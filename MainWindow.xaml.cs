@@ -18,12 +18,15 @@ public partial class MainWindow : Window
     private const double ExpandedInfoWidth = 96;
     private const int HorizontalMarginAt96Dpi = 8;
     private const int VerticalMarginAt96Dpi = 4;
+    private const int TaskbarWatchdogIntervalMilliseconds = 80;
+    private const int AnimationStableMilliseconds = 400;
 
     private readonly MediaSessionService _mediaSessionService = new();
     private readonly SystemMetricsService _systemMetricsService = new();
     private readonly TaskbarPlacementService _taskbarPlacementService = new();
     private readonly DispatcherTimer _positionTimer;
     private readonly DispatcherTimer _taskbarAnimationTimer;
+    private readonly DispatcherTimer _taskbarWatchdogTimer;
     private readonly DispatcherTimer _placementTimer;
     private readonly DispatcherTimer _metricsTimer;
     private readonly DispatcherTimer _collapseTimer;
@@ -38,6 +41,7 @@ public partial class MainWindow : Window
     private HwndSource? _windowSource;
     private NativeMethods.Rect? _lastTaskbarRect;
     private NativeMethods.Rect? _animationTaskbarRect;
+    private NativeMethods.Rect? _watchdogTaskbarRect;
     private nint _windowHandle;
     private int? _automaticLeft;
     private int? _lastPositionLeft;
@@ -45,6 +49,7 @@ public partial class MainWindow : Window
     private int _metricCycleTicks;
     private int _marqueeVersion;
     private int _placementRefreshInProgress;
+    private DateTime _animationStableSinceUtc;
     private bool _hasPresented;
     private bool _isExpanded;
     private bool _isMenuOpen;
@@ -74,13 +79,19 @@ public partial class MainWindow : Window
             OnTaskbarAnimationTimerTick,
             Dispatcher);
         _taskbarAnimationTimer.Stop();
+        _taskbarWatchdogTimer = new DispatcherTimer(
+            TimeSpan.FromMilliseconds(TaskbarWatchdogIntervalMilliseconds),
+            DispatcherPriority.Background,
+            OnTaskbarWatchdogTimerTick,
+            Dispatcher);
+        _taskbarWatchdogTimer.Stop();
         _placementTimer = new DispatcherTimer(
             TimeSpan.FromSeconds(2),
             DispatcherPriority.Background,
             OnPlacementTimerTick,
             Dispatcher);
         _metricsTimer = new DispatcherTimer(
-            TimeSpan.FromSeconds(1),
+            TimeSpan.FromSeconds(2.5),
             DispatcherPriority.Background,
             OnMetricsTimerTick,
             Dispatcher);
@@ -121,7 +132,7 @@ public partial class MainWindow : Window
         _taskbarEventWatcher.TaskbarChanged += Taskbar_OnChanged;
         if (_taskbarSettings.AutoHide)
         {
-            BeginTaskbarAnimationTracking();
+            StartTaskbarWatchdog();
         }
 
         ApplyMetricSettings();
@@ -152,6 +163,7 @@ public partial class MainWindow : Window
     {
         _positionTimer.Stop();
         _taskbarAnimationTimer.Stop();
+        _taskbarWatchdogTimer.Stop();
         _placementTimer.Stop();
         _metricsTimer.Stop();
         _collapseTimer.Stop();
@@ -207,19 +219,60 @@ public partial class MainWindow : Window
         _taskbarSettings = settings;
         if (settings.AutoHide)
         {
-            BeginTaskbarAnimationTracking();
+            StartTaskbarWatchdog();
         }
         else
         {
             _taskbarAnimationTimer.Stop();
+            _taskbarWatchdogTimer.Stop();
+            _watchdogTaskbarRect = null;
+            _animationTaskbarRect = null;
+        }
+    }
+
+    private void StartTaskbarWatchdog()
+    {
+        if (!_taskbarWatchdogTimer.IsEnabled)
+        {
+            var taskbar = NativeMethods.FindWindow("Shell_TrayWnd", null);
+            _watchdogTaskbarRect = taskbar != nint.Zero &&
+                NativeMethods.GetWindowRect(taskbar, out var rect)
+                    ? rect
+                    : null;
+            _taskbarWatchdogTimer.Start();
         }
     }
 
     private void BeginTaskbarAnimationTracking()
     {
-        if (!_taskbarAnimationTimer.IsEnabled)
+        if (_taskbarAnimationTimer.IsEnabled)
         {
-            _taskbarAnimationTimer.Start();
+            return;
+        }
+
+        _animationTaskbarRect = null;
+        _animationStableSinceUtc = DateTime.UtcNow;
+        _taskbarAnimationTimer.Start();
+    }
+
+    private void OnTaskbarWatchdogTimerTick(object? sender, EventArgs e)
+    {
+        if (!_taskbarSettings.AutoHide)
+        {
+            _taskbarWatchdogTimer.Stop();
+            return;
+        }
+
+        var taskbar = NativeMethods.FindWindow("Shell_TrayWnd", null);
+        if (taskbar == nint.Zero || !NativeMethods.GetWindowRect(taskbar, out var rect))
+        {
+            return;
+        }
+
+        if (!_watchdogTaskbarRect.HasValue || !_watchdogTaskbarRect.Value.Equals(rect))
+        {
+            _watchdogTaskbarRect = rect;
+            BeginTaskbarAnimationTracking();
         }
     }
 
@@ -237,10 +290,18 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (!_animationTaskbarRect.HasValue || !_animationTaskbarRect.Value.Equals(rect))
+        var changed = !_animationTaskbarRect.HasValue ||
+            !_animationTaskbarRect.Value.Equals(rect);
+        if (changed)
         {
             _animationTaskbarRect = rect;
+            _animationStableSinceUtc = DateTime.UtcNow;
             FollowTaskbarAnimation(taskbar, rect, asynchronous: true);
+        }
+        else if ((DateTime.UtcNow - _animationStableSinceUtc).TotalMilliseconds >=
+            AnimationStableMilliseconds)
+        {
+            _taskbarAnimationTimer.Stop();
         }
     }
 
@@ -296,6 +357,8 @@ public partial class MainWindow : Window
                 Visibility = Visibility.Collapsed;
             }
 
+            StopMarquees();
+
             return;
         }
 
@@ -307,6 +370,7 @@ public partial class MainWindow : Window
             _lastTaskbarRect = null;
             _lastPositionLeft = null;
             Visibility = Visibility.Collapsed;
+            StopMarquees();
             return;
         }
 
@@ -414,6 +478,7 @@ public partial class MainWindow : Window
 
         _hasPresented = true;
         Opacity = 1;
+        ScheduleMarqueeUpdate();
     }
 
     private async Task RefreshAutomaticPlacementAsync()
@@ -669,8 +734,47 @@ public partial class MainWindow : Window
 
     private void UpdateMarquees()
     {
+        if (!IsWindowContentVisible())
+        {
+            StopMarquees();
+            return;
+        }
+
         UpdateMarquee(TitleText, TitleViewport, TitleTransform);
         UpdateMarquee(ArtistText, ArtistViewport, ArtistTransform);
+    }
+
+    private bool IsWindowContentVisible()
+    {
+        if (_windowHandle == nint.Zero ||
+            Visibility != Visibility.Visible ||
+            !_hasPresented ||
+            Opacity <= 0.01 ||
+            !NativeMethods.GetWindowRect(_windowHandle, out var windowRect))
+        {
+            return false;
+        }
+
+        var monitor = NativeMethods.MonitorFromWindow(_windowHandle, 2);
+        var monitorInfo = NativeMethods.MonitorInfo.Create();
+        return monitor != nint.Zero &&
+            NativeMethods.GetMonitorInfo(monitor, ref monitorInfo) &&
+            windowRect.Right > monitorInfo.Monitor.Left &&
+            windowRect.Left < monitorInfo.Monitor.Right &&
+            windowRect.Bottom > monitorInfo.Monitor.Top &&
+            windowRect.Top < monitorInfo.Monitor.Bottom;
+    }
+
+    private void StopMarquees()
+    {
+        StopMarquee(TitleTransform);
+        StopMarquee(ArtistTransform);
+    }
+
+    private static void StopMarquee(TranslateTransform transform)
+    {
+        transform.BeginAnimation(TranslateTransform.XProperty, null);
+        transform.X = 0;
     }
 
     private static void UpdateMarquee(
