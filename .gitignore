@@ -2,4 +2,5 @@ bin/
 obj/
 artifacts/
 dist/
+dist-folder/
 *.user

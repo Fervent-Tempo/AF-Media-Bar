@@ -2,37 +2,44 @@
 
 一个贴在 Windows 11 主任务栏左侧的网易云音乐迷你控制器。它读取 Windows 全局系统媒体会话（GSMTC），显示歌曲名、歌手和封面，并提供上一首、播放/暂停、下一首操作。
 
-## 为什么不直接使用控制中心
+## 技术方案
 
-Windows 11 控制中心的媒体卡片不是可嵌入的公共控件。它本身是 Explorer/Shell 的界面，强行查找内部窗口、`SetParent` 或注入 Explorer 都依赖未公开实现，Windows 更新后很容易失效。
+Windows 11 控制中心的媒体卡片不是可嵌入的公共控件。它本身是 Explorer/Shell 的界面，强行查找内部窗口、SetParent 或注入 Explorer 都依赖未公开实现，Windows 更新后容易失效。
 
-本项目复用控制中心背后的公开数据源：`Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager`。任务栏部分则使用独立、无边框、置顶且不出现在 Alt+Tab 的 WPF 窗口覆盖在任务栏左侧。这样既能获得相同的媒体信息和控制能力，又不修改 Explorer 进程。
+本项目复用控制中心背后的公开数据源 Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager，再用独立的 WPF 浮层贴合任务栏显示。浮层不修改 Explorer，不出现在 Alt+Tab，并通过 WinEvent 监听任务栏位置变化，所以自动隐藏任务栏的展开/收起会实时跟随。
 
-## 运行
+## 功能
 
-要求 Windows 11 和 .NET 8 Desktop Runtime。
-
-```powershell
-dotnet run --project .\TaskbarPlayer.csproj
-```
-
-程序启动后会自动寻找来源标识包含 `cloudmusic`、`netease` 或 `163music` 的系统媒体会话。右键播放器可重新连接、设置开机启动或退出；点击封面/歌曲信息会切回网易云音乐。
-
-进入全屏游戏或演示模式时，播放器会与任务栏一样自动隐藏；退出全屏后会自动恢复。
+- 自动识别来源标识包含 cloudmusic、netease 或 163music 的系统媒体会话
+- 显示封面、歌曲名和歌手
+- 上一首、播放/暂停、下一首
+- 鼠标离开时收起为封面、歌名和性能指标，悬停时在固定宽度内平滑展开控制区和歌手名
+- 右键菜单可选择系统 MEM、系统 CPU、播放器 APP 内存指标；多项指标在固定胶囊内循环展示
+- 歌曲名或歌手名超过可用宽度时会自动左右滚动
+- 默认读取任务栏按钮边界并寻找不会遮挡图标的空白区；任务栏靠左时会优先选择固定图标与系统托盘之间的空间
+- 可在右键菜单的“位置”中关闭自动避让，解锁后拖动封面或文字区域，并再次锁定手动位置
+- 原生系统托盘图标，右键可重新连接、设置开机启动或退出，双击切回网易云音乐
+- 任务栏自动隐藏时跟随动画，系统托盘飞出面板出现时不会被错误隐藏
+- 进入全屏游戏或演示模式时自动隐藏
 
 如果一直显示“等待网易云音乐”，先在网易云音乐中实际播放一首歌曲。部分网易云版本还需要在设置中启用“系统媒体控制/显示系统媒体信息”一类选项。
 
-## 构建发布版
+## 运行和发布
 
-```powershell
-dotnet publish .\TaskbarPlayer.csproj -c Release -r win-x64 --self-contained false -o .\dist
-```
+要求 Windows 11 和 .NET 8 Desktop Runtime。
 
-输出为 `dist\TaskbarPlayer.exe`。
+    dotnet run --project .\TaskbarPlayer.csproj
+
+发布时请整体保留 dist 文件夹：
+
+    dotnet publish .\TaskbarPlayer.csproj -c Release -r win-x64 --self-contained false -o .\dist
+
+然后启动 dist\TaskbarPlayer.exe。默认使用文件夹发布而不是压缩单文件，因为 WPF 原生库内嵌会让常驻内存额外增加约 100 MB。
 
 ## 已知边界
 
 - Windows 11 没有受支持的第三方任务栏工具栏 API，所以这里是视觉贴合任务栏的浮层，不是 Explorer 内部插件。
-- 默认占用任务栏最左侧约 348 DIP；若左侧已有 Widgets 等按钮，会被播放器覆盖。
+- 显示性能指标时窗口宽度固定为 349 DIP，收起和展开不会改变性能指标的位置。
+- 当任务栏没有任何足够宽的空白区时，自动模式会选择遮挡最少的位置；仍不合适时可切换手动位置模式。
 - 只有网易云音乐向 GSMTC 发布的能力才能使用。例如某个客户端版本不允许“下一首”，对应按钮会自动禁用。
 - 当前实现跟随主显示器任务栏；辅助显示器任务栏暂未放置第二个实例。

@@ -7,10 +7,12 @@ namespace TaskbarPlayer.Services;
 
 internal sealed class MediaSessionService : IDisposable
 {
+    private const int ArtworkDecodeWidth = 96;
     private static readonly string[] CloudMusicTokens = ["cloudmusic", "netease", "163music"];
 
     private GlobalSystemMediaTransportControlsSessionManager? _manager;
     private GlobalSystemMediaTransportControlsSession? _session;
+    private MediaSnapshot _lastSnapshot = MediaSnapshot.Disconnected;
     private int _refreshVersion;
     private bool _disposed;
 
@@ -28,9 +30,9 @@ internal sealed class MediaSessionService : IDisposable
         await SelectSessionAndRefreshAsync();
     }
 
-    internal async Task ReconnectAsync()
+    internal Task ReconnectAsync()
     {
-        await SelectSessionAndRefreshAsync();
+        return SelectSessionAndRefreshAsync();
     }
 
     internal async Task TogglePlayPauseAsync()
@@ -73,7 +75,6 @@ internal sealed class MediaSessionService : IDisposable
 
         var sessions = _manager.GetSessions();
         var selected = sessions.FirstOrDefault(IsCloudMusicSession);
-
         if (selected is null)
         {
             var current = _manager.GetCurrentSession();
@@ -84,13 +85,14 @@ internal sealed class MediaSessionService : IDisposable
         }
 
         SetSession(selected);
-        await RefreshAsync();
+        await RefreshMediaPropertiesAsync();
     }
 
     private static bool IsCloudMusicSession(GlobalSystemMediaTransportControlsSession session)
     {
         var sourceId = session.SourceAppUserModelId ?? string.Empty;
-        return CloudMusicTokens.Any(token => sourceId.Contains(token, StringComparison.OrdinalIgnoreCase));
+        return CloudMusicTokens.Any(token =>
+            sourceId.Contains(token, StringComparison.OrdinalIgnoreCase));
     }
 
     private void SetSession(GlobalSystemMediaTransportControlsSession? session)
@@ -102,53 +104,60 @@ internal sealed class MediaSessionService : IDisposable
 
         if (_session is not null)
         {
-            _session.MediaPropertiesChanged -= OnSessionChanged;
-            _session.PlaybackInfoChanged -= OnSessionChanged;
-            _session.TimelinePropertiesChanged -= OnSessionChanged;
+            _session.MediaPropertiesChanged -= OnMediaPropertiesChanged;
+            _session.PlaybackInfoChanged -= OnPlaybackInfoChanged;
         }
 
         _session = session;
+        _lastSnapshot = MediaSnapshot.Disconnected;
 
         if (_session is not null)
         {
-            _session.MediaPropertiesChanged += OnSessionChanged;
-            _session.PlaybackInfoChanged += OnSessionChanged;
-            _session.TimelinePropertiesChanged += OnSessionChanged;
+            _session.MediaPropertiesChanged += OnMediaPropertiesChanged;
+            _session.PlaybackInfoChanged += OnPlaybackInfoChanged;
         }
     }
 
-    private async void OnSessionChanged(GlobalSystemMediaTransportControlsSession sender, object args)
+    private async void OnMediaPropertiesChanged(
+        GlobalSystemMediaTransportControlsSession sender,
+        object args)
     {
-        await RefreshAsync();
+        await RefreshMediaPropertiesAsync();
     }
 
-    private async Task RefreshAsync()
+    private void OnPlaybackInfoChanged(
+        GlobalSystemMediaTransportControlsSession sender,
+        object args)
+    {
+        RefreshPlaybackInfo();
+    }
+
+    private async Task RefreshMediaPropertiesAsync()
     {
         var version = Interlocked.Increment(ref _refreshVersion);
         var session = _session;
         if (session is null)
         {
-            SnapshotChanged?.Invoke(this, MediaSnapshot.Disconnected);
+            Publish(MediaSnapshot.Disconnected);
             return;
         }
 
         try
         {
             var mediaProperties = await session.TryGetMediaPropertiesAsync();
-            var playbackInfo = session.GetPlaybackInfo();
-            var controls = playbackInfo.Controls;
             var artwork = await LoadArtworkAsync(mediaProperties.Thumbnail);
-
             if (version != _refreshVersion || !ReferenceEquals(session, _session))
             {
                 return;
             }
 
+            var playbackInfo = session.GetPlaybackInfo();
+            var controls = playbackInfo.Controls;
             var artist = !string.IsNullOrWhiteSpace(mediaProperties.Artist)
                 ? mediaProperties.Artist
                 : mediaProperties.AlbumArtist;
 
-            SnapshotChanged?.Invoke(this, new MediaSnapshot(
+            Publish(new MediaSnapshot(
                 true,
                 playbackInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing,
                 controls.IsPlayPauseToggleEnabled || controls.IsPlayEnabled || controls.IsPauseEnabled,
@@ -164,9 +173,45 @@ internal sealed class MediaSessionService : IDisposable
             if (version == _refreshVersion)
             {
                 SetSession(null);
-                SnapshotChanged?.Invoke(this, MediaSnapshot.Disconnected);
+                Publish(MediaSnapshot.Disconnected);
             }
         }
+    }
+
+    private void RefreshPlaybackInfo()
+    {
+        var session = _session;
+        if (session is null || !_lastSnapshot.IsConnected)
+        {
+            return;
+        }
+
+        try
+        {
+            var playbackInfo = session.GetPlaybackInfo();
+            var controls = playbackInfo.Controls;
+            Publish(_lastSnapshot with
+            {
+                IsPlaying = playbackInfo.PlaybackStatus ==
+                    GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing,
+                CanPlayPause = controls.IsPlayPauseToggleEnabled ||
+                    controls.IsPlayEnabled ||
+                    controls.IsPauseEnabled,
+                CanSkipPrevious = controls.IsPreviousEnabled,
+                CanSkipNext = controls.IsNextEnabled
+            });
+        }
+        catch
+        {
+            SetSession(null);
+            Publish(MediaSnapshot.Disconnected);
+        }
+    }
+
+    private void Publish(MediaSnapshot snapshot)
+    {
+        _lastSnapshot = snapshot;
+        SnapshotChanged?.Invoke(this, snapshot);
     }
 
     private static async Task<BitmapImage?> LoadArtworkAsync(
@@ -186,6 +231,7 @@ internal sealed class MediaSessionService : IDisposable
         var bitmap = new BitmapImage();
         bitmap.BeginInit();
         bitmap.CacheOption = BitmapCacheOption.OnLoad;
+        bitmap.DecodePixelWidth = ArtworkDecodeWidth;
         bitmap.StreamSource = memoryStream;
         bitmap.EndInit();
         bitmap.Freeze();
