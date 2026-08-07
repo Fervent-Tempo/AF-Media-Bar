@@ -51,7 +51,7 @@ internal sealed class TaskbarEventWatcher : IDisposable
     {
         var taskbar = NativeMethods.FindWindow("Shell_TrayWnd", null);
         var isRelevant = eventId == NativeMethods.EventSystemForeground || window == taskbar;
-        if (!isRelevant || Interlocked.Exchange(ref _updateQueued, 1) != 0)
+        if (!isRelevant)
         {
             return;
         }
@@ -59,6 +59,19 @@ internal sealed class TaskbarEventWatcher : IDisposable
         if (_dispatcher.HasShutdownStarted)
         {
             Interlocked.Exchange(ref _updateQueued, 0);
+            return;
+        }
+
+        if (eventId == NativeMethods.EventSystemForeground)
+        {
+            _dispatcher.BeginInvoke(
+                DispatcherPriority.Send,
+                () => TaskbarChanged?.Invoke(this, EventArgs.Empty));
+            return;
+        }
+
+        if (Interlocked.Exchange(ref _updateQueued, 1) != 0)
+        {
             return;
         }
 

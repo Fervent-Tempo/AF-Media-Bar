@@ -25,6 +25,11 @@ internal static class MetricSettingsService
                 ReadBoolean(
                     currentKey,
                     legacyKey,
+                    "MetricsEnabled",
+                    MetricSettings.Default.Enabled),
+                ReadBoolean(
+                    currentKey,
+                    legacyKey,
                     "ShowSystemMemory",
                     MetricSettings.Default.ShowSystemMemory),
                 ReadBoolean(
@@ -61,6 +66,7 @@ internal static class MetricSettingsService
     internal static void Save(MetricSettings settings)
     {
         using var key = Registry.CurrentUser.CreateSubKey(SettingsKeyPath, writable: true);
+        key.SetValue("MetricsEnabled", settings.Enabled ? 1 : 0, RegistryValueKind.DWord);
         key.SetValue("ShowSystemMemory", settings.ShowSystemMemory ? 1 : 0, RegistryValueKind.DWord);
         key.SetValue("ShowSystemCpu", settings.ShowSystemCpu ? 1 : 0, RegistryValueKind.DWord);
         key.SetValue("ShowProcessMemory", settings.ShowProcessMemory ? 1 : 0, RegistryValueKind.DWord);
@@ -78,7 +84,8 @@ internal static class MetricSettingsService
 
     private static bool HasMissingValues(RegistryKey key)
     {
-        return key.GetValue("ShowSystemMemory") is not int ||
+        return key.GetValue("MetricsEnabled") is not int ||
+            key.GetValue("ShowSystemMemory") is not int ||
             key.GetValue("ShowSystemCpu") is not int ||
             key.GetValue("ShowProcessMemory") is not int;
     }

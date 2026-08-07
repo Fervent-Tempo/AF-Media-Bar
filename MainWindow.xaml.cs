@@ -176,6 +176,12 @@ public partial class MainWindow : Window
 
     private void Taskbar_OnChanged(object? sender, EventArgs e)
     {
+        var taskbar = NativeMethods.FindWindow("Shell_TrayWnd", null);
+        if (taskbar != nint.Zero && NativeMethods.GetWindowRect(taskbar, out var taskbarRect))
+        {
+            FollowTaskbarAnimation(taskbar, taskbarRect, asynchronous: false);
+        }
+
         if (_taskbarSettings.AutoHide)
         {
             BeginTaskbarAnimationTracking();
@@ -234,11 +240,14 @@ public partial class MainWindow : Window
         if (!_animationTaskbarRect.HasValue || !_animationTaskbarRect.Value.Equals(rect))
         {
             _animationTaskbarRect = rect;
-            FollowTaskbarAnimation(taskbar, rect);
+            FollowTaskbarAnimation(taskbar, rect, asynchronous: true);
         }
     }
 
-    private void FollowTaskbarAnimation(nint taskbar, NativeMethods.Rect taskbarRect)
+    private void FollowTaskbarAnimation(
+        nint taskbar,
+        NativeMethods.Rect taskbarRect,
+        bool asynchronous)
     {
         if (!_hasPresented ||
             Visibility != Visibility.Visible ||
@@ -251,6 +260,14 @@ public partial class MainWindow : Window
         var scale = dpi > 0 ? dpi / 96d : 1d;
         var marginY = (int)Math.Round(VerticalMarginAt96Dpi * scale);
         _lastTaskbarRect = taskbarRect;
+        var flags = NativeMethods.SwpNoSize |
+            NativeMethods.SwpNoActivate |
+            NativeMethods.SwpShowWindow;
+        if (asynchronous)
+        {
+            flags |= NativeMethods.SwpAsyncWindowPos;
+        }
+
         NativeMethods.SetWindowPos(
             _windowHandle,
             NativeMethods.HwndTopmost,
@@ -258,10 +275,7 @@ public partial class MainWindow : Window
             taskbarRect.Top + marginY,
             0,
             0,
-            NativeMethods.SwpNoSize |
-                NativeMethods.SwpNoActivate |
-                NativeMethods.SwpShowWindow |
-                NativeMethods.SwpAsyncWindowPos);
+            flags);
     }
 
     private void PositionOverTaskbar(bool force)
@@ -506,7 +520,7 @@ public partial class MainWindow : Window
         PlayPauseGlyph.Text = snapshot.IsPlaying ? "\uE769" : "\uE768";
         PlayPauseButton.ToolTip = snapshot.IsPlaying ? "暂停" : "播放";
 
-        ConnectionMenuItem.Header = snapshot.IsConnected
+        ConnectionMenuText.Text = snapshot.IsConnected
             ? $"{snapshot.SourceName}：{snapshot.Title}"
             : "等待媒体播放";
         ShowSourceMenuItem.Header = $"显示 {snapshot.SourceName}";
@@ -726,6 +740,11 @@ public partial class MainWindow : Window
     private List<string> BuildMetricValues(SystemMetricsSnapshot sample)
     {
         var values = new List<string>();
+        if (!_metricSettings.Enabled)
+        {
+            return values;
+        }
+
         if (_metricSettings.ShowSystemMemory)
         {
             values.Add($"MEM {sample.SystemMemoryPercent}%");
@@ -770,9 +789,13 @@ public partial class MainWindow : Window
 
     private void ApplyMetricSettings()
     {
+        MetricsEnabledMenuItem.IsChecked = _metricSettings.Enabled;
         SystemMemoryMenuItem.IsChecked = _metricSettings.ShowSystemMemory;
         SystemCpuMenuItem.IsChecked = _metricSettings.ShowSystemCpu;
         ProcessMemoryMenuItem.IsChecked = _metricSettings.ShowProcessMemory;
+        SystemMemoryMenuItem.IsEnabled = _metricSettings.Enabled;
+        SystemCpuMenuItem.IsEnabled = _metricSettings.Enabled;
+        ProcessMemoryMenuItem.IsEnabled = _metricSettings.Enabled;
         _metricCycleIndex = 0;
         _metricCycleTicks = 0;
         UpdateMetrics(advanceCycle: false);
@@ -782,6 +805,7 @@ public partial class MainWindow : Window
     private void MetricSetting_OnClick(object sender, RoutedEventArgs e)
     {
         _metricSettings = new MetricSettings(
+            MetricsEnabledMenuItem.IsChecked,
             SystemMemoryMenuItem.IsChecked,
             SystemCpuMenuItem.IsChecked,
             ProcessMemoryMenuItem.IsChecked);
@@ -1015,9 +1039,7 @@ public partial class MainWindow : Window
 
     private void MouseHook_OnMouseButtonPressed(NativeMethods.Point point)
     {
-        if (!_isMenuOpen ||
-            IsPointInsideWindow(_windowHandle, point) ||
-            IsPointInsideContextMenu(point))
+        if (!_isMenuOpen || IsPointInsideApplicationWindow(point))
         {
             return;
         }
@@ -1025,10 +1047,24 @@ public partial class MainWindow : Window
         PlayerMenu.IsOpen = false;
     }
 
-    private bool IsPointInsideContextMenu(NativeMethods.Point point)
+    private static bool IsPointInsideApplicationWindow(NativeMethods.Point point)
     {
-        var source = PresentationSource.FromVisual(PlayerMenu) as HwndSource;
-        return source is not null && IsPointInsideWindow(source.Handle, point);
+        var processId = (uint)Environment.ProcessId;
+        var isInside = false;
+        NativeMethods.EnumWindows((window, _) =>
+        {
+            NativeMethods.GetWindowThreadProcessId(window, out var windowProcessId);
+            if (windowProcessId != processId ||
+                !NativeMethods.IsWindowVisible(window) ||
+                !IsPointInsideWindow(window, point))
+            {
+                return true;
+            }
+
+            isInside = true;
+            return false;
+        }, nint.Zero);
+        return isInside;
     }
 
     private static bool IsPointInsideWindow(nint window, NativeMethods.Point point)

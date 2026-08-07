@@ -13,11 +13,19 @@
         Focusable="False">
   <Window.ContextMenu>
     <ContextMenu x:Name="PlayerMenu"
+                 MaxWidth="360"
                  Opened="PlayerMenu_OnOpened"
                  Closed="PlayerMenu_OnClosed">
       <MenuItem x:Name="ConnectionMenuItem"
-                Header="等待媒体播放"
-                IsEnabled="False" />
+                IsEnabled="False">
+        <MenuItem.Header>
+          <TextBlock x:Name="ConnectionMenuText"
+                     MaxWidth="300"
+                     Text="等待媒体播放"
+                     TextTrimming="CharacterEllipsis"
+                     ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+        </MenuItem.Header>
+      </MenuItem>
       <Separator />
       <MenuItem x:Name="ShowSourceMenuItem"
                 Header="显示媒体应用"
@@ -27,6 +35,11 @@
       <MenuItem Header="重新连接媒体会话"
                 Click="Reconnect_OnClick" />
       <MenuItem Header="性能指标">
+        <MenuItem x:Name="MetricsEnabledMenuItem"
+                  Header="显示性能指标"
+                  IsCheckable="True"
+                  Click="MetricSetting_OnClick" />
+        <Separator />
         <MenuItem x:Name="SystemMemoryMenuItem"
                   Header="系统内存（MEM）"
                   IsCheckable="True"
