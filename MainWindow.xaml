@@ -48,11 +48,25 @@
                   Header="系统处理器（CPU）"
                   IsCheckable="True"
                   Click="MetricSetting_OnClick" />
+        <MenuItem x:Name="SystemGpuMenuItem"
+                  Header="系统图形处理器（GPU）"
+                  IsCheckable="True"
+                  Click="MetricSetting_OnClick" />
         <MenuItem x:Name="ProcessMemoryMenuItem"
                   Header="播放器内存（APP）"
                   IsCheckable="True"
                   Click="MetricSetting_OnClick" />
       </MenuItem>
+      <MenuItem x:Name="LowGpuModeMenuItem"
+                Header="低配置模式"
+                ToolTip="降低硬件渲染和动画活动，适合低配置设备"
+                IsCheckable="True"
+                Click="MetricSetting_OnClick" />
+      <MenuItem x:Name="AudioMonitorMenuItem"
+                Header="音频监听"
+                ToolTip="在收起状态显示当前系统声音"
+                IsCheckable="True"
+                Click="MetricSetting_OnClick" />
       <MenuItem Header="位置">
         <MenuItem x:Name="AutomaticPlacementMenuItem"
                   Header="自动避让任务栏图标"
@@ -205,6 +219,19 @@
           </Button>
         </StackPanel>
       </Border>
+      <StackPanel x:Name="AudioVisualizerHost"
+                  Width="114"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Center"
+                  Orientation="Horizontal"
+                  Visibility="Collapsed"
+                  IsHitTestVisible="False">
+        <Border x:Name="AudioBar0" Width="4" Height="4" Margin="14,0,5,0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
+        <Border x:Name="AudioBar1" Width="4" Height="4" Margin="0,0,5,0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
+        <Border x:Name="AudioBar2" Width="4" Height="4" Margin="0,0,5,0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
+        <Border x:Name="AudioBar3" Width="4" Height="4" Margin="0,0,5,0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
+        <Border x:Name="AudioBar4" Width="4" Height="4" Margin="0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
+      </StackPanel>
     </Grid>
 
     <Border x:Name="MetricsDivider"

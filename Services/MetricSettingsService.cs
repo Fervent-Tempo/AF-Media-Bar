@@ -40,8 +40,27 @@ internal static class MetricSettingsService
                 ReadBoolean(
                     currentKey,
                     legacyKey,
+                    "ShowSystemGpu",
+                    MetricSettings.Default.ShowSystemGpu),
+                ReadBoolean(
+                    currentKey,
+                    legacyKey,
                     "ShowProcessMemory",
-                    MetricSettings.Default.ShowProcessMemory));
+                    MetricSettings.Default.ShowProcessMemory),
+                ReadBoolean(
+                    currentKey,
+                    legacyKey,
+                    "LowConfigMode",
+                    ReadBoolean(
+                        currentKey,
+                        legacyKey,
+                        "LowGpuMode",
+                        MetricSettings.Default.LowGpuMode)),
+                ReadBoolean(
+                    currentKey,
+                    legacyKey,
+                    "AudioMonitorEnabled",
+                    MetricSettings.Default.AudioMonitorEnabled));
 
             if (currentKey is null || HasMissingValues(currentKey))
             {
@@ -69,7 +88,10 @@ internal static class MetricSettingsService
         key.SetValue("MetricsEnabled", settings.Enabled ? 1 : 0, RegistryValueKind.DWord);
         key.SetValue("ShowSystemMemory", settings.ShowSystemMemory ? 1 : 0, RegistryValueKind.DWord);
         key.SetValue("ShowSystemCpu", settings.ShowSystemCpu ? 1 : 0, RegistryValueKind.DWord);
+        key.SetValue("ShowSystemGpu", settings.ShowSystemGpu ? 1 : 0, RegistryValueKind.DWord);
         key.SetValue("ShowProcessMemory", settings.ShowProcessMemory ? 1 : 0, RegistryValueKind.DWord);
+        key.SetValue("LowConfigMode", settings.LowGpuMode ? 1 : 0, RegistryValueKind.DWord);
+        key.SetValue("AudioMonitorEnabled", settings.AudioMonitorEnabled ? 1 : 0, RegistryValueKind.DWord);
     }
 
     private static bool ReadBoolean(
@@ -87,6 +109,9 @@ internal static class MetricSettingsService
         return key.GetValue("MetricsEnabled") is not int ||
             key.GetValue("ShowSystemMemory") is not int ||
             key.GetValue("ShowSystemCpu") is not int ||
-            key.GetValue("ShowProcessMemory") is not int;
+            key.GetValue("ShowSystemGpu") is not int ||
+            key.GetValue("ShowProcessMemory") is not int ||
+            key.GetValue("LowConfigMode") is not int ||
+            key.GetValue("AudioMonitorEnabled") is not int;
     }
 }

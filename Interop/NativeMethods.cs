@@ -35,7 +35,14 @@ internal static class NativeMethods
     internal const int WhMouseLowLevel = 14;
 
     internal const uint AbmGetState = 0x00000004;
+    internal const uint AbmGetTaskbarPos = 0x00000005;
     internal const uint AbsAutoHide = 0x00000001;
+
+    internal const uint ErrorSuccess = 0;
+    internal const uint PdhMoreData = 0x800007D2;
+    internal const uint PdhFmtDouble = 0x00000200;
+    internal const uint PdhStatusValidData = 0x00000000;
+    internal const uint PdhStatusNewData = 0x00000001;
 
     internal const uint NotifyIconAdd = 0x00000000;
     internal const uint NotifyIconModify = 0x00000001;
@@ -175,6 +182,33 @@ internal static class NativeMethods
     [DllImport("kernel32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool GetSystemTimes(out FileTime idle, out FileTime kernel, out FileTime user);
+
+    [DllImport("pdh.dll", CharSet = CharSet.Unicode)]
+    internal static extern uint PdhOpenQuery(
+        string? dataSource,
+        nint userData,
+        out nint query);
+
+    [DllImport("pdh.dll", CharSet = CharSet.Unicode)]
+    internal static extern uint PdhAddEnglishCounter(
+        nint query,
+        string counterPath,
+        nint userData,
+        out nint counter);
+
+    [DllImport("pdh.dll")]
+    internal static extern uint PdhCollectQueryData(nint query);
+
+    [DllImport("pdh.dll", EntryPoint = "PdhGetFormattedCounterArrayW")]
+    internal static extern uint PdhGetFormattedCounterArray(
+        nint counter,
+        uint format,
+        ref uint bufferSize,
+        ref uint itemCount,
+        nint itemBuffer);
+
+    [DllImport("pdh.dll")]
+    internal static extern uint PdhCloseQuery(nint query);
 
     [DllImport("shell32.dll", EntryPoint = "Shell_NotifyIconW", CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -387,6 +421,20 @@ internal static class NativeMethods
         {
             return ((ulong)HighDateTime << 32) | LowDateTime;
         }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct PdhFmtCounterValueDouble
+    {
+        internal uint Status;
+        internal double DoubleValue;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct PdhFmtCounterValueItem
+    {
+        internal nint Name;
+        internal PdhFmtCounterValueDouble Value;
     }
 
     internal enum QueryUserNotificationState

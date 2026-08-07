@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -20,6 +21,7 @@ public partial class MainWindow : Window
     private const int VerticalMarginAt96Dpi = 4;
     private const int TaskbarWatchdogIntervalMilliseconds = 80;
     private const int AnimationStableMilliseconds = 400;
+    private const int AudioMonitorIntervalMilliseconds = 80;
 
     private readonly MediaSessionService _mediaSessionService = new();
     private readonly SystemMetricsService _systemMetricsService = new();
@@ -30,12 +32,14 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _placementTimer;
     private readonly DispatcherTimer _metricsTimer;
     private readonly DispatcherTimer _collapseTimer;
+    private readonly DispatcherTimer _audioMonitorTimer;
     private MetricSettings _metricSettings;
     private PlacementSettings _placementSettings;
     private TaskbarSettings _taskbarSettings;
     private SystemMetricsSnapshot _lastMetricsSnapshot;
     private IReadOnlyList<MediaSessionOption> _mediaSessions = [];
     private TaskbarEventWatcher? _taskbarEventWatcher;
+    private AudioMonitorService? _audioMonitorService;
     private readonly MouseHookService _mouseHookService;
     private TrayIconService? _trayIconService;
     private HwndSource? _windowSource;
@@ -49,22 +53,30 @@ public partial class MainWindow : Window
     private int _metricCycleTicks;
     private int _marqueeVersion;
     private int _placementRefreshInProgress;
+    private int _lastExpandedTaskbarHeight;
+    private nint _cachedForegroundWindow;
+    private bool _cachedForegroundIsShellSurface;
     private DateTime _animationStableSinceUtc;
     private bool _hasPresented;
     private bool _isExpanded;
     private bool _isMenuOpen;
     private bool _isDragging;
     private bool _dragMoved;
+    private float _smoothedAudioPeak;
+    private int _audioVisualizerPhase;
     private NativeMethods.Point _dragStartCursor;
     private int _dragStartWindowLeft;
 
     public MainWindow()
     {
         TaskbarPlacementService.ValidateAlgorithm();
+        _metricSettings = MetricSettingsService.Load();
+        RenderOptions.ProcessRenderMode = _metricSettings.LowGpuMode
+            ? RenderMode.SoftwareOnly
+            : RenderMode.Default;
         InitializeComponent();
 
         Opacity = 0;
-        _metricSettings = MetricSettingsService.Load();
         _placementSettings = PlacementSettingsService.Load();
         _taskbarSettings = TaskbarSettingsService.Read();
         _mouseHookService = new MouseHookService(Dispatcher);
@@ -86,7 +98,7 @@ public partial class MainWindow : Window
             Dispatcher);
         _taskbarWatchdogTimer.Stop();
         _placementTimer = new DispatcherTimer(
-            TimeSpan.FromSeconds(2),
+            TimeSpan.FromSeconds(30),
             DispatcherPriority.Background,
             OnPlacementTimerTick,
             Dispatcher);
@@ -101,6 +113,12 @@ public partial class MainWindow : Window
             OnCollapseTimerTick,
             Dispatcher);
         _collapseTimer.Stop();
+        _audioMonitorTimer = new DispatcherTimer(
+            TimeSpan.FromMilliseconds(AudioMonitorIntervalMilliseconds),
+            DispatcherPriority.Background,
+            OnAudioMonitorTimerTick,
+            Dispatcher);
+        _audioMonitorTimer.Stop();
 
         _mediaSessionService.SnapshotChanged += OnSnapshotChanged;
         _mediaSessionService.SessionsChanged += OnSessionsChanged;
@@ -167,6 +185,9 @@ public partial class MainWindow : Window
         _placementTimer.Stop();
         _metricsTimer.Stop();
         _collapseTimer.Stop();
+        _audioMonitorTimer.Stop();
+        _audioMonitorService?.Dispose();
+        _audioMonitorService = null;
         _taskbarEventWatcher?.Dispose();
         _mouseHookService.Dispose();
         _trayIconService?.Dispose();
@@ -188,8 +209,13 @@ public partial class MainWindow : Window
 
     private void Taskbar_OnChanged(object? sender, EventArgs e)
     {
-        var taskbar = NativeMethods.FindWindow("Shell_TrayWnd", null);
-        if (taskbar != nint.Zero && NativeMethods.GetWindowRect(taskbar, out var taskbarRect))
+        if (_placementSettings.AutomaticPlacement)
+        {
+            _automaticLeft = null;
+            _ = RefreshAutomaticPlacementAsync();
+        }
+
+        if (TryGetEffectiveTaskbarRect(out var taskbar, out var taskbarRect))
         {
             FollowTaskbarAnimation(taskbar, taskbarRect, asynchronous: false);
         }
@@ -234,9 +260,7 @@ public partial class MainWindow : Window
     {
         if (!_taskbarWatchdogTimer.IsEnabled)
         {
-            var taskbar = NativeMethods.FindWindow("Shell_TrayWnd", null);
-            _watchdogTaskbarRect = taskbar != nint.Zero &&
-                NativeMethods.GetWindowRect(taskbar, out var rect)
+            _watchdogTaskbarRect = TryGetEffectiveTaskbarRect(out _, out var rect)
                     ? rect
                     : null;
             _taskbarWatchdogTimer.Start();
@@ -263,8 +287,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        var taskbar = NativeMethods.FindWindow("Shell_TrayWnd", null);
-        if (taskbar == nint.Zero || !NativeMethods.GetWindowRect(taskbar, out var rect))
+        if (!TryGetEffectiveTaskbarRect(out _, out var rect))
         {
             return;
         }
@@ -272,14 +295,14 @@ public partial class MainWindow : Window
         if (!_watchdogTaskbarRect.HasValue || !_watchdogTaskbarRect.Value.Equals(rect))
         {
             _watchdogTaskbarRect = rect;
+            PositionOverTaskbar(force: true);
             BeginTaskbarAnimationTracking();
         }
     }
 
     private void OnTaskbarAnimationTimerTick(object? sender, EventArgs e)
     {
-        var taskbar = NativeMethods.FindWindow("Shell_TrayWnd", null);
-        if (taskbar == nint.Zero || !NativeMethods.GetWindowRect(taskbar, out var rect))
+        if (!TryGetEffectiveTaskbarRect(out var taskbar, out var rect))
         {
             return;
         }
@@ -348,7 +371,9 @@ public partial class MainWindow : Window
 
         CollapseWhenPointerLeavesWindow();
 
-        if (NativeMethods.ShouldHideForFullScreenApp(_windowHandle))
+        var shellSurfaceForeground = IsShellTaskbarSurfaceForeground();
+        if (!shellSurfaceForeground &&
+            NativeMethods.ShouldHideForFullScreenApp(_windowHandle))
         {
             _lastTaskbarRect = null;
             _lastPositionLeft = null;
@@ -362,9 +387,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        var taskbar = NativeMethods.FindWindow("Shell_TrayWnd", null);
-        if (taskbar == nint.Zero ||
-            !NativeMethods.GetWindowRect(taskbar, out var taskbarRect) ||
+        if (!TryGetEffectiveTaskbarRect(out var taskbar, out var taskbarRect) ||
             taskbarRect.Width < taskbarRect.Height)
         {
             _lastTaskbarRect = null;
@@ -432,6 +455,128 @@ public partial class MainWindow : Window
                 NativeMethods.SwpNoActivate |
                 NativeMethods.SwpShowWindow);
         RevealAfterPlacement();
+    }
+
+    private bool TryGetEffectiveTaskbarRect(
+        out nint taskbar,
+        out NativeMethods.Rect taskbarRect)
+    {
+        taskbar = NativeMethods.FindWindow("Shell_TrayWnd", null);
+        taskbarRect = default;
+        if (taskbar == nint.Zero)
+        {
+            return false;
+        }
+
+        var hasTaskbarRect = NativeMethods.GetWindowRect(taskbar, out taskbarRect);
+        var shellSurfaceForeground = IsShellTaskbarSurfaceForeground();
+        if (!_taskbarSettings.AutoHide || !shellSurfaceForeground)
+        {
+            return hasTaskbarRect && taskbarRect.Width > 0 && taskbarRect.Height > 0;
+        }
+
+        // When Start opens on an auto-hidden taskbar, Shell_TrayWnd can briefly
+        // report an empty or collapsed rectangle. Recover the stable taskbar rect
+        // instead of treating that transient state as a fullscreen application.
+        var taskbarHeight = hasTaskbarRect && taskbarRect.Width >= taskbarRect.Height
+            ? taskbarRect.Height
+            : 0;
+        if (taskbarHeight > 4)
+        {
+            _lastExpandedTaskbarHeight = taskbarHeight;
+        }
+        else
+        {
+            var appBarData = NativeMethods.AppBarData.Create();
+            appBarData.Window = taskbar;
+            if (NativeMethods.SHAppBarMessage(
+                    NativeMethods.AbmGetTaskbarPos,
+                    ref appBarData) != 0 &&
+                appBarData.Rectangle.Width >= appBarData.Rectangle.Height &&
+                appBarData.Rectangle.Height > 4)
+            {
+                taskbarHeight = appBarData.Rectangle.Height;
+                _lastExpandedTaskbarHeight = taskbarHeight;
+            }
+            else if (_lastExpandedTaskbarHeight > 4)
+            {
+                taskbarHeight = _lastExpandedTaskbarHeight;
+            }
+            else
+            {
+                var dpi = NativeMethods.GetDpiForWindow(taskbar);
+                var scale = dpi > 0 ? dpi / 96d : 1d;
+                taskbarHeight = Math.Max(1, (int)Math.Round(48 * scale));
+            }
+        }
+
+        var monitor = NativeMethods.MonitorFromWindow(
+            _windowHandle != nint.Zero ? _windowHandle : taskbar,
+            2);
+        var monitorInfo = NativeMethods.MonitorInfo.Create();
+        if (monitor == nint.Zero || !NativeMethods.GetMonitorInfo(monitor, ref monitorInfo))
+        {
+            return true;
+        }
+
+        taskbarRect.Left = monitorInfo.Monitor.Left;
+        taskbarRect.Right = monitorInfo.Monitor.Right;
+        taskbarRect.Top = monitorInfo.Monitor.Bottom - taskbarHeight;
+        taskbarRect.Bottom = monitorInfo.Monitor.Bottom;
+        return true;
+    }
+
+    private bool IsShellTaskbarSurfaceForeground()
+    {
+        var foreground = NativeMethods.GetForegroundWindow();
+        if (foreground == nint.Zero)
+        {
+            return false;
+        }
+
+        if (foreground == _cachedForegroundWindow)
+        {
+            return _cachedForegroundIsShellSurface;
+        }
+
+        _cachedForegroundWindow = foreground;
+        _cachedForegroundIsShellSurface = false;
+        var classNameBuffer = new System.Text.StringBuilder(128);
+        NativeMethods.GetClassName(foreground, classNameBuffer, classNameBuffer.Capacity);
+        var className = classNameBuffer.ToString();
+        if (className is "Shell_TrayWnd" or "Shell_SecondaryTrayWnd" or
+            "XamlExplorerHostIslandWindow")
+        {
+            _cachedForegroundIsShellSurface = true;
+            return true;
+        }
+
+        NativeMethods.GetWindowThreadProcessId(foreground, out var processId);
+        if (processId == 0)
+        {
+            return false;
+        }
+
+        try
+        {
+            using var process = Process.GetProcessById(checked((int)processId));
+            _cachedForegroundIsShellSurface = process.ProcessName is
+                "StartMenuExperienceHost" or
+                "ShellExperienceHost" or
+                "SearchHost" or
+                "SearchApp" ||
+                (process.ProcessName == "ApplicationFrameHost" &&
+                    (className is "ApplicationFrameWindow" or "Windows.UI.Core.CoreWindow")) ||
+                (process.ProcessName == "explorer" &&
+                    (className is "Windows.UI.Core.CoreWindow" or
+                        "XamlExplorerHostIslandWindow"));
+        }
+        catch
+        {
+            // The foreground process can exit between the Win32 query and inspection.
+        }
+
+        return _cachedForegroundIsShellSurface;
     }
 
     private int? ResolveAutomaticLeft(
@@ -676,33 +821,58 @@ public partial class MainWindow : Window
     {
         _isExpanded = expanded;
         ControlsHost.IsHitTestVisible = expanded;
+        AudioVisualizerHost.Visibility = _metricSettings.AudioMonitorEnabled && !expanded
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        animate &= !_metricSettings.LowGpuMode;
+        var infoWidth = expanded ? ExpandedInfoWidth : CollapsedInfoWidth;
+        var controlsOpacity = expanded ? 1d : 0d;
+        var controlsOffset = expanded ? 0d : 8d;
+        var titleOffset = expanded ? -8d : 0d;
+        var artistOffset = expanded ? 0d : 3d;
+        var artistOpacity = expanded ? 1d : 0d;
+        if (!animate)
+        {
+            InfoHost.BeginAnimation(FrameworkElement.WidthProperty, null);
+            ControlsHost.BeginAnimation(UIElement.OpacityProperty, null);
+            ControlsTransform.BeginAnimation(TranslateTransform.XProperty, null);
+            TitleTransform.BeginAnimation(TranslateTransform.YProperty, null);
+            ArtistTransform.BeginAnimation(TranslateTransform.YProperty, null);
+            ArtistText.BeginAnimation(UIElement.OpacityProperty, null);
+            InfoHost.Width = infoWidth;
+            ControlsHost.Opacity = controlsOpacity;
+            ControlsTransform.X = controlsOffset;
+            TitleTransform.Y = titleOffset;
+            ArtistTransform.Y = artistOffset;
+            ArtistText.Opacity = artistOpacity;
+            ScheduleMarqueeUpdate();
+            return;
+        }
 
-        var duration = animate
-            ? new Duration(TimeSpan.FromMilliseconds(220))
-            : new Duration(TimeSpan.Zero);
+        var duration = new Duration(TimeSpan.FromMilliseconds(220));
         var easing = new CubicEase { EasingMode = EasingMode.EaseOut };
 
         InfoHost.BeginAnimation(
             FrameworkElement.WidthProperty,
             CreateAnimation(
-                expanded ? ExpandedInfoWidth : CollapsedInfoWidth,
+                infoWidth,
                 duration,
                 easing));
         ControlsHost.BeginAnimation(
             UIElement.OpacityProperty,
-            CreateAnimation(expanded ? 1 : 0, duration, easing));
+            CreateAnimation(controlsOpacity, duration, easing));
         ControlsTransform.BeginAnimation(
             TranslateTransform.XProperty,
-            CreateAnimation(expanded ? 0 : 8, duration, easing));
+            CreateAnimation(controlsOffset, duration, easing));
         TitleTransform.BeginAnimation(
             TranslateTransform.YProperty,
-            CreateAnimation(expanded ? -8 : 0, duration, easing));
+            CreateAnimation(titleOffset, duration, easing));
         ArtistTransform.BeginAnimation(
             TranslateTransform.YProperty,
-            CreateAnimation(expanded ? 0 : 3, duration, easing));
+            CreateAnimation(artistOffset, duration, easing));
         ArtistText.BeginAnimation(
             UIElement.OpacityProperty,
-            CreateAnimation(expanded ? 1 : 0, duration, easing));
+            CreateAnimation(artistOpacity, duration, easing));
         ScheduleMarqueeUpdate();
     }
 
@@ -722,6 +892,13 @@ public partial class MainWindow : Window
 
     private async void ScheduleMarqueeUpdate()
     {
+        if (_metricSettings.LowGpuMode)
+        {
+            Interlocked.Increment(ref _marqueeVersion);
+            StopMarquees();
+            return;
+        }
+
         var version = Interlocked.Increment(ref _marqueeVersion);
         await Task.Delay(260);
         if (version != _marqueeVersion || Dispatcher.HasShutdownStarted)
@@ -734,7 +911,7 @@ public partial class MainWindow : Window
 
     private void UpdateMarquees()
     {
-        if (!IsWindowContentVisible())
+        if (_metricSettings.LowGpuMode || !IsWindowContentVisible())
         {
             StopMarquees();
             return;
@@ -815,9 +992,9 @@ public partial class MainWindow : Window
 
     private void UpdateMetrics(bool advanceCycle)
     {
-        _lastMetricsSnapshot = _systemMetricsService.Sample();
-        var values = BuildMetricValues(_lastMetricsSnapshot);
-        if (values.Count == 0)
+        _lastMetricsSnapshot = _systemMetricsService.Sample(_metricSettings);
+        var selectedCount = _metricSettings.SelectedCount;
+        if (selectedCount == 0)
         {
             MetricsText.Text = string.Empty;
             MetricsHost.Visibility = Visibility.Collapsed;
@@ -831,32 +1008,40 @@ public partial class MainWindow : Window
         PlayerRoot.Width = 349;
         if (advanceCycle)
         {
-            _metricCycleIndex = (_metricCycleIndex + 1) % values.Count;
+            _metricCycleIndex = (_metricCycleIndex + 1) % selectedCount;
         }
         else
         {
-            _metricCycleIndex = Math.Clamp(_metricCycleIndex, 0, values.Count - 1);
+            _metricCycleIndex = Math.Clamp(_metricCycleIndex, 0, selectedCount - 1);
         }
 
-        SetMetricText(values[_metricCycleIndex], advanceCycle);
+        SetMetricText(BuildMetricValue(_lastMetricsSnapshot, _metricCycleIndex), advanceCycle);
     }
 
-    private List<string> BuildMetricValues(SystemMetricsSnapshot sample)
+    private string BuildMetricValue(SystemMetricsSnapshot sample, int selectedIndex)
     {
-        var values = new List<string>();
-        if (!_metricSettings.Enabled)
-        {
-            return values;
-        }
-
         if (_metricSettings.ShowSystemMemory)
         {
-            values.Add($"MEM {sample.SystemMemoryPercent}%");
+            if (selectedIndex-- == 0)
+            {
+                return $"MEM {sample.SystemMemoryPercent}%";
+            }
         }
 
         if (_metricSettings.ShowSystemCpu)
         {
-            values.Add($"CPU {(sample.SystemCpuPercent is int cpu ? $"{cpu}%" : "--%")}");
+            if (selectedIndex-- == 0)
+            {
+                return $"CPU {(sample.SystemCpuPercent is int cpu ? $"{cpu}%" : "--%")}";
+            }
+        }
+
+        if (_metricSettings.ShowSystemGpu)
+        {
+            if (selectedIndex-- == 0)
+            {
+                return $"GPU {(sample.SystemGpuPercent is int gpu ? $"{gpu}%" : "--%")}";
+            }
         }
 
         if (_metricSettings.ShowProcessMemory)
@@ -864,15 +1049,15 @@ public partial class MainWindow : Window
             var appMemory = sample.ProcessMemoryMegabytes < 1000
                 ? $"{sample.ProcessMemoryMegabytes}M"
                 : $"{sample.ProcessMemoryMegabytes / 1024d:0.0}G";
-            values.Add($"APP {appMemory}");
+            return $"APP {appMemory}";
         }
 
-        return values;
+        return string.Empty;
     }
 
     private void SetMetricText(string text, bool animate)
     {
-        if (!animate)
+        if (!animate || _metricSettings.LowGpuMode)
         {
             MetricsText.BeginAnimation(UIElement.OpacityProperty, null);
             MetricsText.Opacity = 1;
@@ -896,13 +1081,30 @@ public partial class MainWindow : Window
         MetricsEnabledMenuItem.IsChecked = _metricSettings.Enabled;
         SystemMemoryMenuItem.IsChecked = _metricSettings.ShowSystemMemory;
         SystemCpuMenuItem.IsChecked = _metricSettings.ShowSystemCpu;
+        SystemGpuMenuItem.IsChecked = _metricSettings.ShowSystemGpu;
         ProcessMemoryMenuItem.IsChecked = _metricSettings.ShowProcessMemory;
+        LowGpuModeMenuItem.IsChecked = _metricSettings.LowGpuMode;
+        AudioMonitorMenuItem.IsChecked = _metricSettings.AudioMonitorEnabled;
         SystemMemoryMenuItem.IsEnabled = _metricSettings.Enabled;
         SystemCpuMenuItem.IsEnabled = _metricSettings.Enabled;
+        SystemGpuMenuItem.IsEnabled = _metricSettings.Enabled;
         ProcessMemoryMenuItem.IsEnabled = _metricSettings.Enabled;
         _metricCycleIndex = 0;
         _metricCycleTicks = 0;
         UpdateMetrics(advanceCycle: false);
+        if (_metricSettings.LowGpuMode)
+        {
+            RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly;
+            SetExpanded(_isExpanded, animate: false);
+            StopMarquees();
+        }
+        else
+        {
+            RenderOptions.ProcessRenderMode = RenderMode.Default;
+            ScheduleMarqueeUpdate();
+        }
+
+        ApplyAudioMonitorSettings();
         _ = RefreshAutomaticPlacementAsync();
     }
 
@@ -912,7 +1114,10 @@ public partial class MainWindow : Window
             MetricsEnabledMenuItem.IsChecked,
             SystemMemoryMenuItem.IsChecked,
             SystemCpuMenuItem.IsChecked,
-            ProcessMemoryMenuItem.IsChecked);
+            SystemGpuMenuItem.IsChecked,
+            ProcessMemoryMenuItem.IsChecked,
+            LowGpuModeMenuItem.IsChecked,
+            AudioMonitorMenuItem.IsChecked);
         try
         {
             MetricSettingsService.Save(_metricSettings);
@@ -927,6 +1132,76 @@ public partial class MainWindow : Window
         }
 
         ApplyMetricSettings();
+    }
+
+    private void ApplyAudioMonitorSettings()
+    {
+        if (_metricSettings.AudioMonitorEnabled)
+        {
+            _audioMonitorService ??= new AudioMonitorService();
+            if (!_audioMonitorTimer.IsEnabled)
+            {
+                _audioMonitorTimer.Start();
+            }
+        }
+        else
+        {
+            _audioMonitorTimer.Stop();
+            _audioMonitorService?.Dispose();
+            _audioMonitorService = null;
+            _smoothedAudioPeak = 0;
+            SetAudioBarHeights(0);
+        }
+
+        AudioVisualizerHost.Visibility = _metricSettings.AudioMonitorEnabled && !_isExpanded
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
+    private void OnAudioMonitorTimerTick(object? sender, EventArgs e)
+    {
+        if (!_metricSettings.AudioMonitorEnabled || _audioMonitorService is null)
+        {
+            return;
+        }
+
+        var peak = _audioMonitorService.GetPeakValue();
+        _smoothedAudioPeak = _smoothedAudioPeak * 0.58f + peak * 0.42f;
+        if (_smoothedAudioPeak < 0.025f)
+        {
+            _smoothedAudioPeak = 0;
+        }
+
+        if (!_isExpanded)
+        {
+            SetAudioBarHeights(_smoothedAudioPeak);
+        }
+    }
+
+    private void SetAudioBarHeights(float peak)
+    {
+        if (peak <= 0.025f)
+        {
+            AudioBar0.Height = 4;
+            AudioBar1.Height = 4;
+            AudioBar2.Height = 4;
+            AudioBar3.Height = 4;
+            AudioBar4.Height = 4;
+            return;
+        }
+
+        var phase = ++_audioVisualizerPhase;
+        SetAudioBarHeight(AudioBar0, peak, 0.42, phase);
+        SetAudioBarHeight(AudioBar1, peak, 0.76, phase + 1);
+        SetAudioBarHeight(AudioBar2, peak, 1.00, phase + 2);
+        SetAudioBarHeight(AudioBar3, peak, 0.62, phase + 3);
+        SetAudioBarHeight(AudioBar4, peak, 0.84, phase + 4);
+    }
+
+    private static void SetAudioBarHeight(Border bar, float peak, double factor, int phase)
+    {
+        var variation = 0.72 + Math.Sin(phase * 0.55 + factor * 4.0) * 0.28;
+        bar.Height = Math.Clamp(4 + peak * 25 * factor * variation, 4, 29);
     }
 
     private void ApplyPlacementSettings()

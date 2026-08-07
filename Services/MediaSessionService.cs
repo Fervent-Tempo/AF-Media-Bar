@@ -8,6 +8,7 @@ namespace TaskbarPlayer.Services;
 internal sealed class MediaSessionService : IDisposable
 {
     private const int ArtworkDecodeWidth = 96;
+    private static readonly TimeSpan SessionReconnectGracePeriod = TimeSpan.FromSeconds(6);
 
     private static readonly (string Name, string[] Tokens)[] SourceNames =
     [
@@ -30,6 +31,10 @@ internal sealed class MediaSessionService : IDisposable
     private GlobalSystemMediaTransportControlsSessionManager? _manager;
     private GlobalSystemMediaTransportControlsSession? _session;
     private string? _selectedKey;
+    private string? _preferredSourceId;
+    private string? _preferredSourceName;
+    private DateTime? _sessionMissingSinceUtc;
+    private CancellationTokenSource? _sessionReconnectCancellation;
     private MediaSnapshot _lastSnapshot = MediaSnapshot.Disconnected;
     private int _refreshVersion;
     private bool _disposed;
@@ -68,8 +73,7 @@ internal sealed class MediaSessionService : IDisposable
                 return;
             }
 
-            _selectedKey = entry.Key;
-            SetSession(entry.Session);
+            SelectEntry(entry);
             PublishSessions();
             await RefreshMediaPropertiesAsync();
         }
@@ -217,9 +221,38 @@ internal sealed class MediaSessionService : IDisposable
                 session.PlaybackInfoChanged += OnAnyPlaybackInfoChanged;
             }
 
+            // An explicitly closed last source is represented by an empty session
+            // list. Clear the old artwork/title immediately instead of keeping a
+            // stale snapshot behind the reconnect grace period.
+            if (_entries.Count == 0)
+            {
+                CancelSessionReconnectGrace();
+                _selectedKey = null;
+                _preferredSourceId = null;
+                _preferredSourceName = null;
+                SetSession(null);
+                PublishSessions();
+                Publish(MediaSnapshot.Disconnected);
+                return;
+            }
+
             var selected = _entries.FirstOrDefault(entry =>
                 ReferenceEquals(entry.Session, previousSession));
             selected ??= _entries.FirstOrDefault(entry => entry.Key == _selectedKey);
+            selected ??= _entries.FirstOrDefault(entry =>
+                !string.IsNullOrWhiteSpace(_preferredSourceId) &&
+                string.Equals(
+                    entry.SourceId,
+                    _preferredSourceId,
+                    StringComparison.OrdinalIgnoreCase));
+
+            if (selected is null && ShouldHoldPreferredSource())
+            {
+                HoldPreferredSource();
+                return;
+            }
+
+            CancelSessionReconnectGrace();
             if (selected is null)
             {
                 var current = _manager.GetCurrentSession();
@@ -230,8 +263,18 @@ internal sealed class MediaSessionService : IDisposable
             selected ??= _entries.FirstOrDefault(entry => IsPlaying(entry.Session));
             selected ??= _entries.FirstOrDefault();
 
-            _selectedKey = selected?.Key;
-            SetSession(selected?.Session);
+            if (selected is not null)
+            {
+                SelectEntry(selected);
+            }
+            else
+            {
+                _selectedKey = null;
+                _preferredSourceId = null;
+                _preferredSourceName = null;
+                SetSession(null);
+            }
+
             PublishSessions();
             await RefreshMediaPropertiesAsync();
         }
@@ -241,7 +284,78 @@ internal sealed class MediaSessionService : IDisposable
         }
     }
 
-    private void SetSession(GlobalSystemMediaTransportControlsSession? session)
+    private void SelectEntry(SessionEntry entry)
+    {
+        CancelSessionReconnectGrace();
+        _selectedKey = entry.Key;
+        _preferredSourceId = entry.SourceId;
+        _preferredSourceName = entry.DisplayName;
+        SetSession(entry.Session);
+    }
+
+    private bool ShouldHoldPreferredSource()
+    {
+        if (string.IsNullOrWhiteSpace(_preferredSourceId))
+        {
+            return false;
+        }
+
+        var now = DateTime.UtcNow;
+        if (!_sessionMissingSinceUtc.HasValue)
+        {
+            _sessionMissingSinceUtc = now;
+            _sessionReconnectCancellation = new CancellationTokenSource();
+            _ = RefreshAfterReconnectGraceAsync(_sessionReconnectCancellation.Token);
+            return true;
+        }
+
+        return now - _sessionMissingSinceUtc.Value < SessionReconnectGracePeriod;
+    }
+
+    private void HoldPreferredSource()
+    {
+        SetSession(null, resetSnapshot: false);
+        PublishSessions();
+        Publish(_lastSnapshot with
+        {
+            IsConnected = true,
+            IsPlaying = false,
+            CanPlayPause = false,
+            CanSkipPrevious = false,
+            CanSkipNext = false,
+            Artist = "正在加载媒体…",
+            SourceId = _preferredSourceId ?? _lastSnapshot.SourceId,
+            SourceName = _preferredSourceName ?? _lastSnapshot.SourceName
+        });
+    }
+
+    private async Task RefreshAfterReconnectGraceAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(SessionReconnectGracePeriod, cancellationToken);
+            if (!_disposed)
+            {
+                await RefreshSessionListAsync();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // The preferred source returned or the user selected another source.
+        }
+    }
+
+    private void CancelSessionReconnectGrace()
+    {
+        _sessionMissingSinceUtc = null;
+        _sessionReconnectCancellation?.Cancel();
+        _sessionReconnectCancellation?.Dispose();
+        _sessionReconnectCancellation = null;
+    }
+
+    private void SetSession(
+        GlobalSystemMediaTransportControlsSession? session,
+        bool resetSnapshot = true)
     {
         if (ReferenceEquals(_session, session))
         {
@@ -254,7 +368,10 @@ internal sealed class MediaSessionService : IDisposable
         }
 
         _session = session;
-        _lastSnapshot = MediaSnapshot.Disconnected;
+        if (resetSnapshot)
+        {
+            _lastSnapshot = MediaSnapshot.Disconnected;
+        }
 
         if (_session is not null)
         {
@@ -308,7 +425,24 @@ internal sealed class MediaSessionService : IDisposable
         try
         {
             var mediaProperties = await session.TryGetMediaPropertiesAsync();
-            var artwork = await LoadArtworkAsync(mediaProperties.Thumbnail);
+            var title = string.IsNullOrWhiteSpace(mediaProperties.Title)
+                ? entry.DisplayName
+                : mediaProperties.Title;
+            var artist = !string.IsNullOrWhiteSpace(mediaProperties.Artist)
+                ? mediaProperties.Artist
+                : mediaProperties.AlbumArtist;
+            artist = string.IsNullOrWhiteSpace(artist) ? "未知创作者" : artist;
+            var canReuseArtwork = _lastSnapshot.Artwork is not null &&
+                _lastSnapshot.IsConnected &&
+                string.Equals(
+                    _lastSnapshot.SourceId,
+                    entry.SourceId,
+                    StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(_lastSnapshot.Title, title, StringComparison.Ordinal) &&
+                string.Equals(_lastSnapshot.Artist, artist, StringComparison.Ordinal);
+            var artwork = canReuseArtwork
+                ? _lastSnapshot.Artwork
+                : await LoadArtworkAsync(mediaProperties.Thumbnail);
             if (version != _refreshVersion || !ReferenceEquals(session, _session))
             {
                 return;
@@ -316,9 +450,6 @@ internal sealed class MediaSessionService : IDisposable
 
             var playbackInfo = session.GetPlaybackInfo();
             var controls = playbackInfo.Controls;
-            var artist = !string.IsNullOrWhiteSpace(mediaProperties.Artist)
-                ? mediaProperties.Artist
-                : mediaProperties.AlbumArtist;
 
             Publish(new MediaSnapshot(
                 true,
@@ -327,25 +458,22 @@ internal sealed class MediaSessionService : IDisposable
                 controls.IsPlayPauseToggleEnabled || controls.IsPlayEnabled || controls.IsPauseEnabled,
                 controls.IsPreviousEnabled,
                 controls.IsNextEnabled,
-                string.IsNullOrWhiteSpace(mediaProperties.Title)
-                    ? entry.DisplayName
-                    : mediaProperties.Title,
-                string.IsNullOrWhiteSpace(artist) ? "未知创作者" : artist,
+                title,
+                artist,
                 entry.SourceId,
                 entry.DisplayName,
                 artwork));
         }
         catch
         {
-            if (version == _refreshVersion)
+            if (version == _refreshVersion && ReferenceEquals(session, _session))
             {
-                Publish(MediaSnapshot.Disconnected with
-                {
-                    Title = $"{entry.DisplayName} 暂无媒体",
-                    Artist = "等待应用发布媒体信息",
-                    SourceId = entry.SourceId,
-                    SourceName = entry.DisplayName
-                });
+                SetSession(null);
+                _selectedKey = null;
+                _preferredSourceId = null;
+                _preferredSourceName = null;
+                Publish(MediaSnapshot.Disconnected);
+                _ = RefreshSessionListAsync();
             }
         }
     }
@@ -421,6 +549,9 @@ internal sealed class MediaSessionService : IDisposable
 
         using var randomAccessStream = await thumbnail.OpenReadAsync();
         using var sourceStream = randomAccessStream.AsStreamForRead();
+        // WPF's decoder can receive a non-seekable WinRT stream on the first
+        // media-properties callback. Buffer only this small 96px artwork so
+        // initial loads and source switching use the same reliable path.
         using var memoryStream = new MemoryStream();
         await sourceStream.CopyToAsync(memoryStream);
         memoryStream.Position = 0;
@@ -443,6 +574,7 @@ internal sealed class MediaSessionService : IDisposable
         }
 
         _disposed = true;
+        CancelSessionReconnectGrace();
         SetSession(null);
         foreach (var entry in _entries)
         {
