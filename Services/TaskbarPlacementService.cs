@@ -8,7 +8,7 @@ internal sealed class TaskbarPlacementService
 {
     private const int OccupiedPadding = 4;
 
-    internal Task<int?> FindBestLeftAsync(
+    internal Task<TaskbarPlacementResult?> FindBestLeftAsync(
         nint taskbar,
         NativeMethods.Rect taskbarRect,
         int playerWidth,
@@ -59,7 +59,7 @@ internal sealed class TaskbarPlacementService
         }
     }
 
-    private static int? FindBestLeft(
+    private static TaskbarPlacementResult? FindBestLeft(
         nint taskbar,
         NativeMethods.Rect taskbarRect,
         int playerWidth,
@@ -77,10 +77,7 @@ internal sealed class TaskbarPlacementService
             foreach (AutomationElement button in buttons)
             {
                 var bounds = button.Current.BoundingRectangle;
-                if (bounds.Width <= 1 || bounds.Width > 260 ||
-                    bounds.Height <= 1 ||
-                    bounds.Bottom <= taskbarRect.Top ||
-                    bounds.Top >= taskbarRect.Bottom)
+                if (bounds.Width <= 1 || bounds.Width > 260 || bounds.Height <= 1)
                 {
                     continue;
                 }
@@ -97,12 +94,14 @@ internal sealed class TaskbarPlacementService
                 }
             }
 
-            return FindBestLeft(
-                taskbarRect.Left,
-                taskbarRect.Right,
-                playerWidth,
-                margin,
-                occupied);
+            return new TaskbarPlacementResult(
+                FindBestLeft(
+                    taskbarRect.Left,
+                    taskbarRect.Right,
+                    playerWidth,
+                    margin,
+                    occupied),
+                occupied.Count);
         }
         catch
         {

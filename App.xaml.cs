@@ -9,7 +9,7 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
-        _singleInstanceMutex = new Mutex(true, "TaskbarPlayer.SingleInstance", out var isFirstInstance);
+        _singleInstanceMutex = new Mutex(true, "AFShell.SingleInstance", out var isFirstInstance);
         if (!isFirstInstance)
         {
             Shutdown();

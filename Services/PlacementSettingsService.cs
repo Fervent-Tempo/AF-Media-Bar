@@ -5,22 +5,56 @@ namespace TaskbarPlayer.Services;
 
 internal static class PlacementSettingsService
 {
-    private const string SettingsKeyPath = @"Software\TaskbarPlayer";
+    private const string SettingsKeyPath = @"Software\AFShell\MediaBar";
+    private const string LegacySettingsKeyPath = @"Software\TaskbarPlayer";
 
     internal static PlacementSettings Load()
     {
         try
         {
-            using var key = Registry.CurrentUser.OpenSubKey(SettingsKeyPath, writable: false);
-            if (key is null)
+            using var currentKey = Registry.CurrentUser.OpenSubKey(SettingsKeyPath, writable: false);
+            using var legacyKey = Registry.CurrentUser.OpenSubKey(
+                LegacySettingsKeyPath,
+                writable: false);
+            if (currentKey is null && legacyKey is null)
             {
                 return PlacementSettings.Default;
             }
 
-            return new PlacementSettings(
-                ReadBoolean(key, "AutomaticPlacement", PlacementSettings.Default.AutomaticPlacement),
-                ReadBoolean(key, "PositionLocked", PlacementSettings.Default.PositionLocked),
-                ReadInteger(key, "ManualOffsetDip", PlacementSettings.Default.ManualOffsetDip));
+            var settings = new PlacementSettings(
+                ReadBoolean(
+                    currentKey,
+                    legacyKey,
+                    "AutomaticPlacement",
+                    PlacementSettings.Default.AutomaticPlacement),
+                ReadBoolean(
+                    currentKey,
+                    legacyKey,
+                    "PositionLocked",
+                    PlacementSettings.Default.PositionLocked),
+                ReadInteger(
+                    currentKey,
+                    legacyKey,
+                    "ManualOffsetDip",
+                    PlacementSettings.Default.ManualOffsetDip),
+                ReadNullableInteger(currentKey, legacyKey, "CachedAutomaticOffsetDip"),
+                ReadNullableInteger(currentKey, legacyKey, "CachedTaskbarWidthDip"),
+                ReadNullableInteger(currentKey, legacyKey, "CachedPlayerWidthDip"),
+                ReadTaskbarAlignment(currentKey, legacyKey, "CachedTaskbarAlignment"));
+
+            if (currentKey is null || HasMissingValues(currentKey))
+            {
+                try
+                {
+                    Save(settings);
+                }
+                catch
+                {
+                    // Loading legacy settings should still succeed if migration cannot write.
+                }
+            }
+
+            return settings;
         }
         catch
         {
@@ -34,15 +68,78 @@ internal static class PlacementSettingsService
         key.SetValue("AutomaticPlacement", settings.AutomaticPlacement ? 1 : 0, RegistryValueKind.DWord);
         key.SetValue("PositionLocked", settings.PositionLocked ? 1 : 0, RegistryValueKind.DWord);
         key.SetValue("ManualOffsetDip", settings.ManualOffsetDip, RegistryValueKind.DWord);
+        WriteNullableInteger(key, "CachedAutomaticOffsetDip", settings.CachedAutomaticOffsetDip);
+        WriteNullableInteger(key, "CachedTaskbarWidthDip", settings.CachedTaskbarWidthDip);
+        WriteNullableInteger(key, "CachedPlayerWidthDip", settings.CachedPlayerWidthDip);
+        WriteNullableInteger(
+            key,
+            "CachedTaskbarAlignment",
+            settings.CachedTaskbarAlignment is TaskbarAlignment alignment ? (int)alignment : null);
     }
 
-    private static bool ReadBoolean(RegistryKey key, string name, bool defaultValue)
+    private static bool ReadBoolean(
+        RegistryKey? currentKey,
+        RegistryKey? legacyKey,
+        string name,
+        bool defaultValue)
     {
-        return key.GetValue(name) is int value ? value != 0 : defaultValue;
+        return ReadValue(currentKey, legacyKey, name) is int value
+            ? value != 0
+            : defaultValue;
     }
 
-    private static int ReadInteger(RegistryKey key, string name, int defaultValue)
+    private static int ReadInteger(
+        RegistryKey? currentKey,
+        RegistryKey? legacyKey,
+        string name,
+        int defaultValue)
     {
-        return key.GetValue(name) is int value ? value : defaultValue;
+        return ReadValue(currentKey, legacyKey, name) is int value ? value : defaultValue;
+    }
+
+    private static int? ReadNullableInteger(
+        RegistryKey? currentKey,
+        RegistryKey? legacyKey,
+        string name)
+    {
+        return ReadValue(currentKey, legacyKey, name) is int value ? value : null;
+    }
+
+    private static TaskbarAlignment? ReadTaskbarAlignment(
+        RegistryKey? currentKey,
+        RegistryKey? legacyKey,
+        string name)
+    {
+        return ReadNullableInteger(currentKey, legacyKey, name) is int value &&
+            Enum.IsDefined(typeof(TaskbarAlignment), value)
+                ? (TaskbarAlignment)value
+                : null;
+    }
+
+    private static object? ReadValue(
+        RegistryKey? currentKey,
+        RegistryKey? legacyKey,
+        string name)
+    {
+        return currentKey?.GetValue(name) ?? legacyKey?.GetValue(name);
+    }
+
+    private static bool HasMissingValues(RegistryKey key)
+    {
+        return key.GetValue("AutomaticPlacement") is not int ||
+            key.GetValue("PositionLocked") is not int ||
+            key.GetValue("ManualOffsetDip") is not int;
+    }
+
+    private static void WriteNullableInteger(RegistryKey key, string name, int? value)
+    {
+        if (value.HasValue)
+        {
+            key.SetValue(name, value.Value, RegistryValueKind.DWord);
+        }
+        else
+        {
+            key.DeleteValue(name, throwOnMissingValue: false);
+        }
     }
 }

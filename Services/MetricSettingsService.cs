@@ -5,22 +5,52 @@ namespace TaskbarPlayer.Services;
 
 internal static class MetricSettingsService
 {
-    private const string SettingsKeyPath = @"Software\TaskbarPlayer";
+    private const string SettingsKeyPath = @"Software\AFShell\MediaBar";
+    private const string LegacySettingsKeyPath = @"Software\TaskbarPlayer";
 
     internal static MetricSettings Load()
     {
         try
         {
-            using var key = Registry.CurrentUser.OpenSubKey(SettingsKeyPath, writable: false);
-            if (key is null)
+            using var currentKey = Registry.CurrentUser.OpenSubKey(SettingsKeyPath, writable: false);
+            using var legacyKey = Registry.CurrentUser.OpenSubKey(
+                LegacySettingsKeyPath,
+                writable: false);
+            if (currentKey is null && legacyKey is null)
             {
                 return MetricSettings.Default;
             }
 
-            return new MetricSettings(
-                ReadBoolean(key, "ShowSystemMemory", MetricSettings.Default.ShowSystemMemory),
-                ReadBoolean(key, "ShowSystemCpu", MetricSettings.Default.ShowSystemCpu),
-                ReadBoolean(key, "ShowProcessMemory", MetricSettings.Default.ShowProcessMemory));
+            var settings = new MetricSettings(
+                ReadBoolean(
+                    currentKey,
+                    legacyKey,
+                    "ShowSystemMemory",
+                    MetricSettings.Default.ShowSystemMemory),
+                ReadBoolean(
+                    currentKey,
+                    legacyKey,
+                    "ShowSystemCpu",
+                    MetricSettings.Default.ShowSystemCpu),
+                ReadBoolean(
+                    currentKey,
+                    legacyKey,
+                    "ShowProcessMemory",
+                    MetricSettings.Default.ShowProcessMemory));
+
+            if (currentKey is null || HasMissingValues(currentKey))
+            {
+                try
+                {
+                    Save(settings);
+                }
+                catch
+                {
+                    // Loading legacy settings should still succeed if migration cannot write.
+                }
+            }
+
+            return settings;
         }
         catch
         {
@@ -36,8 +66,20 @@ internal static class MetricSettingsService
         key.SetValue("ShowProcessMemory", settings.ShowProcessMemory ? 1 : 0, RegistryValueKind.DWord);
     }
 
-    private static bool ReadBoolean(RegistryKey key, string name, bool defaultValue)
+    private static bool ReadBoolean(
+        RegistryKey? currentKey,
+        RegistryKey? legacyKey,
+        string name,
+        bool defaultValue)
     {
-        return key.GetValue(name) is int value ? value != 0 : defaultValue;
+        var value = currentKey?.GetValue(name) ?? legacyKey?.GetValue(name);
+        return value is int integer ? integer != 0 : defaultValue;
+    }
+
+    private static bool HasMissingValues(RegistryKey key)
+    {
+        return key.GetValue("ShowSystemMemory") is not int ||
+            key.GetValue("ShowSystemCpu") is not int ||
+            key.GetValue("ShowProcessMemory") is not int;
     }
 }

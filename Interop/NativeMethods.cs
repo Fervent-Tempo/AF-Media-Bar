@@ -13,6 +13,7 @@ internal static class NativeMethods
     internal const uint SwpNoSize = 0x0001;
     internal const uint SwpNoActivate = 0x0010;
     internal const uint SwpShowWindow = 0x0040;
+    internal const uint SwpAsyncWindowPos = 0x4000;
     internal const int SwRestore = 9;
 
     internal const uint EventSystemForeground = 0x0003;
@@ -25,10 +26,16 @@ internal static class NativeMethods
     internal const int WmApp = 0x8000;
     internal const int WmContextMenu = 0x007B;
     internal const int WmNcHitTest = 0x0084;
+    internal const int WmLeftButtonDown = 0x0201;
     internal const int WmLeftButtonDoubleClick = 0x0203;
+    internal const int WmRightButtonDown = 0x0204;
     internal const int WmRightButtonUp = 0x0205;
     internal const int HtClient = 1;
     internal const int IdiApplication = 32512;
+    internal const int WhMouseLowLevel = 14;
+
+    internal const uint AbmGetState = 0x00000004;
+    internal const uint AbsAutoHide = 0x00000001;
 
     internal const uint NotifyIconAdd = 0x00000000;
     internal const uint NotifyIconModify = 0x00000001;
@@ -53,8 +60,16 @@ internal static class NativeMethods
         uint eventThread,
         uint eventTime);
 
+    internal delegate nint LowLevelMouseDelegate(
+        int code,
+        nint wParam,
+        nint lParam);
+
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     internal static extern nint FindWindow(string? className, string? windowName);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern uint GetWindowThreadProcessId(nint window, out uint processId);
 
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -121,6 +136,24 @@ internal static class NativeMethods
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool UnhookWinEvent(nint hook);
 
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern nint SetWindowsHookEx(
+        int hookId,
+        LowLevelMouseDelegate callback,
+        nint module,
+        uint threadId);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool UnhookWindowsHookEx(nint hook);
+
+    [DllImport("user32.dll")]
+    internal static extern nint CallNextHookEx(
+        nint hook,
+        int code,
+        nint wParam,
+        nint lParam);
+
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool GetMonitorInfo(nint monitor, ref MonitorInfo info);
@@ -139,6 +172,12 @@ internal static class NativeMethods
 
     [DllImport("shell32.dll")]
     internal static extern int SHQueryUserNotificationState(out QueryUserNotificationState state);
+
+    [DllImport("shell32.dll")]
+    internal static extern uint SHAppBarMessage(uint message, ref AppBarData data);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+    internal static extern nint GetModuleHandle(string? moduleName);
 
     internal static bool ShouldHideForFullScreenApp(nint playerWindow)
     {
@@ -219,6 +258,32 @@ internal static class NativeMethods
     {
         internal int X;
         internal int Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct LowLevelMouseStruct
+    {
+        internal Point Point;
+        internal uint MouseData;
+        internal uint Flags;
+        internal uint Time;
+        internal nuint ExtraInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct AppBarData
+    {
+        internal uint Size;
+        internal nint Window;
+        internal uint CallbackMessage;
+        internal uint Edge;
+        internal Rect Rectangle;
+        internal nint Parameter;
+
+        internal static AppBarData Create()
+        {
+            return new AppBarData { Size = (uint)Marshal.SizeOf<AppBarData>() };
+        }
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]

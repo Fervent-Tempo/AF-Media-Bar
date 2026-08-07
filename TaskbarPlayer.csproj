@@ -6,9 +6,11 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <AssemblyName>TaskbarPlayer</AssemblyName>
+    <AssemblyName>AFShell</AssemblyName>
     <RootNamespace>TaskbarPlayer</RootNamespace>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
+    <Product>AF Shell</Product>
+    <Description>AF Shell Media Bar for Windows 11</Description>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">

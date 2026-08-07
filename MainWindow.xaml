@@ -1,7 +1,7 @@
 <Window x:Class="TaskbarPlayer.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="网易云任务栏播放器"
+        Title="AF Shell · Media Bar"
         Height="52"
         SizeToContent="Width"
         WindowStyle="None"
@@ -16,11 +16,14 @@
                  Opened="PlayerMenu_OnOpened"
                  Closed="PlayerMenu_OnClosed">
       <MenuItem x:Name="ConnectionMenuItem"
-                Header="等待网易云音乐"
+                Header="等待媒体播放"
                 IsEnabled="False" />
       <Separator />
-      <MenuItem Header="显示网易云音乐"
-                Click="ShowCloudMusic_OnClick" />
+      <MenuItem x:Name="ShowSourceMenuItem"
+                Header="显示媒体应用"
+                Click="ShowMediaSource_OnClick" />
+      <MenuItem x:Name="MediaSourcesMenuItem"
+                Header="媒体来源" />
       <MenuItem Header="重新连接媒体会话"
                 Click="Reconnect_OnClick" />
       <MenuItem Header="性能指标">
@@ -65,6 +68,7 @@
         SnapsToDevicePixels="True"
         MouseEnter="PlayerRoot_OnMouseEnter"
         MouseLeave="PlayerRoot_OnMouseLeave"
+        PreviewMouseWheel="PlayerRoot_OnPreviewMouseWheel"
         PreviewMouseLeftButtonDown="PlayerRoot_OnPreviewMouseLeftButtonDown"
         PreviewMouseMove="PlayerRoot_OnPreviewMouseMove"
         PreviewMouseLeftButtonUp="PlayerRoot_OnPreviewMouseLeftButtonUp">
@@ -84,7 +88,7 @@
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
             Cursor="Hand"
-            MouseLeftButtonUp="ShowCloudMusic_OnMouseLeftButtonUp">
+            MouseLeftButtonUp="ShowMediaSource_OnMouseLeftButtonUp">
       <Grid ClipToBounds="True">
         <TextBlock x:Name="ArtworkPlaceholder"
                    Text="&#xE8D6;"
@@ -107,36 +111,34 @@
             HorizontalAlignment="Left"
             VerticalAlignment="Center"
             Cursor="Hand"
-            MouseLeftButtonUp="ShowCloudMusic_OnMouseLeftButtonUp">
-        <Grid Margin="9,0,8,0">
-          <Grid.RowDefinitions>
-            <RowDefinition Height="22" />
-            <RowDefinition Height="18" />
-          </Grid.RowDefinitions>
+            MouseLeftButtonUp="ShowMediaSource_OnMouseLeftButtonUp">
+        <Grid Height="40"
+              Margin="9,0,8,0">
 
           <Canvas x:Name="TitleViewport"
-                  Grid.Row="0"
-                  Height="22"
+                  Height="40"
+                  VerticalAlignment="Center"
                   ClipToBounds="True">
             <TextBlock x:Name="TitleText"
-                       Text="等待网易云音乐"
+                       Canvas.Top="10"
+                       Text="等待媒体播放"
                        FontFamily="Segoe UI Variable Display"
                        FontSize="14"
                        FontWeight="SemiBold"
                        Foreground="{StaticResource PrimaryTextBrush}"
                        TextWrapping="NoWrap">
               <TextBlock.RenderTransform>
-                <TranslateTransform x:Name="TitleTransform" Y="8" />
+                <TranslateTransform x:Name="TitleTransform" />
               </TextBlock.RenderTransform>
             </TextBlock>
           </Canvas>
 
           <Canvas x:Name="ArtistViewport"
-                  Grid.Row="1"
                   Height="18"
+                  VerticalAlignment="Bottom"
                   ClipToBounds="True">
             <TextBlock x:Name="ArtistText"
-                       Text="请先播放一首歌曲"
+                       Text="请在任意应用中播放音频或视频"
                        FontFamily="Segoe UI Variable Text"
                        FontSize="11.5"
                        Foreground="{StaticResource SecondaryTextBrush}"
@@ -144,7 +146,7 @@
                        IsHitTestVisible="False"
                        TextWrapping="NoWrap">
               <TextBlock.RenderTransform>
-                <TranslateTransform x:Name="ArtistTransform" Y="-3" />
+                <TranslateTransform x:Name="ArtistTransform" Y="3" />
               </TextBlock.RenderTransform>
             </TextBlock>
           </Canvas>

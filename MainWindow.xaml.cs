@@ -1,6 +1,5 @@
-using System.Diagnostics;
-using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -24,16 +23,21 @@ public partial class MainWindow : Window
     private readonly SystemMetricsService _systemMetricsService = new();
     private readonly TaskbarPlacementService _taskbarPlacementService = new();
     private readonly DispatcherTimer _positionTimer;
+    private readonly DispatcherTimer _taskbarAnimationTimer;
     private readonly DispatcherTimer _placementTimer;
     private readonly DispatcherTimer _metricsTimer;
     private readonly DispatcherTimer _collapseTimer;
     private MetricSettings _metricSettings;
     private PlacementSettings _placementSettings;
+    private TaskbarSettings _taskbarSettings;
     private SystemMetricsSnapshot _lastMetricsSnapshot;
+    private IReadOnlyList<MediaSessionOption> _mediaSessions = [];
     private TaskbarEventWatcher? _taskbarEventWatcher;
+    private readonly MouseHookService _mouseHookService;
     private TrayIconService? _trayIconService;
     private HwndSource? _windowSource;
     private NativeMethods.Rect? _lastTaskbarRect;
+    private NativeMethods.Rect? _animationTaskbarRect;
     private nint _windowHandle;
     private int? _automaticLeft;
     private int? _lastPositionLeft;
@@ -41,7 +45,7 @@ public partial class MainWindow : Window
     private int _metricCycleTicks;
     private int _marqueeVersion;
     private int _placementRefreshInProgress;
-    private bool _isConnected;
+    private bool _hasPresented;
     private bool _isExpanded;
     private bool _isMenuOpen;
     private bool _isDragging;
@@ -54,13 +58,22 @@ public partial class MainWindow : Window
         TaskbarPlacementService.ValidateAlgorithm();
         InitializeComponent();
 
+        Opacity = 0;
         _metricSettings = MetricSettingsService.Load();
         _placementSettings = PlacementSettingsService.Load();
+        _taskbarSettings = TaskbarSettingsService.Read();
+        _mouseHookService = new MouseHookService(Dispatcher);
         _positionTimer = new DispatcherTimer(
-            TimeSpan.FromMilliseconds(250),
+            TimeSpan.FromSeconds(1),
             DispatcherPriority.Background,
             OnPositionTimerTick,
             Dispatcher);
+        _taskbarAnimationTimer = new DispatcherTimer(
+            TimeSpan.FromMilliseconds(16),
+            DispatcherPriority.Render,
+            OnTaskbarAnimationTimerTick,
+            Dispatcher);
+        _taskbarAnimationTimer.Stop();
         _placementTimer = new DispatcherTimer(
             TimeSpan.FromSeconds(2),
             DispatcherPriority.Background,
@@ -79,6 +92,8 @@ public partial class MainWindow : Window
         _collapseTimer.Stop();
 
         _mediaSessionService.SnapshotChanged += OnSnapshotChanged;
+        _mediaSessionService.SessionsChanged += OnSessionsChanged;
+        _mouseHookService.MouseButtonPressed += MouseHook_OnMouseButtonPressed;
         SourceInitialized += OnSourceInitialized;
         Loaded += OnLoaded;
         Closed += OnClosed;
@@ -104,6 +119,10 @@ public partial class MainWindow : Window
 
         _taskbarEventWatcher = new TaskbarEventWatcher(Dispatcher);
         _taskbarEventWatcher.TaskbarChanged += Taskbar_OnChanged;
+        if (_taskbarSettings.AutoHide)
+        {
+            BeginTaskbarAnimationTracking();
+        }
 
         ApplyMetricSettings();
         ApplyPlacementSettings();
@@ -132,10 +151,12 @@ public partial class MainWindow : Window
     private void OnClosed(object? sender, EventArgs e)
     {
         _positionTimer.Stop();
+        _taskbarAnimationTimer.Stop();
         _placementTimer.Stop();
         _metricsTimer.Stop();
         _collapseTimer.Stop();
         _taskbarEventWatcher?.Dispose();
+        _mouseHookService.Dispose();
         _trayIconService?.Dispose();
         _windowSource?.RemoveHook(WindowMessageHook);
         _mediaSessionService.Dispose();
@@ -144,6 +165,7 @@ public partial class MainWindow : Window
 
     private void OnPositionTimerTick(object? sender, EventArgs e)
     {
+        RefreshTaskbarSettings();
         PositionOverTaskbar(force: false);
     }
 
@@ -154,7 +176,92 @@ public partial class MainWindow : Window
 
     private void Taskbar_OnChanged(object? sender, EventArgs e)
     {
+        if (_taskbarSettings.AutoHide)
+        {
+            BeginTaskbarAnimationTracking();
+            return;
+        }
+
         PositionOverTaskbar(force: true);
+    }
+
+    private void RefreshTaskbarSettings()
+    {
+        var settings = TaskbarSettingsService.Read();
+        if (settings.Alignment != _taskbarSettings.Alignment)
+        {
+            _automaticLeft = null;
+            _lastPositionLeft = null;
+            if (_placementSettings.AutomaticPlacement)
+            {
+                Opacity = 0;
+            }
+        }
+
+        _taskbarSettings = settings;
+        if (settings.AutoHide)
+        {
+            BeginTaskbarAnimationTracking();
+        }
+        else
+        {
+            _taskbarAnimationTimer.Stop();
+        }
+    }
+
+    private void BeginTaskbarAnimationTracking()
+    {
+        if (!_taskbarAnimationTimer.IsEnabled)
+        {
+            _taskbarAnimationTimer.Start();
+        }
+    }
+
+    private void OnTaskbarAnimationTimerTick(object? sender, EventArgs e)
+    {
+        var taskbar = NativeMethods.FindWindow("Shell_TrayWnd", null);
+        if (taskbar == nint.Zero || !NativeMethods.GetWindowRect(taskbar, out var rect))
+        {
+            return;
+        }
+
+        if (!_taskbarSettings.AutoHide)
+        {
+            _taskbarAnimationTimer.Stop();
+            return;
+        }
+
+        if (!_animationTaskbarRect.HasValue || !_animationTaskbarRect.Value.Equals(rect))
+        {
+            _animationTaskbarRect = rect;
+            FollowTaskbarAnimation(taskbar, rect);
+        }
+    }
+
+    private void FollowTaskbarAnimation(nint taskbar, NativeMethods.Rect taskbarRect)
+    {
+        if (!_hasPresented ||
+            Visibility != Visibility.Visible ||
+            !_lastPositionLeft.HasValue)
+        {
+            return;
+        }
+
+        var dpi = NativeMethods.GetDpiForWindow(taskbar);
+        var scale = dpi > 0 ? dpi / 96d : 1d;
+        var marginY = (int)Math.Round(VerticalMarginAt96Dpi * scale);
+        _lastTaskbarRect = taskbarRect;
+        NativeMethods.SetWindowPos(
+            _windowHandle,
+            NativeMethods.HwndTopmost,
+            _lastPositionLeft.Value,
+            taskbarRect.Top + marginY,
+            0,
+            0,
+            NativeMethods.SwpNoSize |
+                NativeMethods.SwpNoActivate |
+                NativeMethods.SwpShowWindow |
+                NativeMethods.SwpAsyncWindowPos);
     }
 
     private void PositionOverTaskbar(bool force)
@@ -189,48 +296,110 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (Visibility != Visibility.Visible)
-        {
-            Visibility = Visibility.Visible;
-            force = true;
-        }
-
         var dpi = NativeMethods.GetDpiForWindow(taskbar);
         var scale = dpi > 0 ? dpi / 96d : 1d;
+        if (_placementSettings.AutomaticPlacement &&
+            _lastTaskbarRect.HasValue &&
+            _lastTaskbarRect.Value.Width != taskbarRect.Width)
+        {
+            _automaticLeft = null;
+        }
+
         var marginX = (int)Math.Round(HorizontalMarginAt96Dpi * scale);
         var marginY = (int)Math.Round(VerticalMarginAt96Dpi * scale);
         var playerWidth = (int)Math.Ceiling(PlayerRoot.Width * scale);
         var minLeft = taskbarRect.Left + marginX;
         var maxLeft = Math.Max(minLeft, taskbarRect.Right - marginX - playerWidth);
         var desiredLeft = _placementSettings.AutomaticPlacement
-            ? _automaticLeft ?? minLeft
+            ? ResolveAutomaticLeft(taskbarRect, scale, minLeft)
             : taskbarRect.Left + (int)Math.Round(_placementSettings.ManualOffsetDip * scale);
-        desiredLeft = Math.Clamp(desiredLeft, minLeft, maxLeft);
+        if (!desiredLeft.HasValue)
+        {
+            Opacity = 0;
+            _ = RefreshAutomaticPlacementAsync();
+            return;
+        }
+
+        if (Visibility != Visibility.Visible)
+        {
+            Visibility = Visibility.Visible;
+            force = true;
+        }
+
+        var clampedLeft = Math.Clamp(desiredLeft.Value, minLeft, maxLeft);
 
         var height = Math.Max(1, taskbarRect.Height - marginY * 2);
         var heightDip = Math.Max(44, height / scale);
         var rectChanged = !_lastTaskbarRect.HasValue ||
             !_lastTaskbarRect.Value.Equals(taskbarRect);
-        var leftChanged = _lastPositionLeft != desiredLeft;
+        var leftChanged = _lastPositionLeft != clampedLeft;
 
         Height = heightDip;
         if (!force && !rectChanged && !leftChanged)
         {
+            RevealAfterPlacement();
             return;
         }
 
         _lastTaskbarRect = taskbarRect;
-        _lastPositionLeft = desiredLeft;
+        _lastPositionLeft = clampedLeft;
         NativeMethods.SetWindowPos(
             _windowHandle,
             NativeMethods.HwndTopmost,
-            desiredLeft,
+            clampedLeft,
             taskbarRect.Top + marginY,
             0,
             0,
             NativeMethods.SwpNoSize |
                 NativeMethods.SwpNoActivate |
                 NativeMethods.SwpShowWindow);
+        RevealAfterPlacement();
+    }
+
+    private int? ResolveAutomaticLeft(
+        NativeMethods.Rect taskbarRect,
+        double scale,
+        int fallbackLeft)
+    {
+        if (_automaticLeft.HasValue)
+        {
+            return _automaticLeft.Value;
+        }
+
+        var taskbarWidthDip = (int)Math.Round(taskbarRect.Width / scale);
+        var playerWidthDip = (int)Math.Round(PlayerRoot.Width);
+        var cachedOffset = _placementSettings.CachedAutomaticOffsetDip;
+        var cachedTaskbarWidth = _placementSettings.CachedTaskbarWidthDip;
+        var cachedPlayerWidth = _placementSettings.CachedPlayerWidthDip;
+        var cachedAlignment = _placementSettings.CachedTaskbarAlignment;
+        var cacheMatches = cachedOffset.HasValue &&
+            cachedTaskbarWidth.HasValue &&
+            cachedPlayerWidth.HasValue &&
+            cachedAlignment.HasValue &&
+            Math.Abs(cachedTaskbarWidth.Value - taskbarWidthDip) <= 2 &&
+            Math.Abs(cachedPlayerWidth.Value - playerWidthDip) <= 1 &&
+            cachedAlignment.Value == _taskbarSettings.Alignment;
+        if (cacheMatches)
+        {
+            _automaticLeft = taskbarRect.Left + (int)Math.Round(
+                cachedOffset.GetValueOrDefault() * scale);
+            return _automaticLeft.Value;
+        }
+
+        return _taskbarSettings.Alignment == TaskbarAlignment.Center
+            ? fallbackLeft
+            : null;
+    }
+
+    private void RevealAfterPlacement()
+    {
+        if (_hasPresented && Opacity == 1)
+        {
+            return;
+        }
+
+        _hasPresented = true;
+        Opacity = 1;
     }
 
     private async Task RefreshAutomaticPlacementAsync()
@@ -254,15 +423,36 @@ public partial class MainWindow : Window
             var scale = dpi > 0 ? dpi / 96d : 1d;
             var margin = (int)Math.Round(HorizontalMarginAt96Dpi * scale);
             var playerWidth = (int)Math.Ceiling(PlayerRoot.Width * scale);
-            var bestLeft = await _taskbarPlacementService.FindBestLeftAsync(
+            var placement = await _taskbarPlacementService.FindBestLeftAsync(
                 taskbar,
                 taskbarRect,
                 playerWidth,
                 margin);
 
-            if (_placementSettings.AutomaticPlacement && bestLeft.HasValue)
+            var hasReliablePlacement = placement.HasValue &&
+                (_taskbarSettings.Alignment != TaskbarAlignment.Left ||
+                    placement.Value.OccupiedElementCount > 0);
+            if (_placementSettings.AutomaticPlacement && hasReliablePlacement)
             {
-                _automaticLeft = bestLeft.Value;
+                _automaticLeft = placement!.Value.Left;
+                var taskbarSettings = TaskbarSettingsService.Read();
+                _taskbarSettings = taskbarSettings;
+                var cachedSettings = _placementSettings with
+                {
+                    CachedAutomaticOffsetDip = (int)Math.Round(
+                        (placement.Value.Left - taskbarRect.Left) / scale),
+                    CachedTaskbarWidthDip = (int)Math.Round(taskbarRect.Width / scale),
+                    CachedPlayerWidthDip = (int)Math.Round(PlayerRoot.Width),
+                    CachedTaskbarAlignment = taskbarSettings.Alignment == TaskbarAlignment.Unknown
+                        ? null
+                        : taskbarSettings.Alignment
+                };
+                if (cachedSettings != _placementSettings)
+                {
+                    _placementSettings = cachedSettings;
+                    SavePlacementSettings(showError: false);
+                }
+
                 PositionOverTaskbar(force: true);
             }
         }
@@ -296,9 +486,13 @@ public partial class MainWindow : Window
         Dispatcher.InvokeAsync(() => ApplySnapshot(snapshot));
     }
 
+    private void OnSessionsChanged(IReadOnlyList<MediaSessionOption> sessions)
+    {
+        Dispatcher.InvokeAsync(() => ApplySessions(sessions));
+    }
+
     private void ApplySnapshot(MediaSnapshot snapshot)
     {
-        _isConnected = snapshot.IsConnected;
         TitleText.Text = snapshot.Title;
         ArtistText.Text = snapshot.Artist;
         ArtworkImage.Source = snapshot.Artwork;
@@ -313,13 +507,55 @@ public partial class MainWindow : Window
         PlayPauseButton.ToolTip = snapshot.IsPlaying ? "暂停" : "播放";
 
         ConnectionMenuItem.Header = snapshot.IsConnected
-            ? $"已连接：{snapshot.Title}"
-            : "等待网易云音乐";
+            ? $"{snapshot.SourceName}：{snapshot.Title}"
+            : "等待媒体播放";
+        ShowSourceMenuItem.Header = $"显示 {snapshot.SourceName}";
+        ShowSourceMenuItem.IsEnabled = !string.IsNullOrWhiteSpace(snapshot.SourceId);
         _trayIconService?.UpdateTooltip(
             snapshot.IsConnected
-                ? $"网易云音乐：{snapshot.Title} - {snapshot.Artist}"
-                : "网易云任务栏播放器 - 等待网易云音乐");
+                ? $"AF Shell · {snapshot.SourceName}：{snapshot.Title} - {snapshot.Artist}"
+                : "AF Shell · Media Bar - 等待媒体播放");
         ScheduleMarqueeUpdate();
+    }
+
+    private void ApplySessions(IReadOnlyList<MediaSessionOption> sessions)
+    {
+        _mediaSessions = sessions;
+        MediaSourcesMenuItem.Items.Clear();
+        if (sessions.Count == 0)
+        {
+            MediaSourcesMenuItem.Items.Add(new MenuItem
+            {
+                Header = "暂无可用媒体会话",
+                IsEnabled = false
+            });
+            MediaSourcesMenuItem.IsEnabled = false;
+            return;
+        }
+
+        MediaSourcesMenuItem.IsEnabled = true;
+        foreach (var session in sessions)
+        {
+            var item = new MenuItem
+            {
+                Header = session.IsPlaying
+                    ? $"{session.DisplayName}（播放中）"
+                    : session.DisplayName,
+                IsCheckable = true,
+                IsChecked = session.IsSelected,
+                Tag = session.Key
+            };
+            item.Click += MediaSource_OnClick;
+            MediaSourcesMenuItem.Items.Add(item);
+        }
+    }
+
+    private async void MediaSource_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: string key })
+        {
+            await RunMediaCommandAsync(() => _mediaSessionService.SelectSessionAsync(key));
+        }
     }
 
     private void ShowDisconnectedState(string title, string detail)
@@ -381,10 +617,10 @@ public partial class MainWindow : Window
             CreateAnimation(expanded ? 0 : 8, duration, easing));
         TitleTransform.BeginAnimation(
             TranslateTransform.YProperty,
-            CreateAnimation(expanded ? 0 : 8, duration, easing));
+            CreateAnimation(expanded ? -8 : 0, duration, easing));
         ArtistTransform.BeginAnimation(
             TranslateTransform.YProperty,
-            CreateAnimation(expanded ? 0 : -3, duration, easing));
+            CreateAnimation(expanded ? 0 : 3, duration, easing));
         ArtistText.BeginAnimation(
             UIElement.OpacityProperty,
             CreateAnimation(expanded ? 1 : 0, duration, easing));
@@ -641,7 +877,7 @@ public partial class MainWindow : Window
         return Math.Max(0, (int)Math.Round((windowRect.Left - taskbarRect.Left) / scale));
     }
 
-    private void SavePlacementSettings()
+    private void SavePlacementSettings(bool showError = true)
     {
         try
         {
@@ -649,6 +885,11 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
+            if (!showError)
+            {
+                return;
+            }
+
             MessageBox.Show(
                 exception.Message,
                 "无法保存位置设置",
@@ -681,6 +922,20 @@ public partial class MainWindow : Window
         _isDragging = true;
         Mouse.Capture(PlayerRoot);
         e.Handled = true;
+    }
+
+    private async void PlayerRoot_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (_mediaSessions.Count < 2)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        await RunMediaCommandAsync(
+            e.Delta > 0
+                ? _mediaSessionService.SelectPreviousSessionAsync
+                : _mediaSessionService.SelectNextSessionAsync);
     }
 
     private void PlayerRoot_OnPreviewMouseMove(object sender, MouseEventArgs e)
@@ -735,7 +990,7 @@ public partial class MainWindow : Window
         }
         else
         {
-            ShowCloudMusic();
+            ShowSelectedMediaSource();
         }
 
         e.Handled = true;
@@ -744,6 +999,7 @@ public partial class MainWindow : Window
     private void PlayerMenu_OnOpened(object sender, RoutedEventArgs e)
     {
         _isMenuOpen = true;
+        _mouseHookService.Start();
         SetExpanded(expanded: true, animate: true);
         StartupMenuItem.IsChecked = StartupService.IsEnabled;
         ApplyPlacementSettings();
@@ -753,7 +1009,36 @@ public partial class MainWindow : Window
     private void PlayerMenu_OnClosed(object sender, RoutedEventArgs e)
     {
         _isMenuOpen = false;
+        _mouseHookService.Stop();
         ScheduleCollapse();
+    }
+
+    private void MouseHook_OnMouseButtonPressed(NativeMethods.Point point)
+    {
+        if (!_isMenuOpen ||
+            IsPointInsideWindow(_windowHandle, point) ||
+            IsPointInsideContextMenu(point))
+        {
+            return;
+        }
+
+        PlayerMenu.IsOpen = false;
+    }
+
+    private bool IsPointInsideContextMenu(NativeMethods.Point point)
+    {
+        var source = PresentationSource.FromVisual(PlayerMenu) as HwndSource;
+        return source is not null && IsPointInsideWindow(source.Handle, point);
+    }
+
+    private static bool IsPointInsideWindow(nint window, NativeMethods.Point point)
+    {
+        return window != nint.Zero &&
+            NativeMethods.GetWindowRect(window, out var rect) &&
+            point.X >= rect.Left &&
+            point.X < rect.Right &&
+            point.Y >= rect.Top &&
+            point.Y < rect.Bottom;
     }
 
     private void TrayIcon_OnContextMenuRequested(object? sender, EventArgs e)
@@ -766,7 +1051,7 @@ public partial class MainWindow : Window
 
     private void TrayIcon_OnDoubleClicked(object? sender, EventArgs e)
     {
-        ShowCloudMusic();
+        ShowSelectedMediaSource();
     }
 
     private async void Previous_OnClick(object sender, RoutedEventArgs e)
@@ -818,46 +1103,24 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ShowCloudMusic_OnClick(object sender, RoutedEventArgs e)
+    private void ShowMediaSource_OnClick(object sender, RoutedEventArgs e)
     {
-        ShowCloudMusic();
+        ShowSelectedMediaSource();
     }
 
-    private void ShowCloudMusic_OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    private void ShowMediaSource_OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
-        ShowCloudMusic();
+        ShowSelectedMediaSource();
     }
 
-    private static void ShowCloudMusic()
+    private void ShowSelectedMediaSource()
     {
-        var process = Process.GetProcessesByName("cloudmusic")
-            .FirstOrDefault(candidate => candidate.MainWindowHandle != nint.Zero);
-
-        if (process is not null)
+        var sourceId = _mediaSessionService.SelectedSourceId;
+        if (!string.IsNullOrWhiteSpace(sourceId))
         {
-            NativeMethods.ShowWindow(process.MainWindowHandle, NativeMethods.SwRestore);
-            NativeMethods.SetForegroundWindow(process.MainWindowHandle);
-            return;
-        }
-
-        var knownPaths = new[]
-        {
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-                "NetEase",
-                "CloudMusic",
-                "cloudmusic.exe"),
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
-                "NetEase",
-                "CloudMusic",
-                "cloudmusic.exe")
-        };
-
-        var executable = knownPaths.FirstOrDefault(File.Exists);
-        if (executable is not null)
-        {
-            Process.Start(new ProcessStartInfo(executable) { UseShellExecute = true });
+            MediaSourceLauncherService.ShowOrLaunch(
+                sourceId,
+                _mediaSessionService.SelectedSourceName);
         }
     }
 

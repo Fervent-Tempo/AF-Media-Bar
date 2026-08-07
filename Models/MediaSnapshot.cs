@@ -11,6 +11,7 @@ public sealed record MediaSnapshot(
     string Title,
     string Artist,
     string SourceId,
+    string SourceName,
     BitmapImage? Artwork)
 {
     public static MediaSnapshot Disconnected { get; } = new(
@@ -19,8 +20,9 @@ public sealed record MediaSnapshot(
         false,
         false,
         false,
-        "等待网易云音乐",
-        "请先播放一首歌曲",
+        "等待媒体播放",
+        "请在任意应用中播放音频或视频",
         string.Empty,
+        "媒体",
         null);
 }

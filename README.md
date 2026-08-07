@@ -1,45 +1,50 @@
-# 网易云任务栏播放器
+# AF Shell · Media Bar
 
-一个贴在 Windows 11 主任务栏左侧的网易云音乐迷你控制器。它读取 Windows 全局系统媒体会话（GSMTC），显示歌曲名、歌手和封面，并提供上一首、播放/暂停、下一首操作。
+AF Shell 是一个面向 Windows 11 的桌面增强项目，Media Bar 是当前的任务栏媒体控制模块。它读取 Windows 全局系统媒体会话（GSMTC），在任务栏上显示封面、标题和作者，并提供上一首、播放/暂停、下一首和媒体来源切换。
 
-## 技术方案
+## 为什么不直接嵌入控制中心媒体卡片
 
-Windows 11 控制中心的媒体卡片不是可嵌入的公共控件。它本身是 Explorer/Shell 的界面，强行查找内部窗口、SetParent 或注入 Explorer 都依赖未公开实现，Windows 更新后容易失效。
+Windows 11 控制中心里的媒体卡片不是公开可嵌入的控件，而是 Explorer/Shell 的内部界面。查找内部窗口、`SetParent` 或向 Explorer 注入代码都依赖未公开实现，容易随 Windows 更新失效，也会扩大崩溃和安全风险。
 
-本项目复用控制中心背后的公开数据源 Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager，再用独立的 WPF 浮层贴合任务栏显示。浮层不修改 Explorer，不出现在 Alt+Tab，并通过 WinEvent 监听任务栏位置变化，所以自动隐藏任务栏的展开/收起会实时跟随。
+Media Bar 复用控制中心背后的公开接口 `Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager`，再由独立 WPF 浮层渲染任务栏界面。这样可以获得相同的媒体元数据和控制能力，同时不修改 Explorer。
 
 ## 功能
 
-- 自动识别来源标识包含 cloudmusic、netease 或 163music 的系统媒体会话
-- 显示封面、歌曲名和歌手
-- 上一首、播放/暂停、下一首
-- 鼠标离开时收起为封面、歌名和性能指标，悬停时在固定宽度内平滑展开控制区和歌手名
-- 右键菜单可选择系统 MEM、系统 CPU、播放器 APP 内存指标；多项指标在固定胶囊内循环展示
-- 歌曲名或歌手名超过可用宽度时会自动左右滚动
-- 默认读取任务栏按钮边界并寻找不会遮挡图标的空白区；任务栏靠左时会优先选择固定图标与系统托盘之间的空间
-- 可在右键菜单的“位置”中关闭自动避让，解锁后拖动封面或文字区域，并再次锁定手动位置
-- 原生系统托盘图标，右键可重新连接、设置开机启动或退出，双击切回网易云音乐
-- 任务栏自动隐藏时跟随动画，系统托盘飞出面板出现时不会被错误隐藏
-- 进入全屏游戏或演示模式时自动隐藏
+- 枚举全部 GSMTC 媒体会话，默认选择 Windows 当前会话，其次选择正在播放的会话
+- 适配网易云音乐、QQ 音乐、酷狗音乐、Spotify、Chrome、Edge、Firefox、VLC、PotPlayer、Windows Media Player、mpv 和 foobar2000 等常见来源
+- 右键菜单选择媒体来源，或在播放器上滚动鼠标滚轮快速切换
+- 显示封面、标题和作者，并按会话能力启用上一首、播放/暂停、下一首
+- 点击封面或标题可切回当前媒体应用
+- 收起时显示封面、标题和性能指标，悬停时展开控制区与作者
+- 标题和作者超过可用宽度时自动往返滚动
+- 自动读取任务栏对齐和自动隐藏状态，寻找不会遮挡图标的空白区
+- 缓存与任务栏宽度、播放器宽度和对齐方式匹配的自动位置，避免启动时先在最左侧闪现再跳动
+- 开启自动隐藏时以轻量 16 ms 矩形观察同步任务栏动画，自动与手动位置都适用
+- 右键菜单在点击桌面、任务栏或其他外部区域时立即关闭
+- 可显示系统内存、系统 CPU 和 AF Shell 进程内存
+- 原生系统托盘入口、开机启动和全屏自动隐藏
 
-如果一直显示“等待网易云音乐”，先在网易云音乐中实际播放一首歌曲。部分网易云版本还需要在设置中启用“系统媒体控制/显示系统媒体信息”一类选项。
+媒体应用必须向 Windows 发布 GSMTC 会话才能被控制。浏览器通常需要网页正在播放媒体；部分桌面播放器需要在设置中启用“系统媒体控制”或“SMTC”。
 
 ## 运行和发布
 
 要求 Windows 11 和 .NET 8 Desktop Runtime。
 
-    dotnet run --project .\TaskbarPlayer.csproj
+```powershell
+dotnet run --project .\TaskbarPlayer.csproj
+```
 
-发布时请整体保留 dist 文件夹：
+发布为低常驻内存的框架依赖文件夹：
 
-    dotnet publish .\TaskbarPlayer.csproj -c Release -r win-x64 --self-contained false -o .\dist
+```powershell
+dotnet publish .\TaskbarPlayer.csproj -c Release -r win-x64 --self-contained false -o .\dist\AFShell
+```
 
-然后启动 dist\TaskbarPlayer.exe。默认使用文件夹发布而不是压缩单文件，因为 WPF 原生库内嵌会让常驻内存额外增加约 100 MB。
+启动 `dist\AFShell\AFShell.exe`。程序会把旧版 `TaskbarPlayer` 的位置、性能指标和开机启动配置迁移到 AF Shell。
 
 ## 已知边界
 
-- Windows 11 没有受支持的第三方任务栏工具栏 API，所以这里是视觉贴合任务栏的浮层，不是 Explorer 内部插件。
-- 显示性能指标时窗口宽度固定为 349 DIP，收起和展开不会改变性能指标的位置。
-- 当任务栏没有任何足够宽的空白区时，自动模式会选择遮挡最少的位置；仍不合适时可切换手动位置模式。
-- 只有网易云音乐向 GSMTC 发布的能力才能使用。例如某个客户端版本不允许“下一首”，对应按钮会自动禁用。
-- 当前实现跟随主显示器任务栏；辅助显示器任务栏暂未放置第二个实例。
+- Windows 11 没有受支持的第三方任务栏工具栏 API，因此 Media Bar 是视觉贴合任务栏的顶层浮层，不是 Explorer 内部插件。
+- 只能使用媒体来源通过 GSMTC 声明支持的控制命令；来源不支持的按钮会自动禁用。
+- 当前实例跟随主显示器任务栏，暂不在每个辅助显示器上分别创建控制器。
+- 同一浏览器内多个网页是否表现为一个还是多个会话，由浏览器的 GSMTC 实现决定。

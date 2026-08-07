@@ -73,7 +73,7 @@ internal sealed class TrayIconService : IDisposable
             NativeMethods.NotifyIconIcon |
             NativeMethods.NotifyIconTip |
             NativeMethods.NotifyIconShowTip;
-        data.Tooltip = "网易云任务栏播放器";
+        data.Tooltip = "AF Shell · Media Bar";
 
         _isAdded = NativeMethods.ShellNotifyIcon(NativeMethods.NotifyIconAdd, ref data);
         if (!_isAdded)
