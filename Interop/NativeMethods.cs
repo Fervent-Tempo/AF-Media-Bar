@@ -7,10 +7,12 @@ internal static class NativeMethods
 {
     internal const int GwlStyle = -16;
     internal const int GwlExStyle = -20;
+    internal const int GwlpHwndParent = -8;
     internal const int WsExToolWindow = 0x00000080;
     internal const int WsExNoActivate = 0x08000000;
     internal const long WsCaption = 0x00C00000L;
     internal const uint SwpNoSize = 0x0001;
+    internal const uint SwpNoMove = 0x0002;
     internal const uint SwpNoActivate = 0x0010;
     internal const uint SwpShowWindow = 0x0040;
     internal const uint SwpAsyncWindowPos = 0x4000;
@@ -20,6 +22,7 @@ internal static class NativeMethods
     internal const uint EventObjectShow = 0x8002;
     internal const uint EventObjectHide = 0x8003;
     internal const uint EventObjectLocationChange = 0x800B;
+    internal const int ObjIdWindow = 0x00000000;
     internal const uint WinEventOutOfContext = 0x0000;
     internal const uint WinEventSkipOwnProcess = 0x0002;
 

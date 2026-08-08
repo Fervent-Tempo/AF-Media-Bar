@@ -21,6 +21,7 @@ public partial class MainWindow : Window
     private const int HorizontalMarginAt96Dpi = 8;
     private const int VerticalMarginAt96Dpi = 4;
     private const int TaskbarWatchdogIntervalMilliseconds = 80;
+    private const int TaskbarOwnerWatchdogIntervalMilliseconds = 100;
     private const int AnimationStableMilliseconds = 400;
     private const int AudioMonitorIntervalMilliseconds = 50;
 
@@ -30,6 +31,7 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _positionTimer;
     private readonly DispatcherTimer _taskbarAnimationTimer;
     private readonly DispatcherTimer _taskbarWatchdogTimer;
+    private readonly DispatcherTimer _taskbarOwnerWatchdogTimer;
     private readonly DispatcherTimer _placementTimer;
     private readonly DispatcherTimer _metricsTimer;
     private readonly DispatcherTimer _collapseTimer;
@@ -49,6 +51,8 @@ public partial class MainWindow : Window
     private NativeMethods.Rect? _animationTaskbarRect;
     private NativeMethods.Rect? _watchdogTaskbarRect;
     private nint _windowHandle;
+    private nint _defaultOwnerWindow;
+    private nint _ownedTaskbarWindow;
     private int? _automaticLeft;
     private int? _lastPositionLeft;
     private int _metricCycleIndex;
@@ -56,8 +60,6 @@ public partial class MainWindow : Window
     private int _placementRefreshInProgress;
     private int _placementRefreshRequested;
     private int _lastExpandedTaskbarHeight;
-    private nint _cachedForegroundWindow;
-    private bool _cachedForegroundIsShellSurface;
     private DateTime _animationStableSinceUtc;
     private bool _hasPresented;
     private bool _isExpanded;
@@ -117,6 +119,12 @@ public partial class MainWindow : Window
             OnTaskbarWatchdogTimerTick,
             Dispatcher);
         _taskbarWatchdogTimer.Stop();
+        _taskbarOwnerWatchdogTimer = new DispatcherTimer(
+            TimeSpan.FromMilliseconds(TaskbarOwnerWatchdogIntervalMilliseconds),
+            DispatcherPriority.Send,
+            OnTaskbarOwnerWatchdogTimerTick,
+            Dispatcher);
+        _taskbarOwnerWatchdogTimer.Stop();
         _placementTimer = new DispatcherTimer(
             TimeSpan.FromSeconds(30),
             DispatcherPriority.Background,
@@ -157,6 +165,9 @@ public partial class MainWindow : Window
     private void OnSourceInitialized(object? sender, EventArgs e)
     {
         _windowHandle = new WindowInteropHelper(this).Handle;
+        _defaultOwnerWindow = NativeMethods.GetWindowLongPtr(
+            _windowHandle,
+            NativeMethods.GwlpHwndParent);
         var extendedStyle = NativeMethods.GetWindowLongPtr(
             _windowHandle,
             NativeMethods.GwlExStyle).ToInt64();
@@ -182,11 +193,17 @@ public partial class MainWindow : Window
         ApplyMetricSettings();
         ApplyPlacementSettings();
         PositionOverTaskbar(force: true);
+        EnsureTaskbarOwnership();
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
+        EnsureTaskbarOwnership();
+        _ = Dispatcher.BeginInvoke(
+            DispatcherPriority.ApplicationIdle,
+            EnsureTaskbarOwnership);
         _positionTimer.Start();
+        _taskbarOwnerWatchdogTimer.Start();
         _placementTimer.Start();
         _metricsTimer.Start();
         UpdateMetrics(advanceCycle: false);
@@ -208,10 +225,12 @@ public partial class MainWindow : Window
         _positionTimer.Stop();
         _taskbarAnimationTimer.Stop();
         _taskbarWatchdogTimer.Stop();
+        _taskbarOwnerWatchdogTimer.Stop();
         _placementTimer.Stop();
         _metricsTimer.Stop();
         _collapseTimer.Stop();
         _marqueeTimer.Stop();
+        RestoreDefaultWindowOwner();
         _audioMonitorTimer.Stop();
         _audioMonitorService?.Dispose();
         _audioMonitorService = null;
@@ -227,6 +246,13 @@ public partial class MainWindow : Window
     {
         RefreshTaskbarSettings();
         PositionOverTaskbar(force: false);
+        EnsureTaskbarOwnership();
+    }
+
+    private void OnTaskbarOwnerWatchdogTimerTick(object? sender, EventArgs e)
+    {
+        PositionOverTaskbar(force: true);
+        EnsureTaskbarOwnership();
     }
 
     private async void OnPlacementTimerTick(object? sender, EventArgs e)
@@ -237,7 +263,6 @@ public partial class MainWindow : Window
     private void Taskbar_OnChanged(object? sender, EventArgs e)
     {
         RefreshTaskbarSettings();
-        var shellSurfaceForeground = IsShellTaskbarSurfaceForeground();
         if (TryGetEffectiveTaskbarRect(out var taskbar, out var taskbarRect))
         {
             var horizontalGeometryChanged = !_lastTaskbarRect.HasValue ||
@@ -250,21 +275,99 @@ public partial class MainWindow : Window
             }
 
             FollowTaskbarAnimation(taskbar, taskbarRect, asynchronous: false);
-            if (shellSurfaceForeground)
-            {
-                // Shell surfaces may temporarily cover or hide a top-level bar.
-                // Re-assert visibility and z-order immediately on the foreground event.
-                PositionOverTaskbar(force: true);
-            }
         }
+
+        PositionOverTaskbar(force: true);
+        EnsureTaskbarOwnership();
 
         if (_taskbarSettings.AutoHide)
         {
             BeginTaskbarAnimationTracking();
+        }
+    }
+
+    private void EnsureTaskbarOwnership()
+    {
+        var taskbar = NativeMethods.FindWindow("Shell_TrayWnd", null);
+        if (taskbar != nint.Zero)
+        {
+            AttachToTaskbarOwner(taskbar);
+        }
+    }
+
+    private void AttachToTaskbarOwner(nint taskbar)
+    {
+        if (_windowHandle == nint.Zero)
+        {
             return;
         }
 
-        PositionOverTaskbar(force: true);
+        // Shell_TrayWnd is raised in a special topmost band while Start and
+        // Quick Settings animate. Owning the bar keeps this window above it.
+        var currentOwner = NativeMethods.GetWindowLongPtr(
+            _windowHandle,
+            NativeMethods.GwlpHwndParent);
+        if (currentOwner != taskbar)
+        {
+            new WindowInteropHelper(this).Owner = taskbar;
+            if (NativeMethods.GetWindowLongPtr(
+                    _windowHandle,
+                    NativeMethods.GwlpHwndParent) != taskbar)
+            {
+                NativeMethods.SetWindowLongPtr(
+                    _windowHandle,
+                    NativeMethods.GwlpHwndParent,
+                    taskbar);
+            }
+        }
+
+        _ownedTaskbarWindow = taskbar;
+        var flags = NativeMethods.SwpNoMove |
+            NativeMethods.SwpNoSize |
+            NativeMethods.SwpNoActivate;
+        if (Visibility == Visibility.Visible)
+        {
+            flags |= NativeMethods.SwpShowWindow;
+        }
+
+        NativeMethods.SetWindowPos(
+            _windowHandle,
+            NativeMethods.HwndTopmost,
+            0,
+            0,
+            0,
+            0,
+            flags);
+    }
+
+    private void RestoreDefaultWindowOwner()
+    {
+        if (_windowHandle == nint.Zero || _ownedTaskbarWindow == nint.Zero)
+        {
+            return;
+        }
+
+        NativeMethods.SetWindowLongPtr(
+            _windowHandle,
+            NativeMethods.GwlpHwndParent,
+            _defaultOwnerWindow);
+        _ownedTaskbarWindow = nint.Zero;
+        var flags = NativeMethods.SwpNoMove |
+            NativeMethods.SwpNoSize |
+            NativeMethods.SwpNoActivate;
+        if (Visibility == Visibility.Visible)
+        {
+            flags |= NativeMethods.SwpShowWindow;
+        }
+
+        NativeMethods.SetWindowPos(
+            _windowHandle,
+            NativeMethods.HwndTopmost,
+            0,
+            0,
+            0,
+            0,
+            flags);
     }
 
     private void RefreshTaskbarSettings()
@@ -381,7 +484,6 @@ public partial class MainWindow : Window
         bool asynchronous)
     {
         if (!_hasPresented ||
-            Visibility != Visibility.Visible ||
             !_lastPositionLeft.HasValue)
         {
             return;
@@ -598,20 +700,12 @@ public partial class MainWindow : Window
             return false;
         }
 
-        if (foreground == _cachedForegroundWindow)
-        {
-            return _cachedForegroundIsShellSurface;
-        }
-
-        _cachedForegroundWindow = foreground;
-        _cachedForegroundIsShellSurface = false;
         var classNameBuffer = new System.Text.StringBuilder(128);
         NativeMethods.GetClassName(foreground, classNameBuffer, classNameBuffer.Capacity);
         var className = classNameBuffer.ToString();
         if (className is "Shell_TrayWnd" or "Shell_SecondaryTrayWnd" or
             "XamlExplorerHostIslandWindow" or "ControlCenterWindow")
         {
-            _cachedForegroundIsShellSurface = true;
             return true;
         }
 
@@ -624,7 +718,7 @@ public partial class MainWindow : Window
         try
         {
             using var process = Process.GetProcessById(checked((int)processId));
-            _cachedForegroundIsShellSurface = process.ProcessName is
+            return process.ProcessName is
                 "StartMenuExperienceHost" or
                 "ShellExperienceHost" or
                 "ShellHost" or
@@ -641,7 +735,7 @@ public partial class MainWindow : Window
             // The foreground process can exit between the Win32 query and inspection.
         }
 
-        return _cachedForegroundIsShellSurface;
+        return false;
     }
 
     private int? ResolveAutomaticLeft(

@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Text;
 using System.Windows.Threading;
 using TaskbarPlayer.Interop;
 
@@ -9,6 +11,7 @@ internal sealed class TaskbarEventWatcher : IDisposable
     private readonly NativeMethods.WinEventDelegate _callback;
     private readonly List<nint> _hooks = [];
     private int _updateQueued;
+    private int _foregroundUpdateQueued;
 
     internal TaskbarEventWatcher(Dispatcher dispatcher)
     {
@@ -50,7 +53,14 @@ internal sealed class TaskbarEventWatcher : IDisposable
         uint eventTime)
     {
         var taskbar = NativeMethods.FindWindow("Shell_TrayWnd", null);
-        var isRelevant = eventId == NativeMethods.EventSystemForeground || window == taskbar;
+        var isTopLevelWindowVisibilityEvent =
+            eventId is NativeMethods.EventObjectShow or NativeMethods.EventObjectHide &&
+            objectId == NativeMethods.ObjIdWindow &&
+            childId == 0 &&
+            IsShellSurfaceWindow(window, taskbar);
+        var isRelevant = eventId == NativeMethods.EventSystemForeground ||
+            window == taskbar ||
+            isTopLevelWindowVisibilityEvent;
         if (!isRelevant)
         {
             return;
@@ -59,14 +69,24 @@ internal sealed class TaskbarEventWatcher : IDisposable
         if (_dispatcher.HasShutdownStarted)
         {
             Interlocked.Exchange(ref _updateQueued, 0);
+            Interlocked.Exchange(ref _foregroundUpdateQueued, 0);
             return;
         }
 
         if (eventId == NativeMethods.EventSystemForeground)
         {
+            if (Interlocked.Exchange(ref _foregroundUpdateQueued, 1) != 0)
+            {
+                return;
+            }
+
             _dispatcher.BeginInvoke(
                 DispatcherPriority.Send,
-                () => TaskbarChanged?.Invoke(this, EventArgs.Empty));
+                () =>
+                {
+                    Interlocked.Exchange(ref _foregroundUpdateQueued, 0);
+                    TaskbarChanged?.Invoke(this, EventArgs.Empty);
+                });
             return;
         }
 
@@ -80,6 +100,52 @@ internal sealed class TaskbarEventWatcher : IDisposable
             Interlocked.Exchange(ref _updateQueued, 0);
             TaskbarChanged?.Invoke(this, EventArgs.Empty);
         });
+    }
+
+    private static bool IsShellSurfaceWindow(nint window, nint taskbar)
+    {
+        if (window == nint.Zero || window == taskbar)
+        {
+            return window != nint.Zero;
+        }
+
+        var classNameBuffer = new StringBuilder(128);
+        NativeMethods.GetClassName(window, classNameBuffer, classNameBuffer.Capacity);
+        var className = classNameBuffer.ToString();
+        if (className is
+            "Shell_SecondaryTrayWnd" or
+            "XamlExplorerHostIslandWindow" or
+            "ControlCenterWindow")
+        {
+            return true;
+        }
+
+        if (className is not "ApplicationFrameWindow" and not "Windows.UI.Core.CoreWindow")
+        {
+            return false;
+        }
+
+        NativeMethods.GetWindowThreadProcessId(window, out var processId);
+        if (processId == 0)
+        {
+            return false;
+        }
+
+        try
+        {
+            using var process = Process.GetProcessById(checked((int)processId));
+            return process.ProcessName is
+                "StartMenuExperienceHost" or
+                "ShellExperienceHost" or
+                "ShellHost" or
+                "SearchHost" or
+                "SearchApp" or
+                "explorer";
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     public void Dispose()
