@@ -7,6 +7,8 @@ namespace TaskbarPlayer.Services;
 internal sealed class TaskbarPlacementService
 {
     private const int OccupiedPadding = 4;
+    private readonly object _scanSync = new();
+    private Task<TaskbarPlacementResult?>? _activeScan;
 
     internal Task<TaskbarPlacementResult?> FindBestLeftAsync(
         nint taskbar,
@@ -14,7 +16,16 @@ internal sealed class TaskbarPlacementService
         int playerWidth,
         int margin)
     {
-        return Task.Run(() => FindBestLeft(taskbar, taskbarRect, playerWidth, margin));
+        lock (_scanSync)
+        {
+            if (_activeScan is null || _activeScan.IsCompleted)
+            {
+                _activeScan = Task.Run(() =>
+                    FindBestLeft(taskbar, taskbarRect, playerWidth, margin));
+            }
+
+            return _activeScan;
+        }
     }
 
     [System.Diagnostics.Conditional("DEBUG")]

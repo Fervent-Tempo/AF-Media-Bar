@@ -9,6 +9,7 @@ internal sealed class MediaSessionService : IDisposable
 {
     private const int ArtworkDecodeWidth = 96;
     private static readonly TimeSpan SessionReconnectGracePeriod = TimeSpan.FromSeconds(6);
+    private static readonly TimeSpan ArtworkSettlePeriod = TimeSpan.FromMilliseconds(260);
 
     private static readonly (string Name, string[] Tokens)[] SourceNames =
     [
@@ -35,6 +36,7 @@ internal sealed class MediaSessionService : IDisposable
     private string? _preferredSourceName;
     private DateTime? _sessionMissingSinceUtc;
     private CancellationTokenSource? _sessionReconnectCancellation;
+    private CancellationTokenSource? _artworkRefreshCancellation;
     private MediaSnapshot _lastSnapshot = MediaSnapshot.Disconnected;
     private int _refreshVersion;
     private bool _disposed;
@@ -64,10 +66,11 @@ internal sealed class MediaSessionService : IDisposable
 
     internal async Task SelectSessionAsync(string key)
     {
+        SessionEntry? entry = null;
         await _sessionGate.WaitAsync();
         try
         {
-            var entry = _entries.FirstOrDefault(candidate => candidate.Key == key);
+            entry = _entries.FirstOrDefault(candidate => candidate.Key == key);
             if (entry is null)
             {
                 return;
@@ -75,11 +78,23 @@ internal sealed class MediaSessionService : IDisposable
 
             SelectEntry(entry);
             PublishSessions();
-            await RefreshMediaPropertiesAsync();
+            Publish(MediaSnapshot.Disconnected with
+            {
+                IsConnected = true,
+                Title = entry.DisplayName,
+                Artist = "正在读取媒体…",
+                SourceId = entry.SourceId,
+                SourceName = entry.DisplayName
+            });
         }
         finally
         {
             _sessionGate.Release();
+        }
+
+        if (entry is not null)
+        {
+            await RefreshMediaPropertiesAsync();
         }
     }
 
@@ -413,6 +428,7 @@ internal sealed class MediaSessionService : IDisposable
     private async Task RefreshMediaPropertiesAsync()
     {
         var version = Interlocked.Increment(ref _refreshVersion);
+        CancelArtworkRefresh();
         var session = _session;
         var entry = _entries.FirstOrDefault(candidate =>
             ReferenceEquals(candidate.Session, session));
@@ -432,14 +448,14 @@ internal sealed class MediaSessionService : IDisposable
                 ? mediaProperties.Artist
                 : mediaProperties.AlbumArtist;
             artist = string.IsNullOrWhiteSpace(artist) ? "未知创作者" : artist;
-            var canReuseArtwork = _lastSnapshot.Artwork is not null &&
-                _lastSnapshot.IsConnected &&
-                string.Equals(
+            var mediaChanged = !_lastSnapshot.IsConnected ||
+                !string.Equals(
                     _lastSnapshot.SourceId,
                     entry.SourceId,
-                    StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(_lastSnapshot.Title, title, StringComparison.Ordinal) &&
-                string.Equals(_lastSnapshot.Artist, artist, StringComparison.Ordinal);
+                    StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(_lastSnapshot.Title, title, StringComparison.Ordinal) ||
+                !string.Equals(_lastSnapshot.Artist, artist, StringComparison.Ordinal);
+            var canReuseArtwork = !mediaChanged && _lastSnapshot.Artwork is not null;
             var artwork = canReuseArtwork
                 ? _lastSnapshot.Artwork
                 : await LoadArtworkAsync(mediaProperties.Thumbnail);
@@ -448,21 +464,11 @@ internal sealed class MediaSessionService : IDisposable
                 return;
             }
 
-            var playbackInfo = session.GetPlaybackInfo();
-            var controls = playbackInfo.Controls;
-
-            Publish(new MediaSnapshot(
-                true,
-                playbackInfo.PlaybackStatus ==
-                    GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing,
-                controls.IsPlayPauseToggleEnabled || controls.IsPlayEnabled || controls.IsPauseEnabled,
-                controls.IsPreviousEnabled,
-                controls.IsNextEnabled,
-                title,
-                artist,
-                entry.SourceId,
-                entry.DisplayName,
-                artwork));
+            Publish(CreateSnapshot(session, entry, title, artist, artwork));
+            if (mediaChanged)
+            {
+                ScheduleSettledArtworkRefresh(session, entry, version);
+            }
         }
         catch
         {
@@ -476,6 +482,101 @@ internal sealed class MediaSessionService : IDisposable
                 _ = RefreshSessionListAsync();
             }
         }
+    }
+
+    private MediaSnapshot CreateSnapshot(
+        GlobalSystemMediaTransportControlsSession session,
+        SessionEntry entry,
+        string title,
+        string artist,
+        BitmapImage? artwork)
+    {
+        var playbackInfo = session.GetPlaybackInfo();
+        var controls = playbackInfo.Controls;
+        return new MediaSnapshot(
+                true,
+                playbackInfo.PlaybackStatus ==
+                    GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing,
+                controls.IsPlayPauseToggleEnabled || controls.IsPlayEnabled || controls.IsPauseEnabled,
+                controls.IsPreviousEnabled,
+                controls.IsNextEnabled,
+                title,
+                artist,
+                entry.SourceId,
+                entry.DisplayName,
+                artwork);
+    }
+
+    private void ScheduleSettledArtworkRefresh(
+        GlobalSystemMediaTransportControlsSession session,
+        SessionEntry entry,
+        int version)
+    {
+        var cancellation = new CancellationTokenSource();
+        var previous = Interlocked.Exchange(ref _artworkRefreshCancellation, cancellation);
+        previous?.Cancel();
+        previous?.Dispose();
+        _ = RefreshSettledArtworkAsync(session, entry, version, cancellation);
+    }
+
+    private async Task RefreshSettledArtworkAsync(
+        GlobalSystemMediaTransportControlsSession session,
+        SessionEntry entry,
+        int version,
+        CancellationTokenSource cancellation)
+    {
+        try
+        {
+            await Task.Delay(ArtworkSettlePeriod, cancellation.Token);
+            var mediaProperties = await session.TryGetMediaPropertiesAsync();
+            cancellation.Token.ThrowIfCancellationRequested();
+            if (version != _refreshVersion || !ReferenceEquals(session, _session))
+            {
+                return;
+            }
+
+            var title = string.IsNullOrWhiteSpace(mediaProperties.Title)
+                ? entry.DisplayName
+                : mediaProperties.Title;
+            var artist = !string.IsNullOrWhiteSpace(mediaProperties.Artist)
+                ? mediaProperties.Artist
+                : mediaProperties.AlbumArtist;
+            artist = string.IsNullOrWhiteSpace(artist) ? "未知创作者" : artist;
+            var artwork = await LoadArtworkAsync(mediaProperties.Thumbnail);
+            cancellation.Token.ThrowIfCancellationRequested();
+            if (version == _refreshVersion && ReferenceEquals(session, _session))
+            {
+                Publish(CreateSnapshot(session, entry, title, artist, artwork));
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // A newer media callback or source selection superseded this artwork.
+        }
+        catch
+        {
+            // The immediate snapshot remains usable if the publisher's settled
+            // thumbnail cannot be read.
+        }
+        finally
+        {
+            if (ReferenceEquals(
+                    Interlocked.CompareExchange(
+                        ref _artworkRefreshCancellation,
+                        null,
+                        cancellation),
+                    cancellation))
+            {
+                cancellation.Dispose();
+            }
+        }
+    }
+
+    private void CancelArtworkRefresh()
+    {
+        var cancellation = Interlocked.Exchange(ref _artworkRefreshCancellation, null);
+        cancellation?.Cancel();
+        cancellation?.Dispose();
     }
 
     private void RefreshPlaybackInfo()
@@ -575,6 +676,7 @@ internal sealed class MediaSessionService : IDisposable
 
         _disposed = true;
         CancelSessionReconnectGrace();
+        CancelArtworkRefresh();
         SetSession(null);
         foreach (var entry in _entries)
         {

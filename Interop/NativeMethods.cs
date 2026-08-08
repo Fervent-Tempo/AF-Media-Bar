@@ -215,9 +215,6 @@ internal static class NativeMethods
     internal static extern bool ShellNotifyIcon(uint message, ref NotifyIconData data);
 
     [DllImport("shell32.dll")]
-    internal static extern int SHQueryUserNotificationState(out QueryUserNotificationState state);
-
-    [DllImport("shell32.dll")]
     internal static extern uint SHAppBarMessage(uint message, ref AppBarData data);
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
@@ -225,14 +222,6 @@ internal static class NativeMethods
 
     internal static bool ShouldHideForFullScreenApp(nint playerWindow)
     {
-        if (SHQueryUserNotificationState(out var notificationState) == 0 &&
-            notificationState is QueryUserNotificationState.NotPresent
-                or QueryUserNotificationState.RunningDirect3DFullScreen
-                or QueryUserNotificationState.PresentationMode)
-        {
-            return true;
-        }
-
         var foreground = GetForegroundWindow();
         var taskbar = FindWindow("Shell_TrayWnd", null);
         if (foreground == nint.Zero || foreground == playerWindow || foreground == taskbar)
@@ -437,14 +426,4 @@ internal static class NativeMethods
         internal PdhFmtCounterValueDouble Value;
     }
 
-    internal enum QueryUserNotificationState
-    {
-        NotPresent = 1,
-        Busy = 2,
-        RunningDirect3DFullScreen = 3,
-        PresentationMode = 4,
-        AcceptsNotifications = 5,
-        QuietTime = 6,
-        App = 7
-    }
 }

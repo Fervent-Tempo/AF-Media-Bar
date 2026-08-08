@@ -219,19 +219,28 @@
           </Button>
         </StackPanel>
       </Border>
-      <StackPanel x:Name="AudioVisualizerHost"
-                  Width="114"
-                  HorizontalAlignment="Right"
-                  VerticalAlignment="Center"
-                  Orientation="Horizontal"
-                  Visibility="Collapsed"
-                  IsHitTestVisible="False">
-        <Border x:Name="AudioBar0" Width="4" Height="4" Margin="14,0,5,0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
-        <Border x:Name="AudioBar1" Width="4" Height="4" Margin="0,0,5,0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
-        <Border x:Name="AudioBar2" Width="4" Height="4" Margin="0,0,5,0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
-        <Border x:Name="AudioBar3" Width="4" Height="4" Margin="0,0,5,0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
-        <Border x:Name="AudioBar4" Width="4" Height="4" Margin="0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
-      </StackPanel>
+      <Border x:Name="AudioVisualizerHost"
+              Width="60"
+              Margin="0,0,1,0"
+              HorizontalAlignment="Right"
+              VerticalAlignment="Center"
+              Visibility="Collapsed"
+              IsHitTestVisible="False">
+        <StackPanel Width="43"
+                    HorizontalAlignment="Center"
+                    Orientation="Horizontal"
+                    VerticalAlignment="Center">
+          <Border x:Name="AudioBar0" Width="3" Height="3" Margin="0,0,2,0" CornerRadius="1.5" Background="#B9D1E3" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar1" Width="3" Height="3" Margin="0,0,2,0" CornerRadius="1.5" Background="#B9D1E3" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar2" Width="3" Height="3" Margin="0,0,2,0" CornerRadius="1.5" Background="#B9D1E3" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar3" Width="3" Height="3" Margin="0,0,2,0" CornerRadius="1.5" Background="#B9D1E3" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar4" Width="3" Height="3" Margin="0,0,2,0" CornerRadius="1.5" Background="#B9D1E3" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar5" Width="3" Height="3" Margin="0,0,2,0" CornerRadius="1.5" Background="#B9D1E3" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar6" Width="3" Height="3" Margin="0,0,2,0" CornerRadius="1.5" Background="#B9D1E3" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar7" Width="3" Height="3" Margin="0,0,2,0" CornerRadius="1.5" Background="#B9D1E3" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar8" Width="3" Height="3" CornerRadius="1.5" Background="#B9D1E3" VerticalAlignment="Center" />
+        </StackPanel>
+      </Border>
     </Grid>
 
     <Border x:Name="MetricsDivider"
