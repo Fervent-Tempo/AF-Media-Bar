@@ -93,6 +93,8 @@ public partial class MainWindow : Window
     private bool _isProcessingVolumeWheel;
     private bool _outputDeviceWheelUsesCompactStatus;
     private bool _volumeWheelUsesCompactStatus;
+    private bool _showingOutputDeviceHoverStatus;
+    private bool _showingVolumeHoverStatus;
     private readonly float[] _audioSpectrum = new float[AudioMonitorService.BandCount];
     private readonly float[] _smoothedAudioSpectrum = new float[AudioMonitorService.BandCount];
     private Border[] _audioBars = null!;
@@ -1636,16 +1638,53 @@ public partial class MainWindow : Window
 
             var current = devices.FirstOrDefault(device => device.IsDefault) ?? selected;
             OutputDeviceCurrentText.Text = current?.DisplayName ?? "未找到设备";
-            OutputDeviceButton.ToolTip = current is null
-                ? "未找到可用输出设备"
-                : $"输出设备：{current.DisplayName}";
+            if (_showingOutputDeviceHoverStatus &&
+                _pendingOutputDeviceId is null)
+            {
+                OutputDeviceStatusText.Text = current is null
+                    ? "未找到可用输出设备"
+                    : $"输出设备：{current.DisplayName}";
+            }
         }
         catch (Exception exception)
         {
             _outputDevices = [];
             OutputDeviceList.ItemsSource = null;
             OutputDeviceCurrentText.Text = "读取失败";
-            OutputDeviceButton.ToolTip = $"无法读取输出设备：{exception.Message}";
+            if (_showingOutputDeviceHoverStatus)
+            {
+                OutputDeviceStatusText.Text = $"无法读取输出设备：{exception.Message}";
+            }
+        }
+    }
+
+    private void OutputDeviceHost_OnMouseEnter(object sender, MouseEventArgs e)
+    {
+        if (!_metricSettings.OutputDeviceSwitcherEnabled ||
+            OutputDevicePopup.IsOpen ||
+            _pendingOutputDeviceId is not null)
+        {
+            return;
+        }
+
+        _showingOutputDeviceHoverStatus = true;
+        var current = _outputDevices.FirstOrDefault(device => device.IsDefault);
+        OutputDeviceStatusText.Text = current is null
+            ? "输出设备"
+            : $"输出设备：{current.DisplayName}";
+        OutputDeviceStatusPopup.IsOpen = true;
+        if (_outputDevices.Count == 0)
+        {
+            _ = RefreshOutputDevicesAsync();
+        }
+    }
+
+    private void OutputDeviceHost_OnMouseLeave(object sender, MouseEventArgs e)
+    {
+        _showingOutputDeviceHoverStatus = false;
+        if (_pendingOutputDeviceId is null)
+        {
+            OutputDeviceStatusPopup.IsOpen = false;
         }
     }
 
@@ -1907,13 +1946,22 @@ public partial class MainWindow : Window
         catch (Exception exception)
         {
             OutputDeviceCurrentText.Text = "切换失败";
-            OutputDeviceButton.ToolTip = $"无法切换输出设备：{exception.Message}";
+            OutputDeviceStatusText.Text = $"无法切换输出设备：{exception.Message}";
+            OutputDeviceStatusPopup.IsOpen = true;
+            _outputDeviceApplyTimer.Stop();
+            _outputDeviceApplyTimer.Start();
             return false;
         }
     }
 
+    private void AudioControlPopup_OnOpened(object? sender, EventArgs e)
+    {
+        UpdateMouseHookState();
+    }
+
     private void OutputDevicePopup_OnClosed(object? sender, EventArgs e)
     {
+        UpdateMouseHookState();
         ScheduleCollapse();
     }
 
@@ -1948,7 +1996,10 @@ public partial class MainWindow : Window
             }
 
             SetCurrentApplicationVolume(null);
-            VolumeControlButton.ToolTip = $"无法读取当前媒体音量：{exception.Message}";
+            if (_showingVolumeHoverStatus || VolumeStatusPopup.IsOpen)
+            {
+                VolumeStatusText.Text = $"无法读取当前媒体音量：{exception.Message}";
+            }
         }
     }
 
@@ -1968,10 +2019,7 @@ public partial class MainWindow : Window
             VolumePercentText.Text = snapshot is null
                 ? "暂无"
                 : $"{snapshot.VolumePercent}%";
-            VolumeControlButton.ToolTip = snapshot is null
-                ? "当前媒体没有可用的音频会话；恢复播放后可重新连接"
-                : $"{snapshot.DisplayName}：{snapshot.VolumePercent}%";
-            if (VolumeStatusPopup.IsOpen)
+            if (VolumeStatusPopup.IsOpen || _showingVolumeHoverStatus)
             {
                 UpdateVolumeStatusText();
             }
@@ -2001,6 +2049,33 @@ public partial class MainWindow : Window
             _mediaSessionService.SelectedSourceId,
             _mediaSessionService.SelectedSourceName);
         VolumeControlPopup.IsOpen = true;
+    }
+
+    private void VolumeControlHost_OnMouseEnter(object sender, MouseEventArgs e)
+    {
+        if (!_metricSettings.VolumeControlEnabled || VolumeControlPopup.IsOpen)
+        {
+            return;
+        }
+
+        _showingVolumeHoverStatus = true;
+        UpdateVolumeStatusText();
+        VolumeStatusPopup.IsOpen = true;
+        if (_currentApplicationVolume is null)
+        {
+            _ = RefreshCurrentMediaVolumeAsync(
+                _mediaSessionService.SelectedSourceId,
+                _mediaSessionService.SelectedSourceName);
+        }
+    }
+
+    private void VolumeControlHost_OnMouseLeave(object sender, MouseEventArgs e)
+    {
+        _showingVolumeHoverStatus = false;
+        if (!_volumePopupCloseTimer.IsEnabled)
+        {
+            VolumeStatusPopup.IsOpen = false;
+        }
     }
 
     private void VolumeControlHost_OnPreviewMouseWheel(
@@ -2095,12 +2170,6 @@ public partial class MainWindow : Window
         {
             CurrentMediaVolumeSlider.Value = volumePercent;
             VolumePercentText.Text = $"{volumePercent}%";
-            if (_currentApplicationVolume is not null)
-            {
-                VolumeControlButton.ToolTip =
-                    $"{_currentApplicationVolume.DisplayName}：{volumePercent}%";
-            }
-
             UpdateVolumeStatusText();
         }
         finally
@@ -2240,7 +2309,8 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            VolumeControlButton.ToolTip = $"无法调节媒体音量：{exception.Message}";
+            VolumeStatusText.Text = $"无法调节媒体音量：{exception.Message}";
+            VolumeStatusPopup.IsOpen = true;
         }
     }
 
@@ -2259,6 +2329,7 @@ public partial class MainWindow : Window
             _volumePopupCloseTimer.Stop();
         }
 
+        UpdateMouseHookState();
         ScheduleCollapse();
     }
 
@@ -2481,7 +2552,7 @@ public partial class MainWindow : Window
     private void PlayerMenu_OnOpened(object sender, RoutedEventArgs e)
     {
         _isMenuOpen = true;
-        _mouseHookService.Start();
+        UpdateMouseHookState();
         SetExpanded(expanded: true, animate: true);
         StartupMenuItem.IsChecked = StartupService.IsEnabled;
         ApplyPlacementSettings();
@@ -2491,18 +2562,37 @@ public partial class MainWindow : Window
     private void PlayerMenu_OnClosed(object sender, RoutedEventArgs e)
     {
         _isMenuOpen = false;
-        _mouseHookService.Stop();
+        UpdateMouseHookState();
         ScheduleCollapse();
     }
 
     private void MouseHook_OnMouseButtonPressed(NativeMethods.Point point)
     {
-        if (!_isMenuOpen || IsPointInsideApplicationWindow(point))
+        if (!HasOpenInteractiveOverlay() || IsPointInsideApplicationWindow(point))
         {
             return;
         }
 
         PlayerMenu.IsOpen = false;
+        OutputDevicePopup.IsOpen = false;
+        VolumeControlPopup.IsOpen = false;
+    }
+
+    private bool HasOpenInteractiveOverlay()
+    {
+        return _isMenuOpen || OutputDevicePopup.IsOpen || VolumeControlPopup.IsOpen;
+    }
+
+    private void UpdateMouseHookState()
+    {
+        if (HasOpenInteractiveOverlay())
+        {
+            _mouseHookService.Start();
+        }
+        else
+        {
+            _mouseHookService.Stop();
+        }
     }
 
     private static bool IsPointInsideApplicationWindow(NativeMethods.Point point)
