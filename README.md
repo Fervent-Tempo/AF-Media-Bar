@@ -1,6 +1,6 @@
-# AF Shell · Media Bar
+# AF Media Bar
 
-AF Shell 是一个面向 Windows 11 的桌面增强项目，Media Bar 是当前的任务栏媒体控制模块。它读取 Windows 全局系统媒体会话（GSMTC），在任务栏上显示封面、标题和作者，并提供上一首、播放/暂停、下一首和媒体来源切换。
+AF Media Bar 是一款面向 Windows 11 的任务栏媒体控制器。它读取 Windows 全局系统媒体会话（GSMTC），在任务栏上显示封面、标题和作者，并提供上一首、播放/暂停、下一首和媒体来源切换。
 
 ## 为什么不直接嵌入控制中心媒体卡片
 
@@ -16,7 +16,7 @@ Media Bar 复用控制中心背后的公开接口 `Windows.Media.Control.GlobalS
 - 显示封面、标题和作者，并按会话能力启用上一首、播放/暂停、下一首
 - 点击封面或标题可切回当前媒体应用
 - 收起时显示封面、标题和性能指标，悬停时展开控制区与作者
-- 性能指标提供总开关，也可分别选择系统内存、CPU、GPU 和 AF Shell 进程内存
+- 性能指标提供总开关，也可分别选择系统内存、CPU、GPU 和 AF Media Bar 进程内存
 - 低配置模式会切换为 WPF 软件渲染，并关闭悬停过渡、文字滚动与指标淡入淡出，同时保留全部控制功能
 - 音频监听使用 Windows Core Audio 默认输出峰值计量；收起且鼠标离开时显示低开销圆点/条形可视化
 - 标题和作者超过可用宽度时自动往返滚动
@@ -39,16 +39,16 @@ Media Bar 复用控制中心背后的公开接口 `Windows.Media.Control.GlobalS
 要求 Windows 11 和 .NET 8 Desktop Runtime。
 
 ```powershell
-dotnet run --project .\TaskbarPlayer.csproj
+dotnet run --project .\AFMediaBar.csproj
 ```
 
 发布为低常驻内存的框架依赖文件夹：
 
 ```powershell
-dotnet publish .\TaskbarPlayer.csproj -c Release -r win-x64 --self-contained false -o .\dist\AFShell
+dotnet publish .\AFMediaBar.csproj -c Release -r win-x64 --self-contained false -o .\dist\AFMediaBar
 ```
 
-启动 `dist\AFShell\AFShell.exe`。程序会把旧版 `TaskbarPlayer` 的位置、性能指标和开机启动配置迁移到 AF Shell。
+启动 `dist\AFMediaBar\AFMediaBar.exe`。程序会自动迁移旧版 `AFShell` 和 `TaskbarPlayer` 的位置、性能指标及开机启动配置。
 
 ## 已知边界
 

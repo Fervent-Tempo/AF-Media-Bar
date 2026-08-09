@@ -6,15 +6,21 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <AssemblyName>AFShell</AssemblyName>
-    <RootNamespace>TaskbarPlayer</RootNamespace>
+    <ApplicationIcon>favicon.ico</ApplicationIcon>
+    <AssemblyName>AFMediaBar</AssemblyName>
+    <AssemblyTitle>AF Media Bar</AssemblyTitle>
+    <RootNamespace>AFMediaBar</RootNamespace>
     <Version>0.2.0</Version>
-    <Product>AF Shell</Product>
-    <Description>AF Shell Media Bar for Windows 11</Description>
+    <Product>AF Media Bar</Product>
+    <Description>Media controls for the Windows 11 taskbar</Description>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <DebugType>embedded</DebugType>
     <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="favicon.ico" />
+  </ItemGroup>
 </Project>

@@ -1,8 +1,8 @@
 using System.Runtime.InteropServices;
 using System.Windows.Threading;
-using TaskbarPlayer.Interop;
+using AFMediaBar.Interop;
 
-namespace TaskbarPlayer.Services;
+namespace AFMediaBar.Services;
 
 internal sealed class MouseHookService : IDisposable
 {

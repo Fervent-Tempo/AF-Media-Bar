@@ -1,10 +1,10 @@
 using System.IO;
 using System.Security.Cryptography;
 using System.Windows.Media.Imaging;
-using TaskbarPlayer.Models;
+using AFMediaBar.Models;
 using Windows.Media.Control;
 
-namespace TaskbarPlayer.Services;
+namespace AFMediaBar.Services;
 
 internal sealed class MediaSessionService : IDisposable
 {

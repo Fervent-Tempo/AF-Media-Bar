@@ -1,6 +1,6 @@
 using System.Windows.Media.Imaging;
 
-namespace TaskbarPlayer.Models;
+namespace AFMediaBar.Models;
 
 public sealed record MediaSnapshot(
     bool IsConnected,

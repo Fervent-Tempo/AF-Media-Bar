@@ -1,25 +1,23 @@
 using Microsoft.Win32;
 
-namespace TaskbarPlayer.Services;
+namespace AFMediaBar.Services;
 
 internal static class StartupService
 {
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string ValueName = "AFShell";
-    private const string LegacyValueName = "TaskbarPlayer";
+    private const string ValueName = "AF Media Bar";
+    private const string AFShellValueName = "AFShell";
+    private const string TaskbarPlayerValueName = "TaskbarPlayer";
 
     internal static bool IsEnabled
     {
         get
         {
             using var key = Registry.CurrentUser.CreateSubKey(RunKeyPath, writable: true);
-            if (key.GetValue(ValueName) is string)
-            {
-                key.DeleteValue(LegacyValueName, throwOnMissingValue: false);
-                return true;
-            }
-
-            if (key.GetValue(LegacyValueName) is not string)
+            var isEnabled = key.GetValue(ValueName) is string ||
+                key.GetValue(AFShellValueName) is string ||
+                key.GetValue(TaskbarPlayerValueName) is string;
+            if (!isEnabled)
             {
                 return false;
             }
@@ -28,7 +26,7 @@ internal static class StartupService
             if (!string.IsNullOrWhiteSpace(executablePath))
             {
                 key.SetValue(ValueName, $"\"{executablePath}\"");
-                key.DeleteValue(LegacyValueName, throwOnMissingValue: false);
+                DeleteLegacyValues(key);
             }
 
             return true;
@@ -38,16 +36,22 @@ internal static class StartupService
     internal static void SetEnabled(bool enabled)
     {
         using var key = Registry.CurrentUser.CreateSubKey(RunKeyPath, writable: true);
-        key.DeleteValue(LegacyValueName, throwOnMissingValue: false);
+        DeleteLegacyValues(key);
         if (enabled)
         {
             var executablePath = Environment.ProcessPath
-                ?? throw new InvalidOperationException("无法确定程序路径。");
+                ?? throw new InvalidOperationException("Unable to determine the application path.");
             key.SetValue(ValueName, $"\"{executablePath}\"");
         }
         else
         {
             key.DeleteValue(ValueName, throwOnMissingValue: false);
         }
+    }
+
+    private static void DeleteLegacyValues(RegistryKey key)
+    {
+        key.DeleteValue(AFShellValueName, throwOnMissingValue: false);
+        key.DeleteValue(TaskbarPlayerValueName, throwOnMissingValue: false);
     }
 }

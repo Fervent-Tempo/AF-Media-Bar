@@ -7,11 +7,11 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
-using TaskbarPlayer.Interop;
-using TaskbarPlayer.Models;
-using TaskbarPlayer.Services;
+using AFMediaBar.Interop;
+using AFMediaBar.Models;
+using AFMediaBar.Services;
 
-namespace TaskbarPlayer;
+namespace AFMediaBar;
 
 public partial class MainWindow : Window
 {
@@ -1067,8 +1067,8 @@ public partial class MainWindow : Window
         ShowSourceMenuItem.IsEnabled = !string.IsNullOrWhiteSpace(snapshot.SourceId);
         _trayIconService?.UpdateTooltip(
             snapshot.IsConnected
-                ? $"AF Shell · {snapshot.SourceName}：{snapshot.Title} - {snapshot.Artist}"
-                : "AF Shell · Media Bar - 等待媒体播放");
+                ? $"AF Media Bar · {snapshot.SourceName}：{snapshot.Title} - {snapshot.Artist}"
+                : "AF Media Bar - 等待媒体播放");
         if (_metricSettings.VolumeControlEnabled &&
             (volumeSourceChanged ||
                 VolumeControlPopup.IsOpen ||

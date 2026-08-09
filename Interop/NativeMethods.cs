@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace TaskbarPlayer.Interop;
+namespace AFMediaBar.Interop;
 
 internal static class NativeMethods
 {

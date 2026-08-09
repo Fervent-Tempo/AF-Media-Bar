@@ -1,4 +1,4 @@
-namespace TaskbarPlayer.Models;
+namespace AFMediaBar.Models;
 
 internal readonly record struct OccupiedRange(int Left, int Right)
 {

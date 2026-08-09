@@ -1,8 +1,8 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using TaskbarPlayer.Models;
+using AFMediaBar.Models;
 
-namespace TaskbarPlayer.Services;
+namespace AFMediaBar.Services;
 
 internal sealed class ApplicationVolumeService
 {

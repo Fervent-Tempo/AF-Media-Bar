@@ -1,8 +1,8 @@
 using System.Diagnostics;
 using System.IO;
-using TaskbarPlayer.Interop;
+using AFMediaBar.Interop;
 
-namespace TaskbarPlayer.Services;
+namespace AFMediaBar.Services;
 
 internal static class MediaSourceLauncherService
 {

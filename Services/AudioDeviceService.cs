@@ -1,9 +1,9 @@
 using System.Runtime.InteropServices;
-using TaskbarPlayer.Models;
+using AFMediaBar.Models;
 using Windows.Devices.Enumeration;
 using Windows.Media.Devices;
 
-namespace TaskbarPlayer.Services;
+namespace AFMediaBar.Services;
 
 internal sealed class AudioDeviceService
 {

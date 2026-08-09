@@ -1,4 +1,4 @@
-namespace TaskbarPlayer.Models;
+namespace AFMediaBar.Models;
 
 internal sealed record AudioDeviceOption(
     string Id,

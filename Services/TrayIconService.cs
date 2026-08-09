@@ -1,6 +1,6 @@
-using TaskbarPlayer.Interop;
+using AFMediaBar.Interop;
 
-namespace TaskbarPlayer.Services;
+namespace AFMediaBar.Services;
 
 internal sealed class TrayIconService : IDisposable
 {
@@ -15,7 +15,16 @@ internal sealed class TrayIconService : IDisposable
     internal TrayIconService(nint window)
     {
         _window = window;
-        _icon = NativeMethods.LoadIcon(nint.Zero, new nint(NativeMethods.IdiApplication));
+        _icon = NativeMethods.LoadIcon(
+            NativeMethods.GetModuleHandle(null),
+            new nint(NativeMethods.IdiApplication));
+        if (_icon == nint.Zero)
+        {
+            _icon = NativeMethods.LoadIcon(
+                nint.Zero,
+                new nint(NativeMethods.IdiApplication));
+        }
+
         _taskbarCreatedMessage = NativeMethods.RegisterWindowMessage("TaskbarCreated");
         AddIcon();
     }
@@ -73,7 +82,7 @@ internal sealed class TrayIconService : IDisposable
             NativeMethods.NotifyIconIcon |
             NativeMethods.NotifyIconTip |
             NativeMethods.NotifyIconShowTip;
-        data.Tooltip = "AF Shell · Media Bar";
+        data.Tooltip = "AF Media Bar";
 
         _isAdded = NativeMethods.ShellNotifyIcon(NativeMethods.NotifyIconAdd, ref data);
         if (!_isAdded)

@@ -1,8 +1,8 @@
 using System.Windows.Automation;
-using TaskbarPlayer.Interop;
-using TaskbarPlayer.Models;
+using AFMediaBar.Interop;
+using AFMediaBar.Models;
 
-namespace TaskbarPlayer.Services;
+namespace AFMediaBar.Services;
 
 internal sealed class TaskbarPlacementService
 {

@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 
-namespace TaskbarPlayer.Services;
+namespace AFMediaBar.Services;
 
 /// <summary>
 /// Captures the default render endpoint through WASAPI loopback and exposes
