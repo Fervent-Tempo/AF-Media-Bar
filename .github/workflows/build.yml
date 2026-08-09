@@ -1,0 +1,35 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-build:
+    name: Release build (win-x64)
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore .\AFMediaBar.csproj
+
+      - name: Build
+        run: dotnet build .\AFMediaBar.csproj -c Release --no-restore -p:ContinuousIntegrationBuild=true
+
+      - name: Validate self-contained publish
+        run: dotnet publish .\AFMediaBar.csproj -c Release -r win-x64 --self-contained true -p:ContinuousIntegrationBuild=true -o .\artifacts\AFMediaBar-win-x64

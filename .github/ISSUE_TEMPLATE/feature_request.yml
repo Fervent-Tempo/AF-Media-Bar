@@ -1,0 +1,41 @@
+name: Feature request
+description: Propose a focused improvement for AF Media Bar.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or workflow
+      description: Describe the user problem before describing a solution.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Explain the expected interaction and where it belongs in the current interface.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Include current workarounds or simpler approaches.
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Screenshots or examples from other tools are useful when they clarify the workflow.
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      options:
+        - label: This request is related to Windows taskbar media, audio, placement, or the existing AF Media Bar workflow.
+          required: true

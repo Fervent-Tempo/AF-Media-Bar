@@ -104,12 +104,6 @@ internal static class MediaSourceLauncherService
                 });
                 return true;
             }
-
-            if (sourceId.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-            {
-                Process.Start(new ProcessStartInfo(sourceId) { UseShellExecute = true });
-                return true;
-            }
         }
         catch
         {

@@ -63,5 +63,6 @@ internal sealed class MouseHookService : IDisposable
     public void Dispose()
     {
         Stop();
+        MouseButtonPressed = null;
     }
 }

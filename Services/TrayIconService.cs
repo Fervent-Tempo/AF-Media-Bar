@@ -110,13 +110,14 @@ internal sealed class TrayIconService : IDisposable
 
     public void Dispose()
     {
-        if (!_isAdded)
+        if (_isAdded)
         {
-            return;
+            var data = CreateIconData();
+            NativeMethods.ShellNotifyIcon(NativeMethods.NotifyIconDelete, ref data);
+            _isAdded = false;
         }
 
-        var data = CreateIconData();
-        NativeMethods.ShellNotifyIcon(NativeMethods.NotifyIconDelete, ref data);
-        _isAdded = false;
+        ContextMenuRequested = null;
+        DoubleClicked = null;
     }
 }

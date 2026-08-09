@@ -1,6 +1,8 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
+[assembly: DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+
 namespace AFMediaBar.Interop;
 
 internal static class NativeMethods
@@ -232,7 +234,11 @@ internal static class NativeMethods
         }
 
         var className = new StringBuilder(128);
-        GetClassName(foreground, className, className.Capacity);
+        if (GetClassName(foreground, className, className.Capacity) <= 0)
+        {
+            return false;
+        }
+
         if (className.ToString() is "Progman" or "WorkerW" or "Shell_SecondaryTrayWnd")
         {
             return false;

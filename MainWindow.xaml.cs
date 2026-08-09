@@ -799,7 +799,14 @@ public partial class MainWindow : Window
         }
 
         var classNameBuffer = new System.Text.StringBuilder(128);
-        NativeMethods.GetClassName(foreground, classNameBuffer, classNameBuffer.Capacity);
+        if (NativeMethods.GetClassName(
+                foreground,
+                classNameBuffer,
+                classNameBuffer.Capacity) <= 0)
+        {
+            return false;
+        }
+
         var className = classNameBuffer.ToString();
         if (className is "Shell_TrayWnd" or "Shell_SecondaryTrayWnd" or
             "XamlExplorerHostIslandWindow" or "ControlCenterWindow")
@@ -807,8 +814,8 @@ public partial class MainWindow : Window
             return true;
         }
 
-        NativeMethods.GetWindowThreadProcessId(foreground, out var processId);
-        if (processId == 0)
+        if (NativeMethods.GetWindowThreadProcessId(foreground, out var processId) == 0 ||
+            processId == 0)
         {
             return false;
         }
@@ -2601,8 +2608,8 @@ public partial class MainWindow : Window
         var isInside = false;
         NativeMethods.EnumWindows((window, _) =>
         {
-            NativeMethods.GetWindowThreadProcessId(window, out var windowProcessId);
-            if (windowProcessId != processId ||
+            if (NativeMethods.GetWindowThreadProcessId(window, out var windowProcessId) == 0 ||
+                windowProcessId != processId ||
                 !NativeMethods.IsWindowVisible(window) ||
                 !IsPointInsideWindow(window, point))
             {

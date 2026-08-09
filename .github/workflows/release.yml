@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Publish ${{ github.ref_name }}
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Verify tag matches project version
+        shell: pwsh
+        run: |
+          [xml]$project = Get-Content .\AFMediaBar.csproj
+          $projectVersion = @($project.Project.PropertyGroup.Version | Where-Object { $_ })[0]
+          $tagVersion = $env:GITHUB_REF_NAME.TrimStart('v')
+          if ($projectVersion -ne $tagVersion) {
+            throw "Tag $env:GITHUB_REF_NAME does not match project version $projectVersion."
+          }
+          $releaseNotes = Get-Content .\RELEASE_NOTES.md -Raw
+          if ($releaseNotes -notmatch [regex]::Escape($projectVersion)) {
+            throw "RELEASE_NOTES.md does not mention version $projectVersion."
+          }
+          "VERSION=$projectVersion" >> $env:GITHUB_ENV
+
+      - name: Publish self-contained application
+        run: dotnet publish .\AFMediaBar.csproj -c Release -r win-x64 --self-contained true -p:ContinuousIntegrationBuild=true -o .\artifacts\publish
+
+      - name: Create archive and checksum
+        shell: pwsh
+        run: |
+          $archiveName = "AFMediaBar-v$env:VERSION-win-x64.zip"
+          $archivePath = Join-Path .\artifacts $archiveName
+          Compress-Archive -Path .\artifacts\publish\* -DestinationPath $archivePath -CompressionLevel Optimal
+          $hash = (Get-FileHash $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $archiveName" | Set-Content .\artifacts\SHA256SUMS.txt -Encoding ascii
+          "ARCHIVE_NAME=$archiveName" >> $env:GITHUB_ENV
+
+      - name: Create GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create $env:GITHUB_REF_NAME `
+            ".\artifacts\$env:ARCHIVE_NAME" `
+            ".\artifacts\SHA256SUMS.txt" `
+            --verify-tag `
+            --title "AF Media Bar $env:GITHUB_REF_NAME" `
+            --notes-file ".\RELEASE_NOTES.md"
