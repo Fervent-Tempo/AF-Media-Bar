@@ -271,7 +271,7 @@
     </Grid>
 
     <Border x:Name="MetricsHost"
-            Grid.Column="2"
+            Grid.Column="4"
             Width="74"
             Height="24"
             Margin="0,0,4,0"
@@ -291,7 +291,7 @@
     </Border>
 
     <Border x:Name="OutputDeviceHost"
-            Grid.Column="3"
+            Grid.Column="2"
             Width="36"
             Height="36"
             Margin="0,0,4,0"
@@ -314,7 +314,7 @@
     </Border>
 
     <Border x:Name="VolumeControlHost"
-            Grid.Column="4"
+            Grid.Column="3"
             Width="36"
             Height="36"
             Margin="0,0,4,0"
@@ -386,6 +386,7 @@
                   Orientation="Vertical"
                   IsMoveToPointEnabled="True"
                   Style="{StaticResource VolumeSliderStyle}"
+                  PreviewMouseLeftButtonDown="CurrentMediaVolumeSlider_OnPreviewMouseLeftButtonDown"
                   ValueChanged="CurrentMediaVolumeSlider_OnValueChanged" />
         </StackPanel>
       </Border>
@@ -405,7 +406,8 @@
               Background="{StaticResource MenuBackgroundBrush}"
               BorderBrush="{StaticResource MenuBorderBrush}"
               BorderThickness="1"
-              CornerRadius="8">
+              CornerRadius="8"
+              PreviewMouseWheel="OutputDevicePopup_OnPreviewMouseWheel">
         <StackPanel>
           <DockPanel Margin="4,2,4,8">
             <TextBlock Text="输出设备"
@@ -430,8 +432,7 @@
                    ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                    ScrollViewer.VerticalScrollBarVisibility="Auto"
                    ItemContainerStyle="{StaticResource OutputDeviceListItemStyle}"
-                   PreviewMouseLeftButtonUp="OutputDeviceList_OnPreviewMouseLeftButtonUp"
-                   PreviewMouseWheel="OutputDeviceList_OnPreviewMouseWheel">
+                   PreviewMouseLeftButtonUp="OutputDeviceList_OnPreviewMouseLeftButtonUp">
             <ListBox.ItemTemplate>
               <DataTemplate>
                 <TextBlock Text="{Binding DisplayName}"
@@ -442,6 +443,52 @@
             </ListBox.ItemTemplate>
           </ListBox>
         </StackPanel>
+      </Border>
+    </Popup>
+
+    <Popup x:Name="OutputDeviceStatusPopup"
+           PlacementTarget="{Binding ElementName=OutputDeviceHost}"
+           Placement="Top"
+           VerticalOffset="-7"
+           AllowsTransparency="True"
+           StaysOpen="True"
+           PopupAnimation="Fade">
+      <Border MaxWidth="300"
+              Padding="10,6"
+              Background="{StaticResource MenuBackgroundBrush}"
+              BorderBrush="{StaticResource MenuBorderBrush}"
+              BorderThickness="1"
+              CornerRadius="5"
+              IsHitTestVisible="False">
+        <TextBlock x:Name="OutputDeviceStatusText"
+                   Foreground="{StaticResource PrimaryTextBrush}"
+                   FontFamily="Segoe UI Variable Text"
+                   FontSize="12"
+                   TextTrimming="CharacterEllipsis"
+                   TextWrapping="NoWrap" />
+      </Border>
+    </Popup>
+
+    <Popup x:Name="VolumeStatusPopup"
+           PlacementTarget="{Binding ElementName=VolumeControlHost}"
+           Placement="Top"
+           VerticalOffset="-7"
+           AllowsTransparency="True"
+           StaysOpen="True"
+           PopupAnimation="Fade">
+      <Border MaxWidth="260"
+              Padding="10,6"
+              Background="{StaticResource MenuBackgroundBrush}"
+              BorderBrush="{StaticResource MenuBorderBrush}"
+              BorderThickness="1"
+              CornerRadius="5"
+              IsHitTestVisible="False">
+        <TextBlock x:Name="VolumeStatusText"
+                   Foreground="{StaticResource PrimaryTextBrush}"
+                   FontFamily="Segoe UI Variable Text"
+                   FontSize="12"
+                   TextTrimming="CharacterEllipsis"
+                   TextWrapping="NoWrap" />
       </Border>
     </Popup>
   </Grid>

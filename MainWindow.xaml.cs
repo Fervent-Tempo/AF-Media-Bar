@@ -91,6 +91,8 @@ public partial class MainWindow : Window
     private bool _isUpdatingVolumeSlider;
     private bool _isProcessingOutputDeviceWheel;
     private bool _isProcessingVolumeWheel;
+    private bool _outputDeviceWheelUsesCompactStatus;
+    private bool _volumeWheelUsesCompactStatus;
     private readonly float[] _audioSpectrum = new float[AudioMonitorService.BandCount];
     private readonly float[] _smoothedAudioSpectrum = new float[AudioMonitorService.BandCount];
     private Border[] _audioBars = null!;
@@ -1066,7 +1068,9 @@ public partial class MainWindow : Window
                 ? $"AF Shell · {snapshot.SourceName}：{snapshot.Title} - {snapshot.Artist}"
                 : "AF Shell · Media Bar - 等待媒体播放");
         if (_metricSettings.VolumeControlEnabled &&
-            (volumeSourceChanged || VolumeControlPopup.IsOpen))
+            (volumeSourceChanged ||
+                VolumeControlPopup.IsOpen ||
+                VolumeStatusPopup.IsOpen))
         {
             _ = RefreshCurrentMediaVolumeAsync(
                 snapshot.SourceId,
@@ -1522,9 +1526,11 @@ public partial class MainWindow : Window
         }
 
         OutputDevicePopup.IsOpen = false;
+        OutputDeviceStatusPopup.IsOpen = false;
         _outputDeviceApplyTimer.Stop();
         _pendingOutputDeviceId = null;
         _pendingOutputDeviceWheelSteps = 0;
+        _outputDeviceWheelUsesCompactStatus = false;
         _outputDevices = [];
         OutputDeviceList.ItemsSource = null;
     }
@@ -1544,10 +1550,12 @@ public partial class MainWindow : Window
         }
 
         VolumeControlPopup.IsOpen = false;
+        VolumeStatusPopup.IsOpen = false;
         _volumeApplyTimer.Stop();
         _volumePopupCloseTimer.Stop();
         _pendingVolumePercent = null;
         _pendingVolumeWheelSteps = 0;
+        _volumeWheelUsesCompactStatus = false;
         _currentApplicationVolume = null;
     }
 
@@ -1648,13 +1656,14 @@ public partial class MainWindow : Window
             return;
         }
 
+        OutputDeviceStatusPopup.IsOpen = false;
         if (OutputDevicePopup.IsOpen)
         {
             OutputDevicePopup.IsOpen = false;
             return;
         }
 
-        await RefreshOutputDevicesAsync();
+        await RefreshOutputDevicesAsync(_pendingOutputDeviceId);
         if (_outputDevices.Count > 0)
         {
             OutputDevicePopup.IsOpen = true;
@@ -1675,7 +1684,10 @@ public partial class MainWindow : Window
 
         e.Handled = true;
         _outputDeviceApplyTimer.Stop();
+        OutputDeviceStatusPopup.IsOpen = false;
         _pendingOutputDeviceId = null;
+        _pendingOutputDeviceWheelSteps = 0;
+        _outputDeviceWheelUsesCompactStatus = false;
         OutputDeviceList.SelectedItem = device;
         if (await SwitchOutputDeviceAsync(device))
         {
@@ -1683,22 +1695,12 @@ public partial class MainWindow : Window
         }
     }
 
-    private void OutputDeviceList_OnPreviewMouseWheel(
+    private void OutputDevicePopup_OnPreviewMouseWheel(
         object sender,
         MouseWheelEventArgs e)
     {
         e.Handled = true;
-        var scrollViewer = FindVisualDescendant<ScrollViewer>(OutputDeviceList);
-        if (scrollViewer is null || e.Delta == 0)
-        {
-            return;
-        }
-
-        var nextOffset = Math.Clamp(
-            scrollViewer.VerticalOffset - e.Delta / 3d,
-            0,
-            scrollViewer.ScrollableHeight);
-        scrollViewer.ScrollToVerticalOffset(nextOffset);
+        QueueOutputDeviceFromWheel(e.Delta, useCompactStatus: false);
     }
 
     private static T? FindVisualDescendant<T>(DependencyObject parent)
@@ -1721,21 +1723,38 @@ public partial class MainWindow : Window
         return null;
     }
 
+    private static T? FindVisualAncestor<T>(DependencyObject? child)
+        where T : DependencyObject
+    {
+        while (child is not null)
+        {
+            if (child is T match)
+            {
+                return match;
+            }
+
+            child = VisualTreeHelper.GetParent(child);
+        }
+
+        return null;
+    }
+
     private void OutputDeviceHost_OnPreviewMouseWheel(
         object sender,
         MouseWheelEventArgs e)
     {
         e.Handled = true;
-        QueueOutputDeviceFromWheel(e.Delta);
+        QueueOutputDeviceFromWheel(e.Delta, useCompactStatus: true);
     }
 
-    private void QueueOutputDeviceFromWheel(int delta)
+    private void QueueOutputDeviceFromWheel(int delta, bool useCompactStatus)
     {
         if (!_metricSettings.OutputDeviceSwitcherEnabled || delta == 0)
         {
             return;
         }
 
+        _outputDeviceWheelUsesCompactStatus = useCompactStatus;
         var stepCount = GetWheelStepCount(delta);
         _pendingOutputDeviceWheelSteps += delta > 0 ? -stepCount : stepCount;
         _ = ProcessOutputDeviceWheelAsync();
@@ -1760,6 +1779,14 @@ public partial class MainWindow : Window
                 _outputDevices.Count == 0)
             {
                 _pendingOutputDeviceWheelSteps = 0;
+                if (_outputDeviceWheelUsesCompactStatus)
+                {
+                    OutputDeviceStatusText.Text = "暂无可用输出设备";
+                    OutputDeviceStatusPopup.IsOpen = true;
+                    _outputDeviceApplyTimer.Stop();
+                    _outputDeviceApplyTimer.Start();
+                }
+
                 return;
             }
 
@@ -1791,11 +1818,21 @@ public partial class MainWindow : Window
 
                 var nextDevice = _outputDevices[nextIndex];
                 _pendingOutputDeviceId = nextDevice.Id;
-                OutputDevicePopup.IsOpen = true;
                 OutputDeviceList.SelectedItem = nextDevice;
-                OutputDeviceList.ScrollIntoView(nextDevice);
                 OutputDeviceCurrentText.Text = nextDevice.DisplayName;
-                OutputDeviceButton.ToolTip = $"即将切换到：{nextDevice.DisplayName}";
+                if (_outputDeviceWheelUsesCompactStatus)
+                {
+                    OutputDeviceStatusText.Text = $"输出设备：{nextDevice.DisplayName}";
+                    OutputDeviceStatusPopup.IsOpen = true;
+                    OutputDevicePopup.IsOpen = false;
+                }
+                else
+                {
+                    OutputDeviceStatusPopup.IsOpen = false;
+                    OutputDevicePopup.IsOpen = true;
+                    OutputDeviceList.ScrollIntoView(nextDevice);
+                }
+
                 _outputDeviceApplyTimer.Stop();
                 _outputDeviceApplyTimer.Start();
             }
@@ -1837,13 +1874,16 @@ public partial class MainWindow : Window
     private async void OnOutputDeviceApplyTimerTick(object? sender, EventArgs e)
     {
         _outputDeviceApplyTimer.Stop();
+        OutputDevicePopup.IsOpen = false;
+        OutputDeviceStatusPopup.IsOpen = false;
+        _outputDeviceWheelUsesCompactStatus = false;
         var deviceId = _pendingOutputDeviceId;
         _pendingOutputDeviceId = null;
         var device = _outputDevices.FirstOrDefault(candidate =>
             string.Equals(candidate.Id, deviceId, StringComparison.OrdinalIgnoreCase));
-        if (device is not null && await SwitchOutputDeviceAsync(device))
+        if (device is not null)
         {
-            OutputDevicePopup.IsOpen = false;
+            await SwitchOutputDeviceAsync(device);
         }
     }
 
@@ -1931,6 +1971,10 @@ public partial class MainWindow : Window
             VolumeControlButton.ToolTip = snapshot is null
                 ? "当前媒体没有可用的音频会话；恢复播放后可重新连接"
                 : $"{snapshot.DisplayName}：{snapshot.VolumePercent}%";
+            if (VolumeStatusPopup.IsOpen)
+            {
+                UpdateVolumeStatusText();
+            }
         }
         finally
         {
@@ -1945,6 +1989,8 @@ public partial class MainWindow : Window
             return;
         }
 
+        VolumeStatusPopup.IsOpen = false;
+        _volumePopupCloseTimer.Stop();
         if (VolumeControlPopup.IsOpen)
         {
             VolumeControlPopup.IsOpen = false;
@@ -1962,7 +2008,7 @@ public partial class MainWindow : Window
         MouseWheelEventArgs e)
     {
         e.Handled = true;
-        QueueVolumeWheel(e.Delta);
+        QueueVolumeWheel(e.Delta, useCompactStatus: true);
     }
 
     private void VolumeControlPopup_OnPreviewMouseWheel(
@@ -1970,16 +2016,17 @@ public partial class MainWindow : Window
         MouseWheelEventArgs e)
     {
         e.Handled = true;
-        QueueVolumeWheel(e.Delta);
+        QueueVolumeWheel(e.Delta, useCompactStatus: false);
     }
 
-    private void QueueVolumeWheel(int delta)
+    private void QueueVolumeWheel(int delta, bool useCompactStatus)
     {
         if (!_metricSettings.VolumeControlEnabled || delta == 0)
         {
             return;
         }
 
+        _volumeWheelUsesCompactStatus = useCompactStatus;
         var stepCount = GetWheelStepCount(delta);
         _pendingVolumeWheelSteps += delta > 0 ? stepCount : -stepCount;
         _ = ProcessVolumeWheelAsync();
@@ -2012,7 +2059,7 @@ public partial class MainWindow : Window
             _pendingVolumeWheelSteps = 0;
             if (_currentApplicationVolume is null)
             {
-                VolumeControlPopup.IsOpen = true;
+                ShowVolumeWheelFeedback(_volumeWheelUsesCompactStatus);
                 return;
             }
 
@@ -2028,9 +2075,7 @@ public partial class MainWindow : Window
             };
             SetVolumeSliderValue(nextVolume);
             QueueVolumeApply(nextVolume);
-            VolumeControlPopup.IsOpen = true;
-            _volumePopupCloseTimer.Stop();
-            _volumePopupCloseTimer.Start();
+            ShowVolumeWheelFeedback(_volumeWheelUsesCompactStatus);
         }
         finally
         {
@@ -2055,11 +2100,89 @@ public partial class MainWindow : Window
                 VolumeControlButton.ToolTip =
                     $"{_currentApplicationVolume.DisplayName}：{volumePercent}%";
             }
+
+            UpdateVolumeStatusText();
         }
         finally
         {
             _isUpdatingVolumeSlider = false;
         }
+    }
+
+    private void ShowVolumeWheelFeedback(bool useCompactStatus)
+    {
+        if (useCompactStatus)
+        {
+            UpdateVolumeStatusText();
+            VolumeStatusPopup.IsOpen = true;
+            VolumeControlPopup.IsOpen = false;
+        }
+        else
+        {
+            VolumeStatusPopup.IsOpen = false;
+            VolumeControlPopup.IsOpen = true;
+        }
+
+        ScheduleVolumeInteractionClose();
+    }
+
+    private void UpdateVolumeStatusText()
+    {
+        var sourceName = _currentApplicationVolume?.DisplayName;
+        if (string.IsNullOrWhiteSpace(sourceName))
+        {
+            sourceName = _mediaSessionService.SelectedSourceName;
+        }
+
+        if (string.IsNullOrWhiteSpace(sourceName))
+        {
+            sourceName = "当前媒体";
+        }
+
+        var volume = _currentApplicationVolume is null
+            ? "暂无"
+            : $"{_currentApplicationVolume.VolumePercent}%";
+        VolumeStatusText.Text = $"{sourceName}：{volume}";
+    }
+
+    private void ScheduleVolumeInteractionClose()
+    {
+        _volumePopupCloseTimer.Stop();
+        _volumePopupCloseTimer.Start();
+    }
+
+    private void CurrentMediaVolumeSlider_OnPreviewMouseLeftButtonDown(
+        object sender,
+        MouseButtonEventArgs e)
+    {
+        if (sender is not Slider slider ||
+            !slider.IsEnabled ||
+            e.LeftButton != MouseButtonState.Pressed ||
+            FindVisualAncestor<Thumb>(e.OriginalSource as DependencyObject) is not null)
+        {
+            return;
+        }
+
+        var track = FindVisualDescendant<Track>(slider);
+        if (track is null || track.ActualHeight <= 0)
+        {
+            return;
+        }
+
+        var thumbHeight = track.Thumb?.ActualHeight ?? 0;
+        var usableHeight = Math.Max(1, track.ActualHeight - thumbHeight);
+        var position = Math.Clamp(
+            e.GetPosition(track).Y - thumbHeight / 2,
+            0,
+            usableHeight);
+        var fraction = 1 - position / usableHeight;
+        if (track.IsDirectionReversed)
+        {
+            fraction = 1 - fraction;
+        }
+
+        slider.Value = slider.Minimum + fraction * (slider.Maximum - slider.Minimum);
+        e.Handled = true;
     }
 
     private void CurrentMediaVolumeSlider_OnValueChanged(
@@ -2079,6 +2202,8 @@ public partial class MainWindow : Window
         };
         VolumePercentText.Text = $"{volumePercent}%";
         QueueVolumeApply(volumePercent);
+        VolumeStatusPopup.IsOpen = false;
+        ScheduleVolumeInteractionClose();
     }
 
     private void QueueVolumeApply(int volumePercent)
@@ -2122,17 +2247,18 @@ public partial class MainWindow : Window
     private void OnVolumePopupCloseTimerTick(object? sender, EventArgs e)
     {
         _volumePopupCloseTimer.Stop();
-        if (VolumeControlPopup.Child is UIElement { IsMouseOver: true })
-        {
-            return;
-        }
-
+        VolumeStatusPopup.IsOpen = false;
         VolumeControlPopup.IsOpen = false;
+        _volumeWheelUsesCompactStatus = false;
     }
 
     private void VolumeControlPopup_OnClosed(object? sender, EventArgs e)
     {
-        _volumePopupCloseTimer.Stop();
+        if (!VolumeStatusPopup.IsOpen)
+        {
+            _volumePopupCloseTimer.Stop();
+        }
+
         ScheduleCollapse();
     }
 
@@ -2263,6 +2389,20 @@ public partial class MainWindow : Window
 
     private async void PlayerRoot_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
+        if (OutputDevicePopup.IsOpen)
+        {
+            e.Handled = true;
+            QueueOutputDeviceFromWheel(e.Delta, useCompactStatus: false);
+            return;
+        }
+
+        if (VolumeControlPopup.IsOpen)
+        {
+            e.Handled = true;
+            QueueVolumeWheel(e.Delta, useCompactStatus: false);
+            return;
+        }
+
         if (e.GetPosition(PlayerRoot).X >= MediaSwitchAreaWidth)
         {
             return;

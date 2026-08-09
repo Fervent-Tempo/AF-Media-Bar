@@ -21,8 +21,8 @@ internal sealed class AudioDeviceService
                 GetPolicyDeviceId(device.Id),
                 string.IsNullOrWhiteSpace(device.Name) ? device.Id : device.Name,
                 string.Equals(device.Id, defaultId, StringComparison.OrdinalIgnoreCase)))
-            .OrderByDescending(device => device.IsDefault)
-            .ThenBy(device => device.DisplayName, StringComparer.CurrentCultureIgnoreCase)
+            .OrderBy(device => device.DisplayName, StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(device => device.Id, StringComparer.OrdinalIgnoreCase)
             .ToArray();
     }
 
