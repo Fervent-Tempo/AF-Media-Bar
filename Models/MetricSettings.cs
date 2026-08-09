@@ -7,7 +7,9 @@ internal readonly record struct MetricSettings(
     bool ShowSystemGpu,
     bool ShowProcessMemory,
     bool LowGpuMode,
-    bool AudioMonitorEnabled)
+    bool AudioMonitorEnabled,
+    bool OutputDeviceSwitcherEnabled,
+    bool VolumeControlEnabled)
 {
     internal static MetricSettings Default { get; } = new(
         true,
@@ -16,6 +18,8 @@ internal readonly record struct MetricSettings(
         false,
         false,
         false,
+        false,
+        true,
         false);
 
     internal int SelectedCount => Enabled

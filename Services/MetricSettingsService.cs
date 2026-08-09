@@ -60,7 +60,17 @@ internal static class MetricSettingsService
                     currentKey,
                     legacyKey,
                     "AudioMonitorEnabled",
-                    MetricSettings.Default.AudioMonitorEnabled));
+                    MetricSettings.Default.AudioMonitorEnabled),
+                ReadBoolean(
+                    currentKey,
+                    legacyKey,
+                    "OutputDeviceSwitcherEnabled",
+                    MetricSettings.Default.OutputDeviceSwitcherEnabled),
+                ReadBoolean(
+                    currentKey,
+                    legacyKey,
+                    "VolumeControlEnabled",
+                    MetricSettings.Default.VolumeControlEnabled));
 
             if (currentKey is null || HasMissingValues(currentKey))
             {
@@ -92,6 +102,14 @@ internal static class MetricSettingsService
         key.SetValue("ShowProcessMemory", settings.ShowProcessMemory ? 1 : 0, RegistryValueKind.DWord);
         key.SetValue("LowConfigMode", settings.LowGpuMode ? 1 : 0, RegistryValueKind.DWord);
         key.SetValue("AudioMonitorEnabled", settings.AudioMonitorEnabled ? 1 : 0, RegistryValueKind.DWord);
+        key.SetValue(
+            "OutputDeviceSwitcherEnabled",
+            settings.OutputDeviceSwitcherEnabled ? 1 : 0,
+            RegistryValueKind.DWord);
+        key.SetValue(
+            "VolumeControlEnabled",
+            settings.VolumeControlEnabled ? 1 : 0,
+            RegistryValueKind.DWord);
     }
 
     private static bool ReadBoolean(
@@ -112,6 +130,8 @@ internal static class MetricSettingsService
             key.GetValue("ShowSystemGpu") is not int ||
             key.GetValue("ShowProcessMemory") is not int ||
             key.GetValue("LowConfigMode") is not int ||
-            key.GetValue("AudioMonitorEnabled") is not int;
+            key.GetValue("AudioMonitorEnabled") is not int ||
+            key.GetValue("OutputDeviceSwitcherEnabled") is not int ||
+            key.GetValue("VolumeControlEnabled") is not int;
     }
 }

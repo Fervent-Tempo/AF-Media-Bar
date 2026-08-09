@@ -1,4 +1,5 @@
 using System.IO;
+using System.Security.Cryptography;
 using System.Windows.Media.Imaging;
 using TaskbarPlayer.Models;
 using Windows.Media.Control;
@@ -9,7 +10,14 @@ internal sealed class MediaSessionService : IDisposable
 {
     private const int ArtworkDecodeWidth = 96;
     private static readonly TimeSpan SessionReconnectGracePeriod = TimeSpan.FromSeconds(6);
-    private static readonly TimeSpan ArtworkSettlePeriod = TimeSpan.FromMilliseconds(260);
+    private static readonly TimeSpan[] ArtworkRefreshDelays =
+    [
+        TimeSpan.FromMilliseconds(220),
+        TimeSpan.FromMilliseconds(380),
+        TimeSpan.FromMilliseconds(600),
+        TimeSpan.FromMilliseconds(900),
+        TimeSpan.FromMilliseconds(1500)
+    ];
 
     private static readonly (string Name, string[] Tokens)[] SourceNames =
     [
@@ -38,6 +46,9 @@ internal sealed class MediaSessionService : IDisposable
     private CancellationTokenSource? _sessionReconnectCancellation;
     private CancellationTokenSource? _artworkRefreshCancellation;
     private MediaSnapshot _lastSnapshot = MediaSnapshot.Disconnected;
+    private string? _artworkIdentity;
+    private string? _artworkFingerprint;
+    private string? _pendingArtworkIdentity;
     private int _refreshVersion;
     private bool _disposed;
 
@@ -377,6 +388,10 @@ internal sealed class MediaSessionService : IDisposable
             return;
         }
 
+        CancelArtworkRefresh();
+        _artworkIdentity = null;
+        _artworkFingerprint = null;
+
         if (_session is not null)
         {
             _session.MediaPropertiesChanged -= OnMediaPropertiesChanged;
@@ -428,7 +443,6 @@ internal sealed class MediaSessionService : IDisposable
     private async Task RefreshMediaPropertiesAsync()
     {
         var version = Interlocked.Increment(ref _refreshVersion);
-        CancelArtworkRefresh();
         var session = _session;
         var entry = _entries.FirstOrDefault(candidate =>
             ReferenceEquals(candidate.Session, session));
@@ -448,26 +462,37 @@ internal sealed class MediaSessionService : IDisposable
                 ? mediaProperties.Artist
                 : mediaProperties.AlbumArtist;
             artist = string.IsNullOrWhiteSpace(artist) ? "未知创作者" : artist;
-            var mediaChanged = !_lastSnapshot.IsConnected ||
-                !string.Equals(
-                    _lastSnapshot.SourceId,
-                    entry.SourceId,
-                    StringComparison.OrdinalIgnoreCase) ||
-                !string.Equals(_lastSnapshot.Title, title, StringComparison.Ordinal) ||
-                !string.Equals(_lastSnapshot.Artist, artist, StringComparison.Ordinal);
-            var canReuseArtwork = !mediaChanged && _lastSnapshot.Artwork is not null;
-            var artwork = canReuseArtwork
+            var artworkIdentity = BuildArtworkIdentity(
+                entry,
+                mediaProperties,
+                title,
+                artist);
+            var artwork = string.Equals(
+                    _artworkIdentity,
+                    artworkIdentity,
+                    StringComparison.Ordinal) &&
+                _lastSnapshot.Artwork is not null
                 ? _lastSnapshot.Artwork
-                : await LoadArtworkAsync(mediaProperties.Thumbnail);
+                : null;
             if (version != _refreshVersion || !ReferenceEquals(session, _session))
             {
                 return;
             }
 
             Publish(CreateSnapshot(session, entry, title, artist, artwork));
-            if (mediaChanged)
+            if (artwork is null && !string.Equals(
+                    _pendingArtworkIdentity,
+                    artworkIdentity,
+                    StringComparison.Ordinal))
             {
-                ScheduleSettledArtworkRefresh(session, entry, version);
+                var previousFingerprint = _artworkFingerprint;
+                CancelArtworkRefresh();
+                _pendingArtworkIdentity = artworkIdentity;
+                ScheduleSettledArtworkRefresh(
+                    session,
+                    entry,
+                    artworkIdentity,
+                    previousFingerprint);
             }
         }
         catch
@@ -510,43 +535,98 @@ internal sealed class MediaSessionService : IDisposable
     private void ScheduleSettledArtworkRefresh(
         GlobalSystemMediaTransportControlsSession session,
         SessionEntry entry,
-        int version)
+        string artworkIdentity,
+        string? previousFingerprint)
     {
         var cancellation = new CancellationTokenSource();
         var previous = Interlocked.Exchange(ref _artworkRefreshCancellation, cancellation);
         previous?.Cancel();
         previous?.Dispose();
-        _ = RefreshSettledArtworkAsync(session, entry, version, cancellation);
+        _ = RefreshSettledArtworkAsync(
+            session,
+            entry,
+            artworkIdentity,
+            previousFingerprint,
+            cancellation);
     }
 
     private async Task RefreshSettledArtworkAsync(
         GlobalSystemMediaTransportControlsSession session,
         SessionEntry entry,
-        int version,
+        string artworkIdentity,
+        string? previousFingerprint,
         CancellationTokenSource cancellation)
     {
         try
         {
-            await Task.Delay(ArtworkSettlePeriod, cancellation.Token);
-            var mediaProperties = await session.TryGetMediaPropertiesAsync();
-            cancellation.Token.ThrowIfCancellationRequested();
-            if (version != _refreshVersion || !ReferenceEquals(session, _session))
+            for (var attempt = 0; attempt < ArtworkRefreshDelays.Length; attempt++)
             {
-                return;
-            }
+                await Task.Delay(ArtworkRefreshDelays[attempt], cancellation.Token);
+                var mediaProperties = await session.TryGetMediaPropertiesAsync();
+                cancellation.Token.ThrowIfCancellationRequested();
+                if (!ReferenceEquals(session, _session))
+                {
+                    return;
+                }
 
-            var title = string.IsNullOrWhiteSpace(mediaProperties.Title)
-                ? entry.DisplayName
-                : mediaProperties.Title;
-            var artist = !string.IsNullOrWhiteSpace(mediaProperties.Artist)
-                ? mediaProperties.Artist
-                : mediaProperties.AlbumArtist;
-            artist = string.IsNullOrWhiteSpace(artist) ? "未知创作者" : artist;
-            var artwork = await LoadArtworkAsync(mediaProperties.Thumbnail);
-            cancellation.Token.ThrowIfCancellationRequested();
-            if (version == _refreshVersion && ReferenceEquals(session, _session))
-            {
-                Publish(CreateSnapshot(session, entry, title, artist, artwork));
+                var title = string.IsNullOrWhiteSpace(mediaProperties.Title)
+                    ? entry.DisplayName
+                    : mediaProperties.Title;
+                var artist = !string.IsNullOrWhiteSpace(mediaProperties.Artist)
+                    ? mediaProperties.Artist
+                    : mediaProperties.AlbumArtist;
+                artist = string.IsNullOrWhiteSpace(artist) ? "未知创作者" : artist;
+                var currentIdentity = BuildArtworkIdentity(
+                    entry,
+                    mediaProperties,
+                    title,
+                    artist);
+                if (!string.Equals(
+                        currentIdentity,
+                        artworkIdentity,
+                        StringComparison.Ordinal))
+                {
+                    _ = RefreshMediaPropertiesAsync();
+                    return;
+                }
+
+                ArtworkLoadResult artwork;
+                try
+                {
+                    artwork = await LoadArtworkAsync(mediaProperties.Thumbnail);
+                }
+                catch when (attempt < ArtworkRefreshDelays.Length - 1)
+                {
+                    continue;
+                }
+                cancellation.Token.ThrowIfCancellationRequested();
+                if (artwork.Artwork is null || artwork.Fingerprint is null)
+                {
+                    continue;
+                }
+
+                var differsFromPrevious = !string.Equals(
+                    artwork.Fingerprint,
+                    previousFingerprint,
+                    StringComparison.Ordinal);
+                var showSameCoverFallback = attempt == 1;
+                var isFinalAttempt = attempt == ArtworkRefreshDelays.Length - 1;
+                if (differsFromPrevious || showSameCoverFallback || isFinalAttempt)
+                {
+                    _artworkIdentity = artworkIdentity;
+                    _artworkFingerprint = artwork.Fingerprint;
+                    Publish(CreateSnapshot(
+                        session,
+                        entry,
+                        title,
+                        artist,
+                        artwork.Artwork));
+                }
+
+                if (differsFromPrevious)
+                {
+                    return;
+                }
             }
         }
         catch (OperationCanceledException)
@@ -569,6 +649,14 @@ internal sealed class MediaSessionService : IDisposable
             {
                 cancellation.Dispose();
             }
+
+            if (string.Equals(
+                    _pendingArtworkIdentity,
+                    artworkIdentity,
+                    StringComparison.Ordinal))
+            {
+                _pendingArtworkIdentity = null;
+            }
         }
     }
 
@@ -577,6 +665,7 @@ internal sealed class MediaSessionService : IDisposable
         var cancellation = Interlocked.Exchange(ref _artworkRefreshCancellation, null);
         cancellation?.Cancel();
         cancellation?.Dispose();
+        _pendingArtworkIdentity = null;
     }
 
     private void RefreshPlaybackInfo()
@@ -640,12 +729,27 @@ internal sealed class MediaSessionService : IDisposable
         }
     }
 
-    private static async Task<BitmapImage?> LoadArtworkAsync(
+    private static string BuildArtworkIdentity(
+        SessionEntry entry,
+        GlobalSystemMediaTransportControlsSessionMediaProperties mediaProperties,
+        string title,
+        string artist)
+    {
+        return string.Join(
+            '\u001f',
+            entry.Key,
+            title,
+            artist,
+            mediaProperties.AlbumTitle ?? string.Empty,
+            mediaProperties.TrackNumber.ToString());
+    }
+
+    private static async Task<ArtworkLoadResult> LoadArtworkAsync(
         Windows.Storage.Streams.IRandomAccessStreamReference? thumbnail)
     {
         if (thumbnail is null)
         {
-            return null;
+            return default;
         }
 
         using var randomAccessStream = await thumbnail.OpenReadAsync();
@@ -655,7 +759,19 @@ internal sealed class MediaSessionService : IDisposable
         // initial loads and source switching use the same reliable path.
         using var memoryStream = new MemoryStream();
         await sourceStream.CopyToAsync(memoryStream);
+        if (memoryStream.Length == 0)
+        {
+            return default;
+        }
+
         memoryStream.Position = 0;
+        if (!memoryStream.TryGetBuffer(out var buffer))
+        {
+            return default;
+        }
+
+        var fingerprint = Convert.ToHexString(SHA256.HashData(
+            buffer.AsSpan(0, checked((int)memoryStream.Length))));
 
         var bitmap = new BitmapImage();
         bitmap.BeginInit();
@@ -664,7 +780,7 @@ internal sealed class MediaSessionService : IDisposable
         bitmap.StreamSource = memoryStream;
         bitmap.EndInit();
         bitmap.Freeze();
-        return bitmap;
+        return new ArtworkLoadResult(bitmap, fingerprint);
     }
 
     public void Dispose()
@@ -696,4 +812,8 @@ internal sealed class MediaSessionService : IDisposable
         string SourceId,
         string DisplayName,
         GlobalSystemMediaTransportControlsSession Session);
+
+    private readonly record struct ArtworkLoadResult(
+        BitmapImage? Artwork,
+        string? Fingerprint);
 }

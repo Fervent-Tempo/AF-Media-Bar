@@ -103,6 +103,63 @@
       </Setter>
     </Style>
 
+    <Style x:Key="VolumeSliderStyle" TargetType="Slider">
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Slider">
+            <Grid Width="28"
+                  Height="{TemplateBinding Height}"
+                  HorizontalAlignment="Center">
+              <Track x:Name="PART_Track"
+                     Margin="0,7"
+                     Orientation="Vertical"
+                     IsDirectionReversed="{TemplateBinding IsDirectionReversed}">
+                <Track.DecreaseRepeatButton>
+                  <RepeatButton Command="{x:Static Slider.DecreaseLarge}"
+                                Focusable="False">
+                    <RepeatButton.Template>
+                      <ControlTemplate TargetType="RepeatButton">
+                        <Border Width="4"
+                                HorizontalAlignment="Center"
+                                Background="#B96F9AAA"
+                                CornerRadius="2" />
+                      </ControlTemplate>
+                    </RepeatButton.Template>
+                  </RepeatButton>
+                </Track.DecreaseRepeatButton>
+                <Track.Thumb>
+                  <Thumb Width="15" Height="15">
+                    <Thumb.Template>
+                      <ControlTemplate TargetType="Thumb">
+                        <Border Background="{StaticResource PrimaryTextBrush}"
+                                BorderBrush="#806F9AAA"
+                                BorderThickness="2"
+                                CornerRadius="7.5" />
+                      </ControlTemplate>
+                    </Thumb.Template>
+                  </Thumb>
+                </Track.Thumb>
+                <Track.IncreaseRepeatButton>
+                  <RepeatButton Command="{x:Static Slider.IncreaseLarge}"
+                                Focusable="False">
+                    <RepeatButton.Template>
+                      <ControlTemplate TargetType="RepeatButton">
+                        <Border Width="4"
+                                HorizontalAlignment="Center"
+                                Background="#30FFFFFF"
+                                CornerRadius="2" />
+                      </ControlTemplate>
+                    </RepeatButton.Template>
+                  </RepeatButton>
+                </Track.IncreaseRepeatButton>
+              </Track>
+            </Grid>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
     <Style x:Key="TransportButtonStyle" TargetType="Button">
       <Setter Property="Width" Value="36" />
       <Setter Property="Height" Value="36" />

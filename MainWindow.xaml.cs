@@ -18,6 +18,14 @@ public partial class MainWindow : Window
     private const double CollapsedInfoWidth = 210;
     private const double MonitoredInfoWidth = 149;
     private const double ExpandedInfoWidth = 96;
+    private const double PlayerWidthWithoutExtras = 271;
+    private const double MetricsAreaWidth = 78;
+    private const double OutputDeviceAreaWidth = 40;
+    private const double VolumeControlAreaWidth = 40;
+    private const double MediaSwitchAreaWidth = 254;
+    private const double CentralHostWidth = 210;
+    private const double AudioVisualizerWidth = 60;
+    private const double AudioVisualizerCenterBias = 10;
     private const int HorizontalMarginAt96Dpi = 8;
     private const int VerticalMarginAt96Dpi = 4;
     private const int TaskbarWatchdogIntervalMilliseconds = 80;
@@ -29,6 +37,7 @@ public partial class MainWindow : Window
     private readonly SystemMetricsService _systemMetricsService = new();
     private readonly TaskbarPlacementService _taskbarPlacementService = new();
     private readonly AudioDeviceService _audioDeviceService = new();
+    private readonly ApplicationVolumeService _applicationVolumeService = new();
     private readonly DispatcherTimer _positionTimer;
     private readonly DispatcherTimer _taskbarAnimationTimer;
     private readonly DispatcherTimer _taskbarWatchdogTimer;
@@ -39,6 +48,8 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _marqueeTimer;
     private readonly DispatcherTimer _audioMonitorTimer;
     private readonly DispatcherTimer _outputDeviceApplyTimer;
+    private readonly DispatcherTimer _volumeApplyTimer;
+    private readonly DispatcherTimer _volumePopupCloseTimer;
     private MetricSettings _metricSettings;
     private PlacementSettings _placementSettings;
     private TaskbarSettings _taskbarSettings;
@@ -64,12 +75,17 @@ public partial class MainWindow : Window
     private int _placementRefreshRequested;
     private int _lastExpandedTaskbarHeight;
     private string? _pendingOutputDeviceId;
+    private ApplicationVolumeSnapshot? _currentApplicationVolume;
+    private int? _pendingVolumePercent;
+    private int _volumeRefreshVersion;
+    private string? _lastVolumeSourceId;
     private DateTime _animationStableSinceUtc;
     private bool _hasPresented;
     private bool _isExpanded;
     private bool _isMenuOpen;
     private bool _isDragging;
     private bool _dragMoved;
+    private bool _isUpdatingVolumeSlider;
     private readonly float[] _audioSpectrum = new float[AudioMonitorService.BandCount];
     private readonly float[] _smoothedAudioSpectrum = new float[AudioMonitorService.BandCount];
     private Border[] _audioBars = null!;
@@ -163,6 +179,18 @@ public partial class MainWindow : Window
             OnOutputDeviceApplyTimerTick,
             Dispatcher);
         _outputDeviceApplyTimer.Stop();
+        _volumeApplyTimer = new DispatcherTimer(
+            TimeSpan.FromMilliseconds(90),
+            DispatcherPriority.Background,
+            OnVolumeApplyTimerTick,
+            Dispatcher);
+        _volumeApplyTimer.Stop();
+        _volumePopupCloseTimer = new DispatcherTimer(
+            TimeSpan.FromSeconds(1),
+            DispatcherPriority.Background,
+            OnVolumePopupCloseTimerTick,
+            Dispatcher);
+        _volumePopupCloseTimer.Stop();
 
         _mediaSessionService.SnapshotChanged += OnSnapshotChanged;
         _mediaSessionService.SessionsChanged += OnSessionsChanged;
@@ -246,6 +274,8 @@ public partial class MainWindow : Window
         RestoreDefaultWindowOwner();
         _audioMonitorTimer.Stop();
         _outputDeviceApplyTimer.Stop();
+        _volumeApplyTimer.Stop();
+        _volumePopupCloseTimer.Stop();
         _audioMonitorService?.Dispose();
         _audioMonitorService = null;
         _taskbarEventWatcher?.Dispose();
@@ -964,6 +994,7 @@ public partial class MainWindow : Window
         if (!_isExpanded ||
             _isMenuOpen ||
             OutputDevicePopup.IsOpen ||
+            VolumeControlPopup.IsOpen ||
             _isDragging ||
             !NativeMethods.GetCursorPos(out var cursor) ||
             !NativeMethods.GetWindowRect(_windowHandle, out var windowRect))
@@ -993,6 +1024,19 @@ public partial class MainWindow : Window
 
     private void ApplySnapshot(MediaSnapshot snapshot)
     {
+        var volumeSourceChanged = !string.Equals(
+            _lastVolumeSourceId,
+            snapshot.SourceId,
+            StringComparison.OrdinalIgnoreCase);
+        _lastVolumeSourceId = snapshot.SourceId;
+        if (volumeSourceChanged)
+        {
+            Interlocked.Increment(ref _volumeRefreshVersion);
+            _volumeApplyTimer.Stop();
+            _pendingVolumePercent = null;
+            _currentApplicationVolume = null;
+        }
+
         TitleText.Text = snapshot.Title;
         ArtistText.Text = snapshot.Artist;
         ArtworkImage.Source = snapshot.Artwork;
@@ -1015,6 +1059,14 @@ public partial class MainWindow : Window
             snapshot.IsConnected
                 ? $"AF Shell · {snapshot.SourceName}：{snapshot.Title} - {snapshot.Artist}"
                 : "AF Shell · Media Bar - 等待媒体播放");
+        if (_metricSettings.VolumeControlEnabled &&
+            (volumeSourceChanged || VolumeControlPopup.IsOpen))
+        {
+            _ = RefreshCurrentMediaVolumeAsync(
+                snapshot.SourceId,
+                snapshot.SourceName);
+        }
+
         ScheduleMarqueeUpdate();
     }
 
@@ -1089,6 +1141,7 @@ public partial class MainWindow : Window
         _collapseTimer.Stop();
         if (!_isMenuOpen &&
             !OutputDevicePopup.IsOpen &&
+            !VolumeControlPopup.IsOpen &&
             !_isDragging &&
             !PlayerRoot.IsMouseOver)
         {
@@ -1155,6 +1208,24 @@ public partial class MainWindow : Window
             UIElement.OpacityProperty,
             CreateAnimation(artistOpacity, duration, easing));
         ScheduleMarqueeUpdate();
+    }
+
+    private void InfoHost_OnSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        UpdateAudioVisualizerPlacement();
+    }
+
+    private void UpdateAudioVisualizerPlacement()
+    {
+        var centeredLeft =
+            (CentralHostWidth - AudioVisualizerWidth) / 2 +
+            AudioVisualizerCenterBias;
+        var rightmostLeft = CentralHostWidth - AudioVisualizerWidth;
+        var titleSafeLeft = InfoHost.ActualWidth + 2;
+        AudioVisualizerTransform.X = Math.Clamp(
+            Math.Max(centeredLeft, titleSafeLeft),
+            centeredLeft,
+            rightmostLeft);
     }
 
     private static DoubleAnimation CreateAnimation(
@@ -1242,8 +1313,11 @@ public partial class MainWindow : Window
     {
         transform.BeginAnimation(TranslateTransform.XProperty, null);
         transform.X = 0;
+        text.Width = double.NaN;
         text.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        var overflow = text.DesiredSize.Width - viewport.ActualWidth;
+        var textWidth = Math.Ceiling(text.DesiredSize.Width + 1);
+        text.Width = Math.Max(viewport.ActualWidth, textWidth);
+        var overflow = textWidth - viewport.ActualWidth;
         if (overflow <= 2 || viewport.ActualWidth <= 0)
         {
             return;
@@ -1253,7 +1327,7 @@ public partial class MainWindow : Window
         var animation = new DoubleAnimation
         {
             From = 0,
-            To = -overflow,
+            To = -(overflow + 8),
             BeginTime = TimeSpan.FromSeconds(1),
             Duration = TimeSpan.FromSeconds(travelSeconds),
             AutoReverse = true,
@@ -1279,14 +1353,12 @@ public partial class MainWindow : Window
         {
             MetricsText.Text = string.Empty;
             MetricsHost.Visibility = Visibility.Collapsed;
-            MetricsDivider.Visibility = Visibility.Collapsed;
-            PlayerRoot.Width = 294;
+            UpdatePlayerWidth(metricsVisible: false);
             return;
         }
 
         MetricsHost.Visibility = Visibility.Visible;
-        MetricsDivider.Visibility = Visibility.Visible;
-        PlayerRoot.Width = 389;
+        UpdatePlayerWidth(metricsVisible: true);
         if (advanceCycle)
         {
             _metricCycleIndex = (_metricCycleIndex + 1) % selectedCount;
@@ -1297,6 +1369,14 @@ public partial class MainWindow : Window
         }
 
         SetMetricText(BuildMetricValue(_lastMetricsSnapshot, _metricCycleIndex), advanceCycle);
+    }
+
+    private void UpdatePlayerWidth(bool metricsVisible)
+    {
+        PlayerRoot.Width = PlayerWidthWithoutExtras +
+            (metricsVisible ? MetricsAreaWidth : 0) +
+            (_metricSettings.OutputDeviceSwitcherEnabled ? OutputDeviceAreaWidth : 0) +
+            (_metricSettings.VolumeControlEnabled ? VolumeControlAreaWidth : 0);
     }
 
     private string BuildMetricValue(SystemMetricsSnapshot sample, int selectedIndex)
@@ -1360,6 +1440,8 @@ public partial class MainWindow : Window
     private void ApplyMetricSettings()
     {
         SyncMetricMenuState();
+        ApplyOutputDeviceSettings();
+        ApplyVolumeControlSettings();
         _metricCycleIndex = 0;
         _metricCycleTicks = 0;
         UpdateMetrics(advanceCycle: false);
@@ -1388,6 +1470,9 @@ public partial class MainWindow : Window
         ProcessMemoryMenuItem.IsChecked = _metricSettings.ShowProcessMemory;
         LowGpuModeMenuItem.IsChecked = _metricSettings.LowGpuMode;
         AudioMonitorMenuItem.IsChecked = _metricSettings.AudioMonitorEnabled;
+        OutputDeviceSwitcherMenuItem.IsChecked =
+            _metricSettings.OutputDeviceSwitcherEnabled;
+        VolumeControlMenuItem.IsChecked = _metricSettings.VolumeControlEnabled;
         SystemMemoryMenuItem.IsEnabled = _metricSettings.Enabled;
         SystemCpuMenuItem.IsEnabled = _metricSettings.Enabled;
         SystemGpuMenuItem.IsEnabled = _metricSettings.Enabled;
@@ -1403,7 +1488,9 @@ public partial class MainWindow : Window
             SystemGpuMenuItem.IsChecked,
             ProcessMemoryMenuItem.IsChecked,
             LowGpuModeMenuItem.IsChecked,
-            AudioMonitorMenuItem.IsChecked);
+            AudioMonitorMenuItem.IsChecked,
+            OutputDeviceSwitcherMenuItem.IsChecked,
+            VolumeControlMenuItem.IsChecked);
         try
         {
             MetricSettingsService.Save(_metricSettings);
@@ -1418,6 +1505,45 @@ public partial class MainWindow : Window
         }
 
         ApplyMetricSettings();
+    }
+
+    private void ApplyOutputDeviceSettings()
+    {
+        var enabled = _metricSettings.OutputDeviceSwitcherEnabled;
+        OutputDeviceHost.Visibility = enabled
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        if (enabled)
+        {
+            return;
+        }
+
+        OutputDevicePopup.IsOpen = false;
+        _outputDeviceApplyTimer.Stop();
+        _pendingOutputDeviceId = null;
+        _outputDevices = [];
+        OutputDeviceList.ItemsSource = null;
+    }
+
+    private void ApplyVolumeControlSettings()
+    {
+        var enabled = _metricSettings.VolumeControlEnabled;
+        VolumeControlHost.Visibility = enabled
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        if (enabled)
+        {
+            _ = RefreshCurrentMediaVolumeAsync(
+                _mediaSessionService.SelectedSourceId,
+                _mediaSessionService.SelectedSourceName);
+            return;
+        }
+
+        VolumeControlPopup.IsOpen = false;
+        _volumeApplyTimer.Stop();
+        _volumePopupCloseTimer.Stop();
+        _pendingVolumePercent = null;
+        _currentApplicationVolume = null;
     }
 
     private void ApplyAudioMonitorSettings()
@@ -1512,6 +1638,11 @@ public partial class MainWindow : Window
 
     private async void OutputDeviceButton_OnClick(object sender, RoutedEventArgs e)
     {
+        if (!_metricSettings.OutputDeviceSwitcherEnabled)
+        {
+            return;
+        }
+
         if (OutputDevicePopup.IsOpen)
         {
             OutputDevicePopup.IsOpen = false;
@@ -1565,6 +1696,11 @@ public partial class MainWindow : Window
 
     private async Task QueueOutputDeviceFromWheelAsync(int delta)
     {
+        if (!_metricSettings.OutputDeviceSwitcherEnabled)
+        {
+            return;
+        }
+
         if (_outputDevices.Count == 0)
         {
             await RefreshOutputDevicesAsync();
@@ -1661,6 +1797,227 @@ public partial class MainWindow : Window
 
     private void OutputDevicePopup_OnClosed(object? sender, EventArgs e)
     {
+        ScheduleCollapse();
+    }
+
+    private async Task RefreshCurrentMediaVolumeAsync(
+        string? sourceId,
+        string? sourceName)
+    {
+        if (!_metricSettings.VolumeControlEnabled)
+        {
+            return;
+        }
+
+        var version = Interlocked.Increment(ref _volumeRefreshVersion);
+        try
+        {
+            var snapshot = await Task.Run(() =>
+                    _applicationVolumeService.GetCurrentMediaVolume(sourceId, sourceName))
+                .WaitAsync(TimeSpan.FromSeconds(2));
+            if (version != _volumeRefreshVersion ||
+                !_metricSettings.VolumeControlEnabled)
+            {
+                return;
+            }
+
+            SetCurrentApplicationVolume(snapshot);
+        }
+        catch (Exception exception)
+        {
+            if (version != _volumeRefreshVersion)
+            {
+                return;
+            }
+
+            SetCurrentApplicationVolume(null);
+            VolumeControlButton.ToolTip = $"无法读取当前媒体音量：{exception.Message}";
+        }
+    }
+
+    private void SetCurrentApplicationVolume(ApplicationVolumeSnapshot? snapshot)
+    {
+        _currentApplicationVolume = snapshot;
+        _isUpdatingVolumeSlider = true;
+        try
+        {
+            CurrentMediaVolumeSlider.IsEnabled = snapshot is not null;
+            CurrentMediaVolumeSlider.Value = snapshot?.VolumePercent ?? 0;
+            VolumeMediaNameText.Text = snapshot?.DisplayName ?? "未找到媒体";
+            VolumePercentText.Text = snapshot is null
+                ? "--%"
+                : $"{snapshot.VolumePercent}%";
+            VolumeControlButton.ToolTip = snapshot is null
+                ? "未找到当前媒体的音量会话"
+                : $"{snapshot.DisplayName}：{snapshot.VolumePercent}%";
+        }
+        finally
+        {
+            _isUpdatingVolumeSlider = false;
+        }
+    }
+
+    private async void VolumeControlButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (!_metricSettings.VolumeControlEnabled)
+        {
+            return;
+        }
+
+        if (VolumeControlPopup.IsOpen)
+        {
+            VolumeControlPopup.IsOpen = false;
+            return;
+        }
+
+        await RefreshCurrentMediaVolumeAsync(
+            _mediaSessionService.SelectedSourceId,
+            _mediaSessionService.SelectedSourceName);
+        VolumeControlPopup.IsOpen = true;
+    }
+
+    private async void VolumeControlHost_OnPreviewMouseWheel(
+        object sender,
+        MouseWheelEventArgs e)
+    {
+        e.Handled = true;
+        await AdjustCurrentMediaVolumeAsync(e.Delta);
+    }
+
+    private async void VolumeControlPopup_OnPreviewMouseWheel(
+        object sender,
+        MouseWheelEventArgs e)
+    {
+        e.Handled = true;
+        await AdjustCurrentMediaVolumeAsync(e.Delta);
+    }
+
+    private async Task AdjustCurrentMediaVolumeAsync(int delta)
+    {
+        if (!_metricSettings.VolumeControlEnabled)
+        {
+            return;
+        }
+
+        if (_currentApplicationVolume is null)
+        {
+            await RefreshCurrentMediaVolumeAsync(
+                _mediaSessionService.SelectedSourceId,
+                _mediaSessionService.SelectedSourceName);
+        }
+
+        if (_currentApplicationVolume is null)
+        {
+            VolumeControlPopup.IsOpen = true;
+            return;
+        }
+
+        var nextVolume = Math.Clamp(
+            _currentApplicationVolume.VolumePercent + (delta > 0 ? 2 : -2),
+            0,
+            100);
+        _currentApplicationVolume = _currentApplicationVolume with
+        {
+            VolumePercent = nextVolume,
+            IsMuted = false
+        };
+        SetVolumeSliderValue(nextVolume);
+        QueueVolumeApply(nextVolume);
+        VolumeControlPopup.IsOpen = true;
+        _volumePopupCloseTimer.Stop();
+        _volumePopupCloseTimer.Start();
+    }
+
+    private void SetVolumeSliderValue(int volumePercent)
+    {
+        _isUpdatingVolumeSlider = true;
+        try
+        {
+            CurrentMediaVolumeSlider.Value = volumePercent;
+            VolumePercentText.Text = $"{volumePercent}%";
+            if (_currentApplicationVolume is not null)
+            {
+                VolumeControlButton.ToolTip =
+                    $"{_currentApplicationVolume.DisplayName}：{volumePercent}%";
+            }
+        }
+        finally
+        {
+            _isUpdatingVolumeSlider = false;
+        }
+    }
+
+    private void CurrentMediaVolumeSlider_OnValueChanged(
+        object sender,
+        RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_isUpdatingVolumeSlider || _currentApplicationVolume is null)
+        {
+            return;
+        }
+
+        var volumePercent = Math.Clamp((int)Math.Round(e.NewValue), 0, 100);
+        _currentApplicationVolume = _currentApplicationVolume with
+        {
+            VolumePercent = volumePercent,
+            IsMuted = false
+        };
+        VolumePercentText.Text = $"{volumePercent}%";
+        QueueVolumeApply(volumePercent);
+    }
+
+    private void QueueVolumeApply(int volumePercent)
+    {
+        _pendingVolumePercent = volumePercent;
+        _volumeApplyTimer.Stop();
+        _volumeApplyTimer.Start();
+    }
+
+    private async void OnVolumeApplyTimerTick(object? sender, EventArgs e)
+    {
+        _volumeApplyTimer.Stop();
+        var volumePercent = _pendingVolumePercent;
+        var application = _currentApplicationVolume;
+        _pendingVolumePercent = null;
+        if (!volumePercent.HasValue || application is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var changed = await Task.Run(() =>
+                    _applicationVolumeService.SetApplicationVolume(
+                        application.ProcessName,
+                        volumePercent.Value))
+                .WaitAsync(TimeSpan.FromSeconds(2));
+            if (!changed)
+            {
+                await RefreshCurrentMediaVolumeAsync(
+                    _mediaSessionService.SelectedSourceId,
+                    _mediaSessionService.SelectedSourceName);
+            }
+        }
+        catch (Exception exception)
+        {
+            VolumeControlButton.ToolTip = $"无法调节媒体音量：{exception.Message}";
+        }
+    }
+
+    private void OnVolumePopupCloseTimerTick(object? sender, EventArgs e)
+    {
+        _volumePopupCloseTimer.Stop();
+        if (VolumeControlPopup.Child is UIElement { IsMouseOver: true })
+        {
+            return;
+        }
+
+        VolumeControlPopup.IsOpen = false;
+    }
+
+    private void VolumeControlPopup_OnClosed(object? sender, EventArgs e)
+    {
+        _volumePopupCloseTimer.Stop();
         ScheduleCollapse();
     }
 
@@ -1791,7 +2148,7 @@ public partial class MainWindow : Window
 
     private async void PlayerRoot_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
-        if (OutputDeviceHost.IsMouseOver)
+        if (e.GetPosition(PlayerRoot).X >= MediaSwitchAreaWidth)
         {
             return;
         }

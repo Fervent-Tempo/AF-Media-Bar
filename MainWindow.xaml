@@ -68,6 +68,16 @@
                 ToolTip="在收起状态显示当前系统声音"
                 IsCheckable="True"
                 Click="MetricSetting_OnClick" />
+      <MenuItem x:Name="OutputDeviceSwitcherMenuItem"
+                Header="输出设备切换"
+                ToolTip="在播放器右侧显示快速切换按钮"
+                IsCheckable="True"
+                Click="MetricSetting_OnClick" />
+      <MenuItem x:Name="VolumeControlMenuItem"
+                Header="当前媒体音量"
+                ToolTip="显示当前媒体的独立音量调节按钮"
+                IsCheckable="True"
+                Click="MetricSetting_OnClick" />
       <MenuItem Header="位置">
         <MenuItem x:Name="AutomaticPlacementMenuItem"
                   Header="实验性：自动避让任务栏图标"
@@ -89,7 +99,7 @@
   </Window.ContextMenu>
 
   <Grid x:Name="PlayerRoot"
-        Width="294"
+        Width="389"
         Height="44"
         Background="#01000000"
         ClipToBounds="True"
@@ -103,6 +113,7 @@
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="44" />
       <ColumnDefinition Width="210" />
+      <ColumnDefinition Width="Auto" />
       <ColumnDefinition Width="Auto" />
       <ColumnDefinition Width="Auto" />
       <ColumnDefinition Width="Auto" />
@@ -144,6 +155,7 @@
             HorizontalAlignment="Left"
             VerticalAlignment="Center"
             Cursor="Hand"
+            SizeChanged="InfoHost_OnSizeChanged"
             MouseLeftButtonUp="ShowMediaSource_OnMouseLeftButtonUp">
         <Grid Height="40"
               Margin="9,0,8,0">
@@ -152,36 +164,43 @@
                 Height="40"
                 VerticalAlignment="Center"
                 ClipToBounds="True">
-            <TextBlock x:Name="TitleText"
-                       Text="等待媒体播放"
-                       VerticalAlignment="Center"
-                       FontFamily="Segoe UI Variable Display"
-                       FontSize="14"
-                       FontWeight="SemiBold"
-                       Foreground="{StaticResource PrimaryTextBrush}"
-                       TextWrapping="NoWrap">
-              <TextBlock.RenderTransform>
-                <TranslateTransform x:Name="TitleTransform" />
-              </TextBlock.RenderTransform>
-            </TextBlock>
+            <Canvas Height="40">
+              <TextBlock x:Name="TitleText"
+                         Canvas.Left="0"
+                         Canvas.Top="10"
+                         Text="等待媒体播放"
+                         FontFamily="Segoe UI Variable Display"
+                         FontSize="14"
+                         FontWeight="SemiBold"
+                         Foreground="{StaticResource PrimaryTextBrush}"
+                         TextWrapping="NoWrap">
+                <TextBlock.RenderTransform>
+                  <TranslateTransform x:Name="TitleTransform" />
+                </TextBlock.RenderTransform>
+              </TextBlock>
+            </Canvas>
           </Grid>
 
           <Grid x:Name="ArtistViewport"
                 Height="18"
                 VerticalAlignment="Bottom"
                 ClipToBounds="True">
-            <TextBlock x:Name="ArtistText"
-                       Text="请在任意应用中播放音频或视频"
-                       FontFamily="Segoe UI Variable Text"
-                       FontSize="11.5"
-                       Foreground="{StaticResource SecondaryTextBrush}"
-                       Opacity="0"
-                       IsHitTestVisible="False"
-                       TextWrapping="NoWrap">
-              <TextBlock.RenderTransform>
-                <TranslateTransform x:Name="ArtistTransform" Y="3" />
-              </TextBlock.RenderTransform>
-            </TextBlock>
+            <Canvas Height="18">
+              <TextBlock x:Name="ArtistText"
+                         Canvas.Left="0"
+                         Canvas.Top="1"
+                         Text="请在任意应用中播放音频或视频"
+                         FontFamily="Segoe UI Variable Text"
+                         FontSize="11.5"
+                         Foreground="{StaticResource SecondaryTextBrush}"
+                         Opacity="0"
+                         IsHitTestVisible="False"
+                         TextWrapping="NoWrap">
+                <TextBlock.RenderTransform>
+                  <TranslateTransform x:Name="ArtistTransform" Y="3" />
+                </TextBlock.RenderTransform>
+              </TextBlock>
+            </Canvas>
           </Grid>
         </Grid>
       </Grid>
@@ -227,13 +246,15 @@
         </StackPanel>
       </Border>
       <Border x:Name="AudioVisualizerHost"
-              Grid.Column="1"
+              Grid.ColumnSpan="2"
               Width="60"
-              Margin="0,0,1,0"
               HorizontalAlignment="Left"
               VerticalAlignment="Center"
               Visibility="Collapsed"
               IsHitTestVisible="False">
+        <Border.RenderTransform>
+          <TranslateTransform x:Name="AudioVisualizerTransform" X="75" />
+        </Border.RenderTransform>
         <StackPanel Width="43"
                     HorizontalAlignment="Center"
                     Orientation="Horizontal"
@@ -251,16 +272,8 @@
       </Border>
     </Grid>
 
-    <Border x:Name="MetricsDivider"
-            Grid.Column="2"
-            Width="1"
-            Height="22"
-            Margin="8,0"
-            Background="#28FFFFFF"
-            VerticalAlignment="Center" />
-
     <Border x:Name="MetricsHost"
-            Grid.Column="3"
+            Grid.Column="2"
             Width="74"
             Height="24"
             Margin="0,0,4,0"
@@ -280,7 +293,7 @@
     </Border>
 
     <Border x:Name="OutputDeviceHost"
-            Grid.Column="4"
+            Grid.Column="3"
             Width="36"
             Height="36"
             Margin="0,0,4,0"
@@ -293,21 +306,103 @@
               Height="30"
               Style="{StaticResource TransportButtonStyle}"
               ToolTip="输出设备"
+              ToolTipService.Placement="Top"
+              ToolTipService.VerticalOffset="-8"
               Click="OutputDeviceButton_OnClick">
+        <TextBlock Text="&#xE7F5;"
+                   FontFamily="Segoe Fluent Icons"
+                   FontSize="14" />
+      </Button>
+    </Border>
+
+    <Border x:Name="VolumeControlHost"
+            Grid.Column="4"
+            Width="36"
+            Height="36"
+            Margin="0,0,4,0"
+            CornerRadius="6"
+            Background="Transparent"
+            VerticalAlignment="Center"
+            Visibility="Collapsed"
+            PreviewMouseWheel="VolumeControlHost_OnPreviewMouseWheel">
+      <Button x:Name="VolumeControlButton"
+              Width="30"
+              Height="30"
+              Style="{StaticResource TransportButtonStyle}"
+              ToolTip="当前媒体音量"
+              ToolTipService.Placement="Top"
+              ToolTipService.VerticalOffset="-8"
+              Click="VolumeControlButton_OnClick">
         <TextBlock Text="&#xE767;"
                    FontFamily="Segoe Fluent Icons"
                    FontSize="14" />
       </Button>
     </Border>
 
+    <Border x:Name="EndDivider"
+            Grid.Column="5"
+            Width="1"
+            Height="22"
+            Margin="8,0"
+            Background="#28FFFFFF"
+            VerticalAlignment="Center" />
+
+    <Popup x:Name="VolumeControlPopup"
+           PlacementTarget="{Binding ElementName=VolumeControlHost}"
+           Placement="Top"
+           VerticalOffset="-7"
+           AllowsTransparency="True"
+           StaysOpen="False"
+           PopupAnimation="Fade"
+           Closed="VolumeControlPopup_OnClosed">
+      <Border Width="94"
+              Height="224"
+              Padding="9,10"
+              Background="{StaticResource MenuBackgroundBrush}"
+              BorderBrush="{StaticResource MenuBorderBrush}"
+              BorderThickness="1"
+              CornerRadius="8"
+              PreviewMouseWheel="VolumeControlPopup_OnPreviewMouseWheel">
+        <StackPanel HorizontalAlignment="Center">
+          <TextBlock x:Name="VolumeMediaNameText"
+                     Width="74"
+                     Text="当前媒体"
+                     TextAlignment="Center"
+                     TextTrimming="CharacterEllipsis"
+                     Foreground="{StaticResource PrimaryTextBrush}"
+                     FontFamily="Segoe UI Variable Text"
+                     FontSize="11.5" />
+          <TextBlock x:Name="VolumePercentText"
+                     Margin="0,3,0,5"
+                     Text="--%"
+                     TextAlignment="Center"
+                     Foreground="{StaticResource SecondaryTextBrush}"
+                     FontFamily="Segoe UI Variable Text"
+                     FontSize="12"
+                     FontWeight="SemiBold" />
+          <Slider x:Name="CurrentMediaVolumeSlider"
+                  Width="28"
+                  Height="158"
+                  Minimum="0"
+                  Maximum="100"
+                  Orientation="Vertical"
+                  IsDirectionReversed="True"
+                  IsMoveToPointEnabled="True"
+                  Style="{StaticResource VolumeSliderStyle}"
+                  ValueChanged="CurrentMediaVolumeSlider_OnValueChanged" />
+        </StackPanel>
+      </Border>
+    </Popup>
+
     <Popup x:Name="OutputDevicePopup"
            PlacementTarget="{Binding ElementName=OutputDeviceHost}"
            Placement="Top"
+           VerticalOffset="-7"
            AllowsTransparency="True"
            StaysOpen="False"
            PopupAnimation="Fade"
            Closed="OutputDevicePopup_OnClosed">
-      <Border Width="286"
+      <Border Width="268"
               MaxHeight="360"
               Padding="8"
               Background="{StaticResource MenuBackgroundBrush}"
