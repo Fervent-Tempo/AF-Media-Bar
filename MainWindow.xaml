@@ -13,15 +13,14 @@
         Focusable="False">
   <Window.ContextMenu>
     <ContextMenu x:Name="PlayerMenu"
-                 MinWidth="270"
-                 MaxWidth="360"
+                 Width="280"
                  Opened="PlayerMenu_OnOpened"
                  Closed="PlayerMenu_OnClosed">
       <MenuItem x:Name="ConnectionMenuItem"
                 IsEnabled="False">
         <MenuItem.Header>
           <TextBlock x:Name="ConnectionMenuText"
-                     MaxWidth="300"
+                     MaxWidth="210"
                      Text="等待媒体播放"
                      TextTrimming="CharacterEllipsis"
                      ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
@@ -155,7 +154,6 @@
             HorizontalAlignment="Left"
             VerticalAlignment="Center"
             Cursor="Hand"
-            SizeChanged="InfoHost_OnSizeChanged"
             MouseLeftButtonUp="ShowMediaSource_OnMouseLeftButtonUp">
         <Grid Height="40"
               Margin="9,0,8,0">
@@ -247,27 +245,27 @@
       </Border>
       <Border x:Name="AudioVisualizerHost"
               Grid.ColumnSpan="2"
-              Width="60"
+              Width="88"
               HorizontalAlignment="Left"
               VerticalAlignment="Center"
               Visibility="Collapsed"
               IsHitTestVisible="False">
         <Border.RenderTransform>
-          <TranslateTransform x:Name="AudioVisualizerTransform" X="75" />
+          <TranslateTransform x:Name="AudioVisualizerTransform" X="71" />
         </Border.RenderTransform>
-        <StackPanel Width="43"
+        <StackPanel Width="68"
                     HorizontalAlignment="Center"
                     Orientation="Horizontal"
                     VerticalAlignment="Center">
-          <Border x:Name="AudioBar0" Width="3" Height="3" Margin="0,0,2,0" CornerRadius="1.5" Background="#B9D1E3" VerticalAlignment="Center" />
-          <Border x:Name="AudioBar1" Width="3" Height="3" Margin="0,0,2,0" CornerRadius="1.5" Background="#B9D1E3" VerticalAlignment="Center" />
-          <Border x:Name="AudioBar2" Width="3" Height="3" Margin="0,0,2,0" CornerRadius="1.5" Background="#B9D1E3" VerticalAlignment="Center" />
-          <Border x:Name="AudioBar3" Width="3" Height="3" Margin="0,0,2,0" CornerRadius="1.5" Background="#B9D1E3" VerticalAlignment="Center" />
-          <Border x:Name="AudioBar4" Width="3" Height="3" Margin="0,0,2,0" CornerRadius="1.5" Background="#B9D1E3" VerticalAlignment="Center" />
-          <Border x:Name="AudioBar5" Width="3" Height="3" Margin="0,0,2,0" CornerRadius="1.5" Background="#B9D1E3" VerticalAlignment="Center" />
-          <Border x:Name="AudioBar6" Width="3" Height="3" Margin="0,0,2,0" CornerRadius="1.5" Background="#B9D1E3" VerticalAlignment="Center" />
-          <Border x:Name="AudioBar7" Width="3" Height="3" Margin="0,0,2,0" CornerRadius="1.5" Background="#B9D1E3" VerticalAlignment="Center" />
-          <Border x:Name="AudioBar8" Width="3" Height="3" CornerRadius="1.5" Background="#B9D1E3" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar0" Width="4" Height="3" Margin="0,0,4,0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar1" Width="4" Height="3" Margin="0,0,4,0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar2" Width="4" Height="3" Margin="0,0,4,0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar3" Width="4" Height="3" Margin="0,0,4,0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar4" Width="4" Height="3" Margin="0,0,4,0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar5" Width="4" Height="3" Margin="0,0,4,0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar6" Width="4" Height="3" Margin="0,0,4,0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar7" Width="4" Height="3" Margin="0,0,4,0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar8" Width="4" Height="3" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
         </StackPanel>
       </Border>
     </Grid>
@@ -386,7 +384,6 @@
                   Minimum="0"
                   Maximum="100"
                   Orientation="Vertical"
-                  IsDirectionReversed="True"
                   IsMoveToPointEnabled="True"
                   Style="{StaticResource VolumeSliderStyle}"
                   ValueChanged="CurrentMediaVolumeSlider_OnValueChanged" />

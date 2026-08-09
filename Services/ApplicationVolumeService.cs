@@ -13,6 +13,8 @@ internal sealed class ApplicationVolumeService
     private static readonly Guid VolumeEventContext =
         new("4F74C2B5-7E7B-4A02-ABCB-EF8FA77BD65A");
     private readonly object _syncRoot = new();
+    private readonly Dictionary<string, string> _sourceProcessNames = new(
+        StringComparer.OrdinalIgnoreCase);
 
     internal ApplicationVolumeSnapshot? GetCurrentMediaVolume(
         string? sourceId,
@@ -60,7 +62,7 @@ internal sealed class ApplicationVolumeService
         }
     }
 
-    private static ApplicationVolumeSnapshot? GetCurrentMediaVolumeCore(
+    private ApplicationVolumeSnapshot? GetCurrentMediaVolumeCore(
         string? sourceId,
         string? sourceName)
     {
@@ -77,6 +79,17 @@ internal sealed class ApplicationVolumeService
             application.AddSession(displayName, state, level, muted);
         });
 
+        var sourceKey = GetSourceKey(sourceId, sourceName);
+        string? rememberedProcessName = null;
+        var hadRememberedProcess = sourceKey is not null &&
+            _sourceProcessNames.TryGetValue(sourceKey, out rememberedProcessName);
+        if (hadRememberedProcess &&
+            rememberedProcessName is not null &&
+            applications.TryGetValue(rememberedProcessName, out var rememberedApplication))
+        {
+            return rememberedApplication.CreateSnapshot(sourceId, sourceName);
+        }
+
         ApplicationVolumeAggregate? onlyActiveApplication = null;
         var hasMultipleActiveApplications = false;
         foreach (var application in applications.Values)
@@ -88,6 +101,7 @@ internal sealed class ApplicationVolumeService
                     sourceId,
                     sourceName))
             {
+                RememberSourceProcess(sourceKey, snapshot.ProcessName);
                 return snapshot;
             }
 
@@ -106,9 +120,39 @@ internal sealed class ApplicationVolumeService
             }
         }
 
-        return !hasMultipleActiveApplications && onlyActiveApplication is not null
-            ? onlyActiveApplication.CreateSnapshot(sourceId, sourceName)
-            : null;
+        if (hadRememberedProcess || !string.IsNullOrWhiteSpace(sourceId))
+        {
+            return null;
+        }
+
+        if (hasMultipleActiveApplications || onlyActiveApplication is null)
+        {
+            return null;
+        }
+
+        var fallback = onlyActiveApplication.CreateSnapshot(sourceId, sourceName);
+        RememberSourceProcess(sourceKey, fallback.ProcessName);
+        return fallback;
+    }
+
+    private void RememberSourceProcess(string? sourceKey, string processName)
+    {
+        if (sourceKey is not null)
+        {
+            _sourceProcessNames[sourceKey] = processName;
+        }
+    }
+
+    private static string? GetSourceKey(string? sourceId, string? sourceName)
+    {
+        if (!string.IsNullOrWhiteSpace(sourceId))
+        {
+            return $"id:{sourceId}";
+        }
+
+        return string.IsNullOrWhiteSpace(sourceName)
+            ? null
+            : $"name:{sourceName}";
     }
 
     private static string GetApplicationDisplayName(

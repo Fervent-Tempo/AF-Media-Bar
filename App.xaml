@@ -44,19 +44,105 @@
       <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}" />
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderBrush" Value="Transparent" />
-      <Setter Property="Padding" Value="8,6" />
+      <Setter Property="Padding" Value="6,5" />
       <Setter Property="Margin" Value="1,1" />
       <Setter Property="FontFamily" Value="Segoe UI Variable Text" />
       <Setter Property="FontSize" Value="13" />
-      <Style.Triggers>
-        <Trigger Property="IsHighlighted" Value="True">
-          <Setter Property="Background" Value="{StaticResource MenuHoverBrush}" />
-          <Setter Property="BorderBrush" Value="#52FFFFFF" />
-        </Trigger>
-        <Trigger Property="IsEnabled" Value="False">
-          <Setter Property="Foreground" Value="{StaticResource MenuDisabledBrush}" />
-        </Trigger>
-      </Style.Triggers>
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="MenuItem">
+            <Grid SnapsToDevicePixels="True">
+              <Border x:Name="ItemBorder"
+                      MinHeight="31"
+                      Padding="{TemplateBinding Padding}"
+                      Background="{TemplateBinding Background}"
+                      BorderBrush="{TemplateBinding BorderBrush}"
+                      BorderThickness="1"
+                      CornerRadius="5">
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="22" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="17" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock x:Name="CheckGlyph"
+                             Grid.Column="0"
+                             Text="&#xE73E;"
+                             FontFamily="Segoe Fluent Icons"
+                             FontSize="12"
+                             Foreground="{StaticResource PrimaryTextBrush}"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center"
+                             Visibility="Collapsed" />
+                  <ContentPresenter x:Name="IconPresenter"
+                                    Grid.Column="0"
+                                    ContentSource="Icon"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center" />
+                  <ContentPresenter Grid.Column="1"
+                                    ContentSource="Header"
+                                    RecognizesAccessKey="True"
+                                    VerticalAlignment="Center" />
+                  <TextBlock x:Name="SubmenuGlyph"
+                             Grid.Column="2"
+                             Text="&#xE76C;"
+                             FontFamily="Segoe Fluent Icons"
+                             FontSize="10"
+                             Foreground="{StaticResource SecondaryTextBrush}"
+                             HorizontalAlignment="Right"
+                             VerticalAlignment="Center"
+                             Visibility="Collapsed" />
+                </Grid>
+              </Border>
+              <Popup x:Name="PART_Popup"
+                     AllowsTransparency="True"
+                     Focusable="False"
+                     HorizontalOffset="-2"
+                     IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                     Placement="Right"
+                     PlacementTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
+                     PopupAnimation="Fade"
+                     StaysOpen="False">
+                <Border Width="230"
+                        Padding="3"
+                        Background="{StaticResource MenuBackgroundBrush}"
+                        BorderBrush="{StaticResource MenuBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="7"
+                        SnapsToDevicePixels="True">
+                  <ScrollViewer CanContentScroll="True"
+                                HorizontalScrollBarVisibility="Disabled"
+                                VerticalScrollBarVisibility="Auto">
+                    <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle" />
+                  </ScrollViewer>
+                </Border>
+              </Popup>
+            </Grid>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsHighlighted" Value="True">
+                <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource MenuHoverBrush}" />
+                <Setter TargetName="ItemBorder" Property="BorderBrush" Value="#52FFFFFF" />
+              </Trigger>
+              <Trigger Property="IsSubmenuOpen" Value="True">
+                <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource MenuHoverBrush}" />
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="{StaticResource MenuDisabledBrush}" />
+                <Setter TargetName="ItemBorder" Property="Opacity" Value="0.58" />
+              </Trigger>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="CheckGlyph" Property="Visibility" Value="Visible" />
+                <Setter TargetName="IconPresenter" Property="Visibility" Value="Collapsed" />
+              </Trigger>
+              <Trigger Property="HasItems" Value="True">
+                <Setter TargetName="SubmenuGlyph" Property="Visibility" Value="Visible" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
     </Style>
 
     <Style TargetType="Separator">

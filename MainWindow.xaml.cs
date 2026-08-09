@@ -16,7 +16,6 @@ namespace TaskbarPlayer;
 public partial class MainWindow : Window
 {
     private const double CollapsedInfoWidth = 210;
-    private const double MonitoredInfoWidth = 149;
     private const double ExpandedInfoWidth = 96;
     private const double PlayerWidthWithoutExtras = 271;
     private const double MetricsAreaWidth = 78;
@@ -24,8 +23,10 @@ public partial class MainWindow : Window
     private const double VolumeControlAreaWidth = 40;
     private const double MediaSwitchAreaWidth = 254;
     private const double CentralHostWidth = 210;
-    private const double AudioVisualizerWidth = 60;
+    private const double AudioVisualizerWidth = 88;
     private const double AudioVisualizerCenterBias = 10;
+    private const int MouseWheelDelta = 120;
+    private const int VolumeWheelStepPercent = 2;
     private const int HorizontalMarginAt96Dpi = 8;
     private const int VerticalMarginAt96Dpi = 4;
     private const int TaskbarWatchdogIntervalMilliseconds = 80;
@@ -75,8 +76,10 @@ public partial class MainWindow : Window
     private int _placementRefreshRequested;
     private int _lastExpandedTaskbarHeight;
     private string? _pendingOutputDeviceId;
+    private int _pendingOutputDeviceWheelSteps;
     private ApplicationVolumeSnapshot? _currentApplicationVolume;
     private int? _pendingVolumePercent;
+    private int _pendingVolumeWheelSteps;
     private int _volumeRefreshVersion;
     private string? _lastVolumeSourceId;
     private DateTime _animationStableSinceUtc;
@@ -86,6 +89,8 @@ public partial class MainWindow : Window
     private bool _isDragging;
     private bool _dragMoved;
     private bool _isUpdatingVolumeSlider;
+    private bool _isProcessingOutputDeviceWheel;
+    private bool _isProcessingVolumeWheel;
     private readonly float[] _audioSpectrum = new float[AudioMonitorService.BandCount];
     private readonly float[] _smoothedAudioSpectrum = new float[AudioMonitorService.BandCount];
     private Border[] _audioBars = null!;
@@ -1034,6 +1039,7 @@ public partial class MainWindow : Window
             Interlocked.Increment(ref _volumeRefreshVersion);
             _volumeApplyTimer.Stop();
             _pendingVolumePercent = null;
+            _pendingVolumeWheelSteps = 0;
             _currentApplicationVolume = null;
         }
 
@@ -1153,21 +1159,24 @@ public partial class MainWindow : Window
     {
         _isExpanded = expanded;
         ControlsHost.IsHitTestVisible = expanded;
-        AudioVisualizerHost.Visibility = _metricSettings.AudioMonitorEnabled && !expanded
+        var showVisualizer = _metricSettings.AudioMonitorEnabled && !expanded;
+        AudioVisualizerHost.Visibility = showVisualizer
             ? Visibility.Visible
             : Visibility.Collapsed;
+        InfoHost.Visibility = showVisualizer
+            ? Visibility.Collapsed
+            : Visibility.Visible;
         animate &= !_metricSettings.LowGpuMode;
         var infoWidth = expanded
             ? ExpandedInfoWidth
-            : _metricSettings.AudioMonitorEnabled
-                ? MonitoredInfoWidth
-                : CollapsedInfoWidth;
+            : CollapsedInfoWidth;
         InfoHost.BeginAnimation(FrameworkElement.WidthProperty, null);
         InfoHost.MaxWidth = infoWidth;
-        InfoHost.Width = expanded ? infoWidth : double.NaN;
+        InfoHost.Width = infoWidth;
         TitleText.Width = double.NaN;
         TitleText.MaxWidth = double.PositiveInfinity;
         TitleText.TextTrimming = TextTrimming.None;
+        UpdateAudioVisualizerPlacement();
         var controlsOpacity = expanded ? 1d : 0d;
         var controlsOffset = expanded ? 0d : 8d;
         var titleOffset = expanded ? -8d : 0d;
@@ -1210,21 +1219,15 @@ public partial class MainWindow : Window
         ScheduleMarqueeUpdate();
     }
 
-    private void InfoHost_OnSizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        UpdateAudioVisualizerPlacement();
-    }
-
     private void UpdateAudioVisualizerPlacement()
     {
         var centeredLeft =
             (CentralHostWidth - AudioVisualizerWidth) / 2 +
             AudioVisualizerCenterBias;
         var rightmostLeft = CentralHostWidth - AudioVisualizerWidth;
-        var titleSafeLeft = InfoHost.ActualWidth + 2;
         AudioVisualizerTransform.X = Math.Clamp(
-            Math.Max(centeredLeft, titleSafeLeft),
             centeredLeft,
+            0,
             rightmostLeft);
     }
 
@@ -1521,6 +1524,7 @@ public partial class MainWindow : Window
         OutputDevicePopup.IsOpen = false;
         _outputDeviceApplyTimer.Stop();
         _pendingOutputDeviceId = null;
+        _pendingOutputDeviceWheelSteps = 0;
         _outputDevices = [];
         OutputDeviceList.ItemsSource = null;
     }
@@ -1543,6 +1547,7 @@ public partial class MainWindow : Window
         _volumeApplyTimer.Stop();
         _volumePopupCloseTimer.Stop();
         _pendingVolumePercent = null;
+        _pendingVolumeWheelSteps = 0;
         _currentApplicationVolume = null;
     }
 
@@ -1678,67 +1683,139 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void OutputDeviceHost_OnPreviewMouseWheel(
+    private void OutputDeviceList_OnPreviewMouseWheel(
         object sender,
         MouseWheelEventArgs e)
     {
         e.Handled = true;
-        await QueueOutputDeviceFromWheelAsync(e.Delta);
+        var scrollViewer = FindVisualDescendant<ScrollViewer>(OutputDeviceList);
+        if (scrollViewer is null || e.Delta == 0)
+        {
+            return;
+        }
+
+        var nextOffset = Math.Clamp(
+            scrollViewer.VerticalOffset - e.Delta / 3d,
+            0,
+            scrollViewer.ScrollableHeight);
+        scrollViewer.ScrollToVerticalOffset(nextOffset);
     }
 
-    private async void OutputDeviceList_OnPreviewMouseWheel(
+    private static T? FindVisualDescendant<T>(DependencyObject parent)
+        where T : DependencyObject
+    {
+        for (var index = 0; index < VisualTreeHelper.GetChildrenCount(parent); index++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, index);
+            if (child is T match)
+            {
+                return match;
+            }
+
+            if (FindVisualDescendant<T>(child) is { } descendant)
+            {
+                return descendant;
+            }
+        }
+
+        return null;
+    }
+
+    private void OutputDeviceHost_OnPreviewMouseWheel(
         object sender,
         MouseWheelEventArgs e)
     {
         e.Handled = true;
-        await QueueOutputDeviceFromWheelAsync(e.Delta);
+        QueueOutputDeviceFromWheel(e.Delta);
     }
 
-    private async Task QueueOutputDeviceFromWheelAsync(int delta)
+    private void QueueOutputDeviceFromWheel(int delta)
     {
-        if (!_metricSettings.OutputDeviceSwitcherEnabled)
+        if (!_metricSettings.OutputDeviceSwitcherEnabled || delta == 0)
         {
             return;
         }
 
-        if (_outputDevices.Count == 0)
-        {
-            await RefreshOutputDevicesAsync();
-        }
+        var stepCount = GetWheelStepCount(delta);
+        _pendingOutputDeviceWheelSteps += delta > 0 ? -stepCount : stepCount;
+        _ = ProcessOutputDeviceWheelAsync();
+    }
 
-        if (_outputDevices.Count == 0)
+    private async Task ProcessOutputDeviceWheelAsync()
+    {
+        if (_isProcessingOutputDeviceWheel)
         {
             return;
         }
 
-        var currentIndex = -1;
-        if (!string.IsNullOrWhiteSpace(_pendingOutputDeviceId))
+        _isProcessingOutputDeviceWheel = true;
+        try
         {
-            currentIndex = FindOutputDeviceIndex(_pendingOutputDeviceId);
-        }
+            if (_outputDevices.Count == 0)
+            {
+                await RefreshOutputDevicesAsync();
+            }
 
-        if (currentIndex < 0)
+            if (!_metricSettings.OutputDeviceSwitcherEnabled ||
+                _outputDevices.Count == 0)
+            {
+                _pendingOutputDeviceWheelSteps = 0;
+                return;
+            }
+
+            while (_pendingOutputDeviceWheelSteps != 0)
+            {
+                var wheelSteps = _pendingOutputDeviceWheelSteps;
+                _pendingOutputDeviceWheelSteps = 0;
+                var currentIndex = -1;
+                if (!string.IsNullOrWhiteSpace(_pendingOutputDeviceId))
+                {
+                    currentIndex = FindOutputDeviceIndex(_pendingOutputDeviceId);
+                }
+
+                if (currentIndex < 0)
+                {
+                    currentIndex = _outputDevices
+                        .Select((device, index) => (device, index))
+                        .Where(pair => pair.device.IsDefault)
+                        .Select(pair => pair.index)
+                        .DefaultIfEmpty(0)
+                        .First();
+                }
+
+                var nextIndex = (currentIndex + wheelSteps) % _outputDevices.Count;
+                if (nextIndex < 0)
+                {
+                    nextIndex += _outputDevices.Count;
+                }
+
+                var nextDevice = _outputDevices[nextIndex];
+                _pendingOutputDeviceId = nextDevice.Id;
+                OutputDevicePopup.IsOpen = true;
+                OutputDeviceList.SelectedItem = nextDevice;
+                OutputDeviceList.ScrollIntoView(nextDevice);
+                OutputDeviceCurrentText.Text = nextDevice.DisplayName;
+                OutputDeviceButton.ToolTip = $"即将切换到：{nextDevice.DisplayName}";
+                _outputDeviceApplyTimer.Stop();
+                _outputDeviceApplyTimer.Start();
+            }
+        }
+        finally
         {
-            currentIndex = _outputDevices
-                .Select((device, index) => (device, index))
-                .Where(pair => pair.device.IsDefault)
-                .Select(pair => pair.index)
-                .DefaultIfEmpty(0)
-                .First();
+            _isProcessingOutputDeviceWheel = false;
+            if (_pendingOutputDeviceWheelSteps != 0 &&
+                _metricSettings.OutputDeviceSwitcherEnabled)
+            {
+                _ = ProcessOutputDeviceWheelAsync();
+            }
         }
+    }
 
-        var direction = delta > 0 ? -1 : 1;
-        var nextIndex = (currentIndex + direction + _outputDevices.Count) %
-            _outputDevices.Count;
-        var nextDevice = _outputDevices[nextIndex];
-        _pendingOutputDeviceId = nextDevice.Id;
-        OutputDevicePopup.IsOpen = true;
-        OutputDeviceList.SelectedItem = nextDevice;
-        OutputDeviceList.ScrollIntoView(nextDevice);
-        OutputDeviceCurrentText.Text = nextDevice.DisplayName;
-        OutputDeviceButton.ToolTip = $"即将切换到：{nextDevice.DisplayName}";
-        _outputDeviceApplyTimer.Stop();
-        _outputDeviceApplyTimer.Start();
+    private static int GetWheelStepCount(int delta)
+    {
+        return Math.Max(
+            1,
+            (Math.Abs(delta) + MouseWheelDelta - 1) / MouseWheelDelta);
     }
 
     private int FindOutputDeviceIndex(string deviceId)
@@ -1843,12 +1920,16 @@ public partial class MainWindow : Window
         {
             CurrentMediaVolumeSlider.IsEnabled = snapshot is not null;
             CurrentMediaVolumeSlider.Value = snapshot?.VolumePercent ?? 0;
-            VolumeMediaNameText.Text = snapshot?.DisplayName ?? "未找到媒体";
+            var selectedSourceName = _mediaSessionService.SelectedSourceName;
+            VolumeMediaNameText.Text = snapshot?.DisplayName ??
+                (string.IsNullOrWhiteSpace(selectedSourceName)
+                    ? "当前媒体"
+                    : selectedSourceName);
             VolumePercentText.Text = snapshot is null
-                ? "--%"
+                ? "暂无"
                 : $"{snapshot.VolumePercent}%";
             VolumeControlButton.ToolTip = snapshot is null
-                ? "未找到当前媒体的音量会话"
+                ? "当前媒体没有可用的音频会话；恢复播放后可重新连接"
                 : $"{snapshot.DisplayName}：{snapshot.VolumePercent}%";
         }
         finally
@@ -1876,56 +1957,90 @@ public partial class MainWindow : Window
         VolumeControlPopup.IsOpen = true;
     }
 
-    private async void VolumeControlHost_OnPreviewMouseWheel(
+    private void VolumeControlHost_OnPreviewMouseWheel(
         object sender,
         MouseWheelEventArgs e)
     {
         e.Handled = true;
-        await AdjustCurrentMediaVolumeAsync(e.Delta);
+        QueueVolumeWheel(e.Delta);
     }
 
-    private async void VolumeControlPopup_OnPreviewMouseWheel(
+    private void VolumeControlPopup_OnPreviewMouseWheel(
         object sender,
         MouseWheelEventArgs e)
     {
         e.Handled = true;
-        await AdjustCurrentMediaVolumeAsync(e.Delta);
+        QueueVolumeWheel(e.Delta);
     }
 
-    private async Task AdjustCurrentMediaVolumeAsync(int delta)
+    private void QueueVolumeWheel(int delta)
     {
-        if (!_metricSettings.VolumeControlEnabled)
+        if (!_metricSettings.VolumeControlEnabled || delta == 0)
         {
             return;
         }
 
-        if (_currentApplicationVolume is null)
+        var stepCount = GetWheelStepCount(delta);
+        _pendingVolumeWheelSteps += delta > 0 ? stepCount : -stepCount;
+        _ = ProcessVolumeWheelAsync();
+    }
+
+    private async Task ProcessVolumeWheelAsync()
+    {
+        if (_isProcessingVolumeWheel)
         {
-            await RefreshCurrentMediaVolumeAsync(
-                _mediaSessionService.SelectedSourceId,
-                _mediaSessionService.SelectedSourceName);
+            return;
         }
 
-        if (_currentApplicationVolume is null)
+        _isProcessingVolumeWheel = true;
+        try
         {
+            if (_currentApplicationVolume is null)
+            {
+                await RefreshCurrentMediaVolumeAsync(
+                    _mediaSessionService.SelectedSourceId,
+                    _mediaSessionService.SelectedSourceName);
+            }
+
+            if (!_metricSettings.VolumeControlEnabled)
+            {
+                _pendingVolumeWheelSteps = 0;
+                return;
+            }
+
+            var wheelSteps = _pendingVolumeWheelSteps;
+            _pendingVolumeWheelSteps = 0;
+            if (_currentApplicationVolume is null)
+            {
+                VolumeControlPopup.IsOpen = true;
+                return;
+            }
+
+            var nextVolume = Math.Clamp(
+                _currentApplicationVolume.VolumePercent +
+                    wheelSteps * VolumeWheelStepPercent,
+                0,
+                100);
+            _currentApplicationVolume = _currentApplicationVolume with
+            {
+                VolumePercent = nextVolume,
+                IsMuted = false
+            };
+            SetVolumeSliderValue(nextVolume);
+            QueueVolumeApply(nextVolume);
             VolumeControlPopup.IsOpen = true;
-            return;
+            _volumePopupCloseTimer.Stop();
+            _volumePopupCloseTimer.Start();
         }
-
-        var nextVolume = Math.Clamp(
-            _currentApplicationVolume.VolumePercent + (delta > 0 ? 2 : -2),
-            0,
-            100);
-        _currentApplicationVolume = _currentApplicationVolume with
+        finally
         {
-            VolumePercent = nextVolume,
-            IsMuted = false
-        };
-        SetVolumeSliderValue(nextVolume);
-        QueueVolumeApply(nextVolume);
-        VolumeControlPopup.IsOpen = true;
-        _volumePopupCloseTimer.Stop();
-        _volumePopupCloseTimer.Start();
+            _isProcessingVolumeWheel = false;
+            if (_pendingVolumeWheelSteps != 0 &&
+                _metricSettings.VolumeControlEnabled)
+            {
+                _ = ProcessVolumeWheelAsync();
+            }
+        }
     }
 
     private void SetVolumeSliderValue(int volumePercent)
