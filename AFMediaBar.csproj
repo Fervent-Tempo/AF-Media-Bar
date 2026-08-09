@@ -10,7 +10,11 @@
     <AssemblyName>AFMediaBar</AssemblyName>
     <AssemblyTitle>AF Media Bar</AssemblyTitle>
     <RootNamespace>AFMediaBar</RootNamespace>
-    <Version>0.2.0</Version>
+    <Version>1.0.0</Version>
+    <Authors>Fervent-Tempo</Authors>
+    <Copyright>Copyright (c) 2026 Fervent-Tempo</Copyright>
+    <RepositoryUrl>https://github.com/Fervent-Tempo/AF-Media-Bar</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Product>AF Media Bar</Product>
     <Description>Media controls for the Windows 11 taskbar</Description>
   </PropertyGroup>

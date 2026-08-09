@@ -14,23 +14,15 @@ internal static class StartupService
         get
         {
             using var key = Registry.CurrentUser.CreateSubKey(RunKeyPath, writable: true);
-            var isEnabled = key.GetValue(ValueName) is string ||
-                key.GetValue(AFShellValueName) is string ||
-                key.GetValue(TaskbarPlayerValueName) is string;
-            if (!isEnabled)
-            {
-                return false;
-            }
-
-            var executablePath = Environment.ProcessPath;
-            if (!string.IsNullOrWhiteSpace(executablePath))
-            {
-                key.SetValue(ValueName, $"\"{executablePath}\"");
-                DeleteLegacyValues(key);
-            }
-
-            return true;
+            MigrateLegacyValues(key);
+            return key.GetValue(ValueName) is string;
         }
+    }
+
+    internal static void Migrate()
+    {
+        using var key = Registry.CurrentUser.CreateSubKey(RunKeyPath, writable: true);
+        MigrateLegacyValues(key);
     }
 
     internal static void SetEnabled(bool enabled)
@@ -53,5 +45,22 @@ internal static class StartupService
     {
         key.DeleteValue(AFShellValueName, throwOnMissingValue: false);
         key.DeleteValue(TaskbarPlayerValueName, throwOnMissingValue: false);
+    }
+
+    private static void MigrateLegacyValues(RegistryKey key)
+    {
+        var hasLegacyValue = key.GetValue(AFShellValueName) is string ||
+            key.GetValue(TaskbarPlayerValueName) is string;
+        if (!hasLegacyValue)
+        {
+            return;
+        }
+
+        var executablePath = Environment.ProcessPath;
+        if (!string.IsNullOrWhiteSpace(executablePath))
+        {
+            key.SetValue(ValueName, $"\"{executablePath}\"");
+            DeleteLegacyValues(key);
+        }
     }
 }

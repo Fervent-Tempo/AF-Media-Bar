@@ -147,7 +147,7 @@ internal sealed class SystemMetricsService : IDisposable
                 return;
             }
 
-            NativeMethods.PdhCloseQuery(_query);
+            _ = NativeMethods.PdhCloseQuery(_query);
             _query = nint.Zero;
             _counter = nint.Zero;
         }
@@ -304,7 +304,7 @@ internal sealed class SystemMetricsService : IDisposable
 
             if (_query != nint.Zero)
             {
-                NativeMethods.PdhCloseQuery(_query);
+                _ = NativeMethods.PdhCloseQuery(_query);
                 _query = nint.Zero;
                 _counter = nint.Zero;
             }

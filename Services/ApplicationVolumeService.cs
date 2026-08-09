@@ -6,6 +6,7 @@ namespace AFMediaBar.Services;
 
 internal sealed class ApplicationVolumeService
 {
+    private const int MaximumRememberedSources = 64;
     private static readonly Guid DeviceEnumeratorClassId =
         new("BCDE0395-E52F-467C-8E3D-C4579291692E");
     private static readonly Guid AudioSessionManager2Id =
@@ -15,6 +16,7 @@ internal sealed class ApplicationVolumeService
     private readonly object _syncRoot = new();
     private readonly Dictionary<string, string> _sourceProcessNames = new(
         StringComparer.OrdinalIgnoreCase);
+    private readonly Queue<string> _sourceProcessOrder = new();
 
     internal ApplicationVolumeSnapshot? GetCurrentMediaVolume(
         string? sourceId,
@@ -139,6 +141,17 @@ internal sealed class ApplicationVolumeService
     {
         if (sourceKey is not null)
         {
+            if (!_sourceProcessNames.ContainsKey(sourceKey))
+            {
+                while (_sourceProcessNames.Count >= MaximumRememberedSources &&
+                    _sourceProcessOrder.TryDequeue(out var oldestSource))
+                {
+                    _sourceProcessNames.Remove(oldestSource);
+                }
+
+                _sourceProcessOrder.Enqueue(sourceKey);
+            }
+
             _sourceProcessNames[sourceKey] = processName;
         }
     }

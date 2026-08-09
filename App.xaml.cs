@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Windows;
+using AFMediaBar.Services;
 
 namespace AFMediaBar;
 
@@ -17,6 +18,15 @@ public partial class App : Application
         }
 
         base.OnStartup(e);
+        try
+        {
+            StartupService.Migrate();
+        }
+        catch
+        {
+            // A locked Run key must not prevent the application from starting.
+        }
+
         MainWindow = new MainWindow();
         MainWindow.Show();
     }

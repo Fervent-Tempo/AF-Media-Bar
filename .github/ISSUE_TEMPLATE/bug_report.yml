@@ -1,0 +1,97 @@
+name: Bug report
+description: Report a reproducible AF Media Bar problem.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please search existing Issues first. Do not disclose security vulnerabilities here; follow SECURITY.md instead.
+
+  - type: input
+    id: version
+    attributes:
+      label: AF Media Bar version
+      description: Use the Release version, for example 1.0.0, or provide the commit hash.
+      placeholder: 1.0.0
+    validations:
+      required: true
+
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      description: Open winver and include the edition, version, and OS build.
+      placeholder: Windows 11 24H2, OS Build 26100.x
+    validations:
+      required: true
+
+  - type: input
+    id: player
+    attributes:
+      label: Media player or source
+      description: Include the application and version. For browser playback, include the browser and website.
+      placeholder: NetEase Cloud Music 3.x / Microsoft Edge 1xx + website
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - Media discovery or controls
+        - Artwork or metadata
+        - Taskbar placement or visibility
+        - Output device switching
+        - Application volume
+        - Audio visualizer
+        - Metrics or resource usage
+        - Startup or tray icon
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Provide the smallest reliable sequence that triggers the problem.
+      placeholder: |
+        1. Start ...
+        2. Play ...
+        3. Click ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include exact error text and whether the behavior recovers after restarting.
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add screenshots, recordings, taskbar customization tools, audio devices, and relevant settings. Remove private information first.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I downloaded AF Media Bar from this repository's Releases page or built it from the referenced commit.
+          required: true
+        - label: I searched existing Issues for the same problem.
+          required: true

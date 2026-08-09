@@ -12,6 +12,7 @@ internal sealed class TaskbarEventWatcher : IDisposable
     private readonly List<nint> _hooks = [];
     private int _updateQueued;
     private int _foregroundUpdateQueued;
+    private bool _disposed;
 
     internal TaskbarEventWatcher(Dispatcher dispatcher)
     {
@@ -52,6 +53,11 @@ internal sealed class TaskbarEventWatcher : IDisposable
         uint eventThread,
         uint eventTime)
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         var taskbar = NativeMethods.FindWindow("Shell_TrayWnd", null);
         var isTopLevelWindowVisibilityEvent =
             eventId is NativeMethods.EventObjectShow or NativeMethods.EventObjectHide &&
@@ -85,7 +91,10 @@ internal sealed class TaskbarEventWatcher : IDisposable
                 () =>
                 {
                     Interlocked.Exchange(ref _foregroundUpdateQueued, 0);
-                    TaskbarChanged?.Invoke(this, EventArgs.Empty);
+                    if (!_disposed)
+                    {
+                        TaskbarChanged?.Invoke(this, EventArgs.Empty);
+                    }
                 });
             return;
         }
@@ -98,7 +107,10 @@ internal sealed class TaskbarEventWatcher : IDisposable
         _dispatcher.BeginInvoke(DispatcherPriority.Send, () =>
         {
             Interlocked.Exchange(ref _updateQueued, 0);
-            TaskbarChanged?.Invoke(this, EventArgs.Empty);
+            if (!_disposed)
+            {
+                TaskbarChanged?.Invoke(this, EventArgs.Empty);
+            }
         });
     }
 
@@ -110,7 +122,14 @@ internal sealed class TaskbarEventWatcher : IDisposable
         }
 
         var classNameBuffer = new StringBuilder(128);
-        NativeMethods.GetClassName(window, classNameBuffer, classNameBuffer.Capacity);
+        if (NativeMethods.GetClassName(
+                window,
+                classNameBuffer,
+                classNameBuffer.Capacity) <= 0)
+        {
+            return false;
+        }
+
         var className = classNameBuffer.ToString();
         if (className is
             "Shell_SecondaryTrayWnd" or
@@ -125,8 +144,8 @@ internal sealed class TaskbarEventWatcher : IDisposable
             return false;
         }
 
-        NativeMethods.GetWindowThreadProcessId(window, out var processId);
-        if (processId == 0)
+        if (NativeMethods.GetWindowThreadProcessId(window, out var processId) == 0 ||
+            processId == 0)
         {
             return false;
         }
@@ -150,11 +169,18 @@ internal sealed class TaskbarEventWatcher : IDisposable
 
     public void Dispose()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
         foreach (var hook in _hooks)
         {
             NativeMethods.UnhookWinEvent(hook);
         }
 
         _hooks.Clear();
+        TaskbarChanged = null;
     }
 }

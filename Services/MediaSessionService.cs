@@ -1,3 +1,5 @@
+using System.Buffers;
+using System.Globalization;
 using System.IO;
 using System.Security.Cryptography;
 using System.Windows.Media.Imaging;
@@ -9,6 +11,7 @@ namespace AFMediaBar.Services;
 internal sealed class MediaSessionService : IDisposable
 {
     private const int ArtworkDecodeWidth = 96;
+    private const int MaximumArtworkBytes = 16 * 1024 * 1024;
     private static readonly TimeSpan SessionReconnectGracePeriod = TimeSpan.FromSeconds(6);
     private static readonly TimeSpan[] ArtworkRefreshDelays =
     [
@@ -208,7 +211,7 @@ internal sealed class MediaSessionService : IDisposable
         GlobalSystemMediaTransportControlsSessionManager sender,
         object args)
     {
-        await RefreshSessionListAsync();
+        await RunSessionEventAsync(RefreshSessionListAsync);
     }
 
     private async Task RefreshSessionListAsync()
@@ -221,6 +224,11 @@ internal sealed class MediaSessionService : IDisposable
         await _sessionGate.WaitAsync();
         try
         {
+            if (_disposed)
+            {
+                return;
+            }
+
             foreach (var entry in _entries)
             {
                 entry.Session.PlaybackInfoChanged -= OnAnyPlaybackInfoChanged;
@@ -413,30 +421,64 @@ internal sealed class MediaSessionService : IDisposable
         GlobalSystemMediaTransportControlsSession sender,
         object args)
     {
-        await RefreshMediaPropertiesAsync();
+        await RunSessionEventAsync(RefreshMediaPropertiesAsync);
     }
 
     private async void OnAnyPlaybackInfoChanged(
         GlobalSystemMediaTransportControlsSession sender,
         object args)
     {
-        if (_disposed)
+        await RunSessionEventAsync(async () =>
         {
-            return;
-        }
+            if (_disposed)
+            {
+                return;
+            }
 
-        await _sessionGate.WaitAsync();
+            await _sessionGate.WaitAsync();
+            try
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                PublishSessions();
+                if (ReferenceEquals(sender, _session))
+                {
+                    RefreshPlaybackInfo();
+                }
+            }
+            finally
+            {
+                _sessionGate.Release();
+            }
+        });
+    }
+
+    private async Task RunSessionEventAsync(Func<Task> action)
+    {
         try
         {
-            PublishSessions();
-            if (ReferenceEquals(sender, _session))
-            {
-                RefreshPlaybackInfo();
-            }
+            await action();
         }
-        finally
+        catch
         {
-            _sessionGate.Release();
+            if (!_disposed)
+            {
+                // WinRT event handlers are async void. Keep unexpected provider
+                // failures from terminating the process; the next session event
+                // will retry the refresh.
+                try
+                {
+                    Publish(MediaSnapshot.Disconnected);
+                }
+                catch
+                {
+                    // Event subscribers must not turn provider failures into a
+                    // process-terminating async void exception.
+                }
+            }
         }
     }
 
@@ -593,7 +635,9 @@ internal sealed class MediaSessionService : IDisposable
                 ArtworkLoadResult artwork;
                 try
                 {
-                    artwork = await LoadArtworkAsync(mediaProperties.Thumbnail);
+                    artwork = await LoadArtworkAsync(
+                        mediaProperties.Thumbnail,
+                        cancellation.Token);
                 }
                 catch when (attempt < ArtworkRefreshDelays.Length - 1)
                 {
@@ -741,11 +785,12 @@ internal sealed class MediaSessionService : IDisposable
             title,
             artist,
             mediaProperties.AlbumTitle ?? string.Empty,
-            mediaProperties.TrackNumber.ToString());
+            mediaProperties.TrackNumber.ToString(CultureInfo.InvariantCulture));
     }
 
     private static async Task<ArtworkLoadResult> LoadArtworkAsync(
-        Windows.Storage.Streams.IRandomAccessStreamReference? thumbnail)
+        Windows.Storage.Streams.IRandomAccessStreamReference? thumbnail,
+        CancellationToken cancellationToken)
     {
         if (thumbnail is null)
         {
@@ -753,12 +798,21 @@ internal sealed class MediaSessionService : IDisposable
         }
 
         using var randomAccessStream = await thumbnail.OpenReadAsync();
+        if (randomAccessStream.Size > MaximumArtworkBytes)
+        {
+            return default;
+        }
+
         using var sourceStream = randomAccessStream.AsStreamForRead();
         // WPF's decoder can receive a non-seekable WinRT stream on the first
         // media-properties callback. Buffer only this small 96px artwork so
         // initial loads and source switching use the same reliable path.
-        using var memoryStream = new MemoryStream();
-        await sourceStream.CopyToAsync(memoryStream);
+        using var memoryStream = new MemoryStream(checked((int)randomAccessStream.Size));
+        if (!await CopyArtworkAsync(sourceStream, memoryStream, cancellationToken))
+        {
+            return default;
+        }
+
         if (memoryStream.Length == 0)
         {
             return default;
@@ -781,6 +835,45 @@ internal sealed class MediaSessionService : IDisposable
         bitmap.EndInit();
         bitmap.Freeze();
         return new ArtworkLoadResult(bitmap, fingerprint);
+    }
+
+    private static async Task<bool> CopyArtworkAsync(
+        Stream source,
+        Stream destination,
+        CancellationToken cancellationToken)
+    {
+        var buffer = ArrayPool<byte>.Shared.Rent(81920);
+        try
+        {
+            var totalBytes = 0;
+            while (true)
+            {
+                var bytesToRead = Math.Min(
+                    buffer.Length,
+                    MaximumArtworkBytes - totalBytes + 1);
+                var bytesRead = await source.ReadAsync(
+                    buffer.AsMemory(0, bytesToRead),
+                    cancellationToken);
+                if (bytesRead == 0)
+                {
+                    return true;
+                }
+
+                totalBytes += bytesRead;
+                if (totalBytes > MaximumArtworkBytes)
+                {
+                    return false;
+                }
+
+                await destination.WriteAsync(
+                    buffer.AsMemory(0, bytesRead),
+                    cancellationToken);
+            }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
     }
 
     public void Dispose()
