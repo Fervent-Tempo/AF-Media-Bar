@@ -95,7 +95,7 @@ internal sealed class TaskbarEventWatcher : IDisposable
             return;
         }
 
-        _dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
+        _dispatcher.BeginInvoke(DispatcherPriority.Send, () =>
         {
             Interlocked.Exchange(ref _updateQueued, 0);
             TaskbarChanged?.Invoke(this, EventArgs.Empty);

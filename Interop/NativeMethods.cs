@@ -15,7 +15,6 @@ internal static class NativeMethods
     internal const uint SwpNoMove = 0x0002;
     internal const uint SwpNoActivate = 0x0010;
     internal const uint SwpShowWindow = 0x0040;
-    internal const uint SwpAsyncWindowPos = 0x4000;
     internal const int SwRestore = 9;
 
     internal const uint EventSystemForeground = 0x0003;

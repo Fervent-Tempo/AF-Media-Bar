@@ -7,6 +7,7 @@ internal static class PlacementSettingsService
 {
     private const string SettingsKeyPath = @"Software\AFShell\MediaBar";
     private const string LegacySettingsKeyPath = @"Software\TaskbarPlayer";
+    private const int CurrentSettingsVersion = 2;
 
     internal static PlacementSettings Load()
     {
@@ -42,7 +43,25 @@ internal static class PlacementSettingsService
                 ReadNullableInteger(currentKey, legacyKey, "CachedPlayerWidthDip"),
                 ReadTaskbarAlignment(currentKey, legacyKey, "CachedTaskbarAlignment"));
 
-            if (currentKey is null || HasMissingValues(currentKey))
+            var settingsVersion = ReadInteger(
+                currentKey,
+                legacyKey,
+                "PlacementSettingsVersion",
+                0);
+            if (settingsVersion < CurrentSettingsVersion && settings.AutomaticPlacement)
+            {
+                settings = settings with
+                {
+                    AutomaticPlacement = false,
+                    PositionLocked = false,
+                    ManualOffsetDip = settings.CachedAutomaticOffsetDip ??
+                        settings.ManualOffsetDip
+                };
+            }
+
+            if (currentKey is null ||
+                settingsVersion < CurrentSettingsVersion ||
+                HasMissingValues(currentKey))
             {
                 try
                 {
@@ -68,6 +87,7 @@ internal static class PlacementSettingsService
         key.SetValue("AutomaticPlacement", settings.AutomaticPlacement ? 1 : 0, RegistryValueKind.DWord);
         key.SetValue("PositionLocked", settings.PositionLocked ? 1 : 0, RegistryValueKind.DWord);
         key.SetValue("ManualOffsetDip", settings.ManualOffsetDip, RegistryValueKind.DWord);
+        key.SetValue("PlacementSettingsVersion", CurrentSettingsVersion, RegistryValueKind.DWord);
         WriteNullableInteger(key, "CachedAutomaticOffsetDip", settings.CachedAutomaticOffsetDip);
         WriteNullableInteger(key, "CachedTaskbarWidthDip", settings.CachedTaskbarWidthDip);
         WriteNullableInteger(key, "CachedPlayerWidthDip", settings.CachedPlayerWidthDip);
@@ -128,7 +148,8 @@ internal static class PlacementSettingsService
     {
         return key.GetValue("AutomaticPlacement") is not int ||
             key.GetValue("PositionLocked") is not int ||
-            key.GetValue("ManualOffsetDip") is not int;
+            key.GetValue("ManualOffsetDip") is not int ||
+            key.GetValue("PlacementSettingsVersion") is not int;
     }
 
     private static void WriteNullableInteger(RegistryKey key, string name, int? value)

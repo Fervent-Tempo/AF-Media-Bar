@@ -10,8 +10,8 @@ internal readonly record struct PlacementSettings(
     TaskbarAlignment? CachedTaskbarAlignment)
 {
     internal static PlacementSettings Default { get; } = new(
-        true,
-        true,
+        false,
+        false,
         8,
         null,
         null,

@@ -14,14 +14,20 @@ internal sealed class TaskbarPlacementService
         nint taskbar,
         NativeMethods.Rect taskbarRect,
         int playerWidth,
-        int margin)
+        int margin,
+        int? preferredLeft)
     {
         lock (_scanSync)
         {
             if (_activeScan is null || _activeScan.IsCompleted)
             {
                 _activeScan = Task.Run(() =>
-                    FindBestLeft(taskbar, taskbarRect, playerWidth, margin));
+                    FindBestLeft(
+                        taskbar,
+                        taskbarRect,
+                        playerWidth,
+                        margin,
+                        preferredLeft));
             }
 
             return _activeScan;
@@ -68,13 +74,41 @@ internal sealed class TaskbarPlacementService
         {
             throw new InvalidOperationException("拥挤任务栏的最小重叠位置计算失败。");
         }
+
+        const int stableLeft = 90;
+        var stable = FindBestLeft(
+            taskbarLeft,
+            taskbarRight,
+            playerWidth,
+            margin,
+            [new OccupiedRange(642, 1193), new OccupiedRange(1265, 1920)],
+            stableLeft);
+        if (stable != stableLeft)
+        {
+            throw new InvalidOperationException(
+                "A clear current position must remain stable.");
+        }
+
+        var overlapping = FindBestLeft(
+            taskbarLeft,
+            taskbarRight,
+            playerWidth,
+            margin,
+            [new OccupiedRange(642, 1193), new OccupiedRange(1265, 1920)],
+            700);
+        if (overlapping == 700)
+        {
+            throw new InvalidOperationException(
+                "An overlapping current position must be recalculated.");
+        }
     }
 
     private static TaskbarPlacementResult? FindBestLeft(
         nint taskbar,
         NativeMethods.Rect taskbarRect,
         int playerWidth,
-        int margin)
+        int margin,
+        int? preferredLeft)
     {
         try
         {
@@ -111,7 +145,8 @@ internal sealed class TaskbarPlacementService
                     taskbarRect.Right,
                     playerWidth,
                     margin,
-                    occupied),
+                    occupied,
+                    preferredLeft),
                 occupied.Count);
         }
         catch
@@ -125,7 +160,8 @@ internal sealed class TaskbarPlacementService
         int taskbarRight,
         int playerWidth,
         int margin,
-        IEnumerable<OccupiedRange> occupiedRanges)
+        IEnumerable<OccupiedRange> occupiedRanges,
+        int? preferredLeft = null)
     {
         var start = taskbarLeft + margin;
         var end = taskbarRight - margin;
@@ -137,7 +173,21 @@ internal sealed class TaskbarPlacementService
         var merged = MergeRanges(occupiedRanges, start, end);
         if (merged.Count == 0)
         {
-            return start;
+            return preferredLeft.HasValue
+                ? Math.Clamp(preferredLeft.Value, start, end - playerWidth)
+                : start;
+        }
+
+        if (preferredLeft.HasValue)
+        {
+            var stableLeft = Math.Clamp(preferredLeft.Value, start, end - playerWidth);
+            var stableRight = stableLeft + playerWidth;
+            var overlapsOccupiedRange = merged.Any(range =>
+                stableLeft < range.Right && stableRight > range.Left);
+            if (!overlapsOccupiedRange)
+            {
+                return stableLeft;
+            }
         }
 
         var gaps = BuildGaps(merged, start, end);

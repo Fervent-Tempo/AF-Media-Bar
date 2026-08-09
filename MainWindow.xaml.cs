@@ -28,6 +28,7 @@ public partial class MainWindow : Window
     private readonly MediaSessionService _mediaSessionService = new();
     private readonly SystemMetricsService _systemMetricsService = new();
     private readonly TaskbarPlacementService _taskbarPlacementService = new();
+    private readonly AudioDeviceService _audioDeviceService = new();
     private readonly DispatcherTimer _positionTimer;
     private readonly DispatcherTimer _taskbarAnimationTimer;
     private readonly DispatcherTimer _taskbarWatchdogTimer;
@@ -37,11 +38,13 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _collapseTimer;
     private readonly DispatcherTimer _marqueeTimer;
     private readonly DispatcherTimer _audioMonitorTimer;
+    private readonly DispatcherTimer _outputDeviceApplyTimer;
     private MetricSettings _metricSettings;
     private PlacementSettings _placementSettings;
     private TaskbarSettings _taskbarSettings;
     private SystemMetricsSnapshot _lastMetricsSnapshot;
     private IReadOnlyList<MediaSessionOption> _mediaSessions = [];
+    private IReadOnlyList<AudioDeviceOption> _outputDevices = [];
     private TaskbarEventWatcher? _taskbarEventWatcher;
     private AudioMonitorService? _audioMonitorService;
     private readonly MouseHookService _mouseHookService;
@@ -60,6 +63,7 @@ public partial class MainWindow : Window
     private int _placementRefreshInProgress;
     private int _placementRefreshRequested;
     private int _lastExpandedTaskbarHeight;
+    private string? _pendingOutputDeviceId;
     private DateTime _animationStableSinceUtc;
     private bool _hasPresented;
     private bool _isExpanded;
@@ -109,7 +113,7 @@ public partial class MainWindow : Window
             Dispatcher);
         _taskbarAnimationTimer = new DispatcherTimer(
             TimeSpan.FromMilliseconds(16),
-            DispatcherPriority.Render,
+            DispatcherPriority.Send,
             OnTaskbarAnimationTimerTick,
             Dispatcher);
         _taskbarAnimationTimer.Stop();
@@ -153,6 +157,12 @@ public partial class MainWindow : Window
             OnAudioMonitorTimerTick,
             Dispatcher);
         _audioMonitorTimer.Stop();
+        _outputDeviceApplyTimer = new DispatcherTimer(
+            TimeSpan.FromSeconds(1),
+            DispatcherPriority.Background,
+            OnOutputDeviceApplyTimerTick,
+            Dispatcher);
+        _outputDeviceApplyTimer.Stop();
 
         _mediaSessionService.SnapshotChanged += OnSnapshotChanged;
         _mediaSessionService.SessionsChanged += OnSessionsChanged;
@@ -204,7 +214,10 @@ public partial class MainWindow : Window
             EnsureTaskbarOwnership);
         _positionTimer.Start();
         _taskbarOwnerWatchdogTimer.Start();
-        _placementTimer.Start();
+        if (_placementSettings.AutomaticPlacement)
+        {
+            _placementTimer.Start();
+        }
         _metricsTimer.Start();
         UpdateMetrics(advanceCycle: false);
         SetExpanded(expanded: false, animate: false);
@@ -232,6 +245,7 @@ public partial class MainWindow : Window
         _marqueeTimer.Stop();
         RestoreDefaultWindowOwner();
         _audioMonitorTimer.Stop();
+        _outputDeviceApplyTimer.Stop();
         _audioMonitorService?.Dispose();
         _audioMonitorService = null;
         _taskbarEventWatcher?.Dispose();
@@ -274,7 +288,7 @@ public partial class MainWindow : Window
                 _ = RefreshAutomaticPlacementAsync();
             }
 
-            FollowTaskbarAnimation(taskbar, taskbarRect, asynchronous: false);
+            FollowTaskbarAnimation(taskbar, taskbarRect);
         }
 
         PositionOverTaskbar(force: true);
@@ -469,7 +483,7 @@ public partial class MainWindow : Window
         {
             _animationTaskbarRect = rect;
             _animationStableSinceUtc = DateTime.UtcNow;
-            FollowTaskbarAnimation(taskbar, rect, asynchronous: true);
+            FollowTaskbarAnimation(taskbar, rect);
         }
         else if ((DateTime.UtcNow - _animationStableSinceUtc).TotalMilliseconds >=
             AnimationStableMilliseconds)
@@ -480,13 +494,28 @@ public partial class MainWindow : Window
 
     private void FollowTaskbarAnimation(
         nint taskbar,
-        NativeMethods.Rect taskbarRect,
-        bool asynchronous)
+        NativeMethods.Rect taskbarRect)
     {
         if (!_hasPresented ||
             !_lastPositionLeft.HasValue)
         {
             return;
+        }
+
+        if (IsTaskbarCollapsed(taskbar, taskbarRect, IsShellTaskbarSurfaceForeground()))
+        {
+            if (Visibility != Visibility.Collapsed)
+            {
+                Visibility = Visibility.Collapsed;
+            }
+
+            StopMarquees();
+            return;
+        }
+
+        if (Visibility != Visibility.Visible)
+        {
+            Visibility = Visibility.Visible;
         }
 
         var dpi = NativeMethods.GetDpiForWindow(taskbar);
@@ -496,10 +525,6 @@ public partial class MainWindow : Window
         var flags = NativeMethods.SwpNoSize |
             NativeMethods.SwpNoActivate |
             NativeMethods.SwpShowWindow;
-        if (asynchronous)
-        {
-            flags |= NativeMethods.SwpAsyncWindowPos;
-        }
 
         NativeMethods.SetWindowPos(
             _windowHandle,
@@ -521,8 +546,10 @@ public partial class MainWindow : Window
         CollapseWhenPointerLeavesWindow();
 
         var shellSurfaceForeground = IsShellTaskbarSurfaceForeground();
+        var hasTaskbarRect = TryGetEffectiveTaskbarRect(out var taskbar, out var taskbarRect);
         if (!shellSurfaceForeground &&
-            NativeMethods.ShouldHideForFullScreenApp(_windowHandle))
+            (NativeMethods.ShouldHideForFullScreenApp(_windowHandle) ||
+                IsTaskbarCollapsed(taskbar, taskbarRect, shellSurfaceForeground)))
         {
             if (Visibility != Visibility.Collapsed)
             {
@@ -534,7 +561,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (!TryGetEffectiveTaskbarRect(out var taskbar, out var taskbarRect) ||
+        if (!hasTaskbarRect ||
             (!shellSurfaceForeground && taskbarRect.Width < taskbarRect.Height))
         {
             // A Shell animation can expose a transient zero/small rectangle. Keep
@@ -605,6 +632,38 @@ public partial class MainWindow : Window
                 NativeMethods.SwpNoActivate |
                 NativeMethods.SwpShowWindow);
         RevealAfterPlacement();
+    }
+
+    private bool IsTaskbarCollapsed(
+        nint taskbar,
+        NativeMethods.Rect effectiveRect,
+        bool shellSurfaceForeground)
+    {
+        if (!_taskbarSettings.AutoHide ||
+            shellSurfaceForeground ||
+            taskbar == nint.Zero)
+        {
+            return false;
+        }
+
+        var rect = effectiveRect;
+        if (NativeMethods.GetWindowRect(taskbar, out var rawRect))
+        {
+            rect = rawRect;
+        }
+
+        var monitor = NativeMethods.MonitorFromWindow(taskbar, 2);
+        var monitorInfo = NativeMethods.MonitorInfo.Create();
+        if (monitor == nint.Zero || !NativeMethods.GetMonitorInfo(monitor, ref monitorInfo))
+        {
+            return rect.Height <= 8;
+        }
+
+        var dpi = NativeMethods.GetDpiForWindow(taskbar);
+        var scale = dpi > 0 ? dpi / 96d : 1d;
+        var collapsedThreshold = Math.Max(8, (int)Math.Round(8 * scale));
+        return rect.Height <= collapsedThreshold ||
+            rect.Top >= monitorInfo.Monitor.Bottom - collapsedThreshold;
     }
 
     private bool TryGetEffectiveTaskbarRect(
@@ -794,7 +853,9 @@ public partial class MainWindow : Window
 
     private async Task RefreshAutomaticPlacementAsync()
     {
-        if (!_placementSettings.AutomaticPlacement || _windowHandle == nint.Zero)
+        if (!_placementSettings.AutomaticPlacement ||
+            _windowHandle == nint.Zero ||
+            _isMenuOpen)
         {
             return;
         }
@@ -813,12 +874,14 @@ public partial class MainWindow : Window
                 await RefreshAutomaticPlacementCoreAsync();
             }
             while (_placementSettings.AutomaticPlacement &&
+                !_isMenuOpen &&
                 Interlocked.Exchange(ref _placementRefreshRequested, 0) != 0);
         }
         finally
         {
             Interlocked.Exchange(ref _placementRefreshInProgress, 0);
             if (_placementSettings.AutomaticPlacement &&
+                !_isMenuOpen &&
                 Interlocked.Exchange(ref _placementRefreshRequested, 0) != 0)
             {
                 _ = RefreshAutomaticPlacementAsync();
@@ -846,7 +909,8 @@ public partial class MainWindow : Window
                 taskbar,
                 taskbarRect,
                 playerWidth,
-                margin).WaitAsync(TimeSpan.FromSeconds(2));
+                margin,
+                _automaticLeft).WaitAsync(TimeSpan.FromSeconds(2));
         }
         catch (TimeoutException)
         {
@@ -863,6 +927,7 @@ public partial class MainWindow : Window
             (_taskbarSettings.Alignment != TaskbarAlignment.Left ||
                 placement.Value.OccupiedElementCount > 0);
         if (!_placementSettings.AutomaticPlacement ||
+            _isMenuOpen ||
             !hasReliablePlacement ||
             alignment != _taskbarSettings.Alignment)
         {
@@ -896,7 +961,10 @@ public partial class MainWindow : Window
 
     private void CollapseWhenPointerLeavesWindow()
     {
-        if (!_isExpanded || _isMenuOpen || _isDragging ||
+        if (!_isExpanded ||
+            _isMenuOpen ||
+            OutputDevicePopup.IsOpen ||
+            _isDragging ||
             !NativeMethods.GetCursorPos(out var cursor) ||
             !NativeMethods.GetWindowRect(_windowHandle, out var windowRect))
         {
@@ -1019,7 +1087,10 @@ public partial class MainWindow : Window
     private void OnCollapseTimerTick(object? sender, EventArgs e)
     {
         _collapseTimer.Stop();
-        if (!_isMenuOpen && !_isDragging && !PlayerRoot.IsMouseOver)
+        if (!_isMenuOpen &&
+            !OutputDevicePopup.IsOpen &&
+            !_isDragging &&
+            !PlayerRoot.IsMouseOver)
         {
             SetExpanded(expanded: false, animate: true);
         }
@@ -1038,13 +1109,12 @@ public partial class MainWindow : Window
             : _metricSettings.AudioMonitorEnabled
                 ? MonitoredInfoWidth
                 : CollapsedInfoWidth;
-        var constrainTitleForMonitor = _metricSettings.AudioMonitorEnabled && !expanded;
-        TitleText.Width = constrainTitleForMonitor
-            ? MonitoredInfoWidth - 17
-            : double.NaN;
-        TitleText.TextTrimming = constrainTitleForMonitor
-            ? TextTrimming.CharacterEllipsis
-            : TextTrimming.None;
+        InfoHost.BeginAnimation(FrameworkElement.WidthProperty, null);
+        InfoHost.MaxWidth = infoWidth;
+        InfoHost.Width = expanded ? infoWidth : double.NaN;
+        TitleText.Width = double.NaN;
+        TitleText.MaxWidth = double.PositiveInfinity;
+        TitleText.TextTrimming = TextTrimming.None;
         var controlsOpacity = expanded ? 1d : 0d;
         var controlsOffset = expanded ? 0d : 8d;
         var titleOffset = expanded ? -8d : 0d;
@@ -1052,13 +1122,11 @@ public partial class MainWindow : Window
         var artistOpacity = expanded ? 1d : 0d;
         if (!animate)
         {
-            InfoHost.BeginAnimation(FrameworkElement.WidthProperty, null);
             ControlsHost.BeginAnimation(UIElement.OpacityProperty, null);
             ControlsTransform.BeginAnimation(TranslateTransform.XProperty, null);
             TitleTransform.BeginAnimation(TranslateTransform.YProperty, null);
             ArtistTransform.BeginAnimation(TranslateTransform.YProperty, null);
             ArtistText.BeginAnimation(UIElement.OpacityProperty, null);
-            InfoHost.Width = infoWidth;
             ControlsHost.Opacity = controlsOpacity;
             ControlsTransform.X = controlsOffset;
             TitleTransform.Y = titleOffset;
@@ -1071,12 +1139,6 @@ public partial class MainWindow : Window
         var duration = new Duration(TimeSpan.FromMilliseconds(220));
         var easing = new CubicEase { EasingMode = EasingMode.EaseOut };
 
-        InfoHost.BeginAnimation(
-            FrameworkElement.WidthProperty,
-            CreateAnimation(
-                infoWidth,
-                duration,
-                easing));
         ControlsHost.BeginAnimation(
             UIElement.OpacityProperty,
             CreateAnimation(controlsOpacity, duration, easing));
@@ -1218,13 +1280,13 @@ public partial class MainWindow : Window
             MetricsText.Text = string.Empty;
             MetricsHost.Visibility = Visibility.Collapsed;
             MetricsDivider.Visibility = Visibility.Collapsed;
-            PlayerRoot.Width = 254;
+            PlayerRoot.Width = 294;
             return;
         }
 
         MetricsHost.Visibility = Visibility.Visible;
         MetricsDivider.Visibility = Visibility.Visible;
-        PlayerRoot.Width = 349;
+        PlayerRoot.Width = 389;
         if (advanceCycle)
         {
             _metricCycleIndex = (_metricCycleIndex + 1) % selectedCount;
@@ -1297,17 +1359,7 @@ public partial class MainWindow : Window
 
     private void ApplyMetricSettings()
     {
-        MetricsEnabledMenuItem.IsChecked = _metricSettings.Enabled;
-        SystemMemoryMenuItem.IsChecked = _metricSettings.ShowSystemMemory;
-        SystemCpuMenuItem.IsChecked = _metricSettings.ShowSystemCpu;
-        SystemGpuMenuItem.IsChecked = _metricSettings.ShowSystemGpu;
-        ProcessMemoryMenuItem.IsChecked = _metricSettings.ShowProcessMemory;
-        LowGpuModeMenuItem.IsChecked = _metricSettings.LowGpuMode;
-        AudioMonitorMenuItem.IsChecked = _metricSettings.AudioMonitorEnabled;
-        SystemMemoryMenuItem.IsEnabled = _metricSettings.Enabled;
-        SystemCpuMenuItem.IsEnabled = _metricSettings.Enabled;
-        SystemGpuMenuItem.IsEnabled = _metricSettings.Enabled;
-        ProcessMemoryMenuItem.IsEnabled = _metricSettings.Enabled;
+        SyncMetricMenuState();
         _metricCycleIndex = 0;
         _metricCycleTicks = 0;
         UpdateMetrics(advanceCycle: false);
@@ -1325,6 +1377,21 @@ public partial class MainWindow : Window
 
         ApplyAudioMonitorSettings();
         _ = RefreshAutomaticPlacementAsync();
+    }
+
+    private void SyncMetricMenuState()
+    {
+        MetricsEnabledMenuItem.IsChecked = _metricSettings.Enabled;
+        SystemMemoryMenuItem.IsChecked = _metricSettings.ShowSystemMemory;
+        SystemCpuMenuItem.IsChecked = _metricSettings.ShowSystemCpu;
+        SystemGpuMenuItem.IsChecked = _metricSettings.ShowSystemGpu;
+        ProcessMemoryMenuItem.IsChecked = _metricSettings.ShowProcessMemory;
+        LowGpuModeMenuItem.IsChecked = _metricSettings.LowGpuMode;
+        AudioMonitorMenuItem.IsChecked = _metricSettings.AudioMonitorEnabled;
+        SystemMemoryMenuItem.IsEnabled = _metricSettings.Enabled;
+        SystemCpuMenuItem.IsEnabled = _metricSettings.Enabled;
+        SystemGpuMenuItem.IsEnabled = _metricSettings.Enabled;
+        ProcessMemoryMenuItem.IsEnabled = _metricSettings.Enabled;
     }
 
     private void MetricSetting_OnClick(object sender, RoutedEventArgs e)
@@ -1412,6 +1479,191 @@ public partial class MainWindow : Window
         }
     }
 
+    private async Task RefreshOutputDevicesAsync(string? preferredId = null)
+    {
+        try
+        {
+            var devices = await _audioDeviceService.GetRenderDevicesAsync()
+                .WaitAsync(TimeSpan.FromSeconds(2));
+            _outputDevices = devices;
+            OutputDeviceList.ItemsSource = devices;
+
+            var selected = devices.FirstOrDefault(device =>
+                    !string.IsNullOrWhiteSpace(preferredId) &&
+                    string.Equals(device.Id, preferredId, StringComparison.OrdinalIgnoreCase)) ??
+                devices.FirstOrDefault(device => device.IsDefault) ??
+                devices.FirstOrDefault();
+            OutputDeviceList.SelectedItem = selected;
+
+            var current = devices.FirstOrDefault(device => device.IsDefault) ?? selected;
+            OutputDeviceCurrentText.Text = current?.DisplayName ?? "未找到设备";
+            OutputDeviceButton.ToolTip = current is null
+                ? "未找到可用输出设备"
+                : $"输出设备：{current.DisplayName}";
+        }
+        catch (Exception exception)
+        {
+            _outputDevices = [];
+            OutputDeviceList.ItemsSource = null;
+            OutputDeviceCurrentText.Text = "读取失败";
+            OutputDeviceButton.ToolTip = $"无法读取输出设备：{exception.Message}";
+        }
+    }
+
+    private async void OutputDeviceButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (OutputDevicePopup.IsOpen)
+        {
+            OutputDevicePopup.IsOpen = false;
+            return;
+        }
+
+        await RefreshOutputDevicesAsync();
+        if (_outputDevices.Count > 0)
+        {
+            OutputDevicePopup.IsOpen = true;
+        }
+    }
+
+    private async void OutputDeviceList_OnPreviewMouseLeftButtonUp(
+        object sender,
+        MouseButtonEventArgs e)
+    {
+        var container = ItemsControl.ContainerFromElement(
+            OutputDeviceList,
+            e.OriginalSource as DependencyObject) as ListBoxItem;
+        if (container?.DataContext is not AudioDeviceOption device)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        _outputDeviceApplyTimer.Stop();
+        _pendingOutputDeviceId = null;
+        OutputDeviceList.SelectedItem = device;
+        if (await SwitchOutputDeviceAsync(device))
+        {
+            OutputDevicePopup.IsOpen = false;
+        }
+    }
+
+    private async void OutputDeviceHost_OnPreviewMouseWheel(
+        object sender,
+        MouseWheelEventArgs e)
+    {
+        e.Handled = true;
+        await QueueOutputDeviceFromWheelAsync(e.Delta);
+    }
+
+    private async void OutputDeviceList_OnPreviewMouseWheel(
+        object sender,
+        MouseWheelEventArgs e)
+    {
+        e.Handled = true;
+        await QueueOutputDeviceFromWheelAsync(e.Delta);
+    }
+
+    private async Task QueueOutputDeviceFromWheelAsync(int delta)
+    {
+        if (_outputDevices.Count == 0)
+        {
+            await RefreshOutputDevicesAsync();
+        }
+
+        if (_outputDevices.Count == 0)
+        {
+            return;
+        }
+
+        var currentIndex = -1;
+        if (!string.IsNullOrWhiteSpace(_pendingOutputDeviceId))
+        {
+            currentIndex = FindOutputDeviceIndex(_pendingOutputDeviceId);
+        }
+
+        if (currentIndex < 0)
+        {
+            currentIndex = _outputDevices
+                .Select((device, index) => (device, index))
+                .Where(pair => pair.device.IsDefault)
+                .Select(pair => pair.index)
+                .DefaultIfEmpty(0)
+                .First();
+        }
+
+        var direction = delta > 0 ? -1 : 1;
+        var nextIndex = (currentIndex + direction + _outputDevices.Count) %
+            _outputDevices.Count;
+        var nextDevice = _outputDevices[nextIndex];
+        _pendingOutputDeviceId = nextDevice.Id;
+        OutputDevicePopup.IsOpen = true;
+        OutputDeviceList.SelectedItem = nextDevice;
+        OutputDeviceList.ScrollIntoView(nextDevice);
+        OutputDeviceCurrentText.Text = nextDevice.DisplayName;
+        OutputDeviceButton.ToolTip = $"即将切换到：{nextDevice.DisplayName}";
+        _outputDeviceApplyTimer.Stop();
+        _outputDeviceApplyTimer.Start();
+    }
+
+    private int FindOutputDeviceIndex(string deviceId)
+    {
+        for (var index = 0; index < _outputDevices.Count; index++)
+        {
+            if (string.Equals(
+                    _outputDevices[index].Id,
+                    deviceId,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+
+    private async void OnOutputDeviceApplyTimerTick(object? sender, EventArgs e)
+    {
+        _outputDeviceApplyTimer.Stop();
+        var deviceId = _pendingOutputDeviceId;
+        _pendingOutputDeviceId = null;
+        var device = _outputDevices.FirstOrDefault(candidate =>
+            string.Equals(candidate.Id, deviceId, StringComparison.OrdinalIgnoreCase));
+        if (device is not null && await SwitchOutputDeviceAsync(device))
+        {
+            OutputDevicePopup.IsOpen = false;
+        }
+    }
+
+    private async Task<bool> SwitchOutputDeviceAsync(AudioDeviceOption device)
+    {
+        try
+        {
+            await Task.Run(() => _audioDeviceService.SetDefaultRenderDevice(device.PolicyId))
+                .WaitAsync(TimeSpan.FromSeconds(3));
+            await Task.Delay(180);
+            if (_metricSettings.AudioMonitorEnabled)
+            {
+                _audioMonitorService?.Dispose();
+                _audioMonitorService = null;
+                ApplyAudioMonitorSettings();
+            }
+
+            await RefreshOutputDevicesAsync(device.Id);
+            return true;
+        }
+        catch (Exception exception)
+        {
+            OutputDeviceCurrentText.Text = "切换失败";
+            OutputDeviceButton.ToolTip = $"无法切换输出设备：{exception.Message}";
+            return false;
+        }
+    }
+
+    private void OutputDevicePopup_OnClosed(object? sender, EventArgs e)
+    {
+        ScheduleCollapse();
+    }
+
     private void ApplyPlacementSettings()
     {
         AutomaticPlacementMenuItem.IsChecked = _placementSettings.AutomaticPlacement;
@@ -1455,10 +1707,12 @@ public partial class MainWindow : Window
         ApplyPlacementSettings();
         if (_placementSettings.AutomaticPlacement)
         {
+            _placementTimer.Start();
             await RefreshAutomaticPlacementAsync();
         }
         else
         {
+            _placementTimer.Stop();
             PositionOverTaskbar(force: true);
         }
     }
@@ -1537,6 +1791,11 @@ public partial class MainWindow : Window
 
     private async void PlayerRoot_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
+        if (OutputDeviceHost.IsMouseOver)
+        {
+            return;
+        }
+
         if (_mediaSessions.Count < 2)
         {
             return;
@@ -1614,7 +1873,7 @@ public partial class MainWindow : Window
         SetExpanded(expanded: true, animate: true);
         StartupMenuItem.IsChecked = StartupService.IsEnabled;
         ApplyPlacementSettings();
-        ApplyMetricSettings();
+        SyncMetricMenuState();
     }
 
     private void PlayerMenu_OnClosed(object sender, RoutedEventArgs e)

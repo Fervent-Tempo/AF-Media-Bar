@@ -13,6 +13,7 @@
         Focusable="False">
   <Window.ContextMenu>
     <ContextMenu x:Name="PlayerMenu"
+                 MinWidth="270"
                  MaxWidth="360"
                  Opened="PlayerMenu_OnOpened"
                  Closed="PlayerMenu_OnClosed">
@@ -69,7 +70,7 @@
                 Click="MetricSetting_OnClick" />
       <MenuItem Header="位置">
         <MenuItem x:Name="AutomaticPlacementMenuItem"
-                  Header="自动避让任务栏图标"
+                  Header="实验性：自动避让任务栏图标"
                   IsCheckable="True"
                   Click="AutomaticPlacement_OnClick" />
         <MenuItem x:Name="LockPositionMenuItem"
@@ -88,7 +89,7 @@
   </Window.ContextMenu>
 
   <Grid x:Name="PlayerRoot"
-        Width="349"
+        Width="294"
         Height="44"
         Background="#01000000"
         ClipToBounds="True"
@@ -102,6 +103,7 @@
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="44" />
       <ColumnDefinition Width="210" />
+      <ColumnDefinition Width="Auto" />
       <ColumnDefinition Width="Auto" />
       <ColumnDefinition Width="Auto" />
     </Grid.ColumnDefinitions>
@@ -133,8 +135,12 @@
           Grid.Column="1"
           Width="210"
           ClipToBounds="True">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
       <Grid x:Name="InfoHost"
-            Width="210"
+            MaxWidth="210"
             HorizontalAlignment="Left"
             VerticalAlignment="Center"
             Cursor="Hand"
@@ -142,13 +148,13 @@
         <Grid Height="40"
               Margin="9,0,8,0">
 
-          <Canvas x:Name="TitleViewport"
-                  Height="40"
-                  VerticalAlignment="Center"
-                  ClipToBounds="True">
+          <Grid x:Name="TitleViewport"
+                Height="40"
+                VerticalAlignment="Center"
+                ClipToBounds="True">
             <TextBlock x:Name="TitleText"
-                       Canvas.Top="10"
                        Text="等待媒体播放"
+                       VerticalAlignment="Center"
                        FontFamily="Segoe UI Variable Display"
                        FontSize="14"
                        FontWeight="SemiBold"
@@ -158,12 +164,12 @@
                 <TranslateTransform x:Name="TitleTransform" />
               </TextBlock.RenderTransform>
             </TextBlock>
-          </Canvas>
+          </Grid>
 
-          <Canvas x:Name="ArtistViewport"
-                  Height="18"
-                  VerticalAlignment="Bottom"
-                  ClipToBounds="True">
+          <Grid x:Name="ArtistViewport"
+                Height="18"
+                VerticalAlignment="Bottom"
+                ClipToBounds="True">
             <TextBlock x:Name="ArtistText"
                        Text="请在任意应用中播放音频或视频"
                        FontFamily="Segoe UI Variable Text"
@@ -176,11 +182,12 @@
                 <TranslateTransform x:Name="ArtistTransform" Y="3" />
               </TextBlock.RenderTransform>
             </TextBlock>
-          </Canvas>
+          </Grid>
         </Grid>
       </Grid>
 
       <Border x:Name="ControlsHost"
+              Grid.ColumnSpan="2"
               Width="114"
               HorizontalAlignment="Right"
               Opacity="0"
@@ -220,9 +227,10 @@
         </StackPanel>
       </Border>
       <Border x:Name="AudioVisualizerHost"
+              Grid.Column="1"
               Width="60"
               Margin="0,0,1,0"
-              HorizontalAlignment="Right"
+              HorizontalAlignment="Left"
               VerticalAlignment="Center"
               Visibility="Collapsed"
               IsHitTestVisible="False">
@@ -270,5 +278,79 @@
                  VerticalAlignment="Center"
                  TextTrimming="CharacterEllipsis" />
     </Border>
+
+    <Border x:Name="OutputDeviceHost"
+            Grid.Column="4"
+            Width="36"
+            Height="36"
+            Margin="0,0,4,0"
+            CornerRadius="6"
+            Background="Transparent"
+            VerticalAlignment="Center"
+            PreviewMouseWheel="OutputDeviceHost_OnPreviewMouseWheel">
+      <Button x:Name="OutputDeviceButton"
+              Width="30"
+              Height="30"
+              Style="{StaticResource TransportButtonStyle}"
+              ToolTip="输出设备"
+              Click="OutputDeviceButton_OnClick">
+        <TextBlock Text="&#xE767;"
+                   FontFamily="Segoe Fluent Icons"
+                   FontSize="14" />
+      </Button>
+    </Border>
+
+    <Popup x:Name="OutputDevicePopup"
+           PlacementTarget="{Binding ElementName=OutputDeviceHost}"
+           Placement="Top"
+           AllowsTransparency="True"
+           StaysOpen="False"
+           PopupAnimation="Fade"
+           Closed="OutputDevicePopup_OnClosed">
+      <Border Width="286"
+              MaxHeight="360"
+              Padding="8"
+              Background="{StaticResource MenuBackgroundBrush}"
+              BorderBrush="{StaticResource MenuBorderBrush}"
+              BorderThickness="1"
+              CornerRadius="8">
+        <StackPanel>
+          <DockPanel Margin="4,2,4,8">
+            <TextBlock Text="输出设备"
+                       Foreground="{StaticResource PrimaryTextBrush}"
+                       FontFamily="Segoe UI Variable Text"
+                       FontSize="13"
+                       FontWeight="SemiBold" />
+            <TextBlock x:Name="OutputDeviceCurrentText"
+                       DockPanel.Dock="Right"
+                       MaxWidth="150"
+                       TextTrimming="CharacterEllipsis"
+                       Foreground="{StaticResource SecondaryTextBrush}"
+                       FontFamily="Segoe UI Variable Text"
+                       FontSize="11"
+                       HorizontalAlignment="Right" />
+          </DockPanel>
+          <ListBox x:Name="OutputDeviceList"
+                   MaxHeight="300"
+                   BorderThickness="0"
+                   Background="Transparent"
+                   Foreground="{StaticResource PrimaryTextBrush}"
+                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                   ScrollViewer.VerticalScrollBarVisibility="Auto"
+                   ItemContainerStyle="{StaticResource OutputDeviceListItemStyle}"
+                   PreviewMouseLeftButtonUp="OutputDeviceList_OnPreviewMouseLeftButtonUp"
+                   PreviewMouseWheel="OutputDeviceList_OnPreviewMouseWheel">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding DisplayName}"
+                           TextTrimming="CharacterEllipsis"
+                           FontFamily="Segoe UI Variable Text"
+                           FontSize="12.5" />
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </StackPanel>
+      </Border>
+    </Popup>
   </Grid>
 </Window>
