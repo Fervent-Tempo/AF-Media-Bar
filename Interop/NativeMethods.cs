@@ -1,12 +1,20 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
+// 仅从 System32 解析原生库，避免工作目录中的同名 DLL 被加载。
+// Resolve native libraries only from System32 to prevent DLL preloading.
 [assembly: DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
 
 namespace AFMediaBar.Interop;
 
+/// <summary>
+/// 集中声明 AF Media Bar 使用的 Win32、Shell 和系统性能 API。
+/// Centralizes the Win32, Shell, and system-performance APIs used by AF Media Bar.
+/// </summary>
 internal static class NativeMethods
 {
+    // WinUser.h：窗口样式与 SetWindowPos 标志。
+    // WinUser.h: window styles and SetWindowPos flags.
     internal const int GwlStyle = -16;
     internal const int GwlExStyle = -20;
     internal const int GwlpHwndParent = -8;
@@ -19,6 +27,8 @@ internal static class NativeMethods
     internal const uint SwpShowWindow = 0x0040;
     internal const int SwRestore = 9;
 
+    // WinUser.h：无注入 WinEvent 监听所需的事件、对象和钩子标志。
+    // WinUser.h: events, object IDs, and flags for out-of-process WinEvent hooks.
     internal const uint EventSystemForeground = 0x0003;
     internal const uint EventObjectShow = 0x8002;
     internal const uint EventObjectHide = 0x8003;
@@ -27,6 +37,8 @@ internal static class NativeMethods
     internal const uint WinEventOutOfContext = 0x0000;
     internal const uint WinEventSkipOwnProcess = 0x0002;
 
+    // WinUser.h / shellapi.h：窗口消息、命中测试与通知区域协议。
+    // WinUser.h / shellapi.h: window messages, hit testing, and tray-icon protocol.
     internal const int WmApp = 0x8000;
     internal const int WmContextMenu = 0x007B;
     internal const int WmNcHitTest = 0x0084;
@@ -38,6 +50,8 @@ internal static class NativeMethods
     internal const int IdiApplication = 32512;
     internal const int WhMouseLowLevel = 14;
 
+    // shellapi.h：AppBar 查询用于读取自动隐藏状态和任务栏矩形。
+    // shellapi.h: AppBar queries expose auto-hide state and taskbar geometry.
     internal const uint AbmGetState = 0x00000004;
     internal const uint AbmGetTaskbarPos = 0x00000005;
     internal const uint AbsAutoHide = 0x00000001;

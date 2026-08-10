@@ -2,6 +2,10 @@ using Microsoft.Win32;
 
 namespace AFMediaBar.Services;
 
+/// <summary>
+/// 管理当前用户的开机启动项，并迁移旧版程序名称对应的注册表值。
+/// Manages per-user startup registration and migrates values from earlier application names.
+/// </summary>
 internal static class StartupService
 {
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";

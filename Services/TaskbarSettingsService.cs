@@ -4,6 +4,10 @@ using AFMediaBar.Models;
 
 namespace AFMediaBar.Services;
 
+/// <summary>
+/// 从 Explorer 设置和 Shell AppBar API 读取任务栏对齐与自动隐藏状态。
+/// Reads taskbar alignment and auto-hide state from Explorer and the Shell AppBar API.
+/// </summary>
 internal static class TaskbarSettingsService
 {
     private const string ExplorerAdvancedKeyPath =
@@ -25,7 +29,8 @@ internal static class TaskbarSettingsService
         }
         catch
         {
-            // Explorer can briefly lock its settings while applying a taskbar change.
+            // Explorer 应用任务栏变更时可能短暂锁定设置，此时保留默认对齐方式。
+            // Explorer may briefly lock its settings during a taskbar change; keep the default alignment.
         }
 
         var appBarData = NativeMethods.AppBarData.Create();

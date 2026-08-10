@@ -8,11 +8,17 @@ using Windows.Media.Control;
 
 namespace AFMediaBar.Services;
 
+/// <summary>
+/// 订阅 GSMTC 会话，选择媒体来源，并发布可供 WPF 显示的稳定快照。
+/// Subscribes to GSMTC sessions, selects a source, and publishes stable WPF snapshots.
+/// </summary>
 internal sealed class MediaSessionService : IDisposable
 {
     private const int ArtworkDecodeWidth = 96;
     private const int MaximumArtworkBytes = 16 * 1024 * 1024;
     private static readonly TimeSpan SessionReconnectGracePeriod = TimeSpan.FromSeconds(6);
+    // 播放器常先发布标题、后发布封面；短时重试等待来源完成更新。
+    // Players often publish text before artwork; short retries wait for settled metadata.
     private static readonly TimeSpan[] ArtworkRefreshDelays =
     [
         TimeSpan.FromMilliseconds(220),
@@ -38,20 +44,30 @@ internal sealed class MediaSessionService : IDisposable
         ("foobar2000", ["foobar"])
     ];
 
+    // GSMTC 回调可并发到达，此门锁串行化会话列表与当前来源切换。
+    // GSMTC callbacks may overlap; this gate serializes list and selection changes.
     private readonly SemaphoreSlim _sessionGate = new(1, 1);
     private readonly List<SessionEntry> _entries = [];
+    // manager 和 session 都注册了事件，Dispose/SetSession 必须成对退订。
+    // Both manager and session own event subscriptions that must be removed on teardown.
     private GlobalSystemMediaTransportControlsSessionManager? _manager;
     private GlobalSystemMediaTransportControlsSession? _session;
     private string? _selectedKey;
     private string? _preferredSourceId;
     private string? _preferredSourceName;
+    // 来源短暂消失时保留选择，取消令牌负责终止过期的宽限期刷新。
+    // Preserve briefly missing sources; cancellation stops obsolete grace-period refreshes.
     private DateTime? _sessionMissingSinceUtc;
     private CancellationTokenSource? _sessionReconnectCancellation;
     private CancellationTokenSource? _artworkRefreshCancellation;
     private MediaSnapshot _lastSnapshot = MediaSnapshot.Disconnected;
+    // identity 标识曲目，fingerprint 标识封面内容，pending 防止重复重试。
+    // Identity tracks the item, fingerprint tracks pixels, and pending deduplicates retries.
     private string? _artworkIdentity;
     private string? _artworkFingerprint;
     private string? _pendingArtworkIdentity;
+    // 单调版本号阻止较慢的旧异步读取覆盖较新的媒体来源。
+    // A monotonic version prevents stale async reads from overwriting a newer source.
     private int _refreshVersion;
     private bool _disposed;
 
@@ -65,6 +81,8 @@ internal sealed class MediaSessionService : IDisposable
     {
         if (_manager is null)
         {
+            // WinRT 事件是订阅制；Dispose 中必须退订，避免服务被 manager 保活。
+            // WinRT events are subscription-based; Dispose must detach them.
             _manager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
             _manager.CurrentSessionChanged += OnManagerSessionsChanged;
             _manager.SessionsChanged += OnManagerSessionsChanged;
@@ -255,9 +273,8 @@ internal sealed class MediaSessionService : IDisposable
                 session.PlaybackInfoChanged += OnAnyPlaybackInfoChanged;
             }
 
-            // An explicitly closed last source is represented by an empty session
-            // list. Clear the old artwork/title immediately instead of keeping a
-            // stale snapshot behind the reconnect grace period.
+            // 最后一个来源明确关闭时列表为空，应立即清除旧封面而非进入宽限期。
+            // An empty list means the last source closed; clear stale metadata immediately.
             if (_entries.Count == 0)
             {
                 CancelSessionReconnectGrace();
@@ -375,7 +392,7 @@ internal sealed class MediaSessionService : IDisposable
         }
         catch (OperationCanceledException)
         {
-            // The preferred source returned or the user selected another source.
+            // 来源已恢复或用户已改选。 / The source returned or the user changed selection.
         }
     }
 
@@ -402,6 +419,8 @@ internal sealed class MediaSessionService : IDisposable
 
         if (_session is not null)
         {
+            // 始终先退订旧来源，再替换引用，避免旧回调更新当前界面。
+            // Detach the old source before replacing it so stale callbacks cannot publish.
             _session.MediaPropertiesChanged -= OnMediaPropertiesChanged;
         }
 
@@ -466,17 +485,15 @@ internal sealed class MediaSessionService : IDisposable
         {
             if (!_disposed)
             {
-                // WinRT event handlers are async void. Keep unexpected provider
-                // failures from terminating the process; the next session event
-                // will retry the refresh.
+                // WinRT 回调是 async void；隔离来源异常，等待下次事件重试。
+                // WinRT callbacks are async void; isolate provider failures and retry later.
                 try
                 {
                     Publish(MediaSnapshot.Disconnected);
                 }
                 catch
                 {
-                    // Event subscribers must not turn provider failures into a
-                    // process-terminating async void exception.
+                    // 订阅方异常也不能逃出 async void。 / Subscriber failures stay contained.
                 }
             }
         }
@@ -484,6 +501,8 @@ internal sealed class MediaSessionService : IDisposable
 
     private async Task RefreshMediaPropertiesAsync()
     {
+        // 每次读取占用一个版本；完成时只有最新版本可以发布。
+        // Each read owns a version and only the newest completion may publish.
         var version = Interlocked.Increment(ref _refreshVersion);
         var session = _session;
         var entry = _entries.FirstOrDefault(candidate =>
@@ -496,6 +515,8 @@ internal sealed class MediaSessionService : IDisposable
 
         try
         {
+            // 不同播放器填充 GSMTC 字段的时机不同，缺失字段使用稳定回退值。
+            // Publishers populate GSMTC fields at different times; use stable fallbacks.
             var mediaProperties = await session.TryGetMediaPropertiesAsync();
             var title = string.IsNullOrWhiteSpace(mediaProperties.Title)
                 ? entry.DisplayName
@@ -601,6 +622,8 @@ internal sealed class MediaSessionService : IDisposable
     {
         try
         {
+            // 新曲目回调可能早于封面流；按有限退避重读，避免永久显示旧封面。
+            // Item callbacks may precede artwork streams; bounded retries avoid stale covers.
             for (var attempt = 0; attempt < ArtworkRefreshDelays.Length; attempt++)
             {
                 await Task.Delay(ArtworkRefreshDelays[attempt], cancellation.Token);
@@ -675,12 +698,11 @@ internal sealed class MediaSessionService : IDisposable
         }
         catch (OperationCanceledException)
         {
-            // A newer media callback or source selection superseded this artwork.
+            // 新事件或来源已取代本次封面读取。 / A newer event superseded this artwork read.
         }
         catch
         {
-            // The immediate snapshot remains usable if the publisher's settled
-            // thumbnail cannot be read.
+            // 封面不可读时仍保留文字快照。 / Keep the text snapshot when artwork is unreadable.
         }
         finally
         {
@@ -804,9 +826,8 @@ internal sealed class MediaSessionService : IDisposable
         }
 
         using var sourceStream = randomAccessStream.AsStreamForRead();
-        // WPF's decoder can receive a non-seekable WinRT stream on the first
-        // media-properties callback. Buffer only this small 96px artwork so
-        // initial loads and source switching use the same reliable path.
+        // 首次回调可能提供不可定位的 WinRT 流；限量缓冲后再交给 WPF 解码。
+        // The first callback may expose a non-seekable WinRT stream; buffer it for WPF.
         using var memoryStream = new MemoryStream(checked((int)randomAccessStream.Size));
         if (!await CopyArtworkAsync(sourceStream, memoryStream, cancellationToken))
         {
@@ -883,6 +904,8 @@ internal sealed class MediaSessionService : IDisposable
             return;
         }
 
+        // 先取消后台工作，再退订 session/manager，防止关闭后继续发布快照。
+        // Cancel background work before detaching session/manager event subscriptions.
         _disposed = true;
         CancelSessionReconnectGrace();
         CancelArtworkRefresh();

@@ -2,6 +2,10 @@ using AFMediaBar.Interop;
 
 namespace AFMediaBar.Services;
 
+/// <summary>
+/// 管理 Shell 通知区域图标、回调消息及 Explorer 重启后的自动恢复。
+/// Manages the Shell tray icon, callback messages, and recovery after Explorer restarts.
+/// </summary>
 internal sealed class TrayIconService : IDisposable
 {
     internal const int CallbackMessage = NativeMethods.WmApp + 1;
@@ -25,6 +29,8 @@ internal sealed class TrayIconService : IDisposable
                 new nint(NativeMethods.IdiApplication));
         }
 
+        // Explorer 重启会清空通知区域；TaskbarCreated 到达后必须重新添加图标。
+        // Explorer restart clears the tray; TaskbarCreated requires adding the icon again.
         _taskbarCreatedMessage = NativeMethods.RegisterWindowMessage("TaskbarCreated");
         AddIcon();
     }
@@ -110,6 +116,8 @@ internal sealed class TrayIconService : IDisposable
 
     public void Dispose()
     {
+        // Shell 图标不会随托管对象自动消失，应在窗口销毁前显式删除。
+        // Shell icons do not follow managed lifetime; remove the icon before window teardown.
         if (_isAdded)
         {
             var data = CreateIconData();

@@ -4,10 +4,16 @@ using AFMediaBar.Models;
 
 namespace AFMediaBar.Services;
 
+/// <summary>
+/// 通过 UI Automation 扫描任务栏占用区域，并选择尽量不遮挡图标的位置。
+/// Scans taskbar occupancy through UI Automation and chooses a low-overlap position.
+/// </summary>
 internal sealed class TaskbarPlacementService
 {
     private const int OccupiedPadding = 4;
     private readonly object _scanSync = new();
+    // UI Automation 扫描较慢；并发请求共享同一个在途任务，避免重复遍历 Explorer。
+    // UI Automation is slow; concurrent callers share one scan instead of rescanning Explorer.
     private Task<TaskbarPlacementResult?>? _activeScan;
 
     internal Task<TaskbarPlacementResult?> FindBestLeftAsync(
@@ -151,6 +157,8 @@ internal sealed class TaskbarPlacementService
         }
         catch
         {
+            // Windows 更新或定制任务栏可能改变自动化树，失败时由调用方保留旧位置。
+            // Windows updates or custom taskbars may alter the tree; callers keep the old position.
             return null;
         }
     }

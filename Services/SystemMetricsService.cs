@@ -5,6 +5,10 @@ using AFMediaBar.Models;
 
 namespace AFMediaBar.Services;
 
+/// <summary>
+/// 采样系统内存、CPU、GPU 与当前进程内存，并复用跨周期计数器状态。
+/// Samples system and process metrics while reusing counters across sampling intervals.
+/// </summary>
 internal sealed class SystemMetricsService : IDisposable
 {
     private readonly Process _currentProcess = Process.GetCurrentProcess();
@@ -50,6 +54,8 @@ internal sealed class SystemMetricsService : IDisposable
     {
         if (!includeGpu)
         {
+            // PDH 查询持有原生句柄和非托管缓冲区，禁用 GPU 指标时立即释放。
+            // PDH owns native handles and buffers; release them as soon as GPU metrics stop.
             _gpuUsageSampler?.Dispose();
             _gpuUsageSampler = null;
             return null;

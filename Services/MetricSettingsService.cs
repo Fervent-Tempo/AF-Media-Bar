@@ -3,6 +3,10 @@ using AFMediaBar.Models;
 
 namespace AFMediaBar.Services;
 
+/// <summary>
+/// 从注册表读取、迁移并保存性能指标与可选控件设置。
+/// Reads, migrates, and saves performance metric and optional control settings in the registry.
+/// </summary>
 internal static class MetricSettingsService
 {
     private const string SettingsKeyPath = @"Software\AFMediaBar";
@@ -94,7 +98,8 @@ internal static class MetricSettingsService
                 }
                 catch
                 {
-                    // Loading legacy settings should still succeed if migration cannot write.
+                    // 迁移写入失败时仍使用已读取的旧设置，避免阻断启动。
+                    // Keep the loaded legacy settings when migration cannot write, so startup continues.
                 }
             }
 

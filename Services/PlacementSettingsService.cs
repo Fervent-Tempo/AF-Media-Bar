@@ -3,6 +3,10 @@ using AFMediaBar.Models;
 
 namespace AFMediaBar.Services;
 
+/// <summary>
+/// 从注册表读取、迁移并保存任务栏组件的位置设置。
+/// Reads, migrates, and saves taskbar component placement settings in the registry.
+/// </summary>
 internal static class PlacementSettingsService
 {
     private const string SettingsKeyPath = @"Software\AFMediaBar";
@@ -93,7 +97,8 @@ internal static class PlacementSettingsService
                 }
                 catch
                 {
-                    // Loading legacy settings should still succeed if migration cannot write.
+                    // 迁移写入失败时仍使用已读取的旧设置，避免阻断启动。
+                    // Keep the loaded legacy settings when migration cannot write, so startup continues.
                 }
             }
 

@@ -5,10 +5,17 @@ using Windows.Media.Devices;
 
 namespace AFMediaBar.Services;
 
+/// <summary>
+/// 枚举 Windows 输出设备，并通过音频策略接口切换默认端点。
+/// Enumerates Windows render devices and switches the default audio endpoint.
+/// </summary>
 internal sealed class AudioDeviceService
 {
+    // PolicyConfig 是 Windows 自用的未公开 COM 接口，未来系统版本可能改变。
+    // PolicyConfig is an undocumented Windows COM interface and may change.
     private static readonly Guid PolicyConfigClientClassId =
         new("870AF99C-171D-4F9E-AF0D-E63DF40C2BC9");
+
     internal async Task<IReadOnlyList<AudioDeviceOption>> GetRenderDevicesAsync()
     {
         var defaultId = MediaDevice.GetDefaultAudioRenderId(AudioDeviceRole.Default);
@@ -28,6 +35,8 @@ internal sealed class AudioDeviceService
 
     private static string GetPolicyDeviceId(string deviceInformationId)
     {
+        // WinRT 返回设备接口路径，PolicyConfig 只接受其中的 MMDevice 端点 ID。
+        // WinRT returns an interface path; PolicyConfig expects its MMDevice endpoint ID.
         const string marker = "MMDEVAPI#";
         var start = deviceInformationId.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
         if (start < 0)
@@ -58,6 +67,8 @@ internal sealed class AudioDeviceService
         }
         finally
         {
+            // 此服务不持有长期 COM 状态；每次调用结束都必须释放 RCW。
+            // The service keeps no COM state; release the RCW after every call.
             ReleaseComObject(client);
         }
     }
@@ -85,6 +96,8 @@ internal sealed class AudioDeviceService
         Communications
     }
 
+    // vtable 顺序来自 Windows PolicyConfig 的实际 ABI；方法即使未使用也不能删除。
+    // The vtable follows the observed PolicyConfig ABI; unused methods keep slot order.
     [ComImport]
     [Guid("F8679F50-850A-41CF-9C72-430F290290C8")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]

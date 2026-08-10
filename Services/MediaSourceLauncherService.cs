@@ -4,6 +4,10 @@ using AFMediaBar.Interop;
 
 namespace AFMediaBar.Services;
 
+/// <summary>
+/// 激活当前媒体来源的窗口，必要时尝试启动对应应用。
+/// Activates the current media source window, or launches the matching app when needed.
+/// </summary>
 internal static class MediaSourceLauncherService
 {
     internal static bool ShowOrLaunch(string sourceId, string sourceName)
@@ -28,7 +32,8 @@ internal static class MediaSourceLauncherService
                 }
                 catch
                 {
-                    // A process can exit while its window is being inspected.
+                    // 枚举后进程可能立即退出；单个进程失效不应中断后续查找。
+                    // A process can exit after enumeration; one stale entry must not stop the search.
                 }
             }
         }
@@ -107,7 +112,8 @@ internal static class MediaSourceLauncherService
         }
         catch
         {
-            // Showing the source is a convenience action; media control remains available.
+            // 打开来源只是便捷操作；失败时保留已有媒体控制功能。
+            // Opening the source is optional; existing media controls remain usable on failure.
         }
 
         return false;

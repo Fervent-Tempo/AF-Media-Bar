@@ -19,12 +19,20 @@ internal readonly record struct TaskbarWindowEvent(
     nint Window,
     TaskbarEventSource Source);
 
+/// <summary>
+/// 监听任务栏与 Shell 表面的 WinEvent，并将相关变化投递到 WPF Dispatcher。
+/// Watches taskbar and Shell WinEvents and dispatches relevant changes to WPF.
+/// </summary>
 internal sealed class TaskbarEventWatcher : IDisposable
 {
     private readonly Dispatcher _dispatcher;
+    // 原生钩子只保存函数指针，字段引用用于防止委托被 GC 回收。
+    // Native hooks keep only a function pointer; this field roots the delegate.
     private readonly NativeMethods.WinEventDelegate _callback;
     private readonly List<nint> _hooks = [];
     private readonly object _locationEventLock = new();
+    // 位置事件可能每帧多次到达，只保留尚未投递的最新矩形事件。
+    // Location events can burst per frame; retain only the newest queued event.
     private TaskbarWindowEvent _pendingLocationEvent;
     private bool _locationUpdateQueued;
     private bool _disposed;
@@ -99,6 +107,8 @@ internal sealed class TaskbarEventWatcher : IDisposable
         var taskbarEvent = new TaskbarWindowEvent(eventId, window, source);
         if (eventId == NativeMethods.EventObjectLocationChange)
         {
+            // SHOW/HIDE/FOREGROUND 不合并；只有高频位置事件可以安全覆盖。
+            // Preserve SHOW/HIDE/FOREGROUND; only location bursts are coalesced.
             lock (_locationEventLock)
             {
                 _pendingLocationEvent = taskbarEvent;
@@ -220,6 +230,8 @@ internal sealed class TaskbarEventWatcher : IDisposable
             return;
         }
 
+        // WinEvent 钩子是进程外系统资源，窗口关闭时必须逐一解除。
+        // WinEvent hooks are external system resources and must all be removed.
         _disposed = true;
         foreach (var hook in _hooks)
         {

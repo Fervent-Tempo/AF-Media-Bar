@@ -4,8 +4,8 @@ using System.Runtime.InteropServices;
 namespace AFMediaBar.Services;
 
 /// <summary>
-/// Captures the default render endpoint through WASAPI loopback and exposes
-/// logarithmic FFT bands. All hot-path buffers are reused between samples.
+/// 通过 WASAPI 回环采集默认输出，并以复用缓冲区计算九段 FFT 频谱。
+/// Captures the default render loopback and computes nine FFT bands with reused buffers.
 /// </summary>
 internal sealed class AudioMonitorService : IDisposable
 {
@@ -14,6 +14,8 @@ internal sealed class AudioMonitorService : IDisposable
     private const int FftSize = 512;
     private const int SampleRingSize = 4096;
     private const int InitialPacketBufferSize = 64 * 1024;
+    // audioclient.h / mmreg.h：WASAPI 回环、静音包和 WAVE 格式常量。
+    // audioclient.h / mmreg.h: WASAPI loopback, silent-buffer, and WAVE constants.
     private const uint AudioClientStreamFlagsLoopback = 0x00020000;
     private const uint AudioCaptureBufferFlagsSilent = 0x00000002;
     private const ushort WaveFormatPcm = 0x0001;
@@ -36,6 +38,8 @@ internal sealed class AudioMonitorService : IDisposable
     private readonly double[] _fftImaginary = new double[FftSize];
     private readonly double[] _fftWindow = CreateFftWindow();
     private byte[] _packetBuffer = new byte[InitialPacketBufferSize];
+    // 这些 COM 对象跨采样复用；切换设备或 Dispose 时必须按依赖逆序释放。
+    // These COM objects span samples and must be released in reverse dependency order.
     private IMMDeviceEnumerator? _deviceEnumerator;
     private IMMDevice? _device;
     private IAudioClient? _audioClient;
@@ -91,6 +95,8 @@ internal sealed class AudioMonitorService : IDisposable
             return;
         }
 
+        // Stop 必须先于 COM 释放，否则音频引擎仍可能访问 capture client。
+        // Stop before releasing COM so the audio engine no longer uses the capture client.
         _disposed = true;
         ReleaseCapture();
         ReleaseComObject(ref _deviceEnumerator);
@@ -407,7 +413,7 @@ internal sealed class AudioMonitorService : IDisposable
             }
             catch
             {
-                // The endpoint can disappear while Windows changes audio devices.
+                // 切换设备时端点可能已消失。 / The endpoint may vanish during device changes.
             }
         }
 
@@ -490,6 +496,8 @@ internal sealed class AudioMonitorService : IDisposable
         internal Guid SubFormat;
     }
 
+    // COM 声明来自 Windows Core Audio SDK；顺序和封送类型必须与 ABI 一致。
+    // COM declarations mirror the Core Audio SDK; method order and marshaling are ABI-sensitive.
     [ComImport]
     [Guid("A95664D2-9614-4F35-A746-DE8DB63617E6")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]

@@ -4,6 +4,10 @@ using AFMediaBar.Models;
 
 namespace AFMediaBar.Services;
 
+/// <summary>
+/// 将 GSMTC 媒体来源匹配到 Core Audio 会话，并读取或设置应用音量。
+/// Matches GSMTC sources to Core Audio sessions and reads or sets app volume.
+/// </summary>
 internal sealed class ApplicationVolumeService
 {
     private const int MaximumRememberedSources = 64;
@@ -14,6 +18,8 @@ internal sealed class ApplicationVolumeService
     private static readonly Guid VolumeEventContext =
         new("4F74C2B5-7E7B-4A02-ABCB-EF8FA77BD65A");
     private readonly object _syncRoot = new();
+    // 有些 GSMTC SourceId 不等于进程名，缓存成功匹配可稳定后续调节。
+    // Some GSMTC source IDs differ from process names; cache successful matches.
     private readonly Dictionary<string, string> _sourceProcessNames = new(
         StringComparer.OrdinalIgnoreCase);
     private readonly Queue<string> _sourceProcessOrder = new();
@@ -211,6 +217,8 @@ internal sealed class ApplicationVolumeService
     private static void ForEachSession(
         Action<string, string?, AudioSessionState, float, bool, ISimpleAudioVolume> visitor)
     {
+        // Core Audio 对象仅在本次枚举内有效，所有退出路径都必须释放 COM RCW。
+        // Core Audio objects are call-scoped; every exit path must release each COM RCW.
         object? deviceEnumeratorObject = null;
         IMMDevice? device = null;
         object? managerObject = null;
@@ -270,11 +278,11 @@ internal sealed class ApplicationVolumeService
                 }
                 catch (COMException)
                 {
-                    // Audio sessions can expire while the mixer is being enumerated.
+                    // 枚举期间音频会话可能失效。 / Sessions may expire during enumeration.
                 }
                 catch (InvalidCastException)
                 {
-                    // Some system sessions do not expose per-application volume.
+                    // 部分系统会话不提供应用音量接口。 / Some system sessions expose no app volume.
                 }
                 finally
                 {
@@ -389,6 +397,10 @@ internal sealed class ApplicationVolumeService
         All = InprocServer | InprocHandler | LocalServer
     }
 
+    // 以下声明来自 Windows Core Audio 的 mmdeviceapi.h 与 audiopolicy.h。
+    // These declarations mirror Windows Core Audio mmdeviceapi.h and audiopolicy.h.
+    // 方法顺序必须保持 ABI 一致，返回值按 HRESULT 处理。
+    // Method order is ABI-sensitive and return values are HRESULTs.
     [ComImport]
     [Guid("A95664D2-9614-4F35-A746-DE8DB63617E6")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]

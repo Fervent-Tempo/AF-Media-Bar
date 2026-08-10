@@ -4,9 +4,15 @@ using AFMediaBar.Interop;
 
 namespace AFMediaBar.Services;
 
+/// <summary>
+/// 在弹窗打开期间监听全局鼠标按键，用于可靠关闭非激活式 WPF 窗口。
+/// Watches global mouse buttons while popups are open so no-activate WPF UI can dismiss reliably.
+/// </summary>
 internal sealed class MouseHookService : IDisposable
 {
     private readonly Dispatcher _dispatcher;
+    // SetWindowsHookEx 不会托管委托生命周期，必须保持强引用直到 Unhook。
+    // SetWindowsHookEx does not root delegates; keep this alive until Unhook.
     private readonly NativeMethods.LowLevelMouseDelegate _callback;
     private nint _hook;
 
@@ -62,6 +68,8 @@ internal sealed class MouseHookService : IDisposable
 
     public void Dispose()
     {
+        // WH_MOUSE_LL 是系统钩子，退出时必须解除，避免回调访问已释放状态。
+        // WH_MOUSE_LL must be unhooked before teardown to avoid callbacks into disposed state.
         Stop();
         MouseButtonPressed = null;
     }

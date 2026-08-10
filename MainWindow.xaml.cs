@@ -13,6 +13,10 @@ using AFMediaBar.Services;
 
 namespace AFMediaBar;
 
+/// <summary>
+/// 协调媒体快照、任务栏定位、用户交互和所有窗口级资源的生命周期。
+/// Coordinates media snapshots, taskbar placement, interaction, and window-owned resources.
+/// </summary>
 public partial class MainWindow : Window
 {
     private enum TaskbarMotionState
@@ -36,8 +40,8 @@ public partial class MainWindow : Window
     private const int VolumeWheelStepPercent = 2;
     private const int HorizontalMarginAt96Dpi = 8;
     private const int VerticalMarginAt96Dpi = 4;
-    // The watchdog only probes a cached HWND rectangle. A display-frame cadence
-    // closes event-delivery gaps without the cost and jitter of a 4 ms UI timer.
+    // watchdog 只读取缓存 HWND 的矩形；显示帧跟踪补足事件间隙，无需 4 ms 轮询。
+    // The watchdog reads one cached HWND; render frames close gaps without 4 ms polling.
     private const int TaskbarWatchdogIntervalMilliseconds = 16;
     private const int TaskbarOwnerWatchdogIntervalMilliseconds = 100;
     private const int AnimationStableMilliseconds = 400;
@@ -48,6 +52,8 @@ public partial class MainWindow : Window
     private readonly TaskbarPlacementService _taskbarPlacementService = new();
     private readonly AudioDeviceService _audioDeviceService = new();
     private readonly ApplicationVolumeService _applicationVolumeService = new();
+    // 这些定时器都由窗口拥有，必须在 OnClosed 中停止后再释放服务。
+    // The window owns these timers; OnClosed stops them before disposing services.
     private readonly DispatcherTimer _positionTimer;
     private readonly DispatcherTimer _taskbarWatchdogTimer;
     private readonly DispatcherTimer _taskbarOwnerWatchdogTimer;
@@ -65,11 +71,15 @@ public partial class MainWindow : Window
     private SystemMetricsSnapshot _lastMetricsSnapshot;
     private IReadOnlyList<MediaSessionOption> _mediaSessions = [];
     private IReadOnlyList<AudioDeviceOption> _outputDevices = [];
+    // 这些服务持有 WinEvent、WASAPI、鼠标钩子或 Shell 图标等外部资源。
+    // These services own WinEvent, WASAPI, mouse-hook, or Shell resources.
     private TaskbarEventWatcher? _taskbarEventWatcher;
     private AudioMonitorService? _audioMonitorService;
     private readonly MouseHookService _mouseHookService;
     private TrayIconService? _trayIconService;
     private HwndSource? _windowSource;
+    // 原始、动画和 watchdog 矩形分开保存，避免一次瞬态读数污染稳定位置。
+    // Raw, animation, and watchdog rectangles stay separate so transient reads do not leak.
     private NativeMethods.Rect? _lastTaskbarRect;
     private NativeMethods.Rect? _lastObservedRawTaskbarRect;
     private NativeMethods.Rect? _animationTaskbarRect;
@@ -81,14 +91,22 @@ public partial class MainWindow : Window
     private int? _lastPositionLeft;
     private int _metricCycleIndex;
     private int _metricCycleTicks;
+    // 自动定位只允许一次扫描；扫描期间的新请求会在结束后再补跑一次。
+    // Automatic placement allows one scan; concurrent requests schedule one follow-up scan.
     private int _placementRefreshInProgress;
     private int _placementRefreshRequested;
     private int _lastExpandedTaskbarHeight;
+    // 输出设备滚轮先预览候选项，停止输入一秒后再真正切换。
+    // Output-device wheel input previews a candidate, then applies it after one idle second.
     private string? _pendingOutputDeviceId;
     private int _pendingOutputDeviceWheelSteps;
     private ApplicationVolumeSnapshot? _currentApplicationVolume;
+    // 音量滚轮合并快速步进，并以短延迟批量写入 Core Audio。
+    // Volume wheel steps are coalesced and written to Core Audio after a short delay.
     private int? _pendingVolumePercent;
     private int _pendingVolumeWheelSteps;
+    // 来源切换时递增版本号，丢弃旧进程匹配查询的迟到结果。
+    // Increment on source changes so stale process-matching results are ignored.
     private int _volumeRefreshVersion;
     private string? _lastVolumeSourceId;
     private DateTime _animationStableSinceUtc;
@@ -104,6 +122,8 @@ public partial class MainWindow : Window
     private bool _volumeWheelUsesCompactStatus;
     private bool _showingOutputDeviceHoverStatus;
     private bool _showingVolumeHoverStatus;
+    // 逐帧跟踪只在任务栏运动期间启用，稳定 400 ms 后解除 Rendering 订阅。
+    // Per-frame tracking runs only during taskbar motion and detaches after 400 ms stable.
     private bool _taskbarAnimationTracking;
     private TaskbarMotionState _taskbarMotionState;
     private readonly float[] _audioSpectrum = new float[AudioMonitorService.BandCount];
@@ -277,6 +297,8 @@ public partial class MainWindow : Window
 
     private void OnClosed(object? sender, EventArgs e)
     {
+        // 顺序很重要：先停止回调源，再解除 Owner/钩子，最后释放 COM 与服务。
+        // Order matters: stop callback sources, detach owner/hooks, then dispose services.
         _positionTimer.Stop();
         StopTaskbarAnimationTracking();
         _taskbarWatchdogTimer.Stop();
@@ -403,8 +425,8 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Shell_TrayWnd is raised in a special topmost band while Start and
-        // Quick Settings animate. Owning the bar keeps this window above it.
+        // 开始菜单和快速设置动画时任务栏进入特殊置顶层；Owner 关系保持播放器在其上方。
+        // Shell raises the taskbar into a special topmost band; ownership keeps the bar above it.
         var currentOwner = NativeMethods.GetWindowLongPtr(
             _windowHandle,
             NativeMethods.GwlpHwndParent);
@@ -530,8 +552,8 @@ public partial class MainWindow : Window
         _animationTaskbarRect = null;
         _animationStableSinceUtc = DateTime.UtcNow;
         _taskbarAnimationTracking = true;
-        // Sample on compositor frames so high-refresh displays are not capped
-        // by a fixed DispatcherTimer interval.
+        // 按合成帧采样，让高刷显示器不受固定 DispatcherTimer 周期限制。
+        // Sample on compositor frames so high-refresh displays are not timer-capped.
         CompositionTarget.Rendering += OnTaskbarAnimationRendering;
         return true;
     }
@@ -691,8 +713,8 @@ public partial class MainWindow : Window
         var shellSurfaceKeepsExpanded = shellSurfaceForeground &&
             _taskbarMotionState != TaskbarMotionState.Hiding;
         var hasTaskbarRect = TryGetEffectiveTaskbarRect(out var taskbar, out var taskbarRect);
-        // During normal auto-hide, keep the HWND alive and let the taskbar's
-        // raw rectangle carry it offscreen. Only fullscreen mode truly hides it.
+        // 普通自动隐藏保持 HWND 存活并随原始矩形移出屏幕；只有全屏才真正折叠。
+        // Keep the HWND alive offscreen for auto-hide; only fullscreen truly collapses it.
         if (!shellSurfaceForeground &&
             NativeMethods.ShouldHideForFullScreenApp(_windowHandle))
         {
@@ -709,8 +731,8 @@ public partial class MainWindow : Window
         if (!hasTaskbarRect ||
             (!shellSurfaceKeepsExpanded && taskbarRect.Width < taskbarRect.Height))
         {
-            // A Shell animation can expose a transient zero/small rectangle. Keep
-            // the last valid window on screen until the next geometry sample.
+            // Shell 动画可能短暂返回无效矩形；等待可靠样本，避免按错误几何定位。
+            // Shell may expose transient invalid geometry; wait for a reliable sample.
             if (!shellSurfaceKeepsExpanded)
             {
                 Visibility = Visibility.Collapsed;
@@ -832,9 +854,8 @@ public partial class MainWindow : Window
             return true;
         }
 
-        // When Start opens on an auto-hidden taskbar, Shell_TrayWnd can briefly
-        // report an empty or collapsed rectangle. Recover the stable taskbar rect
-        // instead of treating that transient state as a fullscreen application.
+        // 自动隐藏时开始菜单可能先出现、任务栏矩形仍折叠；此处恢复稳定展开矩形。
+        // Start may appear before the auto-hidden taskbar expands; recover stable geometry.
         var taskbarHeight = taskbarRect.Width >= taskbarRect.Height
             ? taskbarRect.Height
             : 0;
@@ -988,7 +1009,7 @@ public partial class MainWindow : Window
         }
         catch
         {
-            // The foreground process can exit between the Win32 query and inspection.
+            // 查询和读取之间前台进程可能退出。 / The foreground process may exit mid-query.
         }
 
         return false;
@@ -1026,8 +1047,8 @@ public partial class MainWindow : Window
 
         if (_taskbarSettings.Alignment == TaskbarAlignment.Left)
         {
-            // UI Automation can take a moment to expose the rebuilt taskbar.
-            // Use the middle of its free working area until the exact scan lands.
+            // 重建任务栏后 UI Automation 暴露较慢；精确扫描前暂用可用区中点。
+            // UI Automation lags after rebuilds; use the free-area midpoint until scanned.
             var playerWidth = (int)Math.Ceiling(PlayerRoot.Width * scale);
             var availableWidth = Math.Max(0, taskbarRect.Width - playerWidth);
             return taskbarRect.Left + availableWidth / 2;
