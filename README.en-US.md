@@ -90,12 +90,15 @@ The Windows 11 media card is an internal Explorer/Shell surface rather than a su
 - Windows 11 x64
 - No separate .NET installation is required for the recommended self-contained package
 
+> [!IMPORTANT]
+> Disabling Windows 11's **Automatically hide the taskbar** option is recommended while using AF Media Bar. Auto-hide tracking is supported, but its reveal and retract animation still needs further smoothness improvements. A fixed taskbar and fullscreen hiding are not affected by this limitation.
+
 ### Recommended package
 
 1. Open [Releases](https://github.com/Fervent-Tempo/AF-Media-Bar/releases).
 2. Download `AFMediaBar-vX.Y.Z-win-x64.zip`. Do not download GitHub's automatically generated source archives.
-3. Extract it to a permanent writable directory, such as `%LOCALAPPDATA%\Programs\AFMediaBar`.
-4. Run `AFMediaBar.exe`.
+3. Extract the package to get one self-contained `AFMediaBar.exe`; the archive no longer contains hundreds of .NET runtime files.
+4. Place it in a permanent writable directory, such as `%LOCALAPPDATA%\Programs\AFMediaBar`, and run it.
 5. Right-click the player or tray icon to configure startup, visible modules, and placement.
 
 AF Media Bar is portable and currently has no installer. Release binaries are not commercially code-signed, so Windows SmartScreen may show an unknown publisher warning on first launch. Download only from this repository and use `SHA256SUMS.txt` from the same Release to verify the archive.
@@ -118,7 +121,7 @@ Some players require “system media controls,” “media keys,” or “SMTC�
 
 ## Updating and Uninstalling
 
-To update, exit AF Media Bar from the tray menu, extract the new release, and replace the old program files. Settings remain in the current user's registry.
+To update, exit AF Media Bar from the tray menu, extract the new release, and replace the old executable. When upgrading from 1.0.0, the remaining runtime files in the old directory can be removed after the app exits. Settings remain in the current user's registry.
 
 To uninstall, disable startup from the context menu, exit the application, and delete its directory. To remove settings as well:
 
@@ -155,6 +158,7 @@ Disable unused metrics and the audio visualizer, or enable low-spec mode. The vi
 - The bar is a top-level overlay aligned with the taskbar, not an Explorer plugin.
 - Output switching uses the undocumented Windows `PolicyConfig` interface and may change in future Windows releases.
 - Automatic placement depends on Windows UI Automation and may not recognize customized taskbars.
+- Auto-hide taskbar tracking can still show slight animation delay; disabling Windows taskbar auto-hide is recommended.
 - The current instance follows the primary monitor taskbar only.
 - Browsers decide whether multiple tabs appear as one or multiple GSMTC sessions.
 - Only a `win-x64` package is currently published; ARM64 is not yet available.
@@ -178,7 +182,7 @@ dotnet build .\AFMediaBar.csproj -c Release --no-restore
 dotnet run --project .\AFMediaBar.csproj
 ```
 
-Create a self-contained folder for end users:
+Create a self-contained single executable for end users:
 
 ```powershell
 dotnet publish .\AFMediaBar.csproj -c Release -r win-x64 --self-contained true -o .\artifacts\AFMediaBar-win-x64
@@ -201,12 +205,17 @@ AF-Media-Bar/
 |-- MainWindow.xaml.cs      # Main window interaction and coordination
 |-- AFMediaBar.csproj       # .NET project and publish configuration
 |-- app.manifest            # Windows application manifest
-|-- favicon.ico             # Application icon
+|-- icon.ico                # Application icon
 |-- 运行展示.gif             # In-app demonstration
 |-- 组件自定义.gif           # Component customization demonstration
 |-- README.md               # Chinese documentation
 `-- README.en-US.md         # English documentation
 ```
+
+## TODO
+
+- Improve tracking animation smoothness when the Windows taskbar is set to auto-hide.
+- Complete automatic avoidance of taskbar icons.
 
 ## Contributing
 

@@ -31,5 +31,13 @@ jobs:
       - name: Build
         run: dotnet build .\AFMediaBar.csproj -c Release --no-restore -p:ContinuousIntegrationBuild=true
 
-      - name: Validate self-contained publish
+      - name: Validate self-contained single-file publish
         run: dotnet publish .\AFMediaBar.csproj -c Release -r win-x64 --self-contained true -p:ContinuousIntegrationBuild=true -o .\artifacts\AFMediaBar-win-x64
+
+      - name: Verify single-file output
+        shell: pwsh
+        run: |
+          $files = @(Get-ChildItem .\artifacts\AFMediaBar-win-x64 -File)
+          if ($files.Count -ne 1 -or $files[0].Name -ne "AFMediaBar.exe") {
+            throw "Expected only AFMediaBar.exe, found: $($files.Name -join ', ')"
+          }

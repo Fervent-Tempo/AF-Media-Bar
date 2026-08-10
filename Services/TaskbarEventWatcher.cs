@@ -5,13 +5,28 @@ using AFMediaBar.Interop;
 
 namespace AFMediaBar.Services;
 
+[Flags]
+internal enum TaskbarEventSource
+{
+    None = 0,
+    PrimaryTaskbar = 1,
+    TaskbarChild = 2,
+    ShellSurface = 4
+}
+
+internal readonly record struct TaskbarWindowEvent(
+    uint EventId,
+    nint Window,
+    TaskbarEventSource Source);
+
 internal sealed class TaskbarEventWatcher : IDisposable
 {
     private readonly Dispatcher _dispatcher;
     private readonly NativeMethods.WinEventDelegate _callback;
     private readonly List<nint> _hooks = [];
-    private int _updateQueued;
-    private int _foregroundUpdateQueued;
+    private readonly object _locationEventLock = new();
+    private TaskbarWindowEvent _pendingLocationEvent;
+    private bool _locationUpdateQueued;
     private bool _disposed;
 
     internal TaskbarEventWatcher(Dispatcher dispatcher)
@@ -25,7 +40,7 @@ internal sealed class TaskbarEventWatcher : IDisposable
         AddHook(NativeMethods.EventObjectLocationChange);
     }
 
-    internal event EventHandler? TaskbarChanged;
+    internal event Action<TaskbarWindowEvent>? TaskbarChanged;
 
     private void AddHook(uint eventId)
     {
@@ -59,14 +74,18 @@ internal sealed class TaskbarEventWatcher : IDisposable
         }
 
         var taskbar = NativeMethods.FindWindow("Shell_TrayWnd", null);
-        var isTopLevelWindowVisibilityEvent =
-            eventId is NativeMethods.EventObjectShow or NativeMethods.EventObjectHide &&
+        var source = GetEventSource(window, taskbar);
+        var isWindowObjectEvent =
             objectId == NativeMethods.ObjIdWindow &&
-            childId == 0 &&
-            IsShellSurfaceWindow(window, taskbar);
+            childId == 0;
+        var isRelevantObjectEvent =
+            (eventId is NativeMethods.EventObjectShow or
+                NativeMethods.EventObjectHide or
+                NativeMethods.EventObjectLocationChange) &&
+            source != TaskbarEventSource.None &&
+            (isWindowObjectEvent || source.HasFlag(TaskbarEventSource.PrimaryTaskbar));
         var isRelevant = eventId == NativeMethods.EventSystemForeground ||
-            window == taskbar ||
-            isTopLevelWindowVisibilityEvent;
+            isRelevantObjectEvent;
         if (!isRelevant)
         {
             return;
@@ -74,51 +93,78 @@ internal sealed class TaskbarEventWatcher : IDisposable
 
         if (_dispatcher.HasShutdownStarted)
         {
-            Interlocked.Exchange(ref _updateQueued, 0);
-            Interlocked.Exchange(ref _foregroundUpdateQueued, 0);
             return;
         }
 
-        if (eventId == NativeMethods.EventSystemForeground)
+        var taskbarEvent = new TaskbarWindowEvent(eventId, window, source);
+        if (eventId == NativeMethods.EventObjectLocationChange)
         {
-            if (Interlocked.Exchange(ref _foregroundUpdateQueued, 1) != 0)
+            lock (_locationEventLock)
             {
-                return;
+                _pendingLocationEvent = taskbarEvent;
+                if (_locationUpdateQueued)
+                {
+                    return;
+                }
+
+                _locationUpdateQueued = true;
             }
 
             _dispatcher.BeginInvoke(
                 DispatcherPriority.Send,
                 () =>
                 {
-                    Interlocked.Exchange(ref _foregroundUpdateQueued, 0);
+                    TaskbarWindowEvent pendingEvent;
+                    lock (_locationEventLock)
+                    {
+                        pendingEvent = _pendingLocationEvent;
+                        _locationUpdateQueued = false;
+                    }
+
                     if (!_disposed)
                     {
-                        TaskbarChanged?.Invoke(this, EventArgs.Empty);
+                        TaskbarChanged?.Invoke(pendingEvent);
                     }
                 });
             return;
         }
 
-        if (Interlocked.Exchange(ref _updateQueued, 1) != 0)
-        {
-            return;
-        }
-
         _dispatcher.BeginInvoke(DispatcherPriority.Send, () =>
         {
-            Interlocked.Exchange(ref _updateQueued, 0);
             if (!_disposed)
             {
-                TaskbarChanged?.Invoke(this, EventArgs.Empty);
+                TaskbarChanged?.Invoke(taskbarEvent);
             }
         });
     }
 
-    private static bool IsShellSurfaceWindow(nint window, nint taskbar)
+    private static TaskbarEventSource GetEventSource(nint window, nint taskbar)
     {
-        if (window == nint.Zero || window == taskbar)
+        if (window == nint.Zero)
         {
-            return window != nint.Zero;
+            return TaskbarEventSource.None;
+        }
+
+        if (window == taskbar)
+        {
+            return TaskbarEventSource.PrimaryTaskbar;
+        }
+
+        if (taskbar != nint.Zero && NativeMethods.IsChild(taskbar, window))
+        {
+            return TaskbarEventSource.TaskbarChild;
+        }
+
+        return IsShellSurfaceWindow(window)
+            ? TaskbarEventSource.ShellSurface
+            : TaskbarEventSource.None;
+    }
+
+    private static bool IsShellSurfaceWindow(nint window)
+    {
+        if (window == nint.Zero)
+        {
+            return false;
         }
 
         var classNameBuffer = new StringBuilder(128);

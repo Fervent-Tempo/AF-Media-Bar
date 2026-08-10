@@ -6,11 +6,11 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>favicon.ico</ApplicationIcon>
+    <ApplicationIcon>icon.ico</ApplicationIcon>
     <AssemblyName>AFMediaBar</AssemblyName>
     <AssemblyTitle>AF Media Bar</AssemblyTitle>
     <RootNamespace>AFMediaBar</RootNamespace>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Authors>Fervent-Tempo</Authors>
     <Copyright>Copyright (c) 2026 Fervent-Tempo</Copyright>
     <RepositoryUrl>https://github.com/Fervent-Tempo/AF-Media-Bar</RepositoryUrl>
@@ -24,7 +24,13 @@
     <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' and '$(RuntimeIdentifier)' == 'win-x64'">
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+  </PropertyGroup>
+
   <ItemGroup>
-    <Resource Include="favicon.ico" />
+    <Resource Include="icon.ico" />
   </ItemGroup>
 </Project>

@@ -64,6 +64,7 @@
 - [隐私与安全](#隐私与安全)
 - [从源码构建](#从源码构建)
 - [项目结构](#项目结构)
+- [TODO](#todo)
 - [参与贡献](#参与贡献)
 - [License](#license)
 
@@ -106,12 +107,15 @@ Windows 11 控制中心里的媒体卡片是 Explorer/Shell 的内部界面，�
 - Windows 11 x64
 - 使用推荐的自包含版本时，无需另行安装 .NET
 
+> [!IMPORTANT]
+> 推荐在使用 AF Media Bar 时关闭 Windows 11 的“自动隐藏任务栏”。当前版本已经支持跟随自动隐藏任务栏，但出现和收回时的动画流畅度仍待提升；固定显示任务栏与全屏隐藏不受此限制。
+
 ### 推荐方式
 
 1. 打开 [Releases](https://github.com/Fervent-Tempo/AF-Media-Bar/releases)。
 2. 下载最新的 `AFMediaBar-vX.Y.Z-win-x64.zip`，不要下载 GitHub 自动生成的 Source code 压缩包。
-3. 解压到一个长期保留且可写的目录，例如 `%LOCALAPPDATA%\Programs\AFMediaBar`。
-4. 运行 `AFMediaBar.exe`。
+3. 解压后会得到单个自包含的 `AFMediaBar.exe`，不再附带数百个 .NET 运行时文件。
+4. 将它放到一个长期保留且可写的目录，例如 `%LOCALAPPDATA%\Programs\AFMediaBar`，然后运行。
 5. 右键播放器或托盘图标，可配置开机启动、显示项目与定位方式。
 
 AF Media Bar 当前是便携式程序，没有安装器，也不会写入系统目录。发布包暂未进行商业代码签名，因此 Windows SmartScreen 可能在首次运行时显示未知发布者提示。请只从本仓库 Releases 下载，并可使用同一 Release 中的 `SHA256SUMS.txt` 校验文件。
@@ -139,7 +143,7 @@ AF Media Bar 当前是便携式程序，没有安装器，也不会写入系统�
 
 1. 从托盘菜单退出 AF Media Bar。
 2. 下载并解压新版本。
-3. 用新文件替换旧程序目录后重新启动。
+3. 用新的 `AFMediaBar.exe` 替换旧版本后重新启动。从 1.0.0 更新时，退出程序后可删除旧目录中的其余运行时文件。
 
 位置、显示选项和开机启动配置保存在当前用户注册表中，替换程序文件不会丢失设置。
 
@@ -181,6 +185,7 @@ reg.exe delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "AF Media
 - AF Media Bar 是贴合任务栏的独立顶层浮层，不是 Explorer 内部插件。
 - 输出设备切换使用未公开的 Windows `PolicyConfig` 接口，未来 Windows 更新可能改变其行为。
 - 自动定位依赖 Windows UI Automation；第三方任务栏工具、定制布局和系统更新可能影响识别。
+- 自动隐藏任务栏模式下的跟随动画仍可能略有延迟，推荐关闭 Windows 的“自动隐藏任务栏”。
 - 当前只跟随主显示器任务栏，不会在每个辅助显示器上分别创建控制器。
 - 同一浏览器内多个网页如何呈现为 GSMTC 会话，由浏览器决定。
 - 程序当前仅提供 `win-x64` 发布包，尚未提供 ARM64 构建。
@@ -204,7 +209,7 @@ dotnet build .\AFMediaBar.csproj -c Release --no-restore
 dotnet run --project .\AFMediaBar.csproj
 ```
 
-生成供普通用户使用的自包含目录：
+生成供普通用户使用的自包含单文件：
 
 ```powershell
 dotnet publish .\AFMediaBar.csproj -c Release -r win-x64 --self-contained true -o .\artifacts\AFMediaBar-win-x64
@@ -227,11 +232,16 @@ AF-Media-Bar/
 |-- MainWindow.xaml.cs      # 主窗口交互与状态协调
 |-- AFMediaBar.csproj       # .NET 项目与发布配置
 |-- app.manifest            # Windows 应用清单
-|-- favicon.ico             # 应用图标
+|-- icon.ico                # 应用图标
 |-- 运行展示.gif             # 运行效果演示
 |-- 组件自定义.gif           # 组件配置演示
 `-- README.md               # 中文说明
 ```
+
+## TODO
+
+- 提升 Windows 自动隐藏任务栏模式下的跟随动画流畅度。
+- 完善自动避让任务栏图标功能。
 
 ## 参与贡献
 

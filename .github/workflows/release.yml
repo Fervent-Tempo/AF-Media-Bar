@@ -42,15 +42,23 @@ jobs:
           }
           "VERSION=$projectVersion" >> $env:GITHUB_ENV
 
-      - name: Publish self-contained application
+      - name: Publish self-contained single-file application
         run: dotnet publish .\AFMediaBar.csproj -c Release -r win-x64 --self-contained true -p:ContinuousIntegrationBuild=true -o .\artifacts\publish
+
+      - name: Verify single-file output
+        shell: pwsh
+        run: |
+          $files = @(Get-ChildItem .\artifacts\publish -File)
+          if ($files.Count -ne 1 -or $files[0].Name -ne "AFMediaBar.exe") {
+            throw "Expected only AFMediaBar.exe, found: $($files.Name -join ', ')"
+          }
 
       - name: Create archive and checksum
         shell: pwsh
         run: |
           $archiveName = "AFMediaBar-v$env:VERSION-win-x64.zip"
           $archivePath = Join-Path .\artifacts $archiveName
-          Compress-Archive -Path .\artifacts\publish\* -DestinationPath $archivePath -CompressionLevel Optimal
+          Compress-Archive -LiteralPath .\artifacts\publish\AFMediaBar.exe -DestinationPath $archivePath -CompressionLevel Optimal
           $hash = (Get-FileHash $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
           "$hash  $archiveName" | Set-Content .\artifacts\SHA256SUMS.txt -Encoding ascii
           "ARCHIVE_NAME=$archiveName" >> $env:GITHUB_ENV
