@@ -216,6 +216,8 @@ AF-Media-Bar/
 
 - Improve tracking animation smoothness when the Windows taskbar is set to auto-hide.
 - Complete automatic avoidance of taskbar icons.
+- Automatically follow the system theme.
+- Display scrolling video subtitles/lyrics.
 
 ## Contributing
 
