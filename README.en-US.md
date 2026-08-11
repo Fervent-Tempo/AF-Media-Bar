@@ -214,10 +214,17 @@ AF-Media-Bar/
 
 ## TODO
 
-- Improve tracking animation smoothness when the Windows taskbar is set to auto-hide.
-- Complete automatic avoidance of taskbar icons.
-- Automatically follow the system theme.
-- Display scrolling video subtitles/lyrics.
+- [ ] Improve tracking animation smoothness when the Windows taskbar is set to auto-hide.
+- [ ] Complete automatic avoidance of taskbar icons.
+- [ ] Automatically follow the system theme.
+- [ ] Display scrolling video subtitles/lyrics.
+- [ ] Display song progress bars.
+- [ ] Support custom window sizes.
+- [ ] Test Windows 10 compatibility.
+- [ ] Support switching between multiple themes.
+- [ ] Keep the window always on top.
+- [ ] Add an option to auto-hide when no audio is playing.
+- [ ] Add an onboarding tutorial for initial configuration.
 
 ## Contributing
 
