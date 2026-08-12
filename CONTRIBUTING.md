@@ -17,7 +17,7 @@ Thank you for helping improve AF Media Bar.
 
 ## 开发环境 / Development Environment
 
-- Windows 11
+- Windows 10 version 1809 or later, or Windows 11
 - .NET 8 SDK
 - PowerShell
 
@@ -40,9 +40,9 @@ dotnet publish .\AFMediaBar.csproj -c Release -r win-x64 --self-contained true -
 git diff --check
 ```
 
-如果改动影响行为，请在 Windows 11 上验证相关任务栏流程。音频相关改动应尽量使用至少一个桌面播放器和一个浏览器音源进行检查。
+如果改动影响行为，请在 Windows 10 和 Windows 11 上验证相关任务栏流程。音频相关改动应尽量使用至少一个桌面播放器和一个浏览器音源进行检查。
 
-For behavior changes, verify the relevant taskbar workflow on Windows 11. Audio changes should be checked with at least one desktop player and one browser source when possible.
+For behavior changes, verify the relevant taskbar workflow on Windows 10 and Windows 11. Audio changes should be checked with at least one desktop player and one browser source when possible.
 
 ## 改动准则 / Change Guidelines
 

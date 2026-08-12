@@ -133,7 +133,7 @@
       <Grid ClipToBounds="True">
         <TextBlock x:Name="ArtworkPlaceholder"
                    Text="&#xE8D6;"
-                   FontFamily="Segoe Fluent Icons"
+                   FontFamily="{StaticResource AppIconFontFamily}"
                    FontSize="18"
                    Foreground="#B9D1E3"
                    HorizontalAlignment="Center"
@@ -169,7 +169,7 @@
                          Canvas.Left="0"
                          Canvas.Top="10"
                          Text="等待媒体播放"
-                         FontFamily="Segoe UI Variable Display"
+                         FontFamily="{StaticResource AppDisplayFontFamily}"
                          FontSize="14"
                          FontWeight="SemiBold"
                          Foreground="{StaticResource PrimaryTextBrush}"
@@ -190,7 +190,7 @@
                          Canvas.Left="0"
                          Canvas.Top="1"
                          Text="请在任意应用中播放音频或视频"
-                         FontFamily="Segoe UI Variable Text"
+                         FontFamily="{StaticResource AppTextFontFamily}"
                          FontSize="11.5"
                          Foreground="{StaticResource SecondaryTextBrush}"
                          Opacity="0"
@@ -223,7 +223,7 @@
                   ToolTip="上一首"
                   Click="Previous_OnClick">
             <TextBlock Text="&#xE892;"
-                       FontFamily="Segoe Fluent Icons"
+                       FontFamily="{StaticResource AppIconFontFamily}"
                        FontSize="13" />
           </Button>
           <Button x:Name="PlayPauseButton"
@@ -232,7 +232,7 @@
                   Click="PlayPause_OnClick">
             <TextBlock x:Name="PlayPauseGlyph"
                        Text="&#xE768;"
-                       FontFamily="Segoe Fluent Icons"
+                       FontFamily="{StaticResource AppIconFontFamily}"
                        FontSize="15" />
           </Button>
           <Button x:Name="NextButton"
@@ -240,7 +240,7 @@
                   ToolTip="下一首"
                   Click="Next_OnClick">
             <TextBlock Text="&#xE893;"
-                       FontFamily="Segoe Fluent Icons"
+                       FontFamily="{StaticResource AppIconFontFamily}"
                        FontSize="13" />
           </Button>
         </StackPanel>
@@ -283,7 +283,7 @@
             VerticalAlignment="Center">
       <TextBlock x:Name="MetricsText"
                  Text="MEM --%"
-                 FontFamily="Segoe UI Variable Text"
+                 FontFamily="{StaticResource AppTextFontFamily}"
                  FontSize="11"
                  FontWeight="SemiBold"
                  Foreground="{StaticResource SecondaryTextBrush}"
@@ -309,7 +309,7 @@
               Style="{StaticResource TransportButtonStyle}"
               Click="OutputDeviceButton_OnClick">
         <TextBlock Text="&#xE7F5;"
-                   FontFamily="Segoe Fluent Icons"
+                   FontFamily="{StaticResource AppIconFontFamily}"
                    FontSize="14" />
       </Button>
     </Border>
@@ -332,7 +332,7 @@
               Style="{StaticResource TransportButtonStyle}"
               Click="VolumeControlButton_OnClick">
         <TextBlock Text="&#xE767;"
-                   FontFamily="Segoe Fluent Icons"
+                   FontFamily="{StaticResource AppIconFontFamily}"
                    FontSize="14" />
       </Button>
     </Border>
@@ -369,14 +369,14 @@
                      TextAlignment="Center"
                      TextTrimming="CharacterEllipsis"
                      Foreground="{StaticResource PrimaryTextBrush}"
-                     FontFamily="Segoe UI Variable Text"
+                     FontFamily="{StaticResource AppTextFontFamily}"
                      FontSize="11.5" />
           <TextBlock x:Name="VolumePercentText"
                      Margin="0,3,0,5"
                      Text="--%"
                      TextAlignment="Center"
                      Foreground="{StaticResource SecondaryTextBrush}"
-                     FontFamily="Segoe UI Variable Text"
+                     FontFamily="{StaticResource AppTextFontFamily}"
                      FontSize="12"
                      FontWeight="SemiBold" />
           <Slider x:Name="CurrentMediaVolumeSlider"
@@ -414,7 +414,7 @@
           <DockPanel Margin="4,2,4,8">
             <TextBlock Text="输出设备"
                        Foreground="{StaticResource PrimaryTextBrush}"
-                       FontFamily="Segoe UI Variable Text"
+                       FontFamily="{StaticResource AppTextFontFamily}"
                        FontSize="13"
                        FontWeight="SemiBold" />
             <TextBlock x:Name="OutputDeviceCurrentText"
@@ -422,7 +422,7 @@
                        MaxWidth="150"
                        TextTrimming="CharacterEllipsis"
                        Foreground="{StaticResource SecondaryTextBrush}"
-                       FontFamily="Segoe UI Variable Text"
+                       FontFamily="{StaticResource AppTextFontFamily}"
                        FontSize="11"
                        HorizontalAlignment="Right" />
           </DockPanel>
@@ -439,7 +439,7 @@
               <DataTemplate>
                 <TextBlock Text="{Binding DisplayName}"
                            TextTrimming="CharacterEllipsis"
-                           FontFamily="Segoe UI Variable Text"
+                           FontFamily="{StaticResource AppTextFontFamily}"
                            FontSize="12.5" />
               </DataTemplate>
             </ListBox.ItemTemplate>
@@ -464,7 +464,7 @@
               IsHitTestVisible="False">
         <TextBlock x:Name="OutputDeviceStatusText"
                    Foreground="{StaticResource PrimaryTextBrush}"
-                   FontFamily="Segoe UI Variable Text"
+                   FontFamily="{StaticResource AppTextFontFamily}"
                    FontSize="12"
                    TextTrimming="CharacterEllipsis"
                    TextWrapping="NoWrap" />
@@ -487,7 +487,7 @@
               IsHitTestVisible="False">
         <TextBlock x:Name="VolumeStatusText"
                    Foreground="{StaticResource PrimaryTextBrush}"
-                   FontFamily="Segoe UI Variable Text"
+                   FontFamily="{StaticResource AppTextFontFamily}"
                    FontSize="12"
                    TextTrimming="CharacterEllipsis"
                    TextWrapping="NoWrap" />

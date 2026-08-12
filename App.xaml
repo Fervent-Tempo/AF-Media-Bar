@@ -15,6 +15,9 @@
     <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#3D6C8794" />
     <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#FFF7FA" />
     <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="#F0172632" />
+    <FontFamily x:Key="AppTextFontFamily">Segoe UI Variable Text, Segoe UI</FontFamily>
+    <FontFamily x:Key="AppDisplayFontFamily">Segoe UI Variable Display, Segoe UI</FontFamily>
+    <FontFamily x:Key="AppIconFontFamily">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
 
     <Style TargetType="ContextMenu">
       <Setter Property="Background" Value="{StaticResource MenuBackgroundBrush}" />
@@ -22,7 +25,7 @@
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="Padding" Value="4" />
       <Setter Property="HasDropShadow" Value="True" />
-      <Setter Property="FontFamily" Value="Segoe UI Variable Text" />
+      <Setter Property="FontFamily" Value="{StaticResource AppTextFontFamily}" />
       <Setter Property="FontSize" Value="13" />
       <Setter Property="Template">
         <Setter.Value>
@@ -46,7 +49,7 @@
       <Setter Property="BorderBrush" Value="Transparent" />
       <Setter Property="Padding" Value="6,5" />
       <Setter Property="Margin" Value="1,1" />
-      <Setter Property="FontFamily" Value="Segoe UI Variable Text" />
+      <Setter Property="FontFamily" Value="{StaticResource AppTextFontFamily}" />
       <Setter Property="FontSize" Value="13" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -70,7 +73,7 @@
                   <TextBlock x:Name="CheckGlyph"
                              Grid.Column="0"
                              Text="&#xE73E;"
-                             FontFamily="Segoe Fluent Icons"
+                             FontFamily="{StaticResource AppIconFontFamily}"
                              FontSize="12"
                              Foreground="{StaticResource PrimaryTextBrush}"
                              HorizontalAlignment="Center"
@@ -88,7 +91,7 @@
                   <TextBlock x:Name="SubmenuGlyph"
                              Grid.Column="2"
                              Text="&#xE76C;"
-                             FontFamily="Segoe Fluent Icons"
+                             FontFamily="{StaticResource AppIconFontFamily}"
                              FontSize="10"
                              Foreground="{StaticResource SecondaryTextBrush}"
                              HorizontalAlignment="Right"

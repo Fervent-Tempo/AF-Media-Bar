@@ -24,7 +24,7 @@
 
   <h1>AF Media Bar</h1>
 
-  <p>Media controls, audio device switching, and lightweight system metrics on the Windows 11 taskbar.</p>
+  <p>Media controls, audio device switching, and lightweight system metrics on the Windows 10/11 taskbar.</p>
 
   <p>
     <a href="README.md">简体中文</a>
@@ -52,7 +52,7 @@
 
 ## Overview
 
-AF Media Bar is a portable taskbar media controller for Windows 11. It reads Global System Media Transport Controls (GSMTC) sessions, displays artwork, title, and artist, and provides previous, play/pause, next, and source switching controls.
+AF Media Bar is a portable taskbar media controller for Windows 10 and Windows 11. It reads Global System Media Transport Controls (GSMTC) sessions, displays artwork, title, and artist, and provides previous, play/pause, next, and source switching controls.
 
 The interface is an independent WPF top-level window aligned with the taskbar. It does not modify or inject code into `explorer.exe`. Any player that publishes a GSMTC session can be discovered, including NetEase Cloud Music, QQ Music, Spotify, major browsers, VLC, PotPlayer, Windows Media Player, mpv, and foobar2000.
 
@@ -77,7 +77,7 @@ Available commands depend on what each media application exposes through GSMTC.
 flowchart LR
     A[Media apps] -->|GSMTC sessions| B[AF Media Bar]
     C[Windows Core Audio] -->|Devices, volume, loopback| B
-    D[Windows 11 taskbar] -->|Position and auto-hide state| B
+    D[Windows 10/11 taskbar] -->|Position and auto-hide state| B
     B --> E[Independent WPF overlay]
 ```
 
@@ -87,11 +87,11 @@ The Windows 11 media card is an internal Explorer/Shell surface rather than a su
 
 ### Requirements
 
-- Windows 11 x64
+- Windows 10 version 1809 (build 17763) or later, x64
 - No separate .NET installation is required for the recommended self-contained package
 
 > [!IMPORTANT]
-> Disabling Windows 11's **Automatically hide the taskbar** option is recommended while using AF Media Bar. Auto-hide tracking is supported, but its reveal and retract animation still needs further smoothness improvements. A fixed taskbar and fullscreen hiding are not affected by this limitation.
+> Disabling Windows' **Automatically hide the taskbar** option is recommended while using AF Media Bar. Auto-hide tracking is supported, but its reveal and retract animation still needs further smoothness improvements. A fixed taskbar and fullscreen hiding are not affected by this limitation.
 
 ### Recommended package
 
@@ -172,7 +172,7 @@ Disable unused metrics and the audio visualizer, or enable low-spec mode. The vi
 
 ## Building from Source
 
-Windows 11, the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0), and PowerShell are required.
+Windows 10 version 1809 or later, the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0), and PowerShell are required.
 
 ```powershell
 git clone https://github.com/Fervent-Tempo/AF-Media-Bar.git

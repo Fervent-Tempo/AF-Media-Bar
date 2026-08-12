@@ -24,7 +24,7 @@
 
   <h1>AF Media Bar</h1>
 
-  <p>Windows 11 任务栏上的媒体控制、音频设备切换与轻量系统指标。</p>
+  <p>Windows 10/11 任务栏上的媒体控制、音频设备切换与轻量系统指标。</p>
 
   <p>
     简体中文
@@ -70,7 +70,7 @@
 
 ## 简介
 
-AF Media Bar 是一款便携式 Windows 11 任务栏媒体控制器。它读取 Windows 全局系统媒体会话（GSMTC），显示当前媒体的封面、标题和作者，并提供上一首、播放/暂停、下一首和来源切换。
+AF Media Bar 是一款便携式 Windows 10/11 任务栏媒体控制器。它读取 Windows 全局系统媒体会话（GSMTC），显示当前媒体的封面、标题和作者，并提供上一首、播放/暂停、下一首和来源切换。
 
 程序以独立 WPF 顶层窗口贴合任务栏，不修改、不注入 `explorer.exe`。网易云音乐、QQ 音乐、Spotify、浏览器等应用只要向 Windows 发布媒体会话，就可以被发现和控制。
 
@@ -94,7 +94,7 @@ AF Media Bar 是一款便携式 Windows 11 任务栏媒体控制器。它读取 
 flowchart LR
     A[媒体应用] -->|GSMTC 会话| B[AF Media Bar]
     C[Windows Core Audio] -->|设备、音量、回环采样| B
-    D[Windows 11 任务栏] -->|位置与自动隐藏状态| B
+    D[Windows 10/11 任务栏] -->|位置与自动隐藏状态| B
     B --> E[独立 WPF 任务栏浮层]
 ```
 
@@ -104,11 +104,11 @@ Windows 11 控制中心里的媒体卡片是 Explorer/Shell 的内部界面，�
 
 ### 系统要求
 
-- Windows 11 x64
+- Windows 10 版本 1809（内部版本 17763）或更高版本，x64
 - 使用推荐的自包含版本时，无需另行安装 .NET
 
 > [!IMPORTANT]
-> 推荐在使用 AF Media Bar 时关闭 Windows 11 的“自动隐藏任务栏”。当前版本已经支持跟随自动隐藏任务栏，但出现和收回时的动画流畅度仍待提升；固定显示任务栏与全屏隐藏不受此限制。
+> 推荐在使用 AF Media Bar 时关闭 Windows 的“自动隐藏任务栏”。当前版本已经支持跟随自动隐藏任务栏，但出现和收回时的动画流畅度仍待提升；固定显示任务栏与全屏隐藏不受此限制。
 
 ### 推荐方式
 
@@ -199,7 +199,7 @@ reg.exe delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "AF Media
 
 ## 从源码构建
 
-需要 Windows 11、[.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) 和 PowerShell。
+需要 Windows 10 版本 1809 或更高版本、[.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) 和 PowerShell。
 
 ```powershell
 git clone https://github.com/Fervent-Tempo/AF-Media-Bar.git
