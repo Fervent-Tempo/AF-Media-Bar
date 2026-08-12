@@ -2738,6 +2738,11 @@ public partial class MainWindow : Window
         SyncMetricMenuState();
     }
 
+    private void PlayerMenu_OnOpening(object sender, ContextMenuEventArgs e)
+    {
+        PrepareContextMenuWindow();
+    }
+
     private void PlayerMenu_OnClosed(object sender, RoutedEventArgs e)
     {
         _isMenuOpen = false;
@@ -2806,10 +2811,20 @@ public partial class MainWindow : Window
 
     private void TrayIcon_OnContextMenuRequested(object? sender, EventArgs e)
     {
-        NativeMethods.SetForegroundWindow(_windowHandle);
+        PrepareContextMenuWindow();
         PlayerMenu.Placement = PlacementMode.MousePoint;
         PlayerMenu.PlacementTarget = this;
         PlayerMenu.IsOpen = true;
+    }
+
+    private void PrepareContextMenuWindow()
+    {
+        // ContextMenu 是独立的 Popup；先准备宿主窗口层级，避免菜单被任务栏覆盖。
+        // ContextMenu is a separate Popup; prepare the host window layer before it opens above the taskbar.
+        if (_windowHandle != nint.Zero)
+        {
+            NativeMethods.SetForegroundWindow(_windowHandle);
+        }
     }
 
     private void TrayIcon_OnDoubleClicked(object? sender, EventArgs e)

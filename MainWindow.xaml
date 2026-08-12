@@ -11,7 +11,8 @@
         Background="#01000000"
         ShowInTaskbar="False"
         Topmost="True"
-        Focusable="False">
+        Focusable="False"
+        ContextMenuOpening="PlayerMenu_OnOpening">
   <Window.ContextMenu>
     <ContextMenu x:Name="PlayerMenu"
                  Width="280"
