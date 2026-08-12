@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Security vulnerability
+  - name: 报告安全漏洞 / Security Vulnerability
     url: https://github.com/Fervent-Tempo/AF-Media-Bar/security/advisories/new
-    about: Report security issues privately. Do not open a public Issue.
+    about: 请私下报告安全问题，不要公开创建 Issue。 / Report security issues privately. Do not open a public Issue.

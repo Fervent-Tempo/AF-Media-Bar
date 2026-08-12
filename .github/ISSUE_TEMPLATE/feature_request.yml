@@ -1,5 +1,5 @@
-name: Feature request
-description: Propose a focused improvement for AF Media Bar.
+name: 功能建议 / Feature Request
+description: 为 AF Media Bar 提出明确、可执行的改进建议。 / Propose a focused, actionable improvement for AF Media Bar.
 title: "[Feature]: "
 labels:
   - enhancement
@@ -7,35 +7,35 @@ body:
   - type: textarea
     id: problem
     attributes:
-      label: Problem or workflow
-      description: Describe the user problem before describing a solution.
+      label: 要解决的问题或使用场景 / Problem or Workflow
+      description: 请先描述实际遇到的问题，再说明期望的解决方案。 / Describe the user problem before describing a solution.
     validations:
       required: true
 
   - type: textarea
     id: proposal
     attributes:
-      label: Proposed behavior
-      description: Explain the expected interaction and where it belongs in the current interface.
+      label: 建议的行为 / Proposed Behavior
+      description: 说明期望的交互方式，以及它应位于当前界面的哪个位置。 / Explain the expected interaction and where it belongs in the current interface.
     validations:
       required: true
 
   - type: textarea
     id: alternatives
     attributes:
-      label: Alternatives considered
-      description: Include current workarounds or simpler approaches.
+      label: 已考虑的替代方案 / Alternatives Considered
+      description: 可填写当前的临时解决方法或更简单的实现方式。 / Include current workarounds or simpler approaches.
 
   - type: textarea
     id: context
     attributes:
-      label: Additional context
-      description: Screenshots or examples from other tools are useful when they clarify the workflow.
+      label: 其他信息 / Additional Context
+      description: 如果能帮助说明使用流程，可附上截图或其他工具中的示例。 / Add screenshots or examples from other tools when they clarify the workflow.
 
   - type: checkboxes
     id: scope
     attributes:
-      label: Scope check
+      label: 范围确认 / Scope Check
       options:
-        - label: This request is related to Windows taskbar media, audio, placement, or the existing AF Media Bar workflow.
+        - label: 此建议与 Windows 任务栏媒体、音频、窗口位置或现有 AF Media Bar 使用流程有关。 / This request is related to Windows taskbar media, audio, placement, or the existing AF Media Bar workflow.
           required: true

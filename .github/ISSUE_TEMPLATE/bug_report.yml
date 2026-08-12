@@ -1,5 +1,5 @@
-name: Bug report
-description: Report a reproducible AF Media Bar problem.
+name: 提交问题 / Bug Report
+description: 报告 AF Media Bar 中可以复现的问题。 / Report a reproducible problem in AF Media Bar.
 title: "[Bug]: "
 labels:
   - bug
@@ -7,13 +7,14 @@ body:
   - type: markdown
     attributes:
       value: |
+        请先搜索现有 Issue，确认没有重复报告。安全漏洞请按照 SECURITY.md 的说明私下提交，不要在此公开。
         Please search existing Issues first. Do not disclose security vulnerabilities here; follow SECURITY.md instead.
 
   - type: input
     id: version
     attributes:
-      label: AF Media Bar version
-      description: Use the Release version, for example 1.0.0, or provide the commit hash.
+      label: AF Media Bar 版本 / AF Media Bar Version
+      description: 填写 Release 版本（例如 1.0.0），或提供构建所使用的提交哈希。 / Use the Release version (for example, 1.0.0), or provide the commit hash used to build it.
       placeholder: 1.0.0
     validations:
       required: true
@@ -21,8 +22,8 @@ body:
   - type: input
     id: windows
     attributes:
-      label: Windows version
-      description: Open winver and include the edition, version, and OS build.
+      label: Windows 版本 / Windows Version
+      description: 打开“运行”并执行 winver，填写版本、版本号和系统内部版本。 / Run winver and include the edition, version, and OS build.
       placeholder: Windows 11 24H2, OS Build 26100.x
     validations:
       required: true
@@ -30,8 +31,8 @@ body:
   - type: input
     id: player
     attributes:
-      label: Media player or source
-      description: Include the application and version. For browser playback, include the browser and website.
+      label: 媒体播放器或来源 / Media Player or Source
+      description: 填写应用名称和版本。若通过浏览器播放，请同时填写浏览器和网站。 / Include the application and version. For browser playback, include the browser and website.
       placeholder: NetEase Cloud Music 3.x / Microsoft Edge 1xx + website
     validations:
       required: true
@@ -39,25 +40,25 @@ body:
   - type: dropdown
     id: area
     attributes:
-      label: Affected area
+      label: 受影响的功能 / Affected Area
       options:
-        - Media discovery or controls
-        - Artwork or metadata
-        - Taskbar placement or visibility
-        - Output device switching
-        - Application volume
-        - Audio visualizer
-        - Metrics or resource usage
-        - Startup or tray icon
-        - Other
+        - 媒体发现或控制 / Media discovery or controls
+        - 封面或媒体信息 / Artwork or metadata
+        - 任务栏位置或显示 / Taskbar placement or visibility
+        - 输出设备切换 / Output device switching
+        - 应用音量 / Application volume
+        - 音频可视化 / Audio visualizer
+        - 指标或资源占用 / Metrics or resource usage
+        - 启动或托盘图标 / Startup or tray icon
+        - 其他 / Other
     validations:
       required: true
 
   - type: textarea
     id: steps
     attributes:
-      label: Reproduction steps
-      description: Provide the smallest reliable sequence that triggers the problem.
+      label: 复现步骤 / Reproduction Steps
+      description: 提供能够稳定触发问题的最简步骤。 / Provide the smallest reliable sequence that triggers the problem.
       placeholder: |
         1. Start ...
         2. Play ...
@@ -68,30 +69,30 @@ body:
   - type: textarea
     id: expected
     attributes:
-      label: Expected behavior
+      label: 预期行为 / Expected Behavior
     validations:
       required: true
 
   - type: textarea
     id: actual
     attributes:
-      label: Actual behavior
-      description: Include exact error text and whether the behavior recovers after restarting.
+      label: 实际行为 / Actual Behavior
+      description: 请提供完整的错误文本，并说明重启程序后问题是否仍然存在。 / Include the exact error text and whether the problem remains after restarting.
     validations:
       required: true
 
   - type: textarea
     id: context
     attributes:
-      label: Additional context
-      description: Add screenshots, recordings, taskbar customization tools, audio devices, and relevant settings. Remove private information first.
+      label: 其他信息 / Additional Context
+      description: 可添加截图、录屏、任务栏美化工具、音频设备和相关设置。请先移除隐私信息。 / Add screenshots, recordings, taskbar customization tools, audio devices, and relevant settings. Remove private information first.
 
   - type: checkboxes
     id: checklist
     attributes:
-      label: Checklist
+      label: 提交前确认 / Checklist
       options:
-        - label: I downloaded AF Media Bar from this repository's Releases page or built it from the referenced commit.
+        - label: 我从本仓库的 Releases 页面下载了 AF Media Bar，或根据上述提交自行构建。 / I downloaded AF Media Bar from this repository's Releases page or built it from the referenced commit.
           required: true
-        - label: I searched existing Issues for the same problem.
+        - label: 我已搜索现有 Issue，确认没有相同的问题。 / I searched existing Issues for the same problem.
           required: true
