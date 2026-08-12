@@ -54,7 +54,7 @@
 
 AF Media Bar is a portable taskbar media controller for Windows 10 and Windows 11. It reads Global System Media Transport Controls (GSMTC) sessions, displays artwork, title, and artist, and provides previous, play/pause, next, and source switching controls.
 
-The interface is an independent WPF top-level window aligned with the taskbar. It does not modify or inject code into `explorer.exe`. Any player that publishes a GSMTC session can be discovered, including NetEase Cloud Music, QQ Music, Spotify, major browsers, VLC, PotPlayer, Windows Media Player, mpv, and foobar2000.
+The app runs in its own process and hosts its WPF player window as a taskbar child window so it shares the taskbar auto-hide animation. It does not modify or inject code into `explorer.exe`. Any player that publishes a GSMTC session can be discovered, including NetEase Cloud Music, QQ Music, Spotify, major browsers, VLC, PotPlayer, Windows Media Player, mpv, and foobar2000.
 
 ## Features
 
@@ -78,7 +78,7 @@ flowchart LR
     A[Media apps] -->|GSMTC sessions| B[AF Media Bar]
     C[Windows Core Audio] -->|Devices, volume, loopback| B
     D[Windows 10/11 taskbar] -->|Position and auto-hide state| B
-    B --> E[Independent WPF overlay]
+    B --> E[WPF taskbar child window]
 ```
 
 The Windows 11 media card is an internal Explorer/Shell surface rather than a supported embeddable control. AF Media Bar uses the public GSMTC API behind that card and renders its own interface, avoiding Explorer injection and its stability risks.
@@ -155,7 +155,8 @@ Disable unused metrics and the audio visualizer, or enable low-spec mode. The vi
 
 ## Technical Limitations
 
-- The bar is a top-level overlay aligned with the taskbar, not an Explorer plugin.
+- The bar is a WPF window in an independent process, attached to the Explorer taskbar with `SetParent`; it is not an Explorer plugin and does not inject code.
+- The app must rediscover and reattach to the taskbar after Explorer restarts or third-party taskbar tools change its window structure; heavily customized environments may be incompatible.
 - Output switching uses the undocumented Windows `PolicyConfig` interface and may change in future Windows releases.
 - Automatic placement depends on Windows UI Automation and may not recognize customized taskbars.
 - Auto-hide taskbar tracking can still show slight animation delay; disabling Windows taskbar auto-hide is recommended.
@@ -214,16 +215,17 @@ AF-Media-Bar/
 
 ## TODO
 
-- [ ] Improve tracking animation smoothness when the Windows taskbar is set to auto-hide.
-- [ ] Complete automatic avoidance of taskbar icons.
-- [ ] Automatically follow the system theme.
-- [ ] Display scrolling video subtitles/lyrics.
-- [ ] Display song progress bars.
-- [ ] Support custom window sizes.
-- [ ] Test Windows 10 compatibility.
-- [ ] Support switching between multiple themes.
+- [x] Improve tracking animation smoothness when the Windows taskbar is set to auto-hide.
+- [x] Complete automatic avoidance of taskbar icons.
+- [x] Test Windows 10 compatibility.
 - [ ] Keep the window always on top.
 - [ ] Add an option to auto-hide when no audio is playing.
+- [ ] Automatically follow the system theme.
+- [ ] Provide floating window mode, custom window sizes, and vertical window layout.
+- [ ] Add a detailed settings menu interface.
+- [ ] Display scrolling video subtitles/lyrics.
+- [ ] Display song progress bars.
+- [ ] Support switching between multiple themes.
 - [ ] Add an onboarding tutorial for initial configuration.
 
 ## Contributing

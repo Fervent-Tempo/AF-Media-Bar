@@ -127,6 +127,13 @@ internal sealed class TaskbarPlacementService
 
             foreach (AutomationElement button in buttons)
             {
+                if (button.Current.ProcessId == Environment.ProcessId)
+                {
+                    // An embedded AF Media Bar is part of the taskbar UIA tree.
+                    // It must not be treated as an occupied Explorer button range.
+                    continue;
+                }
+
                 var bounds = button.Current.BoundingRectangle;
                 if (bounds.Width <= 1 || bounds.Width > 260 || bounds.Height <= 1)
                 {

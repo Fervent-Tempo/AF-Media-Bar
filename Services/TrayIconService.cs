@@ -1,3 +1,4 @@
+using System.Windows.Interop;
 using AFMediaBar.Interop;
 
 namespace AFMediaBar.Services;
@@ -11,14 +12,27 @@ internal sealed class TrayIconService : IDisposable
     internal const int CallbackMessage = NativeMethods.WmApp + 1;
 
     private const uint IconId = 1;
+    private readonly HwndSource _messageSource;
     private readonly nint _window;
     private readonly nint _icon;
     private readonly uint _taskbarCreatedMessage;
     private bool _isAdded;
 
-    internal TrayIconService(nint window)
+    internal TrayIconService()
     {
-        _window = window;
+        var parameters = new HwndSourceParameters("AFMediaBar.ShellMessageWindow")
+        {
+            Width = 0,
+            Height = 0,
+            PositionX = -32000,
+            PositionY = -32000,
+            WindowStyle = unchecked((int)NativeMethods.WsPopup),
+            ExtendedWindowStyle =
+                NativeMethods.WsExToolWindow | NativeMethods.WsExNoActivate
+        };
+        _messageSource = new HwndSource(parameters);
+        _messageSource.AddHook(WindowMessageHook);
+        _window = _messageSource.Handle;
         _icon = NativeMethods.LoadIcon(
             NativeMethods.GetModuleHandle(null),
             new nint(NativeMethods.IdiApplication));
@@ -37,35 +51,43 @@ internal sealed class TrayIconService : IDisposable
 
     internal event EventHandler? ContextMenuRequested;
     internal event EventHandler? DoubleClicked;
+    internal event EventHandler? ShellRestarted;
 
-    internal bool HandleWindowMessage(int message, nint wParam, nint lParam)
+    private nint WindowMessageHook(
+        nint window,
+        int message,
+        nint wParam,
+        nint lParam,
+        ref bool handled)
     {
         if ((uint)message == _taskbarCreatedMessage)
         {
             _isAdded = false;
             AddIcon();
-            return false;
+            ShellRestarted?.Invoke(this, EventArgs.Empty);
+            return nint.Zero;
         }
 
         if (message != CallbackMessage)
         {
-            return false;
+            return nint.Zero;
         }
 
         var notification = (int)(lParam.ToInt64() & 0xFFFF);
         if (notification is NativeMethods.WmContextMenu or NativeMethods.WmRightButtonUp)
         {
             ContextMenuRequested?.Invoke(this, EventArgs.Empty);
-            return true;
+            handled = true;
+            return nint.Zero;
         }
 
         if (notification == NativeMethods.WmLeftButtonDoubleClick)
         {
             DoubleClicked?.Invoke(this, EventArgs.Empty);
-            return true;
+            handled = true;
         }
 
-        return false;
+        return nint.Zero;
     }
 
     internal void UpdateTooltip(string tooltip)
@@ -127,5 +149,8 @@ internal sealed class TrayIconService : IDisposable
 
         ContextMenuRequested = null;
         DoubleClicked = null;
+        ShellRestarted = null;
+        _messageSource.RemoveHook(WindowMessageHook);
+        _messageSource.Dispose();
     }
 }

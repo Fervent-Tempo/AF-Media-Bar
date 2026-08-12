@@ -18,6 +18,8 @@ internal static class NativeMethods
     internal const int GwlStyle = -16;
     internal const int GwlExStyle = -20;
     internal const int GwlpHwndParent = -8;
+    internal const long WsChild = 0x40000000L;
+    internal const long WsPopup = 0x80000000L;
     internal const int WsExToolWindow = 0x00000080;
     internal const int WsExNoActivate = 0x08000000;
     internal const long WsCaption = 0x00C00000L;
@@ -75,6 +77,7 @@ internal static class NativeMethods
     private const uint MonitorDefaultToNearest = 0x00000002;
 
     internal static readonly nint HwndTopmost = new(-1);
+    internal static readonly nint HwndTop = nint.Zero;
 
     internal delegate void WinEventDelegate(
         nint hook,
@@ -108,11 +111,30 @@ internal static class NativeMethods
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool IsWindow(nint window);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool IsChild(nint parent, nint window);
 
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool GetWindowRect(nint window, out Rect rect);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool GetClientRect(nint window, out Rect rect);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool ClientToScreen(nint window, ref Point point);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool ScreenToClient(nint window, ref Point point);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern nint SetParent(nint child, nint newParent);
 
     [DllImport("user32.dll", SetLastError = true)]
     internal static extern uint GetDpiForWindow(nint window);
@@ -133,6 +155,16 @@ internal static class NativeMethods
         int width,
         int height,
         uint flags);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern int SetWindowRgn(nint window, nint region, bool redraw);
+
+    [DllImport("gdi32.dll", SetLastError = true)]
+    internal static extern nint CreateRectRgn(int left, int top, int right, int bottom);
+
+    [DllImport("gdi32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool DeleteObject(nint handle);
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
