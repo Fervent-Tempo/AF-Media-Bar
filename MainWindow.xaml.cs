@@ -51,6 +51,7 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _volumeApplyTimer;
     private readonly DispatcherTimer _volumePopupCloseTimer;
     private MetricSettings _metricSettings;
+    private ThemeSettings _themeSettings;
     private PlacementSettings _placementSettings;
     private TaskbarSettings _taskbarSettings;
     private SystemMetricsSnapshot _lastMetricsSnapshot;
@@ -109,6 +110,7 @@ public partial class MainWindow : Window
     {
         TaskbarPlacementService.ValidateAlgorithm();
         _metricSettings = MetricSettingsService.Load();
+        _themeSettings = ThemeSettingsService.Load();
         RenderOptions.ProcessRenderMode = _metricSettings.LowGpuMode
             ? RenderMode.SoftwareOnly
             : RenderMode.Default;
@@ -219,6 +221,7 @@ public partial class MainWindow : Window
         _taskbarEventWatcher.TaskbarChanged += Taskbar_OnChanged;
 
         ApplyMetricSettings();
+        ApplyThemeSettings();
         ApplyPlacementSettings();
         PositionOverTaskbar(force: true);
     }
@@ -1060,6 +1063,47 @@ public partial class MainWindow : Window
 
         ApplyAudioMonitorSettings();
         _ = RefreshAutomaticPlacementAsync();
+    }
+
+    private void ApplyThemeSettings()
+    {
+        TaskbarForegroundAutomaticMenuItem.IsChecked =
+            _themeSettings.TaskbarForegroundMode == TaskbarForegroundMode.Automatic;
+        TaskbarForegroundLightMenuItem.IsChecked =
+            _themeSettings.TaskbarForegroundMode == TaskbarForegroundMode.LightText;
+        TaskbarForegroundDarkMenuItem.IsChecked =
+            _themeSettings.TaskbarForegroundMode == TaskbarForegroundMode.DarkText;
+        EnhancedReadabilityMenuItem.IsChecked = _themeSettings.EnhancedReadability;
+    }
+
+    private void ThemeSetting_OnClick(object sender, RoutedEventArgs e)
+    {
+        var mode = sender == TaskbarForegroundLightMenuItem
+            ? TaskbarForegroundMode.LightText
+            : sender == TaskbarForegroundDarkMenuItem
+                ? TaskbarForegroundMode.DarkText
+                : sender == TaskbarForegroundAutomaticMenuItem
+                    ? TaskbarForegroundMode.Automatic
+                    : _themeSettings.TaskbarForegroundMode;
+        _themeSettings = new ThemeSettings(mode, EnhancedReadabilityMenuItem.IsChecked);
+        TaskbarForegroundAutomaticMenuItem.IsChecked = mode == TaskbarForegroundMode.Automatic;
+        TaskbarForegroundLightMenuItem.IsChecked = mode == TaskbarForegroundMode.LightText;
+        TaskbarForegroundDarkMenuItem.IsChecked = mode == TaskbarForegroundMode.DarkText;
+        try
+        {
+            ThemeSettingsService.Save(_themeSettings);
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(
+                exception.Message,
+                "无法保存外观设置",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+
+        ApplyThemeSettings();
+        (Application.Current as App)?.ThemeService?.Refresh();
     }
 
     private void SyncMetricMenuState()

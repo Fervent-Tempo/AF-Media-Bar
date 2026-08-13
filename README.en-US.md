@@ -90,8 +90,8 @@ The Windows 11 media card is an internal Explorer/Shell surface rather than a su
 - Windows 10 version 1809 (build 17763) or later, x64
 - No separate .NET installation is required for the recommended self-contained package
 
-> [!IMPORTANT]
-> Disabling Windows' **Automatically hide the taskbar** option is recommended while using AF Media Bar. Auto-hide tracking is supported, but its reveal and retract animation still needs further smoothness improvements. A fixed taskbar and fullscreen hiding are not affected by this limitation.
+> [!NOTE]
+> AF Media Bar supports Windows' **Automatically hide the taskbar** option, and the player window follows the taskbar reveal and retract animation.
 
 ### Recommended package
 
@@ -159,7 +159,6 @@ Disable unused metrics and the audio visualizer, or enable low-spec mode. The vi
 - The app must rediscover and reattach to the taskbar after Explorer restarts or third-party taskbar tools change its window structure; heavily customized environments may be incompatible.
 - Output switching uses the undocumented Windows `PolicyConfig` interface and may change in future Windows releases.
 - Automatic placement depends on Windows UI Automation and may not recognize customized taskbars.
-- Auto-hide taskbar tracking can still show slight animation delay; disabling Windows taskbar auto-hide is recommended.
 - The current instance follows the primary monitor taskbar only.
 - Browsers decide whether multiple tabs appear as one or multiple GSMTC sessions.
 - Only a `win-x64` package is currently published; ARM64 is not yet available.
@@ -220,7 +219,7 @@ AF-Media-Bar/
 - [x] Test Windows 10 compatibility.
 - [ ] Keep the window always on top.
 - [ ] Add an option to auto-hide when no audio is playing.
-- [ ] Automatically follow the system theme.
+- [x] Automatically follow the system theme.
 - [ ] Provide floating window mode, custom window sizes, and vertical window layout.
 - [ ] Add a detailed settings menu interface.
 - [ ] Display scrolling video subtitles/lyrics.

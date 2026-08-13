@@ -271,6 +271,11 @@ internal static class NativeMethods
     [DllImport("shell32.dll")]
     internal static extern uint SHAppBarMessage(uint message, ref AppBarData data);
 
+    [DllImport("dwmapi.dll")]
+    internal static extern int DwmGetColorizationColor(
+        out uint colorizationColor,
+        [MarshalAs(UnmanagedType.Bool)] out bool opaqueBlend);
+
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     internal static extern nint GetModuleHandle(string? moduleName);
 

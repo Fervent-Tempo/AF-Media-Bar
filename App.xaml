@@ -3,13 +3,34 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              ShutdownMode="OnExplicitShutdown">
   <Application.Resources>
-    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#FFF7FA" />
-    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#B9D1E3" />
-    <SolidColorBrush x:Key="HoverBrush" Color="#24FFFFFF" />
-    <SolidColorBrush x:Key="MenuBackgroundBrush" Color="#E8172632" />
+    <SolidColorBrush x:Key="TaskbarPrimaryTextBrush" Color="#FFF7FA" />
+    <SolidColorBrush x:Key="TaskbarSecondaryTextBrush" Color="#B9D1E3" />
+    <SolidColorBrush x:Key="TaskbarSurfaceBrush" Color="#2AFFFFFF" />
+    <SolidColorBrush x:Key="TaskbarHoverBrush" Color="#24FFFFFF" />
+    <SolidColorBrush x:Key="TaskbarPressedBrush" Color="#38FFFFFF" />
+    <SolidColorBrush x:Key="TaskbarDividerBrush" Color="#28FFFFFF" />
+    <SolidColorBrush x:Key="TaskbarHighlightTextBrush" Color="#FFF7FA" />
+    <SolidColorBrush x:Key="TaskbarReadabilityBrush" Color="#00000000" />
+    <SolidColorBrush x:Key="MenuBackgroundBrush" Color="#F0172632" />
+    <SolidColorBrush x:Key="MenuPrimaryTextBrush" Color="#FFF7FA" />
+    <SolidColorBrush x:Key="MenuSecondaryTextBrush" Color="#B9D1E3" />
     <SolidColorBrush x:Key="MenuBorderBrush" Color="#4DFFFFFF" />
     <SolidColorBrush x:Key="MenuHoverBrush" Color="#3D6C8794" />
+    <SolidColorBrush x:Key="MenuPressedBrush" Color="#526C8794" />
+    <SolidColorBrush x:Key="MenuSelectionBrush" Color="#4D6F9AAA" />
+    <SolidColorBrush x:Key="MenuHighlightTextBrush" Color="#FFF7FA" />
     <SolidColorBrush x:Key="MenuDisabledBrush" Color="#66B9D1E3" />
+    <SolidColorBrush x:Key="MenuSeparatorBrush" Color="#28FFFFFF" />
+    <SolidColorBrush x:Key="SliderFillBrush" Color="#B96F9AAA" />
+    <SolidColorBrush x:Key="SliderTrackBrush" Color="#30FFFFFF" />
+    <SolidColorBrush x:Key="SliderThumbBrush" Color="#FFF7FA" />
+    <SolidColorBrush x:Key="SliderThumbBorderBrush" Color="#806F9AAA" />
+    <DropShadowEffect x:Key="TaskbarTextEffect"
+                      Color="#99000000"
+                      BlurRadius="1"
+                      Direction="0"
+                      ShadowDepth="0"
+                      Opacity="0.82" />
     <SolidColorBrush x:Key="{x:Static SystemColors.MenuBrushKey}" Color="#F0172632" />
     <SolidColorBrush x:Key="{x:Static SystemColors.MenuTextBrushKey}" Color="#FFF7FA" />
     <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#3D6C8794" />
@@ -20,8 +41,8 @@
     <FontFamily x:Key="AppIconFontFamily">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
 
     <Style TargetType="ContextMenu">
-      <Setter Property="Background" Value="{StaticResource MenuBackgroundBrush}" />
-      <Setter Property="BorderBrush" Value="{StaticResource MenuBorderBrush}" />
+      <Setter Property="Background" Value="{DynamicResource MenuBackgroundBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MenuBorderBrush}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="Padding" Value="4" />
       <Setter Property="HasDropShadow" Value="True" />
@@ -44,7 +65,7 @@
     </Style>
 
     <Style TargetType="MenuItem">
-      <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource MenuPrimaryTextBrush}" />
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderBrush" Value="Transparent" />
       <Setter Property="Padding" Value="6,5" />
@@ -75,7 +96,7 @@
                              Text="&#xE73E;"
                              FontFamily="{StaticResource AppIconFontFamily}"
                              FontSize="12"
-                             Foreground="{StaticResource PrimaryTextBrush}"
+                             Foreground="{DynamicResource MenuPrimaryTextBrush}"
                              HorizontalAlignment="Center"
                              VerticalAlignment="Center"
                              Visibility="Collapsed" />
@@ -93,7 +114,7 @@
                              Text="&#xE76C;"
                              FontFamily="{StaticResource AppIconFontFamily}"
                              FontSize="10"
-                             Foreground="{StaticResource SecondaryTextBrush}"
+                             Foreground="{DynamicResource MenuSecondaryTextBrush}"
                              HorizontalAlignment="Right"
                              VerticalAlignment="Center"
                              Visibility="Collapsed" />
@@ -110,8 +131,8 @@
                      StaysOpen="False">
                 <Border Width="230"
                         Padding="3"
-                        Background="{StaticResource MenuBackgroundBrush}"
-                        BorderBrush="{StaticResource MenuBorderBrush}"
+                        Background="{DynamicResource MenuBackgroundBrush}"
+                        BorderBrush="{DynamicResource MenuBorderBrush}"
                         BorderThickness="1"
                         CornerRadius="7"
                         SnapsToDevicePixels="True">
@@ -125,14 +146,16 @@
             </Grid>
             <ControlTemplate.Triggers>
               <Trigger Property="IsHighlighted" Value="True">
-                <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource MenuHoverBrush}" />
-                <Setter TargetName="ItemBorder" Property="BorderBrush" Value="#52FFFFFF" />
+                <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource MenuHoverBrush}" />
+                <Setter TargetName="ItemBorder" Property="BorderBrush" Value="{DynamicResource MenuBorderBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource MenuHighlightTextBrush}" />
               </Trigger>
               <Trigger Property="IsSubmenuOpen" Value="True">
-                <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource MenuHoverBrush}" />
+                <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource MenuHoverBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource MenuHighlightTextBrush}" />
               </Trigger>
               <Trigger Property="IsEnabled" Value="False">
-                <Setter Property="Foreground" Value="{StaticResource MenuDisabledBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource MenuDisabledBrush}" />
                 <Setter TargetName="ItemBorder" Property="Opacity" Value="0.58" />
               </Trigger>
               <Trigger Property="IsChecked" Value="True">
@@ -151,7 +174,7 @@
     <Style TargetType="Separator">
       <Setter Property="Height" Value="1" />
       <Setter Property="Margin" Value="8,5" />
-      <Setter Property="Background" Value="#28FFFFFF" />
+      <Setter Property="Background" Value="{DynamicResource MenuSeparatorBrush}" />
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="Separator">
@@ -162,7 +185,7 @@
     </Style>
 
     <Style x:Key="OutputDeviceListItemStyle" TargetType="ListBoxItem">
-      <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource MenuPrimaryTextBrush}" />
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="Padding" Value="8,7" />
       <Setter Property="Margin" Value="2,1" />
@@ -178,10 +201,12 @@
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource MenuHoverBrush}" />
+                <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource MenuHoverBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource MenuHighlightTextBrush}" />
               </Trigger>
               <Trigger Property="IsSelected" Value="True">
-                <Setter TargetName="ItemBorder" Property="Background" Value="#4D6F9AAA" />
+                <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource MenuSelectionBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource MenuHighlightTextBrush}" />
               </Trigger>
               <Trigger Property="IsEnabled" Value="False">
                 <Setter Property="Opacity" Value="0.5" />
@@ -211,7 +236,7 @@
                       <ControlTemplate TargetType="RepeatButton">
                         <Border Width="4"
                                 HorizontalAlignment="Center"
-                                Background="#B96F9AAA"
+                                Background="{DynamicResource SliderFillBrush}"
                                 CornerRadius="2" />
                       </ControlTemplate>
                     </RepeatButton.Template>
@@ -221,8 +246,8 @@
                   <Thumb Width="15" Height="15">
                     <Thumb.Template>
                       <ControlTemplate TargetType="Thumb">
-                        <Border Background="{StaticResource PrimaryTextBrush}"
-                                BorderBrush="#806F9AAA"
+                        <Border Background="{DynamicResource SliderThumbBrush}"
+                                BorderBrush="{DynamicResource SliderThumbBorderBrush}"
                                 BorderThickness="2"
                                 CornerRadius="7.5" />
                       </ControlTemplate>
@@ -236,7 +261,7 @@
                       <ControlTemplate TargetType="RepeatButton">
                         <Border Width="4"
                                 HorizontalAlignment="Center"
-                                Background="#30FFFFFF"
+                                Background="{DynamicResource SliderTrackBrush}"
                                 CornerRadius="2" />
                       </ControlTemplate>
                     </RepeatButton.Template>
@@ -254,7 +279,7 @@
       <Setter Property="Height" Value="36" />
       <Setter Property="Margin" Value="1,0" />
       <Setter Property="Padding" Value="0" />
-      <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TaskbarPrimaryTextBrush}" />
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="Cursor" Value="Hand" />
@@ -267,10 +292,12 @@
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="ButtonBorder" Property="Background" Value="{StaticResource HoverBrush}" />
+                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource TaskbarHoverBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource TaskbarHighlightTextBrush}" />
               </Trigger>
               <Trigger Property="IsPressed" Value="True">
-                <Setter TargetName="ButtonBorder" Property="Background" Value="#38FFFFFF" />
+                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource TaskbarPressedBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource TaskbarHighlightTextBrush}" />
               </Trigger>
               <Trigger Property="IsEnabled" Value="False">
                 <Setter Property="Opacity" Value="0.35" />

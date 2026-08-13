@@ -9,6 +9,9 @@ public partial class App : Application
 {
     private Mutex? _singleInstanceMutex;
     private CancellationTokenSource? _shutdownCancellation;
+    private SystemThemeService? _systemThemeService;
+
+    internal SystemThemeService? ThemeService => _systemThemeService;
     private int _windowGeneration;
     private bool _shutdownRequested;
 
@@ -23,6 +26,7 @@ public partial class App : Application
         }
 
         base.OnStartup(e);
+        _systemThemeService = new SystemThemeService(this);
         try
         {
             StartupService.Migrate();
@@ -120,6 +124,7 @@ public partial class App : Application
         _shutdownRequested = true;
         _shutdownCancellation?.Cancel();
         _shutdownCancellation?.Dispose();
+        _systemThemeService?.Dispose();
         _singleInstanceMutex?.Dispose();
         base.OnExit(e);
     }

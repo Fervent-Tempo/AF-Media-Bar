@@ -79,6 +79,25 @@
                 ToolTip="显示当前媒体的独立音量调节按钮"
                 IsCheckable="True"
                 Click="MetricSetting_OnClick" />
+      <MenuItem Header="文字颜色">
+        <MenuItem x:Name="TaskbarForegroundAutomaticMenuItem"
+                  Header="自动跟随 Windows"
+                  IsCheckable="True"
+                  Click="ThemeSetting_OnClick" />
+        <MenuItem x:Name="TaskbarForegroundLightMenuItem"
+                  Header="浅色文字"
+                  IsCheckable="True"
+                  Click="ThemeSetting_OnClick" />
+        <MenuItem x:Name="TaskbarForegroundDarkMenuItem"
+                  Header="深色文字"
+                  IsCheckable="True"
+                  Click="ThemeSetting_OnClick" />
+      </MenuItem>
+      <MenuItem x:Name="EnhancedReadabilityMenuItem"
+                Header="增强文字可读性"
+                ToolTip="在任务栏内容后增加轻微反差底色，适合透明任务栏或复杂壁纸"
+                IsCheckable="True"
+                Click="ThemeSetting_OnClick" />
       <MenuItem Header="位置">
         <MenuItem x:Name="AutomaticPlacementMenuItem"
                   Header="实验性：自动避让任务栏图标"
@@ -120,12 +139,19 @@
       <ColumnDefinition Width="Auto" />
     </Grid.ColumnDefinitions>
 
+    <Border x:Name="TaskbarReadabilityHost"
+            Grid.ColumnSpan="6"
+            Margin="1,2,1,2"
+            Background="{DynamicResource TaskbarReadabilityBrush}"
+            CornerRadius="6"
+            IsHitTestVisible="False" />
+
     <Border x:Name="ArtworkHost"
             Grid.Column="0"
             Width="40"
             Height="40"
             CornerRadius="5"
-            Background="#2AFFFFFF"
+            Background="{DynamicResource TaskbarSurfaceBrush}"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
             Cursor="Hand"
@@ -135,7 +161,8 @@
                    Text="&#xE8D6;"
                    FontFamily="{StaticResource AppIconFontFamily}"
                    FontSize="18"
-                   Foreground="#B9D1E3"
+                   Foreground="{DynamicResource TaskbarSecondaryTextBrush}"
+                   Effect="{DynamicResource TaskbarTextEffect}"
                    HorizontalAlignment="Center"
                    VerticalAlignment="Center" />
         <Image x:Name="ArtworkImage"
@@ -172,7 +199,8 @@
                          FontFamily="{StaticResource AppDisplayFontFamily}"
                          FontSize="14"
                          FontWeight="SemiBold"
-                         Foreground="{StaticResource PrimaryTextBrush}"
+                         Foreground="{DynamicResource TaskbarPrimaryTextBrush}"
+                         Effect="{DynamicResource TaskbarTextEffect}"
                          TextWrapping="NoWrap">
                 <TextBlock.RenderTransform>
                   <TranslateTransform x:Name="TitleTransform" />
@@ -192,7 +220,8 @@
                          Text="请在任意应用中播放音频或视频"
                          FontFamily="{StaticResource AppTextFontFamily}"
                          FontSize="11.5"
-                         Foreground="{StaticResource SecondaryTextBrush}"
+                         Foreground="{DynamicResource TaskbarSecondaryTextBrush}"
+                         Effect="{DynamicResource TaskbarTextEffect}"
                          Opacity="0"
                          IsHitTestVisible="False"
                          TextWrapping="NoWrap">
@@ -259,15 +288,15 @@
                     HorizontalAlignment="Center"
                     Orientation="Horizontal"
                     VerticalAlignment="Center">
-          <Border x:Name="AudioBar0" Width="4" Height="3" Margin="0,0,4,0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
-          <Border x:Name="AudioBar1" Width="4" Height="3" Margin="0,0,4,0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
-          <Border x:Name="AudioBar2" Width="4" Height="3" Margin="0,0,4,0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
-          <Border x:Name="AudioBar3" Width="4" Height="3" Margin="0,0,4,0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
-          <Border x:Name="AudioBar4" Width="4" Height="3" Margin="0,0,4,0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
-          <Border x:Name="AudioBar5" Width="4" Height="3" Margin="0,0,4,0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
-          <Border x:Name="AudioBar6" Width="4" Height="3" Margin="0,0,4,0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
-          <Border x:Name="AudioBar7" Width="4" Height="3" Margin="0,0,4,0" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
-          <Border x:Name="AudioBar8" Width="4" Height="3" CornerRadius="2" Background="#B9D1E3" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar0" Width="4" Height="3" Margin="0,0,4,0" CornerRadius="2" Background="{DynamicResource TaskbarSecondaryTextBrush}" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar1" Width="4" Height="3" Margin="0,0,4,0" CornerRadius="2" Background="{DynamicResource TaskbarSecondaryTextBrush}" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar2" Width="4" Height="3" Margin="0,0,4,0" CornerRadius="2" Background="{DynamicResource TaskbarSecondaryTextBrush}" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar3" Width="4" Height="3" Margin="0,0,4,0" CornerRadius="2" Background="{DynamicResource TaskbarSecondaryTextBrush}" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar4" Width="4" Height="3" Margin="0,0,4,0" CornerRadius="2" Background="{DynamicResource TaskbarSecondaryTextBrush}" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar5" Width="4" Height="3" Margin="0,0,4,0" CornerRadius="2" Background="{DynamicResource TaskbarSecondaryTextBrush}" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar6" Width="4" Height="3" Margin="0,0,4,0" CornerRadius="2" Background="{DynamicResource TaskbarSecondaryTextBrush}" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar7" Width="4" Height="3" Margin="0,0,4,0" CornerRadius="2" Background="{DynamicResource TaskbarSecondaryTextBrush}" VerticalAlignment="Center" />
+          <Border x:Name="AudioBar8" Width="4" Height="3" CornerRadius="2" Background="{DynamicResource TaskbarSecondaryTextBrush}" VerticalAlignment="Center" />
         </StackPanel>
       </Border>
     </Grid>
@@ -279,14 +308,15 @@
             Margin="0,0,4,0"
             Padding="8,0"
             CornerRadius="12"
-            Background="#24FFFFFF"
+            Background="{DynamicResource TaskbarHoverBrush}"
             VerticalAlignment="Center">
       <TextBlock x:Name="MetricsText"
                  Text="MEM --%"
                  FontFamily="{StaticResource AppTextFontFamily}"
                  FontSize="11"
                  FontWeight="SemiBold"
-                 Foreground="{StaticResource SecondaryTextBrush}"
+                 Foreground="{DynamicResource TaskbarSecondaryTextBrush}"
+                 Effect="{DynamicResource TaskbarTextEffect}"
                  HorizontalAlignment="Center"
                  VerticalAlignment="Center"
                  TextTrimming="CharacterEllipsis" />
@@ -342,7 +372,7 @@
             Width="1"
             Height="22"
             Margin="8,0"
-            Background="#28FFFFFF"
+            Background="{DynamicResource TaskbarDividerBrush}"
             VerticalAlignment="Center" />
 
     <Popup x:Name="VolumeControlPopup"
@@ -357,8 +387,8 @@
       <Border Width="94"
               Height="224"
               Padding="9,10"
-              Background="{StaticResource MenuBackgroundBrush}"
-              BorderBrush="{StaticResource MenuBorderBrush}"
+              Background="{DynamicResource MenuBackgroundBrush}"
+              BorderBrush="{DynamicResource MenuBorderBrush}"
               BorderThickness="1"
               CornerRadius="8"
               PreviewMouseWheel="VolumeControlPopup_OnPreviewMouseWheel">
@@ -368,14 +398,14 @@
                      Text="当前媒体"
                      TextAlignment="Center"
                      TextTrimming="CharacterEllipsis"
-                     Foreground="{StaticResource PrimaryTextBrush}"
+                     Foreground="{DynamicResource MenuPrimaryTextBrush}"
                      FontFamily="{StaticResource AppTextFontFamily}"
                      FontSize="11.5" />
           <TextBlock x:Name="VolumePercentText"
                      Margin="0,3,0,5"
                      Text="--%"
                      TextAlignment="Center"
-                     Foreground="{StaticResource SecondaryTextBrush}"
+                     Foreground="{DynamicResource MenuSecondaryTextBrush}"
                      FontFamily="{StaticResource AppTextFontFamily}"
                      FontSize="12"
                      FontWeight="SemiBold" />
@@ -405,15 +435,15 @@
       <Border Width="268"
               MaxHeight="360"
               Padding="8"
-              Background="{StaticResource MenuBackgroundBrush}"
-              BorderBrush="{StaticResource MenuBorderBrush}"
+              Background="{DynamicResource MenuBackgroundBrush}"
+              BorderBrush="{DynamicResource MenuBorderBrush}"
               BorderThickness="1"
               CornerRadius="8"
               PreviewMouseWheel="OutputDevicePopup_OnPreviewMouseWheel">
         <StackPanel>
           <DockPanel Margin="4,2,4,8">
             <TextBlock Text="输出设备"
-                       Foreground="{StaticResource PrimaryTextBrush}"
+                       Foreground="{DynamicResource MenuPrimaryTextBrush}"
                        FontFamily="{StaticResource AppTextFontFamily}"
                        FontSize="13"
                        FontWeight="SemiBold" />
@@ -421,7 +451,7 @@
                        DockPanel.Dock="Right"
                        MaxWidth="150"
                        TextTrimming="CharacterEllipsis"
-                       Foreground="{StaticResource SecondaryTextBrush}"
+                       Foreground="{DynamicResource MenuSecondaryTextBrush}"
                        FontFamily="{StaticResource AppTextFontFamily}"
                        FontSize="11"
                        HorizontalAlignment="Right" />
@@ -430,7 +460,7 @@
                    MaxHeight="300"
                    BorderThickness="0"
                    Background="Transparent"
-                   Foreground="{StaticResource PrimaryTextBrush}"
+                   Foreground="{DynamicResource MenuPrimaryTextBrush}"
                    ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                    ScrollViewer.VerticalScrollBarVisibility="Auto"
                    ItemContainerStyle="{StaticResource OutputDeviceListItemStyle}"
@@ -457,13 +487,13 @@
            PopupAnimation="Fade">
       <Border MaxWidth="300"
               Padding="10,6"
-              Background="{StaticResource MenuBackgroundBrush}"
-              BorderBrush="{StaticResource MenuBorderBrush}"
+              Background="{DynamicResource MenuBackgroundBrush}"
+              BorderBrush="{DynamicResource MenuBorderBrush}"
               BorderThickness="1"
               CornerRadius="5"
               IsHitTestVisible="False">
         <TextBlock x:Name="OutputDeviceStatusText"
-                   Foreground="{StaticResource PrimaryTextBrush}"
+                   Foreground="{DynamicResource MenuPrimaryTextBrush}"
                    FontFamily="{StaticResource AppTextFontFamily}"
                    FontSize="12"
                    TextTrimming="CharacterEllipsis"
@@ -480,13 +510,13 @@
            PopupAnimation="Fade">
       <Border MaxWidth="260"
               Padding="10,6"
-              Background="{StaticResource MenuBackgroundBrush}"
-              BorderBrush="{StaticResource MenuBorderBrush}"
+              Background="{DynamicResource MenuBackgroundBrush}"
+              BorderBrush="{DynamicResource MenuBorderBrush}"
               BorderThickness="1"
               CornerRadius="5"
               IsHitTestVisible="False">
         <TextBlock x:Name="VolumeStatusText"
-                   Foreground="{StaticResource PrimaryTextBrush}"
+                   Foreground="{DynamicResource MenuPrimaryTextBrush}"
                    FontFamily="{StaticResource AppTextFontFamily}"
                    FontSize="12"
                    TextTrimming="CharacterEllipsis"
