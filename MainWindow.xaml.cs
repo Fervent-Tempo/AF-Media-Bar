@@ -33,6 +33,10 @@ public partial class MainWindow : Window
     private const int HorizontalMarginAt96Dpi = 8;
     private const int VerticalMarginAt96Dpi = 4;
     private const int AudioMonitorIntervalMilliseconds = 50;
+    private const int EdgeVisiblePixels = 6;
+    private const int EdgeActivationDistance = 72;
+    private const int EdgeActivationSpanPadding = 80;
+    private const int EdgeAnimationDurationMilliseconds = 180;
 
     private readonly MediaSessionService _mediaSessionService = new();
     private readonly SystemMetricsService _systemMetricsService = new();
@@ -50,8 +54,11 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _outputDeviceApplyTimer;
     private readonly DispatcherTimer _volumeApplyTimer;
     private readonly DispatcherTimer _volumePopupCloseTimer;
+    private readonly DispatcherTimer _edgeAnimationTimer;
+    private readonly DispatcherTimer _edgeHoverTimer;
     private MetricSettings _metricSettings;
     private ThemeSettings _themeSettings;
+    private WindowSettings _windowSettings;
     private PlacementSettings _placementSettings;
     private TaskbarSettings _taskbarSettings;
     private SystemMetricsSnapshot _lastMetricsSnapshot;
@@ -69,6 +76,7 @@ public partial class MainWindow : Window
     private nint _windowHandle;
     private int? _automaticLeft;
     private int? _lastPositionLeft;
+    private int? _lastPositionTop;
     private int _metricCycleIndex;
     private int _metricCycleTicks;
     // 自动定位只允许一次扫描；扫描期间的新请求会在结束后再补跑一次。
@@ -88,6 +96,8 @@ public partial class MainWindow : Window
     // Increment on source changes so stale process-matching results are ignored.
     private int _volumeRefreshVersion;
     private string? _lastVolumeSourceId;
+    private bool _hasConnectedMedia;
+    private bool _selectedMediaIsPlaying;
     private bool _hasPresented;
     private bool _isExpanded;
     private bool _isMenuOpen;
@@ -105,12 +115,27 @@ public partial class MainWindow : Window
     private Border[] _audioBars = null!;
     private NativeMethods.Point _dragStartCursor;
     private int _dragStartWindowLeft;
+    private int _dragStartWindowTop;
+    private int? _floatingNormalLeft;
+    private int? _floatingNormalTop;
+    private int _floatingEdge;
+    private int _expandedEdge;
+    private int _lastFloatingWidth;
+    private int _lastFloatingHeight;
+    private NativeMethods.Rect _edgeAnimationFrom;
+    private NativeMethods.Rect _edgeAnimationTo;
+    private DateTime _edgeAnimationStarted;
+    private bool _edgeAnimationExpanding;
+    private bool _edgeAnimationHasTarget;
 
     public MainWindow()
     {
         TaskbarPlacementService.ValidateAlgorithm();
         _metricSettings = MetricSettingsService.Load();
         _themeSettings = ThemeSettingsService.Load();
+        _windowSettings = WindowSettingsService.Load();
+        _floatingNormalLeft = _windowSettings.FloatingLeft;
+        _floatingNormalTop = _windowSettings.FloatingTop;
         RenderOptions.ProcessRenderMode = _metricSettings.LowGpuMode
             ? RenderMode.SoftwareOnly
             : RenderMode.Default;
@@ -188,6 +213,18 @@ public partial class MainWindow : Window
             OnVolumePopupCloseTimerTick,
             Dispatcher);
         _volumePopupCloseTimer.Stop();
+        _edgeAnimationTimer = new DispatcherTimer(
+            TimeSpan.FromMilliseconds(16),
+            DispatcherPriority.Render,
+            OnEdgeAnimationTick,
+            Dispatcher);
+        _edgeAnimationTimer.Stop();
+        _edgeHoverTimer = new DispatcherTimer(
+            TimeSpan.FromMilliseconds(90),
+            DispatcherPriority.Input,
+            OnEdgeHoverTimerTick,
+            Dispatcher);
+        _edgeHoverTimer.Start();
 
         _mediaSessionService.SnapshotChanged += OnSnapshotChanged;
         _mediaSessionService.SessionsChanged += OnSessionsChanged;
@@ -222,6 +259,7 @@ public partial class MainWindow : Window
 
         ApplyMetricSettings();
         ApplyThemeSettings();
+        ApplyWindowSettings();
         ApplyPlacementSettings();
         PositionOverTaskbar(force: true);
     }
@@ -264,6 +302,8 @@ public partial class MainWindow : Window
         _outputDeviceApplyTimer.Stop();
         _volumeApplyTimer.Stop();
         _volumePopupCloseTimer.Stop();
+        _edgeAnimationTimer.Stop();
+        _edgeHoverTimer.Stop();
         _audioMonitorService?.Dispose();
         _audioMonitorService = null;
         _taskbarEventWatcher?.Dispose();
@@ -278,7 +318,12 @@ public partial class MainWindow : Window
 
     private void OnPositionTimerTick(object? sender, EventArgs e)
     {
-        RefreshTaskbarSettings();
+        if (_windowSettings.HostMode == WindowHostMode.Taskbar)
+        {
+            RefreshTaskbarSettings();
+        }
+
+        UpdateFloatingEdgeCollapse();
         PositionOverTaskbar(force: false);
     }
 
@@ -289,6 +334,11 @@ public partial class MainWindow : Window
 
     private void Taskbar_OnChanged(TaskbarWindowEvent taskbarEvent)
     {
+        if (_windowSettings.HostMode != WindowHostMode.Taskbar)
+        {
+            return;
+        }
+
         RefreshTaskbarSettings();
         if (TryGetTaskbarBounds(out var bounds))
         {
@@ -315,6 +365,11 @@ public partial class MainWindow : Window
 
     private void RefreshTaskbarSettings()
     {
+        if (_windowSettings.HostMode != WindowHostMode.Taskbar)
+        {
+            return;
+        }
+
         var settings = TaskbarSettingsService.Read();
         if (settings.Alignment == TaskbarAlignment.Unknown &&
             _taskbarSettings.Alignment != TaskbarAlignment.Unknown)
@@ -351,9 +406,28 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (_windowSettings.HostMode == WindowHostMode.Floating)
+        {
+            PositionFloatingWindow(force);
+            return;
+        }
+
+        _floatingEdge = 0;
+
         CollapseWhenPointerLeavesWindow();
 
-        if (NativeMethods.ShouldHideForFullScreenApp(_windowHandle))
+        if (_windowSettings.HideWhenNoMedia &&
+            !_hasConnectedMedia &&
+            !_windowSettings.AlwaysOnTop &&
+            !_isMenuOpen)
+        {
+            Visibility = Visibility.Collapsed;
+            StopMarquees();
+            return;
+        }
+
+        if (!_windowSettings.AlwaysOnTop &&
+            NativeMethods.ShouldHideForFullScreenApp(_windowHandle))
         {
             if (Visibility != Visibility.Collapsed)
             {
@@ -367,6 +441,13 @@ public partial class MainWindow : Window
 
         if (!TryGetTaskbarBounds(out var bounds))
         {
+            if (_windowSettings.AlwaysOnTop)
+            {
+                Visibility = Visibility.Visible;
+                Topmost = true;
+                return;
+            }
+
             Visibility = Visibility.Collapsed;
             StopMarquees();
             return;
@@ -413,6 +494,7 @@ public partial class MainWindow : Window
         var leftChanged = _lastPositionLeft != clampedLeft;
 
         Height = heightDip;
+        Topmost = _windowSettings.AlwaysOnTop;
         if (!force && !rectChanged && !leftChanged)
         {
             RevealAfterPlacement();
@@ -426,7 +508,8 @@ public partial class MainWindow : Window
             taskbarRect.Top + marginY,
             width,
             windowHeight,
-            visible: true);
+            visible: true,
+            topmost: _windowSettings.AlwaysOnTop);
         RevealAfterPlacement();
     }
 
@@ -486,7 +569,8 @@ public partial class MainWindow : Window
 
     private async Task RefreshAutomaticPlacementAsync()
     {
-        if (!_placementSettings.AutomaticPlacement ||
+        if (_windowSettings.HostMode != WindowHostMode.Taskbar ||
+            !_placementSettings.AutomaticPlacement ||
             _windowHandle == nint.Zero ||
             _isMenuOpen)
         {
@@ -627,6 +711,9 @@ public partial class MainWindow : Window
 
     private void ApplySnapshot(MediaSnapshot snapshot)
     {
+        _selectedMediaIsPlaying = snapshot.IsConnected && snapshot.IsPlaying;
+        _hasConnectedMedia = _mediaSessions.Any(session => session.IsPlaying) ||
+            (_selectedMediaIsPlaying && _mediaSessions.Count == 0);
         var volumeSourceChanged = !string.Equals(
             _lastVolumeSourceId,
             snapshot.SourceId,
@@ -674,11 +761,26 @@ public partial class MainWindow : Window
         }
 
         ScheduleMarqueeUpdate();
+        if (_windowSettings.HideWhenNoMedia)
+        {
+            PositionOverTaskbar(force: true);
+        }
     }
 
     private void ApplySessions(IReadOnlyList<MediaSessionOption> sessions)
     {
         _mediaSessions = sessions;
+        var hasPlayingSession = sessions.Any(session => session.IsPlaying) ||
+            (_selectedMediaIsPlaying && sessions.Count == 0);
+        var hasChanged = _hasConnectedMedia != hasPlayingSession;
+        _hasConnectedMedia = hasPlayingSession;
+        if (hasChanged)
+        {
+            if (_windowSettings.HideWhenNoMedia)
+            {
+                PositionOverTaskbar(force: true);
+            }
+        }
         MediaSourcesMenuItem.Items.Clear();
         if (sessions.Count == 0)
         {
@@ -757,6 +859,11 @@ public partial class MainWindow : Window
 
     private void SetExpanded(bool expanded, bool animate)
     {
+        if (!_windowSettings.AutoCollapse && !expanded)
+        {
+            expanded = true;
+        }
+
         _isExpanded = expanded;
         ControlsHost.IsHitTestVisible = expanded;
         var showVisualizer = _metricSettings.AudioMonitorEnabled && !expanded;
@@ -1104,6 +1211,483 @@ public partial class MainWindow : Window
 
         ApplyThemeSettings();
         (Application.Current as App)?.ThemeService?.Refresh();
+    }
+
+    private void PositionFloatingWindow(bool force)
+    {
+        if (_windowHandle == nint.Zero || _taskbarHostService is null)
+        {
+            return;
+        }
+
+        CollapseWhenPointerLeavesWindow();
+        if (!_windowSettings.EdgeAutoCollapse &&
+            (_floatingEdge != 0 || _expandedEdge != 0))
+        {
+            _edgeAnimationTimer.Stop();
+            _edgeAnimationHasTarget = false;
+            _floatingEdge = 0;
+            _expandedEdge = 0;
+            UpdateEdgeCollapseIndicator(visible: false);
+            force = true;
+        }
+        if (_windowSettings.HideWhenNoMedia &&
+            !_hasConnectedMedia &&
+            !_windowSettings.AlwaysOnTop &&
+            !_isMenuOpen)
+        {
+            Visibility = Visibility.Collapsed;
+            StopMarquees();
+            return;
+        }
+
+        if (!_windowSettings.AlwaysOnTop &&
+            NativeMethods.ShouldHideForFullScreenApp(_windowHandle))
+        {
+            Visibility = Visibility.Collapsed;
+            StopMarquees();
+            return;
+        }
+
+        var dpi = NativeMethods.GetDpiForWindow(_windowHandle);
+        var scale = dpi == 0 ? 1d : dpi / 96d;
+        var width = Math.Max(1, (int)Math.Ceiling(PlayerRoot.Width * scale));
+        var height = Math.Max(1, (int)Math.Ceiling(44 * scale));
+        Height = 44;
+
+        var left = _windowSettings.FloatingLeft ?? _floatingNormalLeft;
+        var top = _windowSettings.FloatingTop ?? _floatingNormalTop;
+        if ((!left.HasValue || !top.HasValue) &&
+            NativeMethods.GetWindowRect(_windowHandle, out var currentRect))
+        {
+            left ??= currentRect.Left;
+            top ??= currentRect.Top;
+        }
+
+        var monitor = left.HasValue && top.HasValue
+            ? NativeMethods.MonitorFromPoint(
+                new NativeMethods.Point { X = left.Value, Y = top.Value },
+                2)
+            : NativeMethods.MonitorFromWindow(_windowHandle, 2);
+        var monitorInfo = NativeMethods.MonitorInfo.Create();
+        if (monitor == nint.Zero || !NativeMethods.GetMonitorInfo(monitor, ref monitorInfo))
+        {
+            return;
+        }
+
+        var desktopBounds = monitorInfo.WorkArea;
+        left ??= desktopBounds.Left + 16;
+        top ??= desktopBounds.Bottom - height - 16;
+        if (_floatingEdge == 0)
+        {
+            var sizeChanged = _lastFloatingWidth > 0 &&
+                (_lastFloatingWidth != width || _lastFloatingHeight != height);
+            if (sizeChanged)
+            {
+                left = _expandedEdge switch
+                {
+                    1 => desktopBounds.Left,
+                    2 => desktopBounds.Right - width,
+                    _ => left
+                };
+                top = _expandedEdge switch
+                {
+                    3 => desktopBounds.Top,
+                    4 => desktopBounds.Bottom - height,
+                    _ => top
+                };
+                force = true;
+            }
+
+            left = Math.Clamp(left.Value, desktopBounds.Left, desktopBounds.Right - width);
+            top = Math.Clamp(top.Value, desktopBounds.Top, desktopBounds.Bottom - height);
+            _floatingNormalLeft = left;
+            _floatingNormalTop = top;
+            if (_expandedEdge != 0)
+            {
+                _windowSettings = _windowSettings with
+                {
+                    FloatingLeft = left,
+                    FloatingTop = top
+                };
+                SaveWindowSettings(showError: false);
+            }
+        }
+        else
+        {
+            left = _floatingEdge == 1
+                ? desktopBounds.Left - width + EdgeVisiblePixels
+                : _floatingEdge == 2
+                    ? desktopBounds.Right - EdgeVisiblePixels
+                    : left;
+            top = _floatingEdge == 3
+                ? desktopBounds.Top - height + EdgeVisiblePixels
+                : _floatingEdge == 4
+                    ? desktopBounds.Bottom - EdgeVisiblePixels
+                    : top;
+        }
+
+        _lastFloatingWidth = width;
+        _lastFloatingHeight = height;
+
+        if (Visibility != Visibility.Visible)
+        {
+            Visibility = Visibility.Visible;
+            force = true;
+        }
+
+        _taskbarHostService.SetFloating(true);
+        Topmost = _windowSettings.AlwaysOnTop;
+        if (!_edgeAnimationTimer.IsEnabled &&
+            (force || _lastPositionLeft != left || _lastPositionTop != top))
+        {
+            _lastPositionLeft = left;
+            _lastPositionTop = top;
+            _taskbarHostService.Position(
+                left.Value,
+                top.Value,
+                width,
+                height,
+                visible: true,
+                topmost: _windowSettings.AlwaysOnTop);
+        }
+
+        RevealAfterPlacement();
+    }
+
+    private void UpdateFloatingEdgeCollapse()
+    {
+        if (_windowSettings.HostMode != WindowHostMode.Floating ||
+            !_windowSettings.EdgeAutoCollapse ||
+            _windowHandle == nint.Zero ||
+            _isDragging ||
+            _isMenuOpen ||
+            _edgeAnimationTimer.IsEnabled ||
+            !NativeMethods.GetWindowRect(_windowHandle, out var rect) ||
+            !NativeMethods.GetCursorPos(out var cursor))
+        {
+            return;
+        }
+
+        var monitor = NativeMethods.MonitorFromWindow(_windowHandle, 2);
+        var info = NativeMethods.MonitorInfo.Create();
+        if (monitor == nint.Zero || !NativeMethods.GetMonitorInfo(monitor, ref info))
+        {
+            return;
+        }
+
+        const int edgeTolerance = 10;
+        var desktopBounds = info.WorkArea;
+        if (_floatingEdge != 0)
+        {
+            var normalLeft = _floatingNormalLeft ?? rect.Left;
+            var normalTop = _floatingNormalTop ?? rect.Top;
+            var nearHorizontalSpan = cursor.X >= normalLeft - EdgeActivationSpanPadding &&
+                cursor.X < normalLeft + rect.Width + EdgeActivationSpanPadding;
+            var nearVerticalSpan = cursor.Y >= normalTop - EdgeActivationSpanPadding &&
+                cursor.Y < normalTop + rect.Height + EdgeActivationSpanPadding;
+            var nearEdge = _floatingEdge switch
+            {
+                1 => cursor.X >= desktopBounds.Left - EdgeActivationDistance &&
+                    cursor.X <= desktopBounds.Left + EdgeActivationDistance && nearVerticalSpan,
+                2 => cursor.X >= desktopBounds.Right - EdgeActivationDistance &&
+                    cursor.X <= desktopBounds.Right + EdgeActivationDistance && nearVerticalSpan,
+                3 => cursor.Y >= desktopBounds.Top - EdgeActivationDistance &&
+                    cursor.Y <= desktopBounds.Top + EdgeActivationDistance && nearHorizontalSpan,
+                _ => cursor.Y >= desktopBounds.Bottom - EdgeActivationDistance &&
+                    cursor.Y <= desktopBounds.Bottom + EdgeActivationDistance && nearHorizontalSpan
+            };
+            if (nearEdge)
+            {
+                StartEdgeAnimation(expanding: true, rect, desktopBounds);
+            }
+
+            return;
+        }
+
+        if (_expandedEdge != 0)
+        {
+            const int expandedProximity = 64;
+            var nearExpandedWindow = cursor.X >= rect.Left - expandedProximity &&
+                cursor.X < rect.Right + expandedProximity &&
+                cursor.Y >= rect.Top - expandedProximity &&
+                cursor.Y < rect.Bottom + expandedProximity;
+            if (nearExpandedWindow)
+            {
+                return;
+            }
+
+            _floatingEdge = _expandedEdge;
+            _expandedEdge = 0;
+            StartEdgeAnimation(expanding: false, rect, desktopBounds);
+            return;
+        }
+
+        var touchesTop = rect.Top <= desktopBounds.Top + edgeTolerance;
+        var touchesBottom = rect.Bottom >= desktopBounds.Bottom - edgeTolerance;
+        var edge = touchesTop ? 3 :
+            touchesBottom ? 4 :
+            rect.Left <= desktopBounds.Left + edgeTolerance ? 1 :
+            rect.Right >= desktopBounds.Right - edgeTolerance ? 2 : 0;
+        if (edge == 0 ||
+            (cursor.X >= rect.Left && cursor.X < rect.Right &&
+                cursor.Y >= rect.Top && cursor.Y < rect.Bottom))
+        {
+            return;
+        }
+
+        _floatingNormalLeft = rect.Left;
+        _floatingNormalTop = rect.Top;
+        _windowSettings = _windowSettings with
+        {
+            FloatingLeft = rect.Left,
+            FloatingTop = rect.Top
+        };
+        _floatingEdge = edge;
+        StartEdgeAnimation(expanding: false, rect, desktopBounds);
+    }
+
+    private void OnEdgeHoverTimerTick(object? sender, EventArgs e)
+    {
+        UpdateFloatingEdgeCollapse();
+    }
+
+    private void StartEdgeAnimation(
+        bool expanding,
+        NativeMethods.Rect currentRect,
+        NativeMethods.Rect desktopBounds)
+    {
+        if (_taskbarHostService is null || _floatingEdge == 0)
+        {
+            return;
+        }
+
+        var normalLeft = Math.Clamp(
+            _floatingNormalLeft ?? currentRect.Left,
+            desktopBounds.Left,
+            desktopBounds.Right - currentRect.Width);
+        var normalTop = Math.Clamp(
+            _floatingNormalTop ?? currentRect.Top,
+            desktopBounds.Top,
+            desktopBounds.Bottom - currentRect.Height);
+        var collapsedLeft = _floatingEdge == 1
+            ? desktopBounds.Left - currentRect.Width + EdgeVisiblePixels
+            : _floatingEdge == 2
+                ? desktopBounds.Right - EdgeVisiblePixels
+                : normalLeft;
+        var collapsedTop = _floatingEdge == 3
+            ? desktopBounds.Top - currentRect.Height + EdgeVisiblePixels
+            : _floatingEdge == 4
+                ? desktopBounds.Bottom - EdgeVisiblePixels
+                : normalTop;
+
+        _edgeAnimationFrom = currentRect;
+        _edgeAnimationTo = new NativeMethods.Rect
+        {
+            Left = expanding ? normalLeft : collapsedLeft,
+            Top = expanding ? normalTop : collapsedTop,
+            Right = (expanding ? normalLeft : collapsedLeft) + currentRect.Width,
+            Bottom = (expanding ? normalTop : collapsedTop) + currentRect.Height
+        };
+        _edgeAnimationStarted = DateTime.UtcNow;
+        _edgeAnimationExpanding = expanding;
+        _edgeAnimationHasTarget = true;
+        if (expanding)
+        {
+            PlayerContent.Visibility = Visibility.Visible;
+        }
+        UpdateEdgeCollapseIndicator(visible: !expanding);
+        _edgeAnimationTimer.Stop();
+        _edgeAnimationTimer.Start();
+    }
+
+    private void OnEdgeAnimationTick(object? sender, EventArgs e)
+    {
+        if (!_edgeAnimationHasTarget || _taskbarHostService is null)
+        {
+            _edgeAnimationTimer.Stop();
+            return;
+        }
+
+        var elapsed = (DateTime.UtcNow - _edgeAnimationStarted).TotalMilliseconds;
+        var progress = Math.Clamp(elapsed / EdgeAnimationDurationMilliseconds, 0, 1);
+        var eased = 1 - Math.Pow(1 - progress, 3);
+        var left = (int)Math.Round(_edgeAnimationFrom.Left +
+            (_edgeAnimationTo.Left - _edgeAnimationFrom.Left) * eased);
+        var top = (int)Math.Round(_edgeAnimationFrom.Top +
+            (_edgeAnimationTo.Top - _edgeAnimationFrom.Top) * eased);
+        _taskbarHostService.Position(
+            left,
+            top,
+            _edgeAnimationTo.Width,
+            _edgeAnimationTo.Height,
+            visible: true,
+            topmost: _windowSettings.AlwaysOnTop,
+            refresh: false);
+        _lastPositionLeft = left;
+        _lastPositionTop = top;
+
+        if (progress < 1)
+        {
+            return;
+        }
+
+        _edgeAnimationTimer.Stop();
+        _edgeAnimationHasTarget = false;
+        _taskbarHostService.Redraw();
+        if (_edgeAnimationExpanding)
+        {
+            _expandedEdge = _floatingEdge;
+            _floatingEdge = 0;
+            UpdateEdgeCollapseIndicator(visible: false);
+        }
+        else
+        {
+            _expandedEdge = 0;
+            UpdateEdgeCollapseIndicator(visible: true);
+            PlayerContent.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void UpdateEdgeCollapseIndicator(bool visible)
+    {
+        EdgeCollapseIndicator.Visibility = visible
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        if (!visible)
+        {
+            PlayerContent.Visibility = Visibility.Visible;
+            return;
+        }
+
+        var horizontalEdge = _floatingEdge is 3 or 4;
+        EdgeCollapseIndicator.Width = horizontalEdge ? 56 : 4;
+        EdgeCollapseIndicator.Height = horizontalEdge ? 4 : 38;
+        EdgeCollapseIndicator.HorizontalAlignment = _floatingEdge == 1
+            ? HorizontalAlignment.Right
+            : _floatingEdge == 2
+                ? HorizontalAlignment.Left
+                : HorizontalAlignment.Center;
+        EdgeCollapseIndicator.VerticalAlignment = _floatingEdge == 3
+            ? VerticalAlignment.Bottom
+            : _floatingEdge == 4
+                ? VerticalAlignment.Top
+                : VerticalAlignment.Center;
+    }
+
+    private void ApplyWindowSettings()
+    {
+        HideWhenNoMediaMenuItem.IsChecked = _windowSettings.HideWhenNoMedia;
+        AlwaysOnTopMenuItem.IsChecked = _windowSettings.AlwaysOnTop;
+        TaskbarHostModeMenuItem.IsChecked = _windowSettings.HostMode == WindowHostMode.Taskbar;
+        FloatingWindowModeMenuItem.IsChecked = _windowSettings.HostMode == WindowHostMode.Floating;
+        AutoCollapseMenuItem.IsChecked = _windowSettings.AutoCollapse;
+        EdgeAutoCollapseMenuItem.IsChecked = _windowSettings.EdgeAutoCollapse;
+        EdgeAutoCollapseMenuItem.IsEnabled =
+            _windowSettings.HostMode == WindowHostMode.Floating;
+        _taskbarHostService?.SetFloating(_windowSettings.HostMode == WindowHostMode.Floating);
+        Topmost = _windowSettings.AlwaysOnTop;
+        if (!_windowSettings.AutoCollapse)
+        {
+            SetExpanded(expanded: true, animate: true);
+        }
+        if (_windowSettings.AlwaysOnTop)
+        {
+            Visibility = Visibility.Visible;
+        }
+    }
+
+    private void WindowMode_OnClick(object sender, RoutedEventArgs e)
+    {
+        var oldMode = _windowSettings.HostMode;
+        NativeMethods.Rect? oldRect = NativeMethods.GetWindowRect(_windowHandle, out var capturedRect)
+            ? capturedRect
+            : null;
+        if (sender == TaskbarHostModeMenuItem)
+        {
+            _windowSettings = _windowSettings with { HostMode = WindowHostMode.Taskbar };
+        }
+        else if (sender == FloatingWindowModeMenuItem)
+        {
+            if (oldRect is { } rect)
+            {
+                _windowSettings = _windowSettings with
+                {
+                    HostMode = WindowHostMode.Floating,
+                    FloatingLeft = rect.Left,
+                    FloatingTop = rect.Top
+                };
+            }
+            else
+            {
+                _windowSettings = _windowSettings with { HostMode = WindowHostMode.Floating };
+            }
+        }
+
+        if (oldMode != _windowSettings.HostMode && oldRect is { } position)
+        {
+            _windowSettings = _windowSettings with
+            {
+                FloatingLeft = position.Left,
+                FloatingTop = position.Top
+            };
+        }
+        if (oldMode == _windowSettings.HostMode)
+        {
+            ApplyWindowSettings();
+            return;
+        }
+
+        SaveWindowSettings();
+        (Application.Current as App)?.RecreateMainWindow();
+    }
+
+    private void WindowSetting_OnClick(object sender, RoutedEventArgs e)
+    {
+        _windowSettings = new WindowSettings(
+            HideWhenNoMediaMenuItem.IsChecked,
+            AlwaysOnTopMenuItem.IsChecked,
+            _windowSettings.HostMode,
+            AutoCollapseMenuItem.IsChecked,
+            EdgeAutoCollapseMenuItem.IsChecked,
+            _windowSettings.FloatingLeft,
+            _windowSettings.FloatingTop);
+        try
+        {
+            WindowSettingsService.Save(_windowSettings);
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(
+                exception.Message,
+                "无法保存窗口设置",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+
+        ApplyWindowSettings();
+        PositionOverTaskbar(force: true);
+    }
+
+    private void SaveWindowSettings(bool showError = true)
+    {
+        try
+        {
+            WindowSettingsService.Save(_windowSettings);
+        }
+        catch (Exception exception)
+        {
+            if (!showError)
+            {
+                return;
+            }
+
+            MessageBox.Show(
+                exception.Message,
+                "无法保存窗口设置",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
     }
 
     private void SyncMetricMenuState()
@@ -1973,17 +2557,25 @@ public partial class MainWindow : Window
     {
         AutomaticPlacementMenuItem.IsChecked = _placementSettings.AutomaticPlacement;
         LockPositionMenuItem.IsChecked = _placementSettings.PositionLocked;
-        LockPositionMenuItem.IsEnabled = !_placementSettings.AutomaticPlacement;
+        var taskbarMode = _windowSettings.HostMode == WindowHostMode.Taskbar;
+        AutomaticPlacementMenuItem.IsEnabled = taskbarMode;
+        LockPositionMenuItem.IsEnabled = taskbarMode && !_placementSettings.AutomaticPlacement;
 
-        var canDrag = !_placementSettings.AutomaticPlacement &&
-            !_placementSettings.PositionLocked;
-        var cursor = canDrag ? Cursors.SizeWE : Cursors.Hand;
+        var canDrag = _windowSettings.HostMode == WindowHostMode.Floating ||
+            (!_placementSettings.AutomaticPlacement && !_placementSettings.PositionLocked);
+        var cursor = canDrag ? Cursors.SizeAll : Cursors.Hand;
         ArtworkHost.Cursor = cursor;
         InfoHost.Cursor = cursor;
     }
 
     private async void AutomaticPlacement_OnClick(object sender, RoutedEventArgs e)
     {
+        if (_windowSettings.HostMode != WindowHostMode.Taskbar)
+        {
+            AutomaticPlacementMenuItem.IsChecked = false;
+            return;
+        }
+
         if (AutomaticPlacementMenuItem.IsChecked)
         {
             if (NativeMethods.GetWindowRect(_windowHandle, out var windowRect))
@@ -2034,6 +2626,11 @@ public partial class MainWindow : Window
 
     private int GetCurrentOffsetDip()
     {
+        if (_windowSettings.HostMode != WindowHostMode.Taskbar)
+        {
+            return _placementSettings.ManualOffsetDip;
+        }
+
         if (!TryGetTaskbarBounds(out var bounds) ||
             !NativeMethods.GetWindowRect(_windowHandle, out var windowRect))
         {
@@ -2070,8 +2667,8 @@ public partial class MainWindow : Window
         object sender,
         MouseButtonEventArgs e)
     {
-        if (_placementSettings.AutomaticPlacement ||
-            _placementSettings.PositionLocked ||
+        if ((_windowSettings.HostMode == WindowHostMode.Taskbar &&
+                (_placementSettings.AutomaticPlacement || _placementSettings.PositionLocked)) ||
             e.LeftButton != MouseButtonState.Pressed)
         {
             return;
@@ -2086,6 +2683,15 @@ public partial class MainWindow : Window
         }
 
         _dragStartWindowLeft = windowRect.Left;
+        _dragStartWindowTop = windowRect.Top;
+        if (_windowSettings.HostMode == WindowHostMode.Floating)
+        {
+            _edgeAnimationTimer.Stop();
+            _edgeAnimationHasTarget = false;
+            _floatingEdge = 0;
+            _expandedEdge = 0;
+            UpdateEdgeCollapseIndicator(visible: false);
+        }
         _dragMoved = false;
         _isDragging = true;
         Mouse.Capture(PlayerRoot);
@@ -2134,7 +2740,23 @@ public partial class MainWindow : Window
         }
 
         var deltaX = cursor.X - _dragStartCursor.X;
-        _dragMoved |= Math.Abs(deltaX) >= 3;
+        var deltaY = cursor.Y - _dragStartCursor.Y;
+        _dragMoved |= Math.Abs(deltaX) >= 3 || Math.Abs(deltaY) >= 3;
+
+        if (_windowSettings.HostMode == WindowHostMode.Floating)
+        {
+            _floatingEdge = 0;
+            _floatingNormalLeft = _dragStartWindowLeft + deltaX;
+            _floatingNormalTop = _dragStartWindowTop + deltaY;
+            _windowSettings = _windowSettings with
+            {
+                FloatingLeft = _floatingNormalLeft,
+                FloatingTop = _floatingNormalTop
+            };
+            PositionOverTaskbar(force: true);
+            e.Handled = true;
+            return;
+        }
 
         if (TryGetTaskbarBounds(out var bounds))
         {
@@ -2171,7 +2793,19 @@ public partial class MainWindow : Window
         Mouse.Capture(null);
         if (_dragMoved)
         {
-            SavePlacementSettings();
+            if (_windowSettings.HostMode == WindowHostMode.Floating)
+            {
+                _windowSettings = _windowSettings with
+                {
+                    FloatingLeft = _floatingNormalLeft,
+                    FloatingTop = _floatingNormalTop
+                };
+                SaveWindowSettings();
+            }
+            else
+            {
+                SavePlacementSettings();
+            }
         }
         else
         {
@@ -2184,6 +2818,11 @@ public partial class MainWindow : Window
     private void PlayerMenu_OnOpened(object sender, RoutedEventArgs e)
     {
         _isMenuOpen = true;
+        if (_windowSettings.HideWhenNoMedia && Visibility != Visibility.Visible)
+        {
+            Visibility = Visibility.Visible;
+            PositionOverTaskbar(force: true);
+        }
         UpdateMouseHookState();
         SetExpanded(expanded: true, animate: true);
         StartupMenuItem.IsChecked = StartupService.IsEnabled;
@@ -2201,6 +2840,10 @@ public partial class MainWindow : Window
         _isMenuOpen = false;
         UpdateMouseHookState();
         ScheduleCollapse();
+        if (_windowSettings.HideWhenNoMedia && !_hasConnectedMedia)
+        {
+            PositionOverTaskbar(force: true);
+        }
     }
 
     private void MouseHook_OnMouseButtonPressed(NativeMethods.Point point)
@@ -2289,6 +2932,7 @@ public partial class MainWindow : Window
     {
         _lastTaskbarRect = null;
         _lastPositionLeft = null;
+        _lastPositionTop = null;
         _automaticLeft = null;
         _ = Dispatcher.BeginInvoke(
             DispatcherPriority.ApplicationIdle,

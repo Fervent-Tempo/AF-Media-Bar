@@ -52,9 +52,9 @@
 
 ## Overview
 
-AF Media Bar is a portable taskbar media controller for Windows 10 and Windows 11. It reads Global System Media Transport Controls (GSMTC) sessions, displays artwork, title, and artist, and provides previous, play/pause, next, and source switching controls.
+AF Media Bar is a portable media controller for Windows 10 and Windows 11. It reads Global System Media Transport Controls (GSMTC) sessions, displays artwork, title, and artist, and provides previous, play/pause, next, and source switching controls.
 
-The app runs in its own process and hosts its WPF player window as a taskbar child window so it shares the taskbar auto-hide animation. It does not modify or inject code into `explorer.exe`. Any player that publishes a GSMTC session can be discovered, including NetEase Cloud Music, QQ Music, Spotify, major browsers, VLC, PotPlayer, Windows Media Player, mpv, and foobar2000.
+The app runs in its own process. Its WPF player can be hosted as a taskbar child window or used as a freely movable floating window. It does not modify or inject code into `explorer.exe`. Any player that publishes a GSMTC session can be discovered, including NetEase Cloud Music, QQ Music, Spotify, major browsers, VLC, PotPlayer, Windows Media Player, mpv, and foobar2000.
 
 ## Features
 
@@ -63,6 +63,8 @@ The app runs in its own process and hosts its WPF player window as a taskbar chi
 | Media | Artwork, title, artist, previous, play/pause, next, and multiple source selection |
 | Source interaction | Return to the current media app and switch sessions with the mouse wheel |
 | Taskbar behavior | Manual placement and locking, experimental automatic avoidance, auto-hide and fullscreen handling |
+| Window modes | Switch between a taskbar child and a floating window with free dragging, always-on-top, and fullscreen hiding |
+| Auto-hide | Hide when every media session is stopped; floating windows support animated desktop-edge collapse with a visible indicator |
 | Audio devices | List and switch the default output device, including delayed wheel selection |
 | App volume | Match the selected media process and adjust its Windows mixer volume in 2% steps |
 | Visualizer | Nine-band spectrum from WASAPI loopback capture |
@@ -78,7 +80,7 @@ flowchart LR
     A[Media apps] -->|GSMTC sessions| B[AF Media Bar]
     C[Windows Core Audio] -->|Devices, volume, loopback| B
     D[Windows 10/11 taskbar] -->|Position and auto-hide state| B
-    B --> E[WPF taskbar child window]
+    B --> E[WPF taskbar child or floating window]
 ```
 
 The Windows 11 media card is an internal Explorer/Shell surface rather than a supported embeddable control. AF Media Bar uses the public GSMTC API behind that card and renders its own interface, avoiding Explorer injection and its stability risks.
@@ -91,7 +93,7 @@ The Windows 11 media card is an internal Explorer/Shell surface rather than a su
 - No separate .NET installation is required for the recommended self-contained package
 
 > [!NOTE]
-> AF Media Bar supports Windows' **Automatically hide the taskbar** option, and the player window follows the taskbar reveal and retract animation.
+> In taskbar mode, the player follows Windows' **Automatically hide the taskbar** animation. Floating mode does not depend on taskbar position or auto-hide state.
 
 ### Recommended package
 
@@ -115,6 +117,8 @@ AF Media Bar is portable and currently has no installer. Release binaries are no
 | Click the volume button | Open the selected media app volume slider |
 | Scroll over the volume button | Change application volume in 2% steps |
 | Drag the artwork/title area | Move an unlocked manually placed bar |
+| Switch to floating mode | Place the player anywhere in the desktop work area; the window is recreated during mode changes for reliable rendering |
+| Drag a floating window to a desktop edge | Collapse it when desktop-edge auto-collapse is enabled; move the pointer near the indicator line to reveal it |
 | Right-click the bar or tray icon | Open settings or exit |
 
 Some players require “system media controls,” “media keys,” or “SMTC” to be enabled in their own settings.
@@ -155,7 +159,7 @@ Disable unused metrics and the audio visualizer, or enable low-spec mode. The vi
 
 ## Technical Limitations
 
-- The bar is a WPF window in an independent process, attached to the Explorer taskbar with `SetParent`; it is not an Explorer plugin and does not inject code.
+- The bar is a WPF window in an independent process. Taskbar mode attaches it to Explorer with `SetParent`, while floating mode uses an independent top-level window. It is not an Explorer plugin and does not inject code.
 - The app must rediscover and reattach to the taskbar after Explorer restarts or third-party taskbar tools change its window structure; heavily customized environments may be incompatible.
 - Output switching uses the undocumented Windows `PolicyConfig` interface and may change in future Windows releases.
 - Automatic placement depends on Windows UI Automation and may not recognize customized taskbars.
@@ -217,10 +221,11 @@ AF-Media-Bar/
 - [x] Improve tracking animation smoothness when the Windows taskbar is set to auto-hide.
 - [x] Complete automatic avoidance of taskbar icons.
 - [x] Test Windows 10 compatibility.
-- [ ] Keep the window always on top.
-- [ ] Add an option to auto-hide when no audio is playing.
+- [x] Keep the window always on top.
+- [x] Add an option to auto-hide when no media session is playing.
 - [x] Automatically follow the system theme.
-- [ ] Provide floating window mode, custom window sizes, and vertical window layout.
+- [x] Provide floating window mode and animated desktop-edge collapse.
+- [ ] Provide custom window sizes and a vertical window layout.
 - [ ] Add a detailed settings menu interface.
 - [ ] Display scrolling video subtitles/lyrics.
 - [ ] Display song progress bars.

@@ -14,6 +14,7 @@ public partial class App : Application
     internal SystemThemeService? ThemeService => _systemThemeService;
     private int _windowGeneration;
     private bool _shutdownRequested;
+    private bool _recreatingMainWindow;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -53,6 +54,34 @@ public partial class App : Application
         Shutdown();
     }
 
+    internal void RecreateMainWindow()
+    {
+        if (_shutdownRequested || _recreatingMainWindow)
+        {
+            return;
+        }
+
+        _recreatingMainWindow = true;
+        _windowGeneration++;
+        _ = Dispatcher.BeginInvoke(() =>
+        {
+            try
+            {
+                if (_shutdownRequested || Dispatcher.HasShutdownStarted)
+                {
+                    return;
+                }
+
+                MainWindow?.Close();
+                ShowMainWindow();
+            }
+            finally
+            {
+                _recreatingMainWindow = false;
+            }
+        });
+    }
+
     private void ShowMainWindow()
     {
         var window = new MainWindow();
@@ -70,6 +99,12 @@ public partial class App : Application
 
         if (_shutdownRequested || Dispatcher.HasShutdownStarted)
         {
+            return;
+        }
+
+        if (_recreatingMainWindow)
+        {
+            MainWindow = null;
             return;
         }
 

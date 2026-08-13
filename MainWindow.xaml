@@ -10,7 +10,7 @@
         AllowsTransparency="True"
         Background="#01000000"
         ShowInTaskbar="False"
-        Topmost="True"
+        Topmost="False"
         Focusable="False"
         ContextMenuOpening="PlayerMenu_OnOpening">
   <Window.ContextMenu>
@@ -99,6 +99,16 @@
                 IsCheckable="True"
                 Click="ThemeSetting_OnClick" />
       <MenuItem Header="位置">
+        <MenuItem Header="窗口模式">
+          <MenuItem x:Name="TaskbarHostModeMenuItem"
+                    Header="依附任务栏模式"
+                    IsCheckable="True"
+                    Click="WindowMode_OnClick" />
+          <MenuItem x:Name="FloatingWindowModeMenuItem"
+                    Header="悬浮窗口模式"
+                    IsCheckable="True"
+                    Click="WindowMode_OnClick" />
+        </MenuItem>
         <MenuItem x:Name="AutomaticPlacementMenuItem"
                   Header="实验性：自动避让任务栏图标"
                   IsCheckable="True"
@@ -107,6 +117,26 @@
                   Header="锁定手动位置"
                   IsCheckable="True"
                   Click="LockPosition_OnClick" />
+        <MenuItem x:Name="HideWhenNoMediaMenuItem"
+                  Header="无媒体播放时自动隐藏"
+                  ToolTip="没有活动媒体会话时隐藏任务栏播放器"
+                  IsCheckable="True"
+                  Click="WindowSetting_OnClick" />
+        <MenuItem x:Name="AlwaysOnTopMenuItem"
+                  Header="始终置顶并显示"
+                  ToolTip="脱离任务栏托管，始终显示在其他窗口上方"
+                  IsCheckable="True"
+                  Click="WindowSetting_OnClick" />
+        <MenuItem x:Name="AutoCollapseMenuItem"
+                  Header="自动折叠"
+                  ToolTip="鼠标离开窗口后自动收起内容"
+                  IsCheckable="True"
+                  Click="WindowSetting_OnClick" />
+        <MenuItem x:Name="EdgeAutoCollapseMenuItem"
+                  Header="桌面边缘自动折叠"
+                  ToolTip="将悬浮窗口拖到桌面边缘后自动收起"
+                  IsCheckable="True"
+                  Click="WindowSetting_OnClick" />
       </MenuItem>
       <MenuItem x:Name="StartupMenuItem"
                 Header="开机启动"
@@ -138,6 +168,17 @@
       <ColumnDefinition Width="Auto" />
       <ColumnDefinition Width="Auto" />
     </Grid.ColumnDefinitions>
+
+    <Grid x:Name="PlayerContent"
+          Grid.ColumnSpan="6">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="44" />
+        <ColumnDefinition Width="210" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
 
     <Border x:Name="TaskbarReadabilityHost"
             Grid.ColumnSpan="6"
@@ -374,6 +415,20 @@
             Margin="8,0"
             Background="{DynamicResource TaskbarDividerBrush}"
             VerticalAlignment="Center" />
+    </Grid>
+
+    <Border x:Name="EdgeCollapseIndicator"
+            Grid.ColumnSpan="6"
+            Panel.ZIndex="100"
+            Width="4"
+            Height="38"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Center"
+            Background="{DynamicResource TaskbarHighlightTextBrush}"
+            CornerRadius="2"
+            Opacity="0.9"
+            Visibility="Collapsed"
+            IsHitTestVisible="False" />
 
     <Popup x:Name="VolumeControlPopup"
            PlacementTarget="{Binding ElementName=VolumeControlHost}"

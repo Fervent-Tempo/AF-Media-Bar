@@ -25,9 +25,18 @@ internal static class NativeMethods
     internal const long WsCaption = 0x00C00000L;
     internal const uint SwpNoSize = 0x0001;
     internal const uint SwpNoMove = 0x0002;
+    internal const uint SwpNoZOrder = 0x0004;
     internal const uint SwpNoActivate = 0x0010;
+    internal const uint SwpFrameChanged = 0x0020;
     internal const uint SwpShowWindow = 0x0040;
+    internal const uint SwpNoOwnerZOrder = 0x0200;
+    internal const int SwHide = 0;
+    internal const int SwShowNoActivate = 4;
     internal const int SwRestore = 9;
+    internal const uint RdwInvalidate = 0x0001;
+    internal const uint RdwErase = 0x0004;
+    internal const uint RdwAllChildren = 0x0080;
+    internal const uint RdwUpdateNow = 0x0100;
 
     // WinUser.h：无注入 WinEvent 监听所需的事件、对象和钩子标志。
     // WinUser.h: events, object IDs, and flags for out-of-process WinEvent hooks.
@@ -172,6 +181,14 @@ internal static class NativeMethods
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool RedrawWindow(
+        nint window,
+        nint updateRectangle,
+        nint updateRegion,
+        uint flags);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool SetForegroundWindow(nint window);
 
     [DllImport("user32.dll")]
@@ -186,6 +203,9 @@ internal static class NativeMethods
 
     [DllImport("user32.dll")]
     internal static extern nint MonitorFromWindow(nint window, uint flags);
+
+    [DllImport("user32.dll")]
+    internal static extern nint MonitorFromPoint(Point point, uint flags);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     internal static extern uint RegisterWindowMessage(string message);
