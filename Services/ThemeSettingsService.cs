@@ -21,6 +21,10 @@ internal static class ThemeSettingsService
                 Enum.IsDefined(typeof(TaskbarForegroundMode), modeValue)
                     ? (TaskbarForegroundMode)modeValue
                     : ThemeSettings.Default.TaskbarForegroundMode;
+            var menuThemeMode = key.GetValue("MenuThemeMode") is int menuThemeModeValue &&
+                Enum.IsDefined(typeof(MenuThemeMode), menuThemeModeValue)
+                    ? (MenuThemeMode)menuThemeModeValue
+                    : ThemeSettings.Default.MenuThemeMode;
             var enhancedReadability = key.GetValue("EnhancedTaskbarReadability") switch
             {
                 int value => value != 0,
@@ -28,7 +32,7 @@ internal static class ThemeSettingsService
                 _ => ThemeSettings.Default.EnhancedReadability
             };
 
-            return new ThemeSettings(mode, enhancedReadability);
+            return new ThemeSettings(mode, menuThemeMode, enhancedReadability);
         }
         catch
         {
@@ -42,6 +46,10 @@ internal static class ThemeSettingsService
         key.SetValue(
             "TaskbarForegroundMode",
             (int)settings.TaskbarForegroundMode,
+            RegistryValueKind.DWord);
+        key.SetValue(
+            "MenuThemeMode",
+            (int)settings.MenuThemeMode,
             RegistryValueKind.DWord);
         key.SetValue(
             "EnhancedTaskbarReadability",

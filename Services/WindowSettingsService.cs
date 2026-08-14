@@ -95,9 +95,10 @@ internal static class WindowSettingsService
                 key,
                 "TaskbarScalePercent",
                 WindowSettings.Default.DisplayScalePercent));
-        return value is 70 or 80 or 90 or 100 or 110 or 125
-            ? value
-            : WindowSettings.Default.DisplayScalePercent;
+        return Math.Clamp(
+            value,
+            70,
+            125);
     }
 
     private static int ReadInteger(RegistryKey? key, string name, int defaultValue)

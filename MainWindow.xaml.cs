@@ -51,6 +51,7 @@ public partial class MainWindow : Window
     private readonly TaskbarPlacementService _taskbarPlacementService = new();
     private readonly AudioDeviceService _audioDeviceService = new();
     private readonly ApplicationVolumeService _applicationVolumeService = new();
+    private readonly SettingsCoordinator _settingsCoordinator;
     // 这些定时器都由窗口拥有，必须在 OnClosed 中停止后再释放服务。
     // The window owns these timers; OnClosed stops them before disposing services.
     private readonly DispatcherTimer _positionTimer;
@@ -65,7 +66,6 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _edgeAnimationTimer;
     private readonly DispatcherTimer _edgeHoverTimer;
     private MetricSettings _metricSettings;
-    private ThemeSettings _themeSettings;
     private WindowSettings _windowSettings;
     private PlacementSettings _placementSettings;
     private TaskbarSettings _taskbarSettings;
@@ -140,9 +140,11 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         TaskbarPlacementService.ValidateAlgorithm();
-        _metricSettings = MetricSettingsService.Load();
-        _themeSettings = ThemeSettingsService.Load();
-        _windowSettings = WindowSettingsService.Load();
+        _settingsCoordinator = (Application.Current as App)?.SettingsCoordinator ??
+            new SettingsCoordinator();
+        var settings = _settingsCoordinator.Current;
+        _metricSettings = settings.Metrics;
+        _windowSettings = settings.Window;
         _floatingNormalLeft = _windowSettings.FloatingLeft;
         _floatingNormalTop = _windowSettings.FloatingTop;
         RenderOptions.ProcessRenderMode = _metricSettings.LowGpuMode
@@ -163,7 +165,7 @@ public partial class MainWindow : Window
         ];
 
         Opacity = 0;
-        _placementSettings = PlacementSettingsService.Load();
+        _placementSettings = settings.Placement;
         _taskbarSettings = TaskbarSettingsService.Read();
         if (_taskbarSettings.Alignment == TaskbarAlignment.Unknown &&
             _placementSettings.CachedTaskbarAlignment is { } cachedAlignment)
@@ -237,6 +239,7 @@ public partial class MainWindow : Window
 
         _mediaSessionService.SnapshotChanged += OnSnapshotChanged;
         _mediaSessionService.SessionsChanged += OnSessionsChanged;
+        _settingsCoordinator.Changed += SettingsCoordinator_OnChanged;
         _mouseHookService.MouseButtonPressed += MouseHook_OnMouseButtonPressed;
         SourceInitialized += OnSourceInitialized;
         Loaded += OnLoaded;
@@ -267,7 +270,6 @@ public partial class MainWindow : Window
         _taskbarEventWatcher.TaskbarChanged += Taskbar_OnChanged;
 
         ApplyMetricSettings();
-        ApplyThemeSettings();
         ApplyWindowSettings();
         ApplyPlacementSettings();
         PositionOverTaskbar(force: true);
@@ -323,6 +325,96 @@ public partial class MainWindow : Window
         _windowSource?.RemoveHook(WindowMessageHook);
         _mediaSessionService.Dispose();
         _systemMetricsService.Dispose();
+        _settingsCoordinator.Changed -= SettingsCoordinator_OnChanged;
+    }
+
+    private void SettingsCoordinator_OnChanged(
+        object? sender,
+        SettingsChangedEventArgs e)
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.BeginInvoke(() => SettingsCoordinator_OnChanged(sender, e));
+            return;
+        }
+
+        var nextWindowSettings = e.Settings.Window;
+        if (nextWindowSettings.HostMode != _windowSettings.HostMode)
+        {
+            if (!e.Sections.HasFlag(SettingsSection.All) &&
+                NativeMethods.GetWindowRect(_windowHandle, out var currentRect))
+            {
+                nextWindowSettings = nextWindowSettings with
+                {
+                    FloatingLeft = currentRect.Left,
+                    FloatingTop = currentRect.Top
+                };
+                _settingsCoordinator.SynchronizeWindow(nextWindowSettings);
+            }
+
+            _windowSettings = nextWindowSettings;
+            (Application.Current as App)?.RecreateMainWindow();
+            return;
+        }
+
+        if (e.Sections.HasFlag(SettingsSection.Components) ||
+            e.Sections.HasFlag(SettingsSection.Performance))
+        {
+            _metricSettings = e.Settings.Metrics;
+            ApplyMetricSettings();
+        }
+
+        if (e.Sections.HasFlag(SettingsSection.Appearance))
+        {
+            (Application.Current as App)?.ThemeService?.Refresh();
+        }
+
+        if (e.Sections.HasFlag(SettingsSection.Window) ||
+            e.Sections.HasFlag(SettingsSection.General) ||
+            e.Sections.HasFlag(SettingsSection.Interaction))
+        {
+            _windowSettings = nextWindowSettings;
+            _lastTaskbarRect = null;
+            _lastPositionLeft = null;
+            _lastPositionTop = null;
+            _automaticLeft = null;
+            ApplyWindowSettings();
+        }
+
+        if (e.Sections.HasFlag(SettingsSection.Placement))
+        {
+            var nextPlacement = e.Settings.Placement;
+            if (!nextPlacement.AutomaticPlacement && _placementSettings.AutomaticPlacement)
+            {
+                nextPlacement = nextPlacement with
+                {
+                    PositionLocked = false,
+                    ManualOffsetDip = GetCurrentOffsetDip()
+                };
+                _settingsCoordinator.SynchronizePlacement(nextPlacement);
+            }
+            else if (nextPlacement.AutomaticPlacement && !_placementSettings.AutomaticPlacement &&
+                NativeMethods.GetWindowRect(_windowHandle, out var currentRect))
+            {
+                _automaticLeft = currentRect.Left;
+                nextPlacement = nextPlacement with { PositionLocked = true };
+                _settingsCoordinator.SynchronizePlacement(nextPlacement);
+            }
+
+            _placementSettings = nextPlacement;
+            ApplyPlacementSettings();
+            if (_placementSettings.AutomaticPlacement)
+            {
+                _placementTimer.Start();
+                _ = RefreshAutomaticPlacementAsync();
+            }
+            else
+            {
+                _placementTimer.Stop();
+            }
+        }
+
+        PositionOverTaskbar(force: true);
     }
 
     private void OnPositionTimerTick(object? sender, EventArgs e)
@@ -1485,7 +1577,6 @@ public partial class MainWindow : Window
 
     private void ApplyMetricSettings()
     {
-        SyncMetricMenuState();
         ApplyOutputDeviceSettings();
         ApplyVolumeControlSettings();
         _metricCycleIndex = 0;
@@ -1505,47 +1596,6 @@ public partial class MainWindow : Window
 
         ApplyAudioMonitorSettings();
         _ = RefreshAutomaticPlacementAsync();
-    }
-
-    private void ApplyThemeSettings()
-    {
-        TaskbarForegroundAutomaticMenuItem.IsChecked =
-            _themeSettings.TaskbarForegroundMode == TaskbarForegroundMode.Automatic;
-        TaskbarForegroundLightMenuItem.IsChecked =
-            _themeSettings.TaskbarForegroundMode == TaskbarForegroundMode.LightText;
-        TaskbarForegroundDarkMenuItem.IsChecked =
-            _themeSettings.TaskbarForegroundMode == TaskbarForegroundMode.DarkText;
-        EnhancedReadabilityMenuItem.IsChecked = _themeSettings.EnhancedReadability;
-    }
-
-    private void ThemeSetting_OnClick(object sender, RoutedEventArgs e)
-    {
-        var mode = sender == TaskbarForegroundLightMenuItem
-            ? TaskbarForegroundMode.LightText
-            : sender == TaskbarForegroundDarkMenuItem
-                ? TaskbarForegroundMode.DarkText
-                : sender == TaskbarForegroundAutomaticMenuItem
-                    ? TaskbarForegroundMode.Automatic
-                    : _themeSettings.TaskbarForegroundMode;
-        _themeSettings = new ThemeSettings(mode, EnhancedReadabilityMenuItem.IsChecked);
-        TaskbarForegroundAutomaticMenuItem.IsChecked = mode == TaskbarForegroundMode.Automatic;
-        TaskbarForegroundLightMenuItem.IsChecked = mode == TaskbarForegroundMode.LightText;
-        TaskbarForegroundDarkMenuItem.IsChecked = mode == TaskbarForegroundMode.DarkText;
-        try
-        {
-            ThemeSettingsService.Save(_themeSettings);
-        }
-        catch (Exception exception)
-        {
-            MessageBox.Show(
-                exception.Message,
-                "无法保存外观设置",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
-        }
-
-        ApplyThemeSettings();
-        (Application.Current as App)?.ThemeService?.Refresh();
     }
 
     private void PositionFloatingWindow(bool force)
@@ -1978,28 +2028,6 @@ public partial class MainWindow : Window
 
     private void ApplyWindowSettings()
     {
-        HideWhenNoMediaMenuItem.IsChecked = _windowSettings.HideWhenNoMedia;
-        AlwaysOnTopMenuItem.IsChecked = _windowSettings.AlwaysOnTop;
-        TaskbarHostModeMenuItem.IsChecked = _windowSettings.HostMode == WindowHostMode.Taskbar;
-        FloatingWindowModeMenuItem.IsChecked = _windowSettings.HostMode == WindowHostMode.Floating;
-        AutomaticTaskbarLayoutMenuItem.IsChecked =
-            _windowSettings.LayoutMode == PlayerLayoutMode.Automatic;
-        HorizontalTaskbarLayoutMenuItem.IsChecked =
-            _windowSettings.LayoutMode == PlayerLayoutMode.Horizontal;
-        VerticalTaskbarLayoutMenuItem.IsChecked =
-            _windowSettings.LayoutMode == PlayerLayoutMode.Vertical;
-        TaskbarScale100MenuItem.IsChecked = _windowSettings.DisplayScalePercent == 100;
-        TaskbarScale110MenuItem.IsChecked = _windowSettings.DisplayScalePercent == 110;
-        TaskbarScale125MenuItem.IsChecked = _windowSettings.DisplayScalePercent == 125;
-        TaskbarScale90MenuItem.IsChecked = _windowSettings.DisplayScalePercent == 90;
-        TaskbarScale80MenuItem.IsChecked = _windowSettings.DisplayScalePercent == 80;
-        TaskbarScale70MenuItem.IsChecked = _windowSettings.DisplayScalePercent == 70;
-        TaskbarLayoutMenuItem.IsEnabled = true;
-        TaskbarScaleMenuItem.IsEnabled = true;
-        AutoCollapseMenuItem.IsChecked = _windowSettings.AutoCollapse;
-        EdgeAutoCollapseMenuItem.IsChecked = _windowSettings.EdgeAutoCollapse;
-        EdgeAutoCollapseMenuItem.IsEnabled =
-            _windowSettings.HostMode == WindowHostMode.Floating;
         _taskbarHostService?.SetFloating(_windowSettings.HostMode == WindowHostMode.Floating);
         Topmost = _windowSettings.AlwaysOnTop;
         if (!_windowSettings.AutoCollapse)
@@ -2012,125 +2040,11 @@ public partial class MainWindow : Window
         }
     }
 
-    private void WindowMode_OnClick(object sender, RoutedEventArgs e)
-    {
-        var oldMode = _windowSettings.HostMode;
-        NativeMethods.Rect? oldRect = NativeMethods.GetWindowRect(_windowHandle, out var capturedRect)
-            ? capturedRect
-            : null;
-        if (sender == TaskbarHostModeMenuItem)
-        {
-            _windowSettings = _windowSettings with { HostMode = WindowHostMode.Taskbar };
-        }
-        else if (sender == FloatingWindowModeMenuItem)
-        {
-            if (oldRect is { } rect)
-            {
-                _windowSettings = _windowSettings with
-                {
-                    HostMode = WindowHostMode.Floating,
-                    FloatingLeft = rect.Left,
-                    FloatingTop = rect.Top
-                };
-            }
-            else
-            {
-                _windowSettings = _windowSettings with { HostMode = WindowHostMode.Floating };
-            }
-        }
-
-        if (oldMode != _windowSettings.HostMode && oldRect is { } position)
-        {
-            _windowSettings = _windowSettings with
-            {
-                FloatingLeft = position.Left,
-                FloatingTop = position.Top
-            };
-        }
-        if (oldMode == _windowSettings.HostMode)
-        {
-            ApplyWindowSettings();
-            return;
-        }
-
-        SaveWindowSettings();
-        (Application.Current as App)?.RecreateMainWindow();
-    }
-
-    private void WindowSetting_OnClick(object sender, RoutedEventArgs e)
-    {
-        _windowSettings = new WindowSettings(
-            HideWhenNoMediaMenuItem.IsChecked,
-            AlwaysOnTopMenuItem.IsChecked,
-            _windowSettings.HostMode,
-            _windowSettings.LayoutMode,
-            _windowSettings.DisplayScalePercent,
-            AutoCollapseMenuItem.IsChecked,
-            EdgeAutoCollapseMenuItem.IsChecked,
-            _windowSettings.FloatingLeft,
-            _windowSettings.FloatingTop);
-        try
-        {
-            WindowSettingsService.Save(_windowSettings);
-        }
-        catch (Exception exception)
-        {
-            MessageBox.Show(
-                exception.Message,
-                "无法保存窗口设置",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
-        }
-
-        ApplyWindowSettings();
-        PositionOverTaskbar(force: true);
-    }
-
-    private void TaskbarLayout_OnClick(object sender, RoutedEventArgs e)
-    {
-        var layout = sender == HorizontalTaskbarLayoutMenuItem
-            ? PlayerLayoutMode.Horizontal
-            : sender == VerticalTaskbarLayoutMenuItem
-                ? PlayerLayoutMode.Vertical
-                : PlayerLayoutMode.Automatic;
-        _windowSettings = _windowSettings with { LayoutMode = layout };
-        _lastTaskbarRect = null;
-        _lastPositionLeft = null;
-        _lastPositionTop = null;
-        SaveWindowSettings();
-        ApplyWindowSettings();
-        ApplyPlacementSettings();
-        PositionOverTaskbar(force: true);
-    }
-
-    private void TaskbarScale_OnClick(object sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem { Tag: string value } ||
-            !int.TryParse(value, out var scalePercent) ||
-            scalePercent is not (70 or 80 or 90 or 100 or 110 or 125))
-        {
-            return;
-        }
-
-        _windowSettings = _windowSettings with
-        {
-            DisplayScalePercent = scalePercent
-        };
-        _automaticLeft = null;
-        SaveWindowSettings();
-        ApplyWindowSettings();
-        PositionOverTaskbar(force: true);
-        if (_placementSettings.AutomaticPlacement)
-        {
-            _ = RefreshAutomaticPlacementAsync();
-        }
-    }
-
     private void SaveWindowSettings(bool showError = true)
     {
         try
         {
-            WindowSettingsService.Save(_windowSettings);
+            _settingsCoordinator.SynchronizeWindow(_windowSettings);
         }
         catch (Exception exception)
         {
@@ -2145,52 +2059,6 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
-    }
-
-    private void SyncMetricMenuState()
-    {
-        MetricsEnabledMenuItem.IsChecked = _metricSettings.Enabled;
-        SystemMemoryMenuItem.IsChecked = _metricSettings.ShowSystemMemory;
-        SystemCpuMenuItem.IsChecked = _metricSettings.ShowSystemCpu;
-        SystemGpuMenuItem.IsChecked = _metricSettings.ShowSystemGpu;
-        ProcessMemoryMenuItem.IsChecked = _metricSettings.ShowProcessMemory;
-        LowGpuModeMenuItem.IsChecked = _metricSettings.LowGpuMode;
-        AudioMonitorMenuItem.IsChecked = _metricSettings.AudioMonitorEnabled;
-        OutputDeviceSwitcherMenuItem.IsChecked =
-            _metricSettings.OutputDeviceSwitcherEnabled;
-        VolumeControlMenuItem.IsChecked = _metricSettings.VolumeControlEnabled;
-        SystemMemoryMenuItem.IsEnabled = _metricSettings.Enabled;
-        SystemCpuMenuItem.IsEnabled = _metricSettings.Enabled;
-        SystemGpuMenuItem.IsEnabled = _metricSettings.Enabled;
-        ProcessMemoryMenuItem.IsEnabled = _metricSettings.Enabled;
-    }
-
-    private void MetricSetting_OnClick(object sender, RoutedEventArgs e)
-    {
-        _metricSettings = new MetricSettings(
-            MetricsEnabledMenuItem.IsChecked,
-            SystemMemoryMenuItem.IsChecked,
-            SystemCpuMenuItem.IsChecked,
-            SystemGpuMenuItem.IsChecked,
-            ProcessMemoryMenuItem.IsChecked,
-            LowGpuModeMenuItem.IsChecked,
-            AudioMonitorMenuItem.IsChecked,
-            OutputDeviceSwitcherMenuItem.IsChecked,
-            VolumeControlMenuItem.IsChecked);
-        try
-        {
-            MetricSettingsService.Save(_metricSettings);
-        }
-        catch (Exception exception)
-        {
-            MessageBox.Show(
-                exception.Message,
-                "无法保存性能指标设置",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
-        }
-
-        ApplyMetricSettings();
     }
 
     private void ApplyOutputDeviceSettings()
@@ -3023,10 +2891,6 @@ public partial class MainWindow : Window
         var positionLockedActive = _isVerticalLayout
             ? _placementSettings.VerticalPositionLocked
             : _placementSettings.PositionLocked;
-        AutomaticPlacementMenuItem.IsChecked = automaticPlacementActive;
-        LockPositionMenuItem.IsChecked = positionLockedActive;
-        AutomaticPlacementMenuItem.IsEnabled = taskbarMode && !_isVerticalLayout;
-        LockPositionMenuItem.IsEnabled = taskbarMode && !automaticPlacementActive;
 
         var canDrag = _windowSettings.HostMode == WindowHostMode.Floating ||
             (!automaticPlacementActive && !positionLockedActive);
@@ -3037,67 +2901,6 @@ public partial class MainWindow : Window
         VerticalInfoHost.Cursor = cursor;
         VerticalTitleText.Cursor = cursor;
         VerticalArtistText.Cursor = cursor;
-    }
-
-    private async void AutomaticPlacement_OnClick(object sender, RoutedEventArgs e)
-    {
-        if (_windowSettings.HostMode != WindowHostMode.Taskbar)
-        {
-            AutomaticPlacementMenuItem.IsChecked = false;
-            return;
-        }
-
-        if (AutomaticPlacementMenuItem.IsChecked)
-        {
-            if (NativeMethods.GetWindowRect(_windowHandle, out var windowRect))
-            {
-                _automaticLeft = windowRect.Left;
-            }
-
-            _placementSettings = _placementSettings with
-            {
-                AutomaticPlacement = true,
-                PositionLocked = true
-            };
-        }
-        else
-        {
-            var manualOffsetDip = GetCurrentOffsetDip();
-            _placementSettings = _placementSettings with
-            {
-                AutomaticPlacement = false,
-                PositionLocked = false,
-                ManualOffsetDip = manualOffsetDip
-            };
-        }
-
-        SavePlacementSettings();
-        ApplyPlacementSettings();
-        if (_placementSettings.AutomaticPlacement)
-        {
-            _placementTimer.Start();
-            await RefreshAutomaticPlacementAsync();
-        }
-        else
-        {
-            _placementTimer.Stop();
-            PositionOverTaskbar(force: true);
-        }
-    }
-
-    private void LockPosition_OnClick(object sender, RoutedEventArgs e)
-    {
-        _placementSettings = _isVerticalLayout
-            ? _placementSettings with
-            {
-                VerticalPositionLocked = LockPositionMenuItem.IsChecked
-            }
-            : _placementSettings with
-        {
-            PositionLocked = LockPositionMenuItem.IsChecked
-        };
-        SavePlacementSettings();
-        ApplyPlacementSettings();
     }
 
     private int GetCurrentOffsetDip()
@@ -3126,7 +2929,7 @@ public partial class MainWindow : Window
     {
         try
         {
-            PlacementSettingsService.Save(_placementSettings);
+            _settingsCoordinator.SynchronizePlacement(_placementSettings);
         }
         catch (Exception exception)
         {
@@ -3337,9 +3140,7 @@ public partial class MainWindow : Window
         }
         UpdateMouseHookState();
         SetExpanded(expanded: true, animate: true);
-        StartupMenuItem.IsChecked = StartupService.IsEnabled;
-        ApplyPlacementSettings();
-        SyncMetricMenuState();
+        StartupMenuItem.IsChecked = _settingsCoordinator.Current.StartupEnabled;
     }
 
     private void PlayerMenu_OnOpening(object sender, ContextMenuEventArgs e)
@@ -3473,9 +3274,14 @@ public partial class MainWindow : Window
         await RunMediaCommandAsync(_mediaSessionService.SkipNextAsync);
     }
 
-    private async void Reconnect_OnClick(object sender, RoutedEventArgs e)
+    private void Reconnect_OnClick(object sender, RoutedEventArgs e)
     {
-        await RunMediaCommandAsync(_mediaSessionService.ReconnectAsync);
+        RequestMediaReconnect();
+    }
+
+    internal void RequestMediaReconnect()
+    {
+        _ = RunMediaCommandAsync(_mediaSessionService.ReconnectAsync);
     }
 
     private async Task RunMediaCommandAsync(Func<Task> command)
@@ -3494,17 +3300,22 @@ public partial class MainWindow : Window
     {
         try
         {
-            StartupService.SetEnabled(StartupMenuItem.IsChecked);
+            _settingsCoordinator.UpdateStartup(StartupMenuItem.IsChecked);
         }
         catch (Exception exception)
         {
-            StartupMenuItem.IsChecked = StartupService.IsEnabled;
+            StartupMenuItem.IsChecked = _settingsCoordinator.Current.StartupEnabled;
             MessageBox.Show(
                 exception.Message,
                 "无法修改开机启动",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
+    }
+
+    private void OpenSettings_OnClick(object sender, RoutedEventArgs e)
+    {
+        (Application.Current as App)?.ShowSettingsWindow();
     }
 
     private void ShowMediaSource_OnClick(object sender, RoutedEventArgs e)

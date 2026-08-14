@@ -7,11 +7,20 @@ internal enum TaskbarForegroundMode
     DarkText = 2
 }
 
+internal enum MenuThemeMode
+{
+    Automatic = 0,
+    Light = 1,
+    Dark = 2
+}
+
 internal readonly record struct ThemeSettings(
     TaskbarForegroundMode TaskbarForegroundMode,
+    MenuThemeMode MenuThemeMode,
     bool EnhancedReadability)
 {
     internal static ThemeSettings Default { get; } = new(
         TaskbarForegroundMode.Automatic,
+        MenuThemeMode.Automatic,
         false);
 }

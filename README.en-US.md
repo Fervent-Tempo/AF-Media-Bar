@@ -100,7 +100,7 @@ The Windows 10/11 media card is an internal Explorer/Shell surface rather than a
 2. Download `AFMediaBar-vX.Y.Z-win-x64.zip`. Do not download GitHub's automatically generated source archives.
 3. Extract the package to get one self-contained `AFMediaBar.exe`; the archive no longer contains hundreds of .NET runtime files.
 4. Place it in a permanent writable directory, such as `D:\AFMediaBar`, and run it.
-5. Right-click the player or tray icon to configure startup, visible modules, and placement.
+5. Right-click the player or tray icon and choose “Open detailed settings...” to configure startup, components, layout, appearance, and interaction.
 
 AF Media Bar is not commercially code-signed, so Windows SmartScreen may show an unknown publisher warning on first launch.
 
@@ -121,7 +121,7 @@ AF Media Bar is not commercially code-signed, so Windows SmartScreen may show an
 | Change Display scale | Select 70%-125% in either window mode; the final size remains constrained by the taskbar or desktop work area to prevent clipping |
 | Switch to floating mode | Place the player anywhere in the desktop work area |
 | Drag a floating window to a desktop edge | Collapse it when desktop-edge auto-collapse is enabled; vertical layouts prefer left/right edges at desktop corners, and moving the pointer near the indicator reveals it |
-| Right-click the bar or tray icon | Open settings or exit |
+| Right-click the bar or tray icon | Open detailed settings, media actions, or the exit menu |
 
 Some players require “system media controls,” “media keys,” or “SMTC” to be enabled in their own settings.
 
@@ -230,11 +230,12 @@ AF-Media-Bar/
 - [x] Provide display scaling and horizontal/vertical layouts for taskbar and floating windows.
 - [x] Support vertical title/artist marquees and vertical auto-collapse.
 - [ ] Provide freely entered custom window sizes.
-- [ ] Add a detailed settings menu interface with more customization options.
+- [x] Provide an independent detailed settings page for the existing options.
+- [ ] Add more customization options.
 - [ ] Improve opening media apps from the artwork and add quick access to File Explorer.
 - [ ] Display scrolling video subtitles/lyrics.
 - [ ] Display song progress bars.
-- [ ] Support switching between multiple themes.
+- [x] Allow menus and the settings window to independently use automatic, light, or dark themes.
 - [ ] Add an onboarding tutorial for initial configuration.
 
 ## Contributing

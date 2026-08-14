@@ -125,7 +125,13 @@ internal sealed class SystemThemeService : IDisposable
             accentColor,
             accentOpacity,
             themeSettings);
-        ApplyMenuTheme(appsUseLightTheme, accentColor);
+        var menuUsesLightTheme = themeSettings.MenuThemeMode switch
+        {
+            MenuThemeMode.Light => true,
+            MenuThemeMode.Dark => false,
+            _ => appsUseLightTheme
+        };
+        ApplyMenuTheme(menuUsesLightTheme, accentColor);
     }
 
     private void ApplyTaskbarTheme(
