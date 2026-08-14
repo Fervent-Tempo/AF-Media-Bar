@@ -8,6 +8,14 @@
 
 请勿将 GitHub 自动生成的 Source code 压缩包作为程序使用。可通过同一 Release 中的 `SHA256SUMS.txt` 校验下载文件。
 
+## 国内下载镜像
+
+- 夸克网盘：[下载地址](https://pan.quark.cn/s/6987e4945b16)
+- 百度网盘：[下载地址](https://pan.baidu.com/s/1zUQtZ_N1tnRTjJKd9kKREA?pwd=6ddc)，提取码：`6ddc`
+- 蓝奏云：[下载地址](https://amorfate.lanzoue.com/b01eupanbg)，密码：`zzzz`
+
+国内镜像中的压缩包应与 GitHub Release 中的文件完全一致，可使用 SHA-256 校验值进行核对。
+
 ## 本次亮点
 
 - 支持 Windows 10，并继续支持 Windows 11。
