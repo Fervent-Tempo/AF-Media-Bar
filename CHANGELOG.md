@@ -20,6 +20,35 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - 评估 Windows on ARM 支持和多显示器独立任务栏。
   Evaluate Windows on ARM support and per-monitor taskbars.
 
+## [1.1.0] - 2026-08-14
+
+### 新增 / Added
+
+- 增加 Windows 10 兼容支持。
+  Added compatibility support for Windows 10.
+- 增加系统主题自动跟随和独立主题设置。
+  Added automatic system-theme matching and independent theme settings.
+- 增加横向与竖向任务栏播放器布局。
+  Added horizontal and vertical taskbar player layouts.
+- 增加浮动窗口、边缘收起和窗口可见性选项。
+  Added floating-window, edge-collapse, and window visibility options.
+- 增加自动更新检查、备用版本清单源和跳过版本功能。
+  Added automatic update checks, fallback manifest sources, and version skipping.
+
+### 变更 / Changed
+
+- 重构设置窗口和设置菜单。
+  Refactored the settings window and settings menu.
+- 重构任务栏窗口托管，提高不同任务栏布局下的适配能力。
+  Refactored taskbar window hosting to improve adaptation across taskbar layouts.
+- 改进双语社区和项目文档。
+  Improved bilingual community and project documentation.
+
+### 修复 / Fixed
+
+- 修复右键菜单层级问题。
+  Fixed context-menu z-order behavior.
+
 ## [1.0.1] - 2026-08-10
 
 ### 修复 / Fixed
@@ -69,6 +98,7 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - 移除对媒体提供的 `.exe` 来源标识符的通用执行。
   Removed generic execution of media-provided `.exe` source identifiers.
 
-[Unreleased]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.0.0
