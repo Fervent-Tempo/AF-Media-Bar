@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "version": "1.0.1",
+  "releaseDate": "2026-08-10",
+  "minimumSupportedVersion": "1.0.0",
+  "mandatory": false,
+  "title": "AF Media Bar 1.0.1",
+  "changelog": [
+    "改善 Windows 11 自动隐藏任务栏的跟随响应",
+    "将 win-x64 自包含发布包改为单个可执行文件",
+    "更新应用图标和项目文档"
+  ],
+  "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.0.1",
+  "downloads": {
+    "github": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/download/v1.0.1/AFMediaBar-v1.0.1-win-x64.zip",
+    "quark": "",
+    "baidu": "",
+    "lanzou": ""
+  },
+  "sha256": {
+    "github": "1286aa04870d06b53f8aee1a2d523526434676033a25092675006b1b28f86d91"
+  }
+}

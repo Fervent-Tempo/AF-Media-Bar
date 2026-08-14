@@ -54,6 +54,24 @@
 
 - [Watch the AF Media Bar introduction video on Bilibili](https://www.bilibili.com/video/BV1Bjuq6bErr)
 
+## Table of Contents
+
+- [Demo](#demo)
+- [Overview](#overview)
+- [Features](#features)
+- [How It Works](#how-it-works)
+- [Installation](#installation)
+- [Basic Usage](#basic-usage)
+- [Updating and Uninstalling](#updating-and-uninstalling)
+- [Troubleshooting](#troubleshooting)
+- [Technical Limitations](#technical-limitations)
+- [Privacy and Security](#privacy-and-security)
+- [Building from Source](#building-from-source)
+- [Project Structure](#project-structure)
+- [TODO](#todo)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## Overview
 
 AF Media Bar is a portable media controller for Windows 10 and Windows 11. It reads Global System Media Transport Controls (GSMTC) sessions, displays artwork, title, and artist, and provides previous, play/pause, next, and source switching controls.
@@ -62,20 +80,26 @@ The app runs in its own process. Its WPF player can be hosted as a taskbar child
 
 ## Features
 
+<div align="center">
+
 | Category | Capabilities |
 | --- | --- |
 | Media | Artwork, title, artist, previous, play/pause, next, and multiple source selection |
 | Source interaction | Return to the current media app and switch sessions with the mouse wheel |
 | Taskbar behavior | Automatic horizontal/vertical detection, manual placement and locking, automatic avoidance, auto-hide and fullscreen handling |
 | Window modes | Switch between a taskbar child and a floating window; both modes support horizontal/vertical layouts and 70%-125% display scaling |
-| Auto-hide | Hide when every media session is stopped; floating windows support animated desktop-edge collapse with a visible indicator, and vertical layouts prefer left/right edges at corners |
+| Auto-hide | Hide when every media session is stopped; floating windows support desktop-edge auto-collapse, an indicator line, and smooth animation |
 | Audio devices | List and switch the default output device, including delayed wheel selection |
 | App volume | Match the selected media process and adjust its Windows mixer volume in 2% steps |
 | Visualizer | Nine-band spectrum from WASAPI loopback capture |
 | Metrics | Optional system memory, CPU, GPU, and AF Media Bar process memory |
 | Low-spec mode | Software rendering with transitions, marquees, and fades disabled |
 
+</div>
+
 ## How It Works
+
+<div align="center">
 
 ```mermaid
 flowchart LR
@@ -84,6 +108,8 @@ flowchart LR
     D[Windows 10/11 taskbar] -->|Position and auto-hide state| B
     B --> E[WPF taskbar child or floating window]
 ```
+
+</div>
 
 The Windows 10/11 media card is an internal Explorer/Shell surface rather than a supported embeddable control. AF Media Bar uses the public GSMTC API behind that card and renders its own interface, avoiding Explorer injection and its stability risks.
 
@@ -109,7 +135,7 @@ AF Media Bar is not commercially code-signed, so Windows SmartScreen may show an
 | Action | Result |
 | --- | --- |
 | Hover over the bar | Expand media controls |
-| Leave/hover in vertical layout | Auto-collapse between vertically scrolling title/artist text and transport controls |
+| Click previous / play / next | Execute the commands supported by the current media session |
 | Click artwork or title | Return to the selected media app |
 | Scroll over the media area | Switch between GSMTC sessions |
 | Click the output device button | Open the render device list |
@@ -117,19 +143,31 @@ AF Media Bar is not commercially code-signed, so Windows SmartScreen may show an
 | Click the volume button | Open the selected media app volume slider |
 | Scroll over the volume button | Change application volume in 2% steps |
 | Drag the artwork/title area | Move an unlocked manually placed bar |
-| Choose Display layout | Automatic follows the taskbar direction in taskbar mode and uses horizontal in floating mode; horizontal or vertical can also be forced |
-| Change Display scale | Select 70%-125% in either window mode; the final size remains constrained by the taskbar or desktop work area to prevent clipping |
 | Switch to floating mode | Place the player anywhere in the desktop work area |
-| Drag a floating window to a desktop edge | Collapse it when desktop-edge auto-collapse is enabled; vertical layouts prefer left/right edges at desktop corners, and moving the pointer near the indicator reveals it |
+| Drag a floating window to a desktop edge | Collapse it automatically when desktop-edge auto-collapse is enabled; move the pointer near the indicator line to reveal it |
 | Right-click the bar or tray icon | Open detailed settings, media actions, or the exit menu |
 
 Some players require “system media controls,” “media keys,” or “SMTC” to be enabled in their own settings.
 
 ## Updating and Uninstalling
 
-To update, exit AF Media Bar from the tray menu, extract the new release, replace the old executable, and restart the app. Settings remain in the current user's registry.
+### Updating
 
-To uninstall, disable startup from the context menu, exit the application, and delete its directory. To remove settings as well:
+The app checks its version manifest shortly after startup, at most once per day. Automatic checks can be disabled under **Detailed settings → General → Get updates**. You can also check immediately and open any configured GitHub, Quark, Baidu, or Lanzou download channel there.
+
+This version only retrieves update information and opens download links. It does not silently replace the running executable. To install an update:
+
+1. Exit AF Media Bar from the tray menu.
+2. Download and extract the new version.
+3. Replace the old `AFMediaBar.exe` with the new one, then restart the app.
+
+Position, display options, and startup settings are saved in the current user's registry. Replacing the program file will not remove them.
+
+### Uninstalling
+
+1. Disable startup from the context menu, then exit the app.
+2. Delete the AF Media Bar program directory.
+3. To remove settings as well, run this in PowerShell:
 
 ```powershell
 reg.exe delete "HKCU\Software\AFMediaBar" /f
@@ -172,6 +210,7 @@ Disable unused metrics and the audio visualizer, or enable low-spec mode. The vi
 ## Privacy and Security
 
 - No telemetry, advertisements, accounts, or network analytics are included.
+- Automatic update checks only request the public `latest.json` manifest and never upload media data, device information, or user settings; they can be disabled in settings.
 - Media metadata, system metrics, and audio operations stay on the local machine.
 - The app runs as the current user, does not request elevation, and does not inject into Explorer.
 - Report security issues privately according to [SECURITY.md](SECURITY.md).
@@ -223,20 +262,19 @@ AF-Media-Bar/
 - [x] Improve tracking animation smoothness when the Windows taskbar is set to auto-hide.
 - [x] Complete automatic avoidance of taskbar icons.
 - [x] Test Windows 10 compatibility.
-- [x] Keep the window always on top.
-- [x] Add an option to auto-hide when no media session is playing.
-- [x] Automatically follow the system theme.
+- [x] Add no-media auto-hide and always-on-top window behavior.
+- [x] Automatically follow the system light/dark theme.
 - [x] Provide floating window mode and animated desktop-edge collapse.
 - [x] Provide display scaling and horizontal/vertical layouts for taskbar and floating windows.
-- [x] Support vertical title/artist marquees and vertical auto-collapse.
-- [ ] Provide freely entered custom window sizes.
-- [x] Provide an independent detailed settings page for the existing options.
-- [ ] Add more customization options.
-- [ ] Improve opening media apps from the artwork and add quick access to File Explorer.
+- [x] Provide an independent detailed settings page.
+- [ ] Provide freely entered custom window sizes and more customization options.
+- [ ] Improve opening media apps from artwork and add quick access to Task Manager.
 - [ ] Display scrolling video subtitles/lyrics.
-- [ ] Display song progress bars.
-- [x] Allow menus and the settings window to independently use automatic, light, or dark themes.
-- [ ] Add an onboarding tutorial for initial configuration.
+- [ ] Display media progress bars.
+- [ ] Polish the UI and provide multiple preset themes.
+- [ ] Add a UI editor so users can deeply customize the appearance.
+- [ ] Export and share configurations.
+- [ ] Add an onboarding tutorial.
 
 ## Contributing
 

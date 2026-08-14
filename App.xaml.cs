@@ -1,6 +1,8 @@
+using System.Diagnostics;
 using System.Threading;
 using System.Windows;
 using AFMediaBar.Interop;
+using AFMediaBar.Models;
 using AFMediaBar.Services;
 using AFMediaBar.Settings;
 
@@ -11,7 +13,9 @@ public partial class App : Application
     private Mutex? _singleInstanceMutex;
     private CancellationTokenSource? _shutdownCancellation;
     private SystemThemeService? _systemThemeService;
+    private UpdateService? _updateService;
     private SettingsWindow? _settingsWindow;
+    private Version? _notifiedUpdateVersion;
 
     internal SystemThemeService? ThemeService => _systemThemeService;
     internal SettingsCoordinator SettingsCoordinator { get; private set; } = null!;
@@ -41,8 +45,10 @@ public partial class App : Application
         }
 
         SettingsCoordinator = new SettingsCoordinator();
+        _updateService = new UpdateService();
         _shutdownCancellation = new CancellationTokenSource();
         ShowMainWindow();
+        _ = CheckForUpdatesAfterStartupAsync();
     }
 
     internal void RequestShutdown()
@@ -97,7 +103,9 @@ public partial class App : Application
         {
             if (_settingsWindow is null)
             {
-                _settingsWindow = new SettingsWindow(SettingsCoordinator);
+                _settingsWindow = new SettingsWindow(
+                    SettingsCoordinator,
+                    _updateService ?? throw new InvalidOperationException("更新服务尚未初始化。"));
                 _settingsWindow.Closed += SettingsWindow_OnClosed;
                 _settingsWindow.Show();
             }
@@ -134,6 +142,91 @@ public partial class App : Application
         if (MainWindow is MainWindow window)
         {
             window.RequestMediaReconnect();
+        }
+    }
+
+    /// <summary>
+    /// 延迟执行静默自动检查，避免更新网络请求阻塞播放器启动。
+    /// Runs a delayed silent check so update network requests never block player startup.
+    /// </summary>
+    private async Task CheckForUpdatesAfterStartupAsync()
+    {
+        var cancellationToken = _shutdownCancellation?.Token ?? CancellationToken.None;
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(6), cancellationToken);
+            if (_shutdownRequested || _updateService is null)
+            {
+                return;
+            }
+
+            var result = await _updateService.CheckForUpdatesAsync(
+                force: false,
+                cancellationToken);
+            if (result is not { Status: UpdateCheckStatus.UpdateAvailable, Update: { } update } ||
+                (!update.Mandatory && _updateService.IsVersionSkipped(update.Version)) ||
+                _notifiedUpdateVersion == update.Version)
+            {
+                return;
+            }
+
+            _notifiedUpdateVersion = update.Version;
+            if (_settingsWindow is not null)
+            {
+                _settingsWindow.Activate();
+                return;
+            }
+
+            ShowUpdateNotification(update);
+        }
+        catch (OperationCanceledException)
+        {
+            // 应用退出时取消延迟检查。 / Application shutdown cancels a delayed update check.
+        }
+        catch
+        {
+            // 自动检查异常必须保持静默，不能影响启动或退出。 / Automatic-check failures must never affect application startup or shutdown.
+        }
+    }
+
+    /// <summary>
+    /// 提示用户有新版本，并仅打开下载页面，不直接修改本地程序文件。
+    /// Notifies the user and only opens a download page without modifying local program files.
+    /// </summary>
+    private static void ShowUpdateNotification(UpdateInfo update)
+    {
+        var changelog = update.Changelog.Count == 0
+            ? "请打开发布页面查看更新内容。"
+            : string.Join(
+                Environment.NewLine,
+                update.Changelog.Take(5).Select(item => $"• {item}"));
+        var result = MessageBox.Show(
+            $"发现 AF Media Bar {update.VersionText}。\n\n{changelog}\n\n是否打开下载页面？",
+            update.Mandatory ? "发现重要更新" : "发现新版本",
+            MessageBoxButton.YesNo,
+            update.Mandatory ? MessageBoxImage.Warning : MessageBoxImage.Information);
+        if (result != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        var uri = UpdateService.GetPreferredDownloadUri(update);
+        if (uri is null)
+        {
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(
+                exception.Message,
+                "无法打开下载页面",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
         }
     }
 
@@ -223,6 +316,7 @@ public partial class App : Application
         _shutdownRequested = true;
         _shutdownCancellation?.Cancel();
         _shutdownCancellation?.Dispose();
+        _updateService?.Dispose();
         _systemThemeService?.Dispose();
         _singleInstanceMutex?.Dispose();
         base.OnExit(e);

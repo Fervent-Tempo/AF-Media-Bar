@@ -389,6 +389,79 @@
               <Button Content="反馈问题" Tag="https://github.com/Fervent-Tempo/AF-Media-Bar/issues" Style="{StaticResource SettingsActionButtonStyle}" Click="OpenLink_OnClick" />
               <Button Content="许可证" Tag="https://github.com/Fervent-Tempo/AF-Media-Bar/blob/main/LICENSE" Style="{StaticResource SettingsActionButtonStyle}" Click="OpenLink_OnClick" />
             </StackPanel>
+            <TextBlock Margin="0,28,0,8" Text="获取更新" FontSize="15" FontWeight="SemiBold" />
+            <CheckBox x:Name="AutomaticUpdateChecksCheckBox"
+                      Style="{StaticResource SettingsCheckBoxStyle}"
+                      Checked="UpdateCheckSetting_OnChanged"
+                      Unchecked="UpdateCheckSetting_OnChanged">
+              <StackPanel>
+                <TextBlock Text="自动检查更新" Style="{StaticResource SettingsRowTitleStyle}" />
+                <TextBlock Text="启动后延迟检查，每天最多访问一次公开版本清单。" Style="{StaticResource SettingsRowDescriptionStyle}" />
+              </StackPanel>
+            </CheckBox>
+            <StackPanel Orientation="Horizontal">
+              <Button x:Name="CheckForUpdatesButton"
+                      Content="检查更新"
+                      Style="{StaticResource SettingsActionButtonStyle}"
+                      Click="CheckForUpdates_OnClick" />
+              <Button x:Name="SkipUpdateButton"
+                      Content="忽略此版本"
+                      Visibility="Collapsed"
+                      Style="{StaticResource SettingsActionButtonStyle}"
+                      Click="SkipUpdate_OnClick" />
+            </StackPanel>
+            <TextBlock x:Name="UpdateStatusText"
+                       Margin="0,8,0,0"
+                       Text="也可以在这里立即检查。"
+                       Style="{StaticResource SettingsRowDescriptionStyle}" />
+            <Border x:Name="UpdateDetailsPanel"
+                    Margin="0,14,0,0"
+                    Padding="12"
+                    Background="{DynamicResource MenuHoverBrush}"
+                    BorderBrush="{DynamicResource MenuBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Visibility="Collapsed">
+              <StackPanel>
+                <TextBlock x:Name="UpdateTitleText"
+                           FontSize="15"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource MenuPrimaryTextBrush}" />
+                <TextBlock x:Name="UpdateVersionText"
+                           Style="{StaticResource SettingsRowDescriptionStyle}" />
+                <TextBlock x:Name="UpdateChangelogText"
+                           Margin="0,10,0,0"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource MenuPrimaryTextBrush}" />
+                <WrapPanel Margin="0,14,0,0">
+                  <Button x:Name="GitHubDownloadButton"
+                          Content="GitHub 下载"
+                          Visibility="Collapsed"
+                          Style="{StaticResource SettingsActionButtonStyle}"
+                          Click="OpenLink_OnClick" />
+                  <Button x:Name="QuarkDownloadButton"
+                          Content="夸克网盘"
+                          Visibility="Collapsed"
+                          Style="{StaticResource SettingsActionButtonStyle}"
+                          Click="OpenLink_OnClick" />
+                  <Button x:Name="BaiduDownloadButton"
+                          Content="百度网盘"
+                          Visibility="Collapsed"
+                          Style="{StaticResource SettingsActionButtonStyle}"
+                          Click="OpenLink_OnClick" />
+                  <Button x:Name="LanzouDownloadButton"
+                          Content="蓝奏云"
+                          Visibility="Collapsed"
+                          Style="{StaticResource SettingsActionButtonStyle}"
+                          Click="OpenLink_OnClick" />
+                  <Button x:Name="ReleaseNotesButton"
+                          Content="查看更新说明"
+                          Visibility="Collapsed"
+                          Style="{StaticResource SettingsActionButtonStyle}"
+                          Click="OpenLink_OnClick" />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
             <TextBlock Margin="0,28,0,8" Text="恢复" FontSize="15" FontWeight="SemiBold" />
             <Button x:Name="ResetDefaultsButton" Content="恢复全部默认设置" HorizontalAlignment="Left" Style="{StaticResource SettingsActionButtonStyle}" Click="ResetDefaults_OnClick" />
           </StackPanel>

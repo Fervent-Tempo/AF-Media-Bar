@@ -11,11 +11,13 @@ namespace AFMediaBar.Settings;
 public partial class SettingsWindow : Window
 {
     private readonly SettingsCoordinator _coordinator;
+    private readonly UpdateService _updateService;
     private readonly DispatcherTimer _scaleSaveTimer;
     private readonly IReadOnlyList<SettingsSearchResult> _searchResults =
     [
         new("开机启动", "常规", "启动 登录 自动运行"),
         new("无媒体时隐藏播放器", "常规", "隐藏 媒体 可见性"),
+        new("自动检查更新", "常规", "更新 版本 下载 GitHub 夸克 百度 蓝奏云"),
         new("显示性能指标", "播放器组件", "指标 内存 CPU GPU APP"),
         new("音频频谱", "播放器组件", "音频 频谱 可视化"),
         new("输出设备切换", "播放器组件", "音频 输出 设备"),
@@ -34,12 +36,15 @@ public partial class SettingsWindow : Window
         new("低配置模式", "性能与高级", "性能 GPU 动画 渲染"),
         new("重新连接媒体会话", "性能与高级", "诊断 媒体 连接")
     ];
+    private CancellationTokenSource? _updateCheckCancellation;
+    private UpdateInfo? _displayedRelease;
     private bool _isInitialized;
     private bool _isSyncing = true;
 
-    internal SettingsWindow(SettingsCoordinator coordinator)
+    internal SettingsWindow(SettingsCoordinator coordinator, UpdateService updateService)
     {
         _coordinator = coordinator;
+        _updateService = updateService;
         _scaleSaveTimer = new DispatcherTimer(
             TimeSpan.FromMilliseconds(360),
             DispatcherPriority.Background,
@@ -50,8 +55,13 @@ public partial class SettingsWindow : Window
         _isInitialized = true;
         VersionText.Text = $"当前版本：{Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "开发版"}";
         _coordinator.Changed += Coordinator_OnChanged;
+        _updateService.UpdateAvailable += UpdateService_OnUpdateAvailable;
         Closed += SettingsWindow_OnClosed;
         SyncFromSettings();
+        if (_updateService.LatestRelease is { } release)
+        {
+            ShowRelease(release, release.Version > _updateService.CurrentVersion);
+        }
     }
 
     private void Coordinator_OnChanged(object? sender, SettingsChangedEventArgs e)
@@ -72,6 +82,7 @@ public partial class SettingsWindow : Window
         _isSyncing = true;
         StartupCheckBox.IsChecked = settings.StartupEnabled;
         HideWhenNoMediaCheckBox.IsChecked = settings.Window.HideWhenNoMedia;
+        AutomaticUpdateChecksCheckBox.IsChecked = _updateService.AutomaticChecksEnabled;
 
         MetricsEnabledCheckBox.IsChecked = settings.Metrics.Enabled;
         SystemMemoryCheckBox.IsChecked = settings.Metrics.ShowSystemMemory;
@@ -443,6 +454,158 @@ public partial class SettingsWindow : Window
         }));
     }
 
+    private void UpdateCheckSetting_OnChanged(object sender, RoutedEventArgs e)
+    {
+        if (_isSyncing)
+        {
+            return;
+        }
+
+        _updateService.SetAutomaticChecksEnabled(
+            AutomaticUpdateChecksCheckBox.IsChecked == true);
+        UpdateStatusText.Text = AutomaticUpdateChecksCheckBox.IsChecked == true
+            ? "已启用每天一次的自动更新检查。"
+            : "自动检查已关闭，仍可手动检查。";
+    }
+
+    private async void CheckForUpdates_OnClick(object sender, RoutedEventArgs e)
+    {
+        // 手动检查使用独立超时，并在窗口关闭时取消，避免异步回调访问已关闭的界面。 / Manual checks use an independent timeout and are canceled on close so callbacks do not touch a closed window.
+        _updateCheckCancellation?.Cancel();
+        _updateCheckCancellation?.Dispose();
+        var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        _updateCheckCancellation = cancellation;
+        CheckForUpdatesButton.IsEnabled = false;
+        UpdateStatusText.Text = "正在检查更新...";
+
+        try
+        {
+            var result = await _updateService.CheckForUpdatesAsync(
+                force: true,
+                cancellation.Token);
+            ApplyUpdateCheckResult(result);
+        }
+        catch (OperationCanceledException)
+        {
+            if (!cancellation.IsCancellationRequested || IsVisible)
+            {
+                UpdateStatusText.Text = "检查更新超时，请稍后重试。";
+            }
+        }
+        catch (Exception exception)
+        {
+            if (IsVisible)
+            {
+                UpdateStatusText.Text = $"检查更新失败，请稍后重试。\n{exception.Message}";
+            }
+        }
+        finally
+        {
+            if (ReferenceEquals(_updateCheckCancellation, cancellation))
+            {
+                _updateCheckCancellation = null;
+                cancellation.Dispose();
+                CheckForUpdatesButton.IsEnabled = true;
+            }
+        }
+    }
+
+    private void ApplyUpdateCheckResult(UpdateCheckResult result)
+    {
+        switch (result.Status)
+        {
+            case UpdateCheckStatus.UpdateAvailable when result.Update is { } update:
+                ShowRelease(update, updateAvailable: true);
+                UpdateDetailsPanel.BringIntoView();
+                break;
+            case UpdateCheckStatus.NoUpdate when result.Update is { } release:
+                ShowRelease(release, updateAvailable: false);
+                break;
+            case UpdateCheckStatus.AlreadyChecking:
+                UpdateStatusText.Text = "更新检查正在进行，请稍候。";
+                break;
+            case UpdateCheckStatus.NotDue:
+                UpdateStatusText.Text = "今天已经检查过更新。";
+                break;
+            default:
+                UpdateStatusText.Text = result.ErrorMessage ?? "检查更新失败，请稍后重试。";
+                break;
+        }
+    }
+
+    private void UpdateService_OnUpdateAvailable(object? sender, UpdateInfo update)
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.BeginInvoke(() => UpdateService_OnUpdateAvailable(sender, update));
+            return;
+        }
+
+        ShowRelease(update, updateAvailable: true);
+    }
+
+    private void ShowRelease(UpdateInfo release, bool updateAvailable)
+    {
+        _displayedRelease = release;
+        UpdateDetailsPanel.Visibility = Visibility.Visible;
+        UpdateTitleText.Text = release.Title;
+        var releaseDate = release.ReleaseDate is { } date
+            ? $" · {date:yyyy-MM-dd}"
+            : string.Empty;
+        UpdateVersionText.Text = $"版本 {release.VersionText}{releaseDate}";
+        UpdateChangelogText.Text = release.Changelog.Count == 0
+            ? "暂无更新说明。"
+            : string.Join(
+                Environment.NewLine,
+                release.Changelog.Select(item => $"• {item}"));
+
+        SetUpdateLink(GitHubDownloadButton, release, "github");
+        SetUpdateLink(QuarkDownloadButton, release, "quark");
+        SetUpdateLink(BaiduDownloadButton, release, "baidu");
+        SetUpdateLink(LanzouDownloadButton, release, "lanzou");
+        SetUpdateLink(ReleaseNotesButton, release.ReleaseNotesUri);
+
+        var skipped = updateAvailable &&
+            !release.Mandatory &&
+            _updateService.IsVersionSkipped(release.Version);
+        UpdateStatusText.Text = updateAvailable
+            ? skipped
+                ? $"版本 {release.VersionText} 已被忽略，仍可从下方手动下载。"
+                : release.Mandatory
+                    ? $"发现重要更新 {release.VersionText}。"
+                    : $"发现新版本 {release.VersionText}。"
+            : $"当前已是最新版本 {release.VersionText}。";
+        SkipUpdateButton.Visibility = updateAvailable && !release.Mandatory && !skipped
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
+    private static void SetUpdateLink(Button button, UpdateInfo release, string channel)
+    {
+        SetUpdateLink(
+            button,
+            release.DownloadUris.TryGetValue(channel, out var uri) ? uri : null);
+    }
+
+    private static void SetUpdateLink(Button button, Uri? uri)
+    {
+        button.Tag = uri?.AbsoluteUri;
+        button.Visibility = uri is null ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void SkipUpdate_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_displayedRelease is not { Mandatory: false } release ||
+            release.Version <= _updateService.CurrentVersion)
+        {
+            return;
+        }
+
+        _updateService.SkipVersion(release.Version);
+        SkipUpdateButton.Visibility = Visibility.Collapsed;
+        UpdateStatusText.Text = $"已忽略版本 {release.VersionText}，仍可从下方手动下载。";
+    }
+
     private void ResetDefaults_OnClick(object sender, RoutedEventArgs e)
     {
         var result = MessageBox.Show(
@@ -455,7 +618,16 @@ public partial class SettingsWindow : Window
             return;
         }
 
-        TryUpdate(_coordinator.ResetAll);
+        TryUpdate(() =>
+        {
+            _updateService.SetAutomaticChecksEnabled(true);
+            _updateService.ClearSkippedVersion();
+            _coordinator.ResetAll();
+            if (_displayedRelease is { } release)
+            {
+                ShowRelease(release, release.Version > _updateService.CurrentVersion);
+            }
+        });
     }
 
     private void OpenLink_OnClick(object sender, RoutedEventArgs e)
@@ -503,8 +675,12 @@ public partial class SettingsWindow : Window
 
     private void SettingsWindow_OnClosed(object? sender, EventArgs e)
     {
+        _updateCheckCancellation?.Cancel();
+        _updateCheckCancellation?.Dispose();
+        _updateCheckCancellation = null;
         _scaleSaveTimer.Stop();
         _coordinator.Changed -= Coordinator_OnChanged;
+        _updateService.UpdateAvailable -= UpdateService_OnUpdateAvailable;
         Closed -= SettingsWindow_OnClosed;
     }
 
