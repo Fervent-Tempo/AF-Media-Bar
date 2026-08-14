@@ -16,6 +16,8 @@ internal static class WindowSettingsService
                 ReadBoolean(key, "HideWhenNoMedia", WindowSettings.Default.HideWhenNoMedia),
                 ReadBoolean(key, "AlwaysOnTop", WindowSettings.Default.AlwaysOnTop),
                 ReadHostMode(key),
+                ReadPlayerLayoutMode(key),
+                ReadDisplayScalePercent(key),
                 ReadBoolean(key, "AutoCollapse", WindowSettings.Default.AutoCollapse),
                 ReadBoolean(key, "EdgeAutoCollapse", WindowSettings.Default.EdgeAutoCollapse),
                 ReadNullableInt(key, "FloatingLeft"),
@@ -33,6 +35,8 @@ internal static class WindowSettingsService
         key.SetValue("HideWhenNoMedia", settings.HideWhenNoMedia ? 1 : 0, RegistryValueKind.DWord);
         key.SetValue("AlwaysOnTop", settings.AlwaysOnTop ? 1 : 0, RegistryValueKind.DWord);
         key.SetValue("HostMode", (int)settings.HostMode, RegistryValueKind.DWord);
+        key.SetValue("LayoutMode", (int)settings.LayoutMode, RegistryValueKind.DWord);
+        key.SetValue("DisplayScalePercent", settings.DisplayScalePercent, RegistryValueKind.DWord);
         key.SetValue("AutoCollapse", settings.AutoCollapse ? 1 : 0, RegistryValueKind.DWord);
         key.SetValue("EdgeAutoCollapse", settings.EdgeAutoCollapse ? 1 : 0, RegistryValueKind.DWord);
         if (settings.FloatingLeft is int left)
@@ -66,6 +70,44 @@ internal static class WindowSettingsService
         return Enum.IsDefined(typeof(WindowHostMode), value)
             ? (WindowHostMode)value
             : WindowSettings.Default.HostMode;
+    }
+
+    private static PlayerLayoutMode ReadPlayerLayoutMode(RegistryKey? key)
+    {
+        var value = ReadInteger(
+            key,
+            "LayoutMode",
+            ReadInteger(
+                key,
+                "TaskbarLayout",
+                (int)WindowSettings.Default.LayoutMode));
+        return Enum.IsDefined(typeof(PlayerLayoutMode), value)
+            ? (PlayerLayoutMode)value
+            : WindowSettings.Default.LayoutMode;
+    }
+
+    private static int ReadDisplayScalePercent(RegistryKey? key)
+    {
+        var value = ReadInteger(
+            key,
+            "DisplayScalePercent",
+            ReadInteger(
+                key,
+                "TaskbarScalePercent",
+                WindowSettings.Default.DisplayScalePercent));
+        return value is 70 or 80 or 90 or 100 or 110 or 125
+            ? value
+            : WindowSettings.Default.DisplayScalePercent;
+    }
+
+    private static int ReadInteger(RegistryKey? key, string name, int defaultValue)
+    {
+        return key?.GetValue(name) switch
+        {
+            int value => value,
+            long value => (int)value,
+            _ => defaultValue
+        };
     }
 
     private static int? ReadNullableInt(RegistryKey? key, string name)

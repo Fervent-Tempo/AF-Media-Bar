@@ -109,6 +109,56 @@
                     IsCheckable="True"
                     Click="WindowMode_OnClick" />
         </MenuItem>
+        <MenuItem x:Name="TaskbarLayoutMenuItem"
+                  Header="显示布局">
+          <MenuItem x:Name="AutomaticTaskbarLayoutMenuItem"
+                    Header="自动"
+                    ToolTip="任务栏模式跟随任务栏方向，悬浮窗口使用横向布局"
+                    IsCheckable="True"
+                    Click="TaskbarLayout_OnClick" />
+          <MenuItem x:Name="HorizontalTaskbarLayoutMenuItem"
+                    Header="横向显示"
+                    IsCheckable="True"
+                    Click="TaskbarLayout_OnClick" />
+          <MenuItem x:Name="VerticalTaskbarLayoutMenuItem"
+                    Header="竖向显示"
+                    ToolTip="适配左右任务栏，也可用于悬浮窗口"
+                    IsCheckable="True"
+                    Click="TaskbarLayout_OnClick" />
+        </MenuItem>
+        <MenuItem x:Name="TaskbarScaleMenuItem"
+                  Header="显示比例">
+          <MenuItem x:Name="TaskbarScale125MenuItem"
+                    Header="125%"
+                    Tag="125"
+                    IsCheckable="True"
+                    Click="TaskbarScale_OnClick" />
+          <MenuItem x:Name="TaskbarScale110MenuItem"
+                    Header="110%"
+                    Tag="110"
+                    IsCheckable="True"
+                    Click="TaskbarScale_OnClick" />
+          <MenuItem x:Name="TaskbarScale100MenuItem"
+                    Header="100%"
+                    Tag="100"
+                    IsCheckable="True"
+                    Click="TaskbarScale_OnClick" />
+          <MenuItem x:Name="TaskbarScale90MenuItem"
+                    Header="90%"
+                    Tag="90"
+                    IsCheckable="True"
+                    Click="TaskbarScale_OnClick" />
+          <MenuItem x:Name="TaskbarScale80MenuItem"
+                    Header="80%"
+                    Tag="80"
+                    IsCheckable="True"
+                    Click="TaskbarScale_OnClick" />
+          <MenuItem x:Name="TaskbarScale70MenuItem"
+                    Header="70%"
+                    Tag="70"
+                    IsCheckable="True"
+                    Click="TaskbarScale_OnClick" />
+        </MenuItem>
         <MenuItem x:Name="AutomaticPlacementMenuItem"
                   Header="实验性：自动避让任务栏图标"
                   IsCheckable="True"
@@ -160,17 +210,13 @@
         PreviewMouseLeftButtonDown="PlayerRoot_OnPreviewMouseLeftButtonDown"
         PreviewMouseMove="PlayerRoot_OnPreviewMouseMove"
         PreviewMouseLeftButtonUp="PlayerRoot_OnPreviewMouseLeftButtonUp">
-    <Grid.ColumnDefinitions>
-      <ColumnDefinition Width="44" />
-      <ColumnDefinition Width="210" />
-      <ColumnDefinition Width="Auto" />
-      <ColumnDefinition Width="Auto" />
-      <ColumnDefinition Width="Auto" />
-      <ColumnDefinition Width="Auto" />
-    </Grid.ColumnDefinitions>
-
+    <Grid.LayoutTransform>
+      <ScaleTransform x:Name="PlayerScaleTransform"
+                      ScaleX="1"
+                      ScaleY="1" />
+    </Grid.LayoutTransform>
     <Grid x:Name="PlayerContent"
-          Grid.ColumnSpan="6">
+          HorizontalAlignment="Left">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="44" />
         <ColumnDefinition Width="210" />
@@ -417,8 +463,207 @@
             VerticalAlignment="Center" />
     </Grid>
 
+    <Grid x:Name="VerticalPlayerContent"
+          Width="72"
+          HorizontalAlignment="Left"
+          VerticalAlignment="Top"
+          Visibility="Collapsed">
+      <Border Margin="2,1"
+              Background="{DynamicResource TaskbarReadabilityBrush}"
+              CornerRadius="6"
+              IsHitTestVisible="False" />
+      <StackPanel Width="72"
+                  VerticalAlignment="Center">
+        <Border x:Name="VerticalArtworkHost"
+                Width="40"
+                Height="40"
+                Margin="0,3,0,5"
+                CornerRadius="6"
+                Background="{DynamicResource TaskbarSurfaceBrush}"
+                HorizontalAlignment="Center"
+                Cursor="Hand"
+                MouseLeftButtonUp="ShowMediaSource_OnMouseLeftButtonUp">
+          <Grid ClipToBounds="True">
+            <TextBlock x:Name="VerticalArtworkPlaceholder"
+                       Text="&#xE8D6;"
+                       FontFamily="{StaticResource AppIconFontFamily}"
+                       FontSize="20"
+                       Foreground="{DynamicResource TaskbarSecondaryTextBrush}"
+                       Effect="{DynamicResource TaskbarTextEffect}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center" />
+            <Image x:Name="VerticalArtworkImage"
+                   Stretch="UniformToFill" />
+          </Grid>
+        </Border>
+        <Grid x:Name="VerticalCentralHost"
+              Width="68"
+              Height="114"
+              Margin="0,0,0,3"
+              ClipToBounds="True">
+          <Grid x:Name="VerticalInfoHost"
+                Width="68"
+                Height="114"
+                Cursor="Hand"
+                MouseLeftButtonUp="ShowMediaSource_OnMouseLeftButtonUp">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="34" />
+              <ColumnDefinition Width="34" />
+            </Grid.ColumnDefinitions>
+            <Grid x:Name="VerticalTitleViewport"
+                  Grid.Column="0"
+                  Height="110"
+                  VerticalAlignment="Center"
+                  ClipToBounds="True">
+              <Canvas Width="34"
+                      Height="110">
+                <Border x:Name="VerticalTitleMarquee"
+                        Width="34"
+                        Canvas.Left="0"
+                        Canvas.Top="0">
+                  <Border.RenderTransform>
+                    <TranslateTransform x:Name="VerticalTitleTransform" />
+                  </Border.RenderTransform>
+                  <TextBlock x:Name="VerticalTitleText"
+                             Text="等&#xA;待&#xA;媒&#xA;体&#xA;播&#xA;放"
+                             FontFamily="{StaticResource AppDisplayFontFamily}"
+                             FontSize="13"
+                             FontWeight="SemiBold"
+                             Foreground="{DynamicResource TaskbarPrimaryTextBrush}"
+                             Effect="{DynamicResource TaskbarTextEffect}"
+                             LineHeight="17"
+                             LineStackingStrategy="BlockLineHeight"
+                             TextAlignment="Center"
+                             TextWrapping="NoWrap" />
+                </Border>
+              </Canvas>
+            </Grid>
+            <Grid x:Name="VerticalArtistViewport"
+                  Grid.Column="1"
+                  Height="110"
+                  VerticalAlignment="Center"
+                  ClipToBounds="True">
+              <Canvas Width="34"
+                      Height="110">
+                <Border x:Name="VerticalArtistMarquee"
+                        Width="34"
+                        Canvas.Left="0"
+                        Canvas.Top="0">
+                  <Border.RenderTransform>
+                    <TranslateTransform x:Name="VerticalArtistTransform" />
+                  </Border.RenderTransform>
+                  <TextBlock x:Name="VerticalArtistText"
+                             Text="请&#xA;在&#xA;任&#xA;意&#xA;应&#xA;用&#xA;中&#xA;播&#xA;放&#xA;音&#xA;频&#xA;或&#xA;视&#xA;频"
+                             FontFamily="{StaticResource AppTextFontFamily}"
+                             FontSize="11.5"
+                             Foreground="{DynamicResource TaskbarSecondaryTextBrush}"
+                             Effect="{DynamicResource TaskbarTextEffect}"
+                             LineHeight="17"
+                             LineStackingStrategy="BlockLineHeight"
+                             TextAlignment="Center"
+                             TextWrapping="NoWrap" />
+                </Border>
+              </Canvas>
+            </Grid>
+          </Grid>
+          <Border x:Name="VerticalControlsHost"
+                  Width="40"
+                  Height="114"
+                  HorizontalAlignment="Center"
+                  Opacity="0"
+                  IsHitTestVisible="False">
+            <StackPanel Width="38"
+                        VerticalAlignment="Center">
+              <Button x:Name="VerticalPreviousButton"
+                      Style="{StaticResource TransportButtonStyle}"
+                      ToolTip="上一首"
+                      Click="Previous_OnClick">
+                <TextBlock Text="&#xE892;"
+                           FontFamily="{StaticResource AppIconFontFamily}"
+                           FontSize="13" />
+              </Button>
+              <Button x:Name="VerticalPlayPauseButton"
+                      Style="{StaticResource TransportButtonStyle}"
+                      ToolTip="播放"
+                      Click="PlayPause_OnClick">
+                <TextBlock x:Name="VerticalPlayPauseGlyph"
+                           Text="&#xE768;"
+                           FontFamily="{StaticResource AppIconFontFamily}"
+                           FontSize="15" />
+              </Button>
+              <Button x:Name="VerticalNextButton"
+                      Style="{StaticResource TransportButtonStyle}"
+                      ToolTip="下一首"
+                      Click="Next_OnClick">
+                <TextBlock Text="&#xE893;"
+                           FontFamily="{StaticResource AppIconFontFamily}"
+                           FontSize="13" />
+              </Button>
+            </StackPanel>
+          </Border>
+        </Grid>
+        <Border x:Name="VerticalOutputDeviceHost"
+                Width="40"
+                Height="40"
+                CornerRadius="6"
+                Background="Transparent"
+                HorizontalAlignment="Center"
+                MouseEnter="OutputDeviceHost_OnMouseEnter"
+                MouseLeave="OutputDeviceHost_OnMouseLeave"
+                PreviewMouseWheel="OutputDeviceHost_OnPreviewMouseWheel">
+          <Button Width="30"
+                  Height="30"
+                  Style="{StaticResource TransportButtonStyle}"
+                  ToolTip="输出设备"
+                  Click="OutputDeviceButton_OnClick">
+            <TextBlock Text="&#xE7F5;"
+                       FontFamily="{StaticResource AppIconFontFamily}"
+                       FontSize="14" />
+          </Button>
+        </Border>
+        <Border x:Name="VerticalVolumeControlHost"
+                Width="40"
+                Height="40"
+                CornerRadius="6"
+                Background="Transparent"
+                HorizontalAlignment="Center"
+                Visibility="Collapsed"
+                MouseEnter="VolumeControlHost_OnMouseEnter"
+                MouseLeave="VolumeControlHost_OnMouseLeave"
+                PreviewMouseWheel="VolumeControlHost_OnPreviewMouseWheel">
+          <Button Width="30"
+                  Height="30"
+                  Style="{StaticResource TransportButtonStyle}"
+                  ToolTip="当前媒体音量"
+                  Click="VolumeControlButton_OnClick">
+            <TextBlock Text="&#xE767;"
+                       FontFamily="{StaticResource AppIconFontFamily}"
+                       FontSize="14" />
+          </Button>
+        </Border>
+        <Border x:Name="VerticalMetricsHost"
+                Width="62"
+                Height="24"
+                Margin="0,3,0,2"
+                Padding="4,0"
+                CornerRadius="6"
+                Background="{DynamicResource TaskbarHoverBrush}"
+                HorizontalAlignment="Center">
+          <TextBlock x:Name="VerticalMetricsText"
+                     Text="MEM --%"
+                     FontFamily="{StaticResource AppTextFontFamily}"
+                     FontSize="10.5"
+                     FontWeight="SemiBold"
+                     Foreground="{DynamicResource TaskbarSecondaryTextBrush}"
+                     Effect="{DynamicResource TaskbarTextEffect}"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center"
+                     TextTrimming="CharacterEllipsis" />
+        </Border>
+      </StackPanel>
+    </Grid>
+
     <Border x:Name="EdgeCollapseIndicator"
-            Grid.ColumnSpan="6"
             Panel.ZIndex="100"
             Width="4"
             Height="38"

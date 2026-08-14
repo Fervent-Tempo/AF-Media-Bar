@@ -43,12 +43,24 @@ internal static class PlacementSettingsService
                     taskbarPlayerKey,
                     "PositionLocked",
                     PlacementSettings.Default.PositionLocked),
+                ReadBoolean(
+                    currentKey,
+                    afShellKey,
+                    taskbarPlayerKey,
+                    "VerticalPositionLocked",
+                    PlacementSettings.Default.VerticalPositionLocked),
                 ReadInteger(
                     currentKey,
                     afShellKey,
                     taskbarPlayerKey,
                     "ManualOffsetDip",
                     PlacementSettings.Default.ManualOffsetDip),
+                ReadInteger(
+                    currentKey,
+                    afShellKey,
+                    taskbarPlayerKey,
+                    "ManualVerticalOffsetDip",
+                    PlacementSettings.Default.ManualVerticalOffsetDip),
                 ReadNullableInteger(
                     currentKey,
                     afShellKey,
@@ -115,7 +127,15 @@ internal static class PlacementSettingsService
         using var key = Registry.CurrentUser.CreateSubKey(SettingsKeyPath, writable: true);
         key.SetValue("AutomaticPlacement", settings.AutomaticPlacement ? 1 : 0, RegistryValueKind.DWord);
         key.SetValue("PositionLocked", settings.PositionLocked ? 1 : 0, RegistryValueKind.DWord);
+        key.SetValue(
+            "VerticalPositionLocked",
+            settings.VerticalPositionLocked ? 1 : 0,
+            RegistryValueKind.DWord);
         key.SetValue("ManualOffsetDip", settings.ManualOffsetDip, RegistryValueKind.DWord);
+        key.SetValue(
+            "ManualVerticalOffsetDip",
+            settings.ManualVerticalOffsetDip,
+            RegistryValueKind.DWord);
         key.SetValue("PlacementSettingsVersion", CurrentSettingsVersion, RegistryValueKind.DWord);
         WriteNullableInteger(key, "CachedAutomaticOffsetDip", settings.CachedAutomaticOffsetDip);
         WriteNullableInteger(key, "CachedTaskbarWidthDip", settings.CachedTaskbarWidthDip);

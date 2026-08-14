@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -28,6 +30,12 @@ public partial class MainWindow : Window
     private const double CentralHostWidth = 210;
     private const double AudioVisualizerWidth = 88;
     private const double AudioVisualizerCenterBias = 10;
+    private const double HorizontalPlayerHeight = 44;
+    private const double VerticalPlayerWidth = 72;
+    private const double VerticalArtworkAreaHeight = 48;
+    private const double VerticalBaseHeight = 165;
+    private const double VerticalMetricAreaHeight = 29;
+    private const double VerticalControlAreaHeight = 40;
     private const int MouseWheelDelta = 120;
     private const int VolumeWheelStepPercent = 2;
     private const int HorizontalMarginAt96Dpi = 8;
@@ -100,6 +108,7 @@ public partial class MainWindow : Window
     private bool _selectedMediaIsPlaying;
     private bool _hasPresented;
     private bool _isExpanded;
+    private bool _isVerticalLayout;
     private bool _isMenuOpen;
     private bool _isDragging;
     private bool _dragMoved;
@@ -342,10 +351,10 @@ public partial class MainWindow : Window
         RefreshTaskbarSettings();
         if (TryGetTaskbarBounds(out var bounds))
         {
-            var horizontalGeometryChanged = !_lastTaskbarRect.HasValue ||
-                _lastTaskbarRect.Value.Left != bounds.ScreenBounds.Left ||
-                _lastTaskbarRect.Value.Right != bounds.ScreenBounds.Right;
-            if (_placementSettings.AutomaticPlacement && horizontalGeometryChanged)
+            var sizeChanged = !_lastTaskbarRect.HasValue ||
+                _lastTaskbarRect.Value.Width != bounds.ScreenBounds.Width ||
+                _lastTaskbarRect.Value.Height != bounds.ScreenBounds.Height;
+            if (_placementSettings.AutomaticPlacement && sizeChanged)
             {
                 _automaticLeft = null;
                 _ = RefreshAutomaticPlacementAsync();
@@ -354,7 +363,7 @@ public partial class MainWindow : Window
             // Vertical location changes are inherited from the Explorer parent.
             // Repositioning the child during that animation would reintroduce the lag.
             if (taskbarEvent.EventId == NativeMethods.EventObjectLocationChange &&
-                !horizontalGeometryChanged)
+                !sizeChanged)
             {
                 return;
             }
@@ -455,26 +464,16 @@ public partial class MainWindow : Window
 
         var taskbarRect = bounds.ScreenBounds;
         var scale = bounds.Scale;
+        var verticalLayout = ResolveVerticalTaskbarLayout(taskbarRect);
+        ApplyPlayerLayout(verticalLayout);
+        ConfigurePopupPlacement(bounds, verticalLayout);
+        var layoutScale = CalculateTaskbarLayoutScale(bounds, verticalLayout);
+        ApplyPlayerScale(layoutScale);
         if (_placementSettings.AutomaticPlacement &&
             _lastTaskbarRect.HasValue &&
             _lastTaskbarRect.Value.Width != taskbarRect.Width)
         {
             _automaticLeft = null;
-        }
-
-        var marginX = (int)Math.Round(HorizontalMarginAt96Dpi * scale);
-        var marginY = (int)Math.Round(VerticalMarginAt96Dpi * scale);
-        var playerWidth = (int)Math.Ceiling(PlayerRoot.Width * scale);
-        var minLeft = taskbarRect.Left + marginX;
-        var maxLeft = Math.Max(minLeft, taskbarRect.Right - marginX - playerWidth);
-        var desiredLeft = _placementSettings.AutomaticPlacement
-            ? ResolveAutomaticLeft(taskbarRect, scale, minLeft)
-            : taskbarRect.Left + (int)Math.Round(_placementSettings.ManualOffsetDip * scale);
-        desiredLeft ??= _lastPositionLeft;
-        if (!desiredLeft.HasValue)
-        {
-            _ = RefreshAutomaticPlacementAsync();
-            return;
         }
 
         if (Visibility != Visibility.Visible)
@@ -483,34 +482,208 @@ public partial class MainWindow : Window
             force = true;
         }
 
-        var clampedLeft = Math.Clamp(desiredLeft.Value, minLeft, maxLeft);
+        var width = Math.Max(1, (int)Math.Ceiling(PlayerRoot.Width * layoutScale * scale));
+        var height = Math.Max(1, (int)Math.Ceiling(PlayerRoot.Height * layoutScale * scale));
+        int left;
+        int top;
+        if (verticalLayout)
+        {
+            var margin = Math.Min(
+                (int)Math.Round(VerticalMarginAt96Dpi * scale),
+                Math.Max(0, (taskbarRect.Height - height) / 2));
+            var minTop = taskbarRect.Top + margin;
+            var maxTop = Math.Max(minTop, taskbarRect.Bottom - margin - height);
+            top = Math.Clamp(
+                taskbarRect.Top + (int)Math.Round(
+                    _placementSettings.ManualVerticalOffsetDip * scale),
+                minTop,
+                maxTop);
+            left = taskbarRect.Left + (taskbarRect.Width - width) / 2;
+        }
+        else
+        {
+            var margin = Math.Min(
+                (int)Math.Round(HorizontalMarginAt96Dpi * scale),
+                Math.Max(0, (taskbarRect.Width - width) / 2));
+            var minLeft = taskbarRect.Left + margin;
+            var maxLeft = Math.Max(minLeft, taskbarRect.Right - margin - width);
+            var desiredLeft = _placementSettings.AutomaticPlacement
+                ? ResolveAutomaticLeft(taskbarRect, scale, minLeft)
+                : taskbarRect.Left + (int)Math.Round(
+                    _placementSettings.ManualOffsetDip * scale);
+            desiredLeft ??= _lastPositionLeft;
+            if (!desiredLeft.HasValue)
+            {
+                _ = RefreshAutomaticPlacementAsync();
+                return;
+            }
 
-        var height = Math.Max(1, taskbarRect.Height - marginY * 2);
-        var heightDip = Math.Max(44, height / scale);
-        var width = Math.Max(1, (int)Math.Ceiling(PlayerRoot.Width * scale));
-        var windowHeight = Math.Max(1, (int)Math.Ceiling(heightDip * scale));
+            left = Math.Clamp(desiredLeft.Value, minLeft, maxLeft);
+            top = taskbarRect.Top + (taskbarRect.Height - height) / 2;
+        }
+
         var rectChanged = !_lastTaskbarRect.HasValue ||
             !_lastTaskbarRect.Value.Equals(taskbarRect);
-        var leftChanged = _lastPositionLeft != clampedLeft;
+        var positionChanged = _lastPositionLeft != left || _lastPositionTop != top;
 
-        Height = heightDip;
+        Height = PlayerRoot.Height * layoutScale;
         Topmost = _windowSettings.AlwaysOnTop;
-        if (!force && !rectChanged && !leftChanged)
+        if (!force && !rectChanged && !positionChanged)
         {
             RevealAfterPlacement();
             return;
         }
 
         _lastTaskbarRect = taskbarRect;
-        _lastPositionLeft = clampedLeft;
+        _lastPositionLeft = left;
+        _lastPositionTop = top;
         _taskbarHostService?.Position(
-            clampedLeft,
-            taskbarRect.Top + marginY,
+            left,
+            top,
             width,
-            windowHeight,
+            height,
             visible: true,
             topmost: _windowSettings.AlwaysOnTop);
         RevealAfterPlacement();
+    }
+
+    private bool ResolveVerticalTaskbarLayout(NativeMethods.Rect taskbarRect)
+    {
+        return _windowSettings.LayoutMode switch
+        {
+            PlayerLayoutMode.Vertical => true,
+            PlayerLayoutMode.Horizontal => false,
+            _ => taskbarRect.Height > taskbarRect.Width
+        };
+    }
+
+    private void ConfigurePopupPlacement(TaskbarHostBounds bounds, bool verticalLayout)
+    {
+        if (!verticalLayout)
+        {
+            SetPopupPlacement(PlacementMode.Top, 0, -7);
+            return;
+        }
+
+        var monitor = NativeMethods.MonitorFromWindow(bounds.Taskbar, 2);
+        var monitorInfo = NativeMethods.MonitorInfo.Create();
+        var taskbarIsOnLeft = monitor == nint.Zero ||
+            !NativeMethods.GetMonitorInfo(monitor, ref monitorInfo) ||
+            bounds.ScreenBounds.Left + bounds.ScreenBounds.Width / 2 <=
+                monitorInfo.Monitor.Left + monitorInfo.Monitor.Width / 2;
+        SetPopupPlacement(
+            taskbarIsOnLeft ? PlacementMode.Right : PlacementMode.Left,
+            taskbarIsOnLeft ? 7 : -7,
+            0);
+    }
+
+    private void SetPopupPlacement(
+        PlacementMode placement,
+        double horizontalOffset,
+        double verticalOffset)
+    {
+        foreach (var popup in new[]
+        {
+            VolumeControlPopup,
+            OutputDevicePopup,
+            OutputDeviceStatusPopup,
+            VolumeStatusPopup
+        })
+        {
+            popup.Placement = placement;
+            popup.HorizontalOffset = horizontalOffset;
+            popup.VerticalOffset = verticalOffset;
+        }
+    }
+
+    private double CalculateTaskbarLayoutScale(
+        TaskbarHostBounds bounds,
+        bool verticalLayout)
+    {
+        var requestedScale = _windowSettings.DisplayScalePercent / 100d;
+        var availableThickness = verticalLayout
+            ? bounds.ScreenBounds.Width
+            : bounds.ScreenBounds.Height;
+        var availableLength = verticalLayout
+            ? bounds.ScreenBounds.Height
+            : bounds.ScreenBounds.Width;
+        var designThickness = verticalLayout
+            ? VerticalPlayerWidth
+            : HorizontalPlayerHeight;
+        var designLength = verticalLayout ? PlayerRoot.Height : PlayerRoot.Width;
+        var maximumThicknessScale = availableThickness / (designThickness * bounds.Scale);
+        var maximumLengthScale = availableLength / (designLength * bounds.Scale);
+        return Math.Clamp(
+            Math.Min(requestedScale, Math.Min(maximumThicknessScale, maximumLengthScale)),
+            0.1,
+            1.25);
+    }
+
+    private void ApplyPlayerScale(double scale)
+    {
+        PlayerScaleTransform.ScaleX = scale;
+        PlayerScaleTransform.ScaleY = scale;
+    }
+
+    private void ApplyPlayerLayout(bool vertical)
+    {
+        if (_isVerticalLayout == vertical)
+        {
+            return;
+        }
+
+        var contentVisible = PlayerContent.Visibility == Visibility.Visible ||
+            VerticalPlayerContent.Visibility == Visibility.Visible;
+        _isVerticalLayout = vertical;
+        SetPlayerContentVisibility(contentVisible);
+        PlayerRoot.Width = vertical ? VerticalPlayerWidth : CalculateHorizontalPlayerWidth();
+        PlayerRoot.Height = vertical ? CalculateVerticalPlayerHeight() : HorizontalPlayerHeight;
+        VerticalPlayerContent.Height = PlayerRoot.Height;
+        VolumeControlPopup.PlacementTarget = vertical
+            ? VerticalVolumeControlHost
+            : VolumeControlHost;
+        OutputDevicePopup.PlacementTarget = vertical
+            ? VerticalOutputDeviceHost
+            : OutputDeviceHost;
+        OutputDeviceStatusPopup.PlacementTarget = vertical
+            ? VerticalOutputDeviceHost
+            : OutputDeviceHost;
+        VolumeStatusPopup.PlacementTarget = vertical
+            ? VerticalVolumeControlHost
+            : VolumeControlHost;
+        SetExpanded(_isExpanded, animate: false);
+        ApplyPlacementSettings();
+        if (EdgeCollapseIndicator.Visibility == Visibility.Visible)
+        {
+            UpdateEdgeCollapseIndicator(visible: true);
+        }
+        ScheduleMarqueeUpdate();
+    }
+
+    private void SetPlayerContentVisibility(bool visible)
+    {
+        PlayerContent.Visibility = visible && !_isVerticalLayout
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        VerticalPlayerContent.Visibility = visible && _isVerticalLayout
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
+    private double CalculateHorizontalPlayerWidth()
+    {
+        return PlayerWidthWithoutExtras +
+            (_metricSettings.SelectedCount > 0 ? MetricsAreaWidth : 0) +
+            (_metricSettings.OutputDeviceSwitcherEnabled ? OutputDeviceAreaWidth : 0) +
+            (_metricSettings.VolumeControlEnabled ? VolumeControlAreaWidth : 0);
+    }
+
+    private double CalculateVerticalPlayerHeight()
+    {
+        return VerticalBaseHeight +
+            (_metricSettings.SelectedCount > 0 ? VerticalMetricAreaHeight : 0) +
+            (_metricSettings.OutputDeviceSwitcherEnabled ? VerticalControlAreaHeight : 0) +
+            (_metricSettings.VolumeControlEnabled ? VerticalControlAreaHeight : 0);
     }
 
     private int? ResolveAutomaticLeft(
@@ -524,7 +697,8 @@ public partial class MainWindow : Window
         }
 
         var taskbarWidthDip = (int)Math.Round(taskbarRect.Width / scale);
-        var playerWidthDip = (int)Math.Round(PlayerRoot.Width);
+        var playerWidthDip = (int)Math.Round(
+            PlayerRoot.Width * PlayerScaleTransform.ScaleX);
         var cachedOffset = _placementSettings.CachedAutomaticOffsetDip;
         var cachedTaskbarWidth = _placementSettings.CachedTaskbarWidthDip;
         var cachedPlayerWidth = _placementSettings.CachedPlayerWidthDip;
@@ -547,7 +721,8 @@ public partial class MainWindow : Window
         {
             // 重建任务栏后 UI Automation 暴露较慢；精确扫描前暂用可用区中点。
             // UI Automation lags after rebuilds; use the free-area midpoint until scanned.
-            var playerWidth = (int)Math.Ceiling(PlayerRoot.Width * scale);
+            var playerWidth = (int)Math.Ceiling(
+                PlayerRoot.Width * PlayerScaleTransform.ScaleX * scale);
             var availableWidth = Math.Max(0, taskbarRect.Width - playerWidth);
             return taskbarRect.Left + availableWidth / 2;
         }
@@ -570,6 +745,7 @@ public partial class MainWindow : Window
     private async Task RefreshAutomaticPlacementAsync()
     {
         if (_windowSettings.HostMode != WindowHostMode.Taskbar ||
+            _isVerticalLayout ||
             !_placementSettings.AutomaticPlacement ||
             _windowHandle == nint.Zero ||
             _isMenuOpen)
@@ -618,7 +794,8 @@ public partial class MainWindow : Window
         var alignment = _taskbarSettings.Alignment;
         var scale = bounds.Scale;
         var margin = (int)Math.Round(HorizontalMarginAt96Dpi * scale);
-        var playerWidth = (int)Math.Ceiling(PlayerRoot.Width * scale);
+        var playerWidth = (int)Math.Ceiling(
+            PlayerRoot.Width * PlayerScaleTransform.ScaleX * scale);
         TaskbarPlacementResult? placement;
         try
         {
@@ -662,7 +839,8 @@ public partial class MainWindow : Window
             CachedAutomaticOffsetDip = (int)Math.Round(
                 (placement.Value.Left - taskbarRect.Left) / scale),
             CachedTaskbarWidthDip = (int)Math.Round(taskbarRect.Width / scale),
-            CachedPlayerWidthDip = (int)Math.Round(PlayerRoot.Width),
+            CachedPlayerWidthDip = (int)Math.Round(
+                PlayerRoot.Width * PlayerScaleTransform.ScaleX),
             CachedTaskbarAlignment = _taskbarSettings.Alignment == TaskbarAlignment.Unknown
                 ? null
                 : _taskbarSettings.Alignment
@@ -731,15 +909,26 @@ public partial class MainWindow : Window
         TitleText.Text = snapshot.Title;
         ArtistText.Text = snapshot.Artist;
         ArtworkImage.Source = snapshot.Artwork;
+        VerticalTitleText.Text = FormatVerticalText(snapshot.Title);
+        VerticalArtistText.Text = FormatVerticalText(snapshot.Artist);
+        VerticalTitleText.ToolTip = snapshot.Title;
+        VerticalArtistText.ToolTip = snapshot.Artist;
+        VerticalArtworkImage.Source = snapshot.Artwork;
         ArtworkPlaceholder.Visibility = snapshot.Artwork is null
             ? Visibility.Visible
             : Visibility.Collapsed;
+        VerticalArtworkPlaceholder.Visibility = ArtworkPlaceholder.Visibility;
 
         PreviousButton.IsEnabled = snapshot.IsConnected && snapshot.CanSkipPrevious;
         PlayPauseButton.IsEnabled = snapshot.IsConnected && snapshot.CanPlayPause;
         NextButton.IsEnabled = snapshot.IsConnected && snapshot.CanSkipNext;
+        VerticalPreviousButton.IsEnabled = PreviousButton.IsEnabled;
+        VerticalPlayPauseButton.IsEnabled = PlayPauseButton.IsEnabled;
+        VerticalNextButton.IsEnabled = NextButton.IsEnabled;
         PlayPauseGlyph.Text = snapshot.IsPlaying ? "\uE769" : "\uE768";
+        VerticalPlayPauseGlyph.Text = PlayPauseGlyph.Text;
         PlayPauseButton.ToolTip = snapshot.IsPlaying ? "暂停" : "播放";
+        VerticalPlayPauseButton.ToolTip = PlayPauseButton.ToolTip;
 
         ConnectionMenuText.Text = snapshot.IsConnected
             ? $"{snapshot.SourceName}：{snapshot.Title}"
@@ -865,6 +1054,13 @@ public partial class MainWindow : Window
         }
 
         _isExpanded = expanded;
+        animate &= !_metricSettings.LowGpuMode;
+        if (_isVerticalLayout)
+        {
+            ApplyVerticalExpandedState(expanded, animate);
+            return;
+        }
+
         ControlsHost.IsHitTestVisible = expanded;
         var showVisualizer = _metricSettings.AudioMonitorEnabled && !expanded;
         AudioVisualizerHost.Visibility = showVisualizer
@@ -873,7 +1069,6 @@ public partial class MainWindow : Window
         InfoHost.Visibility = showVisualizer
             ? Visibility.Collapsed
             : Visibility.Visible;
-        animate &= !_metricSettings.LowGpuMode;
         var infoWidth = expanded
             ? ExpandedInfoWidth
             : CollapsedInfoWidth;
@@ -923,6 +1118,34 @@ public partial class MainWindow : Window
         ArtistText.BeginAnimation(
             UIElement.OpacityProperty,
             CreateAnimation(artistOpacity, duration, easing));
+        ScheduleMarqueeUpdate();
+    }
+
+    private void ApplyVerticalExpandedState(bool expanded, bool animate)
+    {
+        AudioVisualizerHost.Visibility = Visibility.Collapsed;
+        VerticalInfoHost.IsHitTestVisible = !expanded;
+        VerticalControlsHost.IsHitTestVisible = expanded;
+        var infoOpacity = expanded ? 0d : 1d;
+        var controlsOpacity = expanded ? 1d : 0d;
+        if (!animate)
+        {
+            VerticalInfoHost.BeginAnimation(UIElement.OpacityProperty, null);
+            VerticalControlsHost.BeginAnimation(UIElement.OpacityProperty, null);
+            VerticalInfoHost.Opacity = infoOpacity;
+            VerticalControlsHost.Opacity = controlsOpacity;
+            ScheduleMarqueeUpdate();
+            return;
+        }
+
+        var duration = new Duration(TimeSpan.FromMilliseconds(220));
+        var easing = new CubicEase { EasingMode = EasingMode.EaseOut };
+        VerticalInfoHost.BeginAnimation(
+            UIElement.OpacityProperty,
+            CreateAnimation(infoOpacity, duration, easing));
+        VerticalControlsHost.BeginAnimation(
+            UIElement.OpacityProperty,
+            CreateAnimation(controlsOpacity, duration, easing));
         ScheduleMarqueeUpdate();
     }
 
@@ -979,6 +1202,27 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (_isVerticalLayout)
+        {
+            StopHorizontalMarquees();
+            if (_isExpanded)
+            {
+                StopVerticalMarquees();
+                return;
+            }
+
+            UpdateVerticalMarquee(
+                VerticalTitleMarquee,
+                VerticalTitleViewport,
+                VerticalTitleTransform);
+            UpdateVerticalMarquee(
+                VerticalArtistMarquee,
+                VerticalArtistViewport,
+                VerticalArtistTransform);
+            return;
+        }
+
+        StopVerticalMarquees();
         UpdateMarquee(TitleText, TitleViewport, TitleTransform);
         UpdateMarquee(ArtistText, ArtistViewport, ArtistTransform);
     }
@@ -1006,14 +1250,32 @@ public partial class MainWindow : Window
 
     private void StopMarquees()
     {
-        StopMarquee(TitleTransform);
-        StopMarquee(ArtistTransform);
+        StopHorizontalMarquees();
+        StopVerticalMarquees();
     }
 
-    private static void StopMarquee(TranslateTransform transform)
+    private void StopHorizontalMarquees()
+    {
+        StopHorizontalMarquee(TitleTransform);
+        StopHorizontalMarquee(ArtistTransform);
+    }
+
+    private void StopVerticalMarquees()
+    {
+        StopVerticalMarquee(VerticalTitleTransform);
+        StopVerticalMarquee(VerticalArtistTransform);
+    }
+
+    private static void StopHorizontalMarquee(TranslateTransform transform)
     {
         transform.BeginAnimation(TranslateTransform.XProperty, null);
         transform.X = 0;
+    }
+
+    private static void StopVerticalMarquee(TranslateTransform transform)
+    {
+        transform.BeginAnimation(TranslateTransform.YProperty, null);
+        transform.Y = 0;
     }
 
     private static void UpdateMarquee(
@@ -1047,6 +1309,64 @@ public partial class MainWindow : Window
         transform.BeginAnimation(TranslateTransform.XProperty, animation);
     }
 
+    private static void UpdateVerticalMarquee(
+        FrameworkElement content,
+        FrameworkElement viewport,
+        TranslateTransform transform)
+    {
+        transform.BeginAnimation(TranslateTransform.YProperty, null);
+        transform.Y = 0;
+        content.Height = double.NaN;
+        content.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        var contentHeight = Math.Ceiling(content.DesiredSize.Height + 1);
+        content.Height = Math.Max(viewport.ActualHeight, contentHeight);
+        var overflow = contentHeight - viewport.ActualHeight;
+        if (overflow <= 2 || viewport.ActualHeight <= 0)
+        {
+            return;
+        }
+
+        var travelSeconds = Math.Max(3, overflow / 22d);
+        var animation = new DoubleAnimation
+        {
+            From = 0,
+            To = -(overflow + 8),
+            BeginTime = TimeSpan.FromSeconds(1),
+            Duration = TimeSpan.FromSeconds(travelSeconds),
+            AutoReverse = true,
+            RepeatBehavior = RepeatBehavior.Forever,
+            EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
+        };
+        transform.BeginAnimation(TranslateTransform.YProperty, animation);
+    }
+
+    private static string FormatVerticalText(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return text;
+        }
+
+        var builder = new StringBuilder(text.Length * 2);
+        var elements = StringInfo.GetTextElementEnumerator(text);
+        while (elements.MoveNext())
+        {
+            var element = elements.GetTextElement();
+            if (element is "\r" or "\n")
+            {
+                continue;
+            }
+
+            if (builder.Length > 0)
+            {
+                builder.AppendLine();
+            }
+            builder.Append(element);
+        }
+
+        return builder.ToString();
+    }
+
     private void OnMetricsTimerTick(object? sender, EventArgs e)
     {
         _metricCycleTicks++;
@@ -1063,11 +1383,14 @@ public partial class MainWindow : Window
         {
             MetricsText.Text = string.Empty;
             MetricsHost.Visibility = Visibility.Collapsed;
+            VerticalMetricsText.Text = string.Empty;
+            VerticalMetricsHost.Visibility = Visibility.Collapsed;
             UpdatePlayerWidth(metricsVisible: false);
             return;
         }
 
         MetricsHost.Visibility = Visibility.Visible;
+        VerticalMetricsHost.Visibility = Visibility.Visible;
         UpdatePlayerWidth(metricsVisible: true);
         if (advanceCycle)
         {
@@ -1083,10 +1406,13 @@ public partial class MainWindow : Window
 
     private void UpdatePlayerWidth(bool metricsVisible)
     {
-        PlayerRoot.Width = PlayerWidthWithoutExtras +
-            (metricsVisible ? MetricsAreaWidth : 0) +
-            (_metricSettings.OutputDeviceSwitcherEnabled ? OutputDeviceAreaWidth : 0) +
-            (_metricSettings.VolumeControlEnabled ? VolumeControlAreaWidth : 0);
+        PlayerRoot.Width = _isVerticalLayout
+            ? VerticalPlayerWidth
+            : CalculateHorizontalPlayerWidth();
+        PlayerRoot.Height = _isVerticalLayout
+            ? CalculateVerticalPlayerHeight()
+            : HorizontalPlayerHeight;
+        VerticalPlayerContent.Height = PlayerRoot.Height;
         PositionOverTaskbar(force: true);
     }
 
@@ -1134,6 +1460,8 @@ public partial class MainWindow : Window
             MetricsText.BeginAnimation(UIElement.OpacityProperty, null);
             MetricsText.Opacity = 1;
             MetricsText.Text = text;
+            VerticalMetricsText.Opacity = 1;
+            VerticalMetricsText.Text = text;
             return;
         }
 
@@ -1141,11 +1469,18 @@ public partial class MainWindow : Window
         fadeOut.Completed += (_, _) =>
         {
             MetricsText.Text = text;
+            VerticalMetricsText.Text = text;
             MetricsText.BeginAnimation(
+                UIElement.OpacityProperty,
+                new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(130)));
+            VerticalMetricsText.BeginAnimation(
                 UIElement.OpacityProperty,
                 new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(130)));
         };
         MetricsText.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+        VerticalMetricsText.BeginAnimation(
+            UIElement.OpacityProperty,
+            new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(90)));
     }
 
     private void ApplyMetricSettings()
@@ -1220,6 +1555,8 @@ public partial class MainWindow : Window
             return;
         }
 
+        var verticalLayout = _windowSettings.LayoutMode == PlayerLayoutMode.Vertical;
+        ApplyPlayerLayout(verticalLayout);
         CollapseWhenPointerLeavesWindow();
         if (!_windowSettings.EdgeAutoCollapse &&
             (_floatingEdge != 0 || _expandedEdge != 0))
@@ -1249,12 +1586,6 @@ public partial class MainWindow : Window
             return;
         }
 
-        var dpi = NativeMethods.GetDpiForWindow(_windowHandle);
-        var scale = dpi == 0 ? 1d : dpi / 96d;
-        var width = Math.Max(1, (int)Math.Ceiling(PlayerRoot.Width * scale));
-        var height = Math.Max(1, (int)Math.Ceiling(44 * scale));
-        Height = 44;
-
         var left = _windowSettings.FloatingLeft ?? _floatingNormalLeft;
         var top = _windowSettings.FloatingTop ?? _floatingNormalTop;
         if ((!left.HasValue || !top.HasValue) &&
@@ -1276,6 +1607,19 @@ public partial class MainWindow : Window
         }
 
         var desktopBounds = monitorInfo.WorkArea;
+        var dpi = NativeMethods.GetDpiForWindow(_windowHandle);
+        var scale = dpi == 0 ? 1d : dpi / 96d;
+        var layoutScale = CalculateFloatingLayoutScale(desktopBounds, scale);
+        ApplyPlayerScale(layoutScale);
+        var width = Math.Clamp(
+            (int)Math.Ceiling(PlayerRoot.Width * layoutScale * scale),
+            1,
+            desktopBounds.Width);
+        var height = Math.Clamp(
+            (int)Math.Ceiling(PlayerRoot.Height * layoutScale * scale),
+            1,
+            desktopBounds.Height);
+        Height = PlayerRoot.Height * layoutScale;
         left ??= desktopBounds.Left + 16;
         top ??= desktopBounds.Bottom - height - 16;
         if (_floatingEdge == 0)
@@ -1327,6 +1671,14 @@ public partial class MainWindow : Window
                     : top;
         }
 
+        ConfigureFloatingPopupPlacement(
+            desktopBounds,
+            _floatingNormalLeft ?? left.Value,
+            _floatingNormalTop ?? top.Value,
+            width,
+            height,
+            verticalLayout);
+
         _lastFloatingWidth = width;
         _lastFloatingHeight = height;
 
@@ -1353,6 +1705,46 @@ public partial class MainWindow : Window
         }
 
         RevealAfterPlacement();
+    }
+
+    private double CalculateFloatingLayoutScale(
+        NativeMethods.Rect desktopBounds,
+        double dpiScale)
+    {
+        var requestedScale = _windowSettings.DisplayScalePercent / 100d;
+        var maximumWidthScale = desktopBounds.Width / (PlayerRoot.Width * dpiScale);
+        var maximumHeightScale = desktopBounds.Height / (PlayerRoot.Height * dpiScale);
+        return Math.Clamp(
+            Math.Min(requestedScale, Math.Min(maximumWidthScale, maximumHeightScale)),
+            0.1,
+            1.25);
+    }
+
+    private void ConfigureFloatingPopupPlacement(
+        NativeMethods.Rect desktopBounds,
+        int left,
+        int top,
+        int width,
+        int height,
+        bool verticalLayout)
+    {
+        if (verticalLayout)
+        {
+            var openToRight = left + width / 2 <=
+                desktopBounds.Left + desktopBounds.Width / 2;
+            SetPopupPlacement(
+                openToRight ? PlacementMode.Right : PlacementMode.Left,
+                openToRight ? 7 : -7,
+                0);
+            return;
+        }
+
+        var openDownward = top + height / 2 <=
+            desktopBounds.Top + desktopBounds.Height / 2;
+        SetPopupPlacement(
+            openDownward ? PlacementMode.Bottom : PlacementMode.Top,
+            0,
+            openDownward ? 7 : -7);
     }
 
     private void UpdateFloatingEdgeCollapse()
@@ -1423,12 +1815,19 @@ public partial class MainWindow : Window
             return;
         }
 
+        var touchesLeft = rect.Left <= desktopBounds.Left + edgeTolerance;
+        var touchesRight = rect.Right >= desktopBounds.Right - edgeTolerance;
         var touchesTop = rect.Top <= desktopBounds.Top + edgeTolerance;
         var touchesBottom = rect.Bottom >= desktopBounds.Bottom - edgeTolerance;
-        var edge = touchesTop ? 3 :
-            touchesBottom ? 4 :
-            rect.Left <= desktopBounds.Left + edgeTolerance ? 1 :
-            rect.Right >= desktopBounds.Right - edgeTolerance ? 2 : 0;
+        var edge = _isVerticalLayout
+            ? touchesLeft ? 1 :
+                touchesRight ? 2 :
+                touchesTop ? 3 :
+                touchesBottom ? 4 : 0
+            : touchesTop ? 3 :
+                touchesBottom ? 4 :
+                touchesLeft ? 1 :
+                touchesRight ? 2 : 0;
         if (edge == 0 ||
             (cursor.X >= rect.Left && cursor.X < rect.Right &&
                 cursor.Y >= rect.Top && cursor.Y < rect.Bottom))
@@ -1494,7 +1893,7 @@ public partial class MainWindow : Window
         _edgeAnimationHasTarget = true;
         if (expanding)
         {
-            PlayerContent.Visibility = Visibility.Visible;
+            SetPlayerContentVisibility(visible: true);
         }
         UpdateEdgeCollapseIndicator(visible: !expanding);
         _edgeAnimationTimer.Stop();
@@ -1545,7 +1944,7 @@ public partial class MainWindow : Window
         {
             _expandedEdge = 0;
             UpdateEdgeCollapseIndicator(visible: true);
-            PlayerContent.Visibility = Visibility.Collapsed;
+            SetPlayerContentVisibility(visible: false);
         }
     }
 
@@ -1556,13 +1955,15 @@ public partial class MainWindow : Window
             : Visibility.Collapsed;
         if (!visible)
         {
-            PlayerContent.Visibility = Visibility.Visible;
+            SetPlayerContentVisibility(visible: true);
             return;
         }
 
         var horizontalEdge = _floatingEdge is 3 or 4;
         EdgeCollapseIndicator.Width = horizontalEdge ? 56 : 4;
-        EdgeCollapseIndicator.Height = horizontalEdge ? 4 : 38;
+        EdgeCollapseIndicator.Height = horizontalEdge
+            ? 4
+            : _isVerticalLayout ? 72 : 38;
         EdgeCollapseIndicator.HorizontalAlignment = _floatingEdge == 1
             ? HorizontalAlignment.Right
             : _floatingEdge == 2
@@ -1581,6 +1982,20 @@ public partial class MainWindow : Window
         AlwaysOnTopMenuItem.IsChecked = _windowSettings.AlwaysOnTop;
         TaskbarHostModeMenuItem.IsChecked = _windowSettings.HostMode == WindowHostMode.Taskbar;
         FloatingWindowModeMenuItem.IsChecked = _windowSettings.HostMode == WindowHostMode.Floating;
+        AutomaticTaskbarLayoutMenuItem.IsChecked =
+            _windowSettings.LayoutMode == PlayerLayoutMode.Automatic;
+        HorizontalTaskbarLayoutMenuItem.IsChecked =
+            _windowSettings.LayoutMode == PlayerLayoutMode.Horizontal;
+        VerticalTaskbarLayoutMenuItem.IsChecked =
+            _windowSettings.LayoutMode == PlayerLayoutMode.Vertical;
+        TaskbarScale100MenuItem.IsChecked = _windowSettings.DisplayScalePercent == 100;
+        TaskbarScale110MenuItem.IsChecked = _windowSettings.DisplayScalePercent == 110;
+        TaskbarScale125MenuItem.IsChecked = _windowSettings.DisplayScalePercent == 125;
+        TaskbarScale90MenuItem.IsChecked = _windowSettings.DisplayScalePercent == 90;
+        TaskbarScale80MenuItem.IsChecked = _windowSettings.DisplayScalePercent == 80;
+        TaskbarScale70MenuItem.IsChecked = _windowSettings.DisplayScalePercent == 70;
+        TaskbarLayoutMenuItem.IsEnabled = true;
+        TaskbarScaleMenuItem.IsEnabled = true;
         AutoCollapseMenuItem.IsChecked = _windowSettings.AutoCollapse;
         EdgeAutoCollapseMenuItem.IsChecked = _windowSettings.EdgeAutoCollapse;
         EdgeAutoCollapseMenuItem.IsEnabled =
@@ -1648,6 +2063,8 @@ public partial class MainWindow : Window
             HideWhenNoMediaMenuItem.IsChecked,
             AlwaysOnTopMenuItem.IsChecked,
             _windowSettings.HostMode,
+            _windowSettings.LayoutMode,
+            _windowSettings.DisplayScalePercent,
             AutoCollapseMenuItem.IsChecked,
             EdgeAutoCollapseMenuItem.IsChecked,
             _windowSettings.FloatingLeft,
@@ -1667,6 +2084,46 @@ public partial class MainWindow : Window
 
         ApplyWindowSettings();
         PositionOverTaskbar(force: true);
+    }
+
+    private void TaskbarLayout_OnClick(object sender, RoutedEventArgs e)
+    {
+        var layout = sender == HorizontalTaskbarLayoutMenuItem
+            ? PlayerLayoutMode.Horizontal
+            : sender == VerticalTaskbarLayoutMenuItem
+                ? PlayerLayoutMode.Vertical
+                : PlayerLayoutMode.Automatic;
+        _windowSettings = _windowSettings with { LayoutMode = layout };
+        _lastTaskbarRect = null;
+        _lastPositionLeft = null;
+        _lastPositionTop = null;
+        SaveWindowSettings();
+        ApplyWindowSettings();
+        ApplyPlacementSettings();
+        PositionOverTaskbar(force: true);
+    }
+
+    private void TaskbarScale_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { Tag: string value } ||
+            !int.TryParse(value, out var scalePercent) ||
+            scalePercent is not (70 or 80 or 90 or 100 or 110 or 125))
+        {
+            return;
+        }
+
+        _windowSettings = _windowSettings with
+        {
+            DisplayScalePercent = scalePercent
+        };
+        _automaticLeft = null;
+        SaveWindowSettings();
+        ApplyWindowSettings();
+        PositionOverTaskbar(force: true);
+        if (_placementSettings.AutomaticPlacement)
+        {
+            _ = RefreshAutomaticPlacementAsync();
+        }
     }
 
     private void SaveWindowSettings(bool showError = true)
@@ -1742,6 +2199,8 @@ public partial class MainWindow : Window
         OutputDeviceHost.Visibility = enabled
             ? Visibility.Visible
             : Visibility.Collapsed;
+        VerticalOutputDeviceHost.Visibility = OutputDeviceHost.Visibility;
+        UpdatePlayerWidth(_metricSettings.SelectedCount > 0);
         if (enabled)
         {
             return;
@@ -1763,6 +2222,8 @@ public partial class MainWindow : Window
         VolumeControlHost.Visibility = enabled
             ? Visibility.Visible
             : Visibility.Collapsed;
+        VerticalVolumeControlHost.Visibility = VolumeControlHost.Visibility;
+        UpdatePlayerWidth(_metricSettings.SelectedCount > 0);
         if (enabled)
         {
             _ = RefreshCurrentMediaVolumeAsync(
@@ -2555,17 +3016,27 @@ public partial class MainWindow : Window
 
     private void ApplyPlacementSettings()
     {
-        AutomaticPlacementMenuItem.IsChecked = _placementSettings.AutomaticPlacement;
-        LockPositionMenuItem.IsChecked = _placementSettings.PositionLocked;
         var taskbarMode = _windowSettings.HostMode == WindowHostMode.Taskbar;
-        AutomaticPlacementMenuItem.IsEnabled = taskbarMode;
-        LockPositionMenuItem.IsEnabled = taskbarMode && !_placementSettings.AutomaticPlacement;
+        var automaticPlacementActive = taskbarMode &&
+            !_isVerticalLayout &&
+            _placementSettings.AutomaticPlacement;
+        var positionLockedActive = _isVerticalLayout
+            ? _placementSettings.VerticalPositionLocked
+            : _placementSettings.PositionLocked;
+        AutomaticPlacementMenuItem.IsChecked = automaticPlacementActive;
+        LockPositionMenuItem.IsChecked = positionLockedActive;
+        AutomaticPlacementMenuItem.IsEnabled = taskbarMode && !_isVerticalLayout;
+        LockPositionMenuItem.IsEnabled = taskbarMode && !automaticPlacementActive;
 
         var canDrag = _windowSettings.HostMode == WindowHostMode.Floating ||
-            (!_placementSettings.AutomaticPlacement && !_placementSettings.PositionLocked);
+            (!automaticPlacementActive && !positionLockedActive);
         var cursor = canDrag ? Cursors.SizeAll : Cursors.Hand;
         ArtworkHost.Cursor = cursor;
         InfoHost.Cursor = cursor;
+        VerticalArtworkHost.Cursor = cursor;
+        VerticalInfoHost.Cursor = cursor;
+        VerticalTitleText.Cursor = cursor;
+        VerticalArtistText.Cursor = cursor;
     }
 
     private async void AutomaticPlacement_OnClick(object sender, RoutedEventArgs e)
@@ -2616,7 +3087,12 @@ public partial class MainWindow : Window
 
     private void LockPosition_OnClick(object sender, RoutedEventArgs e)
     {
-        _placementSettings = _placementSettings with
+        _placementSettings = _isVerticalLayout
+            ? _placementSettings with
+            {
+                VerticalPositionLocked = LockPositionMenuItem.IsChecked
+            }
+            : _placementSettings with
         {
             PositionLocked = LockPositionMenuItem.IsChecked
         };
@@ -2639,7 +3115,11 @@ public partial class MainWindow : Window
 
         var taskbarRect = bounds.ScreenBounds;
         var scale = bounds.Scale;
-        return Math.Max(0, (int)Math.Round((windowRect.Left - taskbarRect.Left) / scale));
+        return Math.Max(
+            0,
+            (int)Math.Round(
+                ((_isVerticalLayout ? windowRect.Top : windowRect.Left) -
+                    (_isVerticalLayout ? taskbarRect.Top : taskbarRect.Left)) / scale));
     }
 
     private void SavePlacementSettings(bool showError = true)
@@ -2668,14 +3148,21 @@ public partial class MainWindow : Window
         MouseButtonEventArgs e)
     {
         if ((_windowSettings.HostMode == WindowHostMode.Taskbar &&
-                (_placementSettings.AutomaticPlacement || _placementSettings.PositionLocked)) ||
+                (_isVerticalLayout
+                    ? _placementSettings.VerticalPositionLocked
+                    : _placementSettings.AutomaticPlacement ||
+                        _placementSettings.PositionLocked)) ||
             e.LeftButton != MouseButtonState.Pressed)
         {
             return;
         }
 
         var position = e.GetPosition(PlayerRoot);
-        if (position.X > 44 + InfoHost.ActualWidth ||
+        var isDragArea = _isVerticalLayout
+            ? position.Y <= VerticalArtworkAreaHeight ||
+                (!_isExpanded && position.Y <= VerticalBaseHeight)
+            : position.X <= 44 + InfoHost.ActualWidth;
+        if (!isDragArea ||
             !NativeMethods.GetCursorPos(out _dragStartCursor) ||
             !NativeMethods.GetWindowRect(_windowHandle, out var windowRect))
         {
@@ -2714,7 +3201,10 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (e.GetPosition(PlayerRoot).X >= MediaSwitchAreaWidth)
+        var mediaPosition = e.GetPosition(PlayerRoot);
+        if ((!_isVerticalLayout && mediaPosition.X >= MediaSwitchAreaWidth) ||
+            (_isVerticalLayout &&
+                (mediaPosition.Y > VerticalBaseHeight || _isExpanded)))
         {
             return;
         }
@@ -2762,18 +3252,40 @@ public partial class MainWindow : Window
         {
             var taskbarRect = bounds.ScreenBounds;
             var scale = bounds.Scale;
-            var margin = (int)Math.Round(HorizontalMarginAt96Dpi * scale);
-            var playerWidth = (int)Math.Ceiling(PlayerRoot.Width * scale);
-            var left = Math.Clamp(
-                _dragStartWindowLeft + deltaX,
-                taskbarRect.Left + margin,
-                Math.Max(
-                    taskbarRect.Left + margin,
-                    taskbarRect.Right - margin - playerWidth));
-            _placementSettings = _placementSettings with
+            if (_isVerticalLayout)
             {
-                ManualOffsetDip = (int)Math.Round((left - taskbarRect.Left) / scale)
-            };
+                var margin = (int)Math.Round(VerticalMarginAt96Dpi * scale);
+                var playerHeight = (int)Math.Ceiling(
+                    PlayerRoot.Height * PlayerScaleTransform.ScaleY * scale);
+                var top = Math.Clamp(
+                    _dragStartWindowTop + deltaY,
+                    taskbarRect.Top + margin,
+                    Math.Max(
+                        taskbarRect.Top + margin,
+                        taskbarRect.Bottom - margin - playerHeight));
+                _placementSettings = _placementSettings with
+                {
+                    ManualVerticalOffsetDip = (int)Math.Round(
+                        (top - taskbarRect.Top) / scale)
+                };
+            }
+            else
+            {
+                var margin = (int)Math.Round(HorizontalMarginAt96Dpi * scale);
+                var playerWidth = (int)Math.Ceiling(
+                    PlayerRoot.Width * PlayerScaleTransform.ScaleX * scale);
+                var left = Math.Clamp(
+                    _dragStartWindowLeft + deltaX,
+                    taskbarRect.Left + margin,
+                    Math.Max(
+                        taskbarRect.Left + margin,
+                        taskbarRect.Right - margin - playerWidth));
+                _placementSettings = _placementSettings with
+                {
+                    ManualOffsetDip = (int)Math.Round(
+                        (left - taskbarRect.Left) / scale)
+                };
+            }
             PositionOverTaskbar(force: true);
         }
 

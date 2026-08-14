@@ -6,10 +6,19 @@ internal enum WindowHostMode
     Floating = 1
 }
 
+internal enum PlayerLayoutMode
+{
+    Automatic = 0,
+    Horizontal = 1,
+    Vertical = 2
+}
+
 internal readonly record struct WindowSettings(
     bool HideWhenNoMedia,
     bool AlwaysOnTop,
     WindowHostMode HostMode,
+    PlayerLayoutMode LayoutMode,
+    int DisplayScalePercent,
     bool AutoCollapse,
     bool EdgeAutoCollapse,
     int? FloatingLeft,
@@ -19,6 +28,8 @@ internal readonly record struct WindowSettings(
         false,
         false,
         WindowHostMode.Taskbar,
+        PlayerLayoutMode.Automatic,
+        100,
         true,
         false,
         null,
