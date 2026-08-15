@@ -6,10 +6,15 @@
   "mandatory": false,
   "title": "AF Media Bar 1.1.0",
   "changelog": [
-    "Windows 10 compatibility support, with continued Windows 11 support",
-    "Automatic system theme matching, independent themes, and horizontal or vertical taskbar layouts",
-    "Expanded window behavior options, automatic update checks, and fallback manifest sources",
-    "Refactored settings and taskbar window hosting, plus a context-menu z-order fix"
+    "支持 Windows 10",
+    "支持系统主题自动跟随和独立主题设置。",
+    "支持横向与竖向任务栏播放器布局。",
+    "重构设置窗口、设置菜单和任务栏窗口托管。",
+    "增加自动更新检查、备用版本清单源和跳过版本功能。",
+    "修复右键菜单层级问题。",
+    "双语社区和项目文档改进。",
+    "增加浮动窗口、边缘收起和窗口可见性选项。",
+    "蓝奏云密码：zzzz"
   ],
   "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.1.0",
   "downloads": {
