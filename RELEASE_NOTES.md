@@ -1,3 +1,4 @@
+> The English release notes are provided in the second half of this document.
 
 # AF Media Bar 1.1.0
 
