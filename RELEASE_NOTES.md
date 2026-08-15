@@ -1,3 +1,4 @@
+
 # AF Media Bar 1.1.0
 
 这是 AF Media Bar 的正式功能更新，扩展了 Windows 10/11 兼容性、任务栏布局、外观设置和窗口行为，并加入自动更新检查。
@@ -37,5 +38,8 @@
 本版本没有已确认的阻断性问题。完整安装、卸载、常见问题和隐私说明见 [README](https://github.com/Fervent-Tempo/AF-Media-Bar#readme)。
 
 ---
+
+# AF Media Bar 1.1.0
+
 
 AF Media Bar 1.1.0 is a stable feature release with Windows 10/11 support, automatic system-theme matching, horizontal and vertical taskbar layouts, expanded window behavior, redesigned settings, and update checks with fallback manifest sources. The release is self-contained for `win-x64` and does not require a separate .NET runtime. No blocking issues are currently known. See the [English README](https://github.com/Fervent-Tempo/AF-Media-Bar/blob/main/README.en-US.md) for full documentation.
