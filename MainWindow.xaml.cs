@@ -1672,27 +1672,70 @@ public partial class MainWindow : Window
         Height = PlayerRoot.Height * layoutScale;
         left ??= desktopBounds.Left + 16;
         top ??= desktopBounds.Bottom - height - 16;
-        if (_floatingEdge == 0)
+        var sizeChanged = _lastFloatingWidth > 0 &&
+            (_lastFloatingWidth != width || _lastFloatingHeight != height);
+        var anchoredEdge = _floatingEdge != 0 ? _floatingEdge : _expandedEdge;
+        if (sizeChanged)
         {
-            var sizeChanged = _lastFloatingWidth > 0 &&
-                (_lastFloatingWidth != width || _lastFloatingHeight != height);
-            if (sizeChanged)
+            force = true;
+        }
+
+        if (sizeChanged && anchoredEdge != 0)
+        {
+            // 组件改变尺寸时按新尺寸重算贴边坐标，避免右侧或底部留下旧宽高造成的空白。
+            // Re-anchor with the new size so stale width or height cannot leave gaps at the right or bottom edge.
+            var normalLeft = anchoredEdge switch
             {
-                left = _expandedEdge switch
+                1 => desktopBounds.Left,
+                2 => desktopBounds.Right - width,
+                _ => Math.Clamp(
+                    _floatingNormalLeft ?? left.Value,
+                    desktopBounds.Left,
+                    desktopBounds.Right - width)
+            };
+            var normalTop = anchoredEdge switch
+            {
+                3 => desktopBounds.Top,
+                4 => desktopBounds.Bottom - height,
+                _ => Math.Clamp(
+                    _floatingNormalTop ?? top.Value,
+                    desktopBounds.Top,
+                    desktopBounds.Bottom - height)
+            };
+
+            if (_edgeAnimationTimer.IsEnabled && _edgeAnimationHasTarget)
+            {
+                _edgeAnimationTimer.Stop();
+                _edgeAnimationHasTarget = false;
+                if (_edgeAnimationExpanding)
                 {
-                    1 => desktopBounds.Left,
-                    2 => desktopBounds.Right - width,
-                    _ => left
-                };
-                top = _expandedEdge switch
+                    _floatingEdge = 0;
+                    _expandedEdge = anchoredEdge;
+                    UpdateEdgeCollapseIndicator(visible: false);
+                }
+                else
                 {
-                    3 => desktopBounds.Top,
-                    4 => desktopBounds.Bottom - height,
-                    _ => top
-                };
-                force = true;
+                    _floatingEdge = anchoredEdge;
+                    _expandedEdge = 0;
+                    UpdateEdgeCollapseIndicator(visible: true);
+                    SetPlayerContentVisibility(visible: false);
+                }
             }
 
+            left = normalLeft;
+            top = normalTop;
+            _floatingNormalLeft = normalLeft;
+            _floatingNormalTop = normalTop;
+            _windowSettings = _windowSettings with
+            {
+                FloatingLeft = normalLeft,
+                FloatingTop = normalTop
+            };
+            SaveWindowSettings(showError: false);
+        }
+
+        if (_floatingEdge == 0)
+        {
             left = Math.Clamp(left.Value, desktopBounds.Left, desktopBounds.Right - width);
             top = Math.Clamp(top.Value, desktopBounds.Top, desktopBounds.Bottom - height);
             _floatingNormalLeft = left;

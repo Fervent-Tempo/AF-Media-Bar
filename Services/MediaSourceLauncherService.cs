@@ -14,21 +14,30 @@ internal static class MediaSourceLauncherService
     {
         var candidates = GetProcessNames(sourceId, sourceName).ToHashSet(
             StringComparer.OrdinalIgnoreCase);
+        var processIds = new HashSet<uint>();
+        var executablePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var process in Process.GetProcesses())
         {
             using (process)
             {
                 try
                 {
-                    if (process.MainWindowHandle == nint.Zero ||
-                        !candidates.Contains(process.ProcessName))
+                    if (!candidates.Contains(process.ProcessName))
                     {
                         continue;
                     }
 
-                    NativeMethods.ShowWindow(process.MainWindowHandle, NativeMethods.SwRestore);
-                    NativeMethods.SetForegroundWindow(process.MainWindowHandle);
-                    return true;
+                    processIds.Add(checked((uint)process.Id));
+                    if (TryActivateWindow(process.MainWindowHandle))
+                    {
+                        return true;
+                    }
+
+                    var executable = process.MainModule?.FileName;
+                    if (!string.IsNullOrWhiteSpace(executable) && File.Exists(executable))
+                    {
+                        executablePaths.Add(executable);
+                    }
                 }
                 catch
                 {
@@ -38,7 +47,98 @@ internal static class MediaSourceLauncherService
             }
         }
 
+        // 托盘应用的 MainWindowHandle 常为零，但隐藏的顶层窗口通常仍然存在。
+        // Tray applications often report a zero MainWindowHandle while retaining a hidden top-level window.
+        if (TryActivateWindow(FindBestTopLevelWindow(processIds)))
+        {
+            return true;
+        }
+
+        // 如果应用隐藏时销毁了窗口，重新运行其实际 EXE 可触发单实例唤醒逻辑。
+        // If the app destroys its window while hidden, starting its actual EXE can trigger single-instance activation.
+        foreach (var executable in executablePaths)
+        {
+            if (TryStartExecutable(executable))
+            {
+                return true;
+            }
+        }
+
         return TryLaunch(sourceId, sourceName);
+    }
+
+    private static nint FindBestTopLevelWindow(IReadOnlySet<uint> processIds)
+    {
+        if (processIds.Count == 0)
+        {
+            return nint.Zero;
+        }
+
+        var bestWindow = nint.Zero;
+        var bestScore = long.MinValue;
+        NativeMethods.EnumWindows((window, _) =>
+        {
+            if (NativeMethods.GetWindowThreadProcessId(window, out var processId) == 0 ||
+                !processIds.Contains(processId) ||
+                !NativeMethods.GetWindowRect(window, out var rect) ||
+                rect.Width <= 0 ||
+                rect.Height <= 0)
+            {
+                return true;
+            }
+
+            var area = (long)rect.Width * rect.Height;
+            var extendedStyle = NativeMethods.GetWindowLongPtr(
+                window,
+                NativeMethods.GwlExStyle).ToInt64();
+            var isToolWindow = (extendedStyle & NativeMethods.WsExToolWindow) != 0;
+            var score = area +
+                (isToolWindow ? 0 : 1L << 50) +
+                (NativeMethods.IsWindowVisible(window) ? 1L << 60 : 0);
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestWindow = window;
+            }
+
+            return true;
+        }, nint.Zero);
+        return bestWindow;
+    }
+
+    private static bool TryActivateWindow(nint window)
+    {
+        if (window == nint.Zero || !NativeMethods.IsWindow(window))
+        {
+            return false;
+        }
+
+        NativeMethods.ShowWindow(window, NativeMethods.SwRestore);
+        NativeMethods.SetForegroundWindow(window);
+        return true;
+    }
+
+    private static bool TryStartExecutable(string executable)
+    {
+        try
+        {
+            var startInfo = new ProcessStartInfo(executable)
+            {
+                UseShellExecute = true
+            };
+            var workingDirectory = Path.GetDirectoryName(executable);
+            if (!string.IsNullOrWhiteSpace(workingDirectory))
+            {
+                startInfo.WorkingDirectory = workingDirectory;
+            }
+
+            Process.Start(startInfo);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static IEnumerable<string> GetProcessNames(string sourceId, string sourceName)
@@ -91,12 +191,16 @@ internal static class MediaSourceLauncherService
                         Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
                         "NetEase",
                         "CloudMusic",
+                        "cloudmusic.exe"),
+                    Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "NetEase",
+                        "CloudMusic",
                         "cloudmusic.exe")
                 };
                 var executable = knownPaths.FirstOrDefault(File.Exists);
-                if (executable is not null)
+                if (executable is not null && TryStartExecutable(executable))
                 {
-                    Process.Start(new ProcessStartInfo(executable) { UseShellExecute = true });
                     return true;
                 }
             }
