@@ -1,3 +1,4 @@
+using System.IO;
 using Microsoft.Win32;
 
 namespace AFMediaBar.Services;
@@ -19,13 +20,15 @@ internal static class StartupService
         {
             using var key = Registry.CurrentUser.CreateSubKey(RunKeyPath, writable: true);
             MigrateLegacyValues(key);
-            return key.GetValue(ValueName) is string;
+            return key.GetValue(ValueName) is string value &&
+                IsCurrentExecutableRegistration(value);
         }
     }
 
     internal static void Migrate()
     {
         using var key = Registry.CurrentUser.CreateSubKey(RunKeyPath, writable: true);
+        RemoveInvalidRegistration(key);
         MigrateLegacyValues(key);
     }
 
@@ -35,9 +38,8 @@ internal static class StartupService
         DeleteLegacyValues(key);
         if (enabled)
         {
-            var executablePath = Environment.ProcessPath
-                ?? throw new InvalidOperationException("Unable to determine the application path.");
-            key.SetValue(ValueName, $"\"{executablePath}\"");
+            var executablePath = GetCurrentExecutablePath();
+            key.SetValue(ValueName, BuildRegistration(executablePath));
         }
         else
         {
@@ -61,10 +63,63 @@ internal static class StartupService
         }
 
         var executablePath = Environment.ProcessPath;
-        if (!string.IsNullOrWhiteSpace(executablePath))
+        if (!string.IsNullOrWhiteSpace(executablePath) && File.Exists(executablePath))
         {
-            key.SetValue(ValueName, $"\"{executablePath}\"");
+            key.SetValue(ValueName, BuildRegistration(Path.GetFullPath(executablePath)));
             DeleteLegacyValues(key);
         }
+    }
+
+    private static void RemoveInvalidRegistration(RegistryKey key)
+    {
+        if (key.GetValue(ValueName) is not string value ||
+            IsCurrentExecutableRegistration(value))
+        {
+            return;
+        }
+
+        key.DeleteValue(ValueName, throwOnMissingValue: false);
+        DiagnosticsLogService.Write(
+            "invalid-startup-registration-removed",
+            details: "The Run value did not match the current executable.");
+    }
+
+    private static bool IsCurrentExecutableRegistration(string value)
+    {
+        try
+        {
+            var executablePath = GetCurrentExecutablePath();
+            return string.Equals(
+                value.Trim(),
+                BuildRegistration(executablePath),
+                StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static string GetCurrentExecutablePath()
+    {
+        var executablePath = Environment.ProcessPath;
+        if (string.IsNullOrWhiteSpace(executablePath))
+        {
+            throw new InvalidOperationException("Unable to determine the application path.");
+        }
+
+        executablePath = Path.GetFullPath(executablePath);
+        if (!File.Exists(executablePath) ||
+            !string.Equals(Path.GetExtension(executablePath), ".exe", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("The application executable path is invalid.");
+        }
+
+        return executablePath;
+    }
+
+    private static string BuildRegistration(string executablePath)
+    {
+        return $"\"{executablePath}\"";
     }
 }

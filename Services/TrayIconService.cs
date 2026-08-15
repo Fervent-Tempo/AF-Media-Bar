@@ -64,7 +64,7 @@ internal sealed class TrayIconService : IDisposable
         {
             _isAdded = false;
             AddIcon();
-            ShellRestarted?.Invoke(this, EventArgs.Empty);
+            InvokeSafely(ShellRestarted, "tray-shell-restarted");
             return nint.Zero;
         }
 
@@ -76,18 +76,30 @@ internal sealed class TrayIconService : IDisposable
         var notification = (int)(lParam.ToInt64() & 0xFFFF);
         if (notification is NativeMethods.WmContextMenu or NativeMethods.WmRightButtonUp)
         {
-            ContextMenuRequested?.Invoke(this, EventArgs.Empty);
+            InvokeSafely(ContextMenuRequested, "tray-context-menu");
             handled = true;
             return nint.Zero;
         }
 
         if (notification == NativeMethods.WmLeftButtonDoubleClick)
         {
-            DoubleClicked?.Invoke(this, EventArgs.Empty);
+            InvokeSafely(DoubleClicked, "tray-double-click");
             handled = true;
         }
 
         return nint.Zero;
+    }
+
+    private void InvokeSafely(EventHandler? handler, string category)
+    {
+        try
+        {
+            handler?.Invoke(this, EventArgs.Empty);
+        }
+        catch (Exception exception)
+        {
+            DiagnosticsLogService.Write(category, exception);
+        }
     }
 
     internal void UpdateTooltip(string tooltip)

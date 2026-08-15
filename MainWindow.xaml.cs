@@ -45,6 +45,9 @@ public partial class MainWindow : Window
     private const int EdgeActivationDistance = 72;
     private const int EdgeActivationSpanPadding = 80;
     private const int EdgeAnimationDurationMilliseconds = 180;
+    private const int EnvironmentRecoveryDelayMilliseconds = 900;
+    private const int EnvironmentRecoveryRetryMilliseconds = 600;
+    private const int EnvironmentRecoveryMaxAttempts = 8;
 
     private readonly MediaSessionService _mediaSessionService = new();
     private readonly SystemMetricsService _systemMetricsService = new();
@@ -65,6 +68,7 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _volumePopupCloseTimer;
     private readonly DispatcherTimer _edgeAnimationTimer;
     private readonly DispatcherTimer _edgeHoverTimer;
+    private readonly DispatcherTimer _environmentRecoveryTimer;
     private MetricSettings _metricSettings;
     private WindowSettings _windowSettings;
     private PlacementSettings _placementSettings;
@@ -119,6 +123,13 @@ public partial class MainWindow : Window
     private bool _volumeWheelUsesCompactStatus;
     private bool _showingOutputDeviceHoverStatus;
     private bool _showingVolumeHoverStatus;
+    private bool _powerSuspended;
+    private bool _sessionLocked;
+    private bool _environmentRecoveryRunning;
+    private bool _sessionNotificationRegistered;
+    private bool _isClosed;
+    private int _environmentRecoveryAttempts;
+    private string _environmentRecoveryReason = string.Empty;
     private readonly float[] _audioSpectrum = new float[AudioMonitorService.BandCount];
     private readonly float[] _smoothedAudioSpectrum = new float[AudioMonitorService.BandCount];
     private Border[] _audioBars = null!;
@@ -136,6 +147,8 @@ public partial class MainWindow : Window
     private DateTime _edgeAnimationStarted;
     private bool _edgeAnimationExpanding;
     private bool _edgeAnimationHasTarget;
+
+    private bool IsEnvironmentSuspended => _powerSuspended || _sessionLocked;
 
     public MainWindow()
     {
@@ -236,6 +249,12 @@ public partial class MainWindow : Window
             OnEdgeHoverTimerTick,
             Dispatcher);
         _edgeHoverTimer.Start();
+        _environmentRecoveryTimer = new DispatcherTimer(
+            TimeSpan.FromMilliseconds(EnvironmentRecoveryDelayMilliseconds),
+            DispatcherPriority.Background,
+            OnEnvironmentRecoveryTimerTick,
+            Dispatcher);
+        _environmentRecoveryTimer.Stop();
 
         _mediaSessionService.SnapshotChanged += OnSnapshotChanged;
         _mediaSessionService.SessionsChanged += OnSessionsChanged;
@@ -257,9 +276,25 @@ public partial class MainWindow : Window
             _windowHandle,
             NativeMethods.GwlExStyle,
             new nint(extendedStyle));
+        if (NativeMethods.GetWindowLongPtr(
+                _windowHandle,
+                NativeMethods.GwlExStyle).ToInt64() != extendedStyle)
+        {
+            DiagnosticsLogService.Write("window-style-update-failed");
+        }
 
         _windowSource = HwndSource.FromHwnd(_windowHandle);
         _windowSource?.AddHook(WindowMessageHook);
+        _sessionNotificationRegistered = NativeMethods.WtsRegisterSessionNotification(
+            _windowHandle,
+            NativeMethods.NotifyForThisSession);
+        if (!_sessionNotificationRegistered)
+        {
+            DiagnosticsLogService.Write(
+                "session-notification-registration-failed",
+                details: $"Win32={System.Runtime.InteropServices.Marshal.GetLastWin32Error()}");
+        }
+
         _taskbarHostService = new TaskbarHostService(_windowHandle);
         _trayIconService = new TrayIconService();
         _trayIconService.ContextMenuRequested += TrayIcon_OnContextMenuRequested;
@@ -277,18 +312,21 @@ public partial class MainWindow : Window
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
-        _ = Dispatcher.BeginInvoke(
-            DispatcherPriority.ApplicationIdle,
-            () => PositionOverTaskbar(force: true));
-        _positionTimer.Start();
-        if (_placementSettings.AutomaticPlacement)
+        try
         {
-            _placementTimer.Start();
+            _ = Dispatcher.BeginInvoke(
+                DispatcherPriority.ApplicationIdle,
+                () => PositionOverTaskbar(force: true));
+            ResumeEnvironmentSensitiveTimers();
+            UpdateMetrics(advanceCycle: false);
+            SetExpanded(expanded: false, animate: false);
+            await RefreshAutomaticPlacementAsync();
         }
-        _metricsTimer.Start();
-        UpdateMetrics(advanceCycle: false);
-        SetExpanded(expanded: false, animate: false);
-        await RefreshAutomaticPlacementAsync();
+        catch (Exception exception)
+        {
+            DiagnosticsLogService.Write("main-window-load", exception);
+            ScheduleEnvironmentRecovery("window-load-failure");
+        }
 
         try
         {
@@ -304,6 +342,7 @@ public partial class MainWindow : Window
     {
         // 顺序很重要：先停止回调源，再解除宿主/钩子，最后释放 COM 与服务。
         // Order matters: stop callback sources, detach the host/hooks, then dispose services.
+        _isClosed = true;
         _positionTimer.Stop();
         _placementTimer.Stop();
         _metricsTimer.Stop();
@@ -315,6 +354,7 @@ public partial class MainWindow : Window
         _volumePopupCloseTimer.Stop();
         _edgeAnimationTimer.Stop();
         _edgeHoverTimer.Stop();
+        _environmentRecoveryTimer.Stop();
         _audioMonitorService?.Dispose();
         _audioMonitorService = null;
         _taskbarEventWatcher?.Dispose();
@@ -322,6 +362,11 @@ public partial class MainWindow : Window
         _trayIconService?.Dispose();
         _taskbarHostService?.Dispose();
         _taskbarHostService = null;
+        if (_sessionNotificationRegistered && _windowHandle != nint.Zero)
+        {
+            NativeMethods.WtsUnRegisterSessionNotification(_windowHandle);
+            _sessionNotificationRegistered = false;
+        }
         _windowSource?.RemoveHook(WindowMessageHook);
         _mediaSessionService.Dispose();
         _systemMetricsService.Dispose();
@@ -406,7 +451,7 @@ public partial class MainWindow : Window
             if (_placementSettings.AutomaticPlacement)
             {
                 _placementTimer.Start();
-                _ = RefreshAutomaticPlacementAsync();
+                _ = RefreshAutomaticPlacementSafelyAsync();
             }
             else
             {
@@ -419,49 +464,85 @@ public partial class MainWindow : Window
 
     private void OnPositionTimerTick(object? sender, EventArgs e)
     {
-        if (_windowSettings.HostMode == WindowHostMode.Taskbar)
-        {
-            RefreshTaskbarSettings();
-        }
-
-        UpdateFloatingEdgeCollapse();
-        PositionOverTaskbar(force: false);
-    }
-
-    private async void OnPlacementTimerTick(object? sender, EventArgs e)
-    {
-        await RefreshAutomaticPlacementAsync();
-    }
-
-    private void Taskbar_OnChanged(TaskbarWindowEvent taskbarEvent)
-    {
-        if (_windowSettings.HostMode != WindowHostMode.Taskbar)
+        if (IsEnvironmentSuspended || _environmentRecoveryTimer.IsEnabled)
         {
             return;
         }
 
-        RefreshTaskbarSettings();
-        if (TryGetTaskbarBounds(out var bounds))
+        try
         {
-            var sizeChanged = !_lastTaskbarRect.HasValue ||
-                _lastTaskbarRect.Value.Width != bounds.ScreenBounds.Width ||
-                _lastTaskbarRect.Value.Height != bounds.ScreenBounds.Height;
-            if (_placementSettings.AutomaticPlacement && sizeChanged)
+            if (_windowSettings.HostMode == WindowHostMode.Taskbar)
             {
-                _automaticLeft = null;
-                _ = RefreshAutomaticPlacementAsync();
+                RefreshTaskbarSettings();
             }
 
-            // Vertical location changes are inherited from the Explorer parent.
-            // Repositioning the child during that animation would reintroduce the lag.
-            if (taskbarEvent.EventId == NativeMethods.EventObjectLocationChange &&
-                !sizeChanged)
+            UpdateFloatingEdgeCollapse();
+            PositionOverTaskbar(force: false);
+        }
+        catch (Exception exception)
+        {
+            DiagnosticsLogService.Write("position-timer", exception);
+            ScheduleEnvironmentRecovery("position-timer-failure");
+        }
+    }
+
+    private async void OnPlacementTimerTick(object? sender, EventArgs e)
+    {
+        if (IsEnvironmentSuspended || _environmentRecoveryTimer.IsEnabled)
+        {
+            return;
+        }
+
+        try
+        {
+            await RefreshAutomaticPlacementAsync();
+        }
+        catch (Exception exception)
+        {
+            DiagnosticsLogService.Write("placement-timer", exception);
+            ScheduleEnvironmentRecovery("placement-timer-failure");
+        }
+    }
+
+    private void Taskbar_OnChanged(TaskbarWindowEvent taskbarEvent)
+    {
+        try
+        {
+            if (IsEnvironmentSuspended ||
+                _environmentRecoveryTimer.IsEnabled ||
+                _windowSettings.HostMode != WindowHostMode.Taskbar)
             {
                 return;
             }
-        }
 
-        PositionOverTaskbar(force: true);
+            RefreshTaskbarSettings();
+            if (TryGetTaskbarBounds(out var bounds))
+            {
+                var sizeChanged = !_lastTaskbarRect.HasValue ||
+                    _lastTaskbarRect.Value.Width != bounds.ScreenBounds.Width ||
+                    _lastTaskbarRect.Value.Height != bounds.ScreenBounds.Height;
+                if (_placementSettings.AutomaticPlacement && sizeChanged)
+                {
+                    _automaticLeft = null;
+                    _ = RefreshAutomaticPlacementSafelyAsync();
+                }
+
+                // Vertical location changes are inherited from the Explorer parent.
+                // Repositioning the child during that animation would reintroduce the lag.
+                if (taskbarEvent.EventId == NativeMethods.EventObjectLocationChange &&
+                    !sizeChanged)
+                {
+                    return;
+                }
+            }
+
+            PositionOverTaskbar(force: true);
+        }
+        catch (Exception exception)
+        {
+            DiagnosticsLogService.Write("taskbar-event", exception);
+            ScheduleEnvironmentRecovery("taskbar-event-failure");
+        }
     }
 
     private void RefreshTaskbarSettings()
@@ -485,7 +566,7 @@ public partial class MainWindow : Window
             PositionOverTaskbar(force: true);
             if (_placementSettings.AutomaticPlacement)
             {
-                _ = RefreshAutomaticPlacementAsync();
+                _ = RefreshAutomaticPlacementSafelyAsync();
             }
         }
         else
@@ -501,6 +582,19 @@ public partial class MainWindow : Window
     }
 
     private void PositionOverTaskbar(bool force)
+    {
+        try
+        {
+            PositionOverTaskbarCore(force);
+        }
+        catch (Exception exception)
+        {
+            DiagnosticsLogService.Write("window-position", exception);
+            ScheduleEnvironmentRecovery("window-position-failure");
+        }
+    }
+
+    private void PositionOverTaskbarCore(bool force)
     {
         if (_windowHandle == nint.Zero)
         {
@@ -606,7 +700,7 @@ public partial class MainWindow : Window
             desiredLeft ??= _lastPositionLeft;
             if (!desiredLeft.HasValue)
             {
-                _ = RefreshAutomaticPlacementAsync();
+                _ = RefreshAutomaticPlacementSafelyAsync();
                 return;
             }
 
@@ -629,13 +723,21 @@ public partial class MainWindow : Window
         _lastTaskbarRect = taskbarRect;
         _lastPositionLeft = left;
         _lastPositionTop = top;
-        _taskbarHostService?.Position(
-            left,
-            top,
-            width,
-            height,
-            visible: true,
-            topmost: _windowSettings.AlwaysOnTop);
+        if (_taskbarHostService?.Position(
+                left,
+                top,
+                width,
+                height,
+                visible: true,
+                topmost: _windowSettings.AlwaysOnTop) != true)
+        {
+            DiagnosticsLogService.Write(
+                "taskbar-window-position-failed",
+                details: $"Left={left};Top={top};Width={width};Height={height}");
+            ScheduleEnvironmentRecovery("taskbar-window-position-failure");
+            return;
+        }
+
         RevealAfterPlacement();
     }
 
@@ -869,7 +971,7 @@ public partial class MainWindow : Window
                 !_isMenuOpen &&
                 Interlocked.Exchange(ref _placementRefreshRequested, 0) != 0)
             {
-                _ = RefreshAutomaticPlacementAsync();
+                _ = RefreshAutomaticPlacementSafelyAsync();
             }
         }
     }
@@ -1595,7 +1697,7 @@ public partial class MainWindow : Window
         }
 
         ApplyAudioMonitorSettings();
-        _ = RefreshAutomaticPlacementAsync();
+        _ = RefreshAutomaticPlacementSafelyAsync();
     }
 
     private void PositionFloatingWindow(bool force)
@@ -1781,20 +1883,31 @@ public partial class MainWindow : Window
             force = true;
         }
 
-        _taskbarHostService.SetFloating(true);
+        if (!_taskbarHostService.SetFloating(true))
+        {
+            DiagnosticsLogService.Write("floating-window-detach-failed");
+            ScheduleEnvironmentRecovery("floating-window-detach-failure");
+            return;
+        }
+
         Topmost = _windowSettings.AlwaysOnTop;
         if (!_edgeAnimationTimer.IsEnabled &&
             (force || _lastPositionLeft != left || _lastPositionTop != top))
         {
             _lastPositionLeft = left;
             _lastPositionTop = top;
-            _taskbarHostService.Position(
-                left.Value,
-                top.Value,
-                width,
-                height,
-                visible: true,
-                topmost: _windowSettings.AlwaysOnTop);
+            if (!_taskbarHostService.Position(
+                    left.Value,
+                    top.Value,
+                    width,
+                    height,
+                    visible: true,
+                    topmost: _windowSettings.AlwaysOnTop))
+            {
+                DiagnosticsLogService.Write("floating-window-position-failed");
+                ScheduleEnvironmentRecovery("floating-window-position-failure");
+                return;
+            }
         }
 
         RevealAfterPlacement();
@@ -2008,14 +2121,21 @@ public partial class MainWindow : Window
             (_edgeAnimationTo.Left - _edgeAnimationFrom.Left) * eased);
         var top = (int)Math.Round(_edgeAnimationFrom.Top +
             (_edgeAnimationTo.Top - _edgeAnimationFrom.Top) * eased);
-        _taskbarHostService.Position(
-            left,
-            top,
-            _edgeAnimationTo.Width,
-            _edgeAnimationTo.Height,
-            visible: true,
-            topmost: _windowSettings.AlwaysOnTop,
-            refresh: false);
+        if (!_taskbarHostService.Position(
+                left,
+                top,
+                _edgeAnimationTo.Width,
+                _edgeAnimationTo.Height,
+                visible: true,
+                topmost: _windowSettings.AlwaysOnTop,
+                refresh: false))
+        {
+            _edgeAnimationTimer.Stop();
+            _edgeAnimationHasTarget = false;
+            DiagnosticsLogService.Write("edge-animation-position-failed");
+            ScheduleEnvironmentRecovery("edge-animation-position-failure");
+            return;
+        }
         _lastPositionLeft = left;
         _lastPositionTop = top;
 
@@ -2071,7 +2191,16 @@ public partial class MainWindow : Window
 
     private void ApplyWindowSettings()
     {
-        _taskbarHostService?.SetFloating(_windowSettings.HostMode == WindowHostMode.Floating);
+        if (_taskbarHostService is not null &&
+            !_taskbarHostService.SetFloating(
+                _windowSettings.HostMode == WindowHostMode.Floating))
+        {
+            DiagnosticsLogService.Write(
+                "window-host-transition-failed",
+                details: _windowSettings.HostMode.ToString());
+            ScheduleEnvironmentRecovery("window-host-transition-failure");
+        }
+
         Topmost = _windowSettings.AlwaysOnTop;
         if (!_windowSettings.AutoCollapse)
         {
@@ -3289,20 +3418,156 @@ public partial class MainWindow : Window
 
     private void TrayIcon_OnShellRestarted(object? sender, EventArgs e)
     {
-        _lastTaskbarRect = null;
-        _lastPositionLeft = null;
-        _lastPositionTop = null;
-        _automaticLeft = null;
-        _ = Dispatcher.BeginInvoke(
-            DispatcherPriority.ApplicationIdle,
-            () =>
+        ScheduleEnvironmentRecovery("explorer-restarted");
+    }
+
+    private void PauseEnvironmentSensitiveTimers()
+    {
+        _positionTimer.Stop();
+        _placementTimer.Stop();
+        _metricsTimer.Stop();
+        _audioMonitorTimer.Stop();
+        _collapseTimer.Stop();
+        _marqueeTimer.Stop();
+        _edgeAnimationTimer.Stop();
+        _edgeHoverTimer.Stop();
+        _edgeAnimationHasTarget = false;
+        StopMarquees();
+        _audioMonitorService?.ResetAfterEnvironmentChange();
+    }
+
+    private void ResumeEnvironmentSensitiveTimers()
+    {
+        if (_isClosed ||
+            !IsLoaded ||
+            IsEnvironmentSuspended ||
+            _environmentRecoveryTimer.IsEnabled)
+        {
+            return;
+        }
+
+        _positionTimer.Start();
+        if (_placementSettings.AutomaticPlacement)
+        {
+            _placementTimer.Start();
+        }
+
+        _metricsTimer.Start();
+        _edgeHoverTimer.Start();
+        if (_metricSettings.AudioMonitorEnabled)
+        {
+            _audioMonitorService ??= new AudioMonitorService();
+            _audioMonitorTimer.Start();
+        }
+
+        ScheduleMarqueeUpdate();
+    }
+
+    private void ScheduleEnvironmentRecovery(string reason)
+    {
+        if (_isClosed || Dispatcher.HasShutdownStarted)
+        {
+            return;
+        }
+
+        if (!_environmentRecoveryRunning && !_environmentRecoveryTimer.IsEnabled)
+        {
+            _environmentRecoveryAttempts = 0;
+        }
+
+        _environmentRecoveryReason = reason;
+        PauseEnvironmentSensitiveTimers();
+        _environmentRecoveryTimer.Stop();
+        _environmentRecoveryTimer.Interval =
+            TimeSpan.FromMilliseconds(EnvironmentRecoveryDelayMilliseconds);
+        _environmentRecoveryTimer.Start();
+    }
+
+    private void OnEnvironmentRecoveryTimerTick(object? sender, EventArgs e)
+    {
+        _environmentRecoveryTimer.Stop();
+        if (_isClosed || IsEnvironmentSuspended)
+        {
+            return;
+        }
+
+        _environmentRecoveryRunning = true;
+        try
+        {
+            _environmentRecoveryAttempts++;
+            _lastTaskbarRect = null;
+            _lastPositionLeft = null;
+            _lastPositionTop = null;
+            _automaticLeft = null;
+            _audioMonitorService?.ResetAfterEnvironmentChange();
+
+            if (_windowSettings.HostMode == WindowHostMode.Taskbar)
             {
-                PositionOverTaskbar(force: true);
-                if (_placementSettings.AutomaticPlacement)
+                RefreshTaskbarSettings();
+                if (_taskbarHostService?.SetFloating(floating: false) != true ||
+                    !TryGetTaskbarBounds(out _))
                 {
-                    _ = RefreshAutomaticPlacementAsync();
+                    RetryEnvironmentRecovery();
+                    return;
                 }
-            });
+            }
+
+            PositionOverTaskbar(force: true);
+            if (_environmentRecoveryTimer.IsEnabled)
+            {
+                return;
+            }
+
+            ResumeEnvironmentSensitiveTimers();
+            if (_placementSettings.AutomaticPlacement)
+            {
+                _ = RefreshAutomaticPlacementSafelyAsync();
+            }
+
+            DiagnosticsLogService.Write(
+                "environment-recovery-completed",
+                details: $"Reason={_environmentRecoveryReason};Attempts={_environmentRecoveryAttempts}");
+        }
+        catch (Exception exception)
+        {
+            DiagnosticsLogService.Write(
+                "environment-recovery-failed",
+                exception,
+                $"Reason={_environmentRecoveryReason};Attempts={_environmentRecoveryAttempts}");
+            RetryEnvironmentRecovery();
+        }
+        finally
+        {
+            _environmentRecoveryRunning = false;
+        }
+    }
+
+    private void RetryEnvironmentRecovery()
+    {
+        if (_environmentRecoveryAttempts >= EnvironmentRecoveryMaxAttempts)
+        {
+            DiagnosticsLogService.Write(
+                "environment-recovery-exhausted",
+                details: $"Reason={_environmentRecoveryReason};Attempts={_environmentRecoveryAttempts}");
+            ResumeEnvironmentSensitiveTimers();
+            return;
+        }
+
+        _environmentRecoveryTimer.Interval =
+            TimeSpan.FromMilliseconds(EnvironmentRecoveryRetryMilliseconds);
+        _environmentRecoveryTimer.Start();
+    }
+
+    private async Task RefreshAutomaticPlacementSafelyAsync()
+    {
+        try
+        {
+            await RefreshAutomaticPlacementAsync();
+        }
+        catch (Exception exception)
+        {
+            DiagnosticsLogService.Write("automatic-placement-refresh", exception);
+        }
     }
 
     private async void Previous_OnClick(object sender, RoutedEventArgs e)
@@ -3328,6 +3593,17 @@ public partial class MainWindow : Window
     internal void RequestMediaReconnect()
     {
         _ = RunMediaCommandAsync(_mediaSessionService.ReconnectAsync);
+    }
+
+    internal void RequestEnvironmentRecovery(string reason)
+    {
+        if (Dispatcher.CheckAccess())
+        {
+            ScheduleEnvironmentRecovery(reason);
+            return;
+        }
+
+        _ = Dispatcher.BeginInvoke(() => ScheduleEnvironmentRecovery(reason));
     }
 
     private async Task RunMediaCommandAsync(Func<Task> command)
@@ -3397,6 +3673,47 @@ public partial class MainWindow : Window
         IntPtr lParam,
         ref bool handled)
     {
+        if (message == NativeMethods.WmPowerBroadcast)
+        {
+            var powerEvent = wParam.ToInt32();
+            if (powerEvent == NativeMethods.PbtApmSuspend)
+            {
+                _powerSuspended = true;
+                PauseEnvironmentSensitiveTimers();
+                DiagnosticsLogService.Write("system-suspend");
+            }
+            else if (powerEvent is NativeMethods.PbtApmResumeAutomatic or
+                NativeMethods.PbtApmResumeSuspend)
+            {
+                _powerSuspended = false;
+                ScheduleEnvironmentRecovery("system-resume");
+            }
+        }
+        else if (message == NativeMethods.WmWtsSessionChange)
+        {
+            var sessionEvent = wParam.ToInt32();
+            if (sessionEvent == NativeMethods.WtsSessionLock)
+            {
+                _sessionLocked = true;
+                PauseEnvironmentSensitiveTimers();
+                DiagnosticsLogService.Write("session-locked");
+            }
+            else if (sessionEvent == NativeMethods.WtsSessionUnlock)
+            {
+                _sessionLocked = false;
+                ScheduleEnvironmentRecovery("session-unlocked");
+            }
+        }
+        else if (message is NativeMethods.WmDisplayChange or NativeMethods.WmDpiChanged)
+        {
+            ScheduleEnvironmentRecovery(
+                message == NativeMethods.WmDpiChanged ? "dpi-changed" : "display-changed");
+        }
+        else if (message == NativeMethods.WmDeviceChange)
+        {
+            ScheduleEnvironmentRecovery("device-changed");
+        }
+
         if (message == NativeMethods.WmNcHitTest)
         {
             handled = true;

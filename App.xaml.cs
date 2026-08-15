@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Threading;
 using System.Windows;
+using System.Windows.Threading;
 using AFMediaBar.Interop;
 using AFMediaBar.Models;
 using AFMediaBar.Services;
@@ -25,6 +26,7 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        RegisterExceptionHandlers();
         _singleInstanceMutex = new Mutex(true, "AFMediaBar.SingleInstance", out var isFirstInstance);
         if (!isFirstInstance)
         {
@@ -39,9 +41,10 @@ public partial class App : Application
         {
             StartupService.Migrate();
         }
-        catch
+        catch (Exception exception)
         {
             // A locked Run key must not prevent the application from starting.
+            DiagnosticsLogService.Write("startup-registration-migration", exception);
         }
 
         SettingsCoordinator = new SettingsCoordinator();
@@ -84,6 +87,10 @@ public partial class App : Application
 
                 MainWindow?.Close();
                 ShowMainWindow();
+            }
+            catch (Exception exception)
+            {
+                DiagnosticsLogService.Write("main-window-recreation", exception);
             }
             finally
             {
@@ -301,6 +308,61 @@ public partial class App : Application
         {
             // Application shutdown cancels a pending Explorer recovery.
         }
+        catch (Exception exception)
+        {
+            DiagnosticsLogService.Write("main-window-recovery", exception);
+        }
+    }
+
+    private void RegisterExceptionHandlers()
+    {
+        DispatcherUnhandledException += App_OnDispatcherUnhandledException;
+        TaskScheduler.UnobservedTaskException += App_OnUnobservedTaskException;
+        AppDomain.CurrentDomain.UnhandledException += AppDomain_OnUnhandledException;
+    }
+
+    private void UnregisterExceptionHandlers()
+    {
+        DispatcherUnhandledException -= App_OnDispatcherUnhandledException;
+        TaskScheduler.UnobservedTaskException -= App_OnUnobservedTaskException;
+        AppDomain.CurrentDomain.UnhandledException -= AppDomain_OnUnhandledException;
+    }
+
+    private void App_OnDispatcherUnhandledException(
+        object sender,
+        DispatcherUnhandledExceptionEventArgs e)
+    {
+        DiagnosticsLogService.Write("dispatcher-unhandled", e.Exception);
+        if (e.Exception is OutOfMemoryException or
+            StackOverflowException or
+            AccessViolationException)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        if (!_shutdownRequested && MainWindow is MainWindow window)
+        {
+            window.RequestEnvironmentRecovery("dispatcher-unhandled");
+        }
+    }
+
+    private static void App_OnUnobservedTaskException(
+        object? sender,
+        UnobservedTaskExceptionEventArgs e)
+    {
+        DiagnosticsLogService.Write("task-unobserved", e.Exception);
+        e.SetObserved();
+    }
+
+    private static void AppDomain_OnUnhandledException(
+        object sender,
+        UnhandledExceptionEventArgs e)
+    {
+        DiagnosticsLogService.Write(
+            "appdomain-unhandled",
+            e.ExceptionObject as Exception,
+            $"Terminating={e.IsTerminating}");
     }
 
     protected override void OnSessionEnding(SessionEndingCancelEventArgs e)
@@ -319,6 +381,7 @@ public partial class App : Application
         _updateService?.Dispose();
         _systemThemeService?.Dispose();
         _singleInstanceMutex?.Dispose();
+        UnregisterExceptionHandlers();
         base.OnExit(e);
     }
 }

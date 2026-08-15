@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Text;
 using AFMediaBar.Interop;
 using AFMediaBar.Models;
 
@@ -32,7 +34,7 @@ internal sealed class TaskbarHostService : IDisposable
 
     internal bool SetFloating(bool floating)
     {
-        if (_disposed || _window == nint.Zero)
+        if (_disposed || _window == nint.Zero || !NativeMethods.IsWindow(_window))
         {
             return false;
         }
@@ -42,19 +44,17 @@ internal sealed class TaskbarHostService : IDisposable
         {
             TaskbarHandle = nint.Zero;
             IsEmbedded = false;
-            IsFloating = false;
             return false;
         }
 
-        var actualParent = NativeMethods.GetWindowLongPtr(
-            _window,
-            NativeMethods.GwlpHwndParent);
-        var actualStyle = NativeMethods.GetWindowLongPtr(
-            _window,
-            NativeMethods.GwlStyle).ToInt64();
+        var actualParent = NativeMethods.GetWindowLongPtr(_window, NativeMethods.GwlpHwndParent);
+        var actualStyle = NativeMethods.GetWindowLongPtr(_window, NativeMethods.GwlStyle).ToInt64();
+        var expectedStyle = floating
+            ? _originalStyle
+            : (_originalStyle & ~NativeMethods.WsPopup) | NativeMethods.WsChild;
         if (floating &&
             actualParent == _originalParent &&
-            (actualStyle & NativeMethods.WsChild) == 0)
+            actualStyle == expectedStyle)
         {
             IsFloating = true;
             TaskbarHandle = nint.Zero;
@@ -62,53 +62,68 @@ internal sealed class TaskbarHostService : IDisposable
             return true;
         }
 
-        if (IsFloating == floating && actualParent == expectedParent)
+        if (IsFloating == floating &&
+            actualParent == expectedParent &&
+            actualStyle == expectedStyle)
         {
             TaskbarHandle = floating ? nint.Zero : expectedParent;
             IsEmbedded = !floating;
             return true;
         }
 
+        // 保存当前状态，以便原生调用失败时完整回滚。
+        // Capture the current state so a failed native transition can be rolled back.
+        var previousParent = actualParent;
+        var previousStyle = actualStyle;
+        var previousTaskbarHandle = TaskbarHandle;
+        var previousEmbedded = IsEmbedded;
+        var previousFloating = IsFloating;
         NativeMethods.ShowWindow(_window, NativeMethods.SwHide);
         NativeMethods.SetWindowRgn(_window, nint.Zero, redraw: false);
 
         if (floating)
         {
-            NativeMethods.SetParent(_window, nint.Zero);
-            NativeMethods.SetWindowLongPtr(
-                _window,
-                NativeMethods.GwlStyle,
-                new nint(_originalStyle));
-            NativeMethods.SetWindowLongPtr(
-                _window,
-                NativeMethods.GwlpHwndParent,
-                _originalParent);
+            if (!TrySetWindowState(_originalParent, _originalStyle))
+            {
+                RestoreWindowState(previousParent, previousStyle);
+                return false;
+            }
+
             TaskbarHandle = nint.Zero;
             IsEmbedded = false;
         }
         else
         {
-            TaskbarHandle = expectedParent;
-            var childStyle = (_originalStyle & ~NativeMethods.WsPopup) |
-                NativeMethods.WsChild;
-            NativeMethods.SetWindowLongPtr(
-                _window,
-                NativeMethods.GwlStyle,
-                new nint(childStyle));
-            NativeMethods.SetParent(_window, TaskbarHandle);
-            IsEmbedded = NativeMethods.GetWindowLongPtr(
-                _window,
-                NativeMethods.GwlpHwndParent) == TaskbarHandle;
-            if (!IsEmbedded)
+            if (!TrySetWindowState(expectedParent, expectedStyle))
             {
-                RestoreTopLevelStyle(_originalParent);
+                RestoreWindowState(previousParent, previousStyle);
                 TaskbarHandle = nint.Zero;
+                IsEmbedded = false;
                 return false;
             }
+
+            if (!IsValidTaskbar(expectedParent))
+            {
+                RestoreWindowState(previousParent, previousStyle);
+                TaskbarHandle = nint.Zero;
+                IsEmbedded = false;
+                return false;
+            }
+
+            TaskbarHandle = expectedParent;
+            IsEmbedded = true;
         }
 
         IsFloating = floating;
-        RefreshFrame();
+        if (!RefreshFrame())
+        {
+            RestoreWindowState(previousParent, previousStyle);
+            TaskbarHandle = previousTaskbarHandle;
+            IsEmbedded = previousEmbedded;
+            IsFloating = previousFloating;
+            return false;
+        }
+
         return true;
     }
 
@@ -120,7 +135,7 @@ internal sealed class TaskbarHostService : IDisposable
         }
 
         var taskbar = FindTaskbar();
-        if (taskbar == nint.Zero || !NativeMethods.IsWindow(taskbar))
+        if (taskbar == nint.Zero || !IsValidTaskbar(taskbar))
         {
             TaskbarHandle = nint.Zero;
             IsEmbedded = false;
@@ -140,7 +155,7 @@ internal sealed class TaskbarHostService : IDisposable
     private static nint FindTaskbar()
     {
         var taskbar = NativeMethods.FindWindow("Shell_TrayWnd", null);
-        return taskbar != nint.Zero && NativeMethods.IsWindow(taskbar)
+        return IsValidTaskbar(taskbar)
             ? taskbar
             : nint.Zero;
     }
@@ -154,7 +169,7 @@ internal sealed class TaskbarHostService : IDisposable
         }
 
         var taskbar = TaskbarHandle;
-        if (taskbar == nint.Zero || !NativeMethods.IsWindow(taskbar))
+        if (taskbar == nint.Zero || !IsValidTaskbar(taskbar))
         {
             return false;
         }
@@ -209,8 +224,13 @@ internal sealed class TaskbarHostService : IDisposable
         var x = screenLeft;
         var y = screenTop;
         var insertAfter = topmost ? NativeMethods.HwndTopmost : NativeMethods.HwndTop;
-        if (!IsFloating && EnsureAttached())
+        if (!IsFloating)
         {
+            if (!EnsureAttached())
+            {
+                return false;
+            }
+
             var clientPoint = new NativeMethods.Point { X = screenLeft, Y = screenTop };
             if (!NativeMethods.ScreenToClient(TaskbarHandle, ref clientPoint))
             {
@@ -222,9 +242,9 @@ internal sealed class TaskbarHostService : IDisposable
             insertAfter = NativeMethods.HwndTop;
         }
 
-        if (refresh)
+        if (refresh && !ApplyInputRegion(width, height))
         {
-            ApplyInputRegion(width, height);
+            return false;
         }
         var flags = NativeMethods.SwpNoActivate;
         if (IsFloating && !topmost)
@@ -253,9 +273,9 @@ internal sealed class TaskbarHostService : IDisposable
         return positioned;
     }
 
-    private void RefreshFrame()
+    private bool RefreshFrame()
     {
-        NativeMethods.SetWindowPos(
+        return NativeMethods.SetWindowPos(
             _window,
             NativeMethods.HwndTop,
             0,
@@ -287,31 +307,87 @@ internal sealed class TaskbarHostService : IDisposable
                 NativeMethods.RdwUpdateNow);
     }
 
-    private void ApplyInputRegion(int width, int height)
+    private bool ApplyInputRegion(int width, int height)
     {
         var region = NativeMethods.CreateRectRgn(0, 0, width, height);
         if (region == nint.Zero)
         {
-            return;
+            return false;
         }
 
         // SetWindowRgn takes ownership after success.
         if (NativeMethods.SetWindowRgn(_window, region, redraw: true) == 0)
         {
             NativeMethods.DeleteObject(region);
+            return false;
         }
+
+        return true;
     }
 
-    private void RestoreTopLevelStyle(nint taskbarOwner)
+    private bool TrySetWindowState(nint parent, long style)
     {
-        NativeMethods.SetWindowLongPtr(
-            _window,
-            NativeMethods.GwlStyle,
-            new nint(_originalStyle));
-        NativeMethods.SetWindowLongPtr(
-            _window,
-            NativeMethods.GwlpHwndParent,
-            taskbarOwner);
+        NativeMethods.SetWindowLongPtr(_window, NativeMethods.GwlStyle, new nint(style));
+        if (NativeMethods.GetWindowLongPtr(_window, NativeMethods.GwlStyle).ToInt64() != style)
+        {
+            return false;
+        }
+
+        NativeMethods.SetParent(_window, parent);
+        NativeMethods.SetWindowLongPtr(_window, NativeMethods.GwlpHwndParent, parent);
+        return NativeMethods.GetWindowLongPtr(_window, NativeMethods.GwlpHwndParent) == parent &&
+            NativeMethods.GetWindowLongPtr(_window, NativeMethods.GwlStyle).ToInt64() == style;
+    }
+
+    private bool RestoreWindowState(nint parent, long style)
+    {
+        if (_window == nint.Zero || !NativeMethods.IsWindow(_window))
+        {
+            return false;
+        }
+
+        var restored = TrySetWindowState(parent, style);
+        NativeMethods.SetWindowRgn(_window, nint.Zero, redraw: false);
+        RefreshFrame();
+        return restored;
+    }
+
+    private static bool IsValidTaskbar(nint taskbar)
+    {
+        if (taskbar == nint.Zero || !NativeMethods.IsWindow(taskbar))
+        {
+            return false;
+        }
+
+        var className = new StringBuilder(64);
+        if (NativeMethods.GetClassName(taskbar, className, className.Capacity) <= 0 ||
+            !string.Equals(className.ToString(), "Shell_TrayWnd", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (NativeMethods.GetWindowThreadProcessId(taskbar, out var processId) == 0 ||
+            processId == 0)
+        {
+            return false;
+        }
+
+        if (!NativeMethods.GetClientRect(taskbar, out var clientBounds) ||
+            clientBounds.Width <= 0 ||
+            clientBounds.Height <= 0)
+        {
+            return false;
+        }
+
+        try
+        {
+            using var process = Process.GetProcessById((int)processId);
+            return string.Equals(process.ProcessName, "explorer", StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     public void Dispose()
@@ -322,17 +398,17 @@ internal sealed class TaskbarHostService : IDisposable
         }
 
         _disposed = true;
+        if (_window == nint.Zero || !NativeMethods.IsWindow(_window))
+        {
+            TaskbarHandle = nint.Zero;
+            IsEmbedded = false;
+            IsFloating = false;
+            return;
+        }
+
         IsFloating = false;
         NativeMethods.SetWindowRgn(_window, nint.Zero, redraw: false);
-        NativeMethods.SetParent(_window, _originalParent);
-        NativeMethods.SetWindowLongPtr(
-            _window,
-            NativeMethods.GwlStyle,
-            new nint(_originalStyle));
-        NativeMethods.SetWindowLongPtr(
-            _window,
-            NativeMethods.GwlpHwndParent,
-            _originalParent);
+        RestoreWindowState(_originalParent, _originalStyle);
         TaskbarHandle = nint.Zero;
         IsEmbedded = false;
     }

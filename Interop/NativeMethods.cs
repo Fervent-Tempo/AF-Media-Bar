@@ -51,8 +51,13 @@ internal static class NativeMethods
     // WinUser.h / shellapi.h：窗口消息、命中测试与通知区域协议。
     // WinUser.h / shellapi.h: window messages, hit testing, and tray-icon protocol.
     internal const int WmApp = 0x8000;
+    internal const int WmDisplayChange = 0x007E;
     internal const int WmContextMenu = 0x007B;
     internal const int WmNcHitTest = 0x0084;
+    internal const int WmDeviceChange = 0x0219;
+    internal const int WmPowerBroadcast = 0x0218;
+    internal const int WmWtsSessionChange = 0x02B1;
+    internal const int WmDpiChanged = 0x02E0;
     internal const int WmLeftButtonDown = 0x0201;
     internal const int WmLeftButtonDoubleClick = 0x0203;
     internal const int WmRightButtonDown = 0x0204;
@@ -60,6 +65,12 @@ internal static class NativeMethods
     internal const int HtClient = 1;
     internal const int IdiApplication = 32512;
     internal const int WhMouseLowLevel = 14;
+    internal const int PbtApmSuspend = 0x0004;
+    internal const int PbtApmResumeSuspend = 0x0007;
+    internal const int PbtApmResumeAutomatic = 0x0012;
+    internal const int WtsSessionLock = 0x0007;
+    internal const int WtsSessionUnlock = 0x0008;
+    internal const int NotifyForThisSession = 0;
 
     // shellapi.h：AppBar 查询用于读取自动隐藏状态和任务栏矩形。
     // shellapi.h: AppBar queries expose auto-hide state and taskbar geometry.
@@ -298,6 +309,20 @@ internal static class NativeMethods
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     internal static extern nint GetModuleHandle(string? moduleName);
+
+    [DllImport(
+        "wtsapi32.dll",
+        EntryPoint = "WTSRegisterSessionNotification",
+        SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool WtsRegisterSessionNotification(nint window, int flags);
+
+    [DllImport(
+        "wtsapi32.dll",
+        EntryPoint = "WTSUnRegisterSessionNotification",
+        SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool WtsUnRegisterSessionNotification(nint window);
 
     internal static bool ShouldHideForFullScreenApp(nint playerWindow)
     {

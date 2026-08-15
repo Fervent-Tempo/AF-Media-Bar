@@ -64,10 +64,41 @@ internal sealed class TaskbarEventWatcher : IDisposable
         if (hook != nint.Zero)
         {
             _hooks.Add(hook);
+            return;
         }
+
+        DiagnosticsLogService.Write(
+            "win-event-hook-registration-failed",
+            details: $"Event={eventId};Win32={System.Runtime.InteropServices.Marshal.GetLastWin32Error()}");
     }
 
     private void OnWinEvent(
+        nint hook,
+        uint eventId,
+        nint window,
+        int objectId,
+        int childId,
+        uint eventThread,
+        uint eventTime)
+    {
+        try
+        {
+            OnWinEventCore(
+                hook,
+                eventId,
+                window,
+                objectId,
+                childId,
+                eventThread,
+                eventTime);
+        }
+        catch (Exception exception)
+        {
+            DiagnosticsLogService.Write("win-event-callback", exception);
+        }
+    }
+
+    private void OnWinEventCore(
         nint hook,
         uint eventId,
         nint window,
@@ -133,7 +164,7 @@ internal sealed class TaskbarEventWatcher : IDisposable
 
                     if (!_disposed)
                     {
-                        TaskbarChanged?.Invoke(pendingEvent);
+                        PublishTaskbarChanged(pendingEvent);
                     }
                 });
             return;
@@ -143,9 +174,21 @@ internal sealed class TaskbarEventWatcher : IDisposable
         {
             if (!_disposed)
             {
-                TaskbarChanged?.Invoke(taskbarEvent);
+                PublishTaskbarChanged(taskbarEvent);
             }
         });
+    }
+
+    private void PublishTaskbarChanged(TaskbarWindowEvent taskbarEvent)
+    {
+        try
+        {
+            TaskbarChanged?.Invoke(taskbarEvent);
+        }
+        catch (Exception exception)
+        {
+            DiagnosticsLogService.Write("taskbar-event-subscriber", exception);
+        }
     }
 
     private static TaskbarEventSource GetEventSource(nint window, nint taskbar)

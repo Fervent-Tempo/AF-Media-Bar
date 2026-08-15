@@ -36,6 +36,12 @@ internal sealed class MouseHookService : IDisposable
             _callback,
             NativeMethods.GetModuleHandle(null),
             0);
+        if (_hook == nint.Zero)
+        {
+            DiagnosticsLogService.Write(
+                "mouse-hook-registration-failed",
+                details: $"Win32={Marshal.GetLastWin32Error()}");
+        }
     }
 
     internal void Stop()
@@ -51,19 +57,38 @@ internal sealed class MouseHookService : IDisposable
 
     private nint OnMouseEvent(int code, nint wParam, nint lParam)
     {
-        if (code >= 0 &&
-            wParam.ToInt32() is NativeMethods.WmLeftButtonDown or NativeMethods.WmRightButtonDown)
+        try
         {
-            var data = Marshal.PtrToStructure<NativeMethods.LowLevelMouseStruct>(lParam);
-            if (!_dispatcher.HasShutdownStarted)
+            if (code >= 0 &&
+                wParam.ToInt32() is NativeMethods.WmLeftButtonDown or NativeMethods.WmRightButtonDown)
             {
-                _dispatcher.BeginInvoke(
-                    DispatcherPriority.Input,
-                    () => MouseButtonPressed?.Invoke(data.Point));
+                var data = Marshal.PtrToStructure<NativeMethods.LowLevelMouseStruct>(lParam);
+                if (!_dispatcher.HasShutdownStarted)
+                {
+                    _dispatcher.BeginInvoke(
+                        DispatcherPriority.Input,
+                        () => PublishMouseButtonPressed(data.Point));
+                }
             }
+        }
+        catch (Exception exception)
+        {
+            DiagnosticsLogService.Write("mouse-hook-callback", exception);
         }
 
         return NativeMethods.CallNextHookEx(_hook, code, wParam, lParam);
+    }
+
+    private void PublishMouseButtonPressed(NativeMethods.Point point)
+    {
+        try
+        {
+            MouseButtonPressed?.Invoke(point);
+        }
+        catch (Exception exception)
+        {
+            DiagnosticsLogService.Write("mouse-hook-subscriber", exception);
+        }
     }
 
     public void Dispose()

@@ -14,6 +14,10 @@ internal sealed class AudioMonitorService : IDisposable
     private const int FftSize = 512;
     private const int SampleRingSize = 4096;
     private const int InitialPacketBufferSize = 64 * 1024;
+    private const int InitialCaptureRetryMilliseconds = 100;
+    private const int SecondCaptureRetryMilliseconds = 500;
+    private const int ThirdCaptureRetryMilliseconds = 1_000;
+    private const int MaximumCaptureRetryMilliseconds = 3_000;
     // audioclient.h / mmreg.h：WASAPI 回环、静音包和 WAVE 格式常量。
     // audioclient.h / mmreg.h: WASAPI loopback, silent-buffer, and WAVE constants.
     private const uint AudioClientStreamFlagsLoopback = 0x00020000;
@@ -52,6 +56,8 @@ internal sealed class AudioMonitorService : IDisposable
     private int _bitsPerSample;
     private ushort _formatTag;
     private long _lastPacketTick;
+    private long _nextCaptureAttemptTick;
+    private int _captureFailureCount;
     private bool _disposed;
 
     internal bool GetSpectrum(float[] bands)
@@ -82,10 +88,23 @@ internal sealed class AudioMonitorService : IDisposable
         }
         catch
         {
-            ReleaseCapture();
+            ReleaseCaptureAndScheduleRetry();
             Array.Clear(bands, 0, BandCount);
             return false;
         }
+    }
+
+    internal void ResetAfterEnvironmentChange()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        ReleaseCapture();
+        ReleaseComObject(ref _deviceEnumerator);
+        _captureFailureCount = 0;
+        _nextCaptureAttemptTick = 0;
     }
 
     public void Dispose()
@@ -110,6 +129,11 @@ internal sealed class AudioMonitorService : IDisposable
             return true;
         }
 
+        if (Environment.TickCount64 < _nextCaptureAttemptTick)
+        {
+            return false;
+        }
+
         nint mixFormatPointer = nint.Zero;
         try
         {
@@ -124,7 +148,7 @@ internal sealed class AudioMonitorService : IDisposable
                     out _device) < 0 ||
                 _device is null)
             {
-                return false;
+                return FailCaptureInitialization();
             }
 
             var audioClientId = AudioClientId;
@@ -135,8 +159,7 @@ internal sealed class AudioMonitorService : IDisposable
                     out var clientObject) < 0 ||
                 clientObject is not IAudioClient audioClient)
             {
-                ReleaseCapture();
-                return false;
+                return FailCaptureInitialization();
             }
 
             _audioClient = audioClient;
@@ -144,8 +167,7 @@ internal sealed class AudioMonitorService : IDisposable
                 mixFormatPointer == nint.Zero ||
                 !ReadMixFormat(mixFormatPointer))
             {
-                ReleaseCapture();
-                return false;
+                return FailCaptureInitialization();
             }
 
             var sessionId = Guid.Empty;
@@ -157,34 +179,32 @@ internal sealed class AudioMonitorService : IDisposable
                     mixFormatPointer,
                     ref sessionId) < 0)
             {
-                ReleaseCapture();
-                return false;
+                return FailCaptureInitialization();
             }
 
             var captureClientId = AudioCaptureClientId;
             if (_audioClient.GetService(ref captureClientId, out var captureObject) < 0 ||
                 captureObject is not IAudioCaptureClient captureClient)
             {
-                ReleaseCapture();
-                return false;
+                return FailCaptureInitialization();
             }
 
             _captureClient = captureClient;
             if (_audioClient.Start() < 0)
             {
-                ReleaseCapture();
-                return false;
+                return FailCaptureInitialization();
             }
 
             _sampleWriteIndex = 0;
             _sampleCount = 0;
             _lastPacketTick = Environment.TickCount64;
+            _captureFailureCount = 0;
+            _nextCaptureAttemptTick = 0;
             return true;
         }
         catch
         {
-            ReleaseCapture();
-            return false;
+            return FailCaptureInitialization();
         }
         finally
         {
@@ -193,6 +213,26 @@ internal sealed class AudioMonitorService : IDisposable
                 Marshal.FreeCoTaskMem(mixFormatPointer);
             }
         }
+    }
+
+    private bool FailCaptureInitialization()
+    {
+        ReleaseCaptureAndScheduleRetry();
+        return false;
+    }
+
+    private void ReleaseCaptureAndScheduleRetry()
+    {
+        ReleaseCapture();
+        _captureFailureCount = Math.Min(_captureFailureCount + 1, 4);
+        var retryMilliseconds = _captureFailureCount switch
+        {
+            1 => InitialCaptureRetryMilliseconds,
+            2 => SecondCaptureRetryMilliseconds,
+            3 => ThirdCaptureRetryMilliseconds,
+            _ => MaximumCaptureRetryMilliseconds
+        };
+        _nextCaptureAttemptTick = Environment.TickCount64 + retryMilliseconds;
     }
 
     private bool ReadMixFormat(nint formatPointer)
