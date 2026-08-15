@@ -3012,7 +3012,10 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (_mediaSessions.Count < 2)
+        var hasSelectedAvailableSession = _mediaSessions.Any(session =>
+            session.IsSelected);
+        if (_mediaSessions.Count == 0 ||
+            (_mediaSessions.Count == 1 && hasSelectedAvailableSession))
         {
             return;
         }

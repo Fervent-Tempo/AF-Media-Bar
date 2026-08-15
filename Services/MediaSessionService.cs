@@ -203,16 +203,27 @@ internal sealed class MediaSessionService : IDisposable
         await _sessionGate.WaitAsync();
         try
         {
-            if (_entries.Count < 2)
+            if (_entries.Count == 0)
             {
                 return;
             }
 
-            var currentIndex = Math.Max(
-                0,
-                _entries.FindIndex(entry => entry.Key == _selectedKey));
-            var nextIndex = (currentIndex + direction + _entries.Count) % _entries.Count;
-            key = _entries[nextIndex].Key;
+            var currentIndex = _entries.FindIndex(entry =>
+                entry.Key == _selectedKey);
+            if (currentIndex < 0)
+            {
+                // 宽限期内原来源已离开列表；滚轮应直接选择剩余来源，即使只剩一个。
+                // During the grace period the old source is absent; select a remaining source even when only one exists.
+                key = direction > 0
+                    ? _entries[0].Key
+                    : _entries[^1].Key;
+            }
+            else if (_entries.Count > 1)
+            {
+                var nextIndex =
+                    (currentIndex + direction + _entries.Count) % _entries.Count;
+                key = _entries[nextIndex].Key;
+            }
         }
         finally
         {
@@ -387,7 +398,9 @@ internal sealed class MediaSessionService : IDisposable
             await Task.Delay(SessionReconnectGracePeriod, cancellationToken);
             if (!_disposed)
             {
-                await RefreshSessionListAsync();
+                // 后台宽限期刷新也必须隔离 WinRT 异常，避免界面永久停留在加载状态。
+                // Grace-period refreshes also isolate WinRT failures so the UI cannot remain stuck loading.
+                await RunSessionEventAsync(RefreshSessionListAsync);
             }
         }
         catch (OperationCanceledException)
@@ -440,7 +453,8 @@ internal sealed class MediaSessionService : IDisposable
         GlobalSystemMediaTransportControlsSession sender,
         object args)
     {
-        await RunSessionEventAsync(RefreshMediaPropertiesAsync);
+        await RunSessionEventAsync(() =>
+            RefreshMediaPropertiesAsync(refreshArtwork: true));
     }
 
     private async void OnAnyPlaybackInfoChanged(
@@ -499,7 +513,7 @@ internal sealed class MediaSessionService : IDisposable
         }
     }
 
-    private async Task RefreshMediaPropertiesAsync()
+    private async Task RefreshMediaPropertiesAsync(bool refreshArtwork = false)
     {
         // 每次读取占用一个版本；完成时只有最新版本可以发布。
         // Each read owns a version and only the newest completion may publish.
@@ -530,32 +544,77 @@ internal sealed class MediaSessionService : IDisposable
                 mediaProperties,
                 title,
                 artist);
-            var artwork = string.Equals(
+            var identityMatches = string.Equals(
                     _artworkIdentity,
                     artworkIdentity,
-                    StringComparison.Ordinal) &&
-                _lastSnapshot.Artwork is not null
+                    StringComparison.Ordinal);
+            var previousFingerprint = _artworkFingerprint;
+            var artwork = identityMatches
                 ? _lastSnapshot.Artwork
                 : null;
+            var publishedFingerprint = artwork is not null
+                ? _artworkFingerprint
+                : null;
+            var needsArtworkSettlement = refreshArtwork || artwork is null;
+            var initialArtworkChanged = false;
+            if (needsArtworkSettlement)
+            {
+                ArtworkLoadResult initialArtwork;
+                try
+                {
+                    // 首次属性读取中的 Thumbnail 可能只在本次 WinRT 快照有效，必须立即消费。
+                    // Thumbnail may only be usable from this WinRT snapshot, so consume it immediately.
+                    initialArtwork = await LoadArtworkAsync(
+                        mediaProperties.Thumbnail,
+                        CancellationToken.None);
+                }
+                catch
+                {
+                    initialArtwork = default;
+                }
+
+                if (initialArtwork.Artwork is not null &&
+                    initialArtwork.Fingerprint is not null &&
+                    !string.Equals(
+                        initialArtwork.Fingerprint,
+                        publishedFingerprint,
+                        StringComparison.Ordinal) &&
+                    (artwork is not null || !string.Equals(
+                        initialArtwork.Fingerprint,
+                        previousFingerprint,
+                        StringComparison.Ordinal)))
+                {
+                    artwork = initialArtwork.Artwork;
+                    publishedFingerprint = initialArtwork.Fingerprint;
+                    initialArtworkChanged = true;
+                }
+            }
+
             if (version != _refreshVersion || !ReferenceEquals(session, _session))
             {
                 return;
             }
 
+            if (initialArtworkChanged)
+            {
+                _artworkIdentity = artworkIdentity;
+                _artworkFingerprint = publishedFingerprint;
+            }
+
             Publish(CreateSnapshot(session, entry, title, artist, artwork));
-            if (artwork is null && !string.Equals(
+            if (needsArtworkSettlement && !string.Equals(
                     _pendingArtworkIdentity,
                     artworkIdentity,
                     StringComparison.Ordinal))
             {
-                var previousFingerprint = _artworkFingerprint;
                 CancelArtworkRefresh();
                 _pendingArtworkIdentity = artworkIdentity;
                 ScheduleSettledArtworkRefresh(
                     session,
                     entry,
                     artworkIdentity,
-                    previousFingerprint);
+                    previousFingerprint,
+                    publishedFingerprint);
             }
         }
         catch
@@ -599,7 +658,8 @@ internal sealed class MediaSessionService : IDisposable
         GlobalSystemMediaTransportControlsSession session,
         SessionEntry entry,
         string artworkIdentity,
-        string? previousFingerprint)
+        string? previousFingerprint,
+        string? publishedFingerprint)
     {
         var cancellation = new CancellationTokenSource();
         var previous = Interlocked.Exchange(ref _artworkRefreshCancellation, cancellation);
@@ -610,6 +670,7 @@ internal sealed class MediaSessionService : IDisposable
             entry,
             artworkIdentity,
             previousFingerprint,
+            publishedFingerprint,
             cancellation);
     }
 
@@ -618,12 +679,13 @@ internal sealed class MediaSessionService : IDisposable
         SessionEntry entry,
         string artworkIdentity,
         string? previousFingerprint,
+        string? publishedFingerprint,
         CancellationTokenSource cancellation)
     {
         try
         {
-            // 新曲目回调可能早于封面流；按有限退避重读，避免永久显示旧封面。
-            // Item callbacks may precede artwork streams; bounded retries avoid stale covers.
+            // 浏览器可能先返回临时缩略图，再用真实封面替换；整个短窗口都观察指纹变化。
+            // Browsers may return a provisional thumbnail before the real artwork; observe fingerprint changes for the full short window.
             for (var attempt = 0; attempt < ArtworkRefreshDelays.Length; attempt++)
             {
                 await Task.Delay(ArtworkRefreshDelays[attempt], cancellation.Token);
@@ -676,23 +738,24 @@ internal sealed class MediaSessionService : IDisposable
                     artwork.Fingerprint,
                     previousFingerprint,
                     StringComparison.Ordinal);
-                var showSameCoverFallback = attempt == 1;
+                var differsFromPublished = !string.Equals(
+                    artwork.Fingerprint,
+                    publishedFingerprint,
+                    StringComparison.Ordinal);
+                var showSameCoverFallback = attempt > 0;
                 var isFinalAttempt = attempt == ArtworkRefreshDelays.Length - 1;
-                if (differsFromPrevious || showSameCoverFallback || isFinalAttempt)
+                if (differsFromPublished &&
+                    (differsFromPrevious || showSameCoverFallback || isFinalAttempt))
                 {
                     _artworkIdentity = artworkIdentity;
                     _artworkFingerprint = artwork.Fingerprint;
+                    publishedFingerprint = artwork.Fingerprint;
                     Publish(CreateSnapshot(
                         session,
                         entry,
                         title,
                         artist,
                         artwork.Artwork));
-                }
-
-                if (differsFromPrevious)
-                {
-                    return;
                 }
             }
         }
