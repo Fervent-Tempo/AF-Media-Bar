@@ -11,6 +11,8 @@ using System.Windows.Threading;
 using AFMediaBar.Interop;
 using AFMediaBar.Models;
 using AFMediaBar.Services;
+// System.Windows.Localization（枚举）与本地化帮助类同名，用别名消歧。
+using Loc = AFMediaBar.Services.Localization;
 
 namespace AFMediaBar;
 
@@ -76,6 +78,9 @@ public partial class MainWindow : Window
     private SystemMetricsSnapshot _lastMetricsSnapshot;
     private IReadOnlyList<MediaSessionOption> _mediaSessions = [];
     private IReadOnlyList<AudioDeviceOption> _outputDevices = [];
+    private MediaSnapshot? _lastSnapshot;
+    // 断开提示只缓存错误标题的词典 key；detail 是异常信息，不做本地化重放。
+    private string? _disconnectedTitleKey;
     // 这些服务持有 WinEvent、WASAPI、鼠标钩子或 Shell 图标等外部资源。
     // These services own WinEvent, WASAPI, mouse-hook, or Shell resources.
     private TaskbarEventWatcher? _taskbarEventWatcher;
@@ -334,7 +339,7 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            ShowDisconnectedState("无法访问系统媒体会话", exception.Message);
+            ShowDisconnectedState("Msg.SessionAccessFailed", exception.Message);
         }
     }
 
@@ -1073,6 +1078,7 @@ public partial class MainWindow : Window
 
     private void OnSnapshotChanged(object? sender, MediaSnapshot snapshot)
     {
+        _disconnectedTitleKey = null;
         Dispatcher.InvokeAsync(() => ApplySnapshot(snapshot));
     }
 
@@ -1083,6 +1089,7 @@ public partial class MainWindow : Window
 
     private void ApplySnapshot(MediaSnapshot snapshot)
     {
+        _lastSnapshot = snapshot;
         _selectedMediaIsPlaying = snapshot.IsConnected && snapshot.IsPlaying;
         _hasConnectedMedia = _mediaSessions.Any(session => session.IsPlaying) ||
             (_selectedMediaIsPlaying && _mediaSessions.Count == 0);
@@ -1121,18 +1128,8 @@ public partial class MainWindow : Window
         VerticalNextButton.IsEnabled = NextButton.IsEnabled;
         PlayPauseGlyph.Text = snapshot.IsPlaying ? "\uE769" : "\uE768";
         VerticalPlayPauseGlyph.Text = PlayPauseGlyph.Text;
-        PlayPauseButton.ToolTip = snapshot.IsPlaying ? "暂停" : "播放";
-        VerticalPlayPauseButton.ToolTip = PlayPauseButton.ToolTip;
+        ApplyLocalizedSnapshotText(snapshot);
 
-        ConnectionMenuText.Text = snapshot.IsConnected
-            ? $"{snapshot.SourceName}：{snapshot.Title}"
-            : "等待媒体播放";
-        ShowSourceMenuItem.Header = $"显示 {snapshot.SourceName}";
-        ShowSourceMenuItem.IsEnabled = !string.IsNullOrWhiteSpace(snapshot.SourceId);
-        _trayIconService?.UpdateTooltip(
-            snapshot.IsConnected
-                ? $"AF Media Bar · {snapshot.SourceName}：{snapshot.Title} - {snapshot.Artist}"
-                : "AF Media Bar - 等待媒体播放");
         if (_metricSettings.VolumeControlEnabled &&
             (volumeSourceChanged ||
                 VolumeControlPopup.IsOpen ||
@@ -1148,6 +1145,40 @@ public partial class MainWindow : Window
         {
             PositionOverTaskbar(force: true);
         }
+    }
+
+    /// <summary>
+    /// 刷新快照中的本地化文本；语言切换后由 App 调用重放当前状态。
+    /// Title/Artist 等媒体数据保持快照原值，不做本地化。
+    /// </summary>
+    private void ApplyLocalizedSnapshotText(MediaSnapshot snapshot)
+    {
+        PlayPauseButton.ToolTip = snapshot.IsPlaying
+            ? Loc.Get("Main.Control.Pause")
+            : Loc.Get("Main.Control.Play");
+        VerticalPlayPauseButton.ToolTip = PlayPauseButton.ToolTip;
+        ConnectionMenuText.Text = snapshot.IsConnected
+            ? Loc.Get("Main.SourceStatusFormat", snapshot.SourceName, snapshot.Title)
+            : Loc.Get("Main.Placeholder.Title");
+        ShowSourceMenuItem.Header = Loc.Get("Main.Menu.ShowSourceFormat", snapshot.SourceName);
+        ShowSourceMenuItem.IsEnabled = !string.IsNullOrWhiteSpace(snapshot.SourceId);
+        _trayIconService?.UpdateTooltip(
+            snapshot.IsConnected
+                ? Loc.Get("Main.TrayTooltipFormat", snapshot.SourceName, snapshot.Title, snapshot.Artist)
+                : Loc.Get("Main.TitleIdle"));
+    }
+
+    internal void RefreshLocalizedText()
+    {
+        if (_lastSnapshot is { } snapshot)
+        {
+            var replayed = _disconnectedTitleKey is null
+                ? snapshot
+                : snapshot with { Title = Loc.Get(_disconnectedTitleKey) };
+            ApplySnapshot(replayed);
+        }
+
+        ApplySessions(_mediaSessions);
     }
 
     private void ApplySessions(IReadOnlyList<MediaSessionOption> sessions)
@@ -1169,7 +1200,7 @@ public partial class MainWindow : Window
         {
             MediaSourcesMenuItem.Items.Add(new MenuItem
             {
-                Header = "暂无可用媒体会话",
+                Header = Loc.Get("Main.Menu.NoSessions"),
                 IsEnabled = false
             });
             MediaSourcesMenuItem.IsEnabled = false;
@@ -1182,7 +1213,7 @@ public partial class MainWindow : Window
             var item = new MenuItem
             {
                 Header = session.IsPlaying
-                    ? $"{session.DisplayName}（播放中）"
+                    ? Loc.Get("Main.Menu.SessionPlayingFormat", session.DisplayName)
                     : session.DisplayName,
                 IsCheckable = true,
                 IsChecked = session.IsSelected,
@@ -1201,11 +1232,12 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ShowDisconnectedState(string title, string detail)
+    private void ShowDisconnectedState(string titleKey, string detail)
     {
+        _disconnectedTitleKey = titleKey;
         ApplySnapshot(MediaSnapshot.Disconnected with
         {
-            Title = title,
+            Title = Loc.Get(titleKey),
             Artist = detail
         });
     }
@@ -2227,7 +2259,7 @@ public partial class MainWindow : Window
 
             MessageBox.Show(
                 exception.Message,
-                "无法保存窗口设置",
+                Loc.Get("Msg.SaveWindowFailed"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
@@ -2358,23 +2390,23 @@ public partial class MainWindow : Window
             OutputDeviceList.SelectedItem = selected;
 
             var current = devices.FirstOrDefault(device => device.IsDefault) ?? selected;
-            OutputDeviceCurrentText.Text = current?.DisplayName ?? "未找到设备";
+            OutputDeviceCurrentText.Text = current?.DisplayName ?? Loc.Get("Main.Device.NotFound");
             if (_showingOutputDeviceHoverStatus &&
                 _pendingOutputDeviceId is null)
             {
                 OutputDeviceStatusText.Text = current is null
-                    ? "未找到可用输出设备"
-                    : $"输出设备：{current.DisplayName}";
+                    ? Loc.Get("Main.Device.NoDevices")
+                    : Loc.Get("Main.Device.OutputFormat", current.DisplayName);
             }
         }
         catch (Exception exception)
         {
             _outputDevices = [];
             OutputDeviceList.ItemsSource = null;
-            OutputDeviceCurrentText.Text = "读取失败";
+            OutputDeviceCurrentText.Text = Loc.Get("Main.Device.ReadFailed");
             if (_showingOutputDeviceHoverStatus)
             {
-                OutputDeviceStatusText.Text = $"无法读取输出设备：{exception.Message}";
+                OutputDeviceStatusText.Text = Loc.Get("Main.Device.ReadFailedFormat", exception.Message);
             }
         }
     }
@@ -2391,8 +2423,8 @@ public partial class MainWindow : Window
         _showingOutputDeviceHoverStatus = true;
         var current = _outputDevices.FirstOrDefault(device => device.IsDefault);
         OutputDeviceStatusText.Text = current is null
-            ? "输出设备"
-            : $"输出设备：{current.DisplayName}";
+            ? Loc.Get("Main.Device.Output")
+            : Loc.Get("Main.Device.OutputFormat", current.DisplayName);
         OutputDeviceStatusPopup.IsOpen = true;
         if (_outputDevices.Count == 0)
         {
@@ -2541,7 +2573,7 @@ public partial class MainWindow : Window
                 _pendingOutputDeviceWheelSteps = 0;
                 if (_outputDeviceWheelUsesCompactStatus)
                 {
-                    OutputDeviceStatusText.Text = "暂无可用输出设备";
+                    OutputDeviceStatusText.Text = Loc.Get("Main.Device.NoDevices");
                     OutputDeviceStatusPopup.IsOpen = true;
                     _outputDeviceApplyTimer.Stop();
                     _outputDeviceApplyTimer.Start();
@@ -2582,7 +2614,7 @@ public partial class MainWindow : Window
                 OutputDeviceCurrentText.Text = nextDevice.DisplayName;
                 if (_outputDeviceWheelUsesCompactStatus)
                 {
-                    OutputDeviceStatusText.Text = $"输出设备：{nextDevice.DisplayName}";
+                    OutputDeviceStatusText.Text = Loc.Get("Main.Device.OutputFormat", nextDevice.DisplayName);
                     OutputDeviceStatusPopup.IsOpen = true;
                     OutputDevicePopup.IsOpen = false;
                 }
@@ -2666,8 +2698,8 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            OutputDeviceCurrentText.Text = "切换失败";
-            OutputDeviceStatusText.Text = $"无法切换输出设备：{exception.Message}";
+            OutputDeviceCurrentText.Text = Loc.Get("Main.Device.SwitchFailed");
+            OutputDeviceStatusText.Text = Loc.Get("Main.Device.SwitchFailedFormat", exception.Message);
             OutputDeviceStatusPopup.IsOpen = true;
             _outputDeviceApplyTimer.Stop();
             _outputDeviceApplyTimer.Start();
@@ -2719,7 +2751,7 @@ public partial class MainWindow : Window
             SetCurrentApplicationVolume(null);
             if (_showingVolumeHoverStatus || VolumeStatusPopup.IsOpen)
             {
-                VolumeStatusText.Text = $"无法读取当前媒体音量：{exception.Message}";
+                VolumeStatusText.Text = Loc.Get("Main.Volume.ReadFailedFormat", exception.Message);
             }
         }
     }
@@ -2735,10 +2767,10 @@ public partial class MainWindow : Window
             var selectedSourceName = _mediaSessionService.SelectedSourceName;
             VolumeMediaNameText.Text = snapshot?.DisplayName ??
                 (string.IsNullOrWhiteSpace(selectedSourceName)
-                    ? "当前媒体"
+                    ? Loc.Get("Main.Volume.CurrentMedia")
                     : selectedSourceName);
             VolumePercentText.Text = snapshot is null
-                ? "暂无"
+                ? Loc.Get("Main.Volume.None")
                 : $"{snapshot.VolumePercent}%";
             if (VolumeStatusPopup.IsOpen || _showingVolumeHoverStatus)
             {
@@ -2926,11 +2958,11 @@ public partial class MainWindow : Window
 
         if (string.IsNullOrWhiteSpace(sourceName))
         {
-            sourceName = "当前媒体";
+            sourceName = Loc.Get("Main.Volume.CurrentMedia");
         }
 
         var volume = _currentApplicationVolume is null
-            ? "暂无"
+            ? Loc.Get("Main.Volume.None")
             : $"{_currentApplicationVolume.VolumePercent}%";
         VolumeStatusText.Text = $"{sourceName}：{volume}";
     }
@@ -3030,7 +3062,7 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            VolumeStatusText.Text = $"无法调节媒体音量：{exception.Message}";
+            VolumeStatusText.Text = Loc.Get("Main.Volume.AdjustFailedFormat", exception.Message);
             VolumeStatusPopup.IsOpen = true;
         }
     }
@@ -3112,7 +3144,7 @@ public partial class MainWindow : Window
 
             MessageBox.Show(
                 exception.Message,
-                "无法保存位置设置",
+                Loc.Get("Msg.SavePositionFailed"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
@@ -3614,7 +3646,7 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            ShowDisconnectedState("媒体控制失败", exception.Message);
+            ShowDisconnectedState("Msg.MediaControlFailed", exception.Message);
         }
     }
 
@@ -3629,7 +3661,7 @@ public partial class MainWindow : Window
             StartupMenuItem.IsChecked = _settingsCoordinator.Current.StartupEnabled;
             MessageBox.Show(
                 exception.Message,
-                "无法修改开机启动",
+                Loc.Get("Msg.AutoStartFailed"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }

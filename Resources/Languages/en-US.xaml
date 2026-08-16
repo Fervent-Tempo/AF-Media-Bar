@@ -1,0 +1,241 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+
+  <!-- ===== Media Bar (Main) ===== -->
+  <sys:String x:Key="Main.Placeholder.Title">Waiting for media</sys:String>
+  <sys:String x:Key="Main.Placeholder.Subtitle">Play audio or video in any app</sys:String>
+  <!-- 竖排布局仅宽 34px，英文按字母竖排并压缩为缩写。 -->
+  <sys:String x:Key="Main.Placeholder.TitleVertical">M&#xA;E&#xA;D&#xA;I&#xA;A</sys:String>
+  <sys:String x:Key="Main.Placeholder.SubtitleVertical">P&#xA;L&#xA;A&#xA;Y</sys:String>
+  <sys:String x:Key="Main.TitleIdle">AF Media Bar - Waiting for media</sys:String>
+  <sys:String x:Key="Main.SourceStatusFormat">{0}: {1}</sys:String>
+  <sys:String x:Key="Main.TrayTooltipFormat">AF Media Bar · {0}: {1} - {2}</sys:String>
+
+  <!-- Context menu -->
+  <sys:String x:Key="Main.Menu.ShowSource">Show media app</sys:String>
+  <sys:String x:Key="Main.Menu.ShowSourceFormat">Show {0}</sys:String>
+  <sys:String x:Key="Main.Menu.Sources">Media sources</sys:String>
+  <sys:String x:Key="Main.Menu.NoSessions">No media sessions available</sys:String>
+  <sys:String x:Key="Main.Menu.SessionPlayingFormat">{0} (playing)</sys:String>
+  <sys:String x:Key="Main.Menu.OpenSettings">Open detailed settings...</sys:String>
+  <sys:String x:Key="Main.Menu.Reconnect">Reconnect media session</sys:String>
+  <sys:String x:Key="Main.Menu.AutoStart">Start at boot</sys:String>
+  <sys:String x:Key="Main.Menu.Exit">Exit</sys:String>
+
+  <!-- Transport controls -->
+  <sys:String x:Key="Main.Control.Previous">Previous</sys:String>
+  <sys:String x:Key="Main.Control.Play">Play</sys:String>
+  <sys:String x:Key="Main.Control.Pause">Pause</sys:String>
+  <sys:String x:Key="Main.Control.Next">Next</sys:String>
+
+  <!-- Output device -->
+  <sys:String x:Key="Main.Device.Output">Output device</sys:String>
+  <sys:String x:Key="Main.Device.OutputFormat">Output device: {0}</sys:String>
+  <sys:String x:Key="Main.Device.NoDevices">No output devices available</sys:String>
+  <sys:String x:Key="Main.Device.NotFound">No device found</sys:String>
+  <sys:String x:Key="Main.Device.ReadFailed">Read failed</sys:String>
+  <sys:String x:Key="Main.Device.ReadFailedFormat">Could not read output devices: {0}</sys:String>
+  <sys:String x:Key="Main.Device.SwitchFailed">Switch failed</sys:String>
+  <sys:String x:Key="Main.Device.SwitchFailedFormat">Could not switch output device: {0}</sys:String>
+
+  <!-- Media volume -->
+  <sys:String x:Key="Main.Volume.Current">Current media volume</sys:String>
+  <sys:String x:Key="Main.Volume.CurrentMedia">Current media</sys:String>
+  <sys:String x:Key="Main.Volume.None">None</sys:String>
+  <sys:String x:Key="Main.Volume.ReadFailedFormat">Could not read current media volume: {0}</sys:String>
+  <sys:String x:Key="Main.Volume.AdjustFailedFormat">Could not adjust media volume: {0}</sys:String>
+
+  <!-- ===== Message boxes & errors (Msg) ===== -->
+  <sys:String x:Key="Msg.SessionAccessFailed">Could not access system media sessions</sys:String>
+  <sys:String x:Key="Msg.MediaControlFailed">Media control failed</sys:String>
+  <sys:String x:Key="Msg.SaveWindowFailed">Could not save window settings</sys:String>
+  <sys:String x:Key="Msg.SavePositionFailed">Could not save position settings</sys:String>
+  <sys:String x:Key="Msg.AutoStartFailed">Could not update start-at-boot</sys:String>
+  <sys:String x:Key="Msg.UpdateNotInitialized">Update service is not initialized.</sys:String>
+  <sys:String x:Key="Msg.OpenSettingsFailed">Could not open settings</sys:String>
+  <sys:String x:Key="Msg.OpenSettingsFailedBody">Settings window initialization failed.&#xA;&#xA;{0}</sys:String>
+  <sys:String x:Key="Msg.OpenDownloadFailed">Could not open download page</sys:String>
+  <sys:String x:Key="Msg.OpenLinkFailed">Could not open link</sys:String>
+  <sys:String x:Key="Msg.ResetTitle">Restore default settings</sys:String>
+  <sys:String x:Key="Msg.ResetBody">This restores all settings and disables start-at-boot. Continue?</sys:String>
+  <sys:String x:Key="Msg.SaveSettingsFailed">Could not save settings</sys:String>
+  <sys:String x:Key="Msg.UpdateMajor">Important update available</sys:String>
+  <sys:String x:Key="Msg.UpdateNew">New version available</sys:String>
+  <sys:String x:Key="Msg.UpdateFoundBody">AF Media Bar {0} is available.&#xA;&#xA;{1}&#xA;&#xA;Open the download page?</sys:String>
+  <sys:String x:Key="Msg.UpdateOpenPageHint">Open the release page to view the update.</sys:String>
+
+  <!-- ===== Settings window (Settings) ===== -->
+  <sys:String x:Key="Settings.WindowTitle">AF Media Bar Settings</sys:String>
+  <sys:String x:Key="Settings.LiveApplyHint">Changes apply immediately</sys:String>
+  <sys:String x:Key="Settings.Categories">Categories</sys:String>
+  <sys:String x:Key="Settings.Nav.General">General</sys:String>
+  <sys:String x:Key="Settings.Nav.Components">Player components</sys:String>
+  <sys:String x:Key="Settings.Nav.Layout">Layout &amp; position</sys:String>
+  <sys:String x:Key="Settings.Nav.Appearance">Appearance</sys:String>
+  <sys:String x:Key="Settings.Nav.Interaction">Interaction &amp; animation</sys:String>
+  <sys:String x:Key="Settings.Nav.Performance">Performance &amp; advanced</sys:String>
+  <sys:String x:Key="Settings.VersionFormat">Current version: {0}</sys:String>
+  <sys:String x:Key="Settings.VersionDev">development build</sys:String>
+
+  <!-- Search -->
+  <sys:String x:Key="Settings.Search.Placeholder">Search settings</sys:String>
+  <sys:String x:Key="Settings.Search.Results">Search results</sys:String>
+  <sys:String x:Key="Settings.Search.NoResults">No matching settings</sys:String>
+  <sys:String x:Key="Settings.Search.NoMatchesFormat">No settings match "{0}".</sys:String>
+  <sys:String x:Key="Settings.Search.MatchesFormat">Found {0} setting(s) related to "{1}".</sys:String>
+  <sys:String x:Key="Search.Kw.Language">language ui interface chinese traditional english 语言 繁体</sys:String>
+
+  <!-- Common -->
+  <sys:String x:Key="Settings.Common.Auto">Auto</sys:String>
+  <sys:String x:Key="Settings.Common.Horizontal">Horizontal</sys:String>
+  <sys:String x:Key="Settings.Common.Vertical">Vertical</sys:String>
+  <sys:String x:Key="Settings.Common.Light">Light</sys:String>
+  <sys:String x:Key="Settings.Common.Dark">Dark</sys:String>
+
+  <!-- General page -->
+  <sys:String x:Key="Settings.General.Description">Manage startup, media visibility, and app-level actions.</sys:String>
+  <sys:String x:Key="Settings.General.AutoStartTitle">Start at boot</sys:String>
+  <sys:String x:Key="Settings.General.AutoStartDescription">Launch AF Media Bar automatically after signing in to Windows.</sys:String>
+  <sys:String x:Key="Settings.General.HideWhenNoMediaTitle">Hide player when no media</sys:String>
+  <sys:String x:Key="Settings.General.HideWhenNoMediaDescription">Hide the media bar when all media sessions have stopped playing.</sys:String>
+  <sys:String x:Key="Settings.General.About">About</sys:String>
+  <sys:String x:Key="Settings.General.OpenGitHub">Open GitHub</sys:String>
+  <sys:String x:Key="Settings.General.ReportIssue">Report an issue</sys:String>
+  <sys:String x:Key="Settings.General.License">License</sys:String>
+  <sys:String x:Key="Settings.General.Update">Updates</sys:String>
+  <sys:String x:Key="Settings.General.AutoCheckUpdateTitle">Check for updates automatically</sys:String>
+  <sys:String x:Key="Settings.General.AutoCheckUpdateDescription">Checks after a startup delay, at most once per day against the public release feed.</sys:String>
+  <sys:String x:Key="Settings.General.CheckUpdate">Check now</sys:String>
+  <sys:String x:Key="Settings.General.IgnoreVersion">Skip this version</sys:String>
+  <sys:String x:Key="Settings.General.CheckUpdateHint">You can also check manually here.</sys:String>
+  <sys:String x:Key="Settings.General.DownloadGithub">Download from GitHub</sys:String>
+  <sys:String x:Key="Settings.General.DownloadQuark">Quark Drive</sys:String>
+  <sys:String x:Key="Settings.General.DownloadBaidu">Baidu Netdisk</sys:String>
+  <sys:String x:Key="Settings.General.DownloadLanzou">Lanzou Cloud</sys:String>
+  <sys:String x:Key="Settings.General.ViewReleaseNotes">View release notes</sys:String>
+  <sys:String x:Key="Settings.General.Reset">Reset</sys:String>
+  <sys:String x:Key="Settings.General.ResetAll">Restore all default settings</sys:String>
+
+  <!-- Language section -->
+  <sys:String x:Key="Settings.Language.SectionTitle">Language</sys:String>
+  <sys:String x:Key="Settings.Language.Description">Choose the UI language. After the first explicit choice, the system language is no longer followed.</sys:String>
+  <sys:String x:Key="Settings.Language.FollowSystem">Follow system</sys:String>
+  <sys:String x:Key="Settings.Language.ZhCn">简体中文</sys:String>
+  <sys:String x:Key="Settings.Language.ZhTw">繁體中文</sys:String>
+  <sys:String x:Key="Settings.Language.EnUs">English</sys:String>
+
+  <!-- Player components page -->
+  <sys:String x:Key="Settings.Components.Description">Choose the optional components shown in the media bar. Artwork, title, and transport controls are always kept.</sys:String>
+  <sys:String x:Key="Settings.Components.MetricsTitle">Show performance metrics</sys:String>
+  <sys:String x:Key="Settings.Components.MetricsDescription">Display optional system and process metrics in the player.</sys:String>
+  <sys:String x:Key="Settings.Components.MetricMem">System memory (MEM)</sys:String>
+  <sys:String x:Key="Settings.Components.MetricCpu">System processor (CPU)</sys:String>
+  <sys:String x:Key="Settings.Components.MetricGpu">System graphics processor (GPU)</sys:String>
+  <sys:String x:Key="Settings.Components.MetricApp">Player memory (APP)</sys:String>
+  <sys:String x:Key="Settings.Components.SpectrumTitle">Audio spectrum</sys:String>
+  <sys:String x:Key="Settings.Components.SpectrumDescription">Show the spectrum of current system audio while collapsed.</sys:String>
+  <sys:String x:Key="Settings.Components.OutputSwitchTitle">Output device switcher</sys:String>
+  <sys:String x:Key="Settings.Components.OutputSwitchDescription">Show a button for quickly switching the default output device.</sys:String>
+  <sys:String x:Key="Settings.Components.MediaVolumeTitle">Current media volume</sys:String>
+  <sys:String x:Key="Settings.Components.MediaVolumeDescription">Show a dedicated volume control for the current media app.</sys:String>
+
+  <!-- Layout & position page -->
+  <sys:String x:Key="Settings.Layout.Description">Set the window host, orientation, scale, and taskbar placement.</sys:String>
+  <sys:String x:Key="Settings.Layout.WindowMode">Window mode</sys:String>
+  <sys:String x:Key="Settings.Layout.WindowModeHint">The floating window can move freely away from the taskbar.</sys:String>
+  <sys:String x:Key="Settings.Layout.DockToTaskbar">Attach to taskbar</sys:String>
+  <sys:String x:Key="Settings.Layout.Floating">Float independently</sys:String>
+  <sys:String x:Key="Settings.Layout.Arrangement">Layout</sys:String>
+  <sys:String x:Key="Settings.Layout.ArrangementHint">Auto layout follows the taskbar orientation in taskbar mode and defaults to horizontal in floating mode.</sys:String>
+  <sys:String x:Key="Settings.Layout.Scale">Display scale</sys:String>
+  <sys:String x:Key="Settings.Layout.AvoidTaskbarTitle">Avoid taskbar icons automatically</sys:String>
+  <sys:String x:Key="Settings.Layout.AvoidTaskbarDescription">Only available with the horizontal layout in taskbar mode.</sys:String>
+  <sys:String x:Key="Settings.Layout.AvoidTaskbarDockDescription">Avoids taskbar icons automatically in taskbar mode.</sys:String>
+  <sys:String x:Key="Settings.Layout.AvoidTaskbarUnsupportedDescription">Automatic avoidance is not supported by the current window mode or vertical layout.</sys:String>
+  <sys:String x:Key="Settings.Layout.LockPositionTitle">Lock manual position</sys:String>
+  <sys:String x:Key="Settings.Layout.LockPositionDescription">When locked, dragging cannot change the taskbar position.</sys:String>
+  <sys:String x:Key="Settings.Layout.ResetPosition">Reset position</sys:String>
+
+  <!-- Appearance page -->
+  <sys:String x:Key="Settings.Appearance.Description">Adjust the colors of the media control window and the menu UI separately. Auto follows the Windows theme.</sys:String>
+  <sys:String x:Key="Settings.Appearance.Fonts">Fonts</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontsHint">Choose a Latin and a CJK font. Latin handles English titles and digits; CJK handles Chinese characters. Japanese, Korean, and Traditional Chinese fall back to system fonts automatically.</sys:String>
+  <sys:String x:Key="Settings.Appearance.LatinFont">Latin font</sys:String>
+  <sys:String x:Key="Settings.Appearance.CjkFont">CJK font</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontSegoeUi">Segoe UI (System Default)</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontFollowCjk">Follow CJK font</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontSystemDefault">System Default</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontMsYaHei">Microsoft YaHei (Recommended)</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontDengXian">等线</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontSimSun">宋体</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontSimHei">黑体</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontKaiTi">楷体</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontFangSong">仿宋</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontPreview">Preview: 中文 繁體 日本語 한국어 AaBbCc 123</sys:String>
+  <sys:String x:Key="Settings.Appearance.PlayerText">Media control window text</sys:String>
+  <sys:String x:Key="Settings.Appearance.LightText">Light text</sys:String>
+  <sys:String x:Key="Settings.Appearance.DarkText">Dark text</sys:String>
+  <sys:String x:Key="Settings.Appearance.ReadabilityTitle">Enhance text readability</sys:String>
+  <sys:String x:Key="Settings.Appearance.ReadabilityDescription">Add a contrasting backdrop behind text for transparent taskbars or busy wallpapers.</sys:String>
+  <sys:String x:Key="Settings.Appearance.MenuTheme">Menu &amp; settings theme</sys:String>
+  <sys:String x:Key="Settings.Appearance.MenuThemeHint">Applies to the context menu, detailed settings, and the player volume/device popups.</sys:String>
+
+  <!-- Interaction & animation page -->
+  <sys:String x:Key="Settings.Interaction.Description">Control mouse interaction and collapse behavior of the floating window.</sys:String>
+  <sys:String x:Key="Settings.Interaction.AutoCollapseTitle">Auto-collapse</sys:String>
+  <sys:String x:Key="Settings.Interaction.AutoCollapseDescription">Toggle between media info and transport controls after the mouse leaves.</sys:String>
+  <sys:String x:Key="Settings.Interaction.EdgeCollapseTitle">Collapse at screen edge</sys:String>
+  <sys:String x:Key="Settings.Interaction.EdgeCollapseDescription">Only available in floating mode.</sys:String>
+  <sys:String x:Key="Settings.Interaction.EdgeCollapseFloatingDescription">Available after switching to floating mode.</sys:String>
+  <sys:String x:Key="Settings.Interaction.EdgeCollapseNormalDescription">The window collapses when dragged to the edge of the desktop.</sys:String>
+  <sys:String x:Key="Settings.Interaction.TopMostTitle">Always on top and visible</sys:String>
+  <sys:String x:Key="Settings.Interaction.TopMostDescription">Keep the window visible and above other windows.</sys:String>
+
+  <!-- Performance & advanced page -->
+  <sys:String x:Key="Settings.Performance.Description">Reduce resource usage or run media-session diagnostics.</sys:String>
+  <sys:String x:Key="Settings.Performance.LowPerfTitle">Low-spec mode</sys:String>
+  <sys:String x:Key="Settings.Performance.LowPerfDescription">Use software rendering and disable transitions, marquee text, and metric fades.</sys:String>
+  <sys:String x:Key="Settings.Performance.Diagnostics">Diagnostics</sys:String>
+  <sys:String x:Key="Settings.Performance.Reconnect">Reconnect media session</sys:String>
+
+  <!-- Update status -->
+  <sys:String x:Key="Settings.Update.AutoCheckEnabled">Daily automatic update checks are enabled.</sys:String>
+  <sys:String x:Key="Settings.Update.AutoCheckDisabled">Automatic checks are off; you can still check manually.</sys:String>
+  <sys:String x:Key="Settings.Update.Checking">Checking for updates...</sys:String>
+  <sys:String x:Key="Settings.Update.Timeout">The update check timed out. Please try again later.</sys:String>
+  <sys:String x:Key="Settings.Update.Failed">The update check failed. Please try again later.</sys:String>
+  <sys:String x:Key="Settings.Update.FailedFormat">The update check failed. Please try again later.&#xA;{0}</sys:String>
+  <sys:String x:Key="Settings.Update.InProgress">An update check is already running, please wait.</sys:String>
+  <sys:String x:Key="Settings.Update.CheckedToday">Updates were already checked today.</sys:String>
+  <sys:String x:Key="Settings.Update.VersionFormat">Version {0}{1}</sys:String>
+  <sys:String x:Key="Settings.Update.NoReleaseNotes">No release notes yet.</sys:String>
+  <sys:String x:Key="Settings.Update.IgnoredFormat">Version {0} was skipped; you can still download it manually below.</sys:String>
+  <sys:String x:Key="Settings.Update.IgnoredNowFormat">Version {0} skipped; you can still download it manually below.</sys:String>
+  <sys:String x:Key="Settings.Update.MajorAvailable">An important update {0} is available.</sys:String>
+  <sys:String x:Key="Settings.Update.NewAvailable">A new version {0} is available.</sys:String>
+  <sys:String x:Key="Settings.Update.UpToDate">You are up to date with version {0}.</sys:String>
+
+  <!-- Settings search entries (titles/keywords) -->
+  <sys:String x:Key="Search.Kw.AutoStart">startup boot login auto-run</sys:String>
+  <sys:String x:Key="Search.Kw.HideWhenNoMedia">hide media visibility</sys:String>
+  <sys:String x:Key="Search.Kw.AutoCheckUpdate">update version download GitHub Quark Baidu Lanzou</sys:String>
+  <sys:String x:Key="Search.Kw.Metrics">metrics memory CPU GPU APP</sys:String>
+  <sys:String x:Key="Search.Kw.Spectrum">audio spectrum visualization</sys:String>
+  <sys:String x:Key="Search.Kw.OutputSwitch">audio output device</sys:String>
+  <sys:String x:Key="Search.Kw.MediaVolume">volume app</sys:String>
+  <sys:String x:Key="Search.Kw.WindowMode">taskbar floating host</sys:String>
+  <sys:String x:Key="Search.Kw.Arrangement">auto horizontal vertical orientation</sys:String>
+  <sys:String x:Key="Search.Kw.Scale">size zoom scaling</sys:String>
+  <sys:String x:Key="Search.Kw.AvoidTaskbar">position avoid placement</sys:String>
+  <sys:String x:Key="Search.Kw.LockPosition">position lock drag</sys:String>
+  <sys:String x:Key="Search.Kw.PlayerText">text color theme light dark</sys:String>
+  <sys:String x:Key="Search.Kw.Fonts">font preset yahei dengxian simsun simhei kaiti fangsong latin english Arial Calibri Consolas Verdana Segoe preview</sys:String>
+  <sys:String x:Key="Search.Kw.Readability">readability transparent taskbar</sys:String>
+  <sys:String x:Key="Search.Kw.MenuTheme">menu settings theme auto light dark</sys:String>
+  <sys:String x:Key="Search.Kw.AutoCollapse">collapse mouse animation</sys:String>
+  <sys:String x:Key="Search.Kw.EdgeCollapse">collapse edge floating</sys:String>
+  <sys:String x:Key="Search.Kw.TopMost">always on top</sys:String>
+  <sys:String x:Key="Search.Kw.LowPerf">performance GPU animation rendering</sys:String>
+  <sys:String x:Key="Search.Kw.Reconnect">diagnostics media connection</sys:String>
+</ResourceDictionary>

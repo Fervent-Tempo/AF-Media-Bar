@@ -13,6 +13,7 @@ internal sealed class SettingsCoordinator
             MetricSettingsService.Load(),
             ThemeSettingsService.Load(),
             FontSettingsService.Load(),
+            LanguageSettingsService.Load(),
             WindowSettingsService.Load(),
             PlacementSettingsService.Load(),
             ReadStartupEnabled());
@@ -56,6 +57,18 @@ internal sealed class SettingsCoordinator
         FontSettingsService.Save(settings);
         Current = Current with { Font = settings };
         Publish(SettingsSection.Font);
+    }
+
+    internal void UpdateLanguage(AppLanguage language)
+    {
+        if (language == Current.Language)
+        {
+            return;
+        }
+
+        LanguageSettingsService.Save(language);
+        Current = Current with { Language = language };
+        Publish(SettingsSection.Language);
     }
 
     internal void UpdateWindow(WindowSettings settings)
@@ -127,6 +140,7 @@ internal sealed class SettingsCoordinator
         MetricSettingsService.Save(MetricSettings.Default);
         ThemeSettingsService.Save(ThemeSettings.Default);
         FontSettingsService.Save(FontSettings.Default);
+        LanguageSettingsService.Save(AppLanguage.FollowSystem);
         WindowSettingsService.Save(WindowSettings.Default);
         PlacementSettingsService.Save(PlacementSettings.Default);
         StartupService.SetEnabled(false);
@@ -134,6 +148,7 @@ internal sealed class SettingsCoordinator
             MetricSettings.Default,
             ThemeSettings.Default,
             FontSettings.Default,
+            AppLanguage.FollowSystem,
             WindowSettings.Default,
             PlacementSettings.Default,
             false);

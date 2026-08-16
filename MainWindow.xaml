@@ -23,28 +23,28 @@
         <MenuItem.Header>
           <TextBlock x:Name="ConnectionMenuText"
                      MaxWidth="210"
-                     Text="等待媒体播放"
+                     Text="{DynamicResource Main.Placeholder.Title}"
                      TextTrimming="CharacterEllipsis"
                      ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
         </MenuItem.Header>
       </MenuItem>
       <Separator />
       <MenuItem x:Name="ShowSourceMenuItem"
-                Header="显示媒体应用"
+                Header="{DynamicResource Main.Menu.ShowSource}"
                 Click="ShowMediaSource_OnClick" />
       <MenuItem x:Name="MediaSourcesMenuItem"
-                Header="媒体来源" />
+                Header="{DynamicResource Main.Menu.Sources}" />
       <Separator />
-      <MenuItem Header="打开详细设置..."
+      <MenuItem Header="{DynamicResource Main.Menu.OpenSettings}"
                 Click="OpenSettings_OnClick" />
-      <MenuItem Header="重新连接媒体会话"
+      <MenuItem Header="{DynamicResource Main.Menu.Reconnect}"
                 Click="Reconnect_OnClick" />
       <MenuItem x:Name="StartupMenuItem"
-                Header="开机启动"
+                Header="{DynamicResource Main.Menu.AutoStart}"
                 IsCheckable="True"
                 Click="Startup_OnClick" />
       <Separator />
-      <MenuItem Header="退出"
+      <MenuItem Header="{DynamicResource Main.Menu.Exit}"
                 Click="Exit_OnClick" />
     </ContextMenu>
   </Window.ContextMenu>
@@ -133,7 +133,7 @@
               <TextBlock x:Name="TitleText"
                          Canvas.Left="0"
                          Canvas.Top="10"
-                         Text="等待媒体播放"
+                         Text="{DynamicResource Main.Placeholder.Title}"
                          FontFamily="{DynamicResource AppDisplayFontFamily}"
                          FontSize="14"
                          FontWeight="SemiBold"
@@ -155,7 +155,7 @@
               <TextBlock x:Name="ArtistText"
                          Canvas.Left="0"
                          Canvas.Top="1"
-                         Text="请在任意应用中播放音频或视频"
+                         Text="{DynamicResource Main.Placeholder.Subtitle}"
                          FontFamily="{DynamicResource AppTextFontFamily}"
                          FontSize="11.5"
                          Foreground="{DynamicResource TaskbarSecondaryTextBrush}"
@@ -187,7 +187,7 @@
                     VerticalAlignment="Center">
           <Button x:Name="PreviousButton"
                   Style="{StaticResource TransportButtonStyle}"
-                  ToolTip="上一首"
+                  ToolTip="{DynamicResource Main.Control.Previous}"
                   Click="Previous_OnClick">
             <TextBlock Text="&#xE892;"
                        FontFamily="{StaticResource AppIconFontFamily}"
@@ -195,7 +195,7 @@
           </Button>
           <Button x:Name="PlayPauseButton"
                   Style="{StaticResource TransportButtonStyle}"
-                  ToolTip="播放"
+                  ToolTip="{DynamicResource Main.Control.Play}"
                   Click="PlayPause_OnClick">
             <TextBlock x:Name="PlayPauseGlyph"
                        Text="&#xE768;"
@@ -204,7 +204,7 @@
           </Button>
           <Button x:Name="NextButton"
                   Style="{StaticResource TransportButtonStyle}"
-                  ToolTip="下一首"
+                  ToolTip="{DynamicResource Main.Control.Next}"
                   Click="Next_OnClick">
             <TextBlock Text="&#xE893;"
                        FontFamily="{StaticResource AppIconFontFamily}"
@@ -376,7 +376,7 @@
                     <TranslateTransform x:Name="VerticalTitleTransform" />
                   </Border.RenderTransform>
                   <TextBlock x:Name="VerticalTitleText"
-                             Text="等&#xA;待&#xA;媒&#xA;体&#xA;播&#xA;放"
+                             Text="{DynamicResource Main.Placeholder.TitleVertical}"
                              FontFamily="{DynamicResource AppDisplayFontFamily}"
                              FontSize="13"
                              FontWeight="SemiBold"
@@ -404,7 +404,7 @@
                     <TranslateTransform x:Name="VerticalArtistTransform" />
                   </Border.RenderTransform>
                   <TextBlock x:Name="VerticalArtistText"
-                             Text="请&#xA;在&#xA;任&#xA;意&#xA;应&#xA;用&#xA;中&#xA;播&#xA;放&#xA;音&#xA;频&#xA;或&#xA;视&#xA;频"
+                             Text="{DynamicResource Main.Placeholder.SubtitleVertical}"
                              FontFamily="{DynamicResource AppTextFontFamily}"
                              FontSize="11.5"
                              Foreground="{DynamicResource TaskbarSecondaryTextBrush}"
@@ -427,7 +427,7 @@
                         VerticalAlignment="Center">
               <Button x:Name="VerticalPreviousButton"
                       Style="{StaticResource TransportButtonStyle}"
-                      ToolTip="上一首"
+                      ToolTip="{DynamicResource Main.Control.Previous}"
                       Click="Previous_OnClick">
                 <TextBlock Text="&#xE892;"
                            FontFamily="{StaticResource AppIconFontFamily}"
@@ -435,7 +435,7 @@
               </Button>
               <Button x:Name="VerticalPlayPauseButton"
                       Style="{StaticResource TransportButtonStyle}"
-                      ToolTip="播放"
+                      ToolTip="{DynamicResource Main.Control.Play}"
                       Click="PlayPause_OnClick">
                 <TextBlock x:Name="VerticalPlayPauseGlyph"
                            Text="&#xE768;"
@@ -444,7 +444,7 @@
               </Button>
               <Button x:Name="VerticalNextButton"
                       Style="{StaticResource TransportButtonStyle}"
-                      ToolTip="下一首"
+                      ToolTip="{DynamicResource Main.Control.Next}"
                       Click="Next_OnClick">
                 <TextBlock Text="&#xE893;"
                            FontFamily="{StaticResource AppIconFontFamily}"
@@ -465,7 +465,7 @@
           <Button Width="30"
                   Height="30"
                   Style="{StaticResource TransportButtonStyle}"
-                  ToolTip="输出设备"
+                  ToolTip="{DynamicResource Main.Device.Output}"
                   Click="OutputDeviceButton_OnClick">
             <TextBlock Text="&#xE7F5;"
                        FontFamily="{StaticResource AppIconFontFamily}"
@@ -485,7 +485,7 @@
           <Button Width="30"
                   Height="30"
                   Style="{StaticResource TransportButtonStyle}"
-                  ToolTip="当前媒体音量"
+                  ToolTip="{DynamicResource Main.Volume.Current}"
                   Click="VolumeControlButton_OnClick">
             <TextBlock Text="&#xE767;"
                        FontFamily="{StaticResource AppIconFontFamily}"
@@ -546,7 +546,7 @@
         <StackPanel HorizontalAlignment="Center">
           <TextBlock x:Name="VolumeMediaNameText"
                      Width="74"
-                     Text="当前媒体"
+                     Text="{DynamicResource Main.Volume.CurrentMedia}"
                      TextAlignment="Center"
                      TextTrimming="CharacterEllipsis"
                      Foreground="{DynamicResource MenuPrimaryTextBrush}"
@@ -593,7 +593,7 @@
               PreviewMouseWheel="OutputDevicePopup_OnPreviewMouseWheel">
         <StackPanel>
           <DockPanel Margin="4,2,4,8">
-            <TextBlock Text="输出设备"
+            <TextBlock Text="{DynamicResource Main.Device.Output}"
                        Foreground="{DynamicResource MenuPrimaryTextBrush}"
                        FontFamily="{DynamicResource AppTextFontFamily}"
                        FontSize="13"

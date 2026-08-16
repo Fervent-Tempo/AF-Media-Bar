@@ -3,7 +3,13 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              ShutdownMode="OnExplicitShutdown">
   <Application.Resources>
-    <SolidColorBrush x:Key="TaskbarPrimaryTextBrush" Color="#FFF7FA" />
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <!-- 语言词典由 App 启动时按设置替换（MergedDictionaries[0]） -->
+        <ResourceDictionary Source="Resources/Languages/zh-CN.xaml" />
+      </ResourceDictionary.MergedDictionaries>
+
+      <SolidColorBrush x:Key="TaskbarPrimaryTextBrush" Color="#FFF7FA" />
     <SolidColorBrush x:Key="TaskbarSecondaryTextBrush" Color="#B9D1E3" />
     <SolidColorBrush x:Key="TaskbarSurfaceBrush" Color="#2AFFFFFF" />
     <SolidColorBrush x:Key="TaskbarHoverBrush" Color="#24FFFFFF" />
@@ -307,5 +313,6 @@
         </Setter.Value>
       </Setter>
     </Style>
+    </ResourceDictionary>
   </Application.Resources>
 </Application>

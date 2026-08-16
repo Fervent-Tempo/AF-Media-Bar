@@ -47,7 +47,8 @@ internal readonly record struct FontSettings(
     /// 链尾追加东亚回退（简体中文版 Windows 均自带）：
     /// MS Gothic 接管日文和制汉字（辻/働/畑 等 GBK 之外的码位），但含 JIS 汉字，
     /// 仅在链中已有中文字体时追加，避免截胡"中文=系统默认"预设的中文字形回退；
-    /// Malgun Gothic 为纯谚文字体、无汉字，可始终安全追加。
+    /// Malgun Gothic 为纯谚文字体、无汉字，可始终安全追加；
+    /// Microsoft JhengHei（微軟正黑體）接管简体字体缺失的繁体码位，覆盖台港澳歌曲文本。
     /// </summary>
     internal static string ResolveText(LatinFontPreset latin, CjkFontPreset cjk)
     {
@@ -71,7 +72,7 @@ internal readonly record struct FontSettings(
             CjkFontPreset.FangSong => "FangSong",
             _ => null
         };
-        var parts = new List<string>(4);
+        var parts = new List<string>(5);
         if (latinFont is not null)
         {
             parts.Add(latinFont);
@@ -84,6 +85,7 @@ internal readonly record struct FontSettings(
         }
 
         parts.Add("Malgun Gothic");
+        parts.Add("Microsoft JhengHei");
         return parts.Count == 0
             ? "Microsoft YaHei UI, Segoe UI"
             : string.Join(", ", parts);

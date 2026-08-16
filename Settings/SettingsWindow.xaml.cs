@@ -6,6 +6,8 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using AFMediaBar.Models;
 using AFMediaBar.Services;
+// System.Windows.Localization（枚举）与本地化帮助类同名，用别名消歧。
+using Loc = AFMediaBar.Services.Localization;
 
 namespace AFMediaBar.Settings;
 
@@ -14,30 +16,7 @@ public partial class SettingsWindow : Window
     private readonly SettingsCoordinator _coordinator;
     private readonly UpdateService _updateService;
     private readonly DispatcherTimer _scaleSaveTimer;
-    private readonly IReadOnlyList<SettingsSearchResult> _searchResults =
-    [
-        new("开机启动", "常规", "启动 登录 自动运行"),
-        new("无媒体时隐藏播放器", "常规", "隐藏 媒体 可见性"),
-        new("自动检查更新", "常规", "更新 版本 下载 GitHub 夸克 百度 蓝奏云"),
-        new("显示性能指标", "播放器组件", "指标 内存 CPU GPU APP"),
-        new("音频频谱", "播放器组件", "音频 频谱 可视化"),
-        new("输出设备切换", "播放器组件", "音频 输出 设备"),
-        new("当前媒体音量", "播放器组件", "音量 应用"),
-        new("窗口模式", "布局与位置", "任务栏 悬浮 宿主"),
-        new("布局", "布局与位置", "自动 横向 竖向 方向"),
-        new("显示比例", "布局与位置", "尺寸 缩放 比例"),
-        new("自动避让任务栏图标", "布局与位置", "位置 自动 避让"),
-        new("锁定手动位置", "布局与位置", "位置 锁定 拖动"),
-        new("媒体控制窗口文字", "外观", "文字 颜色 主题 浅色 深色"),
-        new("字体", "外观", "字体 预设 雅黑 等线 宋体 黑体 楷体 仿宋 西文 英文 Arial Calibri Consolas Verdana Segoe 预览"),
-        new("增强文字可读性", "外观", "可读性 透明 任务栏"),
-        new("菜单与设置主题", "外观", "菜单 设置 主题 自动 浅色 深色"),
-        new("自动折叠", "交互与动画", "折叠 鼠标 动画"),
-        new("桌面边缘自动折叠", "交互与动画", "折叠 边缘 悬浮"),
-        new("始终置顶并显示", "交互与动画", "置顶 显示"),
-        new("低配置模式", "性能与高级", "性能 GPU 动画 渲染"),
-        new("重新连接媒体会话", "性能与高级", "诊断 媒体 连接")
-    ];
+    private IReadOnlyList<SettingsSearchResult> _searchResults = [];
     private CancellationTokenSource? _updateCheckCancellation;
     private UpdateInfo? _displayedRelease;
     private bool _isInitialized;
@@ -54,8 +33,11 @@ public partial class SettingsWindow : Window
             Dispatcher);
         _scaleSaveTimer.Stop();
         InitializeComponent();
+        _searchResults = BuildSearchResults();
         _isInitialized = true;
-        VersionText.Text = $"当前版本：{Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "开发版"}";
+        VersionText.Text = Loc.Get(
+            "Settings.VersionFormat",
+            Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? Loc.Get("Settings.VersionDev"));
         _coordinator.Changed += Coordinator_OnChanged;
         _updateService.UpdateAvailable += UpdateService_OnUpdateAvailable;
         Closed += SettingsWindow_OnClosed;
@@ -133,9 +115,53 @@ public partial class SettingsWindow : Window
         AutoCollapseCheckBox.IsChecked = settings.Window.AutoCollapse;
         EdgeAutoCollapseCheckBox.IsChecked = settings.Window.EdgeAutoCollapse;
         AlwaysOnTopCheckBox.IsChecked = settings.Window.AlwaysOnTop;
+
+        LanguageFollowSystemRadioButton.IsChecked = settings.Language == AppLanguage.FollowSystem;
+        LanguageZhCnRadioButton.IsChecked = settings.Language == AppLanguage.ZhCn;
+        LanguageZhTwRadioButton.IsChecked = settings.Language == AppLanguage.ZhTw;
+        LanguageEnUsRadioButton.IsChecked = settings.Language == AppLanguage.EnUs;
         _isSyncing = false;
+        RebuildSearchIndex();
         UpdateDependencies();
     }
+
+    /// <summary>
+    /// 按当前语言重建搜索条目；已有查询时用新语言重新过滤并刷新结果页。
+    /// </summary>
+    private void RebuildSearchIndex()
+    {
+        _searchResults = BuildSearchResults();
+        if (!string.IsNullOrWhiteSpace(SearchBox.Text))
+        {
+            ApplySearchQuery(SearchBox.Text.Trim());
+        }
+    }
+
+    private static IReadOnlyList<SettingsSearchResult> BuildSearchResults() =>
+    [
+        new(SectionTag.General, Loc.Get("Settings.General.AutoStartTitle"), Loc.Get("Search.Kw.AutoStart")),
+        new(SectionTag.General, Loc.Get("Settings.General.HideWhenNoMediaTitle"), Loc.Get("Search.Kw.HideWhenNoMedia")),
+        new(SectionTag.General, Loc.Get("Settings.General.AutoCheckUpdateTitle"), Loc.Get("Search.Kw.AutoCheckUpdate")),
+        new(SectionTag.General, Loc.Get("Settings.Language.SectionTitle"), Loc.Get("Search.Kw.Language")),
+        new(SectionTag.Components, Loc.Get("Settings.Components.MetricsTitle"), Loc.Get("Search.Kw.Metrics")),
+        new(SectionTag.Components, Loc.Get("Settings.Components.SpectrumTitle"), Loc.Get("Search.Kw.Spectrum")),
+        new(SectionTag.Components, Loc.Get("Settings.Components.OutputSwitchTitle"), Loc.Get("Search.Kw.OutputSwitch")),
+        new(SectionTag.Components, Loc.Get("Settings.Components.MediaVolumeTitle"), Loc.Get("Search.Kw.MediaVolume")),
+        new(SectionTag.Layout, Loc.Get("Settings.Layout.WindowMode"), Loc.Get("Search.Kw.WindowMode")),
+        new(SectionTag.Layout, Loc.Get("Settings.Layout.Arrangement"), Loc.Get("Search.Kw.Arrangement")),
+        new(SectionTag.Layout, Loc.Get("Settings.Layout.Scale"), Loc.Get("Search.Kw.Scale")),
+        new(SectionTag.Layout, Loc.Get("Settings.Layout.AvoidTaskbarTitle"), Loc.Get("Search.Kw.AvoidTaskbar")),
+        new(SectionTag.Layout, Loc.Get("Settings.Layout.LockPositionTitle"), Loc.Get("Search.Kw.LockPosition")),
+        new(SectionTag.Appearance, Loc.Get("Settings.Appearance.PlayerText"), Loc.Get("Search.Kw.PlayerText")),
+        new(SectionTag.Appearance, Loc.Get("Settings.Appearance.Fonts"), Loc.Get("Search.Kw.Fonts")),
+        new(SectionTag.Appearance, Loc.Get("Settings.Appearance.ReadabilityTitle"), Loc.Get("Search.Kw.Readability")),
+        new(SectionTag.Appearance, Loc.Get("Settings.Appearance.MenuTheme"), Loc.Get("Search.Kw.MenuTheme")),
+        new(SectionTag.Interaction, Loc.Get("Settings.Interaction.AutoCollapseTitle"), Loc.Get("Search.Kw.AutoCollapse")),
+        new(SectionTag.Interaction, Loc.Get("Settings.Interaction.EdgeCollapseTitle"), Loc.Get("Search.Kw.EdgeCollapse")),
+        new(SectionTag.Interaction, Loc.Get("Settings.Interaction.TopMostTitle"), Loc.Get("Search.Kw.TopMost")),
+        new(SectionTag.Performance, Loc.Get("Settings.Performance.LowPerfTitle"), Loc.Get("Search.Kw.LowPerf")),
+        new(SectionTag.Performance, Loc.Get("Settings.Performance.Reconnect"), Loc.Get("Search.Kw.Reconnect"))
+    ];
 
     private void UpdateDependencies()
     {
@@ -150,13 +176,13 @@ public partial class SettingsWindow : Window
         ProcessMemoryCheckBox.IsEnabled = settings.Metrics.Enabled;
         AutomaticPlacementCheckBox.IsEnabled = canUseAutomaticPlacement;
         AutomaticPlacementDescription.Text = canUseAutomaticPlacement
-            ? "依附任务栏模式下自动避让任务栏图标。"
-            : "当前窗口模式或竖向布局不支持自动避让。";
+            ? Loc.Get("Settings.Layout.AvoidTaskbarDockDescription")
+            : Loc.Get("Settings.Layout.AvoidTaskbarUnsupportedDescription");
         LockPositionCheckBox.IsEnabled = taskbarMode && !settings.Placement.AutomaticPlacement;
         EdgeAutoCollapseCheckBox.IsEnabled = !taskbarMode;
         EdgeAutoCollapseDescription.Text = taskbarMode
-            ? "切换到独立悬浮模式后可用。"
-            : "将窗口拖到桌面边缘后自动收起。";
+            ? Loc.Get("Settings.Interaction.EdgeCollapseFloatingDescription")
+            : Loc.Get("Settings.Interaction.EdgeCollapseNormalDescription");
     }
 
     private void NavigationList_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -216,14 +242,19 @@ public partial class SettingsWindow : Window
             return;
         }
 
+        ApplySearchQuery(query);
+    }
+
+    private void ApplySearchQuery(string query)
+    {
         var results = _searchResults
             .Where(result => result.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                 result.Keywords.Contains(query, StringComparison.OrdinalIgnoreCase))
             .ToArray();
         SearchResultsList.ItemsSource = results;
         SearchResultsSummaryText.Text = results.Length == 0
-            ? $"没有找到与“{query}”匹配的设置。"
-            : $"找到 {results.Length} 项与“{query}”相关的设置。";
+            ? Loc.Get("Settings.Search.NoMatchesFormat", query)
+            : Loc.Get("Settings.Search.MatchesFormat", results.Length, query);
         SearchResultsList.Visibility = results.Length == 0
             ? Visibility.Collapsed
             : Visibility.Visible;
@@ -252,15 +283,7 @@ public partial class SettingsWindow : Window
             return;
         }
 
-        var pageTag = result.PageTitle switch
-        {
-            "常规" => "General",
-            "播放器组件" => "Components",
-            "布局与位置" => "Layout",
-            "外观" => "Appearance",
-            "交互与动画" => "Interaction",
-            _ => "Performance"
-        };
+        var pageTag = result.SectionTag;
         NavigationList.SelectedIndex = pageTag switch
         {
             "General" => 0,
@@ -283,6 +306,23 @@ public partial class SettingsWindow : Window
         }
 
         TryUpdate(() => _coordinator.UpdateStartup(StartupCheckBox.IsChecked == true));
+    }
+
+    private void LanguageRadio_OnChanged(object sender, RoutedEventArgs e)
+    {
+        if (_isSyncing)
+        {
+            return;
+        }
+
+        var language = LanguageFollowSystemRadioButton.IsChecked == true
+            ? AppLanguage.FollowSystem
+            : LanguageZhCnRadioButton.IsChecked == true
+                ? AppLanguage.ZhCn
+                : LanguageZhTwRadioButton.IsChecked == true
+                    ? AppLanguage.ZhTw
+                    : AppLanguage.EnUs;
+        TryUpdate(() => _coordinator.UpdateLanguage(language));
     }
 
     private void MetricCheckBox_OnChanged(object sender, RoutedEventArgs e)
@@ -493,8 +533,8 @@ public partial class SettingsWindow : Window
         _updateService.SetAutomaticChecksEnabled(
             AutomaticUpdateChecksCheckBox.IsChecked == true);
         UpdateStatusText.Text = AutomaticUpdateChecksCheckBox.IsChecked == true
-            ? "已启用每天一次的自动更新检查。"
-            : "自动检查已关闭，仍可手动检查。";
+            ? Loc.Get("Settings.Update.AutoCheckEnabled")
+            : Loc.Get("Settings.Update.AutoCheckDisabled");
     }
 
     private async void CheckForUpdates_OnClick(object sender, RoutedEventArgs e)
@@ -505,7 +545,7 @@ public partial class SettingsWindow : Window
         var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(20));
         _updateCheckCancellation = cancellation;
         CheckForUpdatesButton.IsEnabled = false;
-        UpdateStatusText.Text = "正在检查更新...";
+        UpdateStatusText.Text = Loc.Get("Settings.Update.Checking");
 
         try
         {
@@ -518,14 +558,14 @@ public partial class SettingsWindow : Window
         {
             if (!cancellation.IsCancellationRequested || IsVisible)
             {
-                UpdateStatusText.Text = "检查更新超时，请稍后重试。";
+                UpdateStatusText.Text = Loc.Get("Settings.Update.Timeout");
             }
         }
         catch (Exception exception)
         {
             if (IsVisible)
             {
-                UpdateStatusText.Text = $"检查更新失败，请稍后重试。\n{exception.Message}";
+                UpdateStatusText.Text = Loc.Get("Settings.Update.FailedFormat", exception.Message);
             }
         }
         finally
@@ -551,13 +591,13 @@ public partial class SettingsWindow : Window
                 ShowRelease(release, updateAvailable: false);
                 break;
             case UpdateCheckStatus.AlreadyChecking:
-                UpdateStatusText.Text = "更新检查正在进行，请稍候。";
+                UpdateStatusText.Text = Loc.Get("Settings.Update.InProgress");
                 break;
             case UpdateCheckStatus.NotDue:
-                UpdateStatusText.Text = "今天已经检查过更新。";
+                UpdateStatusText.Text = Loc.Get("Settings.Update.CheckedToday");
                 break;
             default:
-                UpdateStatusText.Text = result.ErrorMessage ?? "检查更新失败，请稍后重试。";
+                UpdateStatusText.Text = result.ErrorMessage ?? Loc.Get("Settings.Update.Failed");
                 break;
         }
     }
@@ -581,9 +621,9 @@ public partial class SettingsWindow : Window
         var releaseDate = release.ReleaseDate is { } date
             ? $" · {date:yyyy-MM-dd}"
             : string.Empty;
-        UpdateVersionText.Text = $"版本 {release.VersionText}{releaseDate}";
+        UpdateVersionText.Text = Loc.Get("Settings.Update.VersionFormat", release.VersionText, releaseDate);
         UpdateChangelogText.Text = release.Changelog.Count == 0
-            ? "暂无更新说明。"
+            ? Loc.Get("Settings.Update.NoReleaseNotes")
             : string.Join(
                 Environment.NewLine,
                 release.Changelog.Select(item => $"• {item}"));
@@ -599,11 +639,11 @@ public partial class SettingsWindow : Window
             _updateService.IsVersionSkipped(release.Version);
         UpdateStatusText.Text = updateAvailable
             ? skipped
-                ? $"版本 {release.VersionText} 已被忽略，仍可从下方手动下载。"
+                ? Loc.Get("Settings.Update.IgnoredFormat", release.VersionText)
                 : release.Mandatory
-                    ? $"发现重要更新 {release.VersionText}。"
-                    : $"发现新版本 {release.VersionText}。"
-            : $"当前已是最新版本 {release.VersionText}。";
+                    ? Loc.Get("Settings.Update.MajorAvailable", release.VersionText)
+                    : Loc.Get("Settings.Update.NewAvailable", release.VersionText)
+            : Loc.Get("Settings.Update.UpToDate", release.VersionText);
         SkipUpdateButton.Visibility = updateAvailable && !release.Mandatory && !skipped
             ? Visibility.Visible
             : Visibility.Collapsed;
@@ -632,14 +672,14 @@ public partial class SettingsWindow : Window
 
         _updateService.SkipVersion(release.Version);
         SkipUpdateButton.Visibility = Visibility.Collapsed;
-        UpdateStatusText.Text = $"已忽略版本 {release.VersionText}，仍可从下方手动下载。";
+        UpdateStatusText.Text = Loc.Get("Settings.Update.IgnoredNowFormat", release.VersionText);
     }
 
     private void ResetDefaults_OnClick(object sender, RoutedEventArgs e)
     {
         var result = MessageBox.Show(
-            "这会恢复所有设置并关闭开机启动，是否继续？",
-            "恢复默认设置",
+            Loc.Get("Msg.ResetBody"),
+            Loc.Get("Msg.ResetTitle"),
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
         if (result != MessageBoxResult.Yes)
@@ -674,7 +714,7 @@ public partial class SettingsWindow : Window
         {
             MessageBox.Show(
                 exception.Message,
-                "无法打开链接",
+                Loc.Get("Msg.OpenLinkFailed"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
@@ -695,7 +735,7 @@ public partial class SettingsWindow : Window
         {
             MessageBox.Show(
                 exception.Message,
-                "无法保存设置",
+                Loc.Get("Msg.SaveSettingsFailed"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
             SyncFromSettings();
@@ -713,5 +753,24 @@ public partial class SettingsWindow : Window
         Closed -= SettingsWindow_OnClosed;
     }
 
-    private sealed record SettingsSearchResult(string Title, string PageTitle, string Keywords);
+    /// <summary>
+    /// 设置页面的稳定标识；搜索跳转不再依赖本地化页面名。
+    /// </summary>
+    private static class SectionTag
+    {
+        internal const string General = "General";
+        internal const string Components = "Components";
+        internal const string Layout = "Layout";
+        internal const string Appearance = "Appearance";
+        internal const string Interaction = "Interaction";
+        internal const string Performance = "Performance";
+    }
+
+    private sealed record SettingsSearchResult(
+        string SectionTag,
+        string Title,
+        string Keywords)
+    {
+        internal string PageTitle => Loc.Get($"Settings.Nav.{SectionTag}");
+    }
 }

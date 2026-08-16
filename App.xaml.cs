@@ -7,6 +7,8 @@ using AFMediaBar.Interop;
 using AFMediaBar.Models;
 using AFMediaBar.Services;
 using AFMediaBar.Settings;
+// System.Windows.Localization（枚举）与本地化帮助类同名，用别名消歧。
+using Loc = AFMediaBar.Services.Localization;
 
 namespace AFMediaBar;
 
@@ -50,6 +52,7 @@ public partial class App : Application
 
         SettingsCoordinator = new SettingsCoordinator();
         SettingsCoordinator.Changed += SettingsCoordinator_OnChanged;
+        ApplyLanguageSettings();
         ApplyFontSettings();
         _updateService = new UpdateService();
         _shutdownCancellation = new CancellationTokenSource();
@@ -115,7 +118,7 @@ public partial class App : Application
             {
                 _settingsWindow = new SettingsWindow(
                     SettingsCoordinator,
-                    _updateService ?? throw new InvalidOperationException("更新服务尚未初始化。"));
+                    _updateService ?? throw new InvalidOperationException(Loc.Get("Msg.UpdateNotInitialized")));
                 _settingsWindow.Closed += SettingsWindow_OnClosed;
                 _settingsWindow.Show();
             }
@@ -140,8 +143,8 @@ public partial class App : Application
 
             _settingsWindow = null;
             MessageBox.Show(
-                $"设置窗口初始化失败。\n\n{exception.Message}",
-                "无法打开设置",
+                Loc.Get("Msg.OpenSettingsFailedBody", exception.Message),
+                Loc.Get("Msg.OpenSettingsFailed"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
@@ -206,13 +209,13 @@ public partial class App : Application
     private static void ShowUpdateNotification(UpdateInfo update)
     {
         var changelog = update.Changelog.Count == 0
-            ? "请打开发布页面查看更新内容。"
+            ? Loc.Get("Msg.UpdateOpenPageHint")
             : string.Join(
                 Environment.NewLine,
                 update.Changelog.Take(5).Select(item => $"• {item}"));
         var result = MessageBox.Show(
-            $"发现 AF Media Bar {update.VersionText}。\n\n{changelog}\n\n是否打开下载页面？",
-            update.Mandatory ? "发现重要更新" : "发现新版本",
+            Loc.Get("Msg.UpdateFoundBody", update.VersionText, changelog),
+            update.Mandatory ? Loc.Get("Msg.UpdateMajor") : Loc.Get("Msg.UpdateNew"),
             MessageBoxButton.YesNo,
             update.Mandatory ? MessageBoxImage.Warning : MessageBoxImage.Information);
         if (result != MessageBoxResult.Yes)
@@ -234,7 +237,7 @@ public partial class App : Application
         {
             MessageBox.Show(
                 exception.Message,
-                "无法打开下载页面",
+                Loc.Get("Msg.OpenDownloadFailed"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
@@ -263,17 +266,47 @@ public partial class App : Application
 
     private void SettingsCoordinator_OnChanged(object? sender, SettingsChangedEventArgs e)
     {
-        if (!e.Sections.HasFlag(SettingsSection.Font))
-        {
-            return;
-        }
-
         if (Dispatcher.HasShutdownStarted)
         {
             return;
         }
 
-        ApplyFontSettings();
+        if (e.Sections.HasFlag(SettingsSection.Font))
+        {
+            ApplyFontSettings();
+        }
+
+        if (e.Sections.HasFlag(SettingsSection.Language))
+        {
+            ApplyLanguageSettings();
+            if (MainWindow is MainWindow window)
+            {
+                window.RefreshLocalizedText();
+            }
+        }
+    }
+
+    /// <summary>
+    /// 将当前语言词典载入应用资源（约定为 MergedDictionaries 首个字典）。
+    /// 替换字典后所有 DynamicResource 文本引用即时刷新；动态文本由各窗口监听
+    /// SettingsSection.Language 自行刷新。
+    /// </summary>
+    private void ApplyLanguageSettings()
+    {
+        var dictionaryName = LanguageSettingsService.ResolveDictionaryName(
+            SettingsCoordinator.Current.Language);
+        var dictionary = new ResourceDictionary
+        {
+            Source = new Uri($"Resources/Languages/{dictionaryName}.xaml", UriKind.Relative)
+        };
+        if (Resources.MergedDictionaries.Count > 0)
+        {
+            Resources.MergedDictionaries[0] = dictionary;
+        }
+        else
+        {
+            Resources.MergedDictionaries.Add(dictionary);
+        }
     }
 
     private void SettingsWindow_OnClosed(object? sender, EventArgs e)
