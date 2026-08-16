@@ -1,4 +1,4 @@
-> The Chinese changelog is provided in [CHANGELOG.md](CHANGELOG.md).
+> 中文日志见： [CHANGELOG.md](CHANGELOG.md).
 
 # Changelog
 

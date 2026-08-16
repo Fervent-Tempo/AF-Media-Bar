@@ -1,4 +1,4 @@
-> 英文更新日志见 [CHANGELOG.en-US.md](CHANGELOG.en-US.md)。
+>  The English changelog is provided in  [CHANGELOG.en-US.md](CHANGELOG.en-US.md)。
 
 # 更新日志
 
