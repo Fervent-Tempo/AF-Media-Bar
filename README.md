@@ -51,14 +51,6 @@
 
 </div>
 
-### 组件自定义
-
-<div align="center">
-
-![AF Media Bar 组件自定义展示](./组件自定义.gif)
-
-</div>
-
 
 ### 介绍视频
 
@@ -148,6 +140,7 @@ AF Media Bar 暂未进行商业代码签名，因此 Windows SmartScreen 可能�
 
 ## 使用
 <div align="center">
+
 | 操作 | 结果 |
 | --- | --- |
 | 悬停播放器 | 展开媒体控制区 |
