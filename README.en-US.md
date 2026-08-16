@@ -44,17 +44,18 @@
 
 ### In Action
 
-![AF Media Bar in action](./运行展示.gif)
+<div align="center">
 
-### Component Customization
+![AF Media Bar 运行展示](./运行展示.gif)
 
-![AF Media Bar component customization](./组件自定义.gif)
+</div>
 
 ### Introduction Video
 
 - [Watch the AF Media Bar introduction video on Bilibili](https://www.bilibili.com/video/BV1Bjuq6bErr)
 
 ## Table of Contents
+<div align="center">
 
 - [Demo](#demo)
 - [Overview](#overview)
@@ -71,6 +72,8 @@
 - [TODO](#todo)
 - [Contributing](#contributing)
 - [License](#license)
+
+</div>
 
 ## Overview
 
@@ -131,6 +134,7 @@ The Windows 10/11 media card is an internal Explorer/Shell surface rather than a
 AF Media Bar is not commercially code-signed, so Windows SmartScreen may show an unknown publisher warning on first launch.
 
 ## Basic Usage
+<div align="center">
 
 | Action | Result |
 | --- | --- |
@@ -146,6 +150,8 @@ AF Media Bar is not commercially code-signed, so Windows SmartScreen may show an
 | Switch to floating mode | Place the player anywhere in the desktop work area |
 | Drag a floating window to a desktop edge | Collapse it automatically when desktop-edge auto-collapse is enabled; move the pointer near the indicator line to reveal it |
 | Right-click the bar or tray icon | Open detailed settings, media actions, or the exit menu |
+
+</div>
 
 Some players require “system media controls,” “media keys,” or “SMTC” to be enabled in their own settings.
 
@@ -267,8 +273,9 @@ AF-Media-Bar/
 - [x] Provide floating window mode and animated desktop-edge collapse.
 - [x] Provide display scaling and horizontal/vertical layouts for taskbar and floating windows.
 - [x] Provide an independent detailed settings page.
-- [ ] Provide freely entered custom window sizes and more customization options.
+- [x] Font Customization.
 - [ ] Improve opening media apps from artwork and add quick access to Task Manager.
+- [ ] Provide freely entered custom window sizes and more customization options.
 - [ ] Display scrolling video subtitles/lyrics.
 - [ ] Display media progress bars.
 - [ ] Polish the UI and provide multiple preset themes.

@@ -9,7 +9,7 @@
         MinHeight="560"
         Background="{DynamicResource MenuBackgroundBrush}"
         Foreground="{DynamicResource MenuPrimaryTextBrush}"
-        FontFamily="{StaticResource AppTextFontFamily}"
+        FontFamily="{DynamicResource AppTextFontFamily}"
         WindowStartupLocation="CenterScreen"
         ShowInTaskbar="True"
         UseLayoutRounding="True">
@@ -198,7 +198,7 @@
     </Style>
 
     <Style x:Key="SettingsPageTitleStyle" TargetType="TextBlock">
-      <Setter Property="FontFamily" Value="{StaticResource AppDisplayFontFamily}" />
+      <Setter Property="FontFamily" Value="{DynamicResource AppDisplayFontFamily}" />
       <Setter Property="FontSize" Value="26" />
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="Foreground" Value="{DynamicResource MenuPrimaryTextBrush}" />
@@ -215,6 +215,109 @@
       <Setter Property="TextWrapping" Value="Wrap" />
       <Setter Property="Foreground" Value="{DynamicResource MenuSecondaryTextBrush}" />
     </Style>
+
+    <Style x:Key="SettingsComboBoxItemStyle" TargetType="ComboBoxItem">
+      <Setter Property="Foreground" Value="{DynamicResource MenuPrimaryTextBrush}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="10,7" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ComboBoxItem">
+            <Border x:Name="ItemBorder"
+                    Background="{TemplateBinding Background}"
+                    CornerRadius="4"
+                    Padding="{TemplateBinding Padding}">
+              <ContentPresenter VerticalAlignment="Center" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsHighlighted" Value="True">
+                <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource MenuHoverBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource MenuHighlightTextBrush}" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="SettingsComboBoxStyle" TargetType="ComboBox">
+      <Setter Property="Foreground" Value="{DynamicResource MenuPrimaryTextBrush}" />
+      <Setter Property="Background" Value="{DynamicResource MenuHoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MenuBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Padding" Value="10,7" />
+      <Setter Property="MinWidth" Value="200" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="ItemContainerStyle" Value="{StaticResource SettingsComboBoxItemStyle}" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ComboBox">
+            <Grid>
+              <ToggleButton x:Name="ToggleButton"
+                            Focusable="False"
+                            ClickMode="Press"
+                            IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                <ToggleButton.Template>
+                  <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="Box"
+                            Background="{DynamicResource MenuHoverBrush}"
+                            BorderBrush="{DynamicResource MenuBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="10,7">
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ContentPresenter Grid.Column="0"
+                                          Margin="0,0,8,0"
+                                          VerticalAlignment="Center"
+                                          TextElement.Foreground="{DynamicResource MenuPrimaryTextBrush}" />
+                        <TextBlock Grid.Column="1"
+                                   Text="&#xE70D;"
+                                   FontFamily="{StaticResource AppIconFontFamily}"
+                                   FontSize="10"
+                                   Foreground="{DynamicResource MenuSecondaryTextBrush}"
+                                   VerticalAlignment="Center" />
+                      </Grid>
+                    </Border>
+                  </ControlTemplate>
+                </ToggleButton.Template>
+              </ToggleButton>
+              <ContentPresenter x:Name="ContentSite"
+                                Margin="{TemplateBinding Padding}"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                IsHitTestVisible="False"
+                                Content="{TemplateBinding SelectionBoxItem}"
+                                ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                TextElement.Foreground="{DynamicResource MenuPrimaryTextBrush}" />
+              <Popup x:Name="PART_Popup"
+                     AllowsTransparency="True"
+                     IsOpen="{TemplateBinding IsDropDownOpen}"
+                     Placement="Bottom"
+                     PopupAnimation="Fade"
+                     StaysOpen="False">
+                <Border MinWidth="{TemplateBinding ActualWidth}"
+                        MaxHeight="300"
+                        Padding="4"
+                        Background="{DynamicResource MenuBackgroundBrush}"
+                        BorderBrush="{DynamicResource MenuBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8">
+                  <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsPresenter />
+                  </ScrollViewer>
+                </Border>
+              </Popup>
+            </Grid>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
   </Window.Resources>
 
   <Grid Margin="18">
@@ -225,7 +328,7 @@
     <Grid Grid.Row="0" Margin="4,0,4,10">
       <StackPanel VerticalAlignment="Center">
         <TextBlock Text="AF Media Bar 设置"
-                   FontFamily="{StaticResource AppDisplayFontFamily}"
+                   FontFamily="{DynamicResource AppDisplayFontFamily}"
                    FontSize="22"
                    FontWeight="SemiBold" />
         <TextBlock Text="修改后立即生效"
@@ -581,7 +684,58 @@
             <TextBlock Text="分别调整媒体控制窗口和菜单界面的配色。自动模式会跟随 Windows 主题。"
                        Margin="0,6,0,20"
                        Style="{StaticResource SettingsRowDescriptionStyle}" />
-            <TextBlock Text="媒体控制窗口文字" FontSize="15" FontWeight="SemiBold" />
+            <TextBlock Text="字体" FontSize="15" FontWeight="SemiBold" />
+            <TextBlock Text="分别选择西文和中文字体。西文负责英文曲名与数字，中文负责汉字；日文、韩文自动使用系统自带字体。"
+                       Margin="0,4,0,8"
+                       Style="{StaticResource SettingsRowDescriptionStyle}" />
+            <Grid Margin="0,0,0,10">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="210" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="210" />
+              </Grid.ColumnDefinitions>
+              <StackPanel Grid.Column="0">
+                <TextBlock Text="西文字体" Margin="0,0,0,4" Style="{StaticResource SettingsRowDescriptionStyle}" />
+                <ComboBox x:Name="FontLatinComboBox"
+                          Style="{StaticResource SettingsComboBoxStyle}"
+                          SelectionChanged="FontComboBox_OnSelectionChanged">
+                  <ComboBoxItem Content="Segoe UI（系统默认）" />
+                  <ComboBoxItem Content="Arial" />
+                  <ComboBoxItem Content="Calibri" />
+                  <ComboBoxItem Content="Verdana" />
+                  <ComboBoxItem Content="Consolas" />
+                  <ComboBoxItem Content="Times New Roman" />
+                  <ComboBoxItem Content="跟随中文字体" />
+                </ComboBox>
+              </StackPanel>
+              <StackPanel Grid.Column="2">
+                <TextBlock Text="中文字体" Margin="0,0,0,4" Style="{StaticResource SettingsRowDescriptionStyle}" />
+                <ComboBox x:Name="FontCjkComboBox"
+                          Style="{StaticResource SettingsComboBoxStyle}"
+                          SelectionChanged="FontComboBox_OnSelectionChanged">
+                  <ComboBoxItem Content="系统默认" />
+                  <ComboBoxItem Content="微软雅黑（推荐）" />
+                  <ComboBoxItem Content="等线" />
+                  <ComboBoxItem Content="宋体" />
+                  <ComboBoxItem Content="黑体" />
+                  <ComboBoxItem Content="楷体" />
+                  <ComboBoxItem Content="仿宋" />
+                </ComboBox>
+              </StackPanel>
+            </Grid>
+            <Border Margin="0,0,0,16"
+                    Padding="12,8"
+                    Background="{DynamicResource MenuHoverBrush}"
+                    BorderBrush="{DynamicResource MenuBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6">
+              <TextBlock x:Name="FontPreviewText"
+                         Text="预览：中文 日本語 한국어 AaBbCc 123"
+                         FontSize="14"
+                         Foreground="{DynamicResource MenuPrimaryTextBrush}" />
+            </Border>
+            <Border BorderBrush="{DynamicResource MenuSeparatorBrush}" BorderThickness="0,0,0,1" />
+            <TextBlock Text="媒体控制窗口文字" Margin="0,16,0,0" FontSize="15" FontWeight="SemiBold" />
             <StackPanel Orientation="Horizontal" Margin="0,8,0,16">
               <RadioButton x:Name="AutomaticForegroundRadioButton" Content="自动" GroupName="ForegroundMode" Style="{StaticResource SettingsSegmentStyle}" Checked="ThemeRadio_OnChanged" />
               <RadioButton x:Name="LightForegroundRadioButton" Content="浅色文字" GroupName="ForegroundMode" Style="{StaticResource SettingsSegmentStyle}" Checked="ThemeRadio_OnChanged" />

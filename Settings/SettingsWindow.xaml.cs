@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Threading;
 using AFMediaBar.Models;
 using AFMediaBar.Services;
@@ -28,6 +29,7 @@ public partial class SettingsWindow : Window
         new("自动避让任务栏图标", "布局与位置", "位置 自动 避让"),
         new("锁定手动位置", "布局与位置", "位置 锁定 拖动"),
         new("媒体控制窗口文字", "外观", "文字 颜色 主题 浅色 深色"),
+        new("字体", "外观", "字体 预设 雅黑 等线 宋体 黑体 楷体 仿宋 西文 英文 Arial Calibri Consolas Verdana Segoe 预览"),
         new("增强文字可读性", "外观", "可读性 透明 任务栏"),
         new("菜单与设置主题", "外观", "菜单 设置 主题 自动 浅色 深色"),
         new("自动折叠", "交互与动画", "折叠 鼠标 动画"),
@@ -121,6 +123,12 @@ public partial class SettingsWindow : Window
         DarkMenuThemeRadioButton.IsChecked =
             settings.Theme.MenuThemeMode == MenuThemeMode.Dark;
         EnhancedReadabilityCheckBox.IsChecked = settings.Theme.EnhancedReadability;
+
+        FontLatinComboBox.SelectedIndex = (int)settings.Font.Latin;
+        FontCjkComboBox.SelectedIndex = (int)settings.Font.Cjk;
+        FontPreviewText.FontFamily = new FontFamily(FontSettings.ResolveText(
+            settings.Font.Latin,
+            settings.Font.Cjk));
 
         AutoCollapseCheckBox.IsChecked = settings.Window.AutoCollapse;
         EdgeAutoCollapseCheckBox.IsChecked = settings.Window.EdgeAutoCollapse;
@@ -452,6 +460,27 @@ public partial class SettingsWindow : Window
         {
             EnhancedReadability = EnhancedReadabilityCheckBox.IsChecked == true
         }));
+    }
+
+    private void FontComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isSyncing)
+        {
+            return;
+        }
+
+        if (FontLatinComboBox.SelectedIndex < 0 ||
+            FontCjkComboBox.SelectedIndex < 0 ||
+            !Enum.IsDefined(typeof(LatinFontPreset), FontLatinComboBox.SelectedIndex) ||
+            !Enum.IsDefined(typeof(CjkFontPreset), FontCjkComboBox.SelectedIndex))
+        {
+            return;
+        }
+
+        var latin = (LatinFontPreset)FontLatinComboBox.SelectedIndex;
+        var cjk = (CjkFontPreset)FontCjkComboBox.SelectedIndex;
+        TryUpdate(() => _coordinator.UpdateFont(new FontSettings(latin, cjk)));
+        FontPreviewText.FontFamily = new FontFamily(FontSettings.ResolveText(latin, cjk));
     }
 
     private void UpdateCheckSetting_OnChanged(object sender, RoutedEventArgs e)

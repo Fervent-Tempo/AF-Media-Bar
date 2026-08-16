@@ -11,12 +11,14 @@ internal enum SettingsSection
     Appearance = 16,
     Interaction = 32,
     Performance = 64,
-    All = General | Components | Window | Placement | Appearance | Interaction | Performance
+    Font = 128,
+    All = General | Components | Window | Placement | Appearance | Interaction | Performance | Font
 }
 
 internal readonly record struct ApplicationSettings(
     MetricSettings Metrics,
     ThemeSettings Theme,
+    FontSettings Font,
     WindowSettings Window,
     PlacementSettings Placement,
     bool StartupEnabled);

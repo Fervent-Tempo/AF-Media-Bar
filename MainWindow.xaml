@@ -134,7 +134,7 @@
                          Canvas.Left="0"
                          Canvas.Top="10"
                          Text="等待媒体播放"
-                         FontFamily="{StaticResource AppDisplayFontFamily}"
+                         FontFamily="{DynamicResource AppDisplayFontFamily}"
                          FontSize="14"
                          FontWeight="SemiBold"
                          Foreground="{DynamicResource TaskbarPrimaryTextBrush}"
@@ -156,7 +156,7 @@
                          Canvas.Left="0"
                          Canvas.Top="1"
                          Text="请在任意应用中播放音频或视频"
-                         FontFamily="{StaticResource AppTextFontFamily}"
+                         FontFamily="{DynamicResource AppTextFontFamily}"
                          FontSize="11.5"
                          Foreground="{DynamicResource TaskbarSecondaryTextBrush}"
                          Effect="{DynamicResource TaskbarTextEffect}"
@@ -250,7 +250,7 @@
             VerticalAlignment="Center">
       <TextBlock x:Name="MetricsText"
                  Text="MEM --%"
-                 FontFamily="{StaticResource AppTextFontFamily}"
+                 FontFamily="{DynamicResource AppTextFontFamily}"
                  FontSize="11"
                  FontWeight="SemiBold"
                  Foreground="{DynamicResource TaskbarSecondaryTextBrush}"
@@ -377,7 +377,7 @@
                   </Border.RenderTransform>
                   <TextBlock x:Name="VerticalTitleText"
                              Text="等&#xA;待&#xA;媒&#xA;体&#xA;播&#xA;放"
-                             FontFamily="{StaticResource AppDisplayFontFamily}"
+                             FontFamily="{DynamicResource AppDisplayFontFamily}"
                              FontSize="13"
                              FontWeight="SemiBold"
                              Foreground="{DynamicResource TaskbarPrimaryTextBrush}"
@@ -405,7 +405,7 @@
                   </Border.RenderTransform>
                   <TextBlock x:Name="VerticalArtistText"
                              Text="请&#xA;在&#xA;任&#xA;意&#xA;应&#xA;用&#xA;中&#xA;播&#xA;放&#xA;音&#xA;频&#xA;或&#xA;视&#xA;频"
-                             FontFamily="{StaticResource AppTextFontFamily}"
+                             FontFamily="{DynamicResource AppTextFontFamily}"
                              FontSize="11.5"
                              Foreground="{DynamicResource TaskbarSecondaryTextBrush}"
                              Effect="{DynamicResource TaskbarTextEffect}"
@@ -502,7 +502,7 @@
                 HorizontalAlignment="Center">
           <TextBlock x:Name="VerticalMetricsText"
                      Text="MEM --%"
-                     FontFamily="{StaticResource AppTextFontFamily}"
+                     FontFamily="{DynamicResource AppTextFontFamily}"
                      FontSize="10.5"
                      FontWeight="SemiBold"
                      Foreground="{DynamicResource TaskbarSecondaryTextBrush}"
@@ -550,14 +550,14 @@
                      TextAlignment="Center"
                      TextTrimming="CharacterEllipsis"
                      Foreground="{DynamicResource MenuPrimaryTextBrush}"
-                     FontFamily="{StaticResource AppTextFontFamily}"
+                     FontFamily="{DynamicResource AppTextFontFamily}"
                      FontSize="11.5" />
           <TextBlock x:Name="VolumePercentText"
                      Margin="0,3,0,5"
                      Text="--%"
                      TextAlignment="Center"
                      Foreground="{DynamicResource MenuSecondaryTextBrush}"
-                     FontFamily="{StaticResource AppTextFontFamily}"
+                     FontFamily="{DynamicResource AppTextFontFamily}"
                      FontSize="12"
                      FontWeight="SemiBold" />
           <Slider x:Name="CurrentMediaVolumeSlider"
@@ -595,7 +595,7 @@
           <DockPanel Margin="4,2,4,8">
             <TextBlock Text="输出设备"
                        Foreground="{DynamicResource MenuPrimaryTextBrush}"
-                       FontFamily="{StaticResource AppTextFontFamily}"
+                       FontFamily="{DynamicResource AppTextFontFamily}"
                        FontSize="13"
                        FontWeight="SemiBold" />
             <TextBlock x:Name="OutputDeviceCurrentText"
@@ -603,7 +603,7 @@
                        MaxWidth="150"
                        TextTrimming="CharacterEllipsis"
                        Foreground="{DynamicResource MenuSecondaryTextBrush}"
-                       FontFamily="{StaticResource AppTextFontFamily}"
+                       FontFamily="{DynamicResource AppTextFontFamily}"
                        FontSize="11"
                        HorizontalAlignment="Right" />
           </DockPanel>
@@ -620,7 +620,7 @@
               <DataTemplate>
                 <TextBlock Text="{Binding DisplayName}"
                            TextTrimming="CharacterEllipsis"
-                           FontFamily="{StaticResource AppTextFontFamily}"
+                           FontFamily="{DynamicResource AppTextFontFamily}"
                            FontSize="12.5" />
               </DataTemplate>
             </ListBox.ItemTemplate>
@@ -645,7 +645,7 @@
               IsHitTestVisible="False">
         <TextBlock x:Name="OutputDeviceStatusText"
                    Foreground="{DynamicResource MenuPrimaryTextBrush}"
-                   FontFamily="{StaticResource AppTextFontFamily}"
+                   FontFamily="{DynamicResource AppTextFontFamily}"
                    FontSize="12"
                    TextTrimming="CharacterEllipsis"
                    TextWrapping="NoWrap" />
@@ -668,7 +668,7 @@
               IsHitTestVisible="False">
         <TextBlock x:Name="VolumeStatusText"
                    Foreground="{DynamicResource MenuPrimaryTextBrush}"
-                   FontFamily="{StaticResource AppTextFontFamily}"
+                   FontFamily="{DynamicResource AppTextFontFamily}"
                    FontSize="12"
                    TextTrimming="CharacterEllipsis"
                    TextWrapping="NoWrap" />

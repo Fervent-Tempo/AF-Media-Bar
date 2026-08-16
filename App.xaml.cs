@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Threading;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Threading;
 using AFMediaBar.Interop;
 using AFMediaBar.Models;
@@ -48,6 +49,8 @@ public partial class App : Application
         }
 
         SettingsCoordinator = new SettingsCoordinator();
+        SettingsCoordinator.Changed += SettingsCoordinator_OnChanged;
+        ApplyFontSettings();
         _updateService = new UpdateService();
         _shutdownCancellation = new CancellationTokenSource();
         ShowMainWindow();
@@ -243,6 +246,34 @@ public partial class App : Application
         window.Closed += MainWindow_OnClosed;
         MainWindow = window;
         window.Show();
+    }
+
+    /// <summary>
+    /// 将已持久化的字体预设写入应用级资源，替换 XAML 中的默认字体。
+    /// 各控件通过 DynamicResource 引用 AppTextFontFamily / AppDisplayFontFamily，
+    /// 资源替换后立即热更新，无需重启。图标字体 AppIconFontFamily 保持不变。
+    /// </summary>
+    private void ApplyFontSettings()
+    {
+        var font = SettingsCoordinator.Current.Font;
+        var textFamily = new FontFamily(FontSettings.ResolveText(font.Latin, font.Cjk));
+        Resources["AppTextFontFamily"] = textFamily;
+        Resources["AppDisplayFontFamily"] = textFamily;
+    }
+
+    private void SettingsCoordinator_OnChanged(object? sender, SettingsChangedEventArgs e)
+    {
+        if (!e.Sections.HasFlag(SettingsSection.Font))
+        {
+            return;
+        }
+
+        if (Dispatcher.HasShutdownStarted)
+        {
+            return;
+        }
+
+        ApplyFontSettings();
     }
 
     private void SettingsWindow_OnClosed(object? sender, EventArgs e)

@@ -12,6 +12,7 @@ internal sealed class SettingsCoordinator
         Current = new ApplicationSettings(
             MetricSettingsService.Load(),
             ThemeSettingsService.Load(),
+            FontSettingsService.Load(),
             WindowSettingsService.Load(),
             PlacementSettingsService.Load(),
             ReadStartupEnabled());
@@ -43,6 +44,18 @@ internal sealed class SettingsCoordinator
         ThemeSettingsService.Save(settings);
         Current = Current with { Theme = settings };
         Publish(SettingsSection.Appearance);
+    }
+
+    internal void UpdateFont(FontSettings settings)
+    {
+        if (settings == Current.Font)
+        {
+            return;
+        }
+
+        FontSettingsService.Save(settings);
+        Current = Current with { Font = settings };
+        Publish(SettingsSection.Font);
     }
 
     internal void UpdateWindow(WindowSettings settings)
@@ -113,12 +126,14 @@ internal sealed class SettingsCoordinator
     {
         MetricSettingsService.Save(MetricSettings.Default);
         ThemeSettingsService.Save(ThemeSettings.Default);
+        FontSettingsService.Save(FontSettings.Default);
         WindowSettingsService.Save(WindowSettings.Default);
         PlacementSettingsService.Save(PlacementSettings.Default);
         StartupService.SetEnabled(false);
         Current = new ApplicationSettings(
             MetricSettings.Default,
             ThemeSettings.Default,
+            FontSettings.Default,
             WindowSettings.Default,
             PlacementSettings.Default,
             false);
