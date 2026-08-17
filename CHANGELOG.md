@@ -10,14 +10,30 @@
 
 ### 计划
 
-- 提供自由输入的自定义窗口大小、增加更多自定义设置。
-- 优化点击封面快速打开软件功能，增加快速打开任务管理器。
 - 视频字幕/歌词滚动展示。
 - 媒体进度条展示。
 - UI 美化、提供多种预制主题。
 - UI 编辑器，允许用户高度自定义外观。
 - 配置导出与分享。
 - 添加新手教程引导。
+
+## [1.1.1] - 2026-08-17
+
+### 改进
+
+- 完善简体中文、繁体中文和英文界面的即时切换。
+- 优化设置窗口、诊断日志和字体预设切换体验。
+- 改进长度、间距、厚度、独立尺寸、字体粗细和任务栏垂直偏移调节。
+- 优化媒体内容显示、封面圆角调节和布局自动切换。
+- 增加资源监控区域的任务管理器快捷操作。
+- 移除旧版注册表兼容逻辑，简化设置读取路径。
+
+### 修复
+
+- 修复悬浮窗口意外消失和焦点干扰问题。
+- 修复浏览器媒体封面刷新和断线宽限期内的媒体切换问题。
+- 修复托盘媒体唤醒、桌面边缘尺寸重锚和相关窗口恢复行为。
+- 改进媒体暂停后的播放来源自动切换。
 
 ## [1.1.0] - 2026-08-14
 
@@ -73,7 +89,8 @@
 - 将原生库查找限制到 System32。
 - 移除对媒体提供的 `.exe` 来源标识符的通用执行。
 
-[Unreleased]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.0.0

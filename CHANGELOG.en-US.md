@@ -10,14 +10,30 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Planned
 
-- Provide freely entered custom window sizes and more customization options.
-- Improve opening media apps from artwork and add quick access to Task Manager.
 - Display scrolling video subtitles/lyrics.
 - Display media progress bars.
 - Polish the UI and provide multiple preset themes.
 - Add a UI editor so users can deeply customize the appearance.
 - Export and share configurations.
 - Add an onboarding tutorial.
+
+## [1.1.1] - 2026-08-17
+
+### Changed
+
+- Improved live switching among Simplified Chinese, Traditional Chinese, and English interfaces.
+- Refined the settings window, diagnostic logging, and font preset switching experience.
+- Improved controls for length, spacing, thickness, independent sizing, font weight, and vertical taskbar offset.
+- Improved media-content visibility, artwork corner-radius controls, and automatic layout switching.
+- Added quick access to Task Manager from the resource metrics area.
+- Removed legacy registry compatibility logic to simplify settings loading.
+
+### Fixed
+
+- Fixed floating-window disappearance and focus interference.
+- Fixed browser artwork refresh and media switching during the disconnection grace period.
+- Fixed tray media activation, desktop-edge size re-anchoring, and related window recovery behavior.
+- Improved automatic media-source switching after playback pauses.
 
 ## [1.1.0] - 2026-08-14
 
@@ -73,7 +89,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Restricted native library lookup to System32.
 - Removed generic execution of media-provided `.exe` source identifiers.
 
-[Unreleased]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.0.0

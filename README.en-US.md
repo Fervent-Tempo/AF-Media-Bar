@@ -274,8 +274,8 @@ AF-Media-Bar/
 - [x] Provide display scaling and horizontal/vertical layouts for taskbar and floating windows.
 - [x] Provide an independent detailed settings page.
 - [x] Font Customization.
-- [ ] Improve opening media apps from artwork and add quick access to Task Manager.
-- [ ] Provide freely entered custom window sizes and more customization options.
+- [x] Improve opening media apps from artwork and add quick access to Task Manager.
+- [x] Provide freely entered custom window sizes and more customization options.
 - [ ] Display scrolling video subtitles/lyrics.
 - [ ] Display media progress bars.
 - [ ] Polish the UI and provide multiple preset themes.
