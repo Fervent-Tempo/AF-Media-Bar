@@ -1,29 +1,26 @@
 {
   "schemaVersion": 1,
-  "version": "1.1.0",
-  "releaseDate": "2026-08-14",
+  "version": "1.1.1",
+  "releaseDate": "2026-08-17",
   "minimumSupportedVersion": "1.0.0",
   "mandatory": false,
-  "title": "AF Media Bar 1.1.0",
+  "title": "AF Media Bar 1.1.1",
   "changelog": [
-    "支持 Windows 10",
-    "支持系统主题自动跟随和独立主题设置。",
-    "支持横向与竖向任务栏播放器布局。",
-    "重构设置窗口、设置菜单和任务栏窗口托管。",
-    "增加自动更新检查、备用版本清单源和跳过版本功能。",
-    "修复右键菜单层级问题。",
-    "双语社区和项目文档改进。",
-    "增加浮动窗口、边缘收起和窗口可见性选项。",
+    "修复悬浮窗口、托盘唤醒和桌面边缘尺寸恢复相关问题。",
+    "修复浏览器媒体封面刷新、断线期媒体切换和暂停后的自动切源。",
+    "完善简体中文、繁体中文和英文的即时界面切换。",
+    "改进设置窗口、诊断日志、字体预设及多项尺寸与外观调节。",
+    "增加资源监控区域的任务管理器快捷操作。",
     "蓝奏云密码：zzzz"
   ],
-  "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.1.0",
+  "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.1.1",
   "downloads": {
-    "github": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/download/v1.1.0/AFMediaBar-v1.1.0-win-x64.zip",
+    "github": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/download/v1.1.1/AFMediaBar-v1.1.1-win-x64.zip",
     "quark": "https://pan.quark.cn/s/6987e4945b16",
     "baidu": "https://pan.baidu.com/s/1zUQtZ_N1tnRTjJKd9kKREA?pwd=6ddc",
     "lanzou": "https://amorfate.lanzoue.com/b01eupanbg"
   },
   "sha256": {
-    "github": "7e86059e50d34bc53a8d8e591c4bc604f9cc93eeb1c251a499406d66e1bc21a2"
+    "github": "58285a60c93f1f3f4b4a325bd9331eedcc0e79fdb196db25d15f5b2fc70a9551"
   }
 }
