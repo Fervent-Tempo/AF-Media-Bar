@@ -23,8 +23,9 @@ internal static class WindowSettingsService
                 ReadNullableInt(key, "FloatingLeft"),
                 ReadNullableInt(key, "FloatingTop"));
         }
-        catch
+        catch (Exception exception)
         {
+            DiagnosticsLogService.Write("window-settings-read", exception);
             return WindowSettings.Default;
         }
     }

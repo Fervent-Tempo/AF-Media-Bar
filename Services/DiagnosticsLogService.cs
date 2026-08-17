@@ -14,22 +14,36 @@ internal static class DiagnosticsLogService
     private static readonly object SyncRoot = new();
     private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
+    internal static string EnsureLogFile()
+    {
+        var path = GetLogFilePath() ??
+            throw new InvalidOperationException("The local application data directory is unavailable.");
+        lock (SyncRoot)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            RotateIfNeeded(path);
+            if (!File.Exists(path))
+            {
+                File.WriteAllText(path, string.Empty, Utf8NoBom);
+            }
+        }
+
+        return path;
+    }
+
     internal static void Write(string category, Exception? exception = null, string? details = null)
     {
         try
         {
-            var localAppData = Environment.GetFolderPath(
-                Environment.SpecialFolder.LocalApplicationData);
-            if (string.IsNullOrWhiteSpace(localAppData))
+            var path = GetLogFilePath();
+            if (path is null)
             {
                 return;
             }
 
-            var directory = Path.Combine(localAppData, "AFMediaBar", "logs");
-            var path = Path.Combine(directory, "afmediabar.log");
             lock (SyncRoot)
             {
-                Directory.CreateDirectory(directory);
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
                 RotateIfNeeded(path);
                 var message = exception is null
                     ? string.Empty
@@ -47,6 +61,15 @@ internal static class DiagnosticsLogService
         {
             // 诊断日志不能成为新的崩溃源。 / Diagnostics must never become a crash source.
         }
+    }
+
+    private static string? GetLogFilePath()
+    {
+        var localAppData = Environment.GetFolderPath(
+            Environment.SpecialFolder.LocalApplicationData);
+        return string.IsNullOrWhiteSpace(localAppData)
+            ? null
+            : Path.Combine(localAppData, "AFMediaBar", "logs", "afmediabar.log");
     }
 
     private static void RotateIfNeeded(string path)

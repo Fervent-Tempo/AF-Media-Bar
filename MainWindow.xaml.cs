@@ -343,6 +343,7 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
+            DiagnosticsLogService.Write("media-session-initialize", exception);
             ShowDisconnectedState("Msg.SessionAccessFailed", exception.Message);
         }
     }
@@ -2272,6 +2273,7 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
+            DiagnosticsLogService.Write("save-window-settings", exception);
             if (!showError)
             {
                 return;
@@ -2421,6 +2423,7 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
+            DiagnosticsLogService.Write("output-device-refresh", exception);
             _outputDevices = [];
             OutputDeviceList.ItemsSource = null;
             OutputDeviceCurrentText.Text = Loc.Get("Main.Device.ReadFailed");
@@ -2718,6 +2721,10 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
+            DiagnosticsLogService.Write(
+                "output-device-switch",
+                exception,
+                $"Device={device.DisplayName};Id={device.Id}");
             OutputDeviceCurrentText.Text = Loc.Get("Main.Device.SwitchFailed");
             OutputDeviceStatusText.Text = Loc.Get("Main.Device.SwitchFailedFormat", exception.Message);
             OutputDeviceStatusPopup.IsOpen = true;
@@ -2768,6 +2775,10 @@ public partial class MainWindow : Window
                 return;
             }
 
+            DiagnosticsLogService.Write(
+                "application-volume-refresh",
+                exception,
+                $"SourceId={sourceId};SourceName={sourceName}");
             SetCurrentApplicationVolume(null);
             if (_showingVolumeHoverStatus || VolumeStatusPopup.IsOpen)
             {
@@ -3082,6 +3093,10 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
+            DiagnosticsLogService.Write(
+                "application-volume-set",
+                exception,
+                $"Process={application.ProcessName};Volume={volumePercent.Value}");
             VolumeStatusText.Text = Loc.Get("Main.Volume.AdjustFailedFormat", exception.Message);
             VolumeStatusPopup.IsOpen = true;
         }
@@ -3157,6 +3172,7 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
+            DiagnosticsLogService.Write("save-placement-settings", exception);
             if (!showError)
             {
                 return;
@@ -3667,6 +3683,7 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
+            DiagnosticsLogService.Write("media-command", exception, command.Method.Name);
             ShowDisconnectedState("Msg.MediaControlFailed", exception.Message);
         }
     }
@@ -3679,6 +3696,7 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
+            DiagnosticsLogService.Write("startup-setting-update", exception);
             StartupMenuItem.IsChecked = _settingsCoordinator.Current.StartupEnabled;
             MessageBox.Show(
                 exception.Message,
@@ -3708,9 +3726,13 @@ public partial class MainWindow : Window
         var sourceId = _mediaSessionService.SelectedSourceId;
         if (!string.IsNullOrWhiteSpace(sourceId))
         {
-            MediaSourceLauncherService.ShowOrLaunch(
-                sourceId,
-                _mediaSessionService.SelectedSourceName);
+            var sourceName = _mediaSessionService.SelectedSourceName;
+            if (!MediaSourceLauncherService.ShowOrLaunch(sourceId, sourceName))
+            {
+                DiagnosticsLogService.Write(
+                    "media-source-open-failed",
+                    details: $"SourceId={sourceId};SourceName={sourceName}");
+            }
         }
     }
 

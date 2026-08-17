@@ -166,8 +166,9 @@ internal sealed class SettingsCoordinator
         {
             return StartupService.IsEnabled;
         }
-        catch
+        catch (Exception exception)
         {
+            DiagnosticsLogService.Write("startup-setting-read", exception);
             return false;
         }
     }

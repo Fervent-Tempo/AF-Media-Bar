@@ -27,8 +27,9 @@ internal static class LanguageSettingsService
                     : AppLanguage.FollowSystem;
             return language;
         }
-        catch
+        catch (Exception exception)
         {
+            DiagnosticsLogService.Write("language-settings-read", exception);
             return AppLanguage.FollowSystem;
         }
     }

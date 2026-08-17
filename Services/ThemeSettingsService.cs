@@ -34,8 +34,9 @@ internal static class ThemeSettingsService
 
             return new ThemeSettings(mode, menuThemeMode, enhancedReadability);
         }
-        catch
+        catch (Exception exception)
         {
+            DiagnosticsLogService.Write("theme-settings-read", exception);
             return ThemeSettings.Default;
         }
     }

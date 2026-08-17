@@ -38,8 +38,9 @@ internal static class FontSettingsService
 
             return FontSettings.Default;
         }
-        catch
+        catch (Exception exception)
         {
+            DiagnosticsLogService.Write("font-settings-read", exception);
             return FontSettings.Default;
         }
     }

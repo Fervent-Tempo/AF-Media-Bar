@@ -563,6 +563,7 @@ public partial class SettingsWindow : Window
         }
         catch (Exception exception)
         {
+            DiagnosticsLogService.Write("manual-update-check", exception);
             if (IsVisible)
             {
                 UpdateStatusText.Text = Loc.Get("Settings.Update.FailedFormat", exception.Message);
@@ -712,9 +713,29 @@ public partial class SettingsWindow : Window
         }
         catch (Exception exception)
         {
+            DiagnosticsLogService.Write("open-external-link", exception, url);
             MessageBox.Show(
                 exception.Message,
                 Loc.Get("Msg.OpenLinkFailed"),
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+    }
+
+    private void OpenLogFile_OnClick(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var path = DiagnosticsLogService.EnsureLogFile();
+            DiagnosticsLogService.Write("log-file-opened");
+            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+        }
+        catch (Exception exception)
+        {
+            DiagnosticsLogService.Write("open-log-file", exception);
+            MessageBox.Show(
+                exception.Message,
+                Loc.Get("Msg.OpenLogFileFailed"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
@@ -733,6 +754,7 @@ public partial class SettingsWindow : Window
         }
         catch (Exception exception)
         {
+            DiagnosticsLogService.Write("save-settings", exception);
             MessageBox.Show(
                 exception.Message,
                 Loc.Get("Msg.SaveSettingsFailed"),

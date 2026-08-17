@@ -56,6 +56,7 @@
   <sys:String x:Key="Msg.OpenSettingsFailedBody">設定視窗初始化失敗。&#xA;&#xA;{0}</sys:String>
   <sys:String x:Key="Msg.OpenDownloadFailed">無法開啟下載頁面</sys:String>
   <sys:String x:Key="Msg.OpenLinkFailed">無法開啟連結</sys:String>
+  <sys:String x:Key="Msg.OpenLogFileFailed">無法開啟記錄檔</sys:String>
   <sys:String x:Key="Msg.ResetTitle">還原預設設定</sys:String>
   <sys:String x:Key="Msg.ResetBody">這會還原所有設定並關閉開機啟動，是否繼續？</sys:String>
   <sys:String x:Key="Msg.SaveSettingsFailed">無法儲存設定</sys:String>
@@ -102,6 +103,7 @@
   <sys:String x:Key="Settings.General.OpenGitHub">開啟 GitHub</sys:String>
   <sys:String x:Key="Settings.General.ReportIssue">回報問題</sys:String>
   <sys:String x:Key="Settings.General.License">授權條款</sys:String>
+  <sys:String x:Key="Settings.General.OpenLogFile">開啟記錄檔</sys:String>
   <sys:String x:Key="Settings.General.Update">取得更新</sys:String>
   <sys:String x:Key="Settings.General.AutoCheckUpdateTitle">自動檢查更新</sys:String>
   <sys:String x:Key="Settings.General.AutoCheckUpdateDescription">啟動後延遲檢查，每天最多存取一次公開版本清單。</sys:String>

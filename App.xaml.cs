@@ -136,6 +136,7 @@ public partial class App : Application
         }
         catch (Exception exception)
         {
+            DiagnosticsLogService.Write("open-settings-window", exception);
             if (_settingsWindow is not null)
             {
                 _settingsWindow.Closed -= SettingsWindow_OnClosed;
@@ -196,8 +197,9 @@ public partial class App : Application
         {
             // 应用退出时取消延迟检查。 / Application shutdown cancels a delayed update check.
         }
-        catch
+        catch (Exception exception)
         {
+            DiagnosticsLogService.Write("automatic-update-check", exception);
             // 自动检查异常必须保持静默，不能影响启动或退出。 / Automatic-check failures must never affect application startup or shutdown.
         }
     }
@@ -235,6 +237,7 @@ public partial class App : Application
         }
         catch (Exception exception)
         {
+            DiagnosticsLogService.Write("open-update-download", exception, uri.AbsoluteUri);
             MessageBox.Show(
                 exception.Message,
                 Loc.Get("Msg.OpenDownloadFailed"),

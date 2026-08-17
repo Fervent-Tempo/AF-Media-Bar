@@ -57,6 +57,7 @@
   <sys:String x:Key="Msg.OpenSettingsFailedBody">Settings window initialization failed.&#xA;&#xA;{0}</sys:String>
   <sys:String x:Key="Msg.OpenDownloadFailed">Could not open download page</sys:String>
   <sys:String x:Key="Msg.OpenLinkFailed">Could not open link</sys:String>
+  <sys:String x:Key="Msg.OpenLogFileFailed">Could not open log file</sys:String>
   <sys:String x:Key="Msg.ResetTitle">Restore default settings</sys:String>
   <sys:String x:Key="Msg.ResetBody">This restores all settings and disables start-at-boot. Continue?</sys:String>
   <sys:String x:Key="Msg.SaveSettingsFailed">Could not save settings</sys:String>
@@ -103,6 +104,7 @@
   <sys:String x:Key="Settings.General.OpenGitHub">Open GitHub</sys:String>
   <sys:String x:Key="Settings.General.ReportIssue">Report an issue</sys:String>
   <sys:String x:Key="Settings.General.License">License</sys:String>
+  <sys:String x:Key="Settings.General.OpenLogFile">Open log file</sys:String>
   <sys:String x:Key="Settings.General.Update">Updates</sys:String>
   <sys:String x:Key="Settings.General.AutoCheckUpdateTitle">Check for updates automatically</sys:String>
   <sys:String x:Key="Settings.General.AutoCheckUpdateDescription">Checks after a startup delay, at most once per day against the public release feed.</sys:String>

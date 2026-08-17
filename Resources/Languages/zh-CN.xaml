@@ -56,6 +56,7 @@
   <sys:String x:Key="Msg.OpenSettingsFailedBody">设置窗口初始化失败。&#xA;&#xA;{0}</sys:String>
   <sys:String x:Key="Msg.OpenDownloadFailed">无法打开下载页面</sys:String>
   <sys:String x:Key="Msg.OpenLinkFailed">无法打开链接</sys:String>
+  <sys:String x:Key="Msg.OpenLogFileFailed">无法打开日志文件</sys:String>
   <sys:String x:Key="Msg.ResetTitle">恢复默认设置</sys:String>
   <sys:String x:Key="Msg.ResetBody">这会恢复所有设置并关闭开机启动，是否继续？</sys:String>
   <sys:String x:Key="Msg.SaveSettingsFailed">无法保存设置</sys:String>
@@ -102,6 +103,7 @@
   <sys:String x:Key="Settings.General.OpenGitHub">打开 GitHub</sys:String>
   <sys:String x:Key="Settings.General.ReportIssue">反馈问题</sys:String>
   <sys:String x:Key="Settings.General.License">许可证</sys:String>
+  <sys:String x:Key="Settings.General.OpenLogFile">打开日志文件</sys:String>
   <sys:String x:Key="Settings.General.Update">获取更新</sys:String>
   <sys:String x:Key="Settings.General.AutoCheckUpdateTitle">自动检查更新</sys:String>
   <sys:String x:Key="Settings.General.AutoCheckUpdateDescription">启动后延迟检查，每天最多访问一次公开版本清单。</sys:String>

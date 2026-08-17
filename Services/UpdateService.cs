@@ -159,8 +159,9 @@ internal sealed class UpdateService : IDisposable
                     {
                         UpdateAvailable?.Invoke(this, LatestUpdate);
                     }
-                    catch
+                    catch (Exception exception)
                     {
+                        DiagnosticsLogService.Write("update-available-subscriber", exception);
                         // 通知订阅者失败不能破坏已经成功的网络检查。 / A subscriber failure must not turn a successful network check into an app failure.
                     }
 
@@ -183,10 +184,11 @@ internal sealed class UpdateService : IDisposable
                 }
             }
 
-            return UpdateCheckResult.Failed(
-                string.IsNullOrWhiteSpace(lastError)
-                    ? "无法访问版本清单。"
-                    : "无法访问版本清单，请稍后重试。\n" + lastError);
+            var errorMessage = string.IsNullOrWhiteSpace(lastError)
+                ? "无法访问版本清单。"
+                : "无法访问版本清单，请稍后重试。\n" + lastError;
+            DiagnosticsLogService.Write("update-check-failed", details: errorMessage);
+            return UpdateCheckResult.Failed(errorMessage);
         }
         finally
         {

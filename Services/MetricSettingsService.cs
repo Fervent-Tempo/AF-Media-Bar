@@ -96,8 +96,9 @@ internal static class MetricSettingsService
                 {
                     Save(settings);
                 }
-                catch
+                catch (Exception exception)
                 {
+                    DiagnosticsLogService.Write("metric-settings-migration", exception);
                     // 迁移写入失败时仍使用已读取的旧设置，避免阻断启动。
                     // Keep the loaded legacy settings when migration cannot write, so startup continues.
                 }
@@ -105,8 +106,9 @@ internal static class MetricSettingsService
 
             return settings;
         }
-        catch
+        catch (Exception exception)
         {
+            DiagnosticsLogService.Write("metric-settings-read", exception);
             return MetricSettings.Default;
         }
     }
