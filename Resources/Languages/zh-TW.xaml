@@ -159,8 +159,8 @@
   <sys:String x:Key="Settings.Layout.Arrangement">版面</sys:String>
   <sys:String x:Key="Settings.Layout.ArrangementHint">自動版面在工作列模式下跟隨工作列方向，懸浮模式預設為橫向。</sys:String>
   <sys:String x:Key="Settings.Layout.Size">尺寸</sys:String>
-  <sys:String x:Key="Settings.Layout.LengthScale">長度（沿工作列方向）</sys:String>
-  <sys:String x:Key="Settings.Layout.ThicknessScale">寬度（垂直工作列方向）</sys:String>
+  <sys:String x:Key="Settings.Layout.LengthScale">長度與間距（沿工作列方向）</sys:String>
+  <sys:String x:Key="Settings.Layout.ThicknessScale">控制項大小（寬度 / 厚度）</sys:String>
   <sys:String x:Key="Settings.Layout.TopOffset">工作列垂直位移</sys:String>
   <sys:String x:Key="Settings.Layout.TopOffsetDescription">僅橫向依附工作列時可用；0 為置中，負值向上，正值向下。</sys:String>
   <sys:String x:Key="Settings.Layout.AvoidTaskbarTitle">自動避讓工作列圖示</sys:String>

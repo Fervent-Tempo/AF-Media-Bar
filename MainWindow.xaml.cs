@@ -25,12 +25,8 @@ public partial class MainWindow : Window
 {
     private const double CollapsedInfoWidth = 210;
     private const double ExpandedInfoWidth = 96;
-    private const double PlayerWidthWithoutExtras = 271;
     private const double ArtworkAreaWidth = 44;
     private const double CompactCentralHostWidth = 114;
-    private const double MetricsAreaWidth = 78;
-    private const double OutputDeviceAreaWidth = 40;
-    private const double VolumeControlAreaWidth = 40;
     private const double MediaSwitchAreaWidth = 254;
     private const double CentralHostWidth = 210;
     private const double AudioVisualizerWidth = 88;
@@ -39,8 +35,6 @@ public partial class MainWindow : Window
     private const double VerticalPlayerWidth = 72;
     private const double VerticalArtworkAreaHeight = 48;
     private const double VerticalBaseHeight = 165;
-    private const double VerticalMetricAreaHeight = 29;
-    private const double VerticalControlAreaHeight = 40;
     private const int MouseWheelDelta = 120;
     private const int VolumeWheelStepPercent = 2;
     private const int HorizontalMarginAt96Dpi = 8;
@@ -819,8 +813,7 @@ public partial class MainWindow : Window
         TaskbarHostBounds bounds,
         bool verticalLayout)
     {
-        var requestedLengthScale = _windowSettings.LengthScalePercent / 100d;
-        var requestedThicknessScale = _windowSettings.ThicknessScalePercent / 100d;
+        var requestedScale = _windowSettings.ThicknessScalePercent / 100d;
         var availableThickness = verticalLayout
             ? bounds.ScreenBounds.Width
             : bounds.ScreenBounds.Height;
@@ -833,17 +826,13 @@ public partial class MainWindow : Window
         var designLength = verticalLayout ? PlayerRoot.Height : PlayerRoot.Width;
         var maximumThicknessScale = availableThickness / (designThickness * bounds.Scale);
         var maximumLengthScale = availableLength / (designLength * bounds.Scale);
-        var lengthScale = Math.Clamp(
-            Math.Min(requestedLengthScale, maximumLengthScale),
+        var scale = Math.Clamp(
+            Math.Min(
+                requestedScale,
+                Math.Min(maximumThicknessScale, maximumLengthScale)),
             0.1,
             1.25);
-        var thicknessScale = Math.Clamp(
-            Math.Min(requestedThicknessScale, maximumThicknessScale),
-            0.1,
-            1.25);
-        return verticalLayout
-            ? (thicknessScale, lengthScale)
-            : (lengthScale, thicknessScale);
+        return (scale, scale);
     }
 
     private void ApplyPlayerScale((double X, double Y) scale)
@@ -863,9 +852,7 @@ public partial class MainWindow : Window
             VerticalPlayerContent.Visibility == Visibility.Visible;
         _isVerticalLayout = vertical;
         SetPlayerContentVisibility(contentVisible);
-        PlayerRoot.Width = vertical ? VerticalPlayerWidth : CalculateHorizontalPlayerWidth();
-        PlayerRoot.Height = vertical ? CalculateVerticalPlayerHeight() : HorizontalPlayerHeight;
-        VerticalPlayerContent.Height = PlayerRoot.Height;
+        ApplyResponsivePlayerDimensions();
         VolumeControlPopup.PlacementTarget = vertical
             ? VerticalVolumeControlHost
             : VolumeControlHost;
@@ -899,21 +886,113 @@ public partial class MainWindow : Window
 
     private double CalculateHorizontalPlayerWidth()
     {
-        return PlayerWidthWithoutExtras +
-            (_windowSettings.ShowArtwork ? 0 : -ArtworkAreaWidth) +
-            (_windowSettings.ShowMediaInfo ? 0 : CompactCentralHostWidth - CentralHostWidth) +
-            (_metricSettings.SelectedCount > 0 ? MetricsAreaWidth : 0) +
-            (_metricSettings.OutputDeviceSwitcherEnabled ? OutputDeviceAreaWidth : 0) +
-            (_metricSettings.VolumeControlEnabled ? VolumeControlAreaWidth : 0);
+        var gap = CalculateLengthGap();
+        var centralWidth = _windowSettings.ShowMediaInfo
+            ? CentralHostWidth
+            : CompactCentralHostWidth;
+        return (_windowSettings.ShowArtwork ? 40 + gap : 0) +
+            centralWidth +
+            (_metricSettings.OutputDeviceSwitcherEnabled ? 36 + gap : 0) +
+            (_metricSettings.VolumeControlEnabled ? 36 + gap : 0) +
+            (_metricSettings.SelectedCount > 0 ? 74 + gap : 0) +
+            1 + gap * 4;
     }
 
     private double CalculateVerticalPlayerHeight()
     {
-        return VerticalBaseHeight +
-            (_windowSettings.ShowArtwork ? 0 : -VerticalArtworkAreaHeight) +
-            (_metricSettings.SelectedCount > 0 ? VerticalMetricAreaHeight : 0) +
-            (_metricSettings.OutputDeviceSwitcherEnabled ? VerticalControlAreaHeight : 0) +
-            (_metricSettings.VolumeControlEnabled ? VerticalControlAreaHeight : 0);
+        var artworkMargin = VerticalArtworkHost.Margin;
+        var centralMargin = VerticalCentralHost.Margin;
+        var outputMargin = VerticalOutputDeviceHost.Margin;
+        var volumeMargin = VerticalVolumeControlHost.Margin;
+        var metricsMargin = VerticalMetricsHost.Margin;
+        return (_windowSettings.ShowArtwork
+                ? 40 + artworkMargin.Top + artworkMargin.Bottom
+                : 0) +
+            VerticalCentralHost.Height + centralMargin.Bottom +
+            (_metricSettings.OutputDeviceSwitcherEnabled
+                ? 40 + outputMargin.Top + outputMargin.Bottom
+                : 0) +
+            (_metricSettings.VolumeControlEnabled
+                ? 40 + volumeMargin.Top + volumeMargin.Bottom
+                : 0) +
+            (_metricSettings.SelectedCount > 0
+                ? 24 + metricsMargin.Top + metricsMargin.Bottom
+                : 0);
+    }
+
+    private double CalculateLengthGap()
+    {
+        return Math.Clamp(
+            4 + (_windowSettings.LengthScalePercent - 100) * 0.14,
+            0.25,
+            8);
+    }
+
+    private double CalculateControlButtonSpacing()
+    {
+        return CalculateLengthGap() / 4;
+    }
+
+    private double CalculateVerticalControlSpacing()
+    {
+        return Math.Max(0, CalculateLengthGap() - 4) * 0.5;
+    }
+
+    private void ApplyResponsivePlayerDimensions()
+    {
+        var gap = CalculateLengthGap();
+        var buttonSpacing = CalculateControlButtonSpacing();
+        var buttonMargin = new Thickness(buttonSpacing, 0, buttonSpacing, 0);
+        PreviousButton.Margin = buttonMargin;
+        PlayPauseButton.Margin = buttonMargin;
+        NextButton.Margin = buttonMargin;
+        var controlsWidth = 3 * (36 + buttonSpacing * 2);
+        ControlsHost.Width = controlsWidth;
+        HorizontalControlsPanel.Width = controlsWidth;
+
+        var verticalButtonSpacing = CalculateVerticalControlSpacing();
+        var verticalButtonMargin = new Thickness(
+            0,
+            verticalButtonSpacing,
+            0,
+            verticalButtonSpacing);
+        VerticalPreviousButton.Margin = verticalButtonMargin;
+        VerticalPlayPauseButton.Margin = verticalButtonMargin;
+        VerticalNextButton.Margin = verticalButtonMargin;
+
+        ArtworkHost.Margin = new Thickness(gap / 2, 2, gap / 2, 2);
+        ArtworkColumn.Width = new GridLength(
+            _windowSettings.ShowArtwork ? 40 + gap : 0);
+        InfoContentGrid.Margin = new Thickness(5 + gap, 0, 4 + gap, 0);
+        var horizontalComponentMargin = new Thickness(gap / 2, 0, gap / 2, 0);
+        OutputDeviceHost.Margin = horizontalComponentMargin;
+        VolumeControlHost.Margin = horizontalComponentMargin;
+        MetricsHost.Margin = horizontalComponentMargin;
+        EndDivider.Margin = new Thickness(gap * 2, 0, gap * 2, 0);
+
+        VerticalArtworkHost.Margin = new Thickness(0, gap * 0.75, 0, gap * 1.25);
+        VerticalCentralHost.Margin = new Thickness(0, 0, 0, gap * 0.75);
+        var verticalControlSpacing = CalculateVerticalControlSpacing();
+        var verticalControlMargin = new Thickness(
+            0,
+            verticalControlSpacing,
+            0,
+            verticalControlSpacing);
+        var verticalCentralHeight = Math.Max(114, 108 + verticalControlSpacing * 6);
+        VerticalCentralHost.Height = verticalCentralHeight;
+        VerticalInfoHost.Height = verticalCentralHeight;
+        VerticalControlsHost.Height = verticalCentralHeight;
+        VerticalOutputDeviceHost.Margin = verticalControlMargin;
+        VerticalVolumeControlHost.Margin = verticalControlMargin;
+        VerticalMetricsHost.Margin = new Thickness(0, gap * 0.75, 0, gap * 0.5);
+
+        PlayerRoot.Width = _isVerticalLayout
+            ? VerticalPlayerWidth
+            : CalculateHorizontalPlayerWidth();
+        PlayerRoot.Height = _isVerticalLayout
+            ? CalculateVerticalPlayerHeight()
+            : HorizontalPlayerHeight;
+        VerticalPlayerContent.Height = PlayerRoot.Height;
     }
 
     private int? ResolveAutomaticLeft(
@@ -1714,13 +1793,7 @@ public partial class MainWindow : Window
 
     private void UpdatePlayerWidth(bool metricsVisible)
     {
-        PlayerRoot.Width = _isVerticalLayout
-            ? VerticalPlayerWidth
-            : CalculateHorizontalPlayerWidth();
-        PlayerRoot.Height = _isVerticalLayout
-            ? CalculateVerticalPlayerHeight()
-            : HorizontalPlayerHeight;
-        VerticalPlayerContent.Height = PlayerRoot.Height;
+        ApplyResponsivePlayerDimensions();
         PositionOverTaskbar(force: true);
     }
 
@@ -2032,19 +2105,14 @@ public partial class MainWindow : Window
         NativeMethods.Rect desktopBounds,
         double dpiScale)
     {
-        var requestedLengthScale = _windowSettings.LengthScalePercent / 100d;
-        var requestedThicknessScale = _windowSettings.ThicknessScalePercent / 100d;
-        var requestedX = _isVerticalLayout
-            ? requestedThicknessScale
-            : requestedLengthScale;
-        var requestedY = _isVerticalLayout
-            ? requestedLengthScale
-            : requestedThicknessScale;
+        var requestedScale = _windowSettings.ThicknessScalePercent / 100d;
         var maximumX = desktopBounds.Width / (PlayerRoot.Width * dpiScale);
         var maximumY = desktopBounds.Height / (PlayerRoot.Height * dpiScale);
-        return (
-            Math.Clamp(Math.Min(requestedX, maximumX), 0.1, 1.25),
-            Math.Clamp(Math.Min(requestedY, maximumY), 0.1, 1.25));
+        var scale = Math.Clamp(
+            Math.Min(requestedScale, Math.Min(maximumX, maximumY)),
+            0.1,
+            1.25);
+        return (scale, scale);
     }
 
     private void ConfigureFloatingPopupPlacement(
@@ -2334,13 +2402,7 @@ public partial class MainWindow : Window
             : CompactCentralHostWidth;
         CentralColumn.Width = new GridLength(centralWidth);
         CentralHost.Width = centralWidth;
-        PlayerRoot.Width = _isVerticalLayout
-            ? VerticalPlayerWidth
-            : CalculateHorizontalPlayerWidth();
-        PlayerRoot.Height = _isVerticalLayout
-            ? CalculateVerticalPlayerHeight()
-            : HorizontalPlayerHeight;
-        VerticalPlayerContent.Height = PlayerRoot.Height;
+        ApplyResponsivePlayerDimensions();
         SetExpanded(_isExpanded, animate: false);
         ScheduleMarqueeUpdate();
     }

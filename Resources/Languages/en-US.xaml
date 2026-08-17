@@ -160,8 +160,8 @@
   <sys:String x:Key="Settings.Layout.Arrangement">Layout</sys:String>
   <sys:String x:Key="Settings.Layout.ArrangementHint">Auto layout follows the taskbar orientation in taskbar mode and defaults to horizontal in floating mode.</sys:String>
   <sys:String x:Key="Settings.Layout.Size">Size</sys:String>
-  <sys:String x:Key="Settings.Layout.LengthScale">Length (along the taskbar)</sys:String>
-  <sys:String x:Key="Settings.Layout.ThicknessScale">Width / thickness (across the taskbar)</sys:String>
+  <sys:String x:Key="Settings.Layout.LengthScale">Length and spacing (along the taskbar)</sys:String>
+  <sys:String x:Key="Settings.Layout.ThicknessScale">Control size (width / thickness)</sys:String>
   <sys:String x:Key="Settings.Layout.TopOffset">Taskbar vertical offset</sys:String>
   <sys:String x:Key="Settings.Layout.TopOffsetDescription">Available when docked horizontally; 0 centers the player, negative moves up, and positive moves down.</sys:String>
   <sys:String x:Key="Settings.Layout.AvoidTaskbarTitle">Avoid taskbar icons automatically</sys:String>

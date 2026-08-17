@@ -159,8 +159,8 @@
   <sys:String x:Key="Settings.Layout.Arrangement">布局</sys:String>
   <sys:String x:Key="Settings.Layout.ArrangementHint">自动布局在任务栏模式下跟随任务栏方向，悬浮模式默认横向。</sys:String>
   <sys:String x:Key="Settings.Layout.Size">尺寸</sys:String>
-  <sys:String x:Key="Settings.Layout.LengthScale">长度（沿任务栏方向）</sys:String>
-  <sys:String x:Key="Settings.Layout.ThicknessScale">宽度（垂直任务栏方向）</sys:String>
+  <sys:String x:Key="Settings.Layout.LengthScale">长度与间距（沿任务栏方向）</sys:String>
+  <sys:String x:Key="Settings.Layout.ThicknessScale">控件大小（宽度 / 厚度）</sys:String>
   <sys:String x:Key="Settings.Layout.TopOffset">任务栏垂直偏移</sys:String>
   <sys:String x:Key="Settings.Layout.TopOffsetDescription">仅横向依附任务栏时可用；0 为居中，负值向上，正值向下。</sys:String>
   <sys:String x:Key="Settings.Layout.AvoidTaskbarTitle">自动避让任务栏图标</sys:String>

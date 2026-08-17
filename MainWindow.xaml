@@ -129,7 +129,8 @@
             VerticalAlignment="Center"
             Cursor="Hand"
             MouseLeftButtonUp="ShowMediaSource_OnMouseLeftButtonUp">
-        <Grid Height="40"
+        <Grid x:Name="InfoContentGrid"
+              Height="40"
               Margin="9,0,8,0">
 
           <Grid x:Name="TitleViewport"
@@ -190,7 +191,8 @@
         <Border.RenderTransform>
           <TranslateTransform x:Name="ControlsTransform" X="8" />
         </Border.RenderTransform>
-        <StackPanel Width="114"
+        <StackPanel x:Name="HorizontalControlsPanel"
+                    Width="114"
                     Orientation="Horizontal"
                     VerticalAlignment="Center">
           <Button x:Name="PreviousButton"
@@ -440,7 +442,8 @@
                   HorizontalAlignment="Center"
                   Opacity="0"
                   IsHitTestVisible="False">
-            <StackPanel Width="38"
+            <StackPanel x:Name="VerticalControlsPanel"
+                        Width="38"
                         VerticalAlignment="Center">
               <Button x:Name="VerticalPreviousButton"
                       Style="{StaticResource TransportButtonStyle}"
