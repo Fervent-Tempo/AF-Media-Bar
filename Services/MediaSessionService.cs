@@ -322,7 +322,12 @@ internal sealed class MediaSessionService : IDisposable
                     ReferenceEquals(entry.Session, current));
             }
 
-            selected ??= _entries.FirstOrDefault(entry => IsPlaying(entry.Session));
+            var playingEntry = _entries.FirstOrDefault(entry => IsPlaying(entry.Session));
+            if (playingEntry is not null &&
+                (selected is null || !IsPlaying(selected.Session)))
+            {
+                selected = playingEntry;
+            }
             selected ??= _entries.FirstOrDefault();
 
             if (selected is not null)
@@ -468,6 +473,8 @@ internal sealed class MediaSessionService : IDisposable
                 return;
             }
 
+            SessionEntry? replacement = null;
+            var previousSourceId = string.Empty;
             await _sessionGate.WaitAsync();
             try
             {
@@ -476,8 +483,15 @@ internal sealed class MediaSessionService : IDisposable
                     return;
                 }
 
+                replacement = FindPlayingReplacement(sender);
+                if (replacement is not null)
+                {
+                    previousSourceId = _lastSnapshot.SourceId;
+                    SelectEntry(replacement);
+                }
+
                 PublishSessions();
-                if (ReferenceEquals(sender, _session))
+                if (replacement is null && ReferenceEquals(sender, _session))
                 {
                     RefreshPlaybackInfo();
                 }
@@ -486,7 +500,37 @@ internal sealed class MediaSessionService : IDisposable
             {
                 _sessionGate.Release();
             }
+
+            if (replacement is not null)
+            {
+                DiagnosticsLogService.Write(
+                    "media-session-auto-switch",
+                    details: $"From={previousSourceId};To={replacement.SourceId}");
+                await RefreshMediaPropertiesAsync();
+            }
         });
+    }
+
+    private SessionEntry? FindPlayingReplacement(
+        GlobalSystemMediaTransportControlsSession eventSession)
+    {
+        var current = _session;
+        if (current is null || IsPlaying(current))
+        {
+            return null;
+        }
+
+        var eventEntry = _entries.FirstOrDefault(entry =>
+            !ReferenceEquals(entry.Session, current) &&
+            ReferenceEquals(entry.Session, eventSession));
+        if (eventEntry is not null && IsPlaying(eventEntry.Session))
+        {
+            return eventEntry;
+        }
+
+        return _entries.FirstOrDefault(entry =>
+            !ReferenceEquals(entry.Session, current) &&
+            IsPlaying(entry.Session));
     }
 
     private async Task RunSessionEventAsync(Func<Task> action)
