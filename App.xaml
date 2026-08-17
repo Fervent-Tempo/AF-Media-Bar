@@ -44,6 +44,8 @@
     <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="#F0172632" />
     <FontFamily x:Key="AppTextFontFamily">Segoe UI Variable Text, Segoe UI</FontFamily>
     <FontFamily x:Key="AppDisplayFontFamily">Segoe UI Variable Display, Segoe UI</FontFamily>
+    <FontWeight x:Key="PlayerTitleFontWeight">SemiBold</FontWeight>
+    <FontWeight x:Key="PlayerTextFontWeight">Normal</FontWeight>
     <FontFamily x:Key="AppIconFontFamily">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
 
     <Style TargetType="ContextMenu">

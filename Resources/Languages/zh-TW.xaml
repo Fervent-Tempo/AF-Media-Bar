@@ -155,7 +155,11 @@
   <sys:String x:Key="Settings.Layout.Floating">獨立懸浮</sys:String>
   <sys:String x:Key="Settings.Layout.Arrangement">版面</sys:String>
   <sys:String x:Key="Settings.Layout.ArrangementHint">自動版面在工作列模式下跟隨工作列方向，懸浮模式預設為橫向。</sys:String>
-  <sys:String x:Key="Settings.Layout.Scale">顯示比例</sys:String>
+  <sys:String x:Key="Settings.Layout.Size">尺寸</sys:String>
+  <sys:String x:Key="Settings.Layout.LengthScale">長度（沿工作列方向）</sys:String>
+  <sys:String x:Key="Settings.Layout.ThicknessScale">寬度（垂直工作列方向）</sys:String>
+  <sys:String x:Key="Settings.Layout.TopOffset">工作列垂直位移</sys:String>
+  <sys:String x:Key="Settings.Layout.TopOffsetDescription">僅橫向依附工作列時可用；0 為置中，負值向上，正值向下。</sys:String>
   <sys:String x:Key="Settings.Layout.AvoidTaskbarTitle">自動避讓工作列圖示</sys:String>
   <sys:String x:Key="Settings.Layout.AvoidTaskbarDescription">僅依附工作列模式的橫向版面可用。</sys:String>
   <sys:String x:Key="Settings.Layout.AvoidTaskbarDockDescription">依附工作列模式下自動避讓工作列圖示。</sys:String>
@@ -180,6 +184,10 @@
   <sys:String x:Key="Settings.Appearance.FontKaiTi">楷體</sys:String>
   <sys:String x:Key="Settings.Appearance.FontFangSong">仿宋</sys:String>
   <sys:String x:Key="Settings.Appearance.FontPreview">預覽：中文 繁體 日本語 한국어 AaBbCc 123</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontWeight">字型粗細</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontWeightLight">細</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontWeightStandard">標準</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontWeightBold">粗</sys:String>
   <sys:String x:Key="Settings.Appearance.PlayerText">媒體控制視窗文字</sys:String>
   <sys:String x:Key="Settings.Appearance.LightText">淺色文字</sys:String>
   <sys:String x:Key="Settings.Appearance.DarkText">深色文字</sys:String>
@@ -236,10 +244,12 @@
   <sys:String x:Key="Search.Kw.WindowMode">工作列 懸浮 宿主</sys:String>
   <sys:String x:Key="Search.Kw.Arrangement">自動 橫向 直向 方向</sys:String>
   <sys:String x:Key="Search.Kw.Scale">尺寸 縮放 比例</sys:String>
+  <sys:String x:Key="Search.Kw.TopOffset">工作列 上下 垂直 位移 置中</sys:String>
   <sys:String x:Key="Search.Kw.AvoidTaskbar">位置 自動 避讓</sys:String>
   <sys:String x:Key="Search.Kw.LockPosition">位置 鎖定 拖曳</sys:String>
   <sys:String x:Key="Search.Kw.PlayerText">文字 顏色 主題 淺色 深色</sys:String>
   <sys:String x:Key="Search.Kw.Fonts">字型 預設 雅黑 等線 宋體 黑體 楷體 仿宋 西文 英文 Arial Calibri Consolas Verdana Segoe 預覽</sys:String>
+  <sys:String x:Key="Search.Kw.FontWeight">字型 粗細 細 標準 粗 標題 歌手</sys:String>
   <sys:String x:Key="Search.Kw.Readability">可讀性 透明 工作列</sys:String>
   <sys:String x:Key="Search.Kw.MenuTheme">功能表 設定 主題 自動 淺色 深色</sys:String>
   <sys:String x:Key="Search.Kw.AutoCollapse">摺疊 滑鼠 動畫</sys:String>

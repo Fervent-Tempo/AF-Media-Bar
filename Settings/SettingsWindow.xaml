@@ -678,13 +678,14 @@
               <RadioButton x:Name="HorizontalLayoutRadioButton" Content="{DynamicResource Settings.Common.Horizontal}" GroupName="LayoutMode" Style="{StaticResource SettingsSegmentStyle}" Checked="WindowRadio_OnChanged" />
               <RadioButton x:Name="VerticalLayoutRadioButton" Content="{DynamicResource Settings.Common.Vertical}" GroupName="LayoutMode" Style="{StaticResource SettingsSegmentStyle}" Checked="WindowRadio_OnChanged" />
             </StackPanel>
-            <TextBlock Text="{DynamicResource Settings.Layout.Scale}" Margin="0,18,0,4" FontSize="15" FontWeight="SemiBold" />
+            <TextBlock Text="{DynamicResource Settings.Layout.Size}" Margin="0,18,0,4" FontSize="15" FontWeight="SemiBold" />
+            <TextBlock Text="{DynamicResource Settings.Layout.LengthScale}" Style="{StaticResource SettingsRowDescriptionStyle}" />
             <Grid Margin="0,0,0,12">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="64" />
               </Grid.ColumnDefinitions>
-              <Slider x:Name="ScaleSlider"
+              <Slider x:Name="LengthScaleSlider"
                       Grid.Column="0"
                       Minimum="70"
                       Maximum="125"
@@ -692,7 +693,48 @@
                       IsSnapToTickEnabled="True"
                       VerticalAlignment="Center"
                       ValueChanged="ScaleSlider_OnValueChanged" />
-              <TextBlock x:Name="ScaleValueText"
+              <TextBlock x:Name="LengthScaleValueText"
+                         Grid.Column="1"
+                         HorizontalAlignment="Right"
+                         VerticalAlignment="Center"
+                         FontSize="14" />
+            </Grid>
+            <TextBlock Text="{DynamicResource Settings.Layout.ThicknessScale}" Style="{StaticResource SettingsRowDescriptionStyle}" />
+            <Grid Margin="0,0,0,12">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="64" />
+              </Grid.ColumnDefinitions>
+              <Slider x:Name="ThicknessScaleSlider"
+                      Grid.Column="0"
+                      Minimum="70"
+                      Maximum="125"
+                      TickFrequency="5"
+                      IsSnapToTickEnabled="True"
+                      VerticalAlignment="Center"
+                      ValueChanged="ScaleSlider_OnValueChanged" />
+              <TextBlock x:Name="ThicknessScaleValueText"
+                         Grid.Column="1"
+                         HorizontalAlignment="Right"
+                         VerticalAlignment="Center"
+                         FontSize="14" />
+            </Grid>
+            <TextBlock Text="{DynamicResource Settings.Layout.TopOffset}" Margin="0,8,0,0" Style="{StaticResource SettingsRowTitleStyle}" />
+            <TextBlock Text="{DynamicResource Settings.Layout.TopOffsetDescription}" Style="{StaticResource SettingsRowDescriptionStyle}" />
+            <Grid Margin="0,6,0,12">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="64" />
+              </Grid.ColumnDefinitions>
+              <Slider x:Name="TaskbarTopOffsetSlider"
+                      Grid.Column="0"
+                      Minimum="-20"
+                      Maximum="20"
+                      TickFrequency="1"
+                      IsSnapToTickEnabled="True"
+                      VerticalAlignment="Center"
+                      ValueChanged="ScaleSlider_OnValueChanged" />
+              <TextBlock x:Name="TaskbarTopOffsetValueText"
                          Grid.Column="1"
                          HorizontalAlignment="Right"
                          VerticalAlignment="Center"
@@ -761,6 +803,17 @@
                 </ComboBox>
               </StackPanel>
             </Grid>
+            <StackPanel Margin="0,0,0,10" HorizontalAlignment="Left">
+              <TextBlock Text="{DynamicResource Settings.Appearance.FontWeight}" Margin="0,0,0,4" Style="{StaticResource SettingsRowDescriptionStyle}" />
+              <ComboBox x:Name="FontWeightComboBox"
+                        Width="210"
+                        Style="{StaticResource SettingsComboBoxStyle}"
+                        SelectionChanged="FontComboBox_OnSelectionChanged">
+                <ComboBoxItem Content="{DynamicResource Settings.Appearance.FontWeightLight}" />
+                <ComboBoxItem Content="{DynamicResource Settings.Appearance.FontWeightStandard}" />
+                <ComboBoxItem Content="{DynamicResource Settings.Appearance.FontWeightBold}" />
+              </ComboBox>
+            </StackPanel>
             <Border Margin="0,0,0,16"
                     Padding="12,8"
                     Background="{DynamicResource MenuHoverBrush}"

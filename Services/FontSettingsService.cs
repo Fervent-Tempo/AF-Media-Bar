@@ -25,9 +25,13 @@ internal static class FontSettingsService
                 Enum.IsDefined(typeof(CjkFontPreset), cjkValue)
                     ? (CjkFontPreset)cjkValue
                     : (CjkFontPreset?)null;
+            var weight = key.GetValue("PlayerFontWeightPreset") is int weightValue &&
+                Enum.IsDefined(typeof(PlayerFontWeightPreset), weightValue)
+                    ? (PlayerFontWeightPreset)weightValue
+                    : FontSettings.Default.Weight;
             if (latin is not null && cjk is not null)
             {
-                return new FontSettings(latin.Value, cjk.Value);
+                return new FontSettings(latin.Value, cjk.Value, weight);
             }
 
             // 新键缺失时迁移旧版单一字体预设（v1.1 及以前）
@@ -50,6 +54,7 @@ internal static class FontSettingsService
         using var key = Registry.CurrentUser.CreateSubKey(SettingsKeyPath, writable: true);
         key.SetValue("LatinFontPreset", (int)settings.Latin, RegistryValueKind.DWord);
         key.SetValue("CjkFontPreset", (int)settings.Cjk, RegistryValueKind.DWord);
+        key.SetValue("PlayerFontWeightPreset", (int)settings.Weight, RegistryValueKind.DWord);
         key.DeleteValue("FontPreset", throwOnMissingValue: false);
     }
 
@@ -59,13 +64,13 @@ internal static class FontSettingsService
     /// </summary>
     private static FontSettings MigrateFromLegacy(int preset) => preset switch
     {
-        0 => new FontSettings(LatinFontPreset.SegoeUi, CjkFontPreset.SystemDefault),
-        1 => new FontSettings(LatinFontPreset.FollowCjk, CjkFontPreset.MicrosoftYaHei),
-        2 => new FontSettings(LatinFontPreset.FollowCjk, CjkFontPreset.DengXian),
-        3 => new FontSettings(LatinFontPreset.FollowCjk, CjkFontPreset.SimSun),
-        4 => new FontSettings(LatinFontPreset.FollowCjk, CjkFontPreset.SimHei),
-        5 => new FontSettings(LatinFontPreset.FollowCjk, CjkFontPreset.KaiTi),
-        6 => new FontSettings(LatinFontPreset.FollowCjk, CjkFontPreset.FangSong),
+        0 => new FontSettings(LatinFontPreset.SegoeUi, CjkFontPreset.SystemDefault, PlayerFontWeightPreset.Standard),
+        1 => new FontSettings(LatinFontPreset.FollowCjk, CjkFontPreset.MicrosoftYaHei, PlayerFontWeightPreset.Standard),
+        2 => new FontSettings(LatinFontPreset.FollowCjk, CjkFontPreset.DengXian, PlayerFontWeightPreset.Standard),
+        3 => new FontSettings(LatinFontPreset.FollowCjk, CjkFontPreset.SimSun, PlayerFontWeightPreset.Standard),
+        4 => new FontSettings(LatinFontPreset.FollowCjk, CjkFontPreset.SimHei, PlayerFontWeightPreset.Standard),
+        5 => new FontSettings(LatinFontPreset.FollowCjk, CjkFontPreset.KaiTi, PlayerFontWeightPreset.Standard),
+        6 => new FontSettings(LatinFontPreset.FollowCjk, CjkFontPreset.FangSong, PlayerFontWeightPreset.Standard),
         _ => FontSettings.Default
     };
 }

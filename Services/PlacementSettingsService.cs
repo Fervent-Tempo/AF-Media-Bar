@@ -61,6 +61,15 @@ internal static class PlacementSettingsService
                     taskbarPlayerKey,
                     "ManualVerticalOffsetDip",
                     PlacementSettings.Default.ManualVerticalOffsetDip),
+                Math.Clamp(
+                    ReadInteger(
+                        currentKey,
+                        afShellKey,
+                        taskbarPlayerKey,
+                        "TaskbarTopOffsetDip",
+                        PlacementSettings.Default.TaskbarTopOffsetDip),
+                    -20,
+                    20),
                 ReadNullableInteger(
                     currentKey,
                     afShellKey,
@@ -138,6 +147,10 @@ internal static class PlacementSettingsService
             "ManualVerticalOffsetDip",
             settings.ManualVerticalOffsetDip,
             RegistryValueKind.DWord);
+        key.SetValue(
+            "TaskbarTopOffsetDip",
+            settings.TaskbarTopOffsetDip,
+            RegistryValueKind.DWord);
         key.SetValue("PlacementSettingsVersion", CurrentSettingsVersion, RegistryValueKind.DWord);
         WriteNullableInteger(key, "CachedAutomaticOffsetDip", settings.CachedAutomaticOffsetDip);
         WriteNullableInteger(key, "CachedTaskbarWidthDip", settings.CachedTaskbarWidthDip);
@@ -211,6 +224,7 @@ internal static class PlacementSettingsService
         return key.GetValue("AutomaticPlacement") is not int ||
             key.GetValue("PositionLocked") is not int ||
             key.GetValue("ManualOffsetDip") is not int ||
+            key.GetValue("TaskbarTopOffsetDip") is not int ||
             key.GetValue("PlacementSettingsVersion") is not int;
     }
 

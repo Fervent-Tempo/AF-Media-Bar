@@ -29,9 +29,17 @@ internal enum CjkFontPreset
     FangSong = 6
 }
 
+internal enum PlayerFontWeightPreset
+{
+    Light = 0,
+    Standard = 1,
+    Bold = 2
+}
+
 internal readonly record struct FontSettings(
     LatinFontPreset Latin,
-    CjkFontPreset Cjk)
+    CjkFontPreset Cjk,
+    PlayerFontWeightPreset Weight)
 {
     /// <summary>
     /// 默认组合：西文 Segoe UI + 中文微软雅黑，中西文混排观感最接近 Windows 原生。
@@ -39,7 +47,24 @@ internal readonly record struct FontSettings(
     /// </summary>
     internal static FontSettings Default { get; } = new(
         LatinFontPreset.SegoeUi,
-        CjkFontPreset.MicrosoftYaHei);
+        CjkFontPreset.MicrosoftYaHei,
+        PlayerFontWeightPreset.Standard);
+
+    internal static System.Windows.FontWeight ResolveTitleWeight(
+        PlayerFontWeightPreset preset) => preset switch
+        {
+            PlayerFontWeightPreset.Light => System.Windows.FontWeights.Normal,
+            PlayerFontWeightPreset.Bold => System.Windows.FontWeights.Bold,
+            _ => System.Windows.FontWeights.SemiBold
+        };
+
+    internal static System.Windows.FontWeight ResolveBodyWeight(
+        PlayerFontWeightPreset preset) => preset switch
+        {
+            PlayerFontWeightPreset.Light => System.Windows.FontWeights.Light,
+            PlayerFontWeightPreset.Bold => System.Windows.FontWeights.SemiBold,
+            _ => System.Windows.FontWeights.Normal
+        };
 
     /// <summary>
     /// 拼接为 WPF 字体回退链。西文必须放在中文之前：回退链按逐字形解析，

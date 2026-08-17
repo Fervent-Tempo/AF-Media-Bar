@@ -12,12 +12,14 @@ internal static class WindowSettingsService
         try
         {
             using var key = Registry.CurrentUser.OpenSubKey(SettingsKeyPath, writable: false);
+            var legacyScale = ReadDisplayScalePercent(key);
             return new WindowSettings(
                 ReadBoolean(key, "HideWhenNoMedia", WindowSettings.Default.HideWhenNoMedia),
                 ReadBoolean(key, "AlwaysOnTop", WindowSettings.Default.AlwaysOnTop),
                 ReadHostMode(key),
                 ReadPlayerLayoutMode(key),
-                ReadDisplayScalePercent(key),
+                ReadScalePercent(key, "LengthScalePercent", legacyScale),
+                ReadScalePercent(key, "ThicknessScalePercent", legacyScale),
                 ReadBoolean(key, "AutoCollapse", WindowSettings.Default.AutoCollapse),
                 ReadBoolean(key, "EdgeAutoCollapse", WindowSettings.Default.EdgeAutoCollapse),
                 ReadNullableInt(key, "FloatingLeft"),
@@ -40,7 +42,8 @@ internal static class WindowSettingsService
         key.SetValue("AlwaysOnTop", settings.AlwaysOnTop ? 1 : 0, RegistryValueKind.DWord);
         key.SetValue("HostMode", (int)settings.HostMode, RegistryValueKind.DWord);
         key.SetValue("LayoutMode", (int)settings.LayoutMode, RegistryValueKind.DWord);
-        key.SetValue("DisplayScalePercent", settings.DisplayScalePercent, RegistryValueKind.DWord);
+        key.SetValue("LengthScalePercent", settings.LengthScalePercent, RegistryValueKind.DWord);
+        key.SetValue("ThicknessScalePercent", settings.ThicknessScalePercent, RegistryValueKind.DWord);
         key.SetValue("AutoCollapse", settings.AutoCollapse ? 1 : 0, RegistryValueKind.DWord);
         key.SetValue("EdgeAutoCollapse", settings.EdgeAutoCollapse ? 1 : 0, RegistryValueKind.DWord);
         key.SetValue("ShowArtwork", settings.ShowArtwork ? 1 : 0, RegistryValueKind.DWord);
@@ -101,11 +104,16 @@ internal static class WindowSettingsService
             ReadInteger(
                 key,
                 "TaskbarScalePercent",
-                WindowSettings.Default.DisplayScalePercent));
+                WindowSettings.Default.LengthScalePercent));
         return Math.Clamp(
             value,
             70,
             125);
+    }
+
+    private static int ReadScalePercent(RegistryKey? key, string name, int fallback)
+    {
+        return Math.Clamp(ReadInteger(key, name, fallback), 70, 125);
     }
 
     private static int ReadInteger(RegistryKey? key, string name, int defaultValue)

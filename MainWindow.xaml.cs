@@ -672,8 +672,8 @@ public partial class MainWindow : Window
         var verticalLayout = ResolveVerticalTaskbarLayout(taskbarRect);
         ApplyPlayerLayout(verticalLayout);
         ConfigurePopupPlacement(bounds, verticalLayout);
-        var layoutScale = CalculateTaskbarLayoutScale(bounds, verticalLayout);
-        ApplyPlayerScale(layoutScale);
+        var playerScale = CalculateTaskbarPlayerScale(bounds, verticalLayout);
+        ApplyPlayerScale(playerScale);
         if (_placementSettings.AutomaticPlacement &&
             _lastTaskbarRect.HasValue &&
             _lastTaskbarRect.Value.Width != taskbarRect.Width)
@@ -687,8 +687,8 @@ public partial class MainWindow : Window
             force = true;
         }
 
-        var width = Math.Max(1, (int)Math.Ceiling(PlayerRoot.Width * layoutScale * scale));
-        var height = Math.Max(1, (int)Math.Ceiling(PlayerRoot.Height * layoutScale * scale));
+        var width = Math.Max(1, (int)Math.Ceiling(PlayerRoot.Width * playerScale.X * scale));
+        var height = Math.Max(1, (int)Math.Ceiling(PlayerRoot.Height * playerScale.Y * scale));
         int left;
         int top;
         if (verticalLayout)
@@ -724,14 +724,19 @@ public partial class MainWindow : Window
             }
 
             left = Math.Clamp(desiredLeft.Value, minLeft, maxLeft);
-            top = taskbarRect.Top + (taskbarRect.Height - height) / 2;
+            var centeredTop = taskbarRect.Top + (taskbarRect.Height - height) / 2;
+            top = Math.Clamp(
+                centeredTop + (int)Math.Round(
+                    _placementSettings.TaskbarTopOffsetDip * scale),
+                taskbarRect.Top,
+                Math.Max(taskbarRect.Top, taskbarRect.Bottom - height));
         }
 
         var rectChanged = !_lastTaskbarRect.HasValue ||
             !_lastTaskbarRect.Value.Equals(taskbarRect);
         var positionChanged = _lastPositionLeft != left || _lastPositionTop != top;
 
-        Height = PlayerRoot.Height * layoutScale;
+        Height = PlayerRoot.Height * playerScale.Y;
         Topmost = _windowSettings.AlwaysOnTop;
         if (!force && !rectChanged && !positionChanged)
         {
@@ -809,11 +814,12 @@ public partial class MainWindow : Window
         }
     }
 
-    private double CalculateTaskbarLayoutScale(
+    private (double X, double Y) CalculateTaskbarPlayerScale(
         TaskbarHostBounds bounds,
         bool verticalLayout)
     {
-        var requestedScale = _windowSettings.DisplayScalePercent / 100d;
+        var requestedLengthScale = _windowSettings.LengthScalePercent / 100d;
+        var requestedThicknessScale = _windowSettings.ThicknessScalePercent / 100d;
         var availableThickness = verticalLayout
             ? bounds.ScreenBounds.Width
             : bounds.ScreenBounds.Height;
@@ -826,16 +832,23 @@ public partial class MainWindow : Window
         var designLength = verticalLayout ? PlayerRoot.Height : PlayerRoot.Width;
         var maximumThicknessScale = availableThickness / (designThickness * bounds.Scale);
         var maximumLengthScale = availableLength / (designLength * bounds.Scale);
-        return Math.Clamp(
-            Math.Min(requestedScale, Math.Min(maximumThicknessScale, maximumLengthScale)),
+        var lengthScale = Math.Clamp(
+            Math.Min(requestedLengthScale, maximumLengthScale),
             0.1,
             1.25);
+        var thicknessScale = Math.Clamp(
+            Math.Min(requestedThicknessScale, maximumThicknessScale),
+            0.1,
+            1.25);
+        return verticalLayout
+            ? (thicknessScale, lengthScale)
+            : (lengthScale, thicknessScale);
     }
 
-    private void ApplyPlayerScale(double scale)
+    private void ApplyPlayerScale((double X, double Y) scale)
     {
-        PlayerScaleTransform.ScaleX = scale;
-        PlayerScaleTransform.ScaleY = scale;
+        PlayerScaleTransform.ScaleX = scale.X;
+        PlayerScaleTransform.ScaleY = scale.Y;
     }
 
     private void ApplyPlayerLayout(bool vertical)
@@ -1816,17 +1829,17 @@ public partial class MainWindow : Window
         var desktopBounds = monitorInfo.WorkArea;
         var dpi = NativeMethods.GetDpiForWindow(_windowHandle);
         var scale = dpi == 0 ? 1d : dpi / 96d;
-        var layoutScale = CalculateFloatingLayoutScale(desktopBounds, scale);
-        ApplyPlayerScale(layoutScale);
+        var playerScale = CalculateFloatingPlayerScale(desktopBounds, scale);
+        ApplyPlayerScale(playerScale);
         var width = Math.Clamp(
-            (int)Math.Ceiling(PlayerRoot.Width * layoutScale * scale),
+            (int)Math.Ceiling(PlayerRoot.Width * playerScale.X * scale),
             1,
             desktopBounds.Width);
         var height = Math.Clamp(
-            (int)Math.Ceiling(PlayerRoot.Height * layoutScale * scale),
+            (int)Math.Ceiling(PlayerRoot.Height * playerScale.Y * scale),
             1,
             desktopBounds.Height);
-        Height = PlayerRoot.Height * layoutScale;
+        Height = PlayerRoot.Height * playerScale.Y;
         left ??= desktopBounds.Left + 16;
         top ??= desktopBounds.Bottom - height - 16;
         var sizeChanged = _lastFloatingWidth > 0 &&
@@ -1982,17 +1995,23 @@ public partial class MainWindow : Window
         NativeMethods.ShowWindow(_windowHandle, NativeMethods.SwShowNoActivate);
     }
 
-    private double CalculateFloatingLayoutScale(
+    private (double X, double Y) CalculateFloatingPlayerScale(
         NativeMethods.Rect desktopBounds,
         double dpiScale)
     {
-        var requestedScale = _windowSettings.DisplayScalePercent / 100d;
-        var maximumWidthScale = desktopBounds.Width / (PlayerRoot.Width * dpiScale);
-        var maximumHeightScale = desktopBounds.Height / (PlayerRoot.Height * dpiScale);
-        return Math.Clamp(
-            Math.Min(requestedScale, Math.Min(maximumWidthScale, maximumHeightScale)),
-            0.1,
-            1.25);
+        var requestedLengthScale = _windowSettings.LengthScalePercent / 100d;
+        var requestedThicknessScale = _windowSettings.ThicknessScalePercent / 100d;
+        var requestedX = _isVerticalLayout
+            ? requestedThicknessScale
+            : requestedLengthScale;
+        var requestedY = _isVerticalLayout
+            ? requestedLengthScale
+            : requestedThicknessScale;
+        var maximumX = desktopBounds.Width / (PlayerRoot.Width * dpiScale);
+        var maximumY = desktopBounds.Height / (PlayerRoot.Height * dpiScale);
+        return (
+            Math.Clamp(Math.Min(requestedX, maximumX), 0.1, 1.25),
+            Math.Clamp(Math.Min(requestedY, maximumY), 0.1, 1.25));
     }
 
     private void ConfigureFloatingPopupPlacement(
@@ -3386,10 +3405,22 @@ public partial class MainWindow : Window
                     Math.Max(
                         taskbarRect.Left + margin,
                         taskbarRect.Right - margin - playerWidth));
+                var playerHeight = (int)Math.Ceiling(
+                    PlayerRoot.Height * PlayerScaleTransform.ScaleY * scale);
+                var centeredTop =
+                    taskbarRect.Top + (taskbarRect.Height - playerHeight) / 2;
+                var top = Math.Clamp(
+                    _dragStartWindowTop + deltaY,
+                    taskbarRect.Top,
+                    Math.Max(taskbarRect.Top, taskbarRect.Bottom - playerHeight));
                 _placementSettings = _placementSettings with
                 {
                     ManualOffsetDip = (int)Math.Round(
-                        (left - taskbarRect.Left) / scale)
+                        (left - taskbarRect.Left) / scale),
+                    TaskbarTopOffsetDip = Math.Clamp(
+                        (int)Math.Round((top - centeredTop) / scale),
+                        -20,
+                        20)
                 };
             }
             PositionOverTaskbar(force: true);

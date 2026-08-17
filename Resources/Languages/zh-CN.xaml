@@ -155,7 +155,11 @@
   <sys:String x:Key="Settings.Layout.Floating">独立悬浮</sys:String>
   <sys:String x:Key="Settings.Layout.Arrangement">布局</sys:String>
   <sys:String x:Key="Settings.Layout.ArrangementHint">自动布局在任务栏模式下跟随任务栏方向，悬浮模式默认横向。</sys:String>
-  <sys:String x:Key="Settings.Layout.Scale">显示比例</sys:String>
+  <sys:String x:Key="Settings.Layout.Size">尺寸</sys:String>
+  <sys:String x:Key="Settings.Layout.LengthScale">长度（沿任务栏方向）</sys:String>
+  <sys:String x:Key="Settings.Layout.ThicknessScale">宽度（垂直任务栏方向）</sys:String>
+  <sys:String x:Key="Settings.Layout.TopOffset">任务栏垂直偏移</sys:String>
+  <sys:String x:Key="Settings.Layout.TopOffsetDescription">仅横向依附任务栏时可用；0 为居中，负值向上，正值向下。</sys:String>
   <sys:String x:Key="Settings.Layout.AvoidTaskbarTitle">自动避让任务栏图标</sys:String>
   <sys:String x:Key="Settings.Layout.AvoidTaskbarDescription">仅依附任务栏模式的横向布局可用。</sys:String>
   <sys:String x:Key="Settings.Layout.AvoidTaskbarDockDescription">依附任务栏模式下自动避让任务栏图标。</sys:String>
@@ -180,6 +184,10 @@
   <sys:String x:Key="Settings.Appearance.FontKaiTi">楷体</sys:String>
   <sys:String x:Key="Settings.Appearance.FontFangSong">仿宋</sys:String>
   <sys:String x:Key="Settings.Appearance.FontPreview">预览：中文 繁體 日本語 한국어 AaBbCc 123</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontWeight">字体粗细</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontWeightLight">轻</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontWeightStandard">标准</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontWeightBold">粗</sys:String>
   <sys:String x:Key="Settings.Appearance.PlayerText">媒体控制窗口文字</sys:String>
   <sys:String x:Key="Settings.Appearance.LightText">浅色文字</sys:String>
   <sys:String x:Key="Settings.Appearance.DarkText">深色文字</sys:String>
@@ -236,10 +244,12 @@
   <sys:String x:Key="Search.Kw.WindowMode">任务栏 悬浮 宿主</sys:String>
   <sys:String x:Key="Search.Kw.Arrangement">自动 横向 竖向 方向</sys:String>
   <sys:String x:Key="Search.Kw.Scale">尺寸 缩放 比例</sys:String>
+  <sys:String x:Key="Search.Kw.TopOffset">任务栏 上下 垂直 偏移 居中</sys:String>
   <sys:String x:Key="Search.Kw.AvoidTaskbar">位置 自动 避让</sys:String>
   <sys:String x:Key="Search.Kw.LockPosition">位置 锁定 拖动</sys:String>
   <sys:String x:Key="Search.Kw.PlayerText">文字 颜色 主题 浅色 深色</sys:String>
   <sys:String x:Key="Search.Kw.Fonts">字体 预设 雅黑 等线 宋体 黑体 楷体 仿宋 西文 英文 Arial Calibri Consolas Verdana Segoe 预览</sys:String>
+  <sys:String x:Key="Search.Kw.FontWeight">字体 粗细 轻 标准 粗 标题 歌手</sys:String>
   <sys:String x:Key="Search.Kw.Readability">可读性 透明 任务栏</sys:String>
   <sys:String x:Key="Search.Kw.MenuTheme">菜单 设置 主题 自动 浅色 深色</sys:String>
   <sys:String x:Key="Search.Kw.AutoCollapse">折叠 鼠标 动画</sys:String>

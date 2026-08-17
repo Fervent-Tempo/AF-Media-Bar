@@ -265,6 +265,8 @@ public partial class App : Application
         var textFamily = new FontFamily(FontSettings.ResolveText(font.Latin, font.Cjk));
         Resources["AppTextFontFamily"] = textFamily;
         Resources["AppDisplayFontFamily"] = textFamily;
+        Resources["PlayerTitleFontWeight"] = FontSettings.ResolveTitleWeight(font.Weight);
+        Resources["PlayerTextFontWeight"] = FontSettings.ResolveBodyWeight(font.Weight);
     }
 
     private void SettingsCoordinator_OnChanged(object? sender, SettingsChangedEventArgs e)

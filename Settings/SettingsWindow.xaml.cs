@@ -86,8 +86,12 @@ public partial class SettingsWindow : Window
         AutomaticLayoutRadioButton.IsChecked = settings.Window.LayoutMode == PlayerLayoutMode.Automatic;
         HorizontalLayoutRadioButton.IsChecked = settings.Window.LayoutMode == PlayerLayoutMode.Horizontal;
         VerticalLayoutRadioButton.IsChecked = settings.Window.LayoutMode == PlayerLayoutMode.Vertical;
-        ScaleSlider.Value = settings.Window.DisplayScalePercent;
-        ScaleValueText.Text = $"{settings.Window.DisplayScalePercent}%";
+        LengthScaleSlider.Value = settings.Window.LengthScalePercent;
+        LengthScaleValueText.Text = $"{settings.Window.LengthScalePercent}%";
+        ThicknessScaleSlider.Value = settings.Window.ThicknessScalePercent;
+        ThicknessScaleValueText.Text = $"{settings.Window.ThicknessScalePercent}%";
+        TaskbarTopOffsetSlider.Value = settings.Placement.TaskbarTopOffsetDip;
+        TaskbarTopOffsetValueText.Text = $"{settings.Placement.TaskbarTopOffsetDip:+0;-0;0}";
 
         AutomaticPlacementCheckBox.IsChecked = settings.Placement.AutomaticPlacement;
         LockPositionCheckBox.IsChecked = settings.Window.HostMode == WindowHostMode.Taskbar &&
@@ -111,9 +115,11 @@ public partial class SettingsWindow : Window
 
         FontLatinComboBox.SelectedIndex = (int)settings.Font.Latin;
         FontCjkComboBox.SelectedIndex = (int)settings.Font.Cjk;
+        FontWeightComboBox.SelectedIndex = (int)settings.Font.Weight;
         FontPreviewText.FontFamily = new FontFamily(FontSettings.ResolveText(
             settings.Font.Latin,
             settings.Font.Cjk));
+        FontPreviewText.FontWeight = FontSettings.ResolveTitleWeight(settings.Font.Weight);
 
         AutoCollapseCheckBox.IsChecked = settings.Window.AutoCollapse;
         EdgeAutoCollapseCheckBox.IsChecked = settings.Window.EdgeAutoCollapse;
@@ -155,11 +161,13 @@ public partial class SettingsWindow : Window
         new(SectionTag.Components, Loc.Get("Settings.Components.MediaVolumeTitle"), Loc.Get("Search.Kw.MediaVolume")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.WindowMode"), Loc.Get("Search.Kw.WindowMode")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.Arrangement"), Loc.Get("Search.Kw.Arrangement")),
-        new(SectionTag.Layout, Loc.Get("Settings.Layout.Scale"), Loc.Get("Search.Kw.Scale")),
+        new(SectionTag.Layout, Loc.Get("Settings.Layout.Size"), Loc.Get("Search.Kw.Scale")),
+        new(SectionTag.Layout, Loc.Get("Settings.Layout.TopOffset"), Loc.Get("Search.Kw.TopOffset")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.AvoidTaskbarTitle"), Loc.Get("Search.Kw.AvoidTaskbar")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.LockPositionTitle"), Loc.Get("Search.Kw.LockPosition")),
         new(SectionTag.Appearance, Loc.Get("Settings.Appearance.PlayerText"), Loc.Get("Search.Kw.PlayerText")),
         new(SectionTag.Appearance, Loc.Get("Settings.Appearance.Fonts"), Loc.Get("Search.Kw.Fonts")),
+        new(SectionTag.Appearance, Loc.Get("Settings.Appearance.FontWeight"), Loc.Get("Search.Kw.FontWeight")),
         new(SectionTag.Appearance, Loc.Get("Settings.Appearance.ReadabilityTitle"), Loc.Get("Search.Kw.Readability")),
         new(SectionTag.Appearance, Loc.Get("Settings.Appearance.MenuTheme"), Loc.Get("Search.Kw.MenuTheme")),
         new(SectionTag.Interaction, Loc.Get("Settings.Interaction.AutoCollapseTitle"), Loc.Get("Search.Kw.AutoCollapse")),
@@ -182,6 +190,7 @@ public partial class SettingsWindow : Window
         ProcessMemoryCheckBox.IsEnabled = settings.Metrics.Enabled;
         RoundedArtworkCheckBox.IsEnabled = settings.Window.ShowArtwork;
         AutomaticPlacementCheckBox.IsEnabled = canUseAutomaticPlacement;
+        TaskbarTopOffsetSlider.IsEnabled = taskbarMode && !forcedVertical;
         AutomaticPlacementDescription.Text = canUseAutomaticPlacement
             ? Loc.Get("Settings.Layout.AvoidTaskbarDockDescription")
             : Loc.Get("Settings.Layout.AvoidTaskbarUnsupportedDescription");
@@ -388,7 +397,8 @@ public partial class SettingsWindow : Window
             AlwaysOnTop = AlwaysOnTopCheckBox.IsChecked == true,
             HostMode = hostMode,
             LayoutMode = layoutMode,
-            DisplayScalePercent = (int)Math.Round(ScaleSlider.Value),
+            LengthScalePercent = (int)Math.Round(LengthScaleSlider.Value),
+            ThicknessScalePercent = (int)Math.Round(ThicknessScaleSlider.Value),
             AutoCollapse = AutoCollapseCheckBox.IsChecked == true,
             EdgeAutoCollapse = EdgeAutoCollapseCheckBox.IsChecked == true,
             ShowArtwork = ShowArtworkCheckBox.IsChecked == true,
@@ -405,7 +415,10 @@ public partial class SettingsWindow : Window
             return;
         }
 
-        ScaleValueText.Text = $"{Math.Round(ScaleSlider.Value):0}%";
+        LengthScaleValueText.Text = $"{Math.Round(LengthScaleSlider.Value):0}%";
+        ThicknessScaleValueText.Text = $"{Math.Round(ThicknessScaleSlider.Value):0}%";
+        TaskbarTopOffsetValueText.Text =
+            $"{Math.Round(TaskbarTopOffsetSlider.Value):+0;-0;0}";
         if (_isSyncing)
         {
             return;
@@ -419,6 +432,11 @@ public partial class SettingsWindow : Window
     {
         _scaleSaveTimer.Stop();
         UpdateWindowSettings();
+        var currentPlacement = _coordinator.Current.Placement;
+        TryUpdate(() => _coordinator.UpdatePlacement(currentPlacement with
+        {
+            TaskbarTopOffsetDip = (int)Math.Round(TaskbarTopOffsetSlider.Value)
+        }));
     }
 
     private void PlacementCheckBox_OnChanged(object sender, RoutedEventArgs e)
@@ -521,16 +539,20 @@ public partial class SettingsWindow : Window
 
         if (FontLatinComboBox.SelectedIndex < 0 ||
             FontCjkComboBox.SelectedIndex < 0 ||
+            FontWeightComboBox.SelectedIndex < 0 ||
             !Enum.IsDefined(typeof(LatinFontPreset), FontLatinComboBox.SelectedIndex) ||
-            !Enum.IsDefined(typeof(CjkFontPreset), FontCjkComboBox.SelectedIndex))
+            !Enum.IsDefined(typeof(CjkFontPreset), FontCjkComboBox.SelectedIndex) ||
+            !Enum.IsDefined(typeof(PlayerFontWeightPreset), FontWeightComboBox.SelectedIndex))
         {
             return;
         }
 
         var latin = (LatinFontPreset)FontLatinComboBox.SelectedIndex;
         var cjk = (CjkFontPreset)FontCjkComboBox.SelectedIndex;
-        TryUpdate(() => _coordinator.UpdateFont(new FontSettings(latin, cjk)));
+        var weight = (PlayerFontWeightPreset)FontWeightComboBox.SelectedIndex;
+        TryUpdate(() => _coordinator.UpdateFont(new FontSettings(latin, cjk, weight)));
         FontPreviewText.FontFamily = new FontFamily(FontSettings.ResolveText(latin, cjk));
+        FontPreviewText.FontWeight = FontSettings.ResolveTitleWeight(weight);
     }
 
     private void UpdateCheckSetting_OnChanged(object sender, RoutedEventArgs e)
