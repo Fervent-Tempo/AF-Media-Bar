@@ -255,7 +255,8 @@
             Padding="8,0"
             CornerRadius="12"
             Background="{DynamicResource TaskbarHoverBrush}"
-            VerticalAlignment="Center">
+            VerticalAlignment="Center"
+            MouseLeftButtonUp="MetricsHost_OnMouseLeftButtonUp">
       <TextBlock x:Name="MetricsText"
                  Text="MEM --%"
                  FontFamily="{DynamicResource AppTextFontFamily}"
@@ -515,7 +516,8 @@
                 Padding="4,0"
                 CornerRadius="6"
                 Background="{DynamicResource TaskbarHoverBrush}"
-                HorizontalAlignment="Center">
+                HorizontalAlignment="Center"
+                MouseLeftButtonUp="MetricsHost_OnMouseLeftButtonUp">
           <TextBlock x:Name="VerticalMetricsText"
                      Text="MEM --%"
                      FontFamily="{DynamicResource AppTextFontFamily}"

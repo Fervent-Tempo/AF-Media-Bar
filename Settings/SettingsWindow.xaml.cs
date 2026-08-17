@@ -76,6 +76,8 @@ public partial class SettingsWindow : Window
         AudioMonitorCheckBox.IsChecked = settings.Metrics.AudioMonitorEnabled;
         OutputDeviceCheckBox.IsChecked = settings.Metrics.OutputDeviceSwitcherEnabled;
         VolumeControlCheckBox.IsChecked = settings.Metrics.VolumeControlEnabled;
+        OpenTaskManagerOnMetricsClickCheckBox.IsChecked =
+            settings.Metrics.OpenTaskManagerOnMetricsClick;
         LowGpuModeCheckBox.IsChecked = settings.Metrics.LowGpuMode;
         ShowArtworkCheckBox.IsChecked = settings.Window.ShowArtwork;
         RoundedArtworkCheckBox.IsChecked = settings.Window.RoundedArtwork;
@@ -156,6 +158,7 @@ public partial class SettingsWindow : Window
         new(SectionTag.Components, Loc.Get("Settings.Components.RoundedArtworkTitle"), Loc.Get("Search.Kw.Artwork")),
         new(SectionTag.Components, Loc.Get("Settings.Components.ShowMediaInfoTitle"), Loc.Get("Search.Kw.MediaInfo")),
         new(SectionTag.Components, Loc.Get("Settings.Components.MetricsTitle"), Loc.Get("Search.Kw.Metrics")),
+        new(SectionTag.Components, Loc.Get("Settings.Components.OpenTaskManagerTitle"), Loc.Get("Search.Kw.TaskManager")),
         new(SectionTag.Components, Loc.Get("Settings.Components.SpectrumTitle"), Loc.Get("Search.Kw.Spectrum")),
         new(SectionTag.Components, Loc.Get("Settings.Components.OutputSwitchTitle"), Loc.Get("Search.Kw.OutputSwitch")),
         new(SectionTag.Components, Loc.Get("Settings.Components.MediaVolumeTitle"), Loc.Get("Search.Kw.MediaVolume")),
@@ -188,6 +191,7 @@ public partial class SettingsWindow : Window
         SystemCpuCheckBox.IsEnabled = settings.Metrics.Enabled;
         SystemGpuCheckBox.IsEnabled = settings.Metrics.Enabled;
         ProcessMemoryCheckBox.IsEnabled = settings.Metrics.Enabled;
+        OpenTaskManagerOnMetricsClickCheckBox.IsEnabled = settings.Metrics.SelectedCount > 0;
         RoundedArtworkCheckBox.IsEnabled = settings.Window.ShowArtwork;
         AutomaticPlacementCheckBox.IsEnabled = canUseAutomaticPlacement;
         TaskbarTopOffsetSlider.IsEnabled = taskbarMode && !forcedVertical;
@@ -357,7 +361,8 @@ public partial class SettingsWindow : Window
             LowGpuModeCheckBox.IsChecked == true,
             AudioMonitorCheckBox.IsChecked == true,
             OutputDeviceCheckBox.IsChecked == true,
-            VolumeControlCheckBox.IsChecked == true)));
+            VolumeControlCheckBox.IsChecked == true,
+            OpenTaskManagerOnMetricsClickCheckBox.IsChecked == true)));
     }
 
     private void WindowCheckBox_OnChanged(object sender, RoutedEventArgs e)

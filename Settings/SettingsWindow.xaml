@@ -633,6 +633,12 @@
               <CheckBox x:Name="ProcessMemoryCheckBox" Style="{StaticResource SettingsCheckBoxStyle}" Checked="MetricCheckBox_OnChanged" Unchecked="MetricCheckBox_OnChanged">
                 <TextBlock Text="{DynamicResource Settings.Components.MetricApp}" Style="{StaticResource SettingsRowTitleStyle}" />
               </CheckBox>
+              <CheckBox x:Name="OpenTaskManagerOnMetricsClickCheckBox" Style="{StaticResource SettingsCheckBoxStyle}" Checked="MetricCheckBox_OnChanged" Unchecked="MetricCheckBox_OnChanged">
+                <StackPanel>
+                  <TextBlock Text="{DynamicResource Settings.Components.OpenTaskManagerTitle}" Style="{StaticResource SettingsRowTitleStyle}" />
+                  <TextBlock Text="{DynamicResource Settings.Components.OpenTaskManagerDescription}" Style="{StaticResource SettingsRowDescriptionStyle}" />
+                </StackPanel>
+              </CheckBox>
             </StackPanel>
             <Border BorderBrush="{DynamicResource MenuSeparatorBrush}" BorderThickness="0,1,0,1" Padding="0,10">
               <CheckBox x:Name="AudioMonitorCheckBox" Style="{StaticResource SettingsCheckBoxStyle}" Checked="MetricCheckBox_OnChanged" Unchecked="MetricCheckBox_OnChanged">

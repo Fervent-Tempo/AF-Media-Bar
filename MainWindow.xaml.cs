@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Windows;
@@ -1666,6 +1667,11 @@ public partial class MainWindow : Window
 
         MetricsHost.Visibility = Visibility.Visible;
         VerticalMetricsHost.Visibility = Visibility.Visible;
+        var metricsCursor = _metricSettings.OpenTaskManagerOnMetricsClick
+            ? Cursors.Hand
+            : Cursors.Arrow;
+        MetricsHost.Cursor = metricsCursor;
+        VerticalMetricsHost.Cursor = metricsCursor;
         UpdatePlayerWidth(metricsVisible: true);
         if (advanceCycle)
         {
@@ -1677,6 +1683,33 @@ public partial class MainWindow : Window
         }
 
         SetMetricText(BuildMetricValue(_lastMetricsSnapshot, _metricCycleIndex), advanceCycle);
+    }
+
+    private void MetricsHost_OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (!_metricSettings.OpenTaskManagerOnMetricsClick ||
+            _metricSettings.SelectedCount == 0)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        try
+        {
+            Process.Start(new ProcessStartInfo("taskmgr.exe")
+            {
+                UseShellExecute = true
+            });
+        }
+        catch (Exception exception)
+        {
+            DiagnosticsLogService.Write("open-task-manager", exception);
+            MessageBox.Show(
+                exception.Message,
+                Loc.Get("Msg.OpenTaskManagerFailed"),
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
     }
 
     private void UpdatePlayerWidth(bool metricsVisible)

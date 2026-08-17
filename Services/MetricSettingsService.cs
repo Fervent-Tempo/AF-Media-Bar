@@ -88,7 +88,13 @@ internal static class MetricSettingsService
                     afShellKey,
                     taskbarPlayerKey,
                     "VolumeControlEnabled",
-                    MetricSettings.Default.VolumeControlEnabled));
+                    MetricSettings.Default.VolumeControlEnabled),
+                ReadBoolean(
+                    currentKey,
+                    afShellKey,
+                    taskbarPlayerKey,
+                    "OpenTaskManagerOnMetricsClick",
+                    MetricSettings.Default.OpenTaskManagerOnMetricsClick));
 
             if (currentKey is null || HasMissingValues(currentKey))
             {
@@ -131,6 +137,10 @@ internal static class MetricSettingsService
             "VolumeControlEnabled",
             settings.VolumeControlEnabled ? 1 : 0,
             RegistryValueKind.DWord);
+        key.SetValue(
+            "OpenTaskManagerOnMetricsClick",
+            settings.OpenTaskManagerOnMetricsClick ? 1 : 0,
+            RegistryValueKind.DWord);
     }
 
     private static bool ReadBoolean(
@@ -156,6 +166,7 @@ internal static class MetricSettingsService
             key.GetValue("LowConfigMode") is not int ||
             key.GetValue("AudioMonitorEnabled") is not int ||
             key.GetValue("OutputDeviceSwitcherEnabled") is not int ||
-            key.GetValue("VolumeControlEnabled") is not int;
+            key.GetValue("VolumeControlEnabled") is not int ||
+            key.GetValue("OpenTaskManagerOnMetricsClick") is not int;
     }
 }

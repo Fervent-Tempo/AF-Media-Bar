@@ -57,6 +57,7 @@
   <sys:String x:Key="Msg.OpenDownloadFailed">無法開啟下載頁面</sys:String>
   <sys:String x:Key="Msg.OpenLinkFailed">無法開啟連結</sys:String>
   <sys:String x:Key="Msg.OpenLogFileFailed">無法開啟記錄檔</sys:String>
+  <sys:String x:Key="Msg.OpenTaskManagerFailed">無法開啟工作管理員</sys:String>
   <sys:String x:Key="Msg.ResetTitle">還原預設設定</sys:String>
   <sys:String x:Key="Msg.ResetBody">這會還原所有設定並關閉開機啟動，是否繼續？</sys:String>
   <sys:String x:Key="Msg.SaveSettingsFailed">無法儲存設定</sys:String>
@@ -140,6 +141,8 @@
   <sys:String x:Key="Settings.Components.MetricCpu">系統處理器（CPU）</sys:String>
   <sys:String x:Key="Settings.Components.MetricGpu">系統圖形處理器（GPU）</sys:String>
   <sys:String x:Key="Settings.Components.MetricApp">播放器記憶體（APP）</sys:String>
+  <sys:String x:Key="Settings.Components.OpenTaskManagerTitle">點擊指標開啟工作管理員</sys:String>
+  <sys:String x:Key="Settings.Components.OpenTaskManagerDescription">點擊播放器中的資源監控區域時開啟 Windows 工作管理員。</sys:String>
   <sys:String x:Key="Settings.Components.SpectrumTitle">音訊頻譜</sys:String>
   <sys:String x:Key="Settings.Components.SpectrumDescription">在收起狀態顯示目前系統音效的頻譜。</sys:String>
   <sys:String x:Key="Settings.Components.OutputSwitchTitle">輸出裝置切換</sys:String>
@@ -238,6 +241,7 @@
   <sys:String x:Key="Search.Kw.Artwork">封面 圖片 圓角 直角 隱藏</sys:String>
   <sys:String x:Key="Search.Kw.MediaInfo">歌曲 曲名 標題 歌手 媒體 資訊 隱藏</sys:String>
   <sys:String x:Key="Search.Kw.Metrics">指標 記憶體 CPU GPU APP</sys:String>
+  <sys:String x:Key="Search.Kw.TaskManager">工作管理員 資源監控 點擊 開啟 效能</sys:String>
   <sys:String x:Key="Search.Kw.Spectrum">音訊 頻譜 視覺化</sys:String>
   <sys:String x:Key="Search.Kw.OutputSwitch">音訊 輸出 裝置</sys:String>
   <sys:String x:Key="Search.Kw.MediaVolume">音量 應用程式</sys:String>

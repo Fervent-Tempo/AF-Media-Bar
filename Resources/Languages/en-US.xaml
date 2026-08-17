@@ -58,6 +58,7 @@
   <sys:String x:Key="Msg.OpenDownloadFailed">Could not open download page</sys:String>
   <sys:String x:Key="Msg.OpenLinkFailed">Could not open link</sys:String>
   <sys:String x:Key="Msg.OpenLogFileFailed">Could not open log file</sys:String>
+  <sys:String x:Key="Msg.OpenTaskManagerFailed">Could not open Task Manager</sys:String>
   <sys:String x:Key="Msg.ResetTitle">Restore default settings</sys:String>
   <sys:String x:Key="Msg.ResetBody">This restores all settings and disables start-at-boot. Continue?</sys:String>
   <sys:String x:Key="Msg.SaveSettingsFailed">Could not save settings</sys:String>
@@ -141,6 +142,8 @@
   <sys:String x:Key="Settings.Components.MetricCpu">System processor (CPU)</sys:String>
   <sys:String x:Key="Settings.Components.MetricGpu">System graphics processor (GPU)</sys:String>
   <sys:String x:Key="Settings.Components.MetricApp">Player memory (APP)</sys:String>
+  <sys:String x:Key="Settings.Components.OpenTaskManagerTitle">Open Task Manager from metrics</sys:String>
+  <sys:String x:Key="Settings.Components.OpenTaskManagerDescription">Click the resource metrics area in the player to open Windows Task Manager.</sys:String>
   <sys:String x:Key="Settings.Components.SpectrumTitle">Audio spectrum</sys:String>
   <sys:String x:Key="Settings.Components.SpectrumDescription">Show the spectrum of current system audio while collapsed.</sys:String>
   <sys:String x:Key="Settings.Components.OutputSwitchTitle">Output device switcher</sys:String>
@@ -239,6 +242,7 @@
   <sys:String x:Key="Search.Kw.Artwork">artwork cover image rounded square hide</sys:String>
   <sys:String x:Key="Search.Kw.MediaInfo">song title artist media information hide</sys:String>
   <sys:String x:Key="Search.Kw.Metrics">metrics memory CPU GPU APP</sys:String>
+  <sys:String x:Key="Search.Kw.TaskManager">Task Manager resource metrics click open performance</sys:String>
   <sys:String x:Key="Search.Kw.Spectrum">audio spectrum visualization</sys:String>
   <sys:String x:Key="Search.Kw.OutputSwitch">audio output device</sys:String>
   <sys:String x:Key="Search.Kw.MediaVolume">volume app</sys:String>
