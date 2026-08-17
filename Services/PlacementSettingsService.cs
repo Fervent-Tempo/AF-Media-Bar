@@ -10,8 +10,6 @@ namespace AFMediaBar.Services;
 internal static class PlacementSettingsService
 {
     private const string SettingsKeyPath = @"Software\AFMediaBar";
-    private const string AFShellSettingsKeyPath = @"Software\AFShell\MediaBar";
-    private const string TaskbarPlayerSettingsKeyPath = @"Software\TaskbarPlayer";
     private const int CurrentSettingsVersion = 2;
 
     internal static PlacementSettings Load()
@@ -19,13 +17,7 @@ internal static class PlacementSettingsService
         try
         {
             using var currentKey = Registry.CurrentUser.OpenSubKey(SettingsKeyPath, writable: false);
-            using var afShellKey = Registry.CurrentUser.OpenSubKey(
-                AFShellSettingsKeyPath,
-                writable: false);
-            using var taskbarPlayerKey = Registry.CurrentUser.OpenSubKey(
-                TaskbarPlayerSettingsKeyPath,
-                writable: false);
-            if (currentKey is null && afShellKey is null && taskbarPlayerKey is null)
+            if (currentKey is null)
             {
                 return PlacementSettings.Default;
             }
@@ -33,68 +25,46 @@ internal static class PlacementSettingsService
             var settings = new PlacementSettings(
                 ReadBoolean(
                     currentKey,
-                    afShellKey,
-                    taskbarPlayerKey,
                     "AutomaticPlacement",
                     PlacementSettings.Default.AutomaticPlacement),
                 ReadBoolean(
                     currentKey,
-                    afShellKey,
-                    taskbarPlayerKey,
                     "PositionLocked",
                     PlacementSettings.Default.PositionLocked),
                 ReadBoolean(
                     currentKey,
-                    afShellKey,
-                    taskbarPlayerKey,
                     "VerticalPositionLocked",
                     PlacementSettings.Default.VerticalPositionLocked),
                 ReadInteger(
                     currentKey,
-                    afShellKey,
-                    taskbarPlayerKey,
                     "ManualOffsetDip",
                     PlacementSettings.Default.ManualOffsetDip),
                 ReadInteger(
                     currentKey,
-                    afShellKey,
-                    taskbarPlayerKey,
                     "ManualVerticalOffsetDip",
                     PlacementSettings.Default.ManualVerticalOffsetDip),
                 Math.Clamp(
                     ReadInteger(
                         currentKey,
-                        afShellKey,
-                        taskbarPlayerKey,
                         "TaskbarTopOffsetDip",
                         PlacementSettings.Default.TaskbarTopOffsetDip),
                     -20,
                     20),
                 ReadNullableInteger(
                     currentKey,
-                    afShellKey,
-                    taskbarPlayerKey,
                     "CachedAutomaticOffsetDip"),
                 ReadNullableInteger(
                     currentKey,
-                    afShellKey,
-                    taskbarPlayerKey,
                     "CachedTaskbarWidthDip"),
                 ReadNullableInteger(
                     currentKey,
-                    afShellKey,
-                    taskbarPlayerKey,
                     "CachedPlayerWidthDip"),
                 ReadTaskbarAlignment(
                     currentKey,
-                    afShellKey,
-                    taskbarPlayerKey,
                     "CachedTaskbarAlignment"));
 
             var settingsVersion = ReadInteger(
                 currentKey,
-                afShellKey,
-                taskbarPlayerKey,
                 "PlacementSettingsVersion",
                 0);
             if (settingsVersion < CurrentSettingsVersion && settings.AutomaticPlacement)
@@ -108,8 +78,7 @@ internal static class PlacementSettingsService
                 };
             }
 
-            if (currentKey is null ||
-                settingsVersion < CurrentSettingsVersion ||
+            if (settingsVersion < CurrentSettingsVersion ||
                 HasMissingValues(currentKey))
             {
                 try
@@ -163,60 +132,41 @@ internal static class PlacementSettingsService
 
     private static bool ReadBoolean(
         RegistryKey? currentKey,
-        RegistryKey? afShellKey,
-        RegistryKey? taskbarPlayerKey,
         string name,
         bool defaultValue)
     {
-        return ReadValue(currentKey, afShellKey, taskbarPlayerKey, name) is int value
+        return currentKey?.GetValue(name) is int value
             ? value != 0
             : defaultValue;
     }
 
     private static int ReadInteger(
         RegistryKey? currentKey,
-        RegistryKey? afShellKey,
-        RegistryKey? taskbarPlayerKey,
         string name,
         int defaultValue)
     {
-        return ReadValue(currentKey, afShellKey, taskbarPlayerKey, name) is int value
+        return currentKey?.GetValue(name) is int value
             ? value
             : defaultValue;
     }
 
     private static int? ReadNullableInteger(
         RegistryKey? currentKey,
-        RegistryKey? afShellKey,
-        RegistryKey? taskbarPlayerKey,
         string name)
     {
-        return ReadValue(currentKey, afShellKey, taskbarPlayerKey, name) is int value
+        return currentKey?.GetValue(name) is int value
             ? value
             : null;
     }
 
     private static TaskbarAlignment? ReadTaskbarAlignment(
         RegistryKey? currentKey,
-        RegistryKey? afShellKey,
-        RegistryKey? taskbarPlayerKey,
         string name)
     {
-        return ReadNullableInteger(currentKey, afShellKey, taskbarPlayerKey, name) is int value &&
+        return ReadNullableInteger(currentKey, name) is int value &&
             Enum.IsDefined(typeof(TaskbarAlignment), value)
                 ? (TaskbarAlignment)value
                 : null;
-    }
-
-    private static object? ReadValue(
-        RegistryKey? currentKey,
-        RegistryKey? afShellKey,
-        RegistryKey? taskbarPlayerKey,
-        string name)
-    {
-        return currentKey?.GetValue(name) ??
-            afShellKey?.GetValue(name) ??
-            taskbarPlayerKey?.GetValue(name);
     }
 
     private static bool HasMissingValues(RegistryKey key)

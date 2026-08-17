@@ -10,21 +10,13 @@ namespace AFMediaBar.Services;
 internal static class MetricSettingsService
 {
     private const string SettingsKeyPath = @"Software\AFMediaBar";
-    private const string AFShellSettingsKeyPath = @"Software\AFShell\MediaBar";
-    private const string TaskbarPlayerSettingsKeyPath = @"Software\TaskbarPlayer";
 
     internal static MetricSettings Load()
     {
         try
         {
             using var currentKey = Registry.CurrentUser.OpenSubKey(SettingsKeyPath, writable: false);
-            using var afShellKey = Registry.CurrentUser.OpenSubKey(
-                AFShellSettingsKeyPath,
-                writable: false);
-            using var taskbarPlayerKey = Registry.CurrentUser.OpenSubKey(
-                TaskbarPlayerSettingsKeyPath,
-                writable: false);
-            if (currentKey is null && afShellKey is null && taskbarPlayerKey is null)
+            if (currentKey is null)
             {
                 return MetricSettings.Default;
             }
@@ -32,67 +24,45 @@ internal static class MetricSettingsService
             var settings = new MetricSettings(
                 ReadBoolean(
                     currentKey,
-                    afShellKey,
-                    taskbarPlayerKey,
                     "MetricsEnabled",
                     MetricSettings.Default.Enabled),
                 ReadBoolean(
                     currentKey,
-                    afShellKey,
-                    taskbarPlayerKey,
                     "ShowSystemMemory",
                     MetricSettings.Default.ShowSystemMemory),
                 ReadBoolean(
                     currentKey,
-                    afShellKey,
-                    taskbarPlayerKey,
                     "ShowSystemCpu",
                     MetricSettings.Default.ShowSystemCpu),
                 ReadBoolean(
                     currentKey,
-                    afShellKey,
-                    taskbarPlayerKey,
                     "ShowSystemGpu",
                     MetricSettings.Default.ShowSystemGpu),
                 ReadBoolean(
                     currentKey,
-                    afShellKey,
-                    taskbarPlayerKey,
                     "ShowProcessMemory",
                     MetricSettings.Default.ShowProcessMemory),
                 ReadBoolean(
                     currentKey,
-                    afShellKey,
-                    taskbarPlayerKey,
                     "LowConfigMode",
                     ReadBoolean(
                         currentKey,
-                        afShellKey,
-                        taskbarPlayerKey,
                         "LowGpuMode",
                         MetricSettings.Default.LowGpuMode)),
                 ReadBoolean(
                     currentKey,
-                    afShellKey,
-                    taskbarPlayerKey,
                     "AudioMonitorEnabled",
                     MetricSettings.Default.AudioMonitorEnabled),
                 ReadBoolean(
                     currentKey,
-                    afShellKey,
-                    taskbarPlayerKey,
                     "OutputDeviceSwitcherEnabled",
                     MetricSettings.Default.OutputDeviceSwitcherEnabled),
                 ReadBoolean(
                     currentKey,
-                    afShellKey,
-                    taskbarPlayerKey,
                     "VolumeControlEnabled",
                     MetricSettings.Default.VolumeControlEnabled),
                 ReadBoolean(
                     currentKey,
-                    afShellKey,
-                    taskbarPlayerKey,
                     "OpenTaskManagerOnMetricsClick",
                     MetricSettings.Default.OpenTaskManagerOnMetricsClick));
 
@@ -145,14 +115,10 @@ internal static class MetricSettingsService
 
     private static bool ReadBoolean(
         RegistryKey? currentKey,
-        RegistryKey? afShellKey,
-        RegistryKey? taskbarPlayerKey,
         string name,
         bool defaultValue)
     {
-        var value = currentKey?.GetValue(name) ??
-            afShellKey?.GetValue(name) ??
-            taskbarPlayerKey?.GetValue(name);
+        var value = currentKey?.GetValue(name);
         return value is int integer ? integer != 0 : defaultValue;
     }
 
