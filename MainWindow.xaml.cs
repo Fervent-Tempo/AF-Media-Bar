@@ -152,6 +152,7 @@ public partial class MainWindow : Window
     private DateTime _edgeAnimationStarted;
     private bool _edgeAnimationExpanding;
     private bool _edgeAnimationHasTarget;
+    private bool _floatingFallbackActive;
 
     private bool IsEnvironmentSuspended => _powerSuspended || _sessionLocked;
 
@@ -182,7 +183,10 @@ public partial class MainWindow : Window
             AudioBar8
         ];
 
-        Opacity = 0;
+        // A floating window is already a top-level HWND and must not enter the
+        // taskbar-host startup concealment path. WPF can otherwise reapply the
+        // cached hidden state after the native window has been positioned.
+        Opacity = _windowSettings.HostMode == WindowHostMode.Floating ? 1 : 0;
         _placementSettings = settings.Placement;
         _taskbarSettings = TaskbarSettingsService.Read();
         if (_taskbarSettings.Alignment == TaskbarAlignment.Unknown &&
@@ -595,7 +599,14 @@ public partial class MainWindow : Window
         catch (Exception exception)
         {
             DiagnosticsLogService.Write("window-position", exception);
-            ScheduleEnvironmentRecovery("window-position-failure");
+            if (_windowSettings.HostMode == WindowHostMode.Floating)
+            {
+                RevealFloatingFallback();
+            }
+            else
+            {
+                ScheduleEnvironmentRecovery("window-position-failure");
+            }
         }
     }
 
@@ -1175,20 +1186,25 @@ public partial class MainWindow : Window
             var replayed = _disconnectedTitleKey is null
                 ? snapshot
                 : snapshot with { Title = Loc.Get(_disconnectedTitleKey) };
-            ApplySnapshot(replayed);
+            // Language changes only require text refresh. Replaying the full snapshot
+            // also re-enters the hide/position path and can hide a floating HWND while
+            // the media state is unchanged.
+            ApplyLocalizedSnapshotText(replayed);
         }
 
-        ApplySessions(_mediaSessions);
+        ApplySessions(_mediaSessions, updateVisibility: false);
     }
 
-    private void ApplySessions(IReadOnlyList<MediaSessionOption> sessions)
+    private void ApplySessions(
+        IReadOnlyList<MediaSessionOption> sessions,
+        bool updateVisibility = true)
     {
         _mediaSessions = sessions;
         var hasPlayingSession = sessions.Any(session => session.IsPlaying) ||
             (_selectedMediaIsPlaying && sessions.Count == 0);
         var hasChanged = _hasConnectedMedia != hasPlayingSession;
         _hasConnectedMedia = hasPlayingSession;
-        if (hasChanged)
+        if (hasChanged && updateVisibility)
         {
             if (_windowSettings.HideWhenNoMedia)
             {
@@ -1739,6 +1755,11 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (_floatingFallbackActive && !force)
+        {
+            return;
+        }
+
         var verticalLayout = _windowSettings.LayoutMode == PlayerLayoutMode.Vertical;
         ApplyPlayerLayout(verticalLayout);
         CollapseWhenPointerLeavesWindow();
@@ -1752,24 +1773,6 @@ public partial class MainWindow : Window
             UpdateEdgeCollapseIndicator(visible: false);
             force = true;
         }
-        if (_windowSettings.HideWhenNoMedia &&
-            !_hasConnectedMedia &&
-            !_windowSettings.AlwaysOnTop &&
-            !_isMenuOpen)
-        {
-            Visibility = Visibility.Collapsed;
-            StopMarquees();
-            return;
-        }
-
-        if (!_windowSettings.AlwaysOnTop &&
-            NativeMethods.ShouldHideForFullScreenApp(_windowHandle))
-        {
-            Visibility = Visibility.Collapsed;
-            StopMarquees();
-            return;
-        }
-
         var left = _windowSettings.FloatingLeft ?? _floatingNormalLeft;
         var top = _windowSettings.FloatingTop ?? _floatingNormalTop;
         if ((!left.HasValue || !top.HasValue) &&
@@ -1915,14 +1918,14 @@ public partial class MainWindow : Window
             force = true;
         }
 
-        if (!_taskbarHostService.SetFloating(true))
+        if (!_taskbarHostService.IsFloating &&
+            !_taskbarHostService.SetFloating(true))
         {
             DiagnosticsLogService.Write("floating-window-detach-failed");
-            ScheduleEnvironmentRecovery("floating-window-detach-failure");
+            RevealFloatingFallback();
             return;
         }
 
-        Topmost = _windowSettings.AlwaysOnTop;
         if (!_edgeAnimationTimer.IsEnabled &&
             (force || _lastPositionLeft != left || _lastPositionTop != top))
         {
@@ -1937,12 +1940,26 @@ public partial class MainWindow : Window
                     topmost: _windowSettings.AlwaysOnTop))
             {
                 DiagnosticsLogService.Write("floating-window-position-failed");
-                ScheduleEnvironmentRecovery("floating-window-position-failure");
+                RevealFloatingFallback();
                 return;
             }
         }
 
+        _floatingFallbackActive = false;
         RevealAfterPlacement();
+    }
+
+    private void RevealFloatingFallback()
+    {
+        if (_floatingFallbackActive)
+        {
+            return;
+        }
+
+        _floatingFallbackActive = true;
+        Visibility = Visibility.Visible;
+        RevealAfterPlacement();
+        NativeMethods.ShowWindow(_windowHandle, NativeMethods.SwShowNoActivate);
     }
 
     private double CalculateFloatingLayoutScale(
@@ -2223,14 +2240,17 @@ public partial class MainWindow : Window
 
     private void ApplyWindowSettings()
     {
+        var floating = _windowSettings.HostMode == WindowHostMode.Floating;
         if (_taskbarHostService is not null &&
-            !_taskbarHostService.SetFloating(
-                _windowSettings.HostMode == WindowHostMode.Floating))
+            !_taskbarHostService.SetFloating(floating))
         {
             DiagnosticsLogService.Write(
                 "window-host-transition-failed",
                 details: _windowSettings.HostMode.ToString());
-            ScheduleEnvironmentRecovery("window-host-transition-failure");
+            if (!floating)
+            {
+                ScheduleEnvironmentRecovery("window-host-transition-failure");
+            }
         }
 
         Topmost = _windowSettings.AlwaysOnTop;
@@ -3437,7 +3457,8 @@ public partial class MainWindow : Window
     {
         // ContextMenu 是独立的 Popup；先准备宿主窗口层级，避免菜单被任务栏覆盖。
         // ContextMenu is a separate Popup; prepare the host window layer before it opens above the taskbar.
-        if (_windowHandle != nint.Zero)
+        if (_windowSettings.HostMode == WindowHostMode.Taskbar &&
+            _windowHandle != nint.Zero)
         {
             NativeMethods.SetForegroundWindow(_windowHandle);
         }

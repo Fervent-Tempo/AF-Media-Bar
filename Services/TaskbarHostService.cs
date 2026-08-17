@@ -39,7 +39,10 @@ internal sealed class TaskbarHostService : IDisposable
             return false;
         }
 
-        var expectedParent = floating ? _originalParent : FindTaskbar();
+        // WPF may assign a hidden owner when ShowInTaskbar is false. Restoring
+        // that HWND as the floating owner makes Windows hide the media bar with
+        // the owner. A floating media bar must be an unowned top-level window.
+        var expectedParent = floating ? nint.Zero : FindTaskbar();
         if (!floating && expectedParent == nint.Zero)
         {
             TaskbarHandle = nint.Zero;
@@ -78,12 +81,15 @@ internal sealed class TaskbarHostService : IDisposable
         var previousTaskbarHandle = TaskbarHandle;
         var previousEmbedded = IsEmbedded;
         var previousFloating = IsFloating;
-        NativeMethods.ShowWindow(_window, NativeMethods.SwHide);
+        if (!floating)
+        {
+            NativeMethods.ShowWindow(_window, NativeMethods.SwHide);
+        }
         NativeMethods.SetWindowRgn(_window, nint.Zero, redraw: false);
 
         if (floating)
         {
-            if (!TrySetWindowState(_originalParent, _originalStyle))
+            if (!TrySetWindowState(expectedParent, _originalStyle))
             {
                 RestoreWindowState(previousParent, previousStyle);
                 return false;
@@ -117,6 +123,14 @@ internal sealed class TaskbarHostService : IDisposable
         IsFloating = floating;
         if (!RefreshFrame())
         {
+            if (floating)
+            {
+                // The parent/style transition already succeeded. A frame refresh
+                // failure must not put the top-level window back under Explorer.
+                DiagnosticsLogService.Write("floating-frame-refresh-failed");
+                return true;
+            }
+
             RestoreWindowState(previousParent, previousStyle);
             TaskbarHandle = previousTaskbarHandle;
             IsEmbedded = previousEmbedded;
@@ -242,9 +256,16 @@ internal sealed class TaskbarHostService : IDisposable
             insertAfter = NativeMethods.HwndTop;
         }
 
-        if (refresh && !ApplyInputRegion(width, height))
+        var regionApplied = !refresh || ApplyInputRegion(width, height);
+        if (refresh && !regionApplied)
         {
-            return false;
+            // A WPF layered window can reject SetWindowRgn on some desktop/DPI
+            // combinations. The region is only an input clip; it must not prevent
+            // the top-level window from being positioned and shown.
+            DiagnosticsLogService.Write(
+                "window-region-update-failed",
+                details: $"Width={width};Height={height};Win32={System.Runtime.InteropServices.Marshal.GetLastWin32Error()}");
+            NativeMethods.SetWindowRgn(_window, nint.Zero, redraw: false);
         }
         var flags = NativeMethods.SwpNoActivate;
         if (IsFloating && !topmost)
@@ -267,7 +288,17 @@ internal sealed class TaskbarHostService : IDisposable
         if (positioned && visible && refresh)
         {
             NativeMethods.ShowWindow(_window, NativeMethods.SwShowNoActivate);
-            Redraw();
+            if (regionApplied)
+            {
+                Redraw();
+            }
+        }
+
+        if (!positioned)
+        {
+            DiagnosticsLogService.Write(
+                "window-position-native-failed",
+                details: $"X={x};Y={y};Width={width};Height={height};Win32={System.Runtime.InteropServices.Marshal.GetLastWin32Error()}");
         }
 
         return positioned;
