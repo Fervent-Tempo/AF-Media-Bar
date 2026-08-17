@@ -192,6 +192,11 @@
   <sys:String x:Key="Settings.Appearance.FontWeightLight">Light</sys:String>
   <sys:String x:Key="Settings.Appearance.FontWeightStandard">Standard</sys:String>
   <sys:String x:Key="Settings.Appearance.FontWeightBold">Bold</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontWeightThin">Thin</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontWeightMedium">Medium</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontWeightSemiBold">Semi Bold</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontWeightBlack">Black</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontWeightValueFormat">{0} · {1}</sys:String>
   <sys:String x:Key="Settings.Appearance.PlayerText">Media control window text</sys:String>
   <sys:String x:Key="Settings.Appearance.LightText">Light text</sys:String>
   <sys:String x:Key="Settings.Appearance.DarkText">Dark text</sys:String>

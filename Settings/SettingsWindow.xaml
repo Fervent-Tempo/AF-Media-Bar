@@ -686,17 +686,19 @@
             </StackPanel>
             <TextBlock Text="{DynamicResource Settings.Layout.Size}" Margin="0,18,0,4" FontSize="15" FontWeight="SemiBold" />
             <TextBlock Text="{DynamicResource Settings.Layout.LengthScale}" Style="{StaticResource SettingsRowDescriptionStyle}" />
-            <Grid Margin="0,0,0,12">
+            <Grid Width="320" HorizontalAlignment="Left" Margin="0,0,0,12">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="64" />
               </Grid.ColumnDefinitions>
               <Slider x:Name="LengthScaleSlider"
                       Grid.Column="0"
+                      Width="240"
                       Minimum="70"
                       Maximum="125"
                       TickFrequency="5"
                       IsSnapToTickEnabled="True"
+                      HorizontalAlignment="Left"
                       VerticalAlignment="Center"
                       ValueChanged="ScaleSlider_OnValueChanged" />
               <TextBlock x:Name="LengthScaleValueText"
@@ -706,17 +708,19 @@
                          FontSize="14" />
             </Grid>
             <TextBlock Text="{DynamicResource Settings.Layout.ThicknessScale}" Style="{StaticResource SettingsRowDescriptionStyle}" />
-            <Grid Margin="0,0,0,12">
+            <Grid Width="320" HorizontalAlignment="Left" Margin="0,0,0,12">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="64" />
               </Grid.ColumnDefinitions>
               <Slider x:Name="ThicknessScaleSlider"
                       Grid.Column="0"
+                      Width="240"
                       Minimum="70"
                       Maximum="125"
                       TickFrequency="5"
                       IsSnapToTickEnabled="True"
+                      HorizontalAlignment="Left"
                       VerticalAlignment="Center"
                       ValueChanged="ScaleSlider_OnValueChanged" />
               <TextBlock x:Name="ThicknessScaleValueText"
@@ -727,17 +731,19 @@
             </Grid>
             <TextBlock Text="{DynamicResource Settings.Layout.TopOffset}" Margin="0,8,0,0" Style="{StaticResource SettingsRowTitleStyle}" />
             <TextBlock Text="{DynamicResource Settings.Layout.TopOffsetDescription}" Style="{StaticResource SettingsRowDescriptionStyle}" />
-            <Grid Margin="0,6,0,12">
+            <Grid Width="320" HorizontalAlignment="Left" Margin="0,6,0,12">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="64" />
               </Grid.ColumnDefinitions>
               <Slider x:Name="TaskbarTopOffsetSlider"
                       Grid.Column="0"
+                      Width="240"
                       Minimum="-20"
                       Maximum="20"
                       TickFrequency="1"
                       IsSnapToTickEnabled="True"
+                      HorizontalAlignment="Left"
                       VerticalAlignment="Center"
                       ValueChanged="ScaleSlider_OnValueChanged" />
               <TextBlock x:Name="TaskbarTopOffsetValueText"
@@ -811,14 +817,27 @@
             </Grid>
             <StackPanel Margin="0,0,0,10" HorizontalAlignment="Left">
               <TextBlock Text="{DynamicResource Settings.Appearance.FontWeight}" Margin="0,0,0,4" Style="{StaticResource SettingsRowDescriptionStyle}" />
-              <ComboBox x:Name="FontWeightComboBox"
-                        Width="210"
-                        Style="{StaticResource SettingsComboBoxStyle}"
-                        SelectionChanged="FontComboBox_OnSelectionChanged">
-                <ComboBoxItem Content="{DynamicResource Settings.Appearance.FontWeightLight}" />
-                <ComboBoxItem Content="{DynamicResource Settings.Appearance.FontWeightStandard}" />
-                <ComboBoxItem Content="{DynamicResource Settings.Appearance.FontWeightBold}" />
-              </ComboBox>
+              <Grid Width="320">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="240" />
+                  <ColumnDefinition Width="64" />
+                </Grid.ColumnDefinitions>
+                <Slider x:Name="FontWeightSlider"
+                        Grid.Column="0"
+                        Width="240"
+                        Minimum="300"
+                        Maximum="900"
+                        TickFrequency="50"
+                        IsSnapToTickEnabled="False"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        ValueChanged="FontWeightSlider_OnValueChanged" />
+                <TextBlock x:Name="FontWeightValueText"
+                           Grid.Column="1"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Center"
+                           FontSize="14" />
+              </Grid>
             </StackPanel>
             <Border Margin="0,0,0,16"
                     Padding="12,8"

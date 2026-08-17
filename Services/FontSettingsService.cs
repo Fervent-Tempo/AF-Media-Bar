@@ -25,9 +25,11 @@ internal static class FontSettingsService
                 Enum.IsDefined(typeof(CjkFontPreset), cjkValue)
                     ? (CjkFontPreset)cjkValue
                     : (CjkFontPreset?)null;
-            var weight = key.GetValue("PlayerFontWeightPreset") is int weightValue &&
-                Enum.IsDefined(typeof(PlayerFontWeightPreset), weightValue)
-                    ? (PlayerFontWeightPreset)weightValue
+            var weight = key.GetValue("PlayerFontWeight") is int weightValue
+                ? FontSettings.NormalizeWeight(weightValue)
+                : key.GetValue("PlayerFontWeightPreset") is int legacyWeightValue &&
+                    Enum.IsDefined(typeof(PlayerFontWeightPreset), legacyWeightValue)
+                    ? FontSettings.ResolveLegacyWeight((PlayerFontWeightPreset)legacyWeightValue)
                     : FontSettings.Default.Weight;
             if (latin is not null && cjk is not null)
             {
@@ -54,7 +56,11 @@ internal static class FontSettingsService
         using var key = Registry.CurrentUser.CreateSubKey(SettingsKeyPath, writable: true);
         key.SetValue("LatinFontPreset", (int)settings.Latin, RegistryValueKind.DWord);
         key.SetValue("CjkFontPreset", (int)settings.Cjk, RegistryValueKind.DWord);
-        key.SetValue("PlayerFontWeightPreset", (int)settings.Weight, RegistryValueKind.DWord);
+        key.SetValue(
+            "PlayerFontWeight",
+            FontSettings.NormalizeWeight(settings.Weight),
+            RegistryValueKind.DWord);
+        key.DeleteValue("PlayerFontWeightPreset", throwOnMissingValue: false);
         key.DeleteValue("FontPreset", throwOnMissingValue: false);
     }
 
@@ -64,13 +70,13 @@ internal static class FontSettingsService
     /// </summary>
     private static FontSettings MigrateFromLegacy(int preset) => preset switch
     {
-        0 => new FontSettings(LatinFontPreset.SegoeUi, CjkFontPreset.SystemDefault, PlayerFontWeightPreset.Standard),
-        1 => new FontSettings(LatinFontPreset.FollowCjk, CjkFontPreset.MicrosoftYaHei, PlayerFontWeightPreset.Standard),
-        2 => new FontSettings(LatinFontPreset.FollowCjk, CjkFontPreset.DengXian, PlayerFontWeightPreset.Standard),
-        3 => new FontSettings(LatinFontPreset.FollowCjk, CjkFontPreset.SimSun, PlayerFontWeightPreset.Standard),
-        4 => new FontSettings(LatinFontPreset.FollowCjk, CjkFontPreset.SimHei, PlayerFontWeightPreset.Standard),
-        5 => new FontSettings(LatinFontPreset.FollowCjk, CjkFontPreset.KaiTi, PlayerFontWeightPreset.Standard),
-        6 => new FontSettings(LatinFontPreset.FollowCjk, CjkFontPreset.FangSong, PlayerFontWeightPreset.Standard),
+        0 => new FontSettings(LatinFontPreset.SegoeUi, CjkFontPreset.SystemDefault, FontSettings.Default.Weight),
+        1 => new FontSettings(LatinFontPreset.FollowCjk, CjkFontPreset.MicrosoftYaHei, FontSettings.Default.Weight),
+        2 => new FontSettings(LatinFontPreset.FollowCjk, CjkFontPreset.DengXian, FontSettings.Default.Weight),
+        3 => new FontSettings(LatinFontPreset.FollowCjk, CjkFontPreset.SimSun, FontSettings.Default.Weight),
+        4 => new FontSettings(LatinFontPreset.FollowCjk, CjkFontPreset.SimHei, FontSettings.Default.Weight),
+        5 => new FontSettings(LatinFontPreset.FollowCjk, CjkFontPreset.KaiTi, FontSettings.Default.Weight),
+        6 => new FontSettings(LatinFontPreset.FollowCjk, CjkFontPreset.FangSong, FontSettings.Default.Weight),
         _ => FontSettings.Default
     };
 }

@@ -39,8 +39,12 @@ internal enum PlayerFontWeightPreset
 internal readonly record struct FontSettings(
     LatinFontPreset Latin,
     CjkFontPreset Cjk,
-    PlayerFontWeightPreset Weight)
+    int Weight)
 {
+    internal const int MinWeight = 300;
+    internal const int MaxWeight = 900;
+    internal const int DefaultWeight = 600;
+
     /// <summary>
     /// 默认组合：西文 Segoe UI + 中文微软雅黑，中西文混排观感最接近 Windows 原生。
     /// 图标字体（AppIconFontFamily）不参与预设，始终为 Segoe Fluent Icons。
@@ -48,22 +52,24 @@ internal readonly record struct FontSettings(
     internal static FontSettings Default { get; } = new(
         LatinFontPreset.SegoeUi,
         CjkFontPreset.MicrosoftYaHei,
-        PlayerFontWeightPreset.Standard);
+        DefaultWeight);
 
-    internal static System.Windows.FontWeight ResolveTitleWeight(
-        PlayerFontWeightPreset preset) => preset switch
-        {
-            PlayerFontWeightPreset.Light => System.Windows.FontWeights.Normal,
-            PlayerFontWeightPreset.Bold => System.Windows.FontWeights.Bold,
-            _ => System.Windows.FontWeights.SemiBold
-        };
+    internal static int NormalizeWeight(int weight) =>
+        Math.Clamp(weight, MinWeight, MaxWeight);
 
-    internal static System.Windows.FontWeight ResolveBodyWeight(
-        PlayerFontWeightPreset preset) => preset switch
+    internal static System.Windows.FontWeight ResolveTitleWeight(int weight) =>
+        System.Windows.FontWeight.FromOpenTypeWeight(NormalizeWeight(weight));
+
+    internal static System.Windows.FontWeight ResolveBodyWeight(int weight) =>
+        System.Windows.FontWeight.FromOpenTypeWeight(
+            NormalizeWeight(weight - 200));
+
+    internal static int ResolveLegacyWeight(PlayerFontWeightPreset preset) =>
+        preset switch
         {
-            PlayerFontWeightPreset.Light => System.Windows.FontWeights.Light,
-            PlayerFontWeightPreset.Bold => System.Windows.FontWeights.SemiBold,
-            _ => System.Windows.FontWeights.Normal
+            PlayerFontWeightPreset.Light => 400,
+            PlayerFontWeightPreset.Bold => 700,
+            _ => DefaultWeight
         };
 
     /// <summary>

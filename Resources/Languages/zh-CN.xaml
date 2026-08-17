@@ -191,6 +191,11 @@
   <sys:String x:Key="Settings.Appearance.FontWeightLight">轻</sys:String>
   <sys:String x:Key="Settings.Appearance.FontWeightStandard">标准</sys:String>
   <sys:String x:Key="Settings.Appearance.FontWeightBold">粗</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontWeightThin">极细</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontWeightMedium">中等</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontWeightSemiBold">半粗</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontWeightBlack">特粗</sys:String>
+  <sys:String x:Key="Settings.Appearance.FontWeightValueFormat">{0} · {1}</sys:String>
   <sys:String x:Key="Settings.Appearance.PlayerText">媒体控制窗口文字</sys:String>
   <sys:String x:Key="Settings.Appearance.LightText">浅色文字</sys:String>
   <sys:String x:Key="Settings.Appearance.DarkText">深色文字</sys:String>

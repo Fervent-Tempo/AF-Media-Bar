@@ -16,6 +16,7 @@ public partial class SettingsWindow : Window
     private readonly SettingsCoordinator _coordinator;
     private readonly UpdateService _updateService;
     private readonly DispatcherTimer _scaleSaveTimer;
+    private readonly DispatcherTimer _fontSaveTimer;
     private IReadOnlyList<SettingsSearchResult> _searchResults = [];
     private CancellationTokenSource? _updateCheckCancellation;
     private UpdateInfo? _displayedRelease;
@@ -32,6 +33,12 @@ public partial class SettingsWindow : Window
             ScaleSaveTimer_OnTick,
             Dispatcher);
         _scaleSaveTimer.Stop();
+        _fontSaveTimer = new DispatcherTimer(
+            TimeSpan.FromMilliseconds(240),
+            DispatcherPriority.Background,
+            FontWeightSaveTimer_OnTick,
+            Dispatcher);
+        _fontSaveTimer.Stop();
         InitializeComponent();
         _searchResults = BuildSearchResults();
         _isInitialized = true;
@@ -117,7 +124,8 @@ public partial class SettingsWindow : Window
 
         FontLatinComboBox.SelectedIndex = (int)settings.Font.Latin;
         FontCjkComboBox.SelectedIndex = (int)settings.Font.Cjk;
-        FontWeightComboBox.SelectedIndex = (int)settings.Font.Weight;
+        FontWeightSlider.Value = FontSettings.NormalizeWeight(settings.Font.Weight);
+        FontWeightValueText.Text = FormatFontWeight(settings.Font.Weight);
         FontPreviewText.FontFamily = new FontFamily(FontSettings.ResolveText(
             settings.Font.Latin,
             settings.Font.Cjk));
@@ -544,20 +552,66 @@ public partial class SettingsWindow : Window
 
         if (FontLatinComboBox.SelectedIndex < 0 ||
             FontCjkComboBox.SelectedIndex < 0 ||
-            FontWeightComboBox.SelectedIndex < 0 ||
             !Enum.IsDefined(typeof(LatinFontPreset), FontLatinComboBox.SelectedIndex) ||
-            !Enum.IsDefined(typeof(CjkFontPreset), FontCjkComboBox.SelectedIndex) ||
-            !Enum.IsDefined(typeof(PlayerFontWeightPreset), FontWeightComboBox.SelectedIndex))
+            !Enum.IsDefined(typeof(CjkFontPreset), FontCjkComboBox.SelectedIndex))
         {
             return;
         }
 
         var latin = (LatinFontPreset)FontLatinComboBox.SelectedIndex;
         var cjk = (CjkFontPreset)FontCjkComboBox.SelectedIndex;
-        var weight = (PlayerFontWeightPreset)FontWeightComboBox.SelectedIndex;
+        var weight = _coordinator.Current.Font.Weight;
         TryUpdate(() => _coordinator.UpdateFont(new FontSettings(latin, cjk, weight)));
         FontPreviewText.FontFamily = new FontFamily(FontSettings.ResolveText(latin, cjk));
         FontPreviewText.FontWeight = FontSettings.ResolveTitleWeight(weight);
+    }
+
+    private void FontWeightSlider_OnValueChanged(
+        object sender,
+        RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (!_isInitialized)
+        {
+            return;
+        }
+
+        var weight = FontSettings.NormalizeWeight((int)Math.Round(e.NewValue));
+        FontWeightValueText.Text = FormatFontWeight(weight);
+        FontPreviewText.FontWeight = FontSettings.ResolveTitleWeight(weight);
+        if (_isSyncing)
+        {
+            return;
+        }
+
+        _fontSaveTimer.Stop();
+        _fontSaveTimer.Start();
+    }
+
+    private void FontWeightSaveTimer_OnTick(object? sender, EventArgs e)
+    {
+        _fontSaveTimer.Stop();
+        var current = _coordinator.Current.Font;
+        var weight = FontSettings.NormalizeWeight((int)Math.Round(FontWeightSlider.Value));
+        TryUpdate(() => _coordinator.UpdateFont(current with { Weight = weight }));
+    }
+
+    private static string FormatFontWeight(int weight)
+    {
+        var normalizedWeight = FontSettings.NormalizeWeight(weight);
+        var nameKey = normalizedWeight switch
+        {
+            < 350 => "Settings.Appearance.FontWeightThin",
+            < 450 => "Settings.Appearance.FontWeightLight",
+            < 550 => "Settings.Appearance.FontWeightStandard",
+            < 650 => "Settings.Appearance.FontWeightMedium",
+            < 750 => "Settings.Appearance.FontWeightSemiBold",
+            < 850 => "Settings.Appearance.FontWeightBold",
+            _ => "Settings.Appearance.FontWeightBlack"
+        };
+        return Loc.Get(
+            "Settings.Appearance.FontWeightValueFormat",
+            normalizedWeight,
+            Loc.Get(nameKey));
     }
 
     private void UpdateCheckSetting_OnChanged(object sender, RoutedEventArgs e)
@@ -807,6 +861,7 @@ public partial class SettingsWindow : Window
         _updateCheckCancellation?.Dispose();
         _updateCheckCancellation = null;
         _scaleSaveTimer.Stop();
+        _fontSaveTimer.Stop();
         _coordinator.Changed -= Coordinator_OnChanged;
         _updateService.UpdateAvailable -= UpdateService_OnUpdateAvailable;
         Closed -= SettingsWindow_OnClosed;
