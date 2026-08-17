@@ -589,6 +589,30 @@
                        Margin="0,6,0,20"
                        Style="{StaticResource SettingsRowDescriptionStyle}" />
             <Border BorderBrush="{DynamicResource MenuSeparatorBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10">
+              <CheckBox x:Name="ShowArtworkCheckBox" Style="{StaticResource SettingsCheckBoxStyle}" Checked="WindowCheckBox_OnChanged" Unchecked="WindowCheckBox_OnChanged">
+                <StackPanel>
+                  <TextBlock Text="{DynamicResource Settings.Components.ShowArtworkTitle}" Style="{StaticResource SettingsRowTitleStyle}" />
+                  <TextBlock Text="{DynamicResource Settings.Components.ShowArtworkDescription}" Style="{StaticResource SettingsRowDescriptionStyle}" />
+                </StackPanel>
+              </CheckBox>
+            </Border>
+            <Border BorderBrush="{DynamicResource MenuSeparatorBrush}" BorderThickness="0,0,0,1" Padding="0,10">
+              <CheckBox x:Name="RoundedArtworkCheckBox" Style="{StaticResource SettingsCheckBoxStyle}" Checked="WindowCheckBox_OnChanged" Unchecked="WindowCheckBox_OnChanged">
+                <StackPanel>
+                  <TextBlock Text="{DynamicResource Settings.Components.RoundedArtworkTitle}" Style="{StaticResource SettingsRowTitleStyle}" />
+                  <TextBlock Text="{DynamicResource Settings.Components.RoundedArtworkDescription}" Style="{StaticResource SettingsRowDescriptionStyle}" />
+                </StackPanel>
+              </CheckBox>
+            </Border>
+            <Border BorderBrush="{DynamicResource MenuSeparatorBrush}" BorderThickness="0,0,0,1" Padding="0,10">
+              <CheckBox x:Name="ShowMediaInfoCheckBox" Style="{StaticResource SettingsCheckBoxStyle}" Checked="WindowCheckBox_OnChanged" Unchecked="WindowCheckBox_OnChanged">
+                <StackPanel>
+                  <TextBlock Text="{DynamicResource Settings.Components.ShowMediaInfoTitle}" Style="{StaticResource SettingsRowTitleStyle}" />
+                  <TextBlock Text="{DynamicResource Settings.Components.ShowMediaInfoDescription}" Style="{StaticResource SettingsRowDescriptionStyle}" />
+                </StackPanel>
+              </CheckBox>
+            </Border>
+            <Border BorderBrush="{DynamicResource MenuSeparatorBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10">
               <CheckBox x:Name="MetricsEnabledCheckBox" Style="{StaticResource SettingsCheckBoxStyle}" Checked="MetricCheckBox_OnChanged" Unchecked="MetricCheckBox_OnChanged">
                 <StackPanel>
                   <TextBlock Text="{DynamicResource Settings.Components.MetricsTitle}" Style="{StaticResource SettingsRowTitleStyle}" />

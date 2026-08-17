@@ -25,6 +25,8 @@ public partial class MainWindow : Window
     private const double CollapsedInfoWidth = 210;
     private const double ExpandedInfoWidth = 96;
     private const double PlayerWidthWithoutExtras = 271;
+    private const double ArtworkAreaWidth = 44;
+    private const double CompactCentralHostWidth = 114;
     private const double MetricsAreaWidth = 78;
     private const double OutputDeviceAreaWidth = 40;
     private const double VolumeControlAreaWidth = 40;
@@ -884,6 +886,8 @@ public partial class MainWindow : Window
     private double CalculateHorizontalPlayerWidth()
     {
         return PlayerWidthWithoutExtras +
+            (_windowSettings.ShowArtwork ? 0 : -ArtworkAreaWidth) +
+            (_windowSettings.ShowMediaInfo ? 0 : CompactCentralHostWidth - CentralHostWidth) +
             (_metricSettings.SelectedCount > 0 ? MetricsAreaWidth : 0) +
             (_metricSettings.OutputDeviceSwitcherEnabled ? OutputDeviceAreaWidth : 0) +
             (_metricSettings.VolumeControlEnabled ? VolumeControlAreaWidth : 0);
@@ -892,6 +896,7 @@ public partial class MainWindow : Window
     private double CalculateVerticalPlayerHeight()
     {
         return VerticalBaseHeight +
+            (_windowSettings.ShowArtwork ? 0 : -VerticalArtworkAreaHeight) +
             (_metricSettings.SelectedCount > 0 ? VerticalMetricAreaHeight : 0) +
             (_metricSettings.OutputDeviceSwitcherEnabled ? VerticalControlAreaHeight : 0) +
             (_metricSettings.VolumeControlEnabled ? VerticalControlAreaHeight : 0);
@@ -1304,26 +1309,28 @@ public partial class MainWindow : Window
             return;
         }
 
-        ControlsHost.IsHitTestVisible = expanded;
+        var showMediaInfo = _windowSettings.ShowMediaInfo;
         var showVisualizer = _metricSettings.AudioMonitorEnabled && !expanded;
+        var showControls = expanded || (!showMediaInfo && !showVisualizer);
+        ControlsHost.IsHitTestVisible = showControls;
         AudioVisualizerHost.Visibility = showVisualizer
             ? Visibility.Visible
             : Visibility.Collapsed;
-        InfoHost.Visibility = showVisualizer
-            ? Visibility.Collapsed
-            : Visibility.Visible;
+        InfoHost.Visibility = showMediaInfo && !showVisualizer
+            ? Visibility.Visible
+            : Visibility.Collapsed;
         var infoWidth = expanded
             ? ExpandedInfoWidth
             : CollapsedInfoWidth;
         InfoHost.BeginAnimation(FrameworkElement.WidthProperty, null);
-        InfoHost.MaxWidth = infoWidth;
-        InfoHost.Width = infoWidth;
+        InfoHost.MaxWidth = Math.Min(infoWidth, CentralHost.Width);
+        InfoHost.Width = InfoHost.MaxWidth;
         TitleText.Width = double.NaN;
         TitleText.MaxWidth = double.PositiveInfinity;
         TitleText.TextTrimming = TextTrimming.None;
         UpdateAudioVisualizerPlacement();
-        var controlsOpacity = expanded ? 1d : 0d;
-        var controlsOffset = expanded ? 0d : 8d;
+        var controlsOpacity = showControls ? 1d : 0d;
+        var controlsOffset = showControls ? 0d : 8d;
         var titleOffset = expanded ? -8d : 0d;
         var artistOffset = expanded ? 0d : 3d;
         var artistOpacity = expanded ? 1d : 0d;
@@ -1367,10 +1374,15 @@ public partial class MainWindow : Window
     private void ApplyVerticalExpandedState(bool expanded, bool animate)
     {
         AudioVisualizerHost.Visibility = Visibility.Collapsed;
-        VerticalInfoHost.IsHitTestVisible = !expanded;
-        VerticalControlsHost.IsHitTestVisible = expanded;
-        var infoOpacity = expanded ? 0d : 1d;
-        var controlsOpacity = expanded ? 1d : 0d;
+        var showMediaInfo = _windowSettings.ShowMediaInfo;
+        var showControls = expanded || !showMediaInfo;
+        VerticalInfoHost.Visibility = showMediaInfo
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        VerticalInfoHost.IsHitTestVisible = showMediaInfo && !expanded;
+        VerticalControlsHost.IsHitTestVisible = showControls;
+        var infoOpacity = showMediaInfo && !expanded ? 1d : 0d;
+        var controlsOpacity = showControls ? 1d : 0d;
         if (!animate)
         {
             VerticalInfoHost.BeginAnimation(UIElement.OpacityProperty, null);
@@ -1394,10 +1406,11 @@ public partial class MainWindow : Window
 
     private void UpdateAudioVisualizerPlacement()
     {
+        var centralWidth = CentralHost.Width;
         var centeredLeft =
-            (CentralHostWidth - AudioVisualizerWidth) / 2 +
+            (centralWidth - AudioVisualizerWidth) / 2 +
             AudioVisualizerCenterBias;
-        var rightmostLeft = CentralHostWidth - AudioVisualizerWidth;
+        var rightmostLeft = centralWidth - AudioVisualizerWidth;
         AudioVisualizerTransform.X = Math.Clamp(
             centeredLeft,
             0,
@@ -1440,6 +1453,12 @@ public partial class MainWindow : Window
     private void UpdateMarquees()
     {
         if (_metricSettings.LowGpuMode || !IsWindowContentVisible())
+        {
+            StopMarquees();
+            return;
+        }
+
+        if (!_windowSettings.ShowMediaInfo)
         {
             StopMarquees();
             return;
@@ -2239,8 +2258,44 @@ public partial class MainWindow : Window
                 : VerticalAlignment.Center;
     }
 
+    private void ApplyMediaDisplaySettings()
+    {
+        var artworkVisible = _windowSettings.ShowArtwork
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        ArtworkColumn.Width = new GridLength(
+            _windowSettings.ShowArtwork ? ArtworkAreaWidth : 0);
+        ArtworkHost.Visibility = artworkVisible;
+        VerticalArtworkHost.Visibility = artworkVisible;
+
+        var horizontalRadius = _windowSettings.RoundedArtwork ? 5d : 0d;
+        var verticalRadius = _windowSettings.RoundedArtwork ? 6d : 0d;
+        ArtworkHost.CornerRadius = new CornerRadius(horizontalRadius);
+        VerticalArtworkHost.CornerRadius = new CornerRadius(verticalRadius);
+        ArtworkImageClip.RadiusX = horizontalRadius;
+        ArtworkImageClip.RadiusY = horizontalRadius;
+        VerticalArtworkImageClip.RadiusX = verticalRadius;
+        VerticalArtworkImageClip.RadiusY = verticalRadius;
+
+        var centralWidth = _windowSettings.ShowMediaInfo
+            ? CentralHostWidth
+            : CompactCentralHostWidth;
+        CentralColumn.Width = new GridLength(centralWidth);
+        CentralHost.Width = centralWidth;
+        PlayerRoot.Width = _isVerticalLayout
+            ? VerticalPlayerWidth
+            : CalculateHorizontalPlayerWidth();
+        PlayerRoot.Height = _isVerticalLayout
+            ? CalculateVerticalPlayerHeight()
+            : HorizontalPlayerHeight;
+        VerticalPlayerContent.Height = PlayerRoot.Height;
+        SetExpanded(_isExpanded, animate: false);
+        ScheduleMarqueeUpdate();
+    }
+
     private void ApplyWindowSettings()
     {
+        ApplyMediaDisplaySettings();
         var floating = _windowSettings.HostMode == WindowHostMode.Floating;
         if (_taskbarHostService is not null &&
             !_taskbarHostService.SetFloating(floating))
@@ -3202,9 +3257,14 @@ public partial class MainWindow : Window
 
         var position = e.GetPosition(PlayerRoot);
         var isDragArea = _isVerticalLayout
-            ? position.Y <= VerticalArtworkAreaHeight ||
-                (!_isExpanded && position.Y <= VerticalBaseHeight)
-            : position.X <= 44 + InfoHost.ActualWidth;
+            ? (_windowSettings.ShowArtwork && position.Y <= VerticalArtworkAreaHeight) ||
+                (_windowSettings.ShowMediaInfo &&
+                    !_isExpanded &&
+                    position.Y <= VerticalBaseHeight -
+                        (_windowSettings.ShowArtwork ? 0 : VerticalArtworkAreaHeight))
+            : position.X <=
+                (_windowSettings.ShowArtwork ? ArtworkAreaWidth : 0) +
+                InfoHost.ActualWidth;
         if (!isDragArea ||
             !NativeMethods.GetCursorPos(out _dragStartCursor) ||
             !NativeMethods.GetWindowRect(_windowHandle, out var windowRect))

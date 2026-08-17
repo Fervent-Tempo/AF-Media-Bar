@@ -128,7 +128,13 @@
   <sys:String x:Key="Settings.Language.EnUs">English</sys:String>
 
   <!-- Player components page -->
-  <sys:String x:Key="Settings.Components.Description">Choose the optional components shown in the media bar. Artwork, title, and transport controls are always kept.</sys:String>
+  <sys:String x:Key="Settings.Components.Description">Choose the core content and optional components shown in the player.</sys:String>
+  <sys:String x:Key="Settings.Components.ShowArtworkTitle">Show artwork</sys:String>
+  <sys:String x:Key="Settings.Components.ShowArtworkDescription">Show artwork for the current media and reclaim its space when disabled.</sys:String>
+  <sys:String x:Key="Settings.Components.RoundedArtworkTitle">Round artwork corners</sys:String>
+  <sys:String x:Key="Settings.Components.RoundedArtworkDescription">Clip artwork to a rounded rectangle or keep square corners when disabled.</sys:String>
+  <sys:String x:Key="Settings.Components.ShowMediaInfoTitle">Show media information</sys:String>
+  <sys:String x:Key="Settings.Components.ShowMediaInfoDescription">Show the title and artist; transport controls remain visible when disabled.</sys:String>
   <sys:String x:Key="Settings.Components.MetricsTitle">Show performance metrics</sys:String>
   <sys:String x:Key="Settings.Components.MetricsDescription">Display optional system and process metrics in the player.</sys:String>
   <sys:String x:Key="Settings.Components.MetricMem">System memory (MEM)</sys:String>
@@ -222,6 +228,8 @@
   <sys:String x:Key="Search.Kw.AutoStart">startup boot login auto-run</sys:String>
   <sys:String x:Key="Search.Kw.HideWhenNoMedia">hide media visibility</sys:String>
   <sys:String x:Key="Search.Kw.AutoCheckUpdate">update version download GitHub Quark Baidu Lanzou</sys:String>
+  <sys:String x:Key="Search.Kw.Artwork">artwork cover image rounded square hide</sys:String>
+  <sys:String x:Key="Search.Kw.MediaInfo">song title artist media information hide</sys:String>
   <sys:String x:Key="Search.Kw.Metrics">metrics memory CPU GPU APP</sys:String>
   <sys:String x:Key="Search.Kw.Spectrum">audio spectrum visualization</sys:String>
   <sys:String x:Key="Search.Kw.OutputSwitch">audio output device</sys:String>

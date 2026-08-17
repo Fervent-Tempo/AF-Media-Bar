@@ -22,7 +22,10 @@ internal readonly record struct WindowSettings(
     bool AutoCollapse,
     bool EdgeAutoCollapse,
     int? FloatingLeft,
-    int? FloatingTop)
+    int? FloatingTop,
+    bool ShowArtwork,
+    bool RoundedArtwork,
+    bool ShowMediaInfo)
 {
     internal static WindowSettings Default { get; } = new(
         false,
@@ -33,5 +36,8 @@ internal readonly record struct WindowSettings(
         true,
         false,
         null,
-        null);
+        null,
+        true,
+        true,
+        true);
 }

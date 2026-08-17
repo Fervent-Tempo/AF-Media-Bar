@@ -21,7 +21,10 @@ internal static class WindowSettingsService
                 ReadBoolean(key, "AutoCollapse", WindowSettings.Default.AutoCollapse),
                 ReadBoolean(key, "EdgeAutoCollapse", WindowSettings.Default.EdgeAutoCollapse),
                 ReadNullableInt(key, "FloatingLeft"),
-                ReadNullableInt(key, "FloatingTop"));
+                ReadNullableInt(key, "FloatingTop"),
+                ReadBoolean(key, "ShowArtwork", WindowSettings.Default.ShowArtwork),
+                ReadBoolean(key, "RoundedArtwork", WindowSettings.Default.RoundedArtwork),
+                ReadBoolean(key, "ShowMediaInfo", WindowSettings.Default.ShowMediaInfo));
         }
         catch (Exception exception)
         {
@@ -40,6 +43,9 @@ internal static class WindowSettingsService
         key.SetValue("DisplayScalePercent", settings.DisplayScalePercent, RegistryValueKind.DWord);
         key.SetValue("AutoCollapse", settings.AutoCollapse ? 1 : 0, RegistryValueKind.DWord);
         key.SetValue("EdgeAutoCollapse", settings.EdgeAutoCollapse ? 1 : 0, RegistryValueKind.DWord);
+        key.SetValue("ShowArtwork", settings.ShowArtwork ? 1 : 0, RegistryValueKind.DWord);
+        key.SetValue("RoundedArtwork", settings.RoundedArtwork ? 1 : 0, RegistryValueKind.DWord);
+        key.SetValue("ShowMediaInfo", settings.ShowMediaInfo ? 1 : 0, RegistryValueKind.DWord);
         if (settings.FloatingLeft is int left)
         {
             key.SetValue("FloatingLeft", left, RegistryValueKind.DWord);

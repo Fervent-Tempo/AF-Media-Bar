@@ -77,6 +77,9 @@ public partial class SettingsWindow : Window
         OutputDeviceCheckBox.IsChecked = settings.Metrics.OutputDeviceSwitcherEnabled;
         VolumeControlCheckBox.IsChecked = settings.Metrics.VolumeControlEnabled;
         LowGpuModeCheckBox.IsChecked = settings.Metrics.LowGpuMode;
+        ShowArtworkCheckBox.IsChecked = settings.Window.ShowArtwork;
+        RoundedArtworkCheckBox.IsChecked = settings.Window.RoundedArtwork;
+        ShowMediaInfoCheckBox.IsChecked = settings.Window.ShowMediaInfo;
 
         TaskbarModeRadioButton.IsChecked = settings.Window.HostMode == WindowHostMode.Taskbar;
         FloatingModeRadioButton.IsChecked = settings.Window.HostMode == WindowHostMode.Floating;
@@ -143,6 +146,9 @@ public partial class SettingsWindow : Window
         new(SectionTag.General, Loc.Get("Settings.General.HideWhenNoMediaTitle"), Loc.Get("Search.Kw.HideWhenNoMedia")),
         new(SectionTag.General, Loc.Get("Settings.General.AutoCheckUpdateTitle"), Loc.Get("Search.Kw.AutoCheckUpdate")),
         new(SectionTag.General, Loc.Get("Settings.Language.SectionTitle"), Loc.Get("Search.Kw.Language")),
+        new(SectionTag.Components, Loc.Get("Settings.Components.ShowArtworkTitle"), Loc.Get("Search.Kw.Artwork")),
+        new(SectionTag.Components, Loc.Get("Settings.Components.RoundedArtworkTitle"), Loc.Get("Search.Kw.Artwork")),
+        new(SectionTag.Components, Loc.Get("Settings.Components.ShowMediaInfoTitle"), Loc.Get("Search.Kw.MediaInfo")),
         new(SectionTag.Components, Loc.Get("Settings.Components.MetricsTitle"), Loc.Get("Search.Kw.Metrics")),
         new(SectionTag.Components, Loc.Get("Settings.Components.SpectrumTitle"), Loc.Get("Search.Kw.Spectrum")),
         new(SectionTag.Components, Loc.Get("Settings.Components.OutputSwitchTitle"), Loc.Get("Search.Kw.OutputSwitch")),
@@ -174,6 +180,7 @@ public partial class SettingsWindow : Window
         SystemCpuCheckBox.IsEnabled = settings.Metrics.Enabled;
         SystemGpuCheckBox.IsEnabled = settings.Metrics.Enabled;
         ProcessMemoryCheckBox.IsEnabled = settings.Metrics.Enabled;
+        RoundedArtworkCheckBox.IsEnabled = settings.Window.ShowArtwork;
         AutomaticPlacementCheckBox.IsEnabled = canUseAutomaticPlacement;
         AutomaticPlacementDescription.Text = canUseAutomaticPlacement
             ? Loc.Get("Settings.Layout.AvoidTaskbarDockDescription")
@@ -383,7 +390,10 @@ public partial class SettingsWindow : Window
             LayoutMode = layoutMode,
             DisplayScalePercent = (int)Math.Round(ScaleSlider.Value),
             AutoCollapse = AutoCollapseCheckBox.IsChecked == true,
-            EdgeAutoCollapse = EdgeAutoCollapseCheckBox.IsChecked == true
+            EdgeAutoCollapse = EdgeAutoCollapseCheckBox.IsChecked == true,
+            ShowArtwork = ShowArtworkCheckBox.IsChecked == true,
+            RoundedArtwork = RoundedArtworkCheckBox.IsChecked == true,
+            ShowMediaInfo = ShowMediaInfoCheckBox.IsChecked == true
         };
         TryUpdate(() => _coordinator.UpdateWindow(settings));
     }

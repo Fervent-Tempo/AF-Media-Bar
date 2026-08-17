@@ -69,8 +69,8 @@
     <Grid x:Name="PlayerContent"
           HorizontalAlignment="Left">
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="44" />
-        <ColumnDefinition Width="210" />
+        <ColumnDefinition x:Name="ArtworkColumn" Width="44" />
+        <ColumnDefinition x:Name="CentralColumn" Width="210" />
         <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="Auto" />
@@ -104,7 +104,14 @@
                    HorizontalAlignment="Center"
                    VerticalAlignment="Center" />
         <Image x:Name="ArtworkImage"
-               Stretch="UniformToFill" />
+               Stretch="UniformToFill">
+          <Image.Clip>
+            <RectangleGeometry x:Name="ArtworkImageClip"
+                               Rect="0,0,40,40"
+                               RadiusX="5"
+                               RadiusY="5" />
+          </Image.Clip>
+        </Image>
       </Grid>
     </Border>
 
@@ -344,7 +351,14 @@
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center" />
             <Image x:Name="VerticalArtworkImage"
-                   Stretch="UniformToFill" />
+                   Stretch="UniformToFill">
+              <Image.Clip>
+                <RectangleGeometry x:Name="VerticalArtworkImageClip"
+                                   Rect="0,0,40,40"
+                                   RadiusX="6"
+                                   RadiusY="6" />
+              </Image.Clip>
+            </Image>
           </Grid>
         </Border>
         <Grid x:Name="VerticalCentralHost"
