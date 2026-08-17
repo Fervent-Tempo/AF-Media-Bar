@@ -87,7 +87,8 @@ public partial class SettingsWindow : Window
             settings.Metrics.OpenTaskManagerOnMetricsClick;
         LowGpuModeCheckBox.IsChecked = settings.Metrics.LowGpuMode;
         ShowArtworkCheckBox.IsChecked = settings.Window.ShowArtwork;
-        RoundedArtworkCheckBox.IsChecked = settings.Window.RoundedArtwork;
+        ArtworkCornerRadiusSlider.Value = settings.Window.ArtworkCornerRadius;
+        ArtworkCornerRadiusValueText.Text = FormatArtworkCornerRadius(settings.Window.ArtworkCornerRadius);
         ShowMediaInfoCheckBox.IsChecked = settings.Window.ShowMediaInfo;
 
         TaskbarModeRadioButton.IsChecked = settings.Window.HostMode == WindowHostMode.Taskbar;
@@ -163,7 +164,7 @@ public partial class SettingsWindow : Window
         new(SectionTag.General, Loc.Get("Settings.General.AutoCheckUpdateTitle"), Loc.Get("Search.Kw.AutoCheckUpdate")),
         new(SectionTag.General, Loc.Get("Settings.Language.SectionTitle"), Loc.Get("Search.Kw.Language")),
         new(SectionTag.Components, Loc.Get("Settings.Components.ShowArtworkTitle"), Loc.Get("Search.Kw.Artwork")),
-        new(SectionTag.Components, Loc.Get("Settings.Components.RoundedArtworkTitle"), Loc.Get("Search.Kw.Artwork")),
+        new(SectionTag.Components, Loc.Get("Settings.Components.ArtworkCornerRadiusTitle"), Loc.Get("Search.Kw.Artwork")),
         new(SectionTag.Components, Loc.Get("Settings.Components.ShowMediaInfoTitle"), Loc.Get("Search.Kw.MediaInfo")),
         new(SectionTag.Components, Loc.Get("Settings.Components.MetricsTitle"), Loc.Get("Search.Kw.Metrics")),
         new(SectionTag.Components, Loc.Get("Settings.Components.OpenTaskManagerTitle"), Loc.Get("Search.Kw.TaskManager")),
@@ -200,7 +201,7 @@ public partial class SettingsWindow : Window
         SystemGpuCheckBox.IsEnabled = settings.Metrics.Enabled;
         ProcessMemoryCheckBox.IsEnabled = settings.Metrics.Enabled;
         OpenTaskManagerOnMetricsClickCheckBox.IsEnabled = settings.Metrics.SelectedCount > 0;
-        RoundedArtworkCheckBox.IsEnabled = settings.Window.ShowArtwork;
+        ArtworkCornerRadiusSlider.IsEnabled = settings.Window.ShowArtwork;
         AutomaticPlacementCheckBox.IsEnabled = canUseAutomaticPlacement;
         TaskbarTopOffsetSlider.IsEnabled = taskbarMode && !forcedVertical;
         AutomaticPlacementDescription.Text = canUseAutomaticPlacement
@@ -415,7 +416,7 @@ public partial class SettingsWindow : Window
             AutoCollapse = AutoCollapseCheckBox.IsChecked == true,
             EdgeAutoCollapse = EdgeAutoCollapseCheckBox.IsChecked == true,
             ShowArtwork = ShowArtworkCheckBox.IsChecked == true,
-            RoundedArtwork = RoundedArtworkCheckBox.IsChecked == true,
+            ArtworkCornerRadius = (int)Math.Round(ArtworkCornerRadiusSlider.Value),
             ShowMediaInfo = ShowMediaInfoCheckBox.IsChecked == true
         };
         TryUpdate(() => _coordinator.UpdateWindow(settings));
@@ -439,6 +440,33 @@ public partial class SettingsWindow : Window
 
         _scaleSaveTimer.Stop();
         _scaleSaveTimer.Start();
+    }
+
+    private void ArtworkCornerRadiusSlider_OnValueChanged(
+        object sender,
+        RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (!_isInitialized)
+        {
+            return;
+        }
+
+        ArtworkCornerRadiusValueText.Text = FormatArtworkCornerRadius(
+            (int)Math.Round(ArtworkCornerRadiusSlider.Value));
+        if (_isSyncing)
+        {
+            return;
+        }
+
+        _scaleSaveTimer.Stop();
+        _scaleSaveTimer.Start();
+    }
+
+    private static string FormatArtworkCornerRadius(int radius)
+    {
+        return radius <= 0
+            ? Loc.Get("Settings.Components.ArtworkCornerRadiusNone")
+            : $"{radius} px";
     }
 
     private void ScaleSaveTimer_OnTick(object? sender, EventArgs e)

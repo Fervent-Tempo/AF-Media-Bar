@@ -597,12 +597,31 @@
               </CheckBox>
             </Border>
             <Border BorderBrush="{DynamicResource MenuSeparatorBrush}" BorderThickness="0,0,0,1" Padding="0,10">
-              <CheckBox x:Name="RoundedArtworkCheckBox" Style="{StaticResource SettingsCheckBoxStyle}" Checked="WindowCheckBox_OnChanged" Unchecked="WindowCheckBox_OnChanged">
-                <StackPanel>
-                  <TextBlock Text="{DynamicResource Settings.Components.RoundedArtworkTitle}" Style="{StaticResource SettingsRowTitleStyle}" />
-                  <TextBlock Text="{DynamicResource Settings.Components.RoundedArtworkDescription}" Style="{StaticResource SettingsRowDescriptionStyle}" />
-                </StackPanel>
-              </CheckBox>
+              <StackPanel>
+                <TextBlock Text="{DynamicResource Settings.Components.ArtworkCornerRadiusTitle}" Style="{StaticResource SettingsRowTitleStyle}" />
+                <TextBlock Text="{DynamicResource Settings.Components.ArtworkCornerRadiusDescription}" Style="{StaticResource SettingsRowDescriptionStyle}" />
+                <Grid Width="320" HorizontalAlignment="Left" Margin="0,6,0,0">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="64" />
+                  </Grid.ColumnDefinitions>
+                  <Slider x:Name="ArtworkCornerRadiusSlider"
+                          Grid.Column="0"
+                          Width="240"
+                          Minimum="0"
+                          Maximum="20"
+                          TickFrequency="1"
+                          IsSnapToTickEnabled="True"
+                          HorizontalAlignment="Left"
+                          VerticalAlignment="Center"
+                          ValueChanged="ArtworkCornerRadiusSlider_OnValueChanged" />
+                  <TextBlock x:Name="ArtworkCornerRadiusValueText"
+                             Grid.Column="1"
+                             HorizontalAlignment="Right"
+                             VerticalAlignment="Center"
+                             FontSize="14" />
+                </Grid>
+              </StackPanel>
             </Border>
             <Border BorderBrush="{DynamicResource MenuSeparatorBrush}" BorderThickness="0,0,0,1" Padding="0,10">
               <CheckBox x:Name="ShowMediaInfoCheckBox" Style="{StaticResource SettingsCheckBoxStyle}" Checked="WindowCheckBox_OnChanged" Unchecked="WindowCheckBox_OnChanged">

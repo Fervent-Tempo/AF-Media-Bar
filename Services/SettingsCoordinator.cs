@@ -73,6 +73,12 @@ internal sealed class SettingsCoordinator
 
     internal void UpdateWindow(WindowSettings settings)
     {
+        if (Current.Window.HostMode == WindowHostMode.Floating &&
+            settings.HostMode == WindowHostMode.Taskbar)
+        {
+            settings = settings with { LayoutMode = PlayerLayoutMode.Automatic };
+        }
+
         if (settings == Current.Window)
         {
             return;

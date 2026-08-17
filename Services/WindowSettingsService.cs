@@ -25,7 +25,7 @@ internal static class WindowSettingsService
                 ReadNullableInt(key, "FloatingLeft"),
                 ReadNullableInt(key, "FloatingTop"),
                 ReadBoolean(key, "ShowArtwork", WindowSettings.Default.ShowArtwork),
-                ReadBoolean(key, "RoundedArtwork", WindowSettings.Default.RoundedArtwork),
+                ReadArtworkCornerRadius(key),
                 ReadBoolean(key, "ShowMediaInfo", WindowSettings.Default.ShowMediaInfo));
         }
         catch (Exception exception)
@@ -47,7 +47,11 @@ internal static class WindowSettingsService
         key.SetValue("AutoCollapse", settings.AutoCollapse ? 1 : 0, RegistryValueKind.DWord);
         key.SetValue("EdgeAutoCollapse", settings.EdgeAutoCollapse ? 1 : 0, RegistryValueKind.DWord);
         key.SetValue("ShowArtwork", settings.ShowArtwork ? 1 : 0, RegistryValueKind.DWord);
-        key.SetValue("RoundedArtwork", settings.RoundedArtwork ? 1 : 0, RegistryValueKind.DWord);
+        key.SetValue(
+            "ArtworkCornerRadius",
+            Math.Clamp(settings.ArtworkCornerRadius, 0, 20),
+            RegistryValueKind.DWord);
+        key.DeleteValue("RoundedArtwork", throwOnMissingValue: false);
         key.SetValue("ShowMediaInfo", settings.ShowMediaInfo ? 1 : 0, RegistryValueKind.DWord);
         if (settings.FloatingLeft is int left)
         {
@@ -114,6 +118,28 @@ internal static class WindowSettingsService
     private static int ReadScalePercent(RegistryKey? key, string name, int fallback)
     {
         return Math.Clamp(ReadInteger(key, name, fallback), 70, 125);
+    }
+
+    private static int ReadArtworkCornerRadius(RegistryKey? key)
+    {
+        var value = key?.GetValue("ArtworkCornerRadius") switch
+        {
+            int number => number,
+            long number => (int)number,
+            _ => int.MinValue
+        };
+        if (value != int.MinValue)
+        {
+            return Math.Clamp(value, 0, 20);
+        }
+
+        // Migrate the previous on/off option to the former default radius.
+        return ReadBoolean(
+            key,
+            "RoundedArtwork",
+            WindowSettings.Default.ArtworkCornerRadius > 0)
+            ? WindowSettings.Default.ArtworkCornerRadius
+            : 0;
     }
 
     private static int ReadInteger(RegistryKey? key, string name, int defaultValue)

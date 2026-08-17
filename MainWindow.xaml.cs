@@ -2388,8 +2388,9 @@ public partial class MainWindow : Window
         ArtworkHost.Visibility = artworkVisible;
         VerticalArtworkHost.Visibility = artworkVisible;
 
-        var horizontalRadius = _windowSettings.RoundedArtwork ? 5d : 0d;
-        var verticalRadius = _windowSettings.RoundedArtwork ? 6d : 0d;
+        var artworkRadius = Math.Clamp(_windowSettings.ArtworkCornerRadius, 0, 20);
+        var horizontalRadius = (double)artworkRadius;
+        var verticalRadius = (double)artworkRadius;
         ArtworkHost.CornerRadius = new CornerRadius(horizontalRadius);
         VerticalArtworkHost.CornerRadius = new CornerRadius(verticalRadius);
         ArtworkImageClip.RadiusX = horizontalRadius;

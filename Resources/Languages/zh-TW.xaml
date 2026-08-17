@@ -131,8 +131,9 @@
   <sys:String x:Key="Settings.Components.Description">選擇播放器中顯示的核心內容與附加元件。</sys:String>
   <sys:String x:Key="Settings.Components.ShowArtworkTitle">顯示封面圖片</sys:String>
   <sys:String x:Key="Settings.Components.ShowArtworkDescription">顯示目前媒體的封面；關閉後收回封面占用空間。</sys:String>
-  <sys:String x:Key="Settings.Components.RoundedArtworkTitle">封面使用圓角</sys:String>
-  <sys:String x:Key="Settings.Components.RoundedArtworkDescription">以圓角矩形裁切封面；關閉後顯示直角封面。</sys:String>
+  <sys:String x:Key="Settings.Components.ArtworkCornerRadiusTitle">封面圓角弧度</sys:String>
+  <sys:String x:Key="Settings.Components.ArtworkCornerRadiusDescription">調整封面圓角矩形的弧度；最小值為無圓角，最大值為半圓。</sys:String>
+  <sys:String x:Key="Settings.Components.ArtworkCornerRadiusNone">無圓角</sys:String>
   <sys:String x:Key="Settings.Components.ShowMediaInfoTitle">顯示媒體資訊</sys:String>
   <sys:String x:Key="Settings.Components.ShowMediaInfoDescription">顯示歌曲名稱與歌手名稱；關閉後播放控制維持可見。</sys:String>
   <sys:String x:Key="Settings.Components.MetricsTitle">顯示效能指標</sys:String>
@@ -243,7 +244,7 @@
   <sys:String x:Key="Search.Kw.AutoStart">啟動 登入 自動執行</sys:String>
   <sys:String x:Key="Search.Kw.HideWhenNoMedia">隱藏 媒體 可見性</sys:String>
   <sys:String x:Key="Search.Kw.AutoCheckUpdate">更新 版本 下載 GitHub 夸克 百度 藍奏雲</sys:String>
-  <sys:String x:Key="Search.Kw.Artwork">封面 圖片 圓角 直角 隱藏</sys:String>
+  <sys:String x:Key="Search.Kw.Artwork">封面 圖片 圓角 弧度 半徑 直角 隱藏</sys:String>
   <sys:String x:Key="Search.Kw.MediaInfo">歌曲 曲名 標題 歌手 媒體 資訊 隱藏</sys:String>
   <sys:String x:Key="Search.Kw.Metrics">指標 記憶體 CPU GPU APP</sys:String>
   <sys:String x:Key="Search.Kw.TaskManager">工作管理員 資源監控 點擊 開啟 效能</sys:String>
