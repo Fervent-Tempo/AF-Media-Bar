@@ -1,10 +1,9 @@
-using System.Buffers;
 using System.Globalization;
 using System.IO;
-using System.Security.Cryptography;
 using System.Windows.Media.Imaging;
 using AFMediaBar.Models;
 using Windows.Media.Control;
+using Loc = AFMediaBar.Services.Localization;
 
 namespace AFMediaBar.Services;
 
@@ -14,8 +13,6 @@ namespace AFMediaBar.Services;
 /// </summary>
 internal sealed class MediaSessionService : IDisposable
 {
-    private const int ArtworkDecodeWidth = 96;
-    private const int MaximumArtworkBytes = 16 * 1024 * 1024;
     private static readonly TimeSpan SessionReconnectGracePeriod = TimeSpan.FromSeconds(6);
     // 播放器常先发布标题、后发布封面；短时重试等待来源完成更新。
     // Players often publish text before artwork; short retries wait for settled metadata.
@@ -114,7 +111,7 @@ internal sealed class MediaSessionService : IDisposable
             {
                 IsConnected = true,
                 Title = entry.DisplayName,
-                Artist = "正在读取媒体…",
+                Artist = Loc.Get("Main.Media.LoadingArtist"),
                 SourceId = entry.SourceId,
                 SourceName = entry.DisplayName
             });
@@ -178,7 +175,7 @@ internal sealed class MediaSessionService : IDisposable
 
         if (string.IsNullOrWhiteSpace(value))
         {
-            return "未知媒体";
+            return Loc.Get("Main.Media.UnknownSource");
         }
 
         var bangIndex = value.LastIndexOf('!');
@@ -194,7 +191,9 @@ internal sealed class MediaSessionService : IDisposable
             value = value[..packageIndex];
         }
 
-        return string.IsNullOrWhiteSpace(value) ? "未知媒体" : value;
+        return string.IsNullOrWhiteSpace(value)
+            ? Loc.Get("Main.Media.UnknownSource")
+            : value;
     }
 
     private async Task SelectRelativeSessionAsync(int direction)
@@ -390,7 +389,7 @@ internal sealed class MediaSessionService : IDisposable
             CanPlayPause = false,
             CanSkipPrevious = false,
             CanSkipNext = false,
-            Artist = "正在加载媒体…",
+            Artist = Loc.Get("Main.Media.LoadingArtist"),
             SourceId = _preferredSourceId ?? _lastSnapshot.SourceId,
             SourceName = _preferredSourceName ?? _lastSnapshot.SourceName
         });
@@ -582,7 +581,9 @@ internal sealed class MediaSessionService : IDisposable
             var artist = !string.IsNullOrWhiteSpace(mediaProperties.Artist)
                 ? mediaProperties.Artist
                 : mediaProperties.AlbumArtist;
-            artist = string.IsNullOrWhiteSpace(artist) ? "未知创作者" : artist;
+            artist = string.IsNullOrWhiteSpace(artist)
+                ? Loc.Get("Main.Media.UnknownArtist")
+                : artist;
             var artworkIdentity = BuildArtworkIdentity(
                 entry,
                 mediaProperties,
@@ -603,12 +604,12 @@ internal sealed class MediaSessionService : IDisposable
             var initialArtworkChanged = false;
             if (needsArtworkSettlement)
             {
-                ArtworkLoadResult initialArtwork;
+                MediaArtworkLoadResult initialArtwork;
                 try
                 {
                     // 首次属性读取中的 Thumbnail 可能只在本次 WinRT 快照有效，必须立即消费。
                     // Thumbnail may only be usable from this WinRT snapshot, so consume it immediately.
-                    initialArtwork = await LoadArtworkAsync(
+                    initialArtwork = await MediaArtworkLoader.LoadAsync(
                         mediaProperties.Thumbnail,
                         CancellationToken.None);
                 }
@@ -746,7 +747,9 @@ internal sealed class MediaSessionService : IDisposable
                 var artist = !string.IsNullOrWhiteSpace(mediaProperties.Artist)
                     ? mediaProperties.Artist
                     : mediaProperties.AlbumArtist;
-                artist = string.IsNullOrWhiteSpace(artist) ? "未知创作者" : artist;
+                artist = string.IsNullOrWhiteSpace(artist)
+                    ? Loc.Get("Main.Media.UnknownArtist")
+                    : artist;
                 var currentIdentity = BuildArtworkIdentity(
                     entry,
                     mediaProperties,
@@ -761,10 +764,10 @@ internal sealed class MediaSessionService : IDisposable
                     return;
                 }
 
-                ArtworkLoadResult artwork;
+                MediaArtworkLoadResult artwork;
                 try
                 {
-                    artwork = await LoadArtworkAsync(
+                    artwork = await MediaArtworkLoader.LoadAsync(
                         mediaProperties.Thumbnail,
                         cancellation.Token);
                 }
@@ -917,93 +920,6 @@ internal sealed class MediaSessionService : IDisposable
             mediaProperties.TrackNumber.ToString(CultureInfo.InvariantCulture));
     }
 
-    private static async Task<ArtworkLoadResult> LoadArtworkAsync(
-        Windows.Storage.Streams.IRandomAccessStreamReference? thumbnail,
-        CancellationToken cancellationToken)
-    {
-        if (thumbnail is null)
-        {
-            return default;
-        }
-
-        using var randomAccessStream = await thumbnail.OpenReadAsync();
-        if (randomAccessStream.Size > MaximumArtworkBytes)
-        {
-            return default;
-        }
-
-        using var sourceStream = randomAccessStream.AsStreamForRead();
-        // 首次回调可能提供不可定位的 WinRT 流；限量缓冲后再交给 WPF 解码。
-        // The first callback may expose a non-seekable WinRT stream; buffer it for WPF.
-        using var memoryStream = new MemoryStream(checked((int)randomAccessStream.Size));
-        if (!await CopyArtworkAsync(sourceStream, memoryStream, cancellationToken))
-        {
-            return default;
-        }
-
-        if (memoryStream.Length == 0)
-        {
-            return default;
-        }
-
-        memoryStream.Position = 0;
-        if (!memoryStream.TryGetBuffer(out var buffer))
-        {
-            return default;
-        }
-
-        var fingerprint = Convert.ToHexString(SHA256.HashData(
-            buffer.AsSpan(0, checked((int)memoryStream.Length))));
-
-        var bitmap = new BitmapImage();
-        bitmap.BeginInit();
-        bitmap.CacheOption = BitmapCacheOption.OnLoad;
-        bitmap.DecodePixelWidth = ArtworkDecodeWidth;
-        bitmap.StreamSource = memoryStream;
-        bitmap.EndInit();
-        bitmap.Freeze();
-        return new ArtworkLoadResult(bitmap, fingerprint);
-    }
-
-    private static async Task<bool> CopyArtworkAsync(
-        Stream source,
-        Stream destination,
-        CancellationToken cancellationToken)
-    {
-        var buffer = ArrayPool<byte>.Shared.Rent(81920);
-        try
-        {
-            var totalBytes = 0;
-            while (true)
-            {
-                var bytesToRead = Math.Min(
-                    buffer.Length,
-                    MaximumArtworkBytes - totalBytes + 1);
-                var bytesRead = await source.ReadAsync(
-                    buffer.AsMemory(0, bytesToRead),
-                    cancellationToken);
-                if (bytesRead == 0)
-                {
-                    return true;
-                }
-
-                totalBytes += bytesRead;
-                if (totalBytes > MaximumArtworkBytes)
-                {
-                    return false;
-                }
-
-                await destination.WriteAsync(
-                    buffer.AsMemory(0, bytesRead),
-                    cancellationToken);
-            }
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(buffer);
-        }
-    }
-
     public void Dispose()
     {
         if (_disposed)
@@ -1036,7 +952,4 @@ internal sealed class MediaSessionService : IDisposable
         string DisplayName,
         GlobalSystemMediaTransportControlsSession Session);
 
-    private readonly record struct ArtworkLoadResult(
-        BitmapImage? Artwork,
-        string? Fingerprint);
 }

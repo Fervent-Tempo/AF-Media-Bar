@@ -3,6 +3,10 @@ using Microsoft.Win32;
 
 namespace AFMediaBar.Services;
 
+/// <summary>
+/// 负责窗口模式、布局、缩放、封面和浮动坐标设置的读取、迁移与保存。
+/// Owns loading, migration, and persistence for window mode, layout, scale, artwork, and floating coordinates.
+/// </summary>
 internal static class WindowSettingsService
 {
     private const string SettingsKeyPath = @"Software\AFMediaBar";

@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using AFMediaBar.Models;
 using Windows.Devices.Enumeration;
 using Windows.Media.Devices;
+using Loc = AFMediaBar.Services.Localization;
 
 namespace AFMediaBar.Services;
 
@@ -60,7 +61,7 @@ internal sealed class AudioDeviceService
                 PolicyConfigClientClassId,
                 throwOnError: true)!;
             client = Activator.CreateInstance(clientType) ??
-                throw new InvalidOperationException("无法创建 Windows 音频策略服务。");
+                throw new InvalidOperationException(Loc.Get("Msg.AudioPolicyServiceCreateFailed"));
             var policy = (IPolicyConfig)client;
             SetDefaultEndpoint(policy, deviceId, ERole.Console);
             SetDefaultEndpoint(policy, deviceId, ERole.Multimedia);

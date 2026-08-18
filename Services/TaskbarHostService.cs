@@ -6,7 +6,8 @@ using AFMediaBar.Models;
 namespace AFMediaBar.Services;
 
 /// <summary>
-/// Hosts the WPF HWND inside the Explorer taskbar so both windows share one animation tree.
+/// 在 Explorer 任务栏中挂载或恢复 WPF HWND，使窗口共享任务栏动画树。
+/// Hosts or restores the WPF HWND in Explorer so the window shares the taskbar animation tree.
 /// </summary>
 internal sealed class TaskbarHostService : IDisposable
 {

@@ -14,15 +14,17 @@ public sealed record MediaSnapshot(
     string SourceName,
     BitmapImage? Artwork)
 {
+    // 断开快照不携带固定语言文本；窗口根据当前语言资源呈现占位符或错误信息。
+    // Disconnected snapshots carry no fixed-language text; windows resolve placeholders or errors from current resources.
     public static MediaSnapshot Disconnected { get; } = new(
         false,
         false,
         false,
         false,
         false,
-        "等待媒体播放",
-        "请在任意应用中播放音频或视频",
         string.Empty,
-        "媒体",
+        string.Empty,
+        string.Empty,
+        string.Empty,
         null);
 }

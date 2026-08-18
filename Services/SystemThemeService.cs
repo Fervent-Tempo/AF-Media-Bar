@@ -10,7 +10,8 @@ using Microsoft.Win32;
 namespace AFMediaBar.Services;
 
 /// <summary>
-/// Keeps taskbar and popup resources synchronized with Windows theme settings.
+/// 将 Windows 主题、强调色和高对比度状态映射到任务栏与弹窗资源。
+/// Maps Windows theme, accent, and high-contrast state to taskbar and popup resources.
 /// </summary>
 internal sealed class SystemThemeService : IDisposable
 {

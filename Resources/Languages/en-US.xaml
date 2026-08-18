@@ -45,6 +45,9 @@
   <sys:String x:Key="Main.Volume.None">None</sys:String>
   <sys:String x:Key="Main.Volume.ReadFailedFormat">Could not read current media volume: {0}</sys:String>
   <sys:String x:Key="Main.Volume.AdjustFailedFormat">Could not adjust media volume: {0}</sys:String>
+  <sys:String x:Key="Main.Media.UnknownSource">Unknown media</sys:String>
+  <sys:String x:Key="Main.Media.UnknownArtist">Unknown artist</sys:String>
+  <sys:String x:Key="Main.Media.LoadingArtist">Loading media...</sys:String>
 
   <!-- ===== Message boxes & errors (Msg) ===== -->
   <sys:String x:Key="Msg.SessionAccessFailed">Could not access system media sessions</sys:String>
@@ -59,6 +62,8 @@
   <sys:String x:Key="Msg.OpenLinkFailed">Could not open link</sys:String>
   <sys:String x:Key="Msg.OpenLogFileFailed">Could not open log file</sys:String>
   <sys:String x:Key="Msg.OpenTaskManagerFailed">Could not open Task Manager</sys:String>
+  <sys:String x:Key="Msg.AudioPolicyServiceCreateFailed">Could not create the Windows audio policy service.</sys:String>
+  <sys:String x:Key="Msg.AudioDeviceEnumeratorCreateFailed">Could not create the Windows audio device enumerator.</sys:String>
   <sys:String x:Key="Msg.ResetTitle">Restore default settings</sys:String>
   <sys:String x:Key="Msg.ResetBody">This restores all settings and disables start-at-boot. Continue?</sys:String>
   <sys:String x:Key="Msg.SaveSettingsFailed">Could not save settings</sys:String>
@@ -66,6 +71,13 @@
   <sys:String x:Key="Msg.UpdateNew">New version available</sys:String>
   <sys:String x:Key="Msg.UpdateFoundBody">AF Media Bar {0} is available.&#xA;&#xA;{1}&#xA;&#xA;Open the download page?</sys:String>
   <sys:String x:Key="Msg.UpdateOpenPageHint">Open the release page to view the update.</sys:String>
+  <sys:String x:Key="Msg.UpdateServiceClosed">The update service is closed.</sys:String>
+  <sys:String x:Key="Msg.UpdateManifestInvalid">The update manifest format is invalid.</sys:String>
+  <sys:String x:Key="Msg.UpdateManifestVersionInvalid">The version in the update manifest is invalid.</sys:String>
+  <sys:String x:Key="Msg.UpdateManifestLinksMissing">The update manifest has no usable HTTPS download or release-note link.</sys:String>
+  <sys:String x:Key="Msg.UpdateManifestUnavailable">The update manifest could not be reached.</sys:String>
+  <sys:String x:Key="Msg.UpdateManifestUnavailableRetryFormat">The update manifest could not be reached. Please try again later.&#xA;{0}</sys:String>
+  <sys:String x:Key="Msg.UpdateManifestHttpFormat">The update manifest returned HTTP {0}.</sys:String>
 
   <!-- ===== Settings window (Settings) ===== -->
   <sys:String x:Key="Settings.WindowTitle">AF Media Bar Settings</sys:String>

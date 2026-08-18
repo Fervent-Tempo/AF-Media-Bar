@@ -3,6 +3,10 @@ using AFMediaBar.Models;
 
 namespace AFMediaBar.Services;
 
+/// <summary>
+/// 负责主题模式和增强可读性设置的注册表读取、校验与保存。
+/// Owns registry loading, validation, and persistence for theme and readability settings.
+/// </summary>
 internal static class ThemeSettingsService
 {
     private const string SettingsKeyPath = @"Software\AFMediaBar";

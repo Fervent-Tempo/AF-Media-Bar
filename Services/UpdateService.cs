@@ -1,9 +1,9 @@
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
-using System.Text.Json;
 using AFMediaBar.Models;
 using Microsoft.Win32;
+using Loc = AFMediaBar.Services.Localization;
 
 namespace AFMediaBar.Services;
 
@@ -18,13 +18,6 @@ internal sealed class UpdateService : IDisposable
     private const string LastCheckValueName = "UpdateLastCheckUtc";
     private const string SkippedVersionValueName = "UpdateSkippedVersion";
     private static readonly TimeSpan AutomaticCheckInterval = TimeSpan.FromHours(24);
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        ReadCommentHandling = JsonCommentHandling.Skip,
-        AllowTrailingCommas = true
-    };
-
     // 按顺序尝试多个公开来源，降低单个 GitHub 入口不可用造成的影响。 / Try multiple public sources in order to tolerate a blocked or unavailable GitHub endpoint.
     internal static IReadOnlyList<Uri> ManifestUris { get; } =
     [
@@ -102,7 +95,7 @@ internal sealed class UpdateService : IDisposable
     {
         if (_disposed)
         {
-            return UpdateCheckResult.Failed("更新服务已关闭。");
+            return UpdateCheckResult.Failed(Loc.Get("Msg.UpdateServiceClosed"));
         }
 
         if (!force && !ShouldCheckAutomatically())
@@ -134,12 +127,18 @@ internal sealed class UpdateService : IDisposable
                         cancellationToken);
                     if (!response.IsSuccessStatusCode)
                     {
-                        lastError = $"版本清单返回 HTTP {(int)response.StatusCode}。";
+                        lastError = Loc.Get(
+                            "Msg.UpdateManifestHttpFormat",
+                            (int)response.StatusCode);
                         continue;
                     }
 
                     var json = await response.Content.ReadAsStringAsync(cancellationToken);
-                    if (!TryParseManifest(json, manifestUri, out var update, out var parseError))
+                    if (!UpdateManifestParser.TryParse(
+                            json,
+                            manifestUri,
+                            out var update,
+                            out var parseError))
                     {
                         lastError = parseError;
                         continue;
@@ -173,20 +172,19 @@ internal sealed class UpdateService : IDisposable
                 }
                 catch (Exception exception) when (
                     exception is HttpRequestException or
-                    TaskCanceledException or
-                    JsonException)
+                    TaskCanceledException)
                 {
                     lastError = exception.Message;
                 }
                 catch (ObjectDisposedException) when (_disposed)
                 {
-                    return UpdateCheckResult.Failed("更新服务已关闭。");
+                    return UpdateCheckResult.Failed(Loc.Get("Msg.UpdateServiceClosed"));
                 }
             }
 
             var errorMessage = string.IsNullOrWhiteSpace(lastError)
-                ? "无法访问版本清单。"
-                : "无法访问版本清单，请稍后重试。\n" + lastError;
+                ? Loc.Get("Msg.UpdateManifestUnavailable")
+                : Loc.Get("Msg.UpdateManifestUnavailableRetryFormat", lastError);
             DiagnosticsLogService.Write("update-check-failed", details: errorMessage);
             return UpdateCheckResult.Failed(errorMessage);
         }
@@ -311,137 +309,6 @@ internal sealed class UpdateService : IDisposable
         }
     }
 
-    /// <summary>
-    /// 解析并过滤清单中的外部数据，只保留 HTTPS 链接和有效 SHA-256。
-    /// Parses and filters external manifest data, retaining only HTTPS links and valid SHA-256 values.
-    /// </summary>
-    private static bool TryParseManifest(
-        string json,
-        Uri manifestUri,
-        out UpdateInfo? update,
-        out string error)
-    {
-        update = null;
-        error = "版本清单格式无效。";
-        UpdateManifestDto? manifest;
-        try
-        {
-            manifest = JsonSerializer.Deserialize<UpdateManifestDto>(json, JsonOptions);
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
-
-        if (manifest is null || manifest.SchemaVersion != 1)
-        {
-            return false;
-        }
-
-        if (!Version.TryParse(manifest.Version, out var parsedVersion))
-        {
-            error = "版本清单中的版本号无效。";
-            return false;
-        }
-
-        var version = NormalizeVersion(parsedVersion);
-        var releaseNotesUri = ParseHttpsUri(manifest.ReleaseNotesUrl);
-        var downloads = ParseHttpsUris(manifest.Downloads);
-        if (releaseNotesUri is null && downloads.Count == 0)
-        {
-            error = "版本清单没有可用的 HTTPS 下载或说明链接。";
-            return false;
-        }
-
-        var minimumVersion = Version.TryParse(
-            manifest.MinimumSupportedVersion,
-            out var parsedMinimumVersion)
-            ? NormalizeVersion(parsedMinimumVersion).ToString(3)
-            : null;
-        DateTimeOffset? releaseDate = DateTimeOffset.TryParse(
-            manifest.ReleaseDate,
-            out var parsedReleaseDate)
-            ? parsedReleaseDate
-            : null;
-        var changelog = manifest.Changelog?
-            .Where(item => !string.IsNullOrWhiteSpace(item))
-            .Select(item => item.Trim())
-            .Take(12)
-            .ToArray() ?? [];
-        var title = string.IsNullOrWhiteSpace(manifest.Title)
-            ? $"AF Media Bar {version.ToString(3)}"
-            : manifest.Title.Trim();
-
-        update = new UpdateInfo(
-            version,
-            version.ToString(3),
-            title,
-            releaseDate,
-            minimumVersion,
-            manifest.Mandatory,
-            changelog,
-            releaseNotesUri,
-            downloads,
-            ParseSha256(manifest.Sha256),
-            manifestUri);
-        return true;
-    }
-
-    private static Dictionary<string, string> ParseSha256(
-        IReadOnlyDictionary<string, string>? values)
-    {
-        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        if (values is null)
-        {
-            return result;
-        }
-
-        foreach (var (name, value) in values)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                continue;
-            }
-
-            var checksum = value.Trim();
-            if (checksum.Length == 64 && checksum.All(Uri.IsHexDigit))
-            {
-                result[name] = checksum.ToLowerInvariant();
-            }
-        }
-
-        return result;
-    }
-
-    private static Dictionary<string, Uri> ParseHttpsUris(
-        IReadOnlyDictionary<string, string>? values)
-    {
-        var result = new Dictionary<string, Uri>(StringComparer.OrdinalIgnoreCase);
-        if (values is null)
-        {
-            return result;
-        }
-
-        foreach (var (name, value) in values)
-        {
-            var uri = ParseHttpsUri(value);
-            if (uri is not null)
-            {
-                result[name] = uri;
-            }
-        }
-
-        return result;
-    }
-
-    private static Uri? ParseHttpsUri(string? value)
-    {
-        return Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
-            uri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)
-            ? uri
-            : null;
-    }
-
     private static Version NormalizeVersion(Version version)
     {
         return new Version(
@@ -450,17 +317,4 @@ internal sealed class UpdateService : IDisposable
             Math.Max(0, version.Build));
     }
 
-    private sealed class UpdateManifestDto
-    {
-        public int SchemaVersion { get; set; }
-        public string? Version { get; set; }
-        public string? ReleaseDate { get; set; }
-        public string? MinimumSupportedVersion { get; set; }
-        public bool Mandatory { get; set; }
-        public string? Title { get; set; }
-        public List<string>? Changelog { get; set; }
-        public string? ReleaseNotesUrl { get; set; }
-        public Dictionary<string, string>? Downloads { get; set; }
-        public Dictionary<string, string>? Sha256 { get; set; }
-    }
 }

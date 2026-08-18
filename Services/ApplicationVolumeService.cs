@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using AFMediaBar.Models;
+using Loc = AFMediaBar.Services.Localization;
 
 namespace AFMediaBar.Services;
 
@@ -229,7 +230,7 @@ internal sealed class ApplicationVolumeService
                 DeviceEnumeratorClassId,
                 throwOnError: true)!;
             deviceEnumeratorObject = Activator.CreateInstance(enumeratorType) ??
-                throw new InvalidOperationException("无法创建 Windows 音频设备枚举器。");
+                throw new InvalidOperationException(Loc.Get("Msg.AudioDeviceEnumeratorCreateFailed"));
             var deviceEnumerator = (IMMDeviceEnumerator)deviceEnumeratorObject;
             Marshal.ThrowExceptionForHR(deviceEnumerator.GetDefaultAudioEndpoint(
                 EDataFlow.Render,

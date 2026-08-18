@@ -3,7 +3,8 @@ using AFMediaBar.Models;
 namespace AFMediaBar.Services;
 
 /// <summary>
-/// Owns the current settings snapshot and keeps the existing registry-backed stores coordinated.
+/// 持有不可变设置快照，并协调现有注册表服务的读写与精准分区通知。
+/// Owns the immutable settings snapshot and coordinates registry stores with precise section notifications.
 /// </summary>
 internal sealed class SettingsCoordinator
 {

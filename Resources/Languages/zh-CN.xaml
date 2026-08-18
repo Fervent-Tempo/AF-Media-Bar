@@ -44,6 +44,9 @@
   <sys:String x:Key="Main.Volume.None">暂无</sys:String>
   <sys:String x:Key="Main.Volume.ReadFailedFormat">无法读取当前媒体音量：{0}</sys:String>
   <sys:String x:Key="Main.Volume.AdjustFailedFormat">无法调节媒体音量：{0}</sys:String>
+  <sys:String x:Key="Main.Media.UnknownSource">未知媒体</sys:String>
+  <sys:String x:Key="Main.Media.UnknownArtist">未知创作者</sys:String>
+  <sys:String x:Key="Main.Media.LoadingArtist">正在加载媒体...</sys:String>
 
   <!-- ===== 消息框与错误（Msg） ===== -->
   <sys:String x:Key="Msg.SessionAccessFailed">无法访问系统媒体会话</sys:String>
@@ -58,6 +61,8 @@
   <sys:String x:Key="Msg.OpenLinkFailed">无法打开链接</sys:String>
   <sys:String x:Key="Msg.OpenLogFileFailed">无法打开日志文件</sys:String>
   <sys:String x:Key="Msg.OpenTaskManagerFailed">无法打开任务管理器</sys:String>
+  <sys:String x:Key="Msg.AudioPolicyServiceCreateFailed">无法创建 Windows 音频策略服务。</sys:String>
+  <sys:String x:Key="Msg.AudioDeviceEnumeratorCreateFailed">无法创建 Windows 音频设备枚举器。</sys:String>
   <sys:String x:Key="Msg.ResetTitle">恢复默认设置</sys:String>
   <sys:String x:Key="Msg.ResetBody">这会恢复所有设置并关闭开机启动，是否继续？</sys:String>
   <sys:String x:Key="Msg.SaveSettingsFailed">无法保存设置</sys:String>
@@ -65,6 +70,13 @@
   <sys:String x:Key="Msg.UpdateNew">发现新版本</sys:String>
   <sys:String x:Key="Msg.UpdateFoundBody">发现 AF Media Bar {0}。&#xA;&#xA;{1}&#xA;&#xA;是否打开下载页面？</sys:String>
   <sys:String x:Key="Msg.UpdateOpenPageHint">请打开发布页面查看更新内容。</sys:String>
+  <sys:String x:Key="Msg.UpdateServiceClosed">更新服务已关闭。</sys:String>
+  <sys:String x:Key="Msg.UpdateManifestInvalid">版本清单格式无效。</sys:String>
+  <sys:String x:Key="Msg.UpdateManifestVersionInvalid">版本清单中的版本号无效。</sys:String>
+  <sys:String x:Key="Msg.UpdateManifestLinksMissing">版本清单没有可用的 HTTPS 下载或说明链接。</sys:String>
+  <sys:String x:Key="Msg.UpdateManifestUnavailable">无法访问版本清单。</sys:String>
+  <sys:String x:Key="Msg.UpdateManifestUnavailableRetryFormat">无法访问版本清单，请稍后重试。&#xA;{0}</sys:String>
+  <sys:String x:Key="Msg.UpdateManifestHttpFormat">版本清单返回 HTTP {0}。</sys:String>
 
   <!-- ===== 设置窗口（Settings） ===== -->
   <sys:String x:Key="Settings.WindowTitle">AF Media Bar 设置</sys:String>
