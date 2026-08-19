@@ -94,7 +94,9 @@ internal static class NativeMethods
     internal const uint NotifyIconShowTip = 0x00000080;
     internal const uint NotifyIconVersion4 = 4;
 
-    private const uint MonitorDefaultToNearest = 0x00000002;
+    // MONITOR_DEFAULTTONEAREST 来自 WinUser.h；任务栏和浮动窗口的几何回退都需要稳定选择最近显示器。
+    // MONITOR_DEFAULTTONEAREST comes from WinUser.h; taskbar and floating-window geometry fallbacks both need a stable nearest monitor.
+    internal const uint MonitorDefaultToNearest = 0x00000002;
 
     internal static readonly nint HwndTopmost = new(-1);
     internal static readonly nint HwndTop = nint.Zero;

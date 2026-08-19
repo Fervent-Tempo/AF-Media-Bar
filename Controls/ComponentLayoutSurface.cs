@@ -77,7 +77,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         _marqueeTimer.Stop();
         Children.Clear();
 
-        var root = BuildContainer(profile.Root);
+        var root = BuildInlineContainers(profile);
         root.HorizontalAlignment = HorizontalAlignment.Left;
         root.VerticalAlignment = VerticalAlignment.Top;
         var vertical = profile.LayoutMode == PlayerLayoutMode.Vertical;
@@ -95,6 +95,58 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         {
             _marqueeTimer.Start();
         }
+    }
+
+    internal void ApplyEdge(LayoutProfile profile, LayoutEdgeContainer edgeContainer)
+    {
+        _profile = profile;
+        _pointerNear = true;
+        _gapDip = Math.Clamp(profile.Surface.GapDip, 0, 32);
+        _widgetViews.Clear();
+        _containerViews.Clear();
+        _mediaTextKinds.Clear();
+        _marqueeStates.Clear();
+        _metricStates.Clear();
+        _marqueeTimer.Stop();
+        Children.Clear();
+
+        var root = BuildSlot(edgeContainer.ExpandedSlot, LayoutFlowOrientation.Automatic);
+        root.HorizontalAlignment = HorizontalAlignment.Left;
+        root.VerticalAlignment = VerticalAlignment.Top;
+        Children.Add(root);
+        RefreshAllData();
+        if (_marqueeStates.Count > 0)
+        {
+            _marqueeTimer.Start();
+        }
+    }
+
+    private FrameworkElement BuildInlineContainers(LayoutProfile profile)
+    {
+        var panel = new StackPanel
+        {
+            Orientation = profile.LayoutMode == PlayerLayoutMode.Vertical
+                ? Orientation.Vertical
+                : Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Top
+        };
+        var visibleIndex = 0;
+        foreach (var container in profile.InlineContainers.Where(container => container.Enabled))
+        {
+            var view = BuildContainer(container);
+            if (visibleIndex > 0 && _gapDip > 0)
+            {
+                view.Margin = panel.Orientation == Orientation.Horizontal
+                    ? new Thickness(_gapDip, 0, 0, 0)
+                    : new Thickness(0, _gapDip, 0, 0);
+            }
+
+            panel.Children.Add(view);
+            visibleIndex++;
+        }
+
+        return panel;
     }
 
     internal void SetPointerNear(bool pointerNear)

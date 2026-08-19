@@ -90,7 +90,7 @@ The app runs in its own process. Its WPF player can be hosted as a taskbar child
 | Media | Artwork, title, artist, previous, play/pause, next, and multiple source selection |
 | Source interaction | Return to the current media app and switch sessions with the mouse wheel |
 | Taskbar behavior | Automatic horizontal/vertical detection, manual placement and locking, automatic avoidance, auto-hide and fullscreen handling |
-| Window modes | Switch between a taskbar child and a floating window; both modes support horizontal/vertical layouts and 70%-125% display scaling |
+| Window modes | Four independent layouts combine host mode and arrangement; taskbar and floating hosts support horizontal/vertical layouts and 70%-125% display scaling |
 | Auto-hide | Hide when every media session is stopped; floating windows support desktop-edge auto-collapse, an indicator line, and smooth animation |
 | Audio devices | List and switch the default output device, including delayed wheel selection |
 | App volume | Match the selected media process and adjust its Windows mixer volume in 2% steps |
@@ -279,7 +279,7 @@ AF-Media-Bar/
 - [ ] Display scrolling video subtitles/lyrics.
 - [ ] Display media progress bars.
 - [ ] Polish the UI and provide multiple preset themes.
-- [x] Add a UI layout editor with four profiles, component trees, container states, numeric properties, and live preview.
+- [x] Add a drag-and-drop composition editor with multiple strip containers, four edge-collapse areas, primary properties, undo, and profile reset.
 - [ ] Export and share configurations.
 - [ ] Add an onboarding tutorial.
 

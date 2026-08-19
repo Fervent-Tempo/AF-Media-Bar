@@ -140,6 +140,10 @@ public partial class SettingsWindow
         new(SectionTag.Layout, Loc.Get("Settings.Layout.TopOffset"), Loc.Get("Search.Kw.TopOffset")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.EditorTitle"), Loc.Get("Search.Kw.LayoutEditor")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.EditorProperties"), Loc.Get("Search.Kw.LayoutEditor")),
+        new(SectionTag.Layout, Loc.Get("Settings.Layout.EditorHostMode"), Loc.Get("Search.Kw.LayoutEditor")),
+        new(SectionTag.Layout, Loc.Get("Settings.Layout.EditorArrangement"), Loc.Get("Search.Kw.LayoutEditor")),
+        new(SectionTag.Layout, Loc.Get("Settings.Layout.EditorPalette"), Loc.Get("Search.Kw.LayoutEditor")),
+        new(SectionTag.Layout, Loc.Get("Settings.Layout.EditorEdgeContainer"), Loc.Get("Search.Kw.EdgeCollapse")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.AvoidTaskbarTitle"), Loc.Get("Search.Kw.AvoidTaskbar")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.LockPositionTitle"), Loc.Get("Search.Kw.LockPosition")),
         new(SectionTag.Appearance, Loc.Get("Settings.Appearance.PlayerText"), Loc.Get("Search.Kw.PlayerText")),
@@ -173,10 +177,8 @@ public partial class SettingsWindow
             ? Loc.Get("Settings.Layout.AvoidTaskbarDockDescription")
             : Loc.Get("Settings.Layout.AvoidTaskbarUnsupportedDescription");
         LockPositionCheckBox.IsEnabled = taskbarMode && !settings.Placement.AutomaticPlacement;
-        EdgeAutoCollapseCheckBox.IsEnabled = !taskbarMode;
-        EdgeAutoCollapseDescription.Text = taskbarMode
-            ? Loc.Get("Settings.Interaction.EdgeCollapseFloatingDescription")
-            : Loc.Get("Settings.Interaction.EdgeCollapseNormalDescription");
+        EdgeAutoCollapseCheckBox.IsEnabled = false;
+        EdgeAutoCollapseDescription.Text = Loc.Get("Settings.Interaction.EdgeCollapseLayoutDescription");
     }
 
     private void NavigationList_OnSelectionChanged(object sender, SelectionChangedEventArgs e)

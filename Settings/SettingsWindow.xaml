@@ -792,52 +792,84 @@
             <TextBlock Text="{DynamicResource Settings.Layout.EditorDescription}"
                        Margin="0,4,0,10"
                        Style="{StaticResource SettingsRowDescriptionStyle}" />
-            <TextBlock Text="{DynamicResource Settings.Layout.EditorProfile}" Style="{StaticResource SettingsRowDescriptionStyle}" />
-            <ComboBox x:Name="LayoutProfileComboBox"
-                      Width="320"
-                      HorizontalAlignment="Left"
-                      Margin="0,4,0,10"
-                      Style="{StaticResource SettingsComboBoxStyle}"
-                      SelectionChanged="LayoutProfileComboBox_OnSelectionChanged" />
-            <Grid Margin="0,0,0,8">
+            <Grid Margin="0,0,0,10">
               <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="230" />
+                <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="12" />
                 <ColumnDefinition Width="*" />
               </Grid.ColumnDefinitions>
               <StackPanel Grid.Column="0">
-                <TextBlock Text="{DynamicResource Settings.Layout.EditorStructure}" Style="{StaticResource SettingsRowDescriptionStyle}" />
-                <TreeView x:Name="LayoutTree"
-                          Height="220"
+                <TextBlock Text="{DynamicResource Settings.Layout.EditorHostMode}" Style="{StaticResource SettingsRowDescriptionStyle}" />
+                <ComboBox x:Name="LayoutHostModeComboBox"
                           Margin="0,4,0,0"
-                          Background="{DynamicResource MenuHoverBrush}"
-                          BorderBrush="{DynamicResource MenuBorderBrush}"
-                          BorderThickness="1"
-                          Foreground="{DynamicResource MenuPrimaryTextBrush}"
-                          SelectedItemChanged="LayoutTree_OnSelectedItemChanged" />
-                <TextBlock x:Name="LayoutEditorSelectionText"
-                           Margin="0,6,0,0"
-                           Text="{DynamicResource Settings.Layout.EditorNoSelection}"
-                           Style="{StaticResource SettingsRowDescriptionStyle}" />
+                          Style="{StaticResource SettingsComboBoxStyle}"
+                          SelectionChanged="LayoutProfileOption_OnSelectionChanged" />
               </StackPanel>
-              <Border Grid.Column="2"
-                      MinHeight="220"
-                      Padding="10"
-                      Background="{DynamicResource MenuHoverBrush}"
-                      BorderBrush="{DynamicResource MenuBorderBrush}"
-                      BorderThickness="1"
-                      CornerRadius="6">
-                <StackPanel>
-                  <TextBlock Text="{DynamicResource Settings.Layout.EditorPreview}" Style="{StaticResource SettingsRowDescriptionStyle}" />
-                  <Border x:Name="LayoutEditorPreviewHost"
-                          Height="120"
-                          Margin="0,8,0,0"
-                          Background="{DynamicResource TaskbarReadabilityBrush}"
-                          CornerRadius="6"
-                          ClipToBounds="True" />
-                </StackPanel>
-              </Border>
+              <StackPanel Grid.Column="2">
+                <TextBlock Text="{DynamicResource Settings.Layout.EditorArrangement}" Style="{StaticResource SettingsRowDescriptionStyle}" />
+                <ComboBox x:Name="LayoutArrangementComboBox"
+                          Margin="0,4,0,0"
+                          Style="{StaticResource SettingsComboBoxStyle}"
+                          SelectionChanged="LayoutProfileOption_OnSelectionChanged" />
+              </StackPanel>
             </Grid>
+            <DockPanel Margin="0,0,0,8">
+              <WrapPanel DockPanel.Dock="Right">
+                <Button x:Name="LayoutUndoButton"
+                        Content="{DynamicResource Settings.Layout.EditorUndo}"
+                        Style="{StaticResource SettingsActionButtonStyle}"
+                        Click="LayoutUndoButton_OnClick" />
+                <Button x:Name="LayoutResetProfileButton"
+                        Content="{DynamicResource Settings.Layout.EditorResetProfile}"
+                        Style="{StaticResource SettingsActionButtonStyle}"
+                        Click="LayoutResetProfileButton_OnClick" />
+              </WrapPanel>
+              <TextBlock Text="{DynamicResource Settings.Layout.EditorPalette}"
+                         VerticalAlignment="Center"
+                         Style="{StaticResource SettingsRowDescriptionStyle}" />
+            </DockPanel>
+            <WrapPanel x:Name="LayoutComponentPalette" Margin="0,0,0,8" />
+            <WrapPanel Margin="0,0,0,8">
+              <Button x:Name="LayoutAddStaticContainerButton"
+                      Content="{DynamicResource Settings.Layout.EditorAddStaticContainer}"
+                      Style="{StaticResource SettingsActionButtonStyle}"
+                      Click="LayoutAddStaticContainerButton_OnClick" />
+              <Button x:Name="LayoutAddHoverContainerButton"
+                      Content="{DynamicResource Settings.Layout.EditorAddHoverContainer}"
+                      Style="{StaticResource SettingsActionButtonStyle}"
+                      Click="LayoutAddHoverContainerButton_OnClick" />
+              <Button x:Name="LayoutAddEdgeContainerButton"
+                      Content="{DynamicResource Settings.Layout.EditorAddEdgeContainer}"
+                      Style="{StaticResource SettingsActionButtonStyle}"
+                      Click="LayoutAddEdgeContainerButton_OnClick" />
+              <ComboBox x:Name="LayoutNewEdgeComboBox"
+                        Width="110"
+                        Margin="6,0,0,0"
+                        Style="{StaticResource SettingsComboBoxStyle}" />
+            </WrapPanel>
+            <Border x:Name="LayoutVisualEditorHost"
+                    Height="330"
+                    Margin="0,0,0,8"
+                    Padding="10"
+                    Background="{DynamicResource MenuHoverBrush}"
+                    BorderBrush="{DynamicResource MenuBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    AllowDrop="True"
+                    DragOver="LayoutVisualEditorHost_OnDragOver"
+                    Drop="LayoutVisualEditorHost_OnDrop" />
+            <DockPanel Margin="0,0,0,8">
+              <ComboBox x:Name="LayoutSlotComboBox"
+                        DockPanel.Dock="Left"
+                        Width="160"
+                        Margin="0,0,8,0"
+                        Style="{StaticResource SettingsComboBoxStyle}"
+                        SelectionChanged="LayoutSlotComboBox_OnSelectionChanged" />
+              <TextBlock x:Name="LayoutEditorSelectionText"
+                         VerticalAlignment="Center"
+                         Text="{DynamicResource Settings.Layout.EditorNoSelection}"
+                         Style="{StaticResource SettingsRowDescriptionStyle}" />
+            </DockPanel>
             <WrapPanel Margin="0,0,0,8">
               <Button x:Name="LayoutMoveUpButton"
                       Content="{DynamicResource Settings.Layout.EditorMoveUp}"
@@ -856,31 +888,6 @@
                       Style="{StaticResource SettingsActionButtonStyle}"
                       Click="LayoutRemoveButton_OnClick" />
             </WrapPanel>
-            <Grid Margin="0,0,0,8">
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="160" />
-                <ColumnDefinition Width="160" />
-                <ColumnDefinition Width="Auto" />
-              </Grid.ColumnDefinitions>
-              <ComboBox x:Name="LayoutSlotComboBox"
-                        Grid.Column="0"
-                        Margin="0,0,8,0"
-                        Style="{StaticResource SettingsComboBoxStyle}" />
-              <ComboBox x:Name="LayoutWidgetTypeComboBox"
-                        Grid.Column="1"
-                        Margin="0,0,8,0"
-                        Style="{StaticResource SettingsComboBoxStyle}" />
-              <Button x:Name="LayoutAddWidgetButton"
-                      Grid.Column="2"
-                      Content="{DynamicResource Settings.Layout.EditorAddWidget}"
-                      Style="{StaticResource SettingsActionButtonStyle}"
-                      Click="LayoutAddWidgetButton_OnClick" />
-            </Grid>
-            <Button x:Name="LayoutAddContainerButton"
-                    Content="{DynamicResource Settings.Layout.EditorAddContainer}"
-                    HorizontalAlignment="Left"
-                    Style="{StaticResource SettingsActionButtonStyle}"
-                    Click="LayoutAddContainerButton_OnClick" />
             <TextBlock x:Name="LayoutEditorMessageText"
                        Margin="0,6,0,0"
                        Style="{StaticResource SettingsRowDescriptionStyle}" />

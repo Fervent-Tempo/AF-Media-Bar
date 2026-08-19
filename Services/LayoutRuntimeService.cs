@@ -35,7 +35,7 @@ internal sealed class LayoutRuntimeService
 
     internal static bool ContainsWidget(LayoutProfile profile, string typeId)
     {
-        return EnumerateWidgets(profile.Root)
+        return EnumerateWidgets(profile)
             .Any(widget => widget.Enabled &&
                 string.Equals(widget.TypeId, typeId, StringComparison.Ordinal));
     }
@@ -49,7 +49,14 @@ internal sealed class LayoutRuntimeService
         var orientation = profile.LayoutMode == PlayerLayoutMode.Vertical
             ? LayoutFlowOrientation.Vertical
             : LayoutFlowOrientation.Horizontal;
-        var size = MeasureContainer(profile.Root, orientation, profile.Surface.GapDip);
+        var inlineSizes = profile.InlineContainers
+            .Where(container => container.Enabled)
+            .Select(container => MeasureContainer(
+                container,
+                orientation,
+                profile.Surface.GapDip))
+            .ToArray();
+        var size = Combine(inlineSizes, orientation, profile.Surface.GapDip);
         var lengthScale = Math.Clamp(profile.Surface.LengthScalePercent, 70, 125) / 100d;
         var thicknessScale = Math.Clamp(profile.Surface.ThicknessScalePercent, 70, 125) / 100d;
         var width = orientation == LayoutFlowOrientation.Vertical
@@ -68,6 +75,44 @@ internal sealed class LayoutRuntimeService
         }
 
         return new LayoutSize(Math.Max(1, width), Math.Max(1, height));
+    }
+
+    internal static LayoutSize CalculateCompositionSize(
+        LayoutProfile profile,
+        LayoutEdge? unavailableEdge = null)
+    {
+        var strip = CalculateDesiredSize(profile);
+        var edgeSizes = profile.EdgeContainers
+            .Where(container => container.Enabled &&
+                (profile.HostMode != WindowHostMode.Taskbar || container.Edge != unavailableEdge))
+            .Select(container => (container.Edge, Size: MeasureSlot(
+                container.ExpandedSlot,
+                profile.LayoutMode == PlayerLayoutMode.Vertical
+                    ? LayoutFlowOrientation.Vertical
+                    : LayoutFlowOrientation.Horizontal,
+                profile.Surface.GapDip)))
+            .ToArray();
+        var left = edgeSizes.Where(item => item.Edge == LayoutEdge.Left)
+            .Select(item => item.Size.WidthDip).DefaultIfEmpty().Max();
+        var right = edgeSizes.Where(item => item.Edge == LayoutEdge.Right)
+            .Select(item => item.Size.WidthDip).DefaultIfEmpty().Max();
+        var top = edgeSizes.Where(item => item.Edge == LayoutEdge.Top)
+            .Select(item => item.Size.HeightDip).DefaultIfEmpty().Max();
+        var bottom = edgeSizes.Where(item => item.Edge == LayoutEdge.Bottom)
+            .Select(item => item.Size.HeightDip).DefaultIfEmpty().Max();
+        return new LayoutSize(
+            Math.Max(1, strip.WidthDip + left + right),
+            Math.Max(1, strip.HeightDip + top + bottom));
+    }
+
+    internal static LayoutSize MeasureEdgeContainer(LayoutProfile profile, LayoutEdgeContainer container)
+    {
+        return MeasureSlot(
+            container.ExpandedSlot,
+            profile.LayoutMode == PlayerLayoutMode.Vertical
+                ? LayoutFlowOrientation.Vertical
+                : LayoutFlowOrientation.Horizontal,
+            profile.Surface.GapDip);
     }
 
     private static LayoutSize MeasureContainer(
@@ -123,6 +168,25 @@ internal sealed class LayoutRuntimeService
                 sizes.Sum(size => size.HeightDip) + Math.Max(0, sizes.Length - 1) * gap);
     }
 
+    private static LayoutSize Combine(
+        IReadOnlyList<LayoutSize> sizes,
+        LayoutFlowOrientation orientation,
+        int gap)
+    {
+        if (sizes.Count == 0)
+        {
+            return new LayoutSize(1, 1);
+        }
+
+        return orientation == LayoutFlowOrientation.Horizontal
+            ? new LayoutSize(
+                sizes.Sum(size => size.WidthDip) + Math.Max(0, sizes.Count - 1) * gap,
+                sizes.Max(size => size.HeightDip))
+            : new LayoutSize(
+                sizes.Max(size => size.WidthDip),
+                sizes.Sum(size => size.HeightDip) + Math.Max(0, sizes.Count - 1) * gap);
+    }
+
     private static LayoutSize MeasureWidget(LayoutWidgetElement widget)
     {
         var settings = widget.Settings;
@@ -175,7 +239,7 @@ internal sealed class LayoutRuntimeService
         LayoutProfile profile,
         string typeId)
     {
-        return EnumerateWidgets(profile.Root)
+        return EnumerateWidgets(profile)
             .Where(widget => widget.Enabled &&
                 string.Equals(widget.TypeId, typeId, StringComparison.Ordinal))
             .ToArray();
@@ -228,6 +292,25 @@ internal sealed class LayoutRuntimeService
         return intervals.Length == 0
             ? fallbackMilliseconds
             : intervals.Min();
+    }
+
+    private static IEnumerable<LayoutWidgetElement> EnumerateWidgets(LayoutProfile profile)
+    {
+        foreach (var container in profile.InlineContainers)
+        {
+            foreach (var widget in EnumerateWidgets(container))
+            {
+                yield return widget;
+            }
+        }
+
+        foreach (var edge in profile.EdgeContainers)
+        {
+            foreach (var widget in EnumerateSlot(edge.ExpandedSlot))
+            {
+                yield return widget;
+            }
+        }
     }
 
     private static IEnumerable<LayoutWidgetElement> EnumerateWidgets(

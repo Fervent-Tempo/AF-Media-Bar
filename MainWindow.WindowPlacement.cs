@@ -231,6 +231,16 @@ public partial class MainWindow
 
         var taskbarRect = bounds.ScreenBounds;
         var scale = bounds.Scale;
+        var currentTaskbarEdge = TaskbarEdgeService.TryResolveCurrent();
+        if (_unavailableLayoutEdge != currentTaskbarEdge)
+        {
+            // Explorer 允许用户在运行期间移动任务栏；边缘约束变化后立即重建组合，避免旧边缘容器继续显示。
+            // Explorer can move the taskbar at runtime; rebuild immediately so a container cannot remain on the newly occupied edge.
+            _unavailableLayoutEdge = currentTaskbarEdge;
+            ApplyComponentLayout();
+            ApplyResponsivePlayerDimensions();
+            force = true;
+        }
         var verticalLayout = ResolveVerticalTaskbarLayout(taskbarRect);
         ApplyPlayerLayout(verticalLayout);
         ConfigurePopupPlacement(bounds, verticalLayout);
@@ -556,7 +566,9 @@ public partial class MainWindow
 
         if (_activeLayoutProfile is not null)
         {
-            var desiredSize = LayoutRuntimeService.CalculateDesiredSize(_activeLayoutProfile);
+            var desiredSize = LayoutRuntimeService.CalculateCompositionSize(
+                _activeLayoutProfile,
+                _unavailableLayoutEdge);
             PlayerRoot.Width = desiredSize.WidthDip;
             PlayerRoot.Height = desiredSize.HeightDip;
         }

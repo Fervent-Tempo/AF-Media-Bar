@@ -185,7 +185,7 @@
   <sys:String x:Key="Settings.Layout.LockPositionDescription">When locked, dragging cannot change the taskbar position.</sys:String>
   <sys:String x:Key="Settings.Layout.ResetPosition">Reset position</sys:String>
   <sys:String x:Key="Settings.Layout.EditorTitle">Component layout editor</sys:String>
-  <sys:String x:Key="Settings.Layout.EditorDescription">Edit containers, component order, and visibility independently for each window context. Changes apply immediately.</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorDescription">Choose a host mode and arrangement, then drag widgets into the strip or onto an outer edge. Changes apply immediately.</sys:String>
   <sys:String x:Key="Settings.Layout.EditorProfile">Editing profile</sys:String>
   <sys:String x:Key="Settings.Layout.EditorStructure">Component structure</sys:String>
   <sys:String x:Key="Settings.Layout.EditorPreview">Live preview</sys:String>
@@ -206,6 +206,31 @@
   <sys:String x:Key="Settings.Layout.ContainerStatic">Static container</sys:String>
   <sys:String x:Key="Settings.Layout.ContainerHoverSwitch">Hover switch container</sys:String>
   <sys:String x:Key="Settings.Layout.ContainerAutoCollapse">Auto-collapse container</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorHostMode">Host mode</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorArrangement">Arrangement</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPalette">Widgets and containers</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorUndo">Undo</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorResetProfile">Reset current profile</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorAddStaticContainer">Add static container</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorAddHoverContainer">Add hover container</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorAddEdgeContainer">Add edge-collapse container</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorEdgeContainer">Edge-collapse container</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorLeaveContent">Leave content</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorNearContent">Pointer-near content</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorExpandedContent">Expanded content</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorDropHere">Drop here</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorEmptyStrip">Add a container first, or drop a widget directly</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPrimaryProperties">Primary properties</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorAdvancedSize">Advanced size</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorStaticFollowsProfile">Static containers follow the current profile's arrangement and need no separate orientation.</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorTaskbarEdgeUnavailable">The taskbar edge cannot host a collapse container. Runtime validation repeats if Explorer is temporarily unavailable.</sys:String>
+  <sys:String x:Key="Settings.Layout.EdgeTop">Top edge</sys:String>
+  <sys:String x:Key="Settings.Layout.EdgeRight">Right edge</sys:String>
+  <sys:String x:Key="Settings.Layout.EdgeBottom">Bottom edge</sys:String>
+  <sys:String x:Key="Settings.Layout.EdgeLeft">Left edge</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyEdge">Edge</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyEdgeOffset">Offset along edge</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyTriggerThickness">Collapsed trigger thickness</sys:String>
 
   <!-- Appearance page -->
   <sys:String x:Key="Settings.Appearance.Description">Adjust the colors of the media control window and the menu UI separately. Auto follows the Windows theme.</sys:String>
@@ -248,6 +273,7 @@
   <sys:String x:Key="Settings.Interaction.EdgeCollapseDescription">Only available in floating mode.</sys:String>
   <sys:String x:Key="Settings.Interaction.EdgeCollapseFloatingDescription">Available after switching to floating mode.</sys:String>
   <sys:String x:Key="Settings.Interaction.EdgeCollapseNormalDescription">The window collapses when dragged to the edge of the desktop.</sys:String>
+  <sys:String x:Key="Settings.Interaction.EdgeCollapseLayoutDescription">Add edge-collapse containers in the layout editor; the legacy whole-window collapse is disabled.</sys:String>
   <sys:String x:Key="Settings.Interaction.TopMostTitle">Always on top and visible</sys:String>
   <sys:String x:Key="Settings.Interaction.TopMostDescription">Keep the window visible and above other windows.</sys:String>
 

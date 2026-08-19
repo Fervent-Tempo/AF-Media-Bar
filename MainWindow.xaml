@@ -539,12 +539,18 @@
       组件化布局表面覆盖旧版静态呈现；旧节点暂时保留为弹窗锚点和行为回退。
       The component surface overlays the legacy static presentation; legacy nodes remain temporarily as popup anchors and behavior fallback.
     -->
-    <Border x:Name="ComponentSurfaceHost"
-            Panel.ZIndex="20"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
-            Background="{DynamicResource TaskbarReadabilityBrush}"
-            CornerRadius="6" />
+    <Grid x:Name="ComponentCompositionHost"
+          Panel.ZIndex="20"
+          HorizontalAlignment="Left"
+          VerticalAlignment="Top">
+      <Canvas x:Name="LayoutEdgeSurfaceHost" />
+      <Border x:Name="ComponentSurfaceHost"
+              Panel.ZIndex="20"
+              HorizontalAlignment="Left"
+              VerticalAlignment="Top"
+              Background="{DynamicResource TaskbarReadabilityBrush}"
+              CornerRadius="6" />
+    </Grid>
 
     <Border x:Name="EdgeCollapseIndicator"
             Panel.ZIndex="100"

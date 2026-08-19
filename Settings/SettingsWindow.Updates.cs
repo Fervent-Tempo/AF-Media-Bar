@@ -266,7 +266,6 @@ public partial class SettingsWindow
         _updateCheckCancellation = null;
         _scaleSaveTimer.Stop();
         _fontSaveTimer.Stop();
-        _layoutEditorPreview?.Dispose();
         _coordinator.Changed -= Coordinator_OnChanged;
         _updateService.UpdateAvailable -= UpdateService_OnUpdateAvailable;
         Closed -= SettingsWindow_OnClosed;

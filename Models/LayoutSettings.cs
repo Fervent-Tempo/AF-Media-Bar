@@ -21,6 +21,14 @@ internal enum LayoutContainerKind
     AutoCollapse = 2
 }
 
+internal enum LayoutEdge
+{
+    Top = 0,
+    Right = 1,
+    Bottom = 2,
+    Left = 3
+}
+
 internal enum LayoutFlowOrientation
 {
     Automatic = 0,
@@ -228,12 +236,30 @@ internal sealed record LayoutContainerElement(
     LayoutSlot SecondarySlot,
     LayoutSlot CollapsedSlot) : LayoutElement(InstanceId, Enabled, Geometry);
 
+/// <summary>
+/// 描述长条外侧的自动折叠容器；折叠状态只保留触发区域，因此模型只保存展开内容。
+/// Describes an auto-collapsing container outside the strip; the collapsed state is trigger-only, so only expanded content is persisted.
+/// </summary>
+internal sealed record LayoutEdgeContainer(
+    string InstanceId,
+    bool Enabled,
+    LayoutEdge Edge,
+    int OffsetDip,
+    int TriggerThicknessDip,
+    int ProximityDip,
+    LayoutAnimationSettings Animation,
+    LayoutSlot ExpandedSlot);
+
 internal sealed record LayoutProfile(
     LayoutProfileKey Key,
     WindowHostMode HostMode,
     PlayerLayoutMode LayoutMode,
     LayoutSurfaceSettings Surface,
-    LayoutContainerElement Root);
+    IReadOnlyList<LayoutContainerElement> InlineContainers,
+    IReadOnlyList<LayoutEdgeContainer> EdgeContainers,
+    // 仅用于读取 schema 1；规范化后始终清空，避免新编辑器重新暴露旧三槽位根节点。
+    // Read-only schema-1 compatibility; normalization always clears it so the new editor cannot expose the legacy three-slot root.
+    LayoutContainerElement? Root = null);
 
 internal sealed record LayoutDocument(
     int SchemaVersion,
@@ -242,7 +268,7 @@ internal sealed record LayoutDocument(
     LayoutProfile FloatingHorizontal,
     LayoutProfile FloatingVertical)
 {
-    internal const int CurrentSchemaVersion = 1;
+    internal const int CurrentSchemaVersion = 2;
 
     internal LayoutProfile Get(LayoutProfileKey key) => key switch
     {

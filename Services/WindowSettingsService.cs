@@ -25,7 +25,9 @@ internal static class WindowSettingsService
                 ReadScalePercent(key, "LengthScalePercent", legacyScale),
                 ReadScalePercent(key, "ThicknessScalePercent", legacyScale),
                 ReadBoolean(key, "AutoCollapse", WindowSettings.Default.AutoCollapse),
-                ReadBoolean(key, "EdgeAutoCollapse", WindowSettings.Default.EdgeAutoCollapse),
+                // schema 2 将边缘折叠拆分为独立布局容器；忽略旧的整窗开关，避免整条窗口与边缘容器同时折叠。
+                // Schema 2 models edge collapse as independent layout containers; ignore the legacy whole-window switch so both collapse systems cannot run together.
+                false,
                 ReadNullableInt(key, "FloatingLeft"),
                 ReadNullableInt(key, "FloatingTop"),
                 ReadBoolean(key, "ShowArtwork", WindowSettings.Default.ShowArtwork),

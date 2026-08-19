@@ -184,7 +184,7 @@
   <sys:String x:Key="Settings.Layout.LockPositionDescription">锁定后不能通过拖动改变任务栏位置。</sys:String>
   <sys:String x:Key="Settings.Layout.ResetPosition">重置位置</sys:String>
   <sys:String x:Key="Settings.Layout.EditorTitle">组件布局编辑器</sys:String>
-  <sys:String x:Key="Settings.Layout.EditorDescription">按窗口模式和方向分别编辑容器、组件顺序与显示状态，修改会即时应用。</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorDescription">选择宿主模式和排布方向，再把组件拖到长条内或外边缘；修改会即时应用。</sys:String>
   <sys:String x:Key="Settings.Layout.EditorProfile">编辑档案</sys:String>
   <sys:String x:Key="Settings.Layout.EditorStructure">组件结构</sys:String>
   <sys:String x:Key="Settings.Layout.EditorPreview">实时预览</sys:String>
@@ -205,6 +205,31 @@
   <sys:String x:Key="Settings.Layout.ContainerStatic">常驻容器</sys:String>
   <sys:String x:Key="Settings.Layout.ContainerHoverSwitch">悬停切换容器</sys:String>
   <sys:String x:Key="Settings.Layout.ContainerAutoCollapse">自动折叠容器</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorHostMode">宿主模式</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorArrangement">排布方向</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPalette">组件与容器</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorUndo">撤销</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorResetProfile">重置当前档案</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorAddStaticContainer">添加常驻容器</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorAddHoverContainer">添加悬停容器</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorAddEdgeContainer">添加边缘折叠容器</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorEdgeContainer">边缘折叠容器</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorLeaveContent">离开时内容</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorNearContent">靠近时内容</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorExpandedContent">展开内容</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorDropHere">拖到这里</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorEmptyStrip">先添加容器，或直接拖入组件</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPrimaryProperties">主要属性</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorAdvancedSize">高级尺寸</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorStaticFollowsProfile">常驻容器的排列方向跟随当前档案，无需单独设置。</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorTaskbarEdgeUnavailable">任务栏占用的边缘不可放置折叠容器；Explorer 暂时不可用时会在运行时再次校验。</sys:String>
+  <sys:String x:Key="Settings.Layout.EdgeTop">上边缘</sys:String>
+  <sys:String x:Key="Settings.Layout.EdgeRight">右边缘</sys:String>
+  <sys:String x:Key="Settings.Layout.EdgeBottom">下边缘</sys:String>
+  <sys:String x:Key="Settings.Layout.EdgeLeft">左边缘</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyEdge">所在边缘</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyEdgeOffset">沿边缘偏移</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyTriggerThickness">折叠触发区厚度</sys:String>
 
   <!-- 外观页 -->
   <sys:String x:Key="Settings.Appearance.Description">分别调整媒体控制窗口和菜单界面的配色。自动模式会跟随 Windows 主题。</sys:String>
@@ -247,6 +272,7 @@
   <sys:String x:Key="Settings.Interaction.EdgeCollapseDescription">仅独立悬浮模式可用。</sys:String>
   <sys:String x:Key="Settings.Interaction.EdgeCollapseFloatingDescription">切换到独立悬浮模式后可用。</sys:String>
   <sys:String x:Key="Settings.Interaction.EdgeCollapseNormalDescription">将窗口拖到桌面边缘后自动收起。</sys:String>
+  <sys:String x:Key="Settings.Interaction.EdgeCollapseLayoutDescription">边缘折叠容器请在布局编辑器中添加；旧版整窗折叠已停用。</sys:String>
   <sys:String x:Key="Settings.Interaction.TopMostTitle">始终置顶并显示</sys:String>
   <sys:String x:Key="Settings.Interaction.TopMostDescription">保持窗口可见并显示在其他窗口上方。</sys:String>
 

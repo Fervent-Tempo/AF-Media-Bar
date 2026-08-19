@@ -81,35 +81,40 @@ internal static class LayoutMigrationService
         MetricSettings metrics,
         bool vertical)
     {
-        var rootChildren = new List<LayoutElement>();
+        var inlineContainers = new List<LayoutContainerElement>();
         if (window.ShowArtwork)
         {
-            rootChildren.Add(CreateWidget(
-                "artwork",
-                BuiltInWidgetTypeIds.Artwork,
-                new ArtworkWidgetSettings(
-                    Math.Clamp(window.ArtworkCornerRadius, 0, 20),
-                    false)));
+            inlineContainers.Add(CreateStaticContainer(
+                "always-leading",
+                LayoutFlowOrientation.Automatic,
+                [CreateWidget(
+                    "artwork",
+                    BuiltInWidgetTypeIds.Artwork,
+                    new ArtworkWidgetSettings(
+                        Math.Clamp(window.ArtworkCornerRadius, 0, 20),
+                        false))]));
         }
 
-        rootChildren.Add(CreateHoverContainer(window, metrics, vertical));
+        inlineContainers.Add(CreateHoverContainer(window, metrics, vertical));
+
+        var trailingChildren = new List<LayoutElement>();
 
         if (metrics.OutputDeviceSwitcherEnabled)
         {
-            rootChildren.Add(CreateCommand(
+            trailingChildren.Add(CreateCommand(
                 "output-device",
                 MediaCommandKind.SelectOutputDevice));
         }
 
         if (metrics.VolumeControlEnabled)
         {
-            rootChildren.Add(CreateCommand("volume", MediaCommandKind.AdjustVolume));
+            trailingChildren.Add(CreateCommand("volume", MediaCommandKind.AdjustVolume));
         }
 
         var cycleMetrics = GetSelectedMetrics(metrics);
         if (cycleMetrics.Count > 0)
         {
-            rootChildren.Add(CreateWidget(
+            trailingChildren.Add(CreateWidget(
                 "metrics",
                 BuiltInWidgetTypeIds.Metrics,
                 new MetricsWidgetSettings(
@@ -121,24 +126,19 @@ internal static class LayoutMigrationService
 
         if (!vertical)
         {
-            rootChildren.Add(CreateWidget(
+            trailingChildren.Add(CreateWidget(
                 "divider",
                 BuiltInWidgetTypeIds.Separator,
                 new SeparatorWidgetSettings(1, 22)));
         }
 
-        var root = new LayoutContainerElement(
-            "root",
-            true,
-            LayoutGeometry.Auto,
-            LayoutContainerKind.Static,
-            vertical ? LayoutFlowOrientation.Vertical : LayoutFlowOrientation.Horizontal,
-            LayoutTriggerMode.Always,
-            0,
-            new LayoutAnimationSettings(false, 0, 0, LayoutEasingKind.Linear),
-            new LayoutSlot("content", rootChildren),
-            LayoutSlot.Empty("secondary"),
-            LayoutSlot.Empty("collapsed"));
+        if (trailingChildren.Count > 0)
+        {
+            inlineContainers.Add(CreateStaticContainer(
+                "always-trailing",
+                LayoutFlowOrientation.Automatic,
+                trailingChildren));
+        }
 
         var surface = LayoutSurfaceSettings.Default with
         {
@@ -154,7 +154,13 @@ internal static class LayoutMigrationService
                 window.EdgeAutoCollapse
         };
 
-        return new LayoutProfile(key, hostMode, layoutMode, surface, root);
+        return new LayoutProfile(
+            key,
+            hostMode,
+            layoutMode,
+            surface,
+            inlineContainers,
+            []);
     }
 
     private static LayoutContainerElement CreateHoverContainer(
@@ -316,8 +322,180 @@ internal static class LayoutMigrationService
             HeightDip = ClampNullable(surface.HeightDip, 24, 2_000)
         };
 
-        var root = NormalizeContainer(profile.Root, parentAllowsInteractive: true);
-        return profile with { Surface = surface, Root = root };
+        var inline = (profile.InlineContainers ?? [])
+            .Select(container => NormalizeContainer(container, parentAllowsInteractive: true))
+            .ToList();
+        var edges = (profile.EdgeContainers ?? [])
+            .Select(NormalizeEdgeContainer)
+            .ToList();
+
+        if (profile.Root is not null)
+        {
+            MigrateLegacyRoot(profile.Root, inline, edges, profile.LayoutMode);
+        }
+
+        // 自动折叠容器只能存在于边缘；读取旧版或手工 JSON 时将其移出长条，而不是静默禁用。
+        // Auto-collapse containers are edge-only; move legacy or hand-authored entries out of the strip instead of silently disabling them.
+        for (var index = inline.Count - 1; index >= 0; index--)
+        {
+            if (inline[index].ContainerKind != LayoutContainerKind.AutoCollapse)
+            {
+                continue;
+            }
+
+            edges.Add(ConvertLegacyAutoCollapse(inline[index], profile.LayoutMode, edges.Count));
+            inline.RemoveAt(index);
+        }
+
+        return profile with
+        {
+            Surface = surface with { EdgeCollapseEnabled = false },
+            InlineContainers = EnsureUniqueTopLevelIds(inline),
+            EdgeContainers = EnsureUniqueEdgeIds(edges),
+            Root = null
+        };
+    }
+
+    private static void MigrateLegacyRoot(
+        LayoutContainerElement root,
+        ICollection<LayoutContainerElement> inline,
+        ICollection<LayoutEdgeContainer> edges,
+        PlayerLayoutMode layoutMode)
+    {
+        var normalizedRoot = NormalizeContainer(root, parentAllowsInteractive: true);
+        if (normalizedRoot.ContainerKind != LayoutContainerKind.Static)
+        {
+            if (normalizedRoot.ContainerKind == LayoutContainerKind.AutoCollapse)
+            {
+                edges.Add(ConvertLegacyAutoCollapse(normalizedRoot, layoutMode, edges.Count));
+            }
+            else
+            {
+                inline.Add(normalizedRoot with { Orientation = LayoutFlowOrientation.Automatic });
+            }
+            return;
+        }
+
+        var pendingWidgets = new List<LayoutElement>();
+        foreach (var child in normalizedRoot.PrimarySlot.Children)
+        {
+            if (child is LayoutContainerElement container)
+            {
+                FlushLegacyWidgets(pendingWidgets, inline);
+                if (container.ContainerKind == LayoutContainerKind.AutoCollapse)
+                {
+                    edges.Add(ConvertLegacyAutoCollapse(container, layoutMode, edges.Count));
+                }
+                else
+                {
+                    inline.Add(container with { Orientation = LayoutFlowOrientation.Automatic });
+                }
+            }
+            else
+            {
+                pendingWidgets.Add(child);
+            }
+        }
+
+        FlushLegacyWidgets(pendingWidgets, inline);
+    }
+
+    private static void FlushLegacyWidgets(
+        List<LayoutElement> widgets,
+        ICollection<LayoutContainerElement> inline)
+    {
+        if (widgets.Count == 0)
+        {
+            return;
+        }
+
+        inline.Add(CreateStaticContainer(
+            $"migrated-inline-{inline.Count + 1}",
+            LayoutFlowOrientation.Automatic,
+            widgets.ToArray()));
+        widgets.Clear();
+    }
+
+    private static LayoutEdgeContainer ConvertLegacyAutoCollapse(
+        LayoutContainerElement container,
+        PlayerLayoutMode layoutMode,
+        int index)
+    {
+        var expandedChildren = container.PrimarySlot.Children.Count > 0
+            ? container.PrimarySlot.Children
+            : container.CollapsedSlot.Children;
+        return new LayoutEdgeContainer(
+            string.IsNullOrWhiteSpace(container.InstanceId)
+                ? $"migrated-edge-{index + 1}"
+                : container.InstanceId,
+            container.Enabled,
+            layoutMode == PlayerLayoutMode.Vertical ? LayoutEdge.Right : LayoutEdge.Top,
+            0,
+            6,
+            Math.Clamp(container.ProximityDip, 0, MaximumProximityDip),
+            NormalizeAnimation(container.Animation),
+            NormalizeSlot(new LayoutSlot("expanded", expandedChildren), allowInteractive: true));
+    }
+
+    private static LayoutEdgeContainer NormalizeEdgeContainer(LayoutEdgeContainer container)
+    {
+        return container with
+        {
+            InstanceId = string.IsNullOrWhiteSpace(container.InstanceId)
+                ? $"edge-{Guid.NewGuid():N}"
+                : container.InstanceId,
+            Edge = Enum.IsDefined(container.Edge) ? container.Edge : LayoutEdge.Top,
+            OffsetDip = Math.Clamp(container.OffsetDip, -2_000, 2_000),
+            TriggerThicknessDip = Math.Clamp(container.TriggerThicknessDip, 2, 24),
+            ProximityDip = Math.Clamp(container.ProximityDip, 0, MaximumProximityDip),
+            Animation = NormalizeAnimation(container.Animation),
+            ExpandedSlot = NormalizeSlot(container.ExpandedSlot, allowInteractive: true)
+        };
+    }
+
+    private static IReadOnlyList<LayoutContainerElement> EnsureUniqueTopLevelIds(
+        IReadOnlyList<LayoutContainerElement> containers)
+    {
+        var used = new HashSet<string>(StringComparer.Ordinal);
+        return containers.Select((container, index) =>
+        {
+            var id = string.IsNullOrWhiteSpace(container.InstanceId)
+                ? $"inline-{index + 1}"
+                : container.InstanceId;
+            while (!used.Add(id))
+            {
+                id = $"{id}-{index + 1}";
+            }
+
+            return container with
+            {
+                InstanceId = id,
+                ContainerKind = container.ContainerKind == LayoutContainerKind.HoverSwitch
+                    ? LayoutContainerKind.HoverSwitch
+                    : LayoutContainerKind.Static,
+                Orientation = LayoutFlowOrientation.Automatic,
+                Trigger = container.ContainerKind == LayoutContainerKind.HoverSwitch
+                    ? LayoutTriggerMode.PointerNear
+                    : LayoutTriggerMode.Always,
+                CollapsedSlot = LayoutSlot.Empty("collapsed")
+            };
+        }).ToArray();
+    }
+
+    private static IReadOnlyList<LayoutEdgeContainer> EnsureUniqueEdgeIds(
+        IReadOnlyList<LayoutEdgeContainer> containers)
+    {
+        var used = new HashSet<string>(StringComparer.Ordinal);
+        return containers.Select((container, index) =>
+        {
+            var id = container.InstanceId;
+            while (!used.Add(id))
+            {
+                id = $"{id}-{index + 1}";
+            }
+
+            return container with { InstanceId = id };
+        }).ToArray();
     }
 
     private static LayoutContainerElement NormalizeContainer(
@@ -351,12 +529,22 @@ internal static class LayoutMigrationService
         }
 
         var children = slot.Children ?? [];
+        var normalizedChildren = children
+            .Select(child => NormalizeElement(child, allowInteractive))
+            .Where(child => child is not null)
+            .Cast<LayoutElement>()
+            .ToArray();
         return slot with
         {
-            Children = children
-                .Select(child => NormalizeElement(child, allowInteractive))
-                .Where(child => child is not null)
-                .Cast<LayoutElement>()
+            // 新布局不允许容器拥有独立方向；旧版仅用于分组的静态嵌套容器在迁移时展开。
+            // New layouts do not allow per-container orientation; flatten legacy static grouping containers during migration.
+            Children = normalizedChildren
+                .SelectMany(child => child is LayoutContainerElement
+                    {
+                        ContainerKind: LayoutContainerKind.Static
+                    } nested
+                        ? nested.PrimarySlot.Children
+                        : [child])
                 .ToArray()
         };
     }

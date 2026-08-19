@@ -6,7 +6,7 @@ internal enum LayoutSlotKind
 {
     Primary = 0,
     Secondary = 1,
-    Collapsed = 2
+    Expanded = 2
 }
 
 internal enum LayoutEditFailure
@@ -15,170 +15,262 @@ internal enum LayoutEditFailure
     ContainerNotFound = 1,
     DuplicateInstanceId = 2,
     InteractiveNotAllowed = 3,
-    UnsupportedWidget = 4
+    UnsupportedWidget = 4,
+    EdgeUnavailable = 5,
+    InvalidContainerKind = 6
 }
 
 /// <summary>
-/// 以不可变记录编辑布局树，集中处理插入、删除、移动和交互能力校验。
-/// Edits the immutable layout tree and centralizes insertion, removal, reordering, and interaction-capability validation.
+/// 以不可变快照编辑长条容器和边缘容器，并集中执行放置及交互能力约束。
+/// Edits strip and edge containers as immutable snapshots while centralizing placement and interaction-capability constraints.
 /// </summary>
 internal static class LayoutEditorService
 {
-    internal static bool TryAdd(
-        LayoutProfile profile,
-        string containerId,
-        LayoutSlotKind slotKind,
-        LayoutElement element,
-        out LayoutProfile updated)
+    internal static LayoutContainerElement CreateInlineContainer(LayoutContainerKind kind)
     {
-        return TryAdd(profile, containerId, slotKind, element, out updated, out _);
+        var normalizedKind = kind == LayoutContainerKind.HoverSwitch
+            ? LayoutContainerKind.HoverSwitch
+            : LayoutContainerKind.Static;
+        return new LayoutContainerElement(
+            $"inline-{Guid.NewGuid():N}",
+            true,
+            LayoutGeometry.Auto,
+            normalizedKind,
+            LayoutFlowOrientation.Automatic,
+            normalizedKind == LayoutContainerKind.HoverSwitch
+                ? LayoutTriggerMode.PointerNear
+                : LayoutTriggerMode.Always,
+            48,
+            normalizedKind == LayoutContainerKind.HoverSwitch
+                ? LayoutAnimationSettings.Default
+                : new LayoutAnimationSettings(false, 0, 0, LayoutEasingKind.Linear),
+            LayoutSlot.Empty(normalizedKind == LayoutContainerKind.HoverSwitch ? "leave" : "content"),
+            LayoutSlot.Empty(normalizedKind == LayoutContainerKind.HoverSwitch ? "near" : "unused"),
+            LayoutSlot.Empty("legacy-collapsed"));
     }
 
-    internal static bool TryAdd(
+    internal static LayoutEdgeContainer CreateEdgeContainer(LayoutEdge edge)
+    {
+        return new LayoutEdgeContainer(
+            $"edge-{Guid.NewGuid():N}",
+            true,
+            edge,
+            0,
+            6,
+            72,
+            LayoutAnimationSettings.Default,
+            LayoutSlot.Empty("expanded"));
+    }
+
+    internal static bool TryAddInlineContainer(
         LayoutProfile profile,
-        string containerId,
-        LayoutSlotKind slotKind,
-        LayoutElement element,
+        LayoutContainerKind kind,
         out LayoutProfile updated,
         out LayoutEditFailure failure)
     {
-        var state = new EditState();
+        if (kind == LayoutContainerKind.AutoCollapse)
+        {
+            updated = profile;
+            failure = LayoutEditFailure.InvalidContainerKind;
+            return false;
+        }
+
+        var container = CreateInlineContainer(kind);
+        updated = profile with
+        {
+            InlineContainers = profile.InlineContainers.Append(container).ToArray()
+        };
         failure = LayoutEditFailure.None;
-        if (Find(profile.Root, element.InstanceId) is not null)
+        return true;
+    }
+
+    internal static bool TryAddEdgeContainer(
+        LayoutProfile profile,
+        LayoutEdge edge,
+        LayoutEdge? unavailableEdge,
+        out LayoutProfile updated,
+        out LayoutEditFailure failure)
+    {
+        if (profile.HostMode == WindowHostMode.Taskbar && unavailableEdge == edge)
+        {
+            updated = profile;
+            failure = LayoutEditFailure.EdgeUnavailable;
+            return false;
+        }
+
+        updated = profile with
+        {
+            EdgeContainers = profile.EdgeContainers.Append(CreateEdgeContainer(edge)).ToArray()
+        };
+        failure = LayoutEditFailure.None;
+        return true;
+    }
+
+    internal static bool TryAddWidget(
+        LayoutProfile profile,
+        string containerId,
+        LayoutSlotKind slotKind,
+        LayoutWidgetElement widget,
+        out LayoutProfile updated,
+        out LayoutEditFailure failure)
+    {
+        if (Find(profile, widget.InstanceId) is not null)
         {
             updated = profile;
             failure = LayoutEditFailure.DuplicateInstanceId;
             return false;
         }
 
-        if (element is LayoutWidgetElement widget &&
-            !ComponentCatalog.TryGet(widget.TypeId, out _))
+        if (!ComponentCatalog.TryGet(widget.TypeId, out _))
         {
             updated = profile;
             failure = LayoutEditFailure.UnsupportedWidget;
             return false;
         }
 
-        updated = profile with
+        var changed = false;
+        var inlineFailure = LayoutEditFailure.None;
+        var inline = new LayoutContainerElement[profile.InlineContainers.Count];
+        for (var index = 0; index < profile.InlineContainers.Count; index++)
         {
-            Root = AddToContainer(profile.Root, containerId, slotKind, element, state)
-        };
-        if (!state.Changed && state.Failure == LayoutEditFailure.None)
-        {
-            state.Failure = LayoutEditFailure.ContainerNotFound;
+            inline[index] = RewriteContainer(
+                profile.InlineContainers[index],
+                containerId,
+                slotKind,
+                widget,
+                ref changed,
+                out var candidateFailure);
+            if (candidateFailure != LayoutEditFailure.None)
+            {
+                inlineFailure = candidateFailure;
+            }
         }
-        if (state.Changed && !IsContainerCapabilityValid(updated.Root, parentAllowsInteractive: true))
+        if (changed)
+        {
+            updated = profile with { InlineContainers = inline };
+            failure = LayoutEditFailure.None;
+            return true;
+        }
+
+        var edgeFailure = LayoutEditFailure.None;
+        var edges = profile.EdgeContainers.Select(edge =>
+        {
+            if (!string.Equals(edge.InstanceId, containerId, StringComparison.Ordinal))
+            {
+                return edge;
+            }
+
+            if (slotKind != LayoutSlotKind.Expanded)
+            {
+                edgeFailure = LayoutEditFailure.ContainerNotFound;
+                return edge;
+            }
+
+            changed = true;
+            return edge with
+            {
+                ExpandedSlot = edge.ExpandedSlot with
+                {
+                    Children = edge.ExpandedSlot.Children.Append(widget).ToArray()
+                }
+            };
+        }).ToArray();
+        updated = changed ? profile with { EdgeContainers = edges } : profile;
+        failure = changed
+            ? LayoutEditFailure.None
+            : inlineFailure != LayoutEditFailure.None
+                ? inlineFailure
+                : edgeFailure == LayoutEditFailure.None
+                    ? LayoutEditFailure.ContainerNotFound
+                    : edgeFailure;
+        return changed;
+    }
+
+    internal static bool TryRelocateWidget(
+        LayoutProfile profile,
+        string instanceId,
+        string targetContainerId,
+        LayoutSlotKind targetSlot,
+        out LayoutProfile updated,
+        out LayoutEditFailure failure)
+    {
+        if (Find(profile, instanceId) is not LayoutWidgetElement widget ||
+            !TryRemove(profile, instanceId, out var removed))
         {
             updated = profile;
-            state.Changed = false;
-            state.Failure = LayoutEditFailure.InteractiveNotAllowed;
+            failure = LayoutEditFailure.ContainerNotFound;
+            return false;
         }
-        failure = state.Failure;
-        return state.Changed;
+
+        if (!TryAddWidget(
+                removed,
+                targetContainerId,
+                targetSlot,
+                widget,
+                out updated,
+                out failure))
+        {
+            updated = profile;
+            return false;
+        }
+
+        return updated != profile;
     }
 
-    internal static bool TryUpdateGeometry(
-        LayoutProfile profile,
-        string elementId,
-        LayoutGeometry geometry,
-        out LayoutProfile updated)
+    internal static bool TryRemove(LayoutProfile profile, string instanceId, out LayoutProfile updated)
     {
-        var state = new EditState();
-        updated = profile with
+        var inline = profile.InlineContainers.ToList();
+        var inlineIndex = inline.FindIndex(container =>
+            string.Equals(container.InstanceId, instanceId, StringComparison.Ordinal));
+        if (inlineIndex >= 0)
         {
-            Root = UpdateElement(profile.Root, elementId, element =>
+            inline.RemoveAt(inlineIndex);
+            updated = profile with { InlineContainers = inline.ToArray() };
+            return true;
+        }
+
+        var edges = profile.EdgeContainers.ToList();
+        var edgeIndex = edges.FindIndex(container =>
+            string.Equals(container.InstanceId, instanceId, StringComparison.Ordinal));
+        if (edgeIndex >= 0)
+        {
+            edges.RemoveAt(edgeIndex);
+            updated = profile with { EdgeContainers = edges.ToArray() };
+            return true;
+        }
+
+        var state = new EditState();
+        var rewrittenInline = inline.Select(container => RemoveChild(container, instanceId, state)).ToArray();
+        if (state.Changed)
+        {
+            updated = profile with { InlineContainers = rewrittenInline };
+            return true;
+        }
+
+        var rewrittenEdges = edges.Select(edge =>
+        {
+            if (state.Changed || !edge.ExpandedSlot.Children.Any(child =>
+                    string.Equals(child.InstanceId, instanceId, StringComparison.Ordinal)))
             {
-                state.Changed = true;
-                return element with { Geometry = geometry };
-            }, state)
-        };
-        return state.Changed;
-    }
+                return edge;
+            }
 
-    internal static bool TryUpdateWidgetSettings(
-        LayoutProfile profile,
-        string elementId,
-        WidgetSettings settings,
-        out LayoutProfile updated)
-    {
-        var state = new EditState();
-        updated = profile with
-        {
-            Root = UpdateElement(profile.Root, elementId, element =>
+            state.Changed = true;
+            return edge with
             {
-                if (element is not LayoutWidgetElement widget)
+                ExpandedSlot = edge.ExpandedSlot with
                 {
-                    return element;
+                    Children = edge.ExpandedSlot.Children
+                        .Where(child => !string.Equals(child.InstanceId, instanceId, StringComparison.Ordinal))
+                        .ToArray()
                 }
-
-                state.Changed = true;
-                return widget with { Settings = settings };
-            }, state)
-        };
+            };
+        }).ToArray();
+        updated = state.Changed ? profile with { EdgeContainers = rewrittenEdges } : profile;
         return state.Changed;
     }
 
-    internal static bool TryUpdateContainerSettings(
-        LayoutProfile profile,
-        string elementId,
-        LayoutContainerKind kind,
-        LayoutFlowOrientation orientation,
-        LayoutTriggerMode trigger,
-        int proximityDip,
-        LayoutAnimationSettings animation,
-        out LayoutProfile updated)
-    {
-        var state = new EditState();
-        updated = profile with
-        {
-            Root = UpdateElement(profile.Root, elementId, element =>
-            {
-                if (element is not LayoutContainerElement container)
-                {
-                    return element;
-                }
-
-                var candidate = container with
-                {
-                    ContainerKind = kind,
-                    Orientation = orientation,
-                    Trigger = trigger,
-                    ProximityDip = proximityDip,
-                    Animation = animation
-                };
-                if (!candidate.PrimarySlot.Children.All(child =>
-                        CanAddToSlot(candidate, LayoutSlotKind.Primary, child)) ||
-                    !candidate.CollapsedSlot.Children.All(child =>
-                        CanAddToSlot(candidate, LayoutSlotKind.Collapsed, child)))
-                {
-                    return element;
-                }
-
-                state.Changed = true;
-                return candidate;
-            }, state)
-        };
-        return state.Changed;
-    }
-
-    internal static bool TryRemove(
-        LayoutProfile profile,
-        string elementId,
-        out LayoutProfile updated)
-    {
-        var state = new EditState();
-        updated = profile with
-        {
-            Root = RemoveFromContainer(profile.Root, elementId, state)
-        };
-        return state.Changed;
-    }
-
-    internal static bool TryMove(
-        LayoutProfile profile,
-        string elementId,
-        int offset,
-        out LayoutProfile updated)
+    internal static bool TryMove(LayoutProfile profile, string instanceId, int offset, out LayoutProfile updated)
     {
         if (offset == 0)
         {
@@ -186,26 +278,110 @@ internal static class LayoutEditorService
             return false;
         }
 
-        var state = new EditState();
-        updated = profile with
+        if (TryMoveList(profile.InlineContainers, instanceId, offset, out var inline))
         {
-            Root = MoveInContainer(profile.Root, elementId, offset, state)
-        };
-        return state.Changed;
+            updated = profile with { InlineContainers = inline };
+            return true;
+        }
+
+        if (TryMoveList(profile.EdgeContainers, instanceId, offset, out var edges))
+        {
+            updated = profile with { EdgeContainers = edges };
+            return true;
+        }
+
+        var changed = false;
+        var rewrittenInline = profile.InlineContainers
+            .Select(container => MoveChild(container, instanceId, offset, ref changed))
+            .ToArray();
+        if (changed)
+        {
+            updated = profile with { InlineContainers = rewrittenInline };
+            return true;
+        }
+
+        var rewrittenEdges = profile.EdgeContainers.Select(edge =>
+        {
+            if (changed || !TryMoveList(edge.ExpandedSlot.Children, instanceId, offset, out var children))
+            {
+                return edge;
+            }
+
+            changed = true;
+            return edge with { ExpandedSlot = edge.ExpandedSlot with { Children = children } };
+        }).ToArray();
+        updated = changed ? profile with { EdgeContainers = rewrittenEdges } : profile;
+        return changed;
     }
 
-    internal static bool TrySetEnabled(
+    internal static bool TryReorderTopLevel(
         LayoutProfile profile,
-        string elementId,
-        bool enabled,
+        string sourceId,
+        string targetId,
         out LayoutProfile updated)
     {
-        var state = new EditState();
-        updated = profile with
+        if (TryReorderList(profile.InlineContainers, sourceId, targetId, out var inline))
         {
-            Root = SetEnabledInContainer(profile.Root, elementId, enabled, state)
-        };
-        if (state.Changed && !IsContainerCapabilityValid(updated.Root, parentAllowsInteractive: true))
+            updated = profile with { InlineContainers = inline };
+            return true;
+        }
+
+        if (TryReorderList(profile.EdgeContainers, sourceId, targetId, out var edges))
+        {
+            updated = profile with { EdgeContainers = edges };
+            return true;
+        }
+
+        updated = profile;
+        return false;
+    }
+
+    internal static bool TrySetEnabled(LayoutProfile profile, string instanceId, bool enabled, out LayoutProfile updated)
+    {
+        var state = new EditState();
+        var inline = profile.InlineContainers.Select(container =>
+        {
+            if (string.Equals(container.InstanceId, instanceId, StringComparison.Ordinal))
+            {
+                state.Changed = container.Enabled != enabled;
+                return container with { Enabled = enabled };
+            }
+
+            return SetChildEnabled(container, instanceId, enabled, state);
+        }).ToArray();
+        if (state.Changed)
+        {
+            updated = profile with { InlineContainers = inline };
+            if (!IsProfileCapabilityValid(updated))
+            {
+                updated = profile;
+                return false;
+            }
+            return true;
+        }
+
+        var edges = profile.EdgeContainers.Select(edge =>
+        {
+            if (string.Equals(edge.InstanceId, instanceId, StringComparison.Ordinal))
+            {
+                state.Changed = edge.Enabled != enabled;
+                return edge with { Enabled = enabled };
+            }
+
+            var children = edge.ExpandedSlot.Children.Select(child =>
+            {
+                if (string.Equals(child.InstanceId, instanceId, StringComparison.Ordinal))
+                {
+                    state.Changed = child.Enabled != enabled;
+                    return child with { Enabled = enabled };
+                }
+
+                return child;
+            }).ToArray();
+            return state.Changed ? edge with { ExpandedSlot = edge.ExpandedSlot with { Children = children } } : edge;
+        }).ToArray();
+        updated = state.Changed ? profile with { EdgeContainers = edges } : profile;
+        if (state.Changed && !IsProfileCapabilityValid(updated))
         {
             updated = profile;
             return false;
@@ -213,343 +389,406 @@ internal static class LayoutEditorService
         return state.Changed;
     }
 
-    internal static LayoutElement? Find(
-        LayoutContainerElement container,
-        string elementId)
+    internal static bool TryUpdateWidgetSettings(
+        LayoutProfile profile,
+        string instanceId,
+        WidgetSettings settings,
+        out LayoutProfile updated)
     {
-        if (string.Equals(container.InstanceId, elementId, StringComparison.Ordinal))
+        return TryUpdateElement(profile, instanceId, element =>
+            element is LayoutWidgetElement widget ? widget with { Settings = settings } : element, out updated);
+    }
+
+    internal static bool TryUpdateGeometry(
+        LayoutProfile profile,
+        string instanceId,
+        LayoutGeometry geometry,
+        out LayoutProfile updated)
+    {
+        return TryUpdateElement(profile, instanceId, element => element with { Geometry = geometry }, out updated);
+    }
+
+    internal static bool TryUpdateInlineContainer(
+        LayoutProfile profile,
+        string instanceId,
+        int proximityDip,
+        LayoutAnimationSettings animation,
+        out LayoutProfile updated)
+    {
+        var changed = false;
+        var inline = profile.InlineContainers.Select(container =>
         {
-            return container;
+            if (!string.Equals(container.InstanceId, instanceId, StringComparison.Ordinal))
+            {
+                return container;
+            }
+
+            changed = true;
+            return container with
+            {
+                Orientation = LayoutFlowOrientation.Automatic,
+                Trigger = container.ContainerKind == LayoutContainerKind.HoverSwitch
+                    ? LayoutTriggerMode.PointerNear
+                    : LayoutTriggerMode.Always,
+                ProximityDip = Math.Clamp(proximityDip, 0, 256),
+                Animation = animation
+            };
+        }).ToArray();
+        updated = changed ? profile with { InlineContainers = inline } : profile;
+        return changed;
+    }
+
+    internal static bool TryUpdateEdgeContainer(
+        LayoutProfile profile,
+        string instanceId,
+        LayoutEdge edge,
+        LayoutEdge? unavailableEdge,
+        int offsetDip,
+        int triggerThicknessDip,
+        int proximityDip,
+        LayoutAnimationSettings animation,
+        out LayoutProfile updated,
+        out LayoutEditFailure failure)
+    {
+        if (profile.HostMode == WindowHostMode.Taskbar && unavailableEdge == edge)
+        {
+            updated = profile;
+            failure = LayoutEditFailure.EdgeUnavailable;
+            return false;
         }
 
-        foreach (var slot in GetSlots(container))
+        var changed = false;
+        var edges = profile.EdgeContainers.Select(container =>
         {
-            foreach (var child in slot.Children)
+            if (!string.Equals(container.InstanceId, instanceId, StringComparison.Ordinal))
             {
-                if (string.Equals(child.InstanceId, elementId, StringComparison.Ordinal))
-                {
-                    return child;
-                }
+                return container;
+            }
 
-                if (child is LayoutContainerElement nested)
-                {
-                    var result = Find(nested, elementId);
-                    if (result is not null)
-                    {
-                        return result;
-                    }
-                }
+            changed = true;
+            return container with
+            {
+                Edge = edge,
+                OffsetDip = Math.Clamp(offsetDip, -2_000, 2_000),
+                TriggerThicknessDip = Math.Clamp(triggerThicknessDip, 2, 24),
+                ProximityDip = Math.Clamp(proximityDip, 0, 256),
+                Animation = animation
+            };
+        }).ToArray();
+        updated = changed ? profile with { EdgeContainers = edges } : profile;
+        failure = changed ? LayoutEditFailure.None : LayoutEditFailure.ContainerNotFound;
+        return changed;
+    }
+
+    internal static object? Find(LayoutProfile profile, string instanceId)
+    {
+        foreach (var container in profile.InlineContainers)
+        {
+            if (Find(container, instanceId) is { } match)
+            {
+                return match;
+            }
+        }
+
+        foreach (var edge in profile.EdgeContainers)
+        {
+            if (string.Equals(edge.InstanceId, instanceId, StringComparison.Ordinal))
+            {
+                return edge;
+            }
+
+            var child = edge.ExpandedSlot.Children.FirstOrDefault(item =>
+                string.Equals(item.InstanceId, instanceId, StringComparison.Ordinal));
+            if (child is not null)
+            {
+                return child;
             }
         }
 
         return null;
     }
 
-    private static LayoutContainerElement AddToContainer(
+    internal static LayoutElement? Find(LayoutContainerElement container, string instanceId)
+    {
+        if (string.Equals(container.InstanceId, instanceId, StringComparison.Ordinal))
+        {
+            return container;
+        }
+
+        foreach (var child in container.PrimarySlot.Children.Concat(container.SecondarySlot.Children))
+        {
+            if (string.Equals(child.InstanceId, instanceId, StringComparison.Ordinal))
+            {
+                return child;
+            }
+
+            if (child is LayoutContainerElement nested && Find(nested, instanceId) is { } match)
+            {
+                return match;
+            }
+        }
+
+        return null;
+    }
+
+    private static LayoutContainerElement RewriteContainer(
         LayoutContainerElement container,
         string containerId,
         LayoutSlotKind slotKind,
-        LayoutElement element,
-        EditState state)
+        LayoutWidgetElement widget,
+        ref bool changed,
+        out LayoutEditFailure failure)
     {
-        if (state.Changed)
+        failure = LayoutEditFailure.None;
+        if (!string.Equals(container.InstanceId, containerId, StringComparison.Ordinal))
         {
             return container;
         }
 
-        if (string.Equals(container.InstanceId, containerId, StringComparison.Ordinal))
+        if (slotKind == LayoutSlotKind.Expanded ||
+            container.ContainerKind == LayoutContainerKind.Static && slotKind == LayoutSlotKind.Secondary)
         {
-            if (!CanAddToSlot(container, slotKind, element))
-            {
-                state.Failure = LayoutEditFailure.InteractiveNotAllowed;
-                return container;
-            }
-
-            state.Changed = true;
-            return WithSlot(
-                container,
-                slotKind,
-                GetSlot(container, slotKind) with
-                {
-                    Children = GetSlot(container, slotKind).Children.Append(element).ToArray()
-                });
+            failure = LayoutEditFailure.ContainerNotFound;
+            return container;
         }
 
-        return RewriteChildren(
-            container,
-            child => child is LayoutContainerElement nested
-                 ? AddToContainer(nested, containerId, slotKind, element, state)
-                : child);
+        if (slotKind == LayoutSlotKind.Primary &&
+            container.ContainerKind == LayoutContainerKind.HoverSwitch &&
+            ContainsInteractiveElement(widget))
+        {
+            failure = LayoutEditFailure.InteractiveNotAllowed;
+            return container;
+        }
+
+        changed = true;
+        return slotKind == LayoutSlotKind.Secondary
+            ? container with
+            {
+                SecondarySlot = container.SecondarySlot with
+                {
+                    Children = container.SecondarySlot.Children.Append(widget).ToArray()
+                }
+            }
+            : container with
+            {
+                PrimarySlot = container.PrimarySlot with
+                {
+                    Children = container.PrimarySlot.Children.Append(widget).ToArray()
+                }
+            };
     }
 
-    private static LayoutContainerElement UpdateElement(
+    private static bool TryUpdateElement(
+        LayoutProfile profile,
+        string instanceId,
+        Func<LayoutElement, LayoutElement> update,
+        out LayoutProfile updated)
+    {
+        var state = new EditState();
+        var inline = profile.InlineContainers
+            .Select(container => UpdateChild(container, instanceId, update, state))
+            .ToArray();
+        if (state.Changed)
+        {
+            updated = profile with { InlineContainers = inline };
+            return true;
+        }
+
+        var edges = profile.EdgeContainers.Select(edge =>
+        {
+            var children = edge.ExpandedSlot.Children.Select(child =>
+            {
+                if (!string.Equals(child.InstanceId, instanceId, StringComparison.Ordinal))
+                {
+                    return child;
+                }
+
+                var next = update(child);
+                state.Changed = next != child;
+                return next;
+            }).ToArray();
+            return state.Changed ? edge with { ExpandedSlot = edge.ExpandedSlot with { Children = children } } : edge;
+        }).ToArray();
+        updated = state.Changed ? profile with { EdgeContainers = edges } : profile;
+        return state.Changed;
+    }
+
+    private static LayoutContainerElement UpdateChild(
         LayoutContainerElement container,
-        string elementId,
+        string instanceId,
         Func<LayoutElement, LayoutElement> update,
         EditState state)
     {
-        if (state.Changed)
-        {
-            return container;
-        }
-
-        if (string.Equals(container.InstanceId, elementId, StringComparison.Ordinal))
+        if (string.Equals(container.InstanceId, instanceId, StringComparison.Ordinal))
         {
             var next = update(container);
-            if (next is LayoutContainerElement updatedContainer && next != container)
-            {
-                state.Changed = true;
-                return updatedContainer;
-            }
-
-            return container;
+            state.Changed = next != container;
+            return next as LayoutContainerElement ?? container;
         }
 
-        return RewriteSlots(container, slot =>
+        LayoutSlot Rewrite(LayoutSlot slot)
         {
-            if (state.Changed)
+            var children = slot.Children.Select(child =>
             {
-                return slot;
-            }
+                if (state.Changed)
+                {
+                    return child;
+                }
 
-            var children = slot.Children.ToArray();
-            for (var index = 0; index < children.Length; index++)
-            {
-                var child = children[index];
-                if (string.Equals(child.InstanceId, elementId, StringComparison.Ordinal))
+                if (string.Equals(child.InstanceId, instanceId, StringComparison.Ordinal))
                 {
                     var next = update(child);
-                    if (next != child)
-                    {
-                        children[index] = next;
-                        return slot with { Children = children };
-                    }
-
-                    return slot;
+                    state.Changed = next != child;
+                    return next;
                 }
 
-                if (child is LayoutContainerElement nested)
+                return child is LayoutContainerElement nested
+                    ? UpdateChild(nested, instanceId, update, state)
+                    : child;
+            }).ToArray();
+            return slot with { Children = children };
+        }
+
+        return container with
+        {
+            PrimarySlot = Rewrite(container.PrimarySlot),
+            SecondarySlot = Rewrite(container.SecondarySlot)
+        };
+    }
+
+    private static LayoutContainerElement RemoveChild(
+        LayoutContainerElement container,
+        string instanceId,
+        EditState state)
+    {
+        LayoutSlot Rewrite(LayoutSlot slot)
+        {
+            if (slot.Children.Any(child => string.Equals(child.InstanceId, instanceId, StringComparison.Ordinal)))
+            {
+                state.Changed = true;
+                return slot with
                 {
-                    var next = UpdateElement(nested, elementId, update, state);
-                    if (state.Changed)
-                    {
-                        children[index] = next;
-                        return slot with { Children = children };
-                    }
-                }
+                    Children = slot.Children.Where(child =>
+                        !string.Equals(child.InstanceId, instanceId, StringComparison.Ordinal)).ToArray()
+                };
             }
 
             return slot;
-        });
-    }
-
-    private static LayoutContainerElement RemoveFromContainer(
-        LayoutContainerElement container,
-        string elementId,
-        EditState state)
-    {
-        if (state.Changed)
-        {
-            return container;
         }
 
-        return RewriteSlots(
-            container,
-            slot =>
-            {
-                if (state.Changed)
-                {
-                    return slot;
-                }
-
-                if (slot.Children.Any(child =>
-                        string.Equals(child.InstanceId, elementId, StringComparison.Ordinal)))
-                {
-                    state.Changed = true;
-                    return slot with
-                    {
-                        Children = slot.Children
-                            .Where(child => !string.Equals(
-                                child.InstanceId,
-                                elementId,
-                                StringComparison.Ordinal))
-                            .ToArray()
-                    };
-                }
-
-                return slot with
-                {
-                    Children = slot.Children
-                        .Select(child => child is LayoutContainerElement nested
-                             ? RemoveFromContainer(nested, elementId, state)
-                            : child)
-                        .ToArray()
-                };
-            });
+        return container with
+        {
+            PrimarySlot = Rewrite(container.PrimarySlot),
+            SecondarySlot = Rewrite(container.SecondarySlot)
+        };
     }
 
-    private static LayoutContainerElement MoveInContainer(
+    private static LayoutContainerElement MoveChild(
         LayoutContainerElement container,
-        string elementId,
+        string instanceId,
         int offset,
-        EditState state)
+        ref bool changed)
     {
-        if (state.Changed)
+        if (TryMoveList(container.PrimarySlot.Children, instanceId, offset, out var primary))
         {
-            return container;
+            changed = true;
+            return container with { PrimarySlot = container.PrimarySlot with { Children = primary } };
         }
 
-        return RewriteSlots(
-            container,
-            slot =>
-            {
-                if (state.Changed)
-                {
-                    return slot;
-                }
+        if (TryMoveList(container.SecondarySlot.Children, instanceId, offset, out var secondary))
+        {
+            changed = true;
+            return container with { SecondarySlot = container.SecondarySlot with { Children = secondary } };
+        }
 
-                var index = -1;
-                for (var childIndex = 0; childIndex < slot.Children.Count; childIndex++)
-                {
-                    if (string.Equals(
-                            slot.Children[childIndex].InstanceId,
-                            elementId,
-                            StringComparison.Ordinal))
-                    {
-                        index = childIndex;
-                        break;
-                    }
-                }
-                if (index < 0 || index >= slot.Children.Count)
-                {
-                    return slot;
-                }
-
-                var targetIndex = index + Math.Sign(offset);
-                if (targetIndex < 0 || targetIndex >= slot.Children.Count)
-                {
-                    return slot;
-                }
-
-                var children = slot.Children.ToArray();
-                (children[index], children[targetIndex]) =
-                    (children[targetIndex], children[index]);
-                state.Changed = true;
-                return slot with { Children = children };
-            });
+        return container;
     }
 
-    private static LayoutContainerElement SetEnabledInContainer(
+    private static LayoutContainerElement SetChildEnabled(
         LayoutContainerElement container,
-        string elementId,
+        string instanceId,
         bool enabled,
         EditState state)
     {
-        if (state.Changed)
+        LayoutSlot Rewrite(LayoutSlot slot)
         {
-            return container;
+            var children = slot.Children.Select(child =>
+            {
+                if (!string.Equals(child.InstanceId, instanceId, StringComparison.Ordinal))
+                {
+                    return child;
+                }
+
+                state.Changed = child.Enabled != enabled;
+                return child with { Enabled = enabled };
+            }).ToArray();
+            return slot with { Children = children };
         }
 
-        return RewriteSlots(
-            container,
-            slot =>
-            {
-                if (state.Changed)
-                {
-                    return slot;
-                }
-
-                var children = slot.Children.ToArray();
-                for (var index = 0; index < children.Length; index++)
-                {
-                    var child = children[index];
-                    if (string.Equals(child.InstanceId, elementId, StringComparison.Ordinal))
-                    {
-                        if (child.Enabled == enabled)
-                        {
-                            return slot;
-                        }
-
-                        children[index] = child with { Enabled = enabled };
-                        state.Changed = true;
-                        return slot with { Children = children };
-                    }
-
-                    if (child is LayoutContainerElement nested)
-                    {
-                        children[index] = SetEnabledInContainer(
-                            nested,
-                            elementId,
-                            enabled,
-                            state);
-                        if (state.Changed)
-                        {
-                            return slot with { Children = children };
-                        }
-                    }
-                }
-
-                return slot;
-            });
-    }
-
-    private static LayoutContainerElement RewriteChildren(
-        LayoutContainerElement container,
-        Func<LayoutElement, LayoutElement> rewrite)
-    {
-        return RewriteSlots(
-            container,
-            slot => slot with
-            {
-                Children = slot.Children.Select(rewrite).ToArray()
-            });
-    }
-
-    private static LayoutContainerElement RewriteSlots(
-        LayoutContainerElement container,
-        Func<LayoutSlot, LayoutSlot> rewrite)
-    {
         return container with
         {
-            PrimarySlot = rewrite(container.PrimarySlot),
-            SecondarySlot = rewrite(container.SecondarySlot),
-            CollapsedSlot = rewrite(container.CollapsedSlot)
+            PrimarySlot = Rewrite(container.PrimarySlot),
+            SecondarySlot = Rewrite(container.SecondarySlot)
         };
     }
 
-    private static LayoutSlot GetSlot(
-        LayoutContainerElement container,
-        LayoutSlotKind slotKind)
+    private static bool TryMoveList<T>(
+        IReadOnlyList<T> source,
+        string instanceId,
+        int offset,
+        out IReadOnlyList<T> updated)
     {
-        return slotKind switch
+        var items = source.ToArray();
+        var index = Array.FindIndex(items, item => item switch
         {
-            LayoutSlotKind.Primary => container.PrimarySlot,
-            LayoutSlotKind.Secondary => container.SecondarySlot,
-            LayoutSlotKind.Collapsed => container.CollapsedSlot,
-            _ => container.PrimarySlot
-        };
-    }
-
-    private static LayoutContainerElement WithSlot(
-        LayoutContainerElement container,
-        LayoutSlotKind slotKind,
-        LayoutSlot slot)
-    {
-        return slotKind switch
+            LayoutElement element => string.Equals(element.InstanceId, instanceId, StringComparison.Ordinal),
+            LayoutEdgeContainer edge => string.Equals(edge.InstanceId, instanceId, StringComparison.Ordinal),
+            _ => false
+        });
+        var target = index + Math.Sign(offset);
+        if (index < 0 || target < 0 || target >= items.Length)
         {
-            LayoutSlotKind.Primary => container with { PrimarySlot = slot },
-            LayoutSlotKind.Secondary => container with { SecondarySlot = slot },
-            LayoutSlotKind.Collapsed => container with { CollapsedSlot = slot },
-            _ => container
-        };
+            updated = source;
+            return false;
+        }
+
+        (items[index], items[target]) = (items[target], items[index]);
+        updated = items;
+        return true;
     }
 
-    private static IEnumerable<LayoutSlot> GetSlots(LayoutContainerElement container)
+    private static bool TryReorderList<T>(
+        IReadOnlyList<T> source,
+        string sourceId,
+        string targetId,
+        out IReadOnlyList<T> updated)
     {
-        yield return container.PrimarySlot;
-        yield return container.SecondarySlot;
-        yield return container.CollapsedSlot;
+        var items = source.ToList();
+        var sourceIndex = items.FindIndex(item => GetInstanceId(item) == sourceId);
+        var targetIndex = items.FindIndex(item => GetInstanceId(item) == targetId);
+        if (sourceIndex < 0 || targetIndex < 0 || sourceIndex == targetIndex)
+        {
+            updated = source;
+            return false;
+        }
+
+        var item = items[sourceIndex];
+        items.RemoveAt(sourceIndex);
+        if (sourceIndex < targetIndex)
+        {
+            targetIndex--;
+        }
+        items.Insert(targetIndex, item);
+        updated = items.ToArray();
+        return true;
     }
+
+    private static string? GetInstanceId<T>(T item) => item switch
+    {
+        LayoutElement element => element.InstanceId,
+        LayoutEdgeContainer edge => edge.InstanceId,
+        _ => null
+    };
 
     private static bool ContainsInteractiveElement(LayoutElement element)
     {
@@ -560,79 +799,39 @@ internal static class LayoutEditorService
                 definition.Capabilities.HasFlag(WidgetCapabilities.Interactive);
         }
 
-        return element is LayoutContainerElement { Enabled: true } container &&
-            GetSlots(container)
-                .SelectMany(slot => slot.Children)
+        return element is LayoutContainerElement container &&
+            container.PrimarySlot.Children.Concat(container.SecondarySlot.Children)
                 .Any(ContainsInteractiveElement);
     }
 
-    private static bool CanAddToSlot(
-        LayoutContainerElement container,
-        LayoutSlotKind slotKind,
-        LayoutElement element)
+    private static bool IsProfileCapabilityValid(LayoutProfile profile)
     {
-        if (!ContainsInteractiveElement(element))
+        foreach (var container in profile.InlineContainers)
         {
-            return true;
-        }
-
-        // 离开状态必须是可观察但不可操作的界面，避免用户把隐藏期间的点击命令暴露出来。
-        // Leave-state surfaces must remain observable but non-interactive so hidden-state clicks cannot invoke commands.
-        if (slotKind == LayoutSlotKind.Collapsed ||
-            (container.ContainerKind == LayoutContainerKind.HoverSwitch &&
-                slotKind == LayoutSlotKind.Primary) ||
-            (container.ContainerKind == LayoutContainerKind.AutoCollapse &&
-                slotKind == LayoutSlotKind.Collapsed))
-        {
-            return false;
-        }
-
-        if (element is LayoutWidgetElement widget &&
-            ComponentCatalog.TryGet(widget.TypeId, out var definition))
-        {
-            return slotKind != LayoutSlotKind.Collapsed || definition.SupportsCollapsedSlot;
-        }
-
-        return true;
-    }
-
-    private static bool IsContainerCapabilityValid(
-        LayoutContainerElement container,
-        bool parentAllowsInteractive)
-    {
-        var primaryAllowsInteractive = parentAllowsInteractive &&
-            container.ContainerKind != LayoutContainerKind.HoverSwitch;
-        return IsSlotCapabilityValid(container.PrimarySlot, primaryAllowsInteractive) &&
-            IsSlotCapabilityValid(container.SecondarySlot, parentAllowsInteractive) &&
-            IsSlotCapabilityValid(container.CollapsedSlot, allowInteractive: false);
-    }
-
-    private static bool IsSlotCapabilityValid(LayoutSlot slot, bool allowInteractive)
-    {
-        foreach (var child in slot.Children)
-        {
-            if (child is LayoutWidgetElement widget)
-            {
-                if (widget.Enabled && !allowInteractive &&
-                    ComponentCatalog.TryGet(widget.TypeId, out var definition) &&
-                    definition.Capabilities.HasFlag(WidgetCapabilities.Interactive))
-                {
-                    return false;
-                }
-            }
-            else if (child is LayoutContainerElement { Enabled: true } container &&
-                !IsContainerCapabilityValid(container, allowInteractive))
+            if (!IsContainerCapabilityValid(container))
             {
                 return false;
             }
         }
-
         return true;
+    }
+
+    private static bool IsContainerCapabilityValid(LayoutContainerElement container)
+    {
+        if (container.ContainerKind == LayoutContainerKind.HoverSwitch &&
+            container.PrimarySlot.Children.Any(ContainsInteractiveElement))
+        {
+            return false;
+        }
+
+        return container.PrimarySlot.Children
+            .Concat(container.SecondarySlot.Children)
+            .OfType<LayoutContainerElement>()
+            .All(IsContainerCapabilityValid);
     }
 
     private sealed class EditState
     {
         internal bool Changed { get; set; }
-        internal LayoutEditFailure Failure { get; set; }
     }
 }

@@ -283,6 +283,7 @@ public partial class MainWindow : Window
         _edgeAnimationTimer.Stop();
         _edgeHoverTimer.Stop();
         _environmentRecoveryTimer.Stop();
+        DisposeEdgeSurfaces();
         _componentSurface?.Dispose();
         _audioMonitorService?.Dispose();
         _audioMonitorService = null;
