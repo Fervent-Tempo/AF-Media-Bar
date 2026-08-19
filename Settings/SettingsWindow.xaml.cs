@@ -41,6 +41,7 @@ public partial class SettingsWindow : Window
             Dispatcher);
         _fontSaveTimer.Stop();
         InitializeComponent();
+        InitializeLayoutEditor();
         _searchResults = BuildSearchResults();
         _isInitialized = true;
         VersionText.Text = Loc.Get(

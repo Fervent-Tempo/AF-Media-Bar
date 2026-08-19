@@ -279,7 +279,7 @@ AF-Media-Bar/
 - [ ] Display scrolling video subtitles/lyrics.
 - [ ] Display media progress bars.
 - [ ] Polish the UI and provide multiple preset themes.
-- [ ] Add a UI editor so users can deeply customize the appearance.
+- [x] Add a UI layout editor with four profiles, component trees, container states, numeric properties, and live preview.
 - [ ] Export and share configurations.
 - [ ] Add an onboarding tutorial.
 

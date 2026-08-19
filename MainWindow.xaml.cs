@@ -86,6 +86,7 @@ public partial class MainWindow : Window
             ? RenderMode.SoftwareOnly
             : RenderMode.Default;
         InitializeComponent();
+        InitializeComponentLayout(settings.Layout);
         _audioBars =
         [
             AudioBar0,
@@ -180,6 +181,7 @@ public partial class MainWindow : Window
             OnEnvironmentRecoveryTimerTick,
             Dispatcher);
         _environmentRecoveryTimer.Stop();
+        ApplyComponentMetricRefreshInterval();
 
         _mediaSessionService.SnapshotChanged += OnSnapshotChanged;
         _mediaSessionService.SessionsChanged += OnSessionsChanged;
@@ -281,6 +283,7 @@ public partial class MainWindow : Window
         _edgeAnimationTimer.Stop();
         _edgeHoverTimer.Stop();
         _environmentRecoveryTimer.Stop();
+        _componentSurface?.Dispose();
         _audioMonitorService?.Dispose();
         _audioMonitorService = null;
         _taskbarEventWatcher?.Dispose();
@@ -333,6 +336,11 @@ public partial class MainWindow : Window
         {
             _metricSettings = e.Settings.Metrics;
             ApplyMetricSettings();
+        }
+
+        if (e.Sections.HasFlag(SettingsSection.Layout))
+        {
+            ComponentSurface_OnLayoutSettingsChanged(e.Settings.Layout);
         }
 
         if (e.Sections.HasFlag(SettingsSection.Appearance))

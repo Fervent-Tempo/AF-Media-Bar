@@ -37,7 +37,11 @@ public partial class MainWindow
 
     private void UpdateMetrics(bool advanceCycle)
     {
-        var sample = _systemMetricsService.Sample(_metricSettings);
+        var samplingSettings = LayoutRuntimeService.ResolveMetricSamplingSettings(
+            _activeLayoutProfile,
+            _metricSettings);
+        var sample = _systemMetricsService.Sample(samplingSettings);
+        ComponentSurface_OnMetricsSnapshotChanged(sample);
         var selectedCount = _metricSettings.SelectedCount;
         if (selectedCount == 0)
         {
@@ -79,6 +83,11 @@ public partial class MainWindow
         }
 
         e.Handled = true;
+        OpenTaskManager();
+    }
+
+    private void OpenTaskManager()
+    {
         try
         {
             Process.Start(new ProcessStartInfo("taskmgr.exe")

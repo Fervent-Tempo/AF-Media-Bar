@@ -13,7 +13,8 @@ internal enum SettingsSection
     Performance = 64,
     Font = 128,
     Language = 256,
-    All = General | Components | Window | Placement | Appearance | Interaction | Performance | Font | Language
+    Layout = 512,
+    All = General | Components | Window | Placement | Appearance | Interaction | Performance | Font | Language | Layout
 }
 
 internal readonly record struct ApplicationSettings(
@@ -23,6 +24,7 @@ internal readonly record struct ApplicationSettings(
     AppLanguage Language,
     WindowSettings Window,
     PlacementSettings Placement,
+    LayoutDocument Layout,
     bool StartupEnabled);
 
 internal sealed class SettingsChangedEventArgs(

@@ -51,6 +51,7 @@ public partial class MainWindow
     private void ApplySnapshot(MediaSnapshot snapshot)
     {
         _lastSnapshot = snapshot;
+        ComponentSurface_OnSnapshotChanged(snapshot);
         _selectedMediaIsPlaying = snapshot.IsConnected && snapshot.IsPlaying;
         _hasConnectedMedia = _mediaSessions.Any(session => session.IsPlaying) ||
             (_selectedMediaIsPlaying && _mediaSessions.Count == 0);
@@ -271,6 +272,7 @@ public partial class MainWindow
         }
 
         _isExpanded = expanded;
+        ComponentSurface_OnLayoutPointerNearChanged(expanded);
         animate &= !_metricSettings.LowGpuMode;
         if (_isVerticalLayout)
         {

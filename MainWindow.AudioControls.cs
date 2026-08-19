@@ -163,6 +163,8 @@ public partial class MainWindow
             _smoothedAudioSpectrum[index] = current;
             _audioBars[index].Height = Math.Clamp(3 + Math.Sqrt(current) * 32, 3, 35);
         }
+
+        ComponentSurface_OnSpectrumChanged(_audioSpectrum);
     }
 
     private async Task RefreshOutputDevicesAsync(string? preferredId = null)
@@ -236,7 +238,8 @@ public partial class MainWindow
 
     private async void OutputDeviceButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (!_metricSettings.OutputDeviceSwitcherEnabled)
+        if (!_metricSettings.OutputDeviceSwitcherEnabled &&
+            sender is not FrameworkElement { Tag: MediaCommandKind.SelectOutputDevice })
         {
             return;
         }
@@ -578,7 +581,8 @@ public partial class MainWindow
 
     private async void VolumeControlButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (!_metricSettings.VolumeControlEnabled)
+        if (!_metricSettings.VolumeControlEnabled &&
+            sender is not FrameworkElement { Tag: MediaCommandKind.AdjustVolume })
         {
             return;
         }

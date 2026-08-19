@@ -105,6 +105,7 @@ public partial class SettingsWindow
         _isSyncing = false;
         RebuildSearchIndex();
         UpdateDependencies();
+        SyncLayoutEditor();
     }
 
     /// <summary>
@@ -137,6 +138,8 @@ public partial class SettingsWindow
         new(SectionTag.Layout, Loc.Get("Settings.Layout.Arrangement"), Loc.Get("Search.Kw.Arrangement")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.Size"), Loc.Get("Search.Kw.Scale")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.TopOffset"), Loc.Get("Search.Kw.TopOffset")),
+        new(SectionTag.Layout, Loc.Get("Settings.Layout.EditorTitle"), Loc.Get("Search.Kw.LayoutEditor")),
+        new(SectionTag.Layout, Loc.Get("Settings.Layout.EditorProperties"), Loc.Get("Search.Kw.LayoutEditor")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.AvoidTaskbarTitle"), Loc.Get("Search.Kw.AvoidTaskbar")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.LockPositionTitle"), Loc.Get("Search.Kw.LockPosition")),
         new(SectionTag.Appearance, Loc.Get("Settings.Appearance.PlayerText"), Loc.Get("Search.Kw.PlayerText")),

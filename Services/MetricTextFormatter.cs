@@ -8,6 +8,20 @@ namespace AFMediaBar.Services;
 /// </summary>
 internal static class MetricTextFormatter
 {
+    internal static string Format(SystemMetricsSnapshot sample, MetricKind metric)
+    {
+        return metric switch
+        {
+            MetricKind.SystemMemory => $"MEM {sample.SystemMemoryPercent}%",
+            MetricKind.SystemCpu => $"CPU {(sample.SystemCpuPercent is int cpu ? $"{cpu}%" : "--%")}",
+            MetricKind.SystemGpu => $"GPU {(sample.SystemGpuPercent is int gpu ? $"{gpu}%" : "--%")}",
+            MetricKind.ProcessMemory => sample.ProcessMemoryMegabytes < 1000
+                ? $"APP {sample.ProcessMemoryMegabytes}M"
+                : $"APP {sample.ProcessMemoryMegabytes / 1024d:0.0}G",
+            _ => string.Empty
+        };
+    }
+
     internal static string Format(
         SystemMetricsSnapshot sample,
         MetricSettings settings,

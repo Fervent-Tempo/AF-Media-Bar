@@ -10,13 +10,16 @@ internal sealed class SettingsCoordinator
 {
     internal SettingsCoordinator()
     {
+        var metrics = MetricSettingsService.Load();
+        var window = WindowSettingsService.Load();
         Current = new ApplicationSettings(
-            MetricSettingsService.Load(),
+            metrics,
             ThemeSettingsService.Load(),
             FontSettingsService.Load(),
             LanguageSettingsService.Load(),
-            WindowSettingsService.Load(),
+            window,
             PlacementSettingsService.Load(),
+            LayoutSettingsService.Load(window, metrics),
             ReadStartupEnabled());
     }
 
@@ -31,9 +34,13 @@ internal sealed class SettingsCoordinator
             return;
         }
 
+        var previousMetrics = Current.Metrics;
+        var previousWindow = Current.Window;
+        var wasLegacyLayout = IsLegacyLayout(previousWindow, previousMetrics);
         MetricSettingsService.Save(settings);
         Current = Current with { Metrics = settings };
-        Publish(SettingsSection.Components | SettingsSection.Performance);
+        SynchronizeLegacyLayoutIfUncustomized(wasLegacyLayout);
+        Publish(SettingsSection.Components | SettingsSection.Performance | SettingsSection.Layout);
     }
 
     internal void UpdateTheme(ThemeSettings settings)
@@ -85,15 +92,46 @@ internal sealed class SettingsCoordinator
             return;
         }
 
+        var previousMetrics = Current.Metrics;
+        var previousWindow = Current.Window;
+        var wasLegacyLayout = IsLegacyLayout(previousWindow, previousMetrics);
         WindowSettingsService.Save(settings);
-        var changedSections = SettingsSection.Window | SettingsSection.Interaction;
+        var changedSections = SettingsSection.Window |
+            SettingsSection.Interaction |
+            SettingsSection.Layout;
         if (settings.HideWhenNoMedia != Current.Window.HideWhenNoMedia)
         {
             changedSections |= SettingsSection.General;
         }
 
         Current = Current with { Window = settings };
+        SynchronizeLegacyLayoutIfUncustomized(wasLegacyLayout);
         Publish(changedSections);
+    }
+
+    internal void UpdateLayout(LayoutDocument layout)
+    {
+        var normalized = LayoutMigrationService.Normalize(layout);
+        if (normalized == Current.Layout)
+        {
+            return;
+        }
+
+        LayoutSettingsService.Save(normalized);
+        Current = Current with { Layout = normalized };
+        Publish(SettingsSection.Layout);
+    }
+
+    internal void SynchronizeLayout(LayoutDocument layout)
+    {
+        var normalized = LayoutMigrationService.Normalize(layout);
+        if (normalized == Current.Layout)
+        {
+            return;
+        }
+
+        LayoutSettingsService.Save(normalized);
+        Current = Current with { Layout = normalized };
     }
 
     internal void SynchronizeWindow(WindowSettings settings)
@@ -150,6 +188,10 @@ internal sealed class SettingsCoordinator
         LanguageSettingsService.Save(AppLanguage.FollowSystem);
         WindowSettingsService.Save(WindowSettings.Default);
         PlacementSettingsService.Save(PlacementSettings.Default);
+        var layout = LayoutMigrationService.CreateFromLegacy(
+            WindowSettings.Default,
+            MetricSettings.Default);
+        LayoutSettingsService.Save(layout);
         StartupService.SetEnabled(false);
         Current = new ApplicationSettings(
             MetricSettings.Default,
@@ -158,8 +200,38 @@ internal sealed class SettingsCoordinator
             AppLanguage.FollowSystem,
             WindowSettings.Default,
             PlacementSettings.Default,
+            layout,
             false);
         Publish(SettingsSection.All);
+    }
+
+    /// <summary>
+    /// 只有布局仍等于旧设置生成的默认文档时才同步旧选项；一旦用户编辑树，旧设置不能覆盖自定义布局。
+    /// Synchronize legacy options only while the document still matches their generated defaults, so tree edits cannot be overwritten.
+    /// </summary>
+    private void SynchronizeLegacyLayoutIfUncustomized(bool wasLegacyLayout)
+    {
+        if (!wasLegacyLayout)
+        {
+            return;
+        }
+
+        var layout = LayoutMigrationService.CreateFromLegacy(Current.Window, Current.Metrics);
+        LayoutSettingsService.Save(layout);
+        Current = Current with { Layout = layout };
+    }
+
+    private bool IsLegacyLayout(WindowSettings window, MetricSettings metrics)
+    {
+        try
+        {
+            return Current.Layout == LayoutMigrationService.CreateFromLegacy(window, metrics);
+        }
+        catch (Exception exception)
+        {
+            DiagnosticsLogService.Write("legacy-layout-compare", exception);
+            return false;
+        }
     }
 
     private void Publish(SettingsSection sections)

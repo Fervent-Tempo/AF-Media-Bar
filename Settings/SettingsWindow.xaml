@@ -788,6 +788,109 @@
               </CheckBox>
             </Border>
             <Button Content="{DynamicResource Settings.Layout.ResetPosition}" HorizontalAlignment="Left" Margin="0,16,0,0" Style="{StaticResource SettingsActionButtonStyle}" Click="ResetPosition_OnClick" />
+            <TextBlock Text="{DynamicResource Settings.Layout.EditorTitle}" Margin="0,30,0,0" FontSize="15" FontWeight="SemiBold" />
+            <TextBlock Text="{DynamicResource Settings.Layout.EditorDescription}"
+                       Margin="0,4,0,10"
+                       Style="{StaticResource SettingsRowDescriptionStyle}" />
+            <TextBlock Text="{DynamicResource Settings.Layout.EditorProfile}" Style="{StaticResource SettingsRowDescriptionStyle}" />
+            <ComboBox x:Name="LayoutProfileComboBox"
+                      Width="320"
+                      HorizontalAlignment="Left"
+                      Margin="0,4,0,10"
+                      Style="{StaticResource SettingsComboBoxStyle}"
+                      SelectionChanged="LayoutProfileComboBox_OnSelectionChanged" />
+            <Grid Margin="0,0,0,8">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="230" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="*" />
+              </Grid.ColumnDefinitions>
+              <StackPanel Grid.Column="0">
+                <TextBlock Text="{DynamicResource Settings.Layout.EditorStructure}" Style="{StaticResource SettingsRowDescriptionStyle}" />
+                <TreeView x:Name="LayoutTree"
+                          Height="220"
+                          Margin="0,4,0,0"
+                          Background="{DynamicResource MenuHoverBrush}"
+                          BorderBrush="{DynamicResource MenuBorderBrush}"
+                          BorderThickness="1"
+                          Foreground="{DynamicResource MenuPrimaryTextBrush}"
+                          SelectedItemChanged="LayoutTree_OnSelectedItemChanged" />
+                <TextBlock x:Name="LayoutEditorSelectionText"
+                           Margin="0,6,0,0"
+                           Text="{DynamicResource Settings.Layout.EditorNoSelection}"
+                           Style="{StaticResource SettingsRowDescriptionStyle}" />
+              </StackPanel>
+              <Border Grid.Column="2"
+                      MinHeight="220"
+                      Padding="10"
+                      Background="{DynamicResource MenuHoverBrush}"
+                      BorderBrush="{DynamicResource MenuBorderBrush}"
+                      BorderThickness="1"
+                      CornerRadius="6">
+                <StackPanel>
+                  <TextBlock Text="{DynamicResource Settings.Layout.EditorPreview}" Style="{StaticResource SettingsRowDescriptionStyle}" />
+                  <Border x:Name="LayoutEditorPreviewHost"
+                          Height="120"
+                          Margin="0,8,0,0"
+                          Background="{DynamicResource TaskbarReadabilityBrush}"
+                          CornerRadius="6"
+                          ClipToBounds="True" />
+                </StackPanel>
+              </Border>
+            </Grid>
+            <WrapPanel Margin="0,0,0,8">
+              <Button x:Name="LayoutMoveUpButton"
+                      Content="{DynamicResource Settings.Layout.EditorMoveUp}"
+                      Style="{StaticResource SettingsActionButtonStyle}"
+                      Click="LayoutMoveUpButton_OnClick" />
+              <Button x:Name="LayoutMoveDownButton"
+                      Content="{DynamicResource Settings.Layout.EditorMoveDown}"
+                      Style="{StaticResource SettingsActionButtonStyle}"
+                      Click="LayoutMoveDownButton_OnClick" />
+              <Button x:Name="LayoutToggleButton"
+                      Content="{DynamicResource Settings.Layout.EditorToggle}"
+                      Style="{StaticResource SettingsActionButtonStyle}"
+                      Click="LayoutToggleButton_OnClick" />
+              <Button x:Name="LayoutRemoveButton"
+                      Content="{DynamicResource Settings.Layout.EditorRemove}"
+                      Style="{StaticResource SettingsActionButtonStyle}"
+                      Click="LayoutRemoveButton_OnClick" />
+            </WrapPanel>
+            <Grid Margin="0,0,0,8">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="160" />
+                <ColumnDefinition Width="160" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <ComboBox x:Name="LayoutSlotComboBox"
+                        Grid.Column="0"
+                        Margin="0,0,8,0"
+                        Style="{StaticResource SettingsComboBoxStyle}" />
+              <ComboBox x:Name="LayoutWidgetTypeComboBox"
+                        Grid.Column="1"
+                        Margin="0,0,8,0"
+                        Style="{StaticResource SettingsComboBoxStyle}" />
+              <Button x:Name="LayoutAddWidgetButton"
+                      Grid.Column="2"
+                      Content="{DynamicResource Settings.Layout.EditorAddWidget}"
+                      Style="{StaticResource SettingsActionButtonStyle}"
+                      Click="LayoutAddWidgetButton_OnClick" />
+            </Grid>
+            <Button x:Name="LayoutAddContainerButton"
+                    Content="{DynamicResource Settings.Layout.EditorAddContainer}"
+                    HorizontalAlignment="Left"
+                    Style="{StaticResource SettingsActionButtonStyle}"
+                    Click="LayoutAddContainerButton_OnClick" />
+            <TextBlock x:Name="LayoutEditorMessageText"
+                       Margin="0,6,0,0"
+                       Style="{StaticResource SettingsRowDescriptionStyle}" />
+            <Border x:Name="LayoutPropertyHost"
+                    Margin="0,14,0,0"
+                    Padding="10"
+                    Background="{DynamicResource MenuHoverBrush}"
+                    BorderBrush="{DynamicResource MenuBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6" />
           </StackPanel>
 
           <StackPanel x:Name="AppearancePage" Visibility="Collapsed">

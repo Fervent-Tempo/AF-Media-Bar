@@ -419,6 +419,7 @@ public partial class MainWindow
             VerticalPlayerContent.Visibility == Visibility.Visible;
         _isVerticalLayout = vertical;
         SetPlayerContentVisibility(contentVisible);
+        ApplyComponentLayout();
         ApplyResponsivePlayerDimensions();
         VolumeControlPopup.PlacementTarget = vertical
             ? VerticalVolumeControlHost
@@ -553,12 +554,21 @@ public partial class MainWindow
         VerticalVolumeControlHost.Margin = verticalControlMargin;
         VerticalMetricsHost.Margin = new Thickness(0, gap * 0.75, 0, gap * 0.5);
 
-        PlayerRoot.Width = _isVerticalLayout
-            ? VerticalPlayerWidth
-            : CalculateHorizontalPlayerWidth();
-        PlayerRoot.Height = _isVerticalLayout
-            ? CalculateVerticalPlayerHeight()
-            : HorizontalPlayerHeight;
+        if (_activeLayoutProfile is not null)
+        {
+            var desiredSize = LayoutRuntimeService.CalculateDesiredSize(_activeLayoutProfile);
+            PlayerRoot.Width = desiredSize.WidthDip;
+            PlayerRoot.Height = desiredSize.HeightDip;
+        }
+        else
+        {
+            PlayerRoot.Width = _isVerticalLayout
+                ? VerticalPlayerWidth
+                : CalculateHorizontalPlayerWidth();
+            PlayerRoot.Height = _isVerticalLayout
+                ? CalculateVerticalPlayerHeight()
+                : HorizontalPlayerHeight;
+        }
         VerticalPlayerContent.Height = PlayerRoot.Height;
     }
 
