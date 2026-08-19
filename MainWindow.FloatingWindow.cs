@@ -42,6 +42,73 @@ public partial class MainWindow
     private bool _edgeAnimationHasTarget;
     private bool _floatingFallbackActive;
 
+    /// <summary>
+    /// 在宿主模式重建前恢复浮动窗口的正常坐标，避免折叠动画留下屏幕外坐标被保存到任务栏模式。
+    /// Restores the normal floating coordinates before host recreation so a collapsed animation cannot persist an off-screen taskbar position.
+    /// </summary>
+    private void PrepareHostModeTransition()
+    {
+        if (_windowSettings.HostMode != WindowHostMode.Floating)
+        {
+            return;
+        }
+
+        _edgeAnimationTimer.Stop();
+        _edgeAnimationHasTarget = false;
+        _floatingEdge = 0;
+        _expandedEdge = 0;
+        _isExpanded = true;
+        UpdateEdgeCollapseIndicator(visible: false);
+        SetPlayerContentVisibility(visible: true);
+
+        if (_windowHandle == nint.Zero ||
+            _taskbarHostService is null ||
+            !NativeMethods.GetWindowRect(_windowHandle, out var rect))
+        {
+            return;
+        }
+
+        var monitor = NativeMethods.MonitorFromWindow(
+            _windowHandle,
+            NativeMethods.MonitorDefaultToNearest);
+        var info = NativeMethods.MonitorInfo.Create();
+        if (monitor == nint.Zero || !NativeMethods.GetMonitorInfo(monitor, ref info))
+        {
+            return;
+        }
+
+        var width = Math.Max(1, rect.Width);
+        var height = Math.Max(1, rect.Height);
+        var left = Math.Clamp(
+            _floatingNormalLeft ?? rect.Left,
+            info.WorkArea.Left,
+            Math.Max(info.WorkArea.Left, info.WorkArea.Right - width));
+        var top = Math.Clamp(
+            _floatingNormalTop ?? rect.Top,
+            info.WorkArea.Top,
+            Math.Max(info.WorkArea.Top, info.WorkArea.Bottom - height));
+        _floatingNormalLeft = left;
+        _floatingNormalTop = top;
+        _windowSettings = _windowSettings with
+        {
+            FloatingLeft = left,
+            FloatingTop = top
+        };
+        if (!_taskbarHostService.Position(
+                left,
+                top,
+                width,
+                height,
+                visible: true,
+                topmost: _windowSettings.AlwaysOnTop,
+                refresh: false))
+        {
+            DiagnosticsLogService.Write(
+                "host-mode-transition-position-failed",
+                details: $"Left={left};Top={top};Width={width};Height={height}");
+        }
+    }
+
     private void PositionFloatingWindow(bool force)
     {
         if (_windowHandle == nint.Zero || _taskbarHostService is null)
@@ -398,7 +465,8 @@ public partial class MainWindow
 
     private void OnEdgeHoverTimerTick(object? sender, EventArgs e)
     {
-        UpdateFloatingEdgeCollapse();
+        // 整窗贴边折叠已由布局中的边缘折叠容器取代；保留计时器回调签名以兼容旧生命周期清理，但不再触发整窗移动。
+        // Whole-window edge collapse is replaced by layout edge containers; keep the callback shape for legacy lifecycle cleanup without moving the entire window.
     }
 
     private void StartEdgeAnimation(

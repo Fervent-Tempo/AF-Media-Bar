@@ -4,12 +4,25 @@ using AFMediaBar.Models;
 namespace AFMediaBar.Services;
 
 /// <summary>
-/// 从注册表读取、迁移并保存性能指标与可选控件设置。
-/// Reads, migrates, and saves performance metric and optional control settings in the registry.
+/// 读取仍有效的低配置选项，并仅在首次布局迁移时消费旧组件注册表值。
+/// Loads the remaining low-spec option and consumes legacy component registry values only during first-run layout migration.
 /// </summary>
 internal static class MetricSettingsService
 {
     private const string SettingsKeyPath = @"Software\AFMediaBar";
+    private static readonly string[] LegacyValueNames =
+    [
+        "MetricsEnabled",
+        "ShowSystemMemory",
+        "ShowSystemCpu",
+        "ShowSystemGpu",
+        "ShowProcessMemory",
+        "AudioMonitorEnabled",
+        "OutputDeviceSwitcherEnabled",
+        "VolumeControlEnabled",
+        "OpenTaskManagerOnMetricsClick",
+        "LowGpuMode"
+    ];
 
     internal static MetricSettings Load()
     {
@@ -66,18 +79,17 @@ internal static class MetricSettingsService
                     "OpenTaskManagerOnMetricsClick",
                     MetricSettings.Default.OpenTaskManagerOnMetricsClick));
 
-            if (currentKey is null || HasMissingValues(currentKey))
+            try
             {
-                try
-                {
-                    Save(settings);
-                }
-                catch (Exception exception)
-                {
-                    DiagnosticsLogService.Write("metric-settings-migration", exception);
-                    // 迁移写入失败时仍使用已读取的旧设置，避免阻断启动。
-                    // Keep the loaded legacy settings when migration cannot write, so startup continues.
-                }
+                // 旧组件配置只为首次布局迁移保留在内存中；读取后立即清理，避免新版本继续依赖注册表。
+                // Legacy component settings stay in memory only for the first layout migration, then are removed so the new version no longer depends on the registry.
+                Save(settings);
+            }
+            catch (Exception exception)
+            {
+                DiagnosticsLogService.Write("metric-settings-migration", exception);
+                // 迁移写入失败时仍使用已读取的旧设置，避免阻断启动。
+                // Keep the loaded legacy settings when migration cannot write, so startup continues.
             }
 
             return settings;
@@ -92,25 +104,11 @@ internal static class MetricSettingsService
     internal static void Save(MetricSettings settings)
     {
         using var key = Registry.CurrentUser.CreateSubKey(SettingsKeyPath, writable: true);
-        key.SetValue("MetricsEnabled", settings.Enabled ? 1 : 0, RegistryValueKind.DWord);
-        key.SetValue("ShowSystemMemory", settings.ShowSystemMemory ? 1 : 0, RegistryValueKind.DWord);
-        key.SetValue("ShowSystemCpu", settings.ShowSystemCpu ? 1 : 0, RegistryValueKind.DWord);
-        key.SetValue("ShowSystemGpu", settings.ShowSystemGpu ? 1 : 0, RegistryValueKind.DWord);
-        key.SetValue("ShowProcessMemory", settings.ShowProcessMemory ? 1 : 0, RegistryValueKind.DWord);
         key.SetValue("LowConfigMode", settings.LowGpuMode ? 1 : 0, RegistryValueKind.DWord);
-        key.SetValue("AudioMonitorEnabled", settings.AudioMonitorEnabled ? 1 : 0, RegistryValueKind.DWord);
-        key.SetValue(
-            "OutputDeviceSwitcherEnabled",
-            settings.OutputDeviceSwitcherEnabled ? 1 : 0,
-            RegistryValueKind.DWord);
-        key.SetValue(
-            "VolumeControlEnabled",
-            settings.VolumeControlEnabled ? 1 : 0,
-            RegistryValueKind.DWord);
-        key.SetValue(
-            "OpenTaskManagerOnMetricsClick",
-            settings.OpenTaskManagerOnMetricsClick ? 1 : 0,
-            RegistryValueKind.DWord);
+        foreach (var legacyName in LegacyValueNames)
+        {
+            key.DeleteValue(legacyName, throwOnMissingValue: false);
+        }
     }
 
     private static bool ReadBoolean(
@@ -119,20 +117,11 @@ internal static class MetricSettingsService
         bool defaultValue)
     {
         var value = currentKey?.GetValue(name);
-        return value is int integer ? integer != 0 : defaultValue;
-    }
-
-    private static bool HasMissingValues(RegistryKey key)
-    {
-        return key.GetValue("MetricsEnabled") is not int ||
-            key.GetValue("ShowSystemMemory") is not int ||
-            key.GetValue("ShowSystemCpu") is not int ||
-            key.GetValue("ShowSystemGpu") is not int ||
-            key.GetValue("ShowProcessMemory") is not int ||
-            key.GetValue("LowConfigMode") is not int ||
-            key.GetValue("AudioMonitorEnabled") is not int ||
-            key.GetValue("OutputDeviceSwitcherEnabled") is not int ||
-            key.GetValue("VolumeControlEnabled") is not int ||
-            key.GetValue("OpenTaskManagerOnMetricsClick") is not int;
+        return value switch
+        {
+            int integer => integer != 0,
+            long integer => integer != 0,
+            _ => defaultValue
+        };
     }
 }

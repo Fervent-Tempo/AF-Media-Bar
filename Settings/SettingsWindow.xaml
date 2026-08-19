@@ -390,12 +390,6 @@
                 <TextBlock Text="{DynamicResource Settings.Nav.General}" />
               </StackPanel>
             </ListBoxItem>
-            <ListBoxItem Tag="Components">
-              <StackPanel Orientation="Horizontal">
-                <TextBlock Width="24" Text="&#xE90F;" FontFamily="{StaticResource AppIconFontFamily}" />
-                <TextBlock Text="{DynamicResource Settings.Nav.Components}" />
-              </StackPanel>
-            </ListBoxItem>
             <ListBoxItem Tag="Layout">
               <StackPanel Orientation="Horizontal">
                 <TextBlock Width="24" Text="&#xE8A1;" FontFamily="{StaticResource AppIconFontFamily}" />
@@ -583,108 +577,6 @@
             <Button x:Name="ResetDefaultsButton" Content="{DynamicResource Settings.General.ResetAll}" HorizontalAlignment="Left" Style="{StaticResource SettingsActionButtonStyle}" Click="ResetDefaults_OnClick" />
           </StackPanel>
 
-          <StackPanel x:Name="ComponentsPage" Visibility="Collapsed">
-            <TextBlock Text="{DynamicResource Settings.Nav.Components}" Style="{StaticResource SettingsPageTitleStyle}" />
-            <TextBlock Text="{DynamicResource Settings.Components.Description}"
-                       Margin="0,6,0,20"
-                       Style="{StaticResource SettingsRowDescriptionStyle}" />
-            <Border BorderBrush="{DynamicResource MenuSeparatorBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10">
-              <CheckBox x:Name="ShowArtworkCheckBox" Style="{StaticResource SettingsCheckBoxStyle}" Checked="WindowCheckBox_OnChanged" Unchecked="WindowCheckBox_OnChanged">
-                <StackPanel>
-                  <TextBlock Text="{DynamicResource Settings.Components.ShowArtworkTitle}" Style="{StaticResource SettingsRowTitleStyle}" />
-                  <TextBlock Text="{DynamicResource Settings.Components.ShowArtworkDescription}" Style="{StaticResource SettingsRowDescriptionStyle}" />
-                </StackPanel>
-              </CheckBox>
-            </Border>
-            <Border BorderBrush="{DynamicResource MenuSeparatorBrush}" BorderThickness="0,0,0,1" Padding="0,10">
-              <StackPanel>
-                <TextBlock Text="{DynamicResource Settings.Components.ArtworkCornerRadiusTitle}" Style="{StaticResource SettingsRowTitleStyle}" />
-                <TextBlock Text="{DynamicResource Settings.Components.ArtworkCornerRadiusDescription}" Style="{StaticResource SettingsRowDescriptionStyle}" />
-                <Grid Width="320" HorizontalAlignment="Left" Margin="0,6,0,0">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="64" />
-                  </Grid.ColumnDefinitions>
-                  <Slider x:Name="ArtworkCornerRadiusSlider"
-                          Grid.Column="0"
-                          Width="240"
-                          Minimum="0"
-                          Maximum="20"
-                          TickFrequency="1"
-                          IsSnapToTickEnabled="True"
-                          HorizontalAlignment="Left"
-                          VerticalAlignment="Center"
-                          ValueChanged="ArtworkCornerRadiusSlider_OnValueChanged" />
-                  <TextBlock x:Name="ArtworkCornerRadiusValueText"
-                             Grid.Column="1"
-                             HorizontalAlignment="Right"
-                             VerticalAlignment="Center"
-                             FontSize="14" />
-                </Grid>
-              </StackPanel>
-            </Border>
-            <Border BorderBrush="{DynamicResource MenuSeparatorBrush}" BorderThickness="0,0,0,1" Padding="0,10">
-              <CheckBox x:Name="ShowMediaInfoCheckBox" Style="{StaticResource SettingsCheckBoxStyle}" Checked="WindowCheckBox_OnChanged" Unchecked="WindowCheckBox_OnChanged">
-                <StackPanel>
-                  <TextBlock Text="{DynamicResource Settings.Components.ShowMediaInfoTitle}" Style="{StaticResource SettingsRowTitleStyle}" />
-                  <TextBlock Text="{DynamicResource Settings.Components.ShowMediaInfoDescription}" Style="{StaticResource SettingsRowDescriptionStyle}" />
-                </StackPanel>
-              </CheckBox>
-            </Border>
-            <Border BorderBrush="{DynamicResource MenuSeparatorBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10">
-              <CheckBox x:Name="MetricsEnabledCheckBox" Style="{StaticResource SettingsCheckBoxStyle}" Checked="MetricCheckBox_OnChanged" Unchecked="MetricCheckBox_OnChanged">
-                <StackPanel>
-                  <TextBlock Text="{DynamicResource Settings.Components.MetricsTitle}" Style="{StaticResource SettingsRowTitleStyle}" />
-                  <TextBlock Text="{DynamicResource Settings.Components.MetricsDescription}" Style="{StaticResource SettingsRowDescriptionStyle}" />
-                </StackPanel>
-              </CheckBox>
-            </Border>
-            <StackPanel Margin="44,0,0,0">
-              <CheckBox x:Name="SystemMemoryCheckBox" Style="{StaticResource SettingsCheckBoxStyle}" Checked="MetricCheckBox_OnChanged" Unchecked="MetricCheckBox_OnChanged">
-                <TextBlock Text="{DynamicResource Settings.Components.MetricMem}" Style="{StaticResource SettingsRowTitleStyle}" />
-              </CheckBox>
-              <CheckBox x:Name="SystemCpuCheckBox" Style="{StaticResource SettingsCheckBoxStyle}" Checked="MetricCheckBox_OnChanged" Unchecked="MetricCheckBox_OnChanged">
-                <TextBlock Text="{DynamicResource Settings.Components.MetricCpu}" Style="{StaticResource SettingsRowTitleStyle}" />
-              </CheckBox>
-              <CheckBox x:Name="SystemGpuCheckBox" Style="{StaticResource SettingsCheckBoxStyle}" Checked="MetricCheckBox_OnChanged" Unchecked="MetricCheckBox_OnChanged">
-                <TextBlock Text="{DynamicResource Settings.Components.MetricGpu}" Style="{StaticResource SettingsRowTitleStyle}" />
-              </CheckBox>
-              <CheckBox x:Name="ProcessMemoryCheckBox" Style="{StaticResource SettingsCheckBoxStyle}" Checked="MetricCheckBox_OnChanged" Unchecked="MetricCheckBox_OnChanged">
-                <TextBlock Text="{DynamicResource Settings.Components.MetricApp}" Style="{StaticResource SettingsRowTitleStyle}" />
-              </CheckBox>
-              <CheckBox x:Name="OpenTaskManagerOnMetricsClickCheckBox" Style="{StaticResource SettingsCheckBoxStyle}" Checked="MetricCheckBox_OnChanged" Unchecked="MetricCheckBox_OnChanged">
-                <StackPanel>
-                  <TextBlock Text="{DynamicResource Settings.Components.OpenTaskManagerTitle}" Style="{StaticResource SettingsRowTitleStyle}" />
-                  <TextBlock Text="{DynamicResource Settings.Components.OpenTaskManagerDescription}" Style="{StaticResource SettingsRowDescriptionStyle}" />
-                </StackPanel>
-              </CheckBox>
-            </StackPanel>
-            <Border BorderBrush="{DynamicResource MenuSeparatorBrush}" BorderThickness="0,1,0,1" Padding="0,10">
-              <CheckBox x:Name="AudioMonitorCheckBox" Style="{StaticResource SettingsCheckBoxStyle}" Checked="MetricCheckBox_OnChanged" Unchecked="MetricCheckBox_OnChanged">
-                <StackPanel>
-                  <TextBlock Text="{DynamicResource Settings.Components.SpectrumTitle}" Style="{StaticResource SettingsRowTitleStyle}" />
-                  <TextBlock Text="{DynamicResource Settings.Components.SpectrumDescription}" Style="{StaticResource SettingsRowDescriptionStyle}" />
-                </StackPanel>
-              </CheckBox>
-            </Border>
-            <Border BorderBrush="{DynamicResource MenuSeparatorBrush}" BorderThickness="0,0,0,1" Padding="0,10">
-              <CheckBox x:Name="OutputDeviceCheckBox" Style="{StaticResource SettingsCheckBoxStyle}" Checked="MetricCheckBox_OnChanged" Unchecked="MetricCheckBox_OnChanged">
-                <StackPanel>
-                  <TextBlock Text="{DynamicResource Settings.Components.OutputSwitchTitle}" Style="{StaticResource SettingsRowTitleStyle}" />
-                  <TextBlock Text="{DynamicResource Settings.Components.OutputSwitchDescription}" Style="{StaticResource SettingsRowDescriptionStyle}" />
-                </StackPanel>
-              </CheckBox>
-            </Border>
-            <Border BorderBrush="{DynamicResource MenuSeparatorBrush}" BorderThickness="0,0,0,1" Padding="0,10">
-              <CheckBox x:Name="VolumeControlCheckBox" Style="{StaticResource SettingsCheckBoxStyle}" Checked="MetricCheckBox_OnChanged" Unchecked="MetricCheckBox_OnChanged">
-                <StackPanel>
-                  <TextBlock Text="{DynamicResource Settings.Components.MediaVolumeTitle}" Style="{StaticResource SettingsRowTitleStyle}" />
-                  <TextBlock Text="{DynamicResource Settings.Components.MediaVolumeDescription}" Style="{StaticResource SettingsRowDescriptionStyle}" />
-                </StackPanel>
-              </CheckBox>
-            </Border>
-          </StackPanel>
-
           <StackPanel x:Name="LayoutPage" Visibility="Collapsed">
             <TextBlock Text="{DynamicResource Settings.Nav.Layout}" Style="{StaticResource SettingsPageTitleStyle}" />
             <TextBlock Text="{DynamicResource Settings.Layout.Description}"
@@ -792,27 +684,21 @@
             <TextBlock Text="{DynamicResource Settings.Layout.EditorDescription}"
                        Margin="0,4,0,10"
                        Style="{StaticResource SettingsRowDescriptionStyle}" />
-            <Grid Margin="0,0,0,10">
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="12" />
-                <ColumnDefinition Width="*" />
-              </Grid.ColumnDefinitions>
-              <StackPanel Grid.Column="0">
-                <TextBlock Text="{DynamicResource Settings.Layout.EditorHostMode}" Style="{StaticResource SettingsRowDescriptionStyle}" />
-                <ComboBox x:Name="LayoutHostModeComboBox"
-                          Margin="0,4,0,0"
-                          Style="{StaticResource SettingsComboBoxStyle}"
-                          SelectionChanged="LayoutProfileOption_OnSelectionChanged" />
+            <Border Margin="0,0,0,10"
+                    Padding="10,8"
+                    Background="{DynamicResource MenuHoverBrush}"
+                    BorderBrush="{DynamicResource MenuBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6">
+              <StackPanel>
+                <TextBlock x:Name="LayoutEditorContextText"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource MenuPrimaryTextBrush}" />
+                <TextBlock Margin="0,3,0,0"
+                           Text="{DynamicResource Settings.Layout.EditorCurrentContextHint}"
+                           Style="{StaticResource SettingsRowDescriptionStyle}" />
               </StackPanel>
-              <StackPanel Grid.Column="2">
-                <TextBlock Text="{DynamicResource Settings.Layout.EditorArrangement}" Style="{StaticResource SettingsRowDescriptionStyle}" />
-                <ComboBox x:Name="LayoutArrangementComboBox"
-                          Margin="0,4,0,0"
-                          Style="{StaticResource SettingsComboBoxStyle}"
-                          SelectionChanged="LayoutProfileOption_OnSelectionChanged" />
-              </StackPanel>
-            </Grid>
+            </Border>
             <DockPanel Margin="0,0,0,8">
               <WrapPanel DockPanel.Dock="Right">
                 <Button x:Name="LayoutUndoButton"
@@ -1010,22 +896,6 @@
                        Margin="0,6,0,20"
                        Style="{StaticResource SettingsRowDescriptionStyle}" />
             <Border BorderBrush="{DynamicResource MenuSeparatorBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10">
-              <CheckBox x:Name="AutoCollapseCheckBox" Style="{StaticResource SettingsCheckBoxStyle}" Checked="WindowCheckBox_OnChanged" Unchecked="WindowCheckBox_OnChanged">
-                <StackPanel>
-                  <TextBlock Text="{DynamicResource Settings.Interaction.AutoCollapseTitle}" Style="{StaticResource SettingsRowTitleStyle}" />
-                  <TextBlock Text="{DynamicResource Settings.Interaction.AutoCollapseDescription}" Style="{StaticResource SettingsRowDescriptionStyle}" />
-                </StackPanel>
-              </CheckBox>
-            </Border>
-            <Border BorderBrush="{DynamicResource MenuSeparatorBrush}" BorderThickness="0,0,0,1" Padding="0,10">
-              <CheckBox x:Name="EdgeAutoCollapseCheckBox" Style="{StaticResource SettingsCheckBoxStyle}" Checked="WindowCheckBox_OnChanged" Unchecked="WindowCheckBox_OnChanged">
-                <StackPanel>
-                  <TextBlock Text="{DynamicResource Settings.Interaction.EdgeCollapseTitle}" Style="{StaticResource SettingsRowTitleStyle}" />
-                  <TextBlock x:Name="EdgeAutoCollapseDescription" Text="{DynamicResource Settings.Interaction.EdgeCollapseDescription}" Style="{StaticResource SettingsRowDescriptionStyle}" />
-                </StackPanel>
-              </CheckBox>
-            </Border>
-            <Border BorderBrush="{DynamicResource MenuSeparatorBrush}" BorderThickness="0,0,0,1" Padding="0,10">
               <CheckBox x:Name="AlwaysOnTopCheckBox" Style="{StaticResource SettingsCheckBoxStyle}" Checked="WindowCheckBox_OnChanged" Unchecked="WindowCheckBox_OnChanged">
                 <StackPanel>
                   <TextBlock Text="{DynamicResource Settings.Interaction.TopMostTitle}" Style="{StaticResource SettingsRowTitleStyle}" />

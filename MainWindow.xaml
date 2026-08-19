@@ -35,6 +35,15 @@
       <MenuItem x:Name="MediaSourcesMenuItem"
                 Header="{DynamicResource Main.Menu.Sources}" />
       <Separator />
+      <MenuItem x:Name="TaskbarModeMenuItem"
+                Header="{DynamicResource Main.Menu.TaskbarMode}"
+                IsCheckable="True"
+                Click="TaskbarMode_OnClick" />
+      <MenuItem x:Name="FloatingModeMenuItem"
+                Header="{DynamicResource Main.Menu.FloatingMode}"
+                IsCheckable="True"
+                Click="FloatingMode_OnClick" />
+      <Separator />
       <MenuItem Header="{DynamicResource Main.Menu.OpenSettings}"
                 Click="OpenSettings_OnClick" />
       <MenuItem Header="{DynamicResource Main.Menu.Reconnect}"
@@ -92,8 +101,7 @@
             Background="{DynamicResource TaskbarSurfaceBrush}"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
-            Cursor="Hand"
-            MouseLeftButtonUp="ShowMediaSource_OnMouseLeftButtonUp">
+            Cursor="Hand">
       <Grid ClipToBounds="True">
         <TextBlock x:Name="ArtworkPlaceholder"
                    Text="&#xE8D6;"
@@ -127,8 +135,7 @@
             MaxWidth="210"
             HorizontalAlignment="Left"
             VerticalAlignment="Center"
-            Cursor="Hand"
-            MouseLeftButtonUp="ShowMediaSource_OnMouseLeftButtonUp">
+            Cursor="Hand">
         <Grid x:Name="InfoContentGrid"
               Height="40"
               Margin="9,0,8,0">
@@ -343,8 +350,7 @@
                 CornerRadius="6"
                 Background="{DynamicResource TaskbarSurfaceBrush}"
                 HorizontalAlignment="Center"
-                Cursor="Hand"
-                MouseLeftButtonUp="ShowMediaSource_OnMouseLeftButtonUp">
+                Cursor="Hand">
           <Grid ClipToBounds="True">
             <TextBlock x:Name="VerticalArtworkPlaceholder"
                        Text="&#xE8D6;"
@@ -373,8 +379,7 @@
           <Grid x:Name="VerticalInfoHost"
                 Width="68"
                 Height="114"
-                Cursor="Hand"
-                MouseLeftButtonUp="ShowMediaSource_OnMouseLeftButtonUp">
+                Cursor="Hand">
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="34" />
               <ColumnDefinition Width="34" />

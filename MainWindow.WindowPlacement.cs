@@ -50,7 +50,6 @@ public partial class MainWindow
                 RefreshTaskbarSettings();
             }
 
-            UpdateFloatingEdgeCollapse();
             PositionOverTaskbar(force: false);
         }
         catch (Exception exception)
@@ -429,7 +428,22 @@ public partial class MainWindow
             VerticalPlayerContent.Visibility == Visibility.Visible;
         _isVerticalLayout = vertical;
         SetPlayerContentVisibility(contentVisible);
+        var previousMetricSettings = _metricSettings;
         ApplyComponentLayout();
+        if (_metricSettings != previousMetricSettings)
+        {
+            // 定位调用栈可能正在切换布局；延后应用服务，避免音频设置刷新重入窗口定位。
+            // Placement may already be switching layouts; defer service updates to avoid re-entering window placement.
+            // 方向切换的服务刷新会延后到定位调用栈返回；关闭期间丢弃回调，避免触及已释放的音频资源。
+            // Defer service refresh until placement returns; discard it after close so disposed audio resources are never re-entered.
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (!_isClosed)
+                {
+                    ApplyMetricSettings();
+                }
+            });
+        }
         ApplyResponsivePlayerDimensions();
         VolumeControlPopup.PlacementTarget = vertical
             ? VerticalVolumeControlHost

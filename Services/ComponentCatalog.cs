@@ -106,9 +106,24 @@ internal static class ComponentCatalog
         return definition is not null;
     }
 
+    internal static bool IsInteractive(LayoutWidgetElement widget)
+    {
+        if (!widget.Enabled || !TryGet(widget.TypeId, out var definition))
+        {
+            return false;
+        }
+
+        return widget.Settings switch
+        {
+            ArtworkWidgetSettings artwork => artwork.OpenSourceOnClick,
+            MetricsWidgetSettings metrics => metrics.OpenTaskManagerOnClick,
+            _ => definition.Capabilities.HasFlag(WidgetCapabilities.Interactive)
+        };
+    }
+
     internal static WidgetSettings CreateDefaultSettings(string typeId) => typeId switch
     {
-        BuiltInWidgetTypeIds.Artwork => new ArtworkWidgetSettings(6, false),
+        BuiltInWidgetTypeIds.Artwork => new ArtworkWidgetSettings(6, false, true),
         BuiltInWidgetTypeIds.MediaText => new MediaTextWidgetSettings(
             MediaTextKind.Title,
             true,

@@ -266,13 +266,16 @@ public partial class MainWindow
 
     private void SetExpanded(bool expanded, bool animate)
     {
+        var pointerNear = expanded;
         if (!_windowSettings.AutoCollapse && !expanded)
         {
             expanded = true;
         }
 
         _isExpanded = expanded;
-        ComponentSurface_OnLayoutPointerNearChanged(expanded);
+        // 新布局的悬停容器始终跟随实际指针；旧全局自动收起只影响透明兼容树。
+        // New hover containers always follow the real pointer; legacy global collapse affects only the transparent compatibility tree.
+        ComponentSurface_OnLayoutPointerNearChanged(pointerNear);
         animate &= !_metricSettings.LowGpuMode;
         if (_isVerticalLayout)
         {

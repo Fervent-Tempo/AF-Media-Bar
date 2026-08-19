@@ -34,6 +34,8 @@ public partial class MainWindow
         // Legacy nodes remain as popup anchors and behavior fallback; transparency prevents a second visible tree from being composited.
         PlayerContent.Opacity = 0;
         VerticalPlayerContent.Opacity = 0;
+        PlayerContent.IsHitTestVisible = false;
+        VerticalPlayerContent.IsHitTestVisible = false;
         ApplyComponentLayout();
     }
 
@@ -46,9 +48,8 @@ public partial class MainWindow
 
         _activeLayoutProfile = _layoutRuntimeService.ResolveProfile(
             _layoutDocument,
-            _windowSettings.HostMode,
             _isVerticalLayout);
-        _unavailableLayoutEdge = _activeLayoutProfile.HostMode == WindowHostMode.Taskbar
+        _unavailableLayoutEdge = _windowSettings.HostMode == WindowHostMode.Taskbar
             ? TaskbarEdgeService.TryResolveCurrent()
             : null;
         _componentSurface.Apply(_activeLayoutProfile, _isExpanded);
@@ -73,6 +74,9 @@ public partial class MainWindow
             compositionSize,
             edgeInsets,
             _unavailableLayoutEdge);
+        _metricSettings = LayoutRuntimeService.ResolveComponentSettings(
+            _activeLayoutProfile,
+            _settingsCoordinator.Current.Metrics);
         ApplyComponentMetricRefreshInterval();
     }
 
@@ -86,7 +90,7 @@ public partial class MainWindow
         DisposeEdgeSurfaces();
         foreach (var model in profile.EdgeContainers.Where(model =>
                      model.Enabled &&
-                     (profile.HostMode != WindowHostMode.Taskbar || model.Edge != unavailableEdge)))
+                     model.Edge != unavailableEdge))
         {
             var size = LayoutRuntimeService.MeasureEdgeContainer(profile, model);
             if (size.WidthDip <= 0 || size.HeightDip <= 0)
@@ -182,7 +186,7 @@ public partial class MainWindow
     {
         var sizes = profile.EdgeContainers
             .Where(container => container.Enabled &&
-                (profile.HostMode != WindowHostMode.Taskbar || container.Edge != unavailableEdge))
+                container.Edge != unavailableEdge)
             .Select(container => (container.Edge, Size: LayoutRuntimeService.MeasureEdgeContainer(profile, container)))
             .ToArray();
         return new Thickness(
@@ -352,8 +356,13 @@ public partial class MainWindow
 
     private void ComponentSurface_OnLayoutSettingsChanged(LayoutDocument document)
     {
+        var previousMetricSettings = _metricSettings;
         _layoutDocument = document;
         ApplyComponentLayout();
+        if (_metricSettings != previousMetricSettings)
+        {
+            ApplyMetricSettings();
+        }
         ApplyResponsivePlayerDimensions();
         PositionOverTaskbar(force: true);
     }

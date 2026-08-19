@@ -4,20 +4,37 @@ using Microsoft.Win32;
 namespace AFMediaBar.Services;
 
 /// <summary>
-/// 负责窗口模式、布局、缩放、封面和浮动坐标设置的读取、迁移与保存。
-/// Owns loading, migration, and persistence for window mode, layout, scale, artwork, and floating coordinates.
+/// 负责窗口模式、布局缩放和浮动坐标的读取与保存，并在读取时消费旧组件设置完成迁移。
+/// Owns window mode, layout scale, and floating-coordinate persistence while consuming legacy component settings during migration.
 /// </summary>
 internal static class WindowSettingsService
 {
     private const string SettingsKeyPath = @"Software\AFMediaBar";
+    private static readonly string[] LegacyValueNames =
+    [
+        "AutoCollapse",
+        "EdgeAutoCollapse",
+        "ShowArtwork",
+        "RoundedArtwork",
+        "ArtworkCornerRadius",
+        "ShowMediaInfo",
+        "TaskbarLayout",
+        "TaskbarScalePercent",
+        "DisplayScalePercent"
+    ];
 
     internal static WindowSettings Load()
     {
         try
         {
             using var key = Registry.CurrentUser.OpenSubKey(SettingsKeyPath, writable: false);
+            if (key is null)
+            {
+                return WindowSettings.Default;
+            }
+
             var legacyScale = ReadDisplayScalePercent(key);
-            return new WindowSettings(
+            var settings = new WindowSettings(
                 ReadBoolean(key, "HideWhenNoMedia", WindowSettings.Default.HideWhenNoMedia),
                 ReadBoolean(key, "AlwaysOnTop", WindowSettings.Default.AlwaysOnTop),
                 ReadHostMode(key),
@@ -25,14 +42,29 @@ internal static class WindowSettingsService
                 ReadScalePercent(key, "LengthScalePercent", legacyScale),
                 ReadScalePercent(key, "ThicknessScalePercent", legacyScale),
                 ReadBoolean(key, "AutoCollapse", WindowSettings.Default.AutoCollapse),
-                // schema 2 将边缘折叠拆分为独立布局容器；忽略旧的整窗开关，避免整条窗口与边缘容器同时折叠。
-                // Schema 2 models edge collapse as independent layout containers; ignore the legacy whole-window switch so both collapse systems cannot run together.
+                // schema 3 将边缘折叠拆分为独立布局容器；忽略旧的整窗开关，避免整条窗口与边缘容器同时折叠。
+                // Schema 3 models edge collapse as independent layout containers; ignore the legacy whole-window switch so both collapse systems cannot run together.
                 false,
                 ReadNullableInt(key, "FloatingLeft"),
                 ReadNullableInt(key, "FloatingTop"),
                 ReadBoolean(key, "ShowArtwork", WindowSettings.Default.ShowArtwork),
                 ReadArtworkCornerRadius(key),
                 ReadBoolean(key, "ShowMediaInfo", WindowSettings.Default.ShowMediaInfo));
+
+            try
+            {
+                // 旧组件与旧整窗折叠值只参与本次布局迁移；读取后清理，避免 schema 3 继续出现双重配置来源。
+                // Legacy component and whole-window-collapse values are used only for this layout migration, then removed so schema 3 has one source of truth.
+                Save(settings);
+            }
+            catch (Exception exception)
+            {
+                DiagnosticsLogService.Write("window-settings-migration", exception);
+                // 注册表规范化失败不应阻断启动；布局迁移仍可使用内存中的旧值。
+                // A registry normalization failure must not block startup; layout migration can still use the in-memory legacy values.
+            }
+
+            return settings;
         }
         catch (Exception exception)
         {
@@ -50,22 +82,26 @@ internal static class WindowSettingsService
         key.SetValue("LayoutMode", (int)settings.LayoutMode, RegistryValueKind.DWord);
         key.SetValue("LengthScalePercent", settings.LengthScalePercent, RegistryValueKind.DWord);
         key.SetValue("ThicknessScalePercent", settings.ThicknessScalePercent, RegistryValueKind.DWord);
-        key.SetValue("AutoCollapse", settings.AutoCollapse ? 1 : 0, RegistryValueKind.DWord);
-        key.SetValue("EdgeAutoCollapse", settings.EdgeAutoCollapse ? 1 : 0, RegistryValueKind.DWord);
-        key.SetValue("ShowArtwork", settings.ShowArtwork ? 1 : 0, RegistryValueKind.DWord);
-        key.SetValue(
-            "ArtworkCornerRadius",
-            Math.Clamp(settings.ArtworkCornerRadius, 0, 20),
-            RegistryValueKind.DWord);
-        key.DeleteValue("RoundedArtwork", throwOnMissingValue: false);
-        key.SetValue("ShowMediaInfo", settings.ShowMediaInfo ? 1 : 0, RegistryValueKind.DWord);
         if (settings.FloatingLeft is int left)
         {
             key.SetValue("FloatingLeft", left, RegistryValueKind.DWord);
         }
+        else
+        {
+            key.DeleteValue("FloatingLeft", throwOnMissingValue: false);
+        }
         if (settings.FloatingTop is int top)
         {
             key.SetValue("FloatingTop", top, RegistryValueKind.DWord);
+        }
+        else
+        {
+            key.DeleteValue("FloatingTop", throwOnMissingValue: false);
+        }
+
+        foreach (var legacyName in LegacyValueNames)
+        {
+            key.DeleteValue(legacyName, throwOnMissingValue: false);
         }
     }
 

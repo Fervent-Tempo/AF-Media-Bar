@@ -37,21 +37,7 @@ public partial class SettingsWindow
         HideWhenNoMediaCheckBox.IsChecked = settings.Window.HideWhenNoMedia;
         AutomaticUpdateChecksCheckBox.IsChecked = _updateService.AutomaticChecksEnabled;
 
-        MetricsEnabledCheckBox.IsChecked = settings.Metrics.Enabled;
-        SystemMemoryCheckBox.IsChecked = settings.Metrics.ShowSystemMemory;
-        SystemCpuCheckBox.IsChecked = settings.Metrics.ShowSystemCpu;
-        SystemGpuCheckBox.IsChecked = settings.Metrics.ShowSystemGpu;
-        ProcessMemoryCheckBox.IsChecked = settings.Metrics.ShowProcessMemory;
-        AudioMonitorCheckBox.IsChecked = settings.Metrics.AudioMonitorEnabled;
-        OutputDeviceCheckBox.IsChecked = settings.Metrics.OutputDeviceSwitcherEnabled;
-        VolumeControlCheckBox.IsChecked = settings.Metrics.VolumeControlEnabled;
-        OpenTaskManagerOnMetricsClickCheckBox.IsChecked =
-            settings.Metrics.OpenTaskManagerOnMetricsClick;
         LowGpuModeCheckBox.IsChecked = settings.Metrics.LowGpuMode;
-        ShowArtworkCheckBox.IsChecked = settings.Window.ShowArtwork;
-        ArtworkCornerRadiusSlider.Value = settings.Window.ArtworkCornerRadius;
-        ArtworkCornerRadiusValueText.Text = FormatArtworkCornerRadius(settings.Window.ArtworkCornerRadius);
-        ShowMediaInfoCheckBox.IsChecked = settings.Window.ShowMediaInfo;
 
         TaskbarModeRadioButton.IsChecked = settings.Window.HostMode == WindowHostMode.Taskbar;
         FloatingModeRadioButton.IsChecked = settings.Window.HostMode == WindowHostMode.Floating;
@@ -94,8 +80,6 @@ public partial class SettingsWindow
             settings.Font.Cjk));
         FontPreviewText.FontWeight = FontSettings.ResolveTitleWeight(settings.Font.Weight);
 
-        AutoCollapseCheckBox.IsChecked = settings.Window.AutoCollapse;
-        EdgeAutoCollapseCheckBox.IsChecked = settings.Window.EdgeAutoCollapse;
         AlwaysOnTopCheckBox.IsChecked = settings.Window.AlwaysOnTop;
 
         LanguageFollowSystemRadioButton.IsChecked = settings.Language == AppLanguage.FollowSystem;
@@ -126,24 +110,23 @@ public partial class SettingsWindow
         new(SectionTag.General, Loc.Get("Settings.General.HideWhenNoMediaTitle"), Loc.Get("Search.Kw.HideWhenNoMedia")),
         new(SectionTag.General, Loc.Get("Settings.General.AutoCheckUpdateTitle"), Loc.Get("Search.Kw.AutoCheckUpdate")),
         new(SectionTag.General, Loc.Get("Settings.Language.SectionTitle"), Loc.Get("Search.Kw.Language")),
-        new(SectionTag.Components, Loc.Get("Settings.Components.ShowArtworkTitle"), Loc.Get("Search.Kw.Artwork")),
-        new(SectionTag.Components, Loc.Get("Settings.Components.ArtworkCornerRadiusTitle"), Loc.Get("Search.Kw.Artwork")),
-        new(SectionTag.Components, Loc.Get("Settings.Components.ShowMediaInfoTitle"), Loc.Get("Search.Kw.MediaInfo")),
-        new(SectionTag.Components, Loc.Get("Settings.Components.MetricsTitle"), Loc.Get("Search.Kw.Metrics")),
-        new(SectionTag.Components, Loc.Get("Settings.Components.OpenTaskManagerTitle"), Loc.Get("Search.Kw.TaskManager")),
-        new(SectionTag.Components, Loc.Get("Settings.Components.SpectrumTitle"), Loc.Get("Search.Kw.Spectrum")),
-        new(SectionTag.Components, Loc.Get("Settings.Components.OutputSwitchTitle"), Loc.Get("Search.Kw.OutputSwitch")),
-        new(SectionTag.Components, Loc.Get("Settings.Components.MediaVolumeTitle"), Loc.Get("Search.Kw.MediaVolume")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.WindowMode"), Loc.Get("Search.Kw.WindowMode")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.Arrangement"), Loc.Get("Search.Kw.Arrangement")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.Size"), Loc.Get("Search.Kw.Scale")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.TopOffset"), Loc.Get("Search.Kw.TopOffset")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.EditorTitle"), Loc.Get("Search.Kw.LayoutEditor")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.EditorProperties"), Loc.Get("Search.Kw.LayoutEditor")),
-        new(SectionTag.Layout, Loc.Get("Settings.Layout.EditorHostMode"), Loc.Get("Search.Kw.LayoutEditor")),
-        new(SectionTag.Layout, Loc.Get("Settings.Layout.EditorArrangement"), Loc.Get("Search.Kw.LayoutEditor")),
+        new(SectionTag.Layout, Loc.Get("Settings.Layout.EditorCurrentContext"), Loc.Get("Search.Kw.LayoutEditor")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.EditorPalette"), Loc.Get("Search.Kw.LayoutEditor")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.EditorEdgeContainer"), Loc.Get("Search.Kw.EdgeCollapse")),
+        new(SectionTag.Layout, Loc.Get("Settings.LayoutWidget.ArtworkTitle"), Loc.Get("Search.Kw.Artwork")),
+        new(SectionTag.Layout, Loc.Get("Settings.Layout.PropertyArtworkOpenSource"), Loc.Get("Search.Kw.MediaInfo")),
+        new(SectionTag.Layout, Loc.Get("Settings.LayoutWidget.MediaTextTitle"), Loc.Get("Search.Kw.MediaInfo")),
+        new(SectionTag.Layout, Loc.Get("Settings.LayoutWidget.MetricsTitle"), Loc.Get("Search.Kw.Metrics")),
+        new(SectionTag.Layout, Loc.Get("Settings.Layout.PropertyOpenTaskManager"), Loc.Get("Search.Kw.TaskManager")),
+        new(SectionTag.Layout, Loc.Get("Settings.LayoutWidget.SpectrumTitle"), Loc.Get("Search.Kw.Spectrum")),
+        new(SectionTag.Layout, Loc.Get("Main.Device.Output"), Loc.Get("Search.Kw.OutputSwitch")),
+        new(SectionTag.Layout, Loc.Get("Main.Volume.Current"), Loc.Get("Search.Kw.MediaVolume")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.AvoidTaskbarTitle"), Loc.Get("Search.Kw.AvoidTaskbar")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.LockPositionTitle"), Loc.Get("Search.Kw.LockPosition")),
         new(SectionTag.Appearance, Loc.Get("Settings.Appearance.PlayerText"), Loc.Get("Search.Kw.PlayerText")),
@@ -151,8 +134,6 @@ public partial class SettingsWindow
         new(SectionTag.Appearance, Loc.Get("Settings.Appearance.FontWeight"), Loc.Get("Search.Kw.FontWeight")),
         new(SectionTag.Appearance, Loc.Get("Settings.Appearance.ReadabilityTitle"), Loc.Get("Search.Kw.Readability")),
         new(SectionTag.Appearance, Loc.Get("Settings.Appearance.MenuTheme"), Loc.Get("Search.Kw.MenuTheme")),
-        new(SectionTag.Interaction, Loc.Get("Settings.Interaction.AutoCollapseTitle"), Loc.Get("Search.Kw.AutoCollapse")),
-        new(SectionTag.Interaction, Loc.Get("Settings.Interaction.EdgeCollapseTitle"), Loc.Get("Search.Kw.EdgeCollapse")),
         new(SectionTag.Interaction, Loc.Get("Settings.Interaction.TopMostTitle"), Loc.Get("Search.Kw.TopMost")),
         new(SectionTag.Performance, Loc.Get("Settings.Performance.LowPerfTitle"), Loc.Get("Search.Kw.LowPerf")),
         new(SectionTag.Performance, Loc.Get("Settings.Performance.Reconnect"), Loc.Get("Search.Kw.Reconnect"))
@@ -164,21 +145,12 @@ public partial class SettingsWindow
         var taskbarMode = settings.Window.HostMode == WindowHostMode.Taskbar;
         var forcedVertical = settings.Window.LayoutMode == PlayerLayoutMode.Vertical;
         var canUseAutomaticPlacement = taskbarMode && !forcedVertical;
-        MetricsEnabledCheckBox.IsEnabled = true;
-        SystemMemoryCheckBox.IsEnabled = settings.Metrics.Enabled;
-        SystemCpuCheckBox.IsEnabled = settings.Metrics.Enabled;
-        SystemGpuCheckBox.IsEnabled = settings.Metrics.Enabled;
-        ProcessMemoryCheckBox.IsEnabled = settings.Metrics.Enabled;
-        OpenTaskManagerOnMetricsClickCheckBox.IsEnabled = settings.Metrics.SelectedCount > 0;
-        ArtworkCornerRadiusSlider.IsEnabled = settings.Window.ShowArtwork;
         AutomaticPlacementCheckBox.IsEnabled = canUseAutomaticPlacement;
         TaskbarTopOffsetSlider.IsEnabled = taskbarMode && !forcedVertical;
         AutomaticPlacementDescription.Text = canUseAutomaticPlacement
             ? Loc.Get("Settings.Layout.AvoidTaskbarDockDescription")
             : Loc.Get("Settings.Layout.AvoidTaskbarUnsupportedDescription");
         LockPositionCheckBox.IsEnabled = taskbarMode && !settings.Placement.AutomaticPlacement;
-        EdgeAutoCollapseCheckBox.IsEnabled = false;
-        EdgeAutoCollapseDescription.Text = Loc.Get("Settings.Interaction.EdgeCollapseLayoutDescription");
     }
 
     private void NavigationList_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -203,7 +175,6 @@ public partial class SettingsWindow
     {
         SearchResultsPage.Visibility = Visibility.Collapsed;
         GeneralPage.Visibility = tag == "General" ? Visibility.Visible : Visibility.Collapsed;
-        ComponentsPage.Visibility = tag == "Components" ? Visibility.Visible : Visibility.Collapsed;
         LayoutPage.Visibility = tag == "Layout" ? Visibility.Visible : Visibility.Collapsed;
         AppearancePage.Visibility = tag == "Appearance" ? Visibility.Visible : Visibility.Collapsed;
         InteractionPage.Visibility = tag == "Interaction" ? Visibility.Visible : Visibility.Collapsed;
@@ -259,7 +230,6 @@ public partial class SettingsWindow
             : Visibility.Collapsed;
         SearchResultsPage.Visibility = Visibility.Visible;
         GeneralPage.Visibility = Visibility.Collapsed;
-        ComponentsPage.Visibility = Visibility.Collapsed;
         LayoutPage.Visibility = Visibility.Collapsed;
         AppearancePage.Visibility = Visibility.Collapsed;
         InteractionPage.Visibility = Visibility.Collapsed;
@@ -283,11 +253,10 @@ public partial class SettingsWindow
         NavigationList.SelectedIndex = pageTag switch
         {
             "General" => 0,
-            "Components" => 1,
-            "Layout" => 2,
-            "Appearance" => 3,
-            "Interaction" => 4,
-            _ => 5
+            "Layout" => 1,
+            "Appearance" => 2,
+            "Interaction" => 3,
+            _ => 4
         };
         SearchResultsList.SelectedIndex = -1;
         SearchBox.Clear();
@@ -301,7 +270,6 @@ public partial class SettingsWindow
     private static class SectionTag
     {
         internal const string General = "General";
-        internal const string Components = "Components";
         internal const string Layout = "Layout";
         internal const string Appearance = "Appearance";
         internal const string Interaction = "Interaction";

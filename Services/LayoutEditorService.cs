@@ -91,7 +91,7 @@ internal static class LayoutEditorService
         out LayoutProfile updated,
         out LayoutEditFailure failure)
     {
-        if (profile.HostMode == WindowHostMode.Taskbar && unavailableEdge == edge)
+        if (unavailableEdge == edge)
         {
             updated = profile;
             failure = LayoutEditFailure.EdgeUnavailable;
@@ -450,7 +450,7 @@ internal static class LayoutEditorService
         out LayoutProfile updated,
         out LayoutEditFailure failure)
     {
-        if (profile.HostMode == WindowHostMode.Taskbar && unavailableEdge == edge)
+        if (unavailableEdge == edge)
         {
             updated = profile;
             failure = LayoutEditFailure.EdgeUnavailable;
@@ -794,9 +794,7 @@ internal static class LayoutEditorService
     {
         if (element is LayoutWidgetElement widget)
         {
-            return widget.Enabled &&
-                ComponentCatalog.TryGet(widget.TypeId, out var definition) &&
-                definition.Capabilities.HasFlag(WidgetCapabilities.Interactive);
+            return ComponentCatalog.IsInteractive(widget);
         }
 
         return element is LayoutContainerElement container &&

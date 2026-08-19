@@ -34,13 +34,9 @@ internal sealed class SettingsCoordinator
             return;
         }
 
-        var previousMetrics = Current.Metrics;
-        var previousWindow = Current.Window;
-        var wasLegacyLayout = IsLegacyLayout(previousWindow, previousMetrics);
         MetricSettingsService.Save(settings);
         Current = Current with { Metrics = settings };
-        SynchronizeLegacyLayoutIfUncustomized(wasLegacyLayout);
-        Publish(SettingsSection.Components | SettingsSection.Performance | SettingsSection.Layout);
+        Publish(SettingsSection.Performance);
     }
 
     internal void UpdateTheme(ThemeSettings settings)
@@ -81,12 +77,9 @@ internal sealed class SettingsCoordinator
 
     internal void UpdateWindow(WindowSettings settings)
     {
-        if (Current.Window.HostMode == WindowHostMode.Floating &&
-            settings.HostMode == WindowHostMode.Taskbar)
-        {
-            settings = settings with { LayoutMode = PlayerLayoutMode.Automatic };
-        }
-
+        // 整窗贴边折叠已迁移为布局边缘容器；统一清零旧字段，防止外部旧调用重新启用整窗动画。
+        // Whole-window edge collapse is now represented by layout edge containers; clear the legacy field so stale callers cannot re-enable the animation.
+        settings = settings with { EdgeAutoCollapse = false };
         if (settings == Current.Window)
         {
             return;
@@ -106,6 +99,7 @@ internal sealed class SettingsCoordinator
 
         Current = Current with { Window = settings };
         SynchronizeLegacyLayoutIfUncustomized(wasLegacyLayout);
+        SynchronizeLayoutSurfaceScale(settings);
         Publish(changedSections);
     }
 
@@ -136,6 +130,7 @@ internal sealed class SettingsCoordinator
 
     internal void SynchronizeWindow(WindowSettings settings)
     {
+        settings = settings with { EdgeAutoCollapse = false };
         if (settings == Current.Window)
         {
             return;
@@ -219,6 +214,42 @@ internal sealed class SettingsCoordinator
         var layout = LayoutMigrationService.CreateFromLegacy(Current.Window, Current.Metrics);
         LayoutSettingsService.Save(layout);
         Current = Current with { Layout = layout };
+    }
+
+    /// <summary>
+    /// 保留用户编辑过的布局树，同时让窗口级长度/厚度比例继续作用于两套方向档案。
+    /// Preserve an edited layout tree while keeping window-level length/thickness scales effective for both orientation profiles.
+    /// </summary>
+    private void SynchronizeLayoutSurfaceScale(WindowSettings window)
+    {
+        var layout = Current.Layout;
+        var updated = layout with
+        {
+            Horizontal = layout.Horizontal with
+            {
+                Surface = layout.Horizontal.Surface with
+                {
+                    LengthScalePercent = window.LengthScalePercent,
+                    ThicknessScalePercent = window.ThicknessScalePercent
+                }
+            },
+            Vertical = layout.Vertical with
+            {
+                Surface = layout.Vertical.Surface with
+                {
+                    LengthScalePercent = window.LengthScalePercent,
+                    ThicknessScalePercent = window.ThicknessScalePercent
+                }
+            }
+        };
+        updated = LayoutMigrationService.Normalize(updated);
+        if (updated == layout)
+        {
+            return;
+        }
+
+        LayoutSettingsService.Save(updated);
+        Current = Current with { Layout = updated };
     }
 
     private bool IsLegacyLayout(WindowSettings window, MetricSettings metrics)

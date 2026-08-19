@@ -12,8 +12,8 @@ using Loc = AFMediaBar.Services.Localization;
 namespace AFMediaBar.Settings;
 
 /// <summary>
-/// 负责四套布局档案的可视化拼贴、主要属性和档案内撤销；不直接持久化或访问窗口运行时。
-/// Owns visual composition, primary properties, and per-profile undo for four layout profiles without direct persistence or runtime-window access.
+/// 负责当前方向布局的可视化拼贴、主要属性和档案内撤销；方向跟随窗口设置，不提供独立档案切换。
+/// Owns visual composition, primary properties, and per-profile undo for the current orientation; direction follows window settings without a separate selector.
 /// </summary>
 public partial class SettingsWindow
 {
@@ -22,7 +22,7 @@ public partial class SettingsWindow
     private const string ExistingContainerDragFormat = "AFMediaBar.Layout.ExistingContainer";
 
     private readonly LayoutEditHistoryService _layoutEditHistory = new();
-    private LayoutProfileKey _layoutEditorProfileKey = LayoutProfileKey.TaskbarHorizontal;
+    private LayoutProfileKey _layoutEditorProfileKey = LayoutProfileKey.Horizontal;
     private LayoutEditorSelection? _layoutEditorSelection;
     private bool _layoutEditorSyncing;
     private bool _layoutPropertySyncing;
@@ -31,8 +31,7 @@ public partial class SettingsWindow
     private void InitializeLayoutEditor()
     {
         PopulateLayoutEditorOptions();
-        _layoutEditorProfileKey = ResolveInitialLayoutProfile();
-        SelectProfileOptions(_layoutEditorProfileKey);
+        _layoutEditorProfileKey = ResolveCurrentLayoutProfile();
         PopulateComponentPalette();
         RefreshLayoutEditor();
     }
@@ -42,6 +41,13 @@ public partial class SettingsWindow
         if (!_isInitialized)
         {
             return;
+        }
+
+        var currentKey = ResolveCurrentLayoutProfile();
+        if (currentKey != _layoutEditorProfileKey)
+        {
+            _layoutEditorProfileKey = currentKey;
+            _layoutEditorSelection = null;
         }
 
         PopulateLayoutEditorOptions();
@@ -54,14 +60,6 @@ public partial class SettingsWindow
         _layoutEditorSyncing = true;
         try
         {
-            LayoutHostModeComboBox.Items.Clear();
-            AddComboOption(LayoutHostModeComboBox, WindowHostMode.Taskbar, "Settings.Layout.DockToTaskbar");
-            AddComboOption(LayoutHostModeComboBox, WindowHostMode.Floating, "Settings.Layout.Floating");
-
-            LayoutArrangementComboBox.Items.Clear();
-            AddComboOption(LayoutArrangementComboBox, PlayerLayoutMode.Horizontal, "Settings.Common.Horizontal");
-            AddComboOption(LayoutArrangementComboBox, PlayerLayoutMode.Vertical, "Settings.Common.Vertical");
-
             LayoutNewEdgeComboBox.Items.Clear();
             var unavailableEdge = GetUnavailableTaskbarEdge();
             foreach (var edge in Enum.GetValues<LayoutEdge>())
@@ -75,7 +73,20 @@ public partial class SettingsWindow
             }
 
             LayoutNewEdgeComboBox.SelectedIndex = FindFirstEnabledIndex(LayoutNewEdgeComboBox);
-            SelectProfileOptions(_layoutEditorProfileKey);
+            if (LayoutEditorContextText is not null)
+            {
+                var window = _coordinator.Current.Window;
+                var host = Loc.Get(window.HostMode == WindowHostMode.Taskbar
+                    ? "Settings.Layout.DockToTaskbar"
+                    : "Settings.Layout.Floating");
+                var orientation = Loc.Get(_layoutEditorProfileKey == LayoutProfileKey.Vertical
+                    ? "Settings.Common.Vertical"
+                    : "Settings.Common.Horizontal");
+                LayoutEditorContextText.Text = Loc.Get(
+                    "Settings.Layout.EditorCurrentContextFormat",
+                    host,
+                    orientation);
+            }
         }
         finally
         {
@@ -458,23 +469,6 @@ public partial class SettingsWindow
         };
     }
 
-    private void LayoutProfileOption_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (_layoutEditorSyncing ||
-            LayoutHostModeComboBox.SelectedItem is not ComboBoxItem { Tag: WindowHostMode hostMode } ||
-            LayoutArrangementComboBox.SelectedItem is not ComboBoxItem { Tag: PlayerLayoutMode layoutMode })
-        {
-            return;
-        }
-
-        _layoutEditorProfileKey = LayoutRuntimeService.ResolveProfileKey(
-            hostMode,
-            layoutMode == PlayerLayoutMode.Vertical);
-        _layoutEditorSelection = null;
-        PopulateLayoutEditorOptions();
-        RefreshLayoutEditor();
-    }
-
     private void LayoutAddStaticContainerButton_OnClick(object sender, RoutedEventArgs e) =>
         AddInlineContainer(LayoutContainerKind.Static);
 
@@ -805,7 +799,14 @@ public partial class SettingsWindow
             return;
         }
 
-        var document = _coordinator.Current.Layout.WithProfile(profile);
+        var current = _coordinator.Current.Layout;
+        // 长度和厚度是窗口级设置；撤销组件拼贴时保留当前比例，避免旧快照让滑块与实际布局不一致。
+        // Length and thickness are window-level settings; preserve them while undoing composition so snapshots cannot desynchronize the sliders.
+        profile = profile with
+        {
+            Surface = current.Get(_layoutEditorProfileKey).Surface
+        };
+        var document = current.WithProfile(profile);
         TryUpdate(() => _coordinator.UpdateLayout(document));
     }
 
@@ -938,20 +939,25 @@ public partial class SettingsWindow
         switch (widget.Settings)
         {
             case ArtworkWidgetSettings artwork:
+                AddCheckRow(panel, "Settings.Layout.PropertyArtworkOpenSource", artwork.OpenSourceOnClick,
+                    value => UpdateWidget(widget, current => ((ArtworkWidgetSettings)current) with { OpenSourceOnClick = value }));
                 AddSliderRow(panel, "Settings.Layout.PropertyArtworkRadius", artwork.CornerRadiusDip, 0, 32,
                     value => UpdateWidget(widget, current => ((ArtworkWidgetSettings)current) with { CornerRadiusDip = value }));
                 AddCheckRow(panel, "Settings.Layout.PropertyArtworkColor", artwork.UseMediaPrimaryColor,
                     value => UpdateWidget(widget, current => ((ArtworkWidgetSettings)current) with { UseMediaPrimaryColor = value }));
                 break;
             case MediaTextWidgetSettings text:
-                AddEnumRow(panel, "Settings.Layout.PropertyTextKind", text.TextKind,
-                    new Dictionary<MediaTextKind, string>
-                    {
-                        [MediaTextKind.Title] = "Settings.Layout.PropertyTextTitle",
-                        [MediaTextKind.Artist] = "Settings.Layout.PropertyTextArtist",
-                        [MediaTextKind.Source] = "Settings.Layout.PropertyTextSource"
-                    },
-                    value => UpdateWidget(widget, current => ((MediaTextWidgetSettings)current) with { TextKind = value }));
+                if (widget.TypeId == BuiltInWidgetTypeIds.MediaText)
+                {
+                    AddEnumRow(panel, "Settings.Layout.PropertyTextKind", text.TextKind,
+                        new Dictionary<MediaTextKind, string>
+                        {
+                            [MediaTextKind.Title] = "Settings.Layout.PropertyTextTitle",
+                            [MediaTextKind.Artist] = "Settings.Layout.PropertyTextArtist",
+                            [MediaTextKind.Source] = "Settings.Layout.PropertyTextSource"
+                        },
+                        value => UpdateWidget(widget, current => ((MediaTextWidgetSettings)current) with { TextKind = value }));
+                }
                 AddSliderRow(panel, "Settings.Layout.PropertyFontSize", text.FontSizeDip, 6, 72,
                     value => UpdateWidget(widget, current => ((MediaTextWidgetSettings)current) with { FontSizeDip = value }));
                 AddCheckRow(panel, "Settings.Layout.PropertyMarquee", text.EnableMarquee,
@@ -979,7 +985,7 @@ public partial class SettingsWindow
                     value => UpdateWidget(widget, current => ((MetricsWidgetSettings)current) with { OpenTaskManagerOnClick = value }));
                 break;
             case SpectrumWidgetSettings spectrum:
-                AddSliderRow(panel, "Settings.Layout.PropertyBandCount", spectrum.BandCount, 1, 32,
+                AddSliderRow(panel, "Settings.Layout.PropertyBandCount", spectrum.BandCount, 1, AudioMonitorService.BandCount,
                     value => UpdateWidget(widget, current => ((SpectrumWidgetSettings)current) with { BandCount = value }));
                 AddSliderRow(panel, "Settings.Layout.PropertyRefreshRate", spectrum.RefreshRateHz, 5, 30,
                     value => UpdateWidget(widget, current => ((SpectrumWidgetSettings)current) with { RefreshRateHz = value }),
@@ -1044,6 +1050,14 @@ public partial class SettingsWindow
             value => UpdateEdgeContainer(edge, edge.Edge, value, edge.TriggerThicknessDip, edge.ProximityDip, edge.Animation));
         AddSliderRow(panel, "Settings.Layout.PropertyTriggerThickness", edge.TriggerThicknessDip, 2, 24,
             value => UpdateEdgeContainer(edge, edge.Edge, edge.OffsetDip, value, edge.ProximityDip, edge.Animation));
+        AddCheckRow(panel, "Settings.Layout.PropertyAnimation", edge.Animation.Enabled,
+            value => UpdateEdgeContainer(
+                edge,
+                edge.Edge,
+                edge.OffsetDip,
+                edge.TriggerThicknessDip,
+                edge.ProximityDip,
+                edge.Animation with { Enabled = value }));
         AddSliderRow(panel, "Settings.Layout.PropertyDuration", edge.Animation.DurationMilliseconds, 0, 2_000,
             value => UpdateEdgeContainer(
                 edge,
@@ -1448,25 +1462,23 @@ public partial class SettingsWindow
 
     private LayoutEdge? GetUnavailableTaskbarEdge()
     {
-        var profile = _coordinator.Current.Layout.Get(_layoutEditorProfileKey);
-        return profile.HostMode == WindowHostMode.Taskbar
+        return _coordinator.Current.Window.HostMode == WindowHostMode.Taskbar
             ? TaskbarEdgeService.TryResolveCurrent()
             : null;
     }
 
-    private LayoutProfileKey ResolveInitialLayoutProfile()
+    private LayoutProfileKey ResolveCurrentLayoutProfile()
     {
         var settings = _coordinator.Current.Window;
-        return LayoutRuntimeService.ResolveProfileKey(
-            settings.HostMode,
-            settings.LayoutMode == PlayerLayoutMode.Vertical);
-    }
-
-    private void SelectProfileOptions(LayoutProfileKey key)
-    {
-        var profile = _coordinator.Current.Layout.Get(key);
-        LayoutHostModeComboBox.SelectedIndex = profile.HostMode == WindowHostMode.Floating ? 1 : 0;
-        LayoutArrangementComboBox.SelectedIndex = profile.LayoutMode == PlayerLayoutMode.Vertical ? 1 : 0;
+        var vertical = settings.LayoutMode switch
+        {
+            PlayerLayoutMode.Vertical => true,
+            PlayerLayoutMode.Horizontal => false,
+            _ when settings.HostMode == WindowHostMode.Taskbar =>
+                TaskbarEdgeService.TryResolveCurrent() is LayoutEdge.Left or LayoutEdge.Right,
+            _ => false
+        };
+        return LayoutRuntimeService.ResolveProfileKey(vertical);
     }
 
     private static void AddComboOption<T>(ComboBox combo, T value, string resourceKey)
@@ -1533,10 +1545,10 @@ public partial class SettingsWindow
 
     private static string GetMetricOptionKey(MetricKind metric) => metric switch
     {
-        MetricKind.SystemMemory => "Settings.Components.MetricMem",
-        MetricKind.SystemCpu => "Settings.Components.MetricCpu",
-        MetricKind.SystemGpu => "Settings.Components.MetricGpu",
-        MetricKind.ProcessMemory => "Settings.Components.MetricApp",
+        MetricKind.SystemMemory => "Settings.Layout.PropertyMetricMemory",
+        MetricKind.SystemCpu => "Settings.Layout.PropertyMetricCpu",
+        MetricKind.SystemGpu => "Settings.Layout.PropertyMetricGpu",
+        MetricKind.ProcessMemory => "Settings.Layout.PropertyMetricApp",
         _ => "Settings.Layout.PropertyMetric"
     };
 

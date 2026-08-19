@@ -88,10 +88,11 @@ The app runs in its own process. Its WPF player can be hosted as a taskbar child
 | Category | Capabilities |
 | --- | --- |
 | Media | Artwork, title, artist, previous, play/pause, next, and multiple source selection |
-| Source interaction | Return to the current media app and switch sessions with the mouse wheel |
+| Source interaction | Click artwork to return to the media app; click a media-source widget to open source selection; media-text widgets are display-only; switch sessions with the mouse wheel |
 | Taskbar behavior | Automatic horizontal/vertical detection, manual placement and locking, automatic avoidance, auto-hide and fullscreen handling |
-| Window modes | Four independent layouts combine host mode and arrangement; taskbar and floating hosts support horizontal/vertical layouts and 70%-125% display scaling |
-| Auto-hide | Hide when every media session is stopped; floating windows support desktop-edge auto-collapse, an indicator line, and smooth animation |
+| Window modes | Taskbar and floating hosts share horizontal and vertical layouts; host mode and arrangement are selected separately, with 70%-125% display scaling |
+| Container layout | Compose multiple static/hover-switch containers inside the strip and edge-collapse containers outside it; collapsed containers keep only a trigger region |
+| Auto-hide | Hide when every media session is stopped; edge-collapse containers reveal their content when the pointer approaches |
 | Audio devices | List and switch the default output device, including delayed wheel selection |
 | App volume | Match the selected media process and adjust its Windows mixer volume in 2% steps |
 | Visualizer | Nine-band spectrum from WASAPI loopback capture |
@@ -129,7 +130,7 @@ The Windows 10/11 media card is an internal Explorer/Shell surface rather than a
 2. Download `AFMediaBar-vX.Y.Z-win-x64.zip`. Do not download GitHub's automatically generated source archives.
 3. Extract the package to get one self-contained `AFMediaBar.exe`; the archive no longer contains hundreds of .NET runtime files.
 4. Place it in a permanent writable directory, such as `D:\AFMediaBar`, and run it.
-5. Right-click the player or tray icon and choose “Open detailed settings...” to configure startup, components, layout, appearance, and interaction.
+5. Right-click the player or tray icon and choose “Open detailed settings...” to configure startup, visual layout composition, appearance, and interaction.
 
 AF Media Bar is not commercially code-signed, so Windows SmartScreen may show an unknown publisher warning on first launch.
 
@@ -140,7 +141,8 @@ AF Media Bar is not commercially code-signed, so Windows SmartScreen may show an
 | --- | --- |
 | Hover over the bar | Expand media controls |
 | Click previous / play / next | Execute the commands supported by the current media session |
-| Click artwork or title | Return to the selected media app |
+| Click artwork | Return to the selected media app |
+| Click a media-source widget | Open source selection; regular title, artist, and source text do not navigate |
 | Scroll over the media area | Switch between GSMTC sessions |
 | Click the output device button | Open the render device list |
 | Scroll over the device button | Preview a device and apply it after scrolling stops |
@@ -148,7 +150,7 @@ AF Media Bar is not commercially code-signed, so Windows SmartScreen may show an
 | Scroll over the volume button | Change application volume in 2% steps |
 | Drag the artwork/title area | Move an unlocked manually placed bar |
 | Switch to floating mode | Place the player anywhere in the desktop work area |
-| Drag a floating window to a desktop edge | Collapse it automatically when desktop-edge auto-collapse is enabled; move the pointer near the indicator line to reveal it |
+| Place an edge-collapse container on a desktop edge | Reveal its content when the pointer enters the trigger region; hide the content after leaving |
 | Right-click the bar or tray icon | Open detailed settings, media actions, or the exit menu |
 
 </div>
@@ -167,7 +169,7 @@ This version only retrieves update information and opens download links. It does
 2. Download and extract the new version.
 3. Replace the old `AFMediaBar.exe` with the new one, then restart the app.
 
-Position, display options, and startup settings are saved in the current user's registry. Replacing the program file will not remove them.
+Window position, host mode, scaling, and startup settings are saved in the current user's registry; layout profiles and component properties are stored in `%LOCALAPPDATA%\AFMediaBar\profiles\layout.json`. Replacing the program file will not remove them. Legacy component registry values are removed after first-run migration.
 
 ### Uninstalling
 
@@ -270,7 +272,7 @@ AF-Media-Bar/
 - [x] Test Windows 10 compatibility.
 - [x] Add no-media auto-hide and always-on-top window behavior.
 - [x] Automatically follow the system light/dark theme.
-- [x] Provide floating window mode and animated desktop-edge collapse.
+- [x] Provide floating window mode and edge-collapse containers outside the strip.
 - [x] Provide display scaling and horizontal/vertical layouts for taskbar and floating windows.
 - [x] Provide an independent detailed settings page.
 - [x] Font Customization.

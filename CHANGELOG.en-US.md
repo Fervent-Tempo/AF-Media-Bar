@@ -18,15 +18,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
-- Added four independent layout profiles composed from host mode plus arrangement; the strip can combine multiple static/hover-switch containers and the outer edges can host collapse containers.
-- Replaced the tree editor with a drag-and-drop composition editor. Collapse containers edit expanded content only, primary properties are shown first, and undo/reset are isolated per profile.
-- Upgraded layout JSON to schema 2 while retaining Root/CollapsedSlot migration; validation/clamping, atomic writes, backups, and invalid-file recovery remain in place.
+- Changed layout storage to two shared horizontal/vertical profiles for taskbar and floating hosts; host mode and arrangement are selected separately, and each profile owns its arrangement.
+- Replaced the tree editor with a drag-and-drop composition editor. Static and hover-switch containers can be combined inside the strip, edge-collapse containers edit expanded content only, primary properties are shown first, and undo/reset are isolated per profile.
+- Upgraded layout JSON to schema 3; schema 1/2 migration keeps the horizontal/vertical pair for the host active during migration while retaining validation/clamping, atomic writes, backups, and invalid-file recovery.
 - Added numeric size and component-specific settings for artwork, media text, commands, metrics, spectrum, and separators, with three-language resources and search indexing.
 
 ### Compatibility
 
 - Interactive widgets are rejected from hover leave-state slots; edge-collapse content is completely hidden while collapsed and only a trigger region remains.
 - Host dimensions are estimated from strip and edge composition, while legacy nodes remain popup anchors/fallbacks; the Windows 10 1809+ minimum remains unchanged.
+- Legacy component registry values are read only for first-run migration and then removed; component configuration now has one source of truth at `%LOCALAPPDATA%\AFMediaBar\profiles\layout.json`.
 
 ## [1.1.1] - 2026-08-17
 

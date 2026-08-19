@@ -10,8 +10,8 @@ using Loc = AFMediaBar.Services.Localization;
 
 namespace AFMediaBar.Settings;
 /// <summary>
-/// 处理通用、组件、窗口和任务栏位置设置，并通过 SettingsCoordinator 提交变更。
-/// Handles general, component, window, and placement settings through SettingsCoordinator.
+/// 处理通用、窗口、性能和任务栏位置设置，并通过 SettingsCoordinator 提交变更。
+/// Handles general, window, performance, and placement settings through SettingsCoordinator.
 /// </summary>
 public partial class SettingsWindow
 {
@@ -49,17 +49,11 @@ public partial class SettingsWindow
             return;
         }
 
-        TryUpdate(() => _coordinator.UpdateMetrics(new MetricSettings(
-            MetricsEnabledCheckBox.IsChecked == true,
-            SystemMemoryCheckBox.IsChecked == true,
-            SystemCpuCheckBox.IsChecked == true,
-            SystemGpuCheckBox.IsChecked == true,
-            ProcessMemoryCheckBox.IsChecked == true,
-            LowGpuModeCheckBox.IsChecked == true,
-            AudioMonitorCheckBox.IsChecked == true,
-            OutputDeviceCheckBox.IsChecked == true,
-            VolumeControlCheckBox.IsChecked == true,
-            OpenTaskManagerOnMetricsClickCheckBox.IsChecked == true)));
+        var current = _coordinator.Current.Metrics;
+        TryUpdate(() => _coordinator.UpdateMetrics(current with
+        {
+            LowGpuMode = LowGpuModeCheckBox.IsChecked == true
+        }));
     }
 
     private void WindowCheckBox_OnChanged(object sender, RoutedEventArgs e)
@@ -100,12 +94,7 @@ public partial class SettingsWindow
             HostMode = hostMode,
             LayoutMode = layoutMode,
             LengthScalePercent = (int)Math.Round(LengthScaleSlider.Value),
-            ThicknessScalePercent = (int)Math.Round(ThicknessScaleSlider.Value),
-            AutoCollapse = AutoCollapseCheckBox.IsChecked == true,
-            EdgeAutoCollapse = EdgeAutoCollapseCheckBox.IsChecked == true,
-            ShowArtwork = ShowArtworkCheckBox.IsChecked == true,
-            ArtworkCornerRadius = (int)Math.Round(ArtworkCornerRadiusSlider.Value),
-            ShowMediaInfo = ShowMediaInfoCheckBox.IsChecked == true
+            ThicknessScalePercent = (int)Math.Round(ThicknessScaleSlider.Value)
         };
         TryUpdate(() => _coordinator.UpdateWindow(settings));
     }
@@ -128,33 +117,6 @@ public partial class SettingsWindow
 
         _scaleSaveTimer.Stop();
         _scaleSaveTimer.Start();
-    }
-
-    private void ArtworkCornerRadiusSlider_OnValueChanged(
-        object sender,
-        RoutedPropertyChangedEventArgs<double> e)
-    {
-        if (!_isInitialized)
-        {
-            return;
-        }
-
-        ArtworkCornerRadiusValueText.Text = FormatArtworkCornerRadius(
-            (int)Math.Round(ArtworkCornerRadiusSlider.Value));
-        if (_isSyncing)
-        {
-            return;
-        }
-
-        _scaleSaveTimer.Stop();
-        _scaleSaveTimer.Start();
-    }
-
-    private static string FormatArtworkCornerRadius(int radius)
-    {
-        return radius <= 0
-            ? Loc.Get("Settings.Components.ArtworkCornerRadiusNone")
-            : $"{radius} px";
     }
 
     private void ScaleSaveTimer_OnTick(object? sender, EventArgs e)

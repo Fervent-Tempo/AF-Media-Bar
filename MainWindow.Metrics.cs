@@ -144,6 +144,11 @@ public partial class MainWindow
 
     private void ApplyMetricSettings()
     {
+        if (_isClosed)
+        {
+            return;
+        }
+
         ApplyOutputDeviceSettings();
         ApplyVolumeControlSettings();
         _metricCycleIndex = 0;

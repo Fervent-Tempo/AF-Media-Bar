@@ -4,8 +4,8 @@ using AFMediaBar.Models;
 namespace AFMediaBar.Services;
 
 /// <summary>
-/// 将旧版扁平设置转换为四套独立布局，并对布局树做读取后的标准化。
-/// Converts legacy flat settings into four independent layouts and normalizes the tree after loading.
+/// 将旧版扁平设置或四档案文档转换为横竖两套布局，并对布局树做读取后的标准化。
+/// Converts legacy flat settings or four-profile documents into two orientation layouts and normalizes the tree after loading.
 /// </summary>
 internal static class LayoutMigrationService
 {
@@ -18,30 +18,14 @@ internal static class LayoutMigrationService
         WindowSettings window,
         MetricSettings metrics)
     {
-        var horizontalTaskbar = CreateProfile(
-            LayoutProfileKey.TaskbarHorizontal,
-            WindowHostMode.Taskbar,
+        var horizontal = CreateProfile(
+            LayoutProfileKey.Horizontal,
             PlayerLayoutMode.Horizontal,
             window,
             metrics,
             vertical: false);
-        var verticalTaskbar = CreateProfile(
-            LayoutProfileKey.TaskbarVertical,
-            WindowHostMode.Taskbar,
-            PlayerLayoutMode.Vertical,
-            window,
-            metrics,
-            vertical: true);
-        var horizontalFloating = CreateProfile(
-            LayoutProfileKey.FloatingHorizontal,
-            WindowHostMode.Floating,
-            PlayerLayoutMode.Horizontal,
-            window,
-            metrics,
-            vertical: false);
-        var verticalFloating = CreateProfile(
-            LayoutProfileKey.FloatingVertical,
-            WindowHostMode.Floating,
+        var vertical = CreateProfile(
+            LayoutProfileKey.Vertical,
             PlayerLayoutMode.Vertical,
             window,
             metrics,
@@ -49,10 +33,51 @@ internal static class LayoutMigrationService
 
         return new LayoutDocument(
             LayoutDocument.CurrentSchemaVersion,
-            horizontalTaskbar,
-            verticalTaskbar,
-            horizontalFloating,
-            verticalFloating);
+            horizontal,
+            vertical);
+    }
+
+    /// <summary>
+    /// schema 1/2 曾为任务栏和悬浮各保存一份布局；迁移时优先保留当前宿主模式对应的两份，避免静默拼接产生重复组件。
+    /// Schema 1/2 stored separate taskbar and floating layouts; migration keeps the current host pair to avoid silently merging duplicate widgets.
+    /// </summary>
+    internal static LayoutDocument MigrateLegacyDocument(
+        LegacyLayoutDocument legacy,
+        WindowHostMode preferredHostMode)
+    {
+        if (legacy.SchemaVersion > 2)
+        {
+            throw new InvalidDataException(
+                $"Unsupported legacy layout schema version: {legacy.SchemaVersion}.");
+        }
+
+        var horizontal = preferredHostMode == WindowHostMode.Floating
+            ? legacy.FloatingHorizontal ?? legacy.TaskbarHorizontal
+            : legacy.TaskbarHorizontal ?? legacy.FloatingHorizontal;
+        var vertical = preferredHostMode == WindowHostMode.Floating
+            ? legacy.FloatingVertical ?? legacy.TaskbarVertical
+            : legacy.TaskbarVertical ?? legacy.FloatingVertical;
+        if (horizontal is null || vertical is null)
+        {
+            throw new InvalidDataException("Legacy orientation layouts are missing.");
+        }
+
+        // 旧版封面和整个媒体区域都可跳转来源；schema 3 将该行为收敛到封面属性，迁移时默认保留原有可达性。
+        // Legacy artwork and the whole media area opened the source; schema 3 moves that behavior to artwork and preserves reachability on migration.
+        horizontal = MigrateLegacyArtworkInteraction(horizontal) with
+        {
+            Key = LayoutProfileKey.Horizontal,
+            LayoutMode = PlayerLayoutMode.Horizontal
+        };
+        vertical = MigrateLegacyArtworkInteraction(vertical) with
+        {
+            Key = LayoutProfileKey.Vertical,
+            LayoutMode = PlayerLayoutMode.Vertical
+        };
+        return Normalize(new LayoutDocument(
+            LayoutDocument.CurrentSchemaVersion,
+            horizontal,
+            vertical));
     }
 
     internal static LayoutDocument Normalize(LayoutDocument document)
@@ -66,16 +91,21 @@ internal static class LayoutMigrationService
         return document with
         {
             SchemaVersion = LayoutDocument.CurrentSchemaVersion,
-            TaskbarHorizontal = NormalizeProfile(document.TaskbarHorizontal),
-            TaskbarVertical = NormalizeProfile(document.TaskbarVertical),
-            FloatingHorizontal = NormalizeProfile(document.FloatingHorizontal),
-            FloatingVertical = NormalizeProfile(document.FloatingVertical)
+            Horizontal = NormalizeProfile(document.Horizontal with
+            {
+                Key = LayoutProfileKey.Horizontal,
+                LayoutMode = PlayerLayoutMode.Horizontal
+            }),
+            Vertical = NormalizeProfile(document.Vertical with
+            {
+                Key = LayoutProfileKey.Vertical,
+                LayoutMode = PlayerLayoutMode.Vertical
+            })
         };
     }
 
     private static LayoutProfile CreateProfile(
         LayoutProfileKey key,
-        WindowHostMode hostMode,
         PlayerLayoutMode layoutMode,
         WindowSettings window,
         MetricSettings metrics,
@@ -92,7 +122,8 @@ internal static class LayoutMigrationService
                     BuiltInWidgetTypeIds.Artwork,
                     new ArtworkWidgetSettings(
                         Math.Clamp(window.ArtworkCornerRadius, 0, 20),
-                        false))]));
+                        false,
+                        true))]));
         }
 
         inlineContainers.Add(CreateHoverContainer(window, metrics, vertical));
@@ -150,17 +181,70 @@ internal static class LayoutMigrationService
                 window.ThicknessScalePercent,
                 MinimumScalePercent,
                 MaximumScalePercent),
-            EdgeCollapseEnabled = hostMode == WindowHostMode.Floating &&
-                window.EdgeAutoCollapse
+            EdgeCollapseEnabled = false
         };
 
         return new LayoutProfile(
             key,
-            hostMode,
             layoutMode,
             surface,
             inlineContainers,
             []);
+    }
+
+    private static LayoutProfile MigrateLegacyArtworkInteraction(LayoutProfile profile)
+    {
+        return profile with
+        {
+            InlineContainers = (profile.InlineContainers ?? [])
+                .Select(MigrateLegacyArtworkInteraction)
+                .ToArray(),
+            EdgeContainers = (profile.EdgeContainers ?? [])
+                .Select(edge => edge with
+                {
+                    ExpandedSlot = MigrateLegacyArtworkInteraction(edge.ExpandedSlot)
+                })
+                .ToArray(),
+            Root = profile.Root is null
+                ? null
+                : MigrateLegacyArtworkInteraction(profile.Root)
+        };
+    }
+
+    private static LayoutContainerElement MigrateLegacyArtworkInteraction(
+        LayoutContainerElement container)
+    {
+        return container with
+        {
+            PrimarySlot = MigrateLegacyArtworkInteraction(container.PrimarySlot),
+            SecondarySlot = MigrateLegacyArtworkInteraction(container.SecondarySlot),
+            CollapsedSlot = MigrateLegacyArtworkInteraction(container.CollapsedSlot)
+        };
+    }
+
+    private static LayoutSlot MigrateLegacyArtworkInteraction(LayoutSlot slot)
+    {
+        if (slot is null)
+        {
+            return LayoutSlot.Empty("migrated");
+        }
+
+        return slot with
+        {
+            Children = (slot.Children ?? []).Select(element => element switch
+            {
+                LayoutWidgetElement
+                {
+                    TypeId: BuiltInWidgetTypeIds.Artwork,
+                    Settings: ArtworkWidgetSettings artwork
+                } widget => widget with
+                {
+                    Settings = artwork with { OpenSourceOnClick = true }
+                },
+                LayoutContainerElement container => MigrateLegacyArtworkInteraction(container),
+                _ => element
+            }).ToArray()
+        };
     }
 
     private static LayoutContainerElement CreateHoverContainer(
@@ -572,8 +656,8 @@ internal static class LayoutMigrationService
         }
 
         var enabled = widget.Enabled;
-        if (enabled && (!ComponentCatalog.TryGet(widget.TypeId, out var definition) ||
-                (!allowInteractive && definition.Capabilities.HasFlag(WidgetCapabilities.Interactive))))
+        if (enabled && (!ComponentCatalog.TryGet(widget.TypeId, out _) ||
+                (!allowInteractive && ComponentCatalog.IsInteractive(widget))))
         {
             enabled = false;
         }
@@ -606,6 +690,13 @@ internal static class LayoutMigrationService
                     FontSizeDip = Math.Clamp(text.FontSizeDip, 6, 72),
                     MaxLines = Math.Clamp(text.MaxLines, 1, 8)
                 },
+            BuiltInWidgetTypeIds.MediaSource when settings is MediaTextWidgetSettings source =>
+                source with
+                {
+                    TextKind = MediaTextKind.Source,
+                    FontSizeDip = Math.Clamp(source.FontSizeDip, 6, 72),
+                    MaxLines = Math.Clamp(source.MaxLines, 1, 8)
+                },
             BuiltInWidgetTypeIds.Command when settings is CommandWidgetSettings command =>
                 command with
                 {
@@ -637,7 +728,7 @@ internal static class LayoutMigrationService
             BuiltInWidgetTypeIds.Spectrum when settings is SpectrumWidgetSettings spectrum =>
                 spectrum with
                 {
-                    BandCount = Math.Clamp(spectrum.BandCount, 1, 32),
+                    BandCount = Math.Clamp(spectrum.BandCount, 1, AudioMonitorService.BandCount),
                     RefreshRateHz = Math.Clamp(spectrum.RefreshRateHz, 5, 30),
                     SensitivityPercent = Math.Clamp(spectrum.SensitivityPercent, 1, 400)
                 },
@@ -655,9 +746,7 @@ internal static class LayoutMigrationService
     {
         if (element is LayoutWidgetElement widget)
         {
-            return widget.Enabled &&
-                ComponentCatalog.TryGet(widget.TypeId, out var definition) &&
-                definition.Capabilities.HasFlag(WidgetCapabilities.Interactive);
+            return ComponentCatalog.IsInteractive(widget);
         }
 
         return element is LayoutContainerElement { Enabled: true } container &&

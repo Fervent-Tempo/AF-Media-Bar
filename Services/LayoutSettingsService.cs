@@ -55,15 +55,41 @@ internal static class LayoutSettingsService
         try
         {
             var json = File.ReadAllText(path, Encoding.UTF8);
-            var document = JsonSerializer.Deserialize<LayoutDocument>(json, SerializerOptions)
-                ?? throw new InvalidDataException("Layout document is empty.");
+            using var jsonDocument = JsonDocument.Parse(json, new JsonDocumentOptions
+            {
+                AllowTrailingCommas = true,
+                CommentHandling = JsonCommentHandling.Skip
+            });
+            var schemaVersion = jsonDocument.RootElement.TryGetProperty(
+                "schemaVersion",
+                out var schemaElement)
+                ? schemaElement.GetInt32()
+                : 1;
+            LayoutDocument document;
+            var migratedLegacyDocument = schemaVersion < LayoutDocument.CurrentSchemaVersion;
+            if (migratedLegacyDocument)
+            {
+                var legacy = JsonSerializer.Deserialize<LegacyLayoutDocument>(json, SerializerOptions)
+                    ?? throw new InvalidDataException("Legacy layout document is empty.");
+                document = LayoutMigrationService.MigrateLegacyDocument(
+                    legacy,
+                    legacyWindowSettings.HostMode);
+            }
+            else
+            {
+                document = JsonSerializer.Deserialize<LayoutDocument>(json, SerializerOptions)
+                    ?? throw new InvalidDataException("Layout document is empty.");
+            }
+
             var normalized = LayoutMigrationService.Normalize(document);
-            if (!Equals(document, normalized))
+            if (migratedLegacyDocument || !Equals(document, normalized))
             {
                 TrySaveAfterMigration(normalized, "layout-settings-normalize");
             }
 
-            DiagnosticsLogService.Write("layout-settings-loaded", details: $"Path={path};Source=json");
+            DiagnosticsLogService.Write(
+                "layout-settings-loaded",
+                details: $"Path={path};Source={(migratedLegacyDocument ? "schema-migration" : "json")};Schema={schemaVersion}");
             return normalized;
         }
         catch (Exception exception)

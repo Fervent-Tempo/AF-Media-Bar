@@ -12,25 +12,15 @@ internal sealed class LayoutRuntimeService
 {
     internal LayoutProfile ResolveProfile(
         LayoutDocument document,
-        WindowHostMode hostMode,
         bool vertical)
     {
-        var key = ResolveProfileKey(hostMode, vertical);
+        var key = ResolveProfileKey(vertical);
         return document.Get(key);
     }
 
-    internal static LayoutProfileKey ResolveProfileKey(
-        WindowHostMode hostMode,
-        bool vertical)
+    internal static LayoutProfileKey ResolveProfileKey(bool vertical)
     {
-        return (hostMode, vertical) switch
-        {
-            (WindowHostMode.Taskbar, false) => LayoutProfileKey.TaskbarHorizontal,
-            (WindowHostMode.Taskbar, true) => LayoutProfileKey.TaskbarVertical,
-            (WindowHostMode.Floating, false) => LayoutProfileKey.FloatingHorizontal,
-            (WindowHostMode.Floating, true) => LayoutProfileKey.FloatingVertical,
-            _ => LayoutProfileKey.TaskbarHorizontal
-        };
+        return vertical ? LayoutProfileKey.Vertical : LayoutProfileKey.Horizontal;
     }
 
     internal static bool ContainsWidget(LayoutProfile profile, string typeId)
@@ -38,6 +28,47 @@ internal sealed class LayoutRuntimeService
         return EnumerateWidgets(profile)
             .Any(widget => widget.Enabled &&
                 string.Equals(widget.TypeId, typeId, StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// 从当前布局派生需要启动的组件能力；旧注册表布尔值只保留低 GPU 全局选项，不再覆盖可视化布局。
+    /// Derives component capabilities from the active layout; legacy registry booleans no longer override the visual layout except for global low-GPU mode.
+    /// </summary>
+    internal static MetricSettings ResolveComponentSettings(
+        LayoutProfile? profile,
+        MetricSettings persisted)
+    {
+        if (profile is null)
+        {
+            return persisted;
+        }
+
+        var metricWidgets = FindWidgets(profile, BuiltInWidgetTypeIds.Metrics)
+            .Select(widget => widget.Settings)
+            .OfType<MetricsWidgetSettings>()
+            .ToArray();
+        var requestedMetrics = metricWidgets
+            .SelectMany(settings => settings.CycleMetrics is { Count: > 0 }
+                ? settings.CycleMetrics
+                : [settings.Metric])
+            .Distinct()
+            .ToArray();
+        var commands = FindWidgets(profile, BuiltInWidgetTypeIds.Command)
+            .Select(widget => widget.Settings)
+            .OfType<CommandWidgetSettings>()
+            .Select(settings => settings.Command)
+            .ToHashSet();
+        return new MetricSettings(
+            requestedMetrics.Length > 0,
+            requestedMetrics.Contains(MetricKind.SystemMemory),
+            requestedMetrics.Contains(MetricKind.SystemCpu),
+            requestedMetrics.Contains(MetricKind.SystemGpu),
+            requestedMetrics.Contains(MetricKind.ProcessMemory),
+            persisted.LowGpuMode,
+            ContainsWidget(profile, BuiltInWidgetTypeIds.Spectrum),
+            commands.Contains(MediaCommandKind.SelectOutputDevice),
+            commands.Contains(MediaCommandKind.AdjustVolume),
+            metricWidgets.Any(settings => settings.OpenTaskManagerOnClick));
     }
 
     /// <summary>
@@ -84,7 +115,7 @@ internal sealed class LayoutRuntimeService
         var strip = CalculateDesiredSize(profile);
         var edgeSizes = profile.EdgeContainers
             .Where(container => container.Enabled &&
-                (profile.HostMode != WindowHostMode.Taskbar || container.Edge != unavailableEdge))
+                container.Edge != unavailableEdge)
             .Select(container => (container.Edge, Size: MeasureSlot(
                 container.ExpandedSlot,
                 profile.LayoutMode == PlayerLayoutMode.Vertical
@@ -296,7 +327,7 @@ internal sealed class LayoutRuntimeService
 
     private static IEnumerable<LayoutWidgetElement> EnumerateWidgets(LayoutProfile profile)
     {
-        foreach (var container in profile.InlineContainers)
+        foreach (var container in profile.InlineContainers.Where(container => container.Enabled))
         {
             foreach (var widget in EnumerateWidgets(container))
             {
@@ -304,7 +335,7 @@ internal sealed class LayoutRuntimeService
             }
         }
 
-        foreach (var edge in profile.EdgeContainers)
+        foreach (var edge in profile.EdgeContainers.Where(edge => edge.Enabled))
         {
             foreach (var widget in EnumerateSlot(edge.ExpandedSlot))
             {
@@ -316,6 +347,11 @@ internal sealed class LayoutRuntimeService
     private static IEnumerable<LayoutWidgetElement> EnumerateWidgets(
         LayoutContainerElement container)
     {
+        if (!container.Enabled)
+        {
+            yield break;
+        }
+
         foreach (var widget in EnumerateSlot(container.PrimarySlot))
         {
             yield return widget;

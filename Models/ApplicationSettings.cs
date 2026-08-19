@@ -5,7 +5,6 @@ internal enum SettingsSection
 {
     None = 0,
     General = 1,
-    Components = 2,
     Window = 4,
     Placement = 8,
     Appearance = 16,
@@ -14,7 +13,7 @@ internal enum SettingsSection
     Font = 128,
     Language = 256,
     Layout = 512,
-    All = General | Components | Window | Placement | Appearance | Interaction | Performance | Font | Language | Layout
+    All = General | Window | Placement | Appearance | Interaction | Performance | Font | Language | Layout
 }
 
 internal readonly record struct ApplicationSettings(

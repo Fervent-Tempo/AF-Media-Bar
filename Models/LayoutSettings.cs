@@ -3,15 +3,20 @@ using System.Text.Json.Serialization;
 namespace AFMediaBar.Models;
 
 /// <summary>
-/// 描述四种窗口上下文的独立布局档案；档案只保存可迁移的数据，不保存 WPF 控件实例。
-/// Describes four independent window-context layouts; profiles persist portable data, never WPF control instances.
+/// 标识横向和竖向两套共享布局；宿主模式属于窗口状态，不再复制布局档案。
+/// Identifies the shared horizontal and vertical layouts; host mode remains window state and no longer duplicates profiles.
 /// </summary>
 internal enum LayoutProfileKey
 {
-    TaskbarHorizontal = 0,
-    TaskbarVertical = 1,
-    FloatingHorizontal = 2,
-    FloatingVertical = 3
+    Horizontal = 0,
+    Vertical = 1,
+
+    // 仅供 schema 1/2 的字符串枚举反序列化；迁移后不会写回这些值。
+    // These names exist only to deserialize schema-1/2 string enums and are never persisted after migration.
+    TaskbarHorizontal = 10,
+    TaskbarVertical = 11,
+    FloatingHorizontal = 12,
+    FloatingVertical = 13
 }
 
 internal enum LayoutContainerKind
@@ -189,7 +194,8 @@ internal abstract record WidgetSettings;
 
 internal sealed record ArtworkWidgetSettings(
     int CornerRadiusDip,
-    bool UseMediaPrimaryColor) : WidgetSettings;
+    bool UseMediaPrimaryColor,
+    bool OpenSourceOnClick) : WidgetSettings;
 
 internal sealed record MediaTextWidgetSettings(
     MediaTextKind TextKind,
@@ -252,7 +258,6 @@ internal sealed record LayoutEdgeContainer(
 
 internal sealed record LayoutProfile(
     LayoutProfileKey Key,
-    WindowHostMode HostMode,
     PlayerLayoutMode LayoutMode,
     LayoutSurfaceSettings Surface,
     IReadOnlyList<LayoutContainerElement> InlineContainers,
@@ -263,28 +268,32 @@ internal sealed record LayoutProfile(
 
 internal sealed record LayoutDocument(
     int SchemaVersion,
-    LayoutProfile TaskbarHorizontal,
-    LayoutProfile TaskbarVertical,
-    LayoutProfile FloatingHorizontal,
-    LayoutProfile FloatingVertical)
+    LayoutProfile Horizontal,
+    LayoutProfile Vertical)
 {
-    internal const int CurrentSchemaVersion = 2;
+    internal const int CurrentSchemaVersion = 3;
 
     internal LayoutProfile Get(LayoutProfileKey key) => key switch
     {
-        LayoutProfileKey.TaskbarHorizontal => TaskbarHorizontal,
-        LayoutProfileKey.TaskbarVertical => TaskbarVertical,
-        LayoutProfileKey.FloatingHorizontal => FloatingHorizontal,
-        LayoutProfileKey.FloatingVertical => FloatingVertical,
-        _ => TaskbarHorizontal
+        LayoutProfileKey.Vertical => Vertical,
+        _ => Horizontal
     };
 
     internal LayoutDocument WithProfile(LayoutProfile profile) => profile.Key switch
     {
-        LayoutProfileKey.TaskbarHorizontal => this with { TaskbarHorizontal = profile },
-        LayoutProfileKey.TaskbarVertical => this with { TaskbarVertical = profile },
-        LayoutProfileKey.FloatingHorizontal => this with { FloatingHorizontal = profile },
-        LayoutProfileKey.FloatingVertical => this with { FloatingVertical = profile },
+        LayoutProfileKey.Horizontal => this with { Horizontal = profile },
+        LayoutProfileKey.Vertical => this with { Vertical = profile },
         _ => this
     };
 }
+
+/// <summary>
+/// 仅描述 schema 1/2 的四档案外壳；内部元素复用当前数据契约，未知旧字段由 JSON 读取器忽略。
+/// Describes only the four-profile schema-1/2 envelope; inner elements reuse current contracts while unknown legacy fields are ignored.
+/// </summary>
+internal sealed record LegacyLayoutDocument(
+    int SchemaVersion,
+    LayoutProfile TaskbarHorizontal,
+    LayoutProfile TaskbarVertical,
+    LayoutProfile FloatingHorizontal,
+    LayoutProfile FloatingVertical);

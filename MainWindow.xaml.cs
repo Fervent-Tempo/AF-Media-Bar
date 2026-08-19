@@ -9,6 +9,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using AFMediaBar.Controls;
 using AFMediaBar.Interop;
 using AFMediaBar.Models;
 using AFMediaBar.Services;
@@ -174,7 +175,6 @@ public partial class MainWindow : Window
             DispatcherPriority.Input,
             OnEdgeHoverTimerTick,
             Dispatcher);
-        _edgeHoverTimer.Start();
         _environmentRecoveryTimer = new DispatcherTimer(
             TimeSpan.FromMilliseconds(EnvironmentRecoveryDelayMilliseconds),
             DispatcherPriority.Background,
@@ -316,7 +316,9 @@ public partial class MainWindow : Window
         var nextWindowSettings = e.Settings.Window;
         if (nextWindowSettings.HostMode != _windowSettings.HostMode)
         {
-            if (!e.Sections.HasFlag(SettingsSection.All) &&
+            PrepareHostModeTransition();
+            if (_windowSettings.HostMode == WindowHostMode.Floating &&
+                !e.Sections.HasFlag(SettingsSection.All) &&
                 NativeMethods.GetWindowRect(_windowHandle, out var currentRect))
             {
                 nextWindowSettings = nextWindowSettings with
@@ -332,10 +334,11 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (e.Sections.HasFlag(SettingsSection.Components) ||
-            e.Sections.HasFlag(SettingsSection.Performance))
+        if (e.Sections.HasFlag(SettingsSection.Performance))
         {
-            _metricSettings = e.Settings.Metrics;
+            _metricSettings = LayoutRuntimeService.ResolveComponentSettings(
+                _activeLayoutProfile,
+                e.Settings.Metrics);
             ApplyMetricSettings();
         }
 
@@ -555,6 +558,11 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (e.OriginalSource is DependencyObject source && IsInteractiveLayoutElement(source))
+        {
+            return;
+        }
+
         var position = e.GetPosition(PlayerRoot);
         var isDragArea = _isVerticalLayout
             ? (_windowSettings.ShowArtwork && position.Y <= VerticalArtworkAreaHeight) ||
@@ -737,11 +745,6 @@ public partial class MainWindow : Window
                 SavePlacementSettings();
             }
         }
-        else
-        {
-            ShowSelectedMediaSource();
-        }
-
         e.Handled = true;
     }
 
@@ -756,6 +759,10 @@ public partial class MainWindow : Window
         UpdateMouseHookState();
         SetExpanded(expanded: true, animate: true);
         StartupMenuItem.IsChecked = _settingsCoordinator.Current.StartupEnabled;
+        TaskbarModeMenuItem.IsChecked = _windowSettings.HostMode == WindowHostMode.Taskbar;
+        FloatingModeMenuItem.IsChecked = _windowSettings.HostMode == WindowHostMode.Floating;
+        TaskbarModeMenuItem.IsEnabled = _windowSettings.HostMode != WindowHostMode.Taskbar;
+        FloatingModeMenuItem.IsEnabled = _windowSettings.HostMode != WindowHostMode.Floating;
     }
 
     private void PlayerMenu_OnOpening(object sender, ContextMenuEventArgs e)
@@ -894,7 +901,6 @@ public partial class MainWindow : Window
         }
 
         _metricsTimer.Start();
-        _edgeHoverTimer.Start();
         if (_metricSettings.AudioMonitorEnabled)
         {
             _audioMonitorService ??= new AudioMonitorService();
@@ -1088,9 +1094,59 @@ public partial class MainWindow : Window
         ShowSelectedMediaSource();
     }
 
-    private void ShowMediaSource_OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    private static bool IsInteractiveLayoutElement(DependencyObject source)
     {
-        ShowSelectedMediaSource();
+        for (var current = source; current is not null; current = VisualTreeHelper.GetParent(current))
+        {
+            if (ComponentLayoutSurface.GetIsInteractiveElement(current))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void TaskbarMode_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_windowSettings.HostMode == WindowHostMode.Taskbar)
+        {
+            return;
+        }
+
+        SwitchHostMode(WindowHostMode.Taskbar);
+    }
+
+    private void FloatingMode_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_windowSettings.HostMode == WindowHostMode.Floating)
+        {
+            return;
+        }
+
+        SwitchHostMode(WindowHostMode.Floating);
+    }
+
+    private void SwitchHostMode(WindowHostMode hostMode)
+    {
+        try
+        {
+            _settingsCoordinator.UpdateWindow(_windowSettings with { HostMode = hostMode });
+        }
+        catch (Exception exception)
+        {
+            DiagnosticsLogService.Write(
+                "quick-host-mode-switch",
+                exception,
+                hostMode.ToString());
+            TaskbarModeMenuItem.IsChecked = _windowSettings.HostMode == WindowHostMode.Taskbar;
+            FloatingModeMenuItem.IsChecked = _windowSettings.HostMode == WindowHostMode.Floating;
+            MessageBox.Show(
+                exception.Message,
+                Loc.Get("Msg.SaveWindowFailed"),
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
     }
 
     private void ShowSelectedMediaSource()

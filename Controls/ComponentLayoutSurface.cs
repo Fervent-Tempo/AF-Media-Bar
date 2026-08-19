@@ -31,6 +31,13 @@ internal sealed class LayoutMetricsEventArgs(bool openTaskManager) : EventArgs
 /// </summary>
 internal sealed class ComponentLayoutSurface : Grid, IDisposable
 {
+    internal static readonly DependencyProperty IsInteractiveElementProperty =
+        DependencyProperty.RegisterAttached(
+            "IsInteractiveElement",
+            typeof(bool),
+            typeof(ComponentLayoutSurface),
+            new FrameworkPropertyMetadata(false));
+
     private readonly Dictionary<string, FrameworkElement> _widgetViews =
         new(StringComparer.Ordinal);
     private readonly Dictionary<string, ContainerVisual> _containerViews =
@@ -63,6 +70,12 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
     internal event EventHandler<LayoutCommandEventArgs>? CommandRequested;
     internal event EventHandler<LayoutMetricsEventArgs>? MetricsRequested;
     internal event EventHandler? SourceRequested;
+
+    internal static bool GetIsInteractiveElement(DependencyObject element) =>
+        (bool)element.GetValue(IsInteractiveElementProperty);
+
+    private static void SetIsInteractiveElement(DependencyObject element, bool value) =>
+        element.SetValue(IsInteractiveElementProperty, value);
 
     internal void Apply(LayoutProfile profile, bool pointerNear)
     {
@@ -299,7 +312,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
     private FrameworkElement BuildArtwork(LayoutWidgetElement widget)
     {
         var settings = widget.Settings as ArtworkWidgetSettings ??
-            new ArtworkWidgetSettings(6, false);
+            new ArtworkWidgetSettings(6, false, true);
         var image = new Image
         {
             Stretch = Stretch.UniformToFill,
@@ -326,14 +339,18 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             CornerRadius = new CornerRadius(Math.Clamp(settings.CornerRadiusDip, 0, 32)),
             Background = ResolveArtworkBackground(settings),
             Child = grid,
-            Cursor = Cursors.Hand,
-            ToolTip = Loc.Get("Main.Menu.ShowSource")
+            Cursor = settings.OpenSourceOnClick ? Cursors.Hand : Cursors.Arrow,
+            ToolTip = settings.OpenSourceOnClick ? Loc.Get("Main.Menu.ShowSource") : null
         };
-        border.MouseLeftButtonUp += (_, args) =>
+        if (settings.OpenSourceOnClick)
         {
-            args.Handled = true;
-            SourceRequested?.Invoke(this, EventArgs.Empty);
-        };
+            SetIsInteractiveElement(border, true);
+            border.MouseLeftButtonUp += (_, args) =>
+            {
+                args.Handled = true;
+                SourceRequested?.Invoke(this, EventArgs.Empty);
+            };
+        }
         border.Tag = (image, placeholder, settings);
         return border;
     }
@@ -363,12 +380,18 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
 
     private FrameworkElement BuildMediaSource(LayoutWidgetElement widget)
     {
-        var text = BuildMediaText(widget);
+        var settings = widget.Settings as MediaTextWidgetSettings ??
+            new MediaTextWidgetSettings(MediaTextKind.Source, false, 11, 1);
+        var text = BuildMediaText(widget with
+        {
+            Settings = settings with { TextKind = MediaTextKind.Source }
+        });
         if (text is TextBlock textBlock)
         {
-            textBlock.FontSize = 11;
             textBlock.Foreground = GetBrush("TaskbarSecondaryTextBrush");
             textBlock.Cursor = Cursors.Hand;
+            textBlock.ToolTip = Loc.Get("Main.Menu.ShowSource");
+            SetIsInteractiveElement(textBlock, true);
             textBlock.MouseLeftButtonUp += (_, args) =>
             {
                 args.Handled = true;
@@ -405,6 +428,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         button.Click += (_, _) => CommandRequested?.Invoke(
             this,
             new LayoutCommandEventArgs(settings.Command, button));
+        SetIsInteractiveElement(button, true);
         return button;
     }
 
@@ -434,6 +458,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             Cursor = settings.OpenTaskManagerOnClick ? Cursors.Hand : Cursors.Arrow,
             Child = text
         };
+        SetIsInteractiveElement(border, settings.OpenTaskManagerOnClick);
         border.MouseLeftButtonUp += (_, args) =>
         {
             if (!settings.OpenTaskManagerOnClick)
