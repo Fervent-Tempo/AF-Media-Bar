@@ -18,10 +18,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
-- Changed layout storage to two shared horizontal/vertical profiles for taskbar and floating hosts; host mode and arrangement are selected separately, and each profile owns its arrangement.
-- Replaced the tree editor with a drag-and-drop composition editor. Static and hover-switch containers can be combined inside the strip, edge-collapse containers edit expanded content only, primary properties are shown first, and undo/reset are isolated per profile.
-- Upgraded layout JSON to schema 3; schema 1/2 migration keeps the horizontal/vertical pair for the host active during migration while retaining validation/clamping, atomic writes, backups, and invalid-file recovery.
+- Changed layout storage to two shared horizontal/vertical profiles for taskbar and floating hosts; host mode and arrangement are selected separately. Layout JSON is upgraded to schema 3, with automatic migration that retains validation/clamping, atomic writes, backups, and invalid-file recovery.
+- Replaced the tree editor with a drag-and-drop composition editor: static and hover-switch containers can be combined inside the strip, edge-collapse containers edit expanded content only, and the workspace is split into insert palette, canvas, and properties. Drop targets resolve from real container slots, preview matches runtime visuals, undo/reset are isolated per profile, and containers can restore default behavior.
+- The properties panel shows primary options first and can reset a single widget's defaults; the palette names title, artist, and concrete transport controls directly.
+- Added a combined title-and-artist widget for dense two-line media information; media text supports maximum lines, bounded width, and trimming, and maximum lines moved to advanced display without changing container height.
 - Added numeric size and component-specific settings for artwork, media text, commands, metrics, spectrum, and separators, with three-language resources and search indexing.
+- Added container content alignment options (center, start, end, and fill); hover proximity is adjustable in advanced behavior (default 48 DIP); collapsed edge containers fully hide their expanded content and keep only a trigger region.
+- Made the strip's empty area draggable; taskbar dragging temporarily exits automatic placement and position locks. Output-device and media-volume widgets now accept mouse-wheel input, and settings controls use responsive widths.
+
+### Fixed
+
+- Fixed multi-line titles being forced back into marquee mode and reset actions changing “previous/artist” roles into “play/title”.
+- Fixed collapsed edge-container drag bounds and flicker caused by sharing one pointer state across hover-switch containers; leave transitions now fade only into near content and commit leave content immediately, preventing a stale widget flash after the animation.
 
 ### Compatibility
 

@@ -91,7 +91,8 @@ The app runs in its own process. Its WPF player can be hosted as a taskbar child
 | Source interaction | Click artwork to return to the media app; click a media-source widget to open source selection; media-text widgets are display-only; switch sessions with the mouse wheel |
 | Taskbar behavior | Automatic horizontal/vertical detection, manual placement and locking, automatic avoidance, auto-hide and fullscreen handling |
 | Window modes | Taskbar and floating hosts share horizontal and vertical layouts; host mode and arrangement are selected separately, with 70%-125% display scaling |
-| Container layout | Compose multiple static/hover-switch containers inside the strip and edge-collapse containers outside it; collapsed containers keep only a trigger region |
+| Container layout | Compose multiple static/hover-switch containers inside the strip and edge-collapse containers outside it; collapsed containers keep only a trigger region; the editor uses an insert, canvas, and properties workspace |
+| Information density | Hover states can use a two-line title-and-artist widget; maximum lines only wraps text inside the widget and does not change container size |
 | Auto-hide | Hide when every media session is stopped; edge-collapse containers reveal their content when the pointer approaches |
 | Audio devices | List and switch the default output device, including delayed wheel selection |
 | App volume | Match the selected media process and adjust its Windows mixer volume in 2% steps |
@@ -148,7 +149,7 @@ AF Media Bar is not commercially code-signed, so Windows SmartScreen may show an
 | Scroll over the device button | Preview a device and apply it after scrolling stops |
 | Click the volume button | Open the selected media app volume slider |
 | Scroll over the volume button | Change application volume in 2% steps |
-| Drag the artwork/title area | Move an unlocked manually placed bar |
+| Drag an empty area of the strip | Move the bar; taskbar dragging temporarily exits automatic placement/locks |
 | Switch to floating mode | Place the player anywhere in the desktop work area |
 | Place an edge-collapse container on a desktop edge | Reveal its content when the pointer enters the trigger region; hide the content after leaving |
 | Right-click the bar or tray icon | Open detailed settings, media actions, or the exit menu |
