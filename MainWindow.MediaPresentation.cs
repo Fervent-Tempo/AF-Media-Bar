@@ -237,6 +237,7 @@ public partial class MainWindow
     private void PlayerRoot_OnMouseEnter(object sender, MouseEventArgs e)
     {
         _collapseTimer.Stop();
+        ComponentSurface_OnLayoutPointerNearChanged(pointerNear: true);
         SetExpanded(expanded: true, animate: true);
     }
 
@@ -258,15 +259,15 @@ public partial class MainWindow
             !OutputDevicePopup.IsOpen &&
             !VolumeControlPopup.IsOpen &&
             !_isDragging &&
-            !PlayerRoot.IsMouseOver)
+            !IsCursorInsideWindow())
         {
+            ComponentSurface_OnLayoutPointerNearChanged(pointerNear: false);
             SetExpanded(expanded: false, animate: true);
         }
     }
 
     private void SetExpanded(bool expanded, bool animate)
     {
-        var pointerNear = expanded;
         if (!_windowSettings.AutoCollapse && !expanded)
         {
             expanded = true;
@@ -275,7 +276,6 @@ public partial class MainWindow
         _isExpanded = expanded;
         // 新布局的悬停容器始终跟随实际指针；旧全局自动收起只影响透明兼容树。
         // New hover containers always follow the real pointer; legacy global collapse affects only the transparent compatibility tree.
-        ComponentSurface_OnLayoutPointerNearChanged(pointerNear);
         animate &= !_metricSettings.LowGpuMode;
         if (_isVerticalLayout)
         {
@@ -343,6 +343,25 @@ public partial class MainWindow
             UIElement.OpacityProperty,
             CreateAnimation(artistOpacity, duration, easing));
         ScheduleMarqueeUpdate();
+    }
+
+    /// <summary>
+    /// 使用窗口矩形而不是 WPF 的 IsMouseOver 判断离开状态；布局变宽/变窄时旧视觉树可能短暂丢失命中，不能因此闪回离开槽位。
+    /// Uses the native window rectangle instead of WPF IsMouseOver; resizing can briefly lose the old visual hit and must not flash back to the leave slot.
+    /// </summary>
+    private bool IsCursorInsideWindow()
+    {
+        if (_windowHandle == nint.Zero ||
+            !NativeMethods.GetCursorPos(out var cursor) ||
+            !NativeMethods.GetWindowRect(_windowHandle, out var bounds))
+        {
+            return PlayerRoot.IsMouseOver;
+        }
+
+        return cursor.X >= bounds.Left &&
+            cursor.X < bounds.Right &&
+            cursor.Y >= bounds.Top &&
+            cursor.Y < bounds.Bottom;
     }
 
     private void ApplyVerticalExpandedState(bool expanded, bool animate)

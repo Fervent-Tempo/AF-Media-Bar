@@ -167,9 +167,14 @@ public partial class MainWindow
             (int)Math.Ceiling(PlayerRoot.Height * playerScale.Y * scale),
             1,
             desktopBounds.Height);
+        var collapsedInsets = ResolveCollapsedActiveEdgeInsets();
+        var collapsedLeft = (int)Math.Round(collapsedInsets.Left * playerScale.X * scale);
+        var collapsedTop = (int)Math.Round(collapsedInsets.Top * playerScale.Y * scale);
+        var collapsedRight = (int)Math.Round(collapsedInsets.Right * playerScale.X * scale);
+        var collapsedBottom = (int)Math.Round(collapsedInsets.Bottom * playerScale.Y * scale);
         Height = PlayerRoot.Height * playerScale.Y;
-        left ??= desktopBounds.Left + 16;
-        top ??= desktopBounds.Bottom - height - 16;
+        left ??= desktopBounds.Left + 16 - collapsedLeft;
+        top ??= desktopBounds.Bottom - height - 16 + collapsedBottom;
         var sizeChanged = _lastFloatingWidth > 0 &&
             (_lastFloatingWidth != width || _lastFloatingHeight != height);
         var anchoredEdge = _floatingEdge != 0 ? _floatingEdge : _expandedEdge;
@@ -234,8 +239,16 @@ public partial class MainWindow
 
         if (_floatingEdge == 0)
         {
-            left = Math.Clamp(left.Value, desktopBounds.Left, desktopBounds.Right - width);
-            top = Math.Clamp(top.Value, desktopBounds.Top, desktopBounds.Bottom - height);
+            // 折叠触发条仍留在窗口中接收鼠标，但它不参与工作区碰撞；长条本体可以真正贴到四个屏幕边缘。
+            // Collapsed triggers remain in the window for pointer activation but do not participate in work-area collision, so the strip body can reach every screen edge.
+            left = Math.Clamp(
+                left.Value,
+                desktopBounds.Left - collapsedLeft,
+                desktopBounds.Right - width + collapsedRight);
+            top = Math.Clamp(
+                top.Value,
+                desktopBounds.Top - collapsedTop,
+                desktopBounds.Bottom - height + collapsedBottom);
             _floatingNormalLeft = left;
             _floatingNormalTop = top;
             if (_expandedEdge != 0)
@@ -298,7 +311,8 @@ public partial class MainWindow
                     width,
                     height,
                     visible: true,
-                    topmost: _windowSettings.AlwaysOnTop))
+                    topmost: _windowSettings.AlwaysOnTop,
+                    inputRects: BuildWindowInputRects(playerScale.X * scale)))
             {
                 DiagnosticsLogService.Write("floating-window-position-failed");
                 RevealFloatingFallback();

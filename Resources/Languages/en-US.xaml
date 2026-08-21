@@ -175,6 +175,8 @@
   <sys:String x:Key="Settings.Layout.EditorCurrentContextFormat">Current: {0} · {1}</sys:String>
   <sys:String x:Key="Settings.Layout.EditorCurrentContextHint">Switch the app mode or arrangement above before editing its horizontal or vertical profile.</sys:String>
   <sys:String x:Key="Settings.Layout.EditorPalette">Widgets and containers</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorObjects">Current layout</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorContainers">Containers</sys:String>
   <sys:String x:Key="Settings.Layout.EditorUndo">Undo</sys:String>
   <sys:String x:Key="Settings.Layout.EditorResetProfile">Reset current profile</sys:String>
   <sys:String x:Key="Settings.Layout.EditorAddStaticContainer">Add static container</sys:String>
@@ -185,9 +187,14 @@
   <sys:String x:Key="Settings.Layout.EditorNearContent">Pointer-near content</sys:String>
   <sys:String x:Key="Settings.Layout.EditorExpandedContent">Expanded content</sys:String>
   <sys:String x:Key="Settings.Layout.EditorDropHere">Drop here</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPreviewTitle">Sample track</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPreviewArtist">Sample artist</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPreviewSource">Sample media</sys:String>
   <sys:String x:Key="Settings.Layout.EditorEmptyStrip">Add a container first, or drop a widget directly</sys:String>
   <sys:String x:Key="Settings.Layout.EditorPrimaryProperties">Primary properties</sys:String>
   <sys:String x:Key="Settings.Layout.EditorAdvancedSize">Advanced size</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorAdvancedText">Advanced display</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorAdvancedBehavior">Advanced behavior and animation</sys:String>
   <sys:String x:Key="Settings.Layout.EditorStaticFollowsProfile">Static containers follow the current profile's arrangement and need no separate orientation.</sys:String>
   <sys:String x:Key="Settings.Layout.EditorTaskbarEdgeUnavailable">The taskbar edge cannot host a collapse container. Runtime validation repeats if Explorer is temporarily unavailable.</sys:String>
   <sys:String x:Key="Settings.Layout.EdgeTop">Top edge</sys:String>
@@ -281,15 +288,28 @@
   <sys:String x:Key="Settings.Layout.PropertyAuto">Automatic</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyWidth">Width</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyHeight">Height</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyResetDefault">Reset component defaults</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyResetDefaultHint">Restore this component's properties without moving it in the layout.</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyResetContainerDefault">Reset container defaults</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyResetContainerDefaultHint">Restore container behavior without moving content or changing its slots.</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyAlignment">Content alignment</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyNearAlignment">Pointer-near alignment</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyAlignmentCenter">Centered</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyAlignmentStart">Start</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyAlignmentEnd">End</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyAlignmentStretch">Fill</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyArtworkRadius">Artwork corner radius</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyArtworkColor">Use media primary color</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyArtworkOpenSource">Open media app when artwork is clicked</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyTextKind">Text kind</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyTextTitle">Title</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyTextArtist">Artist</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyTextTitleAndArtist">Title and artist</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyTextSource">Source</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyMarquee">Enable marquee</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyFontSize">Font size</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyMaxLines">Maximum lines</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyMaxLinesHint">Shows at most 1–2 lines; wrapping stays inside the widget and does not change container size.</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyCommand">Command</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyButtonSize">Button size</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyMetric">Metric type</sys:String>
@@ -306,9 +326,16 @@
   <sys:String x:Key="Settings.Layout.PropertyLength">Line length</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyAnimation">Enable animation</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyDuration">Animation duration</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyDelay">Animation delay</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyProximity">Near-trigger distance</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyEasing">Animation easing</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyEasingLinear">Linear</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyEasingEaseOut">Ease out</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyEasingEaseInOut">Ease in and out</sys:String>
   <sys:String x:Key="Settings.Layout.UnitMilliseconds">{0} ms</sys:String>
   <sys:String x:Key="Settings.Layout.UnitHertz">{0} Hz</sys:String>
   <sys:String x:Key="Settings.Layout.UnitPercent">{0}%</sys:String>
+  <sys:String x:Key="Settings.Layout.UnitDip">{0} DIP</sys:String>
 
   <!-- Settings search entries (titles/keywords) -->
   <sys:String x:Key="Search.Kw.AutoStart">startup boot login auto-run</sys:String>
@@ -316,6 +343,7 @@
   <sys:String x:Key="Search.Kw.AutoCheckUpdate">update version download GitHub Quark Baidu Lanzou</sys:String>
   <sys:String x:Key="Search.Kw.Artwork">artwork cover image corner radius rounded square hide</sys:String>
   <sys:String x:Key="Search.Kw.MediaInfo">song title artist media information hide</sys:String>
+  <sys:String x:Key="Search.Kw.MediaControls">previous play pause next transport controls buttons</sys:String>
   <sys:String x:Key="Search.Kw.Metrics">metrics memory CPU GPU APP</sys:String>
   <sys:String x:Key="Search.Kw.TaskManager">Task Manager resource metrics click open performance</sys:String>
   <sys:String x:Key="Search.Kw.Spectrum">audio spectrum visualization</sys:String>

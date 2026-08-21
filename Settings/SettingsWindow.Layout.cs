@@ -27,6 +27,10 @@ public partial class SettingsWindow
     private bool _layoutEditorSyncing;
     private bool _layoutPropertySyncing;
     private Point _layoutDragStart;
+    private readonly List<ComponentLayoutSurface> _layoutPreviewSurfaces = [];
+    private readonly List<ComponentLayoutSurface> _layoutPaletteSurfaces = [];
+    private Popup? _layoutDragPreviewPopup;
+    private Border? _layoutPreviewDropOverlay;
 
     private void InitializeLayoutEditor()
     {
@@ -101,23 +105,146 @@ public partial class SettingsWindow
             return;
         }
 
-        LayoutComponentPalette.Children.Clear();
-        foreach (var definition in ComponentCatalog.All)
+        foreach (var surface in _layoutPaletteSurfaces)
         {
+            surface.Dispose();
+        }
+        _layoutPaletteSurfaces.Clear();
+        LayoutComponentPalette.Children.Clear();
+        foreach (var entry in EnumeratePaletteEntries())
+        {
+            var preview = CreatePalettePreview(entry.Token);
             var button = new Button
             {
-                Content = Loc.Get(definition.NameResourceKey),
-                Tag = definition.TypeId,
+                Width = 96,
+                Height = 82,
+                Content = new StackPanel
+                {
+                    IsHitTestVisible = false,
+                    Children =
+                    {
+                        new Viewbox
+                        {
+                            Width = 78,
+                            Height = 48,
+                            Stretch = Stretch.Uniform,
+                            Child = preview
+                        },
+                        new TextBlock
+                        {
+                            Text = entry.Label,
+                            FontSize = 10,
+                            TextAlignment = TextAlignment.Center,
+                            TextTrimming = TextTrimming.CharacterEllipsis,
+                            Margin = new Thickness(2, 3, 2, 0)
+                        }
+                    }
+                },
+                Tag = entry.Token,
                 Margin = new Thickness(0, 0, 6, 6),
-                Padding = new Thickness(10, 5, 10, 5),
+                Padding = new Thickness(4),
                 Cursor = Cursors.Hand,
                 Style = TryFindResource("SettingsActionButtonStyle") as Style,
-                ToolTip = Loc.Get(definition.DescriptionResourceKey)
+                ToolTip = entry.Description
             };
             button.PreviewMouseLeftButtonDown += LayoutDragSource_OnPreviewMouseLeftButtonDown;
             button.PreviewMouseMove += LayoutPaletteButton_OnPreviewMouseMove;
             button.Click += LayoutPaletteButton_OnClick;
             LayoutComponentPalette.Children.Add(button);
+        }
+    }
+
+    private ComponentLayoutSurface CreatePalettePreview(string paletteToken)
+    {
+        var parts = paletteToken.Split('|', 2);
+        var typeId = parts[0];
+        var settings = ComponentCatalog.CreateDefaultSettings(typeId);
+        if (parts.Length == 2 &&
+            int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var option))
+        {
+            settings = typeId switch
+            {
+                BuiltInWidgetTypeIds.Command when Enum.IsDefined(typeof(MediaCommandKind), option) =>
+                    new CommandWidgetSettings((MediaCommandKind)option, 36),
+                BuiltInWidgetTypeIds.MediaText when Enum.IsDefined(typeof(MediaTextKind), option) =>
+                    new MediaTextWidgetSettings((MediaTextKind)option, false, 14, 1),
+                _ => settings
+            };
+        }
+
+        var widget = new LayoutWidgetElement(
+            "palette-widget",
+            true,
+            LayoutGeometry.Auto,
+            typeId,
+            settings);
+        var container = new LayoutContainerElement(
+            "palette-container",
+            true,
+            LayoutGeometry.Auto,
+            LayoutContainerKind.Static,
+            LayoutFlowOrientation.Automatic,
+            LayoutContentAlignment.Center,
+            LayoutContentAlignment.Center,
+            LayoutTriggerMode.Always,
+            0,
+            LayoutAnimationSettings.Default,
+            new LayoutSlot("palette-primary", [widget]),
+            LayoutSlot.Empty("palette-secondary"),
+            LayoutSlot.Empty("palette-collapsed"));
+        var profile = new LayoutProfile(
+            LayoutProfileKey.Horizontal,
+            PlayerLayoutMode.Horizontal,
+            LayoutSurfaceSettings.Default with { GapDip = 2, WidthDip = null, HeightDip = null },
+            [container],
+            []);
+        var surface = new ComponentLayoutSurface();
+        surface.SetMediaSnapshot(CreateLayoutPreviewSnapshot());
+        surface.Apply(profile, pointerNear: true);
+        surface.IsHitTestVisible = false;
+        _layoutPaletteSurfaces.Add(surface);
+        return surface;
+    }
+
+    private static IEnumerable<PaletteEntry> EnumeratePaletteEntries()
+    {
+        foreach (var definition in ComponentCatalog.All)
+        {
+            if (definition.TypeId == BuiltInWidgetTypeIds.Command)
+            {
+                foreach (var command in Enum.GetValues<MediaCommandKind>())
+                {
+                    yield return new PaletteEntry(
+                        $"{definition.TypeId}|{(int)command}",
+                        Loc.Get(GetCommandOptionKey(command)),
+                        Loc.Get(definition.DescriptionResourceKey));
+                }
+
+                continue;
+            }
+
+            if (definition.TypeId == BuiltInWidgetTypeIds.MediaText)
+            {
+                foreach (var kind in new[]
+                {
+                    MediaTextKind.Title,
+                    MediaTextKind.Artist,
+                    MediaTextKind.TitleAndArtist
+                })
+                {
+                    yield return new PaletteEntry(
+                        $"{definition.TypeId}|{(int)kind}",
+                        GetMediaTextOptionLabel(kind),
+                        Loc.Get(definition.DescriptionResourceKey));
+                }
+
+                continue;
+            }
+
+            yield return new PaletteEntry(
+                definition.TypeId,
+                Loc.Get(definition.NameResourceKey),
+                Loc.Get(definition.DescriptionResourceKey));
         }
     }
 
@@ -133,7 +260,13 @@ public partial class SettingsWindow
         _layoutEditorSelection = string.IsNullOrWhiteSpace(selectedId)
             ? null
             : ResolveSelection(profile, selectedId);
+        PopulateLayoutObjectList(profile);
+        DisposeLayoutPreviewSurfaces();
         LayoutVisualEditorHost.Child = BuildVisualEditor(profile);
+        foreach (var surface in _layoutPreviewSurfaces)
+        {
+            surface.SetDesignSelection(_layoutEditorSelection?.InstanceId);
+        }
         RefreshSlotOptions();
         RefreshSelectionText();
         RefreshLayoutProperties();
@@ -141,54 +274,458 @@ public partial class SettingsWindow
         LayoutEditorMessageText.Text = string.Empty;
     }
 
+    private void PopulateLayoutObjectList(LayoutProfile profile)
+    {
+        if (LayoutObjectList is null)
+        {
+            return;
+        }
+
+        _layoutEditorSyncing = true;
+        try
+        {
+            LayoutObjectList.Items.Clear();
+            foreach (var container in profile.InlineContainers)
+            {
+                AddLayoutObjectItem(container, 0, null, LayoutSlotKind.Primary);
+                AddLayoutObjectSlotItems(container.PrimarySlot, container.InstanceId, LayoutSlotKind.Primary, 1);
+                if (container.ContainerKind == LayoutContainerKind.HoverSwitch)
+                {
+                    AddLayoutObjectSlotItems(container.SecondarySlot, container.InstanceId, LayoutSlotKind.Secondary, 1);
+                }
+            }
+
+            foreach (var edge in profile.EdgeContainers)
+            {
+                AddLayoutObjectItem(edge, 0, null, LayoutSlotKind.Expanded);
+                AddLayoutObjectSlotItems(edge.ExpandedSlot, edge.InstanceId, LayoutSlotKind.Expanded, 1);
+            }
+
+            var selected = LayoutObjectList.Items
+                .OfType<ListBoxItem>()
+                .FirstOrDefault(item => item.Tag is LayoutEditorSelection selection &&
+                    selection.InstanceId == _layoutEditorSelection?.InstanceId);
+            LayoutObjectList.SelectedItem = selected;
+        }
+        finally
+        {
+            _layoutEditorSyncing = false;
+        }
+    }
+
+    private void AddLayoutObjectSlotItems(
+        LayoutSlot slot,
+        string parentId,
+        LayoutSlotKind slotKind,
+        int depth)
+    {
+        foreach (var child in slot.Children)
+        {
+            var selection = child switch
+            {
+                LayoutWidgetElement widget => new LayoutEditorSelection(
+                    widget.InstanceId,
+                    LayoutEditorNodeKind.Widget,
+                    parentId,
+                    slotKind,
+                    widget),
+                LayoutContainerElement container => new LayoutEditorSelection(
+                    container.InstanceId,
+                    LayoutEditorNodeKind.InlineContainer,
+                    parentId,
+                    slotKind,
+                    container),
+                _ => null
+            };
+            if (selection is null)
+            {
+                continue;
+            }
+
+            AddLayoutObjectItem(child, depth, selection);
+            if (child is LayoutContainerElement nested)
+            {
+                AddLayoutObjectSlotItems(nested.PrimarySlot, nested.InstanceId, LayoutSlotKind.Primary, depth + 1);
+                if (nested.ContainerKind == LayoutContainerKind.HoverSwitch)
+                {
+                    AddLayoutObjectSlotItems(nested.SecondarySlot, nested.InstanceId, LayoutSlotKind.Secondary, depth + 1);
+                }
+            }
+        }
+    }
+
+    private void AddLayoutObjectItem(
+        LayoutElement element,
+        int depth,
+        string? parentId,
+        LayoutSlotKind slotKind)
+    {
+        var selection = element switch
+        {
+            LayoutWidgetElement widget => new LayoutEditorSelection(
+                widget.InstanceId,
+                LayoutEditorNodeKind.Widget,
+                parentId,
+                slotKind,
+                widget),
+            LayoutContainerElement container => new LayoutEditorSelection(
+                container.InstanceId,
+                LayoutEditorNodeKind.InlineContainer,
+                parentId,
+                slotKind,
+                container),
+            _ => null
+        };
+        AddLayoutObjectItem(element, depth, selection);
+    }
+
+    private void AddLayoutObjectItem(
+        LayoutEdgeContainer edge,
+        int depth,
+        string? parentId,
+        LayoutSlotKind slotKind)
+    {
+        AddLayoutObjectItem(edge, depth, new LayoutEditorSelection(
+            edge.InstanceId,
+            LayoutEditorNodeKind.EdgeContainer,
+            parentId,
+            slotKind,
+            edge));
+    }
+
+    private void AddLayoutObjectItem(LayoutElement element, int depth, LayoutEditorSelection? selection)
+    {
+        var label = element switch
+        {
+            LayoutWidgetElement widget => GetWidgetTitle(widget),
+            LayoutContainerElement { ContainerKind: LayoutContainerKind.HoverSwitch } => Loc.Get("Settings.Layout.ContainerHoverSwitch"),
+            LayoutContainerElement => Loc.Get("Settings.Layout.ContainerStatic"),
+            _ => element.InstanceId
+        };
+        var item = new ListBoxItem
+        {
+            Tag = selection,
+            Padding = new Thickness(8, 5, 6, 5),
+            Content = new TextBlock
+            {
+                Text = new string(' ', depth * 2) + label,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                ToolTip = element.InstanceId
+            }
+        };
+        LayoutObjectList.Items.Add(item);
+    }
+
+    private void AddLayoutObjectItem(LayoutEdgeContainer edge, int depth, LayoutEditorSelection selection)
+    {
+        var item = new ListBoxItem
+        {
+            Tag = selection,
+            Padding = new Thickness(8, 5, 6, 5),
+            Content = new TextBlock
+            {
+                Text = new string(' ', depth * 2) +
+                    $"{Loc.Get("Settings.Layout.ContainerAutoCollapse")} · {GetEdgeName(edge.Edge)}",
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                ToolTip = edge.InstanceId
+            }
+        };
+        LayoutObjectList.Items.Add(item);
+    }
+
+    private void LayoutObjectList_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_layoutEditorSyncing ||
+            LayoutObjectList.SelectedItem is not ListBoxItem { Tag: LayoutEditorSelection selection })
+        {
+            return;
+        }
+
+        SelectLayoutNode(selection);
+    }
+
     private FrameworkElement BuildVisualEditor(LayoutProfile profile)
     {
-        var grid = new Grid();
-        grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(68) });
-        grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-        grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(68) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(82) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(82) });
-
-        AddEdgeArea(grid, profile, LayoutEdge.Top, 0, 1, Orientation.Horizontal);
-        AddEdgeArea(grid, profile, LayoutEdge.Left, 1, 0, Orientation.Vertical);
-        AddEdgeArea(grid, profile, LayoutEdge.Right, 1, 2, Orientation.Vertical);
-        AddEdgeArea(grid, profile, LayoutEdge.Bottom, 2, 1, Orientation.Horizontal);
-
-        var stripPanel = new StackPanel
+        // 预览使用与主窗口相同的组件树，再用 Viewbox 适配可用区域，避免固定边缘栏裁掉内容。
+        // Reuse the runtime component tree and fit it with a Viewbox so fixed edge bands cannot crop the preview.
+        var stripSize = LayoutRuntimeService.CalculateDesiredSize(profile);
+        var edgeSizes = profile.EdgeContainers
+            .Where(container => container.Enabled)
+            .Select(container => (container.Edge, Size: LayoutRuntimeService.MeasureEdgeContainer(profile, container)))
+            .ToArray();
+        var leftBand = Math.Max(86, edgeSizes.Where(item => item.Edge == LayoutEdge.Left).Select(item => item.Size.WidthDip).DefaultIfEmpty().Max() + 24);
+        var rightBand = Math.Max(86, edgeSizes.Where(item => item.Edge == LayoutEdge.Right).Select(item => item.Size.WidthDip).DefaultIfEmpty().Max() + 24);
+        var topBand = Math.Max(72, edgeSizes.Where(item => item.Edge == LayoutEdge.Top).Select(item => item.Size.HeightDip).DefaultIfEmpty().Max() + 24);
+        var bottomBand = Math.Max(72, edgeSizes.Where(item => item.Edge == LayoutEdge.Bottom).Select(item => item.Size.HeightDip).DefaultIfEmpty().Max() + 24);
+        var centerWidth = Math.Max(360, stripSize.WidthDip + 32);
+        var centerHeight = Math.Max(220, stripSize.HeightDip + 32);
+        var composition = new Grid
         {
-            Orientation = profile.LayoutMode == PlayerLayoutMode.Vertical
-                ? Orientation.Vertical
-                : Orientation.Horizontal,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center
+            Width = leftBand + centerWidth + rightBand,
+            Height = topBand + centerHeight + bottomBand,
+            Background = new SolidColorBrush(Color.FromRgb(35, 43, 52)),
+            ClipToBounds = true,
+            AllowDrop = true
         };
-        foreach (var container in profile.InlineContainers)
-        {
-            stripPanel.Children.Add(BuildInlineContainerCard(profile, container));
-        }
+        composition.RowDefinitions.Add(new RowDefinition { Height = new GridLength(topBand) });
+        composition.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        composition.RowDefinitions.Add(new RowDefinition { Height = new GridLength(bottomBand) });
+        composition.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(leftBand) });
+        composition.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        composition.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(rightBand) });
 
-        if (profile.InlineContainers.Count == 0)
-        {
-            stripPanel.Children.Add(CreateEmptyHint("Settings.Layout.EditorEmptyStrip"));
-        }
+        AddPreviewEdgeStrip(composition, profile, LayoutEdge.Top, 0, 1, Orientation.Horizontal);
+        AddPreviewEdgeStrip(composition, profile, LayoutEdge.Left, 1, 0, Orientation.Vertical);
+        AddPreviewEdgeStrip(composition, profile, LayoutEdge.Right, 1, 2, Orientation.Vertical);
+        AddPreviewEdgeStrip(composition, profile, LayoutEdge.Bottom, 2, 1, Orientation.Horizontal);
 
-        var strip = new Border
+        var inlineSurface = CreatePreviewSurface(profile);
+        inlineSurface.HorizontalAlignment = HorizontalAlignment.Center;
+        inlineSurface.VerticalAlignment = VerticalAlignment.Center;
+        inlineSurface.Margin = new Thickness(16);
+        // 释放高亮只属于设计模式，避免拖动时用户失去当前槽位的空间反馈；运行时窗口不会创建此层。
+        // The drop highlight exists only in design mode so users keep spatial feedback while dragging; runtime never creates it.
+        var dropOverlay = new Border
         {
-            Padding = new Thickness(7),
-            MinWidth = 260,
-            MinHeight = 72,
-            Background = FindBrush("TaskbarReadabilityBrush", Brushes.DimGray),
+            Visibility = Visibility.Collapsed,
+            Background = new SolidColorBrush(Color.FromArgb(54, 86, 156, 255)),
+            BorderBrush = FindBrush("MenuHighlightTextBrush", Brushes.White),
+            BorderThickness = new Thickness(2),
+            CornerRadius = new CornerRadius(5),
+            IsHitTestVisible = false,
+            Child = new TextBlock
+            {
+                Text = Loc.Get("Settings.Layout.EditorDropHere"),
+                Foreground = FindBrush("MenuHighlightTextBrush", Brushes.White),
+                FontWeight = FontWeights.SemiBold,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            }
+        };
+        _layoutPreviewDropOverlay = dropOverlay;
+        var centerContent = new Grid();
+        centerContent.Children.Add(inlineSurface);
+        centerContent.Children.Add(dropOverlay);
+        var center = new Border
+        {
+            Margin = new Thickness(4),
+            Padding = new Thickness(10),
+            Background = new SolidColorBrush(Color.FromRgb(35, 43, 52)),
             BorderBrush = FindBrush("MenuBorderBrush", Brushes.Gray),
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(6),
-            Child = stripPanel
+            Child = centerContent,
+            AllowDrop = true,
+            ToolTip = Loc.Get("Settings.Layout.EditorDropHere")
         };
-        Grid.SetRow(strip, 1);
-        Grid.SetColumn(strip, 1);
-        grid.Children.Add(strip);
-        return grid;
+        center.DragOver += LayoutVisualEditorHost_OnDragOver;
+        center.Drop += LayoutVisualEditorHost_OnDrop;
+        center.DragEnter += LayoutPreviewDropHost_OnDragEnter;
+        center.DragLeave += LayoutPreviewDropHost_OnDragLeave;
+        Grid.SetRow(center, 1);
+        Grid.SetColumn(center, 1);
+        composition.Children.Add(center);
+
+        composition.DragOver += LayoutVisualEditorHost_OnDragOver;
+        composition.Drop += LayoutVisualEditorHost_OnDrop;
+
+        return new Border
+        {
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Top,
+            Padding = new Thickness(8),
+            Background = new SolidColorBrush(Color.FromRgb(35, 43, 52)),
+            Child = new Viewbox
+            {
+                Stretch = Stretch.Uniform,
+                StretchDirection = StretchDirection.Both,
+                Child = composition
+            }
+        };
+    }
+
+    private void AddPreviewEdgeStrip(
+        Grid grid,
+        LayoutProfile profile,
+        LayoutEdge edge,
+        int row,
+        int column,
+        Orientation orientation)
+    {
+        var panel = new StackPanel
+        {
+            Orientation = orientation,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        foreach (var container in profile.EdgeContainers.Where(item => item.Edge == edge && item.Enabled))
+        {
+            var surface = CreatePreviewSurface(profile, container);
+            surface.Margin = new Thickness(3);
+            panel.Children.Add(surface);
+        }
+
+        var area = new Border
+        {
+            Margin = new Thickness(3),
+            Padding = new Thickness(3),
+            Background = Brushes.Transparent,
+            BorderBrush = GetUnavailableTaskbarEdge() == edge
+                ? FindBrush("MenuSeparatorBrush", Brushes.Gray)
+                : Brushes.Transparent,
+            BorderThickness = GetUnavailableTaskbarEdge() == edge ? new Thickness(1) : new Thickness(0),
+            Child = panel,
+            AllowDrop = true,
+            Tag = edge,
+            ToolTip = GetUnavailableTaskbarEdge() == edge
+                ? Loc.Get("Settings.Layout.EditorTaskbarEdgeUnavailable")
+                : GetEdgeName(edge)
+        };
+        area.DragOver += LayoutEdgeArea_OnDragOver;
+        area.Drop += LayoutEdgeArea_OnDrop;
+        Grid.SetRow(area, row);
+        Grid.SetColumn(area, column);
+        grid.Children.Add(area);
+    }
+
+    private ComponentLayoutSurface CreatePreviewSurface(LayoutProfile profile, LayoutEdgeContainer? edge = null)
+    {
+        var surface = new ComponentLayoutSurface();
+        surface.SetDesignMode(true);
+        surface.DesignElementSelected += LayoutPreviewSurface_OnElementSelected;
+        surface.DesignElementDragRequested += LayoutPreviewSurface_OnElementDragRequested;
+        surface.DesignDropTargetDragOver += LayoutPreviewSurface_OnDropTargetDragOver;
+        surface.DesignDropRequested += LayoutPreviewSurface_OnDropRequested;
+        surface.SetMediaSnapshot(CreateLayoutPreviewSnapshot());
+        if (edge is null)
+        {
+            surface.Apply(profile, pointerNear: ResolvePreviewPointerNear());
+        }
+        else
+        {
+            surface.ApplyEdge(profile, edge);
+        }
+
+        _layoutPreviewSurfaces.Add(surface);
+        return surface;
+    }
+
+    private bool ResolvePreviewPointerNear()
+    {
+        return _layoutEditorSelection?.SlotKind == LayoutSlotKind.Primary
+            ? false
+            : true;
+    }
+
+    private static MediaSnapshot CreateLayoutPreviewSnapshot() => new(
+        true,
+        true,
+        true,
+        true,
+        true,
+        Loc.Get("Settings.Layout.EditorPreviewTitle"),
+        Loc.Get("Settings.Layout.EditorPreviewArtist"),
+        "design-preview",
+        Loc.Get("Settings.Layout.EditorPreviewSource"),
+        null);
+
+    private void LayoutPreviewSurface_OnElementSelected(object? sender, LayoutDesignElementEventArgs e)
+    {
+        var profile = _coordinator.Current.Layout.Get(_layoutEditorProfileKey);
+        _layoutEditorSelection = ResolveSelection(profile, e.InstanceId);
+        foreach (var surface in _layoutPreviewSurfaces)
+        {
+            surface.SetDesignSelection(e.InstanceId);
+            surface.SetPointerNear(ResolvePreviewPointerNear());
+        }
+        RefreshSlotOptions();
+        RefreshSelectionText();
+        RefreshLayoutProperties();
+        UpdateLayoutEditorButtons();
+    }
+
+    private void LayoutPreviewSurface_OnElementDragRequested(object? sender, LayoutDesignElementEventArgs e)
+    {
+        if (e.Source is not UIElement source)
+        {
+            return;
+        }
+
+        BeginVisualDrag(
+            source,
+            new DataObject(
+                e.IsContainer ? ExistingContainerDragFormat : ExistingWidgetDragFormat,
+                e.InstanceId),
+            DragDropEffects.Move);
+    }
+
+    private void LayoutPreviewSurface_OnDropTargetDragOver(object? sender, LayoutDesignDropEventArgs e)
+    {
+        var drag = e.DragEventArgs;
+        drag.Effects = drag.Data.GetDataPresent(NewWidgetDragFormat)
+            ? DragDropEffects.Copy
+            : drag.Data.GetDataPresent(ExistingWidgetDragFormat)
+                ? DragDropEffects.Move
+                : DragDropEffects.None;
+        if (drag.Effects == DragDropEffects.None)
+        {
+            return;
+        }
+
+        if (_layoutPreviewDropOverlay is not null)
+        {
+            _layoutPreviewDropOverlay.Visibility = Visibility.Visible;
+        }
+        drag.Handled = true;
+    }
+
+    private void LayoutPreviewSurface_OnDropRequested(object? sender, LayoutDesignDropEventArgs e)
+    {
+        if (_layoutPreviewDropOverlay is not null)
+        {
+            _layoutPreviewDropOverlay.Visibility = Visibility.Collapsed;
+        }
+
+        var target = new LayoutDropTarget(e.ContainerId, e.SlotKind);
+        if (e.DragEventArgs.Data.GetData(ExistingContainerDragFormat) is string sourceId)
+        {
+            // 容器只允许在同一层级卡片之间重排；槽位仅接受组件，避免把不可嵌套的容器拖入后静默无效。
+            // Containers reorder only among same-level cards; slots accept widgets only so unsupported nesting never appears to succeed silently.
+            TryApplyProfile(profile => LayoutEditorService.TryReorderTopLevel(
+                profile,
+                sourceId,
+                e.ContainerId,
+                out var updated) ? updated : null);
+        }
+        else
+        {
+            ApplyDrop(e.DragEventArgs, target);
+        }
+        e.DragEventArgs.Handled = true;
+    }
+
+    private void DisposeLayoutPreviewSurfaces()
+    {
+        if (_layoutPreviewDropOverlay is not null)
+        {
+            _layoutPreviewDropOverlay.Visibility = Visibility.Collapsed;
+            _layoutPreviewDropOverlay = null;
+        }
+        foreach (var surface in _layoutPreviewSurfaces)
+        {
+            surface.Dispose();
+        }
+        _layoutPreviewSurfaces.Clear();
+    }
+
+    private void DisposeLayoutEditorSurfaces()
+    {
+        DisposeLayoutPreviewSurfaces();
+        foreach (var surface in _layoutPaletteSurfaces)
+        {
+            surface.Dispose();
+        }
+        _layoutPaletteSurfaces.Clear();
     }
 
     private void AddEdgeArea(
@@ -238,7 +775,9 @@ public partial class SettingsWindow
 
     private void LayoutEdgeArea_OnDragOver(object sender, DragEventArgs e)
     {
-        e.Effects = e.Data.GetDataPresent(ExistingContainerDragFormat) &&
+        var profile = _coordinator.Current.Layout.Get(_layoutEditorProfileKey);
+        e.Effects = e.Data.GetData(ExistingContainerDragFormat) is string sourceId &&
+            LayoutEditorService.Find(profile, sourceId) is LayoutEdgeContainer &&
             sender is Border { Tag: LayoutEdge edge } &&
             GetUnavailableTaskbarEdge() != edge
             ? DragDropEffects.Move
@@ -504,9 +1043,9 @@ public partial class SettingsWindow
 
     private void LayoutPaletteButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (sender is Button { Tag: string typeId })
+        if (sender is Button { Tag: string paletteToken })
         {
-            AddWidgetToTarget(typeId, ResolveAddTarget());
+            AddWidgetToTarget(paletteToken, ResolveAddTarget());
         }
     }
 
@@ -517,12 +1056,15 @@ public partial class SettingsWindow
 
     private void LayoutPaletteButton_OnPreviewMouseMove(object sender, MouseEventArgs e)
     {
-        if (sender is not Button { Tag: string typeId } button || !ShouldBeginDrag(e))
+        if (sender is not Button { Tag: string paletteToken } button || !ShouldBeginDrag(e))
         {
             return;
         }
 
-        DragDrop.DoDragDrop(button, new DataObject(NewWidgetDragFormat, typeId), DragDropEffects.Copy);
+        BeginVisualDrag(
+            button,
+            new DataObject(NewWidgetDragFormat, paletteToken),
+            DragDropEffects.Copy);
     }
 
     private void LayoutWidgetTile_OnPreviewMouseMove(object sender, MouseEventArgs e)
@@ -532,7 +1074,7 @@ public partial class SettingsWindow
             return;
         }
 
-        DragDrop.DoDragDrop(
+        BeginVisualDrag(
             button,
             new DataObject(ExistingWidgetDragFormat, selection.InstanceId),
             DragDropEffects.Move);
@@ -547,7 +1089,7 @@ public partial class SettingsWindow
             return;
         }
 
-        DragDrop.DoDragDrop(
+        BeginVisualDrag(
             header,
             new DataObject(ExistingContainerDragFormat, selection.InstanceId),
             DragDropEffects.Move);
@@ -590,6 +1132,72 @@ public partial class SettingsWindow
             Math.Abs(current.Y - _layoutDragStart.Y) >= SystemParameters.MinimumVerticalDragDistance;
     }
 
+    /// <summary>
+    /// 使用源控件的 VisualBrush 作为拖影，让用户看到实际组件外观而不是文本占位框。
+    /// Uses the source control as a VisualBrush drag ghost so users see the real component instead of a text placeholder.
+    /// </summary>
+    private void BeginVisualDrag(UIElement source, DataObject data, DragDropEffects effects)
+    {
+        if (_layoutDragPreviewPopup is not null)
+        {
+            return;
+        }
+
+        var width = Math.Clamp(source.RenderSize.Width, 32, 180);
+        var height = Math.Clamp(source.RenderSize.Height, 24, 96);
+        var ghost = new Border
+        {
+            Width = width,
+            Height = height,
+            Padding = new Thickness(2),
+            Background = new VisualBrush(source)
+            {
+                Stretch = Stretch.Uniform,
+                Opacity = 0.9
+            },
+            BorderBrush = FindBrush("MenuHighlightTextBrush", Brushes.White),
+            BorderThickness = new Thickness(1),
+            Opacity = 0.88,
+            IsHitTestVisible = false
+        };
+        var popup = new Popup
+        {
+            AllowsTransparency = true,
+            IsHitTestVisible = false,
+            PlacementTarget = this,
+            Placement = PlacementMode.Relative,
+            Child = ghost
+        };
+        _layoutDragPreviewPopup = popup;
+        popup.IsOpen = true;
+
+        void GiveFeedback(object? sender, GiveFeedbackEventArgs args)
+        {
+            var point = Mouse.GetPosition(this);
+            popup.HorizontalOffset = point.X + 12;
+            popup.VerticalOffset = point.Y + 12;
+            args.UseDefaultCursors = true;
+            args.Handled = true;
+        }
+
+        source.GiveFeedback += GiveFeedback;
+        try
+        {
+            DragDrop.DoDragDrop(source, data, effects);
+        }
+        finally
+        {
+            source.GiveFeedback -= GiveFeedback;
+            popup.IsOpen = false;
+            popup.Child = null;
+            _layoutDragPreviewPopup = null;
+            if (_layoutPreviewDropOverlay is not null)
+            {
+                _layoutPreviewDropOverlay.Visibility = Visibility.Collapsed;
+            }
+        }
+    }
+
     private void LayoutDropTarget_OnDragOver(object sender, DragEventArgs e)
     {
         e.Effects = e.Data.GetDataPresent(NewWidgetDragFormat)
@@ -615,17 +1223,52 @@ public partial class SettingsWindow
     {
         e.Effects = e.Data.GetDataPresent(NewWidgetDragFormat)
             ? DragDropEffects.Copy
+            : e.Data.GetDataPresent(ExistingWidgetDragFormat)
+                ? DragDropEffects.Move
             : e.Data.GetDataPresent(ExistingContainerDragFormat)
                 ? DragDropEffects.Move
                 : DragDropEffects.None;
+        if (e.Effects != DragDropEffects.None && _layoutPreviewDropOverlay is not null)
+        {
+            _layoutPreviewDropOverlay.Visibility = Visibility.Visible;
+        }
+        else if (_layoutPreviewDropOverlay is not null)
+        {
+            _layoutPreviewDropOverlay.Visibility = Visibility.Collapsed;
+        }
         e.Handled = true;
+    }
+
+    private void LayoutPreviewDropHost_OnDragEnter(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(NewWidgetDragFormat) ||
+            e.Data.GetDataPresent(ExistingWidgetDragFormat) ||
+            e.Data.GetDataPresent(ExistingContainerDragFormat))
+        {
+            if (_layoutPreviewDropOverlay is not null)
+            {
+                _layoutPreviewDropOverlay.Visibility = Visibility.Visible;
+            }
+        }
+    }
+
+    private void LayoutPreviewDropHost_OnDragLeave(object sender, DragEventArgs e)
+    {
+        if (_layoutPreviewDropOverlay is not null)
+        {
+            _layoutPreviewDropOverlay.Visibility = Visibility.Collapsed;
+        }
     }
 
     private void LayoutVisualEditorHost_OnDrop(object sender, DragEventArgs e)
     {
-        if (e.Data.GetData(NewWidgetDragFormat) is string typeId)
+        if (_layoutPreviewDropOverlay is not null)
         {
-            AddWidgetToTarget(typeId, ResolveAddTarget());
+            _layoutPreviewDropOverlay.Visibility = Visibility.Collapsed;
+        }
+        if (e.Data.GetData(NewWidgetDragFormat) is string paletteToken)
+        {
+            AddWidgetToTarget(paletteToken, ResolveAddTarget());
         }
         else if (e.Data.GetData(ExistingContainerDragFormat) is string sourceId &&
             ResolveAddTarget() is { } target)
@@ -636,14 +1279,19 @@ public partial class SettingsWindow
                 target.ContainerId,
                 out var updated) ? updated : null);
         }
+        else if (e.Data.GetData(ExistingWidgetDragFormat) is string widgetId &&
+            ResolveAddTarget() is { } widgetTarget)
+        {
+            ApplyDrop(e, widgetTarget);
+        }
         e.Handled = true;
     }
 
     private void ApplyDrop(DragEventArgs e, LayoutDropTarget target)
     {
-        if (e.Data.GetData(NewWidgetDragFormat) is string typeId)
+        if (e.Data.GetData(NewWidgetDragFormat) is string paletteToken)
         {
-            AddWidgetToTarget(typeId, target);
+            AddWidgetToTarget(paletteToken, target);
             return;
         }
 
@@ -660,14 +1308,34 @@ public partial class SettingsWindow
         }
     }
 
-    private void AddWidgetToTarget(string typeId, LayoutDropTarget? target)
+    private void AddWidgetToTarget(string paletteToken, LayoutDropTarget? target)
     {
+        var parts = paletteToken.Split('|', 2);
+        var typeId = parts[0];
+        var settings = ComponentCatalog.CreateDefaultSettings(typeId);
+        if (parts.Length == 2 &&
+            int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var option))
+        {
+            settings = typeId switch
+            {
+                BuiltInWidgetTypeIds.Command when Enum.IsDefined(typeof(MediaCommandKind), option) =>
+                    new CommandWidgetSettings((MediaCommandKind)option, 36),
+                BuiltInWidgetTypeIds.MediaText when Enum.IsDefined(typeof(MediaTextKind), option) =>
+                    new MediaTextWidgetSettings(
+                        (MediaTextKind)option,
+                        true,
+                        option == (int)MediaTextKind.Artist ? 11 : 14,
+                        1),
+                _ => settings
+            };
+        }
+
         var widget = new LayoutWidgetElement(
             $"widget-{Guid.NewGuid():N}",
             true,
             LayoutGeometry.Auto,
             typeId,
-            ComponentCatalog.CreateDefaultSettings(typeId));
+            settings);
         if (!TryApplyProfile(profile =>
         {
             var working = profile;
@@ -936,6 +1604,17 @@ public partial class SettingsWindow
 
     private void AddWidgetProperties(StackPanel panel, LayoutWidgetElement widget)
     {
+        var resetButton = new Button
+        {
+            Content = Loc.Get("Settings.Layout.PropertyResetDefault"),
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Margin = new Thickness(0, 0, 0, 8),
+            Style = TryFindResource("SettingsActionButtonStyle") as Style,
+            ToolTip = Loc.Get("Settings.Layout.PropertyResetDefaultHint")
+        };
+        resetButton.Click += (_, _) => ResetWidgetProperties(widget);
+        panel.Children.Add(resetButton);
+
         switch (widget.Settings)
         {
             case ArtworkWidgetSettings artwork:
@@ -954,14 +1633,32 @@ public partial class SettingsWindow
                         {
                             [MediaTextKind.Title] = "Settings.Layout.PropertyTextTitle",
                             [MediaTextKind.Artist] = "Settings.Layout.PropertyTextArtist",
-                            [MediaTextKind.Source] = "Settings.Layout.PropertyTextSource"
+                            [MediaTextKind.Source] = "Settings.Layout.PropertyTextSource",
+                            [MediaTextKind.TitleAndArtist] = "Settings.Layout.PropertyTextTitleAndArtist"
                         },
                         value => UpdateWidget(widget, current => ((MediaTextWidgetSettings)current) with { TextKind = value }));
                 }
                 AddSliderRow(panel, "Settings.Layout.PropertyFontSize", text.FontSizeDip, 6, 72,
                     value => UpdateWidget(widget, current => ((MediaTextWidgetSettings)current) with { FontSizeDip = value }));
-                AddCheckRow(panel, "Settings.Layout.PropertyMarquee", text.EnableMarquee,
-                    value => UpdateWidget(widget, current => ((MediaTextWidgetSettings)current) with { EnableMarquee = value }));
+                var advancedText = new StackPanel();
+                if (text.TextKind != MediaTextKind.TitleAndArtist)
+                {
+                    advancedText.Children.Add(CreateEmptyHint("Settings.Layout.PropertyMaxLinesHint"));
+                    AddSliderRow(advancedText, "Settings.Layout.PropertyMaxLines", text.MaxLines, 1, 2,
+                        value => UpdateWidget(widget, current => ((MediaTextWidgetSettings)current) with { MaxLines = value }));
+                    AddCheckRow(advancedText, "Settings.Layout.PropertyMarquee", text.EnableMarquee,
+                        value => UpdateWidget(widget, current => ((MediaTextWidgetSettings)current) with { EnableMarquee = value }));
+                }
+                if (advancedText.Children.Count > 0)
+                {
+                    panel.Children.Add(new Expander
+                    {
+                        Header = Loc.Get("Settings.Layout.EditorAdvancedText"),
+                        Margin = new Thickness(0, 8, 0, 0),
+                        IsExpanded = false,
+                        Content = advancedText
+                    });
+                }
                 break;
             case CommandWidgetSettings command:
                 AddEnumRow(panel, "Settings.Layout.PropertyCommand", command.Command,
@@ -1022,27 +1719,131 @@ public partial class SettingsWindow
 
     private void AddInlineContainerProperties(StackPanel panel, LayoutContainerElement container)
     {
+        var resetButton = new Button
+        {
+            Content = Loc.Get("Settings.Layout.PropertyResetContainerDefault"),
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Margin = new Thickness(0, 0, 0, 8),
+            Style = TryFindResource("SettingsActionButtonStyle") as Style,
+            ToolTip = Loc.Get("Settings.Layout.PropertyResetContainerDefaultHint")
+        };
+        resetButton.Click += (_, _) => ResetInlineContainerProperties(container);
+        panel.Children.Add(resetButton);
+
+        AddEnumRow(
+            panel,
+            "Settings.Layout.PropertyAlignment",
+            container.ContentAlignment,
+            new Dictionary<LayoutContentAlignment, string>
+            {
+                [LayoutContentAlignment.Center] = "Settings.Layout.PropertyAlignmentCenter",
+                [LayoutContentAlignment.Start] = "Settings.Layout.PropertyAlignmentStart",
+                [LayoutContentAlignment.End] = "Settings.Layout.PropertyAlignmentEnd",
+                [LayoutContentAlignment.Stretch] = "Settings.Layout.PropertyAlignmentStretch"
+            },
+            value => UpdateInlineContainer(
+                container,
+                container.ProximityDip,
+                value,
+                container.SecondaryContentAlignment,
+                container.Animation));
+
         if (container.ContainerKind != LayoutContainerKind.HoverSwitch)
         {
             panel.Children.Add(CreateEmptyHint("Settings.Layout.EditorStaticFollowsProfile"));
+            AddAdvancedContainerGeometryProperties(panel, container);
             return;
         }
 
-        AddCheckRow(panel, "Settings.Layout.PropertyAnimation", container.Animation.Enabled,
+        AddEnumRow(
+            panel,
+            "Settings.Layout.PropertyNearAlignment",
+            container.SecondaryContentAlignment,
+            new Dictionary<LayoutContentAlignment, string>
+            {
+                [LayoutContentAlignment.Center] = "Settings.Layout.PropertyAlignmentCenter",
+                [LayoutContentAlignment.Start] = "Settings.Layout.PropertyAlignmentStart",
+                [LayoutContentAlignment.End] = "Settings.Layout.PropertyAlignmentEnd",
+                [LayoutContentAlignment.Stretch] = "Settings.Layout.PropertyAlignmentStretch"
+            },
             value => UpdateInlineContainer(
                 container,
                 container.ProximityDip,
+                container.ContentAlignment,
+                value,
+                container.Animation));
+
+        var advanced = new StackPanel();
+        AddCheckRow(advanced, "Settings.Layout.PropertyAnimation", container.Animation.Enabled,
+            value => UpdateInlineContainer(
+                container,
+                container.ProximityDip,
+                container.ContentAlignment,
+                container.SecondaryContentAlignment,
                 container.Animation with { Enabled = value }));
-        AddSliderRow(panel, "Settings.Layout.PropertyDuration", container.Animation.DurationMilliseconds, 0, 2_000,
+        AddSliderRow(advanced, "Settings.Layout.PropertyDuration", container.Animation.DurationMilliseconds, 0, 2_000,
             value => UpdateInlineContainer(
                 container,
                 container.ProximityDip,
+                container.ContentAlignment,
+                container.SecondaryContentAlignment,
                 container.Animation with { DurationMilliseconds = value }),
             value => Loc.Get("Settings.Layout.UnitMilliseconds", value));
+        AddSliderRow(advanced, "Settings.Layout.PropertyDelay", container.Animation.DelayMilliseconds, 0, 2_000,
+            value => UpdateInlineContainer(
+                container,
+                container.ProximityDip,
+                container.ContentAlignment,
+                container.SecondaryContentAlignment,
+                container.Animation with { DelayMilliseconds = value }),
+            value => Loc.Get("Settings.Layout.UnitMilliseconds", value));
+        AddSliderRow(advanced, "Settings.Layout.PropertyProximity", container.ProximityDip, 0, 256,
+            value => UpdateInlineContainer(
+                container,
+                value,
+                container.ContentAlignment,
+                container.SecondaryContentAlignment,
+                container.Animation),
+            value => Loc.Get("Settings.Layout.UnitDip", value));
+        AddEnumRow(
+            advanced,
+            "Settings.Layout.PropertyEasing",
+            container.Animation.Easing,
+            new Dictionary<LayoutEasingKind, string>
+            {
+                [LayoutEasingKind.Linear] = "Settings.Layout.PropertyEasingLinear",
+                [LayoutEasingKind.EaseOut] = "Settings.Layout.PropertyEasingEaseOut",
+                [LayoutEasingKind.EaseInOut] = "Settings.Layout.PropertyEasingEaseInOut"
+            },
+            value => UpdateInlineContainer(
+                container,
+                container.ProximityDip,
+                container.ContentAlignment,
+                container.SecondaryContentAlignment,
+                container.Animation with { Easing = value }));
+        panel.Children.Add(new Expander
+        {
+            Header = Loc.Get("Settings.Layout.EditorAdvancedBehavior"),
+            Margin = new Thickness(0, 8, 0, 0),
+            IsExpanded = false,
+            Content = advanced
+        });
+        AddAdvancedContainerGeometryProperties(panel, container);
     }
 
     private void AddEdgeContainerProperties(StackPanel panel, LayoutEdgeContainer edge)
     {
+        var resetButton = new Button
+        {
+            Content = Loc.Get("Settings.Layout.PropertyResetContainerDefault"),
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Margin = new Thickness(0, 0, 0, 8),
+            Style = TryFindResource("SettingsActionButtonStyle") as Style,
+            ToolTip = Loc.Get("Settings.Layout.PropertyResetContainerDefaultHint")
+        };
+        resetButton.Click += (_, _) => ResetEdgeContainerProperties(edge);
+        panel.Children.Add(resetButton);
+
         AddEnumRow(panel, "Settings.Layout.PropertyEdge", edge.Edge,
             Enum.GetValues<LayoutEdge>().ToDictionary(value => value, GetEdgeResourceKey),
             value => UpdateEdgeContainer(edge, value, edge.OffsetDip, edge.TriggerThicknessDip, edge.ProximityDip, edge.Animation));
@@ -1050,7 +1851,8 @@ public partial class SettingsWindow
             value => UpdateEdgeContainer(edge, edge.Edge, value, edge.TriggerThicknessDip, edge.ProximityDip, edge.Animation));
         AddSliderRow(panel, "Settings.Layout.PropertyTriggerThickness", edge.TriggerThicknessDip, 2, 24,
             value => UpdateEdgeContainer(edge, edge.Edge, edge.OffsetDip, value, edge.ProximityDip, edge.Animation));
-        AddCheckRow(panel, "Settings.Layout.PropertyAnimation", edge.Animation.Enabled,
+        var advanced = new StackPanel();
+        AddCheckRow(advanced, "Settings.Layout.PropertyAnimation", edge.Animation.Enabled,
             value => UpdateEdgeContainer(
                 edge,
                 edge.Edge,
@@ -1058,7 +1860,7 @@ public partial class SettingsWindow
                 edge.TriggerThicknessDip,
                 edge.ProximityDip,
                 edge.Animation with { Enabled = value }));
-        AddSliderRow(panel, "Settings.Layout.PropertyDuration", edge.Animation.DurationMilliseconds, 0, 2_000,
+        AddSliderRow(advanced, "Settings.Layout.PropertyDuration", edge.Animation.DurationMilliseconds, 0, 2_000,
             value => UpdateEdgeContainer(
                 edge,
                 edge.Edge,
@@ -1067,6 +1869,58 @@ public partial class SettingsWindow
                 edge.ProximityDip,
                 edge.Animation with { DurationMilliseconds = value }),
             value => Loc.Get("Settings.Layout.UnitMilliseconds", value));
+        AddSliderRow(advanced, "Settings.Layout.PropertyDelay", edge.Animation.DelayMilliseconds, 0, 2_000,
+            value => UpdateEdgeContainer(
+                edge,
+                edge.Edge,
+                edge.OffsetDip,
+                edge.TriggerThicknessDip,
+                edge.ProximityDip,
+                edge.Animation with { DelayMilliseconds = value }),
+            value => Loc.Get("Settings.Layout.UnitMilliseconds", value));
+        AddEnumRow(
+            advanced,
+            "Settings.Layout.PropertyEasing",
+            edge.Animation.Easing,
+            new Dictionary<LayoutEasingKind, string>
+            {
+                [LayoutEasingKind.Linear] = "Settings.Layout.PropertyEasingLinear",
+                [LayoutEasingKind.EaseOut] = "Settings.Layout.PropertyEasingEaseOut",
+                [LayoutEasingKind.EaseInOut] = "Settings.Layout.PropertyEasingEaseInOut"
+            },
+            value => UpdateEdgeContainer(
+                edge,
+                edge.Edge,
+                edge.OffsetDip,
+                edge.TriggerThicknessDip,
+                edge.ProximityDip,
+                edge.Animation with { Easing = value }));
+        panel.Children.Add(new Expander
+        {
+            Header = Loc.Get("Settings.Layout.EditorAdvancedBehavior"),
+            Margin = new Thickness(0, 8, 0, 0),
+            IsExpanded = false,
+            Content = advanced
+        });
+    }
+
+    private void AddAdvancedContainerGeometryProperties(StackPanel panel, LayoutElement element)
+    {
+        // 容器尺寸属于高级覆盖项；默认保持自动测量，避免普通用户被无效固定值干扰。
+        // Container dimensions remain advanced overrides; automatic measurement keeps the common path predictable.
+        var geometry = element.Geometry ?? LayoutGeometry.Auto;
+        var content = new StackPanel();
+        AddNullableNumericRow(content, "Settings.Layout.PropertyWidth", geometry.WidthDip, 1, 2_000,
+            value => UpdateGeometry(element, current => current with { WidthDip = value }));
+        AddNullableNumericRow(content, "Settings.Layout.PropertyHeight", geometry.HeightDip, 1, 2_000,
+            value => UpdateGeometry(element, current => current with { HeightDip = value }));
+        panel.Children.Add(new Expander
+        {
+            Header = Loc.Get("Settings.Layout.EditorAdvancedSize"),
+            Margin = new Thickness(0, 8, 0, 0),
+            IsExpanded = false,
+            Content = content
+        });
     }
 
     private void UpdateWidget(LayoutWidgetElement widget, Func<WidgetSettings, WidgetSettings> update)
@@ -1087,7 +1941,7 @@ public partial class SettingsWindow
         });
     }
 
-    private void UpdateGeometry(LayoutWidgetElement widget, Func<LayoutGeometry, LayoutGeometry> update)
+    private void UpdateGeometry(LayoutElement element, Func<LayoutGeometry, LayoutGeometry> update)
     {
         if (_layoutPropertySyncing)
         {
@@ -1096,14 +1950,16 @@ public partial class SettingsWindow
 
         TryApplyProfile(profile => LayoutEditorService.TryUpdateGeometry(
             profile,
-            widget.InstanceId,
-            update(widget.Geometry ?? LayoutGeometry.Auto),
+            element.InstanceId,
+            update(element.Geometry ?? LayoutGeometry.Auto),
             out var updated) ? updated : null);
     }
 
     private void UpdateInlineContainer(
         LayoutContainerElement container,
         int proximityDip,
+        LayoutContentAlignment contentAlignment,
+        LayoutContentAlignment secondaryContentAlignment,
         LayoutAnimationSettings animation)
     {
         if (_layoutPropertySyncing)
@@ -1115,7 +1971,48 @@ public partial class SettingsWindow
             profile,
             container.InstanceId,
             proximityDip,
+            contentAlignment,
+            secondaryContentAlignment,
             animation,
+            out var updated) ? updated : null);
+    }
+
+    private void ResetInlineContainerProperties(LayoutContainerElement container)
+    {
+        if (_layoutPropertySyncing)
+        {
+            return;
+        }
+
+        TryApplyProfile(profile => LayoutEditorService.TryResetInlineContainer(
+            profile,
+            container.InstanceId,
+            out var updated) ? updated : null);
+    }
+
+    private void ResetEdgeContainerProperties(LayoutEdgeContainer container)
+    {
+        if (_layoutPropertySyncing)
+        {
+            return;
+        }
+
+        TryApplyProfile(profile => LayoutEditorService.TryResetEdgeContainer(
+            profile,
+            container.InstanceId,
+            out var updated) ? updated : null);
+    }
+
+    private void ResetWidgetProperties(LayoutWidgetElement widget)
+    {
+        if (_layoutPropertySyncing)
+        {
+            return;
+        }
+
+        TryApplyProfile(profile => LayoutEditorService.TryResetWidgetProperties(
+            profile,
+            widget.InstanceId,
             out var updated) ? updated : null);
     }
 
@@ -1194,6 +2091,7 @@ public partial class SettingsWindow
             }
         };
         row.Children.Add(input);
+        Grid.SetColumn(input, 1);
         panel.Children.Add(row);
     }
 
@@ -1207,13 +2105,19 @@ public partial class SettingsWindow
         Func<int, string>? format = null)
     {
         var row = CreatePropertyRow(labelKey);
+        var controlGroup = new Grid();
+        controlGroup.ColumnDefinitions.Add(new ColumnDefinition
+        {
+            Width = new GridLength(1, GridUnitType.Star)
+        });
+        controlGroup.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(90) });
         var slider = new Slider
         {
-            Width = 150,
             Minimum = minimum,
             Maximum = maximum,
             TickFrequency = Math.Max(1, (maximum - minimum) / 10),
-            Value = Math.Clamp(value, minimum, maximum)
+            Value = Math.Clamp(value, minimum, maximum),
+            HorizontalAlignment = HorizontalAlignment.Stretch
         };
         var input = new TextBox
         {
@@ -1252,8 +2156,11 @@ public partial class SettingsWindow
                 e.Handled = true;
             }
         };
-        row.Children.Add(slider);
-        row.Children.Add(input);
+        controlGroup.Children.Add(slider);
+        controlGroup.Children.Add(input);
+        Grid.SetColumn(input, 1);
+        row.Children.Add(controlGroup);
+        Grid.SetColumn(controlGroup, 1);
         panel.Children.Add(row);
     }
 
@@ -1282,7 +2189,7 @@ public partial class SettingsWindow
         var row = CreatePropertyRow(labelKey);
         var combo = new ComboBox
         {
-            Width = 176,
+            MinWidth = 160,
             Style = TryFindResource("SettingsComboBoxStyle") as Style
         };
         var selectedIndex = 0;
@@ -1312,20 +2219,22 @@ public partial class SettingsWindow
             }
         };
         row.Children.Add(combo);
+        Grid.SetColumn(combo, 1);
+        combo.HorizontalAlignment = HorizontalAlignment.Stretch;
         panel.Children.Add(row);
     }
 
-    private StackPanel CreatePropertyRow(string labelKey)
+    private Grid CreatePropertyRow(string labelKey)
     {
-        var row = new StackPanel
+        var row = new Grid
         {
-            Orientation = Orientation.Horizontal,
             Margin = new Thickness(0, 3, 0, 3),
             VerticalAlignment = VerticalAlignment.Center
         };
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         row.Children.Add(new TextBlock
         {
-            Width = 170,
             Text = Loc.Get(labelKey),
             VerticalAlignment = VerticalAlignment.Center,
             Style = TryFindResource("SettingsRowDescriptionStyle") as Style
@@ -1402,11 +2311,11 @@ public partial class SettingsWindow
                         : LayoutSlotKind.Primary,
                     container);
             }
-            if (ResolveWidgetSelection(container.PrimarySlot, container.InstanceId, LayoutSlotKind.Primary, instanceId) is { } primary)
+            if (ResolveSlotSelection(container.PrimarySlot, container.InstanceId, LayoutSlotKind.Primary, instanceId) is { } primary)
             {
                 return primary;
             }
-            if (ResolveWidgetSelection(container.SecondarySlot, container.InstanceId, LayoutSlotKind.Secondary, instanceId) is { } secondary)
+            if (ResolveSlotSelection(container.SecondarySlot, container.InstanceId, LayoutSlotKind.Secondary, instanceId) is { } secondary)
             {
                 return secondary;
             }
@@ -1423,7 +2332,7 @@ public partial class SettingsWindow
                     LayoutSlotKind.Expanded,
                     edge);
             }
-            if (ResolveWidgetSelection(edge.ExpandedSlot, edge.InstanceId, LayoutSlotKind.Expanded, instanceId) is { } widget)
+            if (ResolveSlotSelection(edge.ExpandedSlot, edge.InstanceId, LayoutSlotKind.Expanded, instanceId) is { } widget)
             {
                 return widget;
             }
@@ -1432,22 +2341,48 @@ public partial class SettingsWindow
         return null;
     }
 
-    private static LayoutEditorSelection? ResolveWidgetSelection(
+    private static LayoutEditorSelection? ResolveSlotSelection(
         LayoutSlot slot,
         string parentId,
         LayoutSlotKind slotKind,
         string instanceId)
     {
-        var widget = slot.Children.OfType<LayoutWidgetElement>()
-            .FirstOrDefault(item => item.InstanceId == instanceId);
-        return widget is null
-            ? null
-            : new LayoutEditorSelection(
-                instanceId,
-                LayoutEditorNodeKind.Widget,
-                parentId,
-                slotKind,
-                widget);
+        foreach (var child in slot.Children)
+        {
+            if (child.InstanceId == instanceId)
+            {
+                return child switch
+                {
+                    LayoutWidgetElement widget => new LayoutEditorSelection(
+                        instanceId,
+                        LayoutEditorNodeKind.Widget,
+                        parentId,
+                        slotKind,
+                        widget),
+                    LayoutContainerElement container => new LayoutEditorSelection(
+                        instanceId,
+                        LayoutEditorNodeKind.InlineContainer,
+                        parentId,
+                        slotKind,
+                        container),
+                    _ => null
+                };
+            }
+
+            if (child is LayoutContainerElement nested)
+            {
+                if (ResolveSlotSelection(nested.PrimarySlot, nested.InstanceId, LayoutSlotKind.Primary, instanceId) is { } primary)
+                {
+                    return primary;
+                }
+                if (ResolveSlotSelection(nested.SecondarySlot, nested.InstanceId, LayoutSlotKind.Secondary, instanceId) is { } secondary)
+                {
+                    return secondary;
+                }
+            }
+        }
+
+        return null;
     }
 
     private void UpdateLayoutEditorButtons()
@@ -1475,7 +2410,8 @@ public partial class SettingsWindow
             PlayerLayoutMode.Vertical => true,
             PlayerLayoutMode.Horizontal => false,
             _ when settings.HostMode == WindowHostMode.Taskbar =>
-                TaskbarEdgeService.TryResolveCurrent() is LayoutEdge.Left or LayoutEdge.Right,
+                TaskbarEdgeService.TryResolveCurrentVerticalLayout() ??
+                (TaskbarEdgeService.TryResolveCurrent() is LayoutEdge.Left or LayoutEdge.Right),
             _ => false
         };
         return LayoutRuntimeService.ResolveProfileKey(vertical);
@@ -1507,10 +2443,32 @@ public partial class SettingsWindow
 
     private static string GetWidgetTitle(LayoutWidgetElement widget)
     {
-        return ComponentCatalog.TryGet(widget.TypeId, out var definition)
-            ? Loc.Get(definition.NameResourceKey)
-            : widget.TypeId;
+        return widget.Settings switch
+        {
+            CommandWidgetSettings command => GetCommandOptionLabel(command.Command),
+            MediaTextWidgetSettings text when widget.TypeId == BuiltInWidgetTypeIds.MediaText =>
+                GetMediaTextOptionLabel(text.TextKind),
+            MetricsWidgetSettings metrics => GetMetricOptionLabel(metrics.Metric),
+            _ when ComponentCatalog.TryGet(widget.TypeId, out var definition) =>
+                Loc.Get(definition.NameResourceKey),
+            _ => widget.TypeId
+        };
     }
+
+    private static string GetCommandOptionLabel(MediaCommandKind command) =>
+        Loc.Get(GetCommandOptionKey(command));
+
+    private static string GetMediaTextOptionLabel(MediaTextKind kind) => kind switch
+    {
+        MediaTextKind.Title => Loc.Get("Settings.Layout.PropertyTextTitle"),
+        MediaTextKind.Artist => Loc.Get("Settings.Layout.PropertyTextArtist"),
+        MediaTextKind.Source => Loc.Get("Settings.Layout.PropertyTextSource"),
+        MediaTextKind.TitleAndArtist => Loc.Get("Settings.Layout.PropertyTextTitleAndArtist"),
+        _ => Loc.Get("Settings.LayoutWidget.MediaTextTitle")
+    };
+
+    private static string GetMetricOptionLabel(MetricKind metric) =>
+        Loc.Get(GetMetricOptionKey(metric));
 
     private static string GetSlotName(LayoutSlotKind slotKind) => Loc.Get(GetSlotResourceKey(slotKind));
 
@@ -1560,6 +2518,8 @@ public partial class SettingsWindow
     }
 
     private sealed record LayoutDropTarget(string ContainerId, LayoutSlotKind SlotKind);
+
+    private sealed record PaletteEntry(string Token, string Label, string Description);
 
     private sealed record LayoutEditorSelection(
         string InstanceId,

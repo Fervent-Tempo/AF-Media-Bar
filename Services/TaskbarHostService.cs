@@ -229,7 +229,8 @@ internal sealed class TaskbarHostService : IDisposable
         int height,
         bool visible,
         bool topmost = false,
-        bool refresh = true)
+        bool refresh = true,
+        IReadOnlyList<NativeMethods.Rect>? inputRects = null)
     {
         if (_disposed || width <= 0 || height <= 0)
         {
@@ -257,7 +258,7 @@ internal sealed class TaskbarHostService : IDisposable
             insertAfter = NativeMethods.HwndTop;
         }
 
-        var regionApplied = !refresh || ApplyInputRegion(width, height);
+        var regionApplied = !refresh || ApplyInputRegion(width, height, inputRects);
         if (refresh && !regionApplied)
         {
             // A WPF layered window can reject SetWindowRgn on some desktop/DPI
@@ -339,9 +340,16 @@ internal sealed class TaskbarHostService : IDisposable
                 NativeMethods.RdwUpdateNow);
     }
 
-    private bool ApplyInputRegion(int width, int height)
+    /// <summary>
+    /// 为布局窗口建立真实输入区域；折叠时只把条带与窄触发条放入并集，隐藏内容所在矩形保持穿透。
+    /// Builds the real input region for a layout window; while collapsed, only the strip and narrow trigger bars are unioned, leaving hidden content click-through.
+    /// </summary>
+    private bool ApplyInputRegion(
+        int width,
+        int height,
+        IReadOnlyList<NativeMethods.Rect>? inputRects)
     {
-        var region = NativeMethods.CreateRectRgn(0, 0, width, height);
+        var region = CreateInputRegion(width, height, inputRects);
         if (region == nint.Zero)
         {
             return false;
@@ -355,6 +363,65 @@ internal sealed class TaskbarHostService : IDisposable
         }
 
         return true;
+    }
+
+    private static nint CreateInputRegion(
+        int width,
+        int height,
+        IReadOnlyList<NativeMethods.Rect>? inputRects)
+    {
+        if (inputRects is null || inputRects.Count == 0)
+        {
+            return NativeMethods.CreateRectRgn(0, 0, width, height);
+        }
+
+        var combined = NativeMethods.CreateRectRgn(0, 0, 0, 0);
+        if (combined == nint.Zero)
+        {
+            return nint.Zero;
+        }
+
+        var hasArea = false;
+        foreach (var candidate in inputRects)
+        {
+            var left = Math.Clamp(candidate.Left, 0, width);
+            var top = Math.Clamp(candidate.Top, 0, height);
+            var right = Math.Clamp(candidate.Right, 0, width);
+            var bottom = Math.Clamp(candidate.Bottom, 0, height);
+            if (right <= left || bottom <= top)
+            {
+                continue;
+            }
+
+            var part = NativeMethods.CreateRectRgn(left, top, right, bottom);
+            if (part == nint.Zero)
+            {
+                NativeMethods.DeleteObject(combined);
+                return nint.Zero;
+            }
+
+            var result = NativeMethods.CombineRgn(
+                combined,
+                combined,
+                part,
+                NativeMethods.RgnOr);
+            NativeMethods.DeleteObject(part);
+            if (result == 0)
+            {
+                NativeMethods.DeleteObject(combined);
+                return nint.Zero;
+            }
+
+            hasArea = true;
+        }
+
+        if (hasArea)
+        {
+            return combined;
+        }
+
+        NativeMethods.DeleteObject(combined);
+        return NativeMethods.CreateRectRgn(0, 0, width, height);
     }
 
     private bool TrySetWindowState(nint parent, long style)

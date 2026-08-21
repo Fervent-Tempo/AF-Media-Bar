@@ -37,6 +37,8 @@ internal static class LayoutEditorService
             LayoutGeometry.Auto,
             normalizedKind,
             LayoutFlowOrientation.Automatic,
+            LayoutContentAlignment.Center,
+            LayoutContentAlignment.Center,
             normalizedKind == LayoutContainerKind.HoverSwitch
                 ? LayoutTriggerMode.PointerNear
                 : LayoutTriggerMode.Always,
@@ -60,6 +62,65 @@ internal static class LayoutEditorService
             72,
             LayoutAnimationSettings.Default,
             LayoutSlot.Empty("expanded"));
+    }
+
+    internal static bool TryResetInlineContainer(
+        LayoutProfile profile,
+        string instanceId,
+        out LayoutProfile updated)
+    {
+        var changed = false;
+        var inline = profile.InlineContainers.Select(container =>
+        {
+            if (!string.Equals(container.InstanceId, instanceId, StringComparison.Ordinal))
+            {
+                return container;
+            }
+
+            var defaults = CreateInlineContainer(container.ContainerKind);
+            changed = true;
+            return container with
+            {
+                // 容器恢复默认时一并移除手动尺寸覆盖；否则“恢复默认”仍会保留旧碰撞尺寸。
+                // Reset also removes manual geometry overrides; otherwise the old collision size would survive a default reset.
+                Geometry = LayoutGeometry.Auto,
+                Orientation = LayoutFlowOrientation.Automatic,
+                ContentAlignment = defaults.ContentAlignment,
+                SecondaryContentAlignment = defaults.SecondaryContentAlignment,
+                Trigger = defaults.Trigger,
+                ProximityDip = defaults.ProximityDip,
+                Animation = defaults.Animation
+            };
+        }).ToArray();
+        updated = changed ? profile with { InlineContainers = inline } : profile;
+        return changed;
+    }
+
+    internal static bool TryResetEdgeContainer(
+        LayoutProfile profile,
+        string instanceId,
+        out LayoutProfile updated)
+    {
+        var changed = false;
+        var edges = profile.EdgeContainers.Select(container =>
+        {
+            if (!string.Equals(container.InstanceId, instanceId, StringComparison.Ordinal))
+            {
+                return container;
+            }
+
+            var defaults = CreateEdgeContainer(container.Edge);
+            changed = true;
+            return container with
+            {
+                OffsetDip = defaults.OffsetDip,
+                TriggerThicknessDip = defaults.TriggerThicknessDip,
+                ProximityDip = defaults.ProximityDip,
+                Animation = defaults.Animation
+            };
+        }).ToArray();
+        updated = changed ? profile with { EdgeContainers = edges } : profile;
+        return changed;
     }
 
     internal static bool TryAddInlineContainer(
@@ -399,6 +460,37 @@ internal static class LayoutEditorService
             element is LayoutWidgetElement widget ? widget with { Settings = settings } : element, out updated);
     }
 
+    internal static bool TryResetWidgetProperties(
+        LayoutProfile profile,
+        string instanceId,
+        out LayoutProfile updated)
+    {
+        return TryUpdateElement(profile, instanceId, element =>
+        {
+            if (element is not LayoutWidgetElement widget)
+            {
+                return element;
+            }
+
+            var defaults = ComponentCatalog.CreateDefaultSettings(widget.TypeId);
+            // 调色板中的“上一首/歌手”等条目共享底层类型；恢复属性时保留当前语义角色，避免按钮或文本类型被重置。
+            // Palette entries share a storage type; preserve the current semantic role so reset does not change a command or text kind.
+            defaults = (defaults, widget.Settings) switch
+            {
+                (CommandWidgetSettings defaultCommand, CommandWidgetSettings currentCommand) =>
+                    defaultCommand with { Command = currentCommand.Command },
+                (MediaTextWidgetSettings defaultText, MediaTextWidgetSettings currentText) =>
+                    defaultText with { TextKind = currentText.TextKind },
+                _ => defaults
+            };
+            return widget with
+            {
+                Geometry = LayoutGeometry.Auto,
+                Settings = defaults
+            };
+        }, out updated);
+    }
+
     internal static bool TryUpdateGeometry(
         LayoutProfile profile,
         string instanceId,
@@ -412,6 +504,8 @@ internal static class LayoutEditorService
         LayoutProfile profile,
         string instanceId,
         int proximityDip,
+        LayoutContentAlignment contentAlignment,
+        LayoutContentAlignment secondaryContentAlignment,
         LayoutAnimationSettings animation,
         out LayoutProfile updated)
     {
@@ -427,6 +521,12 @@ internal static class LayoutEditorService
             return container with
             {
                 Orientation = LayoutFlowOrientation.Automatic,
+                ContentAlignment = Enum.IsDefined(contentAlignment)
+                    ? contentAlignment
+                    : LayoutContentAlignment.Center,
+                SecondaryContentAlignment = Enum.IsDefined(secondaryContentAlignment)
+                    ? secondaryContentAlignment
+                    : LayoutContentAlignment.Center,
                 Trigger = container.ContainerKind == LayoutContainerKind.HoverSwitch
                     ? LayoutTriggerMode.PointerNear
                     : LayoutTriggerMode.Always,

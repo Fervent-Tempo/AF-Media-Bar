@@ -63,6 +63,7 @@ internal static class NativeMethods
     internal const int WmRightButtonDown = 0x0204;
     internal const int WmRightButtonUp = 0x0205;
     internal const int HtClient = 1;
+    internal const int RgnOr = 2;
     internal const int IdiApplication = 32512;
     internal const int WhMouseLowLevel = 14;
     internal const int PbtApmSuspend = 0x0004;
@@ -183,6 +184,15 @@ internal static class NativeMethods
 
     [DllImport("gdi32.dll", SetLastError = true)]
     internal static extern nint CreateRectRgn(int left, int top, int right, int bottom);
+
+    // 使用 GDI 区域并集让非矩形布局窗口只接收真实条带/触发区输入，避免隐藏折叠内容继续形成碰撞体积。
+    // Combine GDI regions so non-rectangular layout windows receive input only on real strip/trigger surfaces; hidden collapsed content cannot remain a collision area.
+    [DllImport("gdi32.dll")]
+    internal static extern int CombineRgn(
+        nint destination,
+        nint sourceOne,
+        nint sourceTwo,
+        int combineMode);
 
     [DllImport("gdi32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]

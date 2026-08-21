@@ -13,6 +13,7 @@ internal static class LayoutMigrationService
     private const int MaximumScalePercent = 125;
     private const int MaximumAnimationMilliseconds = 2_000;
     private const int MaximumProximityDip = 256;
+    private const int MaximumMediaTextLines = 2;
 
     internal static LayoutDocument CreateFromLegacy(
         WindowSettings window,
@@ -259,19 +260,18 @@ internal static class LayoutMigrationService
         {
             var mediaTextChildren = new LayoutElement[]
             {
-                CreateMediaText("title", MediaTextKind.Title, 14),
-                CreateMediaText("artist", MediaTextKind.Artist, 11)
+                CreateMediaText("title", MediaTextKind.Title, 14, heightDip: 20),
+                CreateMediaText("artist", MediaTextKind.Artist, 11, heightDip: 20)
             };
             if (vertical)
             {
-                idleChildren.AddRange(mediaTextChildren);
+                idleChildren.Add(mediaTextChildren[0]);
             }
             else
             {
-                idleChildren.Add(CreateStaticContainer(
-                    "media-text-stack",
-                    LayoutFlowOrientation.Vertical,
-                    mediaTextChildren));
+                // 离开槽只保留歌曲名；歌手在靠近槽与控制按钮一起显示，避免低密度状态占满长条。
+                // The leave slot keeps only the title; artist joins the near slot with controls for a denser state.
+                idleChildren.Add(mediaTextChildren[0]);
             }
         }
         else if (metrics.AudioMonitorEnabled && !vertical)
@@ -284,8 +284,13 @@ internal static class LayoutMigrationService
 
         if (window.ShowMediaInfo)
         {
-            activeChildren.Add(CreateMediaText("title-active", MediaTextKind.Title, 14));
-            activeChildren.Add(CreateMediaText("artist-active", MediaTextKind.Artist, 11));
+            // 组合信息组件把歌手放在歌曲名下方；固定列宽让长标题截断，不会把右侧控制按钮推出长条。
+            // The combined media widget places artist below title; a fixed width keeps long titles from pushing controls out of the strip.
+            activeChildren.Add(CreateMediaText(
+                "media-active-text",
+                MediaTextKind.TitleAndArtist,
+                14,
+                vertical ? null : 150));
         }
 
         activeChildren.Add(CreateCommand("previous", MediaCommandKind.Previous));
@@ -295,9 +300,11 @@ internal static class LayoutMigrationService
         return new LayoutContainerElement(
             "media-interaction",
             true,
-            new LayoutGeometry(210, null, 0, 420, null, null, LayoutThickness.Zero),
+            LayoutGeometry.Auto,
             LayoutContainerKind.HoverSwitch,
             vertical ? LayoutFlowOrientation.Vertical : LayoutFlowOrientation.Horizontal,
+            LayoutContentAlignment.Center,
+            LayoutContentAlignment.Center,
             window.AutoCollapse ? LayoutTriggerMode.PointerNear : LayoutTriggerMode.Always,
             0,
             LayoutAnimationSettings.Default,
@@ -309,12 +316,21 @@ internal static class LayoutMigrationService
     private static LayoutWidgetElement CreateMediaText(
         string id,
         MediaTextKind kind,
-        int fontSizeDip)
+        int fontSizeDip,
+        int? widthDip = null,
+        int? heightDip = null)
     {
         return CreateWidget(
             id,
             BuiltInWidgetTypeIds.MediaText,
-            new MediaTextWidgetSettings(kind, true, fontSizeDip, 1));
+            new MediaTextWidgetSettings(kind, true, fontSizeDip, 1)) with
+        {
+            Geometry = LayoutGeometry.Auto with
+            {
+                WidthDip = widthDip,
+                HeightDip = heightDip
+            }
+        };
     }
 
     private static LayoutWidgetElement CreateCommand(
@@ -351,6 +367,8 @@ internal static class LayoutMigrationService
             LayoutGeometry.Auto,
             LayoutContainerKind.Static,
             orientation,
+            LayoutContentAlignment.Center,
+            LayoutContentAlignment.Center,
             LayoutTriggerMode.Always,
             0,
             new LayoutAnimationSettings(false, 0, 0, LayoutEasingKind.Linear),
@@ -595,6 +613,15 @@ internal static class LayoutMigrationService
         var normalized = container with
         {
             ContainerKind = kind,
+            // 新布局的主轴只能由横向/竖向档案决定；旧容器级方向在规范化时清除，避免同一档案出现混合排列。
+            // The profile owns the layout axis; clear legacy per-container orientation so one profile cannot mix directions.
+            Orientation = LayoutFlowOrientation.Automatic,
+            ContentAlignment = Enum.IsDefined(container.ContentAlignment)
+                ? container.ContentAlignment
+                : LayoutContentAlignment.Center,
+            SecondaryContentAlignment = Enum.IsDefined(container.SecondaryContentAlignment)
+                ? container.SecondaryContentAlignment
+                : LayoutContentAlignment.Center,
             Geometry = NormalizeGeometry(container.Geometry),
             ProximityDip = Math.Clamp(container.ProximityDip, 0, MaximumProximityDip),
             Animation = NormalizeAnimation(container.Animation),
@@ -602,7 +629,54 @@ internal static class LayoutMigrationService
             SecondarySlot = NormalizeSlot(container.SecondarySlot, secondaryAllowsInteractive),
             CollapsedSlot = NormalizeSlot(container.CollapsedSlot, allowInteractive: false)
         };
-        return normalized;
+        return normalized.ContainerKind == LayoutContainerKind.HoverSwitch &&
+            string.Equals(normalized.InstanceId, "media-interaction", StringComparison.Ordinal)
+            ? NormalizeDefaultMediaInteraction(normalized)
+            : normalized;
+    }
+
+    private static LayoutContainerElement NormalizeDefaultMediaInteraction(
+        LayoutContainerElement container)
+    {
+        var normalized = container;
+        // 旧默认档案把标题和歌手作为两个横向控件；合并为稳定宽度的两行信息，避免控制按钮被长标题推出窗口。
+        // Older defaults placed title and artist as two horizontal widgets; merge them into a stable two-line block so long titles cannot push controls out.
+        var title = normalized.SecondarySlot.Children
+            .OfType<LayoutWidgetElement>()
+            .FirstOrDefault(widget =>
+                widget.Settings is MediaTextWidgetSettings { TextKind: MediaTextKind.Title });
+        var artist = normalized.SecondarySlot.Children
+            .OfType<LayoutWidgetElement>()
+            .FirstOrDefault(widget =>
+                widget.Settings is MediaTextWidgetSettings { TextKind: MediaTextKind.Artist });
+        if (title is null || artist is null)
+        {
+            return normalized;
+        }
+
+        var combined = title with
+        {
+            Settings = title.Settings is MediaTextWidgetSettings text
+                ? text with { TextKind = MediaTextKind.TitleAndArtist }
+                : title.Settings,
+            Geometry = (title.Geometry ?? LayoutGeometry.Auto) with
+            {
+                WidthDip = null,
+                HeightDip = 40
+            }
+        };
+        return normalized with
+        {
+            SecondarySlot = normalized.SecondarySlot with
+            {
+                Children = normalized.SecondarySlot.Children
+                    .Where(child => !string.Equals(child.InstanceId, artist.InstanceId, StringComparison.Ordinal))
+                    .Select(child => string.Equals(child.InstanceId, title.InstanceId, StringComparison.Ordinal)
+                        ? combined
+                        : child)
+                    .ToArray()
+            }
+        };
     }
 
     private static LayoutSlot NormalizeSlot(LayoutSlot slot, bool allowInteractive)
@@ -688,14 +762,14 @@ internal static class LayoutMigrationService
                         ? text.TextKind
                         : MediaTextKind.Title,
                     FontSizeDip = Math.Clamp(text.FontSizeDip, 6, 72),
-                    MaxLines = Math.Clamp(text.MaxLines, 1, 8)
+                    MaxLines = Math.Clamp(text.MaxLines, 1, MaximumMediaTextLines)
                 },
             BuiltInWidgetTypeIds.MediaSource when settings is MediaTextWidgetSettings source =>
                 source with
                 {
                     TextKind = MediaTextKind.Source,
                     FontSizeDip = Math.Clamp(source.FontSizeDip, 6, 72),
-                    MaxLines = Math.Clamp(source.MaxLines, 1, 8)
+                    MaxLines = Math.Clamp(source.MaxLines, 1, MaximumMediaTextLines)
                 },
             BuiltInWidgetTypeIds.Command when settings is CommandWidgetSettings command =>
                 command with

@@ -60,6 +60,7 @@ public partial class MainWindow : Window
     private bool _isMenuOpen;
     private bool _isDragging;
     private bool _dragMoved;
+    private PlacementSettings? _dragPreviousPlacementSettings;
     private bool _powerSuspended;
     private bool _sessionLocked;
     private bool _environmentRecoveryRunning;
@@ -548,12 +549,7 @@ public partial class MainWindow : Window
         object sender,
         MouseButtonEventArgs e)
     {
-        if ((_windowSettings.HostMode == WindowHostMode.Taskbar &&
-                (_isVerticalLayout
-                    ? _placementSettings.VerticalPositionLocked
-                    : _placementSettings.AutomaticPlacement ||
-                        _placementSettings.PositionLocked)) ||
-            e.LeftButton != MouseButtonState.Pressed)
+        if (e.LeftButton != MouseButtonState.Pressed)
         {
             return;
         }
@@ -563,18 +559,9 @@ public partial class MainWindow : Window
             return;
         }
 
-        var position = e.GetPosition(PlayerRoot);
-        var isDragArea = _isVerticalLayout
-            ? (_windowSettings.ShowArtwork && position.Y <= VerticalArtworkAreaHeight) ||
-                (_windowSettings.ShowMediaInfo &&
-                    !_isExpanded &&
-                    position.Y <= VerticalBaseHeight -
-                        (_windowSettings.ShowArtwork ? 0 : VerticalArtworkAreaHeight))
-            : position.X <=
-                (_windowSettings.ShowArtwork ? ArtworkAreaWidth : 0) +
-                InfoHost.ActualWidth;
-        if (!isDragArea ||
-            !NativeMethods.GetCursorPos(out _dragStartCursor) ||
+        // 长条本身始终是拖动区域；只有明确可交互的组件拦截鼠标，避免自定义布局后旧节点尺寸决定拖动范围。
+        // The strip itself is always draggable; only explicitly interactive widgets intercept the pointer so legacy node sizes cannot shrink the drag area.
+        if (!NativeMethods.GetCursorPos(out _dragStartCursor) ||
             !NativeMethods.GetWindowRect(_windowHandle, out var windowRect))
         {
             return;
@@ -591,6 +578,19 @@ public partial class MainWindow : Window
             UpdateEdgeCollapseIndicator(visible: false);
         }
         _dragMoved = false;
+        if (_windowSettings.HostMode == WindowHostMode.Taskbar)
+        {
+            // 长条本身固定可拖动；开始拖动时自动退出自动定位/锁定，避免用户必须先寻找隐藏的解锁开关。
+            // The strip is always draggable; starting a drag exits auto-placement/lock so users do not need to find a hidden unlock switch first.
+            _dragPreviousPlacementSettings = _placementSettings;
+            _placementSettings = _placementSettings with
+            {
+                AutomaticPlacement = false,
+                PositionLocked = false,
+                VerticalPositionLocked = false
+            };
+            _placementTimer.Stop();
+        }
         _isDragging = true;
         Mouse.Capture(PlayerRoot);
         e.Handled = true;
@@ -598,6 +598,13 @@ public partial class MainWindow : Window
 
     private async void PlayerRoot_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
+        if (e.OriginalSource is DependencyObject source && IsLayoutWheelSource(source))
+        {
+            // 组件自身将在事件隧道结束时处理设备/音量滚轮；父级不能把它误判为媒体来源切换。
+            // The widget handles device/volume wheel input after tunneling; the parent must not mistake it for media-source switching.
+            return;
+        }
+
         if (OutputDevicePopup.IsOpen)
         {
             e.Handled = true;
@@ -671,12 +678,15 @@ public partial class MainWindow : Window
                 var margin = (int)Math.Round(VerticalMarginAt96Dpi * scale);
                 var playerHeight = (int)Math.Ceiling(
                     PlayerRoot.Height * PlayerScaleTransform.ScaleY * scale);
+                var edgeInsets = ResolveCollapsedActiveEdgeInsets();
+                var collapsedTop = (int)Math.Round(edgeInsets.Top * PlayerScaleTransform.ScaleY * scale);
+                var collapsedBottom = (int)Math.Round(edgeInsets.Bottom * PlayerScaleTransform.ScaleY * scale);
                 var top = Math.Clamp(
                     _dragStartWindowTop + deltaY,
-                    taskbarRect.Top + margin,
+                    taskbarRect.Top + margin - collapsedTop,
                     Math.Max(
-                        taskbarRect.Top + margin,
-                        taskbarRect.Bottom - margin - playerHeight));
+                        taskbarRect.Top + margin - collapsedTop,
+                        taskbarRect.Bottom - margin - playerHeight + collapsedBottom));
                 _placementSettings = _placementSettings with
                 {
                     ManualVerticalOffsetDip = (int)Math.Round(
@@ -688,20 +698,25 @@ public partial class MainWindow : Window
                 var margin = (int)Math.Round(HorizontalMarginAt96Dpi * scale);
                 var playerWidth = (int)Math.Ceiling(
                     PlayerRoot.Width * PlayerScaleTransform.ScaleX * scale);
+                var edgeInsets = ResolveCollapsedActiveEdgeInsets();
+                var collapsedLeft = (int)Math.Round(edgeInsets.Left * PlayerScaleTransform.ScaleX * scale);
+                var collapsedRight = (int)Math.Round(edgeInsets.Right * PlayerScaleTransform.ScaleX * scale);
                 var left = Math.Clamp(
                     _dragStartWindowLeft + deltaX,
-                    taskbarRect.Left + margin,
+                    taskbarRect.Left + margin - collapsedLeft,
                     Math.Max(
-                        taskbarRect.Left + margin,
-                        taskbarRect.Right - margin - playerWidth));
+                        taskbarRect.Left + margin - collapsedLeft,
+                        taskbarRect.Right - margin - playerWidth + collapsedRight));
                 var playerHeight = (int)Math.Ceiling(
                     PlayerRoot.Height * PlayerScaleTransform.ScaleY * scale);
+                var collapsedTop = (int)Math.Round(edgeInsets.Top * PlayerScaleTransform.ScaleY * scale);
+                var collapsedBottom = (int)Math.Round(edgeInsets.Bottom * PlayerScaleTransform.ScaleY * scale);
                 var centeredTop =
                     taskbarRect.Top + (taskbarRect.Height - playerHeight) / 2;
                 var top = Math.Clamp(
                     _dragStartWindowTop + deltaY,
-                    taskbarRect.Top,
-                    Math.Max(taskbarRect.Top, taskbarRect.Bottom - playerHeight));
+                    taskbarRect.Top - collapsedTop,
+                    Math.Max(taskbarRect.Top - collapsedTop, taskbarRect.Bottom - playerHeight + collapsedBottom));
                 _placementSettings = _placementSettings with
                 {
                     ManualOffsetDip = (int)Math.Round(
@@ -727,9 +742,25 @@ public partial class MainWindow : Window
             return;
         }
 
+        FinishPlayerDrag(commit: _dragMoved);
+        e.Handled = true;
+    }
+
+    private void PlayerRoot_OnLostMouseCapture(object sender, MouseEventArgs e)
+    {
+        if (_isDragging)
+        {
+            // 窗口失去捕获时也要提交已移动位置或恢复临时解锁状态，避免拖动中切换桌面后留下“半拖动”状态。
+            // If capture is lost, commit the moved position or restore the temporary unlock so desktop switches cannot leave a half-drag state.
+            FinishPlayerDrag(commit: _dragMoved);
+        }
+    }
+
+    private void FinishPlayerDrag(bool commit)
+    {
         _isDragging = false;
         Mouse.Capture(null);
-        if (_dragMoved)
+        if (commit)
         {
             if (_windowSettings.HostMode == WindowHostMode.Floating)
             {
@@ -745,7 +776,17 @@ public partial class MainWindow : Window
                 SavePlacementSettings();
             }
         }
-        e.Handled = true;
+        else if (_dragPreviousPlacementSettings is { } previousPlacement)
+        {
+            _placementSettings = previousPlacement;
+            if (_placementSettings.AutomaticPlacement)
+            {
+                _placementTimer.Start();
+            }
+        }
+
+        _dragPreviousPlacementSettings = null;
+        _dragMoved = false;
     }
 
     private void PlayerMenu_OnOpened(object sender, RoutedEventArgs e)
@@ -1099,6 +1140,21 @@ public partial class MainWindow : Window
         for (var current = source; current is not null; current = VisualTreeHelper.GetParent(current))
         {
             if (ComponentLayoutSurface.GetIsInteractiveElement(current))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsLayoutWheelSource(DependencyObject source)
+    {
+        for (var current = source; current is not null; current = VisualTreeHelper.GetParent(current))
+        {
+            if (current is FrameworkElement { Tag: MediaCommandKind command } &&
+                command is MediaCommandKind.SelectOutputDevice or MediaCommandKind.AdjustVolume &&
+                ComponentLayoutSurface.GetIsInteractiveElement(current))
             {
                 return true;
             }

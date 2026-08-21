@@ -110,18 +110,21 @@ internal sealed class LayoutRuntimeService
 
     internal static LayoutSize CalculateCompositionSize(
         LayoutProfile profile,
-        LayoutEdge? unavailableEdge = null)
+        LayoutEdge? unavailableEdge = null,
+        IReadOnlySet<string>? expandedEdgeContainerIds = null)
     {
         var strip = CalculateDesiredSize(profile);
         var edgeSizes = profile.EdgeContainers
             .Where(container => container.Enabled &&
                 container.Edge != unavailableEdge)
-            .Select(container => (container.Edge, Size: MeasureSlot(
-                container.ExpandedSlot,
-                profile.LayoutMode == PlayerLayoutMode.Vertical
-                    ? LayoutFlowOrientation.Vertical
-                    : LayoutFlowOrientation.Horizontal,
-                profile.Surface.GapDip)))
+            .Select(container =>
+            {
+                var expanded = expandedEdgeContainerIds is null ||
+                    expandedEdgeContainerIds.Contains(container.InstanceId);
+                return (container.Edge, Size: expanded
+                    ? MeasureEdgeContainer(profile, container)
+                    : MeasureEdgeTrigger(profile, container));
+            })
             .ToArray();
         var left = edgeSizes.Where(item => item.Edge == LayoutEdge.Left)
             .Select(item => item.Size.WidthDip).DefaultIfEmpty().Max();
@@ -144,6 +147,21 @@ internal sealed class LayoutRuntimeService
                 ? LayoutFlowOrientation.Vertical
                 : LayoutFlowOrientation.Horizontal,
             profile.Surface.GapDip);
+    }
+
+    /// <summary>
+    /// 计算折叠状态只需保留的触发区尺寸；展开内容不应参与窗口碰撞边界。
+    /// Measures the trigger-only footprint so expanded content does not remain in the window collision bounds while collapsed.
+    /// </summary>
+    internal static LayoutSize MeasureEdgeTrigger(
+        LayoutProfile profile,
+        LayoutEdgeContainer container)
+    {
+        var expanded = MeasureEdgeContainer(profile, container);
+        var trigger = Math.Clamp(container.TriggerThicknessDip, 2, 24);
+        return container.Edge is LayoutEdge.Top or LayoutEdge.Bottom
+            ? new LayoutSize(Math.Min(Math.Max(36, expanded.WidthDip), 72), trigger)
+            : new LayoutSize(trigger, Math.Min(Math.Max(36, expanded.HeightDip), 72));
     }
 
     private static LayoutSize MeasureContainer(
@@ -180,7 +198,7 @@ internal sealed class LayoutRuntimeService
             .Where(child => child.Enabled)
             .Select(child => child switch
             {
-                LayoutWidgetElement widget => MeasureWidget(widget),
+                LayoutWidgetElement widget => MeasureWidget(widget, orientation),
                 LayoutContainerElement container => MeasureContainer(container, orientation, gap),
                 _ => new LayoutSize(0, 0)
             })
@@ -218,15 +236,20 @@ internal sealed class LayoutRuntimeService
                 sizes.Sum(size => size.HeightDip) + Math.Max(0, sizes.Count - 1) * gap);
     }
 
-    private static LayoutSize MeasureWidget(LayoutWidgetElement widget)
+    private static LayoutSize MeasureWidget(
+        LayoutWidgetElement widget,
+        LayoutFlowOrientation orientation)
     {
         var settings = widget.Settings;
+        var isVertical = orientation == LayoutFlowOrientation.Vertical;
         var size = widget.TypeId switch
         {
             BuiltInWidgetTypeIds.Artwork => new LayoutSize(40, 40),
             BuiltInWidgetTypeIds.MediaText when settings is MediaTextWidgetSettings text =>
-                new LayoutSize(210, Math.Max(18, text.FontSizeDip * text.MaxLines + 4)),
-            BuiltInWidgetTypeIds.MediaSource => new LayoutSize(150, 18),
+                text.TextKind == MediaTextKind.TitleAndArtist
+                    ? new LayoutSize(isVertical ? 68 : 150, 40)
+                    : new LayoutSize(isVertical ? 68 : 210, 40),
+            BuiltInWidgetTypeIds.MediaSource => new LayoutSize(isVertical ? 68 : 150, 18),
             BuiltInWidgetTypeIds.Command when settings is CommandWidgetSettings command =>
                 new LayoutSize(command.ButtonSizeDip, command.ButtonSizeDip),
             BuiltInWidgetTypeIds.Metrics => new LayoutSize(74, 24),

@@ -41,6 +41,18 @@ internal enum LayoutFlowOrientation
     Vertical = 2
 }
 
+/// <summary>
+/// 控制容器内容在档案主轴交叉方向的对齐；默认居中可避免悬停内容贴在窗口边缘而浪费空间。
+/// Controls cross-axis alignment inside a container; centered by default so hover content does not waste space at an edge.
+/// </summary>
+internal enum LayoutContentAlignment
+{
+    Center = 0,
+    Start = 1,
+    End = 2,
+    Stretch = 3
+}
+
 internal enum LayoutTriggerMode
 {
     Always = 0,
@@ -70,7 +82,8 @@ internal enum MediaTextKind
 {
     Title = 0,
     Artist = 1,
-    Source = 2
+    Source = 2,
+    TitleAndArtist = 3
 }
 
 internal enum MetricKind
@@ -235,6 +248,8 @@ internal sealed record LayoutContainerElement(
     LayoutGeometry Geometry,
     LayoutContainerKind ContainerKind,
     LayoutFlowOrientation Orientation,
+    LayoutContentAlignment ContentAlignment,
+    LayoutContentAlignment SecondaryContentAlignment,
     LayoutTriggerMode Trigger,
     int ProximityDip,
     LayoutAnimationSettings Animation,

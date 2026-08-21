@@ -5,6 +5,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using System.Windows.Documents;
 using System.Windows.Threading;
 using AFMediaBar.Models;
 using AFMediaBar.Services;
@@ -26,11 +27,54 @@ internal sealed class LayoutMetricsEventArgs(bool openTaskManager) : EventArgs
 }
 
 /// <summary>
-/// 根据不可变布局档案生成轻量 WPF 组件树；不读取注册表、不创建系统会话，业务动作通过事件交给窗口协调器。
-/// Builds a lightweight WPF tree from an immutable layout profile without registry or system-session access; actions return to the window coordinator through events.
+/// 组件将设备/音量滚轮连同自身锚点转发给窗口，以便弹窗定位不依赖旧静态控件。
+/// Forwards device/volume wheel input with the originating anchor so popups do not depend on legacy static controls.
+/// </summary>
+internal sealed class LayoutWheelEventArgs(
+    MediaCommandKind command,
+    int delta,
+    FrameworkElement placementTarget) : EventArgs
+{
+    internal MediaCommandKind Command { get; } = command;
+    internal int Delta { get; } = delta;
+    internal FrameworkElement PlacementTarget { get; } = placementTarget;
+}
+
+/// <summary>
+/// 设计模式下把真实组件的选择与拖放回传给设置编辑器；组件本身不修改布局档案。
+/// In design mode, returns selection and drag gestures from real widgets; the surface never mutates layout profiles.
+/// </summary>
+internal sealed class LayoutDesignElementEventArgs(
+    string instanceId,
+    DependencyObject source,
+    bool isContainer = false) : EventArgs
+{
+    internal string InstanceId { get; } = instanceId;
+    internal DependencyObject Source { get; } = source;
+    internal bool IsContainer { get; } = isContainer;
+}
+
+/// <summary>
+/// 设计模式把真实容器的拖放目标回传给设置编辑器；编辑器负责校验并提交不可变档案。
+/// Reports a real container drop target to the settings editor; the editor validates and commits the immutable profile.
+/// </summary>
+internal sealed class LayoutDesignDropEventArgs(
+    string containerId,
+    LayoutSlotKind slotKind,
+    DragEventArgs dragEventArgs) : EventArgs
+{
+    internal string ContainerId { get; } = containerId;
+    internal LayoutSlotKind SlotKind { get; } = slotKind;
+    internal DragEventArgs DragEventArgs { get; } = dragEventArgs;
+}
+
+/// <summary>
+/// 根据不可变布局档案生成运行时与设置预览共用的 WPF 组件树；不读取注册表、不创建系统会话，业务动作通过事件交给窗口协调器。
+/// Builds the shared runtime/settings-preview WPF tree from an immutable layout profile without registry or system-session access; actions return to the window coordinator through events.
 /// </summary>
 internal sealed class ComponentLayoutSurface : Grid, IDisposable
 {
+    private const int MaximumMediaTextLines = 2;
     internal static readonly DependencyProperty IsInteractiveElementProperty =
         DependencyProperty.RegisterAttached(
             "IsInteractiveElement",
@@ -39,6 +83,12 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             new FrameworkPropertyMetadata(false));
 
     private readonly Dictionary<string, FrameworkElement> _widgetViews =
+        new(StringComparer.Ordinal);
+    private readonly Dictionary<string, FrameworkElement> _designElements =
+        new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Adorner> _designAdorners =
+        new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Adorner> _designBoundaryAdorners =
         new(StringComparer.Ordinal);
     private readonly Dictionary<string, ContainerVisual> _containerViews =
         new(StringComparer.Ordinal);
@@ -54,22 +104,36 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
     private MediaSnapshot _mediaSnapshot = MediaSnapshot.Disconnected;
     private string _metricsText = string.Empty;
     private bool _pointerNear;
+    private bool _designMode;
+    private string? _designPressInstanceId;
+    private Point _designPressPoint;
+    private DependencyObject? _designPressSource;
     private int _gapDip;
     private bool _disposed;
 
     internal ComponentLayoutSurface()
     {
+        // 透明背景让整块条带都参与 WPF 命中测试；靠近距离可能落在组件空白区，不能只依赖子控件收到 MouseMove。
+        // A transparent background keeps the whole strip hit-testable; proximity can fall in empty space and must not depend on child widgets.
+        Background = Brushes.Transparent;
         _marqueeTimer = new DispatcherTimer(
             TimeSpan.FromMilliseconds(260),
             DispatcherPriority.Render,
             OnMarqueeTimerTick,
             Dispatcher);
         _marqueeTimer.Stop();
+        MouseMove += Surface_OnMouseMove;
+        MouseLeave += Surface_OnMouseLeave;
     }
 
     internal event EventHandler<LayoutCommandEventArgs>? CommandRequested;
     internal event EventHandler<LayoutMetricsEventArgs>? MetricsRequested;
+    internal event EventHandler<LayoutWheelEventArgs>? WheelRequested;
     internal event EventHandler? SourceRequested;
+    internal event EventHandler<LayoutDesignElementEventArgs>? DesignElementSelected;
+    internal event EventHandler<LayoutDesignElementEventArgs>? DesignElementDragRequested;
+    internal event EventHandler<LayoutDesignDropEventArgs>? DesignDropTargetDragOver;
+    internal event EventHandler<LayoutDesignDropEventArgs>? DesignDropRequested;
 
     internal static bool GetIsInteractiveElement(DependencyObject element) =>
         (bool)element.GetValue(IsInteractiveElementProperty);
@@ -83,6 +147,8 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         _pointerNear = pointerNear;
         _gapDip = Math.Clamp(profile.Surface.GapDip, 0, 32);
         _widgetViews.Clear();
+        ClearDesignAdorners();
+        _designElements.Clear();
         _containerViews.Clear();
         _mediaTextKinds.Clear();
         _marqueeStates.Clear();
@@ -110,12 +176,61 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         }
     }
 
+    /// <summary>
+    /// 切换设置预览的设计模式；该模式只改变输入处理，不改变运行时布局和视觉。
+    /// Enables editor input handling without changing the runtime layout or visuals.
+    /// </summary>
+    internal void SetDesignMode(bool enabled) => _designMode = enabled;
+
+    /// <summary>
+    /// 在 AdornerLayer 上叠加选择框，不把编辑手柄计入组件测量或运行时命中区域。
+    /// Adds a selection frame through AdornerLayer so editor handles never affect measurement or runtime hit testing.
+    /// </summary>
+    internal void SetDesignSelection(string? instanceId)
+    {
+        foreach (var adorner in _designAdorners.Values)
+        {
+            AdornerLayer.GetAdornerLayer(adorner.AdornedElement)?.Remove(adorner);
+        }
+        _designAdorners.Clear();
+        if (!_designMode || string.IsNullOrWhiteSpace(instanceId) ||
+            !_designElements.TryGetValue(instanceId, out var view))
+        {
+            return;
+        }
+
+        void Attach(object? sender, RoutedEventArgs args)
+        {
+            view.Loaded -= Attach;
+            if (AdornerLayer.GetAdornerLayer(view) is not { } layer)
+            {
+                return;
+            }
+
+            var adorner = new DesignSelectionAdorner(view);
+            adorner.IsHitTestVisible = false;
+            layer.Add(adorner);
+            _designAdorners[instanceId] = adorner;
+        }
+
+        if (view.IsLoaded)
+        {
+            Attach(view, new RoutedEventArgs());
+        }
+        else
+        {
+            view.Loaded += Attach;
+        }
+    }
+
     internal void ApplyEdge(LayoutProfile profile, LayoutEdgeContainer edgeContainer)
     {
         _profile = profile;
         _pointerNear = true;
         _gapDip = Math.Clamp(profile.Surface.GapDip, 0, 32);
         _widgetViews.Clear();
+        ClearDesignAdorners();
+        _designElements.Clear();
         _containerViews.Clear();
         _mediaTextKinds.Clear();
         _marqueeStates.Clear();
@@ -123,9 +238,27 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         _marqueeTimer.Stop();
         Children.Clear();
 
-        var root = BuildSlot(edgeContainer.ExpandedSlot, LayoutFlowOrientation.Automatic);
+        var root = BuildSlot(
+            edgeContainer.ExpandedSlot,
+            LayoutFlowOrientation.Automatic,
+            LayoutContentAlignment.Center);
         root.HorizontalAlignment = HorizontalAlignment.Left;
         root.VerticalAlignment = VerticalAlignment.Top;
+        if (_designMode)
+        {
+            if (root is Panel rootPanel)
+            {
+                rootPanel.Background = Brushes.Transparent;
+            }
+            AttachDesignContainerHandlers(root, edgeContainer.InstanceId);
+            AttachDesignDropHandlers(root, edgeContainer.InstanceId, LayoutSlotKind.Expanded);
+            // 编辑器中的折叠触发区没有展开内容时仍应可见，避免空容器无法选中。
+            // Keep an editor-only footprint for an empty edge container so a collapsed container remains selectable.
+            root.MinWidth = 74;
+            root.MinHeight = 30;
+        }
+        _designElements[edgeContainer.InstanceId] = root;
+        RegisterDesignBoundary(edgeContainer.InstanceId, root, LayoutContainerKind.AutoCollapse);
         Children.Add(root);
         RefreshAllData();
         if (_marqueeStates.Count > 0)
@@ -167,7 +300,89 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         _pointerNear = pointerNear;
         foreach (var visual in _containerViews.Values)
         {
+            visual.PointerNear = pointerNear;
             ApplyContainerState(visual, animate: true);
+        }
+    }
+
+    internal void RefreshPointerNearFromMouse()
+    {
+        foreach (var visual in _containerViews.Values)
+        {
+            if (visual.Model.ContainerKind != LayoutContainerKind.HoverSwitch)
+            {
+                continue;
+            }
+
+            visual.PointerNear = IsPointerNear(visual);
+            ApplyContainerState(visual, animate: true);
+        }
+    }
+
+    private void Surface_OnMouseMove(object sender, MouseEventArgs e)
+    {
+        if (_designMode || _disposed)
+        {
+            return;
+        }
+
+        foreach (var visual in _containerViews.Values)
+        {
+            if (visual.Model.ContainerKind != LayoutContainerKind.HoverSwitch ||
+                visual.Host.ActualWidth <= 0 ||
+                visual.Host.ActualHeight <= 0)
+            {
+                continue;
+            }
+
+            var near = IsPointerNear(visual);
+            if (visual.PointerNear == near)
+            {
+                continue;
+            }
+
+            visual.PointerNear = near;
+            ApplyContainerState(visual, animate: true);
+        }
+    }
+
+    /// <summary>
+    /// 根据当前鼠标相对容器的 DIP 坐标判断“靠近”；使用膨胀矩形覆盖容器外的空白区域，并在视觉树重建后保持一致。
+    /// Resolves proximity from the current pointer in DIP coordinates; the inflated rectangle covers empty space outside the container and stays consistent after tree rebuilds.
+    /// </summary>
+    private bool IsPointerNear(ContainerVisual visual)
+    {
+        if (visual.Host.ActualWidth <= 0 || visual.Host.ActualHeight <= 0)
+        {
+            return false;
+        }
+
+        var proximity = Math.Clamp(visual.Model.ProximityDip, 0, 256);
+        var point = Mouse.GetPosition(visual.Host);
+        return point.X >= -proximity &&
+            point.Y >= -proximity &&
+            point.X <= visual.Host.ActualWidth + proximity &&
+            point.Y <= visual.Host.ActualHeight + proximity;
+    }
+
+    private void Surface_OnMouseLeave(object sender, MouseEventArgs e)
+    {
+        if (_designMode || _disposed)
+        {
+            return;
+        }
+
+        foreach (var visual in _containerViews.Values)
+        {
+            if (visual.Model.ContainerKind != LayoutContainerKind.HoverSwitch ||
+                !visual.PointerNear)
+            {
+                continue;
+            }
+
+            // 表面边界先于子容器收到 MouseLeave；仍在 ProximityDip 内时不能抢先切回离开槽。
+            // The surface can receive MouseLeave before its child host; keep the near slot while the pointer is still within ProximityDip.
+            UpdateContainerPointerState(visual, IsPointerNear(visual));
         }
     }
 
@@ -238,28 +453,179 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
     {
         if (container.ContainerKind == LayoutContainerKind.Static)
         {
-            var staticSlot = BuildSlot(container.PrimarySlot, container.Orientation);
+            var staticSlot = BuildSlot(
+                container.PrimarySlot,
+                container.Orientation,
+                container.ContentAlignment);
+            if (_designMode && staticSlot is Panel staticPanel)
+            {
+                staticPanel.Background = Brushes.Transparent;
+            }
             ApplyGeometry(staticSlot, container.Geometry);
+            if (_designMode)
+            {
+                AttachDesignContainerHandlers(staticSlot, container.InstanceId);
+                AttachDesignDropHandlers(staticSlot, container.InstanceId, LayoutSlotKind.Primary);
+            }
+            _designElements[container.InstanceId] = staticSlot;
+            RegisterDesignBoundary(container.InstanceId, staticSlot, container.ContainerKind);
             return staticSlot;
         }
 
         var visual = new ContainerVisual(container);
+        visual.PointerNear = _pointerNear;
         _containerViews[container.InstanceId] = visual;
-        visual.Slots[0].Children.Add(BuildSlot(container.PrimarySlot, container.Orientation));
-        visual.Slots[1].Children.Add(BuildSlot(container.SecondarySlot, container.Orientation));
-        visual.Slots[2].Children.Add(BuildSlot(container.CollapsedSlot, container.Orientation));
+        // Grid 默认没有背景时，空白槽位不会产生可靠的 MouseEnter/Leave；透明背景只扩大命中区域，不改变视觉。
+        // A Grid without a background cannot reliably raise MouseEnter/Leave over empty slots; transparent fill expands hit testing without changing visuals.
+        visual.Host.Background = Brushes.Transparent;
+        visual.Slots[0].Children.Add(BuildSlot(container.PrimarySlot, container.Orientation, container.ContentAlignment));
+        visual.Slots[1].Children.Add(BuildSlot(container.SecondarySlot, container.Orientation, container.SecondaryContentAlignment));
+        visual.Slots[2].Children.Add(BuildSlot(container.CollapsedSlot, container.Orientation, container.ContentAlignment));
         ApplyContainerState(visual, animate: false);
         ApplyGeometry(visual.Host, container.Geometry);
+        if (_designMode)
+        {
+            AttachDesignContainerHandlers(visual.Host, container.InstanceId);
+            AttachDesignDropHandlers(visual.Slots[0], container.InstanceId, LayoutSlotKind.Primary);
+            if (container.ContainerKind == LayoutContainerKind.HoverSwitch)
+            {
+                AttachDesignDropHandlers(visual.Slots[1], container.InstanceId, LayoutSlotKind.Secondary);
+            }
+        }
+        else if (container.ContainerKind == LayoutContainerKind.HoverSwitch)
+        {
+            // 每个悬停容器独立跟踪鼠标；多个容器并存时，指向一个容器不能让其它容器同步切换。
+            // Each hover container tracks its own pointer so hovering one of several containers cannot switch the others.
+            visual.Host.MouseEnter += (_, _) =>
+            {
+                UpdateContainerPointerState(visual, true);
+            };
+            visual.Host.MouseLeave += (_, _) =>
+            {
+                // 离开控件但仍在 ProximityDip 膨胀区域内时保持靠近态，避免“闪一下又回到离开内容”。
+                // Keep the near state while the pointer remains inside the ProximityDip inflation area, preventing a flash back to leave content.
+                UpdateContainerPointerState(visual, IsPointerNear(visual));
+            };
+        }
+        _designElements[container.InstanceId] = visual.Host;
+        RegisterDesignBoundary(container.InstanceId, visual.Host, container.ContainerKind);
         return visual.Host;
     }
 
-    private FrameworkElement BuildSlot(LayoutSlot slot, LayoutFlowOrientation orientation)
+    private void UpdateContainerPointerState(ContainerVisual visual, bool pointerNear)
     {
+        if (visual.PointerNear == pointerNear)
+        {
+            return;
+        }
+
+        visual.PointerNear = pointerNear;
+        ApplyContainerState(visual, animate: true);
+    }
+
+    private void AttachDesignContainerHandlers(FrameworkElement view, string instanceId)
+    {
+        view.PreviewMouseLeftButtonDown += (_, args) =>
+        {
+            if (IsInsideWidget(args.OriginalSource as DependencyObject))
+            {
+                return;
+            }
+
+            _designPressInstanceId = instanceId;
+            _designPressPoint = args.GetPosition(this);
+            _designPressSource = view;
+            DesignElementSelected?.Invoke(
+                this,
+                new LayoutDesignElementEventArgs(instanceId, view, isContainer: true));
+        };
+        view.PreviewMouseMove += (_, args) =>
+        {
+            if (IsInsideWidget(args.OriginalSource as DependencyObject))
+            {
+                return;
+            }
+
+            if (_designPressInstanceId != instanceId ||
+                args.LeftButton != MouseButtonState.Pressed ||
+                _designPressSource is null)
+            {
+                return;
+            }
+
+            var current = args.GetPosition(this);
+            if (Math.Abs(current.X - _designPressPoint.X) < SystemParameters.MinimumHorizontalDragDistance &&
+                Math.Abs(current.Y - _designPressPoint.Y) < SystemParameters.MinimumVerticalDragDistance)
+            {
+                return;
+            }
+
+            var source = _designPressSource;
+            _designPressInstanceId = null;
+            _designPressSource = null;
+            DesignElementDragRequested?.Invoke(
+                this,
+                new LayoutDesignElementEventArgs(instanceId, source, isContainer: true));
+        };
+    }
+
+    private bool IsInsideWidget(DependencyObject? source)
+    {
+        while (source is not null)
+        {
+            if (_widgetViews.Values.Any(view => ReferenceEquals(view, source)))
+            {
+                return true;
+            }
+            source = source is Visual visual ? VisualTreeHelper.GetParent(visual) : null;
+        }
+
+        return false;
+    }
+
+    private void AttachDesignDropHandlers(
+        FrameworkElement view,
+        string containerId,
+        LayoutSlotKind slotKind)
+    {
+        // 仅在编辑器树中让槽位接收拖放；运行时表面不绑定这些事件，避免改变真实命中区域。
+        // Only the editor tree accepts drops; runtime surfaces stay free of these handlers and keep their hit area unchanged.
+        if (view is Panel panel)
+        {
+            panel.Background = Brushes.Transparent;
+        }
+        view.AllowDrop = true;
+        view.DragOver += (_, args) =>
+        {
+            DesignDropTargetDragOver?.Invoke(
+                this,
+                new LayoutDesignDropEventArgs(containerId, slotKind, args));
+            args.Handled = true;
+        };
+        view.Drop += (_, args) =>
+        {
+            DesignDropRequested?.Invoke(
+                this,
+                new LayoutDesignDropEventArgs(containerId, slotKind, args));
+            args.Handled = true;
+        };
+    }
+
+    private FrameworkElement BuildSlot(
+        LayoutSlot slot,
+        LayoutFlowOrientation orientation,
+        LayoutContentAlignment contentAlignment)
+    {
+        var resolvedOrientation = ResolveOrientation(orientation);
         var panel = new StackPanel
         {
-            Orientation = ResolveOrientation(orientation),
-            HorizontalAlignment = HorizontalAlignment.Left,
-            VerticalAlignment = VerticalAlignment.Top
+            Orientation = resolvedOrientation,
+            HorizontalAlignment = resolvedOrientation == Orientation.Vertical
+                ? ResolveHorizontalAlignment(contentAlignment)
+                : HorizontalAlignment.Left,
+            VerticalAlignment = resolvedOrientation == Orientation.Horizontal
+                ? ResolveVerticalAlignment(contentAlignment)
+                : VerticalAlignment.Top
         };
         var visibleIndex = 0;
         foreach (var child in slot.Children)
@@ -305,7 +671,43 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         };
 
         ApplyGeometry(view, widget.Geometry);
+        if (_designMode)
+        {
+            view.PreviewMouseLeftButtonDown += (_, args) =>
+            {
+                _designPressInstanceId = widget.InstanceId;
+                _designPressPoint = args.GetPosition(this);
+                _designPressSource = view;
+                DesignElementSelected?.Invoke(
+                    this,
+                    new LayoutDesignElementEventArgs(widget.InstanceId, view));
+            };
+            view.PreviewMouseMove += (_, args) =>
+            {
+                if (_designPressInstanceId != widget.InstanceId ||
+                    args.LeftButton != MouseButtonState.Pressed ||
+                    _designPressSource is null)
+                {
+                    return;
+                }
+
+                var current = args.GetPosition(this);
+                if (Math.Abs(current.X - _designPressPoint.X) < SystemParameters.MinimumHorizontalDragDistance &&
+                    Math.Abs(current.Y - _designPressPoint.Y) < SystemParameters.MinimumVerticalDragDistance)
+                {
+                    return;
+                }
+
+                var source = _designPressSource;
+                _designPressInstanceId = null;
+                _designPressSource = null;
+                DesignElementDragRequested?.Invoke(
+                    this,
+                    new LayoutDesignElementEventArgs(widget.InstanceId, source));
+            };
+        }
         _widgetViews[widget.InstanceId] = view;
+        _designElements[widget.InstanceId] = view;
         return view;
     }
 
@@ -348,6 +750,10 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             border.MouseLeftButtonUp += (_, args) =>
             {
                 args.Handled = true;
+                if (_designMode)
+                {
+                    return;
+                }
                 SourceRequested?.Invoke(this, EventArgs.Empty);
             };
         }
@@ -359,6 +765,39 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
     {
         var settings = widget.Settings as MediaTextWidgetSettings ??
             new MediaTextWidgetSettings(MediaTextKind.Title, true, 14, 1);
+        if (settings.TextKind == MediaTextKind.TitleAndArtist)
+        {
+            var stack = new StackPanel
+            {
+                Orientation = Orientation.Vertical,
+                Width = widget.Geometry?.WidthDip ?? (IsVertical ? 68 : 150),
+                Height = widget.Geometry?.HeightDip ?? 40,
+                ClipToBounds = true
+            };
+            var title = new TextBlock
+            {
+                FontFamily = GetResource<FontFamily>("AppDisplayFontFamily") ?? new FontFamily("Segoe UI"),
+                FontSize = Math.Clamp(settings.FontSizeDip, 6, 72),
+                Foreground = GetBrush("TaskbarPrimaryTextBrush"),
+                Height = 22,
+                TextAlignment = TextAlignment.Center,
+                TextTrimming = TextTrimming.CharacterEllipsis
+            };
+            var artist = new TextBlock
+            {
+                FontFamily = GetResource<FontFamily>("AppTextFontFamily") ?? new FontFamily("Segoe UI"),
+                FontSize = Math.Clamp(settings.FontSizeDip - 3, 6, 72),
+                Foreground = GetBrush("TaskbarSecondaryTextBrush"),
+                Height = 18,
+                TextAlignment = TextAlignment.Center,
+                TextTrimming = TextTrimming.CharacterEllipsis
+            };
+            stack.Children.Add(title);
+            stack.Children.Add(artist);
+            _mediaTextKinds[widget.InstanceId] = MediaTextKind.TitleAndArtist;
+            stack.Tag = (title, artist);
+            return stack;
+        }
         var text = new TextBlock
         {
             FontFamily = GetResource<FontFamily>("AppDisplayFontFamily") ?? new FontFamily("Segoe UI"),
@@ -367,11 +806,43 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             Foreground = GetBrush("TaskbarPrimaryTextBrush"),
             TextWrapping = settings.MaxLines > 1 ? TextWrapping.Wrap : TextWrapping.NoWrap,
             TextTrimming = TextTrimming.CharacterEllipsis,
-            MaxWidth = 210,
+            Width = IsVertical ? 68 : 210,
+            // 文本组件保持稳定的槽位高度；最多行数只控制内部换行，不能把同槽控件顶出显示区域。
+            // Keep a stable slot height; MaxLines controls wrapping inside the widget and must not push siblings out of view.
+            Height = 40,
+            TextAlignment = TextAlignment.Center,
+            ClipToBounds = true,
             VerticalAlignment = VerticalAlignment.Center
         };
+        if (settings.MaxLines > 1)
+        {
+            // 多行文本放入固定高度槽位，内部高度按最大行数裁切，避免换行改变同级组件的排列位置。
+            // Multi-line text stays inside a fixed-height slot; its inner height is capped by MaxLines so wrapping cannot move siblings.
+            var lineHeight = Math.Max(12, Math.Ceiling(Math.Clamp(settings.FontSizeDip, 6, 72) * 1.25));
+            text.Height = double.NaN;
+            text.Width = double.NaN;
+            text.LineHeight = lineHeight;
+            text.LineStackingStrategy = LineStackingStrategy.BlockLineHeight;
+            // 长条文本槽位固定为两行高度；超过两行不会产生额外可见内容，只会制造无效设置。
+            // The strip text slot is fixed to two lines; values above two cannot render more content and would only create a no-op setting.
+            text.MaxHeight = Math.Min(40, lineHeight * Math.Clamp(settings.MaxLines, 1, MaximumMediaTextLines));
+            text.HorizontalAlignment = HorizontalAlignment.Stretch;
+            var host = new Grid
+            {
+                Width = IsVertical ? 68 : 210,
+                Height = 40,
+                ClipToBounds = true,
+                VerticalAlignment = VerticalAlignment.Center,
+                Tag = text
+            };
+            host.Children.Add(text);
+            _mediaTextKinds[widget.InstanceId] = settings.TextKind;
+            return host;
+        }
         _mediaTextKinds[widget.InstanceId] = settings.TextKind;
-        if (settings.EnableMarquee)
+        // 多行文本需要保留 WPF 的换行布局；跑马灯只对单行标题启用，避免设置看似成功却仍被改回单行。
+        // Multi-line text must keep WPF wrapping; marquee is limited to single-line titles so the MaxLines setting remains effective.
+        if (settings.EnableMarquee && settings.MaxLines <= 1)
         {
             _marqueeStates[widget.InstanceId] = new(text, string.Empty, 0);
         }
@@ -386,17 +857,37 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         {
             Settings = settings with { TextKind = MediaTextKind.Source }
         });
-        if (text is TextBlock textBlock)
+        if (GetTextBlock(text) is { } textBlock)
         {
             textBlock.Foreground = GetBrush("TaskbarSecondaryTextBrush");
             textBlock.Cursor = Cursors.Hand;
             textBlock.ToolTip = Loc.Get("Main.Menu.ShowSource");
             SetIsInteractiveElement(textBlock, true);
-            textBlock.MouseLeftButtonUp += (_, args) =>
+            if (text is FrameworkElement host)
             {
-                args.Handled = true;
-                SourceRequested?.Invoke(this, EventArgs.Empty);
-            };
+                SetIsInteractiveElement(host, true);
+                host.MouseLeftButtonUp += (_, args) =>
+                {
+                    args.Handled = true;
+                    if (_designMode)
+                    {
+                        return;
+                    }
+                    SourceRequested?.Invoke(this, EventArgs.Empty);
+                };
+            }
+            else
+            {
+                textBlock.MouseLeftButtonUp += (_, args) =>
+                {
+                    args.Handled = true;
+                    if (_designMode)
+                    {
+                        return;
+                    }
+                    SourceRequested?.Invoke(this, EventArgs.Empty);
+                };
+            }
         }
 
         return text;
@@ -425,9 +916,33 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
                 VerticalAlignment = VerticalAlignment.Center
             }
         };
-        button.Click += (_, _) => CommandRequested?.Invoke(
-            this,
-            new LayoutCommandEventArgs(settings.Command, button));
+        button.Click += (_, args) =>
+        {
+            args.Handled = true;
+            if (_designMode)
+            {
+                return;
+            }
+
+            CommandRequested?.Invoke(
+                this,
+                new LayoutCommandEventArgs(settings.Command, button));
+        };
+        if (settings.Command is MediaCommandKind.SelectOutputDevice or MediaCommandKind.AdjustVolume)
+        {
+            button.PreviewMouseWheel += (_, args) =>
+            {
+                args.Handled = true;
+                if (_designMode)
+                {
+                    return;
+                }
+
+                WheelRequested?.Invoke(
+                    this,
+                    new LayoutWheelEventArgs(settings.Command, args.Delta, button));
+            };
+        }
         SetIsInteractiveElement(button, true);
         return button;
     }
@@ -467,6 +982,10 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             }
 
             args.Handled = true;
+            if (_designMode)
+            {
+                return;
+            }
             MetricsRequested?.Invoke(
                 this,
                 new LayoutMetricsEventArgs(settings.OpenTaskManagerOnClick));
@@ -528,7 +1047,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
     {
         foreach (var pair in _mediaTextKinds)
         {
-            if (_widgetViews[pair.Key] is not TextBlock text)
+            if (!_widgetViews.TryGetValue(pair.Key, out var view))
             {
                 continue;
             }
@@ -540,9 +1059,21 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
                 MediaTextKind.Source => GetDisplayText(_mediaSnapshot.SourceName, "Main.TitleIdle"),
                 _ => string.Empty
             };
-            text.Text = IsVertical
-                ? FormatVerticalText(value)
-                : value;
+            if (pair.Value == MediaTextKind.TitleAndArtist && view is StackPanel { Tag: ValueTuple<TextBlock, TextBlock> combined })
+            {
+                combined.Item1.Text = GetDisplayText(_mediaSnapshot.Title, "Main.Placeholder.Title");
+                combined.Item2.Text = GetDisplayText(_mediaSnapshot.Artist, "Main.Placeholder.Subtitle");
+                combined.Item1.ToolTip = combined.Item1.Text;
+                combined.Item2.ToolTip = combined.Item2.Text;
+                continue;
+            }
+
+            var text = GetTextBlock(view);
+            if (text is null)
+            {
+                continue;
+            }
+            text.Text = IsVertical ? FormatVerticalText(value) : value;
             text.ToolTip = value;
             if (_marqueeStates.TryGetValue(pair.Key, out var marquee))
             {
@@ -573,21 +1104,37 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
     private void ApplyContainerState(ContainerVisual visual, bool animate)
     {
         var container = visual.Model;
+        // 悬停容器的两个槽位由实际指针状态唯一决定；旧档案中的 Always 触发值不能覆盖“离开/靠近”切换。
+        // Hover containers are driven solely by the actual pointer state; a legacy Always trigger must not mask leave/near switching.
         var activeSlot = container.ContainerKind == LayoutContainerKind.AutoCollapse
-            ? (_pointerNear ? 0 : 2)
-            : container.Trigger == LayoutTriggerMode.Always || _pointerNear
-                ? 1
+            ? (visual.PointerNear ? 0 : 2)
+            : container.ContainerKind == LayoutContainerKind.HoverSwitch
+                ? (visual.PointerNear ? 1 : 0)
                 : 0;
+        var slotChanged = visual.ActiveSlot != activeSlot;
+        var enteringNearSlot = slotChanged &&
+            container.ContainerKind == LayoutContainerKind.HoverSwitch &&
+            activeSlot == 1;
+        visual.ActiveSlot = activeSlot;
         for (var index = 0; index < visual.Slots.Count; index++)
         {
             var slot = visual.Slots[index];
             var visible = index == activeSlot;
-            slot.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+            // 悬停槽用 Hidden 保留两态最大测量尺寸，避免切换后外框缩放导致指针离开并闪回；其它容器仍彻底折叠非活动内容。
+            // Hover slots use Hidden to retain the maximum measured footprint, preventing resize-driven pointer leave and flicker; other containers fully collapse inactive content.
+            slot.Visibility = visible
+                ? Visibility.Visible
+                : container.ContainerKind == LayoutContainerKind.HoverSwitch
+                    ? Visibility.Hidden
+                    : Visibility.Collapsed;
             slot.BeginAnimation(UIElement.OpacityProperty, null);
-            slot.Opacity = visible ? 1 : 0;
+            // 离开态直接落地，避免旧的靠近态动画在鼠标离开后再次把组件绘制一帧。
+            // Commit the leave state immediately so a stale near animation cannot flash its widgets after the pointer exits.
+            slot.Opacity = visible && !(animate && enteringNearSlot) ? 1 : 0;
         }
 
-        if (!animate || !container.Animation.Enabled || container.Animation.DurationMilliseconds <= 0)
+        if (!animate || !slotChanged || !enteringNearSlot ||
+            !container.Animation.Enabled || container.Animation.DurationMilliseconds <= 0)
         {
             return;
         }
@@ -624,6 +1171,24 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             _ => IsVertical ? Orientation.Vertical : Orientation.Horizontal
         };
     }
+
+    private static HorizontalAlignment ResolveHorizontalAlignment(LayoutContentAlignment alignment) =>
+        alignment switch
+        {
+            LayoutContentAlignment.Start => HorizontalAlignment.Left,
+            LayoutContentAlignment.End => HorizontalAlignment.Right,
+            LayoutContentAlignment.Stretch => HorizontalAlignment.Stretch,
+            _ => HorizontalAlignment.Center
+        };
+
+    private static VerticalAlignment ResolveVerticalAlignment(LayoutContentAlignment alignment) =>
+        alignment switch
+        {
+            LayoutContentAlignment.Start => VerticalAlignment.Top,
+            LayoutContentAlignment.End => VerticalAlignment.Bottom,
+            LayoutContentAlignment.Stretch => VerticalAlignment.Stretch,
+            _ => VerticalAlignment.Center
+        };
 
     private static void ApplyGeometry(FrameworkElement view, LayoutGeometry geometry)
     {
@@ -665,6 +1230,16 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         return string.IsNullOrWhiteSpace(value)
             ? Loc.Get(fallbackKey)
             : value;
+    }
+
+    private static TextBlock? GetTextBlock(FrameworkElement view)
+    {
+        return view switch
+        {
+            TextBlock text => text,
+            Grid { Tag: TextBlock text } => text,
+            _ => null
+        };
     }
 
     private Brush ResolveArtworkBackground(ArtworkWidgetSettings settings)
@@ -750,12 +1325,70 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         _marqueeTimer.Tick -= OnMarqueeTimerTick;
         CommandRequested = null;
         MetricsRequested = null;
+        WheelRequested = null;
         SourceRequested = null;
+        DesignElementSelected = null;
+        DesignElementDragRequested = null;
+        DesignDropTargetDragOver = null;
+        DesignDropRequested = null;
+        MouseMove -= Surface_OnMouseMove;
+        MouseLeave -= Surface_OnMouseLeave;
+        ClearDesignAdorners();
+        _designElements.Clear();
         _widgetViews.Clear();
         _containerViews.Clear();
         _mediaTextKinds.Clear();
         _marqueeStates.Clear();
         _metricStates.Clear();
+    }
+
+    private void ClearDesignAdorners()
+    {
+        foreach (var adorner in _designAdorners.Values)
+        {
+            AdornerLayer.GetAdornerLayer(adorner.AdornedElement)?.Remove(adorner);
+        }
+        _designAdorners.Clear();
+        foreach (var adorner in _designBoundaryAdorners.Values)
+        {
+            AdornerLayer.GetAdornerLayer(adorner.AdornedElement)?.Remove(adorner);
+        }
+        _designBoundaryAdorners.Clear();
+    }
+
+    private void RegisterDesignBoundary(
+        string instanceId,
+        FrameworkElement view,
+        LayoutContainerKind containerKind)
+    {
+        if (!_designMode)
+        {
+            return;
+        }
+
+        void Attach(object? sender, RoutedEventArgs args)
+        {
+            view.Loaded -= Attach;
+            if (AdornerLayer.GetAdornerLayer(view) is not { } layer ||
+                _designBoundaryAdorners.ContainsKey(instanceId))
+            {
+                return;
+            }
+
+            var adorner = new DesignBoundaryAdorner(view, containerKind);
+            adorner.IsHitTestVisible = false;
+            layer.Add(adorner);
+            _designBoundaryAdorners[instanceId] = adorner;
+        }
+
+        if (view.IsLoaded)
+        {
+            Attach(view, new RoutedEventArgs());
+        }
+        else
+        {
+            view.Loaded += Attach;
+        }
     }
 
     private static string FormatVerticalText(string value)
@@ -833,6 +1466,8 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         internal LayoutContainerElement Model { get; }
         internal Grid Host { get; } = new();
         internal List<Grid> Slots { get; } = [];
+        internal bool PointerNear { get; set; }
+        internal int ActiveSlot { get; set; } = -1;
     }
 
     private sealed class MarqueeState(TextBlock text, string content, int offset)
@@ -848,6 +1483,77 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         internal MetricsWidgetSettings Settings { get; } = settings;
         internal long LastUpdateTick { get; set; }
         internal int CycleIndex { get; set; }
+    }
+
+    /// <summary>
+    /// 选择框仅属于编辑器叠加层，四角手柄不会改变真实组件的测量尺寸。
+    /// The editor-only selection frame uses an adorner so corner handles never change runtime measurement.
+    /// </summary>
+    private sealed class DesignSelectionAdorner(UIElement adornedElement) : Adorner(adornedElement)
+    {
+        private readonly Pen _pen = new(
+            new SolidColorBrush(Color.FromRgb(86, 156, 255)),
+            1.5);
+
+        protected override void OnRender(DrawingContext drawingContext)
+        {
+            base.OnRender(drawingContext);
+            var size = AdornedElement.RenderSize;
+            var rect = new Rect(0.75, 0.75, Math.Max(0, size.Width - 1.5), Math.Max(0, size.Height - 1.5));
+            drawingContext.DrawRectangle(null, _pen, rect);
+            const double handle = 5;
+            var brush = new SolidColorBrush(Color.FromRgb(86, 156, 255));
+            foreach (var point in new[]
+            {
+                new Point(rect.Left, rect.Top),
+                new Point(rect.Right - handle, rect.Top),
+                new Point(rect.Left, rect.Bottom - handle),
+                new Point(rect.Right - handle, rect.Bottom - handle)
+            })
+            {
+                drawingContext.DrawRectangle(brush, null, new Rect(point.X, point.Y, handle, handle));
+            }
+        }
+    }
+
+    /// <summary>
+    /// 编辑器持续显示容器轮廓；折叠容器使用虚线和最小触发区，避免只能点中展开内容。
+    /// Keeps container outlines visible in the editor; dashed lines and a minimum trigger footprint make edge containers selectable even when empty.
+    /// </summary>
+    private sealed class DesignBoundaryAdorner(
+        UIElement adornedElement,
+        LayoutContainerKind containerKind) : Adorner(adornedElement)
+    {
+        private readonly Pen _pen = CreatePen(containerKind);
+
+        protected override void OnRender(DrawingContext drawingContext)
+        {
+            base.OnRender(drawingContext);
+            var size = AdornedElement.RenderSize;
+            if (size.Width <= 0 || size.Height <= 0)
+            {
+                return;
+            }
+
+            var rect = new Rect(0.75, 0.75, Math.Max(0, size.Width - 1.5), Math.Max(0, size.Height - 1.5));
+            drawingContext.DrawRectangle(null, _pen, rect);
+        }
+
+        private static Pen CreatePen(LayoutContainerKind kind)
+        {
+            var color = kind switch
+            {
+                LayoutContainerKind.HoverSwitch => Color.FromRgb(255, 190, 76),
+                LayoutContainerKind.AutoCollapse => Color.FromRgb(255, 115, 115),
+                _ => Color.FromRgb(120, 205, 255)
+            };
+            var pen = new Pen(new SolidColorBrush(color), 1.25);
+            if (kind != LayoutContainerKind.Static)
+            {
+                pen.DashStyle = DashStyles.Dash;
+            }
+            return pen;
+        }
     }
 
     private sealed class SpectrumView(

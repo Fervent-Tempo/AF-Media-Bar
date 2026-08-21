@@ -8,7 +8,7 @@
         WindowStyle="None"
         ResizeMode="NoResize"
         AllowsTransparency="True"
-        Background="#01000000"
+        Background="Transparent"
         ShowInTaskbar="False"
         Topmost="False"
         Focusable="False"
@@ -61,7 +61,7 @@
   <Grid x:Name="PlayerRoot"
         Width="389"
         Height="44"
-        Background="#01000000"
+        Background="{x:Null}"
         ClipToBounds="True"
         SnapsToDevicePixels="True"
         MouseEnter="PlayerRoot_OnMouseEnter"
@@ -69,7 +69,8 @@
         PreviewMouseWheel="PlayerRoot_OnPreviewMouseWheel"
         PreviewMouseLeftButtonDown="PlayerRoot_OnPreviewMouseLeftButtonDown"
         PreviewMouseMove="PlayerRoot_OnPreviewMouseMove"
-        PreviewMouseLeftButtonUp="PlayerRoot_OnPreviewMouseLeftButtonUp">
+        PreviewMouseLeftButtonUp="PlayerRoot_OnPreviewMouseLeftButtonUp"
+        LostMouseCapture="PlayerRoot_OnLostMouseCapture">
     <Grid.LayoutTransform>
       <ScaleTransform x:Name="PlayerScaleTransform"
                       ScaleX="1"
@@ -547,7 +548,16 @@
     <Grid x:Name="ComponentCompositionHost"
           Panel.ZIndex="20"
           HorizontalAlignment="Left"
-          VerticalAlignment="Top">
+          VerticalAlignment="Top"
+          Background="Transparent"
+          MouseMove="ComponentCompositionHost_OnMouseMove">
+      <!-- 长条空白区单独提供命中面；它不覆盖边缘折叠触发区，折叠时不会扩大窗口碰撞范围。 -->
+      <!-- Dedicated hit surface for strip whitespace; it never covers edge triggers or enlarges collapsed bounds. -->
+      <Border x:Name="LayoutDragSurface"
+              Panel.ZIndex="0"
+              Background="#01000000"
+              HorizontalAlignment="Left"
+              VerticalAlignment="Top" />
       <Canvas x:Name="LayoutEdgeSurfaceHost" />
       <Border x:Name="ComponentSurfaceHost"
               Panel.ZIndex="20"

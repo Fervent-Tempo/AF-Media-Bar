@@ -24,6 +24,7 @@ public partial class MainWindow
 {
     private const int HorizontalMarginAt96Dpi = 8;
     private const int VerticalMarginAt96Dpi = 4;
+    private const double CollapsedTriggerVisibleDip = 2;
 
     private readonly TaskbarPlacementService _taskbarPlacementService = new();
     private readonly DispatcherTimer _positionTimer;
@@ -260,6 +261,16 @@ public partial class MainWindow
 
         var width = Math.Max(1, (int)Math.Ceiling(PlayerRoot.Width * playerScale.X * scale));
         var height = Math.Max(1, (int)Math.Ceiling(PlayerRoot.Height * playerScale.Y * scale));
+        var collapsedInsets = _activeLayoutProfile is null
+            ? new Thickness(0)
+            : CalculateCollapsedEdgeInsets(
+                _activeLayoutProfile,
+                _unavailableLayoutEdge,
+                _expandedEdgeContainerIds);
+        var collapsedLeft = (int)Math.Round(collapsedInsets.Left * playerScale.X * scale);
+        var collapsedTop = (int)Math.Round(collapsedInsets.Top * playerScale.Y * scale);
+        var collapsedRight = (int)Math.Round(collapsedInsets.Right * playerScale.X * scale);
+        var collapsedBottom = (int)Math.Round(collapsedInsets.Bottom * playerScale.Y * scale);
         int left;
         int top;
         if (verticalLayout)
@@ -267,11 +278,11 @@ public partial class MainWindow
             var margin = Math.Min(
                 (int)Math.Round(VerticalMarginAt96Dpi * scale),
                 Math.Max(0, (taskbarRect.Height - height) / 2));
-            var minTop = taskbarRect.Top + margin;
-            var maxTop = Math.Max(minTop, taskbarRect.Bottom - margin - height);
+            var minTop = taskbarRect.Top + margin - collapsedTop;
+            var maxTop = Math.Max(minTop, taskbarRect.Bottom - margin - height + collapsedBottom);
             top = Math.Clamp(
                 taskbarRect.Top + (int)Math.Round(
-                    _placementSettings.ManualVerticalOffsetDip * scale),
+                    _placementSettings.ManualVerticalOffsetDip * scale) - collapsedTop,
                 minTop,
                 maxTop);
             left = taskbarRect.Left + (taskbarRect.Width - width) / 2;
@@ -281,8 +292,8 @@ public partial class MainWindow
             var margin = Math.Min(
                 (int)Math.Round(HorizontalMarginAt96Dpi * scale),
                 Math.Max(0, (taskbarRect.Width - width) / 2));
-            var minLeft = taskbarRect.Left + margin;
-            var maxLeft = Math.Max(minLeft, taskbarRect.Right - margin - width);
+            var minLeft = taskbarRect.Left + margin - collapsedLeft;
+            var maxLeft = Math.Max(minLeft, taskbarRect.Right - margin - width + collapsedRight);
             var desiredLeft = _placementSettings.AutomaticPlacement
                 ? ResolveAutomaticLeft(taskbarRect, scale, minLeft)
                 : taskbarRect.Left + (int)Math.Round(
@@ -299,8 +310,8 @@ public partial class MainWindow
             top = Math.Clamp(
                 centeredTop + (int)Math.Round(
                     _placementSettings.TaskbarTopOffsetDip * scale),
-                taskbarRect.Top,
-                Math.Max(taskbarRect.Top, taskbarRect.Bottom - height));
+                taskbarRect.Top - collapsedTop,
+                Math.Max(taskbarRect.Top - collapsedTop, taskbarRect.Bottom - height + collapsedBottom));
         }
 
         var rectChanged = !_lastTaskbarRect.HasValue ||
@@ -324,7 +335,8 @@ public partial class MainWindow
                 width,
                 height,
                 visible: true,
-                topmost: _windowSettings.AlwaysOnTop) != true)
+                topmost: _windowSettings.AlwaysOnTop,
+                inputRects: BuildWindowInputRects(playerScale.X * scale)) != true)
         {
             DiagnosticsLogService.Write(
                 "taskbar-window-position-failed",
@@ -582,7 +594,8 @@ public partial class MainWindow
         {
             var desiredSize = LayoutRuntimeService.CalculateCompositionSize(
                 _activeLayoutProfile,
-                _unavailableLayoutEdge);
+                _unavailableLayoutEdge,
+                _expandedEdgeContainerIds);
             PlayerRoot.Width = desiredSize.WidthDip;
             PlayerRoot.Height = desiredSize.HeightDip;
         }
@@ -785,6 +798,7 @@ public partial class MainWindow
             cursor.Y < windowRect.Bottom;
         if (!isInside)
         {
+            ComponentSurface_OnLayoutPointerNearChanged(pointerNear: false);
             SetExpanded(expanded: false, animate: true);
         }
     }

@@ -261,6 +261,7 @@ public partial class SettingsWindow
 
     private void SettingsWindow_OnClosed(object? sender, EventArgs e)
     {
+        DisposeLayoutEditorSurfaces();
         _updateCheckCancellation?.Cancel();
         _updateCheckCancellation?.Dispose();
         _updateCheckCancellation = null;

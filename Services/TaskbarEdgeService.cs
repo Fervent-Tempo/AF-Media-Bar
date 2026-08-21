@@ -9,6 +9,22 @@ namespace AFMediaBar.Services;
 /// </summary>
 internal static class TaskbarEdgeService
 {
+    /// <summary>
+    /// 使用任务栏实际窗口矩形判断自动排布方向，和主窗口定位使用同一几何规则。
+    /// Resolves automatic layout from the taskbar window rectangle, matching the main-window placement rule.
+    /// </summary>
+    internal static bool? TryResolveCurrentVerticalLayout()
+    {
+        var taskbar = NativeMethods.FindWindow("Shell_TrayWnd", null);
+        if (taskbar == nint.Zero || !NativeMethods.GetWindowRect(taskbar, out var taskbarRect) ||
+            taskbarRect.Width <= 0 || taskbarRect.Height <= 0)
+        {
+            return null;
+        }
+
+        return taskbarRect.Height > taskbarRect.Width;
+    }
+
     internal static LayoutEdge? TryResolveCurrent()
     {
         var taskbar = NativeMethods.FindWindow("Shell_TrayWnd", null);

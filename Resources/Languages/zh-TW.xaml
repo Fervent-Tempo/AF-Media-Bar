@@ -174,6 +174,8 @@
   <sys:String x:Key="Settings.Layout.EditorCurrentContextFormat">目前：{0} · {1}</sys:String>
   <sys:String x:Key="Settings.Layout.EditorCurrentContextHint">請先在上方切換軟體模式或排列方向，再編輯對應的橫向或直向檔案。</sys:String>
   <sys:String x:Key="Settings.Layout.EditorPalette">元件與容器</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorObjects">目前版面</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorContainers">容器</sys:String>
   <sys:String x:Key="Settings.Layout.EditorUndo">復原</sys:String>
   <sys:String x:Key="Settings.Layout.EditorResetProfile">重設目前檔案</sys:String>
   <sys:String x:Key="Settings.Layout.EditorAddStaticContainer">新增常駐容器</sys:String>
@@ -184,9 +186,14 @@
   <sys:String x:Key="Settings.Layout.EditorNearContent">靠近時內容</sys:String>
   <sys:String x:Key="Settings.Layout.EditorExpandedContent">展開內容</sys:String>
   <sys:String x:Key="Settings.Layout.EditorDropHere">拖到這裡</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPreviewTitle">示例歌曲</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPreviewArtist">示例歌手</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPreviewSource">示例媒體</sys:String>
   <sys:String x:Key="Settings.Layout.EditorEmptyStrip">先新增容器，或直接拖入元件</sys:String>
   <sys:String x:Key="Settings.Layout.EditorPrimaryProperties">主要屬性</sys:String>
   <sys:String x:Key="Settings.Layout.EditorAdvancedSize">進階尺寸</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorAdvancedText">進階顯示</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorAdvancedBehavior">進階行為與動畫</sys:String>
   <sys:String x:Key="Settings.Layout.EditorStaticFollowsProfile">常駐容器的排列方向會跟隨目前檔案，不需個別設定。</sys:String>
   <sys:String x:Key="Settings.Layout.EditorTaskbarEdgeUnavailable">工作列占用的邊緣不能放置摺疊容器；Explorer 暫時無法使用時會在執行階段再次檢查。</sys:String>
   <sys:String x:Key="Settings.Layout.EdgeTop">上邊緣</sys:String>
@@ -280,15 +287,28 @@
   <sys:String x:Key="Settings.Layout.PropertyAuto">自動</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyWidth">寬度</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyHeight">高度</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyResetDefault">恢復元件預設</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyResetDefaultHint">只恢復目前元件的屬性，不改變它在版面中的位置。</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyResetContainerDefault">恢復容器預設</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyResetContainerDefaultHint">只恢復目前容器的行為屬性，不移動內容或改變插槽。</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyAlignment">內容對齊</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyNearAlignment">靠近時內容對齊</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyAlignmentCenter">置中</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyAlignmentStart">靠前</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyAlignmentEnd">靠後</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyAlignmentStretch">填滿</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyArtworkRadius">封面圓角</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyArtworkColor">使用媒體主色</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyArtworkOpenSource">點擊封面跳轉媒體應用程式</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyTextKind">文字類型</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyTextTitle">歌曲名</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyTextArtist">歌手</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyTextTitleAndArtist">歌曲名與歌手</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyTextSource">來源</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyMarquee">啟用跑馬燈</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyFontSize">字號</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyMaxLines">最多顯示行數</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyMaxLinesHint">最多顯示 1–2 行，只控制元件內換行，不會改變容器尺寸。</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyCommand">控制命令</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyButtonSize">按鈕尺寸</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyMetric">指標類型</sys:String>
@@ -305,9 +325,16 @@
   <sys:String x:Key="Settings.Layout.PropertyLength">線長</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyAnimation">啟用動畫</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyDuration">動畫時長</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyDelay">動畫延遲</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyProximity">靠近觸發距離</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyEasing">動畫曲線</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyEasingLinear">等速</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyEasingEaseOut">先快後慢</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertyEasingEaseInOut">平滑進出</sys:String>
   <sys:String x:Key="Settings.Layout.UnitMilliseconds">{0} 毫秒</sys:String>
   <sys:String x:Key="Settings.Layout.UnitHertz">{0} Hz</sys:String>
   <sys:String x:Key="Settings.Layout.UnitPercent">{0}%</sys:String>
+  <sys:String x:Key="Settings.Layout.UnitDip">{0} DIP</sys:String>
 
   <!-- 設定搜尋條目（標題/關鍵詞） -->
   <sys:String x:Key="Search.Kw.AutoStart">啟動 登入 自動執行</sys:String>
@@ -315,6 +342,7 @@
   <sys:String x:Key="Search.Kw.AutoCheckUpdate">更新 版本 下載 GitHub 夸克 百度 藍奏雲</sys:String>
   <sys:String x:Key="Search.Kw.Artwork">封面 圖片 圓角 弧度 半徑 直角 隱藏</sys:String>
   <sys:String x:Key="Search.Kw.MediaInfo">歌曲 曲名 標題 歌手 媒體 資訊 隱藏</sys:String>
+  <sys:String x:Key="Search.Kw.MediaControls">上一首 播放 暫停 下一首 控制 按鈕</sys:String>
   <sys:String x:Key="Search.Kw.Metrics">指標 記憶體 CPU GPU APP</sys:String>
   <sys:String x:Key="Search.Kw.TaskManager">工作管理員 資源監控 點擊 開啟 效能</sys:String>
   <sys:String x:Key="Search.Kw.Spectrum">音訊 頻譜 視覺化</sys:String>

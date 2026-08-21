@@ -3,10 +3,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="{DynamicResource Settings.WindowTitle}"
         Icon="/AFMediaBar;component/icon.ico"
-        Width="820"
-        Height="560"
-        MinWidth="820"
-        MinHeight="560"
+        Width="1180"
+        Height="760"
+        MinWidth="980"
+        MinHeight="620"
         Background="{DynamicResource MenuBackgroundBrush}"
         Foreground="{DynamicResource MenuPrimaryTextBrush}"
         FontFamily="{DynamicResource AppTextFontFamily}"
@@ -247,7 +247,7 @@
       <Setter Property="BorderBrush" Value="{DynamicResource MenuBorderBrush}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="Padding" Value="10,7" />
-      <Setter Property="MinWidth" Value="200" />
+      <Setter Property="MinWidth" Value="0" />
       <Setter Property="Cursor" Value="Hand" />
       <Setter Property="ItemContainerStyle" Value="{StaticResource SettingsComboBoxItemStyle}" />
       <Setter Property="Template">
@@ -335,7 +335,9 @@
                    Margin="0,4,0,0"
                    Style="{StaticResource SettingsRowDescriptionStyle}" />
       </StackPanel>
-      <Grid Width="300"
+      <Grid MinWidth="180"
+            MaxWidth="340"
+            Width="300"
             HorizontalAlignment="Right"
             VerticalAlignment="Center">
         <TextBox x:Name="SearchBox"
@@ -363,7 +365,8 @@
         <ColumnDefinition Width="*" />
       </Grid.ColumnDefinitions>
       <Border Grid.Column="0"
-              MinWidth="160"
+              Width="180"
+              MinWidth="150"
               Padding="8"
               Background="{DynamicResource MenuHoverBrush}"
               CornerRadius="8">
@@ -597,19 +600,18 @@
             </StackPanel>
             <TextBlock Text="{DynamicResource Settings.Layout.Size}" Margin="0,18,0,4" FontSize="15" FontWeight="SemiBold" />
             <TextBlock Text="{DynamicResource Settings.Layout.LengthScale}" Style="{StaticResource SettingsRowDescriptionStyle}" />
-            <Grid Width="320" HorizontalAlignment="Left" Margin="0,0,0,12">
+            <Grid MaxWidth="520" HorizontalAlignment="Stretch" Margin="0,0,0,12">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="64" />
               </Grid.ColumnDefinitions>
               <Slider x:Name="LengthScaleSlider"
                       Grid.Column="0"
-                      Width="240"
                       Minimum="70"
                       Maximum="125"
                       TickFrequency="5"
                       IsSnapToTickEnabled="True"
-                      HorizontalAlignment="Left"
+                      HorizontalAlignment="Stretch"
                       VerticalAlignment="Center"
                       ValueChanged="ScaleSlider_OnValueChanged" />
               <TextBlock x:Name="LengthScaleValueText"
@@ -619,19 +621,18 @@
                          FontSize="14" />
             </Grid>
             <TextBlock Text="{DynamicResource Settings.Layout.ThicknessScale}" Style="{StaticResource SettingsRowDescriptionStyle}" />
-            <Grid Width="320" HorizontalAlignment="Left" Margin="0,0,0,12">
+            <Grid MaxWidth="520" HorizontalAlignment="Stretch" Margin="0,0,0,12">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="64" />
               </Grid.ColumnDefinitions>
               <Slider x:Name="ThicknessScaleSlider"
                       Grid.Column="0"
-                      Width="240"
                       Minimum="70"
                       Maximum="125"
                       TickFrequency="5"
                       IsSnapToTickEnabled="True"
-                      HorizontalAlignment="Left"
+                      HorizontalAlignment="Stretch"
                       VerticalAlignment="Center"
                       ValueChanged="ScaleSlider_OnValueChanged" />
               <TextBlock x:Name="ThicknessScaleValueText"
@@ -642,19 +643,18 @@
             </Grid>
             <TextBlock Text="{DynamicResource Settings.Layout.TopOffset}" Margin="0,8,0,0" Style="{StaticResource SettingsRowTitleStyle}" />
             <TextBlock Text="{DynamicResource Settings.Layout.TopOffsetDescription}" Style="{StaticResource SettingsRowDescriptionStyle}" />
-            <Grid Width="320" HorizontalAlignment="Left" Margin="0,6,0,12">
+            <Grid MaxWidth="520" HorizontalAlignment="Stretch" Margin="0,6,0,12">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="64" />
               </Grid.ColumnDefinitions>
               <Slider x:Name="TaskbarTopOffsetSlider"
                       Grid.Column="0"
-                      Width="240"
                       Minimum="-20"
                       Maximum="20"
                       TickFrequency="1"
                       IsSnapToTickEnabled="True"
-                      HorizontalAlignment="Left"
+                      HorizontalAlignment="Stretch"
                       VerticalAlignment="Center"
                       ValueChanged="ScaleSlider_OnValueChanged" />
               <TextBlock x:Name="TaskbarTopOffsetValueText"
@@ -714,76 +714,123 @@
                          VerticalAlignment="Center"
                          Style="{StaticResource SettingsRowDescriptionStyle}" />
             </DockPanel>
-            <WrapPanel x:Name="LayoutComponentPalette" Margin="0,0,0,8" />
-            <WrapPanel Margin="0,0,0,8">
-              <Button x:Name="LayoutAddStaticContainerButton"
-                      Content="{DynamicResource Settings.Layout.EditorAddStaticContainer}"
-                      Style="{StaticResource SettingsActionButtonStyle}"
-                      Click="LayoutAddStaticContainerButton_OnClick" />
-              <Button x:Name="LayoutAddHoverContainerButton"
-                      Content="{DynamicResource Settings.Layout.EditorAddHoverContainer}"
-                      Style="{StaticResource SettingsActionButtonStyle}"
-                      Click="LayoutAddHoverContainerButton_OnClick" />
-              <Button x:Name="LayoutAddEdgeContainerButton"
-                      Content="{DynamicResource Settings.Layout.EditorAddEdgeContainer}"
-                      Style="{StaticResource SettingsActionButtonStyle}"
-                      Click="LayoutAddEdgeContainerButton_OnClick" />
-              <ComboBox x:Name="LayoutNewEdgeComboBox"
-                        Width="110"
-                        Margin="6,0,0,0"
-                        Style="{StaticResource SettingsComboBoxStyle}" />
-            </WrapPanel>
-            <Border x:Name="LayoutVisualEditorHost"
-                    Height="330"
-                    Margin="0,0,0,8"
-                    Padding="10"
-                    Background="{DynamicResource MenuHoverBrush}"
-                    BorderBrush="{DynamicResource MenuBorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="6"
-                    AllowDrop="True"
-                    DragOver="LayoutVisualEditorHost_OnDragOver"
-                    Drop="LayoutVisualEditorHost_OnDrop" />
-            <DockPanel Margin="0,0,0,8">
-              <ComboBox x:Name="LayoutSlotComboBox"
-                        DockPanel.Dock="Left"
-                        Width="160"
-                        Margin="0,0,8,0"
-                        Style="{StaticResource SettingsComboBoxStyle}"
-                        SelectionChanged="LayoutSlotComboBox_OnSelectionChanged" />
-              <TextBlock x:Name="LayoutEditorSelectionText"
-                         VerticalAlignment="Center"
-                         Text="{DynamicResource Settings.Layout.EditorNoSelection}"
-                         Style="{StaticResource SettingsRowDescriptionStyle}" />
-            </DockPanel>
-            <WrapPanel Margin="0,0,0,8">
-              <Button x:Name="LayoutMoveUpButton"
-                      Content="{DynamicResource Settings.Layout.EditorMoveUp}"
-                      Style="{StaticResource SettingsActionButtonStyle}"
-                      Click="LayoutMoveUpButton_OnClick" />
-              <Button x:Name="LayoutMoveDownButton"
-                      Content="{DynamicResource Settings.Layout.EditorMoveDown}"
-                      Style="{StaticResource SettingsActionButtonStyle}"
-                      Click="LayoutMoveDownButton_OnClick" />
-              <Button x:Name="LayoutToggleButton"
-                      Content="{DynamicResource Settings.Layout.EditorToggle}"
-                      Style="{StaticResource SettingsActionButtonStyle}"
-                      Click="LayoutToggleButton_OnClick" />
-              <Button x:Name="LayoutRemoveButton"
-                      Content="{DynamicResource Settings.Layout.EditorRemove}"
-                      Style="{StaticResource SettingsActionButtonStyle}"
-                      Click="LayoutRemoveButton_OnClick" />
-            </WrapPanel>
-            <TextBlock x:Name="LayoutEditorMessageText"
-                       Margin="0,6,0,0"
-                       Style="{StaticResource SettingsRowDescriptionStyle}" />
-            <Border x:Name="LayoutPropertyHost"
-                    Margin="0,14,0,0"
-                    Padding="10"
-                    Background="{DynamicResource MenuHoverBrush}"
-                    BorderBrush="{DynamicResource MenuBorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="6" />
+            <Grid Margin="0,0,0,8" Height="520" VerticalAlignment="Top">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*" MinWidth="160" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="5*" MinWidth="360" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="3*" MinWidth="240" />
+              </Grid.ColumnDefinitions>
+              <Border Grid.Column="0"
+                      Padding="10"
+                      Background="{DynamicResource MenuHoverBrush}"
+                      BorderBrush="{DynamicResource MenuBorderBrush}"
+                      BorderThickness="1"
+                      CornerRadius="6"
+                      VerticalAlignment="Stretch">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                  <StackPanel>
+                    <TextBlock Text="{DynamicResource Settings.Layout.EditorObjects}"
+                               Style="{StaticResource SettingsRowDescriptionStyle}"
+                               Margin="0,0,0,6" />
+                    <ListBox x:Name="LayoutObjectList"
+                             Height="148"
+                             Margin="0,0,0,10"
+                             Background="Transparent"
+                             BorderBrush="{DynamicResource MenuBorderBrush}"
+                             BorderThickness="1"
+                             ItemContainerStyle="{StaticResource SettingsSearchResultItemStyle}"
+                             SelectionChanged="LayoutObjectList_OnSelectionChanged" />
+                    <TextBlock Text="{DynamicResource Settings.Layout.EditorPalette}"
+                               Style="{StaticResource SettingsRowDescriptionStyle}"
+                               Margin="0,0,0,6" />
+                    <WrapPanel x:Name="LayoutComponentPalette" />
+                    <TextBlock Text="{DynamicResource Settings.Layout.EditorContainers}"
+                               Style="{StaticResource SettingsRowDescriptionStyle}"
+                               Margin="0,10,0,6" />
+                    <Button x:Name="LayoutAddStaticContainerButton"
+                            Content="{DynamicResource Settings.Layout.EditorAddStaticContainer}"
+                            HorizontalAlignment="Stretch"
+                            Style="{StaticResource SettingsActionButtonStyle}"
+                            Click="LayoutAddStaticContainerButton_OnClick" />
+                    <Button x:Name="LayoutAddHoverContainerButton"
+                            Content="{DynamicResource Settings.Layout.EditorAddHoverContainer}"
+                            HorizontalAlignment="Stretch"
+                            Style="{StaticResource SettingsActionButtonStyle}"
+                            Click="LayoutAddHoverContainerButton_OnClick" />
+                    <Button x:Name="LayoutAddEdgeContainerButton"
+                            Content="{DynamicResource Settings.Layout.EditorAddEdgeContainer}"
+                            HorizontalAlignment="Stretch"
+                            Style="{StaticResource SettingsActionButtonStyle}"
+                            Click="LayoutAddEdgeContainerButton_OnClick" />
+                    <ComboBox x:Name="LayoutNewEdgeComboBox"
+                              Margin="0,2,0,0"
+                              Style="{StaticResource SettingsComboBoxStyle}" />
+                  </StackPanel>
+                </ScrollViewer>
+              </Border>
+              <Border Grid.Column="2"
+                      MinHeight="0"
+                      Padding="10"
+                      Background="{DynamicResource MenuHoverBrush}"
+                      BorderBrush="{DynamicResource MenuBorderBrush}"
+                      BorderThickness="1"
+                      CornerRadius="6"
+                      AllowDrop="True"
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Stretch">
+                <Border x:Name="LayoutVisualEditorHost"
+                        AllowDrop="True"
+                        DragOver="LayoutVisualEditorHost_OnDragOver"
+                        Drop="LayoutVisualEditorHost_OnDrop" />
+              </Border>
+              <Border Grid.Column="4"
+                      Padding="10"
+                      Background="{DynamicResource MenuHoverBrush}"
+                      BorderBrush="{DynamicResource MenuBorderBrush}"
+                      BorderThickness="1"
+                      CornerRadius="6"
+                      VerticalAlignment="Stretch">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                  <StackPanel>
+                    <ComboBox x:Name="LayoutSlotComboBox"
+                              Margin="0,0,0,8"
+                              Style="{StaticResource SettingsComboBoxStyle}"
+                              SelectionChanged="LayoutSlotComboBox_OnSelectionChanged" />
+                    <TextBlock x:Name="LayoutEditorSelectionText"
+                               Text="{DynamicResource Settings.Layout.EditorNoSelection}"
+                               Style="{StaticResource SettingsRowDescriptionStyle}"
+                               Margin="0,0,0,8" />
+                    <WrapPanel>
+                      <Button x:Name="LayoutMoveUpButton"
+                              Content="{DynamicResource Settings.Layout.EditorMoveUp}"
+                              Style="{StaticResource SettingsActionButtonStyle}"
+                              Click="LayoutMoveUpButton_OnClick" />
+                      <Button x:Name="LayoutMoveDownButton"
+                              Content="{DynamicResource Settings.Layout.EditorMoveDown}"
+                              Style="{StaticResource SettingsActionButtonStyle}"
+                              Click="LayoutMoveDownButton_OnClick" />
+                      <Button x:Name="LayoutToggleButton"
+                              Content="{DynamicResource Settings.Layout.EditorToggle}"
+                              Style="{StaticResource SettingsActionButtonStyle}"
+                              Click="LayoutToggleButton_OnClick" />
+                      <Button x:Name="LayoutRemoveButton"
+                              Content="{DynamicResource Settings.Layout.EditorRemove}"
+                              Style="{StaticResource SettingsActionButtonStyle}"
+                              Click="LayoutRemoveButton_OnClick" />
+                    </WrapPanel>
+                    <TextBlock x:Name="LayoutEditorMessageText"
+                               Margin="0,6,0,10"
+                               Style="{StaticResource SettingsRowDescriptionStyle}" />
+                    <TextBlock Text="{DynamicResource Settings.Layout.EditorProperties}"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,6" />
+                    <Border x:Name="LayoutPropertyHost" />
+                  </StackPanel>
+                </ScrollViewer>
+              </Border>
+            </Grid>
           </StackPanel>
 
           <StackPanel x:Name="AppearancePage" Visibility="Collapsed">
@@ -797,9 +844,9 @@
                        Style="{StaticResource SettingsRowDescriptionStyle}" />
             <Grid Margin="0,0,0,10">
               <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="210" />
+                <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="12" />
-                <ColumnDefinition Width="210" />
+                <ColumnDefinition Width="*" />
               </Grid.ColumnDefinitions>
               <StackPanel Grid.Column="0">
                 <TextBlock Text="{DynamicResource Settings.Appearance.LatinFont}" Margin="0,0,0,4" Style="{StaticResource SettingsRowDescriptionStyle}" />
@@ -830,21 +877,20 @@
                 </ComboBox>
               </StackPanel>
             </Grid>
-            <StackPanel Margin="0,0,0,10" HorizontalAlignment="Left">
+            <StackPanel Margin="0,0,0,10">
               <TextBlock Text="{DynamicResource Settings.Appearance.FontWeight}" Margin="0,0,0,4" Style="{StaticResource SettingsRowDescriptionStyle}" />
-              <Grid Width="320">
+              <Grid MaxWidth="520" HorizontalAlignment="Stretch">
                 <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="240" />
+                  <ColumnDefinition Width="*" />
                   <ColumnDefinition Width="64" />
                 </Grid.ColumnDefinitions>
                 <Slider x:Name="FontWeightSlider"
                         Grid.Column="0"
-                        Width="240"
                         Minimum="300"
                         Maximum="900"
                         TickFrequency="50"
                         IsSnapToTickEnabled="False"
-                        HorizontalAlignment="Left"
+                        HorizontalAlignment="Stretch"
                         VerticalAlignment="Center"
                         ValueChanged="FontWeightSlider_OnValueChanged" />
                 <TextBlock x:Name="FontWeightValueText"
