@@ -61,10 +61,12 @@ internal sealed class LayoutDesignElementEventArgs(
 internal sealed class LayoutDesignDropEventArgs(
     string containerId,
     LayoutSlotKind slotKind,
+    FrameworkElement target,
     DragEventArgs dragEventArgs) : EventArgs
 {
     internal string ContainerId { get; } = containerId;
     internal LayoutSlotKind SlotKind { get; } = slotKind;
+    internal FrameworkElement Target { get; } = target;
     internal DragEventArgs DragEventArgs { get; } = dragEventArgs;
 }
 
@@ -81,6 +83,24 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             typeof(bool),
             typeof(ComponentLayoutSurface),
             new FrameworkPropertyMetadata(false));
+    private static readonly DependencyProperty TransitionKeyProperty =
+        DependencyProperty.RegisterAttached(
+            "TransitionKey",
+            typeof(string),
+            typeof(ComponentLayoutSurface),
+            new FrameworkPropertyMetadata(null));
+    private static readonly DependencyProperty IsTransitionBoundaryProperty =
+        DependencyProperty.RegisterAttached(
+            "IsTransitionBoundary",
+            typeof(bool),
+            typeof(ComponentLayoutSurface),
+            new FrameworkPropertyMetadata(false));
+    private static readonly DependencyProperty TransitionProgressProperty =
+        DependencyProperty.RegisterAttached(
+            "TransitionProgress",
+            typeof(double),
+            typeof(ComponentLayoutSurface),
+            new FrameworkPropertyMetadata(0d));
 
     private readonly Dictionary<string, FrameworkElement> _widgetViews =
         new(StringComparer.Ordinal);
@@ -100,6 +120,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         new(StringComparer.Ordinal);
     private readonly float[] _spectrum = new float[AudioMonitorService.BandCount];
     private readonly DispatcherTimer _marqueeTimer;
+    private readonly DispatcherTimer _pointerStateTimer;
     private LayoutProfile? _profile;
     private MediaSnapshot _mediaSnapshot = MediaSnapshot.Disconnected;
     private string _metricsText = string.Empty;
@@ -122,6 +143,13 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             OnMarqueeTimerTick,
             Dispatcher);
         _marqueeTimer.Stop();
+        _pointerStateTimer = new DispatcherTimer(
+            TimeSpan.FromMilliseconds(40),
+            DispatcherPriority.Input,
+            OnPointerStateTimerTick,
+            Dispatcher);
+        _pointerStateTimer.Stop();
+        MouseEnter += Surface_OnMouseEnter;
         MouseMove += Surface_OnMouseMove;
         MouseLeave += Surface_OnMouseLeave;
     }
@@ -154,6 +182,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         _marqueeStates.Clear();
         _metricStates.Clear();
         _marqueeTimer.Stop();
+        _pointerStateTimer.Stop();
         Children.Clear();
 
         var root = BuildInlineContainers(profile);
@@ -180,7 +209,14 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
     /// 切换设置预览的设计模式；该模式只改变输入处理，不改变运行时布局和视觉。
     /// Enables editor input handling without changing the runtime layout or visuals.
     /// </summary>
-    internal void SetDesignMode(bool enabled) => _designMode = enabled;
+    internal void SetDesignMode(bool enabled)
+    {
+        _designMode = enabled;
+        if (enabled)
+        {
+            _pointerStateTimer.Stop();
+        }
+    }
 
     /// <summary>
     /// 在 AdornerLayer 上叠加选择框，不把编辑手柄计入组件测量或运行时命中区域。
@@ -236,6 +272,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         _marqueeStates.Clear();
         _metricStates.Clear();
         _marqueeTimer.Stop();
+        _pointerStateTimer.Stop();
         Children.Clear();
 
         var root = BuildSlot(
@@ -303,23 +340,10 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             visual.PointerNear = pointerNear;
             ApplyContainerState(visual, animate: true);
         }
+        UpdatePointerStateTimer();
     }
 
     internal void RefreshPointerNearFromMouse()
-    {
-        foreach (var visual in _containerViews.Values)
-        {
-            if (visual.Model.ContainerKind != LayoutContainerKind.HoverSwitch)
-            {
-                continue;
-            }
-
-            visual.PointerNear = IsPointerNear(visual);
-            ApplyContainerState(visual, animate: true);
-        }
-    }
-
-    private void Surface_OnMouseMove(object sender, MouseEventArgs e)
     {
         if (_designMode || _disposed)
         {
@@ -328,22 +352,24 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
 
         foreach (var visual in _containerViews.Values)
         {
-            if (visual.Model.ContainerKind != LayoutContainerKind.HoverSwitch ||
-                visual.Host.ActualWidth <= 0 ||
-                visual.Host.ActualHeight <= 0)
+            if (visual.Model.ContainerKind != LayoutContainerKind.HoverSwitch)
             {
                 continue;
             }
 
-            var near = IsPointerNear(visual);
-            if (visual.PointerNear == near)
-            {
-                continue;
-            }
-
-            visual.PointerNear = near;
-            ApplyContainerState(visual, animate: true);
+            UpdateContainerPointerState(visual, IsPointerNear(visual));
         }
+        UpdatePointerStateTimer();
+    }
+
+    private void Surface_OnMouseEnter(object sender, MouseEventArgs e)
+    {
+        RefreshPointerNearFromMouse();
+    }
+
+    private void Surface_OnMouseMove(object sender, MouseEventArgs e)
+    {
+        RefreshPointerNearFromMouse();
     }
 
     /// <summary>
@@ -372,17 +398,30 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             return;
         }
 
-        foreach (var visual in _containerViews.Values)
-        {
-            if (visual.Model.ContainerKind != LayoutContainerKind.HoverSwitch ||
-                !visual.PointerNear)
-            {
-                continue;
-            }
+        // MouseLeave 可能发生在 ProximityDip 内；计时器继续读取实际坐标，直到指针真正离开靠近范围。
+        // MouseLeave can occur inside ProximityDip; the timer keeps reading real coordinates until the pointer actually clears it.
+        RefreshPointerNearFromMouse();
+    }
 
-            // 表面边界先于子容器收到 MouseLeave；仍在 ProximityDip 内时不能抢先切回离开槽。
-            // The surface can receive MouseLeave before its child host; keep the near slot while the pointer is still within ProximityDip.
-            UpdateContainerPointerState(visual, IsPointerNear(visual));
+    private void OnPointerStateTimerTick(object? sender, EventArgs e)
+    {
+        RefreshPointerNearFromMouse();
+    }
+
+    private void UpdatePointerStateTimer()
+    {
+        if (_designMode || _disposed ||
+            !_containerViews.Values.Any(visual =>
+                visual.Model.ContainerKind == LayoutContainerKind.HoverSwitch &&
+                visual.PointerNear))
+        {
+            _pointerStateTimer.Stop();
+            return;
+        }
+
+        if (!_pointerStateTimer.IsEnabled)
+        {
+            _pointerStateTimer.Start();
         }
     }
 
@@ -467,12 +506,16 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
                 AttachDesignContainerHandlers(staticSlot, container.InstanceId);
                 AttachDesignDropHandlers(staticSlot, container.InstanceId, LayoutSlotKind.Primary);
             }
+            staticSlot.SetValue(TransitionKeyProperty, $"container:{container.InstanceId}");
+            staticSlot.SetValue(IsTransitionBoundaryProperty, true);
             _designElements[container.InstanceId] = staticSlot;
             RegisterDesignBoundary(container.InstanceId, staticSlot, container.ContainerKind);
             return staticSlot;
         }
 
         var visual = new ContainerVisual(container);
+        visual.Host.SetValue(TransitionKeyProperty, $"container:{container.InstanceId}");
+        visual.Host.SetValue(IsTransitionBoundaryProperty, true);
         visual.PointerNear = _pointerNear;
         _containerViews[container.InstanceId] = visual;
         // Grid 默认没有背景时，空白槽位不会产生可靠的 MouseEnter/Leave；透明背景只扩大命中区域，不改变视觉。
@@ -492,21 +535,6 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
                 AttachDesignDropHandlers(visual.Slots[1], container.InstanceId, LayoutSlotKind.Secondary);
             }
         }
-        else if (container.ContainerKind == LayoutContainerKind.HoverSwitch)
-        {
-            // 每个悬停容器独立跟踪鼠标；多个容器并存时，指向一个容器不能让其它容器同步切换。
-            // Each hover container tracks its own pointer so hovering one of several containers cannot switch the others.
-            visual.Host.MouseEnter += (_, _) =>
-            {
-                UpdateContainerPointerState(visual, true);
-            };
-            visual.Host.MouseLeave += (_, _) =>
-            {
-                // 离开控件但仍在 ProximityDip 膨胀区域内时保持靠近态，避免“闪一下又回到离开内容”。
-                // Keep the near state while the pointer remains inside the ProximityDip inflation area, preventing a flash back to leave content.
-                UpdateContainerPointerState(visual, IsPointerNear(visual));
-            };
-        }
         _designElements[container.InstanceId] = visual.Host;
         RegisterDesignBoundary(container.InstanceId, visual.Host, container.ContainerKind);
         return visual.Host;
@@ -521,6 +549,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
 
         visual.PointerNear = pointerNear;
         ApplyContainerState(visual, animate: true);
+        UpdatePointerStateTimer();
     }
 
     private void AttachDesignContainerHandlers(FrameworkElement view, string instanceId)
@@ -599,14 +628,14 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         {
             DesignDropTargetDragOver?.Invoke(
                 this,
-                new LayoutDesignDropEventArgs(containerId, slotKind, args));
+                new LayoutDesignDropEventArgs(containerId, slotKind, view, args));
             args.Handled = true;
         };
         view.Drop += (_, args) =>
         {
             DesignDropRequested?.Invoke(
                 this,
-                new LayoutDesignDropEventArgs(containerId, slotKind, args));
+                new LayoutDesignDropEventArgs(containerId, slotKind, view, args));
             args.Handled = true;
         };
     }
@@ -671,6 +700,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         };
 
         ApplyGeometry(view, widget.Geometry);
+        AssignTransitionKeys(view, widget);
         if (_designMode)
         {
             view.PreviewMouseLeftButtonDown += (_, args) =>
@@ -709,6 +739,37 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         _widgetViews[widget.InstanceId] = view;
         _designElements[widget.InstanceId] = view;
         return view;
+    }
+
+    private static string GetTransitionKey(LayoutWidgetElement widget)
+    {
+        return widget.Settings switch
+        {
+            MediaTextWidgetSettings text => text.TextKind switch
+            {
+                MediaTextKind.Title => "media-text:title",
+                MediaTextKind.Artist => "media-text:artist",
+                MediaTextKind.Source => "media-text:source",
+                MediaTextKind.TitleAndArtist => "media-text:combined",
+                _ => "media-text"
+            },
+            CommandWidgetSettings command => $"{widget.TypeId}:{command.Command}",
+            MetricsWidgetSettings metrics => $"{widget.TypeId}:{metrics.Metric}",
+            _ => widget.TypeId
+        };
+    }
+
+    private static void AssignTransitionKeys(FrameworkElement view, LayoutWidgetElement widget)
+    {
+        if (widget.Settings is MediaTextWidgetSettings { TextKind: MediaTextKind.TitleAndArtist } &&
+            view is StackPanel { Tag: ValueTuple<TextBlock, TextBlock> combined })
+        {
+            combined.Item1.SetValue(TransitionKeyProperty, "media-text:title");
+            combined.Item2.SetValue(TransitionKeyProperty, "media-text:artist");
+            return;
+        }
+
+        view.SetValue(TransitionKeyProperty, GetTransitionKey(widget));
     }
 
     private FrameworkElement BuildArtwork(LayoutWidgetElement widget)
@@ -1099,6 +1160,38 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
                 : Visibility.Collapsed;
             border.Background = ResolveArtworkBackground(artwork.Item3);
         }
+
+        RefreshCommandViews();
+    }
+
+    private void RefreshCommandViews()
+    {
+        foreach (var view in _widgetViews.Values.OfType<Button>())
+        {
+            if (view.Tag is not MediaCommandKind command)
+            {
+                continue;
+            }
+
+            view.IsEnabled = command switch
+            {
+                MediaCommandKind.Previous => _mediaSnapshot.IsConnected && _mediaSnapshot.CanSkipPrevious,
+                MediaCommandKind.PlayPause => _mediaSnapshot.IsConnected && _mediaSnapshot.CanPlayPause,
+                MediaCommandKind.Next => _mediaSnapshot.IsConnected && _mediaSnapshot.CanSkipNext,
+                MediaCommandKind.SelectSource or MediaCommandKind.AdjustVolume => _mediaSnapshot.IsConnected,
+                MediaCommandKind.SelectOutputDevice => true,
+                _ => true
+            };
+            if (view.Content is TextBlock glyph)
+            {
+                glyph.Text = command == MediaCommandKind.PlayPause
+                    ? GetCommandGlyph(command, _mediaSnapshot.IsPlaying)
+                    : GetCommandGlyph(command);
+            }
+            view.ToolTip = command == MediaCommandKind.PlayPause
+                ? GetCommandTooltip(command, _mediaSnapshot.IsPlaying)
+                : GetCommandTooltip(command);
+        }
     }
 
     private void ApplyContainerState(ContainerVisual visual, bool animate)
@@ -1111,53 +1204,270 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             : container.ContainerKind == LayoutContainerKind.HoverSwitch
                 ? (visual.PointerNear ? 1 : 0)
                 : 0;
-        var slotChanged = visual.ActiveSlot != activeSlot;
-        var enteringNearSlot = slotChanged &&
-            container.ContainerKind == LayoutContainerKind.HoverSwitch &&
-            activeSlot == 1;
-        visual.ActiveSlot = activeSlot;
-        for (var index = 0; index < visual.Slots.Count; index++)
-        {
-            var slot = visual.Slots[index];
-            var visible = index == activeSlot;
-            // 悬停槽用 Hidden 保留两态最大测量尺寸，避免切换后外框缩放导致指针离开并闪回；其它容器仍彻底折叠非活动内容。
-            // Hover slots use Hidden to retain the maximum measured footprint, preventing resize-driven pointer leave and flicker; other containers fully collapse inactive content.
-            slot.Visibility = visible
-                ? Visibility.Visible
-                : container.ContainerKind == LayoutContainerKind.HoverSwitch
-                    ? Visibility.Hidden
-                    : Visibility.Collapsed;
-            slot.BeginAnimation(UIElement.OpacityProperty, null);
-            // 离开态直接落地，避免旧的靠近态动画在鼠标离开后再次把组件绘制一帧。
-            // Commit the leave state immediately so a stale near animation cannot flash its widgets after the pointer exits.
-            slot.Opacity = visible && !(animate && enteringNearSlot) ? 1 : 0;
-        }
-
-        if (!animate || !slotChanged || !enteringNearSlot ||
-            !container.Animation.Enabled || container.Animation.DurationMilliseconds <= 0)
+        if (visual.ActiveSlot == activeSlot)
         {
             return;
         }
 
-        var duration = new Duration(TimeSpan.FromMilliseconds(
-            Math.Clamp(container.Animation.DurationMilliseconds, 0, 2_000)));
-        var easing = container.Animation.Easing switch
+        var previousSlot = visual.ActiveSlot;
+        visual.ActiveSlot = activeSlot;
+        if (!animate || previousSlot < 0 ||
+            !container.Animation.Enabled || container.Animation.DurationMilliseconds <= 0)
         {
-            LayoutEasingKind.Linear => null,
-            LayoutEasingKind.EaseInOut => new CubicEase { EasingMode = EasingMode.EaseInOut },
-            _ => new CubicEase { EasingMode = EasingMode.EaseOut }
+            CommitContainerState(visual);
+            return;
+        }
+
+        AnimateContainerState(visual, previousSlot, activeSlot);
+    }
+
+    private void CommitContainerState(ContainerVisual visual)
+    {
+        visual.TransitionVersion++;
+        visual.Host.BeginAnimation(TransitionProgressProperty, null);
+        visual.Host.SetValue(TransitionProgressProperty, 0d);
+        for (var index = 0; index < visual.Slots.Count; index++)
+        {
+            var slot = visual.Slots[index];
+            var active = index == visual.ActiveSlot;
+            slot.BeginAnimation(UIElement.OpacityProperty, null);
+            slot.Opacity = 1;
+            slot.IsHitTestVisible = active;
+            slot.Visibility = active
+                ? Visibility.Visible
+                : visual.Model.ContainerKind == LayoutContainerKind.HoverSwitch
+                    ? Visibility.Hidden
+                    : Visibility.Collapsed;
+            foreach (var element in EnumerateTransitionElements(slot))
+            {
+                element.BeginAnimation(UIElement.OpacityProperty, null);
+                element.Opacity = 1;
+                element.ClearValue(UIElement.RenderTransformProperty);
+                element.ClearValue(UIElement.RenderTransformOriginProperty);
+            }
+        }
+    }
+
+    private void AnimateContainerState(
+        ContainerVisual visual,
+        int previousSlot,
+        int activeSlot)
+    {
+        var version = ++visual.TransitionVersion;
+        var durationMilliseconds = Math.Clamp(
+            visual.Model.Animation.DurationMilliseconds,
+            1,
+            2_000);
+        var delayMilliseconds = Math.Clamp(
+            visual.Model.Animation.DelayMilliseconds,
+            0,
+            2_000);
+        var easing = ResolveEasing(visual.Model.Animation.Easing);
+        var outgoingSlot = visual.Slots[previousSlot];
+        var incomingSlot = visual.Slots[activeSlot];
+        var allElements = EnumerateTransitionElements(outgoingSlot)
+            .Concat(EnumerateTransitionElements(incomingSlot))
+            .Distinct()
+            .ToArray();
+        var presentations = allElements.ToDictionary(
+            element => element,
+            element => CaptureElementPresentation(element, visual.Host));
+
+        outgoingSlot.Visibility = Visibility.Visible;
+        incomingSlot.Visibility = Visibility.Visible;
+        outgoingSlot.IsHitTestVisible = false;
+        incomingSlot.IsHitTestVisible = true;
+        outgoingSlot.BeginAnimation(UIElement.OpacityProperty, null);
+        incomingSlot.BeginAnimation(UIElement.OpacityProperty, null);
+        outgoingSlot.Opacity = 1;
+        incomingSlot.Opacity = 1;
+
+        var outgoingByKey = EnumerateTransitionElements(outgoingSlot)
+            .GroupBy(GetTransitionKey)
+            .ToDictionary(group => group.Key, group => group.ToArray(), StringComparer.Ordinal);
+        var incomingByKey = EnumerateTransitionElements(incomingSlot)
+            .GroupBy(GetTransitionKey)
+            .ToDictionary(group => group.Key, group => group.ToArray(), StringComparer.Ordinal);
+        var matchedOutgoing = new HashSet<FrameworkElement>();
+        var matchedIncoming = new HashSet<FrameworkElement>();
+
+        foreach (var key in outgoingByKey.Keys.Intersect(incomingByKey.Keys, StringComparer.Ordinal))
+        {
+            var outgoing = outgoingByKey[key];
+            var incoming = incomingByKey[key];
+            var count = Math.Min(outgoing.Length, incoming.Length);
+            for (var index = 0; index < count; index++)
+            {
+                var oldElement = outgoing[index];
+                var newElement = incoming[index];
+                matchedOutgoing.Add(oldElement);
+                matchedIncoming.Add(newElement);
+                oldElement.BeginAnimation(UIElement.OpacityProperty, null);
+                oldElement.Opacity = 0;
+                newElement.BeginAnimation(UIElement.OpacityProperty, null);
+                newElement.Opacity = 1;
+
+                var delta = presentations[oldElement].VisualPosition -
+                    presentations[newElement].BasePosition;
+                var transform = new TranslateTransform(delta.X, delta.Y);
+                newElement.RenderTransform = transform;
+                AnimateTo(
+                    transform,
+                    TranslateTransform.XProperty,
+                    0,
+                    durationMilliseconds,
+                    delayMilliseconds,
+                    easing);
+                AnimateTo(
+                    transform,
+                    TranslateTransform.YProperty,
+                    0,
+                    durationMilliseconds,
+                    delayMilliseconds,
+                    easing);
+            }
+        }
+
+        var outgoingElements = EnumerateTransitionElements(outgoingSlot).ToArray();
+        var incomingElements = EnumerateTransitionElements(incomingSlot).ToArray();
+        foreach (var element in outgoingElements.Where(element => !matchedOutgoing.Contains(element)))
+        {
+            element.Opacity = presentations[element].Opacity;
+            AnimateOpacity(element, 0, durationMilliseconds, delayMilliseconds, easing);
+        }
+        foreach (var element in incomingElements.Where(element => !matchedIncoming.Contains(element)))
+        {
+            element.Opacity = presentations[element].WasVisible
+                ? presentations[element].Opacity
+                : 0;
+            AnimateOpacity(element, 1, durationMilliseconds, delayMilliseconds, easing);
+            var currentOffset = presentations[element].VisualPosition -
+                presentations[element].BasePosition;
+            if (Math.Abs(currentOffset.X) > 0.01 || Math.Abs(currentOffset.Y) > 0.01)
+            {
+                var transform = new TranslateTransform(currentOffset.X, currentOffset.Y);
+                element.RenderTransform = transform;
+                AnimateTo(transform, TranslateTransform.XProperty, 0, durationMilliseconds, delayMilliseconds, easing);
+                AnimateTo(transform, TranslateTransform.YProperty, 0, durationMilliseconds, delayMilliseconds, easing);
+            }
+        }
+
+        if (outgoingElements.Length == 0 && incomingElements.Length == 0)
+        {
+            outgoingSlot.Opacity = 1;
+            incomingSlot.Opacity = 0;
+            AnimateOpacity(outgoingSlot, 0, durationMilliseconds, delayMilliseconds, easing);
+            AnimateOpacity(incomingSlot, 1, durationMilliseconds, delayMilliseconds, easing);
+        }
+
+        var completion = new DoubleAnimation
+        {
+            From = 1,
+            To = 1,
+            Duration = TimeSpan.FromMilliseconds(durationMilliseconds),
+            BeginTime = TimeSpan.FromMilliseconds(delayMilliseconds),
+            FillBehavior = FillBehavior.Stop
         };
-        visual.Slots[activeSlot].BeginAnimation(
+        completion.Completed += (_, _) =>
+        {
+            if (!_disposed && visual.TransitionVersion == version)
+            {
+                CommitContainerState(visual);
+            }
+        };
+        visual.Host.BeginAnimation(
+            TransitionProgressProperty,
+            completion,
+            HandoffBehavior.SnapshotAndReplace);
+    }
+
+    private static ElementPresentation CaptureElementPresentation(
+        FrameworkElement element,
+        UIElement relativeTo)
+    {
+        var wasVisible = element.IsVisible;
+        var opacity = element.Opacity;
+        var visualPosition = element.TranslatePoint(new Point(), relativeTo);
+        element.BeginAnimation(UIElement.OpacityProperty, null);
+        element.Opacity = opacity;
+        element.ClearValue(UIElement.RenderTransformProperty);
+        element.ClearValue(UIElement.RenderTransformOriginProperty);
+        var basePosition = element.TranslatePoint(new Point(), relativeTo);
+        return new ElementPresentation(visualPosition, basePosition, opacity, wasVisible);
+    }
+
+    private static IEnumerable<FrameworkElement> EnumerateTransitionElements(DependencyObject root)
+    {
+        if (root is FrameworkElement element &&
+            element.GetValue(TransitionKeyProperty) is string)
+        {
+            yield return element;
+            if ((bool)element.GetValue(IsTransitionBoundaryProperty))
+            {
+                yield break;
+            }
+        }
+
+        for (var index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
+        {
+            foreach (var child in EnumerateTransitionElements(VisualTreeHelper.GetChild(root, index)))
+            {
+                yield return child;
+            }
+        }
+    }
+
+    private static string GetTransitionKey(FrameworkElement element) =>
+        (string)element.GetValue(TransitionKeyProperty);
+
+    private static IEasingFunction? ResolveEasing(LayoutEasingKind easing) => easing switch
+    {
+        LayoutEasingKind.Linear => null,
+        LayoutEasingKind.EaseInOut => new CubicEase { EasingMode = EasingMode.EaseInOut },
+        _ => new CubicEase { EasingMode = EasingMode.EaseOut }
+    };
+
+    private static void AnimateOpacity(
+        UIElement element,
+        double target,
+        int durationMilliseconds,
+        int delayMilliseconds,
+        IEasingFunction? easing)
+    {
+        var current = element.Opacity;
+        element.BeginAnimation(UIElement.OpacityProperty, null);
+        element.Opacity = current;
+        element.BeginAnimation(
             UIElement.OpacityProperty,
             new DoubleAnimation
             {
-                From = 0,
-                To = 1,
-                Duration = duration,
-                BeginTime = TimeSpan.FromMilliseconds(
-                    Math.Clamp(container.Animation.DelayMilliseconds, 0, 2_000)),
+                From = current,
+                To = target,
+                Duration = TimeSpan.FromMilliseconds(durationMilliseconds),
+                BeginTime = TimeSpan.FromMilliseconds(delayMilliseconds),
                 EasingFunction = easing
-            });
+            },
+            HandoffBehavior.SnapshotAndReplace);
+    }
+
+    private static void AnimateTo(
+        Animatable target,
+        DependencyProperty property,
+        double value,
+        int durationMilliseconds,
+        int delayMilliseconds,
+        IEasingFunction? easing)
+    {
+        target.BeginAnimation(
+            property,
+            new DoubleAnimation
+            {
+                To = value,
+                Duration = TimeSpan.FromMilliseconds(durationMilliseconds),
+                BeginTime = TimeSpan.FromMilliseconds(delayMilliseconds),
+                EasingFunction = easing
+            },
+            HandoffBehavior.SnapshotAndReplace);
     }
 
     private bool IsVertical => _profile?.LayoutMode == PlayerLayoutMode.Vertical;
@@ -1323,6 +1633,8 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         _disposed = true;
         _marqueeTimer.Stop();
         _marqueeTimer.Tick -= OnMarqueeTimerTick;
+        _pointerStateTimer.Stop();
+        _pointerStateTimer.Tick -= OnPointerStateTimerTick;
         CommandRequested = null;
         MetricsRequested = null;
         WheelRequested = null;
@@ -1331,6 +1643,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         DesignElementDragRequested = null;
         DesignDropTargetDragOver = null;
         DesignDropRequested = null;
+        MouseEnter -= Surface_OnMouseEnter;
         MouseMove -= Surface_OnMouseMove;
         MouseLeave -= Surface_OnMouseLeave;
         ClearDesignAdorners();
@@ -1410,10 +1723,10 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             }));
     }
 
-    private static string GetCommandGlyph(MediaCommandKind command) => command switch
+    private static string GetCommandGlyph(MediaCommandKind command, bool isPlaying = false) => command switch
     {
         MediaCommandKind.Previous => "\uE892",
-        MediaCommandKind.PlayPause => "\uE768",
+        MediaCommandKind.PlayPause => isPlaying ? "\uE769" : "\uE768",
         MediaCommandKind.Next => "\uE893",
         MediaCommandKind.SelectSource => "\uE8D6",
         MediaCommandKind.AdjustVolume => "\uE767",
@@ -1421,10 +1734,12 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         _ => "\uE710"
     };
 
-    private static string GetCommandTooltip(MediaCommandKind command) => command switch
+    private static string GetCommandTooltip(MediaCommandKind command, bool isPlaying = false) => command switch
     {
         MediaCommandKind.Previous => Loc.Get("Main.Control.Previous"),
-        MediaCommandKind.PlayPause => Loc.Get("Main.Control.Play"),
+        MediaCommandKind.PlayPause => isPlaying
+            ? Loc.Get("Main.Control.Pause")
+            : Loc.Get("Main.Control.Play"),
         MediaCommandKind.Next => Loc.Get("Main.Control.Next"),
         MediaCommandKind.SelectSource => Loc.Get("Main.Menu.ShowSource"),
         MediaCommandKind.AdjustVolume => Loc.Get("Main.Volume.Current"),
@@ -1468,7 +1783,14 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         internal List<Grid> Slots { get; } = [];
         internal bool PointerNear { get; set; }
         internal int ActiveSlot { get; set; } = -1;
+        internal int TransitionVersion { get; set; }
     }
+
+    private sealed record ElementPresentation(
+        Point VisualPosition,
+        Point BasePosition,
+        double Opacity,
+        bool WasVisible);
 
     private sealed class MarqueeState(TextBlock text, string content, int offset)
     {

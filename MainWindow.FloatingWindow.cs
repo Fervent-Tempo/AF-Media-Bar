@@ -275,6 +275,13 @@ public partial class MainWindow
                     : top;
         }
 
+        if (_floatingEdge == 0 &&
+            (_layoutBodyCorrectionX != 0 || _layoutBodyCorrectionY != 0))
+        {
+            left += _layoutBodyCorrectionX;
+            top += _layoutBodyCorrectionY;
+        }
+
         ConfigureFloatingPopupPlacement(
             desktopBounds,
             _floatingNormalLeft ?? left.Value,

@@ -5,7 +5,7 @@
         Icon="/AFMediaBar;component/icon.ico"
         Width="1180"
         Height="760"
-        MinWidth="980"
+        MinWidth="900"
         MinHeight="620"
         Background="{DynamicResource MenuBackgroundBrush}"
         Foreground="{DynamicResource MenuPrimaryTextBrush}"
@@ -714,15 +714,19 @@
                          VerticalAlignment="Center"
                          Style="{StaticResource SettingsRowDescriptionStyle}" />
             </DockPanel>
-            <Grid Margin="0,0,0,8" Height="520" VerticalAlignment="Top">
+            <Grid Margin="0,0,0,8" Height="820" VerticalAlignment="Top">
+              <Grid.RowDefinitions>
+                <RowDefinition Height="440" />
+                <RowDefinition Height="8" />
+                <RowDefinition Height="*" />
+              </Grid.RowDefinitions>
               <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2*" MinWidth="160" />
+                <ColumnDefinition Width="5*" MinWidth="300" />
                 <ColumnDefinition Width="8" />
-                <ColumnDefinition Width="5*" MinWidth="360" />
-                <ColumnDefinition Width="8" />
-                <ColumnDefinition Width="3*" MinWidth="240" />
+                <ColumnDefinition Width="4*" MinWidth="250" />
               </Grid.ColumnDefinitions>
-              <Border Grid.Column="0"
+              <Border Grid.Row="2"
+                      Grid.Column="0"
                       Padding="10"
                       Background="{DynamicResource MenuHoverBrush}"
                       BorderBrush="{DynamicResource MenuBorderBrush}"
@@ -770,7 +774,9 @@
                   </StackPanel>
                 </ScrollViewer>
               </Border>
-              <Border Grid.Column="2"
+              <Border Grid.Row="0"
+                      Grid.Column="0"
+                      Grid.ColumnSpan="3"
                       MinHeight="0"
                       Padding="10"
                       Background="{DynamicResource MenuHoverBrush}"
@@ -785,7 +791,8 @@
                         DragOver="LayoutVisualEditorHost_OnDragOver"
                         Drop="LayoutVisualEditorHost_OnDrop" />
               </Border>
-              <Border Grid.Column="4"
+              <Border Grid.Row="2"
+                      Grid.Column="2"
                       Padding="10"
                       Background="{DynamicResource MenuHoverBrush}"
                       BorderBrush="{DynamicResource MenuBorderBrush}"

@@ -237,6 +237,7 @@ public partial class MainWindow
             // Explorer 允许用户在运行期间移动任务栏；边缘约束变化后立即重建组合，避免旧边缘容器继续显示。
             // Explorer can move the taskbar at runtime; rebuild immediately so a container cannot remain on the newly occupied edge.
             _unavailableLayoutEdge = currentTaskbarEdge;
+            ResetLayoutBodyCorrection();
             ApplyComponentLayout();
             ApplyResponsivePlayerDimensions();
             force = true;
@@ -312,6 +313,12 @@ public partial class MainWindow
                     _placementSettings.TaskbarTopOffsetDip * scale),
                 taskbarRect.Top - collapsedTop,
                 Math.Max(taskbarRect.Top - collapsedTop, taskbarRect.Bottom - height + collapsedBottom));
+        }
+
+        if (_layoutBodyCorrectionX != 0 || _layoutBodyCorrectionY != 0)
+        {
+            left += _layoutBodyCorrectionX;
+            top += _layoutBodyCorrectionY;
         }
 
         var rectChanged = !_lastTaskbarRect.HasValue ||
@@ -439,6 +446,7 @@ public partial class MainWindow
         var contentVisible = PlayerContent.Visibility == Visibility.Visible ||
             VerticalPlayerContent.Visibility == Visibility.Visible;
         _isVerticalLayout = vertical;
+        ResetLayoutBodyCorrection();
         SetPlayerContentVisibility(contentVisible);
         var previousMetricSettings = _metricSettings;
         ApplyComponentLayout();

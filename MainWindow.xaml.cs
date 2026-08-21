@@ -657,8 +657,8 @@ public partial class MainWindow : Window
         if (_windowSettings.HostMode == WindowHostMode.Floating)
         {
             _floatingEdge = 0;
-            _floatingNormalLeft = _dragStartWindowLeft + deltaX;
-            _floatingNormalTop = _dragStartWindowTop + deltaY;
+            _floatingNormalLeft = _dragStartWindowLeft + deltaX - _layoutBodyCorrectionX;
+            _floatingNormalTop = _dragStartWindowTop + deltaY - _layoutBodyCorrectionY;
             _windowSettings = _windowSettings with
             {
                 FloatingLeft = _floatingNormalLeft,
@@ -690,7 +690,7 @@ public partial class MainWindow : Window
                 _placementSettings = _placementSettings with
                 {
                     ManualVerticalOffsetDip = (int)Math.Round(
-                        (top - taskbarRect.Top) / scale)
+                        (top - _layoutBodyCorrectionY - taskbarRect.Top) / scale)
                 };
             }
             else
@@ -720,9 +720,10 @@ public partial class MainWindow : Window
                 _placementSettings = _placementSettings with
                 {
                     ManualOffsetDip = (int)Math.Round(
-                        (left - taskbarRect.Left) / scale),
+                        (left - _layoutBodyCorrectionX - taskbarRect.Left) / scale),
                     TaskbarTopOffsetDip = Math.Clamp(
-                        (int)Math.Round((top - centeredTop) / scale),
+                        (int)Math.Round(
+                            (top - _layoutBodyCorrectionY - centeredTop) / scale),
                         -20,
                         20)
                 };

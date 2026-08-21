@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using AFMediaBar.Controls;
@@ -31,6 +32,8 @@ public partial class SettingsWindow
     private readonly List<ComponentLayoutSurface> _layoutPaletteSurfaces = [];
     private Popup? _layoutDragPreviewPopup;
     private Border? _layoutPreviewDropOverlay;
+    private Adorner? _layoutPreviewDropAdorner;
+    private FrameworkElement? _layoutPreviewDropAdornerTarget;
 
     private void InitializeLayoutEditor()
     {
@@ -532,13 +535,15 @@ public partial class SettingsWindow
         return new Border
         {
             HorizontalAlignment = HorizontalAlignment.Stretch,
-            VerticalAlignment = VerticalAlignment.Top,
+            VerticalAlignment = VerticalAlignment.Stretch,
             Padding = new Thickness(8),
             Background = new SolidColorBrush(Color.FromRgb(35, 43, 52)),
             Child = new Viewbox
             {
                 Stretch = Stretch.Uniform,
                 StretchDirection = StretchDirection.Both,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch,
                 Child = composition
             }
         };
@@ -674,13 +679,15 @@ public partial class SettingsWindow
 
         if (_layoutPreviewDropOverlay is not null)
         {
-            _layoutPreviewDropOverlay.Visibility = Visibility.Visible;
+            _layoutPreviewDropOverlay.Visibility = Visibility.Collapsed;
         }
+        ShowLayoutDropTarget(e.Target);
         drag.Handled = true;
     }
 
     private void LayoutPreviewSurface_OnDropRequested(object? sender, LayoutDesignDropEventArgs e)
     {
+        HideLayoutDropTarget();
         if (_layoutPreviewDropOverlay is not null)
         {
             _layoutPreviewDropOverlay.Visibility = Visibility.Collapsed;
@@ -704,8 +711,47 @@ public partial class SettingsWindow
         e.DragEventArgs.Handled = true;
     }
 
+    private void ShowLayoutDropTarget(FrameworkElement target)
+    {
+        if (ReferenceEquals(_layoutPreviewDropAdornerTarget, target) &&
+            _layoutPreviewDropAdorner is not null)
+        {
+            return;
+        }
+
+        HideLayoutDropTarget();
+        if (AdornerLayer.GetAdornerLayer(target) is not { } layer)
+        {
+            if (_layoutPreviewDropOverlay is not null)
+            {
+                _layoutPreviewDropOverlay.Visibility = Visibility.Visible;
+            }
+            return;
+        }
+
+        var adorner = new LayoutDropTargetAdorner(target)
+        {
+            IsHitTestVisible = false
+        };
+        layer.Add(adorner);
+        _layoutPreviewDropAdorner = adorner;
+        _layoutPreviewDropAdornerTarget = target;
+    }
+
+    private void HideLayoutDropTarget()
+    {
+        if (_layoutPreviewDropAdorner is not null)
+        {
+            AdornerLayer.GetAdornerLayer(_layoutPreviewDropAdorner.AdornedElement)
+                ?.Remove(_layoutPreviewDropAdorner);
+        }
+        _layoutPreviewDropAdorner = null;
+        _layoutPreviewDropAdornerTarget = null;
+    }
+
     private void DisposeLayoutPreviewSurfaces()
     {
+        HideLayoutDropTarget();
         if (_layoutPreviewDropOverlay is not null)
         {
             _layoutPreviewDropOverlay.Visibility = Visibility.Collapsed;
@@ -1191,6 +1237,7 @@ public partial class SettingsWindow
             popup.IsOpen = false;
             popup.Child = null;
             _layoutDragPreviewPopup = null;
+            HideLayoutDropTarget();
             if (_layoutPreviewDropOverlay is not null)
             {
                 _layoutPreviewDropOverlay.Visibility = Visibility.Collapsed;
@@ -1221,6 +1268,7 @@ public partial class SettingsWindow
 
     private void LayoutVisualEditorHost_OnDragOver(object sender, DragEventArgs e)
     {
+        HideLayoutDropTarget();
         e.Effects = e.Data.GetDataPresent(NewWidgetDragFormat)
             ? DragDropEffects.Copy
             : e.Data.GetDataPresent(ExistingWidgetDragFormat)
@@ -1254,6 +1302,7 @@ public partial class SettingsWindow
 
     private void LayoutPreviewDropHost_OnDragLeave(object sender, DragEventArgs e)
     {
+        HideLayoutDropTarget();
         if (_layoutPreviewDropOverlay is not null)
         {
             _layoutPreviewDropOverlay.Visibility = Visibility.Collapsed;
@@ -1262,6 +1311,7 @@ public partial class SettingsWindow
 
     private void LayoutVisualEditorHost_OnDrop(object sender, DragEventArgs e)
     {
+        HideLayoutDropTarget();
         if (_layoutPreviewDropOverlay is not null)
         {
             _layoutPreviewDropOverlay.Visibility = Visibility.Collapsed;
@@ -2509,6 +2559,40 @@ public partial class SettingsWindow
         MetricKind.ProcessMemory => "Settings.Layout.PropertyMetricApp",
         _ => "Settings.Layout.PropertyMetric"
     };
+
+    private sealed class LayoutDropTargetAdorner(UIElement adornedElement) : Adorner(adornedElement)
+    {
+        private static readonly Brush Fill = new SolidColorBrush(Color.FromArgb(46, 86, 156, 255));
+        private static readonly Brush Accent = new SolidColorBrush(Color.FromRgb(86, 156, 255));
+        private static readonly Pen Outline = new(Accent, 2);
+
+        protected override void OnRender(DrawingContext drawingContext)
+        {
+            base.OnRender(drawingContext);
+            var width = AdornedElement.RenderSize.Width;
+            var height = AdornedElement.RenderSize.Height;
+            var bounds = new Rect(1, 1, Math.Max(0, width - 2), Math.Max(0, height - 2));
+            drawingContext.DrawRoundedRectangle(Fill, Outline, bounds, 4, 4);
+            if (width >= height)
+            {
+                drawingContext.DrawRoundedRectangle(
+                    Accent,
+                    null,
+                    new Rect(Math.Max(1, width - 5), 5, 3, Math.Max(0, height - 10)),
+                    1.5,
+                    1.5);
+            }
+            else
+            {
+                drawingContext.DrawRoundedRectangle(
+                    Accent,
+                    null,
+                    new Rect(5, Math.Max(1, height - 5), Math.Max(0, width - 10), 3),
+                    1.5,
+                    1.5);
+            }
+        }
+    }
 
     private enum LayoutEditorNodeKind
     {

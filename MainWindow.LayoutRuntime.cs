@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using AFMediaBar.Controls;
 using AFMediaBar.Interop;
 using AFMediaBar.Models;
@@ -24,6 +25,11 @@ public partial class MainWindow
     // 只记录当前实际展开的边缘容器；折叠时不把展开内容计入窗口尺寸，避免拖动边界被透明区域顶住。
     // Tracks only expanded edge containers so collapsed content cannot enlarge the draggable window bounds.
     private readonly HashSet<string> _expandedEdgeContainerIds = new(StringComparer.Ordinal);
+    private DispatcherTimer? _layoutEdgePointerTimer;
+    private Point? _layoutBodyAnchorScreen;
+    private int _layoutBodyCorrectionX;
+    private int _layoutBodyCorrectionY;
+    private SystemMetricsSnapshot? _lastComponentMetricsSnapshot;
     // 悬停槽位使用独立的真实指针状态，不能复用旧版全局展开状态，否则禁用自动收起时会永久显示靠近内容。
     // Hover slots keep an independent real-pointer state; reusing legacy expansion would pin near content whenever auto-collapse is disabled.
     private bool _isLayoutPointerNear;
@@ -32,6 +38,12 @@ public partial class MainWindow
     private void InitializeComponentLayout(LayoutDocument document)
     {
         _layoutDocument = document;
+        _layoutEdgePointerTimer ??= new DispatcherTimer(
+            TimeSpan.FromMilliseconds(50),
+            DispatcherPriority.Input,
+            OnLayoutEdgePointerTimerTick,
+            Dispatcher);
+        _layoutEdgePointerTimer.Stop();
         _componentSurface = new ComponentLayoutSurface();
         _componentSurface.CommandRequested += ComponentSurface_OnCommandRequested;
         _componentSurface.MetricsRequested += ComponentSurface_OnMetricsRequested;
@@ -101,6 +113,7 @@ public partial class MainWindow
             _unavailableLayoutEdge,
             _expandedEdgeContainerIds,
             animateEdgeState);
+        UpdateLayoutEdgePointerTimer();
         RefreshLayoutPointerStateAfterMeasure();
         _metricSettings = LayoutRuntimeService.ResolveComponentSettings(
             _activeLayoutProfile,
@@ -135,6 +148,13 @@ public partial class MainWindow
             surface.WheelRequested += ComponentSurface_OnWheelRequested;
             surface.SourceRequested += ComponentSurface_OnSourceRequested;
             surface.ApplyEdge(profile, model);
+            surface.SetMediaSnapshot(_lastSnapshot ?? MediaSnapshot.Disconnected);
+            surface.SetMetricsText(MetricsText.Text);
+            if (_lastComponentMetricsSnapshot is { } metricsSnapshot)
+            {
+                surface.SetMetricsSnapshot(metricsSnapshot);
+            }
+            surface.SetSpectrum(_audioSpectrum);
             surface.RefreshPointerNearFromMouse();
             var host = new Border
             {
@@ -360,12 +380,7 @@ public partial class MainWindow
     {
         if (sender is Border { Tag: EdgeSurfaceState state })
         {
-            if (_expandedEdgeContainerIds.Add(state.Model.InstanceId))
-            {
-                ApplyComponentLayout(animateEdgeState: true);
-                ApplyResponsivePlayerDimensions();
-                PositionOverTaskbar(force: true);
-            }
+            SetEdgeSurfaceExpanded(state, expanded: true);
         }
     }
 
@@ -373,14 +388,10 @@ public partial class MainWindow
     {
         if (sender is Border { Tag: EdgeSurfaceState state } &&
             !state.Host.IsMouseOver &&
-            !IsEdgeSurfacePointerNear(state, state.ExpandedBounds))
+            !IsEdgeSurfacePointerInside(state) &&
+            !IsEdgeSurfacePointerNear(state, state.CollapsedBounds))
         {
-            if (_expandedEdgeContainerIds.Remove(state.Model.InstanceId))
-            {
-                ApplyComponentLayout(animateEdgeState: true);
-                ApplyResponsivePlayerDimensions();
-                PositionOverTaskbar(force: true);
-            }
+            SetEdgeSurfaceExpanded(state, expanded: false);
         }
     }
 
@@ -395,89 +406,376 @@ public partial class MainWindow
             return;
         }
 
-        var changed = false;
-        foreach (var state in _edgeSurfaces)
+        foreach (var state in _edgeSurfaces.ToArray())
         {
             var id = state.Model.InstanceId;
             var isExpanded = _expandedEdgeContainerIds.Contains(id);
-            var targetBounds = isExpanded ? state.ExpandedBounds : state.CollapsedBounds;
-            var near = IsEdgeSurfacePointerNear(state, targetBounds);
+            var nearTrigger = IsEdgeSurfacePointerNear(state, state.CollapsedBounds);
+            var insideExpanded = IsEdgeSurfacePointerInside(state);
             if (isExpanded)
             {
-                if (!near && !state.Host.IsMouseOver)
+                if (!insideExpanded && !nearTrigger && !state.Host.IsMouseOver)
                 {
-                    changed |= _expandedEdgeContainerIds.Remove(id);
+                    SetEdgeSurfaceExpanded(state, expanded: false);
+                    return;
                 }
             }
-            else if (near)
+            else if (nearTrigger)
             {
-                changed |= _expandedEdgeContainerIds.Add(id);
+                SetEdgeSurfaceExpanded(state, expanded: true);
+                return;
+            }
+        }
+    }
+
+    private void OnLayoutEdgePointerTimerTick(object? sender, EventArgs e)
+    {
+        if (_isClosed || _isDragging || !IsVisible || _edgeSurfaces.Count == 0)
+        {
+            UpdateLayoutEdgePointerTimer();
+            return;
+        }
+
+        foreach (var state in _edgeSurfaces.ToArray())
+        {
+            var isExpanded = _expandedEdgeContainerIds.Contains(state.Model.InstanceId);
+            var nearTrigger = IsEdgeSurfacePointerNear(state, state.CollapsedBounds);
+            var insideExpanded = IsEdgeSurfacePointerInside(state);
+            if (isExpanded && state.TargetExpanded)
+            {
+                if (!insideExpanded && !nearTrigger && !state.Host.IsMouseOver)
+                {
+                    SetEdgeSurfaceExpanded(state, expanded: false);
+                    return;
+                }
+            }
+            else if (isExpanded)
+            {
+                if (nearTrigger || insideExpanded || state.Host.IsMouseOver)
+                {
+                    SetEdgeSurfaceExpanded(state, expanded: true);
+                    return;
+                }
+            }
+            else if (nearTrigger)
+            {
+                SetEdgeSurfaceExpanded(state, expanded: true);
+                return;
             }
         }
 
-        if (!changed)
+        UpdateLayoutEdgePointerTimer();
+    }
+
+    private void UpdateLayoutEdgePointerTimer()
+    {
+        if (_layoutEdgePointerTimer is null)
         {
             return;
         }
 
-        ApplyComponentLayout(animateEdgeState: true);
-        ApplyResponsivePlayerDimensions();
-        PositionOverTaskbar(force: true);
+        if (_isClosed || _edgeSurfaces.Count == 0)
+        {
+            _layoutEdgePointerTimer.Stop();
+        }
+        else if (!_layoutEdgePointerTimer.IsEnabled)
+        {
+            _layoutEdgePointerTimer.Start();
+        }
+    }
+
+    private void SetEdgeSurfaceExpanded(EdgeSurfaceState state, bool expanded)
+    {
+        var instanceId = state.Model.InstanceId;
+        if (expanded)
+        {
+            if (_expandedEdgeContainerIds.Contains(instanceId) && state.TargetExpanded)
+            {
+                UpdateLayoutEdgePointerTimer();
+                return;
+            }
+
+            CaptureLayoutBodyAnchor();
+            if (_expandedEdgeContainerIds.Add(instanceId))
+            {
+                ApplyComponentLayout(animateEdgeState: true);
+                ApplyResponsivePlayerDimensions();
+                PositionOverTaskbar(force: true);
+                ScheduleLayoutBodyCorrection();
+            }
+            else if (!state.TargetExpanded)
+            {
+                BeginEdgeSurfaceTransition(state, expanded: true);
+            }
+            UpdateLayoutEdgePointerTimer();
+            return;
+        }
+
+        if (!_expandedEdgeContainerIds.Contains(instanceId) || !state.TargetExpanded)
+        {
+            return;
+        }
+
+        CaptureLayoutBodyAnchor();
+
+        if (!state.Model.Animation.Enabled || state.Model.Animation.DurationMilliseconds <= 0)
+        {
+            CompleteEdgeSurfaceCollapse(state);
+            return;
+        }
+
+        BeginEdgeSurfaceTransition(state, expanded: false);
     }
 
     private bool IsEdgeSurfacePointerNear(EdgeSurfaceState state, Rect bounds)
     {
         var proximity = Math.Clamp(state.Model.ProximityDip, 0, 256);
         var point = Mouse.GetPosition(LayoutEdgeSurfaceHost);
-        return point.X >= bounds.Left - proximity &&
-            point.X <= bounds.Right + proximity &&
-            point.Y >= bounds.Top - proximity &&
-            point.Y <= bounds.Bottom + proximity;
+        if (bounds.Contains(point))
+        {
+            return true;
+        }
+
+        var distanceX = point.X - (bounds.Left + bounds.Width / 2);
+        var distanceY = point.Y - (bounds.Top + bounds.Height / 2);
+        return distanceX * distanceX + distanceY * distanceY <= proximity * proximity;
     }
 
-    private static void ApplyEdgeSurfaceState(EdgeSurfaceState state, bool expanded, bool animate)
+    private bool IsEdgeSurfacePointerInside(EdgeSurfaceState state)
     {
-        var rect = expanded ? state.ExpandedBounds : state.CollapsedBounds;
-        Canvas.SetLeft(state.Host, rect.Left);
-        Canvas.SetTop(state.Host, rect.Top);
-        state.Host.Width = rect.Width;
-        state.Host.Height = rect.Height;
-        state.Surface.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
-        // 折叠状态移除展开内容子树，避免不可见组件仍参与命中测试或挡住长条拖动。
-        // Remove the expanded subtree while collapsed so invisible widgets cannot retain hit testing or block strip dragging.
-        state.Host.Child = expanded ? state.Surface : null;
-        state.Host.Background = expanded
-            ? state.ExpandedBackground
-            : state.TriggerBackground;
-        state.Host.BeginAnimation(UIElement.OpacityProperty, null);
-        state.Host.Opacity = 1;
-        if (!animate || !state.Model.Animation.Enabled || state.Model.Animation.DurationMilliseconds <= 0)
+        var point = Mouse.GetPosition(LayoutEdgeSurfaceHost);
+        return point.X >= state.ExpandedBounds.Left &&
+            point.X <= state.ExpandedBounds.Right &&
+            point.Y >= state.ExpandedBounds.Top &&
+            point.Y <= state.ExpandedBounds.Bottom;
+    }
+
+    private void ApplyEdgeSurfaceState(EdgeSurfaceState state, bool expanded, bool animate)
+    {
+        state.TargetExpanded = expanded;
+        if (animate && expanded && state.Model.Animation.Enabled &&
+            state.Model.Animation.DurationMilliseconds > 0)
         {
+            CommitEdgeSurfaceState(state, expanded: false, retainContent: true);
+            BeginEdgeSurfaceTransition(state, expanded: true);
             return;
         }
 
+        CommitEdgeSurfaceState(state, expanded, retainContent: false);
+    }
+
+    private void BeginEdgeSurfaceTransition(EdgeSurfaceState state, bool expanded)
+    {
+        var version = ++state.TransitionVersion;
+        state.TargetExpanded = expanded;
+        var targetRect = expanded ? state.ExpandedBounds : state.CollapsedBounds;
+        var currentRect = new Rect(
+            Canvas.GetLeft(state.Host),
+            Canvas.GetTop(state.Host),
+            state.Host.Width,
+            state.Host.Height);
+        var currentOpacity = state.Host.Opacity;
+        state.Host.Child = state.Surface;
+        state.Surface.Visibility = Visibility.Visible;
+        state.Host.Background = state.ExpandedBackground;
+        // 延迟期间必须保持当前呈现值；目标基值只在版本校验后的完成回调中提交。
+        // Keep the current presentation throughout the delay; commit target base values only from the version-checked completion callback.
+        ClearEdgeAnimations(state.Host);
+        SetEdgeSurfaceBaseRect(state.Host, currentRect);
+        state.Host.Opacity = currentOpacity;
+        var durationMilliseconds = Math.Clamp(
+            state.Model.Animation.DurationMilliseconds,
+            1,
+            2_000);
+        var delayMilliseconds = Math.Clamp(
+            state.Model.Animation.DelayMilliseconds,
+            0,
+            2_000);
         var easing = state.Model.Animation.Easing switch
         {
             LayoutEasingKind.Linear => null,
             LayoutEasingKind.EaseInOut => new CubicEase { EasingMode = EasingMode.EaseInOut },
             _ => new CubicEase { EasingMode = EasingMode.EaseOut }
         };
+
+        BeginEdgeAnimation(state.Host, Canvas.LeftProperty, currentRect.Left, targetRect.Left, durationMilliseconds, delayMilliseconds, easing);
+        BeginEdgeAnimation(state.Host, Canvas.TopProperty, currentRect.Top, targetRect.Top, durationMilliseconds, delayMilliseconds, easing);
+        BeginEdgeAnimation(state.Host, FrameworkElement.WidthProperty, currentRect.Width, targetRect.Width, durationMilliseconds, delayMilliseconds, easing);
+        BeginEdgeAnimation(state.Host, FrameworkElement.HeightProperty, currentRect.Height, targetRect.Height, durationMilliseconds, delayMilliseconds, easing);
+        var opacityAnimation = new DoubleAnimation
+        {
+            From = currentOpacity,
+            To = expanded ? 1 : 0.35,
+            Duration = TimeSpan.FromMilliseconds(durationMilliseconds),
+            BeginTime = TimeSpan.FromMilliseconds(delayMilliseconds),
+            EasingFunction = easing
+        };
+        opacityAnimation.Completed += (_, _) =>
+        {
+            if (_isClosed || state.TransitionVersion != version)
+            {
+                return;
+            }
+
+            if (expanded)
+            {
+                CommitEdgeSurfaceState(state, expanded: true, retainContent: false);
+            }
+            else
+            {
+                CompleteEdgeSurfaceCollapse(state);
+            }
+        };
         state.Host.BeginAnimation(
             UIElement.OpacityProperty,
+            opacityAnimation,
+            HandoffBehavior.SnapshotAndReplace);
+    }
+
+    private void CompleteEdgeSurfaceCollapse(EdgeSurfaceState state)
+    {
+        if (!_expandedEdgeContainerIds.Remove(state.Model.InstanceId))
+        {
+            return;
+        }
+
+        state.TransitionVersion++;
+        var retainBodyCorrection = _expandedEdgeContainerIds.Count > 0;
+        if (!retainBodyCorrection)
+        {
+            ResetLayoutBodyCorrection();
+        }
+        ApplyComponentLayout();
+        ApplyResponsivePlayerDimensions();
+        PositionOverTaskbar(force: true);
+        if (retainBodyCorrection)
+        {
+            ScheduleLayoutBodyCorrection();
+        }
+        UpdateLayoutEdgePointerTimer();
+    }
+
+    private void CaptureLayoutBodyAnchor()
+    {
+        if (_layoutBodyAnchorScreen.HasValue || !IsLoaded ||
+            ComponentSurfaceHost.ActualWidth <= 0 ||
+            ComponentSurfaceHost.ActualHeight <= 0)
+        {
+            return;
+        }
+
+        try
+        {
+            _layoutBodyAnchorScreen = ComponentSurfaceHost.PointToScreen(new Point());
+        }
+        catch
+        {
+            _layoutBodyAnchorScreen = null;
+        }
+    }
+
+    private void ScheduleLayoutBodyCorrection()
+    {
+        if (!_layoutBodyAnchorScreen.HasValue)
+        {
+            return;
+        }
+
+        Dispatcher.BeginInvoke(
+            DispatcherPriority.Loaded,
+            new Action(CorrectLayoutBodyPosition));
+    }
+
+    private void CorrectLayoutBodyPosition()
+    {
+        if (!_layoutBodyAnchorScreen.HasValue || _isClosed || !IsLoaded)
+        {
+            return;
+        }
+
+        try
+        {
+            var current = ComponentSurfaceHost.PointToScreen(new Point());
+            var delta = _layoutBodyAnchorScreen.Value - current;
+            var correctionX = (int)Math.Round(delta.X);
+            var correctionY = (int)Math.Round(delta.Y);
+            if (correctionX != 0 || correctionY != 0)
+            {
+                _layoutBodyCorrectionX += correctionX;
+                _layoutBodyCorrectionY += correctionY;
+                PositionOverTaskbar(force: true);
+            }
+        }
+        finally
+        {
+            _layoutBodyAnchorScreen = null;
+        }
+    }
+
+    private static void CommitEdgeSurfaceState(
+        EdgeSurfaceState state,
+        bool expanded,
+        bool retainContent)
+    {
+        state.TransitionVersion++;
+        state.TargetExpanded = expanded;
+        var rect = expanded ? state.ExpandedBounds : state.CollapsedBounds;
+        ClearEdgeAnimations(state.Host);
+        SetEdgeSurfaceBaseRect(state.Host, rect);
+        state.Host.Opacity = expanded || !retainContent ? 1 : 0.35;
+        state.Surface.Visibility = expanded || retainContent
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        // 折叠完成后才移除展开子树；过渡期间保留它以获得连续裁切，同时最终命中区域仍只含触发条。
+        // Remove expanded content only after collapse; retaining it during transition enables continuous clipping while the final hit region remains trigger-only.
+        state.Host.Child = expanded || retainContent ? state.Surface : null;
+        state.Host.Background = expanded || retainContent
+            ? state.ExpandedBackground
+            : state.TriggerBackground;
+    }
+
+    private static void SetEdgeSurfaceBaseRect(FrameworkElement host, Rect rect)
+    {
+        Canvas.SetLeft(host, rect.Left);
+        Canvas.SetTop(host, rect.Top);
+        host.Width = rect.Width;
+        host.Height = rect.Height;
+    }
+
+    private static void ClearEdgeAnimations(FrameworkElement host)
+    {
+        host.BeginAnimation(Canvas.LeftProperty, null);
+        host.BeginAnimation(Canvas.TopProperty, null);
+        host.BeginAnimation(FrameworkElement.WidthProperty, null);
+        host.BeginAnimation(FrameworkElement.HeightProperty, null);
+        host.BeginAnimation(UIElement.OpacityProperty, null);
+    }
+
+    private static void BeginEdgeAnimation(
+        FrameworkElement target,
+        DependencyProperty property,
+        double from,
+        double to,
+        int durationMilliseconds,
+        int delayMilliseconds,
+        IEasingFunction? easing)
+    {
+        target.BeginAnimation(
+            property,
             new DoubleAnimation
             {
-                From = 0.35,
-                To = 1,
-                Duration = TimeSpan.FromMilliseconds(
-                    Math.Clamp(state.Model.Animation.DurationMilliseconds, 0, 2_000)),
-                BeginTime = TimeSpan.FromMilliseconds(
-                    Math.Clamp(state.Model.Animation.DelayMilliseconds, 0, 2_000)),
+                From = from,
+                To = to,
+                Duration = TimeSpan.FromMilliseconds(durationMilliseconds),
+                BeginTime = TimeSpan.FromMilliseconds(delayMilliseconds),
                 EasingFunction = easing
-            });
+            },
+            HandoffBehavior.SnapshotAndReplace);
     }
 
     private void DisposeEdgeSurfaces()
     {
+        _layoutEdgePointerTimer?.Stop();
         foreach (var state in _edgeSurfaces)
         {
             state.Host.MouseEnter -= EdgeSurfaceHost_OnMouseEnter;
@@ -594,6 +892,7 @@ public partial class MainWindow
 
     private void ComponentSurface_OnMetricsSnapshotChanged(SystemMetricsSnapshot snapshot)
     {
+        _lastComponentMetricsSnapshot = snapshot;
         _componentSurface?.SetMetricsSnapshot(snapshot);
         foreach (var state in _edgeSurfaces)
         {
@@ -613,6 +912,7 @@ public partial class MainWindow
     private void ComponentSurface_OnLayoutSettingsChanged(LayoutDocument document)
     {
         var previousMetricSettings = _metricSettings;
+        ResetLayoutBodyCorrection();
         _layoutDocument = document;
         ApplyComponentLayout();
         if (_metricSettings != previousMetricSettings)
@@ -621,6 +921,13 @@ public partial class MainWindow
         }
         ApplyResponsivePlayerDimensions();
         PositionOverTaskbar(force: true);
+    }
+
+    private void ResetLayoutBodyCorrection()
+    {
+        _layoutBodyAnchorScreen = null;
+        _layoutBodyCorrectionX = 0;
+        _layoutBodyCorrectionY = 0;
     }
 
     private void ApplyComponentMetricRefreshInterval()
@@ -652,6 +959,8 @@ public partial class MainWindow
         internal Rect CollapsedBounds { get; } = collapsedBounds;
         internal Brush ExpandedBackground { get; } = host.Background;
         internal Brush TriggerBackground { get; } = host.BorderBrush;
+        internal bool TargetExpanded { get; set; }
+        internal int TransitionVersion { get; set; }
     }
 
 }
