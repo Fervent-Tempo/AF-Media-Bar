@@ -14,7 +14,7 @@
 ## 开发环境
 
 - Windows 10 version 1809 or later, or Windows 11
-- .NET 8 SDK
+- .NET 10 SDK（使用 `global.json` 选定的版本）
 - PowerShell
 
 ```powershell
@@ -65,7 +65,7 @@ Thank you for helping improve AF Media Bar.
 ## Development Environment
 
 - Windows 10 version 1809 or later, or Windows 11
-- .NET 8 SDK
+- .NET 10 SDK (use the version selected by `global.json`)
 - PowerShell
 
 ```powershell

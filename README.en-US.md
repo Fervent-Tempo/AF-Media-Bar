@@ -226,7 +226,7 @@ Disable unused metrics and the audio visualizer, or enable low-spec mode. The vi
 
 ## Building from Source
 
-Windows 10 version 1809 or later, the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0), and PowerShell are required.
+Windows 10 version 1809 or later, the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0), and PowerShell are required. The repository pins the supported SDK feature band through `global.json`.
 
 ```powershell
 git clone https://github.com/Fervent-Tempo/AF-Media-Bar.git

@@ -231,7 +231,7 @@ reg.exe delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "AF Media
 
 ## 从源码构建
 
-需要 Windows 10 版本 1809 或更高版本、[.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) 和 PowerShell。
+需要 Windows 10 版本 1809 或更高版本、[.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) 和 PowerShell。仓库通过 `global.json` 固定受支持的 SDK 特性带（feature band）。
 
 ```powershell
 git clone https://github.com/Fervent-Tempo/AF-Media-Bar.git
