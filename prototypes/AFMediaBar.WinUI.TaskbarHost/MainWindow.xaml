@@ -1,0 +1,70 @@
+<Window
+    x:Class="AFMediaBar.WinUI.TaskbarHost.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+    <Grid Background="Transparent">
+        <Border
+            x:Name="ContentSurface"
+            Width="256"
+            Height="48"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Center"
+            Background="#E51F2937"
+            BorderBrush="#FF8BA3B8"
+            BorderThickness="1"
+            CornerRadius="4">
+            <Grid Padding="8,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock
+                    x:Name="StatusText"
+                    VerticalAlignment="Center"
+                    Foreground="White"
+                    Text="WinUI host: starting"
+                    TextTrimming="CharacterEllipsis" />
+                <Button
+                    Grid.Column="1"
+                    Margin="8,0,0,0"
+                    Click="ToggleHostButton_OnClick"
+                    Content="Taskbar"
+                    Padding="8,2" />
+                <Button
+                    Grid.Column="2"
+                    Margin="4,0,0,0"
+                    Click="ToggleRegionButton_OnClick"
+                    Content="Region"
+                    Padding="8,2" />
+                <Button
+                    Grid.Column="3"
+                    Margin="4,0,0,0"
+                    Click="ExitButton_OnClick"
+                    Content="Exit"
+                    Padding="8,2" />
+            </Grid>
+        </Border>
+        <Border
+            x:Name="TriggerSurface"
+            Width="64"
+            Height="24"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Center"
+            Background="#332F4354"
+            BorderBrush="#FF8BA3B8"
+            BorderThickness="1"
+            CornerRadius="3"
+            PointerPressed="TriggerSurface_OnPointerPressed">
+            <TextBlock
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Foreground="#FFB8C7D4"
+                Text=">" />
+        </Border>
+    </Grid>
+</Window>
