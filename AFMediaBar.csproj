@@ -37,6 +37,11 @@
   <ItemGroup>
     <Compile Remove="src\**\*.cs" />
     <Compile Remove="tests\**\*.cs" />
+    <Page Remove="src\AFMediaBar.WinUI\**\*.xaml" />
+    <ApplicationDefinition Remove="src\AFMediaBar.WinUI\App.xaml" />
+    <Compile Remove="prototypes\**\*.cs" />
+    <Page Remove="prototypes\**\*.xaml" />
+    <ApplicationDefinition Remove="prototypes\**\App.xaml" />
   </ItemGroup>
 
   <ItemGroup>

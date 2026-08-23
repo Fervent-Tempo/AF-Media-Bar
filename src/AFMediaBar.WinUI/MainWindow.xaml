@@ -1,0 +1,165 @@
+<Window
+    x:Class="AFMediaBar.WinUI.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+    <Grid
+        x:Name="Root"
+        Padding="24"
+        Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Spacing="4">
+                <TextBlock
+                    x:Name="TitleText"
+                    FontSize="24"
+                    FontWeight="SemiBold"
+                    Foreground="{ThemeResource SystemControlForegroundBaseHighBrush}"
+                    Text="AF Media Bar" />
+                <TextBlock
+                    x:Name="TaglineText"
+                    Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                    Text="WinUI 3 application shell" />
+            </StackPanel>
+            <Button
+                Grid.Column="1"
+                Command="{x:Bind ViewModel.OpenSettingsCommand}"
+                HorizontalAlignment="Right"
+                Padding="12,8">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="&#xE713;" />
+                    <TextBlock x:Name="SettingsButtonText" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <Grid Grid.Row="1" Margin="0,24,0,16">
+            <Border
+                x:Name="ShellView"
+                Padding="24"
+                Background="{ThemeResource SystemControlBackgroundAltHighBrush}"
+                BorderBrush="{ThemeResource SystemControlForegroundBaseLowBrush}"
+                BorderThickness="1"
+                CornerRadius="8">
+                <StackPanel Spacing="14" VerticalAlignment="Center">
+                    <TextBlock
+                        FontSize="20"
+                        FontWeight="SemiBold"
+                        Foreground="{ThemeResource SystemControlForegroundBaseHighBrush}"
+                        Text="AF Media Bar" />
+                    <TextBlock
+                        x:Name="StatusText"
+                        Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                        Text="Ready in floating mode" />
+                    <TextBlock
+                        x:Name="HighContrastStatusText"
+                        Foreground="{ThemeResource SystemControlHighlightAccentBrush}"
+                        Text="High contrast is enabled"
+                        Visibility="Collapsed" />
+                </StackPanel>
+            </Border>
+
+            <Border
+                x:Name="SettingsView"
+                Padding="24"
+                Background="{ThemeResource SystemControlBackgroundAltHighBrush}"
+                BorderBrush="{ThemeResource SystemControlForegroundBaseLowBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Visibility="Collapsed">
+                <Grid RowSpacing="18">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock
+                        x:Name="SettingsTitleText"
+                        FontSize="20"
+                        FontWeight="SemiBold"
+                        Foreground="{ThemeResource SystemControlForegroundBaseHighBrush}" />
+                    <TextBlock
+                        Grid.Row="1"
+                        x:Name="SettingsDescriptionText"
+                        Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                        TextWrapping="WrapWholeWords" />
+                    <Grid Grid.Row="2" ColumnSpacing="20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="6">
+                            <TextBlock
+                                x:Name="ThemeLabelText"
+                                Foreground="{ThemeResource SystemControlForegroundBaseHighBrush}" />
+                            <ComboBox x:Name="ThemeComboBox" SelectionChanged="ThemeComboBox_OnSelectionChanged">
+                                <ComboBoxItem x:Name="ThemeAutomaticItem" />
+                                <ComboBoxItem x:Name="ThemeLightItem" />
+                                <ComboBoxItem x:Name="ThemeDarkItem" />
+                            </ComboBox>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="6">
+                            <TextBlock
+                                x:Name="LanguageLabelText"
+                                Foreground="{ThemeResource SystemControlForegroundBaseHighBrush}" />
+                            <ComboBox x:Name="LanguageComboBox" SelectionChanged="LanguageComboBox_OnSelectionChanged">
+                                <ComboBoxItem x:Name="LanguageFollowSystemItem" />
+                                <ComboBoxItem x:Name="LanguageZhCnItem" />
+                                <ComboBoxItem x:Name="LanguageZhTwItem" />
+                                <ComboBoxItem x:Name="LanguageEnUsItem" />
+                            </ComboBox>
+                        </StackPanel>
+                    </Grid>
+                    <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                        <Button x:Name="BackButton" Click="BackButton_OnClick" Padding="12,8">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE72B;" />
+                                <TextBlock x:Name="BackButtonText" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="CloseButton" Command="{x:Bind ViewModel.ExitCommand}" Padding="12,8">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE711;" />
+                                <TextBlock x:Name="CloseButtonText" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="2" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock
+                x:Name="FooterText"
+                Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                Text="{x:Bind ViewModel.Status, Mode=OneWay}"
+                TextTrimming="CharacterEllipsis" />
+            <Button
+                Grid.Column="1"
+                Command="{x:Bind ViewModel.ExitCommand}"
+                Padding="12,8">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="&#xE711;" />
+                    <TextBlock x:Name="ExitButtonText" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+        </Grid>
+    </Grid>
+</Window>

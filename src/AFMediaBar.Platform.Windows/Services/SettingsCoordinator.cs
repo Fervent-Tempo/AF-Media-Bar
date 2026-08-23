@@ -6,9 +6,9 @@ namespace AFMediaBar.Services;
 /// 持有不可变设置快照，并协调现有注册表服务的读写与精准分区通知。
 /// Owns the immutable settings snapshot and coordinates registry stores with precise section notifications.
 /// </summary>
-internal sealed class SettingsCoordinator
+public sealed class SettingsCoordinator
 {
-    internal SettingsCoordinator()
+    public SettingsCoordinator()
     {
         var metrics = MetricSettingsService.Load();
         var window = WindowSettingsService.Load();
@@ -23,11 +23,11 @@ internal sealed class SettingsCoordinator
             ReadStartupEnabled());
     }
 
-    internal ApplicationSettings Current { get; private set; }
+    public ApplicationSettings Current { get; private set; }
 
-    internal event EventHandler<SettingsChangedEventArgs>? Changed;
+    public event EventHandler<SettingsChangedEventArgs>? Changed;
 
-    internal void UpdateMetrics(MetricSettings settings)
+    public void UpdateMetrics(MetricSettings settings)
     {
         if (settings == Current.Metrics)
         {
@@ -39,7 +39,7 @@ internal sealed class SettingsCoordinator
         Publish(SettingsSection.Performance);
     }
 
-    internal void UpdateTheme(ThemeSettings settings)
+    public void UpdateTheme(ThemeSettings settings)
     {
         if (settings == Current.Theme)
         {
@@ -51,7 +51,7 @@ internal sealed class SettingsCoordinator
         Publish(SettingsSection.Appearance);
     }
 
-    internal void UpdateFont(FontSettings settings)
+    public void UpdateFont(FontSettings settings)
     {
         if (settings == Current.Font)
         {
@@ -63,7 +63,7 @@ internal sealed class SettingsCoordinator
         Publish(SettingsSection.Font);
     }
 
-    internal void UpdateLanguage(AppLanguage language)
+    public void UpdateLanguage(AppLanguage language)
     {
         if (language == Current.Language)
         {
@@ -75,10 +75,10 @@ internal sealed class SettingsCoordinator
         Publish(SettingsSection.Language);
     }
 
-    internal void UpdateWindow(WindowSettings settings)
+    public void UpdateWindow(WindowSettings settings)
     {
-        // 整窗贴边折叠已迁移为布局边缘容器；统一清零旧字段，防止外部旧调用重新启用整窗动画。
-        // Whole-window edge collapse is now represented by layout edge containers; clear the legacy field so stale callers cannot re-enable the animation.
+        // Whole-window edge collapse is represented by layout edge containers.
+        // Clear the legacy field so stale callers cannot re-enable that animation.
         settings = settings with { EdgeAutoCollapse = false };
         if (settings == Current.Window)
         {
@@ -103,7 +103,7 @@ internal sealed class SettingsCoordinator
         Publish(changedSections);
     }
 
-    internal void UpdateLayout(LayoutDocument layout)
+    public void UpdateLayout(LayoutDocument layout)
     {
         var normalized = LayoutMigrationService.Normalize(layout);
         if (normalized == Current.Layout)
@@ -116,7 +116,7 @@ internal sealed class SettingsCoordinator
         Publish(SettingsSection.Layout);
     }
 
-    internal void SynchronizeLayout(LayoutDocument layout)
+    public void SynchronizeLayout(LayoutDocument layout)
     {
         var normalized = LayoutMigrationService.Normalize(layout);
         if (normalized == Current.Layout)
@@ -128,7 +128,7 @@ internal sealed class SettingsCoordinator
         Current = Current with { Layout = normalized };
     }
 
-    internal void SynchronizeWindow(WindowSettings settings)
+    public void SynchronizeWindow(WindowSettings settings)
     {
         settings = settings with { EdgeAutoCollapse = false };
         if (settings == Current.Window)
@@ -140,7 +140,7 @@ internal sealed class SettingsCoordinator
         Current = Current with { Window = settings };
     }
 
-    internal void UpdatePlacement(PlacementSettings settings)
+    public void UpdatePlacement(PlacementSettings settings)
     {
         if (settings == Current.Placement)
         {
@@ -152,7 +152,7 @@ internal sealed class SettingsCoordinator
         Publish(SettingsSection.Placement);
     }
 
-    internal void SynchronizePlacement(PlacementSettings settings)
+    public void SynchronizePlacement(PlacementSettings settings)
     {
         if (settings == Current.Placement)
         {
@@ -163,7 +163,7 @@ internal sealed class SettingsCoordinator
         Current = Current with { Placement = settings };
     }
 
-    internal void UpdateStartup(bool enabled)
+    public void UpdateStartup(bool enabled)
     {
         if (enabled == Current.StartupEnabled)
         {
@@ -175,7 +175,7 @@ internal sealed class SettingsCoordinator
         Publish(SettingsSection.General);
     }
 
-    internal void ResetAll()
+    public void ResetAll()
     {
         MetricSettingsService.Save(MetricSettings.Default);
         ThemeSettingsService.Save(ThemeSettings.Default);
@@ -201,8 +201,7 @@ internal sealed class SettingsCoordinator
     }
 
     /// <summary>
-    /// 只有布局仍等于旧设置生成的默认文档时才同步旧选项；一旦用户编辑树，旧设置不能覆盖自定义布局。
-    /// Synchronize legacy options only while the document still matches their generated defaults, so tree edits cannot be overwritten.
+    /// Synchronize legacy options only while the document still matches their generated defaults.
     /// </summary>
     private void SynchronizeLegacyLayoutIfUncustomized(bool wasLegacyLayout)
     {
@@ -217,8 +216,7 @@ internal sealed class SettingsCoordinator
     }
 
     /// <summary>
-    /// 保留用户编辑过的布局树，同时让窗口级长度/厚度比例继续作用于两套方向档案。
-    /// Preserve an edited layout tree while keeping window-level length/thickness scales effective for both orientation profiles.
+    /// Preserve an edited layout tree while keeping window-level scales effective for both profiles.
     /// </summary>
     private void SynchronizeLayoutSurfaceScale(WindowSettings window)
     {

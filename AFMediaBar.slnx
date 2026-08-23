@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/AFMediaBar.Core/AFMediaBar.Core.csproj" />
     <Project Path="src/AFMediaBar.Platform.Windows/AFMediaBar.Platform.Windows.csproj" />
+    <Project Path="src/AFMediaBar.WinUI/AFMediaBar.WinUI.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/AFMediaBar.Core.Tests/AFMediaBar.Core.Tests.csproj" />
