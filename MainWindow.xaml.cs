@@ -348,9 +348,13 @@ public partial class MainWindow : Window
             ComponentSurface_OnLayoutSettingsChanged(e.Settings.Layout);
         }
 
-        if (e.Sections.HasFlag(SettingsSection.Appearance))
+        if ((e.Sections.HasFlag(SettingsSection.Appearance) ||
+             e.Sections.HasFlag(SettingsSection.Font)) &&
+            !e.Sections.HasFlag(SettingsSection.Layout))
         {
-            (Application.Current as App)?.ThemeService?.Refresh();
+            ApplyComponentLayout();
+            ApplyResponsivePlayerDimensions();
+            PositionOverTaskbar(force: true);
         }
 
         if (e.Sections.HasFlag(SettingsSection.Window) ||

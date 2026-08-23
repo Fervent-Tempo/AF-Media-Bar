@@ -10,12 +10,22 @@ internal sealed record ComponentDefinition(
     string TypeId,
     string NameResourceKey,
     string DescriptionResourceKey,
+    ComponentCategory Category,
     WidgetCapabilities Capabilities,
     bool SupportsTaskbar,
     bool SupportsFloating,
     bool SupportsHorizontal,
     bool SupportsVertical,
     bool SupportsCollapsedSlot);
+
+internal enum ComponentCategory
+{
+    Media = 0,
+    Controls = 1,
+    Audio = 2,
+    System = 3,
+    Layout = 4
+}
 
 /// <summary>
 /// 内置组件注册表；稳定 TypeId 让布局文件可以跨版本迁移，未知组件由加载器禁用并回退。
@@ -29,6 +39,7 @@ internal static class ComponentCatalog
             BuiltInWidgetTypeIds.Artwork,
             "Settings.LayoutWidget.ArtworkTitle",
             "Settings.LayoutWidget.ArtworkDescription",
+            ComponentCategory.Media,
             WidgetCapabilities.Display | WidgetCapabilities.Invoke,
             true,
             true,
@@ -39,6 +50,7 @@ internal static class ComponentCatalog
             BuiltInWidgetTypeIds.MediaText,
             "Settings.LayoutWidget.MediaTextTitle",
             "Settings.LayoutWidget.MediaTextDescription",
+            ComponentCategory.Media,
             WidgetCapabilities.Display,
             true,
             true,
@@ -49,6 +61,7 @@ internal static class ComponentCatalog
             BuiltInWidgetTypeIds.MediaSource,
             "Settings.LayoutWidget.MediaSourceTitle",
             "Settings.LayoutWidget.MediaSourceDescription",
+            ComponentCategory.Media,
             WidgetCapabilities.Display | WidgetCapabilities.Invoke,
             true,
             true,
@@ -59,6 +72,7 @@ internal static class ComponentCatalog
             BuiltInWidgetTypeIds.Command,
             "Settings.LayoutWidget.CommandTitle",
             "Settings.LayoutWidget.CommandDescription",
+            ComponentCategory.Controls,
             WidgetCapabilities.Invoke,
             true,
             true,
@@ -69,6 +83,7 @@ internal static class ComponentCatalog
             BuiltInWidgetTypeIds.Metrics,
             "Settings.LayoutWidget.MetricsTitle",
             "Settings.LayoutWidget.MetricsDescription",
+            ComponentCategory.System,
             WidgetCapabilities.Display | WidgetCapabilities.Invoke,
             true,
             true,
@@ -79,6 +94,7 @@ internal static class ComponentCatalog
             BuiltInWidgetTypeIds.Spectrum,
             "Settings.LayoutWidget.SpectrumTitle",
             "Settings.LayoutWidget.SpectrumDescription",
+            ComponentCategory.Audio,
             WidgetCapabilities.Display,
             true,
             true,
@@ -89,6 +105,7 @@ internal static class ComponentCatalog
             BuiltInWidgetTypeIds.Separator,
             "Settings.LayoutWidget.SeparatorTitle",
             "Settings.LayoutWidget.SeparatorDescription",
+            ComponentCategory.Layout,
             WidgetCapabilities.Display,
             true,
             true,

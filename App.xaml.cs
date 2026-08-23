@@ -281,6 +281,11 @@ public partial class App : Application
             ApplyFontSettings();
         }
 
+        if (e.Sections.HasFlag(SettingsSection.Appearance))
+        {
+            _systemThemeService?.Refresh(e.Settings.Theme);
+        }
+
         if (e.Sections.HasFlag(SettingsSection.Language))
         {
             ApplyLanguageSettings();

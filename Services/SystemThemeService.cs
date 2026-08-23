@@ -24,15 +24,17 @@ internal sealed class SystemThemeService : IDisposable
     private static readonly Color DefaultAccentColor = Color.FromRgb(0, 120, 212);
 
     private readonly Application _application;
+    private ThemeSettings _themeSettings;
     private int _updatePending;
     private bool _disposed;
 
     internal SystemThemeService(Application application)
     {
         _application = application;
+        _themeSettings = ThemeSettingsService.Load();
         SystemEvents.UserPreferenceChanged += SystemEvents_OnUserPreferenceChanged;
         SystemParameters.StaticPropertyChanged += SystemParameters_OnStaticPropertyChanged;
-        ApplyTheme();
+        ApplyTheme(_themeSettings);
     }
 
     public void Dispose()
@@ -47,8 +49,15 @@ internal sealed class SystemThemeService : IDisposable
         SystemParameters.StaticPropertyChanged -= SystemParameters_OnStaticPropertyChanged;
     }
 
-    internal void Refresh()
+    internal void Refresh(ThemeSettings settings)
     {
+        _themeSettings = settings;
+        if (_application.Dispatcher.CheckAccess())
+        {
+            ApplyTheme(settings);
+            return;
+        }
+
         QueueThemeUpdate();
     }
 
@@ -87,7 +96,7 @@ internal sealed class SystemThemeService : IDisposable
                     Interlocked.Exchange(ref _updatePending, 0);
                     if (!_disposed && !_application.Dispatcher.HasShutdownStarted)
                     {
-                        ApplyTheme();
+                        ApplyTheme(_themeSettings);
                     }
                 });
         }
@@ -97,7 +106,7 @@ internal sealed class SystemThemeService : IDisposable
         }
     }
 
-    private void ApplyTheme()
+    private void ApplyTheme(ThemeSettings themeSettings)
     {
         if (SystemParameters.HighContrast)
         {
@@ -117,8 +126,6 @@ internal sealed class SystemThemeService : IDisposable
             PersonalizeKeyPath,
             "ColorPrevalence",
             ReadBoolean(DwmKeyPath, "ColorPrevalence", defaultValue: false));
-        var themeSettings = ThemeSettingsService.Load();
-
         var accentColor = ReadAccentColor(out var accentOpacity);
         ApplyTaskbarTheme(
             systemUsesLightTheme,
@@ -162,6 +169,10 @@ internal sealed class SystemThemeService : IDisposable
         SetBrush("TaskbarPressedBrush", WithAlpha(overlay, usesDarkForeground ? (byte)0x24 : (byte)0x38));
         SetBrush("TaskbarDividerBrush", WithAlpha(overlay, 0x28));
         SetBrush("TaskbarHighlightTextBrush", foreground);
+        SetBrush("TaskbarDisabledTextBrush", WithAlpha(foreground, 0x66));
+        SetBrush(
+            "PlayerPreviewBackgroundBrush",
+            usesDarkForeground ? LightTaskbarColor : DarkTaskbarColor);
         SetBrush(
             "TaskbarReadabilityBrush",
              themeSettings.EnhancedReadability
@@ -215,6 +226,11 @@ internal sealed class SystemThemeService : IDisposable
         SetBrush("SliderTrackBrush", sliderTrack);
         SetBrush("SliderThumbBrush", sliderThumb);
         SetBrush("SliderThumbBorderBrush", accessibleAccent);
+        SetBrush(
+            "LayoutEditorCanvasBrush",
+            usesLightTheme ? Color.FromRgb(238, 241, 244) : Color.FromRgb(35, 43, 52));
+        SetBrush("LayoutEditorDropBrush", WithAlpha(accessibleAccent, usesLightTheme ? (byte)0x28 : (byte)0x42));
+        SetBrush("LayoutEditorAccentBrush", accessibleAccent);
 
         _application.Resources[SystemColors.MenuBrushKey] = backgroundBrush;
         _application.Resources[SystemColors.MenuTextBrushKey] = primaryBrush;
@@ -232,7 +248,9 @@ internal sealed class SystemThemeService : IDisposable
         SetBrush("TaskbarPressedBrush", SystemColors.HighlightBrush);
         SetBrush("TaskbarDividerBrush", SystemColors.WindowTextBrush);
         SetBrush("TaskbarHighlightTextBrush", SystemColors.HighlightTextBrush);
+        SetBrush("TaskbarDisabledTextBrush", SystemColors.GrayTextBrush);
         SetBrush("TaskbarReadabilityBrush", Colors.Transparent);
+        SetBrush("PlayerPreviewBackgroundBrush", SystemColors.WindowBrush);
         SetTextEffect(SystemColors.WindowColor, 1.0);
 
         SetBrush("MenuBackgroundBrush", SystemColors.MenuBrush);
@@ -249,6 +267,9 @@ internal sealed class SystemThemeService : IDisposable
         SetBrush("SliderTrackBrush", SystemColors.ControlDarkBrush);
         SetBrush("SliderThumbBrush", SystemColors.HighlightTextBrush);
         SetBrush("SliderThumbBorderBrush", SystemColors.HighlightBrush);
+        SetBrush("LayoutEditorCanvasBrush", SystemColors.WindowBrush);
+        SetBrush("LayoutEditorDropBrush", SystemColors.HighlightBrush);
+        SetBrush("LayoutEditorAccentBrush", SystemColors.HighlightBrush);
 
         _application.Resources[SystemColors.MenuBrushKey] = SystemColors.MenuBrush;
         _application.Resources[SystemColors.MenuTextBrushKey] = SystemColors.MenuTextBrush;

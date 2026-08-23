@@ -10,6 +10,9 @@ internal readonly record struct LayoutSize(double WidthDip, double HeightDip);
 /// </summary>
 internal sealed class LayoutRuntimeService
 {
+    internal const double EmptyContainerMinWidthDip = 64;
+    internal const double EmptyContainerMinHeightDip = 32;
+
     internal LayoutProfile ResolveProfile(
         LayoutDocument document,
         bool vertical)
@@ -141,12 +144,15 @@ internal sealed class LayoutRuntimeService
 
     internal static LayoutSize MeasureEdgeContainer(LayoutProfile profile, LayoutEdgeContainer container)
     {
-        return MeasureSlot(
+        var measured = MeasureSlot(
             container.ExpandedSlot,
             profile.LayoutMode == PlayerLayoutMode.Vertical
                 ? LayoutFlowOrientation.Vertical
                 : LayoutFlowOrientation.Horizontal,
             profile.Surface.GapDip);
+        return container.ExpandedSlot.Children.Any(child => child.Enabled)
+            ? measured
+            : EnsureContainerMinimum(measured);
     }
 
     /// <summary>
@@ -189,8 +195,15 @@ internal sealed class LayoutRuntimeService
             height = measured.Length == 0 ? 0 : measured.Max(item => item.HeightDip);
         }
 
-        return ApplyGeometry(new LayoutSize(width, height), container.Geometry);
+        var sized = ApplyGeometry(new LayoutSize(width, height), container.Geometry);
+        return slots.Any(slot => slot.Children.Any(child => child.Enabled))
+            ? sized
+            : EnsureContainerMinimum(sized);
     }
+
+    private static LayoutSize EnsureContainerMinimum(LayoutSize size) => new(
+        Math.Max(EmptyContainerMinWidthDip, size.WidthDip),
+        Math.Max(EmptyContainerMinHeightDip, size.HeightDip));
 
     private static LayoutSize MeasureSlot(LayoutSlot slot, LayoutFlowOrientation orientation, int gap)
     {

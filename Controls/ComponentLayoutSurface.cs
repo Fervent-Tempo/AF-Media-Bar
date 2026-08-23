@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -70,6 +71,14 @@ internal sealed class LayoutDesignDropEventArgs(
     internal DragEventArgs DragEventArgs { get; } = dragEventArgs;
 }
 
+internal sealed class LayoutDesignPreviewStateEventArgs(
+    string containerId,
+    bool pointerNear) : EventArgs
+{
+    internal string ContainerId { get; } = containerId;
+    internal bool PointerNear { get; } = pointerNear;
+}
+
 /// <summary>
 /// 根据不可变布局档案生成运行时与设置预览共用的 WPF 组件树；不读取注册表、不创建系统会话，业务动作通过事件交给窗口协调器。
 /// Builds the shared runtime/settings-preview WPF tree from an immutable layout profile without registry or system-session access; actions return to the window coordinator through events.
@@ -126,6 +135,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
     private string _metricsText = string.Empty;
     private bool _pointerNear;
     private bool _designMode;
+    private bool _useMenuThemeForContent;
     private string? _designPressInstanceId;
     private Point _designPressPoint;
     private DependencyObject? _designPressSource;
@@ -162,6 +172,10 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
     internal event EventHandler<LayoutDesignElementEventArgs>? DesignElementDragRequested;
     internal event EventHandler<LayoutDesignDropEventArgs>? DesignDropTargetDragOver;
     internal event EventHandler<LayoutDesignDropEventArgs>? DesignDropRequested;
+    internal event EventHandler<LayoutDesignPreviewStateEventArgs>? DesignPreviewStateChanged;
+
+    internal void SetUseMenuThemeForContent(bool useMenuTheme) =>
+        _useMenuThemeForContent = useMenuTheme;
 
     internal static bool GetIsInteractiveElement(DependencyObject element) =>
         (bool)element.GetValue(IsInteractiveElementProperty);
@@ -281,6 +295,10 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             LayoutContentAlignment.Center);
         root.HorizontalAlignment = HorizontalAlignment.Left;
         root.VerticalAlignment = VerticalAlignment.Top;
+        if (!edgeContainer.ExpandedSlot.Children.Any(child => child.Enabled))
+        {
+            EnsureContainerMinimum(root);
+        }
         if (_designMode)
         {
             if (root is Panel rootPanel)
@@ -291,8 +309,8 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             AttachDesignDropHandlers(root, edgeContainer.InstanceId, LayoutSlotKind.Expanded);
             // 编辑器中的折叠触发区没有展开内容时仍应可见，避免空容器无法选中。
             // Keep an editor-only footprint for an empty edge container so a collapsed container remains selectable.
-            root.MinWidth = 74;
-            root.MinHeight = 30;
+            root.MinWidth = Math.Max(root.MinWidth, 74);
+            root.MinHeight = Math.Max(root.MinHeight, 30);
         }
         _designElements[edgeContainer.InstanceId] = root;
         RegisterDesignBoundary(edgeContainer.InstanceId, root, LayoutContainerKind.AutoCollapse);
@@ -501,6 +519,10 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
                 staticPanel.Background = Brushes.Transparent;
             }
             ApplyGeometry(staticSlot, container.Geometry);
+            if (!container.PrimarySlot.Children.Any(child => child.Enabled))
+            {
+                EnsureContainerMinimum(staticSlot);
+            }
             if (_designMode)
             {
                 AttachDesignContainerHandlers(staticSlot, container.InstanceId);
@@ -526,6 +548,12 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         visual.Slots[2].Children.Add(BuildSlot(container.CollapsedSlot, container.Orientation, container.ContentAlignment));
         ApplyContainerState(visual, animate: false);
         ApplyGeometry(visual.Host, container.Geometry);
+        if (!container.PrimarySlot.Children.Any(child => child.Enabled) &&
+            !container.SecondarySlot.Children.Any(child => child.Enabled) &&
+            !container.CollapsedSlot.Children.Any(child => child.Enabled))
+        {
+            EnsureContainerMinimum(visual.Host);
+        }
         if (_designMode)
         {
             AttachDesignContainerHandlers(visual.Host, container.InstanceId);
@@ -537,7 +565,94 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         }
         _designElements[container.InstanceId] = visual.Host;
         RegisterDesignBoundary(container.InstanceId, visual.Host, container.ContainerKind);
-        return visual.Host;
+        return _designMode && container.ContainerKind == LayoutContainerKind.HoverSwitch
+            ? BuildDesignHoverPreview(container, visual)
+            : visual.Host;
+    }
+
+    private FrameworkElement BuildDesignHoverPreview(
+        LayoutContainerElement container,
+        ContainerVisual visual)
+    {
+        var buttons = new UniformGrid
+        {
+            Columns = 2,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Margin = new Thickness(0, 0, 0, 4)
+        };
+        var leaveButton = CreateDesignStateButton(Loc.Get("Settings.Layout.EditorLeaveContent"));
+        var nearButton = CreateDesignStateButton(Loc.Get("Settings.Layout.EditorNearContent"));
+        buttons.Children.Add(leaveButton);
+        buttons.Children.Add(nearButton);
+
+        void RefreshButtons()
+        {
+            ApplyDesignStateButton(leaveButton, selected: !visual.PointerNear);
+            ApplyDesignStateButton(nearButton, selected: visual.PointerNear);
+        }
+
+        void SelectState(bool pointerNear)
+        {
+            visual.PointerNear = pointerNear;
+            ApplyContainerState(visual, animate: false);
+            RefreshButtons();
+            DesignPreviewStateChanged?.Invoke(
+                this,
+                new LayoutDesignPreviewStateEventArgs(container.InstanceId, pointerNear));
+        }
+
+        leaveButton.Click += (_, _) => SelectState(pointerNear: false);
+        nearButton.Click += (_, _) => SelectState(pointerNear: true);
+        RefreshButtons();
+
+        var panel = new StackPanel
+        {
+            HorizontalAlignment = HorizontalAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Top
+        };
+        panel.Children.Add(buttons);
+        panel.Children.Add(visual.Host);
+        return panel;
+    }
+
+    private Button CreateDesignStateButton(string text)
+    {
+        var button = new Button
+        {
+            Content = text,
+            MinWidth = 72,
+            MinHeight = 24,
+            Padding = new Thickness(7, 2, 7, 2),
+            Margin = new Thickness(1, 0, 1, 0),
+            FontSize = 10.5,
+            BorderThickness = new Thickness(1),
+            Cursor = Cursors.Hand,
+            Style = GetResource<Style>("LayoutEditorButtonStyle")
+        };
+        SetDynamicResource(button, Control.ForegroundProperty, "MenuPrimaryTextBrush");
+        SetDynamicResource(button, Control.BorderBrushProperty, "MenuBorderBrush");
+        return button;
+    }
+
+    private void ApplyDesignStateButton(Button button, bool selected)
+    {
+        if (selected)
+        {
+            SetDynamicResource(button, Control.BackgroundProperty, "MenuSelectionBrush");
+            SetDynamicResource(button, Control.BorderBrushProperty, "LayoutEditorAccentBrush");
+        }
+        else
+        {
+            button.Background = Brushes.Transparent;
+            SetDynamicResource(button, Control.BorderBrushProperty, "MenuBorderBrush");
+        }
+        button.FontWeight = selected ? FontWeights.SemiBold : FontWeights.Normal;
+    }
+
+    private static void EnsureContainerMinimum(FrameworkElement view)
+    {
+        view.MinWidth = Math.Max(view.MinWidth, LayoutRuntimeService.EmptyContainerMinWidthDip);
+        view.MinHeight = Math.Max(view.MinHeight, LayoutRuntimeService.EmptyContainerMinHeightDip);
     }
 
     private void UpdateContainerPointerState(ContainerVisual visual, bool pointerNear)
@@ -787,24 +902,35 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             Text = "\uE8D6",
             FontFamily = GetResource<FontFamily>("AppIconFontFamily") ?? new FontFamily("Segoe MDL2 Assets"),
             FontSize = 18,
-            Foreground = GetBrush("TaskbarSecondaryTextBrush"),
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
             IsHitTestVisible = false
         };
+        SetDynamicResource(
+            placeholder,
+            TextBlock.ForegroundProperty,
+            ResolveContentResourceKey("TaskbarSecondaryTextBrush"));
         var grid = new Grid();
         grid.Children.Add(placeholder);
         grid.Children.Add(image);
+        var useArtworkColor = settings.UseMediaPrimaryColor && _mediaSnapshot.Artwork is not null;
         var border = new Border
         {
             Width = 40,
             Height = 40,
             CornerRadius = new CornerRadius(Math.Clamp(settings.CornerRadiusDip, 0, 32)),
-            Background = ResolveArtworkBackground(settings),
+            Background = useArtworkColor ? ResolveArtworkBackground(settings) : Brushes.Transparent,
             Child = grid,
             Cursor = settings.OpenSourceOnClick ? Cursors.Hand : Cursors.Arrow,
             ToolTip = settings.OpenSourceOnClick ? Loc.Get("Main.Menu.ShowSource") : null
         };
+        if (!useArtworkColor)
+        {
+            SetDynamicResource(
+                border,
+                Border.BackgroundProperty,
+                ResolveContentResourceKey("TaskbarSurfaceBrush"));
+        }
         if (settings.OpenSourceOnClick)
         {
             SetIsInteractiveElement(border, true);
@@ -837,22 +963,30 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             };
             var title = new TextBlock
             {
-                FontFamily = GetResource<FontFamily>("AppDisplayFontFamily") ?? new FontFamily("Segoe UI"),
                 FontSize = Math.Clamp(settings.FontSizeDip, 6, 72),
-                Foreground = GetBrush("TaskbarPrimaryTextBrush"),
                 Height = 22,
                 TextAlignment = TextAlignment.Center,
                 TextTrimming = TextTrimming.CharacterEllipsis
             };
             var artist = new TextBlock
             {
-                FontFamily = GetResource<FontFamily>("AppTextFontFamily") ?? new FontFamily("Segoe UI"),
                 FontSize = Math.Clamp(settings.FontSizeDip - 3, 6, 72),
-                Foreground = GetBrush("TaskbarSecondaryTextBrush"),
                 Height = 18,
                 TextAlignment = TextAlignment.Center,
                 TextTrimming = TextTrimming.CharacterEllipsis
             };
+            SetDynamicResource(title, TextBlock.FontFamilyProperty, "AppDisplayFontFamily");
+            SetDynamicResource(title, TextBlock.FontWeightProperty, "PlayerTitleFontWeight");
+            SetDynamicResource(
+                title,
+                TextBlock.ForegroundProperty,
+                ResolveContentResourceKey("TaskbarPrimaryTextBrush"));
+            SetDynamicResource(artist, TextBlock.FontFamilyProperty, "AppTextFontFamily");
+            SetDynamicResource(artist, TextBlock.FontWeightProperty, "PlayerTextFontWeight");
+            SetDynamicResource(
+                artist,
+                TextBlock.ForegroundProperty,
+                ResolveContentResourceKey("TaskbarSecondaryTextBrush"));
             stack.Children.Add(title);
             stack.Children.Add(artist);
             _mediaTextKinds[widget.InstanceId] = MediaTextKind.TitleAndArtist;
@@ -861,10 +995,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         }
         var text = new TextBlock
         {
-            FontFamily = GetResource<FontFamily>("AppDisplayFontFamily") ?? new FontFamily("Segoe UI"),
             FontSize = Math.Clamp(settings.FontSizeDip, 6, 72),
-            FontWeight = GetFontWeight("PlayerTitleFontWeight"),
-            Foreground = GetBrush("TaskbarPrimaryTextBrush"),
             TextWrapping = settings.MaxLines > 1 ? TextWrapping.Wrap : TextWrapping.NoWrap,
             TextTrimming = TextTrimming.CharacterEllipsis,
             Width = IsVertical ? 68 : 210,
@@ -875,6 +1006,12 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             ClipToBounds = true,
             VerticalAlignment = VerticalAlignment.Center
         };
+        SetDynamicResource(text, TextBlock.FontFamilyProperty, "AppDisplayFontFamily");
+        SetDynamicResource(text, TextBlock.FontWeightProperty, "PlayerTitleFontWeight");
+        SetDynamicResource(
+            text,
+            TextBlock.ForegroundProperty,
+            ResolveContentResourceKey("TaskbarPrimaryTextBrush"));
         if (settings.MaxLines > 1)
         {
             // 多行文本放入固定高度槽位，内部高度按最大行数裁切，避免换行改变同级组件的排列位置。
@@ -920,7 +1057,10 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         });
         if (GetTextBlock(text) is { } textBlock)
         {
-            textBlock.Foreground = GetBrush("TaskbarSecondaryTextBrush");
+            SetDynamicResource(
+                textBlock,
+                TextBlock.ForegroundProperty,
+                ResolveContentResourceKey("TaskbarSecondaryTextBrush"));
             textBlock.Cursor = Cursors.Hand;
             textBlock.ToolTip = Loc.Get("Main.Menu.ShowSource");
             SetIsInteractiveElement(textBlock, true);
@@ -964,8 +1104,9 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             Height = Math.Clamp(settings.ButtonSizeDip, 20, 96),
             Background = Brushes.Transparent,
             BorderThickness = new Thickness(0),
-            Foreground = GetBrush("TaskbarPrimaryTextBrush"),
             Cursor = Cursors.Hand,
+            Style = GetResource<Style>(
+                _useMenuThemeForContent ? "LayoutEditorButtonStyle" : "TransportButtonStyle"),
             Tag = settings.Command,
             ToolTip = GetCommandTooltip(settings.Command),
             Content = new TextBlock
@@ -1016,24 +1157,30 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         {
             Tag = BuiltInWidgetTypeIds.Metrics,
             Text = _metricsText,
-            FontFamily = GetResource<FontFamily>("AppTextFontFamily") ?? new FontFamily("Segoe UI"),
             FontSize = 11,
-            FontWeight = FontWeights.SemiBold,
-            Foreground = GetBrush("TaskbarSecondaryTextBrush"),
             TextTrimming = TextTrimming.CharacterEllipsis,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center
         };
+        SetDynamicResource(text, TextBlock.FontFamilyProperty, "AppTextFontFamily");
+        SetDynamicResource(text, TextBlock.FontWeightProperty, "PlayerTextFontWeight");
+        SetDynamicResource(
+            text,
+            TextBlock.ForegroundProperty,
+            ResolveContentResourceKey("TaskbarSecondaryTextBrush"));
         var border = new Border
         {
             Width = 74,
             Height = 24,
             Padding = new Thickness(8, 0, 8, 0),
             CornerRadius = new CornerRadius(12),
-            Background = GetBrush("TaskbarHoverBrush"),
             Cursor = settings.OpenTaskManagerOnClick ? Cursors.Hand : Cursors.Arrow,
             Child = text
         };
+        SetDynamicResource(
+            border,
+            Border.BackgroundProperty,
+            ResolveContentResourceKey("TaskbarHoverBrush"));
         SetIsInteractiveElement(border, settings.OpenTaskManagerOnClick);
         border.MouseLeftButtonUp += (_, args) =>
         {
@@ -1063,21 +1210,25 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             Math.Clamp(settings.BandCount, 1, AudioMonitorService.BandCount),
             Math.Clamp(settings.RefreshRateHz, 5, 30),
             Math.Clamp(settings.SensitivityPercent, 1, 400),
-            GetBrush("TaskbarSecondaryTextBrush"));
+            ResolveContentResourceKey("TaskbarSecondaryTextBrush"));
     }
 
-    private static FrameworkElement BuildSeparator(LayoutWidgetElement widget)
+    private FrameworkElement BuildSeparator(LayoutWidgetElement widget)
     {
         var settings = widget.Settings as SeparatorWidgetSettings ??
             new SeparatorWidgetSettings(1, 22);
-        return new Border
+        var separator = new Border
         {
             Width = Math.Clamp(settings.ThicknessDip, 1, 8),
             Height = Math.Clamp(settings.LengthDip, 4, 256),
-            Background = GetBrush("TaskbarDividerBrush"),
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(8, 0, 8, 0)
         };
+        SetDynamicResource(
+            separator,
+            Border.BackgroundProperty,
+            ResolveContentResourceKey("TaskbarDividerBrush"));
+        return separator;
     }
 
     private static FrameworkElement BuildUnknown(LayoutWidgetElement widget)
@@ -1556,7 +1707,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
     {
         if (!settings.UseMediaPrimaryColor || _mediaSnapshot.Artwork is null)
         {
-            return GetBrush("TaskbarSurfaceBrush");
+            return GetContentBrush("TaskbarSurfaceBrush");
         }
 
         try
@@ -1597,7 +1748,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             DiagnosticsLogService.Write("layout-artwork-accent", exception);
         }
 
-        return GetBrush("TaskbarSurfaceBrush");
+        return GetContentBrush("TaskbarSurfaceBrush");
     }
 
     private void OnMarqueeTimerTick(object? sender, EventArgs e)
@@ -1643,6 +1794,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         DesignElementDragRequested = null;
         DesignDropTargetDragOver = null;
         DesignDropRequested = null;
+        DesignPreviewStateChanged = null;
         MouseEnter -= Surface_OnMouseEnter;
         MouseMove -= Surface_OnMouseMove;
         MouseLeave -= Surface_OnMouseLeave;
@@ -1758,12 +1910,36 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         return GetResource<Brush>(key) ?? Brushes.Transparent;
     }
 
-    private static FontWeight GetFontWeight(string key)
+    private Brush GetContentBrush(string taskbarResourceKey)
     {
-        return Application.Current?.TryFindResource(key) is FontWeight weight
-            ? weight
-            : FontWeights.Normal;
+        return TryFindResource(ResolveContentResourceKey(taskbarResourceKey)) as Brush ??
+            Brushes.Transparent;
     }
+
+    private string ResolveContentResourceKey(string taskbarResourceKey)
+    {
+        if (!_useMenuThemeForContent)
+        {
+            return taskbarResourceKey;
+        }
+
+        return taskbarResourceKey switch
+        {
+            "TaskbarPrimaryTextBrush" or "TaskbarHighlightTextBrush" => "MenuPrimaryTextBrush",
+            "TaskbarSecondaryTextBrush" => "MenuSecondaryTextBrush",
+            "TaskbarDisabledTextBrush" => "MenuDisabledBrush",
+            "TaskbarPressedBrush" => "MenuPressedBrush",
+            "TaskbarDividerBrush" => "MenuSeparatorBrush",
+            "TaskbarSurfaceBrush" or "TaskbarHoverBrush" or "TaskbarReadabilityBrush" => "MenuHoverBrush",
+            _ => taskbarResourceKey
+        };
+    }
+
+    private static void SetDynamicResource(
+        FrameworkElement element,
+        DependencyProperty property,
+        string resourceKey) =>
+        element.SetResourceReference(property, resourceKey);
 
     private sealed class ContainerVisual
     {
@@ -1882,7 +2058,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         int bandCount,
         int refreshRateHz,
         int sensitivityPercent,
-        Brush brush) : FrameworkElement
+        string brushResourceKey) : FrameworkElement
     {
         private readonly float[] _values = new float[AudioMonitorService.BandCount];
         private long _lastRenderTick;
@@ -1923,7 +2099,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
                 var barHeight = Math.Clamp(3 + Math.Sqrt(_values[index]) * (height - 3), 3, height);
                 var x = index * (barWidth + gap);
                 drawingContext.DrawRoundedRectangle(
-                    brush,
+                    TryFindResource(brushResourceKey) as Brush ?? Brushes.Transparent,
                     null,
                     new Rect(x, (height - barHeight) / 2, barWidth, barHeight),
                     2,

@@ -318,6 +318,220 @@
         </Setter.Value>
       </Setter>
     </Style>
+
+    <Style x:Key="SettingsHorizontalSliderStyle" TargetType="Slider">
+      <Setter Property="Height" Value="28" />
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="IsMoveToPointEnabled" Value="True" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Slider">
+            <Grid Height="28" Background="Transparent">
+              <Track x:Name="PART_Track"
+                     Margin="8,0"
+                     VerticalAlignment="Center"
+                     Orientation="Horizontal">
+                <Track.DecreaseRepeatButton>
+                  <RepeatButton Command="{x:Static Slider.DecreaseLarge}" Focusable="False">
+                    <RepeatButton.Template>
+                      <ControlTemplate TargetType="RepeatButton">
+                        <Border Height="4"
+                                VerticalAlignment="Center"
+                                Background="{DynamicResource SliderFillBrush}"
+                                CornerRadius="2" />
+                      </ControlTemplate>
+                    </RepeatButton.Template>
+                  </RepeatButton>
+                </Track.DecreaseRepeatButton>
+                <Track.Thumb>
+                  <Thumb Width="16" Height="16">
+                    <Thumb.Template>
+                      <ControlTemplate TargetType="Thumb">
+                        <Ellipse Fill="{DynamicResource SliderThumbBrush}"
+                                 Stroke="{DynamicResource SliderThumbBorderBrush}"
+                                 StrokeThickness="2" />
+                      </ControlTemplate>
+                    </Thumb.Template>
+                  </Thumb>
+                </Track.Thumb>
+                <Track.IncreaseRepeatButton>
+                  <RepeatButton Command="{x:Static Slider.IncreaseLarge}" Focusable="False">
+                    <RepeatButton.Template>
+                      <ControlTemplate TargetType="RepeatButton">
+                        <Border Height="4"
+                                VerticalAlignment="Center"
+                                Background="{DynamicResource SliderTrackBrush}"
+                                CornerRadius="2" />
+                      </ControlTemplate>
+                    </RepeatButton.Template>
+                  </RepeatButton>
+                </Track.IncreaseRepeatButton>
+              </Track>
+            </Grid>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="SettingsIconToggleButtonStyle" TargetType="ToggleButton">
+      <Setter Property="Foreground" Value="{DynamicResource MenuPrimaryTextBrush}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MenuBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ToggleButton">
+            <Border x:Name="ToggleBorder"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="5">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="ToggleBorder" Property="Background" Value="{DynamicResource MenuHoverBrush}" />
+              </Trigger>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="ToggleBorder" Property="Background" Value="{DynamicResource MenuSelectionBrush}" />
+                <Setter TargetName="ToggleBorder" Property="BorderBrush" Value="{DynamicResource LayoutEditorAccentBrush}" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="LayoutTreeViewItemStyle" TargetType="TreeViewItem">
+      <Setter Property="Foreground" Value="{DynamicResource MenuPrimaryTextBrush}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="IsExpanded" Value="True" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="TreeViewItem">
+            <Grid>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+              </Grid.RowDefinitions>
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="18" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <ToggleButton x:Name="Expander"
+                              Width="18"
+                              Height="24"
+                              Focusable="False"
+                              IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}">
+                  <ToggleButton.Template>
+                    <ControlTemplate TargetType="ToggleButton">
+                      <TextBlock x:Name="Glyph"
+                                 Text="&#xE76C;"
+                                 FontFamily="{StaticResource AppIconFontFamily}"
+                                 FontSize="9"
+                                 Foreground="{DynamicResource MenuSecondaryTextBrush}"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center" />
+                      <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                          <Setter TargetName="Glyph" Property="Text" Value="&#xE70D;" />
+                        </Trigger>
+                      </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                  </ToggleButton.Template>
+                </ToggleButton>
+                <Border x:Name="SelectionBorder"
+                        Grid.Column="1"
+                        MinHeight="26"
+                        Padding="4,2"
+                        Background="Transparent"
+                        CornerRadius="4">
+                  <ContentPresenter ContentSource="Header" VerticalAlignment="Center" />
+                </Border>
+              </Grid>
+              <ItemsPresenter x:Name="ItemsHost" Grid.Row="1" Margin="16,0,0,0" />
+            </Grid>
+            <ControlTemplate.Triggers>
+              <Trigger Property="HasItems" Value="False">
+                <Setter TargetName="Expander" Property="Visibility" Value="Hidden" />
+              </Trigger>
+              <Trigger Property="IsExpanded" Value="False">
+                <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed" />
+              </Trigger>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="SelectionBorder" Property="Background" Value="{DynamicResource MenuHoverBrush}" />
+              </Trigger>
+              <Trigger Property="IsSelected" Value="True">
+                <Setter TargetName="SelectionBorder" Property="Background" Value="{DynamicResource MenuSelectionBrush}" />
+                <Setter TargetName="SelectionBorder" Property="BorderBrush" Value="{DynamicResource LayoutEditorAccentBrush}" />
+                <Setter TargetName="SelectionBorder" Property="BorderThickness" Value="1" />
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Opacity" Value="0.48" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="LayoutCategoryTabItemStyle" TargetType="TabItem">
+      <Setter Property="Foreground" Value="{DynamicResource MenuSecondaryTextBrush}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="9,5" />
+      <Setter Property="Margin" Value="0,0,3,4" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="TabItem">
+            <Border x:Name="TabBorder"
+                    Padding="{TemplateBinding Padding}"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="Transparent"
+                    BorderThickness="1"
+                    CornerRadius="4">
+              <ContentPresenter ContentSource="Header" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource MenuHoverBrush}" />
+              </Trigger>
+              <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource MenuPrimaryTextBrush}" />
+                <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource MenuSelectionBrush}" />
+                <Setter TargetName="TabBorder" Property="BorderBrush" Value="{DynamicResource LayoutEditorAccentBrush}" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="LayoutCategoryTabControlStyle" TargetType="TabControl">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="ItemContainerStyle" Value="{StaticResource LayoutCategoryTabItemStyle}" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="TabControl">
+            <Grid>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+              </Grid.RowDefinitions>
+              <TabPanel Grid.Row="0" IsItemsHost="True" />
+              <ContentPresenter x:Name="PART_SelectedContentHost"
+                                Grid.Row="1"
+                                ContentSource="SelectedContent" />
+            </Grid>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
   </Window.Resources>
 
   <Grid Margin="18">
@@ -399,6 +613,12 @@
                 <TextBlock Text="{DynamicResource Settings.Nav.Layout}" />
               </StackPanel>
             </ListBoxItem>
+            <ListBoxItem Tag="LayoutEditor">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Width="24" Text="&#xE8A0;" FontFamily="{StaticResource AppIconFontFamily}" />
+                <TextBlock Text="{DynamicResource Settings.Nav.LayoutEditor}" />
+              </StackPanel>
+            </ListBoxItem>
             <ListBoxItem Tag="Appearance">
               <StackPanel Orientation="Horizontal">
                 <TextBlock Width="24" Text="&#xE790;" FontFamily="{StaticResource AppIconFontFamily}" />
@@ -424,7 +644,8 @@
       <ScrollViewer x:Name="SettingsPageScrollViewer"
                     Grid.Column="2"
                     HorizontalScrollBarVisibility="Disabled"
-                    VerticalScrollBarVisibility="Auto">
+                    VerticalScrollBarVisibility="Auto"
+                    SizeChanged="SettingsPageScrollViewer_OnSizeChanged">
         <Grid Margin="10,0,22,20">
           <StackPanel x:Name="SearchResultsPage" Visibility="Collapsed">
             <TextBlock Text="{DynamicResource Settings.Search.Results}" Style="{StaticResource SettingsPageTitleStyle}" />
@@ -680,26 +901,35 @@
               </CheckBox>
             </Border>
             <Button Content="{DynamicResource Settings.Layout.ResetPosition}" HorizontalAlignment="Left" Margin="0,16,0,0" Style="{StaticResource SettingsActionButtonStyle}" Click="ResetPosition_OnClick" />
-            <TextBlock Text="{DynamicResource Settings.Layout.EditorTitle}" Margin="0,30,0,0" FontSize="15" FontWeight="SemiBold" />
-            <TextBlock Text="{DynamicResource Settings.Layout.EditorDescription}"
-                       Margin="0,4,0,10"
-                       Style="{StaticResource SettingsRowDescriptionStyle}" />
-            <Border Margin="0,0,0,10"
-                    Padding="10,8"
-                    Background="{DynamicResource MenuHoverBrush}"
-                    BorderBrush="{DynamicResource MenuBorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="6">
-              <StackPanel>
-                <TextBlock x:Name="LayoutEditorContextText"
-                           FontWeight="SemiBold"
-                           Foreground="{DynamicResource MenuPrimaryTextBrush}" />
-                <TextBlock Margin="0,3,0,0"
-                           Text="{DynamicResource Settings.Layout.EditorCurrentContextHint}"
+          </StackPanel>
+
+          <Grid x:Name="LayoutEditorPage" Visibility="Collapsed">
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid Margin="0,0,0,8">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <StackPanel Grid.Column="0">
+                <TextBlock Text="{DynamicResource Settings.Nav.LayoutEditor}" Style="{StaticResource SettingsPageTitleStyle}" />
+                <TextBlock Text="{DynamicResource Settings.Layout.EditorDescription}"
+                           Margin="0,3,0,0"
+                           TextWrapping="Wrap"
                            Style="{StaticResource SettingsRowDescriptionStyle}" />
               </StackPanel>
-            </Border>
-            <DockPanel Margin="0,0,0,8">
+              <TextBlock x:Name="LayoutEditorContextText"
+                         Grid.Column="1"
+                         Margin="16,4,0,0"
+                         HorizontalAlignment="Right"
+                         VerticalAlignment="Top"
+                         FontWeight="SemiBold"
+                         Foreground="{DynamicResource MenuPrimaryTextBrush}" />
+            </Grid>
+            <DockPanel Grid.Row="1" Margin="0,0,0,8">
               <WrapPanel DockPanel.Dock="Right">
                 <Button x:Name="LayoutUndoButton"
                         Content="{DynamicResource Settings.Layout.EditorUndo}"
@@ -714,131 +944,182 @@
                          VerticalAlignment="Center"
                          Style="{StaticResource SettingsRowDescriptionStyle}" />
             </DockPanel>
-            <Grid Margin="0,0,0,8" Height="820" VerticalAlignment="Top">
+            <Grid Grid.Row="2" MinHeight="0">
               <Grid.RowDefinitions>
-                <RowDefinition Height="440" />
+                <RowDefinition Height="3*" MinHeight="190" />
                 <RowDefinition Height="8" />
-                <RowDefinition Height="*" />
+                <RowDefinition Height="2*" MinHeight="150" />
               </Grid.RowDefinitions>
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="5*" MinWidth="300" />
-                <ColumnDefinition Width="8" />
-                <ColumnDefinition Width="4*" MinWidth="250" />
-              </Grid.ColumnDefinitions>
-              <Border Grid.Row="2"
-                      Grid.Column="0"
-                      Padding="10"
-                      Background="{DynamicResource MenuHoverBrush}"
-                      BorderBrush="{DynamicResource MenuBorderBrush}"
-                      BorderThickness="1"
-                      CornerRadius="6"
-                      VerticalAlignment="Stretch">
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                  <StackPanel>
-                    <TextBlock Text="{DynamicResource Settings.Layout.EditorObjects}"
-                               Style="{StaticResource SettingsRowDescriptionStyle}"
-                               Margin="0,0,0,6" />
-                    <ListBox x:Name="LayoutObjectList"
-                             Height="148"
-                             Margin="0,0,0,10"
-                             Background="Transparent"
-                             BorderBrush="{DynamicResource MenuBorderBrush}"
-                             BorderThickness="1"
-                             ItemContainerStyle="{StaticResource SettingsSearchResultItemStyle}"
-                             SelectionChanged="LayoutObjectList_OnSelectionChanged" />
-                    <TextBlock Text="{DynamicResource Settings.Layout.EditorPalette}"
-                               Style="{StaticResource SettingsRowDescriptionStyle}"
-                               Margin="0,0,0,6" />
-                    <WrapPanel x:Name="LayoutComponentPalette" />
-                    <TextBlock Text="{DynamicResource Settings.Layout.EditorContainers}"
-                               Style="{StaticResource SettingsRowDescriptionStyle}"
-                               Margin="0,10,0,6" />
-                    <Button x:Name="LayoutAddStaticContainerButton"
-                            Content="{DynamicResource Settings.Layout.EditorAddStaticContainer}"
-                            HorizontalAlignment="Stretch"
-                            Style="{StaticResource SettingsActionButtonStyle}"
-                            Click="LayoutAddStaticContainerButton_OnClick" />
-                    <Button x:Name="LayoutAddHoverContainerButton"
-                            Content="{DynamicResource Settings.Layout.EditorAddHoverContainer}"
-                            HorizontalAlignment="Stretch"
-                            Style="{StaticResource SettingsActionButtonStyle}"
-                            Click="LayoutAddHoverContainerButton_OnClick" />
-                    <Button x:Name="LayoutAddEdgeContainerButton"
-                            Content="{DynamicResource Settings.Layout.EditorAddEdgeContainer}"
-                            HorizontalAlignment="Stretch"
-                            Style="{StaticResource SettingsActionButtonStyle}"
-                            Click="LayoutAddEdgeContainerButton_OnClick" />
-                    <ComboBox x:Name="LayoutNewEdgeComboBox"
-                              Margin="0,2,0,0"
-                              Style="{StaticResource SettingsComboBoxStyle}" />
-                  </StackPanel>
-                </ScrollViewer>
-              </Border>
-              <Border Grid.Row="0"
-                      Grid.Column="0"
-                      Grid.ColumnSpan="3"
-                      MinHeight="0"
-                      Padding="10"
-                      Background="{DynamicResource MenuHoverBrush}"
-                      BorderBrush="{DynamicResource MenuBorderBrush}"
-                      BorderThickness="1"
-                      CornerRadius="6"
-                      AllowDrop="True"
-                      HorizontalAlignment="Stretch"
-                      VerticalAlignment="Stretch">
-                <Border x:Name="LayoutVisualEditorHost"
-                        AllowDrop="True"
-                        DragOver="LayoutVisualEditorHost_OnDragOver"
-                        Drop="LayoutVisualEditorHost_OnDrop" />
-              </Border>
-              <Border Grid.Row="2"
-                      Grid.Column="2"
-                      Padding="10"
-                      Background="{DynamicResource MenuHoverBrush}"
-                      BorderBrush="{DynamicResource MenuBorderBrush}"
-                      BorderThickness="1"
-                      CornerRadius="6"
-                      VerticalAlignment="Stretch">
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                  <StackPanel>
-                    <ComboBox x:Name="LayoutSlotComboBox"
-                              Margin="0,0,0,8"
-                              Style="{StaticResource SettingsComboBoxStyle}"
-                              SelectionChanged="LayoutSlotComboBox_OnSelectionChanged" />
-                    <TextBlock x:Name="LayoutEditorSelectionText"
-                               Text="{DynamicResource Settings.Layout.EditorNoSelection}"
-                               Style="{StaticResource SettingsRowDescriptionStyle}"
-                               Margin="0,0,0,8" />
-                    <WrapPanel>
-                      <Button x:Name="LayoutMoveUpButton"
-                              Content="{DynamicResource Settings.Layout.EditorMoveUp}"
-                              Style="{StaticResource SettingsActionButtonStyle}"
-                              Click="LayoutMoveUpButton_OnClick" />
-                      <Button x:Name="LayoutMoveDownButton"
-                              Content="{DynamicResource Settings.Layout.EditorMoveDown}"
-                              Style="{StaticResource SettingsActionButtonStyle}"
-                              Click="LayoutMoveDownButton_OnClick" />
-                      <Button x:Name="LayoutToggleButton"
-                              Content="{DynamicResource Settings.Layout.EditorToggle}"
-                              Style="{StaticResource SettingsActionButtonStyle}"
-                              Click="LayoutToggleButton_OnClick" />
-                      <Button x:Name="LayoutRemoveButton"
-                              Content="{DynamicResource Settings.Layout.EditorRemove}"
-                              Style="{StaticResource SettingsActionButtonStyle}"
-                              Click="LayoutRemoveButton_OnClick" />
-                    </WrapPanel>
-                    <TextBlock x:Name="LayoutEditorMessageText"
-                               Margin="0,6,0,10"
-                               Style="{StaticResource SettingsRowDescriptionStyle}" />
-                    <TextBlock Text="{DynamicResource Settings.Layout.EditorProperties}"
-                               FontWeight="SemiBold"
-                               Margin="0,0,0,6" />
-                    <Border x:Name="LayoutPropertyHost" />
-                  </StackPanel>
-                </ScrollViewer>
-              </Border>
+              <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" MinWidth="260" />
+                  <ColumnDefinition Width="8" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Border Grid.Column="0"
+                        MinHeight="0"
+                        Padding="8"
+                        Background="{DynamicResource MenuHoverBrush}"
+                        BorderBrush="{DynamicResource MenuBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        AllowDrop="True">
+                  <Border x:Name="LayoutVisualEditorHost"
+                          AllowDrop="True"
+                          DragOver="LayoutVisualEditorHost_OnDragOver"
+                          Drop="LayoutVisualEditorHost_OnDrop" />
+                </Border>
+                <Grid Grid.Column="2">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="32" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <ToggleButton x:Name="LayoutTreeToggleButton"
+                                Grid.Column="0"
+                                Width="28"
+                                Height="28"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Top"
+                                IsChecked="True"
+                                Style="{StaticResource SettingsIconToggleButtonStyle}"
+                                Content="&#xE76B;"
+                                FontFamily="{StaticResource AppIconFontFamily}"
+                                ToolTip="{DynamicResource Settings.Layout.EditorToggleTree}"
+                                Checked="LayoutTreeToggleButton_OnToggled"
+                                Unchecked="LayoutTreeToggleButton_OnToggled" />
+                  <Border x:Name="LayoutObjectTreePanel"
+                          Grid.Column="1"
+                          Width="220"
+                          Padding="8"
+                          Background="{DynamicResource MenuHoverBrush}"
+                          BorderBrush="{DynamicResource MenuBorderBrush}"
+                          BorderThickness="1"
+                          CornerRadius="6">
+                    <Grid>
+                      <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                      </Grid.RowDefinitions>
+                      <TextBlock Text="{DynamicResource Settings.Layout.EditorObjects}"
+                                 FontWeight="SemiBold"
+                                 Margin="2,0,0,6" />
+                      <TreeView x:Name="LayoutObjectTree"
+                                Grid.Row="1"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                ItemContainerStyle="{StaticResource LayoutTreeViewItemStyle}"
+                                SelectedItemChanged="LayoutObjectTree_OnSelectedItemChanged">
+                        <TreeView.Resources>
+                          <Style TargetType="TreeViewItem" BasedOn="{StaticResource LayoutTreeViewItemStyle}" />
+                        </TreeView.Resources>
+                      </TreeView>
+                    </Grid>
+                  </Border>
+                </Grid>
+              </Grid>
+              <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="5*" MinWidth="280" />
+                  <ColumnDefinition Width="8" />
+                  <ColumnDefinition Width="4*" MinWidth="240" />
+                </Grid.ColumnDefinitions>
+                <Border Grid.Column="0"
+                        Padding="8"
+                        Background="{DynamicResource MenuHoverBrush}"
+                        BorderBrush="{DynamicResource MenuBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6">
+                  <Grid>
+                    <Grid.RowDefinitions>
+                      <RowDefinition Height="*" />
+                      <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TabControl x:Name="LayoutComponentCategories"
+                                Style="{StaticResource LayoutCategoryTabControlStyle}" />
+                    <StackPanel Grid.Row="1" Margin="0,6,0,0">
+                      <TextBlock Text="{DynamicResource Settings.Layout.EditorContainers}"
+                                 Style="{StaticResource SettingsRowDescriptionStyle}"
+                                 Margin="0,0,0,4" />
+                      <WrapPanel>
+                        <Button x:Name="LayoutAddStaticContainerButton"
+                                Tag="static"
+                                Content="{DynamicResource Settings.Layout.EditorContainerStaticShort}"
+                                ToolTip="{DynamicResource Settings.Layout.EditorAddStaticContainer}"
+                                Style="{StaticResource SettingsActionButtonStyle}"
+                                PreviewMouseLeftButtonDown="LayoutDragSource_OnPreviewMouseLeftButtonDown"
+                                PreviewMouseMove="LayoutContainerPaletteButton_OnPreviewMouseMove"
+                                Click="LayoutAddStaticContainerButton_OnClick" />
+                        <Button x:Name="LayoutAddHoverContainerButton"
+                                Tag="hover"
+                                Content="{DynamicResource Settings.Layout.EditorContainerHoverShort}"
+                                ToolTip="{DynamicResource Settings.Layout.EditorAddHoverContainer}"
+                                Style="{StaticResource SettingsActionButtonStyle}"
+                                PreviewMouseLeftButtonDown="LayoutDragSource_OnPreviewMouseLeftButtonDown"
+                                PreviewMouseMove="LayoutContainerPaletteButton_OnPreviewMouseMove"
+                                Click="LayoutAddHoverContainerButton_OnClick" />
+                        <Button x:Name="LayoutAddEdgeContainerButton"
+                                Tag="edge"
+                                Content="{DynamicResource Settings.Layout.EditorContainerEdgeShort}"
+                                ToolTip="{DynamicResource Settings.Layout.EditorAddEdgeContainer}"
+                                Style="{StaticResource SettingsActionButtonStyle}"
+                                PreviewMouseLeftButtonDown="LayoutDragSource_OnPreviewMouseLeftButtonDown"
+                                PreviewMouseMove="LayoutContainerPaletteButton_OnPreviewMouseMove"
+                                Click="LayoutAddEdgeContainerButton_OnClick" />
+                        <ComboBox x:Name="LayoutNewEdgeComboBox"
+                                  Width="94"
+                                  Margin="0,2,0,0"
+                                  Style="{StaticResource SettingsComboBoxStyle}" />
+                      </WrapPanel>
+                    </StackPanel>
+                  </Grid>
+                </Border>
+                <Border Grid.Column="2"
+                        Padding="8"
+                        Background="{DynamicResource MenuHoverBrush}"
+                        BorderBrush="{DynamicResource MenuBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6">
+                  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                      <ComboBox x:Name="LayoutSlotComboBox"
+                                Margin="0,0,0,8"
+                                Style="{StaticResource SettingsComboBoxStyle}"
+                                SelectionChanged="LayoutSlotComboBox_OnSelectionChanged" />
+                      <TextBlock x:Name="LayoutEditorSelectionText"
+                                 Text="{DynamicResource Settings.Layout.EditorNoSelection}"
+                                 Style="{StaticResource SettingsRowDescriptionStyle}"
+                                 Margin="0,0,0,8" />
+                      <WrapPanel>
+                        <Button x:Name="LayoutMoveUpButton"
+                                Content="{DynamicResource Settings.Layout.EditorMoveUp}"
+                                Style="{StaticResource SettingsActionButtonStyle}"
+                                Click="LayoutMoveUpButton_OnClick" />
+                        <Button x:Name="LayoutMoveDownButton"
+                                Content="{DynamicResource Settings.Layout.EditorMoveDown}"
+                                Style="{StaticResource SettingsActionButtonStyle}"
+                                Click="LayoutMoveDownButton_OnClick" />
+                        <Button x:Name="LayoutToggleButton"
+                                Content="{DynamicResource Settings.Layout.EditorToggle}"
+                                Style="{StaticResource SettingsActionButtonStyle}"
+                                Click="LayoutToggleButton_OnClick" />
+                        <Button x:Name="LayoutRemoveButton"
+                                Content="{DynamicResource Settings.Layout.EditorRemove}"
+                                Style="{StaticResource SettingsActionButtonStyle}"
+                                Click="LayoutRemoveButton_OnClick" />
+                      </WrapPanel>
+                      <TextBlock x:Name="LayoutEditorMessageText"
+                                 Margin="0,6,0,10"
+                                 Style="{StaticResource SettingsRowDescriptionStyle}" />
+                      <TextBlock Text="{DynamicResource Settings.Layout.EditorProperties}"
+                                 FontWeight="SemiBold"
+                                 Margin="0,0,0,6" />
+                      <Border x:Name="LayoutPropertyHost" />
+                    </StackPanel>
+                  </ScrollViewer>
+                </Border>
+              </Grid>
             </Grid>
-          </StackPanel>
+          </Grid>
 
           <StackPanel x:Name="AppearancePage" Visibility="Collapsed">
             <TextBlock Text="{DynamicResource Settings.Nav.Appearance}" Style="{StaticResource SettingsPageTitleStyle}" />
@@ -893,6 +1174,7 @@
                 </Grid.ColumnDefinitions>
                 <Slider x:Name="FontWeightSlider"
                         Grid.Column="0"
+                        Style="{StaticResource SettingsHorizontalSliderStyle}"
                         Minimum="300"
                         Maximum="900"
                         TickFrequency="50"

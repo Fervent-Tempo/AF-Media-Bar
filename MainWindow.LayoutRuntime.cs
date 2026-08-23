@@ -142,6 +142,15 @@ public partial class MainWindow
                 continue;
             }
 
+            var collapseTargetIds = expandedEdgeContainerIds.Contains(model.InstanceId)
+                ? expandedEdgeContainerIds
+                    .Where(instanceId => instanceId != model.InstanceId)
+                    .ToHashSet(StringComparer.Ordinal)
+                : expandedEdgeContainerIds;
+            var collapsedEdgeInsets = CalculateEdgeInsets(
+                profile,
+                unavailableEdge,
+                collapseTargetIds);
             var surface = new ComponentLayoutSurface();
             surface.CommandRequested += ComponentSurface_OnCommandRequested;
             surface.MetricsRequested += ComponentSurface_OnMetricsRequested;
@@ -158,14 +167,14 @@ public partial class MainWindow
             surface.RefreshPointerNearFromMouse();
             var host = new Border
             {
-                Background = TryFindResource("TaskbarReadabilityBrush") as Brush ?? Brushes.Transparent,
-                BorderBrush = TryFindResource("TaskbarHoverBrush") as Brush ?? Brushes.Transparent,
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(Math.Clamp(profile.Surface.CornerRadiusDip, 0, 32)),
                 ClipToBounds = true,
                 Cursor = System.Windows.Input.Cursors.Hand,
                 Child = surface
             };
+            host.SetResourceReference(Border.BackgroundProperty, "TaskbarReadabilityBrush");
+            host.SetResourceReference(Border.BorderBrushProperty, "TaskbarHoverBrush");
             Panel.SetZIndex(host, 30);
             var state = CreateEdgeSurfaceState(
                 model,
@@ -175,7 +184,8 @@ public partial class MainWindow
                 collapsedSize,
                 stripSize,
                 compositionSize,
-                edgeInsets);
+                edgeInsets,
+                collapsedEdgeInsets);
             host.Tag = state;
             host.MouseEnter += EdgeSurfaceHost_OnMouseEnter;
             host.MouseLeave += EdgeSurfaceHost_OnMouseLeave;
@@ -220,7 +230,8 @@ public partial class MainWindow
         LayoutSize collapsedSize,
         LayoutSize stripSize,
         LayoutSize compositionSize,
-        Thickness edgeInsets)
+        Thickness edgeInsets,
+        Thickness collapsedEdgeInsets)
     {
         var expandedLeft = model.Edge switch
         {
@@ -243,22 +254,33 @@ public partial class MainWindow
         {
             // 留出少量可见触发像素；其余触发区允许落在工作区外，不再阻挡长条拖动。
             // Keep a small visible activation strip; the remaining trigger may extend outside the work area and no longer blocks strip dragging.
-            LayoutEdge.Left => edgeInsets.Left - collapsedWidth + CollapsedTriggerVisibleDip,
+            LayoutEdge.Left => collapsedEdgeInsets.Left - collapsedWidth + CollapsedTriggerVisibleDip,
             LayoutEdge.Right => edgeInsets.Left + stripSize.WidthDip - CollapsedTriggerVisibleDip,
             _ => edgeInsets.Left + (stripSize.WidthDip - collapsedWidth) / 2 + model.OffsetDip
         };
         var collapsedTop = model.Edge switch
         {
-            LayoutEdge.Top => edgeInsets.Top - collapsedHeight + CollapsedTriggerVisibleDip,
+            LayoutEdge.Top => collapsedEdgeInsets.Top - collapsedHeight + CollapsedTriggerVisibleDip,
             LayoutEdge.Bottom => edgeInsets.Top + stripSize.HeightDip - CollapsedTriggerVisibleDip,
             _ => edgeInsets.Top + (stripSize.HeightDip - collapsedHeight) / 2 + model.OffsetDip
         };
+        var transitionCollapsedLeft = model.Edge == LayoutEdge.Left
+            ? edgeInsets.Left - collapsedWidth + CollapsedTriggerVisibleDip
+            : collapsedLeft;
+        var transitionCollapsedTop = model.Edge == LayoutEdge.Top
+            ? edgeInsets.Top - collapsedHeight + CollapsedTriggerVisibleDip
+            : collapsedTop;
         return new EdgeSurfaceState(
             model,
             host,
             surface,
             new Rect(expandedLeft, expandedTop, expandedSize.WidthDip, expandedSize.HeightDip),
-            new Rect(collapsedLeft, collapsedTop, collapsedWidth, collapsedHeight));
+            new Rect(collapsedLeft, collapsedTop, collapsedWidth, collapsedHeight),
+            new Rect(
+                transitionCollapsedLeft,
+                transitionCollapsedTop,
+                collapsedWidth,
+                collapsedHeight));
     }
 
     private static Thickness CalculateEdgeInsets(
@@ -499,9 +521,7 @@ public partial class MainWindow
             if (_expandedEdgeContainerIds.Add(instanceId))
             {
                 ApplyComponentLayout(animateEdgeState: true);
-                ApplyResponsivePlayerDimensions();
-                PositionOverTaskbar(force: true);
-                ScheduleLayoutBodyCorrection();
+                RepositionPreservingLayoutBody();
             }
             else if (!state.TargetExpanded)
             {
@@ -529,8 +549,12 @@ public partial class MainWindow
 
     private bool IsEdgeSurfacePointerNear(EdgeSurfaceState state, Rect bounds)
     {
+        if (!TryGetLayoutPointerPosition(out var point))
+        {
+            return false;
+        }
+
         var proximity = Math.Clamp(state.Model.ProximityDip, 0, 256);
-        var point = Mouse.GetPosition(LayoutEdgeSurfaceHost);
         if (bounds.Contains(point))
         {
             return true;
@@ -543,11 +567,39 @@ public partial class MainWindow
 
     private bool IsEdgeSurfacePointerInside(EdgeSurfaceState state)
     {
-        var point = Mouse.GetPosition(LayoutEdgeSurfaceHost);
+        if (!TryGetLayoutPointerPosition(out var point))
+        {
+            return false;
+        }
+
         return point.X >= state.ExpandedBounds.Left &&
             point.X <= state.ExpandedBounds.Right &&
             point.Y >= state.ExpandedBounds.Top &&
             point.Y <= state.ExpandedBounds.Bottom;
+    }
+
+    /// <summary>
+    /// 使用真实屏幕坐标读取窗口外的指针；WPF Mouse.GetPosition 在 HWND 输入区域之外可能停留在最后一次窗口内位置。
+    /// Reads the real screen cursor outside the HWND; WPF Mouse.GetPosition can retain the last in-window position beyond the native input region.
+    /// </summary>
+    private bool TryGetLayoutPointerPosition(out Point point)
+    {
+        point = default;
+        if (!NativeMethods.GetCursorPos(out var cursor) ||
+            PresentationSource.FromVisual(LayoutEdgeSurfaceHost) is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            point = LayoutEdgeSurfaceHost.PointFromScreen(new Point(cursor.X, cursor.Y));
+            return true;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
     }
 
     private void ApplyEdgeSurfaceState(EdgeSurfaceState state, bool expanded, bool animate)
@@ -556,7 +608,11 @@ public partial class MainWindow
         if (animate && expanded && state.Model.Animation.Enabled &&
             state.Model.Animation.DurationMilliseconds > 0)
         {
-            CommitEdgeSurfaceState(state, expanded: false, retainContent: true);
+            CommitEdgeSurfaceState(
+                state,
+                expanded: false,
+                retainContent: true,
+                state.TransitionCollapsedBounds);
             BeginEdgeSurfaceTransition(state, expanded: true);
             return;
         }
@@ -568,7 +624,9 @@ public partial class MainWindow
     {
         var version = ++state.TransitionVersion;
         state.TargetExpanded = expanded;
-        var targetRect = expanded ? state.ExpandedBounds : state.CollapsedBounds;
+        var targetRect = expanded
+            ? state.ExpandedBounds
+            : state.TransitionCollapsedBounds;
         var currentRect = new Rect(
             Canvas.GetLeft(state.Host),
             Canvas.GetTop(state.Host),
@@ -577,7 +635,7 @@ public partial class MainWindow
         var currentOpacity = state.Host.Opacity;
         state.Host.Child = state.Surface;
         state.Surface.Visibility = Visibility.Visible;
-        state.Host.Background = state.ExpandedBackground;
+        state.Host.SetResourceReference(Border.BackgroundProperty, "TaskbarReadabilityBrush");
         // 延迟期间必须保持当前呈现值；目标基值只在版本校验后的完成回调中提交。
         // Keep the current presentation throughout the delay; commit target base values only from the version-checked completion callback.
         ClearEdgeAnimations(state.Host);
@@ -643,15 +701,11 @@ public partial class MainWindow
         var retainBodyCorrection = _expandedEdgeContainerIds.Count > 0;
         if (!retainBodyCorrection)
         {
-            ResetLayoutBodyCorrection();
+            _layoutBodyCorrectionX = 0;
+            _layoutBodyCorrectionY = 0;
         }
         ApplyComponentLayout();
-        ApplyResponsivePlayerDimensions();
-        PositionOverTaskbar(force: true);
-        if (retainBodyCorrection)
-        {
-            ScheduleLayoutBodyCorrection();
-        }
+        RepositionPreservingLayoutBody();
         UpdateLayoutEdgePointerTimer();
     }
 
@@ -674,37 +728,12 @@ public partial class MainWindow
         }
     }
 
-    private void ScheduleLayoutBodyCorrection()
+    private void RepositionPreservingLayoutBody()
     {
-        if (!_layoutBodyAnchorScreen.HasValue)
-        {
-            return;
-        }
-
-        Dispatcher.BeginInvoke(
-            DispatcherPriority.Loaded,
-            new Action(CorrectLayoutBodyPosition));
-    }
-
-    private void CorrectLayoutBodyPosition()
-    {
-        if (!_layoutBodyAnchorScreen.HasValue || _isClosed || !IsLoaded)
-        {
-            return;
-        }
-
+        ApplyResponsivePlayerDimensions();
         try
         {
-            var current = ComponentSurfaceHost.PointToScreen(new Point());
-            var delta = _layoutBodyAnchorScreen.Value - current;
-            var correctionX = (int)Math.Round(delta.X);
-            var correctionY = (int)Math.Round(delta.Y);
-            if (correctionX != 0 || correctionY != 0)
-            {
-                _layoutBodyCorrectionX += correctionX;
-                _layoutBodyCorrectionY += correctionY;
-                PositionOverTaskbar(force: true);
-            }
+            PositionOverTaskbar(force: true);
         }
         finally
         {
@@ -712,14 +741,37 @@ public partial class MainWindow
         }
     }
 
+    private bool TryResolveLayoutBodyTarget(
+        double scaleX,
+        double scaleY,
+        out int left,
+        out int top)
+    {
+        left = 0;
+        top = 0;
+        if (!_layoutBodyAnchorScreen.HasValue || _activeLayoutProfile is null)
+        {
+            return false;
+        }
+
+        var edgeInsets = CalculateEdgeInsets(
+            _activeLayoutProfile,
+            _unavailableLayoutEdge,
+            _expandedEdgeContainerIds);
+        left = (int)Math.Round(_layoutBodyAnchorScreen.Value.X - edgeInsets.Left * scaleX);
+        top = (int)Math.Round(_layoutBodyAnchorScreen.Value.Y - edgeInsets.Top * scaleY);
+        return true;
+    }
+
     private static void CommitEdgeSurfaceState(
         EdgeSurfaceState state,
         bool expanded,
-        bool retainContent)
+        bool retainContent,
+        Rect? bounds = null)
     {
         state.TransitionVersion++;
         state.TargetExpanded = expanded;
-        var rect = expanded ? state.ExpandedBounds : state.CollapsedBounds;
+        var rect = bounds ?? (expanded ? state.ExpandedBounds : state.CollapsedBounds);
         ClearEdgeAnimations(state.Host);
         SetEdgeSurfaceBaseRect(state.Host, rect);
         state.Host.Opacity = expanded || !retainContent ? 1 : 0.35;
@@ -729,9 +781,9 @@ public partial class MainWindow
         // 折叠完成后才移除展开子树；过渡期间保留它以获得连续裁切，同时最终命中区域仍只含触发条。
         // Remove expanded content only after collapse; retaining it during transition enables continuous clipping while the final hit region remains trigger-only.
         state.Host.Child = expanded || retainContent ? state.Surface : null;
-        state.Host.Background = expanded || retainContent
-            ? state.ExpandedBackground
-            : state.TriggerBackground;
+        state.Host.SetResourceReference(
+            Border.BackgroundProperty,
+            expanded || retainContent ? "TaskbarReadabilityBrush" : "TaskbarHoverBrush");
     }
 
     private static void SetEdgeSurfaceBaseRect(FrameworkElement host, Rect rect)
@@ -950,15 +1002,15 @@ public partial class MainWindow
         Border host,
         ComponentLayoutSurface surface,
         Rect expandedBounds,
-        Rect collapsedBounds)
+        Rect collapsedBounds,
+        Rect transitionCollapsedBounds)
     {
         internal LayoutEdgeContainer Model { get; } = model;
         internal Border Host { get; } = host;
         internal ComponentLayoutSurface Surface { get; } = surface;
         internal Rect ExpandedBounds { get; } = expandedBounds;
         internal Rect CollapsedBounds { get; } = collapsedBounds;
-        internal Brush ExpandedBackground { get; } = host.Background;
-        internal Brush TriggerBackground { get; } = host.BorderBrush;
+        internal Rect TransitionCollapsedBounds { get; } = transitionCollapsedBounds;
         internal bool TargetExpanded { get; set; }
         internal int TransitionVersion { get; set; }
     }

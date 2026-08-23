@@ -282,7 +282,7 @@ AF-Media-Bar/
 - [ ] Display scrolling video subtitles/lyrics.
 - [ ] Display media progress bars.
 - [ ] Polish the UI and provide multiple preset themes.
-- [ ] Add a drag-and-drop composition editor with multiple strip containers, four edge-collapse areas, primary properties, undo, and profile reset.
+- [ ] Provide a dedicated component layout editor .
 - [ ] Export and share configurations.
 - [ ] Add an onboarding tutorial.
 

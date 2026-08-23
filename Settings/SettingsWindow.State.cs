@@ -114,32 +114,32 @@ public partial class SettingsWindow
         new(SectionTag.Layout, Loc.Get("Settings.Layout.Arrangement"), Loc.Get("Search.Kw.Arrangement")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.Size"), Loc.Get("Search.Kw.Scale")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.TopOffset"), Loc.Get("Search.Kw.TopOffset")),
-        new(SectionTag.Layout, Loc.Get("Settings.Layout.EditorTitle"), Loc.Get("Search.Kw.LayoutEditor")),
-        new(SectionTag.Layout, Loc.Get("Settings.Layout.EditorProperties"), Loc.Get("Search.Kw.LayoutEditor")),
-        new(SectionTag.Layout, Loc.Get("Settings.Layout.EditorCurrentContext"), Loc.Get("Search.Kw.LayoutEditor")),
-        new(SectionTag.Layout, Loc.Get("Settings.Layout.EditorPalette"), Loc.Get("Search.Kw.LayoutEditor")),
-        new(SectionTag.Layout, Loc.Get("Settings.Layout.EditorContainers"), Loc.Get("Search.Kw.LayoutEditor")),
-        new(SectionTag.Layout, Loc.Get("Settings.Layout.EditorEdgeContainer"), Loc.Get("Search.Kw.EdgeCollapse")),
-        new(SectionTag.Layout, Loc.Get("Settings.Layout.PropertyResetDefault"), Loc.Get("Search.Kw.LayoutEditor")),
-        new(SectionTag.Layout, Loc.Get("Settings.Layout.PropertyResetContainerDefault"), Loc.Get("Search.Kw.LayoutEditor")),
-        new(SectionTag.Layout, Loc.Get("Settings.Layout.PropertyAlignment"), Loc.Get("Search.Kw.LayoutEditor")),
-        new(SectionTag.Layout, Loc.Get("Settings.Layout.PropertyNearAlignment"), Loc.Get("Search.Kw.LayoutEditor")),
-        new(SectionTag.Layout, Loc.Get("Settings.Layout.PropertyProximity"), Loc.Get("Search.Kw.LayoutEditor")),
-        new(SectionTag.Layout, Loc.Get("Settings.Layout.EditorAdvancedBehavior"), Loc.Get("Search.Kw.LayoutEditor")),
-        new(SectionTag.Layout, Loc.Get("Settings.Layout.PropertyMaxLines"), Loc.Get("Search.Kw.MediaInfo")),
-        new(SectionTag.Layout, Loc.Get("Settings.Layout.PropertyMaxLinesHint"), Loc.Get("Search.Kw.MediaInfo")),
-        new(SectionTag.Layout, Loc.Get("Settings.LayoutWidget.ArtworkTitle"), Loc.Get("Search.Kw.Artwork")),
-        new(SectionTag.Layout, Loc.Get("Settings.Layout.PropertyArtworkOpenSource"), Loc.Get("Search.Kw.MediaInfo")),
-        new(SectionTag.Layout, Loc.Get("Settings.LayoutWidget.MediaTextTitle"), Loc.Get("Search.Kw.MediaInfo")),
-        new(SectionTag.Layout, Loc.Get("Settings.Layout.PropertyTextTitleAndArtist"), Loc.Get("Search.Kw.MediaInfo")),
-        new(SectionTag.Layout, Loc.Get("Main.Control.Previous"), Loc.Get("Search.Kw.MediaControls")),
-        new(SectionTag.Layout, Loc.Get("Main.Control.Play"), Loc.Get("Search.Kw.MediaControls")),
-        new(SectionTag.Layout, Loc.Get("Main.Control.Next"), Loc.Get("Search.Kw.MediaControls")),
-        new(SectionTag.Layout, Loc.Get("Settings.LayoutWidget.MetricsTitle"), Loc.Get("Search.Kw.Metrics")),
-        new(SectionTag.Layout, Loc.Get("Settings.Layout.PropertyOpenTaskManager"), Loc.Get("Search.Kw.TaskManager")),
-        new(SectionTag.Layout, Loc.Get("Settings.LayoutWidget.SpectrumTitle"), Loc.Get("Search.Kw.Spectrum")),
-        new(SectionTag.Layout, Loc.Get("Main.Device.Output"), Loc.Get("Search.Kw.OutputSwitch")),
-        new(SectionTag.Layout, Loc.Get("Main.Volume.Current"), Loc.Get("Search.Kw.MediaVolume")),
+        new(SectionTag.LayoutEditor, Loc.Get("Settings.Layout.EditorTitle"), Loc.Get("Search.Kw.LayoutEditor")),
+        new(SectionTag.LayoutEditor, Loc.Get("Settings.Layout.EditorProperties"), Loc.Get("Search.Kw.LayoutEditor")),
+        new(SectionTag.LayoutEditor, Loc.Get("Settings.Layout.EditorCurrentContext"), Loc.Get("Search.Kw.LayoutEditor")),
+        new(SectionTag.LayoutEditor, Loc.Get("Settings.Layout.EditorPalette"), Loc.Get("Search.Kw.LayoutEditor")),
+        new(SectionTag.LayoutEditor, Loc.Get("Settings.Layout.EditorContainers"), Loc.Get("Search.Kw.LayoutEditor")),
+        new(SectionTag.LayoutEditor, Loc.Get("Settings.Layout.EditorEdgeContainer"), Loc.Get("Search.Kw.EdgeCollapse")),
+        new(SectionTag.LayoutEditor, Loc.Get("Settings.Layout.PropertyResetDefault"), Loc.Get("Search.Kw.LayoutEditor")),
+        new(SectionTag.LayoutEditor, Loc.Get("Settings.Layout.PropertyResetContainerDefault"), Loc.Get("Search.Kw.LayoutEditor")),
+        new(SectionTag.LayoutEditor, Loc.Get("Settings.Layout.PropertyAlignment"), Loc.Get("Search.Kw.LayoutEditor")),
+        new(SectionTag.LayoutEditor, Loc.Get("Settings.Layout.PropertyNearAlignment"), Loc.Get("Search.Kw.LayoutEditor")),
+        new(SectionTag.LayoutEditor, Loc.Get("Settings.Layout.PropertyProximity"), Loc.Get("Search.Kw.LayoutEditor")),
+        new(SectionTag.LayoutEditor, Loc.Get("Settings.Layout.EditorAdvancedBehavior"), Loc.Get("Search.Kw.LayoutEditor")),
+        new(SectionTag.LayoutEditor, Loc.Get("Settings.Layout.PropertyMaxLines"), Loc.Get("Search.Kw.MediaInfo")),
+        new(SectionTag.LayoutEditor, Loc.Get("Settings.Layout.PropertyMaxLinesHint"), Loc.Get("Search.Kw.MediaInfo")),
+        new(SectionTag.LayoutEditor, Loc.Get("Settings.LayoutWidget.ArtworkTitle"), Loc.Get("Search.Kw.Artwork")),
+        new(SectionTag.LayoutEditor, Loc.Get("Settings.Layout.PropertyArtworkOpenSource"), Loc.Get("Search.Kw.MediaInfo")),
+        new(SectionTag.LayoutEditor, Loc.Get("Settings.LayoutWidget.MediaTextTitle"), Loc.Get("Search.Kw.MediaInfo")),
+        new(SectionTag.LayoutEditor, Loc.Get("Settings.Layout.PropertyTextTitleAndArtist"), Loc.Get("Search.Kw.MediaInfo")),
+        new(SectionTag.LayoutEditor, Loc.Get("Main.Control.Previous"), Loc.Get("Search.Kw.MediaControls")),
+        new(SectionTag.LayoutEditor, Loc.Get("Main.Control.Play"), Loc.Get("Search.Kw.MediaControls")),
+        new(SectionTag.LayoutEditor, Loc.Get("Main.Control.Next"), Loc.Get("Search.Kw.MediaControls")),
+        new(SectionTag.LayoutEditor, Loc.Get("Settings.LayoutWidget.MetricsTitle"), Loc.Get("Search.Kw.Metrics")),
+        new(SectionTag.LayoutEditor, Loc.Get("Settings.Layout.PropertyOpenTaskManager"), Loc.Get("Search.Kw.TaskManager")),
+        new(SectionTag.LayoutEditor, Loc.Get("Settings.LayoutWidget.SpectrumTitle"), Loc.Get("Search.Kw.Spectrum")),
+        new(SectionTag.LayoutEditor, Loc.Get("Main.Device.Output"), Loc.Get("Search.Kw.OutputSwitch")),
+        new(SectionTag.LayoutEditor, Loc.Get("Main.Volume.Current"), Loc.Get("Search.Kw.MediaVolume")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.AvoidTaskbarTitle"), Loc.Get("Search.Kw.AvoidTaskbar")),
         new(SectionTag.Layout, Loc.Get("Settings.Layout.LockPositionTitle"), Loc.Get("Search.Kw.LockPosition")),
         new(SectionTag.Appearance, Loc.Get("Settings.Appearance.PlayerText"), Loc.Get("Search.Kw.PlayerText")),
@@ -189,9 +189,14 @@ public partial class SettingsWindow
         SearchResultsPage.Visibility = Visibility.Collapsed;
         GeneralPage.Visibility = tag == "General" ? Visibility.Visible : Visibility.Collapsed;
         LayoutPage.Visibility = tag == "Layout" ? Visibility.Visible : Visibility.Collapsed;
+        LayoutEditorPage.Visibility = tag == "LayoutEditor" ? Visibility.Visible : Visibility.Collapsed;
         AppearancePage.Visibility = tag == "Appearance" ? Visibility.Visible : Visibility.Collapsed;
         InteractionPage.Visibility = tag == "Interaction" ? Visibility.Visible : Visibility.Collapsed;
         PerformancePage.Visibility = tag == "Performance" ? Visibility.Visible : Visibility.Collapsed;
+        SettingsPageScrollViewer.VerticalScrollBarVisibility = tag == "LayoutEditor"
+            ? ScrollBarVisibility.Disabled
+            : ScrollBarVisibility.Auto;
+        UpdateLayoutEditorPageHeight();
         SettingsPageScrollViewer.ScrollToTop();
         if (target is not null)
         {
@@ -244,9 +249,11 @@ public partial class SettingsWindow
         SearchResultsPage.Visibility = Visibility.Visible;
         GeneralPage.Visibility = Visibility.Collapsed;
         LayoutPage.Visibility = Visibility.Collapsed;
+        LayoutEditorPage.Visibility = Visibility.Collapsed;
         AppearancePage.Visibility = Visibility.Collapsed;
         InteractionPage.Visibility = Visibility.Collapsed;
         PerformancePage.Visibility = Visibility.Collapsed;
+        SettingsPageScrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
         SettingsPageScrollViewer.ScrollToTop();
     }
 
@@ -267,9 +274,10 @@ public partial class SettingsWindow
         {
             "General" => 0,
             "Layout" => 1,
-            "Appearance" => 2,
-            "Interaction" => 3,
-            _ => 4
+            "LayoutEditor" => 2,
+            "Appearance" => 3,
+            "Interaction" => 4,
+            _ => 5
         };
         SearchResultsList.SelectedIndex = -1;
         SearchBox.Clear();
@@ -284,9 +292,23 @@ public partial class SettingsWindow
     {
         internal const string General = "General";
         internal const string Layout = "Layout";
+        internal const string LayoutEditor = "LayoutEditor";
         internal const string Appearance = "Appearance";
         internal const string Interaction = "Interaction";
         internal const string Performance = "Performance";
+    }
+
+    private void SettingsPageScrollViewer_OnSizeChanged(object sender, SizeChangedEventArgs e) =>
+        UpdateLayoutEditorPageHeight();
+
+    private void UpdateLayoutEditorPageHeight()
+    {
+        if (LayoutEditorPage is null || SettingsPageScrollViewer is null)
+        {
+            return;
+        }
+
+        LayoutEditorPage.Height = Math.Max(420, SettingsPageScrollViewer.ActualHeight - 20);
     }
 
     private sealed record SettingsSearchResult(

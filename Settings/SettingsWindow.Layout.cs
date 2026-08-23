@@ -19,6 +19,7 @@ namespace AFMediaBar.Settings;
 public partial class SettingsWindow
 {
     private const string NewWidgetDragFormat = "AFMediaBar.Layout.NewWidget";
+    private const string NewContainerDragFormat = "AFMediaBar.Layout.NewContainer";
     private const string ExistingWidgetDragFormat = "AFMediaBar.Layout.ExistingWidget";
     private const string ExistingContainerDragFormat = "AFMediaBar.Layout.ExistingContainer";
 
@@ -103,7 +104,7 @@ public partial class SettingsWindow
 
     private void PopulateComponentPalette()
     {
-        if (LayoutComponentPalette is null)
+        if (LayoutComponentCategories is null)
         {
             return;
         }
@@ -113,48 +114,72 @@ public partial class SettingsWindow
             surface.Dispose();
         }
         _layoutPaletteSurfaces.Clear();
-        LayoutComponentPalette.Children.Clear();
-        foreach (var entry in EnumeratePaletteEntries())
+        var selectedCategory = LayoutComponentCategories.SelectedItem is TabItem { Tag: ComponentCategory category }
+            ? category
+            : ComponentCategory.Media;
+        LayoutComponentCategories.Items.Clear();
+        foreach (var group in EnumeratePaletteEntries().GroupBy(entry => entry.Category))
         {
-            var preview = CreatePalettePreview(entry.Token);
-            var button = new Button
+            var panel = new WrapPanel();
+            foreach (var entry in group)
             {
-                Width = 96,
-                Height = 82,
-                Content = new StackPanel
+                var preview = CreatePalettePreview(entry.Token);
+                var button = new Button
                 {
-                    IsHitTestVisible = false,
-                    Children =
+                    Width = 90,
+                    Height = 68,
+                    Content = new StackPanel
                     {
-                        new Viewbox
+                        IsHitTestVisible = false,
+                        Children =
                         {
-                            Width = 78,
-                            Height = 48,
-                            Stretch = Stretch.Uniform,
-                            Child = preview
-                        },
-                        new TextBlock
-                        {
-                            Text = entry.Label,
-                            FontSize = 10,
-                            TextAlignment = TextAlignment.Center,
-                            TextTrimming = TextTrimming.CharacterEllipsis,
-                            Margin = new Thickness(2, 3, 2, 0)
+                            new Viewbox
+                            {
+                                Width = 72,
+                                Height = 36,
+                                Stretch = Stretch.Uniform,
+                                Child = preview
+                            },
+                            new TextBlock
+                            {
+                                Text = entry.Label,
+                                FontSize = 10,
+                                TextAlignment = TextAlignment.Center,
+                                TextTrimming = TextTrimming.CharacterEllipsis,
+                                Margin = new Thickness(2, 2, 2, 0)
+                            }
                         }
-                    }
-                },
-                Tag = entry.Token,
-                Margin = new Thickness(0, 0, 6, 6),
-                Padding = new Thickness(4),
-                Cursor = Cursors.Hand,
-                Style = TryFindResource("SettingsActionButtonStyle") as Style,
-                ToolTip = entry.Description
-            };
-            button.PreviewMouseLeftButtonDown += LayoutDragSource_OnPreviewMouseLeftButtonDown;
-            button.PreviewMouseMove += LayoutPaletteButton_OnPreviewMouseMove;
-            button.Click += LayoutPaletteButton_OnClick;
-            LayoutComponentPalette.Children.Add(button);
+                    },
+                    Tag = entry.Token,
+                    Margin = new Thickness(0, 0, 5, 5),
+                    Padding = new Thickness(3),
+                    Cursor = Cursors.Hand,
+                    Style = TryFindResource("SettingsActionButtonStyle") as Style,
+                    ToolTip = entry.Description
+                };
+                button.PreviewMouseLeftButtonDown += LayoutDragSource_OnPreviewMouseLeftButtonDown;
+                button.PreviewMouseMove += LayoutPaletteButton_OnPreviewMouseMove;
+                button.Click += LayoutPaletteButton_OnClick;
+                panel.Children.Add(button);
+            }
+
+            LayoutComponentCategories.Items.Add(new TabItem
+            {
+                Header = Loc.Get(GetComponentCategoryResourceKey(group.Key)),
+                Tag = group.Key,
+                Content = new ScrollViewer
+                {
+                    HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                    Content = panel
+                }
+            });
         }
+
+        LayoutComponentCategories.SelectedItem = LayoutComponentCategories.Items
+            .OfType<TabItem>()
+            .FirstOrDefault(item => item.Tag is ComponentCategory category && category == selectedCategory)
+            ?? LayoutComponentCategories.Items.OfType<TabItem>().FirstOrDefault();
     }
 
     private ComponentLayoutSurface CreatePalettePreview(string paletteToken)
@@ -202,6 +227,7 @@ public partial class SettingsWindow
             [container],
             []);
         var surface = new ComponentLayoutSurface();
+        surface.SetUseMenuThemeForContent(true);
         surface.SetMediaSnapshot(CreateLayoutPreviewSnapshot());
         surface.Apply(profile, pointerNear: true);
         surface.IsHitTestVisible = false;
@@ -220,7 +246,10 @@ public partial class SettingsWindow
                     yield return new PaletteEntry(
                         $"{definition.TypeId}|{(int)command}",
                         Loc.Get(GetCommandOptionKey(command)),
-                        Loc.Get(definition.DescriptionResourceKey));
+                        Loc.Get(definition.DescriptionResourceKey),
+                        command is MediaCommandKind.AdjustVolume or MediaCommandKind.SelectOutputDevice
+                            ? ComponentCategory.Audio
+                            : definition.Category);
                 }
 
                 continue;
@@ -238,7 +267,8 @@ public partial class SettingsWindow
                     yield return new PaletteEntry(
                         $"{definition.TypeId}|{(int)kind}",
                         GetMediaTextOptionLabel(kind),
-                        Loc.Get(definition.DescriptionResourceKey));
+                        Loc.Get(definition.DescriptionResourceKey),
+                        definition.Category);
                 }
 
                 continue;
@@ -247,7 +277,8 @@ public partial class SettingsWindow
             yield return new PaletteEntry(
                 definition.TypeId,
                 Loc.Get(definition.NameResourceKey),
-                Loc.Get(definition.DescriptionResourceKey));
+                Loc.Get(definition.DescriptionResourceKey),
+                definition.Category);
         }
     }
 
@@ -263,7 +294,7 @@ public partial class SettingsWindow
         _layoutEditorSelection = string.IsNullOrWhiteSpace(selectedId)
             ? null
             : ResolveSelection(profile, selectedId);
-        PopulateLayoutObjectList(profile);
+        PopulateLayoutObjectTree(profile);
         DisposeLayoutPreviewSurfaces();
         LayoutVisualEditorHost.Child = BuildVisualEditor(profile);
         foreach (var surface in _layoutPreviewSurfaces)
@@ -277,9 +308,9 @@ public partial class SettingsWindow
         LayoutEditorMessageText.Text = string.Empty;
     }
 
-    private void PopulateLayoutObjectList(LayoutProfile profile)
+    private void PopulateLayoutObjectTree(LayoutProfile profile)
     {
-        if (LayoutObjectList is null)
+        if (LayoutObjectTree is null)
         {
             return;
         }
@@ -287,28 +318,23 @@ public partial class SettingsWindow
         _layoutEditorSyncing = true;
         try
         {
-            LayoutObjectList.Items.Clear();
+            LayoutObjectTree.Items.Clear();
             foreach (var container in profile.InlineContainers)
             {
-                AddLayoutObjectItem(container, 0, null, LayoutSlotKind.Primary);
-                AddLayoutObjectSlotItems(container.PrimarySlot, container.InstanceId, LayoutSlotKind.Primary, 1);
-                if (container.ContainerKind == LayoutContainerKind.HoverSwitch)
-                {
-                    AddLayoutObjectSlotItems(container.SecondarySlot, container.InstanceId, LayoutSlotKind.Secondary, 1);
-                }
+                LayoutObjectTree.Items.Add(BuildInlineTreeItem(container, null, LayoutSlotKind.Primary));
             }
 
             foreach (var edge in profile.EdgeContainers)
             {
-                AddLayoutObjectItem(edge, 0, null, LayoutSlotKind.Expanded);
-                AddLayoutObjectSlotItems(edge.ExpandedSlot, edge.InstanceId, LayoutSlotKind.Expanded, 1);
+                LayoutObjectTree.Items.Add(BuildEdgeTreeItem(edge));
             }
 
-            var selected = LayoutObjectList.Items
-                .OfType<ListBoxItem>()
-                .FirstOrDefault(item => item.Tag is LayoutEditorSelection selection &&
-                    selection.InstanceId == _layoutEditorSelection?.InstanceId);
-            LayoutObjectList.SelectedItem = selected;
+            if (!string.IsNullOrWhiteSpace(_layoutEditorSelection?.InstanceId) &&
+                FindTreeItem(LayoutObjectTree.Items, _layoutEditorSelection.InstanceId) is { } selected)
+            {
+                selected.IsSelected = true;
+                selected.BringIntoView();
+            }
         }
         finally
         {
@@ -316,135 +342,207 @@ public partial class SettingsWindow
         }
     }
 
-    private void AddLayoutObjectSlotItems(
+    private TreeViewItem BuildInlineTreeItem(
+        LayoutContainerElement container,
+        string? parentId,
+        LayoutSlotKind parentSlot)
+    {
+        var selection = new LayoutEditorSelection(
+            container.InstanceId,
+            LayoutEditorNodeKind.InlineContainer,
+            parentId,
+            parentSlot,
+            container);
+        var label = Loc.Get(container.ContainerKind == LayoutContainerKind.HoverSwitch
+            ? "Settings.Layout.ContainerHoverSwitch"
+            : "Settings.Layout.ContainerStatic");
+        var item = CreateLayoutTreeItem("\uE8B7", label, container.InstanceId, selection, container.Enabled);
+        item.Items.Add(BuildSlotTreeItem(
+            container.PrimarySlot,
+            container.InstanceId,
+            LayoutSlotKind.Primary,
+            container.ContainerKind == LayoutContainerKind.HoverSwitch
+                ? "Settings.Layout.EditorLeaveContent"
+                : "Settings.Layout.EditorContent"));
+        if (container.ContainerKind == LayoutContainerKind.HoverSwitch)
+        {
+            item.Items.Add(BuildSlotTreeItem(
+                container.SecondarySlot,
+                container.InstanceId,
+                LayoutSlotKind.Secondary,
+                "Settings.Layout.EditorNearContent"));
+        }
+        return item;
+    }
+
+    private TreeViewItem BuildEdgeTreeItem(LayoutEdgeContainer edge)
+    {
+        var selection = new LayoutEditorSelection(
+            edge.InstanceId,
+            LayoutEditorNodeKind.EdgeContainer,
+            null,
+            LayoutSlotKind.Expanded,
+            edge);
+        var item = CreateLayoutTreeItem(
+            "\uE7F1",
+            $"{Loc.Get("Settings.Layout.ContainerAutoCollapse")} · {GetEdgeName(edge.Edge)}",
+            edge.InstanceId,
+            selection,
+            edge.Enabled);
+        item.Items.Add(BuildSlotTreeItem(
+            edge.ExpandedSlot,
+            edge.InstanceId,
+            LayoutSlotKind.Expanded,
+            "Settings.Layout.EditorExpandedContent"));
+        return item;
+    }
+
+    private TreeViewItem BuildSlotTreeItem(
         LayoutSlot slot,
         string parentId,
         LayoutSlotKind slotKind,
-        int depth)
+        string resourceKey)
     {
+        var item = new TreeViewItem
+        {
+            Header = CreateTreeHeader("\uE8A0", Loc.Get(resourceKey), slot.SlotId, enabled: true, isSlot: true),
+            IsExpanded = true
+        };
         foreach (var child in slot.Children)
         {
-            var selection = child switch
+            if (child is LayoutWidgetElement widget)
             {
-                LayoutWidgetElement widget => new LayoutEditorSelection(
+                var selection = new LayoutEditorSelection(
                     widget.InstanceId,
                     LayoutEditorNodeKind.Widget,
                     parentId,
                     slotKind,
-                    widget),
-                LayoutContainerElement container => new LayoutEditorSelection(
-                    container.InstanceId,
-                    LayoutEditorNodeKind.InlineContainer,
-                    parentId,
-                    slotKind,
-                    container),
-                _ => null
-            };
-            if (selection is null)
-            {
-                continue;
+                    widget);
+                item.Items.Add(CreateLayoutTreeItem(
+                    "\uE7C3",
+                    GetWidgetTitle(widget),
+                    widget.InstanceId,
+                    selection,
+                    widget.Enabled));
             }
-
-            AddLayoutObjectItem(child, depth, selection);
-            if (child is LayoutContainerElement nested)
+            else if (child is LayoutContainerElement nested)
             {
-                AddLayoutObjectSlotItems(nested.PrimarySlot, nested.InstanceId, LayoutSlotKind.Primary, depth + 1);
-                if (nested.ContainerKind == LayoutContainerKind.HoverSwitch)
-                {
-                    AddLayoutObjectSlotItems(nested.SecondarySlot, nested.InstanceId, LayoutSlotKind.Secondary, depth + 1);
-                }
+                item.Items.Add(BuildInlineTreeItem(nested, parentId, slotKind));
             }
         }
-    }
 
-    private void AddLayoutObjectItem(
-        LayoutElement element,
-        int depth,
-        string? parentId,
-        LayoutSlotKind slotKind)
-    {
-        var selection = element switch
+        if (item.Items.Count == 0)
         {
-            LayoutWidgetElement widget => new LayoutEditorSelection(
-                widget.InstanceId,
-                LayoutEditorNodeKind.Widget,
-                parentId,
-                slotKind,
-                widget),
-            LayoutContainerElement container => new LayoutEditorSelection(
-                container.InstanceId,
-                LayoutEditorNodeKind.InlineContainer,
-                parentId,
-                slotKind,
-                container),
-            _ => null
-        };
-        AddLayoutObjectItem(element, depth, selection);
-    }
-
-    private void AddLayoutObjectItem(
-        LayoutEdgeContainer edge,
-        int depth,
-        string? parentId,
-        LayoutSlotKind slotKind)
-    {
-        AddLayoutObjectItem(edge, depth, new LayoutEditorSelection(
-            edge.InstanceId,
-            LayoutEditorNodeKind.EdgeContainer,
-            parentId,
-            slotKind,
-            edge));
-    }
-
-    private void AddLayoutObjectItem(LayoutElement element, int depth, LayoutEditorSelection? selection)
-    {
-        var label = element switch
-        {
-            LayoutWidgetElement widget => GetWidgetTitle(widget),
-            LayoutContainerElement { ContainerKind: LayoutContainerKind.HoverSwitch } => Loc.Get("Settings.Layout.ContainerHoverSwitch"),
-            LayoutContainerElement => Loc.Get("Settings.Layout.ContainerStatic"),
-            _ => element.InstanceId
-        };
-        var item = new ListBoxItem
-        {
-            Tag = selection,
-            Padding = new Thickness(8, 5, 6, 5),
-            Content = new TextBlock
+            item.Items.Add(new TreeViewItem
             {
-                Text = new string(' ', depth * 2) + label,
-                TextTrimming = TextTrimming.CharacterEllipsis,
-                ToolTip = element.InstanceId
-            }
-        };
-        LayoutObjectList.Items.Add(item);
+                Header = CreateTreeHeader(
+                    "\uE73A",
+                    Loc.Get("Settings.Layout.EditorEmptySlot"),
+                    slot.SlotId,
+                    enabled: false,
+                    isSlot: true),
+                IsHitTestVisible = false
+            });
+        }
+        return item;
     }
 
-    private void AddLayoutObjectItem(LayoutEdgeContainer edge, int depth, LayoutEditorSelection selection)
+    private TreeViewItem CreateLayoutTreeItem(
+        string icon,
+        string label,
+        string instanceId,
+        LayoutEditorSelection selection,
+        bool enabled)
     {
-        var item = new ListBoxItem
+        return new TreeViewItem
         {
+            Header = CreateTreeHeader(icon, label, instanceId, enabled, isSlot: false),
             Tag = selection,
-            Padding = new Thickness(8, 5, 6, 5),
-            Content = new TextBlock
-            {
-                Text = new string(' ', depth * 2) +
-                    $"{Loc.Get("Settings.Layout.ContainerAutoCollapse")} · {GetEdgeName(edge.Edge)}",
-                TextTrimming = TextTrimming.CharacterEllipsis,
-                ToolTip = edge.InstanceId
-            }
+            IsExpanded = true,
+            ToolTip = instanceId
         };
-        LayoutObjectList.Items.Add(item);
     }
 
-    private void LayoutObjectList_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    private FrameworkElement CreateTreeHeader(
+        string icon,
+        string label,
+        string toolTip,
+        bool enabled,
+        bool isSlot)
+    {
+        var panel = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Opacity = enabled ? 1 : 0.5,
+            ToolTip = toolTip
+        };
+        var iconText = new TextBlock
+        {
+            Width = 20,
+            Text = icon,
+            FontFamily = TryFindResource("AppIconFontFamily") as FontFamily,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        SetDynamicResource(
+            iconText,
+            TextBlock.ForegroundProperty,
+            isSlot ? "MenuSecondaryTextBrush" : "MenuPrimaryTextBrush");
+        panel.Children.Add(iconText);
+        var labelText = new TextBlock
+        {
+            Text = label,
+            FontSize = isSlot ? 11 : 12,
+            FontWeight = isSlot ? FontWeights.Normal : FontWeights.SemiBold,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        SetDynamicResource(
+            labelText,
+            TextBlock.ForegroundProperty,
+            isSlot ? "MenuSecondaryTextBrush" : "MenuPrimaryTextBrush");
+        panel.Children.Add(labelText);
+        return panel;
+    }
+
+    private static TreeViewItem? FindTreeItem(ItemCollection items, string instanceId)
+    {
+        foreach (var item in items.OfType<TreeViewItem>())
+        {
+            if (item.Tag is LayoutEditorSelection selection && selection.InstanceId == instanceId)
+            {
+                return item;
+            }
+            if (FindTreeItem(item.Items, instanceId) is { } nested)
+            {
+                return nested;
+            }
+        }
+        return null;
+    }
+
+    private void LayoutObjectTree_OnSelectedItemChanged(
+        object sender,
+        RoutedPropertyChangedEventArgs<object> e)
     {
         if (_layoutEditorSyncing ||
-            LayoutObjectList.SelectedItem is not ListBoxItem { Tag: LayoutEditorSelection selection })
+            e.NewValue is not TreeViewItem { Tag: LayoutEditorSelection selection })
         {
             return;
         }
 
         SelectLayoutNode(selection);
+    }
+
+    private void LayoutTreeToggleButton_OnToggled(object sender, RoutedEventArgs e)
+    {
+        if (LayoutObjectTreePanel is null || LayoutTreeToggleButton is null)
+        {
+            return;
+        }
+
+        LayoutObjectTreePanel.Visibility = LayoutTreeToggleButton.IsChecked == true
+            ? Visibility.Visible
+            : Visibility.Collapsed;
     }
 
     private FrameworkElement BuildVisualEditor(LayoutProfile profile)
@@ -466,10 +564,10 @@ public partial class SettingsWindow
         {
             Width = leftBand + centerWidth + rightBand,
             Height = topBand + centerHeight + bottomBand,
-            Background = new SolidColorBrush(Color.FromRgb(35, 43, 52)),
             ClipToBounds = true,
             AllowDrop = true
         };
+        SetDynamicResource(composition, Panel.BackgroundProperty, "PlayerPreviewBackgroundBrush");
         composition.RowDefinitions.Add(new RowDefinition { Height = new GridLength(topBand) });
         composition.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         composition.RowDefinitions.Add(new RowDefinition { Height = new GridLength(bottomBand) });
@@ -488,23 +586,24 @@ public partial class SettingsWindow
         inlineSurface.Margin = new Thickness(16);
         // 释放高亮只属于设计模式，避免拖动时用户失去当前槽位的空间反馈；运行时窗口不会创建此层。
         // The drop highlight exists only in design mode so users keep spatial feedback while dragging; runtime never creates it.
+        var dropOverlayText = new TextBlock
+        {
+            Text = Loc.Get("Settings.Layout.EditorDropHere"),
+            FontWeight = FontWeights.SemiBold,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        SetDynamicResource(dropOverlayText, TextBlock.ForegroundProperty, "MenuPrimaryTextBrush");
         var dropOverlay = new Border
         {
             Visibility = Visibility.Collapsed,
-            Background = new SolidColorBrush(Color.FromArgb(54, 86, 156, 255)),
-            BorderBrush = FindBrush("MenuHighlightTextBrush", Brushes.White),
             BorderThickness = new Thickness(2),
             CornerRadius = new CornerRadius(5),
             IsHitTestVisible = false,
-            Child = new TextBlock
-            {
-                Text = Loc.Get("Settings.Layout.EditorDropHere"),
-                Foreground = FindBrush("MenuHighlightTextBrush", Brushes.White),
-                FontWeight = FontWeights.SemiBold,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            }
+            Child = dropOverlayText
         };
+        SetDynamicResource(dropOverlay, Border.BackgroundProperty, "LayoutEditorDropBrush");
+        SetDynamicResource(dropOverlay, Border.BorderBrushProperty, "LayoutEditorAccentBrush");
         _layoutPreviewDropOverlay = dropOverlay;
         var centerContent = new Grid();
         centerContent.Children.Add(inlineSurface);
@@ -513,14 +612,14 @@ public partial class SettingsWindow
         {
             Margin = new Thickness(4),
             Padding = new Thickness(10),
-            Background = new SolidColorBrush(Color.FromRgb(35, 43, 52)),
-            BorderBrush = FindBrush("MenuBorderBrush", Brushes.Gray),
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(6),
             Child = centerContent,
             AllowDrop = true,
             ToolTip = Loc.Get("Settings.Layout.EditorDropHere")
         };
+        SetDynamicResource(center, Border.BackgroundProperty, "PlayerPreviewBackgroundBrush");
+        SetDynamicResource(center, Border.BorderBrushProperty, "MenuBorderBrush");
         center.DragOver += LayoutVisualEditorHost_OnDragOver;
         center.Drop += LayoutVisualEditorHost_OnDrop;
         center.DragEnter += LayoutPreviewDropHost_OnDragEnter;
@@ -532,12 +631,11 @@ public partial class SettingsWindow
         composition.DragOver += LayoutVisualEditorHost_OnDragOver;
         composition.Drop += LayoutVisualEditorHost_OnDrop;
 
-        return new Border
+        var previewHost = new Border
         {
             HorizontalAlignment = HorizontalAlignment.Stretch,
             VerticalAlignment = VerticalAlignment.Stretch,
             Padding = new Thickness(8),
-            Background = new SolidColorBrush(Color.FromRgb(35, 43, 52)),
             Child = new Viewbox
             {
                 Stretch = Stretch.Uniform,
@@ -547,6 +645,8 @@ public partial class SettingsWindow
                 Child = composition
             }
         };
+        SetDynamicResource(previewHost, Border.BackgroundProperty, "MenuHoverBrush");
+        return previewHost;
     }
 
     private void AddPreviewEdgeStrip(
@@ -575,9 +675,6 @@ public partial class SettingsWindow
             Margin = new Thickness(3),
             Padding = new Thickness(3),
             Background = Brushes.Transparent,
-            BorderBrush = GetUnavailableTaskbarEdge() == edge
-                ? FindBrush("MenuSeparatorBrush", Brushes.Gray)
-                : Brushes.Transparent,
             BorderThickness = GetUnavailableTaskbarEdge() == edge ? new Thickness(1) : new Thickness(0),
             Child = panel,
             AllowDrop = true,
@@ -586,6 +683,10 @@ public partial class SettingsWindow
                 ? Loc.Get("Settings.Layout.EditorTaskbarEdgeUnavailable")
                 : GetEdgeName(edge)
         };
+        if (GetUnavailableTaskbarEdge() == edge)
+        {
+            SetDynamicResource(area, Border.BorderBrushProperty, "MenuSeparatorBrush");
+        }
         area.DragOver += LayoutEdgeArea_OnDragOver;
         area.Drop += LayoutEdgeArea_OnDrop;
         Grid.SetRow(area, row);
@@ -601,6 +702,7 @@ public partial class SettingsWindow
         surface.DesignElementDragRequested += LayoutPreviewSurface_OnElementDragRequested;
         surface.DesignDropTargetDragOver += LayoutPreviewSurface_OnDropTargetDragOver;
         surface.DesignDropRequested += LayoutPreviewSurface_OnDropRequested;
+        surface.DesignPreviewStateChanged += LayoutPreviewSurface_OnPreviewStateChanged;
         surface.SetMediaSnapshot(CreateLayoutPreviewSnapshot());
         if (edge is null)
         {
@@ -613,6 +715,31 @@ public partial class SettingsWindow
 
         _layoutPreviewSurfaces.Add(surface);
         return surface;
+    }
+
+    private void LayoutPreviewSurface_OnPreviewStateChanged(
+        object? sender,
+        LayoutDesignPreviewStateEventArgs e)
+    {
+        var profile = _coordinator.Current.Layout.Get(_layoutEditorProfileKey);
+        if (ResolveSelection(profile, e.ContainerId) is not { } selection)
+        {
+            return;
+        }
+
+        _layoutEditorSelection = selection with
+        {
+            SlotKind = e.PointerNear ? LayoutSlotKind.Secondary : LayoutSlotKind.Primary
+        };
+        foreach (var surface in _layoutPreviewSurfaces)
+        {
+            surface.SetDesignSelection(e.ContainerId);
+        }
+        PopulateLayoutObjectTree(profile);
+        RefreshSlotOptions();
+        RefreshSelectionText();
+        RefreshLayoutProperties();
+        UpdateLayoutEditorButtons();
     }
 
     private bool ResolvePreviewPointerNear()
@@ -667,11 +794,26 @@ public partial class SettingsWindow
     private void LayoutPreviewSurface_OnDropTargetDragOver(object? sender, LayoutDesignDropEventArgs e)
     {
         var drag = e.DragEventArgs;
-        drag.Effects = drag.Data.GetDataPresent(NewWidgetDragFormat)
-            ? DragDropEffects.Copy
-            : drag.Data.GetDataPresent(ExistingWidgetDragFormat)
-                ? DragDropEffects.Move
-                : DragDropEffects.None;
+        var profile = _coordinator.Current.Layout.Get(_layoutEditorProfileKey);
+        var targetModel = LayoutEditorService.Find(profile, e.ContainerId);
+        var newContainerToken = drag.Data.GetData(NewContainerDragFormat) as string;
+        var containerEffect = targetModel switch
+        {
+            LayoutContainerElement when newContainerToken is "static" or "hover" => DragDropEffects.Copy,
+            LayoutEdgeContainer when newContainerToken == "edge" => DragDropEffects.Copy,
+            LayoutContainerElement when drag.Data.GetData(ExistingContainerDragFormat) is string sourceId &&
+                profile.InlineContainers.Any(container => container.InstanceId == sourceId) => DragDropEffects.Move,
+            LayoutEdgeContainer when drag.Data.GetData(ExistingContainerDragFormat) is string sourceId &&
+                LayoutEditorService.Find(profile, sourceId) is LayoutEdgeContainer => DragDropEffects.Move,
+            _ => DragDropEffects.None
+        };
+        drag.Effects = containerEffect != DragDropEffects.None
+            ? containerEffect
+            : drag.Data.GetDataPresent(NewWidgetDragFormat)
+                ? DragDropEffects.Copy
+                : drag.Data.GetDataPresent(ExistingWidgetDragFormat)
+                    ? DragDropEffects.Move
+                    : DragDropEffects.None;
         if (drag.Effects == DragDropEffects.None)
         {
             return;
@@ -681,7 +823,14 @@ public partial class SettingsWindow
         {
             _layoutPreviewDropOverlay.Visibility = Visibility.Collapsed;
         }
-        ShowLayoutDropTarget(e.Target);
+        if (containerEffect != DragDropEffects.None)
+        {
+            ShowLayoutDropTarget(e.Target);
+        }
+        else
+        {
+            HideLayoutDropTarget();
+        }
         drag.Handled = true;
     }
 
@@ -694,15 +843,51 @@ public partial class SettingsWindow
         }
 
         var target = new LayoutDropTarget(e.ContainerId, e.SlotKind);
-        if (e.DragEventArgs.Data.GetData(ExistingContainerDragFormat) is string sourceId)
+        var profile = _coordinator.Current.Layout.Get(_layoutEditorProfileKey);
+        var targetModel = LayoutEditorService.Find(profile, e.ContainerId);
+        if (e.DragEventArgs.Data.GetData(NewContainerDragFormat) is string token)
         {
-            // 容器只允许在同一层级卡片之间重排；槽位仅接受组件，避免把不可嵌套的容器拖入后静默无效。
-            // Containers reorder only among same-level cards; slots accept widgets only so unsupported nesting never appears to succeed silently.
-            TryApplyProfile(profile => LayoutEditorService.TryReorderTopLevel(
-                profile,
-                sourceId,
-                e.ContainerId,
-                out var updated) ? updated : null);
+            if (targetModel is LayoutContainerElement && token is "static" or "hover")
+            {
+                AddInlineContainer(token == "hover"
+                    ? LayoutContainerKind.HoverSwitch
+                    : LayoutContainerKind.Static);
+            }
+            else if (targetModel is LayoutEdgeContainer edge && token == "edge")
+            {
+                TryApplyProfile(current => LayoutEditorService.TryAddEdgeContainer(
+                    current,
+                    edge.Edge,
+                    GetUnavailableTaskbarEdge(),
+                    out var updated,
+                    out _) ? updated : null);
+            }
+        }
+        else if (e.DragEventArgs.Data.GetData(ExistingContainerDragFormat) is string sourceId)
+        {
+            if (targetModel is LayoutEdgeContainer targetEdge &&
+                LayoutEditorService.Find(profile, sourceId) is LayoutEdgeContainer sourceEdge)
+            {
+                TryApplyProfile(current => LayoutEditorService.TryUpdateEdgeContainer(
+                    current,
+                    sourceEdge.InstanceId,
+                    targetEdge.Edge,
+                    GetUnavailableTaskbarEdge(),
+                    sourceEdge.OffsetDip,
+                    sourceEdge.TriggerThicknessDip,
+                    sourceEdge.ProximityDip,
+                    sourceEdge.Animation,
+                    out var updated,
+                    out _) ? updated : null);
+            }
+            else
+            {
+                TryApplyProfile(current => LayoutEditorService.TryReorderTopLevel(
+                    current,
+                    sourceId,
+                    e.ContainerId,
+                    out var updated) ? updated : null);
+            }
         }
         else
         {
@@ -798,9 +983,6 @@ public partial class SettingsWindow
             Margin = new Thickness(3),
             Padding = new Thickness(3),
             Background = Brushes.Transparent,
-            BorderBrush = GetUnavailableTaskbarEdge() == edge
-                ? FindBrush("MenuSeparatorBrush", Brushes.Gray)
-                : Brushes.Transparent,
             BorderThickness = GetUnavailableTaskbarEdge() == edge
                 ? new Thickness(1)
                 : new Thickness(0),
@@ -812,6 +994,10 @@ public partial class SettingsWindow
                 ? Loc.Get("Settings.Layout.EditorTaskbarEdgeUnavailable")
                 : GetEdgeName(edge)
         };
+        if (GetUnavailableTaskbarEdge() == edge)
+        {
+            SetDynamicResource(area, Border.BorderBrushProperty, "MenuSeparatorBrush");
+        }
         area.DragOver += LayoutEdgeArea_OnDragOver;
         area.Drop += LayoutEdgeArea_OnDrop;
         Grid.SetRow(area, row);
@@ -822,19 +1008,52 @@ public partial class SettingsWindow
     private void LayoutEdgeArea_OnDragOver(object sender, DragEventArgs e)
     {
         var profile = _coordinator.Current.Layout.Get(_layoutEditorProfileKey);
-        e.Effects = e.Data.GetData(ExistingContainerDragFormat) is string sourceId &&
-            LayoutEditorService.Find(profile, sourceId) is LayoutEdgeContainer &&
-            sender is Border { Tag: LayoutEdge edge } &&
-            GetUnavailableTaskbarEdge() != edge
-            ? DragDropEffects.Move
+        var target = sender as Border;
+        var valid = target?.Tag is LayoutEdge edge &&
+            GetUnavailableTaskbarEdge() != edge &&
+            (string.Equals(e.Data.GetData(NewContainerDragFormat) as string, "edge", StringComparison.Ordinal) ||
+             e.Data.GetData(ExistingContainerDragFormat) is string sourceId &&
+             LayoutEditorService.Find(profile, sourceId) is LayoutEdgeContainer);
+        e.Effects = valid
+            ? e.Data.GetDataPresent(NewContainerDragFormat)
+                ? DragDropEffects.Copy
+                : DragDropEffects.Move
             : DragDropEffects.None;
+        if (valid && target is not null)
+        {
+            ShowLayoutDropTarget(target);
+        }
+        else
+        {
+            HideLayoutDropTarget();
+        }
         e.Handled = true;
     }
 
     private void LayoutEdgeArea_OnDrop(object sender, DragEventArgs e)
     {
-        if (sender is not Border { Tag: LayoutEdge edge } ||
-            e.Data.GetData(ExistingContainerDragFormat) is not string sourceId)
+        HideLayoutDropTarget();
+        if (sender is not Border { Tag: LayoutEdge edge } || GetUnavailableTaskbarEdge() == edge)
+        {
+            return;
+        }
+
+        if (string.Equals(e.Data.GetData(NewContainerDragFormat) as string, "edge", StringComparison.Ordinal))
+        {
+            if (!TryApplyProfile(profile => LayoutEditorService.TryAddEdgeContainer(
+                    profile,
+                    edge,
+                    GetUnavailableTaskbarEdge(),
+                    out var updated,
+                    out _) ? updated : null))
+            {
+                LayoutEditorMessageText.Text = Loc.Get("Settings.Layout.EditorTaskbarEdgeUnavailable");
+            }
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Data.GetData(ExistingContainerDragFormat) is not string sourceId)
         {
             return;
         }
@@ -862,6 +1081,24 @@ public partial class SettingsWindow
             LayoutEditorMessageText.Text = Loc.Get("Settings.Layout.EditorTaskbarEdgeUnavailable");
         }
         e.Handled = true;
+    }
+
+    private DragDropEffects ResolveCenterDropEffect(IDataObject data)
+    {
+        if (data.GetData(NewContainerDragFormat) is string token)
+        {
+            return token is "static" or "hover" ? DragDropEffects.Copy : DragDropEffects.None;
+        }
+
+        if (data.GetData(ExistingContainerDragFormat) is string sourceId)
+        {
+            var profile = _coordinator.Current.Layout.Get(_layoutEditorProfileKey);
+            return profile.InlineContainers.Any(container => container.InstanceId == sourceId)
+            ? DragDropEffects.Move
+            : DragDropEffects.None;
+        }
+
+        return DragDropEffects.None;
     }
 
     private FrameworkElement BuildInlineContainerCard(
@@ -939,10 +1176,6 @@ public partial class SettingsWindow
             MinHeight = 52,
             Margin = new Thickness(3),
             Padding = new Thickness(6),
-            Background = FindBrush("MenuBackgroundBrush", Brushes.Black),
-            BorderBrush = selected
-                ? FindBrush("MenuHighlightTextBrush", Brushes.White)
-                : FindBrush("MenuBorderBrush", Brushes.Gray),
             BorderThickness = new Thickness(selected ? 2 : 1),
             CornerRadius = new CornerRadius(5),
             Cursor = Cursors.Hand,
@@ -950,6 +1183,11 @@ public partial class SettingsWindow
             ToolTip = instanceId,
             Child = panel
         };
+        SetDynamicResource(card, Border.BackgroundProperty, "MenuBackgroundBrush");
+        SetDynamicResource(
+            card,
+            Border.BorderBrushProperty,
+            selected ? "LayoutEditorAccentBrush" : "MenuBorderBrush");
         card.MouseLeftButtonUp += LayoutVisualNode_OnMouseLeftButtonUp;
         card.AllowDrop = true;
         card.DragOver += LayoutContainerCard_OnDragOver;
@@ -1000,13 +1238,13 @@ public partial class SettingsWindow
             MinHeight = 30,
             Padding = new Thickness(3),
             Background = Brushes.Transparent,
-            BorderBrush = FindBrush("MenuSeparatorBrush", Brushes.Gray),
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(4),
             AllowDrop = true,
             Tag = target,
             Child = panel
         };
+        SetDynamicResource(dropHost, Border.BorderBrushProperty, "MenuSeparatorBrush");
         dropHost.DragOver += LayoutDropTarget_OnDragOver;
         dropHost.Drop += LayoutDropTarget_OnDrop;
         return dropHost;
@@ -1030,11 +1268,13 @@ public partial class SettingsWindow
             MinHeight = 26,
             Opacity = widget.Enabled ? 1 : 0.45,
             BorderThickness = new Thickness(selected ? 2 : 1),
-            BorderBrush = selected
-                ? FindBrush("MenuHighlightTextBrush", Brushes.White)
-                : FindBrush("MenuBorderBrush", Brushes.Gray),
-            Cursor = Cursors.Hand
+            Cursor = Cursors.Hand,
+            Style = TryFindResource("SettingsActionButtonStyle") as Style
         };
+        SetDynamicResource(
+            tile,
+            Button.BorderBrushProperty,
+            selected ? "LayoutEditorAccentBrush" : "MenuBorderBrush");
         tile.PreviewMouseLeftButtonDown += LayoutDragSource_OnPreviewMouseLeftButtonDown;
         tile.PreviewMouseMove += LayoutWidgetTile_OnPreviewMouseMove;
         tile.Click += LayoutWidgetTile_OnClick;
@@ -1043,15 +1283,16 @@ public partial class SettingsWindow
 
     private TextBlock CreateEmptyHint(string resourceKey)
     {
-        return new TextBlock
+        var hint = new TextBlock
         {
             Text = Loc.Get(resourceKey),
             Margin = new Thickness(6),
-            Foreground = FindBrush("MenuSecondaryTextBrush", Brushes.Gray),
             FontSize = 10.5,
             TextAlignment = TextAlignment.Center,
             TextWrapping = TextWrapping.Wrap
         };
+        SetDynamicResource(hint, TextBlock.ForegroundProperty, "MenuSecondaryTextBrush");
+        return hint;
     }
 
     private void LayoutAddStaticContainerButton_OnClick(object sender, RoutedEventArgs e) =>
@@ -1110,6 +1351,19 @@ public partial class SettingsWindow
         BeginVisualDrag(
             button,
             new DataObject(NewWidgetDragFormat, paletteToken),
+            DragDropEffects.Copy);
+    }
+
+    private void LayoutContainerPaletteButton_OnPreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (sender is not Button { Tag: string token } button || !ShouldBeginDrag(e))
+        {
+            return;
+        }
+
+        BeginVisualDrag(
+            button,
+            new DataObject(NewContainerDragFormat, token),
             DragDropEffects.Copy);
     }
 
@@ -1201,11 +1455,11 @@ public partial class SettingsWindow
                 Stretch = Stretch.Uniform,
                 Opacity = 0.9
             },
-            BorderBrush = FindBrush("MenuHighlightTextBrush", Brushes.White),
             BorderThickness = new Thickness(1),
             Opacity = 0.88,
             IsHitTestVisible = false
         };
+        SetDynamicResource(ghost, Border.BorderBrushProperty, "LayoutEditorAccentBrush");
         var popup = new Popup
         {
             AllowsTransparency = true,
@@ -1269,14 +1523,15 @@ public partial class SettingsWindow
     private void LayoutVisualEditorHost_OnDragOver(object sender, DragEventArgs e)
     {
         HideLayoutDropTarget();
-        e.Effects = e.Data.GetDataPresent(NewWidgetDragFormat)
-            ? DragDropEffects.Copy
-            : e.Data.GetDataPresent(ExistingWidgetDragFormat)
-                ? DragDropEffects.Move
-            : e.Data.GetDataPresent(ExistingContainerDragFormat)
-                ? DragDropEffects.Move
-                : DragDropEffects.None;
-        if (e.Effects != DragDropEffects.None && _layoutPreviewDropOverlay is not null)
+        var containerEffect = ResolveCenterDropEffect(e.Data);
+        e.Effects = containerEffect != DragDropEffects.None
+            ? containerEffect
+            : e.Data.GetDataPresent(NewWidgetDragFormat)
+                ? DragDropEffects.Copy
+                : e.Data.GetDataPresent(ExistingWidgetDragFormat)
+                    ? DragDropEffects.Move
+                    : DragDropEffects.None;
+        if (containerEffect != DragDropEffects.None && _layoutPreviewDropOverlay is not null)
         {
             _layoutPreviewDropOverlay.Visibility = Visibility.Visible;
         }
@@ -1289,9 +1544,7 @@ public partial class SettingsWindow
 
     private void LayoutPreviewDropHost_OnDragEnter(object sender, DragEventArgs e)
     {
-        if (e.Data.GetDataPresent(NewWidgetDragFormat) ||
-            e.Data.GetDataPresent(ExistingWidgetDragFormat) ||
-            e.Data.GetDataPresent(ExistingContainerDragFormat))
+        if (ResolveCenterDropEffect(e.Data) != DragDropEffects.None)
         {
             if (_layoutPreviewDropOverlay is not null)
             {
@@ -1319,6 +1572,17 @@ public partial class SettingsWindow
         if (e.Data.GetData(NewWidgetDragFormat) is string paletteToken)
         {
             AddWidgetToTarget(paletteToken, ResolveAddTarget());
+        }
+        else if (e.Data.GetData(NewContainerDragFormat) is string containerToken)
+        {
+            if (containerToken == "static")
+            {
+                AddInlineContainer(LayoutContainerKind.Static);
+            }
+            else if (containerToken == "hover")
+            {
+                AddInlineContainer(LayoutContainerKind.HoverSwitch);
+            }
         }
         else if (e.Data.GetData(ExistingContainerDragFormat) is string sourceId &&
             ResolveAddTarget() is { } target)
@@ -2488,8 +2752,11 @@ public partial class SettingsWindow
         return -1;
     }
 
-    private Brush FindBrush(string resourceKey, Brush fallback) =>
-        TryFindResource(resourceKey) as Brush ?? fallback;
+    private static void SetDynamicResource(
+        FrameworkElement element,
+        DependencyProperty property,
+        string resourceKey) =>
+        element.SetResourceReference(property, resourceKey);
 
     private static string GetWidgetTitle(LayoutWidgetElement widget)
     {
@@ -2560,6 +2827,15 @@ public partial class SettingsWindow
         _ => "Settings.Layout.PropertyMetric"
     };
 
+    private static string GetComponentCategoryResourceKey(ComponentCategory category) => category switch
+    {
+        ComponentCategory.Media => "Settings.Layout.CategoryMedia",
+        ComponentCategory.Controls => "Settings.Layout.CategoryControls",
+        ComponentCategory.Audio => "Settings.Layout.CategoryAudio",
+        ComponentCategory.System => "Settings.Layout.CategorySystem",
+        _ => "Settings.Layout.CategoryLayout"
+    };
+
     private sealed class LayoutDropTargetAdorner(UIElement adornedElement) : Adorner(adornedElement)
     {
         private static readonly Brush Fill = new SolidColorBrush(Color.FromArgb(46, 86, 156, 255));
@@ -2603,7 +2879,11 @@ public partial class SettingsWindow
 
     private sealed record LayoutDropTarget(string ContainerId, LayoutSlotKind SlotKind);
 
-    private sealed record PaletteEntry(string Token, string Label, string Description);
+    private sealed record PaletteEntry(
+        string Token,
+        string Label,
+        string Description,
+        ComponentCategory Category);
 
     private sealed record LayoutEditorSelection(
         string InstanceId,

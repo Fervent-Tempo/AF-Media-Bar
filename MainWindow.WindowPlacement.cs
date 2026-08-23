@@ -315,7 +315,18 @@ public partial class MainWindow
                 Math.Max(taskbarRect.Top - collapsedTop, taskbarRect.Bottom - height + collapsedBottom));
         }
 
-        if (_layoutBodyCorrectionX != 0 || _layoutBodyCorrectionY != 0)
+        if (TryResolveLayoutBodyTarget(
+                playerScale.X * scale,
+                playerScale.Y * scale,
+                out var layoutTargetLeft,
+                out var layoutTargetTop))
+        {
+            _layoutBodyCorrectionX = layoutTargetLeft - left;
+            _layoutBodyCorrectionY = layoutTargetTop - top;
+            left = layoutTargetLeft;
+            top = layoutTargetTop;
+        }
+        else if (_layoutBodyCorrectionX != 0 || _layoutBodyCorrectionY != 0)
         {
             left += _layoutBodyCorrectionX;
             top += _layoutBodyCorrectionY;

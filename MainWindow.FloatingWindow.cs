@@ -275,8 +275,23 @@ public partial class MainWindow
                     : top;
         }
 
-        if (_floatingEdge == 0 &&
-            (_layoutBodyCorrectionX != 0 || _layoutBodyCorrectionY != 0))
+        var layoutTargetLeft = 0;
+        var layoutTargetTop = 0;
+        var preservingLayoutBody = _floatingEdge == 0 &&
+            TryResolveLayoutBodyTarget(
+                playerScale.X * scale,
+                playerScale.Y * scale,
+                out layoutTargetLeft,
+                out layoutTargetTop);
+        if (preservingLayoutBody)
+        {
+            _layoutBodyCorrectionX = layoutTargetLeft - left.Value;
+            _layoutBodyCorrectionY = layoutTargetTop - top.Value;
+            left = layoutTargetLeft;
+            top = layoutTargetTop;
+        }
+        else if (_floatingEdge == 0 &&
+                 (_layoutBodyCorrectionX != 0 || _layoutBodyCorrectionY != 0))
         {
             left += _layoutBodyCorrectionX;
             top += _layoutBodyCorrectionY;
@@ -284,8 +299,8 @@ public partial class MainWindow
 
         ConfigureFloatingPopupPlacement(
             desktopBounds,
-            _floatingNormalLeft ?? left.Value,
-            _floatingNormalTop ?? top.Value,
+            preservingLayoutBody ? left.Value : _floatingNormalLeft ?? left.Value,
+            preservingLayoutBody ? top.Value : _floatingNormalTop ?? top.Value,
             width,
             height,
             verticalLayout);

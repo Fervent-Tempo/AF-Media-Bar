@@ -16,7 +16,9 @@
     <SolidColorBrush x:Key="TaskbarPressedBrush" Color="#38FFFFFF" />
     <SolidColorBrush x:Key="TaskbarDividerBrush" Color="#28FFFFFF" />
     <SolidColorBrush x:Key="TaskbarHighlightTextBrush" Color="#FFF7FA" />
+    <SolidColorBrush x:Key="TaskbarDisabledTextBrush" Color="#66FFF7FA" />
     <SolidColorBrush x:Key="TaskbarReadabilityBrush" Color="#00000000" />
+    <SolidColorBrush x:Key="PlayerPreviewBackgroundBrush" Color="#FF202020" />
     <SolidColorBrush x:Key="MenuBackgroundBrush" Color="#F0172632" />
     <SolidColorBrush x:Key="MenuPrimaryTextBrush" Color="#FFF7FA" />
     <SolidColorBrush x:Key="MenuSecondaryTextBrush" Color="#B9D1E3" />
@@ -31,6 +33,9 @@
     <SolidColorBrush x:Key="SliderTrackBrush" Color="#30FFFFFF" />
     <SolidColorBrush x:Key="SliderThumbBrush" Color="#FFF7FA" />
     <SolidColorBrush x:Key="SliderThumbBorderBrush" Color="#806F9AAA" />
+    <SolidColorBrush x:Key="LayoutEditorCanvasBrush" Color="#FF232B34" />
+    <SolidColorBrush x:Key="LayoutEditorDropBrush" Color="#36569CFF" />
+    <SolidColorBrush x:Key="LayoutEditorAccentBrush" Color="#FF8AB4F8" />
     <DropShadowEffect x:Key="TaskbarTextEffect"
                       Color="#99000000"
                       BlurRadius="1"
@@ -309,6 +314,44 @@
               </Trigger>
               <Trigger Property="IsEnabled" Value="False">
                 <Setter Property="Opacity" Value="0.35" />
+                <Setter Property="Foreground" Value="{DynamicResource TaskbarDisabledTextBrush}" />
+                <Setter Property="Cursor" Value="Arrow" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="LayoutEditorButtonStyle" TargetType="Button">
+      <Setter Property="Foreground" Value="{DynamicResource MenuPrimaryTextBrush}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MenuBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="ButtonBorder"
+                    Padding="{TemplateBinding Padding}"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="4">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource MenuHoverBrush}" />
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource MenuPressedBrush}" />
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="{DynamicResource MenuDisabledBrush}" />
+                <Setter Property="Opacity" Value="0.55" />
+                <Setter Property="Cursor" Value="Arrow" />
               </Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
