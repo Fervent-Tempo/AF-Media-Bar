@@ -9,6 +9,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using AFMediaBar.Adapters;
 using AFMediaBar.Controls;
 using AFMediaBar.Interop;
 using AFMediaBar.Models;
@@ -36,7 +37,9 @@ public partial class MainWindow : Window
     private const int EnvironmentRecoveryRetryMilliseconds = 600;
     private const int EnvironmentRecoveryMaxAttempts = 8;
 
-    private readonly MediaSessionService _mediaSessionService = new();
+    private readonly MediaSessionService _mediaSessionService = new(
+        new WpfArtworkDecoder(),
+        WpfStringLocalizer.Instance);
     private readonly SettingsCoordinator _settingsCoordinator;
     // 这些定时器都由窗口拥有，必须在 OnClosed 中停止后再释放服务。
     // The window owns these timers; OnClosed stops them before disposing services.
@@ -113,7 +116,7 @@ public partial class MainWindow : Window
         {
             _taskbarSettings = _taskbarSettings with { Alignment = cachedAlignment };
         }
-        _mouseHookService = new MouseHookService(Dispatcher);
+        _mouseHookService = new MouseHookService(new WpfUiDispatcher(Dispatcher));
         _positionTimer = new DispatcherTimer(
             TimeSpan.FromSeconds(1),
             DispatcherPriority.Background,
@@ -229,7 +232,7 @@ public partial class MainWindow : Window
         _trayIconService.DoubleClicked += TrayIcon_OnDoubleClicked;
         _trayIconService.ShellRestarted += TrayIcon_OnShellRestarted;
 
-        _taskbarEventWatcher = new TaskbarEventWatcher(Dispatcher);
+        _taskbarEventWatcher = new TaskbarEventWatcher(new WpfUiDispatcher(Dispatcher));
         _taskbarEventWatcher.TaskbarChanged += Taskbar_OnChanged;
 
         ApplyMetricSettings();

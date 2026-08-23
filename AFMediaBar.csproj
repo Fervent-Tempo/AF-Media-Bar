@@ -33,4 +33,14 @@
   <ItemGroup>
     <Resource Include="icon.ico" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="src\**\*.cs" />
+    <Compile Remove="tests\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="src\AFMediaBar.Core\AFMediaBar.Core.csproj" />
+    <ProjectReference Include="src\AFMediaBar.Platform.Windows\AFMediaBar.Platform.Windows.csproj" />
+  </ItemGroup>
 </Project>

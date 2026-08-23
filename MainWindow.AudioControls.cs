@@ -9,6 +9,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using AFMediaBar.Adapters;
 using AFMediaBar.Interop;
 using AFMediaBar.Models;
 using AFMediaBar.Services;
@@ -25,8 +26,8 @@ public partial class MainWindow
     private const int VolumeWheelStepPercent = 2;
     private const int AudioMonitorIntervalMilliseconds = 50;
 
-    private readonly AudioDeviceService _audioDeviceService = new();
-    private readonly ApplicationVolumeService _applicationVolumeService = new();
+    private readonly AudioDeviceService _audioDeviceService = new(WpfStringLocalizer.Instance);
+    private readonly ApplicationVolumeService _applicationVolumeService = new(WpfStringLocalizer.Instance);
     private readonly DispatcherTimer _audioMonitorTimer;
     private readonly DispatcherTimer _outputDeviceApplyTimer;
     private readonly DispatcherTimer _volumeApplyTimer;

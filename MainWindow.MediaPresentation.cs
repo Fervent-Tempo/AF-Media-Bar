@@ -9,6 +9,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using AFMediaBar.Adapters;
 using AFMediaBar.Interop;
 using AFMediaBar.Models;
 using AFMediaBar.Services;
@@ -79,12 +80,12 @@ public partial class MainWindow
             : snapshot.Artist;
         TitleText.Text = displayTitle;
         ArtistText.Text = displayArtist;
-        ArtworkImage.Source = snapshot.Artwork;
+        ArtworkImage.Source = snapshot.Artwork.AsImageSource();
         VerticalTitleText.Text = FormatVerticalText(displayTitle);
         VerticalArtistText.Text = FormatVerticalText(displayArtist);
         VerticalTitleText.ToolTip = displayTitle;
         VerticalArtistText.ToolTip = displayArtist;
-        VerticalArtworkImage.Source = snapshot.Artwork;
+        VerticalArtworkImage.Source = snapshot.Artwork.AsImageSource();
         ArtworkPlaceholder.Visibility = snapshot.Artwork is null
             ? Visibility.Visible
             : Visibility.Collapsed;

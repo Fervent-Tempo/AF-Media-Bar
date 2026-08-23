@@ -3,6 +3,7 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
+using AFMediaBar.Adapters;
 using AFMediaBar.Interop;
 using AFMediaBar.Models;
 using AFMediaBar.Services;
@@ -54,7 +55,7 @@ public partial class App : Application
         SettingsCoordinator.Changed += SettingsCoordinator_OnChanged;
         ApplyLanguageSettings();
         ApplyFontSettings();
-        _updateService = new UpdateService();
+        _updateService = new UpdateService(WpfStringLocalizer.Instance);
         _shutdownCancellation = new CancellationTokenSource();
         ShowMainWindow();
         _ = CheckForUpdatesAfterStartupAsync();
@@ -265,8 +266,8 @@ public partial class App : Application
         var textFamily = new FontFamily(FontSettings.ResolveText(font.Latin, font.Cjk));
         Resources["AppTextFontFamily"] = textFamily;
         Resources["AppDisplayFontFamily"] = textFamily;
-        Resources["PlayerTitleFontWeight"] = FontSettings.ResolveTitleWeight(font.Weight);
-        Resources["PlayerTextFontWeight"] = FontSettings.ResolveBodyWeight(font.Weight);
+        Resources["PlayerTitleFontWeight"] = WpfFontSettingsAdapter.ResolveTitleWeight(font.Weight);
+        Resources["PlayerTextFontWeight"] = WpfFontSettingsAdapter.ResolveBodyWeight(font.Weight);
     }
 
     private void SettingsCoordinator_OnChanged(object? sender, SettingsChangedEventArgs e)

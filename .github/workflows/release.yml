@@ -42,6 +42,15 @@ jobs:
           }
           "VERSION=$projectVersion" >> $env:GITHUB_ENV
 
+      - name: Restore
+        run: dotnet restore .\AFMediaBar.slnx
+
+      - name: Build
+        run: dotnet build .\AFMediaBar.slnx -c Release --no-restore -p:ContinuousIntegrationBuild=true
+
+      - name: Test
+        run: dotnet test .\AFMediaBar.slnx -c Release --no-build
+
       - name: Publish self-contained single-file application
         run: dotnet publish .\AFMediaBar.csproj -c Release -r win-x64 --self-contained true -p:ContinuousIntegrationBuild=true -o .\artifacts\publish
 

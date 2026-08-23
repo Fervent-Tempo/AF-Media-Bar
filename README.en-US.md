@@ -231,8 +231,9 @@ Windows 10 version 1809 or later, the [.NET 10 SDK](https://dotnet.microsoft.com
 ```powershell
 git clone https://github.com/Fervent-Tempo/AF-Media-Bar.git
 cd AF-Media-Bar
-dotnet restore .\AFMediaBar.csproj
-dotnet build .\AFMediaBar.csproj -c Release --no-restore
+dotnet restore .\AFMediaBar.slnx
+dotnet build .\AFMediaBar.slnx -c Release --no-restore
+dotnet test .\AFMediaBar.slnx -c Release --no-build
 dotnet run --project .\AFMediaBar.csproj
 ```
 
@@ -250,14 +251,19 @@ AF-Media-Bar/
 |   |-- ISSUE_TEMPLATE/     # Issue forms
 |   `-- workflows/          # Build and release workflows
 |-- assets/                 # README and branding images
-|-- Interop/                # Windows native API interop
-|-- Models/                 # Media, audio, metrics, and taskbar models
-|-- Services/               # Media, audio, placement, and tray services
+|-- Adapters/               # WPF font, artwork, localization, and dispatcher adapters
+|-- src/
+|   |-- AFMediaBar.Core/    # UI-independent models, contracts, and pure logic
+|   `-- AFMediaBar.Platform.Windows/ # Windows system access and persistence
+|-- tests/
+|   `-- AFMediaBar.Core.Tests/ # Core automated tests
+|-- Services/               # WPF shell coordination, theme, tray, and UI Automation
 |-- App.xaml                # WPF application resources
 |-- App.xaml.cs             # Startup and exception handling
 |-- MainWindow.xaml         # Main interface layout
 |-- MainWindow.xaml.cs      # Main window interaction and coordination
-|-- AFMediaBar.csproj       # .NET project and publish configuration
+|-- AFMediaBar.slnx         # Solution build and test entry point
+|-- AFMediaBar.csproj       # WPF shell and publish configuration
 |-- app.manifest            # Windows application manifest
 |-- icon.ico                # Application icon
 |-- 运行展示.gif             # In-app demonstration

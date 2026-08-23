@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
+using AFMediaBar.Adapters;
 using AFMediaBar.Models;
 using AFMediaBar.Services;
 using Loc = AFMediaBar.Services.Localization;
@@ -87,7 +88,7 @@ public partial class SettingsWindow
         var weight = _coordinator.Current.Font.Weight;
         TryUpdate(() => _coordinator.UpdateFont(new FontSettings(latin, cjk, weight)));
         FontPreviewText.FontFamily = new FontFamily(FontSettings.ResolveText(latin, cjk));
-        FontPreviewText.FontWeight = FontSettings.ResolveTitleWeight(weight);
+        FontPreviewText.FontWeight = WpfFontSettingsAdapter.ResolveTitleWeight(weight);
     }
 
     private void FontWeightSlider_OnValueChanged(
@@ -101,7 +102,7 @@ public partial class SettingsWindow
 
         var weight = FontSettings.NormalizeWeight((int)Math.Round(e.NewValue));
         FontWeightValueText.Text = FormatFontWeight(weight);
-        FontPreviewText.FontWeight = FontSettings.ResolveTitleWeight(weight);
+        FontPreviewText.FontWeight = WpfFontSettingsAdapter.ResolveTitleWeight(weight);
         if (_isSyncing)
         {
             return;

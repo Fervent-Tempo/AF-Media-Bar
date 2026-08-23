@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AFMediaBar.Core/AFMediaBar.Core.csproj" />
+    <Project Path="src/AFMediaBar.Platform.Windows/AFMediaBar.Platform.Windows.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AFMediaBar.Core.Tests/AFMediaBar.Core.Tests.csproj" />
+  </Folder>
+  <Project Path="AFMediaBar.csproj" />
+</Solution>

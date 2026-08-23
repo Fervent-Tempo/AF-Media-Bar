@@ -236,8 +236,9 @@ reg.exe delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "AF Media
 ```powershell
 git clone https://github.com/Fervent-Tempo/AF-Media-Bar.git
 cd AF-Media-Bar
-dotnet restore .\AFMediaBar.csproj
-dotnet build .\AFMediaBar.csproj -c Release --no-restore
+dotnet restore .\AFMediaBar.slnx
+dotnet build .\AFMediaBar.slnx -c Release --no-restore
+dotnet test .\AFMediaBar.slnx -c Release --no-build
 dotnet run --project .\AFMediaBar.csproj
 ```
 
@@ -256,14 +257,19 @@ AF-Media-Bar/
 |   |-- ISSUE_TEMPLATE/     # Issue 表单
 |   `-- workflows/          # 构建与发布工作流
 |-- assets/                 # README 与品牌图片
-|-- Interop/                # Windows 原生 API 互操作
-|-- Models/                 # 媒体、音频、指标与任务栏数据模型
-|-- Services/               # 媒体会话、音频、定位、托盘等服务
+|-- Adapters/               # WPF 字体、封面、本地化与 Dispatcher 适配器
+|-- src/
+|   |-- AFMediaBar.Core/    # UI 无关模型、契约与纯逻辑
+|   `-- AFMediaBar.Platform.Windows/ # Windows 系统访问与持久化服务
+|-- tests/
+|   `-- AFMediaBar.Core.Tests/ # Core 自动化测试
+|-- Services/               # WPF 外壳协调、主题、托盘与 UI Automation
 |-- App.xaml                # WPF 应用资源
 |-- App.xaml.cs             # 应用启动与异常处理
 |-- MainWindow.xaml         # 主界面布局
 |-- MainWindow.xaml.cs      # 主窗口交互与状态协调
-|-- AFMediaBar.csproj       # .NET 项目与发布配置
+|-- AFMediaBar.slnx         # 解决方案构建与测试入口
+|-- AFMediaBar.csproj       # WPF 外壳与发布配置
 |-- app.manifest            # Windows 应用清单
 |-- icon.ico                # 应用图标
 |-- 运行展示.gif             # 运行效果演示

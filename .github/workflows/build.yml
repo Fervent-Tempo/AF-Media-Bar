@@ -26,10 +26,13 @@ jobs:
           global-json-file: global.json
 
       - name: Restore
-        run: dotnet restore .\AFMediaBar.csproj
+        run: dotnet restore .\AFMediaBar.slnx
 
       - name: Build
-        run: dotnet build .\AFMediaBar.csproj -c Release --no-restore -p:ContinuousIntegrationBuild=true
+        run: dotnet build .\AFMediaBar.slnx -c Release --no-restore -p:ContinuousIntegrationBuild=true
+
+      - name: Test
+        run: dotnet test .\AFMediaBar.slnx -c Release --no-build
 
       - name: Validate self-contained single-file publish
         run: dotnet publish .\AFMediaBar.csproj -c Release -r win-x64 --self-contained true -p:ContinuousIntegrationBuild=true -o .\artifacts\AFMediaBar-win-x64

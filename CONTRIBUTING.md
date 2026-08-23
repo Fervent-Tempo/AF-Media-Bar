@@ -20,8 +20,8 @@
 ```powershell
 git clone https://github.com/Fervent-Tempo/AF-Media-Bar.git
 cd AF-Media-Bar
-dotnet restore .\AFMediaBar.csproj
-dotnet build .\AFMediaBar.csproj -c Debug --no-restore
+dotnet restore .\AFMediaBar.slnx
+dotnet build .\AFMediaBar.slnx -c Debug --no-restore
 ```
 
 ## 验证
@@ -29,7 +29,8 @@ dotnet build .\AFMediaBar.csproj -c Debug --no-restore
 提交改动前请运行：
 
 ```powershell
-dotnet build .\AFMediaBar.csproj -c Release --no-restore
+dotnet build .\AFMediaBar.slnx -c Release --no-restore
+dotnet test .\AFMediaBar.slnx -c Release --no-build
 dotnet publish .\AFMediaBar.csproj -c Release -r win-x64 --self-contained true -o .\artifacts\AFMediaBar-win-x64
 git diff --check
 ```
@@ -71,8 +72,8 @@ Thank you for helping improve AF Media Bar.
 ```powershell
 git clone https://github.com/Fervent-Tempo/AF-Media-Bar.git
 cd AF-Media-Bar
-dotnet restore .\AFMediaBar.csproj
-dotnet build .\AFMediaBar.csproj -c Debug --no-restore
+dotnet restore .\AFMediaBar.slnx
+dotnet build .\AFMediaBar.slnx -c Debug --no-restore
 ```
 
 ## Validation
@@ -80,7 +81,8 @@ dotnet build .\AFMediaBar.csproj -c Debug --no-restore
 Before submitting a change:
 
 ```powershell
-dotnet build .\AFMediaBar.csproj -c Release --no-restore
+dotnet build .\AFMediaBar.slnx -c Release --no-restore
+dotnet test .\AFMediaBar.slnx -c Release --no-build
 dotnet publish .\AFMediaBar.csproj -c Release -r win-x64 --self-contained true -o .\artifacts\AFMediaBar-win-x64
 git diff --check
 ```

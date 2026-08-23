@@ -8,6 +8,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Documents;
 using System.Windows.Threading;
+using AFMediaBar.Adapters;
 using AFMediaBar.Models;
 using AFMediaBar.Services;
 using Loc = AFMediaBar.Services.Localization;
@@ -894,7 +895,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         var image = new Image
         {
             Stretch = Stretch.UniformToFill,
-            Source = _mediaSnapshot.Artwork,
+            Source = _mediaSnapshot.Artwork.AsImageSource(),
             IsHitTestVisible = false
         };
         var placeholder = new TextBlock
@@ -1305,7 +1306,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
                 continue;
             }
 
-            artwork.Item1.Source = _mediaSnapshot.Artwork;
+            artwork.Item1.Source = _mediaSnapshot.Artwork.AsImageSource();
             artwork.Item2.Visibility = _mediaSnapshot.Artwork is null
                 ? Visibility.Visible
                 : Visibility.Collapsed;
@@ -1712,7 +1713,11 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
 
         try
         {
-            var source = _mediaSnapshot.Artwork;
+            var source = _mediaSnapshot.Artwork.AsImageSource() as BitmapSource;
+            if (source is null)
+            {
+                return GetContentBrush("TaskbarSurfaceBrush");
+            }
             var width = Math.Max(1, source.PixelWidth);
             var height = Math.Max(1, source.PixelHeight);
             var stride = width * 4;

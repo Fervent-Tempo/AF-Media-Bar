@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
+using AFMediaBar.Adapters;
 using AFMediaBar.Models;
 using AFMediaBar.Services;
 using Loc = AFMediaBar.Services.Localization;
@@ -78,7 +79,7 @@ public partial class SettingsWindow
         FontPreviewText.FontFamily = new FontFamily(FontSettings.ResolveText(
             settings.Font.Latin,
             settings.Font.Cjk));
-        FontPreviewText.FontWeight = FontSettings.ResolveTitleWeight(settings.Font.Weight);
+        FontPreviewText.FontWeight = WpfFontSettingsAdapter.ResolveTitleWeight(settings.Font.Weight);
 
         AlwaysOnTopCheckBox.IsChecked = settings.Window.AlwaysOnTop;
 
