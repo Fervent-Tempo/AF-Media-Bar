@@ -28,6 +28,12 @@ internal sealed class SystemThemeService : IDisposable
     private int _updatePending;
     private bool _disposed;
 
+    internal event EventHandler? ThemeApplied;
+
+    internal bool MenuUsesLightTheme { get; private set; } = true;
+
+    internal bool IsHighContrast { get; private set; }
+
     internal SystemThemeService(Application application)
     {
         _application = application;
@@ -110,9 +116,13 @@ internal sealed class SystemThemeService : IDisposable
     {
         if (SystemParameters.HighContrast)
         {
+            IsHighContrast = true;
             ApplyHighContrastTheme();
+            ThemeApplied?.Invoke(this, EventArgs.Empty);
             return;
         }
+
+        IsHighContrast = false;
 
         var systemUsesLightTheme = ReadBoolean(
             PersonalizeKeyPath,
@@ -139,7 +149,9 @@ internal sealed class SystemThemeService : IDisposable
             MenuThemeMode.Dark => false,
             _ => appsUseLightTheme
         };
+        MenuUsesLightTheme = menuUsesLightTheme;
         ApplyMenuTheme(menuUsesLightTheme, accentColor);
+        ThemeApplied?.Invoke(this, EventArgs.Empty);
     }
 
     private void ApplyTaskbarTheme(

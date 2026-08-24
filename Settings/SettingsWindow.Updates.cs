@@ -261,6 +261,7 @@ public partial class SettingsWindow
 
     private void SettingsWindow_OnClosed(object? sender, EventArgs e)
     {
+        ClearSkinPreview();
         DisposeLayoutEditorSurfaces();
         _updateCheckCancellation?.Cancel();
         _updateCheckCancellation?.Dispose();
@@ -269,6 +270,10 @@ public partial class SettingsWindow
         _fontSaveTimer.Stop();
         _coordinator.Changed -= Coordinator_OnChanged;
         _updateService.UpdateAvailable -= UpdateService_OnUpdateAvailable;
+        if (_systemThemeService is not null)
+        {
+            _systemThemeService.ThemeApplied -= SystemThemeService_OnThemeApplied;
+        }
         Closed -= SettingsWindow_OnClosed;
     }
 

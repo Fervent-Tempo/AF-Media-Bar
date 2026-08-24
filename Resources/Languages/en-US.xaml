@@ -324,6 +324,10 @@
   <sys:String x:Key="Settings.Layout.PropertyMaxLinesHint">Shows at most 1–2 lines; wrapping stays inside the widget and does not change container size.</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyCommand">Command</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyButtonSize">Button size</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertySkin">Component skin</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertySkinHint">Choose a visual skin for this component. Unknown or unsupported skins fall back to Default.</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertySkinSave">Save skin</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertySkinCancel">Cancel preview</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyMetric">Metric type</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyMetricMemory">System memory (MEM)</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyMetricCpu">System processor (CPU)</sys:String>
@@ -348,6 +352,9 @@
   <sys:String x:Key="Settings.Layout.UnitHertz">{0} Hz</sys:String>
   <sys:String x:Key="Settings.Layout.UnitPercent">{0}%</sys:String>
   <sys:String x:Key="Settings.Layout.UnitDip">{0} DIP</sys:String>
+
+  <sys:String x:Key="Settings.Skin.DefaultName">Default</sys:String>
+  <sys:String x:Key="Settings.Skin.ExamplePlayPauseName">Accent play/pause</sys:String>
 
   <!-- Settings search entries (titles/keywords) -->
   <sys:String x:Key="Search.Kw.AutoStart">startup boot login auto-run</sys:String>

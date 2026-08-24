@@ -85,6 +85,103 @@ public sealed class LayoutMigrationTests
             BuiltInWidgetTypeIds.MediaText));
     }
 
+    [TestMethod]
+    public void Normalize_UnknownSkinFallsBackWithoutDisablingWidget()
+    {
+        var document = CreateDefaultDocument();
+        var container = LayoutEditorService.CreateInlineContainer(LayoutContainerKind.Static);
+        var widget = new LayoutWidgetElement(
+            "play-pause-skin",
+            true,
+            LayoutGeometry.Auto,
+            BuiltInWidgetTypeIds.Command,
+            new CommandWidgetSettings(MediaCommandKind.PlayPause, 36),
+            "missing.skin",
+            99,
+            new Dictionary<string, string> { ["accent"] = "invalid" });
+        Assert.IsTrue(LayoutEditorService.TryAddWidget(
+            document.Horizontal with { InlineContainers = [container] },
+            container.InstanceId,
+            LayoutSlotKind.Primary,
+            widget,
+            out var profile,
+            out var failure), failure.ToString());
+
+        var normalized = LayoutMigrationService.Normalize(document with { Horizontal = profile });
+        var restored = LayoutRuntimeService.FindWidgets(
+            normalized.Horizontal,
+            BuiltInWidgetTypeIds.Command).Single();
+
+        Assert.IsTrue(restored.Enabled);
+        Assert.IsNull(restored.SkinId);
+        Assert.IsNull(restored.SkinVersion);
+        Assert.IsNull(restored.SkinSettings);
+    }
+
+    [TestMethod]
+    public void Normalize_IncompatibleSkinVersionFallsBack()
+    {
+        var assignment = ComponentSkinCatalog.Normalize(
+            BuiltInWidgetTypeIds.Command,
+            ComponentSkinCatalog.ExampleSkinId,
+            2,
+            null);
+
+        Assert.IsNull(assignment);
+    }
+
+    [TestMethod]
+    public void SkinCatalog_RequirementsAreProvidedByDefaultGlobalTheme()
+    {
+        var tokens = GlobalTheme.Default.SemanticTokens.ToHashSet(StringComparer.Ordinal);
+
+        foreach (var definition in ComponentSkinCatalog.All)
+        {
+            Assert.IsTrue(
+                definition.RequiredSemanticTokens.All(tokens.Contains),
+                definition.SkinId);
+        }
+    }
+
+    [TestMethod]
+    public void LayoutDocument_RoundTripsSupportedSkinAssignment()
+    {
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+        options.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+        var source = CreateDefaultDocument();
+        var command = new LayoutWidgetElement(
+            "play-pause-skin",
+            true,
+            LayoutGeometry.Auto,
+            BuiltInWidgetTypeIds.Command,
+            new CommandWidgetSettings(MediaCommandKind.PlayPause, 36),
+            ComponentSkinCatalog.ExampleSkinId,
+            1,
+            new Dictionary<string, string> { ["emphasis"] = "true" });
+        var container = LayoutEditorService.CreateInlineContainer(LayoutContainerKind.Static);
+        Assert.IsTrue(LayoutEditorService.TryAddWidget(
+            source.Horizontal with { InlineContainers = [container] },
+            container.InstanceId,
+            LayoutSlotKind.Primary,
+            command,
+            out var profile,
+            out var failure), failure.ToString());
+
+        var json = JsonSerializer.Serialize(source with { Horizontal = profile }, options);
+        var restored = JsonSerializer.Deserialize<LayoutDocument>(json, options);
+        var restoredCommand = LayoutRuntimeService.FindWidgets(
+                restored!.Horizontal,
+                BuiltInWidgetTypeIds.Command)
+            .Single();
+
+        Assert.AreEqual(ComponentSkinCatalog.ExampleSkinId, restoredCommand.SkinId);
+        Assert.AreEqual(1, restoredCommand.SkinVersion);
+        Assert.AreEqual("true", restoredCommand.SkinSettings!["emphasis"]);
+    }
+
     private static LayoutDocument CreateDefaultDocument() =>
         LayoutMigrationService.CreateFromLegacy(WindowSettings.Default, MetricSettings.Default);
 }

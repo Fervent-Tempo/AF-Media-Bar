@@ -736,11 +736,19 @@ public static class LayoutMigrationService
             enabled = false;
         }
 
+        var skin = ComponentSkinCatalog.Normalize(
+            widget.TypeId,
+            widget.SkinId,
+            widget.SkinVersion,
+            widget.SkinSettings);
         return widget with
         {
             Enabled = enabled,
             Geometry = NormalizeGeometry(widget.Geometry),
-            Settings = NormalizeWidgetSettings(widget.TypeId, widget.Settings)
+            Settings = NormalizeWidgetSettings(widget.TypeId, widget.Settings),
+            SkinId = skin?.SkinId,
+            SkinVersion = skin?.Version,
+            SkinSettings = skin?.Settings
         };
     }
 

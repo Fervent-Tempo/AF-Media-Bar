@@ -323,6 +323,10 @@
   <sys:String x:Key="Settings.Layout.PropertyMaxLinesHint">最多显示 1–2 行，只控制组件内部换行，不会改变容器尺寸。</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyCommand">控制命令</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyButtonSize">按钮尺寸</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertySkin">组件皮肤</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertySkinHint">为当前组件选择视觉皮肤。未知或不支持的皮肤会回退到默认皮肤。</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertySkinSave">保存皮肤</sys:String>
+  <sys:String x:Key="Settings.Layout.PropertySkinCancel">取消预览</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyMetric">指标类型</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyMetricMemory">系统内存（MEM）</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyMetricCpu">系统处理器（CPU）</sys:String>
@@ -347,6 +351,9 @@
   <sys:String x:Key="Settings.Layout.UnitHertz">{0} Hz</sys:String>
   <sys:String x:Key="Settings.Layout.UnitPercent">{0}%</sys:String>
   <sys:String x:Key="Settings.Layout.UnitDip">{0} DIP</sys:String>
+
+  <sys:String x:Key="Settings.Skin.DefaultName">默认</sys:String>
+  <sys:String x:Key="Settings.Skin.ExamplePlayPauseName">强调播放/暂停</sys:String>
 
   <!-- 设置搜索条目（标题/关键词） -->
   <sys:String x:Key="Search.Kw.AutoStart">启动 登录 自动运行</sys:String>

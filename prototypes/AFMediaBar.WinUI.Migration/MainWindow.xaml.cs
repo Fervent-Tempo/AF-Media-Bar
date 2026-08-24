@@ -260,22 +260,14 @@ public sealed partial class MainWindow : Window
             _windowHandle,
             NativeMethods.GwlExStyle,
             new nint(extendedStyle));
-        var borderless = NativeMethods.ConfigureBorderlessWindow(_windowHandle);
+        var borderless = WinUiNativeMethods.ConfigureBorderlessWindow(_windowHandle);
         DiagnosticsLogService.Write(
             "winui-window-composition",
             details: $"Borderless={borderless};Backdrop={(_usesTunedAcrylicBackdrop ? "tuned-desktop-acrylic" : "desktop-acrylic-fallback")};Handle=0x{_windowHandle.ToInt64():X}");
         var borderColor = 0u;
-        _ = NativeMethods.DwmSetWindowAttribute(
-            _windowHandle,
-            NativeMethods.DwmwaBorderColor,
-            ref borderColor,
-            sizeof(uint));
-        var cornerPreference = NativeMethods.DwmWindowCornerDoNotRound;
-        _ = NativeMethods.DwmSetWindowAttribute(
-            _windowHandle,
-            NativeMethods.DwmwaWindowCornerPreference,
-            ref cornerPreference,
-            sizeof(int));
+        _ = WinUiNativeMethods.SetBorderColor(_windowHandle, ref borderColor);
+        var cornerPreference = WinUiNativeMethods.DwmWindowCornerDoNotRound;
+        _ = WinUiNativeMethods.SetCornerPreference(_windowHandle, ref cornerPreference);
         ApplyComponentLayout();
         ResizeForView(settingsView: false);
         var windowSettings = _settingsCoordinator.Current.Window;
@@ -991,7 +983,7 @@ public sealed partial class MainWindow : Window
         var targetSize = settingsView
             ? new Windows.Graphics.SizeInt32(640, 400)
             : normalSize;
-        var resized = NativeMethods.ResizeClientWindow(
+        var resized = WinUiNativeMethods.ResizeClientWindow(
             _windowHandle,
             targetSize.Width,
             targetSize.Height);

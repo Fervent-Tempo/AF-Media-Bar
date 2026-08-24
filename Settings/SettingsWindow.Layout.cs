@@ -28,6 +28,10 @@ public partial class SettingsWindow
     private LayoutEditorSelection? _layoutEditorSelection;
     private bool _layoutEditorSyncing;
     private bool _layoutPropertySyncing;
+    private bool _hasSkinPreview;
+    private string? _skinPreviewInstanceId;
+    private ComponentSkinAssignment? _skinPreviewAssignment;
+    private LayoutProfileKey _skinPreviewProfileKey;
     private Point _layoutDragStart;
     private readonly List<ComponentLayoutSurface> _layoutPreviewSurfaces = [];
     private readonly List<ComponentLayoutSurface> _layoutPaletteSurfaces = [];
@@ -54,6 +58,7 @@ public partial class SettingsWindow
         var currentKey = ResolveCurrentLayoutProfile();
         if (currentKey != _layoutEditorProfileKey)
         {
+            ClearSkinPreview();
             _layoutEditorProfileKey = currentKey;
             _layoutEditorSelection = null;
         }
@@ -289,7 +294,8 @@ public partial class SettingsWindow
             return;
         }
 
-        var profile = _coordinator.Current.Layout.Get(_layoutEditorProfileKey);
+        var profile = ApplySkinPreview(
+            _coordinator.Current.Layout.Get(_layoutEditorProfileKey));
         var selectedId = _layoutEditorSelection?.InstanceId;
         _layoutEditorSelection = string.IsNullOrWhiteSpace(selectedId)
             ? null
@@ -1703,6 +1709,11 @@ public partial class SettingsWindow
 
     private void SelectLayoutNode(LayoutEditorSelection selection)
     {
+        if (_hasSkinPreview &&
+            !string.Equals(_skinPreviewInstanceId, selection.InstanceId, StringComparison.Ordinal))
+        {
+            ClearSkinPreview();
+        }
         _layoutEditorSelection = selection;
         RefreshLayoutEditor();
     }
@@ -1928,6 +1939,7 @@ public partial class SettingsWindow
         };
         resetButton.Click += (_, _) => ResetWidgetProperties(widget);
         panel.Children.Add(resetButton);
+        AddSkinRow(panel, widget);
 
         switch (widget.Settings)
         {
@@ -2255,6 +2267,183 @@ public partial class SettingsWindow
         });
     }
 
+    private void AddSkinRow(StackPanel panel, LayoutWidgetElement widget)
+    {
+        var definitions = ComponentSkinCatalog.ForComponent(widget.TypeId)
+            .Where(definition => definition.SkinId == ComponentSkinCatalog.DefaultSkinId ||
+                widget.Settings is CommandWidgetSettings { Command: MediaCommandKind.PlayPause })
+            .ToArray();
+        if (definitions.Length == 0)
+        {
+            return;
+        }
+
+        var row = CreatePropertyRow("Settings.Layout.PropertySkin");
+        var content = new StackPanel();
+        var combo = new ComboBox
+        {
+            MinWidth = 160,
+            ToolTip = Loc.Get("Settings.Layout.PropertySkinHint")
+        };
+        var current = ComponentSkinCatalog.Normalize(
+            widget.TypeId,
+            widget.SkinId,
+            widget.SkinVersion,
+            widget.SkinSettings);
+        var selectedIndex = 0;
+        foreach (var definition in definitions)
+        {
+            var item = new ComboBoxItem
+            {
+                Content = Loc.Get(definition.DisplayNameResourceKey),
+                Tag = definition,
+                ToolTip = definition.SkinId == ComponentSkinCatalog.DefaultSkinId
+                    ? Loc.Get("Settings.Layout.PropertySkinHint")
+                    : Loc.Get("Settings.Skin.ExamplePlayPauseName")
+            };
+            if (string.Equals(current?.SkinId ?? ComponentSkinCatalog.DefaultSkinId,
+                definition.SkinId,
+                StringComparison.Ordinal))
+            {
+                selectedIndex = combo.Items.Count;
+            }
+            combo.Items.Add(item);
+        }
+
+        combo.SelectedIndex = selectedIndex;
+        combo.SelectionChanged += (_, _) =>
+        {
+            if (_layoutPropertySyncing ||
+                combo.SelectedItem is not ComboBoxItem { Tag: ComponentSkinDefinition selected })
+            {
+                return;
+            }
+
+            var assignment = selected.SkinId == ComponentSkinCatalog.DefaultSkinId
+                ? null
+                : new ComponentSkinAssignment(selected.SkinId, selected.Version);
+            PreviewWidgetSkin(widget, assignment);
+        };
+        content.Children.Add(combo);
+        var actions = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Margin = new Thickness(0, 6, 0, 0)
+        };
+        var previewPending = _hasSkinPreview &&
+            _skinPreviewProfileKey == _layoutEditorProfileKey &&
+            string.Equals(_skinPreviewInstanceId, widget.InstanceId, StringComparison.Ordinal);
+        var saveButton = new Button
+        {
+            Content = Loc.Get("Settings.Layout.PropertySkinSave"),
+            Style = TryFindResource("SettingsActionButtonStyle") as Style,
+            IsEnabled = previewPending
+        };
+        saveButton.Click += (_, _) => SaveSkinPreview();
+        var cancelButton = new Button
+        {
+            Content = Loc.Get("Settings.Layout.PropertySkinCancel"),
+            Style = TryFindResource("SettingsActionButtonStyle") as Style,
+            IsEnabled = previewPending
+        };
+        cancelButton.Click += (_, _) => CancelSkinPreview();
+        actions.Children.Add(saveButton);
+        actions.Children.Add(cancelButton);
+        content.Children.Add(actions);
+        content.Children.Add(new TextBlock
+        {
+            Text = Loc.Get("Settings.Layout.PropertySkinHint"),
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 3, 0, 0),
+            Style = TryFindResource("SettingsRowDescriptionStyle") as Style
+        });
+        row.Children.Add(content);
+        Grid.SetColumn(content, 1);
+        panel.Children.Add(row);
+    }
+
+    private void PreviewWidgetSkin(LayoutWidgetElement widget, ComponentSkinAssignment? assignment)
+    {
+        if (_layoutPropertySyncing)
+        {
+            return;
+        }
+
+        var persisted = LayoutEditorService.Find(
+            _coordinator.Current.Layout.Get(_layoutEditorProfileKey),
+            widget.InstanceId) as LayoutWidgetElement;
+        var current = persisted is null ? null : ComponentSkinService.Normalize(persisted);
+        if (current == assignment)
+        {
+            ClearSkinPreview();
+        }
+        else
+        {
+            _hasSkinPreview = true;
+            _skinPreviewProfileKey = _layoutEditorProfileKey;
+            _skinPreviewInstanceId = widget.InstanceId;
+            _skinPreviewAssignment = assignment;
+        }
+        RefreshLayoutEditor();
+    }
+
+    private LayoutProfile ApplySkinPreview(LayoutProfile profile)
+    {
+        if (!_hasSkinPreview ||
+            _skinPreviewProfileKey != _layoutEditorProfileKey ||
+            string.IsNullOrWhiteSpace(_skinPreviewInstanceId))
+        {
+            return profile;
+        }
+
+        if (LayoutEditorService.TryUpdateWidgetSkin(
+            profile,
+            _skinPreviewInstanceId,
+            _skinPreviewAssignment,
+            out var preview))
+        {
+            return preview;
+        }
+
+        ClearSkinPreview();
+        return profile;
+    }
+
+    private void SaveSkinPreview()
+    {
+        if (!_hasSkinPreview ||
+            _skinPreviewProfileKey != _layoutEditorProfileKey ||
+            string.IsNullOrWhiteSpace(_skinPreviewInstanceId))
+        {
+            return;
+        }
+
+        var instanceId = _skinPreviewInstanceId;
+        var assignment = _skinPreviewAssignment;
+        ClearSkinPreview();
+        if (!TryApplyProfile(profile => LayoutEditorService.TryUpdateWidgetSkin(
+            profile,
+            instanceId,
+            assignment,
+            out var updated) ? updated : null))
+        {
+            RefreshLayoutEditor();
+        }
+    }
+
+    private void CancelSkinPreview()
+    {
+        ClearSkinPreview();
+        RefreshLayoutEditor();
+    }
+
+    private void ClearSkinPreview()
+    {
+        _hasSkinPreview = false;
+        _skinPreviewInstanceId = null;
+        _skinPreviewAssignment = null;
+    }
+
     private void UpdateGeometry(LayoutElement element, Func<LayoutGeometry, LayoutGeometry> update)
     {
         if (_layoutPropertySyncing)
@@ -2503,8 +2692,7 @@ public partial class SettingsWindow
         var row = CreatePropertyRow(labelKey);
         var combo = new ComboBox
         {
-            MinWidth = 160,
-            Style = TryFindResource("SettingsComboBoxStyle") as Style
+            MinWidth = 160
         };
         var selectedIndex = 0;
         foreach (var pair in labels)

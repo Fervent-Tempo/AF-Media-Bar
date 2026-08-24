@@ -243,7 +243,10 @@ public sealed record LayoutWidgetElement(
     bool Enabled,
     LayoutGeometry Geometry,
     string TypeId,
-    WidgetSettings Settings) : LayoutElement(InstanceId, Enabled, Geometry);
+    WidgetSettings Settings,
+    string? SkinId = null,
+    int? SkinVersion = null,
+    IReadOnlyDictionary<string, string>? SkinSettings = null) : LayoutElement(InstanceId, Enabled, Geometry);
 
 public sealed record LayoutContainerElement(
     string InstanceId,

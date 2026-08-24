@@ -124,6 +124,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         new(StringComparer.Ordinal);
     private readonly Dictionary<string, MediaTextKind> _mediaTextKinds =
         new(StringComparer.Ordinal);
+    private readonly ComponentSkinService _componentSkinService = new();
     private readonly Dictionary<string, MarqueeState> _marqueeStates =
         new(StringComparer.Ordinal);
     private readonly Dictionary<string, MetricViewState> _metricStates =
@@ -1103,11 +1104,8 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         {
             Width = Math.Clamp(settings.ButtonSizeDip, 20, 96),
             Height = Math.Clamp(settings.ButtonSizeDip, 20, 96),
-            Background = Brushes.Transparent,
-            BorderThickness = new Thickness(0),
             Cursor = Cursors.Hand,
-            Style = GetResource<Style>(
-                _useMenuThemeForContent ? "LayoutEditorButtonStyle" : "TransportButtonStyle"),
+            Style = GetResource<Style>(_componentSkinService.ResolveResourceKey(widget, _useMenuThemeForContent)),
             Tag = settings.Command,
             ToolTip = GetCommandTooltip(settings.Command),
             Content = new TextBlock

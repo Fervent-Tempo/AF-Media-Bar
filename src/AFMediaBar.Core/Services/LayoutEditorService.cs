@@ -460,6 +460,24 @@ public static class LayoutEditorService
             element is LayoutWidgetElement widget ? widget with { Settings = settings } : element, out updated);
     }
 
+    public static bool TryUpdateWidgetSkin(
+        LayoutProfile profile,
+        string instanceId,
+        ComponentSkinAssignment? assignment,
+        out LayoutProfile updated)
+    {
+        return TryUpdateElement(profile, instanceId, element =>
+            element is LayoutWidgetElement widget
+                ? widget with
+                {
+                    SkinId = assignment?.SkinId,
+                    SkinVersion = assignment?.Version,
+                    SkinSettings = assignment?.Settings
+                }
+                : element,
+            out updated);
+    }
+
     public static bool TryResetWidgetProperties(
         LayoutProfile profile,
         string instanceId,
@@ -486,7 +504,10 @@ public static class LayoutEditorService
             return widget with
             {
                 Geometry = LayoutGeometry.Auto,
-                Settings = defaults
+                Settings = defaults,
+                SkinId = null,
+                SkinVersion = null,
+                SkinSettings = null
             };
         }, out updated);
     }

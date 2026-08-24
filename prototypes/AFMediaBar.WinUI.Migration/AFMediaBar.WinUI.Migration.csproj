@@ -3,8 +3,8 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
-    <RootNamespace>AFMediaBar.WinUI</RootNamespace>
-    <AssemblyName>AFMediaBar.WinUI</AssemblyName>
+    <RootNamespace>AFMediaBar.WinUI.Migration</RootNamespace>
+    <AssemblyName>AFMediaBar.WinUI.Migration</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <UseWinUI>true</UseWinUI>
     <WindowsPackageType>None</WindowsPackageType>
@@ -23,7 +23,7 @@
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.4.0" />
-    <ProjectReference Include="..\AFMediaBar.Core\AFMediaBar.Core.csproj" />
-    <ProjectReference Include="..\AFMediaBar.Platform.Windows\AFMediaBar.Platform.Windows.csproj" />
+    <ProjectReference Include="..\..\src\AFMediaBar.Core\AFMediaBar.Core.csproj" />
+    <ProjectReference Include="..\..\src\AFMediaBar.Platform.Windows\AFMediaBar.Platform.Windows.csproj" />
   </ItemGroup>
 </Project>
