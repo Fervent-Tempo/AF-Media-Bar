@@ -534,6 +534,7 @@ public sealed class MediaSessionService : IDisposable
             return;
         }
 
+        IArtworkImage? transientArtwork = null;
         try
         {
             // 不同播放器填充 GSMTC 字段的时机不同，缺失字段使用稳定回退值。
@@ -594,8 +595,13 @@ public sealed class MediaSessionService : IDisposable
                         StringComparison.Ordinal)))
                 {
                     artwork = initialArtwork.Artwork;
+                    transientArtwork = artwork;
                     publishedFingerprint = initialArtwork.Fingerprint;
                     initialArtworkChanged = true;
+                }
+                else
+                {
+                    DisposeTransientArtwork(initialArtwork.Artwork);
                 }
             }
 
@@ -611,6 +617,7 @@ public sealed class MediaSessionService : IDisposable
             }
 
             Publish(CreateSnapshot(session, entry, title, artist, artwork));
+            transientArtwork = null;
             if (needsArtworkSettlement && !string.Equals(
                     _pendingArtworkIdentity,
                     artworkIdentity,
@@ -637,6 +644,10 @@ public sealed class MediaSessionService : IDisposable
                 Publish(MediaSnapshot.Disconnected);
                 _ = RefreshSessionListAsync();
             }
+        }
+        finally
+        {
+            DisposeTransientArtwork(transientArtwork);
         }
     }
 
@@ -728,45 +739,54 @@ public sealed class MediaSessionService : IDisposable
                     return;
                 }
 
-                ArtworkDecodeResult artwork;
+                ArtworkDecodeResult artwork = default;
                 try
                 {
-                    artwork = await LoadArtworkAsync(
-                        mediaProperties.Thumbnail,
-                        cancellation.Token);
-                }
-                catch when (attempt < ArtworkRefreshDelays.Length - 1)
-                {
-                    continue;
-                }
-                cancellation.Token.ThrowIfCancellationRequested();
-                if (artwork.Artwork is null || artwork.Fingerprint is null)
-                {
-                    continue;
-                }
+                    try
+                    {
+                        artwork = await LoadArtworkAsync(
+                            mediaProperties.Thumbnail,
+                            cancellation.Token);
+                    }
+                    catch when (attempt < ArtworkRefreshDelays.Length - 1)
+                    {
+                        continue;
+                    }
+                    cancellation.Token.ThrowIfCancellationRequested();
+                    if (artwork.Artwork is null || artwork.Fingerprint is null)
+                    {
+                        continue;
+                    }
 
-                var differsFromPrevious = !string.Equals(
-                    artwork.Fingerprint,
-                    previousFingerprint,
-                    StringComparison.Ordinal);
-                var differsFromPublished = !string.Equals(
-                    artwork.Fingerprint,
-                    publishedFingerprint,
-                    StringComparison.Ordinal);
-                var showSameCoverFallback = attempt > 0;
-                var isFinalAttempt = attempt == ArtworkRefreshDelays.Length - 1;
-                if (differsFromPublished &&
-                    (differsFromPrevious || showSameCoverFallback || isFinalAttempt))
+                    var differsFromPrevious = !string.Equals(
+                        artwork.Fingerprint,
+                        previousFingerprint,
+                        StringComparison.Ordinal);
+                    var differsFromPublished = !string.Equals(
+                        artwork.Fingerprint,
+                        publishedFingerprint,
+                        StringComparison.Ordinal);
+                    var showSameCoverFallback = attempt > 0;
+                    var isFinalAttempt = attempt == ArtworkRefreshDelays.Length - 1;
+                    if (differsFromPublished &&
+                        (differsFromPrevious || showSameCoverFallback || isFinalAttempt))
+                    {
+                        _artworkIdentity = artworkIdentity;
+                        _artworkFingerprint = artwork.Fingerprint;
+                        publishedFingerprint = artwork.Fingerprint;
+                        var publishedArtwork = artwork.Artwork;
+                        artwork = default;
+                        Publish(CreateSnapshot(
+                            session,
+                            entry,
+                            title,
+                            artist,
+                            publishedArtwork));
+                    }
+                }
+                finally
                 {
-                    _artworkIdentity = artworkIdentity;
-                    _artworkFingerprint = artwork.Fingerprint;
-                    publishedFingerprint = artwork.Fingerprint;
-                    Publish(CreateSnapshot(
-                        session,
-                        entry,
-                        title,
-                        artist,
-                        artwork.Artwork));
+                    DisposeTransientArtwork(artwork.Artwork);
                 }
             }
         }
@@ -886,6 +906,14 @@ public sealed class MediaSessionService : IDisposable
         catch
         {
             return false;
+        }
+    }
+
+    private static void DisposeTransientArtwork(IArtworkImage? artwork)
+    {
+        if (artwork is IDisposable disposable)
+        {
+            disposable.Dispose();
         }
     }
 

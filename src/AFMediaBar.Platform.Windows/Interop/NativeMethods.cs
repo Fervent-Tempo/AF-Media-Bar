@@ -20,9 +20,18 @@ public static class NativeMethods
     internal const int GwlpHwndParent = -8;
     internal const long WsChild = 0x40000000L;
     public const long WsPopup = 0x80000000L;
+    public const long WsBorder = 0x00800000L;
+    public const long WsDlgFrame = 0x00400000L;
+    public const long WsThickFrame = 0x00040000L;
+    public const long WsSysMenu = 0x00080000L;
+    public const long WsMinimizeBox = 0x00020000L;
+    public const long WsMaximizeBox = 0x00010000L;
     public const int WsExToolWindow = 0x00000080;
     public const int WsExNoActivate = 0x08000000;
     internal const long WsCaption = 0x00C00000L;
+    public const int DwmwaBorderColor = 34;
+    public const int DwmwaWindowCornerPreference = 33;
+    public const int DwmWindowCornerDoNotRound = 1;
     internal const uint SwpNoSize = 0x0001;
     internal const uint SwpNoMove = 0x0002;
     internal const uint SwpNoZOrder = 0x0004;
@@ -170,7 +179,7 @@ public static class NativeMethods
 
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool SetWindowPos(
+    public static extern bool SetWindowPos(
         nint window,
         nint insertAfter,
         int x,
@@ -178,6 +187,47 @@ public static class NativeMethods
         int width,
         int height,
         uint flags);
+
+    public static bool ResizeClientWindow(
+        nint window,
+        int clientWidth,
+        int clientHeight)
+    {
+        if (!GetWindowRect(window, out var windowRect) ||
+            !GetClientRect(window, out var clientRect))
+        {
+            return false;
+        }
+
+        var frameWidth = Math.Max(0, windowRect.Width - clientRect.Width);
+        var frameHeight = Math.Max(0, windowRect.Height - clientRect.Height);
+        return SetWindowPos(
+            window,
+            nint.Zero,
+            windowRect.Left,
+            windowRect.Top,
+            Math.Max(1, clientWidth + frameWidth),
+            Math.Max(1, clientHeight + frameHeight),
+            SwpNoZOrder | SwpNoActivate | SwpNoOwnerZOrder | SwpFrameChanged);
+    }
+
+    public static bool ConfigureBorderlessWindow(nint window)
+    {
+        var style = GetWindowLongPtr(window, GwlStyle).ToInt64();
+        style &= ~(WsCaption | WsBorder | WsDlgFrame | WsThickFrame |
+            WsSysMenu | WsMinimizeBox | WsMaximizeBox);
+        style |= WsPopup;
+        SetWindowLongPtr(window, GwlStyle, new nint(style));
+        return SetWindowPos(
+            window,
+            nint.Zero,
+            0,
+            0,
+            0,
+            0,
+            SwpNoMove | SwpNoSize | SwpNoZOrder | SwpNoActivate |
+            SwpNoOwnerZOrder | SwpFrameChanged);
+    }
 
     [DllImport("user32.dll", SetLastError = true)]
     internal static extern int SetWindowRgn(nint window, nint region, bool redraw);
@@ -318,6 +368,20 @@ public static class NativeMethods
     public static extern int DwmGetColorizationColor(
         out uint colorizationColor,
         [MarshalAs(UnmanagedType.Bool)] out bool opaqueBlend);
+
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmSetWindowAttribute(
+        nint window,
+        int attribute,
+        ref int value,
+        uint valueSize);
+
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmSetWindowAttribute(
+        nint window,
+        int attribute,
+        ref uint value,
+        uint valueSize);
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     public static extern nint GetModuleHandle(string? moduleName);
