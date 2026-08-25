@@ -63,9 +63,6 @@ public partial class App : Application
         _shutdownCancellation = new CancellationTokenSource();
         ShowMainWindow();
         _ = CheckForUpdatesAfterStartupAsync();
-#if DEBUG
-        _ = Task.Run(() => PollNetEasePlayerInfoAsync(_shutdownCancellation.Token));
-#endif
     }
 
     internal void RequestShutdown()
@@ -211,55 +208,6 @@ public partial class App : Application
             // 自动检查异常必须保持静默，不能影响启动或退出。 / Automatic-check failures must never affect application startup or shutdown.
         }
     }
-
-#if DEBUG
-    /// <summary>
-    /// 持续读取网易云音乐播放状态，并在调试输出中打印当前歌曲信息。
-    /// </summary>
-    private static async Task PollNetEasePlayerInfoAsync(CancellationToken cancellationToken)
-    {
-        const string netEaseWindowClass = "OrpheusBrowserHost";
-        var pollInterval = TimeSpan.FromMilliseconds(233);
-
-        IMusicPlayer? player = null;
-
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            try
-            {
-                if (!User32.GetWindowTitle(netEaseWindowClass, out _, out var processId))
-                {
-                    player = null;
-                    Debug.WriteLine("[NetEase] player not found");
-                }
-                else
-                {
-                    player = player is null || !player.Validate(processId)
-                        ? new NetEase(processId)
-                        : player;
-
-                    var info = player.GetPlayerInfo();
-                    Debug.WriteLine(info is null
-                        ? "[NetEase] no playing track"
-                        : $"[NetEase] {JsonSerializer.Serialize(info)}");
-                }
-            }
-            catch (Exception exception)
-            {
-                Debug.WriteLine($"[NetEase] poll failed: {exception.Message}");
-            }
-
-            try
-            {
-                await Task.Delay(pollInterval, cancellationToken);
-            }
-            catch (OperationCanceledException)
-            {
-                break;
-            }
-        }
-    }
-#endif
 
     /// <summary>
     /// 提示用户有新版本，并仅打开下载页面，不直接修改本地程序文件。
