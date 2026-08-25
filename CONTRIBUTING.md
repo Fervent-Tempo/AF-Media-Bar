@@ -31,7 +31,7 @@ dotnet build .\AFMediaBar.slnx -c Debug --no-restore
 ```powershell
 dotnet build .\AFMediaBar.slnx -c Release --no-restore
 dotnet test .\AFMediaBar.slnx -c Release --no-build
-dotnet publish .\AFMediaBar.csproj -c Release -r win-x64 --self-contained true -o .\artifacts\AFMediaBar-win-x64
+dotnet publish .\src\AFMediaBar\AFMediaBar.csproj -c Release -r win-x64 --self-contained true -o .\artifacts\AFMediaBar-win-x64
 git diff --check
 ```
 
@@ -83,7 +83,7 @@ Before submitting a change:
 ```powershell
 dotnet build .\AFMediaBar.slnx -c Release --no-restore
 dotnet test .\AFMediaBar.slnx -c Release --no-build
-dotnet publish .\AFMediaBar.csproj -c Release -r win-x64 --self-contained true -o .\artifacts\AFMediaBar-win-x64
+dotnet publish .\src\AFMediaBar\AFMediaBar.csproj -c Release -r win-x64 --self-contained true -o .\artifacts\AFMediaBar-win-x64
 git diff --check
 ```
 

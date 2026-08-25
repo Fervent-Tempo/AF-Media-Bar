@@ -20,7 +20,7 @@
 
   <br><br>
 
-  <img src="assets/af-media-bar.png" alt="AF Media Bar" width="160" height="160">
+  <img src="docs/assets/af-media-bar.png" alt="AF Media Bar" width="160" height="160">
 
   <h1>AF Media Bar</h1>
 
@@ -46,7 +46,7 @@
 
 <div align="center">
 
-![AF Media Bar 运行展示](./运行展示.gif)
+![AF Media Bar 运行展示](./docs/assets/运行展示.gif)
 
 </div>
 
@@ -234,13 +234,13 @@ cd AF-Media-Bar
 dotnet restore .\AFMediaBar.slnx
 dotnet build .\AFMediaBar.slnx -c Release --no-restore
 dotnet test .\AFMediaBar.slnx -c Release --no-build
-dotnet run --project .\AFMediaBar.csproj
+dotnet run --project .\src\AFMediaBar\AFMediaBar.csproj
 ```
 
 Create a self-contained single executable for end users:
 
 ```powershell
-dotnet publish .\AFMediaBar.csproj -c Release -r win-x64 --self-contained true -o .\artifacts\AFMediaBar-win-x64
+dotnet publish .\src\AFMediaBar\AFMediaBar.csproj -c Release -r win-x64 --self-contained true -o .\artifacts\AFMediaBar-win-x64
 ```
 
 ## Project Structure
@@ -250,24 +250,15 @@ AF-Media-Bar/
 |-- .github/
 |   |-- ISSUE_TEMPLATE/     # Issue forms
 |   `-- workflows/          # Build and release workflows
-|-- assets/                 # README and branding images
-|-- Adapters/               # WPF font, artwork, localization, and dispatcher adapters
 |-- src/
+|   |-- AFMediaBar/         # WPF shell, UI, and publish configuration
 |   |-- AFMediaBar.Core/    # UI-independent models, contracts, and pure logic
 |   `-- AFMediaBar.Platform.Windows/ # Windows system access and persistence
 |-- tests/
 |   `-- AFMediaBar.Core.Tests/ # Core automated tests
-|-- Services/               # WPF shell coordination, theme, tray, and UI Automation
-|-- App.xaml                # WPF application resources
-|-- App.xaml.cs             # Startup and exception handling
-|-- MainWindow.xaml         # Main interface layout
-|-- MainWindow.xaml.cs      # Main window interaction and coordination
+|-- prototypes/             # WinUI migration experiments
+|-- docs/                   # Project documentation and assets
 |-- AFMediaBar.slnx         # Solution build and test entry point
-|-- AFMediaBar.csproj       # WPF shell and publish configuration
-|-- app.manifest            # Windows application manifest
-|-- icon.ico                # Application icon
-|-- 运行展示.gif             # In-app demonstration
-|-- 组件自定义.gif           # Component customization demonstration
 |-- README.md               # Chinese documentation
 `-- README.en-US.md         # English documentation
 ```

@@ -20,7 +20,7 @@
 
   <br><br>
 
-  <img src="assets/af-media-bar.png" alt="AF Media Bar" width="160" height="160">
+  <img src="docs/assets/af-media-bar.png" alt="AF Media Bar" width="160" height="160">
 
   <h1>AF Media Bar</h1>
 
@@ -47,7 +47,7 @@
 
 <div align="center">
 
-![AF Media Bar 运行展示](./运行展示.gif)
+![AF Media Bar 运行展示](./docs/assets/运行展示.gif)
 
 </div>
 
@@ -239,13 +239,13 @@ cd AF-Media-Bar
 dotnet restore .\AFMediaBar.slnx
 dotnet build .\AFMediaBar.slnx -c Release --no-restore
 dotnet test .\AFMediaBar.slnx -c Release --no-build
-dotnet run --project .\AFMediaBar.csproj
+dotnet run --project .\src\AFMediaBar\AFMediaBar.csproj
 ```
 
 生成供普通用户使用的自包含单文件：
 
 ```powershell
-dotnet publish .\AFMediaBar.csproj -c Release -r win-x64 --self-contained true -o .\artifacts\AFMediaBar-win-x64
+dotnet publish .\src\AFMediaBar\AFMediaBar.csproj -c Release -r win-x64 --self-contained true -o .\artifacts\AFMediaBar-win-x64
 ```
 
 ## 项目结构
@@ -256,24 +256,15 @@ AF-Media-Bar/
 |-- .github/
 |   |-- ISSUE_TEMPLATE/     # Issue 表单
 |   `-- workflows/          # 构建与发布工作流
-|-- assets/                 # README 与品牌图片
-|-- Adapters/               # WPF 字体、封面、本地化与 Dispatcher 适配器
 |-- src/
+|   |-- AFMediaBar/         # WPF 外壳、界面与发布配置
 |   |-- AFMediaBar.Core/    # UI 无关模型、契约与纯逻辑
 |   `-- AFMediaBar.Platform.Windows/ # Windows 系统访问与持久化服务
 |-- tests/
 |   `-- AFMediaBar.Core.Tests/ # Core 自动化测试
-|-- Services/               # WPF 外壳协调、主题、托盘与 UI Automation
-|-- App.xaml                # WPF 应用资源
-|-- App.xaml.cs             # 应用启动与异常处理
-|-- MainWindow.xaml         # 主界面布局
-|-- MainWindow.xaml.cs      # 主窗口交互与状态协调
+|-- prototypes/             # WinUI 迁移实验项目
+|-- docs/                   # 项目文档与资源
 |-- AFMediaBar.slnx         # 解决方案构建与测试入口
-|-- AFMediaBar.csproj       # WPF 外壳与发布配置
-|-- app.manifest            # Windows 应用清单
-|-- icon.ico                # 应用图标
-|-- 运行展示.gif             # 运行效果演示
-|-- 组件自定义.gif           # 组件配置演示
 `-- README.md               # 中文说明
 ```
 
