@@ -40,6 +40,7 @@ public partial class MainWindow : Window
     private readonly MediaSessionService _mediaSessionService = new(
         new WpfArtworkDecoder(),
         WpfStringLocalizer.Instance);
+    internal MediaSessionService MediaSessionService => _mediaSessionService;
     private readonly SettingsCoordinator _settingsCoordinator;
     // 这些定时器都由窗口拥有，必须在 OnClosed 中停止后再释放服务。
     // The window owns these timers; OnClosed stops them before disposing services.

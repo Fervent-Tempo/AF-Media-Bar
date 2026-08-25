@@ -2,6 +2,7 @@ using System.Globalization;
 using System.IO;
 using AFMediaBar.Abstractions;
 using AFMediaBar.Models;
+using AFMediaBar.Services.Lyrics;
 using AFMediaBar.Services.Players;
 using AFMediaBar.Services.Win32Api;
 using Windows.Media.Control;
@@ -43,6 +44,14 @@ public sealed class MediaSessionService : IDisposable
         new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _pendingMemoryArtworkUrls =
         new(StringComparer.OrdinalIgnoreCase);
+    // 歌词按歌曲 id 缓存（null 表示已尝试但无歌词），pending 集合去重并发拉取。
+    // Lyrics cache per song id (null marks an attempted miss); pending set deduplicates in-flight fetches.
+    private readonly Dictionary<string, LyricsResult?> _lyricsCache =
+        new(StringComparer.Ordinal);
+    private readonly HashSet<string> _pendingLyricsIdentities =
+        new(StringComparer.Ordinal);
+    private readonly LyricsService _lyricsService =
+        new(new NetEaseLyricsProvider(), new LrclibLyricsProvider());
     // manager 和 session 都注册了事件，Dispose/SetSession 必须成对退订。
     // Both manager and session own event subscriptions that must be removed on teardown.
     private GlobalSystemMediaTransportControlsSessionManager? _manager;
@@ -692,7 +701,11 @@ public sealed class MediaSessionService : IDisposable
                 artist,
                 entry.SourceId,
                 entry.DisplayName,
-                artwork);
+                artwork,
+                null,
+                // GSMTC 不推送连续进度，位置由内存播放器（网易云）的 233ms 轮询提供。
+                // GSMTC does not push continuous progress; position comes from the memory player poll.
+                0);
     }
 
     private void ScheduleSettledArtworkRefresh(
@@ -1143,7 +1156,9 @@ public sealed class MediaSessionService : IDisposable
         };
 
         MemoryArtworkCacheEntry? cachedArtwork = null;
+        LyricsResult? lyrics = null;
         bool shouldDownloadArtwork;
+        bool shouldLoadLyrics;
 
         lock (_memoryPlayerGate)
         {
@@ -1179,11 +1194,23 @@ public sealed class MediaSessionService : IDisposable
                     version,
                     cancellationToken);
             }
+
+            _lyricsCache.TryGetValue(playerInfo.Identity, out lyrics);
+            shouldLoadLyrics = !_lyricsCache.ContainsKey(playerInfo.Identity) &&
+                _pendingLyricsIdentities.Add(playerInfo.Identity);
         }
 
         PublishMemorySnapshot(CreateMemorySnapshot(
             playerInfo,
-            cachedArtwork?.Artwork));
+            cachedArtwork?.Artwork) with
+        {
+            Lyrics = lyrics
+        });
+
+        if (shouldLoadLyrics)
+        {
+            _ = LoadLyricsAsync(playerInfo, cancellationToken);
+        }
     }
 
     private async Task LoadMemoryArtworkAsync(
@@ -1209,6 +1236,7 @@ public sealed class MediaSessionService : IDisposable
             }
 
             PlayerInfo? currentPlayerInfo;
+            LyricsResult? lyrics;
             lock (_memoryPlayerGate)
             {
                 currentPlayerInfo = _memoryPlayerInfo;
@@ -1218,11 +1246,16 @@ public sealed class MediaSessionService : IDisposable
                 {
                     return;
                 }
+
+                lyrics = _lyricsCache.TryGetValue(info.Identity, out var cached) ? cached : null;
             }
 
             PublishMemorySnapshot(CreateMemorySnapshot(
                 currentPlayerInfo.Value,
-                artwork.Artwork));
+                artwork.Artwork) with
+            {
+                Lyrics = lyrics
+            });
         }
         catch (OperationCanceledException)
         {
@@ -1257,6 +1290,56 @@ public sealed class MediaSessionService : IDisposable
         }
     }
 
+    private async Task LoadLyricsAsync(
+        PlayerInfo playerInfo,
+        CancellationToken cancellationToken)
+    {
+        var identity = playerInfo.Identity;
+        LyricsResult? lyrics;
+        try
+        {
+            var request = new LyricsRequest(
+                playerInfo.Title,
+                playerInfo.Artists,
+                playerInfo.Album,
+                playerInfo.Duration > 0 ? playerInfo.Duration : null,
+                string.IsNullOrWhiteSpace(identity) ? null : identity);
+            lyrics = await _lyricsService.GetLyricsAsync(request, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            lock (_memoryPlayerGate)
+            {
+                _pendingLyricsIdentities.Remove(identity);
+            }
+
+            return;
+        }
+        catch
+        {
+            // 拉取失败按未命中缓存，避免每次轮询都重试。 / Cache failures as misses so the poll does not retry every tick.
+            lyrics = null;
+        }
+
+        MediaSnapshot? updated;
+        lock (_memoryPlayerGate)
+        {
+            _pendingLyricsIdentities.Remove(identity);
+            _lyricsCache[identity] = lyrics;
+
+            if (_memoryPlayerInfo is not { } info ||
+                !string.Equals(info.Identity, identity, StringComparison.Ordinal) ||
+                _memorySnapshot is null)
+            {
+                return;
+            }
+
+            updated = _memorySnapshot with { Lyrics = lyrics };
+        }
+
+        PublishMemorySnapshot(updated);
+    }
+
     private MediaSnapshot CreateMemorySnapshot(
         PlayerInfo playerInfo,
         IArtworkImage? artwork)
@@ -1283,7 +1366,9 @@ public sealed class MediaSessionService : IDisposable
                 : playerInfo.Artists,
             MemoryPlayerSourceId,
             sourceName,
-            artwork);
+            artwork,
+            null,
+            playerInfo.Schedule);
     }
 
     private static bool MemoryPlayerControlsMatch(string sourceId) =>

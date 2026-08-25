@@ -65,14 +65,14 @@ public sealed class HttpContentLoader : IHttpContentLoader
         CancellationToken cancellationToken)
     {
         await using var content = await GetStreamAsync(uri, cancellationToken);
-        if (content.ContentLength is > 0 and > _maximumTextBytes)
+        if (content.ContentLength is long contentLength && contentLength > _maximumTextBytes)
         {
             throw new InvalidDataException("Remote text content exceeds the size limit.");
         }
 
         using var memoryStream = new MemoryStream(
-            content.ContentLength is > 0 and <= _maximumTextBytes
-                ? checked((int)content.ContentLength.Value)
+            content.ContentLength is long boundedLength && boundedLength > 0 && boundedLength <= _maximumTextBytes
+                ? checked((int)boundedLength)
                 : 0);
         await CopyBoundedAsync(
             content.Content,
