@@ -36,6 +36,7 @@
     <SolidColorBrush x:Key="LayoutEditorCanvasBrush" Color="#FF232B34" />
     <SolidColorBrush x:Key="LayoutEditorDropBrush" Color="#36569CFF" />
     <SolidColorBrush x:Key="LayoutEditorAccentBrush" Color="#FF8AB4F8" />
+    <SolidColorBrush x:Key="LayoutEditorInvalidBrush" Color="#33FF5555" />
     <DropShadowEffect x:Key="TaskbarTextEffect"
                       Color="#99000000"
                       BlurRadius="1"

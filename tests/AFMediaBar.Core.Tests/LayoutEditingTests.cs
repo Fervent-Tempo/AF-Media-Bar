@@ -7,30 +7,31 @@ namespace AFMediaBar.Core.Tests;
 public sealed class LayoutEditingTests
 {
     [TestMethod]
-    public void AddInlineContainer_AppendsWithoutMutatingSource()
+    public void AddContainer_AppendsWithoutMutatingSource()
     {
         var source = CreateProfile();
-        var originalCount = source.InlineContainers.Count;
+        var originalCount = source.Containers.Count;
 
-        var changed = LayoutEditorService.TryAddInlineContainer(
+        var changed = LayoutEditorService.TryAddContainer(
             source,
             LayoutContainerKind.HoverSwitch,
             out var updated,
             out var failure);
 
-        Assert.IsTrue(changed);
+        Assert.IsTrue(changed, failure.ToString());
         Assert.AreEqual(LayoutEditFailure.None, failure);
-        Assert.HasCount(originalCount + 1, updated.InlineContainers);
-        Assert.HasCount(originalCount, source.InlineContainers);
-        Assert.AreEqual(LayoutContainerKind.HoverSwitch, updated.InlineContainers[^1].ContainerKind);
+        Assert.HasCount(originalCount + 1, updated.Containers);
+        Assert.HasCount(originalCount, source.Containers);
+        Assert.AreEqual(LayoutContainerKind.HoverSwitch, updated.Containers[^1].ContainerKind);
+        Assert.IsNotNull(updated.Containers[^1].GridBounds);
     }
 
     [TestMethod]
-    public void AddEdgeContainer_RejectsUnavailableTaskbarEdge()
+    public void AddCollapse_RejectsUnavailableTaskbarEdge()
     {
         var source = CreateProfile();
 
-        var changed = LayoutEditorService.TryAddEdgeContainer(
+        var changed = LayoutEditorService.TryAddCollapse(
             source,
             LayoutEdge.Bottom,
             LayoutEdge.Bottom,
@@ -43,10 +44,31 @@ public sealed class LayoutEditingTests
     }
 
     [TestMethod]
+    public void AddCollapse_AttachesToFirstEnabledContainer()
+    {
+        var source = CreateProfile();
+
+        var changed = LayoutEditorService.TryAddCollapse(
+            source,
+            LayoutEdge.Right,
+            null,
+            out var updated,
+            out var failure);
+
+        Assert.IsTrue(changed);
+        Assert.AreEqual(LayoutEditFailure.None, failure);
+        Assert.HasCount(1, updated.CollapseContainers);
+        Assert.AreEqual(
+            source.Containers[0].InstanceId,
+            updated.CollapseContainers[0].Attachment.AnchorContainerId);
+        Assert.IsTrue(LayoutGridConstraintService.IsProfileValid(updated));
+    }
+
+    [TestMethod]
     public void AddWidget_RejectsDuplicateInstanceId()
     {
         var source = CreateProfile();
-        var container = source.InlineContainers[0];
+        var container = source.Containers[0];
         var widget = new LayoutWidgetElement(
             "separator-test",
             true,
@@ -75,6 +97,41 @@ public sealed class LayoutEditingTests
     }
 
     [TestMethod]
+    public void AddWidget_ToCollapseExpandedSlot_IsAllowed()
+    {
+        var source = CreateProfile();
+        var collapse = new LayoutCollapseContainer(
+            "collapse-1",
+            true,
+            new LayoutGridRect(24, 0, 3, 3),
+            new LayoutAttachment(source.Containers[0].InstanceId, LayoutEdge.Right),
+            6,
+            72,
+            LayoutAnimationSettings.Default,
+            LayoutSlot.Empty("expanded"));
+        source = source with { CollapseContainers = [collapse] };
+
+        var widget = new LayoutWidgetElement(
+            "command-1",
+            true,
+            LayoutGeometry.Auto,
+            BuiltInWidgetTypeIds.Command,
+            new CommandWidgetSettings(MediaCommandKind.PlayPause, 24));
+
+        var changed = LayoutEditorService.TryAddWidget(
+            source,
+            collapse.InstanceId,
+            LayoutSlotKind.Expanded,
+            widget,
+            out var updated,
+            out var failure);
+
+        Assert.IsTrue(changed);
+        Assert.AreEqual(LayoutEditFailure.None, failure);
+        Assert.IsNotNull(updated.CollapseContainers[0].ExpandedSlot.Children.Single().GridBounds);
+    }
+
+    [TestMethod]
     public void HistoryService_RecordsAndReturnsLatestSnapshot()
     {
         var source = CreateProfile();
@@ -85,6 +142,18 @@ public sealed class LayoutEditingTests
         Assert.IsTrue(history.TryUndo(source.Key, out var restored));
         Assert.AreSame(source, restored);
         Assert.IsFalse(history.CanUndo(source.Key));
+    }
+
+    [TestMethod]
+    public void HistoryService_OneUndoPerRecordedSnapshot()
+    {
+        var source = CreateProfile();
+        var history = new LayoutEditHistoryService();
+        history.Record(source);
+
+        Assert.IsTrue(history.TryUndo(source.Key, out var first));
+        Assert.AreSame(source, first);
+        Assert.IsFalse(history.TryUndo(source.Key, out _));
     }
 
     [TestMethod]
@@ -104,7 +173,18 @@ public sealed class LayoutEditingTests
             settings.AudioMonitorEnabled);
     }
 
-    private static LayoutProfile CreateProfile() =>
-        LayoutMigrationService.CreateFromLegacy(WindowSettings.Default, MetricSettings.Default)
-            .Horizontal;
+    private static LayoutProfile CreateProfile()
+    {
+        var container = LayoutGridConstraintService.CreateContainer(LayoutContainerKind.Static) with
+        {
+            GridBounds = new LayoutGridRect(0, 0, 24, 8)
+        };
+        return new LayoutProfile(
+            LayoutProfileKey.Horizontal,
+            PlayerLayoutMode.Horizontal,
+            LayoutSurfaceSettings.Default,
+            LayoutGridSettings.Default,
+            [container],
+            []);
+    }
 }

@@ -538,44 +538,9 @@
                   <Grid>
                     <Grid.RowDefinitions>
                       <RowDefinition Height="*" />
-                      <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <TabControl x:Name="LayoutComponentCategories"
                                 Style="{StaticResource LayoutCategoryTabControlStyle}" />
-                    <StackPanel Grid.Row="1" Margin="0,6,0,0">
-                      <TextBlock Text="{DynamicResource Settings.Layout.EditorContainers}"
-                                 Style="{StaticResource SettingsRowDescriptionStyle}"
-                                 Margin="0,0,0,4" />
-                      <WrapPanel>
-                        <Button x:Name="LayoutAddStaticContainerButton"
-                                Tag="static"
-                                Content="{DynamicResource Settings.Layout.EditorContainerStaticShort}"
-                                ToolTip="{DynamicResource Settings.Layout.EditorAddStaticContainer}"
-                                Style="{StaticResource SettingsActionButtonStyle}"
-                                PreviewMouseLeftButtonDown="LayoutDragSource_OnPreviewMouseLeftButtonDown"
-                                PreviewMouseMove="LayoutContainerPaletteButton_OnPreviewMouseMove"
-                                Click="LayoutAddStaticContainerButton_OnClick" />
-                        <Button x:Name="LayoutAddHoverContainerButton"
-                                Tag="hover"
-                                Content="{DynamicResource Settings.Layout.EditorContainerHoverShort}"
-                                ToolTip="{DynamicResource Settings.Layout.EditorAddHoverContainer}"
-                                Style="{StaticResource SettingsActionButtonStyle}"
-                                PreviewMouseLeftButtonDown="LayoutDragSource_OnPreviewMouseLeftButtonDown"
-                                PreviewMouseMove="LayoutContainerPaletteButton_OnPreviewMouseMove"
-                                Click="LayoutAddHoverContainerButton_OnClick" />
-                        <Button x:Name="LayoutAddEdgeContainerButton"
-                                Tag="edge"
-                                Content="{DynamicResource Settings.Layout.EditorContainerEdgeShort}"
-                                ToolTip="{DynamicResource Settings.Layout.EditorAddEdgeContainer}"
-                                Style="{StaticResource SettingsActionButtonStyle}"
-                                PreviewMouseLeftButtonDown="LayoutDragSource_OnPreviewMouseLeftButtonDown"
-                                PreviewMouseMove="LayoutContainerPaletteButton_OnPreviewMouseMove"
-                                Click="LayoutAddEdgeContainerButton_OnClick" />
-                        <ComboBox x:Name="LayoutNewEdgeComboBox"
-                                  Width="94"
-                                  Margin="0,2,0,0" />
-                      </WrapPanel>
-                    </StackPanel>
                   </Grid>
                 </Border>
                 <Border Grid.Column="2"
@@ -586,26 +551,11 @@
                         CornerRadius="6">
                   <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                     <StackPanel>
-                      <ComboBox x:Name="LayoutSlotComboBox"
-                                Margin="0,0,0,8"
-                                SelectionChanged="LayoutSlotComboBox_OnSelectionChanged" />
                       <TextBlock x:Name="LayoutEditorSelectionText"
                                  Text="{DynamicResource Settings.Layout.EditorNoSelection}"
                                  Style="{StaticResource SettingsRowDescriptionStyle}"
                                  Margin="0,0,0,8" />
                       <WrapPanel>
-                        <Button x:Name="LayoutMoveUpButton"
-                                Content="{DynamicResource Settings.Layout.EditorMoveUp}"
-                                Style="{StaticResource SettingsActionButtonStyle}"
-                                Click="LayoutMoveUpButton_OnClick" />
-                        <Button x:Name="LayoutMoveDownButton"
-                                Content="{DynamicResource Settings.Layout.EditorMoveDown}"
-                                Style="{StaticResource SettingsActionButtonStyle}"
-                                Click="LayoutMoveDownButton_OnClick" />
-                        <Button x:Name="LayoutToggleButton"
-                                Content="{DynamicResource Settings.Layout.EditorToggle}"
-                                Style="{StaticResource SettingsActionButtonStyle}"
-                                Click="LayoutToggleButton_OnClick" />
                         <Button x:Name="LayoutRemoveButton"
                                 Content="{DynamicResource Settings.Layout.EditorRemove}"
                                 Style="{StaticResource SettingsActionButtonStyle}"

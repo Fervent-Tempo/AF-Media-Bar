@@ -91,9 +91,9 @@ The app runs in its own process. Its WPF player can be hosted as a taskbar child
 | Source interaction | Click artwork to return to the media app; click a media-source widget to open source selection; media-text widgets are display-only; switch sessions with the mouse wheel |
 | Taskbar behavior | Automatic horizontal/vertical detection, manual placement and locking, automatic avoidance, auto-hide and fullscreen handling |
 | Window modes | Taskbar and floating hosts share horizontal and vertical layouts; host mode and arrangement are selected separately, with 70%-125% display scaling |
-| Container layout | Compose multiple static/hover-switch containers inside the strip and edge-collapse containers outside it; collapsed containers keep only a trigger region; the editor uses an insert, canvas, and properties workspace |
+| Container layout | Layouts are built on an integer logic grid; containers and widgets are placed by grid coordinates with click-to-create 1×1, drag-to-draw rectangles, and four-edge resizing; static, hover-switch, and collapse containers can all be composed |
 | Information density | Hover states can use a two-line title-and-artist widget; maximum lines only wraps text inside the widget and does not change container size |
-| Auto-hide | Hide when every media session is stopped; edge-collapse containers reveal their content when the pointer approaches |
+| Auto-hide | Hide when every media session is stopped; collapse containers attach to a specific container and reveal their content along the shared edge when the pointer approaches |
 | Audio devices | List and switch the default output device, including delayed wheel selection |
 | App volume | Match the selected media process and adjust its Windows mixer volume in 2% steps |
 | Visualizer | Nine-band spectrum from WASAPI loopback capture |

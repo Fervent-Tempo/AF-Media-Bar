@@ -208,6 +208,14 @@
   <sys:String x:Key="Settings.Layout.EditorAdvancedBehavior">進階行為與動畫</sys:String>
   <sys:String x:Key="Settings.Layout.EditorStaticFollowsProfile">常駐容器的排列方向會跟隨目前檔案，不需個別設定。</sys:String>
   <sys:String x:Key="Settings.Layout.EditorTaskbarEdgeUnavailable">工作列占用的邊緣不能放置摺疊容器；Explorer 暫時無法使用時會在執行階段再次檢查。</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPlaceContainerHint">已選取容器工具：在畫布上按一下建立 1×1 容器，或按住拖曳建立矩形；Esc 取消。</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPlaceWidgetHint">已選取元件：移到目標容器內按一下/拖曳放置；Esc 取消。</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPlaceWidgetNeedsContainer">無法放置：請先按一下畫布上的一個容器內部來放置元件。</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPlaceOutOfGrid">放置失敗：矩形超出網格邊界。</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPlaceOverlap">放置失敗：與既有容器重疊。</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPlaceDisconnected">放置失敗：新容器必須與現有容器共享一條邊。</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPlaceLastContainer">操作失敗：不能刪除或停用最後一個非摺疊容器。</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPlaceRejected">放置失敗：目前矩形不被允許。</sys:String>
   <sys:String x:Key="Settings.Layout.EdgeTop">上邊緣</sys:String>
   <sys:String x:Key="Settings.Layout.EdgeRight">右邊緣</sys:String>
   <sys:String x:Key="Settings.Layout.EdgeBottom">下邊緣</sys:String>

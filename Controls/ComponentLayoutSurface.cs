@@ -81,6 +81,34 @@ internal sealed class LayoutDesignPreviewStateEventArgs(
 }
 
 /// <summary>
+/// 设计模式四边 Thumb 的缩放请求；DeltaDip 是该边累计的 DIP 增量，编辑器负责换算为整数格。
+/// Design-mode four-edge resize request; DeltaDip is the cumulative DIP delta, converted to integer cells by the editor.
+/// </summary>
+internal sealed class LayoutDesignResizeEventArgs(
+    string instanceId,
+    LayoutEdge edge,
+    double deltaDip) : EventArgs
+{
+    internal string InstanceId { get; } = instanceId;
+    internal LayoutEdge Edge { get; } = edge;
+    internal double DeltaDip { get; } = deltaDip;
+}
+
+/// <summary>
+/// 设计模式右键删除请求；编辑器用命中坐标弹出名称+删除小菜单。
+/// Design-mode right-click delete request; the editor pops the name-plus-delete menu at the hit position.
+/// </summary>
+internal sealed class LayoutDesignDeleteEventArgs(
+    string instanceId,
+    FrameworkElement source,
+    Point position) : EventArgs
+{
+    internal string InstanceId { get; } = instanceId;
+    internal FrameworkElement Source { get; } = source;
+    internal Point Position { get; } = position;
+}
+
+/// <summary>
 /// 根据不可变布局档案生成运行时与设置预览共用的 WPF 组件树；不读取注册表、不创建系统会话，业务动作通过事件交给窗口协调器。
 /// Builds the shared runtime/settings-preview WPF tree from an immutable layout profile without registry or system-session access; actions return to the window coordinator through events.
 /// </summary>
@@ -132,12 +160,14 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
     private readonly float[] _spectrum = new float[AudioMonitorService.BandCount];
     private readonly DispatcherTimer _marqueeTimer;
     private readonly DispatcherTimer _pointerStateTimer;
+    private readonly DispatcherTimer _hoverButtonTimer;
     private LayoutProfile? _profile;
     private MediaSnapshot _mediaSnapshot = MediaSnapshot.Disconnected;
     private string _metricsText = string.Empty;
     private bool _pointerNear;
     private bool _designMode;
     private bool _useMenuThemeForContent;
+    private string? _designSelectedInstanceId;
     private string? _designPressInstanceId;
     private Point _designPressPoint;
     private DependencyObject? _designPressSource;
@@ -161,6 +191,12 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             OnPointerStateTimerTick,
             Dispatcher);
         _pointerStateTimer.Stop();
+        _hoverButtonTimer = new DispatcherTimer(
+            TimeSpan.FromMilliseconds(140),
+            DispatcherPriority.Input,
+            OnHoverButtonTimerTick,
+            Dispatcher);
+        _hoverButtonTimer.Stop();
         MouseEnter += Surface_OnMouseEnter;
         MouseMove += Surface_OnMouseMove;
         MouseLeave += Surface_OnMouseLeave;
@@ -175,6 +211,8 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
     internal event EventHandler<LayoutDesignDropEventArgs>? DesignDropTargetDragOver;
     internal event EventHandler<LayoutDesignDropEventArgs>? DesignDropRequested;
     internal event EventHandler<LayoutDesignPreviewStateEventArgs>? DesignPreviewStateChanged;
+    internal event EventHandler<LayoutDesignResizeEventArgs>? DesignResizeRequested;
+    internal event EventHandler<LayoutDesignDeleteEventArgs>? DesignDeleteRequested;
 
     internal void SetUseMenuThemeForContent(bool useMenuTheme) =>
         _useMenuThemeForContent = useMenuTheme;
@@ -201,7 +239,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         _pointerStateTimer.Stop();
         Children.Clear();
 
-        var root = BuildInlineContainers(profile);
+        var root = BuildAbsoluteLayout(profile);
         root.HorizontalAlignment = HorizontalAlignment.Left;
         root.VerticalAlignment = VerticalAlignment.Top;
         var vertical = profile.LayoutMode == PlayerLayoutMode.Vertical;
@@ -210,9 +248,11 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         root.LayoutTransform = new ScaleTransform(
             vertical ? thicknessScale : lengthScale,
             vertical ? lengthScale : thicknessScale);
-        Width = profile.Surface.WidthDip ?? double.NaN;
-        Height = profile.Surface.HeightDip ?? double.NaN;
-        ClipToBounds = profile.Surface.WidthDip.HasValue || profile.Surface.HeightDip.HasValue;
+        // schema 4 外框尺寸由网格联合边界决定；Surface.WidthDip/HeightDip 已被迁移清空，不再作为事实来源。
+        // Schema-4 frame size comes from the grid union; Surface DIP overrides were cleared by migration.
+        Width = double.NaN;
+        Height = double.NaN;
+        ClipToBounds = false;
         Children.Add(root);
         RefreshAllData();
         if (_marqueeStates.Count > 0)
@@ -235,11 +275,37 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
     }
 
     /// <summary>
+    /// 设计模式下为元素挂右键删除；命中后把坐标回传编辑器，由编辑器弹出名称+删除菜单。
+    /// In design mode, wires right-click delete; the hit is reported to the editor to pop the name-plus-delete menu.
+    /// </summary>
+    private void AttachDesignDeleteHandler(FrameworkElement view, string instanceId)
+    {
+        if (!_designMode)
+        {
+            return;
+        }
+
+        view.PreviewMouseRightButtonUp += (_, args) =>
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            args.Handled = true;
+            DesignDeleteRequested?.Invoke(
+                this,
+                new LayoutDesignDeleteEventArgs(instanceId, view, args.GetPosition(view)));
+        };
+    }
+
+    /// <summary>
     /// 在 AdornerLayer 上叠加选择框，不把编辑手柄计入组件测量或运行时命中区域。
     /// Adds a selection frame through AdornerLayer so editor handles never affect measurement or runtime hit testing.
     /// </summary>
     internal void SetDesignSelection(string? instanceId)
     {
+        _designSelectedInstanceId = instanceId;
         foreach (var adorner in _designAdorners.Values)
         {
             AdornerLayer.GetAdornerLayer(adorner.AdornedElement)?.Remove(adorner);
@@ -259,8 +325,17 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
                 return;
             }
 
-            var adorner = new DesignSelectionAdorner(view);
-            adorner.IsHitTestVisible = false;
+            var adorner = new DesignSelectionAdorner(
+                view,
+                (edge, deltaDip) =>
+                {
+                    if (_designMode && !_disposed)
+                    {
+                        DesignResizeRequested?.Invoke(
+                            this,
+                            new LayoutDesignResizeEventArgs(instanceId, edge, deltaDip));
+                    }
+                });
             layer.Add(adorner);
             _designAdorners[instanceId] = adorner;
         }
@@ -275,7 +350,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         }
     }
 
-    internal void ApplyEdge(LayoutProfile profile, LayoutEdgeContainer edgeContainer)
+    internal void ApplyEdge(LayoutProfile profile, LayoutCollapseContainer collapse)
     {
         _profile = profile;
         _pointerNear = true;
@@ -291,13 +366,10 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         _pointerStateTimer.Stop();
         Children.Clear();
 
-        var root = BuildSlot(
-            edgeContainer.ExpandedSlot,
-            LayoutFlowOrientation.Automatic,
-            LayoutContentAlignment.Center);
+        var root = BuildSlot(collapse.ExpandedSlot, collapse.GridBounds);
         root.HorizontalAlignment = HorizontalAlignment.Left;
         root.VerticalAlignment = VerticalAlignment.Top;
-        if (!edgeContainer.ExpandedSlot.Children.Any(child => child.Enabled))
+        if (!collapse.ExpandedSlot.Children.Any(child => child.Enabled))
         {
             EnsureContainerMinimum(root);
         }
@@ -307,15 +379,16 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             {
                 rootPanel.Background = Brushes.Transparent;
             }
-            AttachDesignContainerHandlers(root, edgeContainer.InstanceId);
-            AttachDesignDropHandlers(root, edgeContainer.InstanceId, LayoutSlotKind.Expanded);
+            AttachDesignContainerHandlers(root, collapse.InstanceId);
+            AttachDesignDropHandlers(root, collapse.InstanceId, LayoutSlotKind.Expanded);
             // 编辑器中的折叠触发区没有展开内容时仍应可见，避免空容器无法选中。
-            // Keep an editor-only footprint for an empty edge container so a collapsed container remains selectable.
+            // Keep an editor-only footprint for an empty collapse container so it remains selectable.
             root.MinWidth = Math.Max(root.MinWidth, 74);
             root.MinHeight = Math.Max(root.MinHeight, 30);
         }
-        _designElements[edgeContainer.InstanceId] = root;
-        RegisterDesignBoundary(edgeContainer.InstanceId, root, LayoutContainerKind.AutoCollapse);
+        _designElements[collapse.InstanceId] = root;
+        RegisterDesignBoundary(collapse.InstanceId, root, LayoutContainerKind.AutoCollapse);
+        AttachDesignDeleteHandler(root, collapse.InstanceId);
         Children.Add(root);
         RefreshAllData();
         if (_marqueeStates.Count > 0)
@@ -324,32 +397,38 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         }
     }
 
-    private FrameworkElement BuildInlineContainers(LayoutProfile profile)
+    /// <summary>
+    /// 构建绝对网格根：容器按档案全局 GridBounds 转为 DIP 后绝对定位，左上角以占用联合矩形为局部原点。
+    /// Builds the absolute-grid root: containers are positioned from profile-global GridBounds scaled to DIPs,
+    /// using the occupied union's top-left corner as the local origin so leading empty space is not rendered.
+    /// </summary>
+    private FrameworkElement BuildAbsoluteLayout(LayoutProfile profile)
     {
-        var panel = new StackPanel
+        var grid = LayoutGridSettings.Normalize(profile.Grid);
+        var cell = Math.Max(grid.CellSizeDip, 1);
+        var root = new Canvas();
+        var origin = LayoutRuntimeService.CalculateBodyGridBounds(profile);
+        if (origin is null)
         {
-            Orientation = profile.LayoutMode == PlayerLayoutMode.Vertical
-                ? Orientation.Vertical
-                : Orientation.Horizontal,
-            HorizontalAlignment = HorizontalAlignment.Left,
-            VerticalAlignment = VerticalAlignment.Top
-        };
-        var visibleIndex = 0;
-        foreach (var container in profile.InlineContainers.Where(container => container.Enabled))
-        {
-            var view = BuildContainer(container);
-            if (visibleIndex > 0 && _gapDip > 0)
-            {
-                view.Margin = panel.Orientation == Orientation.Horizontal
-                    ? new Thickness(_gapDip, 0, 0, 0)
-                    : new Thickness(0, _gapDip, 0, 0);
-            }
-
-            panel.Children.Add(view);
-            visibleIndex++;
+            return root;
         }
 
-        return panel;
+        foreach (var container in profile.Containers)
+        {
+            if (!container.Enabled || container.GridBounds is not { } bounds)
+            {
+                continue;
+            }
+
+            var view = BuildContainer(container);
+            Canvas.SetLeft(view, (bounds.X - origin.X) * cell);
+            Canvas.SetTop(view, (bounds.Y - origin.Y) * cell);
+            view.Width = bounds.Width * cell;
+            view.Height = bounds.Height * cell;
+            root.Children.Add(view);
+        }
+
+        return root;
     }
 
     internal void SetPointerNear(bool pointerNear)
@@ -510,12 +589,10 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
 
     private FrameworkElement BuildContainer(LayoutContainerElement container)
     {
+        var bounds = container.GridBounds ?? new LayoutGridRect(0, 0, 1, 1);
         if (container.ContainerKind == LayoutContainerKind.Static)
         {
-            var staticSlot = BuildSlot(
-                container.PrimarySlot,
-                container.Orientation,
-                container.ContentAlignment);
+            var staticSlot = BuildSlot(container.PrimarySlot, bounds);
             if (_designMode && staticSlot is Panel staticPanel)
             {
                 staticPanel.Background = Brushes.Transparent;
@@ -534,25 +611,23 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             staticSlot.SetValue(IsTransitionBoundaryProperty, true);
             _designElements[container.InstanceId] = staticSlot;
             RegisterDesignBoundary(container.InstanceId, staticSlot, container.ContainerKind);
+            AttachDesignDeleteHandler(staticSlot, container.InstanceId);
             return staticSlot;
         }
 
-        var visual = new ContainerVisual(container);
+        // HoverSwitch：离开/靠近两状态层共用同一外框，切换只替换可见层。
+        var visual = new ContainerVisual(container, bounds);
         visual.Host.SetValue(TransitionKeyProperty, $"container:{container.InstanceId}");
         visual.Host.SetValue(IsTransitionBoundaryProperty, true);
         visual.PointerNear = _pointerNear;
         _containerViews[container.InstanceId] = visual;
-        // Grid 默认没有背景时，空白槽位不会产生可靠的 MouseEnter/Leave；透明背景只扩大命中区域，不改变视觉。
-        // A Grid without a background cannot reliably raise MouseEnter/Leave over empty slots; transparent fill expands hit testing without changing visuals.
         visual.Host.Background = Brushes.Transparent;
-        visual.Slots[0].Children.Add(BuildSlot(container.PrimarySlot, container.Orientation, container.ContentAlignment));
-        visual.Slots[1].Children.Add(BuildSlot(container.SecondarySlot, container.Orientation, container.SecondaryContentAlignment));
-        visual.Slots[2].Children.Add(BuildSlot(container.CollapsedSlot, container.Orientation, container.ContentAlignment));
+        visual.Slots[0].Children.Add(BuildSlot(container.PrimarySlot, bounds));
+        visual.Slots[1].Children.Add(BuildSlot(container.SecondarySlot, bounds));
         ApplyContainerState(visual, animate: false);
         ApplyGeometry(visual.Host, container.Geometry);
         if (!container.PrimarySlot.Children.Any(child => child.Enabled) &&
-            !container.SecondarySlot.Children.Any(child => child.Enabled) &&
-            !container.CollapsedSlot.Children.Any(child => child.Enabled))
+            !container.SecondarySlot.Children.Any(child => child.Enabled))
         {
             EnsureContainerMinimum(visual.Host);
         }
@@ -560,13 +635,11 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         {
             AttachDesignContainerHandlers(visual.Host, container.InstanceId);
             AttachDesignDropHandlers(visual.Slots[0], container.InstanceId, LayoutSlotKind.Primary);
-            if (container.ContainerKind == LayoutContainerKind.HoverSwitch)
-            {
-                AttachDesignDropHandlers(visual.Slots[1], container.InstanceId, LayoutSlotKind.Secondary);
-            }
+            AttachDesignDropHandlers(visual.Slots[1], container.InstanceId, LayoutSlotKind.Secondary);
         }
         _designElements[container.InstanceId] = visual.Host;
         RegisterDesignBoundary(container.InstanceId, visual.Host, container.ContainerKind);
+        AttachDesignDeleteHandler(visual.Host, container.InstanceId);
         return _designMode && container.ContainerKind == LayoutContainerKind.HoverSwitch
             ? BuildDesignHoverPreview(container, visual)
             : visual.Host;
@@ -607,14 +680,65 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         nearButton.Click += (_, _) => SelectState(pointerNear: true);
         RefreshButtons();
 
-        var panel = new StackPanel
+        // 标签悬浮在容器上边界之外，不遮挡容器内容；仅当该容器未被选中且鼠标靠近时显示切换按钮。
+        // The label floats outside the container's top edge so it never blocks container widgets; it shows only
+        // when the pointer is near and this container is not currently selected.
+        var buttonBar = new Border
+        {
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(0, -30, 0, 0),
+            Padding = new Thickness(2),
+            CornerRadius = new CornerRadius(4),
+            BorderThickness = new Thickness(1),
+            Child = buttons,
+            Visibility = Visibility.Collapsed
+        };
+        SetDynamicResource(buttonBar, Border.BackgroundProperty, "MenuHoverBrush");
+        SetDynamicResource(buttonBar, Border.BorderBrushProperty, "LayoutEditorAccentBrush");
+        var overlay = new Grid
         {
             HorizontalAlignment = HorizontalAlignment.Left,
             VerticalAlignment = VerticalAlignment.Top
         };
-        panel.Children.Add(buttons);
-        panel.Children.Add(visual.Host);
-        return panel;
+        overlay.Children.Add(visual.Host);
+        overlay.Children.Add(buttonBar);
+        overlay.MouseEnter += (_, _) =>
+        {
+            // 已选中的容器不显示切换按钮，避免遮挡其中的组件交互。
+            if (_designSelectedInstanceId == container.InstanceId)
+            {
+                _hoverButtonTimer.Stop();
+                buttonBar.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            _hoverButtonTimer.Stop();
+            buttonBar.Visibility = Visibility.Visible;
+        };
+        overlay.MouseLeave += (_, _) => _hoverButtonTimer.Start();
+        return overlay;
+    }
+
+    private void OnHoverButtonTimerTick(object? sender, EventArgs e)
+    {
+        _hoverButtonTimer.Stop();
+        // 去抖延迟结束后才隐藏；期间若鼠标重新进入 overlay，MouseEnter 已停止计时器。
+        foreach (var element in _designElements.Values)
+        {
+            if (element is not Grid { Children.Count: 2 } grid)
+            {
+                continue;
+            }
+
+            foreach (var child in grid.Children)
+            {
+                if (child is Border { Child: UniformGrid } border)
+                {
+                    border.Visibility = Visibility.Collapsed;
+                }
+            }
+        }
     }
 
     private Button CreateDesignStateButton(string text)
@@ -757,49 +881,80 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         };
     }
 
-    private FrameworkElement BuildSlot(
-        LayoutSlot slot,
-        LayoutFlowOrientation orientation,
-        LayoutContentAlignment contentAlignment)
+    /// <summary>
+    /// 槽位组件按容器局部网格绝对定位；不再使用 StackPanel 自动排列。
+    /// Positions slot widgets absolutely on the container-local grid instead of auto-arranging with a StackPanel.
+    /// </summary>
+    private FrameworkElement BuildSlot(LayoutSlot slot, LayoutGridRect ownerBounds)
     {
-        var resolvedOrientation = ResolveOrientation(orientation);
-        var panel = new StackPanel
-        {
-            Orientation = resolvedOrientation,
-            HorizontalAlignment = resolvedOrientation == Orientation.Vertical
-                ? ResolveHorizontalAlignment(contentAlignment)
-                : HorizontalAlignment.Left,
-            VerticalAlignment = resolvedOrientation == Orientation.Horizontal
-                ? ResolveVerticalAlignment(contentAlignment)
-                : VerticalAlignment.Top
-        };
-        var visibleIndex = 0;
+        var canvas = new Canvas();
         foreach (var child in slot.Children)
         {
-            if (!child.Enabled)
+            if (!child.Enabled || child is not LayoutWidgetElement widget ||
+                widget.GridBounds is not { } widgetBounds)
             {
                 continue;
             }
 
-            var view = child switch
-            {
-                LayoutWidgetElement widget => BuildWidget(widget),
-                LayoutContainerElement nested => BuildContainer(nested),
-                _ => new FrameworkElement()
-            };
-            if (visibleIndex > 0 && _gapDip > 0)
-            {
-                var margin = view.Margin;
-                view.Margin = panel.Orientation == Orientation.Horizontal
-                    ? new Thickness(margin.Left + _gapDip, margin.Top, margin.Right, margin.Bottom)
-                    : new Thickness(margin.Left, margin.Top + _gapDip, margin.Right, margin.Bottom);
-            }
-
-            panel.Children.Add(view);
-            visibleIndex++;
+            var view = BuildWidgetAt(widget, widgetBounds);
+            Canvas.SetLeft(view, widgetBounds.X * CellSize);
+            Canvas.SetTop(view, widgetBounds.Y * CellSize);
+            canvas.Children.Add(view);
         }
 
-        return panel;
+        return canvas;
+    }
+
+    /// <summary>
+    /// 组件外框由局部网格矩形决定；内部视觉保持原尺寸并居中，要求等比的图标内容由各自 Stretch 策略保持比例。
+    /// The widget frame is its local grid rectangle; the inner visual keeps its intrinsic size centered,
+    /// and aspect-requiring visuals keep their ratio via their own Stretch policy.
+    /// </summary>
+    private FrameworkElement BuildWidgetAt(LayoutWidgetElement widget, LayoutGridRect bounds)
+    {
+        var view = BuildWidget(widget);
+        var host = new Grid
+        {
+            Width = Math.Max(0, bounds.Width * CellSize),
+            Height = Math.Max(0, bounds.Height * CellSize),
+            ClipToBounds = true
+        };
+        view.HorizontalAlignment = HorizontalAlignment.Center;
+        view.VerticalAlignment = VerticalAlignment.Center;
+        host.Children.Add(view);
+        // 设计模式：为组件叠加可见边框与浅色底，使边界在画布上可辨，尤其无背景的指标组件。
+        // In design mode, add a visible frame and translucent fill so widget bounds are recognizable, especially metrics.
+        if (_designMode)
+        {
+            var frame = new Border
+            {
+                Width = host.Width,
+                Height = host.Height,
+                Child = host,
+                ClipToBounds = true
+            };
+            frame.SetResourceReference(Border.BorderBrushProperty, "LayoutEditorAccentBrush");
+            frame.BorderThickness = new Thickness(1);
+            frame.Background = new SolidColorBrush(Color.FromArgb(18, 86, 156, 255));
+            _designElements[widget.InstanceId] = frame;
+            AttachDesignDeleteHandler(frame, widget.InstanceId);
+            return frame;
+        }
+
+        _designElements[widget.InstanceId] = host;
+        AttachDesignDeleteHandler(host, widget.InstanceId);
+        return host;
+    }
+
+    private int CellSize
+    {
+        get
+        {
+            var grid = _profile is null
+                ? LayoutGridSettings.Default
+                : LayoutGridSettings.Normalize(_profile.Grid);
+            return Math.Max(grid.CellSizeDip, 1);
+        }
     }
 
     private FrameworkElement BuildWidget(LayoutWidgetElement widget)
@@ -1347,13 +1502,11 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
     private void ApplyContainerState(ContainerVisual visual, bool animate)
     {
         var container = visual.Model;
-        // 悬停容器的两个槽位由实际指针状态唯一决定；旧档案中的 Always 触发值不能覆盖“离开/靠近”切换。
-        // Hover containers are driven solely by the actual pointer state; a legacy Always trigger must not mask leave/near switching.
-        var activeSlot = container.ContainerKind == LayoutContainerKind.AutoCollapse
-            ? (visual.PointerNear ? 0 : 2)
-            : container.ContainerKind == LayoutContainerKind.HoverSwitch
-                ? (visual.PointerNear ? 1 : 0)
-                : 0;
+        // 悬停容器只有“离开/靠近”两个状态层，由实际指针状态唯一决定。
+        // A HoverSwitch container owns exactly two state layers driven solely by the real pointer state.
+        var activeSlot = container.ContainerKind == LayoutContainerKind.HoverSwitch
+            ? (visual.PointerNear ? 1 : 0)
+            : 0;
         if (visual.ActiveSlot == activeSlot)
         {
             return;
@@ -1652,14 +1805,8 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
 
     private static void ApplyGeometry(FrameworkElement view, LayoutGeometry geometry)
     {
-        if (geometry.WidthDip.HasValue)
-        {
-            view.Width = geometry.WidthDip.Value;
-        }
-        if (geometry.HeightDip.HasValue)
-        {
-            view.Height = geometry.HeightDip.Value;
-        }
+        // schema 4 中组件/容器外框由网格矩形决定；DIP 尺寸覆盖已被迁移清空，不得再次成为事实来源。
+        // Schema-4 frames are owned by grid rectangles; DIP size overrides were cleared by migration.
         if (geometry.MinWidthDip.HasValue)
         {
             view.MinWidth = geometry.MinWidthDip.Value;
@@ -1789,6 +1936,8 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         _marqueeTimer.Tick -= OnMarqueeTimerTick;
         _pointerStateTimer.Stop();
         _pointerStateTimer.Tick -= OnPointerStateTimerTick;
+        _hoverButtonTimer.Stop();
+        _hoverButtonTimer.Tick -= OnHoverButtonTimerTick;
         CommandRequested = null;
         MetricsRequested = null;
         WheelRequested = null;
@@ -1798,6 +1947,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         DesignDropTargetDragOver = null;
         DesignDropRequested = null;
         DesignPreviewStateChanged = null;
+        DesignResizeRequested = null;
         MouseEnter -= Surface_OnMouseEnter;
         MouseMove -= Surface_OnMouseMove;
         MouseLeave -= Surface_OnMouseLeave;
@@ -1946,10 +2096,11 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
 
     private sealed class ContainerVisual
     {
-        internal ContainerVisual(LayoutContainerElement model)
+        internal ContainerVisual(LayoutContainerElement model, LayoutGridRect bounds)
         {
             Model = model;
-            for (var index = 0; index < 3; index++)
+            // 外框尺寸由调用方按网格矩形设置（BuildAbsoluteLayout 统一赋 Width/Height）。
+            for (var index = 0; index < 2; index++)
             {
                 var slot = new Grid();
                 Slots.Add(slot);
@@ -1987,14 +2138,85 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
     }
 
     /// <summary>
-    /// 选择框仅属于编辑器叠加层，四角手柄不会改变真实组件的测量尺寸。
-    /// The editor-only selection frame uses an adorner so corner handles never change runtime measurement.
+    /// 选择框叠加在 AdornerLayer：四边 Thumb 只命中手柄区域，不改变真实组件测量。
+    /// The editor-only selection frame lives on the AdornerLayer; the four edge Thumbs hit only their handles and never change runtime measurement.
     /// </summary>
-    private sealed class DesignSelectionAdorner(UIElement adornedElement) : Adorner(adornedElement)
+    private sealed class DesignSelectionAdorner : Adorner
     {
+        private const double HandleSize = 7;
         private readonly Pen _pen = new(
             new SolidColorBrush(Color.FromRgb(86, 156, 255)),
             1.5);
+        private readonly Thumb _leftThumb;
+        private readonly Thumb _topThumb;
+        private readonly Thumb _rightThumb;
+        private readonly Thumb _bottomThumb;
+
+        internal DesignSelectionAdorner(
+            UIElement adornedElement,
+            Action<LayoutEdge, double> resizeRequested) : base(adornedElement)
+        {
+            _leftThumb = CreateThumb(Cursors.SizeWE, resizeRequested, LayoutEdge.Left);
+            _topThumb = CreateThumb(Cursors.SizeNS, resizeRequested, LayoutEdge.Top);
+            _rightThumb = CreateThumb(Cursors.SizeWE, resizeRequested, LayoutEdge.Right);
+            _bottomThumb = CreateThumb(Cursors.SizeNS, resizeRequested, LayoutEdge.Bottom);
+            AddVisualChild(_leftThumb);
+            AddVisualChild(_topThumb);
+            AddVisualChild(_rightThumb);
+            AddVisualChild(_bottomThumb);
+        }
+
+        private static Thumb CreateThumb(
+            Cursor cursor,
+            Action<LayoutEdge, double> resizeRequested,
+            LayoutEdge edge)
+        {
+            var thumb = new Thumb
+            {
+                Width = HandleSize,
+                Height = HandleSize,
+                Cursor = cursor,
+                Background = new SolidColorBrush(Color.FromRgb(86, 156, 255)),
+                BorderBrush = Brushes.White,
+                BorderThickness = new Thickness(1),
+                Opacity = 0.95,
+                IsTabStop = false
+            };
+            thumb.DragDelta += (_, args) =>
+            {
+                var delta = edge is LayoutEdge.Left or LayoutEdge.Right
+                    ? args.HorizontalChange
+                    : args.VerticalChange;
+                if (Math.Abs(delta) > 0.01)
+                {
+                    resizeRequested(edge, delta);
+                }
+            };
+            return thumb;
+        }
+
+        protected override int VisualChildrenCount => 4;
+
+        protected override Visual GetVisualChild(int index) => index switch
+        {
+            0 => _leftThumb,
+            1 => _topThumb,
+            2 => _rightThumb,
+            3 => _bottomThumb,
+            _ => throw new ArgumentOutOfRangeException(nameof(index))
+        };
+
+        protected override Size ArrangeOverride(Size finalSize)
+        {
+            var half = HandleSize / 2;
+            var midX = finalSize.Width / 2 - half;
+            var midY = finalSize.Height / 2 - half;
+            _leftThumb.Arrange(new Rect(-half, midY, HandleSize, HandleSize));
+            _rightThumb.Arrange(new Rect(finalSize.Width - half, midY, HandleSize, HandleSize));
+            _topThumb.Arrange(new Rect(midX, -half, HandleSize, HandleSize));
+            _bottomThumb.Arrange(new Rect(midX, finalSize.Height - half, HandleSize, HandleSize));
+            return finalSize;
+        }
 
         protected override void OnRender(DrawingContext drawingContext)
         {
@@ -2002,18 +2224,6 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             var size = AdornedElement.RenderSize;
             var rect = new Rect(0.75, 0.75, Math.Max(0, size.Width - 1.5), Math.Max(0, size.Height - 1.5));
             drawingContext.DrawRectangle(null, _pen, rect);
-            const double handle = 5;
-            var brush = new SolidColorBrush(Color.FromRgb(86, 156, 255));
-            foreach (var point in new[]
-            {
-                new Point(rect.Left, rect.Top),
-                new Point(rect.Right - handle, rect.Top),
-                new Point(rect.Left, rect.Bottom - handle),
-                new Point(rect.Right - handle, rect.Bottom - handle)
-            })
-            {
-                drawingContext.DrawRectangle(brush, null, new Rect(point.X, point.Y, handle, handle));
-            }
         }
     }
 

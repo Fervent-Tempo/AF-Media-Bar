@@ -5,8 +5,8 @@ namespace AFMediaBar.Services;
 public readonly record struct LayoutSize(double WidthDip, double HeightDip);
 
 /// <summary>
-/// 选择当前窗口上下文的布局档案并提供只读组件查询；不创建视图、不持有系统资源。
-/// Selects the profile for the current window context and exposes read-only widget queries without creating views or owning system resources.
+/// 选择当前窗口上下文的布局档案并提供只读组件查询；schema 4 的尺寸全部来自网格联合边界。
+/// Selects the profile for the current window context and exposes read-only widget queries; schema 4 sizes come from grid union bounds.
 /// </summary>
 public sealed class LayoutRuntimeService
 {
@@ -75,231 +75,145 @@ public sealed class LayoutRuntimeService
     }
 
     /// <summary>
-    /// 根据布局树估算宿主所需 DIP 尺寸；运行时窗口据此定位，避免自定义组件被旧固定尺寸裁剪。
-    /// Estimates the host DIP size from the layout tree so custom widgets are not clipped by legacy fixed dimensions.
+    /// 求所有启用非折叠容器的占用联合矩形；实际窗口以联合矩形左上角为局部原点，不含前导空白。
+    /// Returns the union rectangle of enabled non-collapse containers; the real window uses its top-left corner as the local origin with no leading blank space.
     /// </summary>
-    public static LayoutSize CalculateDesiredSize(LayoutProfile profile)
+    public static LayoutGridRect? CalculateBodyGridBounds(LayoutProfile profile)
     {
-        var orientation = profile.LayoutMode == PlayerLayoutMode.Vertical
-            ? LayoutFlowOrientation.Vertical
-            : LayoutFlowOrientation.Horizontal;
-        var inlineSizes = profile.InlineContainers
-            .Where(container => container.Enabled)
-            .Select(container => MeasureContainer(
-                container,
-                orientation,
-                profile.Surface.GapDip))
-            .ToArray();
-        var size = Combine(inlineSizes, orientation, profile.Surface.GapDip);
-        var lengthScale = Math.Clamp(profile.Surface.LengthScalePercent, 70, 125) / 100d;
-        var thicknessScale = Math.Clamp(profile.Surface.ThicknessScalePercent, 70, 125) / 100d;
-        var width = orientation == LayoutFlowOrientation.Vertical
-            ? size.WidthDip * thicknessScale
-            : size.WidthDip * lengthScale;
-        var height = orientation == LayoutFlowOrientation.Vertical
-            ? size.HeightDip * lengthScale
-            : size.HeightDip * thicknessScale;
-        if (profile.Surface.WidthDip is { } fixedWidth)
+        var grid = LayoutGridSettings.Normalize(profile.Grid);
+        LayoutGridRect? union = null;
+        foreach (var container in profile.Containers)
         {
-            width = fixedWidth;
-        }
-        if (profile.Surface.HeightDip is { } fixedHeight)
-        {
-            height = fixedHeight;
-        }
-
-        return new LayoutSize(Math.Max(1, width), Math.Max(1, height));
-    }
-
-    public static LayoutSize CalculateCompositionSize(
-        LayoutProfile profile,
-        LayoutEdge? unavailableEdge = null,
-        IReadOnlySet<string>? expandedEdgeContainerIds = null)
-    {
-        var strip = CalculateDesiredSize(profile);
-        var edgeSizes = profile.EdgeContainers
-            .Where(container => container.Enabled &&
-                container.Edge != unavailableEdge)
-            .Select(container =>
+            if (!container.Enabled || container.GridBounds is not { } bounds)
             {
-                var expanded = expandedEdgeContainerIds is null ||
-                    expandedEdgeContainerIds.Contains(container.InstanceId);
-                return (container.Edge, Size: expanded
-                    ? MeasureEdgeContainer(profile, container)
-                    : MeasureEdgeTrigger(profile, container));
-            })
-            .ToArray();
-        var left = edgeSizes.Where(item => item.Edge == LayoutEdge.Left)
-            .Select(item => item.Size.WidthDip).DefaultIfEmpty().Max();
-        var right = edgeSizes.Where(item => item.Edge == LayoutEdge.Right)
-            .Select(item => item.Size.WidthDip).DefaultIfEmpty().Max();
-        var top = edgeSizes.Where(item => item.Edge == LayoutEdge.Top)
-            .Select(item => item.Size.HeightDip).DefaultIfEmpty().Max();
-        var bottom = edgeSizes.Where(item => item.Edge == LayoutEdge.Bottom)
-            .Select(item => item.Size.HeightDip).DefaultIfEmpty().Max();
-        return new LayoutSize(
-            Math.Max(1, strip.WidthDip + left + right),
-            Math.Max(1, strip.HeightDip + top + bottom));
-    }
+                continue;
+            }
 
-    public static LayoutSize MeasureEdgeContainer(LayoutProfile profile, LayoutEdgeContainer container)
-    {
-        var measured = MeasureSlot(
-            container.ExpandedSlot,
-            profile.LayoutMode == PlayerLayoutMode.Vertical
-                ? LayoutFlowOrientation.Vertical
-                : LayoutFlowOrientation.Horizontal,
-            profile.Surface.GapDip);
-        return container.ExpandedSlot.Children.Any(child => child.Enabled)
-            ? measured
-            : EnsureContainerMinimum(measured);
+            union = union is { } current ? Union(current, ClampToGrid(bounds, grid)) : ClampToGrid(bounds, grid);
+        }
+
+        return union;
     }
 
     /// <summary>
-    /// 计算折叠状态只需保留的触发区尺寸；展开内容不应参与窗口碰撞边界。
-    /// Measures the trigger-only footprint so expanded content does not remain in the window collision bounds while collapsed.
+    /// 求非折叠容器和当前展开/折叠状态折叠容器的占用联合矩形；折叠容器折叠时只保留触发条。
+    /// Returns the union of non-collapse containers and collapse containers in their current expanded or collapsed (trigger-only) state.
     /// </summary>
-    public static LayoutSize MeasureEdgeTrigger(
+    public static LayoutGridRect? CalculateCompositionGridBounds(
         LayoutProfile profile,
-        LayoutEdgeContainer container)
+        IReadOnlySet<string>? expandedCollapseIds = null)
     {
-        var expanded = MeasureEdgeContainer(profile, container);
-        var trigger = Math.Clamp(container.TriggerThicknessDip, 2, 24);
-        return container.Edge is LayoutEdge.Top or LayoutEdge.Bottom
-            ? new LayoutSize(Math.Min(Math.Max(36, expanded.WidthDip), 72), trigger)
-            : new LayoutSize(trigger, Math.Min(Math.Max(36, expanded.HeightDip), 72));
-    }
-
-    private static LayoutSize MeasureContainer(
-        LayoutContainerElement container,
-        LayoutFlowOrientation fallbackOrientation,
-        int gap)
-    {
-        var orientation = container.Orientation == LayoutFlowOrientation.Automatic
-            ? fallbackOrientation
-            : container.Orientation;
-        var slots = container.ContainerKind switch
+        var union = CalculateBodyGridBounds(profile);
+        foreach (var collapse in profile.CollapseContainers)
         {
-            LayoutContainerKind.HoverSwitch => new[] { container.PrimarySlot, container.SecondarySlot },
-            LayoutContainerKind.AutoCollapse => new[] { container.PrimarySlot, container.CollapsedSlot },
-            _ => new[] { container.PrimarySlot }
-        };
-        var measured = slots
-            .Select(slot => MeasureSlot(slot, orientation, gap))
-            .ToArray();
-        var width = measured.Length == 0 ? 0 : measured.Max(item => item.WidthDip);
-        var height = measured.Length == 0 ? 0 : measured.Max(item => item.HeightDip);
-        if (orientation == LayoutFlowOrientation.Horizontal)
-        {
-            width = measured.Length == 0 ? 0 : measured.Max(item => item.WidthDip);
-            height = measured.Length == 0 ? 0 : measured.Max(item => item.HeightDip);
-        }
-
-        var sized = ApplyGeometry(new LayoutSize(width, height), container.Geometry);
-        return slots.Any(slot => slot.Children.Any(child => child.Enabled))
-            ? sized
-            : EnsureContainerMinimum(sized);
-    }
-
-    private static LayoutSize EnsureContainerMinimum(LayoutSize size) => new(
-        Math.Max(EmptyContainerMinWidthDip, size.WidthDip),
-        Math.Max(EmptyContainerMinHeightDip, size.HeightDip));
-
-    private static LayoutSize MeasureSlot(LayoutSlot slot, LayoutFlowOrientation orientation, int gap)
-    {
-        var sizes = slot.Children
-            .Where(child => child.Enabled)
-            .Select(child => child switch
+            if (!collapse.Enabled || collapse.GridBounds is not { } bounds)
             {
-                LayoutWidgetElement widget => MeasureWidget(widget, orientation),
-                LayoutContainerElement container => MeasureContainer(container, orientation, gap),
-                _ => new LayoutSize(0, 0)
-            })
-            .ToArray();
-        if (sizes.Length == 0)
-        {
-            return new LayoutSize(0, 0);
+                continue;
+            }
+
+            var expanded = expandedCollapseIds is null ||
+                expandedCollapseIds.Contains(collapse.InstanceId);
+            var footprint = expanded
+                ? bounds
+                : CalculateCollapseTriggerBounds(collapse, profile);
+            union = union is { } current ? Union(current, footprint) : footprint;
         }
 
-        return orientation == LayoutFlowOrientation.Horizontal
-            ? new LayoutSize(
-                sizes.Sum(size => size.WidthDip) + Math.Max(0, sizes.Length - 1) * gap,
-                sizes.Max(size => size.HeightDip))
-            : new LayoutSize(
-                sizes.Max(size => size.WidthDip),
-                sizes.Sum(size => size.HeightDip) + Math.Max(0, sizes.Length - 1) * gap);
+        return union;
     }
 
-    private static LayoutSize Combine(
-        IReadOnlyList<LayoutSize> sizes,
-        LayoutFlowOrientation orientation,
-        int gap)
+    /// <summary>
+    /// 折叠容器的触发条占用矩形：沿公共边保留触发厚度，长度限制在公共边交集内。
+    /// Collapsed footprint of a collapse container: trigger thickness along the shared edge, length limited to the shared-edge intersection.
+    /// </summary>
+    public static LayoutGridRect CalculateCollapseTriggerBounds(
+        LayoutCollapseContainer collapse,
+        LayoutProfile profile)
     {
-        if (sizes.Count == 0)
+        var bounds = collapse.GridBounds;
+        var grid = LayoutGridSettings.Normalize(profile.Grid);
+        var info = LayoutGridConstraintService.ResolveAttachment(collapse, profile);
+        if (!info.Valid || info.SharedEdge.IsEmpty)
         {
-            return new LayoutSize(1, 1);
+            // 依附失效时退化为整个展开矩形，避免负尺寸。
+            // Fall back to the full expanded rect when the attachment is invalid so the footprint stays positive.
+            return ClampToGrid(bounds, grid);
         }
 
-        return orientation == LayoutFlowOrientation.Horizontal
-            ? new LayoutSize(
-                sizes.Sum(size => size.WidthDip) + Math.Max(0, sizes.Count - 1) * gap,
-                sizes.Max(size => size.HeightDip))
-            : new LayoutSize(
-                sizes.Max(size => size.WidthDip),
-                sizes.Sum(size => size.HeightDip) + Math.Max(0, sizes.Count - 1) * gap);
-    }
-
-    private static LayoutSize MeasureWidget(
-        LayoutWidgetElement widget,
-        LayoutFlowOrientation orientation)
-    {
-        var settings = widget.Settings;
-        var isVertical = orientation == LayoutFlowOrientation.Vertical;
-        var size = widget.TypeId switch
+        var cellSize = Math.Max(grid.CellSizeDip, 1);
+        var trigger = Math.Max(
+            1,
+            (int)Math.Ceiling(Math.Clamp(collapse.TriggerThicknessDip, 2, 24) / (double)cellSize));
+        var shared = info.SharedEdge;
+        var side = LayoutGridConstraintService.ConnectionSide(collapse.Attachment);
+        var rect = side switch
         {
-            BuiltInWidgetTypeIds.Artwork => new LayoutSize(40, 40),
-            BuiltInWidgetTypeIds.MediaText when settings is MediaTextWidgetSettings text =>
-                text.TextKind == MediaTextKind.TitleAndArtist
-                    ? new LayoutSize(isVertical ? 68 : 150, 40)
-                    : new LayoutSize(isVertical ? 68 : 210, 40),
-            BuiltInWidgetTypeIds.MediaSource => new LayoutSize(isVertical ? 68 : 150, 18),
-            BuiltInWidgetTypeIds.Command when settings is CommandWidgetSettings command =>
-                new LayoutSize(command.ButtonSizeDip, command.ButtonSizeDip),
-            BuiltInWidgetTypeIds.Metrics => new LayoutSize(74, 24),
-            BuiltInWidgetTypeIds.Spectrum => new LayoutSize(88, 24),
-            BuiltInWidgetTypeIds.Separator when settings is SeparatorWidgetSettings separator =>
-                new LayoutSize(separator.ThicknessDip + 16, separator.LengthDip),
-            _ => new LayoutSize(24, 24)
+            LayoutEdge.Top => new LayoutGridRect(
+                shared.X,
+                bounds.Y,
+                shared.Width,
+                Math.Min(trigger, bounds.Height)),
+            LayoutEdge.Bottom => new LayoutGridRect(
+                shared.X,
+                bounds.Bottom - Math.Min(trigger, bounds.Height),
+                shared.Width,
+                Math.Min(trigger, bounds.Height)),
+            LayoutEdge.Left => new LayoutGridRect(
+                bounds.X,
+                shared.Y,
+                Math.Min(trigger, bounds.Width),
+                shared.Height),
+            _ => new LayoutGridRect(
+                bounds.Right - Math.Min(trigger, bounds.Width),
+                shared.Y,
+                Math.Min(trigger, bounds.Width),
+                shared.Height)
         };
-        return ApplyGeometry(size, widget.Geometry);
+        return ClampToGrid(rect, grid);
     }
 
-    private static LayoutSize ApplyGeometry(LayoutSize size, LayoutGeometry geometry)
+    /// <summary>
+    /// 网格矩形乘以单格尺寸得到 DIP 尺寸。
+    /// Multiplies a grid rectangle by the cell size to produce DIP dimensions.
+    /// </summary>
+    public static LayoutSize GridRectToDip(LayoutGridRect rect, int cellSizeDip)
     {
-        geometry ??= LayoutGeometry.Auto;
-        var width = geometry.WidthDip ?? size.WidthDip;
-        var height = geometry.HeightDip ?? size.HeightDip;
-        if (geometry.MinWidthDip is { } minWidth)
+        var cell = Math.Max(cellSizeDip, 1);
+        return new LayoutSize(rect.Width * cell, rect.Height * cell);
+    }
+
+    /// <summary>
+    /// 估算宿主 DIP 尺寸：启用非折叠容器联合矩形乘单格尺寸。
+    /// Estimates host DIP size from the enabled non-collapse container union rectangle times the cell size.
+    /// </summary>
+    public static LayoutSize CalculateDesiredSize(LayoutProfile profile)
+    {
+        var grid = LayoutGridSettings.Normalize(profile.Grid);
+        var union = CalculateBodyGridBounds(profile);
+        if (union is null)
         {
-            width = Math.Max(width, minWidth);
-        }
-        if (geometry.MaxWidthDip is { } maxWidth)
-        {
-            width = Math.Min(width, maxWidth);
-        }
-        if (geometry.MinHeightDip is { } minHeight)
-        {
-            height = Math.Max(height, minHeight);
-        }
-        if (geometry.MaxHeightDip is { } maxHeight)
-        {
-            height = Math.Min(height, maxHeight);
+            return new LayoutSize(grid.CellSizeDip, grid.CellSizeDip);
         }
 
-        var margin = geometry.Margin ?? LayoutThickness.Zero;
-        return new LayoutSize(
-            Math.Max(0, width + margin.Left + margin.Right),
-            Math.Max(0, height + margin.Top + margin.Bottom));
+        return GridRectToDip(union, grid.CellSizeDip);
+    }
+
+    /// <summary>
+    /// 估算含折叠容器展开/折叠状态的组合 DIP 尺寸。
+    /// Estimates the combined DIP size including collapse containers in their current state.
+    /// </summary>
+    public static LayoutSize CalculateCompositionSize(
+        LayoutProfile profile,
+        IReadOnlySet<string>? expandedCollapseIds = null)
+    {
+        var grid = LayoutGridSettings.Normalize(profile.Grid);
+        var union = CalculateCompositionGridBounds(profile, expandedCollapseIds);
+        if (union is null)
+        {
+            return new LayoutSize(grid.CellSizeDip, grid.CellSizeDip);
+        }
+
+        return GridRectToDip(union, grid.CellSizeDip);
     }
 
     public static IReadOnlyList<LayoutWidgetElement> FindWidgets(
@@ -363,63 +277,50 @@ public sealed class LayoutRuntimeService
 
     private static IEnumerable<LayoutWidgetElement> EnumerateWidgets(LayoutProfile profile)
     {
-        foreach (var container in profile.InlineContainers.Where(container => container.Enabled))
+        foreach (var container in profile.Containers.Where(container => container.Enabled))
         {
-            foreach (var widget in EnumerateWidgets(container))
+            foreach (var widget in EnumerateContainerWidgets(container))
             {
                 yield return widget;
             }
         }
 
-        foreach (var edge in profile.EdgeContainers.Where(edge => edge.Enabled))
+        foreach (var collapse in profile.CollapseContainers.Where(collapse => collapse.Enabled))
         {
-            foreach (var widget in EnumerateSlot(edge.ExpandedSlot))
+            foreach (var widget in collapse.ExpandedSlot.Children.OfType<LayoutWidgetElement>())
             {
                 yield return widget;
             }
         }
     }
 
-    private static IEnumerable<LayoutWidgetElement> EnumerateWidgets(
+    private static IEnumerable<LayoutWidgetElement> EnumerateContainerWidgets(
         LayoutContainerElement container)
     {
-        if (!container.Enabled)
-        {
-            yield break;
-        }
-
-        foreach (var widget in EnumerateSlot(container.PrimarySlot))
+        foreach (var widget in container.PrimarySlot.Children.OfType<LayoutWidgetElement>())
         {
             yield return widget;
         }
 
-        foreach (var widget in EnumerateSlot(container.SecondarySlot))
-        {
-            yield return widget;
-        }
-
-        foreach (var widget in EnumerateSlot(container.CollapsedSlot))
+        foreach (var widget in container.SecondarySlot.Children.OfType<LayoutWidgetElement>())
         {
             yield return widget;
         }
     }
 
-    private static IEnumerable<LayoutWidgetElement> EnumerateSlot(LayoutSlot slot)
+    private static LayoutGridRect ClampToGrid(LayoutGridRect rect, LayoutGridSettings grid)
     {
-        foreach (var child in slot.Children)
-        {
-            switch (child)
-            {
-                case LayoutWidgetElement widget:
-                    yield return widget;
-                    break;
-                case LayoutContainerElement container:
-                    foreach (var nested in EnumerateWidgets(container))
-                    {
-                        yield return nested;
-                    }
-                    break;
-            }
-        }
+        var left = Math.Max(0, rect.X);
+        var top = Math.Max(0, rect.Y);
+        var right = Math.Min(grid.Columns, rect.Right);
+        var bottom = Math.Min(grid.Rows, rect.Bottom);
+        return new LayoutGridRect(left, top, Math.Max(0, right - left), Math.Max(0, bottom - top));
     }
+
+    private static LayoutGridRect Union(LayoutGridRect a, LayoutGridRect b) =>
+        new(
+            Math.Min(a.X, b.X),
+            Math.Min(a.Y, b.Y),
+            Math.Max(a.Right, b.Right) - Math.Min(a.X, b.X),
+            Math.Max(a.Bottom, b.Bottom) - Math.Min(a.Y, b.Y));
 }

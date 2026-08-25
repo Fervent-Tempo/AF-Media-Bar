@@ -134,7 +134,8 @@ public static class ComponentCatalog
         {
             ArtworkWidgetSettings artwork => artwork.OpenSourceOnClick,
             MetricsWidgetSettings metrics => metrics.OpenTaskManagerOnClick,
-            _ => definition.Capabilities.HasFlag(WidgetCapabilities.Interactive)
+            // 组件只要具备任意交互能力（Invoke/Adjust/Popup 之一）就视为交互组件。
+            _ => (definition.Capabilities & WidgetCapabilities.Interactive) != 0
         };
     }
 

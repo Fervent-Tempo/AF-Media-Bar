@@ -22,9 +22,9 @@ public partial class MainWindow
     private LayoutProfile? _activeLayoutProfile;
     private ComponentLayoutSurface? _componentSurface;
     private readonly List<EdgeSurfaceState> _edgeSurfaces = [];
-    // 只记录当前实际展开的边缘容器；折叠时不把展开内容计入窗口尺寸，避免拖动边界被透明区域顶住。
-    // Tracks only expanded edge containers so collapsed content cannot enlarge the draggable window bounds.
-    private readonly HashSet<string> _expandedEdgeContainerIds = new(StringComparer.Ordinal);
+    // 只记录当前实际展开的折叠容器；折叠时不把展开内容计入窗口尺寸，避免拖动边界被透明区域顶住。
+    // Tracks only currently expanded collapse containers so collapsed content cannot enlarge the draggable window bounds.
+    private readonly HashSet<string> _expandedCollapseContainerIds = new(StringComparer.Ordinal);
     private DispatcherTimer? _layoutEdgePointerTimer;
     private Point? _layoutBodyAnchorScreen;
     private int _layoutBodyCorrectionX;
@@ -73,8 +73,8 @@ public partial class MainWindow
         _unavailableLayoutEdge = _windowSettings.HostMode == WindowHostMode.Taskbar
             ? TaskbarEdgeService.TryResolveCurrent()
             : null;
-        _expandedEdgeContainerIds.RemoveWhere(instanceId =>
-            !_activeLayoutProfile.EdgeContainers.Any(container =>
+        _expandedCollapseContainerIds.RemoveWhere(instanceId =>
+            !_activeLayoutProfile.CollapseContainers.Any(container =>
                 container.Enabled && container.InstanceId == instanceId));
         // 运行时悬停状态由每个容器自己的命中事件决定；重建树时先用离开态，再按当前鼠标位置恢复，避免一次全局 MouseEnter 让所有容器同时靠近。
         // Runtime hover state comes from each container's own hit events; rebuild from leave state and restore from actual mouse position to avoid switching every container at once.
@@ -83,35 +83,41 @@ public partial class MainWindow
         {
             _componentSurface.RefreshPointerNearFromMouse();
         }
-        var stripSize = LayoutRuntimeService.CalculateDesiredSize(_activeLayoutProfile);
-        var compositionSize = LayoutRuntimeService.CalculateCompositionSize(
+
+        var grid = LayoutGridSettings.Normalize(_activeLayoutProfile.Grid);
+        var cell = Math.Max(grid.CellSizeDip, 1);
+        var bodyGrid = LayoutRuntimeService.CalculateBodyGridBounds(_activeLayoutProfile)
+            ?? LayoutGridRect.Unit(0, 0);
+        var compositionGrid = LayoutRuntimeService.CalculateCompositionGridBounds(
             _activeLayoutProfile,
-            _unavailableLayoutEdge,
-            _expandedEdgeContainerIds);
-        var edgeInsets = CalculateEdgeInsets(
-            _activeLayoutProfile,
-            _unavailableLayoutEdge,
-            _expandedEdgeContainerIds);
+            _expandedCollapseContainerIds) ?? bodyGrid;
+        var stripSize = LayoutRuntimeService.GridRectToDip(bodyGrid, cell);
+        var compositionSize = LayoutRuntimeService.GridRectToDip(compositionGrid, cell);
+        // body 相对组合原点的偏移；组合原点以占用联合矩形左上角为准，不含编辑画布前导空白。
+        // Body offset within the composition; the composition origin is the occupied union's top-left corner.
+        var bodyOffset = new Thickness(
+            (bodyGrid.X - compositionGrid.X) * cell,
+            (bodyGrid.Y - compositionGrid.Y) * cell,
+            0,
+            0);
         ComponentCompositionHost.Width = compositionSize.WidthDip;
         ComponentCompositionHost.Height = compositionSize.HeightDip;
         LayoutDragSurface.Width = stripSize.WidthDip;
         LayoutDragSurface.Height = stripSize.HeightDip;
-        LayoutDragSurface.Margin = new Thickness(edgeInsets.Left, edgeInsets.Top, 0, 0);
+        LayoutDragSurface.Margin = bodyOffset;
         LayoutEdgeSurfaceHost.Width = compositionSize.WidthDip;
         LayoutEdgeSurfaceHost.Height = compositionSize.HeightDip;
         ComponentSurfaceHost.Width = stripSize.WidthDip;
         ComponentSurfaceHost.Height = stripSize.HeightDip;
-        ComponentSurfaceHost.Margin = new Thickness(edgeInsets.Left, edgeInsets.Top, 0, 0);
+        ComponentSurfaceHost.Margin = bodyOffset;
         ComponentSurfaceHost.CornerRadius = new CornerRadius(
             Math.Clamp(_activeLayoutProfile.Surface.CornerRadiusDip, 0, 32));
         ComponentSurfaceHost.Visibility = Visibility.Visible;
-        RebuildEdgeSurfaces(
+        RebuildCollapseSurfaces(
             _activeLayoutProfile,
-            stripSize,
-            compositionSize,
-            edgeInsets,
-            _unavailableLayoutEdge,
-            _expandedEdgeContainerIds,
+            compositionGrid,
+            bodyGrid,
+            cell,
             animateEdgeState);
         UpdateLayoutEdgePointerTimer();
         RefreshLayoutPointerStateAfterMeasure();
@@ -121,36 +127,23 @@ public partial class MainWindow
         ApplyComponentMetricRefreshInterval();
     }
 
-    private void RebuildEdgeSurfaces(
+    private void RebuildCollapseSurfaces(
         LayoutProfile profile,
-        LayoutSize stripSize,
-        LayoutSize compositionSize,
-        Thickness edgeInsets,
-        LayoutEdge? unavailableEdge,
-        IReadOnlySet<string> expandedEdgeContainerIds,
+        LayoutGridRect compositionGrid,
+        LayoutGridRect bodyGrid,
+        int cell,
         bool animateEdgeState)
     {
         DisposeEdgeSurfaces();
-        foreach (var model in profile.EdgeContainers.Where(model =>
+        foreach (var model in profile.CollapseContainers.Where(model =>
                      model.Enabled &&
-                     model.Edge != unavailableEdge))
+                     model.Attachment.AttachmentSide != _unavailableLayoutEdge))
         {
-            var expandedSize = LayoutRuntimeService.MeasureEdgeContainer(profile, model);
-            var collapsedSize = LayoutRuntimeService.MeasureEdgeTrigger(profile, model);
-            if (collapsedSize.WidthDip <= 0 || collapsedSize.HeightDip <= 0)
+            if (!LayoutGridConstraintService.ResolveAttachment(model, profile).Valid)
             {
                 continue;
             }
 
-            var collapseTargetIds = expandedEdgeContainerIds.Contains(model.InstanceId)
-                ? expandedEdgeContainerIds
-                    .Where(instanceId => instanceId != model.InstanceId)
-                    .ToHashSet(StringComparer.Ordinal)
-                : expandedEdgeContainerIds;
-            var collapsedEdgeInsets = CalculateEdgeInsets(
-                profile,
-                unavailableEdge,
-                collapseTargetIds);
             var surface = new ComponentLayoutSurface();
             surface.CommandRequested += ComponentSurface_OnCommandRequested;
             surface.MetricsRequested += ComponentSurface_OnMetricsRequested;
@@ -180,12 +173,9 @@ public partial class MainWindow
                 model,
                 host,
                 surface,
-                expandedSize,
-                collapsedSize,
-                stripSize,
-                compositionSize,
-                edgeInsets,
-                collapsedEdgeInsets);
+                compositionGrid,
+                profile,
+                cell);
             host.Tag = state;
             host.MouseEnter += EdgeSurfaceHost_OnMouseEnter;
             host.MouseLeave += EdgeSurfaceHost_OnMouseLeave;
@@ -193,7 +183,7 @@ public partial class MainWindow
             LayoutEdgeSurfaceHost.Children.Add(host);
             ApplyEdgeSurfaceState(
                 state,
-                expandedEdgeContainerIds.Contains(model.InstanceId),
+                _expandedCollapseContainerIds.Contains(model.InstanceId),
                 animateEdgeState);
         }
     }
@@ -223,113 +213,103 @@ public partial class MainWindow
     }
 
     private static EdgeSurfaceState CreateEdgeSurfaceState(
-        LayoutEdgeContainer model,
+        LayoutCollapseContainer model,
         Border host,
         ComponentLayoutSurface surface,
-        LayoutSize expandedSize,
-        LayoutSize collapsedSize,
-        LayoutSize stripSize,
-        LayoutSize compositionSize,
-        Thickness edgeInsets,
-        Thickness collapsedEdgeInsets)
+        LayoutGridRect compositionGrid,
+        LayoutProfile profile,
+        int cell)
     {
-        var expandedLeft = model.Edge switch
-        {
-            LayoutEdge.Left => edgeInsets.Left - expandedSize.WidthDip,
-            LayoutEdge.Right => edgeInsets.Left + stripSize.WidthDip,
-            _ => edgeInsets.Left + (stripSize.WidthDip - expandedSize.WidthDip) / 2 + model.OffsetDip
-        };
-        var expandedTop = model.Edge switch
-        {
-            LayoutEdge.Top => edgeInsets.Top - expandedSize.HeightDip,
-            LayoutEdge.Bottom => edgeInsets.Top + stripSize.HeightDip,
-            _ => edgeInsets.Top + (stripSize.HeightDip - expandedSize.HeightDip) / 2 + model.OffsetDip
-        };
-        expandedLeft = Math.Clamp(expandedLeft, 0, Math.Max(0, compositionSize.WidthDip - expandedSize.WidthDip));
-        expandedTop = Math.Clamp(expandedTop, 0, Math.Max(0, compositionSize.HeightDip - expandedSize.HeightDip));
-
-        var collapsedWidth = collapsedSize.WidthDip;
-        var collapsedHeight = collapsedSize.HeightDip;
-        var collapsedLeft = model.Edge switch
-        {
-            // 留出少量可见触发像素；其余触发区允许落在工作区外，不再阻挡长条拖动。
-            // Keep a small visible activation strip; the remaining trigger may extend outside the work area and no longer blocks strip dragging.
-            LayoutEdge.Left => collapsedEdgeInsets.Left - collapsedWidth + CollapsedTriggerVisibleDip,
-            LayoutEdge.Right => edgeInsets.Left + stripSize.WidthDip - CollapsedTriggerVisibleDip,
-            _ => edgeInsets.Left + (stripSize.WidthDip - collapsedWidth) / 2 + model.OffsetDip
-        };
-        var collapsedTop = model.Edge switch
-        {
-            LayoutEdge.Top => collapsedEdgeInsets.Top - collapsedHeight + CollapsedTriggerVisibleDip,
-            LayoutEdge.Bottom => edgeInsets.Top + stripSize.HeightDip - CollapsedTriggerVisibleDip,
-            _ => edgeInsets.Top + (stripSize.HeightDip - collapsedHeight) / 2 + model.OffsetDip
-        };
-        var transitionCollapsedLeft = model.Edge == LayoutEdge.Left
-            ? edgeInsets.Left - collapsedWidth + CollapsedTriggerVisibleDip
-            : collapsedLeft;
-        var transitionCollapsedTop = model.Edge == LayoutEdge.Top
-            ? edgeInsets.Top - collapsedHeight + CollapsedTriggerVisibleDip
-            : collapsedTop;
+        // 展开矩形来自持久化网格位置；折叠矩形位于公共边，只保留触发厚度，长度限制在公共边交集内。
+        // The expanded rect comes from persisted grid bounds; the collapsed rect keeps the trigger thickness on the shared edge.
+        var expandedBounds = GridRectToDipRect(model.GridBounds, compositionGrid, cell);
+        var triggerGrid = LayoutRuntimeService.CalculateCollapseTriggerBounds(model, profile);
+        var collapsedBounds = GridRectToDipRect(triggerGrid, compositionGrid, cell);
         return new EdgeSurfaceState(
             model,
             host,
             surface,
-            new Rect(expandedLeft, expandedTop, expandedSize.WidthDip, expandedSize.HeightDip),
-            new Rect(collapsedLeft, collapsedTop, collapsedWidth, collapsedHeight),
-            new Rect(
-                transitionCollapsedLeft,
-                transitionCollapsedTop,
-                collapsedWidth,
-                collapsedHeight));
+            expandedBounds,
+            collapsedBounds,
+            collapsedBounds);
     }
 
+    private static Rect GridRectToDipRect(
+        LayoutGridRect rect,
+        LayoutGridRect origin,
+        int cell) =>
+        new(
+            (rect.X - origin.X) * cell,
+            (rect.Y - origin.Y) * cell,
+            Math.Max(0, rect.Width * cell),
+            Math.Max(0, rect.Height * cell));
+
+    /// <summary>
+    /// 计算所有启用折叠容器相对 body 的外侧占用，用于窗口定位与输入矩形。
+    /// Computes the outer footprint that enabled collapse containers extend beyond the body.
+    /// </summary>
     private static Thickness CalculateEdgeInsets(
         LayoutProfile profile,
-        LayoutEdge? unavailableEdge,
-        IReadOnlySet<string> expandedEdgeContainerIds)
+        IReadOnlySet<string> expandedCollapseContainerIds)
     {
-        var sizes = profile.EdgeContainers
-            .Where(container => container.Enabled &&
-                container.Edge != unavailableEdge)
-            .Select(container =>
-            {
-                var size = expandedEdgeContainerIds.Contains(container.InstanceId)
-                    ? LayoutRuntimeService.MeasureEdgeContainer(profile, container)
-                    : LayoutRuntimeService.MeasureEdgeTrigger(profile, container);
-                return (container.Edge, Size: size);
-            })
-            .ToArray();
-        return new Thickness(
-            sizes.Where(item => item.Edge == LayoutEdge.Left).Select(item => item.Size.WidthDip).DefaultIfEmpty().Max(),
-            sizes.Where(item => item.Edge == LayoutEdge.Top).Select(item => item.Size.HeightDip).DefaultIfEmpty().Max(),
-            sizes.Where(item => item.Edge == LayoutEdge.Right).Select(item => item.Size.WidthDip).DefaultIfEmpty().Max(),
-            sizes.Where(item => item.Edge == LayoutEdge.Bottom).Select(item => item.Size.HeightDip).DefaultIfEmpty().Max());
+        var grid = LayoutGridSettings.Normalize(profile.Grid);
+        var cell = Math.Max(grid.CellSizeDip, 1);
+        var body = LayoutRuntimeService.CalculateBodyGridBounds(profile);
+        if (body is null)
+        {
+            return new Thickness(0);
+        }
+
+        double left = 0;
+        double top = 0;
+        double right = 0;
+        double bottom = 0;
+        foreach (var collapse in profile.CollapseContainers.Where(item => item.Enabled))
+        {
+            var footprint = expandedCollapseContainerIds.Contains(collapse.InstanceId)
+                ? collapse.GridBounds
+                : LayoutRuntimeService.CalculateCollapseTriggerBounds(collapse, profile);
+            left = Math.Max(left, Math.Max(0, body.X - footprint.X) * cell);
+            top = Math.Max(top, Math.Max(0, body.Y - footprint.Y) * cell);
+            right = Math.Max(right, Math.Max(0, footprint.Right - body.Right) * cell);
+            bottom = Math.Max(bottom, Math.Max(0, footprint.Bottom - body.Bottom) * cell);
+        }
+
+        return new Thickness(left, top, right, bottom);
     }
 
     /// <summary>
-    /// 仅返回折叠触发条的外侧尺寸；拖动与任务栏定位会允许这部分落在工作区外，避免触发条把长条本体顶离屏幕边缘。
-    /// Returns only collapsed trigger insets; placement lets these pixels extend outside the work area so triggers cannot push the strip body away from an edge.
+    /// 仅返回折叠状态折叠容器的外侧尺寸；拖动与任务栏定位会允许这部分落在工作区外，避免触发条把长条本体顶离屏幕边缘。
+    /// Returns only collapsed-trigger insets; placement lets these pixels extend outside the work area so triggers cannot push the strip body away from an edge.
     /// </summary>
     private static Thickness CalculateCollapsedEdgeInsets(
         LayoutProfile profile,
-        LayoutEdge? unavailableEdge,
-        IReadOnlySet<string> expandedEdgeContainerIds)
+        IReadOnlySet<string> expandedCollapseContainerIds)
     {
-        var sizes = profile.EdgeContainers
-            .Where(container => container.Enabled &&
-                container.Edge != unavailableEdge &&
-                !expandedEdgeContainerIds.Contains(container.InstanceId))
-            .Select(container =>
-            {
-                var size = LayoutRuntimeService.MeasureEdgeTrigger(profile, container);
-                return (container.Edge, Size: size);
-            })
-            .ToArray();
-        return new Thickness(
-            sizes.Where(item => item.Edge == LayoutEdge.Left).Select(item => item.Size.WidthDip).DefaultIfEmpty().Max(),
-            sizes.Where(item => item.Edge == LayoutEdge.Top).Select(item => item.Size.HeightDip).DefaultIfEmpty().Max(),
-            sizes.Where(item => item.Edge == LayoutEdge.Right).Select(item => item.Size.WidthDip).DefaultIfEmpty().Max(),
-            sizes.Where(item => item.Edge == LayoutEdge.Bottom).Select(item => item.Size.HeightDip).DefaultIfEmpty().Max());
+        var grid = LayoutGridSettings.Normalize(profile.Grid);
+        var cell = Math.Max(grid.CellSizeDip, 1);
+        var body = LayoutRuntimeService.CalculateBodyGridBounds(profile);
+        if (body is null)
+        {
+            return new Thickness(0);
+        }
+
+        double left = 0;
+        double top = 0;
+        double right = 0;
+        double bottom = 0;
+        foreach (var collapse in profile.CollapseContainers.Where(item =>
+                     item.Enabled &&
+                     !expandedCollapseContainerIds.Contains(item.InstanceId)))
+        {
+            var footprint = LayoutRuntimeService.CalculateCollapseTriggerBounds(collapse, profile);
+            left = Math.Max(left, Math.Max(0, body.X - footprint.X) * cell);
+            top = Math.Max(top, Math.Max(0, body.Y - footprint.Y) * cell);
+            right = Math.Max(right, Math.Max(0, footprint.Right - body.Right) * cell);
+            bottom = Math.Max(bottom, Math.Max(0, footprint.Bottom - body.Bottom) * cell);
+        }
+
+        return new Thickness(left, top, right, bottom);
     }
 
     private Thickness ResolveCollapsedActiveEdgeInsets()
@@ -338,8 +318,7 @@ public partial class MainWindow
             ? new Thickness(0)
             : CalculateCollapsedEdgeInsets(
                 _activeLayoutProfile,
-                _unavailableLayoutEdge,
-                _expandedEdgeContainerIds);
+                _expandedCollapseContainerIds);
     }
 
     /// <summary>
@@ -353,23 +332,26 @@ public partial class MainWindow
             return null;
         }
 
-        var edgeInsets = CalculateEdgeInsets(
+        var grid = LayoutGridSettings.Normalize(_activeLayoutProfile.Grid);
+        var cell = Math.Max(grid.CellSizeDip, 1);
+        var bodyGrid = LayoutRuntimeService.CalculateBodyGridBounds(_activeLayoutProfile)
+            ?? LayoutGridRect.Unit(0, 0);
+        var compositionGrid = LayoutRuntimeService.CalculateCompositionGridBounds(
             _activeLayoutProfile,
-            _unavailableLayoutEdge,
-            _expandedEdgeContainerIds);
-        var stripSize = LayoutRuntimeService.CalculateDesiredSize(_activeLayoutProfile);
+            _expandedCollapseContainerIds) ?? bodyGrid;
+        var bodyBounds = GridRectToDipRect(bodyGrid, compositionGrid, cell);
         var regions = new List<NativeMethods.Rect>
         {
             ToNativeRect(
-                edgeInsets.Left,
-                edgeInsets.Top,
-                stripSize.WidthDip,
-                stripSize.HeightDip,
+                bodyBounds.Left,
+                bodyBounds.Top,
+                bodyBounds.Width,
+                bodyBounds.Height,
                 scale)
         };
         foreach (var state in _edgeSurfaces)
         {
-            var bounds = _expandedEdgeContainerIds.Contains(state.Model.InstanceId)
+            var bounds = _expandedCollapseContainerIds.Contains(state.Model.InstanceId)
                 ? state.ExpandedBounds
                 : state.CollapsedBounds;
             regions.Add(ToNativeRect(bounds.Left, bounds.Top, bounds.Width, bounds.Height, scale));
@@ -418,8 +400,8 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// 边缘容器的 ProximityDip 在触发条外形成预展开区域；状态只在跨越阈值时重建，避免鼠标移动热路径反复测量窗口。
-    /// ProximityDip creates a pre-expand area around an edge trigger; rebuild only on threshold crossings so mouse movement never causes repeated layout measurement.
+    /// 折叠容器的 ProximityDip 在触发条外形成预展开区域；状态只在跨越阈值时重建，避免鼠标移动热路径反复测量窗口。
+    /// ProximityDip creates a pre-expand area around a collapse trigger; rebuild only on threshold crossings so mouse movement never causes repeated layout measurement.
     /// </summary>
     private void ComponentCompositionHost_OnMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
     {
@@ -431,7 +413,7 @@ public partial class MainWindow
         foreach (var state in _edgeSurfaces.ToArray())
         {
             var id = state.Model.InstanceId;
-            var isExpanded = _expandedEdgeContainerIds.Contains(id);
+            var isExpanded = _expandedCollapseContainerIds.Contains(id);
             var nearTrigger = IsEdgeSurfacePointerNear(state, state.CollapsedBounds);
             var insideExpanded = IsEdgeSurfacePointerInside(state);
             if (isExpanded)
@@ -460,7 +442,7 @@ public partial class MainWindow
 
         foreach (var state in _edgeSurfaces.ToArray())
         {
-            var isExpanded = _expandedEdgeContainerIds.Contains(state.Model.InstanceId);
+            var isExpanded = _expandedCollapseContainerIds.Contains(state.Model.InstanceId);
             var nearTrigger = IsEdgeSurfacePointerNear(state, state.CollapsedBounds);
             var insideExpanded = IsEdgeSurfacePointerInside(state);
             if (isExpanded && state.TargetExpanded)
@@ -511,14 +493,14 @@ public partial class MainWindow
         var instanceId = state.Model.InstanceId;
         if (expanded)
         {
-            if (_expandedEdgeContainerIds.Contains(instanceId) && state.TargetExpanded)
+            if (_expandedCollapseContainerIds.Contains(instanceId) && state.TargetExpanded)
             {
                 UpdateLayoutEdgePointerTimer();
                 return;
             }
 
             CaptureLayoutBodyAnchor();
-            if (_expandedEdgeContainerIds.Add(instanceId))
+            if (_expandedCollapseContainerIds.Add(instanceId))
             {
                 ApplyComponentLayout(animateEdgeState: true);
                 RepositionPreservingLayoutBody();
@@ -531,7 +513,7 @@ public partial class MainWindow
             return;
         }
 
-        if (!_expandedEdgeContainerIds.Contains(instanceId) || !state.TargetExpanded)
+        if (!_expandedCollapseContainerIds.Contains(instanceId) || !state.TargetExpanded)
         {
             return;
         }
@@ -692,13 +674,13 @@ public partial class MainWindow
 
     private void CompleteEdgeSurfaceCollapse(EdgeSurfaceState state)
     {
-        if (!_expandedEdgeContainerIds.Remove(state.Model.InstanceId))
+        if (!_expandedCollapseContainerIds.Remove(state.Model.InstanceId))
         {
             return;
         }
 
         state.TransitionVersion++;
-        var retainBodyCorrection = _expandedEdgeContainerIds.Count > 0;
+        var retainBodyCorrection = _expandedCollapseContainerIds.Count > 0;
         if (!retainBodyCorrection)
         {
             _layoutBodyCorrectionX = 0;
@@ -754,12 +736,19 @@ public partial class MainWindow
             return false;
         }
 
-        var edgeInsets = CalculateEdgeInsets(
+        // body 相对组合原点的偏移；保持 body 屏幕锚点不动，组合原点随 body 移动。
+        // Keep the body's screen anchor fixed; the composition origin follows the body offset.
+        var grid = LayoutGridSettings.Normalize(_activeLayoutProfile.Grid);
+        var cell = Math.Max(grid.CellSizeDip, 1);
+        var bodyGrid = LayoutRuntimeService.CalculateBodyGridBounds(_activeLayoutProfile)
+            ?? LayoutGridRect.Unit(0, 0);
+        var compositionGrid = LayoutRuntimeService.CalculateCompositionGridBounds(
             _activeLayoutProfile,
-            _unavailableLayoutEdge,
-            _expandedEdgeContainerIds);
-        left = (int)Math.Round(_layoutBodyAnchorScreen.Value.X - edgeInsets.Left * scaleX);
-        top = (int)Math.Round(_layoutBodyAnchorScreen.Value.Y - edgeInsets.Top * scaleY);
+            _expandedCollapseContainerIds) ?? bodyGrid;
+        left = (int)Math.Round(
+            _layoutBodyAnchorScreen.Value.X - (bodyGrid.X - compositionGrid.X) * cell * scaleX);
+        top = (int)Math.Round(
+            _layoutBodyAnchorScreen.Value.Y - (bodyGrid.Y - compositionGrid.Y) * cell * scaleY);
         return true;
     }
 
@@ -998,14 +987,14 @@ public partial class MainWindow
     }
 
     private sealed class EdgeSurfaceState(
-        LayoutEdgeContainer model,
+        LayoutCollapseContainer model,
         Border host,
         ComponentLayoutSurface surface,
         Rect expandedBounds,
         Rect collapsedBounds,
         Rect transitionCollapsedBounds)
     {
-        internal LayoutEdgeContainer Model { get; } = model;
+        internal LayoutCollapseContainer Model { get; } = model;
         internal Border Host { get; } = host;
         internal ComponentLayoutSurface Surface { get; } = surface;
         internal Rect ExpandedBounds { get; } = expandedBounds;

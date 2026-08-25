@@ -67,18 +67,33 @@ public static class LayoutSettingsService
                 : 1;
             LayoutDocument document;
             var migratedLegacyDocument = schemaVersion < LayoutDocument.CurrentSchemaVersion;
-            if (migratedLegacyDocument)
+            if (schemaVersion <= 2)
             {
+                // schema 1/2 是四档案外壳：先归并为 schema 3 两档案，再确定性迁移到 schema 4。
                 var legacy = JsonSerializer.Deserialize<LegacyLayoutDocument>(json, SerializerOptions)
                     ?? throw new InvalidDataException("Legacy layout document is empty.");
-                document = LayoutMigrationService.MigrateLegacyDocument(
+                var schema3 = LayoutMigrationService.MigrateLegacyDocument(
                     legacy,
                     legacyWindowSettings.HostMode);
+                document = LayoutMigrationService.MigrateSchema3To4(schema3);
             }
-            else
+            else if (schemaVersion == 3)
+            {
+                // schema 3 的 JSON 外壳已经与 LayoutDocument 相同（两档案），必须按 schema 3 DTO 读取。
+                var schema3 = JsonSerializer.Deserialize<Schema3LayoutDocument>(json, SerializerOptions)
+                    ?? throw new InvalidDataException("Schema-3 layout document is empty.");
+                document = LayoutMigrationService.MigrateSchema3To4(schema3);
+            }
+            else if (schemaVersion == LayoutDocument.CurrentSchemaVersion)
             {
                 document = JsonSerializer.Deserialize<LayoutDocument>(json, SerializerOptions)
                     ?? throw new InvalidDataException("Layout document is empty.");
+            }
+            else
+            {
+                // schema > 4：拒绝读取，保留无效文件并回退默认布局。
+                throw new InvalidDataException(
+                    $"Unsupported layout schema version: {schemaVersion}.");
             }
 
             var normalized = LayoutMigrationService.Normalize(document);

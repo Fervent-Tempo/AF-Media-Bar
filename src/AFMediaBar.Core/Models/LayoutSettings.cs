@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json.Serialization;
 
 namespace AFMediaBar.Models;
@@ -23,6 +24,9 @@ public enum LayoutContainerKind
 {
     Static = 0,
     HoverSwitch = 1,
+
+    // 仅供 schema 3 读取；schema 4 的折叠容器是 LayoutCollapseContainer，不再出现在 Containers 中。
+    // Read-only for schema 3; schema 4 models collapse containers as LayoutCollapseContainer outside Containers.
     AutoCollapse = 2
 }
 
@@ -119,6 +123,137 @@ public static class BuiltInWidgetTypeIds
     public const string Separator = "builtin.separator";
 }
 
+/// <summary>
+/// 描述档案的整数逻辑网格；单格尺寸用于把网格坐标转换为 DIP。
+/// Describes the integer logical grid of a profile; the cell size converts grid coordinates to DIPs.
+/// </summary>
+public sealed record LayoutGridSettings(
+    int Columns,
+    int Rows,
+    int CellSizeDip)
+{
+    public const int MinimumCells = 1;
+    public const int MaximumColumns = 256;
+    public const int MaximumRows = 256;
+    public const int MinimumCellSizeDip = 2;
+    public const int MaximumCellSizeDip = 32;
+
+    public static LayoutGridSettings Default { get; } = new(48, 24, 8);
+
+    public static LayoutGridSettings Normalize(LayoutGridSettings? grid)
+    {
+        grid ??= Default;
+        return new LayoutGridSettings(
+            Math.Clamp(grid.Columns, MinimumCells, MaximumColumns),
+            Math.Clamp(grid.Rows, MinimumCells, MaximumRows),
+            Math.Clamp(grid.CellSizeDip, MinimumCellSizeDip, MaximumCellSizeDip));
+    }
+}
+
+/// <summary>
+/// 不可变的整数网格矩形；容器使用档案全局坐标，槽位中的组件使用容器局部坐标。
+/// Immutable integer grid rectangle; containers use profile-global coordinates while widgets in slots use container-local coordinates.
+/// </summary>
+public sealed record LayoutGridRect(
+    int X,
+    int Y,
+    int Width,
+    int Height)
+{
+    [JsonIgnore]
+    public int Right => X + Width;
+
+    [JsonIgnore]
+    public int Bottom => Y + Height;
+
+    [JsonIgnore]
+    public bool IsEmpty => Width <= 0 || Height <= 0;
+
+    /// <summary>
+    /// 把负增量矩形规范化为非负矩形；编辑器拖动时请使用 FromDrag，这里只作为读入数据的安全网。
+    /// Normalizes negative-width/height rectangles; editors should use FromDrag instead of relying on this safety net.
+    /// </summary>
+    [JsonIgnore]
+    public LayoutGridRect Normalized
+    {
+        get
+        {
+            if (Width >= 0 && Height >= 0)
+            {
+                return this;
+            }
+
+            return new LayoutGridRect(
+                Math.Min(X, X + Width),
+                Math.Min(Y, Y + Height),
+                Math.Abs(Width),
+                Math.Abs(Height));
+        }
+    }
+
+    /// <summary>
+    /// record 默认的 ToString 会遍历计算属性 Normalized，导致无限递归；只输出原始字段。
+    /// The default record ToString walks the computed Normalized property and recurses forever; emit raw fields only.
+    /// </summary>
+    public sealed override string ToString() =>
+        $"{nameof(LayoutGridRect)}({X}, {Y}, {Width}x{Height})";
+
+    public static LayoutGridRect Unit(int x, int y) => new(x, y, 1, 1);
+
+    /// <summary>
+    /// 从拖动起止两格（含起止格）构造规范矩形；可从任意方向拖动。
+    /// Builds the canonical rectangle covering both drag corners inclusive, regardless of drag direction.
+    /// </summary>
+    public static LayoutGridRect FromDrag(int startX, int startY, int currentX, int currentY) =>
+        new(
+            Math.Min(startX, currentX),
+            Math.Min(startY, currentY),
+            Math.Abs(currentX - startX) + 1,
+            Math.Abs(currentY - startY) + 1);
+
+    /// <summary>
+    /// 两个矩形是否在内部重叠；共享边或只在角上接触不算重叠。
+    /// Whether two rectangles overlap in their interiors; shared edges and corner contact are not overlaps.
+    /// </summary>
+    public bool Overlaps(LayoutGridRect other) =>
+        X < other.Right &&
+        Right > other.X &&
+        Y < other.Bottom &&
+        Bottom > other.Y;
+
+    /// <summary>
+    /// 是否完全包含另一个矩形（含贴边）。
+    /// Whether this rectangle fully contains the other, including flush edges.
+    /// </summary>
+    public bool Contains(LayoutGridRect other) =>
+        other.X >= X &&
+        other.Y >= Y &&
+        other.Right <= Right &&
+        other.Bottom <= Bottom;
+}
+
+/// <summary>
+/// 折叠容器对非折叠锚点容器的依附；AttachmentSide 表示锚点被依附的边。
+/// Describes how a collapse container attaches to a non-collapse anchor; AttachmentSide is the anchored side.
+/// </summary>
+public sealed record LayoutAttachment(
+    string AnchorContainerId,
+    LayoutEdge AttachmentSide);
+
+/// <summary>
+/// schema 4 的自动折叠容器：保存网格矩形、锚点依附、触发厚度、接近距离和动画。
+/// Schema-4 auto-collapse container that persists grid bounds, anchor attachment, trigger thickness, proximity, and animation.
+/// </summary>
+public sealed record LayoutCollapseContainer(
+    string InstanceId,
+    bool Enabled,
+    LayoutGridRect GridBounds,
+    LayoutAttachment Attachment,
+    int TriggerThicknessDip,
+    int ProximityDip,
+    LayoutAnimationSettings Animation,
+    LayoutSlot ExpandedSlot);
+
 public sealed record LayoutThickness(
     int Left,
     int Top,
@@ -194,7 +329,10 @@ public sealed record LayoutSlot(
 public abstract record LayoutElement(
     string InstanceId,
     bool Enabled,
-    LayoutGeometry Geometry);
+    LayoutGeometry Geometry,
+    // 顶层容器使用档案网格坐标；槽位中的组件使用容器局部网格坐标。schema 4 起由约束服务负责赋值。
+    // Top-level containers use profile-grid coordinates; widgets in slots use container-local grid coordinates. Assigned by the constraint service since schema 4.
+    LayoutGridRect? GridBounds = null);
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(ArtworkWidgetSettings), "artwork")]
@@ -246,7 +384,8 @@ public sealed record LayoutWidgetElement(
     WidgetSettings Settings,
     string? SkinId = null,
     int? SkinVersion = null,
-    IReadOnlyDictionary<string, string>? SkinSettings = null) : LayoutElement(InstanceId, Enabled, Geometry);
+    IReadOnlyDictionary<string, string>? SkinSettings = null,
+    LayoutGridRect? GridBounds = null) : LayoutElement(InstanceId, Enabled, Geometry, GridBounds);
 
 public sealed record LayoutContainerElement(
     string InstanceId,
@@ -261,38 +400,26 @@ public sealed record LayoutContainerElement(
     LayoutAnimationSettings Animation,
     LayoutSlot PrimarySlot,
     LayoutSlot SecondarySlot,
-    LayoutSlot CollapsedSlot) : LayoutElement(InstanceId, Enabled, Geometry);
+    LayoutGridRect? GridBounds = null) : LayoutElement(InstanceId, Enabled, Geometry, GridBounds);
 
 /// <summary>
-/// 描述长条外侧的自动折叠容器；折叠状态只保留触发区域，因此模型只保存展开内容。
-/// Describes an auto-collapsing container outside the strip; the collapsed state is trigger-only, so only expanded content is persisted.
+/// 单个横向或纵向档案：schema 4 起保存整数网格、顶层非折叠容器和折叠容器。
+/// A single horizontal or vertical profile; schema 4 stores the integer grid, top-level non-collapse containers, and collapse containers.
 /// </summary>
-public sealed record LayoutEdgeContainer(
-    string InstanceId,
-    bool Enabled,
-    LayoutEdge Edge,
-    int OffsetDip,
-    int TriggerThicknessDip,
-    int ProximityDip,
-    LayoutAnimationSettings Animation,
-    LayoutSlot ExpandedSlot);
-
 public sealed record LayoutProfile(
     LayoutProfileKey Key,
     PlayerLayoutMode LayoutMode,
     LayoutSurfaceSettings Surface,
-    IReadOnlyList<LayoutContainerElement> InlineContainers,
-    IReadOnlyList<LayoutEdgeContainer> EdgeContainers,
-    // 仅用于读取 schema 1；规范化后始终清空，避免新编辑器重新暴露旧三槽位根节点。
-    // Read-only schema-1 compatibility; normalization always clears it so the new editor cannot expose the legacy three-slot root.
-    LayoutContainerElement? Root = null);
+    LayoutGridSettings Grid,
+    IReadOnlyList<LayoutContainerElement> Containers,
+    IReadOnlyList<LayoutCollapseContainer> CollapseContainers);
 
 public sealed record LayoutDocument(
     int SchemaVersion,
     LayoutProfile Horizontal,
     LayoutProfile Vertical)
 {
-    public const int CurrentSchemaVersion = 3;
+    public const int CurrentSchemaVersion = 4;
 
     public LayoutProfile Get(LayoutProfileKey key) => key switch
     {
@@ -307,14 +434,3 @@ public sealed record LayoutDocument(
         _ => this
     };
 }
-
-/// <summary>
-/// 仅描述 schema 1/2 的四档案外壳；内部元素复用当前数据契约，未知旧字段由 JSON 读取器忽略。
-/// Describes only the four-profile schema-1/2 envelope; inner elements reuse current contracts while unknown legacy fields are ignored.
-/// </summary>
-public sealed record LegacyLayoutDocument(
-    int SchemaVersion,
-    LayoutProfile TaskbarHorizontal,
-    LayoutProfile TaskbarVertical,
-    LayoutProfile FloatingHorizontal,
-    LayoutProfile FloatingVertical);

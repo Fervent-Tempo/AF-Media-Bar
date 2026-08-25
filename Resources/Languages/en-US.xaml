@@ -209,6 +209,14 @@
   <sys:String x:Key="Settings.Layout.EditorAdvancedBehavior">Advanced behavior and animation</sys:String>
   <sys:String x:Key="Settings.Layout.EditorStaticFollowsProfile">Static containers follow the current profile's arrangement and need no separate orientation.</sys:String>
   <sys:String x:Key="Settings.Layout.EditorTaskbarEdgeUnavailable">The taskbar edge cannot host a collapse container. Runtime validation repeats if Explorer is temporarily unavailable.</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPlaceContainerHint">Container tool armed: click the canvas for a 1×1 container, or drag to draw a rectangle; Esc cancels.</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPlaceWidgetHint">Widget selected: click/drag inside a target container to place; Esc cancels.</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPlaceWidgetNeedsContainer">Cannot place: click inside a container on the canvas to place the widget.</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPlaceOutOfGrid">Placement rejected: the rectangle is outside the grid.</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPlaceOverlap">Placement rejected: the rectangle overlaps an existing container.</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPlaceDisconnected">Placement rejected: the new container must share an edge with an existing container.</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPlaceLastContainer">Action rejected: the last non-collapse container cannot be removed or disabled.</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorPlaceRejected">Placement rejected: the current rectangle is not allowed.</sys:String>
   <sys:String x:Key="Settings.Layout.EdgeTop">Top edge</sys:String>
   <sys:String x:Key="Settings.Layout.EdgeRight">Right edge</sys:String>
   <sys:String x:Key="Settings.Layout.EdgeBottom">Bottom edge</sys:String>

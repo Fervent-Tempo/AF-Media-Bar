@@ -266,8 +266,7 @@ public partial class MainWindow
             ? new Thickness(0)
             : CalculateCollapsedEdgeInsets(
                 _activeLayoutProfile,
-                _unavailableLayoutEdge,
-                _expandedEdgeContainerIds);
+                _expandedCollapseContainerIds);
         var collapsedLeft = (int)Math.Round(collapsedInsets.Left * playerScale.X * scale);
         var collapsedTop = (int)Math.Round(collapsedInsets.Top * playerScale.Y * scale);
         var collapsedRight = (int)Math.Round(collapsedInsets.Right * playerScale.X * scale);
@@ -613,8 +612,7 @@ public partial class MainWindow
         {
             var desiredSize = LayoutRuntimeService.CalculateCompositionSize(
                 _activeLayoutProfile,
-                _unavailableLayoutEdge,
-                _expandedEdgeContainerIds);
+                _expandedCollapseContainerIds);
             PlayerRoot.Width = desiredSize.WidthDip;
             PlayerRoot.Height = desiredSize.HeightDip;
         }

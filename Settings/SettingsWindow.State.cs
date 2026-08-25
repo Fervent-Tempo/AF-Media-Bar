@@ -191,6 +191,17 @@ public partial class SettingsWindow
         GeneralPage.Visibility = tag == "General" ? Visibility.Visible : Visibility.Collapsed;
         LayoutPage.Visibility = tag == "Layout" ? Visibility.Visible : Visibility.Collapsed;
         LayoutEditorPage.Visibility = tag == "LayoutEditor" ? Visibility.Visible : Visibility.Collapsed;
+        if (tag == "LayoutEditor")
+        {
+            // 进入布局编辑器时重建预览，确保此前清理的表面与框线恢复。
+            SyncLayoutEditor();
+        }
+        else
+        {
+            // 切离布局编辑器时释放预览表面与全部选择/边界 Adorner，避免框线残留在其页面或布局页上。
+            DisposeLayoutEditorSurfaces();
+            ClearSkinPreview();
+        }
         AppearancePage.Visibility = tag == "Appearance" ? Visibility.Visible : Visibility.Collapsed;
         InteractionPage.Visibility = tag == "Interaction" ? Visibility.Visible : Visibility.Collapsed;
         PerformancePage.Visibility = tag == "Performance" ? Visibility.Visible : Visibility.Collapsed;
