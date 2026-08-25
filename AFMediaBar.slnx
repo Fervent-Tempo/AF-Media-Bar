@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/AFMediaBar/AFMediaBar.csproj" />
     <Project Path="src/AFMediaBar.Core/AFMediaBar.Core.csproj" />
     <Project Path="src/AFMediaBar.Platform.Windows/AFMediaBar.Platform.Windows.csproj" />
   </Folder>
@@ -10,5 +11,4 @@
     <Project Path="prototypes/AFMediaBar.WinUI.TaskbarHost/AFMediaBar.WinUI.TaskbarHost.csproj" />
     <Project Path="prototypes/AFMediaBar.WinUI.Migration/AFMediaBar.WinUI.Migration.csproj" />
   </Folder>
-  <Project Path="AFMediaBar.csproj" />
 </Solution>

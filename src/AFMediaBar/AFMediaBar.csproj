@@ -35,19 +35,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="src\**\*.cs" />
-    <Compile Remove="tests\**\*.cs" />
-    <Compile Remove="prototypes\**\*.cs" />
-    <Page Remove="prototypes\**\*.xaml" />
-    <ApplicationDefinition Remove="prototypes\**\App.xaml" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="src\AFMediaBar.Core\AFMediaBar.Core.csproj" />
-    <ProjectReference Include="src\AFMediaBar.Platform.Windows\AFMediaBar.Platform.Windows.csproj" />
+    <ProjectReference Include="..\AFMediaBar.Core\AFMediaBar.Core.csproj" />
+    <ProjectReference Include="..\AFMediaBar.Platform.Windows\AFMediaBar.Platform.Windows.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="unchihugo.WPF-UI" Version="4.4.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Services\Players\" />
   </ItemGroup>
 </Project>

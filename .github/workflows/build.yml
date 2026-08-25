@@ -35,7 +35,7 @@ jobs:
         run: dotnet test .\AFMediaBar.slnx -c Release --no-build
 
       - name: Validate self-contained single-file publish
-        run: dotnet publish .\AFMediaBar.csproj -c Release -r win-x64 --self-contained true -p:ContinuousIntegrationBuild=true -o .\artifacts\AFMediaBar-win-x64
+        run: dotnet publish .\src\AFMediaBar\AFMediaBar.csproj -c Release -r win-x64 --self-contained true -p:ContinuousIntegrationBuild=true -o .\artifacts\AFMediaBar-win-x64
 
       - name: Verify single-file output
         shell: pwsh
