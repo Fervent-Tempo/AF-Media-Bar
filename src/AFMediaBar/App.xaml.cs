@@ -1,12 +1,17 @@
 using System.Diagnostics;
+using System.Text.Json;
 using System.Threading;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
 using AFMediaBar.Adapters;
+using AFMediaBar.Abstractions;
 using AFMediaBar.Interop;
 using AFMediaBar.Models;
 using AFMediaBar.Services;
+using AFMediaBar.Services.Lyrics;
+using AFMediaBar.Services.Players;
+using AFMediaBar.Services.Win32Api;
 using AFMediaBar.Settings;
 // System.Windows.Localization（枚举）与本地化帮助类同名，用别名消歧。
 using Loc = AFMediaBar.Services.Localization;
@@ -21,6 +26,13 @@ public partial class App : Application
     private UpdateService? _updateService;
     private SettingsWindow? _settingsWindow;
     private Version? _notifiedUpdateVersion;
+#if DEBUG
+    // 实时歌词调试状态：仅在歌词行变化时输出，避免 233ms 轮询刷屏。
+    // Debug lyric state: prints only when the active line changes, to avoid spam from the 233ms poll.
+    private string? _debugLyricsLrc;
+    private IReadOnlyList<LrcLine> _debugLyricsLines = [];
+    private int _debugLyricsLastIndex = -1;
+#endif
 
     internal SystemThemeService? ThemeService => _systemThemeService;
     internal SettingsCoordinator SettingsCoordinator { get; private set; } = null!;
@@ -251,9 +263,43 @@ public partial class App : Application
     {
         var window = new MainWindow();
         window.Closed += MainWindow_OnClosed;
+#if DEBUG
+        window.MediaSessionService.SnapshotChanged += DebugOutputLyrics;
+#endif
         MainWindow = window;
         window.Show();
     }
+
+#if DEBUG
+    // 实时歌词调试：根据快照位置解析 LRC 并输出当前行（仅行变化时打印）。
+    // Debug handler: resolves the active LRC line from the snapshot position.
+    private void DebugOutputLyrics(object? sender, MediaSnapshot snapshot)
+    {
+        if (snapshot.Lyrics is not { } lyrics || string.IsNullOrWhiteSpace(lyrics.Lrc))
+        {
+            return;
+        }
+
+        if (!string.Equals(_debugLyricsLrc, lyrics.Lrc, StringComparison.Ordinal))
+        {
+            _debugLyricsLrc = lyrics.Lrc;
+            _debugLyricsLines = LrcParser.Parse(lyrics.Lrc);
+            _debugLyricsLastIndex = -1;
+        }
+
+        var index = LrcParser.FindIndex(
+            _debugLyricsLines,
+            TimeSpan.FromSeconds(snapshot.Position));
+        if (index < 0 || index == _debugLyricsLastIndex)
+        {
+            return;
+        }
+
+        _debugLyricsLastIndex = index;
+        Debug.WriteLine(
+            $"[Lyrics][{lyrics.Source}] {_debugLyricsLines[index].Time:mm\\:ss} {_debugLyricsLines[index].Text}");
+    }
+#endif
 
     /// <summary>
     /// 将已持久化的字体预设写入应用级资源，替换 XAML 中的默认字体。
@@ -334,6 +380,12 @@ public partial class App : Application
         if (sender is Window window)
         {
             window.Closed -= MainWindow_OnClosed;
+#if DEBUG
+            if (window is MainWindow mainWindow)
+            {
+                mainWindow.MediaSessionService.SnapshotChanged -= DebugOutputLyrics;
+            }
+#endif
         }
 
         if (_shutdownRequested || Dispatcher.HasShutdownStarted)

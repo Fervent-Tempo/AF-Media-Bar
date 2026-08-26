@@ -916,7 +916,9 @@ public partial class SettingsWindow
         Loc.Get("Settings.Layout.EditorPreviewArtist"),
         "design-preview",
         Loc.Get("Settings.Layout.EditorPreviewSource"),
-        null);
+        null,
+        null,
+        0);
 
     private void LayoutPreviewSurface_OnElementSelected(object? sender, LayoutDesignElementEventArgs e)
     {

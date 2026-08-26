@@ -2,6 +2,9 @@ using System.Globalization;
 using System.IO;
 using AFMediaBar.Abstractions;
 using AFMediaBar.Models;
+using AFMediaBar.Services.Lyrics;
+using AFMediaBar.Services.Players;
+using AFMediaBar.Services.Win32Api;
 using Windows.Media.Control;
 using Windows.Storage.Streams;
 
@@ -13,7 +16,10 @@ namespace AFMediaBar.Services;
 /// </summary>
 public sealed class MediaSessionService : IDisposable
 {
+    private const string MemoryPlayerSourceId = "cloudmusic";
+    private const string NetEaseWindowClass = "OrpheusBrowserHost";
     private static readonly TimeSpan SessionReconnectGracePeriod = TimeSpan.FromSeconds(6);
+    private static readonly TimeSpan MemoryPlayerPollInterval = TimeSpan.FromMilliseconds(233);
     // 播放器常先发布标题、后发布封面；短时重试等待来源完成更新。
     // Players often publish text before artwork; short retries wait for settled metadata.
     private static readonly TimeSpan[] ArtworkRefreshDelays =
@@ -30,7 +36,22 @@ public sealed class MediaSessionService : IDisposable
     private readonly SemaphoreSlim _sessionGate = new(1, 1);
     private readonly List<SessionEntry> _entries = [];
     private readonly IArtworkDecoder _artworkDecoder;
+    private readonly IArtworkUriLoader _artworkUriLoader;
     private readonly IStringLocalizer _localizer;
+    private readonly object _publishGate = new();
+    private readonly object _memoryPlayerGate = new();
+    private readonly Dictionary<string, MemoryArtworkCacheEntry> _memoryArtworkCache =
+        new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _pendingMemoryArtworkUrls =
+        new(StringComparer.OrdinalIgnoreCase);
+    // 歌词按歌曲 id 缓存（null 表示已尝试但无歌词），pending 集合去重并发拉取。
+    // Lyrics cache per song id (null marks an attempted miss); pending set deduplicates in-flight fetches.
+    private readonly Dictionary<string, LyricsResult?> _lyricsCache =
+        new(StringComparer.Ordinal);
+    private readonly HashSet<string> _pendingLyricsIdentities =
+        new(StringComparer.Ordinal);
+    private readonly LyricsService _lyricsService =
+        new(new NetEaseLyricsProvider(), new LrclibLyricsProvider());
     // manager 和 session 都注册了事件，Dispose/SetSession 必须成对退订。
     // Both manager and session own event subscriptions that must be removed on teardown.
     private GlobalSystemMediaTransportControlsSessionManager? _manager;
@@ -43,6 +64,8 @@ public sealed class MediaSessionService : IDisposable
     private DateTime? _sessionMissingSinceUtc;
     private CancellationTokenSource? _sessionReconnectCancellation;
     private CancellationTokenSource? _artworkRefreshCancellation;
+    private MediaSnapshot _sessionSnapshot = MediaSnapshot.Disconnected;
+    private MediaSnapshot? _memorySnapshot;
     private MediaSnapshot _lastSnapshot = MediaSnapshot.Disconnected;
     // identity 标识曲目，fingerprint 标识封面内容，pending 防止重复重试。
     // Identity tracks the item, fingerprint tracks pixels, and pending deduplicates retries.
@@ -52,6 +75,10 @@ public sealed class MediaSessionService : IDisposable
     // 单调版本号阻止较慢的旧异步读取覆盖较新的媒体来源。
     // A monotonic version prevents stale async reads from overwriting a newer source.
     private int _refreshVersion;
+    private int _memoryPlayerVersion;
+    private CancellationTokenSource? _memoryPlayerCancellation;
+    private IMusicPlayer? _memoryPlayer;
+    private PlayerInfo? _memoryPlayerInfo;
     private bool _disposed;
 
     public MediaSessionService(
@@ -59,6 +86,7 @@ public sealed class MediaSessionService : IDisposable
         IStringLocalizer localizer)
     {
         _artworkDecoder = artworkDecoder;
+        _artworkUriLoader = new HttpArtworkLoader(artworkDecoder);
         _localizer = localizer;
     }
 
@@ -70,6 +98,8 @@ public sealed class MediaSessionService : IDisposable
 
     public async Task InitializeAsync()
     {
+        StartMemoryPlayerPoll();
+
         if (_manager is null)
         {
             // WinRT 事件是订阅制；Dispose 中必须退订，避免服务被 manager 保活。
@@ -346,7 +376,7 @@ public sealed class MediaSessionService : IDisposable
     {
         SetSession(null, resetSnapshot: false);
         PublishSessions();
-        Publish(_lastSnapshot with
+        Publish(_sessionSnapshot with
         {
             IsConnected = true,
             IsPlaying = false,
@@ -354,8 +384,8 @@ public sealed class MediaSessionService : IDisposable
             CanSkipPrevious = false,
             CanSkipNext = false,
             Artist = _localizer.Get("Main.Media.LoadingArtist"),
-            SourceId = _preferredSourceId ?? _lastSnapshot.SourceId,
-            SourceName = _preferredSourceName ?? _lastSnapshot.SourceName
+            SourceId = _preferredSourceId ?? _sessionSnapshot.SourceId,
+            SourceName = _preferredSourceName ?? _sessionSnapshot.SourceName
         });
     }
 
@@ -408,7 +438,7 @@ public sealed class MediaSessionService : IDisposable
         _session = session;
         if (resetSnapshot)
         {
-            _lastSnapshot = MediaSnapshot.Disconnected;
+            _sessionSnapshot = MediaSnapshot.Disconnected;
         }
 
         if (_session is not null)
@@ -560,7 +590,7 @@ public sealed class MediaSessionService : IDisposable
                     StringComparison.Ordinal);
             var previousFingerprint = _artworkFingerprint;
             var artwork = identityMatches
-                ? _lastSnapshot.Artwork
+                ? _sessionSnapshot.Artwork
                 : null;
             var publishedFingerprint = artwork is not null
                 ? _artworkFingerprint
@@ -671,7 +701,11 @@ public sealed class MediaSessionService : IDisposable
                 artist,
                 entry.SourceId,
                 entry.DisplayName,
-                artwork);
+                artwork,
+                null,
+                // GSMTC 不推送连续进度，位置由内存播放器（网易云）的 233ms 轮询提供。
+                // GSMTC does not push continuous progress; position comes from the memory player poll.
+                0);
     }
 
     private void ScheduleSettledArtworkRefresh(
@@ -851,7 +885,7 @@ public sealed class MediaSessionService : IDisposable
     private void RefreshPlaybackInfo()
     {
         var session = _session;
-        if (session is null || !_lastSnapshot.IsConnected)
+        if (session is null || !_sessionSnapshot.IsConnected)
         {
             return;
         }
@@ -860,7 +894,7 @@ public sealed class MediaSessionService : IDisposable
         {
             var playbackInfo = session.GetPlaybackInfo();
             var controls = playbackInfo.Controls;
-            Publish(_lastSnapshot with
+            Publish(_sessionSnapshot with
             {
                 IsPlaying = playbackInfo.PlaybackStatus ==
                     GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing,
@@ -892,8 +926,34 @@ public sealed class MediaSessionService : IDisposable
 
     private void Publish(MediaSnapshot snapshot)
     {
-        _lastSnapshot = snapshot;
-        SnapshotChanged?.Invoke(this, snapshot);
+        _sessionSnapshot = snapshot;
+
+        MediaSnapshot activeSnapshot;
+        lock (_memoryPlayerGate)
+        {
+            activeSnapshot = _memorySnapshot ?? snapshot;
+        }
+
+        PublishResolved(activeSnapshot);
+    }
+
+    private void PublishResolved(MediaSnapshot snapshot)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        lock (_publishGate)
+        {
+            if (Equals(_lastSnapshot, snapshot))
+            {
+                return;
+            }
+
+            _lastSnapshot = snapshot;
+            SnapshotChanged?.Invoke(this, snapshot);
+        }
     }
 
     private static bool IsPlaying(GlobalSystemMediaTransportControlsSession session)
@@ -942,6 +1002,7 @@ public sealed class MediaSessionService : IDisposable
         // 先取消后台工作，再退订 session/manager，防止关闭后继续发布快照。
         // Cancel background work before detaching session/manager event subscriptions.
         _disposed = true;
+        CancelMemoryPlayerPoll();
         CancelSessionReconnectGrace();
         CancelArtworkRefresh();
         SetSession(null);
@@ -963,5 +1024,379 @@ public sealed class MediaSessionService : IDisposable
         string SourceId,
         string DisplayName,
         GlobalSystemMediaTransportControlsSession Session);
+
+    private readonly record struct MemoryArtworkCacheEntry(IArtworkImage? Artwork);
+
+    private void StartMemoryPlayerPoll()
+    {
+        if (_disposed || _memoryPlayerCancellation is not null)
+        {
+            return;
+        }
+
+        var cancellation = new CancellationTokenSource();
+        _memoryPlayerCancellation = cancellation;
+        _ = PollMemoryPlayersAsync(cancellation, cancellation.Token);
+    }
+
+    private async Task PollMemoryPlayersAsync(
+        CancellationTokenSource cancellation,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                PlayerInfo? playerInfo = null;
+                try
+                {
+                    playerInfo = ReadMemoryPlayerInfo();
+                }
+                catch
+                {
+                    ResetMemoryPlayer();
+                }
+
+                if (_disposed)
+                {
+                    return;
+                }
+
+                if (playerInfo is { } info)
+                {
+                    if (ShouldUseMemoryPlayerInfo(info))
+                    {
+                        PublishMemoryPlayerInfo(info, cancellationToken);
+                    }
+                    else
+                    {
+                        PublishMemorySnapshot(null);
+                    }
+                }
+                else
+                {
+                    PublishMemorySnapshot(null);
+                }
+
+                await Task.Delay(MemoryPlayerPollInterval, cancellationToken);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Shutdown or service disposal stops the polling loop.
+        }
+        finally
+        {
+            if (ReferenceEquals(_memoryPlayerCancellation, cancellation))
+            {
+                _memoryPlayerCancellation = null;
+            }
+
+            cancellation.Dispose();
+        }
+    }
+
+    private PlayerInfo? ReadMemoryPlayerInfo()
+    {
+        if (!User32.GetWindowTitle(
+                NetEaseWindowClass,
+                out _,
+                out var processId))
+        {
+            ResetMemoryPlayer();
+            return null;
+        }
+
+        lock (_memoryPlayerGate)
+        {
+            if (_memoryPlayer is null || !_memoryPlayer.Validate(processId))
+            {
+                _memoryPlayer = new NetEase(processId);
+            }
+
+            return _memoryPlayer.GetPlayerInfo();
+        }
+    }
+
+    private void ResetMemoryPlayer()
+    {
+        lock (_memoryPlayerGate)
+        {
+            _memoryPlayer = null;
+            _memoryPlayerInfo = null;
+            _memoryPlayerVersion++;
+        }
+    }
+
+    private bool ShouldUseMemoryPlayerInfo(PlayerInfo playerInfo)
+    {
+        if (!playerInfo.Pause)
+        {
+            return true;
+        }
+
+        var sessionSnapshot = _sessionSnapshot;
+        return !sessionSnapshot.IsConnected ||
+            MemoryPlayerControlsMatch(sessionSnapshot.SourceId) ||
+            string.Equals(
+                sessionSnapshot.SourceName,
+                MediaSourceNameFormatter.GetDisplayName(
+                    MemoryPlayerSourceId,
+                    _localizer.Get("Main.Media.UnknownSource")),
+                StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void PublishMemoryPlayerInfo(
+        PlayerInfo playerInfo,
+        CancellationToken cancellationToken)
+    {
+        playerInfo = playerInfo with
+        {
+            Cover = NormalizeCoverUrl(playerInfo.Cover)
+        };
+
+        MemoryArtworkCacheEntry? cachedArtwork = null;
+        LyricsResult? lyrics = null;
+        bool shouldDownloadArtwork;
+        bool shouldLoadLyrics;
+
+        lock (_memoryPlayerGate)
+        {
+            var version = _memoryPlayerInfo is { } currentPlayerInfo &&
+                string.Equals(
+                    currentPlayerInfo.Identity,
+                    playerInfo.Identity,
+                    StringComparison.Ordinal) &&
+                string.Equals(
+                    currentPlayerInfo.Cover,
+                    playerInfo.Cover,
+                    StringComparison.Ordinal)
+                    ? _memoryPlayerVersion
+                    : ++_memoryPlayerVersion;
+            _memoryPlayerInfo = playerInfo;
+
+            var coverUrl = playerInfo.Cover;
+            if (_memoryArtworkCache.TryGetValue(coverUrl, out var artwork))
+            {
+                cachedArtwork = artwork;
+                shouldDownloadArtwork = false;
+            }
+            else
+            {
+                shouldDownloadArtwork =
+                    _pendingMemoryArtworkUrls.Add(coverUrl);
+            }
+
+            if (shouldDownloadArtwork)
+            {
+                _ = LoadMemoryArtworkAsync(
+                    coverUrl,
+                    version,
+                    cancellationToken);
+            }
+
+            _lyricsCache.TryGetValue(playerInfo.Identity, out lyrics);
+            shouldLoadLyrics = !_lyricsCache.ContainsKey(playerInfo.Identity) &&
+                _pendingLyricsIdentities.Add(playerInfo.Identity);
+        }
+
+        PublishMemorySnapshot(CreateMemorySnapshot(
+            playerInfo,
+            cachedArtwork?.Artwork) with
+        {
+            Lyrics = lyrics
+        });
+
+        if (shouldLoadLyrics)
+        {
+            _ = LoadLyricsAsync(playerInfo, cancellationToken);
+        }
+    }
+
+    private async Task LoadMemoryArtworkAsync(
+        string coverUrl,
+        int version,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (!Uri.TryCreate(coverUrl, UriKind.Absolute, out var uri))
+            {
+                RememberMemoryArtwork(coverUrl, null);
+                return;
+            }
+
+            var artwork = await _artworkUriLoader.LoadAsync(
+                uri,
+                cancellationToken);
+            RememberMemoryArtwork(coverUrl, artwork.Artwork);
+            if (artwork.Artwork is null)
+            {
+                return;
+            }
+
+            PlayerInfo? currentPlayerInfo;
+            LyricsResult? lyrics;
+            lock (_memoryPlayerGate)
+            {
+                currentPlayerInfo = _memoryPlayerInfo;
+                if (version != _memoryPlayerVersion ||
+                    currentPlayerInfo is not { } info ||
+                    !string.Equals(info.Cover, coverUrl, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                lyrics = _lyricsCache.TryGetValue(info.Identity, out var cached) ? cached : null;
+            }
+
+            PublishMemorySnapshot(CreateMemorySnapshot(
+                currentPlayerInfo.Value,
+                artwork.Artwork) with
+            {
+                Lyrics = lyrics
+            });
+        }
+        catch (OperationCanceledException)
+        {
+            // The service switched tracks or is shutting down.
+        }
+        catch
+        {
+            // Cache the miss so an unreachable cover URL is not retried on every poll.
+            RememberMemoryArtwork(coverUrl, null);
+        }
+        finally
+        {
+            lock (_memoryPlayerGate)
+            {
+                _pendingMemoryArtworkUrls.Remove(coverUrl);
+            }
+        }
+    }
+
+    private void RememberMemoryArtwork(string coverUrl, IArtworkImage? artwork)
+    {
+        lock (_memoryPlayerGate)
+        {
+            if (_memoryArtworkCache.Count >= 12 &&
+                !_memoryArtworkCache.ContainsKey(coverUrl))
+            {
+                var oldestUrl = _memoryArtworkCache.Keys.First();
+                _memoryArtworkCache.Remove(oldestUrl);
+            }
+
+            _memoryArtworkCache[coverUrl] = new MemoryArtworkCacheEntry(artwork);
+        }
+    }
+
+    private async Task LoadLyricsAsync(
+        PlayerInfo playerInfo,
+        CancellationToken cancellationToken)
+    {
+        var identity = playerInfo.Identity;
+        LyricsResult? lyrics;
+        try
+        {
+            var request = new LyricsRequest(
+                playerInfo.Title,
+                playerInfo.Artists,
+                playerInfo.Album,
+                playerInfo.Duration > 0 ? playerInfo.Duration : null,
+                string.IsNullOrWhiteSpace(identity) ? null : identity);
+            lyrics = await _lyricsService.GetLyricsAsync(request, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            lock (_memoryPlayerGate)
+            {
+                _pendingLyricsIdentities.Remove(identity);
+            }
+
+            return;
+        }
+        catch
+        {
+            // 拉取失败按未命中缓存，避免每次轮询都重试。 / Cache failures as misses so the poll does not retry every tick.
+            lyrics = null;
+        }
+
+        MediaSnapshot? updated;
+        lock (_memoryPlayerGate)
+        {
+            _pendingLyricsIdentities.Remove(identity);
+            _lyricsCache[identity] = lyrics;
+
+            if (_memoryPlayerInfo is not { } info ||
+                !string.Equals(info.Identity, identity, StringComparison.Ordinal) ||
+                _memorySnapshot is null)
+            {
+                return;
+            }
+
+            updated = _memorySnapshot with { Lyrics = lyrics };
+        }
+
+        PublishMemorySnapshot(updated);
+    }
+
+    private MediaSnapshot CreateMemorySnapshot(
+        PlayerInfo playerInfo,
+        IArtworkImage? artwork)
+    {
+        var sourceName = MediaSourceNameFormatter.GetDisplayName(
+            MemoryPlayerSourceId,
+            _localizer.Get("Main.Media.UnknownSource"));
+        var controlsAvailable = _sessionSnapshot.IsConnected &&
+            (MemoryPlayerControlsMatch(_sessionSnapshot.SourceId) ||
+                string.Equals(
+                    _sessionSnapshot.SourceName,
+                    sourceName,
+                    StringComparison.OrdinalIgnoreCase));
+
+        return new MediaSnapshot(
+            true,
+            !playerInfo.Pause,
+            controlsAvailable && _sessionSnapshot.CanPlayPause,
+            controlsAvailable && _sessionSnapshot.CanSkipPrevious,
+            controlsAvailable && _sessionSnapshot.CanSkipNext,
+            playerInfo.Title,
+            string.IsNullOrWhiteSpace(playerInfo.Artists)
+                ? _localizer.Get("Main.Media.UnknownArtist")
+                : playerInfo.Artists,
+            MemoryPlayerSourceId,
+            sourceName,
+            artwork,
+            null,
+            playerInfo.Schedule);
+    }
+
+    private static bool MemoryPlayerControlsMatch(string sourceId) =>
+        sourceId.Contains("cloudmusic", StringComparison.OrdinalIgnoreCase) ||
+        sourceId.Contains("netease", StringComparison.OrdinalIgnoreCase);
+
+    private static string NormalizeCoverUrl(string coverUrl) =>
+        string.IsNullOrWhiteSpace(coverUrl) ? string.Empty : coverUrl;
+
+    private void PublishMemorySnapshot(MediaSnapshot? snapshot)
+    {
+        lock (_memoryPlayerGate)
+        {
+            if (snapshot is null)
+            {
+                _memoryPlayerInfo = null;
+                _memoryPlayerVersion++;
+            }
+
+            _memorySnapshot = snapshot;
+        }
+
+        PublishResolved(snapshot ?? _sessionSnapshot);
+    }
+
+    private void CancelMemoryPlayerPoll()
+    {
+        _memoryPlayerCancellation?.Cancel();
+    }
 
 }
