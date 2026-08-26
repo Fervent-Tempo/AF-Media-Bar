@@ -8,34 +8,32 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
-### Planned
-
-- Display scrolling video subtitles/lyrics.
-- Display media progress bars.
-- Polish the UI and provide multiple preset themes.
-- Export and share configurations.
-- Add an onboarding tutorial.
-
 ### Added
 
-- Changed layout storage to two shared horizontal/vertical profiles for taskbar and floating hosts; host mode and arrangement are selected separately. Layout JSON is upgraded to schema 3, with automatic migration that retains validation/clamping, atomic writes, backups, and invalid-file recovery.
-- Replaced the tree editor with a drag-and-drop composition editor: static and hover-switch containers can be combined inside the strip, edge-collapse containers edit expanded content only, and the workspace is split into insert palette, canvas, and properties. Drop targets resolve from real container slots, preview matches runtime visuals, undo/reset are isolated per profile, and containers can restore default behavior.
-- The properties panel shows primary options first and can reset a single widget's defaults; the palette names title, artist, and concrete transport controls directly.
-- Added a combined title-and-artist widget for dense two-line media information; media text supports maximum lines, bounded width, and trimming, and maximum lines moved to advanced display without changing container height.
-- Added numeric size and component-specific settings for artwork, media text, commands, metrics, spectrum, and separators, with three-language resources and search indexing.
-- Added container content alignment options (center, start, end, and fill); hover proximity is adjustable in advanced behavior (default 48 DIP); collapsed edge containers fully hide their expanded content and keep only a trigger region.
-- Made the strip's empty area draggable; taskbar dragging temporarily exits automatic placement and position locks. Output-device and media-volume widgets now accept mouse-wheel input, and settings controls use responsive widths.
+- Added shared horizontal and vertical layout profiles with a fine-grid editor for placing and resizing widgets and composing static, hover-switch, and edge-collapse containers.
+- Added widget-specific sizing, text-line and width limits, content alignment, and hover-proximity settings.
+- Made empty strip areas draggable and added mouse-wheel interaction to output-device and media-volume widgets.
 
-### Fixed
+### Improved
 
-- Fixed multi-line titles being forced back into marquee mode and reset actions changing “previous/artist” roles into “play/title”.
-- Fixed collapsed edge-container drag bounds and flicker caused by sharing one pointer state across hover-switch containers; leave transitions now fade only into near content and commit leave content immediately, preventing a stale widget flash after the animation.
+- Settings previews and the player now share the same layout model, while collapse containers expand and retract along a shared edge with a selected anchor container.
+- Media text supports combined two-line title and artist display, with clearer input behavior for hover and collapsed states.
+- The layout workspace and properties panel adapt to different window widths and include matching text in all three supported languages.
 
-### Compatibility
+### Compatibility and Limitations
 
+- Layout data currently uses schema 4 while retaining migration, backup, and invalid-file recovery for older schemas.
+- The fine-grid editor is still being stabilized. Four-way collapse, DPI pointer alignment, outside-window proximity, taskbar recovery, and post-migration behavior have not yet completed real-Windows acceptance.
 - Interactive widgets are rejected from hover leave-state slots; edge-collapse content is completely hidden while collapsed and only a trigger region remains.
-- Host dimensions are estimated from strip and edge composition, while legacy nodes remain popup anchors/fallbacks; the Windows 10 1809+ minimum remains unchanged.
-- Legacy component registry values are read only for first-run migration and then removed; component configuration now has one source of truth at `%LOCALAPPDATA%\AFMediaBar\profiles\layout.json`.
+- Layout profiles and widget properties are stored in `%LOCALAPPDATA%\AFMediaBar\profiles\layout.json`; legacy registry settings are used only for first-run migration.
+
+### Planned
+
+- Display scrolling video subtitles or lyrics.
+- Display media progress bars.
+- Polish the UI and provide preset themes.
+- Export and share configurations.
+- Add an onboarding tutorial.
 
 ## [1.1.1] - 2026-08-17
 

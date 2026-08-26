@@ -469,11 +469,9 @@
                         BorderBrush="{DynamicResource MenuBorderBrush}"
                         BorderThickness="1"
                         CornerRadius="6"
-                        AllowDrop="True">
+                        AllowDrop="False">
                   <Border x:Name="LayoutVisualEditorHost"
-                          AllowDrop="True"
-                          DragOver="LayoutVisualEditorHost_OnDragOver"
-                          Drop="LayoutVisualEditorHost_OnDrop" />
+                          AllowDrop="False" />
                 </Border>
                 <Grid Grid.Column="2">
                   <Grid.ColumnDefinitions>
@@ -500,7 +498,8 @@
                           Background="{DynamicResource MenuHoverBrush}"
                           BorderBrush="{DynamicResource MenuBorderBrush}"
                           BorderThickness="1"
-                          CornerRadius="6">
+                          CornerRadius="6"
+                          PreviewMouseLeftButtonDown="LayoutEditorOutsidePreview_OnPreviewMouseLeftButtonDown">
                     <Grid>
                       <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -534,7 +533,8 @@
                         Background="{DynamicResource MenuHoverBrush}"
                         BorderBrush="{DynamicResource MenuBorderBrush}"
                         BorderThickness="1"
-                        CornerRadius="6">
+                        CornerRadius="6"
+                        PreviewMouseLeftButtonDown="LayoutEditorOutsidePreview_OnPreviewMouseLeftButtonDown">
                   <Grid>
                     <Grid.RowDefinitions>
                       <RowDefinition Height="*" />
@@ -548,7 +548,8 @@
                         Background="{DynamicResource MenuHoverBrush}"
                         BorderBrush="{DynamicResource MenuBorderBrush}"
                         BorderThickness="1"
-                        CornerRadius="6">
+                        CornerRadius="6"
+                        PreviewMouseLeftButtonDown="LayoutEditorOutsidePreview_OnPreviewMouseLeftButtonDown">
                   <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                     <StackPanel>
                       <TextBlock x:Name="LayoutEditorSelectionText"

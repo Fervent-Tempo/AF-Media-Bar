@@ -173,6 +173,38 @@ public sealed class LayoutEditingTests
             settings.AudioMonitorEnabled);
     }
 
+    [TestMethod]
+    public void WidgetRequiredCells_ReflectIntrinsicRuntimeSize()
+    {
+        var profile = CreateProfile();
+        var metrics = new LayoutWidgetElement(
+            "metrics-size",
+            true,
+            LayoutGeometry.Auto,
+            BuiltInWidgetTypeIds.Metrics,
+            new MetricsWidgetSettings(
+                MetricKind.SystemMemory,
+                false,
+                2500,
+                [MetricKind.SystemMemory]));
+        var command = new LayoutWidgetElement(
+            "command-size",
+            true,
+            LayoutGeometry.Auto,
+            BuiltInWidgetTypeIds.Command,
+            new CommandWidgetSettings(MediaCommandKind.SelectOutputDevice, 36));
+        var combined = new LayoutWidgetElement(
+            "combined-size",
+            true,
+            LayoutGeometry.Auto,
+            BuiltInWidgetTypeIds.MediaText,
+            new MediaTextWidgetSettings(MediaTextKind.TitleAndArtist, false, 14, 1));
+
+        Assert.AreEqual((10, 3), LayoutEditorService.ResolveWidgetRequiredCells(profile, metrics));
+        Assert.AreEqual((5, 5), LayoutEditorService.ResolveWidgetRequiredCells(profile, command));
+        Assert.AreEqual((19, 5), LayoutEditorService.ResolveWidgetRequiredCells(profile, combined));
+    }
+
     private static LayoutProfile CreateProfile()
     {
         var container = LayoutGridConstraintService.CreateContainer(LayoutContainerKind.Static) with

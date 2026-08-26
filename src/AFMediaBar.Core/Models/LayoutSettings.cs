@@ -356,7 +356,14 @@ public sealed record MediaTextWidgetSettings(
 
 public sealed record CommandWidgetSettings(
     MediaCommandKind Command,
-    int ButtonSizeDip) : WidgetSettings;
+    int ButtonSizeDip) : WidgetSettings
+{
+    /// <summary>
+    /// 新建命令组件的默认交互尺寸；在默认 8 DIP 网格下对应 3x3 格。
+    /// Default interaction size for new command widgets; this is 3x3 cells on the default 8 DIP grid.
+    /// </summary>
+    public const int DefaultButtonSizeDip = 24;
+}
 
 public sealed record MetricsWidgetSettings(
     MetricKind Metric,

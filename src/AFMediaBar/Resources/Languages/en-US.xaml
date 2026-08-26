@@ -211,6 +211,7 @@
   <sys:String x:Key="Settings.Layout.EditorTaskbarEdgeUnavailable">The taskbar edge cannot host a collapse container. Runtime validation repeats if Explorer is temporarily unavailable.</sys:String>
   <sys:String x:Key="Settings.Layout.EditorPlaceContainerHint">Container tool armed: click the canvas for a 1×1 container, or drag to draw a rectangle; Esc cancels.</sys:String>
   <sys:String x:Key="Settings.Layout.EditorPlaceWidgetHint">Widget selected: click/drag inside a target container to place; Esc cancels.</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorWidgetMayClip">Current {2}x{3} cells; full display recommends {0}x{1}. Runtime content may be clipped.</sys:String>
   <sys:String x:Key="Settings.Layout.EditorPlaceWidgetNeedsContainer">Cannot place: click inside a container on the canvas to place the widget.</sys:String>
   <sys:String x:Key="Settings.Layout.EditorPlaceOutOfGrid">Placement rejected: the rectangle is outside the grid.</sys:String>
   <sys:String x:Key="Settings.Layout.EditorPlaceOverlap">Placement rejected: the rectangle overlaps an existing container.</sys:String>

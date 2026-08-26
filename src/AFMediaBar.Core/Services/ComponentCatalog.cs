@@ -154,7 +154,7 @@ public static class ComponentCatalog
             1),
         BuiltInWidgetTypeIds.Command => new CommandWidgetSettings(
             MediaCommandKind.PlayPause,
-            36),
+            CommandWidgetSettings.DefaultButtonSizeDip),
         BuiltInWidgetTypeIds.Metrics => new MetricsWidgetSettings(
             MetricKind.SystemMemory,
             false,

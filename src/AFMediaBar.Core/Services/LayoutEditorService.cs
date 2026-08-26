@@ -36,6 +36,15 @@ public static class LayoutEditorService
     public static LayoutWidgetElement CreateWidget(string typeId) =>
         LayoutGridConstraintService.CreateWidget(typeId);
 
+    /// <summary>
+    /// 返回组件按当前档案方向和设置完整显示所需的最小网格尺寸；结构约束仍允许用户缩小到 1x1。
+    /// Returns the minimum grid footprint needed for a widget to render its content without clipping; structural constraints still allow 1x1.
+    /// </summary>
+    public static (int Width, int Height) ResolveWidgetRequiredCells(
+        LayoutProfile profile,
+        LayoutWidgetElement widget) =>
+        MeasureWidgetCells(profile, widget);
+
     public static LayoutCollapseContainer CreateCollapse(
         LayoutContainerElement anchor,
         LayoutEdge attachmentSide,
@@ -787,15 +796,29 @@ public static class LayoutEditorService
             case BuiltInWidgetTypeIds.MediaSource:
             {
                 var text = widget.Settings as MediaTextWidgetSettings;
+                var fontSize = Math.Clamp(text?.FontSizeDip ?? 14, 6, 72);
                 var combined = text?.TextKind == MediaTextKind.TitleAndArtist;
-                width = widget.Geometry?.WidthDip ??
-                    (vertical ? 68 : combined ? 150 : 210);
-                height = widget.Geometry?.HeightDip ?? 40;
+                width = widget.Geometry?.WidthDip ?? (vertical ? 68 : combined ? 150 : 210);
+                if (combined)
+                {
+                    var titleHeight = Math.Max(22, Math.Ceiling(fontSize * 1.25));
+                    var artistHeight = Math.Max(18, Math.Ceiling(Math.Max(6, fontSize - 3) * 1.25));
+                    height = widget.Geometry?.HeightDip ?? titleHeight + artistHeight;
+                }
+                else
+                {
+                    var lineHeight = Math.Max(12, Math.Ceiling(fontSize * 1.25));
+                    var lines = Math.Clamp(text?.MaxLines ?? 1, 1, 2);
+                    height = widget.Geometry?.HeightDip ?? Math.Max(40, lineHeight * lines);
+                }
                 break;
             }
             case BuiltInWidgetTypeIds.Command:
                 var command = widget.Settings as CommandWidgetSettings;
-                var buttonSize = Math.Clamp(command?.ButtonSizeDip ?? 36, 20, 96);
+                var buttonSize = Math.Clamp(
+                    command?.ButtonSizeDip ?? CommandWidgetSettings.DefaultButtonSizeDip,
+                    20,
+                    96);
                 width = buttonSize;
                 height = buttonSize;
                 break;

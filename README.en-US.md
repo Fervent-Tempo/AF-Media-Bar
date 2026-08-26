@@ -91,9 +91,9 @@ The app runs in its own process. Its WPF player can be hosted as a taskbar child
 | Source interaction | Click artwork to return to the media app; click a media-source widget to open source selection; media-text widgets are display-only; switch sessions with the mouse wheel |
 | Taskbar behavior | Automatic horizontal/vertical detection, manual placement and locking, automatic avoidance, auto-hide and fullscreen handling |
 | Window modes | Taskbar and floating hosts share horizontal and vertical layouts; host mode and arrangement are selected separately, with 70%-125% display scaling |
-| Container layout | Layouts are built on an integer logic grid; containers and widgets are placed by grid coordinates with click-to-create 1×1, drag-to-draw rectangles, and four-edge resizing; static, hover-switch, and collapse containers can all be composed |
+| Container layout | The settings page uses an integer logic grid for container and widget placement, including click-to-create 1×1, drag-to-draw rectangles, and four-edge resizing; schema 4 is still being stabilized and some boundary, collapse, and DPI cases may require fixes |
 | Information density | Hover states can use a two-line title-and-artist widget; maximum lines only wraps text inside the widget and does not change container size |
-| Auto-hide | Hide when every media session is stopped; collapse containers attach to a specific container and reveal their content along the shared edge when the pointer approaches |
+| Auto-hide | Hide when every media session is stopped; collapse containers use an anchor container and shared edge, but four-way schema-4 collapse remains subject to acceptance |
 | Audio devices | List and switch the default output device, including delayed wheel selection |
 | App volume | Match the selected media process and adjust its Windows mixer volume in 2% steps |
 | Visualizer | Nine-band spectrum from WASAPI loopback capture |
@@ -215,11 +215,12 @@ Disable unused metrics and the audio visualizer, or enable low-spec mode. The vi
 - The current instance follows the primary monitor taskbar only.
 - Browsers decide whether multiple tabs appear as one or multiple GSMTC sessions.
 - Only a `win-x64` package is currently published; ARM64 is not yet available.
+- The schema-4 grid editor is still being fixed; four-way collapse, DPI pointer alignment, outside-window proximity, and migration recovery are not yet guaranteed as stable behavior on real Windows.
 
 ## Privacy and Security
 
 - No telemetry, advertisements, accounts, or network analytics are included.
-- Automatic update checks only request the public `latest.json` manifest and never upload media data, device information, or user settings; they can be disabled in settings.
+- Update checks request the public `latest.json` manifest; lyrics and remote artwork may also request configured lyric/image services using current media metadata, but the app does not upload device information or user settings.
 - Media metadata, system metrics, and audio operations stay on the local machine.
 - The app runs as the current user, does not request elevation, and does not inject into Explorer.
 - Report security issues privately according to [SECURITY.md](SECURITY.md).
@@ -279,7 +280,7 @@ AF-Media-Bar/
 - [ ] Display scrolling video subtitles/lyrics.
 - [ ] Display media progress bars.
 - [ ] Polish the UI and provide multiple preset themes.
-- [ ] Provide a dedicated component layout editor .
+- [ ] Stabilize the fine-grid component layout editor and complete real-Windows acceptance.
 - [ ] Export and share configurations.
 - [ ] Add an onboarding tutorial.
 

@@ -28,6 +28,74 @@ public sealed class LayoutMigrationTests
     }
 
     [TestMethod]
+    public void CreateFromLegacy_UsesCompactCommandDefaultsAndUnclippedHoverTitles()
+    {
+        var document = CreateDefaultDocument();
+
+        Assert.AreEqual(54, document.Horizontal.Grid.Columns);
+        Assert.AreEqual(24, document.Horizontal.Grid.Rows);
+        Assert.HasCount(3, document.Horizontal.Containers);
+
+        foreach (var profile in new[] { document.Horizontal, document.Vertical })
+        {
+            var commands = LayoutRuntimeService.FindWidgets(
+                profile,
+                BuiltInWidgetTypeIds.Command);
+            Assert.IsNotEmpty(commands);
+            foreach (var command in commands)
+            {
+                var settings = command.Settings as CommandWidgetSettings;
+                Assert.IsNotNull(settings);
+                Assert.AreEqual(CommandWidgetSettings.DefaultButtonSizeDip, settings.ButtonSizeDip);
+                Assert.IsNotNull(command.GridBounds);
+                Assert.AreEqual(3, command.GridBounds!.Width);
+                Assert.AreEqual(3, command.GridBounds.Height);
+            }
+
+            var hover = profile.Containers.Single(container =>
+                container.InstanceId == "media-interaction");
+            var mediaText = hover.PrimarySlot.Children
+                .Concat(hover.SecondarySlot.Children)
+                .OfType<LayoutWidgetElement>()
+                .Where(widget => widget.Settings is MediaTextWidgetSettings)
+                .ToArray();
+            Assert.IsNotEmpty(mediaText);
+            foreach (var widget in mediaText)
+            {
+                var required = LayoutEditorService.ResolveWidgetRequiredCells(profile, widget);
+                Assert.IsNotNull(widget.GridBounds);
+                Assert.IsTrue(
+                    widget.GridBounds!.Width >= required.Width &&
+                    widget.GridBounds.Height >= required.Height,
+                    $"{profile.Key}:{widget.InstanceId} is {widget.GridBounds}, requires {required.Width}x{required.Height}.");
+            }
+        }
+
+        var horizontalHover = document.Horizontal.Containers.Single(container =>
+            container.InstanceId == "media-interaction");
+        Assert.AreEqual(new LayoutGridRect(5, 0, 31, 5), horizontalHover.GridBounds);
+        var title = horizontalHover.PrimarySlot.Children
+            .OfType<LayoutWidgetElement>()
+            .Single(widget => widget.InstanceId == "title");
+        Assert.AreEqual(new LayoutGridRect(0, 0, 31, 5), title.GridBounds);
+        var trailing = document.Horizontal.Containers.Single(container =>
+            container.InstanceId == "always-trailing");
+        Assert.AreEqual(new LayoutGridRect(36, 0, 18, 5), trailing.GridBounds);
+        Assert.AreEqual(
+            new LayoutGridRect(1, 1, 3, 3),
+            trailing.PrimarySlot.Children.Single(child => child.InstanceId == "output-device").GridBounds);
+        Assert.AreEqual(
+            new LayoutGridRect(5, 1, 3, 3),
+            trailing.PrimarySlot.Children.Single(child => child.InstanceId == "volume").GridBounds);
+        Assert.AreEqual(
+            new LayoutGridRect(8, 1, 10, 3),
+            trailing.PrimarySlot.Children.Single(child => child.InstanceId == "metrics").GridBounds);
+        CollectionAssert.DoesNotContain(
+            trailing.PrimarySlot.Children.Select(child => child.InstanceId).ToArray(),
+            "divider");
+    }
+
+    [TestMethod]
     public void Normalize_ClampsSpectrumAndSurfaceValues()
     {
         var document = CreateDefaultDocument();

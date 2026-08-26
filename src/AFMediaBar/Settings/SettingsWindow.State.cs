@@ -90,7 +90,10 @@ public partial class SettingsWindow
         _isSyncing = false;
         RebuildSearchIndex();
         UpdateDependencies();
-        SyncLayoutEditor();
+        if (!_layoutEditorResizeInProgress)
+        {
+            SyncLayoutEditor();
+        }
     }
 
     /// <summary>

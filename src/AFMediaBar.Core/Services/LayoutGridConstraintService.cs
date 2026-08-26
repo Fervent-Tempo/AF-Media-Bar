@@ -1091,8 +1091,13 @@ public static class LayoutGridConstraintService
         LayoutGridRect candidate,
         string? ignoredId = null)
     {
-        var owner = FindContainer(profile, ownerId);
-        if (owner is null || !owner.Enabled || owner.GridBounds is not { } ownerBounds)
+        var inlineOwner = FindContainer(profile, ownerId);
+        var collapseOwner = FindCollapse(profile, ownerId);
+        var ownerBounds = inlineOwner?.GridBounds ?? collapseOwner?.GridBounds;
+        if ((inlineOwner is null && collapseOwner is null) ||
+            inlineOwner is { Enabled: false } ||
+            collapseOwner is { Enabled: false } ||
+            ownerBounds is not { } bounds)
         {
             return false;
         }
@@ -1100,8 +1105,8 @@ public static class LayoutGridConstraintService
         if (candidate.IsEmpty ||
             candidate.X < 0 ||
             candidate.Y < 0 ||
-            candidate.Right > ownerBounds.Width ||
-            candidate.Bottom > ownerBounds.Height)
+            candidate.Right > bounds.Width ||
+            candidate.Bottom > bounds.Height)
         {
             return false;
         }

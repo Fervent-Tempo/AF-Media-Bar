@@ -15,6 +15,7 @@ public static class LayoutMigrationService
     private const int MaximumProximityDip = 256;
     private const int MaximumMediaTextLines = 2;
     private const int DefaultCellSizeDip = 8;
+    private const int DefaultHorizontalTitleWidthDip = 248;
     private const int MinimumTriggerThicknessDip = 2;
     private const int MaximumTriggerThicknessDip = 24;
 
@@ -27,7 +28,48 @@ public static class LayoutMigrationService
         MetricSettings metrics)
     {
         var schema3 = BuildSchema3Document(window, metrics);
-        return MigrateSchema3To4(schema3);
+        return ApplyHorizontalDefaultTemplate(MigrateSchema3To4(schema3));
+    }
+
+    /// <summary>
+    /// 应用当前用户确认的横向默认档案微调；只用于新建/重置默认档案，不参与旧文件迁移。
+    /// Applies the accepted horizontal default-profile fine tuning for new/reset defaults only, never legacy-file migration.
+    /// </summary>
+    private static LayoutDocument ApplyHorizontalDefaultTemplate(LayoutDocument document)
+    {
+        var horizontal = document.Horizontal;
+        var trailing = horizontal.Containers.FirstOrDefault(container =>
+            string.Equals(container.InstanceId, "always-trailing", StringComparison.Ordinal));
+        if (trailing is null)
+        {
+            return document;
+        }
+
+        var children = trailing.PrimarySlot.Children
+            .Select(child => child switch
+            {
+                LayoutWidgetElement { InstanceId: "output-device", GridBounds: { } bounds } widget =>
+                    widget with { GridBounds = bounds with { X = 1 } },
+                LayoutWidgetElement { InstanceId: "volume", GridBounds: { } bounds } widget =>
+                    widget with { GridBounds = bounds with { X = 5 } },
+                _ => child
+            })
+            .ToArray();
+        var updatedTrailing = trailing with
+        {
+            PrimarySlot = trailing.PrimarySlot with { Children = children }
+        };
+        return document with
+        {
+            Horizontal = horizontal with
+            {
+                Containers = horizontal.Containers
+                    .Select(container => string.Equals(container.InstanceId, trailing.InstanceId, StringComparison.Ordinal)
+                        ? updatedTrailing
+                        : container)
+                    .ToArray()
+            }
+        };
     }
 
     /// <summary>
@@ -206,7 +248,9 @@ public static class LayoutMigrationService
                 MediaCommandKind.SelectOutputDevice));
         }
 
-        if (metrics.VolumeControlEnabled)
+        // 横向默认档案沿用当前用户确认的布局模板，默认保留音量按钮；布局编辑器仍可删除它。
+        // The canonical horizontal default keeps the volume button from the user's accepted template; the editor can still remove it.
+        if (metrics.VolumeControlEnabled || !vertical)
         {
             trailingChildren.Add(CreateSchema3Command("volume", MediaCommandKind.AdjustVolume));
         }
@@ -224,19 +268,12 @@ public static class LayoutMigrationService
                     cycleMetrics)));
         }
 
-        if (!vertical)
-        {
-            trailingChildren.Add(CreateSchema3Widget(
-                "divider",
-                BuiltInWidgetTypeIds.Separator,
-                new SeparatorWidgetSettings(1, 22)));
-        }
-
         if (trailingChildren.Count > 0)
         {
             inlineContainers.Add(CreateSchema3StaticContainer(
                 "always-trailing",
-                trailingChildren));
+                trailingChildren,
+                heightDip: vertical ? null : 40));
         }
 
         var surface = LayoutSurfaceSettings.Default with
@@ -262,12 +299,18 @@ public static class LayoutMigrationService
 
     private static Schema3ContainerElement CreateSchema3StaticContainer(
         string id,
-        IReadOnlyList<Schema3Element> children)
+        IReadOnlyList<Schema3Element> children,
+        int? widthDip = null,
+        int? heightDip = null)
     {
         return new Schema3ContainerElement(
             id,
             true,
-            LayoutGeometry.Auto,
+            LayoutGeometry.Auto with
+            {
+                WidthDip = widthDip,
+                HeightDip = heightDip
+            },
             LayoutContainerKind.Static,
             LayoutFlowOrientation.Automatic,
             LayoutContentAlignment.Center,
@@ -294,7 +337,10 @@ public static class LayoutMigrationService
                 "title",
                 MediaTextKind.Title,
                 14,
-                heightDip: 20));
+                widthDip: vertical ? null : DefaultHorizontalTitleWidthDip,
+                heightDip: 40,
+                enableMarquee: false,
+                maxLines: 2));
         }
         else if (metrics.AudioMonitorEnabled && !vertical)
         {
@@ -312,7 +358,9 @@ public static class LayoutMigrationService
                 "media-active-text",
                 MediaTextKind.TitleAndArtist,
                 14,
-                vertical ? null : 150));
+                vertical ? null : 150,
+                enableMarquee: true,
+                maxLines: 1));
         }
 
         activeChildren.Add(CreateSchema3Command("previous", MediaCommandKind.Previous));
@@ -340,12 +388,14 @@ public static class LayoutMigrationService
         MediaTextKind kind,
         int fontSizeDip,
         int? widthDip = null,
-        int? heightDip = null)
+        int? heightDip = null,
+        bool enableMarquee = true,
+        int maxLines = 1)
     {
         return CreateSchema3Widget(
             id,
             BuiltInWidgetTypeIds.MediaText,
-            new MediaTextWidgetSettings(kind, true, fontSizeDip, 1)) with
+            new MediaTextWidgetSettings(kind, enableMarquee, fontSizeDip, maxLines)) with
         {
             Geometry = LayoutGeometry.Auto with
             {
@@ -362,7 +412,7 @@ public static class LayoutMigrationService
         return CreateSchema3Widget(
             id,
             BuiltInWidgetTypeIds.Command,
-            new CommandWidgetSettings(command, 36));
+            new CommandWidgetSettings(command, CommandWidgetSettings.DefaultButtonSizeDip));
     }
 
     private static Schema3WidgetElement CreateSchema3Widget(
@@ -993,8 +1043,20 @@ public static class LayoutMigrationService
         var secondary = MeasureSchema3SlotCells(container.SecondarySlot, vertical, gapDip);
         var collapsed = MeasureSchema3SlotCells(container.CollapsedSlot, vertical, gapDip);
         return (
-            Math.Max(1, Math.Max(primary.W, Math.Max(secondary.W, collapsed.W))),
-            Math.Max(1, Math.Max(primary.H, Math.Max(secondary.H, collapsed.H))));
+            Math.Max(
+                1,
+                Math.Max(
+                    primary.W,
+                    Math.Max(
+                        secondary.W,
+                        Math.Max(collapsed.W, ToCells(container.Geometry?.WidthDip ?? 0))))),
+            Math.Max(
+                1,
+                Math.Max(
+                    primary.H,
+                    Math.Max(
+                        secondary.H,
+                        Math.Max(collapsed.H, ToCells(container.Geometry?.HeightDip ?? 0))))));
     }
 
     private static (int W, int H) MeasureSchema3SlotCells(
@@ -1056,7 +1118,10 @@ public static class LayoutMigrationService
             }
             case BuiltInWidgetTypeIds.Command:
                 var command = widget.Settings as CommandWidgetSettings;
-                var buttonSize = Math.Clamp(command?.ButtonSizeDip ?? 36, 20, 96);
+                var buttonSize = Math.Clamp(
+                    command?.ButtonSizeDip ?? CommandWidgetSettings.DefaultButtonSizeDip,
+                    20,
+                    96);
                 width = buttonSize;
                 height = buttonSize;
                 break;

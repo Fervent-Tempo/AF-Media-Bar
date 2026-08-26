@@ -210,6 +210,7 @@
   <sys:String x:Key="Settings.Layout.EditorTaskbarEdgeUnavailable">任务栏占用的边缘不可放置折叠容器；Explorer 暂时不可用时会在运行时再次校验。</sys:String>
   <sys:String x:Key="Settings.Layout.EditorPlaceContainerHint">已选择容器工具：在画布上单击创建 1×1 容器，或按住拖动创建矩形；Esc 取消。</sys:String>
   <sys:String x:Key="Settings.Layout.EditorPlaceWidgetHint">已选择组件：移动到目标容器内单击/拖动放置；Esc 取消。</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorWidgetMayClip">当前 {2}×{3} 格，小于完整显示建议的 {0}×{1} 格，运行时内容可能被裁切。</sys:String>
   <sys:String x:Key="Settings.Layout.EditorPlaceWidgetNeedsContainer">无法放置：请先单击画布上的一个容器内部来放置组件。</sys:String>
   <sys:String x:Key="Settings.Layout.EditorPlaceOutOfGrid">放置失败：矩形超出网格边界。</sys:String>
   <sys:String x:Key="Settings.Layout.EditorPlaceOverlap">放置失败：与已有容器重叠。</sys:String>
