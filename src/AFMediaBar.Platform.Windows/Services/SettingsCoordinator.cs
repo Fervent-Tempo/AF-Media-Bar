@@ -1,4 +1,6 @@
 using AFMediaBar.Models;
+using AFMediaBar.Layout.Defaults;
+using AFMediaBar.Layout.Serialization;
 
 namespace AFMediaBar.Services;
 
@@ -105,7 +107,7 @@ public sealed class SettingsCoordinator
 
     public void UpdateLayout(LayoutDocument layout)
     {
-        var normalized = LayoutMigrationService.Normalize(layout);
+        var normalized = LayoutDocumentNormalizer.Normalize(layout);
         if (normalized == Current.Layout)
         {
             return;
@@ -118,7 +120,7 @@ public sealed class SettingsCoordinator
 
     public void SynchronizeLayout(LayoutDocument layout)
     {
-        var normalized = LayoutMigrationService.Normalize(layout);
+        var normalized = LayoutDocumentNormalizer.Normalize(layout);
         if (normalized == Current.Layout)
         {
             return;
@@ -183,9 +185,7 @@ public sealed class SettingsCoordinator
         LanguageSettingsService.Save(AppLanguage.FollowSystem);
         WindowSettingsService.Save(WindowSettings.Default);
         PlacementSettingsService.Save(PlacementSettings.Default);
-        var layout = LayoutMigrationService.CreateFromLegacy(
-            WindowSettings.Default,
-            MetricSettings.Default);
+        var layout = LayoutDefaultTemplates.LoadDocument();
         LayoutSettingsService.Save(layout);
         StartupService.SetEnabled(false);
         Current = new ApplicationSettings(
@@ -210,7 +210,7 @@ public sealed class SettingsCoordinator
             return;
         }
 
-        var layout = LayoutMigrationService.CreateFromLegacy(Current.Window, Current.Metrics);
+        var layout = LayoutDefaultTemplates.LoadDocument();
         LayoutSettingsService.Save(layout);
         Current = Current with { Layout = layout };
     }
@@ -240,7 +240,7 @@ public sealed class SettingsCoordinator
                 }
             }
         };
-        updated = LayoutMigrationService.Normalize(updated);
+        updated = LayoutDocumentNormalizer.Normalize(updated);
         if (updated == layout)
         {
             return;
@@ -254,7 +254,7 @@ public sealed class SettingsCoordinator
     {
         try
         {
-            return Current.Layout == LayoutMigrationService.CreateFromLegacy(window, metrics);
+            return Current.Layout == LayoutDefaultTemplates.LoadDocument();
         }
         catch (Exception exception)
         {

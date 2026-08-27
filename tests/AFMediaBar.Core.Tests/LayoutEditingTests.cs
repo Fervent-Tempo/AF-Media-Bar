@@ -1,5 +1,6 @@
 using AFMediaBar.Models;
 using AFMediaBar.Services;
+using AFMediaBar.Layout.Widgets;
 
 namespace AFMediaBar.Core.Tests;
 
@@ -12,14 +13,10 @@ public sealed class LayoutEditingTests
         var source = CreateProfile();
         var originalCount = source.Containers.Count;
 
-        var changed = LayoutEditorService.TryAddContainer(
-            source,
-            LayoutContainerKind.HoverSwitch,
-            out var updated,
-            out var failure);
+        var result = LayoutPlacementService.TryAddContainer(source, LayoutContainerKind.HoverSwitch);
 
-        Assert.IsTrue(changed, failure.ToString());
-        Assert.AreEqual(LayoutEditFailure.None, failure);
+        Assert.IsTrue(result.Success, result.Failure.ToString());
+        var updated = result.Updated!;
         Assert.HasCount(originalCount + 1, updated.Containers);
         Assert.HasCount(originalCount, source.Containers);
         Assert.AreEqual(LayoutContainerKind.HoverSwitch, updated.Containers[^1].ContainerKind);
@@ -31,16 +28,11 @@ public sealed class LayoutEditingTests
     {
         var source = CreateProfile();
 
-        var changed = LayoutEditorService.TryAddCollapse(
-            source,
-            LayoutEdge.Bottom,
-            LayoutEdge.Bottom,
-            out var updated,
-            out var failure);
+        var result = LayoutPlacementService.TryAddCollapse(source, LayoutEdge.Bottom, LayoutEdge.Bottom);
 
-        Assert.IsFalse(changed);
-        Assert.AreSame(source, updated);
-        Assert.AreEqual(LayoutEditFailure.EdgeUnavailable, failure);
+        Assert.IsFalse(result.Success);
+        Assert.AreSame(null, result.Updated);
+        Assert.AreEqual(LayoutGridFailure.InvalidAttachmentSide, result.Failure);
     }
 
     [TestMethod]
@@ -48,20 +40,26 @@ public sealed class LayoutEditingTests
     {
         var source = CreateProfile();
 
-        var changed = LayoutEditorService.TryAddCollapse(
-            source,
-            LayoutEdge.Right,
-            null,
-            out var updated,
-            out var failure);
+        var result = LayoutPlacementService.TryAddCollapse(source, LayoutEdge.Right, null);
 
-        Assert.IsTrue(changed);
-        Assert.AreEqual(LayoutEditFailure.None, failure);
+        Assert.IsTrue(result.Success);
+        var updated = result.Updated!;
         Assert.HasCount(1, updated.CollapseContainers);
         Assert.AreEqual(
             source.Containers[0].InstanceId,
             updated.CollapseContainers[0].Attachment.AnchorContainerId);
         Assert.IsTrue(LayoutGridConstraintService.IsProfileValid(updated));
+    }
+
+    [TestMethod]
+    public void LayoutPlacementServiceAddsConnectedContainer()
+    {
+        var source = CreateProfile();
+        var result = LayoutPlacementService.TryAddContainer(source, LayoutContainerKind.Static);
+
+        Assert.IsTrue(result.Success);
+        Assert.HasCount(source.Containers.Count + 1, result.Updated!.Containers);
+        Assert.IsTrue(LayoutGridConstraintService.IsProfileValid(result.Updated));
     }
 
     [TestMethod]
@@ -75,25 +73,47 @@ public sealed class LayoutEditingTests
             LayoutGeometry.Auto,
             BuiltInWidgetTypeIds.Separator,
             new SeparatorWidgetSettings(1, 22));
-        Assert.IsTrue(LayoutEditorService.TryAddWidget(
-            source,
+        var first = LayoutGridConstraintService.TryAddWidget(
+            source, container.InstanceId, LayoutSlotKind.Primary,
+            widget with { GridBounds = new LayoutGridRect(0, 0, 3, 3) });
+        Assert.IsTrue(first.Success);
+        var once = first.Updated!;
+
+        var twice = LayoutGridConstraintService.TryAddWidget(
+            once, container.InstanceId, LayoutSlotKind.Primary,
+            widget with { GridBounds = new LayoutGridRect(4, 0, 3, 3) });
+
+        Assert.IsFalse(twice.Success);
+        Assert.AreEqual(LayoutGridFailure.DuplicateInstanceId, twice.Failure);
+    }
+
+    [TestMethod]
+    public void LayoutConstraintServiceAddsCallerProvidedWidgetSettings()
+    {
+        var profile = CreateProfile();
+        var container = profile.Containers[0];
+        var widget = new LayoutWidgetElement(
+            "custom-command",
+            true,
+            LayoutGeometry.Auto,
+            BuiltInWidgetTypeIds.Command,
+            new CommandWidgetSettings(MediaCommandKind.Next, 48),
+            null,
+            null,
+            null,
+            new LayoutGridRect(0, 0, 3, 3));
+
+        var result = LayoutGridConstraintService.TryAddWidget(
+            profile,
             container.InstanceId,
             LayoutSlotKind.Primary,
-            widget,
-            out var once,
-            out _));
+            widget);
 
-        var changed = LayoutEditorService.TryAddWidget(
-            once,
-            container.InstanceId,
-            LayoutSlotKind.Primary,
-            widget,
-            out var twice,
-            out var failure);
-
-        Assert.IsFalse(changed);
-        Assert.AreSame(once, twice);
-        Assert.AreEqual(LayoutEditFailure.DuplicateInstanceId, failure);
+        Assert.IsTrue(result.Success);
+        var added = result.Updated!.Containers[0].PrimarySlot.Children
+            .OfType<LayoutWidgetElement>()
+            .Single(item => item.InstanceId == widget.InstanceId);
+        Assert.AreEqual(MediaCommandKind.Next, ((CommandWidgetSettings)added.Settings).Command);
     }
 
     [TestMethod]
@@ -118,16 +138,14 @@ public sealed class LayoutEditingTests
             BuiltInWidgetTypeIds.Command,
             new CommandWidgetSettings(MediaCommandKind.PlayPause, 24));
 
-        var changed = LayoutEditorService.TryAddWidget(
+        var result = LayoutGridConstraintService.TryAddWidget(
             source,
             collapse.InstanceId,
             LayoutSlotKind.Expanded,
-            widget,
-            out var updated,
-            out var failure);
+            widget with { GridBounds = new LayoutGridRect(0, 0, 3, 3) });
 
-        Assert.IsTrue(changed);
-        Assert.AreEqual(LayoutEditFailure.None, failure);
+        Assert.IsTrue(result.Success);
+        var updated = result.Updated!;
         Assert.IsNotNull(updated.CollapseContainers[0].ExpandedSlot.Children.Single().GridBounds);
     }
 
@@ -200,9 +218,9 @@ public sealed class LayoutEditingTests
             BuiltInWidgetTypeIds.MediaText,
             new MediaTextWidgetSettings(MediaTextKind.TitleAndArtist, false, 14, 1));
 
-        Assert.AreEqual((10, 3), LayoutEditorService.ResolveWidgetRequiredCells(profile, metrics));
-        Assert.AreEqual((5, 5), LayoutEditorService.ResolveWidgetRequiredCells(profile, command));
-        Assert.AreEqual((19, 5), LayoutEditorService.ResolveWidgetRequiredCells(profile, combined));
+        Assert.AreEqual((10, 3), WidgetMeasurementService.MeasureRequiredCells(profile, metrics));
+        Assert.AreEqual((5, 5), WidgetMeasurementService.MeasureRequiredCells(profile, command));
+        Assert.AreEqual((19, 5), WidgetMeasurementService.MeasureRequiredCells(profile, combined));
     }
 
     private static LayoutProfile CreateProfile()

@@ -1,4 +1,6 @@
-using AFMediaBar.Models;
+using AFMediaBar.Layout.Editing;
+using AFMediaBar.Layout.Models;
+using AFMediaBar.Layout.Widgets;
 
 namespace AFMediaBar.Services;
 
@@ -112,7 +114,7 @@ public static class LayoutGridConstraintService
 
     public static LayoutWidgetElement CreateWidget(string typeId)
     {
-        var settings = ComponentCatalog.CreateDefaultSettings(typeId);
+        var settings = LayoutComponentCatalog.CreateDefaultSettings(typeId);
         return new LayoutWidgetElement(
             $"widget-{Guid.NewGuid():N}",
             true,
@@ -387,7 +389,7 @@ public static class LayoutGridConstraintService
             {
                 foreach (var widget in container.PrimarySlot.Children.OfType<LayoutWidgetElement>())
                 {
-                    if (widget.Enabled && ComponentCatalog.IsInteractive(widget))
+                    if (widget.Enabled && LayoutComponentCatalog.IsInteractive(widget))
                     {
                         errors.Add(new LayoutValidationError(widget.InstanceId, LayoutGridFailure.WidgetNotAllowed));
                     }
@@ -588,6 +590,70 @@ public static class LayoutGridConstraintService
 
     // ---------- 编辑操作 ----------
 
+    /// <summary>
+    /// Adds a caller-provided widget to a container slot and validates the
+    /// resulting immutable profile. The editor uses this overload when a
+    /// palette entry carries semantic settings such as a specific command.
+    /// </summary>
+    public static LayoutGridEditResult TryAddWidget(
+        LayoutProfile profile,
+        string containerId,
+        LayoutSlotKind slotKind,
+        LayoutWidgetElement widget)
+    {
+        if (FindAny(profile, widget.InstanceId) is not null)
+        {
+            return LayoutGridEditResult.Fail(LayoutGridFailure.DuplicateInstanceId);
+        }
+
+        if (FindContainer(profile, containerId) is { } container)
+        {
+            if (slotKind == LayoutSlotKind.Expanded ||
+                slotKind == LayoutSlotKind.Secondary && container.ContainerKind != LayoutContainerKind.HoverSwitch)
+            {
+                return LayoutGridEditResult.Fail(LayoutGridFailure.NotSupported);
+            }
+
+            var slot = slotKind == LayoutSlotKind.Secondary
+                ? container.SecondarySlot
+                : container.PrimarySlot;
+            var candidate = profile with
+            {
+                Containers = Replace(
+                    profile.Containers,
+                    container with
+                    {
+                        PrimarySlot = slotKind == LayoutSlotKind.Primary
+                            ? slot with { Children = slot.Children.Append(widget).ToArray() }
+                            : container.PrimarySlot,
+                        SecondarySlot = slotKind == LayoutSlotKind.Secondary
+                            ? slot with { Children = slot.Children.Append(widget).ToArray() }
+                            : container.SecondarySlot
+                    })
+            };
+            return ValidateCandidate(candidate, widget.InstanceId);
+        }
+
+        if (FindCollapse(profile, containerId) is { } collapse && slotKind == LayoutSlotKind.Expanded)
+        {
+            var candidate = profile with
+            {
+                CollapseContainers = Replace(
+                    profile.CollapseContainers,
+                    collapse with
+                    {
+                        ExpandedSlot = collapse.ExpandedSlot with
+                        {
+                            Children = collapse.ExpandedSlot.Children.Append(widget).ToArray()
+                        }
+                    })
+            };
+            return ValidateCandidate(candidate, widget.InstanceId);
+        }
+
+        return LayoutGridEditResult.Fail(LayoutGridFailure.ContainerNotFound);
+    }
+
     public static LayoutGridEditResult TryCreateFromDrag(
         LayoutProfile profile,
         LayoutPlacementTool tool,
@@ -659,7 +725,7 @@ public static class LayoutGridConstraintService
             rect.Width,
             rect.Height);
         var widget = CreateWidget(tool.WidgetTypeId!) with { GridBounds = local };
-        if (!ComponentCatalog.TryGet(tool.WidgetTypeId!, out _))
+        if (!LayoutComponentCatalog.TryGet(tool.WidgetTypeId!, out _))
         {
             return LayoutGridEditResult.Fail(LayoutGridFailure.NotSupported);
         }

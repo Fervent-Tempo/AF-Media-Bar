@@ -6,6 +6,12 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using AFMediaBar.Controls;
+using AFMediaBar.Layout.Defaults;
+using AFMediaBar.Layout.Editing;
+using AFMediaBar.Layout.Widgets;
+using AFMediaBar.LayoutEditor.Wpf.Input;
+using AFMediaBar.LayoutEditor.Wpf.Controls;
+using AFMediaBar.LayoutEditor.Wpf.Preview;
 using AFMediaBar.Models;
 using AFMediaBar.Services;
 using Loc = AFMediaBar.Services.Localization;
@@ -19,14 +25,18 @@ namespace AFMediaBar.Settings;
 public partial class SettingsWindow
 {
     private const int LayoutEditorPaddingCells = 6;
-    private const string NewWidgetDragFormat = "AFMediaBar.Layout.NewWidget";
-    private const string NewContainerDragFormat = "AFMediaBar.Layout.NewContainer";
-    private const string ExistingWidgetDragFormat = "AFMediaBar.Layout.ExistingWidget";
-    private const string ExistingContainerDragFormat = "AFMediaBar.Layout.ExistingContainer";
+    private const string NewWidgetDragFormat = LayoutEditorDragFormats.NewWidget;
+    private const string NewContainerDragFormat = LayoutEditorDragFormats.NewContainer;
+    private const string ExistingWidgetDragFormat = LayoutEditorDragFormats.ExistingWidget;
+    private const string ExistingContainerDragFormat = LayoutEditorDragFormats.ExistingContainer;
 
     private readonly LayoutEditHistoryService _layoutEditHistory = new();
+    private readonly LayoutEditorCommandProcessor _layoutEditorCommands =
+        new(new CoreLayoutConstraintAdapter());
     private LayoutProfileKey _layoutEditorProfileKey = LayoutProfileKey.Horizontal;
     private LayoutEditorSelection? _layoutEditorSelection;
+    private LayoutEditorSession? _layoutEditorSession;
+    private LayoutEditorControl? _layoutEditorHostControl;
     private bool _layoutEditorSyncing;
     private bool _layoutPropertySyncing;
     private bool _hasSkinPreview;
@@ -34,7 +44,7 @@ public partial class SettingsWindow
     private ComponentSkinAssignment? _skinPreviewAssignment;
     private LayoutProfileKey _skinPreviewProfileKey;
     private Point _layoutDragStart;
-    private readonly List<ComponentLayoutSurface> _layoutPreviewSurfaces = [];
+    private readonly List<LayoutEditorPreviewSurface> _layoutPreviewSurfaces = [];
     private readonly List<ComponentLayoutSurface> _layoutPaletteSurfaces = [];
     private Popup? _layoutDragPreviewPopup;
     private Border? _layoutPreviewDropOverlay;
@@ -43,30 +53,79 @@ public partial class SettingsWindow
     private ContextMenu? _layoutPreviewDeleteMenu;
     // 细网格放置状态机：调色板点击容器工具后 armed，画布上单击创建 1 x 1、拖动创建矩形，释放提交。
     // Fine-grid placement state machine: arming a container tool lets the canvas commit a 1x1 click or a dragged rectangle.
-    private LayoutPlacementTool? _layoutPlacementTool;
+    private readonly LayoutEditorInteractionState _layoutInteraction = new();
+    private LayoutEditorPointerController _layoutPointerController = null!;
     private WidgetSettings? _layoutWidgetSettings;
-    private bool _layoutDrawing;
-    private bool _layoutDragMoved;
-    private Point _layoutDrawStartDip;
-    private LayoutGridRect? _layoutDrawCandidate;
-    private Border? _layoutDrawGhost;
-    private Border? _layoutHoverCell;
+    private LayoutPlacementTool? _layoutPlacementTool
+    {
+        get => _layoutInteraction.PlacementTool;
+        set => _layoutInteraction.PlacementTool = value;
+    }
+
+    private bool _layoutDrawing
+    {
+        get => _layoutInteraction.IsDrawing;
+        set => _layoutInteraction.IsDrawing = value;
+    }
+
+    private bool _layoutDragMoved
+    {
+        get => _layoutInteraction.DragMoved;
+        set => _layoutInteraction.DragMoved = value;
+    }
+
+    private Point _layoutDrawStartDip
+    {
+        get => _layoutInteraction.DrawStart;
+        set => _layoutInteraction.DrawStart = value;
+    }
+
+    private LayoutGridRect? _layoutDrawCandidate
+    {
+        get => _layoutInteraction.DrawCandidate;
+        set => _layoutInteraction.DrawCandidate = value;
+    }
+    private readonly LayoutEditorOverlay _layoutOverlay = new();
     private Canvas? _layoutEditorCanvas;
     private FrameworkElement? _layoutEditorViewport;
     private readonly TransformGroup _layoutCanvasTransform = new();
-    private bool _layoutPanning;
-    private Point _layoutPanStart;
-    private Point _layoutPanOrigin;
-    private Point _layoutCanvasTranslate;
-    private double _layoutCanvasScale = 1.0;
+    private bool _layoutPanning
+    {
+        get => _layoutInteraction.IsPanning;
+        set => _layoutInteraction.IsPanning = value;
+    }
+
+    private Point _layoutPanStart
+    {
+        get => _layoutInteraction.PanStart;
+        set => _layoutInteraction.PanStart = value;
+    }
+
+    private Point _layoutPanOrigin
+    {
+        get => _layoutInteraction.PanOrigin;
+        set => _layoutInteraction.PanOrigin = value;
+    }
+    private readonly LayoutViewportState _layoutViewportState = new();
+    private readonly LayoutEditorInputRouter _layoutInputRouter = new();
     private double _layoutEditorCompositionWidth;
     private double _layoutEditorCompositionHeight;
-    private bool _layoutCanvasCentered;
     private bool _layoutEditorResizeInProgress;
     private readonly Dictionary<(string InstanceId, LayoutEdge Edge), int> _layoutResizeAppliedCells = [];
 
     private void InitializeLayoutEditor()
     {
+        _layoutPointerController = new(_layoutInteraction, _layoutViewportState);
+        LayoutVisualEditorHost.AllowDrop = true;
+        LayoutVisualEditorHost.DragEnter += LayoutPreviewDropHost_OnDragEnter;
+        LayoutVisualEditorHost.DragOver += LayoutVisualEditorHost_OnDragOver;
+        LayoutVisualEditorHost.DragLeave += LayoutPreviewDropHost_OnDragLeave;
+        LayoutVisualEditorHost.Drop += LayoutVisualEditorHost_OnDrop;
+        _layoutInputRouter.MouseLeftButtonDown += LayoutEditorCanvas_OnMouseLeftButtonDown;
+        _layoutInputRouter.MouseMove += LayoutEditorCanvas_OnMouseMove;
+        _layoutInputRouter.MouseLeftButtonUp += LayoutEditorCanvas_OnMouseLeftButtonUp;
+        _layoutInputRouter.MouseLeave += LayoutEditorCanvas_OnMouseLeave;
+        _layoutInputRouter.PreviewKeyDown += LayoutEditorCanvas_OnPreviewKeyDown;
         PopulateLayoutEditorOptions();
         _layoutEditorProfileKey = ResolveCurrentLayoutProfile();
         PopulateComponentPalette();
@@ -422,26 +481,35 @@ public partial class SettingsWindow
         }
 
         var preserveViewport = _layoutEditorCanvas is not null;
-        var preservedTranslate = _layoutCanvasTranslate;
-        var preservedScale = _layoutCanvasScale;
+        var preservedTranslate = _layoutViewportState.Translate;
+        var preservedScale = _layoutViewportState.Scale;
+        var document = _coordinator.Current.Layout;
+        if (_layoutEditorSession is null || !ReferenceEquals(_layoutEditorSession.Document, document))
+        {
+            _layoutEditorSession = new LayoutEditorSession(document, _layoutEditorProfileKey);
+        }
         var profile = ApplySkinPreview(
-            _coordinator.Current.Layout.Get(_layoutEditorProfileKey));
+            document.Get(_layoutEditorProfileKey));
         var selectedId = _layoutEditorSelection?.InstanceId;
         _layoutEditorSelection = string.IsNullOrWhiteSpace(selectedId)
             ? null
             : ResolveSelection(profile, selectedId);
+        _layoutEditorSession.Select(_layoutEditorSelection?.InstanceId);
         PopulateLayoutObjectTree(profile);
         DisposeLayoutPreviewSurfaces();
         // 画布重建后旧的幽灵/画布引用随之失效。
-        _layoutDrawGhost = null;
-        _layoutHoverCell = null;
+        _layoutOverlay.Reset();
         _layoutEditorCanvas = null;
-        _layoutCanvasCentered = false;
-        LayoutVisualEditorHost.Child = BuildVisualEditor(profile);
+        _layoutViewportState.ResetCentered();
+        _layoutEditorHostControl ??= new LayoutEditorControl();
+        _layoutEditorHostControl.Session = _layoutEditorSession;
+        _layoutEditorHostControl.PreviewFactory = previewProfile =>
+            BuildVisualEditor(ApplySkinPreview(previewProfile));
+        LayoutVisualEditorHost.Child = _layoutEditorHostControl;
         if (preserveViewport)
         {
             UpdateLayoutCanvasTranslate(preservedTranslate, preservedScale);
-            _layoutCanvasCentered = true;
+            _layoutViewportState.MarkCentered();
         }
         foreach (var surface in _layoutPreviewSurfaces)
         {
@@ -635,9 +703,8 @@ public partial class SettingsWindow
 
     private void DeleteLayoutSelection(LayoutEditorSelection selection)
     {
-        if (TryApplyProfile(profile => LayoutEditorService.TryRemove(profile, selection.InstanceId, out var updated)
-                ? updated
-                : null))
+        if (TryApplyProfile(profile =>
+            LayoutGridConstraintService.TryRemove(profile, selection.InstanceId).Updated))
         {
             if (_layoutEditorSelection?.InstanceId == selection.InstanceId)
             {
@@ -751,40 +818,26 @@ public partial class SettingsWindow
 
         // 画布覆盖整个逻辑网格（含容器外空白），因此任何格都可被放置容器。
         // The canvas covers the whole logical grid including blank cells so a container can extend outward.
-        var canvas = new Canvas
-        {
-            Width = (grid.Columns + LayoutEditorPaddingCells * 2) * cell,
-            Height = (grid.Rows + LayoutEditorPaddingCells * 2) * cell,
-            HorizontalAlignment = HorizontalAlignment.Left,
-            VerticalAlignment = VerticalAlignment.Top,
-            Background = BuildGridBackground(grid, cell),
-            AllowDrop = false,
-            Focusable = true
-        };
-        canvas.MouseLeftButtonDown += LayoutEditorCanvas_OnMouseLeftButtonDown;
-        canvas.MouseMove += LayoutEditorCanvas_OnMouseMove;
-        canvas.MouseLeftButtonUp += LayoutEditorCanvas_OnMouseLeftButtonUp;
-        canvas.MouseLeave += LayoutEditorCanvas_OnMouseLeave;
-        canvas.PreviewKeyDown += LayoutEditorCanvas_OnPreviewKeyDown;
+        var canvasHost = new LayoutEditorCanvas();
+        var canvas = canvasHost.GridSurface;
+        canvasHost.Configure(
+            (grid.Columns + LayoutEditorPaddingCells * 2) * cell,
+            (grid.Rows + LayoutEditorPaddingCells * 2) * cell,
+            BuildGridBackground(grid, cell),
+            _layoutCanvasTransform);
+        _layoutInputRouter.Attach(canvasHost);
         canvas.RenderTransform = _layoutCanvasTransform;
         _layoutEditorCanvas = canvas;
 
         // Viewport 提供滚轮缩放与左键平移；初始把主体联合边界居中，四周留足空余格子。
         // The viewport offers wheel zoom and left-drag pan; the body union is centered on load to leave spare cells around it.
-        var viewport = new Grid
-        {
-            ClipToBounds = true,
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-            VerticalAlignment = VerticalAlignment.Stretch,
-            AllowDrop = false
-        };
+        var viewport = canvasHost;
         viewport.PreviewMouseWheel += (_, e) =>
         {
             LayoutEditorViewport_OnMouseWheel(this, e);
             e.Handled = true;
         };
         viewport.SizeChanged += (_, _) => CenterLayoutCanvasOnBody(cell);
-        viewport.Children.Add(canvas);
         _layoutEditorViewport = viewport;
         CenterLayoutCanvasOnBody(cell);
 
@@ -864,9 +917,9 @@ public partial class SettingsWindow
         return previewHost;
     }
 
-    private ComponentLayoutSurface CreatePreviewSurface(LayoutProfile profile, LayoutCollapseContainer? collapse = null)
+    private LayoutEditorPreviewSurface CreatePreviewSurface(LayoutProfile profile, LayoutCollapseContainer? collapse = null)
     {
-        var surface = new ComponentLayoutSurface();
+        var surface = new LayoutEditorPreviewSurface();
         surface.SetDesignMode(true);
         surface.SetDesignPlacementArmed(_layoutPlacementTool is not null);
         surface.DesignElementSelected += LayoutPreviewSurface_OnElementSelected;
@@ -936,14 +989,26 @@ public partial class SettingsWindow
             return;
         }
 
-        if (TryApplyProfile(current => LayoutEditorService.TryResize(
-            current,
-            e.InstanceId,
-            e.Edge,
-            deltaCells,
-            out var updated,
-            out _) ? updated : null))
+        var session = _layoutEditorSession;
+        if (session is null || !ReferenceEquals(session.Document, _coordinator.Current.Layout))
         {
+            session = new LayoutEditorSession(_coordinator.Current.Layout, _layoutEditorProfileKey);
+            _layoutEditorSession = session;
+        }
+        else
+        {
+            session.SelectProfile(_layoutEditorProfileKey);
+        }
+
+        if (_layoutEditorCommands.TryResize(session, e.InstanceId, e.Edge, deltaCells))
+        {
+            var updatedDocument = session.Document;
+            if (!TryApplyProfile(current => updatedDocument.Get(_layoutEditorProfileKey)))
+            {
+                _layoutEditorResizeInProgress = false;
+                return;
+            }
+
             _layoutResizeAppliedCells[key] = targetCells;
             var updatedProfile = _coordinator.Current.Layout.Get(_layoutEditorProfileKey);
             foreach (var surface in _layoutPreviewSurfaces)
@@ -1089,7 +1154,7 @@ public partial class SettingsWindow
     private void ArmContainerPlacementTool(LayoutContainerKind kind)
     {
         _layoutPlacementTool = LayoutPlacementTool.Container(kind);
-        _layoutDrawing = false;
+        _layoutInteraction.EndDrawing();
         SetLayoutPlacementArmed(true);
         _layoutEditorCanvas?.Focus();
         LayoutEditorMessageText.Text = Loc.Get("Settings.Layout.EditorPlaceContainerHint");
@@ -1121,7 +1186,7 @@ public partial class SettingsWindow
 
         _layoutPlacementTool = LayoutPlacementTool.Widget(typeId, string.Empty, LayoutSlotKind.Primary);
         _layoutWidgetSettings = settings;
-        _layoutDrawing = false;
+        _layoutInteraction.EndDrawing();
         SetLayoutPlacementArmed(true);
         _layoutEditorCanvas?.Focus();
         LayoutEditorMessageText.Text = Loc.Get("Settings.Layout.EditorPlaceWidgetHint");
@@ -1129,120 +1194,79 @@ public partial class SettingsWindow
 
     private void LayoutEditorCanvas_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (sender is not Canvas canvas)
+        if (sender is not LayoutEditorCanvas canvasHost)
+        {
+            return;
+        }
+        if (_layoutEditorViewport is null)
         {
             return;
         }
 
-        // 无放置工具：左键空白开始拖动平移视角。
-        // Without a placement tool, a left drag pans the viewport.
-        if (_layoutPlacementTool is null)
-        {
-            _layoutPanning = true;
-            _layoutPanStart = e.GetPosition(_layoutEditorViewport);
-            _layoutPanOrigin = _layoutCanvasTranslate;
-            canvas.CaptureMouse();
-            e.Handled = true;
-            return;
-        }
-
-        _layoutDrawing = true;
-        _layoutDragMoved = false;
-        _layoutDrawStartDip = e.GetPosition(canvas);
-        UpdateLayoutDrawGhost(canvas, e.GetPosition(canvas), dragging: false);
-        canvas.CaptureMouse();
+        _layoutPointerController.HandleMouseLeftButtonDown(
+            canvasHost,
+            _layoutEditorViewport,
+            _layoutPlacementTool,
+            UpdateLayoutDrawGhost);
         e.Handled = true;
     }
 
     private void LayoutEditorCanvas_OnMouseMove(object sender, MouseEventArgs e)
     {
-        if (sender is not Canvas canvas)
+        if (sender is not LayoutEditorCanvas canvasHost)
         {
             return;
         }
 
-        if (_layoutPanning)
+        if (_layoutEditorViewport is null)
         {
-            var point = e.GetPosition(_layoutEditorViewport);
-            UpdateLayoutCanvasTranslate(
-                _layoutPanOrigin + (point - _layoutPanStart),
-                _layoutCanvasScale);
-            e.Handled = true;
             return;
         }
 
-        if (_layoutDrawing)
-        {
-            var point = e.GetPosition(canvas);
-            _layoutDragMoved |=
-                Math.Abs(point.X - _layoutDrawStartDip.X) >= SystemParameters.MinimumHorizontalDragDistance ||
-                Math.Abs(point.Y - _layoutDrawStartDip.Y) >= SystemParameters.MinimumVerticalDragDistance;
-            UpdateLayoutDrawGhost(canvas, point, dragging: _layoutDragMoved);
-            e.Handled = true;
-            return;
-        }
-
-        if (_layoutPlacementTool is not null)
-        {
-            UpdateLayoutDrawGhost(canvas, e.GetPosition(canvas), dragging: false);
-            e.Handled = true;
-            return;
-        }
-
-        UpdateLayoutHoverCell(canvas, e.GetPosition(canvas));
+        _layoutPointerController.HandleMouseMove(
+            canvasHost,
+            _layoutEditorViewport,
+            _layoutPlacementTool,
+            UpdateLayoutCanvasTranslate,
+            UpdateLayoutDrawGhost,
+            UpdateLayoutHoverCell);
+        e.Handled = true;
     }
 
     private void LayoutEditorCanvas_OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
-        if (sender is not Canvas canvas)
+        if (sender is not LayoutEditorCanvas canvasHost)
         {
             return;
         }
 
-        if (_layoutPanning)
-        {
-            _layoutPanning = false;
-            canvas.ReleaseMouseCapture();
-            // 无位移视为点击空白：取消当前选中；有位移视为平移完成。
-            if (_layoutEditorViewport is { } viewport)
-            {
-                var up = e.GetPosition(viewport);
-                if (Math.Abs(up.X - _layoutPanStart.X) < SystemParameters.MinimumHorizontalDragDistance &&
-                    Math.Abs(up.Y - _layoutPanStart.Y) < SystemParameters.MinimumVerticalDragDistance)
-                {
-                    ClearLayoutSelection();
-                }
-            }
-            e.Handled = true;
-            return;
-        }
-
-        if (!_layoutDrawing)
+        if (_layoutEditorViewport is null)
         {
             return;
         }
 
-        _layoutDrawing = false;
-        _layoutDragMoved = false;
-        canvas.ReleaseMouseCapture();
-        var point = e.GetPosition(canvas);
-        if (_layoutPlacementTool is { } tool)
-        {
-            if (tool.IsContainer)
-            {
-                CommitContainerPlacement(canvas, point);
-            }
-            else
-            {
-                CommitWidgetPlacement(canvas, point, tool.WidgetTypeId!);
-            }
-
-            // 成功放置后自动取消选中工具，便于下一次直接点空白或重新选工具。
-            // After a successful placement the tool is cleared so the next click deselects or starts a new tool.
-            ClearLayoutPlacementTool();
-        }
+        _layoutPointerController.HandleMouseLeftButtonUp(
+            canvasHost,
+            _layoutEditorViewport,
+            _layoutPlacementTool,
+            ClearLayoutSelection,
+            CommitLayoutPlacement,
+            HideLayoutDrawGhost,
+            ClearLayoutPlacementTool);
 
         e.Handled = true;
+    }
+
+    private void CommitLayoutPlacement(Canvas canvas, Point point, LayoutPlacementTool tool)
+    {
+        if (tool.IsContainer)
+        {
+            CommitContainerPlacement(canvas, point);
+        }
+        else if (tool.WidgetTypeId is { } typeId)
+        {
+            CommitWidgetPlacement(canvas, point, typeId);
+        }
     }
 
     private void CommitContainerPlacement(Canvas canvas, Point point)
@@ -1252,7 +1276,7 @@ public partial class SettingsWindow
         var (currentX, currentY) = LayoutCanvasToCell(canvas, point);
         candidate ??= LayoutGridRect.FromDrag(startX, startY, currentX, currentY);
         var profile = _coordinator.Current.Layout.Get(_layoutEditorProfileKey);
-        var result = TryCreateEditorContainer(profile, _layoutPlacementTool!, candidate);
+        var result = LayoutPlacementService.TryCreateContainer(profile, _layoutPlacementTool!, candidate);
         HideLayoutDrawGhost(canvas);
         if (!result.Success || result.Updated is null)
         {
@@ -1262,67 +1286,9 @@ public partial class SettingsWindow
 
         TryApplyProfile(current =>
         {
-            var currentResult = TryCreateEditorContainer(current, _layoutPlacementTool!, candidate);
+            var currentResult = LayoutPlacementService.TryCreateContainer(current, _layoutPlacementTool!, candidate);
             return currentResult.Success ? currentResult.Updated : null;
         });
-    }
-
-    private static LayoutGridEditResult TryCreateEditorContainer(
-        LayoutProfile profile,
-        LayoutPlacementTool tool,
-        LayoutGridRect editorRect)
-    {
-        var normalized = ExpandProfileForEditorRect(profile, editorRect);
-        return LayoutGridConstraintService.TryCreateFromDrag(
-            normalized.Profile,
-            tool,
-            normalized.Rect.X,
-            normalized.Rect.Y,
-            normalized.Rect.Right - 1,
-            normalized.Rect.Bottom - 1);
-    }
-
-    private static (LayoutProfile Profile, LayoutGridRect Rect) ExpandProfileForEditorRect(
-        LayoutProfile profile,
-        LayoutGridRect rect)
-    {
-        var grid = LayoutGridSettings.Normalize(profile.Grid);
-        var shiftX = Math.Max(0, -rect.X);
-        var shiftY = Math.Max(0, -rect.Y);
-        var growRight = Math.Max(0, rect.Right - grid.Columns);
-        var growBottom = Math.Max(0, rect.Bottom - grid.Rows);
-        if (shiftX == 0 && shiftY == 0 && growRight == 0 && growBottom == 0)
-        {
-            return (profile, rect);
-        }
-
-        LayoutGridRect Shift(LayoutGridRect value) => new(
-            value.X + shiftX,
-            value.Y + shiftY,
-            value.Width,
-            value.Height);
-
-        var containers = profile.Containers
-            .Select(container => container.GridBounds is { } bounds
-                ? container with { GridBounds = Shift(bounds) }
-                : container)
-            .ToArray();
-        var collapses = profile.CollapseContainers
-            .Select(collapse => collapse with { GridBounds = Shift(collapse.GridBounds) })
-            .ToArray();
-        var expandedGrid = grid with
-        {
-            Columns = grid.Columns + shiftX + growRight,
-            Rows = grid.Rows + shiftY + growBottom
-        };
-        return (
-            profile with
-            {
-                Grid = LayoutGridSettings.Normalize(expandedGrid),
-                Containers = containers,
-                CollapseContainers = collapses
-            },
-            Shift(rect));
     }
 
     private void CommitWidgetPlacement(Canvas canvas, Point point, string typeId)
@@ -1363,13 +1329,11 @@ public partial class SettingsWindow
             null,
             local);
         if (!TryApplyProfile(current =>
-                LayoutEditorService.TryAddWidget(
+                LayoutGridConstraintService.TryAddWidget(
                     current,
                     owner.Value.ContainerId,
                     owner.Value.SlotKind,
-                    widget,
-                    out var updated,
-                    out _) ? updated : null))
+                    widget).Updated))
         {
             LayoutEditorMessageText.Text = Loc.Get("Settings.Layout.EditorAddFailed");
         }
@@ -1404,40 +1368,34 @@ public partial class SettingsWindow
 
     private void LayoutEditorCanvas_OnMouseLeave(object sender, MouseEventArgs e)
     {
-        if (_layoutDrawing && sender is Canvas canvas)
+        if (sender is LayoutEditorCanvas canvasHost)
         {
-            _layoutDrawing = false;
-            _layoutDragMoved = false;
-            canvas.ReleaseMouseCapture();
-            HideLayoutDrawGhost(canvas);
-            HideLayoutHoverCell();
-        }
-        else
-        {
-            HideLayoutHoverCell();
+            _layoutPointerController.HandleMouseLeave(
+                canvasHost,
+                HideLayoutDrawGhost,
+                HideLayoutHoverCell);
         }
     }
 
     private void LayoutEditorCanvas_OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Escape && _layoutPlacementTool is not null)
+        if (e.Key == Key.Escape &&
+            sender is LayoutEditorCanvas canvasHost &&
+            _layoutPointerController.HandlePreviewKeyDown(
+                canvasHost,
+                _layoutPlacementTool,
+                ClearLayoutPlacementTool,
+                HideLayoutDrawGhost,
+                () => LayoutEditorMessageText.Text = string.Empty))
         {
-            ClearLayoutPlacementTool();
-            if (sender is Canvas canvas)
-            {
-                HideLayoutDrawGhost(canvas);
-            }
-            LayoutEditorMessageText.Text = string.Empty;
             e.Handled = true;
         }
     }
 
     private void ClearLayoutPlacementTool()
     {
-        _layoutPlacementTool = null;
+        _layoutInteraction.ClearPlacement();
         _layoutWidgetSettings = null;
-        _layoutDrawing = false;
-        _layoutDragMoved = false;
         SetLayoutPlacementArmed(false);
     }
 
@@ -1466,31 +1424,20 @@ public partial class SettingsWindow
     /// </summary>
     private void LayoutEditorViewport_OnMouseWheel(object sender, MouseWheelEventArgs e)
     {
-        var factor = e.Delta > 0 ? 1.15 : 1 / 1.15;
-        var target = Math.Clamp(_layoutCanvasScale * factor, 0.4, 3.0);
-        if (target == _layoutCanvasScale)
-        {
-            return;
-        }
-
         if (_layoutEditorViewport is not { } viewport)
         {
             return;
         }
 
         var viewportCenter = new Point(viewport.ActualWidth / 2, viewport.ActualHeight / 2);
-        // 保持 viewport 中心点稳定：缩放后平移按比例补偿。
-        var newTranslate = new Point(
-            viewportCenter.X - (viewportCenter.X - _layoutCanvasTranslate.X) * (target / _layoutCanvasScale),
-            viewportCenter.Y - (viewportCenter.Y - _layoutCanvasTranslate.Y) * (target / _layoutCanvasScale));
-        UpdateLayoutCanvasTranslate(newTranslate, target);
+        _layoutViewportState.ZoomAround(viewportCenter, e.Delta);
+        UpdateLayoutCanvasTranslate(_layoutViewportState.Translate, _layoutViewportState.Scale);
         e.Handled = true;
     }
 
     private void UpdateLayoutCanvasTranslate(Point translate, double scale)
     {
-        _layoutCanvasTranslate = translate;
-        _layoutCanvasScale = scale;
+        _layoutViewportState.Set(translate, scale);
         _layoutCanvasTransform.Children.Clear();
         _layoutCanvasTransform.Children.Add(new TranslateTransform(translate.X, translate.Y));
         _layoutCanvasTransform.Children.Add(new ScaleTransform(scale, scale));
@@ -1504,7 +1451,7 @@ public partial class SettingsWindow
     {
         if (_layoutEditorViewport is not { } viewport ||
             viewport.ActualWidth <= 0 || viewport.ActualHeight <= 0 ||
-            _layoutCanvasCentered)
+            _layoutViewportState.IsCentered)
         {
             return;
         }
@@ -1524,19 +1471,15 @@ public partial class SettingsWindow
             new Point(
                 viewportCenter.X / fitScale - bodyCenter.X,
                 viewportCenter.Y / fitScale - bodyCenter.Y),
-            _layoutCanvasScale);
-        _layoutCanvasCentered = true;
+            _layoutViewportState.Scale);
+        _layoutViewportState.MarkCentered();
     }
 
     private (int X, int Y) LayoutCanvasToCell(Canvas canvas, Point point)
     {
         var profile = _coordinator.Current.Layout.Get(_layoutEditorProfileKey);
         var grid = LayoutGridSettings.Normalize(profile.Grid);
-        var cell = Math.Max(grid.CellSizeDip, 1);
-        // 画布原点即网格原点 (0,0)，直接按单格换算。
-        var x = (int)Math.Floor(point.X / cell) - LayoutEditorPaddingCells;
-        var y = (int)Math.Floor(point.Y / cell) - LayoutEditorPaddingCells;
-        return (x, y);
+        return LayoutPointerMapper.ToCell(point, grid.CellSizeDip, LayoutEditorPaddingCells);
     }
 
     private void UpdateLayoutDrawGhost(Canvas canvas, Point point, bool dragging)
@@ -1549,103 +1492,22 @@ public partial class SettingsWindow
 
         var grid = LayoutGridSettings.Normalize(profile.Grid);
         var cell = Math.Max(grid.CellSizeDip, 1);
-        var (startX, startY) = dragging
-            ? LayoutCanvasToCell(canvas, _layoutDrawStartDip)
-            : LayoutCanvasToCell(canvas, point);
+        var (startX, startY) = LayoutCanvasToCell(canvas, _layoutDrawStartDip);
         var (currentX, currentY) = LayoutCanvasToCell(canvas, point);
-        var rect = dragging
-            ? LayoutGridRect.FromDrag(startX, startY, currentX, currentY)
-            : CreateDefaultPlacementRect(profile, tool, currentX, currentY);
-        var valid = tool.IsContainer
-            ? CanPlaceEditorContainer(profile, rect)
-            : ResolveWidgetPlacementOwner(profile, startX, startY) is { } owner &&
-              rect.X >= owner.Bounds.X && rect.Y >= owner.Bounds.Y &&
-              rect.Right <= owner.Bounds.Right && rect.Bottom <= owner.Bounds.Bottom &&
-              LayoutGridConstraintService.CanPlaceWidget(
-                  profile,
-                  owner.ContainerId,
-                  owner.SlotKind,
-                  new LayoutGridRect(
-                      rect.X - owner.Bounds.X,
-                      rect.Y - owner.Bounds.Y,
-                      rect.Width,
-                      rect.Height));
-        _layoutDrawCandidate = valid ? rect : null;
-
-        if (_layoutDrawGhost is null)
-        {
-            _layoutDrawGhost = new Border
-            {
-                IsHitTestVisible = false,
-                BorderThickness = new Thickness(1.5),
-                CornerRadius = new CornerRadius(3)
-            };
-            SetDynamicResource(_layoutDrawGhost, Border.BorderBrushProperty, "LayoutEditorAccentBrush");
-            canvas.Children.Add(_layoutDrawGhost);
-        }
+        var preview = LayoutPlacementPreviewService.Calculate(
+            profile,
+            tool,
+            dragging ? startX : currentX,
+            dragging ? startY : currentY,
+            currentX,
+            currentY,
+            _layoutWidgetSettings,
+            ResolveVisibleSlot);
+        var rect = preview.Bounds;
+        _layoutDrawCandidate = preview.IsValid ? rect : null;
 
         // 画布原点即网格原点，幽灵直接按网格坐标定位。
-        Canvas.SetLeft(_layoutDrawGhost, (rect.X + LayoutEditorPaddingCells) * cell);
-        Canvas.SetTop(_layoutDrawGhost, (rect.Y + LayoutEditorPaddingCells) * cell);
-        _layoutDrawGhost.Width = Math.Max(0, rect.Width * cell);
-        _layoutDrawGhost.Height = Math.Max(0, rect.Height * cell);
-        _layoutDrawGhost.Background = valid
-            ? TryFindResource("LayoutEditorDropBrush") as Brush ?? Brushes.Transparent
-            : TryFindResource("LayoutEditorInvalidBrush") as Brush ?? Brushes.Transparent;
-        _layoutDrawGhost.Visibility = Visibility.Visible;
-    }
-
-    private static bool CanPlaceEditorContainer(LayoutProfile profile, LayoutGridRect editorRect)
-    {
-        var normalized = ExpandProfileForEditorRect(profile, editorRect);
-        return LayoutGridConstraintService.CanPlaceContainer(
-            normalized.Profile,
-            normalized.Rect);
-    }
-
-    private LayoutGridRect CreateDefaultPlacementRect(
-        LayoutProfile profile,
-        LayoutPlacementTool tool,
-        int cellX,
-        int cellY)
-    {
-        if (tool.IsContainer)
-        {
-            var size = tool.ContainerKind == LayoutContainerKind.HoverSwitch
-                ? (Width: 6, Height: 3)
-                : (Width: 4, Height: 3);
-            return new LayoutGridRect(cellX, cellY, size.Width, size.Height);
-        }
-
-        if (ResolveWidgetPlacementOwner(profile, cellX, cellY) is not { } owner)
-        {
-            return LayoutGridRect.Unit(cellX, cellY);
-        }
-
-        var desired = ResolveDefaultWidgetCells(profile, tool.WidgetTypeId);
-        return new LayoutGridRect(
-            cellX,
-            cellY,
-            Math.Min(desired.Width, owner.Bounds.Right - cellX),
-            Math.Min(desired.Height, owner.Bounds.Bottom - cellY));
-    }
-
-    private (int Width, int Height) ResolveDefaultWidgetCells(
-        LayoutProfile profile,
-        string? typeId)
-    {
-        if (string.IsNullOrWhiteSpace(typeId))
-        {
-            return (1, 1);
-        }
-
-        var widget = new LayoutWidgetElement(
-            "placement-preview",
-            true,
-            LayoutGeometry.Auto,
-            typeId,
-            _layoutWidgetSettings ?? ComponentCatalog.CreateDefaultSettings(typeId));
-        return LayoutEditorService.ResolveWidgetRequiredCells(profile, widget);
+        _layoutOverlay.ShowGhost(canvas, rect, cell, LayoutEditorPaddingCells, preview.IsValid);
     }
 
     private void UpdateLayoutHoverCell(Canvas canvas, Point point)
@@ -1665,39 +1527,17 @@ public partial class SettingsWindow
             return;
         }
 
-        _layoutHoverCell ??= new Border
-        {
-            IsHitTestVisible = false,
-            BorderThickness = new Thickness(1)
-        };
-        SetDynamicResource(_layoutHoverCell, Border.BorderBrushProperty, "LayoutEditorAccentBrush");
-        Canvas.SetLeft(_layoutHoverCell, (x + LayoutEditorPaddingCells) * cell);
-        Canvas.SetTop(_layoutHoverCell, (y + LayoutEditorPaddingCells) * cell);
-        _layoutHoverCell.Width = cell;
-        _layoutHoverCell.Height = cell;
-        if (!_layoutEditorCanvas!.Children.Contains(_layoutHoverCell))
-        {
-            canvas.Children.Add(_layoutHoverCell);
-        }
-        _layoutHoverCell.Visibility = Visibility.Visible;
+        _layoutOverlay.ShowHoverCell(canvas, x, y, cell, LayoutEditorPaddingCells);
     }
 
     private void HideLayoutHoverCell()
     {
-        if (_layoutHoverCell is not null)
-        {
-            _layoutHoverCell.Visibility = Visibility.Collapsed;
-        }
+        _layoutOverlay.HideHoverCell();
     }
 
     private void HideLayoutDrawGhost(Canvas? canvas)
     {
-        if (_layoutDrawGhost is null)
-        {
-            return;
-        }
-
-        _layoutDrawGhost.Visibility = Visibility.Collapsed;
+        _layoutOverlay.HideGhost();
         _layoutDrawCandidate = null;
     }
 
@@ -1934,11 +1774,7 @@ public partial class SettingsWindow
 
     private void AddInlineContainer(LayoutContainerKind kind)
     {
-        TryApplyProfile(profile => LayoutEditorService.TryAddContainer(
-            profile,
-            kind,
-            out var updated,
-            out _) ? updated : null);
+        TryApplyProfile(profile => LayoutPlacementService.TryAddContainer(profile, kind).Updated);
     }
 
     private void LayoutPaletteButton_OnClick(object sender, RoutedEventArgs e)
@@ -2028,12 +1864,10 @@ public partial class SettingsWindow
 
     private void AddCollapseContainerFromPalette()
     {
-        if (!TryApplyProfile(profile => LayoutEditorService.TryAddCollapse(
+        if (!TryApplyProfile(profile => LayoutPlacementService.TryAddCollapse(
                 profile,
                 LayoutEdge.Top,
-                GetUnavailableTaskbarEdge(),
-                out var updated,
-                out _) ? updated : null))
+                GetUnavailableTaskbarEdge()).Updated))
         {
             LayoutEditorMessageText.Text = Loc.Get("Settings.Layout.EditorAddFailed");
             return;
@@ -2086,7 +1920,7 @@ public partial class SettingsWindow
         if (sender is Border { Tag: LayoutEditorSelection target } &&
             e.Data.GetData(ExistingContainerDragFormat) is string sourceId)
         {
-            TryApplyProfile(profile => LayoutEditorService.TryReorderTopLevel(
+            TryApplyProfile(profile => LayoutOrderingService.TryReorderTopLevel(
                 profile,
                 sourceId,
                 target.InstanceId,
@@ -2262,7 +2096,7 @@ public partial class SettingsWindow
         else if (e.Data.GetData(ExistingContainerDragFormat) is string sourceId &&
             ResolveAddTarget() is { } target)
         {
-            TryApplyProfile(profile => LayoutEditorService.TryReorderTopLevel(
+            TryApplyProfile(profile => LayoutOrderingService.TryReorderTopLevel(
                 profile,
                 sourceId,
                 target.ContainerId,
@@ -2285,13 +2119,12 @@ public partial class SettingsWindow
         }
 
         if (e.Data.GetData(ExistingWidgetDragFormat) is string instanceId &&
-            !TryApplyProfile(profile => LayoutEditorService.TryRelocateWidget(
+            !TryApplyProfile(profile => LayoutOrderingService.TryRelocateWidget(
                 profile,
                 instanceId,
                 target.ContainerId,
                 target.SlotKind,
-                out var updated,
-                out _) ? updated : null))
+                out var updated) ? updated : null))
         {
             LayoutEditorMessageText.Text = Loc.Get("Settings.Layout.EditorAddFailed");
         }
@@ -2333,27 +2166,26 @@ public partial class SettingsWindow
             var destination = target;
             if (destination is null)
             {
-                if (!LayoutEditorService.TryAddContainer(
-                        profile,
-                        LayoutContainerKind.Static,
-                        out working,
-                        out _))
+                var created = LayoutPlacementService.TryAddContainer(
+                    profile,
+                    LayoutContainerKind.Static);
+                if (!created.Success || created.Updated is not { } createdProfile)
                 {
                     return null;
                 }
+
+                working = createdProfile;
 
                 destination = new LayoutDropTarget(
                     working.Containers[^1].InstanceId,
                     LayoutSlotKind.Primary);
             }
 
-            return LayoutEditorService.TryAddWidget(
+            return LayoutGridConstraintService.TryAddWidget(
                 working,
                 destination.ContainerId,
                 destination.SlotKind,
-                widget,
-                out var updated,
-                out _) ? updated : null;
+                widget).Updated;
         }))
         {
             LayoutEditorMessageText.Text = Loc.Get("Settings.Layout.EditorAddFailed");
@@ -2386,6 +2218,7 @@ public partial class SettingsWindow
             ClearSkinPreview();
         }
         _layoutEditorSelection = selection;
+        _layoutEditorSession?.Select(selection.InstanceId);
         RefreshLayoutEditor();
     }
 
@@ -2407,9 +2240,7 @@ public partial class SettingsWindow
         }
 
         var id = _layoutEditorSelection.InstanceId;
-        if (TryApplyProfile(profile => LayoutEditorService.TryRemove(profile, id, out var updated)
-                ? updated
-                : null))
+        if (TryApplyProfile(profile => LayoutGridConstraintService.TryRemove(profile, id).Updated))
         {
             _layoutEditorSelection = null;
         }
@@ -2426,7 +2257,7 @@ public partial class SettingsWindow
             return;
         }
 
-        TryApplyProfile(profile => LayoutEditorService.TryMove(
+        TryApplyProfile(profile => LayoutOrderingService.TryMoveSibling(
             profile,
             selection.InstanceId,
             offset,
@@ -2446,11 +2277,10 @@ public partial class SettingsWindow
             LayoutCollapseContainer edge => edge.Enabled,
             _ => true
         };
-        TryApplyProfile(profile => LayoutEditorService.TrySetEnabled(
+        TryApplyProfile(profile => LayoutGridConstraintService.TrySetEnabled(
             profile,
             selection.InstanceId,
-            !enabled,
-            out var updated) ? updated : null);
+            !enabled).Updated);
     }
 
     private void LayoutUndoButton_OnClick(object sender, RoutedEventArgs e)
@@ -2475,7 +2305,7 @@ public partial class SettingsWindow
     {
         var current = _coordinator.Current;
         var profile = current.Layout.Get(_layoutEditorProfileKey);
-        var defaults = LayoutMigrationService.CreateFromLegacy(current.Window, current.Metrics)
+        var defaults = LayoutDefaultTemplates.LoadDocument()
             .Get(_layoutEditorProfileKey);
         if (profile == defaults)
         {
@@ -2893,8 +2723,8 @@ public partial class SettingsWindow
 
         TryApplyProfile(profile =>
         {
-            var current = LayoutEditorService.Find(profile, widget.InstanceId) as LayoutWidgetElement;
-            return current is not null && LayoutEditorService.TryUpdateWidgetSettings(
+            var current = LayoutElementQueryService.Find(profile, widget.InstanceId) as LayoutWidgetElement;
+            return current is not null && LayoutPropertyEditService.TryUpdateWidgetSettings(
                 profile,
                 widget.InstanceId,
                 update(current.Settings),
@@ -3004,7 +2834,7 @@ public partial class SettingsWindow
             return;
         }
 
-        var persisted = LayoutEditorService.Find(
+        var persisted = LayoutElementQueryService.Find(
             _coordinator.Current.Layout.Get(_layoutEditorProfileKey),
             widget.InstanceId) as LayoutWidgetElement;
         var current = persisted is null ? null : ComponentSkinService.Normalize(persisted);
@@ -3031,7 +2861,7 @@ public partial class SettingsWindow
             return profile;
         }
 
-        if (LayoutEditorService.TryUpdateWidgetSkin(
+        if (ComponentSkinEditService.TryUpdateWidgetSkin(
             profile,
             _skinPreviewInstanceId,
             _skinPreviewAssignment,
@@ -3056,7 +2886,7 @@ public partial class SettingsWindow
         var instanceId = _skinPreviewInstanceId;
         var assignment = _skinPreviewAssignment;
         ClearSkinPreview();
-        if (!TryApplyProfile(profile => LayoutEditorService.TryUpdateWidgetSkin(
+        if (!TryApplyProfile(profile => ComponentSkinEditService.TryUpdateWidgetSkin(
             profile,
             instanceId,
             assignment,
@@ -3086,7 +2916,7 @@ public partial class SettingsWindow
             return;
         }
 
-        TryApplyProfile(profile => LayoutEditorService.TryUpdateGeometry(
+        TryApplyProfile(profile => LayoutPropertyEditService.TryUpdateGeometry(
             profile,
             element.InstanceId,
             update(element.Geometry ?? LayoutGeometry.Auto),
@@ -3105,7 +2935,7 @@ public partial class SettingsWindow
             return;
         }
 
-        TryApplyProfile(profile => LayoutEditorService.TryUpdateContainer(
+        TryApplyProfile(profile => LayoutPropertyEditService.TryUpdateContainer(
             profile,
             container.InstanceId,
             proximityDip,
@@ -3122,7 +2952,7 @@ public partial class SettingsWindow
             return;
         }
 
-        TryApplyProfile(profile => LayoutEditorService.TryResetContainer(
+        TryApplyProfile(profile => LayoutPropertyEditService.TryResetContainer(
             profile,
             container.InstanceId,
             out var updated) ? updated : null);
@@ -3135,7 +2965,7 @@ public partial class SettingsWindow
             return;
         }
 
-        TryApplyProfile(profile => LayoutEditorService.TryResetCollapse(
+        TryApplyProfile(profile => LayoutPropertyEditService.TryResetCollapse(
             profile,
             container.InstanceId,
             out var updated) ? updated : null);
@@ -3148,7 +2978,7 @@ public partial class SettingsWindow
             return;
         }
 
-        TryApplyProfile(profile => LayoutEditorService.TryResetWidgetProperties(
+        TryApplyProfile(profile => LayoutPropertyEditService.TryResetWidgetProperties(
             profile,
             widget.InstanceId,
             out var updated) ? updated : null);
@@ -3166,7 +2996,7 @@ public partial class SettingsWindow
             return;
         }
 
-        if (!TryApplyProfile(profile => LayoutEditorService.TryUpdateCollapse(
+        if (!TryApplyProfile(profile => LayoutPropertyEditService.TryUpdateCollapse(
                 profile,
                 container.InstanceId,
                 edge,
@@ -3174,8 +3004,7 @@ public partial class SettingsWindow
                 triggerThicknessDip,
                 proximityDip,
                 animation,
-                out var updated,
-                out _) ? updated : null))
+                out var updated) ? updated : null))
         {
             LayoutEditorMessageText.Text = Loc.Get("Settings.Layout.EditorTaskbarEdgeUnavailable");
         }

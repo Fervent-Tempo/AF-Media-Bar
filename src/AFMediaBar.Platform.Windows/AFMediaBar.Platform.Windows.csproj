@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AFMediaBar.Core\AFMediaBar.Core.csproj" />
+    <ProjectReference Include="..\AFMediaBar.Layout\AFMediaBar.Layout.csproj" />
   </ItemGroup>
 
 </Project>

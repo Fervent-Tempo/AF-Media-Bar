@@ -8,6 +8,8 @@ using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using AFMediaBar.Adapters;
+using AFMediaBar.Layout.Widgets;
+using AFMediaBar.LayoutEditor.Wpf.Preview;
 using AFMediaBar.Models;
 using AFMediaBar.Services;
 using Loc = AFMediaBar.Services.Localization;
@@ -45,57 +47,11 @@ internal sealed class LayoutWheelEventArgs(
 /// 设计模式下把真实组件的选择与拖放回传给设置编辑器；组件本身不修改布局档案。
 /// In design mode, returns selection and drag gestures from real widgets; the surface never mutates layout profiles.
 /// </summary>
-internal sealed class LayoutDesignElementEventArgs(
-    string instanceId,
-    DependencyObject source,
-    bool isContainer = false) : EventArgs
-{
-    internal string InstanceId { get; } = instanceId;
-    internal DependencyObject Source { get; } = source;
-    internal bool IsContainer { get; } = isContainer;
-}
-
-internal sealed class LayoutDesignPreviewStateEventArgs(
-    string containerId,
-    bool pointerNear) : EventArgs
-{
-    internal string ContainerId { get; } = containerId;
-    internal bool PointerNear { get; } = pointerNear;
-}
-
-/// <summary>
-/// 设计模式四边 Thumb 的缩放请求；DeltaDip 是该边累计的 DIP 增量，编辑器负责换算为整数格。
-/// Design-mode four-edge resize request; DeltaDip is the cumulative DIP delta, converted to integer cells by the editor.
-/// </summary>
-internal sealed class LayoutDesignResizeEventArgs(
-    string instanceId,
-    LayoutEdge edge,
-    double deltaDip) : EventArgs
-{
-    internal string InstanceId { get; } = instanceId;
-    internal LayoutEdge Edge { get; } = edge;
-    internal double DeltaDip { get; } = deltaDip;
-}
-
-/// <summary>
-/// 设计模式右键删除请求；编辑器用命中坐标弹出名称+删除小菜单。
-/// Design-mode right-click delete request; the editor pops the name-plus-delete menu at the hit position.
-/// </summary>
-internal sealed class LayoutDesignDeleteEventArgs(
-    string instanceId,
-    FrameworkElement source,
-    Point position) : EventArgs
-{
-    internal string InstanceId { get; } = instanceId;
-    internal FrameworkElement Source { get; } = source;
-    internal Point Position { get; } = position;
-}
-
 /// <summary>
 /// 根据不可变布局档案生成运行时与设置预览共用的 WPF 组件树；不读取注册表、不创建系统会话，业务动作通过事件交给窗口协调器。
 /// Builds the shared runtime/settings-preview WPF tree from an immutable layout profile without registry or system-session access; actions return to the window coordinator through events.
 /// </summary>
-internal sealed class ComponentLayoutSurface : Grid, IDisposable
+internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
 {
     private const int MaximumMediaTextLines = 2;
     private const double DefaultCommandGlyphSizeDip = 16;
@@ -151,6 +107,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         new(StringComparer.Ordinal);
     private readonly Dictionary<string, MetricViewState> _metricStates =
         new(StringComparer.Ordinal);
+    private readonly WidgetRendererRegistry _widgetRendererRegistry;
     private readonly float[] _spectrum = new float[AudioMonitorService.BandCount];
     private readonly DispatcherTimer _marqueeTimer;
     private readonly DispatcherTimer _pointerStateTimer;
@@ -169,6 +126,16 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
 
     internal ComponentLayoutSurface()
     {
+        _widgetRendererRegistry = new(new Dictionary<string, Func<LayoutWidgetElement, FrameworkElement>>(StringComparer.Ordinal)
+        {
+            [BuiltInWidgetTypeIds.Artwork] = BuildArtwork,
+            [BuiltInWidgetTypeIds.MediaText] = BuildMediaText,
+            [BuiltInWidgetTypeIds.MediaSource] = BuildMediaSource,
+            [BuiltInWidgetTypeIds.Command] = BuildCommand,
+            [BuiltInWidgetTypeIds.Metrics] = BuildMetrics,
+            [BuiltInWidgetTypeIds.Spectrum] = BuildSpectrum,
+            [BuiltInWidgetTypeIds.Separator] = BuildSeparator
+        });
         // 透明背景让整块条带都参与 WPF 命中测试；靠近距离可能落在组件空白区，不能只依赖子控件收到 MouseMove。
         // A transparent background keeps the whole strip hit-testable; proximity can fall in empty space and must not depend on child widgets.
         Background = Brushes.Transparent;
@@ -730,7 +697,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             }
             if (_designClipWarnings.TryGetValue(widget.InstanceId, out var warning))
             {
-                var required = LayoutEditorService.ResolveWidgetRequiredCells(profile, widget);
+                var required = WidgetMeasurementService.MeasureRequiredCells(profile, widget);
                 var mayClip = bounds.Width < required.Width || bounds.Height < required.Height;
                 warning.Visibility = mayClip ? Visibility.Visible : Visibility.Collapsed;
                 warning.ToolTip = string.Format(
@@ -1004,7 +971,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
             (int Width, int Height) required = default;
             if (_profile is { } profile)
             {
-                required = LayoutEditorService.ResolveWidgetRequiredCells(profile, widget);
+                required = WidgetMeasurementService.MeasureRequiredCells(profile, widget);
                 mayClip = bounds.Width < required.Width || bounds.Height < required.Height;
                 if (mayClip)
                 {
@@ -1191,17 +1158,7 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
 
     private FrameworkElement BuildWidget(LayoutWidgetElement widget)
     {
-        FrameworkElement view = widget.TypeId switch
-        {
-            BuiltInWidgetTypeIds.Artwork => BuildArtwork(widget),
-            BuiltInWidgetTypeIds.MediaText => BuildMediaText(widget),
-            BuiltInWidgetTypeIds.MediaSource => BuildMediaSource(widget),
-            BuiltInWidgetTypeIds.Command => BuildCommand(widget),
-            BuiltInWidgetTypeIds.Metrics => BuildMetrics(widget),
-            BuiltInWidgetTypeIds.Spectrum => BuildSpectrum(widget),
-            BuiltInWidgetTypeIds.Separator => BuildSeparator(widget),
-            _ => BuildUnknown(widget)
-        };
+        var view = _widgetRendererRegistry.Build(widget, BuildUnknown);
 
         ApplyGeometry(view, widget.Geometry);
         AssignTransitionKeys(view, widget);
@@ -1239,358 +1196,6 @@ internal sealed class ComponentLayoutSurface : Grid, IDisposable
         }
 
         view.SetValue(TransitionKeyProperty, GetTransitionKey(widget));
-    }
-
-    private FrameworkElement BuildArtwork(LayoutWidgetElement widget)
-    {
-        var settings = widget.Settings as ArtworkWidgetSettings ??
-            new ArtworkWidgetSettings(6, false, true);
-        var image = new Image
-        {
-            Stretch = Stretch.UniformToFill,
-            Source = _mediaSnapshot.Artwork.AsImageSource(),
-            IsHitTestVisible = false
-        };
-        var placeholder = new TextBlock
-        {
-            Text = "\uE8D6",
-            FontFamily = GetResource<FontFamily>("AppIconFontFamily") ?? new FontFamily("Segoe MDL2 Assets"),
-            FontSize = 18,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
-            IsHitTestVisible = false
-        };
-        SetDynamicResource(
-            placeholder,
-            TextBlock.ForegroundProperty,
-            ResolveContentResourceKey("TaskbarSecondaryTextBrush"));
-        var grid = new Grid();
-        grid.Children.Add(placeholder);
-        grid.Children.Add(image);
-        var useArtworkColor = settings.UseMediaPrimaryColor && _mediaSnapshot.Artwork is not null;
-        var border = new Border
-        {
-            Width = 40,
-            Height = 40,
-            CornerRadius = new CornerRadius(Math.Clamp(settings.CornerRadiusDip, 0, 32)),
-            Background = useArtworkColor ? ResolveArtworkBackground(settings) : Brushes.Transparent,
-            Child = grid,
-            Cursor = settings.OpenSourceOnClick ? Cursors.Hand : Cursors.Arrow,
-            ToolTip = settings.OpenSourceOnClick ? Loc.Get("Main.Menu.ShowSource") : null
-        };
-        if (!useArtworkColor)
-        {
-            SetDynamicResource(
-                border,
-                Border.BackgroundProperty,
-                ResolveContentResourceKey("TaskbarSurfaceBrush"));
-        }
-        if (settings.OpenSourceOnClick)
-        {
-            SetIsInteractiveElement(border, true);
-            border.MouseLeftButtonUp += (_, args) =>
-            {
-                args.Handled = true;
-                if (_designMode)
-                {
-                    return;
-                }
-                SourceRequested?.Invoke(this, EventArgs.Empty);
-            };
-        }
-        border.Tag = (image, placeholder, settings);
-        return border;
-    }
-
-    private FrameworkElement BuildMediaText(LayoutWidgetElement widget)
-    {
-        var settings = widget.Settings as MediaTextWidgetSettings ??
-            new MediaTextWidgetSettings(MediaTextKind.Title, true, 14, 1);
-        if (settings.TextKind == MediaTextKind.TitleAndArtist)
-        {
-            var titleFontSize = Math.Clamp(settings.FontSizeDip, 6, 72);
-            var artistFontSize = Math.Max(6, titleFontSize - 3);
-            var titleHeight = Math.Max(22, Math.Ceiling(titleFontSize * 1.25));
-            var artistHeight = Math.Max(18, Math.Ceiling(artistFontSize * 1.25));
-            var stack = new StackPanel
-            {
-                Orientation = Orientation.Vertical,
-                Width = widget.Geometry?.WidthDip ?? (IsVertical ? 68 : 150),
-                Height = widget.Geometry?.HeightDip ?? titleHeight + artistHeight,
-                ClipToBounds = true
-            };
-            var title = new TextBlock
-            {
-                FontSize = titleFontSize,
-                Height = titleHeight,
-                TextAlignment = TextAlignment.Center,
-                TextTrimming = TextTrimming.CharacterEllipsis
-            };
-            var artist = new TextBlock
-            {
-                FontSize = artistFontSize,
-                Height = artistHeight,
-                TextAlignment = TextAlignment.Center,
-                TextTrimming = TextTrimming.CharacterEllipsis
-            };
-            SetDynamicResource(title, TextBlock.FontFamilyProperty, "AppDisplayFontFamily");
-            SetDynamicResource(title, TextBlock.FontWeightProperty, "PlayerTitleFontWeight");
-            SetDynamicResource(
-                title,
-                TextBlock.ForegroundProperty,
-                ResolveContentResourceKey("TaskbarPrimaryTextBrush"));
-            SetDynamicResource(artist, TextBlock.FontFamilyProperty, "AppTextFontFamily");
-            SetDynamicResource(artist, TextBlock.FontWeightProperty, "PlayerTextFontWeight");
-            SetDynamicResource(
-                artist,
-                TextBlock.ForegroundProperty,
-                ResolveContentResourceKey("TaskbarSecondaryTextBrush"));
-            stack.Children.Add(title);
-            stack.Children.Add(artist);
-            _mediaTextKinds[widget.InstanceId] = MediaTextKind.TitleAndArtist;
-            stack.Tag = (title, artist);
-            return stack;
-        }
-        var text = new TextBlock
-        {
-            FontSize = Math.Clamp(settings.FontSizeDip, 6, 72),
-            TextWrapping = settings.MaxLines > 1 ? TextWrapping.Wrap : TextWrapping.NoWrap,
-            TextTrimming = TextTrimming.CharacterEllipsis,
-            Width = IsVertical ? 68 : 210,
-            Height = Math.Max(
-                40,
-                Math.Max(12, Math.Ceiling(Math.Clamp(settings.FontSizeDip, 6, 72) * 1.25)) *
-                Math.Clamp(settings.MaxLines, 1, MaximumMediaTextLines)),
-            TextAlignment = TextAlignment.Center,
-            ClipToBounds = true,
-            VerticalAlignment = VerticalAlignment.Center
-        };
-        SetDynamicResource(text, TextBlock.FontFamilyProperty, "AppDisplayFontFamily");
-        SetDynamicResource(text, TextBlock.FontWeightProperty, "PlayerTitleFontWeight");
-        SetDynamicResource(
-            text,
-            TextBlock.ForegroundProperty,
-            ResolveContentResourceKey("TaskbarPrimaryTextBrush"));
-        if (settings.MaxLines > 1)
-        {
-            // 多行文本高度按字号和最多行数计算；外框不足时仍会裁切，但编辑器会显示裁切警告。
-            // Multi-line text height follows font size and MaxLines; a smaller grid frame still clips and is flagged by the editor.
-            var lineHeight = Math.Max(12, Math.Ceiling(Math.Clamp(settings.FontSizeDip, 6, 72) * 1.25));
-            text.Height = double.NaN;
-            text.Width = double.NaN;
-            text.LineHeight = lineHeight;
-            text.LineStackingStrategy = LineStackingStrategy.BlockLineHeight;
-            text.MaxHeight = lineHeight * Math.Clamp(settings.MaxLines, 1, MaximumMediaTextLines);
-            text.HorizontalAlignment = HorizontalAlignment.Stretch;
-            var host = new Grid
-            {
-                Width = IsVertical ? 68 : 210,
-                Height = Math.Max(40, lineHeight * Math.Clamp(settings.MaxLines, 1, MaximumMediaTextLines)),
-                ClipToBounds = true,
-                VerticalAlignment = VerticalAlignment.Center,
-                Tag = text
-            };
-            host.Children.Add(text);
-            _mediaTextKinds[widget.InstanceId] = settings.TextKind;
-            return host;
-        }
-        _mediaTextKinds[widget.InstanceId] = settings.TextKind;
-        // 多行文本需要保留 WPF 的换行布局；跑马灯只对单行标题启用，避免设置看似成功却仍被改回单行。
-        // Multi-line text must keep WPF wrapping; marquee is limited to single-line titles so the MaxLines setting remains effective.
-        if (settings.EnableMarquee && settings.MaxLines <= 1)
-        {
-            _marqueeStates[widget.InstanceId] = new(text, string.Empty, 0);
-        }
-        return text;
-    }
-
-    private FrameworkElement BuildMediaSource(LayoutWidgetElement widget)
-    {
-        var settings = widget.Settings as MediaTextWidgetSettings ??
-            new MediaTextWidgetSettings(MediaTextKind.Source, false, 11, 1);
-        var text = BuildMediaText(widget with
-        {
-            Settings = settings with { TextKind = MediaTextKind.Source }
-        });
-        if (GetTextBlock(text) is { } textBlock)
-        {
-            SetDynamicResource(
-                textBlock,
-                TextBlock.ForegroundProperty,
-                ResolveContentResourceKey("TaskbarSecondaryTextBrush"));
-            textBlock.Cursor = Cursors.Hand;
-            textBlock.ToolTip = Loc.Get("Main.Menu.ShowSource");
-            SetIsInteractiveElement(textBlock, true);
-            if (text is FrameworkElement host)
-            {
-                SetIsInteractiveElement(host, true);
-                host.MouseLeftButtonUp += (_, args) =>
-                {
-                    args.Handled = true;
-                    if (_designMode)
-                    {
-                        return;
-                    }
-                    SourceRequested?.Invoke(this, EventArgs.Empty);
-                };
-            }
-            else
-            {
-                textBlock.MouseLeftButtonUp += (_, args) =>
-                {
-                    args.Handled = true;
-                    if (_designMode)
-                    {
-                        return;
-                    }
-                    SourceRequested?.Invoke(this, EventArgs.Empty);
-                };
-            }
-        }
-
-        return text;
-    }
-
-    private FrameworkElement BuildCommand(LayoutWidgetElement widget)
-    {
-        var settings = widget.Settings as CommandWidgetSettings ??
-            new CommandWidgetSettings(
-                MediaCommandKind.PlayPause,
-                CommandWidgetSettings.DefaultButtonSizeDip);
-        var button = new Button
-        {
-            Width = Math.Clamp(settings.ButtonSizeDip, 20, 96),
-            Height = Math.Clamp(settings.ButtonSizeDip, 20, 96),
-            Cursor = Cursors.Hand,
-            Style = GetResource<Style>(_componentSkinService.ResolveResourceKey(widget, _useMenuThemeForContent)),
-            Tag = settings.Command,
-            ToolTip = GetCommandTooltip(settings.Command),
-            Content = new Viewbox
-            {
-                Width = DefaultCommandGlyphSizeDip,
-                Height = DefaultCommandGlyphSizeDip,
-                Stretch = Stretch.Uniform,
-                Child = new TextBlock
-                {
-                    Text = GetCommandGlyph(settings.Command),
-                    FontFamily = GetResource<FontFamily>("AppIconFontFamily") ?? new FontFamily("Segoe MDL2 Assets"),
-                    FontSize = 14,
-                },
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            }
-        };
-        button.Click += (_, args) =>
-        {
-            args.Handled = true;
-            if (_designMode)
-            {
-                return;
-            }
-
-            CommandRequested?.Invoke(
-                this,
-                new LayoutCommandEventArgs(settings.Command, button));
-        };
-        if (settings.Command is MediaCommandKind.SelectOutputDevice or MediaCommandKind.AdjustVolume)
-        {
-            button.PreviewMouseWheel += (_, args) =>
-            {
-                args.Handled = true;
-                if (_designMode)
-                {
-                    return;
-                }
-
-                WheelRequested?.Invoke(
-                    this,
-                    new LayoutWheelEventArgs(settings.Command, args.Delta, button));
-            };
-        }
-        SetIsInteractiveElement(button, true);
-        return button;
-    }
-
-    private FrameworkElement BuildMetrics(LayoutWidgetElement widget)
-    {
-        var settings = widget.Settings as MetricsWidgetSettings ??
-            new MetricsWidgetSettings(MetricKind.SystemMemory, false, 2500, [MetricKind.SystemMemory]);
-        var text = new TextBlock
-        {
-            Tag = BuiltInWidgetTypeIds.Metrics,
-            Text = _metricsText,
-            FontSize = 11,
-            TextTrimming = TextTrimming.CharacterEllipsis,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center
-        };
-        SetDynamicResource(text, TextBlock.FontFamilyProperty, "AppTextFontFamily");
-        SetDynamicResource(text, TextBlock.FontWeightProperty, "PlayerTextFontWeight");
-        SetDynamicResource(
-            text,
-            TextBlock.ForegroundProperty,
-            ResolveContentResourceKey("TaskbarSecondaryTextBrush"));
-        var border = new Border
-        {
-            Width = 74,
-            Height = 24,
-            Padding = new Thickness(8, 0, 8, 0),
-            CornerRadius = new CornerRadius(12),
-            Cursor = settings.OpenTaskManagerOnClick ? Cursors.Hand : Cursors.Arrow,
-            Child = text
-        };
-        SetDynamicResource(
-            border,
-            Border.BackgroundProperty,
-            ResolveContentResourceKey("TaskbarHoverBrush"));
-        SetIsInteractiveElement(border, settings.OpenTaskManagerOnClick);
-        border.MouseLeftButtonUp += (_, args) =>
-        {
-            if (!settings.OpenTaskManagerOnClick)
-            {
-                return;
-            }
-
-            args.Handled = true;
-            if (_designMode)
-            {
-                return;
-            }
-            MetricsRequested?.Invoke(
-                this,
-                new LayoutMetricsEventArgs(settings.OpenTaskManagerOnClick));
-        };
-        _metricStates[widget.InstanceId] = new(text, settings);
-        return border;
-    }
-
-    private FrameworkElement BuildSpectrum(LayoutWidgetElement widget)
-    {
-        var settings = widget.Settings as SpectrumWidgetSettings ??
-            new SpectrumWidgetSettings(9, 20, 100);
-        return new SpectrumView(
-            Math.Clamp(settings.BandCount, 1, AudioMonitorService.BandCount),
-            Math.Clamp(settings.RefreshRateHz, 5, 30),
-            Math.Clamp(settings.SensitivityPercent, 1, 400),
-            ResolveContentResourceKey("TaskbarSecondaryTextBrush"));
-    }
-
-    private FrameworkElement BuildSeparator(LayoutWidgetElement widget)
-    {
-        var settings = widget.Settings as SeparatorWidgetSettings ??
-            new SeparatorWidgetSettings(1, 22);
-        var separator = new Border
-        {
-            Width = Math.Clamp(settings.ThicknessDip, 1, 8),
-            Height = Math.Clamp(settings.LengthDip, 4, 256),
-            VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(8, 0, 8, 0)
-        };
-        SetDynamicResource(
-            separator,
-            Border.BackgroundProperty,
-            ResolveContentResourceKey("TaskbarDividerBrush"));
-        return separator;
     }
 
     private static FrameworkElement BuildUnknown(LayoutWidgetElement widget)

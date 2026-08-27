@@ -91,9 +91,9 @@ The app runs in its own process. Its WPF player can be hosted as a taskbar child
 | Source interaction | Click artwork to return to the media app; click a media-source widget to open source selection; media-text widgets are display-only; switch sessions with the mouse wheel |
 | Taskbar behavior | Automatic horizontal/vertical detection, manual placement and locking, automatic avoidance, auto-hide and fullscreen handling |
 | Window modes | Taskbar and floating hosts share horizontal and vertical layouts; host mode and arrangement are selected separately, with 70%-125% display scaling |
-| Container layout | The settings page uses an integer logic grid for container and widget placement, including click-to-create 1×1, drag-to-draw rectangles, and four-edge resizing; schema 4 is still being stabilized and some boundary, collapse, and DPI cases may require fixes |
+| Container layout | The settings page uses the schema-5 integer grid for container and widget placement, including click-to-create 1×1, drag-to-draw rectangles, and four-edge resizing; the editor code is modularized, while real-Windows boundary, collapse, and DPI behavior remains subject to acceptance |
 | Information density | Hover states can use a two-line title-and-artist widget; maximum lines only wraps text inside the widget and does not change container size |
-| Auto-hide | Hide when every media session is stopped; collapse containers use an anchor container and shared edge, but four-way schema-4 collapse remains subject to acceptance |
+| Auto-hide | Hide when every media session is stopped; collapse containers use an anchor container and shared edge, while four-way collapse still requires real-Windows acceptance |
 | Audio devices | List and switch the default output device, including delayed wheel selection |
 | App volume | Match the selected media process and adjust its Windows mixer volume in 2% steps |
 | Visualizer | Nine-band spectrum from WASAPI loopback capture |
@@ -215,7 +215,7 @@ Disable unused metrics and the audio visualizer, or enable low-spec mode. The vi
 - The current instance follows the primary monitor taskbar only.
 - Browsers decide whether multiple tabs appear as one or multiple GSMTC sessions.
 - Only a `win-x64` package is currently published; ARM64 is not yet available.
-- The schema-4 grid editor is still being fixed; four-way collapse, DPI pointer alignment, outside-window proximity, and migration recovery are not yet guaranteed as stable behavior on real Windows.
+- The schema-5 grid editor has completed its code-level architecture refactor, and its preview surface is now isolated from the runtime surface. Four-way collapse, DPI pointer alignment, outside-window proximity, and old-profile recovery still require real-Windows acceptance.
 
 ## Privacy and Security
 
@@ -252,12 +252,14 @@ AF-Media-Bar/
 |   |-- ISSUE_TEMPLATE/     # Issue forms
 |   `-- workflows/          # Build and release workflows
 |-- src/
-|   |-- AFMediaBar/         # WPF shell, UI, and publish configuration
-|   |-- AFMediaBar.Core/    # UI-independent models, contracts, and pure logic
-|   `-- AFMediaBar.Platform.Windows/ # Windows system access and persistence
+|   |-- AFMediaBar/         # WPF shell, settings, runtime widgets, and publishing
+|   |-- AFMediaBar.Core/    # Media, audio, shared business logic, and cross-layer contracts
+|   |-- AFMediaBar.Layout/  # UI-independent layout model, constraints, commands, and schema 5
+|   |-- AFMediaBar.LayoutEditor.Wpf/ # Standalone WPF grid editor host and pointer state machine
+|   `-- AFMediaBar.Platform.Windows/ # Windows integration, layout storage, and adapters
 |-- tests/
 |   `-- AFMediaBar.Core.Tests/ # Core automated tests
-|-- prototypes/             # WinUI migration experiments
+|-- prototypes/             # WinUI and standalone layout-editor experiments
 |-- docs/                   # Project documentation and assets
 |-- AFMediaBar.slnx         # Solution build and test entry point
 |-- README.md               # Chinese documentation
@@ -280,7 +282,7 @@ AF-Media-Bar/
 - [ ] Display scrolling video subtitles/lyrics.
 - [ ] Display media progress bars.
 - [ ] Polish the UI and provide multiple preset themes.
-- [ ] Stabilize the fine-grid component layout editor and complete real-Windows acceptance.
+- [ ] Complete real-Windows acceptance for the fine-grid editor.
 - [ ] Export and share configurations.
 - [ ] Add an onboarding tutorial.
 

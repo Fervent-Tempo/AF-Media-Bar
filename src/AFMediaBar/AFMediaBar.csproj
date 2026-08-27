@@ -36,6 +36,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AFMediaBar.Core\AFMediaBar.Core.csproj" />
+    <ProjectReference Include="..\AFMediaBar.Layout\AFMediaBar.Layout.csproj" />
+    <ProjectReference Include="..\AFMediaBar.LayoutEditor.Wpf\AFMediaBar.LayoutEditor.Wpf.csproj" />
     <ProjectReference Include="..\AFMediaBar.Platform.Windows\AFMediaBar.Platform.Windows.csproj" />
   </ItemGroup>
 

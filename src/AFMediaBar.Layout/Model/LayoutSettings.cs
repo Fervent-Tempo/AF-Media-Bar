@@ -1,7 +1,6 @@
 using System.Text;
 using System.Text.Json.Serialization;
-
-namespace AFMediaBar.Models;
+namespace AFMediaBar.Layout.Models;
 
 /// <summary>
 /// 标识横向和竖向两套共享布局；宿主模式属于窗口状态，不再复制布局档案。
@@ -426,7 +425,7 @@ public sealed record LayoutDocument(
     LayoutProfile Horizontal,
     LayoutProfile Vertical)
 {
-    public const int CurrentSchemaVersion = 4;
+    public const int CurrentSchemaVersion = 5;
 
     public LayoutProfile Get(LayoutProfileKey key) => key switch
     {

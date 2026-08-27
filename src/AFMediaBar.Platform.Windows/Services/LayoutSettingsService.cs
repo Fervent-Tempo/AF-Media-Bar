@@ -2,13 +2,15 @@ using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using AFMediaBar.Layout.Defaults;
+using AFMediaBar.Layout.Serialization;
 using AFMediaBar.Models;
 
 namespace AFMediaBar.Services;
 
 /// <summary>
-/// 持有布局文档的 JSON 存储、版本迁移和原子写入；注册表仍由各旧设置服务负责。
-/// Owns JSON layout storage, schema migration, and atomic writes while existing settings services retain registry ownership.
+/// 持有 schema 5 布局文档的 JSON 存储、恢复和原子写入；注册表仍由各旧设置服务负责。
+/// Owns schema-5 JSON storage, recovery, and atomic writes while existing settings services retain registry ownership.
 /// </summary>
 public static class LayoutSettingsService
 {
@@ -44,9 +46,7 @@ public static class LayoutSettingsService
         var path = LayoutFilePath;
         if (!File.Exists(path))
         {
-            var migrated = LayoutMigrationService.CreateFromLegacy(
-                legacyWindowSettings,
-                legacyMetricSettings);
+            var migrated = LayoutDefaultTemplates.LoadDocument();
             TrySaveAfterMigration(migrated, "layout-settings-initial-migration");
             DiagnosticsLogService.Write("layout-settings-loaded", details: $"Path={path};Source=legacy");
             return migrated;
@@ -66,37 +66,20 @@ public static class LayoutSettingsService
                 ? schemaElement.GetInt32()
                 : 1;
             LayoutDocument document;
-            var migratedLegacyDocument = schemaVersion < LayoutDocument.CurrentSchemaVersion;
-            if (schemaVersion <= 2)
-            {
-                // schema 1/2 是四档案外壳：先归并为 schema 3 两档案，再确定性迁移到 schema 4。
-                var legacy = JsonSerializer.Deserialize<LegacyLayoutDocument>(json, SerializerOptions)
-                    ?? throw new InvalidDataException("Legacy layout document is empty.");
-                var schema3 = LayoutMigrationService.MigrateLegacyDocument(
-                    legacy,
-                    legacyWindowSettings.HostMode);
-                document = LayoutMigrationService.MigrateSchema3To4(schema3);
-            }
-            else if (schemaVersion == 3)
-            {
-                // schema 3 的 JSON 外壳已经与 LayoutDocument 相同（两档案），必须按 schema 3 DTO 读取。
-                var schema3 = JsonSerializer.Deserialize<Schema3LayoutDocument>(json, SerializerOptions)
-                    ?? throw new InvalidDataException("Schema-3 layout document is empty.");
-                document = LayoutMigrationService.MigrateSchema3To4(schema3);
-            }
-            else if (schemaVersion == LayoutDocument.CurrentSchemaVersion)
+            const bool migratedLegacyDocument = false;
+            if (schemaVersion == LayoutDocument.CurrentSchemaVersion)
             {
                 document = JsonSerializer.Deserialize<LayoutDocument>(json, SerializerOptions)
                     ?? throw new InvalidDataException("Layout document is empty.");
             }
             else
             {
-                // schema > 4：拒绝读取，保留无效文件并回退默认布局。
+                // schema 1-4 和未来版本均不再作为正式兼容格式；保留文件后恢复 schema 5 默认档案。
                 throw new InvalidDataException(
                     $"Unsupported layout schema version: {schemaVersion}.");
             }
 
-            var normalized = LayoutMigrationService.Normalize(document);
+            var normalized = LayoutDocumentNormalizer.Normalize(document);
             if (migratedLegacyDocument || !Equals(document, normalized))
             {
                 TrySaveAfterMigration(normalized, "layout-settings-normalize");
@@ -104,7 +87,7 @@ public static class LayoutSettingsService
 
             DiagnosticsLogService.Write(
                 "layout-settings-loaded",
-                details: $"Path={path};Source={(migratedLegacyDocument ? "schema-migration" : "json")};Schema={schemaVersion}");
+                details: $"Path={path};Source=json;Schema={schemaVersion}");
             return normalized;
         }
         catch (Exception exception)
@@ -115,9 +98,7 @@ public static class LayoutSettingsService
                 path);
 
             PreserveInvalidFile(path);
-            var fallback = LayoutMigrationService.CreateFromLegacy(
-                legacyWindowSettings,
-                legacyMetricSettings);
+            var fallback = LayoutDefaultTemplates.LoadDocument();
             TrySaveAfterMigration(fallback, "layout-settings-recovery");
             DiagnosticsLogService.Write("layout-settings-loaded", details: $"Path={path};Source=recovery");
             return fallback;
@@ -126,7 +107,7 @@ public static class LayoutSettingsService
 
     public static void Save(LayoutDocument document)
     {
-        var normalized = LayoutMigrationService.Normalize(document);
+        var normalized = LayoutDocumentNormalizer.Normalize(document);
         var path = LayoutFilePath;
         var directory = Path.GetDirectoryName(path)
             ?? throw new InvalidOperationException("Layout directory cannot be resolved.");

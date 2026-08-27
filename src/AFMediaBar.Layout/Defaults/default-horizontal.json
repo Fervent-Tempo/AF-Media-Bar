@@ -1,0 +1,372 @@
+{
+  "key": "horizontal",
+  "layoutMode": "horizontal",
+  "surface": {
+    "lengthScalePercent": 100,
+    "thicknessScalePercent": 100,
+    "gapDip": 4,
+    "cornerRadiusDip": 6,
+    "sizeToContent": true,
+    "edgeCollapseEnabled": false
+  },
+  "grid": {
+    "columns": 54,
+    "rows": 24,
+    "cellSizeDip": 8
+  },
+  "containers": [
+    {
+      "containerKind": "static",
+      "orientation": "automatic",
+      "contentAlignment": "center",
+      "secondaryContentAlignment": "center",
+      "trigger": "always",
+      "proximityDip": 0,
+      "animation": {
+        "enabled": false,
+        "durationMilliseconds": 0,
+        "delayMilliseconds": 0,
+        "easing": "linear"
+      },
+      "primarySlot": {
+        "slotId": "content",
+        "children": [
+          {
+            "kind": "widget",
+            "typeId": "builtin.artwork",
+            "settings": {
+              "type": "artwork",
+              "cornerRadiusDip": 6,
+              "useMediaPrimaryColor": false,
+              "openSourceOnClick": true
+            },
+            "instanceId": "artwork",
+            "enabled": true,
+            "geometry": {
+              "margin": {
+                "left": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0
+              }
+            },
+            "gridBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 5,
+              "height": 5
+            }
+          }
+        ]
+      },
+      "secondarySlot": {
+        "slotId": "unused",
+        "children": []
+      },
+      "instanceId": "always-leading",
+      "enabled": true,
+      "geometry": {
+        "margin": {
+          "left": 0,
+          "top": 0,
+          "right": 0,
+          "bottom": 0
+        }
+      },
+      "gridBounds": {
+        "x": 0,
+        "y": 0,
+        "width": 5,
+        "height": 5
+      }
+    },
+    {
+      "containerKind": "hoverSwitch",
+      "orientation": "automatic",
+      "contentAlignment": "center",
+      "secondaryContentAlignment": "center",
+      "trigger": "pointerNear",
+      "proximityDip": 0,
+      "animation": {
+        "enabled": true,
+        "durationMilliseconds": 220,
+        "delayMilliseconds": 0,
+        "easing": "easeOut"
+      },
+      "primarySlot": {
+        "slotId": "idle",
+        "children": [
+          {
+            "kind": "widget",
+            "typeId": "builtin.media-text",
+            "settings": {
+              "type": "media-text",
+              "textKind": "title",
+              "enableMarquee": false,
+              "fontSizeDip": 14,
+              "maxLines": 2
+            },
+            "instanceId": "title",
+            "enabled": true,
+            "geometry": {
+              "margin": {
+                "left": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0
+              }
+            },
+            "gridBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 31,
+              "height": 5
+            }
+          }
+        ]
+      },
+      "secondarySlot": {
+        "slotId": "active",
+        "children": [
+          {
+            "kind": "widget",
+            "typeId": "builtin.media-text",
+            "settings": {
+              "type": "media-text",
+              "textKind": "titleAndArtist",
+              "enableMarquee": true,
+              "fontSizeDip": 14,
+              "maxLines": 1
+            },
+            "instanceId": "media-active-text",
+            "enabled": true,
+            "geometry": {
+              "margin": {
+                "left": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0
+              }
+            },
+            "gridBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 19,
+              "height": 5
+            }
+          },
+          {
+            "kind": "widget",
+            "typeId": "builtin.command",
+            "settings": {
+              "type": "command",
+              "command": "previous",
+              "buttonSizeDip": 24
+            },
+            "instanceId": "previous",
+            "enabled": true,
+            "geometry": {
+              "margin": {
+                "left": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0
+              }
+            },
+            "gridBounds": {
+              "x": 20,
+              "y": 1,
+              "width": 3,
+              "height": 3
+            }
+          },
+          {
+            "kind": "widget",
+            "typeId": "builtin.command",
+            "settings": {
+              "type": "command",
+              "command": "playPause",
+              "buttonSizeDip": 24
+            },
+            "instanceId": "play-pause",
+            "enabled": true,
+            "geometry": {
+              "margin": {
+                "left": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0
+              }
+            },
+            "gridBounds": {
+              "x": 24,
+              "y": 1,
+              "width": 3,
+              "height": 3
+            }
+          },
+          {
+            "kind": "widget",
+            "typeId": "builtin.command",
+            "settings": {
+              "type": "command",
+              "command": "next",
+              "buttonSizeDip": 24
+            },
+            "instanceId": "next",
+            "enabled": true,
+            "geometry": {
+              "margin": {
+                "left": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0
+              }
+            },
+            "gridBounds": {
+              "x": 28,
+              "y": 1,
+              "width": 3,
+              "height": 3
+            }
+          }
+        ]
+      },
+      "instanceId": "media-interaction",
+      "enabled": true,
+      "geometry": {
+        "margin": {
+          "left": 0,
+          "top": 0,
+          "right": 0,
+          "bottom": 0
+        }
+      },
+      "gridBounds": {
+        "x": 5,
+        "y": 0,
+        "width": 31,
+        "height": 5
+      }
+    },
+    {
+      "containerKind": "static",
+      "orientation": "automatic",
+      "contentAlignment": "center",
+      "secondaryContentAlignment": "center",
+      "trigger": "always",
+      "proximityDip": 0,
+      "animation": {
+        "enabled": false,
+        "durationMilliseconds": 0,
+        "delayMilliseconds": 0,
+        "easing": "linear"
+      },
+      "primarySlot": {
+        "slotId": "content",
+        "children": [
+          {
+            "kind": "widget",
+            "typeId": "builtin.command",
+            "settings": {
+              "type": "command",
+              "command": "selectOutputDevice",
+              "buttonSizeDip": 24
+            },
+            "instanceId": "output-device",
+            "enabled": true,
+            "geometry": {
+              "margin": {
+                "left": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0
+              }
+            },
+            "gridBounds": {
+              "x": 1,
+              "y": 1,
+              "width": 3,
+              "height": 3
+            }
+          },
+          {
+            "kind": "widget",
+            "typeId": "builtin.command",
+            "settings": {
+              "type": "command",
+              "command": "adjustVolume",
+              "buttonSizeDip": 24
+            },
+            "instanceId": "volume",
+            "enabled": true,
+            "geometry": {
+              "margin": {
+                "left": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0
+              }
+            },
+            "gridBounds": {
+              "x": 5,
+              "y": 1,
+              "width": 3,
+              "height": 3
+            }
+          },
+          {
+            "kind": "widget",
+            "typeId": "builtin.metrics",
+            "settings": {
+              "type": "metrics",
+              "metric": "systemMemory",
+              "openTaskManagerOnClick": false,
+              "refreshIntervalMilliseconds": 2500,
+              "cycleMetrics": [
+                "systemMemory"
+              ]
+            },
+            "instanceId": "metrics",
+            "enabled": true,
+            "geometry": {
+              "margin": {
+                "left": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0
+              }
+            },
+            "gridBounds": {
+              "x": 8,
+              "y": 1,
+              "width": 10,
+              "height": 3
+            }
+          }
+        ]
+      },
+      "secondarySlot": {
+        "slotId": "unused",
+        "children": []
+      },
+      "instanceId": "always-trailing",
+      "enabled": true,
+      "geometry": {
+        "margin": {
+          "left": 0,
+          "top": 0,
+          "right": 0,
+          "bottom": 0
+        }
+      },
+      "gridBounds": {
+        "x": 36,
+        "y": 0,
+        "width": 18,
+        "height": 5
+      }
+    }
+  ],
+  "collapseContainers": []
+}

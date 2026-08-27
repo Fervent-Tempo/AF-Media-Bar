@@ -1,16 +1,11 @@
+using AFMediaBar.Layout.Models;
+
 namespace AFMediaBar.Models;
 
 public enum WindowHostMode
 {
     Taskbar = 0,
     Floating = 1
-}
-
-public enum PlayerLayoutMode
-{
-    Automatic = 0,
-    Horizontal = 1,
-    Vertical = 2
 }
 
 public readonly record struct WindowSettings(

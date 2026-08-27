@@ -22,10 +22,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Compatibility and Limitations
 
-- Layout data currently uses schema 4 while retaining migration, backup, and invalid-file recovery for older schemas.
-- The fine-grid editor is still being stabilized. Four-way collapse, DPI pointer alignment, outside-window proximity, taskbar recovery, and post-migration behavior have not yet completed real-Windows acceptance.
+- Layout data now uses schema 5 as the only supported format. Unrecognized or invalid layout files are preserved and replaced with the default profile.
+- The fine-grid editor is still being stabilized. Four-way collapse, DPI pointer alignment, outside-window proximity, taskbar recovery, and invalid-profile recovery have not yet completed real-Windows acceptance.
 - Interactive widgets are rejected from hover leave-state slots; edge-collapse content is completely hidden while collapsed and only a trigger region remains.
-- Layout profiles and widget properties are stored in `%LOCALAPPDATA%\AFMediaBar\profiles\layout.json`; legacy registry settings are used only for first-run migration.
+- Layout profiles and widget properties are stored in `%LOCALAPPDATA%\AFMediaBar\profiles\layout.json`; legacy widget registry values are used only during first-run migration.
 
 ### Planned
 
