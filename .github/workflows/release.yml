@@ -48,11 +48,14 @@ jobs:
       - name: Build
         run: dotnet build .\AFMediaBar.slnx -c Release --no-restore -p:ContinuousIntegrationBuild=true
 
-      - name: Test
-        run: dotnet test .\AFMediaBar.slnx -c Release --no-build
+      - name: Test components
+        run: dotnet test .\tests\AFMediaBar.Components.Tests\AFMediaBar.Components.Tests.csproj -c Release --no-build --no-restore
+
+      - name: Test core and layout
+        run: dotnet test .\tests\AFMediaBar.Core.Tests\AFMediaBar.Core.Tests.csproj -c Release --no-build --no-restore
 
       - name: Publish self-contained single-file application
-        run: dotnet publish .\src\AFMediaBar\AFMediaBar.csproj -c Release -r win-x64 --self-contained true -p:ContinuousIntegrationBuild=true -o .\artifacts\publish
+        run: dotnet publish .\src\AFMediaBar\AFMediaBar.csproj -c Release -r win-x64 --self-contained true --no-restore -p:ContinuousIntegrationBuild=true -o .\artifacts\publish
 
       - name: Verify single-file output
         shell: pwsh

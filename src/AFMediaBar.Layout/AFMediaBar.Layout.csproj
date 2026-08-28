@@ -5,6 +5,10 @@
     <Nullable>enable</Nullable>
     <RootNamespace>AFMediaBar.Layout</RootNamespace>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\AFMediaBar.Components\AFMediaBar.Components.csproj" />
