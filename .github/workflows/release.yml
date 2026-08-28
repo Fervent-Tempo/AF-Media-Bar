@@ -43,7 +43,7 @@ jobs:
           "VERSION=$projectVersion" >> $env:GITHUB_ENV
 
       - name: Restore
-        run: dotnet restore .\AFMediaBar.slnx
+        run: dotnet restore .\AFMediaBar.slnx -r win-x64
 
       - name: Build
         run: dotnet build .\AFMediaBar.slnx -c Release --no-restore -p:ContinuousIntegrationBuild=true
