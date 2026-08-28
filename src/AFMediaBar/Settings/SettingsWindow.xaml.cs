@@ -20,11 +20,9 @@ namespace AFMediaBar.Settings;
 /// </summary>
 public partial class SettingsWindow : FluentWindow
 {
-    private const double ExpandedNavigationPaneWidth = 220;
-    private const double CollapsedNavigationPaneWidth = 56;
-
     private readonly SettingsCoordinator _coordinator;
     private readonly UpdateService _updateService;
+    private readonly SettingsWindowViewModel _viewModel;
     private readonly DispatcherTimer _scaleSaveTimer;
     private readonly DispatcherTimer _fontSaveTimer;
     private readonly SystemThemeService? _systemThemeService;
@@ -32,20 +30,15 @@ public partial class SettingsWindow : FluentWindow
     private bool _isInitialized;
     private bool _isSyncing = true;
 
-    private void NavigationPaneToggle_OnClick(object sender, RoutedEventArgs e)
-    {
-        var collapse = NavigationPaneColumn.Width.Value > CollapsedNavigationPaneWidth;
-        NavigationPaneColumn.Width = new GridLength(
-            collapse ? CollapsedNavigationPaneWidth : ExpandedNavigationPaneWidth);
-        NavigationPaneIcon.Symbol = collapse
-            ? SymbolRegular.PanelLeftExpand20
-            : SymbolRegular.PanelLeftContract20;
-    }
-
-    internal SettingsWindow(SettingsCoordinator coordinator, UpdateService updateService)
+    internal SettingsWindow(
+        SettingsCoordinator coordinator,
+        UpdateService updateService,
+        SettingsWindowViewModel viewModel)
     {
         _coordinator = coordinator;
         _updateService = updateService;
+        _viewModel = viewModel;
+        DataContext = _viewModel;
         _systemThemeService = (Application.Current as App)?.ThemeService;
         _scaleSaveTimer = new DispatcherTimer(
             TimeSpan.FromMilliseconds(360),
@@ -60,6 +53,7 @@ public partial class SettingsWindow : FluentWindow
             Dispatcher);
         _fontSaveTimer.Stop();
         InitializeComponent();
+        _viewModel.PropertyChanged += ViewModel_OnPropertyChanged;
         InitializeLayoutEditor();
         _searchResults = BuildSearchResults();
         _isInitialized = true;
@@ -78,6 +72,16 @@ public partial class SettingsWindow : FluentWindow
         if (_updateService.LatestRelease is { } release)
         {
             ShowRelease(release, release.Version > _updateService.CurrentVersion);
+        }
+    }
+
+    private void ViewModel_OnPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SettingsWindowViewModel.IsNavigationPaneExpanded))
+        {
+            NavigationPaneIcon.Symbol = _viewModel.IsNavigationPaneExpanded
+                ? SymbolRegular.PanelLeftContract20
+                : SymbolRegular.PanelLeftExpand20;
         }
     }
 

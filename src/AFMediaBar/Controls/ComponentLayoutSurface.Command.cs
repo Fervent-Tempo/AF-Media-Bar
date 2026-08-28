@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
+using AFMediaBar.Components.Wpf.Controls;
 using AFMediaBar.Layout.Models;
 
 namespace AFMediaBar.Controls;
@@ -23,17 +24,13 @@ internal sealed partial class ComponentLayoutSurface
             Style = GetResource<Style>(_componentSkinService.ResolveResourceKey(widget, _useMenuThemeForContent)),
             Tag = settings.Command,
             ToolTip = GetCommandTooltip(settings.Command),
-            Content = new Viewbox
+            Content = new CenteredIconGlyph
             {
                 Width = DefaultCommandGlyphSizeDip,
                 Height = DefaultCommandGlyphSizeDip,
-                Stretch = Stretch.Uniform,
-                Child = new TextBlock
-                {
-                    Text = GetCommandGlyph(settings.Command),
-                    FontFamily = GetResource<FontFamily>("AppIconFontFamily") ?? new FontFamily("Segoe MDL2 Assets"),
-                    FontSize = 14,
-                },
+                Glyph = GetCommandGlyph(settings.Command),
+                FontFamily = GetResource<FontFamily>("AppIconFontFamily") ?? new FontFamily("Segoe MDL2 Assets"),
+                FontSize = 14,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center
             }

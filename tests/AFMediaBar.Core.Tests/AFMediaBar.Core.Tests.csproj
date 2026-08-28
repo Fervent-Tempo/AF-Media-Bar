@@ -18,6 +18,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\AFMediaBar.Core\AFMediaBar.Core.csproj" />
+    <ProjectReference Include="..\..\src\AFMediaBar\AFMediaBar.csproj" />
+    <ProjectReference Include="..\..\src\AFMediaBar.Components.Wpf\AFMediaBar.Components.Wpf.csproj" />
     <ProjectReference Include="..\..\src\AFMediaBar.Layout\AFMediaBar.Layout.csproj" />
     <ProjectReference Include="..\..\src\AFMediaBar.LayoutEditor.Wpf\AFMediaBar.LayoutEditor.Wpf.csproj" />
   </ItemGroup>

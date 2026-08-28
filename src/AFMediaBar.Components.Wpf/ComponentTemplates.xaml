@@ -1,0 +1,21 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:artwork="clr-namespace:AFMediaBar.Components.Wpf.BuiltIn.Artwork"
+                    xmlns:mediaText="clr-namespace:AFMediaBar.Components.Wpf.BuiltIn.MediaText"
+                    xmlns:mediaSource="clr-namespace:AFMediaBar.Components.Wpf.BuiltIn.MediaSource"
+                    xmlns:command="clr-namespace:AFMediaBar.Components.Wpf.BuiltIn.PlaybackCommand"
+                    xmlns:output="clr-namespace:AFMediaBar.Components.Wpf.BuiltIn.OutputDevice"
+                    xmlns:volume="clr-namespace:AFMediaBar.Components.Wpf.BuiltIn.Volume"
+                    xmlns:spectrum="clr-namespace:AFMediaBar.Components.Wpf.BuiltIn.Spectrum"
+                    xmlns:metrics="clr-namespace:AFMediaBar.Components.Wpf.BuiltIn.Metrics"
+                    xmlns:separator="clr-namespace:AFMediaBar.Components.Wpf.BuiltIn.Separator">
+  <DataTemplate DataType="{x:Type artwork:ArtworkViewModel}"><artwork:ArtworkView /></DataTemplate>
+  <DataTemplate DataType="{x:Type mediaText:MediaTextViewModel}"><mediaText:MediaTextView /></DataTemplate>
+  <DataTemplate DataType="{x:Type mediaSource:MediaSourceViewModel}"><mediaSource:MediaSourceView /></DataTemplate>
+  <DataTemplate DataType="{x:Type command:PlaybackCommandViewModel}"><command:PlaybackCommandView /></DataTemplate>
+  <DataTemplate DataType="{x:Type output:OutputDeviceViewModel}"><output:OutputDeviceView /></DataTemplate>
+  <DataTemplate DataType="{x:Type volume:VolumeViewModel}"><volume:VolumeView /></DataTemplate>
+  <DataTemplate DataType="{x:Type spectrum:SpectrumViewModel}"><spectrum:SpectrumView /></DataTemplate>
+  <DataTemplate DataType="{x:Type metrics:MetricsViewModel}"><metrics:MetricsView /></DataTemplate>
+  <DataTemplate DataType="{x:Type separator:SeparatorViewModel}"><separator:SeparatorView /></DataTemplate>
+</ResourceDictionary>

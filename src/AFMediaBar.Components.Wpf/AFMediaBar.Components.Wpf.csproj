@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.17763.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>AFMediaBar.Components.Wpf</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <ProjectReference Include="..\AFMediaBar.Components\AFMediaBar.Components.csproj" />
+    <ProjectReference Include="..\AFMediaBar.Layout\AFMediaBar.Layout.csproj" />
+  </ItemGroup>
+</Project>

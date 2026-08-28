@@ -1,0 +1,33 @@
+<UserControl x:Class="AFMediaBar.Components.Wpf.BuiltIn.MediaText.MediaTextView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Grid Width="{Binding WidthDip}" ClipToBounds="True">
+    <TextBlock Text="{Binding DisplayText}" FontSize="{Binding FontSizeDip}"
+               FontFamily="{DynamicResource AppDisplayFontFamily}"
+               Foreground="{DynamicResource TaskbarPrimaryTextBrush}"
+               TextAlignment="Center" TextTrimming="CharacterEllipsis">
+      <TextBlock.Style>
+        <Style TargetType="TextBlock">
+          <Setter Property="Visibility" Value="Visible" />
+          <Style.Triggers><DataTrigger Binding="{Binding IsCombined}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger></Style.Triggers>
+        </Style>
+      </TextBlock.Style>
+    </TextBlock>
+    <StackPanel>
+      <StackPanel.Style>
+        <Style TargetType="StackPanel">
+          <Setter Property="Visibility" Value="Collapsed" />
+          <Style.Triggers><DataTrigger Binding="{Binding IsCombined}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers>
+        </Style>
+      </StackPanel.Style>
+      <TextBlock Text="{Binding Title}" FontSize="{Binding FontSizeDip}"
+                 FontFamily="{DynamicResource AppDisplayFontFamily}"
+                 Foreground="{DynamicResource TaskbarPrimaryTextBrush}"
+                 TextAlignment="Center" TextTrimming="CharacterEllipsis" />
+      <TextBlock Text="{Binding Artist}" FontSize="{Binding ArtistFontSizeDip}"
+                 FontFamily="{DynamicResource AppTextFontFamily}"
+                 Foreground="{DynamicResource TaskbarSecondaryTextBrush}"
+                 TextAlignment="Center" TextTrimming="CharacterEllipsis" />
+    </StackPanel>
+  </Grid>
+</UserControl>

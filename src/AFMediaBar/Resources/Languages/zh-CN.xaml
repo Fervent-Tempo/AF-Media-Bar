@@ -186,6 +186,7 @@
   <sys:String x:Key="Settings.Layout.CategorySystem">系统监控</sys:String>
   <sys:String x:Key="Settings.Layout.CategoryLayout">布局辅助</sys:String>
   <sys:String x:Key="Settings.Layout.EditorUndo">撤销</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorRedo">重做</sys:String>
   <sys:String x:Key="Settings.Layout.EditorResetProfile">重置当前档案</sys:String>
   <sys:String x:Key="Settings.Layout.EditorAddStaticContainer">添加常驻容器</sys:String>
   <sys:String x:Key="Settings.Layout.EditorAddHoverContainer">添加悬停容器</sys:String>
@@ -296,6 +297,10 @@
   <sys:String x:Key="Settings.LayoutWidget.MediaSourceDescription">显示当前媒体来源并打开来源选择。</sys:String>
   <sys:String x:Key="Settings.LayoutWidget.CommandTitle">媒体控制组件</sys:String>
   <sys:String x:Key="Settings.LayoutWidget.CommandDescription">执行上一首、播放、下一首或设备控制操作。</sys:String>
+  <sys:String x:Key="Settings.LayoutWidget.OutputDeviceTitle">输出设备组件</sys:String>
+  <sys:String x:Key="Settings.LayoutWidget.OutputDeviceDescription">显示并切换当前音频输出设备。</sys:String>
+  <sys:String x:Key="Settings.LayoutWidget.VolumeTitle">音量组件</sys:String>
+  <sys:String x:Key="Settings.LayoutWidget.VolumeDescription">显示并调节当前媒体音量。</sys:String>
   <sys:String x:Key="Settings.LayoutWidget.MetricsTitle">性能指标组件</sys:String>
   <sys:String x:Key="Settings.LayoutWidget.MetricsDescription">显示系统或当前进程的性能数据。</sys:String>
   <sys:String x:Key="Settings.LayoutWidget.SpectrumTitle">频谱组件</sys:String>
@@ -305,6 +310,7 @@
   <sys:String x:Key="Settings.Layout.EditorAddFailed">无法添加：目标槽位不允许该组件，或实例标识已存在。</sys:String>
   <sys:String x:Key="Settings.Layout.UnknownWidget">未知组件：{0}</sys:String>
   <sys:String x:Key="Settings.Layout.EditorProperties">组件属性</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorMinimumSizeFormat">最小网格尺寸：{0} x {1}</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyAuto">自动</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyWidth">宽度</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyHeight">高度</sys:String>

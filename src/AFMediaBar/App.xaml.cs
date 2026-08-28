@@ -6,6 +6,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using AFMediaBar.Adapters;
 using AFMediaBar.Abstractions;
+using AFMediaBar.Composition;
 using AFMediaBar.Interop;
 using AFMediaBar.Models;
 using AFMediaBar.Services;
@@ -15,6 +16,7 @@ using AFMediaBar.Services.Win32Api;
 using AFMediaBar.Settings;
 // System.Windows.Localization（枚举）与本地化帮助类同名，用别名消歧。
 using Loc = AFMediaBar.Services.Localization;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AFMediaBar;
 
@@ -24,6 +26,7 @@ public partial class App : Application
     private CancellationTokenSource? _shutdownCancellation;
     private SystemThemeService? _systemThemeService;
     private UpdateService? _updateService;
+    private ServiceProvider? _services;
     private SettingsWindow? _settingsWindow;
     private Version? _notifiedUpdateVersion;
 #if DEBUG
@@ -68,6 +71,7 @@ public partial class App : Application
         ApplyLanguageSettings();
         ApplyFontSettings();
         _updateService = new UpdateService(WpfStringLocalizer.Instance);
+        _services = ServiceRegistration.Build(SettingsCoordinator, _updateService);
         _shutdownCancellation = new CancellationTokenSource();
         ShowMainWindow();
         _ = CheckForUpdatesAfterStartupAsync();
@@ -131,7 +135,9 @@ public partial class App : Application
             {
                 _settingsWindow = new SettingsWindow(
                     SettingsCoordinator,
-                    _updateService ?? throw new InvalidOperationException(Loc.Get("Msg.UpdateNotInitialized")));
+                    _updateService ?? throw new InvalidOperationException(Loc.Get("Msg.UpdateNotInitialized")),
+                    _services?.GetRequiredService<SettingsWindowViewModel>()
+                        ?? throw new InvalidOperationException("Settings services are not initialized."));
                 _settingsWindow.Closed += SettingsWindow_OnClosed;
                 _settingsWindow.Show();
             }
@@ -506,6 +512,7 @@ public partial class App : Application
         _shutdownCancellation?.Cancel();
         _shutdownCancellation?.Dispose();
         _updateService?.Dispose();
+        _services?.Dispose();
         _systemThemeService?.Dispose();
         _singleInstanceMutex?.Dispose();
         UnregisterExceptionHandlers();

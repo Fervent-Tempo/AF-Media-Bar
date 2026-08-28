@@ -12,6 +12,8 @@ using AFMediaBar.Layout.Widgets;
 using AFMediaBar.LayoutEditor.Wpf.Input;
 using AFMediaBar.LayoutEditor.Wpf.Controls;
 using AFMediaBar.LayoutEditor.Wpf.Preview;
+using AFMediaBar.LayoutEditor.Wpf.ViewModels;
+using AFMediaBar.LayoutEditor.Wpf.Views;
 using AFMediaBar.Models;
 using AFMediaBar.Services;
 using Loc = AFMediaBar.Services.Localization;
@@ -30,12 +32,12 @@ public partial class SettingsWindow
     private const string ExistingWidgetDragFormat = LayoutEditorDragFormats.ExistingWidget;
     private const string ExistingContainerDragFormat = LayoutEditorDragFormats.ExistingContainer;
 
-    private readonly LayoutEditHistoryService _layoutEditHistory = new();
     private readonly LayoutEditorCommandProcessor _layoutEditorCommands =
         new(new CoreLayoutConstraintAdapter());
     private LayoutProfileKey _layoutEditorProfileKey = LayoutProfileKey.Horizontal;
     private LayoutEditorSelection? _layoutEditorSelection;
     private LayoutEditorSession? _layoutEditorSession;
+    private LayoutEditorViewModel? _layoutEditorViewModel;
     private LayoutEditorControl? _layoutEditorHostControl;
     private bool _layoutEditorSyncing;
     private bool _layoutPropertySyncing;
@@ -126,9 +128,9 @@ public partial class SettingsWindow
         _layoutInputRouter.MouseLeftButtonUp += LayoutEditorCanvas_OnMouseLeftButtonUp;
         _layoutInputRouter.MouseLeave += LayoutEditorCanvas_OnMouseLeave;
         _layoutInputRouter.PreviewKeyDown += LayoutEditorCanvas_OnPreviewKeyDown;
+        LayoutPaletteView.PreviewFactory = item => CreatePalettePreview(item.Token);
         PopulateLayoutEditorOptions();
         _layoutEditorProfileKey = ResolveCurrentLayoutProfile();
-        PopulateComponentPalette();
         RefreshLayoutEditor();
     }
 
@@ -145,10 +147,10 @@ public partial class SettingsWindow
             ClearSkinPreview();
             _layoutEditorProfileKey = currentKey;
             _layoutEditorSelection = null;
+            _layoutEditorViewModel?.SelectProfile(currentKey);
         }
 
         PopulateLayoutEditorOptions();
-        PopulateComponentPalette();
         RefreshLayoutEditor();
     }
 
@@ -484,24 +486,32 @@ public partial class SettingsWindow
         var preservedTranslate = _layoutViewportState.Translate;
         var preservedScale = _layoutViewportState.Scale;
         var document = _coordinator.Current.Layout;
-        if (_layoutEditorSession is null || !ReferenceEquals(_layoutEditorSession.Document, document))
+        if (_layoutEditorViewModel is null ||
+            _layoutEditorViewModel.Session.Document != document)
         {
-            _layoutEditorSession = new LayoutEditorSession(document, _layoutEditorProfileKey);
+            _layoutEditorViewModel?.Dispose();
+            _layoutEditorViewModel = CreateLayoutEditorViewModel(document);
         }
+        else if (_layoutEditorViewModel.ProfileKey != _layoutEditorProfileKey)
+        {
+            _layoutEditorViewModel.SelectProfile(_layoutEditorProfileKey);
+        }
+        _layoutEditorSession = _layoutEditorViewModel.Session;
+        LayoutEditorPage.DataContext = _layoutEditorViewModel;
         var profile = ApplySkinPreview(
             document.Get(_layoutEditorProfileKey));
         var selectedId = _layoutEditorSelection?.InstanceId;
         _layoutEditorSelection = string.IsNullOrWhiteSpace(selectedId)
             ? null
             : ResolveSelection(profile, selectedId);
-        _layoutEditorSession.Select(_layoutEditorSelection?.InstanceId);
-        PopulateLayoutObjectTree(profile);
+        _layoutEditorViewModel.SelectNode(_layoutEditorSelection?.InstanceId);
         DisposeLayoutPreviewSurfaces();
         // 画布重建后旧的幽灵/画布引用随之失效。
         _layoutOverlay.Reset();
         _layoutEditorCanvas = null;
         _layoutViewportState.ResetCentered();
         _layoutEditorHostControl ??= new LayoutEditorControl();
+        _layoutEditorHostControl.DataContext = _layoutEditorViewModel;
         _layoutEditorHostControl.Session = _layoutEditorSession;
         _layoutEditorHostControl.PreviewFactory = previewProfile =>
             BuildVisualEditor(ApplySkinPreview(previewProfile));
@@ -785,6 +795,74 @@ public partial class SettingsWindow
         SelectLayoutNode(selection);
     }
 
+    private void LayoutTreeView_OnItemSelected(
+        object? sender,
+        LayoutTreeItemViewModel item)
+    {
+        var profile = _coordinator.Current.Layout.Get(_layoutEditorProfileKey);
+        if (ResolveSelection(profile, item.InstanceId) is not { } selection)
+        {
+            return;
+        }
+
+        if (_hasSkinPreview &&
+            !string.Equals(_skinPreviewInstanceId, selection.InstanceId, StringComparison.Ordinal))
+        {
+            ClearSkinPreview();
+        }
+
+        _layoutEditorSelection = selection;
+        foreach (var surface in _layoutPreviewSurfaces)
+        {
+            surface.SetDesignSelection(selection.InstanceId);
+        }
+        RefreshSelectionText();
+        RefreshLayoutProperties();
+        UpdateLayoutEditorButtons();
+    }
+
+    private void LayoutPaletteView_OnItemInvoked(
+        object? sender,
+        ComponentPaletteItemViewModel item)
+    {
+        var paletteToken = item.Token;
+        if (TryParseContainerToken(paletteToken, out var kind))
+        {
+            if (kind == LayoutContainerKind.AutoCollapse)
+            {
+                AddCollapseContainerFromPalette();
+                return;
+            }
+
+            ArmContainerPlacementTool(kind);
+            return;
+        }
+
+        ArmWidgetPlacementTool(paletteToken);
+    }
+
+    private void LayoutPaletteView_OnItemDragRequested(
+        object? sender,
+        ComponentPaletteDragEventArgs e)
+    {
+        var paletteToken = e.Item.Token;
+        if (TryParseContainerToken(paletteToken, out var kind))
+        {
+            BeginVisualDrag(
+                e.Source,
+                new DataObject(
+                    NewContainerDragFormat,
+                    kind == LayoutContainerKind.HoverSwitch ? "hover" : "static"),
+                DragDropEffects.Copy);
+            return;
+        }
+
+        BeginVisualDrag(
+            e.Source,
+            new DataObject(NewWidgetDragFormat, paletteToken),
+            DragDropEffects.Copy);
+    }
+
     private void LayoutTreeToggleButton_OnToggled(object sender, RoutedEventArgs e)
     {
         if (LayoutObjectTreePanel is null || LayoutTreeToggleButton is null)
@@ -959,7 +1037,7 @@ public partial class SettingsWindow
         {
             surface.SetDesignSelection(e.ContainerId);
         }
-        PopulateLayoutObjectTree(profile);
+        _layoutEditorViewModel?.SelectNode(e.ContainerId);
         RefreshSlotOptions();
         RefreshSelectionText();
         RefreshLayoutProperties();
@@ -1002,13 +1080,6 @@ public partial class SettingsWindow
 
         if (_layoutEditorCommands.TryResize(session, e.InstanceId, e.Edge, deltaCells))
         {
-            var updatedDocument = session.Document;
-            if (!TryApplyProfile(current => updatedDocument.Get(_layoutEditorProfileKey)))
-            {
-                _layoutEditorResizeInProgress = false;
-                return;
-            }
-
             _layoutResizeAppliedCells[key] = targetCells;
             var updatedProfile = _coordinator.Current.Layout.Get(_layoutEditorProfileKey);
             foreach (var surface in _layoutPreviewSurfaces)
@@ -1138,6 +1209,9 @@ public partial class SettingsWindow
     {
         _layoutPreviewDeleteMenu = null;
         DisposeLayoutPreviewSurfaces();
+        _layoutEditorViewModel?.Dispose();
+        _layoutEditorViewModel = null;
+        _layoutEditorSession = null;
         foreach (var surface in _layoutPaletteSurfaces)
         {
             surface.Dispose();
@@ -2218,7 +2292,7 @@ public partial class SettingsWindow
             ClearSkinPreview();
         }
         _layoutEditorSelection = selection;
-        _layoutEditorSession?.Select(selection.InstanceId);
+        _layoutEditorViewModel?.SelectNode(selection.InstanceId);
         RefreshLayoutEditor();
     }
 
@@ -2285,20 +2359,21 @@ public partial class SettingsWindow
 
     private void LayoutUndoButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (!_layoutEditHistory.TryUndo(_layoutEditorProfileKey, out var profile))
+        if (_layoutEditorViewModel is null || !_layoutEditorViewModel.UndoCommand.CanExecute(null))
         {
             return;
         }
 
-        var current = _coordinator.Current.Layout;
+        _layoutEditorViewModel.UndoCommand.Execute(null);
+        var current = _coordinator.Current;
+        var profile = _layoutEditorViewModel.Session.Document.Get(_layoutEditorProfileKey);
         // 长度和厚度是窗口级设置；撤销组件拼贴时保留当前比例，避免旧快照让滑块与实际布局不一致。
         // Length and thickness are window-level settings; preserve them while undoing composition so snapshots cannot desynchronize the sliders.
         profile = profile with
         {
-            Surface = current.Get(_layoutEditorProfileKey).Surface
+            Surface = current.Layout.Get(_layoutEditorProfileKey).Surface
         };
-        var document = current.WithProfile(profile);
-        TryUpdate(() => _coordinator.UpdateLayout(document));
+        TryUpdate(() => _coordinator.UpdateLayout(current.Layout.WithProfile(profile)));
     }
 
     private void LayoutResetProfileButton_OnClick(object sender, RoutedEventArgs e)
@@ -2312,9 +2387,11 @@ public partial class SettingsWindow
             return;
         }
 
-        _layoutEditHistory.Record(profile);
-        TryUpdate(() => _coordinator.UpdateLayout(current.Layout.WithProfile(defaults)));
-        _layoutEditorSelection = null;
+        if (TryApplyProfile(_ => defaults))
+        {
+            _layoutEditorSelection = null;
+            _layoutEditorViewModel?.SelectNode(null);
+        }
     }
 
     private bool TryApplyProfile(Func<LayoutProfile, LayoutProfile?> edit)
@@ -2327,9 +2404,41 @@ public partial class SettingsWindow
             return false;
         }
 
-        _layoutEditHistory.Record(profile);
-        TryUpdate(() => _coordinator.UpdateLayout(current.WithProfile(updated)));
+        if (_layoutEditorViewModel is null ||
+            _layoutEditorViewModel.ProfileKey != _layoutEditorProfileKey ||
+            _layoutEditorViewModel.Session.Document != current)
+        {
+            _layoutEditorViewModel?.Dispose();
+            _layoutEditorViewModel = CreateLayoutEditorViewModel(current);
+            _layoutEditorSession = _layoutEditorViewModel.Session;
+        }
+
+        if (!_layoutEditorViewModel.TryApply(document => document.WithProfile(updated)))
+        {
+            return false;
+        }
+
         return true;
+    }
+
+    private LayoutEditorViewModel CreateLayoutEditorViewModel(LayoutDocument document)
+    {
+        var viewModel = new LayoutEditorViewModel(
+            document,
+            localize: Loc.Get,
+            profileKey: _layoutEditorProfileKey);
+        viewModel.DocumentChanged += LayoutEditorViewModel_OnDocumentChanged;
+        return viewModel;
+    }
+
+    private void LayoutEditorViewModel_OnDocumentChanged(
+        object? sender,
+        LayoutDocumentChangedEventArgs e)
+    {
+        if (_coordinator.Current.Layout != e.Current)
+        {
+            TryUpdate(() => _coordinator.UpdateLayout(e.Current));
+        }
     }
 
     private void RefreshSelectionText()
@@ -3353,7 +3462,7 @@ public partial class SettingsWindow
     {
         var hasSelection = _layoutEditorSelection is not null;
         LayoutRemoveButton.IsEnabled = hasSelection;
-        LayoutUndoButton.IsEnabled = _layoutEditHistory.CanUndo(_layoutEditorProfileKey);
+        LayoutUndoButton.IsEnabled = _layoutEditorViewModel?.CanUndo == true;
     }
 
     private LayoutEdge? GetUnavailableTaskbarEdge()

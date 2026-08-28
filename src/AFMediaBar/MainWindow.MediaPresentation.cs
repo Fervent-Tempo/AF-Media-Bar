@@ -275,6 +275,7 @@ public partial class MainWindow
         }
 
         _isExpanded = expanded;
+        _viewModel.ApplyPresentation(IsVisible, expanded);
         // 新布局的悬停容器始终跟随实际指针；旧全局自动收起只影响透明兼容树。
         // New hover containers always follow the real pointer; legacy global collapse affects only the transparent compatibility tree.
         animate &= !_metricSettings.LowGpuMode;

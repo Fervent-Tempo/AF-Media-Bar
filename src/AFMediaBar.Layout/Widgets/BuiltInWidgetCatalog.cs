@@ -1,20 +1,13 @@
 using AFMediaBar.Layout.Models;
 using AFMediaBar.Layout.Ports;
+using AFMediaBar.Components.Abstractions;
+using AFMediaBar.Components.BuiltIn;
 
 namespace AFMediaBar.Layout.Widgets;
 
 public sealed class BuiltInWidgetCatalog : IWidgetCatalog
 {
-    private static readonly IReadOnlyList<WidgetDescriptor> Definitions =
-    [
-        Create(BuiltInWidgetTypeIds.Artwork, LayoutComponentCategory.Media, WidgetCapabilities.Display | WidgetCapabilities.Invoke, 5, 5, true),
-        Create(BuiltInWidgetTypeIds.MediaText, LayoutComponentCategory.Media, WidgetCapabilities.Display, 27, 5, true),
-        Create(BuiltInWidgetTypeIds.MediaSource, LayoutComponentCategory.Media, WidgetCapabilities.Display | WidgetCapabilities.Invoke, 27, 3, true),
-        Create(BuiltInWidgetTypeIds.Command, LayoutComponentCategory.Controls, WidgetCapabilities.Invoke, 3, 3, false),
-        Create(BuiltInWidgetTypeIds.Metrics, LayoutComponentCategory.System, WidgetCapabilities.Display | WidgetCapabilities.Invoke, 10, 3, true),
-        Create(BuiltInWidgetTypeIds.Spectrum, LayoutComponentCategory.Audio, WidgetCapabilities.Display, 11, 3, true),
-        Create(BuiltInWidgetTypeIds.Separator, LayoutComponentCategory.Layout, WidgetCapabilities.Display, 3, 3, true)
-    ];
+    private static readonly IReadOnlyList<WidgetDescriptor> Definitions = CreateDefinitions();
 
     public IReadOnlyList<WidgetDescriptor> Items => Definitions;
 
@@ -25,18 +18,44 @@ public sealed class BuiltInWidgetCatalog : IWidgetCatalog
         return descriptor is not null;
     }
 
-    private static WidgetDescriptor Create(
-        string typeId,
-        LayoutComponentCategory category,
-        WidgetCapabilities capabilities,
-        int width,
-        int height,
-        bool supportsCollapsedSlot) =>
-        new(
-            typeId,
-            category,
-            capabilities,
-            new LayoutGridRect(0, 0, width, height),
-            LayoutGridRect.Unit(0, 0),
-            supportsCollapsedSlot);
+    private static IReadOnlyList<WidgetDescriptor> CreateDefinitions()
+    {
+        var registry = new BuiltInComponentRegistry();
+        var supported = new HashSet<string>(StringComparer.Ordinal)
+        {
+            BuiltInWidgetTypeIds.Artwork,
+            BuiltInWidgetTypeIds.MediaText,
+            BuiltInWidgetTypeIds.MediaSource,
+            BuiltInWidgetTypeIds.Command,
+            BuiltInWidgetTypeIds.Metrics,
+            BuiltInWidgetTypeIds.Spectrum,
+            BuiltInWidgetTypeIds.Separator
+        };
+
+        return registry.Items
+            .Where(definition => definition.Kind == ComponentKind.Functional && supported.Contains(definition.Metadata.TypeId))
+            .Select(definition =>
+            {
+                var result = definition.Measure(
+                    definition.CreateDefaultSettings(),
+                    new ComponentMeasureContext(48, 24, 8, false));
+                return new WidgetDescriptor(
+                    definition.Metadata.TypeId,
+                    ToLayoutCategory(definition.Metadata.Category),
+                    (WidgetCapabilities)(int)definition.Metadata.Capabilities,
+                    new LayoutGridRect(0, 0, result.PreferredWidth, result.PreferredHeight),
+                    LayoutGridRect.Unit(0, 0),
+                    definition.Metadata.SupportsCollapsedSlot);
+            })
+            .ToArray();
+    }
+
+    private static LayoutComponentCategory ToLayoutCategory(ComponentCategory category) => category switch
+    {
+        ComponentCategory.Media => LayoutComponentCategory.Media,
+        ComponentCategory.Playback => LayoutComponentCategory.Controls,
+        ComponentCategory.Audio => LayoutComponentCategory.Audio,
+        ComponentCategory.System => LayoutComponentCategory.System,
+        _ => LayoutComponentCategory.Layout
+    };
 }

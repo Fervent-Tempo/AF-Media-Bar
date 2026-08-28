@@ -27,15 +27,21 @@ public static class LayoutComponentCatalog
         };
     }
 
-    public static WidgetSettings CreateDefaultSettings(string typeId) => typeId switch
+    public static WidgetSettings CreateDefaultSettings(string typeId)
     {
+        if (ComponentDefinitionAdapter.TryCreateDefaultSettings(typeId, out var settings))
+        {
+            return settings;
+        }
+
+        return typeId switch
+        {
         BuiltInWidgetTypeIds.Artwork => new ArtworkWidgetSettings(6, false, true),
         BuiltInWidgetTypeIds.MediaText => new MediaTextWidgetSettings(MediaTextKind.Title, true, 14, 1),
         BuiltInWidgetTypeIds.MediaSource => new MediaTextWidgetSettings(MediaTextKind.Source, false, 11, 1),
         BuiltInWidgetTypeIds.Command => new CommandWidgetSettings(MediaCommandKind.PlayPause, CommandWidgetSettings.DefaultButtonSizeDip),
         BuiltInWidgetTypeIds.Metrics => new MetricsWidgetSettings(MetricKind.SystemMemory, false, 2500, [MetricKind.SystemMemory]),
-        BuiltInWidgetTypeIds.Spectrum => new SpectrumWidgetSettings(9, 20, 100),
-        BuiltInWidgetTypeIds.Separator => new SeparatorWidgetSettings(1, 22),
         _ => new MediaTextWidgetSettings(MediaTextKind.Title, false, 14, 1)
-    };
+        };
+    }
 }

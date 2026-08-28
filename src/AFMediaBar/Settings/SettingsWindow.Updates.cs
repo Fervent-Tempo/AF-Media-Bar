@@ -274,6 +274,7 @@ public partial class SettingsWindow
         {
             _systemThemeService.ThemeApplied -= SystemThemeService_OnThemeApplied;
         }
+        _viewModel.PropertyChanged -= ViewModel_OnPropertyChanged;
         Closed -= SettingsWindow_OnClosed;
     }
 

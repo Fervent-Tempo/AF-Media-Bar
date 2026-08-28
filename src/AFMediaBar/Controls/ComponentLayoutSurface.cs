@@ -8,6 +8,21 @@ using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using AFMediaBar.Adapters;
+using AFMediaBar.Components.Abstractions;
+using AFMediaBar.Components.BuiltIn.Audio;
+using AFMediaBar.Components.BuiltIn.Media;
+using AFMediaBar.Components.BuiltIn.Playback;
+using AFMediaBar.Components.BuiltIn.System;
+using AFMediaBar.Components.Wpf;
+using AFMediaBar.Components.Wpf.BuiltIn.Artwork;
+using AFMediaBar.Components.Wpf.BuiltIn.MediaSource;
+using AFMediaBar.Components.Wpf.BuiltIn.MediaText;
+using AFMediaBar.Components.Wpf.BuiltIn.Metrics;
+using AFMediaBar.Components.Wpf.BuiltIn.OutputDevice;
+using AFMediaBar.Components.Wpf.BuiltIn.PlaybackCommand;
+using AFMediaBar.Components.Wpf.BuiltIn.Spectrum;
+using AFMediaBar.Components.Wpf.BuiltIn.Volume;
+using AFMediaBar.Components.Wpf.Composition;
 using AFMediaBar.Layout.Widgets;
 using AFMediaBar.LayoutEditor.Wpf.Preview;
 using AFMediaBar.Models;
@@ -105,9 +120,17 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
     private readonly ComponentSkinService _componentSkinService = new();
     private readonly Dictionary<string, MarqueeState> _marqueeStates =
         new(StringComparer.Ordinal);
+    private readonly Dictionary<string, ComponentMarqueeState> _componentMarqueeStates =
+        new(StringComparer.Ordinal);
     private readonly Dictionary<string, MetricViewState> _metricStates =
         new(StringComparer.Ordinal);
+    private readonly Dictionary<string, ComponentMetricViewState> _componentMetricStates =
+        new(StringComparer.Ordinal);
     private readonly WidgetRendererRegistry _widgetRendererRegistry;
+    private readonly LayoutCompositionService _compositionService;
+    private LayoutCompositionViewModel? _composition;
+    private IReadOnlyDictionary<string, ComponentViewModelBase> _componentViewModels =
+        new Dictionary<string, ComponentViewModelBase>(StringComparer.Ordinal);
     private readonly float[] _spectrum = new float[AudioMonitorService.BandCount];
     private readonly DispatcherTimer _marqueeTimer;
     private readonly DispatcherTimer _pointerStateTimer;
@@ -126,6 +149,18 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
 
     internal ComponentLayoutSurface()
     {
+        _compositionService = new LayoutCompositionService(new ComponentInteractionCallbacks(
+            SourceRequested: _ => RaiseSourceRequested(),
+            CommandRequested: (command, anchor) => RaiseCommandRequested((MediaCommandKind)command, anchor),
+            OutputDeviceRequested: anchor => RaiseCommandRequested(MediaCommandKind.SelectOutputDevice, anchor),
+            VolumeRequested: anchor => RaiseCommandRequested(MediaCommandKind.AdjustVolume, anchor),
+            OutputDeviceWheelRequested: (delta, anchor) => RaiseWheelRequested(MediaCommandKind.SelectOutputDevice, delta, anchor),
+            VolumeWheelRequested: (delta, anchor) => RaiseWheelRequested(MediaCommandKind.AdjustVolume, delta, anchor),
+            MetricsRequested: RaiseMetricsRequested));
+        Resources.MergedDictionaries.Add(new ResourceDictionary
+        {
+            Source = new Uri("/AFMediaBar.Components.Wpf;component/ComponentTemplates.xaml", UriKind.RelativeOrAbsolute)
+        });
         _widgetRendererRegistry = new(new Dictionary<string, Func<LayoutWidgetElement, FrameworkElement>>(StringComparer.Ordinal)
         {
             [BuiltInWidgetTypeIds.Artwork] = BuildArtwork,
@@ -162,6 +197,48 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         MouseLeave += Surface_OnMouseLeave;
     }
 
+    private void RaiseWheelRequested(MediaCommandKind command, int delta, object? anchor)
+    {
+        if (!_designMode && anchor is FrameworkElement placementTarget)
+        {
+            WheelRequested?.Invoke(this, new LayoutWheelEventArgs(command, delta, placementTarget));
+        }
+    }
+
+    private void RaiseCommandRequested(MediaCommandKind command, object? anchor)
+    {
+        if (!_designMode)
+        {
+            CommandRequested?.Invoke(this, new LayoutCommandEventArgs(command, anchor as FrameworkElement));
+        }
+    }
+
+    private void RaiseSourceRequested()
+    {
+        if (!_designMode) SourceRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void RaiseMetricsRequested()
+    {
+        if (!_designMode) MetricsRequested?.Invoke(this, new LayoutMetricsEventArgs(true));
+    }
+
+    private void PrepareComponentViewModels(bool isVertical)
+    {
+        foreach (var viewModel in _componentViewModels.Values)
+        {
+            switch (viewModel)
+            {
+                case MediaTextViewModel text:
+                    text.IsVertical = isVertical;
+                    break;
+                case MediaSourceViewModel source:
+                    source.IsVertical = isVertical;
+                    break;
+            }
+        }
+    }
+
     internal event EventHandler<LayoutCommandEventArgs>? CommandRequested;
     internal event EventHandler<LayoutMetricsEventArgs>? MetricsRequested;
     internal event EventHandler<LayoutWheelEventArgs>? WheelRequested;
@@ -187,6 +264,9 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
     internal void Apply(LayoutProfile profile, bool pointerNear)
     {
         _profile = profile;
+        _composition = _compositionService.Compose(profile);
+        _componentViewModels = _composition.Components;
+        PrepareComponentViewModels(profile.LayoutMode == PlayerLayoutMode.Vertical);
         _edgeCollapseId = null;
         _pointerNear = pointerNear;
         _gapDip = Math.Clamp(profile.Surface.GapDip, 0, 32);
@@ -204,7 +284,9 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         _containerViews.Clear();
         _mediaTextKinds.Clear();
         _marqueeStates.Clear();
+        _componentMarqueeStates.Clear();
         _metricStates.Clear();
+        _componentMetricStates.Clear();
         _marqueeTimer.Stop();
         _pointerStateTimer.Stop();
         Children.Clear();
@@ -225,7 +307,7 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         ClipToBounds = false;
         Children.Add(root);
         RefreshAllData();
-        if (_marqueeStates.Count > 0)
+        if (_marqueeStates.Count > 0 || _componentMarqueeStates.Count > 0)
         {
             _marqueeTimer.Start();
         }
@@ -311,6 +393,9 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
     internal void ApplyEdge(LayoutProfile profile, LayoutCollapseContainer collapse)
     {
         _profile = profile;
+        _composition = _compositionService.Compose(profile);
+        _componentViewModels = _composition.Components;
+        PrepareComponentViewModels(profile.LayoutMode == PlayerLayoutMode.Vertical);
         _edgeCollapseId = collapse.InstanceId;
         _pointerNear = true;
         _gapDip = Math.Clamp(profile.Surface.GapDip, 0, 32);
@@ -328,7 +413,9 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         _containerViews.Clear();
         _mediaTextKinds.Clear();
         _marqueeStates.Clear();
+        _componentMarqueeStates.Clear();
         _metricStates.Clear();
+        _componentMetricStates.Clear();
         _marqueeTimer.Stop();
         _pointerStateTimer.Stop();
         Children.Clear();
@@ -356,7 +443,7 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
             AttachDesignDeleteHandler(frame, collapse.InstanceId);
             Children.Add(frame);
             RefreshAllData();
-            if (_marqueeStates.Count > 0)
+            if (_marqueeStates.Count > 0 || _componentMarqueeStates.Count > 0)
             {
                 _marqueeTimer.Start();
             }
@@ -366,7 +453,7 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         _designElements[collapse.InstanceId] = root;
         Children.Add(root);
         RefreshAllData();
-        if (_marqueeStates.Count > 0)
+        if (_marqueeStates.Count > 0 || _componentMarqueeStates.Count > 0)
         {
             _marqueeTimer.Start();
         }
@@ -388,7 +475,10 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
             return root;
         }
 
-        foreach (var container in profile.Containers)
+        var containers = _composition?.Containers
+            .Select(x => x.Model)
+            .OfType<LayoutContainerElement>() ?? profile.Containers;
+        foreach (var container in containers)
         {
             if (!container.Enabled || container.GridBounds is not { } bounds)
             {
@@ -416,6 +506,7 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         foreach (var visual in _containerViews.Values)
         {
             visual.PointerNear = pointerNear;
+            if (visual.ViewModel is not null) visual.ViewModel.IsPointerNear = pointerNear;
             ApplyContainerState(visual, animate: true);
         }
         UpdatePointerStateTimer();
@@ -512,6 +603,10 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
     internal void SetMetricsText(string text)
     {
         _metricsText = text;
+        foreach (var state in _componentMetricStates.Values)
+        {
+            state.ViewModel.Text = text;
+        }
         foreach (var view in _widgetViews.Values)
         {
             if (view is Border { Child: TextBlock textBlock } &&
@@ -526,6 +621,22 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
     internal void SetMetricsSnapshot(SystemMetricsSnapshot snapshot)
     {
         var now = Environment.TickCount64;
+        foreach (var state in _componentMetricStates.Values)
+        {
+            var interval = Math.Clamp(state.Settings.RefreshIntervalMilliseconds, 250, 30_000);
+            if (state.LastUpdateTick != 0 && now - state.LastUpdateTick < interval)
+            {
+                continue;
+            }
+
+            state.LastUpdateTick = now;
+            var cycle = state.Settings.EffectiveCycleMetrics;
+            state.CycleIndex = Math.Clamp(state.CycleIndex, 0, cycle.Count - 1);
+            state.ViewModel.Text = MetricTextFormatter.Format(
+                snapshot,
+                (AFMediaBar.Layout.Models.MetricKind)cycle[state.CycleIndex]);
+            state.CycleIndex = (state.CycleIndex + 1) % cycle.Count;
+        }
         foreach (var state in _metricStates.Values)
         {
             var interval = Math.Clamp(
@@ -555,6 +666,11 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
             _spectrum[index] = index < count
                 ? Math.Clamp(values[index], 0, 1)
                 : 0;
+        }
+
+        foreach (var viewModel in _componentViewModels.Values.OfType<SpectrumViewModel>())
+        {
+            viewModel.SetValues(_spectrum);
         }
 
         foreach (var view in _widgetViews.Values)
@@ -598,10 +714,12 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         }
 
         // HoverSwitch：离开/靠近两状态层共用同一外框，切换只替换可见层。
-        var visual = new ContainerVisual(container, bounds);
+        var containerViewModel = _composition?.Containers.FirstOrDefault(x => x.InstanceId == container.InstanceId);
+        var visual = new ContainerVisual(container, bounds, containerViewModel);
         visual.Host.SetValue(TransitionKeyProperty, $"container:{container.InstanceId}");
         visual.Host.SetValue(IsTransitionBoundaryProperty, true);
         visual.PointerNear = _pointerNear;
+        if (visual.ViewModel is not null) visual.ViewModel.IsPointerNear = _pointerNear;
         _containerViews[container.InstanceId] = visual;
         visual.Host.Background = Brushes.Transparent;
         visual.Slots[0].Children.Add(BuildSlot(container.PrimarySlot, bounds));
@@ -759,6 +877,7 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         void SelectState(bool pointerNear)
         {
             visual.PointerNear = pointerNear;
+            if (visual.ViewModel is not null) visual.ViewModel.IsPointerNear = pointerNear;
             ApplyContainerState(visual, animate: false);
             RefreshButtons();
             DesignPreviewStateChanged?.Invoke(
@@ -869,6 +988,7 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         }
 
         visual.PointerNear = pointerNear;
+        if (visual.ViewModel is not null) visual.ViewModel.IsPointerNear = pointerNear;
         ApplyContainerState(visual, animate: true);
         UpdatePointerStateTimer();
     }
@@ -948,6 +1068,14 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         };
         view.HorizontalAlignment = HorizontalAlignment.Center;
         view.VerticalAlignment = VerticalAlignment.Center;
+        if (view is ContentPresenter
+            {
+                Content: PlaybackCommandViewModel or OutputDeviceViewModel or VolumeViewModel
+            })
+        {
+            view.HorizontalAlignment = HorizontalAlignment.Stretch;
+            view.VerticalAlignment = VerticalAlignment.Stretch;
+        }
         if (view is Button commandButton)
         {
             // 命令组件的网格外框就是实际交互范围；按钮填满宿主，图标由 Viewbox 保持等比缩放。
@@ -1158,7 +1286,29 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
 
     private FrameworkElement BuildWidget(LayoutWidgetElement widget)
     {
-        var view = _widgetRendererRegistry.Build(widget, BuildUnknown);
+        FrameworkElement view;
+        if (_componentViewModels.TryGetValue(widget.InstanceId, out var viewModel))
+        {
+            view = new ContentPresenter
+            {
+                Content = viewModel,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            SetIsInteractiveElement(view, IsInteractive(viewModel));
+            if (viewModel is MediaTextViewModel { Settings.EnableMarquee: true, Settings.MaxLines: <= 1 } mediaText)
+            {
+                _componentMarqueeStates[widget.InstanceId] = new(mediaText, string.Empty, 0);
+            }
+            if (viewModel is MetricsViewModel metrics)
+            {
+                _componentMetricStates[widget.InstanceId] = new(metrics, metrics.Settings);
+            }
+        }
+        else
+        {
+            view = _widgetRendererRegistry.Build(widget, BuildUnknown);
+        }
 
         ApplyGeometry(view, widget.Geometry);
         AssignTransitionKeys(view, widget);
@@ -1166,6 +1316,14 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         _designElements[widget.InstanceId] = view;
         return view;
     }
+
+    private static bool IsInteractive(ComponentViewModelBase viewModel) => viewModel switch
+    {
+        ArtworkViewModel artwork => artwork.Settings.OpenSourceOnClick,
+        MetricsViewModel metrics => metrics.Settings.OpenTaskManagerOnClick,
+        MediaSourceViewModel or PlaybackCommandViewModel or OutputDeviceViewModel or VolumeViewModel => true,
+        _ => false
+    };
 
     private static string GetTransitionKey(LayoutWidgetElement widget)
     {
@@ -1224,6 +1382,61 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
 
     private void RefreshMediaViews()
     {
+        foreach (var viewModel in _componentViewModels.Values)
+        {
+            switch (viewModel)
+            {
+                case ArtworkViewModel artwork:
+                    artwork.Artwork = _mediaSnapshot.Artwork.AsImageSource();
+                    artwork.Background = ResolveArtworkBackground(new ArtworkWidgetSettings(
+                        artwork.Settings.CornerRadiusDip,
+                        artwork.Settings.UseMediaPrimaryColor,
+                        artwork.Settings.OpenSourceOnClick));
+                    break;
+                case MediaTextViewModel text:
+                {
+                    var title = GetDisplayText(_mediaSnapshot.Title, "Main.Placeholder.Title");
+                    var artist = GetDisplayText(_mediaSnapshot.Artist, "Main.Placeholder.Subtitle");
+                    text.Title = IsVertical && !text.IsCombined ? FormatVerticalText(title) : title;
+                    text.Artist = IsVertical && !text.IsCombined ? FormatVerticalText(artist) : artist;
+                    if (_componentMarqueeStates.TryGetValue(text.InstanceId, out var marquee))
+                    {
+                        marquee.Content = text.Text;
+                        marquee.Offset = 0;
+                        text.MarqueeText = text.Text;
+                    }
+                    break;
+                }
+                case MediaSourceViewModel source:
+                {
+                    var value = GetDisplayText(_mediaSnapshot.SourceName, "Main.TitleIdle");
+                    source.SourceName = IsVertical ? FormatVerticalText(value) : value;
+                    source.IsEnabled = _mediaSnapshot.IsConnected;
+                    break;
+                }
+                case PlaybackCommandViewModel command:
+                    command.IsPlaying = _mediaSnapshot.IsPlaying;
+                    command.IsEnabled = command.Settings.Command switch
+                    {
+                        PlaybackCommandKind.Previous => _mediaSnapshot.IsConnected && _mediaSnapshot.CanSkipPrevious,
+                        PlaybackCommandKind.PlayPause => _mediaSnapshot.IsConnected && _mediaSnapshot.CanPlayPause,
+                        PlaybackCommandKind.Next => _mediaSnapshot.IsConnected && _mediaSnapshot.CanSkipNext,
+                        PlaybackCommandKind.SelectSource or PlaybackCommandKind.AdjustVolume => _mediaSnapshot.IsConnected,
+                        _ => true
+                    };
+                    command.ToolTip = command.Settings.Command == PlaybackCommandKind.PlayPause
+                        ? GetCommandTooltip(MediaCommandKind.PlayPause, _mediaSnapshot.IsPlaying)
+                        : GetCommandTooltip((MediaCommandKind)command.Settings.Command);
+                    break;
+                case OutputDeviceViewModel output:
+                    output.IsEnabled = true;
+                    break;
+                case VolumeViewModel volume:
+                    volume.IsAvailable = _mediaSnapshot.IsConnected;
+                    break;
+            }
+        }
+
         foreach (var pair in _mediaTextKinds)
         {
             if (!_widgetViews.TryGetValue(pair.Key, out var view))
@@ -1300,9 +1513,9 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
                 MediaCommandKind.SelectOutputDevice => true,
                 _ => true
             };
-            if (view.Content is Viewbox { Child: TextBlock glyph })
+            if (view.Content is AFMediaBar.Components.Wpf.Controls.CenteredIconGlyph glyph)
             {
-                glyph.Text = command == MediaCommandKind.PlayPause
+                glyph.Glyph = command == MediaCommandKind.PlayPause
                     ? GetCommandGlyph(command, _mediaSnapshot.IsPlaying)
                     : GetCommandGlyph(command);
             }
@@ -1327,6 +1540,7 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
 
         var previousSlot = visual.ActiveSlot;
         visual.ActiveSlot = activeSlot;
+        if (visual.ViewModel is not null) visual.ViewModel.ActiveSlotIndex = activeSlot;
         if (!animate || previousSlot < 0 ||
             !container.Animation.Enabled || container.Animation.DurationMilliseconds <= 0)
         {
@@ -1340,6 +1554,7 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
     private void CommitContainerState(ContainerVisual visual)
     {
         visual.TransitionVersion++;
+        if (visual.ViewModel is not null) visual.ViewModel.TransitionVersion = visual.TransitionVersion;
         visual.Host.BeginAnimation(TransitionProgressProperty, null);
         visual.Host.SetValue(TransitionProgressProperty, 0d);
         for (var index = 0; index < visual.Slots.Count; index++)
@@ -1370,6 +1585,7 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         int activeSlot)
     {
         var version = ++visual.TransitionVersion;
+        if (visual.ViewModel is not null) visual.ViewModel.TransitionVersion = version;
         var durationMilliseconds = Math.Clamp(
             visual.Model.Animation.DurationMilliseconds,
             1,
@@ -1735,6 +1951,21 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
             state.Text.Text = text[offset..] + text[..offset];
             state.Offset++;
         }
+
+        foreach (var state in _componentMarqueeStates.Values)
+        {
+            var content = state.Content;
+            if (content.Length <= 18)
+            {
+                state.ViewModel.MarqueeText = content;
+                continue;
+            }
+
+            var text = content + "   ";
+            var offset = state.Offset % text.Length;
+            state.ViewModel.MarqueeText = text[offset..] + text[..offset];
+            state.Offset++;
+        }
     }
 
     public void Dispose()
@@ -1774,7 +2005,9 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         _containerViews.Clear();
         _mediaTextKinds.Clear();
         _marqueeStates.Clear();
+        _componentMarqueeStates.Clear();
         _metricStates.Clear();
+        _componentMetricStates.Clear();
     }
 
     private void ClearDesignLayers()
@@ -1870,9 +2103,13 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
 
     private sealed class ContainerVisual
     {
-        internal ContainerVisual(LayoutContainerElement model, LayoutGridRect bounds)
+        internal ContainerVisual(
+            LayoutContainerElement model,
+            LayoutGridRect bounds,
+            ContainerHostViewModel? viewModel)
         {
             Model = model;
+            ViewModel = viewModel;
             // 外框尺寸由调用方按网格矩形设置（BuildAbsoluteLayout 统一赋 Width/Height）。
             for (var index = 0; index < 2; index++)
             {
@@ -1883,6 +2120,7 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         }
 
         internal LayoutContainerElement Model { get; }
+        internal ContainerHostViewModel? ViewModel { get; }
         internal Grid Host { get; } = new();
         internal List<Grid> Slots { get; } = [];
         internal bool PointerNear { get; set; }
@@ -1903,10 +2141,25 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         internal int Offset { get; set; } = offset;
     }
 
+    private sealed class ComponentMarqueeState(MediaTextViewModel viewModel, string content, int offset)
+    {
+        internal MediaTextViewModel ViewModel { get; } = viewModel;
+        internal string Content { get; set; } = content;
+        internal int Offset { get; set; } = offset;
+    }
+
     private sealed class MetricViewState(TextBlock text, MetricsWidgetSettings settings)
     {
         internal TextBlock Text { get; } = text;
         internal MetricsWidgetSettings Settings { get; } = settings;
+        internal long LastUpdateTick { get; set; }
+        internal int CycleIndex { get; set; }
+    }
+
+    private sealed class ComponentMetricViewState(MetricsViewModel viewModel, MetricsSettings settings)
+    {
+        internal MetricsViewModel ViewModel { get; } = viewModel;
+        internal MetricsSettings Settings { get; } = settings;
         internal long LastUpdateTick { get; set; }
         internal int CycleIndex { get; set; }
     }

@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:editorViews="clr-namespace:AFMediaBar.LayoutEditor.Wpf.Views;assembly=AFMediaBar.LayoutEditor.Wpf"
         Title="{DynamicResource Settings.WindowTitle}"
         Icon="/AFMediaBar;component/icon.ico"
         Width="1020"
@@ -60,7 +61,7 @@
 
     <Grid Grid.Row="1" Margin="4,0,4,4">
       <Grid.ColumnDefinitions>
-        <ColumnDefinition x:Name="NavigationPaneColumn" Width="220" />
+        <ColumnDefinition Width="{Binding NavigationPaneWidth}" />
         <ColumnDefinition Width="*" />
       </Grid.ColumnDefinitions>
       <Border Grid.Column="0"
@@ -78,7 +79,7 @@
                      HorizontalAlignment="Left"
                      Appearance="Transparent"
                      ToolTip="{DynamicResource Settings.Categories}"
-                     Click="NavigationPaneToggle_OnClick">
+                     Command="{Binding ToggleNavigationPaneCommand}">
             <ui:SymbolIcon x:Name="NavigationPaneIcon" Symbol="PanelLeftContract20" />
           </ui:Button>
           <ListBox x:Name="NavigationList"
@@ -440,7 +441,11 @@
                 <Button x:Name="LayoutUndoButton"
                         Content="{DynamicResource Settings.Layout.EditorUndo}"
                         Style="{StaticResource SettingsActionButtonStyle}"
-                        Click="LayoutUndoButton_OnClick" />
+                        Command="{Binding UndoCommand}" />
+                <Button x:Name="LayoutRedoButton"
+                        Content="{DynamicResource Settings.Layout.EditorRedo}"
+                        Style="{StaticResource SettingsActionButtonStyle}"
+                        Command="{Binding RedoCommand}" />
                 <Button x:Name="LayoutResetProfileButton"
                         Content="{DynamicResource Settings.Layout.EditorResetProfile}"
                         Style="{StaticResource SettingsActionButtonStyle}"
@@ -508,8 +513,12 @@
                       <TextBlock Text="{DynamicResource Settings.Layout.EditorObjects}"
                                  FontWeight="SemiBold"
                                  Margin="2,0,0,6" />
+                      <editorViews:LayoutTreeView Grid.Row="1"
+                                                  DataContext="{Binding}"
+                                                  ItemSelected="LayoutTreeView_OnItemSelected" />
                       <TreeView x:Name="LayoutObjectTree"
                                 Grid.Row="1"
+                                Visibility="Collapsed"
                                 Background="Transparent"
                                 BorderThickness="0"
                                 ItemContainerStyle="{StaticResource LayoutTreeViewItemStyle}"
@@ -539,7 +548,12 @@
                     <Grid.RowDefinitions>
                       <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
+                    <editorViews:ComponentPaletteView x:Name="LayoutPaletteView"
+                                                      DataContext="{Binding}"
+                                                      ItemInvoked="LayoutPaletteView_OnItemInvoked"
+                                                      ItemDragRequested="LayoutPaletteView_OnItemDragRequested" />
                     <TabControl x:Name="LayoutComponentCategories"
+                                Visibility="Collapsed"
                                 Style="{StaticResource LayoutCategoryTabControlStyle}" />
                   </Grid>
                 </Border>
@@ -568,6 +582,7 @@
                       <TextBlock Text="{DynamicResource Settings.Layout.EditorProperties}"
                                  FontWeight="SemiBold"
                                  Margin="0,0,0,6" />
+                      <editorViews:LayoutInspectorView Margin="0,0,0,8" />
                       <Border x:Name="LayoutPropertyHost" />
                     </StackPanel>
                   </ScrollViewer>

@@ -187,6 +187,7 @@
   <sys:String x:Key="Settings.Layout.CategorySystem">System monitoring</sys:String>
   <sys:String x:Key="Settings.Layout.CategoryLayout">Layout helpers</sys:String>
   <sys:String x:Key="Settings.Layout.EditorUndo">Undo</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorRedo">Redo</sys:String>
   <sys:String x:Key="Settings.Layout.EditorResetProfile">Reset current profile</sys:String>
   <sys:String x:Key="Settings.Layout.EditorAddStaticContainer">Add static container</sys:String>
   <sys:String x:Key="Settings.Layout.EditorAddHoverContainer">Add hover container</sys:String>
@@ -297,6 +298,10 @@
   <sys:String x:Key="Settings.LayoutWidget.MediaSourceDescription">Shows the current source and opens source selection.</sys:String>
   <sys:String x:Key="Settings.LayoutWidget.CommandTitle">Media command widget</sys:String>
   <sys:String x:Key="Settings.LayoutWidget.CommandDescription">Runs previous, play, next, or device actions.</sys:String>
+  <sys:String x:Key="Settings.LayoutWidget.OutputDeviceTitle">Output device widget</sys:String>
+  <sys:String x:Key="Settings.LayoutWidget.OutputDeviceDescription">Shows and switches the current audio output device.</sys:String>
+  <sys:String x:Key="Settings.LayoutWidget.VolumeTitle">Volume widget</sys:String>
+  <sys:String x:Key="Settings.LayoutWidget.VolumeDescription">Shows and adjusts the current media volume.</sys:String>
   <sys:String x:Key="Settings.LayoutWidget.MetricsTitle">Metrics widget</sys:String>
   <sys:String x:Key="Settings.LayoutWidget.MetricsDescription">Shows system or current-process performance data.</sys:String>
   <sys:String x:Key="Settings.LayoutWidget.SpectrumTitle">Spectrum widget</sys:String>
@@ -306,6 +311,7 @@
   <sys:String x:Key="Settings.Layout.EditorAddFailed">Cannot add: the target slot rejects this widget or the instance ID already exists.</sys:String>
   <sys:String x:Key="Settings.Layout.UnknownWidget">Unknown component: {0}</sys:String>
   <sys:String x:Key="Settings.Layout.EditorProperties">Component properties</sys:String>
+  <sys:String x:Key="Settings.Layout.EditorMinimumSizeFormat">Minimum grid size: {0} x {1}</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyAuto">Automatic</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyWidth">Width</sys:String>
   <sys:String x:Key="Settings.Layout.PropertyHeight">Height</sys:String>

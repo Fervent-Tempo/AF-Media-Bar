@@ -160,6 +160,7 @@ public partial class MainWindow
         try
         {
             PositionOverTaskbarCore(force);
+            SyncWindowStateProjection();
         }
         catch (Exception exception)
         {

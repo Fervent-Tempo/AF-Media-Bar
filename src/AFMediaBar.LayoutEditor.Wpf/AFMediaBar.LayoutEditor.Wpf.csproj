@@ -8,6 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <ProjectReference Include="..\AFMediaBar.Components\AFMediaBar.Components.csproj" />
     <ProjectReference Include="..\AFMediaBar.Layout\AFMediaBar.Layout.csproj" />
   </ItemGroup>
 </Project>

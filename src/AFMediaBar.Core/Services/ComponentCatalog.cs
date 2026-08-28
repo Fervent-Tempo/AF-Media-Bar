@@ -1,4 +1,6 @@
 using AFMediaBar.Models;
+using AFMediaBar.Components.Abstractions;
+using AFMediaBar.Components.BuiltIn;
 
 namespace AFMediaBar.Services;
 
@@ -33,86 +35,7 @@ public enum ComponentCategory
 /// </summary>
 public static class ComponentCatalog
 {
-    private static readonly IReadOnlyList<ComponentDefinition> Definitions =
-    [
-        new(
-            BuiltInWidgetTypeIds.Artwork,
-            "Settings.LayoutWidget.ArtworkTitle",
-            "Settings.LayoutWidget.ArtworkDescription",
-            ComponentCategory.Media,
-            WidgetCapabilities.Display | WidgetCapabilities.Invoke,
-            true,
-            true,
-            true,
-            true,
-            true),
-        new(
-            BuiltInWidgetTypeIds.MediaText,
-            "Settings.LayoutWidget.MediaTextTitle",
-            "Settings.LayoutWidget.MediaTextDescription",
-            ComponentCategory.Media,
-            WidgetCapabilities.Display,
-            true,
-            true,
-            true,
-            true,
-            true),
-        new(
-            BuiltInWidgetTypeIds.MediaSource,
-            "Settings.LayoutWidget.MediaSourceTitle",
-            "Settings.LayoutWidget.MediaSourceDescription",
-            ComponentCategory.Media,
-            WidgetCapabilities.Display | WidgetCapabilities.Invoke,
-            true,
-            true,
-            true,
-            true,
-            true),
-        new(
-            BuiltInWidgetTypeIds.Command,
-            "Settings.LayoutWidget.CommandTitle",
-            "Settings.LayoutWidget.CommandDescription",
-            ComponentCategory.Controls,
-            WidgetCapabilities.Invoke,
-            true,
-            true,
-            true,
-            true,
-            false),
-        new(
-            BuiltInWidgetTypeIds.Metrics,
-            "Settings.LayoutWidget.MetricsTitle",
-            "Settings.LayoutWidget.MetricsDescription",
-            ComponentCategory.System,
-            WidgetCapabilities.Display | WidgetCapabilities.Invoke,
-            true,
-            true,
-            true,
-            true,
-            true),
-        new(
-            BuiltInWidgetTypeIds.Spectrum,
-            "Settings.LayoutWidget.SpectrumTitle",
-            "Settings.LayoutWidget.SpectrumDescription",
-            ComponentCategory.Audio,
-            WidgetCapabilities.Display,
-            true,
-            true,
-            true,
-            true,
-            true),
-        new(
-            BuiltInWidgetTypeIds.Separator,
-            "Settings.LayoutWidget.SeparatorTitle",
-            "Settings.LayoutWidget.SeparatorDescription",
-            ComponentCategory.Layout,
-            WidgetCapabilities.Display,
-            true,
-            true,
-            true,
-            true,
-            true)
-    ];
+    private static readonly IReadOnlyList<ComponentDefinition> Definitions = CreateDefinitions();
 
     public static IReadOnlyList<ComponentDefinition> All => Definitions;
 
@@ -123,48 +46,37 @@ public static class ComponentCatalog
         return definition is not null;
     }
 
-    public static bool IsInteractive(LayoutWidgetElement widget)
-    {
-        if (!widget.Enabled || !TryGet(widget.TypeId, out var definition))
-        {
-            return false;
-        }
+    public static bool IsInteractive(LayoutWidgetElement widget) =>
+        Layout.Widgets.LayoutComponentCatalog.IsInteractive(widget);
 
-        return widget.Settings switch
-        {
-            ArtworkWidgetSettings artwork => artwork.OpenSourceOnClick,
-            MetricsWidgetSettings metrics => metrics.OpenTaskManagerOnClick,
-            // 组件只要具备任意交互能力（Invoke/Adjust/Popup 之一）就视为交互组件。
-            _ => (definition.Capabilities & WidgetCapabilities.Interactive) != 0
-        };
+    public static WidgetSettings CreateDefaultSettings(string typeId) =>
+        Layout.Widgets.LayoutComponentCatalog.CreateDefaultSettings(typeId);
+
+    private static IReadOnlyList<ComponentDefinition> CreateDefinitions()
+    {
+        var registry = new BuiltInComponentRegistry();
+        return registry.Items
+            .Where(definition => definition.Kind == ComponentKind.Functional)
+            .Select(definition => new ComponentDefinition(
+                definition.Metadata.TypeId,
+                definition.Metadata.NameResourceKey,
+                definition.Metadata.DescriptionResourceKey,
+                ToLegacyCategory(definition.Metadata.Category),
+                (WidgetCapabilities)(int)definition.Metadata.Capabilities,
+                definition.Metadata.SupportsTaskbar,
+                definition.Metadata.SupportsFloating,
+                definition.Metadata.SupportsHorizontal,
+                definition.Metadata.SupportsVertical,
+                definition.Metadata.SupportsCollapsedSlot))
+            .ToArray();
     }
 
-    public static WidgetSettings CreateDefaultSettings(string typeId) => typeId switch
+    private static ComponentCategory ToLegacyCategory(AFMediaBar.Components.Abstractions.ComponentCategory category) => category switch
     {
-        BuiltInWidgetTypeIds.Artwork => new ArtworkWidgetSettings(6, false, true),
-        BuiltInWidgetTypeIds.MediaText => new MediaTextWidgetSettings(
-            MediaTextKind.Title,
-            true,
-            14,
-            1),
-        BuiltInWidgetTypeIds.MediaSource => new MediaTextWidgetSettings(
-            MediaTextKind.Source,
-            false,
-            11,
-            1),
-        BuiltInWidgetTypeIds.Command => new CommandWidgetSettings(
-            MediaCommandKind.PlayPause,
-            CommandWidgetSettings.DefaultButtonSizeDip),
-        BuiltInWidgetTypeIds.Metrics => new MetricsWidgetSettings(
-            MetricKind.SystemMemory,
-            false,
-            2500,
-            [MetricKind.SystemMemory]),
-        BuiltInWidgetTypeIds.Spectrum => new SpectrumWidgetSettings(
-            9,
-            20,
-            100),
-        BuiltInWidgetTypeIds.Separator => new SeparatorWidgetSettings(1, 22),
-        _ => new MediaTextWidgetSettings(MediaTextKind.Title, false, 14, 1)
+        AFMediaBar.Components.Abstractions.ComponentCategory.Media => ComponentCategory.Media,
+        AFMediaBar.Components.Abstractions.ComponentCategory.Playback => ComponentCategory.Controls,
+        AFMediaBar.Components.Abstractions.ComponentCategory.Audio => ComponentCategory.Audio,
+        AFMediaBar.Components.Abstractions.ComponentCategory.System => ComponentCategory.System,
+        _ => ComponentCategory.Layout
     };
 }

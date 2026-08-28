@@ -14,6 +14,7 @@ using AFMediaBar.Controls;
 using AFMediaBar.Interop;
 using AFMediaBar.Models;
 using AFMediaBar.Services;
+using AFMediaBar.ViewModels;
 // System.Windows.Localization（枚举）与本地化帮助类同名，用别名消歧。
 using Loc = AFMediaBar.Services.Localization;
 
@@ -42,6 +43,7 @@ public partial class MainWindow : Window
         WpfStringLocalizer.Instance);
     internal MediaSessionService MediaSessionService => _mediaSessionService;
     private readonly SettingsCoordinator _settingsCoordinator;
+    private readonly MainWindowViewModel _viewModel;
     // 这些定时器都由窗口拥有，必须在 OnClosed 中停止后再释放服务。
     // The window owns these timers; OnClosed stops them before disposing services.
     private readonly DispatcherTimer _environmentRecoveryTimer;
@@ -84,6 +86,8 @@ public partial class MainWindow : Window
         _settingsCoordinator = (Application.Current as App)?.SettingsCoordinator ??
             new SettingsCoordinator();
         var settings = _settingsCoordinator.Current;
+        _viewModel = new MainWindowViewModel(settings.Window);
+        DataContext = _viewModel;
         _metricSettings = settings.Metrics;
         _windowSettings = settings.Window;
         _floatingNormalLeft = _windowSettings.FloatingLeft;
@@ -240,6 +244,7 @@ public partial class MainWindow : Window
         ApplyWindowSettings();
         ApplyPlacementSettings();
         PositionOverTaskbar(force: true);
+        SyncWindowStateProjection();
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -335,6 +340,7 @@ public partial class MainWindow : Window
             }
 
             _windowSettings = nextWindowSettings;
+            _viewModel.ApplyWindowSettings(_windowSettings);
             (Application.Current as App)?.RecreateMainWindow();
             return;
         }
@@ -366,6 +372,7 @@ public partial class MainWindow : Window
             e.Sections.HasFlag(SettingsSection.Interaction))
         {
             _windowSettings = nextWindowSettings;
+            _viewModel.ApplyWindowSettings(_windowSettings);
             _lastTaskbarRect = null;
             _lastPositionLeft = null;
             _lastPositionTop = null;
@@ -441,6 +448,7 @@ public partial class MainWindow : Window
 
     private void ApplyWindowSettings()
     {
+        _viewModel.ApplyWindowSettings(_windowSettings);
         ApplyMediaDisplaySettings();
         var floating = _windowSettings.HostMode == WindowHostMode.Floating;
         if (_taskbarHostService is not null &&
@@ -464,6 +472,38 @@ public partial class MainWindow : Window
         {
             Visibility = Visibility.Visible;
         }
+    }
+
+    private void SyncWindowStateProjection()
+    {
+        if (_windowHandle == nint.Zero)
+        {
+            return;
+        }
+
+        int? left = null;
+        int? top = null;
+        var width = 0;
+        var height = 0;
+        if (NativeMethods.GetWindowRect(_windowHandle, out var rect))
+        {
+            left = rect.Left;
+            top = rect.Top;
+            width = rect.Width;
+            height = rect.Height;
+        }
+
+        _viewModel.Placement.ApplyBounds(
+            left,
+            top,
+            width,
+            height,
+            NativeMethods.GetDpiForWindow(_windowHandle));
+        _viewModel.Placement.SetPresentation(IsVisible, _isExpanded);
+        _viewModel.TaskbarHost.ApplySnapshot(
+            _taskbarHostService?.TaskbarHandle ?? nint.Zero,
+            _taskbarHostService?.IsEmbedded == true,
+            _taskbarHostService?.IsFloating == true);
     }
 
     private void SaveWindowSettings(bool showError = true)
@@ -973,6 +1013,7 @@ public partial class MainWindow : Window
         }
 
         _environmentRecoveryReason = reason;
+        _viewModel.ApplyRecovery(reason);
         PauseEnvironmentSensitiveTimers();
         _environmentRecoveryTimer.Stop();
         _environmentRecoveryTimer.Interval =
@@ -1024,6 +1065,7 @@ public partial class MainWindow : Window
             DiagnosticsLogService.Write(
                 "environment-recovery-completed",
                 details: $"Reason={_environmentRecoveryReason};Attempts={_environmentRecoveryAttempts}");
+            _viewModel.ApplyRecovery(null);
         }
         catch (Exception exception)
         {
@@ -1046,6 +1088,7 @@ public partial class MainWindow : Window
             DiagnosticsLogService.Write(
                 "environment-recovery-exhausted",
                 details: $"Reason={_environmentRecoveryReason};Attempts={_environmentRecoveryAttempts}");
+            _viewModel.ApplyRecovery(null);
             ResumeEnvironmentSensitiveTimers();
             return;
         }

@@ -1,0 +1,18 @@
+<UserControl x:Class="AFMediaBar.Components.Wpf.BuiltIn.Volume.VolumeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:AFMediaBar.Components.Wpf.Controls">
+  <Button x:Name="VolumeButton" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+          IsEnabled="{Binding IsAvailable}"
+          Command="{Binding OpenPopupCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
+          PreviewMouseWheel="VolumeButton_OnPreviewMouseWheel"
+          Style="{DynamicResource TransportButtonStyle}"
+          ToolTip="{Binding VolumePercent}">
+    <controls:CenteredIconGlyph Width="16" Height="16"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                FontFamily="{DynamicResource AppIconFontFamily}"
+                                FontSize="14"
+                                Glyph="&#xE767;" />
+  </Button>
+</UserControl>
