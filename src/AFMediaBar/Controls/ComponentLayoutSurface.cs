@@ -115,18 +115,12 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         new(StringComparer.Ordinal);
     private readonly Dictionary<string, ContainerVisual> _containerViews =
         new(StringComparer.Ordinal);
-    private readonly Dictionary<string, MediaTextKind> _mediaTextKinds =
-        new(StringComparer.Ordinal);
-    private readonly ComponentSkinService _componentSkinService = new();
-    private readonly Dictionary<string, MarqueeState> _marqueeStates =
-        new(StringComparer.Ordinal);
+    private readonly ComponentSkinService _componentSkinService;
+    private readonly IComponentSettingsMapper _componentSettingsMapper;
     private readonly Dictionary<string, ComponentMarqueeState> _componentMarqueeStates =
-        new(StringComparer.Ordinal);
-    private readonly Dictionary<string, MetricViewState> _metricStates =
         new(StringComparer.Ordinal);
     private readonly Dictionary<string, ComponentMetricViewState> _componentMetricStates =
         new(StringComparer.Ordinal);
-    private readonly WidgetRendererRegistry _widgetRendererRegistry;
     private readonly LayoutCompositionService _compositionService;
     private LayoutCompositionViewModel? _composition;
     private IReadOnlyDictionary<string, ComponentViewModelBase> _componentViewModels =
@@ -147,8 +141,12 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
     private int _gapDip;
     private bool _disposed;
 
-    internal ComponentLayoutSurface()
+    internal ComponentLayoutSurface(
+        IComponentSettingsMapper? settingsMapper = null,
+        IComponentViewFactory? viewFactory = null)
     {
+        var resolvedSettingsMapper = settingsMapper ?? ComponentDefinitionAdapter.Default;
+        _componentSettingsMapper = resolvedSettingsMapper;
         _compositionService = new LayoutCompositionService(new ComponentInteractionCallbacks(
             SourceRequested: _ => RaiseSourceRequested(),
             CommandRequested: (command, anchor) => RaiseCommandRequested((MediaCommandKind)command, anchor),
@@ -156,20 +154,13 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
             VolumeRequested: anchor => RaiseCommandRequested(MediaCommandKind.AdjustVolume, anchor),
             OutputDeviceWheelRequested: (delta, anchor) => RaiseWheelRequested(MediaCommandKind.SelectOutputDevice, delta, anchor),
             VolumeWheelRequested: (delta, anchor) => RaiseWheelRequested(MediaCommandKind.AdjustVolume, delta, anchor),
-            MetricsRequested: RaiseMetricsRequested));
+            MetricsRequested: RaiseMetricsRequested),
+            resolvedSettingsMapper,
+            viewFactory);
+        _componentSkinService = new ComponentSkinService(resolvedSettingsMapper);
         Resources.MergedDictionaries.Add(new ResourceDictionary
         {
             Source = new Uri("/AFMediaBar.Components.Wpf;component/ComponentTemplates.xaml", UriKind.RelativeOrAbsolute)
-        });
-        _widgetRendererRegistry = new(new Dictionary<string, Func<LayoutWidgetElement, FrameworkElement>>(StringComparer.Ordinal)
-        {
-            [BuiltInWidgetTypeIds.Artwork] = BuildArtwork,
-            [BuiltInWidgetTypeIds.MediaText] = BuildMediaText,
-            [BuiltInWidgetTypeIds.MediaSource] = BuildMediaSource,
-            [BuiltInWidgetTypeIds.Command] = BuildCommand,
-            [BuiltInWidgetTypeIds.Metrics] = BuildMetrics,
-            [BuiltInWidgetTypeIds.Spectrum] = BuildSpectrum,
-            [BuiltInWidgetTypeIds.Separator] = BuildSeparator
         });
         // 透明背景让整块条带都参与 WPF 命中测试；靠近距离可能落在组件空白区，不能只依赖子控件收到 MouseMove。
         // A transparent background keeps the whole strip hit-testable; proximity can fall in empty space and must not depend on child widgets.
@@ -282,10 +273,7 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         _designWidgetElements.Clear();
         _designHoverButtonBars.Clear();
         _containerViews.Clear();
-        _mediaTextKinds.Clear();
-        _marqueeStates.Clear();
         _componentMarqueeStates.Clear();
-        _metricStates.Clear();
         _componentMetricStates.Clear();
         _marqueeTimer.Stop();
         _pointerStateTimer.Stop();
@@ -307,7 +295,7 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         ClipToBounds = false;
         Children.Add(root);
         RefreshAllData();
-        if (_marqueeStates.Count > 0 || _componentMarqueeStates.Count > 0)
+        if (_componentMarqueeStates.Count > 0)
         {
             _marqueeTimer.Start();
         }
@@ -411,10 +399,7 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         _designWidgetElements.Clear();
         _designHoverButtonBars.Clear();
         _containerViews.Clear();
-        _mediaTextKinds.Clear();
-        _marqueeStates.Clear();
         _componentMarqueeStates.Clear();
-        _metricStates.Clear();
         _componentMetricStates.Clear();
         _marqueeTimer.Stop();
         _pointerStateTimer.Stop();
@@ -443,7 +428,7 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
             AttachDesignDeleteHandler(frame, collapse.InstanceId);
             Children.Add(frame);
             RefreshAllData();
-            if (_marqueeStates.Count > 0 || _componentMarqueeStates.Count > 0)
+            if (_componentMarqueeStates.Count > 0)
             {
                 _marqueeTimer.Start();
             }
@@ -453,7 +438,7 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         _designElements[collapse.InstanceId] = root;
         Children.Add(root);
         RefreshAllData();
-        if (_marqueeStates.Count > 0 || _componentMarqueeStates.Count > 0)
+        if (_componentMarqueeStates.Count > 0)
         {
             _marqueeTimer.Start();
         }
@@ -607,15 +592,6 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         {
             state.ViewModel.Text = text;
         }
-        foreach (var view in _widgetViews.Values)
-        {
-            if (view is Border { Child: TextBlock textBlock } &&
-                textBlock.Tag is string tag &&
-                tag == BuiltInWidgetTypeIds.Metrics)
-            {
-                textBlock.Text = text;
-            }
-        }
     }
 
     internal void SetMetricsSnapshot(SystemMetricsSnapshot snapshot)
@@ -637,25 +613,6 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
                 (AFMediaBar.Layout.Models.MetricKind)cycle[state.CycleIndex]);
             state.CycleIndex = (state.CycleIndex + 1) % cycle.Count;
         }
-        foreach (var state in _metricStates.Values)
-        {
-            var interval = Math.Clamp(
-                state.Settings.RefreshIntervalMilliseconds,
-                250,
-                30_000);
-            if (state.LastUpdateTick != 0 && now - state.LastUpdateTick < interval)
-            {
-                continue;
-            }
-
-            state.LastUpdateTick = now;
-            var cycle = state.Settings.CycleMetrics is { Count: > 0 }
-                ? state.Settings.CycleMetrics
-                : [state.Settings.Metric];
-            state.CycleIndex = Math.Clamp(state.CycleIndex, 0, cycle.Count - 1);
-            state.Text.Text = MetricTextFormatter.Format(snapshot, cycle[state.CycleIndex]);
-            state.CycleIndex = (state.CycleIndex + 1) % cycle.Count;
-        }
     }
 
     internal void SetSpectrum(IReadOnlyList<float> values)
@@ -673,13 +630,6 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
             viewModel.SetValues(_spectrum);
         }
 
-        foreach (var view in _widgetViews.Values)
-        {
-            if (view is SpectrumView spectrum)
-            {
-                spectrum.SetValues(_spectrum);
-            }
-        }
     }
 
     private FrameworkElement BuildContainer(LayoutContainerElement container)
@@ -815,7 +765,7 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
             }
             if (_designClipWarnings.TryGetValue(widget.InstanceId, out var warning))
             {
-                var required = WidgetMeasurementService.MeasureRequiredCells(profile, widget);
+                var required = WidgetMeasurementService.MeasureRequiredCells(profile, widget, _componentSettingsMapper);
                 var mayClip = bounds.Width < required.Width || bounds.Height < required.Height;
                 warning.Visibility = mayClip ? Visibility.Visible : Visibility.Collapsed;
                 warning.ToolTip = string.Format(
@@ -1099,7 +1049,7 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
             (int Width, int Height) required = default;
             if (_profile is { } profile)
             {
-                required = WidgetMeasurementService.MeasureRequiredCells(profile, widget);
+                required = WidgetMeasurementService.MeasureRequiredCells(profile, widget, _componentSettingsMapper);
                 mayClip = bounds.Width < required.Width || bounds.Height < required.Height;
                 if (mayClip)
                 {
@@ -1307,11 +1257,11 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         }
         else
         {
-            view = _widgetRendererRegistry.Build(widget, BuildUnknown);
+            view = BuildUnknown(widget);
         }
 
         ApplyGeometry(view, widget.Geometry);
-        AssignTransitionKeys(view, widget);
+        AssignTransitionKeys(view, widget, viewModel);
         _widgetViews[widget.InstanceId] = view;
         _designElements[widget.InstanceId] = view;
         return view;
@@ -1325,27 +1275,29 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         _ => false
     };
 
-    private static string GetTransitionKey(LayoutWidgetElement widget)
+    private static string GetTransitionKey(LayoutWidgetElement widget, ComponentViewModelBase? viewModel)
     {
-        return widget.Settings switch
+        return viewModel switch
         {
-            MediaTextWidgetSettings text => text.TextKind switch
+            MediaTextViewModel text => text.Settings.TextKind switch
             {
-                MediaTextKind.Title => "media-text:title",
-                MediaTextKind.Artist => "media-text:artist",
-                MediaTextKind.Source => "media-text:source",
-                MediaTextKind.TitleAndArtist => "media-text:combined",
+                MediaTextContentKind.Title => "media-text:title",
+                MediaTextContentKind.Artist => "media-text:artist",
+                MediaTextContentKind.TitleAndArtist => "media-text:combined",
                 _ => "media-text"
             },
-            CommandWidgetSettings command => $"{widget.TypeId}:{command.Command}",
-            MetricsWidgetSettings metrics => $"{widget.TypeId}:{metrics.Metric}",
+            PlaybackCommandViewModel command => $"{widget.TypeId}:{command.Settings.Command}",
+            MetricsViewModel metrics => $"{widget.TypeId}:{metrics.Settings.Metric}",
             _ => widget.TypeId
         };
     }
 
-    private static void AssignTransitionKeys(FrameworkElement view, LayoutWidgetElement widget)
+    private static void AssignTransitionKeys(
+        FrameworkElement view,
+        LayoutWidgetElement widget,
+        ComponentViewModelBase? viewModel)
     {
-        if (widget.Settings is MediaTextWidgetSettings { TextKind: MediaTextKind.TitleAndArtist } &&
+        if (viewModel is MediaTextViewModel { Settings.TextKind: MediaTextContentKind.TitleAndArtist } &&
             view is StackPanel { Tag: ValueTuple<TextBlock, TextBlock> combined })
         {
             combined.Item1.SetValue(TransitionKeyProperty, "media-text:title");
@@ -1353,7 +1305,7 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
             return;
         }
 
-        view.SetValue(TransitionKeyProperty, GetTransitionKey(widget));
+        view.SetValue(TransitionKeyProperty, GetTransitionKey(widget, viewModel));
     }
 
     private static FrameworkElement BuildUnknown(LayoutWidgetElement widget)
@@ -1388,10 +1340,7 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
             {
                 case ArtworkViewModel artwork:
                     artwork.Artwork = _mediaSnapshot.Artwork.AsImageSource();
-                    artwork.Background = ResolveArtworkBackground(new ArtworkWidgetSettings(
-                        artwork.Settings.CornerRadiusDip,
-                        artwork.Settings.UseMediaPrimaryColor,
-                        artwork.Settings.OpenSourceOnClick));
+                    artwork.Background = ResolveArtworkBackground(artwork.Settings);
                     break;
                 case MediaTextViewModel text:
                 {
@@ -1437,92 +1386,6 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
             }
         }
 
-        foreach (var pair in _mediaTextKinds)
-        {
-            if (!_widgetViews.TryGetValue(pair.Key, out var view))
-            {
-                continue;
-            }
-
-            var value = pair.Value switch
-            {
-                MediaTextKind.Title => GetDisplayText(_mediaSnapshot.Title, "Main.Placeholder.Title"),
-                MediaTextKind.Artist => GetDisplayText(_mediaSnapshot.Artist, "Main.Placeholder.Subtitle"),
-                MediaTextKind.Source => GetDisplayText(_mediaSnapshot.SourceName, "Main.TitleIdle"),
-                _ => string.Empty
-            };
-            if (pair.Value == MediaTextKind.TitleAndArtist && view is StackPanel { Tag: ValueTuple<TextBlock, TextBlock> combined })
-            {
-                combined.Item1.Text = GetDisplayText(_mediaSnapshot.Title, "Main.Placeholder.Title");
-                combined.Item2.Text = GetDisplayText(_mediaSnapshot.Artist, "Main.Placeholder.Subtitle");
-                combined.Item1.ToolTip = combined.Item1.Text;
-                combined.Item2.ToolTip = combined.Item2.Text;
-                continue;
-            }
-
-            var text = GetTextBlock(view);
-            if (text is null)
-            {
-                continue;
-            }
-            text.Text = IsVertical ? FormatVerticalText(value) : value;
-            text.ToolTip = value;
-            if (_marqueeStates.TryGetValue(pair.Key, out var marquee))
-            {
-                marquee.Content = value;
-                marquee.Offset = 0;
-            }
-        }
-
-        foreach (var view in _widgetViews.Values)
-        {
-            if (view is not Border
-                {
-                    Child: Grid grid,
-                    Tag: ValueTuple<Image, TextBlock, ArtworkWidgetSettings> artwork
-                } border)
-            {
-                continue;
-            }
-
-            artwork.Item1.Source = _mediaSnapshot.Artwork.AsImageSource();
-            artwork.Item2.Visibility = _mediaSnapshot.Artwork is null
-                ? Visibility.Visible
-                : Visibility.Collapsed;
-            border.Background = ResolveArtworkBackground(artwork.Item3);
-        }
-
-        RefreshCommandViews();
-    }
-
-    private void RefreshCommandViews()
-    {
-        foreach (var view in _widgetViews.Values.OfType<Button>())
-        {
-            if (view.Tag is not MediaCommandKind command)
-            {
-                continue;
-            }
-
-            view.IsEnabled = command switch
-            {
-                MediaCommandKind.Previous => _mediaSnapshot.IsConnected && _mediaSnapshot.CanSkipPrevious,
-                MediaCommandKind.PlayPause => _mediaSnapshot.IsConnected && _mediaSnapshot.CanPlayPause,
-                MediaCommandKind.Next => _mediaSnapshot.IsConnected && _mediaSnapshot.CanSkipNext,
-                MediaCommandKind.SelectSource or MediaCommandKind.AdjustVolume => _mediaSnapshot.IsConnected,
-                MediaCommandKind.SelectOutputDevice => true,
-                _ => true
-            };
-            if (view.Content is AFMediaBar.Components.Wpf.Controls.CenteredIconGlyph glyph)
-            {
-                glyph.Glyph = command == MediaCommandKind.PlayPause
-                    ? GetCommandGlyph(command, _mediaSnapshot.IsPlaying)
-                    : GetCommandGlyph(command);
-            }
-            view.ToolTip = command == MediaCommandKind.PlayPause
-                ? GetCommandTooltip(command, _mediaSnapshot.IsPlaying)
-                : GetCommandTooltip(command);
-        }
     }
 
     private void ApplyContainerState(ContainerVisual visual, bool animate)
@@ -1868,17 +1731,7 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
             : value;
     }
 
-    private static TextBlock? GetTextBlock(FrameworkElement view)
-    {
-        return view switch
-        {
-            TextBlock text => text,
-            Grid { Tag: TextBlock text } => text,
-            _ => null
-        };
-    }
-
-    private Brush ResolveArtworkBackground(ArtworkWidgetSettings settings)
+    private Brush ResolveArtworkBackground(ArtworkSettings settings)
     {
         if (!settings.UseMediaPrimaryColor || _mediaSnapshot.Artwork is null)
         {
@@ -1937,21 +1790,6 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
             return;
         }
 
-        foreach (var state in _marqueeStates.Values)
-        {
-            var content = state.Content;
-            if (content.Length <= 18)
-            {
-                state.Text.Text = content;
-                continue;
-            }
-
-            var text = content + "   ";
-            var offset = state.Offset % text.Length;
-            state.Text.Text = text[offset..] + text[..offset];
-            state.Offset++;
-        }
-
         foreach (var state in _componentMarqueeStates.Values)
         {
             var content = state.Content;
@@ -2003,10 +1841,7 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         _designHoverButtonBars.Clear();
         _widgetViews.Clear();
         _containerViews.Clear();
-        _mediaTextKinds.Clear();
-        _marqueeStates.Clear();
         _componentMarqueeStates.Clear();
-        _metricStates.Clear();
         _componentMetricStates.Clear();
     }
 
@@ -2034,17 +1869,6 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
                 return value[start..end];
             }));
     }
-
-    private static string GetCommandGlyph(MediaCommandKind command, bool isPlaying = false) => command switch
-    {
-        MediaCommandKind.Previous => "\uE892",
-        MediaCommandKind.PlayPause => isPlaying ? "\uE769" : "\uE768",
-        MediaCommandKind.Next => "\uE893",
-        MediaCommandKind.SelectSource => "\uE8D6",
-        MediaCommandKind.AdjustVolume => "\uE767",
-        MediaCommandKind.SelectOutputDevice => "\uE7F5",
-        _ => "\uE710"
-    };
 
     private static string GetCommandTooltip(MediaCommandKind command, bool isPlaying = false) => command switch
     {
@@ -2134,26 +1958,11 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         double Opacity,
         bool WasVisible);
 
-    private sealed class MarqueeState(TextBlock text, string content, int offset)
-    {
-        internal TextBlock Text { get; } = text;
-        internal string Content { get; set; } = content;
-        internal int Offset { get; set; } = offset;
-    }
-
     private sealed class ComponentMarqueeState(MediaTextViewModel viewModel, string content, int offset)
     {
         internal MediaTextViewModel ViewModel { get; } = viewModel;
         internal string Content { get; set; } = content;
         internal int Offset { get; set; } = offset;
-    }
-
-    private sealed class MetricViewState(TextBlock text, MetricsWidgetSettings settings)
-    {
-        internal TextBlock Text { get; } = text;
-        internal MetricsWidgetSettings Settings { get; } = settings;
-        internal long LastUpdateTick { get; set; }
-        internal int CycleIndex { get; set; }
     }
 
     private sealed class ComponentMetricViewState(MetricsViewModel viewModel, MetricsSettings settings)
@@ -2164,62 +1973,4 @@ internal sealed partial class ComponentLayoutSurface : Grid, IDisposable
         internal int CycleIndex { get; set; }
     }
 
-    private sealed class SpectrumView(
-        int bandCount,
-        int refreshRateHz,
-        int sensitivityPercent,
-        string brushResourceKey) : FrameworkElement
-    {
-        private readonly float[] _values = new float[AudioMonitorService.BandCount];
-        private long _lastRenderTick;
-
-        internal void SetValues(IReadOnlyList<float> values)
-        {
-            var now = Environment.TickCount64;
-            if (now - _lastRenderTick < 1_000 / refreshRateHz)
-            {
-                return;
-            }
-
-            _lastRenderTick = now;
-            var count = Math.Min(values.Count, _values.Length);
-            for (var index = 0; index < count; index++)
-            {
-                _values[index] = Math.Clamp(
-                    values[index] * sensitivityPercent / 100f,
-                    0,
-                    1);
-            }
-            for (var index = count; index < _values.Length; index++)
-            {
-                _values[index] = 0;
-            }
-            InvalidateVisual();
-        }
-
-        protected override void OnRender(DrawingContext drawingContext)
-        {
-            base.OnRender(drawingContext);
-            var width = ActualWidth > 0 ? ActualWidth : 68;
-            var height = ActualHeight > 0 ? ActualHeight : 24;
-            var gap = 3d;
-            var barWidth = Math.Max(2, (width - gap * (bandCount - 1)) / bandCount);
-            for (var index = 0; index < bandCount; index++)
-            {
-                var barHeight = Math.Clamp(3 + Math.Sqrt(_values[index]) * (height - 3), 3, height);
-                var x = index * (barWidth + gap);
-                drawingContext.DrawRoundedRectangle(
-                    TryFindResource(brushResourceKey) as Brush ?? Brushes.Transparent,
-                    null,
-                    new Rect(x, (height - barHeight) / 2, barWidth, barHeight),
-                    2,
-                    2);
-            }
-        }
-
-        protected override Size MeasureOverride(Size availableSize)
-        {
-            return new Size(Math.Min(88, availableSize.Width), 24);
-        }
-    }
 }

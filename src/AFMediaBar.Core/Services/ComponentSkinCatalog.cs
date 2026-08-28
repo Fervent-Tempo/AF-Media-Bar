@@ -1,4 +1,5 @@
 using AFMediaBar.Models;
+using AFMediaBar.Components.Abstractions;
 
 namespace AFMediaBar.Services;
 
@@ -17,13 +18,13 @@ public static class ComponentSkinCatalog
             "Settings.Skin.DefaultName",
             1,
             [
-                BuiltInWidgetTypeIds.Artwork,
-                BuiltInWidgetTypeIds.MediaText,
-                BuiltInWidgetTypeIds.MediaSource,
-                BuiltInWidgetTypeIds.Command,
-                BuiltInWidgetTypeIds.Metrics,
-                BuiltInWidgetTypeIds.Spectrum,
-                BuiltInWidgetTypeIds.Separator
+                ComponentTypeIds.Artwork,
+                ComponentTypeIds.MediaText,
+                ComponentTypeIds.MediaSource,
+                ComponentTypeIds.PlaybackCommand,
+                ComponentTypeIds.Metrics,
+                ComponentTypeIds.Spectrum,
+                ComponentTypeIds.Separator
             ],
             [
                 GlobalThemeTokenIds.Text,
@@ -41,7 +42,7 @@ public static class ComponentSkinCatalog
             ExampleSkinId,
             "Settings.Skin.ExamplePlayPauseName",
             1,
-            [BuiltInWidgetTypeIds.Command],
+            [ComponentTypeIds.PlaybackCommand],
             [
                 GlobalThemeTokenIds.Surface,
                 GlobalThemeTokenIds.Text,

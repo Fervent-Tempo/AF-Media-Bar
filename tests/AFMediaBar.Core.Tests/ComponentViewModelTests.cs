@@ -94,6 +94,24 @@ public sealed class ComponentViewModelTests
         Assert.IsTrue(composition.Containers.All(x => x.ActiveSlotIndex == -1));
     }
 
+    [TestMethod]
+    public void LayoutCompositionUsesTheInjectedViewFactory()
+    {
+        var profile = LayoutDefaultTemplates.LoadDocument().Horizontal;
+        var factory = new RecordingViewFactory();
+        var composition = new LayoutCompositionService(
+            new ComponentInteractionCallbacks(),
+            viewFactory: factory).Compose(profile);
+
+        var widgetCount = profile.Containers
+            .SelectMany(container => container.PrimarySlot.Children.Concat(container.SecondarySlot.Children))
+            .OfType<LayoutWidgetElement>()
+            .Count(widget => widget.Enabled);
+
+        Assert.AreEqual(widgetCount, factory.CreateCount);
+        Assert.HasCount(widgetCount, composition.Components);
+    }
+
     [STATestMethod]
     public void ComponentTemplateDictionaryLoadsAllFunctionalTemplates()
     {
@@ -318,4 +336,33 @@ public sealed class ComponentViewModelTests
 
     private static IEnumerable<LayoutTreeItemViewModel> Descendants(LayoutTreeItemViewModel item) =>
         new[] { item }.Concat(item.Children.SelectMany(Descendants));
+
+    private sealed class RecordingViewFactory : IComponentViewFactory
+    {
+        internal int CreateCount { get; private set; }
+
+        public ComponentViewModelBase? Create(
+            string instanceId,
+            IComponentSettings settings,
+            Action<object?>? sourceRequested = null,
+            Action<PlaybackCommandKind, object?>? commandRequested = null,
+            Action<object?>? deviceRequested = null,
+            Action<object?>? volumeRequested = null,
+            Action<int, object?>? outputDeviceWheelRequested = null,
+            Action<int, object?>? volumeWheelRequested = null,
+            Action? metricsRequested = null)
+        {
+            CreateCount++;
+            return ComponentViewFactory.Create(
+                instanceId,
+                settings,
+                sourceRequested,
+                commandRequested,
+                deviceRequested,
+                volumeRequested,
+                outputDeviceWheelRequested,
+                volumeWheelRequested,
+                metricsRequested);
+        }
+    }
 }

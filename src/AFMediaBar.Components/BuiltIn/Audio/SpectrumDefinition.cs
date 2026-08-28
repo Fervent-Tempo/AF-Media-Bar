@@ -4,7 +4,7 @@ namespace AFMediaBar.Components.BuiltIn.Audio;
 
 public sealed class SpectrumDefinition : ComponentDefinitionBase<SpectrumSettings>
 {
-    public const int MaximumBandCount = 9;
+    public const int MaximumBandCount = SpectrumSettings.MaximumBandCount;
 
     public override ComponentMetadata Metadata { get; } = new(
         ComponentTypeIds.Spectrum, "Settings.LayoutWidget.SpectrumTitle", "Settings.LayoutWidget.SpectrumDescription",

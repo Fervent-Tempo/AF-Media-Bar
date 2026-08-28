@@ -19,12 +19,14 @@ public static class LayoutPlacementPreviewService
         int currentX,
         int currentY,
         WidgetSettings? widgetSettings,
-        Func<LayoutContainerElement, LayoutSlotKind>? visibleSlotResolver = null)
+        Func<LayoutContainerElement, LayoutSlotKind>? visibleSlotResolver = null,
+        IComponentSettingsMapper? settingsMapper = null)
     {
+        var mapper = settingsMapper ?? ComponentDefinitionAdapter.Default;
         var dragging = startX != currentX || startY != currentY;
         var bounds = dragging
             ? LayoutGridRect.FromDrag(startX, startY, currentX, currentY)
-            : CreateDefaultBounds(profile, tool, currentX, currentY, widgetSettings, visibleSlotResolver);
+            : CreateDefaultBounds(profile, tool, currentX, currentY, widgetSettings, visibleSlotResolver, mapper);
 
         var valid = tool.IsContainer
             ? LayoutPlacementService.CanPlaceContainer(profile, bounds)
@@ -50,7 +52,8 @@ public static class LayoutPlacementPreviewService
         int cellX,
         int cellY,
         WidgetSettings? widgetSettings,
-        Func<LayoutContainerElement, LayoutSlotKind>? visibleSlotResolver)
+        Func<LayoutContainerElement, LayoutSlotKind>? visibleSlotResolver,
+        IComponentSettingsMapper settingsMapper)
     {
         if (tool.IsContainer)
         {
@@ -65,14 +68,21 @@ public static class LayoutPlacementPreviewService
             return LayoutGridRect.Unit(cellX, cellY);
         }
 
-        var settings = widgetSettings ?? LayoutComponentCatalog.CreateDefaultSettings(tool.WidgetTypeId!);
+        var settings = widgetSettings;
+        if (settings is null && !settingsMapper.TryCreateDefaultSettings(tool.WidgetTypeId!, out settings))
+        {
+            return LayoutGridRect.Unit(cellX, cellY);
+        }
+
         var widget = new LayoutWidgetElement(
             "placement-preview",
             true,
             LayoutGeometry.Auto,
             tool.WidgetTypeId!,
             settings);
-        var desired = WidgetMeasurementService.MeasureRequiredCells(profile, widget);
+        var desired = settingsMapper.TryMeasure(profile, widget, out var measured)
+            ? measured
+            : (Width: 1, Height: 1);
         return new LayoutGridRect(
             cellX,
             cellY,

@@ -39,7 +39,8 @@ public partial class MainWindow
     {
         var samplingSettings = LayoutRuntimeService.ResolveMetricSamplingSettings(
             _activeLayoutProfile,
-            _metricSettings);
+            _metricSettings,
+            _componentSettingsMapper);
         var sample = _systemMetricsService.Sample(samplingSettings);
         ComponentSurface_OnMetricsSnapshotChanged(sample);
         var selectedCount = _metricSettings.SelectedCount;

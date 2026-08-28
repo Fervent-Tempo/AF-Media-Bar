@@ -17,6 +17,7 @@ namespace AFMediaBar.LayoutEditor.Wpf.ViewModels;
 public sealed partial class LayoutEditorViewModel : ObservableObject, IDisposable
 {
     private readonly IComponentRegistry _registry;
+    private readonly IComponentSettingsMapper _settingsMapper;
     private readonly Func<string, string> _localize;
     private LayoutDocument _lastDocument;
     private bool _selectionChanging;
@@ -26,9 +27,11 @@ public sealed partial class LayoutEditorViewModel : ObservableObject, IDisposabl
         LayoutDocument document,
         IComponentRegistry? registry = null,
         Func<string, string>? localize = null,
-        LayoutProfileKey profileKey = LayoutProfileKey.Horizontal)
+        LayoutProfileKey profileKey = LayoutProfileKey.Horizontal,
+        IComponentSettingsMapper? settingsMapper = null)
     {
         _registry = registry ?? new BuiltInComponentRegistry();
+        _settingsMapper = settingsMapper ?? new Schema5ComponentSettingsMapper(_registry);
         _localize = localize ?? (key => key);
         Inspector = new LayoutInspectorViewModel(_localize);
         Session = new LayoutEditorSession(document, profileKey);
@@ -150,7 +153,7 @@ public sealed partial class LayoutEditorViewModel : ObservableObject, IDisposabl
                 {
                     AddPaletteItem(
                         definition,
-                        $"{BuiltInWidgetTypeIds.Command}|{(int)command}",
+                        $"{ComponentTypeIds.PlaybackCommand}|{(int)command}",
                         GetCommandResourceKey(command));
                 }
                 continue;
@@ -167,7 +170,7 @@ public sealed partial class LayoutEditorViewModel : ObservableObject, IDisposabl
                 {
                     AddPaletteItem(
                         definition,
-                        $"{BuiltInWidgetTypeIds.MediaText}|{(int)kind}",
+                        $"{ComponentTypeIds.MediaText}|{(int)kind}",
                         GetMediaTextResourceKey(kind));
                 }
                 continue;
@@ -178,8 +181,8 @@ public sealed partial class LayoutEditorViewModel : ObservableObject, IDisposabl
                 ComponentTypeIds.StaticContainer => "container:static",
                 ComponentTypeIds.HoverSwitchContainer => "container:hover",
                 ComponentTypeIds.CollapseContainer => "container:edge",
-                ComponentTypeIds.OutputDevice => $"{BuiltInWidgetTypeIds.Command}|{(int)MediaCommandKind.SelectOutputDevice}",
-                ComponentTypeIds.Volume => $"{BuiltInWidgetTypeIds.Command}|{(int)MediaCommandKind.AdjustVolume}",
+                ComponentTypeIds.OutputDevice => $"{ComponentTypeIds.PlaybackCommand}|{(int)MediaCommandKind.SelectOutputDevice}",
+                ComponentTypeIds.Volume => $"{ComponentTypeIds.PlaybackCommand}|{(int)MediaCommandKind.AdjustVolume}",
                 _ => definition.Metadata.TypeId
             };
             AddPaletteItem(definition, token, definition.Metadata.NameResourceKey);
@@ -307,7 +310,7 @@ public sealed partial class LayoutEditorViewModel : ObservableObject, IDisposabl
 
     private string ResolveWidgetName(LayoutWidgetElement widget)
     {
-        if (ComponentDefinitionAdapter.TryMapSettings(widget, out var settings) &&
+        if (_settingsMapper.TryMapSettings(widget, out var settings) &&
             _registry.TryGet(settings.TypeId, out var definition))
         {
             return _localize(definition.Metadata.NameResourceKey);
@@ -321,7 +324,7 @@ public sealed partial class LayoutEditorViewModel : ObservableObject, IDisposabl
             ? null
             : LayoutElementQueryService.Find(CurrentProfile, SelectedInstanceId);
         if (model is LayoutWidgetElement widget &&
-            ComponentDefinitionAdapter.TryMapSettings(widget, out var mappedSettings) &&
+            _settingsMapper.TryMapSettings(widget, out var mappedSettings) &&
             _registry.TryGet(mappedSettings.TypeId, out var definition))
         {
             var grid = LayoutGridSettings.Normalize(CurrentProfile.Grid);

@@ -1,3 +1,4 @@
+using AFMediaBar.Components.BuiltIn;
 using AFMediaBar.Layout.Models;
 using AFMediaBar.Layout.Ports;
 
@@ -5,43 +6,37 @@ namespace AFMediaBar.Layout.Widgets;
 
 public static class LayoutComponentCatalog
 {
+    private static readonly BuiltInComponentRegistry ComponentRegistry = new();
+    private static readonly BuiltInWidgetCatalog WidgetCatalog = new(ComponentRegistry);
+    private static readonly Schema5ComponentSettingsMapper SettingsMapper = new(ComponentRegistry);
+
     public static bool TryGet(string typeId, out WidgetDescriptor descriptor)
     {
-        descriptor = new BuiltInWidgetCatalog().Items.FirstOrDefault(item =>
-            string.Equals(item.TypeId, typeId, StringComparison.Ordinal))!;
-        return descriptor is not null;
+        return WidgetCatalog.TryGet(typeId, out descriptor);
     }
 
-    public static bool IsInteractive(LayoutWidgetElement widget)
+    public static bool IsInteractive(
+        LayoutWidgetElement widget,
+        IComponentSettingsMapper? settingsMapper = null)
     {
+        var mapper = settingsMapper ?? SettingsMapper;
         if (!widget.Enabled || !TryGet(widget.TypeId, out var definition))
         {
             return false;
         }
 
-        return widget.Settings switch
-        {
-            ArtworkWidgetSettings artwork => artwork.OpenSourceOnClick,
-            MetricsWidgetSettings metrics => metrics.OpenTaskManagerOnClick,
-            _ => (definition.Capabilities & WidgetCapabilities.Interactive) != 0
-        };
+        return mapper.TryMapSettings(widget, out var settings) &&
+               ComponentRegistry.TryGet(settings.TypeId, out var component) &&
+               component.IsInteractive(settings);
     }
 
     public static WidgetSettings CreateDefaultSettings(string typeId)
     {
-        if (ComponentDefinitionAdapter.TryCreateDefaultSettings(typeId, out var settings))
+        if (SettingsMapper.TryCreateDefaultSettings(typeId, out var settings))
         {
             return settings;
         }
 
-        return typeId switch
-        {
-        BuiltInWidgetTypeIds.Artwork => new ArtworkWidgetSettings(6, false, true),
-        BuiltInWidgetTypeIds.MediaText => new MediaTextWidgetSettings(MediaTextKind.Title, true, 14, 1),
-        BuiltInWidgetTypeIds.MediaSource => new MediaTextWidgetSettings(MediaTextKind.Source, false, 11, 1),
-        BuiltInWidgetTypeIds.Command => new CommandWidgetSettings(MediaCommandKind.PlayPause, CommandWidgetSettings.DefaultButtonSizeDip),
-        BuiltInWidgetTypeIds.Metrics => new MetricsWidgetSettings(MetricKind.SystemMemory, false, 2500, [MetricKind.SystemMemory]),
-        _ => new MediaTextWidgetSettings(MediaTextKind.Title, false, 14, 1)
-        };
+        throw new ArgumentException($"Unknown layout component TypeId: {typeId}", nameof(typeId));
     }
 }

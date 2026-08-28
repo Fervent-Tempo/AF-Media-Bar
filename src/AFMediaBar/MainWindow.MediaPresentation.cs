@@ -103,8 +103,8 @@ public partial class MainWindow
 
         if (_metricSettings.VolumeControlEnabled &&
             (volumeSourceChanged ||
-                VolumeControlPopup.IsOpen ||
-                VolumeStatusPopup.IsOpen))
+                _audioPopupCoordinator.IsVolumeControlOpen ||
+                _audioPopupCoordinator.IsVolumeStatusOpen))
         {
             _ = RefreshCurrentMediaVolumeAsync(
                 snapshot.SourceId,

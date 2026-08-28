@@ -1,5 +1,5 @@
-using System.Text;
 using System.Text.Json.Serialization;
+using AFMediaBar.Components.Abstractions;
 namespace AFMediaBar.Layout.Models;
 
 /// <summary>
@@ -113,13 +113,14 @@ public enum MediaCommandKind
 /// </summary>
 public static class BuiltInWidgetTypeIds
 {
-    public const string Artwork = "builtin.artwork";
-    public const string MediaText = "builtin.media-text";
-    public const string MediaSource = "builtin.media-source";
-    public const string Command = "builtin.command";
-    public const string Metrics = "builtin.metrics";
-    public const string Spectrum = "builtin.spectrum";
-    public const string Separator = "builtin.separator";
+    // Compatibility aliases for schema-5 callers. Canonical values live in Components.
+    public const string Artwork = ComponentTypeIds.Artwork;
+    public const string MediaText = ComponentTypeIds.MediaText;
+    public const string MediaSource = ComponentTypeIds.MediaSource;
+    public const string Command = ComponentTypeIds.PlaybackCommand;
+    public const string Metrics = ComponentTypeIds.Metrics;
+    public const string Spectrum = ComponentTypeIds.Spectrum;
+    public const string Separator = ComponentTypeIds.Separator;
 }
 
 /// <summary>
@@ -321,92 +322,6 @@ public sealed record LayoutSlot(
 {
     public static LayoutSlot Empty(string slotId) => new(slotId, []);
 }
-
-[JsonPolymorphic(TypeDiscriminatorPropertyName = "kind")]
-[JsonDerivedType(typeof(LayoutWidgetElement), "widget")]
-[JsonDerivedType(typeof(LayoutContainerElement), "container")]
-public abstract record LayoutElement(
-    string InstanceId,
-    bool Enabled,
-    LayoutGeometry Geometry,
-    // 顶层容器使用档案网格坐标；槽位中的组件使用容器局部网格坐标。schema 4 起由约束服务负责赋值。
-    // Top-level containers use profile-grid coordinates; widgets in slots use container-local grid coordinates. Assigned by the constraint service since schema 4.
-    LayoutGridRect? GridBounds = null);
-
-[JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
-[JsonDerivedType(typeof(ArtworkWidgetSettings), "artwork")]
-[JsonDerivedType(typeof(MediaTextWidgetSettings), "media-text")]
-[JsonDerivedType(typeof(CommandWidgetSettings), "command")]
-[JsonDerivedType(typeof(MetricsWidgetSettings), "metrics")]
-[JsonDerivedType(typeof(SpectrumWidgetSettings), "spectrum")]
-[JsonDerivedType(typeof(SeparatorWidgetSettings), "separator")]
-public abstract record WidgetSettings;
-
-public sealed record ArtworkWidgetSettings(
-    int CornerRadiusDip,
-    bool UseMediaPrimaryColor,
-    bool OpenSourceOnClick) : WidgetSettings;
-
-public sealed record MediaTextWidgetSettings(
-    MediaTextKind TextKind,
-    bool EnableMarquee,
-    int FontSizeDip,
-    int MaxLines) : WidgetSettings;
-
-public sealed record CommandWidgetSettings(
-    MediaCommandKind Command,
-    int ButtonSizeDip) : WidgetSettings
-{
-    /// <summary>
-    /// 新建命令组件的默认交互尺寸；在默认 8 DIP 网格下对应 3x3 格。
-    /// Default interaction size for new command widgets; this is 3x3 cells on the default 8 DIP grid.
-    /// </summary>
-    public const int DefaultButtonSizeDip = 24;
-}
-
-public sealed record MetricsWidgetSettings(
-    MetricKind Metric,
-    bool OpenTaskManagerOnClick,
-    int RefreshIntervalMilliseconds,
-    IReadOnlyList<MetricKind> CycleMetrics) : WidgetSettings;
-
-public sealed record SpectrumWidgetSettings(
-    int BandCount,
-    int RefreshRateHz,
-    int SensitivityPercent) : WidgetSettings
-{
-    public const int MaximumBandCount = 9;
-}
-
-public sealed record SeparatorWidgetSettings(
-    int ThicknessDip,
-    int LengthDip) : WidgetSettings;
-
-public sealed record LayoutWidgetElement(
-    string InstanceId,
-    bool Enabled,
-    LayoutGeometry Geometry,
-    string TypeId,
-    WidgetSettings Settings,
-    string? SkinId = null,
-    int? SkinVersion = null,
-    IReadOnlyDictionary<string, string>? SkinSettings = null,
-    LayoutGridRect? GridBounds = null) : LayoutElement(InstanceId, Enabled, Geometry, GridBounds);
-
-public sealed record LayoutContainerElement(
-    string InstanceId,
-    bool Enabled,
-    LayoutGeometry Geometry,
-    LayoutContainerKind ContainerKind,
-    LayoutFlowOrientation Orientation,
-    LayoutContentAlignment ContentAlignment,
-    LayoutContentAlignment SecondaryContentAlignment,
-    LayoutTriggerMode Trigger,
-    int ProximityDip,
-    LayoutAnimationSettings Animation,
-    LayoutSlot PrimarySlot,
-    LayoutSlot SecondarySlot,
-    LayoutGridRect? GridBounds = null) : LayoutElement(InstanceId, Enabled, Geometry, GridBounds);
 
 /// <summary>
 /// 单个横向或纵向档案：schema 4 起保存整数网格、顶层非折叠容器和折叠容器。

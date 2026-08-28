@@ -1,5 +1,7 @@
 using AFMediaBar.Models;
 using AFMediaBar.Services;
+using AFMediaBar.Components.Abstractions;
+using AFMediaBar.Layout.Widgets;
 
 namespace AFMediaBar.Core.Tests;
 
@@ -505,6 +507,23 @@ public sealed class LayoutGridConstraintTests
             error.Failure == LayoutGridFailure.WidgetNotAllowed));
     }
 
+    [TestMethod]
+    public void HoverSwitchValidationUsesTheInjectedSettingsMapper()
+    {
+        var container = Container("a", new LayoutGridRect(0, 0, 6, 4), LayoutContainerKind.HoverSwitch) with
+        {
+            PrimarySlot = new LayoutSlot("leave", [Widget("w", new LayoutGridRect(0, 0, 2, 2), BuiltInWidgetTypeIds.Command)])
+        };
+        var mapper = new TrackingSettingsMapper(new Schema5ComponentSettingsMapper());
+
+        var errors = LayoutGridConstraintService.ValidateProfile(Profile(container), mapper);
+
+        Assert.IsTrue(errors.Any(error =>
+            error.InstanceId == "w" &&
+            error.Failure == LayoutGridFailure.WidgetNotAllowed));
+        Assert.AreEqual(1, mapper.MapCalls);
+    }
+
     // ---------- 尺寸 ----------
 
     [TestMethod]
@@ -584,5 +603,25 @@ public sealed class LayoutGridConstraintTests
         null,
         null,
         null,
-        bounds);
+            bounds);
+
+    private sealed class TrackingSettingsMapper(IComponentSettingsMapper inner) : IComponentSettingsMapper
+    {
+        public int MapCalls { get; private set; }
+
+        public bool TryCreateDefaultSettings(string typeId, out WidgetSettings settings) =>
+            inner.TryCreateDefaultSettings(typeId, out settings);
+
+        public bool TryMapSettings(LayoutWidgetElement widget, out IComponentSettings componentSettings)
+        {
+            MapCalls++;
+            return inner.TryMapSettings(widget, out componentSettings);
+        }
+
+        public bool TryMapToSchema5(IComponentSettings componentSettings, out string typeId, out WidgetSettings settings) =>
+            inner.TryMapToSchema5(componentSettings, out typeId, out settings);
+
+        public bool TryMeasure(LayoutProfile profile, LayoutWidgetElement widget, out (int Width, int Height) measurement) =>
+            inner.TryMeasure(profile, widget, out measurement);
+    }
 }

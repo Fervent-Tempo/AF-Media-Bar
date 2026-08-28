@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 using AFMediaBar.Models;
+using AFMediaBar.Components.BuiltIn.Audio;
 
 namespace AFMediaBar.Services;
 
@@ -10,7 +11,7 @@ namespace AFMediaBar.Services;
 /// </summary>
 public sealed class AudioMonitorService : IDisposable
 {
-    public const int BandCount = SpectrumWidgetSettings.MaximumBandCount;
+    public const int BandCount = SpectrumSettings.MaximumBandCount;
 
     private const int FftSize = 512;
     private const int SampleRingSize = 4096;

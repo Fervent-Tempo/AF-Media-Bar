@@ -1,4 +1,6 @@
 using AFMediaBar.Models;
+using AFMediaBar.Components.BuiltIn.Playback;
+using AFMediaBar.Layout.Widgets;
 
 namespace AFMediaBar.Services;
 
@@ -8,6 +10,13 @@ namespace AFMediaBar.Services;
 /// </summary>
 internal sealed class ComponentSkinService
 {
+    private readonly IComponentSettingsMapper _settingsMapper;
+
+    internal ComponentSkinService(IComponentSettingsMapper settingsMapper)
+    {
+        _settingsMapper = settingsMapper;
+    }
+
     internal string ResolveResourceKey(LayoutWidgetElement widget, bool menuTheme)
     {
         var assignment = ComponentSkinCatalog.Normalize(
@@ -16,7 +25,8 @@ internal sealed class ComponentSkinService
             widget.SkinVersion,
             widget.SkinSettings);
         if (assignment?.SkinId == ComponentSkinCatalog.ExampleSkinId &&
-            widget.Settings is not CommandWidgetSettings { Command: MediaCommandKind.PlayPause })
+            (!_settingsMapper.TryMapSettings(widget, out var componentSettings) ||
+             componentSettings is not PlaybackCommandSettings { Command: PlaybackCommandKind.PlayPause }))
         {
             assignment = null;
         }

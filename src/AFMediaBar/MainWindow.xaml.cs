@@ -11,6 +11,8 @@ using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using AFMediaBar.Adapters;
 using AFMediaBar.Controls;
+using AFMediaBar.Components.Wpf;
+using AFMediaBar.Layout.Widgets;
 using AFMediaBar.Interop;
 using AFMediaBar.Models;
 using AFMediaBar.Services;
@@ -44,6 +46,8 @@ public partial class MainWindow : Window
     internal MediaSessionService MediaSessionService => _mediaSessionService;
     private readonly SettingsCoordinator _settingsCoordinator;
     private readonly MainWindowViewModel _viewModel;
+    private readonly IComponentSettingsMapper _componentSettingsMapper;
+    private readonly IComponentViewFactory _componentViewFactory;
     // 这些定时器都由窗口拥有，必须在 OnClosed 中停止后再释放服务。
     // The window owns these timers; OnClosed stops them before disposing services.
     private readonly DispatcherTimer _environmentRecoveryTimer;
@@ -80,8 +84,12 @@ public partial class MainWindow : Window
 
     private bool IsEnvironmentSuspended => _powerSuspended || _sessionLocked;
 
-    public MainWindow()
+    public MainWindow(
+        IComponentSettingsMapper? componentSettingsMapper = null,
+        IComponentViewFactory? componentViewFactory = null)
     {
+        _componentSettingsMapper = componentSettingsMapper ?? ComponentDefinitionAdapter.Default;
+        _componentViewFactory = componentViewFactory ?? new DefaultComponentViewFactory();
         TaskbarPlacementService.ValidateAlgorithm();
         _settingsCoordinator = (Application.Current as App)?.SettingsCoordinator ??
             new SettingsCoordinator();
@@ -96,6 +104,13 @@ public partial class MainWindow : Window
             ? RenderMode.SoftwareOnly
             : RenderMode.Default;
         InitializeComponent();
+        _audioPopupCoordinator = new AudioPopupCoordinator(
+            OutputDevicePopup,
+            OutputDeviceStatusPopup,
+            VolumeControlPopup,
+            VolumeStatusPopup,
+            Dispatcher,
+            () => _volumeWheelUsesCompactStatus = false);
         InitializeComponentLayout(settings.Layout);
         _audioBars =
         [
@@ -167,12 +182,6 @@ public partial class MainWindow : Window
             OnVolumeApplyTimerTick,
             Dispatcher);
         _volumeApplyTimer.Stop();
-        _volumePopupCloseTimer = new DispatcherTimer(
-            TimeSpan.FromSeconds(1),
-            DispatcherPriority.Background,
-            OnVolumePopupCloseTimerTick,
-            Dispatcher);
-        _volumePopupCloseTimer.Stop();
         _edgeAnimationTimer = new DispatcherTimer(
             TimeSpan.FromMilliseconds(16),
             DispatcherPriority.Render,
@@ -289,7 +298,7 @@ public partial class MainWindow : Window
         _audioMonitorTimer.Stop();
         _outputDeviceApplyTimer.Stop();
         _volumeApplyTimer.Stop();
-        _volumePopupCloseTimer.Stop();
+        _audioPopupCoordinator.Dispose();
         _edgeAnimationTimer.Stop();
         _edgeHoverTimer.Stop();
         _environmentRecoveryTimer.Stop();
@@ -349,7 +358,8 @@ public partial class MainWindow : Window
         {
             _metricSettings = LayoutRuntimeService.ResolveComponentSettings(
                 _activeLayoutProfile,
-                e.Settings.Metrics);
+                e.Settings.Metrics,
+                _componentSettingsMapper);
             ApplyMetricSettings();
         }
 
@@ -653,14 +663,14 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (OutputDevicePopup.IsOpen)
+        if (_audioPopupCoordinator.IsOutputDeviceOpen)
         {
             e.Handled = true;
             QueueOutputDeviceFromWheel(e.Delta, useCompactStatus: false);
             return;
         }
 
-        if (VolumeControlPopup.IsOpen)
+        if (_audioPopupCoordinator.IsVolumeControlOpen)
         {
             e.Handled = true;
             QueueVolumeWheel(e.Delta, useCompactStatus: false);
@@ -879,13 +889,12 @@ public partial class MainWindow : Window
         }
 
         PlayerMenu.IsOpen = false;
-        OutputDevicePopup.IsOpen = false;
-        VolumeControlPopup.IsOpen = false;
+        _audioPopupCoordinator.CloseAll();
     }
 
     private bool HasOpenInteractiveOverlay()
     {
-        return _isMenuOpen || OutputDevicePopup.IsOpen || VolumeControlPopup.IsOpen;
+        return _isMenuOpen || _audioPopupCoordinator.IsAnyPrimaryOpen;
     }
 
     private void UpdateMouseHookState()

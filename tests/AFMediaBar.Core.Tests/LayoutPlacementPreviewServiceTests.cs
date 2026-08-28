@@ -1,6 +1,8 @@
 using AFMediaBar.Layout.Defaults;
 using AFMediaBar.Layout.Editing;
 using AFMediaBar.Layout.Models;
+using AFMediaBar.Layout.Widgets;
+using AFMediaBar.Components.Abstractions;
 using AFMediaBar.Services;
 
 namespace AFMediaBar.Core.Tests;
@@ -73,6 +75,37 @@ public sealed class LayoutPlacementPreviewServiceTests
     }
 
     [TestMethod]
+    public void WidgetCandidateUsesTheInjectedSchemaMapper()
+    {
+        var profile = LayoutDefaultTemplates.LoadDocument().Horizontal;
+        var container = profile.Containers.First(item => item.GridBounds is not null) with
+        {
+            GridBounds = new LayoutGridRect(0, 0, 8, 8),
+            PrimarySlot = LayoutSlot.Empty("preview-primary")
+        };
+        profile = profile with { Containers = [container], CollapseContainers = [] };
+        var mapper = new TrackingSettingsMapper(new Schema5ComponentSettingsMapper());
+        var tool = LayoutPlacementTool.Widget(
+            BuiltInWidgetTypeIds.Command,
+            string.Empty,
+            LayoutSlotKind.Primary);
+
+        var preview = LayoutPlacementPreviewService.Calculate(
+            profile,
+            tool,
+            1,
+            1,
+            1,
+            1,
+            widgetSettings: null,
+            settingsMapper: mapper);
+
+        Assert.IsTrue(preview.IsValid);
+        Assert.AreEqual(1, mapper.DefaultCalls);
+        Assert.AreEqual(1, mapper.MeasureCalls);
+    }
+
+    [TestMethod]
     public void ContainerCandidateReportsGridBoundaryValidity()
     {
         var profile = LayoutDefaultTemplates.LoadDocument().Horizontal with
@@ -108,5 +141,29 @@ public sealed class LayoutPlacementPreviewServiceTests
 
         Assert.IsTrue(valid.IsValid);
         Assert.IsFalse(invalid.IsValid);
+    }
+
+    private sealed class TrackingSettingsMapper(IComponentSettingsMapper inner) : IComponentSettingsMapper
+    {
+        public int DefaultCalls { get; private set; }
+        public int MeasureCalls { get; private set; }
+
+        public bool TryCreateDefaultSettings(string typeId, out WidgetSettings settings)
+        {
+            DefaultCalls++;
+            return inner.TryCreateDefaultSettings(typeId, out settings);
+        }
+
+        public bool TryMapSettings(LayoutWidgetElement widget, out IComponentSettings componentSettings) =>
+            inner.TryMapSettings(widget, out componentSettings);
+
+        public bool TryMapToSchema5(IComponentSettings componentSettings, out string typeId, out WidgetSettings settings) =>
+            inner.TryMapToSchema5(componentSettings, out typeId, out settings);
+
+        public bool TryMeasure(LayoutProfile profile, LayoutWidgetElement widget, out (int Width, int Height) measurement)
+        {
+            MeasureCalls++;
+            return inner.TryMeasure(profile, widget, out measurement);
+        }
     }
 }

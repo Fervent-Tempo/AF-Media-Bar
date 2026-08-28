@@ -1,4 +1,6 @@
 using AFMediaBar.Layout.Models;
+using AFMediaBar.Layout.Widgets;
+using AFMediaBar.Components.Abstractions;
 using AFMediaBar.Services;
 
 namespace AFMediaBar.Layout.Editing;
@@ -84,7 +86,8 @@ public static class LayoutOrderingService
         string instanceId,
         string targetContainerId,
         LayoutSlotKind targetSlot,
-        out LayoutProfile updated)
+        out LayoutProfile updated,
+        IComponentSettingsMapper? settingsMapper = null)
     {
         if (LayoutGridConstraintService.FindAny(profile, instanceId) is not LayoutWidgetElement widget)
         {
@@ -114,7 +117,7 @@ public static class LayoutOrderingService
                     }
                     : item).ToArray()
             };
-            if (LayoutGridConstraintService.ValidateProfile(collapseCandidate).Count == 0)
+            if (LayoutGridConstraintService.ValidateProfile(collapseCandidate, settingsMapper).Count == 0)
             {
                 updated = collapseCandidate;
                 return true;
@@ -143,7 +146,7 @@ public static class LayoutOrderingService
                     : item with { PrimarySlot = slot with { Children = slot.Children.Append(candidateWidget).ToArray() } }
                 : item).ToArray()
         };
-        var errors = LayoutGridConstraintService.ValidateProfile(candidate);
+        var errors = LayoutGridConstraintService.ValidateProfile(candidate, settingsMapper);
         if (errors.Count != 0)
         {
             updated = profile;

@@ -11,12 +11,15 @@ namespace AFMediaBar.Components.BuiltIn;
 public sealed class BuiltInComponentRegistry : IComponentRegistry
 {
     private static readonly IReadOnlyList<IComponentDefinition> Definitions = CreateDefinitions();
+    private static readonly IReadOnlyDictionary<string, IComponentDefinition> DefinitionsById =
+        Definitions.ToDictionary(
+            definition => definition.Metadata.TypeId,
+            StringComparer.Ordinal);
     public IReadOnlyList<IComponentDefinition> Items => Definitions;
 
     public bool TryGet(string typeId, out IComponentDefinition definition)
     {
-        definition = Definitions.FirstOrDefault(x => string.Equals(x.Metadata.TypeId, typeId, StringComparison.Ordinal))!;
-        return definition is not null;
+        return DefinitionsById.TryGetValue(typeId, out definition!);
     }
 
     private static IReadOnlyList<IComponentDefinition> CreateDefinitions()

@@ -44,7 +44,7 @@ public partial class MainWindow
             OnLayoutEdgePointerTimerTick,
             Dispatcher);
         _layoutEdgePointerTimer.Stop();
-        _componentSurface = new ComponentLayoutSurface();
+        _componentSurface = new ComponentLayoutSurface(_componentSettingsMapper, _componentViewFactory);
         _componentSurface.CommandRequested += ComponentSurface_OnCommandRequested;
         _componentSurface.MetricsRequested += ComponentSurface_OnMetricsRequested;
         _componentSurface.WheelRequested += ComponentSurface_OnWheelRequested;
@@ -123,7 +123,8 @@ public partial class MainWindow
         RefreshLayoutPointerStateAfterMeasure();
         _metricSettings = LayoutRuntimeService.ResolveComponentSettings(
             _activeLayoutProfile,
-            _settingsCoordinator.Current.Metrics);
+            _settingsCoordinator.Current.Metrics,
+            _componentSettingsMapper);
         ApplyComponentMetricRefreshInterval();
     }
 
@@ -144,7 +145,7 @@ public partial class MainWindow
                 continue;
             }
 
-            var surface = new ComponentLayoutSurface();
+            var surface = new ComponentLayoutSurface(_componentSettingsMapper, _componentViewFactory);
             surface.CommandRequested += ComponentSurface_OnCommandRequested;
             surface.MetricsRequested += ComponentSurface_OnMetricsRequested;
             surface.WheelRequested += ComponentSurface_OnWheelRequested;
@@ -852,8 +853,7 @@ public partial class MainWindow
             case MediaCommandKind.AdjustVolume:
                 if (e.PlacementTarget is not null)
                 {
-                    VolumeControlPopup.PlacementTarget = e.PlacementTarget;
-                    VolumeStatusPopup.PlacementTarget = e.PlacementTarget;
+                    _audioPopupCoordinator.SetPlacementTarget(MediaCommandKind.AdjustVolume, e.PlacementTarget);
                 }
                 VolumeControlButton_OnClick(
                     e.PlacementTarget ?? VolumeControlButton,
@@ -862,8 +862,7 @@ public partial class MainWindow
             case MediaCommandKind.SelectOutputDevice:
                 if (e.PlacementTarget is not null)
                 {
-                    OutputDevicePopup.PlacementTarget = e.PlacementTarget;
-                    OutputDeviceStatusPopup.PlacementTarget = e.PlacementTarget;
+                    _audioPopupCoordinator.SetPlacementTarget(MediaCommandKind.SelectOutputDevice, e.PlacementTarget);
                 }
                 OutputDeviceButton_OnClick(
                     e.PlacementTarget ?? OutputDeviceButton,
@@ -888,16 +887,14 @@ public partial class MainWindow
     {
         if (e.Command == MediaCommandKind.SelectOutputDevice)
         {
-            OutputDevicePopup.PlacementTarget = e.PlacementTarget;
-            OutputDeviceStatusPopup.PlacementTarget = e.PlacementTarget;
+            _audioPopupCoordinator.SetPlacementTarget(MediaCommandKind.SelectOutputDevice, e.PlacementTarget);
             QueueOutputDeviceFromWheel(e.Delta, useCompactStatus: true);
             return;
         }
 
         if (e.Command == MediaCommandKind.AdjustVolume)
         {
-            VolumeControlPopup.PlacementTarget = e.PlacementTarget;
-            VolumeStatusPopup.PlacementTarget = e.PlacementTarget;
+            _audioPopupCoordinator.SetPlacementTarget(MediaCommandKind.AdjustVolume, e.PlacementTarget);
             QueueVolumeWheel(e.Delta, useCompactStatus: true);
         }
     }
@@ -983,7 +980,8 @@ public partial class MainWindow
         _metricsTimer.Interval = TimeSpan.FromMilliseconds(
             LayoutRuntimeService.ResolveMetricRefreshInterval(
                 _activeLayoutProfile,
-                fallbackMilliseconds: 2_500));
+                fallbackMilliseconds: 2_500,
+                settingsMapper: _componentSettingsMapper));
     }
 
     private sealed class EdgeSurfaceState(

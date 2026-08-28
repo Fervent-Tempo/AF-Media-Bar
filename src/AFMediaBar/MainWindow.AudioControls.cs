@@ -31,7 +31,7 @@ public partial class MainWindow
     private readonly DispatcherTimer _audioMonitorTimer;
     private readonly DispatcherTimer _outputDeviceApplyTimer;
     private readonly DispatcherTimer _volumeApplyTimer;
-    private readonly DispatcherTimer _volumePopupCloseTimer;
+    private AudioPopupCoordinator _audioPopupCoordinator = null!;
     private IReadOnlyList<AudioDeviceOption> _outputDevices = [];
     private AudioMonitorService? _audioMonitorService;
     // 输出设备滚轮先预览候选项，停止输入一秒后再真正切换。
@@ -71,8 +71,7 @@ public partial class MainWindow
             return;
         }
 
-        OutputDevicePopup.IsOpen = false;
-        OutputDeviceStatusPopup.IsOpen = false;
+        _audioPopupCoordinator.CloseOutputDevicePopups();
         _outputDeviceApplyTimer.Stop();
         _pendingOutputDeviceId = null;
         _pendingOutputDeviceWheelSteps = 0;
@@ -97,10 +96,9 @@ public partial class MainWindow
             return;
         }
 
-        VolumeControlPopup.IsOpen = false;
-        VolumeStatusPopup.IsOpen = false;
+        _audioPopupCoordinator.CloseVolumePopups();
         _volumeApplyTimer.Stop();
-        _volumePopupCloseTimer.Stop();
+        _audioPopupCoordinator.StopVolumeInteractionClose();
         _pendingVolumePercent = null;
         _pendingVolumeWheelSteps = 0;
         _volumeWheelUsesCompactStatus = false;
@@ -210,7 +208,7 @@ public partial class MainWindow
     private void OutputDeviceHost_OnMouseEnter(object sender, MouseEventArgs e)
     {
         if (!_metricSettings.OutputDeviceSwitcherEnabled ||
-            OutputDevicePopup.IsOpen ||
+            _audioPopupCoordinator.IsOutputDeviceOpen ||
             _pendingOutputDeviceId is not null)
         {
             return;
@@ -246,7 +244,7 @@ public partial class MainWindow
         }
 
         OutputDeviceStatusPopup.IsOpen = false;
-        if (OutputDevicePopup.IsOpen)
+        if (_audioPopupCoordinator.IsOutputDeviceOpen)
         {
             OutputDevicePopup.IsOpen = false;
             return;
@@ -546,7 +544,7 @@ public partial class MainWindow
                 exception,
                 $"SourceId={sourceId};SourceName={sourceName}");
             SetCurrentApplicationVolume(null);
-            if (_showingVolumeHoverStatus || VolumeStatusPopup.IsOpen)
+            if (_showingVolumeHoverStatus || _audioPopupCoordinator.IsVolumeStatusOpen)
             {
                 VolumeStatusText.Text = Loc.Get("Main.Volume.ReadFailedFormat", exception.Message);
             }
@@ -569,7 +567,7 @@ public partial class MainWindow
             VolumePercentText.Text = snapshot is null
                 ? Loc.Get("Main.Volume.None")
                 : $"{snapshot.VolumePercent}%";
-            if (VolumeStatusPopup.IsOpen || _showingVolumeHoverStatus)
+            if (_audioPopupCoordinator.IsVolumeStatusOpen || _showingVolumeHoverStatus)
             {
                 UpdateVolumeStatusText();
             }
@@ -588,9 +586,9 @@ public partial class MainWindow
             return;
         }
 
-        VolumeStatusPopup.IsOpen = false;
-        _volumePopupCloseTimer.Stop();
-        if (VolumeControlPopup.IsOpen)
+        _audioPopupCoordinator.CloseVolumeStatus();
+        _audioPopupCoordinator.StopVolumeInteractionClose();
+        if (_audioPopupCoordinator.IsVolumeControlOpen)
         {
             VolumeControlPopup.IsOpen = false;
             return;
@@ -604,7 +602,7 @@ public partial class MainWindow
 
     private void VolumeControlHost_OnMouseEnter(object sender, MouseEventArgs e)
     {
-        if (!_metricSettings.VolumeControlEnabled || VolumeControlPopup.IsOpen)
+        if (!_metricSettings.VolumeControlEnabled || _audioPopupCoordinator.IsVolumeControlOpen)
         {
             return;
         }
@@ -623,9 +621,9 @@ public partial class MainWindow
     private void VolumeControlHost_OnMouseLeave(object sender, MouseEventArgs e)
     {
         _showingVolumeHoverStatus = false;
-        if (!_volumePopupCloseTimer.IsEnabled)
+        if (!_audioPopupCoordinator.IsVolumeClosePending)
         {
-            VolumeStatusPopup.IsOpen = false;
+            _audioPopupCoordinator.CloseVolumeStatus();
         }
     }
 
@@ -739,7 +737,7 @@ public partial class MainWindow
         }
         else
         {
-            VolumeStatusPopup.IsOpen = false;
+            _audioPopupCoordinator.CloseVolumeStatus();
             VolumeControlPopup.IsOpen = true;
         }
 
@@ -767,8 +765,7 @@ public partial class MainWindow
 
     private void ScheduleVolumeInteractionClose()
     {
-        _volumePopupCloseTimer.Stop();
-        _volumePopupCloseTimer.Start();
+        _audioPopupCoordinator.StartVolumeInteractionClose();
     }
 
     private void CurrentMediaVolumeSlider_OnPreviewMouseLeftButtonDown(
@@ -822,7 +819,7 @@ public partial class MainWindow
         };
         VolumePercentText.Text = $"{volumePercent}%";
         QueueVolumeApply(volumePercent);
-        VolumeStatusPopup.IsOpen = false;
+        _audioPopupCoordinator.CloseVolumeStatus();
         ScheduleVolumeInteractionClose();
     }
 
@@ -869,19 +866,11 @@ public partial class MainWindow
         }
     }
 
-    private void OnVolumePopupCloseTimerTick(object? sender, EventArgs e)
-    {
-        _volumePopupCloseTimer.Stop();
-        VolumeStatusPopup.IsOpen = false;
-        VolumeControlPopup.IsOpen = false;
-        _volumeWheelUsesCompactStatus = false;
-    }
-
     private void VolumeControlPopup_OnClosed(object? sender, EventArgs e)
     {
-        if (!VolumeStatusPopup.IsOpen)
+        if (!_audioPopupCoordinator.IsVolumeStatusOpen)
         {
-            _volumePopupCloseTimer.Stop();
+            _audioPopupCoordinator.StopVolumeInteractionClose();
         }
 
         UpdateMouseHookState();

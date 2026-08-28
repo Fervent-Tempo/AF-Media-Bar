@@ -385,7 +385,7 @@ public partial class MainWindow
         {
             var openToRight = left + width / 2 <=
                 desktopBounds.Left + desktopBounds.Width / 2;
-            SetPopupPlacement(
+            _audioPopupCoordinator.SetPlacement(
                 openToRight ? PlacementMode.Right : PlacementMode.Left,
                 openToRight ? 7 : -7,
                 0);
@@ -394,7 +394,7 @@ public partial class MainWindow
 
         var openDownward = top + height / 2 <=
             desktopBounds.Top + desktopBounds.Height / 2;
-        SetPopupPlacement(
+        _audioPopupCoordinator.SetPlacement(
             openDownward ? PlacementMode.Bottom : PlacementMode.Top,
             0,
             openDownward ? 7 : -7);

@@ -4,9 +4,13 @@ namespace AFMediaBar.Layout.Widgets;
 
 public static class WidgetMeasurementService
 {
-    public static (int Width, int Height) MeasureRequiredCells(LayoutProfile profile, LayoutWidgetElement widget)
+    public static (int Width, int Height) MeasureRequiredCells(
+        LayoutProfile profile,
+        LayoutWidgetElement widget,
+        IComponentSettingsMapper? settingsMapper = null)
     {
-        if (ComponentDefinitionAdapter.TryMeasure(profile, widget, out var migratedMeasurement))
+        var mapper = settingsMapper ?? ComponentDefinitionAdapter.Default;
+        if (mapper.TryMeasure(profile, widget, out var migratedMeasurement))
         {
             return migratedMeasurement;
         }

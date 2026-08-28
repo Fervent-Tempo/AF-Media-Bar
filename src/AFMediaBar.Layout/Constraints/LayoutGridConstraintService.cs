@@ -1,6 +1,7 @@
 using AFMediaBar.Layout.Editing;
 using AFMediaBar.Layout.Models;
 using AFMediaBar.Layout.Widgets;
+using AFMediaBar.Components.Abstractions;
 
 namespace AFMediaBar.Services;
 
@@ -112,9 +113,13 @@ public static class LayoutGridConstraintService
             LayoutSlot.Empty(normalizedKind == LayoutContainerKind.HoverSwitch ? "near" : "unused"));
     }
 
-    public static LayoutWidgetElement CreateWidget(string typeId)
+    public static LayoutWidgetElement CreateWidget(string typeId, IComponentSettingsMapper? settingsMapper = null)
     {
-        var settings = LayoutComponentCatalog.CreateDefaultSettings(typeId);
+        var mapper = settingsMapper ?? ComponentDefinitionAdapter.Default;
+        if (!mapper.TryCreateDefaultSettings(typeId, out var settings))
+        {
+            throw new ArgumentException($"Unknown layout component TypeId: {typeId}", nameof(typeId));
+        }
         return new LayoutWidgetElement(
             $"widget-{Guid.NewGuid():N}",
             true,
@@ -199,7 +204,9 @@ public static class LayoutGridConstraintService
     /// 验证整个档案并返回全部错误；结构化失败原因与指南第 5 节一致。
     /// Validates the whole profile and returns every error with the structured reasons from guide section 5.
     /// </summary>
-    public static IReadOnlyList<LayoutValidationError> ValidateProfile(LayoutProfile profile)
+    public static IReadOnlyList<LayoutValidationError> ValidateProfile(
+        LayoutProfile profile,
+        IComponentSettingsMapper? settingsMapper = null)
     {
         var errors = new List<LayoutValidationError>();
         var grid = profile.Grid ?? LayoutGridSettings.Default;
@@ -207,12 +214,13 @@ public static class LayoutGridConstraintService
         ValidateUniqueIds(profile, errors);
         ValidateNonCollapseContainers(profile, grid, errors);
         ValidateCollapseContainers(profile, grid, errors);
-        ValidateWidgets(profile, errors);
+        ValidateWidgets(profile, errors, settingsMapper);
         ValidateConnectivity(profile, errors);
         return errors;
     }
 
-    public static bool IsProfileValid(LayoutProfile profile) => ValidateProfile(profile).Count == 0;
+    public static bool IsProfileValid(LayoutProfile profile, IComponentSettingsMapper? settingsMapper = null) =>
+        ValidateProfile(profile, settingsMapper).Count == 0;
 
     private static void ValidateUniqueIds(LayoutProfile profile, ICollection<LayoutValidationError> errors)
     {
@@ -374,7 +382,10 @@ public static class LayoutGridConstraintService
         }
     }
 
-    private static void ValidateWidgets(LayoutProfile profile, ICollection<LayoutValidationError> errors)
+    private static void ValidateWidgets(
+        LayoutProfile profile,
+        ICollection<LayoutValidationError> errors,
+        IComponentSettingsMapper? settingsMapper)
     {
         foreach (var container in profile.Containers)
         {
@@ -389,7 +400,7 @@ public static class LayoutGridConstraintService
             {
                 foreach (var widget in container.PrimarySlot.Children.OfType<LayoutWidgetElement>())
                 {
-                    if (widget.Enabled && LayoutComponentCatalog.IsInteractive(widget))
+                    if (widget.Enabled && LayoutComponentCatalog.IsInteractive(widget, settingsMapper))
                     {
                         errors.Add(new LayoutValidationError(widget.InstanceId, LayoutGridFailure.WidgetNotAllowed));
                     }
@@ -599,7 +610,8 @@ public static class LayoutGridConstraintService
         LayoutProfile profile,
         string containerId,
         LayoutSlotKind slotKind,
-        LayoutWidgetElement widget)
+        LayoutWidgetElement widget,
+        IComponentSettingsMapper? settingsMapper = null)
     {
         if (FindAny(profile, widget.InstanceId) is not null)
         {
@@ -631,7 +643,7 @@ public static class LayoutGridConstraintService
                             : container.SecondarySlot
                     })
             };
-            return ValidateCandidate(candidate, widget.InstanceId);
+            return ValidateCandidate(candidate, widget.InstanceId, settingsMapper);
         }
 
         if (FindCollapse(profile, containerId) is { } collapse && slotKind == LayoutSlotKind.Expanded)
@@ -648,7 +660,7 @@ public static class LayoutGridConstraintService
                         }
                     })
             };
-            return ValidateCandidate(candidate, widget.InstanceId);
+            return ValidateCandidate(candidate, widget.InstanceId, settingsMapper);
         }
 
         return LayoutGridEditResult.Fail(LayoutGridFailure.ContainerNotFound);
@@ -660,21 +672,23 @@ public static class LayoutGridConstraintService
         int startCellX,
         int startCellY,
         int currentCellX,
-        int currentCellY)
+        int currentCellY,
+        IComponentSettingsMapper? settingsMapper = null)
     {
         var rect = LayoutGridRect.FromDrag(startCellX, startCellY, currentCellX, currentCellY);
         if (tool.IsContainer)
         {
-            return TryCreateContainerFromRect(profile, tool.ContainerKind!.Value, rect);
+            return TryCreateContainerFromRect(profile, tool.ContainerKind!.Value, rect, settingsMapper);
         }
 
-        return TryCreateWidgetFromRect(profile, tool, rect);
+        return TryCreateWidgetFromRect(profile, tool, rect, settingsMapper);
     }
 
     private static LayoutGridEditResult TryCreateContainerFromRect(
         LayoutProfile profile,
         LayoutContainerKind kind,
-        LayoutGridRect rect)
+        LayoutGridRect rect,
+        IComponentSettingsMapper? settingsMapper)
     {
         var container = CreateContainer(kind) with { GridBounds = rect };
         var candidate = profile with
@@ -686,13 +700,14 @@ public static class LayoutGridConstraintService
             return LayoutGridEditResult.Fail(LayoutGridFailure.OutOfGrid);
         }
 
-        return ValidateCandidate(candidate, container.InstanceId);
+        return ValidateCandidate(candidate, container.InstanceId, settingsMapper);
     }
 
     private static LayoutGridEditResult TryCreateWidgetFromRect(
         LayoutProfile profile,
         LayoutPlacementTool tool,
-        LayoutGridRect rect)
+        LayoutGridRect rect,
+        IComponentSettingsMapper? settingsMapper)
     {
         if (tool.OwnerContainerId is not { } ownerId)
         {
@@ -724,7 +739,15 @@ public static class LayoutGridConstraintService
             rect.Y - ownerBounds.Y,
             rect.Width,
             rect.Height);
-        var widget = CreateWidget(tool.WidgetTypeId!) with { GridBounds = local };
+        LayoutWidgetElement widget;
+        try
+        {
+            widget = CreateWidget(tool.WidgetTypeId!, settingsMapper) with { GridBounds = local };
+        }
+        catch (ArgumentException)
+        {
+            return LayoutGridEditResult.Fail(LayoutGridFailure.NotSupported);
+        }
         if (!LayoutComponentCatalog.TryGet(tool.WidgetTypeId!, out _))
         {
             return LayoutGridEditResult.Fail(LayoutGridFailure.NotSupported);
@@ -738,14 +761,15 @@ public static class LayoutGridConstraintService
             ownerId,
             tool.SlotKind,
             slot with { Children = slot.Children.Append(widget).ToArray() });
-        return ValidateCandidate(candidate, widget.InstanceId);
+        return ValidateCandidate(candidate, widget.InstanceId, settingsMapper);
     }
 
     public static LayoutGridEditResult TryMove(
         LayoutProfile profile,
         string instanceId,
         int deltaX,
-        int deltaY)
+        int deltaY,
+        IComponentSettingsMapper? settingsMapper = null)
     {
         if (deltaX == 0 && deltaY == 0)
         {
@@ -773,7 +797,7 @@ public static class LayoutGridConstraintService
                             bounds.Height)
                     })
                 };
-                return ValidateCandidate(candidate, instanceId);
+                return ValidateCandidate(candidate, instanceId, settingsMapper);
             }
             case LayoutCollapseContainer collapse when collapse.GridBounds is { } bounds:
             {
@@ -788,7 +812,7 @@ public static class LayoutGridConstraintService
                             bounds.Height)
                     })
                 };
-                return ValidateCandidate(candidate, instanceId);
+                return ValidateCandidate(candidate, instanceId, settingsMapper);
             }
             case LayoutWidgetElement widget when widget.GridBounds is { } bounds:
             {
@@ -806,7 +830,7 @@ public static class LayoutGridConstraintService
                     return LayoutGridEditResult.Fail(LayoutGridFailure.ContainerNotFound);
                 }
 
-                return ValidateCandidate(ReplaceWidget(profile, owner.Value.ContainerId, owner.Value.SlotKind, next), instanceId);
+                return ValidateCandidate(ReplaceWidget(profile, owner.Value.ContainerId, owner.Value.SlotKind, next), instanceId, settingsMapper);
             }
             default:
                 return LayoutGridEditResult.Fail(LayoutGridFailure.MissingGridBounds);
@@ -817,7 +841,8 @@ public static class LayoutGridConstraintService
         LayoutProfile profile,
         string instanceId,
         LayoutEdge edge,
-        int delta)
+        int delta,
+        IComponentSettingsMapper? settingsMapper = null)
     {
         if (delta == 0)
         {
@@ -867,7 +892,7 @@ public static class LayoutGridConstraintService
                 {
                     Containers = Replace(profile.Containers, shifted with { GridBounds = resized })
                 };
-                return ValidateCandidate(candidate, instanceId);
+                return ValidateCandidate(candidate, instanceId, settingsMapper);
             }
             case LayoutCollapseContainer collapse when collapse.GridBounds is { } bounds:
             {
@@ -886,7 +911,7 @@ public static class LayoutGridConstraintService
                 {
                     CollapseContainers = Replace(profile.CollapseContainers, collapse with { GridBounds = resized })
                 };
-                return ValidateCandidate(candidate, instanceId);
+                return ValidateCandidate(candidate, instanceId, settingsMapper);
             }
             case LayoutWidgetElement widget when widget.GridBounds is { } bounds:
             {
@@ -911,7 +936,8 @@ public static class LayoutGridConstraintService
 
                 return ValidateCandidate(
                     ReplaceWidget(profile, owner.Value.ContainerId, owner.Value.SlotKind, widget with { GridBounds = resized }),
-                    instanceId);
+                    instanceId,
+                    settingsMapper);
             }
             default:
                 return LayoutGridEditResult.Fail(LayoutGridFailure.MissingGridBounds);
@@ -1044,7 +1070,8 @@ public static class LayoutGridConstraintService
     public static LayoutGridEditResult TrySetGridBounds(
         LayoutProfile profile,
         string instanceId,
-        LayoutGridRect rect)
+        LayoutGridRect rect,
+        IComponentSettingsMapper? settingsMapper = null)
     {
         var target = FindAny(profile, instanceId);
         if (target is null)
@@ -1060,7 +1087,7 @@ public static class LayoutGridConstraintService
                 {
                     Containers = Replace(profile.Containers, container with { GridBounds = rect })
                 };
-                return ValidateCandidate(candidate, instanceId);
+                return ValidateCandidate(candidate, instanceId, settingsMapper);
             }
             case LayoutCollapseContainer collapse:
             {
@@ -1068,7 +1095,7 @@ public static class LayoutGridConstraintService
                 {
                     CollapseContainers = Replace(profile.CollapseContainers, collapse with { GridBounds = rect })
                 };
-                return ValidateCandidate(candidate, instanceId);
+                return ValidateCandidate(candidate, instanceId, settingsMapper);
             }
             case LayoutWidgetElement widget:
             {
@@ -1080,7 +1107,8 @@ public static class LayoutGridConstraintService
 
                 return ValidateCandidate(
                     ReplaceWidget(profile, owner.Value.ContainerId, owner.Value.SlotKind, widget with { GridBounds = rect }),
-                    instanceId);
+                    instanceId,
+                    settingsMapper);
             }
             default:
                 return LayoutGridEditResult.Fail(LayoutGridFailure.MissingGridBounds);
@@ -1191,9 +1219,12 @@ public static class LayoutGridConstraintService
 
     // ---------- 内部工具 ----------
 
-    private static LayoutGridEditResult ValidateCandidate(LayoutProfile candidate, string instanceId)
+    private static LayoutGridEditResult ValidateCandidate(
+        LayoutProfile candidate,
+        string instanceId,
+        IComponentSettingsMapper? settingsMapper = null)
     {
-        var errors = ValidateProfile(candidate);
+        var errors = ValidateProfile(candidate, settingsMapper);
         if (errors.Count == 0)
         {
             return LayoutGridEditResult.Ok(candidate);

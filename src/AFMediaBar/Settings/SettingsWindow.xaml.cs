@@ -6,6 +6,9 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using AFMediaBar.Models;
 using AFMediaBar.Services;
+using AFMediaBar.Components.Abstractions;
+using AFMediaBar.Components.Wpf;
+using AFMediaBar.Layout.Widgets;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 using Wpf.Ui.Markup;
@@ -23,6 +26,9 @@ public partial class SettingsWindow : FluentWindow
     private readonly SettingsCoordinator _coordinator;
     private readonly UpdateService _updateService;
     private readonly SettingsWindowViewModel _viewModel;
+    private readonly IComponentRegistry _componentRegistry;
+    private readonly IComponentSettingsMapper _componentSettingsMapper;
+    private readonly IComponentViewFactory _componentViewFactory;
     private readonly DispatcherTimer _scaleSaveTimer;
     private readonly DispatcherTimer _fontSaveTimer;
     private readonly SystemThemeService? _systemThemeService;
@@ -33,11 +39,18 @@ public partial class SettingsWindow : FluentWindow
     internal SettingsWindow(
         SettingsCoordinator coordinator,
         UpdateService updateService,
-        SettingsWindowViewModel viewModel)
+        SettingsWindowViewModel viewModel,
+        IComponentRegistry componentRegistry,
+        IComponentSettingsMapper componentSettingsMapper,
+        IComponentViewFactory? componentViewFactory = null)
     {
         _coordinator = coordinator;
         _updateService = updateService;
         _viewModel = viewModel;
+        _componentRegistry = componentRegistry;
+        _componentSettingsMapper = componentSettingsMapper;
+        _componentViewFactory = componentViewFactory ?? new DefaultComponentViewFactory();
+        _layoutEditorCommands = new LayoutEditorCommandProcessor(new CoreLayoutConstraintAdapter(_componentSettingsMapper));
         DataContext = _viewModel;
         _systemThemeService = (Application.Current as App)?.ThemeService;
         _scaleSaveTimer = new DispatcherTimer(

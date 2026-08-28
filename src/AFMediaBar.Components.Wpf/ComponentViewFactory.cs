@@ -17,9 +17,23 @@ using AFMediaBar.Components.Wpf.BuiltIn.Volume;
 namespace AFMediaBar.Components.Wpf;
 
 /// <summary>Creates presentation state for migrated component settings.</summary>
-public static class ComponentViewFactory
+public interface IComponentViewFactory
 {
-    public static ComponentViewModelBase? Create(
+    ComponentViewModelBase? Create(
+        string instanceId,
+        IComponentSettings settings,
+        Action<object?>? sourceRequested = null,
+        Action<PlaybackCommandKind, object?>? commandRequested = null,
+        Action<object?>? deviceRequested = null,
+        Action<object?>? volumeRequested = null,
+        Action<int, object?>? outputDeviceWheelRequested = null,
+        Action<int, object?>? volumeWheelRequested = null,
+        Action? metricsRequested = null);
+}
+
+public sealed class DefaultComponentViewFactory : IComponentViewFactory
+{
+    public ComponentViewModelBase? Create(
         string instanceId,
         IComponentSettings settings,
         Action<object?>? sourceRequested = null,
@@ -44,4 +58,33 @@ public static class ComponentViewFactory
             _ => null
         };
     }
+}
+
+/// <summary>
+/// Compatibility facade for callers that have not yet adopted dependency injection.
+/// </summary>
+public static class ComponentViewFactory
+{
+    private static readonly IComponentViewFactory Default = new DefaultComponentViewFactory();
+
+    public static ComponentViewModelBase? Create(
+        string instanceId,
+        IComponentSettings settings,
+        Action<object?>? sourceRequested = null,
+        Action<PlaybackCommandKind, object?>? commandRequested = null,
+        Action<object?>? deviceRequested = null,
+        Action<object?>? volumeRequested = null,
+        Action<int, object?>? outputDeviceWheelRequested = null,
+        Action<int, object?>? volumeWheelRequested = null,
+        Action? metricsRequested = null) =>
+        Default.Create(
+            instanceId,
+            settings,
+            sourceRequested,
+            commandRequested,
+            deviceRequested,
+            volumeRequested,
+            outputDeviceWheelRequested,
+            volumeWheelRequested,
+            metricsRequested);
 }

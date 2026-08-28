@@ -6,6 +6,11 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using AFMediaBar.Controls;
+using AFMediaBar.Components.BuiltIn;
+using AFMediaBar.Components.Wpf;
+using AFMediaBar.Components.Abstractions;
+using ComponentKind = AFMediaBar.Components.Abstractions.ComponentKind;
+using ComponentRegistry = AFMediaBar.Components.Abstractions.IComponentRegistry;
 using AFMediaBar.Layout.Defaults;
 using AFMediaBar.Layout.Editing;
 using AFMediaBar.Layout.Widgets;
@@ -32,8 +37,7 @@ public partial class SettingsWindow
     private const string ExistingWidgetDragFormat = LayoutEditorDragFormats.ExistingWidget;
     private const string ExistingContainerDragFormat = LayoutEditorDragFormats.ExistingContainer;
 
-    private readonly LayoutEditorCommandProcessor _layoutEditorCommands =
-        new(new CoreLayoutConstraintAdapter());
+    private readonly LayoutEditorCommandProcessor _layoutEditorCommands;
     private LayoutProfileKey _layoutEditorProfileKey = LayoutProfileKey.Horizontal;
     private LayoutEditorSelection? _layoutEditorSelection;
     private LayoutEditorSession? _layoutEditorSession;
@@ -273,17 +277,17 @@ public partial class SettingsWindow
 
         var parts = paletteToken.Split('|', 2);
         var typeId = parts[0];
-        var settings = ComponentCatalog.CreateDefaultSettings(typeId);
+        var settings = CreateDefaultWidgetSettings(typeId);
         if (parts.Length == 2 &&
             int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var option))
         {
             settings = typeId switch
             {
-                BuiltInWidgetTypeIds.Command when Enum.IsDefined(typeof(MediaCommandKind), option) =>
+                ComponentTypeIds.PlaybackCommand when Enum.IsDefined(typeof(MediaCommandKind), option) =>
                     new CommandWidgetSettings(
                         (MediaCommandKind)option,
                         CommandWidgetSettings.DefaultButtonSizeDip),
-                BuiltInWidgetTypeIds.MediaText when Enum.IsDefined(typeof(MediaTextKind), option) =>
+                ComponentTypeIds.MediaText when Enum.IsDefined(typeof(MediaTextKind), option) =>
                     new MediaTextWidgetSettings((MediaTextKind)option, false, 14, 1),
                 _ => settings
             };
@@ -322,7 +326,7 @@ public partial class SettingsWindow
             LayoutGridSettings.Default,
             [container],
             []);
-        var surface = new ComponentLayoutSurface();
+        var surface = new ComponentLayoutSurface(_componentSettingsMapper, _componentViewFactory);
         surface.SetDesignMode(true);
         surface.SetDesignPlacementArmed(_layoutPlacementTool is not null);
         surface.SetUseMenuThemeForContent(true);
@@ -361,7 +365,7 @@ public partial class SettingsWindow
             LayoutGridSettings.Default,
             [container],
             []);
-        var surface = new ComponentLayoutSurface();
+        var surface = new ComponentLayoutSurface(_componentSettingsMapper, _componentViewFactory);
         surface.SetDesignMode(true);
         surface.Apply(profile, pointerNear: hover);
         surface.IsHitTestVisible = false;
@@ -401,7 +405,7 @@ public partial class SettingsWindow
             LayoutGridSettings.Default,
             [anchor],
             [collapse]);
-        var surface = new ComponentLayoutSurface();
+        var surface = new ComponentLayoutSurface(_componentSettingsMapper, _componentViewFactory);
         surface.SetDesignMode(true);
         surface.SetMediaSnapshot(CreateLayoutPreviewSnapshot());
         surface.ApplyEdge(profile, collapse);
@@ -410,7 +414,7 @@ public partial class SettingsWindow
         return surface;
     }
 
-    private static IEnumerable<PaletteEntry> EnumeratePaletteEntries()
+    private IEnumerable<PaletteEntry> EnumeratePaletteEntries()
     {
         // 容器作为组件放入分类选择，提供预览图片。
         // Containers join the component palette with a live preview.
@@ -430,25 +434,26 @@ public partial class SettingsWindow
             Loc.Get("Settings.Layout.EditorAddEdgeContainer"),
             ComponentCategory.Layout);
 
-        foreach (var definition in ComponentCatalog.All)
+        foreach (var definition in _componentRegistry.Items.Where(item => item.Kind == ComponentKind.Functional))
         {
-            if (definition.TypeId == BuiltInWidgetTypeIds.Command)
+            var metadata = definition.Metadata;
+            if (metadata.TypeId == ComponentTypeIds.PlaybackCommand)
             {
                 foreach (var command in Enum.GetValues<MediaCommandKind>())
                 {
                     yield return new PaletteEntry(
-                        $"{definition.TypeId}|{(int)command}",
+                        $"{metadata.TypeId}|{(int)command}",
                         Loc.Get(GetCommandOptionKey(command)),
-                        Loc.Get(definition.DescriptionResourceKey),
+                        Loc.Get(metadata.DescriptionResourceKey),
                         command is MediaCommandKind.AdjustVolume or MediaCommandKind.SelectOutputDevice
                             ? ComponentCategory.Audio
-                            : definition.Category);
+                            : ToLegacyComponentCategory(metadata.Category));
                 }
 
                 continue;
             }
 
-            if (definition.TypeId == BuiltInWidgetTypeIds.MediaText)
+            if (metadata.TypeId == ComponentTypeIds.MediaText)
             {
                 foreach (var kind in new[]
                 {
@@ -458,20 +463,20 @@ public partial class SettingsWindow
                 })
                 {
                     yield return new PaletteEntry(
-                        $"{definition.TypeId}|{(int)kind}",
+                        $"{metadata.TypeId}|{(int)kind}",
                         GetMediaTextOptionLabel(kind),
-                        Loc.Get(definition.DescriptionResourceKey),
-                        definition.Category);
+                        Loc.Get(metadata.DescriptionResourceKey),
+                        ToLegacyComponentCategory(metadata.Category));
                 }
 
                 continue;
             }
 
             yield return new PaletteEntry(
-                definition.TypeId,
-                Loc.Get(definition.NameResourceKey),
-                Loc.Get(definition.DescriptionResourceKey),
-                definition.Category);
+                metadata.TypeId,
+                Loc.Get(metadata.NameResourceKey),
+                Loc.Get(metadata.DescriptionResourceKey),
+                ToLegacyComponentCategory(metadata.Category));
         }
     }
 
@@ -1238,17 +1243,17 @@ public partial class SettingsWindow
     {
         var parts = paletteToken.Split('|', 2);
         var typeId = parts[0];
-        var settings = ComponentCatalog.CreateDefaultSettings(typeId);
+        var settings = CreateDefaultWidgetSettings(typeId);
         if (parts.Length == 2 &&
             int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var option))
         {
             settings = typeId switch
             {
-                BuiltInWidgetTypeIds.Command when Enum.IsDefined(typeof(MediaCommandKind), option) =>
+                ComponentTypeIds.PlaybackCommand when Enum.IsDefined(typeof(MediaCommandKind), option) =>
                     new CommandWidgetSettings(
                         (MediaCommandKind)option,
                         CommandWidgetSettings.DefaultButtonSizeDip),
-                BuiltInWidgetTypeIds.MediaText when Enum.IsDefined(typeof(MediaTextKind), option) =>
+                ComponentTypeIds.MediaText when Enum.IsDefined(typeof(MediaTextKind), option) =>
                     new MediaTextWidgetSettings(
                         (MediaTextKind)option,
                         true,
@@ -1350,7 +1355,7 @@ public partial class SettingsWindow
         var (currentX, currentY) = LayoutCanvasToCell(canvas, point);
         candidate ??= LayoutGridRect.FromDrag(startX, startY, currentX, currentY);
         var profile = _coordinator.Current.Layout.Get(_layoutEditorProfileKey);
-        var result = LayoutPlacementService.TryCreateContainer(profile, _layoutPlacementTool!, candidate);
+        var result = LayoutPlacementService.TryCreateContainer(profile, _layoutPlacementTool!, candidate, _componentSettingsMapper);
         HideLayoutDrawGhost(canvas);
         if (!result.Success || result.Updated is null)
         {
@@ -1360,7 +1365,7 @@ public partial class SettingsWindow
 
         TryApplyProfile(current =>
         {
-            var currentResult = LayoutPlacementService.TryCreateContainer(current, _layoutPlacementTool!, candidate);
+            var currentResult = LayoutPlacementService.TryCreateContainer(current, _layoutPlacementTool!, candidate, _componentSettingsMapper);
             return currentResult.Success ? currentResult.Updated : null;
         });
     }
@@ -1397,7 +1402,7 @@ public partial class SettingsWindow
             true,
             LayoutGeometry.Auto,
             typeId,
-            _layoutWidgetSettings ?? ComponentCatalog.CreateDefaultSettings(typeId),
+            _layoutWidgetSettings ?? CreateDefaultWidgetSettings(typeId),
             null,
             null,
             null,
@@ -1407,7 +1412,8 @@ public partial class SettingsWindow
                     current,
                     owner.Value.ContainerId,
                     owner.Value.SlotKind,
-                    widget).Updated))
+                    widget,
+                    _componentSettingsMapper).Updated))
         {
             LayoutEditorMessageText.Text = Loc.Get("Settings.Layout.EditorAddFailed");
         }
@@ -1576,7 +1582,8 @@ public partial class SettingsWindow
             currentX,
             currentY,
             _layoutWidgetSettings,
-            ResolveVisibleSlot);
+            ResolveVisibleSlot,
+            _componentSettingsMapper);
         var rect = preview.Bounds;
         _layoutDrawCandidate = preview.IsValid ? rect : null;
 
@@ -2198,7 +2205,8 @@ public partial class SettingsWindow
                 instanceId,
                 target.ContainerId,
                 target.SlotKind,
-                out var updated) ? updated : null))
+                out var updated,
+                _componentSettingsMapper) ? updated : null))
         {
             LayoutEditorMessageText.Text = Loc.Get("Settings.Layout.EditorAddFailed");
         }
@@ -2208,17 +2216,17 @@ public partial class SettingsWindow
     {
         var parts = paletteToken.Split('|', 2);
         var typeId = parts[0];
-        var settings = ComponentCatalog.CreateDefaultSettings(typeId);
+        var settings = CreateDefaultWidgetSettings(typeId);
         if (parts.Length == 2 &&
             int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var option))
         {
             settings = typeId switch
             {
-                BuiltInWidgetTypeIds.Command when Enum.IsDefined(typeof(MediaCommandKind), option) =>
+                ComponentTypeIds.PlaybackCommand when Enum.IsDefined(typeof(MediaCommandKind), option) =>
                     new CommandWidgetSettings(
                         (MediaCommandKind)option,
                         CommandWidgetSettings.DefaultButtonSizeDip),
-                BuiltInWidgetTypeIds.MediaText when Enum.IsDefined(typeof(MediaTextKind), option) =>
+                ComponentTypeIds.MediaText when Enum.IsDefined(typeof(MediaTextKind), option) =>
                     new MediaTextWidgetSettings(
                         (MediaTextKind)option,
                         true,
@@ -2259,7 +2267,8 @@ public partial class SettingsWindow
                 working,
                 destination.ContainerId,
                 destination.SlotKind,
-                widget).Updated;
+                widget,
+                _componentSettingsMapper).Updated;
         }))
         {
             LayoutEditorMessageText.Text = Loc.Get("Settings.Layout.EditorAddFailed");
@@ -2425,8 +2434,10 @@ public partial class SettingsWindow
     {
         var viewModel = new LayoutEditorViewModel(
             document,
+            registry: _componentRegistry,
             localize: Loc.Get,
-            profileKey: _layoutEditorProfileKey);
+            profileKey: _layoutEditorProfileKey,
+            settingsMapper: _componentSettingsMapper);
         viewModel.DocumentChanged += LayoutEditorViewModel_OnDocumentChanged;
         return viewModel;
     }
@@ -2454,7 +2465,7 @@ public partial class SettingsWindow
         };
     }
 
-    private static string ResolveLayoutSelectionLabel(object model) => model switch
+    private string ResolveLayoutSelectionLabel(object model) => model switch
     {
         LayoutWidgetElement widget => GetWidgetTitle(widget),
         LayoutContainerElement { ContainerKind: LayoutContainerKind.HoverSwitch } =>
@@ -2530,7 +2541,7 @@ public partial class SettingsWindow
                     value => UpdateWidget(widget, current => ((ArtworkWidgetSettings)current) with { UseMediaPrimaryColor = value }));
                 break;
             case MediaTextWidgetSettings text:
-                if (widget.TypeId == BuiltInWidgetTypeIds.MediaText)
+                if (widget.TypeId == ComponentTypeIds.MediaText)
                 {
                     AddEnumRow(panel, "Settings.Layout.PropertyTextKind", text.TextKind,
                         new Dictionary<MediaTextKind, string>
@@ -3090,7 +3101,8 @@ public partial class SettingsWindow
         TryApplyProfile(profile => LayoutPropertyEditService.TryResetWidgetProperties(
             profile,
             widget.InstanceId,
-            out var updated) ? updated : null);
+            out var updated,
+            _componentSettingsMapper) ? updated : null);
     }
 
     private void UpdateEdgeContainer(
@@ -3514,16 +3526,28 @@ public partial class SettingsWindow
         string resourceKey) =>
         element.SetResourceReference(property, resourceKey);
 
-    private static string GetWidgetTitle(LayoutWidgetElement widget)
+    private WidgetSettings CreateDefaultWidgetSettings(string typeId)
+    {
+        if (_componentSettingsMapper.TryCreateDefaultSettings(typeId, out var settings))
+        {
+            return settings;
+        }
+
+        throw new ArgumentException(
+            $"Unknown layout component TypeId: {typeId}",
+            nameof(typeId));
+    }
+
+    private string GetWidgetTitle(LayoutWidgetElement widget)
     {
         return widget.Settings switch
         {
             CommandWidgetSettings command => GetCommandOptionLabel(command.Command),
-            MediaTextWidgetSettings text when widget.TypeId == BuiltInWidgetTypeIds.MediaText =>
+            MediaTextWidgetSettings text when widget.TypeId == ComponentTypeIds.MediaText =>
                 GetMediaTextOptionLabel(text.TextKind),
             MetricsWidgetSettings metrics => GetMetricOptionLabel(metrics.Metric),
-            _ when ComponentCatalog.TryGet(widget.TypeId, out var definition) =>
-                Loc.Get(definition.NameResourceKey),
+            _ when _componentRegistry.TryGet(widget.TypeId, out var definition) =>
+                Loc.Get(definition.Metadata.NameResourceKey),
             _ => widget.TypeId
         };
     }
@@ -3590,6 +3614,16 @@ public partial class SettingsWindow
         ComponentCategory.Audio => "Settings.Layout.CategoryAudio",
         ComponentCategory.System => "Settings.Layout.CategorySystem",
         _ => "Settings.Layout.CategoryLayout"
+    };
+
+    private static ComponentCategory ToLegacyComponentCategory(
+        AFMediaBar.Components.Abstractions.ComponentCategory category) => category switch
+    {
+        AFMediaBar.Components.Abstractions.ComponentCategory.Media => ComponentCategory.Media,
+        AFMediaBar.Components.Abstractions.ComponentCategory.Playback => ComponentCategory.Controls,
+        AFMediaBar.Components.Abstractions.ComponentCategory.Audio => ComponentCategory.Audio,
+        AFMediaBar.Components.Abstractions.ComponentCategory.System => ComponentCategory.System,
+        _ => ComponentCategory.Layout
     };
 
     private sealed class LayoutDropTargetAdorner(UIElement adornedElement) : Adorner(adornedElement)

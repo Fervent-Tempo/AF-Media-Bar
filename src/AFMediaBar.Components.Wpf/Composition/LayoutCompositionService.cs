@@ -5,8 +5,16 @@ using AFMediaBar.Layout.Widgets;
 
 namespace AFMediaBar.Components.Wpf.Composition;
 
-public sealed class LayoutCompositionService(ComponentInteractionCallbacks callbacks)
+public sealed class LayoutCompositionService(
+    ComponentInteractionCallbacks callbacks,
+    IComponentSettingsMapper? settingsMapper = null,
+    IComponentViewFactory? viewFactory = null)
 {
+    private readonly IComponentSettingsMapper _settingsMapper =
+        settingsMapper ?? ComponentDefinitionAdapter.Default;
+    private readonly IComponentViewFactory _viewFactory =
+        viewFactory ?? new DefaultComponentViewFactory();
+
     public LayoutCompositionViewModel Compose(LayoutProfile profile)
     {
         var components = new Dictionary<string, ComponentViewModelBase>(StringComparer.Ordinal);
@@ -60,8 +68,8 @@ public sealed class LayoutCompositionService(ComponentInteractionCallbacks callb
         var result = new List<ComponentViewModelBase>();
         foreach (var widget in slot.Children.OfType<LayoutWidgetElement>().Where(x => x.Enabled))
         {
-            if (!ComponentDefinitionAdapter.TryMapSettings(widget, out var settings)) continue;
-            var viewModel = ComponentViewFactory.Create(
+            if (!_settingsMapper.TryMapSettings(widget, out var settings)) continue;
+            var viewModel = _viewFactory.Create(
                 widget.InstanceId,
                 settings,
                 callbacks.SourceRequested,

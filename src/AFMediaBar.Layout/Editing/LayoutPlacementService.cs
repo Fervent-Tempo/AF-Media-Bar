@@ -1,4 +1,6 @@
 using AFMediaBar.Layout.Models;
+using AFMediaBar.Layout.Widgets;
+using AFMediaBar.Components.Abstractions;
 using AFMediaBar.Services;
 
 namespace AFMediaBar.Layout.Editing;
@@ -79,7 +81,8 @@ public static class LayoutPlacementService
     public static LayoutGridEditResult TryCreateContainer(
         LayoutProfile profile,
         LayoutPlacementTool tool,
-        LayoutGridRect editorRect)
+        LayoutGridRect editorRect,
+        IComponentSettingsMapper? settingsMapper = null)
     {
         var normalized = ExpandGridForRect(profile, editorRect);
         return LayoutGridConstraintService.TryCreateFromDrag(
@@ -88,7 +91,8 @@ public static class LayoutPlacementService
             normalized.Rect.X,
             normalized.Rect.Y,
             normalized.Rect.Right - 1,
-            normalized.Rect.Bottom - 1);
+            normalized.Rect.Bottom - 1,
+            settingsMapper);
     }
 
     public static bool CanPlaceContainer(LayoutProfile profile, LayoutGridRect editorRect)

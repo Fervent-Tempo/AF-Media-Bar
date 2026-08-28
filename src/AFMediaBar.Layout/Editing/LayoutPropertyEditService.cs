@@ -1,5 +1,6 @@
 using AFMediaBar.Layout.Models;
 using AFMediaBar.Layout.Widgets;
+using AFMediaBar.Components.Abstractions;
 using AFMediaBar.Services;
 
 namespace AFMediaBar.Layout.Editing;
@@ -24,7 +25,8 @@ public static class LayoutPropertyEditService
     public static bool TryResetWidgetProperties(
         LayoutProfile profile,
         string instanceId,
-        out LayoutProfile updated) =>
+        out LayoutProfile updated,
+        IComponentSettingsMapper? settingsMapper = null) =>
         TryUpdateElement(profile, instanceId, element =>
         {
             if (element is not LayoutWidgetElement widget)
@@ -32,7 +34,11 @@ public static class LayoutPropertyEditService
                 return element;
             }
 
-            var defaults = LayoutComponentCatalog.CreateDefaultSettings(widget.TypeId);
+            var mapper = settingsMapper ?? ComponentDefinitionAdapter.Default;
+            if (!mapper.TryCreateDefaultSettings(widget.TypeId, out var defaults))
+            {
+                return element;
+            }
             defaults = (defaults, widget.Settings) switch
             {
                 (CommandWidgetSettings defaultCommand, CommandWidgetSettings currentCommand) =>

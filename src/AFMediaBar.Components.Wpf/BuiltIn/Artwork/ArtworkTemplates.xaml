@@ -1,0 +1,3 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:AFMediaBar.Components.Wpf.BuiltIn.Artwork">
+  <DataTemplate DataType="{x:Type local:ArtworkViewModel}"><local:ArtworkView /></DataTemplate>
+</ResourceDictionary>

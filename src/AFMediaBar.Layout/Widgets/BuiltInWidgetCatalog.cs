@@ -7,29 +7,33 @@ namespace AFMediaBar.Layout.Widgets;
 
 public sealed class BuiltInWidgetCatalog : IWidgetCatalog
 {
-    private static readonly IReadOnlyList<WidgetDescriptor> Definitions = CreateDefinitions();
+    private readonly IReadOnlyList<WidgetDescriptor> _definitions;
 
-    public IReadOnlyList<WidgetDescriptor> Items => Definitions;
+    public BuiltInWidgetCatalog(IComponentRegistry? registry = null)
+    {
+        _definitions = CreateDefinitions(registry ?? new BuiltInComponentRegistry());
+    }
+
+    public IReadOnlyList<WidgetDescriptor> Items => _definitions;
 
     public bool TryGet(string typeId, out WidgetDescriptor descriptor)
     {
-        descriptor = Definitions.FirstOrDefault(item =>
+        descriptor = _definitions.FirstOrDefault(item =>
             string.Equals(item.TypeId, typeId, StringComparison.Ordinal))!;
         return descriptor is not null;
     }
 
-    private static IReadOnlyList<WidgetDescriptor> CreateDefinitions()
+    private static IReadOnlyList<WidgetDescriptor> CreateDefinitions(IComponentRegistry registry)
     {
-        var registry = new BuiltInComponentRegistry();
         var supported = new HashSet<string>(StringComparer.Ordinal)
         {
-            BuiltInWidgetTypeIds.Artwork,
-            BuiltInWidgetTypeIds.MediaText,
-            BuiltInWidgetTypeIds.MediaSource,
-            BuiltInWidgetTypeIds.Command,
-            BuiltInWidgetTypeIds.Metrics,
-            BuiltInWidgetTypeIds.Spectrum,
-            BuiltInWidgetTypeIds.Separator
+            ComponentTypeIds.Artwork,
+            ComponentTypeIds.MediaText,
+            ComponentTypeIds.MediaSource,
+            ComponentTypeIds.PlaybackCommand,
+            ComponentTypeIds.Metrics,
+            ComponentTypeIds.Spectrum,
+            ComponentTypeIds.Separator
         };
 
         return registry.Items

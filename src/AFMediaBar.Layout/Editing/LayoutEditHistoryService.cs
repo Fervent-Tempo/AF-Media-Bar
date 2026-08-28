@@ -1,10 +1,10 @@
-using AFMediaBar.Models;
+using AFMediaBar.Layout.Models;
 
 namespace AFMediaBar.Services;
 
 /// <summary>
-/// 为每个布局档案维护独立的有界撤销栈；不负责持久化，也不跨档案回放编辑。
-/// Maintains a bounded undo stack per layout profile without persistence or cross-profile replay.
+/// Layout-only bounded undo history. It has no persistence or UI dependencies.
+/// The namespace remains compatible with existing callers while ownership moves to Layout.
 /// </summary>
 public sealed class LayoutEditHistoryService
 {
@@ -52,8 +52,5 @@ public sealed class LayoutEditHistoryService
         return false;
     }
 
-    public void Clear(LayoutProfileKey key)
-    {
-        _history.Remove(key);
-    }
+    public void Clear(LayoutProfileKey key) => _history.Remove(key);
 }

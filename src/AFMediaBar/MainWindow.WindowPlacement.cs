@@ -380,7 +380,7 @@ public partial class MainWindow
     {
         if (!verticalLayout)
         {
-            SetPopupPlacement(PlacementMode.Top, 0, -7);
+        _audioPopupCoordinator.SetPlacement(PlacementMode.Top, 0, -7);
             return;
         }
 
@@ -390,29 +390,10 @@ public partial class MainWindow
             !NativeMethods.GetMonitorInfo(monitor, ref monitorInfo) ||
             bounds.ScreenBounds.Left + bounds.ScreenBounds.Width / 2 <=
                 monitorInfo.Monitor.Left + monitorInfo.Monitor.Width / 2;
-        SetPopupPlacement(
+        _audioPopupCoordinator.SetPlacement(
             taskbarIsOnLeft ? PlacementMode.Right : PlacementMode.Left,
             taskbarIsOnLeft ? 7 : -7,
             0);
-    }
-
-    private void SetPopupPlacement(
-        PlacementMode placement,
-        double horizontalOffset,
-        double verticalOffset)
-    {
-        foreach (var popup in new[]
-        {
-            VolumeControlPopup,
-            OutputDevicePopup,
-            OutputDeviceStatusPopup,
-            VolumeStatusPopup
-        })
-        {
-            popup.Placement = placement;
-            popup.HorizontalOffset = horizontalOffset;
-            popup.VerticalOffset = verticalOffset;
-        }
     }
 
     private (double X, double Y) CalculateTaskbarPlayerScale(
@@ -476,18 +457,9 @@ public partial class MainWindow
             });
         }
         ApplyResponsivePlayerDimensions();
-        VolumeControlPopup.PlacementTarget = vertical
-            ? VerticalVolumeControlHost
-            : VolumeControlHost;
-        OutputDevicePopup.PlacementTarget = vertical
-            ? VerticalOutputDeviceHost
-            : OutputDeviceHost;
-        OutputDeviceStatusPopup.PlacementTarget = vertical
-            ? VerticalOutputDeviceHost
-            : OutputDeviceHost;
-        VolumeStatusPopup.PlacementTarget = vertical
-            ? VerticalVolumeControlHost
-            : VolumeControlHost;
+        _audioPopupCoordinator.SetPlacementTargets(
+            vertical ? VerticalOutputDeviceHost : OutputDeviceHost,
+            vertical ? VerticalVolumeControlHost : VolumeControlHost);
         SetExpanded(_isExpanded, animate: false);
         ApplyPlacementSettings();
         if (EdgeCollapseIndicator.Visibility == Visibility.Visible)
@@ -801,8 +773,7 @@ public partial class MainWindow
     {
         if (!_isExpanded ||
             _isMenuOpen ||
-            OutputDevicePopup.IsOpen ||
-            VolumeControlPopup.IsOpen ||
+            _audioPopupCoordinator.IsAnyPrimaryOpen ||
             _isDragging ||
             !NativeMethods.GetCursorPos(out var cursor) ||
             !NativeMethods.GetWindowRect(_windowHandle, out var windowRect))
