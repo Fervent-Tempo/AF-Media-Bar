@@ -41,18 +41,15 @@
         </ui:TitleBar>
         <ui:NavigationView
             x:Name="RootNavigation"
-            Padding="42,0,42,0"
             BreadcrumbBar="{Binding ElementName=BreadcrumbBar}"
             FrameMargin="0"
             IsBackButtonVisible="Visible"
-            IsPaneToggleVisible="True"
-            OpenPaneLength="310"
+            IsPaneToggleVisible="true"
             PaneDisplayMode="Left"
             IsFooterSeparatorVisible="false"
+            OpenPaneLength="220"
+            TransitionDuration="300"
             TitleBar="{Binding ElementName=TitleBar, Mode=OneWay}">
-            <ui:NavigationView.Header>
-                <ui:BreadcrumbBar x:Name="BreadcrumbBar" Margin="42,32,42,20" />
-            </ui:NavigationView.Header>
             <ui:NavigationView.AutoSuggestBox>
                 <ui:AutoSuggestBox x:Name="AutoSuggestBox" PlaceholderText="Search">
                     <ui:AutoSuggestBox.Icon>
