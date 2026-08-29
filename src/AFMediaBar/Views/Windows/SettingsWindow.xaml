@@ -6,6 +6,8 @@
     xmlns:local="clr-namespace:AFMediaBar.Views.Windows"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+
+    xmlns:pages="clr-namespace:AFMediaBar.Views.Pages"
     Title="{Binding ViewModel.ApplicationTitle, Mode=OneWay}"
     Width="1100"
     Height="650"
@@ -39,19 +41,15 @@
         </ui:TitleBar>
         <ui:NavigationView
             x:Name="RootNavigation"
-            Padding="42,0,42,0"
             BreadcrumbBar="{Binding ElementName=BreadcrumbBar}"
-            FooterMenuItemsSource="{Binding ViewModel.FooterMenuItems, Mode=OneWay}"
             FrameMargin="0"
             IsBackButtonVisible="Visible"
-            IsPaneToggleVisible="True"
-            MenuItemsSource="{Binding ViewModel.MenuItems, Mode=OneWay}"
-            OpenPaneLength="310"
+            IsPaneToggleVisible="true"
             PaneDisplayMode="Left"
+            IsFooterSeparatorVisible="false"
+            OpenPaneLength="220"
+            TransitionDuration="300"
             TitleBar="{Binding ElementName=TitleBar, Mode=OneWay}">
-            <ui:NavigationView.Header>
-                <ui:BreadcrumbBar x:Name="BreadcrumbBar" Margin="42,32,42,20" />
-            </ui:NavigationView.Header>
             <ui:NavigationView.AutoSuggestBox>
                 <ui:AutoSuggestBox x:Name="AutoSuggestBox" PlaceholderText="Search">
                     <ui:AutoSuggestBox.Icon>
@@ -61,6 +59,22 @@
                     </ui:AutoSuggestBox.Icon>
                 </ui:AutoSuggestBox>
             </ui:NavigationView.AutoSuggestBox>
+
+            <ui:NavigationView.MenuItems>
+                <ui:NavigationViewItem Content="常规" Icon="{ui:SymbolIcon Home24}"
+                                       TargetPageType="{x:Type pages:GeneralPage}" />
+                <ui:NavigationViewItem Content="外观"
+                                       Icon="{ui:SymbolIcon Color16}"
+                                       TargetPageType="{x:Type pages:AppearancePage}" />
+                <ui:NavigationViewItem Content="布局" Icon="{ui:SymbolIcon Gauge24}"
+                                       TargetPageType="{x:Type pages:LayoutPage}" />
+            </ui:NavigationView.MenuItems>
+
+            <ui:NavigationView.FooterMenuItems>
+                <ui:NavigationViewItem Content="关于" Icon="{ui:SymbolIcon Info24}"
+                                       TargetPageType="{x:Type pages:AboutPage}" />
+            </ui:NavigationView.FooterMenuItems>
+
             <ui:NavigationView.ContentOverlay>
                 <Grid>
                     <ui:SnackbarPresenter x:Name="SnackbarPresenter" />
