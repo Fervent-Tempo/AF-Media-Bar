@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>wpfui-icon.ico</ApplicationIcon>
     <UseWPF>true</UseWPF>
@@ -15,6 +15,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Dubya.WindowsMediaController" Version="2.5.6" />
+    <PackageReference Include="MicaWPF" Version="7.1.0" />
     <PackageReference Include="WPF-UI" Version="4.2.0" />
     <PackageReference Include="WPF-UI.DependencyInjection" Version="4.2.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.1" />
