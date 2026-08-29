@@ -3,12 +3,52 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-      xmlns:local="clr-namespace:AFMediaBar.Views.Pages"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       mc:Ignorable="d"
-      d:DesignHeight="450" d:DesignWidth="800"
-      Title="AboutPage">
+      d:DesignHeight="900"
+      d:DesignWidth="1100"
+      Title="AboutPage"
+      Foreground="{DynamicResource TextFillColorPrimaryBrush}">
 
-    <Grid>
+    <StackPanel MaxWidth="1000"
+                Margin="16"
+                VerticalAlignment="Top">
+        <TextBlock Text="关于"
+                   FontSize="18"
+                   FontWeight="SemiBold"
+                   Margin="0,0,0,12" />
+        <ui:CardControl Margin="0,0,0,24"
+                        Icon="{ui:SymbolIcon Info24}">
+            <ui:CardControl.Header>
+                <StackPanel>
+                    <ui:TextBlock Text="AF Media Bar"
+                                  FontWeight="SemiBold" />
+                    <ui:TextBlock Text="版本 1.0.0"
+                                  Appearance="Secondary"
+                                  FontSize="12" />
+                </StackPanel>
+            </ui:CardControl.Header>
+            <ui:Anchor Content="GitHub"
+                       Icon="{ui:SymbolIcon Open24}"
+                       NavigateUri="https://github.com/Fervent-Tempo/AF-Media-Bar" />
+        </ui:CardControl>
 
-    </Grid>
+        <TextBlock Text="重置"
+                   FontSize="18"
+                   FontWeight="SemiBold"
+                   Margin="0,0,0,12" />
+        <ui:CardControl Icon="{ui:SymbolIcon ArrowReset24}">
+            <ui:CardControl.Header>
+                <StackPanel>
+                    <ui:TextBlock Text="恢复默认设置"
+                                  FontWeight="SemiBold" />
+                    <ui:TextBlock Text="将所有设置恢复到初始状态"
+                                  Appearance="Secondary"
+                                  FontSize="12" />
+                </StackPanel>
+            </ui:CardControl.Header>
+            <ui:Button Content="重置"
+                       Icon="{ui:SymbolIcon ArrowReset24}" />
+        </ui:CardControl>
+    </StackPanel>
 </Page>
