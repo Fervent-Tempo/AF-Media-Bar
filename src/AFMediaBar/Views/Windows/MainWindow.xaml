@@ -37,7 +37,7 @@
                          Icon="{ui:SymbolIcon ArrowExit20}" />
         </ContextMenu>
     </Window.ContextMenu>
-    <Border Name="MainBorder" CornerRadius="6" ClipToBounds="True">
+    <Border Name="MainBorder" CornerRadius="6" MouseEnter="Grid_MouseEnter" MouseLeave="Grid_MouseLeave" ClipToBounds="True">
         <Grid>
             <Image x:Name="BackgroundImage" Stretch="UniformToFill" HorizontalAlignment="Center"
                    VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5" Opacity="0.4">
@@ -70,14 +70,14 @@
                                     ToolTipService.InitialShowDelay="800"
                                     ToolTipService.Placement="RelativePoint"
                                     ToolTipService.VerticalOffset="-16">
-                            <Canvas x:Name="SongTitleContainer" ClipToBounds="True" Height="19">
+                            <Canvas x:Name="SongTitleContainer" Height="19">
                                 <TextBlock x:Name="SongTitle" Text="" FontWeight="Normal">
                                     <TextBlock.RenderTransform>
                                         <TranslateTransform />
                                     </TextBlock.RenderTransform>
                                 </TextBlock>
                             </Canvas>
-                            <Canvas x:Name="SongArtistContainer" ClipToBounds="True" Margin="0,-1.5,0,0" Height="19">
+                            <Canvas x:Name="SongArtistContainer" Margin="0,-1.5,0,0" Height="19">
                                 <TextBlock x:Name="SongArtist" Text="" FontWeight="Normal" Opacity="0.5">
                                     <TextBlock.RenderTransform>
                                         <TranslateTransform />

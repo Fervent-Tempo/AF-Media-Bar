@@ -70,8 +70,12 @@ namespace AFMediaBar.Views.Windows
             // subscribe to SMTC media session events and start monitoring
             mediaManager.OnAnyMediaPropertyChanged += MediaManager_OnAnyMediaPropertyChanged;
             mediaManager.OnAnyPlaybackStateChanged += CurrentSession_OnPlaybackStateChanged;
+            mediaManager.OnAnySessionOpened += MediaManager_OnAnySessionOpened;
             mediaManager.OnAnySessionClosed += MediaManager_OnAnySessionClosed;
             mediaManager.Start();
+
+            // evaluate the initial state once the window is loaded
+            Loaded += MainWindow_Loaded;
         }
 
         #region INavigationWindow methods
@@ -222,21 +226,21 @@ namespace AFMediaBar.Views.Windows
         {
             if (title == "-" && artist == "-")
             {
-                // No media playing, hide UI
+                // No media playing - show the placeholder text so the media bar stays visible
                 Dispatcher.Invoke(() =>
                 {
-                    _actualTitle = string.Empty;
-                    _actualArtist = string.Empty;
-
                     if (ViewModel.TaskbarWidgetHideCompletely)
                     {
                         Visibility = Visibility.Collapsed;
                         return;
                     }
 
-                    SongTitle.Text = string.Empty;
-                    SongArtist.Text = string.Empty;
-                    SongInfoStackPanel.Visibility = Visibility.Collapsed;
+                    _actualTitle = ViewModel.SongTitle;
+                    _actualArtist = ViewModel.SongArtist;
+
+                    SongTitle.Text = _actualTitle;
+                    SongArtist.Text = _actualArtist;
+                    SongInfoStackPanel.Visibility = Visibility.Visible;
                     SongInfoStackPanel.ToolTip = string.Empty;
                     SongImagePlaceholder.Symbol = SymbolRegular.MusicNote220;
                     SongImagePlaceholder.Visibility = Visibility.Visible;
@@ -333,7 +337,6 @@ namespace AFMediaBar.Views.Windows
 
         private void AnimateEntrance()
         {
-            return;
             try
             {
                 const int msDuration = 300;
@@ -371,7 +374,6 @@ namespace AFMediaBar.Views.Windows
         // hover effects with animations, hard-coded colors because the resource brushes are not accessible here
         private void Grid_MouseEnter(object sender, MouseEventArgs e)
         {
-            return;
             if (string.IsNullOrEmpty(SongTitle.Text + SongArtist.Text)) return;
 
             SolidColorBrush targetBackgroundBrush;
@@ -439,6 +441,11 @@ namespace AFMediaBar.Views.Windows
             TopBorder.BorderBrush = Brushes.Transparent;
         }
 
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            UpdateTaskbar();
+        }
+
         // SMTC media session event handlers
         private void MediaManager_OnAnyMediaPropertyChanged(MediaSession mediaSession,
             GlobalSystemMediaTransportControlsSessionMediaProperties mediaProperties)
@@ -448,6 +455,11 @@ namespace AFMediaBar.Views.Windows
 
         private void CurrentSession_OnPlaybackStateChanged(MediaSession mediaSession,
             GlobalSystemMediaTransportControlsSessionPlaybackInfo playbackInfo)
+        {
+            Dispatcher.BeginInvoke(() => UpdateTaskbar());
+        }
+
+        private void MediaManager_OnAnySessionOpened(MediaSession mediaSession)
         {
             Dispatcher.BeginInvoke(() => UpdateTaskbar());
         }
