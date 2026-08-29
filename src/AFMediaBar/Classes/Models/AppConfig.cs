@@ -1,4 +1,4 @@
-﻿namespace AFMediaBar.Models
+﻿namespace AFMediaBar.Classes.Models
 {
     public class AppConfig
     {

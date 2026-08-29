@@ -1,6 +1,6 @@
 ﻿using System.Windows.Media;
 
-namespace AFMediaBar.Models
+namespace AFMediaBar.Classes.Models
 {
     public struct DataColor
     {

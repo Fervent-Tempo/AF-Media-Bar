@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Wpf.Ui;
 
-namespace AFMediaBar.Services
+namespace AFMediaBar.Classes.Services
 {
     /// <summary>
     /// Managed host of the application.

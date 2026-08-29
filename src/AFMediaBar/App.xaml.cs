@@ -1,4 +1,4 @@
-﻿using AFMediaBar.Services;
+﻿using AFMediaBar.Classes.Services;
 using AFMediaBar.ViewModels.Pages;
 using AFMediaBar.ViewModels.Windows;
 using AFMediaBar.Views.Pages;

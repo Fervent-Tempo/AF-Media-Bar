@@ -2,7 +2,7 @@
 using System.Windows.Data;
 using Wpf.Ui.Appearance;
 
-namespace AFMediaBar.Helpers
+namespace AFMediaBar.Classes.Converters
 {
     internal class EnumToBooleanConverter : IValueConverter
     {

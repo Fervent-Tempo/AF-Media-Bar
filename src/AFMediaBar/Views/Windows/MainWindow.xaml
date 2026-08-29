@@ -6,7 +6,8 @@
     xmlns:local="clr-namespace:AFMediaBar.Views.Windows"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-    xmlns:controls="clr-namespace:MicaWPF.Controls;assembly=MicaWPF"
+    xmlns:controls="clr-namespace:AFMediaBar.Components"
+
 
     Title="{Binding ViewModel.ApplicationTitle, Mode=OneWay}"
     Height="40" Width="310"
@@ -37,72 +38,7 @@
                          Icon="{ui:SymbolIcon ArrowExit20}" />
         </ContextMenu>
     </Window.ContextMenu>
-    <Border Name="MainBorder" CornerRadius="6" MouseEnter="Grid_MouseEnter" MouseLeave="Grid_MouseLeave" ClipToBounds="True">
-        <Grid>
-            <Image x:Name="BackgroundImage" Stretch="UniformToFill" HorizontalAlignment="Center"
-                   VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5" Opacity="0.4">
-                <Image.Effect>
-                    <BlurEffect Radius="80" />
-                </Image.Effect>
-            </Image>
-            <Border Name="TopBorder" BorderThickness="0,1.25,0,0" CornerRadius="5" Margin="0,0,0,1.25">
-                <Grid Name="MainGrid" HorizontalAlignment="Left" VerticalAlignment="Center"
-                      RenderTransformOrigin="0,0.5">
-                    <Grid.RenderTransform>
-                        <ScaleTransform ScaleX="0.9" ScaleY="0.9" />
-                    </Grid.RenderTransform>
-                    <StackPanel Name="MainStackPanel" Orientation="Horizontal" HorizontalAlignment="Left"
-                                VerticalAlignment="Center" Width="Auto" Margin="4,0,-100,0">
-                        <Border Name="SongImageBorder" CornerRadius="5" ClipToBounds="True" Width="36" Height="36"
-                                Panel.ZIndex="2">
-                            <Grid>
-                                <ui:SymbolIcon Name="SongImagePlaceholder" Symbol="MusicNote220" FontSize="24"
-                                               Filled="True"
-                                               Foreground="{DynamicResource MicaWPF.Brushes.SystemAccentColorTertiary}" />
-                            </Grid>
-                            <Border.Background>
-                                <ImageBrush x:Name="SongImage" Stretch="UniformToFill" />
-                            </Border.Background>
-                        </Border>
-
-                        <StackPanel Name="SongInfoStackPanel" Orientation="Vertical" VerticalAlignment="Center"
-                                    Width="Auto" Margin="8,0,0,0"
-                                    ToolTipService.InitialShowDelay="800"
-                                    ToolTipService.Placement="RelativePoint"
-                                    ToolTipService.VerticalOffset="-16">
-                            <Canvas x:Name="SongTitleContainer" Height="19">
-                                <TextBlock x:Name="SongTitle" Text="" FontWeight="Normal">
-                                    <TextBlock.RenderTransform>
-                                        <TranslateTransform />
-                                    </TextBlock.RenderTransform>
-                                </TextBlock>
-                            </Canvas>
-                            <Canvas x:Name="SongArtistContainer" Margin="0,-1.5,0,0" Height="19">
-                                <TextBlock x:Name="SongArtist" Text="" FontWeight="Normal" Opacity="0.5">
-                                    <TextBlock.RenderTransform>
-                                        <TranslateTransform />
-                                    </TextBlock.RenderTransform>
-                                </TextBlock>
-                            </Canvas>
-                        </StackPanel>
-
-                        <StackPanel Name="ControlsStackPanel" Orientation="Horizontal" VerticalAlignment="Center"
-                                    Width="Auto">
-                            <StackPanel.Style>
-                                <Style TargetType="StackPanel">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding TaskbarWidgetControlsEnabled}" Value="True">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </StackPanel.Style>
-                        </StackPanel>
-
-                    </StackPanel>
-                </Grid>
-            </Border>
-        </Grid>
-    </Border>
+    <Canvas Name="WidgetCanvas" Background="Transparent">
+        <controls:TaskBarMediaControl x:Name="MediaControl"/>
+    </Canvas>
 </Window>
