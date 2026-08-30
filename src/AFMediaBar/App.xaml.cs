@@ -55,6 +55,10 @@ namespace AFMediaBar
                 services.AddSingleton<INavigationWindow, MainWindow>();
                 services.AddSingleton<MainWindowViewModel>();
 
+                // Settings window (opened from the taskbar context menu)
+                services.AddSingleton<SettingsWindowViewModel>();
+                services.AddTransient<SettingsWindow>();
+
                 services.AddSingleton<GeneralPage>();
                 services.AddSingleton<GeneralViewModel>();
 

@@ -167,11 +167,6 @@ namespace AFMediaBar.Views.Windows
             _taskbarWindow?.ApplySessions(options);
         }
 
-        // 任务栏窗口右键菜单的命令入口。 / Command entry points for the taskbar window context menu.
-        internal void SelectMediaSession(string key) => _mediaSessionService.SelectSession(key);
-
-        internal void ReconnectMediaSession() => _ = _mediaSessionService.ReconnectAsync();
-
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             // The media bar lives in the docked TaskbarWindow; keep this window as an invisible host.

@@ -1,5 +1,6 @@
 // The media bar docked into the Explorer taskbar, ported from FluentFlyout's TaskbarWindow
 // (https://github.com/ManualDinosaur/FluentFlyout, GPL-3.0-or-later).
+
 using System.Diagnostics;
 using System.Windows.Controls;
 using System.Windows.Interop;
@@ -35,7 +36,6 @@ public partial class TaskbarWindow : Window
     private IntPtr _lastTaskbarHandle;
     private bool _positionUpdateInProgress;
     private bool _isClosing;
-    private IReadOnlyList<MediaSessionOption>? _currentSessionOptions;
 
     public TaskbarWindow(ITaskbarDockService taskBarService, MainWindow mainWindow)
     {
@@ -87,10 +87,10 @@ public partial class TaskbarWindow : Window
         // blocking the taskbar's message processing.
         switch (msg)
         {
-            case WM_GETOBJECT:          // MS UI Automation requests
+            case WM_GETOBJECT: // MS UI Automation requests
             case WM_SHOWWINDOW:
-            case WM_WINDOWPOSCHANGING:  // triggers during alt-tabs, window changes
-            case WM_NCCALCSIZE:         // can trigger layout storms
+            case WM_WINDOWPOSCHANGING: // triggers during alt-tabs, window changes
+            case WM_NCCALCSIZE: // can trigger layout storms
             case WM_IME_SETCONTEXT:
             case WM_IME_NOTIFY:
                 handled = true;
@@ -104,6 +104,8 @@ public partial class TaskbarWindow : Window
     {
         SetupWindow();
     }
+
+    #region TaskBar Layout&Position
 
     private void SetupWindow()
     {
@@ -154,10 +156,7 @@ public partial class TaskbarWindow : Window
 
                 _timer.Stop();
 
-                Dispatcher.BeginInvoke(() =>
-                {
-                    _mainWindow.RecreateTaskbarWindow();
-                }, DispatcherPriority.Background);
+                Dispatcher.BeginInvoke(() => { _mainWindow.RecreateTaskbarWindow(); }, DispatcherPriority.Background);
 
                 return;
             }
@@ -171,10 +170,8 @@ public partial class TaskbarWindow : Window
 
             if (taskbarHandle != IntPtr.Zero && interop.Handle != IntPtr.Zero)
             {
-                Dispatcher.BeginInvoke(() =>
-                {
-                    CalculateAndSetPosition(taskbarHandle, interop.Handle);
-                }, DispatcherPriority.Background);
+                Dispatcher.BeginInvoke(() => { CalculateAndSetPosition(taskbarHandle, interop.Handle); },
+                    DispatcherPriority.Background);
             }
         }
         catch (Exception ex)
@@ -252,6 +249,10 @@ public partial class TaskbarWindow : Window
         };
     }
 
+    #endregion
+
+    #region SMTC
+
     public void ApplySnapshot(MediaSnapshot snapshot)
     {
         if (!SettingsManager.Current.TaskbarBarEnabled || _isClosing)
@@ -270,16 +271,17 @@ public partial class TaskbarWindow : Window
         Dispatcher.Invoke(() => { Visibility = Visibility.Visible; });
     }
 
+    #endregion
+
+
     /// <summary>
-    /// 用最新会话列表重建右键菜单的"切换媒体源"子菜单。
-    /// Rebuilds the "switch media source" submenu from the latest session list.
+    /// 用最新会话列表重建右键菜单的"切换媒体源"子菜单；点击通过命令执行。
+    /// Rebuilds the "switch media source" submenu from the latest session list; clicks run through commands.
     /// </summary>
     public void ApplySessions(IReadOnlyList<MediaSessionOption> options)
     {
         if (_isClosing)
             return;
-
-        _currentSessionOptions = options;
 
         Dispatcher.Invoke(() =>
         {
@@ -291,34 +293,12 @@ public partial class TaskbarWindow : Window
                     Header = option.DisplayName,
                     IsCheckable = true,
                     IsChecked = option.IsSelected,
-                    Tag = option.Key
+                    Command = _mainWindow.ViewModel.SelectMediaSessionCommand,
+                    CommandParameter = option.Key
                 };
-                item.Click += SessionMenuItem_OnClick;
                 SessionsMenuItem.Items.Add(item);
             }
         });
-    }
-
-    private void SessionMenuItem_OnClick(object sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem { Tag: string key } item)
-        {
-            return;
-        }
-
-        // 点击已选中的会话保持勾选状态；其余交给服务切换，列表事件会重建菜单。
-        if (_currentSessionOptions?.FirstOrDefault(option => option.Key == key)?.IsSelected == true)
-        {
-            item.IsChecked = true;
-            return;
-        }
-
-        _mainWindow.SelectMediaSession(key);
-    }
-
-    private void ReconnectMenuItem_OnClick(object sender, RoutedEventArgs e)
-    {
-        _mainWindow.ReconnectMediaSession();
     }
 
     protected override void OnClosed(EventArgs e)

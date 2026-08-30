@@ -136,7 +136,7 @@ public sealed class MediaSessionService : IDisposable
     /// <summary>切换到指定会话。 / Switches to the session identified by key.</summary>
     public void SelectSession(string key)
     {
-        if (!_mediaManager.CurrentMediaSessions.ContainsKey(key))
+        if (string.IsNullOrEmpty(key) || !_mediaManager.CurrentMediaSessions.ContainsKey(key))
         {
             return;
         }

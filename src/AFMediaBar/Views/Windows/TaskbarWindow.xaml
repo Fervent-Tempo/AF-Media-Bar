@@ -14,19 +14,22 @@
         Background="Transparent"
         Visibility="Collapsed">
     <Window.ContextMenu>
-        <ContextMenu x:Name="PlayerMenu" Width="280">
+        <ContextMenu x:Name="PlayerMenu" Width="280"
+                     DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
             <ui:MenuItem x:Name="SessionsMenuItem"
-                         Header="打开媒体源"
+                         Header="切换媒体源"
                          Icon="{ui:SymbolIcon MusicNote216}" />
             <Separator />
             <ui:MenuItem Header="重新连接 SMTC"
                          Icon="{ui:SymbolIcon ArrowSync24}"
-                         Click="ReconnectMenuItem_OnClick" />
+                         Command="{Binding ViewModel.ReconnectMediaSessionCommand}" />
             <ui:MenuItem Header="设置"
-                         Icon="{ui:SymbolIcon Settings24}" />
+                         Icon="{ui:SymbolIcon Settings24}"
+                         Command="{Binding ViewModel.OpenSettingsCommand}" />
             <Separator />
             <ui:MenuItem Header="退出"
-                         Icon="{ui:SymbolIcon ArrowExit20}" />
+                         Icon="{ui:SymbolIcon ArrowExit20}"
+                         Command="{Binding ViewModel.ExitApplicationCommand}" />
         </ContextMenu>
     </Window.ContextMenu>
     <Canvas Name="WidgetCanvas" Background="Transparent">

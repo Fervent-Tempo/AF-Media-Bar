@@ -6,7 +6,7 @@ namespace AFMediaBar.ViewModels.Windows
     public partial class SettingsWindowViewModel : ObservableObject
     {
         [ObservableProperty]
-        private string _applicationTitle = "WPF UI - AFMediaBar";
+        private string _applicationTitle = "AFMediaBar";
 
         [ObservableProperty]
         private ObservableCollection<object> _menuItems = new()
@@ -46,12 +46,6 @@ namespace AFMediaBar.ViewModels.Windows
                 Icon = new SymbolIcon { Symbol = SymbolRegular.Info24 },
                 TargetPageType = typeof(Views.Pages.AboutPage)
             }
-        };
-
-        [ObservableProperty]
-        private ObservableCollection<MenuItem> _trayMenuItems = new()
-        {
-            new MenuItem { Header = "Home", Tag = "tray_home" }
         };
     }
 }

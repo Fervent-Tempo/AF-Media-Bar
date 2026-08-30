@@ -42,17 +42,6 @@ namespace AFMediaBar.Views.Windows
 
         #endregion INavigationWindow methods
 
-        /// <summary>
-        /// Raises the closed event.
-        /// </summary>
-        protected override void OnClosed(EventArgs e)
-        {
-            base.OnClosed(e);
-
-            // Make sure that closing this window will begin the process of closing the application.
-            Application.Current.Shutdown();
-        }
-
         INavigationView INavigationWindow.GetNavigation()
         {
             throw new NotImplementedException();
