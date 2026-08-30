@@ -14,6 +14,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Windows.Media.Control;
+using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Utils;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
@@ -57,6 +58,20 @@ namespace AFMediaBar.Components
         }
 
 
+        public void ApplyWindowsTheme()
+        {
+            WindowsThemeDetector.GetWindowsTheme(out _, out var systemTheme);
+            bool isDark = systemTheme == WindowsThemeDetector.ThemeMode.Dark;
+
+            var foreground = new SolidColorBrush(isDark
+                ? Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF)
+                : Color.FromArgb(0xE4, 0x1C, 0x1C, 0x1C));
+
+            SongTitle.Foreground = foreground;
+            SongArtist.Foreground = foreground;
+        }
+
+
         private static GlobalSystemMediaTransportControlsSessionMediaProperties? TryGetMediaProperties(
             GlobalSystemMediaTransportControlsSession controlSession)
         {
@@ -89,6 +104,7 @@ namespace AFMediaBar.Components
                     SongImagePlaceholder.Visibility = Visibility.Visible;
                     SongImage.ImageSource = null;
                     BackgroundImage.Source = null;
+                    BackgroundImage.Visibility = Visibility.Collapsed;
                     SongImageBorder.Margin = new Thickness(0, 0, 0, -3); // align music note better when no cover
 
                     MainBorder.Background = new SolidColorBrush(Colors.Transparent);
@@ -167,9 +183,10 @@ namespace AFMediaBar.Components
                     ? Visibility.Visible
                     : Visibility.Collapsed;
                 SongInfoStackPanel.Visibility = _isVertical ? Visibility.Collapsed : Visibility.Visible;
-                // BackgroundImage.Visibility = ViewModel.TaskbarWidgetBackgroundBlur
-                //     ? Visibility.Visible
-                //     : Visibility.Collapsed;
+                // blurred cover background, off by default like FluentFlyout's TaskbarWidgetBackgroundBlur
+                BackgroundImage.Visibility = SettingsManager.Current.TaskbarBarBackgroundBlur
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
 
                 Visibility = Visibility.Visible;
             });

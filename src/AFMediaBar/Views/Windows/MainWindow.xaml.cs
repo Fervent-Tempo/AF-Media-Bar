@@ -1,17 +1,16 @@
+using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Utils;
 using AFMediaBar.ViewModels.Windows;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
-using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
-using System.Windows.Threading;
 using Windows.Media.Control;
 using Wpf.Ui;
 using Wpf.Ui.Abstractions;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
+using static AFMediaBar.Classes.Interop.NativeMethods;
 using static WindowsMediaController.MediaManager;
 
 namespace AFMediaBar.Views.Windows
@@ -20,27 +19,25 @@ namespace AFMediaBar.Views.Windows
     {
         public MainWindowViewModel ViewModel { get; }
 
-        private readonly DispatcherTimer _timer;
-
         public readonly WindowsMediaController.MediaManager mediaManager = new();
 
+        private readonly ITaskbarDockService _taskBarService;
+        private TaskbarWindow? _taskbarWindow;
+        private int _taskbarCreatedMessage;
 
-        public MainWindow(MainWindowViewModel viewModel)
+        // Set while Explorer restarts so windows touching the taskbar pause their work
+        internal static volatile bool ExplorerRestarting = false;
+
+        public MainWindow(MainWindowViewModel viewModel, ITaskbarDockService taskBarService)
         {
             ViewModel = viewModel;
             DataContext = this;
 
+            _taskBarService = taskBarService;
+
             SystemThemeWatcher.Watch(this);
 
             InitializeComponent();
-
-            // slow auto-update for display changes
-            _timer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(1500)
-            };
-            _timer.Tick += (s, e) => UpdatePosition();
-            _timer.Start();
 
             Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0));
 
@@ -82,18 +79,80 @@ namespace AFMediaBar.Views.Windows
         {
             base.OnClosed(e);
 
+            _taskbarWindow?.Close();
+            _taskbarWindow = null;
+
             // Make sure that closing this window will begin the process of closing the application.
             Application.Current.Shutdown();
         }
 
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            var source = (HwndSource)PresentationSource.FromDependencyObject(this);
+            source.AddHook(WndProc);
+            _taskbarCreatedMessage = RegisterWindowMessage("TaskbarCreated");
+        }
+
+        private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            if (msg == _taskbarCreatedMessage)
+            {
+                // Explorer restarted; defer recovery until the taskbar is back and stable.
+                ExplorerRestarting = true;
+                _ = WaitForExplorerAndRecoverAsync();
+                handled = true;
+            }
+            return IntPtr.Zero;
+        }
+
+        private async Task WaitForExplorerAndRecoverAsync()
+        {
+            try
+            {
+                // Poll for the taskbar window for up to ~10 seconds
+                for (int i = 0; i < 20; i++)
+                {
+                    await Task.Delay(500);
+                    if (FindWindow("Shell_TrayWnd", null) != IntPtr.Zero)
+                        break;
+                }
+            }
+            catch { }
+
+            ExplorerRestarting = false;
+            RecreateTaskbarWindow();
+        }
+
         #endregion
+
+        /// <summary>
+        /// Closes and re-creates the docked taskbar window (e.g. after Explorer restarted
+        /// and destroyed the old taskbar together with our child window).
+        /// </summary>
+        public void RecreateTaskbarWindow()
+        {
+            if (_taskbarWindow != null)
+            {
+                try
+                {
+                    _taskbarWindow.Close();
+                }
+                catch { }
+
+                _taskbarWindow = null;
+            }
+
+            _taskbarWindow = new TaskbarWindow(_taskBarService, this);
+            UpdateTaskbar();
+        }
 
         public void UpdateTaskbar()
         {
             var activeSession = GetActiveMediaSession();
             if (!mediaManager.IsStarted || activeSession == null)
             {
-                UpdateUi("-", "-", null, GlobalSystemMediaTransportControlsSessionPlaybackStatus.Closed);
+                _taskbarWindow?.UpdateUi("-", "-", null, GlobalSystemMediaTransportControlsSessionPlaybackStatus.Closed);
                 return;
             }
 
@@ -103,7 +162,8 @@ namespace AFMediaBar.Views.Windows
             var playbackInfo = activeSession.ControlSession.GetPlaybackInfo();
             var thumbnail = BitmapHelper.GetThumbnail(songInfo.Thumbnail);
             BitmapHelper.GetDominantColors(1);
-            UpdateUi(songInfo.Title, songInfo.Artist, thumbnail, playbackInfo.PlaybackStatus);
+            _taskbarWindow?.UpdateUi(songInfo.Title, songInfo.Artist, thumbnail, playbackInfo.PlaybackStatus);
+            _taskbarWindow?.MediaControl.ApplyWindowsTheme();
         }
 
         private static GlobalSystemMediaTransportControlsSessionMediaProperties? TryGetMediaProperties(
@@ -132,31 +192,6 @@ namespace AFMediaBar.Views.Windows
             return validSessions.FirstOrDefault();
         }
 
-        public void UpdateUi(string title, string artist, BitmapImage? icon,
-            GlobalSystemMediaTransportControlsSessionPlaybackStatus? playbackStatus)
-        {
-            if (!_timer.IsEnabled)
-                _timer.Start();
-
-            // Delegate UI update to the internal update logic
-            MediaControl.UpdateSongInfo(title, artist, icon, playbackStatus);
-
-            // Update position after UI change
-            Dispatcher.BeginInvoke(() => UpdatePosition(), DispatcherPriority.Background);
-
-            Dispatcher.Invoke(() => { Visibility = Visibility.Visible; });
-        }
-
-        /// <summary>
-        /// Keeps the media bar centered on the taskbar.
-        /// </summary>
-        public void UpdatePosition()
-        {
-            Rect workArea = SystemParameters.WorkArea;
-            Left = workArea.Left + (workArea.Width - Width) / 2;
-            Top = workArea.Bottom - Height;
-        }
-
         public bool IsSessionAllowed(MediaSession? session)
         {
             if (session == null) return false;
@@ -165,7 +200,10 @@ namespace AFMediaBar.Views.Windows
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            UpdateTaskbar();
+            // The media bar lives in the docked TaskbarWindow; keep this window as an invisible host.
+            Visibility = Visibility.Collapsed;
+
+            RecreateTaskbarWindow();
         }
 
         // SMTC media session event handlers
