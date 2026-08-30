@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -10,10 +9,9 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using Windows.Media.Control;
+using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Utils;
 using Wpf.Ui.Appearance;
@@ -30,8 +28,6 @@ namespace AFMediaBar.Components
         {
             InitializeComponent();
         }
-
-        private GlobalSystemMediaTransportControlsSessionPlaybackStatus? _lastPlaybackStatus;
 
         private string _actualTitle = string.Empty;
         private string _actualArtist = string.Empty;
@@ -72,23 +68,9 @@ namespace AFMediaBar.Components
         }
 
 
-        private static GlobalSystemMediaTransportControlsSessionMediaProperties? TryGetMediaProperties(
-            GlobalSystemMediaTransportControlsSession controlSession)
+        public void UpdateSongInfo(MediaSnapshot snapshot)
         {
-            try
-            {
-                return controlSession.TryGetMediaPropertiesAsync().GetAwaiter().GetResult();
-            }
-            catch (COMException)
-            {
-                return null;
-            }
-        }
-
-        public void UpdateSongInfo(string title, string artist, BitmapImage? icon,
-            GlobalSystemMediaTransportControlsSessionPlaybackStatus? playbackStatus)
-        {
-            if (title == "-" && artist == "-")
+            if (!snapshot.IsConnected)
             {
                 // No media playing - show the placeholder text so the media bar stays visible
                 Dispatcher.Invoke(() =>
@@ -116,16 +98,12 @@ namespace AFMediaBar.Components
                 return;
             }
 
-            _isPaused = false;
-            if (playbackStatus != GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
-            {
-                _isPaused = true;
-            }
+            _isPaused = !snapshot.IsPlaying;
 
             Dispatcher.Invoke(() =>
             {
-                string newTitle = !string.IsNullOrEmpty(title) ? title : "-";
-                string newArtist = !string.IsNullOrEmpty(artist) ? artist : "-";
+                string newTitle = !string.IsNullOrEmpty(snapshot.Title) ? snapshot.Title : "-";
+                string newArtist = !string.IsNullOrEmpty(snapshot.Artist) ? snapshot.Artist : "-";
 
                 if (_actualTitle != newTitle || _actualArtist != newArtist)
                 {
@@ -141,8 +119,8 @@ namespace AFMediaBar.Components
 
                 // Update tooltip with song info
                 SongInfoStackPanel.ToolTip = string.Empty;
-                SongInfoStackPanel.ToolTip += !string.IsNullOrEmpty(title) ? title : string.Empty;
-                SongInfoStackPanel.ToolTip += !string.IsNullOrEmpty(artist) ? "\n\n" + artist : string.Empty;
+                SongInfoStackPanel.ToolTip += !string.IsNullOrEmpty(snapshot.Title) ? snapshot.Title : string.Empty;
+                SongInfoStackPanel.ToolTip += !string.IsNullOrEmpty(snapshot.Artist) ? "\n\n" + snapshot.Artist : string.Empty;
 
 
                 // change color of icon
@@ -151,7 +129,7 @@ namespace AFMediaBar.Components
                     : (SolidColorBrush)Application.Current.TryFindResource("MicaWPF.Brushes.SystemAccentColorTertiary");
                 SongImagePlaceholder.Foreground = brush;
 
-                if (icon != null)
+                if (snapshot.Artwork is not null)
                 {
                     if (_isPaused)
                     {
@@ -166,8 +144,8 @@ namespace AFMediaBar.Components
                         SongImage.Opacity = 1;
                     }
 
-                    SongImage.ImageSource = icon;
-                    BackgroundImage.Source = icon;
+                    SongImage.ImageSource = snapshot.Artwork;
+                    BackgroundImage.Source = snapshot.Artwork;
                     SongImageBorder.Margin = new Thickness(0, 0, 0, -2); // align image better when cover is present
                 }
                 else
@@ -179,7 +157,7 @@ namespace AFMediaBar.Components
                 }
 
                 SongTitle.Visibility = Visibility.Visible;
-                SongArtistContainer.Visibility = !_isSmallTaskbar && !_isVertical && !string.IsNullOrEmpty(artist)
+                SongArtistContainer.Visibility = !_isSmallTaskbar && !_isVertical && !string.IsNullOrEmpty(snapshot.Artist)
                     ? Visibility.Visible
                     : Visibility.Collapsed;
                 SongInfoStackPanel.Visibility = _isVertical ? Visibility.Collapsed : Visibility.Visible;

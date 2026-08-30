@@ -1,4 +1,5 @@
 ﻿using AFMediaBar.Classes.Services;
+using AFMediaBar.Classes.Services.Lyrics;
 using AFMediaBar.ViewModels.Pages;
 using AFMediaBar.ViewModels.Windows;
 using AFMediaBar.Views.Pages;
@@ -6,9 +7,11 @@ using AFMediaBar.Views.Windows;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Windows.Threading;
+using AFMediaBar.Classes.Models;
 using Wpf.Ui;
 using Wpf.Ui.DependencyInjection;
 
@@ -42,6 +45,9 @@ namespace AFMediaBar
                 // Taskbar docking engine (media bar embedded into the Explorer taskbar)
                 services.AddSingleton<ITaskbarDockService, TaskbarDockService>();
 
+                // SMTC media session monitoring producing MediaSnapshot for the UI chain
+                services.AddSingleton<MediaSessionService>();
+
                 // Service containing navigation, same as INavigationWindow... but without window
                 services.AddSingleton<INavigationService, NavigationService>();
 
@@ -65,6 +71,8 @@ namespace AFMediaBar
                 services.AddSingleton<AboutViewModel>();
             }).Build();
 
+        #region FrameWork
+
         /// <summary>
         /// Gets services.
         /// </summary>
@@ -79,6 +87,9 @@ namespace AFMediaBar
         private async void OnStartup(object sender, StartupEventArgs e)
         {
             await _host.StartAsync();
+
+            // 实时歌词调试：快照事件已在 UI 线程触发，直接订阅。
+            Services.GetRequiredService<MediaSessionService>().SnapshotChanged += DebugOutputLyrics;
         }
 
         /// <summary>
@@ -89,8 +100,44 @@ namespace AFMediaBar
             await _host.StopAsync();
 
             _host.Dispose();
-        }
 
+        }
+#if DEBUG
+        // 实时歌词调试状态：仅在歌词行变化时输出，避免 233ms 轮询刷屏。
+        // Debug lyric state: prints only when the active line changes, to avoid spam from the 233ms poll.
+        private string? _debugLyricsLrc;
+        private IReadOnlyList<LrcLine> _debugLyricsLines = [];
+        private int _debugLyricsLastIndex = -1;
+
+        // 实时歌词调试：根据快照位置解析 LRC 并输出当前行（仅行变化时打印）。
+        // Debug handler: resolves the active LRC line from the snapshot position.
+        private void DebugOutputLyrics(object? sender, MediaSnapshot snapshot)
+        {
+            if (snapshot.Lyrics is not { } lyrics || string.IsNullOrWhiteSpace(lyrics.Lrc))
+            {
+                return;
+            }
+
+            if (!string.Equals(_debugLyricsLrc, lyrics.Lrc, StringComparison.Ordinal))
+            {
+                _debugLyricsLrc = lyrics.Lrc;
+                _debugLyricsLines = LrcParser.Parse(lyrics.Lrc);
+                _debugLyricsLastIndex = -1;
+            }
+
+            var index = LrcParser.FindIndex(
+                _debugLyricsLines,
+                TimeSpan.FromSeconds(snapshot.Position));
+            if (index < 0 || index == _debugLyricsLastIndex)
+            {
+                return;
+            }
+
+            _debugLyricsLastIndex = index;
+            Debug.WriteLine(
+                $"[Lyrics][{lyrics.Source}] {_debugLyricsLines[index].Time:mm\\:ss} {_debugLyricsLines[index].Text}");
+        }
+#endif
         /// <summary>
         /// Occurs when an exception is thrown by an application but not handled.
         /// </summary>
@@ -99,4 +146,6 @@ namespace AFMediaBar
             // For more info see https://docs.microsoft.com/en-us/dotnet/api/system.windows.application.dispatcherunhandledexception?view=windowsdesktop-6.0
         }
     }
+
+    #endregion
 }

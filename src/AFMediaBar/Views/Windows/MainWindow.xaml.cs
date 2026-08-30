@@ -1,17 +1,15 @@
+using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Utils;
 using AFMediaBar.ViewModels.Windows;
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using Windows.Media.Control;
 using Wpf.Ui;
 using Wpf.Ui.Abstractions;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 using static AFMediaBar.Classes.Interop.NativeMethods;
-using static WindowsMediaController.MediaManager;
 
 namespace AFMediaBar.Views.Windows
 {
@@ -19,21 +17,24 @@ namespace AFMediaBar.Views.Windows
     {
         public MainWindowViewModel ViewModel { get; }
 
-        public readonly WindowsMediaController.MediaManager mediaManager = new();
-
         private readonly ITaskbarDockService _taskBarService;
+        private readonly MediaSessionService _mediaSessionService;
         private TaskbarWindow? _taskbarWindow;
         private int _taskbarCreatedMessage;
 
         // Set while Explorer restarts so windows touching the taskbar pause their work
         internal static volatile bool ExplorerRestarting = false;
 
-        public MainWindow(MainWindowViewModel viewModel, ITaskbarDockService taskBarService)
+        public MainWindow(
+            MainWindowViewModel viewModel,
+            ITaskbarDockService taskBarService,
+            MediaSessionService mediaSessionService)
         {
             ViewModel = viewModel;
             DataContext = this;
 
             _taskBarService = taskBarService;
+            _mediaSessionService = mediaSessionService;
 
             SystemThemeWatcher.Watch(this);
 
@@ -41,12 +42,8 @@ namespace AFMediaBar.Views.Windows
 
             Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0));
 
-            // subscribe to SMTC media session events and start monitoring
-            mediaManager.OnAnyMediaPropertyChanged += MediaManager_OnAnyMediaPropertyChanged;
-            mediaManager.OnAnyPlaybackStateChanged += CurrentSession_OnPlaybackStateChanged;
-            mediaManager.OnAnySessionOpened += MediaManager_OnAnySessionOpened;
-            mediaManager.OnAnySessionClosed += MediaManager_OnAnySessionClosed;
-            mediaManager.Start();
+            // 快照事件已在服务内调度到 UI 线程，这里只负责转发给任务栏窗口。
+            _mediaSessionService.SnapshotChanged += MediaSessionService_OnSnapshotChanged;
 
             // evaluate the initial state once the window is loaded
             Loaded += MainWindow_Loaded;
@@ -78,6 +75,8 @@ namespace AFMediaBar.Views.Windows
         protected override void OnClosed(EventArgs e)
         {
             base.OnClosed(e);
+
+            _mediaSessionService.SnapshotChanged -= MediaSessionService_OnSnapshotChanged;
 
             _taskbarWindow?.Close();
             _taskbarWindow = null;
@@ -144,58 +143,21 @@ namespace AFMediaBar.Views.Windows
             }
 
             _taskbarWindow = new TaskbarWindow(_taskBarService, this);
-            UpdateTaskbar();
-        }
 
-        public void UpdateTaskbar()
-        {
-            var activeSession = GetActiveMediaSession();
-            if (!mediaManager.IsStarted || activeSession == null)
+            // Replay the latest snapshot; if none exists yet, force a synchronous refresh.
+            if (_mediaSessionService.CurrentSnapshot is { } snapshot)
             {
-                _taskbarWindow?.UpdateUi("-", "-", null, GlobalSystemMediaTransportControlsSessionPlaybackStatus.Closed);
-                return;
+                _taskbarWindow.ApplySnapshot(snapshot);
             }
-
-            var songInfo = TryGetMediaProperties(activeSession.ControlSession);
-            if (songInfo == null)
-                return;
-            var playbackInfo = activeSession.ControlSession.GetPlaybackInfo();
-            var thumbnail = BitmapHelper.GetThumbnail(songInfo.Thumbnail);
-            BitmapHelper.GetDominantColors(1);
-            _taskbarWindow?.UpdateUi(songInfo.Title, songInfo.Artist, thumbnail, playbackInfo.PlaybackStatus);
-            _taskbarWindow?.MediaControl.ApplyWindowsTheme();
-        }
-
-        private static GlobalSystemMediaTransportControlsSessionMediaProperties? TryGetMediaProperties(
-            GlobalSystemMediaTransportControlsSession controlSession)
-        {
-            try
+            else
             {
-                return controlSession.TryGetMediaPropertiesAsync().GetAwaiter().GetResult();
-            }
-            catch (COMException)
-            {
-                return null;
+                _mediaSessionService.RefreshNow();
             }
         }
 
-        public MediaSession? GetActiveMediaSession()
+        private void MediaSessionService_OnSnapshotChanged(object? sender, MediaSnapshot snapshot)
         {
-            var validSessions = mediaManager.CurrentMediaSessions.Values.Where(IsSessionAllowed).ToList();
-
-            if (validSessions.Count == 0) return null;
-
-            var focused = mediaManager.GetFocusedSession();
-            if (focused != null && validSessions.Any(s => s.Id == focused.Id))
-                return focused;
-
-            return validSessions.FirstOrDefault();
-        }
-
-        public bool IsSessionAllowed(MediaSession? session)
-        {
-            if (session == null) return false;
-            return true;
+            _taskbarWindow?.ApplySnapshot(snapshot);
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -204,29 +166,6 @@ namespace AFMediaBar.Views.Windows
             Visibility = Visibility.Collapsed;
 
             RecreateTaskbarWindow();
-        }
-
-        // SMTC media session event handlers
-        private void MediaManager_OnAnyMediaPropertyChanged(MediaSession mediaSession,
-            GlobalSystemMediaTransportControlsSessionMediaProperties mediaProperties)
-        {
-            Dispatcher.BeginInvoke(() => UpdateTaskbar());
-        }
-
-        private void CurrentSession_OnPlaybackStateChanged(MediaSession mediaSession,
-            GlobalSystemMediaTransportControlsSessionPlaybackInfo playbackInfo)
-        {
-            Dispatcher.BeginInvoke(() => UpdateTaskbar());
-        }
-
-        private void MediaManager_OnAnySessionOpened(MediaSession mediaSession)
-        {
-            Dispatcher.BeginInvoke(() => UpdateTaskbar());
-        }
-
-        private void MediaManager_OnAnySessionClosed(MediaSession mediaSession)
-        {
-            Dispatcher.BeginInvoke(() => UpdateTaskbar());
         }
     }
 }

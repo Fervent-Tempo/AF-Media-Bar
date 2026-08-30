@@ -3,13 +3,12 @@
 using System.Diagnostics;
 using System.Windows.Controls;
 using System.Windows.Interop;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Interop;
+using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Utils;
-using Windows.Media.Control;
 using static AFMediaBar.Classes.Interop.NativeMethods;
 
 namespace AFMediaBar.Views.Windows;
@@ -251,8 +250,7 @@ public partial class TaskbarWindow : Window
         };
     }
 
-    public void UpdateUi(string title, string artist, BitmapImage? icon,
-        GlobalSystemMediaTransportControlsSessionPlaybackStatus? playbackStatus)
+    public void ApplySnapshot(MediaSnapshot snapshot)
     {
         if (!SettingsManager.Current.TaskbarBarEnabled || _isClosing)
             return;
@@ -261,7 +259,8 @@ public partial class TaskbarWindow : Window
             _timer.Start();
 
         // Delegate UI update to the media control
-        MediaControl.UpdateSongInfo(title, artist, icon, playbackStatus);
+        MediaControl.UpdateSongInfo(snapshot);
+        MediaControl.ApplyWindowsTheme();
 
         // Update position after UI change
         Dispatcher.BeginInvoke(() => UpdatePosition(), DispatcherPriority.Background);
