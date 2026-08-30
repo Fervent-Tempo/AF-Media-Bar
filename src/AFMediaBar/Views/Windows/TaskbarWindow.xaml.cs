@@ -9,6 +9,7 @@ using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Utils;
+using MenuItem = Wpf.Ui.Controls.MenuItem;
 using static AFMediaBar.Classes.Interop.NativeMethods;
 
 namespace AFMediaBar.Views.Windows;
@@ -34,6 +35,7 @@ public partial class TaskbarWindow : Window
     private IntPtr _lastTaskbarHandle;
     private bool _positionUpdateInProgress;
     private bool _isClosing;
+    private IReadOnlyList<MediaSessionOption>? _currentSessionOptions;
 
     public TaskbarWindow(ITaskbarDockService taskBarService, MainWindow mainWindow)
     {
@@ -266,6 +268,57 @@ public partial class TaskbarWindow : Window
         Dispatcher.BeginInvoke(() => UpdatePosition(), DispatcherPriority.Background);
 
         Dispatcher.Invoke(() => { Visibility = Visibility.Visible; });
+    }
+
+    /// <summary>
+    /// 用最新会话列表重建右键菜单的"切换媒体源"子菜单。
+    /// Rebuilds the "switch media source" submenu from the latest session list.
+    /// </summary>
+    public void ApplySessions(IReadOnlyList<MediaSessionOption> options)
+    {
+        if (_isClosing)
+            return;
+
+        _currentSessionOptions = options;
+
+        Dispatcher.Invoke(() =>
+        {
+            SessionsMenuItem.Items.Clear();
+            foreach (var option in options)
+            {
+                var item = new MenuItem
+                {
+                    Header = option.DisplayName,
+                    IsCheckable = true,
+                    IsChecked = option.IsSelected,
+                    Tag = option.Key
+                };
+                item.Click += SessionMenuItem_OnClick;
+                SessionsMenuItem.Items.Add(item);
+            }
+        });
+    }
+
+    private void SessionMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { Tag: string key } item)
+        {
+            return;
+        }
+
+        // 点击已选中的会话保持勾选状态；其余交给服务切换，列表事件会重建菜单。
+        if (_currentSessionOptions?.FirstOrDefault(option => option.Key == key)?.IsSelected == true)
+        {
+            item.IsChecked = true;
+            return;
+        }
+
+        _mainWindow.SelectMediaSession(key);
+    }
+
+    private void ReconnectMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        _mainWindow.ReconnectMediaSession();
     }
 
     protected override void OnClosed(EventArgs e)

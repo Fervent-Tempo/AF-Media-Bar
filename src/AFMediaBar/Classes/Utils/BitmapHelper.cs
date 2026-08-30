@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Net.Http;
 using System.Security.Cryptography;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -96,6 +97,9 @@ internal static class BitmapHelper
     // current or latest dominant colors
     private static List<SolidColorBrush>? _currentDominantColors;
 
+    // cover URL downloads (memory player artwork), short timeout so a hung cover host cannot stall the poll
+    private static readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromSeconds(8) };
+
     /// <summary>
     /// 是否使用专辑封面提取强调色（后续可接入设置，默认开启）。
     /// </summary>
@@ -161,6 +165,45 @@ internal static class BitmapHelper
         _currentHashCode = hashCode;
         _currentHashCodeContext.Value = hashCode;
         return image;
+    }
+
+    /// <summary>
+    /// 从 URL 下载并解码封面（内存播放器路径使用）；失败或非 2xx 时返回 null。
+    /// Downloads and decodes artwork from a URL (memory player path); null on failure or non-2xx.
+    /// </summary>
+    internal static async Task<BitmapImage?> GetImageFromUrlAsync(string url, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(url) || !Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var response = await _httpClient.GetAsync(uri, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            var image = new BitmapImage();
+            image.BeginInit();
+            image.CacheOption = BitmapCacheOption.OnLoad;
+            image.DecodePixelWidth = _maxThumbnailSize;
+            image.StreamSource = stream;
+            image.EndInit();
+            image.Freeze();
+            return image;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     internal static CroppedBitmap? CropToSquare(BitmapImage? sourceImage)

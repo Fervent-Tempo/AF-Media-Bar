@@ -14,16 +14,14 @@
         Background="Transparent"
         Visibility="Collapsed">
     <Window.ContextMenu>
-        <ContextMenu x:Name="PlayerMenu"
-                     Width="280"
-                     DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-            <ui:MenuItem x:Name="MediaSourcesMenuItem"
+        <ContextMenu x:Name="PlayerMenu" Width="280">
+            <ui:MenuItem x:Name="SessionsMenuItem"
                          Header="打开媒体源"
-                         Icon="{ui:SymbolIcon MusicNote224}"
-                         ItemsSource="{Binding ViewModel.MediaSources}" />
+                         Icon="{ui:SymbolIcon MusicNote216}" />
             <Separator />
             <ui:MenuItem Header="重新连接 SMTC"
-                         Icon="{ui:SymbolIcon ArrowSync24}" />
+                         Icon="{ui:SymbolIcon ArrowSync24}"
+                         Click="ReconnectMenuItem_OnClick" />
             <ui:MenuItem Header="设置"
                          Icon="{ui:SymbolIcon Settings24}" />
             <Separator />

@@ -44,6 +44,7 @@ namespace AFMediaBar.Views.Windows
 
             // 快照事件已在服务内调度到 UI 线程，这里只负责转发给任务栏窗口。
             _mediaSessionService.SnapshotChanged += MediaSessionService_OnSnapshotChanged;
+            _mediaSessionService.SessionsChanged += MediaSessionService_OnSessionsChanged;
 
             // evaluate the initial state once the window is loaded
             Loaded += MainWindow_Loaded;
@@ -77,6 +78,7 @@ namespace AFMediaBar.Views.Windows
             base.OnClosed(e);
 
             _mediaSessionService.SnapshotChanged -= MediaSessionService_OnSnapshotChanged;
+            _mediaSessionService.SessionsChanged -= MediaSessionService_OnSessionsChanged;
 
             _taskbarWindow?.Close();
             _taskbarWindow = null;
@@ -159,6 +161,16 @@ namespace AFMediaBar.Views.Windows
         {
             _taskbarWindow?.ApplySnapshot(snapshot);
         }
+
+        private void MediaSessionService_OnSessionsChanged(IReadOnlyList<MediaSessionOption> options)
+        {
+            _taskbarWindow?.ApplySessions(options);
+        }
+
+        // 任务栏窗口右键菜单的命令入口。 / Command entry points for the taskbar window context menu.
+        internal void SelectMediaSession(string key) => _mediaSessionService.SelectSession(key);
+
+        internal void ReconnectMediaSession() => _ = _mediaSessionService.ReconnectAsync();
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {

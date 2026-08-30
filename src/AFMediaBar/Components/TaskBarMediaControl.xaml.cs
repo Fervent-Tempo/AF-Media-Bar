@@ -12,6 +12,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Services.Lyrics;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Utils;
 using Wpf.Ui.Appearance;
@@ -35,6 +36,11 @@ namespace AFMediaBar.Components
         private bool _isPaused;
         private bool _isVertical;
         private bool _isSmallTaskbar;
+
+        // 歌词显示状态：解析后的行缓存 + 当前行下标，避免每个快照重复解析。
+        private string? _lyricsLrc;
+        private IReadOnlyList<LrcLine> _lyricsLines = [];
+        private int _lastLyricIndex = -2;
 
         public void SetVerticalMode(bool isVertical)
         {
@@ -117,6 +123,9 @@ namespace AFMediaBar.Components
                     SongArtist.Text = _actualArtist;
                 }
 
+                // 歌词可用时标题位置显示当前歌词行（随快照位置推进）。
+                UpdateLyricLine(snapshot);
+
                 // Update tooltip with song info
                 SongInfoStackPanel.ToolTip = string.Empty;
                 SongInfoStackPanel.ToolTip += !string.IsNullOrEmpty(snapshot.Title) ? snapshot.Title : string.Empty;
@@ -168,6 +177,41 @@ namespace AFMediaBar.Components
 
                 Visibility = Visibility.Visible;
             });
+        }
+
+        /// <summary>
+        /// 用快照中的歌词和位置更新标题区域的当前行；无歌词时恢复标题。
+        /// Shows the active lyric line in the title slot from the snapshot; restores the title when lyrics are absent.
+        /// </summary>
+        private void UpdateLyricLine(MediaSnapshot snapshot)
+        {
+            var lrc = snapshot.Lyrics?.Lrc;
+            if (string.IsNullOrWhiteSpace(lrc))
+            {
+                if (_lyricsLrc is not null)
+                {
+                    _lyricsLrc = null;
+                    _lyricsLines = [];
+                    _lastLyricIndex = -2;
+                    SongTitle.Text = _actualTitle;
+                }
+
+                return;
+            }
+
+            if (!string.Equals(_lyricsLrc, lrc, StringComparison.Ordinal))
+            {
+                _lyricsLrc = lrc;
+                _lyricsLines = LrcParser.Parse(lrc);
+                _lastLyricIndex = -2;
+            }
+
+            var index = LrcParser.FindIndex(_lyricsLines, TimeSpan.FromSeconds(snapshot.Position));
+            if (index != _lastLyricIndex)
+            {
+                _lastLyricIndex = index;
+                SongTitle.Text = index >= 0 ? _lyricsLines[index].Text : _actualTitle;
+            }
         }
 
         private void AnimateEntrance()

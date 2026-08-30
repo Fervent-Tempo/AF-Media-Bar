@@ -125,6 +125,9 @@ public static partial class NativeMethods
     public static partial uint GetWindowThreadProcessId(IntPtr hWnd, IntPtr lpdwProcessId);
 
     [LibraryImport("user32.dll", SetLastError = true)]
+    public static partial uint GetWindowThreadProcessId(IntPtr hWnd, out int processId);
+
+    [LibraryImport("user32.dll", SetLastError = true)]
     public static partial IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
 
     [LibraryImport("user32.dll", SetLastError = true)]
