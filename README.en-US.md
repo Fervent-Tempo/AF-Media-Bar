@@ -55,25 +55,30 @@
 - [Watch the AF Media Bar introduction video on Bilibili](https://www.bilibili.com/video/BV1Bjuq6bErr)
 
 ## Table of Contents
-<div align="center">
 
-- [Demo](#demo)
-- [Overview](#overview)
-- [Features](#features)
-- [How It Works](#how-it-works)
-- [Installation](#installation)
-- [Basic Usage](#basic-usage)
-- [Updating and Uninstalling](#updating-and-uninstalling)
-- [Troubleshooting](#troubleshooting)
-- [Technical Limitations](#technical-limitations)
-- [Privacy and Security](#privacy-and-security)
-- [Building from Source](#building-from-source)
-- [Project Structure](#project-structure)
-- [TODO](#todo)
-- [Contributing](#contributing)
-- [License](#license)
 
-</div>
+- [AF Media Bar](#af-media-bar)
+  - [Demo](#demo)
+    - [In Action](#in-action)
+    - [Introduction Video](#introduction-video)
+  - [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+  - [Features](#features)
+  - [How It Works](#how-it-works)
+  - [Installation](#installation)
+    - [Requirements](#requirements)
+    - [Recommended package](#recommended-package)
+  - [Basic Usage](#basic-usage)
+  - [Updating and Uninstalling](#updating-and-uninstalling)
+    - [Updating](#updating)
+    - [Uninstalling](#uninstalling)
+  - [Privacy and Security](#privacy-and-security)
+  - [Building from Source](#building-from-source)
+  - [Project Structure](#project-structure)
+  - [Contributing](#contributing)
+  - [License](#license)
+
+
 
 ## Overview
 
@@ -184,38 +189,6 @@ reg.exe delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "AF Media
 ```
 
 
-## Troubleshooting
-
-### No media session appears
-
-Make sure the app is actively playing media and has system media controls enabled. Browsers normally create a session only while a tab is playing audio or video. If the session is still missing, the app may not be supported; please report it in an Issue.
-
-### The bar overlaps taskbar icons
-
-Manual placement is the default. Unlock the position, drag the bar to an empty area, and lock it again. Automatic avoidance may be affected by third-party taskbar tools or Windows updates.
-
-### Output device switching fails
-
-Device enumeration uses supported Windows APIs, but changing the default endpoint relies on the undocumented `PolicyConfig` COM interface. Windows updates, managed-device policies, or unusual drivers may block this operation without affecting media controls.
-
-### Application volume is unavailable or targets the wrong process
-
-Volume control matches the GSMTC source to Windows audio sessions. Browser process models, multiple streams in one process, and custom audio engines can make a unique match impossible.
-
-### Resource usage is higher than expected
-
-Disable unused metrics and the audio visualizer, or enable low-spec mode. The visualizer reads WASAPI loopback data every 50 ms while enabled.
-
-## Technical Limitations
-
-- The bar is a WPF window in an independent process. Taskbar mode attaches it to Explorer with `SetParent`, while floating mode uses an independent top-level window. It is not an Explorer plugin and does not inject code.
-- The app must rediscover and reattach to the taskbar after Explorer restarts or third-party taskbar tools change its window structure; heavily customized environments may be incompatible.
-- Output switching uses the undocumented Windows `PolicyConfig` interface and may change in future Windows releases.
-- Automatic placement depends on Windows UI Automation and may not recognize customized taskbars.
-- The current instance follows the primary monitor taskbar only.
-- Browsers decide whether multiple tabs appear as one or multiple GSMTC sessions.
-- Only a `win-x64` package is currently published; ARM64 is not yet available.
-- The schema-5 grid editor has completed its code-level architecture refactor, and its preview surface is now isolated from the runtime surface. Four-way collapse, DPI pointer alignment, outside-window proximity, and old-profile recovery still require real-Windows acceptance.
 
 ## Privacy and Security
 
@@ -266,25 +239,6 @@ AF-Media-Bar/
 `-- README.en-US.md         # English documentation
 ```
 
-## TODO
-
-- [x] Improve tracking animation smoothness when the Windows taskbar is set to auto-hide.
-- [x] Complete automatic avoidance of taskbar icons.
-- [x] Test Windows 10 compatibility.
-- [x] Add no-media auto-hide and always-on-top window behavior.
-- [x] Automatically follow the system light/dark theme.
-- [x] Provide floating window mode and edge-collapse containers outside the strip.
-- [x] Provide display scaling and horizontal/vertical layouts for taskbar and floating windows.
-- [x] Provide an independent detailed settings page.
-- [x] Font Customization.
-- [x] Improve opening media apps from artwork and add quick access to Task Manager.
-- [x] Provide freely entered custom window sizes and more customization options.
-- [ ] Display scrolling video subtitles/lyrics.
-- [ ] Display media progress bars.
-- [ ] Polish the UI and provide multiple preset themes.
-- [ ] Complete real-Windows acceptance for the fine-grid editor.
-- [ ] Export and share configurations.
-- [ ] Add an onboarding tutorial.
 
 ## Contributing
 
@@ -298,6 +252,6 @@ AF Media Bar is available under the [MIT License](LICENSE).
 
 <div align="center">
 
-If AF Media Bar is useful to you, consider starring the repository.
+If AF Media Bar is useful to you, consider starring the repository❤️.
 
 </div>
