@@ -226,21 +226,34 @@ dotnet publish .\src\AFMediaBar\AFMediaBar.csproj -c Release -r win-x64 --self-c
 
 ```text
 AF-Media-Bar/
-|-- .github/
-|   |-- ISSUE_TEMPLATE/     # Issue 表单
-|   `-- workflows/          # 构建与发布工作流
-|-- src/
-|   |-- AFMediaBar/         # WPF 外壳、设置、运行时组件与发布配置
-|   |-- AFMediaBar.Core/    # 媒体、音频、通用业务逻辑与跨层契约
-|   |-- AFMediaBar.Layout/  # UI 无关布局模型、约束、编辑命令与 schema 5
-|   |-- AFMediaBar.LayoutEditor.Wpf/ # 独立 WPF 网格编辑器宿主与交互状态机
-|   `-- AFMediaBar.Platform.Windows/ # Windows 系统访问、布局存储与适配器
-|-- tests/
-|   `-- AFMediaBar.Core.Tests/ # Core 自动化测试
-|-- prototypes/             # WinUI 与布局编辑器独立实验项目
-|-- docs/                   # 项目文档与资源
-|-- AFMediaBar.slnx         # 解决方案构建与测试入口
-`-- README.md               # 中文说明
+├── .github/
+│   ├── ISSUE_TEMPLATE/            # Issue 表单
+│   └── workflows/                 # 构建与发布工作流
+├── src/
+│   └── AFMediaBar/                # WPF 应用主项目
+│       ├── Classes/               # 核心业务逻辑和服务
+│       │   ├── Abstractions/      # 抽象接口定义
+│       │   ├── Converters/        # WPF 值转换器
+│       │   ├── Interop/           # Windows API 互操作
+│       │   ├── Models/            # 数据模型
+│       │   │   └── Layout/        # 布局数据模型（LayoutSchema、ComponentConfig 等）
+│       │   ├── Services/          # 业务服务
+│       │   │   ├── Layout/        # 布局预设和渲染引擎
+│       │   │   ├── Lyrics/        # 歌词服务（网易云音乐歌词获取与解析）
+│       │   │   ├── Players/       # 媒体播放器服务
+│       │   │   └── Win32/         # Windows 系统服务
+│       │   ├── Settings/          # 设置管理
+│       │   └── Utils/             # 工具类
+│       ├── Components/            # 可复用 UI 组件（TaskBarMediaControl 等）
+│       ├── ViewModels/            # MVVM ViewModels
+│       │   ├── Pages/             # 页面 ViewModel
+│       │   └── Windows/           # 窗口 ViewModel
+│       └── Views/                 # XAML 视图
+│           ├── Pages/             # 设置页面视图
+│           └── Windows/           # 窗口视图
+├── docs/                          # 项目文档与资源
+├── AFMediaBar.slnx                # 解决方案文件
+└── README.md                      # 项目说明
 ```
 
 

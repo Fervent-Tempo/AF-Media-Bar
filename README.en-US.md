@@ -221,22 +221,35 @@ dotnet publish .\src\AFMediaBar\AFMediaBar.csproj -c Release -r win-x64 --self-c
 
 ```text
 AF-Media-Bar/
-|-- .github/
-|   |-- ISSUE_TEMPLATE/     # Issue forms
-|   `-- workflows/          # Build and release workflows
-|-- src/
-|   |-- AFMediaBar/         # WPF shell, settings, runtime widgets, and publishing
-|   |-- AFMediaBar.Core/    # Media, audio, shared business logic, and cross-layer contracts
-|   |-- AFMediaBar.Layout/  # UI-independent layout model, constraints, commands, and schema 5
-|   |-- AFMediaBar.LayoutEditor.Wpf/ # Standalone WPF grid editor host and pointer state machine
-|   `-- AFMediaBar.Platform.Windows/ # Windows integration, layout storage, and adapters
-|-- tests/
-|   `-- AFMediaBar.Core.Tests/ # Core automated tests
-|-- prototypes/             # WinUI and standalone layout-editor experiments
-|-- docs/                   # Project documentation and assets
-|-- AFMediaBar.slnx         # Solution build and test entry point
-|-- README.md               # Chinese documentation
-`-- README.en-US.md         # English documentation
+├── .github/
+│   ├── ISSUE_TEMPLATE/            # Issue forms
+│   └── workflows/                 # Build and release workflows
+├── src/
+│   └── AFMediaBar/                # WPF application main project
+│       ├── Classes/               # Core business logic and services
+│       │   ├── Abstractions/      # Abstract interface definitions
+│       │   ├── Converters/        # WPF value converters
+│       │   ├── Interop/           # Windows API interop
+│       │   ├── Models/            # Data models
+│       │   │   └── Layout/        # Layout data models (LayoutSchema, ComponentConfig, etc.)
+│       │   ├── Services/          # Business services
+│       │   │   ├── Layout/        # Layout presets and render engine
+│       │   │   ├── Lyrics/        # Lyrics service (NetEase Cloud Music lyrics fetch and parse)
+│       │   │   ├── Players/       # Media player services
+│       │   │   └── Win32/         # Windows system services
+│       │   ├── Settings/          # Settings management
+│       │   └── Utils/             # Utility classes
+│       ├── Components/            # Reusable UI components (TaskBarMediaControl, etc.)
+│       ├── ViewModels/            # MVVM ViewModels
+│       │   ├── Pages/             # Page ViewModels
+│       │   └── Windows/           # Window ViewModels
+│       └── Views/                 # XAML views
+│           ├── Pages/             # Settings page views
+│           └── Windows/           # Window views
+├── docs/                          # Project documentation and assets
+├── AFMediaBar.slnx                # Solution file
+├── README.md                      # Chinese documentation
+└── README.en-US.md                # English documentation
 ```
 
 
