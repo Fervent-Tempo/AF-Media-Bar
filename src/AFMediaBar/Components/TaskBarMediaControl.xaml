@@ -19,62 +19,64 @@
                 </Image.Effect>
             </Image>
             <Border Name="TopBorder" BorderThickness="0,1.25,0,0" CornerRadius="5" Margin="0,0,0,1.25">
-                <Grid Name="MainGrid" HorizontalAlignment="Left" VerticalAlignment="Center"
-                      RenderTransformOrigin="0,0.5">
-                    <Grid.RenderTransform>
+                <!-- 使用 Canvas 支持绝对定位，便于布局系统动态调整组件位置 -->
+                <!-- Use Canvas for absolute positioning, allowing layout system to dynamically adjust component positions -->
+                <Canvas Name="MainCanvas" HorizontalAlignment="Left" VerticalAlignment="Center">
+                    <Canvas.RenderTransform>
                         <ScaleTransform ScaleX="0.9" ScaleY="0.9" />
-                    </Grid.RenderTransform>
-                    <StackPanel Name="MainStackPanel" Orientation="Horizontal" HorizontalAlignment="Left"
-                                VerticalAlignment="Center" Width="Auto" Margin="4,0,-100,0">
-                        <Border Name="SongImageBorder" CornerRadius="5" ClipToBounds="True" Width="36" Height="36"
-                                Panel.ZIndex="2">
-                            <Grid>
-                                <ui:SymbolIcon Name="SongImagePlaceholder" Symbol="MusicNote220" FontSize="24"
-                                               Filled="True"
-                                               Foreground="{DynamicResource MicaWPF.Brushes.SystemAccentColorTertiary}" />
-                            </Grid>
-                            <Border.Background>
-                                <ImageBrush x:Name="SongImage" Stretch="UniformToFill" />
-                            </Border.Background>
-                        </Border>
+                    </Canvas.RenderTransform>
 
-                        <StackPanel Name="SongInfoStackPanel" Orientation="Vertical" VerticalAlignment="Center"
-                                    Width="Auto" Margin="8,0,0,0"
-                                    ToolTipService.InitialShowDelay="800"
-                                    ToolTipService.Placement="RelativePoint"
-                                    ToolTipService.VerticalOffset="-16">
-                            <Canvas x:Name="SongTitleContainer" Height="19">
-                                <TextBlock x:Name="SongTitle" Text="" FontWeight="Normal">
-                                    <TextBlock.RenderTransform>
-                                        <TranslateTransform />
-                                    </TextBlock.RenderTransform>
-                                </TextBlock>
-                            </Canvas>
-                            <Canvas x:Name="SongArtistContainer" Margin="0,-1.5,0,0" Height="19">
-                                <TextBlock x:Name="SongArtist" Text="" FontWeight="Normal" Opacity="0.5">
-                                    <TextBlock.RenderTransform>
-                                        <TranslateTransform />
-                                    </TextBlock.RenderTransform>
-                                </TextBlock>
-                            </Canvas>
-                        </StackPanel>
+                    <!-- 封面组件 Artwork component -->
+                    <Border Name="SongImageBorder" CornerRadius="5" ClipToBounds="True" Width="36" Height="36"
+                            Panel.ZIndex="2">
+                        <Grid>
+                            <ui:SymbolIcon Name="SongImagePlaceholder" Symbol="MusicNote220" FontSize="24"
+                                           Filled="True"
+                                           Foreground="{DynamicResource MicaWPF.Brushes.SystemAccentColorTertiary}" />
+                        </Grid>
+                        <Border.Background>
+                            <ImageBrush x:Name="SongImage" Stretch="UniformToFill" />
+                        </Border.Background>
+                    </Border>
 
-                        <StackPanel Name="ControlsStackPanel" Orientation="Horizontal" VerticalAlignment="Center"
-                                    Width="Auto">
-                            <StackPanel.Style>
-                                <Style TargetType="StackPanel">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding TaskbarWidgetControlsEnabled}" Value="True">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </StackPanel.Style>
-                        </StackPanel>
-
+                    <!-- 歌曲信息组件 Song info component -->
+                    <StackPanel Name="SongInfoStackPanel" Orientation="Vertical" VerticalAlignment="Center"
+                                Width="Auto"
+                                ToolTipService.InitialShowDelay="800"
+                                ToolTipService.Placement="RelativePoint"
+                                ToolTipService.VerticalOffset="-16">
+                        <Canvas x:Name="SongTitleContainer" Height="19">
+                            <TextBlock x:Name="SongTitle" Text="" FontWeight="Normal">
+                                <TextBlock.RenderTransform>
+                                    <TranslateTransform />
+                                </TextBlock.RenderTransform>
+                            </TextBlock>
+                        </Canvas>
+                        <Canvas x:Name="SongArtistContainer" Margin="0,-1.5,0,0" Height="19">
+                            <TextBlock x:Name="SongArtist" Text="" FontWeight="Normal" Opacity="0.5">
+                                <TextBlock.RenderTransform>
+                                    <TranslateTransform />
+                                </TextBlock.RenderTransform>
+                            </TextBlock>
+                        </Canvas>
                     </StackPanel>
-                </Grid>
+
+                    <!-- 控制按钮组件 Controls component -->
+                    <StackPanel Name="ControlsStackPanel" Orientation="Horizontal" VerticalAlignment="Center"
+                                Width="Auto">
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding TaskbarWidgetControlsEnabled}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+                    </StackPanel>
+
+                </Canvas>
             </Border>
         </Grid>
     </Border>

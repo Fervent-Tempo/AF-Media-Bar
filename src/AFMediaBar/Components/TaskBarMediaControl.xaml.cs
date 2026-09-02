@@ -12,6 +12,8 @@ using System.Windows.Media.Animation;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Models.Layout;
+using AFMediaBar.Classes.Services.Layout;
 using AFMediaBar.Classes.Services.Lyrics;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Utils;
@@ -44,9 +46,17 @@ namespace AFMediaBar.Components
     /// </summary>
     public partial class TaskBarMediaControl : UserControl
     {
+        // === 布局渲染引擎 Layout Render Engine ===
+        private LayoutRenderEngine? _layoutEngine;
+        private WindowMode _currentMode = WindowMode.Taskbar;  // 当前窗口模式 Current window mode
+
         public TaskBarMediaControl()
         {
             InitializeComponent();
+
+            // 初始化布局渲染引擎
+            // Initialize layout render engine
+            InitializeLayoutEngine();
         }
 
         // === 内部状态缓存 Internal State Cache ===
@@ -65,12 +75,67 @@ namespace AFMediaBar.Components
         private int _lastLyricIndex = -2;
 
         /// <summary>
+        /// 初始化布局渲染引擎：将 MainBorder 和 BackgroundImage 传入引擎以便动态调整布局。
+        /// Initialize layout render engine: pass MainBorder and BackgroundImage to engine for dynamic layout adjustment.
+        /// </summary>
+        private void InitializeLayoutEngine()
+        {
+            _layoutEngine = new LayoutRenderEngine(
+                mainBorder: MainBorder,
+                contentCanvas: MainCanvas,
+                backgroundImage: BackgroundImage,
+                artworkBorder: SongImageBorder,
+                songInfoPanel: SongInfoStackPanel,
+                controlsPanel: ControlsStackPanel
+            );
+
+            // 应用默认布局（任务栏横向）
+            // Apply default layout (taskbar horizontal)
+            ApplyLayout(WindowMode.Taskbar, LayoutOrientation.Horizontal);
+        }
+
+        /// <summary>
+        /// 应用布局：根据窗口模式和方向选择并应用对应的布局配置。
+        /// Apply layout: select and apply corresponding layout config based on window mode and orientation.
+        /// </summary>
+        /// <param name="mode">窗口模式（任务栏/悬浮）/ Window mode (taskbar/floating)</param>
+        /// <param name="orientation">布局方向（横向/竖向）/ Layout orientation (horizontal/vertical)</param>
+        public void ApplyLayout(WindowMode mode, LayoutOrientation orientation)
+        {
+            _currentMode = mode;
+
+            // 从预设中获取布局
+            // Get layout from presets
+            var layout = LayoutPresets.GetLayout(mode, orientation);
+
+            // 应用布局
+            // Apply layout
+            _layoutEngine?.ApplyLayout(layout);
+
+            // 更新内部状态标志以保持兼容
+            // Update internal state flags to maintain compatibility
+            _isVertical = orientation == LayoutOrientation.Vertical;
+        }
+
+        /// <summary>
+        /// 获取当前应用的布局配置。
+        /// Get currently applied layout configuration.
+        /// </summary>
+        public LayoutSchema? CurrentLayout => _layoutEngine?.CurrentLayout;
+
+        /// <summary>
         /// 设置竖向模式：任务栏在屏幕左侧或右侧时调整布局。
         /// Set vertical mode: adjust layout when taskbar is on screen left or right edge.
         /// </summary>
         public void SetVerticalMode(bool isVertical)
         {
-            _isVertical = isVertical;
+            // 使用新的布局系统
+            // Use new layout system
+            var orientation = isVertical ? LayoutOrientation.Vertical : LayoutOrientation.Horizontal;
+            ApplyLayout(_currentMode, orientation);
+
+            // 兼容性：更新可见性（布局系统已处理尺寸）
+            // Compatibility: update visibility (layout system handles sizing)
             SongInfoStackPanel.Visibility = isVertical ? Visibility.Collapsed : Visibility.Visible;
             SongArtistContainer.Visibility = !_isSmallTaskbar && !isVertical && !string.IsNullOrEmpty(_actualArtist)
                 ? Visibility.Visible
