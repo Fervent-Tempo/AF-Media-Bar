@@ -1,5 +1,7 @@
 using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services;
+using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Utils;
 using AFMediaBar.ViewModels.Windows;
 using System.Runtime.InteropServices;
@@ -46,6 +48,10 @@ namespace AFMediaBar.Views.Windows
             _mediaSessionService.SnapshotChanged += MediaSessionService_OnSnapshotChanged;
             _mediaSessionService.SessionsChanged += MediaSessionService_OnSessionsChanged;
 
+            // 订阅布局设置变更事件
+            // Subscribe to layout settings changed event
+            SettingsManager.LayoutSettingsChanged += SettingsManager_OnLayoutSettingsChanged;
+
             // evaluate the initial state once the window is loaded
             Loaded += MainWindow_Loaded;
         }
@@ -79,6 +85,7 @@ namespace AFMediaBar.Views.Windows
 
             _mediaSessionService.SnapshotChanged -= MediaSessionService_OnSnapshotChanged;
             _mediaSessionService.SessionsChanged -= MediaSessionService_OnSessionsChanged;
+            SettingsManager.LayoutSettingsChanged -= SettingsManager_OnLayoutSettingsChanged;
 
             _taskbarWindow?.Close();
             _taskbarWindow = null;
@@ -165,6 +172,20 @@ namespace AFMediaBar.Views.Windows
         private void MediaSessionService_OnSessionsChanged(IReadOnlyList<MediaSessionOption> options)
         {
             _taskbarWindow?.ApplySessions(options);
+        }
+
+        /// <summary>
+        /// 处理布局设置变更事件：应用新的窗口模式和布局方向。
+        /// Handle layout settings changed event: apply new window mode and layout orientation.
+        /// </summary>
+        private void SettingsManager_OnLayoutSettingsChanged(object? sender, LayoutSettingsChangedEventArgs e)
+        {
+            // 在 UI 线程上执行布局更新
+            // Execute layout update on UI thread
+            Dispatcher.BeginInvoke(() =>
+            {
+                _taskbarWindow?.ApplyLayoutSettings(e.WindowMode, e.OrientationMode);
+            });
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)

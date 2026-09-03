@@ -1,6 +1,8 @@
 // The media bar docked into the Explorer taskbar, ported from FluentFlyout's TaskbarWindow
 // (https://github.com/ManualDinosaur/FluentFlyout, GPL-3.0-or-later).
 
+using AFMediaBar.Classes.Models.Layout;
+using AFMediaBar.Classes.Settings;
 using System.Diagnostics;
 using System.Windows.Controls;
 using System.Windows.Interop;
@@ -8,7 +10,6 @@ using System.Windows.Threading;
 using AFMediaBar.Classes.Interop;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
-using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Utils;
 using MenuItem = Wpf.Ui.Controls.MenuItem;
 using static AFMediaBar.Classes.Interop.NativeMethods;
@@ -273,6 +274,49 @@ public partial class TaskbarWindow : Window
 
     #endregion
 
+    /// <summary>
+    /// 应用布局设置：根据窗口模式和布局方向更新媒体控件的布局。
+    /// Apply layout settings: update media control layout based on window mode and orientation mode.
+    /// </summary>
+    /// <param name="windowMode">窗口模式 / Window mode</param>
+    /// <param name="orientationMode">布局方向模式 / Layout orientation mode</param>
+    public void ApplyLayoutSettings(WindowMode windowMode, LayoutOrientationMode orientationMode)
+    {
+        if (_isClosing)
+            return;
+
+        // 将 LayoutOrientationMode 转换为 LayoutOrientation
+        // Convert LayoutOrientationMode to LayoutOrientation
+        LayoutOrientation orientation;
+
+        if (orientationMode == LayoutOrientationMode.Auto)
+        {
+            // 自动模式：根据任务栏位置判断
+            // Auto mode: determine based on taskbar position
+            // TODO: 需要从 TaskbarDockService 获取任务栏方向
+            // 暂时默认为横向
+            // TODO: Need to get taskbar orientation from TaskbarDockService
+            // Default to horizontal for now
+            orientation = LayoutOrientation.Horizontal;
+        }
+        else
+        {
+            // 手动模式：直接映射
+            // Manual mode: direct mapping
+            orientation = orientationMode == LayoutOrientationMode.Horizontal
+                ? LayoutOrientation.Horizontal
+                : LayoutOrientation.Vertical;
+        }
+
+        // 应用布局到媒体控件
+        // Apply layout to media control
+        MediaControl.ApplyLayout(windowMode, orientation);
+
+        // 注意：窗口模式切换（任务栏/悬浮）需要重新创建窗口
+        // Note: Window mode switching (taskbar/floating) requires window recreation
+        // 当前仅更新布局，悬浮窗口模式的完整实现需要额外的窗口逻辑
+        // Currently only updates layout, full floating mode implementation requires additional window logic
+    }
 
     /// <summary>
     /// 用最新会话列表重建右键菜单的"切换媒体源"子菜单；点击通过命令执行。

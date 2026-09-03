@@ -90,4 +90,40 @@ public class AppSettings
 public static class SettingsManager
 {
     public static AppSettings Current { get; set; } = new();
+
+    /// <summary>
+    /// 布局设置变更事件：当窗口模式或布局方向发生变化时触发。
+    /// Layout settings changed event: fired when window mode or layout orientation changes.
+    /// </summary>
+    public static event EventHandler<LayoutSettingsChangedEventArgs>? LayoutSettingsChanged;
+
+    /// <summary>
+    /// 触发布局设置变更事件。
+    /// Raise layout settings changed event.
+    /// </summary>
+    /// <param name="windowMode">新的窗口模式 / New window mode</param>
+    /// <param name="orientationMode">新的布局方向模式 / New layout orientation mode</param>
+    public static void RaiseLayoutSettingsChanged(WindowMode windowMode, LayoutOrientationMode orientationMode)
+    {
+        LayoutSettingsChanged?.Invoke(null, new LayoutSettingsChangedEventArgs(windowMode, orientationMode));
+    }
+}
+
+/// <summary>
+/// 布局设置变更事件参数。
+/// Layout settings changed event arguments.
+/// </summary>
+public class LayoutSettingsChangedEventArgs : EventArgs
+{
+    /// <summary>新的窗口模式 / New window mode</summary>
+    public WindowMode WindowMode { get; }
+
+    /// <summary>新的布局方向模式 / New layout orientation mode</summary>
+    public LayoutOrientationMode OrientationMode { get; }
+
+    public LayoutSettingsChangedEventArgs(WindowMode windowMode, LayoutOrientationMode orientationMode)
+    {
+        WindowMode = windowMode;
+        OrientationMode = orientationMode;
+    }
 }

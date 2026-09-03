@@ -44,8 +44,11 @@ namespace AFMediaBar.ViewModels.Pages
             CurrentWindowMode = WindowMode.Taskbar;
             SettingsManager.Current.WindowMode = WindowMode.Taskbar;
 
-            // TODO: 触发窗口模式变更事件，通知主窗口更新
-            // TODO: Trigger window mode change event to notify main window
+            // 触发布局设置变更事件
+            // Trigger layout settings changed event
+            SettingsManager.RaiseLayoutSettingsChanged(
+                SettingsManager.Current.WindowMode,
+                SettingsManager.Current.LayoutOrientationMode);
         }
 
         /// <summary>
@@ -61,8 +64,11 @@ namespace AFMediaBar.ViewModels.Pages
             CurrentWindowMode = WindowMode.Floating;
             SettingsManager.Current.WindowMode = WindowMode.Floating;
 
-            // TODO: 触发窗口模式变更事件，通知主窗口更新
-            // TODO: Trigger window mode change event to notify main window
+            // 触发布局设置变更事件
+            // Trigger layout settings changed event
+            SettingsManager.RaiseLayoutSettingsChanged(
+                SettingsManager.Current.WindowMode,
+                SettingsManager.Current.LayoutOrientationMode);
         }
 
         /// <summary>
@@ -78,8 +84,11 @@ namespace AFMediaBar.ViewModels.Pages
             CurrentLayoutOrientationMode = LayoutOrientationMode.Auto;
             SettingsManager.Current.LayoutOrientationMode = LayoutOrientationMode.Auto;
 
-            // TODO: 触发布局方向变更事件，通知主窗口更新布局
-            // TODO: Trigger layout orientation change event to notify main window
+            // 触发布局设置变更事件
+            // Trigger layout settings changed event
+            SettingsManager.RaiseLayoutSettingsChanged(
+                SettingsManager.Current.WindowMode,
+                SettingsManager.Current.LayoutOrientationMode);
         }
 
         /// <summary>
@@ -95,8 +104,11 @@ namespace AFMediaBar.ViewModels.Pages
             CurrentLayoutOrientationMode = LayoutOrientationMode.Horizontal;
             SettingsManager.Current.LayoutOrientationMode = LayoutOrientationMode.Horizontal;
 
-            // TODO: 触发布局方向变更事件，通知主窗口更新布局
-            // TODO: Trigger layout orientation change event to notify main window
+            // 触发布局设置变更事件
+            // Trigger layout settings changed event
+            SettingsManager.RaiseLayoutSettingsChanged(
+                SettingsManager.Current.WindowMode,
+                SettingsManager.Current.LayoutOrientationMode);
         }
 
         /// <summary>
@@ -112,8 +124,11 @@ namespace AFMediaBar.ViewModels.Pages
             CurrentLayoutOrientationMode = LayoutOrientationMode.Vertical;
             SettingsManager.Current.LayoutOrientationMode = LayoutOrientationMode.Vertical;
 
-            // TODO: 触发布局方向变更事件，通知主窗口更新布局
-            // TODO: Trigger layout orientation change event to notify main window
+            // 触发布局设置变更事件
+            // Trigger layout settings changed event
+            SettingsManager.RaiseLayoutSettingsChanged(
+                SettingsManager.Current.WindowMode,
+                SettingsManager.Current.LayoutOrientationMode);
         }
     }
 }
