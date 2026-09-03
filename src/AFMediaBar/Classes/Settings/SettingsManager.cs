@@ -1,3 +1,5 @@
+using AFMediaBar.Classes.Models.Layout;
+
 namespace AFMediaBar.Classes.Settings;
 
 /// <summary>
@@ -9,6 +11,17 @@ public enum TaskbarBarPosition
     Start = 0,   // 开始位置（左侧/上侧）Start position (left/top)
     Center = 1,  // 居中位置 Center position
     End = 2      // 结束位置（右侧/下侧）End position (right/bottom)
+}
+
+/// <summary>
+/// 布局方向模式：自动、横向或纵向。
+/// Layout orientation mode: auto, horizontal or vertical.
+/// </summary>
+public enum LayoutOrientationMode
+{
+    Auto = 0,       // 自动（根据任务栏位置自动选择）Auto (auto-select based on taskbar position)
+    Horizontal = 1, // 横向 Horizontal
+    Vertical = 2    // 纵向 Vertical
 }
 
 /// <summary>
@@ -50,6 +63,18 @@ public class AppSettings
     /// Extra manual offset (physical px) applied along the taskbar axis.
     /// </summary>
     public int TaskbarBarManualPadding { get; set; }
+
+    /// <summary>
+    /// 窗口模式：任务栏模式或悬浮模式
+    /// Window mode: taskbar mode or floating mode
+    /// </summary>
+    public WindowMode WindowMode { get; set; } = WindowMode.Taskbar;
+
+    /// <summary>
+    /// 布局方向模式：自动、横向或纵向
+    /// Layout orientation mode: auto, horizontal or vertical
+    /// </summary>
+    public LayoutOrientationMode LayoutOrientationMode { get; set; } = LayoutOrientationMode.Auto;
 }
 
 /// <summary>

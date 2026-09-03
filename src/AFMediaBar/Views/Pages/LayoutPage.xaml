@@ -4,11 +4,16 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:converters="clr-namespace:AFMediaBar.Classes.Converters"
       mc:Ignorable="d"
       d:DesignHeight="900"
       d:DesignWidth="1100"
       Title="LayoutPage"
       Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+
+    <Page.Resources>
+        <converters:GenericEnumToBooleanConverter x:Key="GenericEnumToBooleanConverter" />
+    </Page.Resources>
 
     <StackPanel MaxWidth="1000"
                 Margin="16"
@@ -38,10 +43,13 @@
             <StackPanel Orientation="Horizontal">
                 <RadioButton Content="停靠任务栏"
                              GroupName="HostMode"
-                             IsChecked="True"
+                             IsChecked="{Binding ViewModel.CurrentWindowMode, Converter={StaticResource GenericEnumToBooleanConverter}, ConverterParameter=Taskbar, Mode=OneWay}"
+                             Command="{Binding ViewModel.SwitchToTaskbarModeCommand, Mode=OneWay}"
                              Margin="0,0,12,0" />
                 <RadioButton Content="悬浮窗口"
-                             GroupName="HostMode" />
+                             GroupName="HostMode"
+                             IsChecked="{Binding ViewModel.CurrentWindowMode, Converter={StaticResource GenericEnumToBooleanConverter}, ConverterParameter=Floating, Mode=OneWay}"
+                             Command="{Binding ViewModel.SwitchToFloatingModeCommand, Mode=OneWay}" />
             </StackPanel>
         </ui:CardControl>
 
@@ -59,13 +67,18 @@
             <StackPanel Orientation="Horizontal">
                 <RadioButton Content="自动"
                              GroupName="LayoutMode"
-                             IsChecked="True"
+                             IsChecked="{Binding ViewModel.CurrentLayoutOrientationMode, Converter={StaticResource GenericEnumToBooleanConverter}, ConverterParameter=Auto, Mode=OneWay}"
+                             Command="{Binding ViewModel.SwitchToAutoLayoutCommand, Mode=OneWay}"
                              Margin="0,0,12,0" />
                 <RadioButton Content="横向"
                              GroupName="LayoutMode"
+                             IsChecked="{Binding ViewModel.CurrentLayoutOrientationMode, Converter={StaticResource GenericEnumToBooleanConverter}, ConverterParameter=Horizontal, Mode=OneWay}"
+                             Command="{Binding ViewModel.SwitchToHorizontalLayoutCommand, Mode=OneWay}"
                              Margin="0,0,12,0" />
                 <RadioButton Content="纵向"
-                             GroupName="LayoutMode" />
+                             GroupName="LayoutMode"
+                             IsChecked="{Binding ViewModel.CurrentLayoutOrientationMode, Converter={StaticResource GenericEnumToBooleanConverter}, ConverterParameter=Vertical, Mode=OneWay}"
+                             Command="{Binding ViewModel.SwitchToVerticalLayoutCommand, Mode=OneWay}" />
             </StackPanel>
         </ui:CardControl>
 
