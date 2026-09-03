@@ -6,7 +6,6 @@
              xmlns:local="clr-namespace:AFMediaBar.Components"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              mc:Ignorable="d"
-             Height="40" Width="100"
              TextOptions.TextRenderingMode="ClearType" TextOptions.TextFormattingMode="Ideal">
 
     <Border Name="MainBorder" CornerRadius="6" MouseEnter="Grid_MouseEnter" MouseLeave="Grid_MouseLeave"
@@ -21,10 +20,7 @@
             <Border Name="TopBorder" BorderThickness="0,1.25,0,0" CornerRadius="5" Margin="0,0,0,1.25">
                 <!-- 使用 Canvas 支持绝对定位，便于布局系统动态调整组件位置 -->
                 <!-- Use Canvas for absolute positioning, allowing layout system to dynamically adjust component positions -->
-                <Canvas Name="MainCanvas" HorizontalAlignment="Left" VerticalAlignment="Center">
-                    <Canvas.RenderTransform>
-                        <ScaleTransform ScaleX="0.9" ScaleY="0.9" />
-                    </Canvas.RenderTransform>
+                <Canvas Name="MainCanvas">
 
                     <!-- 封面组件 Artwork component -->
                     <Border Name="SongImageBorder" CornerRadius="5" ClipToBounds="True" Width="36" Height="36"
@@ -40,7 +36,7 @@
                     </Border>
 
                     <!-- 歌曲信息组件 Song info component -->
-                    <StackPanel Name="SongInfoStackPanel" Orientation="Vertical" VerticalAlignment="Center"
+                    <StackPanel Name="SongInfoStackPanel" Orientation="Vertical"
                                 Width="Auto"
                                 ToolTipService.InitialShowDelay="800"
                                 ToolTipService.Placement="RelativePoint"
@@ -62,18 +58,8 @@
                     </StackPanel>
 
                     <!-- 控制按钮组件 Controls component -->
-                    <StackPanel Name="ControlsStackPanel" Orientation="Horizontal" VerticalAlignment="Center"
-                                Width="Auto">
-                        <StackPanel.Style>
-                            <Style TargetType="StackPanel">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding TaskbarWidgetControlsEnabled}" Value="True">
-                                        <Setter Property="Visibility" Value="Visible" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </StackPanel.Style>
+                    <StackPanel Name="ControlsStackPanel" Orientation="Horizontal"
+                                Width="Auto" Visibility="Visible">
                     </StackPanel>
 
                 </Canvas>

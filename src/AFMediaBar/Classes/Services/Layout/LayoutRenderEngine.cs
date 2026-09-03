@@ -117,6 +117,10 @@ public sealed class LayoutRenderEngine
         _mainBorder.Width = config.Width;
         _mainBorder.Height = config.Height;
 
+        // 调试输出：记录应用的尺寸
+        // Debug output: log applied size
+        System.Diagnostics.Debug.WriteLine($"[LayoutRenderEngine] Applied size: {config.Width}×{config.Height}");
+
         // 设置圆角
         // Set corner radius
         _mainBorder.CornerRadius = new CornerRadius(config.CornerRadius);
@@ -213,6 +217,10 @@ public sealed class LayoutRenderEngine
     {
         if (_artworkBorder is null) return;
 
+        // 调试输出
+        // Debug output
+        System.Diagnostics.Debug.WriteLine($"[LayoutRenderEngine] Artwork: Position({config.Bounds.X}, {config.Bounds.Y}), Size({config.Bounds.Width}×{config.Bounds.Height})");
+
         // 设置尺寸
         // Set size
         _artworkBorder.Width = config.Bounds.Width;
@@ -244,6 +252,10 @@ public sealed class LayoutRenderEngine
     {
         if (_songInfoPanel is null) return;
 
+        // 调试输出
+        // Debug output
+        System.Diagnostics.Debug.WriteLine($"[LayoutRenderEngine] SongInfo: Position({config.Bounds.X}, {config.Bounds.Y}), Size({config.Bounds.Width}×{config.Bounds.Height})");
+
         // 设置尺寸
         // Set size
         _songInfoPanel.Width = config.Bounds.Width;
@@ -253,6 +265,12 @@ public sealed class LayoutRenderEngine
         // Set position
         Canvas.SetLeft(_songInfoPanel, config.Bounds.X);
         Canvas.SetTop(_songInfoPanel, config.Bounds.Y);
+
+        // 验证位置是否设置成功
+        // Verify position was set successfully
+        var actualLeft = Canvas.GetLeft(_songInfoPanel);
+        var actualTop = Canvas.GetTop(_songInfoPanel);
+        System.Diagnostics.Debug.WriteLine($"[LayoutRenderEngine] SongInfo actual position: Left={actualLeft}, Top={actualTop}");
 
         // 应用自定义属性（如文本对齐方式）
         // Apply custom properties (e.g., text alignment)
@@ -280,6 +298,10 @@ public sealed class LayoutRenderEngine
     private void ApplyControlsLayout(ComponentConfig config)
     {
         if (_controlsPanel is null) return;
+
+        // 调试输出
+        // Debug output
+        System.Diagnostics.Debug.WriteLine($"[LayoutRenderEngine] Controls: Position({config.Bounds.X}, {config.Bounds.Y}), Size({config.Bounds.Width}×{config.Bounds.Height})");
 
         // 设置尺寸
         // Set size

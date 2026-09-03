@@ -7,8 +7,8 @@ namespace AFMediaBar.Classes.Services.Layout;
 /// Taskbar theme - horizontal layout (for taskbar at top or bottom).
 ///
 /// 特点 Features:
-/// - 尺寸：280×40（标准任务栏高度）
-///   Size: 280×40 (standard taskbar height)
+/// - 尺寸：310×40（匹配 TaskbarWindow 尺寸）
+///   Size: 310×40 (matches TaskbarWindow size)
 /// - 组件横向排列：封面 | 歌曲信息 | 控制按钮
 ///   Components arranged horizontally: artwork | song info | controls
 /// - 适合宽度有限的任务栏环境
@@ -17,9 +17,9 @@ namespace AFMediaBar.Classes.Services.Layout;
 /// 组件布局 Component Layout:
 /// ┌────────────────────────────────────────┐
 /// │  [封面]  歌曲标题 - 艺术家  [控制按钮]  │
-/// │   36px     180px               40px    │
+/// │   36px     210px               40px    │
 /// └────────────────────────────────────────┘
-///    280px × 40px
+///    310px × 40px
 /// </summary>
 public static class TaskbarHorizontalLayout
 {
@@ -29,7 +29,7 @@ public static class TaskbarHorizontalLayout
         Description = "任务栏主题（横向）：适配任务栏在屏幕顶部或底部",
         Canvas = new CanvasConfig
         {
-            Width = 280,
+            Width = 310,
             Height = 40,
             Background = "#00000000",
             CornerRadius = 6,
@@ -67,7 +67,7 @@ public static class TaskbarHorizontalLayout
             {
                 Id = "song-info",
                 Type = "MediaText",
-                Bounds = new ComponentBounds(48, 2, 180, 36),
+                Bounds = new ComponentBounds(48, 2, 210, 36),
                 Properties = new Dictionary<string, object>
                 {
                     ["showTitle"] = true,
@@ -85,7 +85,7 @@ public static class TaskbarHorizontalLayout
             {
                 Id = "controls",
                 Type = "PlaybackControls",
-                Bounds = new ComponentBounds(236, 2, 40, 36),
+                Bounds = new ComponentBounds(266, 2, 40, 36),
                 Properties = new Dictionary<string, object>
                 {
                     ["buttonSize"] = 20.0,
