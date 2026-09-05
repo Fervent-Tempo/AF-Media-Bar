@@ -18,6 +18,7 @@ public partial class DynamicIslandWindow : Window
     private const double EdgeRevealDip = 5;
     private const double EdgeDockThresholdDip = 28;
     private const double PositionToleranceDip = 0.5;
+    private readonly MainWindowViewModel _viewModel;
     private bool _isExpanded;
     private bool _isClosing;
     private bool _isDragging;
@@ -27,11 +28,17 @@ public partial class DynamicIslandWindow : Window
     {
         WindowHelper.SetNoActivate(this);
         InitializeComponent();
+        _viewModel = viewModel;
         DataContext = new MainWindowDataContext(viewModel);
+        MediaControl.TogglePlayPauseRequested += MediaControl_TogglePlayPauseRequested;
+        MediaControl.SkipPreviousRequested += MediaControl_SkipPreviousRequested;
+        MediaControl.SkipNextRequested += MediaControl_SkipNextRequested;
+        MediaControl.ActivateSourceRequested += MediaControl_ActivateSourceRequested;
         Loaded += (_, _) =>
         {
             RestoreSavedPosition();
             ApplyLayoutSettings(SettingsManager.Current.LayoutOrientationMode);
+            MediaControl.ApplyWindowsTheme();
             SetPosition(_isExpanded ? GetExpandedPosition() : GetCollapsedPosition(), animated: false);
         };
     }
@@ -46,6 +53,7 @@ public partial class DynamicIslandWindow : Window
             if (!snapshot.IsConnected)
             {
                 MediaControl.UpdateSongInfo(snapshot);
+                MediaControl.ApplyWindowsTheme();
                 Visibility = Visibility.Visible;
                 if (SettingsManager.Current.DynamicIslandEdgeDocked)
                     Collapse(animated: true);
@@ -99,6 +107,8 @@ public partial class DynamicIslandWindow : Window
 
         SetPosition(_isExpanded ? GetExpandedPosition() : GetCollapsedPosition(), animated: false);
     }
+
+    public void ApplyAppearanceSettings() => MediaControl.ApplyWindowsTheme();
 
     private void Expand(bool animated)
     {
@@ -172,7 +182,8 @@ public partial class DynamicIslandWindow : Window
     private void Canvas_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (e.ChangedButton != System.Windows.Input.MouseButton.Left ||
-            e.OriginalSource is DependencyObject source && FindAncestor<System.Windows.Controls.Primitives.ButtonBase>(source) is not null)
+            e.OriginalSource is DependencyObject source &&
+            (FindAncestor<System.Windows.Controls.Primitives.ButtonBase>(source) is not null || IsMediaAction(source)))
         {
             return;
         }
@@ -216,7 +227,29 @@ public partial class DynamicIslandWindow : Window
         _isClosing = true;
         BeginAnimation(TopProperty, null);
         BeginAnimation(LeftProperty, null);
+        MediaControl.TogglePlayPauseRequested -= MediaControl_TogglePlayPauseRequested;
+        MediaControl.SkipPreviousRequested -= MediaControl_SkipPreviousRequested;
+        MediaControl.SkipNextRequested -= MediaControl_SkipNextRequested;
+        MediaControl.ActivateSourceRequested -= MediaControl_ActivateSourceRequested;
         base.OnClosed(e);
+    }
+
+    private void MediaControl_TogglePlayPauseRequested(object? sender, EventArgs e) =>
+        Execute(_viewModel.TogglePlayPauseCommand);
+
+    private void MediaControl_SkipPreviousRequested(object? sender, EventArgs e) =>
+        Execute(_viewModel.SkipPreviousCommand);
+
+    private void MediaControl_SkipNextRequested(object? sender, EventArgs e) =>
+        Execute(_viewModel.SkipNextCommand);
+
+    private void MediaControl_ActivateSourceRequested(object? sender, EventArgs e) =>
+        Execute(_viewModel.ActivateMediaSourceCommand);
+
+    private static void Execute(System.Windows.Input.ICommand command)
+    {
+        if (command.CanExecute(null))
+            command.Execute(null);
     }
 
     private void StopPositionAnimationAtCurrentPosition()
@@ -318,6 +351,18 @@ public partial class DynamicIslandWindow : Window
         }
 
         return null;
+    }
+
+    private static bool IsMediaAction(DependencyObject? source)
+    {
+        while (source is not null)
+        {
+            if (source is FrameworkElement { Tag: "MediaAction" })
+                return true;
+            source = System.Windows.Media.VisualTreeHelper.GetParent(source);
+        }
+
+        return false;
     }
 
     private sealed class MainWindowDataContext

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Media;
@@ -31,6 +32,21 @@ public sealed class MediaSessionService : IDisposable
     private const string UnknownSourceName = "未知来源";
     private const string UnknownArtistName = "未知艺术家";
     private static readonly TimeSpan MemoryPlayerPollInterval = TimeSpan.FromMilliseconds(233);
+    private static readonly (string[] Tokens, string[] ProcessNames)[] SourceProcesses =
+    [
+        (["cloudmusic", "netease", "163music"], ["cloudmusic"]),
+        (["qqmusic"], ["QQMusic"]),
+        (["kugou", "kgmusic"], ["KuGou", "KuGouMusic"]),
+        (["spotify"], ["Spotify"]),
+        (["chrome"], ["chrome"]),
+        (["msedge", "microsoftedge"], ["msedge"]),
+        (["firefox"], ["firefox"]),
+        (["vlc"], ["vlc"]),
+        (["potplayer", "daum"], ["PotPlayerMini64", "PotPlayerMini"]),
+        (["zunemusic", "media.player", "wmplayer"], ["Microsoft.Media.Player", "Music.UI", "wmplayer"]),
+        (["mpv"], ["mpv"]),
+        (["foobar"], ["foobar2000"])
+    ];
 
     private readonly MediaManager _mediaManager = new();
     private readonly Dispatcher _dispatcher;
@@ -195,6 +211,73 @@ public sealed class MediaSessionService : IDisposable
         {
             Debug.WriteLine($"[MediaSessionService] SkipNext failed: {ex}");
         }
+    }
+
+    /// <summary>激活当前媒体来源应用；浏览器来源只能激活浏览器，SMTC 不提供具体标签页窗口。</summary>
+    public void ActivateSelectedSource()
+    {
+        var sourceId = SelectedSourceId;
+        if (string.IsNullOrWhiteSpace(sourceId))
+            return;
+
+        foreach (var processName in ResolveProcessNames(sourceId))
+        {
+            foreach (var process in Process.GetProcessesByName(processName))
+            {
+                using (process)
+                {
+                    try
+                    {
+                        var handle = process.MainWindowHandle;
+                        if (handle == IntPtr.Zero)
+                            continue;
+
+                        NativeMethods.ShowWindow(handle, NativeMethods.SW_RESTORE);
+                        NativeMethods.SetForegroundWindow(handle);
+                        return;
+                    }
+                    catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
+                    {
+                        // The process can exit while its window is being resolved.
+                    }
+                }
+            }
+        }
+
+        if (!sourceId.Contains('!'))
+            return;
+
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = $"shell:AppsFolder\\{sourceId}",
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+            Debug.WriteLine($"[MediaSessionService] Activate source failed: {ex}");
+        }
+    }
+
+    private static IEnumerable<string> ResolveProcessNames(string sourceId)
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var mapping in SourceProcesses)
+        {
+            if (mapping.Tokens.Any(token => sourceId.Contains(token, StringComparison.OrdinalIgnoreCase)))
+            {
+                foreach (var processName in mapping.ProcessNames)
+                    names.Add(processName);
+            }
+        }
+
+        if (sourceId.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            names.Add(Path.GetFileNameWithoutExtension(sourceId));
+
+        return names;
     }
 
     #region MediaManager events

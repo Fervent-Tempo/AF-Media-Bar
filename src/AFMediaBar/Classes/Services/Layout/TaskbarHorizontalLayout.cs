@@ -7,19 +7,19 @@ namespace AFMediaBar.Classes.Services.Layout;
 /// Taskbar theme - horizontal layout (for taskbar at top or bottom).
 ///
 /// 特点 Features:
-/// - 尺寸：310×40（匹配 TaskbarWindow 尺寸）
-///   Size: 310×40 (matches TaskbarWindow size)
-/// - 组件横向排列：封面 | 歌曲信息 | 控制按钮
-///   Components arranged horizontally: artwork | song info | controls
+/// - 尺寸：274×40（匹配 TaskbarWindow 尺寸）
+///   Size: 274×40 (matches TaskbarWindow size)
+/// - 组件横向排列：封面 | 歌曲信息
+///   Components arranged horizontally: artwork | song info
 /// - 适合宽度有限的任务栏环境
 ///   Suitable for taskbar environment with limited width
 ///
 /// 组件布局 Component Layout:
 /// ┌────────────────────────────────────────┐
-/// │  [封面]  歌曲标题 - 艺术家  [控制按钮]  │
-/// │   36px     210px               40px    │
+/// │  [封面]  歌曲标题 - 艺术家              │
+/// │   36px     210px                        │
 /// └────────────────────────────────────────┘
-///    310px × 40px
+///    274px × 40px
 /// </summary>
 public static class TaskbarHorizontalLayout
 {
@@ -29,7 +29,7 @@ public static class TaskbarHorizontalLayout
         Description = "任务栏主题（横向）：适配任务栏在屏幕顶部或底部",
         Canvas = new CanvasConfig
         {
-            Width = 370,
+            Width = 274,
             Height = 40,
             Background = "#00000000",
             CornerRadius = 6,
@@ -77,20 +77,6 @@ public static class TaskbarHorizontalLayout
                     ["artistOpacity"] = 0.5,
                     ["layout"] = "vertical",
                     ["verticalAlignment"] = "center"
-                }
-            },
-
-            // 播放控制组件 PlaybackControls Component
-            new ComponentConfig
-            {
-                Id = "controls",
-                Type = "PlaybackControls",
-                Bounds = new ComponentBounds(270, 2, 96, 36),
-                Properties = new Dictionary<string, object>
-                {
-                    ["buttonSize"] = 20.0,
-                    ["spacing"] = 4.0,
-                    ["orientation"] = "horizontal"
                 }
             }
         }

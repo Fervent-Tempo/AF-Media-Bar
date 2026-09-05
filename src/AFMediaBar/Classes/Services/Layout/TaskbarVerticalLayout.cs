@@ -7,10 +7,10 @@ namespace AFMediaBar.Classes.Services.Layout;
 /// Taskbar theme - vertical layout (for taskbar at left or right).
 ///
 /// 特点 Features:
-/// - 尺寸：72×180（适配竖向任务栏宽度）
-///   Size: 72×180 (adapted for vertical taskbar width)
-/// - 组件竖向排列：封面 ↓ 歌曲信息 ↓ 控制按钮
-///   Components arranged vertically: artwork ↓ song info ↓ controls
+/// - 尺寸：72×152（适配竖向任务栏宽度）
+///   Size: 72×152 (adapted for vertical taskbar width)
+/// - 组件竖向排列：封面 ↓ 歌曲信息
+///   Components arranged vertically: artwork ↓ song info
 /// - 封面更大（52×52），文字居中对齐
 ///   Larger artwork (52×52), center-aligned text
 ///
@@ -25,7 +25,7 @@ namespace AFMediaBar.Classes.Services.Layout;
 /// ├──────────┤
 /// │ [控制]   │  24px
 /// └──────────┘
-///   72px × 180px
+///   72px × 152px
 /// </summary>
 public static class TaskbarVerticalLayout
 {
@@ -36,7 +36,7 @@ public static class TaskbarVerticalLayout
         Canvas = new CanvasConfig
         {
             Width = 72,
-            Height = 180,
+            Height = 152,
             Background = "#00000000",
             CornerRadius = 6,
             Border = new BorderConfig
@@ -85,21 +85,6 @@ public static class TaskbarVerticalLayout
                     ["textAlignment"] = "center",
                     ["maxLines"] = 4,
                     ["textWrapping"] = "wrap"
-                }
-            },
-
-            // 播放控制组件 PlaybackControls Component
-            new ComponentConfig
-            {
-                Id = "controls",
-                Type = "PlaybackControls",
-                Bounds = new ComponentBounds(6, 152, 60, 24),
-                Properties = new Dictionary<string, object>
-                {
-                    ["buttonSize"] = 18.0,
-                    ["spacing"] = 4.0,
-                    ["orientation"] = "horizontal",
-                    ["horizontalAlignment"] = "center"
                 }
             }
         }

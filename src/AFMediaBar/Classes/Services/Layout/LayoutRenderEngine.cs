@@ -38,7 +38,6 @@ public sealed class LayoutRenderEngine
     // 组件引用 Component references
     private readonly Border? _artworkBorder;
     private readonly StackPanel? _songInfoPanel;
-    private readonly StackPanel? _controlsPanel;
 
     private LayoutSchema? _currentLayout;
 
@@ -51,21 +50,18 @@ public sealed class LayoutRenderEngine
     /// <param name="backgroundImage">背景图片（用于应用模糊效果）/ Background image (for blur effect)</param>
     /// <param name="artworkBorder">封面边框 / Artwork border</param>
     /// <param name="songInfoPanel">歌曲信息面板 / Song info panel</param>
-    /// <param name="controlsPanel">控制按钮面板 / Controls panel</param>
     public LayoutRenderEngine(
         Border mainBorder,
         Canvas? contentCanvas = null,
         Image? backgroundImage = null,
         Border? artworkBorder = null,
-        StackPanel? songInfoPanel = null,
-        StackPanel? controlsPanel = null)
+        StackPanel? songInfoPanel = null)
     {
         _mainBorder = mainBorder;
         _contentCanvas = contentCanvas;
         _backgroundImage = backgroundImage;
         _artworkBorder = artworkBorder;
         _songInfoPanel = songInfoPanel;
-        _controlsPanel = controlsPanel;
     }
 
     /// <summary>
@@ -116,10 +112,6 @@ public sealed class LayoutRenderEngine
         // Set size
         _mainBorder.Width = config.Width;
         _mainBorder.Height = config.Height;
-
-        // 调试输出：记录应用的尺寸
-        // Debug output: log applied size
-        System.Diagnostics.Debug.WriteLine($"[LayoutRenderEngine] Applied size: {config.Width}×{config.Height}");
 
         // 设置圆角
         // Set corner radius
@@ -202,9 +194,6 @@ public sealed class LayoutRenderEngine
                     ApplySongInfoLayout(component);
                     break;
 
-                case "controls":
-                    ApplyControlsLayout(component);
-                    break;
             }
         }
     }
@@ -216,10 +205,6 @@ public sealed class LayoutRenderEngine
     private void ApplyArtworkLayout(ComponentConfig config)
     {
         if (_artworkBorder is null) return;
-
-        // 调试输出
-        // Debug output
-        System.Diagnostics.Debug.WriteLine($"[LayoutRenderEngine] Artwork: Position({config.Bounds.X}, {config.Bounds.Y}), Size({config.Bounds.Width}×{config.Bounds.Height})");
 
         // 设置尺寸
         // Set size
@@ -252,10 +237,6 @@ public sealed class LayoutRenderEngine
     {
         if (_songInfoPanel is null) return;
 
-        // 调试输出
-        // Debug output
-        System.Diagnostics.Debug.WriteLine($"[LayoutRenderEngine] SongInfo: Position({config.Bounds.X}, {config.Bounds.Y}), Size({config.Bounds.Width}×{config.Bounds.Height})");
-
         // 设置尺寸
         // Set size
         _songInfoPanel.Width = config.Bounds.Width;
@@ -265,12 +246,6 @@ public sealed class LayoutRenderEngine
         // Set position
         Canvas.SetLeft(_songInfoPanel, config.Bounds.X);
         Canvas.SetTop(_songInfoPanel, config.Bounds.Y);
-
-        // 验证位置是否设置成功
-        // Verify position was set successfully
-        var actualLeft = Canvas.GetLeft(_songInfoPanel);
-        var actualTop = Canvas.GetTop(_songInfoPanel);
-        System.Diagnostics.Debug.WriteLine($"[LayoutRenderEngine] SongInfo actual position: Left={actualLeft}, Top={actualTop}");
 
         // 应用自定义属性（如文本对齐方式）
         // Apply custom properties (e.g., text alignment)
@@ -289,51 +264,6 @@ public sealed class LayoutRenderEngine
         // 显示组件
         // Show component
         _songInfoPanel.Visibility = Visibility.Visible;
-    }
-
-    /// <summary>
-    /// 应用控制按钮组件布局。
-    /// Apply controls component layout.
-    /// </summary>
-    private void ApplyControlsLayout(ComponentConfig config)
-    {
-        if (_controlsPanel is null) return;
-
-        // 调试输出
-        // Debug output
-        System.Diagnostics.Debug.WriteLine($"[LayoutRenderEngine] Controls: Position({config.Bounds.X}, {config.Bounds.Y}), Size({config.Bounds.Width}×{config.Bounds.Height})");
-
-        // 设置尺寸
-        // Set size
-        _controlsPanel.Width = config.Bounds.Width;
-        _controlsPanel.Height = config.Bounds.Height;
-
-        if (config.Properties.TryGetValue("orientation", out var orientationValue) &&
-            orientationValue is string orientation)
-        {
-            _controlsPanel.Orientation = string.Equals(orientation, "vertical", StringComparison.OrdinalIgnoreCase)
-                ? Orientation.Vertical
-                : Orientation.Horizontal;
-        }
-
-        if (config.Properties.TryGetValue("horizontalAlignment", out var alignmentValue) &&
-            alignmentValue is string alignment)
-        {
-            _controlsPanel.HorizontalAlignment = alignment.ToLowerInvariant() switch
-            {
-                "center" => HorizontalAlignment.Center,
-                "right" => HorizontalAlignment.Right,
-                _ => HorizontalAlignment.Left
-            };
-        }
-
-        // 设置位置
-        // Set position
-        Canvas.SetLeft(_controlsPanel, config.Bounds.X);
-        Canvas.SetTop(_controlsPanel, config.Bounds.Y);
-
-        // 控制按钮的可见性由数据绑定控制，这里不强制显示
-        // Controls visibility is controlled by data binding, do not force show here
     }
 
     /// <summary>

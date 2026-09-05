@@ -24,6 +24,13 @@ public enum LayoutOrientationMode
     Vertical = 2    // 纵向 Vertical
 }
 
+/// <summary>灵动岛背景方案。/ Dynamic island background style.</summary>
+public enum DynamicIslandBackgroundMode
+{
+    SystemTheme = 0,
+    Transparent = 1
+}
+
 /// <summary>
 /// 应用设置模型：定义所有可配置的应用行为。
 /// Application settings model: defines all configurable application behaviors.
@@ -75,6 +82,9 @@ public class AppSettings
     /// Layout orientation mode: auto, horizontal or vertical
     /// </summary>
     public LayoutOrientationMode LayoutOrientationMode { get; set; } = LayoutOrientationMode.Auto;
+
+    /// <summary>灵动岛背景方案。/ Background style used by the dynamic island.</summary>
+    public DynamicIslandBackgroundMode DynamicIslandBackgroundMode { get; set; } = DynamicIslandBackgroundMode.SystemTheme;
 
     /// <summary>灵动岛上次拖动位置。/ Last dragged position of the dynamic island.</summary>
     public double? DynamicIslandLeft { get; set; }

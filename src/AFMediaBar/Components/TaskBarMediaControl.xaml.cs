@@ -1,16 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services.Layout;
@@ -39,8 +34,8 @@ namespace AFMediaBar.Components
     /// ⚠️ 架构约束 Architecture Constraints:
     /// - 此组件只负责 UI 呈现，不包含业务逻辑
     ///   This component is responsible for UI presentation only, no business logic
-    /// - 媒体控制命令由 TaskbarWindow 的 ContextMenu 绑定到 MainWindowViewModel
-    ///   Media control commands are bound from TaskbarWindow's ContextMenu to MainWindowViewModel
+    /// - 用户操作通过请求事件交给宿主窗口，再由 MainWindowViewModel 执行
+    ///   User actions are raised as request events and executed by the host through MainWindowViewModel
     /// - 不直接调用服务，所有数据通过 UpdateSongInfo 方法传入
     ///   Does not call services directly; all data is passed via UpdateSongInfo method
     /// </summary>
@@ -67,7 +62,14 @@ namespace AFMediaBar.Components
         private bool _isConnected;
         private bool _isVertical;      // 任务栏是否竖向 Whether taskbar is vertical
         private bool _isSmallTaskbar;  // 是否小任务栏 Whether taskbar is small
-        private bool _controlsVisible;
+        private bool _canPlayPause;
+        private bool _canSkipPrevious;
+        private bool _canSkipNext;
+
+        public event EventHandler? TogglePlayPauseRequested;
+        public event EventHandler? SkipPreviousRequested;
+        public event EventHandler? SkipNextRequested;
+        public event EventHandler? ActivateSourceRequested;
 
         // === 歌词显示状态 Lyrics Display State ===
         // 解析后的行缓存 + 当前行下标，避免每个快照重复解析。
@@ -87,8 +89,7 @@ namespace AFMediaBar.Components
                 contentCanvas: MainCanvas,
                 backgroundImage: BackgroundImage,
                 artworkBorder: SongImageBorder,
-                songInfoPanel: SongInfoStackPanel,
-                controlsPanel: ControlsStackPanel
+                songInfoPanel: SongInfoStackPanel
             );
 
             // 应用默认布局（任务栏横向）
@@ -174,6 +175,15 @@ namespace AFMediaBar.Components
 
             SongTitle.Foreground = foreground;
             SongArtist.Foreground = foreground;
+
+            if (_currentMode != WindowMode.DynamicIsland)
+                return;
+
+            MainBorder.Background = SettingsManager.Current.DynamicIslandBackgroundMode == DynamicIslandBackgroundMode.Transparent
+                ? new SolidColorBrush(Color.FromArgb(1, 0, 0, 0))
+                : new SolidColorBrush(isDark
+                    ? Color.FromArgb(0xFF, 0x20, 0x20, 0x20)
+                    : Color.FromArgb(0xFF, 0xF3, 0xF3, 0xF3));
         }
 
 
@@ -202,6 +212,9 @@ namespace AFMediaBar.Components
                     _actualTitle = string.Empty;
                     _actualArtist = string.Empty;
                     _isConnected = false;
+                    _canPlayPause = false;
+                    _canSkipPrevious = false;
+                    _canSkipNext = false;
 
                     SongTitle.Text = _actualTitle;
                     SongArtist.Text = _actualArtist;
@@ -224,16 +237,15 @@ namespace AFMediaBar.Components
                     }
 
                     Visibility = Visibility.Visible;
-                    PreviousButton.IsEnabled = false;
-                    PlayPauseButton.IsEnabled = false;
-                    NextButton.IsEnabled = false;
-                    AnimateControls(false);
                 });
                 return;
             }
 
             _isPaused = !snapshot.IsPlaying;
             _isConnected = true;
+            _canPlayPause = snapshot.CanPlayPause;
+            _canSkipPrevious = snapshot.CanSkipPrevious;
+            _canSkipNext = snapshot.CanSkipNext;
 
             Dispatcher.Invoke(() =>
             {
@@ -298,18 +310,13 @@ namespace AFMediaBar.Components
                 }
 
                 SongTitle.Visibility = Visibility.Visible;
-                PreviousButton.IsEnabled = snapshot.CanSkipPrevious;
-                PlayPauseButton.IsEnabled = snapshot.CanPlayPause;
-                NextButton.IsEnabled = snapshot.CanSkipNext;
-                PlayPauseButton.Icon = snapshot.IsPlaying
-                    ? new SymbolIcon(SymbolRegular.Pause24)
-                    : new SymbolIcon(SymbolRegular.Play24);
                 SongArtistContainer.Visibility = !_isSmallTaskbar && !_isVertical && !string.IsNullOrEmpty(snapshot.Artist)
                     ? Visibility.Visible
                     : Visibility.Collapsed;
                 SongInfoStackPanel.Visibility = _isVertical ? Visibility.Collapsed : Visibility.Visible;
                 // blurred cover background, off by default like FluentFlyout's TaskbarWidgetBackgroundBlur
-                BackgroundImage.Visibility = SettingsManager.Current.TaskbarBarBackgroundBlur
+                BackgroundImage.Visibility = _currentMode == WindowMode.Taskbar &&
+                                             SettingsManager.Current.TaskbarBarBackgroundBlur
                     ? Visibility.Visible
                     : Visibility.Collapsed;
 
@@ -407,8 +414,6 @@ namespace AFMediaBar.Components
         {
             if (!_isConnected) return;
 
-            AnimateControls(true);
-
             // 灵动岛使用布局定义的稳定背景；任务栏模式才使用悬停高亮。
             // The dynamic-island host keeps its layout background; only taskbar mode uses hover highlighting.
             if (_currentMode != WindowMode.Taskbar)
@@ -466,8 +471,6 @@ namespace AFMediaBar.Components
         {
             if (!_isConnected) return;
 
-            AnimateControls(false);
-
             if (_currentMode != WindowMode.Taskbar)
                 return;
 
@@ -492,43 +495,39 @@ namespace AFMediaBar.Components
             TopBorder.BorderBrush = Brushes.Transparent;
         }
 
-        /// <summary>
-        /// 仅在鼠标悬停媒体栏时显示控制按钮，并在离开时收回。
-        /// Shows playback controls only while the pointer is over the media bar and retracts them on leave.
-        /// </summary>
-        private void AnimateControls(bool visible)
+        private void SongImageBorder_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            if (_controlsVisible == visible)
+            if (!_isConnected || !_canPlayPause || e.ChangedButton != MouseButton.Left)
                 return;
 
-            _controlsVisible = visible;
-            if (visible)
-                ControlsStackPanel.IsHitTestVisible = true;
+            TogglePlayPauseRequested?.Invoke(this, EventArgs.Empty);
+            e.Handled = true;
+        }
 
-            var duration = new Duration(TimeSpan.FromMilliseconds(180));
-            var opacity = new DoubleAnimation(visible ? 1 : 0, duration)
-            {
-                EasingFunction = new CubicEase { EasingMode = visible ? EasingMode.EaseOut : EasingMode.EaseIn }
-            };
-            if (!visible)
-            {
-                opacity.Completed += (_, _) =>
-                {
-                    if (!_controlsVisible)
-                        ControlsStackPanel.IsHitTestVisible = false;
-                };
-            }
-            var scale = new DoubleAnimation(visible ? 1 : 0.92, duration)
-            {
-                EasingFunction = new CubicEase { EasingMode = visible ? EasingMode.EaseOut : EasingMode.EaseIn }
-            };
+        private void InteractionSurface_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (!_isConnected)
+                return;
 
-            ControlsStackPanel.BeginAnimation(OpacityProperty, opacity);
-            if (ControlsStackPanel.RenderTransform is ScaleTransform transform)
+            if (e.Delta > 0 && _canSkipPrevious)
             {
-                transform.BeginAnimation(ScaleTransform.ScaleXProperty, scale);
-                transform.BeginAnimation(ScaleTransform.ScaleYProperty, scale);
+                SkipPreviousRequested?.Invoke(this, EventArgs.Empty);
+                e.Handled = true;
             }
+            else if (e.Delta < 0 && _canSkipNext)
+            {
+                SkipNextRequested?.Invoke(this, EventArgs.Empty);
+                e.Handled = true;
+            }
+        }
+
+        private void SongTitleContainer_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (!_isConnected || e.ChangedButton != MouseButton.Left)
+                return;
+
+            ActivateSourceRequested?.Invoke(this, EventArgs.Empty);
+            e.Handled = true;
         }
     }
 }

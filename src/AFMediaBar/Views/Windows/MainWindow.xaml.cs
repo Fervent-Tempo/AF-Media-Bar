@@ -198,6 +198,7 @@ namespace AFMediaBar.Views.Windows
                 ActivateWindowMode(e.WindowMode);
                 _taskbarWindow?.ApplyLayoutSettings(e.WindowMode, e.OrientationMode);
                 _dynamicIslandWindow?.ApplyLayoutSettings(e.OrientationMode);
+                _dynamicIslandWindow?.ApplyAppearanceSettings();
             });
         }
 

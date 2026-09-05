@@ -10,8 +10,9 @@
 
     <Border Name="MainBorder" CornerRadius="6"
             ClipToBounds="True">
-        <Grid Name="InteractionSurface" Background="Transparent"
-              MouseEnter="Grid_MouseEnter" MouseLeave="Grid_MouseLeave">
+        <Grid Name="InteractionSurface" Background="#01000000"
+              MouseEnter="Grid_MouseEnter" MouseLeave="Grid_MouseLeave"
+              PreviewMouseWheel="InteractionSurface_PreviewMouseWheel">
             <Image x:Name="BackgroundImage" Stretch="UniformToFill" HorizontalAlignment="Center"
                    VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5" Opacity="0.4">
                 <Image.Effect>
@@ -25,7 +26,8 @@
 
                     <!-- 封面组件 Artwork component -->
                     <Border Name="SongImageBorder" CornerRadius="5" ClipToBounds="True" Width="36" Height="36"
-                            Panel.ZIndex="2">
+                            Panel.ZIndex="2" Cursor="Hand" Tag="MediaAction"
+                            MouseLeftButtonUp="SongImageBorder_MouseLeftButtonUp">
                         <Grid>
                             <ui:SymbolIcon Name="SongImagePlaceholder" Symbol="MusicNote220" FontSize="24"
                                            Filled="True"
@@ -42,7 +44,8 @@
                                 ToolTipService.InitialShowDelay="800"
                                 ToolTipService.Placement="RelativePoint"
                                 ToolTipService.VerticalOffset="-16">
-                        <Canvas x:Name="SongTitleContainer" Height="19">
+                        <Canvas x:Name="SongTitleContainer" Height="19" Cursor="Hand" Tag="MediaAction"
+                                MouseLeftButtonUp="SongTitleContainer_MouseLeftButtonUp">
                             <TextBlock x:Name="SongTitle" Text="" FontWeight="Normal">
                                 <TextBlock.RenderTransform>
                                     <TranslateTransform />
@@ -56,30 +59,6 @@
                                 </TextBlock.RenderTransform>
                             </TextBlock>
                         </Canvas>
-                    </StackPanel>
-
-                    <!-- 控制按钮组件 Controls component -->
-                    <StackPanel Name="ControlsStackPanel" Orientation="Horizontal"
-                                Width="Auto" Visibility="Visible" Opacity="0" IsHitTestVisible="False"
-                                RenderTransformOrigin="0.5,0.5">
-                        <StackPanel.RenderTransform>
-                            <ScaleTransform ScaleX="0.92" ScaleY="0.92" />
-                        </StackPanel.RenderTransform>
-                        <ui:Button x:Name="PreviousButton" Width="28" Height="32" Padding="0"
-                                   ToolTip="上一首" AutomationProperties.Name="上一首"
-                                   Icon="{ui:SymbolIcon Previous24}"
-                                   Command="{Binding ViewModel.SkipPreviousCommand}"
-                                   IsEnabled="False" />
-                        <ui:Button x:Name="PlayPauseButton" Width="32" Height="32" Padding="0"
-                                   ToolTip="播放或暂停" AutomationProperties.Name="播放或暂停"
-                                   Icon="{ui:SymbolIcon Play24}"
-                                   Command="{Binding ViewModel.TogglePlayPauseCommand}"
-                                   IsEnabled="False" />
-                        <ui:Button x:Name="NextButton" Width="28" Height="32" Padding="0"
-                                   ToolTip="下一首" AutomationProperties.Name="下一首"
-                                   Icon="{ui:SymbolIcon Next24}"
-                                   Command="{Binding ViewModel.SkipNextCommand}"
-                                   IsEnabled="False" />
                     </StackPanel>
 
                 </Canvas>

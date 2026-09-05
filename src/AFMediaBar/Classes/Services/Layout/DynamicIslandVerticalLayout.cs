@@ -7,8 +7,8 @@ namespace AFMediaBar.Classes.Services.Layout;
 /// Dynamic island theme - vertical layout (independent desktop window, vertical display).
 ///
 /// 特点 Features:
-/// - 尺寸：80×200（比任务栏竖向略宽）
-///   Size: 80×200 (slightly wider than taskbar vertical)
+/// - 尺寸：80×176（比任务栏竖向略宽）
+///   Size: 80×176 (slightly wider than taskbar vertical)
 /// - 更大的封面（60×60）和更宽松的间距
 ///   Larger artwork (60×60) and more spacious layout
 /// - 适合竖屏显示器或桌面边缘放置
@@ -25,7 +25,7 @@ namespace AFMediaBar.Classes.Services.Layout;
 /// ├────────────┤
 /// │  [控制]    │  24px
 /// └────────────┘
-///   80px × 200px
+///   80px × 176px
 /// </summary>
 public static class DynamicIslandVerticalLayout
 {
@@ -36,8 +36,8 @@ public static class DynamicIslandVerticalLayout
         Canvas = new CanvasConfig
         {
             Width = 80,
-            Height = 200,
-            Background = "#CC000000",
+            Height = 176,
+            Background = "#01000000",
             CornerRadius = 8,
             Border = new BorderConfig
             {
@@ -85,21 +85,6 @@ public static class DynamicIslandVerticalLayout
                     ["textAlignment"] = "center",
                     ["maxLines"] = 4,
                     ["textWrapping"] = "wrap"
-                }
-            },
-
-            // 播放控制组件 PlaybackControls Component
-            new ComponentConfig
-            {
-                Id = "controls",
-                Type = "PlaybackControls",
-                Bounds = new ComponentBounds(7, 172, 66, 24),
-                Properties = new Dictionary<string, object>
-                {
-                    ["buttonSize"] = 20.0,
-                    ["spacing"] = 6.0,
-                    ["orientation"] = "horizontal",
-                    ["horizontalAlignment"] = "center"
                 }
             }
         }

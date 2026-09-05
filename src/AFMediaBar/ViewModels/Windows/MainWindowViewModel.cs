@@ -39,6 +39,9 @@ namespace AFMediaBar.ViewModels.Windows
         /// <summary>播放下一首媒体。/ Skips to the next item in the selected media session.</summary>
         public ICommand SkipNextCommand { get; }
 
+        /// <summary>激活当前媒体来源应用。/ Activates the application that owns the selected media session.</summary>
+        public ICommand ActivateMediaSourceCommand { get; }
+
         public MainWindowViewModel(MediaSessionService mediaSessionService)
         {
             SelectMediaSessionCommand = new RelayCommand<string>(key => mediaSessionService.SelectSession(key ?? string.Empty));
@@ -48,6 +51,7 @@ namespace AFMediaBar.ViewModels.Windows
             TogglePlayPauseCommand = new AsyncRelayCommand(mediaSessionService.TogglePlayPauseAsync);
             SkipPreviousCommand = new AsyncRelayCommand(mediaSessionService.SkipPreviousAsync);
             SkipNextCommand = new AsyncRelayCommand(mediaSessionService.SkipNextAsync);
+            ActivateMediaSourceCommand = new RelayCommand(mediaSessionService.ActivateSelectedSource);
         }
 
         private void OpenSettings()

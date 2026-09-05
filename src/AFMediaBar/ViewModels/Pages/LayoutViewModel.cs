@@ -23,12 +23,26 @@ namespace AFMediaBar.ViewModels.Pages
         [ObservableProperty]
         private LayoutOrientationMode _currentLayoutOrientationMode = LayoutOrientationMode.Auto;
 
+        [ObservableProperty]
+        private DynamicIslandBackgroundMode _currentDynamicIslandBackgroundMode = DynamicIslandBackgroundMode.SystemTheme;
+
+        public bool IsTaskbarMode => CurrentWindowMode == WindowMode.Taskbar;
+
+        public bool IsDynamicIslandMode => CurrentWindowMode == WindowMode.DynamicIsland;
+
         public LayoutViewModel()
         {
             // 从设置管理器加载当前设置
             // Load current settings from settings manager
             CurrentWindowMode = SettingsManager.Current.WindowMode;
             CurrentLayoutOrientationMode = SettingsManager.Current.LayoutOrientationMode;
+            CurrentDynamicIslandBackgroundMode = SettingsManager.Current.DynamicIslandBackgroundMode;
+        }
+
+        partial void OnCurrentWindowModeChanged(WindowMode value)
+        {
+            OnPropertyChanged(nameof(IsTaskbarMode));
+            OnPropertyChanged(nameof(IsDynamicIslandMode));
         }
 
         /// <summary>
@@ -123,6 +137,30 @@ namespace AFMediaBar.ViewModels.Pages
 
             // 触发布局设置变更事件
             // Trigger layout settings changed event
+            SettingsManager.RaiseLayoutSettingsChanged(
+                SettingsManager.Current.WindowMode,
+                SettingsManager.Current.LayoutOrientationMode);
+        }
+
+        [RelayCommand]
+        private void OnSwitchToSystemThemeBackground()
+        {
+            SetDynamicIslandBackgroundMode(DynamicIslandBackgroundMode.SystemTheme);
+        }
+
+        [RelayCommand]
+        private void OnSwitchToTransparentBackground()
+        {
+            SetDynamicIslandBackgroundMode(DynamicIslandBackgroundMode.Transparent);
+        }
+
+        private void SetDynamicIslandBackgroundMode(DynamicIslandBackgroundMode mode)
+        {
+            if (CurrentDynamicIslandBackgroundMode == mode)
+                return;
+
+            CurrentDynamicIslandBackgroundMode = mode;
+            SettingsManager.Current.DynamicIslandBackgroundMode = mode;
             SettingsManager.RaiseLayoutSettingsChanged(
                 SettingsManager.Current.WindowMode,
                 SettingsManager.Current.LayoutOrientationMode);

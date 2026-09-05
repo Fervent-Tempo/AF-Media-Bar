@@ -13,6 +13,7 @@
 
     <Page.Resources>
         <converters:GenericEnumToBooleanConverter x:Key="GenericEnumToBooleanConverter" />
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     </Page.Resources>
 
     <StackPanel MaxWidth="1000"
@@ -83,6 +84,36 @@
             </StackPanel>
         </ui:CardControl>
 
+        <StackPanel Visibility="{Binding ViewModel.IsDynamicIslandMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <TextBlock Text="灵动岛外观"
+                       FontSize="18"
+                       FontWeight="SemiBold"
+                       Margin="0,0,0,12" />
+            <ui:CardControl Margin="0,0,0,24"
+                            Icon="{ui:SymbolIcon ColorBackground20}">
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <ui:TextBlock Text="背景方案"
+                                      FontWeight="SemiBold" />
+                        <ui:TextBlock Text="使用系统主题配色或透明背景"
+                                      Appearance="Secondary"
+                                      FontSize="12" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton Content="系统主题背景"
+                                 GroupName="DynamicIslandBackground"
+                                 IsChecked="{Binding ViewModel.CurrentDynamicIslandBackgroundMode, Converter={StaticResource GenericEnumToBooleanConverter}, ConverterParameter=SystemTheme, Mode=OneWay}"
+                                 Command="{Binding ViewModel.SwitchToSystemThemeBackgroundCommand}"
+                                 Margin="0,0,12,0" />
+                    <RadioButton Content="透明背景"
+                                 GroupName="DynamicIslandBackground"
+                                 IsChecked="{Binding ViewModel.CurrentDynamicIslandBackgroundMode, Converter={StaticResource GenericEnumToBooleanConverter}, ConverterParameter=Transparent, Mode=OneWay}"
+                                 Command="{Binding ViewModel.SwitchToTransparentBackgroundCommand}" />
+                </StackPanel>
+            </ui:CardControl>
+        </StackPanel>
+
         <TextBlock Text="尺寸"
                    FontSize="18"
                    FontWeight="SemiBold"
@@ -145,6 +176,7 @@
             </Grid>
         </ui:CardControl>
 
+        <StackPanel Visibility="{Binding ViewModel.IsTaskbarMode, Converter={StaticResource BooleanToVisibilityConverter}}">
         <ui:CardControl Margin="0,0,0,24"
                         Icon="{ui:SymbolIcon ArrowUp24}">
             <ui:CardControl.Header>
@@ -219,5 +251,6 @@
             <ui:Button Content="重置"
                        Icon="{ui:SymbolIcon ArrowReset24}" />
         </ui:CardControl>
+        </StackPanel>
     </StackPanel>
 </Page>

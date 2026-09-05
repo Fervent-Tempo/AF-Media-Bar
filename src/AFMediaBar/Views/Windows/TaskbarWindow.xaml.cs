@@ -33,6 +33,7 @@ public partial class TaskbarWindow : Window
     private IntPtr _lastTaskbarHandle;
     private bool _positionUpdateInProgress;
     private bool _isClosing;
+    private WindowMode? _appliedWindowMode;
     private LayoutOrientation? _appliedOrientation;
 
     public TaskbarWindow(ITaskbarDockService taskBarService, MainWindow mainWindow)
@@ -42,6 +43,10 @@ public partial class TaskbarWindow : Window
 
         // The context menu bindings rely on MainWindow.ViewModel
         DataContext = mainWindow;
+        MediaControl.TogglePlayPauseRequested += MediaControl_TogglePlayPauseRequested;
+        MediaControl.SkipPreviousRequested += MediaControl_SkipPreviousRequested;
+        MediaControl.SkipNextRequested += MediaControl_SkipNextRequested;
+        MediaControl.ActivateSourceRequested += MediaControl_ActivateSourceRequested;
 
         _taskBarService = taskBarService;
         _mainWindow = mainWindow;
@@ -331,8 +336,14 @@ public partial class TaskbarWindow : Window
         // 应用布局到媒体控件
         // Apply layout to media control
         var orientationChanged = _appliedOrientation != orientation;
-        MediaControl.ApplyLayout(windowMode, orientation);
-        _appliedOrientation = orientation;
+        var layoutChanged = _appliedWindowMode != windowMode || orientationChanged;
+        if (layoutChanged)
+        {
+            MediaControl.ApplyLayout(windowMode, orientation);
+            MediaControl.ApplyWindowsTheme();
+            _appliedWindowMode = windowMode;
+            _appliedOrientation = orientation;
+        }
 
         if (orientationChanged && IsLoaded)
         {
@@ -370,10 +381,32 @@ public partial class TaskbarWindow : Window
         });
     }
 
+    private void MediaControl_TogglePlayPauseRequested(object? sender, EventArgs e) =>
+        Execute(_mainWindow.ViewModel.TogglePlayPauseCommand);
+
+    private void MediaControl_SkipPreviousRequested(object? sender, EventArgs e) =>
+        Execute(_mainWindow.ViewModel.SkipPreviousCommand);
+
+    private void MediaControl_SkipNextRequested(object? sender, EventArgs e) =>
+        Execute(_mainWindow.ViewModel.SkipNextCommand);
+
+    private void MediaControl_ActivateSourceRequested(object? sender, EventArgs e) =>
+        Execute(_mainWindow.ViewModel.ActivateMediaSourceCommand);
+
+    private static void Execute(System.Windows.Input.ICommand command)
+    {
+        if (command.CanExecute(null))
+            command.Execute(null);
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         _isClosing = true;
         _timer.Stop();
+        MediaControl.TogglePlayPauseRequested -= MediaControl_TogglePlayPauseRequested;
+        MediaControl.SkipPreviousRequested -= MediaControl_SkipPreviousRequested;
+        MediaControl.SkipNextRequested -= MediaControl_SkipNextRequested;
+        MediaControl.ActivateSourceRequested -= MediaControl_ActivateSourceRequested;
         base.OnClosed(e);
     }
 }

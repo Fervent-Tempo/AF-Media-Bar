@@ -22,6 +22,7 @@ public static partial class NativeMethods
     public const uint SWP_SHOWWINDOW = 0x0040;
     public const uint SWP_HIDEWINDOW = 0x0080;
     public const uint SWP_ASYNCWINDOWPOS = 0x4000;
+    public const int SW_RESTORE = 9;
 
     // window messages
     public const int WM_DPICHANGED = 0x02E0;
@@ -136,6 +137,14 @@ public static partial class NativeMethods
     [LibraryImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool SetForegroundWindow(IntPtr hWnd);
 
     [LibraryImport("user32.dll", EntryPoint = "GetWindowLongW", SetLastError = true)]
     public static partial int GetWindowLong(IntPtr hWnd, int nIndex);
