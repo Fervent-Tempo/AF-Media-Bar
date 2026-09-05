@@ -46,10 +46,11 @@
                              IsChecked="{Binding ViewModel.CurrentWindowMode, Converter={StaticResource GenericEnumToBooleanConverter}, ConverterParameter=Taskbar, Mode=OneWay}"
                              Command="{Binding ViewModel.SwitchToTaskbarModeCommand, Mode=OneWay}"
                              Margin="0,0,12,0" />
-                <RadioButton Content="悬浮窗口"
+                <RadioButton Content="灵动岛"
                              GroupName="HostMode"
-                             IsChecked="{Binding ViewModel.CurrentWindowMode, Converter={StaticResource GenericEnumToBooleanConverter}, ConverterParameter=Floating, Mode=OneWay}"
-                             Command="{Binding ViewModel.SwitchToFloatingModeCommand, Mode=OneWay}" />
+                             IsChecked="{Binding ViewModel.CurrentWindowMode, Converter={StaticResource GenericEnumToBooleanConverter}, ConverterParameter=DynamicIsland, Mode=OneWay}"
+                             Command="{Binding ViewModel.SwitchToDynamicIslandModeCommand, Mode=OneWay}"
+                             Margin="12,0,0,0" />
             </StackPanel>
         </ui:CardControl>
 

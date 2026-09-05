@@ -308,6 +308,25 @@ public sealed class LayoutRenderEngine
         _controlsPanel.Width = config.Bounds.Width;
         _controlsPanel.Height = config.Bounds.Height;
 
+        if (config.Properties.TryGetValue("orientation", out var orientationValue) &&
+            orientationValue is string orientation)
+        {
+            _controlsPanel.Orientation = string.Equals(orientation, "vertical", StringComparison.OrdinalIgnoreCase)
+                ? Orientation.Vertical
+                : Orientation.Horizontal;
+        }
+
+        if (config.Properties.TryGetValue("horizontalAlignment", out var alignmentValue) &&
+            alignmentValue is string alignment)
+        {
+            _controlsPanel.HorizontalAlignment = alignment.ToLowerInvariant() switch
+            {
+                "center" => HorizontalAlignment.Center,
+                "right" => HorizontalAlignment.Right,
+                _ => HorizontalAlignment.Left
+            };
+        }
+
         // 设置位置
         // Set position
         Canvas.SetLeft(_controlsPanel, config.Bounds.X);

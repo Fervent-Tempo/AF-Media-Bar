@@ -29,7 +29,7 @@ public static class TaskbarHorizontalLayout
         Description = "任务栏主题（横向）：适配任务栏在屏幕顶部或底部",
         Canvas = new CanvasConfig
         {
-            Width = 310,
+            Width = 370,
             Height = 40,
             Background = "#00000000",
             CornerRadius = 6,
@@ -67,7 +67,7 @@ public static class TaskbarHorizontalLayout
             {
                 Id = "song-info",
                 Type = "MediaText",
-                Bounds = new ComponentBounds(48, 2, 210, 36),
+                Bounds = new ComponentBounds(48, 2, 218, 36),
                 Properties = new Dictionary<string, object>
                 {
                     ["showTitle"] = true,
@@ -85,7 +85,7 @@ public static class TaskbarHorizontalLayout
             {
                 Id = "controls",
                 Type = "PlaybackControls",
-                Bounds = new ComponentBounds(266, 2, 40, 36),
+                Bounds = new ComponentBounds(270, 2, 96, 36),
                 Properties = new Dictionary<string, object>
                 {
                     ["buttonSize"] = 20.0,

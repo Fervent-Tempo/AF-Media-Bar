@@ -52,20 +52,17 @@ namespace AFMediaBar.ViewModels.Pages
         }
 
         /// <summary>
-        /// 切换到悬浮窗口模式命令。
-        /// Switch to floating mode command.
+        /// 切换到灵动岛模式命令。
+        /// Switches to dynamic island mode.
         /// </summary>
         [RelayCommand]
-        private void OnSwitchToFloatingMode()
+        private void OnSwitchToDynamicIslandMode()
         {
-            if (CurrentWindowMode == WindowMode.Floating)
+            if (CurrentWindowMode == WindowMode.DynamicIsland)
                 return;
 
-            CurrentWindowMode = WindowMode.Floating;
-            SettingsManager.Current.WindowMode = WindowMode.Floating;
-
-            // 触发布局设置变更事件
-            // Trigger layout settings changed event
+            CurrentWindowMode = WindowMode.DynamicIsland;
+            SettingsManager.Current.WindowMode = WindowMode.DynamicIsland;
             SettingsManager.RaiseLayoutSettingsChanged(
                 SettingsManager.Current.WindowMode,
                 SettingsManager.Current.LayoutOrientationMode);

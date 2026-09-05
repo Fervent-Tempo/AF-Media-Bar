@@ -37,26 +37,26 @@ public static class LayoutPresets
     public static LayoutSchema TaskbarVertical => TaskbarVerticalLayout.Create();
 
     /// <summary>
-    /// 悬浮主题 - 横向布局（独立桌面窗口，横向显示）。
-    /// Floating theme - horizontal layout (independent desktop window, horizontal display).
-    /// 详细定义见 FloatingHorizontalLayout.cs / See FloatingHorizontalLayout.cs for details.
+    /// 灵动岛主题 - 横向布局（独立桌面窗口，横向显示）。
+    /// Dynamic island theme - horizontal layout (independent desktop window, horizontal display).
+    /// 详细定义见 DynamicIslandHorizontalLayout.cs / See DynamicIslandHorizontalLayout.cs for details.
     /// </summary>
-    public static LayoutSchema FloatingHorizontal => FloatingHorizontalLayout.Create();
+    public static LayoutSchema DynamicIslandHorizontal => DynamicIslandHorizontalLayout.Create();
 
     /// <summary>
-    /// 悬浮主题 - 竖向布局（独立桌面窗口，竖向显示）。
-    /// Floating theme - vertical layout (independent desktop window, vertical display).
-    /// 详细定义见 FloatingVerticalLayout.cs / See FloatingVerticalLayout.cs for details.
+    /// 灵动岛主题 - 竖向布局（独立桌面窗口，竖向显示）。
+    /// Dynamic island theme - vertical layout (independent desktop window, vertical display).
+    /// 详细定义见 DynamicIslandVerticalLayout.cs / See DynamicIslandVerticalLayout.cs for details.
     /// </summary>
-    public static LayoutSchema FloatingVertical => FloatingVerticalLayout.Create();
+    public static LayoutSchema DynamicIslandVertical => DynamicIslandVerticalLayout.Create();
 
     /// <summary>
     /// 获取指定窗口模式和方向的布局。
     /// Get layout for specified window mode and orientation.
     ///
     /// 算法 Algorithm:
-    /// 1. 根据窗口模式（任务栏/悬浮）选择主题
-    ///    Select theme based on window mode (taskbar/floating)
+    /// 1. 根据窗口模式（任务栏/灵动岛）选择主题
+    ///    Select theme based on window mode (taskbar/dynamic island)
     /// 2. 根据方向（横向/竖向）选择布局
     ///    Select layout based on orientation (horizontal/vertical)
     /// </summary>
@@ -69,8 +69,8 @@ public static class LayoutPresets
         {
             (WindowMode.Taskbar, LayoutOrientation.Horizontal) => TaskbarHorizontal,
             (WindowMode.Taskbar, LayoutOrientation.Vertical) => TaskbarVertical,
-            (WindowMode.Floating, LayoutOrientation.Horizontal) => FloatingHorizontal,
-            (WindowMode.Floating, LayoutOrientation.Vertical) => FloatingVertical,
+            (WindowMode.DynamicIsland, LayoutOrientation.Horizontal) => DynamicIslandHorizontal,
+            (WindowMode.DynamicIsland, LayoutOrientation.Vertical) => DynamicIslandVertical,
             _ => TaskbarHorizontal // 默认使用任务栏横向布局
         };
     }

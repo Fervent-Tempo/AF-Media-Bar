@@ -11,6 +11,7 @@ using Wpf.Ui;
 using Wpf.Ui.Abstractions;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
+using Microsoft.Extensions.DependencyInjection;
 using static AFMediaBar.Classes.Interop.NativeMethods;
 
 namespace AFMediaBar.Views.Windows
@@ -22,6 +23,7 @@ namespace AFMediaBar.Views.Windows
         private readonly ITaskbarDockService _taskBarService;
         private readonly MediaSessionService _mediaSessionService;
         private TaskbarWindow? _taskbarWindow;
+        private DynamicIslandWindow? _dynamicIslandWindow;
         private int _taskbarCreatedMessage;
 
         // Set while Explorer restarts so windows touching the taskbar pause their work
@@ -89,6 +91,8 @@ namespace AFMediaBar.Views.Windows
 
             _taskbarWindow?.Close();
             _taskbarWindow = null;
+            _dynamicIslandWindow?.Close();
+            _dynamicIslandWindow = null;
 
             // Make sure that closing this window will begin the process of closing the application.
             Application.Current.Shutdown();
@@ -140,6 +144,12 @@ namespace AFMediaBar.Views.Windows
         /// </summary>
         public void RecreateTaskbarWindow()
         {
+            if (SettingsManager.Current.WindowMode != WindowMode.Taskbar)
+            {
+                ActivateWindowMode(SettingsManager.Current.WindowMode);
+                return;
+            }
+
             if (_taskbarWindow != null)
             {
                 try
@@ -167,6 +177,7 @@ namespace AFMediaBar.Views.Windows
         private void MediaSessionService_OnSnapshotChanged(object? sender, MediaSnapshot snapshot)
         {
             _taskbarWindow?.ApplySnapshot(snapshot);
+            _dynamicIslandWindow?.ApplySnapshot(snapshot);
         }
 
         private void MediaSessionService_OnSessionsChanged(IReadOnlyList<MediaSessionOption> options)
@@ -184,8 +195,36 @@ namespace AFMediaBar.Views.Windows
             // Execute layout update on UI thread
             Dispatcher.BeginInvoke(() =>
             {
+                ActivateWindowMode(e.WindowMode);
                 _taskbarWindow?.ApplyLayoutSettings(e.WindowMode, e.OrientationMode);
+                _dynamicIslandWindow?.ApplyLayoutSettings(e.OrientationMode);
             });
+        }
+
+        private void ActivateWindowMode(WindowMode mode)
+        {
+            if (mode == WindowMode.DynamicIsland)
+            {
+                _taskbarWindow?.Close();
+                _taskbarWindow = null;
+                _dynamicIslandWindow ??= App.Services.GetRequiredService<DynamicIslandWindow>();
+                _dynamicIslandWindow.ApplyLayoutSettings(SettingsManager.Current.LayoutOrientationMode);
+                _dynamicIslandWindow.Show();
+                if (_mediaSessionService.CurrentSnapshot is { } islandSnapshot)
+                    _dynamicIslandWindow.ApplySnapshot(islandSnapshot);
+                return;
+            }
+
+            _dynamicIslandWindow?.Close();
+            _dynamicIslandWindow = null;
+            if (_taskbarWindow is null)
+            {
+                _taskbarWindow = new TaskbarWindow(_taskBarService, this);
+                if (_mediaSessionService.CurrentSnapshot is { } snapshot)
+                    _taskbarWindow.ApplySnapshot(snapshot);
+                else
+                    _mediaSessionService.RefreshNow();
+            }
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -193,7 +232,7 @@ namespace AFMediaBar.Views.Windows
             // The media bar lives in the docked TaskbarWindow; keep this window as an invisible host.
             Visibility = Visibility.Collapsed;
 
-            RecreateTaskbarWindow();
+            ActivateWindowMode(SettingsManager.Current.WindowMode);
         }
     }
 }

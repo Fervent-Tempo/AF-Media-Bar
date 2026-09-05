@@ -23,10 +23,6 @@ namespace AFMediaBar.Views.Windows;
 /// </summary>
 public partial class TaskbarWindow : Window
 {
-    // logical (DIP) size of the media bar, matching the previous MainWindow dimensions
-    private const double BarWidth = 310;
-    private const double BarHeight = 40;
-
     // physical px offsets from the taskbar edges
     private const int EdgePadding = 20;
 
@@ -37,6 +33,7 @@ public partial class TaskbarWindow : Window
     private IntPtr _lastTaskbarHandle;
     private bool _positionUpdateInProgress;
     private bool _isClosing;
+    private LayoutOrientation? _appliedOrientation;
 
     public TaskbarWindow(ITaskbarDockService taskBarService, MainWindow mainWindow)
     {
@@ -119,6 +116,8 @@ public partial class TaskbarWindow : Window
                 SettingsManager.Current.TaskbarBarSelectedMonitor, out _);
             _lastTaskbarHandle = taskbarHandle;
 
+            ApplyLayoutSettings(SettingsManager.Current.WindowMode, SettingsManager.Current.LayoutOrientationMode, taskbarHandle);
+
             // If this window is created faster than the taskbar is loaded, taskbarHandle will be NULL;
             // UpdatePosition will re-attach once the taskbar appears.
             _taskBarService.DockWindow(taskbarWindowHandle, taskbarHandle);
@@ -148,6 +147,8 @@ public partial class TaskbarWindow : Window
             IntPtr taskbarHandle = _taskBarService.GetSelectedTaskbarHandle(
                 SettingsManager.Current.TaskbarBarSelectedMonitor, out _);
             _lastTaskbarHandle = taskbarHandle;
+
+            ApplyLayoutSettings(SettingsManager.Current.WindowMode, SettingsManager.Current.LayoutOrientationMode, taskbarHandle);
 
             if (interop.Handle == IntPtr.Zero)
             {
@@ -222,31 +223,40 @@ public partial class TaskbarWindow : Window
         int taskbarWidth = taskbarRect.Right - taskbarRect.Left;
         int taskbarHeight = taskbarRect.Bottom - taskbarRect.Top;
 
-        int physicalWidth = (int)(BarWidth * dpiScale);
-        int physicalHeight = (int)(BarHeight * dpiScale);
+        var canvas = MediaControl.CurrentLayout?.Canvas;
+        double barWidth = canvas?.Width ?? 310;
+        double barHeight = canvas?.Height ?? 40;
+        int physicalWidth = (int)Math.Round(barWidth * dpiScale);
+        int physicalHeight = (int)Math.Round(barHeight * dpiScale);
+
+        bool isVertical = _appliedOrientation == LayoutOrientation.Vertical;
+        int primaryLength = isVertical ? taskbarHeight : taskbarWidth;
+        int primarySize = isVertical ? physicalHeight : physicalWidth;
+        int crossLength = isVertical ? taskbarWidth : taskbarHeight;
+        int crossSize = isVertical ? physicalWidth : physicalHeight;
 
         int primaryPos = SettingsManager.Current.Position switch
         {
             TaskbarBarPosition.Start => EdgePadding,
-            TaskbarBarPosition.End => taskbarWidth - physicalWidth - EdgePadding,
-            _ => (taskbarWidth - physicalWidth) / 2
+            TaskbarBarPosition.End => primaryLength - primarySize - EdgePadding,
+            _ => (primaryLength - primarySize) / 2
         };
         primaryPos += SettingsManager.Current.TaskbarBarManualPadding;
 
-        int crossPos = (taskbarHeight - physicalHeight) / 2; // vertical center
+        int crossPos = (crossLength - crossSize) / 2;
 
         // Canvas coordinates and control size are DIPs, hence the dpiScale conversion
-        Canvas.SetLeft(MediaControl, primaryPos / dpiScale);
-        Canvas.SetTop(MediaControl, crossPos / dpiScale);
+        Canvas.SetLeft(MediaControl, (isVertical ? crossPos : primaryPos) / dpiScale);
+        Canvas.SetTop(MediaControl, (isVertical ? primaryPos : crossPos) / dpiScale);
         MediaControl.Width = physicalWidth / dpiScale;
         MediaControl.Height = physicalHeight / dpiScale;
 
         return new RECT
         {
-            Left = primaryPos,
-            Top = crossPos,
-            Right = primaryPos + physicalWidth,
-            Bottom = crossPos + physicalHeight
+            Left = isVertical ? crossPos : primaryPos,
+            Top = isVertical ? primaryPos : crossPos,
+            Right = (isVertical ? crossPos : primaryPos) + physicalWidth,
+            Bottom = (isVertical ? primaryPos : crossPos) + physicalHeight
         };
     }
 
@@ -282,6 +292,18 @@ public partial class TaskbarWindow : Window
     /// <param name="orientationMode">布局方向模式 / Layout orientation mode</param>
     public void ApplyLayoutSettings(WindowMode windowMode, LayoutOrientationMode orientationMode)
     {
+        var taskbarHandle = _lastTaskbarHandle;
+        if (taskbarHandle == IntPtr.Zero)
+        {
+            taskbarHandle = _taskBarService.GetSelectedTaskbarHandle(
+                SettingsManager.Current.TaskbarBarSelectedMonitor, out _);
+        }
+
+        ApplyLayoutSettings(windowMode, orientationMode, taskbarHandle);
+    }
+
+    private void ApplyLayoutSettings(WindowMode windowMode, LayoutOrientationMode orientationMode, IntPtr taskbarHandle)
+    {
         if (_isClosing)
             return;
 
@@ -291,13 +313,11 @@ public partial class TaskbarWindow : Window
 
         if (orientationMode == LayoutOrientationMode.Auto)
         {
-            // 自动模式：根据任务栏位置判断
-            // Auto mode: determine based on taskbar position
-            // TODO: 需要从 TaskbarDockService 获取任务栏方向
-            // 暂时默认为横向
-            // TODO: Need to get taskbar orientation from TaskbarDockService
-            // Default to horizontal for now
-            orientation = LayoutOrientation.Horizontal;
+            // 自动模式直接根据当前任务栏矩形判定，任务栏在左右边缘时为竖向。
+            // Auto mode resolves the current taskbar rectangle; left/right docking is vertical.
+            orientation = _taskBarService.IsTaskbarVertical(taskbarHandle)
+                ? LayoutOrientation.Vertical
+                : LayoutOrientation.Horizontal;
         }
         else
         {
@@ -310,12 +330,17 @@ public partial class TaskbarWindow : Window
 
         // 应用布局到媒体控件
         // Apply layout to media control
+        var orientationChanged = _appliedOrientation != orientation;
         MediaControl.ApplyLayout(windowMode, orientation);
+        _appliedOrientation = orientation;
 
-        // 注意：窗口模式切换（任务栏/悬浮）需要重新创建窗口
-        // Note: Window mode switching (taskbar/floating) requires window recreation
-        // 当前仅更新布局，悬浮窗口模式的完整实现需要额外的窗口逻辑
-        // Currently only updates layout, full floating mode implementation requires additional window logic
+        if (orientationChanged && IsLoaded)
+        {
+            Dispatcher.BeginInvoke(UpdatePosition, DispatcherPriority.Loaded);
+        }
+
+        // 窗口模式切换由 MainWindow 负责重新创建任务栏或灵动岛宿主。
+        // MainWindow recreates the taskbar or dynamic-island host when the window mode changes.
     }
 
     /// <summary>

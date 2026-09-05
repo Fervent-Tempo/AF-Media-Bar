@@ -64,8 +64,10 @@ namespace AFMediaBar.Components
         private string _actualArtist = string.Empty;  // 实际艺术家 Actual artist
 
         private bool _isPaused;        // 是否暂停 Whether paused
+        private bool _isConnected;
         private bool _isVertical;      // 任务栏是否竖向 Whether taskbar is vertical
         private bool _isSmallTaskbar;  // 是否小任务栏 Whether taskbar is small
+        private bool _controlsVisible;
 
         // === 歌词显示状态 Lyrics Display State ===
         // 解析后的行缓存 + 当前行下标，避免每个快照重复解析。
@@ -98,7 +100,7 @@ namespace AFMediaBar.Components
         /// 应用布局：根据窗口模式和方向选择并应用对应的布局配置。
         /// Apply layout: select and apply corresponding layout config based on window mode and orientation.
         /// </summary>
-        /// <param name="mode">窗口模式（任务栏/悬浮）/ Window mode (taskbar/floating)</param>
+        /// <param name="mode">窗口模式（任务栏/灵动岛）/ Window mode (taskbar/dynamic island)</param>
         /// <param name="orientation">布局方向（横向/竖向）/ Layout orientation (horizontal/vertical)</param>
         public void ApplyLayout(WindowMode mode, LayoutOrientation orientation)
         {
@@ -122,6 +124,9 @@ namespace AFMediaBar.Components
         /// Get currently applied layout configuration.
         /// </summary>
         public LayoutSchema? CurrentLayout => _layoutEngine?.CurrentLayout;
+
+        /// <summary>当前是否有已连接且正在播放的媒体。/ Indicates whether connected media is currently playing.</summary>
+        public bool IsPlaying => _isConnected && !_isPaused;
 
         /// <summary>
         /// 设置竖向模式：任务栏在屏幕左侧或右侧时调整布局。
@@ -196,6 +201,7 @@ namespace AFMediaBar.Components
                 {
                     _actualTitle = string.Empty;
                     _actualArtist = string.Empty;
+                    _isConnected = false;
 
                     SongTitle.Text = _actualTitle;
                     SongArtist.Text = _actualArtist;
@@ -208,16 +214,26 @@ namespace AFMediaBar.Components
                     BackgroundImage.Visibility = Visibility.Collapsed;
                     SongImageBorder.Margin = new Thickness(0, 0, 0, -3); // align music note better when no cover
 
-                    MainBorder.Background = new SolidColorBrush(Colors.Transparent);
-                    MainBorder.Background.Opacity = 0;
-                    TopBorder.BorderBrush = Brushes.Transparent;
+                    // 任务栏无媒体时保持完全透明；灵动岛保留布局定义的稳定背景。
+                    // Keep the disconnected taskbar transparent; preserve the dynamic-island layout background.
+                    if (_currentMode == WindowMode.Taskbar)
+                    {
+                        MainBorder.Background = new SolidColorBrush(Colors.Transparent);
+                        MainBorder.Background.Opacity = 0;
+                        TopBorder.BorderBrush = Brushes.Transparent;
+                    }
 
                     Visibility = Visibility.Visible;
+                    PreviousButton.IsEnabled = false;
+                    PlayPauseButton.IsEnabled = false;
+                    NextButton.IsEnabled = false;
+                    AnimateControls(false);
                 });
                 return;
             }
 
             _isPaused = !snapshot.IsPlaying;
+            _isConnected = true;
 
             Dispatcher.Invoke(() =>
             {
@@ -282,6 +298,12 @@ namespace AFMediaBar.Components
                 }
 
                 SongTitle.Visibility = Visibility.Visible;
+                PreviousButton.IsEnabled = snapshot.CanSkipPrevious;
+                PlayPauseButton.IsEnabled = snapshot.CanPlayPause;
+                NextButton.IsEnabled = snapshot.CanSkipNext;
+                PlayPauseButton.Icon = snapshot.IsPlaying
+                    ? new SymbolIcon(SymbolRegular.Pause24)
+                    : new SymbolIcon(SymbolRegular.Play24);
                 SongArtistContainer.Visibility = !_isSmallTaskbar && !_isVertical && !string.IsNullOrEmpty(snapshot.Artist)
                     ? Visibility.Visible
                     : Visibility.Collapsed;
@@ -383,7 +405,14 @@ namespace AFMediaBar.Components
         /// </summary>
         private void Grid_MouseEnter(object sender, MouseEventArgs e)
         {
-            if (string.IsNullOrEmpty(SongTitle.Text + SongArtist.Text)) return;
+            if (!_isConnected) return;
+
+            AnimateControls(true);
+
+            // 灵动岛使用布局定义的稳定背景；任务栏模式才使用悬停高亮。
+            // The dynamic-island host keeps its layout background; only taskbar mode uses hover highlighting.
+            if (_currentMode != WindowMode.Taskbar)
+                return;
 
             SolidColorBrush targetBackgroundBrush;
             bool isDark = ApplicationThemeManager.GetSystemTheme() == SystemTheme.Dark;
@@ -435,7 +464,12 @@ namespace AFMediaBar.Components
         /// </summary>
         private void Grid_MouseLeave(object sender, MouseEventArgs e)
         {
-            if (string.IsNullOrEmpty(SongTitle.Text + SongArtist.Text)) return;
+            if (!_isConnected) return;
+
+            AnimateControls(false);
+
+            if (_currentMode != WindowMode.Taskbar)
+                return;
 
             // 动画恢复到透明 Animate back to transparent
             var backgroundAnimation = new ColorAnimation
@@ -456,6 +490,45 @@ namespace AFMediaBar.Components
             MainBorder.Background?.BeginAnimation(SolidColorBrush.OpacityProperty, backgroundOpacityAnimation);
 
             TopBorder.BorderBrush = Brushes.Transparent;
+        }
+
+        /// <summary>
+        /// 仅在鼠标悬停媒体栏时显示控制按钮，并在离开时收回。
+        /// Shows playback controls only while the pointer is over the media bar and retracts them on leave.
+        /// </summary>
+        private void AnimateControls(bool visible)
+        {
+            if (_controlsVisible == visible)
+                return;
+
+            _controlsVisible = visible;
+            if (visible)
+                ControlsStackPanel.IsHitTestVisible = true;
+
+            var duration = new Duration(TimeSpan.FromMilliseconds(180));
+            var opacity = new DoubleAnimation(visible ? 1 : 0, duration)
+            {
+                EasingFunction = new CubicEase { EasingMode = visible ? EasingMode.EaseOut : EasingMode.EaseIn }
+            };
+            if (!visible)
+            {
+                opacity.Completed += (_, _) =>
+                {
+                    if (!_controlsVisible)
+                        ControlsStackPanel.IsHitTestVisible = false;
+                };
+            }
+            var scale = new DoubleAnimation(visible ? 1 : 0.92, duration)
+            {
+                EasingFunction = new CubicEase { EasingMode = visible ? EasingMode.EaseOut : EasingMode.EaseIn }
+            };
+
+            ControlsStackPanel.BeginAnimation(OpacityProperty, opacity);
+            if (ControlsStackPanel.RenderTransform is ScaleTransform transform)
+            {
+                transform.BeginAnimation(ScaleTransform.ScaleXProperty, scale);
+                transform.BeginAnimation(ScaleTransform.ScaleYProperty, scale);
+            }
         }
     }
 }

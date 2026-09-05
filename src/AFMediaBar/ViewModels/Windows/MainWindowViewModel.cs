@@ -30,12 +30,24 @@ namespace AFMediaBar.ViewModels.Windows
         /// <summary>退出整个程序。/ Exits the application.</summary>
         public ICommand ExitApplicationCommand { get; }
 
+        /// <summary>切换当前媒体播放状态。/ Toggles playback for the selected media session.</summary>
+        public ICommand TogglePlayPauseCommand { get; }
+
+        /// <summary>播放上一首媒体。/ Skips to the previous item in the selected media session.</summary>
+        public ICommand SkipPreviousCommand { get; }
+
+        /// <summary>播放下一首媒体。/ Skips to the next item in the selected media session.</summary>
+        public ICommand SkipNextCommand { get; }
+
         public MainWindowViewModel(MediaSessionService mediaSessionService)
         {
             SelectMediaSessionCommand = new RelayCommand<string>(key => mediaSessionService.SelectSession(key ?? string.Empty));
             ReconnectMediaSessionCommand = new AsyncRelayCommand(() => mediaSessionService.ReconnectAsync());
             OpenSettingsCommand = new RelayCommand(OpenSettings);
             ExitApplicationCommand = new RelayCommand(() => Application.Current.Shutdown());
+            TogglePlayPauseCommand = new AsyncRelayCommand(mediaSessionService.TogglePlayPauseAsync);
+            SkipPreviousCommand = new AsyncRelayCommand(mediaSessionService.SkipPreviousAsync);
+            SkipNextCommand = new AsyncRelayCommand(mediaSessionService.SkipNextAsync);
         }
 
         private void OpenSettings()

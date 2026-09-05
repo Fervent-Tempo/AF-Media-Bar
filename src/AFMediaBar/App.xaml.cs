@@ -66,6 +66,7 @@ namespace AFMediaBar
                 // === 主窗口（隐藏的宿主窗口）Main Window (invisible host window) ===
                 services.AddSingleton<INavigationWindow, MainWindow>();
                 services.AddSingleton<MainWindowViewModel>();
+                services.AddTransient<DynamicIslandWindow>();
 
                 // === 设置窗口（从任务栏右键菜单打开）Settings Window (opened from taskbar context menu) ===
                 services.AddSingleton<SettingsWindowViewModel>();

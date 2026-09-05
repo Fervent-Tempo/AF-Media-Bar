@@ -84,7 +84,7 @@
 
 AF Media Bar is a portable media controller for Windows 10 and Windows 11. It reads Global System Media Transport Controls (GSMTC) sessions, displays artwork, title, and artist, and provides previous, play/pause, next, and source switching controls.
 
-The app runs in its own process. Its WPF player can be hosted as a taskbar child window or used as a freely movable floating window. It does not modify or inject code into `explorer.exe`. Any player that publishes a GSMTC session can be discovered, including NetEase Cloud Music, QQ Music, Spotify, major browsers, VLC, PotPlayer, Windows Media Player, mpv, and foobar2000.
+The app runs in its own process. Its WPF player can be hosted as a taskbar child window or used as a freely movable dynamic-island window that retracts at a desktop edge. It does not modify or inject code into `explorer.exe`. Any player that publishes a GSMTC session can be discovered, including NetEase Cloud Music, QQ Music, Spotify, major browsers, VLC, PotPlayer, Windows Media Player, mpv, and foobar2000.
 
 ## Features
 
@@ -95,7 +95,7 @@ The app runs in its own process. Its WPF player can be hosted as a taskbar child
 | Media | Artwork, title, artist, previous, play/pause, next, and multiple source selection |
 | Source interaction | Click artwork to return to the media app; click a media-source widget to open source selection; media-text widgets are display-only; switch sessions with the mouse wheel |
 | Taskbar behavior | Automatic horizontal/vertical detection, manual placement and locking, automatic avoidance, auto-hide and fullscreen handling |
-| Window modes | Taskbar and floating hosts share horizontal and vertical layouts; host mode and arrangement are selected separately, with 70%-125% display scaling |
+| Window modes | Taskbar and dynamic-island hosts share horizontal and vertical layouts; the island can be dragged freely and retracts at a desktop edge |
 | Container layout | The settings page uses the schema-5 integer grid for container and widget placement, including click-to-create 1×1, drag-to-draw rectangles, and four-edge resizing; the editor code is modularized, while real-Windows boundary, collapse, and DPI behavior remains subject to acceptance |
 | Information density | Hover states can use a two-line title-and-artist widget; maximum lines only wraps text inside the widget and does not change container size |
 | Auto-hide | Hide when every media session is stopped; collapse containers use an anchor container and shared edge, while four-way collapse still requires real-Windows acceptance |
@@ -116,7 +116,7 @@ flowchart LR
     A[Media apps] -->|GSMTC sessions| B[AF Media Bar]
     C[Windows Core Audio] -->|Devices, volume, loopback| B
     D[Windows 10/11 taskbar] -->|Position and auto-hide state| B
-    B --> E[WPF taskbar child or floating window]
+    B --> E[WPF taskbar child or dynamic-island window]
 ```
 
 </div>
@@ -155,7 +155,7 @@ AF Media Bar is not commercially code-signed, so Windows SmartScreen may show an
 | Click the volume button | Open the selected media app volume slider |
 | Scroll over the volume button | Change application volume in 2% steps |
 | Drag an empty area of the strip | Move the bar; taskbar dragging temporarily exits automatic placement/locks |
-| Switch to floating mode | Place the player anywhere in the desktop work area |
+| Switch to dynamic-island mode | Drag the player anywhere in the desktop work area; drag it to an edge to enable paused retraction, while playback keeps it expanded |
 | Place an edge-collapse container on a desktop edge | Reveal its content when the pointer enters the trigger region; hide the content after leaving |
 | Right-click the bar or tray icon | Open detailed settings, media actions, or the exit menu |
 

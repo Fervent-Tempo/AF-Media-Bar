@@ -1,0 +1,20 @@
+<Window x:Class="AFMediaBar.Views.Windows.DynamicIslandWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:AFMediaBar.Components"
+        Title="DynamicIslandWindow"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Topmost="True"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ShowActivated="False"
+        Visibility="Collapsed"
+        MouseEnter="Window_MouseEnter"
+        MouseLeave="Window_MouseLeave">
+    <Canvas Background="Transparent"
+            MouseLeftButtonDown="Canvas_MouseLeftButtonDown">
+        <controls:TaskBarMediaControl x:Name="MediaControl" />
+    </Canvas>
+</Window>

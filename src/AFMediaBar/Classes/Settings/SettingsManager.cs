@@ -65,8 +65,8 @@ public class AppSettings
     public int TaskbarBarManualPadding { get; set; }
 
     /// <summary>
-    /// 窗口模式：任务栏模式或悬浮模式
-    /// Window mode: taskbar mode or floating mode
+    /// 窗口模式：任务栏模式或灵动岛模式
+    /// Window mode: taskbar mode or dynamic island mode
     /// </summary>
     public WindowMode WindowMode { get; set; } = WindowMode.Taskbar;
 
@@ -75,6 +75,16 @@ public class AppSettings
     /// Layout orientation mode: auto, horizontal or vertical
     /// </summary>
     public LayoutOrientationMode LayoutOrientationMode { get; set; } = LayoutOrientationMode.Auto;
+
+    /// <summary>灵动岛上次拖动位置。/ Last dragged position of the dynamic island.</summary>
+    public double? DynamicIslandLeft { get; set; }
+    public double? DynamicIslandTop { get; set; }
+
+    /// <summary>暂停时隐藏到的边缘。/ Edge used for the paused retracted state.</summary>
+    public DynamicIslandEdge DynamicIslandEdge { get; set; } = DynamicIslandEdge.Top;
+
+    /// <summary>灵动岛是否已拖到桌面边缘并启用自动隐藏。/ Whether the dynamic island is docked to an edge for auto-hide.</summary>
+    public bool DynamicIslandEdgeDocked { get; set; } = true;
 }
 
 /// <summary>

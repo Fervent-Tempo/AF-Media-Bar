@@ -3,8 +3,8 @@ using AFMediaBar.Classes.Models.Layout;
 namespace AFMediaBar.Classes.Services.Layout;
 
 /// <summary>
-/// 悬浮主题 - 竖向布局（独立桌面窗口，竖向显示）。
-/// Floating theme - vertical layout (independent desktop window, vertical display).
+/// 灵动岛主题 - 竖向布局（独立桌面窗口，竖向显示）。
+/// Dynamic island theme - vertical layout (independent desktop window, vertical display).
 ///
 /// 特点 Features:
 /// - 尺寸：80×200（比任务栏竖向略宽）
@@ -27,12 +27,12 @@ namespace AFMediaBar.Classes.Services.Layout;
 /// └────────────┘
 ///   80px × 200px
 /// </summary>
-public static class FloatingVerticalLayout
+public static class DynamicIslandVerticalLayout
 {
     public static LayoutSchema Create() => new()
     {
         Orientation = LayoutOrientation.Vertical,
-        Description = "悬浮主题（竖向）：独立桌面窗口，竖向显示",
+        Description = "灵动岛主题（竖向）：可拖动并支持桌面边缘收起",
         Canvas = new CanvasConfig
         {
             Width = 80,

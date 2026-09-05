@@ -145,6 +145,18 @@ public class TaskbarDockService : ITaskbarDockService
         return taskbarHandle != IntPtr.Zero && GetWindowRect(taskbarHandle, out rect);
     }
 
+    public bool IsTaskbarVertical(IntPtr taskbarHandle)
+    {
+        if (!TryGetTaskbarRect(taskbarHandle, out var rect))
+        {
+            return false;
+        }
+
+        var width = rect.Right - rect.Left;
+        var height = rect.Bottom - rect.Top;
+        return height > width;
+    }
+
     public void DockWindow(IntPtr windowHandle, IntPtr taskbarHandle)
     {
         if (windowHandle == IntPtr.Zero || taskbarHandle == IntPtr.Zero)

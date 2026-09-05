@@ -59,6 +59,12 @@ public interface ITaskbarDockService
     bool TryGetTaskbarRect(IntPtr taskbarHandle, out RECT rect);
 
     /// <summary>
+    /// 判断任务栏是否沿屏幕垂直方向停靠。
+    /// Determines whether the taskbar is docked along a vertical screen edge.
+    /// </summary>
+    bool IsTaskbarVertical(IntPtr taskbarHandle);
+
+    /// <summary>
     /// 将窗口转换为任务栏的子窗口（WS_CHILD + SetParent）。
     /// Turns the window into a WS_CHILD of the taskbar (SetParent).
     ///
