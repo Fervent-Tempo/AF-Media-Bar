@@ -1,4 +1,5 @@
 ﻿using AFMediaBar.Classes.Services;
+using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Services.Lyrics;
 using AFMediaBar.ViewModels.Pages;
 using AFMediaBar.ViewModels.Windows;
@@ -58,6 +59,14 @@ namespace AFMediaBar
 
                 // SMTC 媒体会话监听服务，生成 MediaSnapshot 快照供 UI 消费
                 // SMTC media session monitoring service, producing MediaSnapshot for UI consumption
+                services.AddSingleton<LyricsService>(_ => new LyricsService(
+                    new NetEaseLyricsProvider(),
+                    new LrclibLyricsProvider()));
+                services.AddSingleton<MediaSessionCatalog>();
+                services.AddSingleton<MediaSessionSelectionService>();
+                services.AddSingleton<MediaSnapshotBuilder>();
+                services.AddSingleton<IMediaSourceProvider, NetEaseMediaProvider>();
+                services.AddSingleton<MediaSourceActivationService>();
                 services.AddSingleton<MediaSessionService>();
 
                 // 导航服务（页面导航，不依赖具体窗口）Navigation service (page navigation, window-independent)
