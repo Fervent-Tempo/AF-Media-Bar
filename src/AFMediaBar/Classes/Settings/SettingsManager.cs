@@ -31,6 +31,14 @@ public enum DynamicIslandBackgroundMode
     Transparent = 1
 }
 
+/// <summary>托盘图标上的普通滚轮行为。 / Plain-wheel behavior over the tray icon.</summary>
+public enum TrayWheelBehavior
+{
+    AdjustVolume = 0,
+    SwitchOutputDevice = 1,
+    Disabled = 2
+}
+
 /// <summary>
 /// 应用设置模型：定义所有可配置的应用行为。
 /// Application settings model: defines all configurable application behaviors.
@@ -47,6 +55,9 @@ public enum DynamicIslandBackgroundMode
 /// </summary>
 public class AppSettings
 {
+    /// <summary>托盘图标滚轮行为；Shift + 滚轮执行另一项音频操作。 / Tray wheel behavior; Shift+wheel performs the alternate audio action.</summary>
+    public TrayWheelBehavior TrayWheelBehavior { get; set; } = TrayWheelBehavior.AdjustVolume;
+
     /// <summary>是否启用任务栏媒体栏（停靠到任务栏）Whether the media bar is docked into the taskbar.</summary>
     public bool TaskbarBarEnabled { get; set; } = true;
 

@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
 
         Title="{Binding ViewModel.ApplicationTitle, Mode=OneWay}"
         Height="40" Width="310"
@@ -12,4 +13,19 @@
         Background="Transparent"
         Visibility="Collapsed"
         mc:Ignorable="d">
+    <Window.ContextMenu>
+        <ContextMenu x:Name="TrayMenu" Width="240"
+                     DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+            <ui:MenuItem x:Name="TraySessionsMenuItem" Header="切换媒体源"
+                         Icon="{ui:SymbolIcon MusicNote216}" />
+            <Separator />
+            <ui:MenuItem Header="重新连接 SMTC" Icon="{ui:SymbolIcon ArrowSync24}"
+                         Command="{Binding ViewModel.ReconnectMediaSessionCommand}" />
+            <ui:MenuItem Header="设置" Icon="{ui:SymbolIcon Settings24}"
+                         Command="{Binding ViewModel.OpenSettingsCommand}" />
+            <Separator />
+            <ui:MenuItem Header="退出" Icon="{ui:SymbolIcon ArrowExit20}"
+                         Command="{Binding ViewModel.ExitApplicationCommand}" />
+        </ContextMenu>
+    </Window.ContextMenu>
 </Window>

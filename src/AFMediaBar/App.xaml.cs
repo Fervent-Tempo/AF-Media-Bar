@@ -13,6 +13,7 @@ using System.IO;
 using System.Reflection;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Services.Audio;
 using Wpf.Ui;
 using Wpf.Ui.DependencyInjection;
 
@@ -50,7 +51,8 @@ namespace AFMediaBar
                 // 主题管理（深浅色主题切换）Theme management (light/dark theme switching)
                 services.AddSingleton<IThemeService, ThemeService>();
 
-                // 任务栏状态服务（系统托盘图标）Taskbar status service (system tray icon)
+                // WPF-UI 任务栏状态服务（不创建 Shell 通知区域图标）
+                // WPF-UI taskbar-state service (does not create a Shell notification icon)
                 services.AddSingleton<ITaskBarService, TaskBarService>();
 
                 // 任务栏停靠引擎（将媒体栏嵌入到资源管理器任务栏）
@@ -68,6 +70,14 @@ namespace AFMediaBar
                 services.AddSingleton<IMediaSourceProvider, NetEaseMediaProvider>();
                 services.AddSingleton<MediaSourceActivationService>();
                 services.AddSingleton<MediaSessionService>();
+                services.AddSingleton<MediaSourceProcessResolver>();
+                services.AddSingleton<ApplicationVolumeService>();
+                services.AddSingleton<AudioDeviceService>();
+                services.AddSingleton<SpatialAudioService>();
+                // 自有 Shell 托盘图标与其滚轮命中监听
+                // App-owned Shell tray icon and wheel hit monitor
+                services.AddSingleton<ShellTrayIconService>();
+                services.AddSingleton<NativeMouseWheelMonitor>();
 
                 // 导航服务（页面导航，不依赖具体窗口）Navigation service (page navigation, window-independent)
                 services.AddSingleton<INavigationService, NavigationService>();
@@ -75,7 +85,10 @@ namespace AFMediaBar
                 // === 主窗口（隐藏的宿主窗口）Main Window (invisible host window) ===
                 services.AddSingleton<INavigationWindow, MainWindow>();
                 services.AddSingleton<MainWindowViewModel>();
+                services.AddSingleton<AudioControlViewModel>();
                 services.AddTransient<DynamicIslandWindow>();
+                services.AddSingleton<AudioControlFlyoutWindow>();
+                services.AddSingleton<TrayFeedbackWindow>();
 
                 // === 设置窗口（从任务栏右键菜单打开）Settings Window (opened from taskbar context menu) ===
                 services.AddSingleton<SettingsWindowViewModel>();

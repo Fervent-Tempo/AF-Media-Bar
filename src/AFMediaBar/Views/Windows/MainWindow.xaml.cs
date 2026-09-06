@@ -22,6 +22,9 @@ namespace AFMediaBar.Views.Windows
 
         private readonly ITaskbarDockService _taskBarService;
         private readonly MediaSessionService _mediaSessionService;
+        private readonly AudioControlViewModel _audioControlViewModel;
+        private readonly AudioControlFlyoutWindow _audioControlFlyout;
+        private readonly TrayFeedbackWindow _trayFeedbackWindow;
         private TaskbarWindow? _taskbarWindow;
         private DynamicIslandWindow? _dynamicIslandWindow;
         private int _taskbarCreatedMessage;
@@ -32,13 +35,19 @@ namespace AFMediaBar.Views.Windows
         public MainWindow(
             MainWindowViewModel viewModel,
             ITaskbarDockService taskBarService,
-            MediaSessionService mediaSessionService)
+            MediaSessionService mediaSessionService,
+            AudioControlViewModel audioControlViewModel,
+            AudioControlFlyoutWindow audioControlFlyout,
+            TrayFeedbackWindow trayFeedbackWindow)
         {
             ViewModel = viewModel;
             DataContext = this;
 
             _taskBarService = taskBarService;
             _mediaSessionService = mediaSessionService;
+            _audioControlViewModel = audioControlViewModel;
+            _audioControlFlyout = audioControlFlyout;
+            _trayFeedbackWindow = trayFeedbackWindow;
 
             SystemThemeWatcher.Watch(this);
 
@@ -53,6 +62,9 @@ namespace AFMediaBar.Views.Windows
             // 订阅布局设置变更事件
             // Subscribe to layout settings changed event
             SettingsManager.LayoutSettingsChanged += SettingsManager_OnLayoutSettingsChanged;
+            _audioControlViewModel.FlyoutToggleRequested += AudioControl_OnFlyoutToggleRequested;
+            _audioControlViewModel.TrayContextMenuRequested += AudioControl_OnTrayContextMenuRequested;
+            _audioControlViewModel.FeedbackRequested += AudioControl_OnFeedbackRequested;
 
             // evaluate the initial state once the window is loaded
             Loaded += MainWindow_Loaded;
@@ -88,11 +100,16 @@ namespace AFMediaBar.Views.Windows
             _mediaSessionService.SnapshotChanged -= MediaSessionService_OnSnapshotChanged;
             _mediaSessionService.SessionsChanged -= MediaSessionService_OnSessionsChanged;
             SettingsManager.LayoutSettingsChanged -= SettingsManager_OnLayoutSettingsChanged;
+            _audioControlViewModel.FlyoutToggleRequested -= AudioControl_OnFlyoutToggleRequested;
+            _audioControlViewModel.TrayContextMenuRequested -= AudioControl_OnTrayContextMenuRequested;
+            _audioControlViewModel.FeedbackRequested -= AudioControl_OnFeedbackRequested;
 
             _taskbarWindow?.Close();
             _taskbarWindow = null;
             _dynamicIslandWindow?.Close();
             _dynamicIslandWindow = null;
+            _audioControlFlyout.Close();
+            _trayFeedbackWindow.Close();
 
             // Make sure that closing this window will begin the process of closing the application.
             Application.Current.Shutdown();
@@ -184,6 +201,23 @@ namespace AFMediaBar.Views.Windows
         {
             _taskbarWindow?.ApplySessions(options);
             _dynamicIslandWindow?.ApplySessions(options);
+            ApplyTraySessions(options);
+        }
+
+        private void ApplyTraySessions(IReadOnlyList<MediaSessionOption> options)
+        {
+            TraySessionsMenuItem.Items.Clear();
+            foreach (var option in options)
+            {
+                TraySessionsMenuItem.Items.Add(new MenuItem
+                {
+                    Header = option.DisplayName,
+                    IsCheckable = true,
+                    IsChecked = option.IsSelected,
+                    Command = ViewModel.SelectMediaSessionCommand,
+                    CommandParameter = option.Key
+                });
+            }
         }
 
         /// <summary>
@@ -236,6 +270,27 @@ namespace AFMediaBar.Views.Windows
             Visibility = Visibility.Collapsed;
 
             ActivateWindowMode(SettingsManager.Current.WindowMode);
+        }
+
+        private async void AudioControl_OnFlyoutToggleRequested(TrayIconBounds? bounds)
+        {
+            await _audioControlFlyout.ToggleAsync(bounds);
+        }
+
+        private void AudioControl_OnTrayContextMenuRequested(TrayIconBounds? bounds)
+        {
+            _audioControlFlyout.Hide();
+            ApplyTraySessions(_mediaSessionService.CurrentSessionOptions);
+            TrayMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
+            TrayMenu.IsOpen = true;
+        }
+
+        private void AudioControl_OnFeedbackRequested(string text, TrayIconBounds? bounds)
+        {
+            if (!_audioControlFlyout.IsVisible)
+            {
+                _trayFeedbackWindow.ShowFeedback(text, bounds);
+            }
         }
     }
 }

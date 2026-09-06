@@ -4,6 +4,7 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:settings="clr-namespace:AFMediaBar.Classes.Settings"
       mc:Ignorable="d"
       d:DesignHeight="900"
       d:DesignWidth="1100"
@@ -128,6 +129,24 @@
                 <ComboBoxItem Content="简体中文" />
                 <ComboBoxItem Content="繁體中文" />
                 <ComboBoxItem Content="English" />
+            </ComboBox>
+        </ui:CardControl>
+
+        <ui:CardControl Margin="0,0,0,24"
+                        Icon="{ui:SymbolIcon Settings24}">
+            <ui:CardControl.Header>
+                <StackPanel>
+                    <ui:TextBlock Text="托盘滚轮行为" FontWeight="SemiBold" />
+                    <ui:TextBlock Text="选择托盘图标的默认滚轮操作"
+                                  Appearance="Secondary" FontSize="12" />
+                </StackPanel>
+            </ui:CardControl.Header>
+            <ComboBox MinWidth="180"
+                      SelectedValuePath="Tag"
+                      SelectedValue="{Binding ViewModel.TrayWheelBehavior, Mode=TwoWay}">
+                <ComboBoxItem Content="调节当前媒体音量" Tag="{x:Static settings:TrayWheelBehavior.AdjustVolume}" />
+                <ComboBoxItem Content="切换输出设备" Tag="{x:Static settings:TrayWheelBehavior.SwitchOutputDevice}" />
+                <ComboBoxItem Content="禁用" Tag="{x:Static settings:TrayWheelBehavior.Disabled}" />
             </ComboBox>
         </ui:CardControl>
 

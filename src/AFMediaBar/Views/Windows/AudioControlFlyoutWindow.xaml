@@ -1,0 +1,135 @@
+<ui:FluentWindow x:Class="AFMediaBar.Views.Windows.AudioControlFlyoutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        Title="音频控制"
+        Width="380"
+        SizeToContent="Height"
+        MaxHeight="560"
+        ShowInTaskbar="False"
+        Topmost="True"
+        WindowBackdropType="Acrylic"
+        WindowCornerPreference="Round"
+        ExtendsContentIntoTitleBar="True"
+        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+        Deactivated="Window_OnDeactivated"
+        mc:Ignorable="d"
+        d:DesignHeight="500">
+    <Border Margin="10"
+            Padding="20"
+            CornerRadius="8"
+            Background="{DynamicResource ControlFillColorDefaultBrush}"
+            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+            BorderThickness="1">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="22" ShadowDepth="4" Opacity="0.28" />
+        </Border.Effect>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="音频控制" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <ui:Button Grid.Column="1"
+                           Width="32" Height="32"
+                           Padding="0"
+                           Command="{Binding RefreshCommand}"
+                           ToolTip="刷新音频状态">
+                    <ui:SymbolIcon Symbol="ArrowSync24" />
+                </ui:Button>
+            </Grid>
+
+            <TextBlock Grid.Row="1" Text="输出设备" FontSize="13"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,6" />
+            <ComboBox Grid.Row="2"
+                      MinHeight="40"
+                      ItemsSource="{Binding OutputDevices}"
+                      DisplayMemberPath="DisplayName"
+                      SelectedItem="{Binding SelectedOutputDevice, Mode=TwoWay}"
+                      PreviewMouseWheel="OutputDevice_OnPreviewMouseWheel" />
+
+            <Button Grid.Row="3"
+                    Margin="0,10,0,16"
+                    Padding="12,9"
+                    HorizontalContentAlignment="Stretch"
+                    Command="{Binding OpenSpatialAudioSettingsCommand}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="空间音效" FontWeight="SemiBold" FontSize="14" />
+                        <TextBlock Text="{Binding SpatialAudioText}" FontSize="12"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                    <ui:SymbolIcon Grid.Column="1" Symbol="Open24" VerticalAlignment="Center" />
+                </Grid>
+            </Button>
+
+            <Grid Grid.Row="4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <TextBlock Text="应用音量" FontSize="13"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,6" />
+                <ScrollViewer Grid.Row="1" MaxHeight="280" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Applications}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="34" />
+                                        <ColumnDefinition Width="110" />
+                                        <ColumnDefinition />
+                                        <ColumnDefinition Width="42" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Width="28" Height="28" CornerRadius="4"
+                                            Background="{DynamicResource ControlFillColorSecondaryBrush}">
+                                        <TextBlock Text="{Binding Initial}" HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center" FontWeight="SemiBold" />
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="{Binding DisplayName}" Margin="8,0"
+                                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="FontWeight" Value="Normal" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsCurrentMedia}" Value="True">
+                                                        <Setter Property="FontWeight" Value="SemiBold" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <Slider Grid.Column="2" Minimum="0" Maximum="100"
+                                            Value="{Binding VolumePercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="3" Text="{Binding VolumePercent, StringFormat={}{0}%}"
+                                               HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+
+            <TextBlock Grid.Row="5" Text="{Binding StatusText}" Margin="0,10,0,0"
+                       FontSize="12" TextWrapping="Wrap"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+        </Grid>
+    </Border>
+</ui:FluentWindow>
