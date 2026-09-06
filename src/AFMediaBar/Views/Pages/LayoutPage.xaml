@@ -124,7 +124,7 @@
                 <StackPanel>
                     <ui:TextBlock Text="长度缩放"
                                   FontWeight="SemiBold" />
-                    <ui:TextBlock Text="调整媒体栏长度"
+                    <ui:TextBlock Text="调整媒体栏的长度（调节标题和歌词长度）"
                                   Appearance="Secondary"
                                   FontSize="12" />
                 </StackPanel>
@@ -153,7 +153,7 @@
                 <StackPanel>
                     <ui:TextBlock Text="粗细缩放"
                                   FontWeight="SemiBold" />
-                    <ui:TextBlock Text="调整媒体栏厚度"
+                    <ui:TextBlock Text="调整媒体栏厚度（按比例缩放内容大小）"
                                   Appearance="Secondary"
                                   FontSize="12" />
                 </StackPanel>

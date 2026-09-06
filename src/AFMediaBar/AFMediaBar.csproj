@@ -11,6 +11,14 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+<PropertyGroup Condition="'$(Configuration)' == 'Release' and '$(RuntimeIdentifier)' == 'win-x64'">
+  <PublishSingleFile>true</PublishSingleFile>
+  <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+  <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+  <DebugType>None</DebugType>
+  <DebugSymbols>false</DebugSymbols>
+</PropertyGroup>
+
   <ItemGroup>
     <Content Include="wpfui-icon.ico" />
   </ItemGroup>

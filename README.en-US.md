@@ -205,9 +205,9 @@ Windows 10 version 1809 or later, the [.NET 10 SDK](https://dotnet.microsoft.com
 ```powershell
 git clone https://github.com/Fervent-Tempo/AF-Media-Bar.git
 cd AF-Media-Bar
-dotnet restore .\AFMediaBar.slnx
-dotnet build .\AFMediaBar.slnx -c Release --no-restore
-dotnet test .\AFMediaBar.slnx -c Release --no-build
+dotnet restore .\src\AFMediaBar.slnx
+dotnet build .\src\AFMediaBar.slnx -c Release --no-restore
+dotnet test .\src\AFMediaBar.slnx -c Release --no-build
 dotnet run --project .\src\AFMediaBar\AFMediaBar.csproj
 ```
 
