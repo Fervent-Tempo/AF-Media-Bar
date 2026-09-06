@@ -225,7 +225,9 @@ public sealed class MediaSessionService : IDisposable
 
         if (sessions.Length == 0)
         {
-            if (_selection.IsMissingSessionGraceActive)
+            // 浏览器可能是唯一的 SMTC 会话；其重建期间空数组也必须启动恢复缓冲。
+            // The browser may be the only SMTC session; an empty array must also start the recovery grace period.
+            if (_selection.TryHoldMissingSession())
             {
                 return;
             }

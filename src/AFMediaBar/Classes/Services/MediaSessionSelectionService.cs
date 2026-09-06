@@ -58,6 +58,11 @@ public sealed class MediaSessionSelectionService : IDisposable
             string.Equals(session.Id, SelectedKey, StringComparison.Ordinal));
         if (selected is not null)
         {
+            if (_missingSessionSinceUtc != default)
+            {
+                Debug.WriteLine($"[MediaSessionSelection] Browser source recovered: {SelectedSourceId}");
+            }
+
             SelectedSourceId = selected.ControlSession.SourceAppUserModelId ?? SelectedSourceId;
             ClearMissingSession();
             return selected;
@@ -68,6 +73,7 @@ public sealed class MediaSessionSelectionService : IDisposable
         {
             SelectedKey = restored.Id;
             SelectedSourceId = restored.ControlSession.SourceAppUserModelId ?? string.Empty;
+            Debug.WriteLine($"[MediaSessionSelection] Browser source recreated: {SelectedSourceId}");
             ClearMissingSession();
             return restored;
         }
@@ -161,6 +167,33 @@ public sealed class MediaSessionSelectionService : IDisposable
         DateTime.UtcNow - _missingSessionSinceUtc < MissingSessionGracePeriod &&
         IsBrowserSource(SelectedSourceId ?? string.Empty);
 
+    /// <summary>
+    /// 在浏览器会话暂时消失时启动或维持恢复缓冲。
+    /// Starts or maintains the recovery grace period while a browser session is temporarily missing.
+    /// </summary>
+    public bool TryHoldMissingSession()
+    {
+        if (!IsBrowserSource(SelectedSourceId ?? string.Empty))
+        {
+            return false;
+        }
+
+        if (_missingSessionSinceUtc == default)
+        {
+            _missingSessionSinceUtc = DateTime.UtcNow;
+            Debug.WriteLine($"[MediaSessionSelection] Holding missing browser source: {SelectedSourceId}");
+        }
+
+        if (DateTime.UtcNow - _missingSessionSinceUtc >= MissingSessionGracePeriod)
+        {
+            Debug.WriteLine($"[MediaSessionSelection] Missing browser source grace expired: {SelectedSourceId}");
+            return false;
+        }
+
+        _timer.Start();
+        return true;
+    }
+
     public void ClearSelection()
     {
         SelectedKey = null;
@@ -181,33 +214,11 @@ public sealed class MediaSessionSelectionService : IDisposable
         _timer.Tick -= OnTimerTick;
     }
 
-    private bool TryHoldMissingSession()
-    {
-        if (!IsBrowserSource(SelectedSourceId ?? string.Empty))
-        {
-            return false;
-        }
-
-        if (_missingSessionSinceUtc == default)
-        {
-            _missingSessionSinceUtc = DateTime.UtcNow;
-        }
-
-        if (DateTime.UtcNow - _missingSessionSinceUtc >= MissingSessionGracePeriod)
-        {
-            return false;
-        }
-
-        _timer.Start();
-        return true;
-    }
-
     private MediaSession? FindRestoredSession(IReadOnlyList<MediaSession> sessions) =>
         IsMissingSessionGraceActive
-            ? sessions.FirstOrDefault(session => string.Equals(
-                session.ControlSession.SourceAppUserModelId,
-                SelectedSourceId,
-                StringComparison.OrdinalIgnoreCase))
+            ? sessions.FirstOrDefault(session => IsSameBrowserSource(
+                session.ControlSession.SourceAppUserModelId ?? string.Empty,
+                SelectedSourceId ?? string.Empty))
             : null;
 
     private void ClearPendingAutoSwitch()
@@ -258,4 +269,29 @@ public sealed class MediaSessionSelectionService : IDisposable
         sourceId.Contains("msedge", StringComparison.OrdinalIgnoreCase) ||
         sourceId.Contains("microsoftedge", StringComparison.OrdinalIgnoreCase) ||
         sourceId.Contains("firefox", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsSameBrowserSource(string leftSourceId, string rightSourceId)
+    {
+        var leftFamily = GetBrowserFamily(leftSourceId);
+        var rightFamily = GetBrowserFamily(rightSourceId);
+        return leftFamily is not null && string.Equals(leftFamily, rightFamily, StringComparison.Ordinal);
+    }
+
+    private static string? GetBrowserFamily(string sourceId)
+    {
+        if (sourceId.Contains("chrome", StringComparison.OrdinalIgnoreCase))
+        {
+            return "chrome";
+        }
+
+        if (sourceId.Contains("msedge", StringComparison.OrdinalIgnoreCase) ||
+            sourceId.Contains("microsoftedge", StringComparison.OrdinalIgnoreCase))
+        {
+            return "edge";
+        }
+
+        return sourceId.Contains("firefox", StringComparison.OrdinalIgnoreCase)
+            ? "firefox"
+            : null;
+    }
 }
