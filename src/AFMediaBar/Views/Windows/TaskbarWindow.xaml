@@ -33,6 +33,10 @@
         </ContextMenu>
     </Window.ContextMenu>
     <Canvas Name="WidgetCanvas" Background="Transparent">
-        <controls:TaskBarMediaControl x:Name="MediaControl" />
+        <controls:TaskBarMediaControl x:Name="MediaControl"
+                                      PreviewMouseLeftButtonDown="MediaControl_PreviewMouseLeftButtonDown"
+                                      PreviewMouseMove="MediaControl_PreviewMouseMove"
+                                      PreviewMouseLeftButtonUp="MediaControl_PreviewMouseLeftButtonUp"
+                                      LostMouseCapture="MediaControl_LostMouseCapture" />
     </Canvas>
 </Window>

@@ -89,7 +89,12 @@ namespace AFMediaBar.Components
                 contentCanvas: MainCanvas,
                 backgroundImage: BackgroundImage,
                 artworkBorder: SongImageBorder,
-                songInfoPanel: SongInfoStackPanel
+                songInfoPanel: SongInfoStackPanel,
+                artworkPlaceholder: SongImagePlaceholder,
+                songTitle: SongTitle,
+                songArtist: SongArtist,
+                songTitleContainer: SongTitleContainer,
+                songArtistContainer: SongArtistContainer
             );
 
             // 应用默认布局（任务栏横向）
@@ -105,6 +110,27 @@ namespace AFMediaBar.Components
         /// <param name="orientation">布局方向（横向/竖向）/ Layout orientation (horizontal/vertical)</param>
         public void ApplyLayout(WindowMode mode, LayoutOrientation orientation)
         {
+            ApplyLayout(
+                mode,
+                orientation,
+                SettingsManager.Current.LayoutLengthScalePercent,
+                SettingsManager.Current.LayoutThicknessScalePercent);
+        }
+
+        /// <summary>
+        /// 使用宿主解析后的缩放百分比应用布局。
+        /// Applies layout with scale percentages resolved by the host.
+        /// </summary>
+        /// <param name="mode">窗口模式 / Window mode</param>
+        /// <param name="orientation">布局方向 / Layout orientation</param>
+        /// <param name="lengthScalePercent">主轴长度缩放百分比 / Primary-axis length scale percentage</param>
+        /// <param name="thicknessScalePercent">横轴厚度缩放百分比 / Cross-axis thickness scale percentage</param>
+        public void ApplyLayout(
+            WindowMode mode,
+            LayoutOrientation orientation,
+            double lengthScalePercent,
+            double thicknessScalePercent)
+        {
             _currentMode = mode;
 
             // 从预设中获取布局
@@ -113,7 +139,10 @@ namespace AFMediaBar.Components
 
             // 应用布局
             // Apply layout
-            _layoutEngine?.ApplyLayout(layout);
+            _layoutEngine?.ApplyLayout(
+                layout,
+                lengthScalePercent / 100.0,
+                thicknessScalePercent / 100.0);
 
             // 更新内部状态标志以保持兼容
             // Update internal state flags to maintain compatibility

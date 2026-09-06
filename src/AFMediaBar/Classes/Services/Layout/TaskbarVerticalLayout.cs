@@ -7,12 +7,12 @@ namespace AFMediaBar.Classes.Services.Layout;
 /// Taskbar theme - vertical layout (for taskbar at left or right).
 ///
 /// 特点 Features:
-/// - 尺寸：72×152（适配竖向任务栏宽度）
-///   Size: 72×152 (adapted for vertical taskbar width)
+/// - 尺寸：80×168（适配竖向任务栏宽度）
+///   Size: 80×168 (adapted for vertical taskbar width)
 /// - 组件竖向排列：封面 ↓ 歌曲信息
 ///   Components arranged vertically: artwork ↓ song info
-/// - 封面更大（52×52），文字居中对齐
-///   Larger artwork (52×52), center-aligned text
+/// - 封面更大（58×58），文字居中对齐
+///   Larger artwork (58×58), center-aligned text
 ///
 /// 组件布局 Component Layout:
 /// ┌──────────┐
@@ -25,7 +25,7 @@ namespace AFMediaBar.Classes.Services.Layout;
 /// ├──────────┤
 /// │ [控制]   │  24px
 /// └──────────┘
-///   72px × 152px
+///   80px × 168px
 /// </summary>
 public static class TaskbarVerticalLayout
 {
@@ -35,8 +35,8 @@ public static class TaskbarVerticalLayout
         Description = "任务栏主题（竖向）：适配任务栏在屏幕左侧或右侧",
         Canvas = new CanvasConfig
         {
-            Width = 72,
-            Height = 152,
+            Width = 80,
+            Height = 168,
             Background = "#00000000",
             CornerRadius = 6,
             Border = new BorderConfig
@@ -58,13 +58,13 @@ public static class TaskbarVerticalLayout
             {
                 Id = "artwork",
                 Type = "Artwork",
-                Bounds = new ComponentBounds(10, 8, 52, 52),
+                Bounds = new ComponentBounds(11, 8, 58, 58),
                 Properties = new Dictionary<string, object>
                 {
-                    ["cornerRadius"] = 6.0,
+                    ["cornerRadius"] = 6.5,
                     ["showPlaceholder"] = true,
                     ["placeholderIcon"] = "MusicNote220",
-                    ["placeholderIconSize"] = 32.0
+                    ["placeholderIconSize"] = 35.0
                 }
             },
 
@@ -73,13 +73,13 @@ public static class TaskbarVerticalLayout
             {
                 Id = "song-info",
                 Type = "MediaText",
-                Bounds = new ComponentBounds(4, 68, 64, 80),
+                Bounds = new ComponentBounds(4, 74, 72, 90),
                 Properties = new Dictionary<string, object>
                 {
                     ["showTitle"] = true,
                     ["showArtist"] = true,
-                    ["titleFontSize"] = 11.0,
-                    ["artistFontSize"] = 10.0,
+                    ["titleFontSize"] = 12.0,
+                    ["artistFontSize"] = 11.0,
                     ["artistOpacity"] = 0.5,
                     ["layout"] = "vertical",
                     ["textAlignment"] = "center",

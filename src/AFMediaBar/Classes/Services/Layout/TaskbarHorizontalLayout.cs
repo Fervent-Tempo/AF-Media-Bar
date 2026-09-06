@@ -7,8 +7,8 @@ namespace AFMediaBar.Classes.Services.Layout;
 /// Taskbar theme - horizontal layout (for taskbar at top or bottom).
 ///
 /// 特点 Features:
-/// - 尺寸：274×40（匹配 TaskbarWindow 尺寸）
-///   Size: 274×40 (matches TaskbarWindow size)
+/// - 尺寸：300×44（匹配 TaskbarWindow 尺寸）
+///   Size: 300×44 (matches TaskbarWindow size)
 /// - 组件横向排列：封面 | 歌曲信息
 ///   Components arranged horizontally: artwork | song info
 /// - 适合宽度有限的任务栏环境
@@ -17,9 +17,9 @@ namespace AFMediaBar.Classes.Services.Layout;
 /// 组件布局 Component Layout:
 /// ┌────────────────────────────────────────┐
 /// │  [封面]  歌曲标题 - 艺术家              │
-/// │   36px     210px                        │
+/// │   40px     240px                        │
 /// └────────────────────────────────────────┘
-///    274px × 40px
+///    300px × 44px
 /// </summary>
 public static class TaskbarHorizontalLayout
 {
@@ -29,8 +29,8 @@ public static class TaskbarHorizontalLayout
         Description = "任务栏主题（横向）：适配任务栏在屏幕顶部或底部",
         Canvas = new CanvasConfig
         {
-            Width = 274,
-            Height = 40,
+            Width = 300,
+            Height = 44,
             Background = "#00000000",
             CornerRadius = 6,
             Border = new BorderConfig
@@ -52,13 +52,13 @@ public static class TaskbarHorizontalLayout
             {
                 Id = "artwork",
                 Type = "Artwork",
-                Bounds = new ComponentBounds(4, 2, 36, 36),
+                Bounds = new ComponentBounds(4, 2, 40, 40),
                 Properties = new Dictionary<string, object>
                 {
-                    ["cornerRadius"] = 5.0,
+                    ["cornerRadius"] = 5.5,
                     ["showPlaceholder"] = true,
                     ["placeholderIcon"] = "MusicNote220",
-                    ["placeholderIconSize"] = 24.0
+                    ["placeholderIconSize"] = 27.0
                 }
             },
 
@@ -67,13 +67,13 @@ public static class TaskbarHorizontalLayout
             {
                 Id = "song-info",
                 Type = "MediaText",
-                Bounds = new ComponentBounds(48, 2, 218, 36),
+                Bounds = new ComponentBounds(52, 2, 240, 40),
                 Properties = new Dictionary<string, object>
                 {
                     ["showTitle"] = true,
                     ["showArtist"] = true,
-                    ["titleFontSize"] = 13.0,
-                    ["artistFontSize"] = 11.0,
+                    ["titleFontSize"] = 14.0,
+                    ["artistFontSize"] = 12.0,
                     ["artistOpacity"] = 0.5,
                     ["layout"] = "vertical",
                     ["verticalAlignment"] = "center"

@@ -23,6 +23,8 @@ public partial class DynamicIslandWindow : Window
     private bool _isClosing;
     private bool _isDragging;
     private LayoutOrientation? _appliedOrientation;
+    private double _appliedLengthScalePercent = double.NaN;
+    private double _appliedThicknessScalePercent = double.NaN;
 
     public DynamicIslandWindow(MainWindowViewModel viewModel)
     {
@@ -55,6 +57,8 @@ public partial class DynamicIslandWindow : Window
                 MediaControl.UpdateSongInfo(snapshot);
                 MediaControl.ApplyWindowsTheme();
                 Visibility = Visibility.Visible;
+                if (_isDragging)
+                    return;
                 if (SettingsManager.Current.DynamicIslandEdgeDocked)
                     Collapse(animated: true);
                 else
@@ -66,6 +70,9 @@ public partial class DynamicIslandWindow : Window
             MediaControl.UpdateSongInfo(snapshot);
             MediaControl.ApplyWindowsTheme();
             Visibility = Visibility.Visible;
+
+            if (_isDragging)
+                return;
 
             if (snapshot.IsPlaying)
             {
@@ -87,7 +94,11 @@ public partial class DynamicIslandWindow : Window
             ? LayoutOrientation.Vertical
             : LayoutOrientation.Horizontal;
 
-        if (_appliedOrientation == orientation)
+        var lengthScalePercent = SettingsManager.Current.LayoutLengthScalePercent;
+        var thicknessScalePercent = SettingsManager.Current.LayoutThicknessScalePercent;
+        if (_appliedOrientation == orientation &&
+            lengthScalePercent.Equals(_appliedLengthScalePercent) &&
+            thicknessScalePercent.Equals(_appliedThicknessScalePercent))
             return;
 
         MediaControl.ApplyLayout(WindowMode.DynamicIsland, orientation);
@@ -96,6 +107,8 @@ public partial class DynamicIslandWindow : Window
             return;
 
         _appliedOrientation = orientation;
+        _appliedLengthScalePercent = lengthScalePercent;
+        _appliedThicknessScalePercent = thicknessScalePercent;
         Width = canvas.Width;
         Height = canvas.Height;
 
@@ -105,13 +118,17 @@ public partial class DynamicIslandWindow : Window
             return;
         }
 
-        SetPosition(_isExpanded ? GetExpandedPosition() : GetCollapsedPosition(), animated: false);
+        if (!_isDragging)
+            SetPosition(_isExpanded ? GetExpandedPosition() : GetCollapsedPosition(), animated: false);
     }
 
     public void ApplyAppearanceSettings() => MediaControl.ApplyWindowsTheme();
 
     private void Expand(bool animated)
     {
+        if (_isDragging)
+            return;
+
         var target = GetExpandedPosition();
         if (_isExpanded && IsPositionTarget(target))
         {
@@ -126,6 +143,9 @@ public partial class DynamicIslandWindow : Window
 
     private void Collapse(bool animated)
     {
+        if (_isDragging)
+            return;
+
         var target = GetCollapsedPosition();
         if (!_isExpanded && IsPositionTarget(target))
             return;
@@ -188,8 +208,8 @@ public partial class DynamicIslandWindow : Window
             return;
         }
 
-        StopPositionAnimationAtCurrentPosition();
         _isDragging = true;
+        StopPositionAnimationAtCurrentPosition();
         _isExpanded = true;
 
         try

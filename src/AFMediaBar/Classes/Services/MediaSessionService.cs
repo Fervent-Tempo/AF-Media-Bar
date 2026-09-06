@@ -213,13 +213,17 @@ public sealed class MediaSessionService : IDisposable
         }
     }
 
-    /// <summary>激活当前媒体来源应用；浏览器来源只能激活浏览器，SMTC 不提供具体标签页窗口。</summary>
+    /// <summary>
+    /// 激活当前媒体来源；窗口已关闭到托盘时，重新启动同一可执行文件以请求应用恢复前台。
+    /// Activates the current media source; when its window is closed to tray, starts the same executable to request foreground restoration.
+    /// </summary>
     public void ActivateSelectedSource()
     {
         var sourceId = SelectedSourceId;
         if (string.IsNullOrWhiteSpace(sourceId))
             return;
 
+        var executablePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var processName in ResolveProcessNames(sourceId))
         {
             foreach (var process in Process.GetProcessesByName(processName))
@@ -230,31 +234,44 @@ public sealed class MediaSessionService : IDisposable
                     {
                         var handle = process.MainWindowHandle;
                         if (handle == IntPtr.Zero)
+                        {
+                            var executablePath = process.MainModule?.FileName;
+                            if (!string.IsNullOrWhiteSpace(executablePath))
+                                executablePaths.Add(executablePath);
                             continue;
+                        }
 
                         NativeMethods.ShowWindow(handle, NativeMethods.SW_RESTORE);
                         NativeMethods.SetForegroundWindow(handle);
                         return;
                     }
-                    catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
+                    catch (Exception ex) when (ex is InvalidOperationException or
+                                                   System.ComponentModel.Win32Exception or
+                                                   NotSupportedException)
                     {
-                        // The process can exit while its window is being resolved.
+                        // 解析窗口或可执行文件时进程可能已经退出。
+                        // The process can exit while its window or executable is being resolved.
                     }
                 }
             }
         }
 
-        if (!sourceId.Contains('!'))
-            return;
-
         try
         {
-            Process.Start(new ProcessStartInfo
+            if (sourceId.Contains('!'))
             {
-                FileName = "explorer.exe",
-                Arguments = $"shell:AppsFolder\\{sourceId}",
-                UseShellExecute = true
-            });
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "explorer.exe",
+                    Arguments = $"shell:AppsFolder\\{sourceId}",
+                    UseShellExecute = true
+                });
+                return;
+            }
+
+            var executablePath = executablePaths.FirstOrDefault(File.Exists);
+            if (executablePath is not null)
+                Process.Start(new ProcessStartInfo(executablePath) { UseShellExecute = true });
         }
         catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
         {

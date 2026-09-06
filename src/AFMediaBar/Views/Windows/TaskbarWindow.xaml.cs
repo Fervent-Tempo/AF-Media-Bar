@@ -5,11 +5,14 @@ using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Settings;
 using System.Diagnostics;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Interop;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
+using AFMediaBar.Classes.Services.Layout;
 using AFMediaBar.Classes.Utils;
 using MenuItem = Wpf.Ui.Controls.MenuItem;
 using static AFMediaBar.Classes.Interop.NativeMethods;
@@ -33,8 +36,14 @@ public partial class TaskbarWindow : Window
     private IntPtr _lastTaskbarHandle;
     private bool _positionUpdateInProgress;
     private bool _isClosing;
+    private bool _isDragging;
     private WindowMode? _appliedWindowMode;
     private LayoutOrientation? _appliedOrientation;
+    private double _appliedLengthScalePercent = double.NaN;
+    private double _appliedThicknessScalePercent = double.NaN;
+    private int _dragStartCursorPrimary;
+    private int _dragStartBarPrimary;
+    private int _dragPrimaryLimit;
 
     public TaskbarWindow(ITaskbarDockService taskBarService, MainWindow mainWindow)
     {
@@ -137,7 +146,7 @@ public partial class TaskbarWindow : Window
 
     private void UpdatePosition()
     {
-        if (_isClosing || MainWindow.ExplorerRestarting)
+        if (_isClosing || _isDragging || MainWindow.ExplorerRestarting)
         {
             // Explorer is restarting -- do NOTHING
             return;
@@ -229,8 +238,8 @@ public partial class TaskbarWindow : Window
         int taskbarHeight = taskbarRect.Bottom - taskbarRect.Top;
 
         var canvas = MediaControl.CurrentLayout?.Canvas;
-        double barWidth = canvas?.Width ?? 310;
-        double barHeight = canvas?.Height ?? 40;
+        double barWidth = canvas?.Width ?? 300;
+        double barHeight = canvas?.Height ?? 44;
         int physicalWidth = (int)Math.Round(barWidth * dpiScale);
         int physicalHeight = (int)Math.Round(barHeight * dpiScale);
 
@@ -248,7 +257,10 @@ public partial class TaskbarWindow : Window
         };
         primaryPos += SettingsManager.Current.TaskbarBarManualPadding;
 
-        int crossPos = (crossLength - crossSize) / 2;
+        int crossPos = (crossLength - crossSize) / 2 +
+                       (int)Math.Round(SettingsManager.Current.TaskbarBarCrossAxisOffsetDip * dpiScale);
+        primaryPos = Math.Clamp(primaryPos, 0, Math.Max(0, primaryLength - primarySize));
+        crossPos = Math.Clamp(crossPos, 0, Math.Max(0, crossLength - crossSize));
 
         // Canvas coordinates and control size are DIPs, hence the dpiScale conversion
         Canvas.SetLeft(MediaControl, (isVertical ? crossPos : primaryPos) / dpiScale);
@@ -305,6 +317,7 @@ public partial class TaskbarWindow : Window
         }
 
         ApplyLayoutSettings(windowMode, orientationMode, taskbarHandle);
+        Dispatcher.BeginInvoke(UpdatePosition, DispatcherPriority.Background);
     }
 
     private void ApplyLayoutSettings(WindowMode windowMode, LayoutOrientationMode orientationMode, IntPtr taskbarHandle)
@@ -336,13 +349,23 @@ public partial class TaskbarWindow : Window
         // 应用布局到媒体控件
         // Apply layout to media control
         var orientationChanged = _appliedOrientation != orientation;
-        var layoutChanged = _appliedWindowMode != windowMode || orientationChanged;
+        var lengthScalePercent = SettingsManager.Current.LayoutLengthScalePercent;
+        var thicknessScalePercent = ResolveTaskbarThicknessScalePercent(
+            taskbarHandle,
+            orientation,
+            SettingsManager.Current.LayoutThicknessScalePercent);
+        var layoutChanged = _appliedWindowMode != windowMode ||
+                            orientationChanged ||
+                            !lengthScalePercent.Equals(_appliedLengthScalePercent) ||
+                            !thicknessScalePercent.Equals(_appliedThicknessScalePercent);
         if (layoutChanged)
         {
-            MediaControl.ApplyLayout(windowMode, orientation);
+            MediaControl.ApplyLayout(windowMode, orientation, lengthScalePercent, thicknessScalePercent);
             MediaControl.ApplyWindowsTheme();
             _appliedWindowMode = windowMode;
             _appliedOrientation = orientation;
+            _appliedLengthScalePercent = lengthScalePercent;
+            _appliedThicknessScalePercent = thicknessScalePercent;
         }
 
         if (orientationChanged && IsLoaded)
@@ -352,6 +375,31 @@ public partial class TaskbarWindow : Window
 
         // 窗口模式切换由 MainWindow 负责重新创建任务栏或灵动岛宿主。
         // MainWindow recreates the taskbar or dynamic-island host when the window mode changes.
+    }
+
+    private double ResolveTaskbarThicknessScalePercent(
+        IntPtr taskbarHandle,
+        LayoutOrientation orientation,
+        double requestedPercent)
+    {
+        requestedPercent = Math.Clamp(requestedPercent, 70, 125);
+        var dpiScale = _taskBarService.GetTaskbarDpiScale(taskbarHandle);
+        if (dpiScale <= 0 || !_taskBarService.TryGetTaskbarRect(taskbarHandle, out var taskbarRect))
+            return requestedPercent;
+
+        var preset = LayoutPresets.GetLayout(WindowMode.Taskbar, orientation);
+        var baseCrossSize = orientation == LayoutOrientation.Vertical
+            ? preset.Canvas.Width
+            : preset.Canvas.Height;
+        var physicalCrossSize = orientation == LayoutOrientation.Vertical
+            ? taskbarRect.Right - taskbarRect.Left
+            : taskbarRect.Bottom - taskbarRect.Top;
+        var availableCrossSizeDip = physicalCrossSize / dpiScale;
+
+        // 任务栏宿主会裁剪超出横轴的内容，因此仅限制实际渲染值，保留用户设置值。
+        // The taskbar host clips cross-axis overflow, so cap only the rendered value and preserve the user's setting.
+        var maximumPercent = Math.Max(70, availableCrossSizeDip / baseCrossSize * 100);
+        return Math.Min(requestedPercent, maximumPercent);
     }
 
     /// <summary>
@@ -397,6 +445,107 @@ public partial class TaskbarWindow : Window
     {
         if (command.CanExecute(null))
             command.Execute(null);
+    }
+
+    private void MediaControl_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton != MouseButton.Left ||
+            SettingsManager.Current.TaskbarBarPositionLocked ||
+            e.OriginalSource is DependencyObject source && IsMediaAction(source))
+        {
+            return;
+        }
+
+        var taskbarHandle = _lastTaskbarHandle;
+        if (taskbarHandle == IntPtr.Zero ||
+            !_taskBarService.TryGetTaskbarRect(taskbarHandle, out var taskbarRect) ||
+            !GetCursorPos(out var cursor))
+        {
+            return;
+        }
+
+        var dpiScale = _taskBarService.GetTaskbarDpiScale(taskbarHandle);
+        if (dpiScale <= 0)
+            return;
+
+        var isVertical = _appliedOrientation == LayoutOrientation.Vertical;
+        var primaryLength = isVertical
+            ? taskbarRect.Bottom - taskbarRect.Top
+            : taskbarRect.Right - taskbarRect.Left;
+        var canvas = MediaControl.CurrentLayout?.Canvas;
+        var primarySize = (int)Math.Round((isVertical ? canvas?.Height ?? 168 : canvas?.Width ?? 300) * dpiScale);
+
+        _dragStartCursorPrimary = isVertical ? cursor.Y : cursor.X;
+        _dragStartBarPrimary = (int)Math.Round((isVertical
+            ? Canvas.GetTop(MediaControl)
+            : Canvas.GetLeft(MediaControl)) * dpiScale);
+        _dragPrimaryLimit = Math.Max(0, primaryLength - primarySize);
+        _isDragging = true;
+        Mouse.Capture(MediaControl, CaptureMode.SubTree);
+        e.Handled = true;
+    }
+
+    private void MediaControl_PreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_isDragging)
+            return;
+
+        if (e.LeftButton != MouseButtonState.Pressed || SettingsManager.Current.TaskbarBarPositionLocked)
+        {
+            EndTaskbarDrag();
+            return;
+        }
+
+        if (!GetCursorPos(out var cursor))
+            return;
+
+        var cursorPrimary = _appliedOrientation == LayoutOrientation.Vertical ? cursor.Y : cursor.X;
+        var targetPrimary = Math.Clamp(
+            _dragStartBarPrimary + cursorPrimary - _dragStartCursorPrimary,
+            0,
+            _dragPrimaryLimit);
+        SettingsManager.Current.Position = TaskbarBarPosition.Start;
+        SettingsManager.Current.TaskbarBarManualPadding = targetPrimary - EdgePadding;
+
+        var windowHandle = new WindowInteropHelper(this).Handle;
+        if (_lastTaskbarHandle != IntPtr.Zero && windowHandle != IntPtr.Zero)
+            CalculateAndSetPosition(_lastTaskbarHandle, windowHandle);
+        e.Handled = true;
+    }
+
+    private void MediaControl_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (!_isDragging || e.ChangedButton != MouseButton.Left)
+            return;
+
+        EndTaskbarDrag();
+        e.Handled = true;
+    }
+
+    private void MediaControl_LostMouseCapture(object sender, MouseEventArgs e)
+    {
+        if (_isDragging)
+            EndTaskbarDrag(releaseCapture: false);
+    }
+
+    private void EndTaskbarDrag(bool releaseCapture = true)
+    {
+        _isDragging = false;
+        if (releaseCapture && MediaControl.IsMouseCaptured)
+            MediaControl.ReleaseMouseCapture();
+        UpdatePosition();
+    }
+
+    private static bool IsMediaAction(DependencyObject? source)
+    {
+        while (source is not null)
+        {
+            if (source is FrameworkElement { Tag: "MediaAction" })
+                return true;
+            source = VisualTreeHelper.GetParent(source);
+        }
+
+        return false;
     }
 
     protected override void OnClosed(EventArgs e)

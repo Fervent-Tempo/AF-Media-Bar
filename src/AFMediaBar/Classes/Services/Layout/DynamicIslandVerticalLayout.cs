@@ -7,10 +7,10 @@ namespace AFMediaBar.Classes.Services.Layout;
 /// Dynamic island theme - vertical layout (independent desktop window, vertical display).
 ///
 /// 特点 Features:
-/// - 尺寸：80×176（比任务栏竖向略宽）
-///   Size: 80×176 (slightly wider than taskbar vertical)
-/// - 更大的封面（60×60）和更宽松的间距
-///   Larger artwork (60×60) and more spacious layout
+/// - 尺寸：88×194（比任务栏竖向略宽）
+///   Size: 88×194 (slightly wider than taskbar vertical)
+/// - 更大的封面（66×66）和更宽松的间距
+///   Larger artwork (66×66) and more spacious layout
 /// - 适合竖屏显示器或桌面边缘放置
 ///   Suitable for vertical monitors or desktop edge placement
 ///
@@ -25,7 +25,7 @@ namespace AFMediaBar.Classes.Services.Layout;
 /// ├────────────┤
 /// │  [控制]    │  24px
 /// └────────────┘
-///   80px × 176px
+///   88px × 194px
 /// </summary>
 public static class DynamicIslandVerticalLayout
 {
@@ -35,8 +35,8 @@ public static class DynamicIslandVerticalLayout
         Description = "灵动岛主题（竖向）：可拖动并支持桌面边缘收起",
         Canvas = new CanvasConfig
         {
-            Width = 80,
-            Height = 176,
+            Width = 88,
+            Height = 194,
             Background = "#01000000",
             CornerRadius = 8,
             Border = new BorderConfig
@@ -58,13 +58,13 @@ public static class DynamicIslandVerticalLayout
             {
                 Id = "artwork",
                 Type = "Artwork",
-                Bounds = new ComponentBounds(10, 10, 60, 60),
+                Bounds = new ComponentBounds(11, 10, 66, 66),
                 Properties = new Dictionary<string, object>
                 {
-                    ["cornerRadius"] = 8.0,
+                    ["cornerRadius"] = 8.5,
                     ["showPlaceholder"] = true,
                     ["placeholderIcon"] = "MusicNote220",
-                    ["placeholderIconSize"] = 36.0
+                    ["placeholderIconSize"] = 40.0
                 }
             },
 
@@ -73,13 +73,13 @@ public static class DynamicIslandVerticalLayout
             {
                 Id = "song-info",
                 Type = "MediaText",
-                Bounds = new ComponentBounds(6, 78, 68, 90),
+                Bounds = new ComponentBounds(6, 84, 76, 104),
                 Properties = new Dictionary<string, object>
                 {
                     ["showTitle"] = true,
                     ["showArtist"] = true,
-                    ["titleFontSize"] = 12.0,
-                    ["artistFontSize"] = 11.0,
+                    ["titleFontSize"] = 13.0,
+                    ["artistFontSize"] = 12.0,
                     ["artistOpacity"] = 0.6,
                     ["layout"] = "vertical",
                     ["textAlignment"] = "center",

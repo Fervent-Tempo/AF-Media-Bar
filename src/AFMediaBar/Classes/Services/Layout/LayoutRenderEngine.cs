@@ -4,6 +4,7 @@ using System.Windows.Media;
 using System.Windows.Media.Effects;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Models.Layout;
+using FontIcon = Wpf.Ui.Controls.FontIcon;
 
 namespace AFMediaBar.Classes.Services.Layout;
 
@@ -38,6 +39,11 @@ public sealed class LayoutRenderEngine
     // 组件引用 Component references
     private readonly Border? _artworkBorder;
     private readonly StackPanel? _songInfoPanel;
+    private readonly FontIcon? _artworkPlaceholder;
+    private readonly TextBlock? _songTitle;
+    private readonly TextBlock? _songArtist;
+    private readonly FrameworkElement? _songTitleContainer;
+    private readonly FrameworkElement? _songArtistContainer;
 
     private LayoutSchema? _currentLayout;
 
@@ -55,13 +61,23 @@ public sealed class LayoutRenderEngine
         Canvas? contentCanvas = null,
         Image? backgroundImage = null,
         Border? artworkBorder = null,
-        StackPanel? songInfoPanel = null)
+        StackPanel? songInfoPanel = null,
+        FontIcon? artworkPlaceholder = null,
+        TextBlock? songTitle = null,
+        TextBlock? songArtist = null,
+        FrameworkElement? songTitleContainer = null,
+        FrameworkElement? songArtistContainer = null)
     {
         _mainBorder = mainBorder;
         _contentCanvas = contentCanvas;
         _backgroundImage = backgroundImage;
         _artworkBorder = artworkBorder;
         _songInfoPanel = songInfoPanel;
+        _artworkPlaceholder = artworkPlaceholder;
+        _songTitle = songTitle;
+        _songArtist = songArtist;
+        _songTitleContainer = songTitleContainer;
+        _songArtistContainer = songArtistContainer;
     }
 
     /// <summary>
@@ -81,25 +97,111 @@ public sealed class LayoutRenderEngine
     ///    Trigger layout update
     /// </summary>
     /// <param name="layout">布局配置 / Layout configuration</param>
-    public void ApplyLayout(LayoutSchema layout)
+    /// <param name="lengthScale">主轴长度缩放系数 / Primary-axis length scale factor</param>
+    /// <param name="thicknessScale">横轴厚度缩放系数 / Cross-axis thickness scale factor</param>
+    public void ApplyLayout(LayoutSchema layout, double lengthScale, double thicknessScale)
     {
-        _currentLayout = layout;
+        var effectiveLayout = CreateScaledLayout(layout, lengthScale, thicknessScale);
+        _currentLayout = effectiveLayout;
 
         // 应用画布配置
         // Apply canvas config
-        ApplyCanvasConfig(layout.Canvas);
+        ApplyCanvasConfig(effectiveLayout.Canvas);
 
         // 应用组件布局
         // Apply component layout
-        ApplyComponentLayout(layout.Components);
+        ApplyComponentLayout(effectiveLayout.Components);
 
         // 应用视觉效果
         // Apply visual effects
-        ApplyEffects(layout.Canvas.Effects);
+        ApplyEffects(effectiveLayout.Canvas.Effects);
 
         // 强制刷新布局
         // Force layout refresh
         _mainBorder.UpdateLayout();
+    }
+
+    /// <summary>
+    /// 将预设转换为运行时缩放布局：粗细缩放整体组件，长度缩放主轴与文本空间。
+    /// Converts a preset into a runtime layout: thickness scales components, while length scales the primary axis and text space.
+    /// </summary>
+    private static LayoutSchema CreateScaledLayout(LayoutSchema source, double lengthScale, double thicknessScale)
+    {
+        lengthScale = Math.Clamp(lengthScale, 0.7, 1.25);
+        thicknessScale = Math.Clamp(thicknessScale, 0.7, 1.25);
+        var isVertical = source.Orientation == LayoutOrientation.Vertical;
+        var basePrimaryLength = isVertical ? source.Canvas.Height : source.Canvas.Width;
+        var primaryDelta = basePrimaryLength * thicknessScale * (lengthScale - 1);
+
+        var components = source.Components.Select(component => new ComponentConfig
+        {
+            Id = component.Id,
+            Type = component.Type,
+            Bounds = new ComponentBounds(
+                component.Bounds.X * thicknessScale,
+                component.Bounds.Y * thicknessScale,
+                component.Bounds.Width * thicknessScale,
+                component.Bounds.Height * thicknessScale),
+            Properties = ScaleVisualProperties(component.Properties, thicknessScale)
+        }).ToList();
+
+        var artwork = components.FirstOrDefault(component => component.Id == "artwork");
+        var songInfoIndex = components.FindIndex(component => component.Id == "song-info");
+        if (songInfoIndex >= 0)
+        {
+            var songInfo = components[songInfoIndex];
+            var bounds = songInfo.Bounds;
+            var gapDelta = 0.0;
+            if (artwork is not null)
+            {
+                var gap = isVertical
+                    ? bounds.Y - (artwork.Bounds.Y + artwork.Bounds.Height)
+                    : bounds.X - (artwork.Bounds.X + artwork.Bounds.Width);
+                gapDelta = gap * (lengthScale - 1);
+            }
+
+            bounds = isVertical
+                ? bounds with
+                {
+                    Y = bounds.Y + gapDelta,
+                    Height = Math.Max(24 * thicknessScale, bounds.Height + primaryDelta - gapDelta)
+                }
+                : bounds with
+                {
+                    X = bounds.X + gapDelta,
+                    Width = Math.Max(48 * thicknessScale, bounds.Width + primaryDelta - gapDelta)
+                };
+            components[songInfoIndex] = songInfo with { Bounds = bounds };
+        }
+
+        var canvas = source.Canvas with
+        {
+            Width = source.Canvas.Width * thicknessScale * (isVertical ? 1 : lengthScale),
+            Height = source.Canvas.Height * thicknessScale * (isVertical ? lengthScale : 1),
+            CornerRadius = source.Canvas.CornerRadius * thicknessScale,
+            Border = source.Canvas.Border is null
+                ? null
+                : source.Canvas.Border with { Thickness = source.Canvas.Border.Thickness * thicknessScale },
+            Effects = source.Canvas.Effects is null
+                ? null
+                : source.Canvas.Effects with { Blur = source.Canvas.Effects.Blur * thicknessScale }
+        };
+
+        return source with { Canvas = canvas, Components = components };
+    }
+
+    private static Dictionary<string, object> ScaleVisualProperties(
+        IReadOnlyDictionary<string, object> properties,
+        double thicknessScale)
+    {
+        var result = new Dictionary<string, object>(properties);
+        foreach (var key in new[] { "cornerRadius", "placeholderIconSize", "titleFontSize", "artistFontSize" })
+        {
+            if (result.TryGetValue(key, out var value) && value is double number)
+                result[key] = number * thicknessScale;
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -224,6 +326,13 @@ public sealed class LayoutRenderEngine
             _artworkBorder.CornerRadius = new CornerRadius(cornerRadius);
         }
 
+        if (_artworkPlaceholder is not null &&
+            config.Properties.TryGetValue("placeholderIconSize", out var iconSizeValue) &&
+            iconSizeValue is double iconSize)
+        {
+            _artworkPlaceholder.FontSize = iconSize;
+        }
+
         // 显示组件
         // Show component
         _artworkBorder.Visibility = Visibility.Visible;
@@ -249,7 +358,8 @@ public sealed class LayoutRenderEngine
 
         // 应用自定义属性（如文本对齐方式）
         // Apply custom properties (e.g., text alignment)
-        if (config.Properties.TryGetValue("textAlign", out var textAlignValue)
+        if ((config.Properties.TryGetValue("textAlignment", out var textAlignValue) ||
+             config.Properties.TryGetValue("textAlign", out textAlignValue))
             && textAlignValue is string textAlign)
         {
             _songInfoPanel.HorizontalAlignment = textAlign switch
@@ -259,6 +369,32 @@ public sealed class LayoutRenderEngine
                 "right" => HorizontalAlignment.Right,
                 _ => HorizontalAlignment.Left
             };
+        }
+
+
+        if (_songTitle is not null &&
+            config.Properties.TryGetValue("titleFontSize", out var titleFontSizeValue) &&
+            titleFontSizeValue is double titleFontSize)
+        {
+            _songTitle.FontSize = titleFontSize;
+            if (_songTitleContainer is not null)
+                _songTitleContainer.Height = Math.Max(titleFontSize + 5, config.Bounds.Height / 2);
+        }
+
+        if (_songArtist is not null &&
+            config.Properties.TryGetValue("artistFontSize", out var artistFontSizeValue) &&
+            artistFontSizeValue is double artistFontSize)
+        {
+            _songArtist.FontSize = artistFontSize;
+            if (_songArtistContainer is not null)
+                _songArtistContainer.Height = Math.Max(artistFontSize + 5, config.Bounds.Height / 2);
+        }
+
+        if (_songArtist is not null &&
+            config.Properties.TryGetValue("artistOpacity", out var artistOpacityValue) &&
+            artistOpacityValue is double artistOpacity)
+        {
+            _songArtist.Opacity = artistOpacity;
         }
 
         // 显示组件

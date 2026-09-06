@@ -138,9 +138,9 @@
                         Maximum="125"
                         TickFrequency="5"
                         IsSnapToTickEnabled="True"
-                        Value="100" />
+                        Value="{Binding ViewModel.LayoutLengthScalePercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Delay=40}" />
                 <TextBlock Grid.Column="1"
-                           Text="100%"
+                           Text="{Binding ViewModel.LayoutLengthScalePercent, StringFormat={}{0:0}%}"
                            HorizontalAlignment="Right"
                            VerticalAlignment="Center"
                            FontSize="14" />
@@ -167,9 +167,9 @@
                         Maximum="125"
                         TickFrequency="5"
                         IsSnapToTickEnabled="True"
-                        Value="100" />
+                        Value="{Binding ViewModel.LayoutThicknessScalePercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Delay=40}" />
                 <TextBlock Grid.Column="1"
-                           Text="100%"
+                           Text="{Binding ViewModel.LayoutThicknessScalePercent, StringFormat={}{0:0}%}"
                            HorizontalAlignment="Right"
                            VerticalAlignment="Center"
                            FontSize="14" />
@@ -181,9 +181,9 @@
                         Icon="{ui:SymbolIcon ArrowUp24}">
             <ui:CardControl.Header>
                 <StackPanel>
-                    <ui:TextBlock Text="顶部偏移"
+                    <ui:TextBlock Text="边缘偏移"
                                   FontWeight="SemiBold" />
-                    <ui:TextBlock Text="微调媒体栏相对位置"
+                    <ui:TextBlock Text="水平任务栏上下移动，垂直任务栏左右移动"
                                   Appearance="Secondary"
                                   FontSize="12" />
                 </StackPanel>
@@ -197,9 +197,9 @@
                         Maximum="20"
                         TickFrequency="1"
                         IsSnapToTickEnabled="True"
-                        Value="0" />
+                        Value="{Binding ViewModel.TaskbarCrossAxisOffsetDip, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Delay=40}" />
                 <TextBlock Grid.Column="1"
-                           Text="0"
+                           Text="{Binding ViewModel.TaskbarCrossAxisOffsetDip, StringFormat={}{0:0}}"
                            HorizontalAlignment="Right"
                            VerticalAlignment="Center"
                            FontSize="14" />
@@ -235,7 +235,7 @@
                                   FontSize="12" />
                 </StackPanel>
             </ui:CardControl.Header>
-            <ui:ToggleSwitch />
+            <ui:ToggleSwitch IsChecked="{Binding ViewModel.IsTaskbarPositionLocked, Mode=TwoWay}" />
         </ui:CardControl>
 
         <ui:CardControl Icon="{ui:SymbolIcon ArrowReset24}">
@@ -249,7 +249,8 @@
                 </StackPanel>
             </ui:CardControl.Header>
             <ui:Button Content="重置"
-                       Icon="{ui:SymbolIcon ArrowReset24}" />
+                       Icon="{ui:SymbolIcon ArrowReset24}"
+                       Command="{Binding ViewModel.ResetTaskbarPositionCommand}" />
         </ui:CardControl>
         </StackPanel>
     </StackPanel>

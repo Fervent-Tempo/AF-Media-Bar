@@ -83,8 +83,20 @@ public class AppSettings
     /// </summary>
     public LayoutOrientationMode LayoutOrientationMode { get; set; } = LayoutOrientationMode.Auto;
 
+    /// <summary>媒体栏主轴长度缩放百分比。/ Media bar primary-axis length scale percentage.</summary>
+    public double LayoutLengthScalePercent { get; set; } = 100;
+
+    /// <summary>媒体栏组件与横轴厚度缩放百分比。/ Media bar component and cross-axis thickness scale percentage.</summary>
+    public double LayoutThicknessScalePercent { get; set; } = 100;
+
     /// <summary>灵动岛背景方案。/ Background style used by the dynamic island.</summary>
     public DynamicIslandBackgroundMode DynamicIslandBackgroundMode { get; set; } = DynamicIslandBackgroundMode.SystemTheme;
+
+    /// <summary>任务栏横轴方向偏移（DIP）。/ Taskbar cross-axis offset in DIPs.</summary>
+    public double TaskbarBarCrossAxisOffsetDip { get; set; }
+
+    /// <summary>是否禁止拖动任务栏媒体栏。/ Whether taskbar media bar dragging is disabled.</summary>
+    public bool TaskbarBarPositionLocked { get; set; }
 
     /// <summary>灵动岛上次拖动位置。/ Last dragged position of the dynamic island.</summary>
     public double? DynamicIslandLeft { get; set; }

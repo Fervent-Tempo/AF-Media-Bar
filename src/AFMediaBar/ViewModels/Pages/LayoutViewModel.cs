@@ -26,6 +26,18 @@ namespace AFMediaBar.ViewModels.Pages
         [ObservableProperty]
         private DynamicIslandBackgroundMode _currentDynamicIslandBackgroundMode = DynamicIslandBackgroundMode.SystemTheme;
 
+        [ObservableProperty]
+        private double _layoutLengthScalePercent = 100;
+
+        [ObservableProperty]
+        private double _layoutThicknessScalePercent = 100;
+
+        [ObservableProperty]
+        private double _taskbarCrossAxisOffsetDip;
+
+        [ObservableProperty]
+        private bool _isTaskbarPositionLocked;
+
         public bool IsTaskbarMode => CurrentWindowMode == WindowMode.Taskbar;
 
         public bool IsDynamicIslandMode => CurrentWindowMode == WindowMode.DynamicIsland;
@@ -34,15 +46,42 @@ namespace AFMediaBar.ViewModels.Pages
         {
             // 从设置管理器加载当前设置
             // Load current settings from settings manager
-            CurrentWindowMode = SettingsManager.Current.WindowMode;
-            CurrentLayoutOrientationMode = SettingsManager.Current.LayoutOrientationMode;
-            CurrentDynamicIslandBackgroundMode = SettingsManager.Current.DynamicIslandBackgroundMode;
+            _currentWindowMode = SettingsManager.Current.WindowMode;
+            _currentLayoutOrientationMode = SettingsManager.Current.LayoutOrientationMode;
+            _currentDynamicIslandBackgroundMode = SettingsManager.Current.DynamicIslandBackgroundMode;
+            _layoutLengthScalePercent = SettingsManager.Current.LayoutLengthScalePercent;
+            _layoutThicknessScalePercent = SettingsManager.Current.LayoutThicknessScalePercent;
+            _taskbarCrossAxisOffsetDip = SettingsManager.Current.TaskbarBarCrossAxisOffsetDip;
+            _isTaskbarPositionLocked = SettingsManager.Current.TaskbarBarPositionLocked;
         }
 
         partial void OnCurrentWindowModeChanged(WindowMode value)
         {
             OnPropertyChanged(nameof(IsTaskbarMode));
             OnPropertyChanged(nameof(IsDynamicIslandMode));
+        }
+
+        partial void OnLayoutLengthScalePercentChanged(double value)
+        {
+            SettingsManager.Current.LayoutLengthScalePercent = value;
+            RaiseLayoutSettingsChanged();
+        }
+
+        partial void OnLayoutThicknessScalePercentChanged(double value)
+        {
+            SettingsManager.Current.LayoutThicknessScalePercent = value;
+            RaiseLayoutSettingsChanged();
+        }
+
+        partial void OnTaskbarCrossAxisOffsetDipChanged(double value)
+        {
+            SettingsManager.Current.TaskbarBarCrossAxisOffsetDip = value;
+            RaiseLayoutSettingsChanged();
+        }
+
+        partial void OnIsTaskbarPositionLockedChanged(bool value)
+        {
+            SettingsManager.Current.TaskbarBarPositionLocked = value;
         }
 
         /// <summary>
@@ -165,5 +204,27 @@ namespace AFMediaBar.ViewModels.Pages
                 SettingsManager.Current.WindowMode,
                 SettingsManager.Current.LayoutOrientationMode);
         }
+
+        [RelayCommand]
+        private void OnResetTaskbarPosition()
+        {
+            SettingsManager.Current.Position = TaskbarBarPosition.Start;
+            SettingsManager.Current.TaskbarBarManualPadding = 0;
+            if (TaskbarCrossAxisOffsetDip.Equals(0d))
+            {
+                RaiseLayoutSettingsChanged();
+            }
+            else
+            {
+                // 属性回调统一发送一次刷新，同时同步滑块显示。
+                // The property callback sends one refresh and synchronizes the slider display.
+                TaskbarCrossAxisOffsetDip = 0;
+            }
+        }
+
+        private static void RaiseLayoutSettingsChanged() =>
+            SettingsManager.RaiseLayoutSettingsChanged(
+                SettingsManager.Current.WindowMode,
+                SettingsManager.Current.LayoutOrientationMode);
     }
 }

@@ -92,8 +92,8 @@ The app runs in its own process. Its WPF player can be hosted as a taskbar child
 
 | Category | Capabilities |
 | --- | --- |
-| Media | Artwork, title, artist, previous, play/pause, next, and multiple source selection |
-| Source interaction | Click artwork to return to the media app; click a media-source widget to open source selection; media-text widgets are display-only; switch sessions with the mouse wheel |
+| Media | Artwork, title, and artist; click artwork to play/pause; scroll for previous/next; multiple source selection |
+| Source interaction | Click the title or lyric to return to the media app |
 | Taskbar behavior | Automatic horizontal/vertical detection, manual placement and locking, automatic avoidance, auto-hide and fullscreen handling |
 | Window modes | Taskbar and dynamic-island hosts share horizontal and vertical layouts; the island can be dragged freely and retracts at a desktop edge |
 | Container layout | The settings page uses the schema-5 integer grid for container and widget placement, including click-to-create 1×1, drag-to-draw rectangles, and four-edge resizing; the editor code is modularized, while real-Windows boundary, collapse, and DPI behavior remains subject to acceptance |
@@ -145,16 +145,15 @@ AF Media Bar is not commercially code-signed, so Windows SmartScreen may show an
 
 | Action | Result |
 | --- | --- |
-| Hover over the bar | Expand media controls |
-| Click previous / play / next | Execute the commands supported by the current media session |
-| Click artwork | Return to the selected media app |
-| Click a media-source widget | Open source selection; regular title, artist, and source text do not navigate |
-| Scroll over the media area | Switch between GSMTC sessions |
+| Hover over the bar | Show the taskbar hover border, or expand a retracted island from the desktop edge |
+| Click artwork | Play or pause the selected media session |
+| Click title or lyric | Return to the media app |
+| Scroll up/down over the media area | Go to the previous/next track |
 | Click the output device button | Open the render device list |
 | Scroll over the device button | Preview a device and apply it after scrolling stops |
 | Click the volume button | Open the selected media app volume slider |
 | Scroll over the volume button | Change application volume in 2% steps |
-| Drag an empty area of the strip | Move the bar; taskbar dragging temporarily exits automatic placement/locks |
+| Drag an empty area of the strip | Move the bar and does not drag while locked |
 | Switch to dynamic-island mode | Drag the player anywhere in the desktop work area; drag it to an edge to enable paused retraction, while playback keeps it expanded |
 | Place an edge-collapse container on a desktop edge | Reveal its content when the pointer enters the trigger region; hide the content after leaving |
 | Right-click the bar or tray icon | Open detailed settings, media actions, or the exit menu |
