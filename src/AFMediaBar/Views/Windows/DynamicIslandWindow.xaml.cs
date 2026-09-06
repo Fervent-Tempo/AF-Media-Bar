@@ -1,11 +1,13 @@
 using System.Windows;
 using System.Windows.Media.Animation;
 using System.Windows.Interop;
+using AFMediaBar.Classes.Interop;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Utils;
 using AFMediaBar.ViewModels.Windows;
+using MenuItem = Wpf.Ui.Controls.MenuItem;
 
 namespace AFMediaBar.Views.Windows;
 
@@ -18,6 +20,7 @@ public partial class DynamicIslandWindow : Window
     private const double EdgeRevealDip = 5;
     private const double EdgeDockThresholdDip = 28;
     private const double PositionToleranceDip = 0.5;
+    private const int PositionAnimationDurationMs = 260;
     private readonly MainWindowViewModel _viewModel;
     private bool _isExpanded;
     private bool _isClosing;
@@ -25,6 +28,8 @@ public partial class DynamicIslandWindow : Window
     private LayoutOrientation? _appliedOrientation;
     private double _appliedLengthScalePercent = double.NaN;
     private double _appliedThicknessScalePercent = double.NaN;
+    private Point? _positionAnimationTarget;
+    private bool _positionAnimationActive;
 
     public DynamicIslandWindow(MainWindowViewModel viewModel)
     {
@@ -59,7 +64,7 @@ public partial class DynamicIslandWindow : Window
                 Visibility = Visibility.Visible;
                 if (_isDragging)
                     return;
-                if (SettingsManager.Current.DynamicIslandEdgeDocked)
+                if (SettingsManager.Current.DynamicIslandEdgeDocked && !IsCursorWithinWindow())
                     Collapse(animated: true);
                 else
                     Expand(animated: true);
@@ -80,7 +85,7 @@ public partial class DynamicIslandWindow : Window
             }
             else
             {
-                if (SettingsManager.Current.DynamicIslandEdgeDocked)
+                if (SettingsManager.Current.DynamicIslandEdgeDocked && !IsCursorWithinWindow())
                     Collapse(animated: true);
                 else
                     Expand(animated: true);
@@ -124,6 +129,32 @@ public partial class DynamicIslandWindow : Window
 
     public void ApplyAppearanceSettings() => MediaControl.ApplyWindowsTheme();
 
+    /// <summary>
+    /// 用最新会话列表重建灵动岛的媒体源菜单。
+    /// Rebuilds the dynamic-island media-source menu from the latest session list.
+    /// </summary>
+    public void ApplySessions(IReadOnlyList<MediaSessionOption> options)
+    {
+        if (_isClosing)
+            return;
+
+        Dispatcher.Invoke(() =>
+        {
+            SessionsMenuItem.Items.Clear();
+            foreach (var option in options)
+            {
+                SessionsMenuItem.Items.Add(new MenuItem
+                {
+                    Header = option.DisplayName,
+                    IsCheckable = true,
+                    IsChecked = option.IsSelected,
+                    Command = _viewModel.SelectMediaSessionCommand,
+                    CommandParameter = option.Key
+                });
+            }
+        });
+    }
+
     private void Expand(bool animated)
     {
         if (_isDragging)
@@ -156,35 +187,68 @@ public partial class DynamicIslandWindow : Window
 
     private void SetPosition(Point target, bool animated)
     {
-        if (IsPositionTarget(target))
+        var currentLeft = Left;
+        var currentTop = Top;
+        if (double.IsNaN(currentLeft) || double.IsNaN(currentTop))
+        {
+            animated = false;
+            currentLeft = target.X;
+            currentTop = target.Y;
+        }
+
+        if (animated && _positionAnimationActive &&
+            _positionAnimationTarget is { } pendingTarget && IsClose(pendingTarget, target))
             return;
 
-        var startLeft = double.IsNaN(Left) ? target.X : Left;
-        var startTop = double.IsNaN(Top) ? target.Y : Top;
+        if (!animated && IsClose(new Point(currentLeft, currentTop), target))
+            return;
+
         BeginAnimation(LeftProperty, null);
         BeginAnimation(TopProperty, null);
-        Left = target.X;
-        Top = target.Y;
+        _positionAnimationActive = false;
+        _positionAnimationTarget = null;
+        // 以当前视觉位置作为动画基准，避免窗口先瞬移到目标位置再开始动画。
+        // Keep the current visual position as the animation base to avoid a one-frame jump.
+        Left = currentLeft;
+        Top = currentTop;
 
         if (!animated)
+        {
+            Left = target.X;
+            Top = target.Y;
             return;
+        }
 
+        _positionAnimationTarget = target;
+        _positionAnimationActive = true;
         var easing = new CubicEase { EasingMode = _isExpanded ? EasingMode.EaseOut : EasingMode.EaseInOut };
         var leftAnimation = new DoubleAnimation
         {
-            From = startLeft,
+            From = currentLeft,
             To = target.X,
-            Duration = TimeSpan.FromMilliseconds(260),
+            Duration = TimeSpan.FromMilliseconds(PositionAnimationDurationMs),
             EasingFunction = easing,
             FillBehavior = FillBehavior.Stop
         };
         var topAnimation = new DoubleAnimation
         {
-            From = startTop,
+            From = currentTop,
             To = target.Y,
-            Duration = TimeSpan.FromMilliseconds(260),
+            Duration = TimeSpan.FromMilliseconds(PositionAnimationDurationMs),
             EasingFunction = easing,
             FillBehavior = FillBehavior.Stop
+        };
+        leftAnimation.Completed += (_, _) =>
+        {
+            if (_positionAnimationTarget is not { } completedTarget || !IsClose(completedTarget, target))
+                return;
+
+            BeginAnimation(LeftProperty, null);
+            BeginAnimation(TopProperty, null);
+            Left = target.X;
+            Top = target.Y;
+            _positionAnimationTarget = null;
+            _positionAnimationActive = false;
         };
         BeginAnimation(LeftProperty, leftAnimation, HandoffBehavior.SnapshotAndReplace);
         BeginAnimation(TopProperty, topAnimation, HandoffBehavior.SnapshotAndReplace);
@@ -192,12 +256,16 @@ public partial class DynamicIslandWindow : Window
 
     private bool IsPositionTarget(Point target)
     {
-        var baseLeft = (double)GetAnimationBaseValue(LeftProperty);
-        var baseTop = (double)GetAnimationBaseValue(TopProperty);
-        return !double.IsNaN(baseLeft) && !double.IsNaN(baseTop) &&
-               Math.Abs(baseLeft - target.X) <= PositionToleranceDip &&
-               Math.Abs(baseTop - target.Y) <= PositionToleranceDip;
+        if (_positionAnimationActive && _positionAnimationTarget is { } pendingTarget)
+            return IsClose(pendingTarget, target);
+
+        return !double.IsNaN(Left) && !double.IsNaN(Top) &&
+               IsClose(new Point(Left, Top), target);
     }
+
+    private static bool IsClose(Point first, Point second) =>
+        Math.Abs(first.X - second.X) <= PositionToleranceDip &&
+        Math.Abs(first.Y - second.Y) <= PositionToleranceDip;
 
     private void Canvas_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
@@ -238,8 +306,30 @@ public partial class DynamicIslandWindow : Window
 
     private void Window_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
     {
-        if (!MediaControl.IsPlaying && !_isDragging && SettingsManager.Current.DynamicIslandEdgeDocked)
+        if (!MediaControl.IsPlaying && !_isDragging && SettingsManager.Current.DynamicIslandEdgeDocked &&
+            !IsCursorWithinWindow())
             Collapse(animated: true);
+    }
+
+    /// <summary>
+    /// 使用系统屏幕光标判断指针是否仍在灵动岛窗口内。
+    /// Uses the native screen cursor position to determine whether the pointer remains inside the island.
+    /// </summary>
+    private bool IsCursorWithinWindow()
+    {
+        if (!NativeMethods.GetCursorPos(out var cursor))
+            return false;
+
+        try
+        {
+            var cursorInWindow = PointFromScreen(new Point(cursor.X, cursor.Y));
+            return cursorInWindow.X >= 0 && cursorInWindow.X <= ActualWidth &&
+                   cursorInWindow.Y >= 0 && cursorInWindow.Y <= ActualHeight;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
     }
 
     protected override void OnClosed(EventArgs e)
@@ -278,8 +368,12 @@ public partial class DynamicIslandWindow : Window
         var currentTop = Top;
         BeginAnimation(LeftProperty, null);
         BeginAnimation(TopProperty, null);
-        Left = currentLeft;
-        Top = currentTop;
+        _positionAnimationTarget = null;
+        _positionAnimationActive = false;
+        if (!double.IsNaN(currentLeft))
+            Left = currentLeft;
+        if (!double.IsNaN(currentTop))
+            Top = currentTop;
     }
 
     private bool SaveDraggedPositionAndEdge()

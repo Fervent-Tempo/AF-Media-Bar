@@ -183,6 +183,7 @@ namespace AFMediaBar.Views.Windows
         private void MediaSessionService_OnSessionsChanged(IReadOnlyList<MediaSessionOption> options)
         {
             _taskbarWindow?.ApplySessions(options);
+            _dynamicIslandWindow?.ApplySessions(options);
         }
 
         /// <summary>
@@ -210,6 +211,7 @@ namespace AFMediaBar.Views.Windows
                 _taskbarWindow = null;
                 _dynamicIslandWindow ??= App.Services.GetRequiredService<DynamicIslandWindow>();
                 _dynamicIslandWindow.ApplyLayoutSettings(SettingsManager.Current.LayoutOrientationMode);
+                _dynamicIslandWindow.ApplySessions(_mediaSessionService.CurrentSessionOptions);
                 _dynamicIslandWindow.Show();
                 if (_mediaSessionService.CurrentSnapshot is { } islandSnapshot)
                     _dynamicIslandWindow.ApplySnapshot(islandSnapshot);

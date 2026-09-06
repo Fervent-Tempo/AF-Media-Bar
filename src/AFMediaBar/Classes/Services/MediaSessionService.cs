@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -31,6 +32,9 @@ public sealed class MediaSessionService : IDisposable
     private const string NetEaseWindowClass = "OrpheusBrowserHost";
     private const string UnknownSourceName = "未知来源";
     private const string UnknownArtistName = "未知艺术家";
+    private static readonly TimeSpan AutoSwitchGracePeriod = TimeSpan.FromSeconds(1);
+    private static readonly TimeSpan MissingSessionGracePeriod = TimeSpan.FromSeconds(3);
+    private const int SessionSnapshotRetryCount = 4;
     private static readonly TimeSpan MemoryPlayerPollInterval = TimeSpan.FromMilliseconds(233);
     private static readonly (string[] Tokens, string[] ProcessNames)[] SourceProcesses =
     [
@@ -52,10 +56,15 @@ public sealed class MediaSessionService : IDisposable
     private readonly Dispatcher _dispatcher;
     private readonly object _publishGate = new();
 
-    // 会话列表与选择状态。所有事件处理都被调度到 UI 线程，天然串行，无需加锁。
-    // Session list and selection state. All event handling is marshalled to the UI thread, so no locks are needed.
+    // 本服务的选择状态在 UI 线程串行更新；第三方会话集合仍需复制为稳定快照。
+    // Selection state is serialized on the UI thread; the third-party session collection still needs a stable copy.
     private string? _selectedKey;
+    private string? _selectedSourceId;
     private IReadOnlyList<MediaSessionOption>? _lastSessionOptions;
+    private string? _pendingAutoSwitchKey;
+    private DateTime _pendingAutoSwitchSinceUtc;
+    private DateTime _missingSessionSinceUtc;
+    private readonly DispatcherTimer _autoSwitchTimer;
 
     // 快照状态：sessionSnapshot 来自 SMTC，memorySnapshot 来自网易云内存轮询（存在时优先）。
     // Snapshot state: sessionSnapshot comes from SMTC; memorySnapshot from the NetEase poll wins when present.
@@ -95,9 +104,17 @@ public sealed class MediaSessionService : IDisposable
     /// <summary>当前选中会话的显示名称。 / Display name of the selected session.</summary>
     public string SelectedSourceName => _lastSnapshot.SourceName;
 
+    /// <summary>当前可选媒体会话列表。/ Current selectable media-session list.</summary>
+    public IReadOnlyList<MediaSessionOption> CurrentSessionOptions => _lastSessionOptions ?? Array.Empty<MediaSessionOption>();
+
     public MediaSessionService()
     {
         _dispatcher = Application.Current.Dispatcher;
+        _autoSwitchTimer = new DispatcherTimer(DispatcherPriority.Background, _dispatcher)
+        {
+            Interval = TimeSpan.FromMilliseconds(200)
+        };
+        _autoSwitchTimer.Tick += AutoSwitchTimer_Tick;
         _mediaManager.OnAnyMediaPropertyChanged += MediaManager_OnAnyMediaPropertyChanged;
         _mediaManager.OnAnyPlaybackStateChanged += MediaManager_OnAnyPlaybackStateChanged;
         _mediaManager.OnAnySessionOpened += MediaManager_OnAnySessionOpened;
@@ -120,6 +137,8 @@ public sealed class MediaSessionService : IDisposable
 
         _isDisposed = true;
         CancelMemoryPlayerPoll();
+        _autoSwitchTimer.Stop();
+        _autoSwitchTimer.Tick -= AutoSwitchTimer_Tick;
         _memoryPlayer?.Dispose();
         _memoryPlayer = null;
 
@@ -152,13 +171,23 @@ public sealed class MediaSessionService : IDisposable
     /// <summary>切换到指定会话。 / Switches to the session identified by key.</summary>
     public void SelectSession(string key)
     {
-        if (string.IsNullOrEmpty(key) || !_mediaManager.CurrentMediaSessions.ContainsKey(key))
+        if (string.IsNullOrEmpty(key) || !TryGetStableSessions(out var sessions))
         {
             return;
         }
 
+        var selected = sessions.FirstOrDefault(session =>
+            string.Equals(session.Id, key, StringComparison.Ordinal));
+        if (selected is null)
+        {
+            return;
+        }
+
+        ClearPendingAutoSwitch();
+        ClearMissingSession();
         _selectedKey = key;
-        PublishSessions();
+        _selectedSourceId = selected.ControlSession.SourceAppUserModelId ?? string.Empty;
+        PublishSessions(sessions);
         RefreshSnapshot();
     }
 
@@ -344,36 +373,92 @@ public sealed class MediaSessionService : IDisposable
 
     private void RefreshSessionListAsync()
     {
-        var sessions = _mediaManager.CurrentMediaSessions;
-        if (sessions.Count == 0)
+        if (!TryGetStableSessions(out var sessions))
         {
+            // 第三方集合正在变更时保留现有状态，等待下一次事件重试。
+            // Keep the current state while the third-party collection is changing and retry on the next event.
+            return;
+        }
+
+        if (sessions.Length == 0)
+        {
+            if (TryHoldMissingSession())
+            {
+                return;
+            }
+
             // 最后一个来源关闭时列表为空，立即清除旧状态。
             _selectedKey = null;
-            PublishSessions();
+            _selectedSourceId = null;
+            ClearMissingSession();
+            PublishSessions(sessions);
             Publish(MediaSnapshot.Disconnected);
             return;
         }
 
         // 优先保留当前选择；否则焦点会话 → 播放中的会话 → 第一个。
-        if (!sessions.ContainsKey(_selectedKey ?? string.Empty))
+        var selected = sessions.FirstOrDefault(session =>
+            string.Equals(session.Id, _selectedKey, StringComparison.Ordinal));
+        if (selected is not null)
         {
-            var focused = _mediaManager.GetFocusedSession();
-            _selectedKey = focused is not null && sessions.ContainsKey(focused.Id)
-                ? focused.Id
-                : sessions.Values.FirstOrDefault(IsPlaying)?.Id
-                    ?? sessions.Keys.First();
+            _selectedSourceId = selected.ControlSession.SourceAppUserModelId ?? _selectedSourceId;
+            ClearMissingSession();
         }
 
-        PublishSessions();
+        var restored = selected is null ? FindRestoredMissingSession(sessions) : null;
+        if (restored is not null)
+        {
+            selected = restored;
+            _selectedKey = selected.Id;
+            _selectedSourceId = selected.ControlSession.SourceAppUserModelId ?? string.Empty;
+            ClearMissingSession();
+        }
+
+        if (selected is null)
+        {
+            if (TryHoldMissingSession())
+            {
+                return;
+            }
+
+            ClearPendingAutoSwitch();
+            ClearMissingSession();
+            var focused = _mediaManager.GetFocusedSession();
+            selected = focused is not null
+                ? sessions.FirstOrDefault(session =>
+                    string.Equals(session.Id, focused.Id, StringComparison.Ordinal))
+                : null;
+            selected ??= sessions.FirstOrDefault(IsPlaying) ?? sessions[0];
+            _selectedKey = selected.Id;
+            _selectedSourceId = selected.ControlSession.SourceAppUserModelId ?? string.Empty;
+        }
+
+        PublishSessions(sessions);
         RefreshSnapshot();
     }
 
     /// <summary>当前选择的会话不存在时回退到焦点会话。 / Falls back to the focused session when the selection is gone.</summary>
     private MediaSession? GetSelectedSession()
     {
-        if (_mediaManager.CurrentMediaSessions.TryGetValue(_selectedKey ?? string.Empty, out var session))
+        if (TryGetStableSessions(out var sessions))
         {
-            return session;
+            var session = sessions.FirstOrDefault(candidate =>
+                string.Equals(candidate.Id, _selectedKey, StringComparison.Ordinal));
+            if (session is not null)
+            {
+                _selectedSourceId = session.ControlSession.SourceAppUserModelId ?? _selectedSourceId;
+                return session;
+            }
+
+            if (IsMissingSessionGraceActive())
+            {
+                return null;
+            }
+        }
+
+        if (TryHoldMissingSession())
+        {
+            return null;
         }
 
         return _mediaManager.GetFocusedSession();
@@ -383,27 +468,98 @@ public sealed class MediaSessionService : IDisposable
     private bool TryAutoSwitchToPlaying()
     {
         var current = GetSelectedSession();
-        if (current is null || IsPlaying(current))
+        if (current is null)
+        {
+            // 会话消失缓冲期间保持计时器运行，不能被“无当前会话”分支取消。
+            // Keep the timer alive while the selected session is temporarily absent.
+            if (IsMissingSessionGraceActive())
+            {
+                _autoSwitchTimer.Start();
+            }
+            else
+            {
+                ClearPendingAutoSwitch();
+            }
+
+            return false;
+        }
+
+        if (IsPlaying(current))
+        {
+            ClearPendingAutoSwitch();
+            return false;
+        }
+
+        // 浏览器视频切换时会短暂报告暂停；只要浏览器会话仍存在，就保持当前来源。
+        // Browser videos can report paused while switching; keep the browser source while its session exists.
+        var currentSourceId = current.ControlSession.SourceAppUserModelId ?? string.Empty;
+        if (IsBrowserSource(currentSourceId))
+        {
+            ClearPendingAutoSwitch();
+            return false;
+        }
+
+        if (!TryGetStableSessions(out var sessions))
         {
             return false;
         }
 
-        var replacement = _mediaManager.CurrentMediaSessions.Values
+        var replacement = sessions
             .FirstOrDefault(candidate => !ReferenceEquals(candidate, current) && IsPlaying(candidate));
         if (replacement is null)
         {
+            ClearPendingAutoSwitch();
             return false;
         }
 
+        if (!string.Equals(_pendingAutoSwitchKey, replacement.Id, StringComparison.Ordinal))
+        {
+            _pendingAutoSwitchKey = replacement.Id;
+            _pendingAutoSwitchSinceUtc = DateTime.UtcNow;
+            _autoSwitchTimer.Start();
+            return false;
+        }
+
+        var elapsed = DateTime.UtcNow - _pendingAutoSwitchSinceUtc;
+        if (elapsed < AutoSwitchGracePeriod)
+        {
+            _autoSwitchTimer.Start();
+            return false;
+        }
+
+        ClearPendingAutoSwitch();
         _selectedKey = replacement.Id;
-        PublishSessions();
+        _selectedSourceId = replacement.ControlSession.SourceAppUserModelId ?? string.Empty;
+        PublishSessions(sessions);
         return true;
     }
 
-    private void PublishSessions()
+    private void AutoSwitchTimer_Tick(object? sender, EventArgs e)
+    {
+        if (_isDisposed)
+        {
+            _autoSwitchTimer.Stop();
+            return;
+        }
+
+        if (_pendingAutoSwitchSinceUtc != default &&
+            DateTime.UtcNow - _pendingAutoSwitchSinceUtc >= AutoSwitchGracePeriod)
+            _autoSwitchTimer.Stop();
+
+        RefreshSessionListAsync();
+    }
+
+    private void ClearPendingAutoSwitch()
+    {
+        _pendingAutoSwitchKey = null;
+        _pendingAutoSwitchSinceUtc = default;
+        _autoSwitchTimer.Stop();
+    }
+
+    private void PublishSessions(IReadOnlyList<MediaSession> sessions)
     {
         var occurrences = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        var options = _mediaManager.CurrentMediaSessions.Values
+        var options = sessions
             .Select(session =>
             {
                 var sourceId = session.ControlSession.SourceAppUserModelId ?? string.Empty;
@@ -432,6 +588,80 @@ public sealed class MediaSessionService : IDisposable
 
         _lastSessionOptions = options;
         SessionsChanged?.Invoke(options);
+    }
+
+    private bool TryGetStableSessions(out MediaSession[] sessions)
+    {
+        for (var attempt = 0; attempt < SessionSnapshotRetryCount; attempt++)
+        {
+            try
+            {
+                sessions = _mediaManager.CurrentMediaSessions.Values.ToArray();
+                return true;
+            }
+            catch (InvalidOperationException)
+            {
+                if (attempt + 1 < SessionSnapshotRetryCount)
+                {
+                    Thread.Yield();
+                }
+            }
+        }
+
+        sessions = Array.Empty<MediaSession>();
+        Debug.WriteLine("[MediaSessionService] Failed to copy CurrentMediaSessions after retries.");
+        return false;
+    }
+
+    private bool TryHoldMissingSession()
+    {
+        if (!IsBrowserSource(_selectedSourceId ?? _lastSnapshot.SourceId))
+        {
+            return false;
+        }
+
+        if (_missingSessionSinceUtc == default)
+        {
+            _missingSessionSinceUtc = DateTime.UtcNow;
+        }
+
+        if (DateTime.UtcNow - _missingSessionSinceUtc >= MissingSessionGracePeriod)
+        {
+            return false;
+        }
+
+        // 浏览器切换视频时 SMTC 可能先关闭旧会话，再创建新会话；此期间不切到后台音乐。
+        // During browser video switching SMTC may close the old session before creating the new one; do not switch to background music meanwhile.
+        _autoSwitchTimer.Start();
+        return true;
+    }
+
+    private bool IsMissingSessionGraceActive() =>
+        _missingSessionSinceUtc != default &&
+        DateTime.UtcNow - _missingSessionSinceUtc < MissingSessionGracePeriod &&
+        IsBrowserSource(_selectedSourceId ?? _lastSnapshot.SourceId);
+
+    private void ClearMissingSession()
+    {
+        _missingSessionSinceUtc = default;
+        if (string.IsNullOrEmpty(_pendingAutoSwitchKey))
+        {
+            _autoSwitchTimer.Stop();
+        }
+    }
+
+    private MediaSession? FindRestoredMissingSession(IReadOnlyList<MediaSession> sessions)
+    {
+        if (!IsMissingSessionGraceActive())
+        {
+            return null;
+        }
+
+        return sessions.FirstOrDefault(session =>
+            string.Equals(
+                session.ControlSession.SourceAppUserModelId,
+                _selectedSourceId,
+                StringComparison.OrdinalIgnoreCase));
     }
 
     private static bool IsPlaying(MediaSession session)
@@ -487,6 +717,11 @@ public sealed class MediaSessionService : IDisposable
     private MediaSnapshot? BuildSessionSnapshot()
     {
         var session = GetSelectedSession();
+        if (session is null && IsMissingSessionGraceActive())
+        {
+            return null;
+        }
+
         if (session is null || !_mediaManager.IsStarted)
         {
             return MediaSnapshot.Disconnected;
@@ -583,12 +818,23 @@ public sealed class MediaSessionService : IDisposable
         }
     }
 
-    /// <summary>发布会话快照；内存快照存在时优先于它（来源回退策略）。</summary>
+    /// <summary>发布会话快照；仅在当前来源匹配网易云时使用内存快照。/ Publishes a session snapshot; memory data is used only when the selected source matches NetEase.</summary>
     private void Publish(MediaSnapshot snapshot)
     {
         _sessionSnapshot = snapshot;
-        PublishResolved(_memorySnapshot ?? snapshot);
+        PublishResolved(ShouldUseMemorySnapshot(snapshot) && _memorySnapshot is { } memory
+            ? memory
+            : snapshot);
     }
+
+    private static bool ShouldUseMemorySnapshot(MediaSnapshot snapshot) =>
+        !snapshot.IsConnected || MemoryPlayerControlsMatch(snapshot.SourceId);
+
+    private static bool IsBrowserSource(string sourceId) =>
+        sourceId.Contains("chrome", StringComparison.OrdinalIgnoreCase) ||
+        sourceId.Contains("msedge", StringComparison.OrdinalIgnoreCase) ||
+        sourceId.Contains("microsoftedge", StringComparison.OrdinalIgnoreCase) ||
+        sourceId.Contains("firefox", StringComparison.OrdinalIgnoreCase);
 
     private void PublishResolved(MediaSnapshot snapshot)
     {
@@ -819,7 +1065,9 @@ public sealed class MediaSessionService : IDisposable
         }
 
         _memorySnapshot = snapshot;
-        PublishResolved(snapshot ?? _sessionSnapshot);
+        PublishResolved(ShouldUseMemorySnapshot(_sessionSnapshot) && snapshot is { } memory
+            ? memory
+            : _sessionSnapshot);
     }
 
     private async Task LoadMemoryArtworkAsync(string coverUrl, int version, CancellationToken cancellationToken)
