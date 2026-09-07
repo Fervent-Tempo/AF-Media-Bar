@@ -5,19 +5,20 @@ using AFMediaBar.Classes.Interop;
 namespace AFMediaBar.Classes.Services;
 
 public sealed record TrayWheelEventArgs(int Delta, bool IsShiftPressed);
+public sealed record NativeMouseButtonEventArgs(int ScreenX, int ScreenY);
 
 /// <summary>
-/// 通过低级鼠标钩子监听 AF Media Bar 托盘图标上的滚轮，不拦截系统输入。
-/// Watches wheel input over the AF Media Bar tray icon without consuming system input.
+/// 通过低级鼠标钩子监听托盘滚轮和全局左键，不拦截系统输入。
+/// Watches tray-wheel and global left-button input without consuming system input.
 /// </summary>
-public sealed class NativeMouseWheelMonitor : IDisposable
+public sealed class NativeMouseInputMonitor : IDisposable
 {
     private readonly ShellTrayIconService _trayIcon;
     private readonly NativeMethods.LowLevelMouseProc _callback;
     private readonly SynchronizationContext? _context;
     private IntPtr _hook;
 
-    public NativeMouseWheelMonitor(ShellTrayIconService trayIcon)
+    public NativeMouseInputMonitor(ShellTrayIconService trayIcon)
     {
         _trayIcon = trayIcon;
         _callback = OnMouseEvent;
@@ -25,6 +26,7 @@ public sealed class NativeMouseWheelMonitor : IDisposable
     }
 
     public event EventHandler<TrayWheelEventArgs>? WheelChanged;
+    public event EventHandler<NativeMouseButtonEventArgs>? LeftButtonPressed;
 
     public void Start()
     {
@@ -40,7 +42,7 @@ public sealed class NativeMouseWheelMonitor : IDisposable
             0);
         if (_hook == IntPtr.Zero)
         {
-            Debug.WriteLine($"[NativeMouseWheelMonitor] Hook failed: {Marshal.GetLastWin32Error()}");
+            Debug.WriteLine($"[NativeMouseInputMonitor] Hook failed: {Marshal.GetLastWin32Error()}");
         }
     }
 
@@ -48,27 +50,27 @@ public sealed class NativeMouseWheelMonitor : IDisposable
     {
         try
         {
-            if (code >= 0 && wParam.ToInt32() == NativeMethods.WM_MOUSEWHEEL)
+            if (code >= 0)
             {
                 var data = Marshal.PtrToStructure<NativeMethods.MSLLHOOKSTRUCT>(lParam);
-                if (_trayIcon.TryGetBounds(out var bounds) && bounds.Contains(data.Point.X, data.Point.Y))
+                if (wParam.ToInt32() == NativeMethods.WM_MOUSEWHEEL &&
+                    _trayIcon.TryGetBounds(out var bounds) && bounds.Contains(data.Point.X, data.Point.Y))
                 {
                     var delta = unchecked((short)(data.MouseData >> 16));
                     var shift = (NativeMethods.GetKeyState(NativeMethods.VK_SHIFT) & 0x8000) != 0;
-                    if (_context is null)
-                    {
-                        WheelChanged?.Invoke(this, new TrayWheelEventArgs(delta, shift));
-                    }
-                    else
-                    {
-                        _context.Post(_ => WheelChanged?.Invoke(this, new TrayWheelEventArgs(delta, shift)), null);
-                    }
+                    Post(() => WheelChanged?.Invoke(this, new TrayWheelEventArgs(delta, shift)));
+                }
+                else if (wParam.ToInt32() == NativeMethods.WM_LBUTTONDOWN)
+                {
+                    Post(() => LeftButtonPressed?.Invoke(
+                        this,
+                        new NativeMouseButtonEventArgs(data.Point.X, data.Point.Y)));
                 }
             }
         }
         catch (Exception exception)
         {
-            Debug.WriteLine($"[NativeMouseWheelMonitor] Callback failed: {exception}");
+            Debug.WriteLine($"[NativeMouseInputMonitor] Callback failed: {exception}");
         }
         finally
         {
@@ -77,6 +79,17 @@ public sealed class NativeMouseWheelMonitor : IDisposable
         }
 
         return NativeMethods.CallNextHookEx(_hook, code, wParam, lParam);
+    }
+
+    private void Post(Action callback)
+    {
+        if (_context is null)
+        {
+            callback();
+            return;
+        }
+
+        _context.Post(_ => callback(), null);
     }
 
     public void Dispose()
@@ -88,5 +101,6 @@ public sealed class NativeMouseWheelMonitor : IDisposable
         }
 
         WheelChanged = null;
+        LeftButtonPressed = null;
     }
 }

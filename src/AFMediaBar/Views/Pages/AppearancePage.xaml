@@ -4,19 +4,28 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:converters="clr-namespace:AFMediaBar.Classes.Converters"
+      xmlns:settings="clr-namespace:AFMediaBar.Classes.Settings"
       mc:Ignorable="d"
       d:DesignHeight="900"
       d:DesignWidth="1100"
       Title="AppearancePage"
       Foreground="{DynamicResource TextFillColorPrimaryBrush}">
 
+    <Page.Resources>
+        <converters:GenericEnumToBooleanConverter x:Key="EnumToBooleanConverter" />
+    </Page.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
     <StackPanel MaxWidth="1000"
-                Margin="16"
-                VerticalAlignment="Center">
+                Margin="16,16,16,24"
+                TextElement.FontFamily="{DynamicResource AppTextFontFamily}"
+                TextElement.FontWeight="{DynamicResource AppTextFontWeight}">
         <TextBlock Text="外观"
                    FontSize="32"
                    FontWeight="SemiBold" />
-        <ui:TextBlock Text="调整字体、文字颜色和菜单主题"
+        <ui:TextBlock Text="调整字体、文字颜色和应用主题"
                       Appearance="Secondary"
                       Margin="0,8,0,28" />
 
@@ -41,23 +50,25 @@
                     <ColumnDefinition Width="12" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <ComboBox SelectedIndex="0">
-                    <ComboBoxItem Content="Segoe UI" />
-                    <ComboBoxItem Content="Arial" />
-                    <ComboBoxItem Content="Calibri" />
-                    <ComboBoxItem Content="Verdana" />
-                    <ComboBoxItem Content="Consolas" />
-                    <ComboBoxItem Content="Times New Roman" />
+                <ComboBox SelectedValuePath="Tag"
+                          SelectedValue="{Binding ViewModel.LatinFont, Mode=TwoWay}">
+                    <ComboBoxItem Content="Segoe UI" Tag="{x:Static settings:LatinFontPreset.SegoeUi}" />
+                    <ComboBoxItem Content="Arial" Tag="{x:Static settings:LatinFontPreset.Arial}" />
+                    <ComboBoxItem Content="Calibri" Tag="{x:Static settings:LatinFontPreset.Calibri}" />
+                    <ComboBoxItem Content="Verdana" Tag="{x:Static settings:LatinFontPreset.Verdana}" />
+                    <ComboBoxItem Content="Consolas" Tag="{x:Static settings:LatinFontPreset.Consolas}" />
+                    <ComboBoxItem Content="Times New Roman" Tag="{x:Static settings:LatinFontPreset.TimesNewRoman}" />
                 </ComboBox>
                 <ComboBox Grid.Column="2"
-                          SelectedIndex="0">
-                    <ComboBoxItem Content="跟随系统" />
-                    <ComboBoxItem Content="微软雅黑" />
-                    <ComboBoxItem Content="等线" />
-                    <ComboBoxItem Content="宋体" />
-                    <ComboBoxItem Content="黑体" />
-                    <ComboBoxItem Content="楷体" />
-                    <ComboBoxItem Content="仿宋" />
+                          SelectedValuePath="Tag"
+                          SelectedValue="{Binding ViewModel.CjkFont, Mode=TwoWay}">
+                    <ComboBoxItem Content="跟随系统" Tag="{x:Static settings:CjkFontPreset.SystemDefault}" />
+                    <ComboBoxItem Content="微软雅黑" Tag="{x:Static settings:CjkFontPreset.MicrosoftYaHei}" />
+                    <ComboBoxItem Content="等线" Tag="{x:Static settings:CjkFontPreset.DengXian}" />
+                    <ComboBoxItem Content="宋体" Tag="{x:Static settings:CjkFontPreset.SimSun}" />
+                    <ComboBoxItem Content="黑体" Tag="{x:Static settings:CjkFontPreset.SimHei}" />
+                    <ComboBoxItem Content="楷体" Tag="{x:Static settings:CjkFontPreset.KaiTi}" />
+                    <ComboBoxItem Content="仿宋" Tag="{x:Static settings:CjkFontPreset.FangSong}" />
                 </ComboBox>
             </Grid>
         </ui:CardControl>
@@ -81,9 +92,10 @@
                 <Slider Minimum="300"
                         Maximum="900"
                         TickFrequency="50"
-                        Value="400" />
+                        IsSnapToTickEnabled="True"
+                        Value="{Binding ViewModel.FontWeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 <TextBlock Grid.Column="1"
-                           Text="400"
+                           Text="{Binding ViewModel.FontWeight}"
                            HorizontalAlignment="Right"
                            VerticalAlignment="Center"
                            FontSize="14" />
@@ -102,7 +114,9 @@
                 </StackPanel>
             </ui:CardControl.Header>
             <TextBlock Text="The quick brown fox 敏捷的棕色狐狸"
-                       FontSize="16" />
+                       FontSize="16"
+                       FontFamily="{DynamicResource AppTextFontFamily}"
+                       FontWeight="{DynamicResource AppTextFontWeight}" />
         </ui:CardControl>
 
         <TextBlock Text="播放器文字"
@@ -123,13 +137,21 @@
             <StackPanel Orientation="Horizontal">
                 <RadioButton Content="自动"
                              GroupName="ForegroundMode"
-                             IsChecked="True"
+                             IsChecked="{Binding ViewModel.PlayerForegroundMode, Mode=OneWay, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Automatic}"
+                             Command="{Binding ViewModel.SetPlayerForegroundModeCommand}"
+                             CommandParameter="{x:Static settings:PlayerForegroundMode.Automatic}"
                              Margin="0,0,12,0" />
                 <RadioButton Content="浅色文字"
                              GroupName="ForegroundMode"
+                             IsChecked="{Binding ViewModel.PlayerForegroundMode, Mode=OneWay, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=LightText}"
+                             Command="{Binding ViewModel.SetPlayerForegroundModeCommand}"
+                             CommandParameter="{x:Static settings:PlayerForegroundMode.LightText}"
                              Margin="0,0,12,0" />
                 <RadioButton Content="深色文字"
-                             GroupName="ForegroundMode" />
+                             GroupName="ForegroundMode"
+                             IsChecked="{Binding ViewModel.PlayerForegroundMode, Mode=OneWay, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=DarkText}"
+                             Command="{Binding ViewModel.SetPlayerForegroundModeCommand}"
+                             CommandParameter="{x:Static settings:PlayerForegroundMode.DarkText}" />
             </StackPanel>
         </ui:CardControl>
 
@@ -144,34 +166,43 @@
                                   FontSize="12" />
                 </StackPanel>
             </ui:CardControl.Header>
-            <ui:ToggleSwitch />
+            <ui:ToggleSwitch IsChecked="{Binding ViewModel.EnhancedReadability, Mode=TwoWay}" />
         </ui:CardControl>
 
-        <TextBlock Text="菜单主题"
+        <TextBlock Text="应用主题"
                    FontSize="18"
                    FontWeight="SemiBold"
                    Margin="0,0,0,12" />
         <ui:CardControl Icon="{ui:SymbolIcon Color24}">
             <ui:CardControl.Header>
                 <StackPanel>
-                    <ui:TextBlock Text="菜单主题"
+                    <ui:TextBlock Text="应用主题"
                                   FontWeight="SemiBold" />
-                    <ui:TextBlock Text="选择媒体栏菜单的明暗外观"
+                    <ui:TextBlock Text="选择整个程序界面的明暗外观"
                                   Appearance="Secondary"
                                   FontSize="12" />
                 </StackPanel>
             </ui:CardControl.Header>
             <StackPanel Orientation="Horizontal">
                 <RadioButton Content="自动"
-                             GroupName="MenuThemeMode"
-                             IsChecked="True"
+                             GroupName="ApplicationThemeMode"
+                             IsChecked="{Binding ViewModel.ApplicationThemeMode, Mode=OneWay, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Automatic}"
+                             Command="{Binding ViewModel.SetApplicationThemeModeCommand}"
+                             CommandParameter="{x:Static settings:ApplicationThemeMode.Automatic}"
                              Margin="0,0,12,0" />
                 <RadioButton Content="浅色"
-                             GroupName="MenuThemeMode"
+                             GroupName="ApplicationThemeMode"
+                             IsChecked="{Binding ViewModel.ApplicationThemeMode, Mode=OneWay, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Light}"
+                             Command="{Binding ViewModel.SetApplicationThemeModeCommand}"
+                             CommandParameter="{x:Static settings:ApplicationThemeMode.Light}"
                              Margin="0,0,12,0" />
                 <RadioButton Content="深色"
-                             GroupName="MenuThemeMode" />
+                             GroupName="ApplicationThemeMode"
+                             IsChecked="{Binding ViewModel.ApplicationThemeMode, Mode=OneWay, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Dark}"
+                             Command="{Binding ViewModel.SetApplicationThemeModeCommand}"
+                             CommandParameter="{x:Static settings:ApplicationThemeMode.Dark}" />
             </StackPanel>
         </ui:CardControl>
     </StackPanel>
+    </ScrollViewer>
 </Page>

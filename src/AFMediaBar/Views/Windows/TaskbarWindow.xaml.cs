@@ -52,6 +52,7 @@ public partial class TaskbarWindow : Window
 
         // The context menu bindings rely on MainWindow.ViewModel
         DataContext = mainWindow;
+        ContextMenuHelper.AttachOutsideClickDismissal(PlayerMenu);
         MediaControl.TogglePlayPauseRequested += MediaControl_TogglePlayPauseRequested;
         MediaControl.SkipPreviousRequested += MediaControl_SkipPreviousRequested;
         MediaControl.SkipNextRequested += MediaControl_SkipNextRequested;
@@ -291,7 +292,7 @@ public partial class TaskbarWindow : Window
 
         // Delegate UI update to the media control
         MediaControl.UpdateSongInfo(snapshot);
-        MediaControl.ApplyWindowsTheme();
+        MediaControl.ApplyAppearanceSettings();
 
         // Update position after UI change
         Dispatcher.BeginInvoke(() => UpdatePosition(), DispatcherPriority.Background);
@@ -361,7 +362,7 @@ public partial class TaskbarWindow : Window
         if (layoutChanged)
         {
             MediaControl.ApplyLayout(windowMode, orientation, lengthScalePercent, thicknessScalePercent);
-            MediaControl.ApplyWindowsTheme();
+            MediaControl.ApplyAppearanceSettings();
             _appliedWindowMode = windowMode;
             _appliedOrientation = orientation;
             _appliedLengthScalePercent = lengthScalePercent;
@@ -428,6 +429,16 @@ public partial class TaskbarWindow : Window
             }
         });
     }
+
+    /// <summary>立即应用播放器与右键菜单外观。 / Immediately applies player and context-menu appearance.</summary>
+    public void ApplyAppearanceSettings()
+    {
+        MediaControl.ApplyAppearanceSettings();
+    }
+
+    /// <summary>在全局左键点击位于菜单外时关闭右键菜单。 / Closes the context menu after a global left click outside it.</summary>
+    public void CloseContextMenuIfOutside(int screenX, int screenY) =>
+        ContextMenuHelper.CloseIfOutside(PlayerMenu, screenX, screenY);
 
     private void MediaControl_TogglePlayPauseRequested(object? sender, EventArgs e) =>
         Execute(_mainWindow.ViewModel.TogglePlayPauseCommand);

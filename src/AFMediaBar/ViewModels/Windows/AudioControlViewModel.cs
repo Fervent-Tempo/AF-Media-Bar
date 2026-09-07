@@ -22,7 +22,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     private readonly ApplicationVolumeService _volumeService;
     private readonly MediaSessionService _mediaSessionService;
     private readonly ShellTrayIconService _trayIconService;
-    private readonly NativeMouseWheelMonitor _wheelMonitor;
+    private readonly NativeMouseInputMonitor _mouseInputMonitor;
     private readonly Dictionary<string, CancellationTokenSource> _volumeDelays = new(StringComparer.OrdinalIgnoreCase);
     private CancellationTokenSource? _deviceDelay;
     private bool _isRefreshing;
@@ -67,24 +67,24 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         ApplicationVolumeService volumeService,
         MediaSessionService mediaSessionService,
         ShellTrayIconService trayIconService,
-        NativeMouseWheelMonitor wheelMonitor)
+        NativeMouseInputMonitor mouseInputMonitor)
     {
         _deviceService = deviceService;
         _spatialAudioService = spatialAudioService;
         _volumeService = volumeService;
         _mediaSessionService = mediaSessionService;
         _trayIconService = trayIconService;
-        _wheelMonitor = wheelMonitor;
+        _mouseInputMonitor = mouseInputMonitor;
 
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
         OpenSpatialAudioSettingsCommand = new RelayCommand(OpenSpatialAudioSettings);
         _trayIconService.LeftClicked += OnTrayLeftClicked;
         _trayIconService.ContextMenuRequested += OnTrayContextMenuRequested;
         _trayIconService.TooltipOpening += OnTrayTooltipOpening;
-        _wheelMonitor.WheelChanged += OnTrayWheelChanged;
+        _mouseInputMonitor.WheelChanged += OnTrayWheelChanged;
         _mediaSessionService.SnapshotChanged += OnMediaSnapshotChanged;
         SettingsManager.TrayWheelBehaviorChanged += OnTrayWheelBehaviorChanged;
-        _wheelMonitor.Start();
+        _mouseInputMonitor.Start();
         QueueTrayTooltipRefresh();
     }
 
@@ -413,10 +413,10 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         _trayIconService.LeftClicked -= OnTrayLeftClicked;
         _trayIconService.ContextMenuRequested -= OnTrayContextMenuRequested;
         _trayIconService.TooltipOpening -= OnTrayTooltipOpening;
-        _wheelMonitor.WheelChanged -= OnTrayWheelChanged;
+        _mouseInputMonitor.WheelChanged -= OnTrayWheelChanged;
         _mediaSessionService.SnapshotChanged -= OnMediaSnapshotChanged;
         SettingsManager.TrayWheelBehaviorChanged -= OnTrayWheelBehaviorChanged;
-        _wheelMonitor.Dispose();
+        _mouseInputMonitor.Dispose();
         _deviceDelay?.Cancel();
         _deviceDelay?.Dispose();
         foreach (var delay in _volumeDelays.Values)

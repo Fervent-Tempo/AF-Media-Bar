@@ -190,29 +190,61 @@ namespace AFMediaBar.Components
         }
 
         /// <summary>
-        /// 应用 Windows 主题：根据系统深浅色模式调整文字颜色。
-        /// Apply Windows theme: adjust text color based on system light/dark mode.
+        /// 应用播放器文字、可读性背景和灵动岛背景设置。
+        /// Applies player text, readability background, and dynamic-island background settings.
         /// </summary>
-        public void ApplyWindowsTheme()
+        public void ApplyAppearanceSettings()
         {
-            WindowsThemeDetector.GetWindowsTheme(out _, out var systemTheme);
-            bool isDark = systemTheme == WindowsThemeDetector.ThemeMode.Dark;
+            var appearance = SettingsManager.Current.Appearance.Normalize();
+            var appTheme = ApplicationThemeManager.GetAppTheme();
+            var isDark = appTheme == ApplicationTheme.Dark;
+            if (appTheme == ApplicationTheme.Unknown)
+            {
+                WindowsThemeDetector.GetWindowsTheme(out var windowsAppTheme, out _);
+                isDark = windowsAppTheme == WindowsThemeDetector.ThemeMode.Dark;
+            }
+            var usesLightText = appearance.PlayerForegroundMode switch
+            {
+                PlayerForegroundMode.LightText => true,
+                PlayerForegroundMode.DarkText => false,
+                _ => isDark
+            };
 
-            var foreground = new SolidColorBrush(isDark
-                ? Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF)  // 深色模式：白色文字 Dark mode: white text
-                : Color.FromArgb(0xE4, 0x1C, 0x1C, 0x1C)); // 浅色模式：深色文字 Light mode: dark text
+            Brush foreground;
+            Brush readabilityBackground;
+            if (SystemParameters.HighContrast)
+            {
+                foreground = SystemColors.WindowTextBrush;
+                readabilityBackground = appearance.EnhancedReadability && _isConnected
+                    ? SystemColors.WindowBrush
+                    : Brushes.Transparent;
+            }
+            else
+            {
+                foreground = new SolidColorBrush(usesLightText
+                    ? Colors.White
+                    : Color.FromArgb(0xE4, 0x1C, 0x1C, 0x1C));
+                readabilityBackground = appearance.EnhancedReadability && _isConnected
+                    ? new SolidColorBrush(usesLightText
+                        ? Color.FromArgb(0x78, 0x00, 0x00, 0x00)
+                        : Color.FromArgb(0xB8, 0xFF, 0xFF, 0xFF))
+                    : Brushes.Transparent;
+            }
 
             SongTitle.Foreground = foreground;
             SongArtist.Foreground = foreground;
+            SongInfoStackPanel.Background = readabilityBackground;
 
             if (_currentMode != WindowMode.DynamicIsland)
                 return;
 
             MainBorder.Background = SettingsManager.Current.DynamicIslandBackgroundMode == DynamicIslandBackgroundMode.Transparent
                 ? new SolidColorBrush(Color.FromArgb(1, 0, 0, 0))
-                : new SolidColorBrush(isDark
-                    ? Color.FromArgb(0xFF, 0x20, 0x20, 0x20)
-                    : Color.FromArgb(0xFF, 0xF3, 0xF3, 0xF3));
+                : SystemParameters.HighContrast
+                    ? SystemColors.WindowBrush
+                    : new SolidColorBrush(isDark
+                        ? Color.FromArgb(0xFF, 0x20, 0x20, 0x20)
+                        : Color.FromArgb(0xFF, 0xF3, 0xF3, 0xF3));
         }
 
 

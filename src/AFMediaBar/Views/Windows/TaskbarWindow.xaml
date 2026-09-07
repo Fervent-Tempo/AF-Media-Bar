@@ -15,6 +15,14 @@
         Visibility="Collapsed">
     <Window.ContextMenu>
         <ContextMenu x:Name="PlayerMenu" Width="280"
+                     Padding="4"
+                     StaysOpen="False"
+                     FontFamily="{DynamicResource AppTextFontFamily}"
+                     FontWeight="{DynamicResource AppTextFontWeight}"
+                     Background="{DynamicResource ApplicationBackgroundBrush}"
+                     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                     BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                     BorderThickness="1"
                      DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
             <ui:MenuItem x:Name="SessionsMenuItem"
                          Header="切换媒体源"

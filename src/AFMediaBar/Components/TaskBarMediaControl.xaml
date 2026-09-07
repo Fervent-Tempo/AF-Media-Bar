@@ -6,6 +6,8 @@
              xmlns:local="clr-namespace:AFMediaBar.Components"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              mc:Ignorable="d"
+             FontFamily="{DynamicResource AppTextFontFamily}"
+             FontWeight="{DynamicResource AppTextFontWeight}"
              TextOptions.TextRenderingMode="ClearType" TextOptions.TextFormattingMode="Ideal">
 
     <Border Name="MainBorder" CornerRadius="6"
@@ -46,14 +48,18 @@
                                 ToolTipService.VerticalOffset="-16">
                         <Canvas x:Name="SongTitleContainer" Height="19" Cursor="Hand" Tag="MediaAction"
                                 MouseLeftButtonUp="SongTitleContainer_MouseLeftButtonUp">
-                            <TextBlock x:Name="SongTitle" Text="" FontWeight="Normal">
+                            <TextBlock x:Name="SongTitle" Text=""
+                                       FontFamily="{DynamicResource AppTextFontFamily}"
+                                       FontWeight="{DynamicResource AppTextFontWeight}">
                                 <TextBlock.RenderTransform>
                                     <TranslateTransform />
                                 </TextBlock.RenderTransform>
                             </TextBlock>
                         </Canvas>
                         <Canvas x:Name="SongArtistContainer" Margin="0,-1.5,0,0" Height="19">
-                            <TextBlock x:Name="SongArtist" Text="" FontWeight="Normal" Opacity="0.5">
+                            <TextBlock x:Name="SongArtist" Text="" Opacity="0.5"
+                                       FontFamily="{DynamicResource AppTextFontFamily}"
+                                       FontWeight="{DynamicResource AppTextFontWeight}">
                                 <TextBlock.RenderTransform>
                                     <TranslateTransform />
                                 </TextBlock.RenderTransform>

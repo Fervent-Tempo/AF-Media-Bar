@@ -11,10 +11,13 @@ using Microsoft.Extensions.Hosting;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Windows.Media;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services.Audio;
+using AFMediaBar.Classes.Settings;
 using Wpf.Ui;
+using Wpf.Ui.Appearance;
 using Wpf.Ui.DependencyInjection;
 
 namespace AFMediaBar
@@ -75,10 +78,10 @@ namespace AFMediaBar
                 services.AddSingleton<ApplicationVolumeService>();
                 services.AddSingleton<AudioDeviceService>();
                 services.AddSingleton<SpatialAudioService>();
-                // 自有 Shell 托盘图标与其滚轮命中监听
-                // App-owned Shell tray icon and wheel hit monitor
+                // 自有 Shell 托盘图标与统一鼠标输入监听
+                // App-owned Shell tray icon and unified mouse input monitor
                 services.AddSingleton<ShellTrayIconService>();
-                services.AddSingleton<NativeMouseWheelMonitor>();
+                services.AddSingleton<NativeMouseInputMonitor>();
 
                 // 导航服务（页面导航，不依赖具体窗口）Navigation service (page navigation, window-independent)
                 services.AddSingleton<INavigationService, NavigationService>();
@@ -128,6 +131,8 @@ namespace AFMediaBar
         /// </summary>
         private async void OnStartup(object sender, StartupEventArgs e)
         {
+            ApplyAppearanceResources(SettingsManager.Current.Appearance);
+            SettingsManager.AppearanceSettingsChanged += SettingsManager_OnAppearanceSettingsChanged;
             await _host.StartAsync();
 
 #if DEBUG
@@ -143,10 +148,50 @@ namespace AFMediaBar
         /// </summary>
         private async void OnExit(object sender, ExitEventArgs e)
         {
+            SettingsManager.AppearanceSettingsChanged -= SettingsManager_OnAppearanceSettingsChanged;
             await _host.StopAsync();
 
             _host.Dispose();
 
+        }
+
+        private void SettingsManager_OnAppearanceSettingsChanged(object? sender, AppearanceSettingsChangedEventArgs e)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                ApplyAppearanceResources(e.Appearance);
+                return;
+            }
+
+            Dispatcher.BeginInvoke(() => ApplyAppearanceResources(e.Appearance));
+        }
+
+        private void ApplyAppearanceResources(AppearanceSettings appearance)
+        {
+            ApplicationThemeManager.Apply(ResolveApplicationTheme(appearance.ApplicationThemeMode));
+            var fontFamily = new FontFamily(appearance.ResolveFontFamilySource(SystemFonts.MessageFontFamily.Source));
+            Resources["AppTextFontFamily"] = fontFamily;
+            Resources["AppTextFontWeight"] = FontWeight.FromOpenTypeWeight(appearance.FontWeight);
+        }
+
+        private static ApplicationTheme ResolveApplicationTheme(ApplicationThemeMode mode)
+        {
+            if (SystemParameters.HighContrast)
+            {
+                return ApplicationTheme.HighContrast;
+            }
+
+            if (mode == ApplicationThemeMode.Automatic)
+            {
+                WindowsThemeDetector.GetWindowsTheme(out var appTheme, out _);
+                return appTheme == WindowsThemeDetector.ThemeMode.Dark
+                    ? ApplicationTheme.Dark
+                    : ApplicationTheme.Light;
+            }
+
+            return mode == ApplicationThemeMode.Dark
+                ? ApplicationTheme.Dark
+                : ApplicationTheme.Light;
         }
 #if DEBUG
         // === 实时歌词调试状态（仅 Debug 模式）Real-time Lyrics Debug State (Debug Mode Only) ===

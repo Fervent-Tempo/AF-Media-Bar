@@ -24,9 +24,11 @@ namespace AFMediaBar.Views.Windows
         private readonly MediaSessionService _mediaSessionService;
         private readonly AudioControlViewModel _audioControlViewModel;
         private readonly AudioControlFlyoutWindow _audioControlFlyout;
+        private readonly NativeMouseInputMonitor _mouseInputMonitor;
         private TaskbarWindow? _taskbarWindow;
         private DynamicIslandWindow? _dynamicIslandWindow;
         private int _taskbarCreatedMessage;
+        private bool _isSystemThemeWatcherActive;
 
         // Set while Explorer restarts so windows touching the taskbar pause their work
         internal static volatile bool ExplorerRestarting = false;
@@ -36,7 +38,8 @@ namespace AFMediaBar.Views.Windows
             ITaskbarDockService taskBarService,
             MediaSessionService mediaSessionService,
             AudioControlViewModel audioControlViewModel,
-            AudioControlFlyoutWindow audioControlFlyout)
+            AudioControlFlyoutWindow audioControlFlyout,
+            NativeMouseInputMonitor mouseInputMonitor)
         {
             ViewModel = viewModel;
             DataContext = this;
@@ -45,14 +48,15 @@ namespace AFMediaBar.Views.Windows
             _mediaSessionService = mediaSessionService;
             _audioControlViewModel = audioControlViewModel;
             _audioControlFlyout = audioControlFlyout;
-
-            SystemThemeWatcher.Watch(this);
+            _mouseInputMonitor = mouseInputMonitor;
 
             InitializeComponent();
+            UpdateSystemThemeWatcher(SettingsManager.Current.Appearance.ApplicationThemeMode);
 
             // 托盘菜单由 Shell 消息手动打开，没有 PlacementTarget；显式绑定才能让命令保持有效。
             // The tray menu is opened from a Shell message without a PlacementTarget; bind explicitly so commands remain active.
             TrayMenu.DataContext = this;
+            ContextMenuHelper.AttachOutsideClickDismissal(TrayMenu);
 
             Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0));
 
@@ -63,8 +67,10 @@ namespace AFMediaBar.Views.Windows
             // 订阅布局设置变更事件
             // Subscribe to layout settings changed event
             SettingsManager.LayoutSettingsChanged += SettingsManager_OnLayoutSettingsChanged;
+            SettingsManager.AppearanceSettingsChanged += SettingsManager_OnAppearanceSettingsChanged;
             _audioControlViewModel.FlyoutToggleRequested += AudioControl_OnFlyoutToggleRequested;
             _audioControlViewModel.TrayContextMenuRequested += AudioControl_OnTrayContextMenuRequested;
+            _mouseInputMonitor.LeftButtonPressed += MouseInputMonitor_OnLeftButtonPressed;
 
             // evaluate the initial state once the window is loaded
             Loaded += MainWindow_Loaded;
@@ -100,8 +106,15 @@ namespace AFMediaBar.Views.Windows
             _mediaSessionService.SnapshotChanged -= MediaSessionService_OnSnapshotChanged;
             _mediaSessionService.SessionsChanged -= MediaSessionService_OnSessionsChanged;
             SettingsManager.LayoutSettingsChanged -= SettingsManager_OnLayoutSettingsChanged;
+            SettingsManager.AppearanceSettingsChanged -= SettingsManager_OnAppearanceSettingsChanged;
             _audioControlViewModel.FlyoutToggleRequested -= AudioControl_OnFlyoutToggleRequested;
             _audioControlViewModel.TrayContextMenuRequested -= AudioControl_OnTrayContextMenuRequested;
+            _mouseInputMonitor.LeftButtonPressed -= MouseInputMonitor_OnLeftButtonPressed;
+            if (_isSystemThemeWatcherActive)
+            {
+                SystemThemeWatcher.UnWatch(this);
+                _isSystemThemeWatcherActive = false;
+            }
 
             _taskbarWindow?.Close();
             _taskbarWindow = null;
@@ -177,6 +190,7 @@ namespace AFMediaBar.Views.Windows
             }
 
             _taskbarWindow = new TaskbarWindow(_taskBarService, this);
+            _taskbarWindow.ApplyAppearanceSettings();
 
             // Replay the latest snapshot; if none exists yet, force a synchronous refresh.
             if (_mediaSessionService.CurrentSnapshot is { } snapshot)
@@ -235,6 +249,36 @@ namespace AFMediaBar.Views.Windows
             });
         }
 
+        private void SettingsManager_OnAppearanceSettingsChanged(object? sender, AppearanceSettingsChangedEventArgs e)
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                UpdateSystemThemeWatcher(e.Appearance.ApplicationThemeMode);
+                _taskbarWindow?.ApplyAppearanceSettings();
+                _dynamicIslandWindow?.ApplyAppearanceSettings();
+            });
+        }
+
+        private void UpdateSystemThemeWatcher(ApplicationThemeMode mode)
+        {
+            var shouldWatch = mode == ApplicationThemeMode.Automatic;
+            if (shouldWatch == _isSystemThemeWatcherActive)
+            {
+                return;
+            }
+
+            if (shouldWatch)
+            {
+                SystemThemeWatcher.Watch(this);
+            }
+            else
+            {
+                SystemThemeWatcher.UnWatch(this);
+            }
+
+            _isSystemThemeWatcherActive = shouldWatch;
+        }
+
         private void ActivateWindowMode(WindowMode mode)
         {
             if (mode == WindowMode.DynamicIsland)
@@ -243,6 +287,7 @@ namespace AFMediaBar.Views.Windows
                 _taskbarWindow = null;
                 _dynamicIslandWindow ??= App.Services.GetRequiredService<DynamicIslandWindow>();
                 _dynamicIslandWindow.ApplyLayoutSettings(SettingsManager.Current.LayoutOrientationMode);
+                _dynamicIslandWindow.ApplyAppearanceSettings();
                 _dynamicIslandWindow.ApplySessions(_mediaSessionService.CurrentSessionOptions);
                 _dynamicIslandWindow.Show();
                 if (_mediaSessionService.CurrentSnapshot is { } islandSnapshot)
@@ -255,6 +300,7 @@ namespace AFMediaBar.Views.Windows
             if (_taskbarWindow is null)
             {
                 _taskbarWindow = new TaskbarWindow(_taskBarService, this);
+                _taskbarWindow.ApplyAppearanceSettings();
                 if (_mediaSessionService.CurrentSnapshot is { } snapshot)
                     _taskbarWindow.ApplySnapshot(snapshot);
                 else
@@ -283,6 +329,16 @@ namespace AFMediaBar.Views.Windows
             TrayMenu.PlacementTarget = this;
             TrayMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
             TrayMenu.IsOpen = true;
+        }
+
+        private void MouseInputMonitor_OnLeftButtonPressed(object? sender, NativeMouseButtonEventArgs e)
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                ContextMenuHelper.CloseIfOutside(TrayMenu, e.ScreenX, e.ScreenY);
+                _taskbarWindow?.CloseContextMenuIfOutside(e.ScreenX, e.ScreenY);
+                _dynamicIslandWindow?.CloseContextMenuIfOutside(e.ScreenX, e.ScreenY);
+            }, System.Windows.Threading.DispatcherPriority.Background);
         }
 
     }

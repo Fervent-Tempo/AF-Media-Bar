@@ -35,6 +35,7 @@ public static partial class NativeMethods
     public const int WM_IME_NOTIFY = 0x0282;
     public const int WM_APP = 0x8000;
     public const int WM_CONTEXTMENU = 0x007B;
+    public const int WM_LBUTTONDOWN = 0x0201;
     public const int WM_MOUSEWHEEL = 0x020A;
     public const int NIN_SELECT = 0x0400;
     public const int NIN_KEYSELECT = 0x0401;

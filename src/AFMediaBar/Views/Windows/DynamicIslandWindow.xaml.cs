@@ -37,6 +37,7 @@ public partial class DynamicIslandWindow : Window
         InitializeComponent();
         _viewModel = viewModel;
         DataContext = new MainWindowDataContext(viewModel);
+        ContextMenuHelper.AttachOutsideClickDismissal(PlayerMenu);
         MediaControl.TogglePlayPauseRequested += MediaControl_TogglePlayPauseRequested;
         MediaControl.SkipPreviousRequested += MediaControl_SkipPreviousRequested;
         MediaControl.SkipNextRequested += MediaControl_SkipNextRequested;
@@ -45,7 +46,7 @@ public partial class DynamicIslandWindow : Window
         {
             RestoreSavedPosition();
             ApplyLayoutSettings(SettingsManager.Current.LayoutOrientationMode);
-            MediaControl.ApplyWindowsTheme();
+            MediaControl.ApplyAppearanceSettings();
             SetPosition(_isExpanded ? GetExpandedPosition() : GetCollapsedPosition(), animated: false);
         };
     }
@@ -60,7 +61,7 @@ public partial class DynamicIslandWindow : Window
             if (!snapshot.IsConnected)
             {
                 MediaControl.UpdateSongInfo(snapshot);
-                MediaControl.ApplyWindowsTheme();
+                MediaControl.ApplyAppearanceSettings();
                 Visibility = Visibility.Visible;
                 if (_isDragging)
                     return;
@@ -73,7 +74,7 @@ public partial class DynamicIslandWindow : Window
 
             ApplyLayoutSettings(SettingsManager.Current.LayoutOrientationMode);
             MediaControl.UpdateSongInfo(snapshot);
-            MediaControl.ApplyWindowsTheme();
+            MediaControl.ApplyAppearanceSettings();
             Visibility = Visibility.Visible;
 
             if (_isDragging)
@@ -127,7 +128,14 @@ public partial class DynamicIslandWindow : Window
             SetPosition(_isExpanded ? GetExpandedPosition() : GetCollapsedPosition(), animated: false);
     }
 
-    public void ApplyAppearanceSettings() => MediaControl.ApplyWindowsTheme();
+    public void ApplyAppearanceSettings()
+    {
+        MediaControl.ApplyAppearanceSettings();
+    }
+
+    /// <summary>在全局左键点击位于菜单外时关闭右键菜单。 / Closes the context menu after a global left click outside it.</summary>
+    public void CloseContextMenuIfOutside(int screenX, int screenY) =>
+        ContextMenuHelper.CloseIfOutside(PlayerMenu, screenX, screenY);
 
     /// <summary>
     /// 用最新会话列表重建灵动岛的媒体源菜单。

@@ -96,6 +96,7 @@ The app runs in its own process. Its WPF player can be hosted as a taskbar child
 | Source interaction | Click the title or lyric to return to the media app; right-click the bar to switch sources |
 | Taskbar behavior | Automatic horizontal/vertical detection, manual placement and locking, automatic avoidance, auto-hide and fullscreen handling |
 | Window modes | Taskbar and dynamic-island hosts share horizontal and vertical layouts; the island can be dragged freely and retracts at a desktop edge |
+| Appearance | Choose Latin and CJK fonts separately, adjust font weight, select player text color and enhanced readability, and set the entire app to automatic, light, or dark |
 | Container layout | The settings page uses the schema-5 integer grid for container and widget placement, including click-to-create 1×1, drag-to-draw rectangles, and four-edge resizing; the editor code is modularized, while real-Windows boundary, collapse, and DPI behavior remains subject to acceptance |
 | Information density | Hover states can use a two-line title-and-artist widget; maximum lines only wraps text inside the widget and does not change container size |
 | Auto-hide | Hide when every media session is stopped; collapse containers use an anchor container and shared edge, while four-way collapse still requires real-Windows acceptance |
@@ -159,7 +160,7 @@ AF Media Bar is not commercially code-signed, so Windows SmartScreen may show an
 | Drag an empty area of the strip | Move the bar and does not drag while locked |
 | Switch to dynamic-island mode | Drag the player anywhere in the desktop work area; drag it to an edge to enable paused retraction, while playback keeps it expanded |
 | Place an edge-collapse container on a desktop edge | Reveal its content when the pointer enters the trigger region; hide the content after leaving |
-| Right-click the bar or tray icon | Open detailed settings, media actions, or the exit menu |
+| Right-click the bar or tray icon | Open detailed settings, media actions, or the exit menu; left-click outside to close it |
 
 </div>
 

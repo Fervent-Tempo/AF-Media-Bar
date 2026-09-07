@@ -55,6 +55,9 @@ public enum TrayWheelBehavior
 /// </summary>
 public class AppSettings
 {
+    /// <summary>字体、播放器文字与应用主题设置。 / Font, player text, and application-theme settings.</summary>
+    public AppearanceSettings Appearance { get; set; } = AppearanceSettings.Default;
+
     /// <summary>托盘图标滚轮行为；Shift + 滚轮执行另一项音频操作。 / Tray wheel behavior; Shift+wheel performs the alternate audio action.</summary>
     public TrayWheelBehavior TrayWheelBehavior { get; set; } = TrayWheelBehavior.AdjustVolume;
 
@@ -134,6 +137,7 @@ public static class SettingsManager
 {
     public static AppSettings Current { get; set; } = new();
 
+    public static event EventHandler<AppearanceSettingsChangedEventArgs>? AppearanceSettingsChanged;
     public static event EventHandler? TrayWheelBehaviorChanged;
 
     /// <summary>
@@ -154,6 +158,19 @@ public static class SettingsManager
         TrayWheelBehaviorChanged?.Invoke(null, EventArgs.Empty);
     }
 
+    /// <summary>更新外观设置并发布统一变更事件。 / Updates appearance settings and publishes one coherent change event.</summary>
+    public static void SetAppearanceSettings(AppearanceSettings appearance)
+    {
+        appearance = appearance.Normalize();
+        if (Current.Appearance == appearance)
+        {
+            return;
+        }
+
+        Current.Appearance = appearance;
+        AppearanceSettingsChanged?.Invoke(null, new AppearanceSettingsChangedEventArgs(appearance));
+    }
+
     /// <summary>
     /// 触发布局设置变更事件。
     /// Raise layout settings changed event.
@@ -164,6 +181,12 @@ public static class SettingsManager
     {
         LayoutSettingsChanged?.Invoke(null, new LayoutSettingsChangedEventArgs(windowMode, orientationMode));
     }
+}
+
+/// <summary>外观设置变更事件参数。 / Appearance-settings change event arguments.</summary>
+public sealed class AppearanceSettingsChangedEventArgs(AppearanceSettings appearance) : EventArgs
+{
+    public AppearanceSettings Appearance { get; } = appearance;
 }
 
 /// <summary>

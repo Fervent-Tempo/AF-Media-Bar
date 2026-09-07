@@ -13,6 +13,8 @@
         <ui:ThemesDictionary Theme="Light" />
         <ui:ControlsDictionary />
       </ResourceDictionary.MergedDictionaries>
+      <FontFamily x:Key="AppTextFontFamily">Segoe UI Variable Text, Segoe UI</FontFamily>
+      <FontWeight x:Key="AppTextFontWeight">Normal</FontWeight>
     </ResourceDictionary>
   </Application.Resources>
 </Application>
