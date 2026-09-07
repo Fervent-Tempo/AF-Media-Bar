@@ -99,9 +99,9 @@ The app runs in its own process. Its WPF player can be hosted as a taskbar child
 | Container layout | The settings page uses the schema-5 integer grid for container and widget placement, including click-to-create 1×1, drag-to-draw rectangles, and four-edge resizing; the editor code is modularized, while real-Windows boundary, collapse, and DPI behavior remains subject to acceptance |
 | Information density | Hover states can use a two-line title-and-artist widget; maximum lines only wraps text inside the widget and does not change container size |
 | Auto-hide | Hide when every media session is stopped; collapse containers use an anchor container and shared edge, while four-way collapse still requires real-Windows acceptance |
-| Tray audio controls | Click the app's tray icon to open output-device, spatial-audio status, and app-volume controls |
-| Audio devices | List and switch the default output device; wheel-preview and apply after scrolling stops |
-| App volume | List audio sessions on the current endpoint; adjust the selected media app in 2% tray-wheel steps |
+| Tray audio controls | Click the app tray icon for audio controls; native Windows tooltip feedback shows the current hover and wheel value |
+| Audio devices | Switch devices in a stable ordered list; wheel-preview and apply after scrolling stops |
+| App volume | Show application icons and endpoint audio sessions; adjust the selected media app in 2% tray-wheel steps |
 | Visualizer | Nine-band spectrum from WASAPI loopback capture |
 | Metrics | Optional system memory, CPU, GPU, and AF Media Bar process memory |
 | Low-spec mode | Software rendering with transitions, marquees, and fades disabled |
@@ -153,8 +153,9 @@ AF Media Bar is not commercially code-signed, so Windows SmartScreen may show an
 | Right-click the bar and choose “Switch media source” | Switch between available media sessions |
 | Click the AF Media Bar tray icon | Open output-device, spatial-audio status, and application-volume controls |
 | Scroll over the flyout's output-device row | Preview a device and switch about 450 ms after scrolling stops |
-| Scroll over the tray icon | Adjust selected-media volume or switch devices based on settings; hold Shift for the alternate action |
-| Click the spatial-audio row | Open Windows sound settings; third-party apps cannot reliably switch Dolby/DTS modes for the system |
+| Hover over the AF Media Bar tray icon | Show the default wheel action and its current value in the native Windows tooltip |
+| Scroll over the tray icon | Adjust selected-media volume or switch devices, update the native tooltip, and hold Shift for the alternate action |
+| Click the spatial-audio row | Show the current spatial format and open System > Sound > All sound devices; third-party apps cannot reliably switch Dolby/DTS modes for the system |
 | Drag an empty area of the strip | Move the bar and does not drag while locked |
 | Switch to dynamic-island mode | Drag the player anywhere in the desktop work area; drag it to an edge to enable paused retraction, while playback keeps it expanded |
 | Place an edge-collapse container on a desktop edge | Reveal its content when the pointer enters the trigger region; hide the content after leaving |

@@ -32,10 +32,13 @@ public sealed class SpatialAudioService
             }
 
             var active = configuration.ActiveSpatialAudioFormat;
-            var name = string.IsNullOrWhiteSpace(active)
+            var selected = string.IsNullOrWhiteSpace(active)
+                ? configuration.DefaultSpatialAudioFormat
+                : active;
+            var name = string.IsNullOrWhiteSpace(selected)
                 ? "关闭"
-                : KnownFormats.TryGetValue(active, out var known) ? known : "已启用";
-            return new SpatialAudioSnapshot(true, name, active);
+                : TryGetKnownFormatName(selected, out var known) ? known : "已启用";
+            return new SpatialAudioSnapshot(true, name, selected);
         }
         catch (Exception exception)
         {
@@ -46,6 +49,32 @@ public sealed class SpatialAudioService
 
     public void OpenSystemSettings()
     {
-        Process.Start(new ProcessStartInfo("ms-settings:sound") { UseShellExecute = true });
+        Process.Start(new ProcessStartInfo("ms-settings:sound-devices") { UseShellExecute = true });
+    }
+
+    private static bool TryGetKnownFormatName(string subtype, out string name)
+    {
+        if (KnownFormats.TryGetValue(subtype, out name!))
+        {
+            return true;
+        }
+
+        if (!Guid.TryParse(subtype, out var candidate))
+        {
+            name = string.Empty;
+            return false;
+        }
+
+        foreach (var format in KnownFormats)
+        {
+            if (Guid.TryParse(format.Key, out var known) && candidate == known)
+            {
+                name = format.Value;
+                return true;
+            }
+        }
+
+        name = string.Empty;
+        return false;
     }
 }

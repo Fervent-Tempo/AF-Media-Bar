@@ -28,6 +28,10 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     private bool _isRefreshing;
     private int _pendingTrayVolumeSteps;
     private bool _isProcessingTrayVolume;
+    private int _tooltipRefreshVersion;
+    private string? _tooltipSourceId;
+    private string? _tooltipSourceName;
+    private bool _disposed;
 
     public ObservableCollection<AudioDeviceOption> OutputDevices { get; } = [];
     public ObservableCollection<ApplicationVolumeItemViewModel> Applications { get; } = [];
@@ -47,8 +51,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
                 return;
             }
 
-            SettingsManager.Current.TrayWheelBehavior = value;
-            OnPropertyChanged();
+            SettingsManager.SetTrayWheelBehavior(value);
         }
     }
 
@@ -57,7 +60,6 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
 
     public event Action<TrayIconBounds?>? FlyoutToggleRequested;
     public event Action<TrayIconBounds?>? TrayContextMenuRequested;
-    public event Action<string, TrayIconBounds?>? FeedbackRequested;
 
     public AudioControlViewModel(
         AudioDeviceService deviceService,
@@ -78,9 +80,12 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         OpenSpatialAudioSettingsCommand = new RelayCommand(OpenSpatialAudioSettings);
         _trayIconService.LeftClicked += OnTrayLeftClicked;
         _trayIconService.ContextMenuRequested += OnTrayContextMenuRequested;
+        _trayIconService.TooltipOpening += OnTrayTooltipOpening;
         _wheelMonitor.WheelChanged += OnTrayWheelChanged;
         _mediaSessionService.SnapshotChanged += OnMediaSnapshotChanged;
+        SettingsManager.TrayWheelBehaviorChanged += OnTrayWheelBehaviorChanged;
         _wheelMonitor.Start();
+        QueueTrayTooltipRefresh();
     }
 
     public async Task RefreshAsync()
@@ -115,6 +120,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
             }
 
             StatusText = applications.Count == 0 ? "当前没有应用音频会话" : string.Empty;
+            UpdateTooltipFromLoadedState();
         }
         catch (Exception exception)
         {
@@ -154,7 +160,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         _deviceDelay?.Dispose();
         _deviceDelay = new CancellationTokenSource();
         _ = ApplyOutputDeviceAfterDelayAsync(device, _deviceDelay.Token);
-        RaiseFeedback($"输出设备：{device.DisplayName}");
+        SetTrayTooltip($"输出设备：{device.DisplayName}");
     }
 
     private async Task ApplyOutputDeviceAfterDelayAsync(AudioDeviceOption device, CancellationToken cancellationToken)
@@ -171,7 +177,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         catch (Exception exception)
         {
             StatusText = $"切换输出设备失败：{exception.Message}";
-            RaiseFeedback("输出设备切换失败");
+            SetTrayTooltip("输出设备切换失败");
         }
     }
 
@@ -263,20 +269,20 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
                     _mediaSessionService.SelectedSourceName));
                 if (current is null)
                 {
-                    RaiseFeedback("未找到当前媒体应用的音量会话");
+                    SetTrayTooltip("当前媒体音量：不可用");
                     continue;
                 }
 
                 var next = Math.Clamp(current.VolumePercent + steps * VolumeStepPercent, 0, 100);
                 await Task.Run(() => _volumeService.SetApplicationVolume(current.ProcessName, next));
                 Applications.FirstOrDefault(item => string.Equals(item.ProcessName, current.ProcessName, StringComparison.OrdinalIgnoreCase))?.SynchronizeVolume(next);
-                RaiseFeedback($"{current.DisplayName}  {next}%");
+                SetTrayTooltip($"{current.DisplayName}：{next}%");
             }
         }
         catch (Exception exception)
         {
             Debug.WriteLine($"[AudioControlViewModel] Tray volume failed: {exception}");
-            RaiseFeedback("音量调节失败");
+            SetTrayTooltip("音量调节失败");
         }
         finally
         {
@@ -312,18 +318,104 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
 
     private void OnMediaSnapshotChanged(object? sender, MediaSnapshot snapshot)
     {
-        _trayIconService.UpdateTooltip(snapshot.IsConnected ? $"{snapshot.Title}\n{snapshot.Artist}" : null);
+        if (string.Equals(_tooltipSourceId, snapshot.SourceId, StringComparison.Ordinal) &&
+            string.Equals(_tooltipSourceName, snapshot.SourceName, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _tooltipSourceId = snapshot.SourceId;
+        _tooltipSourceName = snapshot.SourceName;
+        QueueTrayTooltipRefresh();
+    }
+
+    private void OnTrayTooltipOpening(object? sender, EventArgs e) => QueueTrayTooltipRefresh();
+
+    private void OnTrayWheelBehaviorChanged(object? sender, EventArgs e)
+    {
+        OnPropertyChanged(nameof(TrayWheelBehavior));
+        QueueTrayTooltipRefresh();
+    }
+
+    private void QueueTrayTooltipRefresh()
+    {
+        var version = ++_tooltipRefreshVersion;
+        _ = RefreshTrayTooltipAsync(version);
+    }
+
+    private async Task RefreshTrayTooltipAsync(int version)
+    {
+        try
+        {
+            string text;
+            switch (TrayWheelBehavior)
+            {
+                case TrayWheelBehavior.AdjustVolume:
+                    var application = await Task.Run(() => _volumeService.GetCurrentMediaVolume(
+                        _mediaSessionService.SelectedSourceId,
+                        _mediaSessionService.SelectedSourceName));
+                    text = application is null
+                        ? "当前媒体音量：不可用"
+                        : $"{application.DisplayName}：{application.VolumePercent}%";
+                    break;
+                case TrayWheelBehavior.SwitchOutputDevice:
+                    var devices = await _deviceService.GetRenderDevicesAsync();
+                    var device = devices.FirstOrDefault(candidate => candidate.IsDefault);
+                    text = device is null ? "输出设备：不可用" : $"输出设备：{device.DisplayName}";
+                    break;
+                default:
+                    text = "托盘滚轮已禁用";
+                    break;
+            }
+
+            if (!_disposed && version == _tooltipRefreshVersion)
+            {
+                _trayIconService.UpdateTooltip(text);
+            }
+        }
+        catch (Exception exception)
+        {
+            Debug.WriteLine($"[AudioControlViewModel] Tooltip refresh failed: {exception.Message}");
+            if (!_disposed && version == _tooltipRefreshVersion)
+            {
+                _trayIconService.UpdateTooltip("AF Media Bar");
+            }
+        }
+    }
+
+    private void UpdateTooltipFromLoadedState()
+    {
+        var text = TrayWheelBehavior switch
+        {
+            TrayWheelBehavior.AdjustVolume => Applications.FirstOrDefault(item => item.IsCurrentMedia) is { } application
+                ? $"{application.DisplayName}：{application.VolumePercent}%"
+                : "当前媒体音量：不可用",
+            TrayWheelBehavior.SwitchOutputDevice => SelectedOutputDevice is { } device
+                ? $"输出设备：{device.DisplayName}"
+                : "输出设备：不可用",
+            _ => "托盘滚轮已禁用"
+        };
+        SetTrayTooltip(text);
+    }
+
+    private void SetTrayTooltip(string text)
+    {
+        _tooltipRefreshVersion++;
+        _trayIconService.UpdateTooltip(text);
     }
 
     private TrayIconBounds? GetTrayBounds() => _trayIconService.TryGetBounds(out var bounds) ? bounds : null;
-    private void RaiseFeedback(string text) => FeedbackRequested?.Invoke(text, GetTrayBounds());
 
     public void Dispose()
     {
+        _disposed = true;
+        _tooltipRefreshVersion++;
         _trayIconService.LeftClicked -= OnTrayLeftClicked;
         _trayIconService.ContextMenuRequested -= OnTrayContextMenuRequested;
+        _trayIconService.TooltipOpening -= OnTrayTooltipOpening;
         _wheelMonitor.WheelChanged -= OnTrayWheelChanged;
         _mediaSessionService.SnapshotChanged -= OnMediaSnapshotChanged;
+        SettingsManager.TrayWheelBehaviorChanged -= OnTrayWheelBehaviorChanged;
         _wheelMonitor.Dispose();
         _deviceDelay?.Cancel();
         _deviceDelay?.Dispose();

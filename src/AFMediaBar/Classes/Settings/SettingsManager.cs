@@ -134,11 +134,25 @@ public static class SettingsManager
 {
     public static AppSettings Current { get; set; } = new();
 
+    public static event EventHandler? TrayWheelBehaviorChanged;
+
     /// <summary>
     /// 布局设置变更事件：当窗口模式或布局方向发生变化时触发。
     /// Layout settings changed event: fired when window mode or layout orientation changes.
     /// </summary>
     public static event EventHandler<LayoutSettingsChangedEventArgs>? LayoutSettingsChanged;
+
+    /// <summary>更新托盘滚轮行为并发布变更。 / Updates the tray-wheel behavior and publishes the change.</summary>
+    public static void SetTrayWheelBehavior(TrayWheelBehavior behavior)
+    {
+        if (Current.TrayWheelBehavior == behavior)
+        {
+            return;
+        }
+
+        Current.TrayWheelBehavior = behavior;
+        TrayWheelBehaviorChanged?.Invoke(null, EventArgs.Empty);
+    }
 
     /// <summary>
     /// 触发布局设置变更事件。

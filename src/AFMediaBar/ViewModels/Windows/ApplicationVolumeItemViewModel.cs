@@ -11,6 +11,7 @@ public partial class ApplicationVolumeItemViewModel : ObservableObject
     public string ProcessName { get; }
     public string DisplayName { get; }
     public bool IsCurrentMedia { get; }
+    public byte[]? IconData { get; }
 
     [ObservableProperty]
     private int _volumePercent;
@@ -24,6 +25,7 @@ public partial class ApplicationVolumeItemViewModel : ObservableObject
         ProcessName = snapshot.ProcessName;
         DisplayName = snapshot.DisplayName;
         IsCurrentMedia = snapshot.IsCurrentMedia;
+        IconData = snapshot.IconData;
         _volumePercent = snapshot.VolumePercent;
         _volumeChanged = volumeChanged;
     }

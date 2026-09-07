@@ -71,6 +71,7 @@ namespace AFMediaBar
                 services.AddSingleton<MediaSourceActivationService>();
                 services.AddSingleton<MediaSessionService>();
                 services.AddSingleton<MediaSourceProcessResolver>();
+                services.AddSingleton<ApplicationIconService>();
                 services.AddSingleton<ApplicationVolumeService>();
                 services.AddSingleton<AudioDeviceService>();
                 services.AddSingleton<SpatialAudioService>();
@@ -88,7 +89,6 @@ namespace AFMediaBar
                 services.AddSingleton<AudioControlViewModel>();
                 services.AddTransient<DynamicIslandWindow>();
                 services.AddSingleton<AudioControlFlyoutWindow>();
-                services.AddSingleton<TrayFeedbackWindow>();
 
                 // === 设置窗口（从任务栏右键菜单打开）Settings Window (opened from taskbar context menu) ===
                 services.AddSingleton<SettingsWindowViewModel>();

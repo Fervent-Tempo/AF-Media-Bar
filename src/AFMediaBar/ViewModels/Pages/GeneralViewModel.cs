@@ -14,7 +14,7 @@ namespace AFMediaBar.ViewModels.Pages
                     return;
                 }
 
-                Classes.Settings.SettingsManager.Current.TrayWheelBehavior = value;
+                Classes.Settings.SettingsManager.SetTrayWheelBehavior(value);
                 OnPropertyChanged();
             }
         }

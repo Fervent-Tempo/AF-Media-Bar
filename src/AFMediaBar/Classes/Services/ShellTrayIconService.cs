@@ -17,6 +17,7 @@ public sealed class ShellTrayIconService : IDisposable
     private readonly HwndSource _messageWindow;
     private readonly uint _taskbarCreatedMessage;
     private IntPtr _icon;
+    private string _tooltipText = "AF Media Bar";
     private bool _isAdded;
     private bool _disposed;
 
@@ -39,6 +40,7 @@ public sealed class ShellTrayIconService : IDisposable
 
     public event EventHandler? LeftClicked;
     public event EventHandler? ContextMenuRequested;
+    public event EventHandler? TooltipOpening;
     public event EventHandler? ShellRestarted;
 
     public bool TryGetBounds(out TrayIconBounds bounds)
@@ -66,8 +68,18 @@ public sealed class ShellTrayIconService : IDisposable
 
     public void UpdateTooltip(string? text)
     {
-        // 不设置 Shell 原生 tooltip，避免它与自绘音频反馈气泡叠加。
-        // Do not set the Shell tooltip, so it cannot overlap the custom audio feedback bubble.
+        var normalized = string.IsNullOrWhiteSpace(text)
+            ? "AF Media Bar"
+            : string.Join(" ", text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)).Trim();
+        _tooltipText = normalized.Length <= 127 ? normalized : normalized[..127];
+        if (!_isAdded)
+        {
+            return;
+        }
+
+        var data = CreateData();
+        data.uFlags = NativeMethods.NIF_TIP | NativeMethods.NIF_SHOWTIP;
+        _ = NativeMethods.ShellNotifyIcon(NativeMethods.NIM_MODIFY, ref data);
     }
 
     private IntPtr WindowHook(IntPtr window, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -96,6 +108,10 @@ public sealed class ShellTrayIconService : IDisposable
             ContextMenuRequested?.Invoke(this, EventArgs.Empty);
             handled = true;
         }
+        else if (notification == NativeMethods.NIN_POPUPOPEN)
+        {
+            TooltipOpening?.Invoke(this, EventArgs.Empty);
+        }
 
         return IntPtr.Zero;
     }
@@ -119,8 +135,8 @@ public sealed class ShellTrayIconService : IDisposable
     private void AddIcon()
     {
         var data = CreateData();
-        data.uFlags = NativeMethods.NIF_MESSAGE | NativeMethods.NIF_ICON;
-        data.szTip = string.Empty;
+        data.uFlags = NativeMethods.NIF_MESSAGE | NativeMethods.NIF_ICON |
+            NativeMethods.NIF_TIP | NativeMethods.NIF_SHOWTIP;
         _isAdded = NativeMethods.ShellNotifyIcon(NativeMethods.NIM_ADD, ref data);
         if (!_isAdded)
         {
@@ -139,7 +155,7 @@ public sealed class ShellTrayIconService : IDisposable
         uID = IconId,
         uCallbackMessage = CallbackMessage,
         hIcon = _icon,
-        szTip = string.Empty,
+        szTip = _tooltipText,
         szInfo = string.Empty,
         szInfoTitle = string.Empty
     };

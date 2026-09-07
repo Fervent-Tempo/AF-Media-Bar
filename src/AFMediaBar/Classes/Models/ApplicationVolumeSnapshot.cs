@@ -6,4 +6,5 @@ public sealed record ApplicationVolumeSnapshot(
     string DisplayName,
     int VolumePercent,
     bool IsMuted,
-    bool IsCurrentMedia);
+    bool IsCurrentMedia,
+    byte[]? IconData);

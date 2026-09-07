@@ -15,18 +15,32 @@ public sealed class ApplicationVolumeService
     private static readonly Guid VolumeEventContext = new("4F74C2B5-7E7B-4A02-ABCB-EF8FA77BD65A");
     private readonly object _gate = new();
     private readonly MediaSourceProcessResolver _processResolver;
+    private readonly ApplicationIconService _iconService;
 
-    public ApplicationVolumeService(MediaSourceProcessResolver processResolver)
+    public ApplicationVolumeService(
+        MediaSourceProcessResolver processResolver,
+        ApplicationIconService iconService)
     {
         _processResolver = processResolver;
+        _iconService = iconService;
     }
 
-    public IReadOnlyList<ApplicationVolumeSnapshot> GetApplications(string? sourceId, string? sourceName)
+    public IReadOnlyList<ApplicationVolumeSnapshot> GetApplications(string? sourceId, string? sourceName) =>
+        GetApplicationsCore(sourceId, sourceName, includeIcons: true);
+
+    public ApplicationVolumeSnapshot? GetCurrentMediaVolume(string? sourceId, string? sourceName) =>
+        GetApplicationsCore(sourceId, sourceName, includeIcons: false)
+            .FirstOrDefault(value => value.IsCurrentMedia);
+
+    private IReadOnlyList<ApplicationVolumeSnapshot> GetApplicationsCore(
+        string? sourceId,
+        string? sourceName,
+        bool includeIcons)
     {
         lock (_gate)
         {
             var aggregates = new Dictionary<string, Aggregate>(StringComparer.OrdinalIgnoreCase);
-            ForEachSession((processName, displayName, state, level, muted, _) =>
+            ForEachSession((processId, processName, displayName, iconPath, state, level, muted, _) =>
             {
                 if (!aggregates.TryGetValue(processName, out var aggregate))
                 {
@@ -34,7 +48,12 @@ public sealed class ApplicationVolumeService
                     aggregates.Add(processName, aggregate);
                 }
 
-                aggregate.Add(displayName, state, level, muted);
+                aggregate.Add(
+                    displayName,
+                    state,
+                    level,
+                    muted,
+                    includeIcons ? _iconService.GetIconData(processId, iconPath) : null);
             });
 
             var snapshots = aggregates.Values
@@ -57,16 +76,13 @@ public sealed class ApplicationVolumeService
         }
     }
 
-    public ApplicationVolumeSnapshot? GetCurrentMediaVolume(string? sourceId, string? sourceName) =>
-        GetApplications(sourceId, sourceName).FirstOrDefault(value => value.IsCurrentMedia);
-
     public bool SetApplicationVolume(string processName, int volumePercent)
     {
         lock (_gate)
         {
             var target = Math.Clamp(volumePercent, 0, 100) / 100f;
             var changed = false;
-            ForEachSession((candidate, _, _, _, _, volume) =>
+            ForEachSession((_, candidate, _, _, _, _, _, volume) =>
             {
                 if (!string.Equals(candidate, processName, StringComparison.OrdinalIgnoreCase))
                 {
@@ -87,7 +103,7 @@ public sealed class ApplicationVolumeService
         }
     }
 
-    private void ForEachSession(Action<string, string?, AudioSessionState, float, bool, ISimpleAudioVolume> visitor)
+    private void ForEachSession(Action<uint, string, string?, string?, AudioSessionState, float, bool, ISimpleAudioVolume> visitor)
     {
         object? enumeratorObject = null;
         IMMDevice? device = null;
@@ -128,10 +144,11 @@ public sealed class ApplicationVolumeService
                     }
 
                     _ = control.GetDisplayName(out var displayName);
+                    _ = control.GetIconPath(out var iconPath);
                     var volume = (ISimpleAudioVolume)control;
                     Marshal.ThrowExceptionForHR(volume.GetMasterVolume(out var level));
                     Marshal.ThrowExceptionForHR(volume.GetMute(out var muted));
-                    visitor(processName, displayName, state, level, muted, volume);
+                    visitor(processId, processName, displayName, iconPath, state, level, muted, volume);
                 }
                 catch (COMException)
                 {
@@ -183,13 +200,14 @@ public sealed class ApplicationVolumeService
         private int _count;
         private bool _allMuted = true;
         private string? _sessionName;
+        private byte[]? _iconData;
 
         public string ProcessName { get; } = processName;
         public string DisplayName => string.IsNullOrWhiteSpace(_sessionName) || _sessionName.StartsWith('@')
             ? MediaSourceNameFormatter.GetDisplayName(ProcessName, ProcessName)
             : _sessionName;
 
-        public void Add(string? displayName, AudioSessionState state, float volume, bool muted)
+        public void Add(string? displayName, AudioSessionState state, float volume, bool muted, byte[]? iconData)
         {
             if (string.IsNullOrWhiteSpace(_sessionName) && !string.IsNullOrWhiteSpace(displayName))
             {
@@ -199,6 +217,7 @@ public sealed class ApplicationVolumeService
             _total += volume;
             _count++;
             _allMuted &= muted;
+            _iconData ??= iconData;
         }
 
         public ApplicationVolumeSnapshot Create(bool isCurrentMedia) => new(
@@ -206,7 +225,8 @@ public sealed class ApplicationVolumeService
             DisplayName,
             _count == 0 ? 0 : (int)Math.Round(_total / _count * 100),
             _allMuted,
-            isCurrentMedia);
+            isCurrentMedia,
+            _iconData);
     }
 
     private enum EDataFlow { Render, Capture, All }

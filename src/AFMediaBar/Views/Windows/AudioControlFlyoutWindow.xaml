@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:converters="clr-namespace:AFMediaBar.Classes.Converters"
         Title="音频控制"
         Width="380"
         SizeToContent="Height"
@@ -17,6 +18,9 @@
         Deactivated="Window_OnDeactivated"
         mc:Ignorable="d"
         d:DesignHeight="500">
+    <ui:FluentWindow.Resources>
+        <converters:ByteArrayToImageSourceConverter x:Key="ByteArrayToImageSourceConverter" />
+    </ui:FluentWindow.Resources>
     <Border Margin="10"
             Padding="20"
             CornerRadius="8"
@@ -61,8 +65,10 @@
                       PreviewMouseWheel="OutputDevice_OnPreviewMouseWheel" />
 
             <Button Grid.Row="3"
+                    MinHeight="48"
                     Margin="0,10,0,16"
-                    Padding="12,9"
+                    Padding="12,7"
+                    HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Stretch"
                     Command="{Binding OpenSpatialAudioSettingsCommand}">
                 <Grid>
@@ -99,8 +105,24 @@
                                     </Grid.ColumnDefinitions>
                                     <Border Width="28" Height="28" CornerRadius="4"
                                             Background="{DynamicResource ControlFillColorSecondaryBrush}">
-                                        <TextBlock Text="{Binding Initial}" HorizontalAlignment="Center"
-                                                   VerticalAlignment="Center" FontWeight="SemiBold" />
+                                        <Grid>
+                                            <TextBlock Text="{Binding Initial}" HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center" FontWeight="SemiBold">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IconData}" Value="{x:Null}">
+                                                                <Setter Property="Visibility" Value="Visible" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <Image Width="24" Height="24"
+                                                   Source="{Binding IconData, Converter={StaticResource ByteArrayToImageSourceConverter}}"
+                                                   Stretch="Uniform" />
+                                        </Grid>
                                     </Border>
                                     <TextBlock Grid.Column="1" Text="{Binding DisplayName}" Margin="8,0"
                                                VerticalAlignment="Center" TextTrimming="CharacterEllipsis">

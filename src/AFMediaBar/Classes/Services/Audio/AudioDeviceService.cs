@@ -21,8 +21,10 @@ public sealed class AudioDeviceService
                 GetPolicyDeviceId(device.Id),
                 string.IsNullOrWhiteSpace(device.Name) ? device.Id : device.Name,
                 string.Equals(device.Id, defaultId, StringComparison.OrdinalIgnoreCase)))
-            .OrderByDescending(device => device.IsDefault)
-            .ThenBy(device => device.DisplayName, StringComparer.CurrentCultureIgnoreCase)
+            // 默认状态只决定选中项，不参与排序，避免切换后设备位置跳动。
+            // Default status controls selection only, keeping wheel indexes stable after a switch.
+            .OrderBy(device => device.DisplayName, StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(device => device.Id, StringComparer.OrdinalIgnoreCase)
             .ToArray();
     }
 

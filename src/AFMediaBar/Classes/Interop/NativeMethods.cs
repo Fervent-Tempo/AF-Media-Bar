@@ -38,6 +38,7 @@ public static partial class NativeMethods
     public const int WM_MOUSEWHEEL = 0x020A;
     public const int NIN_SELECT = 0x0400;
     public const int NIN_KEYSELECT = 0x0401;
+    public const int NIN_POPUPOPEN = 0x0406;
     public const int WH_MOUSE_LL = 14;
     public const int VK_SHIFT = 0x10;
 

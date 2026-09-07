@@ -24,7 +24,6 @@ namespace AFMediaBar.Views.Windows
         private readonly MediaSessionService _mediaSessionService;
         private readonly AudioControlViewModel _audioControlViewModel;
         private readonly AudioControlFlyoutWindow _audioControlFlyout;
-        private readonly TrayFeedbackWindow _trayFeedbackWindow;
         private TaskbarWindow? _taskbarWindow;
         private DynamicIslandWindow? _dynamicIslandWindow;
         private int _taskbarCreatedMessage;
@@ -37,8 +36,7 @@ namespace AFMediaBar.Views.Windows
             ITaskbarDockService taskBarService,
             MediaSessionService mediaSessionService,
             AudioControlViewModel audioControlViewModel,
-            AudioControlFlyoutWindow audioControlFlyout,
-            TrayFeedbackWindow trayFeedbackWindow)
+            AudioControlFlyoutWindow audioControlFlyout)
         {
             ViewModel = viewModel;
             DataContext = this;
@@ -47,7 +45,6 @@ namespace AFMediaBar.Views.Windows
             _mediaSessionService = mediaSessionService;
             _audioControlViewModel = audioControlViewModel;
             _audioControlFlyout = audioControlFlyout;
-            _trayFeedbackWindow = trayFeedbackWindow;
 
             SystemThemeWatcher.Watch(this);
 
@@ -64,7 +61,6 @@ namespace AFMediaBar.Views.Windows
             SettingsManager.LayoutSettingsChanged += SettingsManager_OnLayoutSettingsChanged;
             _audioControlViewModel.FlyoutToggleRequested += AudioControl_OnFlyoutToggleRequested;
             _audioControlViewModel.TrayContextMenuRequested += AudioControl_OnTrayContextMenuRequested;
-            _audioControlViewModel.FeedbackRequested += AudioControl_OnFeedbackRequested;
 
             // evaluate the initial state once the window is loaded
             Loaded += MainWindow_Loaded;
@@ -102,14 +98,12 @@ namespace AFMediaBar.Views.Windows
             SettingsManager.LayoutSettingsChanged -= SettingsManager_OnLayoutSettingsChanged;
             _audioControlViewModel.FlyoutToggleRequested -= AudioControl_OnFlyoutToggleRequested;
             _audioControlViewModel.TrayContextMenuRequested -= AudioControl_OnTrayContextMenuRequested;
-            _audioControlViewModel.FeedbackRequested -= AudioControl_OnFeedbackRequested;
 
             _taskbarWindow?.Close();
             _taskbarWindow = null;
             _dynamicIslandWindow?.Close();
             _dynamicIslandWindow = null;
             _audioControlFlyout.Close();
-            _trayFeedbackWindow.Close();
 
             // Make sure that closing this window will begin the process of closing the application.
             Application.Current.Shutdown();
@@ -285,12 +279,5 @@ namespace AFMediaBar.Views.Windows
             TrayMenu.IsOpen = true;
         }
 
-        private void AudioControl_OnFeedbackRequested(string text, TrayIconBounds? bounds)
-        {
-            if (!_audioControlFlyout.IsVisible)
-            {
-                _trayFeedbackWindow.ShowFeedback(text, bounds);
-            }
-        }
     }
 }
