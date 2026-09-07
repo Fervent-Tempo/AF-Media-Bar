@@ -14,8 +14,13 @@
         Visibility="Collapsed"
         mc:Ignorable="d">
     <Window.ContextMenu>
-        <ContextMenu x:Name="TrayMenu" Width="240"
-                     DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+        <ContextMenu x:Name="TrayMenu"
+                     Width="240"
+                     Padding="4"
+                     Background="{DynamicResource ApplicationBackgroundBrush}"
+                     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                     BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                     BorderThickness="1">
             <ui:MenuItem x:Name="TraySessionsMenuItem" Header="切换媒体源"
                          Icon="{ui:SymbolIcon MusicNote216}" />
             <Separator />

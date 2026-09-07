@@ -7,6 +7,7 @@
         xmlns:converters="clr-namespace:AFMediaBar.Classes.Converters"
         Title="音频控制"
         Width="380"
+        MinHeight="500"
         SizeToContent="Height"
         MaxHeight="560"
         ShowInTaskbar="False"
@@ -57,11 +58,15 @@
 
             <TextBlock Grid.Row="1" Text="输出设备" FontSize="13"
                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,6" />
-            <ComboBox Grid.Row="2"
+            <ComboBox x:Name="OutputDeviceComboBox"
+                      Grid.Row="2"
                       MinHeight="40"
+                      MaxDropDownHeight="280"
                       ItemsSource="{Binding OutputDevices}"
                       DisplayMemberPath="DisplayName"
                       SelectedItem="{Binding SelectedOutputDevice, Mode=TwoWay}"
+                      DropDownOpened="OutputDevice_OnDropDownOpened"
+                      DropDownClosed="OutputDevice_OnDropDownClosed"
                       PreviewMouseWheel="OutputDevice_OnPreviewMouseWheel" />
 
             <Button Grid.Row="3"

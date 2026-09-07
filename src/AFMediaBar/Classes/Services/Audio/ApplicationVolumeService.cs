@@ -5,14 +5,18 @@ using AFMediaBar.Classes.Models;
 namespace AFMediaBar.Classes.Services.Audio;
 
 /// <summary>
-/// 枚举默认输出端点的 Core Audio 会话，并按进程读取或设置应用音量。
-/// Enumerates Core Audio sessions on the default render endpoint and reads or sets per-process volume.
+/// 枚举所有活动输出端点的 Core Audio 会话，并按进程聚合读取或设置应用音量。
+/// Enumerates Core Audio sessions across all active render endpoints and reads or sets volume aggregated by process.
+///
+/// 注意：跨端点聚合可保持音量合成器列表稳定，但不会迁移应用已有的音频流。
+/// Note: Cross-endpoint aggregation keeps the mixer list stable but does not migrate an application's existing audio stream.
 /// </summary>
 public sealed class ApplicationVolumeService
 {
     private static readonly Guid DeviceEnumeratorClassId = new("BCDE0395-E52F-467C-8E3D-C4579291692E");
     private static readonly Guid AudioSessionManager2Id = new("77AA99A0-1BD6-484F-8BC7-2C654C9A9B6F");
     private static readonly Guid VolumeEventContext = new("4F74C2B5-7E7B-4A02-ABCB-EF8FA77BD65A");
+    private const int DeviceStateActive = 0x00000001;
     private readonly object _gate = new();
     private readonly MediaSourceProcessResolver _processResolver;
     private readonly ApplicationIconService _iconService;
@@ -106,17 +110,49 @@ public sealed class ApplicationVolumeService
     private void ForEachSession(Action<uint, string, string?, string?, AudioSessionState, float, bool, ISimpleAudioVolume> visitor)
     {
         object? enumeratorObject = null;
-        IMMDevice? device = null;
-        object? managerObject = null;
-        IAudioSessionEnumerator? sessions = null;
+        IMMDeviceCollection? devices = null;
         try
         {
             var type = Type.GetTypeFromCLSID(DeviceEnumeratorClassId, throwOnError: true)!;
             enumeratorObject = Activator.CreateInstance(type) ??
                 throw new InvalidOperationException("无法创建 Windows 音频设备枚举器。");
             var enumerator = (IMMDeviceEnumerator)enumeratorObject;
-            Marshal.ThrowExceptionForHR(enumerator.GetDefaultAudioEndpoint(EDataFlow.Render, ERole.Multimedia, out device));
+            Marshal.ThrowExceptionForHR(enumerator.EnumAudioEndpoints(EDataFlow.Render, DeviceStateActive, out devices));
+            Marshal.ThrowExceptionForHR(devices.GetCount(out var deviceCount));
 
+            for (var deviceIndex = 0; deviceIndex < deviceCount; deviceIndex++)
+            {
+                IMMDevice? device = null;
+                try
+                {
+                    Marshal.ThrowExceptionForHR(devices.Item(deviceIndex, out device));
+                    ForEachSessionOnDevice(device, visitor);
+                }
+                catch (COMException)
+                {
+                    // 切换或断开设备时端点可能在枚举期间失效。 / An endpoint may disappear during enumeration while devices switch or disconnect.
+                }
+                finally
+                {
+                    Release(device);
+                }
+            }
+        }
+        finally
+        {
+            Release(devices);
+            Release(enumeratorObject);
+        }
+    }
+
+    private static void ForEachSessionOnDevice(
+        IMMDevice device,
+        Action<uint, string, string?, string?, AudioSessionState, float, bool, ISimpleAudioVolume> visitor)
+    {
+        object? managerObject = null;
+        IAudioSessionEnumerator? sessions = null;
+        try
+        {
             var managerId = AudioSessionManager2Id;
             Marshal.ThrowExceptionForHR(device.Activate(ref managerId, ClsCtx.All, nint.Zero, out managerObject));
             var manager = (IAudioSessionManager2)managerObject;
@@ -168,8 +204,6 @@ public sealed class ApplicationVolumeService
         {
             Release(sessions);
             Release(managerObject);
-            Release(device);
-            Release(enumeratorObject);
         }
     }
 
@@ -237,11 +271,18 @@ public sealed class ApplicationVolumeService
     [ComImport, Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     private interface IMMDeviceEnumerator
     {
-        int EnumAudioEndpoints(EDataFlow flow, int stateMask, out nint devices);
+        int EnumAudioEndpoints(EDataFlow flow, int stateMask, out IMMDeviceCollection devices);
         int GetDefaultAudioEndpoint(EDataFlow flow, ERole role, out IMMDevice device);
         int GetDevice([MarshalAs(UnmanagedType.LPWStr)] string id, out IMMDevice device);
         int RegisterEndpointNotificationCallback(nint client);
         int UnregisterEndpointNotificationCallback(nint client);
+    }
+
+    [ComImport, Guid("0BD7A1BE-7A1A-44DB-8397-CC5392387B5E"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface IMMDeviceCollection
+    {
+        int GetCount(out int count);
+        int Item(int index, out IMMDevice device);
     }
 
     [ComImport, Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]

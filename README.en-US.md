@@ -101,7 +101,7 @@ The app runs in its own process. Its WPF player can be hosted as a taskbar child
 | Auto-hide | Hide when every media session is stopped; collapse containers use an anchor container and shared edge, while four-way collapse still requires real-Windows acceptance |
 | Tray audio controls | Click the app tray icon for audio controls; native Windows tooltip feedback shows the current hover and wheel value |
 | Audio devices | Switch devices in a stable ordered list; wheel-preview and apply after scrolling stops |
-| App volume | Show application icons and endpoint audio sessions; adjust the selected media app in 2% tray-wheel steps |
+| App volume | Aggregate application icons and audio sessions across active output endpoints; adjust the selected media app in 2% tray-wheel steps |
 | Visualizer | Nine-band spectrum from WASAPI loopback capture |
 | Metrics | Optional system memory, CPU, GPU, and AF Media Bar process memory |
 | Low-spec mode | Software rendering with transitions, marquees, and fades disabled |
@@ -152,7 +152,7 @@ AF Media Bar is not commercially code-signed, so Windows SmartScreen may show an
 | Scroll up/down over the media area | Go to the previous/next track |
 | Right-click the bar and choose “Switch media source” | Switch between available media sessions |
 | Click the AF Media Bar tray icon | Open output-device, spatial-audio status, and application-volume controls |
-| Scroll over the flyout's output-device row | Preview a device and switch about 450 ms after scrolling stops |
+| Scroll over the flyout's output-device row | Preview a device and switch about 1.2 seconds after scrolling stops |
 | Hover over the AF Media Bar tray icon | Show the default wheel action and its current value in the native Windows tooltip |
 | Scroll over the tray icon | Adjust selected-media volume or switch devices, update the native tooltip, and hold Shift for the alternate action |
 | Click the spatial-audio row | Show the current spatial format and open System > Sound > All sound devices; third-party apps cannot reliably switch Dolby/DTS modes for the system |

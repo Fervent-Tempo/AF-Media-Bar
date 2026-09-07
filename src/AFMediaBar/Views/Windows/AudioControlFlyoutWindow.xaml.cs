@@ -1,5 +1,6 @@
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Threading;
 using AFMediaBar.Classes.Interop;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.ViewModels.Windows;
@@ -10,6 +11,8 @@ namespace AFMediaBar.Views.Windows;
 /// <summary>锚定自有托盘图标的紧凑音频面板。 / Compact audio flyout anchored to the app's own tray icon.</summary>
 public partial class AudioControlFlyoutWindow : FluentWindow
 {
+    private bool _isOutputDeviceDropDownOpen;
+
     public AudioControlViewModel ViewModel { get; }
 
     public AudioControlFlyoutWindow(AudioControlViewModel viewModel)
@@ -64,7 +67,24 @@ public partial class AudioControlFlyoutWindow : FluentWindow
         e.Handled = true;
     }
 
-    private void Window_OnDeactivated(object? sender, EventArgs e) => Hide();
+    private void OutputDevice_OnDropDownOpened(object sender, EventArgs e) =>
+        _isOutputDeviceDropDownOpen = true;
+
+    private void OutputDevice_OnDropDownClosed(object sender, EventArgs e) =>
+        _isOutputDeviceDropDownOpen = false;
+
+    private void Window_OnDeactivated(object? sender, EventArgs e)
+    {
+        // ComboBox 的下拉列表使用独立 Popup；等 Popup 状态稳定后再判断是否真的点击到了窗口外。
+        // The ComboBox list uses a separate Popup; wait for its state to settle before treating deactivation as an outside click.
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (IsVisible && !_isOutputDeviceDropDownOpen && !OutputDeviceComboBox.IsDropDownOpen && !IsActive)
+            {
+                Hide();
+            }
+        }, DispatcherPriority.ContextIdle);
+    }
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {

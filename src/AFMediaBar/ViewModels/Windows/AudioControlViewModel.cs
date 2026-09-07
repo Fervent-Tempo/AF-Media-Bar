@@ -15,7 +15,7 @@ namespace AFMediaBar.ViewModels.Windows;
 public partial class AudioControlViewModel : ObservableObject, IDisposable
 {
     private const int VolumeStepPercent = 2;
-    private static readonly TimeSpan DeviceApplyDelay = TimeSpan.FromMilliseconds(450);
+    private static readonly TimeSpan DeviceApplyDelay = TimeSpan.FromMilliseconds(1200);
     private static readonly TimeSpan VolumeApplyDelay = TimeSpan.FromMilliseconds(100);
     private readonly AudioDeviceService _deviceService;
     private readonly SpatialAudioService _spatialAudioService;

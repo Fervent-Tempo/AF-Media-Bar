@@ -50,6 +50,10 @@ namespace AFMediaBar.Views.Windows
 
             InitializeComponent();
 
+            // 托盘菜单由 Shell 消息手动打开，没有 PlacementTarget；显式绑定才能让命令保持有效。
+            // The tray menu is opened from a Shell message without a PlacementTarget; bind explicitly so commands remain active.
+            TrayMenu.DataContext = this;
+
             Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0));
 
             // 快照事件已在服务内调度到 UI 线程，这里只负责转发给任务栏窗口。
@@ -275,6 +279,8 @@ namespace AFMediaBar.Views.Windows
         {
             _audioControlFlyout.Hide();
             ApplyTraySessions(_mediaSessionService.CurrentSessionOptions);
+            TrayMenu.DataContext = this;
+            TrayMenu.PlacementTarget = this;
             TrayMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
             TrayMenu.IsOpen = true;
         }
