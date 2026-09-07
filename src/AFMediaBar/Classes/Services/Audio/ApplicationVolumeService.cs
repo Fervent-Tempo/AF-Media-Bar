@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using AFMediaBar.Classes.Models;
 
@@ -13,6 +12,7 @@ namespace AFMediaBar.Classes.Services.Audio;
 /// </summary>
 public sealed class ApplicationVolumeService
 {
+    private const string SystemSoundsProcessName = "AFMediaBar.SystemSounds";
     private static readonly Guid DeviceEnumeratorClassId = new("BCDE0395-E52F-467C-8E3D-C4579291692E");
     private static readonly Guid AudioSessionManager2Id = new("77AA99A0-1BD6-484F-8BC7-2C654C9A9B6F");
     private static readonly Guid VolumeEventContext = new("4F74C2B5-7E7B-4A02-ABCB-EF8FA77BD65A");
@@ -20,13 +20,16 @@ public sealed class ApplicationVolumeService
     private readonly object _gate = new();
     private readonly MediaSourceProcessResolver _processResolver;
     private readonly ApplicationIconService _iconService;
+    private readonly AudioProcessInfoService _processInfo;
 
     public ApplicationVolumeService(
         MediaSourceProcessResolver processResolver,
-        ApplicationIconService iconService)
+        ApplicationIconService iconService,
+        AudioProcessInfoService processInfo)
     {
         _processResolver = processResolver;
         _iconService = iconService;
+        _processInfo = processInfo;
     }
 
     public IReadOnlyList<ApplicationVolumeSnapshot> GetApplications(string? sourceId, string? sourceName) =>
@@ -48,7 +51,7 @@ public sealed class ApplicationVolumeService
             {
                 if (!aggregates.TryGetValue(processName, out var aggregate))
                 {
-                    aggregate = new Aggregate(processName);
+                    aggregate = new Aggregate(processName, processName == SystemSoundsProcessName);
                     aggregates.Add(processName, aggregate);
                 }
 
@@ -145,7 +148,7 @@ public sealed class ApplicationVolumeService
         }
     }
 
-    private static void ForEachSessionOnDevice(
+    private void ForEachSessionOnDevice(
         IMMDevice device,
         Action<uint, string, string?, string?, AudioSessionState, float, bool, ISimpleAudioVolume> visitor)
     {
@@ -173,8 +176,17 @@ public sealed class ApplicationVolumeService
                     }
 
                     Marshal.ThrowExceptionForHR(control2.GetProcessId(out var processId));
-                    var processName = GetProcessName(processId);
-                    if (processId == 0 || processId == Environment.ProcessId || string.IsNullOrWhiteSpace(processName))
+                    if (processId == Environment.ProcessId)
+                    {
+                        continue;
+                    }
+
+                    // Core Audio 使用 PID 0 表示系统声音。IsSystemSoundsSession 在部分会话代理上会产生错误归类。
+                    // Core Audio uses PID 0 for system sounds. IsSystemSoundsSession can misclassify proxied sessions.
+                    var processName = processId == 0
+                        ? SystemSoundsProcessName
+                        : _processInfo.GetProcessName(processId) ?? $"AFMediaBar.Process.{processId}";
+                    if (string.IsNullOrWhiteSpace(processName))
                     {
                         continue;
                     }
@@ -207,19 +219,6 @@ public sealed class ApplicationVolumeService
         }
     }
 
-    private static string? GetProcessName(uint processId)
-    {
-        try
-        {
-            using var process = Process.GetProcessById(checked((int)processId));
-            return process.ProcessName;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
     private static void Release(object? value)
     {
         if (value is not null && Marshal.IsComObject(value))
@@ -228,7 +227,7 @@ public sealed class ApplicationVolumeService
         }
     }
 
-    private sealed class Aggregate(string processName)
+    private sealed class Aggregate(string processName, bool isSystemSounds)
     {
         private double _total;
         private int _count;
@@ -237,7 +236,9 @@ public sealed class ApplicationVolumeService
         private byte[]? _iconData;
 
         public string ProcessName { get; } = processName;
-        public string DisplayName => string.IsNullOrWhiteSpace(_sessionName) || _sessionName.StartsWith('@')
+        public string DisplayName => isSystemSounds
+            ? "系统声音"
+            : string.IsNullOrWhiteSpace(_sessionName) || _sessionName.StartsWith('@')
             ? MediaSourceNameFormatter.GetDisplayName(ProcessName, ProcessName)
             : _sessionName;
 

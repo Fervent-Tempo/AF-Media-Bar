@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.IO;
 using DrawingIcon = System.Drawing.Icon;
 
@@ -12,11 +11,27 @@ public sealed class ApplicationIconService
 {
     private readonly object _gate = new();
     private readonly Dictionary<string, byte[]> _cache = new(StringComparer.OrdinalIgnoreCase);
+    private readonly AudioProcessInfoService _processInfo;
+
+    public ApplicationIconService(AudioProcessInfoService processInfo)
+    {
+        _processInfo = processInfo;
+    }
 
     /// <summary>按会话图标路径和进程路径依次读取图标。 / Reads an icon from the session path and then the process path.</summary>
     public byte[]? GetIconData(uint processId, string? sessionIconPath)
     {
-        var candidates = new[] { NormalizeIconPath(sessionIconPath), GetProcessPath(processId) }
+        var candidates = (processId == 0
+                ? new[]
+                {
+                    Path.Combine(Environment.SystemDirectory, "SndVol.exe"),
+                    NormalizeIconPath(sessionIconPath)
+                }
+                : new[]
+                {
+                    NormalizeIconPath(sessionIconPath),
+                    _processInfo.GetExecutablePath(processId)
+                })
             .Where(path => !string.IsNullOrWhiteSpace(path))
             .Distinct(StringComparer.OrdinalIgnoreCase);
 
@@ -73,19 +88,6 @@ public sealed class ApplicationIconService
             using var stream = new MemoryStream();
             icon.Save(stream);
             return stream.ToArray();
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    private static string? GetProcessPath(uint processId)
-    {
-        try
-        {
-            using var process = Process.GetProcessById(checked((int)processId));
-            return process.MainModule?.FileName;
         }
         catch
         {

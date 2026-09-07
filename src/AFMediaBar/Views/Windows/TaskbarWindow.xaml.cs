@@ -45,7 +45,10 @@ public partial class TaskbarWindow : Window
     private int _dragStartBarPrimary;
     private int _dragPrimaryLimit;
 
-    public TaskbarWindow(ITaskbarDockService taskBarService, MainWindow mainWindow)
+    public TaskbarWindow(
+        ITaskbarDockService taskBarService,
+        MainWindow mainWindow,
+        WindowAppearanceService appearanceService)
     {
         WindowHelper.SetNoActivate(this);
         InitializeComponent();
@@ -53,6 +56,7 @@ public partial class TaskbarWindow : Window
         // The context menu bindings rely on MainWindow.ViewModel
         DataContext = mainWindow;
         ContextMenuHelper.AttachOutsideClickDismissal(PlayerMenu);
+        appearanceService.Attach(PlayerMenu, this);
         MediaControl.TogglePlayPauseRequested += MediaControl_TogglePlayPauseRequested;
         MediaControl.SkipPreviousRequested += MediaControl_SkipPreviousRequested;
         MediaControl.SkipNextRequested += MediaControl_SkipNextRequested;

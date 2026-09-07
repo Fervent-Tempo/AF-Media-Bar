@@ -1,7 +1,7 @@
 ﻿using AFMediaBar.ViewModels.Windows;
+using AFMediaBar.Classes.Services;
 using Wpf.Ui;
 using Wpf.Ui.Abstractions;
-using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 
 namespace AFMediaBar.Views.Windows
@@ -13,15 +13,15 @@ namespace AFMediaBar.Views.Windows
         public SettingsWindow(
             SettingsWindowViewModel viewModel,
             INavigationViewPageProvider navigationViewPageProvider,
-            INavigationService navigationService
+            INavigationService navigationService,
+            WindowAppearanceService appearanceService
         )
         {
             ViewModel = viewModel;
             DataContext = this;
 
-            SystemThemeWatcher.Watch(this);
-
             InitializeComponent();
+            appearanceService.Attach(this);
             SetPageService(navigationViewPageProvider);
 
             navigationService.SetNavigationControl(RootNavigation);

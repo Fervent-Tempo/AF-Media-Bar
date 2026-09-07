@@ -16,6 +16,14 @@ public enum ApplicationThemeMode
     Dark = 2
 }
 
+/// <summary>应用窗口和菜单使用的背景材质。 / Background material used by application windows and menus.</summary>
+public enum ApplicationBackdropMode
+{
+    FluentSolid = 0,
+    Mica = 1,
+    Acrylic = 2
+}
+
 /// <summary>西文字体预设。 / Latin font preset.</summary>
 public enum LatinFontPreset
 {
@@ -49,7 +57,8 @@ public readonly record struct AppearanceSettings(
     int FontWeight,
     PlayerForegroundMode PlayerForegroundMode,
     bool EnhancedReadability,
-    ApplicationThemeMode ApplicationThemeMode)
+    ApplicationThemeMode ApplicationThemeMode,
+    ApplicationBackdropMode BackdropMode)
 {
     public const int MinimumFontWeight = 300;
     public const int MaximumFontWeight = 900;
@@ -60,7 +69,8 @@ public readonly record struct AppearanceSettings(
         400,
         PlayerForegroundMode.Automatic,
         false,
-        ApplicationThemeMode.Automatic);
+        ApplicationThemeMode.Automatic,
+        ApplicationBackdropMode.Mica);
 
     public AppearanceSettings Normalize() => this with
     {

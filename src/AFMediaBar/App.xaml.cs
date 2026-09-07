@@ -18,6 +18,7 @@ using AFMediaBar.Classes.Services.Audio;
 using AFMediaBar.Classes.Settings;
 using Wpf.Ui;
 using Wpf.Ui.Appearance;
+using Wpf.Ui.Controls;
 using Wpf.Ui.DependencyInjection;
 
 namespace AFMediaBar
@@ -74,6 +75,7 @@ namespace AFMediaBar
                 services.AddSingleton<MediaSourceActivationService>();
                 services.AddSingleton<MediaSessionService>();
                 services.AddSingleton<MediaSourceProcessResolver>();
+                services.AddSingleton<AudioProcessInfoService>();
                 services.AddSingleton<ApplicationIconService>();
                 services.AddSingleton<ApplicationVolumeService>();
                 services.AddSingleton<AudioDeviceService>();
@@ -82,6 +84,7 @@ namespace AFMediaBar
                 // App-owned Shell tray icon and unified mouse input monitor
                 services.AddSingleton<ShellTrayIconService>();
                 services.AddSingleton<NativeMouseInputMonitor>();
+                services.AddSingleton<WindowAppearanceService>();
 
                 // 导航服务（页面导航，不依赖具体窗口）Navigation service (page navigation, window-independent)
                 services.AddSingleton<INavigationService, NavigationService>();
@@ -131,6 +134,7 @@ namespace AFMediaBar
         /// </summary>
         private async void OnStartup(object sender, StartupEventArgs e)
         {
+            ApplicationThemeManager.Changed += ApplicationThemeManager_OnChanged;
             ApplyAppearanceResources(SettingsManager.Current.Appearance);
             SettingsManager.AppearanceSettingsChanged += SettingsManager_OnAppearanceSettingsChanged;
             await _host.StartAsync();
@@ -149,6 +153,7 @@ namespace AFMediaBar
         private async void OnExit(object sender, ExitEventArgs e)
         {
             SettingsManager.AppearanceSettingsChanged -= SettingsManager_OnAppearanceSettingsChanged;
+            ApplicationThemeManager.Changed -= ApplicationThemeManager_OnChanged;
             await _host.StopAsync();
 
             _host.Dispose();
@@ -168,10 +173,39 @@ namespace AFMediaBar
 
         private void ApplyAppearanceResources(AppearanceSettings appearance)
         {
-            ApplicationThemeManager.Apply(ResolveApplicationTheme(appearance.ApplicationThemeMode));
+            var theme = ResolveApplicationTheme(appearance.ApplicationThemeMode);
+            if (ApplicationThemeManager.GetAppTheme() != theme)
+            {
+                ApplicationThemeManager.Apply(
+                    theme,
+                    WindowBackdropType.None,
+                    updateAccent: true);
+            }
+
+            UpdateAppearanceResources(appearance, theme);
+        }
+
+        private void ApplicationThemeManager_OnChanged(ApplicationTheme theme, Color accent) =>
+            UpdateAppearanceResources(SettingsManager.Current.Appearance, theme);
+
+        private void UpdateAppearanceResources(AppearanceSettings appearance, ApplicationTheme theme)
+        {
             var fontFamily = new FontFamily(appearance.ResolveFontFamilySource(SystemFonts.MessageFontFamily.Source));
+            var fontWeight = FontWeight.FromOpenTypeWeight(appearance.FontWeight);
             Resources["AppTextFontFamily"] = fontFamily;
-            Resources["AppTextFontWeight"] = FontWeight.FromOpenTypeWeight(appearance.FontWeight);
+            Resources["ContentControlThemeFontFamily"] = fontFamily;
+            Resources["AppTextFontWeight"] = fontWeight;
+            Resources["AppTextMediumFontWeight"] = FontWeight.FromOpenTypeWeight(Math.Clamp(appearance.FontWeight + 100, 100, 999));
+            Resources["AppTextStrongFontWeight"] = FontWeight.FromOpenTypeWeight(Math.Clamp(appearance.FontWeight + 200, 100, 999));
+
+            var dark = theme == ApplicationTheme.Dark || theme == ApplicationTheme.HighContrast && SystemParameters.HighContrast;
+            var menuColor = appearance.BackdropMode == ApplicationBackdropMode.FluentSolid || SystemParameters.HighContrast
+                ? dark ? Color.FromRgb(44, 44, 44) : Color.FromRgb(249, 249, 249)
+                : Colors.Transparent;
+            var menuBrush = new SolidColorBrush(menuColor);
+            menuBrush.Freeze();
+            Resources["AppMenuBackgroundBrush"] = menuBrush;
+            Resources["ContextMenuBackground"] = menuBrush;
         }
 
         private static ApplicationTheme ResolveApplicationTheme(ApplicationThemeMode mode)

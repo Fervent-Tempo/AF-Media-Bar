@@ -44,4 +44,6 @@ public partial class ApplicationVolumeItemViewModel : ObservableObject
         VolumePercent = value;
         _isSynchronizing = false;
     }
+
+    public void AdjustVolume(int delta) => VolumePercent = Math.Clamp(VolumePercent + delta, 0, 100);
 }

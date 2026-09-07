@@ -25,10 +25,12 @@ namespace AFMediaBar.Views.Windows
         private readonly AudioControlViewModel _audioControlViewModel;
         private readonly AudioControlFlyoutWindow _audioControlFlyout;
         private readonly NativeMouseInputMonitor _mouseInputMonitor;
+        private readonly WindowAppearanceService _appearanceService;
         private TaskbarWindow? _taskbarWindow;
         private DynamicIslandWindow? _dynamicIslandWindow;
         private int _taskbarCreatedMessage;
         private bool _isSystemThemeWatcherActive;
+        private ApplicationBackdropMode? _watchedBackdropMode;
 
         // Set while Explorer restarts so windows touching the taskbar pause their work
         internal static volatile bool ExplorerRestarting = false;
@@ -39,7 +41,8 @@ namespace AFMediaBar.Views.Windows
             MediaSessionService mediaSessionService,
             AudioControlViewModel audioControlViewModel,
             AudioControlFlyoutWindow audioControlFlyout,
-            NativeMouseInputMonitor mouseInputMonitor)
+            NativeMouseInputMonitor mouseInputMonitor,
+            WindowAppearanceService appearanceService)
         {
             ViewModel = viewModel;
             DataContext = this;
@@ -49,14 +52,16 @@ namespace AFMediaBar.Views.Windows
             _audioControlViewModel = audioControlViewModel;
             _audioControlFlyout = audioControlFlyout;
             _mouseInputMonitor = mouseInputMonitor;
+            _appearanceService = appearanceService;
 
             InitializeComponent();
-            UpdateSystemThemeWatcher(SettingsManager.Current.Appearance.ApplicationThemeMode);
+            UpdateSystemThemeWatcher(SettingsManager.Current.Appearance);
 
             // 托盘菜单由 Shell 消息手动打开，没有 PlacementTarget；显式绑定才能让命令保持有效。
             // The tray menu is opened from a Shell message without a PlacementTarget; bind explicitly so commands remain active.
             TrayMenu.DataContext = this;
             ContextMenuHelper.AttachOutsideClickDismissal(TrayMenu);
+            _appearanceService.Attach(TrayMenu, this);
 
             Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0));
 
@@ -189,7 +194,7 @@ namespace AFMediaBar.Views.Windows
                 _taskbarWindow = null;
             }
 
-            _taskbarWindow = new TaskbarWindow(_taskBarService, this);
+            _taskbarWindow = new TaskbarWindow(_taskBarService, this, _appearanceService);
             _taskbarWindow.ApplyAppearanceSettings();
 
             // Replay the latest snapshot; if none exists yet, force a synchronous refresh.
@@ -253,30 +258,36 @@ namespace AFMediaBar.Views.Windows
         {
             Dispatcher.BeginInvoke(() =>
             {
-                UpdateSystemThemeWatcher(e.Appearance.ApplicationThemeMode);
+                UpdateSystemThemeWatcher(e.Appearance);
                 _taskbarWindow?.ApplyAppearanceSettings();
                 _dynamicIslandWindow?.ApplyAppearanceSettings();
             });
         }
 
-        private void UpdateSystemThemeWatcher(ApplicationThemeMode mode)
+        private void UpdateSystemThemeWatcher(AppearanceSettings appearance)
         {
-            var shouldWatch = mode == ApplicationThemeMode.Automatic;
-            if (shouldWatch == _isSystemThemeWatcherActive)
+            var shouldWatch = appearance.ApplicationThemeMode == ApplicationThemeMode.Automatic;
+            if (shouldWatch == _isSystemThemeWatcherActive &&
+                (!shouldWatch || _watchedBackdropMode == appearance.BackdropMode))
             {
                 return;
             }
 
-            if (shouldWatch)
-            {
-                SystemThemeWatcher.Watch(this);
-            }
-            else
+            if (_isSystemThemeWatcherActive)
             {
                 SystemThemeWatcher.UnWatch(this);
             }
 
+            if (shouldWatch)
+            {
+                SystemThemeWatcher.Watch(
+                    this,
+                    WindowBackdropType.None,
+                    updateAccents: true);
+            }
+
             _isSystemThemeWatcherActive = shouldWatch;
+            _watchedBackdropMode = shouldWatch ? appearance.BackdropMode : null;
         }
 
         private void ActivateWindowMode(WindowMode mode)
@@ -299,7 +310,7 @@ namespace AFMediaBar.Views.Windows
             _dynamicIslandWindow = null;
             if (_taskbarWindow is null)
             {
-                _taskbarWindow = new TaskbarWindow(_taskBarService, this);
+                _taskbarWindow = new TaskbarWindow(_taskBarService, this, _appearanceService);
                 _taskbarWindow.ApplyAppearanceSettings();
                 if (_mediaSessionService.CurrentSnapshot is { } snapshot)
                     _taskbarWindow.ApplySnapshot(snapshot);

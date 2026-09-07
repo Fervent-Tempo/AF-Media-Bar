@@ -3,8 +3,8 @@ using AFMediaBar.Classes.Settings;
 namespace AFMediaBar.ViewModels.Pages;
 
 /// <summary>
-/// 外观页 ViewModel：管理字体、播放器文字和应用主题设置。
-/// Appearance-page ViewModel: manages font, player-text, and application-theme settings.
+/// 外观页 ViewModel：管理字体、播放器文字、应用主题和窗口材质设置。
+/// Appearance-page ViewModel: manages font, player text, application theme, and window material settings.
 /// </summary>
 public partial class AppearanceViewModel : ObservableObject
 {
@@ -14,6 +14,7 @@ public partial class AppearanceViewModel : ObservableObject
     private PlayerForegroundMode _playerForegroundMode;
     private bool _enhancedReadability;
     private ApplicationThemeMode _applicationThemeMode;
+    private ApplicationBackdropMode _backdropMode;
 
     public AppearanceViewModel()
     {
@@ -24,6 +25,7 @@ public partial class AppearanceViewModel : ObservableObject
         _playerForegroundMode = appearance.PlayerForegroundMode;
         _enhancedReadability = appearance.EnhancedReadability;
         _applicationThemeMode = appearance.ApplicationThemeMode;
+        _backdropMode = appearance.BackdropMode;
     }
 
     public LatinFontPreset LatinFont
@@ -99,11 +101,26 @@ public partial class AppearanceViewModel : ObservableObject
         }
     }
 
+    public ApplicationBackdropMode BackdropMode
+    {
+        get => _backdropMode;
+        private set
+        {
+            if (SetProperty(ref _backdropMode, value))
+            {
+                Publish();
+            }
+        }
+    }
+
     [RelayCommand]
     private void SetPlayerForegroundMode(PlayerForegroundMode mode) => PlayerForegroundMode = mode;
 
     [RelayCommand]
     private void SetApplicationThemeMode(ApplicationThemeMode mode) => ApplicationThemeMode = mode;
+
+    [RelayCommand]
+    private void SetBackdropMode(ApplicationBackdropMode mode) => BackdropMode = mode;
 
     private void Publish() => SettingsManager.SetAppearanceSettings(new AppearanceSettings(
         LatinFont,
@@ -111,5 +128,6 @@ public partial class AppearanceViewModel : ObservableObject
         FontWeight,
         PlayerForegroundMode,
         EnhancedReadability,
-        ApplicationThemeMode));
+        ApplicationThemeMode,
+        BackdropMode));
 }

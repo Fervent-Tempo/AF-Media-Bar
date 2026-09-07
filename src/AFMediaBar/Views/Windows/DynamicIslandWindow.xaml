@@ -20,7 +20,7 @@
                      StaysOpen="False"
                      FontFamily="{DynamicResource AppTextFontFamily}"
                      FontWeight="{DynamicResource AppTextFontWeight}"
-                     Background="{DynamicResource ApplicationBackgroundBrush}"
+                     Background="{DynamicResource AppMenuBackgroundBrush}"
                      Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                      BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                      BorderThickness="1"

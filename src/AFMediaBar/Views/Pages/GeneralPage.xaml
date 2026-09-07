@@ -17,14 +17,14 @@
                 VerticalAlignment="Center">
         <TextBlock Text="常规"
                    FontSize="32"
-                   FontWeight="SemiBold" />
+                   FontWeight="{DynamicResource AppTextStrongFontWeight}" />
         <ui:TextBlock Text="管理启动、语言、更新和基础信息"
                       Appearance="Secondary"
                       Margin="0,8,0,28" />
 
         <TextBlock Text="快速入口"
                    FontSize="18"
-                   FontWeight="SemiBold"
+                   FontWeight="{DynamicResource AppTextStrongFontWeight}"
                    Margin="0,0,0,12" />
         <Grid ColumnDefinitions="*, *, *"
               Margin="0,0,0,32">
@@ -38,7 +38,7 @@
                 </ui:CardAction.Icon>
                 <StackPanel>
                     <ui:TextBlock Text="GitHub"
-                                  FontWeight="SemiBold" />
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
                     <ui:TextBlock Text="查看源码和发布页"
                                   Appearance="Secondary"
                                   FontSize="12" />
@@ -55,7 +55,7 @@
                 </ui:CardAction.Icon>
                 <StackPanel>
                     <ui:TextBlock Text="问题反馈"
-                                  FontWeight="SemiBold" />
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
                     <ui:TextBlock Text="提交 Bug 或功能建议"
                                   Appearance="Secondary"
                                   FontSize="12" />
@@ -72,7 +72,7 @@
                 </ui:CardAction.Icon>
                 <StackPanel>
                     <ui:TextBlock Text="日志文件"
-                                  FontWeight="SemiBold" />
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
                     <ui:TextBlock Text="打开本地运行日志"
                                   Appearance="Secondary"
                                   FontSize="12" />
@@ -82,14 +82,14 @@
 
         <TextBlock Text="基础设置"
                    FontSize="18"
-                   FontWeight="SemiBold"
+                   FontWeight="{DynamicResource AppTextStrongFontWeight}"
                    Margin="0,0,0,12" />
         <ui:CardControl Margin="0,0,0,8"
                         Icon="{ui:SymbolIcon ShareScreenStart24}">
             <ui:CardControl.Header>
                 <StackPanel>
                     <ui:TextBlock Text="开机自动启动"
-                                  FontWeight="SemiBold" />
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
                     <ui:TextBlock Text="登录 Windows 后自动运行 AF Media Bar"
                                   Appearance="Secondary"
                                   FontSize="12" />
@@ -103,7 +103,7 @@
             <ui:CardControl.Header>
                 <StackPanel>
                     <ui:TextBlock Text="无媒体时隐藏"
-                                  FontWeight="SemiBold" />
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
                     <ui:TextBlock Text="没有正在播放的内容时隐藏媒体栏"
                                   Appearance="Secondary"
                                   FontSize="12" />
@@ -117,7 +117,7 @@
             <ui:CardControl.Header>
                 <StackPanel>
                     <ui:TextBlock Text="界面语言"
-                                  FontWeight="SemiBold" />
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
                     <ui:TextBlock Text="选择应用显示语言"
                                   Appearance="Secondary"
                                   FontSize="12" />
@@ -136,7 +136,7 @@
                         Icon="{ui:SymbolIcon Settings24}">
             <ui:CardControl.Header>
                 <StackPanel>
-                    <ui:TextBlock Text="托盘滚轮行为" FontWeight="SemiBold" />
+                    <ui:TextBlock Text="托盘滚轮行为" FontWeight="{DynamicResource AppTextStrongFontWeight}" />
                     <ui:TextBlock Text="选择托盘图标的默认滚轮操作"
                                   Appearance="Secondary" FontSize="12" />
                 </StackPanel>
@@ -152,14 +152,14 @@
 
         <TextBlock Text="更新"
                    FontSize="18"
-                   FontWeight="SemiBold"
+                   FontWeight="{DynamicResource AppTextStrongFontWeight}"
                    Margin="0,0,0,12" />
         <ui:CardControl Margin="0,0,0,8"
                         Icon="{ui:SymbolIcon ArrowSync24}">
             <ui:CardControl.Header>
                 <StackPanel>
                     <ui:TextBlock Text="自动检查更新"
-                                  FontWeight="SemiBold" />
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
                     <ui:TextBlock Text="启动时在后台检查新版本"
                                   Appearance="Secondary"
                                   FontSize="12" />
@@ -173,7 +173,7 @@
             <ui:CardControl.Header>
                 <StackPanel>
                     <ui:TextBlock Text="检查更新"
-                                  FontWeight="SemiBold" />
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
                     <ui:TextBlock Text="手动获取最新版本信息"
                                   Appearance="Secondary"
                                   FontSize="12" />

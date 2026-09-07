@@ -4,6 +4,7 @@ using System.Windows.Interop;
 using AFMediaBar.Classes.Interop;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Models.Layout;
+using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Utils;
 using AFMediaBar.ViewModels.Windows;
@@ -31,13 +32,14 @@ public partial class DynamicIslandWindow : Window
     private Point? _positionAnimationTarget;
     private bool _positionAnimationActive;
 
-    public DynamicIslandWindow(MainWindowViewModel viewModel)
+    public DynamicIslandWindow(MainWindowViewModel viewModel, WindowAppearanceService appearanceService)
     {
         WindowHelper.SetNoActivate(this);
         InitializeComponent();
         _viewModel = viewModel;
         DataContext = new MainWindowDataContext(viewModel);
         ContextMenuHelper.AttachOutsideClickDismissal(PlayerMenu);
+        appearanceService.Attach(PlayerMenu, this);
         MediaControl.TogglePlayPauseRequested += MediaControl_TogglePlayPauseRequested;
         MediaControl.SkipPreviousRequested += MediaControl_SkipPreviousRequested;
         MediaControl.SkipNextRequested += MediaControl_SkipNextRequested;

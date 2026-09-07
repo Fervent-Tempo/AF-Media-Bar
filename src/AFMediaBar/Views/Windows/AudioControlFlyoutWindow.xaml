@@ -6,32 +6,31 @@
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:converters="clr-namespace:AFMediaBar.Classes.Converters"
         Title="音频控制"
-        Width="380"
-        MinHeight="500"
+        Width="230"
         SizeToContent="Height"
-        MaxHeight="560"
+        MaxHeight="440"
         ShowInTaskbar="False"
         Topmost="True"
-        WindowBackdropType="Acrylic"
         WindowCornerPreference="Round"
         ExtendsContentIntoTitleBar="True"
         FontFamily="{DynamicResource AppTextFontFamily}"
         FontWeight="{DynamicResource AppTextFontWeight}"
         Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+        Background="Transparent"
         Deactivated="Window_OnDeactivated"
         mc:Ignorable="d"
         d:DesignHeight="500">
     <ui:FluentWindow.Resources>
         <converters:ByteArrayToImageSourceConverter x:Key="ByteArrayToImageSourceConverter" />
     </ui:FluentWindow.Resources>
-    <Border Margin="10"
-            Padding="20"
+    <Border Margin="4"
+            Padding="10"
             CornerRadius="8"
-            Background="{DynamicResource ControlFillColorDefaultBrush}"
+            Background="Transparent"
             BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
             BorderThickness="1">
         <Border.Effect>
-            <DropShadowEffect BlurRadius="22" ShadowDepth="4" Opacity="0.28" />
+            <DropShadowEffect BlurRadius="16" ShadowDepth="3" Opacity="0.24" />
         </Border.Effect>
         <Grid>
             <Grid.RowDefinitions>
@@ -39,18 +38,18 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <Grid Margin="0,0,0,16">
+            <Grid Margin="0,0,0,8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <TextBlock Text="音频控制" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <TextBlock Text="音频控制" FontSize="16" FontWeight="{DynamicResource AppTextStrongFontWeight}" VerticalAlignment="Center" />
                 <ui:Button Grid.Column="1"
-                           Width="32" Height="32"
+                           Width="26" Height="26"
                            Padding="0"
                            Command="{Binding RefreshCommand}"
                            ToolTip="刷新音频状态">
@@ -62,8 +61,8 @@
                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,6" />
             <ComboBox x:Name="OutputDeviceComboBox"
                       Grid.Row="2"
-                      MinHeight="40"
-                      MaxDropDownHeight="280"
+                      MinHeight="32"
+                      MaxDropDownHeight="240"
                       ItemsSource="{Binding OutputDevices}"
                       DisplayMemberPath="DisplayName"
                       SelectedItem="{Binding SelectedOutputDevice, Mode=TwoWay}"
@@ -72,9 +71,9 @@
                       PreviewMouseWheel="OutputDevice_OnPreviewMouseWheel" />
 
             <Button Grid.Row="3"
-                    MinHeight="48"
-                    Margin="0,10,0,16"
-                    Padding="12,7"
+                    MinHeight="38"
+                    Margin="0,7,0,10"
+                    Padding="8,4"
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Stretch"
                     Command="{Binding OpenSpatialAudioSettingsCommand}">
@@ -84,7 +83,7 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <StackPanel>
-                        <TextBlock Text="空间音效" FontWeight="SemiBold" FontSize="14" />
+                        <TextBlock Text="空间音效" FontWeight="{DynamicResource AppTextStrongFontWeight}" FontSize="13" />
                         <TextBlock Text="{Binding SpatialAudioText}" FontSize="12"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                     </StackPanel>
@@ -99,22 +98,26 @@
                 </Grid.RowDefinitions>
                 <TextBlock Text="应用音量" FontSize="13"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,6" />
-                <ScrollViewer Grid.Row="1" MaxHeight="280" VerticalScrollBarVisibility="Auto">
+                <ScrollViewer Grid.Row="1"
+                              MaxHeight="114"
+                              PanningMode="VerticalOnly"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
                     <ItemsControl ItemsSource="{Binding Applications}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Grid Margin="0,5">
+                                <Grid Height="38">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="34" />
-                                        <ColumnDefinition Width="110" />
+                                        <ColumnDefinition Width="26" />
                                         <ColumnDefinition />
-                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="66" />
+                                        <ColumnDefinition Width="38" />
                                     </Grid.ColumnDefinitions>
-                                    <Border Width="28" Height="28" CornerRadius="4"
+                                    <Border Width="22" Height="22" CornerRadius="4"
                                             Background="{DynamicResource ControlFillColorSecondaryBrush}">
                                         <Grid>
                                             <TextBlock Text="{Binding Initial}" HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center" FontWeight="SemiBold">
+                                                       VerticalAlignment="Center" FontWeight="{DynamicResource AppTextStrongFontWeight}">
                                                 <TextBlock.Style>
                                                     <Style TargetType="TextBlock">
                                                         <Setter Property="Visibility" Value="Collapsed" />
@@ -126,26 +129,31 @@
                                                     </Style>
                                                 </TextBlock.Style>
                                             </TextBlock>
-                                            <Image Width="24" Height="24"
+                                            <Image Width="18" Height="18"
                                                    Source="{Binding IconData, Converter={StaticResource ByteArrayToImageSourceConverter}}"
                                                    Stretch="Uniform" />
                                         </Grid>
                                     </Border>
-                                    <TextBlock Grid.Column="1" Text="{Binding DisplayName}" Margin="8,0"
+                                    <TextBlock Grid.Column="1" Text="{Binding DisplayName}" Margin="5,0"
                                                VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock">
-                                                <Setter Property="FontWeight" Value="Normal" />
+                                                <Setter Property="FontWeight" Value="{DynamicResource AppTextFontWeight}" />
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding IsCurrentMedia}" Value="True">
-                                                        <Setter Property="FontWeight" Value="SemiBold" />
+                                                        <Setter Property="FontWeight" Value="{DynamicResource AppTextStrongFontWeight}" />
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
                                         </TextBlock.Style>
                                     </TextBlock>
                                     <Slider Grid.Column="2" Minimum="0" Maximum="100"
+                                            Margin="0,0,8,0"
                                             Value="{Binding VolumePercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            IsMoveToPointEnabled="True"
+                                            LargeChange="10"
+                                            SmallChange="2"
+                                            PreviewMouseWheel="ApplicationVolumeSlider_OnPreviewMouseWheel"
                                             VerticalAlignment="Center" />
                                     <TextBlock Grid.Column="3" Text="{Binding VolumePercent, StringFormat={}{0}%}"
                                                HorizontalAlignment="Right" VerticalAlignment="Center" />
@@ -156,7 +164,7 @@
                 </ScrollViewer>
             </Grid>
 
-            <TextBlock Grid.Row="5" Text="{Binding StatusText}" Margin="0,10,0,0"
+            <TextBlock Grid.Row="5" Text="{Binding StatusText}" Margin="0,6,0,0"
                        FontSize="12" TextWrapping="Wrap"
                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
         </Grid>

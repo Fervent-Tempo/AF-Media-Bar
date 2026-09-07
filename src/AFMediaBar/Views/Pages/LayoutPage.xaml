@@ -21,21 +21,21 @@
                 VerticalAlignment="Center">
         <TextBlock Text="布局"
                    FontSize="32"
-                   FontWeight="SemiBold" />
+                   FontWeight="{DynamicResource AppTextStrongFontWeight}" />
         <ui:TextBlock Text="调整窗口模式、排列方式和尺寸"
                       Appearance="Secondary"
                       Margin="0,8,0,28" />
 
         <TextBlock Text="窗口"
                    FontSize="18"
-                   FontWeight="SemiBold"
+                   FontWeight="{DynamicResource AppTextStrongFontWeight}"
                    Margin="0,0,0,12" />
         <ui:CardControl Margin="0,0,0,8"
                         Icon="{ui:SymbolIcon WindowConsole20}">
             <ui:CardControl.Header>
                 <StackPanel>
                     <ui:TextBlock Text="窗口模式"
-                                  FontWeight="SemiBold" />
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
                     <ui:TextBlock Text="选择媒体栏的承载方式"
                                   Appearance="Secondary"
                                   FontSize="12" />
@@ -60,7 +60,7 @@
             <ui:CardControl.Header>
                 <StackPanel>
                     <ui:TextBlock Text="排列方式"
-                                  FontWeight="SemiBold" />
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
                     <ui:TextBlock Text="设置媒体内容的排列方向"
                                   Appearance="Secondary"
                                   FontSize="12" />
@@ -87,14 +87,14 @@
         <StackPanel Visibility="{Binding ViewModel.IsDynamicIslandMode, Converter={StaticResource BooleanToVisibilityConverter}}">
             <TextBlock Text="灵动岛外观"
                        FontSize="18"
-                       FontWeight="SemiBold"
+                       FontWeight="{DynamicResource AppTextStrongFontWeight}"
                        Margin="0,0,0,12" />
             <ui:CardControl Margin="0,0,0,24"
                             Icon="{ui:SymbolIcon ColorBackground20}">
                 <ui:CardControl.Header>
                     <StackPanel>
                         <ui:TextBlock Text="背景方案"
-                                      FontWeight="SemiBold" />
+                                      FontWeight="{DynamicResource AppTextStrongFontWeight}" />
                         <ui:TextBlock Text="使用系统主题配色或透明背景"
                                       Appearance="Secondary"
                                       FontSize="12" />
@@ -116,14 +116,14 @@
 
         <TextBlock Text="尺寸"
                    FontSize="18"
-                   FontWeight="SemiBold"
+                   FontWeight="{DynamicResource AppTextStrongFontWeight}"
                    Margin="0,0,0,12" />
         <ui:CardControl Margin="0,0,0,8"
                         Icon="{ui:SymbolIcon ResizeLarge24}">
             <ui:CardControl.Header>
                 <StackPanel>
                     <ui:TextBlock Text="长度缩放"
-                                  FontWeight="SemiBold" />
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
                     <ui:TextBlock Text="调整媒体栏的长度（调节标题和歌词长度）"
                                   Appearance="Secondary"
                                   FontSize="12" />
@@ -152,7 +152,7 @@
             <ui:CardControl.Header>
                 <StackPanel>
                     <ui:TextBlock Text="粗细缩放"
-                                  FontWeight="SemiBold" />
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
                     <ui:TextBlock Text="调整媒体栏厚度（按比例缩放内容大小）"
                                   Appearance="Secondary"
                                   FontSize="12" />
@@ -182,7 +182,7 @@
             <ui:CardControl.Header>
                 <StackPanel>
                     <ui:TextBlock Text="边缘偏移"
-                                  FontWeight="SemiBold" />
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
                     <ui:TextBlock Text="水平任务栏上下移动，垂直任务栏左右移动"
                                   Appearance="Secondary"
                                   FontSize="12" />
@@ -208,14 +208,14 @@
 
         <TextBlock Text="位置"
                    FontSize="18"
-                   FontWeight="SemiBold"
+                   FontWeight="{DynamicResource AppTextStrongFontWeight}"
                    Margin="0,0,0,12" />
         <ui:CardControl Margin="0,0,0,8"
                         Icon="{ui:SymbolIcon DesktopArrowRight24}">
             <ui:CardControl.Header>
                 <StackPanel>
                     <ui:TextBlock Text="避开任务栏"
-                                  FontWeight="SemiBold" />
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
                     <ui:TextBlock Text="自动调整位置以避免遮挡任务栏"
                                   Appearance="Secondary"
                                   FontSize="12" />
@@ -229,7 +229,7 @@
             <ui:CardControl.Header>
                 <StackPanel>
                     <ui:TextBlock Text="锁定位置"
-                                  FontWeight="SemiBold" />
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
                     <ui:TextBlock Text="固定媒体栏当前位置"
                                   Appearance="Secondary"
                                   FontSize="12" />
@@ -242,7 +242,7 @@
             <ui:CardControl.Header>
                 <StackPanel>
                     <ui:TextBlock Text="重置位置"
-                                  FontWeight="SemiBold" />
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
                     <ui:TextBlock Text="恢复默认位置"
                                   Appearance="Secondary"
                                   FontSize="12" />

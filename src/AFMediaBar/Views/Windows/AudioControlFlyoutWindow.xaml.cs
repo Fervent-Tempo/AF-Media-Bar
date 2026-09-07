@@ -1,8 +1,10 @@
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Interop;
 using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Services;
 using AFMediaBar.ViewModels.Windows;
 using Wpf.Ui.Controls;
 
@@ -15,11 +17,12 @@ public partial class AudioControlFlyoutWindow : FluentWindow
 
     public AudioControlViewModel ViewModel { get; }
 
-    public AudioControlFlyoutWindow(AudioControlViewModel viewModel)
+    public AudioControlFlyoutWindow(AudioControlViewModel viewModel, WindowAppearanceService appearanceService)
     {
         ViewModel = viewModel;
         DataContext = viewModel;
         InitializeComponent();
+        appearanceService.Attach(this);
     }
 
     public async Task ToggleAsync(TrayIconBounds? bounds)
@@ -65,6 +68,16 @@ public partial class AudioControlFlyoutWindow : FluentWindow
     {
         ViewModel.PreviewOutputDeviceWheel(e.Delta);
         e.Handled = true;
+    }
+
+    private void ApplicationVolumeSlider_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (sender is Slider { DataContext: ApplicationVolumeItemViewModel application })
+        {
+            var notches = Math.Max(1, Math.Abs(e.Delta) / Mouse.MouseWheelDeltaForOneLine);
+            application.AdjustVolume((e.Delta > 0 ? 1 : -1) * notches * 2);
+            e.Handled = true;
+        }
     }
 
     private void OutputDevice_OnDropDownOpened(object sender, EventArgs e) =>

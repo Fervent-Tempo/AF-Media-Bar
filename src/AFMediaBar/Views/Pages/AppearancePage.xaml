@@ -10,35 +10,39 @@
       d:DesignHeight="900"
       d:DesignWidth="1100"
       Title="AppearancePage"
+      Background="Transparent"
       Foreground="{DynamicResource TextFillColorPrimaryBrush}">
 
     <Page.Resources>
         <converters:GenericEnumToBooleanConverter x:Key="EnumToBooleanConverter" />
     </Page.Resources>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto"
-                  HorizontalScrollBarVisibility="Disabled">
+    <ScrollViewer x:Name="AppearanceScrollViewer"
+                  Background="Transparent"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled"
+                  PanningMode="VerticalOnly">
     <StackPanel MaxWidth="1000"
                 Margin="16,16,16,24"
                 TextElement.FontFamily="{DynamicResource AppTextFontFamily}"
                 TextElement.FontWeight="{DynamicResource AppTextFontWeight}">
         <TextBlock Text="外观"
                    FontSize="32"
-                   FontWeight="SemiBold" />
+                   FontWeight="{DynamicResource AppTextStrongFontWeight}" />
         <ui:TextBlock Text="调整字体、文字颜色和应用主题"
                       Appearance="Secondary"
                       Margin="0,8,0,28" />
 
         <TextBlock Text="字体"
                    FontSize="18"
-                   FontWeight="SemiBold"
+                   FontWeight="{DynamicResource AppTextStrongFontWeight}"
                    Margin="0,0,0,12" />
         <ui:CardControl Margin="0,0,0,8"
                         Icon="{ui:SymbolIcon TextFont24}">
             <ui:CardControl.Header>
                 <StackPanel>
                     <ui:TextBlock Text="界面字体"
-                                  FontWeight="SemiBold" />
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
                     <ui:TextBlock Text="分别选择西文和中文字体"
                                   Appearance="Secondary"
                                   FontSize="12" />
@@ -78,7 +82,7 @@
             <ui:CardControl.Header>
                 <StackPanel>
                     <ui:TextBlock Text="字重"
-                                  FontWeight="SemiBold" />
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
                     <ui:TextBlock Text="调整界面文字的粗细"
                                   Appearance="Secondary"
                                   FontSize="12" />
@@ -107,7 +111,7 @@
             <ui:CardControl.Header>
                 <StackPanel>
                     <ui:TextBlock Text="字体预览"
-                                  FontWeight="SemiBold" />
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
                     <ui:TextBlock Text="预览当前选择的字体效果"
                                   Appearance="Secondary"
                                   FontSize="12" />
@@ -121,14 +125,14 @@
 
         <TextBlock Text="播放器文字"
                    FontSize="18"
-                   FontWeight="SemiBold"
+                   FontWeight="{DynamicResource AppTextStrongFontWeight}"
                    Margin="0,0,0,12" />
         <ui:CardControl Margin="0,0,0,8"
                         Icon="{ui:SymbolIcon TextColor24}">
             <ui:CardControl.Header>
                 <StackPanel>
                     <ui:TextBlock Text="文字颜色"
-                                  FontWeight="SemiBold" />
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
                     <ui:TextBlock Text="选择媒体栏文字的颜色模式"
                                   Appearance="Secondary"
                                   FontSize="12" />
@@ -160,7 +164,7 @@
             <ui:CardControl.Header>
                 <StackPanel>
                     <ui:TextBlock Text="增强可读性"
-                                  FontWeight="SemiBold" />
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
                     <ui:TextBlock Text="为文字增加背景以提升对比度"
                                   Appearance="Secondary"
                                   FontSize="12" />
@@ -171,13 +175,14 @@
 
         <TextBlock Text="应用主题"
                    FontSize="18"
-                   FontWeight="SemiBold"
+                   FontWeight="{DynamicResource AppTextStrongFontWeight}"
                    Margin="0,0,0,12" />
-        <ui:CardControl Icon="{ui:SymbolIcon Color24}">
+        <ui:CardControl Margin="0,0,0,8"
+                        Icon="{ui:SymbolIcon Color24}">
             <ui:CardControl.Header>
                 <StackPanel>
                     <ui:TextBlock Text="应用主题"
-                                  FontWeight="SemiBold" />
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
                     <ui:TextBlock Text="选择整个程序界面的明暗外观"
                                   Appearance="Secondary"
                                   FontSize="12" />
@@ -201,6 +206,37 @@
                              IsChecked="{Binding ViewModel.ApplicationThemeMode, Mode=OneWay, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Dark}"
                              Command="{Binding ViewModel.SetApplicationThemeModeCommand}"
                              CommandParameter="{x:Static settings:ApplicationThemeMode.Dark}" />
+            </StackPanel>
+        </ui:CardControl>
+
+        <ui:CardControl Icon="{ui:SymbolIcon WindowConsole20}">
+            <ui:CardControl.Header>
+                <StackPanel>
+                    <ui:TextBlock Text="背景材质"
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
+                    <ui:TextBlock Text="统一设置窗口、托盘弹窗和右键菜单的背景效果"
+                                  Appearance="Secondary"
+                                  FontSize="12" />
+                </StackPanel>
+            </ui:CardControl.Header>
+            <StackPanel Orientation="Horizontal">
+                <RadioButton Content="Fluent 纯色"
+                             GroupName="BackdropMode"
+                             IsChecked="{Binding ViewModel.BackdropMode, Mode=OneWay, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=FluentSolid}"
+                             Command="{Binding ViewModel.SetBackdropModeCommand}"
+                             CommandParameter="{x:Static settings:ApplicationBackdropMode.FluentSolid}"
+                             Margin="0,0,12,0" />
+                <RadioButton Content="Mica 云母"
+                             GroupName="BackdropMode"
+                             IsChecked="{Binding ViewModel.BackdropMode, Mode=OneWay, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Mica}"
+                             Command="{Binding ViewModel.SetBackdropModeCommand}"
+                             CommandParameter="{x:Static settings:ApplicationBackdropMode.Mica}"
+                             Margin="0,0,12,0" />
+                <RadioButton Content="Acrylic 亚克力"
+                             GroupName="BackdropMode"
+                             IsChecked="{Binding ViewModel.BackdropMode, Mode=OneWay, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Acrylic}"
+                             Command="{Binding ViewModel.SetBackdropModeCommand}"
+                             CommandParameter="{x:Static settings:ApplicationBackdropMode.Acrylic}" />
             </StackPanel>
         </ui:CardControl>
     </StackPanel>

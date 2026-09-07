@@ -21,7 +21,7 @@
     FontFamily="{DynamicResource AppTextFontFamily}"
     FontWeight="{DynamicResource AppTextFontWeight}"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-    WindowBackdropType="Mica"
+    Background="Transparent"
     WindowCornerPreference="Round"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
@@ -43,7 +43,7 @@
         </ui:TitleBar>
         <ui:NavigationView
             x:Name="RootNavigation"
-            BreadcrumbBar="{Binding ElementName=BreadcrumbBar}"
+            Background="Transparent"
             FrameMargin="0"
             IsBackButtonVisible="Visible"
             IsPaneToggleVisible="true"

@@ -23,8 +23,8 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     private readonly MediaSessionService _mediaSessionService;
     private readonly ShellTrayIconService _trayIconService;
     private readonly NativeMouseInputMonitor _mouseInputMonitor;
-    private readonly Dictionary<string, CancellationTokenSource> _volumeDelays = new(StringComparer.OrdinalIgnoreCase);
-    private CancellationTokenSource? _deviceDelay;
+    private readonly Dictionary<string, int> _volumeApplyVersions = new(StringComparer.OrdinalIgnoreCase);
+    private int _deviceApplyVersion;
     private bool _isRefreshing;
     private int _pendingTrayVolumeSteps;
     private bool _isProcessingTrayVolume;
@@ -156,23 +156,23 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
 
     private void QueueOutputDevice(AudioDeviceOption device)
     {
-        _deviceDelay?.Cancel();
-        _deviceDelay?.Dispose();
-        _deviceDelay = new CancellationTokenSource();
-        _ = ApplyOutputDeviceAfterDelayAsync(device, _deviceDelay.Token);
+        var version = ++_deviceApplyVersion;
+        _ = ApplyOutputDeviceAfterDelayAsync(device, version);
         SetTrayTooltip($"输出设备：{device.DisplayName}");
     }
 
-    private async Task ApplyOutputDeviceAfterDelayAsync(AudioDeviceOption device, CancellationToken cancellationToken)
+    private async Task ApplyOutputDeviceAfterDelayAsync(AudioDeviceOption device, int version)
     {
         try
         {
-            await Task.Delay(DeviceApplyDelay, cancellationToken);
-            await Task.Run(() => _deviceService.SetDefaultRenderDevice(device.PolicyId), cancellationToken);
+            await Task.Delay(DeviceApplyDelay);
+            if (_disposed || version != _deviceApplyVersion)
+            {
+                return;
+            }
+
+            await Task.Run(() => _deviceService.SetDefaultRenderDevice(device.PolicyId));
             await RefreshAsync();
-        }
-        catch (OperationCanceledException)
-        {
         }
         catch (Exception exception)
         {
@@ -183,29 +183,25 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
 
     private void QueueApplicationVolume(ApplicationVolumeItemViewModel application, int volumePercent)
     {
-        if (_volumeDelays.Remove(application.ProcessName, out var oldDelay))
-        {
-            oldDelay.Cancel();
-            oldDelay.Dispose();
-        }
-
-        var delay = new CancellationTokenSource();
-        _volumeDelays[application.ProcessName] = delay;
-        _ = ApplyApplicationVolumeAfterDelayAsync(application, volumePercent, delay);
+        var version = _volumeApplyVersions.GetValueOrDefault(application.ProcessName) + 1;
+        _volumeApplyVersions[application.ProcessName] = version;
+        _ = ApplyApplicationVolumeAfterDelayAsync(application, volumePercent, version);
     }
 
     private async Task ApplyApplicationVolumeAfterDelayAsync(
         ApplicationVolumeItemViewModel application,
         int volumePercent,
-        CancellationTokenSource delay)
+        int version)
     {
         try
         {
-            await Task.Delay(VolumeApplyDelay, delay.Token);
-            await Task.Run(() => _volumeService.SetApplicationVolume(application.ProcessName, volumePercent), delay.Token);
-        }
-        catch (OperationCanceledException)
-        {
+            await Task.Delay(VolumeApplyDelay);
+            if (_disposed || !_volumeApplyVersions.TryGetValue(application.ProcessName, out var current) || current != version)
+            {
+                return;
+            }
+
+            await Task.Run(() => _volumeService.SetApplicationVolume(application.ProcessName, volumePercent));
         }
         catch (Exception exception)
         {
@@ -213,10 +209,9 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         }
         finally
         {
-            if (_volumeDelays.TryGetValue(application.ProcessName, out var current) && ReferenceEquals(current, delay))
+            if (_volumeApplyVersions.TryGetValue(application.ProcessName, out var current) && current == version)
             {
-                _volumeDelays.Remove(application.ProcessName);
-                delay.Dispose();
+                _volumeApplyVersions.Remove(application.ProcessName);
             }
         }
     }
@@ -417,13 +412,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         _mediaSessionService.SnapshotChanged -= OnMediaSnapshotChanged;
         SettingsManager.TrayWheelBehaviorChanged -= OnTrayWheelBehaviorChanged;
         _mouseInputMonitor.Dispose();
-        _deviceDelay?.Cancel();
-        _deviceDelay?.Dispose();
-        foreach (var delay in _volumeDelays.Values)
-        {
-            delay.Cancel();
-            delay.Dispose();
-        }
-        _volumeDelays.Clear();
+        _deviceApplyVersion++;
+        _volumeApplyVersions.Clear();
     }
 }
