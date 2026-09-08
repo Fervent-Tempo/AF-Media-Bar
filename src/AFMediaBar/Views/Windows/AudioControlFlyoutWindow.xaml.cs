@@ -14,7 +14,6 @@ namespace AFMediaBar.Views.Windows;
 public partial class AudioControlFlyoutWindow : FluentWindow
 {
     private bool _isOutputDeviceDropDownOpen;
-    private bool _isOutputDeviceWheelInteraction;
 
     public AudioControlViewModel ViewModel { get; }
 
@@ -67,25 +66,8 @@ public partial class AudioControlFlyoutWindow : FluentWindow
 
     private void OutputDevice_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
-        _isOutputDeviceWheelInteraction = true;
-        try
-        {
-            ViewModel.PreviewOutputDeviceWheel(e.Delta);
-            e.Handled = true;
-        }
-        finally
-        {
-            _isOutputDeviceWheelInteraction = false;
-        }
-    }
-
-    private void OutputDevice_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (!_isOutputDeviceWheelInteraction &&
-            sender is ComboBox { SelectedItem: AudioDeviceOption device })
-        {
-            ViewModel.ApplyOutputDeviceImmediately(device);
-        }
+        ViewModel.PreviewOutputDeviceWheel(e.Delta);
+        e.Handled = true;
     }
 
     private void ApplicationVolumeSlider_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)

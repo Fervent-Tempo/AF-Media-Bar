@@ -67,7 +67,6 @@
                       ItemsSource="{Binding OutputDevices}"
                       DisplayMemberPath="DisplayName"
                       SelectedItem="{Binding SelectedOutputDevice, Mode=TwoWay}"
-                      SelectionChanged="OutputDevice_OnSelectionChanged"
                       DropDownOpened="OutputDevice_OnDropDownOpened"
                       DropDownClosed="OutputDevice_OnDropDownClosed"
                       PreviewMouseWheel="OutputDevice_OnPreviewMouseWheel" />

@@ -58,8 +58,8 @@ public class AppSettings
     /// <summary>字体、播放器文字与应用主题设置。 / Font, player text, and application-theme settings.</summary>
     public AppearanceSettings Appearance { get; set; } = AppearanceSettings.Default;
 
-    /// <summary>托盘图标滚轮行为；Shift + 滚轮执行另一项音频操作。 / Tray wheel behavior; Shift+wheel performs the alternate audio action.</summary>
-    public TrayWheelBehavior TrayWheelBehavior { get; set; } = TrayWheelBehavior.AdjustVolume;
+    /// <summary>托盘图标滚轮行为。 / Tray-wheel behavior.</summary>
+    public TrayWheelBehavior TrayWheelBehavior { get; set; } = TrayWheelBehavior.SwitchOutputDevice;
 
     /// <summary>是否启用任务栏媒体栏（停靠到任务栏）Whether the media bar is docked into the taskbar.</summary>
     public bool TaskbarBarEnabled { get; set; } = true;

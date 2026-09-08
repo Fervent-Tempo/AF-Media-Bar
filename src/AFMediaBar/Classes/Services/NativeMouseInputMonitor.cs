@@ -4,7 +4,7 @@ using AFMediaBar.Classes.Interop;
 
 namespace AFMediaBar.Classes.Services;
 
-public sealed record TrayWheelEventArgs(int Delta, bool IsShiftPressed);
+public sealed record TrayWheelEventArgs(int Delta);
 public sealed record NativeMouseButtonEventArgs(int ScreenX, int ScreenY);
 
 /// <summary>
@@ -57,8 +57,7 @@ public sealed class NativeMouseInputMonitor : IDisposable
                     _trayIcon.TryGetBounds(out var bounds) && bounds.Contains(data.Point.X, data.Point.Y))
                 {
                     var delta = unchecked((short)(data.MouseData >> 16));
-                    var shift = (NativeMethods.GetKeyState(NativeMethods.VK_SHIFT) & 0x8000) != 0;
-                    Post(() => WheelChanged?.Invoke(this, new TrayWheelEventArgs(delta, shift)));
+                    Post(() => WheelChanged?.Invoke(this, new TrayWheelEventArgs(delta)));
                 }
                 else if (wParam.ToInt32() == NativeMethods.WM_LBUTTONDOWN)
                 {

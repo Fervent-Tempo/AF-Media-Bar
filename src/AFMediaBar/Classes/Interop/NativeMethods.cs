@@ -41,7 +41,6 @@ public static partial class NativeMethods
     public const int NIN_KEYSELECT = 0x0401;
     public const int NIN_POPUPOPEN = 0x0406;
     public const int WH_MOUSE_LL = 14;
-    public const int VK_SHIFT = 0x10;
 
     // Shell notification icon protocol
     public const uint NIM_ADD = 0;
@@ -259,9 +258,6 @@ public static partial class NativeMethods
 
     [DllImport("user32.dll")]
     public static extern IntPtr CallNextHookEx(IntPtr hook, int code, IntPtr wParam, IntPtr lParam);
-
-    [DllImport("user32.dll")]
-    public static extern short GetKeyState(int virtualKey);
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     public static extern IntPtr GetModuleHandle(string? moduleName);

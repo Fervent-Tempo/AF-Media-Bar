@@ -26,6 +26,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     private readonly Dictionary<string, int> _volumeApplyVersions = new(StringComparer.OrdinalIgnoreCase);
     private int _deviceApplyVersion;
     private bool _isRefreshing;
+    private bool _isPreviewingOutputDevice;
     private int _pendingTrayVolumeSteps;
     private bool _isProcessingTrayVolume;
     private int _tooltipRefreshVersion;
@@ -143,15 +144,16 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
 
         var current = Math.Max(0, SelectedOutputDevice is null ? 0 : OutputDevices.IndexOf(SelectedOutputDevice));
         var steps = WheelInput.GetStepCount(delta) * (delta > 0 ? -1 : 1);
-        SelectedOutputDevice = OutputDevices[WheelInput.MoveCircular(current, steps, OutputDevices.Count)];
-    }
+        var device = OutputDevices[WheelInput.MoveCircular(current, steps, OutputDevices.Count)];
 
-    /// <summary>立即应用列表点击或键盘选择的输出设备。 / Applies a clicked or keyboard-selected output device immediately.</summary>
-    public void ApplyOutputDeviceImmediately(AudioDeviceOption? device)
-    {
-        if (!_isRefreshing && device is not null)
+        _isPreviewingOutputDevice = true;
+        try
         {
-            StartOutputDeviceApply(device, TimeSpan.Zero);
+            SelectedOutputDevice = device;
+        }
+        finally
+        {
+            _isPreviewingOutputDevice = false;
         }
     }
 
@@ -159,13 +161,10 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     {
         if (!_isRefreshing && value is not null)
         {
-            QueueOutputDevice(value);
+            StartOutputDeviceApply(
+                value,
+                _isPreviewingOutputDevice ? DeviceApplyDelay : TimeSpan.Zero);
         }
-    }
-
-    private void QueueOutputDevice(AudioDeviceOption device)
-    {
-        StartOutputDeviceApply(device, DeviceApplyDelay);
     }
 
     private void StartOutputDeviceApply(AudioDeviceOption device, TimeSpan delay)
@@ -260,13 +259,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
             return;
         }
 
-        var switchDevice = TrayWheelBehavior == TrayWheelBehavior.SwitchOutputDevice;
-        if (e.IsShiftPressed)
-        {
-            switchDevice = !switchDevice;
-        }
-
-        if (switchDevice)
+        if (TrayWheelBehavior == TrayWheelBehavior.SwitchOutputDevice)
         {
             if (OutputDevices.Count == 0)
             {
