@@ -65,11 +65,14 @@ namespace AFMediaBar.Components
         private bool _canPlayPause;
         private bool _canSkipPrevious;
         private bool _canSkipNext;
+        private string _activeLyric = string.Empty;
+        private string _lastSizeFingerprint = string.Empty;
 
         public event EventHandler? TogglePlayPauseRequested;
         public event EventHandler? SkipPreviousRequested;
         public event EventHandler? SkipNextRequested;
         public event EventHandler? ActivateSourceRequested;
+        public event EventHandler<MediaBarSizeRequestEventArgs>? DesiredSizeChanged;
 
         // === 歌词显示状态 Lyrics Display State ===
         // 解析后的行缓存 + 当前行下标，避免每个快照重复解析。
@@ -94,7 +97,9 @@ namespace AFMediaBar.Components
                 songTitle: SongTitle,
                 songArtist: SongArtist,
                 songTitleContainer: SongTitleContainer,
-                songArtistContainer: SongArtistContainer
+                songArtistContainer: SongArtistContainer,
+                songLyrics: SongLyrics,
+                songLyricsContainer: SongLyricsContainer
             );
 
             // 应用默认布局（任务栏横向）
@@ -147,6 +152,7 @@ namespace AFMediaBar.Components
             // 更新内部状态标志以保持兼容
             // Update internal state flags to maintain compatibility
             _isVertical = orientation == LayoutOrientation.Vertical;
+            RaiseDesiredSizeChanged();
         }
 
         /// <summary>
@@ -154,6 +160,12 @@ namespace AFMediaBar.Components
         /// Get currently applied layout configuration.
         /// </summary>
         public LayoutSchema? CurrentLayout => _layoutEngine?.CurrentLayout;
+
+        /// <summary>应用自动计算的主轴长度。/ Applies an auto-calculated primary-axis length.</summary>
+        public void ApplyPrimaryLength(double primaryLength) => _layoutEngine?.ApplyPrimaryLength(primaryLength);
+
+        /// <summary>在宿主更新方向或缩放状态后重新发布尺寸请求。/ Re-raises the size request after the host updates orientation or scale state.</summary>
+        public void RefreshDesiredSize() => RaiseDesiredSizeChanged();
 
         /// <summary>当前是否有已连接且正在播放的媒体。/ Indicates whether connected media is currently playing.</summary>
         public bool IsPlaying => _isConnected && !_isPaused;
@@ -232,6 +244,7 @@ namespace AFMediaBar.Components
             }
 
             SongTitle.Foreground = foreground;
+            SongLyrics.Foreground = foreground;
             SongArtist.Foreground = foreground;
             SongInfoStackPanel.Background = readabilityBackground;
 
@@ -278,6 +291,8 @@ namespace AFMediaBar.Components
                     _canSkipNext = false;
 
                     SongTitle.Text = _actualTitle;
+                    SongLyrics.Text = string.Empty;
+                    SongLyricsContainer.Visibility = Visibility.Collapsed;
                     SongArtist.Text = _actualArtist;
                     SongInfoStackPanel.Visibility = Visibility.Visible;
                     SongInfoStackPanel.ToolTip = string.Empty;
@@ -298,6 +313,7 @@ namespace AFMediaBar.Components
                     }
 
                     Visibility = Visibility.Visible;
+                    RaiseDesiredSizeChanged(isResetToPreset: true);
                 });
                 return;
             }
@@ -370,7 +386,12 @@ namespace AFMediaBar.Components
                     BackgroundImage.Source = null;
                 }
 
-                SongTitle.Visibility = Visibility.Visible;
+                SongTitle.Visibility = string.IsNullOrEmpty(_activeLyric)
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+                SongLyricsContainer.Visibility = string.IsNullOrEmpty(_activeLyric)
+                    ? Visibility.Collapsed
+                    : Visibility.Visible;
                 SongArtistContainer.Visibility = !_isSmallTaskbar && !_isVertical && !string.IsNullOrEmpty(snapshot.Artist)
                     ? Visibility.Visible
                     : Visibility.Collapsed;
@@ -382,6 +403,7 @@ namespace AFMediaBar.Components
                     : Visibility.Collapsed;
 
                 Visibility = Visibility.Visible;
+                RaiseDesiredSizeChanged();
             });
         }
 
@@ -400,6 +422,9 @@ namespace AFMediaBar.Components
                     _lyricsLines = [];
                     _lastLyricIndex = -2;
                     SongTitle.Text = _actualTitle;
+                    _activeLyric = string.Empty;
+                    SongLyrics.Text = string.Empty;
+                    SongLyricsContainer.Visibility = Visibility.Collapsed;
                 }
 
                 return;
@@ -416,8 +441,59 @@ namespace AFMediaBar.Components
             if (index != _lastLyricIndex)
             {
                 _lastLyricIndex = index;
-                SongTitle.Text = index >= 0 ? _lyricsLines[index].Text : _actualTitle;
+                _activeLyric = index >= 0 ? _lyricsLines[index].Text : string.Empty;
+                SongTitle.Text = _actualTitle;
+                SongLyrics.Text = _activeLyric;
+                SongLyricsContainer.Visibility = string.IsNullOrEmpty(_activeLyric)
+                    ? Visibility.Collapsed
+                    : Visibility.Visible;
             }
+        }
+
+        /// <summary>根据当前可见文本发布自动尺寸请求。/ Raises an auto-size request for the visible text.</summary>
+        private void RaiseDesiredSizeChanged(bool isResetToPreset = false)
+        {
+            if (_layoutEngine?.CurrentOrientation is not { } orientation)
+                return;
+
+            var visibleText = string.IsNullOrEmpty(_activeLyric) ? _actualTitle : _activeLyric;
+            var artist = SongArtistContainer.Visibility == Visibility.Visible ? _actualArtist : string.Empty;
+            var fingerprint = $"{orientation}|{visibleText}|{artist}|{SongTitle.FontSize:0.##}|{SongArtist.FontSize:0.##}|{SettingsManager.Current.LayoutLengthScalePercent:0.##}|{SettingsManager.Current.LayoutThicknessScalePercent:0.##}";
+            if (!isResetToPreset && fingerprint == _lastSizeFingerprint)
+                return;
+
+            _lastSizeFingerprint = fingerprint;
+            var textWidth = Math.Max(MeasureTextWidth(visibleText, SongTitle), MeasureTextWidth(artist, SongArtist));
+            var preset = LayoutPresets.GetLayout(_currentMode, orientation);
+            var request = LayoutSizeCalculator.Calculate(
+                preset,
+                SettingsManager.Current.LayoutLengthScalePercent / 100.0,
+                SettingsManager.Current.LayoutThicknessScalePercent / 100.0,
+                textWidth,
+                double.PositiveInfinity,
+                fingerprint,
+                isResetToPreset);
+            DesiredSizeChanged?.Invoke(this, new MediaBarSizeRequestEventArgs(request));
+        }
+
+        private static double MeasureTextWidth(string text, System.Windows.Controls.TextBlock source)
+        {
+            if (string.IsNullOrEmpty(text))
+                return 0;
+
+            var pixelsPerDip = VisualTreeHelper.GetDpi(source).PixelsPerDip;
+            var formatted = new FormattedText(
+                text,
+                System.Globalization.CultureInfo.CurrentUICulture,
+                FlowDirection.LeftToRight,
+                new Typeface(source.FontFamily, source.FontStyle, source.FontWeight, source.FontStretch),
+                source.FontSize,
+                Brushes.Transparent,
+                pixelsPerDip)
+            {
+                Trimming = TextTrimming.None
+            };
+            return formatted.WidthIncludingTrailingWhitespace + 4;
         }
 
         /// <summary>

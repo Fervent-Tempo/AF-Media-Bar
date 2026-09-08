@@ -122,9 +122,9 @@
                         Icon="{ui:SymbolIcon ResizeLarge24}">
             <ui:CardControl.Header>
                 <StackPanel>
-                    <ui:TextBlock Text="长度缩放"
+                    <ui:TextBlock Text="组件间距缩放"
                                   FontWeight="{DynamicResource AppTextStrongFontWeight}" />
-                    <ui:TextBlock Text="调整媒体栏的长度（调节标题和歌词长度）"
+                    <ui:TextBlock Text="调整封面、歌词、标题等组件之间的间距"
                                   Appearance="Secondary"
                                   FontSize="12" />
                 </StackPanel>
@@ -153,7 +153,7 @@
                 <StackPanel>
                     <ui:TextBlock Text="粗细缩放"
                                   FontWeight="{DynamicResource AppTextStrongFontWeight}" />
-                    <ui:TextBlock Text="调整媒体栏厚度（按比例缩放内容大小）"
+                    <ui:TextBlock Text="按比例缩放所有组件大小，保持组件间距不变"
                                   Appearance="Secondary"
                                   FontSize="12" />
                 </StackPanel>

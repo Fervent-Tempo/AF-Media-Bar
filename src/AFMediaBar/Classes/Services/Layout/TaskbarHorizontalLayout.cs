@@ -52,6 +52,7 @@ public static class TaskbarHorizontalLayout
             {
                 Id = "artwork",
                 Type = "Artwork",
+                SpacingAfter = 8,
                 Bounds = new ComponentBounds(4, 2, 40, 40),
                 Properties = new Dictionary<string, object>
                 {
@@ -67,6 +68,7 @@ public static class TaskbarHorizontalLayout
             {
                 Id = "song-info",
                 Type = "MediaText",
+                AutoSizePrimary = true,
                 Bounds = new ComponentBounds(52, 2, 240, 40),
                 Properties = new Dictionary<string, object>
                 {

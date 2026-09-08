@@ -97,7 +97,7 @@ public class AppSettings
     /// </summary>
     public LayoutOrientationMode LayoutOrientationMode { get; set; } = LayoutOrientationMode.Auto;
 
-    /// <summary>媒体栏主轴长度缩放百分比。/ Media bar primary-axis length scale percentage.</summary>
+    /// <summary>媒体栏组件间距缩放百分比。/ Media-bar component-spacing scale percentage.</summary>
     public double LayoutLengthScalePercent { get; set; } = 100;
 
     /// <summary>媒体栏组件与横轴厚度缩放百分比。/ Media bar component and cross-axis thickness scale percentage.</summary>

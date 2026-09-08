@@ -49,6 +49,7 @@
                         <Canvas x:Name="SongTitleContainer" Height="19" Cursor="Hand" Tag="MediaAction"
                                 MouseLeftButtonUp="SongTitleContainer_MouseLeftButtonUp">
                             <TextBlock x:Name="SongTitle" Text=""
+                                       TextTrimming="CharacterEllipsis"
                                        FontFamily="{DynamicResource AppTextFontFamily}"
                                        FontWeight="{DynamicResource AppTextFontWeight}">
                                 <TextBlock.RenderTransform>
@@ -56,8 +57,16 @@
                                 </TextBlock.RenderTransform>
                             </TextBlock>
                         </Canvas>
+                        <Canvas x:Name="SongLyricsContainer" Height="19" Visibility="Collapsed" Cursor="Hand" Tag="MediaAction"
+                                MouseLeftButtonUp="SongTitleContainer_MouseLeftButtonUp">
+                            <TextBlock x:Name="SongLyrics" Text=""
+                                       TextTrimming="CharacterEllipsis"
+                                       FontFamily="{DynamicResource AppTextFontFamily}"
+                                       FontWeight="{DynamicResource AppTextFontWeight}" />
+                        </Canvas>
                         <Canvas x:Name="SongArtistContainer" Margin="0,-1.5,0,0" Height="19">
                             <TextBlock x:Name="SongArtist" Text="" Opacity="0.5"
+                                       TextTrimming="CharacterEllipsis"
                                        FontFamily="{DynamicResource AppTextFontFamily}"
                                        FontWeight="{DynamicResource AppTextFontWeight}">
                                 <TextBlock.RenderTransform>

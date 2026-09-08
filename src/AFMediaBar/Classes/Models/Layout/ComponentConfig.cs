@@ -55,6 +55,15 @@ public record ComponentConfig
     /// </summary>
     public string Type { get; init; } = string.Empty;
 
+    /// <summary>是否显示该组件 / Whether this component is visible.</summary>
+    public bool IsVisible { get; init; } = true;
+
+    /// <summary>组件结束后的主轴间距（DIP）。/ Primary-axis gap after this component in DIPs.</summary>
+    public double SpacingAfter { get; init; }
+
+    /// <summary>是否根据内容自动调整主轴尺寸。/ Whether the primary size follows content measurement.</summary>
+    public bool AutoSizePrimary { get; init; }
+
     /// <summary>组件边界（位置和尺寸） / Component bounds (position and size)</summary>
     public ComponentBounds Bounds { get; init; } = new();
 

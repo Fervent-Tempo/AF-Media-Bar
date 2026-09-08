@@ -52,6 +52,7 @@ public static class DynamicIslandHorizontalLayout
             {
                 Id = "artwork",
                 Type = "Artwork",
+                SpacingAfter = 6,
                 Bounds = new ComponentBounds(6, 6, 40, 40),
                 Properties = new Dictionary<string, object>
                 {
@@ -67,6 +68,7 @@ public static class DynamicIslandHorizontalLayout
             {
                 Id = "song-info",
                 Type = "MediaText",
+                AutoSizePrimary = true,
                 Bounds = new ComponentBounds(52, 6, 228, 40),
                 Properties = new Dictionary<string, object>
                 {

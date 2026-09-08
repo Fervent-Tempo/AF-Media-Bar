@@ -58,6 +58,7 @@ public static class TaskbarVerticalLayout
             {
                 Id = "artwork",
                 Type = "Artwork",
+                SpacingAfter = 8,
                 Bounds = new ComponentBounds(11, 8, 58, 58),
                 Properties = new Dictionary<string, object>
                 {
@@ -73,6 +74,7 @@ public static class TaskbarVerticalLayout
             {
                 Id = "song-info",
                 Type = "MediaText",
+                AutoSizePrimary = true,
                 Bounds = new ComponentBounds(4, 74, 72, 90),
                 Properties = new Dictionary<string, object>
                 {

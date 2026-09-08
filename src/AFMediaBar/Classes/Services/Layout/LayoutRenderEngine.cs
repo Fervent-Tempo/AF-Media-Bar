@@ -42,8 +42,10 @@ public sealed class LayoutRenderEngine
     private readonly FontIcon? _artworkPlaceholder;
     private readonly TextBlock? _songTitle;
     private readonly TextBlock? _songArtist;
+    private readonly TextBlock? _songLyrics;
     private readonly FrameworkElement? _songTitleContainer;
     private readonly FrameworkElement? _songArtistContainer;
+    private readonly FrameworkElement? _songLyricsContainer;
 
     private LayoutSchema? _currentLayout;
 
@@ -66,7 +68,9 @@ public sealed class LayoutRenderEngine
         TextBlock? songTitle = null,
         TextBlock? songArtist = null,
         FrameworkElement? songTitleContainer = null,
-        FrameworkElement? songArtistContainer = null)
+        FrameworkElement? songArtistContainer = null,
+        TextBlock? songLyrics = null,
+        FrameworkElement? songLyricsContainer = null)
     {
         _mainBorder = mainBorder;
         _contentCanvas = contentCanvas;
@@ -76,8 +80,10 @@ public sealed class LayoutRenderEngine
         _artworkPlaceholder = artworkPlaceholder;
         _songTitle = songTitle;
         _songArtist = songArtist;
+        _songLyrics = songLyrics;
         _songTitleContainer = songTitleContainer;
         _songArtistContainer = songArtistContainer;
+        _songLyricsContainer = songLyricsContainer;
     }
 
     /// <summary>
@@ -97,7 +103,7 @@ public sealed class LayoutRenderEngine
     ///    Trigger layout update
     /// </summary>
     /// <param name="layout">布局配置 / Layout configuration</param>
-    /// <param name="lengthScale">主轴长度缩放系数 / Primary-axis length scale factor</param>
+    /// <param name="lengthScale">组件间距缩放系数 / Component-spacing scale factor</param>
     /// <param name="thicknessScale">横轴厚度缩放系数 / Cross-axis thickness scale factor</param>
     public void ApplyLayout(LayoutSchema layout, double lengthScale, double thicknessScale)
     {
@@ -122,21 +128,22 @@ public sealed class LayoutRenderEngine
     }
 
     /// <summary>
-    /// 将预设转换为运行时缩放布局：粗细缩放整体组件，长度缩放主轴与文本空间。
-    /// Converts a preset into a runtime layout: thickness scales components, while length scales the primary axis and text space.
+    /// 将预设转换为运行时缩放布局：粗细缩放组件，内容尺寸和间距由尺寸计算器处理。
+    /// Converts a preset into a runtime layout: thickness scales components; content size and spacing are handled by the size calculator.
     /// </summary>
     private static LayoutSchema CreateScaledLayout(LayoutSchema source, double lengthScale, double thicknessScale)
     {
         lengthScale = Math.Clamp(lengthScale, 0.7, 1.25);
         thicknessScale = Math.Clamp(thicknessScale, 0.7, 1.25);
         var isVertical = source.Orientation == LayoutOrientation.Vertical;
-        var basePrimaryLength = isVertical ? source.Canvas.Height : source.Canvas.Width;
-        var primaryDelta = basePrimaryLength * thicknessScale * (lengthScale - 1);
 
         var components = source.Components.Select(component => new ComponentConfig
         {
             Id = component.Id,
             Type = component.Type,
+            IsVisible = component.IsVisible,
+            SpacingAfter = component.SpacingAfter,
+            AutoSizePrimary = component.AutoSizePrimary,
             Bounds = new ComponentBounds(
                 component.Bounds.X * thicknessScale,
                 component.Bounds.Y * thicknessScale,
@@ -145,39 +152,36 @@ public sealed class LayoutRenderEngine
             Properties = ScaleVisualProperties(component.Properties, thicknessScale)
         }).ToList();
 
-        var artwork = components.FirstOrDefault(component => component.Id == "artwork");
-        var songInfoIndex = components.FindIndex(component => component.Id == "song-info");
-        if (songInfoIndex >= 0)
+        var primaryGapDelta = 0d;
+        ComponentConfig? previousVisible = null;
+        for (var index = 0; index < components.Count; index++)
         {
-            var songInfo = components[songInfoIndex];
-            var bounds = songInfo.Bounds;
-            var gapDelta = 0.0;
-            if (artwork is not null)
+            var component = components[index];
+            var bounds = component.Bounds;
+            if (previousVisible is not null)
             {
-                var gap = isVertical
-                    ? bounds.Y - (artwork.Bounds.Y + artwork.Bounds.Height)
-                    : bounds.X - (artwork.Bounds.X + artwork.Bounds.Width);
-                gapDelta = gap * (lengthScale - 1);
+                var previousBounds = previousVisible.Bounds;
+                var desiredStart = isVertical
+                    ? previousBounds.Y + previousBounds.Height + previousVisible.SpacingAfter * lengthScale
+                    : previousBounds.X + previousBounds.Width + previousVisible.SpacingAfter * lengthScale;
+                bounds = isVertical
+                    ? bounds with { Y = desiredStart }
+                    : bounds with { X = desiredStart };
             }
 
-            bounds = isVertical
-                ? bounds with
-                {
-                    Y = bounds.Y + gapDelta,
-                    Height = Math.Max(24 * thicknessScale, bounds.Height + primaryDelta - gapDelta)
-                }
-                : bounds with
-                {
-                    X = bounds.X + gapDelta,
-                    Width = Math.Max(48 * thicknessScale, bounds.Width + primaryDelta - gapDelta)
-                };
-            components[songInfoIndex] = songInfo with { Bounds = bounds };
+            components[index] = component with { Bounds = bounds };
+
+            if (component.IsVisible)
+            {
+                primaryGapDelta += component.SpacingAfter * (lengthScale - 1);
+                previousVisible = components[index];
+            }
         }
 
         var canvas = source.Canvas with
         {
-            Width = source.Canvas.Width * thicknessScale * (isVertical ? 1 : lengthScale),
-            Height = source.Canvas.Height * thicknessScale * (isVertical ? lengthScale : 1),
+            Width = source.Canvas.Width * thicknessScale + (isVertical ? 0 : primaryGapDelta),
+            Height = source.Canvas.Height * thicknessScale + (isVertical ? primaryGapDelta : 0),
             CornerRadius = source.Canvas.CornerRadius * thicknessScale,
             Border = source.Canvas.Border is null
                 ? null
@@ -296,6 +300,18 @@ public sealed class LayoutRenderEngine
                     ApplySongInfoLayout(component);
                     break;
 
+                case "lyrics":
+                    ApplyElementLayout(_songLyrics, _songLyricsContainer, component, "fontSize", "lyricsFontSize");
+                    break;
+
+                case "title":
+                    ApplyElementLayout(_songTitle, _songTitleContainer, component, "fontSize", "titleFontSize");
+                    break;
+
+                case "artist":
+                    ApplyElementLayout(_songArtist, _songArtistContainer, component, "fontSize", "artistFontSize");
+                    break;
+
             }
         }
     }
@@ -335,7 +351,7 @@ public sealed class LayoutRenderEngine
 
         // 显示组件
         // Show component
-        _artworkBorder.Visibility = Visibility.Visible;
+        _artworkBorder.Visibility = config.IsVisible ? Visibility.Visible : Visibility.Collapsed;
     }
 
     /// <summary>
@@ -350,6 +366,27 @@ public sealed class LayoutRenderEngine
         // Set size
         _songInfoPanel.Width = config.Bounds.Width;
         _songInfoPanel.Height = config.Bounds.Height;
+        if (_songTitleContainer is not null)
+        {
+            _songTitleContainer.Width = config.Bounds.Width;
+            _songTitleContainer.Height = config.Bounds.Height / 2;
+        }
+        if (_songArtistContainer is not null)
+        {
+            _songArtistContainer.Width = config.Bounds.Width;
+            _songArtistContainer.Height = config.Bounds.Height / 2;
+        }
+        if (_songLyricsContainer is not null)
+        {
+            _songLyricsContainer.Width = config.Bounds.Width;
+            _songLyricsContainer.Height = config.Bounds.Height / 2;
+        }
+        if (_songTitle is not null)
+            _songTitle.Width = config.Bounds.Width;
+        if (_songArtist is not null)
+            _songArtist.Width = config.Bounds.Width;
+        if (_songLyrics is not null)
+            _songLyrics.Width = config.Bounds.Width;
 
         // 设置位置
         // Set position
@@ -399,7 +436,30 @@ public sealed class LayoutRenderEngine
 
         // 显示组件
         // Show component
-        _songInfoPanel.Visibility = Visibility.Visible;
+        _songInfoPanel.Visibility = config.IsVisible ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private static void ApplyElementLayout(
+        TextBlock? text,
+        FrameworkElement? container,
+        ComponentConfig config,
+        string primaryFontKey,
+        string fallbackFontKey)
+    {
+        if (text is not null &&
+            (config.Properties.TryGetValue(primaryFontKey, out var fontValue) ||
+             config.Properties.TryGetValue(fallbackFontKey, out fontValue)) &&
+            fontValue is double fontSize)
+            text.FontSize = fontSize;
+
+        if (container is null)
+            return;
+
+        container.Visibility = config.IsVisible ? Visibility.Visible : Visibility.Collapsed;
+        container.Width = config.Bounds.Width;
+        container.Height = config.Bounds.Height;
+        Canvas.SetLeft(container, config.Bounds.X);
+        Canvas.SetTop(container, config.Bounds.Y);
     }
 
     /// <summary>
@@ -441,6 +501,23 @@ public sealed class LayoutRenderEngine
     /// Get currently applied layout configuration.
     /// </summary>
     public LayoutSchema? CurrentLayout => _currentLayout;
+
+    /// <summary>
+    /// 应用自动尺寸计算得到的主轴长度，不重新创建基础布局。
+    /// Applies an auto-sized primary length without rebuilding the base layout.
+    /// </summary>
+    public void ApplyPrimaryLength(double primaryLength)
+    {
+        if (_currentLayout is null)
+            return;
+
+        var resized = LayoutSizeCalculator.ResizePrimary(_currentLayout, primaryLength);
+        _currentLayout = resized;
+        _mainBorder.Width = resized.Canvas.Width;
+        _mainBorder.Height = resized.Canvas.Height;
+        ApplyComponentLayout(resized.Components);
+        _mainBorder.UpdateLayout();
+    }
 
     /// <summary>
     /// 获取当前布局的方向。

@@ -32,6 +32,7 @@ public partial class TaskbarWindow : Window
     private readonly ITaskbarDockService _taskBarService;
     private readonly MainWindow _mainWindow;
     private readonly DispatcherTimer _timer;
+    private readonly DispatcherTimer _sizeAnimationTimer;
 
     private IntPtr _lastTaskbarHandle;
     private bool _positionUpdateInProgress;
@@ -44,6 +45,10 @@ public partial class TaskbarWindow : Window
     private int _dragStartCursorPrimary;
     private int _dragStartBarPrimary;
     private int _dragPrimaryLimit;
+    private double _sizeAnimationStart;
+    private double _sizeAnimationTarget;
+    private double _sizeAnimationProgress;
+    private MediaBarSizeRequest? _pendingSizeRequest;
 
     public TaskbarWindow(
         ITaskbarDockService taskBarService,
@@ -61,6 +66,7 @@ public partial class TaskbarWindow : Window
         MediaControl.SkipPreviousRequested += MediaControl_SkipPreviousRequested;
         MediaControl.SkipNextRequested += MediaControl_SkipNextRequested;
         MediaControl.ActivateSourceRequested += MediaControl_ActivateSourceRequested;
+        MediaControl.DesiredSizeChanged += MediaControl_DesiredSizeChanged;
 
         _taskBarService = taskBarService;
         _mainWindow = mainWindow;
@@ -69,6 +75,9 @@ public partial class TaskbarWindow : Window
         _timer.Interval = TimeSpan.FromMilliseconds(1500); // slow auto-update for display changes
         _timer.Tick += (s, e) => UpdatePosition();
         _timer.Start();
+
+        _sizeAnimationTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+        _sizeAnimationTimer.Tick += (_, _) => AdvanceSizeAnimation();
 
         Loaded += Window_Loaded;
 
@@ -245,6 +254,19 @@ public partial class TaskbarWindow : Window
         var canvas = MediaControl.CurrentLayout?.Canvas;
         double barWidth = canvas?.Width ?? 300;
         double barHeight = canvas?.Height ?? 44;
+        var orientation = _appliedOrientation ?? LayoutOrientation.Horizontal;
+        var maximumPrimary = GetAvailablePrimaryLengthDip(orientation);
+        if (maximumPrimary > 0)
+        {
+            var currentPrimary = orientation == LayoutOrientation.Horizontal ? barWidth : barHeight;
+            if (currentPrimary > maximumPrimary)
+            {
+                MediaControl.ApplyPrimaryLength(maximumPrimary);
+                canvas = MediaControl.CurrentLayout?.Canvas;
+                barWidth = canvas?.Width ?? barWidth;
+                barHeight = canvas?.Height ?? barHeight;
+            }
+        }
         int physicalWidth = (int)Math.Round(barWidth * dpiScale);
         int physicalHeight = (int)Math.Round(barHeight * dpiScale);
 
@@ -371,6 +393,7 @@ public partial class TaskbarWindow : Window
             _appliedOrientation = orientation;
             _appliedLengthScalePercent = lengthScalePercent;
             _appliedThicknessScalePercent = thicknessScalePercent;
+            MediaControl.RefreshDesiredSize();
         }
 
         if (orientationChanged && IsLoaded)
@@ -537,6 +560,75 @@ public partial class TaskbarWindow : Window
         e.Handled = true;
     }
 
+    private void MediaControl_DesiredSizeChanged(object? sender, MediaBarSizeRequestEventArgs eventArgs)
+    {
+        var request = eventArgs.Request;
+        if (_isClosing || _appliedOrientation is not { } orientation)
+            return;
+
+        if (_isDragging)
+        {
+            _pendingSizeRequest = request;
+            return;
+        }
+
+        var maximum = GetAvailablePrimaryLengthDip(orientation);
+        var target = request.PrimaryLength;
+        if (maximum > 0)
+            target = Math.Min(target, maximum);
+
+        var current = MediaControl.CurrentLayout is { } layout
+            ? orientation == LayoutOrientation.Horizontal ? layout.Canvas.Width : layout.Canvas.Height
+            : target;
+        if (Math.Abs(target - current) < LayoutSizeCalculator.MinimumChangeDip)
+        {
+            MediaControl.ApplyPrimaryLength(target);
+            UpdatePosition();
+            return;
+        }
+
+        _sizeAnimationStart = current;
+        _sizeAnimationTarget = target;
+        _sizeAnimationProgress = 0;
+        _sizeAnimationTimer.Start();
+    }
+
+    private double GetAvailablePrimaryLengthDip(LayoutOrientation orientation)
+    {
+        if (_lastTaskbarHandle == IntPtr.Zero || !_taskBarService.TryGetTaskbarRect(_lastTaskbarHandle, out var rect))
+            return 0;
+
+        var dpi = _taskBarService.GetTaskbarDpiScale(_lastTaskbarHandle);
+        if (dpi <= 0)
+            return 0;
+
+        var physicalLength = orientation == LayoutOrientation.Horizontal
+            ? rect.Right - rect.Left
+            : rect.Bottom - rect.Top;
+        return Math.Max(1, physicalLength / dpi - EdgePadding * 2);
+    }
+
+    private void AdvanceSizeAnimation()
+    {
+        if (_isClosing || _isDragging)
+        {
+            _sizeAnimationTimer.Stop();
+            return;
+        }
+
+        _sizeAnimationProgress = Math.Min(1, _sizeAnimationProgress + 16.0 / 220.0);
+        var eased = 1 - Math.Pow(1 - _sizeAnimationProgress, 3);
+        var value = _sizeAnimationStart + (_sizeAnimationTarget - _sizeAnimationStart) * eased;
+        MediaControl.ApplyPrimaryLength(value);
+        UpdatePosition();
+        if (_sizeAnimationProgress >= 1)
+        {
+            MediaControl.ApplyPrimaryLength(_sizeAnimationTarget);
+            UpdatePosition();
+            _sizeAnimationTimer.Stop();
+        }
+    }
+
     private void MediaControl_LostMouseCapture(object sender, MouseEventArgs e)
     {
         if (_isDragging)
@@ -548,6 +640,12 @@ public partial class TaskbarWindow : Window
         _isDragging = false;
         if (releaseCapture && MediaControl.IsMouseCaptured)
             MediaControl.ReleaseMouseCapture();
+
+        if (_pendingSizeRequest is { } request && _appliedOrientation is { } orientation)
+        {
+            _pendingSizeRequest = null;
+            MediaControl_DesiredSizeChanged(this, new MediaBarSizeRequestEventArgs(request));
+        }
         UpdatePosition();
     }
 
@@ -567,10 +665,12 @@ public partial class TaskbarWindow : Window
     {
         _isClosing = true;
         _timer.Stop();
+        _sizeAnimationTimer.Stop();
         MediaControl.TogglePlayPauseRequested -= MediaControl_TogglePlayPauseRequested;
         MediaControl.SkipPreviousRequested -= MediaControl_SkipPreviousRequested;
         MediaControl.SkipNextRequested -= MediaControl_SkipNextRequested;
         MediaControl.ActivateSourceRequested -= MediaControl_ActivateSourceRequested;
+        MediaControl.DesiredSizeChanged -= MediaControl_DesiredSizeChanged;
         base.OnClosed(e);
     }
 }

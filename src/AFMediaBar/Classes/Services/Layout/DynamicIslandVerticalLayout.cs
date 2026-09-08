@@ -58,6 +58,7 @@ public static class DynamicIslandVerticalLayout
             {
                 Id = "artwork",
                 Type = "Artwork",
+                SpacingAfter = 8,
                 Bounds = new ComponentBounds(11, 10, 66, 66),
                 Properties = new Dictionary<string, object>
                 {
@@ -73,6 +74,7 @@ public static class DynamicIslandVerticalLayout
             {
                 Id = "song-info",
                 Type = "MediaText",
+                AutoSizePrimary = true,
                 Bounds = new ComponentBounds(6, 84, 76, 104),
                 Properties = new Dictionary<string, object>
                 {
