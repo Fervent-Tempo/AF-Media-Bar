@@ -199,9 +199,10 @@ namespace AFMediaBar
             Resources["AppTextStrongFontWeight"] = FontWeight.FromOpenTypeWeight(Math.Clamp(appearance.FontWeight + 200, 100, 999));
 
             var dark = theme == ApplicationTheme.Dark || theme == ApplicationTheme.HighContrast && SystemParameters.HighContrast;
-            var menuColor = appearance.BackdropMode == ApplicationBackdropMode.FluentSolid || SystemParameters.HighContrast
-                ? dark ? Color.FromRgb(44, 44, 44) : Color.FromRgb(249, 249, 249)
-                : Colors.Transparent;
+            // Context menus always use an opaque Fluent solid surface. Native
+            // Mica/Acrylic on Popup HWNDs leaves transparent hit-test regions
+            // that can pass clicks through to the window behind the menu.
+            var menuColor = dark ? Color.FromRgb(44, 44, 44) : Color.FromRgb(249, 249, 249);
             var menuBrush = new SolidColorBrush(menuColor);
             menuBrush.Freeze();
             Resources["AppMenuBackgroundBrush"] = menuBrush;

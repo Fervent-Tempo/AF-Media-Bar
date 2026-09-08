@@ -45,6 +45,14 @@
           </Setter.Value>
         </Setter>
       </Style>
+      <!-- Keep WPF-UI menu visuals while making the complete item row hit-testable. -->
+      <Style x:Key="AfMenuItemStyle"
+             BasedOn="{StaticResource WpfUiMenuItem}"
+             TargetType="{x:Type ui:MenuItem}">
+        <Setter Property="Background" Value="Transparent" />
+      </Style>
+      <Style BasedOn="{StaticResource AfMenuItemStyle}"
+             TargetType="{x:Type ui:MenuItem}" />
     </ResourceDictionary>
   </Application.Resources>
 </Application>

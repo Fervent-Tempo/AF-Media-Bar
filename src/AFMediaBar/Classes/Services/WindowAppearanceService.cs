@@ -14,8 +14,10 @@ using WpfMenuItem = System.Windows.Controls.MenuItem;
 namespace AFMediaBar.Classes.Services;
 
 /// <summary>
-/// 让 Fluent 窗口和 WPF 弹出菜单共用同一种材质，并在 DWM 生命周期变化后恢复材质。
-/// Keeps Fluent windows and WPF popup menus on one selected backdrop and restores it after DWM lifecycle changes.
+/// 为普通 Fluent 窗口应用所选材质；WPF 弹出菜单固定使用不透明 Fluent 纯色，
+/// 并在 DWM 生命周期变化后恢复窗口和菜单外观。
+/// Applies the selected backdrop to regular Fluent windows; WPF popup menus
+/// remain opaque Fluent-solid surfaces and are restored after DWM lifecycle changes.
 /// </summary>
 public sealed class WindowAppearanceService : IDisposable
 {
@@ -333,24 +335,20 @@ public sealed class WindowAppearanceService : IDisposable
 
     private static void ApplyPopup(HwndSource source, FrameworkElement surface)
     {
-        var mode = ResolveEffectiveMode(SettingsManager.Current.Appearance.BackdropMode);
         var dark = ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark;
         var backgroundProperty = surface is Border
             ? Border.BackgroundProperty
             : Control.BackgroundProperty;
+
+        // Keep Popup HWNDs opaque and Fluent-solid. Applying native Mica or
+        // Acrylic here makes transparent portions of the popup miss hit
+        // testing, so clicks in blank menu areas can reach the window behind it.
         source.CompositionTarget.BackgroundColor = Colors.Transparent;
 
-        if (mode == ApplicationBackdropMode.FluentSolid)
-        {
-            ResetNativeBackdrop(source.Handle);
-            SetFrame(source.Handle, extended: false);
-            surface.SetResourceReference(backgroundProperty, "AppMenuBackgroundBrush");
-        }
-        else
-        {
-            surface.SetValue(backgroundProperty, Brushes.Transparent);
-            ApplyNativeBackdrop(source, mode, dark);
-        }
+        ResetNativeBackdrop(source.Handle);
+        SetFrame(source.Handle, extended: false);
+        SetDwmNonClientColors(source.Handle, transparent: false);
+        surface.SetResourceReference(backgroundProperty, "AppMenuBackgroundBrush");
 
         SetDwmAttribute(source.Handle, DwmUseImmersiveDarkMode, dark ? 1 : 0);
         SetDwmAttribute(source.Handle, DwmWindowCornerPreference, DwmCornerRound);
