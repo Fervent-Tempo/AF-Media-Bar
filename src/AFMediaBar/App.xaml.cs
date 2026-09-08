@@ -11,6 +11,7 @@ using Microsoft.Extensions.Hosting;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using Microsoft.Win32;
 using System.Windows.Media;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Models;
@@ -117,6 +118,8 @@ namespace AFMediaBar
                 services.AddSingleton<AboutViewModel>();
             }).Build();
 
+        private DispatcherTimer? _systemThemeRefreshTimer;
+
         #region FrameWork
 
         /// <summary>
@@ -135,6 +138,7 @@ namespace AFMediaBar
         private async void OnStartup(object sender, StartupEventArgs e)
         {
             ApplicationThemeManager.Changed += ApplicationThemeManager_OnChanged;
+            SystemEvents.UserPreferenceChanged += SystemEvents_OnUserPreferenceChanged;
             ApplyAppearanceResources(SettingsManager.Current.Appearance);
             SettingsManager.AppearanceSettingsChanged += SettingsManager_OnAppearanceSettingsChanged;
             await _host.StartAsync();
@@ -154,6 +158,8 @@ namespace AFMediaBar
         {
             SettingsManager.AppearanceSettingsChanged -= SettingsManager_OnAppearanceSettingsChanged;
             ApplicationThemeManager.Changed -= ApplicationThemeManager_OnChanged;
+            SystemEvents.UserPreferenceChanged -= SystemEvents_OnUserPreferenceChanged;
+            _systemThemeRefreshTimer?.Stop();
             await _host.StopAsync();
 
             _host.Dispose();
@@ -187,6 +193,41 @@ namespace AFMediaBar
 
         private void ApplicationThemeManager_OnChanged(ApplicationTheme theme, Color accent) =>
             UpdateAppearanceResources(SettingsManager.Current.Appearance, theme);
+
+        private void SystemEvents_OnUserPreferenceChanged(object? sender, UserPreferenceChangedEventArgs e)
+        {
+            if (SettingsManager.Current.Appearance.ApplicationThemeMode != ApplicationThemeMode.Automatic)
+            {
+                return;
+            }
+
+            QueueSystemThemeRefresh();
+        }
+
+        private void QueueSystemThemeRefresh()
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.BeginInvoke(QueueSystemThemeRefresh, DispatcherPriority.DataBind);
+                return;
+            }
+
+            _systemThemeRefreshTimer ??= new DispatcherTimer(
+                TimeSpan.FromMilliseconds(180),
+                DispatcherPriority.DataBind,
+                (_, _) =>
+                {
+                    _systemThemeRefreshTimer!.Stop();
+                    if (SettingsManager.Current.Appearance.ApplicationThemeMode == ApplicationThemeMode.Automatic)
+                    {
+                        ApplyAppearanceResources(SettingsManager.Current.Appearance);
+                    }
+                },
+                Dispatcher);
+
+            _systemThemeRefreshTimer.Stop();
+            _systemThemeRefreshTimer.Start();
+        }
 
         private void UpdateAppearanceResources(AppearanceSettings appearance, ApplicationTheme theme)
         {
