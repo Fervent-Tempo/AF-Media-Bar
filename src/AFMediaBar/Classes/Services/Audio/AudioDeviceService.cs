@@ -28,6 +28,16 @@ public sealed class AudioDeviceService
             .ToArray();
     }
 
+    /// <summary>
+    /// 判断指定设备是否已经是当前默认音频输出。
+    /// Determines whether the specified device is already the current default audio output.
+    /// </summary>
+    public bool IsDefaultRenderDevice(string deviceId) =>
+        string.Equals(
+            MediaDevice.GetDefaultAudioRenderId(AudioDeviceRole.Default),
+            deviceId,
+            StringComparison.OrdinalIgnoreCase);
+
     public void SetDefaultRenderDevice(string policyDeviceId)
     {
         object? client = null;

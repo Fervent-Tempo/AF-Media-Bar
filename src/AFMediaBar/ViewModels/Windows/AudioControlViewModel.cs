@@ -188,6 +188,13 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
                 return;
             }
 
+            // 缓冲结束后再次读取系统默认设备；循环滚回原设备时不要重复切换而打断音频。
+            // Recheck the system default after buffering so cycling back does not interrupt audio with a redundant switch.
+            if (_deviceService.IsDefaultRenderDevice(device.Id))
+            {
+                return;
+            }
+
             await Task.Run(() => _deviceService.SetDefaultRenderDevice(device.PolicyId));
             await RefreshAsync();
         }
