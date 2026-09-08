@@ -146,6 +146,15 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         SelectedOutputDevice = OutputDevices[WheelInput.MoveCircular(current, steps, OutputDevices.Count)];
     }
 
+    /// <summary>立即应用列表点击或键盘选择的输出设备。 / Applies a clicked or keyboard-selected output device immediately.</summary>
+    public void ApplyOutputDeviceImmediately(AudioDeviceOption? device)
+    {
+        if (!_isRefreshing && device is not null)
+        {
+            StartOutputDeviceApply(device, TimeSpan.Zero);
+        }
+    }
+
     partial void OnSelectedOutputDeviceChanged(AudioDeviceOption? value)
     {
         if (!_isRefreshing && value is not null)
@@ -156,16 +165,25 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
 
     private void QueueOutputDevice(AudioDeviceOption device)
     {
+        StartOutputDeviceApply(device, DeviceApplyDelay);
+    }
+
+    private void StartOutputDeviceApply(AudioDeviceOption device, TimeSpan delay)
+    {
         var version = ++_deviceApplyVersion;
-        _ = ApplyOutputDeviceAfterDelayAsync(device, version);
+        _ = ApplyOutputDeviceAsync(device, version, delay);
         SetTrayTooltip($"输出设备：{device.DisplayName}");
     }
 
-    private async Task ApplyOutputDeviceAfterDelayAsync(AudioDeviceOption device, int version)
+    private async Task ApplyOutputDeviceAsync(AudioDeviceOption device, int version, TimeSpan delay)
     {
         try
         {
-            await Task.Delay(DeviceApplyDelay);
+            if (delay > TimeSpan.Zero)
+            {
+                await Task.Delay(delay);
+            }
+
             if (_disposed || version != _deviceApplyVersion)
             {
                 return;
@@ -181,21 +199,40 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         }
     }
 
-    private void QueueApplicationVolume(ApplicationVolumeItemViewModel application, int volumePercent)
+    private void QueueApplicationVolume(
+        ApplicationVolumeItemViewModel application,
+        int volumePercent,
+        bool applyImmediately)
+    {
+        StartApplicationVolumeApply(
+            application,
+            volumePercent,
+            applyImmediately ? TimeSpan.Zero : VolumeApplyDelay);
+    }
+
+    private void StartApplicationVolumeApply(
+        ApplicationVolumeItemViewModel application,
+        int volumePercent,
+        TimeSpan delay)
     {
         var version = _volumeApplyVersions.GetValueOrDefault(application.ProcessName) + 1;
         _volumeApplyVersions[application.ProcessName] = version;
-        _ = ApplyApplicationVolumeAfterDelayAsync(application, volumePercent, version);
+        _ = ApplyApplicationVolumeAsync(application, volumePercent, version, delay);
     }
 
-    private async Task ApplyApplicationVolumeAfterDelayAsync(
+    private async Task ApplyApplicationVolumeAsync(
         ApplicationVolumeItemViewModel application,
         int volumePercent,
-        int version)
+        int version,
+        TimeSpan delay)
     {
         try
         {
-            await Task.Delay(VolumeApplyDelay);
+            if (delay > TimeSpan.Zero)
+            {
+                await Task.Delay(delay);
+            }
+
             if (_disposed || !_volumeApplyVersions.TryGetValue(application.ProcessName, out var current) || current != version)
             {
                 return;

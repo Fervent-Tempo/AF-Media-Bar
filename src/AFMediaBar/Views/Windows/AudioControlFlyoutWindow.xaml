@@ -67,6 +67,7 @@
                       ItemsSource="{Binding OutputDevices}"
                       DisplayMemberPath="DisplayName"
                       SelectedItem="{Binding SelectedOutputDevice, Mode=TwoWay}"
+                      SelectionChanged="OutputDevice_OnSelectionChanged"
                       DropDownOpened="OutputDevice_OnDropDownOpened"
                       DropDownClosed="OutputDevice_OnDropDownClosed"
                       PreviewMouseWheel="OutputDevice_OnPreviewMouseWheel" />
@@ -152,6 +153,10 @@
                                             MinWidth="0"
                                             Margin="0,0,6,0"
                                             Value="{Binding VolumePercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            PreviewMouseLeftButtonDown="ApplicationVolumeSlider_OnPreviewMouseLeftButtonDown"
+                                            PreviewMouseLeftButtonUp="ApplicationVolumeSlider_OnPreviewMouseLeftButtonUp"
+                                            LostMouseCapture="ApplicationVolumeSlider_OnLostMouseCapture"
+                                            PreviewKeyDown="ApplicationVolumeSlider_OnPreviewKeyDown"
                                             IsMoveToPointEnabled="True"
                                             LargeChange="10"
                                             SmallChange="2"

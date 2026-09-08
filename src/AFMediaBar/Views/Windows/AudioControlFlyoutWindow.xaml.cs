@@ -14,6 +14,7 @@ namespace AFMediaBar.Views.Windows;
 public partial class AudioControlFlyoutWindow : FluentWindow
 {
     private bool _isOutputDeviceDropDownOpen;
+    private bool _isOutputDeviceWheelInteraction;
 
     public AudioControlViewModel ViewModel { get; }
 
@@ -66,17 +67,67 @@ public partial class AudioControlFlyoutWindow : FluentWindow
 
     private void OutputDevice_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
-        ViewModel.PreviewOutputDeviceWheel(e.Delta);
-        e.Handled = true;
+        _isOutputDeviceWheelInteraction = true;
+        try
+        {
+            ViewModel.PreviewOutputDeviceWheel(e.Delta);
+            e.Handled = true;
+        }
+        finally
+        {
+            _isOutputDeviceWheelInteraction = false;
+        }
+    }
+
+    private void OutputDevice_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_isOutputDeviceWheelInteraction &&
+            sender is ComboBox { SelectedItem: AudioDeviceOption device })
+        {
+            ViewModel.ApplyOutputDeviceImmediately(device);
+        }
     }
 
     private void ApplicationVolumeSlider_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
         if (sender is Slider { DataContext: ApplicationVolumeItemViewModel application })
         {
+            application.SetApplyImmediately(false);
             var notches = Math.Max(1, Math.Abs(e.Delta) / Mouse.MouseWheelDeltaForOneLine);
             application.AdjustVolume((e.Delta > 0 ? 1 : -1) * notches * 2);
             e.Handled = true;
+        }
+    }
+
+    private void ApplicationVolumeSlider_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is Slider { DataContext: ApplicationVolumeItemViewModel application })
+        {
+            application.SetApplyImmediately(true);
+        }
+    }
+
+    private void ApplicationVolumeSlider_OnPreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is Slider { DataContext: ApplicationVolumeItemViewModel application })
+        {
+            application.SetApplyImmediately(false);
+        }
+    }
+
+    private void ApplicationVolumeSlider_OnLostMouseCapture(object sender, MouseEventArgs e)
+    {
+        if (sender is Slider { DataContext: ApplicationVolumeItemViewModel application })
+        {
+            application.SetApplyImmediately(false);
+        }
+    }
+
+    private void ApplicationVolumeSlider_OnPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (sender is Slider { DataContext: ApplicationVolumeItemViewModel application })
+        {
+            application.SetApplyImmediately(true);
         }
     }
 

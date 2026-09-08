@@ -5,8 +5,9 @@ namespace AFMediaBar.ViewModels.Windows;
 /// <summary>音量合成器中的单个应用。 / One application row in the volume mixer.</summary>
 public partial class ApplicationVolumeItemViewModel : ObservableObject
 {
-    private readonly Action<ApplicationVolumeItemViewModel, int> _volumeChanged;
+    private readonly Action<ApplicationVolumeItemViewModel, int, bool> _volumeChanged;
     private bool _isSynchronizing;
+    private bool _applyImmediately;
 
     public string ProcessName { get; }
     public string DisplayName { get; }
@@ -20,7 +21,7 @@ public partial class ApplicationVolumeItemViewModel : ObservableObject
 
     public ApplicationVolumeItemViewModel(
         ApplicationVolumeSnapshot snapshot,
-        Action<ApplicationVolumeItemViewModel, int> volumeChanged)
+        Action<ApplicationVolumeItemViewModel, int, bool> volumeChanged)
     {
         ProcessName = snapshot.ProcessName;
         DisplayName = snapshot.DisplayName;
@@ -34,9 +35,11 @@ public partial class ApplicationVolumeItemViewModel : ObservableObject
     {
         if (!_isSynchronizing)
         {
-            _volumeChanged(this, Math.Clamp(value, 0, 100));
+            _volumeChanged(this, Math.Clamp(value, 0, 100), _applyImmediately);
         }
     }
+
+    public void SetApplyImmediately(bool applyImmediately) => _applyImmediately = applyImmediately;
 
     public void SynchronizeVolume(int value)
     {
@@ -45,5 +48,9 @@ public partial class ApplicationVolumeItemViewModel : ObservableObject
         _isSynchronizing = false;
     }
 
-    public void AdjustVolume(int delta) => VolumePercent = Math.Clamp(VolumePercent + delta, 0, 100);
+    public void AdjustVolume(int delta)
+    {
+        _applyImmediately = false;
+        VolumePercent = Math.Clamp(VolumePercent + delta, 0, 100);
+    }
 }
