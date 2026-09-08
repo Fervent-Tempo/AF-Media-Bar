@@ -241,6 +241,14 @@ public partial class DynamicIslandWindow : Window
         {
             ApplyAnimatedSize(_sizeAnimationTarget, _appliedOrientation ?? LayoutOrientation.Horizontal);
             _sizeAnimationTimer.Stop();
+
+            // 展开状态下将尺寸动画后的最终位置作为新的持久化锚点，避免旧左上角覆盖中心锚点结果。
+            // While expanded, persist the post-resize position so a stale top-left does not overwrite the center anchor.
+            if (_isExpanded)
+                SaveCurrentExpandedPosition();
+
+            if (!_isDragging && !_positionAnimationActive)
+                SetPosition(_isExpanded ? GetExpandedPosition() : GetCollapsedPosition(), animated: false);
         }
     }
 
@@ -318,6 +326,13 @@ public partial class DynamicIslandWindow : Window
         if (_isDragging)
             return;
 
+        if (_sizeAnimationTimer.IsEnabled)
+        {
+            _isExpanded = true;
+            Visibility = Visibility.Visible;
+            return;
+        }
+
         var target = GetExpandedPosition();
         if (_isExpanded && IsPositionTarget(target))
         {
@@ -334,6 +349,12 @@ public partial class DynamicIslandWindow : Window
     {
         if (_isDragging)
             return;
+
+        if (_sizeAnimationTimer.IsEnabled)
+        {
+            _isExpanded = false;
+            return;
+        }
 
         var target = GetCollapsedPosition();
         if (!_isExpanded && IsPositionTarget(target))
@@ -552,6 +573,22 @@ public partial class DynamicIslandWindow : Window
 
         _pendingSizeRequest = null;
         ApplyDesiredSizeRequest(request, orientation);
+    }
+
+    private void SaveCurrentExpandedPosition()
+    {
+        if (double.IsNaN(Left) || double.IsNaN(Top))
+            return;
+
+        var workArea = GetCurrentWorkArea();
+        SettingsManager.Current.DynamicIslandLeft = Math.Clamp(
+            Left,
+            workArea.Left,
+            Math.Max(workArea.Left, workArea.Right - Width));
+        SettingsManager.Current.DynamicIslandTop = Math.Clamp(
+            Top,
+            workArea.Top,
+            Math.Max(workArea.Top, workArea.Bottom - Height));
     }
 
     private bool SaveDraggedPositionAndEdge()
