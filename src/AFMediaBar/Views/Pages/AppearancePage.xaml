@@ -112,7 +112,7 @@
                                   FontSize="12" />
                 </StackPanel>
             </ui:CardControl.Header>
-            <TextBlock Text="The quick brown fox 敏捷的棕色狐狸"
+            <TextBlock Text="You are my everything · 你是我的一切 · 君は私のすべて · 당신은 나의 전부"
                        FontSize="16"
                        FontFamily="{DynamicResource AppTextFontFamily}"
                        FontWeight="{DynamicResource AppTextFontWeight}" />
