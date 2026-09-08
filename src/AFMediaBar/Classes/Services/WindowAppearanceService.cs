@@ -5,6 +5,7 @@ using System.Windows.Media.Effects;
 using System.Windows.Controls.Primitives;
 using System.Runtime.InteropServices;
 using System.Windows.Threading;
+using AFMediaBar.Classes.Interop;
 using AFMediaBar.Classes.Settings;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
@@ -26,12 +27,16 @@ public sealed class WindowAppearanceService : IDisposable
     private const int WmDpiChangedAfterParent = 0x02E3;
     private const int DwmUseImmersiveDarkMode = 20;
     private const int DwmWindowCornerPreference = 33;
+    private const int DwmBorderColor = 34;
+    private const int DwmCaptionColor = 35;
     private const int DwmSystemBackdropType = 38;
     private const int DwmMicaEffect = 1029;
     private const int DwmBackdropNone = 1;
     private const int DwmBackdropMica = 2;
     private const int DwmBackdropAcrylic = 3;
     private const int DwmCornerRound = 2;
+    private const int DwmColorDefault = unchecked((int)0xFFFFFFFF);
+    private const int DwmColorNone = unchecked((int)0xFFFFFFFE);
 
     private readonly HashSet<FluentWindow> _windows = [];
     private readonly Dictionary<FluentWindow, HwndSource> _windowSources = [];
@@ -135,7 +140,11 @@ public sealed class WindowAppearanceService : IDisposable
         if (sender is ContextMenu menu)
         {
             WireSubmenuHandlers(menu);
-            menu.Dispatcher.BeginInvoke(() => ApplyMenu(menu), DispatcherPriority.Loaded);
+            menu.Dispatcher.BeginInvoke(() =>
+            {
+                ApplyMenu(menu);
+                ScheduleMenuZOrderReassert(menu);
+            }, DispatcherPriority.Loaded);
         }
     }
 
@@ -147,7 +156,11 @@ public sealed class WindowAppearanceService : IDisposable
         }
 
         PrepareSubmenuVisual(item);
-        item.Dispatcher.BeginInvoke(() => ApplySubmenu(item), DispatcherPriority.Loaded);
+        item.Dispatcher.BeginInvoke(() =>
+        {
+            ApplySubmenu(item);
+            ScheduleSubmenuZOrderReassert(item);
+        }, DispatcherPriority.Loaded);
     }
 
     private void OnMenuOwnerClosed(object? sender, EventArgs e)
@@ -224,6 +237,7 @@ public sealed class WindowAppearanceService : IDisposable
         {
             ResetNativeBackdrop(source.Handle);
             SetFrame(source.Handle, extended: false);
+            SetDwmNonClientColors(source.Handle, transparent: false);
             source.CompositionTarget.BackgroundColor = Colors.Transparent;
             window.SetResourceReference(Control.BackgroundProperty, "ApplicationBackgroundBrush");
         }
@@ -231,10 +245,69 @@ public sealed class WindowAppearanceService : IDisposable
         {
             window.Background = Brushes.Transparent;
             ApplyNativeBackdrop(source, mode, dark);
+            SetDwmNonClientColors(source.Handle, transparent: true);
         }
 
         SetDwmAttribute(source.Handle, DwmUseImmersiveDarkMode, dark ? 1 : 0);
         SetDwmAttribute(source.Handle, DwmWindowCornerPreference, DwmCornerRound);
+    }
+
+    private static void ScheduleMenuZOrderReassert(ContextMenu menu)
+    {
+        var timer = new DispatcherTimer(DispatcherPriority.Input, menu.Dispatcher)
+        {
+            Interval = TimeSpan.FromMilliseconds(250)
+        };
+        EventHandler? tick = null;
+        tick = (_, _) =>
+        {
+            timer.Stop();
+            timer.Tick -= tick;
+            if (menu.IsOpen && PresentationSource.FromVisual(menu) is HwndSource source)
+            {
+                PromotePopup(source.Handle);
+            }
+        };
+        timer.Tick += tick;
+        timer.Start();
+    }
+
+    private static void ScheduleSubmenuZOrderReassert(WpfMenuItem item)
+    {
+        var timer = new DispatcherTimer(DispatcherPriority.Input, item.Dispatcher)
+        {
+            Interval = TimeSpan.FromMilliseconds(250)
+        };
+        EventHandler? tick = null;
+        tick = (_, _) =>
+        {
+            timer.Stop();
+            timer.Tick -= tick;
+            if (item.IsSubmenuOpen && item.Template.FindName("SubmenuBorder", item) is Border border &&
+                PresentationSource.FromVisual(border) is HwndSource source)
+            {
+                PromotePopup(source.Handle);
+            }
+        };
+        timer.Tick += tick;
+        timer.Start();
+    }
+
+    private static void PromotePopup(nint handle)
+    {
+        if (handle == nint.Zero)
+        {
+            return;
+        }
+
+        _ = NativeMethods.SetWindowPos(
+            handle,
+            -1,
+            0,
+            0,
+            0,
+            0,
+            NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
     }
 
     private static void ApplyMenu(ContextMenu menu)
@@ -281,6 +354,7 @@ public sealed class WindowAppearanceService : IDisposable
 
         SetDwmAttribute(source.Handle, DwmUseImmersiveDarkMode, dark ? 1 : 0);
         SetDwmAttribute(source.Handle, DwmWindowCornerPreference, DwmCornerRound);
+        PromotePopup(source.Handle);
     }
 
     private static void PrepareSubmenuVisual(WpfMenuItem item)
@@ -373,6 +447,13 @@ public sealed class WindowAppearanceService : IDisposable
 
     private static void SetDwmAttribute(nint handle, int attribute, int value) =>
         _ = DwmSetWindowAttribute(handle, attribute, ref value, sizeof(int));
+
+    private static void SetDwmNonClientColors(nint handle, bool transparent)
+    {
+        var color = transparent ? DwmColorNone : DwmColorDefault;
+        SetDwmAttribute(handle, DwmCaptionColor, color);
+        SetDwmAttribute(handle, DwmBorderColor, color);
+    }
 
     private static void ApplyLegacyAcrylic(nint handle, bool dark)
     {

@@ -10,20 +10,15 @@
       d:DesignHeight="900"
       d:DesignWidth="1100"
       Title="AppearancePage"
-      Background="Transparent"
       Foreground="{DynamicResource TextFillColorPrimaryBrush}">
 
     <Page.Resources>
         <converters:GenericEnumToBooleanConverter x:Key="EnumToBooleanConverter" />
     </Page.Resources>
 
-    <ScrollViewer x:Name="AppearanceScrollViewer"
-                  Background="Transparent"
-                  VerticalScrollBarVisibility="Auto"
-                  HorizontalScrollBarVisibility="Disabled"
-                  PanningMode="VerticalOnly">
     <StackPanel MaxWidth="1000"
-                Margin="16,16,16,24"
+                Margin="16"
+                VerticalAlignment="Center"
                 TextElement.FontFamily="{DynamicResource AppTextFontFamily}"
                 TextElement.FontWeight="{DynamicResource AppTextFontWeight}">
         <TextBlock Text="外观"
@@ -240,5 +235,4 @@
             </StackPanel>
         </ui:CardControl>
     </StackPanel>
-    </ScrollViewer>
 </Page>

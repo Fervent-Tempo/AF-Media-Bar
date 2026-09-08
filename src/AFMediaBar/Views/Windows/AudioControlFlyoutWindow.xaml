@@ -109,8 +109,8 @@
                                 <Grid Height="38">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="26" />
+                                        <ColumnDefinition Width="72" />
                                         <ColumnDefinition />
-                                        <ColumnDefinition Width="66" />
                                         <ColumnDefinition Width="38" />
                                     </Grid.ColumnDefinitions>
                                     <Border Width="22" Height="22" CornerRadius="4"
@@ -148,7 +148,8 @@
                                         </TextBlock.Style>
                                     </TextBlock>
                                     <Slider Grid.Column="2" Minimum="0" Maximum="100"
-                                            Margin="0,0,8,0"
+                                            MinWidth="0"
+                                            Margin="0,0,6,0"
                                             Value="{Binding VolumePercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                             IsMoveToPointEnabled="True"
                                             LargeChange="10"
