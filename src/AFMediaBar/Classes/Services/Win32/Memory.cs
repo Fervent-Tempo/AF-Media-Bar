@@ -4,6 +4,10 @@ using System.Runtime.InteropServices;
 
 namespace AFMediaBar.Classes.Services.Win32;
 
+/// <summary>
+/// 读取外部进程内存并执行签名扫描的内部工具。
+/// Internal helper for reading external process memory and scanning signatures.
+/// </summary>
 internal static class Memory
 {
     public static bool FindPattern(string pattern, int processId, nint address, out nint pointer)
@@ -131,6 +135,10 @@ internal static class Memory
     }
 }
 
+/// <summary>
+/// 封装进程句柄和基础类型读取操作。
+/// Encapsulates a process handle and primitive typed reads.
+/// </summary>
 internal sealed class ProcessMemory : IDisposable
 {
     private readonly nint _process;

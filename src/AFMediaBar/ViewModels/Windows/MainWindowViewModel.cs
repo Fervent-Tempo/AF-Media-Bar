@@ -1,8 +1,6 @@
 using System.Windows.Input;
 using AFMediaBar.Classes.Services;
-using AFMediaBar.Views.Windows;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace AFMediaBar.ViewModels.Windows
 {
@@ -16,7 +14,11 @@ namespace AFMediaBar.ViewModels.Windows
         [ObservableProperty]
         private string _applicationTitle = "AFMediaBar";
 
-        private SettingsWindow? _settingsWindow;
+        /// <summary>
+        /// 请求宿主窗口打开设置页。
+        /// Requests that the host window open the settings page.
+        /// </summary>
+        public event EventHandler? OpenSettingsRequested;
 
         /// <summary>切换到指定媒体会话（参数为会话 Key）。/ Switches to the session identified by the parameter key.</summary>
         public ICommand SelectMediaSessionCommand { get; }
@@ -46,7 +48,7 @@ namespace AFMediaBar.ViewModels.Windows
         {
             SelectMediaSessionCommand = new RelayCommand<string>(key => mediaSessionService.SelectSession(key ?? string.Empty));
             ReconnectMediaSessionCommand = new AsyncRelayCommand(() => mediaSessionService.ReconnectAsync());
-            OpenSettingsCommand = new RelayCommand(OpenSettings);
+            OpenSettingsCommand = new RelayCommand(() => OpenSettingsRequested?.Invoke(this, EventArgs.Empty));
             ExitApplicationCommand = new RelayCommand(() => Application.Current.Shutdown());
             TogglePlayPauseCommand = new AsyncRelayCommand(mediaSessionService.TogglePlayPauseAsync);
             SkipPreviousCommand = new AsyncRelayCommand(mediaSessionService.SkipPreviousAsync);
@@ -54,16 +56,5 @@ namespace AFMediaBar.ViewModels.Windows
             ActivateMediaSourceCommand = new RelayCommand(mediaSessionService.ActivateSelectedSource);
         }
 
-        private void OpenSettings()
-        {
-            if (_settingsWindow is null)
-            {
-                _settingsWindow = App.Services.GetRequiredService<SettingsWindow>();
-                _settingsWindow.Closed += (_, _) => _settingsWindow = null;
-            }
-
-            _settingsWindow.Show();
-            _settingsWindow.Activate();
-        }
     }
 }

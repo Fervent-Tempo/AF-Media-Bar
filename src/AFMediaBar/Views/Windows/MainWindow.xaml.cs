@@ -1,4 +1,5 @@
 using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
@@ -17,7 +18,11 @@ using static AFMediaBar.Classes.Interop.NativeMethods;
 
 namespace AFMediaBar.Views.Windows
 {
-    public partial class MainWindow : INavigationWindow
+    /// <summary>
+    /// 隐藏的应用宿主窗口，协调媒体栏模式、托盘入口和任务栏恢复。
+    /// Invisible application host coordinating media-bar modes, tray entry points, and taskbar recovery.
+    /// </summary>
+    public partial class MainWindow : INavigationWindow, ITaskbarWindowHostActions
     {
         public MainWindowViewModel ViewModel { get; }
 
@@ -28,8 +33,10 @@ namespace AFMediaBar.Views.Windows
         private readonly NativeMouseInputMonitor _mouseInputMonitor;
         private readonly WindowAppearanceService _appearanceService;
         private readonly TaskbarOccupiedAreaService _occupiedAreaService;
+        private readonly Func<SettingsWindow> _settingsWindowFactory;
         private TaskbarWindow? _taskbarWindow;
         private DynamicIslandWindow? _dynamicIslandWindow;
+        private SettingsWindow? _settingsWindow;
         private int _taskbarCreatedMessage;
         private bool _isSystemThemeWatcherActive;
         private bool _isClosing;
@@ -40,6 +47,13 @@ namespace AFMediaBar.Views.Windows
         // Pause the old host while an Explorer restart rebuilds the taskbar child window.
         internal static volatile bool TaskbarEnvironmentRecovering;
 
+        bool ITaskbarWindowHostActions.IsEnvironmentRecovering => TaskbarEnvironmentRecovering;
+        void ITaskbarWindowHostActions.RequestTaskbarHostReload() => RequestTaskbarHostReload();
+
+        /// <summary>
+        /// 创建并初始化应用宿主窗口及其基础设施依赖。
+        /// Creates the application host window and initializes its infrastructure dependencies.
+        /// </summary>
         public MainWindow(
             MainWindowViewModel viewModel,
             ITaskbarDockService taskBarService,
@@ -48,7 +62,8 @@ namespace AFMediaBar.Views.Windows
             AudioControlFlyoutWindow audioControlFlyout,
             NativeMouseInputMonitor mouseInputMonitor,
             WindowAppearanceService appearanceService,
-            TaskbarOccupiedAreaService occupiedAreaService)
+            TaskbarOccupiedAreaService occupiedAreaService,
+            Func<SettingsWindow> settingsWindowFactory)
         {
             ViewModel = viewModel;
             DataContext = this;
@@ -60,6 +75,7 @@ namespace AFMediaBar.Views.Windows
             _mouseInputMonitor = mouseInputMonitor;
             _appearanceService = appearanceService;
             _occupiedAreaService = occupiedAreaService;
+            _settingsWindowFactory = settingsWindowFactory;
 
             InitializeComponent();
             UpdateSystemThemeWatcher(SettingsManager.Current.Appearance);
@@ -83,6 +99,7 @@ namespace AFMediaBar.Views.Windows
             _audioControlViewModel.FlyoutToggleRequested += AudioControl_OnFlyoutToggleRequested;
             _audioControlViewModel.TrayContextMenuRequested += AudioControl_OnTrayContextMenuRequested;
             _mouseInputMonitor.LeftButtonPressed += MouseInputMonitor_OnLeftButtonPressed;
+            ViewModel.OpenSettingsRequested += ViewModel_OpenSettingsRequested;
 
             // evaluate the initial state once the window is loaded
             Loaded += MainWindow_Loaded;
@@ -90,18 +107,24 @@ namespace AFMediaBar.Views.Windows
 
         #region INavigationWindow methods
 
+        /// <summary>返回导航控件；隐藏宿主不提供页面导航。/ Returns the navigation control; the hidden host does not expose page navigation.</summary>
         public INavigationView GetNavigation() => throw new NotImplementedException();
 
+        /// <summary>尝试导航到页面类型。/ Attempts to navigate to a page type.</summary>
         public bool Navigate(Type pageType) => false;
 
+        /// <summary>设置页面提供器；隐藏宿主不承载页面。/ Sets the page provider; the hidden host does not host pages.</summary>
         public void SetPageService(INavigationViewPageProvider navigationViewPageProvider) =>
             throw new NotImplementedException();
 
+        /// <summary>设置导航服务提供器；隐藏宿主不使用该入口。/ Sets the navigation service provider; unused by the hidden host.</summary>
         public void SetServiceProvider(IServiceProvider serviceProvider) =>
             throw new NotImplementedException();
 
+        /// <summary>显示宿主窗口。/ Shows the host window.</summary>
         public void ShowWindow() => Show();
 
+        /// <summary>关闭宿主窗口。/ Closes the host window.</summary>
         public void CloseWindow() => Close();
 
         #endregion INavigationWindow methods
@@ -155,6 +178,7 @@ namespace AFMediaBar.Views.Windows
             _audioControlViewModel.FlyoutToggleRequested -= AudioControl_OnFlyoutToggleRequested;
             _audioControlViewModel.TrayContextMenuRequested -= AudioControl_OnTrayContextMenuRequested;
             _mouseInputMonitor.LeftButtonPressed -= MouseInputMonitor_OnLeftButtonPressed;
+            ViewModel.OpenSettingsRequested -= ViewModel_OpenSettingsRequested;
             // Make sure that closing this window will begin the process of closing the application.
             Application.Current.Shutdown();
         }
@@ -293,7 +317,7 @@ namespace AFMediaBar.Views.Windows
 
             CloseTaskbarWindow();
 
-            _taskbarWindow = new TaskbarWindow(_taskBarService, this, _appearanceService, _occupiedAreaService);
+            _taskbarWindow = new TaskbarWindow(_taskBarService, ViewModel, this, _appearanceService, _occupiedAreaService);
             _taskbarWindow.ApplyAppearanceSettings();
 
             // Replay the latest snapshot; if none exists yet, force a synchronous refresh.
@@ -447,7 +471,7 @@ namespace AFMediaBar.Views.Windows
             _dynamicIslandWindow = null;
             if (_taskbarWindow is null)
             {
-                _taskbarWindow = new TaskbarWindow(_taskBarService, this, _appearanceService, _occupiedAreaService);
+                _taskbarWindow = new TaskbarWindow(_taskBarService, ViewModel, this, _appearanceService, _occupiedAreaService);
                 _taskbarWindow.ApplyAppearanceSettings();
                 if (_mediaSessionService.CurrentSnapshot is { } snapshot)
                     _taskbarWindow.ApplySnapshot(snapshot);
@@ -470,6 +494,28 @@ namespace AFMediaBar.Views.Windows
                 return;
 
             await _audioControlFlyout.ToggleAsync(bounds);
+        }
+
+        private void ViewModel_OpenSettingsRequested(object? sender, EventArgs e)
+        {
+            if (_isClosing)
+                return;
+
+            _settingsWindow ??= _settingsWindowFactory();
+            _settingsWindow.Closed -= SettingsWindow_Closed;
+            _settingsWindow.Closed += SettingsWindow_Closed;
+            _settingsWindow.Show();
+            _settingsWindow.Activate();
+        }
+
+        private void SettingsWindow_Closed(object? sender, EventArgs e)
+        {
+            if (sender is SettingsWindow window)
+            {
+                window.Closed -= SettingsWindow_Closed;
+                if (ReferenceEquals(_settingsWindow, window))
+                    _settingsWindow = null;
+            }
         }
 
         private void AudioControl_OnTrayContextMenuRequested(TrayIconBounds? bounds)

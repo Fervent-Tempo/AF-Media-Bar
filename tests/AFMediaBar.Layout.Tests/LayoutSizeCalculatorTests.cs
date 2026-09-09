@@ -2,6 +2,7 @@ using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services.Layout;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Settings;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace AFMediaBar.Layout.Tests;
@@ -119,7 +120,7 @@ public sealed class LayoutSizeCalculatorTests
     [TestMethod]
     public void TaskbarOccupiedRangesLeaveOnlySafeIntervals()
     {
-        var ranges = TaskbarOccupiedAreaService.CalculateFreeRanges(
+        var ranges = TaskbarFreeRangeCalculator.Calculate(
             primaryLength: 1000,
             occupied:
             [
@@ -136,5 +137,36 @@ public sealed class LayoutSizeCalculatorTests
         Assert.AreEqual(690, ranges[1].End);
         Assert.AreEqual(810, ranges[2].Start);
         Assert.AreEqual(980, ranges[2].End);
+    }
+
+    [TestMethod]
+    public void ScaledLayoutFactoryKeepsThicknessIndependentFromSpacingScale()
+    {
+        var layout = LayoutPresets.GetLayout(WindowMode.Taskbar, LayoutOrientation.Horizontal);
+
+        var scaled = ScaledLayoutFactory.Create(layout, lengthScale: 1.25, thicknessScale: 1);
+
+        Assert.AreEqual(302, scaled.Canvas.Width, 0.01);
+        Assert.AreEqual(44, scaled.Canvas.Height, 0.01);
+        Assert.AreEqual(54, scaled.Components[1].Bounds.X, 0.01);
+    }
+
+    [TestMethod]
+    public void TaskbarPlacementCalculatorClampsManualOffsetsToSafeRange()
+    {
+        var placement = TaskbarBarPlacementCalculator.Calculate(
+            primaryLength: 1000,
+            primarySize: 240,
+            crossLength: 48,
+            crossSize: 44,
+            preferredRange: new TaskbarPrimaryRange(100, 400),
+            position: TaskbarBarPosition.End,
+            manualPadding: 200,
+            crossAxisOffsetDip: 20,
+            dpiScale: 1,
+            edgePadding: 20);
+
+        Assert.AreEqual(160, placement.Primary);
+        Assert.AreEqual(4, placement.Cross);
     }
 }

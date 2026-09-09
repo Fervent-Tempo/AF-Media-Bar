@@ -1,5 +1,9 @@
 namespace AFMediaBar.ViewModels.Pages
 {
+    /// <summary>
+    /// 通用设置页面的视图模型。
+    /// View model for the General settings page.
+    /// </summary>
     public partial class GeneralViewModel : ObservableObject
     {
         public Array TrayWheelBehaviors => Enum.GetValues(typeof(Classes.Settings.TrayWheelBehavior));

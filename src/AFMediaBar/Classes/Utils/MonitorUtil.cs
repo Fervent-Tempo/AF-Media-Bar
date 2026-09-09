@@ -6,8 +6,16 @@ using static AFMediaBar.Classes.Interop.NativeMethods;
 
 namespace AFMediaBar.Classes.Utils;
 
+/// <summary>
+/// 枚举显示器、工作区和有效 DPI 信息。
+/// Enumerates displays, work areas, and effective DPI information.
+/// </summary>
 public static class MonitorUtil
 {
+    /// <summary>
+    /// 表示单个显示器的屏幕、工作区和设备信息。
+    /// Describes one display's screen, work-area, and device information.
+    /// </summary>
     public struct MonitorInfo
     {
         public Rect monitorArea;

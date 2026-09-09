@@ -11,19 +11,21 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Interop;
+using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Layout;
 using AFMediaBar.Classes.Utils;
+using AFMediaBar.ViewModels.Windows;
 using MenuItem = Wpf.Ui.Controls.MenuItem;
 using static AFMediaBar.Classes.Interop.NativeMethods;
 
 namespace AFMediaBar.Views.Windows;
 
 /// <summary>
-/// A transparent child window spanning the whole taskbar. The media bar itself is placed
-/// on a canvas and the window is clipped with SetWindowRgn, so the rest of the taskbar
-/// stays visible and click-through.
+/// 透明子窗口覆盖整个任务栏，媒体栏通过 Canvas 放置并用 SetWindowRgn 裁剪。
+/// A transparent child window spans the whole taskbar; the media bar is placed on a canvas
+/// and clipped with SetWindowRgn so the rest of the taskbar remains visible and click-through.
 /// </summary>
 public partial class TaskbarWindow : Window
 {
@@ -33,7 +35,8 @@ public partial class TaskbarWindow : Window
 
     private readonly ITaskbarDockService _taskBarService;
     private readonly TaskbarOccupiedAreaService _occupiedAreaService;
-    private readonly MainWindow _mainWindow;
+    private readonly MainWindowViewModel _viewModel;
+    private readonly ITaskbarWindowHostActions _hostActions;
     private readonly DispatcherTimer _timer;
     private readonly DispatcherTimer _sizeAnimationTimer;
 
@@ -60,17 +63,21 @@ public partial class TaskbarWindow : Window
     private MediaBarSizeRequest? _pendingSizeRequest;
     private MediaBarSizeRequest? _lastDesiredSizeRequest;
 
+    /// <summary>
+    /// 创建任务栏媒体宿主并连接其基础设施动作。
+    /// Creates the taskbar media host and connects its infrastructure actions.
+    /// </summary>
     public TaskbarWindow(
         ITaskbarDockService taskBarService,
-        MainWindow mainWindow,
+        MainWindowViewModel viewModel,
+        ITaskbarWindowHostActions hostActions,
         WindowAppearanceService appearanceService,
         TaskbarOccupiedAreaService occupiedAreaService)
     {
         WindowHelper.SetNoActivate(this);
         InitializeComponent();
 
-        // The context menu bindings rely on MainWindow.ViewModel
-        DataContext = mainWindow;
+        DataContext = viewModel;
         ContextMenuHelper.AttachOutsideClickDismissal(PlayerMenu);
         appearanceService.Attach(PlayerMenu, this);
         MediaControl.TogglePlayPauseRequested += MediaControl_TogglePlayPauseRequested;
@@ -81,7 +88,8 @@ public partial class TaskbarWindow : Window
 
         _taskBarService = taskBarService;
         _occupiedAreaService = occupiedAreaService;
-        _mainWindow = mainWindow;
+        _viewModel = viewModel;
+        _hostActions = hostActions;
 
         _timer = new DispatcherTimer();
         _timer.Interval = TimeSpan.FromMilliseconds(1500); // slow auto-update for display changes
@@ -218,7 +226,7 @@ public partial class TaskbarWindow : Window
 
     private void UpdatePosition()
     {
-        if (_isClosing || _isEnvironmentSuspended || _isDragging || MainWindow.TaskbarEnvironmentRecovering)
+        if (_isClosing || _isEnvironmentSuspended || _isDragging || _hostActions.IsEnvironmentRecovering)
         {
             // Explorer 正在恢复时不更新旧宿主位置。
             // Do not reposition the old host while Explorer is recovering.
@@ -240,12 +248,12 @@ public partial class TaskbarWindow : Window
             if (interop.Handle == IntPtr.Zero)
             {
                 // Our HWND was destroyed with the old taskbar; let MainWindow recreate the window.
-                if (MainWindow.TaskbarEnvironmentRecovering)
+                if (_hostActions.IsEnvironmentRecovering)
                     return;
 
                 _timer.Stop();
 
-                Dispatcher.BeginInvoke(() => { _mainWindow.RecreateTaskbarWindow(); }, DispatcherPriority.Background);
+                Dispatcher.BeginInvoke(_hostActions.RecreateTaskbarWindow, DispatcherPriority.Background);
 
                 return;
             }
@@ -338,20 +346,19 @@ public partial class TaskbarWindow : Window
         int crossLength = isVertical ? taskbarWidth : taskbarHeight;
         int crossSize = isVertical ? physicalWidth : physicalHeight;
 
-        var rangeStart = preferredRange.Length > 0 ? preferredRange.Start : EdgePadding;
-        var rangeEnd = preferredRange.Length > 0 ? preferredRange.End : primaryLength - EdgePadding;
-        int primaryPos = SettingsManager.Current.Position switch
-        {
-            TaskbarBarPosition.Start => rangeStart,
-            TaskbarBarPosition.End => rangeEnd - primarySize,
-            _ => rangeStart + (rangeEnd - rangeStart - primarySize) / 2
-        };
-        primaryPos += SettingsManager.Current.TaskbarBarManualPadding;
-
-        int crossPos = (crossLength - crossSize) / 2 +
-                       (int)Math.Round(SettingsManager.Current.TaskbarBarCrossAxisOffsetDip * dpiScale);
-        primaryPos = Math.Clamp(primaryPos, rangeStart, Math.Max(rangeStart, rangeEnd - primarySize));
-        crossPos = Math.Clamp(crossPos, 0, Math.Max(0, crossLength - crossSize));
+        var placement = TaskbarBarPlacementCalculator.Calculate(
+            primaryLength,
+            primarySize,
+            crossLength,
+            crossSize,
+            preferredRange,
+            SettingsManager.Current.Position,
+            SettingsManager.Current.TaskbarBarManualPadding,
+            SettingsManager.Current.TaskbarBarCrossAxisOffsetDip,
+            dpiScale,
+            EdgePadding);
+        var primaryPos = placement.Primary;
+        var crossPos = placement.Cross;
 
         // Canvas coordinates and control size are DIPs, hence the dpiScale conversion
         Canvas.SetLeft(MediaControl, (isVertical ? crossPos : primaryPos) / dpiScale);
@@ -523,7 +530,7 @@ public partial class TaskbarWindow : Window
                     Header = option.DisplayName,
                     IsCheckable = true,
                     IsChecked = option.IsSelected,
-                    Command = _mainWindow.ViewModel.SelectMediaSessionCommand,
+                    Command = _viewModel.SelectMediaSessionCommand,
                     CommandParameter = option.Key
                 };
                 SessionsMenuItem.Items.Add(item);
@@ -589,16 +596,16 @@ public partial class TaskbarWindow : Window
     }
 
     private void MediaControl_TogglePlayPauseRequested(object? sender, EventArgs e) =>
-        Execute(_mainWindow.ViewModel.TogglePlayPauseCommand);
+        Execute(_viewModel.TogglePlayPauseCommand);
 
     private void MediaControl_SkipPreviousRequested(object? sender, EventArgs e) =>
-        Execute(_mainWindow.ViewModel.SkipPreviousCommand);
+        Execute(_viewModel.SkipPreviousCommand);
 
     private void MediaControl_SkipNextRequested(object? sender, EventArgs e) =>
-        Execute(_mainWindow.ViewModel.SkipNextCommand);
+        Execute(_viewModel.SkipNextCommand);
 
     private void MediaControl_ActivateSourceRequested(object? sender, EventArgs e) =>
-        Execute(_mainWindow.ViewModel.ActivateMediaSourceCommand);
+        Execute(_viewModel.ActivateMediaSourceCommand);
 
     private static void Execute(System.Windows.Input.ICommand command)
     {
@@ -723,7 +730,7 @@ public partial class TaskbarWindow : Window
     private void ReloadTaskbarHostMenuItem_Click(object sender, RoutedEventArgs e)
     {
         PlayerMenu.IsOpen = false;
-        _mainWindow.RequestTaskbarHostReload();
+        _hostActions.RequestTaskbarHostReload();
     }
 
     private double GetAvailablePrimaryLengthDip(LayoutOrientation orientation)
@@ -750,7 +757,7 @@ public partial class TaskbarWindow : Window
 
         if (!SettingsManager.Current.TaskbarBarAvoidIcons ||
             _lastTaskbarHandle == IntPtr.Zero ||
-            MainWindow.TaskbarEnvironmentRecovering ||
+            _hostActions.IsEnvironmentRecovering ||
             DateTime.UtcNow < _skipOccupiedAreaProbeUntilUtc)
             return fallback;
 

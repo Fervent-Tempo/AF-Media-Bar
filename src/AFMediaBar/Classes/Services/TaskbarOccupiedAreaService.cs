@@ -221,7 +221,7 @@ public sealed class TaskbarOccupiedAreaService
         }
 
         var gap = Math.Max(8, (int)Math.Round(8 * Math.Max(1, dpiScale)));
-        return CalculateFreeRanges(primaryLength, occupied, Math.Max(0, edgePaddingPixels), gap);
+        return TaskbarFreeRangeCalculator.Calculate(primaryLength, occupied, Math.Max(0, edgePaddingPixels), gap);
     }
 
     private bool MatchesCacheKey(
@@ -236,69 +236,6 @@ public sealed class TaskbarOccupiedAreaService
                orientation == _cachedOrientation &&
                Math.Abs(dpiScale - _cachedDpiScale) < 0.01 &&
                edgePaddingPixels == _cachedEdgePaddingPixels;
-    }
-
-    /// <summary>
-    /// 根据占用区间计算安全空闲区间；结果按主轴从小到大排列。
-    /// Calculates safe free ranges from occupied intervals, ordered along the primary axis.
-    /// </summary>
-    public static IReadOnlyList<TaskbarPrimaryRange> CalculateFreeRanges(
-        int primaryLength,
-        IReadOnlyList<TaskbarPrimaryRange> occupied,
-        int edgePaddingPixels,
-        int gapPixels)
-    {
-        var start = Math.Clamp(edgePaddingPixels, 0, Math.Max(0, primaryLength));
-        var end = Math.Clamp(primaryLength - edgePaddingPixels, start, primaryLength);
-        if (end <= start)
-            return [];
-
-        var merged = occupied
-            .Select(range => new TaskbarPrimaryRange(
-                Math.Clamp(range.Start - gapPixels, start, end),
-                Math.Clamp(range.End + gapPixels, start, end)))
-            .Where(range => range.End > range.Start)
-            .OrderBy(range => range.Start)
-            .ToList();
-
-        var result = new List<TaskbarPrimaryRange>();
-        var cursor = start;
-        foreach (var range in MergeRanges(merged))
-        {
-            if (range.Start > cursor)
-                result.Add(new TaskbarPrimaryRange(cursor, range.Start));
-            cursor = Math.Max(cursor, range.End);
-        }
-
-        if (cursor < end)
-            result.Add(new TaskbarPrimaryRange(cursor, end));
-
-        return result.Where(range => range.Length > 0).ToArray();
-    }
-
-    private static IEnumerable<TaskbarPrimaryRange> MergeRanges(IEnumerable<TaskbarPrimaryRange> ranges)
-    {
-        TaskbarPrimaryRange? current = null;
-        foreach (var range in ranges)
-        {
-            if (current is not { } active)
-            {
-                current = range;
-                continue;
-            }
-
-            if (range.Start <= active.End)
-            {
-                current = new TaskbarPrimaryRange(active.Start, Math.Max(active.End, range.End));
-                continue;
-            }
-
-            yield return active;
-            current = range;
-        }
-
-        if (current is { } last)
-            yield return last;
     }
 
     private static void TryCollectAutomationRanges(

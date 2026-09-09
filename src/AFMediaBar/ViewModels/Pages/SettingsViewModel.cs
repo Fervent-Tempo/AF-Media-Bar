@@ -3,6 +3,10 @@ using Wpf.Ui.Appearance;
 
 namespace AFMediaBar.ViewModels.Pages
 {
+    /// <summary>
+    /// 设置信息页面的视图模型，提供版本和主题状态。
+    /// View model for the settings information page, exposing version and theme state.
+    /// </summary>
     public partial class SettingsViewModel : ObservableObject, INavigationAware
     {
         private bool _isInitialized = false;

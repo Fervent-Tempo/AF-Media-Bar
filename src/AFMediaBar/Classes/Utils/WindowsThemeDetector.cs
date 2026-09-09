@@ -11,12 +11,17 @@ using System;
 // Console.WriteLine($"App Theme: {appTheme}");
 // Console.WriteLine($"System Theme: {systemTheme}");
 
+/// <summary>
+/// 从 Windows 个性化注册表读取应用和系统主题。
+/// Reads application and system themes from the Windows personalization registry.
+/// </summary>
 public class WindowsThemeDetector
 {
     private const string RegistryKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
     private const string AppThemeValueName = "AppsUseLightTheme";
     private const string SystemThemeValueName = "SystemUsesLightTheme";
 
+    /// <summary>主题模式。/ Theme mode.</summary>
     public enum ThemeMode
     {
         Light,
@@ -25,7 +30,8 @@ public class WindowsThemeDetector
     }
 
     /// <summary>
-    /// Gets the current theme for Applications and the System.
+    /// 获取当前应用和系统主题。
+    /// Gets the current theme for applications and the system.
     /// </summary>
     public static void GetWindowsTheme(out ThemeMode appTheme, out ThemeMode systemTheme)
     {

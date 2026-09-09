@@ -12,6 +12,10 @@ using Wpf.Ui.Appearance;
 
 namespace AFMediaBar.Classes.Utils;
 
+/// <summary>
+/// 提供媒体封面加载、缓存、裁剪和主色提取的兼容入口。
+/// Compatibility entry point for artwork loading, caching, cropping, and dominant-color extraction.
+/// </summary>
 internal static class BitmapHelper
 {
     // LRU cache implementation for caching thumbnails and their dominant colors

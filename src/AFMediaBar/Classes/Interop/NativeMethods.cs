@@ -5,6 +5,10 @@ using System.Text;
 
 namespace AFMediaBar.Classes.Interop;
 
+/// <summary>
+/// 集中声明 AFMediaBar 使用的 Windows 原生互操作常量、结构和函数。
+/// Central declaration of Windows interop constants, structures, and functions used by AFMediaBar.
+/// </summary>
 public static partial class NativeMethods
 {
     // window styles
@@ -63,6 +67,7 @@ public static partial class NativeMethods
     // GDI region
     public const int RGN_OR = 2;
 
+    /// <summary>监视器选择策略。/ Monitor selection policy.</summary>
     public enum MonitorFromWindowFlags : uint
     {
         DEFAULTTONULL = 0,
@@ -70,6 +75,7 @@ public static partial class NativeMethods
         DEFAULTTONEAREST = 2
     }
 
+    /// <summary>监视器 DPI 类型。/ Monitor DPI type.</summary>
     public enum MonitorDpiType
     {
         MDT_EFFECTIVE_DPI = 0,
@@ -79,6 +85,7 @@ public static partial class NativeMethods
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    /// <summary>屏幕坐标点。/ Screen coordinate point.</summary>
     public struct POINT
     {
         public int X;
@@ -86,6 +93,7 @@ public static partial class NativeMethods
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    /// <summary>整数矩形。/ Integer rectangle.</summary>
     public struct RECT
     {
         public int Left;
@@ -95,6 +103,7 @@ public static partial class NativeMethods
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    /// <summary>包含设备名称的监视器信息。/ Monitor information including the device name.</summary>
     public struct MONITORINFOEX
     {
         public int cbSize;
@@ -106,6 +115,7 @@ public static partial class NativeMethods
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    /// <summary>显示设备枚举信息。/ Enumerated display-device information.</summary>
     public struct DISPLAY_DEVICE
     {
         public int cb;
@@ -121,6 +131,7 @@ public static partial class NativeMethods
     }
 
     [Flags]
+    /// <summary>显示设备状态标志。/ Display-device state flags.</summary>
     public enum DisplayDeviceStateFlags : uint
     {
         DISPLAY_DEVICE_ATTACHED_TO_DESKTOP = 0x1
@@ -131,6 +142,7 @@ public static partial class NativeMethods
     public delegate IntPtr LowLevelMouseProc(int code, IntPtr wParam, IntPtr lParam);
 
     [StructLayout(LayoutKind.Sequential)]
+    /// <summary>低级鼠标钩子数据。/ Low-level mouse hook data.</summary>
     public struct MSLLHOOKSTRUCT
     {
         public POINT Point;
@@ -141,6 +153,7 @@ public static partial class NativeMethods
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    /// <summary>Shell 通知区域图标数据。/ Shell notification-area icon data.</summary>
     public struct NOTIFYICONDATA
     {
         public uint cbSize;
@@ -161,6 +174,7 @@ public static partial class NativeMethods
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    /// <summary>Shell 通知区域图标标识。/ Shell notification-area icon identifier.</summary>
     public struct NOTIFYICONIDENTIFIER
     {
         public uint cbSize;

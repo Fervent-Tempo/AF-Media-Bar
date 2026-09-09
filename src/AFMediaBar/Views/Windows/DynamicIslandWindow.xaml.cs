@@ -18,6 +18,10 @@ namespace AFMediaBar.Views.Windows;
 /// 灵动岛窗口：可自由拖动，贴边后在暂停时收起并支持悬停展开。
 /// Dynamic island window: can be dragged freely and retracts to its selected edge while paused.
 /// </summary>
+/// <summary>
+/// 灵动岛媒体宿主窗口，负责边缘状态、位置和媒体呈现适配。
+/// Dynamic-island media host responsible for edge state, positioning, and media presentation adaptation.
+/// </summary>
 public partial class DynamicIslandWindow : Window
 {
     private const double EdgeRevealDip = 5;
@@ -48,6 +52,10 @@ public partial class DynamicIslandWindow : Window
     private double _sizeAnchorCenterY;
     private MediaBarSizeRequest? _pendingSizeRequest;
 
+    /// <summary>
+    /// 创建灵动岛媒体宿主窗口。
+    /// Creates the dynamic-island media host window.
+    /// </summary>
     public DynamicIslandWindow(MainWindowViewModel viewModel, WindowAppearanceService appearanceService)
     {
         WindowHelper.SetNoActivate(this);

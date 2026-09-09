@@ -103,6 +103,8 @@ namespace AFMediaBar
                 // === 设置窗口（从任务栏右键菜单打开）Settings Window (opened from taskbar context menu) ===
                 services.AddSingleton<SettingsWindowViewModel>();
                 services.AddTransient<SettingsWindow>();
+                services.AddSingleton<Func<SettingsWindow>>(sp =>
+                    () => sp.GetRequiredService<SettingsWindow>());
 
                 // === 设置页面及其 ViewModel Settings Pages and ViewModels ===
                 services.AddSingleton<GeneralPage>();
