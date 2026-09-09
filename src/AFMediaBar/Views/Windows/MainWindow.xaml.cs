@@ -178,12 +178,15 @@ namespace AFMediaBar.Views.Windows
         }
 
         /// <summary>
-        /// 在 Explorer 重启并重新创建任务栏后重建任务栏子窗口。
-        /// Recreates the taskbar child window after Explorer recreates the taskbar.
+        /// 等待任务栏环境稳定后重建任务栏子窗口，用于 Explorer 恢复和手动重载。
+        /// Recreates the taskbar child window after the Shell stabilizes, for Explorer recovery and manual reloads.
         /// </summary>
         internal void RequestTaskbarEnvironmentRecovery()
         {
             if (_isClosing || SettingsManager.Current.WindowMode != WindowMode.Taskbar)
+                return;
+
+            if (TaskbarEnvironmentRecovering)
                 return;
 
             TaskbarEnvironmentRecovering = true;
@@ -195,6 +198,19 @@ namespace AFMediaBar.Views.Windows
             previous?.Dispose();
 
             _ = RecoverTaskbarEnvironmentAsync(_taskbarRecoveryCancellation);
+        }
+
+        /// <summary>
+        /// 从托盘或媒体栏菜单请求安全重建任务栏宿主。
+        /// Requests a safe taskbar-host rebuild from the tray or media-bar menu.
+        /// </summary>
+        internal void RequestTaskbarHostReload()
+        {
+            if (_isClosing || SettingsManager.Current.WindowMode != WindowMode.Taskbar)
+                return;
+
+            TrayMenu.IsOpen = false;
+            RequestTaskbarEnvironmentRecovery();
         }
 
         private async Task RecoverTaskbarEnvironmentAsync(CancellationTokenSource recovery)
@@ -463,11 +479,16 @@ namespace AFMediaBar.Views.Windows
 
             _audioControlFlyout.Hide();
             ApplyTraySessions(_mediaSessionService.CurrentSessionOptions);
+            ReloadTaskbarHostMenuItem.IsEnabled =
+                SettingsManager.Current.WindowMode == WindowMode.Taskbar;
             TrayMenu.DataContext = this;
             TrayMenu.PlacementTarget = this;
             TrayMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
             TrayMenu.IsOpen = true;
         }
+
+        private void ReloadTaskbarHostMenuItem_Click(object sender, RoutedEventArgs e) =>
+            RequestTaskbarHostReload();
 
         private void MouseInputMonitor_OnLeftButtonPressed(object? sender, NativeMouseButtonEventArgs e)
         {

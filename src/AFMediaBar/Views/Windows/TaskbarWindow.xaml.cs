@@ -58,6 +58,7 @@ public partial class TaskbarWindow : Window
     private double _sizeAnimationTarget;
     private double _sizeAnimationProgress;
     private MediaBarSizeRequest? _pendingSizeRequest;
+    private MediaBarSizeRequest? _lastDesiredSizeRequest;
 
     public TaskbarWindow(
         ITaskbarDockService taskBarService,
@@ -84,7 +85,7 @@ public partial class TaskbarWindow : Window
 
         _timer = new DispatcherTimer();
         _timer.Interval = TimeSpan.FromMilliseconds(1500); // slow auto-update for display changes
-        _timer.Tick += (s, e) => UpdatePosition();
+        _timer.Tick += PositionTimer_Tick;
         _timer.Start();
 
         _sizeAnimationTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
@@ -125,6 +126,9 @@ public partial class TaskbarWindow : Window
             // UI Automation probing cannot deadlock with the Shell during repeated display changes.
             _skipOccupiedAreaProbeUntilUtc = DateTime.UtcNow + EnvironmentChangeProbeCooldown;
             _occupiedAreaService.InvalidateCache();
+            _sizeAnimationTimer.Stop();
+            if (_lastDesiredSizeRequest is { } desiredSize)
+                _pendingSizeRequest = desiredSize;
             if (!_environmentLayoutQueued)
             {
                 _environmentLayoutQueued = true;
@@ -160,6 +164,23 @@ public partial class TaskbarWindow : Window
         }
 
         return IntPtr.Zero;
+    }
+
+    private void PositionTimer_Tick(object? sender, EventArgs e)
+    {
+        if (_isClosing || _isEnvironmentSuspended)
+            return;
+
+        if (!_isDragging &&
+            DateTime.UtcNow >= _skipOccupiedAreaProbeUntilUtc &&
+            _pendingSizeRequest is { } request &&
+            _appliedOrientation is { } orientation)
+        {
+            _pendingSizeRequest = null;
+            ApplyDesiredSizeRequest(request, orientation);
+        }
+
+        UpdatePosition();
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -269,6 +290,8 @@ public partial class TaskbarWindow : Window
 
             int taskbarWidth = taskbarRect.Right - taskbarRect.Left;
             int taskbarHeight = taskbarRect.Bottom - taskbarRect.Top;
+            if (taskbarWidth <= 0 || taskbarHeight <= 0)
+                return;
 
             // Cover the whole taskbar with the child window (taskbar-relative coordinates)
             _taskBarService.SetWindowPosition(taskbarWindowHandle, taskbarHandle, taskbarRect,
@@ -295,7 +318,7 @@ public partial class TaskbarWindow : Window
         var orientation = _appliedOrientation ?? LayoutOrientation.Horizontal;
         var preferredRange = GetPreferredSafeRange(taskbarRect, orientation, dpiScale);
         var maximumPrimary = preferredRange.Length / dpiScale;
-        if (maximumPrimary > 0)
+        if (DateTime.UtcNow >= _skipOccupiedAreaProbeUntilUtc && maximumPrimary > 0)
         {
             var currentPrimary = orientation == LayoutOrientation.Horizontal ? barWidth : barHeight;
             if (currentPrimary > maximumPrimary)
@@ -664,12 +687,18 @@ public partial class TaskbarWindow : Window
         if (_isClosing || _appliedOrientation is not { } orientation)
             return;
 
-        if (_isDragging)
+        _lastDesiredSizeRequest = request;
+        if (_isDragging || DateTime.UtcNow < _skipOccupiedAreaProbeUntilUtc)
         {
             _pendingSizeRequest = request;
             return;
         }
 
+        ApplyDesiredSizeRequest(request, orientation);
+    }
+
+    private void ApplyDesiredSizeRequest(MediaBarSizeRequest request, LayoutOrientation orientation)
+    {
         var maximum = GetAvailablePrimaryLengthDip(orientation);
         var target = request.PrimaryLength;
         if (maximum > 0)
@@ -689,6 +718,12 @@ public partial class TaskbarWindow : Window
         _sizeAnimationTarget = target;
         _sizeAnimationProgress = 0;
         _sizeAnimationTimer.Start();
+    }
+
+    private void ReloadTaskbarHostMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        PlayerMenu.IsOpen = false;
+        _mainWindow.RequestTaskbarHostReload();
     }
 
     private double GetAvailablePrimaryLengthDip(LayoutOrientation orientation)

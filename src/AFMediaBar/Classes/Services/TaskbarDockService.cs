@@ -191,7 +191,8 @@ public class TaskbarDockService : ITaskbarDockService
 
         // SetWindowPos positions the child relative to its parent, so convert screen coords first.
         POINT containerPos = new() { X = taskbarRect.Left, Y = taskbarRect.Top };
-        ScreenToClient(taskbarHandle, ref containerPos);
+        if (!ScreenToClient(taskbarHandle, ref containerPos))
+            return;
 
         SetWindowPos(windowHandle, 0,
             containerPos.X, containerPos.Y,
