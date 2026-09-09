@@ -38,6 +38,8 @@ namespace AFMediaBar
     /// </summary>
     public partial class App
     {
+        private static readonly TimeSpan HostShutdownTimeout = TimeSpan.FromSeconds(5);
+
         // .NET Generic Host 提供依赖注入、配置、日志等服务。
         // The .NET Generic Host provides dependency injection, configuration, logging, and other services.
         // https://docs.microsoft.com/dotnet/core/extensions/generic-host
@@ -155,16 +157,34 @@ namespace AFMediaBar
         /// 应用退出事件：停止 Host 并释放资源。
         /// Application exit event: stops the Host and disposes resources.
         /// </summary>
-        private async void OnExit(object sender, ExitEventArgs e)
+        private void OnExit(object sender, ExitEventArgs e)
         {
             SettingsManager.AppearanceSettingsChanged -= SettingsManager_OnAppearanceSettingsChanged;
             ApplicationThemeManager.Changed -= ApplicationThemeManager_OnChanged;
             SystemEvents.UserPreferenceChanged -= SystemEvents_OnUserPreferenceChanged;
             _systemThemeRefreshTimer?.Stop();
-            await _host.StopAsync();
 
-            _host.Dispose();
-
+            // WPF 正在关闭 Dispatcher 时不能从 async void Exit 处理器等待后再恢复到 UI 线程，
+            // 否则 Host.Dispose 可能永远不执行，媒体与 Shell 服务会让进程残留。
+            // Do not await from an async-void Exit handler while WPF is shutting down its
+            // Dispatcher; the continuation may never run and leave hosted resources alive.
+            using var shutdown = new CancellationTokenSource(HostShutdownTimeout);
+            try
+            {
+                _host.StopAsync(shutdown.Token).GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException) when (shutdown.IsCancellationRequested)
+            {
+                Debug.WriteLine("[App] Host shutdown timed out; disposing remaining services.");
+            }
+            catch (Exception exception)
+            {
+                Debug.WriteLine($"[App] Host shutdown failed: {exception}");
+            }
+            finally
+            {
+                _host.Dispose();
+            }
         }
 
         private void SettingsManager_OnAppearanceSettingsChanged(object? sender, AppearanceSettingsChangedEventArgs e)
