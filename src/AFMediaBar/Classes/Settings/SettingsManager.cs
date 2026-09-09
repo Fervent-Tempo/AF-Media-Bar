@@ -109,6 +109,9 @@ public class AppSettings
     /// <summary>任务栏横轴方向偏移（DIP）。/ Taskbar cross-axis offset in DIPs.</summary>
     public double TaskbarBarCrossAxisOffsetDip { get; set; }
 
+    /// <summary>是否避开任务栏图标。/ Whether the media bar avoids occupied taskbar icon areas.</summary>
+    public bool TaskbarBarAvoidIcons { get; set; } = true;
+
     /// <summary>是否禁止拖动任务栏媒体栏。/ Whether taskbar media bar dragging is disabled.</summary>
     public bool TaskbarBarPositionLocked { get; set; }
 

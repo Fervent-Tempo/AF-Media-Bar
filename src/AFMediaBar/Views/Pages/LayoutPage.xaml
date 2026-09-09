@@ -214,14 +214,14 @@
                         Icon="{ui:SymbolIcon DesktopArrowRight24}">
             <ui:CardControl.Header>
                 <StackPanel>
-                    <ui:TextBlock Text="避开任务栏"
+                    <ui:TextBlock Text="避开任务栏图标"
                                   FontWeight="{DynamicResource AppTextStrongFontWeight}" />
-                    <ui:TextBlock Text="自动调整位置以避免遮挡任务栏"
+                    <ui:TextBlock Text="自动限制长度和位置，避免遮挡任务栏图标"
                                   Appearance="Secondary"
                                   FontSize="12" />
                 </StackPanel>
             </ui:CardControl.Header>
-            <ui:ToggleSwitch />
+            <ui:ToggleSwitch IsChecked="{Binding ViewModel.IsTaskbarAvoidingIcons, Mode=TwoWay}" />
         </ui:CardControl>
 
         <ui:CardControl Margin="0,0,0,8"

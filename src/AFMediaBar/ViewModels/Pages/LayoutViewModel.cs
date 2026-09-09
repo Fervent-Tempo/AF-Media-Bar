@@ -38,6 +38,9 @@ namespace AFMediaBar.ViewModels.Pages
         [ObservableProperty]
         private bool _isTaskbarPositionLocked;
 
+        [ObservableProperty]
+        private bool _isTaskbarAvoidingIcons;
+
         public bool IsTaskbarMode => CurrentWindowMode == WindowMode.Taskbar;
 
         public bool IsDynamicIslandMode => CurrentWindowMode == WindowMode.DynamicIsland;
@@ -53,6 +56,7 @@ namespace AFMediaBar.ViewModels.Pages
             _layoutThicknessScalePercent = SettingsManager.Current.LayoutThicknessScalePercent;
             _taskbarCrossAxisOffsetDip = SettingsManager.Current.TaskbarBarCrossAxisOffsetDip;
             _isTaskbarPositionLocked = SettingsManager.Current.TaskbarBarPositionLocked;
+            _isTaskbarAvoidingIcons = SettingsManager.Current.TaskbarBarAvoidIcons;
         }
 
         partial void OnCurrentWindowModeChanged(WindowMode value)
@@ -82,6 +86,12 @@ namespace AFMediaBar.ViewModels.Pages
         partial void OnIsTaskbarPositionLockedChanged(bool value)
         {
             SettingsManager.Current.TaskbarBarPositionLocked = value;
+        }
+
+        partial void OnIsTaskbarAvoidingIconsChanged(bool value)
+        {
+            SettingsManager.Current.TaskbarBarAvoidIcons = value;
+            RaiseLayoutSettingsChanged();
         }
 
         /// <summary>

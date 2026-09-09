@@ -26,6 +26,7 @@ namespace AFMediaBar.Views.Windows
         private readonly AudioControlFlyoutWindow _audioControlFlyout;
         private readonly NativeMouseInputMonitor _mouseInputMonitor;
         private readonly WindowAppearanceService _appearanceService;
+        private readonly TaskbarOccupiedAreaService _occupiedAreaService;
         private TaskbarWindow? _taskbarWindow;
         private DynamicIslandWindow? _dynamicIslandWindow;
         private int _taskbarCreatedMessage;
@@ -42,7 +43,8 @@ namespace AFMediaBar.Views.Windows
             AudioControlViewModel audioControlViewModel,
             AudioControlFlyoutWindow audioControlFlyout,
             NativeMouseInputMonitor mouseInputMonitor,
-            WindowAppearanceService appearanceService)
+            WindowAppearanceService appearanceService,
+            TaskbarOccupiedAreaService occupiedAreaService)
         {
             ViewModel = viewModel;
             DataContext = this;
@@ -53,6 +55,7 @@ namespace AFMediaBar.Views.Windows
             _audioControlFlyout = audioControlFlyout;
             _mouseInputMonitor = mouseInputMonitor;
             _appearanceService = appearanceService;
+            _occupiedAreaService = occupiedAreaService;
 
             InitializeComponent();
             UpdateSystemThemeWatcher(SettingsManager.Current.Appearance);
@@ -194,7 +197,7 @@ namespace AFMediaBar.Views.Windows
                 _taskbarWindow = null;
             }
 
-            _taskbarWindow = new TaskbarWindow(_taskBarService, this, _appearanceService);
+            _taskbarWindow = new TaskbarWindow(_taskBarService, this, _appearanceService, _occupiedAreaService);
             _taskbarWindow.ApplyAppearanceSettings();
 
             // Replay the latest snapshot; if none exists yet, force a synchronous refresh.
@@ -310,7 +313,7 @@ namespace AFMediaBar.Views.Windows
             _dynamicIslandWindow = null;
             if (_taskbarWindow is null)
             {
-                _taskbarWindow = new TaskbarWindow(_taskBarService, this, _appearanceService);
+                _taskbarWindow = new TaskbarWindow(_taskBarService, this, _appearanceService, _occupiedAreaService);
                 _taskbarWindow.ApplyAppearanceSettings();
                 if (_mediaSessionService.CurrentSnapshot is { } snapshot)
                     _taskbarWindow.ApplySnapshot(snapshot);

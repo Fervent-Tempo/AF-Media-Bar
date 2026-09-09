@@ -1,5 +1,6 @@
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services.Layout;
+using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Models;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -113,5 +114,27 @@ public sealed class LayoutSizeCalculatorTests
         var request = LayoutSizeCalculator.Calculate(layout, 1, 1, 0, 1000, "empty");
 
         Assert.AreEqual(128, request.Width, 0.01);
+    }
+
+    [TestMethod]
+    public void TaskbarOccupiedRangesLeaveOnlySafeIntervals()
+    {
+        var ranges = TaskbarOccupiedAreaService.CalculateFreeRanges(
+            primaryLength: 1000,
+            occupied:
+            [
+                new TaskbarPrimaryRange(300, 500),
+                new TaskbarPrimaryRange(700, 800)
+            ],
+            edgePaddingPixels: 20,
+            gapPixels: 10);
+
+        Assert.AreEqual(3, ranges.Count);
+        Assert.AreEqual(20, ranges[0].Start);
+        Assert.AreEqual(290, ranges[0].End);
+        Assert.AreEqual(510, ranges[1].Start);
+        Assert.AreEqual(690, ranges[1].End);
+        Assert.AreEqual(810, ranges[2].Start);
+        Assert.AreEqual(980, ranges[2].End);
     }
 }

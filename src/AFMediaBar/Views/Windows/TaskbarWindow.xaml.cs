@@ -30,6 +30,7 @@ public partial class TaskbarWindow : Window
     private const int EdgePadding = 20;
 
     private readonly ITaskbarDockService _taskBarService;
+    private readonly TaskbarOccupiedAreaService _occupiedAreaService;
     private readonly MainWindow _mainWindow;
     private readonly DispatcherTimer _timer;
     private readonly DispatcherTimer _sizeAnimationTimer;
@@ -53,7 +54,8 @@ public partial class TaskbarWindow : Window
     public TaskbarWindow(
         ITaskbarDockService taskBarService,
         MainWindow mainWindow,
-        WindowAppearanceService appearanceService)
+        WindowAppearanceService appearanceService,
+        TaskbarOccupiedAreaService occupiedAreaService)
     {
         WindowHelper.SetNoActivate(this);
         InitializeComponent();
@@ -69,6 +71,7 @@ public partial class TaskbarWindow : Window
         MediaControl.DesiredSizeChanged += MediaControl_DesiredSizeChanged;
 
         _taskBarService = taskBarService;
+        _occupiedAreaService = occupiedAreaService;
         _mainWindow = mainWindow;
 
         _timer = new DispatcherTimer();
@@ -255,7 +258,8 @@ public partial class TaskbarWindow : Window
         double barWidth = canvas?.Width ?? 300;
         double barHeight = canvas?.Height ?? 44;
         var orientation = _appliedOrientation ?? LayoutOrientation.Horizontal;
-        var maximumPrimary = GetAvailablePrimaryLengthDip(orientation);
+        var preferredRange = GetPreferredSafeRange(taskbarRect, orientation, dpiScale);
+        var maximumPrimary = preferredRange.Length / dpiScale;
         if (maximumPrimary > 0)
         {
             var currentPrimary = orientation == LayoutOrientation.Horizontal ? barWidth : barHeight;
@@ -276,17 +280,19 @@ public partial class TaskbarWindow : Window
         int crossLength = isVertical ? taskbarWidth : taskbarHeight;
         int crossSize = isVertical ? physicalWidth : physicalHeight;
 
+        var rangeStart = preferredRange.Length > 0 ? preferredRange.Start : EdgePadding;
+        var rangeEnd = preferredRange.Length > 0 ? preferredRange.End : primaryLength - EdgePadding;
         int primaryPos = SettingsManager.Current.Position switch
         {
-            TaskbarBarPosition.Start => EdgePadding,
-            TaskbarBarPosition.End => primaryLength - primarySize - EdgePadding,
-            _ => (primaryLength - primarySize) / 2
+            TaskbarBarPosition.Start => rangeStart,
+            TaskbarBarPosition.End => rangeEnd - primarySize,
+            _ => rangeStart + (rangeEnd - rangeStart - primarySize) / 2
         };
         primaryPos += SettingsManager.Current.TaskbarBarManualPadding;
 
         int crossPos = (crossLength - crossSize) / 2 +
                        (int)Math.Round(SettingsManager.Current.TaskbarBarCrossAxisOffsetDip * dpiScale);
-        primaryPos = Math.Clamp(primaryPos, 0, Math.Max(0, primaryLength - primarySize));
+        primaryPos = Math.Clamp(primaryPos, rangeStart, Math.Max(rangeStart, rangeEnd - primarySize));
         crossPos = Math.Clamp(crossPos, 0, Math.Max(0, crossLength - crossSize));
 
         // Canvas coordinates and control size are DIPs, hence the dpiScale conversion
@@ -602,10 +608,37 @@ public partial class TaskbarWindow : Window
         if (dpi <= 0)
             return 0;
 
-        var physicalLength = orientation == LayoutOrientation.Horizontal
-            ? rect.Right - rect.Left
-            : rect.Bottom - rect.Top;
-        return Math.Max(1, physicalLength / dpi - EdgePadding * 2);
+        var range = GetPreferredSafeRange(rect, orientation, dpi);
+        return Math.Max(1, range.Length / dpi);
+    }
+
+    private TaskbarPrimaryRange GetPreferredSafeRange(RECT taskbarRect, LayoutOrientation orientation, double dpiScale)
+    {
+        var primaryLength = orientation == LayoutOrientation.Horizontal
+            ? taskbarRect.Right - taskbarRect.Left
+            : taskbarRect.Bottom - taskbarRect.Top;
+        var fallback = new TaskbarPrimaryRange(
+            Math.Min(EdgePadding, primaryLength),
+            Math.Max(Math.Min(EdgePadding, primaryLength), primaryLength - EdgePadding));
+
+        if (!SettingsManager.Current.TaskbarBarAvoidIcons || _lastTaskbarHandle == IntPtr.Zero)
+            return fallback;
+
+        var ranges = _occupiedAreaService.GetSafePrimaryRanges(
+            _lastTaskbarHandle,
+            taskbarRect,
+            orientation,
+            dpiScale,
+            EdgePadding);
+        if (ranges.Count == 0)
+            return fallback;
+
+        return SettingsManager.Current.Position switch
+        {
+            TaskbarBarPosition.End => ranges[^1],
+            TaskbarBarPosition.Center => ranges.OrderByDescending(range => range.Length).First(),
+            _ => ranges[0]
+        };
     }
 
     private void AdvanceSizeAnimation()
