@@ -1,6 +1,8 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
+using AFMediaBar.Classes.Interop;
 
 namespace AFMediaBar.Classes.Utils;
 
@@ -61,9 +63,19 @@ public static class ContextMenuHelper
     private static bool ContainsScreenPoint(FrameworkElement element, Point screenPoint)
     {
         if (!element.IsVisible || element.ActualWidth <= 0 || element.ActualHeight <= 0 ||
-            PresentationSource.FromVisual(element) is null)
+            PresentationSource.FromVisual(element) is not HwndSource source)
         {
             return false;
+        }
+
+        // 低级鼠标钩子和 HWND 矩形都使用物理屏幕像素，避免 DPI 热切换时
+        // WPF 的 PointFromScreen 暂时仍使用旧变换而误判菜单内部点击。
+        // Low-level mouse input and HWND bounds share physical screen pixels, avoiding
+        // stale PointFromScreen transforms while a per-monitor DPI transition settles.
+        if (source.Handle != IntPtr.Zero && NativeMethods.GetWindowRect(source.Handle, out var windowRect))
+        {
+            return screenPoint.X >= windowRect.Left && screenPoint.X <= windowRect.Right &&
+                   screenPoint.Y >= windowRect.Top && screenPoint.Y <= windowRect.Bottom;
         }
 
         try

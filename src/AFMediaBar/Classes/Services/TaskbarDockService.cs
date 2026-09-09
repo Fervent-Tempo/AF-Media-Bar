@@ -170,6 +170,20 @@ public class TaskbarDockService : ITaskbarDockService
         SetParent(windowHandle, taskbarHandle);
     }
 
+    public void UndockWindow(IntPtr windowHandle)
+    {
+        if (windowHandle == IntPtr.Zero)
+            return;
+
+        SetWindowPos(windowHandle, 0, 0, 0, 0, 0,
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_HIDEWINDOW);
+        SetParent(windowHandle, IntPtr.Zero);
+
+        var style = GetWindowLong(windowHandle, GWL_STYLE);
+        style = (style & ~WS_CHILD) | WS_POPUP;
+        SetWindowLong(windowHandle, GWL_STYLE, style);
+    }
+
     public void SetWindowPosition(IntPtr windowHandle, IntPtr taskbarHandle, RECT taskbarRect, int width, int height)
     {
         if (windowHandle == IntPtr.Zero || taskbarHandle == IntPtr.Zero)

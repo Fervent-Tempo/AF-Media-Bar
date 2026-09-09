@@ -19,6 +19,8 @@ public sealed class TaskbarOccupiedAreaService
     private const int MinimumElementPrimaryPixels = 8;
     private const int MaximumElementPrimaryPixels = 260;
     private static readonly TimeSpan ProbeCacheDuration = TimeSpan.FromMilliseconds(250);
+    private static readonly TimeSpan ProbeResultTimeout = TimeSpan.FromMilliseconds(1500);
+    private readonly object _cacheGate = new();
     private IntPtr _cachedTaskbarHandle;
     private RECT _cachedTaskbarRect;
     private LayoutOrientation _cachedOrientation;
@@ -26,6 +28,9 @@ public sealed class TaskbarOccupiedAreaService
     private int _cachedEdgePaddingPixels;
     private DateTime _cachedAtUtc;
     private IReadOnlyList<TaskbarPrimaryRange> _cachedRanges = [];
+    private bool _probeInProgress;
+    private DateTime _probeStartedAtUtc;
+    private long _cacheGeneration;
 
     /// <summary>
     /// 探测任务栏按钮和托盘占用区域，并返回带安全间距的可用主轴区间。
@@ -36,7 +41,7 @@ public sealed class TaskbarOccupiedAreaService
     /// <param name="orientation">布局主轴方向 / Layout primary-axis orientation.</param>
     /// <param name="dpiScale">任务栏 DPI 缩放 / Taskbar DPI scale.</param>
     /// <param name="edgePaddingPixels">媒体栏边缘留白 / Media-bar edge padding.</param>
-    /// <returns>按主轴顺序排列的安全区间 / Safe ranges ordered along the primary axis.</returns>
+    /// <returns>按主轴顺序排列的已缓存安全区间；探测未完成时返回空集合。 / Cached safe ranges ordered along the primary axis; empty while a probe is pending.</returns>
     public IReadOnlyList<TaskbarPrimaryRange> GetSafePrimaryRanges(
         IntPtr taskbarHandle,
         RECT taskbarRect,
@@ -44,16 +49,159 @@ public sealed class TaskbarOccupiedAreaService
         double dpiScale,
         int edgePaddingPixels)
     {
-        if (taskbarHandle == _cachedTaskbarHandle &&
-            taskbarRect.Equals(_cachedTaskbarRect) &&
-            orientation == _cachedOrientation &&
-            Math.Abs(dpiScale - _cachedDpiScale) < 0.01 &&
-            edgePaddingPixels == _cachedEdgePaddingPixels &&
-            DateTime.UtcNow - _cachedAtUtc < ProbeCacheDuration)
+        IReadOnlyList<TaskbarPrimaryRange> availableCache;
+        var startProbe = false;
+        var probeGeneration = 0L;
+        var probeStartedAtUtc = default(DateTime);
+        lock (_cacheGate)
         {
-            return _cachedRanges;
+            var now = DateTime.UtcNow;
+            var cacheMatches = MatchesCacheKey(
+                taskbarHandle,
+                taskbarRect,
+                orientation,
+                dpiScale,
+                edgePaddingPixels);
+            if (cacheMatches && now - _cachedAtUtc < ProbeCacheDuration)
+                return _cachedRanges;
+
+            var activeProbeTimedOut = _probeInProgress && now - _probeStartedAtUtc > ProbeResultTimeout;
+            availableCache = cacheMatches && !activeProbeTimedOut ? _cachedRanges : [];
+            if (!_probeInProgress)
+            {
+                _probeInProgress = true;
+                _probeStartedAtUtc = now;
+                probeGeneration = _cacheGeneration;
+                probeStartedAtUtc = now;
+                startProbe = true;
+            }
         }
 
+        if (startProbe)
+        {
+            StartProbeThread(
+                taskbarHandle,
+                taskbarRect,
+                orientation,
+                dpiScale,
+                edgePaddingPixels,
+                probeGeneration,
+                probeStartedAtUtc);
+        }
+
+        // UI Automation 可能等待 Explorer；持有 Explorer 子 HWND 的 WPF 线程绝不能同步等待。
+        // UI Automation may wait on Explorer. Never block the WPF thread that owns an
+        // Explorer child HWND; use the previous matching snapshot or the caller's fallback.
+        return availableCache;
+    }
+
+    /// <summary>
+    /// 使当前占用区缓存失效；正在运行的旧探测完成后不会发布结果。
+    /// Invalidates the current occupancy cache; an in-flight older probe will not publish its result.
+    /// </summary>
+    public void InvalidateCache()
+    {
+        lock (_cacheGate)
+        {
+            _cacheGeneration++;
+            _cachedTaskbarHandle = IntPtr.Zero;
+            _cachedTaskbarRect = default;
+            _cachedDpiScale = 0;
+            _cachedAtUtc = default;
+            _cachedRanges = [];
+        }
+    }
+
+    private void StartProbeThread(
+        IntPtr taskbarHandle,
+        RECT taskbarRect,
+        LayoutOrientation orientation,
+        double dpiScale,
+        int edgePaddingPixels,
+        long probeGeneration,
+        DateTime probeStartedAtUtc)
+    {
+        try
+        {
+            var thread = new Thread(() => ProbeAndCache(
+                taskbarHandle,
+                taskbarRect,
+                orientation,
+                dpiScale,
+                edgePaddingPixels,
+                probeGeneration,
+                probeStartedAtUtc))
+            {
+                IsBackground = true,
+                Name = "AFMediaBar.TaskbarUiaProbe"
+            };
+            thread.SetApartmentState(ApartmentState.MTA);
+            thread.Start();
+        }
+        catch (Exception)
+        {
+            lock (_cacheGate)
+            {
+                _probeInProgress = false;
+            }
+        }
+    }
+
+    private void ProbeAndCache(
+        IntPtr taskbarHandle,
+        RECT taskbarRect,
+        LayoutOrientation orientation,
+        double dpiScale,
+        int edgePaddingPixels,
+        long probeGeneration,
+        DateTime probeStartedAtUtc)
+    {
+        try
+        {
+            var ranges = ProbeSafePrimaryRanges(
+                taskbarHandle,
+                taskbarRect,
+                orientation,
+                dpiScale,
+                edgePaddingPixels);
+            lock (_cacheGate)
+            {
+                var completedAtUtc = DateTime.UtcNow;
+                if (probeGeneration == _cacheGeneration &&
+                    completedAtUtc - probeStartedAtUtc <= ProbeResultTimeout)
+                {
+                    _cachedTaskbarHandle = taskbarHandle;
+                    _cachedTaskbarRect = taskbarRect;
+                    _cachedOrientation = orientation;
+                    _cachedDpiScale = dpiScale;
+                    _cachedEdgePaddingPixels = edgePaddingPixels;
+                    _cachedAtUtc = completedAtUtc;
+                    _cachedRanges = ranges;
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // Explorer 可能正在重启或替换 UI Automation 树；调用方继续使用保守区间，后续定位周期会重试。
+            // Explorer may be restarting or replacing its UI Automation tree. The caller
+            // keeps using a conservative range and a later positioning tick retries.
+        }
+        finally
+        {
+            lock (_cacheGate)
+            {
+                _probeInProgress = false;
+            }
+        }
+    }
+
+    private static IReadOnlyList<TaskbarPrimaryRange> ProbeSafePrimaryRanges(
+        IntPtr taskbarHandle,
+        RECT taskbarRect,
+        LayoutOrientation orientation,
+        double dpiScale,
+        int edgePaddingPixels)
+    {
         var primaryLength = orientation == LayoutOrientation.Horizontal
             ? taskbarRect.Right - taskbarRect.Left
             : taskbarRect.Bottom - taskbarRect.Top;
@@ -73,15 +221,21 @@ public sealed class TaskbarOccupiedAreaService
         }
 
         var gap = Math.Max(8, (int)Math.Round(8 * Math.Max(1, dpiScale)));
-        var ranges = CalculateFreeRanges(primaryLength, occupied, Math.Max(0, edgePaddingPixels), gap);
-        _cachedTaskbarHandle = taskbarHandle;
-        _cachedTaskbarRect = taskbarRect;
-        _cachedOrientation = orientation;
-        _cachedDpiScale = dpiScale;
-        _cachedEdgePaddingPixels = edgePaddingPixels;
-        _cachedAtUtc = DateTime.UtcNow;
-        _cachedRanges = ranges;
-        return ranges;
+        return CalculateFreeRanges(primaryLength, occupied, Math.Max(0, edgePaddingPixels), gap);
+    }
+
+    private bool MatchesCacheKey(
+        IntPtr taskbarHandle,
+        RECT taskbarRect,
+        LayoutOrientation orientation,
+        double dpiScale,
+        int edgePaddingPixels)
+    {
+        return taskbarHandle == _cachedTaskbarHandle &&
+               taskbarRect.Equals(_cachedTaskbarRect) &&
+               orientation == _cachedOrientation &&
+               Math.Abs(dpiScale - _cachedDpiScale) < 0.01 &&
+               edgePaddingPixels == _cachedEdgePaddingPixels;
     }
 
     /// <summary>
@@ -157,8 +311,46 @@ public sealed class TaskbarOccupiedAreaService
         try
         {
             var root = AutomationElement.FromHandle(taskbarHandle);
-            var walker = TreeWalker.ControlViewWalker;
-            Visit(root, walker, taskbarRect, orientation, primaryLength, occupied);
+            var interactiveControlCondition = new OrCondition(
+                new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Button),
+                new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.SplitButton),
+                new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.MenuItem),
+                new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem));
+            var cacheRequest = new CacheRequest
+            {
+                TreeScope = TreeScope.Element,
+                TreeFilter = Automation.ControlViewCondition
+            };
+            cacheRequest.Add(AutomationElement.IsOffscreenProperty);
+            cacheRequest.Add(AutomationElement.BoundingRectangleProperty);
+
+            AutomationElementCollection elements;
+            using (cacheRequest.Activate())
+            {
+                elements = root.FindAll(TreeScope.Descendants, interactiveControlCondition);
+            }
+
+            foreach (AutomationElement element in elements)
+            {
+                try
+                {
+                    if (element.Cached.IsOffscreen)
+                        continue;
+
+                    AddAutomationRange(
+                        element.Cached.BoundingRectangle,
+                        taskbarRect,
+                        orientation,
+                        primaryLength,
+                        occupied);
+                }
+                catch (ElementNotAvailableException)
+                {
+                }
+                catch (InvalidOperationException)
+                {
+                }
+            }
         }
         catch (ElementNotAvailableException)
         {
@@ -171,51 +363,23 @@ public sealed class TaskbarOccupiedAreaService
         }
     }
 
-    private static void Visit(
-        AutomationElement element,
-        TreeWalker walker,
+    private static void AddAutomationRange(
+        System.Windows.Rect bounds,
         RECT taskbarRect,
         LayoutOrientation orientation,
         int primaryLength,
         List<TaskbarPrimaryRange> occupied)
     {
-        AutomationElement? child = null;
-        try
-        {
-            var current = element.Current;
-            var type = current.ControlType;
-            if (!current.IsOffscreen &&
-                (type == ControlType.Button ||
-                 type == ControlType.SplitButton ||
-                 type == ControlType.MenuItem ||
-                 type == ControlType.ListItem))
-            {
-                var bounds = current.BoundingRectangle;
-                if (IsUsefulTaskbarElement(bounds, taskbarRect, orientation, primaryLength))
-                {
-                    var start = orientation == LayoutOrientation.Horizontal
-                        ? (int)Math.Round(bounds.Left - taskbarRect.Left)
-                        : (int)Math.Round(bounds.Top - taskbarRect.Top);
-                    var length = orientation == LayoutOrientation.Horizontal
-                        ? (int)Math.Round(bounds.Width)
-                        : (int)Math.Round(bounds.Height);
-                    occupied.Add(new TaskbarPrimaryRange(start, start + length));
-                }
-            }
+        if (!IsUsefulTaskbarElement(bounds, taskbarRect, orientation, primaryLength))
+            return;
 
-            child = walker.GetFirstChild(element);
-            while (child is not null)
-            {
-                Visit(child, walker, taskbarRect, orientation, primaryLength, occupied);
-                child = walker.GetNextSibling(child);
-            }
-        }
-        catch (ElementNotAvailableException)
-        {
-        }
-        catch (COMException)
-        {
-        }
+        var start = orientation == LayoutOrientation.Horizontal
+            ? (int)Math.Round(bounds.Left - taskbarRect.Left)
+            : (int)Math.Round(bounds.Top - taskbarRect.Top);
+        var length = orientation == LayoutOrientation.Horizontal
+            ? (int)Math.Round(bounds.Width)
+            : (int)Math.Round(bounds.Height);
+        occupied.Add(new TaskbarPrimaryRange(start, start + length));
     }
 
     private static bool IsUsefulTaskbarElement(

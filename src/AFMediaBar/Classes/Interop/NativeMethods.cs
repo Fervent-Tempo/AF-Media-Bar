@@ -27,10 +27,12 @@ public static partial class NativeMethods
     // window messages
     public const int WM_DPICHANGED = 0x02E0;
     public const int WM_DPICHANGED_AFTERPARENT = 0x02E3;
+    public const int WM_DISPLAYCHANGE = 0x007E;
     public const int WM_GETOBJECT = 0x003D;
     public const int WM_SHOWWINDOW = 0x0018;
     public const int WM_WINDOWPOSCHANGING = 0x0046;
     public const int WM_NCCALCSIZE = 0x0083;
+    public const int WM_NCDESTROY = 0x0082;
     public const int WM_IME_SETCONTEXT = 0x0281;
     public const int WM_IME_NOTIFY = 0x0282;
     public const int WM_APP = 0x8000;

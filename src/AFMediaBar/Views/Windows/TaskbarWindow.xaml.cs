@@ -3,6 +3,7 @@
 
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Settings;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -28,6 +29,7 @@ public partial class TaskbarWindow : Window
 {
     // physical px offsets from the taskbar edges
     private const int EdgePadding = 20;
+    private static readonly TimeSpan EnvironmentChangeProbeCooldown = TimeSpan.FromSeconds(2);
 
     private readonly ITaskbarDockService _taskBarService;
     private readonly TaskbarOccupiedAreaService _occupiedAreaService;
@@ -36,9 +38,15 @@ public partial class TaskbarWindow : Window
     private readonly DispatcherTimer _sizeAnimationTimer;
 
     private IntPtr _lastTaskbarHandle;
+    private IntPtr _windowHandle;
     private bool _positionUpdateInProgress;
     private bool _isClosing;
+    private bool _isEnvironmentSuspended;
+    private bool _isDetachedFromTaskbar;
+    private bool _setupComplete;
+    private bool _environmentLayoutQueued;
     private bool _isDragging;
+    private DateTime _skipOccupiedAreaProbeUntilUtc;
     private WindowMode? _appliedWindowMode;
     private LayoutOrientation? _appliedOrientation;
     private double _appliedLengthScalePercent = double.NaN;
@@ -91,23 +99,48 @@ public partial class TaskbarWindow : Window
     {
         base.OnSourceInitialized(e);
         HwndSource source = (HwndSource)PresentationSource.FromDependencyObject(this);
+        _windowHandle = source.Handle;
         source.AddHook(WindowProc);
     }
 
     private IntPtr WindowProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
-        if (msg is WM_DPICHANGED or WM_DPICHANGED_AFTERPARENT)
+        if (msg == WM_NCDESTROY)
         {
-            // WPF processes WM_DPICHANGED itself. Refresh placement after that layout
-            // pass; PMv2 child windows receive the AFTERPARENT variant instead.
-            Dispatcher.BeginInvoke(() =>
+            // Explorer 会在 TaskbarCreated 到达 MainWindow 前销毁任务栏子 HWND；立即阻止媒体回调。
+            // Explorer destroys taskbar child HWNDs before TaskbarCreated reaches MainWindow;
+            // block media callbacks immediately so they cannot show an already closed Window.
+            _isClosing = true;
+            _windowHandle = IntPtr.Zero;
+            _timer.Stop();
+            _sizeAnimationTimer.Stop();
+            return IntPtr.Zero;
+        }
+
+        if (_setupComplete &&
+            (msg is WM_DPICHANGED or WM_DPICHANGED_AFTERPARENT or WM_DISPLAYCHANGE))
+        {
+            // Explorer 重排任务栏期间只使用保守区间，避免同步 UI Automation 探测与 Shell 互相等待。
+            // Use the conservative range while Explorer rearranges the taskbar so synchronous
+            // UI Automation probing cannot deadlock with the Shell during repeated display changes.
+            _skipOccupiedAreaProbeUntilUtc = DateTime.UtcNow + EnvironmentChangeProbeCooldown;
+            _occupiedAreaService.InvalidateCache();
+            if (!_environmentLayoutQueued)
             {
-                InvalidateMeasure();
-                InvalidateArrange();
-                InvalidateVisual();
-                UpdateLayout();
-                UpdatePosition();
-            }, DispatcherPriority.Loaded);
+                _environmentLayoutQueued = true;
+                Dispatcher.BeginInvoke(() =>
+                {
+                    _environmentLayoutQueued = false;
+                    if (_isClosing || _isEnvironmentSuspended)
+                        return;
+
+                    InvalidateMeasure();
+                    InvalidateArrange();
+                    InvalidateVisual();
+                    UpdateLayout();
+                    UpdatePosition();
+                }, DispatcherPriority.ContextIdle);
+            }
         }
 
         // Some interface mods (e.g. Nilesoft Shell, Windhawk) collect information from all
@@ -132,6 +165,7 @@ public partial class TaskbarWindow : Window
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
         SetupWindow();
+        _setupComplete = true;
     }
 
     #region TaskBar Layout&Position
@@ -163,9 +197,10 @@ public partial class TaskbarWindow : Window
 
     private void UpdatePosition()
     {
-        if (_isClosing || _isDragging || MainWindow.ExplorerRestarting)
+        if (_isClosing || _isEnvironmentSuspended || _isDragging || MainWindow.TaskbarEnvironmentRecovering)
         {
-            // Explorer is restarting -- do NOTHING
+            // Explorer 正在恢复时不更新旧宿主位置。
+            // Do not reposition the old host while Explorer is recovering.
             return;
         }
 
@@ -184,7 +219,7 @@ public partial class TaskbarWindow : Window
             if (interop.Handle == IntPtr.Zero)
             {
                 // Our HWND was destroyed with the old taskbar; let MainWindow recreate the window.
-                if (MainWindow.ExplorerRestarting)
+                if (MainWindow.TaskbarEnvironmentRecovering)
                     return;
 
                 _timer.Stop();
@@ -316,7 +351,13 @@ public partial class TaskbarWindow : Window
 
     public void ApplySnapshot(MediaSnapshot snapshot)
     {
-        if (!SettingsManager.Current.TaskbarBarEnabled || _isClosing)
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.BeginInvoke(() => ApplySnapshot(snapshot), DispatcherPriority.Background);
+            return;
+        }
+
+        if (!SettingsManager.Current.TaskbarBarEnabled || _isClosing || _isEnvironmentSuspended)
             return;
 
         if (!_timer.IsEnabled)
@@ -329,7 +370,11 @@ public partial class TaskbarWindow : Window
         // Update position after UI change
         Dispatcher.BeginInvoke(() => UpdatePosition(), DispatcherPriority.Background);
 
-        Dispatcher.Invoke(() => { Visibility = Visibility.Visible; });
+        // 修改 Visibility 前在 UI 线程再次检查；Explorer 可能在媒体回调与显示步骤之间销毁子 HWND。
+        // Recheck on the UI thread immediately before touching Window.Visibility. Explorer
+        // can destroy the child HWND between a media callback and this presentation step.
+        if (!_isClosing && !_isEnvironmentSuspended)
+            Visibility = Visibility.Visible;
     }
 
     #endregion
@@ -442,7 +487,7 @@ public partial class TaskbarWindow : Window
     /// </summary>
     public void ApplySessions(IReadOnlyList<MediaSessionOption> options)
     {
-        if (_isClosing)
+        if (_isClosing || _isEnvironmentSuspended)
             return;
 
         Dispatcher.Invoke(() =>
@@ -472,6 +517,53 @@ public partial class TaskbarWindow : Window
     /// <summary>在全局左键点击位于菜单外时关闭右键菜单。 / Closes the context menu after a global left click outside it.</summary>
     public void CloseContextMenuIfOutside(int screenX, int screenY) =>
         ContextMenuHelper.CloseIfOutside(PlayerMenu, screenX, screenY);
+
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        base.OnClosing(e);
+        if (e.Cancel)
+            return;
+
+        _isClosing = true;
+        SuspendForEnvironmentRecovery();
+        DetachFromTaskbar();
+    }
+
+    /// <summary>
+    /// 停止旧任务栏宿主的布局、动画和菜单更新，等待环境恢复时重建窗口。
+    /// Stops layout, animation, and menu updates on an old taskbar host until it is recreated.
+    /// </summary>
+    internal void SuspendForEnvironmentRecovery()
+    {
+        if (_isEnvironmentSuspended)
+            return;
+
+        _isEnvironmentSuspended = true;
+        _timer.Stop();
+        _sizeAnimationTimer.Stop();
+        _pendingSizeRequest = null;
+        PlayerMenu.IsOpen = false;
+    }
+
+    internal void ResumeAfterEnvironmentRecovery()
+    {
+        if (_isClosing || !_isEnvironmentSuspended)
+            return;
+
+        _isEnvironmentSuspended = false;
+        if (!_timer.IsEnabled)
+            _timer.Start();
+        UpdatePosition();
+    }
+
+    internal void DetachFromTaskbar()
+    {
+        if (_isDetachedFromTaskbar || _windowHandle == IntPtr.Zero)
+            return;
+
+        _isDetachedFromTaskbar = true;
+        _taskBarService.UndockWindow(_windowHandle);
+    }
 
     private void MediaControl_TogglePlayPauseRequested(object? sender, EventArgs e) =>
         Execute(_mainWindow.ViewModel.TogglePlayPauseCommand);
@@ -621,7 +713,10 @@ public partial class TaskbarWindow : Window
             Math.Min(EdgePadding, primaryLength),
             Math.Max(Math.Min(EdgePadding, primaryLength), primaryLength - EdgePadding));
 
-        if (!SettingsManager.Current.TaskbarBarAvoidIcons || _lastTaskbarHandle == IntPtr.Zero)
+        if (!SettingsManager.Current.TaskbarBarAvoidIcons ||
+            _lastTaskbarHandle == IntPtr.Zero ||
+            MainWindow.TaskbarEnvironmentRecovering ||
+            DateTime.UtcNow < _skipOccupiedAreaProbeUntilUtc)
             return fallback;
 
         var ranges = _occupiedAreaService.GetSafePrimaryRanges(

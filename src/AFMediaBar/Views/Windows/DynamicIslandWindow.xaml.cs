@@ -29,6 +29,9 @@ public partial class DynamicIslandWindow : Window
     private bool _isExpanded;
     private bool _isClosing;
     private bool _isDragging;
+    private bool _dpiRecoveryQueued;
+    private HwndSource? _windowSource;
+    private Point? _dpiNormalizedCenter;
     private LayoutOrientation? _appliedOrientation;
     private double _appliedLengthScalePercent = double.NaN;
     private double _appliedThicknessScalePercent = double.NaN;
@@ -67,6 +70,92 @@ public partial class DynamicIslandWindow : Window
             MediaControl.ApplyAppearanceSettings();
             SetPosition(_isExpanded ? GetExpandedPosition() : GetCollapsedPosition(), animated: false);
         };
+    }
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        _windowSource = (HwndSource)PresentationSource.FromDependencyObject(this);
+        _windowSource.AddHook(WindowProc);
+    }
+
+    private IntPtr WindowProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg is NativeMethods.WM_DPICHANGED or NativeMethods.WM_DISPLAYCHANGE)
+            ScheduleDpiRecovery(hwnd);
+
+        return IntPtr.Zero;
+    }
+
+    private void ScheduleDpiRecovery(IntPtr hwnd)
+    {
+        if (_isClosing || _dpiRecoveryQueued)
+            return;
+
+        _dpiRecoveryQueued = true;
+        _sizeAnimationTimer.Stop();
+        StopPositionAnimationAtCurrentPosition();
+        PlayerMenu.IsOpen = false;
+
+        if (NativeMethods.GetWindowRect(hwnd, out var windowRect))
+        {
+            var workArea = MonitorUtil.GetMonitor(hwnd).workArea;
+            if (workArea.Width > 0 && workArea.Height > 0)
+            {
+                var centerX = (windowRect.Left + windowRect.Right) / 2.0;
+                var centerY = (windowRect.Top + windowRect.Bottom) / 2.0;
+                _dpiNormalizedCenter = new Point(
+                    Math.Clamp((centerX - workArea.Left) / workArea.Width, 0, 1),
+                    Math.Clamp((centerY - workArea.Top) / workArea.Height, 0, 1));
+            }
+        }
+
+        Dispatcher.BeginInvoke(RecoverAfterDpiChange, DispatcherPriority.ContextIdle);
+    }
+
+    private void RecoverAfterDpiChange()
+    {
+        _dpiRecoveryQueued = false;
+        if (_isClosing)
+            return;
+
+        InvalidateMeasure();
+        InvalidateArrange();
+        InvalidateVisual();
+        UpdateLayout();
+
+        var workArea = GetCurrentWorkArea();
+        var center = _dpiNormalizedCenter ?? new Point(0.5, 0);
+        _dpiNormalizedCenter = null;
+        var left = workArea.Left + center.X * workArea.Width - Width / 2;
+        var top = workArea.Top + center.Y * workArea.Height - Height / 2;
+
+        if (SettingsManager.Current.DynamicIslandEdgeDocked)
+        {
+            switch (SettingsManager.Current.DynamicIslandEdge)
+            {
+                case DynamicIslandEdge.Left:
+                    left = workArea.Left;
+                    break;
+                case DynamicIslandEdge.Right:
+                    left = workArea.Right - Width;
+                    break;
+                case DynamicIslandEdge.Bottom:
+                    top = workArea.Bottom - Height;
+                    break;
+                default:
+                    top = workArea.Top;
+                    break;
+            }
+        }
+
+        left = Math.Clamp(left, workArea.Left, Math.Max(workArea.Left, workArea.Right - Width));
+        top = Math.Clamp(top, workArea.Top, Math.Max(workArea.Top, workArea.Bottom - Height));
+        SettingsManager.Current.DynamicIslandLeft = left;
+        SettingsManager.Current.DynamicIslandTop = top;
+        SetPosition(_isExpanded ? new Point(left, top) : GetCollapsedPosition(), animated: false);
+        MediaControl.RefreshDesiredSize();
+        ApplyPendingSizeRequest();
     }
 
     public void ApplySnapshot(MediaSnapshot snapshot)
@@ -160,7 +249,7 @@ public partial class DynamicIslandWindow : Window
 
         // 拖动或收起/展开的位置动画期间保留最新请求，动画结束后再应用。
         // Keep the latest request during drag or position animation and apply it afterwards.
-        if (_isDragging || _positionAnimationActive)
+        if (_isDragging || _positionAnimationActive || _dpiRecoveryQueued)
         {
             _pendingSizeRequest = request;
             return;
@@ -523,6 +612,11 @@ public partial class DynamicIslandWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _isClosing = true;
+        if (_windowSource is not null)
+        {
+            _windowSource.RemoveHook(WindowProc);
+            _windowSource = null;
+        }
         _sizeAnimationTimer.Stop();
         BeginAnimation(TopProperty, null);
         BeginAnimation(LeftProperty, null);

@@ -77,6 +77,12 @@ public interface ITaskbarDockService
     void DockWindow(IntPtr windowHandle, IntPtr taskbarHandle);
 
     /// <summary>
+    /// 在关闭前将应用窗口从 Explorer 任务栏解挂，避免进程退出期间保留跨进程父子关系。
+    /// Detaches the app window from Explorer before closing, avoiding a cross-process parent relationship during shutdown.
+    /// </summary>
+    void UndockWindow(IntPtr windowHandle);
+
+    /// <summary>
     /// 定位并调整子窗口的大小，覆盖整个任务栏。
     /// Positions and sizes the child window over the taskbar.
     ///
