@@ -3,9 +3,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
 using System.Windows.Controls.Primitives;
-using System.Runtime.InteropServices;
 using System.Windows.Threading;
-using AFMediaBar.Classes.Interop;
 using AFMediaBar.Classes.Settings;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
@@ -27,19 +25,7 @@ public sealed class WindowAppearanceService : IDisposable
     private const int WmDwmColorizationColorChanged = 0x0320;
     private const int WmDpiChanged = 0x02E0;
     private const int WmDpiChangedAfterParent = 0x02E3;
-    private const int DwmUseImmersiveDarkMode = 20;
-    private const int DwmWindowCornerPreference = 33;
-    private const int DwmBorderColor = 34;
-    private const int DwmCaptionColor = 35;
-    private const int DwmSystemBackdropType = 38;
-    private const int DwmMicaEffect = 1029;
-    private const int DwmBackdropNone = 1;
-    private const int DwmBackdropMica = 2;
-    private const int DwmBackdropAcrylic = 3;
-    private const int DwmCornerRound = 2;
-    private const int DwmColorDefault = unchecked((int)0xFFFFFFFF);
-    private const int DwmColorNone = unchecked((int)0xFFFFFFFE);
-
+    private readonly NativeWindowBackdropAdapter _nativeBackdropAdapter;
     private readonly HashSet<FluentWindow> _windows = [];
     private readonly Dictionary<FluentWindow, HwndSource> _windowSources = [];
     private readonly HashSet<ContextMenu> _menus = [];
@@ -47,12 +33,22 @@ public sealed class WindowAppearanceService : IDisposable
     private bool _applyQueued;
     private bool _disposed;
 
-    public WindowAppearanceService()
+    /// <summary>
+    /// 创建窗口外观协调服务并订阅外观与主题变化。
+    /// Creates the window appearance coordinator and subscribes to appearance and theme changes.
+    /// </summary>
+    public WindowAppearanceService(NativeWindowBackdropAdapter nativeBackdropAdapter)
     {
+        _nativeBackdropAdapter = nativeBackdropAdapter;
         SettingsManager.AppearanceSettingsChanged += OnAppearanceSettingsChanged;
         ApplicationThemeManager.Changed += OnApplicationThemeChanged;
     }
 
+    /// <summary>
+    /// 注册一个需要统一应用材质和主题属性的 Fluent 窗口。
+    /// Registers a Fluent window for unified backdrop and theme-attribute application.
+    /// </summary>
+    /// <param name="window">要注册的窗口。/ Window to register.</param>
     public void Attach(FluentWindow window)
     {
         if (_disposed || !_windows.Add(window))
@@ -71,6 +67,12 @@ public sealed class WindowAppearanceService : IDisposable
         }
     }
 
+    /// <summary>
+    /// 注册一个由指定宿主窗口拥有的 ContextMenu，并管理其 Popup 外观。
+    /// Registers a ContextMenu owned by the specified window and manages its Popup appearance.
+    /// </summary>
+    /// <param name="menu">要注册的菜单。/ Menu to register.</param>
+    /// <param name="owner">菜单宿主窗口。/ Menu owner window.</param>
     public void Attach(ContextMenu menu, Window owner)
     {
         if (_disposed || !_menus.Add(menu))
@@ -226,7 +228,7 @@ public sealed class WindowAppearanceService : IDisposable
         }
     }
 
-    private static void ApplyWindow(FluentWindow window)
+    private void ApplyWindow(FluentWindow window)
     {
         if (PresentationSource.FromVisual(window) is not HwndSource source || source.Handle == nint.Zero)
         {
@@ -237,24 +239,24 @@ public sealed class WindowAppearanceService : IDisposable
         var dark = ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark;
         if (mode == ApplicationBackdropMode.FluentSolid)
         {
-            ResetNativeBackdrop(source.Handle);
-            SetFrame(source.Handle, extended: false);
-            SetDwmNonClientColors(source.Handle, transparent: false);
+            _nativeBackdropAdapter.ResetBackdrop(source.Handle);
+            _nativeBackdropAdapter.SetFrame(source.Handle, extended: false);
+            _nativeBackdropAdapter.SetNonClientColors(source.Handle, transparent: false);
             source.CompositionTarget.BackgroundColor = Colors.Transparent;
             window.SetResourceReference(Control.BackgroundProperty, "ApplicationBackgroundBrush");
         }
         else
         {
             window.Background = Brushes.Transparent;
-            ApplyNativeBackdrop(source, mode, dark);
-            SetDwmNonClientColors(source.Handle, transparent: true);
+            source.CompositionTarget.BackgroundColor = Colors.Transparent;
+            _nativeBackdropAdapter.ApplyBackdrop(source.Handle, mode, dark);
+            _nativeBackdropAdapter.SetNonClientColors(source.Handle, transparent: true);
         }
 
-        SetDwmAttribute(source.Handle, DwmUseImmersiveDarkMode, dark ? 1 : 0);
-        SetDwmAttribute(source.Handle, DwmWindowCornerPreference, DwmCornerRound);
+        _nativeBackdropAdapter.SetThemeAttributes(source.Handle, dark);
     }
 
-    private static void ScheduleMenuZOrderReassert(ContextMenu menu)
+    private void ScheduleMenuZOrderReassert(ContextMenu menu)
     {
         var timer = new DispatcherTimer(DispatcherPriority.Input, menu.Dispatcher)
         {
@@ -267,14 +269,14 @@ public sealed class WindowAppearanceService : IDisposable
             timer.Tick -= tick;
             if (menu.IsOpen && PresentationSource.FromVisual(menu) is HwndSource source)
             {
-                PromotePopup(source.Handle);
+                _nativeBackdropAdapter.PromotePopup(source.Handle);
             }
         };
         timer.Tick += tick;
         timer.Start();
     }
 
-    private static void ScheduleSubmenuZOrderReassert(WpfMenuItem item)
+    private void ScheduleSubmenuZOrderReassert(WpfMenuItem item)
     {
         var timer = new DispatcherTimer(DispatcherPriority.Input, item.Dispatcher)
         {
@@ -288,31 +290,14 @@ public sealed class WindowAppearanceService : IDisposable
             if (item.IsSubmenuOpen && item.Template.FindName("SubmenuBorder", item) is Border border &&
                 PresentationSource.FromVisual(border) is HwndSource source)
             {
-                PromotePopup(source.Handle);
+                _nativeBackdropAdapter.PromotePopup(source.Handle);
             }
         };
         timer.Tick += tick;
         timer.Start();
     }
 
-    private static void PromotePopup(nint handle)
-    {
-        if (handle == nint.Zero)
-        {
-            return;
-        }
-
-        _ = NativeMethods.SetWindowPos(
-            handle,
-            -1,
-            0,
-            0,
-            0,
-            0,
-            NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
-    }
-
-    private static void ApplyMenu(ContextMenu menu)
+    private void ApplyMenu(ContextMenu menu)
     {
         if (PresentationSource.FromVisual(menu) is not HwndSource source || source.Handle == nint.Zero)
         {
@@ -322,7 +307,7 @@ public sealed class WindowAppearanceService : IDisposable
         ApplyPopup(source, menu);
     }
 
-    private static void ApplySubmenu(WpfMenuItem item)
+    private void ApplySubmenu(WpfMenuItem item)
     {
         if (item.Template.FindName("SubmenuBorder", item) is not Border border ||
             PresentationSource.FromVisual(border) is not HwndSource source || source.Handle == nint.Zero)
@@ -333,7 +318,7 @@ public sealed class WindowAppearanceService : IDisposable
         ApplyPopup(source, border);
     }
 
-    private static void ApplyPopup(HwndSource source, FrameworkElement surface)
+    private void ApplyPopup(HwndSource source, FrameworkElement surface)
     {
         var dark = ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark;
         var backgroundProperty = surface is Border
@@ -345,14 +330,13 @@ public sealed class WindowAppearanceService : IDisposable
         // testing, so clicks in blank menu areas can reach the window behind it.
         source.CompositionTarget.BackgroundColor = Colors.Transparent;
 
-        ResetNativeBackdrop(source.Handle);
-        SetFrame(source.Handle, extended: false);
-        SetDwmNonClientColors(source.Handle, transparent: false);
+        _nativeBackdropAdapter.ResetBackdrop(source.Handle);
+        _nativeBackdropAdapter.SetFrame(source.Handle, extended: false);
+        _nativeBackdropAdapter.SetNonClientColors(source.Handle, transparent: false);
         surface.SetResourceReference(backgroundProperty, "AppMenuBackgroundBrush");
 
-        SetDwmAttribute(source.Handle, DwmUseImmersiveDarkMode, dark ? 1 : 0);
-        SetDwmAttribute(source.Handle, DwmWindowCornerPreference, DwmCornerRound);
-        PromotePopup(source.Handle);
+        _nativeBackdropAdapter.SetThemeAttributes(source.Handle, dark);
+        _nativeBackdropAdapter.PromotePopup(source.Handle);
     }
 
     private static void PrepareSubmenuVisual(WpfMenuItem item)
@@ -404,77 +388,10 @@ public sealed class WindowAppearanceService : IDisposable
         return requested;
     }
 
-    private static void ApplyNativeBackdrop(HwndSource source, ApplicationBackdropMode mode, bool dark)
-    {
-        source.CompositionTarget.BackgroundColor = Colors.Transparent;
-        ResetNativeBackdrop(source.Handle);
-
-        if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22621))
-        {
-            SetFrame(source.Handle, extended: true);
-            SetDwmAttribute(source.Handle, DwmSystemBackdropType,
-                mode == ApplicationBackdropMode.Mica ? DwmBackdropMica : DwmBackdropAcrylic);
-            return;
-        }
-
-        if (mode == ApplicationBackdropMode.Mica)
-        {
-            SetFrame(source.Handle, extended: true);
-            SetDwmAttribute(source.Handle, DwmMicaEffect, 1);
-            return;
-        }
-
-        SetFrame(source.Handle, extended: false);
-        ApplyLegacyAcrylic(source.Handle, dark);
-    }
-
-    private static void ResetNativeBackdrop(nint handle)
-    {
-        SetDwmAttribute(handle, DwmSystemBackdropType, DwmBackdropNone);
-        SetDwmAttribute(handle, DwmMicaEffect, 0);
-        ApplyAccentPolicy(handle, AccentState.Disabled, 0);
-    }
-
-    private static void SetFrame(nint handle, bool extended)
-    {
-        var margins = extended
-            ? new DwmMargins(-1, -1, -1, -1)
-            : new DwmMargins(0, 0, 0, 0);
-        _ = DwmExtendFrameIntoClientArea(handle, ref margins);
-    }
-
-    private static void SetDwmAttribute(nint handle, int attribute, int value) =>
-        _ = DwmSetWindowAttribute(handle, attribute, ref value, sizeof(int));
-
-    private static void SetDwmNonClientColors(nint handle, bool transparent)
-    {
-        var color = transparent ? DwmColorNone : DwmColorDefault;
-        SetDwmAttribute(handle, DwmCaptionColor, color);
-        SetDwmAttribute(handle, DwmBorderColor, color);
-    }
-
-    private static void ApplyLegacyAcrylic(nint handle, bool dark)
-    {
-        var tint = dark ? unchecked((int)0xCC202020) : unchecked((int)0xCCF9F9F9);
-        ApplyAccentPolicy(handle, AccentState.EnableAcrylicBlurBehind, tint);
-    }
-
-    private static unsafe void ApplyAccentPolicy(nint handle, AccentState state, int gradientColor)
-    {
-        var policy = new AccentPolicy
-        {
-            State = state,
-            GradientColor = gradientColor
-        };
-        var data = new WindowCompositionAttributeData
-        {
-            Attribute = WindowCompositionAttribute.AccentPolicy,
-            Data = (nint)(&policy),
-            SizeOfData = sizeof(AccentPolicy)
-        };
-        _ = SetWindowCompositionAttribute(handle, ref data);
-    }
-
+    /// <summary>
+    /// 取消事件订阅并释放已注册窗口和菜单的外观钩子。
+    /// Unsubscribes events and releases appearance hooks for registered windows and menus.
+    /// </summary>
     public void Dispose()
     {
         if (_disposed)
@@ -502,58 +419,4 @@ public sealed class WindowAppearanceService : IDisposable
         _menuOwners.Clear();
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct DwmMargins
-    {
-        public DwmMargins(int left, int right, int top, int bottom)
-        {
-            Left = left;
-            Right = right;
-            Top = top;
-            Bottom = bottom;
-        }
-
-        public int Left;
-        public int Right;
-        public int Top;
-        public int Bottom;
-    }
-
-    private enum AccentState
-    {
-        Disabled = 0,
-        EnableAcrylicBlurBehind = 4
-    }
-
-    private enum WindowCompositionAttribute
-    {
-        AccentPolicy = 19
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct AccentPolicy
-    {
-        public AccentState State;
-        public int Flags;
-        public int GradientColor;
-        public int AnimationId;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct WindowCompositionAttributeData
-    {
-        public WindowCompositionAttribute Attribute;
-        public nint Data;
-        public int SizeOfData;
-    }
-
-    [DllImport("dwmapi.dll")]
-    private static extern int DwmSetWindowAttribute(nint handle, int attribute, ref int value, int size);
-
-    [DllImport("dwmapi.dll")]
-    private static extern int DwmExtendFrameIntoClientArea(nint handle, ref DwmMargins margins);
-
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool SetWindowCompositionAttribute(nint handle, ref WindowCompositionAttributeData data);
 }

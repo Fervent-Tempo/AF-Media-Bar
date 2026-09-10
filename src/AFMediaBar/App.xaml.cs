@@ -88,6 +88,7 @@ namespace AFMediaBar
                 // App-owned Shell tray icon and unified mouse input monitor
                 services.AddSingleton<ShellTrayIconService>();
                 services.AddSingleton<NativeMouseInputMonitor>();
+                services.AddSingleton<NativeWindowBackdropAdapter>();
                 services.AddSingleton<WindowAppearanceService>();
 
                 // 导航服务（页面导航，不依赖具体窗口）Navigation service (page navigation, window-independent)
