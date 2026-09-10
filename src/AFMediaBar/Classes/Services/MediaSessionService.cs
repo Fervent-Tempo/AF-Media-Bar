@@ -44,6 +44,10 @@ public sealed class MediaSessionService : IDisposable
     public string SelectedSourceName => _lastSnapshot.SourceName;
     public IReadOnlyList<MediaSessionOption> CurrentSessionOptions => _lastSessionOptions;
 
+    /// <summary>
+    /// 调用 MediaSessionService，提供 API。
+    /// Provides the public MediaSessionService entry point required by this component.
+    /// </summary>
     public MediaSessionService(
         MediaSessionCatalog catalog,
         MediaSessionSelectionService selection,
@@ -75,8 +79,16 @@ public sealed class MediaSessionService : IDisposable
         ScheduleSessionsRefresh();
     }
 
+    /// <summary>
+    /// 调用 RefreshNow，提供 API。
+    /// Provides the public RefreshNow entry point required by this component.
+    /// </summary>
     public void RefreshNow() => RefreshSnapshot();
 
+    /// <summary>
+    /// 调用 ReconnectAsync，提供 API。
+    /// Provides the public ReconnectAsync entry point required by this component.
+    /// </summary>
     public Task ReconnectAsync()
     {
         _catalog.ForceUpdate();
@@ -85,6 +97,10 @@ public sealed class MediaSessionService : IDisposable
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// 调用 SelectSession，提供 API。
+    /// Provides the public SelectSession entry point required by this component.
+    /// </summary>
     public void SelectSession(string key)
     {
         if (string.IsNullOrEmpty(key) || !_catalog.TryGetSnapshot(out var sessions))
@@ -101,23 +117,43 @@ public sealed class MediaSessionService : IDisposable
         RefreshSnapshot(sessions);
     }
 
+    /// <summary>
+    /// 调用 TogglePlayPauseAsync，提供 API。
+    /// Provides the public TogglePlayPauseAsync entry point required by this component.
+    /// </summary>
     public Task TogglePlayPauseAsync() => ExecuteOnSelectedAsync(async session =>
     {
         await session.ControlSession.TryTogglePlayPauseAsync();
     });
 
+    /// <summary>
+    /// 调用 SkipPreviousAsync，提供 API。
+    /// Provides the public SkipPreviousAsync entry point required by this component.
+    /// </summary>
     public Task SkipPreviousAsync() => ExecuteOnSelectedAsync(async session =>
     {
         await session.ControlSession.TrySkipPreviousAsync();
     });
 
+    /// <summary>
+    /// 调用 SkipNextAsync，提供 API。
+    /// Provides the public SkipNextAsync entry point required by this component.
+    /// </summary>
     public Task SkipNextAsync() => ExecuteOnSelectedAsync(async session =>
     {
         await session.ControlSession.TrySkipNextAsync();
     });
 
+    /// <summary>
+    /// 调用 ActivateSelectedSource，提供 API。
+    /// Provides the public ActivateSelectedSource entry point required by this component.
+    /// </summary>
     public void ActivateSelectedSource() => _sourceActivator.Activate(SelectedSourceId);
 
+    /// <summary>
+    /// 调用 Dispose，提供 API。
+    /// Provides the public Dispose entry point required by this component.
+    /// </summary>
     public void Dispose()
     {
         if (_isDisposed)

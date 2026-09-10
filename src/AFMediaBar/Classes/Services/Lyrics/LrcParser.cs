@@ -19,6 +19,10 @@ public static class LrcParser
         @"\[(\d{1,3}):(\d{1,2})(?:[.:](\d{1,3}))?\]",
         RegexOptions.Compiled);
 
+    /// <summary>
+    /// 调用 Parse，提供 API。
+    /// Provides the public Parse entry point required by this component.
+    /// </summary>
     public static IReadOnlyList<LrcLine> Parse(string? lrc)
     {
         if (string.IsNullOrWhiteSpace(lrc))

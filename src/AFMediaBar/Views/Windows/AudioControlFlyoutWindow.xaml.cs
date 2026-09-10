@@ -17,6 +17,10 @@ public partial class AudioControlFlyoutWindow : FluentWindow
 
     public AudioControlViewModel ViewModel { get; }
 
+    /// <summary>
+    /// 调用 AudioControlFlyoutWindow，提供 API。
+    /// Provides the public AudioControlFlyoutWindow entry point required by this component.
+    /// </summary>
     public AudioControlFlyoutWindow(AudioControlViewModel viewModel, WindowAppearanceService appearanceService)
     {
         ViewModel = viewModel;
@@ -25,6 +29,10 @@ public partial class AudioControlFlyoutWindow : FluentWindow
         appearanceService.Attach(this);
     }
 
+    /// <summary>
+    /// 调用 ToggleAsync，提供 API。
+    /// Provides the public ToggleAsync entry point required by this component.
+    /// </summary>
     public async Task ToggleAsync(TrayIconBounds? bounds)
     {
         if (IsVisible)
@@ -132,6 +140,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow
         }, DispatcherPriority.ContextIdle);
     }
 
+    /// <summary>处理面板关闭请求并保留托盘复用实例。/ Handles closing while retaining the tray flyout instance.</summary>
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
         if (Application.Current?.Dispatcher.HasShutdownStarted != true)

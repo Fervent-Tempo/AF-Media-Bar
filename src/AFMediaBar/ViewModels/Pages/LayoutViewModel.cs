@@ -45,6 +45,10 @@ namespace AFMediaBar.ViewModels.Pages
 
         public bool IsDynamicIslandMode => CurrentWindowMode == WindowMode.DynamicIsland;
 
+        /// <summary>
+        /// 调用 LayoutViewModel，提供 API。
+        /// Provides the public LayoutViewModel entry point required by this component.
+        /// </summary>
         public LayoutViewModel()
         {
             // 从设置管理器加载当前设置

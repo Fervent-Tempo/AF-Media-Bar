@@ -235,7 +235,10 @@ public sealed class WindowAppearanceService : IDisposable
             return;
         }
 
-        var mode = ResolveEffectiveMode(SettingsManager.Current.Appearance.BackdropMode);
+        var mode = WindowBackdropPolicy.Resolve(
+            SettingsManager.Current.Appearance.BackdropMode,
+            SystemParameters.HighContrast,
+            OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000));
         var dark = ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark;
         if (mode == ApplicationBackdropMode.FluentSolid)
         {
@@ -333,7 +336,7 @@ public sealed class WindowAppearanceService : IDisposable
         _nativeBackdropAdapter.ResetBackdrop(source.Handle);
         _nativeBackdropAdapter.SetFrame(source.Handle, extended: false);
         _nativeBackdropAdapter.SetNonClientColors(source.Handle, transparent: false);
-        surface.SetResourceReference(backgroundProperty, "AppMenuBackgroundBrush");
+        surface.SetResourceReference(backgroundProperty, PopupAppearancePolicy.BackgroundResourceKey);
 
         _nativeBackdropAdapter.SetThemeAttributes(source.Handle, dark);
         _nativeBackdropAdapter.PromotePopup(source.Handle);
@@ -371,21 +374,6 @@ public sealed class WindowAppearanceService : IDisposable
             item.SubmenuOpened -= OnSubmenuOpened;
             UnwireSubmenuHandlers(item);
         }
-    }
-
-    private static ApplicationBackdropMode ResolveEffectiveMode(ApplicationBackdropMode requested)
-    {
-        if (SystemParameters.HighContrast)
-        {
-            return ApplicationBackdropMode.FluentSolid;
-        }
-
-        if (requested == ApplicationBackdropMode.Mica && !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
-        {
-            return ApplicationBackdropMode.FluentSolid;
-        }
-
-        return requested;
     }
 
     /// <summary>

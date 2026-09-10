@@ -23,8 +23,16 @@ public record ComponentBounds
     /// <summary>高度（像素） / Height in pixels</summary>
     public double Height { get; init; }
 
+    /// <summary>
+    /// 调用 ComponentBounds，提供 API。
+    /// Provides the public ComponentBounds entry point required by this component.
+    /// </summary>
     public ComponentBounds() { }
 
+    /// <summary>
+    /// 调用 ComponentBounds，提供 API。
+    /// Provides the public ComponentBounds entry point required by this component.
+    /// </summary>
     public ComponentBounds(double x, double y, double width, double height)
     {
         X = x;

@@ -44,6 +44,10 @@ namespace AFMediaBar.ViewModels.Windows
         /// <summary>激活当前媒体来源应用。/ Activates the application that owns the selected media session.</summary>
         public ICommand ActivateMediaSourceCommand { get; }
 
+        /// <summary>
+        /// 调用 MainWindowViewModel，提供 API。
+        /// Provides the public MainWindowViewModel entry point required by this component.
+        /// </summary>
         public MainWindowViewModel(MediaSessionService mediaSessionService)
         {
             SelectMediaSessionCommand = new RelayCommand<string>(key => mediaSessionService.SelectSession(key ?? string.Empty));

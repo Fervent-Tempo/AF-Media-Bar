@@ -131,6 +131,7 @@ namespace AFMediaBar.Views.Windows
 
         #region Window Controller & others
 
+        /// <summary>协调主窗口关闭和任务栏宿主解挂。/ Coordinates main-window shutdown and taskbar-host detachment.</summary>
         protected override void OnClosing(CancelEventArgs e)
         {
             base.OnClosing(e);
@@ -183,6 +184,7 @@ namespace AFMediaBar.Views.Windows
             Application.Current.Shutdown();
         }
 
+        /// <summary>初始化主窗口消息钩子和 TaskbarCreated 注册。/ Initializes the main-window hook and TaskbarCreated registration.</summary>
         protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
@@ -246,9 +248,9 @@ namespace AFMediaBar.Views.Windows
             var recreated = false;
             try
             {
-                for (var attempt = 0; attempt < 8; attempt++)
+                for (var attempt = 0; attempt < TaskbarRecoveryPolicy.MaximumAttempts; attempt++)
                 {
-                    await Task.Delay(attempt == 0 ? 900 : 600, recovery.Token);
+                    await Task.Delay(TaskbarRecoveryPolicy.GetDelay(attempt), recovery.Token);
                     if (_isClosing || SettingsManager.Current.WindowMode != WindowMode.Taskbar)
                         return;
 
@@ -277,7 +279,7 @@ namespace AFMediaBar.Views.Windows
                     previousHandle = taskbarHandle;
                     previousRect = rect;
                     previousDpi = dpi;
-                    if (stableSamples < 2)
+                    if (stableSamples < TaskbarRecoveryPolicy.RequiredStableSamples)
                         continue;
 
                     RecreateTaskbarWindow();

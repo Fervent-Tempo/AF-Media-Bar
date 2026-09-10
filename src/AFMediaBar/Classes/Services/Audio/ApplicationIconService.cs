@@ -13,6 +13,10 @@ public sealed class ApplicationIconService
     private readonly Dictionary<string, byte[]> _cache = new(StringComparer.OrdinalIgnoreCase);
     private readonly AudioProcessInfoService _processInfo;
 
+    /// <summary>
+    /// 调用 ApplicationIconService，提供 API。
+    /// Provides the public ApplicationIconService entry point required by this component.
+    /// </summary>
     public ApplicationIconService(AudioProcessInfoService processInfo)
     {
         _processInfo = processInfo;

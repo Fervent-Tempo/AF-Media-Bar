@@ -24,6 +24,10 @@ public static class MediaSourceNameFormatter
         ("foobar2000", ["foobar"])
     ];
 
+    /// <summary>
+    /// 调用 GetDisplayName，提供 API。
+    /// Provides the public GetDisplayName entry point required by this component.
+    /// </summary>
     public static string GetDisplayName(string? sourceId, string unknownSourceName)
     {
         var value = sourceId?.Trim() ?? string.Empty;

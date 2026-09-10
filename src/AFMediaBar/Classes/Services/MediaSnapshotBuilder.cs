@@ -22,11 +22,19 @@ public sealed class MediaSnapshotBuilder
 
     public event Action? EnrichmentCompleted;
 
+    /// <summary>
+    /// 调用 MediaSnapshotBuilder，提供 API。
+    /// Provides the public MediaSnapshotBuilder entry point required by this component.
+    /// </summary>
     public MediaSnapshotBuilder(LyricsService lyricsService)
     {
         _lyricsService = lyricsService;
     }
 
+    /// <summary>
+    /// 调用 Build，提供 API。
+    /// Provides the public Build entry point required by this component.
+    /// </summary>
     public MediaSnapshot? Build(MediaSession? session, bool isStarted)
     {
         if (session is null || !isStarted)

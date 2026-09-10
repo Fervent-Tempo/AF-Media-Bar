@@ -38,6 +38,10 @@ public sealed class NetEase : IDisposable
 
     private const string AudioSchedulePattern = "66 0F 2E 0D ? ? ? ? 7A ? 75 ? 66 0F 2E 15";
 
+    /// <summary>
+    /// 调用 NetEase，提供 API。
+    /// Provides the public NetEase entry point required by this component.
+    /// </summary>
     public NetEase(int pid)
     {
         _pid = pid;
@@ -97,11 +101,23 @@ public sealed class NetEase : IDisposable
         }
     }
 
+    /// <summary>
+    /// 调用 Dispose，提供 API。
+    /// Provides the public Dispose entry point required by this component.
+    /// </summary>
     public void Dispose() => _process.Dispose();
 
+    /// <summary>
+    /// 调用 Validate，提供 API。
+    /// Provides the public Validate entry point required by this component.
+    /// </summary>
     public bool Validate(int pid)
         => pid == _pid;
 
+    /// <summary>
+    /// 调用 GetPlayerInfo，提供 API。
+    /// Provides the public GetPlayerInfo entry point required by this component.
+    /// </summary>
     public PlayerInfo? GetPlayerInfo()
     {
         var status = GetPlayerStatus();

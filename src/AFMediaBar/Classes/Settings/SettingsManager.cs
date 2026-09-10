@@ -138,6 +138,10 @@ public class AppSettings
 /// </summary>
 public static class SettingsManager
 {
+    /// <summary>
+    /// 调用 new，提供 API。
+    /// Provides the public new entry point required by this component.
+    /// </summary>
     public static AppSettings Current { get; set; } = new();
 
     public static event EventHandler<AppearanceSettingsChangedEventArgs>? AppearanceSettingsChanged;
@@ -204,6 +208,10 @@ public class LayoutSettingsChangedEventArgs : EventArgs
     /// <summary>新的布局方向模式 / New layout orientation mode</summary>
     public LayoutOrientationMode OrientationMode { get; }
 
+    /// <summary>
+    /// 调用 LayoutSettingsChangedEventArgs，提供 API。
+    /// Provides the public LayoutSettingsChangedEventArgs entry point required by this component.
+    /// </summary>
     public LayoutSettingsChangedEventArgs(WindowMode windowMode, LayoutOrientationMode orientationMode)
     {
         WindowMode = windowMode;

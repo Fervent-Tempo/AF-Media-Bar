@@ -1,4 +1,4 @@
-﻿using AFMediaBar.ViewModels.Pages;
+using AFMediaBar.ViewModels.Pages;
 using Wpf.Ui.Abstractions.Controls;
 
 namespace AFMediaBar.Views.Pages
@@ -11,6 +11,10 @@ namespace AFMediaBar.Views.Pages
     {
         public SettingsViewModel ViewModel { get; }
 
+        /// <summary>
+        /// 调用 SettingsPage，提供 API。
+        /// Provides the public SettingsPage entry point required by this component.
+        /// </summary>
         public SettingsPage(SettingsViewModel viewModel)
         {
             ViewModel = viewModel;

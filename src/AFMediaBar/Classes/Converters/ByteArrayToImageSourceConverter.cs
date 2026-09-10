@@ -8,6 +8,10 @@ namespace AFMediaBar.Classes.Converters;
 /// <summary>将模型中的原始图标字节解码为冻结的 WPF 图像。 / Decodes raw model icon bytes into a frozen WPF image.</summary>
 public sealed class ByteArrayToImageSourceConverter : IValueConverter
 {
+    /// <summary>
+    /// 调用 Convert，提供 API。
+    /// Provides the public Convert entry point required by this component.
+    /// </summary>
     public object? Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
         if (value is not byte[] { Length: > 0 } data)
@@ -33,6 +37,10 @@ public sealed class ByteArrayToImageSourceConverter : IValueConverter
         }
     }
 
+    /// <summary>
+    /// 调用 ConvertBack，提供 API。
+    /// Provides the public ConvertBack entry point required by this component.
+    /// </summary>
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
         throw new NotSupportedException();
 }

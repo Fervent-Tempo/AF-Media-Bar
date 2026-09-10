@@ -16,7 +16,16 @@ public interface IMediaSourceProvider : IDisposable
     /// </summary>
     bool CanHandle(string sourceId);
 
+    /// <summary>
+    /// 更新当前 SMTC 会话快照。
+    /// Updates the current SMTC session snapshot.
+    /// </summary>
+    /// <param name="snapshot">统一媒体快照 / Unified media snapshot.</param>
     void UpdateSessionSnapshot(MediaSnapshot snapshot);
 
+    /// <summary>
+    /// 启动媒体来源监听。
+    /// Starts media-source monitoring.
+    /// </summary>
     void Start();
 }

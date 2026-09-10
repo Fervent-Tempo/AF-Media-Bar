@@ -14,6 +14,10 @@ namespace AFMediaBar.Classes.Converters
     /// </summary>
     public class GenericEnumToBooleanConverter : IValueConverter
     {
+        /// <summary>
+        /// 调用 Convert，提供 API。
+        /// Provides the public Convert entry point required by this component.
+        /// </summary>
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (parameter is not string enumString)
@@ -48,6 +52,10 @@ namespace AFMediaBar.Classes.Converters
             }
         }
 
+        /// <summary>
+        /// 调用 ConvertBack，提供 API。
+        /// Provides the public ConvertBack entry point required by this component.
+        /// </summary>
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (parameter is not string enumString)

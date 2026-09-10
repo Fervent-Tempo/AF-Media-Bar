@@ -21,6 +21,10 @@ public sealed class SpatialAudioService
             [SpatialAudioFormatSubtype.DTSXUltra] = "DTS:X Ultra"
         };
 
+    /// <summary>
+    /// 调用 GetState，提供 API。
+    /// Provides the public GetState entry point required by this component.
+    /// </summary>
     public SpatialAudioSnapshot GetState(string deviceId)
     {
         try
@@ -47,6 +51,10 @@ public sealed class SpatialAudioService
         }
     }
 
+    /// <summary>
+    /// 调用 OpenSystemSettings，提供 API。
+    /// Provides the public OpenSystemSettings entry point required by this component.
+    /// </summary>
     public void OpenSystemSettings()
     {
         Process.Start(new ProcessStartInfo("ms-settings:sound-devices") { UseShellExecute = true });

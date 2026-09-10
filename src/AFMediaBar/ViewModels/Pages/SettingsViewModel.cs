@@ -1,4 +1,4 @@
-﻿using Wpf.Ui.Abstractions.Controls;
+using Wpf.Ui.Abstractions.Controls;
 using Wpf.Ui.Appearance;
 
 namespace AFMediaBar.ViewModels.Pages
@@ -17,6 +17,10 @@ namespace AFMediaBar.ViewModels.Pages
         [ObservableProperty]
         private ApplicationTheme _currentTheme = ApplicationTheme.Unknown;
 
+        /// <summary>
+        /// 调用 OnNavigatedToAsync，提供 API。
+        /// Provides the public OnNavigatedToAsync entry point required by this component.
+        /// </summary>
         public Task OnNavigatedToAsync()
         {
             if (!_isInitialized)
@@ -25,6 +29,10 @@ namespace AFMediaBar.ViewModels.Pages
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// 调用 OnNavigatedFromAsync，提供 API。
+        /// Provides the public OnNavigatedFromAsync entry point required by this component.
+        /// </summary>
         public Task OnNavigatedFromAsync() => Task.CompletedTask;
 
         private void InitializeViewModel()

@@ -63,6 +63,10 @@ public readonly record struct AppearanceSettings(
     public const int MinimumFontWeight = 300;
     public const int MaximumFontWeight = 900;
 
+    /// <summary>
+    /// 调用 new，提供 API。
+    /// Provides the public new entry point required by this component.
+    /// </summary>
     public static AppearanceSettings Default { get; } = new(
         LatinFontPreset.SegoeUi,
         CjkFontPreset.SystemDefault,
@@ -72,6 +76,10 @@ public readonly record struct AppearanceSettings(
         ApplicationThemeMode.Automatic,
         ApplicationBackdropMode.Mica);
 
+    /// <summary>
+    /// 调用 Normalize，提供 API。
+    /// Provides the public Normalize entry point required by this component.
+    /// </summary>
     public AppearanceSettings Normalize() => this with
     {
         FontWeight = Math.Clamp(FontWeight, MinimumFontWeight, MaximumFontWeight)

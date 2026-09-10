@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Windows;
@@ -23,6 +23,10 @@ namespace AFMediaBar.Views.Pages
     {
         public GeneralViewModel ViewModel { get; }
 
+        /// <summary>
+        /// 调用 GeneralPage，提供 API。
+        /// Provides the public GeneralPage entry point required by this component.
+        /// </summary>
         public GeneralPage(GeneralViewModel viewModel)
         {
             ViewModel = viewModel;

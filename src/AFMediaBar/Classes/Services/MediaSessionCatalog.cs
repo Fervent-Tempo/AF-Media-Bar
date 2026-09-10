@@ -25,6 +25,10 @@ public sealed class MediaSessionCatalog : IDisposable
     public event Action<MediaSession>? FocusedSessionChanged;
     public event Action<MediaSession, GlobalSystemMediaTransportControlsSessionTimelineProperties>? AnyTimelinePropertyChanged;
 
+    /// <summary>
+    /// 调用 MediaSessionCatalog，提供 API。
+    /// Provides the public MediaSessionCatalog entry point required by this component.
+    /// </summary>
     public MediaSessionCatalog()
     {
         _mediaManager.OnAnyMediaPropertyChanged += OnAnyMediaPropertyChanged;
@@ -36,6 +40,10 @@ public sealed class MediaSessionCatalog : IDisposable
         _mediaManager.Start();
     }
 
+    /// <summary>
+    /// 调用 TryGetSnapshot，提供 API。
+    /// Provides the public TryGetSnapshot entry point required by this component.
+    /// </summary>
     public bool TryGetSnapshot(out MediaSession[] sessions)
     {
         for (var attempt = 0; attempt < SnapshotRetryCount; attempt++)
@@ -59,6 +67,10 @@ public sealed class MediaSessionCatalog : IDisposable
         return false;
     }
 
+    /// <summary>
+    /// 调用 GetFocusedSession，提供 API。
+    /// Provides the public GetFocusedSession entry point required by this component.
+    /// </summary>
     public MediaSession? GetFocusedSession()
     {
         try
@@ -72,8 +84,16 @@ public sealed class MediaSessionCatalog : IDisposable
         }
     }
 
+    /// <summary>
+    /// 调用 ForceUpdate，提供 API。
+    /// Provides the public ForceUpdate entry point required by this component.
+    /// </summary>
     public void ForceUpdate() => _mediaManager.ForceUpdate();
 
+    /// <summary>
+    /// 调用 Dispose，提供 API。
+    /// Provides the public Dispose entry point required by this component.
+    /// </summary>
     public void Dispose()
     {
         if (_isDisposed)

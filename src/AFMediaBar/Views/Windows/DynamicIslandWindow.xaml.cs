@@ -80,6 +80,7 @@ public partial class DynamicIslandWindow : Window
         };
     }
 
+    /// <summary>初始化灵动岛窗口句柄钩子。/ Initializes the dynamic-island window hook.</summary>
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
@@ -151,6 +152,10 @@ public partial class DynamicIslandWindow : Window
         ApplyPendingSizeRequest();
     }
 
+    /// <summary>
+    /// 调用 ApplySnapshot，提供 API。
+    /// Provides the public ApplySnapshot entry point required by this component.
+    /// </summary>
     public void ApplySnapshot(MediaSnapshot snapshot)
     {
         if (_isClosing)
@@ -194,6 +199,10 @@ public partial class DynamicIslandWindow : Window
         });
     }
 
+    /// <summary>
+    /// 调用 ApplyLayoutSettings，提供 API。
+    /// Provides the public ApplyLayoutSettings entry point required by this component.
+    /// </summary>
     public void ApplyLayoutSettings(LayoutOrientationMode mode)
     {
         var orientation = mode == LayoutOrientationMode.Vertical
@@ -229,6 +238,10 @@ public partial class DynamicIslandWindow : Window
             SetPosition(_isExpanded ? GetExpandedPosition() : GetCollapsedPosition(), animated: false);
     }
 
+    /// <summary>
+    /// 调用 ApplyAppearanceSettings，提供 API。
+    /// Provides the public ApplyAppearanceSettings entry point required by this component.
+    /// </summary>
     public void ApplyAppearanceSettings()
     {
         MediaControl.ApplyAppearanceSettings();
@@ -605,6 +618,7 @@ public partial class DynamicIslandWindow : Window
         }
     }
 
+    /// <summary>释放灵动岛窗口资源和消息钩子。/ Releases dynamic-island resources and message hooks.</summary>
     protected override void OnClosed(EventArgs e)
     {
         _isClosing = true;

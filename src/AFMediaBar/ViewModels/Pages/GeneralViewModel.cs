@@ -6,6 +6,10 @@ namespace AFMediaBar.ViewModels.Pages
     /// </summary>
     public partial class GeneralViewModel : ObservableObject
     {
+        /// <summary>
+        /// 调用 GetValues，提供 API。
+        /// Provides the public GetValues entry point required by this component.
+        /// </summary>
         public Array TrayWheelBehaviors => Enum.GetValues(typeof(Classes.Settings.TrayWheelBehavior));
 
         public Classes.Settings.TrayWheelBehavior TrayWheelBehavior

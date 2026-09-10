@@ -10,6 +10,10 @@ namespace AFMediaBar.Views.Pages
     {
         public AboutViewModel ViewModel { get; }
 
+        /// <summary>
+        /// 调用 AboutPage，提供 API。
+        /// Provides the public AboutPage entry point required by this component.
+        /// </summary>
         public AboutPage(AboutViewModel viewModel)
         {
             ViewModel = viewModel;

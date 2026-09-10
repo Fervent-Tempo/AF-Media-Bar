@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using AFMediaBar.ViewModels.Pages;
 using Wpf.Ui.Abstractions.Controls;
 
@@ -11,6 +11,10 @@ namespace AFMediaBar.Views.Pages
     {
         public AppearanceViewModel ViewModel { get; }
 
+        /// <summary>
+        /// 调用 AppearancePage，提供 API。
+        /// Provides the public AppearancePage entry point required by this component.
+        /// </summary>
         public AppearancePage(AppearanceViewModel viewModel)
         {
             ViewModel = viewModel;

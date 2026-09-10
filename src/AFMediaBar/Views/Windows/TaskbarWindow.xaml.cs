@@ -104,6 +104,7 @@ public partial class TaskbarWindow : Window
         Show();
     }
 
+    /// <summary>初始化任务栏宿主窗口句柄和消息钩子。/ Initializes the taskbar-host handle and message hook.</summary>
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
@@ -126,8 +127,7 @@ public partial class TaskbarWindow : Window
             return IntPtr.Zero;
         }
 
-        if (_setupComplete &&
-            (msg is WM_DPICHANGED or WM_DPICHANGED_AFTERPARENT or WM_DISPLAYCHANGE))
+        if (_setupComplete && TaskbarHostMessagePolicy.IsEnvironmentChange(msg))
         {
             // Explorer 重排任务栏期间只使用保守区间，避免同步 UI Automation 探测与 Shell 互相等待。
             // Use the conservative range while Explorer rearranges the taskbar so synchronous
@@ -159,16 +159,10 @@ public partial class TaskbarWindow : Window
         // windows associated with the taskbar, which can freeze the widget and the whole
         // taskbar. Prevent the propagation of these messages, and stop the widget from
         // blocking the taskbar's message processing.
-        switch (msg)
+        if (TaskbarHostMessagePolicy.ShouldSuppressPropagation(msg))
         {
-            case WM_GETOBJECT: // MS UI Automation requests
-            case WM_SHOWWINDOW:
-            case WM_WINDOWPOSCHANGING: // triggers during alt-tabs, window changes
-            case WM_NCCALCSIZE: // can trigger layout storms
-            case WM_IME_SETCONTEXT:
-            case WM_IME_NOTIFY:
-                handled = true;
-                return IntPtr.Zero;
+            handled = true;
+            return IntPtr.Zero;
         }
 
         return IntPtr.Zero;
@@ -379,6 +373,11 @@ public partial class TaskbarWindow : Window
 
     #region SMTC
 
+    /// <summary>
+    /// 在任务栏宿主上应用媒体快照并安排位置刷新。
+    /// Applies a media snapshot to the taskbar host and schedules repositioning.
+    /// </summary>
+    /// <param name="snapshot">不可变媒体快照 / Immutable media snapshot.</param>
     public void ApplySnapshot(MediaSnapshot snapshot)
     {
         if (!Dispatcher.CheckAccess())
@@ -548,6 +547,7 @@ public partial class TaskbarWindow : Window
     public void CloseContextMenuIfOutside(int screenX, int screenY) =>
         ContextMenuHelper.CloseIfOutside(PlayerMenu, screenX, screenY);
 
+    /// <summary>安全停止任务栏宿主并解除 Explorer 停靠。/ Safely stops the taskbar host and detaches it from Explorer.</summary>
     protected override void OnClosing(CancelEventArgs e)
     {
         base.OnClosing(e);
@@ -834,6 +834,7 @@ public partial class TaskbarWindow : Window
         return false;
     }
 
+    /// <summary>释放任务栏宿主事件、计时器和消息钩子。/ Releases taskbar-host events, timers, and message hooks.</summary>
     protected override void OnClosed(EventArgs e)
     {
         _isClosing = true;

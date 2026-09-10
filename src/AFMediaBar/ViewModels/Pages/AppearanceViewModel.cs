@@ -16,6 +16,10 @@ public partial class AppearanceViewModel : ObservableObject
     private ApplicationThemeMode _applicationThemeMode;
     private ApplicationBackdropMode _backdropMode;
 
+    /// <summary>
+    /// 调用 AppearanceViewModel，提供 API。
+    /// Provides the public AppearanceViewModel entry point required by this component.
+    /// </summary>
     public AppearanceViewModel()
     {
         var appearance = SettingsManager.Current.Appearance.Normalize();

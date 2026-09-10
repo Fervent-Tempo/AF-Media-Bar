@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Windows;
@@ -23,6 +23,10 @@ namespace AFMediaBar.Views.Pages
     {
         public LayoutViewModel ViewModel { get; }
 
+        /// <summary>
+        /// 调用 LayoutPage，提供 API。
+        /// Provides the public LayoutPage entry point required by this component.
+        /// </summary>
         public LayoutPage(LayoutViewModel viewModel)
         {
             ViewModel = viewModel;

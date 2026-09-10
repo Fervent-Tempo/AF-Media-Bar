@@ -31,6 +31,10 @@ public sealed class LyricsService
 {
     private readonly IReadOnlyList<ILyricsProvider> _providers;
 
+    /// <summary>
+    /// 调用 LyricsService，提供 API。
+    /// Provides the public LyricsService entry point required by this component.
+    /// </summary>
     public LyricsService(params ILyricsProvider[] providers)
     {
         _providers = providers;

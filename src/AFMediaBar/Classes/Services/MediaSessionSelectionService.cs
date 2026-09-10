@@ -26,6 +26,10 @@ public sealed class MediaSessionSelectionService : IDisposable
 
     public event Action? RefreshRequested;
 
+    /// <summary>
+    /// 调用 MediaSessionSelectionService，提供 API。
+    /// Provides the public MediaSessionSelectionService entry point required by this component.
+    /// </summary>
     public MediaSessionSelectionService(MediaSessionCatalog catalog)
     {
         _catalog = catalog;
@@ -36,6 +40,10 @@ public sealed class MediaSessionSelectionService : IDisposable
         _timer.Tick += OnTimerTick;
     }
 
+    /// <summary>
+    /// 调用 Select，提供 API。
+    /// Provides the public Select entry point required by this component.
+    /// </summary>
     public bool Select(string key, IReadOnlyList<MediaSession> sessions)
     {
         var selected = sessions.FirstOrDefault(session =>
@@ -52,6 +60,10 @@ public sealed class MediaSessionSelectionService : IDisposable
         return true;
     }
 
+    /// <summary>
+    /// 调用 Resolve，提供 API。
+    /// Provides the public Resolve entry point required by this component.
+    /// </summary>
     public MediaSession? Resolve(IReadOnlyList<MediaSession> sessions)
     {
         var selected = sessions.FirstOrDefault(session =>
@@ -103,6 +115,10 @@ public sealed class MediaSessionSelectionService : IDisposable
         return selected;
     }
 
+    /// <summary>
+    /// 调用 TryAutoSwitchToPlaying，提供 API。
+    /// Provides the public TryAutoSwitchToPlaying entry point required by this component.
+    /// </summary>
     public bool TryAutoSwitchToPlaying(IReadOnlyList<MediaSession> sessions)
     {
         var current = sessions.FirstOrDefault(session =>
@@ -194,6 +210,10 @@ public sealed class MediaSessionSelectionService : IDisposable
         return true;
     }
 
+    /// <summary>
+    /// 调用 ClearSelection，提供 API。
+    /// Provides the public ClearSelection entry point required by this component.
+    /// </summary>
     public void ClearSelection()
     {
         SelectedKey = null;
@@ -202,6 +222,10 @@ public sealed class MediaSessionSelectionService : IDisposable
         ClearMissingSession();
     }
 
+    /// <summary>
+    /// 调用 Dispose，提供 API。
+    /// Provides the public Dispose entry point required by this component.
+    /// </summary>
     public void Dispose()
     {
         if (_isDisposed)

@@ -29,6 +29,10 @@ namespace AFMediaBar.Classes.Services.Layout;
 /// </summary>
 public static class DynamicIslandVerticalLayout
 {
+    /// <summary>
+    /// 调用 Create，提供 API。
+    /// Provides the public Create entry point required by this component.
+    /// </summary>
     public static LayoutSchema Create() => new()
     {
         Orientation = LayoutOrientation.Vertical,

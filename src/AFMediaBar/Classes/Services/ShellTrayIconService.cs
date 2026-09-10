@@ -21,6 +21,10 @@ public sealed class ShellTrayIconService : IDisposable
     private bool _isAdded;
     private bool _disposed;
 
+    /// <summary>
+    /// 调用 ShellTrayIconService，提供 API。
+    /// Provides the public ShellTrayIconService entry point required by this component.
+    /// </summary>
     public ShellTrayIconService()
     {
         _messageWindow = new HwndSource(new HwndSourceParameters("AFMediaBar.ShellTrayWindow")
@@ -43,6 +47,10 @@ public sealed class ShellTrayIconService : IDisposable
     public event EventHandler? TooltipOpening;
     public event EventHandler? ShellRestarted;
 
+    /// <summary>
+    /// 调用 TryGetBounds，提供 API。
+    /// Provides the public TryGetBounds entry point required by this component.
+    /// </summary>
     public bool TryGetBounds(out TrayIconBounds bounds)
     {
         bounds = default;
@@ -66,6 +74,10 @@ public sealed class ShellTrayIconService : IDisposable
         return bounds.Right > bounds.Left && bounds.Bottom > bounds.Top;
     }
 
+    /// <summary>
+    /// 调用 UpdateTooltip，提供 API。
+    /// Provides the public UpdateTooltip entry point required by this component.
+    /// </summary>
     public void UpdateTooltip(string? text)
     {
         var normalized = string.IsNullOrWhiteSpace(text)
@@ -160,6 +172,10 @@ public sealed class ShellTrayIconService : IDisposable
         szInfoTitle = string.Empty
     };
 
+    /// <summary>
+    /// 调用 Dispose，提供 API。
+    /// Provides the public Dispose entry point required by this component.
+    /// </summary>
     public void Dispose()
     {
         if (_disposed)

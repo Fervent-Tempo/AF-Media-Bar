@@ -13,11 +13,19 @@ public sealed class MediaSourceActivationService
 {
     private readonly MediaSourceProcessResolver _processResolver;
 
+    /// <summary>
+    /// 调用 MediaSourceActivationService，提供 API。
+    /// Provides the public MediaSourceActivationService entry point required by this component.
+    /// </summary>
     public MediaSourceActivationService(MediaSourceProcessResolver processResolver)
     {
         _processResolver = processResolver;
     }
 
+    /// <summary>
+    /// 调用 Activate，提供 API。
+    /// Provides the public Activate entry point required by this component.
+    /// </summary>
     public void Activate(string sourceId)
     {
         if (string.IsNullOrWhiteSpace(sourceId))

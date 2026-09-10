@@ -36,6 +36,10 @@ public sealed class NetEaseMediaProvider : IMediaSourceProvider
 
     public event Action<IMediaSourceProvider, MediaSnapshot?>? SnapshotChanged;
 
+    /// <summary>
+    /// 调用 NetEaseMediaProvider，提供 API。
+    /// Provides the public NetEaseMediaProvider entry point required by this component.
+    /// </summary>
     public NetEaseMediaProvider(LyricsService lyricsService)
     {
         _dispatcher = Application.Current.Dispatcher;
@@ -51,11 +55,19 @@ public sealed class NetEaseMediaProvider : IMediaSourceProvider
         sourceId.Contains("netease", StringComparison.OrdinalIgnoreCase) ||
         sourceId.Contains("163music", StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// 调用 UpdateSessionSnapshot，提供 API。
+    /// Provides the public UpdateSessionSnapshot entry point required by this component.
+    /// </summary>
     public void UpdateSessionSnapshot(MediaSnapshot snapshot)
     {
         _sessionSnapshot = snapshot;
     }
 
+    /// <summary>
+    /// 调用 Start，提供 API。
+    /// Provides the public Start entry point required by this component.
+    /// </summary>
     public void Start()
     {
         if (_isDisposed || _cancellation is not null)
@@ -68,6 +80,10 @@ public sealed class NetEaseMediaProvider : IMediaSourceProvider
         _ = PollAsync(cancellation, cancellation.Token);
     }
 
+    /// <summary>
+    /// 调用 Dispose，提供 API。
+    /// Provides the public Dispose entry point required by this component.
+    /// </summary>
     public void Dispose()
     {
         if (_isDisposed)

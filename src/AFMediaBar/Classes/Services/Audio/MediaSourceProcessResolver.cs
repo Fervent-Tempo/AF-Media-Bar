@@ -29,6 +29,10 @@ public sealed class MediaSourceProcessResolver
     private readonly Dictionary<string, string> _rememberedProcesses = new(StringComparer.OrdinalIgnoreCase);
     private readonly Queue<string> _rememberedOrder = new();
 
+    /// <summary>
+    /// 调用 ResolveProcessNames，提供 API。
+    /// Provides the public ResolveProcessNames entry point required by this component.
+    /// </summary>
     public IReadOnlyList<string> ResolveProcessNames(string? sourceId)
     {
         if (string.IsNullOrWhiteSpace(sourceId))
@@ -53,6 +57,10 @@ public sealed class MediaSourceProcessResolver
         return names.ToArray();
     }
 
+    /// <summary>
+    /// 调用 Matches，提供 API。
+    /// Provides the public Matches entry point required by this component.
+    /// </summary>
     public bool Matches(string? sourceId, string? sourceName, string processName, string displayName)
     {
         var key = GetSourceKey(sourceId, sourceName);
@@ -72,6 +80,10 @@ public sealed class MediaSourceProcessResolver
               sourceName.Contains(processName, StringComparison.OrdinalIgnoreCase)));
     }
 
+    /// <summary>
+    /// 调用 Remember，提供 API。
+    /// Provides the public Remember entry point required by this component.
+    /// </summary>
     public void Remember(string? sourceId, string? sourceName, string processName)
     {
         var key = GetSourceKey(sourceId, sourceName);

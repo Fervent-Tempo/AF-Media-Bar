@@ -14,6 +14,10 @@ public sealed class LrclibLyricsProvider : ILyricsProvider
 
     public string SourceName => "LRCLIB";
 
+    /// <summary>
+    /// 调用 GetLyricsAsync，提供 API。
+    /// Provides the public GetLyricsAsync entry point required by this component.
+    /// </summary>
     public async Task<LyricsResult?> GetLyricsAsync(
         LyricsRequest request,
         CancellationToken cancellationToken)

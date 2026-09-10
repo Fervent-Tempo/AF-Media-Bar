@@ -15,8 +15,10 @@ namespace AFMediaBar.ViewModels.Windows;
 public partial class AudioControlViewModel : ObservableObject, IDisposable
 {
     private const int VolumeStepPercent = 2;
-    private static readonly TimeSpan DeviceApplyDelay = TimeSpan.FromMilliseconds(1200);
-    private static readonly TimeSpan VolumeApplyDelay = TimeSpan.FromMilliseconds(100);
+    private static readonly TimeSpan DeviceApplyDelay =
+        TimeSpan.FromMilliseconds(AudioApplyPolicy.OutputDevicePreviewDelayMilliseconds);
+    private static readonly TimeSpan VolumeApplyDelay =
+        TimeSpan.FromMilliseconds(AudioApplyPolicy.ApplicationVolumeDelayMilliseconds);
     private readonly AudioDeviceService _deviceService;
     private readonly SpatialAudioService _spatialAudioService;
     private readonly ApplicationVolumeService _volumeService;
@@ -62,6 +64,10 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     public event Action<TrayIconBounds?>? FlyoutToggleRequested;
     public event Action<TrayIconBounds?>? TrayContextMenuRequested;
 
+    /// <summary>
+    /// 调用 AudioControlViewModel，提供 API。
+    /// Provides the public AudioControlViewModel entry point required by this component.
+    /// </summary>
     public AudioControlViewModel(
         AudioDeviceService deviceService,
         SpatialAudioService spatialAudioService,
@@ -89,6 +95,10 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         QueueTrayTooltipRefresh();
     }
 
+    /// <summary>
+    /// 刷新输出设备、应用音量和空间音效状态。
+    /// Refreshes output devices, application volumes, and spatial-audio state.
+    /// </summary>
     public async Task RefreshAsync()
     {
         if (IsBusy)
@@ -135,6 +145,11 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// 根据托盘滚轮增量预览下一个输出设备。
+    /// Previews the next output device for a tray-wheel delta.
+    /// </summary>
+    /// <param name="delta">滚轮增量 / Wheel delta.</param>
     public void PreviewOutputDeviceWheel(int delta)
     {
         if (OutputDevices.Count == 0 || delta == 0)
@@ -183,7 +198,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
                 await Task.Delay(delay);
             }
 
-            if (_disposed || version != _deviceApplyVersion)
+            if (!AudioApplyPolicy.IsCurrent(_disposed, version, _deviceApplyVersion))
             {
                 return;
             }
@@ -277,8 +292,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
             return;
         }
 
-        var stepCount = WheelInput.GetStepCount(e.Delta);
-        _pendingTrayVolumeSteps += e.Delta > 0 ? stepCount : -stepCount;
+        _pendingTrayVolumeSteps += TrayWheelPolicy.GetVolumeSteps(e.Delta);
         await ProcessTrayVolumeAsync();
     }
 
@@ -386,17 +400,15 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
                     var application = await Task.Run(() => _volumeService.GetCurrentMediaVolume(
                         _mediaSessionService.SelectedSourceId,
                         _mediaSessionService.SelectedSourceName));
-                    text = application is null
-                        ? "当前媒体音量：不可用"
-                        : $"{application.DisplayName}：{application.VolumePercent}%";
+                    text = AudioTooltipPolicy.Build(TrayWheelBehavior, application, null);
                     break;
                 case TrayWheelBehavior.SwitchOutputDevice:
                     var devices = await _deviceService.GetRenderDevicesAsync();
                     var device = devices.FirstOrDefault(candidate => candidate.IsDefault);
-                    text = device is null ? "输出设备：不可用" : $"输出设备：{device.DisplayName}";
+                    text = AudioTooltipPolicy.Build(TrayWheelBehavior, null, device);
                     break;
                 default:
-                    text = "托盘滚轮已禁用";
+                    text = AudioTooltipPolicy.Build(TrayWheelBehavior, null, null);
                     break;
             }
 
@@ -417,16 +429,17 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
 
     private void UpdateTooltipFromLoadedState()
     {
-        var text = TrayWheelBehavior switch
-        {
-            TrayWheelBehavior.AdjustVolume => Applications.FirstOrDefault(item => item.IsCurrentMedia) is { } application
-                ? $"{application.DisplayName}：{application.VolumePercent}%"
-                : "当前媒体音量：不可用",
-            TrayWheelBehavior.SwitchOutputDevice => SelectedOutputDevice is { } device
-                ? $"输出设备：{device.DisplayName}"
-                : "输出设备：不可用",
-            _ => "托盘滚轮已禁用"
-        };
+        var currentApplication = Applications.FirstOrDefault(item => item.IsCurrentMedia);
+        ApplicationVolumeSnapshot? snapshot = currentApplication is null
+            ? null
+            : new ApplicationVolumeSnapshot(
+                currentApplication.ProcessName,
+                currentApplication.DisplayName,
+                currentApplication.VolumePercent,
+                false,
+                currentApplication.IsCurrentMedia,
+                currentApplication.IconData);
+        var text = AudioTooltipPolicy.Build(TrayWheelBehavior, snapshot, SelectedOutputDevice);
         SetTrayTooltip(text);
     }
 
@@ -438,6 +451,10 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
 
     private TrayIconBounds? GetTrayBounds() => _trayIconService.TryGetBounds(out var bounds) ? bounds : null;
 
+    /// <summary>
+    /// 取消托盘和媒体事件订阅并释放输入监听器。
+    /// Unsubscribes tray and media events and releases the input monitor.
+    /// </summary>
     public void Dispose()
     {
         _disposed = true;

@@ -1,6 +1,8 @@
 using AFMediaBar.Classes.Models.Layout;
+using AFMediaBar.Classes.Interop;
 using AFMediaBar.Classes.Services.Layout;
 using AFMediaBar.Classes.Services;
+using AFMediaBar.Classes.Services.Lyrics;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Utils;
@@ -295,5 +297,68 @@ public sealed class LayoutSizeCalculatorTests
 
         Assert.AreEqual(300, frame.Value, 0.01);
         Assert.IsTrue(frame.IsCompleted);
+    }
+
+    [TestMethod]
+    public void WindowBackdropPolicyFallsBackForUnsupportedMicaAndHighContrast()
+    {
+        Assert.AreEqual(
+            ApplicationBackdropMode.FluentSolid,
+            WindowBackdropPolicy.Resolve(ApplicationBackdropMode.Mica, highContrast: false, supportsMica: false));
+        Assert.AreEqual(
+            ApplicationBackdropMode.FluentSolid,
+            WindowBackdropPolicy.Resolve(ApplicationBackdropMode.Acrylic, highContrast: true, supportsMica: true));
+        Assert.AreEqual(
+            ApplicationBackdropMode.Acrylic,
+            WindowBackdropPolicy.Resolve(ApplicationBackdropMode.Acrylic, highContrast: false, supportsMica: false));
+    }
+
+    [TestMethod]
+    public void PopupAppearancePolicyKeepsMenuOpaque()
+    {
+        Assert.IsFalse(PopupAppearancePolicy.AllowsNativeBackdrop);
+        Assert.AreEqual("AppMenuBackgroundBrush", PopupAppearancePolicy.BackgroundResourceKey);
+    }
+
+    [TestMethod]
+    public void AudioPoliciesPreserveDelayVersionWheelAndTooltipSemantics()
+    {
+        Assert.AreEqual(1200, AudioApplyPolicy.OutputDevicePreviewDelayMilliseconds);
+        Assert.AreEqual(100, AudioApplyPolicy.ApplicationVolumeDelayMilliseconds);
+        Assert.IsTrue(AudioApplyPolicy.IsCurrent(false, 3, 3));
+        Assert.IsFalse(AudioApplyPolicy.IsCurrent(false, 2, 3));
+        Assert.AreEqual(1, TrayWheelPolicy.GetVolumeSteps(120));
+        Assert.AreEqual(-1, TrayWheelPolicy.GetVolumeSteps(-120));
+        Assert.AreEqual(
+            "输出设备：扬声器",
+            AudioTooltipPolicy.Build(
+                TrayWheelBehavior.SwitchOutputDevice,
+                null,
+                new AudioDeviceOption("id", "policy", "扬声器", true)));
+    }
+
+    [TestMethod]
+    public void TaskbarRecoveryPolicyPreservesValidatedTimingAndMessageBoundaries()
+    {
+        Assert.AreEqual(8, TaskbarRecoveryPolicy.MaximumAttempts);
+        Assert.AreEqual(TimeSpan.FromMilliseconds(900), TaskbarRecoveryPolicy.GetDelay(0));
+        Assert.AreEqual(TimeSpan.FromMilliseconds(600), TaskbarRecoveryPolicy.GetDelay(7));
+        Assert.AreEqual(2, TaskbarRecoveryPolicy.RequiredStableSamples);
+        Assert.IsTrue(TaskbarHostMessagePolicy.IsEnvironmentChange(NativeMethods.WM_DISPLAYCHANGE));
+        Assert.IsTrue(TaskbarHostMessagePolicy.ShouldSuppressPropagation(NativeMethods.WM_GETOBJECT));
+        Assert.IsFalse(TaskbarHostMessagePolicy.ShouldSuppressPropagation(0x000F));
+    }
+
+    [TestMethod]
+    public void LyricLinePresenterCachesLrcAndClearsOnMissingLyrics()
+    {
+        var presenter = new LyricLinePresenter();
+        var lyrics = new LyricsResult("test", "[00:01.00]第一行\n[00:02.00]第二行", null);
+
+        Assert.IsTrue(presenter.Update(lyrics, 1.1).Changed);
+        Assert.AreEqual("第一行", presenter.Update(lyrics, 1.1).Text);
+        Assert.AreEqual("第二行", presenter.Update(lyrics, 2.1).Text);
+        Assert.IsTrue(presenter.Update(null, 0).Changed);
+        Assert.AreEqual(string.Empty, presenter.Update(null, 0).Text);
     }
 }

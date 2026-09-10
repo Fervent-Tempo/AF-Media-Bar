@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Windows;
@@ -45,6 +45,10 @@ namespace AFMediaBar.Components
         private LayoutRenderEngine? _layoutEngine;
         private WindowMode _currentMode = WindowMode.Taskbar;  // 当前窗口模式 Current window mode
 
+        /// <summary>
+        /// 调用 TaskBarMediaControl，提供 API。
+        /// Provides the public TaskBarMediaControl entry point required by this component.
+        /// </summary>
         public TaskBarMediaControl()
         {
             InitializeComponent();
@@ -77,9 +81,7 @@ namespace AFMediaBar.Components
         // === 歌词显示状态 Lyrics Display State ===
         // 解析后的行缓存 + 当前行下标，避免每个快照重复解析。
         // Parsed line cache + current line index to avoid re-parsing on every snapshot.
-        private string? _lyricsLrc;
-        private IReadOnlyList<LrcLine> _lyricsLines = [];
-        private int _lastLyricIndex = -2;
+        private readonly LyricLinePresenter _lyricPresenter = new();
 
         /// <summary>
         /// 初始化布局渲染引擎：将 MainBorder 和 BackgroundImage 传入引擎以便动态调整布局。
@@ -289,6 +291,8 @@ namespace AFMediaBar.Components
                     _canPlayPause = false;
                     _canSkipPrevious = false;
                     _canSkipNext = false;
+                    _lyricPresenter.Update(null, 0);
+                    _activeLyric = string.Empty;
 
                     SongTitle.Text = _actualTitle;
                     SongLyrics.Text = string.Empty;
@@ -413,35 +417,10 @@ namespace AFMediaBar.Components
         /// </summary>
         private void UpdateLyricLine(MediaSnapshot snapshot)
         {
-            var lrc = snapshot.Lyrics?.Lrc;
-            if (string.IsNullOrWhiteSpace(lrc))
+            var update = _lyricPresenter.Update(snapshot.Lyrics, snapshot.Position);
+            if (update.Changed)
             {
-                if (_lyricsLrc is not null)
-                {
-                    _lyricsLrc = null;
-                    _lyricsLines = [];
-                    _lastLyricIndex = -2;
-                    SongTitle.Text = _actualTitle;
-                    _activeLyric = string.Empty;
-                    SongLyrics.Text = string.Empty;
-                    SongLyricsContainer.Visibility = Visibility.Collapsed;
-                }
-
-                return;
-            }
-
-            if (!string.Equals(_lyricsLrc, lrc, StringComparison.Ordinal))
-            {
-                _lyricsLrc = lrc;
-                _lyricsLines = LrcParser.Parse(lrc);
-                _lastLyricIndex = -2;
-            }
-
-            var index = LrcParser.FindIndex(_lyricsLines, TimeSpan.FromSeconds(snapshot.Position));
-            if (index != _lastLyricIndex)
-            {
-                _lastLyricIndex = index;
-                _activeLyric = index >= 0 ? _lyricsLines[index].Text : string.Empty;
+                _activeLyric = update.Text;
                 SongTitle.Text = _actualTitle;
                 SongLyrics.Text = _activeLyric;
                 SongLyricsContainer.Visibility = string.IsNullOrEmpty(_activeLyric)

@@ -4,7 +4,10 @@ using AFMediaBar.Classes.Interop;
 
 namespace AFMediaBar.Classes.Services;
 
+/// <summary>托盘滚轮事件参数。/ Tray-wheel event arguments.</summary>
 public sealed record TrayWheelEventArgs(int Delta);
+
+/// <summary>全局左键事件的屏幕坐标。/ Screen coordinates for a global left-button event.</summary>
 public sealed record NativeMouseButtonEventArgs(int ScreenX, int ScreenY);
 
 /// <summary>
@@ -18,6 +21,7 @@ public sealed class NativeMouseInputMonitor : IDisposable
     private readonly SynchronizationContext? _context;
     private IntPtr _hook;
 
+    /// <summary>创建全局鼠标监听器。/ Creates the global mouse monitor.</summary>
     public NativeMouseInputMonitor(ShellTrayIconService trayIcon)
     {
         _trayIcon = trayIcon;
@@ -28,6 +32,7 @@ public sealed class NativeMouseInputMonitor : IDisposable
     public event EventHandler<TrayWheelEventArgs>? WheelChanged;
     public event EventHandler<NativeMouseButtonEventArgs>? LeftButtonPressed;
 
+    /// <summary>安装低级鼠标钩子。/ Installs the low-level mouse hook.</summary>
     public void Start()
     {
         if (_hook != IntPtr.Zero)
@@ -91,6 +96,7 @@ public sealed class NativeMouseInputMonitor : IDisposable
         _context.Post(_ => callback(), null);
     }
 
+    /// <summary>移除鼠标钩子并清理事件。/ Removes the mouse hook and clears events.</summary>
     public void Dispose()
     {
         if (_hook != IntPtr.Zero)

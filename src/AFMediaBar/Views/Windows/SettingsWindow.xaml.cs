@@ -1,4 +1,4 @@
-﻿using AFMediaBar.ViewModels.Windows;
+using AFMediaBar.ViewModels.Windows;
 using AFMediaBar.Classes.Services;
 using Wpf.Ui;
 using Wpf.Ui.Abstractions;
@@ -60,6 +60,10 @@ namespace AFMediaBar.Views.Windows
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// 调用 SetServiceProvider，提供 API。
+        /// Provides the public SetServiceProvider entry point required by this component.
+        /// </summary>
         public void SetServiceProvider(IServiceProvider serviceProvider)
         {
             throw new NotImplementedException();

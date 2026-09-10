@@ -139,12 +139,20 @@ public class TaskbarDockService : ITaskbarDockService
         return GetDpiForWindow(taskbarHandle) / 96.0;
     }
 
+    /// <summary>
+    /// 调用 TryGetTaskbarRect，提供 API。
+    /// Provides the public TryGetTaskbarRect entry point required by this component.
+    /// </summary>
     public bool TryGetTaskbarRect(IntPtr taskbarHandle, out RECT rect)
     {
         rect = default;
         return taskbarHandle != IntPtr.Zero && GetWindowRect(taskbarHandle, out rect);
     }
 
+    /// <summary>
+    /// 调用 IsTaskbarVertical，提供 API。
+    /// Provides the public IsTaskbarVertical entry point required by this component.
+    /// </summary>
     public bool IsTaskbarVertical(IntPtr taskbarHandle)
     {
         if (!TryGetTaskbarRect(taskbarHandle, out var rect))
@@ -157,6 +165,10 @@ public class TaskbarDockService : ITaskbarDockService
         return height > width;
     }
 
+    /// <summary>
+    /// 调用 DockWindow，提供 API。
+    /// Provides the public DockWindow entry point required by this component.
+    /// </summary>
     public void DockWindow(IntPtr windowHandle, IntPtr taskbarHandle)
     {
         if (windowHandle == IntPtr.Zero || taskbarHandle == IntPtr.Zero)
@@ -170,6 +182,10 @@ public class TaskbarDockService : ITaskbarDockService
         SetParent(windowHandle, taskbarHandle);
     }
 
+    /// <summary>
+    /// 调用 UndockWindow，提供 API。
+    /// Provides the public UndockWindow entry point required by this component.
+    /// </summary>
     public void UndockWindow(IntPtr windowHandle)
     {
         if (windowHandle == IntPtr.Zero)
@@ -184,6 +200,10 @@ public class TaskbarDockService : ITaskbarDockService
         SetWindowLong(windowHandle, GWL_STYLE, style);
     }
 
+    /// <summary>
+    /// 调用 SetWindowPosition，提供 API。
+    /// Provides the public SetWindowPosition entry point required by this component.
+    /// </summary>
     public void SetWindowPosition(IntPtr windowHandle, IntPtr taskbarHandle, RECT taskbarRect, int width, int height)
     {
         if (windowHandle == IntPtr.Zero || taskbarHandle == IntPtr.Zero)
@@ -200,6 +220,10 @@ public class TaskbarDockService : ITaskbarDockService
             SWP_NOZORDER | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS | SWP_SHOWWINDOW);
     }
 
+    /// <summary>
+    /// 调用 ApplyInputRegion，提供 API。
+    /// Provides the public ApplyInputRegion entry point required by this component.
+    /// </summary>
     public void ApplyInputRegion(IntPtr windowHandle, IReadOnlyList<RECT> rects)
     {
         if (windowHandle == IntPtr.Zero)

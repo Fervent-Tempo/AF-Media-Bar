@@ -11,7 +11,6 @@ using Microsoft.Extensions.Hosting;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using Microsoft.Win32;
 using System.Windows.Media;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Models;
@@ -125,7 +124,10 @@ namespace AFMediaBar
                 services.AddSingleton<AboutViewModel>();
             }).Build();
 
-        private DispatcherTimer? _systemThemeRefreshTimer;
+        private ApplicationThemeCoordinator? _themeCoordinator;
+#if DEBUG
+        private DebugLyricsDiagnostics? _debugLyricsDiagnostics;
+#endif
 
         #region FrameWork
 
@@ -144,16 +146,14 @@ namespace AFMediaBar
         /// </summary>
         private async void OnStartup(object sender, StartupEventArgs e)
         {
-            ApplicationThemeManager.Changed += ApplicationThemeManager_OnChanged;
-            SystemEvents.UserPreferenceChanged += SystemEvents_OnUserPreferenceChanged;
-            ApplyAppearanceResources(SettingsManager.Current.Appearance);
-            SettingsManager.AppearanceSettingsChanged += SettingsManager_OnAppearanceSettingsChanged;
+            _themeCoordinator = new ApplicationThemeCoordinator(Dispatcher, UpdateAppearanceResources);
+            _themeCoordinator.Start();
+            _themeCoordinator.Apply(SettingsManager.Current.Appearance);
             await _host.StartAsync();
 
 #if DEBUG
-            // 实时歌词调试：快照事件已在 UI 线程触发，直接订阅。
-            // Real-time lyrics debug: snapshot events are already dispatched to UI thread, subscribe directly.
-            Services.GetRequiredService<MediaSessionService>().SnapshotChanged += DebugOutputLyrics;
+            _debugLyricsDiagnostics = new DebugLyricsDiagnostics();
+            Services.GetRequiredService<MediaSessionService>().SnapshotChanged += _debugLyricsDiagnostics.OnSnapshotChanged;
 #endif
         }
 
@@ -163,10 +163,13 @@ namespace AFMediaBar
         /// </summary>
         private void OnExit(object sender, ExitEventArgs e)
         {
-            SettingsManager.AppearanceSettingsChanged -= SettingsManager_OnAppearanceSettingsChanged;
-            ApplicationThemeManager.Changed -= ApplicationThemeManager_OnChanged;
-            SystemEvents.UserPreferenceChanged -= SystemEvents_OnUserPreferenceChanged;
-            _systemThemeRefreshTimer?.Stop();
+#if DEBUG
+            if (_debugLyricsDiagnostics is not null)
+                Services.GetRequiredService<MediaSessionService>().SnapshotChanged -= _debugLyricsDiagnostics.OnSnapshotChanged;
+            _debugLyricsDiagnostics = null;
+#endif
+            _themeCoordinator?.Dispose();
+            _themeCoordinator = null;
 
             // WPF 正在关闭 Dispatcher 时不能从 async void Exit 处理器等待后再恢复到 UI 线程，
             // 否则 Host.Dispose 可能永远不执行，媒体与 Shell 服务会让进程残留。
@@ -191,69 +194,6 @@ namespace AFMediaBar
             }
         }
 
-        private void SettingsManager_OnAppearanceSettingsChanged(object? sender, AppearanceSettingsChangedEventArgs e)
-        {
-            if (Dispatcher.CheckAccess())
-            {
-                ApplyAppearanceResources(e.Appearance);
-                return;
-            }
-
-            Dispatcher.BeginInvoke(() => ApplyAppearanceResources(e.Appearance));
-        }
-
-        private void ApplyAppearanceResources(AppearanceSettings appearance)
-        {
-            var theme = ResolveApplicationTheme(appearance.ApplicationThemeMode);
-            if (ApplicationThemeManager.GetAppTheme() != theme)
-            {
-                ApplicationThemeManager.Apply(
-                    theme,
-                    WindowBackdropType.None,
-                    updateAccent: true);
-            }
-
-            UpdateAppearanceResources(appearance, theme);
-        }
-
-        private void ApplicationThemeManager_OnChanged(ApplicationTheme theme, Color accent) =>
-            UpdateAppearanceResources(SettingsManager.Current.Appearance, theme);
-
-        private void SystemEvents_OnUserPreferenceChanged(object? sender, UserPreferenceChangedEventArgs e)
-        {
-            if (SettingsManager.Current.Appearance.ApplicationThemeMode != ApplicationThemeMode.Automatic)
-            {
-                return;
-            }
-
-            QueueSystemThemeRefresh();
-        }
-
-        private void QueueSystemThemeRefresh()
-        {
-            if (!Dispatcher.CheckAccess())
-            {
-                Dispatcher.BeginInvoke(QueueSystemThemeRefresh, DispatcherPriority.DataBind);
-                return;
-            }
-
-            _systemThemeRefreshTimer ??= new DispatcherTimer(
-                TimeSpan.FromMilliseconds(180),
-                DispatcherPriority.DataBind,
-                (_, _) =>
-                {
-                    _systemThemeRefreshTimer!.Stop();
-                    if (SettingsManager.Current.Appearance.ApplicationThemeMode == ApplicationThemeMode.Automatic)
-                    {
-                        ApplyAppearanceResources(SettingsManager.Current.Appearance);
-                    }
-                },
-                Dispatcher);
-
-            _systemThemeRefreshTimer.Stop();
-            _systemThemeRefreshTimer.Start();
-        }
-
         private void UpdateAppearanceResources(AppearanceSettings appearance, ApplicationTheme theme)
         {
             var fontFamily = new FontFamily(appearance.ResolveFontFamilySource(SystemFonts.MessageFontFamily.Source));
@@ -275,64 +215,6 @@ namespace AFMediaBar
             Resources["ContextMenuBackground"] = menuBrush;
         }
 
-        private static ApplicationTheme ResolveApplicationTheme(ApplicationThemeMode mode)
-        {
-            if (SystemParameters.HighContrast)
-            {
-                return ApplicationTheme.HighContrast;
-            }
-
-            if (mode == ApplicationThemeMode.Automatic)
-            {
-                WindowsThemeDetector.GetWindowsTheme(out var appTheme, out _);
-                return appTheme == WindowsThemeDetector.ThemeMode.Dark
-                    ? ApplicationTheme.Dark
-                    : ApplicationTheme.Light;
-            }
-
-            return mode == ApplicationThemeMode.Dark
-                ? ApplicationTheme.Dark
-                : ApplicationTheme.Light;
-        }
-#if DEBUG
-        // === 实时歌词调试状态（仅 Debug 模式）Real-time Lyrics Debug State (Debug Mode Only) ===
-        // 仅在歌词行变化时输出，避免 233ms 轮询刷屏。
-        // Prints only when the active line changes, to avoid spam from the 233ms poll.
-        private string? _debugLyricsLrc;
-        private IReadOnlyList<LrcLine> _debugLyricsLines = [];
-        private int _debugLyricsLastIndex = -1;
-
-        /// <summary>
-        /// 实时歌词调试：根据快照位置解析 LRC 并输出当前行（仅行变化时打印）。
-        /// Real-time lyrics debug: resolves the active LRC line from the snapshot position (prints only on line change).
-        /// </summary>
-        private void DebugOutputLyrics(object? sender, MediaSnapshot snapshot)
-        {
-            if (snapshot.Lyrics is not { } lyrics || string.IsNullOrWhiteSpace(lyrics.Lrc))
-            {
-                return;
-            }
-
-            if (!string.Equals(_debugLyricsLrc, lyrics.Lrc, StringComparison.Ordinal))
-            {
-                _debugLyricsLrc = lyrics.Lrc;
-                _debugLyricsLines = LrcParser.Parse(lyrics.Lrc);
-                _debugLyricsLastIndex = -1;
-            }
-
-            var index = LrcParser.FindIndex(
-                _debugLyricsLines,
-                TimeSpan.FromSeconds(snapshot.Position));
-            if (index < 0 || index == _debugLyricsLastIndex)
-            {
-                return;
-            }
-
-            _debugLyricsLastIndex = index;
-            Debug.WriteLine(
-                $"[Lyrics][{lyrics.Source}] {_debugLyricsLines[index].Time:mm\\:ss} {_debugLyricsLines[index].Text}");
-        }
-#endif
         /// <summary>
         /// 应用未处理异常事件：捕获全局异常以防止应用崩溃。
         /// Application unhandled exception event: catches global exceptions to prevent crashes.

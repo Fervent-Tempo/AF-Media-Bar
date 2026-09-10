@@ -22,6 +22,10 @@ public sealed class ApplicationVolumeService
     private readonly ApplicationIconService _iconService;
     private readonly AudioProcessInfoService _processInfo;
 
+    /// <summary>
+    /// 调用 ApplicationVolumeService，提供 API。
+    /// Provides the public ApplicationVolumeService entry point required by this component.
+    /// </summary>
     public ApplicationVolumeService(
         MediaSourceProcessResolver processResolver,
         ApplicationIconService iconService,
@@ -32,9 +36,17 @@ public sealed class ApplicationVolumeService
         _processInfo = processInfo;
     }
 
+    /// <summary>
+    /// 调用 GetApplications，提供 API。
+    /// Provides the public GetApplications entry point required by this component.
+    /// </summary>
     public IReadOnlyList<ApplicationVolumeSnapshot> GetApplications(string? sourceId, string? sourceName) =>
         GetApplicationsCore(sourceId, sourceName, includeIcons: true);
 
+    /// <summary>
+    /// 调用 GetCurrentMediaVolume，提供 API。
+    /// Provides the public GetCurrentMediaVolume entry point required by this component.
+    /// </summary>
     public ApplicationVolumeSnapshot? GetCurrentMediaVolume(string? sourceId, string? sourceName) =>
         GetApplicationsCore(sourceId, sourceName, includeIcons: false)
             .FirstOrDefault(value => value.IsCurrentMedia);
@@ -83,6 +95,10 @@ public sealed class ApplicationVolumeService
         }
     }
 
+    /// <summary>
+    /// 调用 SetApplicationVolume，提供 API。
+    /// Provides the public SetApplicationVolume entry point required by this component.
+    /// </summary>
     public bool SetApplicationVolume(string processName, int volumePercent)
     {
         lock (_gate)

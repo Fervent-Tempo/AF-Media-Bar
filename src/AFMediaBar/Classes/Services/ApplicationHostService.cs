@@ -1,4 +1,4 @@
-﻿using AFMediaBar.Views.Pages;
+using AFMediaBar.Views.Pages;
 using AFMediaBar.Views.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -26,6 +26,10 @@ namespace AFMediaBar.Classes.Services
 
         private INavigationWindow _navigationWindow;
 
+        /// <summary>
+        /// 调用 ApplicationHostService，提供 API。
+        /// Provides the public ApplicationHostService entry point required by this component.
+        /// </summary>
         public ApplicationHostService(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;

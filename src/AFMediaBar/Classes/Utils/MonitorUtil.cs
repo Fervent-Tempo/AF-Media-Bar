@@ -27,6 +27,10 @@ public static class MonitorUtil
         public string deviceName;
     }
 
+    /// <summary>
+    /// 调用 GetSelectedMonitor，提供 API。
+    /// Provides the public GetSelectedMonitor entry point required by this component.
+    /// </summary>
     public static MonitorInfo GetSelectedMonitor(int index = 0)
     {
         var monitors = GetMonitors();
@@ -68,12 +72,20 @@ public static class MonitorUtil
         return new MonitorInfo(); // defaults: empty rects/strings
     }
 
+    /// <summary>
+    /// 调用 GetMonitor，提供 API。
+    /// Provides the public GetMonitor entry point required by this component.
+    /// </summary>
     public static MonitorInfo GetMonitor(IntPtr hwnd, MonitorFromWindowFlags flag = MonitorFromWindowFlags.DEFAULTTONEAREST)
     {
         var hMonitor = MonitorFromWindow(hwnd, (int)flag);
         return GetMonitorInfoInternal(hMonitor);
     }
 
+    /// <summary>
+    /// 调用 GetMonitors，提供 API。
+    /// Provides the public GetMonitors entry point required by this component.
+    /// </summary>
     public static IReadOnlyList<MonitorInfo> GetMonitors()
     {
         List<MonitorInfo> result = [];

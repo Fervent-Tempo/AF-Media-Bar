@@ -10,6 +10,10 @@ public sealed class AudioDeviceService
 {
     private static readonly Guid PolicyConfigClientClassId = new("870AF99C-171D-4F9E-AF0D-E63DF40C2BC9");
 
+    /// <summary>
+    /// 调用 GetRenderDevicesAsync，提供 API。
+    /// Provides the public GetRenderDevicesAsync entry point required by this component.
+    /// </summary>
     public async Task<IReadOnlyList<AudioDeviceOption>> GetRenderDevicesAsync()
     {
         var defaultId = MediaDevice.GetDefaultAudioRenderId(AudioDeviceRole.Default);
@@ -38,6 +42,10 @@ public sealed class AudioDeviceService
             deviceId,
             StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// 调用 SetDefaultRenderDevice，提供 API。
+    /// Provides the public SetDefaultRenderDevice entry point required by this component.
+    /// </summary>
     public void SetDefaultRenderDevice(string policyDeviceId)
     {
         object? client = null;
