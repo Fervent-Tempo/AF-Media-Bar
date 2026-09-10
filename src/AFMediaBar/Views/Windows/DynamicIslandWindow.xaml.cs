@@ -135,33 +135,18 @@ public partial class DynamicIslandWindow : Window
         var workArea = GetCurrentWorkArea();
         var center = _dpiNormalizedCenter ?? new Point(0.5, 0);
         _dpiNormalizedCenter = null;
-        var left = workArea.Left + center.X * workArea.Width - Width / 2;
-        var top = workArea.Top + center.Y * workArea.Height - Height / 2;
-
-        if (SettingsManager.Current.DynamicIslandEdgeDocked)
-        {
-            switch (SettingsManager.Current.DynamicIslandEdge)
-            {
-                case DynamicIslandEdge.Left:
-                    left = workArea.Left;
-                    break;
-                case DynamicIslandEdge.Right:
-                    left = workArea.Right - Width;
-                    break;
-                case DynamicIslandEdge.Bottom:
-                    top = workArea.Bottom - Height;
-                    break;
-                default:
-                    top = workArea.Top;
-                    break;
-            }
-        }
-
-        left = Math.Clamp(left, workArea.Left, Math.Max(workArea.Left, workArea.Right - Width));
-        top = Math.Clamp(top, workArea.Top, Math.Max(workArea.Top, workArea.Bottom - Height));
-        SettingsManager.Current.DynamicIslandLeft = left;
-        SettingsManager.Current.DynamicIslandTop = top;
-        SetPosition(_isExpanded ? new Point(left, top) : GetCollapsedPosition(), animated: false);
+        var dockedEdge = SettingsManager.Current.DynamicIslandEdgeDocked
+            ? SettingsManager.Current.DynamicIslandEdge
+            : (DynamicIslandEdge?)null;
+        var restoredPosition = DynamicIslandPositionCalculator.GetDpiRestoredPosition(
+            workArea,
+            Width,
+            Height,
+            center,
+            dockedEdge);
+        SettingsManager.Current.DynamicIslandLeft = restoredPosition.X;
+        SettingsManager.Current.DynamicIslandTop = restoredPosition.Y;
+        SetPosition(_isExpanded ? restoredPosition : GetCollapsedPosition(), animated: false);
         MediaControl.RefreshDesiredSize();
         ApplyPendingSizeRequest();
     }
@@ -330,11 +315,14 @@ public partial class DynamicIslandWindow : Window
             return;
         }
 
-        _sizeAnimationProgress = Math.Min(1, _sizeAnimationProgress + 16.0 / 220.0);
-        var eased = 1 - Math.Pow(1 - _sizeAnimationProgress, 3);
-        var value = _sizeAnimationStart + (_sizeAnimationTarget - _sizeAnimationStart) * eased;
-        ApplyAnimatedSize(value, _appliedOrientation ?? LayoutOrientation.Horizontal);
-        if (_sizeAnimationProgress >= 1)
+        var frame = MediaBarSizeAnimationCalculator.Advance(
+            _sizeAnimationStart,
+            _sizeAnimationTarget,
+            _sizeAnimationProgress,
+            elapsedMilliseconds: 16);
+        _sizeAnimationProgress = frame.Progress;
+        ApplyAnimatedSize(frame.Value, _appliedOrientation ?? LayoutOrientation.Horizontal);
+        if (frame.IsCompleted)
         {
             ApplyAnimatedSize(_sizeAnimationTarget, _appliedOrientation ?? LayoutOrientation.Horizontal);
             _sizeAnimationTimer.Stop();
@@ -682,27 +670,34 @@ public partial class DynamicIslandWindow : Window
         if (double.IsNaN(Left) || double.IsNaN(Top))
             return;
 
-        var workArea = GetCurrentWorkArea();
-        SettingsManager.Current.DynamicIslandLeft = Math.Clamp(
-            Left,
-            workArea.Left,
-            Math.Max(workArea.Left, workArea.Right - Width));
-        SettingsManager.Current.DynamicIslandTop = Math.Clamp(
-            Top,
-            workArea.Top,
-            Math.Max(workArea.Top, workArea.Bottom - Height));
+        var position = DynamicIslandPositionCalculator.ClampPosition(
+            GetCurrentWorkArea(),
+            Width,
+            Height,
+            new Point(Left, Top));
+        SettingsManager.Current.DynamicIslandLeft = position.X;
+        SettingsManager.Current.DynamicIslandTop = position.Y;
     }
 
     private bool SaveDraggedPositionAndEdge()
     {
         var workArea = GetCurrentWorkArea();
-        var clampedLeft = Math.Clamp(Left, workArea.Left, Math.Max(workArea.Left, workArea.Right - Width));
-        var clampedTop = Math.Clamp(Top, workArea.Top, Math.Max(workArea.Top, workArea.Bottom - Height));
-        SetPosition(new Point(clampedLeft, clampedTop), animated: false);
+        var clampedPosition = DynamicIslandPositionCalculator.ClampPosition(
+            workArea,
+            Width,
+            Height,
+            new Point(Left, Top));
+        SetPosition(clampedPosition, animated: false);
 
-        SettingsManager.Current.DynamicIslandLeft = clampedLeft;
-        SettingsManager.Current.DynamicIslandTop = clampedTop;
-        var edge = FindDockedEdge(Left, Top, workArea);
+        SettingsManager.Current.DynamicIslandLeft = clampedPosition.X;
+        SettingsManager.Current.DynamicIslandTop = clampedPosition.Y;
+        var edge = DynamicIslandPositionCalculator.FindDockedEdge(
+            clampedPosition.X,
+            clampedPosition.Y,
+            Width,
+            Height,
+            workArea,
+            EdgeDockThresholdDip);
         SettingsManager.Current.DynamicIslandEdgeDocked = edge is not null;
         if (edge is { } dockedEdge)
             SettingsManager.Current.DynamicIslandEdge = dockedEdge;
@@ -720,39 +715,24 @@ public partial class DynamicIslandWindow : Window
 
     private Point GetExpandedPosition()
     {
-        var workArea = GetCurrentWorkArea();
-        var defaultLeft = (workArea.Left + workArea.Right - Width) / 2;
-        var left = SettingsManager.Current.DynamicIslandLeft ?? defaultLeft;
-        var top = SettingsManager.Current.DynamicIslandTop ?? workArea.Top;
-        return new Point(
-            Math.Clamp(left, workArea.Left, Math.Max(workArea.Left, workArea.Right - Width)),
-            Math.Clamp(top, workArea.Top, Math.Max(workArea.Top, workArea.Bottom - Height)));
+        return DynamicIslandPositionCalculator.GetExpandedPosition(
+            GetCurrentWorkArea(),
+            Width,
+            Height,
+            SettingsManager.Current.DynamicIslandLeft,
+            SettingsManager.Current.DynamicIslandTop);
     }
 
     private Point GetCollapsedPosition()
     {
-        var workArea = GetCurrentWorkArea();
-        var expanded = GetExpandedPosition();
-        return SettingsManager.Current.DynamicIslandEdge switch
-        {
-            DynamicIslandEdge.Left => new Point(workArea.Left - Width + EdgeRevealDip, expanded.Y),
-            DynamicIslandEdge.Right => new Point(workArea.Right - EdgeRevealDip, expanded.Y),
-            DynamicIslandEdge.Bottom => new Point(expanded.X, workArea.Bottom - EdgeRevealDip),
-            _ => new Point(expanded.X, workArea.Top - Height + EdgeRevealDip)
-        };
-    }
-
-    private DynamicIslandEdge? FindDockedEdge(double left, double top, Rect workArea)
-    {
-        var distances = new (DynamicIslandEdge Edge, double Distance)[]
-        {
-            (DynamicIslandEdge.Top, Math.Abs(top - workArea.Top)),
-            (DynamicIslandEdge.Right, Math.Abs(workArea.Right - (left + Width))),
-            (DynamicIslandEdge.Bottom, Math.Abs(workArea.Bottom - (top + Height))),
-            (DynamicIslandEdge.Left, Math.Abs(left - workArea.Left))
-        };
-        var nearest = distances.MinBy(item => item.Distance);
-        return nearest.Distance <= EdgeDockThresholdDip ? nearest.Edge : null;
+        return DynamicIslandPositionCalculator.GetCollapsedPosition(
+            GetCurrentWorkArea(),
+            Width,
+            Height,
+            SettingsManager.Current.DynamicIslandEdge,
+            EdgeRevealDip,
+            SettingsManager.Current.DynamicIslandLeft,
+            SettingsManager.Current.DynamicIslandTop);
     }
 
     private Rect GetCurrentWorkArea()

@@ -786,12 +786,15 @@ public partial class TaskbarWindow : Window
             return;
         }
 
-        _sizeAnimationProgress = Math.Min(1, _sizeAnimationProgress + 16.0 / 220.0);
-        var eased = 1 - Math.Pow(1 - _sizeAnimationProgress, 3);
-        var value = _sizeAnimationStart + (_sizeAnimationTarget - _sizeAnimationStart) * eased;
-        MediaControl.ApplyPrimaryLength(value);
+        var frame = MediaBarSizeAnimationCalculator.Advance(
+            _sizeAnimationStart,
+            _sizeAnimationTarget,
+            _sizeAnimationProgress,
+            elapsedMilliseconds: 16);
+        _sizeAnimationProgress = frame.Progress;
+        MediaControl.ApplyPrimaryLength(frame.Value);
         UpdatePosition();
-        if (_sizeAnimationProgress >= 1)
+        if (frame.IsCompleted)
         {
             MediaControl.ApplyPrimaryLength(_sizeAnimationTarget);
             UpdatePosition();

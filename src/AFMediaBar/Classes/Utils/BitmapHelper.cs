@@ -106,14 +106,25 @@ internal static class BitmapHelper
 
     /// <summary>
     /// 是否使用专辑封面提取强调色（后续可接入设置，默认开启）。
+    /// Whether to extract accent colors from album artwork (enabled by default).
     /// </summary>
     public static bool UseAlbumArtAsAccentColor { get; set; } = true;
 
+    /// <summary>
+    /// 获取最近一次计算出的主色画刷。
+    /// Gets the dominant-color brushes calculated most recently.
+    /// </summary>
     public static List<SolidColorBrush> SavedDominantColors
     {
         get => _currentDominantColors ??= [];
     }
 
+    /// <summary>
+    /// 读取缩略图内容并计算稳定哈希，用于缓存键。
+    /// Reads thumbnail content and computes a stable hash for cache keys.
+    /// </summary>
+    /// <param name="thumbnail">缩略图流引用。/ Thumbnail stream reference.</param>
+    /// <returns>内容哈希；读取失败时返回对象哈希。/ Content hash, or the object hash when reading fails.</returns>
     public static int GetStableThumbnailHash(IRandomAccessStreamReference thumbnail)
     {
         if (thumbnail == null)
@@ -126,7 +137,7 @@ internal static class BitmapHelper
             byte[] hashBytes = sha256.ComputeHash(stream);
             return BitConverter.ToInt32(hashBytes, 0);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return thumbnail.GetHashCode();
         }
@@ -229,12 +240,13 @@ internal static class BitmapHelper
     }
 
     /// <summary>
-    /// Gets dominant colors from last cached Bitmap from GetThumbnail method.
-    /// K-means clustering for multiple colors, histogram peak for single color.
+    /// 从最近一次 GetThumbnail 缓存的位图提取主色；单色使用直方图峰值，多色使用 K-means。
+    /// Gets dominant colors from the bitmap cached by the latest GetThumbnail call;
+    /// uses a histogram peak for one color and K-means for multiple colors.
     /// </summary>
-    /// <param name="colorCount">Amount of colors needed</param>
-    /// <param name="maxIterations">Amount of k-means iterations (more = higher accuracy)</param>
-    /// <returns>List of dominant colors from cached Bitmap as SolidColorBrush</returns>
+    /// <param name="colorCount">需要的颜色数量。/ Number of colors needed.</param>
+    /// <param name="maxIterations">K-means 最大迭代次数。/ Maximum K-means iterations.</param>
+    /// <returns>缓存位图对应的主色画刷列表。/ Dominant-color brushes for the cached bitmap.</returns>
     public static List<SolidColorBrush> GetDominantColors(int colorCount, int maxIterations = 15)
     {
         int hashCode = _currentHashCodeContext.Value != 0 ? _currentHashCodeContext.Value : _currentHashCode;
@@ -294,192 +306,13 @@ internal static class BitmapHelper
             byte[] pixels = new byte[height * stride];
             formattedBitmap.CopyPixels(pixels, stride, 0);
 
-            // downsample pixels
-            var rng = new Random();
-            var samples = new List<int[]>();
-
-            for (int i = 0; i < pixels.Length; i += 4)
-            {
-                byte b = pixels[i];
-                byte g = pixels[i + 1];
-                byte r = pixels[i + 2];
-                byte a = pixels[i + 3];
-
-                if (a < 128) continue;
-                if (rng.Next(10) != 0) continue; // sample ~10%
-
-                samples.Add([r, g, b]);
-            }
-
-            List<Color> result;
-
-            if (colorCount == 1)
-            {
-                // histogram peak for single dominant color for single color extraction (~2x faster than k-means)
-                const int quantBits = 4;
-                const int bins = 1 << quantBits;
-                var histogram = new int[bins * bins * bins];
-
-                foreach (var pixel in samples)
-                {
-                    float r = pixel[0] / 255f;
-                    float g = pixel[1] / 255f;
-                    float b = pixel[2] / 255f;
-
-                    float max = MathF.Max(r, MathF.Max(g, b));
-                    float min = MathF.Min(r, MathF.Min(g, b));
-                    float chroma = max - min;
-                    float lightness = (max + min) / 2f;
-
-                    // skip blacks, whites, and neutrals
-                    if (chroma < 0.15f) continue;
-                    if (lightness < 0.15f || lightness > 0.85f) continue;
-
-                    // weight by chroma so vivid colors dominate
-                    float weight = chroma * chroma;
-
-                    int ri = pixel[0] >> (8 - quantBits);
-                    int gi = pixel[1] >> (8 - quantBits);
-                    int bi = pixel[2] >> (8 - quantBits);
-                    histogram[ri * bins * bins + gi * bins + bi] += (int)(weight * 100);
-                }
-
-                int peakIdx = 0;
-                for (int i = 1; i < histogram.Length; i++)
-                    if (histogram[i] > histogram[peakIdx])
-                        peakIdx = i;
-
-                int pr = peakIdx / (bins * bins);
-                int pg = (peakIdx / bins) % bins;
-                int pb = peakIdx % bins;
-
-                // map each bin index back to the center of its value range
-                byte peakR = (byte)((pr << (8 - quantBits)) + (1 << (8 - quantBits - 1)));
-                byte peakG = (byte)((pg << (8 - quantBits)) + (1 << (8 - quantBits - 1)));
-                byte peakB = (byte)((pb << (8 - quantBits)) + (1 << (8 - quantBits - 1)));
-
-                result = [Color.FromArgb(255, peakR, peakG, peakB)];
-            }
-            else
-            {
-                // get random initial centroids
-                var centroids = samples
-                    .OrderBy(_ => rng.Next())
-                    .Take(colorCount)
-                    .Select(p => new double[] { p[0], p[1], p[2] })
-                    .ToList();
-
-                // k-means iterations
-                for (int iter = 0; iter < maxIterations; iter++)
-                {
-                    var clusters = Enumerable.Range(0, colorCount)
-                        .Select(_ => new List<int[]>())
-                        .ToList();
-
-                    // assign pixels to nearest centroid
-                    foreach (var pixel in samples)
-                    {
-                        int best = 0;
-                        double bestDist = double.MaxValue;
-
-                        for (int i = 0; i < colorCount; i++)
-                        {
-                            double dr = pixel[0] - centroids[i][0];
-                            double dg = pixel[1] - centroids[i][1];
-                            double db = pixel[2] - centroids[i][2];
-                            double dist = dr * dr + dg * dg + db * db;
-
-                            if (dist < bestDist)
-                            {
-                                bestDist = dist;
-                                best = i;
-                            }
-                        }
-
-                        clusters[best].Add(pixel);
-                    }
-
-                    // recalculate centroids + check convergence
-                    bool converged = true;
-                    for (int i = 0; i < colorCount; i++)
-                    {
-                        if (clusters[i].Count == 0) continue;
-
-                        double newR = clusters[i].Average(p => p[0]);
-                        double newG = clusters[i].Average(p => p[1]);
-                        double newB = clusters[i].Average(p => p[2]);
-
-                        double dr = newR - centroids[i][0];
-                        double dg = newG - centroids[i][1];
-                        double db = newB - centroids[i][2];
-
-                        if (dr * dr + dg * dg + db * db > 1.0) converged = false;
-
-                        centroids[i][0] = newR;
-                        centroids[i][1] = newG;
-                        centroids[i][2] = newB;
-                    }
-
-                    if (converged) break;
-                }
-
-                result = [.. centroids.Select(c => Color.FromArgb(255, (byte)c[0], (byte)c[1], (byte)c[2]))];
-            }
-
-            if (ApplicationThemeManager.GetSystemTheme() == SystemTheme.Dark)
-            {
-                // lighten colors and add contrast when in dark mode
-                result =
-                [
-                    .. result
-                        .Select(c =>
-                        {
-                            double r = ToLinear(c.R);
-                            double g = ToLinear(c.G);
-                            double b = ToLinear(c.B);
-
-                            double luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-
-                            // lift colors that are too dark for black backgrounds
-                            double targetL = Math.Max(luminance, 0.75);
-                            double scale = targetL / Math.Max(0.0001, luminance);
-                            r *= scale;
-                            g *= scale;
-                            b *= scale;
-
-                            // desaturate
-                            double desaturation = 0.35;
-                            double newL = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-                            r += (newL - r) * desaturation;
-                            g += (newL - g) * desaturation;
-                            b += (newL - b) * desaturation;
-
-                            return Color.FromArgb(c.A, ToGamma(r), ToGamma(g), ToGamma(b));
-                        })
-                ];
-            }
-            else
-            {
-                // just desaturate when in light mode
-                result =
-                [
-                    .. result
-                        .Select(c =>
-                        {
-                            double r = ToLinear(c.R);
-                            double g = ToLinear(c.G);
-                            double b = ToLinear(c.B);
-
-                            double desaturation = 0.35;
-                            double newL = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-                            r += (newL - r) * desaturation;
-                            g += (newL - g) * desaturation;
-                            b += (newL - b) * desaturation;
-
-                            return Color.FromArgb(c.A, ToGamma(r), ToGamma(g), ToGamma(b));
-                        })
-                ];
-            }
+            var result = DominantColorCalculator.Calculate(
+                pixels,
+                width,
+                height,
+                colorCount,
+                maxIterations,
+                ApplicationThemeManager.GetSystemTheme() == SystemTheme.Dark);
 
             // convert to brushes
             var brushes = result.Select(c =>
@@ -507,9 +340,4 @@ internal static class BitmapHelper
         }
     }
 
-    private static double ToLinear(byte v)
-        => Math.Pow(v / 255.0, 2.2);
-
-    private static byte ToGamma(double v)
-        => (byte)Math.Clamp(Math.Pow(v, 1.0 / 2.2) * 255.0, 0, 255);
 }
