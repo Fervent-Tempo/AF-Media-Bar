@@ -30,17 +30,17 @@
             <Separator />
             <ui:MenuItem Header="重新连接 SMTC"
                          Icon="{ui:SymbolIcon ArrowSync24}"
-                         Command="{Binding ViewModel.ReconnectMediaSessionCommand}" />
+                         Command="{Binding ReconnectMediaSessionCommand}" />
             <ui:MenuItem Header="重新加载任务栏媒体栏"
                          Icon="{ui:SymbolIcon ArrowSync24}"
                          Click="ReloadTaskbarHostMenuItem_Click" />
             <ui:MenuItem Header="设置"
                          Icon="{ui:SymbolIcon Settings24}"
-                         Command="{Binding ViewModel.OpenSettingsCommand}" />
+                         Command="{Binding OpenSettingsCommand}" />
             <Separator />
             <ui:MenuItem Header="退出"
                          Icon="{ui:SymbolIcon ArrowExit20}"
-                         Command="{Binding ViewModel.ExitApplicationCommand}" />
+                         Command="{Binding ExitApplicationCommand}" />
         </ContextMenu>
     </Window.ContextMenu>
     <Canvas Name="WidgetCanvas" Background="Transparent">
