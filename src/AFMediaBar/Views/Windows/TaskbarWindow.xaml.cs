@@ -547,6 +547,9 @@ public partial class TaskbarWindow : Window
     public void CloseContextMenuIfOutside(int screenX, int screenY) =>
         ContextMenuHelper.CloseIfOutside(PlayerMenu, screenX, screenY);
 
+    /// <summary>关闭任务栏媒体菜单。/ Closes the taskbar media menu.</summary>
+    internal void ClosePlayerMenu() => PlayerMenu.IsOpen = false;
+
     /// <summary>安全停止任务栏宿主并解除 Explorer 停靠。/ Safely stops the taskbar host and detaches it from Explorer.</summary>
     protected override void OnClosing(CancelEventArgs e)
     {

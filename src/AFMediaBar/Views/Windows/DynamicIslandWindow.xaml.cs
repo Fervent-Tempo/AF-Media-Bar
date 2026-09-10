@@ -393,6 +393,9 @@ public partial class DynamicIslandWindow : Window
     public void CloseContextMenuIfOutside(int screenX, int screenY) =>
         ContextMenuHelper.CloseIfOutside(PlayerMenu, screenX, screenY);
 
+    /// <summary>关闭灵动岛媒体菜单。/ Closes the dynamic-island media menu.</summary>
+    internal void ClosePlayerMenu() => PlayerMenu.IsOpen = false;
+
     /// <summary>
     /// 用最新会话列表重建灵动岛的媒体源菜单。
     /// Rebuilds the dynamic-island media-source menu from the latest session list.

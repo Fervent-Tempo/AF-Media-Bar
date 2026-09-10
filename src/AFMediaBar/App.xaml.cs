@@ -38,6 +38,7 @@ namespace AFMediaBar
     public partial class App
     {
         private static readonly TimeSpan HostShutdownTimeout = TimeSpan.FromSeconds(5);
+        private int _exitHandled;
 
         // .NET Generic Host 提供依赖注入、配置、日志等服务。
         // The .NET Generic Host provides dependency injection, configuration, logging, and other services.
@@ -163,6 +164,14 @@ namespace AFMediaBar
         /// </summary>
         private void OnExit(object sender, ExitEventArgs e)
         {
+            // Exit can be requested by both a ContextMenu command and MainWindow.OnClosed.
+            // Process the cleanup boundary only once so a re-entrant Shutdown call cannot
+            // interrupt disposal halfway through.
+            if (Interlocked.Exchange(ref _exitHandled, 1) != 0)
+            {
+                return;
+            }
+
 #if DEBUG
             if (_debugLyricsDiagnostics is not null)
                 Services.GetRequiredService<MediaSessionService>().SnapshotChanged -= _debugLyricsDiagnostics.OnSnapshotChanged;
@@ -190,8 +199,38 @@ namespace AFMediaBar
             }
             finally
             {
-                _host.Dispose();
+                // A media-session/native component can occasionally block while disposing
+                // after Explorer or a tray Popup has already been torn down. Keep a bounded
+                // watchdog so an explicit user exit can never leave AFMediaBar alive forever.
+                var disposalCompleted = 0;
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(HostShutdownTimeout).ConfigureAwait(false);
+                    if (Volatile.Read(ref disposalCompleted) == 0)
+                    {
+                        Environment.Exit(e.ApplicationExitCode);
+                    }
+                });
+
+                try
+                {
+                    _host.Dispose();
+                }
+                catch (Exception exception)
+                {
+                    // Cleanup must not cancel the final process-termination step.
+                    Debug.WriteLine($"[App] Host disposal failed: {exception}");
+                }
+                finally
+                {
+                    Volatile.Write(ref disposalCompleted, 1);
+                }
             }
+
+            // WPF has completed its Exit event, but third-party native media components
+            // may own non-background threads. Explicitly terminate after all synchronous
+            // cleanup has completed so the process cannot remain in the background.
+            Environment.Exit(e.ApplicationExitCode);
         }
 
         private void UpdateAppearanceResources(AppearanceSettings appearance, ApplicationTheme theme)

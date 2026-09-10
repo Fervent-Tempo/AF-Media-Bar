@@ -144,6 +144,13 @@ namespace AFMediaBar.Views.Windows
             _taskbarRecoveryCancellation = null;
             TaskbarEnvironmentRecovering = false;
 
+            // ContextMenu Popup HWNDs are not Application.Windows entries. Close every
+            // menu explicitly before the hidden host begins shutting down.
+            TrayMenu.IsOpen = false;
+            _taskbarWindow?.ClosePlayerMenu();
+            if (_dynamicIslandWindow is not null)
+                _dynamicIslandWindow.ClosePlayerMenu();
+
             if (_isSystemThemeWatcherActive)
             {
                 try
