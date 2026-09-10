@@ -39,6 +39,13 @@ public enum TrayWheelBehavior
     Disabled = 2
 }
 
+/// <summary>双行歌词的第二行内容。/ Content shown on the second lyric line.</summary>
+public enum LyricsSecondaryLineMode
+{
+    NextLine = 0,
+    Translation = 1
+}
+
 /// <summary>
 /// 应用设置模型：定义所有可配置的应用行为。
 /// Application settings model: defines all configurable application behaviors.
@@ -60,6 +67,15 @@ public class AppSettings
 
     /// <summary>托盘图标滚轮行为。 / Tray-wheel behavior.</summary>
     public TrayWheelBehavior TrayWheelBehavior { get; set; } = TrayWheelBehavior.SwitchOutputDevice;
+
+    /// <summary>是否在媒体栏中显示实时歌词。/ Whether live lyrics are shown in the media bar.</summary>
+    public bool LyricsEnabled { get; set; } = true;
+
+    /// <summary>是否启用双行歌词。/ Whether two-line lyrics are enabled.</summary>
+    public bool TwoLineLyricsEnabled { get; set; }
+
+    /// <summary>双行歌词的第二行内容模式。/ Content mode for the second lyric line.</summary>
+    public LyricsSecondaryLineMode LyricsSecondaryLineMode { get; set; } = LyricsSecondaryLineMode.NextLine;
 
     /// <summary>是否启用任务栏媒体栏（停靠到任务栏）Whether the media bar is docked into the taskbar.</summary>
     public bool TaskbarBarEnabled { get; set; } = true;
@@ -146,6 +162,7 @@ public static class SettingsManager
 
     public static event EventHandler<AppearanceSettingsChangedEventArgs>? AppearanceSettingsChanged;
     public static event EventHandler? TrayWheelBehaviorChanged;
+    public static event EventHandler? LyricsSettingsChanged;
 
     /// <summary>
     /// 布局设置变更事件：当窗口模式或布局方向发生变化时触发。
@@ -163,6 +180,36 @@ public static class SettingsManager
 
         Current.TrayWheelBehavior = behavior;
         TrayWheelBehaviorChanged?.Invoke(null, EventArgs.Empty);
+    }
+
+    /// <summary>更新歌词总开关并发布变更。/ Updates the lyric visibility setting and publishes the change.</summary>
+    public static void SetLyricsEnabled(bool enabled)
+    {
+        if (Current.LyricsEnabled == enabled)
+            return;
+
+        Current.LyricsEnabled = enabled;
+        LyricsSettingsChanged?.Invoke(null, EventArgs.Empty);
+    }
+
+    /// <summary>更新双行歌词开关并发布变更。/ Updates the two-line lyric setting and publishes the change.</summary>
+    public static void SetTwoLineLyricsEnabled(bool enabled)
+    {
+        if (Current.TwoLineLyricsEnabled == enabled)
+            return;
+
+        Current.TwoLineLyricsEnabled = enabled;
+        LyricsSettingsChanged?.Invoke(null, EventArgs.Empty);
+    }
+
+    /// <summary>更新第二行歌词内容模式并发布变更。/ Updates the secondary lyric mode and publishes the change.</summary>
+    public static void SetLyricsSecondaryLineMode(LyricsSecondaryLineMode mode)
+    {
+        if (Current.LyricsSecondaryLineMode == mode)
+            return;
+
+        Current.LyricsSecondaryLineMode = mode;
+        LyricsSettingsChanged?.Invoke(null, EventArgs.Empty);
     }
 
     /// <summary>更新外观设置并发布统一变更事件。 / Updates appearance settings and publishes one coherent change event.</summary>

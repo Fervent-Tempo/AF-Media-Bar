@@ -46,34 +46,76 @@
                                 ToolTipService.InitialShowDelay="800"
                                 ToolTipService.Placement="RelativePoint"
                                 ToolTipService.VerticalOffset="-16">
-                        <Canvas x:Name="SongTitleContainer" Height="19" Cursor="Hand" Tag="MediaAction"
-                                MouseLeftButtonUp="SongTitleContainer_MouseLeftButtonUp">
-                            <TextBlock x:Name="SongTitle" Text=""
-                                       TextTrimming="CharacterEllipsis"
-                                       FontFamily="{DynamicResource AppTextFontFamily}"
-                                       FontWeight="{DynamicResource AppTextFontWeight}">
-                                <TextBlock.RenderTransform>
-                                    <TranslateTransform />
-                                </TextBlock.RenderTransform>
-                            </TextBlock>
-                        </Canvas>
-                        <Canvas x:Name="SongLyricsContainer" Height="19" Visibility="Collapsed" Cursor="Hand" Tag="MediaAction"
-                                MouseLeftButtonUp="SongTitleContainer_MouseLeftButtonUp">
-                            <TextBlock x:Name="SongLyrics" Text=""
-                                       TextTrimming="CharacterEllipsis"
-                                       FontFamily="{DynamicResource AppTextFontFamily}"
-                                       FontWeight="{DynamicResource AppTextFontWeight}" />
-                        </Canvas>
-                        <Canvas x:Name="SongArtistContainer" Margin="0,-1.5,0,0" Height="19">
-                            <TextBlock x:Name="SongArtist" Text="" Opacity="0.5"
-                                       TextTrimming="CharacterEllipsis"
-                                       FontFamily="{DynamicResource AppTextFontFamily}"
-                                       FontWeight="{DynamicResource AppTextFontWeight}">
-                                <TextBlock.RenderTransform>
-                                    <TranslateTransform />
-                                </TextBlock.RenderTransform>
-                            </TextBlock>
-                        </Canvas>
+                        <Grid x:Name="SongInfoSurface"
+                              Width="{Binding ElementName=SongInfoStackPanel, Path=Width}"
+                              Height="{Binding ElementName=SongInfoStackPanel, Path=Height}">
+                            <StackPanel x:Name="SongMetadataPanel">
+                                <Canvas x:Name="SongTitleContainer" Height="19" Cursor="Hand" Tag="MediaAction"
+                                        MouseLeftButtonUp="SongTitleContainer_MouseLeftButtonUp">
+                                    <TextBlock x:Name="SongTitle" Text=""
+                                               TextTrimming="CharacterEllipsis"
+                                               FontFamily="{DynamicResource AppTextFontFamily}"
+                                               FontWeight="{DynamicResource AppTextFontWeight}">
+                                        <TextBlock.RenderTransform>
+                                            <TranslateTransform />
+                                        </TextBlock.RenderTransform>
+                                    </TextBlock>
+                                </Canvas>
+                                <Canvas x:Name="SongArtistContainer" Margin="0,-1.5,0,0" Height="19">
+                                    <TextBlock x:Name="SongArtist" Text="" Opacity="0.5"
+                                               TextTrimming="CharacterEllipsis"
+                                               FontFamily="{DynamicResource AppTextFontFamily}"
+                                               FontWeight="{DynamicResource AppTextFontWeight}">
+                                        <TextBlock.RenderTransform>
+                                            <TranslateTransform />
+                                        </TextBlock.RenderTransform>
+                                    </TextBlock>
+                                </Canvas>
+                            </StackPanel>
+
+                            <Grid x:Name="SongLyricsPanel" Visibility="Collapsed">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <Border x:Name="SongLyricsContainer"
+                                        Grid.Row="0"
+                                        Grid.RowSpan="2"
+                                        Height="19"
+                                        VerticalAlignment="Center"
+                                        Cursor="Hand"
+                                        Tag="MediaAction"
+                                        MouseLeftButtonUp="SongTitleContainer_MouseLeftButtonUp">
+                                    <TextBlock x:Name="SongLyrics"
+                                               Text=""
+                                               HorizontalAlignment="Stretch"
+                                               VerticalAlignment="Center"
+                                               TextAlignment="Center"
+                                               TextTrimming="CharacterEllipsis"
+                                               FontFamily="{DynamicResource AppTextFontFamily}"
+                                               FontWeight="{DynamicResource AppTextFontWeight}" />
+                                </Border>
+                                <Border x:Name="SongLyricsSecondaryContainer"
+                                        Grid.Row="1"
+                                        Height="{Binding ElementName=SongLyricsContainer, Path=Height}"
+                                        VerticalAlignment="Center"
+                                        Visibility="Collapsed"
+                                        Cursor="Hand"
+                                        Tag="MediaAction"
+                                        MouseLeftButtonUp="SongTitleContainer_MouseLeftButtonUp">
+                                    <TextBlock x:Name="SongLyricsSecondary"
+                                               Text=""
+                                               HorizontalAlignment="Stretch"
+                                               VerticalAlignment="Center"
+                                               TextAlignment="Center"
+                                               TextTrimming="CharacterEllipsis"
+                                               FontFamily="{DynamicResource AppTextFontFamily}"
+                                               FontWeight="{DynamicResource AppTextFontWeight}"
+                                               FontSize="{Binding ElementName=SongLyrics, Path=FontSize}"
+                                               Opacity="0.68" />
+                                </Border>
+                            </Grid>
+                        </Grid>
                     </StackPanel>
 
                 </Canvas>

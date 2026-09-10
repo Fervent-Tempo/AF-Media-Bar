@@ -26,5 +26,51 @@ namespace AFMediaBar.ViewModels.Pages
                 OnPropertyChanged();
             }
         }
+
+        public bool LyricsEnabled
+        {
+            get => Classes.Settings.SettingsManager.Current.LyricsEnabled;
+            set
+            {
+                if (Classes.Settings.SettingsManager.Current.LyricsEnabled == value)
+                    return;
+
+                Classes.Settings.SettingsManager.SetLyricsEnabled(value);
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(CanConfigureTwoLineLyrics));
+                OnPropertyChanged(nameof(CanSelectLyricsSecondaryLine));
+            }
+        }
+
+        public bool TwoLineLyricsEnabled
+        {
+            get => Classes.Settings.SettingsManager.Current.TwoLineLyricsEnabled;
+            set
+            {
+                if (Classes.Settings.SettingsManager.Current.TwoLineLyricsEnabled == value)
+                    return;
+
+                Classes.Settings.SettingsManager.SetTwoLineLyricsEnabled(value);
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(CanSelectLyricsSecondaryLine));
+            }
+        }
+
+        public Classes.Settings.LyricsSecondaryLineMode LyricsSecondaryLineMode
+        {
+            get => Classes.Settings.SettingsManager.Current.LyricsSecondaryLineMode;
+            set
+            {
+                if (Classes.Settings.SettingsManager.Current.LyricsSecondaryLineMode == value)
+                    return;
+
+                Classes.Settings.SettingsManager.SetLyricsSecondaryLineMode(value);
+                OnPropertyChanged();
+            }
+        }
+
+        public bool CanConfigureTwoLineLyrics => LyricsEnabled;
+
+        public bool CanSelectLyricsSecondaryLine => LyricsEnabled && TwoLineLyricsEnabled;
     }
 }

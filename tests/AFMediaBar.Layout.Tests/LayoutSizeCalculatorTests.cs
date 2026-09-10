@@ -21,7 +21,7 @@ public sealed class LayoutSizeCalculatorTests
 
         var request = LayoutSizeCalculator.Calculate(layout, 1.25, 1, 0, 1000, "base");
 
-        Assert.AreEqual(302, request.Width, 0.01);
+        Assert.AreEqual(62, request.Width, 0.01);
         Assert.AreEqual(44, request.Height, 0.01);
     }
 
@@ -32,7 +32,7 @@ public sealed class LayoutSizeCalculatorTests
 
         var request = LayoutSizeCalculator.Calculate(layout, 1, 1.25, 0, 1000, "thick");
 
-        Assert.AreEqual(375, request.Width, 0.01);
+        Assert.AreEqual(75, request.Width, 0.01);
         Assert.AreEqual(55, request.Height, 0.01);
     }
 
@@ -47,14 +47,14 @@ public sealed class LayoutSizeCalculatorTests
     }
 
     [TestMethod]
-    public void VerticalLayoutUsesHeightAsThePrimaryAxis()
+    public void VerticalLayoutShrinksHeightAlongThePrimaryAxis()
     {
         var layout = LayoutPresets.GetLayout(WindowMode.Taskbar, LayoutOrientation.Vertical);
 
         var request = LayoutSizeCalculator.Calculate(layout, 1.25, 1, 0, 1000, "vertical");
 
         Assert.AreEqual(80, request.Width, 0.01);
-        Assert.AreEqual(170, request.Height, 0.01);
+        Assert.AreEqual(80, request.Height, 0.01);
     }
 
     [TestMethod]
@@ -99,7 +99,7 @@ public sealed class LayoutSizeCalculatorTests
     }
 
     [TestMethod]
-    public void EmptyContentKeepsMinimumAutoSizedComponentWidth()
+    public void EmptyContentRemovesTheAutoSizedComponentWidth()
     {
         var layout = new LayoutSchema
         {
@@ -118,7 +118,19 @@ public sealed class LayoutSizeCalculatorTests
 
         var request = LayoutSizeCalculator.Calculate(layout, 1, 1, 0, 1000, "empty");
 
-        Assert.AreEqual(128, request.Width, 0.01);
+        Assert.AreEqual(80, request.Width, 0.01);
+    }
+
+    [TestMethod]
+    public void ShortTextCanShrinkBelowThePresetContentWidth()
+    {
+        var layout = LayoutPresets.GetLayout(WindowMode.Taskbar, LayoutOrientation.Horizontal);
+
+        var request = LayoutSizeCalculator.Calculate(layout, 1, 1, 40, 1000, "short");
+        var resized = LayoutSizeCalculator.ResizePrimary(layout, request.PrimaryLength);
+
+        Assert.AreEqual(100, request.Width, 0.01);
+        Assert.AreEqual(40, resized.Components.Single(component => component.Id == "song-info").Bounds.Width, 0.01);
     }
 
     [TestMethod]
@@ -353,12 +365,56 @@ public sealed class LayoutSizeCalculatorTests
     public void LyricLinePresenterCachesLrcAndClearsOnMissingLyrics()
     {
         var presenter = new LyricLinePresenter();
-        var lyrics = new LyricsResult("test", "[00:01.00]第一行\n[00:02.00]第二行", null);
+        var lyrics = new LyricsResult(
+            "test",
+            "[00:01.00]第一行\n[00:02.00]第二行",
+            "[00:01.02]First line\n[00:02.02]Second line");
 
-        Assert.IsTrue(presenter.Update(lyrics, 1.1).Changed);
-        Assert.AreEqual("第一行", presenter.Update(lyrics, 1.1).Text);
-        Assert.AreEqual("第二行", presenter.Update(lyrics, 2.1).Text);
+        var first = presenter.Update(lyrics, 1.1);
+        Assert.IsTrue(first.Changed);
+        Assert.AreEqual("第一行", first.Text);
+        Assert.AreEqual("第二行", first.NextText);
+        Assert.AreEqual("First line", first.TranslationText);
+
+        var unchanged = presenter.Update(lyrics, 1.1);
+        Assert.IsFalse(unchanged.Changed);
+        Assert.AreEqual("第一行", unchanged.Text);
+
+        var second = presenter.Update(lyrics, 2.1);
+        Assert.AreEqual("第二行", second.Text);
+        Assert.AreEqual(string.Empty, second.NextText);
+        Assert.AreEqual("Second line", second.TranslationText);
         Assert.IsTrue(presenter.Update(null, 0).Changed);
         Assert.AreEqual(string.Empty, presenter.Update(null, 0).Text);
+    }
+
+    [TestMethod]
+    public void LyricLinePresenterDoesNotReuseAnUnmatchedTranslation()
+    {
+        var presenter = new LyricLinePresenter();
+        var lyrics = new LyricsResult(
+            "test",
+            "[00:01.00]第一行\n[00:03.00]第三行",
+            "[00:01.00]First line");
+
+        var update = presenter.Update(lyrics, 3.1);
+
+        Assert.AreEqual("第三行", update.Text);
+        Assert.AreEqual(string.Empty, update.TranslationText);
+    }
+
+    [TestMethod]
+    public void LyricLinePresenterRefreshesWhenTranslationArrivesForTheSameLyrics()
+    {
+        var presenter = new LyricLinePresenter();
+        const string lrc = "[00:01.00]第一行";
+
+        presenter.Update(new LyricsResult("test", lrc, null), 1.1);
+        var enriched = presenter.Update(
+            new LyricsResult("test", lrc, "[00:01.00]First line"),
+            1.1);
+
+        Assert.IsTrue(enriched.Changed);
+        Assert.AreEqual("First line", enriched.TranslationText);
     }
 }

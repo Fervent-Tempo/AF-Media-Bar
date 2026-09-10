@@ -70,6 +70,9 @@ namespace AFMediaBar.Components
         private bool _canSkipPrevious;
         private bool _canSkipNext;
         private string _activeLyric = string.Empty;
+        private string _nextLyric = string.Empty;
+        private string _translatedLyric = string.Empty;
+        private string _secondaryLyric = string.Empty;
         private string _lastSizeFingerprint = string.Empty;
 
         public event EventHandler? TogglePlayPauseRequested;
@@ -247,6 +250,8 @@ namespace AFMediaBar.Components
 
             SongTitle.Foreground = foreground;
             SongLyrics.Foreground = foreground;
+            SongLyricsSecondary.Foreground = foreground;
+            SongLyricsSecondary.Opacity = SystemParameters.HighContrast ? 1 : 0.68;
             SongArtist.Foreground = foreground;
             SongInfoStackPanel.Background = readabilityBackground;
 
@@ -293,10 +298,15 @@ namespace AFMediaBar.Components
                     _canSkipNext = false;
                     _lyricPresenter.Update(null, 0);
                     _activeLyric = string.Empty;
+                    _nextLyric = string.Empty;
+                    _translatedLyric = string.Empty;
+                    _secondaryLyric = string.Empty;
 
                     SongTitle.Text = _actualTitle;
                     SongLyrics.Text = string.Empty;
-                    SongLyricsContainer.Visibility = Visibility.Collapsed;
+                    SongLyricsSecondary.Text = string.Empty;
+                    SongMetadataPanel.Visibility = Visibility.Visible;
+                    SongLyricsPanel.Visibility = Visibility.Collapsed;
                     SongArtist.Text = _actualArtist;
                     SongInfoStackPanel.Visibility = Visibility.Visible;
                     SongInfoStackPanel.ToolTip = string.Empty;
@@ -390,12 +400,7 @@ namespace AFMediaBar.Components
                     BackgroundImage.Source = null;
                 }
 
-                SongTitle.Visibility = string.IsNullOrEmpty(_activeLyric)
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
-                SongLyricsContainer.Visibility = string.IsNullOrEmpty(_activeLyric)
-                    ? Visibility.Collapsed
-                    : Visibility.Visible;
+                ApplyLyricPresentation();
                 SongArtistContainer.Visibility = !_isSmallTaskbar && !_isVertical && !string.IsNullOrEmpty(snapshot.Artist)
                     ? Visibility.Visible
                     : Visibility.Collapsed;
@@ -418,15 +423,32 @@ namespace AFMediaBar.Components
         private void UpdateLyricLine(MediaSnapshot snapshot)
         {
             var update = _lyricPresenter.Update(snapshot.Lyrics, snapshot.Position);
-            if (update.Changed)
-            {
-                _activeLyric = update.Text;
-                SongTitle.Text = _actualTitle;
-                SongLyrics.Text = _activeLyric;
-                SongLyricsContainer.Visibility = string.IsNullOrEmpty(_activeLyric)
-                    ? Visibility.Collapsed
-                    : Visibility.Visible;
-            }
+            _activeLyric = update.Text;
+            _nextLyric = update.NextText;
+            _translatedLyric = update.TranslationText;
+            SongTitle.Text = _actualTitle;
+        }
+
+        private void ApplyLyricPresentation()
+        {
+            var settings = SettingsManager.Current;
+            var showLyrics = settings.LyricsEnabled && !string.IsNullOrEmpty(_activeLyric);
+            _secondaryLyric = settings.LyricsSecondaryLineMode == LyricsSecondaryLineMode.Translation
+                ? _translatedLyric
+                : _nextLyric;
+            var showSecondary = showLyrics &&
+                                settings.TwoLineLyricsEnabled &&
+                                !string.IsNullOrEmpty(_secondaryLyric);
+
+            SongMetadataPanel.Visibility = showLyrics ? Visibility.Collapsed : Visibility.Visible;
+            SongLyricsPanel.Visibility = showLyrics ? Visibility.Visible : Visibility.Collapsed;
+            SongLyrics.Text = showLyrics ? _activeLyric : string.Empty;
+            SongLyricsSecondary.Text = showSecondary ? _secondaryLyric : string.Empty;
+            SongLyricsSecondaryContainer.Visibility = showSecondary ? Visibility.Visible : Visibility.Collapsed;
+            Grid.SetRowSpan(SongLyricsContainer, showSecondary ? 1 : 2);
+            SongLyricsContainer.VerticalAlignment = showSecondary
+                ? VerticalAlignment.Stretch
+                : VerticalAlignment.Center;
         }
 
         /// <summary>根据当前可见文本发布自动尺寸请求。/ Raises an auto-size request for the visible text.</summary>
@@ -435,14 +457,21 @@ namespace AFMediaBar.Components
             if (_layoutEngine?.CurrentOrientation is not { } orientation)
                 return;
 
-            var visibleText = string.IsNullOrEmpty(_activeLyric) ? _actualTitle : _activeLyric;
-            var artist = SongArtistContainer.Visibility == Visibility.Visible ? _actualArtist : string.Empty;
-            var fingerprint = $"{orientation}|{visibleText}|{artist}|{SongTitle.FontSize:0.##}|{SongArtist.FontSize:0.##}|{SettingsManager.Current.LayoutLengthScalePercent:0.##}|{SettingsManager.Current.LayoutThicknessScalePercent:0.##}";
+            var lyricsVisible = SongLyricsPanel.Visibility == Visibility.Visible;
+            var visibleText = lyricsVisible ? _activeLyric : _actualTitle;
+            var secondaryText = lyricsVisible && SongLyricsSecondaryContainer.Visibility == Visibility.Visible
+                ? _secondaryLyric
+                : string.Empty;
+            var artist = !lyricsVisible && SongArtistContainer.Visibility == Visibility.Visible ? _actualArtist : string.Empty;
+            var fingerprint = $"{orientation}|{visibleText}|{secondaryText}|{artist}|{SongTitle.FontSize:0.##}|{SongArtist.FontSize:0.##}|{SettingsManager.Current.LayoutLengthScalePercent:0.##}|{SettingsManager.Current.LayoutThicknessScalePercent:0.##}|{SettingsManager.Current.LyricsEnabled}|{SettingsManager.Current.TwoLineLyricsEnabled}|{SettingsManager.Current.LyricsSecondaryLineMode}";
             if (!isResetToPreset && fingerprint == _lastSizeFingerprint)
                 return;
 
             _lastSizeFingerprint = fingerprint;
-            var textWidth = Math.Max(MeasureTextWidth(visibleText, SongTitle), MeasureTextWidth(artist, SongArtist));
+            var textWidth = Math.Max(
+                Math.Max(MeasureTextWidth(visibleText, lyricsVisible ? SongLyrics : SongTitle),
+                    MeasureTextWidth(secondaryText, SongLyricsSecondary)),
+                MeasureTextWidth(artist, SongArtist));
             var preset = LayoutPresets.GetLayout(_currentMode, orientation);
             var request = LayoutSizeCalculator.Calculate(
                 preset,

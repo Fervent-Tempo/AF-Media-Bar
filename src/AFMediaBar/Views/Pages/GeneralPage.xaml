@@ -11,10 +11,8 @@
       Title="GeneralPage"
       Foreground="{DynamicResource TextFillColorPrimaryBrush}">
 
-
-    <StackPanel MaxWidth="1000"
-                Margin="16"
-                VerticalAlignment="Center">
+      <StackPanel MaxWidth="1000"
+                  Margin="16">
         <TextBlock Text="常规"
                    FontSize="32"
                    FontWeight="{DynamicResource AppTextStrongFontWeight}" />
@@ -150,6 +148,59 @@
             </ComboBox>
         </ui:CardControl>
 
+        <TextBlock Text="歌词"
+                   FontSize="18"
+                   FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                   Margin="0,0,0,12" />
+        <ui:CardControl Margin="0,0,0,8"
+                        Icon="{ui:SymbolIcon TextQuote24}">
+            <ui:CardControl.Header>
+                <StackPanel>
+                    <ui:TextBlock Text="显示实时歌词"
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
+                    <ui:TextBlock Text="歌词可用时用当前歌词替代歌曲标题"
+                                  Appearance="Secondary"
+                                  FontSize="12" />
+                </StackPanel>
+            </ui:CardControl.Header>
+            <ui:ToggleSwitch IsChecked="{Binding ViewModel.LyricsEnabled, Mode=TwoWay}" />
+        </ui:CardControl>
+
+        <ui:CardControl Margin="0,0,0,8"
+                        Icon="{ui:SymbolIcon TextAlignJustify24}">
+            <ui:CardControl.Header>
+                <StackPanel>
+                    <ui:TextBlock Text="双行显示"
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
+                    <ui:TextBlock Text="在当前歌词下方增加一行内容"
+                                  Appearance="Secondary"
+                                  FontSize="12" />
+                </StackPanel>
+            </ui:CardControl.Header>
+            <ui:ToggleSwitch IsChecked="{Binding ViewModel.TwoLineLyricsEnabled, Mode=TwoWay}"
+                             IsEnabled="{Binding ViewModel.CanConfigureTwoLineLyrics}" />
+        </ui:CardControl>
+
+        <ui:CardControl Margin="0,0,0,24"
+                        Icon="{ui:SymbolIcon TextBulletListSquare24}">
+            <ui:CardControl.Header>
+                <StackPanel>
+                    <ui:TextBlock Text="第二行内容"
+                                  FontWeight="{DynamicResource AppTextStrongFontWeight}" />
+                    <ui:TextBlock Text="翻译不可用时只居中显示当前歌词"
+                                  Appearance="Secondary"
+                                  FontSize="12" />
+                </StackPanel>
+            </ui:CardControl.Header>
+            <ComboBox MinWidth="180"
+                      IsEnabled="{Binding ViewModel.CanSelectLyricsSecondaryLine}"
+                      SelectedValuePath="Tag"
+                      SelectedValue="{Binding ViewModel.LyricsSecondaryLineMode, Mode=TwoWay}">
+                <ComboBoxItem Content="下一句歌词" Tag="{x:Static settings:LyricsSecondaryLineMode.NextLine}" />
+                <ComboBoxItem Content="当前句翻译" Tag="{x:Static settings:LyricsSecondaryLineMode.Translation}" />
+            </ComboBox>
+        </ui:CardControl>
+
         <TextBlock Text="更新"
                    FontSize="18"
                    FontWeight="{DynamicResource AppTextStrongFontWeight}"
@@ -183,5 +234,6 @@
                        Icon="{ui:SymbolIcon ArrowSync24}" />
         </ui:CardControl>
 
-    </StackPanel>
+      </StackPanel>
+
 </Page>

@@ -8,7 +8,6 @@ namespace AFMediaBar.Classes.Services.Layout;
 /// </summary>
 public static class LayoutSizeCalculator
 {
-    public const double MinimumTextWidthDip = 48;
     public const double MinimumChangeDip = 2;
 
     /// <summary>
@@ -43,16 +42,16 @@ public static class LayoutSizeCalculator
         var basePrimary = isVertical ? layout.Canvas.Height : layout.Canvas.Width;
         var contentComponent = scaledComponents.FirstOrDefault(component => component.AutoSizePrimary)
             ?? scaledComponents.FirstOrDefault(component => component.Id == "song-info");
-        var measuredPrimary = Math.Max(MinimumTextWidthDip * thicknessScale, measuredTextWidthDip);
+        var measuredPrimary = Math.Max(0, measuredTextWidthDip);
         var contentBasePrimary = contentComponent is null
             ? basePrimary
             : isVertical ? contentComponent.Bounds.Height : contentComponent.Bounds.Width;
-        var contentDelta = contentComponent is null ? 0 : Math.Max(0, measuredPrimary - contentBasePrimary);
+        var contentDelta = contentComponent is null ? 0 : measuredPrimary - contentBasePrimary;
 
         var scaledGapDelta = layout.Components
             .Where(component => component.IsVisible)
             .Sum(component => component.SpacingAfter * (spacingScale - 1));
-        var targetPrimary = basePrimary * thicknessScale + contentDelta + scaledGapDelta;
+        var targetPrimary = Math.Max(1, basePrimary * thicknessScale + contentDelta + scaledGapDelta);
         if (maximumPrimaryLengthDip > 0)
             targetPrimary = Math.Min(targetPrimary, maximumPrimaryLengthDip);
 
@@ -95,8 +94,8 @@ public static class LayoutSizeCalculator
             var index = components.FindIndex(component => component.Id == autoComponent.Id);
             var bounds = autoComponent.Bounds;
             var resizedPrimary = isVertical
-                ? Math.Max(MinimumTextWidthDip, bounds.Height + delta)
-                : Math.Max(MinimumTextWidthDip, bounds.Width + delta);
+                ? Math.Max(0, bounds.Height + delta)
+                : Math.Max(0, bounds.Width + delta);
             var appliedDelta = resizedPrimary - (isVertical ? bounds.Height : bounds.Width);
             components[index] = autoComponent with
             {

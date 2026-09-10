@@ -94,7 +94,8 @@ The app runs in its own process. Its WPF player can be hosted as a taskbar child
 | --- | --- |
 | Media | Artwork, title, and artist; click artwork to play/pause; scroll for previous/next; multiple source selection |
 | Source interaction | Click the title or lyric to return to the media app; right-click the bar to switch sources |
-| Taskbar behavior | Automatic horizontal/vertical detection, manual placement and locking, automatic avoidance, auto-hide and fullscreen handling |
+| Live lyrics | Center one lyric line by default; disable lyrics under General settings, or enable two lines with the next lyric/current translation below |
+| Taskbar behavior | Automatic horizontal/vertical detection; length follows the current title or lyric within the icon-safe range; manual placement and locking, auto-hide and fullscreen handling |
 | Window modes | Taskbar and dynamic-island hosts share horizontal and vertical layouts; the island can be dragged freely and retracts at a desktop edge |
 | Appearance | Choose Latin and CJK fonts separately, adjust font weight, select player text color and enhanced readability, and set the entire app to automatic, light, or dark |
 | Container layout | The settings page uses the schema-5 integer grid for container and widget placement, including click-to-create 1×1, drag-to-draw rectangles, and four-edge resizing; the editor code is modularized, while real-Windows boundary, collapse, and DPI behavior remains subject to acceptance |
@@ -150,6 +151,7 @@ AF Media Bar is not commercially code-signed, so Windows SmartScreen may show an
 | Hover over the bar | Show the taskbar hover border, or expand a retracted island from the desktop edge |
 | Click artwork | Play or pause the selected media session |
 | Click title or lyric | Return to the media app |
+| Open “Detailed settings → General → Lyrics” | Toggle live lyrics, enable two-line display, and choose the next lyric or current translation for the second line |
 | Scroll up/down over the media area | Go to the previous/next track |
 | Right-click the bar and choose “Switch media source” | Switch between available media sessions |
 | Click the AF Media Bar tray icon | Open output-device, spatial-audio status, and application-volume controls |

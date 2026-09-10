@@ -96,6 +96,7 @@ namespace AFMediaBar.Views.Windows
             // Subscribe to layout settings changed event
             SettingsManager.LayoutSettingsChanged += SettingsManager_OnLayoutSettingsChanged;
             SettingsManager.AppearanceSettingsChanged += SettingsManager_OnAppearanceSettingsChanged;
+            SettingsManager.LyricsSettingsChanged += SettingsManager_OnLyricsSettingsChanged;
             _audioControlViewModel.FlyoutToggleRequested += AudioControl_OnFlyoutToggleRequested;
             _audioControlViewModel.TrayContextMenuRequested += AudioControl_OnTrayContextMenuRequested;
             _mouseInputMonitor.LeftButtonPressed += MouseInputMonitor_OnLeftButtonPressed;
@@ -183,6 +184,7 @@ namespace AFMediaBar.Views.Windows
             _mediaSessionService.SessionsChanged -= MediaSessionService_OnSessionsChanged;
             SettingsManager.LayoutSettingsChanged -= SettingsManager_OnLayoutSettingsChanged;
             SettingsManager.AppearanceSettingsChanged -= SettingsManager_OnAppearanceSettingsChanged;
+            SettingsManager.LyricsSettingsChanged -= SettingsManager_OnLyricsSettingsChanged;
             _audioControlViewModel.FlyoutToggleRequested -= AudioControl_OnFlyoutToggleRequested;
             _audioControlViewModel.TrayContextMenuRequested -= AudioControl_OnTrayContextMenuRequested;
             _mouseInputMonitor.LeftButtonPressed -= MouseInputMonitor_OnLeftButtonPressed;
@@ -427,6 +429,19 @@ namespace AFMediaBar.Views.Windows
                 UpdateSystemThemeWatcher(e.Appearance);
                 _taskbarWindow?.ApplyAppearanceSettings();
                 _dynamicIslandWindow?.ApplyAppearanceSettings();
+            });
+        }
+
+        private void SettingsManager_OnLyricsSettingsChanged(object? sender, EventArgs e)
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (_isClosing)
+                    return;
+
+                var snapshot = _mediaSessionService.CurrentSnapshot ?? MediaSnapshot.Disconnected;
+                _taskbarWindow?.ApplySnapshot(snapshot);
+                _dynamicIslandWindow?.ApplySnapshot(snapshot);
             });
         }
 
