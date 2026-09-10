@@ -43,7 +43,7 @@ public sealed class MediaSnapshotBuilder
 
         var playbackInfo = controlSession.GetPlaybackInfo();
         var timelineProperties = controlSession.GetTimelineProperties();
-        var artwork = BitmapHelper.GetThumbnail(songInfo.Thumbnail);
+        var artwork = ArtworkLoader.GetThumbnail(songInfo.Thumbnail);
         BitmapHelper.GetDominantColors(1);
         var sourceId = controlSession.SourceAppUserModelId ?? string.Empty;
         var title = songInfo.Title ?? string.Empty;

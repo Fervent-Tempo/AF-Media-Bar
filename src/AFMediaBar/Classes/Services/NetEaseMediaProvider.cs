@@ -235,7 +235,7 @@ public sealed class NetEaseMediaProvider : IMediaSourceProvider
     {
         try
         {
-            var artwork = await BitmapHelper.GetImageFromUrlAsync(coverUrl, token);
+            var artwork = await ArtworkLoader.GetImageFromUrlAsync(coverUrl, token);
             _artworkCache[coverUrl] = artwork;
             if (artwork is not null && !_isDisposed && version == _version &&
                 _currentInfo is { } info && string.Equals(info.Cover, coverUrl, StringComparison.OrdinalIgnoreCase))
