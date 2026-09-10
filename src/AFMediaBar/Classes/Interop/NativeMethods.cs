@@ -41,12 +41,14 @@ public static partial class NativeMethods
     public const int WM_WINDOWPOSCHANGING = 0x0046;
     public const int WM_NCCALCSIZE = 0x0083;
     public const int WM_NCDESTROY = 0x0082;
+    public const int WM_QUIT = 0x0012;
     public const int WM_IME_SETCONTEXT = 0x0281;
     public const int WM_IME_NOTIFY = 0x0282;
     public const int WM_APP = 0x8000;
     public const int WM_CONTEXTMENU = 0x007B;
     public const int WM_LBUTTONDOWN = 0x0201;
     public const int WM_MOUSEWHEEL = 0x020A;
+    public const uint PM_NOREMOVE = 0x0000;
     public const int NIN_SELECT = 0x0400;
     public const int NIN_KEYSELECT = 0x0401;
     public const int NIN_POPUPOPEN = 0x0406;
@@ -157,6 +159,19 @@ public static partial class NativeMethods
         public uint Flags;
         public uint Time;
         public UIntPtr ExtraInfo;
+    }
+
+    /// <summary>线程消息循环中的原生消息。/ Native message used by a thread message loop.</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MSG
+    {
+        public IntPtr Window;
+        public uint Message;
+        public UIntPtr WParam;
+        public IntPtr LParam;
+        public uint Time;
+        public POINT Point;
+        public uint Private;
     }
 
     /// <summary>Shell 通知区域图标数据。/ Shell notification-area icon data.</summary>
@@ -396,6 +411,38 @@ public static partial class NativeMethods
     /// </summary>
     [DllImport("user32.dll")]
     public static extern IntPtr CallNextHookEx(IntPtr hook, int code, IntPtr wParam, IntPtr lParam);
+
+    /// <summary>读取当前线程消息。/ Reads a message from the current thread's message queue.</summary>
+    [DllImport("user32.dll")]
+    public static extern int GetMessage(out MSG message, IntPtr window, uint minimumMessage, uint maximumMessage);
+
+    /// <summary>检查线程消息队列并确保该队列已创建。/ Examines and ensures creation of the thread message queue.</summary>
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool PeekMessage(
+        out MSG message,
+        IntPtr window,
+        uint minimumMessage,
+        uint maximumMessage,
+        uint removeMessage);
+
+    /// <summary>将虚拟键消息转换为字符消息。/ Translates virtual-key messages into character messages.</summary>
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool TranslateMessage(ref MSG message);
+
+    /// <summary>将消息分派到窗口过程。/ Dispatches a message to its window procedure.</summary>
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern IntPtr DispatchMessage(ref MSG message);
+
+    /// <summary>向指定线程的消息队列发送消息。/ Posts a message to the specified thread queue.</summary>
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool PostThreadMessage(uint threadId, uint message, UIntPtr wParam, IntPtr lParam);
+
+    /// <summary>返回当前线程的原生标识。/ Returns the native identifier of the current thread.</summary>
+    [DllImport("kernel32.dll")]
+    public static extern uint GetCurrentThreadId();
 
     /// <summary>
     /// 调用 GetModuleHandle，提供 API。

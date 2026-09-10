@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Threading;
 using AFMediaBar.Classes.Interop;
 
 namespace AFMediaBar.Classes.Services;
@@ -18,15 +20,20 @@ public sealed class NativeMouseInputMonitor : IDisposable
 {
     private readonly ShellTrayIconService _trayIcon;
     private readonly NativeMethods.LowLevelMouseProc _callback;
-    private readonly SynchronizationContext? _context;
+    private readonly Dispatcher _dispatcher;
+    private readonly object _lifecycleGate = new();
+    private readonly ManualResetEventSlim _messageLoopReady = new(false);
+    private Thread? _hookThread;
+    private uint _hookThreadId;
     private IntPtr _hook;
+    private volatile bool _disposed;
 
     /// <summary>创建全局鼠标监听器。/ Creates the global mouse monitor.</summary>
     public NativeMouseInputMonitor(ShellTrayIconService trayIcon)
     {
         _trayIcon = trayIcon;
         _callback = OnMouseEvent;
-        _context = SynchronizationContext.Current;
+        _dispatcher = Application.Current.Dispatcher;
     }
 
     public event EventHandler<TrayWheelEventArgs>? WheelChanged;
@@ -35,19 +42,65 @@ public sealed class NativeMouseInputMonitor : IDisposable
     /// <summary>安装低级鼠标钩子。/ Installs the low-level mouse hook.</summary>
     public void Start()
     {
-        if (_hook != IntPtr.Zero)
+        lock (_lifecycleGate)
         {
-            return;
-        }
+            if (_disposed || _hookThread is not null)
+            {
+                return;
+            }
 
-        _hook = NativeMethods.SetWindowsHookEx(
-            NativeMethods.WH_MOUSE_LL,
-            _callback,
-            NativeMethods.GetModuleHandle(null),
-            0);
-        if (_hook == IntPtr.Zero)
+            // A WH_MOUSE_LL callback is dispatched to the thread that installed it. Installing
+            // on the WPF thread makes all system mouse input wait while startup is mounting the
+            // taskbar window and initializing media services, which causes the visible freeze.
+            _hookThread = new Thread(RunHookMessageLoop)
+            {
+                IsBackground = true,
+                Name = "AFMediaBar.MouseHook"
+            };
+            _hookThread.Start();
+        }
+    }
+
+    private void RunHookMessageLoop()
+    {
+        try
         {
-            Debug.WriteLine($"[NativeMouseInputMonitor] Hook failed: {Marshal.GetLastWin32Error()}");
+            _hookThreadId = NativeMethods.GetCurrentThreadId();
+            // PostThreadMessage requires the destination thread to have created its queue.
+            NativeMethods.PeekMessage(out _, IntPtr.Zero, 0, 0, NativeMethods.PM_NOREMOVE);
+            if (_disposed)
+            {
+                _messageLoopReady.Set();
+                return;
+            }
+
+            _hook = NativeMethods.SetWindowsHookEx(
+                NativeMethods.WH_MOUSE_LL,
+                _callback,
+                NativeMethods.GetModuleHandle(null),
+                0);
+            _messageLoopReady.Set();
+            if (_hook == IntPtr.Zero)
+            {
+                Debug.WriteLine($"[NativeMouseInputMonitor] Hook failed: {Marshal.GetLastWin32Error()}");
+                return;
+            }
+
+            while (NativeMethods.GetMessage(out var message, IntPtr.Zero, 0, 0) > 0)
+            {
+                NativeMethods.TranslateMessage(ref message);
+                NativeMethods.DispatchMessage(ref message);
+            }
+        }
+        finally
+        {
+            var hook = Interlocked.Exchange(ref _hook, IntPtr.Zero);
+            if (hook != IntPtr.Zero)
+            {
+                NativeMethods.UnhookWindowsHookEx(hook);
+            }
+
+            _hookThreadId = 0;
         }
     }
 
@@ -58,11 +111,18 @@ public sealed class NativeMouseInputMonitor : IDisposable
             if (code >= 0)
             {
                 var data = Marshal.PtrToStructure<NativeMethods.MSLLHOOKSTRUCT>(lParam);
-                if (wParam.ToInt32() == NativeMethods.WM_MOUSEWHEEL &&
-                    _trayIcon.TryGetBounds(out var bounds) && bounds.Contains(data.Point.X, data.Point.Y))
+                if (wParam.ToInt32() == NativeMethods.WM_MOUSEWHEEL)
                 {
                     var delta = unchecked((short)(data.MouseData >> 16));
-                    Post(() => WheelChanged?.Invoke(this, new TrayWheelEventArgs(delta)));
+                    var screenX = data.Point.X;
+                    var screenY = data.Point.Y;
+                    Post(() =>
+                    {
+                        if (_trayIcon.TryGetBounds(out var bounds) && bounds.Contains(screenX, screenY))
+                        {
+                            WheelChanged?.Invoke(this, new TrayWheelEventArgs(delta));
+                        }
+                    });
                 }
                 else if (wParam.ToInt32() == NativeMethods.WM_LBUTTONDOWN)
                 {
@@ -87,22 +147,43 @@ public sealed class NativeMouseInputMonitor : IDisposable
 
     private void Post(Action callback)
     {
-        if (_context is null)
+        if (_disposed || _dispatcher.HasShutdownStarted)
         {
-            callback();
             return;
         }
 
-        _context.Post(_ => callback(), null);
+        _dispatcher.BeginInvoke(callback, DispatcherPriority.Input);
     }
 
     /// <summary>移除鼠标钩子并清理事件。/ Removes the mouse hook and clears events.</summary>
     public void Dispose()
     {
-        if (_hook != IntPtr.Zero)
+        Thread? hookThread;
+        lock (_lifecycleGate)
         {
-            NativeMethods.UnhookWindowsHookEx(_hook);
-            _hook = IntPtr.Zero;
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            hookThread = _hookThread;
+        }
+
+        if (hookThread is not null)
+        {
+            _messageLoopReady.Wait(TimeSpan.FromSeconds(1));
+            var threadId = _hookThreadId;
+            if (threadId != 0)
+            {
+                NativeMethods.PostThreadMessage(
+                    threadId,
+                    NativeMethods.WM_QUIT,
+                    UIntPtr.Zero,
+                    IntPtr.Zero);
+            }
+
+            hookThread.Join(TimeSpan.FromSeconds(1));
         }
 
         WheelChanged = null;
