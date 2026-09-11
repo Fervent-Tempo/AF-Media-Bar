@@ -91,6 +91,7 @@ namespace AFMediaBar
                 services.AddSingleton<NativeMouseInputMonitor>();
                 services.AddSingleton<NativeWindowBackdropAdapter>();
                 services.AddSingleton<WindowAppearanceService>();
+                services.AddSingleton<SettingsPersistenceService>();
 
                 // 导航服务（页面导航，不依赖具体窗口）Navigation service (page navigation, window-independent)
                 services.AddSingleton<INavigationService, NavigationService>();
@@ -147,6 +148,7 @@ namespace AFMediaBar
         /// </summary>
         private async void OnStartup(object sender, StartupEventArgs e)
         {
+            Services.GetRequiredService<SettingsPersistenceService>().Initialize();
             _themeCoordinator = new ApplicationThemeCoordinator(Dispatcher, UpdateAppearanceResources);
             _themeCoordinator.Start();
             _themeCoordinator.Apply(SettingsManager.Current.Appearance);
@@ -179,6 +181,15 @@ namespace AFMediaBar
 #endif
             _themeCoordinator?.Dispose();
             _themeCoordinator = null;
+
+            try
+            {
+                Services.GetRequiredService<SettingsPersistenceService>().Flush();
+            }
+            catch (Exception exception)
+            {
+                Debug.WriteLine($"[App] Settings flush failed: {exception}");
+            }
 
             // WPF 正在关闭 Dispatcher 时不能从 async void Exit 处理器等待后再恢复到 UI 线程，
             // 否则 Host.Dispose 可能永远不执行，媒体与 Shell 服务会让进程残留。

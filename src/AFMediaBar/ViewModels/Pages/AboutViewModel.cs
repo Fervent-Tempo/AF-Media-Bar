@@ -6,5 +6,6 @@ namespace AFMediaBar.ViewModels.Pages
     /// </summary>
     public partial class AboutViewModel : ObservableObject
     {
+        public void ResetAll() => Classes.Settings.SettingsManager.ResetAll();
     }
 }

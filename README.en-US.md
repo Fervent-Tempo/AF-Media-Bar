@@ -180,7 +180,7 @@ This version only retrieves update information and opens download links. It does
 2. Download and extract the new version.
 3. Replace the old `AFMediaBar.exe` with the new one, then restart the app.
 
-Window position, host mode, scaling, and startup settings are saved in the current user's registry; layout profiles and component properties are stored in `%LOCALAPPDATA%\AFMediaBar\profiles\layout.json`. Replacing the program file will not remove them. Legacy component registry values are removed after first-run migration.
+User preferences and window state are stored in `%LOCALAPPDATA%\AFMediaBar\settings.json` using versioned JSON, atomic writes, and backup recovery. Layout profiles and component properties remain in `%LOCALAPPDATA%\AFMediaBar\profiles\layout.json`. Replacing the program file will not remove settings; the General page can open the settings folder.
 
 ### Uninstalling
 
@@ -189,8 +189,7 @@ Window position, host mode, scaling, and startup settings are saved in the curre
 3. To remove settings as well, run this in PowerShell:
 
 ```powershell
-reg.exe delete "HKCU\Software\AFMediaBar" /f
-reg.exe delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "AF Media Bar" /f
+Remove-Item "$env:LOCALAPPDATA\AFMediaBar" -Recurse -Force
 ```
 
 

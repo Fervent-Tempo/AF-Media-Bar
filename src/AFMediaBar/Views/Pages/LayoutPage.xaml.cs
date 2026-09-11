@@ -34,5 +34,10 @@ namespace AFMediaBar.Views.Pages
 
             InitializeComponent();
         }
+
+        private async void ResetButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (await SettingsResetDialog.ConfirmAsync("布局页")) ViewModel.ResetLayout();
+        }
     }
 }

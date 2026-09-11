@@ -40,6 +40,7 @@ namespace AFMediaBar.ViewModels.Pages
 
         [ObservableProperty]
         private bool _isTaskbarAvoidingIcons;
+        private bool _isRefreshing;
 
         public bool IsTaskbarMode => CurrentWindowMode == WindowMode.Taskbar;
 
@@ -61,6 +62,7 @@ namespace AFMediaBar.ViewModels.Pages
             _taskbarCrossAxisOffsetDip = SettingsManager.Current.TaskbarBarCrossAxisOffsetDip;
             _isTaskbarPositionLocked = SettingsManager.Current.TaskbarBarPositionLocked;
             _isTaskbarAvoidingIcons = SettingsManager.Current.TaskbarBarAvoidIcons;
+            SettingsManager.SettingsChanged += OnSettingsChanged;
         }
 
         partial void OnCurrentWindowModeChanged(WindowMode value)
@@ -71,31 +73,27 @@ namespace AFMediaBar.ViewModels.Pages
 
         partial void OnLayoutLengthScalePercentChanged(double value)
         {
-            SettingsManager.Current.LayoutLengthScalePercent = value;
-            RaiseLayoutSettingsChanged();
+            if (!_isRefreshing) { SettingsManager.Current.LayoutLengthScalePercent = value; RaiseLayoutSettingsChanged(); }
         }
 
         partial void OnLayoutThicknessScalePercentChanged(double value)
         {
-            SettingsManager.Current.LayoutThicknessScalePercent = value;
-            RaiseLayoutSettingsChanged();
+            if (!_isRefreshing) { SettingsManager.Current.LayoutThicknessScalePercent = value; RaiseLayoutSettingsChanged(); }
         }
 
         partial void OnTaskbarCrossAxisOffsetDipChanged(double value)
         {
-            SettingsManager.Current.TaskbarBarCrossAxisOffsetDip = value;
-            RaiseLayoutSettingsChanged();
+            if (!_isRefreshing) { SettingsManager.Current.TaskbarBarCrossAxisOffsetDip = value; RaiseLayoutSettingsChanged(); }
         }
 
         partial void OnIsTaskbarPositionLockedChanged(bool value)
         {
-            SettingsManager.Current.TaskbarBarPositionLocked = value;
+            if (!_isRefreshing) SettingsManager.Current.TaskbarBarPositionLocked = value;
         }
 
         partial void OnIsTaskbarAvoidingIconsChanged(bool value)
         {
-            SettingsManager.Current.TaskbarBarAvoidIcons = value;
-            RaiseLayoutSettingsChanged();
+            if (!_isRefreshing) { SettingsManager.Current.TaskbarBarAvoidIcons = value; RaiseLayoutSettingsChanged(); }
         }
 
         /// <summary>
@@ -236,9 +234,31 @@ namespace AFMediaBar.ViewModels.Pages
             }
         }
 
-        private static void RaiseLayoutSettingsChanged() =>
+    private static void RaiseLayoutSettingsChanged() =>
             SettingsManager.RaiseLayoutSettingsChanged(
                 SettingsManager.Current.WindowMode,
                 SettingsManager.Current.LayoutOrientationMode);
+
+        public void ResetLayout() => SettingsManager.ResetLayout();
+
+        private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
+        {
+            if (e.ResetScope is not (SettingsResetScope.Layout or SettingsResetScope.All)) return;
+            _isRefreshing = true;
+            try
+            {
+                CurrentWindowMode = SettingsManager.Current.WindowMode;
+                CurrentLayoutOrientationMode = SettingsManager.Current.LayoutOrientationMode;
+                CurrentDynamicIslandBackgroundMode = SettingsManager.Current.DynamicIslandBackgroundMode;
+                LayoutLengthScalePercent = SettingsManager.Current.LayoutLengthScalePercent;
+                LayoutThicknessScalePercent = SettingsManager.Current.LayoutThicknessScalePercent;
+                TaskbarCrossAxisOffsetDip = SettingsManager.Current.TaskbarBarCrossAxisOffsetDip;
+                IsTaskbarPositionLocked = SettingsManager.Current.TaskbarBarPositionLocked;
+                IsTaskbarAvoidingIcons = SettingsManager.Current.TaskbarBarAvoidIcons;
+                OnPropertyChanged(nameof(IsTaskbarMode));
+                OnPropertyChanged(nameof(IsDynamicIslandMode));
+            }
+            finally { _isRefreshing = false; }
+        }
     }
 }

@@ -3,6 +3,7 @@ using AFMediaBar.Classes.Services;
 using Wpf.Ui;
 using Wpf.Ui.Abstractions;
 using Wpf.Ui.Controls;
+using AFMediaBar.Views.Pages;
 
 namespace AFMediaBar.Views.Windows
 {
@@ -29,6 +30,7 @@ namespace AFMediaBar.Views.Windows
             DataContext = this;
 
             InitializeComponent();
+            SettingsResetDialog.SetHost(RootContentDialog);
             appearanceService.Attach(this);
             SetPageService(navigationViewPageProvider);
 

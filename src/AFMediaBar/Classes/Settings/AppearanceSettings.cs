@@ -80,10 +80,20 @@ public readonly record struct AppearanceSettings(
     /// 调用 Normalize，提供 API。
     /// Provides the public Normalize entry point required by this component.
     /// </summary>
-    public AppearanceSettings Normalize() => this with
+    public AppearanceSettings Normalize()
     {
-        FontWeight = Math.Clamp(FontWeight, MinimumFontWeight, MaximumFontWeight)
-    };
+        var defaults = Default;
+        var normalized = this with
+        {
+            LatinFont = Enum.IsDefined(LatinFont) ? LatinFont : defaults.LatinFont,
+            CjkFont = Enum.IsDefined(CjkFont) ? CjkFont : defaults.CjkFont,
+            PlayerForegroundMode = Enum.IsDefined(PlayerForegroundMode) ? PlayerForegroundMode : defaults.PlayerForegroundMode,
+            ApplicationThemeMode = Enum.IsDefined(ApplicationThemeMode) ? ApplicationThemeMode : defaults.ApplicationThemeMode,
+            BackdropMode = Enum.IsDefined(BackdropMode) ? BackdropMode : defaults.BackdropMode,
+            FontWeight = Math.Clamp(FontWeight, MinimumFontWeight, MaximumFontWeight)
+        };
+        return normalized;
+    }
 
     /// <summary>生成西文优先、中文和东亚字符回退在后的字体链。 / Builds a Latin-first fallback chain with CJK coverage.</summary>
     public string ResolveFontFamilySource(string systemFontFamily)

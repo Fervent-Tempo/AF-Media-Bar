@@ -48,7 +48,8 @@
                 </StackPanel>
             </ui:CardControl.Header>
             <ui:Button Content="重置"
-                       Icon="{ui:SymbolIcon ArrowReset24}" />
+                       Icon="{ui:SymbolIcon ArrowReset24}"
+                       Click="ResetButton_Click" />
         </ui:CardControl>
     </StackPanel>
 </Page>

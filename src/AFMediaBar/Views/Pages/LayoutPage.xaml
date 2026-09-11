@@ -248,9 +248,18 @@
                                   FontSize="12" />
                 </StackPanel>
             </ui:CardControl.Header>
-            <ui:Button Content="重置"
+            <ui:Button Content="重置位置"
                        Icon="{ui:SymbolIcon ArrowReset24}"
                        Command="{Binding ViewModel.ResetTaskbarPositionCommand}" />
+        </ui:CardControl>
+        <ui:CardControl Margin="0,8,0,0" Icon="{ui:SymbolIcon ArrowReset24}">
+            <ui:CardControl.Header>
+                <StackPanel>
+                    <ui:TextBlock Text="恢复本页默认设置" FontWeight="{DynamicResource AppTextStrongFontWeight}" />
+                    <ui:TextBlock Text="恢复窗口、方向、缩放、任务栏和灵动岛设置" Appearance="Secondary" FontSize="12" />
+                </StackPanel>
+            </ui:CardControl.Header>
+            <ui:Button Content="恢复默认" Icon="{ui:SymbolIcon ArrowReset24}" Click="ResetButton_Click" />
         </ui:CardControl>
         </StackPanel>
     </StackPanel>

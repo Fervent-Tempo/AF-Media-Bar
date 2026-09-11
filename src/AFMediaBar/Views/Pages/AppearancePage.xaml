@@ -234,5 +234,14 @@
                              CommandParameter="{x:Static settings:ApplicationBackdropMode.Acrylic}" />
             </StackPanel>
         </ui:CardControl>
+        <ui:CardControl Margin="0,24,0,0" Icon="{ui:SymbolIcon ArrowReset24}">
+            <ui:CardControl.Header>
+                <StackPanel>
+                    <ui:TextBlock Text="恢复本页默认设置" FontWeight="{DynamicResource AppTextStrongFontWeight}" />
+                    <ui:TextBlock Text="恢复完整外观设置" Appearance="Secondary" FontSize="12" />
+                </StackPanel>
+            </ui:CardControl.Header>
+            <ui:Button Content="恢复默认" Icon="{ui:SymbolIcon ArrowReset24}" Click="ResetButton_Click" />
+        </ui:CardControl>
     </StackPanel>
 </Page>

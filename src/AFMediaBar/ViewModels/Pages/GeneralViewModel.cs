@@ -6,6 +6,8 @@ namespace AFMediaBar.ViewModels.Pages
     /// </summary>
     public partial class GeneralViewModel : ObservableObject
     {
+        public GeneralViewModel() => Classes.Settings.SettingsManager.SettingsChanged += OnSettingsChanged;
+
         /// <summary>
         /// 调用 GetValues，提供 API。
         /// Provides the public GetValues entry point required by this component.
@@ -72,5 +74,18 @@ namespace AFMediaBar.ViewModels.Pages
         public bool CanConfigureTwoLineLyrics => LyricsEnabled;
 
         public bool CanSelectLyricsSecondaryLine => LyricsEnabled && TwoLineLyricsEnabled;
+
+        public void ResetGeneral() => Classes.Settings.SettingsManager.ResetGeneral();
+
+        private void OnSettingsChanged(object? sender, Classes.Settings.SettingsChangedEventArgs e)
+        {
+            if (e.ResetScope is not (Classes.Settings.SettingsResetScope.General or Classes.Settings.SettingsResetScope.All)) return;
+            OnPropertyChanged(nameof(TrayWheelBehavior));
+            OnPropertyChanged(nameof(LyricsEnabled));
+            OnPropertyChanged(nameof(TwoLineLyricsEnabled));
+            OnPropertyChanged(nameof(LyricsSecondaryLineMode));
+            OnPropertyChanged(nameof(CanConfigureTwoLineLyrics));
+            OnPropertyChanged(nameof(CanSelectLyricsSecondaryLine));
+        }
     }
 }

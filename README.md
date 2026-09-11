@@ -184,7 +184,7 @@ AF Media Bar 暂未进行商业代码签名，因此 Windows SmartScreen 可能�
 2. 下载并解压新版本。
 3. 用新的 `AFMediaBar.exe` 替换旧版本后重新启动。
 
-窗口位置、宿主模式、缩放和开机启动配置保存在当前用户注册表中；布局档案及组件属性保存在 `%LOCALAPPDATA%\AFMediaBar\profiles\layout.json`。替换程序文件不会丢失设置。旧版本组件注册表选项会在首次启动迁移后清理。
+用户偏好和窗口状态统一保存在 `%LOCALAPPDATA%\AFMediaBar\settings.json`，采用版本化 JSON、原子写入和备份恢复。布局档案及组件属性仍保存在 `%LOCALAPPDATA%\AFMediaBar\profiles\layout.json`。替换程序文件不会丢失设置；可在设置的常规页打开设置文件夹。
 
 ### 卸载
 
@@ -193,8 +193,7 @@ AF Media Bar 暂未进行商业代码签名，因此 Windows SmartScreen 可能�
 3. 如需同时清除设置，可在 PowerShell 中执行：
 
 ```powershell
-reg.exe delete "HKCU\Software\AFMediaBar" /f
-reg.exe delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "AF Media Bar" /f
+Remove-Item "$env:LOCALAPPDATA\AFMediaBar" -Recurse -Force
 ```
 
 ## 隐私与安全

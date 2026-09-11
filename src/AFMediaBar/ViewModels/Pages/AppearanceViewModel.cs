@@ -15,6 +15,7 @@ public partial class AppearanceViewModel : ObservableObject
     private bool _enhancedReadability;
     private ApplicationThemeMode _applicationThemeMode;
     private ApplicationBackdropMode _backdropMode;
+    private bool _isRefreshing;
 
     /// <summary>
     /// 调用 AppearanceViewModel，提供 API。
@@ -30,6 +31,7 @@ public partial class AppearanceViewModel : ObservableObject
         _enhancedReadability = appearance.EnhancedReadability;
         _applicationThemeMode = appearance.ApplicationThemeMode;
         _backdropMode = appearance.BackdropMode;
+        SettingsManager.SettingsChanged += OnSettingsChanged;
     }
 
     public LatinFontPreset LatinFont
@@ -39,7 +41,7 @@ public partial class AppearanceViewModel : ObservableObject
         {
             if (SetProperty(ref _latinFont, value))
             {
-                Publish();
+                if (!_isRefreshing) Publish();
             }
         }
     }
@@ -51,7 +53,7 @@ public partial class AppearanceViewModel : ObservableObject
         {
             if (SetProperty(ref _cjkFont, value))
             {
-                Publish();
+                if (!_isRefreshing) Publish();
             }
         }
     }
@@ -64,7 +66,7 @@ public partial class AppearanceViewModel : ObservableObject
             value = Math.Clamp(value, AppearanceSettings.MinimumFontWeight, AppearanceSettings.MaximumFontWeight);
             if (SetProperty(ref _fontWeight, value))
             {
-                Publish();
+                if (!_isRefreshing) Publish();
             }
         }
     }
@@ -76,7 +78,7 @@ public partial class AppearanceViewModel : ObservableObject
         {
             if (SetProperty(ref _playerForegroundMode, value))
             {
-                Publish();
+                if (!_isRefreshing) Publish();
             }
         }
     }
@@ -88,7 +90,7 @@ public partial class AppearanceViewModel : ObservableObject
         {
             if (SetProperty(ref _enhancedReadability, value))
             {
-                Publish();
+                if (!_isRefreshing) Publish();
             }
         }
     }
@@ -100,7 +102,7 @@ public partial class AppearanceViewModel : ObservableObject
         {
             if (SetProperty(ref _applicationThemeMode, value))
             {
-                Publish();
+                if (!_isRefreshing) Publish();
             }
         }
     }
@@ -134,4 +136,24 @@ public partial class AppearanceViewModel : ObservableObject
         EnhancedReadability,
         ApplicationThemeMode,
         BackdropMode));
+
+    public void ResetAppearance() => SettingsManager.ResetAppearance();
+
+    private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
+    {
+        if (e.ResetScope is not (SettingsResetScope.Appearance or SettingsResetScope.All)) return;
+        var appearance = SettingsManager.Current.Appearance;
+        _isRefreshing = true;
+        try
+        {
+            LatinFont = appearance.LatinFont;
+            CjkFont = appearance.CjkFont;
+            FontWeight = appearance.FontWeight;
+            PlayerForegroundMode = appearance.PlayerForegroundMode;
+            EnhancedReadability = appearance.EnhancedReadability;
+            ApplicationThemeMode = appearance.ApplicationThemeMode;
+            BackdropMode = appearance.BackdropMode;
+        }
+        finally { _isRefreshing = false; }
+    }
 }

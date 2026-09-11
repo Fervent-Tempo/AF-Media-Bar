@@ -1,267 +1,216 @@
 using AFMediaBar.Classes.Models.Layout;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace AFMediaBar.Classes.Settings;
 
-/// <summary>
-/// 任务栏媒体栏水平位置枚举。
-/// Horizontal placement of the media bar on the taskbar.
-/// </summary>
-public enum TaskbarBarPosition
+/// <summary>任务栏位置。 / Taskbar placement.</summary>
+public enum TaskbarBarPosition { Start = 0, Center = 1, End = 2 }
+/// <summary>布局方向模式。 / Layout orientation mode.</summary>
+public enum LayoutOrientationMode { Auto = 0, Horizontal = 1, Vertical = 2 }
+/// <summary>灵动岛背景模式。 / Dynamic-island background mode.</summary>
+public enum DynamicIslandBackgroundMode { SystemTheme = 0, Transparent = 1 }
+/// <summary>托盘滚轮行为。 / Tray-wheel behavior.</summary>
+public enum TrayWheelBehavior { AdjustVolume = 0, SwitchOutputDevice = 1, Disabled = 2 }
+/// <summary>双行歌词第二行模式。 / Secondary lyric-line mode.</summary>
+public enum LyricsSecondaryLineMode { NextLine = 0, Translation = 1 }
+
+/// <summary>应用全部用户设置，并在属性直接修改时发布变更。 / All user settings; direct mutations publish changes.</summary>
+public sealed class AppSettings : INotifyPropertyChanged
 {
-    Start = 0,   // 开始位置（左侧/上侧）Start position (left/top)
-    Center = 1,  // 居中位置 Center position
-    End = 2      // 结束位置（右侧/下侧）End position (right/bottom)
+    private AppearanceSettings _appearance = AppearanceSettings.Default;
+    private TrayWheelBehavior _trayWheelBehavior = TrayWheelBehavior.SwitchOutputDevice;
+    private bool _lyricsEnabled = true;
+    private bool _twoLineLyricsEnabled;
+    private LyricsSecondaryLineMode _lyricsSecondaryLineMode = LyricsSecondaryLineMode.NextLine;
+    private bool _taskbarBarEnabled = true;
+    private int _taskbarBarSelectedMonitor;
+    private TaskbarBarPosition _position = TaskbarBarPosition.Start;
+    private bool _taskbarBarBackgroundBlur;
+    private int _taskbarBarManualPadding;
+    private WindowMode _windowMode = WindowMode.Taskbar;
+    private LayoutOrientationMode _layoutOrientationMode = LayoutOrientationMode.Auto;
+    private double _layoutLengthScalePercent = 100;
+    private double _layoutThicknessScalePercent = 100;
+    private DynamicIslandBackgroundMode _dynamicIslandBackgroundMode = DynamicIslandBackgroundMode.SystemTheme;
+    private double _taskbarBarCrossAxisOffsetDip;
+    private bool _taskbarBarAvoidIcons = true;
+    private bool _taskbarBarPositionLocked;
+    private double? _dynamicIslandLeft;
+    private double? _dynamicIslandTop;
+    private DynamicIslandEdge _dynamicIslandEdge = DynamicIslandEdge.Top;
+    private bool _dynamicIslandEdgeDocked = true;
+
+    public AppearanceSettings Appearance { get => _appearance; set => Set(ref _appearance, value.Normalize()); }
+    public TrayWheelBehavior TrayWheelBehavior { get => _trayWheelBehavior; set => Set(ref _trayWheelBehavior, value); }
+    public bool LyricsEnabled { get => _lyricsEnabled; set => Set(ref _lyricsEnabled, value); }
+    public bool TwoLineLyricsEnabled { get => _twoLineLyricsEnabled; set => Set(ref _twoLineLyricsEnabled, value); }
+    public LyricsSecondaryLineMode LyricsSecondaryLineMode { get => _lyricsSecondaryLineMode; set => Set(ref _lyricsSecondaryLineMode, value); }
+    public bool TaskbarBarEnabled { get => _taskbarBarEnabled; set => Set(ref _taskbarBarEnabled, value); }
+    public int TaskbarBarSelectedMonitor { get => _taskbarBarSelectedMonitor; set => Set(ref _taskbarBarSelectedMonitor, value); }
+    public TaskbarBarPosition Position { get => _position; set => Set(ref _position, value); }
+    public bool TaskbarBarBackgroundBlur { get => _taskbarBarBackgroundBlur; set => Set(ref _taskbarBarBackgroundBlur, value); }
+    public int TaskbarBarManualPadding { get => _taskbarBarManualPadding; set => Set(ref _taskbarBarManualPadding, value); }
+    public WindowMode WindowMode { get => _windowMode; set => Set(ref _windowMode, value); }
+    public LayoutOrientationMode LayoutOrientationMode { get => _layoutOrientationMode; set => Set(ref _layoutOrientationMode, value); }
+    public double LayoutLengthScalePercent { get => _layoutLengthScalePercent; set => Set(ref _layoutLengthScalePercent, value); }
+    public double LayoutThicknessScalePercent { get => _layoutThicknessScalePercent; set => Set(ref _layoutThicknessScalePercent, value); }
+    public DynamicIslandBackgroundMode DynamicIslandBackgroundMode { get => _dynamicIslandBackgroundMode; set => Set(ref _dynamicIslandBackgroundMode, value); }
+    public double TaskbarBarCrossAxisOffsetDip { get => _taskbarBarCrossAxisOffsetDip; set => Set(ref _taskbarBarCrossAxisOffsetDip, value); }
+    public bool TaskbarBarAvoidIcons { get => _taskbarBarAvoidIcons; set => Set(ref _taskbarBarAvoidIcons, value); }
+    public bool TaskbarBarPositionLocked { get => _taskbarBarPositionLocked; set => Set(ref _taskbarBarPositionLocked, value); }
+    public double? DynamicIslandLeft { get => _dynamicIslandLeft; set => Set(ref _dynamicIslandLeft, value); }
+    public double? DynamicIslandTop { get => _dynamicIslandTop; set => Set(ref _dynamicIslandTop, value); }
+    public DynamicIslandEdge DynamicIslandEdge { get => _dynamicIslandEdge; set => Set(ref _dynamicIslandEdge, value); }
+    public bool DynamicIslandEdgeDocked { get => _dynamicIslandEdgeDocked; set => Set(ref _dynamicIslandEdgeDocked, value); }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public AppSettings Normalize()
+    {
+        var defaults = new AppSettings();
+        var result = Clone();
+        result.Appearance = result.Appearance.Normalize();
+        if (!Enum.IsDefined(result.TrayWheelBehavior)) result.TrayWheelBehavior = defaults.TrayWheelBehavior;
+        if (!Enum.IsDefined(result.LyricsSecondaryLineMode)) result.LyricsSecondaryLineMode = defaults.LyricsSecondaryLineMode;
+        if (!Enum.IsDefined(result.Position)) result.Position = defaults.Position;
+        if (!Enum.IsDefined(result.WindowMode)) result.WindowMode = defaults.WindowMode;
+        if (!Enum.IsDefined(result.LayoutOrientationMode)) result.LayoutOrientationMode = defaults.LayoutOrientationMode;
+        if (!Enum.IsDefined(result.DynamicIslandBackgroundMode)) result.DynamicIslandBackgroundMode = defaults.DynamicIslandBackgroundMode;
+        if (!Enum.IsDefined(result.DynamicIslandEdge)) result.DynamicIslandEdge = defaults.DynamicIslandEdge;
+        if (result.TaskbarBarSelectedMonitor < 0) result.TaskbarBarSelectedMonitor = defaults.TaskbarBarSelectedMonitor;
+        if (!double.IsFinite(result.LayoutLengthScalePercent)) result.LayoutLengthScalePercent = defaults.LayoutLengthScalePercent;
+        if (!double.IsFinite(result.LayoutThicknessScalePercent)) result.LayoutThicknessScalePercent = defaults.LayoutThicknessScalePercent;
+        if (!double.IsFinite(result.TaskbarBarCrossAxisOffsetDip)) result.TaskbarBarCrossAxisOffsetDip = defaults.TaskbarBarCrossAxisOffsetDip;
+        result.LayoutLengthScalePercent = Math.Clamp(result.LayoutLengthScalePercent, 70, 125);
+        result.LayoutThicknessScalePercent = Math.Clamp(result.LayoutThicknessScalePercent, 70, 125);
+        result.TaskbarBarCrossAxisOffsetDip = Math.Clamp(result.TaskbarBarCrossAxisOffsetDip, -20, 20);
+        if (result.DynamicIslandLeft is not null && (!double.IsFinite(result.DynamicIslandLeft.Value) || result.DynamicIslandLeft < 0)) result.DynamicIslandLeft = null;
+        if (result.DynamicIslandTop is not null && (!double.IsFinite(result.DynamicIslandTop.Value) || result.DynamicIslandTop < 0)) result.DynamicIslandTop = null;
+        return result;
+    }
+
+    public AppSettings Clone() => new()
+    {
+        Appearance = Appearance,
+        TrayWheelBehavior = TrayWheelBehavior,
+        LyricsEnabled = LyricsEnabled,
+        TwoLineLyricsEnabled = TwoLineLyricsEnabled,
+        LyricsSecondaryLineMode = LyricsSecondaryLineMode,
+        TaskbarBarEnabled = TaskbarBarEnabled,
+        TaskbarBarSelectedMonitor = TaskbarBarSelectedMonitor,
+        Position = Position,
+        TaskbarBarBackgroundBlur = TaskbarBarBackgroundBlur,
+        TaskbarBarManualPadding = TaskbarBarManualPadding,
+        WindowMode = WindowMode,
+        LayoutOrientationMode = LayoutOrientationMode,
+        LayoutLengthScalePercent = LayoutLengthScalePercent,
+        LayoutThicknessScalePercent = LayoutThicknessScalePercent,
+        DynamicIslandBackgroundMode = DynamicIslandBackgroundMode,
+        TaskbarBarCrossAxisOffsetDip = TaskbarBarCrossAxisOffsetDip,
+        TaskbarBarAvoidIcons = TaskbarBarAvoidIcons,
+        TaskbarBarPositionLocked = TaskbarBarPositionLocked,
+        DynamicIslandLeft = DynamicIslandLeft,
+        DynamicIslandTop = DynamicIslandTop,
+        DynamicIslandEdge = DynamicIslandEdge,
+        DynamicIslandEdgeDocked = DynamicIslandEdgeDocked
+    };
+
+    private void Set<T>(ref T field, T value, [CallerMemberName] string? name = null)
+    {
+        if (EqualityComparer<T>.Default.Equals(field, value)) return;
+        field = value;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
 }
 
-/// <summary>
-/// 布局方向模式：自动、横向或纵向。
-/// Layout orientation mode: auto, horizontal or vertical.
-/// </summary>
-public enum LayoutOrientationMode
+/// <summary>设置重置范围。 / Settings reset scope.</summary>
+public enum SettingsResetScope { General, Appearance, Layout, All }
+
+/// <summary>设置变更通知参数。 / Settings change notification arguments.</summary>
+public sealed class SettingsChangedEventArgs(SettingsResetScope? resetScope = null, string? propertyName = null) : EventArgs
 {
-    Auto = 0,       // 自动（根据任务栏位置自动选择）Auto (auto-select based on taskbar position)
-    Horizontal = 1, // 横向 Horizontal
-    Vertical = 2    // 纵向 Vertical
+    public SettingsResetScope? ResetScope { get; } = resetScope;
+    public string? PropertyName { get; } = propertyName;
 }
 
-/// <summary>灵动岛背景方案。/ Dynamic island background style.</summary>
-public enum DynamicIslandBackgroundMode
-{
-    SystemTheme = 0,
-    Transparent = 1
-}
-
-/// <summary>托盘图标上的普通滚轮行为。 / Plain-wheel behavior over the tray icon.</summary>
-public enum TrayWheelBehavior
-{
-    AdjustVolume = 0,
-    SwitchOutputDevice = 1,
-    Disabled = 2
-}
-
-/// <summary>双行歌词的第二行内容。/ Content shown on the second lyric line.</summary>
-public enum LyricsSecondaryLineMode
-{
-    NextLine = 0,
-    Translation = 1
-}
-
-/// <summary>
-/// 应用设置模型：定义所有可配置的应用行为。
-/// Application settings model: defines all configurable application behaviors.
-///
-/// 职责 Responsibilities:
-/// 1. 存储任务栏媒体栏的位置、监视器、外观等配置
-///    Store taskbar media bar position, monitor, appearance configurations
-/// 2. 提供默认值（通过属性初始化器）
-///    Provide default values (via property initializers)
-///
-/// ⚠️ 注意 Note:
-/// 当前为内存存储，未实现持久化。后续需添加注册表或 JSON 持久化逻辑。
-/// Currently in-memory only; persistence (registry or JSON) to be added later.
-/// </summary>
-public class AppSettings
-{
-    /// <summary>字体、播放器文字与应用主题设置。 / Font, player text, and application-theme settings.</summary>
-    public AppearanceSettings Appearance { get; set; } = AppearanceSettings.Default;
-
-    /// <summary>托盘图标滚轮行为。 / Tray-wheel behavior.</summary>
-    public TrayWheelBehavior TrayWheelBehavior { get; set; } = TrayWheelBehavior.SwitchOutputDevice;
-
-    /// <summary>是否在媒体栏中显示实时歌词。/ Whether live lyrics are shown in the media bar.</summary>
-    public bool LyricsEnabled { get; set; } = true;
-
-    /// <summary>是否启用双行歌词。/ Whether two-line lyrics are enabled.</summary>
-    public bool TwoLineLyricsEnabled { get; set; }
-
-    /// <summary>双行歌词的第二行内容模式。/ Content mode for the second lyric line.</summary>
-    public LyricsSecondaryLineMode LyricsSecondaryLineMode { get; set; } = LyricsSecondaryLineMode.NextLine;
-
-    /// <summary>是否启用任务栏媒体栏（停靠到任务栏）Whether the media bar is docked into the taskbar.</summary>
-    public bool TaskbarBarEnabled { get; set; } = true;
-
-    /// <summary>
-    /// 选中的监视器索引，其任务栏将承载媒体栏（参见 <see cref="Utils.MonitorUtil.GetMonitors"/> 顺序）
-    /// Index of the monitor whose taskbar hosts the bar (see <see cref="Utils.MonitorUtil.GetMonitors"/> order).
-    /// </summary>
-    public int TaskbarBarSelectedMonitor { get; set; }
-
-    /// <summary>媒体栏在任务栏上的放置位置 Where on the taskbar the bar is placed.</summary>
-    public TaskbarBarPosition Position { get; set; } = TaskbarBarPosition.Start;
-
-    /// <summary>
-    /// 显示模糊的专辑封面背景（类似 FluentFlyout 的 TaskbarWidgetBackgroundBlur，默认关闭）
-    /// Show the blurred album-cover background (like FluentFlyout's TaskbarWidgetBackgroundBlur, off by default).
-    /// </summary>
-    public bool TaskbarBarBackgroundBlur { get; set; }
-
-    /// <summary>
-    /// 沿任务栏轴应用的额外手动偏移（物理像素）
-    /// Extra manual offset (physical px) applied along the taskbar axis.
-    /// </summary>
-    public int TaskbarBarManualPadding { get; set; }
-
-    /// <summary>
-    /// 窗口模式：任务栏模式或灵动岛模式
-    /// Window mode: taskbar mode or dynamic island mode
-    /// </summary>
-    public WindowMode WindowMode { get; set; } = WindowMode.Taskbar;
-
-    /// <summary>
-    /// 布局方向模式：自动、横向或纵向
-    /// Layout orientation mode: auto, horizontal or vertical
-    /// </summary>
-    public LayoutOrientationMode LayoutOrientationMode { get; set; } = LayoutOrientationMode.Auto;
-
-    /// <summary>媒体栏组件间距缩放百分比。/ Media-bar component-spacing scale percentage.</summary>
-    public double LayoutLengthScalePercent { get; set; } = 100;
-
-    /// <summary>媒体栏组件与横轴厚度缩放百分比。/ Media bar component and cross-axis thickness scale percentage.</summary>
-    public double LayoutThicknessScalePercent { get; set; } = 100;
-
-    /// <summary>灵动岛背景方案。/ Background style used by the dynamic island.</summary>
-    public DynamicIslandBackgroundMode DynamicIslandBackgroundMode { get; set; } = DynamicIslandBackgroundMode.SystemTheme;
-
-    /// <summary>任务栏横轴方向偏移（DIP）。/ Taskbar cross-axis offset in DIPs.</summary>
-    public double TaskbarBarCrossAxisOffsetDip { get; set; }
-
-    /// <summary>是否避开任务栏图标。/ Whether the media bar avoids occupied taskbar icon areas.</summary>
-    public bool TaskbarBarAvoidIcons { get; set; } = true;
-
-    /// <summary>是否禁止拖动任务栏媒体栏。/ Whether taskbar media bar dragging is disabled.</summary>
-    public bool TaskbarBarPositionLocked { get; set; }
-
-    /// <summary>灵动岛上次拖动位置。/ Last dragged position of the dynamic island.</summary>
-    public double? DynamicIslandLeft { get; set; }
-    public double? DynamicIslandTop { get; set; }
-
-    /// <summary>暂停时隐藏到的边缘。/ Edge used for the paused retracted state.</summary>
-    public DynamicIslandEdge DynamicIslandEdge { get; set; } = DynamicIslandEdge.Top;
-
-    /// <summary>灵动岛是否已拖到桌面边缘并启用自动隐藏。/ Whether the dynamic island is docked to an edge for auto-hide.</summary>
-    public bool DynamicIslandEdgeDocked { get; set; } = true;
-}
-
-/// <summary>
-/// 设置管理器：提供全局访问当前设置实例。
-/// Settings manager: provides global access to the current settings instance.
-///
-/// ⚠️ 架构注意 Architecture Note:
-/// 使用静态属性提供全局访问，适合小型应用快速开发。
-/// 大型应用建议通过 DI 注入 IOptions&lt;AppSettings&gt;。
-/// Uses static property for global access, suitable for small apps and rapid development.
-/// For larger apps, consider injecting IOptions&lt;AppSettings&gt; via DI.
-/// </summary>
+/// <summary>兼容现有调用方的全局设置门面。 / Global settings facade retained for compatibility.</summary>
 public static class SettingsManager
 {
-    /// <summary>
-    /// 调用 new，提供 API。
-    /// Provides the public new entry point required by this component.
-    /// </summary>
-    public static AppSettings Current { get; set; } = new();
-
+    private static AppSettings _current = new();
+    static SettingsManager() => Subscribe(_current);
+    public static AppSettings Current { get => _current; set => Replace(value); }
+    public static event EventHandler<SettingsChangedEventArgs>? SettingsChanged;
     public static event EventHandler<AppearanceSettingsChangedEventArgs>? AppearanceSettingsChanged;
     public static event EventHandler? TrayWheelBehaviorChanged;
     public static event EventHandler? LyricsSettingsChanged;
-
-    /// <summary>
-    /// 布局设置变更事件：当窗口模式或布局方向发生变化时触发。
-    /// Layout settings changed event: fired when window mode or layout orientation changes.
-    /// </summary>
     public static event EventHandler<LayoutSettingsChangedEventArgs>? LayoutSettingsChanged;
 
-    /// <summary>更新托盘滚轮行为并发布变更。 / Updates the tray-wheel behavior and publishes the change.</summary>
-    public static void SetTrayWheelBehavior(TrayWheelBehavior behavior)
+    public static void Replace(AppSettings settings, SettingsResetScope? scope = null)
     {
-        if (Current.TrayWheelBehavior == behavior)
+        var normalized = settings.Normalize();
+        Unsubscribe(_current);
+        _current = normalized;
+        Subscribe(_current);
+        RaiseAll(scope);
+    }
+    public static void SetTrayWheelBehavior(TrayWheelBehavior behavior) => Current.TrayWheelBehavior = behavior;
+    public static void SetLyricsEnabled(bool enabled) => Current.LyricsEnabled = enabled;
+    public static void SetTwoLineLyricsEnabled(bool enabled) => Current.TwoLineLyricsEnabled = enabled;
+    public static void SetLyricsSecondaryLineMode(LyricsSecondaryLineMode mode) => Current.LyricsSecondaryLineMode = mode;
+    public static void SetAppearanceSettings(AppearanceSettings appearance) => Current.Appearance = appearance;
+    public static void RaiseLayoutSettingsChanged(WindowMode windowMode, LayoutOrientationMode orientationMode) => LayoutSettingsChanged?.Invoke(null, new LayoutSettingsChangedEventArgs(windowMode, orientationMode));
+
+    public static void ResetGeneral()
+    {
+        var next = Current.Clone(); var defaults = new AppSettings();
+        next.TrayWheelBehavior = defaults.TrayWheelBehavior; next.LyricsEnabled = defaults.LyricsEnabled;
+        next.TwoLineLyricsEnabled = defaults.TwoLineLyricsEnabled; next.LyricsSecondaryLineMode = defaults.LyricsSecondaryLineMode;
+        Replace(next, SettingsResetScope.General);
+    }
+    public static void ResetAppearance() { var next = Current.Clone(); next.Appearance = AppearanceSettings.Default; Replace(next, SettingsResetScope.Appearance); }
+    public static void ResetLayout()
+    {
+        var next = Current.Clone(); var defaults = new AppSettings();
+        next.TaskbarBarEnabled = defaults.TaskbarBarEnabled; next.TaskbarBarSelectedMonitor = defaults.TaskbarBarSelectedMonitor;
+        next.Position = defaults.Position; next.TaskbarBarBackgroundBlur = defaults.TaskbarBarBackgroundBlur; next.TaskbarBarManualPadding = defaults.TaskbarBarManualPadding;
+        next.WindowMode = defaults.WindowMode; next.LayoutOrientationMode = defaults.LayoutOrientationMode; next.LayoutLengthScalePercent = defaults.LayoutLengthScalePercent;
+        next.LayoutThicknessScalePercent = defaults.LayoutThicknessScalePercent; next.DynamicIslandBackgroundMode = defaults.DynamicIslandBackgroundMode;
+        next.TaskbarBarCrossAxisOffsetDip = defaults.TaskbarBarCrossAxisOffsetDip; next.TaskbarBarAvoidIcons = defaults.TaskbarBarAvoidIcons;
+        next.TaskbarBarPositionLocked = defaults.TaskbarBarPositionLocked; next.DynamicIslandLeft = defaults.DynamicIslandLeft; next.DynamicIslandTop = defaults.DynamicIslandTop;
+        next.DynamicIslandEdge = defaults.DynamicIslandEdge; next.DynamicIslandEdgeDocked = defaults.DynamicIslandEdgeDocked;
+        Replace(next, SettingsResetScope.Layout);
+    }
+    public static void ResetAll() => Replace(new AppSettings(), SettingsResetScope.All);
+
+    private static void Subscribe(AppSettings settings) => settings.PropertyChanged += OnPropertyChanged;
+    private static void Unsubscribe(AppSettings settings) => settings.PropertyChanged -= OnPropertyChanged;
+    private static void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        SettingsChanged?.Invoke(null, new SettingsChangedEventArgs(propertyName: e.PropertyName));
+        switch (e.PropertyName)
         {
-            return;
+            case nameof(AppSettings.Appearance): AppearanceSettingsChanged?.Invoke(null, new AppearanceSettingsChangedEventArgs(Current.Appearance)); break;
+            case nameof(AppSettings.TrayWheelBehavior): TrayWheelBehaviorChanged?.Invoke(null, EventArgs.Empty); break;
+            case nameof(AppSettings.LyricsEnabled):
+            case nameof(AppSettings.TwoLineLyricsEnabled):
+            case nameof(AppSettings.LyricsSecondaryLineMode): LyricsSettingsChanged?.Invoke(null, EventArgs.Empty); break;
         }
-
-        Current.TrayWheelBehavior = behavior;
-        TrayWheelBehaviorChanged?.Invoke(null, EventArgs.Empty);
     }
-
-    /// <summary>更新歌词总开关并发布变更。/ Updates the lyric visibility setting and publishes the change.</summary>
-    public static void SetLyricsEnabled(bool enabled)
+    private static void RaiseAll(SettingsResetScope? scope)
     {
-        if (Current.LyricsEnabled == enabled)
-            return;
-
-        Current.LyricsEnabled = enabled;
-        LyricsSettingsChanged?.Invoke(null, EventArgs.Empty);
-    }
-
-    /// <summary>更新双行歌词开关并发布变更。/ Updates the two-line lyric setting and publishes the change.</summary>
-    public static void SetTwoLineLyricsEnabled(bool enabled)
-    {
-        if (Current.TwoLineLyricsEnabled == enabled)
-            return;
-
-        Current.TwoLineLyricsEnabled = enabled;
-        LyricsSettingsChanged?.Invoke(null, EventArgs.Empty);
-    }
-
-    /// <summary>更新第二行歌词内容模式并发布变更。/ Updates the secondary lyric mode and publishes the change.</summary>
-    public static void SetLyricsSecondaryLineMode(LyricsSecondaryLineMode mode)
-    {
-        if (Current.LyricsSecondaryLineMode == mode)
-            return;
-
-        Current.LyricsSecondaryLineMode = mode;
-        LyricsSettingsChanged?.Invoke(null, EventArgs.Empty);
-    }
-
-    /// <summary>更新外观设置并发布统一变更事件。 / Updates appearance settings and publishes one coherent change event.</summary>
-    public static void SetAppearanceSettings(AppearanceSettings appearance)
-    {
-        appearance = appearance.Normalize();
-        if (Current.Appearance == appearance)
-        {
-            return;
-        }
-
-        Current.Appearance = appearance;
-        AppearanceSettingsChanged?.Invoke(null, new AppearanceSettingsChangedEventArgs(appearance));
-    }
-
-    /// <summary>
-    /// 触发布局设置变更事件。
-    /// Raise layout settings changed event.
-    /// </summary>
-    /// <param name="windowMode">新的窗口模式 / New window mode</param>
-    /// <param name="orientationMode">新的布局方向模式 / New layout orientation mode</param>
-    public static void RaiseLayoutSettingsChanged(WindowMode windowMode, LayoutOrientationMode orientationMode)
-    {
-        LayoutSettingsChanged?.Invoke(null, new LayoutSettingsChangedEventArgs(windowMode, orientationMode));
+        SettingsChanged?.Invoke(null, new SettingsChangedEventArgs(scope));
+        AppearanceSettingsChanged?.Invoke(null, new AppearanceSettingsChangedEventArgs(Current.Appearance));
+        TrayWheelBehaviorChanged?.Invoke(null, EventArgs.Empty); LyricsSettingsChanged?.Invoke(null, EventArgs.Empty);
+        RaiseLayoutSettingsChanged(Current.WindowMode, Current.LayoutOrientationMode);
     }
 }
 
-/// <summary>外观设置变更事件参数。 / Appearance-settings change event arguments.</summary>
-public sealed class AppearanceSettingsChangedEventArgs(AppearanceSettings appearance) : EventArgs
+/// <summary>外观设置变更参数。 / Appearance settings change arguments.</summary>
+public sealed class AppearanceSettingsChangedEventArgs(AppearanceSettings appearance) : EventArgs { public AppearanceSettings Appearance { get; } = appearance; }
+/// <summary>布局设置变更参数。 / Layout settings change arguments.</summary>
+public sealed class LayoutSettingsChangedEventArgs(WindowMode windowMode, LayoutOrientationMode orientationMode) : EventArgs
 {
-    public AppearanceSettings Appearance { get; } = appearance;
-}
-
-/// <summary>
-/// 布局设置变更事件参数。
-/// Layout settings changed event arguments.
-/// </summary>
-public class LayoutSettingsChangedEventArgs : EventArgs
-{
-    /// <summary>新的窗口模式 / New window mode</summary>
-    public WindowMode WindowMode { get; }
-
-    /// <summary>新的布局方向模式 / New layout orientation mode</summary>
-    public LayoutOrientationMode OrientationMode { get; }
-
-    /// <summary>
-    /// 调用 LayoutSettingsChangedEventArgs，提供 API。
-    /// Provides the public LayoutSettingsChangedEventArgs entry point required by this component.
-    /// </summary>
-    public LayoutSettingsChangedEventArgs(WindowMode windowMode, LayoutOrientationMode orientationMode)
-    {
-        WindowMode = windowMode;
-        OrientationMode = orientationMode;
-    }
+    public WindowMode WindowMode { get; } = windowMode;
+    public LayoutOrientationMode OrientationMode { get; } = orientationMode;
 }

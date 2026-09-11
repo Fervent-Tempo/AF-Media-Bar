@@ -78,6 +78,19 @@
             </ui:CardAction>
         </Grid>
 
+        <ui:CardControl Margin="0,0,0,24" Icon="{ui:SymbolIcon ArrowReset24}">
+            <ui:CardControl.Header>
+                <StackPanel>
+                    <ui:TextBlock Text="常规设置操作" FontWeight="{DynamicResource AppTextStrongFontWeight}" />
+                    <ui:TextBlock Text="恢复本页默认设置或打开设置文件夹" Appearance="Secondary" FontSize="12" />
+                </StackPanel>
+            </ui:CardControl.Header>
+            <StackPanel Orientation="Horizontal">
+                <ui:Button Content="恢复本页默认设置" Icon="{ui:SymbolIcon ArrowReset24}" Click="ResetButton_Click" Margin="0,0,12,0" />
+                <ui:Button Content="打开设置文件夹" Icon="{ui:SymbolIcon FolderOpen24}" Click="OpenSettingsFolder_Click" />
+            </StackPanel>
+        </ui:CardControl>
+
         <TextBlock Text="基础设置"
                    FontSize="18"
                    FontWeight="{DynamicResource AppTextStrongFontWeight}"
