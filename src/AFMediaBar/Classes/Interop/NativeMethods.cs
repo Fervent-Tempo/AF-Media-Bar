@@ -47,12 +47,20 @@ public static partial class NativeMethods
     public const int WM_APP = 0x8000;
     public const int WM_CONTEXTMENU = 0x007B;
     public const int WM_LBUTTONDOWN = 0x0201;
+    public const int WM_LBUTTONUP = 0x0202;
+    public const int WM_RBUTTONDOWN = 0x0204;
+    public const int WM_RBUTTONUP = 0x0205;
     public const int WM_MOUSEWHEEL = 0x020A;
     public const uint PM_NOREMOVE = 0x0000;
     public const int NIN_SELECT = 0x0400;
     public const int NIN_KEYSELECT = 0x0401;
     public const int NIN_POPUPOPEN = 0x0406;
     public const int WH_MOUSE_LL = 14;
+    internal const uint ErrorSuccess = 0;
+    internal const uint PdhMoreData = 0x800007D2;
+    internal const uint PdhFmtDouble = 0x00000200;
+    internal const uint PdhStatusValidData = 0x00000000;
+    internal const uint PdhStatusNewData = 0x00000001;
 
     // Shell notification icon protocol
     public const uint NIM_ADD = 0;
@@ -172,6 +180,44 @@ public static partial class NativeMethods
         public uint Time;
         public POINT Point;
         public uint Private;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct MemoryStatusEx
+    {
+        internal uint Length;
+        internal uint MemoryLoad;
+        internal ulong TotalPhysical;
+        internal ulong AvailablePhysical;
+        internal ulong TotalPageFile;
+        internal ulong AvailablePageFile;
+        internal ulong TotalVirtual;
+        internal ulong AvailableVirtual;
+        internal ulong AvailableExtendedVirtual;
+
+        internal static MemoryStatusEx Create() => new() { Length = (uint)Marshal.SizeOf<MemoryStatusEx>() };
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct FileTime
+    {
+        internal uint LowDateTime;
+        internal uint HighDateTime;
+        internal ulong ToUInt64() => ((ulong)HighDateTime << 32) | LowDateTime;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct PdhFmtCounterValueDouble
+    {
+        internal uint Status;
+        internal double DoubleValue;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct PdhFmtCounterValueItem
+    {
+        internal nint Name;
+        internal PdhFmtCounterValueDouble Value;
     }
 
     /// <summary>Shell 通知区域图标数据。/ Shell notification-area icon data.</summary>
@@ -443,6 +489,34 @@ public static partial class NativeMethods
     /// <summary>返回当前线程的原生标识。/ Returns the native identifier of the current thread.</summary>
     [DllImport("kernel32.dll")]
     public static extern uint GetCurrentThreadId();
+
+    [DllImport("kernel32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool GlobalMemoryStatusEx(ref MemoryStatusEx status);
+
+    [DllImport("kernel32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool GetSystemTimes(out FileTime idle, out FileTime kernel, out FileTime user);
+
+    [DllImport("pdh.dll", CharSet = CharSet.Unicode)]
+    internal static extern uint PdhOpenQuery(string? dataSource, nint userData, out nint query);
+
+    [DllImport("pdh.dll", CharSet = CharSet.Unicode)]
+    internal static extern uint PdhAddEnglishCounter(nint query, string counterPath, nint userData, out nint counter);
+
+    [DllImport("pdh.dll")]
+    internal static extern uint PdhCollectQueryData(nint query);
+
+    [DllImport("pdh.dll", EntryPoint = "PdhGetFormattedCounterArrayW")]
+    internal static extern uint PdhGetFormattedCounterArray(
+        nint counter,
+        uint format,
+        ref uint bufferSize,
+        ref uint itemCount,
+        nint itemBuffer);
+
+    [DllImport("pdh.dll")]
+    internal static extern uint PdhCloseQuery(nint query);
 
     /// <summary>
     /// 调用 GetModuleHandle，提供 API。

@@ -84,6 +84,10 @@ namespace AFMediaBar
                 services.AddSingleton<ApplicationIconService>();
                 services.AddSingleton<ApplicationVolumeService>();
                 services.AddSingleton<AudioDeviceService>();
+                services.AddSingleton<AudioInteractionService>();
+                services.AddSingleton<GlobalInteractionRouter>();
+                services.AddSingleton<AudioMonitorService>();
+                services.AddSingleton<SystemMetricsService>();
                 services.AddSingleton<SpatialAudioService>();
                 // 自有 Shell 托盘图标与统一鼠标输入监听
                 // App-owned Shell tray icon and unified mouse input monitor
@@ -108,6 +112,9 @@ namespace AFMediaBar
                 services.AddTransient<SettingsWindow>();
                 services.AddSingleton<Func<SettingsWindow>>(sp =>
                     () => sp.GetRequiredService<SettingsWindow>());
+                services.AddTransient<TaskbarFullPanelWindow>();
+                services.AddSingleton<Func<TaskbarFullPanelWindow>>(sp =>
+                    () => sp.GetRequiredService<TaskbarFullPanelWindow>());
 
                 // === 设置页面及其 ViewModel Settings Pages and ViewModels ===
                 services.AddSingleton<GeneralPage>();
@@ -118,6 +125,15 @@ namespace AFMediaBar
 
                 services.AddSingleton<LayoutPage>();
                 services.AddSingleton<LayoutViewModel>();
+
+                services.AddSingleton<DisplayModesPage>();
+                services.AddSingleton<DisplayModesViewModel>();
+
+                services.AddSingleton<InteractionPage>();
+                services.AddSingleton<InteractionViewModel>();
+
+                services.AddSingleton<LyricsPage>();
+                services.AddSingleton<LyricsViewModel>();
 
                 services.AddSingleton<SettingsPage>();
                 services.AddSingleton<SettingsViewModel>();

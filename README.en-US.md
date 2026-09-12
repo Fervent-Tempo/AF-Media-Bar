@@ -92,20 +92,20 @@ The app runs in its own process. Its WPF player can be hosted as a taskbar child
 
 | Category | Capabilities |
 | --- | --- |
-| Media | Artwork, title, and artist; click artwork to play/pause; scroll for previous/next; multiple source selection |
+| Media | Previous, play/pause, next, repeat, and seekable progress, with shared Buttons, Hybrid, and Gestures presets |
 | Source interaction | Click the title or lyric to return to the media app; right-click the bar to switch sources |
-| Live lyrics | Center one lyric line by default; disable lyrics under General settings, or enable two lines with the next lyric/current translation below |
-| Taskbar behavior | Automatic horizontal/vertical detection; length follows the current title or lyric within the icon-safe range; manual placement and locking, auto-hide and fullscreen handling |
-| Window modes | Taskbar and dynamic-island hosts share horizontal and vertical layouts; the island can be dragged freely and retracts at a desktop edge |
-| Appearance | Choose Latin and CJK fonts separately, adjust font weight, select player text color and enhanced readability, and set the entire app to automatic, light, or dark |
-| Container layout | The settings page uses the schema-5 integer grid for container and widget placement, including click-to-create 1×1, drag-to-draw rectangles, and four-edge resizing; the editor code is modularized, while real-Windows boundary, collapse, and DPI behavior remains subject to acceptance |
-| Information density | Hover states can use a two-line title-and-artist widget; maximum lines only wraps text inside the widget and does not change container size |
+| Live lyrics | Lyrics exist only in taskbar rest and replace title plus artist/source when available; configure secondary content and alignment on the Lyrics page |
+| Taskbar behavior | Horizontal taskbars retain the original Rest appearance; Hover directly blurs/dims the original text while controls stay crisp, and Full stays outside the taskbar |
+| Window modes | Settings present Taskbar, Dynamic Island, Floating Orb, and Desktop Card; Taskbar and the existing island are available, with the latter two deferred |
+| Appearance | Global fonts, foreground, theme, and window material; the taskbar body is currently fixed transparent, while island surface style, opacity, and radius remain adjustable |
+| Light customization | Toggle Hover/Full, then choose density, content layout, and interaction; arbitrary cross-layer component placement is deferred |
+| Information density | Minimal, Balanced, and Information presets consistently change buttons, seek width, and artwork-text-spectrum gaps; only the middle text region receives a Hover minimum |
 | Auto-hide | Hide when every media session is stopped; collapse containers use an anchor container and shared edge, while four-way collapse still requires real-Windows acceptance |
-| Tray audio controls | Click the app tray icon for audio controls; native Windows tooltip feedback shows the current hover and wheel value |
+| Tray audio controls | Choose the tray left-click action and optionally reuse global plain-wheel plus left/right-button wheel mappings |
 | Audio devices | Switch devices in a stable ordered list; wheel-preview and apply after scrolling stops |
 | App volume | Aggregate application icons and audio sessions across active output endpoints; adjust the selected media app in 2% tray-wheel steps |
 | Visualizer | Nine-band spectrum from WASAPI loopback capture |
-| Metrics | Optional system memory, CPU, GPU, and AF Media Bar process memory |
+| Metrics | The Full panel shows system memory, CPU, GPU, and AF Media Bar process memory; spectrum is hidden there by default |
 | Low-spec mode | Software rendering with transitions, marquees, and fades disabled |
 
 </div>
@@ -139,7 +139,7 @@ The Windows 10/11 media card is an internal Explorer/Shell surface rather than a
 2. Download `AFMediaBar-vX.Y.Z-win-x64.zip`. Do not download GitHub's automatically generated source archives.
 3. Extract the package to get one self-contained `AFMediaBar.exe`; the archive no longer contains hundreds of .NET runtime files.
 4. Place it in a permanent writable directory, such as `D:\AFMediaBar`, and run it.
-5. Right-click the player or tray icon and choose “Open detailed settings...” to configure startup, visual layout composition, appearance, and interaction.
+5. Right-click the player or tray icon and use Display Modes, Interaction, Lyrics, and Global Appearance for light customization.
 
 AF Media Bar is not commercially code-signed, so Windows SmartScreen may show an unknown publisher warning on first launch.
 
@@ -148,16 +148,16 @@ AF Media Bar is not commercially code-signed, so Windows SmartScreen may show an
 
 | Action | Result |
 | --- | --- |
-| Hover over the bar | Show the taskbar hover border, or expand a retracted island from the desktop edge |
-| Click artwork | Play or pause the selected media session |
+| Hover over the bar | Artwork, text, and spectrum use independent legacy hover feedback; opening controls directly blurs/dims the original text while buttons remain crisp; when Hover is disabled, a text-region pull handle still opens Full |
+| Click artwork | Play/pause in Hybrid or Gestures; Buttons uses only visible controls |
 | Click title or lyric | Return to the media app |
-| Open “Detailed settings → General → Lyrics” | Toggle live lyrics, enable two-line display, and choose the next lyric or current translation for the second line |
-| Scroll up/down over the media area | Go to the previous/next track |
+| Open the Lyrics page | Toggle live lyrics, secondary content, and alignment |
+| Scroll up/down over the media area | Previous/next by default, configurable to current-app volume or output device |
 | Right-click the bar and choose “Switch media source” | Switch between available media sessions |
 | Click the AF Media Bar tray icon | Open output-device, spatial-audio status, and application-volume controls |
 | Scroll over the flyout's output-device row | Preview a device and switch about 1.2 seconds after scrolling stops |
 | Hover over the AF Media Bar tray icon | Show the default wheel action and its current value in the native Windows tooltip |
-| Scroll over the tray icon | Adjust selected-media volume or switch devices, update the native tooltip, and hold Shift for the alternate action |
+| Scroll over the tray icon | Optionally reuse global plain-wheel and left/right-button wheel mappings and update the native tooltip |
 | Click the spatial-audio row | Show the current spatial format and open System > Sound > All sound devices; third-party apps cannot reliably switch Dolby/DTS modes for the system |
 | Drag an empty area of the strip | Move the bar and does not drag while locked |
 | Switch to dynamic-island mode | Drag the player anywhere in the desktop work area; drag it to an edge to enable paused retraction, while playback keeps it expanded |

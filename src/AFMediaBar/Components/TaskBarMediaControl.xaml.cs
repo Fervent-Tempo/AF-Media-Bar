@@ -6,8 +6,11 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Effects;
+using System.Windows.Threading;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Models.Layout;
+using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Layout;
 using AFMediaBar.Classes.Services.Lyrics;
 using AFMediaBar.Classes.Settings;
@@ -17,6 +20,17 @@ using Wpf.Ui.Controls;
 
 namespace AFMediaBar.Components
 {
+    /// <summary>播放器表面滚轮及鼠标按键状态。 / Wheel delta and mouse-button state on a player surface.</summary>
+    public sealed class PlayerSurfaceWheelEventArgs(
+        int delta,
+        bool isLeftButtonDown,
+        bool isRightButtonDown) : EventArgs
+    {
+        public int Delta { get; } = delta;
+        public bool IsLeftButtonDown { get; } = isLeftButtonDown;
+        public bool IsRightButtonDown { get; } = isRightButtonDown;
+    }
+
     /// <summary>
     /// 任务栏媒体控制组件：显示当前播放媒体的信息和封面，响应用户交互。
     /// Taskbar media control component: displays currently playing media info and artwork, responds to user interactions.
@@ -53,8 +67,30 @@ namespace AFMediaBar.Components
         {
             InitializeComponent();
 
-            // 初始化布局渲染引擎
-            // Initialize layout render engine
+            _progressTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+            _progressTimer.Tick += (_, _) => UpdateTaskbarProgress();
+            _hoverOpenTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(120) };
+            _hoverOpenTimer.Tick += (_, _) =>
+            {
+                _hoverOpenTimer.Stop();
+                ShowTaskbarHoverLayer();
+            };
+            _hoverCloseTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+            _hoverCloseTimer.Tick += (_, _) =>
+            {
+                _hoverCloseTimer.Stop();
+                HideTaskbarHoverLayer();
+            };
+            Loaded += (_, _) => _progressTimer.Start();
+            Unloaded += (_, _) =>
+            {
+                _progressTimer.Stop();
+                _hoverOpenTimer.Stop();
+                _hoverCloseTimer.Stop();
+            };
+
+            // 计时器必须先于布局初始化；布局会立即应用已持久化的悬停层开关。
+            // Timers must exist before layout initialization, which immediately applies persisted hover settings.
             InitializeLayoutEngine();
         }
 
@@ -74,11 +110,27 @@ namespace AFMediaBar.Components
         private string _translatedLyric = string.Empty;
         private string _secondaryLyric = string.Empty;
         private string _lastSizeFingerprint = string.Empty;
+        private readonly DispatcherTimer _progressTimer;
+        private readonly DispatcherTimer _hoverOpenTimer;
+        private readonly DispatcherTimer _hoverCloseTimer;
+        private MediaSnapshot _snapshot = MediaSnapshot.Disconnected;
+        private bool _isTaskbarHoverVisible;
+        private bool _isSeeking;
+        private DateTime _suppressArtworkClickUntilUtc;
+        private const double TaskbarSpectrumWidth = 38;
+        private const double TaskbarTrailingMargin = 4;
+        private const double TaskbarCoveredBlurRadius = 4;
+        private const double TaskbarCoveredOpacity = 0.32;
 
         public event EventHandler? TogglePlayPauseRequested;
         public event EventHandler? SkipPreviousRequested;
         public event EventHandler? SkipNextRequested;
         public event EventHandler? ActivateSourceRequested;
+        public event EventHandler? OpenFullPanelRequested;
+        public event EventHandler? AudioControlRequested;
+        public event EventHandler? OutputDeviceCycleRequested;
+        public event Action<double>? SeekRequested;
+        public event EventHandler<PlayerSurfaceWheelEventArgs>? WheelRequested;
         public event EventHandler<MediaBarSizeRequestEventArgs>? DesiredSizeChanged;
 
         // === 歌词显示状态 Lyrics Display State ===
@@ -157,6 +209,8 @@ namespace AFMediaBar.Components
             // 更新内部状态标志以保持兼容
             // Update internal state flags to maintain compatibility
             _isVertical = orientation == LayoutOrientation.Vertical;
+            ApplyTaskbarExperienceSettings();
+            ApplyTaskbarSectionGeometry(MainBorder.Width);
             RaiseDesiredSizeChanged();
         }
 
@@ -167,10 +221,185 @@ namespace AFMediaBar.Components
         public LayoutSchema? CurrentLayout => _layoutEngine?.CurrentLayout;
 
         /// <summary>应用自动计算的主轴长度。/ Applies an auto-calculated primary-axis length.</summary>
-        public void ApplyPrimaryLength(double primaryLength) => _layoutEngine?.ApplyPrimaryLength(primaryLength);
+        public void ApplyPrimaryLength(double primaryLength)
+        {
+            _layoutEngine?.ApplyPrimaryLength(primaryLength);
+            ApplyTaskbarSectionGeometry(primaryLength);
+        }
 
         /// <summary>在宿主更新方向或缩放状态后重新发布尺寸请求。/ Re-raises the size request after the host updates orientation or scale state.</summary>
         public void RefreshDesiredSize() => RaiseDesiredSizeChanged();
+
+        /// <summary>
+        /// 应用横向任务栏的层级和交互设置，不改变原有封面、文字或布局引擎。
+        /// Applies horizontal-taskbar layer and interaction settings without replacing the original artwork, text, or layout engine.
+        /// </summary>
+        public void ApplyTaskbarExperienceSettings()
+        {
+            var isHorizontalTaskbar = _currentMode == WindowMode.Taskbar && !_isVertical;
+            var experience = SettingsManager.Current.TaskbarExperience.Normalize();
+            var interaction = SettingsManager.Current.Interaction.Normalize();
+            var metrics = TaskbarDensityMetrics.From(experience.Density);
+            var transportVisible = interaction.Mode != MediaInteractionMode.Gestures;
+            var progressVisible = _snapshot.Duration > 0;
+
+            TaskbarSpectrumHoverSurface.Visibility = isHorizontalTaskbar ? Visibility.Visible : Visibility.Collapsed;
+            TaskbarRestProgress.Visibility = isHorizontalTaskbar && progressVisible
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+            TaskbarTransportButtons.Visibility = transportVisible
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+            TaskbarHoverProgress.Visibility = progressVisible
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+            TaskbarHoverProgress.IsEnabled = _snapshot.CanSeek;
+            TaskbarFullPanelHandle.Visibility = experience.FullLayerEnabled
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+            var directFullPanelHandleVisible = isHorizontalTaskbar &&
+                                               !experience.HoverLayerEnabled &&
+                                               experience.FullLayerEnabled;
+            TaskbarDirectFullPanelHandle.Visibility = directFullPanelHandleVisible
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+            TaskbarDirectFullPanelHandle.IsHitTestVisible = directFullPanelHandleVisible;
+            if (!directFullPanelHandleVisible)
+                AnimateDirectFullPanelHandle(false, immediate: true);
+            else
+                AnimateDirectFullPanelHandle(
+                    SongInfoStackPanel.IsMouseOver || TaskbarDirectFullPanelHandle.IsMouseOver,
+                    immediate: true);
+
+            foreach (var button in FindVisualChildren<System.Windows.Controls.Button>(TaskbarHoverActions))
+            {
+                if (ReferenceEquals(button, TaskbarFullPanelHandle))
+                    continue;
+                button.Width = metrics.ButtonSize;
+                button.Height = metrics.ButtonSize;
+            }
+            TaskbarHoverProgress.Width = metrics.ProgressWidth;
+            TaskbarHoverLayer.Height = metrics.HoverLayerHeight;
+            ApplyTaskbarSectionGeometry(MainBorder.Width);
+
+            var lyricsAlignment = SettingsManager.Current.LyricsTextAlignment switch
+            {
+                LyricsTextAlignment.Left => TextAlignment.Left,
+                LyricsTextAlignment.Right => TextAlignment.Right,
+                _ => TextAlignment.Center
+            };
+            SongMetadataPanel.Orientation = Orientation.Vertical;
+            SongArtistContainer.Margin = new Thickness(0, -1.5, 0, 0);
+            var metadataAlignment = experience.ContentLayout == TaskbarContentLayout.CenteredStack
+                ? TextAlignment.Center
+                : TextAlignment.Left;
+            SongTitle.TextAlignment = metadataAlignment;
+            SongArtist.TextAlignment = metadataAlignment;
+            SongLyrics.TextAlignment = lyricsAlignment;
+            SongLyricsSecondary.TextAlignment = lyricsAlignment;
+            if (isHorizontalTaskbar && SongMetadataPanel.Visibility == Visibility.Visible)
+            {
+                if (experience.ContentLayout == TaskbarContentLayout.CompactInline &&
+                    !string.IsNullOrEmpty(_actualArtist))
+                {
+                    SongTitle.Text = string.IsNullOrEmpty(_actualTitle)
+                        ? _actualArtist
+                        : $"{_actualTitle} · {_actualArtist}";
+                    SongArtistContainer.Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    SongTitle.Text = _actualTitle;
+                    SongArtistContainer.Visibility = !_isSmallTaskbar && !string.IsNullOrEmpty(_actualArtist)
+                        ? Visibility.Visible
+                        : Visibility.Collapsed;
+                }
+            }
+            else if (!isHorizontalTaskbar)
+            {
+                SongTitle.Text = _actualTitle;
+            }
+
+            if (!isHorizontalTaskbar || !experience.HoverLayerEnabled)
+                HideTaskbarHoverLayer(immediate: true);
+            if (!isHorizontalTaskbar)
+            {
+                AnimateComponentHover(SongImageHoverOverlay, false);
+                AnimateComponentHover(SongInfoHoverOverlay, false);
+                AnimateComponentHover(TaskbarSpectrumHoverSurface, false);
+            }
+
+            RaiseDesiredSizeChanged();
+        }
+
+        /// <summary>
+        /// 将统一密度间隔应用到封面、文字和频谱，并让悬停控件只占据文字区域。
+        /// Applies one density-controlled gap to artwork, text, and spectrum while constraining hover controls to the text region.
+        /// </summary>
+        private void ApplyTaskbarSectionGeometry(double primaryLength)
+        {
+            if (_currentMode != WindowMode.Taskbar || _isVertical || !double.IsFinite(primaryLength))
+                return;
+
+            var metrics = TaskbarDensityMetrics.From(SettingsManager.Current.TaskbarExperience.Density);
+            var artworkRight = GetTaskbarArtworkRight();
+            var textLeft = artworkRight + metrics.SectionGap;
+            var reservedRight = metrics.SectionGap + TaskbarSpectrumWidth + TaskbarTrailingMargin;
+            var textWidth = Math.Max(0, primaryLength - textLeft - reservedRight);
+            var textTop = Canvas.GetTop(SongInfoStackPanel);
+            if (!double.IsFinite(textTop))
+                textTop = 0;
+
+            Canvas.SetLeft(SongInfoStackPanel, textLeft);
+            SongInfoStackPanel.Width = textWidth;
+            SongInfoSurface.Width = textWidth;
+            SongTitleContainer.Width = textWidth;
+            SongArtistContainer.Width = textWidth;
+            SongLyricsContainer.Width = textWidth;
+            SongLyricsSecondaryContainer.Width = textWidth;
+            SongTitle.Width = textWidth;
+            SongArtist.Width = textWidth;
+            SongLyrics.Width = textWidth;
+            SongLyricsSecondary.Width = textWidth;
+
+            Canvas.SetLeft(SongInfoHoverOverlay, textLeft);
+            Canvas.SetTop(SongInfoHoverOverlay, textTop);
+            SongInfoHoverOverlay.Width = textWidth;
+            SongInfoHoverOverlay.Height = SongInfoStackPanel.Height;
+
+            TaskbarRestProgress.Margin = new Thickness(textLeft, 0, reservedRight, 1);
+            TaskbarSpectrumHoverSurface.Width = TaskbarSpectrumWidth;
+            TaskbarSpectrumHoverSurface.Margin = new Thickness(0, 0, TaskbarTrailingMargin, 0);
+
+            HoverRevealHost.Margin = new Thickness(textLeft, 1, 0, 1);
+            HoverRevealHost.Height = Math.Max(0, MainBorder.Height - 2);
+            TaskbarHoverLayer.Width = textWidth;
+            TaskbarDirectFullPanelHandle.Width = textWidth;
+            TaskbarDirectFullPanelHandle.Margin = new Thickness(textLeft, 1, 0, 0);
+            if (HoverRevealHost.Visibility == Visibility.Visible)
+            {
+                HoverRevealHost.BeginAnimation(FrameworkElement.WidthProperty, null);
+                HoverRevealHost.Width = textWidth;
+            }
+        }
+
+        private double GetTaskbarArtworkRight()
+        {
+            var artworkLeft = Canvas.GetLeft(SongImageBorder);
+            if (!double.IsFinite(artworkLeft))
+                artworkLeft = 0;
+            return artworkLeft + Math.Max(0, SongImageBorder.Width);
+        }
+
+        /// <summary>把九段频谱值应用到任务栏静置层。 / Applies nine spectrum-band values to the taskbar rest layer.</summary>
+        public void ApplySpectrum(ReadOnlySpan<float> bands)
+        {
+            for (var index = 0; index < TaskbarSpectrum.Children.Count; index++)
+            {
+                if (TaskbarSpectrum.Children[index] is Border bar)
+                    bar.Height = 3 + Math.Clamp(index < bands.Length ? bands[index] : 0, 0, 1) * 18;
+            }
+        }
 
         /// <summary>当前是否有已连接且正在播放的媒体。/ Indicates whether connected media is currently playing.</summary>
         public bool IsPlaying => _isConnected && !_isPaused;
@@ -255,6 +484,14 @@ namespace AFMediaBar.Components
             SongArtist.Foreground = foreground;
             SongInfoStackPanel.Background = readabilityBackground;
 
+            if (_currentMode == WindowMode.Taskbar)
+            {
+                MainBorder.Background = new SolidColorBrush(Colors.Transparent);
+                TopBorder.BorderBrush = Brushes.Transparent;
+                BackgroundImage.Visibility = Visibility.Collapsed;
+                return;
+            }
+
             if (_currentMode != WindowMode.DynamicIsland)
                 return;
 
@@ -284,6 +521,7 @@ namespace AFMediaBar.Components
         /// </summary>
         public void UpdateSongInfo(MediaSnapshot snapshot)
         {
+            _snapshot = snapshot;
             if (!snapshot.IsConnected)
             {
                 // 无媒体播放 - 显示占位符保持媒体栏可见
@@ -316,6 +554,13 @@ namespace AFMediaBar.Components
                     BackgroundImage.Source = null;
                     BackgroundImage.Visibility = Visibility.Collapsed;
                     SongImageBorder.Margin = new Thickness(0, 0, 0, -3); // align music note better when no cover
+                    TaskbarPreviousButton.IsEnabled = false;
+                    TaskbarPlayPauseButton.IsEnabled = false;
+                    TaskbarNextButton.IsEnabled = false;
+                    TaskbarHoverProgress.IsEnabled = false;
+                    HideTaskbarHoverLayer(immediate: true);
+                    UpdateTaskbarProgress();
+                    ApplyTaskbarExperienceSettings();
 
                     // 任务栏无媒体时保持完全透明；灵动岛保留布局定义的稳定背景。
                     // Keep the disconnected taskbar transparent; preserve the dynamic-island layout background.
@@ -341,7 +586,9 @@ namespace AFMediaBar.Components
             Dispatcher.Invoke(() =>
             {
                 string newTitle = !string.IsNullOrEmpty(snapshot.Title) ? snapshot.Title : "-";
-                string newArtist = !string.IsNullOrEmpty(snapshot.Artist) ? snapshot.Artist : "-";
+                string newArtist = !string.IsNullOrWhiteSpace(snapshot.Artist)
+                    ? snapshot.Artist
+                    : !string.IsNullOrWhiteSpace(snapshot.SourceName) ? snapshot.SourceName : "-";
 
                 // 标题或艺术家变化时触发入场动画
                 // Trigger entrance animation when title or artist changes
@@ -401,15 +648,20 @@ namespace AFMediaBar.Components
                 }
 
                 ApplyLyricPresentation();
-                SongArtistContainer.Visibility = !_isSmallTaskbar && !_isVertical && !string.IsNullOrEmpty(snapshot.Artist)
+                SongArtistContainer.Visibility = !_isSmallTaskbar && !_isVertical && !string.IsNullOrEmpty(_actualArtist)
                     ? Visibility.Visible
                     : Visibility.Collapsed;
                 SongInfoStackPanel.Visibility = _isVertical ? Visibility.Collapsed : Visibility.Visible;
-                // blurred cover background, off by default like FluentFlyout's TaskbarWidgetBackgroundBlur
-                BackgroundImage.Visibility = _currentMode == WindowMode.Taskbar &&
-                                             SettingsManager.Current.TaskbarBarBackgroundBlur
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
+                // 任务栏主体保持透明；灵动岛继续沿用布局引擎已有背景行为。
+                // Keep the taskbar body transparent; the island retains its existing layout-engine background behavior.
+                BackgroundImage.Visibility = Visibility.Collapsed;
+
+                TaskbarPreviousButton.IsEnabled = _canSkipPrevious;
+                TaskbarPlayPauseButton.IsEnabled = _canPlayPause;
+                TaskbarNextButton.IsEnabled = _canSkipNext;
+                TaskbarPlayPauseIcon.Symbol = _isPaused ? SymbolRegular.Play24 : SymbolRegular.Pause24;
+                UpdateTaskbarProgress();
+                ApplyTaskbarExperienceSettings();
 
                 Visibility = Visibility.Visible;
                 RaiseDesiredSizeChanged();
@@ -458,12 +710,12 @@ namespace AFMediaBar.Components
                 return;
 
             var lyricsVisible = SongLyricsPanel.Visibility == Visibility.Visible;
-            var visibleText = lyricsVisible ? _activeLyric : _actualTitle;
+            var visibleText = lyricsVisible ? _activeLyric : SongTitle.Text;
             var secondaryText = lyricsVisible && SongLyricsSecondaryContainer.Visibility == Visibility.Visible
                 ? _secondaryLyric
                 : string.Empty;
             var artist = !lyricsVisible && SongArtistContainer.Visibility == Visibility.Visible ? _actualArtist : string.Empty;
-            var fingerprint = $"{orientation}|{visibleText}|{secondaryText}|{artist}|{SongTitle.FontSize:0.##}|{SongArtist.FontSize:0.##}|{SettingsManager.Current.LayoutLengthScalePercent:0.##}|{SettingsManager.Current.LayoutThicknessScalePercent:0.##}|{SettingsManager.Current.LyricsEnabled}|{SettingsManager.Current.TwoLineLyricsEnabled}|{SettingsManager.Current.LyricsSecondaryLineMode}";
+            var fingerprint = $"{orientation}|{visibleText}|{secondaryText}|{artist}|{SongTitle.FontSize:0.##}|{SongArtist.FontSize:0.##}|{SettingsManager.Current.LayoutLengthScalePercent:0.##}|{SettingsManager.Current.LayoutThicknessScalePercent:0.##}|{SettingsManager.Current.LyricsEnabled}|{SettingsManager.Current.TwoLineLyricsEnabled}|{SettingsManager.Current.LyricsSecondaryLineMode}|{SettingsManager.Current.TaskbarExperience}|{SettingsManager.Current.Interaction.Mode}|{_snapshot.Duration > 0}";
             if (!isResetToPreset && fingerprint == _lastSizeFingerprint)
                 return;
 
@@ -481,6 +733,22 @@ namespace AFMediaBar.Components
                 double.PositiveInfinity,
                 fingerprint,
                 isResetToPreset);
+            if (_currentMode == WindowMode.Taskbar && orientation == LayoutOrientation.Horizontal)
+            {
+                request = request with
+                {
+                    Width = TaskbarExperiencePolicy.CalculateWidth(
+                        textWidth,
+                        GetTaskbarArtworkRight(),
+                        TaskbarSpectrumWidth,
+                        TaskbarTrailingMargin,
+                        SettingsManager.Current.Interaction.Mode != MediaInteractionMode.Gestures,
+                        SettingsManager.Current.TaskbarExperience.HoverLayerEnabled,
+                        _snapshot.Duration > 0,
+                        SettingsManager.Current.TaskbarExperience.Density,
+                        double.PositiveInfinity)
+                };
+            }
             DesiredSizeChanged?.Invoke(this, new MediaBarSizeRequestEventArgs(request));
         }
 
@@ -519,7 +787,7 @@ namespace AFMediaBar.Components
                 DoubleAnimation opacityAnimation = new()
                 {
                     From = 0.0,
-                    To = 1.0,
+                    To = _isTaskbarHoverVisible ? TaskbarCoveredOpacity : 1.0,
                     Duration = TimeSpan.FromMilliseconds(msDuration),
                     EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
                 };
@@ -547,102 +815,285 @@ namespace AFMediaBar.Components
             }
         }
 
-        // === 悬停效果 Hover Effects ===
-        // 硬编码颜色，因为资源画刷在此处不可访问
-        // Hard-coded colors because the resource brushes are not accessible here
+        // === 悬停层 Hover layer ===
 
-        /// <summary>
-        /// 鼠标进入事件：显示悬停背景和边框效果。
-        /// Mouse enter event: show hover background and border effects.
-        /// </summary>
-        private void Grid_MouseEnter(object sender, MouseEventArgs e)
+        private bool CanUseTaskbarComponentHover() =>
+            _isConnected && _currentMode == WindowMode.Taskbar && !_isVertical;
+
+        private bool CanShowDirectFullPanelHandle()
         {
-            if (!_isConnected) return;
-
-            // 灵动岛使用布局定义的稳定背景；任务栏模式才使用悬停高亮。
-            // The dynamic-island host keeps its layout background; only taskbar mode uses hover highlighting.
-            if (_currentMode != WindowMode.Taskbar)
-                return;
-
-            SolidColorBrush targetBackgroundBrush;
-            bool isDark = ApplicationThemeManager.GetSystemTheme() == SystemTheme.Dark;
-
-            if (isDark)
-            {
-                // 深色模式 Dark mode
-                targetBackgroundBrush = new SolidColorBrush(Color.FromArgb(197, 255, 255, 255)) { Opacity = 0.075 };
-                TopBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(93, 255, 255, 255)) { Opacity = 0.25 };
-            }
-            else
-            {
-                // 浅色模式 Light mode
-                targetBackgroundBrush = new SolidColorBrush(Color.FromArgb(255, 255, 255, 255)) { Opacity = 0.6 };
-                TopBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(93, 255, 255, 255)) { Opacity = 1 };
-            }
-
-            // 背景颜色动画 Animate background color
-            var backgroundAnimation = new ColorAnimation
-            {
-                To = targetBackgroundBrush.Color,
-                Duration = TimeSpan.FromMilliseconds(200),
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-            };
-
-            // 背景不透明度动画 Animate background opacity
-            var backgroundOpacityAnimation = new DoubleAnimation
-            {
-                To = targetBackgroundBrush.Opacity,
-                Duration = TimeSpan.FromMilliseconds(200),
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-            };
-
-            // 罕见情况：SetupWindow 后背景不是 SolidColorBrush
-            // Rare case where background is not a SolidColorBrush after SetupWindow
-            if (MainBorder.Background is not SolidColorBrush)
-            {
-                MainBorder.Background = new SolidColorBrush(Colors.Transparent);
-                MainBorder.Background.Opacity = 0;
-            }
-
-            MainBorder.Background.BeginAnimation(SolidColorBrush.ColorProperty, backgroundAnimation);
-            MainBorder.Background.BeginAnimation(SolidColorBrush.OpacityProperty, backgroundOpacityAnimation);
+            var experience = SettingsManager.Current.TaskbarExperience;
+            return CanUseTaskbarComponentHover() &&
+                   !experience.HoverLayerEnabled &&
+                   experience.FullLayerEnabled;
         }
 
-        /// <summary>
-        /// 鼠标离开事件：动画恢复到透明背景。
-        /// Mouse leave event: animate back to transparent background.
-        /// </summary>
-        private void Grid_MouseLeave(object sender, MouseEventArgs e)
+        /// <summary>直接模糊并淡化原文字区域，悬停按钮作为独立兄弟元素保持清晰。</summary>
+        private void AnimateSongInfoCovered(bool isCovered, bool immediate = false)
         {
-            if (!_isConnected) return;
-
-            if (_currentMode != WindowMode.Taskbar)
+            if (isCovered && !CanUseTaskbarComponentHover())
                 return;
 
-            // 动画恢复到透明 Animate back to transparent
-            var backgroundAnimation = new ColorAnimation
+            if (SongInfoStackPanel.Effect is not BlurEffect blur)
             {
-                To = Colors.Transparent,
-                Duration = TimeSpan.FromMilliseconds(200),
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
-            };
+                blur = new BlurEffect
+                {
+                    Radius = 0,
+                    KernelType = KernelType.Gaussian,
+                    RenderingBias = RenderingBias.Performance
+                };
+                SongInfoStackPanel.Effect = blur;
+            }
 
-            var backgroundOpacityAnimation = new DoubleAnimation
+            var targetRadius = isCovered ? TaskbarCoveredBlurRadius : 0;
+            var targetOpacity = isCovered ? TaskbarCoveredOpacity : 1;
+            if (immediate)
             {
+                blur.BeginAnimation(BlurEffect.RadiusProperty, null);
+                SongInfoStackPanel.BeginAnimation(OpacityProperty, null);
+                blur.Radius = targetRadius;
+                SongInfoStackPanel.Opacity = targetOpacity;
+                return;
+            }
+
+            var duration = TimeSpan.FromMilliseconds(isCovered ? 180 : 150);
+            var easingMode = isCovered ? EasingMode.EaseOut : EasingMode.EaseInOut;
+            blur.BeginAnimation(BlurEffect.RadiusProperty, new DoubleAnimation
+            {
+                To = targetRadius,
+                Duration = duration,
+                EasingFunction = new CubicEase { EasingMode = easingMode }
+            }, HandoffBehavior.SnapshotAndReplace);
+            SongInfoStackPanel.BeginAnimation(OpacityProperty, new DoubleAnimation
+            {
+                To = targetOpacity,
+                Duration = duration,
+                EasingFunction = new CubicEase { EasingMode = easingMode }
+            }, HandoffBehavior.SnapshotAndReplace);
+        }
+
+        private void AnimateDirectFullPanelHandle(bool isVisible, bool immediate = false)
+        {
+            var targetOpacity = isVisible && CanShowDirectFullPanelHandle() ? 1 : 0;
+            if (immediate)
+            {
+                TaskbarDirectFullPanelHandle.BeginAnimation(OpacityProperty, null);
+                TaskbarDirectFullPanelHandle.Opacity = targetOpacity;
+                return;
+            }
+
+            TaskbarDirectFullPanelHandle.BeginAnimation(OpacityProperty, new DoubleAnimation
+            {
+                To = targetOpacity,
+                Duration = TimeSpan.FromMilliseconds(140),
+                EasingFunction = new CubicEase
+                {
+                    EasingMode = targetOpacity > 0 ? EasingMode.EaseOut : EasingMode.EaseInOut
+                }
+            }, HandoffBehavior.SnapshotAndReplace);
+        }
+
+        /// <summary>复用原 TaskBarMediaControl 的 hover 色彩和节奏，但将效果限制在单个组件。</summary>
+        private void AnimateComponentHover(Border surface, bool isHovered)
+        {
+            if (isHovered && !CanUseTaskbarComponentHover())
+                return;
+
+            var isDark = ApplicationThemeManager.GetSystemTheme() == SystemTheme.Dark;
+            var backgroundColor = isHovered
+                ? isDark ? Color.FromArgb(197, 255, 255, 255) : Colors.White
+                : Colors.Transparent;
+            var backgroundOpacity = isHovered ? isDark ? 0.075 : 0.6 : 0;
+            var borderColor = isHovered ? Color.FromArgb(93, 255, 255, 255) : Colors.Transparent;
+            var borderOpacity = isHovered ? isDark ? 0.25 : 1 : 0;
+            var easingMode = isHovered ? EasingMode.EaseOut : EasingMode.EaseInOut;
+
+            if (surface.Background is not SolidColorBrush background || background.IsFrozen)
+            {
+                background = new SolidColorBrush(Colors.Transparent);
+                surface.Background = background;
+            }
+            if (surface.BorderBrush is not SolidColorBrush border || border.IsFrozen)
+            {
+                border = new SolidColorBrush(Colors.Transparent);
+                surface.BorderBrush = border;
+            }
+
+            var duration = TimeSpan.FromMilliseconds(200);
+            background.BeginAnimation(SolidColorBrush.ColorProperty, new ColorAnimation
+            {
+                To = backgroundColor,
+                Duration = duration,
+                EasingFunction = new CubicEase { EasingMode = easingMode }
+            });
+            background.BeginAnimation(SolidColorBrush.OpacityProperty, new DoubleAnimation
+            {
+                To = backgroundOpacity,
+                Duration = duration,
+                EasingFunction = new CubicEase { EasingMode = easingMode }
+            });
+            border.BeginAnimation(SolidColorBrush.ColorProperty, new ColorAnimation
+            {
+                To = borderColor,
+                Duration = duration,
+                EasingFunction = new CubicEase { EasingMode = easingMode }
+            });
+            border.BeginAnimation(SolidColorBrush.OpacityProperty, new DoubleAnimation
+            {
+                To = borderOpacity,
+                Duration = duration,
+                EasingFunction = new CubicEase { EasingMode = easingMode }
+            });
+        }
+
+        private void SongImageBorder_MouseEnter(object sender, MouseEventArgs e) =>
+            AnimateComponentHover(SongImageHoverOverlay, true);
+
+        private void SongImageBorder_MouseLeave(object sender, MouseEventArgs e) =>
+            AnimateComponentHover(SongImageHoverOverlay, false);
+
+        private void TaskbarSpectrumHoverSurface_MouseEnter(object sender, MouseEventArgs e) =>
+            AnimateComponentHover(TaskbarSpectrumHoverSurface, true);
+
+        private void TaskbarSpectrumHoverSurface_MouseLeave(object sender, MouseEventArgs e) =>
+            AnimateComponentHover(TaskbarSpectrumHoverSurface, false);
+
+        private void SongInfoStackPanel_MouseEnter(object sender, MouseEventArgs e)
+        {
+            if (!CanUseTaskbarComponentHover())
+                return;
+
+            AnimateComponentHover(SongInfoHoverOverlay, true);
+            AnimateDirectFullPanelHandle(true);
+            _hoverCloseTimer.Stop();
+            _hoverOpenTimer.Stop();
+            if (SettingsManager.Current.TaskbarExperience.HoverLayerEnabled)
+                _hoverOpenTimer.Start();
+        }
+
+        private void SongInfoStackPanel_MouseLeave(object sender, MouseEventArgs e)
+        {
+            _hoverOpenTimer.Stop();
+            if (!_isTaskbarHoverVisible)
+            {
+                if (!TaskbarDirectFullPanelHandle.IsMouseOver)
+                {
+                    AnimateComponentHover(SongInfoHoverOverlay, false);
+                    AnimateDirectFullPanelHandle(false);
+                }
+                return;
+            }
+            _hoverCloseTimer.Stop();
+            _hoverCloseTimer.Start();
+        }
+
+        private void TaskbarHoverLayer_MouseEnter(object sender, MouseEventArgs e)
+        {
+            _hoverCloseTimer.Stop();
+            AnimateComponentHover(SongInfoHoverOverlay, true);
+        }
+
+        private void TaskbarHoverLayer_MouseLeave(object sender, MouseEventArgs e)
+        {
+            if (_isSeeking)
+                return;
+            _hoverCloseTimer.Stop();
+            _hoverCloseTimer.Start();
+        }
+
+        private void TaskbarDirectFullPanelHandle_MouseEnter(object sender, MouseEventArgs e)
+        {
+            if (!CanShowDirectFullPanelHandle())
+                return;
+            AnimateComponentHover(SongInfoHoverOverlay, true);
+            AnimateDirectFullPanelHandle(true);
+        }
+
+        private void TaskbarDirectFullPanelHandle_MouseLeave(object sender, MouseEventArgs e)
+        {
+            if (SongInfoStackPanel.IsMouseOver)
+                return;
+            AnimateComponentHover(SongInfoHoverOverlay, false);
+            AnimateDirectFullPanelHandle(false);
+        }
+
+        private void ShowTaskbarHoverLayer()
+        {
+            if (!_isConnected || _currentMode != WindowMode.Taskbar || _isVertical ||
+                !SettingsManager.Current.TaskbarExperience.HoverLayerEnabled ||
+                (!SongInfoStackPanel.IsMouseOver && !HoverRevealHost.IsMouseOver))
+                return;
+
+            ApplyTaskbarExperienceSettings();
+            _isTaskbarHoverVisible = true;
+            AnimateComponentHover(SongInfoHoverOverlay, true);
+            AnimateSongInfoCovered(true);
+            HoverRevealHost.Visibility = Visibility.Visible;
+            HoverRevealHost.IsHitTestVisible = true;
+            HoverRevealHost.BeginAnimation(FrameworkElement.WidthProperty, null);
+            var targetWidth = Math.Max(0, SongInfoStackPanel.Width);
+            HoverRevealHost.Width = Math.Min(Math.Max(1, HoverRevealHost.ActualWidth), targetWidth);
+            var reveal = new DoubleAnimation
+            {
+                From = HoverRevealHost.Width,
+                To = targetWidth,
+                Duration = TimeSpan.FromMilliseconds(180),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            };
+            HoverRevealHost.BeginAnimation(FrameworkElement.WidthProperty, reveal, HandoffBehavior.SnapshotAndReplace);
+        }
+
+        private void HideTaskbarHoverLayer(bool immediate = false)
+        {
+            _hoverOpenTimer.Stop();
+            _hoverCloseTimer.Stop();
+            if (!immediate && _isSeeking)
+                return;
+            if (immediate || HoverRevealHost.Visibility != Visibility.Visible)
+            {
+                HoverRevealHost.BeginAnimation(FrameworkElement.WidthProperty, null);
+                HoverRevealHost.Width = 0;
+                HoverRevealHost.Visibility = Visibility.Collapsed;
+                HoverRevealHost.IsHitTestVisible = false;
+                _isTaskbarHoverVisible = false;
+                AnimateSongInfoCovered(false, immediate: true);
+                var keepRegularHover = CanUseTaskbarComponentHover() &&
+                                       (SongInfoStackPanel.IsMouseOver || TaskbarDirectFullPanelHandle.IsMouseOver);
+                AnimateComponentHover(SongInfoHoverOverlay, keepRegularHover);
+                AnimateDirectFullPanelHandle(keepRegularHover, immediate: true);
+                return;
+            }
+
+            AnimateSongInfoCovered(false);
+
+            var hide = new DoubleAnimation
+            {
+                From = HoverRevealHost.ActualWidth,
                 To = 0,
-                Duration = TimeSpan.FromMilliseconds(200),
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+                Duration = TimeSpan.FromMilliseconds(150),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
             };
-
-            MainBorder.Background?.BeginAnimation(SolidColorBrush.ColorProperty, backgroundAnimation);
-            MainBorder.Background?.BeginAnimation(SolidColorBrush.OpacityProperty, backgroundOpacityAnimation);
-
-            TopBorder.BorderBrush = Brushes.Transparent;
+            hide.Completed += (_, _) =>
+            {
+                HoverRevealHost.BeginAnimation(FrameworkElement.WidthProperty, null);
+                HoverRevealHost.Width = 0;
+                HoverRevealHost.Visibility = Visibility.Collapsed;
+                HoverRevealHost.IsHitTestVisible = false;
+                _isTaskbarHoverVisible = false;
+                if (!SongInfoStackPanel.IsMouseOver && !TaskbarDirectFullPanelHandle.IsMouseOver)
+                    AnimateComponentHover(SongInfoHoverOverlay, false);
+            };
+            HoverRevealHost.BeginAnimation(FrameworkElement.WidthProperty, hide, HandoffBehavior.SnapshotAndReplace);
         }
 
         private void SongImageBorder_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            if (!_isConnected || !_canPlayPause || e.ChangedButton != MouseButton.Left)
+            if (!_isConnected || !_canPlayPause || e.ChangedButton != MouseButton.Left ||
+                DateTime.UtcNow < _suppressArtworkClickUntilUtc)
+                return;
+
+            if (_currentMode == WindowMode.Taskbar &&
+                SettingsManager.Current.Interaction.Mode == MediaInteractionMode.Buttons)
                 return;
 
             TogglePlayPauseRequested?.Invoke(this, EventArgs.Empty);
@@ -654,7 +1105,16 @@ namespace AFMediaBar.Components
             if (!_isConnected)
                 return;
 
-            if (e.Delta > 0 && _canSkipPrevious)
+            if (_currentMode == WindowMode.Taskbar)
+            {
+                var leftDown = Mouse.LeftButton == MouseButtonState.Pressed;
+                var rightDown = Mouse.RightButton == MouseButtonState.Pressed;
+                if (leftDown)
+                    _suppressArtworkClickUntilUtc = DateTime.UtcNow.AddMilliseconds(350);
+                WheelRequested?.Invoke(this, new PlayerSurfaceWheelEventArgs(e.Delta, leftDown, rightDown));
+                e.Handled = SettingsManager.Current.Interaction.Mode != MediaInteractionMode.Buttons;
+            }
+            else if (e.Delta > 0 && _canSkipPrevious)
             {
                 SkipPreviousRequested?.Invoke(this, EventArgs.Empty);
                 e.Handled = true;
@@ -663,6 +1123,91 @@ namespace AFMediaBar.Components
             {
                 SkipNextRequested?.Invoke(this, EventArgs.Empty);
                 e.Handled = true;
+            }
+        }
+
+        private void TaskbarPreviousButton_Click(object sender, RoutedEventArgs e) =>
+            SkipPreviousRequested?.Invoke(this, EventArgs.Empty);
+
+        private void TaskbarPlayPauseButton_Click(object sender, RoutedEventArgs e) =>
+            TogglePlayPauseRequested?.Invoke(this, EventArgs.Empty);
+
+        private void TaskbarNextButton_Click(object sender, RoutedEventArgs e) =>
+            SkipNextRequested?.Invoke(this, EventArgs.Empty);
+
+        private void TaskbarDeviceButton_Click(object sender, RoutedEventArgs e) =>
+            OutputDeviceCycleRequested?.Invoke(this, EventArgs.Empty);
+
+        private void TaskbarVolumeButton_Click(object sender, RoutedEventArgs e) =>
+            AudioControlRequested?.Invoke(this, EventArgs.Empty);
+
+        private void TaskbarFullPanelHandle_Click(object sender, RoutedEventArgs e) =>
+            OpenFullPanelRequested?.Invoke(this, EventArgs.Empty);
+
+        private void TaskbarHoverProgress_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (!_snapshot.CanSeek || _snapshot.Duration <= 0)
+                return;
+            _isSeeking = true;
+            TaskbarHoverProgress.CaptureMouse();
+            UpdateSeekValue(e.GetPosition(TaskbarHoverProgress).X);
+            e.Handled = true;
+        }
+
+        private void TaskbarHoverProgress_PreviewMouseMove(object sender, MouseEventArgs e)
+        {
+            if (!_isSeeking || e.LeftButton != MouseButtonState.Pressed)
+                return;
+            UpdateSeekValue(e.GetPosition(TaskbarHoverProgress).X);
+            e.Handled = true;
+        }
+
+        private void TaskbarHoverProgress_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (!_isSeeking)
+                return;
+            UpdateSeekValue(e.GetPosition(TaskbarHoverProgress).X);
+            _isSeeking = false;
+            TaskbarHoverProgress.ReleaseMouseCapture();
+            SeekRequested?.Invoke(TaskbarHoverProgress.Value);
+            if (!HoverRevealHost.IsMouseOver && !SongInfoStackPanel.IsMouseOver)
+                HideTaskbarHoverLayer();
+            e.Handled = true;
+        }
+
+        private void UpdateSeekValue(double pointerX)
+        {
+            if (TaskbarHoverProgress.ActualWidth <= 0 || _snapshot.Duration <= 0)
+                return;
+            var ratio = Math.Clamp(pointerX / TaskbarHoverProgress.ActualWidth, 0, 1);
+            TaskbarHoverProgress.Value = ratio * _snapshot.Duration;
+        }
+
+        private void UpdateTaskbarProgress()
+        {
+            var position = TaskbarExperiencePolicy.GetPosition(_snapshot, DateTimeOffset.UtcNow);
+            var hasDuration = _snapshot.Duration > 0;
+            TaskbarRestProgress.Maximum = Math.Max(1, _snapshot.Duration);
+            TaskbarRestProgress.Value = position;
+            TaskbarHoverProgress.Maximum = Math.Max(1, _snapshot.Duration);
+            if (!_isSeeking)
+                TaskbarHoverProgress.Value = position;
+            if (_currentMode == WindowMode.Taskbar && !_isVertical)
+            {
+                TaskbarRestProgress.Visibility = hasDuration ? Visibility.Visible : Visibility.Collapsed;
+                TaskbarHoverProgress.Visibility = hasDuration ? Visibility.Visible : Visibility.Collapsed;
+            }
+        }
+
+        private static IEnumerable<T> FindVisualChildren<T>(DependencyObject parent) where T : DependencyObject
+        {
+            for (var index = 0; index < VisualTreeHelper.GetChildrenCount(parent); index++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, index);
+                if (child is T typed)
+                    yield return typed;
+                foreach (var descendant in FindVisualChildren<T>(child))
+                    yield return descendant;
             }
         }
 

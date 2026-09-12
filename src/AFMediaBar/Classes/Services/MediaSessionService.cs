@@ -6,6 +6,7 @@ using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services.Lyrics;
 using Windows.Media.Control;
+using Windows.Media;
 using WindowsMediaController;
 using static WindowsMediaController.MediaManager;
 
@@ -142,6 +143,39 @@ public sealed class MediaSessionService : IDisposable
     public Task SkipNextAsync() => ExecuteOnSelectedAsync(async session =>
     {
         await session.ControlSession.TrySkipNextAsync();
+    });
+
+    /// <summary>跳转到当前媒体的相对播放位置。 / Seeks to a relative position in the selected media item.</summary>
+    public Task SeekAsync(double positionSeconds) => ExecuteOnSelectedAsync(async session =>
+    {
+        var controls = session.ControlSession.GetPlaybackInfo().Controls;
+        var timeline = session.ControlSession.GetTimelineProperties();
+        var duration = Math.Max(0, (timeline.EndTime - timeline.StartTime).TotalSeconds);
+        if (duration <= 0 || controls?.IsPlaybackPositionEnabled != true)
+        {
+            return;
+        }
+
+        var target = timeline.StartTime + TimeSpan.FromSeconds(Math.Clamp(positionSeconds, 0, duration));
+        await session.ControlSession.TryChangePlaybackPositionAsync(target.Ticks);
+    });
+
+    /// <summary>在关闭、列表和单曲循环之间切换。 / Cycles repeat between off, list, and track.</summary>
+    public Task CycleRepeatModeAsync() => ExecuteOnSelectedAsync(async session =>
+    {
+        var playback = session.ControlSession.GetPlaybackInfo();
+        if (playback.Controls?.IsRepeatEnabled != true)
+        {
+            return;
+        }
+
+        var next = playback.AutoRepeatMode switch
+        {
+            MediaPlaybackAutoRepeatMode.List => MediaPlaybackAutoRepeatMode.Track,
+            MediaPlaybackAutoRepeatMode.Track => MediaPlaybackAutoRepeatMode.None,
+            _ => MediaPlaybackAutoRepeatMode.List
+        };
+        await session.ControlSession.TryChangeAutoRepeatModeAsync(next);
     });
 
     /// <summary>
@@ -397,7 +431,11 @@ public sealed class MediaSessionService : IDisposable
         {
             CanPlayPause = snapshot.CanPlayPause,
             CanSkipPrevious = snapshot.CanSkipPrevious,
-            CanSkipNext = snapshot.CanSkipNext
+            CanSkipNext = snapshot.CanSkipNext,
+            CanSeek = snapshot.CanSeek && providerSnapshot.Duration > 0,
+            CanChangeRepeat = snapshot.CanChangeRepeat,
+            RepeatMode = snapshot.RepeatMode,
+            PlaybackRate = snapshot.PlaybackRate
         };
     }
 

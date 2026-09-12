@@ -40,6 +40,11 @@ public sealed class AppSettings : INotifyPropertyChanged
     private double? _dynamicIslandTop;
     private DynamicIslandEdge _dynamicIslandEdge = DynamicIslandEdge.Top;
     private bool _dynamicIslandEdgeDocked = true;
+    private TaskbarExperienceSettings _taskbarExperience = TaskbarExperienceSettings.Default;
+    private GlobalInteractionSettings _interaction = GlobalInteractionSettings.Default;
+    private ModeSurfaceSettings _taskbarSurface = ModeSurfaceSettings.Default;
+    private ModeSurfaceSettings _dynamicIslandSurface = ModeSurfaceSettings.Default;
+    private LyricsTextAlignment _lyricsTextAlignment = LyricsTextAlignment.Center;
 
     public AppearanceSettings Appearance { get => _appearance; set => Set(ref _appearance, value.Normalize()); }
     public TrayWheelBehavior TrayWheelBehavior { get => _trayWheelBehavior; set => Set(ref _trayWheelBehavior, value); }
@@ -63,6 +68,11 @@ public sealed class AppSettings : INotifyPropertyChanged
     public double? DynamicIslandTop { get => _dynamicIslandTop; set => Set(ref _dynamicIslandTop, value); }
     public DynamicIslandEdge DynamicIslandEdge { get => _dynamicIslandEdge; set => Set(ref _dynamicIslandEdge, value); }
     public bool DynamicIslandEdgeDocked { get => _dynamicIslandEdgeDocked; set => Set(ref _dynamicIslandEdgeDocked, value); }
+    public TaskbarExperienceSettings TaskbarExperience { get => _taskbarExperience; set => Set(ref _taskbarExperience, value.Normalize()); }
+    public GlobalInteractionSettings Interaction { get => _interaction; set => Set(ref _interaction, value.Normalize()); }
+    public ModeSurfaceSettings TaskbarSurface { get => _taskbarSurface; set => Set(ref _taskbarSurface, value.Normalize()); }
+    public ModeSurfaceSettings DynamicIslandSurface { get => _dynamicIslandSurface; set => Set(ref _dynamicIslandSurface, value.Normalize()); }
+    public LyricsTextAlignment LyricsTextAlignment { get => _lyricsTextAlignment; set => Set(ref _lyricsTextAlignment, value); }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -78,6 +88,11 @@ public sealed class AppSettings : INotifyPropertyChanged
         if (!Enum.IsDefined(result.LayoutOrientationMode)) result.LayoutOrientationMode = defaults.LayoutOrientationMode;
         if (!Enum.IsDefined(result.DynamicIslandBackgroundMode)) result.DynamicIslandBackgroundMode = defaults.DynamicIslandBackgroundMode;
         if (!Enum.IsDefined(result.DynamicIslandEdge)) result.DynamicIslandEdge = defaults.DynamicIslandEdge;
+        if (!Enum.IsDefined(result.LyricsTextAlignment)) result.LyricsTextAlignment = defaults.LyricsTextAlignment;
+        result.TaskbarExperience = result.TaskbarExperience.Normalize();
+        result.Interaction = result.Interaction.Normalize();
+        result.TaskbarSurface = result.TaskbarSurface.Normalize();
+        result.DynamicIslandSurface = result.DynamicIslandSurface.Normalize();
         if (result.TaskbarBarSelectedMonitor < 0) result.TaskbarBarSelectedMonitor = defaults.TaskbarBarSelectedMonitor;
         if (!double.IsFinite(result.LayoutLengthScalePercent)) result.LayoutLengthScalePercent = defaults.LayoutLengthScalePercent;
         if (!double.IsFinite(result.LayoutThicknessScalePercent)) result.LayoutThicknessScalePercent = defaults.LayoutThicknessScalePercent;
@@ -113,7 +128,12 @@ public sealed class AppSettings : INotifyPropertyChanged
         DynamicIslandLeft = DynamicIslandLeft,
         DynamicIslandTop = DynamicIslandTop,
         DynamicIslandEdge = DynamicIslandEdge,
-        DynamicIslandEdgeDocked = DynamicIslandEdgeDocked
+        DynamicIslandEdgeDocked = DynamicIslandEdgeDocked,
+        TaskbarExperience = TaskbarExperience,
+        Interaction = Interaction,
+        TaskbarSurface = TaskbarSurface,
+        DynamicIslandSurface = DynamicIslandSurface,
+        LyricsTextAlignment = LyricsTextAlignment
     };
 
     private void Set<T>(ref T field, T value, [CallerMemberName] string? name = null)
@@ -125,7 +145,7 @@ public sealed class AppSettings : INotifyPropertyChanged
 }
 
 /// <summary>设置重置范围。 / Settings reset scope.</summary>
-public enum SettingsResetScope { General, Appearance, Layout, All }
+public enum SettingsResetScope { General, Appearance, Layout, DisplayModes, Interaction, Lyrics, All }
 
 /// <summary>设置变更通知参数。 / Settings change notification arguments.</summary>
 public sealed class SettingsChangedEventArgs(SettingsResetScope? resetScope = null, string? propertyName = null) : EventArgs
@@ -145,6 +165,8 @@ public static class SettingsManager
     public static event EventHandler? TrayWheelBehaviorChanged;
     public static event EventHandler? LyricsSettingsChanged;
     public static event EventHandler<LayoutSettingsChangedEventArgs>? LayoutSettingsChanged;
+    public static event EventHandler? TaskbarExperienceSettingsChanged;
+    public static event EventHandler? InteractionSettingsChanged;
 
     public static void Replace(AppSettings settings, SettingsResetScope? scope = null)
     {
@@ -158,17 +180,48 @@ public static class SettingsManager
     public static void SetLyricsEnabled(bool enabled) => Current.LyricsEnabled = enabled;
     public static void SetTwoLineLyricsEnabled(bool enabled) => Current.TwoLineLyricsEnabled = enabled;
     public static void SetLyricsSecondaryLineMode(LyricsSecondaryLineMode mode) => Current.LyricsSecondaryLineMode = mode;
+    public static void SetLyricsTextAlignment(LyricsTextAlignment alignment) => Current.LyricsTextAlignment = alignment;
     public static void SetAppearanceSettings(AppearanceSettings appearance) => Current.Appearance = appearance;
+    public static void SetTaskbarExperienceSettings(TaskbarExperienceSettings settings) => Current.TaskbarExperience = settings;
+    public static void SetInteractionSettings(GlobalInteractionSettings settings) => Current.Interaction = settings;
     public static void RaiseLayoutSettingsChanged(WindowMode windowMode, LayoutOrientationMode orientationMode) => LayoutSettingsChanged?.Invoke(null, new LayoutSettingsChangedEventArgs(windowMode, orientationMode));
 
     public static void ResetGeneral()
     {
-        var next = Current.Clone(); var defaults = new AppSettings();
-        next.TrayWheelBehavior = defaults.TrayWheelBehavior; next.LyricsEnabled = defaults.LyricsEnabled;
-        next.TwoLineLyricsEnabled = defaults.TwoLineLyricsEnabled; next.LyricsSecondaryLineMode = defaults.LyricsSecondaryLineMode;
-        Replace(next, SettingsResetScope.General);
+        // Current general-page controls are operating-system or navigation actions and do not
+        // own interaction or lyric settings. Publish the reset boundary without changing them.
+        Replace(Current.Clone(), SettingsResetScope.General);
     }
-    public static void ResetAppearance() { var next = Current.Clone(); next.Appearance = AppearanceSettings.Default; Replace(next, SettingsResetScope.Appearance); }
+    public static void ResetAppearance()
+    {
+        var next = Current.Clone();
+        next.Appearance = AppearanceSettings.Default;
+        next.TaskbarSurface = ModeSurfaceSettings.Default;
+        next.DynamicIslandSurface = ModeSurfaceSettings.Default;
+        Replace(next, SettingsResetScope.Appearance);
+    }
+    public static void ResetDisplayModes()
+    {
+        var next = Current.Clone(); var defaults = new AppSettings();
+        next.TaskbarExperience = defaults.TaskbarExperience;
+        next.WindowMode = defaults.WindowMode; next.LayoutOrientationMode = defaults.LayoutOrientationMode;
+        next.TaskbarBarEnabled = defaults.TaskbarBarEnabled; next.TaskbarBarSelectedMonitor = defaults.TaskbarBarSelectedMonitor;
+        next.Position = defaults.Position; next.TaskbarBarCrossAxisOffsetDip = defaults.TaskbarBarCrossAxisOffsetDip;
+        next.TaskbarBarAvoidIcons = defaults.TaskbarBarAvoidIcons; next.TaskbarBarPositionLocked = defaults.TaskbarBarPositionLocked;
+        Replace(next, SettingsResetScope.DisplayModes);
+    }
+    public static void ResetInteraction()
+    {
+        var next = Current.Clone(); next.Interaction = GlobalInteractionSettings.Default;
+        Replace(next, SettingsResetScope.Interaction);
+    }
+    public static void ResetLyrics()
+    {
+        var next = Current.Clone(); var defaults = new AppSettings();
+        next.LyricsEnabled = defaults.LyricsEnabled; next.TwoLineLyricsEnabled = defaults.TwoLineLyricsEnabled;
+        next.LyricsSecondaryLineMode = defaults.LyricsSecondaryLineMode; next.LyricsTextAlignment = defaults.LyricsTextAlignment;
+        Replace(next, SettingsResetScope.Lyrics);
+    }
     public static void ResetLayout()
     {
         var next = Current.Clone(); var defaults = new AppSettings();
@@ -195,6 +248,11 @@ public static class SettingsManager
             case nameof(AppSettings.LyricsEnabled):
             case nameof(AppSettings.TwoLineLyricsEnabled):
             case nameof(AppSettings.LyricsSecondaryLineMode): LyricsSettingsChanged?.Invoke(null, EventArgs.Empty); break;
+            case nameof(AppSettings.LyricsTextAlignment): LyricsSettingsChanged?.Invoke(null, EventArgs.Empty); break;
+            case nameof(AppSettings.TaskbarExperience): TaskbarExperienceSettingsChanged?.Invoke(null, EventArgs.Empty); break;
+            case nameof(AppSettings.Interaction): InteractionSettingsChanged?.Invoke(null, EventArgs.Empty); break;
+            case nameof(AppSettings.TaskbarSurface):
+            case nameof(AppSettings.DynamicIslandSurface): AppearanceSettingsChanged?.Invoke(null, new AppearanceSettingsChangedEventArgs(Current.Appearance)); break;
         }
     }
     private static void RaiseAll(SettingsResetScope? scope)
@@ -202,6 +260,7 @@ public static class SettingsManager
         SettingsChanged?.Invoke(null, new SettingsChangedEventArgs(scope));
         AppearanceSettingsChanged?.Invoke(null, new AppearanceSettingsChangedEventArgs(Current.Appearance));
         TrayWheelBehaviorChanged?.Invoke(null, EventArgs.Empty); LyricsSettingsChanged?.Invoke(null, EventArgs.Empty);
+        TaskbarExperienceSettingsChanged?.Invoke(null, EventArgs.Empty); InteractionSettingsChanged?.Invoke(null, EventArgs.Empty);
         RaiseLayoutSettingsChanged(Current.WindowMode, Current.LayoutOrientationMode);
     }
 }

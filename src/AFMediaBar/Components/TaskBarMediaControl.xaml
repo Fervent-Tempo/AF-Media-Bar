@@ -10,10 +10,31 @@
              FontWeight="{DynamicResource AppTextFontWeight}"
              TextOptions.TextRenderingMode="ClearType" TextOptions.TextFormattingMode="Ideal">
 
+    <UserControl.Resources>
+        <Style x:Key="TaskbarHoverButton" TargetType="Button">
+            <Setter Property="Width" Value="24" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="1,0" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Tag" Value="MediaAction" />
+        </Style>
+        <Style x:Key="TaskbarSpectrumBar" TargetType="Border">
+            <Setter Property="Width" Value="2" />
+            <Setter Property="Height" Value="4" />
+            <Setter Property="Margin" Value="1,0" />
+            <Setter Property="CornerRadius" Value="1" />
+            <Setter Property="VerticalAlignment" Value="Bottom" />
+            <Setter Property="Background" Value="#DFFFFFFF" />
+        </Style>
+    </UserControl.Resources>
+
     <Border Name="MainBorder" CornerRadius="6"
             ClipToBounds="True">
         <Grid Name="InteractionSurface" Background="#01000000"
-              MouseEnter="Grid_MouseEnter" MouseLeave="Grid_MouseLeave"
               PreviewMouseWheel="InteractionSurface_PreviewMouseWheel">
             <Image x:Name="BackgroundImage" Stretch="UniformToFill" HorizontalAlignment="Center"
                    VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5" Opacity="0.4">
@@ -29,11 +50,19 @@
                     <!-- 封面组件 Artwork component -->
                     <Border Name="SongImageBorder" CornerRadius="5" ClipToBounds="True" Width="36" Height="36"
                             Panel.ZIndex="2" Cursor="Hand" Tag="MediaAction"
+                            MouseEnter="SongImageBorder_MouseEnter"
+                            MouseLeave="SongImageBorder_MouseLeave"
                             MouseLeftButtonUp="SongImageBorder_MouseLeftButtonUp">
                         <Grid>
                             <ui:SymbolIcon Name="SongImagePlaceholder" Symbol="MusicNote220" FontSize="24"
                                            Filled="True"
                                            Foreground="{DynamicResource MicaWPF.Brushes.SystemAccentColorTertiary}" />
+                            <Border x:Name="SongImageHoverOverlay"
+                                    CornerRadius="5"
+                                    Background="Transparent"
+                                    BorderBrush="Transparent"
+                                    BorderThickness="0,1.25,0,0"
+                                    IsHitTestVisible="False" />
                         </Grid>
                         <Border.Background>
                             <ImageBrush x:Name="SongImage" Stretch="UniformToFill" />
@@ -43,6 +72,10 @@
                     <!-- 歌曲信息组件 Song info component -->
                     <StackPanel Name="SongInfoStackPanel" Orientation="Vertical"
                                 Width="Auto"
+                                Panel.ZIndex="3"
+                                Background="Transparent"
+                                MouseEnter="SongInfoStackPanel_MouseEnter"
+                                MouseLeave="SongInfoStackPanel_MouseLeave"
                                 ToolTipService.InitialShowDelay="800"
                                 ToolTipService.Placement="RelativePoint"
                                 ToolTipService.VerticalOffset="-16">
@@ -118,8 +151,178 @@
                         </Grid>
                     </StackPanel>
 
+                    <Border x:Name="SongInfoHoverOverlay"
+                            Panel.ZIndex="2"
+                            CornerRadius="5"
+                            Background="Transparent"
+                            BorderBrush="Transparent"
+                            BorderThickness="0,1.25,0,0"
+                            IsHitTestVisible="False" />
+
                 </Canvas>
             </Border>
+
+            <!-- 仅用于横向任务栏静置层；原始 Canvas 仍是唯一的封面和文字布局。 -->
+            <!-- Horizontal-taskbar rest adorners; the original Canvas remains the sole artwork/text layout. -->
+            <ProgressBar x:Name="TaskbarRestProgress"
+                         Panel.ZIndex="3"
+                         Height="2"
+                         Margin="52,0,46,1"
+                         VerticalAlignment="Bottom"
+                         Minimum="0"
+                         Maximum="1"
+                         Visibility="Collapsed"
+                         IsHitTestVisible="False"
+                         BorderThickness="0"
+                         Background="Transparent"
+                         Foreground="#FF75B9" />
+            <Border x:Name="TaskbarSpectrumHoverSurface"
+                    Panel.ZIndex="4"
+                    Width="38"
+                    Height="32"
+                    Margin="0,0,4,0"
+                    Padding="1"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    CornerRadius="5"
+                    Background="Transparent"
+                    BorderBrush="Transparent"
+                    BorderThickness="0,1.25,0,0"
+                    Visibility="Collapsed"
+                    MouseEnter="TaskbarSpectrumHoverSurface_MouseEnter"
+                    MouseLeave="TaskbarSpectrumHoverSurface_MouseLeave">
+                <StackPanel x:Name="TaskbarSpectrum"
+                            Width="36"
+                            Height="22"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal"
+                            IsHitTestVisible="False">
+                    <Border Style="{StaticResource TaskbarSpectrumBar}" />
+                    <Border Style="{StaticResource TaskbarSpectrumBar}" />
+                    <Border Style="{StaticResource TaskbarSpectrumBar}" />
+                    <Border Style="{StaticResource TaskbarSpectrumBar}" />
+                    <Border Style="{StaticResource TaskbarSpectrumBar}" />
+                    <Border Style="{StaticResource TaskbarSpectrumBar}" />
+                    <Border Style="{StaticResource TaskbarSpectrumBar}" />
+                    <Border Style="{StaticResource TaskbarSpectrumBar}" />
+                    <Border Style="{StaticResource TaskbarSpectrumBar}" />
+                </StackPanel>
+            </Border>
+
+            <!-- 悬停层只覆盖中间文字区域，不替换或重新排列下方静置层。 -->
+            <!-- The hover layer covers only the middle text region without replacing the rest layer below it. -->
+            <Grid x:Name="HoverRevealHost"
+                  Panel.ZIndex="6"
+                  Width="0"
+                  Height="42"
+                  Margin="52,1,0,1"
+                  HorizontalAlignment="Left"
+                  VerticalAlignment="Center"
+                  ClipToBounds="True"
+                  Visibility="Collapsed"
+                  IsHitTestVisible="False"
+                  MouseEnter="TaskbarHoverLayer_MouseEnter"
+                  MouseLeave="TaskbarHoverLayer_MouseLeave">
+                <Border x:Name="TaskbarHoverLayer"
+                        Width="276"
+                        Height="40"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        CornerRadius="5"
+                        ClipToBounds="True">
+                    <Grid>
+                        <Grid Margin="5,5,6,3">
+                            <StackPanel x:Name="TaskbarHoverActions"
+                                        Orientation="Horizontal"
+                                        HorizontalAlignment="Left"
+                                        VerticalAlignment="Center">
+                                <StackPanel x:Name="TaskbarTransportButtons" Orientation="Horizontal">
+                                    <Button x:Name="TaskbarPreviousButton"
+                                            Style="{StaticResource TaskbarHoverButton}"
+                                            ToolTip="上一首"
+                                            Click="TaskbarPreviousButton_Click">
+                                        <ui:SymbolIcon Symbol="Previous24" FontSize="14" />
+                                    </Button>
+                                    <Button x:Name="TaskbarPlayPauseButton"
+                                            Style="{StaticResource TaskbarHoverButton}"
+                                            ToolTip="播放 / 暂停"
+                                            Click="TaskbarPlayPauseButton_Click">
+                                        <ui:SymbolIcon x:Name="TaskbarPlayPauseIcon" Symbol="Play24" FontSize="14" />
+                                    </Button>
+                                    <Button x:Name="TaskbarNextButton"
+                                            Style="{StaticResource TaskbarHoverButton}"
+                                            ToolTip="下一首"
+                                            Click="TaskbarNextButton_Click">
+                                        <ui:SymbolIcon Symbol="Next24" FontSize="14" />
+                                    </Button>
+                                </StackPanel>
+                                <Button x:Name="TaskbarDeviceButton"
+                                        Style="{StaticResource TaskbarHoverButton}"
+                                        Margin="4,0,1,0"
+                                        ToolTip="切换输出设备"
+                                        Click="TaskbarDeviceButton_Click">
+                                    <ui:SymbolIcon Symbol="Speaker224" FontSize="14" />
+                                </Button>
+                                <Button x:Name="TaskbarVolumeButton"
+                                        Style="{StaticResource TaskbarHoverButton}"
+                                        ToolTip="当前应用音量 / 音量合成器"
+                                        Click="TaskbarVolumeButton_Click">
+                                    <ui:SymbolIcon Symbol="Speaker224" FontSize="14" />
+                                </Button>
+                                <Slider x:Name="TaskbarHoverProgress"
+                                        Width="96"
+                                        Height="20"
+                                        Margin="8,0,0,0"
+                                        VerticalAlignment="Center"
+                                        Minimum="0"
+                                        Maximum="1"
+                                        Tag="MediaAction"
+                                        IsMoveToPointEnabled="True"
+                                        PreviewMouseLeftButtonDown="TaskbarHoverProgress_PreviewMouseLeftButtonDown"
+                                        PreviewMouseMove="TaskbarHoverProgress_PreviewMouseMove"
+                                        PreviewMouseLeftButtonUp="TaskbarHoverProgress_PreviewMouseLeftButtonUp" />
+                            </StackPanel>
+                            <Button x:Name="TaskbarFullPanelHandle"
+                                    Width="44"
+                                    Height="8"
+                                    Padding="0"
+                                    Margin="0,-5,0,0"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Top"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Tag="MediaAction"
+                                    ToolTip="打开完整面板"
+                                    Click="TaskbarFullPanelHandle_Click">
+                                <Border Width="28" Height="4" CornerRadius="2" Background="#B8FFFFFF" />
+                            </Button>
+                        </Grid>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- 关闭悬停层但保留完整层时，在文字区顶部提供同款拉杆入口。 -->
+            <!-- When Hover is disabled but Full remains enabled, expose the same pull handle over the text region. -->
+            <Button x:Name="TaskbarDirectFullPanelHandle"
+                    Panel.ZIndex="7"
+                    Width="0"
+                    Height="8"
+                    Padding="0"
+                    Margin="52,1,0,0"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Opacity="0"
+                    Visibility="Collapsed"
+                    Tag="MediaAction"
+                    ToolTip="打开完整面板"
+                    MouseEnter="TaskbarDirectFullPanelHandle_MouseEnter"
+                    MouseLeave="TaskbarDirectFullPanelHandle_MouseLeave"
+                    Click="TaskbarFullPanelHandle_Click">
+                <Border Width="28" Height="4" CornerRadius="2" Background="#B8FFFFFF" />
+            </Button>
         </Grid>
     </Border>
 </UserControl>

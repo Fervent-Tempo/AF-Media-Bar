@@ -12,6 +12,7 @@
         ShowInTaskbar="False"
         AllowsTransparency="True"
         Background="Transparent"
+        ContextMenuOpening="Window_ContextMenuOpening"
         Visibility="Collapsed">
     <Window.ContextMenu>
         <ContextMenu x:Name="PlayerMenu" Width="280"

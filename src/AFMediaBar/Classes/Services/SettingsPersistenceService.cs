@@ -11,7 +11,7 @@ namespace AFMediaBar.Classes.Services;
 /// <summary>负责用户设置 JSON 的加载、恢复、原子保存和防抖。 / Owns loading, recovery, atomic saving and debouncing of user settings JSON.</summary>
 public sealed class SettingsPersistenceService : IDisposable
 {
-    public const int CurrentSchemaVersion = 1;
+    public const int CurrentSchemaVersion = 2;
     private readonly string _directoryPath;
     private readonly string _settingsPath;
     private readonly string _backupPath;
@@ -143,9 +143,20 @@ public sealed class SettingsPersistenceService : IDisposable
         }
         var envelope = JsonSerializer.Deserialize<SettingsEnvelope>(node.ToJsonString(), _jsonOptions)
             ?? throw new JsonException("Settings envelope is empty.");
-        if (envelope.SchemaVersion != CurrentSchemaVersion)
+        if (envelope.SchemaVersion is < 1 or > CurrentSchemaVersion)
             throw new UnsupportedSettingsSchemaException(envelope.SchemaVersion);
-        return (envelope.Settings ?? new AppSettings()).Normalize();
+        var result = envelope.Settings ?? new AppSettings();
+        if (envelope.SchemaVersion == 1)
+        {
+            // The redesigned interaction model intentionally starts from its new defaults.
+            // Stable appearance, lyric, taskbar-placement, and window-mode fields are retained.
+            result.Interaction = GlobalInteractionSettings.Default;
+            result.TaskbarExperience = TaskbarExperienceSettings.Default;
+            result.TaskbarSurface = ModeSurfaceSettings.Default;
+            result.DynamicIslandSurface = ModeSurfaceSettings.Default;
+            result.LyricsTextAlignment = LyricsTextAlignment.Center;
+        }
+        return result.Normalize();
     }
 
     private void SaveCore(AppSettings settings)
@@ -227,7 +238,15 @@ public sealed class SettingsPersistenceService : IDisposable
                 typeof(TEnum) == typeof(CjkFontPreset) ? CjkFontPreset.SystemDefault :
                 typeof(TEnum) == typeof(PlayerForegroundMode) ? PlayerForegroundMode.Automatic :
                 typeof(TEnum) == typeof(ApplicationThemeMode) ? ApplicationThemeMode.Automatic :
-                typeof(TEnum) == typeof(ApplicationBackdropMode) ? ApplicationBackdropMode.Mica : default(TEnum);
+                typeof(TEnum) == typeof(ApplicationBackdropMode) ? ApplicationBackdropMode.Mica :
+                typeof(TEnum) == typeof(MediaInteractionMode) ? MediaInteractionMode.Hybrid :
+                typeof(TEnum) == typeof(WheelAction) ? WheelAction.PreviousNext :
+                typeof(TEnum) == typeof(MouseChordButton) ? MouseChordButton.Left :
+                typeof(TEnum) == typeof(TrayClickAction) ? TrayClickAction.OpenAudioControl :
+                typeof(TEnum) == typeof(TaskbarInformationDensity) ? TaskbarInformationDensity.Balanced :
+                typeof(TEnum) == typeof(TaskbarContentLayout) ? TaskbarContentLayout.AdaptiveStack :
+                typeof(TEnum) == typeof(PlayerSurfaceStyle) ? PlayerSurfaceStyle.Automatic :
+                typeof(TEnum) == typeof(LyricsTextAlignment) ? LyricsTextAlignment.Center : default(TEnum);
             return (TEnum)value;
         }
     }

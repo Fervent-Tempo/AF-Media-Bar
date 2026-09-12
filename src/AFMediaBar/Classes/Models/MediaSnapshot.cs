@@ -2,6 +2,15 @@ using System.Windows.Media;
 
 namespace AFMediaBar.Classes.Models;
 
+/// <summary>媒体来源报告的循环状态。 / Repeat state reported by the media source.</summary>
+public enum MediaRepeatMode
+{
+    Unavailable = 0,
+    Off = 1,
+    All = 2,
+    One = 3
+}
+
 /// <summary>
 /// 媒体快照：封装当前播放媒体的完整状态（元数据、播放状态、控制能力、歌词等）。
 /// Media snapshot: encapsulates the complete state of the currently playing media
@@ -31,7 +40,13 @@ public sealed record MediaSnapshot(
     string SourceName,       // 来源显示名称 Source display name
     ImageSource? Artwork,    // 封面图像 Artwork image
     LyricsResult? Lyrics,    // 歌词数据 Lyrics data
-    double Position)         // 播放位置（秒）Playback position (seconds)
+    double Position,         // 播放位置（秒）Playback position (seconds)
+    double Duration,         // 媒体总时长（秒）Total media duration (seconds)
+    bool CanSeek,            // 是否支持跳转 Whether seeking is supported
+    bool CanChangeRepeat,    // 是否支持循环控制 Whether repeat control is supported
+    MediaRepeatMode RepeatMode,
+    double PlaybackRate,
+    DateTimeOffset TimelineUpdatedAt)
 {
     /// <summary>
     /// 断开状态的快照：表示没有可用的媒体会话。
@@ -52,5 +67,11 @@ public sealed record MediaSnapshot(
         string.Empty,
         null,
         null,
-        0);
+        0,
+        0,
+        false,
+        false,
+        MediaRepeatMode.Unavailable,
+        1,
+        DateTimeOffset.MinValue);
 }

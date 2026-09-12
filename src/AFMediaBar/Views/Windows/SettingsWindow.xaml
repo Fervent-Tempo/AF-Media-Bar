@@ -65,11 +65,15 @@
             <ui:NavigationView.MenuItems>
                 <ui:NavigationViewItem Content="常规" Icon="{ui:SymbolIcon Home24}"
                                        TargetPageType="{x:Type pages:GeneralPage}" />
-                <ui:NavigationViewItem Content="外观"
+                <ui:NavigationViewItem Content="显示模式" Icon="{ui:SymbolIcon Desktop24}"
+                                       TargetPageType="{x:Type pages:DisplayModesPage}" />
+                <ui:NavigationViewItem Content="交互" Icon="{ui:SymbolIcon HandDraw24}"
+                                       TargetPageType="{x:Type pages:InteractionPage}" />
+                <ui:NavigationViewItem Content="歌词" Icon="{ui:SymbolIcon TextQuote24}"
+                                       TargetPageType="{x:Type pages:LyricsPage}" />
+                <ui:NavigationViewItem Content="全局外观"
                                        Icon="{ui:SymbolIcon Color16}"
                                        TargetPageType="{x:Type pages:AppearancePage}" />
-                <ui:NavigationViewItem Content="布局" Icon="{ui:SymbolIcon Gauge24}"
-                                       TargetPageType="{x:Type pages:LayoutPage}" />
             </ui:NavigationView.MenuItems>
 
             <ui:NavigationView.FooterMenuItems>

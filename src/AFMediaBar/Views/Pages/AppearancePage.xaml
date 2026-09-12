@@ -16,15 +16,16 @@
         <converters:GenericEnumToBooleanConverter x:Key="EnumToBooleanConverter" />
     </Page.Resources>
 
+
     <StackPanel MaxWidth="1000"
                 Margin="16"
-                VerticalAlignment="Center"
+                VerticalAlignment="Top"
                 TextElement.FontFamily="{DynamicResource AppTextFontFamily}"
                 TextElement.FontWeight="{DynamicResource AppTextFontWeight}">
-        <TextBlock Text="外观"
+        <TextBlock Text="全局外观"
                    FontSize="32"
                    FontWeight="{DynamicResource AppTextStrongFontWeight}" />
-        <ui:TextBlock Text="调整字体、文字颜色和应用主题"
+        <ui:TextBlock Text="调整字体、文字颜色、窗口材质和当前模式表面"
                       Appearance="Secondary"
                       Margin="0,8,0,28" />
 
@@ -234,6 +235,34 @@
                              CommandParameter="{x:Static settings:ApplicationBackdropMode.Acrylic}" />
             </StackPanel>
         </ui:CardControl>
+        <TextBlock Text="当前模式表面"
+                   FontSize="18"
+                   FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                   Margin="0,24,0,12" />
+        <ui:TextBlock Text="任务栏模式当前固定使用透明主体；切换到灵动岛模式后可调整以下表面选项。"
+                      Appearance="Secondary"
+                      Margin="0,0,0,10" />
+        <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon ColorBackground24}"
+                        IsEnabled="{Binding ViewModel.CanCustomizeCurrentSurface}">
+            <ui:CardControl.Header>
+                <StackPanel><ui:TextBlock Text="{Binding ViewModel.CurrentSurfaceName}" FontWeight="{DynamicResource AppTextStrongFontWeight}"/><ui:TextBlock Text="基础表面风格，不改变组件布局" Appearance="Secondary" FontSize="12"/></StackPanel>
+            </ui:CardControl.Header>
+            <ComboBox MinWidth="180" SelectedValuePath="Tag" SelectedValue="{Binding ViewModel.SurfaceStyle, Mode=TwoWay}">
+                <ComboBoxItem Content="自动" Tag="{x:Static settings:PlayerSurfaceStyle.Automatic}"/>
+                <ComboBoxItem Content="纯色" Tag="{x:Static settings:PlayerSurfaceStyle.Solid}"/>
+                <ComboBoxItem Content="主题色调" Tag="{x:Static settings:PlayerSurfaceStyle.ThemeTint}"/>
+            </ComboBox>
+        </ui:CardControl>
+        <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon Eye24}"
+                        IsEnabled="{Binding ViewModel.CanCustomizeCurrentSurface}">
+            <ui:CardControl.Header><StackPanel><ui:TextBlock Text="背景不透明度" FontWeight="{DynamicResource AppTextStrongFontWeight}"/><ui:TextBlock Text="只调整播放器表面" Appearance="Secondary" FontSize="12"/></StackPanel></ui:CardControl.Header>
+            <Grid Width="260"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="54"/></Grid.ColumnDefinitions><Slider Minimum="0" Maximum="100" Value="{Binding ViewModel.SurfaceOpacityPercent, Mode=TwoWay}"/><TextBlock Grid.Column="1" Text="{Binding ViewModel.SurfaceOpacityPercent, StringFormat={}{0}%}" HorizontalAlignment="Right"/></Grid>
+        </ui:CardControl>
+        <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon Square24}"
+                        IsEnabled="{Binding ViewModel.CanCustomizeCurrentSurface}">
+            <ui:CardControl.Header><StackPanel><ui:TextBlock Text="圆角" FontWeight="{DynamicResource AppTextStrongFontWeight}"/><ui:TextBlock Text="0–24 DIP" Appearance="Secondary" FontSize="12"/></StackPanel></ui:CardControl.Header>
+            <Grid Width="260"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="54"/></Grid.ColumnDefinitions><Slider Minimum="0" Maximum="24" Value="{Binding ViewModel.SurfaceCornerRadiusDip, Mode=TwoWay}"/><TextBlock Grid.Column="1" Text="{Binding ViewModel.SurfaceCornerRadiusDip, StringFormat={}{0:0.#}}" HorizontalAlignment="Right"/></Grid>
+        </ui:CardControl>
         <ui:CardControl Margin="0,24,0,0" Icon="{ui:SymbolIcon ArrowReset24}">
             <ui:CardControl.Header>
                 <StackPanel>
@@ -244,4 +273,5 @@
             <ui:Button Content="恢复默认" Icon="{ui:SymbolIcon ArrowReset24}" Click="ResetButton_Click" />
         </ui:CardControl>
     </StackPanel>
+
 </Page>

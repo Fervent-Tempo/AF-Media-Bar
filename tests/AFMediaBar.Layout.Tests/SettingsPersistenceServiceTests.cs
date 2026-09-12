@@ -50,7 +50,11 @@ public sealed class SettingsPersistenceServiceTests
             DynamicIslandLeft = 120,
             DynamicIslandTop = 240,
             DynamicIslandEdge = DynamicIslandEdge.Right,
-            DynamicIslandEdgeDocked = false
+            DynamicIslandEdgeDocked = false,
+            TaskbarExperience = new TaskbarExperienceSettings(false, true, TaskbarInformationDensity.Information, TaskbarContentLayout.CenteredStack),
+            Interaction = new GlobalInteractionSettings(MediaInteractionMode.Gestures, WheelAction.OutputDevice, true, MouseChordButton.Right, WheelAction.CurrentApplicationVolume, TrayClickAction.OpenSettings, false),
+            TaskbarSurface = new ModeSurfaceSettings(PlayerSurfaceStyle.ThemeTint, 72, 12),
+            LyricsTextAlignment = LyricsTextAlignment.Right
         };
         using (var writer = new SettingsPersistenceService(_directory)) { writer.Initialize(); SettingsManager.Replace(settings); writer.Flush(); }
         SettingsManager.ResetAll();
@@ -63,6 +67,11 @@ public sealed class SettingsPersistenceServiceTests
         Assert.AreEqual(DynamicIslandEdge.Right, SettingsManager.Current.DynamicIslandEdge);
         Assert.AreEqual(700, SettingsManager.Current.Appearance.FontWeight);
         Assert.AreEqual(120, SettingsManager.Current.DynamicIslandLeft);
+        Assert.AreEqual(MediaInteractionMode.Gestures, SettingsManager.Current.Interaction.Mode);
+        Assert.AreEqual(MouseChordButton.Right, SettingsManager.Current.Interaction.ChordButton);
+        Assert.AreEqual(TaskbarInformationDensity.Information, SettingsManager.Current.TaskbarExperience.Density);
+        Assert.AreEqual(72, SettingsManager.Current.TaskbarSurface.BackgroundOpacityPercent);
+        Assert.AreEqual(LyricsTextAlignment.Right, SettingsManager.Current.LyricsTextAlignment);
         StringAssert.Contains(File.ReadAllText(reader.SettingsPath), "\"Disabled\"");
     }
 
@@ -81,6 +90,7 @@ public sealed class SettingsPersistenceServiceTests
         Assert.AreEqual(WindowMode.Taskbar, SettingsManager.Current.WindowMode);
         Assert.AreEqual(TrayWheelBehavior.SwitchOutputDevice, SettingsManager.Current.TrayWheelBehavior);
         Assert.IsTrue(SettingsManager.Current.LyricsEnabled);
+        Assert.AreEqual(GlobalInteractionSettings.Default, SettingsManager.Current.Interaction);
     }
 
     [TestMethod]
@@ -109,7 +119,7 @@ public sealed class SettingsPersistenceServiceTests
 
         Assert.IsTrue(SettingsManager.Current.LyricsEnabled);
         Assert.IsTrue(Directory.GetFiles(_directory, "settings.json.unsupported-*").Length == 1);
-        StringAssert.Contains(File.ReadAllText(main), "\"schemaVersion\": 1");
+        StringAssert.Contains(File.ReadAllText(main), "\"schemaVersion\": 2");
     }
 
     [TestMethod]
@@ -123,7 +133,7 @@ public sealed class SettingsPersistenceServiceTests
             DynamicIslandLeft = 50
         });
         SettingsManager.ResetGeneral();
-        Assert.IsTrue(SettingsManager.Current.LyricsEnabled);
+        Assert.IsFalse(SettingsManager.Current.LyricsEnabled);
         Assert.AreEqual(700, SettingsManager.Current.Appearance.FontWeight);
         Assert.AreEqual(WindowMode.DynamicIsland, SettingsManager.Current.WindowMode);
         SettingsManager.ResetLayout();

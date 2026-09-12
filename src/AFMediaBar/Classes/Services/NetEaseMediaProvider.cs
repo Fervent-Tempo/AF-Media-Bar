@@ -19,7 +19,6 @@ public sealed class NetEaseMediaProvider : IMediaSourceProvider
 {
     private const string MemoryPlayerSourceId = "cloudmusic";
     private const string NetEaseWindowClass = "OrpheusBrowserHost";
-    private const string UnknownArtistName = "未知艺术家";
     private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(233);
     private readonly Dispatcher _dispatcher;
     private readonly LyricsService _lyricsService;
@@ -228,12 +227,18 @@ public sealed class NetEaseMediaProvider : IMediaSourceProvider
             false,
             false,
             info.Title,
-            string.IsNullOrWhiteSpace(info.Artists) ? UnknownArtistName : info.Artists,
+            info.Artists,
             MemoryPlayerSourceId,
             MediaSourceNameFormatter.GetDisplayName(MemoryPlayerSourceId, "未知来源"),
             artwork,
             lyrics,
-            info.Schedule);
+            info.Schedule,
+            info.Duration,
+            false,
+            false,
+            MediaRepeatMode.Unavailable,
+            1,
+            DateTimeOffset.UtcNow);
 
     private void PublishSnapshot(MediaSnapshot? snapshot)
     {

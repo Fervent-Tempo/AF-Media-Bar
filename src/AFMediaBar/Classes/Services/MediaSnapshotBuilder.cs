@@ -51,6 +51,9 @@ public sealed class MediaSnapshotBuilder
 
         var playbackInfo = controlSession.GetPlaybackInfo();
         var timelineProperties = controlSession.GetTimelineProperties();
+        var timelineStart = timelineProperties.StartTime.TotalSeconds;
+        var duration = Math.Max(0, (timelineProperties.EndTime - timelineProperties.StartTime).TotalSeconds);
+        var position = Math.Clamp(timelineProperties.Position.TotalSeconds - timelineStart, 0, duration > 0 ? duration : double.MaxValue);
         var artwork = ArtworkLoader.GetThumbnail(songInfo.Thumbnail);
         BitmapHelper.GetDominantColors(1);
         var sourceId = controlSession.SourceAppUserModelId ?? string.Empty;
@@ -71,8 +74,22 @@ public sealed class MediaSnapshotBuilder
             MediaSourceNameFormatter.GetDisplayName(sourceId, UnknownSourceName),
             artwork,
             lyrics,
-            timelineProperties.Position.TotalSeconds);
+            position,
+            duration,
+            duration > 0 && (playbackInfo.Controls?.IsPlaybackPositionEnabled ?? false),
+            playbackInfo.Controls?.IsRepeatEnabled ?? false,
+            MapRepeatMode(playbackInfo.AutoRepeatMode),
+            playbackInfo.PlaybackRate is > 0 ? playbackInfo.PlaybackRate.Value : 1,
+            timelineProperties.LastUpdatedTime);
     }
+
+    private static MediaRepeatMode MapRepeatMode(Windows.Media.MediaPlaybackAutoRepeatMode? mode) => mode switch
+    {
+        Windows.Media.MediaPlaybackAutoRepeatMode.None => MediaRepeatMode.Off,
+        Windows.Media.MediaPlaybackAutoRepeatMode.List => MediaRepeatMode.All,
+        Windows.Media.MediaPlaybackAutoRepeatMode.Track => MediaRepeatMode.One,
+        _ => MediaRepeatMode.Unavailable
+    };
 
     private LyricsResult? GetLyrics(
         string key,

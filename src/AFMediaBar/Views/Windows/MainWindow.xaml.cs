@@ -3,6 +3,7 @@ using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
+using AFMediaBar.Classes.Services.Audio;
 using AFMediaBar.Classes.Utils;
 using AFMediaBar.ViewModels.Windows;
 using System.ComponentModel;
@@ -34,9 +35,15 @@ namespace AFMediaBar.Views.Windows
         private readonly WindowAppearanceService _appearanceService;
         private readonly TaskbarOccupiedAreaService _occupiedAreaService;
         private readonly Func<SettingsWindow> _settingsWindowFactory;
+        private readonly GlobalInteractionRouter _interactionRouter;
+        private readonly AudioInteractionService _audioInteractionService;
+        private readonly AudioMonitorService _audioMonitorService;
+        private readonly Func<TaskbarFullPanelWindow> _fullPanelFactory;
         private TaskbarWindow? _taskbarWindow;
         private DynamicIslandWindow? _dynamicIslandWindow;
         private SettingsWindow? _settingsWindow;
+        private TaskbarFullPanelWindow? _fullPanelWindow;
+        private DateTime _fullPanelClosedAtUtc;
         private int _taskbarCreatedMessage;
         private bool _isSystemThemeWatcherActive;
         private bool _isClosing;
@@ -63,7 +70,11 @@ namespace AFMediaBar.Views.Windows
             NativeMouseInputMonitor mouseInputMonitor,
             WindowAppearanceService appearanceService,
             TaskbarOccupiedAreaService occupiedAreaService,
-            Func<SettingsWindow> settingsWindowFactory)
+            Func<SettingsWindow> settingsWindowFactory,
+            GlobalInteractionRouter interactionRouter,
+            AudioInteractionService audioInteractionService,
+            AudioMonitorService audioMonitorService,
+            Func<TaskbarFullPanelWindow> fullPanelFactory)
         {
             ViewModel = viewModel;
             DataContext = this;
@@ -76,6 +87,10 @@ namespace AFMediaBar.Views.Windows
             _appearanceService = appearanceService;
             _occupiedAreaService = occupiedAreaService;
             _settingsWindowFactory = settingsWindowFactory;
+            _interactionRouter = interactionRouter;
+            _audioInteractionService = audioInteractionService;
+            _audioMonitorService = audioMonitorService;
+            _fullPanelFactory = fullPanelFactory;
 
             InitializeComponent();
             UpdateSystemThemeWatcher(SettingsManager.Current.Appearance);
@@ -97,8 +112,11 @@ namespace AFMediaBar.Views.Windows
             SettingsManager.LayoutSettingsChanged += SettingsManager_OnLayoutSettingsChanged;
             SettingsManager.AppearanceSettingsChanged += SettingsManager_OnAppearanceSettingsChanged;
             SettingsManager.LyricsSettingsChanged += SettingsManager_OnLyricsSettingsChanged;
+            SettingsManager.TaskbarExperienceSettingsChanged += SettingsManager_OnTaskbarExperienceSettingsChanged;
+            SettingsManager.InteractionSettingsChanged += SettingsManager_OnTaskbarExperienceSettingsChanged;
             _audioControlViewModel.FlyoutToggleRequested += AudioControl_OnFlyoutToggleRequested;
             _audioControlViewModel.TrayContextMenuRequested += AudioControl_OnTrayContextMenuRequested;
+            _audioControlViewModel.SettingsOpenRequested += ViewModel_OpenSettingsRequested;
             _mouseInputMonitor.LeftButtonPressed += MouseInputMonitor_OnLeftButtonPressed;
             ViewModel.OpenSettingsRequested += ViewModel_OpenSettingsRequested;
 
@@ -171,6 +189,8 @@ namespace AFMediaBar.Views.Windows
             _dynamicIslandWindow = null;
             dynamicIslandWindow?.Close();
             _audioControlFlyout.Close();
+            _fullPanelWindow?.Close();
+            _fullPanelWindow = null;
         }
 
         /// <summary>
@@ -185,8 +205,11 @@ namespace AFMediaBar.Views.Windows
             SettingsManager.LayoutSettingsChanged -= SettingsManager_OnLayoutSettingsChanged;
             SettingsManager.AppearanceSettingsChanged -= SettingsManager_OnAppearanceSettingsChanged;
             SettingsManager.LyricsSettingsChanged -= SettingsManager_OnLyricsSettingsChanged;
+            SettingsManager.TaskbarExperienceSettingsChanged -= SettingsManager_OnTaskbarExperienceSettingsChanged;
+            SettingsManager.InteractionSettingsChanged -= SettingsManager_OnTaskbarExperienceSettingsChanged;
             _audioControlViewModel.FlyoutToggleRequested -= AudioControl_OnFlyoutToggleRequested;
             _audioControlViewModel.TrayContextMenuRequested -= AudioControl_OnTrayContextMenuRequested;
+            _audioControlViewModel.SettingsOpenRequested -= ViewModel_OpenSettingsRequested;
             _mouseInputMonitor.LeftButtonPressed -= MouseInputMonitor_OnLeftButtonPressed;
             ViewModel.OpenSettingsRequested -= ViewModel_OpenSettingsRequested;
             // Make sure that closing this window will begin the process of closing the application.
@@ -328,7 +351,7 @@ namespace AFMediaBar.Views.Windows
 
             CloseTaskbarWindow();
 
-            _taskbarWindow = new TaskbarWindow(_taskBarService, ViewModel, this, _appearanceService, _occupiedAreaService);
+            _taskbarWindow = CreateTaskbarWindow();
             _taskbarWindow.ApplyAppearanceSettings();
 
             // Replay the latest snapshot; if none exists yet, force a synchronous refresh.
@@ -495,7 +518,7 @@ namespace AFMediaBar.Views.Windows
             _dynamicIslandWindow = null;
             if (_taskbarWindow is null)
             {
-                _taskbarWindow = new TaskbarWindow(_taskBarService, ViewModel, this, _appearanceService, _occupiedAreaService);
+                _taskbarWindow = CreateTaskbarWindow();
                 _taskbarWindow.ApplyAppearanceSettings();
                 if (_mediaSessionService.CurrentSnapshot is { } snapshot)
                     _taskbarWindow.ApplySnapshot(snapshot);
@@ -518,6 +541,63 @@ namespace AFMediaBar.Views.Windows
                 return;
 
             await _audioControlFlyout.ToggleAsync(bounds);
+        }
+
+        private void SettingsManager_OnTaskbarExperienceSettingsChanged(object? sender, EventArgs e)
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (_isClosing) return;
+                _taskbarWindow?.ApplyExperienceSettings();
+            });
+        }
+
+        private TaskbarWindow CreateTaskbarWindow()
+        {
+            var window = new TaskbarWindow(
+                _taskBarService,
+                ViewModel,
+                this,
+                _appearanceService,
+                _occupiedAreaService,
+                _interactionRouter,
+                _audioInteractionService,
+                _audioMonitorService);
+            window.AudioControlRequested += TaskbarWindow_AudioControlRequested;
+            window.OpenFullPanelRequested += TaskbarWindow_OpenFullPanelRequested;
+            return window;
+        }
+
+        private async void TaskbarWindow_AudioControlRequested(object? sender, EventArgs e)
+        {
+            if (!_isClosing)
+                await _audioControlFlyout.ToggleAsync(
+                    sender is TaskbarWindow window ? window.GetMediaBarScreenPhysicalBounds() : null);
+        }
+
+        private void TaskbarWindow_OpenFullPanelRequested(object? sender, EventArgs e)
+        {
+            if (_isClosing || sender is not TaskbarWindow taskbarWindow)
+                return;
+
+            if (_fullPanelWindow is null && DateTime.UtcNow - _fullPanelClosedAtUtc < TimeSpan.FromMilliseconds(350))
+                return;
+
+            _fullPanelWindow ??= _fullPanelFactory();
+            _fullPanelWindow.Closed -= FullPanelWindow_Closed;
+            _fullPanelWindow.Closed += FullPanelWindow_Closed;
+            _fullPanelWindow.ToggleNear(taskbarWindow.GetMediaBarScreenBounds());
+        }
+
+        private void FullPanelWindow_Closed(object? sender, EventArgs e)
+        {
+            if (sender is TaskbarFullPanelWindow window)
+            {
+                window.Closed -= FullPanelWindow_Closed;
+                if (ReferenceEquals(window, _fullPanelWindow))
+                    _fullPanelWindow = null;
+                _fullPanelClosedAtUtc = DateTime.UtcNow;
+            }
         }
 
         private void ViewModel_OpenSettingsRequested(object? sender, EventArgs e)

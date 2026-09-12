@@ -7,7 +7,7 @@ using AFMediaBar.Classes.Interop;
 namespace AFMediaBar.Classes.Services;
 
 /// <summary>托盘滚轮事件参数。/ Tray-wheel event arguments.</summary>
-public sealed record TrayWheelEventArgs(int Delta);
+public sealed record TrayWheelEventArgs(int Delta, bool IsLeftButtonDown, bool IsRightButtonDown);
 
 /// <summary>全局左键事件的屏幕坐标。/ Screen coordinates for a global left-button event.</summary>
 public sealed record NativeMouseButtonEventArgs(int ScreenX, int ScreenY);
@@ -27,6 +27,8 @@ public sealed class NativeMouseInputMonitor : IDisposable
     private uint _hookThreadId;
     private IntPtr _hook;
     private volatile bool _disposed;
+    private bool _isLeftButtonDown;
+    private bool _isRightButtonDown;
 
     /// <summary>创建全局鼠标监听器。/ Creates the global mouse monitor.</summary>
     public NativeMouseInputMonitor(ShellTrayIconService trayIcon)
@@ -111,24 +113,43 @@ public sealed class NativeMouseInputMonitor : IDisposable
             if (code >= 0)
             {
                 var data = Marshal.PtrToStructure<NativeMethods.MSLLHOOKSTRUCT>(lParam);
-                if (wParam.ToInt32() == NativeMethods.WM_MOUSEWHEEL)
+                var message = wParam.ToInt32();
+                if (message == NativeMethods.WM_LBUTTONDOWN)
+                {
+                    _isLeftButtonDown = true;
+                    Post(() => LeftButtonPressed?.Invoke(
+                        this,
+                        new NativeMouseButtonEventArgs(data.Point.X, data.Point.Y)));
+                }
+                else if (message == NativeMethods.WM_LBUTTONUP)
+                {
+                    _isLeftButtonDown = false;
+                }
+                else if (message == NativeMethods.WM_RBUTTONDOWN)
+                {
+                    _isRightButtonDown = true;
+                }
+                else if (message == NativeMethods.WM_RBUTTONUP)
+                {
+                    _isRightButtonDown = false;
+                }
+                else if (message == NativeMethods.WM_MOUSEWHEEL)
                 {
                     var delta = unchecked((short)(data.MouseData >> 16));
                     var screenX = data.Point.X;
                     var screenY = data.Point.Y;
+                    var isLeftButtonDown = _isLeftButtonDown;
+                    var isRightButtonDown = _isRightButtonDown;
                     Post(() =>
                     {
                         if (_trayIcon.TryGetBounds(out var bounds) && bounds.Contains(screenX, screenY))
                         {
-                            WheelChanged?.Invoke(this, new TrayWheelEventArgs(delta));
+                            WheelChanged?.Invoke(this, new TrayWheelEventArgs(
+                                delta,
+                                isLeftButtonDown,
+                                isRightButtonDown));
                         }
                     });
-                }
-                else if (wParam.ToInt32() == NativeMethods.WM_LBUTTONDOWN)
-                {
-                    Post(() => LeftButtonPressed?.Invoke(
-                        this,
-                        new NativeMouseButtonEventArgs(data.Point.X, data.Point.Y)));
                 }
             }
         }

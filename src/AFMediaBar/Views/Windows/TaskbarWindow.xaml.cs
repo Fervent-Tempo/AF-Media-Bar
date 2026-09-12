@@ -15,8 +15,10 @@ using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Layout;
+using AFMediaBar.Classes.Services.Audio;
 using AFMediaBar.Classes.Utils;
 using AFMediaBar.ViewModels.Windows;
+using AFMediaBar.Components;
 using MenuItem = Wpf.Ui.Controls.MenuItem;
 using static AFMediaBar.Classes.Interop.NativeMethods;
 
@@ -39,6 +41,9 @@ public partial class TaskbarWindow : Window
     private readonly ITaskbarWindowHostActions _hostActions;
     private readonly DispatcherTimer _timer;
     private readonly DispatcherTimer _sizeAnimationTimer;
+    private readonly DispatcherTimer _spectrumTimer;
+    private readonly GlobalInteractionRouter _interactionRouter;
+    private readonly AudioInteractionService _audioInteractionService;
 
     private IntPtr _lastTaskbarHandle;
     private IntPtr _windowHandle;
@@ -49,6 +54,8 @@ public partial class TaskbarWindow : Window
     private bool _setupComplete;
     private bool _environmentLayoutQueued;
     private bool _isDragging;
+    private bool _isDragPending;
+    private DateTime _suppressContextMenuUntilUtc;
     private DateTime _skipOccupiedAreaProbeUntilUtc;
     private WindowMode? _appliedWindowMode;
     private LayoutOrientation? _appliedOrientation;
@@ -62,6 +69,12 @@ public partial class TaskbarWindow : Window
     private double _sizeAnimationProgress;
     private MediaBarSizeRequest? _pendingSizeRequest;
     private MediaBarSizeRequest? _lastDesiredSizeRequest;
+    private readonly AudioMonitorService _audioMonitorService;
+    private readonly float[] _spectrumBands = new float[AudioMonitorService.BandCount];
+    private MediaSnapshot _lastSnapshot = MediaSnapshot.Disconnected;
+
+    public event EventHandler? OpenFullPanelRequested;
+    public event EventHandler? AudioControlRequested;
 
     /// <summary>
     /// 创建任务栏媒体宿主并连接其基础设施动作。
@@ -72,7 +85,10 @@ public partial class TaskbarWindow : Window
         MainWindowViewModel viewModel,
         ITaskbarWindowHostActions hostActions,
         WindowAppearanceService appearanceService,
-        TaskbarOccupiedAreaService occupiedAreaService)
+        TaskbarOccupiedAreaService occupiedAreaService,
+        GlobalInteractionRouter interactionRouter,
+        AudioInteractionService audioInteractionService,
+        AudioMonitorService audioMonitorService)
     {
         WindowHelper.SetNoActivate(this);
         InitializeComponent();
@@ -84,12 +100,20 @@ public partial class TaskbarWindow : Window
         MediaControl.SkipPreviousRequested += MediaControl_SkipPreviousRequested;
         MediaControl.SkipNextRequested += MediaControl_SkipNextRequested;
         MediaControl.ActivateSourceRequested += MediaControl_ActivateSourceRequested;
+        MediaControl.OpenFullPanelRequested += MediaControl_OpenFullPanelRequested;
+        MediaControl.AudioControlRequested += MediaControl_AudioControlRequested;
+        MediaControl.OutputDeviceCycleRequested += MediaControl_OutputDeviceCycleRequested;
+        MediaControl.SeekRequested += MediaControl_SeekRequested;
+        MediaControl.WheelRequested += MediaControl_WheelRequested;
         MediaControl.DesiredSizeChanged += MediaControl_DesiredSizeChanged;
 
         _taskBarService = taskBarService;
         _occupiedAreaService = occupiedAreaService;
         _viewModel = viewModel;
         _hostActions = hostActions;
+        _interactionRouter = interactionRouter;
+        _audioInteractionService = audioInteractionService;
+        _audioMonitorService = audioMonitorService;
 
         _timer = new DispatcherTimer();
         _timer.Interval = TimeSpan.FromMilliseconds(1500); // slow auto-update for display changes
@@ -98,6 +122,14 @@ public partial class TaskbarWindow : Window
 
         _sizeAnimationTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
         _sizeAnimationTimer.Tick += (_, _) => AdvanceSizeAnimation();
+        _spectrumTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(80) };
+        _spectrumTimer.Tick += (_, _) =>
+        {
+            if (!_isClosing && _appliedOrientation == LayoutOrientation.Horizontal &&
+                _audioMonitorService.GetSpectrum(_spectrumBands))
+                MediaControl.ApplySpectrum(_spectrumBands);
+        };
+        _spectrumTimer.Start();
 
         Loaded += Window_Loaded;
 
@@ -124,6 +156,7 @@ public partial class TaskbarWindow : Window
             _windowHandle = IntPtr.Zero;
             _timer.Stop();
             _sizeAnimationTimer.Stop();
+            _spectrumTimer.Stop();
             return IntPtr.Zero;
         }
 
@@ -325,7 +358,7 @@ public partial class TaskbarWindow : Window
             var currentPrimary = orientation == LayoutOrientation.Horizontal ? barWidth : barHeight;
             if (currentPrimary > maximumPrimary)
             {
-                MediaControl.ApplyPrimaryLength(maximumPrimary);
+                ApplyPrimaryLength(maximumPrimary);
                 canvas = MediaControl.CurrentLayout?.Canvas;
                 barWidth = canvas?.Width ?? barWidth;
                 barHeight = canvas?.Height ?? barHeight;
@@ -389,10 +422,12 @@ public partial class TaskbarWindow : Window
         if (!SettingsManager.Current.TaskbarBarEnabled || _isClosing || _isEnvironmentSuspended)
             return;
 
+        _lastSnapshot = snapshot;
+
         if (!_timer.IsEnabled)
             _timer.Start();
 
-        // Delegate UI update to the media control
+        // Delegate UI update to the original media control and its taskbar-only overlay.
         MediaControl.UpdateSongInfo(snapshot);
         MediaControl.ApplyAppearanceSettings();
 
@@ -469,6 +504,7 @@ public partial class TaskbarWindow : Window
         {
             MediaControl.ApplyLayout(windowMode, orientation, lengthScalePercent, thicknessScalePercent);
             MediaControl.ApplyAppearanceSettings();
+            MediaControl.ApplyTaskbarExperienceSettings();
             _appliedWindowMode = windowMode;
             _appliedOrientation = orientation;
             _appliedLengthScalePercent = lengthScalePercent;
@@ -550,6 +586,39 @@ public partial class TaskbarWindow : Window
     /// <summary>关闭任务栏媒体菜单。/ Closes the taskbar media menu.</summary>
     internal void ClosePlayerMenu() => PlayerMenu.IsOpen = false;
 
+    /// <summary>返回当前媒体栏的屏幕 DIP 边界，供完整面板定位。 / Returns the current media-bar screen DIP bounds for full-panel placement.</summary>
+    public Rect GetMediaBarScreenBounds()
+    {
+        var active = GetActiveControl();
+        var point = active.PointToScreen(new Point(0, 0));
+        var dpi = VisualTreeHelper.GetDpi(active);
+        return new Rect(
+            point.X / dpi.DpiScaleX,
+            point.Y / dpi.DpiScaleY,
+            active.ActualWidth,
+            active.ActualHeight);
+    }
+
+    /// <summary>返回音频弹窗所需的媒体栏物理像素边界。 / Returns media-bar physical-pixel bounds for the audio flyout.</summary>
+    public TrayIconBounds GetMediaBarScreenPhysicalBounds()
+    {
+        var active = GetActiveControl();
+        var point = active.PointToScreen(new Point(0, 0));
+        var dpi = VisualTreeHelper.GetDpi(active);
+        return new TrayIconBounds(
+            (int)Math.Round(point.X),
+            (int)Math.Round(point.Y),
+            (int)Math.Round(point.X + active.ActualWidth * dpi.DpiScaleX),
+            (int)Math.Round(point.Y + active.ActualHeight * dpi.DpiScaleY));
+    }
+
+    public void ApplyExperienceSettings()
+    {
+        MediaControl.ApplyTaskbarExperienceSettings();
+        MediaControl.UpdateSongInfo(_lastSnapshot);
+        Dispatcher.BeginInvoke(UpdatePosition, DispatcherPriority.Background);
+    }
+
     /// <summary>安全停止任务栏宿主并解除 Explorer 停靠。/ Safely stops the taskbar host and detaches it from Explorer.</summary>
     protected override void OnClosing(CancelEventArgs e)
     {
@@ -574,6 +643,7 @@ public partial class TaskbarWindow : Window
         _isEnvironmentSuspended = true;
         _timer.Stop();
         _sizeAnimationTimer.Stop();
+        _spectrumTimer.Stop();
         _pendingSizeRequest = null;
         PlayerMenu.IsOpen = false;
     }
@@ -586,6 +656,8 @@ public partial class TaskbarWindow : Window
         _isEnvironmentSuspended = false;
         if (!_timer.IsEnabled)
             _timer.Start();
+        if (!_spectrumTimer.IsEnabled)
+            _spectrumTimer.Start();
         UpdatePosition();
     }
 
@@ -616,6 +688,38 @@ public partial class TaskbarWindow : Window
             command.Execute(null);
     }
 
+    private void MediaControl_OpenFullPanelRequested(object? sender, EventArgs e) =>
+        OpenFullPanelRequested?.Invoke(this, EventArgs.Empty);
+
+    private void MediaControl_AudioControlRequested(object? sender, EventArgs e) =>
+        AudioControlRequested?.Invoke(this, EventArgs.Empty);
+
+    private async void MediaControl_WheelRequested(object? sender, PlayerSurfaceWheelEventArgs e)
+    {
+        if (e.IsLeftButtonDown)
+            EndTaskbarDrag();
+        if (e.IsRightButtonDown)
+        {
+            _suppressContextMenuUntilUtc = DateTime.UtcNow.AddMilliseconds(450);
+            PlayerMenu.IsOpen = false;
+        }
+        await _interactionRouter.ExecuteWheelAsync(e.Delta, e.IsLeftButtonDown, e.IsRightButtonDown);
+    }
+
+    private async void MediaControl_OutputDeviceCycleRequested(object? sender, EventArgs e)
+    {
+        await _audioInteractionService.CycleOutputDeviceAsync(1, deferApply: false);
+    }
+
+    private void MediaControl_SeekRequested(double position) =>
+        ExecuteWithParameter(_viewModel.SeekCommand, position);
+
+    private static void ExecuteWithParameter(System.Windows.Input.ICommand command, object parameter)
+    {
+        if (command.CanExecute(parameter))
+            command.Execute(parameter);
+    }
+
     private void MediaControl_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ChangedButton != MouseButton.Left ||
@@ -642,21 +746,21 @@ public partial class TaskbarWindow : Window
             ? taskbarRect.Bottom - taskbarRect.Top
             : taskbarRect.Right - taskbarRect.Left;
         var canvas = MediaControl.CurrentLayout?.Canvas;
-        var primarySize = (int)Math.Round((isVertical ? canvas?.Height ?? 168 : canvas?.Width ?? 300) * dpiScale);
+        var primarySizeDip = isVertical ? canvas?.Height ?? 168 : canvas?.Width ?? 300;
+        var primarySize = (int)Math.Round(primarySizeDip * dpiScale);
 
         _dragStartCursorPrimary = isVertical ? cursor.Y : cursor.X;
         _dragStartBarPrimary = (int)Math.Round((isVertical
-            ? Canvas.GetTop(MediaControl)
-            : Canvas.GetLeft(MediaControl)) * dpiScale);
+            ? Canvas.GetTop(GetActiveControl())
+            : Canvas.GetLeft(GetActiveControl())) * dpiScale);
         _dragPrimaryLimit = Math.Max(0, primaryLength - primarySize);
-        _isDragging = true;
-        Mouse.Capture(MediaControl, CaptureMode.SubTree);
-        e.Handled = true;
+        _isDragPending = true;
+        Mouse.Capture(GetActiveControl(), CaptureMode.SubTree);
     }
 
     private void MediaControl_PreviewMouseMove(object sender, MouseEventArgs e)
     {
-        if (!_isDragging)
+        if (!_isDragging && !_isDragPending)
             return;
 
         if (e.LeftButton != MouseButtonState.Pressed || SettingsManager.Current.TaskbarBarPositionLocked)
@@ -669,6 +773,14 @@ public partial class TaskbarWindow : Window
             return;
 
         var cursorPrimary = _appliedOrientation == LayoutOrientation.Vertical ? cursor.Y : cursor.X;
+        if (_isDragPending)
+        {
+            var dpiScale = _taskBarService.GetTaskbarDpiScale(_lastTaskbarHandle);
+            if (Math.Abs(cursorPrimary - _dragStartCursorPrimary) < 4 * Math.Max(1, dpiScale))
+                return;
+            _isDragPending = false;
+            _isDragging = true;
+        }
         var targetPrimary = Math.Clamp(
             _dragStartBarPrimary + cursorPrimary - _dragStartCursorPrimary,
             0,
@@ -684,7 +796,7 @@ public partial class TaskbarWindow : Window
 
     private void MediaControl_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
-        if (!_isDragging || e.ChangedButton != MouseButton.Left)
+        if ((!_isDragging && !_isDragPending) || e.ChangedButton != MouseButton.Left)
             return;
 
         EndTaskbarDrag();
@@ -719,7 +831,7 @@ public partial class TaskbarWindow : Window
             : target;
         if (Math.Abs(target - current) < LayoutSizeCalculator.MinimumChangeDip)
         {
-            MediaControl.ApplyPrimaryLength(target);
+            ApplyPrimaryLength(target);
             UpdatePosition();
             return;
         }
@@ -795,11 +907,11 @@ public partial class TaskbarWindow : Window
             _sizeAnimationProgress,
             elapsedMilliseconds: 16);
         _sizeAnimationProgress = frame.Progress;
-        MediaControl.ApplyPrimaryLength(frame.Value);
+        ApplyPrimaryLength(frame.Value);
         UpdatePosition();
         if (frame.IsCompleted)
         {
-            MediaControl.ApplyPrimaryLength(_sizeAnimationTarget);
+            ApplyPrimaryLength(_sizeAnimationTarget);
             UpdatePosition();
             _sizeAnimationTimer.Stop();
         }
@@ -814,6 +926,7 @@ public partial class TaskbarWindow : Window
     private void EndTaskbarDrag(bool releaseCapture = true)
     {
         _isDragging = false;
+        _isDragPending = false;
         if (releaseCapture && MediaControl.IsMouseCaptured)
             MediaControl.ReleaseMouseCapture();
 
@@ -823,6 +936,15 @@ public partial class TaskbarWindow : Window
             MediaControl_DesiredSizeChanged(this, new MediaBarSizeRequestEventArgs(request));
         }
         UpdatePosition();
+    }
+
+    private void Window_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        if (DateTime.UtcNow < _suppressContextMenuUntilUtc)
+        {
+            e.Handled = true;
+            PlayerMenu.IsOpen = false;
+        }
     }
 
     private static bool IsMediaAction(DependencyObject? source)
@@ -843,11 +965,21 @@ public partial class TaskbarWindow : Window
         _isClosing = true;
         _timer.Stop();
         _sizeAnimationTimer.Stop();
+        _spectrumTimer.Stop();
         MediaControl.TogglePlayPauseRequested -= MediaControl_TogglePlayPauseRequested;
         MediaControl.SkipPreviousRequested -= MediaControl_SkipPreviousRequested;
         MediaControl.SkipNextRequested -= MediaControl_SkipNextRequested;
         MediaControl.ActivateSourceRequested -= MediaControl_ActivateSourceRequested;
+        MediaControl.OpenFullPanelRequested -= MediaControl_OpenFullPanelRequested;
+        MediaControl.AudioControlRequested -= MediaControl_AudioControlRequested;
+        MediaControl.OutputDeviceCycleRequested -= MediaControl_OutputDeviceCycleRequested;
+        MediaControl.SeekRequested -= MediaControl_SeekRequested;
+        MediaControl.WheelRequested -= MediaControl_WheelRequested;
         MediaControl.DesiredSizeChanged -= MediaControl_DesiredSizeChanged;
         base.OnClosed(e);
     }
+
+    private FrameworkElement GetActiveControl() => MediaControl;
+
+    private void ApplyPrimaryLength(double primaryLength) => MediaControl.ApplyPrimaryLength(primaryLength);
 }

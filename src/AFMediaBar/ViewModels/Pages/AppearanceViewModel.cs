@@ -1,4 +1,5 @@
 using AFMediaBar.Classes.Settings;
+using AFMediaBar.Classes.Models.Layout;
 
 namespace AFMediaBar.ViewModels.Pages;
 
@@ -32,6 +33,12 @@ public partial class AppearanceViewModel : ObservableObject
         _applicationThemeMode = appearance.ApplicationThemeMode;
         _backdropMode = appearance.BackdropMode;
         SettingsManager.SettingsChanged += OnSettingsChanged;
+        SettingsManager.LayoutSettingsChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(CurrentSurfaceName)); OnPropertyChanged(nameof(SurfaceStyle));
+            OnPropertyChanged(nameof(SurfaceOpacityPercent)); OnPropertyChanged(nameof(SurfaceCornerRadiusDip));
+            OnPropertyChanged(nameof(CanCustomizeCurrentSurface));
+        };
     }
 
     public LatinFontPreset LatinFont
@@ -119,6 +126,42 @@ public partial class AppearanceViewModel : ObservableObject
         }
     }
 
+    public string CurrentSurfaceName => SettingsManager.Current.WindowMode == WindowMode.Taskbar ? "任务栏模式" : "灵动岛模式";
+    public bool CanCustomizeCurrentSurface => SettingsManager.Current.WindowMode != WindowMode.Taskbar;
+
+    public PlayerSurfaceStyle SurfaceStyle
+    {
+        get => CurrentSurface.Style;
+        set => PublishSurface(CurrentSurface with { Style = value });
+    }
+
+    public int SurfaceOpacityPercent
+    {
+        get => CurrentSurface.BackgroundOpacityPercent;
+        set => PublishSurface(CurrentSurface with { BackgroundOpacityPercent = value });
+    }
+
+    public double SurfaceCornerRadiusDip
+    {
+        get => CurrentSurface.CornerRadiusDip;
+        set => PublishSurface(CurrentSurface with { CornerRadiusDip = value });
+    }
+
+    private static ModeSurfaceSettings CurrentSurface => SettingsManager.Current.WindowMode == WindowMode.Taskbar
+        ? SettingsManager.Current.TaskbarSurface
+        : SettingsManager.Current.DynamicIslandSurface;
+
+    private void PublishSurface(ModeSurfaceSettings settings)
+    {
+        if (SettingsManager.Current.WindowMode == WindowMode.Taskbar)
+            SettingsManager.Current.TaskbarSurface = settings.Normalize();
+        else
+            SettingsManager.Current.DynamicIslandSurface = settings.Normalize();
+        OnPropertyChanged(nameof(SurfaceStyle));
+        OnPropertyChanged(nameof(SurfaceOpacityPercent));
+        OnPropertyChanged(nameof(SurfaceCornerRadiusDip));
+    }
+
     [RelayCommand]
     private void SetPlayerForegroundMode(PlayerForegroundMode mode) => PlayerForegroundMode = mode;
 
@@ -153,6 +196,11 @@ public partial class AppearanceViewModel : ObservableObject
             EnhancedReadability = appearance.EnhancedReadability;
             ApplicationThemeMode = appearance.ApplicationThemeMode;
             BackdropMode = appearance.BackdropMode;
+            OnPropertyChanged(nameof(CurrentSurfaceName));
+            OnPropertyChanged(nameof(SurfaceStyle));
+            OnPropertyChanged(nameof(SurfaceOpacityPercent));
+            OnPropertyChanged(nameof(SurfaceCornerRadiusDip));
+            OnPropertyChanged(nameof(CanCustomizeCurrentSurface));
         }
         finally { _isRefreshing = false; }
     }
