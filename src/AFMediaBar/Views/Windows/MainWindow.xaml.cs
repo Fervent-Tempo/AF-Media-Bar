@@ -31,6 +31,7 @@ namespace AFMediaBar.Views.Windows
     {
         public MainWindowViewModel ViewModel { get; }
 
+        private readonly TaskbarWindowViewModel _taskbarViewModel;
         private readonly ITaskbarDockService _taskBarService;
         private readonly MediaSessionService _mediaSessionService;
         private readonly AudioControlViewModel _audioControlViewModel;
@@ -90,6 +91,7 @@ namespace AFMediaBar.Views.Windows
         /// </summary>
         public MainWindow(
             MainWindowViewModel viewModel,
+            TaskbarWindowViewModel taskbarViewModel,
             ITaskbarDockService taskBarService,
             MediaSessionService mediaSessionService,
             AudioControlViewModel audioControlViewModel,
@@ -114,6 +116,7 @@ namespace AFMediaBar.Views.Windows
             MemoryPruneCoordinator memoryPruneCoordinator)
         {
             ViewModel = viewModel;
+            _taskbarViewModel = taskbarViewModel;
             DataContext = this;
 
             _taskBarService = taskBarService;
@@ -175,6 +178,8 @@ namespace AFMediaBar.Views.Windows
             _mouseInputMonitor.LeftButtonPressed += MouseInputMonitor_OnLeftButtonPressed;
             ViewModel.OpenSettingsRequested += ViewModel_OpenSettingsRequested;
             ViewModel.OpenUpdateSettingsRequested += ViewModel_OpenUpdateSettingsRequested;
+            _taskbarViewModel.OpenSettingsRequested += ViewModel_OpenSettingsRequested;
+            _taskbarViewModel.OpenUpdateSettingsRequested += ViewModel_OpenUpdateSettingsRequested;
 
             // 发现新版本时由宿主弹一次系统通知，点击通知把用户带到"应用与关于"。
             // 通知只表达"有新版本"：下载与安装都由用户在该页显式触发。
@@ -289,6 +294,8 @@ namespace AFMediaBar.Views.Windows
             _mouseInputMonitor.LeftButtonPressed -= MouseInputMonitor_OnLeftButtonPressed;
             ViewModel.OpenSettingsRequested -= ViewModel_OpenSettingsRequested;
             ViewModel.OpenUpdateSettingsRequested -= ViewModel_OpenUpdateSettingsRequested;
+            _taskbarViewModel.OpenSettingsRequested -= ViewModel_OpenSettingsRequested;
+            _taskbarViewModel.OpenUpdateSettingsRequested -= ViewModel_OpenUpdateSettingsRequested;
             _updateService.UpdateStateChanged -= UpdateService_OnStateChanged;
             _trayIconService.NotificationClicked -= TrayIconService_OnNotificationClicked;
             // Make sure that closing this window will begin the process of closing the application.
@@ -742,7 +749,7 @@ namespace AFMediaBar.Views.Windows
         {
             var window = new TaskbarWindow(
                 _taskBarService,
-                ViewModel,
+                _taskbarViewModel,
                 this,
                 _appearanceService,
                 _occupiedAreaService,

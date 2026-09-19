@@ -154,6 +154,7 @@ namespace AFMediaBar
                 // === 主窗口（隐藏的宿主窗口）Main Window (invisible host window) ===
                 services.AddSingleton<INavigationWindow, MainWindow>();
                 services.AddSingleton<MainWindowViewModel>();
+                services.AddSingleton<TaskbarWindowViewModel>();
                 services.AddSingleton<AudioControlViewModel>();
                 services.AddTransient<DynamicIslandWindow>();
                 services.AddSingleton<AudioControlFlyoutWindow>();

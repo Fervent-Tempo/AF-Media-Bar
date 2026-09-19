@@ -39,7 +39,7 @@ public partial class TaskbarWindow : Window
     private readonly ITaskbarDockService _taskBarService;
     private readonly TaskbarOccupiedAreaService _occupiedAreaService;
     private readonly TaskbarLengthConstraintsService _lengthConstraints;
-    private readonly MainWindowViewModel _viewModel;
+    private readonly TaskbarWindowViewModel _viewModel;
     private readonly ITaskbarWindowHostActions _hostActions;
     private readonly DispatcherTimer _timer;
     private readonly DispatcherTimer _sizeAnimationTimer;
@@ -107,7 +107,7 @@ public partial class TaskbarWindow : Window
     /// </summary>
     public TaskbarWindow(
         ITaskbarDockService taskBarService,
-        MainWindowViewModel viewModel,
+        TaskbarWindowViewModel viewModel,
         ITaskbarWindowHostActions hostActions,
         WindowAppearanceService appearanceService,
         TaskbarOccupiedAreaService occupiedAreaService,
