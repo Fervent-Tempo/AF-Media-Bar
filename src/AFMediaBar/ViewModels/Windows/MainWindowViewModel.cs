@@ -1,11 +1,9 @@
 using System.Diagnostics;
-using System.Windows.Input;
 using AFMediaBar.Classes.Models.Updates;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Localization;
 using AFMediaBar.Classes.Services.Updates;
 using AFMediaBar.Resources;
-using CommunityToolkit.Mvvm.Input;
 
 namespace AFMediaBar.ViewModels.Windows
 {
@@ -32,53 +30,19 @@ namespace AFMediaBar.ViewModels.Windows
         [ObservableProperty] private bool _isUpdateMenuEnabled = true;
 
         /// <summary>
-        /// 请求宿主窗口打开设置页。
-        /// Requests that the host window open the settings page.
-        /// </summary>
-        public event EventHandler? OpenSettingsRequested;
-
-        /// <summary>
-        /// 请求宿主窗口打开设置页的「应用与关于」：更新提示被点击时跳到那一页。
-        /// Requests that the host window open "application and about", which is where the update notice takes the
-        /// user when it is clicked.
-        /// </summary>
-        public event EventHandler? OpenUpdateSettingsRequested;
-
-        /// <summary>打开设置窗口（已打开时激活到前台）。/ Opens the settings window, activating it when already open.</summary>
-        public ICommand OpenSettingsCommand { get; }
-
-        /// <summary>退出整个程序。/ Exits the application.</summary>
-        public ICommand ExitApplicationCommand { get; }
-
-        /// <summary>右键菜单的更新入口：按当前状态检查、取消下载、打开更新页或立即重启安装。/ The context menu's update entry: check, cancel the download, open the update page or restart and install, depending on the state.</summary>
-        public ICommand UpdateMenuCommand { get; }
-
-        /// <summary>切换到指定媒体会话（参数为会话 Key）。/ Switches to the session identified by the parameter key.</summary>
-        public ICommand SelectMediaSessionCommand { get; }
-
-        /// <summary>重新扫描 SMTC 会话并刷新。/ Re-scans SMTC sessions and refreshes.</summary>
-        public ICommand ReconnectMediaSessionCommand { get; }
-
-        /// <summary>
         /// 创建主窗口状态适配器，并接通托盘菜单所需的会话操作与更新状态。
         /// Creates the main-window state adapter and connects the session actions and update state required by
         /// the tray menu.
         /// </summary>
-        /// <param name="mediaSessionService">媒体会话协调器。/ Media session coordinator.</param>
         /// <param name="updateService">更新下载器协调器。/ Update downloader coordinator.</param>
         /// <param name="localization">界面语言：更新那一行的标题由代码拼出，必须在语言变化后重取。/ Interface language: the update entry's title is composed in code and has to be fetched again when the language changes.</param>
         public MainWindowViewModel(
-            MediaSessionService mediaSessionService,
             UpdateService updateService,
             LocalizationService localization)
         {
             _updateService = updateService;
             _localization = localization;
-            SelectMediaSessionCommand = new RelayCommand<string>(key => mediaSessionService.SelectSession(key ?? string.Empty));
-            ReconnectMediaSessionCommand = new AsyncRelayCommand(() => mediaSessionService.ReconnectAsync());
-            OpenSettingsCommand = new RelayCommand(() => OpenSettingsRequested?.Invoke(this, EventArgs.Empty));
-            ExitApplicationCommand = new RelayCommand(() => Application.Current.Shutdown());
-            UpdateMenuCommand = new RelayCommand(ExecuteUpdateAction);
+
 
             // 视图模型与更新服务都是单例，订阅与进程同寿命；状态事件始终在 UI 线程上发布。
             // Both the view model and the update service are singletons, so the subscription lives as long as the
@@ -108,45 +72,6 @@ namespace AFMediaBar.ViewModels.Windows
         {
             UpdateMenuHeader = UpdatePresentationPolicy.ResolveTrayHeader(state);
             IsUpdateMenuEnabled = UpdatePresentationPolicy.IsTrayHeaderEnabled(state);
-        }
-
-        private void ExecuteUpdateAction()
-        {
-            switch (UpdatePresentationPolicy.ResolveTrayAction(_updateService.CurrentState))
-            {
-                case UpdateTrayAction.Check:
-                    _ = CheckForUpdatesAsync();
-                    break;
-
-                case UpdateTrayAction.Cancel:
-                    _updateService.CancelDownload();
-                    break;
-
-                case UpdateTrayAction.InstallAndRestart:
-                    _updateService.RequestInstallAndExit();
-                    break;
-
-                case UpdateTrayAction.OpenUpdatePage:
-                    OpenUpdateSettingsRequested?.Invoke(this, EventArgs.Empty);
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// 手动检查更新；异常只写进调试输出，因为一次失败的更新绝不能让右键菜单命令崩溃。
-        /// Checks for updates manually; failures only reach the debug output, because a failed update must never
-        /// crash a context-menu command.
-        /// </summary>
-        private async Task CheckForUpdatesAsync()
-        {
-            try
-            {
-                await _updateService.CheckAsync(manual: true);
-            }
-            catch (Exception exception)
-            {
-                Debug.WriteLine($"[Update] Manual check failed: {exception}");
-            }
         }
     }
 }

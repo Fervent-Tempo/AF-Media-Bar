@@ -128,6 +128,9 @@ public partial class TaskbarWindow : Window
         DataContext = viewModel;
         ContextMenuHelper.AttachOutsideClickDismissal(PlayerMenu);
         appearanceService.Attach(PlayerMenu, this);
+        PlayerMenu.OpenSettingsRequested += PlayerMenu_OpenSettingsRequested;
+        PlayerMenu.OpenUpdateSettingsRequested += PlayerMenu_OpenUpdateSettingsRequested;
+        PlayerMenu.ReloadTaskbarHostRequested += PlayerMenu_ReloadTaskbarHostRequested;
         // 组合滚轮结束时的合成点击必须被吞掉：静置层点击与右键菜单都要问同一个判定，它们分别属于控件与宿主。
         // The click synthesized when a chord wheel ends has to be swallowed: the rest-layer click and the context menu both ask the
         // same authority, and they live in the control and the host respectively.
@@ -727,19 +730,7 @@ public partial class TaskbarWindow : Window
 
         Dispatcher.Invoke(() =>
         {
-            SessionsMenuItem.Items.Clear();
-            foreach (var option in options)
-            {
-                var item = new MenuItem
-                {
-                    Header = option.DisplayName,
-                    IsCheckable = true,
-                    IsChecked = option.IsSelected,
-                    Command = _viewModel.SelectMediaSessionCommand,
-                    CommandParameter = option.Key
-                };
-                SessionsMenuItem.Items.Add(item);
-            }
+            PlayerMenu.ApplySessions(options);
         });
     }
 
@@ -1445,7 +1436,13 @@ public partial class TaskbarWindow : Window
         _sizeAnimationTimer.Start();
     }
 
-    private void ReloadTaskbarHostMenuItem_Click(object sender, RoutedEventArgs e)
+    private void PlayerMenu_OpenSettingsRequested(object? sender, EventArgs e) =>
+        _viewModel.RaiseOpenSettingsRequested();
+
+    private void PlayerMenu_OpenUpdateSettingsRequested(object? sender, EventArgs e) =>
+        _viewModel.RaiseOpenUpdateSettingsRequested();
+
+    private void PlayerMenu_ReloadTaskbarHostRequested(object? sender, EventArgs e)
     {
         PlayerMenu.IsOpen = false;
         _hostActions.RequestTaskbarHostReload();

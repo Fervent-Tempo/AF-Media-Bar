@@ -43,6 +43,12 @@ namespace AFMediaBar.ViewModels.Windows
         /// </summary>
         public event EventHandler? OpenUpdateSettingsRequested;
 
+        internal void RaiseOpenSettingsRequested() =>
+            OpenSettingsRequested?.Invoke(this, EventArgs.Empty);
+
+        internal void RaiseOpenUpdateSettingsRequested() =>
+            OpenUpdateSettingsRequested?.Invoke(this, EventArgs.Empty);
+
         /// <summary>切换到指定媒体会话（参数为会话 Key）。/ Switches to the session identified by the parameter key.</summary>
         public ICommand SelectMediaSessionCommand { get; }
 
