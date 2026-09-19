@@ -6,8 +6,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using Microsoft.Extensions.DependencyInjection;
+using CommunityToolkit.Mvvm.Input;
 
 namespace AFMediaBar.Components
 {
@@ -21,32 +21,31 @@ namespace AFMediaBar.Components
         private readonly UpdateService _updateService;
 
         /// <summary>打开设置窗口（已打开时激活到前台）。/ Opens the settings window, activating it when already open.</summary>
-        public ICommand OpenSettingsCommand { get; }
+        [RelayCommand]
+        private void OpenSettings() => OpenSettingsRequested?.Invoke(this, EventArgs.Empty);
 
         /// <summary>退出整个程序。/ Exits the application.</summary>
-        public ICommand ExitApplicationCommand { get; }
+        [RelayCommand]
+        private void ExitApplication() => Application.Current.Shutdown();
 
         /// <summary>右键菜单的更新入口。/ The context menu's update entry.</summary>
-        public ICommand UpdateMenuCommand { get; }
+        [RelayCommand]
+        private void UpdateMenu() => ExecuteUpdateAction();
 
         /// <summary>切换到指定媒体会话（参数为会话 Key）。/ Switches to the session identified by the parameter key.</summary>
-        public ICommand SelectMediaSessionCommand { get; }
+        [RelayCommand]
+        private void SelectMediaSession(string? key) =>
+            _mediaSessionService.SelectSession(key ?? string.Empty);
 
         /// <summary>重新扫描 SMTC 会话并刷新。/ Re-scans SMTC sessions and refreshes.</summary>
-        public ICommand ReconnectMediaSessionCommand { get; }
+        [RelayCommand]
+        private async Task ReconnectMediaSession() =>
+            await _mediaSessionService.ReconnectAsync();
 
         public AFContextMenu()
         {
             _mediaSessionService = App.Services.GetRequiredService<MediaSessionService>();
             _updateService = App.Services.GetRequiredService<UpdateService>();
-
-            SelectMediaSessionCommand = new RelayCommand<string>(
-                key => _mediaSessionService.SelectSession(key ?? string.Empty));
-            ReconnectMediaSessionCommand = new AsyncRelayCommand(_mediaSessionService.ReconnectAsync);
-            OpenSettingsCommand = new RelayCommand(
-                () => OpenSettingsRequested?.Invoke(this, EventArgs.Empty));
-            ExitApplicationCommand = new RelayCommand(() => Application.Current.Shutdown());
-            UpdateMenuCommand = new RelayCommand(ExecuteUpdateAction);
 
             InitializeComponent();
         }
