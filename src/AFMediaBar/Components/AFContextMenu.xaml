@@ -1,4 +1,4 @@
-﻿<ContextMenu x:Class="AFMediaBar.Components.AFContextMenu"
+<ContextMenu x:Class="AFMediaBar.Components.AFContextMenu"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
@@ -21,28 +21,26 @@
 
     <ui:MenuItem Header="{DynamicResource Loc.Common.ReconnectSmtc}"
                  Icon="{ui:SymbolIcon ArrowSync24}"
-                 Command="{Binding ReconnectMediaSessionCommand, RelativeSource={RelativeSource Self}}" />
+                 Command="{Binding ReconnectMediaSessionCommand}" />
 
     <ui:MenuItem x:Name="ReloadTaskbarHostMenuItem"
                  Header="{DynamicResource Loc.Common.ReloadTaskbarHost}"
                  Icon="{ui:SymbolIcon ArrowSync24}"
                  Click="ReloadTaskbarHostMenuItem_Click" />
 
-    <ui:MenuItem Header="{Binding PlacementTarget.DataContext.ViewModel.UpdateMenuHeader,
-                                  RelativeSource={RelativeSource Self}}"
+    <ui:MenuItem Header="{Binding PlacementTarget.DataContext.ViewModel.UpdateMenuHeader}"
                  Icon="{ui:SymbolIcon ArrowSync24}"
-                 IsEnabled="{Binding PlacementTarget.DataContext.ViewModel.IsUpdateMenuEnabled,
-                                     RelativeSource={RelativeSource Self}}"
-                 Command="{Binding UpdateMenuCommand, RelativeSource={RelativeSource Self}}" />
+                 IsEnabled="{Binding PlacementTarget.DataContext.ViewModel.IsUpdateMenuEnabled}"
+                 Command="{Binding UpdateMenuCommand}" />
 
     <ui:MenuItem Header="{DynamicResource Loc.Common.Settings}"
                  Icon="{ui:SymbolIcon Settings24}"
-                 Command="{Binding OpenSettingsCommand, RelativeSource={RelativeSource Self}}" />
+                 Command="{Binding OpenSettingsCommand}" />
 
     <Separator />
 
     <ui:MenuItem Header="{DynamicResource Loc.Common.Exit}"
                  Icon="{ui:SymbolIcon ArrowExit20}"
-                 Command="{Binding ExitApplicationCommand, RelativeSource={RelativeSource Self}}" />
+                 Command="{Binding ExitApplicationCommand}" />
 
 </ContextMenu>

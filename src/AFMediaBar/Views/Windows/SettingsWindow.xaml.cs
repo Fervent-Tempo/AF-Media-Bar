@@ -20,6 +20,8 @@ namespace AFMediaBar.Views.Windows
     /// </summary>
     public partial class SettingsWindow : INavigationWindow
     {
+        private Type? _currentPageType;
+
         /// <summary>
         /// 搜索命中到页面类型的映射。搜索索引刻意不引用任何 View 类型，
         /// 因此这层映射留在视图侧，索引只使用与视图解耦的页面键。
@@ -274,6 +276,12 @@ namespace AFMediaBar.Views.Windows
         public void SetServiceProvider(IServiceProvider serviceProvider)
         {
             throw new NotImplementedException();
+        }
+
+        private void SettingsWindow_OnLoaded(object sender, RoutedEventArgs e)
+        {
+            _currentPageType = typeof(DisplayModesPage);
+            RootNavigation.Navigate(_currentPageType);
         }
     }
 }
