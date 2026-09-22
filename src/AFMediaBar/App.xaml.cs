@@ -117,6 +117,11 @@ namespace AFMediaBar
                 services.AddSingleton<GlobalInteractionRouter>();
                 services.AddSingleton<AudioMonitorService>();
                 services.AddSingleton<IMemoryPrunable>(sp => sp.GetRequiredService<AudioMonitorService>());
+                // 频谱采集的目标端点由后台循环解析并缓存，UI 路径只读结果，不做端点/会话枚举。
+                // The spectrum capture's target endpoint is resolved and cached by a background loop; UI paths only read the result and
+                // never enumerate endpoints or sessions.
+                services.AddSingleton<AudioCaptureDeviceResolver>();
+                services.AddSingleton<IMemoryPrunable>(sp => sp.GetRequiredService<AudioCaptureDeviceResolver>());
                 services.AddSingleton<SystemMetricsService>();
                 services.AddSingleton<SystemMetricsMonitorService>();
                 services.AddSingleton<IMemoryPrunable>(sp => sp.GetRequiredService<SystemMetricsMonitorService>());

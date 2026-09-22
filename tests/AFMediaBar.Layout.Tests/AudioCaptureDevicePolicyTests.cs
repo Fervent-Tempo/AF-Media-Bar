@@ -1,3 +1,4 @@
+using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -120,5 +121,21 @@ public sealed class AudioCaptureDevicePolicyTests
             Other,
             AudioCaptureDevicePolicy.SelectTarget(null, null, [Application(Other, 0.1f)]));
         Assert.IsNull(AudioCaptureDevicePolicy.SelectTarget(null, null, []));
+    }
+
+    [TestMethod]
+    public void ScanIntervalFollowsThePruneLevelAndPausesEnumeration()
+    {
+        Assert.AreEqual(AudioCaptureDevicePolicy.NormalScanInterval, AudioCaptureDevicePolicy.ResolveScanInterval(MemoryPruneLevel.None));
+        Assert.AreEqual(AudioCaptureDevicePolicy.IdleScanInterval, AudioCaptureDevicePolicy.ResolveScanInterval(MemoryPruneLevel.Idle));
+        Assert.AreEqual(AudioCaptureDevicePolicy.PausedScanInterval, AudioCaptureDevicePolicy.ResolveScanInterval(MemoryPruneLevel.DisplayOff));
+        Assert.AreEqual(AudioCaptureDevicePolicy.PausedScanInterval, AudioCaptureDevicePolicy.ResolveScanInterval(MemoryPruneLevel.Suspended));
+
+        // 正常与空闲档位允许枚举；息屏与睡眠只唤醒观察档位，不枚举。
+        // Normal and idle allow enumeration; display-off and suspend only wake to observe the level and enumerate nothing.
+        Assert.IsTrue(AudioCaptureDevicePolicy.ShouldScan(MemoryPruneLevel.None));
+        Assert.IsTrue(AudioCaptureDevicePolicy.ShouldScan(MemoryPruneLevel.Idle));
+        Assert.IsFalse(AudioCaptureDevicePolicy.ShouldScan(MemoryPruneLevel.DisplayOff));
+        Assert.IsFalse(AudioCaptureDevicePolicy.ShouldScan(MemoryPruneLevel.Suspended));
     }
 }

@@ -1,3 +1,5 @@
+using AFMediaBar.Classes.Abstractions;
+
 namespace AFMediaBar.Classes.Services;
 
 /// <summary>
@@ -34,6 +36,36 @@ public static class AudioCaptureDevicePolicy
 
     /// <summary>有普通应用的会话在出声。/ An ordinary application's session is audible.</summary>
     public const int RankApplication = 2;
+
+    /// <summary>正常档位的扫描间隔：两秒一次端点与会话枚举，毫秒级成本，足以在"出声设备变化"后迅速跟上。
+    /// Scan interval at the normal level: one endpoint and session enumeration every two seconds, costing milliseconds and following
+    /// a change of the audible device promptly.</summary>
+    public static readonly TimeSpan NormalScanInterval = TimeSpan.FromSeconds(2);
+
+    /// <summary>空闲档位的扫描间隔：用户已离开，慢一点没有代价。</summary>
+    /// <summary>Scan interval at the idle level: the user is gone, so a slower scan costs nothing.</summary>
+    public static readonly TimeSpan IdleScanInterval = TimeSpan.FromSeconds(10);
+
+    /// <summary>息屏/睡眠档位的唤醒间隔：只唤醒观察档位，不做任何枚举。</summary>
+    /// <summary>Wake interval at the display-off or suspend level: the loop only wakes to observe the level and enumerates nothing.</summary>
+    public static readonly TimeSpan PausedScanInterval = TimeSpan.FromSeconds(5);
+
+    /// <summary>
+    /// 该档位是否允许枚举。息屏与睡眠档位下只唤醒、不枚举：屏幕已经黑了，端点解析没有意义。
+    /// Whether enumeration is allowed at this level. Under display-off and suspend the loop only wakes without enumerating: the screen
+    /// is dark and endpoint resolution is pointless.
+    /// </summary>
+    /// <param name="level">当前剪枝档位。/ The current prune level.</param>
+    public static bool ShouldScan(MemoryPruneLevel level) => level < MemoryPruneLevel.DisplayOff;
+
+    /// <summary>按剪枝档位取扫描间隔（息屏/睡眠用唤醒间隔）。/ Resolves the scan interval for a prune level (display-off and suspend use the wake interval).</summary>
+    /// <param name="level">当前剪枝档位。/ The current prune level.</param>
+    public static TimeSpan ResolveScanInterval(MemoryPruneLevel level) => level switch
+    {
+        >= MemoryPruneLevel.DisplayOff => PausedScanInterval,
+        MemoryPruneLevel.Idle => IdleScanInterval,
+        _ => NormalScanInterval
+    };
 
     /// <summary>
     /// 按候选端点的可听状态选出本次采集应使用的端点；返回 null 表示连回退端点都没有。
