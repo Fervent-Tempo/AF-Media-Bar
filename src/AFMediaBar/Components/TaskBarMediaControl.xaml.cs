@@ -73,7 +73,16 @@ namespace AFMediaBar.Components
             InitializeComponent();
 
             _progressTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
-            _progressTimer.Tick += (_, _) => UpdateTaskbarProgress();
+            // 进度条与歌词换行共用这支 250ms 计时器：两者都只依赖"外推后的播放位置"，多一次行号比较不增加任何系统调用，
+            // 而播放器时间轴停更时（澜音等只在曲目开始写一次时间轴）歌词也能靠它正常换行。
+            // The progress bar and the lyric line share this 250 ms timer: both depend only on the extrapolated playback position, so one
+            // extra line-index comparison costs no system call — and it is what keeps the lyrics advancing when a player stops updating
+            // its timeline (Ceru and others write it once at track start).
+            _progressTimer.Tick += (_, _) =>
+            {
+                UpdateTaskbarProgress();
+                AdvanceLyricLine();
+            };
             _hoverOpenTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(120) };
             _hoverOpenTimer.Tick += (_, _) =>
             {
@@ -1849,18 +1858,74 @@ namespace AFMediaBar.Components
         }
 
         /// <summary>
-        /// 用快照中的歌词和位置更新标题区域的当前行；无歌词时恢复标题。
-        /// Shows the active lyric line in the title slot from the snapshot; restores the title when lyrics are absent.
+        /// 用快照中的歌词和外推后的播放位置更新标题区域的当前行；无歌词时恢复标题。
+        ///
+        /// 位置与进度条、逐字擦亮共用同一套语义：快照位置 + 时间戳到现在的真实时间。播放器的时间轴停更时
+        /// （澜音等只在曲目开始写一次时间轴），原始位置会永远停在零，歌词行也就永远停在第一句之前。
+        /// Shows the active lyric line in the title slot from the snapshot using the extrapolated playback position; restores the title
+        /// when lyrics are absent.
+        ///
+        /// The position follows the same semantics as the progress bar and the syllable highlight (snapshot position plus real time since
+        /// the timeline timestamp). When a player stops updating its timeline (Ceru and others write it once at track start), the raw
+        /// position stays at zero and the lyric line would sit before the first line forever.
         /// </summary>
-        private void UpdateLyricLine(MediaSnapshot snapshot)
+        /// <returns>当前行、下一句或译音文本是否发生变化。/ Whether the active line, the next line, or the secondary texts changed.</returns>
+        private bool UpdateLyricLine(MediaSnapshot snapshot)
         {
-            var update = _lyricPresenter.Update(snapshot.Lyrics, snapshot.Position);
+            var position = TaskbarExperiencePolicy.GetPosition(snapshot, DateTimeOffset.UtcNow);
+            var update = _lyricPresenter.Update(snapshot.Lyrics, position);
+            var changed = update.Changed ||
+                          !string.Equals(_activeLyric, update.Text, StringComparison.Ordinal) ||
+                          !string.Equals(_nextLyric, update.NextText, StringComparison.Ordinal) ||
+                          !string.Equals(_translatedLyric, update.TranslationText, StringComparison.Ordinal) ||
+                          !string.Equals(_romanizedLyric, update.RomanizationText, StringComparison.Ordinal);
             _activeLyric = update.Text;
             _nextLyric = update.NextText;
             _translatedLyric = update.TranslationText;
             _romanizedLyric = update.RomanizationText;
             SetCurrentLyricLine(update.CurrentLine);
             SongTitle.Text = _actualTitle;
+            return changed;
+        }
+
+        /// <summary>
+        /// 按外推后的播放位置把当前歌词行向前推进；行没有变化时不做任何界面写入。
+        ///
+        /// 由 250ms 的进度计时器驱动，因此时间轴停更的播放器也能正常换行；位置语义与进度条、逐字擦亮完全一致，
+        /// 不会出现"进度条在走、歌词不动"的分裂。
+        /// Advances the active lyric line using the extrapolated playback position; when the line has not changed nothing is written to
+        /// the UI.
+        ///
+        /// It is driven by the 250 ms progress timer, so a player whose timeline stopped updating still advances its lyrics, and the
+        /// position semantics stay identical to the progress bar and the syllable highlight — the progress bar can never move while
+        /// the lyrics stand still.
+        /// </summary>
+        private void AdvanceLyricLine()
+        {
+            if (!_isConnected || _isVertical || !SettingsManager.Current.LyricsEnabled)
+            {
+                return;
+            }
+
+            // 还没有歌词时什么都不做：清空状态属于快照变化的职责，不该由这支每秒跑四次的计时器改写。
+            // Without lyrics nothing happens here: clearing the state belongs to snapshot changes, not to a timer that ticks four times
+            // a second.
+            if (_snapshot.Lyrics?.Document is not { Lines.Count: > 0 })
+            {
+                return;
+            }
+
+            if (!UpdateLyricLine(_snapshot))
+            {
+                return;
+            }
+
+            // 行变化必须整套重走：文本、两行歌词的显隐、跑马灯窗口与自动尺寸请求都依赖当前行。
+            // A line change has to re-run the whole presentation: the text, the two lyric rows' visibility, the marquee window, and the
+            // auto-size request all depend on the active line.
+            ApplyLyricPresentation();
+            ApplyMarqueeLayout(Math.Max(0, SongInfoStackPanel.Width));
+            RaiseDesiredSizeChanged();
         }
 
         private void ApplyLyricPresentation()
