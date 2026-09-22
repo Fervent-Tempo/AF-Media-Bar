@@ -43,13 +43,13 @@ public enum AccentColorMode
 /// <summary>西文字体预设。 / Latin font preset.</summary>
 public enum LatinFontPreset
 {
-    SystemDefault = 0,
-    SegoeUi = 1,
-    Arial = 2,
-    Calibri = 3,
-    Verdana = 4,
-    Consolas = 5,
-    TimesNewRoman = 6
+    SegoeUi = 0,
+    Arial = 1,
+    Calibri = 2,
+    Verdana = 3,
+    Consolas = 4,
+    TimesNewRoman = 5,
+    SystemDefault = 6
 }
 
 /// <summary>中文字体预设。 / CJK font preset.</summary>

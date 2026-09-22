@@ -6,7 +6,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Abstractions;
@@ -1591,7 +1590,6 @@ namespace AFMediaBar.Components
             ApplySpectrumForeground(foreground);
             ApplyTaskbarHoverAppearance(foreground);
             SongInfoStackPanel.Background = Brushes.Transparent;
-            ApplyContrastShadow(presentation.NeedsContrastShadow, presentation.UsesLightText);
 
             if (_currentMode == WindowMode.Taskbar)
             {
@@ -1630,19 +1628,6 @@ namespace AFMediaBar.Components
             Resources["TaskbarHoverHandleBrush"] = new SolidColorBrush(_taskbarHoverPalette.Handle);
             RefreshTaskbarHoverAppearance();
         }
-
-        private void ApplyContrastShadow(bool enabled, bool usesLightText)
-        {
-            // DropShadowEffect 强行把 TextBlock 渲染到离屏位图表面，会彻底关闭 WPF 的 DirectWrite ClearType 次像素渲染管线，
-            // 造成文字边缘严重发虚、失真与阶梯状锯齿。保持 Effect 为 null，以确保 ClearType 次像素抗锯齿全时生效。
-            SongTitle.Effect = null;
-            SongArtist.Effect = null;
-            SongLyrics.Effect = null;
-            SongLyricsHighlight.Effect = null;
-            SongLyricsSecondary.Effect = null;
-            TaskbarPerformanceText.Effect = null;
-        }
-
 
         /// <summary>
         /// 更新歌曲信息：根据快照更新 UI 的所有元素（标题、艺术家、封面、歌词、播放状态）。

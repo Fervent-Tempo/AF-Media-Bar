@@ -289,6 +289,22 @@ public sealed class SettingsPersistenceServiceTests
     }
 
     [TestMethod]
+    public void NumericLatinFontZeroKeepsTheHistoricalSegoeUiMeaning()
+    {
+        // 旧版本允许数字枚举输入，0 当时表示 SegoeUi；在枚举开头插入新成员会把已有配置静默改成另一种字体。
+        // Older versions accepted numeric enum input where 0 meant SegoeUi; inserting a new member at the front would silently
+        // reinterpret an existing configuration as a different font.
+        Directory.CreateDirectory(_directory);
+        File.WriteAllText(
+            Path.Combine(_directory, "settings.json"),
+            $"{{\"schemaVersion\":{SettingsPersistenceService.CurrentSchemaVersion},\"settings\":{{\"appearance\":{{\"latinFont\":0}}}}}}");
+        using var service = new SettingsPersistenceService(_directory);
+        service.Initialize();
+
+        Assert.AreEqual(LatinFontPreset.SegoeUi, SettingsManager.Current.Appearance.LatinFont);
+    }
+
+    [TestMethod]
     public void CorruptMainRecoversBackupAtTheCurrentSchemaAndQuarantinesMain()
     {
         Directory.CreateDirectory(_directory);
