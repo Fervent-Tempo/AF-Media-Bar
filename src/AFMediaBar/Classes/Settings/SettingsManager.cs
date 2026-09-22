@@ -180,7 +180,14 @@ public sealed class AppSettings : INotifyPropertyChanged
         if (!Enum.IsDefined(result.TrayWheelBehavior)) result.TrayWheelBehavior = defaults.TrayWheelBehavior;
         result.LyricsSecondaryLine = result.LyricsSecondaryLine.Normalize();
         if (!Enum.IsDefined(result.Position)) result.Position = defaults.Position;
-        result.WindowMode = WindowMode.Taskbar;
+        // 窗口模式是用户选出来的运行宿主，Normalize 只负责把未定义的值夹回默认值，
+        // 不能无条件改写：每次加载设置都强制回任务栏，会让设置页里的灵动岛选择永远不生效。
+        // "重置页面默认值"回到任务栏靠的是重置路径（ResetDisplayModes 从默认值取 WindowMode），不是这里。
+        // The window mode is the hosting mode the user picked, so Normalize only clamps an undefined value back to the
+        // default and never rewrites it unconditionally: forcing the taskbar on every load would keep an island choice
+        // in the settings page from ever taking effect. "Restore this page's defaults" lands back on the taskbar through
+        // the reset path (ResetDisplayModes takes WindowMode from the defaults), not through this line.
+        if (!Enum.IsDefined(result.WindowMode)) result.WindowMode = defaults.WindowMode;
         if (!Enum.IsDefined(result.LayoutOrientationMode)) result.LayoutOrientationMode = defaults.LayoutOrientationMode;
         if (!Enum.IsDefined(result.DynamicIslandBackgroundMode)) result.DynamicIslandBackgroundMode = defaults.DynamicIslandBackgroundMode;
         if (!Enum.IsDefined(result.DynamicIslandEdge)) result.DynamicIslandEdge = defaults.DynamicIslandEdge;

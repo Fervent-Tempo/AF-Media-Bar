@@ -680,7 +680,13 @@ public readonly record struct ModeSurfaceSettings(
     int BackgroundOpacityPercent,
     double CornerRadiusDip)
 {
-    public static ModeSurfaceSettings Default { get; } = new(PlayerSurfaceStyle.Automatic, 100, 6);
+    /// <summary>
+    /// 默认圆角 24 DIP：与 iOS 卡片的圆角基准（<c>CapsuleIslandMetrics.CardCornerRadius</c>）一致，
+    /// 老配置里写死的 6 会把卡片压成一个小圆角，读起来不像灵动岛。
+    /// Default corner radius of 24 DIP, matching the iOS card baseline (<c>CapsuleIslandMetrics.CardCornerRadius</c>);
+    /// a hard-coded 6 in an older configuration squashes the card into a small radius that no longer reads as an island.
+    /// </summary>
+    public static ModeSurfaceSettings Default { get; } = new(PlayerSurfaceStyle.Automatic, 100, 24);
 
     public ModeSurfaceSettings Normalize()
     {

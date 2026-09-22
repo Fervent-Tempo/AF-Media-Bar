@@ -39,16 +39,23 @@ public partial class DisplayModesViewModel : ObservableObject
     public bool IsDynamicIslandMode => SelectedMode == DisplayModeSelection.DynamicIsland;
     public bool IsDesktopCardMode => SelectedMode == DisplayModeSelection.DesktopCard;
     public bool IsFloatingBallMode => SelectedMode == DisplayModeSelection.FloatingBall;
-    public bool IsUnimplementedMode => !IsTaskbarMode;
+
+    /// <summary>
+    /// 页面是否高亮了一个尚未实现的承载模式（桌面卡片或悬浮球）。任务栏与灵动岛都是实现了的，
+    /// 因此它们不再算"未实现"：页面据此显示只读提示。
+    /// Whether the page highlights a hosting mode that does not exist yet (the desktop card or the floating ball).
+    /// The taskbar and the dynamic island are both implemented, so neither counts as unimplemented any more, and the
+    /// page uses this to show its read-only notice.
+    /// </summary>
+    public bool IsUnimplementedMode => IsDesktopCardMode || IsFloatingBallMode;
 
     /// <summary>
     /// 当前显示模式的文本，供页头状态芯片显示。它读的是真实 <see cref="WindowMode"/>，
-    /// 而不是本页的预览选择——页内选择只改变高亮，从不切换窗口，两者不能混为一谈。
+    /// 因此芯片始终说的是"正在运行的那一个"，而不是页面里刚点中的卡片。
     /// 模式名取自与模式卡片相同的键，因此芯片与卡片任何时候都写作同一个词。
-    /// Text for the header status chip. It reads the real <see cref="WindowMode"/> rather than this page's
-    /// preview selection, because the in-page selection only changes the highlight and never switches the
-    /// window; the two must not be conflated. The mode name comes from the same keys the mode cards use, so the
-    /// chip and the cards always read as one word.
+    /// Text for the header status chip. It reads the real <see cref="WindowMode"/>, so the chip always names the mode
+    /// that is actually running rather than the card just clicked. The mode name comes from the same keys the mode cards
+    /// use, so the chip and the cards always read as one word.
     /// </summary>
     public string HostingModeText => Translations.Format(
         "DisplayModes.Status.Current",
@@ -61,6 +68,15 @@ public partial class DisplayModesViewModel : ObservableObject
     /// "current mode" chip shows, replacing the chip that used to be hardcoded on the taskbar card.
     /// </summary>
     public bool IsTaskbarHostingActive => CurrentWindowMode == WindowMode.Taskbar;
+
+    /// <summary>
+    /// 灵动岛是否就是当前运行模式，与任务栏侧的同名属性对称；灵动岛卡片用它决定"当前模式"芯片是否显示。
+    /// 它读的同样是真实 <see cref="WindowMode"/>，因此卡片上的芯片不会因为刚点一下就提前亮起。
+    /// Whether the dynamic island really is the running mode, the mirror of the taskbar-side property, and the island
+    /// card uses it to decide whether its "current mode" chip shows. It reads the real <see cref="WindowMode"/> too, so
+    /// the chip never lights up merely because the card was just clicked.
+    /// </summary>
+    public bool IsDynamicIslandHostingActive => CurrentWindowMode == WindowMode.DynamicIsland;
 
     /// <summary>灵动岛背景方案。/ Dynamic-island background scheme.</summary>
     public DynamicIslandBackgroundMode DynamicIslandBackgroundMode
@@ -640,6 +656,12 @@ public partial class DisplayModesViewModel : ObservableObject
 
         _displayMonitorService.Refresh();
         RefreshMonitorOptions();
+        // 页面高亮必须从真实运行模式起步：配置文件里存着灵动岛时，页面若默认高亮任务栏，用户一打开这一页
+        // 就会看到"运行的是灵动岛、高亮的是任务栏"，还会以为点一下任务栏卡片是"切回去"。
+        // The page highlight has to start from the real running mode: with the dynamic island stored in the settings
+        // file, a page that defaults to the taskbar highlight would open showing "the island is running, the taskbar is
+        // highlighted" and a click on the taskbar card would read as switching back rather than as a no-op.
+        _selectedMode = ResolveSelection(SettingsManager.Current.WindowMode);
         // 静置层组件列表是代码构建的（顺序与保留状态来自设置），构造函数里必须先填一次：本页其余属性都是直接读设置的
         // getter，只有它为空的唯一表现就是"打开设置页看到一份空列表"。
         // The rest-layer component list is built in code (its order and kept switches come from the settings), so it has to be filled once
@@ -647,6 +669,19 @@ public partial class DisplayModesViewModel : ObservableObject
         // only as an empty list when the settings page is opened.
         RefreshRestComponentEntries();
     }
+
+    /// <summary>
+    /// 真实运行模式对应的页面高亮。只有两个已实现的模式参与映射：任务栏与灵动岛。
+    /// 未实现的两种模式永远不会成为运行模式，因此它们的卡片只能靠点击进入。
+    /// The page highlight matching a real running mode. Only the two implemented modes take part in the mapping — the
+    /// taskbar and the dynamic island. Neither unimplemented mode can ever be the running one, so their cards are only
+    /// ever reached by clicking them.
+    /// </summary>
+    private static DisplayModeSelection ResolveSelection(WindowMode windowMode) => windowMode switch
+    {
+        WindowMode.DynamicIsland => DisplayModeSelection.DynamicIsland,
+        _ => DisplayModeSelection.Taskbar
+    };
 
     /// <summary>
     /// 语言变化后重新取值：显示器名称是构建下拉框列表时拼出来的字符串，不会随绑定自己更新，因此列表重建一次；
@@ -664,6 +699,10 @@ public partial class DisplayModesViewModel : ObservableObject
         // notification on their own (the list instance is unchanged and so are the items' properties), so this has to refresh explicitly;
         // otherwise the column would keep the previous language after a switch.
         RefreshRestComponentEntries();
+        // 页头芯片与卡片芯片是代码拼出来的模式名，同样不会随空属性名的通知自己更新，因此一并重新通知。
+        // The header chip and the cards' chips are mode names composed in code, so they do not follow the empty-property
+        // notification either and are re-announced here.
+        RaiseSelection();
         OnPropertyChanged(string.Empty);
     }
 
@@ -683,26 +722,76 @@ public partial class DisplayModesViewModel : ObservableObject
         SettingsManager.RaiseLayoutSettingsChanged(CurrentWindowMode, Orientation);
     }
 
+    /// <summary>
+    /// 选中一个显示模式。任务栏与灵动岛是已实现的，选中它们会立刻切换正在运行的窗口并广播布局变化；
+    /// 桌面卡片与悬浮球尚未实现，只切换页面高亮（它们确实没有窗口可切）。
+    ///
+    /// 目标模式与当前运行模式相同时不重复广播：布局变化的订阅方会重建承载窗口，重复广播等于白发一次重建。
+    /// Selects a display mode. The taskbar and the dynamic island are implemented, so selecting either switches the
+    /// running window straight away and publishes the layout change; the desktop card and the floating ball are not, so
+    /// they only move the page highlight (they really have no window to switch to).
+    ///
+    /// A target that already is the running mode is not published again: the layout-change subscribers rebuild the
+    /// hosting window, and re-publishing would rebuild it for nothing.
+    /// </summary>
     private void SelectMode(DisplayModeSelection mode)
     {
         if (_selectedMode == mode) return;
         _selectedMode = mode;
+
+        var windowMode = mode switch
+        {
+            DisplayModeSelection.DynamicIsland => WindowMode.DynamicIsland,
+            DisplayModeSelection.Taskbar => WindowMode.Taskbar,
+            _ => (WindowMode?)null
+        };
+
+        if (windowMode is { } target && SettingsManager.Current.WindowMode != target)
+        {
+            SettingsManager.Current.WindowMode = target;
+            // 广播的是刚写下的模式本身：MainWindow 按事件参数决定切换哪一个窗口，
+            // 若这里去读设置，任何一处顺序调整都会让广播与实际写入的模式脱节。
+            // What is published is the mode just written: MainWindow picks the window from the event argument, so
+            // reading the settings here would let any reordering publish a mode that was never stored.
+            SettingsManager.RaiseLayoutSettingsChanged(target, Orientation);
+        }
+
+        RaiseSelection();
+    }
+
+    /// <summary>
+    /// 通知四处模式高亮：页内当前选择、四个卡片各自的选中态、未实现提示，以及两个"当前模式"芯片。
+    /// 芯片读的是真实运行模式，因此切换运行模式之后必须与高亮一起重新通知。
+    /// Announces the four mode highlights: the in-page selection, each card's checked state, the unimplemented notice,
+    /// and both "current mode" chips. The chips read the real running mode, so they are re-announced together with the
+    /// highlight whenever the running mode changes.
+    /// </summary>
+    private void RaiseSelection()
+    {
         OnPropertyChanged(nameof(SelectedMode));
         OnPropertyChanged(nameof(IsTaskbarMode));
         OnPropertyChanged(nameof(IsDynamicIslandMode));
         OnPropertyChanged(nameof(IsDesktopCardMode));
         OnPropertyChanged(nameof(IsFloatingBallMode));
         OnPropertyChanged(nameof(IsUnimplementedMode));
+        OnPropertyChanged(nameof(IsTaskbarHostingActive));
+        OnPropertyChanged(nameof(IsDynamicIslandHostingActive));
+        OnPropertyChanged(nameof(HostingModeText));
     }
 
+    /// <summary>
+    /// 写回任务栏体验设置。页面高亮一个不是任务栏的模式时，任务栏专属的分组整块只在那张分区里出现、
+    /// 这些控件根本不显示，因此这道守卫拦下的只是"看着能改、实际不保存"的写入（页面在同一状态下会显示只读提示）。
+    /// 灵动岛的外观不走这里：它写在 <c>DynamicIslandSurface</c> 上，由 <see cref="PublishIslandSurface"/> 直接发布，
+    /// 因此这道守卫不会挡住灵动岛分区的可保存设置。
+    /// Writes the taskbar experience settings back. While a mode other than the taskbar is highlighted, the
+    /// taskbar-only groups live in that other section and are not on screen at all, so this guard only refuses writes that
+    /// would look editable without saving — and the page shows a read-only notice in that state. The island's appearance
+    /// does not come through here: it lives on <c>DynamicIslandSurface</c> and is published straight by
+    /// <see cref="PublishIslandSurface"/>, so this guard never blocks the island section's writable settings.
+    /// </summary>
     private void UpdateExperience(TaskbarExperienceSettings value)
     {
-        // 页面上高亮一个未实现的承载模式时，任务栏专属设置不接受写入——这是既有且受测试保护的不变量。
-        // 代价是那些控件会“看着能改、实际不保存”，因此页面在同一状态下会显示一条明确的只读提示，
-        // 而不是让用户自己猜。提示由 DisplayModesPage 绑定 IsUnimplementedMode 呈现。
-        // While an unimplemented hosting mode is highlighted, taskbar-only settings refuse writes: that is an
-        // existing invariant guarded by a test. The cost is controls that look editable without saving, so the
-        // page shows an explicit read-only notice in that state instead of leaving the user to guess.
         if (_isRefreshing || !IsTaskbarMode) return;
         SettingsManager.SetTaskbarExperienceSettings(value.Normalize());
         RaiseExperience();
@@ -762,8 +851,25 @@ public partial class DisplayModesViewModel : ObservableObject
     {
         if (e.ResetScope is SettingsResetScope.DisplayModes or SettingsResetScope.Layout or SettingsResetScope.All)
             RaiseAll();
+        else if (e.PropertyName == nameof(AppSettings.WindowMode) && !_isRefreshing)
+            SyncSelectionToRuntimeMode();
         else if (!_isRefreshing && e.PropertyName is nameof(AppSettings.TaskbarTargetMonitorDeviceIds) or nameof(AppSettings.TaskbarTargetMonitorDeviceId))
             RefreshMonitorOptions();
+    }
+
+    /// <summary>
+    /// 运行模式在别处被改动（另一个页面、托盘菜单或重置）之后，把页面高亮跟过去。
+    /// 不跟随就会留下"设置里是灵动岛、页面还高亮任务栏"这种自相矛盾的状态，而页头芯片与卡片芯片
+    /// 读的都是真实模式，三者必须同时移动。
+    /// Follows the running mode after it is changed elsewhere (another page, the tray menu, or a reset). Without this,
+    /// the page would keep highlighting the taskbar while the settings hold the dynamic island — a self-contradictory
+    /// state, since the header chip and the cards' chips read the real mode and all three have to move together.
+    /// </summary>
+    private void SyncSelectionToRuntimeMode()
+    {
+        if (_selectedMode == ResolveSelection(SettingsManager.Current.WindowMode)) return;
+        _selectedMode = ResolveSelection(SettingsManager.Current.WindowMode);
+        RaiseSelection();
     }
 
     private void OnMonitorsChanged(object? sender, EventArgs e) => RefreshMonitorOptions();
@@ -905,9 +1011,7 @@ public partial class DisplayModesViewModel : ObservableObject
         _isRefreshing = true;
         try
         {
-            OnPropertyChanged(nameof(CurrentWindowMode)); OnPropertyChanged(nameof(IsTaskbarMode)); OnPropertyChanged(nameof(IsDynamicIslandMode));
-            OnPropertyChanged(nameof(IsDesktopCardMode)); OnPropertyChanged(nameof(IsFloatingBallMode)); OnPropertyChanged(nameof(IsUnimplementedMode));
-            OnPropertyChanged(nameof(HostingModeText)); OnPropertyChanged(nameof(IsTaskbarHostingActive));
+            OnPropertyChanged(nameof(CurrentWindowMode)); RaiseSelection();
             OnPropertyChanged(nameof(DynamicIslandBackgroundMode)); OnPropertyChanged(nameof(DynamicIslandEdge));
             OnPropertyChanged(nameof(IslandSurfaceStyle)); OnPropertyChanged(nameof(IslandSurfaceOpacityPercent));
             OnPropertyChanged(nameof(IslandSurfaceCornerRadiusDip));

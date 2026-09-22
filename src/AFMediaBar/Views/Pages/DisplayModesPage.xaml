@@ -168,10 +168,13 @@
                                 Style="{StaticResource ModeChoiceStyle}">
                                 <StackPanel>
                                     <DockPanel>
+                                        <!--  与任务栏卡片同一处理：徽章读真实 WindowMode，灵动岛确实是运行宿主时才亮起。  -->
+                                        <!--  The same treatment as the taskbar card: the badge reads the real WindowMode and lights up only while the island really is the host.  -->
                                         <ContentControl
                                             DockPanel.Dock="Right"
-                                            Content="{DynamicResource Loc.Common.NotImplemented}"
-                                            Style="{StaticResource AfSettingsBadgeNeutralStyle}" />
+                                            Content="{DynamicResource Loc.DisplayModes.Mode.Current}"
+                                            Style="{StaticResource AfSettingsBadgeAccentStyle}"
+                                            Visibility="{Binding ViewModel.IsDynamicIslandHostingActive, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                         <TextBlock
                                             FontSize="16"
                                             FontWeight="{DynamicResource AppTextStrongFontWeight}"
@@ -720,10 +723,7 @@
                     <components:SettingsGroup
                         Description="{DynamicResource Loc.DisplayModes.Island.Group.Description}"
                         Header="{DynamicResource Loc.Common.Group.IslandAppearance}"
-                        Icon="{ui:SymbolIcon Window24}"
-                        StatusText="{DynamicResource Loc.Common.NotImplemented}"
-                        StatusTone="Neutral"
-                        Tint="Muted">
+                        Icon="{ui:SymbolIcon Window24}">
                         <StackPanel>
                             <components:SettingsCallout
                                 Margin="0,0,0,12"
@@ -736,11 +736,10 @@
                             <components:SettingsRow
                                 Description="{DynamicResource Loc.DisplayModes.Island.Row.Surface.Description}"
                                 Icon="{ui:SymbolIcon Square24}"
-                                IsEnabled="False"
                                 Title="{DynamicResource Loc.DisplayModes.Island.Row.Surface.Title}">
                                 <ComboBox
                                     MinWidth="140"
-                                    SelectedValue="{Binding ViewModel.IslandSurfaceStyle, Mode=OneWay}"
+                                    SelectedValue="{Binding ViewModel.IslandSurfaceStyle, Mode=TwoWay}"
                                     SelectedValuePath="Tag">
                                     <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Island.Surface.Automatic}" Tag="{x:Static settings:PlayerSurfaceStyle.Automatic}" />
                                     <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Island.Surface.Solid}" Tag="{x:Static settings:PlayerSurfaceStyle.Solid}" />
@@ -751,14 +750,13 @@
                             <components:SettingsRow
                                 Description="{DynamicResource Loc.DisplayModes.Island.Row.Opacity.Description}"
                                 Icon="{ui:SymbolIcon Eye24}"
-                                IsEnabled="False"
                                 Title="{DynamicResource Loc.DisplayModes.Island.Row.Opacity.Title}">
                                 <StackPanel Orientation="Horizontal">
                                     <Slider
                                         Maximum="100"
                                         Minimum="0"
                                         Style="{StaticResource RowSliderStyle}"
-                                        Value="{Binding ViewModel.IslandSurfaceOpacityPercent, Mode=OneWay}" />
+                                        Value="{Binding ViewModel.IslandSurfaceOpacityPercent, Mode=TwoWay}" />
                                     <TextBlock Style="{StaticResource RowValueStyle}" Text="{Binding ViewModel.IslandSurfaceOpacityPercent, StringFormat={}{0}%}" />
                                 </StackPanel>
                             </components:SettingsRow>
@@ -766,14 +764,13 @@
                             <components:SettingsRow
                                 Description="{DynamicResource Loc.DisplayModes.Island.Row.Corner.Description}"
                                 Icon="{ui:SymbolIcon BorderNone24}"
-                                IsEnabled="False"
                                 Title="{DynamicResource Loc.DisplayModes.Island.Row.Corner.Title}">
                                 <StackPanel Orientation="Horizontal">
                                     <Slider
                                         Maximum="24"
                                         Minimum="0"
                                         Style="{StaticResource RowSliderStyle}"
-                                        Value="{Binding ViewModel.IslandSurfaceCornerRadiusDip, Mode=OneWay}" />
+                                        Value="{Binding ViewModel.IslandSurfaceCornerRadiusDip, Mode=TwoWay}" />
                                     <TextBlock Style="{StaticResource RowValueStyle}" Text="{Binding ViewModel.IslandSurfaceCornerRadiusDip, StringFormat={}{0:0.#} DIP}" />
                                 </StackPanel>
                             </components:SettingsRow>

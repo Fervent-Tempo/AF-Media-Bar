@@ -37,6 +37,7 @@ namespace AFMediaBar.Views.Windows
         private readonly AudioControlFlyoutWindow _audioControlFlyout;
         private readonly NativeMouseInputMonitor _mouseInputMonitor;
         private readonly WindowAppearanceService _appearanceService;
+        private readonly Func<TaskbarCompactFlyoutWindow> _compactFlyoutFactory;
         private readonly ScreenBackgroundSampler _screenBackgroundSampler;
         private readonly TaskbarOccupiedAreaService _occupiedAreaService;
         private readonly TaskbarLengthConstraintsService _taskbarLengthConstraints;
@@ -59,7 +60,7 @@ namespace AFMediaBar.Views.Windows
         /// queries the power state itself.</summary>
         private readonly MemoryPruneCoordinator _memoryPruneCoordinator;
         private readonly List<TaskbarWindow> _taskbarWindows = [];
-        private DynamicIslandWindow? _dynamicIslandWindow;
+        private CapsuleIslandWindow? _capsuleIslandWindow;
         private SettingsWindow? _settingsWindow;
         private readonly Dictionary<string, TaskbarFullPanelWindow> _fullPanelWindows = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, DateTime> _fullPanelClosedAtUtc = new(StringComparer.OrdinalIgnoreCase);
@@ -97,6 +98,7 @@ namespace AFMediaBar.Views.Windows
             AudioControlFlyoutWindow audioControlFlyout,
             NativeMouseInputMonitor mouseInputMonitor,
             WindowAppearanceService appearanceService,
+            Func<TaskbarCompactFlyoutWindow> compactFlyoutFactory,
             ScreenBackgroundSampler screenBackgroundSampler,
             TaskbarOccupiedAreaService occupiedAreaService,
             TaskbarLengthConstraintsService taskbarLengthConstraints,
@@ -123,6 +125,7 @@ namespace AFMediaBar.Views.Windows
             _audioControlFlyout = audioControlFlyout;
             _mouseInputMonitor = mouseInputMonitor;
             _appearanceService = appearanceService;
+            _compactFlyoutFactory = compactFlyoutFactory;
             _screenBackgroundSampler = screenBackgroundSampler;
             _occupiedAreaService = occupiedAreaService;
             _taskbarLengthConstraints = taskbarLengthConstraints;
@@ -175,6 +178,14 @@ namespace AFMediaBar.Views.Windows
             SettingsManager.LyricsSettingsChanged += SettingsManager_OnLyricsSettingsChanged;
             SettingsManager.TaskbarExperienceSettingsChanged += SettingsManager_OnTaskbarExperienceSettingsChanged;
             SettingsManager.InteractionSettingsChanged += SettingsManager_OnTaskbarExperienceSettingsChanged;
+            // 频谱组件（柱数/内容区高度/灵敏度/刷新率）也属于"扩展功能"设置：任务栏侧一直订阅着它（TaskbarWindow 的
+            // ApplyExtraFeaturesSettings），灵动岛侧过去没有订阅——岛上有了波形之后就成了一条真实的缺口：改了设置岛上的波形
+            // 纹丝不动。这里按任务栏同一模式补上订阅。
+            // The spectrum component (band count, content height, sensitivity, refresh rate) is part of the "extra features" settings, which the
+            // taskbar has always subscribed to (TaskbarWindow's ApplyExtraFeaturesSettings) while the island never did — a real gap once the island
+            // has a waveform: editing the settings left the island's waveform unchanged. The subscription is added here, following the very pattern
+            // the taskbar uses.
+            SettingsManager.ExtraFeaturesSettingsChanged += SettingsManager_OnExtraFeaturesSettingsChanged;
             SettingsManager.TaskbarTargetMonitorChanged += SettingsManager_OnTaskbarTargetMonitorChanged;
             _displayMonitorService.MonitorsChanged += DisplayMonitorService_OnMonitorsChanged;
             _trackChangeNotificationCoordinator.NotificationRequested += TrackChangeNotificationCoordinator_OnNotificationRequested;
@@ -246,8 +257,7 @@ namespace AFMediaBar.Views.Windows
             TrayMenu.IsOpen = false;
             foreach (var taskbarWindow in _taskbarWindows)
                 taskbarWindow.ClosePlayerMenu();
-            if (_dynamicIslandWindow is not null)
-                _dynamicIslandWindow.ClosePlayerMenu();
+            _capsuleIslandWindow?.CloseIslandMenu();
 
             if (_isSystemThemeWatcherActive)
             {
@@ -264,9 +274,9 @@ namespace AFMediaBar.Views.Windows
             }
 
             CloseTaskbarWindows();
-            var dynamicIslandWindow = _dynamicIslandWindow;
-            _dynamicIslandWindow = null;
-            dynamicIslandWindow?.Close();
+            var capsuleIslandWindow = _capsuleIslandWindow;
+            _capsuleIslandWindow = null;
+            capsuleIslandWindow?.Close();
             _audioControlFlyout.Close();
             CloseFullPanelWindows();
             var notificationWindow = _trackChangeNotificationWindow;
@@ -290,6 +300,7 @@ namespace AFMediaBar.Views.Windows
             SettingsManager.LyricsSettingsChanged -= SettingsManager_OnLyricsSettingsChanged;
             SettingsManager.TaskbarExperienceSettingsChanged -= SettingsManager_OnTaskbarExperienceSettingsChanged;
             SettingsManager.InteractionSettingsChanged -= SettingsManager_OnTaskbarExperienceSettingsChanged;
+            SettingsManager.ExtraFeaturesSettingsChanged -= SettingsManager_OnExtraFeaturesSettingsChanged;
             SettingsManager.TaskbarTargetMonitorChanged -= SettingsManager_OnTaskbarTargetMonitorChanged;
             _displayMonitorService.MonitorsChanged -= DisplayMonitorService_OnMonitorsChanged;
             _trackChangeNotificationCoordinator.NotificationRequested -= TrackChangeNotificationCoordinator_OnNotificationRequested;
@@ -512,7 +523,7 @@ namespace AFMediaBar.Views.Windows
 
             foreach (var taskbarWindow in _taskbarWindows)
                 taskbarWindow.ApplySnapshot(snapshot);
-            _dynamicIslandWindow?.ApplySnapshot(snapshot);
+            _capsuleIslandWindow?.ApplySnapshot(snapshot);
         }
 
         private void MediaSessionService_OnSessionsChanged(IReadOnlyList<MediaSessionOption> options)
@@ -522,7 +533,9 @@ namespace AFMediaBar.Views.Windows
 
             foreach (var taskbarWindow in _taskbarWindows)
                 taskbarWindow.ApplySessions(options);
-            _dynamicIslandWindow?.ApplySessions(options);
+            // 岛的右键菜单有自己的"切换媒体源"子菜单，因此快照与会话列表必须同样分发给它。
+            // The island's context menu owns its own "switch media source" submenu, so the session list is handed to it too.
+            _capsuleIslandWindow?.ApplySessions(options);
             ApplyTraySessions(options);
         }
 
@@ -558,8 +571,7 @@ namespace AFMediaBar.Views.Windows
                 ActivateWindowMode(e.WindowMode);
                 foreach (var taskbarWindow in _taskbarWindows)
                     taskbarWindow.ApplyLayoutSettings(e.WindowMode, e.OrientationMode);
-                _dynamicIslandWindow?.ApplyLayoutSettings(e.OrientationMode);
-                _dynamicIslandWindow?.ApplyAppearanceSettings();
+                _capsuleIslandWindow?.ApplyAppearanceSettings();
             });
         }
 
@@ -573,7 +585,7 @@ namespace AFMediaBar.Views.Windows
                 UpdateSystemThemeWatcher(e.Appearance);
                 foreach (var taskbarWindow in _taskbarWindows)
                     taskbarWindow.ApplyAppearanceSettings();
-                _dynamicIslandWindow?.ApplyAppearanceSettings();
+                _capsuleIslandWindow?.ApplyAppearanceSettings();
             });
         }
 
@@ -587,13 +599,30 @@ namespace AFMediaBar.Views.Windows
                 var snapshot = _mediaSessionService.CurrentSnapshot ?? MediaSnapshot.Disconnected;
                 foreach (var taskbarWindow in _taskbarWindows)
                     taskbarWindow.ApplySnapshot(snapshot);
-                _dynamicIslandWindow?.ApplySnapshot(snapshot);
+                _capsuleIslandWindow?.ApplySnapshot(snapshot);
+            });
+        }
+
+        /// <summary>
+        /// 扩展功能设置（频谱组件、性能组件、来源过滤、快捷启动）变更：频谱组件一变就要求灵动岛按新设置重新落一次波形几何并重画。
+        /// 任务栏侧走它自己的 <c>ApplyExtraFeaturesSettings</c>，这里只补灵动岛这一半（见订阅处的注释）。
+        /// An extra-features settings change (spectrum component, performance component, source filter, quick launch): a spectrum change asks the
+        /// island to land its waveform geometry again from the new settings and repaint. The taskbar takes its own
+        /// <c>ApplyExtraFeaturesSettings</c> path; this only fills in the island's half (see the note at the subscription).
+        /// </summary>
+        private void SettingsManager_OnExtraFeaturesSettingsChanged(object? sender, EventArgs e)
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (_isClosing)
+                    return;
+
+                _capsuleIslandWindow?.ApplySpectrumSettings();
             });
         }
 
         private void UpdateSystemThemeWatcher(AppearanceSettings appearance)
-        {
-            if (_isClosing)
+        {            if (_isClosing)
                 return;
 
             var shouldWatch = appearance.ApplicationThemeMode == ApplicationThemeMode.Automatic;
@@ -627,18 +656,32 @@ namespace AFMediaBar.Views.Windows
                 _taskbarRecoveryCancellation?.Cancel();
                 TaskbarEnvironmentRecovering = false;
                 CloseTaskbarWindows();
-                _dynamicIslandWindow ??= App.Services.GetRequiredService<DynamicIslandWindow>();
-                _dynamicIslandWindow.ApplyLayoutSettings(SettingsManager.Current.LayoutOrientationMode);
-                _dynamicIslandWindow.ApplyAppearanceSettings();
-                _dynamicIslandWindow.ApplySessions(_mediaSessionService.CurrentSessionOptions);
-                _dynamicIslandWindow.Show();
+                if (_capsuleIslandWindow is null)
+                {
+                    var island = App.Services.GetRequiredService<CapsuleIslandWindow>();
+                    island.OpenFullPanelRequested += CapsuleIslandWindow_OpenFullPanelRequested;
+                    _capsuleIslandWindow = island;
+                }
+
+                _capsuleIslandWindow.ApplyAppearanceSettings();
+                _capsuleIslandWindow.Show();
+                _capsuleIslandWindow.ApplySessions(_mediaSessionService.CurrentSessionOptions);
                 if (_mediaSessionService.CurrentSnapshot is { } islandSnapshot)
-                    _dynamicIslandWindow.ApplySnapshot(islandSnapshot);
+                    _capsuleIslandWindow.ApplySnapshot(islandSnapshot);
                 return;
             }
 
-            _dynamicIslandWindow?.Close();
-            _dynamicIslandWindow = null;
+            if (_capsuleIslandWindow is { } islandWindow)
+            {
+                islandWindow.OpenFullPanelRequested -= CapsuleIslandWindow_OpenFullPanelRequested;
+                _capsuleIslandWindow = null;
+                islandWindow.Close();
+            }
+
+            // 完整层可能正挂在岛的锚点上：岛消失后它必须跟着消失，否则会停在一块已经不存在的位置上。
+            // The full panel may be anchored to the island: once the island goes away it has to go too, or it would sit on
+            // top of an anchor that no longer exists.
+            CloseFullPanelWindows();
             if (_taskbarWindows.Count == 0)
             {
                 CreateTaskbarWindows();
@@ -687,7 +730,7 @@ namespace AFMediaBar.Views.Windows
                     return;
                 foreach (var taskbarWindow in _taskbarWindows)
                     taskbarWindow.ApplyAppearanceSettings();
-                _dynamicIslandWindow?.ApplyAppearanceSettings();
+                _capsuleIslandWindow?.ApplyAppearanceSettings();
             }, DispatcherPriority.Background);
         }
 
@@ -777,13 +820,40 @@ namespace AFMediaBar.Views.Windows
         private async void AudioControl_OnCurrentAppVolumeMenuRequested(TrayIconBounds? bounds) =>
             await ShowTrayCompactMenuAsync(TaskbarCompactFlyoutMode.Volume, bounds);
 
+        /// <summary>
+        /// 托盘点击要求打开输出设备菜单 / 当前应用音量菜单：按当前存在的媒体栏宿主路由，
+        /// 锚点用托盘图标的位置，因此菜单出现在用户刚刚点击的地方。
+        /// The tray click asks for the output-device / current-application-volume menu: the request is routed to whichever
+        /// media-bar host currently exists, and the anchor is the tray icon's position, so the menu appears where the user
+        /// just clicked.
+        ///
+        /// 这里曾经在任务栏媒体栏列表为空时直接返回，于是灵动岛模式下托盘左键的这两项完全没有反应（静默失效）。
+        /// 现在宿主选择交给纯策略：任务栏优先、其次是岛、都没有时退回托盘音频浮窗——每一次点击都有真实落点。
+        /// This used to return as soon as the taskbar media-bar list was empty, which made both tray left-click actions do
+        /// nothing at all in dynamic-island mode (a silent failure). The host is now chosen by a pure policy: taskbar
+        /// first, then the island, and the tray audio flyout when neither exists — every click has a real destination.
+        /// </summary>
         private async Task ShowTrayCompactMenuAsync(TaskbarCompactFlyoutMode mode, TrayIconBounds? bounds)
         {
-            var primaryTaskbarWindow = _taskbarWindows.FirstOrDefault();
-            if (_isClosing || primaryTaskbarWindow is null)
+            if (_isClosing)
                 return;
 
-            await primaryTaskbarWindow.ShowCompactMenuAsync(mode, bounds);
+            switch (TrayAudioMenuRoutePolicy.Resolve(_taskbarWindows.Count > 0, _capsuleIslandWindow is not null))
+            {
+                case TrayAudioMenuRoute.TaskbarHost:
+                    if (_taskbarWindows.FirstOrDefault() is { } taskbarWindow)
+                        await taskbarWindow.ShowCompactMenuAsync(mode, bounds);
+                    return;
+
+                case TrayAudioMenuRoute.IslandHost:
+                    if (_capsuleIslandWindow is { } island)
+                        await island.ShowCompactMenuAsync(mode, bounds);
+                    return;
+
+                default:
+                    await _audioControlFlyout.ToggleAsync(bounds);
+                    return;
+            }
         }
 
         private void SettingsManager_OnTaskbarExperienceSettingsChanged(object? sender, EventArgs e)
@@ -819,6 +889,7 @@ namespace AFMediaBar.Views.Windows
                 ViewModel,
                 this,
                 _appearanceService,
+                _compactFlyoutFactory,
                 _occupiedAreaService,
                 _taskbarLengthConstraints,
                 _interactionRouter,
@@ -838,7 +909,34 @@ namespace AFMediaBar.Views.Windows
             if (_isClosing || sender is not TaskbarWindow taskbarWindow)
                 return;
 
-            var targetDeviceId = taskbarWindow.TargetMonitorDeviceId;
+            ToggleFullPanelNear(taskbarWindow.GetMediaBarScreenBounds(), taskbarWindow.TargetMonitorDeviceId);
+        }
+
+        /// <summary>
+        /// 灵动岛的右键菜单请求打开完整层：与任务栏走同一条路径，只有锚点与目标显示器来自岛，
+        /// 因此完整层不需要为岛再写一份（定位、失焦关闭、分区分组、音频与性能区都自动具备）。
+        /// The island's context menu asks for the full panel: it takes the same path as the taskbar and only the anchor and
+        /// target display come from the island, so no second full panel is needed (placement, focus-loss dismissal,
+        /// sections, audio and performance blocks are all inherited).
+        /// </summary>
+        private void CapsuleIslandWindow_OpenFullPanelRequested(object? sender, EventArgs e)
+        {
+            if (_isClosing || _capsuleIslandWindow is not { } island)
+                return;
+
+            ToggleFullPanelNear(island.GetMediaBarScreenBounds(), island.TargetMonitorDeviceId);
+        }
+
+        /// <summary>
+        /// 在给定锚点处打开（或收起）完整层，并按目标显示器缓存实例。
+        /// Opens — or dismisses — the full panel at the given anchor, caching the instance per target display.
+        ///
+        /// 350ms 的冷却窗口防止"失焦关闭后同一次点击又把它打开"：失焦关闭与再次点击几乎是同一瞬间发生的。
+        /// The 350 ms cooldown keeps a focus-loss dismissal from being reopened by the very same click, which happens
+        /// within a moment of each other.
+        /// </summary>
+        private void ToggleFullPanelNear(Rect anchor, string targetDeviceId)
+        {
             if (!_fullPanelWindows.TryGetValue(targetDeviceId, out var panel) &&
                 _fullPanelClosedAtUtc.TryGetValue(targetDeviceId, out var closedAtUtc) &&
                 DateTime.UtcNow - closedAtUtc < TimeSpan.FromMilliseconds(350))
@@ -854,7 +952,7 @@ namespace AFMediaBar.Views.Windows
 
             panel.Closed -= FullPanelWindow_Closed;
             panel.Closed += FullPanelWindow_Closed;
-            panel.ToggleNear(taskbarWindow.GetMediaBarScreenBounds(), targetDeviceId);
+            panel.ToggleNear(anchor, targetDeviceId);
         }
 
         private void FullPanelWindow_Closed(object? sender, EventArgs e)
@@ -993,7 +1091,10 @@ namespace AFMediaBar.Views.Windows
                 ContextMenuHelper.CloseIfOutside(TrayMenu, e.ScreenX, e.ScreenY);
                 foreach (var taskbarWindow in _taskbarWindows)
                     taskbarWindow.CloseContextMenuIfOutside(e.ScreenX, e.ScreenY);
-                _dynamicIslandWindow?.CloseContextMenuIfOutside(e.ScreenX, e.ScreenY);
+                // 岛的右键菜单同样是 Popup 窗口，不在 Application.Windows 里，其"点菜单外关闭"必须由这里驱动。
+                // The island's context menu is a Popup window too and is not an Application.Windows entry, so its
+                // outside-click dismissal is driven from here as well.
+                _capsuleIslandWindow?.CloseIslandMenuIfOutside(e.ScreenX, e.ScreenY);
             }, System.Windows.Threading.DispatcherPriority.Background);
         }
 

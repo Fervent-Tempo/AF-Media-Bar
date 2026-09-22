@@ -27,12 +27,6 @@
 
 ## 展示
 
-<div align="center">
-
-![AF Media Bar 运行展示](./docs/assets/运行展示.gif)
-
-</div>
-
 [在 Bilibili 观看 AF Media Bar 介绍视频](https://www.bilibili.com/video/BV1Bjuq6bErr)
 
 ## 简介

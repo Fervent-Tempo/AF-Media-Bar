@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Abstractions;
@@ -1590,6 +1591,7 @@ namespace AFMediaBar.Components
             ApplySpectrumForeground(foreground);
             ApplyTaskbarHoverAppearance(foreground);
             SongInfoStackPanel.Background = Brushes.Transparent;
+            ApplyContrastShadow(presentation.NeedsContrastShadow, presentation.UsesLightText);
 
             if (_currentMode == WindowMode.Taskbar)
             {
@@ -1628,6 +1630,39 @@ namespace AFMediaBar.Components
             Resources["TaskbarHoverHandleBrush"] = new SolidColorBrush(_taskbarHoverPalette.Handle);
             RefreshTaskbarHoverAppearance();
         }
+
+        private void ApplyContrastShadow(bool enabled, bool usesLightText)
+        {
+            Effect? effect = null;
+            if (enabled)
+            {
+                // 阴影只负责对比度，不参与字形：模糊半径保持在 1 DIP，并且必须离开字形轮廓。
+                // ShadowDepth 为 0 时模糊副本压在字形正中，会把每条笔画的边缘吃掉，用户看到的就是"文字发虚"；
+                // 偏移 1 DIP 后阴影落在轮廓外侧，字形边缘保持干净。
+                // The shadow exists for contrast, not for glyph shape: keep the blur radius at 1 DIP but move it off the
+                // glyph outline. With ShadowDepth 0 the blurred copy sits centered under the glyphs and eats every stroke
+                // edge, which reads as blurry text; a 1 DIP offset keeps the glyph edges clean.
+                var shadow = new DropShadowEffect
+                {
+                    Color = usesLightText ? Colors.Black : Colors.White,
+                    BlurRadius = 1,
+                    ShadowDepth = 1,
+                    Direction = 315,
+                    Opacity = 0.85,
+                    RenderingBias = RenderingBias.Quality
+                };
+                shadow.Freeze();
+                effect = shadow;
+            }
+
+            SongTitle.Effect = effect;
+            SongArtist.Effect = effect;
+            SongLyrics.Effect = effect;
+            SongLyricsHighlight.Effect = effect;
+            SongLyricsSecondary.Effect = effect;
+            TaskbarPerformanceText.Effect = effect;
+        }
+
 
         /// <summary>
         /// 更新歌曲信息：根据快照更新 UI 的所有元素（标题、艺术家、封面、歌词、播放状态）。

@@ -106,7 +106,6 @@ internal static class StringsZhHans
         table.Add("Appearance.Backdrop.Solid", "纯色");
         table.Add("Appearance.BackdropTint.Hint", "只在材质由本程序绘制时生效：Windows 10 上的窗口，以及永不获取焦点的曲目通知（系统材质要求窗口处于前台，通知从不激活，因此它的模糊由本程序绘制）。Windows 11 的云母与亚克力由系统绘制，不受此值影响。值越低越通透，过高则接近纯色。");
         table.Add("Appearance.CjkFont.FollowSystem", "跟随系统");
-        table.Add("Appearance.LatinFont.FollowSystem", "跟随系统");
         table.Add("Appearance.Header.Subtitle", "字体、主题、窗口背景与媒体栏文字");
         table.Add("Appearance.Motion.Detail.Full", "保留展开、反馈和频谱过渡");
         table.Add("Appearance.Motion.Detail.Instant", "跟随系统设置，避免过渡延迟");
@@ -242,7 +241,7 @@ internal static class StringsZhHans
         table.Add("Common.TrayIcon", "托盘图标");
 
         // ---- Diagram ----
-        table.Add("Diagram.DynamicIslandSurface.Caption", "灵动岛模式尚未实现，因此下面三项当前只读；它的外观与任务栏互不影响。");
+        table.Add("Diagram.DynamicIslandSurface.Caption", "灵动岛自己的背景样式、不透明度与圆角；它与任务栏外观互不影响。");
         table.Add("Diagram.InputGestures.Caption", "媒体栏上仅这两个区域可以点击，并且可分别设置；展开面板中的按钮不受影响。");
         table.Add("Diagram.InputGestures.Label.ArtworkClick", "点击封面");
         table.Add("Diagram.InputGestures.Label.TextClick", "点击标题或歌词");
@@ -296,7 +295,7 @@ internal static class StringsZhHans
         table.Add("DisplayModes.Hover.Row.Enable.Title", "启用悬停层");
         table.Add("DisplayModes.Hover.Row.Progress.Title", "进度条");
         table.Add("DisplayModes.Island.Group.Description", "灵动岛自己的外观，与任务栏互不影响");
-        table.Add("DisplayModes.Island.Notice", "灵动岛模式尚未实现，因此下面的选项当前只读，改动不会影响正在运行的任务栏媒体栏。");
+        table.Add("DisplayModes.Island.Notice", "这三项只作用于灵动岛，与任务栏媒体栏互不影响。");
         table.Add("DisplayModes.Island.Row.Corner.Description", "0–24 DIP");
         table.Add("DisplayModes.Island.Row.Corner.Title", "圆角");
         table.Add("DisplayModes.Island.Row.Opacity.Description", "数值越高越不透明");
@@ -312,7 +311,7 @@ internal static class StringsZhHans
         table.Add("DisplayModes.Mode.DynamicIsland.Caption", "以屏幕边缘浮层承载媒体状态");
         table.Add("DisplayModes.Mode.FloatingBall", "悬浮球");
         table.Add("DisplayModes.Mode.FloatingBall.Caption", "以紧凑悬浮入口展开控制");
-        table.Add("DisplayModes.Mode.PreviewNotice", "当前运行模式固定为任务栏。选择其它模式只切换本页显示的内容，不会切换正在运行的窗口。");
+        table.Add("DisplayModes.Mode.PreviewNotice", "桌面卡片与悬浮球尚未实现，选中它们只会预览本页内容。选择任务栏或灵动岛会立即切换正在运行的窗口。");
         table.Add("DisplayModes.Mode.Taskbar", "任务栏");
         table.Add("DisplayModes.Mode.Taskbar.Caption", "置于 Windows 任务栏，含静置层、悬停层与完整层");
         table.Add("DisplayModes.Monitor.DisconnectedSuffix", "（当前未连接）");
@@ -619,7 +618,7 @@ internal static class StringsZhHans
         table.Add("Search.DisplayModes.ChooseDisplayMode.Description", "选择任务栏、灵动岛、桌面卡片或悬浮球");
         table.Add("Search.DisplayModes.FullLayer.Description", "点击媒体栏展开的面板包含哪些分区");
         table.Add("Search.DisplayModes.HoverLayer.Description", "鼠标移入媒体栏时出现的快捷控制");
-        table.Add("Search.DisplayModes.IslandAppearance.Description", "灵动岛的背景样式、不透明度与圆角，当前只读");
+        table.Add("Search.DisplayModes.IslandAppearance.Description", "灵动岛的背景样式、不透明度与圆角");
         table.Add("Search.DisplayModes.MediaBarWidth.Description", "宽度跟随内容、固定宽度与组件间距");
         table.Add("Search.DisplayModes.RestLayer.Description", "始终显示的基础层：信息密度、内容排列、对齐、进度显示与完整层入口");
         table.Add("Search.DisplayModes.ScreenAndPlacement.Description", "媒体栏所在的显示器与任务栏位置");

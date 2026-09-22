@@ -127,6 +127,7 @@ public partial class TaskbarWindow : Window
         MainWindowViewModel viewModel,
         ITaskbarWindowHostActions hostActions,
         WindowAppearanceService appearanceService,
+        Func<TaskbarCompactFlyoutWindow> compactFlyoutFactory,
         TaskbarOccupiedAreaService occupiedAreaService,
         TaskbarLengthConstraintsService lengthConstraints,
         GlobalInteractionRouter interactionRouter,
@@ -150,7 +151,11 @@ public partial class TaskbarWindow : Window
         // The click synthesized when a chord wheel ends has to be swallowed: the rest-layer click and the context menu both ask the
         // same authority, and they live in the control and the host respectively.
         MediaControl.SuppressedClickSource = _mouseInputMonitor.ConsumeSuppressedClick;
-        _compactFlyout = new TaskbarCompactFlyoutWindow(appearanceService);
+        // 紧凑浮层由容器工厂产出：任务栏宿主与灵动岛宿主共用同一份菜单实现，
+        // 宿主只负责持有自己的实例与把事件接到自己的媒体控件上（见 App.xaml.cs 的注册处）。
+        // The compact flyout comes from the container factory: the taskbar and dynamic-island hosts share one menu
+        // implementation and each host only owns its instance and wires the events to its own media control.
+        _compactFlyout = compactFlyoutFactory();
         _compactFlyout.QuickLaunchSelected += MediaControl_QuickLaunchRequested;
         _compactFlyout.OutputDeviceSelected += MediaControl_OutputDeviceSelected;
         _compactFlyout.OutputDeviceWheelRequested += CompactFlyout_OutputDeviceWheelRequested;

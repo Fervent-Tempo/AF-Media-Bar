@@ -148,4 +148,31 @@ public static class DynamicIslandPositionCalculator
 
         return ClampPosition(workArea, width, height, candidate);
     }
+
+    /// <summary>
+    /// 窗口矩形 → 工作区归一化中心（0..1，按工作区宽高归一，窗口中心点）。
+    /// 工作区宽或高 ≤ 0 时返回 (0.5, 0.5)；结果各分量夹到 0..1。
+    /// Window bounds to a work-area normalized center (0..1 per work-area axis, the window's own center point).
+    /// A work area whose width or height is zero or less returns (0.5, 0.5), and each component is clamped into 0..1.
+    /// </summary>
+    /// <param name="workArea">可用工作区。/ Available work area.</param>
+    /// <param name="windowBounds">窗口矩形。/ The window rectangle.</param>
+    /// <returns>归一化中心坐标。/ The normalized center coordinate.</returns>
+    public static Point GetNormalizedCenter(Rect workArea, Rect windowBounds)
+    {
+        // 零尺寸的工作区没有可归一的长度，中心点只能落在中点上；返回 NaN 会让这个值被存进设置再读回来。
+        // A zero-sized work area has no length to normalize against, so the center can only be the midpoint; returning NaN would
+        // let that value be persisted and read back later.
+        if (workArea.Width <= 0 || workArea.Height <= 0)
+        {
+            return new Point(0.5, 0.5);
+        }
+
+        var center = new Point(
+            (windowBounds.Left + windowBounds.Right) / 2,
+            (windowBounds.Top + windowBounds.Bottom) / 2);
+        return new Point(
+            Math.Clamp((center.X - workArea.Left) / workArea.Width, 0, 1),
+            Math.Clamp((center.Y - workArea.Top) / workArea.Height, 0, 1));
+    }
 }

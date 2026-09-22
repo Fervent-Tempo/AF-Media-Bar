@@ -1,0 +1,587 @@
+<Window x:Class="AFMediaBar.Views.Windows.CapsuleIslandWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        Title="CapsuleIslandWindow"
+        Width="220"
+        Height="44"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Topmost="True"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ShowActivated="False"
+        Visibility="Collapsed"
+        MouseEnter="Window_MouseEnter"
+        MouseLeave="Window_MouseLeave"
+        PreviewMouseLeftButtonDown="Window_PreviewMouseLeftButtonDown"
+        PreviewMouseMove="Window_PreviewMouseMove"
+        PreviewMouseLeftButtonUp="Window_PreviewMouseLeftButtonUp">
+    <!--
+        胶囊式灵动岛（macOS 风格）：空闲收拢为胶囊（封面缩略图 + 滚动歌名 + 播放暂停），
+        悬停或点击形变展开为卡片（大封面、标题、作者、进度条 seek、上一首/播放暂停/下一首）。
+        Capsule-style dynamic island: collapses to a capsule (thumbnail + scrolling title + play/pause)
+        when idle and morphs into a card (large artwork, title, artist, seek slider, transport controls).
+    -->
+    <Border x:Name="RootSurface"
+            CornerRadius="22"
+            BorderThickness="1"
+            Background="#E6171B22"
+            BorderBrush="#4DFFFFFF"
+            PreviewMouseWheel="RootSurface_PreviewMouseWheel">
+        <!--
+            ContentRoot 除了矩形裁剪，还在代码里挂了一个**圆角**几何裁剪（见 CapsuleIslandWindow.Surface.cs）：
+            Border 的 CornerRadius 只裁它自己的背景，子元素（封面模糊底、胶囊封面缩略图、卡片内容）不会被裁成圆角，
+            于是圆角外那四块区域会被画上内容——药丸两端露方角、缩略图直角戳出药丸、形变途中卡片从方角里透出来。
+            ContentRoot carries a **rounded** geometric clip installed from code (see CapsuleIslandWindow.Surface.cs) on top of the
+            rectangular one: a Border's CornerRadius clips only its own background, so children — the blurred artwork backdrop, the
+            capsule thumbnail, the card content — are never clipped into the rounded shape, and the four areas outside the corners get
+            painted: square-ended pill tips, a thumbnail's right angles poking out, and a morph leaking the card through those corners.
+        -->
+        <Grid x:Name="ContentRoot" ClipToBounds="True">
+
+            <!--
+                封面模糊底：与任务栏模式主窗口里的同一元素同配方（UniformToFill + 半径 80 模糊 + 0.4 不透明度），
+                让胶囊与媒体栏看起来是同一个播放器表面。无媒体时它没有 Source，表面就只剩主题底色。
+                Blurred artwork backdrop: the same recipe as the identical element in the taskbar-mode host (UniformToFill,
+                radius-80 blur, 0.4 opacity) so the island and the media bar read as one player surface. Without media it
+                has no Source and only the themed surface colour remains.
+            -->
+            <Image x:Name="BackdropImage"
+                   Stretch="UniformToFill"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   Opacity="0.4"
+                   IsHitTestVisible="False">
+                <Image.Effect>
+                    <BlurEffect Radius="80" />
+                </Image.Effect>
+            </Image>
+
+            <!--
+                胶囊视图 Capsule view
+
+                显式钉住基准尺寸 176×40 并居中（= CapsuleIslandMetrics.CapsuleSize；实际尺寸每次由 ApplyCapsuleViewSize
+                按缩放系数改写）：不钉住的话它会随窗口一起被拉伸，展开时歌名与封面缩略图跟着窗口边缘一起漂移、
+                字号行高也一起变，看起来就是"收缩前后位置对不上"。
+                窗口胀大成卡片时，居中的胶囊内容正好待在原位，只有卡片视图在它周围出现。
+                Pinned to the 176×40 baseline and centred (= CapsuleIslandMetrics.CapsuleSize; ApplyCapsuleViewSize rewrites
+                the actual size from the scale factor on every shape target): left unstretched it would be stretched along
+                with the window, so the title and thumbnail drifted with the window edge and the text re-flowed on every
+                frame — which reads as the text not staying put across a collapse. With the window grown into a card the
+                centred capsule content stays exactly where it was and only the card view appears around it.
+            -->
+            <Grid x:Name="CapsuleView"
+                  Width="180"
+                  Height="40"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <!--
+                        第 0 列是胶囊内容的左内缩：药丸两端是完全圆头，封面若与左弧相切会读成"贴着边"，
+                        留出 CapsuleIslandMetrics.CapsuleLeadInsetDip ×缩放 的间距后，封面才在药丸里"坐得住"。
+                        这一列由 ApplyCapsuleViewSize 按缩放系数改写（列宽是固定 DIP，缩放必须由代码写）；药丸基准宽度
+                        （CapsuleIslandMetrics.CapsuleSize.Width）同时加宽了同样的量，因此**标题可用宽度分毫未减**——
+                        间距不是从歌名那里扣的。
+                        Column 0 is the capsule content's left inset: the pill's ends are fully rounded, and a cover tangent to the
+                        left arc reads as "stuck to the edge"; CapsuleIslandMetrics.CapsuleLeadInsetDip × scale of breathing room is
+                        what makes it sit inside the pill. ApplyCapsuleViewSize rewrites this column from the scale factor (a column
+                        width is a fixed DIP, so scaling has to come from code), and the pill's baseline width
+                        (CapsuleIslandMetrics.CapsuleSize.Width) was widened by the same amount — so the title keeps every DIP it had:
+                        the spacing is not taken out of the song title.
+                    -->
+                    <ColumnDefinition x:Name="CapsuleLeadInset" Width="4" />
+                    <!--
+                        封面列取 Auto，宽度由封面槽自己决定：画布缩放会把槽位尺寸改成 32×scale（见 ApplyCapsuleViewSize），
+                        而列宽是 XAML 里的固定 DIP。列宽钉死 32 时，放大后 41.24 的槽位会在 32 的列里居中，于是左边超出窗口
+                        4.62 DIP——封面被推到药丸左弧之外，再被圆角裁掉。Auto 之后槽位与它所在的那一列对齐，封面完整落在药丸里。
+                        The cover column is Auto so the slot decides its own width: a canvas scale resizes the slot to 32×scale (see
+                        ApplyCapsuleViewSize) while a column width is a fixed DIP written in XAML. Pinned at 32, the scaled slot of 41.24
+                        would centre itself inside that column and stick 4.62 DIP out of the window's left edge — pushing the cover past
+                        the pill's left arc, where the rounded corner then cuts it off. With Auto the slot lines up with its own column
+                        and the cover lands inside the pill whole.
+                    -->
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <!--
+                        第四列（编号 107 的律动波形）：Auto，基准宽度 = SpectrumPresentationPolicy.CalculateContentWidthDip(BandCount)
+                        （本机 11 段 ⇒ 42 DIP），由 ApplyCapsuleViewSize 按缩放系数改写——列宽与元素尺寸都是固定 DIP，缩放只能由代码写。
+                        它是从第三列（星号）里扣宽度的：胶囊药丸的基准宽度 CapsuleIslandMetrics.CapsuleSize **不动**，否则 MeasureMarquee
+                        的容器宽、几何常量与卡片尺寸会一起被牵动，代价远大于"文字槽变窄"。
+                        **实际侵占量（真机实测，基准 DIP）**：11 段 = 42（内容宽）+ 6（左右边距）= **48 DIP**；24 段 = 94 + 6 = **100 DIP**。
+                        乘本机 scale 1.2889 后分别是 **62 / 129 物理像素**。文字槽的基准可用宽因此从本波之前的约 139 DIP 降到
+                        11 段约 91 DIP、24 段约 39 DIP（按每汉字约 16.75 DIP 算，24 段时只剩 2–3 个汉字 ⇒ 跟随滚动会更早触发）。
+                        控制器已裁定**不改代码**：段数是用户自己的设置，这是已知取舍，不加上限也不额外缩放药丸。
+                        纯呈现：IsHitTestVisible=False，点击与拖拽都穿透到窗口级（胶囊里不许新增可点击控件——悬停即展开）。
+                        The fourth column, item 107's animated waveform: Auto, with a baseline width of
+                        SpectrumPresentationPolicy.CalculateContentWidthDip(BandCount) — 42 DIP at the eleven bands this machine uses — rewritten from
+                        the scale factor by ApplyCapsuleViewSize, because both the column width and the element size are fixed DIP and scaling can only
+                        come from code. It takes its width out of the third (star) column: the pill's baseline width (CapsuleIslandMetrics.CapsuleSize)
+                        is deliberately **unchanged**, since growing it would drag along MeasureMarquee's container width, the geometry constants, and
+                        the card size — a far bigger cost than a narrower text slot.
+                        **The measured invasion, in baseline DIP**: at eleven bands it is 42 (content width) + 6 (margins) = **48 DIP**, and at
+                        twenty-four bands 94 + 6 = **100 DIP**; at this machine's 1.2889 scale those are **62 and 129 physical pixels**. The text
+                        slot's baseline usable width therefore falls from about 139 DIP before this wave to about 91 DIP at eleven bands and about
+                        39 DIP at twenty-four (roughly 16.75 DIP per CJK glyph, so two to three characters at twenty-four bands, where the follow
+                        scroll kicks in sooner). The controller has ruled **no code change**: the band count is the user's own setting and this is a
+                        known trade-off — no ceiling is added and the pill is not scaled up.
+                        Presentation only: IsHitTestVisible is false so clicks and drags pass through to the window (no new clickable control may be
+                        added to the capsule, because hovering already expands it).
+                    -->
+                    <ColumnDefinition Width="Auto" />
+                    <!--
+                        第三列（原先放紧凑态播放/暂停按钮）已删除：鼠标一移到岛上岛就形变展开，用户永远没有"点一下紧凑态按钮"
+                        的时机的——按钮在展开途中就被 CapsuleView.IsHitTestVisible=false 挡掉了，那个按钮是**不可达**的。
+                        播放/暂停现在只在舒张态的卡片里（CardPlayPause 是"点击生效"的按钮，悬停不触发它）。
+                        歌名因此独占整格，可用宽度按 CapsuleTitleHost.ActualWidth 实测，不需要另配常量。
+                        The third column (which held the compact play/pause button) is gone: the island morphs open the moment the pointer
+                        lands on it, so there is no moment in which to click a compact button — and mid-morph the button is already out of
+                        the hit test through CapsuleView.IsHitTestVisible=false, which makes it **unreachable**. Play/pause now lives only in
+                        the expanded card, where a click is what runs it and hovering alone does not. The title therefore owns the whole row
+                        and measures itself from CapsuleTitleHost.ActualWidth, so no constant has to be kept in step.
+                    -->
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="1"
+                        x:Name="CapsuleArtworkSlot"
+                        Width="32"
+                        Height="32"
+                        CornerRadius="16"
+                        ClipToBounds="True"
+                        Tag="MediaAction"
+                        IsHitTestVisible="True">
+                    <!-- 槽位自己的圆角同样不裁子元素（WPF 的 Border 只裁自己的背景），方图因此要在代码里裁成这个圆：
+                         见 CapsuleIslandWindow.Surface.cs 的 InstallArtworkSlotClip。 -->
+                    <Grid x:Name="CapsuleArtworkContent">
+                        <Image x:Name="CapsuleArtwork" Stretch="UniformToFill" />
+                        <ui:SymbolIcon x:Name="CapsulePlaceholderIcon"
+                                       Symbol="MusicNote220"
+                                       FontSize="16"
+                                       Visibility="Collapsed"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                    </Grid>
+                </Border>
+
+                <Grid x:Name="CapsuleTitleHost" Grid.Column="2" Margin="4,0,2,0" ClipToBounds="True" Tag="MediaAction" IsHitTestVisible="True">
+                    <!--
+                        歌名轨道的可视宽度就是这一格减去左右边距。这里把左右边距从 8/4 收到 4/2、并把播放按钮的横向内边距从 6 收到 4：
+                        封面列改成 Auto（见下）之后，封面槽诚实地占掉 32×scale = 41.24 DIP，比原先写死的 32 多 9.24 DIP，标题因此被挤窄了
+                        同样的宽度——刚好溢出的歌名（例如 "烂泥 (Live) - 唐汉霄" 自然宽 150.6 DIP）会因此被这格的右缘切掉一点字，
+                        读起来像"最后一个字被吃掉"。把这三处加起来约 10 DIP 还给标题之后，这类"只差一点点"的歌名不再进入跑马灯，
+                        整条歌名完整显示；真正放不下的长歌名仍然按循环跑马灯滚动。
+                        The track's visible width is this cell minus its horizontal margins. The margins are narrowed from 8/4 to 4/2 and the play
+                        button's horizontal padding from 6 to 4 because the cover column became Auto (see below): the cover slot then honestly
+                        occupies 32×scale = 41.24 DIP, 9.24 DIP more than the hard-coded 32 it used to pretend, which squeezed the title by that
+                        same amount — so a title that only just overflows (such as "烂泥 (Live) - 唐汉霄" at a natural width of 150.6 DIP) got a
+                        sliver of its last character cut off by this cell's right edge, which reads as "the last character is half eaten". Giving
+                        those three values back to the title (about 10 DIP in total) keeps such barely-overflowing titles out of the marquee so the
+                        whole title shows, while a genuinely too-long title still scrolls on the looping marquee.
+                    -->
+                    <!--
+                        歌名轨道：轨道里放**两份**同样的文本，横向排布，位移整条轨道一起走（TranslateTransform 在轨道上）。
+                        第一份滚出左缘的同时第二份的头部从右缘进来，于是跑马灯是**循环**的；只有一份时偏移一回绕文字就跳回起点，
+                        用户看到的就是"刷新"而不是"从右侧重新出现"。
+                        两份不可能漂移：第二份的 Text / FontSize / FontFamily / FontWeight / Foreground 全部用 ElementName 绑定跟随
+                        第一份，因此换歌、缩放字号与前景刷新都只写第一份，第二份自动跟上（ApplyFontScales 与前景元素列表都不用动）。
+                        第二份的左间距只有**一个来源**：由 MeasureMarquee 按 MarqueeGapDip 写入，它必须等于回绕周期里的那个间隔，
+                        否则回绕点会跳一下。短歌名不滚动时第二份整份 Collapsed，绝不会在旁边多出一份。
+                        Title track: **two** copies of the same text laid out horizontally, translated as one whole track (the
+                        TranslateTransform sits on the track). While the first copy leaves the left edge the second copy's head enters from the
+                        right edge, which makes the marquee a **loop**; with a single copy the offset wrapping back to zero snaps the text to its
+                        start, which the user reads as a refresh rather than a re-entry from the right.
+                        The two copies cannot drift apart: the second one follows the first through ElementName bindings on Text, FontSize,
+                        FontFamily, FontWeight, and Foreground, so a track change, a font-size rescale, and a foreground refresh all write the
+                        first copy alone and the second one follows (neither ApplyFontScales nor the foreground element list has to change).
+                        The second copy's left spacing has exactly **one** source: MeasureMarquee writes it from MarqueeGapDip, which has to
+                        equal the gap inside the wrap cycle or the wrap point would jump. A short title that does not scroll collapses the
+                        second copy entirely, so no duplicate is ever visible next to it.
+                    -->
+                    <Grid x:Name="CapsuleTitleTrack" HorizontalAlignment="Left">
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:Name="CapsuleTitleTransform" X="0" />
+                        </Grid.RenderTransform>
+                        <TextBlock x:Name="CapsuleTitle"
+                                   VerticalAlignment="Center"
+                                   FontSize="13"
+                                   TextWrapping="NoWrap"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                        <!--
+                            第二份歌名**永久收起，不再参与显示**（保留元素只是因为它的命名与位移仍有代码在复位）。
+                            W9/W10 的实测把这条钉死了：在"两份文本 + 反相位位移"的形状里，第二份的**布局**矩形落在轨道之外，
+                            第一份滚到一半时它自己的布局矩形也整块移出容器，而 WPF 会把布局矩形完全落在父级裁剪之外的元素**整个剔掉**
+                            （`RenderTransform` 救不回来），文字槽因此从 offset ≈ 容器宽 起整段空白 8 秒以上——歌名尾部永远读不出来。
+                            现行做法（用户裁定）：歌名不滚动，过长的歌名由上面那份的 `CharacterEllipsis` 在右缘截断；
+                            有歌词时文字槽优先显示歌词（由 `_capsuleSlotMode` 决定，见 CapsuleIslandWindow.Lyrics.cs）。
+                            The second copy stays collapsed for good and no longer takes part in rendering (the element survives only because
+                            its name and shift still get reset by code). W9/W10 measurements settled this: in the "two copies plus an anti-phase
+                            shift" shape the second copy's **layout** rectangle sits past the track, and the first copy's own layout rectangle
+                            also leaves the container once it has scrolled halfway; WPF **culls** an element whose layout rectangle lies entirely
+                            outside its parent's clip (no RenderTransform brings it back), so the cell went blank for over eight seconds from
+                            offset ≈ one container width onwards — the title's tail could never be read. The current behaviour (the user's
+                            ruling): the title does not scroll, an over-long title is trimmed at the right edge by that element's own
+                            `CharacterEllipsis`, and while lyrics exist the cell shows the lyric line first (decided by `_capsuleSlotMode`, see
+                            CapsuleIslandWindow.Lyrics.cs).
+                        -->
+                        <TextBlock x:Name="CapsuleTitleLoop"
+                                   VerticalAlignment="Center"
+                                   Text="{Binding Text, ElementName=CapsuleTitle}"
+                                   FontSize="{Binding FontSize, ElementName=CapsuleTitle}"
+                                   FontFamily="{Binding FontFamily, ElementName=CapsuleTitle}"
+                                   FontWeight="{Binding FontWeight, ElementName=CapsuleTitle}"
+                                   Foreground="{Binding Foreground, ElementName=CapsuleTitle}"
+                                   TextTrimming="None"
+                                   Visibility="Collapsed">
+                            <TextBlock.RenderTransform>
+                                <TranslateTransform x:Name="CapsuleTitleLoopTransform" X="0" />
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                    </Grid>
+
+                    <!--
+                        歌词槽（编号 105/106）：与歌名轨道**叠在同一格**里，同一时刻只有一个可见（模式由代码里的显式状态
+                        _capsuleSlotMode 决定，绝不靠读 CapsuleTitle.Text 反推——两份槽都会往同一格写文本）。
+                        结构照抄卡片歌词那一对：底色层 + 高亮层同格、同字号、同对齐，高亮层的 Text 用 ElementName 绑定跟随底色层
+                        （红线 6：成对元素不许两处赋值，第二波的 C1 就是两层各写一份文本栽的），高亮层只裁到"已唱宽度"，
+                        两层叠在一起就是从左向右亮起的擦亮效果。
+                        位移挂在**轨道**上而不是各层各挂一个：一帧只写一次，两层天然一起走，不可能漂移。
+                        整格与歌名一样是媒体动作区（Tag="MediaAction"），"点文字切前台"这条绑定在歌词态下照常成立。
+                        Lyric slot (items 105/106): **overlaid in the same cell** as the title track, with only one of the two visible at a
+                        time (the mode comes from the explicit _capsuleSlotMode state in code, never inferred back out of CapsuleTitle.Text,
+                        because both slots write text into this one cell). The structure is the card's lyric pair copied over: a base layer and
+                        a reveal layer in one cell with one font size and one alignment, the reveal's Text following the base through an
+                        ElementName binding (red line 6: paired elements are never assigned in two places — wave two's C1 was exactly two
+                        layers each writing their own text), and the reveal clipped to the sung width so the two layers together read as a
+                        left-to-right wipe. The offset sits on the **track** rather than one transform per layer: one write per frame, both
+                        layers move together by construction and cannot drift apart. The whole cell is a media-action area exactly like the
+                        title (Tag="MediaAction"), so "click the text to activate the source" keeps working in lyric mode.
+                    -->
+                    <Grid x:Name="CapsuleLyricHost" Visibility="Collapsed">
+                        <Grid x:Name="CapsuleLyricTrack" HorizontalAlignment="Left">
+                            <Grid.RenderTransform>
+                                <TranslateTransform x:Name="CapsuleLyricTransform" X="0" />
+                            </Grid.RenderTransform>
+                            <TextBlock x:Name="CapsuleLyricText"
+                                       VerticalAlignment="Center"
+                                       FontSize="13"
+                                       Opacity="0.85"
+                                       TextWrapping="NoWrap"
+                                       TextTrimming="None"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                            <TextBlock x:Name="CapsuleLyricHighlight"
+                                       Text="{Binding Text, ElementName=CapsuleLyricText}"
+                                       VerticalAlignment="Center"
+                                       FontSize="13"
+                                       TextWrapping="NoWrap"
+                                       TextTrimming="None"
+                                       IsHitTestVisible="False"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+                                <TextBlock.Clip>
+                                    <RectangleGeometry x:Name="CapsuleLyricHighlightClip" Rect="0,0,0,0" />
+                                </TextBlock.Clip>
+                            </TextBlock>
+                        </Grid>
+                    </Grid>
+                </Grid>
+
+                <!--
+                    律动波形列（编号 107）：左封面 + 中文字槽 + 右波形。几何在**内容区的局部坐标**里（X 相对内容区左缘、Y 相对上缘，
+                    与 SpectrumPresentationPolicy.CreateWaveformOutline 同一坐标系），因此外层容器钉住"内容区尺寸 ×缩放"，
+                    Path 自己再按同一个系数做 RenderTransform——几何本身不随缩放重算，每帧只原地改写坐标（接缝 S5）。
+                    Width/Height 与 ScaleX/ScaleY 的基准值只在 scale=1 时正确，实际值一律由 ApplyCapsuleViewSize 按 _islandScale 写（裁定 10）。
+                    Fill 由 .Foreground.cs 与全部文字图标同源写入（PlayerForegroundPolicy）。
+                    The animated waveform column (item 107): cover on the left, text slot in the middle, waveform on the right. The geometry lives
+                    in the **content area's local coordinates** (X from its left edge and Y from its top, the space
+                    SpectrumPresentationPolicy.CreateWaveformOutline uses), so the outer container is pinned to "content size times scale" and the
+                    Path applies the same factor as a RenderTransform — the geometry itself is never recomputed for a scale, and each frame only
+                    rewrites coordinates in place (seam S5). The Width/Height and ScaleX/ScaleY baselines are only correct at scale one; the real
+                    values always come from ApplyCapsuleViewSize through _islandScale (ruling 10). The Fill is written from the same source as every
+                    text and icon in .Foreground.cs (PlayerForegroundPolicy).
+                -->
+                <Grid x:Name="CapsuleSpectrumHost"
+                      Grid.Column="3"
+                      Width="42"
+                      Height="22"
+                      Margin="4,0,2,0"
+                      IsHitTestVisible="False">
+                    <!--
+                        内容层：尺寸 = 频谱内容区的**基准尺寸**（不乘缩放），坐标一律用内容区的局部 DIP；缩放由这一层自己的
+                        RenderTransform 施加，因此四种样式（波形轮廓 / 柱 / 像素柱）共用同一套坐标，切样式时几何不需要重算缩放。
+                        宽度与高度由 ApplyCapsuleViewSize 按设置写（XAML 里的 42×22 只在 11 段、内容区 22 DIP、scale=1 时对）。
+                        The content layer: its size is the spectrum content area's **baseline** size (unscaled) and every coordinate in it is content-local
+                        DIP; the scale is applied by this layer's own RenderTransform, so all four styles (waveform outline, bars, pixel columns) share one
+                        coordinate space and switching styles never recomputes anything for a scale. ApplyCapsuleViewSize writes the width and height from
+                        the settings (the 42×22 in XAML is only correct at eleven bands, a twenty-two DIP content height, and scale one).
+                    -->
+                    <Grid x:Name="CapsuleSpectrumContent"
+                          Width="42"
+                          Height="22"
+                          HorizontalAlignment="Left"
+                          VerticalAlignment="Top">
+                        <Grid.RenderTransform>
+                            <ScaleTransform x:Name="CapsuleSpectrumScale" ScaleX="1" ScaleY="1" />
+                        </Grid.RenderTransform>
+                        <!-- 波形样式（Style=Waveform）：对称闭合轮廓，逐帧原地改写坐标。 -->
+                        <!-- The waveform style (Style=Waveform): a symmetric closed outline whose coordinates are rewritten in place every frame. -->
+                        <Path x:Name="CapsuleSpectrumWaveform"
+                              Fill="{DynamicResource TextFillColorPrimaryBrush}"
+                              Opacity="0.95"
+                              Stretch="None"
+                              HorizontalAlignment="Left"
+                              VerticalAlignment="Top"
+                              IsHitTestVisible="False" />
+                        <!--
+                            柱状 / 对称柱 / 像素柱样式：方块子在代码里按段数建（宽度 = BarWidthDip，位于 ResolveBarLeftDip），
+                            柱高与点亮状态由帧回调按 AdvanceDisplayedLevel 平滑后的显示值直接写，**不用** WPF 的 BeginAnimation/ScaleY
+                            （那等于引入第二个推进者，红线 5 的精神）。
+                            The bar, mirrored-bar, and pixel styles: blocks are created in code per band (BarWidthDip wide, at ResolveBarLeftDip), and the
+                            bar heights and lit states are written directly from the per-frame smoothed displayed levels — **never** through WPF's
+                            BeginAnimation/ScaleY, which would be a second advancer and betray red line 5's intent.
+                        -->
+                        <Canvas x:Name="CapsuleSpectrumBars" IsHitTestVisible="False" />
+                    </Grid>
+                </Grid>
+            </Grid>
+
+            <!-- 卡片视图（展开态）Card view (expanded) -->
+            <Grid x:Name="CardView" Margin="16,12" Opacity="0" IsHitTestVisible="False">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="118" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <!--
+                    行序即阅读顺序，且**每行都有元素**：0 封面+标题/作者 → 1 第一行歌词 → 2 第二行歌词 → 3 seek → 4 传输控制（占满剩余）。
+                    两行歌词与 seek 行都是 Auto，因此第二行隐藏时只收掉它自己那一行、seek 与传输控制都自然上移，没有任何元素需要跨行。
+                    此前 seek 与传输控制**共用** Grid.Row="3" 那一格：传输控制贴行底叠在 seek 之上，恰好能看，但一旦 seek 行的期望高度
+                    小于传输控制的高度，按钮就会溢出该行、压到上面的歌词上（RowSpan 时代留下的隐患），因此这里把它们拆成两行。
+                    Row order is reading order and **every row has an element**: 0 artwork + title/artist, 1 first lyric row, 2 second lyric row,
+                    3 seek, 4 transport controls (taking the rest). The two lyric rows and the seek row are Auto, so hiding the second lyric row
+                    collapses that row alone and both the seek row and the controls move up, with no element ever spanning rows.
+                    The seek row and the controls used to **share** Grid.Row="3", the controls bottom-aligned on top of the seek bar: that looks
+                    right while the row is tall enough, but as soon as the seek row's desired height falls below the controls' the buttons
+                    overflow the row and sit on the lyric above it — a leftover hazard from the row-span era, which is why the two are split.
+                -->
+
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="118" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!--
+                        卡片封面与右侧文字区都是媒体动作区：它们打 Tag="MediaAction" 并打开命中，于是"点封面/点文字"按
+                        Interaction 设置里的点击绑定走，而卡片空白处（背景、行间空隙、传输控制周围）仍然切换固定态。
+                        Tag 是所有媒体动作区共用的标记，封面区另由元素名区分（策略要分 artwork / text 两个槽位）。
+                        The cover and the text block beside it are media-action areas: both carry Tag="MediaAction" and take hits, so
+                        "click the cover / click the text" follows the click bindings in the Interaction settings, while a blank part
+                        of the card (background, gaps between rows, around the transport controls) still toggles the pin. The tag is
+                        shared by every media-action area and the two cover slots are told apart by name, because the policy needs a
+                        different slot for artwork and for text.
+                    -->
+                    <Border Grid.Column="0"
+                            x:Name="CardArtworkSlot"
+                            Width="118"
+                            Height="118"
+                            CornerRadius="12"
+                            ClipToBounds="True"
+                            Tag="MediaAction"
+                            IsHitTestVisible="True">
+                        <!-- 同上：封面的圆角由代码裁（InstallArtworkSlotClip），否则 Image 永远是一张方图。 -->
+                        <Grid x:Name="CardArtworkContent">
+                            <Image x:Name="CardArtwork" Stretch="UniformToFill" />
+                            <ui:SymbolIcon x:Name="CardPlaceholderIcon"
+                                           Symbol="MusicNote220"
+                                           FontSize="40"
+                                           Visibility="Collapsed"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                        </Grid>
+                    </Border>
+
+                    <StackPanel Grid.Column="1" Margin="12,2,0,0" Tag="MediaAction" IsHitTestVisible="True">
+                        <TextBlock x:Name="CardTitle"
+                                   FontSize="15"
+                                   FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis"
+                                   MaxHeight="44"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                        <TextBlock x:Name="CardArtist"
+                                   Margin="0,4,0,0"
+                                   FontSize="12"
+                                   Opacity="0.65"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                    </StackPanel>
+                </Grid>
+
+                <!-- 当前歌词行：单行省略，命中占位文本或尚无歌词时回落到作者。
+                     底色层与高亮层同格、同字号、同边距、同对齐，因此逐字擦亮的裁剪矩形与字形严格对齐；高亮层只裁到"已唱宽度"，
+                     两层叠在一起就是从左向右亮起的效果。
+                     歌词行整行是媒体动作区（与任务栏"点文字区"同一个槽位），因此**高亮层仍不参与命中**：命中一律落在底色层上，
+                     再由祖先链找到这一格的 Tag，两层的字形与裁剪不因命中判定产生任何差异。
+                     Current lyric line: one trimmed line that falls back to the artist when the line is a placeholder or lyrics are absent.
+                     The base layer and the reveal layer share one cell, one font size, one margin, and one alignment, so the reveal's clip
+                     rectangle lines up with the glyphs exactly; the reveal only trims to the sung width, and the two layers together read as
+                     a left-to-right wipe.
+                     The lyric row is a media-action area as a whole (the same slot the taskbar's text region uses), so the reveal layer
+                     still takes no hits: every hit lands on the base layer and the ancestor chain then finds this cell's tag, which keeps
+                     the two layers' glyphs and clip identical in every respect, hit testing included. -->
+                <Grid x:Name="CardLyricContainer"
+                      Grid.Row="1"
+                      Margin="0,6,0,0"
+                      ClipToBounds="True"
+                      Tag="MediaAction"
+                      IsHitTestVisible="True">
+                    <TextBlock x:Name="CardLyric"
+                               FontSize="12"
+                               Opacity="0.85"
+                               TextWrapping="NoWrap"
+                               TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                    <TextBlock x:Name="CardLyricHighlight"
+                               Text="{Binding Text, ElementName=CardLyric}"
+                               FontSize="12"
+                               TextWrapping="NoWrap"
+                               TextTrimming="CharacterEllipsis"
+                               IsHitTestVisible="False"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+                        <TextBlock.Clip>
+                            <RectangleGeometry x:Name="CardLyricHighlightClip" Rect="0,0,0,0" />
+                        </TextBlock.Clip>
+                    </TextBlock>
+                </Grid>
+
+                <!-- 第二行歌词（译文/音译/下一句，来源顺序由歌词页决定）：没有内容时整行 Collapsed，不留空白占位。
+                     它占 Grid 里自己的第 2 行，隐藏时只收掉自己那一行，不会牵动其他行。
+                     Second lyric row (translation/romanization/next line, ordered on the lyrics page): the whole row collapses without
+                     content instead of leaving blank space. It owns row 2 and hides by collapsing that row alone, touching no other row. -->
+                <TextBlock x:Name="CardLyricSecondary"
+                           Grid.Row="2"
+                           Margin="0,1,0,0"
+                           FontSize="11"
+                           Opacity="0.7"
+                           TextWrapping="NoWrap"
+                           TextTrimming="CharacterEllipsis"
+                           Visibility="Collapsed"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                           Tag="MediaAction"
+                           IsHitTestVisible="True" />
+
+                <Grid Grid.Row="3" Margin="0,6,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="SeekCurrentText"
+                               Grid.Column="0"
+                               VerticalAlignment="Center"
+                               FontSize="10"
+                               Opacity="0.65"
+                               Text="0:00"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                               IsHitTestVisible="False" />
+                    <Slider x:Name="SeekSlider"
+                            Grid.Column="1"
+                            Margin="8,0"
+                            VerticalAlignment="Center"
+                            Minimum="0"
+                            Maximum="100"
+                            SmallChange="1"
+                            LargeChange="5"
+                            IsMoveToPointEnabled="True" />
+                    <TextBlock x:Name="SeekTotalText"
+                               Grid.Column="2"
+                               VerticalAlignment="Center"
+                               FontSize="10"
+                               Opacity="0.65"
+                               Text="0:00"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                               IsHitTestVisible="False" />
+                </Grid>
+
+                <StackPanel Grid.Row="4"
+                            Margin="0,4,0,0"
+                            VerticalAlignment="Bottom"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Center">
+                    <ui:Button x:Name="CardPrevious"
+                               Appearance="Transparent"
+                               Padding="10,6"
+                               Click="Previous_Click">
+                        <ui:SymbolIcon x:Name="CardPreviousIcon"
+                                       Symbol="Previous24"
+                                       FontSize="16"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                    </ui:Button>
+                    <ui:Button x:Name="CardPlayPause"
+                               Appearance="Transparent"
+                               Padding="12,6"
+                               Margin="4,0"
+                               Click="PlayPause_Click">
+                        <ui:SymbolIcon x:Name="CardPlayPauseIcon"
+                                       Symbol="Play24"
+                                       FontSize="18"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                    </ui:Button>
+                    <ui:Button x:Name="CardNext"
+                               Appearance="Transparent"
+                               Padding="10,6"
+                               Click="Next_Click">
+                        <ui:SymbolIcon x:Name="CardNextIcon"
+                                       Symbol="Next24"
+                                       FontSize="16"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                    </ui:Button>
+
+                    <!--
+                        输出设备与当前应用音量：点开的是与任务栏悬停层完全同一个紧凑浮层（TaskbarCompactFlyoutWindow），
+                        因此菜单内容、菜单内滚轮切设备/调音量、失焦或 Esc 收起的语义两边一致，不存在第二套菜单。
+                        图标沿用任务栏那一套 Segoe Fluent Icons 码点，两个入口看起来才是同一个播放器的控件。
+                        Output device and current application volume: both open the very same compact flyout the taskbar
+                        hover layer uses (TaskbarCompactFlyoutWindow), so the menu content and its in-menu device/volume
+                        wheel, focus-loss and Escape dismissal behave identically on both surfaces — there is no second
+                        menu. The icons reuse the taskbar's Segoe Fluent Icons code points so the two entry points read as
+                        controls of one player.
+                    -->
+                    <Border Width="1"
+                            Height="16"
+                            Margin="8,0,2,0"
+                            VerticalAlignment="Center"
+                            Background="{DynamicResource TextFillColorPrimaryBrush}"
+                            Opacity="0.25" />
+                    <ui:Button x:Name="CardOutputDevice"
+                               Appearance="Transparent"
+                               Padding="8,6"
+                               ToolTip="{DynamicResource Loc.Common.SwitchOutputDevice}"
+                               MouseEnter="OutputDeviceIcon_MouseEnter"
+                               PreviewMouseWheel="OutputDeviceIcon_PreviewMouseWheel"
+                               Click="OutputDevice_Click">
+                        <TextBlock x:Name="CardOutputDeviceIcon"
+                                   Text="&#xE7F5;"
+                                   FontFamily="{DynamicResource AppIconFontFamily}"
+                                   FontSize="14"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                    </ui:Button>
+                    <ui:Button x:Name="CardVolume"
+                               Appearance="Transparent"
+                               Padding="8,6"
+                               Margin="2,0,0,0"
+                               ToolTip="{DynamicResource Loc.Panel.Volume.Tooltip}"
+                               MouseEnter="VolumeIcon_MouseEnter"
+                               PreviewMouseWheel="VolumeIcon_PreviewMouseWheel"
+                               Click="Volume_Click">
+                        <TextBlock x:Name="CardVolumeIcon"
+                                   Text="&#xE767;"
+                                   FontFamily="{DynamicResource AppIconFontFamily}"
+                                   FontSize="14"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                    </ui:Button>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

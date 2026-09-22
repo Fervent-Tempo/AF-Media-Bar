@@ -334,7 +334,7 @@ public sealed class SettingsPersistenceService : IDisposable
                 typeof(TEnum) == typeof(NotificationTargetMode) ? NotificationTargetMode.Fixed :
                 typeof(TEnum) == typeof(WindowMode) ? WindowMode.Taskbar :
                 typeof(TEnum) == typeof(DynamicIslandEdge) ? DynamicIslandEdge.Top :
-                typeof(TEnum) == typeof(LatinFontPreset) ? LatinFontPreset.SystemDefault :
+                typeof(TEnum) == typeof(LatinFontPreset) ? LatinFontPreset.SegoeUi :
                 typeof(TEnum) == typeof(CjkFontPreset) ? CjkFontPreset.SystemDefault :
                 typeof(TEnum) == typeof(PlayerForegroundMode) ? PlayerForegroundMode.Automatic :
                 typeof(TEnum) == typeof(ApplicationThemeMode) ? ApplicationThemeMode.Automatic :

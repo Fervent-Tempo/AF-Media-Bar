@@ -27,12 +27,6 @@
 
 ## Demo
 
-<div align="center">
-
-![AF Media Bar in action](./docs/assets/运行展示.gif)
-
-</div>
-
 [Watch the AF Media Bar introduction video on Bilibili](https://www.bilibili.com/video/BV1Bjuq6bErr)
 
 ## Overview

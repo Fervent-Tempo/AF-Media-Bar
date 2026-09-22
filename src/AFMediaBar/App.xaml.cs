@@ -157,6 +157,7 @@ namespace AFMediaBar
                 services.AddSingleton<MainWindowViewModel>();
                 services.AddSingleton<AudioControlViewModel>();
                 services.AddTransient<DynamicIslandWindow>();
+                services.AddTransient<CapsuleIslandWindow>();
                 services.AddSingleton<AudioControlFlyoutWindow>();
 
                 // === 设置窗口（从任务栏右键菜单打开）Settings Window (opened from taskbar context menu) ===
@@ -167,6 +168,17 @@ namespace AFMediaBar
                 services.AddTransient<TaskbarFullPanelWindow>();
                 services.AddSingleton<Func<TaskbarFullPanelWindow>>(sp =>
                     () => sp.GetRequiredService<TaskbarFullPanelWindow>());
+
+                // 紧凑音频浮层（输出设备 / 当前应用音量）：它被任务栏宿主与灵动岛宿主共用，因此统一由容器产出，
+                // 而不是由某个宿主直接 new。两个宿主互斥存在（切模式时旧的会关掉），各自持有一个实例，
+                // 但菜单实现只有一份，不存在两套会各自漂移的设备/音量逻辑。
+                // The compact audio flyout (output device / current application volume) is shared by the taskbar and
+                // dynamic-island hosts, so the container produces it instead of a host calling new. The two hosts are
+                // mutually exclusive (activating a mode closes the other one) and each owns one instance, but there is a
+                // single menu implementation and never a second device/volume behaviour that can drift away from it.
+                services.AddTransient<TaskbarCompactFlyoutWindow>();
+                services.AddSingleton<Func<TaskbarCompactFlyoutWindow>>(sp =>
+                    () => sp.GetRequiredService<TaskbarCompactFlyoutWindow>());
                 services.AddTransient<TrackChangeNotificationWindow>();
                 services.AddSingleton<Func<TrackChangeNotificationWindow>>(sp =>
                     () => sp.GetRequiredService<TrackChangeNotificationWindow>());

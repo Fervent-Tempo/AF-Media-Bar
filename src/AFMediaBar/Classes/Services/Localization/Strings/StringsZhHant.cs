@@ -106,7 +106,6 @@ internal static class StringsZhHant
         table.Add("Appearance.Backdrop.Solid", "純色");
         table.Add("Appearance.BackdropTint.Hint", "只在材質由本程式繪製時生效：Windows 10 上的視窗，以及永不取得焦點的曲目通知（系統材質要求視窗位於前景，通知從不啟用，因此它的模糊由本程式繪製）。Windows 11 的雲母與壓克力由系統繪製，不受此值影響。值越低越通透，過高則接近純色。");
         table.Add("Appearance.CjkFont.FollowSystem", "跟隨系統");
-        table.Add("Appearance.LatinFont.FollowSystem", "跟隨系統");
         table.Add("Appearance.Header.Subtitle", "字型、佈景主題、視窗背景與媒體列文字");
         table.Add("Appearance.Motion.Detail.Full", "保留展開、回饋與頻譜轉場");
         table.Add("Appearance.Motion.Detail.Instant", "跟隨系統設定，避免轉場延遲");
@@ -242,7 +241,7 @@ internal static class StringsZhHant
         table.Add("Common.TrayIcon", "托盤圖示");
 
         // ---- Diagram ----
-        table.Add("Diagram.DynamicIslandSurface.Caption", "動態島模式尚未實作，因此下面三項目前唯讀；它的外觀與工作列互不影響。");
+        table.Add("Diagram.DynamicIslandSurface.Caption", "動態島自己的背景樣式、不透明度與圓角；它與工作列外觀互不影響。");
         table.Add("Diagram.InputGestures.Caption", "媒體列上僅這兩個區域可以點擊，並且可分別設定；展開面板中的按鈕不受影響。");
         table.Add("Diagram.InputGestures.Label.ArtworkClick", "點擊封面");
         table.Add("Diagram.InputGestures.Label.TextClick", "點擊標題或歌詞");
@@ -296,7 +295,7 @@ internal static class StringsZhHant
         table.Add("DisplayModes.Hover.Row.Enable.Title", "啟用懸停層");
         table.Add("DisplayModes.Hover.Row.Progress.Title", "進度條");
         table.Add("DisplayModes.Island.Group.Description", "動態島本身的外觀，與工作列互不影響");
-        table.Add("DisplayModes.Island.Notice", "動態島模式尚未實作，因此下面的選項目前為唯讀，變更不會影響正在執行的工作列媒體列。");
+        table.Add("DisplayModes.Island.Notice", "這三項只作用於動態島，與工作列媒體列互不影響。");
         table.Add("DisplayModes.Island.Row.Corner.Description", "0–24 DIP");
         table.Add("DisplayModes.Island.Row.Corner.Title", "圓角");
         table.Add("DisplayModes.Island.Row.Opacity.Description", "數值越高越不透明");
@@ -312,7 +311,7 @@ internal static class StringsZhHant
         table.Add("DisplayModes.Mode.DynamicIsland.Caption", "以螢幕邊緣浮層承載媒體狀態");
         table.Add("DisplayModes.Mode.FloatingBall", "懸浮球");
         table.Add("DisplayModes.Mode.FloatingBall.Caption", "以精簡懸浮入口展開控制");
-        table.Add("DisplayModes.Mode.PreviewNotice", "目前執行模式固定為工作列。選擇其他模式只切換本頁顯示的內容，不會切換正在執行的視窗。");
+        table.Add("DisplayModes.Mode.PreviewNotice", "桌面卡片與懸浮球尚未實作，選取它們只會預覽本頁內容。選擇工作列或動態島會立即切換正在執行的視窗。");
         table.Add("DisplayModes.Mode.Taskbar", "工作列");
         table.Add("DisplayModes.Mode.Taskbar.Caption", "置於 Windows 工作列，含靜置層、懸停層與完整層");
         table.Add("DisplayModes.Monitor.DisconnectedSuffix", "（目前未連接）");
@@ -619,7 +618,7 @@ internal static class StringsZhHant
         table.Add("Search.DisplayModes.ChooseDisplayMode.Description", "選擇工作列、動態島、桌面卡片或懸浮球");
         table.Add("Search.DisplayModes.FullLayer.Description", "點選媒體列展開的面板包含哪些分區");
         table.Add("Search.DisplayModes.HoverLayer.Description", "滑鼠移入媒體列時出現的快速控制");
-        table.Add("Search.DisplayModes.IslandAppearance.Description", "動態島的背景樣式、不透明度與圓角，目前唯讀");
+        table.Add("Search.DisplayModes.IslandAppearance.Description", "動態島的背景樣式、不透明度與圓角");
         table.Add("Search.DisplayModes.MediaBarWidth.Description", "寬度跟隨內容、固定寬度與元件間距");
         table.Add("Search.DisplayModes.RestLayer.Description", "始終顯示的基礎層：資訊密度、內容排列、對齊、進度顯示與完整層入口");
         table.Add("Search.DisplayModes.ScreenAndPlacement.Description", "媒體列所在的螢幕與工作列位置");

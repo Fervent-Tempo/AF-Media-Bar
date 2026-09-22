@@ -11,3 +11,16 @@ dist-folder/
 docs/layout-editor-demo.html
 .vscode
 .backup/
+
+# 本地开发计划与代理交接文档：含本机绝对路径与开发过程叙述，不进公开仓库。
+# Local development plans and agent hand-off documents: they carry absolute local paths and development-process narration, so they stay out of the
+# public repository. 与上面已忽略的 /docs/ai-development/ 同一处置。
+/docs/superpowers/
+
+# 构建与测试产物：即使将来产物目录改名（TestResults/、binlog、日志、打包文件）也不会被误提交。
+# Build and test output: even if those output folders are renamed later (TestResults/, binlogs, logs, archives) they can never be committed by accident.
+TestResults/
+*.trx
+*.binlog
+*.log
+*.zip
