@@ -11,8 +11,7 @@ namespace AFMediaBar.Classes.Services;
 /// </summary>
 public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
 {
-    private const int FftSize = 512;
-    private const int SampleRingSize = 4096;
+    private const int MinimumRingSize = 4_096;
     private const int InitialPacketBufferSize = 64 * 1024;
     private const int InitialCaptureRetryMilliseconds = 100;
     private const int SecondCaptureRetryMilliseconds = 500;
@@ -49,10 +48,17 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
     private static readonly Guid AudioSessionManagerId =
         new("77AA99A0-1BD6-484F-8BC7-2C654C9A9B6F");
 
-    private readonly float[] _sampleRing = new float[SampleRingSize];
-    private readonly double[] _fftReal = new double[FftSize];
-    private readonly double[] _fftImaginary = new double[FftSize];
-    private readonly double[] _fftWindow = CreateFftWindow();
+    // FFT 相关缓冲区随采样率确定点数后再分配（96 kHz 至少要 4096 点才能把 45–206 Hz 的前几段分开），
+    // 因此它们不是 readonly 的固定数组；ConfigureFft 在拿到混音格式后统一重建。
+    // The FFT buffers are allocated once the sample rate fixes the size (96 kHz needs at least 4096 points to separate the first bands
+    // between 45 and 206 Hz), so they are not fixed readonly arrays; ConfigureFft rebuilds them after the mix format is known.
+    private float[] _sampleRing = new float[MinimumRingSize];
+    private double[] _fftReal = new double[SpectrumAnalysisPolicy.MinimumFftSize];
+    private double[] _fftImaginary = new double[SpectrumAnalysisPolicy.MinimumFftSize];
+    private double[] _fftWindow = CreateFftWindow(SpectrumAnalysisPolicy.MinimumFftSize);
+    private double[] _powerSpectrum = new double[SpectrumAnalysisPolicy.MinimumFftSize / 2 + 1];
+    private int _fftSize = SpectrumAnalysisPolicy.MinimumFftSize;
+    private int _ringSize = MinimumRingSize;
     // 频段边界只随柱数变化，因此按柱数缓存；采样线程每帧都要读它，不能每帧重新计算等比数列。
     // Band edges change only with the bar count, so they are cached per count: the sampling thread reads them every frame
     // and must not rebuild the geometric progression each time.
@@ -119,7 +125,7 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
             }
 
             DrainCapturePackets();
-            if (_sampleCount < FftSize ||
+            if (_sampleCount < _fftSize ||
                 Environment.TickCount64 - _lastPacketTick > 180)
             {
                 // 静音/无包期间也让参考按真实时间衰减：恢复播放时柱子从当前位置平滑长回来，而不是因为参考过期先跳到满格。
@@ -334,10 +340,44 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
         var supportedBits = _formatTag == WaveFormatIeeeFloat
             ? _bitsPerSample == 32
             : _formatTag == WaveFormatPcm && _bitsPerSample is 16 or 24 or 32;
-        return _sampleRate > 0 &&
+        var supported = _sampleRate > 0 &&
             _channelCount is > 0 and <= 32 &&
             _blockAlign >= _channelCount &&
             supportedBits;
+        if (supported)
+        {
+            // 采样率一确定就把 FFT 点数定下来：96 kHz 需要 4096 点，低频段才不会挤在同一个 bin 里。
+            // The sample rate fixes the FFT size right here: 96 kHz needs 4096 points so the low bands do not crowd into one bin.
+            ConfigureFft(_sampleRate);
+        }
+
+        return supported;
+    }
+
+    /// <summary>
+    /// 按采样率重建 FFT 缓冲区（点数为 2 的幂、bin 宽目标见 <see cref="SpectrumAnalysisPolicy.ResolveFftSize"/>）。
+    /// 点数不变时不做任何事；重建会同时清空采样环，因为旧样本的点数语义已经不同。
+    /// Rebuilds the FFT buffers for a sample rate (the size is a power of two; see <see cref="SpectrumAnalysisPolicy.ResolveFftSize"/>
+    /// for the bin-width target). An unchanged size does nothing; a rebuild also clears the sample ring, because old samples belong
+    /// to a different size.
+    /// </summary>
+    private void ConfigureFft(int sampleRate)
+    {
+        var fftSize = SpectrumAnalysisPolicy.ResolveFftSize(sampleRate);
+        if (fftSize == _fftSize)
+        {
+            return;
+        }
+
+        _fftSize = fftSize;
+        _ringSize = Math.Max(MinimumRingSize, fftSize * 2);
+        _sampleRing = new float[_ringSize];
+        _fftReal = new double[_fftSize];
+        _fftImaginary = new double[_fftSize];
+        _fftWindow = CreateFftWindow(_fftSize);
+        _powerSpectrum = new double[_fftSize / 2 + 1];
+        _sampleWriteIndex = 0;
+        _sampleCount = 0;
     }
 
     private void DrainCapturePackets()
@@ -428,39 +468,48 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
     private void PushSample(float sample)
     {
         _sampleRing[_sampleWriteIndex] = sample;
-        _sampleWriteIndex = (_sampleWriteIndex + 1) % SampleRingSize;
-        _sampleCount = Math.Min(_sampleCount + 1, SampleRingSize);
+        _sampleWriteIndex = (_sampleWriteIndex + 1) % _ringSize;
+        _sampleCount = Math.Min(_sampleCount + 1, _ringSize);
     }
 
     private void CalculateSpectrum(float[] bands, int bandCount)
     {
-        var start = (_sampleWriteIndex - FftSize + SampleRingSize) % SampleRingSize;
-        for (var index = 0; index < FftSize; index++)
+        var start = (_sampleWriteIndex - _fftSize + _ringSize) % _ringSize;
+        for (var index = 0; index < _fftSize; index++)
         {
-            _fftReal[index] = _sampleRing[(start + index) % SampleRingSize] * _fftWindow[index];
+            _fftReal[index] = _sampleRing[(start + index) % _ringSize] * _fftWindow[index];
             _fftImaginary[index] = 0;
         }
 
         TransformFft();
+        var binWidth = _sampleRate / (double)_fftSize;
+        var nyquistBin = _fftSize / 2 - 1;
+
+        // 先展成功率谱：频段积分在功率域做，再开方取回幅度，比"取频段内最大 bin"平滑得多，
+        // 也不会因为频段比一个 bin 还窄而照抄同一个值。
+        // First build the power spectrum: bands integrate in the power domain and take the square root afterwards, which is far
+        // smoother than "largest bin in the band" and never copies one bin's value into a band narrower than a bin.
+        for (var bin = 0; bin <= nyquistBin; bin++)
+        {
+            _powerSpectrum[bin] = _fftReal[bin] * _fftReal[bin] + _fftImaginary[bin] * _fftImaginary[bin];
+        }
+
+        // 与旧的 2/N 幅度归一化保持一致：幅度 = sqrt(功率积分 × 4/N²)。
+        // Keeps the old 2/N amplitude normalization: magnitude = sqrt(integrated power × 4/N²).
+        var normalization = 4.0 / ((double)_fftSize * _fftSize);
         var edges = ResolveBandEdges(bandCount);
-        var binWidth = _sampleRate / (double)FftSize;
-        var nyquistBin = FftSize / 2 - 1;
         var peakMagnitude = 0d;
         for (var band = 0; band < bandCount; band++)
         {
-            var firstBin = Math.Clamp((int)Math.Ceiling(edges[band] / binWidth), 1, nyquistBin);
-            var lastBin = Math.Clamp((int)Math.Floor(edges[band + 1] / binWidth), firstBin, nyquistBin);
-            var maximum = 0d;
-            for (var bin = firstBin; bin <= lastBin; bin++)
-            {
-                var magnitude = Math.Sqrt(
-                    _fftReal[bin] * _fftReal[bin] +
-                    _fftImaginary[bin] * _fftImaginary[bin]) * 2 / FftSize;
-                maximum = Math.Max(maximum, magnitude);
-            }
-
-            _bandMagnitudes[band] = maximum;
-            peakMagnitude = Math.Max(peakMagnitude, maximum);
+            var low = edges[band];
+            var high = edges[band + 1];
+            var power = SpectrumAnalysisPolicy.IntegrateBandPower(_powerSpectrum, binWidth, low, high);
+            // 频段中心取几何中心：对数频段上它才是听觉意义上的"中间"。
+            // The band center is the geometric one: on a logarithmic axis that is the perceptual middle.
+            var center = Math.Sqrt((double)low * high);
+            var magnitude = Math.Sqrt(power * normalization * SpectrumAnalysisPolicy.ResolveTiltPowerGain(center));
+            _bandMagnitudes[band] = magnitude;
+            peakMagnitude = Math.Max(peakMagnitude, magnitude);
         }
 
         // 先按真实时间推进参考峰值，再把各频段映射成相对它的 dB 电平；这样显示强弱与系统音量的绝对大小无关。
@@ -493,9 +542,9 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
     private void TransformFft()
     {
         var target = 0;
-        for (var source = 1; source < FftSize; source++)
+        for (var source = 1; source < _fftSize; source++)
         {
-            var bit = FftSize >> 1;
+            var bit = _fftSize >> 1;
             while ((target & bit) != 0)
             {
                 target ^= bit;
@@ -511,12 +560,12 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
             }
         }
 
-        for (var length = 2; length <= FftSize; length <<= 1)
+        for (var length = 2; length <= _fftSize; length <<= 1)
         {
             var angle = -2 * Math.PI / length;
             var stepReal = Math.Cos(angle);
             var stepImaginary = Math.Sin(angle);
-            for (var offset = 0; offset < FftSize; offset += length)
+            for (var offset = 0; offset < _fftSize; offset += length)
             {
                 var rotationReal = 1d;
                 var rotationImaginary = 0d;
@@ -841,12 +890,12 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
         }
     }
 
-    private static double[] CreateFftWindow()
+    private static double[] CreateFftWindow(int fftSize)
     {
-        var window = new double[FftSize];
-        for (var index = 0; index < FftSize; index++)
+        var window = new double[fftSize];
+        for (var index = 0; index < fftSize; index++)
         {
-            window[index] = 0.5 - 0.5 * Math.Cos(2 * Math.PI * index / (FftSize - 1));
+            window[index] = 0.5 - 0.5 * Math.Cos(2 * Math.PI * index / (fftSize - 1));
         }
 
         return window;
