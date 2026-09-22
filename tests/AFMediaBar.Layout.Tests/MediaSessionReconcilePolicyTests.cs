@@ -5,123 +5,116 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace AFMediaBar.Layout.Tests;
 
 /// <summary>
-/// 自动重连看门狗的判定策略：只在断连、未处于宽限期、系统确有会话且冷却已过时动作；
-/// 按剪枝档位与慢调用退避调整节奏，并在 ForceUpdate 连续失败时改为重建目录。
-/// Decision policy of the auto-reconcile watchdog: act only while disconnected, outside the grace period, with sessions the OS
-/// actually publishes, and past the cooldown; cadence follows the prune level and slow-call backoff, and repeated ForceUpdate
-/// failures escalate to a catalog rebuild.
+/// 自动重连看门狗的两段判定：<c>ShouldProbe</c> 只做时间/档位门控（先于系统查询），<c>DecideAction</c> 才按系统会话数决定动作。
+/// The two halves of the auto-reconcile watchdog: <c>ShouldProbe</c> only gates time and prune level (before any system query), while
+/// <c>DecideAction</c> picks the action from the OS session count.
 /// </summary>
 [TestClass]
 public sealed class MediaSessionReconcilePolicyTests
 {
-    private static MediaSessionReconcileSignals Signals(
+    private static MediaSessionReconcileProbeSignals Signals(
         bool isConnected = false,
         bool isGraceActive = false,
         bool isArmed = false,
         double secondsSinceLastAttempt = 0,
         MemoryPruneLevel pruneLevel = MemoryPruneLevel.None,
-        int consecutiveSlowReconciles = 0,
-        int osSessionCount = 1,
-        int consecutiveFailedReconciles = 0) =>
+        int consecutiveSlowReconciles = 0) =>
         new(
             isConnected,
             isGraceActive,
             isArmed,
             TimeSpan.FromSeconds(secondsSinceLastAttempt),
             pruneLevel,
-            consecutiveSlowReconciles,
-            osSessionCount,
-            consecutiveFailedReconciles);
+            consecutiveSlowReconciles);
 
     [TestMethod]
-    public void DisconnectedSessionForceUpdatesOnTheCooldown()
+    public void DisconnectedSessionIsProbedOnTheCooldown()
     {
-        Assert.AreEqual(
-            MediaSessionReconcileAction.None,
-            MediaSessionReconcilePolicy.Decide(Signals(secondsSinceLastAttempt: 4)));
-        Assert.AreEqual(
-            MediaSessionReconcileAction.ForceUpdate,
-            MediaSessionReconcilePolicy.Decide(Signals(secondsSinceLastAttempt: 5)));
+        Assert.IsFalse(MediaSessionReconcilePolicy.ShouldProbe(Signals(secondsSinceLastAttempt: 4)));
+        Assert.IsTrue(MediaSessionReconcilePolicy.ShouldProbe(Signals(secondsSinceLastAttempt: 5)));
     }
 
     [TestMethod]
     public void ArmedWindowUsesTheFastCadence()
     {
-        Assert.AreEqual(
-            MediaSessionReconcileAction.None,
-            MediaSessionReconcilePolicy.Decide(Signals(isArmed: true, secondsSinceLastAttempt: 0.9)));
-        Assert.AreEqual(
-            MediaSessionReconcileAction.ForceUpdate,
-            MediaSessionReconcilePolicy.Decide(Signals(isArmed: true, secondsSinceLastAttempt: 1.0)));
+        Assert.IsFalse(MediaSessionReconcilePolicy.ShouldProbe(
+            Signals(isArmed: true, secondsSinceLastAttempt: 0.9)));
+        Assert.IsTrue(MediaSessionReconcilePolicy.ShouldProbe(
+            Signals(isArmed: true, secondsSinceLastAttempt: 1.0)));
     }
 
     [TestMethod]
-    public void ConnectedOrGracedSessionNeverActs()
+    public void ConnectedOrGracedSessionIsNeverProbed()
     {
-        Assert.AreEqual(
-            MediaSessionReconcileAction.None,
-            MediaSessionReconcilePolicy.Decide(Signals(isConnected: true, isArmed: true, secondsSinceLastAttempt: 3600)));
-        Assert.AreEqual(
-            MediaSessionReconcileAction.None,
-            MediaSessionReconcilePolicy.Decide(Signals(isGraceActive: true, isArmed: true, secondsSinceLastAttempt: 3600)));
+        Assert.IsFalse(MediaSessionReconcilePolicy.ShouldProbe(
+            Signals(isConnected: true, isArmed: true, secondsSinceLastAttempt: 3600)));
+        Assert.IsFalse(MediaSessionReconcilePolicy.ShouldProbe(
+            Signals(isGraceActive: true, isArmed: true, secondsSinceLastAttempt: 3600)));
     }
 
     [TestMethod]
-    public void NoSessionsFromTheOsMeansNoMediaAndNoWork()
+    public void ProbeGatingDoesNotDependOnTheOsSessionCount()
     {
-        // 系统确实没有会话：ForceUpdate 变不出会话，因此即使冷却已过也不动作。
-        // The OS genuinely has no sessions: ForceUpdate cannot conjure one, so nothing happens even past the cooldown.
+        // 门控签名刻意没有系统会话数：探测时隙先被消耗，系统查询只发生在时隙内。这样"没有媒体"时不会每秒查询一次。
+        // The gating signature deliberately has no OS session count: the probe slot is consumed first and the system query only happens
+        // inside a slot, so a "no media" state cannot be queried once per second.
+        var signals = Signals(secondsSinceLastAttempt: 5);
+        Assert.IsTrue(MediaSessionReconcilePolicy.ShouldProbe(signals));
         Assert.AreEqual(
             MediaSessionReconcileAction.None,
-            MediaSessionReconcilePolicy.Decide(Signals(secondsSinceLastAttempt: 3600, osSessionCount: 0)));
+            MediaSessionReconcilePolicy.DecideAction(osSessionCount: 0, consecutiveFailedReconciles: 0));
     }
 
     [TestMethod]
     public void PruneLevelSlowsOrStopsTheWatchdog()
     {
-        Assert.AreEqual(
-            MediaSessionReconcileAction.None,
-            MediaSessionReconcilePolicy.Decide(
-                Signals(secondsSinceLastAttempt: 6, pruneLevel: MemoryPruneLevel.Idle)));
-        Assert.AreEqual(
-            MediaSessionReconcileAction.ForceUpdate,
-            MediaSessionReconcilePolicy.Decide(
-                Signals(secondsSinceLastAttempt: 10, pruneLevel: MemoryPruneLevel.Idle)));
+        Assert.IsFalse(MediaSessionReconcilePolicy.ShouldProbe(
+            Signals(secondsSinceLastAttempt: 6, pruneLevel: MemoryPruneLevel.Idle)));
+        Assert.IsTrue(MediaSessionReconcilePolicy.ShouldProbe(
+            Signals(secondsSinceLastAttempt: 10, pruneLevel: MemoryPruneLevel.Idle)));
 
-        // 显示关闭与睡眠档位下不做任何重同步：屏幕已经黑了，媒体栏没人看。
-        // No reconcile under display-off or suspend: the screen is dark and nobody reads the bar.
-        Assert.AreEqual(
-            MediaSessionReconcileAction.None,
-            MediaSessionReconcilePolicy.Decide(
-                Signals(isArmed: true, secondsSinceLastAttempt: 3600, pruneLevel: MemoryPruneLevel.DisplayOff)));
-        Assert.AreEqual(
-            MediaSessionReconcileAction.None,
-            MediaSessionReconcilePolicy.Decide(
-                Signals(isArmed: true, secondsSinceLastAttempt: 3600, pruneLevel: MemoryPruneLevel.Suspended)));
+        // 显示关闭与睡眠档位下不探测：屏幕已经黑了，媒体栏没人看。
+        // No probing under display-off or suspend: the screen is dark and nobody reads the bar.
+        Assert.IsFalse(MediaSessionReconcilePolicy.ShouldProbe(
+            Signals(isArmed: true, secondsSinceLastAttempt: 3600, pruneLevel: MemoryPruneLevel.DisplayOff)));
+        Assert.IsFalse(MediaSessionReconcilePolicy.ShouldProbe(
+            Signals(isArmed: true, secondsSinceLastAttempt: 3600, pruneLevel: MemoryPruneLevel.Suspended)));
     }
 
     [TestMethod]
     public void SlowCallsBackOffExponentially()
     {
         // 一次慢调用把 5 秒的间隔翻倍；退避连续累积，直到恢复连接时清零。
-        // One slow call doubles the five-second interval; backoff accumulates until a connected snapshot clears it.
-        Assert.AreEqual(
-            MediaSessionReconcileAction.None,
-            MediaSessionReconcilePolicy.Decide(Signals(secondsSinceLastAttempt: 9, consecutiveSlowReconciles: 1)));
-        Assert.AreEqual(
-            MediaSessionReconcileAction.ForceUpdate,
-            MediaSessionReconcilePolicy.Decide(Signals(secondsSinceLastAttempt: 10, consecutiveSlowReconciles: 1)));
+        // One slow attempt doubles the five-second interval; backoff accumulates until a connected snapshot clears it.
+        Assert.IsFalse(MediaSessionReconcilePolicy.ShouldProbe(
+            Signals(secondsSinceLastAttempt: 9, consecutiveSlowReconciles: 1)));
+        Assert.IsTrue(MediaSessionReconcilePolicy.ShouldProbe(
+            Signals(secondsSinceLastAttempt: 10, consecutiveSlowReconciles: 1)));
 
         var maximum = MediaSessionReconcilePolicy.DisconnectedInterval
             * (1 << MediaSessionReconcilePolicy.MaximumBackoffShift);
+        Assert.IsFalse(MediaSessionReconcilePolicy.ShouldProbe(
+            Signals(secondsSinceLastAttempt: maximum.TotalSeconds - 1, consecutiveSlowReconciles: 99)));
+        Assert.IsTrue(MediaSessionReconcilePolicy.ShouldProbe(
+            Signals(secondsSinceLastAttempt: maximum.TotalSeconds, consecutiveSlowReconciles: 99)));
+    }
+
+    [TestMethod]
+    public void NoSessionsMeansNoMediaAndNoAction()
+    {
         Assert.AreEqual(
             MediaSessionReconcileAction.None,
-            MediaSessionReconcilePolicy.Decide(
-                Signals(secondsSinceLastAttempt: maximum.TotalSeconds - 1, consecutiveSlowReconciles: 99)));
+            MediaSessionReconcilePolicy.DecideAction(osSessionCount: 0, consecutiveFailedReconciles: 0));
+    }
+
+    [TestMethod]
+    public void AFailedProbeStillAttemptsAForceUpdate()
+    {
+        // 查询失败（负值）时分不清"没有媒体"还是"库坏了"，做一次保守的 ForceUpdate。
+        // A failed query (negative) cannot tell "no media" from "the library is broken", so it does one conservative ForceUpdate.
         Assert.AreEqual(
             MediaSessionReconcileAction.ForceUpdate,
-            MediaSessionReconcilePolicy.Decide(
-                Signals(secondsSinceLastAttempt: maximum.TotalSeconds, consecutiveSlowReconciles: 99)));
+            MediaSessionReconcilePolicy.DecideAction(osSessionCount: -1, consecutiveFailedReconciles: 0));
     }
 
     [TestMethod]
@@ -132,14 +125,12 @@ public sealed class MediaSessionReconcilePolicyTests
         var belowThreshold = MediaSessionReconcilePolicy.CatalogRestartFailureThreshold - 1;
         Assert.AreEqual(
             MediaSessionReconcileAction.ForceUpdate,
-            MediaSessionReconcilePolicy.Decide(
-                Signals(secondsSinceLastAttempt: 5, consecutiveFailedReconciles: belowThreshold)));
+            MediaSessionReconcilePolicy.DecideAction(osSessionCount: 1, consecutiveFailedReconciles: belowThreshold));
         Assert.AreEqual(
             MediaSessionReconcileAction.RestartCatalog,
-            MediaSessionReconcilePolicy.Decide(
-                Signals(
-                    secondsSinceLastAttempt: 5,
-                    consecutiveFailedReconciles: MediaSessionReconcilePolicy.CatalogRestartFailureThreshold)));
+            MediaSessionReconcilePolicy.DecideAction(
+                osSessionCount: 1,
+                consecutiveFailedReconciles: MediaSessionReconcilePolicy.CatalogRestartFailureThreshold));
     }
 
     [TestMethod]

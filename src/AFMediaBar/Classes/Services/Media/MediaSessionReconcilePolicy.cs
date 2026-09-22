@@ -19,101 +19,92 @@ public enum MediaSessionReconcileAction
 }
 
 /// <summary>
-/// 自动重连看门狗的决策输入。
+/// 自动重连看门狗的探测门控输入。
 ///
-/// 第三方库 <c>WindowsMediaController</c> 的会话字典只随 WinRT 事件增量同步，而它自己的 issue #6 记录了
-/// "运行期新会话检测不到、关闭后再开也检测不到"；一旦换歌瞬间丢掉事件，快照就会一直停在断连状态。
-/// 看门狗用本策略决定何时 ForceUpdate、何时连目录一起重建。
-/// Signals the auto-reconcile watchdog decides from.
+/// 门控**刻意不接收系统会话数**：探测节奏必须发生在任何系统查询之前，否则"没有媒体"的常见状态下会每秒查询一次。
+/// Probe gating signals for the auto-reconcile watchdog.
 ///
-/// The third-party <c>WindowsMediaController</c> library only syncs its session dictionary from WinRT events, while its own issue #6
-/// records "new sessions are not detected at runtime, and a closed source cannot be re-detected"; once the event around a track change
-/// is lost, the snapshot stays disconnected forever. The watchdog uses this policy to decide when to ForceUpdate and when to rebuild
-/// the whole catalog.
+/// The gating deliberately takes no OS session count: the probe cadence has to be decided before any system query, otherwise the
+/// common "no media at all" state would query once per second.
 /// </summary>
-/// <param name="IsConnected">已发布快照是否连接（断连才需要重同步）。/ Whether the published snapshot is connected (only a disconnected one needs reconciling).</param>
+/// <param name="IsConnected">已发布快照是否连接（断连才需要探测）。/ Whether the published snapshot is connected (only a disconnected one needs probing).</param>
 /// <param name="IsGraceActive">浏览器会话重建的宽限期；宽限期内由选择器自己恢复，看门狗不得插手。/ The browser's session-recreation grace period; the selector restores it on its own, so the watchdog must not interfere.</param>
 /// <param name="IsArmed">是否处于"刚收到会话关闭事件"的快速窗口。/ Whether the fast window armed by a session-closed event is active.</param>
-/// <param name="SinceLastAttempt">距上一次重同步尝试的真实时间。/ Real time since the last reconcile attempt.</param>
+/// <param name="SinceLastAttempt">距上一次探测时隙的真实时间。/ Real time since the previous probe slot.</param>
 /// <param name="PruneLevel">当前内存剪枝档位。/ Current memory-prune level.</param>
-/// <param name="ConsecutiveSlowReconciles">连续"重同步耗时异常"的次数，用于指数退避。/ Consecutive slow reconciles, used for exponential backoff.</param>
-/// <param name="OsSessionCount">操作系统当前发布的会话数；0 表示确实没有媒体，&lt;0 表示读不到（未知）。/ Sessions the OS publishes; 0 means genuinely no media, &lt;0 unknown.</param>
-/// <param name="ConsecutiveFailedReconciles">连续"ForceUpdate 后仍断连且系统有会话"的次数，用于决定是否重建目录。/ Consecutive reconciles that stayed disconnected while the OS had sessions, used to decide on a catalog rebuild.</param>
-public readonly record struct MediaSessionReconcileSignals(
+/// <param name="ConsecutiveSlowReconciles">连续"探测到恢复整段耗时异常"的次数，用于指数退避。/ Consecutive slow probe-and-recover attempts, used for exponential backoff.</param>
+public readonly record struct MediaSessionReconcileProbeSignals(
     bool IsConnected,
     bool IsGraceActive,
     bool IsArmed,
     TimeSpan SinceLastAttempt,
     MemoryPruneLevel PruneLevel,
-    int ConsecutiveSlowReconciles,
-    int OsSessionCount,
-    int ConsecutiveFailedReconciles);
+    int ConsecutiveSlowReconciles);
 
 /// <summary>
 /// 自动重连看门狗的纯判定策略：保证"事件丢失后能自愈"，同时把额外开销限制在故障态。
+///
+/// 判定分成两步：<see cref="ShouldProbe"/> 只做零系统调用的时间与档位门控（因此探测时隙先于系统查询被消耗），
+/// <see cref="DecideAction"/> 才根据系统会话数与失败次数决定动作。两步都是纯函数，可独立单测。
 /// Pure decision policy for the auto-reconcile watchdog: it guarantees self-healing after lost events while keeping the extra cost
 /// bounded to the broken state.
+///
+/// The decision is split in two: <see cref="ShouldProbe"/> only gates time and prune level with zero system calls (so a probe slot is
+/// consumed before any system query), and <see cref="DecideAction"/> picks the action from the OS session count and failure count.
+/// Both are pure functions and independently unit-testable.
 /// </summary>
 public static class MediaSessionReconcilePolicy
 {
-    /// <summary>会话关闭事件后的快速重试间隔：换歌重建会话正是丢事件的高发点，早一秒捞回来就少一秒钟的失明。
-    /// Fast retry interval after a session-closed event: a track change is exactly where events go missing, so catching it one second
+    /// <summary>会话关闭事件后的快速探测间隔：换歌重建会话正是丢事件的高发点，早一秒捞回来就少一秒钟的失明。
+    /// Fast probe interval after a session-closed event: a track change is exactly where events go missing, so catching it one second
     /// earlier is one second less of blindness.</summary>
     public static readonly TimeSpan ArmedInterval = TimeSpan.FromSeconds(1);
 
-    /// <summary>平时断连的重试间隔：低频兜底"启动时就没看见、运行期也没事件"的会话，同时又远低于任何可感知的开销。
-    /// Ordinary retry interval while disconnected: a low-frequency backstop for sessions that were missed at startup or by events, far
+    /// <summary>平时断连的探测间隔：低频兜底"启动时就没看见、运行期也没事件"的会话，同时又远低于任何可感知的开销。
+    /// Ordinary probe interval while disconnected: a low-frequency backstop for sessions that were missed at startup or by events, far
     /// below any perceptible cost.</summary>
     public static readonly TimeSpan DisconnectedInterval = TimeSpan.FromSeconds(5);
 
-    /// <summary>空闲剪枝档位下的重试间隔；此时用户已离开，重同步再慢一点没有代价。
-    /// Retry interval under the idle prune level: the user is gone, so a slower reconcile costs nothing.</summary>
+    /// <summary>空闲剪枝档位下的探测间隔；此时用户已离开，探测再慢一点没有代价。
+    /// Probe interval under the idle prune level: the user is gone, so a slower probe costs nothing.</summary>
     public static readonly TimeSpan PrunedInterval = TimeSpan.FromSeconds(10);
 
     /// <summary>会话关闭后快速窗口的长度；超过它仍无媒体，说明不是换歌而是来源真的退出了。
     /// Length of the fast window after a session closes; staying empty past it means the source really exited rather than changed tracks.</summary>
     public static readonly TimeSpan ArmedWindow = TimeSpan.FromSeconds(30);
 
-    /// <summary>单次重同步超过该耗时即视为异常（RPC 卡顿），随后指数退避，避免持续占用 UI 线程。
-    /// A reconcile longer than this counts as abnormal (a stalled RPC) and triggers exponential backoff so the UI thread is not hammered.</summary>
+    /// <summary>单次"探测到恢复"超过该耗时即视为异常（RPC 卡顿），随后指数退避，避免持续占用后台线程。
+    /// A probe-and-recover attempt longer than this counts as abnormal (a stalled RPC) and triggers exponential backoff so the
+    /// background thread is not hammered.</summary>
     public static readonly TimeSpan SlowCallThreshold = TimeSpan.FromMilliseconds(250);
 
-    /// <summary>退避的最大倍数（2 的幂次），防止长时间卡顿时把间隔吹得过大。</summary>
-    /// <summary>Maximum backoff shift (a power of two), so a long stall cannot blow the interval up without bound.</summary>
+    /// <summary>退避的最大倍数（2 的幂次），防止长时间卡顿时把间隔吹得过大。
+    /// Maximum backoff shift (a power of two), so a long stall cannot blow the interval up without bound.</summary>
     public const int MaximumBackoffShift = 4;
 
     /// <summary>连续多少次"ForceUpdate 后仍断连且系统有会话"后改为重建整个目录。/ How many consecutive ForceUpdate attempts may stay broken before the whole catalog is rebuilt.</summary>
     public const int CatalogRestartFailureThreshold = 2;
 
     /// <summary>
-    /// 决定这次 tick 的动作。判据顺序体现优先级：先排除"有理由不动作"的状态，再看系统是否真的有会话，
-    /// 最后按节奏与退避比较时间并选择 ForceUpdate 或重建目录。
-    /// Decides the action for this tick. The order encodes priority: states that forbid acting come first, then whether the OS genuinely
-    /// has sessions, then cadence and backoff decide the timing and whether to ForceUpdate or rebuild the catalog.
+    /// 这次 tick 是否到了探测时隙。只读门控信号，不做任何系统调用；返回 true 表示调用方应立即消耗该时隙（更新时间戳）并开始一次后台探测。
+    /// Whether this tick has reached a probe slot. It only reads gating signals and makes no system call; true means the caller should
+    /// consume the slot immediately (update the timestamp) and start one background probe.
     /// </summary>
-    /// <param name="signals">当前输入。/ The current signals.</param>
-    public static MediaSessionReconcileAction Decide(in MediaSessionReconcileSignals signals)
+    /// <param name="signals">当前门控信号。/ The current gating signals.</param>
+    public static bool ShouldProbe(in MediaSessionReconcileProbeSignals signals)
     {
-        // 显示关闭/睡眠档位下不做任何重同步：屏幕已经黑了，媒体栏没人看。
-        // No reconcile while the display is off or the system suspends: nobody is looking at the bar.
+        // 显示关闭/睡眠档位下不探测：屏幕已经黑了，媒体栏没人看。
+        // No probing while the display is off or the system suspends: nobody is looking at the bar.
         if (signals.PruneLevel >= MemoryPruneLevel.DisplayOff)
         {
-            return MediaSessionReconcileAction.None;
+            return false;
         }
 
         // 已连接说明事件链路正常；宽限期由选择器负责恢复。两者都不需要看门狗。
         // Connected means the event path works; the grace period belongs to the selector. Neither needs the watchdog.
         if (signals.IsConnected || signals.IsGraceActive)
         {
-            return MediaSessionReconcileAction.None;
-        }
-
-        // 系统确实没有发布任何会话：那是"没有媒体"，不是"库坏了"。ForceUpdate 也变不出会话，继续按断连节奏检查即可。
-        // The OS genuinely publishes no session: that is "no media", not "the library is broken". ForceUpdate cannot conjure one, so
-        // keep watching at the disconnected cadence without doing any work.
-        if (signals.OsSessionCount == 0)
-        {
-            return MediaSessionReconcileAction.None;
+            return false;
         }
 
         var interval = signals.PruneLevel == MemoryPruneLevel.Idle
@@ -123,20 +114,37 @@ public static class MediaSessionReconcilePolicy
         var shift = Math.Clamp(signals.ConsecutiveSlowReconciles, 0, MaximumBackoffShift);
         interval *= 1 << shift;
 
-        if (signals.SinceLastAttempt < interval)
+        return signals.SinceLastAttempt >= interval;
+    }
+
+    /// <summary>
+    /// 根据一次系统探测的结果决定动作。
+    /// 系统确实没有会话时不动（那是"没有媒体"，不是"库坏了"）；查询失败（负值）时做一次保守的 ForceUpdate；
+    /// 系统有会话而 ForceUpdate 连续失败时升级为重建整个目录。
+    /// Picks the action from the result of one system probe.
+    /// Genuinely zero sessions means "no media" rather than "the library is broken", so nothing happens; a failed query (negative)
+    /// does one conservative ForceUpdate; and sessions that keep failing after ForceUpdate escalate to a full catalog rebuild.
+    /// </summary>
+    /// <param name="osSessionCount">操作系统当前发布的会话数；0 为确实没有媒体，负值为查询失败。/ Sessions the OS publishes; zero is genuinely no media, negative is a failed query.</param>
+    /// <param name="consecutiveFailedReconciles">连续"ForceUpdate 后仍断连且系统有会话"的次数。/ Consecutive reconciles that stayed disconnected while the OS had sessions.</param>
+    public static MediaSessionReconcileAction DecideAction(int osSessionCount, int consecutiveFailedReconciles)
+    {
+        if (osSessionCount == 0)
         {
             return MediaSessionReconcileAction.None;
         }
 
-        // 系统有会话、ForceUpdate 却连续失败：库的字典多半残留了失效条目，此时只能重建目录。
-        // The OS has sessions while ForceUpdate keeps failing: the library's dictionary almost certainly holds a dead entry, and only
-        // a catalog rebuild can clear it.
-        return signals.ConsecutiveFailedReconciles >= CatalogRestartFailureThreshold
+        if (osSessionCount < 0)
+        {
+            return MediaSessionReconcileAction.ForceUpdate;
+        }
+
+        return consecutiveFailedReconciles >= CatalogRestartFailureThreshold
             ? MediaSessionReconcileAction.RestartCatalog
             : MediaSessionReconcileAction.ForceUpdate;
     }
 
-    /// <summary>单次重同步是否慢到需要退避。/ Whether one reconcile was slow enough to warrant backoff.</summary>
-    /// <param name="duration">本次重同步耗时。/ Duration of the reconcile.</param>
+    /// <summary>单次"探测到恢复"是否慢到需要退避。/ Whether one probe-and-recover attempt was slow enough to warrant backoff.</summary>
+    /// <param name="duration">本次尝试的耗时。/ Duration of the attempt.</param>
     public static bool IsSlowCall(TimeSpan duration) => duration >= SlowCallThreshold;
 }
