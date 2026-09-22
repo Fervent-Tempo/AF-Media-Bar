@@ -26,6 +26,7 @@ public sealed class WindowAppearanceService : IDisposable
     private const int WmDpiChanged = 0x02E0;
     private const int WmDpiChangedAfterParent = 0x02E3;
     private readonly NativeWindowBackdropAdapter _nativeBackdropAdapter;
+    private readonly AppIconService _appIconService;
     private readonly HashSet<FluentWindow> _windows = [];
     private readonly HashSet<FluentWindow> _nonActivatingTransientWindows = [];
     private readonly Dictionary<FluentWindow, HwndSource> _windowSources = [];
@@ -45,11 +46,16 @@ public sealed class WindowAppearanceService : IDisposable
     /// 创建窗口外观协调服务并订阅外观与主题变化。
     /// Creates the window appearance coordinator and subscribes to appearance and theme changes.
     /// </summary>
-    public WindowAppearanceService(NativeWindowBackdropAdapter nativeBackdropAdapter)
+    public WindowAppearanceService(NativeWindowBackdropAdapter nativeBackdropAdapter, AppIconService appIconService)
     {
         _nativeBackdropAdapter = nativeBackdropAdapter;
+        _appIconService = appIconService;
         SettingsManager.AppearanceSettingsChanged += OnAppearanceSettingsChanged;
         ApplicationThemeManager.Changed += OnApplicationThemeChanged;
+
+        // 图标也一样：主题变了就得换一套，否则深色主题上会留着深色图形。
+        // The icon follows as well: a theme change has to swap the artwork, or the dark theme keeps dark artwork on a dark surface.
+        _appIconService.IconChanged += OnApplicationIconChanged;
     }
 
     /// <summary>
@@ -68,6 +74,11 @@ public sealed class WindowAppearanceService : IDisposable
         window.Loaded += OnWindowLoaded;
         window.IsVisibleChanged += OnWindowIsVisibleChanged;
         window.Closed += OnWindowClosed;
+
+        // 图标不需要窗口句柄，因此注册时就写上去：任务栏按钮与 Alt+Tab 在窗口第一次显示前就已经取过它。
+        // The icon needs no window handle, so it is written at registration: the taskbar button and Alt+Tab have already read it
+        // before the window is first shown.
+        _appIconService.ApplyTo(window);
 
         if (new WindowInteropHelper(window).Handle != nint.Zero)
         {
@@ -221,6 +232,8 @@ public sealed class WindowAppearanceService : IDisposable
 
     private void OnApplicationThemeChanged(ApplicationTheme theme, System.Windows.Media.Color accent) => QueueApplyAll();
 
+    private void OnApplicationIconChanged() => QueueApplyAll();
+
     private void QueueApplyAll()
     {
         if (_disposed || _applyQueued || Application.Current?.Dispatcher is not { } dispatcher)
@@ -251,6 +264,11 @@ public sealed class WindowAppearanceService : IDisposable
 
     private void ApplyWindow(FluentWindow window)
     {
+        // 图标先于句柄判断：没有句柄的窗口也可能已经显示过（任务栏按钮已存在），主题变化时它同样要换图。
+        // The icon comes before the handle check: a window without a handle may already have been shown (its taskbar button exists)
+        // and still has to swap artwork on a theme change.
+        _appIconService.ApplyTo(window);
+
         if (PresentationSource.FromVisual(window) is not HwndSource source || source.Handle == nint.Zero)
         {
             return;
@@ -428,6 +446,7 @@ public sealed class WindowAppearanceService : IDisposable
         _disposed = true;
         SettingsManager.AppearanceSettingsChanged -= OnAppearanceSettingsChanged;
         ApplicationThemeManager.Changed -= OnApplicationThemeChanged;
+        _appIconService.IconChanged -= OnApplicationIconChanged;
 
         foreach (var window in _windows.ToArray())
         {

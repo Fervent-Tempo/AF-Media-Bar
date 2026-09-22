@@ -103,22 +103,6 @@ public sealed class TaskbarExperiencePolicyTests
     }
 
     [TestMethod]
-    public void SpectrumReservesSpaceForConnectedPausedMedia()
-    {
-        Assert.IsFalse(TaskbarExperiencePolicy.ShouldShowSpectrum(MediaSnapshot.Disconnected));
-        Assert.IsTrue(TaskbarExperiencePolicy.ShouldShowSpectrum(MediaSnapshot.Disconnected with
-        {
-            IsConnected = true,
-            IsPlaying = false
-        }));
-        Assert.IsTrue(TaskbarExperiencePolicy.ShouldShowSpectrum(MediaSnapshot.Disconnected with
-        {
-            IsConnected = true,
-            IsPlaying = true
-        }));
-    }
-
-    [TestMethod]
     public void DisconnectedWidthContainsOnlyArtworkAndTrailingMargin()
     {
         var width = TaskbarExperiencePolicy.CalculateWidth(

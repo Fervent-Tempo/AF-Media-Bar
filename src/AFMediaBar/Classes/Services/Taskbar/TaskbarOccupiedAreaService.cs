@@ -17,16 +17,16 @@ public sealed class TaskbarOccupiedAreaService
     private static readonly TimeSpan ProbeResultTimeout = TimeSpan.FromMilliseconds(1500);
     private readonly ITaskbarOccupiedAreaProbe _probe;
     private readonly object _cacheGate = new();
-    private IntPtr _cachedTaskbarHandle;
-    private RECT _cachedTaskbarRect;
-    private LayoutOrientation _cachedOrientation;
-    private double _cachedDpiScale;
-    private int _cachedEdgePaddingPixels;
-    private DateTime _cachedAtUtc;
-    private IReadOnlyList<TaskbarPrimaryRange> _cachedRanges = [];
-    private bool _probeInProgress;
-    private DateTime _probeStartedAtUtc;
+    private readonly Dictionary<ProbeCacheKey, CacheEntry> _cache = [];
+    private readonly Dictionary<ProbeCacheKey, ActiveProbe> _activeProbes = [];
     private long _cacheGeneration;
+    private long _nextProbeId;
+
+    /// <summary>
+    /// 某个任务栏的新安全区间已经发布。事件可能从后台探测线程触发。
+    /// Raised when fresh safe ranges have been published for a taskbar. The event can be raised from a background probe thread.
+    /// </summary>
+    public event EventHandler<TaskbarSafeRangesUpdatedEventArgs>? SafeRangesUpdated;
 
     /// <summary>
     /// 使用指定后台平台探测器创建任务栏占用区域服务。
@@ -55,30 +55,43 @@ public sealed class TaskbarOccupiedAreaService
         double dpiScale,
         int edgePaddingPixels)
     {
-        IReadOnlyList<TaskbarPrimaryRange> availableCache;
+        var key = new ProbeCacheKey(
+            taskbarHandle,
+            taskbarRect,
+            orientation,
+            dpiScale,
+            edgePaddingPixels);
+        IReadOnlyList<TaskbarPrimaryRange> availableCache = [];
         var startProbe = false;
         var probeGeneration = 0L;
+        var probeId = 0L;
         var probeStartedAtUtc = default(DateTime);
         lock (_cacheGate)
         {
             var now = DateTime.UtcNow;
-            var cacheMatches = MatchesCacheKey(
-                taskbarHandle,
-                taskbarRect,
-                orientation,
-                dpiScale,
-                edgePaddingPixels);
-            if (cacheMatches && now - _cachedAtUtc < ProbeCacheDuration)
-                return _cachedRanges;
-
-            var activeProbeTimedOut = _probeInProgress && now - _probeStartedAtUtc > ProbeResultTimeout;
-            availableCache = cacheMatches && !activeProbeTimedOut ? _cachedRanges : [];
-            if (!_probeInProgress)
+            if (_cache.TryGetValue(key, out var entry))
             {
-                _probeInProgress = true;
-                _probeStartedAtUtc = now;
+                if (now - entry.CachedAtUtc < ProbeCacheDuration)
+                    return entry.Ranges;
+                if (now - entry.CachedAtUtc <= ProbeResultTimeout)
+                    availableCache = entry.Ranges;
+            }
+
+            if (_activeProbes.TryGetValue(key, out var activeProbe) &&
+                (activeProbe.Generation != _cacheGeneration || now - activeProbe.StartedAtUtc > ProbeResultTimeout))
+            {
+                // UIA 偶尔会永久卡在失效的 Explorer 树上；只释放这个任务栏的槽位，旧回调靠 probeId 淘汰。
+                // UIA can occasionally remain stuck on a stale Explorer tree forever. Release only this taskbar's slot and discard the old callback by probeId.
+                _activeProbes.Remove(key);
+                availableCache = [];
+            }
+
+            if (!_activeProbes.ContainsKey(key))
+            {
                 probeGeneration = _cacheGeneration;
+                probeId = ++_nextProbeId;
                 probeStartedAtUtc = now;
+                _activeProbes[key] = new ActiveProbe(probeGeneration, probeId, probeStartedAtUtc);
                 startProbe = true;
             }
         }
@@ -86,12 +99,9 @@ public sealed class TaskbarOccupiedAreaService
         if (startProbe)
         {
             StartProbe(
-                taskbarHandle,
-                taskbarRect,
-                orientation,
-                dpiScale,
-                edgePaddingPixels,
+                key,
                 probeGeneration,
+                probeId,
                 probeStartedAtUtc);
         }
 
@@ -110,96 +120,166 @@ public sealed class TaskbarOccupiedAreaService
         lock (_cacheGate)
         {
             _cacheGeneration++;
-            _cachedTaskbarHandle = IntPtr.Zero;
-            _cachedTaskbarRect = default;
-            _cachedDpiScale = 0;
-            _cachedAtUtc = default;
-            _cachedRanges = [];
+            _cache.Clear();
         }
     }
 
     private void StartProbe(
-        IntPtr taskbarHandle,
-        RECT taskbarRect,
-        LayoutOrientation orientation,
-        double dpiScale,
-        int edgePaddingPixels,
+        ProbeCacheKey key,
         long probeGeneration,
+        long probeId,
         DateTime probeStartedAtUtc)
     {
         try
         {
             _probe.Start(
-                taskbarHandle,
-                taskbarRect,
-                orientation,
-                dpiScale,
-                edgePaddingPixels,
+                key.TaskbarHandle,
+                key.TaskbarRect,
+                key.Orientation,
+                key.DpiScale,
+                key.EdgePaddingPixels,
                 ranges => CompleteProbe(
-                    taskbarHandle,
-                    taskbarRect,
-                    orientation,
-                    dpiScale,
-                    edgePaddingPixels,
+                    key,
                     probeGeneration,
+                    probeId,
                     probeStartedAtUtc,
                     ranges),
-                FailProbe);
+                () => FailProbe(key, probeId));
         }
         catch (Exception)
         {
-            FailProbe();
+            FailProbe(key, probeId);
         }
     }
 
     private void CompleteProbe(
+        ProbeCacheKey key,
+        long probeGeneration,
+        long probeId,
+        DateTime probeStartedAtUtc,
+        IReadOnlyList<TaskbarPrimaryRange> ranges)
+    {
+        TaskbarSafeRangesUpdatedEventArgs? updated = null;
+        lock (_cacheGate)
+        {
+            var completedAtUtc = DateTime.UtcNow;
+            if (_activeProbes.TryGetValue(key, out var activeProbe) &&
+                probeId == activeProbe.Id &&
+                probeGeneration == _cacheGeneration &&
+                completedAtUtc - probeStartedAtUtc <= ProbeResultTimeout)
+            {
+                var snapshot = ranges.ToArray();
+                _cache[key] = new CacheEntry(completedAtUtc, snapshot);
+                PruneOldEntries();
+                updated = new TaskbarSafeRangesUpdatedEventArgs(
+                    key.TaskbarHandle,
+                    key.TaskbarRect,
+                    key.Orientation,
+                    key.DpiScale,
+                    key.EdgePaddingPixels,
+                    snapshot);
+            }
+
+            if (_activeProbes.TryGetValue(key, out activeProbe) && probeId == activeProbe.Id)
+                _activeProbes.Remove(key);
+        }
+
+        if (updated is not null)
+            RaiseSafeRangesUpdated(updated);
+    }
+
+    private void FailProbe(ProbeCacheKey key, long probeId)
+    {
+        lock (_cacheGate)
+        {
+            if (_activeProbes.TryGetValue(key, out var activeProbe) && probeId == activeProbe.Id)
+                _activeProbes.Remove(key);
+        }
+    }
+
+    private void RaiseSafeRangesUpdated(TaskbarSafeRangesUpdatedEventArgs args)
+    {
+        foreach (EventHandler<TaskbarSafeRangesUpdatedEventArgs> handler in
+                 SafeRangesUpdated?.GetInvocationList().Cast<EventHandler<TaskbarSafeRangesUpdatedEventArgs>>() ?? [])
+        {
+            try
+            {
+                handler(this, args);
+            }
+            catch
+            {
+                // 探测线程不能因为某个已经关闭的宿主事件处理器而终止。
+                // A stale host event handler must not terminate the probe thread.
+            }
+        }
+    }
+
+    private void PruneOldEntries()
+    {
+        const int maximumEntries = 16;
+        if (_cache.Count <= maximumEntries)
+            return;
+
+        foreach (var key in _cache
+                     .OrderBy(pair => pair.Value.CachedAtUtc)
+                     .Take(_cache.Count - maximumEntries)
+                     .Select(pair => pair.Key)
+                     .ToArray())
+        {
+            _cache.Remove(key);
+        }
+    }
+
+    private readonly record struct ProbeCacheKey(
+        IntPtr TaskbarHandle,
+        RECT TaskbarRect,
+        LayoutOrientation Orientation,
+        double DpiScale,
+        int EdgePaddingPixels);
+
+    private readonly record struct ActiveProbe(long Generation, long Id, DateTime StartedAtUtc);
+
+    private sealed record CacheEntry(DateTime CachedAtUtc, IReadOnlyList<TaskbarPrimaryRange> Ranges);
+}
+
+/// <summary>
+/// 描述一次已发布的任务栏安全区间快照。
+/// Describes one published taskbar safe-range snapshot.
+/// </summary>
+public sealed class TaskbarSafeRangesUpdatedEventArgs : EventArgs
+{
+    /// <summary>创建任务栏安全区间更新参数。/ Creates taskbar safe-range update arguments.</summary>
+    public TaskbarSafeRangesUpdatedEventArgs(
         IntPtr taskbarHandle,
         RECT taskbarRect,
         LayoutOrientation orientation,
         double dpiScale,
         int edgePaddingPixels,
-        long probeGeneration,
-        DateTime probeStartedAtUtc,
         IReadOnlyList<TaskbarPrimaryRange> ranges)
     {
-        lock (_cacheGate)
-        {
-            var completedAtUtc = DateTime.UtcNow;
-            if (probeGeneration == _cacheGeneration &&
-                completedAtUtc - probeStartedAtUtc <= ProbeResultTimeout)
-            {
-                _cachedTaskbarHandle = taskbarHandle;
-                _cachedTaskbarRect = taskbarRect;
-                _cachedOrientation = orientation;
-                _cachedDpiScale = dpiScale;
-                _cachedEdgePaddingPixels = edgePaddingPixels;
-                _cachedAtUtc = completedAtUtc;
-                _cachedRanges = ranges.ToArray();
-            }
-
-            _probeInProgress = false;
-        }
+        TaskbarHandle = taskbarHandle;
+        TaskbarRect = taskbarRect;
+        Orientation = orientation;
+        DpiScale = dpiScale;
+        EdgePaddingPixels = edgePaddingPixels;
+        Ranges = ranges;
     }
 
-    private void FailProbe()
-    {
-        lock (_cacheGate)
-        {
-            _probeInProgress = false;
-        }
-    }
+    /// <summary>任务栏窗口句柄。/ Taskbar window handle.</summary>
+    public IntPtr TaskbarHandle { get; }
 
-    private bool MatchesCacheKey(
-        IntPtr taskbarHandle,
-        RECT taskbarRect,
-        LayoutOrientation orientation,
-        double dpiScale,
-        int edgePaddingPixels)
-    {
-        return taskbarHandle == _cachedTaskbarHandle &&
-               taskbarRect.Equals(_cachedTaskbarRect) &&
-               orientation == _cachedOrientation &&
-               Math.Abs(dpiScale - _cachedDpiScale) < 0.01 &&
-               edgePaddingPixels == _cachedEdgePaddingPixels;
-    }
+    /// <summary>探测时的任务栏屏幕矩形。/ Taskbar screen rectangle at probe time.</summary>
+    public RECT TaskbarRect { get; }
+
+    /// <summary>探测使用的主轴方向。/ Primary-axis orientation used by the probe.</summary>
+    public LayoutOrientation Orientation { get; }
+
+    /// <summary>探测使用的 DPI 缩放。/ DPI scale used by the probe.</summary>
+    public double DpiScale { get; }
+
+    /// <summary>探测使用的边缘留白。/ Edge padding used by the probe.</summary>
+    public int EdgePaddingPixels { get; }
+
+    /// <summary>已发布的不可变安全区间。/ Published immutable safe ranges.</summary>
+    public IReadOnlyList<TaskbarPrimaryRange> Ranges { get; }
 }

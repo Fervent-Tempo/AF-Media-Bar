@@ -268,6 +268,35 @@ public sealed class ExtraFeaturePolicyTests
     }
 
     [TestMethod]
+    public void MetricLeaseStartsWhenAReplayedSnapshotMakesTheComponentVisibleWithoutRenewingEverySnapshot()
+    {
+        Assert.AreEqual(
+            MetricSubscriptionTransition.Subscribe,
+            MetricPresentationPolicy.ResolveSubscriptionTransition(
+                shouldSubscribe: true,
+                hasSubscription: false,
+                forceRenew: false));
+        Assert.AreEqual(
+            MetricSubscriptionTransition.None,
+            MetricPresentationPolicy.ResolveSubscriptionTransition(
+                shouldSubscribe: true,
+                hasSubscription: true,
+                forceRenew: false));
+        Assert.AreEqual(
+            MetricSubscriptionTransition.Renew,
+            MetricPresentationPolicy.ResolveSubscriptionTransition(
+                shouldSubscribe: true,
+                hasSubscription: true,
+                forceRenew: true));
+        Assert.AreEqual(
+            MetricSubscriptionTransition.Unsubscribe,
+            MetricPresentationPolicy.ResolveSubscriptionTransition(
+                shouldSubscribe: false,
+                hasSubscription: true,
+                forceRenew: false));
+    }
+
+    [TestMethod]
     public void DisconnectedWidthStillReservesPerformanceComponent()
     {
         var width = TaskbarExperiencePolicy.CalculateWidth(

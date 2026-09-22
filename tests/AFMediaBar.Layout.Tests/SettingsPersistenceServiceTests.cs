@@ -42,7 +42,7 @@ public sealed class SettingsPersistenceServiceTests
                 LyricsSecondaryLineMode.Translation
             ]),
             TaskbarBarEnabled = false,
-            TaskbarTargetMonitorDeviceId = @"\\.\DISPLAY2",
+            TaskbarTargetMonitorDeviceIds = [@"\\.\DISPLAY1", @"\\.\DISPLAY2"],
             Position = TaskbarBarPosition.End,
             TaskbarBarBackgroundBlur = true,
             TaskbarBarManualPadding = 14,
@@ -70,7 +70,19 @@ public sealed class SettingsPersistenceServiceTests
                 MediaTextAlignment = TaskbarMediaTextAlignment.Right,
                 SpectrumVisible = false,
                 PerformanceVisible = false,
-                HoverControls = new TaskbarHoverControlsSettings(true, true, false, false, false)
+                HoverControls = new TaskbarHoverControlsSettings(true, true, false, false, false),
+                // 静置层组件顺序与"无媒体时保留"是列表字段：列表在记录生成的 ToString 里只打印类型名，
+                // 因此只有真正写进文件再读回来才能证明它们被序列化了。
+                // The rest-layer component order and the "kept without media" list are list fields, and a record's generated ToString prints
+                // only their type name, so only a real write-then-read proves they are serialized at all.
+                OutputDeviceVisible = true,
+                VolumeVisible = true,
+                RestComponentOrder =
+                [
+                    TaskbarRestComponent.Volume,
+                    TaskbarRestComponent.Spectrum
+                ],
+                IdleComponents = [TaskbarRestComponent.Performance, TaskbarRestComponent.Volume]
             },
             Interaction = new GlobalInteractionSettings(
                 PlayerClickAction.ActivateSource,
@@ -128,9 +140,28 @@ public sealed class SettingsPersistenceServiceTests
         Assert.AreEqual(TaskbarMediaTextAlignment.Right, SettingsManager.Current.TaskbarExperience.MediaTextAlignment);
         Assert.IsFalse(SettingsManager.Current.TaskbarExperience.SpectrumVisible);
         Assert.IsFalse(SettingsManager.Current.TaskbarExperience.PerformanceVisible);
+        Assert.IsTrue(SettingsManager.Current.TaskbarExperience.OutputDeviceVisible);
+        Assert.IsTrue(SettingsManager.Current.TaskbarExperience.VolumeVisible);
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                TaskbarRestComponent.Volume,
+                TaskbarRestComponent.Spectrum
+            },
+            SettingsManager.Current.TaskbarExperience.RestComponentOrder!.ToArray());
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                TaskbarRestComponent.Performance,
+                TaskbarRestComponent.Volume
+            },
+            SettingsManager.Current.TaskbarExperience.IdleComponents!.ToArray());
         Assert.AreEqual(72, SettingsManager.Current.TaskbarSurface.BackgroundOpacityPercent);
         Assert.AreEqual(LyricsTextAlignment.Right, SettingsManager.Current.LyricsTextAlignment);
-        Assert.AreEqual(@"\\.\DISPLAY2", SettingsManager.Current.TaskbarTargetMonitorDeviceId);
+        CollectionAssert.AreEqual(
+            new[] { @"\\.\DISPLAY1", @"\\.\DISPLAY2" },
+            SettingsManager.Current.TaskbarTargetMonitorDeviceIds!.ToArray());
+        Assert.IsNull(SettingsManager.Current.TaskbarTargetMonitorDeviceId);
         Assert.AreEqual(7000, SettingsManager.Current.TrackChangeNotification.DurationMilliseconds);
         Assert.AreEqual(TrackChangeNotificationPosition.TopRight, SettingsManager.Current.TrackChangeNotification.Position);
         Assert.AreEqual(NotificationTargetMode.ForegroundWindow, SettingsManager.Current.TrackChangeNotification.TargetMode);
@@ -191,6 +222,22 @@ public sealed class SettingsPersistenceServiceTests
     }
 
     [TestMethod]
+    public void LegacySingleTaskbarTargetNormalizesToExplicitSelection()
+    {
+        Directory.CreateDirectory(_directory);
+        File.WriteAllText(
+            Path.Combine(_directory, "settings.json"),
+            $"{{\"schemaVersion\":{SettingsPersistenceService.CurrentSchemaVersion},\"settings\":{{\"taskbarTargetMonitorDeviceId\":\"  DISPLAY2  \"}}}}");
+        using var service = new SettingsPersistenceService(_directory);
+        service.Initialize();
+
+        CollectionAssert.AreEqual(
+            new[] { "DISPLAY2" },
+            SettingsManager.Current.TaskbarTargetMonitorDeviceIds!.ToArray());
+        Assert.IsNull(SettingsManager.Current.TaskbarTargetMonitorDeviceId);
+    }
+
+    [TestMethod]
     public void AppearanceAccentAndMaterialFieldsNormalizeWithoutRelyingOnMissingFields()
     {
         // 外观这三项是纯新增字段：文件里没有它们，因此必须是文档化的默认值（跟随系统、默认色、浓度 60%），
@@ -239,6 +286,22 @@ public sealed class SettingsPersistenceServiceTests
         Assert.AreEqual(
             AppearanceSettings.MinimumBackdropTintOpacityPercent,
             custom.ResolveBackdropTintOpacityPercent());
+    }
+
+    [TestMethod]
+    public void NumericLatinFontZeroKeepsTheHistoricalSegoeUiMeaning()
+    {
+        // 旧版本允许数字枚举输入，0 当时表示 SegoeUi；在枚举开头插入新成员会把已有配置静默改成另一种字体。
+        // Older versions accepted numeric enum input where 0 meant SegoeUi; inserting a new member at the front would silently
+        // reinterpret an existing configuration as a different font.
+        Directory.CreateDirectory(_directory);
+        File.WriteAllText(
+            Path.Combine(_directory, "settings.json"),
+            $"{{\"schemaVersion\":{SettingsPersistenceService.CurrentSchemaVersion},\"settings\":{{\"appearance\":{{\"latinFont\":0}}}}}}");
+        using var service = new SettingsPersistenceService(_directory);
+        service.Initialize();
+
+        Assert.AreEqual(LatinFontPreset.SegoeUi, SettingsManager.Current.Appearance.LatinFont);
     }
 
     [TestMethod]
@@ -542,10 +605,25 @@ public sealed class SettingsPersistenceServiceTests
         viewModel.TrackChangeNotificationPosition = TrackChangeNotificationPosition.TopCenter;
         viewModel.TrackChangeNotificationTargetMode = NotificationTargetMode.Fixed;
         viewModel.TrackChangeNotificationFixedMonitorDeviceId = "DISPLAY2";
-        viewModel.TaskbarTargetMonitorDeviceId = "DISPLAY1";
+        var primary = viewModel.TaskbarMonitorOptions.Single(option => option.DeviceId == "DISPLAY1");
+        var secondary = viewModel.TaskbarMonitorOptions.Single(option => option.DeviceId == "DISPLAY2");
+        secondary.IsSelected = true;
 
         Assert.AreEqual("DISPLAY2", SettingsManager.Current.TrackChangeNotification.FixedMonitorDeviceId);
-        Assert.AreEqual("DISPLAY1", SettingsManager.Current.TaskbarTargetMonitorDeviceId);
+        CollectionAssert.AreEqual(
+            new[] { "DISPLAY1", "DISPLAY2" },
+            SettingsManager.Current.TaskbarTargetMonitorDeviceIds!.ToArray());
+        Assert.IsNull(SettingsManager.Current.TaskbarTargetMonitorDeviceId);
+        Assert.IsTrue(primary.CanToggle);
+        primary.IsSelected = false;
+        CollectionAssert.AreEqual(
+            new[] { "DISPLAY2" },
+            SettingsManager.Current.TaskbarTargetMonitorDeviceIds!.ToArray());
+        Assert.IsFalse(secondary.CanToggle);
+        secondary.IsSelected = false;
+        Assert.IsTrue(secondary.IsSelected);
+        Assert.IsFalse(viewModel.MonitorOptions.Any(option =>
+            option.DeviceId == TaskbarTargetPolicy.LegacyAllTaskbarsDeviceId));
         Assert.AreEqual(6000, SettingsManager.Current.TrackChangeNotification.DurationMilliseconds);
         Assert.AreEqual(TrackChangeNotificationPosition.TopCenter, SettingsManager.Current.TrackChangeNotification.Position);
         Assert.IsTrue(SettingsManager.Current.TrackChangeNotification.ShowWhenFullscreen);
@@ -606,11 +684,11 @@ public sealed class SettingsPersistenceServiceTests
             FullPanel = TaskbarFullPanelSettings.Compact
         };
         SettingsManager.Current.TrackChangeNotification = TrackChangeNotificationSettings.Default with { Enabled = true };
-        SettingsManager.Current.TaskbarTargetMonitorDeviceId = "DISPLAY2";
+        SettingsManager.Current.TaskbarTargetMonitorDeviceIds = ["DISPLAY2"];
         SettingsManager.ResetDisplayModes();
         Assert.AreEqual(TaskbarFullPanelSettings.Full, SettingsManager.Current.TaskbarExperience.FullPanel);
         Assert.IsTrue(SettingsManager.Current.TrackChangeNotification.Enabled);
-        Assert.IsNull(SettingsManager.Current.TaskbarTargetMonitorDeviceId);
+        Assert.AreEqual(0, SettingsManager.Current.TaskbarTargetMonitorDeviceIds?.Count ?? 0);
         SettingsManager.Current.SmtcSourceFilter = new SmtcSourceFilterSettings(true, ["player"]);
         SettingsManager.Current.QuickLaunch = new QuickLaunchSettings([
             new QuickLaunchEntry("player", "Player", QuickLaunchTargetKind.AppUserModelId, "Player.App!App")]);

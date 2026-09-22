@@ -104,6 +104,13 @@
                         </components:SettingsRow>
 
                         <components:SettingsRow
+                            Description="{DynamicResource Loc.Lyrics.Row.SyllableHighlight.Description}"
+                            Icon="{ui:SymbolIcon TextColor24}"
+                            Title="{DynamicResource Loc.Lyrics.Row.SyllableHighlight.Title}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.SyllableHighlightEnabled, Mode=TwoWay}" />
+                        </components:SettingsRow>
+
+                        <components:SettingsRow
                             Description="{DynamicResource Loc.Lyrics.Row.UnsungOpacity.Description}"
                             Icon="{ui:SymbolIcon CircleHalfFill24}"
                             Style="{StaticResource UnsungOpacityRowStyle}"
