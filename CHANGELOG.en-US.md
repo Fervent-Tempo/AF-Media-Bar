@@ -16,6 +16,10 @@ Reliability fixes: media-session self-healing, spectrum level calibration, and l
 - The spectrum standing still at its minimum bar height while listening at low volume: the level mapping now uses a relative-dB window around a reference peak, so bar heights no longer shrink with the system volume; the capture also follows the device that is actually audible (an application stream outranks the system mixer's echo, and the current endpoint is kept within one rank), so a virtual audio driver routing music to a non-default endpoint no longer leaves the spectrum silent (the target is checked every two seconds and the capture is rebuilt on a change).
 - Lyrics not advancing when a player stops reporting playback progress (its timeline stays at the track start): lyric line selection now uses the same extrapolated position as the progress bar and is advanced by the existing 250 ms progress timer.
 
+### Improved
+
+- Spectrum resolution and look: the FFT size now follows the sample rate (96 kHz goes from 512 to 4096 points), band values integrate power with fractional-bin linear interpolation (low bands no longer share one bin with their neighbour, so the leading columns stop sharing one height), and a +3 dB/octave tilt in the power domain compensates the natural roll-off for a more balanced look.
+
 ## [1.2.1] - 2026-09-21
 
 A fix release: the taskbar auto-hide animation, misplacement while capturing the screen, and multi-monitor display.
