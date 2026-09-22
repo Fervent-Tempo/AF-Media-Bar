@@ -8,7 +8,10 @@
              mc:Ignorable="d"
              FontFamily="{DynamicResource AppTextFontFamily}"
              FontWeight="{DynamicResource AppTextFontWeight}"
-             TextOptions.TextRenderingMode="ClearType" TextOptions.TextFormattingMode="Display">
+             TextOptions.TextRenderingMode="Auto"
+             TextOptions.TextFormattingMode="Ideal"
+             UseLayoutRounding="True"
+             SnapsToDevicePixels="True">
 
     <UserControl.Resources>
         <SolidColorBrush x:Key="TaskbarHoverForegroundBrush" Color="White" />

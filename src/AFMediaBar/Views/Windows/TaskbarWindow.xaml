@@ -12,6 +12,8 @@
         ShowInTaskbar="False"
         AllowsTransparency="True"
         Background="Transparent"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
         ContextMenuOpening="Window_ContextMenuOpening"
         Visibility="Collapsed">
     <Window.ContextMenu>
