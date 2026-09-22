@@ -13,7 +13,7 @@ namespace AFMediaBar.Classes.Services;
 public sealed class MediaSessionCatalog : IDisposable
 {
     private const int SnapshotRetryCount = 4;
-    private readonly MediaManager _mediaManager = new();
+    private MediaManager _mediaManager = new();
     private bool _isDisposed;
 
     public bool IsStarted => _mediaManager.IsStarted;
@@ -31,13 +31,83 @@ public sealed class MediaSessionCatalog : IDisposable
     /// </summary>
     public MediaSessionCatalog()
     {
+        AttachEvents();
+        _mediaManager.Start();
+    }
+
+    /// <summary>订阅底层媒体管理器的目录事件；构造与重建共用同一份订阅清单。/ Attaches the catalog events of the underlying media manager; construction and a rebuild share this one list.</summary>
+    private void AttachEvents()
+    {
         _mediaManager.OnAnyMediaPropertyChanged += OnAnyMediaPropertyChanged;
         _mediaManager.OnAnyPlaybackStateChanged += OnAnyPlaybackStateChanged;
         _mediaManager.OnAnySessionOpened += OnAnySessionOpened;
         _mediaManager.OnAnySessionClosed += OnAnySessionClosed;
         _mediaManager.OnFocusedSessionChanged += OnFocusedSessionChanged;
         _mediaManager.OnAnyTimelinePropertyChanged += OnAnyTimelinePropertyChanged;
+    }
+
+    /// <summary>解除底层媒体管理器的目录事件，方向与 <see cref="AttachEvents"/> 严格对称。/ Detaches the catalog events in the exact reverse order of <see cref="AttachEvents"/>.</summary>
+    private void DetachEvents()
+    {
+        _mediaManager.OnAnyMediaPropertyChanged -= OnAnyMediaPropertyChanged;
+        _mediaManager.OnAnyPlaybackStateChanged -= OnAnyPlaybackStateChanged;
+        _mediaManager.OnAnySessionOpened -= OnAnySessionOpened;
+        _mediaManager.OnAnySessionClosed -= OnAnySessionClosed;
+        _mediaManager.OnFocusedSessionChanged -= OnFocusedSessionChanged;
+        _mediaManager.OnAnyTimelinePropertyChanged -= OnAnyTimelinePropertyChanged;
+    }
+
+    /// <summary>
+    /// 重建底层媒体管理器。
+    ///
+    /// 第三方库存在 ForceUpdate 也救不回来的失效状态：系统仍发布着会话，但库的字典里残留着失效条目，
+    /// 导致新会话既不加进来、旧条目也读不出内容。这时只能整只换掉管理器，让字典与订阅全部从零开始。
+    /// Rebuilds the underlying media manager.
+    ///
+    /// The third-party library has a broken state that even ForceUpdate cannot fix: the OS still publishes sessions while the
+    /// library's dictionary keeps a dead entry, so a new session is never added and the stale one reads nothing. The only cure is a
+    /// fresh manager whose dictionary and subscriptions start from zero.
+    ///
+    /// 这是一条低频、有界的兜底路径：只有"看门狗确认系统真的发布了会话、却怎么都读不到"时才被调用。
+    /// This is a low-frequency, bounded fallback: it runs only when the watchdog confirms the OS publishes sessions while the catalog
+    /// stays unreadable.
+    /// </summary>
+    public void Restart()
+    {
+        if (_isDisposed)
+        {
+            return;
+        }
+
+        DetachEvents();
+        _mediaManager.Dispose();
+        _mediaManager = new MediaManager();
+        AttachEvents();
         _mediaManager.Start();
+    }
+
+    /// <summary>
+    /// 操作系统当前发布的会话数；目录不可用或读取失败时返回 -1。
+    /// 看门狗用它区分"真的没有媒体"（0，不动作）与"库坏了但系统有会话"（&gt;0，触发重建）。
+    /// Number of sessions the OS currently publishes, or -1 when the catalog is unavailable or the read fails.
+    /// The watchdog uses it to tell "no media at all" (0, do nothing) from "the library is broken while the OS has sessions" (&gt;0,
+    /// rebuild).
+    /// </summary>
+    public int GetOsSessionCount()
+    {
+        if (_isDisposed)
+        {
+            return -1;
+        }
+
+        try
+        {
+            return _mediaManager.WindowsSessionManager?.GetSessions().Count ?? -1;
+        }
+        catch
+        {
+            return -1;
+        }
     }
 
     /// <summary>
@@ -109,12 +179,7 @@ public sealed class MediaSessionCatalog : IDisposable
         }
 
         _isDisposed = true;
-        _mediaManager.OnAnyMediaPropertyChanged -= OnAnyMediaPropertyChanged;
-        _mediaManager.OnAnyPlaybackStateChanged -= OnAnyPlaybackStateChanged;
-        _mediaManager.OnAnySessionOpened -= OnAnySessionOpened;
-        _mediaManager.OnAnySessionClosed -= OnAnySessionClosed;
-        _mediaManager.OnFocusedSessionChanged -= OnFocusedSessionChanged;
-        _mediaManager.OnAnyTimelinePropertyChanged -= OnAnyTimelinePropertyChanged;
+        DetachEvents();
         _mediaManager.Dispose();
     }
 

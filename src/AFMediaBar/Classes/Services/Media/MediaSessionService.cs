@@ -36,6 +36,22 @@ public sealed class MediaSessionService : IDisposable
     private bool _isDisposed;
 
     /// <summary>
+    /// 自动重连看门狗：第三方库的会话字典只在 WinRT 事件触发时才同步（见库自己的 issue #6），换歌瞬间丢一次事件就会永久失明。
+    /// 看门狗按 <see cref="MediaSessionReconcilePolicy"/> 判定节奏，在"断连"时才调用库提供的 ForceUpdate 把会话捞回来；
+    /// 连接正常时它每个 tick 只读几个字段，不做任何系统调用。
+    /// Auto-reconcile watchdog: the third-party library only syncs its session dictionary when WinRT events fire (see its own issue #6),
+    /// so one lost event at a track change leaves it blind forever. The watchdog follows
+    /// <see cref="MediaSessionReconcilePolicy"/> and calls the library's ForceUpdate only while disconnected; while connected a tick
+    /// merely reads a few fields and makes no system call.
+    /// </summary>
+    private readonly DispatcherTimer _reconcileWatchdog;
+    private readonly MemoryPruneCoordinator _memoryPrune;
+    private DateTime _lastReconcileUtc = DateTime.MinValue;
+    private DateTime _reconcileArmedUntilUtc = DateTime.MinValue;
+    private int _consecutiveSlowReconciles;
+    private int _consecutiveFailedReconciles;
+
+    /// <summary>
     /// 已经请求过在线取词兜底的那一曲（来源 + 曲名 + 歌手的指纹），只保留最后一个。
     /// 来源提供器每 233 毫秒都会报一次"没有可读的媒体"，没有这个门闩就会每 233 毫秒发起一次兜底取词；
     /// 只留一个是刻意的：它只需要挡住"同一首歌的重复请求"，换歌就该重新允许，而无界集合会随播放一直增长。
@@ -79,13 +95,15 @@ public sealed class MediaSessionService : IDisposable
         MediaSessionSelectionService selection,
         MediaSnapshotBuilder snapshotBuilder,
         IEnumerable<IMediaSourceProvider> sourceProviders,
-        MediaSourceActivationService sourceActivator)
+        MediaSourceActivationService sourceActivator,
+        MemoryPruneCoordinator memoryPrune)
     {
         _catalog = catalog;
         _selection = selection;
         _snapshotBuilder = snapshotBuilder;
         _sourceProviders = sourceProviders.ToArray();
         _sourceActivator = sourceActivator;
+        _memoryPrune = memoryPrune;
         _dispatcher = Application.Current.Dispatcher;
 
         _catalog.AnyMediaPropertyChanged += OnAnyMediaPropertyChanged;
@@ -102,6 +120,15 @@ public sealed class MediaSessionService : IDisposable
             provider.SnapshotChanged += OnSourceSnapshotChanged;
             provider.Start();
         }
+
+        // 看门狗挂在 UI 线程上，但优先级取 Background：它的活是"补一次系统查询"，永远不该和输入或渲染抢时序。
+        // The watchdog lives on the UI thread at Background priority: its job is one extra system query and must never race input or rendering.
+        _reconcileWatchdog = new DispatcherTimer(DispatcherPriority.Background, _dispatcher)
+        {
+            Interval = TimeSpan.FromSeconds(1)
+        };
+        _reconcileWatchdog.Tick += OnReconcileWatchdogTick;
+        _reconcileWatchdog.Start();
 
         ScheduleSessionsRefresh();
     }
@@ -223,6 +250,8 @@ public sealed class MediaSessionService : IDisposable
         }
 
         _isDisposed = true;
+        _reconcileWatchdog.Stop();
+        _reconcileWatchdog.Tick -= OnReconcileWatchdogTick;
         _catalog.AnyMediaPropertyChanged -= OnAnyMediaPropertyChanged;
         _catalog.AnyPlaybackStateChanged -= OnAnyPlaybackStateChanged;
         _catalog.AnySessionOpened -= OnAnySessionOpened;
@@ -281,7 +310,14 @@ public sealed class MediaSessionService : IDisposable
 
     private void OnAnySessionOpened(MediaSession session) => ScheduleSessionsRefresh();
 
-    private void OnAnySessionClosed(MediaSession session) => ScheduleSessionsRefresh();
+    private void OnAnySessionClosed(MediaSession session)
+    {
+        // 会话关闭是"换歌重建会话"的信号，也正是第三方库漏事件的高发点：武装快速窗口，让看门狗用 1 秒的节奏把新会话捞回来。
+        // A session closing signals a track change and is exactly where the third-party library loses events: arm the fast window so the
+        // watchdog catches the recreated session on a one-second cadence.
+        _reconcileArmedUntilUtc = DateTime.UtcNow + MediaSessionReconcilePolicy.ArmedWindow;
+        ScheduleSessionsRefresh();
+    }
 
     private void OnFocusedSessionChanged(MediaSession session) => ScheduleSessionsRefresh();
 
@@ -300,6 +336,108 @@ public sealed class MediaSessionService : IDisposable
             return;
         _selection.ClearSelection();
         ScheduleSessionsRefresh();
+    }
+
+    /// <summary>
+    /// 看门狗 tick：按 <see cref="MediaSessionReconcilePolicy"/> 判定是否重同步，并把单次耗时做成指数退避。
+    /// 正常连接时这里只读几个字段就返回；只有断连（事件丢失后的失明态）才真正执行一次系统查询。
+    /// Watchdog tick: asks <see cref="MediaSessionReconcilePolicy"/> whether to reconcile and turns a slow call into exponential
+    /// backoff. While connected it only reads a few fields; only the disconnected state — the blindness after a lost event — performs
+    /// an actual system query.
+    /// </summary>
+    private void OnReconcileWatchdogTick(object? sender, EventArgs e)
+    {
+        if (_isDisposed)
+        {
+            return;
+        }
+
+        // 零成本门控：这几种状态下策略只会给出 None，因此连"统计系统会话数"这次系统查询都不做。
+        // 正常播放时看门狗每秒只执行到这里就返回，不产生任何系统调用。
+        // Zero-cost gates: the policy only ever returns None in these states, so even the "count OS sessions" query is skipped. While
+        // playback is healthy the watchdog stops right here every second and makes no system call at all.
+        var pruneLevel = _memoryPrune.CurrentLevel;
+        if (_sessionSnapshot.IsConnected ||
+            _selection.IsMissingSessionGraceActive ||
+            pruneLevel >= MemoryPruneLevel.DisplayOff)
+        {
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+        var signals = new MediaSessionReconcileSignals(
+            IsConnected: _sessionSnapshot.IsConnected,
+            IsGraceActive: _selection.IsMissingSessionGraceActive,
+            IsArmed: now < _reconcileArmedUntilUtc,
+            SinceLastAttempt: _lastReconcileUtc == DateTime.MinValue
+                ? TimeSpan.MaxValue
+                : now - _lastReconcileUtc,
+            PruneLevel: pruneLevel,
+            ConsecutiveSlowReconciles: _consecutiveSlowReconciles,
+            OsSessionCount: _catalog.GetOsSessionCount(),
+            ConsecutiveFailedReconciles: _consecutiveFailedReconciles);
+
+        var action = MediaSessionReconcilePolicy.Decide(signals);
+        if (action == MediaSessionReconcileAction.None)
+        {
+            return;
+        }
+
+        _lastReconcileUtc = now;
+        var started = Stopwatch.GetTimestamp();
+        try
+        {
+            if (action == MediaSessionReconcileAction.RestartCatalog)
+            {
+                // 系统有会话而目录怎么都读不到：这是 ForceUpdate 救不回的库失效状态（字典里残留了失效条目），整只重建。
+                // The OS has sessions while the catalog stays unreadable: a library broken state ForceUpdate cannot fix (a dead
+                // dictionary entry), so the whole catalog is rebuilt.
+                _catalog.Restart();
+                AppLogService.Current?.Info("Media", "[看门狗] 系统有会话但目录读不到，已重建媒体目录");
+            }
+
+            _ = ReconnectAsync();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[MediaSessionService] Watchdog reconcile failed: {ex}");
+        }
+
+        var elapsed = Stopwatch.GetElapsedTime(started);
+        if (_sessionSnapshot.IsConnected)
+        {
+            _consecutiveFailedReconciles = 0;
+            // 只有真正把会话捞回来时才写一行：空闲时看门狗会持续以低频重试，逐次记录会把日志刷满。
+            // Only a recovered session earns a line: while idle the watchdog keeps retrying at a low cadence, and logging every
+            // attempt would fill the file.
+            AppLogService.Current?.Info(
+                "Media",
+                $"[看门狗] 事件丢失后恢复媒体会话：耗时 {elapsed.TotalMilliseconds:0.0}ms");
+        }
+        else if (signals.OsSessionCount > 0)
+        {
+            // 系统有会话却没读回来：累计失败次数，下一次到达阈值时改为重建目录。
+            // The OS has sessions yet none came back: count the failure so the next attempt past the threshold rebuilds the catalog.
+            _consecutiveFailedReconciles++;
+        }
+        else
+        {
+            _consecutiveFailedReconciles = 0;
+        }
+
+        // 只统计"卡过的"连续次数：慢调用之后一旦恢复正常耗时就清零，因此退避不会累积成永久性的慢节奏。
+        // Only consecutive stalls accumulate: one normal-duration call clears the count, so the backoff can never grow into a
+        // permanently slow cadence.
+        if (MediaSessionReconcilePolicy.IsSlowCall(elapsed))
+        {
+            _consecutiveSlowReconciles = Math.Min(
+                _consecutiveSlowReconciles + 1,
+                MediaSessionReconcilePolicy.MaximumBackoffShift);
+        }
+        else
+        {
+            _consecutiveSlowReconciles = 0;
+        }
     }
 
     private void OnSourceSnapshotChanged(IMediaSourceProvider provider, MediaSnapshot? snapshot)
@@ -544,6 +682,16 @@ public sealed class MediaSessionService : IDisposable
     private void Publish(MediaSnapshot snapshot)
     {
         _sessionSnapshot = snapshot;
+        if (snapshot.IsConnected)
+        {
+            // 恢复连接即视为"事件链路已自愈"：解除快速窗口并清退避，让下一次失明从最灵敏的节奏重新开始。
+            // A connected snapshot means the event path healed: disarm the fast window and clear the backoff so the next blindness
+            // starts from the most responsive cadence again.
+            _reconcileArmedUntilUtc = DateTime.MinValue;
+            _consecutiveSlowReconciles = 0;
+            _consecutiveFailedReconciles = 0;
+        }
+
         foreach (var provider in _sourceProviders)
         {
             provider.UpdateSessionSnapshot(snapshot);
