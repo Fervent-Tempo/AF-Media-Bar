@@ -18,10 +18,18 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
     private const int SecondCaptureRetryMilliseconds = 500;
     private const int ThirdCaptureRetryMilliseconds = 1_000;
     private const int MaximumCaptureRetryMilliseconds = 3_000;
-    // 默认设备检查的低频节奏：两秒一次的两个轻量 COM 查询，远低于任何可感知开销，又能让"设备被外部切换"在一秒级内被跟上。
-    // Low cadence for the default-device check: two light COM queries every two seconds, far below any perceptible cost, while an
-    // externally switched device is followed within about a second.
-    private const int DefaultDeviceCheckIntervalMilliseconds = 2_000;
+    // 采集设备检查的低频节奏：两秒一次端点与会话枚举，远低于任何可感知开销，又能让"出声设备变化"在两秒内被跟上。
+    // Low cadence for the capture-device check: one endpoint and session enumeration every two seconds, far below any perceptible cost,
+    // while a change of the audible device is followed within about two seconds.
+    private const int CaptureDeviceCheckIntervalMilliseconds = 2_000;
+
+    /// <summary>"有会话在出声"的峰值下限。会话表是端点音量之前的数值，因此不受系统音量影响，低音量听歌也能被识别。
+    /// Session peak that counts as audible. Session meters are pre-endpoint-volume, so system volume does not scale them and quiet
+    /// listening is still recognized.</summary>
+    private const float AudibleSessionPeakThreshold = 0.002f;
+
+    /// <summary>设备状态掩码：只枚举已启用的渲染端点。/ Device state mask: enumerate active render endpoints only.</summary>
+    private const int DeviceStateActive = 0x1;
     // audioclient.h / mmreg.h：WASAPI 回环、静音包和 WAVE 格式常量。
     // audioclient.h / mmreg.h: WASAPI loopback, silent-buffer, and WAVE constants.
     private const uint AudioClientStreamFlagsLoopback = 0x00020000;
@@ -38,6 +46,8 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
         new("00000001-0000-0010-8000-00AA00389B71");
     private static readonly Guid FloatSubFormat =
         new("00000003-0000-0010-8000-00AA00389B71");
+    private static readonly Guid AudioSessionManagerId =
+        new("77AA99A0-1BD6-484F-8BC7-2C654C9A9B6F");
 
     private readonly float[] _sampleRing = new float[SampleRingSize];
     private readonly double[] _fftReal = new double[FftSize];
@@ -71,7 +81,7 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
     private double _spectrumReference;
     private long _lastSpectrumTick;
     private string? _capturedDeviceId;
-    private long _nextDefaultDeviceCheckTick;
+    private long _nextCaptureDeviceCheckTick;
     private bool _disposed;
 
     /// <summary>
@@ -98,7 +108,7 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
 
         try
         {
-            CheckDefaultDeviceChanged();
+            CheckCaptureDeviceChanged();
             if (_captureClient is null)
             {
                 // 刚刚因为默认设备变化释放了采集：这一帧返回"无采集"，下一帧的懒建会落在新的默认设备上。
@@ -209,22 +219,13 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
                     new Guid("BCDE0395-E52F-467C-8E3D-C4579291692E"),
                     throwOnError: true)!)!;
 
-            if (_deviceEnumerator.GetDefaultAudioEndpoint(
-                    EDataFlow.Render,
-                    ERole.Multimedia,
-                    out _device) < 0 ||
-                _device is null)
+            // 目标设备由"哪个设备在出声"决定（见 TryResolveTargetDevice）：默认端点没有声音而音乐在别的端点时，
+            // 采集也必须落在音乐所在的端点上，而不是默认端点。
+            // The target device comes from "which device is audible" (see TryResolveTargetDevice): when the default endpoint carries no
+            // sound while music plays on another one, the capture has to land on the music's endpoint rather than the default.
+            if (!TryResolveTargetDevice(out _device, out _capturedDeviceId) || _device is null)
             {
                 return FailCaptureInitialization();
-            }
-
-            // 记下本次采集的端点标识：默认设备被 AF 之外的操作切换时，靠它比对并让采集跟过去。
-            // Remember the endpoint this capture belongs to: when the default device changes outside AF, this identity is what the
-            // follow-up check compares against and follows.
-            _capturedDeviceId = null;
-            if (_device.GetId(out var capturedId) >= 0 && !string.IsNullOrEmpty(capturedId))
-            {
-                _capturedDeviceId = capturedId;
             }
 
             var audioClientId = AudioClientId;
@@ -573,17 +574,18 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
     }
 
     /// <summary>
-    /// 默认输出设备在 AF 之外被切换时（Windows 设置、SteelSeries Sonar 等），已建立的采集不会自动跟过去，频谱会停在静音。
-    /// 这里以低频检查端点标识，发现变化就释放采集，让下一次懒建落在新的默认设备上。
-    /// When the default output device changes outside AF (Windows settings, SteelSeries Sonar, ...), the established capture does not
-    /// follow by itself and the spectrum goes flat. This checks the endpoint identity at a low cadence and releases the capture on a
-    /// change, so the next lazy init lands on the new default device.
+    /// 低频检查当前采集的端点是否仍是"在出声的那个设备"，不是就释放采集，让下一次懒建落在新的目标端点上。
     ///
-    /// 只做"比较标识"这一件事：设备的建立、失败重试与参考复位都由既有的懒建/释放路径负责，避免在这里长出一条平行的状态机。
-    /// It does exactly one thing — compare identities: device creation, failure retries, and reference resets stay on the existing
-    /// lazy-init/release paths instead of growing a parallel state machine here.
+    /// 检查对象不是"系统默认设备"，而是"实际出声的设备"：虚拟声卡会把不同应用路由到不同端点，系统默认端点可能完全没有声音，
+    /// 只跟随默认端点时频谱会一直停在静音（把音乐实际所在的端点设为默认只是碰巧能用的特例）。
+    /// Checks at a low cadence whether the captured endpoint is still the audible device, and releases the capture when it is not, so the
+    /// next lazy init lands on the new target.
+    ///
+    /// The target is the audible device, not the system default: a virtual audio driver routes different applications to different
+    /// endpoints and the default may carry no sound at all, in which case following only the default leaves the spectrum silent (setting
+    /// the music's endpoint as the default is merely the special case where that happens to work).
     /// </summary>
-    private void CheckDefaultDeviceChanged()
+    private void CheckCaptureDeviceChanged()
     {
         if (_captureClient is null || _deviceEnumerator is null || string.IsNullOrEmpty(_capturedDeviceId))
         {
@@ -591,41 +593,251 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
         }
 
         var now = Environment.TickCount64;
-        if (now < _nextDefaultDeviceCheckTick)
+        if (now < _nextCaptureDeviceCheckTick)
         {
             return;
         }
 
-        _nextDefaultDeviceCheckTick = now + DefaultDeviceCheckIntervalMilliseconds;
+        _nextCaptureDeviceCheckTick = now + CaptureDeviceCheckIntervalMilliseconds;
+
+        IMMDevice? target = null;
         try
         {
-            if (_deviceEnumerator.GetDefaultAudioEndpoint(
-                    EDataFlow.Render,
-                    ERole.Multimedia,
-                    out var current) < 0 ||
-                current is null)
+            if (!TryResolveTargetDevice(out target, out var targetId) || target is null)
             {
                 return;
             }
 
-            try
+            if (!string.IsNullOrEmpty(targetId) &&
+                !string.Equals(targetId, _capturedDeviceId, StringComparison.OrdinalIgnoreCase))
             {
-                if (current.GetId(out var currentId) >= 0 &&
-                    !string.IsNullOrEmpty(currentId) &&
-                    !string.Equals(currentId, _capturedDeviceId, StringComparison.OrdinalIgnoreCase))
-                {
-                    ReleaseCaptureAndScheduleRetry();
-                }
-            }
-            finally
-            {
-                ReleaseComObject(ref current);
+                ReleaseCaptureAndScheduleRetry();
             }
         }
         catch
         {
             // 设备在检查期间消失：交给既有的失败重试路径处理，检查本身绝不向外抛。
             // A device vanishing mid-check is left to the existing failure-retry path; this check never throws outward.
+        }
+        finally
+        {
+            ReleaseComObject(ref target);
+        }
+    }
+
+    /// <summary>
+    /// 解析本次采集应使用的输出端点：候选枚举交给 <see cref="AudioCaptureDevicePolicy"/> 决策，这里只负责把每个端点的
+    /// 可听状态测出来（会话是否在播、是应用还是系统混音、峰值多少）。
+    /// Resolves the render endpoint this capture should use: the choice itself is made by <see cref="AudioCaptureDevicePolicy"/>, while
+    /// this method only measures each endpoint's audibility (whether a session plays, whether it is an application or the system mixer,
+    /// and its peak).
+    /// </summary>
+    /// <param name="device">解析出的端点；失败时为空。/ The resolved endpoint, or null on failure.</param>
+    /// <param name="deviceId">端点标识；失败时为空。/ The endpoint identifier, or null on failure.</param>
+    private bool TryResolveTargetDevice(out IMMDevice? device, out string? deviceId)
+    {
+        device = null;
+        deviceId = null;
+        if (_deviceEnumerator is null)
+        {
+            return false;
+        }
+
+        var defaultId = ResolveDefaultEndpointId();
+        var candidates = new List<AudioEndpointAudibility>();
+        if (_deviceEnumerator.EnumAudioEndpoints(EDataFlow.Render, DeviceStateActive, out var collection) < 0 ||
+            collection is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            if (collection.GetCount(out var count) < 0)
+            {
+                return false;
+            }
+
+            for (uint index = 0; index < count; index++)
+            {
+                if (collection.Item(index, out var endpoint) < 0 || endpoint is null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    if (endpoint.GetId(out var id) < 0 || string.IsNullOrEmpty(id))
+                    {
+                        continue;
+                    }
+
+                    var rank = ResolveAudibilityRank(endpoint, out var peak);
+                    if (rank > AudioCaptureDevicePolicy.RankSilent)
+                    {
+                        candidates.Add(new AudioEndpointAudibility(id, rank, peak));
+                    }
+                }
+                finally
+                {
+                    ReleaseComObject(ref endpoint);
+                }
+            }
+        }
+        finally
+        {
+            ReleaseComObject(ref collection);
+        }
+
+        var targetId = AudioCaptureDevicePolicy.SelectTarget(_capturedDeviceId, defaultId, candidates);
+        if (string.IsNullOrEmpty(targetId) ||
+            _deviceEnumerator.GetDevice(targetId, out device) < 0 ||
+            device is null)
+        {
+            device = null;
+            return false;
+        }
+
+        deviceId = targetId;
+        return true;
+    }
+
+    /// <summary>
+    /// 测出一个端点的可听等级：只看仍在播放（Active）且不是本进程与系统混音进程之外的应用会话；
+    /// 应用会话超过阈值算 <see cref="AudioCaptureDevicePolicy.RankApplication"/>，只有系统混音会话超过阈值算
+    /// <see cref="AudioCaptureDevicePolicy.RankSystemOnly"/>。
+    /// Measures one endpoint's audibility rank: only sessions that are Active and belong neither to this process nor to the system
+    /// mixer's own process count as applications; an application peak above the threshold reads
+    /// <see cref="AudioCaptureDevicePolicy.RankApplication"/>, and only a system-mixer peak above it reads
+    /// <see cref="AudioCaptureDevicePolicy.RankSystemOnly"/>.
+    /// </summary>
+    /// <param name="endpoint">要测量的端点。/ The endpoint to measure.</param>
+    /// <param name="peak">该端点的最大会话峰值（0–1）。/ Largest session peak on the endpoint (0–1).</param>
+    private int ResolveAudibilityRank(IMMDevice endpoint, out float peak)
+    {
+        peak = 0f;
+        object? managerObject = null;
+        IAudioSessionEnumerator? sessionEnumerator = null;
+        try
+        {
+            var managerId = AudioSessionManagerId;
+            if (endpoint.Activate(ref managerId, ClsCtx.All, nint.Zero, out managerObject) < 0 ||
+                managerObject is not IAudioSessionManager2 manager ||
+                manager.GetSessionEnumerator(out sessionEnumerator) < 0 ||
+                sessionEnumerator is null ||
+                sessionEnumerator.GetCount(out var sessionCount) < 0)
+            {
+                return AudioCaptureDevicePolicy.RankSilent;
+            }
+
+            var applicationPeak = 0f;
+            var systemPeak = 0f;
+            for (var index = 0; index < sessionCount; index++)
+            {
+                if (sessionEnumerator.GetSession(index, out var sessionObject) < 0 || sessionObject is null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    if (sessionObject is not IAudioSessionControl2 control ||
+                        control.GetState(out var state) < 0 ||
+                        state != AudioSessionState.Active ||
+                        control.GetProcessId(out var processId) < 0 ||
+                        processId is 0 ||
+                        processId == (uint)Environment.ProcessId)
+                    {
+                        continue;
+                    }
+
+                    if (sessionObject is not IAudioMeterInformation meter ||
+                        meter.GetPeakValue(out var sessionPeak) < 0 ||
+                        sessionPeak <= 0)
+                    {
+                        continue;
+                    }
+
+                    if (IsSystemAudioProcess(processId))
+                    {
+                        systemPeak = Math.Max(systemPeak, sessionPeak);
+                    }
+                    else
+                    {
+                        applicationPeak = Math.Max(applicationPeak, sessionPeak);
+                    }
+                }
+                finally
+                {
+                    ReleaseComObject(ref sessionObject);
+                }
+            }
+
+            peak = Math.Max(applicationPeak, systemPeak);
+            if (applicationPeak >= AudibleSessionPeakThreshold)
+            {
+                return AudioCaptureDevicePolicy.RankApplication;
+            }
+
+            return systemPeak >= AudibleSessionPeakThreshold
+                ? AudioCaptureDevicePolicy.RankSystemOnly
+                : AudioCaptureDevicePolicy.RankSilent;
+        }
+        catch
+        {
+            return AudioCaptureDevicePolicy.RankSilent;
+        }
+        finally
+        {
+            ReleaseComObject(ref sessionEnumerator);
+            ReleaseComObject(ref managerObject);
+        }
+    }
+
+    /// <summary>该进程是否是系统混音进程（audiodg）；查不到进程时按系统进程处理，它不会成为"应用在出声"的证据。
+    /// Whether the process is the system audio engine (audiodg); an unresolvable process counts as a system one, so it can never
+    /// become evidence of "an application is playing".</summary>
+    private static bool IsSystemAudioProcess(uint processId)
+    {
+        try
+        {
+            using var process = System.Diagnostics.Process.GetProcessById((int)processId);
+            return string.Equals(process.ProcessName, "audiodg", StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return true;
+        }
+    }
+
+    /// <summary>解析系统默认多媒体端点的标识；不可用时返回 null。/ Resolves the system default multimedia endpoint identifier, or null.</summary>
+    private string? ResolveDefaultEndpointId()
+    {
+        if (_deviceEnumerator is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            if (_deviceEnumerator.GetDefaultAudioEndpoint(EDataFlow.Render, ERole.Multimedia, out var endpoint) < 0 ||
+                endpoint is null)
+            {
+                return null;
+            }
+
+            try
+            {
+                return endpoint.GetId(out var id) >= 0 && !string.IsNullOrEmpty(id) ? id : null;
+            }
+            finally
+            {
+                ReleaseComObject(ref endpoint);
+            }
+        }
+        catch
+        {
+            return null;
         }
     }
 
@@ -680,6 +892,14 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
         All = InprocServer | InprocHandler | LocalServer
     }
 
+    /// <summary>音频会话状态（audiosessiontypes.h）。/ Audio session state (audiosessiontypes.h).</summary>
+    private enum AudioSessionState
+    {
+        Inactive,
+        Active,
+        Expired
+    }
+
     [StructLayout(LayoutKind.Sequential, Pack = 2)]
     private struct WaveFormatEx
     {
@@ -708,7 +928,7 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     private interface IMMDeviceEnumerator
     {
-        int EnumAudioEndpoints(EDataFlow dataFlow, int stateMask, out nint devices);
+        int EnumAudioEndpoints(EDataFlow dataFlow, int stateMask, out IMMDeviceCollection devices);
         int GetDefaultAudioEndpoint(EDataFlow dataFlow, ERole role, out IMMDevice device);
         int GetDevice([MarshalAs(UnmanagedType.LPWStr)] string id, out IMMDevice device);
         int RegisterEndpointNotificationCallback(nint client);
@@ -728,6 +948,78 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
         int OpenPropertyStore(int accessMode, out nint properties);
         int GetId([MarshalAs(UnmanagedType.LPWStr)] out string id);
         int GetState(out int state);
+    }
+
+    [ComImport]
+    [Guid("0BD7A1BE-7A1A-44DB-8397-CC5392387B5E")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface IMMDeviceCollection
+    {
+        int GetCount(out uint count);
+        int Item(uint index, out IMMDevice device);
+    }
+
+    // 会话枚举与峰值：用于判断"哪个端点正在出声"（见 ResolveAudibilityRank），槽位顺序来自 audiopolicy.h。
+    // Session enumeration and metering: used to decide which endpoint is audible (see ResolveAudibilityRank); the slots follow audiopolicy.h.
+    [ComImport]
+    [Guid("77AA99A0-1BD6-484F-8BC7-2C654C9A9B6F")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface IAudioSessionManager2
+    {
+        int GetAudioSessionControl(
+            ref Guid audioSessionGuid,
+            uint streamFlags,
+            [MarshalAs(UnmanagedType.IUnknown)] out object sessionControl);
+        int GetSimpleAudioVolume(
+            ref Guid audioSessionGuid,
+            uint streamFlags,
+            [MarshalAs(UnmanagedType.IUnknown)] out object audioVolume);
+        int GetSessionEnumerator(out IAudioSessionEnumerator sessionEnum);
+        int RegisterSessionNotification(nint sessionNotification);
+        int UnregisterSessionNotification(nint sessionNotification);
+        int RegisterDuckNotification([MarshalAs(UnmanagedType.LPWStr)] string sessionId, nint duckNotification);
+        int UnregisterDuckNotification(nint duckNotification);
+    }
+
+    [ComImport]
+    [Guid("E2F5BB11-0570-40CA-ACDD-3AA01277DEE8")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface IAudioSessionEnumerator
+    {
+        int GetCount(out int sessionCount);
+        int GetSession(int sessionIndex, [MarshalAs(UnmanagedType.IUnknown)] out object session);
+    }
+
+    [ComImport]
+    [Guid("BFB7FF88-7239-4FC9-8FA2-07C950BE9C6D")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface IAudioSessionControl2
+    {
+        int GetState(out AudioSessionState state);
+        int GetDisplayName([MarshalAs(UnmanagedType.LPWStr)] out string name);
+        int SetDisplayName([MarshalAs(UnmanagedType.LPWStr)] string value, ref Guid eventContext);
+        int GetIconPath([MarshalAs(UnmanagedType.LPWStr)] out string path);
+        int SetIconPath([MarshalAs(UnmanagedType.LPWStr)] string value, ref Guid eventContext);
+        int GetGroupingParam(out Guid groupingParam);
+        int SetGroupingParam(ref Guid groupingParam, ref Guid eventContext);
+        int RegisterAudioSessionNotification(nint client);
+        int UnregisterAudioSessionNotification(nint client);
+        int GetSessionIdentifier([MarshalAs(UnmanagedType.LPWStr)] out string id);
+        int GetSessionInstanceIdentifier([MarshalAs(UnmanagedType.LPWStr)] out string id);
+        int GetProcessId(out uint processId);
+        int IsSystemSoundsSession();
+        int SetDuckingPreference(bool optOut);
+    }
+
+    [ComImport]
+    [Guid("C02216F6-8C67-4B5B-9D00-D008E73E0064")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface IAudioMeterInformation
+    {
+        int GetPeakValue(out float peak);
+        int GetMeteringChannelCount(out uint channelCount);
+        int GetChannelsPeakValues(uint channelCount, nint peakValues);
+        int QueryHardwareSupport(out uint hardwareSupportMask);
     }
 
     [ComImport]
