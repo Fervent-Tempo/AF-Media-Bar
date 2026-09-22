@@ -18,6 +18,10 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
     private const int SecondCaptureRetryMilliseconds = 500;
     private const int ThirdCaptureRetryMilliseconds = 1_000;
     private const int MaximumCaptureRetryMilliseconds = 3_000;
+    // 默认设备检查的低频节奏：两秒一次的两个轻量 COM 查询，远低于任何可感知开销，又能让"设备被外部切换"在一秒级内被跟上。
+    // Low cadence for the default-device check: two light COM queries every two seconds, far below any perceptible cost, while an
+    // externally switched device is followed within about a second.
+    private const int DefaultDeviceCheckIntervalMilliseconds = 2_000;
     // audioclient.h / mmreg.h：WASAPI 回环、静音包和 WAVE 格式常量。
     // audioclient.h / mmreg.h: WASAPI loopback, silent-buffer, and WAVE constants.
     private const uint AudioClientStreamFlagsLoopback = 0x00020000;
@@ -44,6 +48,9 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
     // and must not rebuild the geometric progression each time.
     private float[] _bandEdges = SpectrumBandPolicy.CreateBandEdges(SpectrumComponentSettings.DefaultBandCount);
     private int _bandEdgeCount = SpectrumComponentSettings.DefaultBandCount;
+    // 频段幅度先整体算完再映射：相对 dB 窗口需要一个"本次采样的最大幅度"作为参考更新的输入。
+    // Band magnitudes are computed in full before mapping: the relative dB window needs this sample's largest magnitude to advance the reference.
+    private readonly double[] _bandMagnitudes = new double[SpectrumComponentSettings.MaximumBandCount];
     private byte[] _packetBuffer = new byte[InitialPacketBufferSize];
     // 这些 COM 对象跨采样复用；切换设备或 Dispose 时必须按依赖逆序释放。
     // These COM objects span samples and must be released in reverse dependency order.
@@ -61,6 +68,10 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
     private long _lastPacketTick;
     private long _nextCaptureAttemptTick;
     private int _captureFailureCount;
+    private double _spectrumReference;
+    private long _lastSpectrumTick;
+    private string? _capturedDeviceId;
+    private long _nextDefaultDeviceCheckTick;
     private bool _disposed;
 
     /// <summary>
@@ -87,10 +98,29 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
 
         try
         {
+            CheckDefaultDeviceChanged();
+            if (_captureClient is null)
+            {
+                // 刚刚因为默认设备变化释放了采集：这一帧返回"无采集"，下一帧的懒建会落在新的默认设备上。
+                // The capture was just released because the default device changed: this frame reports "no capture", and the next
+                // frame's lazy init lands on the new default device.
+                Array.Clear(bands, 0, count);
+                return false;
+            }
+
             DrainCapturePackets();
             if (_sampleCount < FftSize ||
                 Environment.TickCount64 - _lastPacketTick > 180)
             {
+                // 静音/无包期间也让参考按真实时间衰减：恢复播放时柱子从当前位置平滑长回来，而不是因为参考过期先跳到满格。
+                // The reference decays by real time during silence or missing packets as well: when playback resumes the bars grow back
+                // smoothly instead of jumping to full height because the reference went stale.
+                var now = Environment.TickCount64;
+                var elapsed = _lastSpectrumTick == 0
+                    ? TimeSpan.Zero
+                    : TimeSpan.FromMilliseconds(now - _lastSpectrumTick);
+                _lastSpectrumTick = now;
+                _spectrumReference = SpectrumLevelPolicy.UpdateReference(_spectrumReference, 0, elapsed);
                 Array.Clear(bands, 0, count);
                 return true;
             }
@@ -186,6 +216,15 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
                 _device is null)
             {
                 return FailCaptureInitialization();
+            }
+
+            // 记下本次采集的端点标识：默认设备被 AF 之外的操作切换时，靠它比对并让采集跟过去。
+            // Remember the endpoint this capture belongs to: when the default device changes outside AF, this identity is what the
+            // follow-up check compares against and follows.
+            _capturedDeviceId = null;
+            if (_device.GetId(out var capturedId) >= 0 && !string.IsNullOrEmpty(capturedId))
+            {
+                _capturedDeviceId = capturedId;
             }
 
             var audioClientId = AudioClientId;
@@ -405,6 +444,7 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
         var edges = ResolveBandEdges(bandCount);
         var binWidth = _sampleRate / (double)FftSize;
         var nyquistBin = FftSize / 2 - 1;
+        var peakMagnitude = 0d;
         for (var band = 0; band < bandCount; band++)
         {
             var firstBin = Math.Clamp((int)Math.Ceiling(edges[band] / binWidth), 1, nyquistBin);
@@ -418,10 +458,23 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
                 maximum = Math.Max(maximum, magnitude);
             }
 
-            bands[band] = (float)Math.Clamp(
-                Math.Log10(1 + maximum * 120) / Math.Log10(121),
-                0,
-                1);
+            _bandMagnitudes[band] = maximum;
+            peakMagnitude = Math.Max(peakMagnitude, maximum);
+        }
+
+        // 先按真实时间推进参考峰值，再把各频段映射成相对它的 dB 电平；这样显示强弱与系统音量的绝对大小无关。
+        // The reference peak is advanced by real time first, then every band is mapped to a level relative to it, so display strength
+        // no longer follows the absolute system volume.
+        var now = Environment.TickCount64;
+        var elapsed = _lastSpectrumTick == 0
+            ? TimeSpan.Zero
+            : TimeSpan.FromMilliseconds(now - _lastSpectrumTick);
+        _lastSpectrumTick = now;
+        _spectrumReference = SpectrumLevelPolicy.UpdateReference(_spectrumReference, peakMagnitude, elapsed);
+
+        for (var band = 0; band < bandCount; band++)
+        {
+            bands[band] = SpectrumLevelPolicy.ToNormalizedLevel(_bandMagnitudes[band], _spectrumReference);
         }
     }
 
@@ -511,6 +564,69 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
         ReleaseComObject(ref _device);
         _sampleWriteIndex = 0;
         _sampleCount = 0;
+        // 采集重建后信号链是全新的：参考与时间戳一起归零，避免旧参考把新链路的电平压低或抬高。
+        // The signal path is brand new after a capture restart: the reference and its timestamp reset together so an old reference
+        // cannot scale the new path's levels down or up.
+        _spectrumReference = 0;
+        _lastSpectrumTick = 0;
+        _capturedDeviceId = null;
+    }
+
+    /// <summary>
+    /// 默认输出设备在 AF 之外被切换时（Windows 设置、SteelSeries Sonar 等），已建立的采集不会自动跟过去，频谱会停在静音。
+    /// 这里以低频检查端点标识，发现变化就释放采集，让下一次懒建落在新的默认设备上。
+    /// When the default output device changes outside AF (Windows settings, SteelSeries Sonar, ...), the established capture does not
+    /// follow by itself and the spectrum goes flat. This checks the endpoint identity at a low cadence and releases the capture on a
+    /// change, so the next lazy init lands on the new default device.
+    ///
+    /// 只做"比较标识"这一件事：设备的建立、失败重试与参考复位都由既有的懒建/释放路径负责，避免在这里长出一条平行的状态机。
+    /// It does exactly one thing — compare identities: device creation, failure retries, and reference resets stay on the existing
+    /// lazy-init/release paths instead of growing a parallel state machine here.
+    /// </summary>
+    private void CheckDefaultDeviceChanged()
+    {
+        if (_captureClient is null || _deviceEnumerator is null || string.IsNullOrEmpty(_capturedDeviceId))
+        {
+            return;
+        }
+
+        var now = Environment.TickCount64;
+        if (now < _nextDefaultDeviceCheckTick)
+        {
+            return;
+        }
+
+        _nextDefaultDeviceCheckTick = now + DefaultDeviceCheckIntervalMilliseconds;
+        try
+        {
+            if (_deviceEnumerator.GetDefaultAudioEndpoint(
+                    EDataFlow.Render,
+                    ERole.Multimedia,
+                    out var current) < 0 ||
+                current is null)
+            {
+                return;
+            }
+
+            try
+            {
+                if (current.GetId(out var currentId) >= 0 &&
+                    !string.IsNullOrEmpty(currentId) &&
+                    !string.Equals(currentId, _capturedDeviceId, StringComparison.OrdinalIgnoreCase))
+                {
+                    ReleaseCaptureAndScheduleRetry();
+                }
+            }
+            finally
+            {
+                ReleaseComObject(ref current);
+            }
+        }
+        catch
+        {
+            // 设备在检查期间消失：交给既有的失败重试路径处理，检查本身绝不向外抛。
+            // A device vanishing mid-check is left to the existing failure-retry path; this check never throws outward.
+        }
     }
 
     private static double[] CreateFftWindow()
