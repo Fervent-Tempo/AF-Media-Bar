@@ -26,6 +26,7 @@
     <ui:MenuItem x:Name="ReloadTaskbarHostMenuItem"
                  Header="{DynamicResource Loc.Common.ReloadTaskbarHost}"
                  Icon="{ui:SymbolIcon ArrowSync24}"
+
                  Click="ReloadTaskbarHostMenuItem_Click" />
 
     <ui:MenuItem Header="{Binding PlacementTarget.DataContext.ViewModel.UpdateMenuHeader}"
