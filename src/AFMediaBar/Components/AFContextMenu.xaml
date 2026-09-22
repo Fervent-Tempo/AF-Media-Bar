@@ -5,9 +5,9 @@
              Width="280"
              Padding="4"
              StaysOpen="False"
+             Style="{StaticResource {x:Type ContextMenu}}"
              FontFamily="{DynamicResource AppTextFontFamily}"
              FontWeight="{DynamicResource AppTextFontWeight}"
-             Background="{DynamicResource AppMenuBackgroundBrush}"
              Foreground="{DynamicResource TextFillColorPrimaryBrush}"
              BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
              BorderThickness="1"
@@ -21,18 +21,17 @@
 
     <ui:MenuItem Header="{DynamicResource Loc.Common.ReconnectSmtc}"
                  Icon="{ui:SymbolIcon ArrowSync24}"
-                 Command="{Binding ReconnectMediaSessionCommand}" />
+                 Command="{Binding ViewModel.ReconnectMediaSessionCommand}" />
 
     <ui:MenuItem x:Name="ReloadTaskbarHostMenuItem"
                  Header="{DynamicResource Loc.Common.ReloadTaskbarHost}"
                  Icon="{ui:SymbolIcon ArrowSync24}"
-
                  Click="ReloadTaskbarHostMenuItem_Click" />
 
-    <ui:MenuItem Header="{Binding PlacementTarget.DataContext.ViewModel.UpdateMenuHeader}"
+    <ui:MenuItem Header="{Binding ViewModel.UpdateMenuHeader}"
                  Icon="{ui:SymbolIcon ArrowSync24}"
-                 IsEnabled="{Binding PlacementTarget.DataContext.ViewModel.IsUpdateMenuEnabled}"
-                 Command="{Binding UpdateMenuCommand}" />
+                 IsEnabled="{Binding ViewModel.IsUpdateMenuEnabled}"
+                 Command="{Binding ViewModel.UpdateMenuCommand}" />
 
     <ui:MenuItem Header="{DynamicResource Loc.Common.Settings}"
                  Icon="{ui:SymbolIcon Settings24}"

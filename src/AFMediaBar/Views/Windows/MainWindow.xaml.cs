@@ -808,7 +808,6 @@ namespace AFMediaBar.Views.Windows
             var window = new TaskbarWindow(
                 _taskBarService,
                 targetDeviceId,
-                ViewModel,
                 this,
                 _appearanceService,
                 _occupiedAreaService,

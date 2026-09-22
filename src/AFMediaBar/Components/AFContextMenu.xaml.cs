@@ -1,13 +1,17 @@
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Updates;
+using AFMediaBar.Resources;
+using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
-using Microsoft.Extensions.DependencyInjection;
-using CommunityToolkit.Mvvm.Input;
+using AFMediaBar.ViewModels.Components;
 
 namespace AFMediaBar.Components
 {
@@ -17,6 +21,8 @@ namespace AFMediaBar.Components
     /// </summary>
     public partial class AFContextMenu : ContextMenu
     {
+        public AFContextMenuViewModel ViewModel { get; }
+
         private readonly MediaSessionService _mediaSessionService;
         private readonly UpdateService _updateService;
 
@@ -28,22 +34,14 @@ namespace AFMediaBar.Components
         [RelayCommand]
         private void ExitApplication() => Application.Current.Shutdown();
 
-        /// <summary>右键菜单的更新入口。/ The context menu's update entry.</summary>
-        [RelayCommand]
-        private void UpdateMenu() => ExecuteUpdateAction();
-
         /// <summary>切换到指定媒体会话（参数为会话 Key）。/ Switches to the session identified by the parameter key.</summary>
         [RelayCommand]
         private void SelectMediaSession(string? key) =>
             _mediaSessionService.SelectSession(key ?? string.Empty);
 
-        /// <summary>重新扫描 SMTC 会话并刷新。/ Re-scans SMTC sessions and refreshes.</summary>
-        [RelayCommand]
-        private async Task ReconnectMediaSession() =>
-            await _mediaSessionService.ReconnectAsync();
-
         public AFContextMenu()
         {
+            ViewModel = App.Services.GetService<AFContextMenuViewModel>();
             _mediaSessionService = App.Services.GetRequiredService<MediaSessionService>();
             _updateService = App.Services.GetRequiredService<UpdateService>();
 
@@ -80,36 +78,5 @@ namespace AFMediaBar.Components
 
         private void ReloadTaskbarHostMenuItem_Click(object sender, RoutedEventArgs e) =>
             ReloadTaskbarHostRequested?.Invoke(this, EventArgs.Empty);
-
-        private void ExecuteUpdateAction()
-        {
-            switch (UpdatePresentationPolicy.ResolveTrayAction(_updateService.CurrentState))
-            {
-                case UpdateTrayAction.Check:
-                    _ = CheckForUpdatesAsync();
-                    break;
-                case UpdateTrayAction.Cancel:
-                    _updateService.CancelDownload();
-                    break;
-                case UpdateTrayAction.InstallAndRestart:
-                    _updateService.RequestInstallAndExit();
-                    break;
-                case UpdateTrayAction.OpenUpdatePage:
-                    OpenUpdateSettingsRequested?.Invoke(this, EventArgs.Empty);
-                    break;
-            }
-        }
-
-        private async Task CheckForUpdatesAsync()
-        {
-            try
-            {
-                await _updateService.CheckAsync(manual: true);
-            }
-            catch (Exception exception)
-            {
-                Debug.WriteLine($"[Update] Manual check failed: {exception}");
-            }
-        }
     }
 }
