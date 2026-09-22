@@ -9,7 +9,7 @@
 
   <br><br>
 
-  <img src="docs/assets/af-media-bar.png" alt="AF Media Bar" width="160" height="160">
+  <img src="src/AFMediaBar/Assets/icon_dark.png" alt="AF Media Bar" width="160" height="160">
 
   <h1>AF Media Bar</h1>
 
@@ -46,18 +46,15 @@ The app runs in its own process and hosts its WPF bar as a taskbar child window.
 | Category | Capabilities |
 | --- | --- |
 | Media | Previous, play/pause, next, repeat, and click-to-position or draggable progress |
-| Source interaction | Bind artwork and title/lyric clicks independently to play/pause, activate the media app, or open the full layer; right-click the bar to switch sources; an SMTC allow list can be enabled per app under Media & Notifications |
-| Live lyrics | Lyrics appear on the taskbar with syllable-by-syllable reveal, translation, romanization, and two-line alignment; sources are matched in order across NetEase Cloud Music, LRCLIB, QQ Music, Kugou Music, and Soda Music |
-| Taskbar behavior | Docked as a taskbar child window that avoids icons and system areas; artwork keeps its own aspect ratio and text that does not fit rotates inside its own region; the target display is selectable and the bar can auto-hide while nothing plays |
+| Source interaction | Bind artwork and title/lyric clicks independently to play/pause, activate the media app, or open the full menu |
+| Live lyrics | Lyrics appear directly on the taskbar with syllable-by-syllable reveal, translation, romanization, and two-line alignment; sources are matched in order across NetEase Cloud Music, LRCLIB, QQ Music, Kugou Music, and Soda Music |
+| Taskbar behavior | Docked as a taskbar child window that avoids icons and system areas; the target display is selectable, and the bar can auto-hide while nothing plays |
 | Appearance | Global fonts, font size, light/dark theme, window material, and material concentration; the accent colour follows the system and can also be picked or entered as hex |
-| Interface language | Simplified Chinese, Traditional Chinese, and English; the default follows the Windows display language, and a change applies immediately without restarting |
-| Hover and Full layers | Hover shows the control layer and blurs/dims the text region; Full allows toggling sections and components plus two presets |
-| Audio | Switch the default output device, adjust the current media app in 2% steps, and inspect spatial audio; tray click and wheel are rebindable |
-| Quick launch | With no acceptable media, click the note to open your own list: wheel-preview entries and start the last one about 1.2 s after scrolling stops |
-| Spectrum and metrics | Four spectrum styles with an adjustable bar count, height, and refresh rate; the taskbar metrics component rotates memory, CPU, GPU, and this app's own memory, and opens Task Manager on click |
-| Track-change notification | Show the current track once it changes and starts playing, with an adjustable placement, duration, and display; identified from the source and title, not from a play queue |
-| Low-performance fallback | Decorative motion, marquees, spectrum easing, and blur are disabled automatically under software rendering or a low-performance path |
-| Diagnostics and upkeep | Graded memory reclaim while idle, with the display off, and while suspending, plus one reclaim after startup settles; Settings offers compress-memory-now and an application log |
+| Layered information | Hover shows the control buttons; the full layer shows every piece of information |
+| Audio output | Click and wheel switch quickly between the default output device, the current media app's volume, and spatial audio |
+| Quick launch | With nothing playing, click or scroll the note icon to open the quick-launch list |
+| Spectrum and metrics | Four spectrum styles and a performance metrics component |
+| Now-playing notification | A notification appears when a track changes and starts playing |
 
 A media app only appears once it publishes a GSMTC session; some players need "system media controls" or "media keys" enabled in their own settings. Taskbar is the only runtime mode: Dynamic Island, Desktop Card, and Floating Orb in Settings are placeholders that only change the page area.
 
@@ -99,23 +96,20 @@ AF Media Bar is not commercially code-signed, so Windows SmartScreen may warn ab
 
 ### Updating
 
-About 20 seconds after launch the app reads the public version manifest (`docs/latest.json`); after a success it does not check again for 24 hours, and after a failure it retries an hour later. You can also check immediately on the Application page. When a newer version exists:
+About 20 seconds after launch the app reads the public version manifest (`docs/latest.json`). When a newer version exists:
 
 - The tray icon shows one system notification whose click opens the Application page, and the tray and media-bar context menus gain a state-aware update entry.
-- That page shows the highlights, the download progress, and every update action; **the download starts only when you click it** (verified against SHA-256 while downloading), so the app never spends that traffic on its own.
-- Once verified it reports "update ready", and **the next launch installs it before starting the new version**; "restart and install now" on that page does the same immediately.
-- Downloads try GitHub directly first and then the accelerators listed in the manifest; when none works the reason is shown together with both a GitHub and an accelerated download page. The portable build has no install record, so it only downloads.
+- That page shows the highlights, the download progress, and every update action.
+- Downloads try GitHub directly first and offer both a GitHub and an accelerated download page. The portable build has no install record, so it only downloads.
 
 The install log is written to `%LOCALAPPDATA%\AFMediaBar\updates\install-<version>.log`, and downloaded installers live in the same folder, cleaned up by version on the next launch.
 
-Preferences and window state live in `%LOCALAPPDATA%\AFMediaBar\settings.json` (schema-numbered JSON, atomic writes, backup recovery). Replacing the program files within one version never loses settings, but **an upgrade across versions does not read the older settings file** (1.1.1 → 1.2.0 renames it to `settings.json.unsupported-<timestamp>` and starts from the defaults), and the Application page opens the settings folder.
+Preferences and window state live in `%LOCALAPPDATA%\AFMediaBar\settings.json`; replacing the program files within one version never loses settings, and the Application page opens the settings folder.
 
 ### Uninstalling
 
-- Installed build: uninstall from Settings > Apps > Installed apps or the Start menu entry; it removes the program folder and shortcuts but **not** `%LOCALAPPDATA%\AFMediaBar`.
 - Portable build: delete the program folder.
-
-To remove settings and downloaded installers as well:
+- Installed build: uninstall from Settings > Apps > Installed apps or the Start menu entry; that removes only the program folder and the shortcuts, so `%LOCALAPPDATA%\AFMediaBar` has to be removed with the command below or by hand.
 
 ```powershell
 Remove-Item "$env:LOCALAPPDATA\AFMediaBar" -Recurse -Force
@@ -181,5 +175,19 @@ AF Media Bar is released under the [MIT License](LICENSE).
 <div align="center">
 
 If AF Media Bar helps you, a Star is appreciated ❤️
+
+</div>
+
+## Sponsor
+
+Buy me a coffee. **Sponsorships above 10 CNY can join the sponsor list — please leave your ID in the payment note.**
+
+<div align="center">
+
+| WeChat | Alipay |
+| :---: | :---: |
+| <img src="src/AFMediaBar/Assets/Sponsor/wechat-pay.png" alt="WeChat payment code" width="220"> | <img src="src/AFMediaBar/Assets/Sponsor/alipay-pay.png" alt="Alipay payment code" width="220"> |
+
+My Afdian: [Afdian](https://ifdian.net/a/amorfate)
 
 </div>

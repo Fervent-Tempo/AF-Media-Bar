@@ -146,7 +146,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable
         var sourceId = controlSession.SourceAppUserModelId ?? string.Empty;
         var title = songInfo.Title ?? string.Empty;
         var artist = songInfo.Artist ?? string.Empty;
-        var lyricsKey = $"{session.Id}\u001f{title}\u001f{artist}";
+        var lyricsKey = BuildLyricsKey(session.Id, title, artist);
         var lyrics = GetLyrics(lyricsKey, sourceId, title, artist, songInfo, timelineProperties);
 
         return new MediaSnapshot(
@@ -178,6 +178,9 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable
         _ => MediaRepeatMode.Unavailable
     };
 
+    private static string BuildLyricsKey(string sessionId, string title, string artist) =>
+        $"{sessionId}\u001f{title}\u001f{artist}";
+
     private LyricsResult? GetLyrics(
         string key,
         string sourceId,
@@ -191,34 +194,82 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable
             return cached;
         }
         if (_pendingLyrics.Contains(key) ||
-            sourceId.Contains("cloudmusic", StringComparison.OrdinalIgnoreCase) ||
-            sourceId.Contains("netease", StringComparison.OrdinalIgnoreCase) ||
+            IsProvidedBySourceProvider(sourceId) ||
             string.IsNullOrWhiteSpace(title))
         {
             return null;
         }
 
         _pendingLyrics.Add(key);
-        _ = LoadLyricsAsync(key, title, artist, songInfo, timelineProperties);
+        var duration = (timelineProperties.EndTime - timelineProperties.StartTime).TotalSeconds;
+        _ = LoadLyricsAsync(key, title, artist, songInfo.AlbumTitle ?? string.Empty, duration > 0 ? duration : null);
         return null;
+    }
+
+    /// <summary>
+    /// 该来源是否由来源提供器负责供词 —— 这类来源在这里不取词，因为提供器给的是逐字歌词与精确进度。
+    /// Whether this source is served by a source provider: such a source is not fetched here, because the provider supplies word-level
+    /// lyrics together with an exact position.
+    /// </summary>
+    private static bool IsProvidedBySourceProvider(string sourceId) =>
+        sourceId.Contains("cloudmusic", StringComparison.OrdinalIgnoreCase) ||
+        sourceId.Contains("netease", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// 为"来源提供器读不出媒体"的会话发起一次在线取词兜底，结果同样进本类的歌词缓存，
+    /// 因此下一次 <see cref="Build"/> 会把它挂到快照上。
+    ///
+    /// 这是常规路径的例外通道：<see cref="GetLyrics"/> 对来源提供器负责的来源一律不取词，提供器一旦失效就完全没有
+    /// 兜底，界面只剩 SMTC 的标题与歌手。是否该走这条通道由 <see cref="MediaEnrichmentFallbackPolicy"/> 判定，
+    /// 调用方 MUST NOT 无条件调用（提供器每 233 毫秒都会报一次"没有媒体"）。
+    /// Starts one online retrieval for a session whose source provider cannot read any media. The result lands in this class's lyric
+    /// cache, so the next <see cref="Build"/> attaches it to the snapshot.
+    ///
+    /// This is the exception channel of the ordinary path: <see cref="GetLyrics"/> never fetches for a source a provider is responsible
+    /// for, so a failing provider leaves no fallback at all and only SMTC's title and artist remain. Whether this channel applies is
+    /// decided by <see cref="MediaEnrichmentFallbackPolicy"/>, and the caller MUST NOT call this unconditionally (the provider reports
+    /// "no media" every 233 milliseconds).
+    /// </summary>
+    /// <param name="sessionId">SMTC 会话标识，参与歌词缓存键。/ SMTC session identifier, part of the lyric cache key.</param>
+    /// <param name="title">曲名。/ Title.</param>
+    /// <param name="artist">歌手。/ Artist.</param>
+    /// <param name="durationSeconds">曲目时长（秒）；不可用时传 null。/ Track duration in seconds, or null when unavailable.</param>
+    public void RequestOnlineLyrics(string sessionId, string title, string artist, double? durationSeconds)
+    {
+        if (string.IsNullOrWhiteSpace(sessionId) || string.IsNullOrWhiteSpace(title))
+        {
+            return;
+        }
+
+        var key = BuildLyricsKey(sessionId, title, artist);
+        if (_lyricsCache.TryGetValue(key, out _) || !_pendingLyrics.Add(key))
+        {
+            return;
+        }
+
+        _ = LoadLyricsAsync(
+            key,
+            title,
+            artist,
+            string.Empty,
+            durationSeconds is > 0 ? durationSeconds : null);
     }
 
     private async Task LoadLyricsAsync(
         string key,
         string title,
         string artist,
-        GlobalSystemMediaTransportControlsSessionMediaProperties songInfo,
-        GlobalSystemMediaTransportControlsSessionTimelineProperties timelineProperties)
+        string album,
+        double? durationSeconds)
     {
         var generation = _lyricsCacheGeneration;
         try
         {
-            var duration = (timelineProperties.EndTime - timelineProperties.StartTime).TotalSeconds;
             var request = new LyricsRequest(
                 title,
                 artist,
-                songInfo.AlbumTitle ?? string.Empty,
-                duration > 0 ? duration : null,
+                album,
+                durationSeconds,
                 NetEaseSongId: null);
             var result = await _lyricsService.GetLyricsAsync(request, CancellationToken.None);
 

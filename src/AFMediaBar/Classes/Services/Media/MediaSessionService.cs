@@ -35,6 +35,17 @@ public sealed class MediaSessionService : IDisposable
     private MediaSnapshot _lastSnapshot = MediaSnapshot.Disconnected;
     private bool _isDisposed;
 
+    /// <summary>
+    /// 已经请求过在线取词兜底的那一曲（来源 + 曲名 + 歌手的指纹），只保留最后一个。
+    /// 来源提供器每 233 毫秒都会报一次"没有可读的媒体"，没有这个门闩就会每 233 毫秒发起一次兜底取词；
+    /// 只留一个是刻意的：它只需要挡住"同一首歌的重复请求"，换歌就该重新允许，而无界集合会随播放一直增长。
+    /// The track (a fingerprint of source, title, and artist) whose online-lyric fallback has already been requested, keeping only the last one.
+    /// A source provider reports "no readable media" every 233 ms, so without this latch a fallback would be requested every 233 ms; keeping
+    /// exactly one is deliberate: it only has to block repeats for the same track, a track change must allow a new one, and an unbounded set
+    /// would grow for as long as playback lasts.
+    /// </summary>
+    private string? _fallbackLyricsKey;
+
     /// <summary>最近一次写进日志的快照指纹；相同则不再重复记录（时间戳每次轮询都变，否则会刷屏）。/ Signature of the last logged snapshot; an identical one is not logged again, since the timestamp changes on every poll.</summary>
     private string? _loggedSnapshotSignature;
 
@@ -295,6 +306,67 @@ public sealed class MediaSessionService : IDisposable
     {
         _sourceSnapshots[provider] = snapshot;
         PublishResolved(ResolveSnapshot(_sessionSnapshot));
+
+        // 提供器报"没有可读的媒体"时，它是每 233 毫秒报一次，因此这里必须用"同一个键只请求一次"挡住重复兜底取词。
+        // When a provider reports "no readable media" it does so every 233 ms, so a repeated fallback retrieval is blocked here by
+        // requesting once per key.
+        if (snapshot is null)
+        {
+            TryRequestFallbackLyrics();
+        }
+    }
+
+    /// <summary>
+    /// 在来源提供器读不出媒体时为当前 SMTC 会话发起一次在线取词兜底。
+    ///
+    /// 判据是"提供器已经明确报过它没有可读的媒体"（<see cref="MediaEnrichmentFallbackPolicy"/>）：提供器还没发布过任何
+    /// 快照时它只是还没跑完第一轮轮询，那时兜底会在每次切歌的头 233 毫秒里白发一次请求。同一个"来源 + 曲名 + 歌手"只请求
+    /// 一次，重复的请求由歌词缓存与键门闩一起挡住。
+    /// Starts one online-lyric fallback for the current SMTC session when its source provider cannot read any media.
+    ///
+    /// The condition is that the provider has already reported having no readable media (<see cref="MediaEnrichmentFallbackPolicy"/>): before
+    /// it has published anything it has merely not finished its first poll, and a fallback then would waste one request during the first
+    /// 233 ms of every track change. One "source + title + artist" is requested once, and the lyric cache plus the key latch block repeats.
+    /// </summary>
+    private void TryRequestFallbackLyrics()
+    {
+        var baseline = _sessionSnapshot;
+        var provider = baseline.IsConnected
+            ? _sourceProviders.FirstOrDefault(candidate => candidate.CanHandle(baseline.SourceId))
+            : null;
+        var providerPublishedNothing = provider is not null &&
+                                       _sourceSnapshots.TryGetValue(provider, out var published) &&
+                                       published is null;
+        if (!MediaEnrichmentFallbackPolicy.ShouldRequestOnlineLyrics(
+                baseline.IsConnected,
+                provider is not null,
+                providerPublishedNothing,
+                baseline.Title))
+        {
+            return;
+        }
+
+        var key = $"{baseline.SourceId}\u001f{baseline.Title}\u001f{baseline.Artist}";
+        if (string.Equals(key, _fallbackLyricsKey, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        // 会话标识必须是选中的那一个：歌词缓存键由它构成，兜底取回的结果要靠同一个键才会被下一次 Build 认领。
+        // The session identifier has to be the selected one: it makes up the lyric cache key, and only the same key lets the next Build
+        // claim the result the fallback fetched.
+        var sessionKey = _selection.SelectedKey;
+        if (string.IsNullOrEmpty(sessionKey))
+        {
+            return;
+        }
+
+        _fallbackLyricsKey = key;
+        _snapshotBuilder.RequestOnlineLyrics(
+            sessionKey,
+            baseline.Title,
+            baseline.Artist,
+            baseline.Duration > 0 ? baseline.Duration : null);
     }
 
     private void ScheduleRefresh()
@@ -398,6 +470,7 @@ public sealed class MediaSessionService : IDisposable
             }
 
             Publish(snapshot);
+            TryRequestFallbackLyrics();
         }
         catch (Exception ex)
         {

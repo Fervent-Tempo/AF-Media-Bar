@@ -4,6 +4,9 @@ using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Localization;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Resources;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using System.Collections.ObjectModel;
 
 namespace AFMediaBar.ViewModels.Pages;
 
@@ -25,8 +28,11 @@ public partial class DisplayModesViewModel : ObservableObject
     private bool _isRefreshing;
     private DisplayModeSelection _selectedMode = DisplayModeSelection.Taskbar;
     private IReadOnlyList<DisplayMonitorOption> _monitorOptions = Array.Empty<DisplayMonitorOption>();
+    private IReadOnlyList<TaskbarMonitorSelectionItem> _taskbarMonitorOptions = Array.Empty<TaskbarMonitorSelectionItem>();
 
     public IReadOnlyList<DisplayMonitorOption> MonitorOptions => _monitorOptions;
+    /// <summary>可逐项勾选的任务栏目标列表；至少保留一项，既支持单选也支持多选。/ Individually selectable taskbar targets; at least one remains selected, supporting one or many.</summary>
+    public IReadOnlyList<TaskbarMonitorSelectionItem> TaskbarMonitorOptions => _taskbarMonitorOptions;
     public WindowMode CurrentWindowMode => SettingsManager.Current.WindowMode;
     public DisplayModeSelection SelectedMode => _selectedMode;
     public bool IsTaskbarMode => SelectedMode == DisplayModeSelection.Taskbar;
@@ -122,24 +128,6 @@ public partial class DisplayModesViewModel : ObservableObject
     public bool CanSelectTrackChangeNotificationMonitor =>
         TrackChangeNotificationEnabled && TrackChangeNotificationTargetMode == NotificationTargetMode.Fixed;
 
-    public string? TaskbarTargetMonitorDeviceId
-    {
-        get => SettingsManager.Current.TaskbarTargetMonitorDeviceId ?? _displayMonitorService.ResolveFixedMonitor(null)?.DeviceId;
-        set
-        {
-            if (_isRefreshing || string.Equals(
-                    SettingsManager.Current.TaskbarTargetMonitorDeviceId,
-                    value,
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            SettingsManager.Current.TaskbarTargetMonitorDeviceId = value;
-            OnPropertyChanged();
-        }
-    }
-
     public bool HoverLayerEnabled
     {
         get => SettingsManager.Current.TaskbarExperience.HoverLayerEnabled;
@@ -203,6 +191,224 @@ public partial class DisplayModesViewModel : ObservableObject
     {
         get => SettingsManager.Current.TaskbarExperience.PerformanceVisible;
         set => UpdateExperience(SettingsManager.Current.TaskbarExperience with { PerformanceVisible = value });
+    }
+
+    /// <summary>静置层是否显示输出设备按钮（点击打开设备菜单，滚轮切换设备）。 / Whether the rest layer shows the output-device button, which opens the device menu on click and switches devices on the wheel.</summary>
+    public bool RestOutputDeviceVisible
+    {
+        get => SettingsManager.Current.TaskbarExperience.OutputDeviceVisible;
+        set => UpdateExperience(SettingsManager.Current.TaskbarExperience with { OutputDeviceVisible = value });
+    }
+
+    /// <summary>静置层是否显示音量按钮（点击打开音量菜单，滚轮调节当前来源音量）。 / Whether the rest layer shows the volume button, which opens the volume menu on click and adjusts the current source on the wheel.</summary>
+    public bool RestVolumeVisible
+    {
+        get => SettingsManager.Current.TaskbarExperience.VolumeVisible;
+        set => UpdateExperience(SettingsManager.Current.TaskbarExperience with { VolumeVisible = value });
+    }
+
+    /// <summary>
+    /// 静置层顺序列表：前两行是固定在最前面的封面与媒体文字（不提供上下移），其后是可排序的频谱、性能、输出设备、音量。
+    ///
+    /// 封面与媒体文字不参与排序是刻意的：它们是这条媒体栏的主干，此前允许移动时界面会错乱，因此现在固定在开头。
+    /// The rest-layer order list: the first two rows are the artwork and the media text pinned to the front (with no move buttons), followed by the
+    /// reorderable spectrum, performance, output device, and volume.
+    ///
+    /// The artwork and the media text deliberately take no part in ordering: they are the backbone of the bar, and allowing them to move broke the
+    /// layout, so they are pinned to the front.
+    /// </summary>
+    public ObservableCollection<TaskbarRestComponentSettingItem> RestOrderEntries { get; } = [];
+
+    /// <summary>
+    /// "没有媒体时显示"列表：快速启动小音符（默认开）、频谱、性能监控、输出设备按钮、音量按钮。
+    ///
+    /// 封面与媒体文字不在这个列表里、也不提供开关：没有媒体时它们没有任何内容可显示，因此一定不显示；一个都不勾选时整条媒体栏隐藏。
+    /// The "shown without media" list: the quick-launch note (on by default), the spectrum, the performance monitor, the output-device button, and the
+    /// volume button.
+    ///
+    /// The artwork and the media text are absent from this list and carry no switch: with no media they have nothing to display and are therefore
+    /// never shown; with nothing checked the whole bar is hidden.
+    /// </summary>
+    public ObservableCollection<TaskbarRestComponentSettingItem> IdleComponentEntries { get; } = [];
+
+    /// <summary>
+    /// 重建两张静置层列表（顺序按设置、显隐按"没有媒体时保留"的取值）。
+    ///
+    /// 顺序与显隐没有变化时只重取显示名（语言可能刚换过）：列表里没有任何变化时重建它，会让 ItemsControl 重新生成全部行，
+    /// 拖动一个无关的滑杆也会把这两份列表闪一下。
+    /// Rebuilds both rest-layer lists (the order from the settings, the switches from the "kept without media" value).
+    ///
+    /// When neither the order nor the switches changed, only the display names are re-read (the language may have just changed): rebuilding a list in
+    /// which nothing changed makes the ItemsControl regenerate every row and flashes both lists even while an unrelated slider is dragged.
+    /// </summary>
+    private void RefreshRestComponentEntries()
+    {
+        var experience = SettingsManager.Current.TaskbarExperience.Normalize();
+        var order = TaskbarRestLayoutPolicy.ResolveOrder(experience.RestComponentOrder);
+        var kept = TaskbarRestLayoutPolicy.ResolveIdleComponents(experience.IdleComponents);
+
+        var orderUnchanged = RestOrderEntries.Count == order.Count &&
+                             RestOrderEntries.Select(entry => entry.Component).SequenceEqual(order);
+        var idleUnchanged = IdleComponentEntries.Count == IdleVisibilityOrder.Count &&
+                            IdleComponentEntries.Select(entry => entry.Component).SequenceEqual(IdleVisibilityOrder) &&
+                            IdleComponentEntries.All(entry => entry.IsVisible == kept.Contains(entry.Component));
+
+        if (orderUnchanged && idleUnchanged)
+        {
+            foreach (var entry in RestOrderEntries)
+            {
+                entry.DisplayName = Translations.Get(TaskbarRestComponentSettingItem.ResolveNameKey(entry.Component));
+                entry.Description = Translations.Get(TaskbarRestComponentSettingItem.ResolveDescriptionKey(entry.Component));
+            }
+
+            foreach (var entry in IdleComponentEntries)
+            {
+                var isNote = entry.Component == TaskbarRestComponent.Artwork;
+                entry.DisplayName = Translations.Get(isNote
+                    ? TaskbarRestComponentSettingItem.QuickLaunchNoteNameKey
+                    : TaskbarRestComponentSettingItem.ResolveNameKey(entry.Component));
+                entry.Description = Translations.Get(isNote
+                    ? TaskbarRestComponentSettingItem.QuickLaunchNoteDescriptionKey
+                    : TaskbarRestComponentSettingItem.ResolveDescriptionKey(entry.Component));
+            }
+
+            return;
+        }
+
+        foreach (var entry in RestOrderEntries)
+        {
+            entry.VisibilityChanged -= OnRestComponentVisibilityChanged;
+        }
+
+        foreach (var entry in IdleComponentEntries)
+        {
+            entry.VisibilityChanged -= OnRestComponentVisibilityChanged;
+        }
+
+        RestOrderEntries.Clear();
+        foreach (var component in order)
+        {
+            RestOrderEntries.Add(new TaskbarRestComponentSettingItem(
+                component,
+                canMove: !TaskbarRestLayoutPolicy.FixedOrder.Contains(component),
+                isVisible: true));
+        }
+
+        IdleComponentEntries.Clear();
+        foreach (var component in IdleVisibilityOrder)
+        {
+            var entry = new TaskbarRestComponentSettingItem(
+                component,
+                canMove: false,
+                isVisible: kept.Contains(component),
+                useQuickLaunchName: component == TaskbarRestComponent.Artwork);
+            entry.VisibilityChanged += OnRestComponentVisibilityChanged;
+            IdleComponentEntries.Add(entry);
+        }
+
+        OnPropertyChanged(nameof(RestOrderEntries));
+        OnPropertyChanged(nameof(IdleComponentEntries));
+    }
+
+    /// <summary>
+    /// "没有媒体时显示"列表的条目集合与顺序：快速启动小音符在最前，其余按顺序列表里排出来的先后。
+    /// The set and order of the "shown without media" list: the quick-launch note first, the rest in the order the order list arranged them.
+    /// </summary>
+    private static IReadOnlyList<TaskbarRestComponent> IdleVisibilityOrder { get; } =
+    [
+        TaskbarRestComponent.Artwork,
+        TaskbarRestComponent.Spectrum,
+        TaskbarRestComponent.Performance,
+        TaskbarRestComponent.OutputDevice,
+        TaskbarRestComponent.Volume
+    ];
+
+    private void OnRestComponentVisibilityChanged(TaskbarRestComponentSettingItem entry) => SaveIdleComponents();
+
+    /// <summary>
+    /// 把"没有媒体时显示"写回设置。勾选项恰好等于默认值（只有小音符）时写回"未配置"，
+    /// 这样"没动过"与"手动勾回默认"在设置文件里长得一样；一个都不勾时写回空列表，表示整条媒体栏隐藏。
+    /// Writes the "shown without media" switches back into the settings. A selection exactly equal to the default (the note alone) is stored as
+    /// "never configured", so "never touched" and "switched back to the default" look the same in the settings file; nothing checked is stored as an
+    /// empty list, which hides the whole bar.
+    /// </summary>
+    private void SaveIdleComponents()
+    {
+        var selected = IdleComponentEntries
+            .Where(entry => entry.IsVisible)
+            .Select(entry => entry.Component)
+            .ToArray();
+        var isDefault = selected.SequenceEqual(TaskbarRestLayoutPolicy.DefaultIdleComponents);
+        UpdateExperience(SettingsManager.Current.TaskbarExperience with
+        {
+            IdleComponents = isDefault ? null : selected
+        });
+    }
+
+    [RelayCommand]
+    private void MoveRestComponentUp(TaskbarRestComponentSettingItem? entry) => MoveRestComponent(entry, -1);
+
+    [RelayCommand]
+    private void MoveRestComponentDown(TaskbarRestComponentSettingItem? entry) => MoveRestComponent(entry, 1);
+
+    /// <summary>
+    /// 在顺序列表里移动一行。只有可排序组件会被写入设置：封面与媒体文字虽然在列表里（用户要看得见自己在排序什么），
+    /// 但它们的位置不参与排序，也不会被写进设置文件。
+    /// Moves one row inside the order list. Only reorderable components reach the settings file: the artwork and the media text are listed (the user
+    /// has to see what they are ordering around) but their position takes no part in ordering and is never stored.
+    /// </summary>
+    private void MoveRestComponent(TaskbarRestComponentSettingItem? entry, int offset)
+    {
+        if (entry is null || !entry.CanMove)
+        {
+            return;
+        }
+
+        var index = RestOrderEntries.IndexOf(entry);
+        var target = index + offset;
+        // 固定头占着列表最前面几行，可排序组件的目标位置不能越过它们。
+        // The pinned head occupies the first rows, and a reorderable component must not move past them.
+        if (index < 0 || target < TaskbarRestLayoutPolicy.FixedOrder.Count || target >= RestOrderEntries.Count)
+        {
+            return;
+        }
+
+        RestOrderEntries.Move(index, target);
+        SaveRestComponentOrder();
+    }
+
+    /// <summary>把可排序段的顺序写回设置：恰好等于默认顺序时写回"未配置"，与歌词来源列表同一处理。/ Writes the reorderable order back into the settings: an order exactly equal to the default is stored as "never configured", the same handling as the lyric-source list.</summary>
+    private void SaveRestComponentOrder()
+    {
+        var ordered = RestOrderEntries
+            .Where(entry => entry.CanMove)
+            .Select(entry => entry.Component)
+            .ToArray();
+        var isDefault = ordered.SequenceEqual(TaskbarRestLayoutPolicy.DefaultTailOrder);
+        UpdateExperience(SettingsManager.Current.TaskbarExperience with
+        {
+            RestComponentOrder = isDefault ? null : ordered
+        });
+    }
+
+    [RelayCommand]
+    private void ResetRestComponentOrder()
+    {
+        var ordered = RestOrderEntries
+            .OrderBy(entry => entry.CanMove
+                ? TaskbarRestLayoutPolicy.DefaultTailOrder.ToList().IndexOf(entry.Component) + TaskbarRestLayoutPolicy.FixedOrder.Count
+                : TaskbarRestLayoutPolicy.FixedOrder.ToList().IndexOf(entry.Component))
+            .ToArray();
+        for (var i = 0; i < ordered.Length; i++)
+        {
+            var current = RestOrderEntries.IndexOf(ordered[i]);
+            if (current != i)
+            {
+                RestOrderEntries.Move(current, i);
+            }
+        }
+
+        SaveRestComponentOrder();
     }
 
     public bool HoverPlayPauseVisible
@@ -434,6 +640,12 @@ public partial class DisplayModesViewModel : ObservableObject
 
         _displayMonitorService.Refresh();
         RefreshMonitorOptions();
+        // 静置层组件列表是代码构建的（顺序与保留状态来自设置），构造函数里必须先填一次：本页其余属性都是直接读设置的
+        // getter，只有它为空的唯一表现就是"打开设置页看到一份空列表"。
+        // The rest-layer component list is built in code (its order and kept switches come from the settings), so it has to be filled once
+        // here: every other property on this page is a getter that reads the settings directly, and leaving this one empty would show up
+        // only as an empty list when the settings page is opened.
+        RefreshRestComponentEntries();
     }
 
     /// <summary>
@@ -446,6 +658,12 @@ public partial class DisplayModesViewModel : ObservableObject
     private void OnLanguageChanged(object? sender, EventArgs e)
     {
         RefreshMonitorOptions();
+        // 组件名与说明是构建列表项时取的语言快照，不会随空属性名的通知自己更新（列表实例没变，项的属性也没变），
+        // 因此这里必须显式刷新一次，否则语言切换后这一列仍是旧语言。
+        // The component names and descriptions are a language snapshot taken while the items were built and do not follow the empty-property
+        // notification on their own (the list instance is unchanged and so are the items' properties), so this has to refresh explicitly;
+        // otherwise the column would keep the previous language after a switch.
+        RefreshRestComponentEntries();
         OnPropertyChanged(string.Empty);
     }
 
@@ -544,6 +762,8 @@ public partial class DisplayModesViewModel : ObservableObject
     {
         if (e.ResetScope is SettingsResetScope.DisplayModes or SettingsResetScope.Layout or SettingsResetScope.All)
             RaiseAll();
+        else if (!_isRefreshing && e.PropertyName is nameof(AppSettings.TaskbarTargetMonitorDeviceIds) or nameof(AppSettings.TaskbarTargetMonitorDeviceId))
+            RefreshMonitorOptions();
     }
 
     private void OnMonitorsChanged(object? sender, EventArgs e) => RefreshMonitorOptions();
@@ -567,34 +787,117 @@ public partial class DisplayModesViewModel : ObservableObject
         var primarySuffix = Translations.Get("Common.Monitor.PrimarySuffix");
         var disconnectedSuffix = Translations.Get("DisplayModes.Monitor.DisconnectedSuffix");
         var monitors = _displayMonitorService.GetMonitors();
-        var options = monitors
+        var availableOptions = monitors
             .Select((monitor, index) => new DisplayMonitorOption(
                 monitor.DeviceId,
                 $"{index + 1}. {monitor.DeviceName}{(monitor.IsPrimary ? primarySuffix : string.Empty)}",
                 monitor.IsPrimary))
             .ToList();
 
-        var preferredIds = new[]
+        var options = availableOptions.ToList();
+
+        var selectedTaskbarIds = ResolveConfiguredTaskbarSelection(monitors);
+        var taskbarOptions = availableOptions
+            .Select(option => new TaskbarMonitorSelectionItem(
+                option.DeviceId,
+                option.DisplayName,
+                option.IsPrimary,
+                option.IsAvailable,
+                selectedTaskbarIds.Contains(option.DeviceId)))
+            .ToList();
+
+        static void AddDisconnected(
+            List<DisplayMonitorOption> target,
+            IReadOnlyList<DisplayMonitorOption> available,
+            string? preferredId,
+            string suffix,
+            int index)
         {
-            SettingsManager.Current.TaskbarTargetMonitorDeviceId,
-            NotificationSettings.FixedMonitorDeviceId
-        };
-        foreach (var preferredId in preferredIds.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct(StringComparer.OrdinalIgnoreCase))
-        {
-            if (options.All(option => !string.Equals(option.DeviceId, preferredId, StringComparison.OrdinalIgnoreCase)))
-            {
-                options.Insert(0, new DisplayMonitorOption(
-                    preferredId!,
-                    $"{preferredId}{disconnectedSuffix}",
-                    false,
-                    false));
-            }
+            if (string.IsNullOrWhiteSpace(preferredId) ||
+                available.Any(option => string.Equals(option.DeviceId, preferredId, StringComparison.OrdinalIgnoreCase)))
+                return;
+
+            target.Insert(index, new DisplayMonitorOption(
+                preferredId,
+                $"{preferredId}{suffix}",
+                false,
+                false));
         }
 
+        AddDisconnected(options, availableOptions, NotificationSettings.FixedMonitorDeviceId, disconnectedSuffix, 0);
+        foreach (var deviceId in selectedTaskbarIds.Where(deviceId =>
+                     availableOptions.All(option => !string.Equals(option.DeviceId, deviceId, StringComparison.OrdinalIgnoreCase))))
+        {
+            taskbarOptions.Add(new TaskbarMonitorSelectionItem(
+                deviceId,
+                $"{deviceId}{disconnectedSuffix}",
+                false,
+                false,
+                true));
+        }
+
+        foreach (var option in taskbarOptions)
+            option.SelectionChanged += OnTaskbarMonitorSelectionChanged;
+
         _monitorOptions = options;
+        _taskbarMonitorOptions = taskbarOptions;
+        UpdateTaskbarMonitorToggleState();
         OnPropertyChanged(nameof(MonitorOptions));
-        OnPropertyChanged(nameof(TaskbarTargetMonitorDeviceId));
+        OnPropertyChanged(nameof(TaskbarMonitorOptions));
         OnPropertyChanged(nameof(TrackChangeNotificationFixedMonitorDeviceId));
+    }
+
+    private HashSet<string> ResolveConfiguredTaskbarSelection(IReadOnlyList<DisplayMonitorInfo> monitors)
+    {
+        var selected = (SettingsManager.Current.TaskbarTargetMonitorDeviceIds ?? [])
+            .Where(deviceId => !string.IsNullOrWhiteSpace(deviceId))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (selected.Count > 0)
+            return selected;
+
+        var legacy = SettingsManager.Current.TaskbarTargetMonitorDeviceId;
+        if (TaskbarTargetPolicy.IsLegacyAllTaskbars(legacy))
+            selected.UnionWith(monitors.Select(monitor => monitor.DeviceId));
+        else if (!string.IsNullOrWhiteSpace(legacy))
+            selected.Add(legacy);
+        else if (_displayMonitorService.ResolveFixedMonitor(null) is { } primary)
+            selected.Add(primary.DeviceId);
+        return selected;
+    }
+
+    private void OnTaskbarMonitorSelectionChanged(TaskbarMonitorSelectionItem changed)
+    {
+        if (_isRefreshing)
+            return;
+
+        var selected = _taskbarMonitorOptions.Where(option => option.IsSelected).ToArray();
+        if (selected.Length == 0)
+        {
+            changed.IsSelected = true;
+            return;
+        }
+
+        var deviceIds = selected.Select(option => option.DeviceId).ToArray();
+        var current = SettingsManager.Current.TaskbarTargetMonitorDeviceIds ?? [];
+        _isRefreshing = true;
+        try
+        {
+            if (!current.SequenceEqual(deviceIds, StringComparer.OrdinalIgnoreCase))
+                SettingsManager.Current.TaskbarTargetMonitorDeviceIds = deviceIds;
+            SettingsManager.Current.TaskbarTargetMonitorDeviceId = null;
+        }
+        finally
+        {
+            _isRefreshing = false;
+        }
+        UpdateTaskbarMonitorToggleState();
+    }
+
+    private void UpdateTaskbarMonitorToggleState()
+    {
+        var selectedCount = _taskbarMonitorOptions.Count(option => option.IsSelected);
+        foreach (var option in _taskbarMonitorOptions)
+            option.CanToggle = !option.IsSelected || selectedCount > 1;
     }
 
     private void RaiseAll()
@@ -610,7 +913,7 @@ public partial class DisplayModesViewModel : ObservableObject
             OnPropertyChanged(nameof(IslandSurfaceCornerRadiusDip));
             RaiseExperience(); OnPropertyChanged(nameof(Orientation)); OnPropertyChanged(nameof(IsTaskbarPositionLocked));
             OnPropertyChanged(nameof(IsTaskbarAvoidingIcons)); OnPropertyChanged(nameof(TaskbarCrossAxisOffsetDip));
-            OnPropertyChanged(nameof(TaskbarTargetMonitorDeviceId));
+            RefreshMonitorOptions();
             RaiseNotification();
         }
         finally { _isRefreshing = false; }
@@ -631,6 +934,11 @@ public partial class DisplayModesViewModel : ObservableObject
         OnPropertyChanged(nameof(FollowMediaTextLength)); OnPropertyChanged(nameof(UsesFixedTaskbarLength));
         OnPropertyChanged(nameof(FixedTaskbarLengthMinimum)); OnPropertyChanged(nameof(FixedTaskbarLengthMaximum));
         OnPropertyChanged(nameof(FixedTaskbarLengthDip)); OnPropertyChanged(nameof(FixedTaskbarLengthRangeText));
+        OnPropertyChanged(nameof(RestOutputDeviceVisible)); OnPropertyChanged(nameof(RestVolumeVisible));
+        // 顺序列表与"没有媒体时显示"列表是两份内容，重建它们同时刷新了两者（也在语言变化后重取显示名）。
+        // The order list and the "shown without media" list are the two contents, and rebuilding them refreshes both (and re-reads the display
+        // names after a language change).
+        RefreshRestComponentEntries();
         RaiseFullPanel();
     }
 

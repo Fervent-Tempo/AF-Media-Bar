@@ -82,6 +82,31 @@ public enum TaskbarLengthMode
     Fixed = 1
 }
 
+/// <summary>
+/// 横向任务栏静置层里的一个组件。成员值参与序列化，因此只能追加。
+/// One component of the horizontal taskbar rest layer. Member values take part in serialization, so this may only be appended.
+/// </summary>
+public enum TaskbarRestComponent
+{
+    /// <summary>封面；没有媒体时是音符（无媒体时点它或在其上滚轮可挑播放器）。 / Artwork; a music note without media (clicking it or wheeling over it picks a player).</summary>
+    Artwork = 0,
+
+    /// <summary>媒体文字：标题与歌手，或歌词两行。 / Media text: the title and artist, or the two lyric rows.</summary>
+    MediaText = 1,
+
+    /// <summary>播放态频谱。 / The playing spectrum.</summary>
+    Spectrum = 2,
+
+    /// <summary>性能指标。 / The performance metrics.</summary>
+    Performance = 3,
+
+    /// <summary>输出设备按钮：点击打开设备菜单，滚轮切换设备。 / Output-device button: clicking opens the device menu, the wheel switches devices.</summary>
+    OutputDevice = 4,
+
+    /// <summary>音量按钮：点击打开音量菜单，滚轮调节当前媒体来源的音量。 / Volume button: clicking opens the volume menu, the wheel adjusts the current source's volume.</summary>
+    Volume = 5
+}
+
 /// <summary>播放器表面的基础背景方案。 / Basic background style for a player surface.</summary>
 public enum PlayerSurfaceStyle
 {
@@ -466,6 +491,47 @@ public readonly record struct TaskbarExperienceSettings(
     public TaskbarHoverControlsSettings HoverControls { get; init; } = TaskbarHoverControlsSettings.Default;
 
     /// <summary>
+    /// 静置层是否显示输出设备按钮。默认关闭：它与悬停层里的同名按钮是同一件事的两种入口，
+    /// 常驻一个按钮会占掉媒体文字的位置，因此由用户显式打开。
+    /// Whether the rest layer shows the output-device button. Off by default: it is one of two entries for the same thing as the
+    /// hover-layer button, and a permanently visible button takes room from the media text, so the user turns it on explicitly.
+    /// </summary>
+    public bool OutputDeviceVisible { get; init; }
+
+    /// <summary>静置层是否显示音量按钮。默认关闭，理由同 <see cref="OutputDeviceVisible"/>。/ Whether the rest layer shows the volume button. Off by default, for the same reason as <see cref="OutputDeviceVisible"/>.</summary>
+    public bool VolumeVisible { get; init; }
+
+    /// <summary>
+    /// 静置层里可排序的那一段组件的顺序；<see langword="null"/> 表示从未配置（用默认顺序）。
+    /// Order of the reorderable part of the rest layer; <see langword="null"/> means never configured (the default order applies).
+    ///
+    /// 封面与媒体文字不在这个列表里：它们的位置固定在整条媒体栏的最前面（<c>TaskbarRestLayoutPolicy.FixedOrder</c>），
+    /// 用户排不了它们，设置里因此也不存它们的顺序。
+    /// The artwork and the media text are not part of this list: they are pinned to the front of the bar
+    /// (<c>TaskbarRestLayoutPolicy.FixedOrder</c>), the user cannot move them, and their order is therefore not stored either.
+    ///
+    /// 列表里没有出现的已知组件由 <c>TaskbarRestLayoutPolicy.ResolveOrder</c> 按默认顺序补在后面，因此旧设置文件不会
+    /// 因为新版本多了一个组件而把它丢掉；用户给定的相对顺序 MUST NOT 被重排。
+    /// A known component missing from the list is appended in the default order by <c>TaskbarRestLayoutPolicy.ResolveOrder</c>, so an older
+    /// settings file never loses a component a newer version added; the relative order the user gave MUST NOT be rearranged.
+    /// </summary>
+    public IReadOnlyList<TaskbarRestComponent>? RestComponentOrder { get; init; }
+
+    /// <summary>
+    /// 没有媒体（没有 SMTC 来源）时仍然留在任务栏上的静置层组件。这个行为没有开关：没有媒体时媒体栏本来就没有内容可显示，
+    /// 保留哪几个组件是这一份列表唯一的答案。
+    /// The rest-layer components that stay on the taskbar while there is no media (no SMTC source). There is no switch for this behaviour:
+    /// without media the bar has nothing to show anyway, and which components remain is the only question this list answers.
+    ///
+    /// 三种取值 MUST 可区分：<see langword="null"/> = 从未配置（用 <c>TaskbarRestLayoutPolicy.DefaultIdleComponents</c>，
+    /// 即快速启动小音符）；空列表 = 用户关掉了全部（整条媒体栏隐藏）；非空列表 = 只保留列出的组件。
+    /// The three values MUST stay distinguishable: null means never configured (the default is
+    /// <c>TaskbarRestLayoutPolicy.DefaultIdleComponents</c>, the quick-launch note), an empty list means the user turned everything off (which
+    /// hides the whole bar), and a non-empty list keeps exactly those components.
+    /// </summary>
+    public IReadOnlyList<TaskbarRestComponent>? IdleComponents { get; init; }
+
+    /// <summary>
     /// 静置层媒体文字（标题、歌手、歌词）的字号缩放百分比。
     /// Font-size scale percentage for rest-layer media text: title, artist, and lyrics.
     /// </summary>
@@ -524,8 +590,40 @@ public readonly record struct TaskbarExperienceSettings(
             // falls back to the default instead of being clamped to the minimum.
             MediaFontSizePercent = MediaFontSizePercent <= 0
                 ? defaults.MediaFontSizePercent
-                : Math.Clamp(MediaFontSizePercent, MinimumMediaFontSizePercent, MaximumMediaFontSizePercent)
+                : Math.Clamp(MediaFontSizePercent, MinimumMediaFontSizePercent, MaximumMediaFontSizePercent),
+            RestComponentOrder = NormalizeComponentList(RestComponentOrder),
+            IdleComponents = NormalizeComponentList(IdleComponents)
         };
+    }
+
+    /// <summary>
+    /// 归一化一个组件列表：丢掉未定义的成员与重复项，其余顺序原样保留；<see langword="null"/> 保持为 <see langword="null"/>
+    /// （"从未配置"因此不会被写成空列表）。
+    /// Normalizes a component list: undefined members and duplicates are dropped while the remaining order is kept exactly as given;
+    /// <see langword="null"/> stays <see langword="null"/>, so "never configured" is never rewritten as an empty list.
+    /// </summary>
+    private static IReadOnlyList<TaskbarRestComponent>? NormalizeComponentList(IReadOnlyList<TaskbarRestComponent>? components)
+    {
+        if (components is null)
+        {
+            return null;
+        }
+
+        if (components.Count == 0)
+        {
+            return [];
+        }
+
+        var result = new List<TaskbarRestComponent>(components.Count);
+        foreach (var component in components)
+        {
+            if (Enum.IsDefined(component) && !result.Contains(component))
+            {
+                result.Add(component);
+            }
+        }
+
+        return result;
     }
 }
 

@@ -1,23 +1,11 @@
 {
   "schemaVersion": 1,
-  "updatedUtc": "2026-09-19T00:00:00Z",
+  "updatedUtc": "2026-09-21T00:00:00Z",
   "sponsors": [
     {
-      "name": "张三",
-      "tier": "gold",
-      "note": "第一批支持者",
-      "url": "https://github.com/zhangsan",
-      "since": "2026-03"
-    },
-    {
-      "name": "李四",
-      "tier": "silver",
-      "since": "2026-05"
-    },
-    {
-      "name": "王五",
-      "tier": "backer",
-      "note": "匿名支持"
+      "name": "好奇怪",
+      "since": "2026-09"
     }
+
   ]
 }

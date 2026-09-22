@@ -14,9 +14,9 @@ namespace AFMediaBar.Classes.Services.Lyrics;
 /// The candidate closest in duration is chosen, because one hash can carry the original lyrics, a translation, and several
 /// versions at the same time.
 ///
-/// 已知限制：KRC 自带的译文行本轮不解析（只有网易云与 QQ 音乐提供译文），见 `features/歌词.md`。
-/// Known limitation: the translation lines a KRC file may carry are not parsed in this round (only NetEase and QQ Music
-/// supply translations); see `features/歌词.md`.
+/// 已知限制：KRC 自带的译文行本轮不解析（提供译文的是网易云、QQ 音乐与汽水音乐）。
+/// Known limitation: the translation lines a KRC file may carry are not parsed in this round (NetEase, QQ Music and
+/// SodaMusic are the sources that supply translations); .
 /// </summary>
 public sealed class KugouLyricsProvider : ILyricsProvider
 {

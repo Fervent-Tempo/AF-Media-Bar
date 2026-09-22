@@ -10,7 +10,6 @@ using System.Windows.Threading;
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
-using Wpf.Ui.Appearance;
 
 namespace AFMediaBar.Components;
 
@@ -89,14 +88,14 @@ public partial class TaskBarMediaControl
     /// <summary>
     /// 按当前内容与可用宽度决定一个文本元素用哪种方式推进，并把该写回的属性写回。
     ///
-    /// 正在逐字擦亮的歌词行用跟随式（只丢弃已唱过的字，已唱段始终是窗口前缀，擦亮因此永远精确）；
+    /// 正在按歌词时间轴推进的歌词行用跟随式（只丢弃已唱过的字，已唱段始终是窗口前缀）；擦亮层即使隐藏也沿用同一轨迹。
     /// 其余元素用轮转式（没有"唱到哪"的概念，循环滚动才能反复读到）。
     /// Decides how one text element advances for its current content and available width, and writes back the properties that belong to
     /// that decision.
     ///
-    /// A lyric line that is being revealed syllable by syllable uses the follow mode, which only discards characters that are already
-    /// sung and therefore keeps the sung run a prefix of the window, so the reveal stays exact. Everything else uses rotation, which
-    /// loops because it has no notion of "how far the singing has reached".
+    /// A lyric line advancing on its lyric timeline uses the follow mode, which only discards characters that are already sung and keeps
+    /// the sung run as a prefix of the window. Hiding the highlight layer keeps this same trajectory. Everything else uses rotation,
+    /// which loops because it has no notion of "how far the singing has reached".
     /// </summary>
     /// <param name="state">该元素的推进状态。/ Advance state of that element.</param>
     /// <param name="enabled">当前是否允许推进。/ Whether advancing is currently allowed.</param>
@@ -120,7 +119,7 @@ public partial class TaskBarMediaControl
         var overflow = enabled && available > 0
             ? TaskbarExperiencePolicy.CalculateMarqueeOverflow(measured, available)
             : 0;
-        var following = overflow > 1 && state.Base.Length > 0 && IsFollowMarqueeElement(element) && _lyricHighlightActive;
+        var following = overflow > 1 && state.Base.Length > 0 && IsFollowMarqueeElement(element) && _lyricTimelineActive;
         // 歌词行的推进属于亮区：暂停时亮区停住，歌词也 MUST NOT 改走轮转自己跑起来（那会让暂停中的歌词一直循环滚动），
         // 此时它按普通裁剪显示整行开头。标题与歌手没有"唱到哪"这种进度，暂停时照常轮转。
         // A lyric row advances with the reveal: while playback is paused the reveal stands still, and the row MUST NOT fall back to rotating
@@ -203,7 +202,7 @@ public partial class TaskBarMediaControl
     private static bool ShowsMarqueeWindow(MarqueeTextState state) =>
         string.Equals(state.Element.Text, state.Window, StringComparison.Ordinal);
 
-    /// <summary>该元素是否使用跟随式推进（正在逐字擦亮的歌词行）。 / Whether the element uses the follow mode, which means the lyric line currently being revealed.</summary>
+    /// <summary>该元素是否可使用歌词时间轴跟随推进。/ Whether the element can follow the lyric timeline.</summary>
     /// <param name="element">文本元素。/ Text element.</param>
     private bool IsFollowMarqueeElement(TextBlock element) => ReferenceEquals(element, SongLyrics);
 
@@ -377,9 +376,9 @@ public partial class TaskBarMediaControl
     }
 
     /// <summary>
-    /// 读取正在逐字擦亮的歌词行窗口：窗口内已唱段的裁剪宽度与窗口整体宽度。没有启用跟随时返回 false，
+    /// 读取按歌词时间轴跟随的主歌词行窗口：窗口内已唱段的裁剪宽度与窗口整体宽度。没有启用跟随时返回 false，
     /// 调用方按整行前缀换算擦亮。
-    /// Reads the window of the lyric line that is being revealed: the clip width of the sung run inside it and the window's total
+    /// Reads the window of the main lyric line that follows its timeline: the clip width of the sung run inside it and the window's total
     /// width. Returns false when the follow mode is off, in which case the caller converts the reveal from the whole line instead.
     /// </summary>
     /// <param name="sungWidthDip">窗口内已唱段的宽度（DIP）。/ Width of the sung run inside the window, in DIP.</param>
@@ -962,18 +961,17 @@ public partial class TaskBarMediaControl
     }
 
     /// <summary>复用原 TaskBarMediaControl 的 hover 色彩和节奏，但将效果限制在单个组件。</summary>
-    private void AnimateComponentHover(Border surface, bool isHovered)
+    private void AnimateComponentHover(Border surface, bool isHovered, bool immediate = false)
     {
         if (isHovered && !CanUseTaskbarComponentHover())
             return;
 
-        var isDark = ApplicationThemeManager.GetSystemTheme() == SystemTheme.Dark;
         var backgroundColor = isHovered
-            ? isDark ? Color.FromArgb(197, 255, 255, 255) : Colors.White
+            ? _taskbarHoverPalette.Surface
             : Colors.Transparent;
-        var backgroundOpacity = isHovered ? isDark ? 0.075 : 0.6 : 0;
-        var borderColor = isHovered ? Color.FromArgb(93, 255, 255, 255) : Colors.Transparent;
-        var borderOpacity = isHovered ? isDark ? 0.25 : 1 : 0;
+        var backgroundOpacity = isHovered ? _taskbarHoverPalette.SurfaceOpacity : 0;
+        var borderColor = isHovered ? _taskbarHoverPalette.Border : Colors.Transparent;
+        var borderOpacity = isHovered ? _taskbarHoverPalette.BorderOpacity : 0;
         var easingMode = isHovered ? EasingMode.EaseOut : EasingMode.EaseInOut;
 
         if (surface.Background is not SolidColorBrush background || background.IsFrozen)
@@ -988,7 +986,7 @@ public partial class TaskBarMediaControl
         }
 
         var motion = CurrentMotion;
-        if (!motion.UseTransitions)
+        if (immediate || !motion.UseTransitions)
         {
             background.BeginAnimation(SolidColorBrush.ColorProperty, null);
             background.BeginAnimation(SolidColorBrush.OpacityProperty, null);
@@ -1028,6 +1026,16 @@ public partial class TaskBarMediaControl
         });
     }
 
+    private void RefreshTaskbarHoverAppearance()
+    {
+        AnimateComponentHover(SongImageHoverOverlay, SongImageBorder.IsMouseOver, immediate: true);
+        AnimateComponentHover(SongInfoHoverOverlay, IsTextSurfaceHovered, immediate: true);
+        AnimateComponentHover(TaskbarSpectrumHoverSurface, TaskbarSpectrumHoverSurface.IsMouseOver, immediate: true);
+        AnimateComponentHover(TaskbarPerformanceHoverSurface, TaskbarPerformanceHoverSurface.IsMouseOver, immediate: true);
+        AnimateComponentHover(TaskbarOutputDeviceHoverSurface, TaskbarOutputDeviceHoverSurface.IsMouseOver, immediate: true);
+        AnimateComponentHover(TaskbarVolumeHoverSurface, TaskbarVolumeHoverSurface.IsMouseOver, immediate: true);
+    }
+
     private void SongImageBorder_MouseEnter(object sender, MouseEventArgs e) =>
         AnimateComponentHover(SongImageHoverOverlay, true);
 
@@ -1036,17 +1044,24 @@ public partial class TaskBarMediaControl
         AnimateComponentHover(SongImageHoverOverlay, false);
 
         // 快速启动提示是手动打开的（滚轮预览需要它在指针不动时也出现），因此离开音符时要显式收起，
-        // 否则它会留在屏幕上直到下一次交互。
+        // 否则它会留在屏幕上直到下一次交互。封面的滚轮提示同理：组合键按住期间它会一直被重申，
+        // 指针离开封面后没有新的鼠标事件能让它自己关掉。
         // The quick-launch tooltip is opened by hand, because a wheel preview has to appear while the pointer is stationary, so it is closed
-        // explicitly when the pointer leaves; otherwise it would stay on screen until the next interaction.
+        // explicitly when the pointer leaves; otherwise it would stay on screen until the next interaction. The artwork's wheel tooltip is
+        // the same: the chord keeps re-asserting it, and once the pointer leaves the artwork no mouse event would close it.
         _quickLaunchTooltip.IsOpen = false;
+        _artworkWheelTooltip.IsOpen = false;
     }
 
+    // 静置层的四个小组件（频谱、性能、输出设备、音量）共用这两个处理器，因此高亮必须落在事件源上：
+    // 写死频谱表面会让悬停设备按钮时亮起的是频谱。
+    // The rest layer's four widgets (spectrum, performance, output device, volume) share these two handlers, so the highlight has to land
+    // on the event source: naming the spectrum surface outright would light up the spectrum while the device button is hovered.
     private void TaskbarSpectrumHoverSurface_MouseEnter(object sender, MouseEventArgs e) =>
-        AnimateComponentHover(TaskbarSpectrumHoverSurface, true);
+        AnimateComponentHover((Border)sender, true);
 
     private void TaskbarSpectrumHoverSurface_MouseLeave(object sender, MouseEventArgs e) =>
-        AnimateComponentHover(TaskbarSpectrumHoverSurface, false);
+        AnimateComponentHover((Border)sender, false);
 
     private void TaskbarPerformanceHoverSurface_MouseEnter(object sender, MouseEventArgs e) =>
         AnimateComponentHover(TaskbarPerformanceHoverSurface, true);
@@ -1118,12 +1133,27 @@ public partial class TaskBarMediaControl
 
     private void ShowTaskbarHoverLayer()
     {
+        // 宿主正在跟随任务栏动画时不开悬停层：展开会给整块文字区装上 BlurEffect 并播一段裁剪动画，
+        // 这两样都与 Shell 的任务栏动画抢同一条合成管线，正是"触边收起时卡顿"里最贵的那一笔。
+        // The hover layer is not opened while the host is following the taskbar animation: revealing it installs a BlurEffect on the whole text area and
+        // plays a clip animation, and both compete for the same compositing pipeline as the Shell's taskbar animation — the most expensive part of the
+        // jank seen when the taskbar hides right after a hover.
+        if (_isHostVisibilitySuspended)
+            return;
+
         if (!_isConnected || _currentMode != WindowMode.Taskbar || _isVertical ||
             !SettingsManager.Current.TaskbarExperience.HoverLayerEnabled ||
             (!SongInfoStackPanel.IsMouseOver && !HoverRevealHost.IsMouseOver))
             return;
 
-        ApplyTaskbarExperienceSettings();
+        // 展开只需要"跑马灯按当前文字区宽度重新判定一次"：媒体栏几何每次快照都会重算（悬停层宽度、文字宽度、各处 Margin 都在那里写入），
+        // 因此这里 MUST NOT 再跑一遍完整的体验设置——那会连带重建频谱、重排整条几何并走一次尺寸指纹，正好落在指针离开任务栏、
+        // Shell 准备开始收起动画的那一刻，而这一刻宿主的冻结请求还排在 UI 线程的队列里。
+        // The reveal only needs the marquee re-evaluated against the current text width: the bar's geometry is recomputed on every snapshot (the hover
+        // layer's width, the text width, and every margin are written there), so this MUST NOT run a full experience pass — that would rebuild the
+        // spectrum, re-lay out the whole bar, and run the size fingerprint exactly at the moment the pointer leaves the taskbar and the Shell is about to
+        // start its hide animation, when the host's freeze request is still queued behind that work on the UI thread.
+        ApplyMarqueeLayout(Math.Max(0, SongInfoStackPanel.Width));
         _isTaskbarHoverVisible = true;
         _hoverHideFallbackTimer.Stop();
         AnimateComponentHover(SongInfoHoverOverlay, true);
@@ -1160,9 +1190,9 @@ public partial class TaskBarMediaControl
                                (SongInfoStackPanel.IsMouseOver || TaskbarDirectFullPanelHandle.IsMouseOver);
         if (immediate || HoverRevealHost.Visibility != Visibility.Visible)
         {
-            FinishTaskbarHoverLayerHide();
+            FinishTaskbarHoverLayerHide(immediate);
             AnimateSongInfoCovered(false, immediate: true);
-            AnimateComponentHover(SongInfoHoverOverlay, keepRegularHover);
+            AnimateComponentHover(SongInfoHoverOverlay, keepRegularHover, immediate);
             AnimateDirectFullPanelHandle(keepRegularHover, immediate: true);
             return;
         }
@@ -1202,7 +1232,7 @@ public partial class TaskBarMediaControl
     /// Finishes hiding the hover layer: zeroes the clip and the width, hides it, and drops hit testing. It is safe to call repeatedly,
     /// since both the animation callback and the fallback timer land here.
     /// </summary>
-    private void FinishTaskbarHoverLayerHide()
+    private void FinishTaskbarHoverLayerHide(bool immediate = false)
     {
         _hoverHideFallbackTimer.Stop();
         HoverRevealClip.BeginAnimation(RectangleGeometry.RectProperty, null);
@@ -1213,9 +1243,32 @@ public partial class TaskBarMediaControl
         _isTaskbarHoverVisible = false;
         if (!SongInfoStackPanel.IsMouseOver && !TaskbarDirectFullPanelHandle.IsMouseOver)
         {
-            AnimateComponentHover(SongInfoHoverOverlay, false);
-            AnimateDirectFullPanelHandle(false);
+            AnimateComponentHover(SongInfoHoverOverlay, false, immediate);
+            AnimateDirectFullPanelHandle(false, immediate);
         }
+    }
+
+    /// <summary>
+    /// 立即结束所有任务栏指针反馈，不留任何 Blur、裁剪、颜色动画或手动打开的提示窗继续跑。
+    /// Immediately settles every taskbar pointer visual, leaving no blur, clip, color animation, or manually opened tooltip running.
+    /// </summary>
+    private void SettleTaskbarPointerVisuals()
+    {
+        _hoverOpenTimer.Stop();
+        _hoverCloseTimer.Stop();
+        _hoverHideFallbackTimer.Stop();
+        _wheelTooltipTimer.Stop();
+        CloseWheelTooltips();
+        _quickLaunchTooltip.IsOpen = false;
+        HideTaskbarHoverLayer(immediate: true);
+        AnimateSongInfoCovered(false, immediate: true);
+        AnimateDirectFullPanelHandle(false, immediate: true);
+        AnimateComponentHover(SongImageHoverOverlay, false, immediate: true);
+        AnimateComponentHover(SongInfoHoverOverlay, false, immediate: true);
+        AnimateComponentHover(TaskbarSpectrumHoverSurface, false, immediate: true);
+        AnimateComponentHover(TaskbarPerformanceHoverSurface, false, immediate: true);
+        AnimateComponentHover(TaskbarOutputDeviceHoverSurface, false, immediate: true);
+        AnimateComponentHover(TaskbarVolumeHoverSurface, false, immediate: true);
     }
 
     /// <summary>
@@ -1226,14 +1279,12 @@ public partial class TaskBarMediaControl
     /// </summary>
     private void InteractionSurface_MouseLeave(object sender, MouseEventArgs e)
     {
-        _hoverOpenTimer.Stop();
-        if (!_isTaskbarHoverVisible && HoverRevealHost.Visibility != Visibility.Visible)
-        {
-            _hoverCloseTimer.Stop();
-            return;
-        }
-
-        HideTaskbarHoverLayer();
+        // 这个通知发生在 Shell 因指针离开任务栏而开始自动收起之前，是唯一个能在动画前清掉文字区 Blur 与裁剪动画的时机。
+        // 等任务栏矩形开始变化后再清理已经太晚，WPF 与 Shell 会同时提交合成帧，这正是“交互后离开才偶发留角”的条件。
+        // This notification arrives before the Shell starts auto-hiding after the pointer leaves the taskbar, making it the only point where the text
+        // blur and clip animation can be cleared ahead of that motion. Waiting for the taskbar rectangle to change is too late: WPF and the Shell then
+        // submit composition frames together, which is precisely why the sliver occurs only after interacting with and leaving the bar.
+        SettleTaskbarPointerVisuals();
     }
 
 }

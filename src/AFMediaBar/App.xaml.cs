@@ -126,6 +126,7 @@ namespace AFMediaBar
                 services.AddSingleton<ShellTrayIconService>();
                 services.AddSingleton<NativeMouseInputMonitor>();
                 services.AddSingleton<NativeWindowBackdropAdapter>();
+                services.AddSingleton<AppIconService>();
                 services.AddSingleton<WindowAppearanceService>();
                 services.AddSingleton<ScreenBackgroundSampler>();
                 services.AddSingleton<SettingsPersistenceService>();

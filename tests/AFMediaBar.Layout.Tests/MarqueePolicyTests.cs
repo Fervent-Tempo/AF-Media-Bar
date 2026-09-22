@@ -8,9 +8,9 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace AFMediaBar.Layout.Tests;
 
 /// <summary>
-/// 跑马灯的两种推进方式：轮转式（标题、歌手、第二行歌词、没有逐字时间轴的歌词行）与跟随式（正在逐字擦亮的歌词行）。
+/// 跑马灯的两种推进方式：轮转式（标题、歌手、第二行歌词、没有可用时间窗的歌词行）与跟随式（按歌词时间轴推进的主歌词行）。
 /// The marquee's two advance modes: rotation for the title, artist, second lyric row, and lyric lines without a syllable timeline, and
-/// the follow mode for the lyric line currently being revealed.
+/// the follow mode for the main lyric line advancing on its timeline.
 /// </summary>
 [TestClass]
 public sealed class MarqueePolicyTests

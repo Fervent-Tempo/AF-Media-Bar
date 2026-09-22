@@ -77,12 +77,28 @@ public sealed class SystemMetricsMonitorService : IDisposable, IMemoryPrunable
         var now = DateTime.UtcNow;
         var due = _subscriptions.Where(item => ReferenceEquals(item, force) || item.NextDueUtc <= now).ToArray();
         if (due.Length == 0) return;
-        var includeGpu = _subscriptions.Any(item => item.Metrics.Contains(MetricKind.SystemGpu));
+        var includeGpu = _subscriptions.Any(item => !item.IsDisposed && item.Metrics.Contains(MetricKind.SystemGpu));
         var snapshot = _sampler.Sample(includeGpu);
         foreach (var item in due)
         {
+            // 前一个回调可能同步关闭另一个显示器宿主；快照里的已释放订阅绝不能再回调旧控件。
+            // A preceding callback may synchronously close another monitor host; a disposed subscription captured in this snapshot must not reach stale UI.
+            if (item.IsDisposed)
+                continue;
+
             item.NextDueUtc = now + item.Interval;
-            item.Callback(snapshot);
+            try
+            {
+                item.Callback(snapshot);
+            }
+            catch (Exception exception)
+            {
+                // 一个显示器上的控件失效不能中断其余订阅者或 DispatcherTimer；记录后让下一项继续。
+                // A stale control on one monitor must not interrupt other subscribers or the DispatcherTimer; log it and continue.
+                AppLogService.Current?.Warn(
+                    "Metrics",
+                    $"性能采样订阅回调失败 / metrics subscriber callback failed: {exception.Message}");
+            }
         }
     }
 
@@ -124,6 +140,7 @@ public sealed class SystemMetricsMonitorService : IDisposable, IMemoryPrunable
         public Action<SystemMetricsSnapshot> Callback { get; } = callback;
         public DateTime NextDueUtc { get; set; }
         private bool _disposed;
+        public bool IsDisposed => _disposed;
         public void Dispose()
         {
             if (_disposed) return;

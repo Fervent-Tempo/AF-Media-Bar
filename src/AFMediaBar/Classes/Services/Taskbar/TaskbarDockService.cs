@@ -221,8 +221,10 @@ public class TaskbarDockService : ITaskbarDockService
     }
 
     /// <summary>
-    /// 将屏幕物理坐标转换为任务栏客户区坐标，并异步定位已停靠窗口。
-    /// Converts physical screen coordinates into taskbar client coordinates and positions the docked window asynchronously.
+    /// 将屏幕物理坐标转换为任务栏客户区坐标，并定位已停靠窗口。调用在窗口所属的 UI 线程上同步完成，
+    /// 不强制显示窗口；定位与显隐因此可以保持"先落地稳定几何，再恢复显示"的顺序。
+    /// Converts physical screen coordinates to taskbar-client coordinates and positions the docked window. The call completes synchronously on the UI
+    /// thread that owns the window and never forces it visible, preserving the ordering "land stable geometry first, then restore visibility".
     /// </summary>
     public void SetWindowPosition(IntPtr windowHandle, IntPtr taskbarHandle, RECT taskbarRect, int width, int height)
     {
@@ -237,7 +239,7 @@ public class TaskbarDockService : ITaskbarDockService
         SetWindowPos(windowHandle, 0,
             containerPos.X, containerPos.Y,
             width, height,
-            SWP_NOZORDER | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS | SWP_SHOWWINDOW);
+            SWP_NOZORDER | SWP_NOACTIVATE);
     }
 
     /// <summary>

@@ -13,6 +13,11 @@
         ShowInTaskbar="False"
         AllowsTransparency="True"
         Background="Transparent"
+        RenderOptions.ClearTypeHint="Enabled"
+        TextOptions.TextRenderingMode="ClearType"
+        TextOptions.TextFormattingMode="Display"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
         ContextMenuOpening="Window_ContextMenuOpening"
         Visibility="Collapsed">
     <Window.ContextMenu>

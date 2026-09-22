@@ -6,6 +6,24 @@
 
 格式遵循 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)，项目使用 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)。
 
+## [1.2.1] - 2026-09-21
+
+以修复为主：任务栏自动隐藏动画、截图错位与多显示器显示。
+
+### 新增
+
+- 可在所有已启用的任务栏上同时显示。
+- 逐字高亮开关：关闭后歌词仍按时间轴滚动，轨迹不变。
+
+### 修复
+
+- 任务栏自动隐藏动画：触边收起时的卡顿与跳位。
+- 截图或录屏时媒体栏错位、折叠。
+- 切换显示器后性能监测组件失效。
+- 后台内存整理与日志队列释放的竞争。
+- 设置页在说明条资源缺失时崩溃；若干窗口稳定性问题。
+- 滚轮手势与提示收窄到封面与文字区；完整层不再省略信息。
+
 ## [1.2.0] - 2026-09-19
 
 界面与交互重做后的第一个版本：任务栏歌词、安装程序与目标显示器选择是新增能力，设置页结构、外观与交互按功能重新组织。
@@ -123,6 +141,7 @@
 - 将原生库查找限制到 System32。
 - 移除对媒体提供的 `.exe` 来源标识符的通用执行。
 
+[1.2.1]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.0.1...v1.1.0

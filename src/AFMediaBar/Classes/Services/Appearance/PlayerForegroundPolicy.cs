@@ -4,13 +4,12 @@ using AFMediaBar.Classes.Settings;
 namespace AFMediaBar.Classes.Services;
 
 /// <summary>根据实际背景计算出的播放器前景决策。/ Player-foreground decision calculated from the actual background.</summary>
-public readonly record struct PlayerForegroundDecision(bool UsesLightText, bool NeedsContrastShadow);
+public readonly record struct PlayerForegroundDecision(bool UsesLightText);
 
 /// <summary>播放器最终采用的前景呈现方式。/ Final foreground presentation used by the player.</summary>
 public readonly record struct PlayerForegroundPresentation(
     bool UsesSystemColors,
-    bool UsesLightText,
-    bool NeedsContrastShadow);
+    bool UsesLightText);
 
 /// <summary>
 /// 根据背景像素、用户模式和高对比度状态选择播放器文字前景。
@@ -18,17 +17,7 @@ public readonly record struct PlayerForegroundPresentation(
 /// </summary>
 public static class PlayerForegroundPolicy
 {
-    private const double RequiredContrast = 4.5;
     private const double Hysteresis = 0.025;
-
-    /// <summary>
-    /// 关闭对比度阴影所需的对比度。阴影开关没有迟滞时，采样值在阈值附近来回跨过就会
-    /// 让阴影反复开关，而阴影压在字形边缘上会被看成"文字时清时糊"。
-    /// Contrast required to turn the contrast shadow back off. Without this exit band, a sample hovering around
-    /// the threshold toggles the shadow repeatedly, and a shadow sitting on the glyph edges reads as text that
-    /// alternates between crisp and blurry.
-    /// </summary>
-    private const double ShadowExitContrast = 6.5;
     private static readonly double DarkTextLuminance = RelativeLuminance(Color.FromRgb(0x1C, 0x1C, 0x1C));
     private static readonly double SwitchingLuminance =
         Math.Sqrt(1.05 * (DarkTextLuminance + 0.05)) - 0.05;
@@ -83,24 +72,7 @@ public static class PlayerForegroundPolicy
         else if (previous is { UsesLightText: false } && median < SwitchingLuminance - Hysteresis)
             usesLightText = true;
 
-        // Bright patches are the weakest points for white text; dark patches are the weakest
-        // points for dark text. Robust percentiles ignore a small number of glyph/icon samples.
-        var adverseLuminance = usesLightText
-            ? Percentile(luminances, 0.8)
-            : Percentile(luminances, 0.2);
-        var contrast = usesLightText
-            ? 1.05 / (adverseLuminance + 0.05)
-            : (adverseLuminance + 0.05) / (DarkTextLuminance + 0.05);
-
-        // 对比度阴影同样带迟滞：进入阈值是必需对比度，退出阈值更高；两个方向都不满足时保留上一次决定。
-        // The contrast shadow carries hysteresis too: it enters below the required contrast and only leaves above the
-        // higher exit contrast, keeping the previous decision inside the band.
-        var needsContrastShadow = previous?.NeedsContrastShadow ?? false;
-        needsContrastShadow = needsContrastShadow
-            ? contrast < ShadowExitContrast
-            : contrast < RequiredContrast;
-
-        return new PlayerForegroundDecision(usesLightText, needsContrastShadow);
+        return new PlayerForegroundDecision(usesLightText);
     }
 
     /// <summary>
@@ -114,15 +86,15 @@ public static class PlayerForegroundPolicy
         PlayerForegroundDecision? automaticDecision)
     {
         if (highContrast)
-            return new PlayerForegroundPresentation(true, themeUsesLightText, false);
+            return new PlayerForegroundPresentation(true, themeUsesLightText);
 
         return mode switch
         {
-            PlayerForegroundMode.LightText => new PlayerForegroundPresentation(false, true, false),
-            PlayerForegroundMode.DarkText => new PlayerForegroundPresentation(false, false, false),
+            PlayerForegroundMode.LightText => new PlayerForegroundPresentation(false, true),
+            PlayerForegroundMode.DarkText => new PlayerForegroundPresentation(false, false),
             _ when automaticDecision is { } decision =>
-                new PlayerForegroundPresentation(false, decision.UsesLightText, decision.NeedsContrastShadow),
-            _ => new PlayerForegroundPresentation(false, themeUsesLightText, false)
+                new PlayerForegroundPresentation(false, decision.UsesLightText),
+            _ => new PlayerForegroundPresentation(false, themeUsesLightText)
         };
     }
 

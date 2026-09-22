@@ -6,6 +6,24 @@ All notable changes to AF Media Bar are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-09-21
+
+A fix release: the taskbar auto-hide animation, misplacement while capturing the screen, and multi-monitor display.
+
+### Added
+
+- The bar can be shown on every enabled taskbar at once.
+- A syllable-highlight switch: turning it off keeps lyrics scrolling on the same timeline and trajectory.
+
+### Fixed
+
+- Taskbar auto-hide animation: stutter and jumping when the bar hides against the screen edge.
+- The bar moving or collapsing while a screenshot or screen recorder is open.
+- The performance-metrics component going dead after switching displays.
+- A race between background memory pruning and releasing the log queue.
+- The settings page crashing when a callout resource is missing, plus several window-stability issues.
+- Wheel gestures and their tooltip scoped to the artwork and text region; the full layer no longer trims information.
+
 ## [1.2.0] - 2026-09-19
 
 The first release of the rebuilt interface and interaction model: taskbar lyrics, an installer, and target-display selection are new capabilities, and the settings pages, appearance, and interactions were reorganised by function.
@@ -123,6 +141,7 @@ The first release of the rebuilt interface and interaction model: taskbar lyrics
 - Restricted native library lookup to System32.
 - Removed generic execution of media-provided `.exe` source identifiers.
 
+[1.2.1]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.0.1...v1.1.0
