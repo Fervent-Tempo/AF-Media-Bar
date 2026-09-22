@@ -13,7 +13,7 @@ Reliability fixes: media-session self-healing, spectrum level calibration, and l
 ### Fixed
 
 - Losing media sessions permanently after a single missed SMTC event (for example at a track change): an auto-reconcile watchdog now heals on a one-second cadence for thirty seconds after a session closes and falls back to five seconds, and it rebuilds the media catalog when the third-party library is stuck beyond what ForceUpdate can fix.
-- The spectrum standing still at its minimum bar height while listening at low volume: the level mapping now uses a relative-dB window around a reference peak, so bar heights no longer shrink with the system volume; the spectrum also follows the default output device when another program switches it (the endpoint is checked every two seconds and the capture is rebuilt on a change).
+- The spectrum standing still at its minimum bar height while listening at low volume: the level mapping now uses a relative-dB window around a reference peak, so bar heights no longer shrink with the system volume; the capture also follows the device that is actually audible (an application stream outranks the system mixer's echo, and the current endpoint is kept within one rank), so a virtual audio driver routing music to a non-default endpoint no longer leaves the spectrum silent (the target is checked every two seconds and the capture is rebuilt on a change).
 - Lyrics not advancing when a player stops reporting playback progress (its timeline stays at the track start): lyric line selection now uses the same extrapolated position as the progress bar and is advanced by the existing 250 ms progress timer.
 
 ## [1.2.1] - 2026-09-21
