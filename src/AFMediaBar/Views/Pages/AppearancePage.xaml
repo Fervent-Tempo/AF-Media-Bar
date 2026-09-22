@@ -96,6 +96,7 @@
                                 MinWidth="200"
                                 SelectedValue="{Binding ViewModel.LatinFont, Mode=TwoWay}"
                                 SelectedValuePath="Tag">
+                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.LatinFont.FollowSystem}" Tag="{x:Static settings:LatinFontPreset.SystemDefault}" />
                                 <ComboBoxItem Content="Segoe UI" Tag="{x:Static settings:LatinFontPreset.SegoeUi}" />
                                 <ComboBoxItem Content="Arial" Tag="{x:Static settings:LatinFontPreset.Arial}" />
                                 <ComboBoxItem Content="Calibri" Tag="{x:Static settings:LatinFontPreset.Calibri}" />

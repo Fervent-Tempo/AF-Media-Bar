@@ -43,12 +43,13 @@ public enum AccentColorMode
 /// <summary>西文字体预设。 / Latin font preset.</summary>
 public enum LatinFontPreset
 {
-    SegoeUi = 0,
-    Arial = 1,
-    Calibri = 2,
-    Verdana = 3,
-    Consolas = 4,
-    TimesNewRoman = 5
+    SystemDefault = 0,
+    SegoeUi = 1,
+    Arial = 2,
+    Calibri = 3,
+    Verdana = 4,
+    Consolas = 5,
+    TimesNewRoman = 6
 }
 
 /// <summary>中文字体预设。 / CJK font preset.</summary>
@@ -148,7 +149,7 @@ public readonly record struct AppearanceSettings(
     public const string DefaultAccentColorHex = "#0078D4";
 
     public static AppearanceSettings Default { get; } = new(
-        LatinFontPreset.SegoeUi,
+        LatinFontPreset.SystemDefault,
         CjkFontPreset.SystemDefault,
         400,
         PlayerForegroundMode.Automatic,
@@ -211,12 +212,14 @@ public readonly record struct AppearanceSettings(
     {
         var latin = LatinFont switch
         {
+            LatinFontPreset.SystemDefault => systemFontFamily,
+            LatinFontPreset.SegoeUi => "Segoe UI Variable Text, Segoe UI",
             LatinFontPreset.Arial => "Arial",
             LatinFontPreset.Calibri => "Calibri",
             LatinFontPreset.Verdana => "Verdana",
             LatinFontPreset.Consolas => "Consolas",
             LatinFontPreset.TimesNewRoman => "Times New Roman",
-            _ => "Segoe UI Variable Text, Segoe UI"
+            _ => systemFontFamily
         };
         var cjk = CjkFont switch
         {
@@ -233,6 +236,7 @@ public readonly record struct AppearanceSettings(
         {
             latin,
             cjk,
+            "Microsoft YaHei UI",
             "Microsoft JhengHei UI",
             "Yu Gothic UI",
             "Malgun Gothic"

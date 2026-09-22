@@ -356,8 +356,8 @@
                         TextOptions.TextRenderingMode="ClearType"
                         TextOptions.TextFormattingMode="Display"
                         Cursor="Arrow" Visibility="Collapsed">
-                    <TextBlock x:Name="TaskbarPerformanceText" Text="MEM —" FontSize="11"
-                               FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    <TextBlock x:Name="TaskbarPerformanceText" Text="MEM —" FontSize="12"
+                               FontWeight="{DynamicResource AppTextMediumFontWeight}" HorizontalAlignment="Center" VerticalAlignment="Center"
                                TextTrimming="CharacterEllipsis" IsHitTestVisible="False"/>
                 </Border>
             </Border>
