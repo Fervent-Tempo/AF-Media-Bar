@@ -1633,34 +1633,14 @@ namespace AFMediaBar.Components
 
         private void ApplyContrastShadow(bool enabled, bool usesLightText)
         {
-            Effect? effect = null;
-            if (enabled)
-            {
-                // 阴影只负责对比度，不参与字形：模糊半径保持在 1 DIP，并且必须离开字形轮廓。
-                // ShadowDepth 为 0 时模糊副本压在字形正中，会把每条笔画的边缘吃掉，用户看到的就是"文字发虚"；
-                // 偏移 1 DIP 后阴影落在轮廓外侧，字形边缘保持干净。
-                // The shadow exists for contrast, not for glyph shape: keep the blur radius at 1 DIP but move it off the
-                // glyph outline. With ShadowDepth 0 the blurred copy sits centered under the glyphs and eats every stroke
-                // edge, which reads as blurry text; a 1 DIP offset keeps the glyph edges clean.
-                var shadow = new DropShadowEffect
-                {
-                    Color = usesLightText ? Colors.Black : Colors.White,
-                    BlurRadius = 1,
-                    ShadowDepth = 1,
-                    Direction = 315,
-                    Opacity = 0.85,
-                    RenderingBias = RenderingBias.Quality
-                };
-                shadow.Freeze();
-                effect = shadow;
-            }
-
-            SongTitle.Effect = effect;
-            SongArtist.Effect = effect;
-            SongLyrics.Effect = effect;
-            SongLyricsHighlight.Effect = effect;
-            SongLyricsSecondary.Effect = effect;
-            TaskbarPerformanceText.Effect = effect;
+            // DropShadowEffect 强行把 TextBlock 渲染到离屏位图表面，会彻底关闭 WPF 的 DirectWrite ClearType 次像素渲染管线，
+            // 造成文字边缘严重发虚、失真与阶梯状锯齿。保持 Effect 为 null，以确保 ClearType 次像素抗锯齿全时生效。
+            SongTitle.Effect = null;
+            SongArtist.Effect = null;
+            SongLyrics.Effect = null;
+            SongLyricsHighlight.Effect = null;
+            SongLyricsSecondary.Effect = null;
+            TaskbarPerformanceText.Effect = null;
         }
 
 

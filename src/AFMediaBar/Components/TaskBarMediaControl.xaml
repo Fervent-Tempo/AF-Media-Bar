@@ -8,8 +8,9 @@
              mc:Ignorable="d"
              FontFamily="{DynamicResource AppTextFontFamily}"
              FontWeight="{DynamicResource AppTextFontWeight}"
-             TextOptions.TextRenderingMode="Auto"
-             TextOptions.TextFormattingMode="Ideal"
+             RenderOptions.ClearTypeHint="Enabled"
+             TextOptions.TextRenderingMode="ClearType"
+             TextOptions.TextFormattingMode="Display"
              UseLayoutRounding="True"
              SnapsToDevicePixels="True">
 
@@ -173,7 +174,10 @@
                         <Grid x:Name="SongInfoSurface"
                               Width="{Binding ElementName=SongInfoStackPanel, Path=Width}"
                               Height="{Binding ElementName=SongInfoStackPanel, Path=Height}">
-                            <StackPanel x:Name="SongMetadataPanel">
+                            <StackPanel x:Name="SongMetadataPanel"
+                                        RenderOptions.ClearTypeHint="Enabled"
+                                        TextOptions.TextRenderingMode="ClearType"
+                                        TextOptions.TextFormattingMode="Display">
                                 <Canvas x:Name="SongTitleContainer" Height="19" ClipToBounds="True" Cursor="Hand" Tag="MediaAction"
                                         MouseLeftButtonUp="SongTitleContainer_MouseLeftButtonUp">
                                     <TextBlock x:Name="SongTitle" Text=""
@@ -189,7 +193,10 @@
                                 </Canvas>
                             </StackPanel>
 
-                            <Grid x:Name="SongLyricsPanel" Visibility="Collapsed">
+                            <Grid x:Name="SongLyricsPanel" Visibility="Collapsed"
+                                  RenderOptions.ClearTypeHint="Enabled"
+                                  TextOptions.TextRenderingMode="ClearType"
+                                  TextOptions.TextFormattingMode="Display">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="*" />
                                     <RowDefinition Height="*" />
@@ -345,6 +352,9 @@
                         Width="74" Height="24"
                         HorizontalAlignment="Center" VerticalAlignment="Center"
                         CornerRadius="12" Background="#16000000"
+                        RenderOptions.ClearTypeHint="Enabled"
+                        TextOptions.TextRenderingMode="ClearType"
+                        TextOptions.TextFormattingMode="Display"
                         Cursor="Arrow" Visibility="Collapsed">
                     <TextBlock x:Name="TaskbarPerformanceText" Text="MEM —" FontSize="11"
                                FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -441,6 +451,9 @@
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
                         CornerRadius="5"
+                        RenderOptions.ClearTypeHint="Enabled"
+                        TextOptions.TextRenderingMode="ClearType"
+                        TextOptions.TextFormattingMode="Display"
                         ClipToBounds="True">
                     <Grid>
                         <Grid Margin="5,5,6,3">
