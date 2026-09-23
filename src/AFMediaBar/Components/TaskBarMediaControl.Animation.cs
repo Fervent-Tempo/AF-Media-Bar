@@ -25,27 +25,14 @@ public partial class TaskBarMediaControl
     private static PowerEase CreateEaseInOut() => new() { Power = 3, EasingMode = EasingMode.EaseInOut };
 
     /// <summary>
-    /// 注册一个跑马灯元素，并把它的小数位移变换挂到渲染上。歌词的高亮层作为第二层传入，两层共用同一个变换实例，
-    /// 因此小数位移同时作用在底色层与高亮层上，亮区与字形始终保持对齐。
-    /// Registers one marquee element and attaches its fractional-offset transform to the render. The lyric highlight layer is passed as
-    /// the second layer so both share one transform instance: the fractional offset then applies to both layers and the reveal stays
-    /// aligned with the glyphs.
+    /// 注册一个跑马灯元素，并把它的小数位移变换挂到渲染上。
+    /// Registers one marquee element and attaches its fractional-offset transform to the render.
     /// </summary>
     /// <param name="element">被推进的文本元素。/ The advanced text element.</param>
-    /// <param name="mirroredLayer">需要一起位移的镜像层，没有则省略。/ Mirrored layer that moves along, omitted when there is none.</param>
-    private void AddMarqueeText(TextBlock element, TextBlock? mirroredLayer = null)
+    private void AddMarqueeText(TextBlock element)
     {
         var state = new MarqueeTextState(element);
         element.RenderTransform = state.Transform;
-        if (mirroredLayer is not null)
-        {
-            // 镜像层用自己的变换实例，但每帧写同一个位移：亮区因此与字形一起移动，且不依赖共享 Freezable 的行为。
-            // The mirrored layer gets its own transform instance written with the same offset every frame, so the reveal moves with the
-            // glyphs without depending on shared-Freezable behaviour.
-            state.MirroredTransform = new TranslateTransform();
-            mirroredLayer.RenderTransform = state.MirroredTransform;
-        }
-
         _marqueeTexts.Add(state);
     }
 
@@ -86,16 +73,8 @@ public partial class TaskBarMediaControl
     }
 
     /// <summary>
-    /// 按当前内容与可用宽度决定一个文本元素用哪种方式推进，并把该写回的属性写回。
-    ///
-    /// 正在按歌词时间轴推进的歌词行用跟随式（只丢弃已唱过的字，已唱段始终是窗口前缀）；擦亮层即使隐藏也沿用同一轨迹。
-    /// 其余元素用轮转式（没有"唱到哪"的概念，循环滚动才能反复读到）。
-    /// Decides how one text element advances for its current content and available width, and writes back the properties that belong to
-    /// that decision.
-    ///
-    /// A lyric line advancing on its lyric timeline uses the follow mode, which only discards characters that are already sung and keeps
-    /// the sung run as a prefix of the window. Hiding the highlight layer keeps this same trajectory. Everything else uses rotation,
-    /// which loops because it has no notion of "how far the singing has reached".
+    /// 按当前内容与可用宽度决定文本是否轮转，并把相关属性写回。
+    /// Decides whether the text rotates for its current content and available width, then writes back the relevant properties.
     /// </summary>
     /// <param name="state">该元素的推进状态。/ Advance state of that element.</param>
     /// <param name="enabled">当前是否允许推进。/ Whether advancing is currently allowed.</param>
@@ -119,15 +98,8 @@ public partial class TaskBarMediaControl
         var overflow = enabled && available > 0
             ? TaskbarExperiencePolicy.CalculateMarqueeOverflow(measured, available)
             : 0;
-        var following = overflow > 1 && state.Base.Length > 0 && IsFollowMarqueeElement(element) && _lyricTimelineActive;
-        // 歌词行的推进属于亮区：暂停时亮区停住，歌词也 MUST NOT 改走轮转自己跑起来（那会让暂停中的歌词一直循环滚动），
-        // 此时它按普通裁剪显示整行开头。标题与歌手没有"唱到哪"这种进度，暂停时照常轮转。
-        // A lyric row advances with the reveal: while playback is paused the reveal stands still, and the row MUST NOT fall back to rotating
-        // on its own, which would keep a paused line scrolling forever; it is then drawn with the regular trimming instead. The title and
-        // artist have no such progress, so they keep rotating while paused.
-        var lyricFrozenByPause = IsLyricMarqueeElement(element) && _isPaused;
-        var advancing = overflow > 1 && state.Base.Length > 0 && !lyricFrozenByPause;
-        var key = $"{advancing}|{following}|{available:0.##}|{state.Base}";
+        var advancing = overflow > 1 && state.Base.Length > 0;
+        var key = $"{advancing}|{available:0.##}|{state.Base}";
         if (!string.Equals(state.Key, key, StringComparison.Ordinal))
         {
             // 内容、宽度、方式或允许状态变化时从头开始，并重新走一遍起读停留。
@@ -139,25 +111,19 @@ public partial class TaskBarMediaControl
             // previous line's window on screen.
             state.WindowStart = -1;
             state.OffsetDip = 0;
-            state.RevealWidth = 0;
             state.LeadIn = MarqueeTiming.LeadInDuration;
         }
 
         state.AvailableWidth = available;
-        state.Following = following;
         if (!advancing)
         {
             state.Advancing = false;
             state.Position = 0;
             state.WindowStart = -1;
             state.OffsetDip = 0;
-            state.RevealWidth = 0;
             state.Window = state.Base;
             state.PrefixWidths = null;
             state.PrefixMeasuredCharacters = 0;
-            state.SungPosition = 0;
-            state.SungWidthDip = 0;
-            state.WindowWidthDip = 0;
             if (!string.Equals(element.Text, state.Base, StringComparison.Ordinal))
                 element.Text = state.Base;
             // 放得下时保持用户设置的裁剪提示；放不下但当前不允许推进时也一样，省略号至少说明后面还有内容。
@@ -175,18 +141,6 @@ public partial class TaskBarMediaControl
 
         state.Advancing = true;
         state.WindowLength = MarqueeRotationPolicy.ResolveWindowLength(state.Base.Length);
-        state.ContentWidth = measured;
-        if (following)
-        {
-            // 跟随式的位置、位移与裁剪宽度都按宽度求解，因此这里直接走一帧：擦亮帧（33 ms）可能先于第一帧推进（16 ms）到来，
-            // 先算一次可以让头一帧就停在正确的位置上，而不是先显示原文开头。
-            // The follow mode solves its position, offset, and clip width by width, so one frame is taken right here: the reveal frame
-            // (33 ms) can arrive before the first advance frame (16 ms), and doing it here puts the line at the right place immediately
-            // instead of showing the content's head first.
-            AdvanceFollow(state);
-            return true;
-        }
-
         UpdateMarqueeWindow(state);
         return true;
     }
@@ -202,35 +156,17 @@ public partial class TaskBarMediaControl
     private static bool ShowsMarqueeWindow(MarqueeTextState state) =>
         string.Equals(state.Element.Text, state.Window, StringComparison.Ordinal);
 
-    /// <summary>该元素是否可使用歌词时间轴跟随推进。/ Whether the element can follow the lyric timeline.</summary>
-    /// <param name="element">文本元素。/ Text element.</param>
-    private bool IsFollowMarqueeElement(TextBlock element) => ReferenceEquals(element, SongLyrics);
-
-    /// <summary>该元素是否是歌词行（两行都算）。/ Whether the element is a lyric row, either row.</summary>
-    /// <param name="element">文本元素。/ Text element.</param>
-    private bool IsLyricMarqueeElement(TextBlock element) =>
-        ReferenceEquals(element, SongLyrics) || ReferenceEquals(element, SongLyricsSecondary);
-
     /// <summary>
-    /// 按当前位置改写窗口：跟随式按亮区求解起点，轮转式按位置轮转字符串。窗口字符串只在整数位置跨过时才变化，
+    /// 按当前位置轮转窗口。窗口字符串只在整数位置跨过时才变化，
     /// 小数部分由 <see cref="ApplyMarqueeOffset"/> 写进渲染变换。
-    /// Rewrites the window for the current position: the follow mode solves its start from the reveal and the rotation mode rotates the
-    /// string. The window string only changes when the integer position crosses; the fraction is written into the render transform by
+    /// Rotates the window for the current position. The window string only changes when the integer position crosses; the fraction is written into the render transform by
     /// <see cref="ApplyMarqueeOffset"/>.
     /// </summary>
     /// <param name="state">该元素的推进状态。/ Advance state of that element.</param>
     private static void UpdateMarqueeWindow(MarqueeTextState state)
     {
-        state.WindowStart = state.Following
-            ? MarqueeFollowPolicy.SnapStart(
-                state.Base,
-                (int)Math.Floor(state.Position),
-                Math.Max(0, state.Base.Length - 1))
-            : MarqueeRotationPolicy.ResolveWindowStart(state.Base, (int)Math.Floor(state.Position));
-        if (!state.Following)
-        {
-            UpdateRotationOffset(state);
-        }
+        state.WindowStart = MarqueeRotationPolicy.ResolveWindowStart(state.Base, (int)Math.Floor(state.Position));
+        UpdateRotationOffset(state);
 
         WriteMarqueeWindow(state);
     }
@@ -238,13 +174,11 @@ public partial class TaskBarMediaControl
     /// <summary>
     /// 懒测一段文字的前缀宽度表并返回"已经测到第几个字符"，表按需向前长。
     ///
-    /// 轮转式按 <c>原文 + 接缝</c> 测（偏移即索引），跟随式按原文测（已唱位置即索引）；两者都从同一张表读出行进速度、
-    /// 小数位移与裁剪宽度，因此三者永远一致。换文字、换字号或换字重时整表重测。
+    /// 按 <c>原文 + 接缝</c> 测量，行进速度与小数位移都从同一张表读取。换文字、换字号或换字重时整表重测。
     /// Lazily measures the prefix-width table of one text and returns how many characters have been measured, growing on demand.
     ///
-    /// The rotation mode measures `content + separator` so the offset is the index, while the follow mode measures the content so the sung
-    /// position is the index. Both read the travel speed, the fractional offset, and the clip width from that one table, which keeps the three
-    /// consistent. A different text, font size, or font weight re-measures everything.
+    /// It measures `content + separator`; travel speed and fractional offset both come from that table. A different text, font size,
+    /// or font weight re-measures everything.
     /// </summary>
     /// <param name="state">该元素的推进状态。/ Advance state of that element.</param>
     /// <param name="text">要测量的文字。/ The text to measure.</param>
@@ -280,17 +214,15 @@ public partial class TaskBarMediaControl
 
     /// <summary>
     /// 把一个正在推进的元素写成当前窗口。窗口文字与容器等宽并硬裁：推进期间不需要省略号（字符会依次进入窗口），
-    /// 硬裁也让逐字擦亮的裁剪边界与可见字形一一对应。
+    /// 硬裁让滚动窗口边界保持稳定。
     /// Writes one advancing element as its current window. The window text is exactly as wide as its container and hard-cut: an ellipsis
-    /// is pointless while characters keep entering the window, and a hard cut keeps the reveal clip aligned with the visible glyphs.
+    /// is pointless while characters keep entering the window, and a hard cut keeps the scrolling boundary stable.
     /// </summary>
     /// <param name="state">该元素的推进状态。/ Advance state of that element.</param>
     private static void WriteMarqueeWindow(MarqueeTextState state)
     {
         var element = state.Element;
-        var window = state.Following
-            ? MarqueeFollowPolicy.BuildWindow(state.Base, state.WindowStart)
-            : MarqueeRotationPolicy.BuildWindow(state.Base, state.WindowStart);
+        var window = MarqueeRotationPolicy.BuildWindow(state.Base, state.WindowStart);
         state.Window = window;
 
         if (!string.Equals(element.Text, state.Window, StringComparison.Ordinal))
@@ -345,7 +277,6 @@ public partial class TaskBarMediaControl
         offset = SnapToDevicePixel(offset, state.DevicePixelScale);
 
         WriteMarqueeOffset(state.Transform, offset);
-        WriteMarqueeOffset(state.MirroredTransform, offset);
     }
 
     /// <summary>把位移对齐到设备像素。/ Snaps an offset to whole device pixels.</summary>
@@ -376,46 +307,10 @@ public partial class TaskBarMediaControl
     }
 
     /// <summary>
-    /// 读取按歌词时间轴跟随的主歌词行窗口：窗口内已唱段的裁剪宽度与窗口整体宽度。没有启用跟随时返回 false，
-    /// 调用方按整行前缀换算擦亮。
-    /// Reads the window of the main lyric line that follows its timeline: the clip width of the sung run inside it and the window's total
-    /// width. Returns false when the follow mode is off, in which case the caller converts the reveal from the whole line instead.
-    /// </summary>
-    /// <param name="sungWidthDip">窗口内已唱段的宽度（DIP）。/ Width of the sung run inside the window, in DIP.</param>
-    /// <param name="windowWidthDip">当前窗口的整体宽度（DIP），用于换算字形内缩。/ Total width of the current window in DIP, used to convert the glyph inset.</param>
-    /// <param name="contentPosition">原文中已唱到的位置（字符，可含小数）。/ Sung position in the content, in possibly fractional characters.</param>
-    /// <param name="contentLength">原文的字符数。/ Content length in characters.</param>
-    internal bool TryGetFollowWindow(
-        out double sungWidthDip,
-        out double windowWidthDip,
-        out double contentPosition,
-        out int contentLength)
-    {
-        foreach (var state in _marqueeTexts)
-        {
-            if (!IsFollowMarqueeElement(state.Element) || !state.Following)
-                continue;
-
-            sungWidthDip = state.SungWidthDip;
-            windowWidthDip = state.WindowWidthDip;
-            contentPosition = state.SungPosition;
-            contentLength = state.Base.Length;
-            return true;
-        }
-
-        sungWidthDip = 0;
-        windowWidthDip = 0;
-        contentPosition = 0;
-        contentLength = 0;
-        return false;
-    }
-
-    /// <summary>
     /// 按帧推进每个正在推进的元素：起读停留期间保持原位，之后每帧前进
-    /// <see cref="MarqueeTiming.CharactersPerFrame"/> 个字符。跟随式每帧按亮区重新求解位置，因此唱得快时窗口跟得快。
+    /// <see cref="MarqueeTiming.CharactersPerFrame"/> 个字符。
     /// Advances every element by one frame: it stays put during the lead-in pause and then moves by
-    /// <see cref="MarqueeTiming.CharactersPerFrame"/> characters per frame. The follow mode re-solves its position from the reveal on every
-    /// frame, so a fast line scrolls just as fast.
+    /// <see cref="MarqueeTiming.CharactersPerFrame"/> characters per frame.
     /// </summary>
     private void AdvanceMarqueeStep()
     {
@@ -426,10 +321,9 @@ public partial class TaskBarMediaControl
                 continue;
 
             anyAdvancing = true;
-            // 起读停留只属于轮转式：跟随式的位置由亮区决定，等一拍会让亮区先跑出窗口。
-            // The lead-in pause belongs to the rotation mode only: a follow window's position is decided by the reveal, and waiting a beat
-            // would let the reveal leave the window first.
-            if (!state.Following && state.LeadIn > TimeSpan.Zero)
+            // 每轮从开头停留片刻，再开始连续滚动。
+            // Pause briefly at the head of each cycle, then begin continuous scrolling.
+            if (state.LeadIn > TimeSpan.Zero)
             {
                 state.LeadIn -= MarqueeTiming.FrameInterval;
                 if (state.LeadIn < TimeSpan.Zero)
@@ -437,12 +331,6 @@ public partial class TaskBarMediaControl
                     state.LeadIn = TimeSpan.Zero;
                 }
 
-                continue;
-            }
-
-            if (state.Following)
-            {
-                AdvanceFollow(state);
                 continue;
             }
 
@@ -481,8 +369,8 @@ public partial class TaskBarMediaControl
         var head = MarqueeRotationPolicy.NormalizeOffset((int)Math.Floor(state.Position), state.WindowLength);
         var measured = EnsurePrefixWidths(state, source, Math.Min(source.Length, head + 2));
         var widths = state.PrefixWidths;
-        var headAdvance = MarqueeFollowPolicy.ResolveWidthAt(widths, measured, head + 1) -
-                          MarqueeFollowPolicy.ResolveWidthAt(widths, measured, head);
+        var headAdvance = MarqueeRotationPolicy.ResolveWidthAt(widths, measured, head + 1) -
+                          MarqueeRotationPolicy.ResolveWidthAt(widths, measured, head);
         var step = headAdvance > 0.01 ? MarqueeTiming.DipPerFrame / headAdvance : 0;
         state.Position = WrapPosition(state.Position + step, state.WindowLength);
         var windowStart = MarqueeRotationPolicy.ResolveWindowStart(state.Base, (int)Math.Floor(state.Position));
@@ -518,68 +406,8 @@ public partial class TaskBarMediaControl
 
         var required = Math.Min(source.Length, Math.Max(state.WindowStart, (int)Math.Floor(state.Position)) + 2);
         var measured = EnsurePrefixWidths(state, source, required);
-        state.OffsetDip = -(MarqueeFollowPolicy.ResolveWidthAt(state.PrefixWidths, measured, state.Position) -
-                            MarqueeFollowPolicy.ResolveWidthAt(state.PrefixWidths, measured, state.WindowStart));
-    }
-
-    /// <summary>
-    /// 跟随式的一帧：按**宽度**求解窗口位置——已唱段有多宽，就把窗口左移到"亮区停在容器的 80% 处"。
-    ///
-    /// 位置因此只取决于亮区（对亮区单调），不会与"窗口内还能放下几个字"互相追赶；那正是混排长歌词抖动的原因。
-    /// 位移与裁剪宽度同出一张前缀宽度表，所以亮区边界、字形与窗口位置三者始终一致。
-    /// One follow frame: the window position is solved by **width** — however wide the sung run is, the window slides left until the reveal
-    /// rests at 80% of the container.
-    ///
-    /// The position therefore depends only on the reveal (it is monotone in it) and never chases "how many characters still fit", which is
-    /// exactly what used to make long mixed-width lyric lines jitter. The offset and the clip width come from the same prefix-width table,
-    /// so the reveal edge, the glyphs, and the window position always agree.
-    /// </summary>
-    /// <param name="state">该元素的推进状态。/ Advance state of that element.</param>
-    private void AdvanceFollow(MarqueeTextState state)
-    {
-        var contentLength = state.Base.Length;
-        var progress = ResolveCurrentLyricProgress();
-        var sung = progress is null ? 0 : MarqueeFollowPolicy.ResolveSungPosition(progress.Value, contentLength);
-        state.SungPosition = sung;
-
-        // 只需要测到"已经唱到的那一个字"：表随演唱向前长，均摊每唱一个字测一次。
-        // Only the characters sung so far have to be measured: the table grows with the singing, which amortises to one measurement per
-        // sung character.
-        var measured = EnsurePrefixWidths(state, state.Base, (int)Math.Ceiling(sung) + 1);
-        var widths = state.PrefixWidths;
-
-        // 播放位置来自播放器上报的时间轴，很多播放器按整秒上报，于是外推值每秒会被修正回退一次。
-        // 呈现层只承认前进，并且每帧最多追赶一小段，因此整块文字不会跟着上报的回退往回跳，也不会被一次台阶整块推走。
-        // The playback position comes from the player's reported timeline, and many players report whole seconds, so the extrapolated value is
-        // corrected backwards once per second. The presentation only accepts forward motion and catches up by a bounded amount per frame, so
-        // the line never jumps backwards with a report and never gets pushed a whole step at once either.
-        var rawWidth = MarqueeFollowPolicy.ResolveWidthAt(widths, measured, sung);
-        state.RevealWidth = MarqueeFollowPolicy.ResolveRevealWidth(
-            state.RevealWidth,
-            rawWidth,
-            MarqueeFollowPolicy.MaximumRevealAdvanceEm * state.Element.FontSize);
-        var revealedWidth = state.RevealWidth;
-
-        var dropped = MarqueeFollowPolicy.ResolveDroppedWidth(revealedWidth, state.AvailableWidth);
-        state.Position = MarqueeFollowPolicy.ResolvePositionAtWidth(widths, measured, dropped);
-
-        var windowStart = MarqueeFollowPolicy.SnapStart(
-            state.Base,
-            (int)Math.Floor(state.Position),
-            Math.Max(0, contentLength - 1));
-        var windowLeftWidth = MarqueeFollowPolicy.ResolveWidthAt(widths, measured, windowStart);
-        state.OffsetDip = -(MarqueeFollowPolicy.ResolveWidthAt(widths, measured, state.Position) - windowLeftWidth);
-        state.SungWidthDip = revealedWidth - windowLeftWidth;
-        state.WindowWidthDip = state.ContentWidth - windowLeftWidth;
-
-        if (windowStart != state.WindowStart || !ShowsMarqueeWindow(state))
-        {
-            state.WindowStart = windowStart;
-            WriteMarqueeWindow(state);
-            return;
-        }
-
-        ApplyMarqueeOffset(state);
+        state.OffsetDip = -(MarqueeRotationPolicy.ResolveWidthAt(state.PrefixWidths, measured, state.Position) -
+                            MarqueeRotationPolicy.ResolveWidthAt(state.PrefixWidths, measured, state.WindowStart));
     }
 
     /// <summary>
@@ -598,16 +426,11 @@ public partial class TaskBarMediaControl
             state.Position = 0;
             state.WindowStart = -1;
             state.OffsetDip = 0;
-            state.RevealWidth = 0;
             state.LeadIn = MarqueeTiming.LeadInDuration;
             state.Advancing = false;
-            state.Following = false;
             state.Window = state.Base;
             state.PrefixWidths = null;
             state.PrefixMeasuredCharacters = 0;
-            state.SungPosition = 0;
-            state.SungWidthDip = 0;
-            state.WindowWidthDip = 0;
             if (!string.Equals(state.Element.Text, state.Base, StringComparison.Ordinal))
                 state.Element.Text = state.Base;
             if (state.Element.TextAlignment != state.Alignment)
@@ -646,18 +469,6 @@ public partial class TaskBarMediaControl
     /// <param name="element">文本元素。/ Text element.</param>
     private TextAlignment ResolveConfiguredAlignment(TextBlock element)
     {
-        if (ReferenceEquals(element, SongLyrics) ||
-            ReferenceEquals(element, SongLyricsHighlight) ||
-            ReferenceEquals(element, SongLyricsSecondary))
-        {
-            return SettingsManager.Current.LyricsTextAlignment switch
-            {
-                LyricsTextAlignment.Left => TextAlignment.Left,
-                LyricsTextAlignment.Right => TextAlignment.Right,
-                _ => TextAlignment.Center
-            };
-        }
-
         return SettingsManager.Current.TaskbarExperience.Normalize().MediaTextAlignment switch
         {
             TaskbarMediaTextAlignment.Center => TextAlignment.Center,
@@ -679,9 +490,6 @@ public partial class TaskBarMediaControl
         /// <summary>小数位移用的渲染变换；歌词两层的镜像层另持一个实例，两个实例每帧写同一个值。 / Render transform carrying the fractional offset; a lyric line's mirrored layer has its own instance and both are written with the same value every frame.</summary>
         public TranslateTransform Transform { get; } = new();
 
-        /// <summary>需要跟着一起位移的镜像层变换（歌词高亮层），没有则为 null。/ Transform of the mirrored layer that moves along, the lyric highlight layer, or null when there is none.</summary>
-        public TranslateTransform? MirroredTransform { get; set; }
-
         /// <summary>应用写入的原文。/ Content written by the application.</summary>
         public string Base { get; set; } = string.Empty;
 
@@ -691,7 +499,7 @@ public partial class TaskBarMediaControl
         /// <summary>决定是否需要重启推进的一致性键。/ Consistency key deciding whether advancing has to restart.</summary>
         public string Key { get; set; } = string.Empty;
 
-        /// <summary>连续位置（字符）：轮转式按窗口长度回绕，跟随式是原文里的起点。/ Continuous position in characters: wrapped by the window length in the rotation mode and the content start in the follow mode.</summary>
+        /// <summary>按窗口长度回绕的连续字符位置。/ Continuous character position wrapped by the window length.</summary>
         public double Position { get; set; }
 
         /// <summary>当前窗口字符串对应的整数位置；-1 表示"还没有写过窗口"。/ Integer position behind the current window string, where minus one means no window written yet.</summary>
@@ -700,14 +508,11 @@ public partial class TaskBarMediaControl
         /// <summary>轮转式窗口的字符数（原文加间隔）。/ Rotation window length in characters: content plus separator.</summary>
         public int WindowLength { get; set; }
 
-        /// <summary>起读停留的剩余时间（只对轮转式有效）。/ Remaining lead-in time, which only the rotation mode uses.</summary>
+        /// <summary>起读停留的剩余时间。/ Remaining lead-in time.</summary>
         public TimeSpan LeadIn { get; set; } = MarqueeTiming.LeadInDuration;
 
         /// <summary>该元素当前是否正在推进。/ Whether that element is currently advancing.</summary>
         public bool Advancing { get; set; }
-
-        /// <summary>该元素是否使用跟随式。/ Whether that element uses the follow mode.</summary>
-        public bool Following { get; set; }
 
         /// <summary>当前可用宽度（DIP）。/ Current available width in DIP.</summary>
         public double AvailableWidth { get; set; }
@@ -719,11 +524,8 @@ public partial class TaskBarMediaControl
         public TextAlignment Alignment { get; set; } = TextAlignment.Left;
 
         /// <summary>
-        /// 跟随式用的原文前缀宽度表：第 i 项是前 i 个字符的宽度，随演唱按需向前长（<see cref="PrefixMeasuredCharacters"/> 记录已测到哪）。
-        /// 位置、位移与裁剪宽度都从这张表读，因此三者始终一致。
-        /// Prefix-width table of the content used by the follow mode: the i-th entry is the width of the first i characters, and it grows on
-        /// demand with the singing, with <see cref="PrefixMeasuredCharacters"/> telling how far it has been measured. The position, the
-        /// offset, and the clip width are all read from this table, so the three always agree.
+        /// 第 i 项是前 i 个字符宽度的前缀表，按需向前增长。
+        /// Prefix-width table whose i-th entry is the width of the first i characters, grown on demand.
         /// </summary>
         public double[]? PrefixWidths { get; set; }
 
@@ -742,23 +544,8 @@ public partial class TaskBarMediaControl
         /// <summary>前缀宽度表对应的字族。/ Font family the prefix-width table was measured with.</summary>
         public FontFamily? PrefixFontFamily { get; set; }
 
-        /// <summary>原文的整体宽度（DIP），用于换算窗口总宽度。/ Total width of the content in DIP, used for the window's overall width.</summary>
-        public double ContentWidth { get; set; }
-
-        /// <summary>跟随式的位移（DIP）：窗口位置到整数起点之间的宽度。/ Offset of the follow mode in DIP, which is the width between the exact window position and its integer start.</summary>
+        /// <summary>窗口位置到整数起点之间的位移（DIP）。/ Offset in DIP between the exact window position and its integer start.</summary>
         public double OffsetDip { get; set; }
-
-        /// <summary>呈现层使用的已唱宽度（DIP）：只前进，每帧最多追赶一小段，因此播放器上报的回退不会把整块文字带回去。/ Sung width used for presentation, in DIP: it only moves forward and catches up by a bounded amount per frame, so a backwards correction from the player's reported timeline never drags the line back.</summary>
-        public double RevealWidth { get; set; }
-
-        /// <summary>跟随式里原文中已唱到的位置（字符，可含小数）。/ Sung position in the content for the follow mode, in possibly fractional characters.</summary>
-        public double SungPosition { get; set; }
-
-        /// <summary>跟随式里窗口内已唱段的裁剪宽度（DIP）。/ Clip width of the sung run inside the window, in DIP.</summary>
-        public double SungWidthDip { get; set; }
-
-        /// <summary>跟随式里窗口的整体宽度（DIP）。/ Total width of the follow window in DIP.</summary>
-        public double WindowWidthDip { get; set; }
     }
 
     private static double MeasureTextWidth(string text, TextBlock source) =>
@@ -767,10 +554,6 @@ public partial class TaskBarMediaControl
     /// <summary>
     /// 测量文字的自然宽度，不含跑马灯为折返预留的 4 DIP。
     /// Measures the natural text width without the 4 DIP the marquee reserves for its turn-around.
-    ///
-    /// 逐字擦亮需要这个不带补偿的宽度：裁剪边界按字形实际占用的宽度换算，多出来的 4 DIP 会让擦亮在行尾提前结束。
-    /// Syllable highlighting needs the width without that compensation: the clip edge converts glyph width, and the extra 4 DIP
-    /// would make the reveal finish before the end of the line.
     /// </summary>
     private static double MeasureTextWidthExact(string text, TextBlock source)
     {

@@ -29,7 +29,7 @@ Open [GitHub Releases](https://github.com/Fervent-Tempo/AF-Media-Bar/releases) a
 1. **Installer (recommended):** Download `AFMediaBar-Setup-vX.Y.Z-win-x64.exe`. Run the wizard to choose language, install location, and current-user or all-user installation. The default location is `%LOCALAPPDATA%\Programs\AFMediaBar`. The installed app supports checking for, downloading, and installing updates.
 2. **Portable:** Download `AFMediaBar-vX.Y.Z-win-x64.zip`. Extract it to a writable, long-lived folder such as `D:\AFMediaBar`, then run `AFMediaBar.exe`. The portable build writes no registry entries; replace the file manually to update.
 
-**Requirements:** Windows 10 1809 (build 17763) or later, x64. Both packages include the .NET runtime. The system interfaces used by the app are available on 1809, but **.NET 10 officially supports only Windows 10 LTSC and Enterprise editions** (1809 E and 21H2 E); consumer Windows 10 is outside Microsoft support. Windows 11 is unaffected.
+**Requirements:** Windows 10 1809 (build 17763) or later, x64, plus Microsoft Edge WebView2 Runtime. Windows 11 and supported Windows 10 installations normally include it; stripped-down systems must install the Evergreen Runtime first. Both packages include the .NET runtime. The system interfaces used by the app are available on 1809, but **.NET 10 officially supports only Windows 10 LTSC and Enterprise editions** (1809 E and 21H2 E); consumer Windows 10 is outside Microsoft support. Windows 11 is unaffected.
 
 Download a release package rather than GitHub's generated Source code archive. The app is not commercially code-signed, so Windows SmartScreen may show an unknown-publisher warning on first run.
 
@@ -40,7 +40,7 @@ The installer offers an optional desktop shortcut and always creates a Start men
 | Area | What you can do |
 | --- | --- |
 | Playback | Previous, play/pause, next, repeat, and click-to-position or draggable progress. Wheel track skipping moves one track at a time; pause for about half a second before another skip |
-| Taskbar lyrics | Syllable-by-syllable live lyrics with translation, romanization, and two-line alignment; sources are tried in order: NetEase Cloud Music, LRCLIB, QQ Music, Kugou Music, and Soda Music |
+| Taskbar lyrics | Live lyrics rendered by the web lyrics engine, with translation, romanization, and two-line alignment; word highlighting runs only when the source supplies genuine word timing, while line-timed lyrics switch by line; sources are tried in order: NetEase Cloud Music, LRCLIB, QQ Music, Kugou Music, and Soda Music |
 | Sources and clicks | Switch media sessions; assign artwork and title/lyric clicks to play/pause, activate the media app, or open the full menu |
 | Audio and system | Click or scroll to switch the default output device, adjust the current media app's volume, and view spatial audio; four spectrum styles and a performance metrics component |
 | Layout and appearance | Avoid taskbar icons and system areas; select a display, auto-hide when nothing plays, and adjust fonts, accent colour, and window material |
