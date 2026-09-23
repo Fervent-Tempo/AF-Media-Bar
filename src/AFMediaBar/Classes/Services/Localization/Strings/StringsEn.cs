@@ -242,7 +242,6 @@ internal static class StringsEn
         table.Add("Common.TrayIcon", "Tray icon");
 
         // ---- Diagram ----
-        table.Add("Diagram.DynamicIslandSurface.Caption", "Dynamic island mode is not implemented, so the three options below are read-only; its appearance and the taskbar do not affect each other.");
         table.Add("Diagram.InputGestures.Caption", "These are the only two clickable areas on the media bar and each is set separately; buttons in the expanded panel are unaffected.");
         table.Add("Diagram.InputGestures.Label.ArtworkClick", "Artwork click");
         table.Add("Diagram.InputGestures.Label.TextClick", "Title or lyrics click");
@@ -295,24 +294,20 @@ internal static class StringsEn
         table.Add("DisplayModes.Hover.Row.Enable.Description", "Shows the quick-control buttons when the pointer enters the media bar");
         table.Add("DisplayModes.Hover.Row.Enable.Title", "Enable the hover layer");
         table.Add("DisplayModes.Hover.Row.Progress.Title", "Progress bar");
-        table.Add("DisplayModes.Island.Group.Description", "The dynamic island's own appearance, independent of the taskbar");
-        table.Add("DisplayModes.Island.Notice", "The dynamic island mode is not implemented yet, so the options below are read-only for now and changes do not affect the running taskbar media bar.");
-        table.Add("DisplayModes.Island.Row.Corner.Description", "0–24 DIP");
-        table.Add("DisplayModes.Island.Row.Corner.Title", "Corner radius");
-        table.Add("DisplayModes.Island.Row.Opacity.Description", "A higher value is more opaque");
-        table.Add("DisplayModes.Island.Row.Opacity.Title", "Background opacity");
-        table.Add("DisplayModes.Island.Row.Surface.Description", "The dynamic island's own background style");
-        table.Add("DisplayModes.Island.Row.Surface.Title", "Background style");
-        table.Add("DisplayModes.Island.Surface.Automatic", "Automatic");
-        table.Add("DisplayModes.Island.Surface.Solid", "Solid color");
-        table.Add("DisplayModes.Island.Surface.ThemeTint", "Theme tint");
+        table.Add("DisplayModes.Island.Group.Title", "Island display");
+        table.Add("DisplayModes.Island.Group.Description", "Monitor and uniform size, independent of taskbar settings");
+        table.Add("DisplayModes.Island.Notice", "A fixed black island at the top center. Quickly tap to open the media app. Holding progressively expands it and commits after about 400 ms; abandoning a hold springs back. Click outside or press Esc to collapse. Paused media stays visible; idle keeps a black base. Hidden while an app is full screen on its monitor.");
+        table.Add("DisplayModes.Island.Monitor.Primary", "Follow the primary monitor");
+        table.Add("DisplayModes.Island.Row.Monitor.Description", "Uses the primary monitor when the selected display is disconnected, and returns when it reconnects");
+        table.Add("DisplayModes.Island.Row.Monitor.Title", "Island monitor");
+        table.Add("DisplayModes.Island.Row.Scale.Description", "75–150% · Scales the entire island, including artwork and controls");
+        table.Add("DisplayModes.Island.Row.Scale.Title", "Island scale");
         table.Add("DisplayModes.Mode.Current", "Current mode");
         table.Add("DisplayModes.Mode.DesktopCard", "Desktop card");
         table.Add("DisplayModes.Mode.DesktopCard.Caption", "Places freely arrangeable media cards on the desktop");
-        table.Add("DisplayModes.Mode.DynamicIsland.Caption", "Carries the media state in an overlay at the edge of the screen");
+        table.Add("DisplayModes.Mode.DynamicIsland.Caption", "A fixed black media island at the top center of your chosen monitor");
         table.Add("DisplayModes.Mode.FloatingBall", "Floating ball");
         table.Add("DisplayModes.Mode.FloatingBall.Caption", "Expands the controls from a compact floating entry point");
-        table.Add("DisplayModes.Mode.PreviewNotice", "The running mode stays the taskbar. Choosing another mode only changes what this page shows; it does not switch the running window.");
         table.Add("DisplayModes.Mode.Taskbar", "Taskbar");
         table.Add("DisplayModes.Mode.Taskbar.Caption", "Runs in the Windows taskbar and provides the rest layer, the hover layer, and the full panel");
         table.Add("DisplayModes.Monitor.DisconnectedSuffix", " (not connected)");
@@ -413,6 +408,19 @@ internal static class StringsEn
         table.Add("Interaction.Wheel.Chord.Title", "Chord wheel");
         table.Add("Interaction.Wheel.Primary.Title", "Plain wheel");
 
+        // ---- Island ----
+        table.Add("Island.Accessibility.Name", "Dynamic island media controls");
+        table.Add("Island.Accessibility.OpenSource", "Open the media app");
+        table.Add("Island.Accessibility.Expand", "Expand media controls");
+        table.Add("Island.Accessibility.Collapse", "Collapse media controls");
+        table.Add("Island.Accessibility.Previous", "Previous track");
+        table.Add("Island.Accessibility.Play", "Play");
+        table.Add("Island.Accessibility.Pause", "Pause");
+        table.Add("Island.Accessibility.Next", "Next track");
+        table.Add("Island.Accessibility.Seek", "Playback position");
+        table.Add("Island.Transport.Unavailable", "This player does not currently expose this action through Windows media controls. Start playback in the player or enable its system media control integration, if available.");
+        table.Add("Island.Activity.OutputSpectrum", "Shared output-device audio spectrum; includes audio from other apps, not just this media app");
+
         // ---- Layout ----
         table.Add("Layout.Arrangement.Auto", "Automatic");
         table.Add("Layout.Arrangement.Horizontal", "Horizontal");
@@ -424,8 +432,8 @@ internal static class StringsEn
         table.Add("Layout.IslandBackground.Transparent", "Transparent background");
         table.Add("Layout.Page.Subtitle", "Adjust the window mode, arrangement, and size");
         table.Add("Layout.Page.Title", "Layout");
-        table.Add("Layout.Preset.DynamicIslandHorizontal", "Dynamic island theme (horizontal): draggable, and collapsible against a desktop edge");
-        table.Add("Layout.Preset.DynamicIslandVertical", "Dynamic island theme (vertical): draggable, and collapsible against a desktop edge");
+        table.Add("Layout.Preset.DynamicIslandHorizontal", "Dynamic island: fixed black surface at the top center");
+        table.Add("Layout.Preset.DynamicIslandVertical", "Dynamic island: fixed black surface at the top center");
         table.Add("Layout.Preset.TaskbarHorizontal", "Taskbar theme (horizontal): fits a taskbar along the top or bottom of the screen");
         table.Add("Layout.Preset.TaskbarVertical", "Taskbar theme (vertical): fits a taskbar along the left or right edge of the screen");
         table.Add("Layout.Reset.Button", "Restore defaults");
@@ -619,7 +627,7 @@ internal static class StringsEn
         table.Add("Search.DisplayModes.ChooseDisplayMode.Description", "Display mode used by the media bar: taskbar, dynamic island, desktop card, or floating ball");
         table.Add("Search.DisplayModes.FullLayer.Description", "Sections of the panel that opens when the media bar is clicked");
         table.Add("Search.DisplayModes.HoverLayer.Description", "Quick controls shown when the pointer enters the media bar");
-        table.Add("Search.DisplayModes.IslandAppearance.Description", "Dynamic island background style, opacity, and corner radius; currently read-only");
+        table.Add("Search.DisplayModes.Island.Description", "Independent island monitor and uniform scale; fixed top-center media controls");
         table.Add("Search.DisplayModes.MediaBarWidth.Description", "Content-driven or fixed width, and component spacing");
         table.Add("Search.DisplayModes.RestLayer.Description", "Always-visible base layer: information density, content arrangement, alignment, progress display, and the full-panel entry");
         table.Add("Search.DisplayModes.ScreenAndPlacement.Description", "Monitor hosting the media bar and its taskbar placement");

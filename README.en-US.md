@@ -45,18 +45,30 @@ The installer offers an optional desktop shortcut and always creates a Start men
 | Audio and system | Click or scroll to switch the default output device, adjust the current media app's volume, and view spatial audio; four spectrum styles and a performance metrics component |
 | Layout and appearance | Avoid taskbar icons and system areas; select a display, auto-hide when nothing plays, and adjust fonts, accent colour, and window material |
 | Shortcuts | Hover for controls, open the full layer for more information, use the note icon for quick launch when idle, and receive a notification when a new track starts |
+| Display modes | Switch and persist between Taskbar and Dynamic Island; the island is a black top-center capsule with press-and-hold controls, its own display selection, and uniform scale |
 
-**Limits:** Only players that publish a Windows GSMTC session appear. Some players require “system media controls” or “media keys” in their settings. Taskbar is the only runtime mode; Dynamic Island, Desktop Card, and Floating Orb in Settings are placeholders.
+**Limits:** Only players that publish a Windows GSMTC session appear. Some players require “system media controls” or “media keys” in their settings. Taskbar and Dynamic Island are both runtime modes and the choice persists. Desktop Card and Floating Orb remain disabled, unimplemented options.
+
+### Dynamic Island Interaction
+
+- With no media, a static black capsule remains. Connected media adds small artwork and an audio activity indicator. Pausing retains the media; the island neither slides off-screen nor expands on hover.
+- Quickly tap the compact island to activate the media app. Holding progressively opens it from its current shape and commits after about 400 ms; abandoning a hold smoothly springs back without also opening the app. Artwork, text, progress, and controls enter in stages. Releasing a completed hold keeps it open. Click outside or press Esc to collapse; seeking supports pressing anywhere on the track and dragging continuously.
+- One surface morphs between states, carrying the same artwork with it. Reversing a transition preserves continuity. Track changes update the current presentation without forcing expansion or a second track-change toast.
+- Choose an independent target display and uniform scale from 75% to 150%. Placement is fixed at the top center; free dragging, vertical layouts, and four-edge docking are no longer exposed. Legacy surface and dragged-position fields remain only for settings-file compatibility.
+- An external fullscreen window on the island's display temporarily suppresses it; leaving fullscreen restores it. The island does not steal focus, its transparent host area does not block desktop input, and system reduced-motion/high-contrast preferences are respected.
+- The activity indicator reuses real samples from the existing output-device capture, not isolated audio from a single media app. It stays still when paused or samples are unavailable. Lyrics remain a taskbar feature rather than part of the island's default presentation.
+- Visible metadata does not imply a controllable session. If NetEase supplies memory-read metadata without publishing a Windows media session, playback/track buttons remain disabled with an explanation. Start playback in the player or enable its system-media integration if that version supports it. The app does not broadcast global media keys to an uncertain target.
 
 ## How it works
 
-AF Media Bar runs as an independent WPF process and hosts its media bar as a taskbar child window. It uses the public Windows GSMTC API for media sessions and Core Audio for devices and volume. It does not modify or inject code into `explorer.exe`.
+AF Media Bar runs as an independent WPF process and hosts its media bar either as a taskbar child window or as a Dynamic Island overlay. It uses the public Windows GSMTC API for media sessions and Core Audio for devices, volume, and loopback samples. It does not modify or inject code into `explorer.exe`.
 
 ```mermaid
 flowchart LR
     A[Media apps] -->|GSMTC sessions| B[AF Media Bar]
-    C[Windows Core Audio] -->|Devices and volume| B
-    B --> D[WPF taskbar child window]
+    C[Windows Core Audio] -->|Devices, volume, loopback samples| B
+    D[Windows 10/11 taskbar and displays] -->|Position, DPI, and fullscreen state| B
+    B --> E[WPF taskbar child window or Dynamic Island overlay]
 ```
 
 NetEase Cloud Music, QQ Music, Spotify, browsers, and other apps can be discovered and controlled when they publish a system media session. The Windows media card is not a public embeddable control; this app reads the public interface behind it and draws its own taskbar UI.

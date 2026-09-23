@@ -1611,13 +1611,41 @@ namespace AFMediaBar.Components
             if (_currentMode != WindowMode.DynamicIsland)
                 return;
 
-            MainBorder.Background = SettingsManager.Current.DynamicIslandBackgroundMode == DynamicIslandBackgroundMode.Transparent
-                ? new SolidColorBrush(Color.FromArgb(1, 0, 0, 0))
-                : SystemParameters.HighContrast
-                    ? SystemColors.WindowBrush
-                    : new SolidColorBrush(isDark
-                        ? Color.FromArgb(0xFF, 0x20, 0x20, 0x20)
-                        : Color.FromArgb(0xFF, 0xF3, 0xF3, 0xF3));
+            var surface = SettingsManager.Current.DynamicIslandSurface.Normalize();
+            var themeColor = isDark
+                ? Color.FromRgb(0x20, 0x20, 0x20)
+                : Color.FromRgb(0xF3, 0xF3, 0xF3);
+            var accentColor = (Application.Current.TryFindResource("AfAccentBrush") as SolidColorBrush)?.Color
+                ?? SystemColors.HighlightColor;
+            var surfaceColor = surface.Style == PlayerSurfaceStyle.ThemeTint ? accentColor : themeColor;
+            var isTransparentAutomatic = surface.Style == PlayerSurfaceStyle.Automatic &&
+                                         SettingsManager.Current.DynamicIslandBackgroundMode == DynamicIslandBackgroundMode.Transparent;
+            var requestedOpacity = isTransparentAutomatic ? 0 : surface.BackgroundOpacityPercent;
+            var alpha = (byte)Math.Clamp(
+                Math.Round(requestedOpacity * 255d / 100d),
+                0,
+                255);
+            if (SystemParameters.HighContrast)
+            {
+                MainBorder.Background = SystemColors.WindowBrush;
+            }
+            else
+            {
+                MainBorder.Background = new SolidColorBrush(Color.FromArgb(
+                    alpha,
+                    surfaceColor.R,
+                    surfaceColor.G,
+                    surfaceColor.B));
+            }
+
+            MainBorder.CornerRadius = new CornerRadius(surface.CornerRadiusDip);
+            TopBorder.BorderBrush = alpha == 0
+                ? Brushes.Transparent
+                : new SolidColorBrush(Color.FromArgb(
+                    (byte)Math.Min(255, alpha + 24),
+                    surfaceColor.R,
+                    surfaceColor.G,
+                    surfaceColor.B));
         }
 
         private void ApplyTaskbarHoverAppearance(Brush foreground)

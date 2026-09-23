@@ -101,7 +101,7 @@ public sealed class DisplayMonitorService : IDisplayMonitorService
     }
 
     /// <inheritdoc />
-    public bool IsForegroundWindowFullscreen()
+    public bool IsForegroundWindowFullscreen(string? monitorDeviceId = null)
     {
         try
         {
@@ -121,6 +121,11 @@ public sealed class DisplayMonitorService : IDisplayMonitorService
             var monitor = MonitorUtil.GetMonitor(foreground);
             if (!IsValid(monitor))
                 return false;
+            if (!string.IsNullOrWhiteSpace(monitorDeviceId) &&
+                !string.Equals(monitor.deviceId, monitorDeviceId, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
 
             NativeMethods.RECT bounds;
             if (NativeMethods.DwmGetWindowAttribute(

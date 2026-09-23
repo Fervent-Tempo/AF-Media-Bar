@@ -24,6 +24,9 @@ public interface IDisplayMonitorService
     /// <summary>按通知目标模式解析显示器。 / Resolves a display using the notification target mode.</summary>
     DisplayMonitorInfo? ResolveNotificationMonitor(NotificationTargetMode mode, string? fixedDeviceId);
 
-    /// <summary>判断当前前台窗口是否全屏。 / Determines whether the current foreground window is fullscreen.</summary>
-    bool IsForegroundWindowFullscreen();
+    /// <summary>
+    /// 判断当前前台窗口是否在指定显示器上全屏；未指定显示器时检查前台窗口所在屏幕。
+    /// Determines whether the foreground window is fullscreen on the specified display; when omitted, checks the foreground window's display.
+    /// </summary>
+    bool IsForegroundWindowFullscreen(string? monitorDeviceId = null);
 }

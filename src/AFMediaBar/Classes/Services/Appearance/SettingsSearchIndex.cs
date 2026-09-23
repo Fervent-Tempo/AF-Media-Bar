@@ -222,10 +222,10 @@ public static class SettingsSearchIndex
         Create(
             SettingsPageKey.DisplayModes,
             1,
-            "Common.Group.IslandAppearance",
-            "Search.DisplayModes.IslandAppearance.Description",
+            "DisplayModes.Island.Group.Title",
+            "Search.DisplayModes.Island.Description",
             language,
-            ["灵动岛", "island", "外观", "表面", "surface", "背景样式", "不透明度", "opacity", "圆角", "radius", "未实现", "灵动岛表面", "基础表面风格"]) with
+            ["灵动岛", "動態島", "island", "显示器", "螢幕", "monitor", "缩放", "縮放", "scale", "顶部", "頂端", "top", "居中", "置中", "center", "长按", "長按", "hold", "展开", "展開", "expand", "全屏", "全螢幕", "fullscreen"]) with
         {
             Mode = SettingsSearchMode.DynamicIsland,
         },

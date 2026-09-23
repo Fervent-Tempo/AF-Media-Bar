@@ -52,6 +52,8 @@ public sealed class AppSettings : INotifyPropertyChanged
     private LayoutOrientationMode _layoutOrientationMode = LayoutOrientationMode.Auto;
     private double _layoutLengthScalePercent = 100;
     private double _layoutThicknessScalePercent = 100;
+    private string? _dynamicIslandMonitorDeviceId;
+    private double _dynamicIslandScalePercent = 100;
     private DynamicIslandBackgroundMode _dynamicIslandBackgroundMode = DynamicIslandBackgroundMode.SystemTheme;
     private double _taskbarBarCrossAxisOffsetDip;
     private bool _taskbarBarAvoidIcons = true;
@@ -112,6 +114,23 @@ public sealed class AppSettings : INotifyPropertyChanged
     public LayoutOrientationMode LayoutOrientationMode { get => _layoutOrientationMode; set => Set(ref _layoutOrientationMode, value); }
     public double LayoutLengthScalePercent { get => _layoutLengthScalePercent; set => Set(ref _layoutLengthScalePercent, value); }
     public double LayoutThicknessScalePercent { get => _layoutThicknessScalePercent; set => Set(ref _layoutThicknessScalePercent, value); }
+
+    /// <summary>灵动岛的独立目标显示器；null 跟随主显示器，断开的目标保留至重连。/ Independent island target; null follows the primary monitor, and disconnected targets are retained.</summary>
+    public string? DynamicIslandMonitorDeviceId
+    {
+        get => _dynamicIslandMonitorDeviceId;
+        set => Set(ref _dynamicIslandMonitorDeviceId, string.IsNullOrWhiteSpace(value) ? null : value.Trim());
+    }
+
+    /// <summary>灵动岛整体等比缩放，不改变任务栏尺寸。/ Uniform island scale, independent of taskbar dimensions.</summary>
+    public double DynamicIslandScalePercent
+    {
+        get => _dynamicIslandScalePercent;
+        set => Set(ref _dynamicIslandScalePercent, double.IsFinite(value) ? Math.Clamp(value, 75, 150) : 100);
+    }
+
+    // 旧版灵动岛外观和拖动位置仅保留文件兼容性，固定黑色灵动岛不使用它们。
+    // Legacy island appearance and drag placement remain serializable for compatibility; the fixed black island ignores them.
     public DynamicIslandBackgroundMode DynamicIslandBackgroundMode { get => _dynamicIslandBackgroundMode; set => Set(ref _dynamicIslandBackgroundMode, value); }
     public double TaskbarBarCrossAxisOffsetDip { get => _taskbarBarCrossAxisOffsetDip; set => Set(ref _taskbarBarCrossAxisOffsetDip, value); }
     public bool TaskbarBarAvoidIcons { get => _taskbarBarAvoidIcons; set => Set(ref _taskbarBarAvoidIcons, value); }
@@ -180,7 +199,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         if (!Enum.IsDefined(result.TrayWheelBehavior)) result.TrayWheelBehavior = defaults.TrayWheelBehavior;
         result.LyricsSecondaryLine = result.LyricsSecondaryLine.Normalize();
         if (!Enum.IsDefined(result.Position)) result.Position = defaults.Position;
-        result.WindowMode = WindowMode.Taskbar;
+        if (!Enum.IsDefined(result.WindowMode)) result.WindowMode = defaults.WindowMode;
         if (!Enum.IsDefined(result.LayoutOrientationMode)) result.LayoutOrientationMode = defaults.LayoutOrientationMode;
         if (!Enum.IsDefined(result.DynamicIslandBackgroundMode)) result.DynamicIslandBackgroundMode = defaults.DynamicIslandBackgroundMode;
         if (!Enum.IsDefined(result.DynamicIslandEdge)) result.DynamicIslandEdge = defaults.DynamicIslandEdge;
@@ -238,6 +257,8 @@ public sealed class AppSettings : INotifyPropertyChanged
         LayoutOrientationMode = LayoutOrientationMode,
         LayoutLengthScalePercent = LayoutLengthScalePercent,
         LayoutThicknessScalePercent = LayoutThicknessScalePercent,
+        DynamicIslandMonitorDeviceId = DynamicIslandMonitorDeviceId,
+        DynamicIslandScalePercent = DynamicIslandScalePercent,
         DynamicIslandBackgroundMode = DynamicIslandBackgroundMode,
         TaskbarBarCrossAxisOffsetDip = TaskbarBarCrossAxisOffsetDip,
         TaskbarBarAvoidIcons = TaskbarBarAvoidIcons,
@@ -374,12 +395,8 @@ public static class SettingsManager
         var next = Current.Clone(); var defaults = Defaults;
         next.Appearance = defaults.Appearance;
         next.TaskbarSurface = defaults.TaskbarSurface;
-        next.DynamicIslandSurface = defaults.DynamicIslandSurface;
-        // 媒体文字大小的界面位于外观页的「媒体栏文字」分组，因此它也属于这一页的重置作用域。
-        // 显示模式页的重置仍然重置同一份任务栏体验设置，两个入口重置同一组值不会互相矛盾——与灵动岛外观的处理相同。
-        // The media text size is presented in the appearance page's media-bar-text group, so it belongs to this page's reset scope
-        // too. The display-mode page's reset still resets the same taskbar experience settings, and both entries agreeing is what
-        // keeps "restore this page" honest — the same arrangement the island appearance already uses.
+        // 媒体文字大小位于外观页，也属于显示模式页的任务栏体验设置。
+        // Media text size belongs to the appearance page and to the display-mode page's taskbar experience settings.
         next.TaskbarExperience = next.TaskbarExperience with
         {
             MediaFontSizePercent = defaults.TaskbarExperience.MediaFontSizePercent
@@ -396,12 +413,8 @@ public static class SettingsManager
         next.TaskbarTargetMonitorDeviceId = defaults.TaskbarTargetMonitorDeviceId;
         next.Position = defaults.Position; next.TaskbarBarCrossAxisOffsetDip = defaults.TaskbarBarCrossAxisOffsetDip;
         next.TaskbarBarAvoidIcons = defaults.TaskbarBarAvoidIcons; next.TaskbarBarPositionLocked = defaults.TaskbarBarPositionLocked;
-        // 灵动岛外观的 UI 现在位于显示模式页的灵动岛分区，因此它的默认值也归这一页的重置作用域；
-        // ResetAppearance 仍然重置同一份设置，两个入口重置同一组值不会互相矛盾。
-        // The island appearance UI now lives in the display-mode page's island section, so its defaults belong to
-        // this page's reset scope too; ResetAppearance still resets the same values, and both entries agreeing is
-        // what keeps "restore this page" honest.
-        next.DynamicIslandSurface = defaults.DynamicIslandSurface;
+        next.DynamicIslandMonitorDeviceId = defaults.DynamicIslandMonitorDeviceId;
+        next.DynamicIslandScalePercent = defaults.DynamicIslandScalePercent;
         Replace(next, SettingsResetScope.DisplayModes);
     }
     public static void ResetExtraFeatures()
@@ -444,6 +457,8 @@ public static class SettingsManager
         next.TaskbarBarCrossAxisOffsetDip = defaults.TaskbarBarCrossAxisOffsetDip; next.TaskbarBarAvoidIcons = defaults.TaskbarBarAvoidIcons;
         next.TaskbarBarPositionLocked = defaults.TaskbarBarPositionLocked; next.DynamicIslandLeft = defaults.DynamicIslandLeft; next.DynamicIslandTop = defaults.DynamicIslandTop;
         next.DynamicIslandEdge = defaults.DynamicIslandEdge; next.DynamicIslandEdgeDocked = defaults.DynamicIslandEdgeDocked;
+        next.DynamicIslandMonitorDeviceId = defaults.DynamicIslandMonitorDeviceId;
+        next.DynamicIslandScalePercent = defaults.DynamicIslandScalePercent;
         Replace(next, SettingsResetScope.Layout);
     }
     /// <summary>
@@ -480,6 +495,8 @@ public static class SettingsManager
             case nameof(AppSettings.Update): UpdateSettingsChanged?.Invoke(null, EventArgs.Empty); break;
             case nameof(AppSettings.TaskbarTargetMonitorDeviceIds):
             case nameof(AppSettings.TaskbarTargetMonitorDeviceId): TaskbarTargetMonitorChanged?.Invoke(null, EventArgs.Empty); break;
+            case nameof(AppSettings.DynamicIslandMonitorDeviceId):
+            case nameof(AppSettings.DynamicIslandScalePercent): RaiseLayoutSettingsChanged(Current.WindowMode, Current.LayoutOrientationMode); break;
             case nameof(AppSettings.TaskbarSurface):
             case nameof(AppSettings.DynamicIslandSurface): AppearanceSettingsChanged?.Invoke(null, new AppearanceSettingsChangedEventArgs(Current.Appearance)); break;
         }

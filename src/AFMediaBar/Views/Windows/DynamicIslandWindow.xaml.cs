@@ -1,5 +1,11 @@
+using System.Diagnostics;
 using System.Windows;
+using System.Windows.Automation;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Interop;
 using AFMediaBar.Classes.Models;
@@ -8,597 +14,745 @@ using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Layout;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Utils;
+using AFMediaBar.Resources;
 using AFMediaBar.ViewModels.Windows;
 using MenuItem = Wpf.Ui.Controls.MenuItem;
 
 namespace AFMediaBar.Views.Windows;
 
 /// <summary>
-/// 灵动岛窗口：可自由拖动，贴边后在暂停时收起并支持悬停展开。
-/// Dynamic island window: can be dragged freely and retracts to its selected edge while paused.
-/// </summary>
-/// <summary>
-/// 灵动岛媒体宿主窗口，负责边缘状态、位置和媒体呈现适配。
-/// Dynamic-island media host responsible for edge state, positioning, and media presentation adaptation.
+/// 固定顶部的媒体岛；窗口只承载一个连续变形的表面，不拥有媒体会话或音频采集。
+/// Fixed top-center media island. One morphing surface consumes the existing media and audio services.
 /// </summary>
 public partial class DynamicIslandWindow : Window
 {
-    private const double EdgeRevealDip = 5;
-    private const double EdgeDockThresholdDip = 28;
+    private const double HostWidth = 420;
+    private const double HostHeight = 196;
+    private const double SurfaceTop = 4;
+    private const double TopInset = 12;
+    private const double GestureSlop = 8;
+    private const double SwipeDistance = 24;
     private readonly TaskbarWindowViewModel _viewModel;
-    private readonly DispatcherTimer _sizeAnimationTimer;
-    private readonly DispatcherTimer _foregroundSamplingTimer;
-    private readonly AdaptiveForegroundSamplingSession _foregroundSamplingSession;
-    private bool _isExpanded;
-    private bool _isClosing;
-    private bool _isDragging;
-    private bool _dpiRecoveryQueued;
+    private readonly MediaSessionService _mediaSessionService;
+    private readonly AudioMonitorService _audioMonitorService;
+    private readonly IDisplayMonitorService _displayMonitorService;
+    private readonly DispatcherTimer _holdTimer;
+    private readonly DispatcherTimer _environmentTimer;
+    private readonly DispatcherTimer _presentationTimer;
+    private readonly float[] _spectrumBands = new float[9];
+    private readonly double[] _activityTargets = new double[5];
+    private readonly double[] _activityLevels = new double[5];
+    private readonly System.Windows.Shapes.Rectangle[] _activityBars;
+    private MediaSnapshot _latestSnapshot = MediaSnapshot.Disconnected;
     private HwndSource? _windowSource;
-    private Point? _dpiNormalizedCenter;
-    private LayoutOrientation? _appliedOrientation;
-    private double _appliedLengthScalePercent = double.NaN;
-    private double _appliedThicknessScalePercent = double.NaN;
+    private TouchDevice? _activeTouch;
+    private TouchDevice? _seekTouch;
+    private Point _pointerOrigin;
+    private bool _pointerDown;
+    private bool _pointerCancelled;
+    private bool _holdTriggered;
+    private bool _expandedAtPress;
+    private bool _wantsExpanded;
+    private bool _isClosing;
+    private bool _fullscreenSuppressed;
+    private bool _placementQueued;
+    private bool _isSeeking;
+    private bool _updatingProgress;
+    private bool _escapeWasDown;
+    private string? _seekIdentity;
+    private string? _monitorDeviceId;
+    private double _effectiveScale = 1;
+    private long _lastProgressUpdate;
+    private long _holdStartedTimestamp;
+    private double _holdExpansionStart;
 
-    /// <summary>
-    /// 创建灵动岛媒体宿主窗口。
-    /// Creates the dynamic-island media host window.
-    /// </summary>
+    private double HoldElapsedSeconds => _holdStartedTimestamp == 0
+        ? 0
+        : Stopwatch.GetElapsedTime(_holdStartedTimestamp).TotalSeconds;
+
+    private bool IsPreviewingHold => _pointerDown && !_pointerCancelled && !_holdTriggered &&
+        !_expandedAtPress && !_wantsExpanded && _latestSnapshot.IsConnected && !_fullscreenSuppressed;
+
     public DynamicIslandWindow(
         TaskbarWindowViewModel viewModel,
         WindowAppearanceService appearanceService,
-        ScreenBackgroundSampler screenBackgroundSampler)
+        IDisplayMonitorService displayMonitorService,
+        MediaSessionService mediaSessionService,
+        AudioMonitorService audioMonitorService)
     {
         WindowHelper.SetNoActivate(this);
         InitializeComponent();
         _viewModel = viewModel;
-        _foregroundSamplingSession = new AdaptiveForegroundSamplingSession(
-            screenBackgroundSampler,
-            Dispatcher,
-            GetAdaptiveForegroundSampleBounds,
-            MediaControl.ApplyAdaptiveForegroundDecision);
-        DataContext = new DynamicIslandDataContext(viewModel);
+        _mediaSessionService = mediaSessionService;
+        _audioMonitorService = audioMonitorService;
+        _displayMonitorService = displayMonitorService;
+        _activityBars = [ActivityBar0, ActivityBar1, ActivityBar2, ActivityBar3, ActivityBar4];
+        DataContext = viewModel;
         ContextMenuHelper.AttachOutsideClickDismissal(PlayerMenu);
         appearanceService.Attach(PlayerMenu, this);
-        MediaControl.TogglePlayPauseRequested += MediaControl_TogglePlayPauseRequested;
-        MediaControl.SkipPreviousRequested += MediaControl_SkipPreviousRequested;
-        MediaControl.SkipNextRequested += MediaControl_SkipNextRequested;
-        MediaControl.ActivateSourceRequested += MediaControl_ActivateSourceRequested;
-        MediaControl.DesiredSizeChanged += MediaControl_DesiredSizeChanged;
-        _sizeAnimationTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
-        _sizeAnimationTimer.Tick += (_, _) => AdvanceSizeAnimation();
-        _foregroundSamplingTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1500) };
-        _foregroundSamplingTimer.Tick += (_, _) => _foregroundSamplingSession.RequestRefresh();
-        Loaded += (_, _) =>
-        {
-            RestoreSavedPosition();
-            ApplyLayoutSettings(SettingsManager.Current.LayoutOrientationMode);
-            MediaControl.ApplyAppearanceSettings();
-            SetPosition(_isExpanded ? GetExpandedPosition() : GetCollapsedPosition(), animated: false);
-            _foregroundSamplingTimer.Start();
-            Dispatcher.BeginInvoke(_foregroundSamplingSession.RequestRefresh, DispatcherPriority.ContextIdle);
-        };
+        _holdTimer = new DispatcherTimer(DispatcherPriority.Input) { Interval = DynamicIslandHoldPolicy.HoldDuration };
+        _holdTimer.Tick += HoldTimer_Tick;
+        _environmentTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _environmentTimer.Tick += EnvironmentTimer_Tick;
+        _presentationTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
+        _presentationTimer.Tick += PresentationTimer_Tick;
+        Loaded += Window_Loaded;
+        IsVisibleChanged += Window_IsVisibleChanged;
+        SystemParameters.StaticPropertyChanged += SystemParameters_Changed;
+        DrawIsland();
     }
 
-    /// <summary>初始化灵动岛窗口句柄钩子。/ Initializes the dynamic-island window hook.</summary>
+    private void Window_Loaded(object sender, RoutedEventArgs e)
+    {
+        ApplyLayoutSettings(LayoutOrientationMode.Horizontal);
+        ApplyAppearanceSettings();
+        RefreshEnvironmentVisibility();
+        _environmentTimer.Start();
+        UpdatePresentationTimer();
+        RetargetIsland();
+    }
+
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
-        _windowSource = (HwndSource)PresentationSource.FromDependencyObject(this);
-        _windowSource.AddHook(WindowProc);
+        _windowSource = HwndSource.FromHwnd(new WindowInteropHelper(this).Handle);
+        _windowSource?.AddHook(WindowProc);
+        QueuePlacement();
     }
 
     private IntPtr WindowProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
         if (msg is NativeMethods.WM_DPICHANGED or NativeMethods.WM_DISPLAYCHANGE)
+            QueuePlacement();
+        else if (msg == 0x0021) // WM_MOUSEACTIVATE: media controls must not activate their host.
         {
-            _foregroundSamplingSession.Invalidate(clearDecision: false);
-            ScheduleDpiRecovery(hwnd);
+            handled = true;
+            return new IntPtr(3); // MA_NOACTIVATE
         }
-
         return IntPtr.Zero;
     }
 
-    private void ScheduleDpiRecovery(IntPtr hwnd)
-    {
-        if (_isClosing || _dpiRecoveryQueued)
-            return;
-
-        _dpiRecoveryQueued = true;
-        _sizeAnimationTimer.Stop();
-        StopPositionAnimationAtCurrentPosition();
-        PlayerMenu.IsOpen = false;
-
-        if (NativeMethods.GetWindowRect(hwnd, out var windowRect))
-        {
-            var workArea = MonitorUtil.GetMonitor(hwnd).workArea;
-            if (workArea.Width > 0 && workArea.Height > 0)
-            {
-                var centerX = (windowRect.Left + windowRect.Right) / 2.0;
-                var centerY = (windowRect.Top + windowRect.Bottom) / 2.0;
-                _dpiNormalizedCenter = new Point(
-                    Math.Clamp((centerX - workArea.Left) / workArea.Width, 0, 1),
-                    Math.Clamp((centerY - workArea.Top) / workArea.Height, 0, 1));
-            }
-        }
-
-        Dispatcher.BeginInvoke(RecoverAfterDpiChange, DispatcherPriority.ContextIdle);
-    }
-
-    private void RecoverAfterDpiChange()
-    {
-        _dpiRecoveryQueued = false;
-        if (_isClosing)
-            return;
-
-        InvalidateMeasure();
-        InvalidateArrange();
-        InvalidateVisual();
-        UpdateLayout();
-
-        var workArea = GetCurrentWorkArea();
-        var center = _dpiNormalizedCenter ?? new Point(0.5, 0);
-        _dpiNormalizedCenter = null;
-        var dockedEdge = SettingsManager.Current.DynamicIslandEdgeDocked
-            ? SettingsManager.Current.DynamicIslandEdge
-            : (DynamicIslandEdge?)null;
-        var restoredPosition = DynamicIslandPositionCalculator.GetDpiRestoredPosition(
-            workArea,
-            Width,
-            Height,
-            center,
-            dockedEdge);
-        SettingsManager.Current.DynamicIslandLeft = restoredPosition.X;
-        SettingsManager.Current.DynamicIslandTop = restoredPosition.Y;
-        SetPosition(_isExpanded ? restoredPosition : GetCollapsedPosition(), animated: false);
-        MediaControl.RefreshDesiredSize();
-        ApplyPendingSizeRequest();
-    }
-
-    /// <summary>
-    /// 将不可变媒体快照转发到呈现控件，并在内容尺寸变化后保持当前边缘锚点。
-    /// Applies an immutable media snapshot to the presentation control while preserving the current edge anchor after size changes.
-    /// </summary>
+    /// <summary>媒体变化不改变用户选择的展开状态。 / Media updates do not override the user's presentation state.</summary>
     public void ApplySnapshot(MediaSnapshot snapshot)
     {
         if (_isClosing)
             return;
-
-        Dispatcher.Invoke(() =>
+        if (!Dispatcher.CheckAccess())
         {
-            var wasVisible = Visibility == Visibility.Visible;
-            if (!snapshot.IsConnected)
-            {
-                MediaControl.UpdateSongInfo(snapshot);
-                MediaControl.ApplyAppearanceSettings();
-                Visibility = Visibility.Visible;
-                if (!wasVisible)
-                    Dispatcher.BeginInvoke(_foregroundSamplingSession.RequestRefresh, DispatcherPriority.ContextIdle);
-                if (_isDragging)
-                    return;
-                if (SettingsManager.Current.DynamicIslandEdgeDocked && !IsCursorWithinWindow())
-                    Collapse(animated: true);
-                else
-                    Expand(animated: true);
-                return;
-            }
-
-            ApplyLayoutSettings(SettingsManager.Current.LayoutOrientationMode);
-            MediaControl.UpdateSongInfo(snapshot);
-            MediaControl.ApplyAppearanceSettings();
-            Visibility = Visibility.Visible;
-            if (!wasVisible)
-                Dispatcher.BeginInvoke(_foregroundSamplingSession.RequestRefresh, DispatcherPriority.ContextIdle);
-
-            if (_isDragging)
-                return;
-
-            if (snapshot.IsPlaying)
-            {
-                Expand(animated: true);
-            }
-            else
-            {
-                if (SettingsManager.Current.DynamicIslandEdgeDocked && !IsCursorWithinWindow())
-                    Collapse(animated: true);
-                else
-                    Expand(animated: true);
-            }
-        });
-    }
-
-    /// <summary>
-    /// 应用已规范化的布局方向，并重新测量窗口和输入区域。
-    /// Applies the normalized layout orientation and remeasures the window and its input region.
-    /// </summary>
-    public void ApplyLayoutSettings(LayoutOrientationMode mode)
-    {
-        var orientation = mode == LayoutOrientationMode.Vertical
-            ? LayoutOrientation.Vertical
-            : LayoutOrientation.Horizontal;
-
-        var lengthScalePercent = SettingsManager.Current.LayoutLengthScalePercent;
-        var thicknessScalePercent = SettingsManager.Current.LayoutThicknessScalePercent;
-        if (_appliedOrientation == orientation &&
-            lengthScalePercent.Equals(_appliedLengthScalePercent) &&
-            thicknessScalePercent.Equals(_appliedThicknessScalePercent))
-            return;
-
-        MediaControl.ApplyLayout(WindowMode.DynamicIsland, orientation);
-        var canvas = MediaControl.CurrentLayout?.Canvas;
-        if (canvas is null)
-            return;
-
-        _appliedOrientation = orientation;
-        _appliedLengthScalePercent = lengthScalePercent;
-        _appliedThicknessScalePercent = thicknessScalePercent;
-        Width = canvas.Width;
-        Height = canvas.Height;
-        MediaControl.RefreshDesiredSize();
-
-        if (!IsLoaded)
-        {
-            RestoreSavedPosition();
+            Dispatcher.BeginInvoke(() => ApplySnapshot(snapshot));
             return;
         }
 
-        if (!_isDragging)
-            SetPosition(_isExpanded ? GetExpandedPosition() : GetCollapsedPosition(), animated: false);
-    }
-
-    /// <summary>
-    /// 在主题或外观设置变化后重新应用窗口材质及控件资源。
-    /// Reapplies window material and control resources after theme or appearance settings change.
-    /// </summary>
-    public void ApplyAppearanceSettings()
-    {
-        MediaControl.ApplyAppearanceSettings();
-        if (SettingsManager.Current.Appearance.PlayerForegroundMode == PlayerForegroundMode.Automatic &&
-            SettingsManager.Current.DynamicIslandBackgroundMode == DynamicIslandBackgroundMode.Transparent)
+        var previousIdentity = TrackChangeNotificationPolicy.CreateIdentity(_latestSnapshot);
+        _latestSnapshot = snapshot;
+        if (_isSeeking && previousIdentity != TrackChangeNotificationPolicy.CreateIdentity(snapshot))
+            CancelSeek();
+        if (!snapshot.IsConnected)
         {
-            Dispatcher.BeginInvoke(_foregroundSamplingSession.RequestRefresh, DispatcherPriority.ContextIdle);
+            CancelPointer();
+            CancelSeek();
+            _wantsExpanded = false;
+            Array.Clear(_activityTargets);
         }
         else
         {
-            _foregroundSamplingSession.Invalidate(clearDecision: true);
+            TitleText.Text = snapshot.Title;
+            ArtistText.Text = snapshot.Artist;
+            ArtworkImage.Source = snapshot.Artwork;
+            ArtworkPlaceholder.Visibility = snapshot.Artwork is null ? Visibility.Visible : Visibility.Collapsed;
         }
+        PreviousButton.IsEnabled = snapshot.IsConnected && snapshot.CanSkipPrevious;
+        PlayPauseButton.IsEnabled = snapshot.IsConnected && snapshot.CanPlayPause;
+        NextButton.IsEnabled = snapshot.IsConnected && snapshot.CanSkipNext;
+        SeekSlider.IsEnabled = snapshot.IsConnected && snapshot.CanSeek && snapshot.Duration > 0;
+        PlayGlyph.Visibility = snapshot.IsPlaying ? Visibility.Collapsed : Visibility.Visible;
+        PauseGlyph.Visibility = snapshot.IsPlaying ? Visibility.Visible : Visibility.Collapsed;
+        SetTransportHelp(PreviousButton, "Island.Accessibility.Previous", snapshot.IsConnected && snapshot.CanSkipPrevious);
+        SetTransportHelp(NextButton, "Island.Accessibility.Next", snapshot.IsConnected && snapshot.CanSkipNext);
+        SetTransportHelp(PlayPauseButton, snapshot.IsPlaying ? "Island.Accessibility.Pause" : "Island.Accessibility.Play",
+            snapshot.IsConnected && snapshot.CanPlayPause);
+        if (!snapshot.IsPlaying)
+            Array.Clear(_activityTargets);
+        UpdateProgress();
+        if (!IsLoaded)
+            Show();
+        RefreshEnvironmentVisibility();
+        UpdatePresentationTimer();
+        RetargetIsland();
     }
 
-    private Int32Rect? GetAdaptiveForegroundSampleBounds()
+    private static void SetTransportHelp(Button button, string labelKey, bool supported)
     {
-        if (_isClosing || _isDragging || _dpiRecoveryQueued || _positionAnimationActive ||
-            _sizeAnimationTimer.IsEnabled || Visibility != Visibility.Visible ||
-            SettingsManager.Current.Appearance.PlayerForegroundMode != PlayerForegroundMode.Automatic ||
-            SettingsManager.Current.DynamicIslandBackgroundMode != DynamicIslandBackgroundMode.Transparent)
-        {
-            return null;
-        }
-
-        return MediaControl.TryGetForegroundSampleBounds(out var bounds) ? bounds : null;
+        button.SetResourceReference(AutomationProperties.NameProperty, "Loc." + labelKey);
+        button.SetResourceReference(ToolTipProperty, "Loc." + (supported ? labelKey : "Island.Transport.Unavailable"));
+        if (supported)
+            button.ClearValue(AutomationProperties.HelpTextProperty);
+        else
+            button.SetResourceReference(AutomationProperties.HelpTextProperty, "Loc.Island.Transport.Unavailable");
     }
 
-    private void MediaControl_DesiredSizeChanged(object? sender, MediaBarSizeRequestEventArgs eventArgs)
-    {
-        var request = eventArgs.Request;
-        if (_isClosing || _appliedOrientation is not { } orientation)
-            return;
-
-        // 拖动或收起/展开的位置动画期间保留最新请求，动画结束后再应用。
-        // Keep the latest request during drag or position animation and apply it afterwards.
-        if (_isDragging || _positionAnimationActive || _dpiRecoveryQueued)
-        {
-            _pendingSizeRequest = request;
-            return;
-        }
-
-        ApplyDesiredSizeRequest(request, orientation);
-    }
-
-    /// <summary>在全局左键点击位于菜单外时关闭右键菜单。 / Closes the context menu after a global left click outside it.</summary>
-    public void CloseContextMenuIfOutside(int screenX, int screenY) =>
-        ContextMenuHelper.CloseIfOutside(PlayerMenu, screenX, screenY);
-
-    /// <summary>关闭灵动岛媒体菜单。/ Closes the dynamic-island media menu.</summary>
-    internal void ClosePlayerMenu() => PlayerMenu.IsOpen = false;
-
-    /// <summary>
-    /// 用最新会话列表重建灵动岛的媒体源菜单。
-    /// Rebuilds the dynamic-island media-source menu from the latest session list.
-    /// </summary>
     public void ApplySessions(IReadOnlyList<MediaSessionOption> options)
     {
         if (_isClosing)
             return;
-
-        Dispatcher.Invoke(() =>
+        SessionsMenuItem.Items.Clear();
+        foreach (var option in options)
         {
-            SessionsMenuItem.Items.Clear();
-            foreach (var option in options)
+            SessionsMenuItem.Items.Add(new MenuItem
             {
-                SessionsMenuItem.Items.Add(new MenuItem
-                {
-                    Header = option.DisplayName,
-                    IsCheckable = true,
-                    IsChecked = option.IsSelected,
-                    Command = _viewModel.SelectMediaSessionCommand,
-                    CommandParameter = option.Key
-                });
-            }
-        });
+                Header = option.DisplayName,
+                IsCheckable = true,
+                IsChecked = option.IsSelected,
+                Command = _viewModel.SelectMediaSessionCommand,
+                CommandParameter = option.Key
+            });
+        }
     }
 
-    private void Expand(bool animated)
+    /// <summary>灵动岛只使用独立的等比尺寸和显示器设置。 / The island ignores taskbar orientation and sizing.</summary>
+    public void ApplyLayoutSettings(LayoutOrientationMode mode)
     {
-        if (_isDragging)
+        if (_isClosing)
             return;
-
-        if (_sizeAnimationTimer.IsEnabled)
-        {
-            _isExpanded = true;
-            Visibility = Visibility.Visible;
-            return;
-        }
-
-        var target = GetExpandedPosition();
-        if (_isExpanded && IsPositionTarget(target))
-        {
-            Visibility = Visibility.Visible;
-            return;
-        }
-
-        _isExpanded = true;
-        Visibility = Visibility.Visible;
-        SetPosition(target, animated);
+        PlaceOnTargetMonitor();
+        DrawIsland();
     }
 
-    private void Collapse(bool animated)
+    public void ApplyAppearanceSettings()
     {
-        if (_isDragging)
+        if (_isClosing)
             return;
-
-        if (_sizeAnimationTimer.IsEnabled)
-        {
-            _isExpanded = false;
-            return;
-        }
-
-        var target = GetCollapsedPosition();
-        if (!_isExpanded && IsPositionTarget(target))
-            return;
-
-        _isExpanded = false;
-        SetPosition(target, animated);
+        // The island remains black in both themes; system high contrast takes precedence for accessibility.
+        IslandBody.Background = SystemParameters.HighContrast ? SystemColors.WindowBrush : Brushes.Black;
+        TitleText.Foreground = SystemParameters.HighContrast ? SystemColors.WindowTextBrush : Brushes.White;
+        ArtistText.Foreground = SystemParameters.HighContrast ? SystemColors.WindowTextBrush : new SolidColorBrush(Color.FromRgb(157, 157, 163));
+        Resources["IslandPrimaryBrush"] = TitleText.Foreground;
+        Resources["IslandSecondaryBrush"] = ArtistText.Foreground;
+        Resources["IslandTrackBrush"] = SystemParameters.HighContrast ? SystemColors.GrayTextBrush : new SolidColorBrush(Color.FromArgb(69, 255, 255, 255));
+        Resources["IslandActivityBrush"] = SystemParameters.HighContrast ? SystemColors.WindowTextBrush : new SolidColorBrush(Color.FromRgb(255, 83, 110));
+        AutomationProperties.SetHelpText(IslandBody, Translations.Get("Island.Accessibility.Expand"));
+        RetargetIsland();
     }
 
-    private void Canvas_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    public void RefreshDisplayEnvironment() => QueuePlacement();
+
+    private void QueuePlacement()
     {
-        if (e.ChangedButton != System.Windows.Input.MouseButton.Left ||
-            e.OriginalSource is DependencyObject source &&
-            (FindAncestor<System.Windows.Controls.Primitives.ButtonBase>(source) is not null || IsMediaAction(source)))
+        if (_isClosing || _placementQueued)
+            return;
+        _placementQueued = true;
+        Dispatcher.BeginInvoke(() =>
         {
+            _placementQueued = false;
+            if (_isClosing)
+                return;
+            PlaceOnTargetMonitor();
+            DrawIsland();
+            RefreshEnvironmentVisibility();
+        }, DispatcherPriority.Loaded);
+    }
+
+    private void PlaceOnTargetMonitor()
+    {
+        var monitor = _displayMonitorService.ResolveFixedMonitor(SettingsManager.Current.DynamicIslandMonitorDeviceId);
+        var dpiX = monitor?.DpiX is > 0 ? monitor.DpiX / 96d : VisualTreeHelper.GetDpi(this).DpiScaleX;
+        var dpiY = monitor?.DpiY is > 0 ? monitor.DpiY / 96d : VisualTreeHelper.GetDpi(this).DpiScaleY;
+        var physicalArea = monitor?.WorkArea ?? new Rect(
+            SystemParameters.WorkArea.X * dpiX, SystemParameters.WorkArea.Y * dpiY,
+            SystemParameters.WorkArea.Width * dpiX, SystemParameters.WorkArea.Height * dpiY);
+        _monitorDeviceId = monitor?.DeviceId;
+        var requestedScale = SettingsManager.Current.DynamicIslandScalePercent / 100;
+        var availableScale = Math.Min(physicalArea.Width / (HostWidth * dpiX),
+            Math.Max(1, physicalArea.Height - TopInset * dpiY) / (HostHeight * dpiY));
+        _effectiveScale = Math.Max(0.1, Math.Min(requestedScale, availableScale));
+        Width = IslandViewport.Width = HostWidth * _effectiveScale;
+        Height = IslandViewport.Height = HostHeight * _effectiveScale;
+        var workAreaDip = new Rect(physicalArea.X / dpiX, physicalArea.Y / dpiY,
+            physicalArea.Width / dpiX, physicalArea.Height / dpiY);
+        var position = DynamicIslandPositionCalculator.GetCenteredPosition(workAreaDip, Width, Height,
+            Math.Max(0, TopInset - SurfaceTop * _effectiveScale));
+        var hwnd = new WindowInteropHelper(this).Handle;
+        if (hwnd == IntPtr.Zero)
+        {
+            Left = position.X;
+            Top = position.Y;
             return;
         }
-
-        _isDragging = true;
-        _foregroundSamplingSession.Invalidate(clearDecision: false);
-        StopPositionAnimationAtCurrentPosition();
-        _isExpanded = true;
-
-        try
+        var x = (int)Math.Round(position.X * dpiX);
+        var y = (int)Math.Round(position.Y * dpiY);
+        var width = (int)Math.Ceiling(Width * dpiX);
+        var height = (int)Math.Ceiling(Height * dpiY);
+        if (!NativeMethods.GetWindowRect(hwnd, out var current) || current.Left != x || current.Top != y ||
+            current.Right - current.Left != width || current.Bottom - current.Top != height)
         {
-            DragMove();
+            NativeMethods.SetWindowPos(hwnd, -1, x, y, width, height, 0x0010); // HWND_TOPMOST, SWP_NOACTIVATE
         }
-        catch (InvalidOperationException)
-        {
+    }
+
+    private void RefreshEnvironmentVisibility()
+    {
+        if (_isClosing || !IsLoaded)
             return;
-        }
-        finally
+        var suppressed = _displayMonitorService.IsForegroundWindowFullscreen(_monitorDeviceId);
+        if (suppressed == _fullscreenSuppressed)
+            return;
+        _fullscreenSuppressed = suppressed;
+        if (suppressed)
         {
-            _isDragging = false;
-        }
-
-        var edgeDocked = SaveDraggedPositionAndEdge();
-        if (!MediaControl.IsPlaying && edgeDocked)
-        {
-            Collapse(animated: true);
-            if (!_positionAnimationActive)
-                ApplyPendingSizeRequest();
+            CancelPointer();
+            CancelSeek();
+            PlayerMenu.IsOpen = false;
+            Visibility = Visibility.Hidden;
+            StopRendering();
         }
         else
         {
-            ApplyPendingSizeRequest();
+            Visibility = Visibility.Visible;
+            SnapPresentation();
+            DrawIsland();
         }
-        Dispatcher.BeginInvoke(_foregroundSamplingSession.RequestRefresh, DispatcherPriority.ContextIdle);
+        UpdatePresentationTimer();
     }
 
-    private void Window_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+    private void EnvironmentTimer_Tick(object? sender, EventArgs e) => RefreshEnvironmentVisibility();
+
+    private void Window_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
-        if (!_isExpanded && !_isDragging)
-            Expand(animated: true);
+        if (!IsVisible)
+            StopRendering();
+        UpdatePresentationTimer();
     }
 
-    private void Window_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    private void SystemParameters_Changed(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (!MediaControl.IsPlaying && !_isDragging && SettingsManager.Current.DynamicIslandEdgeDocked &&
-            !IsCursorWithinWindow())
-            Collapse(animated: true);
+        if (e.PropertyName is nameof(SystemParameters.ClientAreaAnimation) or nameof(SystemParameters.HighContrast))
+            Dispatcher.BeginInvoke(ApplyAppearanceSettings);
     }
 
-    /// <summary>
-    /// 使用系统屏幕光标判断指针是否仍在灵动岛窗口内。
-    /// Uses the native screen cursor position to determine whether the pointer remains inside the island.
-    /// </summary>
-    private bool IsCursorWithinWindow()
+    private void SetExpanded(bool expanded)
     {
-        if (!NativeMethods.GetCursorPos(out var cursor))
-            return false;
-
-        try
-        {
-            var cursorInWindow = PointFromScreen(new Point(cursor.X, cursor.Y));
-            return cursorInWindow.X >= 0 && cursorInWindow.X <= ActualWidth &&
-                   cursorInWindow.Y >= 0 && cursorInWindow.Y <= ActualHeight;
-        }
-        catch (InvalidOperationException)
-        {
-            return false;
-        }
-    }
-
-    /// <summary>释放灵动岛窗口资源和消息钩子。/ Releases dynamic-island resources and message hooks.</summary>
-    protected override void OnClosed(EventArgs e)
-    {
-        _isClosing = true;
-        if (_windowSource is not null)
-        {
-            _windowSource.RemoveHook(WindowProc);
-            _windowSource = null;
-        }
-        _sizeAnimationTimer.Stop();
-        _foregroundSamplingTimer.Stop();
-        _foregroundSamplingSession.Dispose();
-        BeginAnimation(TopProperty, null);
-        BeginAnimation(LeftProperty, null);
-        MediaControl.TogglePlayPauseRequested -= MediaControl_TogglePlayPauseRequested;
-        MediaControl.SkipPreviousRequested -= MediaControl_SkipPreviousRequested;
-        MediaControl.SkipNextRequested -= MediaControl_SkipNextRequested;
-        MediaControl.ActivateSourceRequested -= MediaControl_ActivateSourceRequested;
-        MediaControl.DesiredSizeChanged -= MediaControl_DesiredSizeChanged;
-        base.OnClosed(e);
-    }
-
-    private void MediaControl_TogglePlayPauseRequested(object? sender, EventArgs e) =>
-        Execute(_viewModel.TogglePlayPauseCommand);
-
-    private void MediaControl_SkipPreviousRequested(object? sender, EventArgs e) =>
-        Execute(_viewModel.SkipPreviousCommand);
-
-    private void MediaControl_SkipNextRequested(object? sender, EventArgs e) =>
-        Execute(_viewModel.SkipNextCommand);
-
-    private void MediaControl_ActivateSourceRequested(object? sender, EventArgs e) =>
-        Execute(_viewModel.ActivateMediaSourceCommand);
-
-    private static void Execute(System.Windows.Input.ICommand command)
-    {
-        if (command.CanExecute(null))
-            command.Execute(null);
-    }
-
-    private void SaveCurrentExpandedPosition()
-    {
-        if (double.IsNaN(Left) || double.IsNaN(Top))
+        expanded &= _latestSnapshot.IsConnected;
+        if (_isClosing || _wantsExpanded == expanded)
             return;
-
-        var position = DynamicIslandPositionCalculator.ClampPosition(
-            GetCurrentWorkArea(),
-            Width,
-            Height,
-            new Point(Left, Top));
-        SettingsManager.Current.DynamicIslandLeft = position.X;
-        SettingsManager.Current.DynamicIslandTop = position.Y;
+        _wantsExpanded = expanded;
+        _escapeWasDown = (NativeMethods.GetAsyncKeyState(0x1B) & 0x8000) != 0;
+        if (!expanded)
+            CancelSeek();
+        UpdateProgress();
+        UpdatePresentationTimer();
+        RetargetIsland();
     }
 
-    private bool SaveDraggedPositionAndEdge()
+    private void BeginPointer(Point point, TouchDevice? touch)
     {
-        var workArea = GetCurrentWorkArea();
-        var clampedPosition = DynamicIslandPositionCalculator.ClampPosition(
-            workArea,
-            Width,
-            Height,
-            new Point(Left, Top));
-        SetPosition(clampedPosition, animated: false);
-
-        SettingsManager.Current.DynamicIslandLeft = clampedPosition.X;
-        SettingsManager.Current.DynamicIslandTop = clampedPosition.Y;
-        var edge = DynamicIslandPositionCalculator.FindDockedEdge(
-            clampedPosition.X,
-            clampedPosition.Y,
-            Width,
-            Height,
-            workArea,
-            EdgeDockThresholdDip);
-        SettingsManager.Current.DynamicIslandEdgeDocked = edge is not null;
-        if (edge is { } dockedEdge)
-            SettingsManager.Current.DynamicIslandEdge = dockedEdge;
-        return edge is not null;
+        if (_pointerDown || _isSeeking || !_latestSnapshot.IsConnected || PlayerMenu.IsOpen)
+            return;
+        _pointerOrigin = point;
+        _activeTouch = touch;
+        _pointerDown = true;
+        _pointerCancelled = false;
+        _holdTriggered = false;
+        _expandedAtPress = _wantsExpanded;
+        _holdStartedTimestamp = Stopwatch.GetTimestamp();
+        _holdExpansionStart = Math.Clamp(_expansionSpring.Value, 0, 1);
+        if (touch is null)
+            Mouse.Capture(IslandBody);
+        else
+            touch.Capture(IslandBody);
+        _holdTimer.Stop();
+        _holdTimer.Interval = DynamicIslandHoldPolicy.HoldDuration;
+        _holdTimer.Start();
+        RetargetIsland();
     }
 
-    private void RestoreSavedPosition()
+    private void HoldTimer_Tick(object? sender, EventArgs e)
     {
-        if (SettingsManager.Current.DynamicIslandLeft is { } savedLeft &&
-            SettingsManager.Current.DynamicIslandTop is { } savedTop)
+        if (TryCompleteHold())
+            return;
+        if (!_pointerDown || _pointerCancelled || _holdTriggered || _fullscreenSuppressed || !_latestSnapshot.IsConnected)
         {
-            SetPosition(new Point(savedLeft, savedTop), animated: false);
+            _holdTimer.Stop();
+            return;
+        }
+        _holdTimer.Interval = TimeSpan.FromSeconds(Math.Max(0.001,
+            DynamicIslandHoldPolicy.HoldDuration.TotalSeconds - HoldElapsedSeconds));
+    }
+
+    private bool TryCompleteHold()
+    {
+        if (!_pointerDown || _pointerCancelled || _holdTriggered || _fullscreenSuppressed ||
+            !_latestSnapshot.IsConnected || !DynamicIslandHoldPolicy.ShouldCommit(HoldElapsedSeconds))
+            return false;
+        _holdTimer.Stop();
+        _holdTriggered = true;
+        SetExpanded(true);
+        RetargetIsland();
+        return true;
+    }
+
+    private void MovePointer(Point point, bool touch)
+    {
+        if (!_pointerDown || _holdTriggered)
+            return;
+        var delta = point - _pointerOrigin;
+        if (touch && Math.Abs(delta.X) >= SwipeDistance && Math.Abs(delta.X) > Math.Abs(delta.Y) * 1.5)
+        {
+            var centerOffset = _pointerOrigin.X - IslandBody.Width / 2;
+            var side = Math.Abs(centerOffset) <= GestureSlop ? Math.Sign(delta.X) : Math.Sign(centerOffset);
+            _holdTriggered = true;
+            _holdTimer.Stop();
+            SetExpanded(side * delta.X > 0);
+            RetargetIsland();
+            return;
+        }
+        if (delta.Length > GestureSlop)
+        {
+            _pointerCancelled = true;
+            _holdTimer.Stop();
+            RetargetIsland();
         }
     }
 
-    private Point GetExpandedPosition()
+    private void EndPointer(Point point)
     {
-        return DynamicIslandPositionCalculator.GetExpandedPosition(
-            GetCurrentWorkArea(),
-            Width,
-            Height,
-            SettingsManager.Current.DynamicIslandLeft,
-            SettingsManager.Current.DynamicIslandTop);
+        if (!_holdTriggered && (point - _pointerOrigin).Length > GestureSlop)
+            _pointerCancelled = true;
+        // Release can be dispatched before the deadline timer; classify by actual elapsed time, not callback order.
+        TryCompleteHold();
+        var activate = _pointerDown && !_pointerCancelled && !_holdTriggered && !_expandedAtPress &&
+            IslandClip.FillContains(point) && _latestSnapshot.IsConnected && DynamicIslandHoldPolicy.IsTap(HoldElapsedSeconds);
+        CancelPointer();
+        if (activate && _viewModel.ActivateMediaSourceCommand.CanExecute(null))
+            _viewModel.ActivateMediaSourceCommand.Execute(null);
     }
 
-    private Point GetCollapsedPosition()
+    private void CancelPointer()
     {
-        return DynamicIslandPositionCalculator.GetCollapsedPosition(
-            GetCurrentWorkArea(),
-            Width,
-            Height,
-            SettingsManager.Current.DynamicIslandEdge,
-            EdgeRevealDip,
-            SettingsManager.Current.DynamicIslandLeft,
-            SettingsManager.Current.DynamicIslandTop);
+        _holdTimer.Stop();
+        _pointerDown = false;
+        _pointerCancelled = true;
+        _holdStartedTimestamp = 0;
+        _holdExpansionStart = 0;
+        var touch = _activeTouch;
+        _activeTouch = null;
+        if (Mouse.Captured == IslandBody)
+            Mouse.Capture(null);
+        if (touch?.Captured == IslandBody)
+            touch.Capture(null);
+        if (!_isClosing)
+            RetargetIsland();
     }
 
-    private Rect GetCurrentWorkArea()
+    private void Island_MouseDown(object sender, MouseButtonEventArgs e)
     {
-        var handle = new WindowInteropHelper(this).Handle;
-        if (handle == IntPtr.Zero)
-            return SystemParameters.WorkArea;
-
-        var physicalArea = MonitorUtil.GetMonitor(handle).workArea;
-        var transformFromDevice = PresentationSource.FromVisual(this)?.CompositionTarget?.TransformFromDevice;
-        var relativeTopLeft = transformFromDevice?.Transform(physicalArea.TopLeft) ?? physicalArea.TopLeft;
-        var relativeBottomRight = transformFromDevice?.Transform(physicalArea.BottomRight) ?? physicalArea.BottomRight;
-        return new Rect(
-            relativeTopLeft.X,
-            relativeTopLeft.Y,
-            relativeBottomRight.X - relativeTopLeft.X,
-            relativeBottomRight.Y - relativeTopLeft.Y);
+        if (e.StylusDevice is not null || IsInteractiveControl(e.OriginalSource as DependencyObject))
+            return;
+        BeginPointer(e.GetPosition(IslandBody), null);
+        e.Handled = true;
     }
 
-    private static T? FindAncestor<T>(DependencyObject? source) where T : DependencyObject
+    private void Island_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (_activeTouch is null)
+            MovePointer(e.GetPosition(IslandBody), false);
+    }
+
+    private void Island_MouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (!_pointerDown || _activeTouch is not null)
+            return;
+        EndPointer(e.GetPosition(IslandBody));
+        e.Handled = true;
+    }
+
+    private void Island_LostMouseCapture(object sender, MouseEventArgs e)
+    {
+        if (_pointerDown && _activeTouch is null && Mouse.Captured != IslandBody)
+            CancelPointer();
+    }
+
+    private void Island_TouchDown(object sender, TouchEventArgs e)
+    {
+        if (IsInteractiveControl(e.OriginalSource as DependencyObject))
+            return;
+        BeginPointer(e.GetTouchPoint(IslandBody).Position, e.TouchDevice);
+        e.Handled = true;
+    }
+
+    private void Island_TouchMove(object sender, TouchEventArgs e)
+    {
+        if (e.TouchDevice != _activeTouch)
+            return;
+        MovePointer(e.GetTouchPoint(IslandBody).Position, true);
+        e.Handled = true;
+    }
+
+    private void Island_TouchUp(object sender, TouchEventArgs e)
+    {
+        if (e.TouchDevice != _activeTouch)
+            return;
+        EndPointer(e.GetTouchPoint(IslandBody).Position);
+        e.Handled = true;
+    }
+
+    private void Island_LostTouchCapture(object sender, TouchEventArgs e)
+    {
+        if (_pointerDown && e.TouchDevice == _activeTouch)
+            CancelPointer();
+    }
+
+    private static bool IsInteractiveControl(DependencyObject? source)
     {
         while (source is not null)
         {
-            if (source is T match)
-                return match;
-            source = System.Windows.Media.VisualTreeHelper.GetParent(source);
-        }
-
-        return null;
-    }
-
-    private static bool IsMediaAction(DependencyObject? source)
-    {
-        while (source is not null)
-        {
-            if (source is FrameworkElement { Tag: "MediaAction" })
+            if (source is ButtonBase or RangeBase or Thumb)
                 return true;
-            source = System.Windows.Media.VisualTreeHelper.GetParent(source);
+            source = source is Visual ? VisualTreeHelper.GetParent(source) : LogicalTreeHelper.GetParent(source);
         }
-
         return false;
     }
 
-    private sealed class DynamicIslandDataContext
+    /// <summary>使用既有全局鼠标通知收起展开层，仍让原始点击到达桌面。 / Dismiss without swallowing the underlying desktop click.</summary>
+    public void CloseContextMenuIfOutside(int screenX, int screenY)
     {
-        public TaskbarWindowViewModel ViewModel { get; }
+        if (_isClosing || !IsVisible)
+            return;
+        ContextMenuHelper.CloseIfOutside(PlayerMenu, screenX, screenY);
+        if (PlayerMenu.IsOpen || _pointerDown || !_wantsExpanded)
+            return;
+        var point = IslandBody.PointFromScreen(new Point(screenX, screenY));
+        if (!IslandClip.FillContains(point))
+            SetExpanded(false);
+    }
 
-        public DynamicIslandDataContext(TaskbarWindowViewModel viewModel) => ViewModel = viewModel;
+    internal void ClosePlayerMenu() => PlayerMenu.IsOpen = false;
+
+    private void UpdatePresentationTimer()
+    {
+        if (_isClosing || !IsVisible || _fullscreenSuppressed || (!_latestSnapshot.IsPlaying && !_wantsExpanded))
+            _presentationTimer.Stop();
+        else
+            _presentationTimer.Start();
+    }
+
+    private void PresentationTimer_Tick(object? sender, EventArgs e)
+    {
+        if (_isClosing || !IsVisible || _fullscreenSuppressed)
+            return;
+        var escapeDown = (NativeMethods.GetAsyncKeyState(0x1B) & 0x8000) != 0;
+        if (_wantsExpanded && escapeDown && !_escapeWasDown)
+        {
+            ClosePlayerMenu();
+            CancelPointer();
+            SetExpanded(false);
+        }
+        _escapeWasDown = escapeDown;
+        var now = Stopwatch.GetTimestamp();
+        if (_wantsExpanded && Stopwatch.GetElapsedTime(_lastProgressUpdate, now).TotalMilliseconds >= 200)
+        {
+            _lastProgressUpdate = now;
+            UpdateProgress();
+        }
+        var hasSample = _latestSnapshot.IsPlaying && MotionPolicy.ResolveCurrent().UseDecorativeEffects &&
+            _audioMonitorService.GetSpectrum(_spectrumBands, _spectrumBands.Length);
+        var changed = false;
+        for (var i = 0; i < _activityTargets.Length; i++)
+        {
+            var value = 0d;
+            var first = i * _spectrumBands.Length / _activityTargets.Length;
+            var last = (i + 1) * _spectrumBands.Length / _activityTargets.Length;
+            if (hasSample)
+            {
+                for (var band = first; band < last; band++)
+                    value += Math.Clamp(_spectrumBands[band], 0, 1);
+                value /= last - first;
+            }
+            if (Math.Abs(value - _activityTargets[i]) > 0.005)
+            {
+                _activityTargets[i] = value;
+                changed = true;
+            }
+        }
+        if (changed)
+            RetargetIsland();
+    }
+
+    private void UpdateProgress()
+    {
+        if (_isSeeking)
+            return;
+        _updatingProgress = true;
+        var duration = double.IsFinite(_latestSnapshot.Duration) ? Math.Max(0, _latestSnapshot.Duration) : 0;
+        SeekSlider.Maximum = Math.Max(1, duration);
+        var position = TaskbarExperiencePolicy.GetPosition(_latestSnapshot, DateTimeOffset.UtcNow);
+        SeekSlider.Value = double.IsFinite(position) ? Math.Clamp(position, 0, duration) : 0;
+        UpdateTimeLabels(SeekSlider.Value);
+        _updatingProgress = false;
+    }
+
+    private void UpdateTimeLabels(double position)
+    {
+        ElapsedText.Text = FormatTime(position);
+        RemainingText.Text = "−" + FormatTime(Math.Max(0, _latestSnapshot.Duration - position));
+    }
+
+    private static string FormatTime(double seconds)
+    {
+        var value = TimeSpan.FromSeconds(double.IsFinite(seconds) ? Math.Clamp(seconds, 0, 359999) : 0);
+        return value.TotalHours >= 1 ? $"{(int)value.TotalHours}:{value.Minutes:00}:{value.Seconds:00}" : $"{(int)value.TotalMinutes}:{value.Seconds:00}";
+    }
+
+    private bool BeginSeek()
+    {
+        if (!SeekSlider.IsEnabled || !_latestSnapshot.IsConnected || !_latestSnapshot.CanSeek)
+            return false;
+        _isSeeking = true;
+        _seekIdentity = TrackChangeNotificationPolicy.CreateIdentity(_latestSnapshot);
+        return true;
+    }
+
+    private void UpdateSeekFromPoint(Point point)
+    {
+        if (SeekSlider.Template.FindName("PART_Track", SeekSlider) is not Track track)
+            return;
+        var value = track.ValueFromPoint(SeekSlider.TranslatePoint(point, track));
+        if (double.IsFinite(value))
+            SeekSlider.Value = Math.Clamp(value, SeekSlider.Minimum, SeekSlider.Maximum);
+    }
+
+    private void SeekSlider_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.StylusDevice is not null || !BeginSeek())
+            return;
+        SeekSlider.CaptureMouse();
+        UpdateSeekFromPoint(e.GetPosition(SeekSlider));
+        e.Handled = true;
+    }
+
+    private void SeekSlider_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (_isSeeking && _seekTouch is null && Mouse.Captured == SeekSlider)
+        {
+            UpdateSeekFromPoint(e.GetPosition(SeekSlider));
+            e.Handled = true;
+        }
+    }
+
+    private void SeekSlider_MouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (!_isSeeking || _seekTouch is not null)
+            return;
+        UpdateSeekFromPoint(e.GetPosition(SeekSlider));
+        CommitSeek();
+        e.Handled = true;
+    }
+
+    private void SeekSlider_LostMouseCapture(object sender, MouseEventArgs e)
+    {
+        if (_isSeeking && _seekTouch is null && Mouse.Captured != SeekSlider)
+            CancelSeek();
+    }
+
+    private void SeekSlider_TouchDown(object sender, TouchEventArgs e)
+    {
+        if (_isSeeking || !BeginSeek())
+            return;
+        _seekTouch = e.TouchDevice;
+        _seekTouch.Capture(SeekSlider);
+        UpdateSeekFromPoint(e.GetTouchPoint(SeekSlider).Position);
+        e.Handled = true;
+    }
+
+    private void SeekSlider_TouchMove(object sender, TouchEventArgs e)
+    {
+        if (!_isSeeking || e.TouchDevice != _seekTouch)
+            return;
+        UpdateSeekFromPoint(e.GetTouchPoint(SeekSlider).Position);
+        e.Handled = true;
+    }
+
+    private void SeekSlider_TouchUp(object sender, TouchEventArgs e)
+    {
+        if (!_isSeeking || e.TouchDevice != _seekTouch)
+            return;
+        UpdateSeekFromPoint(e.GetTouchPoint(SeekSlider).Position);
+        CommitSeek();
+        e.Handled = true;
+    }
+
+    private void SeekSlider_LostTouchCapture(object sender, TouchEventArgs e)
+    {
+        if (_isSeeking && e.TouchDevice == _seekTouch)
+            CancelSeek();
+    }
+
+    private void SeekSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_updatingProgress)
+            return;
+        UpdateTimeLabels(e.NewValue);
+        // Pointer capture batches a drag into one seek; keyboard/UI Automation changes are discrete seeks.
+        if (!_isSeeking && BeginSeek())
+            CommitSeek();
+    }
+
+    private async void CommitSeek()
+    {
+        if (!_isSeeking)
+            return;
+        var identity = _seekIdentity;
+        var position = SeekSlider.Value;
+        _isSeeking = false;
+        _seekIdentity = null;
+        ReleaseSeekCapture();
+        if (identity != TrackChangeNotificationPolicy.CreateIdentity(_latestSnapshot) || !_latestSnapshot.CanSeek)
+            return;
+        try
+        {
+            await _mediaSessionService.SeekAsync(position);
+        }
+        catch (Exception exception)
+        {
+            Debug.WriteLine($"[DynamicIsland] Seek failed: {exception}");
+            if (!_isClosing)
+                UpdateProgress();
+        }
+    }
+
+    private void CancelSeek()
+    {
+        _isSeeking = false;
+        _seekIdentity = null;
+        ReleaseSeekCapture();
+    }
+
+    private void ReleaseSeekCapture()
+    {
+        var touch = _seekTouch;
+        _seekTouch = null;
+        if (Mouse.Captured == SeekSlider)
+            Mouse.Capture(null);
+        if (touch?.Captured == SeekSlider)
+            touch.Capture(null);
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        _isClosing = true;
+        CancelPointer();
+        CancelSeek();
+        StopRendering();
+        _holdTimer.Stop();
+        _environmentTimer.Stop();
+        _presentationTimer.Stop();
+        _holdTimer.Tick -= HoldTimer_Tick;
+        _environmentTimer.Tick -= EnvironmentTimer_Tick;
+        _presentationTimer.Tick -= PresentationTimer_Tick;
+        SystemParameters.StaticPropertyChanged -= SystemParameters_Changed;
+        _windowSource?.RemoveHook(WindowProc);
+        _windowSource = null;
+        PlayerMenu.IsOpen = false;
+        ArtworkImage.Source = null;
+        base.OnClosed(e);
     }
 }

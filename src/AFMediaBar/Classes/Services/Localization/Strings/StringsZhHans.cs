@@ -242,7 +242,6 @@ internal static class StringsZhHans
         table.Add("Common.TrayIcon", "托盘图标");
 
         // ---- Diagram ----
-        table.Add("Diagram.DynamicIslandSurface.Caption", "灵动岛模式尚未实现，因此下面三项当前只读；它的外观与任务栏互不影响。");
         table.Add("Diagram.InputGestures.Caption", "媒体栏上仅这两个区域可以点击，并且可分别设置；展开面板中的按钮不受影响。");
         table.Add("Diagram.InputGestures.Label.ArtworkClick", "点击封面");
         table.Add("Diagram.InputGestures.Label.TextClick", "点击标题或歌词");
@@ -295,24 +294,20 @@ internal static class StringsZhHans
         table.Add("DisplayModes.Hover.Row.Enable.Description", "鼠标移入媒体栏时显示快捷控制按钮");
         table.Add("DisplayModes.Hover.Row.Enable.Title", "启用悬停层");
         table.Add("DisplayModes.Hover.Row.Progress.Title", "进度条");
-        table.Add("DisplayModes.Island.Group.Description", "灵动岛自己的外观，与任务栏互不影响");
-        table.Add("DisplayModes.Island.Notice", "灵动岛模式尚未实现，因此下面的选项当前只读，改动不会影响正在运行的任务栏媒体栏。");
-        table.Add("DisplayModes.Island.Row.Corner.Description", "0–24 DIP");
-        table.Add("DisplayModes.Island.Row.Corner.Title", "圆角");
-        table.Add("DisplayModes.Island.Row.Opacity.Description", "数值越高越不透明");
-        table.Add("DisplayModes.Island.Row.Opacity.Title", "背景不透明度");
-        table.Add("DisplayModes.Island.Row.Surface.Description", "灵动岛自身的背景样式");
-        table.Add("DisplayModes.Island.Row.Surface.Title", "背景样式");
-        table.Add("DisplayModes.Island.Surface.Automatic", "自动");
-        table.Add("DisplayModes.Island.Surface.Solid", "纯色");
-        table.Add("DisplayModes.Island.Surface.ThemeTint", "主题色调");
+        table.Add("DisplayModes.Island.Group.Title", "灵动岛显示");
+        table.Add("DisplayModes.Island.Group.Description", "显示器与整体尺寸独立于任务栏设置");
+        table.Add("DisplayModes.Island.Notice", "固定在屏幕顶部中央的黑色灵动岛。快速轻点打开媒体应用；按住时逐渐展开，约 400 毫秒后保持打开，中途取消长按则回弹。点击岛外或按 Esc 收起。暂停时仍显示媒体，没有媒体时保留黑色底座；所在显示器有全屏应用时隐藏。");
+        table.Add("DisplayModes.Island.Monitor.Primary", "跟随主显示器");
+        table.Add("DisplayModes.Island.Row.Monitor.Description", "所选显示器断开时回退到主显示器，重新连接后自动返回");
+        table.Add("DisplayModes.Island.Row.Monitor.Title", "灵动岛显示器");
+        table.Add("DisplayModes.Island.Row.Scale.Description", "75–150% · 封面与控制按钮随灵动岛整体等比缩放");
+        table.Add("DisplayModes.Island.Row.Scale.Title", "灵动岛缩放");
         table.Add("DisplayModes.Mode.Current", "当前模式");
         table.Add("DisplayModes.Mode.DesktopCard", "桌面卡片");
         table.Add("DisplayModes.Mode.DesktopCard.Caption", "在桌面放置可自由布局的媒体卡片");
-        table.Add("DisplayModes.Mode.DynamicIsland.Caption", "以屏幕边缘浮层承载媒体状态");
+        table.Add("DisplayModes.Mode.DynamicIsland.Caption", "在所选显示器顶部中央固定显示黑色媒体灵动岛");
         table.Add("DisplayModes.Mode.FloatingBall", "悬浮球");
         table.Add("DisplayModes.Mode.FloatingBall.Caption", "以紧凑悬浮入口展开控制");
-        table.Add("DisplayModes.Mode.PreviewNotice", "当前运行模式固定为任务栏。选择其它模式只切换本页显示的内容，不会切换正在运行的窗口。");
         table.Add("DisplayModes.Mode.Taskbar", "任务栏");
         table.Add("DisplayModes.Mode.Taskbar.Caption", "置于 Windows 任务栏，含静置层、悬停层与完整层");
         table.Add("DisplayModes.Monitor.DisconnectedSuffix", "（当前未连接）");
@@ -413,6 +408,19 @@ internal static class StringsZhHans
         table.Add("Interaction.Wheel.Chord.Title", "组合滚轮");
         table.Add("Interaction.Wheel.Primary.Title", "普通滚轮");
 
+        // ---- Island ----
+        table.Add("Island.Accessibility.Name", "灵动岛媒体控制");
+        table.Add("Island.Accessibility.OpenSource", "打开媒体应用");
+        table.Add("Island.Accessibility.Expand", "展开媒体控制");
+        table.Add("Island.Accessibility.Collapse", "收起媒体控制");
+        table.Add("Island.Accessibility.Previous", "上一首");
+        table.Add("Island.Accessibility.Play", "播放");
+        table.Add("Island.Accessibility.Pause", "暂停");
+        table.Add("Island.Accessibility.Next", "下一首");
+        table.Add("Island.Accessibility.Seek", "播放进度");
+        table.Add("Island.Transport.Unavailable", "播放器当前未通过 Windows 媒体会话提供此操作。请先在播放器中开始播放，或启用其系统媒体控制集成（若该版本支持）。");
+        table.Add("Island.Activity.OutputSpectrum", "共享输出设备音频频谱，包含其他应用的声音，并非仅捕获当前媒体应用");
+
         // ---- Layout ----
         table.Add("Layout.Arrangement.Auto", "自动");
         table.Add("Layout.Arrangement.Horizontal", "横向");
@@ -424,8 +432,8 @@ internal static class StringsZhHans
         table.Add("Layout.IslandBackground.Transparent", "透明背景");
         table.Add("Layout.Page.Subtitle", "调整窗口模式、排列方式和尺寸");
         table.Add("Layout.Page.Title", "布局");
-        table.Add("Layout.Preset.DynamicIslandHorizontal", "灵动岛主题（横向）：可拖动并支持桌面边缘收起");
-        table.Add("Layout.Preset.DynamicIslandVertical", "灵动岛主题（竖向）：可拖动并支持桌面边缘收起");
+        table.Add("Layout.Preset.DynamicIslandHorizontal", "灵动岛：固定在屏幕顶部中央的黑色媒体界面");
+        table.Add("Layout.Preset.DynamicIslandVertical", "灵动岛：固定在屏幕顶部中央的黑色媒体界面");
         table.Add("Layout.Preset.TaskbarHorizontal", "任务栏主题（横向）：适配任务栏在屏幕顶部或底部");
         table.Add("Layout.Preset.TaskbarVertical", "任务栏主题（竖向）：适配任务栏在屏幕左侧或右侧");
         table.Add("Layout.Reset.Button", "恢复默认");
@@ -619,7 +627,7 @@ internal static class StringsZhHans
         table.Add("Search.DisplayModes.ChooseDisplayMode.Description", "选择任务栏、灵动岛、桌面卡片或悬浮球");
         table.Add("Search.DisplayModes.FullLayer.Description", "点击媒体栏展开的面板包含哪些分区");
         table.Add("Search.DisplayModes.HoverLayer.Description", "鼠标移入媒体栏时出现的快捷控制");
-        table.Add("Search.DisplayModes.IslandAppearance.Description", "灵动岛的背景样式、不透明度与圆角，当前只读");
+        table.Add("Search.DisplayModes.Island.Description", "灵动岛的独立显示器与等比缩放，以及固定顶部居中的媒体控制");
         table.Add("Search.DisplayModes.MediaBarWidth.Description", "宽度跟随内容、固定宽度与组件间距");
         table.Add("Search.DisplayModes.RestLayer.Description", "始终显示的基础层：信息密度、内容排列、对齐、进度显示与完整层入口");
         table.Add("Search.DisplayModes.ScreenAndPlacement.Description", "媒体栏所在的显示器与任务栏位置");

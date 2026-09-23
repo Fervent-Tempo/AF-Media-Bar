@@ -338,50 +338,119 @@ public sealed class LayoutSizeCalculatorTests
     }
 
     [TestMethod]
-    public void DynamicIslandPositionCalculatorClampsExpandedPositionToWorkArea()
+    public void DynamicIslandPositionCalculatorCentersOnNegativeMonitorCoordinates()
     {
-        var position = DynamicIslandPositionCalculator.GetExpandedPosition(
-            new Rect(100, 50, 800, 500), 240, 80, savedLeft: 999, savedTop: -100);
+        var workArea = new Rect(-1920, -120, 1920, 1080);
+        var position = DynamicIslandPositionCalculator.GetCenteredPosition(workArea, 371, 160);
 
-        Assert.AreEqual(660, position.X, 0.01);
-        Assert.AreEqual(50, position.Y, 0.01);
+        Assert.AreEqual(-1145.5, position.X, 0.01);
+        Assert.AreEqual(-108, position.Y, 0.01);
+        Assert.IsTrue(workArea.Contains(new Rect(position, new Size(371, 160))));
     }
 
     [TestMethod]
-    public void DynamicIslandPositionCalculatorKeepsCollapsedRevealOnEachEdge()
+    public void DynamicIslandPositionCalculatorClampsInsetToRemainingHeight()
     {
-        var workArea = new Rect(100, 50, 800, 500);
+        var workArea = new Rect(100, 50, 371, 165);
+        var position = DynamicIslandPositionCalculator.GetCenteredPosition(workArea, 371, 160);
 
-        Assert.AreEqual(-135, DynamicIslandPositionCalculator.GetCollapsedPosition(workArea, 240, 80, DynamicIslandEdge.Left, 5, 300, 200).X, 0.01);
-        Assert.AreEqual(895, DynamicIslandPositionCalculator.GetCollapsedPosition(workArea, 240, 80, DynamicIslandEdge.Right, 5, 300, 200).X, 0.01);
-        Assert.AreEqual(-25, DynamicIslandPositionCalculator.GetCollapsedPosition(workArea, 240, 80, DynamicIslandEdge.Top, 5, 300, 200).Y, 0.01);
-        Assert.AreEqual(545, DynamicIslandPositionCalculator.GetCollapsedPosition(workArea, 240, 80, DynamicIslandEdge.Bottom, 5, 300, 200).Y, 0.01);
+        Assert.AreEqual(new Point(100, 55), position);
+        Assert.IsTrue(workArea.Contains(new Rect(position, new Size(371, 160))));
     }
 
     [TestMethod]
-    public void DynamicIslandPositionCalculatorDetectsNearestDockedEdge()
+    public void DynamicIslandPositionCalculatorKeepsUndersizedWorkAreaTopLeftVisible()
     {
-        var workArea = new Rect(0, 0, 1000, 600);
+        var position = DynamicIslandPositionCalculator.GetCenteredPosition(
+            new Rect(-500, -300, 200, 100), 371, 160);
 
-        Assert.AreEqual(DynamicIslandEdge.Right,
-            DynamicIslandPositionCalculator.FindDockedEdge(770, 200, 220, 80, workArea, 28));
-        Assert.IsNull(
-            DynamicIslandPositionCalculator.FindDockedEdge(400, 200, 220, 80, workArea, 28));
+        Assert.AreEqual(new Point(-500, -300), position);
+        Assert.AreEqual(new Point(0, 0), DynamicIslandPositionCalculator.GetCenteredPosition(Rect.Empty, 371, 160));
     }
 
     [TestMethod]
-    public void DynamicIslandPositionCalculatorRestoresNormalizedDpiCenterAndDocking()
+    public void DynamicIslandPositionCalculatorHonorsInsetWithoutMovingAboveWorkArea()
     {
-        var workArea = new Rect(100, 50, 800, 500);
-        var free = DynamicIslandPositionCalculator.GetDpiRestoredPosition(
-            workArea, 200, 80, new Point(0.75, 0.5), dockedEdge: null);
-        var docked = DynamicIslandPositionCalculator.GetDpiRestoredPosition(
-            workArea, 200, 80, new Point(0.75, 0.5), DynamicIslandEdge.Left);
+        var workArea = new Rect(0, 0, 1920, 1040);
+        var inset = DynamicIslandPositionCalculator.GetCenteredPosition(workArea, 230, 37, 24);
+        var negativeInset = DynamicIslandPositionCalculator.GetCenteredPosition(workArea, 230, 37, -20);
 
-        Assert.AreEqual(600, free.X, 0.01);
-        Assert.AreEqual(260, free.Y, 0.01);
-        Assert.AreEqual(100, docked.X, 0.01);
-        Assert.AreEqual(260, docked.Y, 0.01);
+        Assert.AreEqual(new Point(845, 24), inset);
+        Assert.AreEqual(new Point(845, 0), negativeInset);
+    }
+
+    [TestMethod]
+    public void DynamicIslandGeometryHasIdleCompactAndExpandedEndpoints()
+    {
+        var idle = DynamicIslandGeometry.Calculate(0, 0);
+        var compact = DynamicIslandGeometry.Calculate(1, 0);
+        var expanded = DynamicIslandGeometry.Calculate(1, 1);
+
+        Assert.AreEqual(126, idle.Width, 0.001);
+        Assert.AreEqual(37, idle.Height, 0.001);
+        Assert.AreEqual(18.5, idle.Radius, 0.001);
+        Assert.AreEqual(0, idle.MediaOpacity, 0.001);
+        Assert.AreEqual(0, idle.DetailOpacity, 0.001);
+
+        Assert.AreEqual(230, compact.Width, 0.001);
+        Assert.AreEqual(37, compact.Height, 0.001);
+        Assert.AreEqual(18.5, compact.Radius, 0.001);
+        Assert.AreEqual(new Rect(10.5, 6.5, 24, 24), compact.Artwork);
+        Assert.AreEqual(new Point(192, 6.5), compact.ActivityOrigin);
+        Assert.AreEqual(1, compact.MediaOpacity, 0.001);
+        Assert.AreEqual(0, compact.DetailOpacity, 0.001);
+
+        Assert.AreEqual(371, expanded.Width, 0.001);
+        Assert.AreEqual(160, expanded.Height, 0.001);
+        Assert.AreEqual(38, expanded.Radius, 0.001);
+        Assert.AreEqual(new Rect(20, 20, 54, 54), expanded.Artwork);
+        Assert.AreEqual(new Point(329, 28), expanded.ActivityOrigin);
+        Assert.AreEqual(1, expanded.MediaOpacity, 0.001);
+        Assert.AreEqual(1, expanded.DetailOpacity, 0.001);
+    }
+
+    [TestMethod]
+    public void DynamicIslandGeometryStagesDetailsUntilThePillOpens()
+    {
+        var opening = DynamicIslandGeometry.Calculate(1, 0.15);
+        var card = DynamicIslandGeometry.Calculate(1, 0.65);
+
+        Assert.IsTrue(opening.Height > 37);
+        Assert.AreEqual(0, opening.DetailOpacity, 0.001);
+        Assert.IsTrue(card.DetailOpacity > 0 && card.DetailOpacity < 1);
+        Assert.AreEqual(DynamicIslandGeometry.Calculate(0, 0), DynamicIslandGeometry.Calculate(0, 1));
+    }
+
+    [TestMethod]
+    public void DynamicIslandGeometryPreservesSmallSpringOvershoot()
+    {
+        var expanded = DynamicIslandGeometry.Calculate(1, 1);
+        var overshoot = DynamicIslandGeometry.Calculate(1, 1.03);
+
+        Assert.IsTrue(overshoot.Width > expanded.Width);
+        Assert.IsTrue(overshoot.Height > expanded.Height);
+        Assert.IsTrue(overshoot.Artwork.Width > expanded.Artwork.Width);
+        Assert.AreEqual(1, overshoot.DetailOpacity, 0.001);
+    }
+
+    [TestMethod]
+    public void DynamicIslandGeometryStaysFiniteAndInsideItsCanvasUnderOvershoot()
+    {
+        double[] progressValues = [-100, -0.04, 0, 0.5, 1, 1.04, 100, double.NaN, double.NegativeInfinity, double.PositiveInfinity];
+        foreach (var media in progressValues)
+        foreach (var expansion in progressValues)
+        {
+            var geometry = DynamicIslandGeometry.Calculate(media, expansion);
+            Assert.IsTrue(geometry.Width is >= 126 and <= 420);
+            Assert.IsTrue(geometry.Height is >= 37 and <= 196);
+            Assert.IsTrue(geometry.Radius >= 0 && geometry.Radius <= Math.Min(geometry.Width, geometry.Height) / 2);
+            Assert.IsTrue(geometry.MediaOpacity is >= 0 and <= 1);
+            Assert.IsTrue(geometry.DetailOpacity is >= 0 and <= 1);
+
+            var bounds = new Rect(0, 0, geometry.Width, geometry.Height);
+            Assert.IsTrue(bounds.Contains(geometry.Artwork));
+            Assert.IsTrue(bounds.Contains(new Rect(geometry.ActivityOrigin, new Size(28, 24))));
+        }
     }
 
     [TestMethod]

@@ -242,7 +242,6 @@ internal static class StringsZhHant
         table.Add("Common.TrayIcon", "托盤圖示");
 
         // ---- Diagram ----
-        table.Add("Diagram.DynamicIslandSurface.Caption", "動態島模式尚未實作，因此下面三項目前唯讀；它的外觀與工作列互不影響。");
         table.Add("Diagram.InputGestures.Caption", "媒體列上僅這兩個區域可以點擊，並且可分別設定；展開面板中的按鈕不受影響。");
         table.Add("Diagram.InputGestures.Label.ArtworkClick", "點擊封面");
         table.Add("Diagram.InputGestures.Label.TextClick", "點擊標題或歌詞");
@@ -295,24 +294,20 @@ internal static class StringsZhHant
         table.Add("DisplayModes.Hover.Row.Enable.Description", "滑鼠移入媒體列時顯示快捷控制按鈕");
         table.Add("DisplayModes.Hover.Row.Enable.Title", "啟用懸停層");
         table.Add("DisplayModes.Hover.Row.Progress.Title", "進度條");
-        table.Add("DisplayModes.Island.Group.Description", "動態島本身的外觀，與工作列互不影響");
-        table.Add("DisplayModes.Island.Notice", "動態島模式尚未實作，因此下面的選項目前為唯讀，變更不會影響正在執行的工作列媒體列。");
-        table.Add("DisplayModes.Island.Row.Corner.Description", "0–24 DIP");
-        table.Add("DisplayModes.Island.Row.Corner.Title", "圓角");
-        table.Add("DisplayModes.Island.Row.Opacity.Description", "數值越高越不透明");
-        table.Add("DisplayModes.Island.Row.Opacity.Title", "背景不透明度");
-        table.Add("DisplayModes.Island.Row.Surface.Description", "動態島本身的背景樣式");
-        table.Add("DisplayModes.Island.Row.Surface.Title", "背景樣式");
-        table.Add("DisplayModes.Island.Surface.Automatic", "自動");
-        table.Add("DisplayModes.Island.Surface.Solid", "純色");
-        table.Add("DisplayModes.Island.Surface.ThemeTint", "佈景主題色調");
+        table.Add("DisplayModes.Island.Group.Title", "動態島顯示");
+        table.Add("DisplayModes.Island.Group.Description", "螢幕與整體尺寸獨立於工作列設定");
+        table.Add("DisplayModes.Island.Notice", "固定在螢幕頂端中央的黑色動態島。快速輕點開啟媒體應用程式；按住時逐漸展開，約 400 毫秒後保持開啟，中途取消長按則回彈。點擊島外或按 Esc 收合。暫停時仍顯示媒體，沒有媒體時保留黑色底座；所在螢幕有全螢幕應用程式時隱藏。");
+        table.Add("DisplayModes.Island.Monitor.Primary", "跟隨主要螢幕");
+        table.Add("DisplayModes.Island.Row.Monitor.Description", "所選螢幕中斷連線時使用主要螢幕，重新連線後自動返回");
+        table.Add("DisplayModes.Island.Row.Monitor.Title", "動態島螢幕");
+        table.Add("DisplayModes.Island.Row.Scale.Description", "75–150% · 封面與控制按鈕隨動態島整體等比縮放");
+        table.Add("DisplayModes.Island.Row.Scale.Title", "動態島縮放");
         table.Add("DisplayModes.Mode.Current", "目前模式");
         table.Add("DisplayModes.Mode.DesktopCard", "桌面卡片");
         table.Add("DisplayModes.Mode.DesktopCard.Caption", "在桌面放置可自由配置的媒體卡片");
-        table.Add("DisplayModes.Mode.DynamicIsland.Caption", "以螢幕邊緣浮層承載媒體狀態");
+        table.Add("DisplayModes.Mode.DynamicIsland.Caption", "在所選螢幕頂端中央固定顯示黑色媒體動態島");
         table.Add("DisplayModes.Mode.FloatingBall", "懸浮球");
         table.Add("DisplayModes.Mode.FloatingBall.Caption", "以精簡懸浮入口展開控制");
-        table.Add("DisplayModes.Mode.PreviewNotice", "目前執行模式固定為工作列。選擇其他模式只切換本頁顯示的內容，不會切換正在執行的視窗。");
         table.Add("DisplayModes.Mode.Taskbar", "工作列");
         table.Add("DisplayModes.Mode.Taskbar.Caption", "置於 Windows 工作列，含靜置層、懸停層與完整層");
         table.Add("DisplayModes.Monitor.DisconnectedSuffix", "（目前未連接）");
@@ -413,6 +408,19 @@ internal static class StringsZhHant
         table.Add("Interaction.Wheel.Chord.Title", "組合滾輪");
         table.Add("Interaction.Wheel.Primary.Title", "一般滾輪");
 
+        // ---- Island ----
+        table.Add("Island.Accessibility.Name", "動態島媒體控制");
+        table.Add("Island.Accessibility.OpenSource", "開啟媒體應用程式");
+        table.Add("Island.Accessibility.Expand", "展開媒體控制");
+        table.Add("Island.Accessibility.Collapse", "收合媒體控制");
+        table.Add("Island.Accessibility.Previous", "上一首");
+        table.Add("Island.Accessibility.Play", "播放");
+        table.Add("Island.Accessibility.Pause", "暫停");
+        table.Add("Island.Accessibility.Next", "下一首");
+        table.Add("Island.Accessibility.Seek", "播放進度");
+        table.Add("Island.Transport.Unavailable", "播放器目前未透過 Windows 媒體工作階段提供此操作。請先在播放器中開始播放，或啟用其系統媒體控制整合（若此版本支援）。");
+        table.Add("Island.Activity.OutputSpectrum", "共用輸出裝置音訊頻譜，包含其他應用程式的聲音，並非僅擷取目前媒體應用程式");
+
         // ---- Layout ----
         table.Add("Layout.Arrangement.Auto", "自動");
         table.Add("Layout.Arrangement.Horizontal", "橫向");
@@ -424,8 +432,8 @@ internal static class StringsZhHant
         table.Add("Layout.IslandBackground.Transparent", "透明背景");
         table.Add("Layout.Page.Subtitle", "調整視窗模式、排列方式與尺寸");
         table.Add("Layout.Page.Title", "版面配置");
-        table.Add("Layout.Preset.DynamicIslandHorizontal", "動態島主題（橫向）：可拖曳並支援桌面邊緣收合");
-        table.Add("Layout.Preset.DynamicIslandVertical", "動態島主題（直向）：可拖曳並支援桌面邊緣收合");
+        table.Add("Layout.Preset.DynamicIslandHorizontal", "動態島：固定在螢幕頂端中央的黑色媒體介面");
+        table.Add("Layout.Preset.DynamicIslandVertical", "動態島：固定在螢幕頂端中央的黑色媒體介面");
         table.Add("Layout.Preset.TaskbarHorizontal", "工作列主題（橫向）：配合工作列在螢幕頂端或底部");
         table.Add("Layout.Preset.TaskbarVertical", "工作列主題（直向）：配合工作列在螢幕左側或右側");
         table.Add("Layout.Reset.Button", "還原預設值");
@@ -619,7 +627,7 @@ internal static class StringsZhHant
         table.Add("Search.DisplayModes.ChooseDisplayMode.Description", "選擇工作列、動態島、桌面卡片或懸浮球");
         table.Add("Search.DisplayModes.FullLayer.Description", "點選媒體列展開的面板包含哪些分區");
         table.Add("Search.DisplayModes.HoverLayer.Description", "滑鼠移入媒體列時出現的快速控制");
-        table.Add("Search.DisplayModes.IslandAppearance.Description", "動態島的背景樣式、不透明度與圓角，目前唯讀");
+        table.Add("Search.DisplayModes.Island.Description", "動態島的獨立螢幕與等比縮放，以及固定頂端置中的媒體控制");
         table.Add("Search.DisplayModes.MediaBarWidth.Description", "寬度跟隨內容、固定寬度與元件間距");
         table.Add("Search.DisplayModes.RestLayer.Description", "始終顯示的基礎層：資訊密度、內容排列、對齊、進度顯示與完整層入口");
         table.Add("Search.DisplayModes.ScreenAndPlacement.Description", "媒體列所在的螢幕與工作列位置");

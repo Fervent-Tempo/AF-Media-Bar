@@ -615,13 +615,14 @@ namespace AFMediaBar.Views.Windows
                 _taskbarRecoveryCancellation?.Cancel();
                 TaskbarEnvironmentRecovering = false;
                 CloseTaskbarWindows();
+                _trackChangeNotificationWindow?.HideImmediately();
                 _dynamicIslandWindow ??= App.Services.GetRequiredService<DynamicIslandWindow>();
                 _dynamicIslandWindow.ApplyLayoutSettings(SettingsManager.Current.LayoutOrientationMode);
                 _dynamicIslandWindow.ApplyAppearanceSettings();
                 _dynamicIslandWindow.ApplySessions(App.Services.GetRequiredService<MediaSessionService>().CurrentSessionOptions);
-                _dynamicIslandWindow.Show();
-                if (App.Services.GetRequiredService<MediaSessionService>().CurrentSnapshot is { } islandSnapshot)
-                    _dynamicIslandWindow.ApplySnapshot(islandSnapshot);
+                _dynamicIslandWindow.ApplySnapshot(
+                    App.Services.GetRequiredService<MediaSessionService>().CurrentSnapshot ??
+                    MediaSnapshot.Disconnected);
                 return;
             }
 
@@ -659,10 +660,17 @@ namespace AFMediaBar.Views.Windows
             object? sender,
             TrackChangeNotificationRequest request)
         {
+            // The island owns media presentation; it updates in place rather than opening a second Windows toast.
+            // Check at dispatch time as well, because the host mode may change while this request is queued.
             Dispatcher.BeginInvoke(() =>
             {
                 if (_isClosing)
                     return;
+                if (SettingsManager.Current.WindowMode == WindowMode.DynamicIsland)
+                {
+                    _trackChangeNotificationWindow?.HideImmediately();
+                    return;
+                }
 
                 _trackChangeNotificationWindow ??= _trackChangeNotificationFactory();
                 _trackChangeNotificationWindow.Closed -= TrackChangeNotificationWindow_Closed;
@@ -688,8 +696,13 @@ namespace AFMediaBar.Views.Windows
 
         private void TrackChangeNotificationCoordinator_OnNotificationContentUpdated(
             object? sender,
-            MediaSnapshot snapshot) =>
+            MediaSnapshot snapshot)
+        {
+            if (SettingsManager.Current.WindowMode == WindowMode.DynamicIsland)
+                return;
+
             Dispatcher.BeginInvoke(() => _trackChangeNotificationWindow?.UpdateSnapshot(snapshot));
+        }
 
         private void TrackChangeNotificationWindow_Closed(object? sender, EventArgs e)
         {
@@ -712,7 +725,11 @@ namespace AFMediaBar.Views.Windows
             Dispatcher.BeginInvoke(() => ApplyEffectiveTaskbarMonitorChange());
 
         private void DisplayMonitorService_OnMonitorsChanged(object? sender, EventArgs e) =>
-            Dispatcher.BeginInvoke(() => ApplyEffectiveTaskbarMonitorChange());
+            Dispatcher.BeginInvoke(() =>
+            {
+                _dynamicIslandWindow?.RefreshDisplayEnvironment();
+                ApplyEffectiveTaskbarMonitorChange();
+            });
 
         private void ApplyEffectiveTaskbarMonitorChange()
         {

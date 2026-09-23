@@ -50,6 +50,8 @@ public sealed class SettingsPersistenceServiceTests
             LayoutOrientationMode = LayoutOrientationMode.Vertical,
             LayoutLengthScalePercent = 115,
             LayoutThicknessScalePercent = 85,
+            DynamicIslandMonitorDeviceId = @"\\.\DISPLAY3",
+            DynamicIslandScalePercent = 135,
             DynamicIslandBackgroundMode = DynamicIslandBackgroundMode.Transparent,
             TaskbarBarCrossAxisOffsetDip = -10,
             TaskbarBarAvoidIcons = false,
@@ -94,6 +96,7 @@ public sealed class SettingsPersistenceServiceTests
                 TrayWheelBehavior.AdjustVolume,
                 TrayWheelBehavior.SwitchOutputDevice),
             TaskbarSurface = new ModeSurfaceSettings(PlayerSurfaceStyle.ThemeTint, 72, 12),
+            DynamicIslandSurface = new ModeSurfaceSettings(PlayerSurfaceStyle.ThemeTint, 68, 14),
             LyricsTextAlignment = LyricsTextAlignment.Right,
             TrackChangeNotification = new TrackChangeNotificationSettings(
                 true,
@@ -126,7 +129,9 @@ public sealed class SettingsPersistenceServiceTests
         CollectionAssert.AreEqual(
             new[] { LyricsSecondaryLineMode.Romanization, LyricsSecondaryLineMode.Translation },
             SettingsManager.Current.LyricsSecondaryLine.Order!.ToArray());
-        Assert.AreEqual(WindowMode.Taskbar, SettingsManager.Current.WindowMode);
+        Assert.AreEqual(WindowMode.DynamicIsland, SettingsManager.Current.WindowMode);
+        Assert.AreEqual(@"\\.\DISPLAY3", SettingsManager.Current.DynamicIslandMonitorDeviceId);
+        Assert.AreEqual(135, SettingsManager.Current.DynamicIslandScalePercent);
         Assert.AreEqual(DynamicIslandEdge.Right, SettingsManager.Current.DynamicIslandEdge);
         Assert.AreEqual(700, SettingsManager.Current.Appearance.FontWeight);
         Assert.AreEqual(120, SettingsManager.Current.DynamicIslandLeft);
@@ -157,6 +162,9 @@ public sealed class SettingsPersistenceServiceTests
             },
             SettingsManager.Current.TaskbarExperience.IdleComponents!.ToArray());
         Assert.AreEqual(72, SettingsManager.Current.TaskbarSurface.BackgroundOpacityPercent);
+        Assert.AreEqual(
+            new ModeSurfaceSettings(PlayerSurfaceStyle.ThemeTint, 68, 14),
+            SettingsManager.Current.DynamicIslandSurface);
         Assert.AreEqual(LyricsTextAlignment.Right, SettingsManager.Current.LyricsTextAlignment);
         CollectionAssert.AreEqual(
             new[] { @"\\.\DISPLAY1", @"\\.\DISPLAY2" },
@@ -200,10 +208,9 @@ public sealed class SettingsPersistenceServiceTests
     [TestMethod]
     public void MissingFieldsUseDefaultsAndInvalidValuesNormalize()
     {
-        // 缺字段取声明处的默认值，写坏的值由 Normalize() 夹回合法区间；显式写出的 null 不参与反序列化
-        // （这五个字段在模型里是非空数值，JSON null 会让反序列化直接失败）。
-        // A missing field takes the declared default and a corrupt one is clamped back into range by Normalize(); an explicit JSON null
-        // is dropped before deserialization, because those five fields are non-nullable numbers in the model.
+        // 缺字段取声明处的默认值；非法数值归一化，显式 null 数值在反序列化前移除，以免整份有效设置丢失。
+        // Missing fields use declared defaults; invalid numbers normalize, and explicit null numeric values are removed before deserialization
+        // so otherwise valid settings are not discarded.
         Directory.CreateDirectory(_directory);
         File.WriteAllText(
             Path.Combine(_directory, "settings.json"),
@@ -545,19 +552,27 @@ public sealed class SettingsPersistenceServiceTests
             "清除快照之后重置必须回到程序内置默认值。");
     }
     [TestMethod]
-    public void UnimplementedDisplayModeSelectionDoesNotChangeRuntimeModeOrTaskbarSettings()
+    public void ImplementedDisplayModeSelectionChangesRuntimeModeAndUnimplementedModesStayDisabled()
     {
         SettingsManager.Replace(new AppSettings());
         var viewModel = new DisplayModesViewModel(new FakeDisplayMonitorService(), new TaskbarLengthConstraintsService(), new LocalizationService());
         var original = SettingsManager.Current.TaskbarExperience;
 
+        viewModel.SwitchToDynamicIslandModeCommand.Execute(null);
+        Assert.IsTrue(viewModel.IsDynamicIslandMode);
+        Assert.AreEqual(WindowMode.DynamicIsland, SettingsManager.Current.WindowMode);
+
         viewModel.SwitchToFloatingBallModeCommand.Execute(null);
         viewModel.HoverLayerEnabled = false;
 
-        Assert.IsTrue(viewModel.IsFloatingBallMode);
-        Assert.IsTrue(viewModel.IsUnimplementedMode);
-        Assert.AreEqual(WindowMode.Taskbar, SettingsManager.Current.WindowMode);
+        Assert.IsFalse(viewModel.IsFloatingBallMode);
+        Assert.IsFalse(viewModel.IsUnimplementedMode);
+        Assert.AreEqual(WindowMode.DynamicIsland, SettingsManager.Current.WindowMode);
         Assert.AreEqual(original, SettingsManager.Current.TaskbarExperience);
+
+        viewModel.SwitchToTaskbarModeCommand.Execute(null);
+        Assert.IsTrue(viewModel.IsTaskbarMode);
+        Assert.AreEqual(WindowMode.Taskbar, SettingsManager.Current.WindowMode);
     }
 
     [TestMethod]
@@ -663,7 +678,7 @@ public sealed class SettingsPersistenceServiceTests
         SettingsManager.ResetGeneral();
         Assert.IsFalse(SettingsManager.Current.LyricsEnabled);
         Assert.AreEqual(700, SettingsManager.Current.Appearance.FontWeight);
-        Assert.AreEqual(WindowMode.Taskbar, SettingsManager.Current.WindowMode);
+        Assert.AreEqual(WindowMode.DynamicIsland, SettingsManager.Current.WindowMode);
         SettingsManager.ResetLayout();
         Assert.AreEqual(WindowMode.Taskbar, SettingsManager.Current.WindowMode);
         Assert.AreEqual(700, SettingsManager.Current.Appearance.FontWeight);
@@ -704,6 +719,194 @@ public sealed class SettingsPersistenceServiceTests
             SettingsManager.Current.PerformanceComponent.Metrics!.ToArray());
         Assert.AreEqual(2500, SettingsManager.Current.PerformanceComponent.RefreshIntervalMilliseconds);
         Assert.IsTrue(SettingsManager.Current.PerformanceComponent.OpenTaskManagerOnClick);
+    }
+
+    [TestMethod]
+    public void NormalizePreservesValidDynamicIslandAndRejectsInvalidWindowMode()
+    {
+        var dynamicIsland = new AppSettings { WindowMode = WindowMode.DynamicIsland }.Normalize();
+        Assert.AreEqual(WindowMode.DynamicIsland, dynamicIsland.WindowMode);
+
+        var invalid = new AppSettings { WindowMode = (WindowMode)99 }.Normalize();
+        Assert.AreEqual(WindowMode.Taskbar, invalid.WindowMode);
+    }
+
+    [TestMethod]
+    public void IslandSettingsRoundTripKeepsTheTaskbarRuntimeModeAndIndependentTargets()
+    {
+        using (var writer = new SettingsPersistenceService(_directory))
+        {
+            writer.Initialize();
+            SettingsManager.Replace(new AppSettings
+            {
+                WindowMode = WindowMode.Taskbar,
+                DynamicIslandMonitorDeviceId = "  DISCONNECTED-ISLAND  ",
+                DynamicIslandScalePercent = 132.5,
+                TaskbarTargetMonitorDeviceIds = ["DISPLAY2"],
+                LayoutLengthScalePercent = 115,
+                LayoutThicknessScalePercent = 85
+            });
+            writer.Flush();
+        }
+
+        SettingsManager.ResetAll();
+        using var reader = new SettingsPersistenceService(_directory);
+        reader.Initialize();
+
+        Assert.AreEqual(WindowMode.Taskbar, SettingsManager.Current.WindowMode);
+        Assert.AreEqual("DISCONNECTED-ISLAND", SettingsManager.Current.DynamicIslandMonitorDeviceId);
+        Assert.AreEqual(132.5, SettingsManager.Current.DynamicIslandScalePercent);
+        CollectionAssert.AreEqual(new[] { "DISPLAY2" }, SettingsManager.Current.TaskbarTargetMonitorDeviceIds!.ToArray());
+        Assert.AreEqual(115, SettingsManager.Current.LayoutLengthScalePercent);
+        Assert.AreEqual(85, SettingsManager.Current.LayoutThicknessScalePercent);
+    }
+
+    [TestMethod]
+    public void IslandScaleRecoveryDoesNotDiscardTheMonitorOrRuntimeMode()
+    {
+        Directory.CreateDirectory(_directory);
+        File.WriteAllText(
+            Path.Combine(_directory, "settings.json"),
+            $"{{\"schemaVersion\":{SettingsPersistenceService.CurrentSchemaVersion},\"settings\":{{\"windowMode\":\"DynamicIsland\",\"dynamicIslandMonitorDeviceId\":\"  DISPLAY2  \",\"dynamicIslandScalePercent\":null,\"taskbarTargetMonitorDeviceIds\":[\"DISPLAY1\"],\"layoutLengthScalePercent\":115}}}}");
+        using var service = new SettingsPersistenceService(_directory);
+        service.Initialize();
+
+        Assert.AreEqual(WindowMode.DynamicIsland, SettingsManager.Current.WindowMode);
+        Assert.AreEqual("DISPLAY2", SettingsManager.Current.DynamicIslandMonitorDeviceId);
+        Assert.AreEqual(100, SettingsManager.Current.DynamicIslandScalePercent);
+
+        foreach (var (input, expected) in new[]
+                 {
+                     (50d, 75d), (175d, 150d), (132.5d, 132.5d),
+                     (double.NaN, 100d), (double.PositiveInfinity, 100d), (double.NegativeInfinity, 100d)
+                 })
+        {
+            SettingsManager.Current.DynamicIslandScalePercent = input;
+            Assert.AreEqual(expected, SettingsManager.Current.Normalize().Clone().DynamicIslandScalePercent);
+        }
+
+        SettingsManager.Current.DynamicIslandMonitorDeviceId = " \t ";
+        Assert.IsNull(SettingsManager.Current.Normalize().Clone().DynamicIslandMonitorDeviceId);
+        CollectionAssert.AreEqual(new[] { "DISPLAY1" }, SettingsManager.Current.TaskbarTargetMonitorDeviceIds!.ToArray());
+        Assert.AreEqual(115, SettingsManager.Current.LayoutLengthScalePercent);
+        Assert.AreEqual(WindowMode.DynamicIsland, SettingsManager.Current.WindowMode);
+    }
+
+    [TestMethod]
+    public void IslandControlsPublishLayoutChangesWithoutChangingTaskbarSettings()
+    {
+        SettingsManager.Replace(new AppSettings
+        {
+            WindowMode = WindowMode.DynamicIsland,
+            TaskbarTargetMonitorDeviceIds = ["DISPLAY1"],
+            LayoutOrientationMode = LayoutOrientationMode.Vertical,
+            LayoutLengthScalePercent = 115,
+            LayoutThicknessScalePercent = 85,
+            TaskbarBarCrossAxisOffsetDip = -8,
+            Position = TaskbarBarPosition.End,
+            TaskbarSurface = new ModeSurfaceSettings(PlayerSurfaceStyle.ThemeTint, 72, 12),
+            TaskbarExperience = TaskbarExperienceSettings.Default with { ComponentSpacingDip = 20 }
+        });
+        var original = SettingsManager.Current.Clone();
+        var viewModel = new DisplayModesViewModel(new FakeDisplayMonitorService(), new TaskbarLengthConstraintsService(), new LocalizationService());
+        var changes = new List<LayoutSettingsChangedEventArgs>();
+        var taskbarTargetChanges = 0;
+        EventHandler<LayoutSettingsChangedEventArgs> layoutHandler = (_, e) => changes.Add(e);
+        EventHandler taskbarHandler = (_, _) => taskbarTargetChanges++;
+        SettingsManager.LayoutSettingsChanged += layoutHandler;
+        SettingsManager.TaskbarTargetMonitorChanged += taskbarHandler;
+        try
+        {
+            viewModel.DynamicIslandMonitorDeviceId = "DISPLAY2";
+            viewModel.DynamicIslandScalePercent = 135;
+
+            Assert.AreEqual("DISPLAY2", SettingsManager.Current.DynamicIslandMonitorDeviceId);
+            Assert.AreEqual(135, SettingsManager.Current.DynamicIslandScalePercent);
+            Assert.AreEqual(2, changes.Count);
+            Assert.IsTrue(changes.All(change => change.WindowMode == WindowMode.DynamicIsland && change.OrientationMode == LayoutOrientationMode.Vertical));
+            Assert.AreEqual(0, taskbarTargetChanges);
+            CollectionAssert.AreEqual(original.TaskbarTargetMonitorDeviceIds!.ToArray(), SettingsManager.Current.TaskbarTargetMonitorDeviceIds!.ToArray());
+            Assert.AreEqual(original.LayoutLengthScalePercent, SettingsManager.Current.LayoutLengthScalePercent);
+            Assert.AreEqual(original.LayoutThicknessScalePercent, SettingsManager.Current.LayoutThicknessScalePercent);
+            Assert.AreEqual(original.TaskbarBarCrossAxisOffsetDip, SettingsManager.Current.TaskbarBarCrossAxisOffsetDip);
+            Assert.AreEqual(original.Position, SettingsManager.Current.Position);
+            Assert.AreEqual(original.TaskbarSurface, SettingsManager.Current.TaskbarSurface);
+            Assert.AreEqual(original.TaskbarExperience, SettingsManager.Current.TaskbarExperience);
+        }
+        finally
+        {
+            SettingsManager.LayoutSettingsChanged -= layoutHandler;
+            SettingsManager.TaskbarTargetMonitorChanged -= taskbarHandler;
+        }
+    }
+
+    [TestMethod]
+    public void IslandMonitorRefreshPreservesDisconnectedSelectionAndPrimaryFollowing()
+    {
+        SettingsManager.Replace(new AppSettings
+        {
+            WindowMode = WindowMode.DynamicIsland,
+            DynamicIslandMonitorDeviceId = "DISCONNECTED-ISLAND",
+            TaskbarTargetMonitorDeviceIds = ["DISPLAY2"]
+        });
+        var monitors = new FakeDisplayMonitorService();
+        var viewModel = new DisplayModesViewModel(monitors, new TaskbarLengthConstraintsService(), new LocalizationService());
+        System.ComponentModel.PropertyChangedEventHandler selectionReset = (_, e) =>
+        {
+            if (e.PropertyName == nameof(DisplayModesViewModel.DynamicIslandMonitorOptions))
+                viewModel.DynamicIslandMonitorDeviceId = null;
+        };
+        viewModel.PropertyChanged += selectionReset;
+        try
+        {
+            monitors.Refresh();
+            Assert.AreEqual("DISCONNECTED-ISLAND", SettingsManager.Current.DynamicIslandMonitorDeviceId);
+            Assert.IsFalse(viewModel.DynamicIslandMonitorOptions.Single(option => option.DeviceId == "DISCONNECTED-ISLAND").IsAvailable);
+
+            viewModel.DynamicIslandMonitorDeviceId = string.Empty;
+            monitors.Refresh();
+            Assert.IsNull(SettingsManager.Current.DynamicIslandMonitorDeviceId);
+            Assert.AreEqual(string.Empty, viewModel.DynamicIslandMonitorDeviceId);
+            Assert.IsTrue(viewModel.DynamicIslandMonitorOptions.Any(option => option.DeviceId == string.Empty));
+            CollectionAssert.AreEqual(new[] { "DISPLAY2" }, SettingsManager.Current.TaskbarTargetMonitorDeviceIds!.ToArray());
+        }
+        finally { viewModel.PropertyChanged -= selectionReset; }
+    }
+
+    [TestMethod]
+    public void IslandLayoutResetsUseSavedDefaultsWhileAppearanceResetLeavesThemAlone()
+    {
+        var defaults = new AppSettings
+        {
+            WindowMode = WindowMode.DynamicIsland,
+            DynamicIslandMonitorDeviceId = "DISPLAY2",
+            DynamicIslandScalePercent = 125,
+            TaskbarTargetMonitorDeviceIds = ["DISPLAY1"],
+            LayoutLengthScalePercent = 110,
+            TaskbarExperience = TaskbarExperienceSettings.Default with { ComponentSpacingDip = 20 }
+        };
+        SettingsManager.SetUserDefaults(defaults);
+        try
+        {
+            foreach (var reset in new Action[] { SettingsManager.ResetDisplayModes, SettingsManager.ResetLayout, SettingsManager.ResetAll })
+            {
+                SettingsManager.Replace(defaults.Clone());
+                SettingsManager.Current.DynamicIslandMonitorDeviceId = "DISCONNECTED-ISLAND";
+                SettingsManager.Current.DynamicIslandScalePercent = 80;
+                SettingsManager.ResetAppearance();
+                Assert.AreEqual("DISCONNECTED-ISLAND", SettingsManager.Current.DynamicIslandMonitorDeviceId);
+                Assert.AreEqual(80, SettingsManager.Current.DynamicIslandScalePercent);
+
+                reset();
+                Assert.AreEqual("DISPLAY2", SettingsManager.Current.DynamicIslandMonitorDeviceId);
+                Assert.AreEqual(125, SettingsManager.Current.DynamicIslandScalePercent);
+                Assert.AreEqual(WindowMode.DynamicIsland, SettingsManager.Current.WindowMode);
+                CollectionAssert.AreEqual(new[] { "DISPLAY1" }, SettingsManager.Current.TaskbarTargetMonitorDeviceIds!.ToArray());
+                Assert.AreEqual(defaults.LayoutLengthScalePercent, SettingsManager.Current.LayoutLengthScalePercent);
+                Assert.AreEqual(defaults.TaskbarExperience, SettingsManager.Current.TaskbarExperience);
+            }
+        }
+        finally { SettingsManager.SetUserDefaults(null); }
     }
 
     [TestMethod]
@@ -768,6 +971,6 @@ public sealed class SettingsPersistenceServiceTests
         public DisplayMonitorInfo? ResolveNotificationMonitor(NotificationTargetMode mode, string? fixedDeviceId) =>
             ResolveFixedMonitor(fixedDeviceId);
 
-        public bool IsForegroundWindowFullscreen() => false;
+        public bool IsForegroundWindowFullscreen(string? monitorDeviceId = null) => false;
     }
 }

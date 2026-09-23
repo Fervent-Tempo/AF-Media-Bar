@@ -240,7 +240,7 @@ public sealed class SettingsPersistenceService : IDisposable
             ?? throw new JsonException("Settings envelope is empty.");
         if (node["settings"] is JsonObject settings)
         {
-            foreach (var property in new[] { "layoutLengthScalePercent", "layoutThicknessScalePercent", "taskbarBarCrossAxisOffsetDip", "dynamicIslandLeft", "dynamicIslandTop" })
+            foreach (var property in new[] { "layoutLengthScalePercent", "layoutThicknessScalePercent", "taskbarBarCrossAxisOffsetDip", "dynamicIslandScalePercent", "dynamicIslandLeft", "dynamicIslandTop" })
             {
                 if (settings[property] is null) settings.Remove(property);
             }

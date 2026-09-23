@@ -10,7 +10,7 @@ using System.Collections.ObjectModel;
 
 namespace AFMediaBar.ViewModels.Pages;
 
-/// <summary>设置页中可预览选择的显示模式。 / Display mode selectable for preview on the settings page.</summary>
+/// <summary>设置页中可切换的显示模式。 / Display mode selectable from the settings page.</summary>
 public enum DisplayModeSelection
 {
     Taskbar = 0,
@@ -26,11 +26,13 @@ public partial class DisplayModesViewModel : ObservableObject
     private readonly TaskbarLengthConstraintsService _taskbarLengthConstraints;
     private readonly LocalizationService _localization;
     private bool _isRefreshing;
-    private DisplayModeSelection _selectedMode = DisplayModeSelection.Taskbar;
+    private DisplayModeSelection _selectedMode;
     private IReadOnlyList<DisplayMonitorOption> _monitorOptions = Array.Empty<DisplayMonitorOption>();
+    private IReadOnlyList<DisplayMonitorOption> _dynamicIslandMonitorOptions = Array.Empty<DisplayMonitorOption>();
     private IReadOnlyList<TaskbarMonitorSelectionItem> _taskbarMonitorOptions = Array.Empty<TaskbarMonitorSelectionItem>();
 
     public IReadOnlyList<DisplayMonitorOption> MonitorOptions => _monitorOptions;
+    public IReadOnlyList<DisplayMonitorOption> DynamicIslandMonitorOptions => _dynamicIslandMonitorOptions;
     /// <summary>可逐项勾选的任务栏目标列表；至少保留一项，既支持单选也支持多选。/ Individually selectable taskbar targets; at least one remains selected, supporting one or many.</summary>
     public IReadOnlyList<TaskbarMonitorSelectionItem> TaskbarMonitorOptions => _taskbarMonitorOptions;
     public WindowMode CurrentWindowMode => SettingsManager.Current.WindowMode;
@@ -39,20 +41,18 @@ public partial class DisplayModesViewModel : ObservableObject
     public bool IsDynamicIslandMode => SelectedMode == DisplayModeSelection.DynamicIsland;
     public bool IsDesktopCardMode => SelectedMode == DisplayModeSelection.DesktopCard;
     public bool IsFloatingBallMode => SelectedMode == DisplayModeSelection.FloatingBall;
-    public bool IsUnimplementedMode => !IsTaskbarMode;
+    public bool IsUnimplementedMode => IsDesktopCardMode || IsFloatingBallMode;
 
     /// <summary>
-    /// 当前显示模式的文本，供页头状态芯片显示。它读的是真实 <see cref="WindowMode"/>，
-    /// 而不是本页的预览选择——页内选择只改变高亮，从不切换窗口，两者不能混为一谈。
-    /// 模式名取自与模式卡片相同的键，因此芯片与卡片任何时候都写作同一个词。
-    /// Text for the header status chip. It reads the real <see cref="WindowMode"/> rather than this page's
-    /// preview selection, because the in-page selection only changes the highlight and never switches the
-    /// window; the two must not be conflated. The mode name comes from the same keys the mode cards use, so the
-    /// chip and the cards always read as one word.
+    /// 当前实际运行模式的文本。页面选择与宿主保持一致，因此芯片、选中卡片和真实窗口不会分叉。
+    /// Text for the currently active host mode. The page selection follows the host, so the chip, selected card,
+    /// and real window cannot drift apart.
     /// </summary>
     public string HostingModeText => Translations.Format(
         "DisplayModes.Status.Current",
-        Translations.Get(CurrentWindowMode == WindowMode.Taskbar ? "DisplayModes.Mode.Taskbar" : "Common.DynamicIsland"));
+        Translations.Get(CurrentWindowMode == WindowMode.DynamicIsland
+            ? "Common.DynamicIsland"
+            : "DisplayModes.Mode.Taskbar"));
 
     /// <summary>
     /// 任务栏是否就是当前运行模式。模式卡片用它决定“当前模式”芯片是否显示，
@@ -62,29 +62,31 @@ public partial class DisplayModesViewModel : ObservableObject
     /// </summary>
     public bool IsTaskbarHostingActive => CurrentWindowMode == WindowMode.Taskbar;
 
-    /// <summary>灵动岛背景方案。/ Dynamic-island background scheme.</summary>
-    public DynamicIslandBackgroundMode DynamicIslandBackgroundMode
+    /// <summary>空字符串选项表示跟随主显示器；持久化为 null。/ The empty option follows the primary monitor and is persisted as null.</summary>
+    public string? DynamicIslandMonitorDeviceId
     {
-        get => SettingsManager.Current.DynamicIslandBackgroundMode;
+        get
+        {
+            var configured = SettingsManager.Current.DynamicIslandMonitorDeviceId;
+            return _dynamicIslandMonitorOptions.FirstOrDefault(option =>
+                string.Equals(option.DeviceId, configured, StringComparison.OrdinalIgnoreCase))?.DeviceId ?? configured ?? string.Empty;
+        }
         set
         {
-            if (_isRefreshing || SettingsManager.Current.DynamicIslandBackgroundMode == value) return;
-            SettingsManager.Current.DynamicIslandBackgroundMode = value;
-            SettingsManager.RaiseLayoutSettingsChanged(CurrentWindowMode, Orientation);
+            if (_isRefreshing || !IsDynamicIslandMode) return;
+            SettingsManager.Current.DynamicIslandMonitorDeviceId = value;
             OnPropertyChanged();
         }
     }
 
-    /// <summary>灵动岛贴靠边缘。/ Edge where the dynamic island docks.</summary>
-    public DynamicIslandEdge DynamicIslandEdge
+    /// <summary>只缩放灵动岛整体，不写入任务栏的长度、厚度或间距。/ Scales the entire island without changing taskbar length, thickness, or spacing.</summary>
+    public double DynamicIslandScalePercent
     {
-        get => SettingsManager.Current.DynamicIslandEdge;
+        get => SettingsManager.Current.DynamicIslandScalePercent;
         set
         {
-            if (_isRefreshing || SettingsManager.Current.DynamicIslandEdge == value) return;
-            SettingsManager.Current.DynamicIslandEdge = value;
-            SettingsManager.Current.DynamicIslandEdgeDocked = true;
-            SettingsManager.RaiseLayoutSettingsChanged(CurrentWindowMode, Orientation);
+            if (_isRefreshing || !IsDynamicIslandMode) return;
+            SettingsManager.Current.DynamicIslandScalePercent = value;
             OnPropertyChanged();
         }
     }
@@ -528,43 +530,6 @@ public partial class DisplayModesViewModel : ObservableObject
 
     private TaskbarFullPanelSettings FullPanelSettings => SettingsManager.Current.TaskbarExperience.FullPanel.Normalize();
 
-    /// <summary>
-    /// 灵动岛模式自己的背景样式。它写在 <c>DynamicIslandSurface</c> 上，与任务栏表面互相独立。
-    /// 界面位于显示模式页的灵动岛分区，因此属性也归这里，避免同一份设置被两个视图模型各写一次。
-    /// The dynamic island's own background style, stored on <c>DynamicIslandSurface</c> and independent of the
-    /// taskbar surface. The interface lives in the display-mode page's island section, so the property lives here
-    /// too and one setting is never written from two view models.
-    /// </summary>
-    public PlayerSurfaceStyle IslandSurfaceStyle
-    {
-        get => IslandSurface.Style;
-        set => PublishIslandSurface(IslandSurface with { Style = value });
-    }
-
-    /// <inheritdoc cref="IslandSurfaceStyle" />
-    public int IslandSurfaceOpacityPercent
-    {
-        get => IslandSurface.BackgroundOpacityPercent;
-        set => PublishIslandSurface(IslandSurface with { BackgroundOpacityPercent = value });
-    }
-
-    /// <inheritdoc cref="IslandSurfaceStyle" />
-    public double IslandSurfaceCornerRadiusDip
-    {
-        get => IslandSurface.CornerRadiusDip;
-        set => PublishIslandSurface(IslandSurface with { CornerRadiusDip = value });
-    }
-
-    private static ModeSurfaceSettings IslandSurface => SettingsManager.Current.DynamicIslandSurface;
-
-    private void PublishIslandSurface(ModeSurfaceSettings settings)
-    {
-        SettingsManager.Current.DynamicIslandSurface = settings.Normalize();
-        OnPropertyChanged(nameof(IslandSurfaceStyle));
-        OnPropertyChanged(nameof(IslandSurfaceOpacityPercent));
-        OnPropertyChanged(nameof(IslandSurfaceCornerRadiusDip));
-    }
-
     public LayoutOrientationMode Orientation
     {
         get => SettingsManager.Current.LayoutOrientationMode;
@@ -629,6 +594,7 @@ public partial class DisplayModesViewModel : ObservableObject
         _displayMonitorService = displayMonitorService;
         _taskbarLengthConstraints = taskbarLengthConstraints;
         _localization = localization;
+        _selectedMode = ToSelection(SettingsManager.Current.WindowMode);
         SettingsManager.SettingsChanged += OnSettingsChanged;
         _displayMonitorService.MonitorsChanged += OnMonitorsChanged;
         _taskbarLengthConstraints.Changed += OnTaskbarLengthConstraintsChanged;
@@ -685,7 +651,17 @@ public partial class DisplayModesViewModel : ObservableObject
 
     private void SelectMode(DisplayModeSelection mode)
     {
-        if (_selectedMode == mode) return;
+        if (mode is DisplayModeSelection.DesktopCard or DisplayModeSelection.FloatingBall)
+            return;
+
+        var windowMode = mode == DisplayModeSelection.DynamicIsland
+            ? WindowMode.DynamicIsland
+            : WindowMode.Taskbar;
+        var selectionChanged = _selectedMode != mode;
+        var hostChanged = SettingsManager.Current.WindowMode != windowMode;
+        if (!selectionChanged && !hostChanged)
+            return;
+
         _selectedMode = mode;
         OnPropertyChanged(nameof(SelectedMode));
         OnPropertyChanged(nameof(IsTaskbarMode));
@@ -693,16 +669,18 @@ public partial class DisplayModesViewModel : ObservableObject
         OnPropertyChanged(nameof(IsDesktopCardMode));
         OnPropertyChanged(nameof(IsFloatingBallMode));
         OnPropertyChanged(nameof(IsUnimplementedMode));
+        if (hostChanged)
+        {
+            SettingsManager.Current.WindowMode = windowMode;
+            SettingsManager.RaiseLayoutSettingsChanged(windowMode, Orientation);
+        }
     }
 
     private void UpdateExperience(TaskbarExperienceSettings value)
     {
-        // 页面上高亮一个未实现的承载模式时，任务栏专属设置不接受写入——这是既有且受测试保护的不变量。
-        // 代价是那些控件会“看着能改、实际不保存”，因此页面在同一状态下会显示一条明确的只读提示，
-        // 而不是让用户自己猜。提示由 DisplayModesPage 绑定 IsUnimplementedMode 呈现。
-        // While an unimplemented hosting mode is highlighted, taskbar-only settings refuse writes: that is an
-        // existing invariant guarded by a test. The cost is controls that look editable without saving, so the
-        // page shows an explicit read-only notice in that state instead of leaving the user to guess.
+        // 灵动岛运行时不写入任务栏专属设置，避免两个宿主的外观与行为互相污染。
+        // While Dynamic Island is active, taskbar-only settings refuse writes so the two hosts keep independent
+        // appearance and behavior.
         if (_isRefreshing || !IsTaskbarMode) return;
         SettingsManager.SetTaskbarExperienceSettings(value.Normalize());
         RaiseExperience();
@@ -760,11 +738,19 @@ public partial class DisplayModesViewModel : ObservableObject
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
     {
-        if (e.ResetScope is SettingsResetScope.DisplayModes or SettingsResetScope.Layout or SettingsResetScope.All)
+        if (e.PropertyName is null or nameof(AppSettings.WindowMode) ||
+            e.ResetScope is SettingsResetScope.DisplayModes or SettingsResetScope.Layout or SettingsResetScope.All)
             RaiseAll();
-        else if (!_isRefreshing && e.PropertyName is nameof(AppSettings.TaskbarTargetMonitorDeviceIds) or nameof(AppSettings.TaskbarTargetMonitorDeviceId))
+        else if (!_isRefreshing && e.PropertyName is nameof(AppSettings.TaskbarTargetMonitorDeviceIds) or nameof(AppSettings.TaskbarTargetMonitorDeviceId) or nameof(AppSettings.DynamicIslandMonitorDeviceId))
             RefreshMonitorOptions();
+        else if (e.PropertyName == nameof(AppSettings.DynamicIslandScalePercent))
+            OnPropertyChanged(nameof(DynamicIslandScalePercent));
     }
+
+    private static DisplayModeSelection ToSelection(WindowMode mode) =>
+        mode == WindowMode.DynamicIsland
+            ? DisplayModeSelection.DynamicIsland
+            : DisplayModeSelection.Taskbar;
 
     private void OnMonitorsChanged(object? sender, EventArgs e) => RefreshMonitorOptions();
 
@@ -825,6 +811,12 @@ public partial class DisplayModesViewModel : ObservableObject
         }
 
         AddDisconnected(options, availableOptions, NotificationSettings.FixedMonitorDeviceId, disconnectedSuffix, 0);
+        var islandOptions = availableOptions.ToList();
+        islandOptions.Insert(0, new DisplayMonitorOption(
+            string.Empty,
+            Translations.Get("DisplayModes.Island.Monitor.Primary"),
+            false));
+        AddDisconnected(islandOptions, availableOptions, SettingsManager.Current.DynamicIslandMonitorDeviceId, disconnectedSuffix, 1);
         foreach (var deviceId in selectedTaskbarIds.Where(deviceId =>
                      availableOptions.All(option => !string.Equals(option.DeviceId, deviceId, StringComparison.OrdinalIgnoreCase))))
         {
@@ -845,6 +837,18 @@ public partial class DisplayModesViewModel : ObservableObject
         OnPropertyChanged(nameof(MonitorOptions));
         OnPropertyChanged(nameof(TaskbarMonitorOptions));
         OnPropertyChanged(nameof(TrackChangeNotificationFixedMonitorDeviceId));
+
+        // 重建下拉框时忽略选择器的临时空值，保留断开的目标与主屏幕回退意图。
+        // Ignore transient empty selections while rebuilding the list, preserving disconnected targets and primary-following intent.
+        var wasRefreshing = _isRefreshing;
+        _isRefreshing = true;
+        try
+        {
+            _dynamicIslandMonitorOptions = islandOptions;
+            OnPropertyChanged(nameof(DynamicIslandMonitorOptions));
+            OnPropertyChanged(nameof(DynamicIslandMonitorDeviceId));
+        }
+        finally { _isRefreshing = wasRefreshing; }
     }
 
     private HashSet<string> ResolveConfiguredTaskbarSelection(IReadOnlyList<DisplayMonitorInfo> monitors)
@@ -905,12 +909,16 @@ public partial class DisplayModesViewModel : ObservableObject
         _isRefreshing = true;
         try
         {
+            var selectedMode = ToSelection(SettingsManager.Current.WindowMode);
+            if (_selectedMode != selectedMode)
+            {
+                _selectedMode = selectedMode;
+                OnPropertyChanged(nameof(SelectedMode));
+            }
             OnPropertyChanged(nameof(CurrentWindowMode)); OnPropertyChanged(nameof(IsTaskbarMode)); OnPropertyChanged(nameof(IsDynamicIslandMode));
             OnPropertyChanged(nameof(IsDesktopCardMode)); OnPropertyChanged(nameof(IsFloatingBallMode)); OnPropertyChanged(nameof(IsUnimplementedMode));
             OnPropertyChanged(nameof(HostingModeText)); OnPropertyChanged(nameof(IsTaskbarHostingActive));
-            OnPropertyChanged(nameof(DynamicIslandBackgroundMode)); OnPropertyChanged(nameof(DynamicIslandEdge));
-            OnPropertyChanged(nameof(IslandSurfaceStyle)); OnPropertyChanged(nameof(IslandSurfaceOpacityPercent));
-            OnPropertyChanged(nameof(IslandSurfaceCornerRadiusDip));
+            OnPropertyChanged(nameof(DynamicIslandMonitorDeviceId)); OnPropertyChanged(nameof(DynamicIslandScalePercent));
             RaiseExperience(); OnPropertyChanged(nameof(Orientation)); OnPropertyChanged(nameof(IsTaskbarPositionLocked));
             OnPropertyChanged(nameof(IsTaskbarAvoidingIcons)); OnPropertyChanged(nameof(TaskbarCrossAxisOffsetDip));
             RefreshMonitorOptions();

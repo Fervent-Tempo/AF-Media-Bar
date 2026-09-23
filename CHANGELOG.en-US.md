@@ -8,17 +8,28 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
-Reliability fixes: media-session self-healing, spectrum level calibration, and lyric advancement.
+Dynamic Island is now a real runtime mode, alongside continued reliability work in media sessions, spectrum levels, and lyric advancement.
+
+### Added
+
+- Dynamic Island now has its own fixed top-center black surface: an idle base, compact media state, and expanded controls morph continuously, with one artwork visual and interruptible, momentum-preserving transitions.
+- Click to activate the media app, hold for about 400 ms to expand, and click outside or press Esc to collapse; playback and continuous track seeking no longer depend on taskbar hover controls.
+- Independent display selection and 75%–150% uniform scale, same-display external-fullscreen suppression/recovery, transparent-host input pass-through, and system reduced-motion support.
 
 ### Fixed
 
 - Losing media sessions permanently after a single missed SMTC event (for example at a track change): an auto-reconcile watchdog now heals on a one-second cadence for thirty seconds after a session closes and falls back to five seconds, and it rebuilds the media catalog when the third-party library is stuck beyond what ForceUpdate can fix.
 - The spectrum standing still at its minimum bar height while listening at low volume: the level mapping now uses a relative-dB window around a reference peak, so bar heights no longer shrink with the system volume; the capture also follows the device that is actually audible (an application stream outranks the system mixer's echo, and the current endpoint is kept within one rank), so a virtual audio driver routing music to a non-default endpoint no longer leaves the spectrum silent (the target is checked every two seconds and the capture is rebuilt on a change).
 - Lyrics not advancing when a player stops reporting playback progress (its timeline stays at the track start): lyric line selection now uses the same extrapolated position as the progress bar and is advanced by the existing 250 ms progress timer.
+- Aligned play/pause capability reporting with dispatch, including sessions that expose separate Play/Pause commands without Toggle. Unavailable controls now explain the missing transport support instead of presenting memory-read metadata as a controllable session.
 
 ### Improved
 
+- Removed free dragging, four-edge docking, hover reveal, and transparent/theme-tinted island surface controls. Idle keeps a static capsule, pause does not hide it, and track changes retain the current presentation without a separate notification.
+- The selected mode matches its actual host, with independently persisted display and scale. Old position/surface fields remain for file compatibility. Real activity levels reuse existing output capture; closing releases rendering subscriptions, timers, and pointer capture.
 - Spectrum resolution and look: the FFT size now follows the sample rate (96 kHz goes from 512 to 4096 points), band values integrate power with fractional-bin linear interpolation (low bands no longer share one bin with their neighbour, so the leading columns stop sharing one height), and a +3 dB/octave tilt in the power domain compensates the natural roll-off for a more balanced look.
+- Island transitions now use fixed layout, clip geometry, and render transforms instead of rebuilding the native window region and reformatting artwork/text each frame. Activity-only frames no longer update island geometry.
+- Holding now progressively opens the island instead of waiting for a fixed delay before animating. Crossing the threshold completes the motion; cancellation springs back, and reholding continues from the current shape. Text, progress, and buttons reveal in stages with input gated until visible; abandoning a hold no longer opens the player accidentally.
 
 ## [1.2.1] - 2026-09-21
 
@@ -77,7 +88,7 @@ The first release of the rebuilt interface and interaction model: taskbar lyrics
 
 ### Compatibility and Limitations
 
-- Vertical taskbars and floating mode are no longer offered: this version supports the horizontal taskbar only, and Dynamic Island, Desktop Card, and Floating Orb in Settings are placeholders that only change what the page shows.
+- Vertical taskbars and Desktop Card/Floating Orb remain unavailable; Dynamic Island is now connected as an independent runtime host.
 - The grid layout editor is no longer part of Settings: layout profiles written by 1.1.1 and earlier (`%LOCALAPPDATA%\AFMediaBar\profiles\layout.json`, schema 5) are no longer used and the interface returns to a fixed layout.
 - **Upgrading resets your settings**: this version reads only its own schema number (2) and never reads the older file that 1.1.1 wrote; that file is renamed to `settings.json.unsupported-<timestamp>` and kept, and the app starts from the defaults. The "my defaults" snapshot is handled the same way, so the settings have to be configured once more.
 - Upgrading from 1.1.1 to 1.2.0 means downloading manually: the manifest for this version offers no automatically installable package, and in-app download and silent installation return in 1.2.1.

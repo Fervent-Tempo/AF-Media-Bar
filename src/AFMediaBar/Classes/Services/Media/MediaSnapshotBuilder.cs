@@ -152,7 +152,11 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable
         return new MediaSnapshot(
             true,
             playbackInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing,
-            playbackInfo.Controls?.IsPlayPauseToggleEnabled ?? false,
+            MediaTransportPolicy.ResolvePlayPause(
+                playbackInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing,
+                playbackInfo.Controls?.IsPlayPauseToggleEnabled ?? false,
+                playbackInfo.Controls?.IsPlayEnabled ?? false,
+                playbackInfo.Controls?.IsPauseEnabled ?? false) != MediaPlayPauseAction.None,
             playbackInfo.Controls?.IsPreviousEnabled ?? false,
             playbackInfo.Controls?.IsNextEnabled ?? false,
             title,

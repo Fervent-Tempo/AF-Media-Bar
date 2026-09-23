@@ -12,13 +12,13 @@
         显示模式页 / Display modes page
 
         页面分成两段：顶部四张模式卡片，下面只显示所选模式的设置。
-        每个模式一个独立分区（`*ModeSection`），互斥显示；未实现的模式显示占位提示。
+        每个模式一个独立分区（`*ModeSection`），互斥显示；桌面卡片与悬浮球保留为禁用选项。
         分区而不是独立页面，是为了让“每个模式一个设置页”这条路线可以机械地推进：
         将来把某个分区的内容整体搬到一个新 Page 即可，本页则只留下模式卡片。
 
         Two bands: four mode cards at the top, and below them only the selected mode's settings. Each mode owns a
-        separate section (`*ModeSection`) and exactly one is visible; an unimplemented mode shows a placeholder
-        notice. Sections rather than separate pages keep "one settings page per mode" a mechanical step later:
+        separate section (`*ModeSection`) and exactly one is visible; Desktop Card and Floating Orb remain disabled
+        options. Sections rather than separate pages keep "one settings page per mode" a mechanical step later:
         move a section's content into a new Page and this page keeps only the cards.
 
         排布规则：一行一个选项，一行恰好一个控件，控件永远贴右。
@@ -169,10 +169,6 @@
                                 Style="{StaticResource ModeChoiceStyle}">
                                 <StackPanel>
                                     <DockPanel>
-                                        <ContentControl
-                                            DockPanel.Dock="Right"
-                                            Content="{DynamicResource Loc.Common.NotImplemented}"
-                                            Style="{StaticResource AfSettingsBadgeNeutralStyle}" />
                                         <TextBlock
                                             FontSize="16"
                                             FontWeight="{DynamicResource AppTextStrongFontWeight}"
@@ -187,6 +183,7 @@
 
                             <RadioButton
                                 GroupName="DisplayMode"
+                                IsEnabled="False"
                                 IsChecked="{Binding ViewModel.IsDesktopCardMode, Mode=OneWay}"
                                 Command="{Binding ViewModel.SwitchToDesktopCardModeCommand}"
                                 Style="{StaticResource ModeChoiceStyle}">
@@ -210,6 +207,7 @@
 
                             <RadioButton
                                 GroupName="DisplayMode"
+                                IsEnabled="False"
                                 IsChecked="{Binding ViewModel.IsFloatingBallMode, Mode=OneWay}"
                                 Command="{Binding ViewModel.SwitchToFloatingBallModeCommand}"
                                 Style="{StaticResource ModeChoiceStyle}">
@@ -231,12 +229,6 @@
                                 </StackPanel>
                             </RadioButton>
                         </UniformGrid>
-
-                        <components:SettingsCallout
-                            Margin="0,4,0,0"
-                            IsAccent="False"
-                            Symbol="Info24"
-                            Text="{DynamicResource Loc.DisplayModes.Mode.PreviewNotice}" />
                     </StackPanel>
                 </components:SettingsGroup>
 
@@ -720,11 +712,10 @@
 
                     <components:SettingsGroup
                         Description="{DynamicResource Loc.DisplayModes.Island.Group.Description}"
-                        Header="{DynamicResource Loc.Common.Group.IslandAppearance}"
+                        Header="{DynamicResource Loc.DisplayModes.Island.Group.Title}"
                         Icon="{ui:SymbolIcon Window24}"
-                        StatusText="{DynamicResource Loc.Common.NotImplemented}"
-                        StatusTone="Neutral"
-                        Tint="Muted">
+                        StatusText="{DynamicResource Loc.DisplayModes.Mode.Current}"
+                        StatusTone="Accent">
                         <StackPanel>
                             <components:SettingsCallout
                                 Margin="0,0,0,12"
@@ -732,50 +723,31 @@
                                 Symbol="Info24"
                                 Text="{DynamicResource Loc.DisplayModes.Island.Notice}" />
 
-                            <components:SettingsDiagram Margin="0,0,0,12" Kind="DynamicIslandSurface" />
-
                             <components:SettingsRow
-                                Description="{DynamicResource Loc.DisplayModes.Island.Row.Surface.Description}"
-                                Icon="{ui:SymbolIcon Square24}"
-                                IsEnabled="False"
-                                Title="{DynamicResource Loc.DisplayModes.Island.Row.Surface.Title}">
+                                Description="{DynamicResource Loc.DisplayModes.Island.Row.Monitor.Description}"
+                                Icon="{ui:SymbolIcon Desktop24}"
+                                Title="{DynamicResource Loc.DisplayModes.Island.Row.Monitor.Title}">
                                 <ComboBox
-                                    MinWidth="140"
-                                    SelectedValue="{Binding ViewModel.IslandSurfaceStyle, Mode=OneWay}"
-                                    SelectedValuePath="Tag">
-                                    <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Island.Surface.Automatic}" Tag="{x:Static settings:PlayerSurfaceStyle.Automatic}" />
-                                    <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Island.Surface.Solid}" Tag="{x:Static settings:PlayerSurfaceStyle.Solid}" />
-                                    <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Island.Surface.ThemeTint}" Tag="{x:Static settings:PlayerSurfaceStyle.ThemeTint}" />
-                                </ComboBox>
+                                    MinWidth="240"
+                                    DisplayMemberPath="DisplayName"
+                                    ItemsSource="{Binding ViewModel.DynamicIslandMonitorOptions}"
+                                    SelectedValue="{Binding ViewModel.DynamicIslandMonitorDeviceId, Mode=TwoWay}"
+                                    SelectedValuePath="DeviceId" />
                             </components:SettingsRow>
 
                             <components:SettingsRow
-                                Description="{DynamicResource Loc.DisplayModes.Island.Row.Opacity.Description}"
-                                Icon="{ui:SymbolIcon Eye24}"
-                                IsEnabled="False"
-                                Title="{DynamicResource Loc.DisplayModes.Island.Row.Opacity.Title}">
+                                Description="{DynamicResource Loc.DisplayModes.Island.Row.Scale.Description}"
+                                Icon="{ui:SymbolIcon SlideSize24}"
+                                Title="{DynamicResource Loc.DisplayModes.Island.Row.Scale.Title}">
                                 <StackPanel Orientation="Horizontal">
                                     <Slider
-                                        Maximum="100"
-                                        Minimum="0"
+                                        Maximum="150"
+                                        Minimum="75"
+                                        TickFrequency="5"
+                                        IsSnapToTickEnabled="True"
                                         Style="{StaticResource RowSliderStyle}"
-                                        Value="{Binding ViewModel.IslandSurfaceOpacityPercent, Mode=OneWay}" />
-                                    <TextBlock Style="{StaticResource RowValueStyle}" Text="{Binding ViewModel.IslandSurfaceOpacityPercent, StringFormat={}{0}%}" />
-                                </StackPanel>
-                            </components:SettingsRow>
-
-                            <components:SettingsRow
-                                Description="{DynamicResource Loc.DisplayModes.Island.Row.Corner.Description}"
-                                Icon="{ui:SymbolIcon BorderNone24}"
-                                IsEnabled="False"
-                                Title="{DynamicResource Loc.DisplayModes.Island.Row.Corner.Title}">
-                                <StackPanel Orientation="Horizontal">
-                                    <Slider
-                                        Maximum="24"
-                                        Minimum="0"
-                                        Style="{StaticResource RowSliderStyle}"
-                                        Value="{Binding ViewModel.IslandSurfaceCornerRadiusDip, Mode=OneWay}" />
-                                    <TextBlock Style="{StaticResource RowValueStyle}" Text="{Binding ViewModel.IslandSurfaceCornerRadiusDip, StringFormat={}{0:0.#} DIP}" />
+                                        Value="{Binding ViewModel.DynamicIslandScalePercent, Mode=TwoWay}" />
+                                    <TextBlock Style="{StaticResource RowValueStyle}" Text="{Binding ViewModel.DynamicIslandScalePercent, StringFormat={}{0:0}%}" />
                                 </StackPanel>
                             </components:SettingsRow>
                         </StackPanel>

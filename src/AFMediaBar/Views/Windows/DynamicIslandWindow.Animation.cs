@@ -1,274 +1,226 @@
+using System.Diagnostics;
 using System.Windows;
-using System.Windows.Media.Animation;
-using System.Windows.Threading;
-using AFMediaBar.Classes.Models;
-using AFMediaBar.Classes.Models.Layout;
+using System.Windows.Media;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Layout;
-using AFMediaBar.Classes.Settings;
 
 namespace AFMediaBar.Views.Windows;
 
 /// <summary>
-/// 灵动岛窗口的尺寸与位置动效协调部分。
-/// Animation coordination for dynamic-island size and position transitions.
+/// 同一表面的实时弹簧形变；只在尚未稳定时监听渲染帧。
+/// Real-time spring morphing of one surface; rendering is subscribed only while a value is unsettled.
 /// </summary>
 public partial class DynamicIslandWindow
 {
-    private const double PositionToleranceDip = 0.5;
-    private Point? _positionAnimationTarget;
-    private bool _positionAnimationActive;
-    private double _sizeAnimationStart;
-    private double _sizeAnimationTarget;
-    private double _sizeAnimationProgress;
-    private double _sizeAnchorLeft;
-    private double _sizeAnchorTop;
-    private double _sizeAnchorRight;
-    private double _sizeAnchorCenter;
-    private double _sizeAnchorBottom;
-    private double _sizeAnchorCenterY;
-    private MediaBarSizeRequest? _pendingSizeRequest;
+    private IslandSpringFrame _mediaSpring;
+    private IslandSpringFrame _expansionSpring;
+    private IslandSpringFrame _pressSpring;
+    private bool _rendering;
+    private long _lastFrameTimestamp;
+    private TimeSpan _lastRenderingTime = TimeSpan.MinValue;
+    private double _drawnMediaProgress = double.NaN;
+    private double _drawnExpansionProgress = double.NaN;
 
-    private void ApplyDesiredSizeRequest(MediaBarSizeRequest request, LayoutOrientation orientation)
+    private double MediaTarget => _latestSnapshot.IsConnected ? 1 : 0;
+    private double ExpansionTarget => !_latestSnapshot.IsConnected ? 0 : _wantsExpanded ? 1 :
+        IsPreviewingHold && MotionPolicy.ResolveCurrent().UseContinuousMotion
+            ? DynamicIslandHoldPolicy.GetPreviewExpansion(HoldElapsedSeconds, _holdExpansionStart)
+            : 0;
+    private double PressTarget => _pointerDown && !_pointerCancelled && !_holdTriggered
+        ? (_expandedAtPress ? 1 : 1 - DynamicIslandHoldPolicy.GetProgress(HoldElapsedSeconds))
+        : 0;
+
+    private void RetargetIsland()
     {
-        if (_isClosing || _isDragging)
+        if (_isClosing)
             return;
-
-        var target = request.PrimaryLength;
-        var motion = MotionPolicy.ResolveCurrent();
-        var maximum = GetAvailablePrimaryLengthDip(orientation);
-        if (maximum > 0)
-            target = Math.Min(target, maximum);
-
-        var current = orientation == LayoutOrientation.Horizontal ? Width : Height;
-        if (double.IsNaN(current) || current <= 0)
-            current = MediaControl.CurrentLayout is { } layout
-                ? orientation == LayoutOrientation.Horizontal ? layout.Canvas.Width : layout.Canvas.Height
-                : target;
-
-        CaptureSizeAnchors(orientation, current);
-        if (!motion.UseContinuousMotion || Math.Abs(target - current) < LayoutSizeCalculator.MinimumChangeDip)
+        if (!IsVisible || _fullscreenSuppressed || !MotionPolicy.ResolveCurrent().UseContinuousMotion)
         {
-            ApplyAnimatedSize(target, orientation);
-            Dispatcher.BeginInvoke(_foregroundSamplingSession.RequestRefresh, DispatcherPriority.ContextIdle);
+            SnapPresentation();
+            DrawIsland();
+            StopRendering();
             return;
         }
-
-        _sizeAnimationStart = current;
-        _sizeAnimationTarget = target;
-        _sizeAnimationProgress = 0;
-        _sizeAnimationTimer.Start();
+        if (IsMotionSettled())
+        {
+            DrawIsland();
+            return;
+        }
+        if (_rendering)
+            return;
+        _rendering = true;
+        _lastFrameTimestamp = Stopwatch.GetTimestamp();
+        _lastRenderingTime = TimeSpan.MinValue;
+        CompositionTarget.Rendering += OnRendering;
     }
 
-    private void CaptureSizeAnchors(LayoutOrientation orientation, double currentPrimary)
+    private void OnRendering(object? sender, EventArgs e)
     {
-        var left = double.IsNaN(Left) ? GetExpandedPosition().X : Left;
-        var top = double.IsNaN(Top) ? GetExpandedPosition().Y : Top;
-        var width = double.IsNaN(Width) || Width <= 0
-            ? MediaControl.CurrentLayout?.Canvas.Width ?? (orientation == LayoutOrientation.Horizontal ? currentPrimary : 1)
-            : Width;
-        var height = double.IsNaN(Height) || Height <= 0
-            ? MediaControl.CurrentLayout?.Canvas.Height ?? (orientation == LayoutOrientation.Vertical ? currentPrimary : 1)
-            : Height;
-
-        _sizeAnchorLeft = left;
-        _sizeAnchorTop = top;
-        _sizeAnchorRight = left + width;
-        _sizeAnchorCenter = left + width / 2;
-        _sizeAnchorBottom = top + height;
-        _sizeAnchorCenterY = top + height / 2;
-    }
-
-    private double GetAvailablePrimaryLengthDip(LayoutOrientation orientation)
-    {
-        var area = GetCurrentWorkArea();
-        return orientation == LayoutOrientation.Horizontal
-            ? Math.Max(1, area.Width - 40)
-            : Math.Max(1, area.Height - 40);
-    }
-
-    private void AdvanceSizeAnimation()
-    {
-        if (_isClosing || _isDragging)
+        if (_isClosing || !IsVisible || _fullscreenSuppressed)
         {
-            _sizeAnimationTimer.Stop();
+            StopRendering();
             return;
         }
-
-        var frame = MediaBarSizeAnimationCalculator.Advance(
-            _sizeAnimationStart,
-            _sizeAnimationTarget,
-            _sizeAnimationProgress,
-            elapsedMilliseconds: 16,
-            durationMilliseconds: MotionPolicy.ResolveCurrent().PositionDuration.TotalMilliseconds);
-        _sizeAnimationProgress = frame.Progress;
-        ApplyAnimatedSize(frame.Value, _appliedOrientation ?? LayoutOrientation.Horizontal);
-        if (frame.IsCompleted)
+        if (e is RenderingEventArgs renderingEvent)
         {
-            ApplyAnimatedSize(_sizeAnimationTarget, _appliedOrientation ?? LayoutOrientation.Horizontal);
-            _sizeAnimationTimer.Stop();
-
-            // 展开状态下将尺寸动画后的最终位置作为新的持久化锚点，避免旧左上角覆盖中心锚点结果。
-            // While expanded, persist the post-resize position so a stale top-left does not overwrite the center anchor.
-            if (_isExpanded)
-                SaveCurrentExpandedPosition();
-
-            if (!_isDragging && !_positionAnimationActive)
-                SetPosition(_isExpanded ? GetExpandedPosition() : GetCollapsedPosition(), animated: false);
-            Dispatcher.BeginInvoke(_foregroundSamplingSession.RequestRefresh, DispatcherPriority.ContextIdle);
-        }
-    }
-
-    private void ApplyAnimatedSize(double primaryLength, LayoutOrientation orientation)
-    {
-        MediaControl.ApplyPrimaryLength(primaryLength);
-        var layout = MediaControl.CurrentLayout;
-        if (layout is null)
-            return;
-
-        if (orientation == LayoutOrientation.Horizontal)
-        {
-            Width = layout.Canvas.Width;
-            Height = layout.Canvas.Height;
-            var edge = SettingsManager.Current.DynamicIslandEdge;
-            Left = SettingsManager.Current.DynamicIslandEdgeDocked && edge == DynamicIslandEdge.Right
-                ? _sizeAnchorRight - Width
-                : SettingsManager.Current.DynamicIslandEdgeDocked && edge == DynamicIslandEdge.Left
-                    ? _sizeAnchorLeft
-                    : _sizeAnchorCenter - Width / 2;
-            Top = _sizeAnchorTop;
-        }
-        else
-        {
-            Width = layout.Canvas.Width;
-            Height = layout.Canvas.Height;
-            var edge = SettingsManager.Current.DynamicIslandEdge;
-            Top = SettingsManager.Current.DynamicIslandEdgeDocked && edge == DynamicIslandEdge.Bottom
-                ? _sizeAnchorBottom - Height
-                : SettingsManager.Current.DynamicIslandEdgeDocked && edge == DynamicIslandEdge.Top
-                    ? _sizeAnchorTop
-                    : _sizeAnchorCenterY - Height / 2;
-
-            if (SettingsManager.Current.DynamicIslandEdgeDocked && edge == DynamicIslandEdge.Right)
-                Left = _sizeAnchorRight - Width;
-            else if (SettingsManager.Current.DynamicIslandEdgeDocked && edge == DynamicIslandEdge.Left)
-                Left = _sizeAnchorLeft;
-            else
-                Left = _sizeAnchorCenter - Width / 2;
-        }
-    }
-
-    private void SetPosition(Point target, bool animated)
-    {
-        if (!MotionPolicy.ResolveCurrent().UseTransitions)
-            animated = false;
-
-        var currentLeft = Left;
-        var currentTop = Top;
-        if (double.IsNaN(currentLeft) || double.IsNaN(currentTop))
-        {
-            animated = false;
-            currentLeft = target.X;
-            currentTop = target.Y;
-        }
-
-        if (animated && _positionAnimationActive &&
-            _positionAnimationTarget is { } pendingTarget && IsClose(pendingTarget, target))
-            return;
-
-        if (!animated && IsClose(new Point(currentLeft, currentTop), target))
-            return;
-
-        _foregroundSamplingSession.Invalidate(clearDecision: false);
-        BeginAnimation(LeftProperty, null);
-        BeginAnimation(TopProperty, null);
-        _positionAnimationActive = false;
-        _positionAnimationTarget = null;
-        // 以当前视觉位置作为动画基准，避免窗口先瞬移到目标位置再开始动画。
-        // Keep the current visual position as the animation base to avoid a one-frame jump.
-        Left = currentLeft;
-        Top = currentTop;
-
-        if (!animated)
-        {
-            Left = target.X;
-            Top = target.Y;
-            Dispatcher.BeginInvoke(_foregroundSamplingSession.RequestRefresh, DispatcherPriority.ContextIdle);
-            return;
-        }
-
-        _positionAnimationTarget = target;
-        _positionAnimationActive = true;
-        var motion = MotionPolicy.ResolveCurrent();
-        var easing = _isExpanded ? new PowerEase { Power = 3, EasingMode = EasingMode.EaseOut }
-            : new PowerEase { Power = 3, EasingMode = EasingMode.EaseInOut };
-        var leftAnimation = new DoubleAnimation
-        {
-            From = currentLeft,
-            To = target.X,
-            Duration = motion.PositionDuration,
-            EasingFunction = easing,
-            FillBehavior = FillBehavior.Stop
-        };
-        var topAnimation = new DoubleAnimation
-        {
-            From = currentTop,
-            To = target.Y,
-            Duration = motion.PositionDuration,
-            EasingFunction = easing,
-            FillBehavior = FillBehavior.Stop
-        };
-        leftAnimation.Completed += (_, _) =>
-        {
-            if (_positionAnimationTarget is not { } completedTarget || !IsClose(completedTarget, target))
+            if (renderingEvent.RenderingTime == _lastRenderingTime)
                 return;
-
-            BeginAnimation(LeftProperty, null);
-            BeginAnimation(TopProperty, null);
-            Left = target.X;
-            Top = target.Y;
-            _positionAnimationTarget = null;
-            _positionAnimationActive = false;
-            ApplyPendingSizeRequest();
-            Dispatcher.BeginInvoke(_foregroundSamplingSession.RequestRefresh, DispatcherPriority.ContextIdle);
-        };
-        BeginAnimation(LeftProperty, leftAnimation, HandoffBehavior.SnapshotAndReplace);
-        BeginAnimation(TopProperty, topAnimation, HandoffBehavior.SnapshotAndReplace);
-    }
-
-    private bool IsPositionTarget(Point target)
-    {
-        if (_positionAnimationActive && _positionAnimationTarget is { } pendingTarget)
-            return IsClose(pendingTarget, target);
-
-        return !double.IsNaN(Left) && !double.IsNaN(Top) &&
-               IsClose(new Point(Left, Top), target);
-    }
-
-    private static bool IsClose(Point first, Point second) =>
-        Math.Abs(first.X - second.X) <= PositionToleranceDip &&
-        Math.Abs(first.Y - second.Y) <= PositionToleranceDip;
-
-    private void StopPositionAnimationAtCurrentPosition()
-    {
-        var currentLeft = Left;
-        var currentTop = Top;
-        BeginAnimation(LeftProperty, null);
-        BeginAnimation(TopProperty, null);
-        _positionAnimationTarget = null;
-        _positionAnimationActive = false;
-        if (!double.IsNaN(currentLeft))
-            Left = currentLeft;
-        if (!double.IsNaN(currentTop))
-            Top = currentTop;
-    }
-
-    private void ApplyPendingSizeRequest()
-    {
-        if (_pendingSizeRequest is not { } request || _appliedOrientation is not { } orientation)
+            _lastRenderingTime = renderingEvent.RenderingTime;
+        }
+        var now = Stopwatch.GetTimestamp();
+        var seconds = Stopwatch.GetElapsedTime(_lastFrameTimestamp, now).TotalSeconds;
+        _lastFrameTimestamp = now;
+        if (IsPreviewingHold)
+            TryCompleteHold();
+        if (!MotionPolicy.ResolveCurrent().UseContinuousMotion)
+        {
+            SnapPresentation();
+            DrawIsland();
+            StopRendering();
             return;
+        }
+        _mediaSpring = AdvanceSpring(_mediaSpring, MediaTarget, seconds);
+        _expansionSpring = AdvanceSpring(_expansionSpring, ExpansionTarget, seconds);
+        _pressSpring = AdvanceSpring(_pressSpring, PressTarget, seconds * 1.8);
+        var blend = 1 - Math.Exp(-seconds / 0.055);
+        for (var i = 0; i < _activityLevels.Length; i++)
+        {
+            _activityLevels[i] += (_activityTargets[i] - _activityLevels[i]) * blend;
+            if (Math.Abs(_activityLevels[i] - _activityTargets[i]) < 0.005)
+                _activityLevels[i] = _activityTargets[i];
+        }
+        DrawIsland();
+        if (IsMotionSettled())
+            StopRendering();
+    }
 
-        _pendingSizeRequest = null;
-        ApplyDesiredSizeRequest(request, orientation);
+    private static IslandSpringFrame AdvanceSpring(IslandSpringFrame frame, double target, double seconds)
+    {
+        var next = DynamicIslandMotion.Advance(frame, target, seconds);
+        return DynamicIslandMotion.IsSettled(next, target) ? new IslandSpringFrame(target, 0) : next;
+    }
+
+    private bool IsMotionSettled()
+    {
+        // A changing hold target must keep receiving frames even if the spring catches it momentarily.
+        if (IsPreviewingHold && MotionPolicy.ResolveCurrent().UseContinuousMotion)
+            return false;
+        if (!DynamicIslandMotion.IsSettled(_mediaSpring, MediaTarget) ||
+            !DynamicIslandMotion.IsSettled(_expansionSpring, ExpansionTarget) ||
+            !DynamicIslandMotion.IsSettled(_pressSpring, PressTarget))
+            return false;
+        for (var i = 0; i < _activityLevels.Length; i++)
+            if (Math.Abs(_activityLevels[i] - _activityTargets[i]) >= 0.005)
+                return false;
+        return true;
+    }
+
+    private void SnapPresentation()
+    {
+        _mediaSpring = new IslandSpringFrame(MediaTarget, 0);
+        _expansionSpring = new IslandSpringFrame(ExpansionTarget, 0);
+        _pressSpring = new IslandSpringFrame(PressTarget, 0);
+        Array.Copy(_activityTargets, _activityLevels, _activityLevels.Length);
+    }
+
+    private void StopRendering()
+    {
+        if (!_rendering)
+            return;
+        CompositionTarget.Rendering -= OnRendering;
+        _rendering = false;
+        _lastFrameTimestamp = 0;
+    }
+
+    private void DrawIsland()
+    {
+        DrawIslandGeometry();
+        var pressScale = 1 - 0.025 * Math.Clamp(_pressSpring.Value, 0, 1);
+        if (PressTransform.ScaleX != pressScale)
+            PressTransform.ScaleX = PressTransform.ScaleY = pressScale;
+        var detailInteractive = _wantsExpanded && DetailLayer.Opacity > 0.5;
+        if (DetailLayer.IsHitTestVisible != detailInteractive)
+            DetailLayer.IsHitTestVisible = detailInteractive;
+        var progressInteractive = detailInteractive && ProgressRow.Opacity > 0.5;
+        var controlsInteractive = detailInteractive && ControlsRow.Opacity > 0.5;
+        if (ProgressRow.IsHitTestVisible != progressInteractive)
+            ProgressRow.IsHitTestVisible = progressInteractive;
+        if (ControlsRow.IsHitTestVisible != controlsInteractive)
+            ControlsRow.IsHitTestVisible = controlsInteractive;
+        DrawActivityBars();
+        if (!_latestSnapshot.IsConnected && ArtworkFrame.Opacity < 0.001)
+        {
+            if (ArtworkImage.Source is not null)
+                ArtworkImage.Source = null;
+            if (TitleText.Text.Length != 0)
+                TitleText.Text = string.Empty;
+            if (ArtistText.Text.Length != 0)
+                ArtistText.Text = string.Empty;
+        }
+    }
+
+    private void DrawIslandGeometry()
+    {
+        // Audio and press frames do not invalidate artwork or text layout, or rebuild the island clip.
+        if (_drawnMediaProgress == _mediaSpring.Value && _drawnExpansionProgress == _expansionSpring.Value)
+            return;
+        var geometry = DynamicIslandGeometry.Calculate(_mediaSpring.Value, _expansionSpring.Value);
+        var left = (HostWidth - geometry.Width) / 2;
+        // Keep the body fixed and centered. Both FillContains and pointer positions use these body coordinates.
+        // Alpha-zero pixels outside this clip pass through the layered HWND without a native window region.
+        IslandClip.Rect = new Rect(left, 0, geometry.Width, geometry.Height);
+        IslandClip.RadiusX = IslandClip.RadiusY = geometry.Radius;
+        PressTransform.CenterY = geometry.Height / 2;
+
+        var artworkScale = geometry.Artwork.Width / ArtworkFrame.Width;
+        ArtworkScale.ScaleX = ArtworkScale.ScaleY = artworkScale;
+        ArtworkTranslation.X = left + geometry.Artwork.X;
+        ArtworkTranslation.Y = geometry.Artwork.Y;
+        var expansion = Math.Clamp(_expansionSpring.Value, 0, 1);
+        ArtworkClip.RadiusX = ArtworkClip.RadiusY = (5 + 4 * expansion) / artworkScale;
+        // Preserve the placeholder's original five-pixel inset while the single artwork visual scales.
+        var placeholderScale = (geometry.Artwork.Width - 10) / ((ArtworkFrame.Width - 10) * artworkScale);
+        var placeholderInset = 5 / artworkScale - 5;
+        ArtworkPlaceholderTransform.Matrix = new Matrix(placeholderScale, 0, 0, placeholderScale,
+            placeholderInset, placeholderInset);
+        ArtworkFrame.Opacity = geometry.MediaOpacity;
+        ActivityTranslation.X = left + geometry.ActivityOrigin.X;
+        ActivityTranslation.Y = geometry.ActivityOrigin.Y;
+        ActivityIndicator.Opacity = geometry.MediaOpacity;
+
+        var detailOffset = (geometry.Width - DetailLayer.Width) / 2;
+        var textLeft = geometry.Artwork.Right + 13;
+        TrackTextTranslation.X = textLeft - detailOffset - 87;
+        var textWidth = Math.Clamp(geometry.ActivityOrigin.X - 12 - textLeft, 0, TitleText.Width);
+        TrackTextClip.Rect = new Rect(0, 0, textWidth, 74);
+        DetailTranslation.Y = 8 * (1 - expansion);
+        DetailLayer.Opacity = geometry.DetailOpacity;
+        // Delay the lower rows until the physical island can contain them; no half-clipped times or buttons.
+        var contentProgress = Math.Clamp((geometry.Height - 37) / 123, 0, 1);
+        var progressReveal = Reveal(contentProgress, 0.75, 0.95);
+        var controlsReveal = Reveal(contentProgress, 0.86, 1);
+        ProgressRow.Opacity = progressReveal;
+        ControlsRow.Opacity = controlsReveal;
+        ProgressRevealTranslation.Y = 4 * (1 - progressReveal);
+        ControlsRevealTranslation.Y = 6 * (1 - controlsReveal);
+        _drawnMediaProgress = _mediaSpring.Value;
+        _drawnExpansionProgress = _expansionSpring.Value;
+    }
+
+    private static double Reveal(double progress, double start, double end)
+    {
+        var value = Math.Clamp((progress - start) / (end - start), 0, 1);
+        return value * value * (3 - 2 * value);
+    }
+
+    private void DrawActivityBars()
+    {
+        for (var i = 0; i < _activityBars.Length; i++)
+        {
+            var height = 3 + 19 * Math.Clamp(_activityLevels[i], 0, 1);
+            var clip = (RectangleGeometry)_activityBars[i].Clip;
+            if (clip.Rect.Height != height)
+                clip.Rect = new Rect(0, (24 - height) / 2, 3, height);
+        }
     }
 }

@@ -187,7 +187,24 @@ public sealed class MediaSessionService : IDisposable
     /// </summary>
     public Task TogglePlayPauseAsync() => ExecuteOnSelectedAsync(async controlSession =>
     {
-        await controlSession.TryTogglePlayPauseAsync();
+        var playback = controlSession.GetPlaybackInfo();
+        var action = MediaTransportPolicy.ResolvePlayPause(
+            playback.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing,
+            playback.Controls?.IsPlayPauseToggleEnabled ?? false,
+            playback.Controls?.IsPlayEnabled ?? false,
+            playback.Controls?.IsPauseEnabled ?? false);
+        switch (action)
+        {
+            case MediaPlayPauseAction.Toggle:
+                await controlSession.TryTogglePlayPauseAsync();
+                break;
+            case MediaPlayPauseAction.Play:
+                await controlSession.TryPlayAsync();
+                break;
+            case MediaPlayPauseAction.Pause:
+                await controlSession.TryPauseAsync();
+                break;
+        }
     });
 
     /// <summary>

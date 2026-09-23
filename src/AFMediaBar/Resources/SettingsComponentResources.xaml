@@ -667,9 +667,6 @@
             <DataTrigger Binding="{Binding Kind, RelativeSource={RelativeSource Self}}" Value="Spectrum">
                 <Setter Property="Template" Value="{StaticResource AfDiagramSpectrum}" />
             </DataTrigger>
-            <DataTrigger Binding="{Binding Kind, RelativeSource={RelativeSource Self}}" Value="DynamicIslandSurface">
-                <Setter Property="Template" Value="{StaticResource AfDiagramDynamicIslandSurface}" />
-            </DataTrigger>
         </Style.Triggers>
     </Style>
 

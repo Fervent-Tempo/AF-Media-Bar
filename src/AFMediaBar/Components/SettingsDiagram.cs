@@ -50,9 +50,6 @@ public enum SettingsDiagramKind
 
     /// <summary>频谱柱数量与参数。/ Spectrum bar count and parameters.</summary>
     Spectrum,
-
-    /// <summary>灵动岛表面示意。/ A mock-up of the dynamic island surface.</summary>
-    DynamicIslandSurface,
 }
 
 /// <summary>
