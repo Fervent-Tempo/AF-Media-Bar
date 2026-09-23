@@ -22,13 +22,6 @@ public readonly record struct TaskbarDensityMetrics(
 public static class TaskbarExperiencePolicy
 {
     /// <summary>
-    /// 媒体源连接期间始终为任务栏频谱保留位置；暂停时由采样器清零，避免文字区跳动。
-    /// Reserves taskbar spectrum space while media is connected; sampling clears paused bars without shifting text.
-    /// </summary>
-    public static bool ShouldShowSpectrum(MediaSnapshot snapshot) =>
-        snapshot.IsConnected;
-
-    /// <summary>
     /// 计算横向任务栏媒体条宽度；连接期间固定预留频谱位置，断开时移除该位置。
     /// Calculates horizontal taskbar media-bar width, reserving spectrum space for every connected state.
     /// </summary>
@@ -49,14 +42,8 @@ public static class TaskbarExperiencePolicy
         double performanceWidth = 0,
         TaskbarHoverControlsSettings? hoverControls = null)
     {
-        var metrics = TaskbarDensityMetrics.From(density);
-        var sectionGap = ResolveSectionGap(metrics, componentSpacingDip);
-        var performance = performanceVisible ? sectionGap + Math.Max(0, performanceWidth) : 0;
-        var artworkOnlyWidth = Math.Max(0, artworkRight) + performance + Math.Max(0, trailingMargin);
-        if (!mediaConnected)
-            return ClampWidth(artworkOnlyWidth, maximumWidth);
-
-        var hoverWidth = hoverLayerEnabled
+        var sectionGap = ResolveSectionGap(TaskbarDensityMetrics.From(density), componentSpacingDip);
+        var hoverMinimum = hoverLayerEnabled
             ? CalculateHoverLayerWidth(
                 hoverControls ?? new TaskbarHoverControlsSettings(
                     transportVisible,
@@ -68,14 +55,95 @@ public static class TaskbarExperiencePolicy
                 density,
                 componentSpacingDip)
             : 0;
-        var middleWidth = Math.Max(Math.Max(0, measuredTextWidth), hoverWidth);
-        var desired = Math.Max(0, artworkRight) +
-                       sectionGap +
-                       middleWidth +
-                       (spectrumVisible ? sectionGap + Math.Max(0, spectrumWidth) : 0) +
-                       performance +
-                      Math.Max(0, trailingMargin);
-        return ClampWidth(desired, maximumWidth);
+
+        // 媒体文字自己就是列表里的一个组件，宽度取"量出的文字"与"悬停层下限"的较大者；断开时文字组件整块不在列表里，
+        // 因此这里不再出现"断开也预留文字宽度"的可能。
+        // The media text is itself one component of the list, with a width that is the larger of the measured text and the hover-layer
+        // minimum; while disconnected the text component is absent from the list altogether, so there is no way for a disconnected bar
+        // to reserve text width.
+        var components = new List<TaskbarRestComponent>(4)
+        {
+            TaskbarRestComponent.Artwork
+        };
+        if (mediaConnected)
+        {
+            components.Add(TaskbarRestComponent.MediaText);
+        }
+
+        if (mediaConnected && spectrumVisible)
+        {
+            components.Add(TaskbarRestComponent.Spectrum);
+        }
+
+        if (performanceVisible)
+        {
+            components.Add(TaskbarRestComponent.Performance);
+        }
+
+        return CalculateRestWidth(
+            components,
+            leadingInset: 0,
+            textWidth: Math.Max(Math.Max(0, measuredTextWidth), hoverMinimum),
+            trailingMargin: trailingMargin,
+            sectionGap: sectionGap,
+            widthOf: component => component switch
+            {
+                TaskbarRestComponent.Artwork => Math.Max(0, artworkRight),
+                TaskbarRestComponent.Spectrum => Math.Max(0, spectrumWidth),
+                TaskbarRestComponent.Performance => Math.Max(0, performanceWidth),
+                _ => 0
+            },
+            maximumWidth: maximumWidth);
+    }
+
+    /// <summary>
+    /// 按"这次可见的组件集合"计算横向任务栏媒体条需要的长度（单位 DIP）。
+    ///
+    /// 它与组件顺序无关，这一点是刻意的：媒体栏长度只是一个和，而每个组件的位置由
+    /// <see cref="TaskbarRestLayoutPolicy.Arrange"/> 按用户顺序排出来。两者用同一套间距规则
+    /// （可见组件数 − 1 个 <paramref name="sectionGap"/>），因此长度与位置永远一致，改顺序不会改变需要的长度。
+    /// Calculates the length a horizontal taskbar media bar needs for the set of components visible this time, in DIP.
+    ///
+    /// It is deliberately independent of the component order: the bar length is only a sum, while every component's position is arranged
+    /// in the user's order by <see cref="TaskbarRestLayoutPolicy.Arrange"/>. Both use the same spacing rule — one
+    /// <paramref name="sectionGap"/> per adjacent pair — so the length and the positions always agree, and reordering never changes the
+    /// length that is needed.
+    /// </summary>
+    /// <param name="visibleComponents">这次可见的组件（顺序无关）。/ The components visible this time; the order does not matter.</param>
+    /// <param name="leadingInset">第一个组件之前的留白（DIP）。/ Padding before the first component, in DIP.</param>
+    /// <param name="textWidth">媒体文字组件占用的宽度；文字不可见时不会被用到。/ Width the media text component takes; unused when the text is not visible.</param>
+    /// <param name="trailingMargin">尾部留白（DIP）。/ Trailing margin, in DIP.</param>
+    /// <param name="sectionGap">组件间距（DIP）。/ Gap between components, in DIP.</param>
+    /// <param name="widthOf">取某个组件固定宽度的函数；媒体文字不会被问到。/ Supplies one component's fixed width; the media text is never asked.</param>
+    /// <param name="maximumWidth">任务栏给出的安全上限。/ The safe maximum the taskbar allows.</param>
+    public static double CalculateRestWidth(
+        IReadOnlyList<TaskbarRestComponent> visibleComponents,
+        double leadingInset,
+        double textWidth,
+        double trailingMargin,
+        double sectionGap,
+        Func<TaskbarRestComponent, double> widthOf,
+        double maximumWidth)
+    {
+        if (visibleComponents.Count == 0)
+        {
+            return 0;
+        }
+
+        var total = Math.Max(0, leadingInset);
+        for (var index = 0; index < visibleComponents.Count; index++)
+        {
+            var component = visibleComponents[index];
+            total += component == TaskbarRestComponent.MediaText
+                ? Math.Max(0, textWidth)
+                : Math.Max(0, widthOf(component));
+            if (index < visibleComponents.Count - 1)
+            {
+                total += Math.Max(0, sectionGap);
+            }
+        }
+
+        return ClampWidth(total + Math.Max(0, trailingMargin), maximumWidth);
     }
 
     private static double ClampWidth(double desired, double maximumWidth) =>
@@ -153,6 +221,15 @@ public static class TaskbarExperiencePolicy
         var progress = controls.ProgressVisible && progressAvailable ? (buttonCount > 0 ? sectionGap : 0) + metrics.ProgressWidth : 0;
         return 11 + buttons + progress;
     }
+
+    /// <summary>
+    /// 解析实际使用的组件间距：设置里的值优先，非法时退回信息密度的预设间距。
+    /// Resolves the component spacing actually used: the settings value wins, and an unusable one falls back to the density preset.
+    /// </summary>
+    /// <param name="density">信息密度。/ Information density.</param>
+    /// <param name="componentSpacingDip">设置里的间距；为空或非法时用密度预设。/ Spacing from the settings, or the density preset when it is absent or unusable.</param>
+    public static double ResolveSectionGap(TaskbarInformationDensity density, double? componentSpacingDip) =>
+        ResolveSectionGap(TaskbarDensityMetrics.From(density), componentSpacingDip);
 
     private static double ResolveSectionGap(TaskbarDensityMetrics metrics, double? componentSpacingDip) =>
         componentSpacingDip is { } value && double.IsFinite(value)

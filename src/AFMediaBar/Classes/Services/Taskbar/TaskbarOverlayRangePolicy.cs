@@ -151,5 +151,8 @@ public enum TaskbarOverlayRejection
     OutsideTaskbar = 3,
 
     /// <summary>占掉任务栏大半主轴长度，是浮层而不是任务栏元素。/ Takes most of the taskbar's primary axis, so a flyout rather than a taskbar element.</summary>
-    TooWide = 4
+    TooWide = 4,
+
+    /// <summary>由普通应用而非 Windows Shell 拥有；截图工具等临时浮层不得触发避让。/ Owned by an ordinary app rather than Windows Shell; transient capture overlays must not trigger avoidance.</summary>
+    NotShellOwned = 5
 }

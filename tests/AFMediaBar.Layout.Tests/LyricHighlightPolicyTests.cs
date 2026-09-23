@@ -20,6 +20,27 @@ public sealed class LyricHighlightPolicyTests
     };
 
     [TestMethod]
+    public void HighlightSwitchOnlyChangesTheVisualLayer()
+    {
+        var enabled = ResolvePresentationState(highlightEnabled: true);
+        var disabled = ResolvePresentationState(highlightEnabled: false);
+
+        Assert.IsTrue(enabled.AdvanceTimeline);
+        Assert.IsTrue(disabled.AdvanceTimeline);
+        Assert.IsTrue(enabled.ShowHighlight);
+        Assert.IsFalse(disabled.ShowHighlight);
+    }
+
+    [TestMethod]
+    public void HighContrastHidesHighlightWithoutChangingTimelineMotion()
+    {
+        var presentation = ResolvePresentationState(highlightEnabled: true, highContrast: true);
+
+        Assert.IsTrue(presentation.AdvanceTimeline);
+        Assert.IsFalse(presentation.ShowHighlight);
+    }
+
+    [TestMethod]
     public void LineWithoutWindowHasNoProgress()
     {
         var line = new LyricLine(5, 5, "degenerate");
@@ -93,4 +114,18 @@ public sealed class LyricHighlightPolicyTests
         Assert.AreEqual(0d, LyricHighlightPolicy.ResolveClipWidth(0.5, 0), 0.0001);
         Assert.AreEqual(0d, LyricHighlightPolicy.ResolveClipWidth(0.5, double.NaN), 0.0001);
     }
+
+    private static LyricHighlightPolicy.PresentationState ResolvePresentationState(
+        bool highlightEnabled,
+        bool highContrast = false) =>
+        LyricHighlightPolicy.ResolvePresentationState(
+            highlightEnabled,
+            hasCurrentLine: true,
+            connected: true,
+            playing: true,
+            lyricsVisible: true,
+            controlVisible: true,
+            isAdvancePruned: false,
+            highContrast,
+            useContinuousMotion: true);
 }

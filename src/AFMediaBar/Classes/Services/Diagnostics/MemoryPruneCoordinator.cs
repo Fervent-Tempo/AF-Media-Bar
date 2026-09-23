@@ -71,7 +71,7 @@ public sealed class MemoryPruneCoordinator : IDisposable
     private MemoryPruneLevel _level = MemoryPruneLevel.None;
     private bool _evaluationScheduled;
     private bool _started;
-    private bool _disposed;
+    private volatile bool _disposed;
 
     /// <summary>
     /// 创建后台剪枝协调器；参与者由容器注入，因此新增一个可回收的资源不需要修改本类。
@@ -210,7 +210,8 @@ public sealed class MemoryPruneCoordinator : IDisposable
             {
                 // 按需回收只是"顺手省一点"，它失败绝不能让关窗路径或用户点击抛出。
                 // An on-demand reclaim only saves a little on the side, so its failure must never escape into a window-close path or a user click.
-                _log?.Warn("Prune", $"按需回收失败 / on-demand reclaim failed ({trigger}): {ex.Message}");
+                if (!_disposed)
+                    _log?.Warn("Prune", $"按需回收失败 / on-demand reclaim failed ({trigger}): {ex.Message}");
             }
             finally
             {
@@ -223,7 +224,7 @@ public sealed class MemoryPruneCoordinator : IDisposable
 
     private void WriteTrimLog(MemoryTrimTrigger trigger, WorkingSetTrimResult result)
     {
-        if (_log is null)
+        if (_disposed || _log is null)
         {
             return;
         }
@@ -234,6 +235,7 @@ public sealed class MemoryPruneCoordinator : IDisposable
             MemoryTrimTrigger.PanelClosed => "浮层关闭 panel closed",
             MemoryTrimTrigger.ManualRequest => "用户手动请求 manual request",
             MemoryTrimTrigger.StartupSettled => "启动已安定 post-startup",
+            MemoryTrimTrigger.TaskbarHidden => "任务栏持续自动隐藏 taskbar stayed auto-hidden",
             _ => "进入空闲档 idle level entered"
         };
         var strength = result.Strength == MemoryTrimStrength.Deep ? "深度 deep" : "温和 gentle";

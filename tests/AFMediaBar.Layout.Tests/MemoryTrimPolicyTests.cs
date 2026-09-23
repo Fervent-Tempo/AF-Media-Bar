@@ -27,6 +27,7 @@ public sealed class MemoryTrimPolicyTests
         // page fault.
         Assert.AreEqual(MemoryTrimStrength.Gentle, MemoryTrimPolicy.ResolveStrength(MemoryTrimTrigger.IdleLevelEntered));
         Assert.AreEqual(MemoryTrimStrength.Gentle, MemoryTrimPolicy.ResolveStrength(MemoryTrimTrigger.PanelClosed));
+        Assert.AreEqual(MemoryTrimStrength.Gentle, MemoryTrimPolicy.ResolveStrength(MemoryTrimTrigger.TaskbarHidden));
     }
 
     /// <summary>手动请求只有一处判定来源。/ A manual request has exactly one source of truth.</summary>

@@ -24,6 +24,49 @@ public sealed class DisplayTargetPolicyTests
     }
 
     [TestMethod]
+    public void ExplicitTaskbarTargetsSupportOneOrManyWithPrimaryFirst()
+    {
+        var primary = Monitor("DISPLAY1", true, new Rect(0, 0, 1920, 1040), 96);
+        var left = Monitor("DISPLAY3", false, new Rect(-1920, 0, 1920, 1040), 96);
+        var right = Monitor("DISPLAY2", false, new Rect(1920, 0, 2560, 1400), 144);
+
+        CollectionAssert.AreEqual(
+            new[] { "DISPLAY1", "DISPLAY2", "DISPLAY3" },
+            TaskbarTargetPolicy.ResolveDeviceIds(
+                [right, left, primary],
+                ["DISPLAY3", "DISPLAY1", "DISPLAY2"]).ToArray());
+        CollectionAssert.AreEqual(
+            new[] { "DISPLAY2" },
+            TaskbarTargetPolicy.ResolveDeviceIds([primary, right], ["DISPLAY2"]).ToArray());
+        CollectionAssert.AreEqual(
+            new[] { "DISPLAY1" },
+            TaskbarTargetPolicy.ResolveDeviceIds([primary, right], ["DISCONNECTED"]).ToArray());
+        CollectionAssert.AreEqual(
+            new[] { "DISPLAY1", "DISPLAY2" },
+            TaskbarTargetPolicy.ResolveDeviceIds(
+                [right, primary],
+                null,
+                TaskbarTargetPolicy.LegacyAllTaskbarsDeviceId).ToArray());
+    }
+
+    [TestMethod]
+    public void MultipleTaskbarsPublishTheSharedLengthIntersection()
+    {
+        var constraints = new TaskbarLengthConstraintsService();
+        var first = new object();
+        var second = new object();
+
+        constraints.Update(first, 240, 900);
+        constraints.Update(second, 320, 700);
+        Assert.AreEqual(320, constraints.MinimumLengthDip);
+        Assert.AreEqual(700, constraints.MaximumLengthDip);
+
+        constraints.Remove(second);
+        Assert.AreEqual(240, constraints.MinimumLengthDip);
+        Assert.AreEqual(900, constraints.MaximumLengthDip);
+    }
+
+    [TestMethod]
     public void NotificationTargetUsesForegroundThenFixedAndPrimaryFallbacks()
     {
         var primary = Monitor("DISPLAY1", true, new Rect(0, 0, 1920, 1040), 96);

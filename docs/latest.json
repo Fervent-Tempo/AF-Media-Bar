@@ -1,23 +1,29 @@
 {
   "schemaVersion": 1,
-  "version": "1.1.1",
-  "releaseDate": "2026-08-17",
-  "minimumSupportedVersion": "1.0.0",
+  "version": "1.2.1",
+  "releaseDate": "2026-09-21",
+  "minimumSupportedVersion": "1.2.0",
   "mandatory": false,
-  "title": "AF Media Bar 1.1.1",
+  "title": "AF Media Bar 1.2.1",
   "changelog": [
-    "修复悬浮窗口、托盘唤醒和桌面边缘尺寸恢复相关问题。",
-    "修复浏览器媒体封面刷新、断线期媒体切换和暂停后的自动切源。",
-    "完善简体中文、繁体中文和英文的即时界面切换。",
-    "改进设置窗口、诊断日志、字体预设及多项尺寸与外观调节。",
-    "增加资源监控区域的任务管理器快捷操作。"
+    "任务栏自动隐藏动画：触边收起时的卡顿与跳位",
+    "截图或录屏时媒体栏不再错位、不再折叠",
+    "可在所有已启用的任务栏上同时显示",
+    "新增逐字高亮开关（关闭后歌词仍按时间轴滚动）",
+    "修复切换显示器后性能监测组件失效",
+    "修复设置页资源缺失与若干窗口稳定性问题",
+    "滚轮手势与提示范围修改"
   ],
-  "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.1.1",
+  "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.2.1",
   "releasePageUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/latest",
   "downloads": {
-    "github": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/download/v1.1.1/AFMediaBar-v1.1.1-win-x64.zip"
+    "github": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/download/v1.2.1/AFMediaBar-Setup-v1.2.1-win-x64.exe"
   },
-  "sha256": {
-    "github": "58285a60c93f1f3f4b4a325bd9331eedcc0e79fdb196db25d15f5b2fc70a9551"
-  }
+  "packages": [
+    {
+      "url": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/download/v1.2.1/AFMediaBar-Setup-v1.2.1-win-x64.exe",
+      "size": 0,
+      "sha256": "36d8834a56870693df73cf212af18f62fe81748e0a7377c23f6a9cebb5e205fa"
+    }
+  ]
 }

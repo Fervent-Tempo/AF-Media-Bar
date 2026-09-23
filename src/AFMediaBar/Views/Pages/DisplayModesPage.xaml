@@ -134,6 +134,7 @@
 
                 <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.ChooseDisplayMode}" Icon="{ui:SymbolIcon WindowConsole20}">
                     <StackPanel>
+
                         <UniformGrid Columns="2">
                             <RadioButton
                                 GroupName="DisplayMode"
@@ -255,12 +256,19 @@
                                 Description="{DynamicResource Loc.DisplayModes.Placement.Row.Monitor.Description}"
                                 Icon="{ui:SymbolIcon Desktop24}"
                                 Title="{DynamicResource Loc.Common.TargetMonitor}">
-                                <ComboBox
-                                    DisplayMemberPath="DisplayName"
-                                    ItemsSource="{Binding ViewModel.MonitorOptions}"
-                                    MinWidth="260"
-                                    SelectedValue="{Binding ViewModel.TaskbarTargetMonitorDeviceId, Mode=TwoWay}"
-                                    SelectedValuePath="DeviceId" />
+                                <ItemsControl
+                                    ItemsSource="{Binding ViewModel.TaskbarMonitorOptions}"
+                                    MinWidth="260">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <ui:ToggleSwitch
+                                                Margin="0,3"
+                                                Content="{Binding DisplayName}"
+                                                IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                IsEnabled="{Binding CanToggle}" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                             </components:SettingsRow>
 
                             <components:SettingsRow
@@ -431,6 +439,129 @@
                                 Title="{DynamicResource Loc.DisplayModes.Rest.Row.Entry.Title}">
                                 <ui:ToggleSwitch IsChecked="{Binding ViewModel.FullPanelEntryVisible, Mode=TwoWay}" />
                             </components:SettingsRow>
+
+                            <components:SettingsRow
+                                Description="{DynamicResource Loc.DisplayModes.Rest.Row.DeviceButton.Description}"
+                                Icon="{ui:SymbolIcon Speaker224}"
+                                Title="{DynamicResource Loc.DisplayModes.Rest.Row.DeviceButton.Title}">
+                                <ui:ToggleSwitch IsChecked="{Binding ViewModel.RestOutputDeviceVisible, Mode=TwoWay}" />
+                            </components:SettingsRow>
+
+                            <components:SettingsRow
+                                Description="{DynamicResource Loc.DisplayModes.Rest.Row.VolumeButton.Description}"
+                                Icon="{ui:SymbolIcon Speaker124}"
+                                Title="{DynamicResource Loc.DisplayModes.Rest.Row.VolumeButton.Title}">
+                                <ui:ToggleSwitch IsChecked="{Binding ViewModel.RestVolumeVisible, Mode=TwoWay}" />
+                            </components:SettingsRow>
+
+                            <!--
+                                静置层组件在这里有两张列表，刻意分开：一张管顺序、一张管"没有媒体时显示什么"。
+                                合成一张时，用户想调顺序会看到一排显隐开关，想调显隐又会看到上下移按钮。
+                                顺序列表的前两行是固定在最前面的封面与媒体文字（没有上下移按钮）：它们是这条媒体栏的主干，
+                                排到别处只会让界面错乱，因此不再参与排序。
+                                The rest layer has two lists here on purpose: one owns the order and one owns what is shown while there is no media.
+                                Merged into one, a user arranging components would face a row of visibility switches, and a user switching visibility
+                                would face move buttons. The first two rows of the order list are the artwork and the media text pinned to the front
+                                (no move buttons): they are the backbone of the bar, moving them only broke the layout, and they no longer take part in
+                                ordering.
+                            -->
+                            <ui:CardExpander
+                                Style="{StaticResource AfSettingsExpanderStyle}"
+                                Icon="{ui:SymbolIcon ArrowSort24}"
+                                IsExpanded="True">
+                                <ui:CardExpander.Header>
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.DisplayModes.Rest.Order.Expander.Title}" />
+                                        <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.DisplayModes.Rest.Order.Expander.Description}" />
+                                    </StackPanel>
+                                </ui:CardExpander.Header>
+
+                                <StackPanel>
+                                    <components:SettingsCallout
+                                        Margin="0,0,0,4"
+                                        Symbol="Info24"
+                                        Text="{DynamicResource Loc.DisplayModes.Rest.Order.Notice}" />
+
+                                    <ItemsControl Margin="0,0,0,4" ItemsSource="{Binding ViewModel.RestOrderEntries}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <components:SettingsRow
+                                                    Description="{Binding Description}"
+                                                    IsNested="True"
+                                                    Title="{Binding DisplayName}">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <!--
+                                                            固定在最前面的两行没有按钮：它们在提示条里说明了不参与排序，而一个点不动的按钮比没有按钮更难懂。
+                                                            The two pinned rows carry no buttons: the callout says they take no part in ordering, and a button that does
+                                                            nothing is harder to understand than no button at all.
+                                                        -->
+                                                        <ui:Button
+                                                            Margin="8,0,0,0"
+                                                            Command="{Binding DataContext.ViewModel.MoveRestComponentUpCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                            CommandParameter="{Binding}"
+                                                            Icon="{ui:SymbolIcon ArrowUp24}"
+                                                            Style="{StaticResource AfSettingsIconButtonStyle}"
+                                                            ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveUp}"
+                                                            Visibility="{Binding CanMove, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                        <ui:Button
+                                                            Margin="4,0,0,0"
+                                                            Command="{Binding DataContext.ViewModel.MoveRestComponentDownCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                            CommandParameter="{Binding}"
+                                                            Icon="{ui:SymbolIcon ArrowDown24}"
+                                                            Style="{StaticResource AfSettingsIconButtonStyle}"
+                                                            ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveDown}"
+                                                            Visibility="{Binding CanMove, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                    </StackPanel>
+                                                </components:SettingsRow>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <components:SettingsRow
+                                        Description="{DynamicResource Loc.DisplayModes.Rest.Order.Reset.Description}"
+                                        Icon="{ui:SymbolIcon ArrowReset24}"
+                                        IsNested="True"
+                                        Title="{DynamicResource Loc.DisplayModes.Rest.Order.Reset.Title}">
+                                        <ui:Button
+                                            Command="{Binding ViewModel.ResetRestComponentOrderCommand}"
+                                            Content="{DynamicResource Loc.Lyrics.Sources.Reset.Action}"
+                                            Icon="{ui:SymbolIcon ArrowReset24}"
+                                            Style="{StaticResource AfSettingsButtonStyle}" />
+                                    </components:SettingsRow>
+                                </StackPanel>
+                            </ui:CardExpander>
+
+                            <ui:CardExpander
+                                Style="{StaticResource AfSettingsExpanderStyle}"
+                                Icon="{ui:SymbolIcon Eye24}"
+                                IsExpanded="True">
+                                <ui:CardExpander.Header>
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.DisplayModes.Rest.Idle.Expander.Title}" />
+                                        <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.DisplayModes.Rest.Idle.Expander.Description}" />
+                                    </StackPanel>
+                                </ui:CardExpander.Header>
+
+                                <StackPanel>
+                                    <components:SettingsCallout
+                                        Margin="0,0,0,4"
+                                        Symbol="Info24"
+                                        Text="{DynamicResource Loc.DisplayModes.Rest.Idle.Notice}" />
+
+                                    <ItemsControl Margin="0,0,0,4" ItemsSource="{Binding ViewModel.IdleComponentEntries}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <components:SettingsRow
+                                                    Description="{Binding Description}"
+                                                    IsNested="True"
+                                                    Title="{Binding DisplayName}">
+                                                    <ui:ToggleSwitch IsChecked="{Binding IsVisible, Mode=TwoWay}" />
+                                                </components:SettingsRow>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </ui:CardExpander>
 
                             <components:SettingsCallout
                                 Margin="0,4,0,0"

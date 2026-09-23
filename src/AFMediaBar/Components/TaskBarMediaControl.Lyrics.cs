@@ -13,11 +13,12 @@ namespace AFMediaBar.Components;
 /// Syllable highlighting for the taskbar media control: the active line lights up from left to right with playback.
 ///
 /// 擦亮只写高亮层的裁剪矩形，不改文本、不改布局、不改尺寸请求，因此跑马灯宽度、自动尺寸指纹与字号缩放都不受影响；
-/// 没有逐字时间轴的来源、行级歌词、暂停、断开、高对比度以及动效降级都会直接关掉这一层，外观与不启用逐字时完全一致。
+/// 用户关闭擦亮或系统进入高对比度时只隐藏这一层，歌词时间轴与跟随滚动继续沿用同一轨迹。没有可用时间轴、暂停、断开或动效降级时
+/// 才停止整条时间轴。
 /// The highlight only writes the clip rectangle of the highlight layer and never touches text, layout, or the size request, so
-/// the marquee width, the auto-size fingerprint, and the font scaling stay unaffected. Sources without a syllable timeline,
-/// line-level lyrics, a paused or disconnected session, high contrast, and reduced motion all switch the layer off, leaving
-/// the appearance exactly as it is without syllable support.
+/// the marquee width, the auto-size fingerprint, and the font scaling stay unaffected. Turning the highlight off or entering high
+/// contrast only hides this layer; the lyric timeline and follow scroll keep the same trajectory. The whole timeline stops only when
+/// no usable timing is available, playback is paused or disconnected, or motion is reduced.
 /// </summary>
 public partial class TaskBarMediaControl
 {
@@ -43,7 +44,7 @@ public partial class TaskBarMediaControl
     private double _measuredLyricFontSize = double.NaN;
     private double _measuredLyricAvailableWidth = double.NaN;
     private double _activeLyricTextWidth;
-    private bool _lyricHighlightActive;
+    private bool _lyricTimelineActive;
 
     /// <summary>
     /// 记录当前行，供逐字擦亮读取；换行时立即收起旧擦亮。
@@ -67,30 +68,41 @@ public partial class TaskBarMediaControl
     }
 
     /// <summary>
-    /// 按当前状态开启或关闭擦亮；已经开启时本方法不做任何事，避免每个快照都重写一次外观。
-    /// Enables or disables highlighting for the current state; while it is already on this method does nothing, so an incoming
-    /// snapshot never rewrites the appearance.
+    /// 按当前状态刷新歌词时间轴与擦亮层。时间轴状态决定跟随滚动，用户开关只改变擦亮层，不重置滚动位置。
+    /// Refreshes the lyric timeline and highlight layer for the current state. The timeline state decides follow scrolling, while the
+    /// user switch changes only the highlight layer and never resets the scroll position.
     /// </summary>
     private void RefreshLyricHighlightPresentation()
     {
-        if (!CanAnimateLyricHighlight())
+        var presentation = ResolveLyricHighlightPresentation();
+        if (!presentation.AdvanceTimeline || ResolveCurrentLyricProgress() is null)
         {
             StopLyricHighlight();
             return;
         }
 
-        if (_lyricHighlightActive)
+        var wasTimelineActive = _lyricTimelineActive;
+        _lyricTimelineActive = true;
+        if (!wasTimelineActive)
         {
+            // 只有时间轴真的开始时才切到跟随式；仅开关擦亮层不会改写跑马灯 key 或回到行首。
+            // Switch to follow mode only when the timeline actually starts. Toggling just the highlight layer does not rewrite the
+            // marquee key or send the line back to its beginning.
+            ReapplyLyricMarquee();
+        }
+
+        if (!presentation.ShowHighlight)
+        {
+            _lyricHighlightTimer.Stop();
+            HideLyricHighlightLayer();
+            SongLyrics.Opacity = 1;
             return;
         }
 
-        _lyricHighlightActive = true;
         SongLyrics.Opacity = LyricHighlightBaseOpacity;
-        SongLyricsHighlightClip.Rect = new Rect(0, 0, 0, ResolveLyricClipHeight());
-        _lyricHighlightTimer.Start();
-        // 擦亮开启意味着这一行改为跟随滚动，因此要重新应用一次跑马灯。
-        // Turning the reveal on means this line starts following the reveal, so the marquee has to be applied again.
-        ReapplyLyricMarquee();
+        if (!_lyricHighlightTimer.IsEnabled)
+            _lyricHighlightTimer.Start();
+        AdvanceLyricHighlight();
     }
 
     /// <summary>
@@ -99,46 +111,40 @@ public partial class TaskBarMediaControl
     /// </summary>
     private void StopLyricHighlight()
     {
-        var wasActive = _lyricHighlightActive;
+        var wasActive = _lyricTimelineActive;
         _lyricHighlightTimer.Stop();
-        _lyricHighlightActive = false;
+        _lyricTimelineActive = false;
         _measuredLyricLine = null;
-        SongLyricsHighlightClip.Rect = new Rect(0, 0, 0, ResolveLyricClipHeight());
-        SongLyricsHighlight.Visibility = Visibility.Collapsed;
+        HideLyricHighlightLayer();
         SongLyrics.Opacity = 1;
-        // 擦亮关闭后这一行回到轮转式，因此只有真的从开启切到关闭时才需要重新应用一次。
-        // Once the reveal is off this line goes back to rotation, so the marquee only has to be re-applied on a real on-to-off transition.
+        // 时间轴停止后这一行才离开跟随式；仅隐藏擦亮层不会走到这里，也不会改动滚动轨迹。
+        // The line leaves follow mode only when its timeline stops. Merely hiding the highlight layer never comes through here and never
+        // changes the scrolling trajectory.
         if (wasActive)
             ReapplyLyricMarquee();
     }
 
     /// <summary>
-    /// 判断当前是否具备逐字擦亮的条件。
-    /// Decides whether syllable highlighting is currently possible.
-    ///
-    /// 用户开关与环境降级是两件事：开关关掉就不再擦亮，开关打开时环境仍能否决它（高对比度、系统关闭动效、控件不可见），
-    /// 因为那两种情况下擦亮要么破坏可读性，要么与"减少动效"的意图冲突。后台剪枝是第三种否决：屏幕熄灭时 33 ms 的逐帧推进只有功耗没有画面
-    /// （播放可以继续，锁屏听歌是常见情形）。
-    /// The user's switch and the environment's degradations are two different things: turning the switch off stops the reveal, and
-    /// while it is on the environment can still veto it (high contrast, system animations off, the control not visible), because in
-    /// those cases the reveal would either hurt readability or contradict the intent to reduce motion. Background pruning is the third veto: while
-    /// the display is dark, a 33 ms frame advance costs power and shows nothing at all, and playback may well continue — listening to music with a
-    /// locked screen is an ordinary case.
+    /// 分别求解时间轴推进与擦亮层可见性。开关和高对比度只影响视觉层；暂停、不可见、后台剪枝与减少动效才停止时间轴。
+    /// Separately resolves timeline advancement and highlight visibility. The switch and high contrast affect only the visual layer;
+    /// pausing, invisibility, background pruning, and reduced motion stop the timeline itself.
     /// </summary>
-    private bool CanAnimateLyricHighlight() =>
-        SettingsManager.Current.LyricsSyllableHighlightEnabled &&
-        _currentLyricLine is not null &&
-        _snapshot.IsConnected &&
-        _snapshot.IsPlaying &&
-        SongLyricsPanel.Visibility == Visibility.Visible &&
-        IsVisible &&
-        !IsAdvancePruned &&
-        !SystemParameters.HighContrast &&
-        CurrentMotion.UseContinuousMotion;
+    private LyricHighlightPolicy.PresentationState ResolveLyricHighlightPresentation() =>
+        LyricHighlightPolicy.ResolvePresentationState(
+            highlightEnabled: SettingsManager.Current.LyricsSyllableHighlightEnabled,
+            hasCurrentLine: _currentLyricLine is not null,
+            connected: _snapshot.IsConnected,
+            playing: _snapshot.IsPlaying,
+            lyricsVisible: SongLyricsPanel.Visibility == Visibility.Visible,
+            controlVisible: IsVisible,
+            isAdvancePruned: IsAdvancePruned,
+            highContrast: SystemParameters.HighContrast,
+            useContinuousMotion: CurrentMotion.UseContinuousMotion);
 
     private void AdvanceLyricHighlight()
     {
-        if (!CanAnimateLyricHighlight())
+        var presentation = ResolveLyricHighlightPresentation();
+        if (!presentation.AdvanceTimeline)
         {
             StopLyricHighlight();
             return;
@@ -150,6 +156,14 @@ public partial class TaskBarMediaControl
         if (progress is null)
         {
             StopLyricHighlight();
+            return;
+        }
+
+        if (!presentation.ShowHighlight)
+        {
+            _lyricHighlightTimer.Stop();
+            HideLyricHighlightLayer();
+            SongLyrics.Opacity = 1;
             return;
         }
 
@@ -200,6 +214,13 @@ public partial class TaskBarMediaControl
         SongLyricsHighlight.Visibility = Visibility.Visible;
     }
 
+    /// <summary>只隐藏擦亮视觉层，不改变时间轴或跑马灯状态。/ Hides only the reveal layer without changing the timeline or marquee state.</summary>
+    private void HideLyricHighlightLayer()
+    {
+        SongLyricsHighlightClip.Rect = new Rect(0, 0, 0, ResolveLyricClipHeight());
+        SongLyricsHighlight.Visibility = Visibility.Collapsed;
+    }
+
     /// <summary>
     /// 当前歌词行已经唱到的比例（0–1），供跑马灯判断"擦亮是否贴近右边界"。没有音节时间轴或位置不可解时返回 null。
     /// Reveal progress of the active lyric line (0–1), which the marquee uses to decide whether the reveal has reached the right margin.
@@ -215,10 +236,8 @@ public partial class TaskBarMediaControl
     }
 
     /// <summary>
-    /// 让跑马灯按"这一行现在要不要跟随滚动"重新决策。擦亮开启或关闭都会改变这一行的推进方式，
-    /// 因此两个入口都必须重新应用一次，否则会停留在上一种方式上。
-    /// Lets the marquee re-decide whether this line should follow the reveal. Turning the reveal on or off changes how the line advances,
-    /// so both entries have to re-apply it or the row would stay in the previous mode.
+    /// 让跑马灯按"这一行现在有没有推进中的歌词时间轴"重新决策。擦亮开关不参与该决策。
+    /// Lets the marquee re-decide whether this line has an advancing lyric timeline. The highlight switch does not participate.
     /// </summary>
     private void ReapplyLyricMarquee() => ApplyMarqueeLayout(Math.Max(0, SongInfoStackPanel.Width));
 

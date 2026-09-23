@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 using System.Windows.Automation;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Interop;
@@ -20,13 +21,13 @@ public sealed class TaskbarOccupiedAreaProbe : ITaskbarOccupiedAreaProbe
     private const int MaximumElementPrimaryPixels = 260;
 
     /// <summary>
-    /// 上一次写进日志的外部窗口描述：探测每 250 毫秒重跑，内容不变时不重复写。
-    /// 静态是因为采集路径全是静态方法，而占用区服务保证同一时刻只跑一次探测（`_probeInProgress`），因此没有并发写入。
-    /// Last overlay description written to the log; the probe re-runs every 250 ms and unchanged content is not written again.
-    /// It is static because the whole collection path is static, and the occupancy service guarantees a single probe at a time
-    /// (`_probeInProgress`), so there is no concurrent writer.
+    /// 每个任务栏上一次写进日志的外部窗口描述：探测会重复运行，内容不变时不重复写。
+    /// 多显示器会并发探测不同任务栏，因此签名按 HWND 隔离并在锁内更新。
+    /// Last overlay description written to the log for each taskbar; repeated probes do not log unchanged content.
+    /// Different taskbars are probed concurrently on multi-monitor systems, so signatures are isolated by HWND and updated under a lock.
     /// </summary>
-    private static string? _lastOverlaySignature;
+    private static readonly object OverlaySignatureGate = new();
+    private static readonly Dictionary<IntPtr, string> LastOverlaySignatures = [];
 
     /// <inheritdoc />
     public void Start(
@@ -185,6 +186,17 @@ public sealed class TaskbarOccupiedAreaProbe : ITaskbarOccupiedAreaProbe
 
             if (TaskbarOverlayRangePolicy.TryResolve(windowRect, taskbarRect, orientation, out var range, out var rejection))
             {
+                // 几何只能说明“有一个窄窗口盖在任务栏带上”，无法区分 Windows 10 搜索框与截图工具的浮动工具条。
+                // 只有 Windows Shell 自己的体验进程可以进入占用区；普通应用覆盖任务栏时不应让媒体栏折叠或跳位。
+                // Geometry only says that a narrow window overlaps the taskbar band; it cannot distinguish the Windows 10 search box
+                // from a capture tool's floating toolbar. Only Windows Shell experience processes may become occupancy, because an
+                // ordinary application covering the taskbar must not collapse or move the media bar.
+                if (!TaskbarOverlayOwnerPolicy.IsShellOwned(TryGetProcessName(processId)))
+                {
+                    rejected.Add((candidate, TaskbarOverlayRejection.NotShellOwned));
+                    return;
+                }
+
                 accepted.Add((candidate, range));
                 occupied.Add(range);
                 return;
@@ -213,10 +225,16 @@ public sealed class TaskbarOccupiedAreaProbe : ITaskbarOccupiedAreaProbe
         // The probe re-runs every 250 ms, so the line is only written when its content changes. This is the only on-site evidence for
         // "why the bar ended up here", and a reporting user runs a Release build with no debug output, so it MUST go to the log
         // rather than to debug output only.
-        if (string.Equals(_lastOverlaySignature, description, StringComparison.Ordinal))
-            return;
+        lock (OverlaySignatureGate)
+        {
+            if (LastOverlaySignatures.TryGetValue(taskbarHandle, out var previous) &&
+                string.Equals(previous, description, StringComparison.Ordinal))
+            {
+                return;
+            }
 
-        _lastOverlaySignature = description;
+            LastOverlaySignatures[taskbarHandle] = description;
+        }
         AppLogService.Current?.Info("Taskbar", $"任务栏上的外部窗口 / foreign windows over the taskbar: {description}");
     }
 
@@ -293,7 +311,32 @@ public sealed class TaskbarOccupiedAreaProbe : ITaskbarOccupiedAreaProbe
         _ = GetClassName(handle, className, className.Capacity);
         _ = GetWindowThreadProcessId(handle, out var processId);
         GetWindowRect(handle, out var rect);
-        return $"{className} pid={processId} rect=({rect.Left},{rect.Top})-({rect.Right},{rect.Bottom})";
+        var processName = TryGetProcessName(processId) ?? "?";
+        return $"{className} process={processName} pid={processId} rect=({rect.Left},{rect.Top})-({rect.Right},{rect.Bottom})";
+    }
+
+    private static string? TryGetProcessName(int processId)
+    {
+        if (processId <= 0)
+            return null;
+
+        try
+        {
+            using var process = Process.GetProcessById(processId);
+            return process.ProcessName;
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            return null;
+        }
     }
 
     private static bool IsDescendantOf(IntPtr handle, IntPtr ancestor)

@@ -202,7 +202,7 @@ public static class SettingsSearchIndex
             "Common.RestLayer",
             "Search.DisplayModes.RestLayer.Description",
             language,
-            ["静置", "常驻", "rest", "信息密度", "density", "精简", "均衡", "排列", "布局", "layout", "对齐", "标题", "歌手", "artist", "内容排列", "字号", "字体大小", "文字大小", "font size", "完整层入口", "横杆", "细杠", "进入完整层", "进度", "进度条", "播放进度", "progress"]),
+            ["静置", "常驻", "rest", "信息密度", "density", "精简", "均衡", "排列", "布局", "layout", "对齐", "标题", "歌手", "artist", "内容排列", "字号", "字体大小", "文字大小", "font size", "完整层入口", "横杆", "细杠", "进入完整层", "进度", "进度条", "播放进度", "progress", "顺序", "排序", "order", "组件", "component", "小组件", "widget", "设备按钮", "输出设备", "音量按钮", "没有媒体", "无媒体", "空闲", "idle", "隐藏", "保留组件", "小音符", "快速启动", "上移", "下移", "固定在最前"]),
         Create(
             SettingsPageKey.DisplayModes,
             4,

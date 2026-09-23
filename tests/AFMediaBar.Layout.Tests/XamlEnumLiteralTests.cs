@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Collections;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Resources;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -107,6 +109,21 @@ public sealed class XamlEnumLiteralTests
         // Self-check: the rule must really catch a violation, otherwise it is code that can only ever pass.
         Assert.IsFalse(IsEnumMember(typeof(AFMediaBar.Components.SettingsChipTone), "Success"));
         Assert.IsTrue(IsEnumMember(typeof(AFMediaBar.Components.SettingsChipTone), "Accent"));
+    }
+
+    [TestMethod]
+    public void SettingsCalloutCompiledResourceIsPresent()
+    {
+        var assembly = typeof(AFMediaBar.Components.SettingsCallout).Assembly;
+        using var stream = assembly.GetManifestResourceStream("AFMediaBar.g.resources");
+        Assert.IsNotNull(stream, "WPF compiled-resource table is missing.");
+        using var resources = new ResourceReader(stream!);
+        var keys = resources.Cast<DictionaryEntry>()
+            .Select(entry => entry.Key?.ToString())
+            .Where(key => key is not null)
+            .ToArray();
+
+        CollectionAssert.Contains(keys, "components/settingscallout.baml");
     }
 
     private static bool IsEnumMember(Type enumType, string value) =>

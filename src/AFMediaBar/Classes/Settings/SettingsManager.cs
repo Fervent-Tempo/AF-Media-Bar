@@ -1,4 +1,5 @@
 using AFMediaBar.Classes.Models.Layout;
+using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Localization;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -42,6 +43,7 @@ public sealed class AppSettings : INotifyPropertyChanged
     /// </summary>
     private LyricsSecondaryLineSettings _lyricsSecondaryLine = LyricsSecondaryLineSettings.Default;
     private bool _taskbarBarEnabled = true;
+    private IReadOnlyList<string>? _taskbarTargetMonitorDeviceIds;
     private string? _taskbarTargetMonitorDeviceId;
     private TaskbarBarPosition _position = TaskbarBarPosition.Start;
     private bool _taskbarBarBackgroundBlur;
@@ -83,6 +85,21 @@ public sealed class AppSettings : INotifyPropertyChanged
     public bool TwoLineLyricsEnabled { get => _twoLineLyricsEnabled; set => Set(ref _twoLineLyricsEnabled, value); }
     public LyricsSecondaryLineSettings LyricsSecondaryLine { get => _lyricsSecondaryLine; set => Set(ref _lyricsSecondaryLine, value.Normalize()); }
     public bool TaskbarBarEnabled { get => _taskbarBarEnabled; set => Set(ref _taskbarBarEnabled, value); }
+    /// <summary>
+    /// 任务栏媒体栏的显式显示器集合。空集合表示使用主显示器回退；列表保留暂时断开的目标，以便重连后自动恢复。
+    /// Explicit monitor set for taskbar media bars. An empty set falls back to the primary monitor; temporarily disconnected targets remain so they
+    /// can return automatically after reconnecting.
+    /// </summary>
+    public IReadOnlyList<string>? TaskbarTargetMonitorDeviceIds
+    {
+        get => _taskbarTargetMonitorDeviceIds;
+        set => Set(ref _taskbarTargetMonitorDeviceIds, NormalizeMonitorDeviceIds(value));
+    }
+
+    /// <summary>
+    /// 旧版单目标字段，仅用于读取已有设置；新写入统一使用 <see cref="TaskbarTargetMonitorDeviceIds"/>。
+    /// Legacy single-target field retained only for loading existing settings; new writes use <see cref="TaskbarTargetMonitorDeviceIds"/>.
+    /// </summary>
     public string? TaskbarTargetMonitorDeviceId
     {
         get => _taskbarTargetMonitorDeviceId;
@@ -185,6 +202,14 @@ public sealed class AppSettings : INotifyPropertyChanged
         result.TaskbarTargetMonitorDeviceId = string.IsNullOrWhiteSpace(result.TaskbarTargetMonitorDeviceId)
             ? null
             : result.TaskbarTargetMonitorDeviceId.Trim();
+        result.TaskbarTargetMonitorDeviceIds = NormalizeMonitorDeviceIds(result.TaskbarTargetMonitorDeviceIds);
+        if ((result.TaskbarTargetMonitorDeviceIds?.Count ?? 0) == 0 &&
+            !string.IsNullOrWhiteSpace(result.TaskbarTargetMonitorDeviceId) &&
+            !TaskbarTargetPolicy.IsLegacyAllTaskbars(result.TaskbarTargetMonitorDeviceId))
+        {
+            result.TaskbarTargetMonitorDeviceIds = [result.TaskbarTargetMonitorDeviceId];
+            result.TaskbarTargetMonitorDeviceId = null;
+        }
         if (!double.IsFinite(result.LayoutLengthScalePercent)) result.LayoutLengthScalePercent = defaults.LayoutLengthScalePercent;
         if (!double.IsFinite(result.LayoutThicknessScalePercent)) result.LayoutThicknessScalePercent = defaults.LayoutThicknessScalePercent;
         if (!double.IsFinite(result.TaskbarBarCrossAxisOffsetDip)) result.TaskbarBarCrossAxisOffsetDip = defaults.TaskbarBarCrossAxisOffsetDip;
@@ -204,6 +229,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         TwoLineLyricsEnabled = TwoLineLyricsEnabled,
         LyricsSecondaryLine = LyricsSecondaryLine,
         TaskbarBarEnabled = TaskbarBarEnabled,
+        TaskbarTargetMonitorDeviceIds = TaskbarTargetMonitorDeviceIds is null ? null : [.. TaskbarTargetMonitorDeviceIds],
         TaskbarTargetMonitorDeviceId = TaskbarTargetMonitorDeviceId,
         Position = Position,
         TaskbarBarBackgroundBlur = TaskbarBarBackgroundBlur,
@@ -239,6 +265,18 @@ public sealed class AppSettings : INotifyPropertyChanged
         LaunchAtStartup = LaunchAtStartup,
         InterfaceLanguage = InterfaceLanguage
     };
+
+    private static IReadOnlyList<string>? NormalizeMonitorDeviceIds(IEnumerable<string>? deviceIds)
+    {
+        if (deviceIds is null)
+            return null;
+
+        return deviceIds
+            .Where(deviceId => !string.IsNullOrWhiteSpace(deviceId))
+            .Select(deviceId => deviceId.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
 
     private void Set<T>(ref T field, T value, [CallerMemberName] string? name = null)
     {
@@ -354,6 +392,7 @@ public static class SettingsManager
         next.TaskbarExperience = defaults.TaskbarExperience;
         next.WindowMode = defaults.WindowMode; next.LayoutOrientationMode = defaults.LayoutOrientationMode;
         next.TaskbarBarEnabled = defaults.TaskbarBarEnabled;
+        next.TaskbarTargetMonitorDeviceIds = defaults.TaskbarTargetMonitorDeviceIds;
         next.TaskbarTargetMonitorDeviceId = defaults.TaskbarTargetMonitorDeviceId;
         next.Position = defaults.Position; next.TaskbarBarCrossAxisOffsetDip = defaults.TaskbarBarCrossAxisOffsetDip;
         next.TaskbarBarAvoidIcons = defaults.TaskbarBarAvoidIcons; next.TaskbarBarPositionLocked = defaults.TaskbarBarPositionLocked;
@@ -397,6 +436,7 @@ public static class SettingsManager
     {
         var next = Current.Clone(); var defaults = Defaults;
         next.TaskbarBarEnabled = defaults.TaskbarBarEnabled;
+        next.TaskbarTargetMonitorDeviceIds = defaults.TaskbarTargetMonitorDeviceIds;
         next.TaskbarTargetMonitorDeviceId = defaults.TaskbarTargetMonitorDeviceId;
         next.Position = defaults.Position; next.TaskbarBarBackgroundBlur = defaults.TaskbarBarBackgroundBlur; next.TaskbarBarManualPadding = defaults.TaskbarBarManualPadding;
         next.WindowMode = defaults.WindowMode; next.LayoutOrientationMode = defaults.LayoutOrientationMode; next.LayoutLengthScalePercent = defaults.LayoutLengthScalePercent;
@@ -438,6 +478,7 @@ public static class SettingsManager
             case nameof(AppSettings.SpectrumComponent):
             case nameof(AppSettings.PerformanceComponent): ExtraFeaturesSettingsChanged?.Invoke(null, EventArgs.Empty); break;
             case nameof(AppSettings.Update): UpdateSettingsChanged?.Invoke(null, EventArgs.Empty); break;
+            case nameof(AppSettings.TaskbarTargetMonitorDeviceIds):
             case nameof(AppSettings.TaskbarTargetMonitorDeviceId): TaskbarTargetMonitorChanged?.Invoke(null, EventArgs.Empty); break;
             case nameof(AppSettings.TaskbarSurface):
             case nameof(AppSettings.DynamicIslandSurface): AppearanceSettingsChanged?.Invoke(null, new AppearanceSettingsChangedEventArgs(Current.Appearance)); break;

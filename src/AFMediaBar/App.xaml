@@ -66,6 +66,7 @@
           </Setter.Value>
         </Setter>
       </Style>
+
       <!-- Keep WPF-UI menu visuals while making the complete item row hit-testable. -->
       <Style x:Key="AfMenuItemStyle"
              BasedOn="{StaticResource WpfUiMenuItem}"

@@ -16,6 +16,44 @@ namespace AFMediaBar.Classes.Services.Lyrics;
 public static class LyricHighlightPolicy
 {
     /// <summary>
+    /// 歌词时间轴与擦亮层的呈现决策。时间轴决定长歌词如何滚动，擦亮层只是叠在同一轨迹上的视觉效果；
+    /// 因此关闭擦亮不得关闭时间轴或改用另一种滚动方式。
+    /// Presentation decision for the lyric timeline and highlight layer. The timeline decides how a long lyric scrolls, while the
+    /// highlight is only a visual layer over that same trajectory, so hiding it must not disable the timeline or select another scroll mode.
+    /// </summary>
+    /// <param name="AdvanceTimeline">是否按歌词时间轴推进。/ Whether the lyric timeline advances.</param>
+    /// <param name="ShowHighlight">是否显示擦亮层。/ Whether the highlight layer is shown.</param>
+    public readonly record struct PresentationState(bool AdvanceTimeline, bool ShowHighlight);
+
+    /// <summary>
+    /// 分别决定时间轴是否推进、擦亮层是否显示。用户开关只参与后者，保证开关前后的滚动轨迹完全相同。
+    /// Separately decides whether the timeline advances and whether the highlight layer is shown. The user switch participates only
+    /// in the latter, keeping the scrolling trajectory identical on both sides of the switch.
+    /// </summary>
+    public static PresentationState ResolvePresentationState(
+        bool highlightEnabled,
+        bool hasCurrentLine,
+        bool connected,
+        bool playing,
+        bool lyricsVisible,
+        bool controlVisible,
+        bool isAdvancePruned,
+        bool highContrast,
+        bool useContinuousMotion)
+    {
+        var advanceTimeline = hasCurrentLine &&
+                              connected &&
+                              playing &&
+                              lyricsVisible &&
+                              controlVisible &&
+                              !isAdvancePruned &&
+                              useContinuousMotion;
+        return new PresentationState(
+            AdvanceTimeline: advanceTimeline,
+            ShowHighlight: advanceTimeline && highlightEnabled && !highContrast);
+    }
+
+    /// <summary>
     /// 计算当前行的擦亮进度。
     /// Computes the highlight progress of the active line.
     /// </summary>

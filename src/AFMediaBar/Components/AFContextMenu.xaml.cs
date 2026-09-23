@@ -1,0 +1,82 @@
+using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Services;
+using AFMediaBar.Classes.Services.Updates;
+using AFMediaBar.Resources;
+using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Windows;
+using System.Windows.Controls;
+using AFMediaBar.ViewModels.Components;
+
+namespace AFMediaBar.Components
+{
+    /// <summary>
+    /// 托盘右键菜单：媒体会话、任务栏宿主、更新、设置与退出入口。
+    /// Tray context menu with media sessions, taskbar host, update, settings, and exit entries.
+    /// </summary>
+    public partial class AFContextMenu : ContextMenu
+    {
+        public AFContextMenuViewModel ViewModel { get; }
+
+        private readonly MediaSessionService _mediaSessionService;
+        private readonly UpdateService _updateService;
+
+        /// <summary>打开设置窗口（已打开时激活到前台）。/ Opens the settings window, activating it when already open.</summary>
+        [RelayCommand]
+        private void OpenSettings() => OpenSettingsRequested?.Invoke(this, EventArgs.Empty);
+
+        /// <summary>退出整个程序。/ Exits the application.</summary>
+        [RelayCommand]
+        private void ExitApplication() => Application.Current.Shutdown();
+
+        /// <summary>切换到指定媒体会话（参数为会话 Key）。/ Switches to the session identified by the parameter key.</summary>
+        [RelayCommand]
+        private void SelectMediaSession(string? key) =>
+            _mediaSessionService.SelectSession(key ?? string.Empty);
+
+        public AFContextMenu()
+        {
+            ViewModel = App.Services.GetService<AFContextMenuViewModel>();
+            _mediaSessionService = App.Services.GetRequiredService<MediaSessionService>();
+            _updateService = App.Services.GetRequiredService<UpdateService>();
+
+            InitializeComponent();
+        }
+
+        public event EventHandler? OpenSettingsRequested;
+
+        public event EventHandler? OpenUpdateSettingsRequested;
+
+        public event EventHandler? ReloadTaskbarHostRequested;
+
+        public bool IsReloadTaskbarHostEnabled
+        {
+            get => ReloadTaskbarHostMenuItem.IsEnabled;
+            set => ReloadTaskbarHostMenuItem.IsEnabled = value;
+        }
+
+        public void ApplySessions(IReadOnlyList<MediaSessionOption> options)
+        {
+            SessionsMenuItem.Items.Clear();
+            foreach (var option in options)
+            {
+                SessionsMenuItem.Items.Add(new System.Windows.Controls.MenuItem
+                {
+                    Header = option.DisplayName,
+                    IsCheckable = true,
+                    IsChecked = option.IsSelected,
+                    Command = SelectMediaSessionCommand,
+                    CommandParameter = option.Key
+                });
+            }
+        }
+
+        private void ReloadTaskbarHostMenuItem_Click(object sender, RoutedEventArgs e) =>
+            ReloadTaskbarHostRequested?.Invoke(this, EventArgs.Empty);
+    }
+}

@@ -17,6 +17,7 @@ public static partial class NativeMethods
     public const int WS_CHILD = 0x40000000;
     public const int WS_POPUP = unchecked((int)0x80000000);
     public const int WS_EX_NOACTIVATE = 0x08000000;
+    public const int WS_EX_TRANSPARENT = 0x00000020;
 
     // SetWindowPos flags
     public const uint SWP_NOSIZE = 0x0001;
@@ -47,6 +48,10 @@ public static partial class NativeMethods
     public const int WM_RBUTTONDOWN = 0x0204;
     public const int WM_RBUTTONUP = 0x0205;
     public const int WM_MOUSEWHEEL = 0x020A;
+    public const uint EVENT_OBJECT_LOCATIONCHANGE = 0x800B;
+    public const int OBJID_WINDOW = 0;
+    public const uint WINEVENT_OUTOFCONTEXT = 0;
+    public const uint WINEVENT_SKIPOWNPROCESS = 0x0002;
     public const uint PM_NOREMOVE = 0x0000;
     public const int NIN_SELECT = 0x0400;
     public const int NIN_KEYSELECT = 0x0401;
@@ -169,6 +174,15 @@ public static partial class NativeMethods
     public delegate bool MonitorEnumProc(IntPtr hMonitor, IntPtr hdcMonitor, ref RECT lprcMonitor, IntPtr dwData);
     /// <summary>低级鼠标钩子回调。/ Low-level mouse-hook callback.</summary>
     public delegate IntPtr LowLevelMouseProc(int code, IntPtr wParam, IntPtr lParam);
+    /// <summary>WinEvent 回调。/ WinEvent callback.</summary>
+    public delegate void WinEventProc(
+        IntPtr hook,
+        uint eventType,
+        IntPtr hwnd,
+        int objectId,
+        int childId,
+        uint eventThread,
+        uint eventTime);
 
     /// <summary>低级鼠标钩子数据。/ Low-level mouse hook data.</summary>
     [StructLayout(LayoutKind.Sequential)]
@@ -334,6 +348,22 @@ public static partial class NativeMethods
 
     [LibraryImport("user32.dll", EntryPoint = "SetWindowLongW")]
     public static partial int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+
+    /// <summary>注册异步窗口事件钩子。/ Installs an out-of-context window event hook.</summary>
+    [LibraryImport("user32.dll")]
+    public static partial IntPtr SetWinEventHook(
+        uint eventMin,
+        uint eventMax,
+        IntPtr eventHook,
+        WinEventProc callback,
+        uint processId,
+        uint threadId,
+        uint flags);
+
+    /// <summary>移除窗口事件钩子。/ Removes a window event hook.</summary>
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool UnhookWinEvent(IntPtr eventHook);
 
     [LibraryImport("user32.dll")]
     public static partial uint GetDpiForWindow(IntPtr hWnd);

@@ -95,6 +95,28 @@ public static class TaskbarFreeRangeCalculator
         };
     }
 
+    /// <summary>
+    /// 当前探测结果仍完整包含上一次选区时保留原选区，避免 UI Automation 的短暂缺项把媒体栏推入图标区。
+    /// Keeps the previous selection while the current probe still fully contains it, preventing a transiently incomplete UI Automation result
+    /// from moving the media bar into the icon band.
+    /// </summary>
+    public static bool TryKeepSelection(
+        IReadOnlyList<TaskbarPrimaryRange> ranges,
+        TaskbarPrimaryRange previous,
+        int requiredPrimaryPixels,
+        out TaskbarPrimaryRange selection)
+    {
+        selection = default;
+        if (previous.Length <= 0 || requiredPrimaryPixels > 0 && previous.Length < requiredPrimaryPixels)
+            return false;
+
+        if (!ranges.Any(range => range.Start <= previous.Start && range.End >= previous.End))
+            return false;
+
+        selection = previous;
+        return true;
+    }
+
     private static IEnumerable<TaskbarPrimaryRange> MergeRanges(IEnumerable<TaskbarPrimaryRange> ranges)    {
         TaskbarPrimaryRange? current = null;
         foreach (var range in ranges)

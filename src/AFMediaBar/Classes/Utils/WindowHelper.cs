@@ -30,6 +30,23 @@ public static class WindowHelper
         ApplyNoActivateStyle();
     }
 
+    /// <summary>
+    /// 临时切换分层窗口的鼠标穿透；任务栏移动期间使用它，避免子窗口抢走 Explorer 的边缘触发与显隐输入。
+    /// Temporarily toggles mouse transparency for a layered window; taskbar motion uses it so the child cannot steal Explorer's
+    /// edge-trigger and reveal/hide input.
+    /// </summary>
+    public static void SetInputTransparent(Window window, bool transparent)
+    {
+        var handle = new WindowInteropHelper(window).Handle;
+        if (handle == IntPtr.Zero)
+            return;
+
+        var style = GetWindowLong(handle, GWL_EXSTYLE);
+        var next = transparent ? style | WS_EX_TRANSPARENT : style & ~WS_EX_TRANSPARENT;
+        if (next != style)
+            SetWindowLong(handle, GWL_EXSTYLE, next);
+    }
+
     /// <summary>通过 Win32 显示或隐藏窗口。/ Shows or hides a window through Win32.</summary>
     public static void SetVisibility(Window window, bool visible) // show/hide without the WPF Visibility delay
     {

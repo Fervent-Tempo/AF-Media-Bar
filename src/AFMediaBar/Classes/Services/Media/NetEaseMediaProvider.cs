@@ -280,7 +280,12 @@ public sealed class NetEaseMediaProvider : IMediaSourceProvider, IMemoryPrunable
             _memoryPlayer = new NetEase(processId);
         }
 
-        return _memoryPlayer.GetPlayerInfo();
+        // SMTC 报出的曲名随基线快照一起传进去：私人FM 的 fmPlay 队列在按 id 查不到当前曲目时只按 currentIndex
+        // 兜底，而队列可能是上一次私人FM 会话留下的，因此那一条 MUST 与 SMTC 的曲名对得上才会被采纳。
+        // The title SMTC reports travels with the baseline snapshot: the private-FM fmPlay queue falls back to currentIndex when the
+        // current track cannot be found by id, and that queue may be left over from a previous FM session, so such an entry is
+        // accepted only when its title matches the one SMTC reports.
+        return _memoryPlayer.GetPlayerInfo(_sessionSnapshot.IsConnected ? _sessionSnapshot.Title : null);
     }
 
     private void ResetMemoryPlayer()

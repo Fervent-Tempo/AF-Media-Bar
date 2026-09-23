@@ -6,6 +6,38 @@ All notable changes to AF Media Bar are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Reliability fixes: media-session self-healing, spectrum level calibration, and lyric advancement.
+
+### Fixed
+
+- Losing media sessions permanently after a single missed SMTC event (for example at a track change): an auto-reconcile watchdog now heals on a one-second cadence for thirty seconds after a session closes and falls back to five seconds, and it rebuilds the media catalog when the third-party library is stuck beyond what ForceUpdate can fix.
+- The spectrum standing still at its minimum bar height while listening at low volume: the level mapping now uses a relative-dB window around a reference peak, so bar heights no longer shrink with the system volume; the capture also follows the device that is actually audible (an application stream outranks the system mixer's echo, and the current endpoint is kept within one rank), so a virtual audio driver routing music to a non-default endpoint no longer leaves the spectrum silent (the target is checked every two seconds and the capture is rebuilt on a change).
+- Lyrics not advancing when a player stops reporting playback progress (its timeline stays at the track start): lyric line selection now uses the same extrapolated position as the progress bar and is advanced by the existing 250 ms progress timer.
+
+### Improved
+
+- Spectrum resolution and look: the FFT size now follows the sample rate (96 kHz goes from 512 to 4096 points), band values integrate power with fractional-bin linear interpolation (low bands no longer share one bin with their neighbour, so the leading columns stop sharing one height), and a +3 dB/octave tilt in the power domain compensates the natural roll-off for a more balanced look.
+
+## [1.2.1] - 2026-09-21
+
+A fix release: the taskbar auto-hide animation, misplacement while capturing the screen, and multi-monitor display.
+
+### Added
+
+- The bar can be shown on every enabled taskbar at once.
+- A syllable-highlight switch: turning it off keeps lyrics scrolling on the same timeline and trajectory.
+
+### Fixed
+
+- Taskbar auto-hide animation: stutter and jumping when the bar hides against the screen edge.
+- The bar moving or collapsing while a screenshot or screen recorder is open.
+- The performance-metrics component going dead after switching displays.
+- A race between background memory pruning and releasing the log queue.
+- The settings page crashing when a callout resource is missing, plus several window-stability issues.
+- Wheel gestures and their tooltip scoped to the artwork and text region; the full layer no longer trims information.
+
 ## [1.2.0] - 2026-09-19
 
 The first release of the rebuilt interface and interaction model: taskbar lyrics, an installer, and target-display selection are new capabilities, and the settings pages, appearance, and interactions were reorganised by function.
@@ -123,6 +155,7 @@ The first release of the rebuilt interface and interaction model: taskbar lyrics
 - Restricted native library lookup to System32.
 - Removed generic execution of media-provided `.exe` source identifiers.
 
+[1.2.1]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.0.1...v1.1.0
