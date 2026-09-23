@@ -35,12 +35,24 @@ public sealed class LyricsSpacingPolicyTests
     }
 
     [TestMethod]
-    public void LineHeightSplitsWhatIsLeftAfterTheGap()
+    public void TightLeadCentresTheTwoLineBlock()
     {
-        Assert.AreEqual(20, LyricsSpacingPolicy.ResolveLineHeightDip(40, 0), 1e-9);
-        Assert.AreEqual(16, LyricsSpacingPolicy.ResolveLineHeightDip(40, 8), 1e-9);
-        Assert.AreEqual(0, LyricsSpacingPolicy.ResolveLineHeightDip(0, 8), 1e-9);
-        Assert.AreEqual(0, LyricsSpacingPolicy.ResolveLineHeightDip(double.NaN, 8), 1e-9);
+        // 40 可用、每行行框 14：行距 0 时两行贴紧，每侧留白 (40-28)/2 = 6；行距 6（默认）时留白 3；
+        // 行距 8 时留白 2；空间不足或输入不可用时留白归零。
+        // With 40 available and 14-high line boxes: a zero gap touches and leaves (40 - 28) / 2 = 6 on each side, the default gap of 6
+        // leaves 3, a gap of 8 leaves 2, and no room or an unusable input lands on zero.
+        Assert.AreEqual(6, LyricsSpacingPolicy.ResolveTightLeadDip(40, 14, 0), 1e-9);
+        Assert.AreEqual(3, LyricsSpacingPolicy.ResolveTightLeadDip(40, 14, 6), 1e-9);
+        Assert.AreEqual(2, LyricsSpacingPolicy.ResolveTightLeadDip(40, 14, 8), 1e-9);
+        Assert.AreEqual(0, LyricsSpacingPolicy.ResolveTightLeadDip(20, 14, 0), 1e-9);
+        Assert.AreEqual(0, LyricsSpacingPolicy.ResolveTightLeadDip(40, 14, 100), 1e-9);
+        Assert.AreEqual(0, LyricsSpacingPolicy.ResolveTightLeadDip(0, 14, 6), 1e-9);
+        Assert.AreEqual(0, LyricsSpacingPolicy.ResolveTightLeadDip(40, 0, 6), 1e-9);
+        Assert.AreEqual(0, LyricsSpacingPolicy.ResolveTightLeadDip(double.NaN, 14, 6), 1e-9);
+
+        // 块中心必须落在可用高度的正中央：留白 + 行框 + 行距/2 = 高度/2。
+        // The block centre has to sit exactly at half the available height: lead + line box + gap / 2 equals half the height.
+        Assert.AreEqual(20, 3 + 14 + 6 / 2.0, 1e-9);
     }
 
     [TestMethod]

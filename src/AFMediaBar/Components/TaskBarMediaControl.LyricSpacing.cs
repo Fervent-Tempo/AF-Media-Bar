@@ -337,59 +337,75 @@ public partial class TaskBarMediaControl
     }
 
     /// <summary>
-    /// 把双行行距落到三行网格上：单行跨三行（与原两行布局的居中效果一致），双行占第一、三行，间距行走中间。
-    /// 行距为 0 时中间行高为 0，网格退化成原先的上下平分。
-    /// Lands the two-line gap on the three-row grid: a single line spans all three rows (centred exactly as the old two-row layout was),
-    /// two lines take the first and third rows, and the gap row sits in between. A zero gap makes the middle row zero-high and the grid
-    /// degrades to the previous even split.
+    /// 把双行行距落到五行网格上：上留白 / 第一行 / 行距 / 第二行 / 下留白。两行文本框之间的距离就是设置值，
+    /// 因此 0 表示两行真正贴紧；整个两行块在文字区里垂直居中（数学上与原版"各占一半并居中"在默认值下等价）。
+    /// 单行时只占中间一行，其余留白把它居中——与原版单行的居中结果一致。
+    /// Lands the two-line gap on a five-row grid: top lead / first line / gap / second line / bottom lead. The distance between the two
+    /// line boxes is exactly the setting, so zero really means the two lines touch; the whole block stays vertically centred in the
+    /// media-text area (which is mathematically identical to the previous "one half each, centred" layout at its default value). A single
+    /// line occupies the middle row only, with the leads centring it, matching the previous single-line centring.
     /// </summary>
     /// <param name="showSecondary">第二行是否可见。/ Whether the second row is visible.</param>
     private void ApplyLyricRowLayout(bool showSecondary)
     {
-        var (gap, lineHeight) = ResolveLyricLineSpacing(showSecondary);
-        ApplyLyricRowLayout(showSecondary, gap, lineHeight);
-    }
-
-    /// <summary>按已求出的行距落网格；可用高度不可用时只改行跨度，不动高度。/ Lands the grid with a resolved gap; an unusable available height changes only the row span, never a height.</summary>
-    /// <param name="showSecondary">第二行是否可见。/ Whether the second row is visible.</param>
-    /// <param name="gap">已夹取的行距（DIP）。/ Clamped gap in DIP.</param>
-    /// <param name="lineHeight">每行的可见高度（DIP）；0 表示高度不可用。/ Visible height of each row in DIP; zero means the height is unusable.</param>
-    private void ApplyLyricRowLayout(bool showSecondary, double gap, double lineHeight)
-    {
-        Grid.SetRowSpan(SongLyricsContainer, showSecondary ? 1 : 3);
-        SongLyricsGapRow.Height = new GridLength(showSecondary ? gap : 0);
-        // 单行不动高度：容器跨三行并沿用布局引擎写的高度，居中结果与原布局完全一致。
-        // A single line leaves the height alone: the container spans all three rows and keeps the height the layout engine wrote, which
-        // centres it exactly like the previous layout.
-        if (showSecondary && lineHeight > 0)
-        {
-            SongLyricsContainer.Height = lineHeight;
-        }
-    }
-
-    /// <summary>
-    /// 双行布局的行距与单行高度：可用高度取媒体文字区，请求值按"两行各留最低可读高度"夹取。
-    /// Gap and per-line height of the two-line layout: the available height comes from the media-text area and the requested value is
-    /// clamped so both lines keep a minimum readable height.
-    /// </summary>
-    /// <param name="showSecondary">第二行是否可见。/ Whether the second row is visible.</param>
-    /// <returns>行距与每行高度；不可用时为 0。/ The gap and per-line height, or zeros when unavailable.</returns>
-    private (double Gap, double LineHeight) ResolveLyricLineSpacing(bool showSecondary)
-    {
-        if (!showSecondary)
-        {
-            return (0, 0);
-        }
-
         var available = SongInfoStackPanel.Height;
         if (!double.IsFinite(available) || available <= 0)
         {
-            return (0, 0);
+            // 高度不可用：只把网格退化成"中间一行"，不写任何高度。
+            // Without a usable height the grid degrades to a single middle row and no height is written at all.
+            SetLyricRowHeights(0, 1, 0, 0, 0, GridUnitType.Star);
+            return;
         }
 
+        if (!showSecondary)
+        {
+            var primary = SongLyricsContainer.Height;
+            if (!double.IsFinite(primary) || primary <= 0)
+            {
+                primary = available / 2;
+            }
+
+            var lead = Math.Max(0, (available - primary) / 2);
+            SetLyricRowHeights(lead, primary, 0, 0, lead, GridUnitType.Pixel);
+            SongLyricsContainer.Height = primary;
+            return;
+        }
+
+        var lineHeight = ResolveLyricLineHeight();
         var requested = LyricsLineGap.Normalize(SettingsManager.Current.LyricsLineGapDip);
         var minimum = LyricsSpacingPolicy.ResolveMinimumLineHeightDip(SongLyrics.FontSize);
         var gap = LyricsSpacingPolicy.ResolveLineGapDip(requested, available, minimum);
-        return (gap, LyricsSpacingPolicy.ResolveLineHeightDip(available, gap));
+        var blockLead = LyricsSpacingPolicy.ResolveTightLeadDip(available, lineHeight, gap);
+        SetLyricRowHeights(blockLead, lineHeight, gap, lineHeight, blockLead, GridUnitType.Pixel);
+        SongLyricsContainer.Height = lineHeight;
+    }
+
+    /// <summary>一次写入五行的行高；中间行的单位可指定（排版前用星号行兜底）。/ Writes all five row heights in one go; the middle line's unit is selectable (a star row backstops the pre-layout state).</summary>
+    private void SetLyricRowHeights(double topLead, double primary, double gap, double secondary, double bottomLead, GridUnitType primaryUnit)
+    {
+        SongLyricsTopSpacer.Height = new GridLength(topLead);
+        SongLyricsPrimaryRow.Height = new GridLength(primary, primaryUnit);
+        SongLyricsGapRow.Height = new GridLength(gap);
+        SongLyricsSecondaryRow.Height = new GridLength(secondary);
+        SongLyricsBottomSpacer.Height = new GridLength(bottomLead);
+    }
+
+    /// <summary>
+    /// 单行的实际行框高度：优先取渲染后的 <c>ActualHeight</c>（Display 与 Ideal 两种排版下都准确），
+    /// 首帧尚未排版时按字号估算。行高只受字体影响，不受行距布局影响，因此不会与行高写入形成反馈。
+    /// The rendered line-box height: the post-layout <c>ActualHeight</c> when available (accurate under both Display and Ideal
+    /// formatting), otherwise an estimate from the font size. The line height depends only on the font, never on the row heights written
+    /// here, so there is no feedback loop.
+    /// </summary>
+    private double ResolveLyricLineHeight()
+    {
+        var actual = SongLyrics.ActualHeight;
+        if (double.IsFinite(actual) && actual > 0)
+        {
+            return actual;
+        }
+
+        var fontSize = SongLyrics.FontSize;
+        return double.IsFinite(fontSize) && fontSize > 0 ? fontSize * 1.2 : 14;
     }
 }

@@ -71,24 +71,23 @@ public static class LyricsSpacingPolicy
     }
 
     /// <summary>
-    /// 两行各分到的高度：可用高度去掉行距后平分；可用高度不可用时返回 0。
-    /// Height each of the two lines gets: the available height minus the gap, split evenly; zero when the available height is unusable.
+    /// 两行块居中时每侧留白的高度：可用高度去掉"两行行框 + 行距"后平分；空间不足或输入不可用时为 0。
+    /// Height of the lead on each side when the two-line block is centred: the available height minus both line boxes and the gap, split
+    /// evenly; zero when there is no room or an input is unusable.
     /// </summary>
     /// <param name="availableHeightDip">可用高度（DIP）。/ Available height in DIP.</param>
-    /// <param name="lineGapDip">已夹取的行距（DIP）。/ Clamped line gap in DIP.</param>
-    public static double ResolveLineHeightDip(double availableHeightDip, double lineGapDip)
+    /// <param name="lineHeightDip">单行行框高度（DIP）。/ Height of one line box in DIP.</param>
+    /// <param name="lineGapDip">已夹取的行距（DIP）。/ Clamped gap in DIP.</param>
+    public static double ResolveTightLeadDip(double availableHeightDip, double lineHeightDip, double lineGapDip)
     {
-        if (!double.IsFinite(availableHeightDip) || availableHeightDip <= 0)
+        if (!double.IsFinite(availableHeightDip) || availableHeightDip <= 0 ||
+            !double.IsFinite(lineHeightDip) || lineHeightDip <= 0)
         {
             return 0;
         }
 
-        if (!double.IsFinite(lineGapDip) || lineGapDip <= 0)
-        {
-            return availableHeightDip / 2;
-        }
-
-        return Math.Max(0, (availableHeightDip - lineGapDip) / 2);
+        var gap = double.IsFinite(lineGapDip) && lineGapDip > 0 ? lineGapDip : 0;
+        return Math.Max(0, (availableHeightDip - 2 * lineHeightDip - gap) / 2);
     }
 
     /// <summary>单行的最低高度：字号 + 余量；字号不可用时只用余量。/ Minimum height of one line: font size plus overhead, or the overhead alone when the size is unusable.</summary>

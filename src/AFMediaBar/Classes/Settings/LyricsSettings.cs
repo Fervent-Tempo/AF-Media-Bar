@@ -61,17 +61,19 @@ public static class LyricsUnsungOpacity
 }
 
 /// <summary>
-/// 双行歌词的行距：两行文字之间空出的高度（DIP）。
+/// 双行歌词的行距：两个行框之间空出的高度（DIP）。
 ///
 /// 行距只在双行歌词下有意义，且运行时会被任务栏文字区的可用高度夹取，保证两行加间距绝不超出媒体栏（见 LyricsSpacingPolicy）。
-/// Line gap of two-line lyrics: the height left empty between the two lines in DIP.
+/// <see cref="DefaultDip"/> 取"升级前的自然间距"（100% 厚度下约 6 DIP），因此默认外观不变；0 表示两行真正贴紧。
+/// Line gap of two-line lyrics: the height left empty between the two line boxes in DIP.
 ///
 /// It only applies to two-line lyrics and is clamped at runtime against the available height of the taskbar's media-text area, so the
-/// two lines plus the gap can never exceed the bar (see LyricsSpacingPolicy).
+/// two lines plus the gap can never exceed the bar (see LyricsSpacingPolicy). <see cref="DefaultDip"/> carries the natural spacing used
+/// before this setting existed (about six DIP at 100% thickness), so the default look is unchanged; zero means the two lines touch.
 /// </summary>
 public static class LyricsLineGap
 {
-    /// <summary>行距的持久化安全下限。/ Persistence-safe lower bound of the line gap.</summary>
+    /// <summary>行距的持久化安全下限：0 表示两行行框紧贴。/ Persistence-safe lower bound of the line gap; zero means the two line boxes touch.</summary>
     public const int MinimumDip = 0;
 
     /// <summary>行距的持久化安全上限；实际生效值还会被运行时按可用高度进一步压缩。
@@ -81,9 +83,10 @@ public static class LyricsLineGap
     /// <summary>行距的步长（DIP）。/ Line-gap step in DIP.</summary>
     public const int StepDip = 1;
 
-    /// <summary>行距的默认值：0 表示两行紧邻，与升级前的观感一致。
-    /// Default line gap: zero means the two lines sit next to each other, matching the look before this setting existed.</summary>
-    public const int DefaultDip = 0;
+    /// <summary>行距的默认值：升级前的自然间距（100% 厚度下约 6 DIP），默认外观因此与升级前一致。
+    /// Default line gap: the natural spacing used before this setting existed (about six DIP at 100% thickness), which keeps the default
+    /// look unchanged.</summary>
+    public const int DefaultDip = 6;
 
     /// <summary>
     /// 把任意输入吸附到步长网格并夹进区间。
