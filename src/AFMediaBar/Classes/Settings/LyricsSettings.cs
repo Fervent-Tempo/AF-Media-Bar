@@ -100,15 +100,13 @@ public static class LyricsLineGap
 /// <summary>
 /// 歌词字距：以字号的百分比增加字与字之间的空隙。
 ///
-/// WPF 的 TextBlock 没有字距属性，因此实现为在显示层给符合条件的字符之间插入窄空格；百分比的含义是
-/// "目标空隙 = 字号 × 百分比"，实现会按当前字体实测候选空格的宽度并取最接近目标的一档，
-/// 字体缺少全部候选字形时退化为不加（见 LyricsSpacingPolicy）。
+/// WPF 的 TextBlock 没有字距属性，因此实现为在显示层插入字距标记，渲染时把每个标记换成"按目标宽度缩放字号的空档 Run"；
+/// 百分比的含义是"目标空隙 = 字号 × 百分比"，字号可以连续缩放，因此每一档都是真实生效的（见 LyricsSpacingPolicy）。
 /// Lyric character spacing: extra space between characters as a percentage of the font size.
 ///
-/// WPF's TextBlock has no letter-spacing property, so this is implemented by inserting narrow space characters between eligible
-/// characters in the displayed text; the percentage means "target gap = font size × percentage", and the implementation measures the
-/// candidate space characters with the actual font and picks the closest one, degrading to no spacing when the font lacks them all
-/// (see LyricsSpacingPolicy).
+/// WPF's TextBlock has no letter-spacing property, so this is implemented by inserting gap markers in the displayed text and replacing
+/// each one at render time with a spacer run whose font size is scaled to the target width; the percentage means "target gap = font
+/// size × percentage", and since the font size scales continuously, every step is genuinely effective (see LyricsSpacingPolicy).
 /// </summary>
 public static class LyricsCharacterSpacing
 {
@@ -119,8 +117,9 @@ public static class LyricsCharacterSpacing
     /// Persistence-safe upper bound in percent: 20% of a 12 DIP font is about 2.4 DIP, already the readability ceiling on a taskbar.</summary>
     public const int MaximumPercent = 20;
 
-    /// <summary>字距的步长（百分比）。/ Character-spacing step in percent.</summary>
-    public const int StepPercent = 2;
+    /// <summary>字距的步长（百分比）：连续渲染下 1% 在屏幕上也是可见变化，档位因此更细腻。
+    /// Character-spacing step in percent: with continuous rendering even one percent is a visible change, so the steps are finer.</summary>
+    public const int StepPercent = 1;
 
     /// <summary>字距的默认值：0 表示不改动字距，与升级前一致。/ Default spacing: zero, matching the look before this setting existed.</summary>
     public const int DefaultPercent = 0;

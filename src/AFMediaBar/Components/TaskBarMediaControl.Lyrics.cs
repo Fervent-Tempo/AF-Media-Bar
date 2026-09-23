@@ -47,6 +47,7 @@ public partial class TaskBarMediaControl
     private string _measuredLyricText = string.Empty;
     private FontFamily? _measuredLyricFontFamily;
     private FontWeight _measuredLyricFontWeight;
+    private double _measuredLyricGap = double.NaN;
     private double _activeLyricTextWidth;
     private bool _lyricTimelineActive;
 
@@ -249,15 +250,21 @@ public partial class TaskBarMediaControl
     {
         var fontSize = SongLyrics.FontSize;
         var availableWidth = double.IsFinite(SongLyrics.Width) ? SongLyrics.Width : double.NaN;
-        // 显示串也是缓存键：改字距不会换行，但会改写元素的文字，不重测就会拿着旧宽度去擦亮（亮区与字形错位）。
+        // 显示串也是缓存键：改字距不会换行，但会改写元素的内容，不重测就会拿着旧宽度去擦亮（亮区与字形错位）。
+        // 歌词行读记录值——Inlines 下 `Text` 读不回实际内容；宽度按间距感知模型换算，与渲染严格同构；
+        // 字距本身也在键里，因为同一个显示串在不同字距下的渲染宽度不同。
         // The display string is part of the cache key as well: changing the character spacing keeps the same line but rewrites the
-        // element's text, and without a re-measure the reveal would use the old width and drift away from the glyphs.
-        var text = SongLyrics.Text;
+        // element's content, and without a re-measure the reveal would use the old width and drift away from the glyphs. Lyric rows read
+        // the recorded value (under inlines `Text` does not read back), and the width converts in the spacing-aware model so it matches
+        // rendering exactly; the gap itself belongs to the key too, because one display string renders at different widths per gap.
+        var text = GetMarqueeContent(SongLyrics);
+        var gap = ResolveCharacterSpacingDip();
         if (ReferenceEquals(_measuredLyricLine, line) &&
             Math.Abs(_measuredLyricFontSize - fontSize) < 0.01 &&
             string.Equals(_measuredLyricText, text, StringComparison.Ordinal) &&
             Equals(_measuredLyricFontFamily, SongLyrics.FontFamily) &&
             _measuredLyricFontWeight == SongLyrics.FontWeight &&
+            Math.Abs(_measuredLyricGap - gap) < 0.001 &&
             (double.IsNaN(availableWidth) && double.IsNaN(_measuredLyricAvailableWidth) ||
              Math.Abs(_measuredLyricAvailableWidth - availableWidth) < 0.01))
         {
@@ -270,7 +277,8 @@ public partial class TaskBarMediaControl
         _measuredLyricText = text;
         _measuredLyricFontFamily = SongLyrics.FontFamily;
         _measuredLyricFontWeight = SongLyrics.FontWeight;
-        _activeLyricTextWidth = MeasureTextWidthExact(text, SongLyrics);
+        _measuredLyricGap = gap;
+        _activeLyricTextWidth = MeasureMarqueeWidth(text, SongLyrics);
     }
 
     /// <summary>

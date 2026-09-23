@@ -106,16 +106,18 @@ public partial class TaskBarMediaControl
         var element = state.Element;
         var available = double.IsFinite(availableWidth) ? Math.Max(0, availableWidth) : 0;
         // 应用写入的才是原文：只有当前文本不是我们上一次写进去的窗口时才重新捕获，否则会把窗口误当原文，
-        // 于是每推进一轮内容就被缩掉一截。
+        // 于是每推进一轮内容就被缩掉一截。歌词行的当前文本走记录值——Inlines 下 `Text` 读不回实际内容。
         // Only what the application wrote counts as the content: it is re-captured when the current text is not the window written last
-        // time, otherwise the window would be mistaken for the content and the text would shrink once per round.
-        if (!string.Equals(element.Text, state.Window, StringComparison.Ordinal))
-            state.Base = element.Text ?? string.Empty;
+        // time, otherwise the window would be mistaken for the content and the text would shrink once per round. Lyric rows read the
+        // recorded value, because `Text` does not read back inline content.
+        var currentContent = GetMarqueeContent(element);
+        if (!string.Equals(currentContent, state.Window, StringComparison.Ordinal))
+            state.Base = currentContent;
 
         if (!state.Advancing)
             state.Alignment = ResolveConfiguredAlignment(element);
 
-        var measured = string.IsNullOrEmpty(state.Base) ? 0 : MeasureTextWidthExact(state.Base, element);
+        var measured = string.IsNullOrEmpty(state.Base) ? 0 : MeasureMarqueeWidth(state.Base, element);
         var overflow = enabled && available > 0
             ? TaskbarExperiencePolicy.CalculateMarqueeOverflow(measured, available)
             : 0;
@@ -158,8 +160,8 @@ public partial class TaskBarMediaControl
             state.SungPosition = 0;
             state.SungWidthDip = 0;
             state.WindowWidthDip = 0;
-            if (!string.Equals(element.Text, state.Base, StringComparison.Ordinal))
-                element.Text = state.Base;
+            if (!string.Equals(GetMarqueeContent(element), state.Base, StringComparison.Ordinal))
+                SetMarqueeContent(element, state.Base);
             // 放得下时保持用户设置的裁剪提示；放不下但当前不允许推进时也一样，省略号至少说明后面还有内容。
             // When it fits, the configured trimming hint stays; the same applies while advancing is not allowed, where the ellipsis at
             // least says that more text follows.
@@ -199,8 +201,8 @@ public partial class TaskBarMediaControl
     /// line's head, and it only recovers at the next integer position crossing.
     /// </summary>
     /// <param name="state">该元素的推进状态。/ Advance state of that element.</param>
-    private static bool ShowsMarqueeWindow(MarqueeTextState state) =>
-        string.Equals(state.Element.Text, state.Window, StringComparison.Ordinal);
+    private bool ShowsMarqueeWindow(MarqueeTextState state) =>
+        string.Equals(GetMarqueeContent(state.Element), state.Window, StringComparison.Ordinal);
 
     /// <summary>该元素是否可使用歌词时间轴跟随推进。/ Whether the element can follow the lyric timeline.</summary>
     /// <param name="element">文本元素。/ Text element.</param>
@@ -219,7 +221,7 @@ public partial class TaskBarMediaControl
     /// <see cref="ApplyMarqueeOffset"/>.
     /// </summary>
     /// <param name="state">该元素的推进状态。/ Advance state of that element.</param>
-    private static void UpdateMarqueeWindow(MarqueeTextState state)
+    private void UpdateMarqueeWindow(MarqueeTextState state)
     {
         state.WindowStart = state.Following
             ? MarqueeFollowPolicy.SnapStart(
@@ -249,16 +251,18 @@ public partial class TaskBarMediaControl
     /// <param name="state">该元素的推进状态。/ Advance state of that element.</param>
     /// <param name="text">要测量的文字。/ The text to measure.</param>
     /// <param name="requiredCharacters">本次至少需要的字符数。/ Characters needed by this step at the very least.</param>
-    private static int EnsurePrefixWidths(MarqueeTextState state, string text, int requiredCharacters)
+    private int EnsurePrefixWidths(MarqueeTextState state, string text, int requiredCharacters)
     {
         var element = state.Element;
         var textLength = text.Length;
+        var gap = ResolveCharacterSpacingDip();
         var valid = state.PrefixWidths is { } cached &&
                     cached.Length == textLength + 1 &&
                     string.Equals(state.PrefixContent, text, StringComparison.Ordinal) &&
                     Math.Abs(state.PrefixFontSize - element.FontSize) < 0.01 &&
                     state.PrefixFontWeight == element.FontWeight &&
-                    Equals(state.PrefixFontFamily, element.FontFamily);
+                    Equals(state.PrefixFontFamily, element.FontFamily) &&
+                    Math.Abs(state.PrefixGap - gap) < 0.001;
         if (!valid)
         {
             state.PrefixWidths = new double[textLength + 1];
@@ -267,12 +271,13 @@ public partial class TaskBarMediaControl
             state.PrefixFontSize = element.FontSize;
             state.PrefixFontWeight = element.FontWeight;
             state.PrefixFontFamily = element.FontFamily;
+            state.PrefixGap = gap;
         }
 
         var widths = state.PrefixWidths!;
         var target = Math.Clamp(requiredCharacters, state.PrefixMeasuredCharacters, textLength);
         for (var index = state.PrefixMeasuredCharacters + 1; index <= target; index++)
-            widths[index] = MeasureTextWidthExact(text[..index], element);
+            widths[index] = MeasureMarqueeWidth(text[..index], element);
 
         state.PrefixMeasuredCharacters = target;
         return target;
@@ -285,7 +290,7 @@ public partial class TaskBarMediaControl
     /// is pointless while characters keep entering the window, and a hard cut keeps the reveal clip aligned with the visible glyphs.
     /// </summary>
     /// <param name="state">该元素的推进状态。/ Advance state of that element.</param>
-    private static void WriteMarqueeWindow(MarqueeTextState state)
+    private void WriteMarqueeWindow(MarqueeTextState state)
     {
         var element = state.Element;
         var window = state.Following
@@ -293,8 +298,8 @@ public partial class TaskBarMediaControl
             : MarqueeRotationPolicy.BuildWindow(state.Base, state.WindowStart);
         state.Window = window;
 
-        if (!string.Equals(element.Text, state.Window, StringComparison.Ordinal))
-            element.Text = state.Window;
+        if (!string.Equals(GetMarqueeContent(element), state.Window, StringComparison.Ordinal))
+            SetMarqueeContent(element, state.Window);
 
         if (element.TextTrimming != TextTrimming.None)
             element.TextTrimming = TextTrimming.None;
@@ -467,7 +472,7 @@ public partial class TaskBarMediaControl
     /// the integer position crosses, and the fractional part becomes a translation read from the same prefix-width table as the travel speed.
     /// </summary>
     /// <param name="state">该元素的推进状态。/ Advance state of that element.</param>
-    private static void AdvanceRotation(MarqueeTextState state)
+    private void AdvanceRotation(MarqueeTextState state)
     {
         var source = MarqueeRotationPolicy.BuildSource(state.Base);
         if (source.Length == 0 || state.WindowLength <= 0)
@@ -507,7 +512,7 @@ public partial class TaskBarMediaControl
     /// from the same prefix-width table, so the offset lines up exactly across a character boundary with no visible jump.
     /// </summary>
     /// <param name="state">该元素的推进状态。/ Advance state of that element.</param>
-    private static void UpdateRotationOffset(MarqueeTextState state)
+    private void UpdateRotationOffset(MarqueeTextState state)
     {
         var source = MarqueeRotationPolicy.BuildSource(state.Base);
         if (source.Length == 0)
@@ -608,8 +613,8 @@ public partial class TaskBarMediaControl
             state.SungPosition = 0;
             state.SungWidthDip = 0;
             state.WindowWidthDip = 0;
-            if (!string.Equals(state.Element.Text, state.Base, StringComparison.Ordinal))
-                state.Element.Text = state.Base;
+            if (!string.Equals(GetMarqueeContent(state.Element), state.Base, StringComparison.Ordinal))
+                SetMarqueeContent(state.Element, state.Base);
             if (state.Element.TextAlignment != state.Alignment)
                 state.Element.TextAlignment = state.Alignment;
             ApplyMarqueeOffset(state);
@@ -741,6 +746,11 @@ public partial class TaskBarMediaControl
 
         /// <summary>前缀宽度表对应的字族。/ Font family the prefix-width table was measured with.</summary>
         public FontFamily? PrefixFontFamily { get; set; }
+
+        /// <summary>前缀宽度表对应的字距目标（DIP）；同一个显示串在不同字距下的宽度不同，因此它也是表的一部分。
+        /// Target character spacing the prefix-width table was measured with, in DIP; one display string renders at different widths
+        /// per gap, so it is part of the table as well.</summary>
+        public double PrefixGap { get; set; }
 
         /// <summary>原文的整体宽度（DIP），用于换算窗口总宽度。/ Total width of the content in DIP, used for the window's overall width.</summary>
         public double ContentWidth { get; set; }

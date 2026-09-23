@@ -89,13 +89,13 @@ public sealed class LyricsSettingsTests
         Assert.AreEqual(LyricsLineGap.MinimumDip, normalized.LyricsLineGapDip);
         Assert.AreEqual(LyricsCharacterSpacing.MinimumPercent, normalized.LyricsCharacterSpacingPercent);
 
-        // 字距吸附到 2 的网格：9% 落到 10%，行距步长为 1 因此原样保留。
-        // Character spacing snaps onto the 2-percent grid, so 9% lands on 10%, while the line gap keeps its step of one.
+        // 两个字段的步长都是 1，因此区间内的值原样保留（字距在连续渲染下每 1% 都有实际变化）。
+        // Both fields step by one, so in-range values stay untouched (with continuous rendering every one-percent step is effective).
         SettingsManager.Current.LyricsLineGapDip = 5;
         SettingsManager.Current.LyricsCharacterSpacingPercent = 9;
         normalized = SettingsManager.Current.Normalize();
         Assert.AreEqual(5, normalized.LyricsLineGapDip);
-        Assert.AreEqual(10, normalized.LyricsCharacterSpacingPercent);
+        Assert.AreEqual(9, normalized.LyricsCharacterSpacingPercent);
 
         // 克隆必须带上这两个字段，否则设置保存会把它们丢掉。
         // Cloning has to carry both fields, or saving the settings would drop them.

@@ -1681,8 +1681,11 @@ namespace AFMediaBar.Components
                     _secondaryLyric = string.Empty;
 
                     SongTitle.Text = _actualTitle;
-                    SongLyrics.Text = string.Empty;
-                    SongLyricsSecondary.Text = string.Empty;
+                    // 歌词行走助手写入：记录值随之清空，字体渲染模式也一并还原（字距关闭时的默认路径）。
+                    // Lyric rows go through the helper: the recorded value is cleared with them and the text formatting mode returns to
+                    // the default path used while spacing is off.
+                    SetMarqueeContent(SongLyrics, string.Empty);
+                    SetMarqueeContent(SongLyricsSecondary, string.Empty);
                     SongMetadataPanel.Visibility = Visibility.Visible;
                     SongLyricsPanel.Visibility = Visibility.Collapsed;
                     SongArtist.Text = _actualArtist;
@@ -1951,7 +1954,7 @@ namespace AFMediaBar.Components
             // The "components kept without media" list has to be spelled out as well: it is a list field, and the record's generated
             // ToString prints only the list's **type name**, so changing that list while there is no media (which changes the bar length)
             // would be deduplicated away and the bar would keep its old length.
-            var fingerprint = $"{orientation}|{visibleText}|{secondaryText}|{artist}|{SongTitle.FontSize:0.##}|{SongArtist.FontSize:0.##}|{SettingsManager.Current.LayoutLengthScalePercent:0.##}|{SettingsManager.Current.LayoutThicknessScalePercent:0.##}|{SettingsManager.Current.LyricsEnabled}|{SettingsManager.Current.TwoLineLyricsEnabled}|{SettingsManager.Current.LyricsSecondaryLine}|{string.Join(',', LyricsSecondaryLinePolicy.ResolveOrder(SettingsManager.Current.LyricsSecondaryLine))}|{SettingsManager.Current.TaskbarExperience}|{SpectrumSurfaceWidth:0.##}|{SettingsManager.Current.SpectrumComponent.ContentHeightDip:0.##}|{_snapshot.IsConnected}|{_snapshot.Duration > 0}|{_isRestLayerEmpty}|{string.Join(',', SettingsManager.Current.TaskbarExperience.IdleComponents ?? [])}";
+            var fingerprint = $"{orientation}|{visibleText}|{secondaryText}|{artist}|{SongTitle.FontSize:0.##}|{SongArtist.FontSize:0.##}|{SettingsManager.Current.LayoutLengthScalePercent:0.##}|{SettingsManager.Current.LayoutThicknessScalePercent:0.##}|{SettingsManager.Current.LyricsEnabled}|{SettingsManager.Current.TwoLineLyricsEnabled}|{SettingsManager.Current.LyricsSecondaryLine}|{string.Join(',', LyricsSecondaryLinePolicy.ResolveOrder(SettingsManager.Current.LyricsSecondaryLine))}|{SettingsManager.Current.TaskbarExperience}|{SpectrumSurfaceWidth:0.##}|{SettingsManager.Current.SpectrumComponent.ContentHeightDip:0.##}|{_snapshot.IsConnected}|{_snapshot.Duration > 0}|{_isRestLayerEmpty}|{string.Join(',', SettingsManager.Current.TaskbarExperience.IdleComponents ?? [])}|{SettingsManager.Current.LyricsCharacterSpacingPercent}";
 
             // 没有订阅者的请求不会被任何宿主消费，因此不能记入指纹；否则订阅后的首次请求会被去重丢弃，
             // 媒体栏在上一次媒体连接之前一直停留在预设长度。
@@ -1966,8 +1969,8 @@ namespace AFMediaBar.Components
 
             _lastSizeFingerprint = fingerprint;
             var textWidth = Math.Max(
-                Math.Max(MeasureTextWidth(visibleText, lyricsVisible ? SongLyrics : SongTitle),
-                    MeasureTextWidth(secondaryText, SongLyricsSecondary)),
+                Math.Max(MeasureAutoSizeWidth(visibleText, lyricsVisible ? SongLyrics : SongTitle),
+                    MeasureAutoSizeWidth(secondaryText, SongLyricsSecondary)),
                 MeasureTextWidth(artist, SongArtist));
             var preset = LayoutPresets.GetLayout(_currentMode, orientation);
             var request = LayoutSizeCalculator.Calculate(
