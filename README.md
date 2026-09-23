@@ -1,97 +1,65 @@
-# AF Media Bar
+<p align="center">
+  <img src="docs/assets/readme/hero-zh.svg" width="100%" alt="AF Media Bar 布局示意：媒体栏位于 Windows 任务栏左下角，完整媒体弹窗在其正上方，软件图标与项目介绍位于右侧">
+</p>
 
-<div align="center">
+<p align="center">
+  <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/releases"><img src="https://img.shields.io/github/v/release/Fervent-Tempo/AF-Media-Bar?style=flat-square" alt="最新版本"></a>
+  <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/releases"><img src="https://img.shields.io/github/downloads/Fervent-Tempo/AF-Media-Bar/total?style=flat-square" alt="下载次数"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/Fervent-Tempo/AF-Media-Bar?style=flat-square" alt="MIT 许可证"></a>
+  <br>
+  简体中文 · <a href="README.en-US.md">English</a>
+  <br>
+  <a href="#下载安装">下载运行</a> · <a href="#功能一览">功能一览</a> · <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/issues/new?template=bug_report.yml">报告问题</a> · <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/issues/new?template=feature_request.yml">功能建议</a>
+</p>
 
-  <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/releases"><img src="https://img.shields.io/github/v/release/Fervent-Tempo/AF-Media-Bar?style=flat-square" alt="Latest release"></a>
-  <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/releases"><img src="https://img.shields.io/github/downloads/Fervent-Tempo/AF-Media-Bar/total?style=flat-square" alt="Downloads"></a>
-  <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/stargazers"><img src="https://img.shields.io/github/stars/Fervent-Tempo/AF-Media-Bar?style=flat-square" alt="Stars"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/Fervent-Tempo/AF-Media-Bar?style=flat-square" alt="MIT License"></a>
+AF Media Bar 是一款便携式 Windows 10/11 任务栏媒体控制器。它从系统媒体会话读取正在播放的内容，让封面、歌词、播放控制和音频设备切换留在桌面边缘。
 
-  <br><br>
+## 真实演示
 
-  <img src="src/AFMediaBar/Assets/icon_dark.png" alt="AF Media Bar" width="160" height="160">
+<p align="center">
+  <img src="docs/assets/运行展示.gif" width="100%" alt="AF Media Bar 实际运行演示：任务栏上的封面、播放控制和媒体信息">
+</p>
 
-  <h1>AF Media Bar</h1>
+[观看 Bilibili 介绍视频](https://www.bilibili.com/video/BV1Bjuq6bErr)
 
-  <p>Windows 10/11 任务栏上的媒体控制、实时歌词、音频设备切换与轻量系统指标。</p>
+## 下载安装
 
-  <p>
-    简体中文 · <a href="README.en-US.md">English</a>
-    <br>
-    <a href="#安装">快速开始</a> ·
-    <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/issues/new?template=bug_report.yml">报告问题</a> ·
-    <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/issues/new?template=feature_request.yml">功能建议</a>
-  </p>
+前往 [GitHub Releases](https://github.com/Fervent-Tempo/AF-Media-Bar/releases)，选择一种方式：
 
-</div>
+1. **安装程序（推荐）：** 下载 `AFMediaBar-Setup-vX.Y.Z-win-x64.exe`，运行向导并选择语言、安装位置及当前用户/所有用户。默认安装位置为 `%LOCALAPPDATA%\Programs\AFMediaBar`；安装版支持程序内检查、下载与安装更新。
+2. **便携版：** 下载 `AFMediaBar-vX.Y.Z-win-x64.zip`，解压到长期保留且可写的目录（如 `D:\AFMediaBar`），运行其中的 `AFMediaBar.exe`。便携版不写注册表，更新时手动替换文件。
 
-## 展示
+**系统要求：** Windows 10 1809（内部版本 17763）或更新的 x64 系统。两种包都自带 .NET 运行时，不需要另行安装。程序用到的系统接口可在 1809 使用，但 **.NET 10 官方仅支持 Windows 10 的长期服务版与企业版**（1809 E、21H2 E）；消费版 Windows 10 不在 Microsoft 的支持范围内。Windows 11 不受此限制。
 
-<div align="center">
+请下载上述发布包，不要使用 GitHub 自动生成的 Source code 压缩包。程序尚未进行商业代码签名，首次运行时 Windows SmartScreen 可能提示“未知发布者”。
 
-![AF Media Bar 运行展示](./docs/assets/运行展示.gif)
+安装程序可选桌面快捷方式，并会创建开始菜单项。国内访问 GitHub 不稳定时，可在 Releases 页面使用 GH-Proxy 加速地址；程序内更新也会在直连失败时尝试加速地址。
 
-</div>
+## 功能一览
 
-[在 Bilibili 观看 AF Media Bar 介绍视频](https://www.bilibili.com/video/BV1Bjuq6bErr)
-
-## 简介
-
-AF Media Bar 是一款便携式 Windows 10/11 媒体控制器。它读取 Windows 全局系统媒体会话（GSMTC），把封面、标题、作者与实时歌词放进任务栏，并提供上一首、播放/暂停、下一首与来源切换；音频设备、应用音量、空间音效与系统指标也都在同一个界面里完成。
-
-程序以独立进程运行，将 WPF 媒体栏挂载为任务栏子窗口，不修改、不向 `explorer.exe` 注入代码。网易云音乐、QQ 音乐、Spotify、浏览器等应用只要向 Windows 发布媒体会话，就可以被发现和控制。
-
-## 功能
-
-| 类别 | 功能 |
+| 场景 | 可以做什么 |
 | --- | --- |
-| 媒体控制 | 上一首、播放/暂停、下一首、循环；点击或拖动进度条跳转 |
-| 来源交互 | 点击封面、标题/歌词可分别绑定播放/暂停、切回媒体应用或打开完整菜单 |
-| 实时歌词 | 任务栏直接显示歌词并逐字擦亮，支持译文、音译与双行对齐；按网易云音乐、LRCLIB、QQ 音乐、酷狗音乐、汽水音乐依次匹配来源 |
-| 任务栏适配 | 挂载为任务栏子窗口并自动避让图标与系统区域，可指定目标屏幕，无播放时可自动隐藏 |
-| 外观与主题 | 字体、字号、浅色/深色、窗口材质与材质浓度全局统一；主题色可跟随系统强调色或自选 |
-| 多层信息展示 | 悬停时显示控制按钮；打开完整层可显示全部信息 |
-| 音频输出 | 支持使用点击/滚轮快速切换：默认输出设备、当前媒体应用音量、查看空间音效； |
-| 快速启动 | 无媒体播放时点击/滚轮音符图标打开快速启动列表 |
-| 频谱与性能 | 四种频谱样式、性能检测组件 |
-| 当前播放通知 | 歌曲切换并开始播放时显示通知 |
+| 音乐控制 | 上一首、播放/暂停、下一首、循环；点击或拖动进度条跳转。滚轮切歌每次只切一首，连续滚动需停顿约半秒才能再次切歌 |
+| 任务栏歌词 | 显示逐字擦亮的实时歌词，支持译文、音译与双行对齐；按网易云音乐、LRCLIB、QQ 音乐、酷狗音乐、汽水音乐的顺序匹配 |
+| 来源与交互 | 切换媒体会话；封面、标题与歌词的点击操作可分别设为播放/暂停、切回媒体应用或打开完整菜单 |
+| 音频与系统 | 点击或滚轮切换默认输出设备、调整当前媒体应用音量、查看空间音效；提供四种频谱样式与性能检测组件 |
+| 布局与外观 | 自动避让任务栏图标及系统区域，可选目标屏幕、无播放时自动隐藏；可调字体、主题色与窗口材质 |
+| 快捷操作 | 悬停显示控制按钮，完整层展示更多信息；无媒体时从音符图标打开快速启动列表；切歌并开始播放时显示通知 |
 
-
-媒体应用需要向 Windows 发布 GSMTC 会话才会被发现，部分播放器要先在自身设置里启用“系统媒体控制”或“媒体键”。当前运行模式只有任务栏：设置中的灵动岛、桌面卡片与悬浮球是占位选项，选中只切换该页显示。
+**使用边界：** 只有向 Windows 发布 GSMTC 媒体会话的播放器才会出现；部分播放器需要在自身设置中启用“系统媒体控制”或“媒体键”。当前仅有任务栏运行模式；设置中的灵动岛、桌面卡片、悬浮球是占位选项。
 
 ## 工作方式
+
+AF Media Bar 以独立 WPF 进程运行，将媒体栏挂载为任务栏子窗口。它使用 Windows 的公开 GSMTC 接口读取媒体会话，通过 Core Audio 处理设备与音量，不修改或向 `explorer.exe` 注入代码。
 
 ```mermaid
 flowchart LR
     A[媒体应用] -->|GSMTC 会话| B[AF Media Bar]
-    C[Windows Core Audio] -->|设备、音量、回环采样| B
-    D[Windows 10/11 任务栏] -->|位置与自动隐藏状态| B
-    B --> E[WPF 任务栏子窗口]
+    C[Windows Core Audio] -->|设备与音量| B
+    B --> D[WPF 任务栏子窗口]
 ```
 
-Windows 10/11 控制中心里的媒体卡片是 Explorer/Shell 的内部界面，不是公开可嵌入的控件。AF Media Bar 复用其背后的公开 GSMTC 接口并自行渲染界面，从而避免注入 Explorer 带来的稳定性与安全风险。
-
-## 安装
-
-### 系统要求
-
-- Windows 10 版本 1809（内部版本 17763）或更高版本，x64；安装程序与便携版都自带 .NET 运行时，无需另行安装。
-- 程序自身用到的系统接口在 1809 上就可用，但这些系统接口之外还有一层限制：**.NET 10 官方只支持 Windows 10 的长期服务版与企业版**（1809 E、21H2 E），消费版 Windows 10 能运行但不受 Microsoft 支持；Windows 11 不受影响。
-
-### 方式一：安装程序（推荐）
-
-1. 在 [Releases](https://github.com/Fervent-Tempo/AF-Media-Bar/releases) 下载 `AFMediaBar-Setup-vX.Y.Z-win-x64.exe`，不要下载 GitHub 自动生成的 Source code 压缩包。
-2. 运行向导：先选**简体中文或英文**，再查看许可协议、**选择安装位置**、决定只为当前用户还是为所有用户安装（默认 `%LOCALAPPDATA%\Programs\AFMediaBar`，不需要管理员权限）。
-3. 桌面快捷方式可选，开始菜单项始终创建。安装后即可启动；安装版支持程序内检查更新、后台下载并静默安装。
-
-### 方式二：便携版
-
-1. 在同一个 Releases 页面下载 `AFMediaBar-vX.Y.Z-win-x64.zip`。
-2. 解压得到单个自包含的 `AFMediaBar.exe`，放到长期保留且可写的目录（例如 `D:\AFMediaBar`）即可运行；便携版不写注册表，升级时手动替换文件。
-
-两种方式都只发布在 GitHub Releases。国内访问 GitHub 不稳定时，可在同一页面用 GH-Proxy 加速地址下载（`https://<加速站点>/https://github.com/...`）；程序内的更新检查与自动下载在直连失败时也会自动改用加速地址。
-
-AF Media Bar 暂未进行商业代码签名，Windows SmartScreen 可能在首次运行或安装时提示未知发布者。
+网易云音乐、QQ 音乐、Spotify、浏览器等应用只要发布系统媒体会话，就可以被发现和控制。Windows 控制中心的媒体卡片不是公开可嵌入的控件；本项目读取其背后的公开接口并自行渲染任务栏界面。
 
 ## 更新与卸载
 

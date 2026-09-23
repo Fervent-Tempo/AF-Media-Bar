@@ -1,96 +1,65 @@
-# AF Media Bar
+<p align="center">
+  <img src="docs/assets/readme/hero-en.svg" width="100%" alt="AF Media Bar layout illustration: the media bar sits at the lower left of the Windows taskbar, its full media popover is directly above, and the app icon and project introduction are on the right">
+</p>
 
-<div align="center">
-
+<p align="center">
   <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/releases"><img src="https://img.shields.io/github/v/release/Fervent-Tempo/AF-Media-Bar?style=flat-square" alt="Latest release"></a>
   <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/releases"><img src="https://img.shields.io/github/downloads/Fervent-Tempo/AF-Media-Bar/total?style=flat-square" alt="Downloads"></a>
-  <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/stargazers"><img src="https://img.shields.io/github/stars/Fervent-Tempo/AF-Media-Bar?style=flat-square" alt="Stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/Fervent-Tempo/AF-Media-Bar?style=flat-square" alt="MIT License"></a>
+  <br>
+  <a href="README.md">简体中文</a> · English
+  <br>
+  <a href="#download-and-run">Download</a> · <a href="#features">Features</a> · <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/issues/new?template=bug_report.yml">Report a bug</a> · <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/issues/new?template=feature_request.yml">Request a feature</a>
+</p>
 
-  <br><br>
+AF Media Bar is a portable media controller for the Windows 10/11 taskbar. It reads the system media session and keeps artwork, lyrics, playback controls, and audio device switching at the edge of your desktop.
 
-  <img src="src/AFMediaBar/Assets/icon_dark.png" alt="AF Media Bar" width="160" height="160">
+## Live demo
 
-  <h1>AF Media Bar</h1>
+<p align="center">
+  <img src="docs/assets/运行展示.gif" width="100%" alt="AF Media Bar running on a Windows taskbar with artwork, playback controls, and media information">
+</p>
 
-  <p>Media controls, live lyrics, audio device switching, and lightweight system metrics on the Windows 10/11 taskbar.</p>
+[Watch the introduction video on Bilibili](https://www.bilibili.com/video/BV1Bjuq6bErr)
 
-  <p>
-    <a href="README.md">简体中文</a> · English
-    <br>
-    <a href="#installation">Quick start</a> ·
-    <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/issues/new?template=bug_report.yml">Report a bug</a> ·
-    <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/issues/new?template=feature_request.yml">Request a feature</a>
-  </p>
+## Download and run
 
-</div>
+Open [GitHub Releases](https://github.com/Fervent-Tempo/AF-Media-Bar/releases) and choose a package:
 
-## Demo
+1. **Installer (recommended):** Download `AFMediaBar-Setup-vX.Y.Z-win-x64.exe`. Run the wizard to choose language, install location, and current-user or all-user installation. The default location is `%LOCALAPPDATA%\Programs\AFMediaBar`. The installed app supports checking for, downloading, and installing updates.
+2. **Portable:** Download `AFMediaBar-vX.Y.Z-win-x64.zip`. Extract it to a writable, long-lived folder such as `D:\AFMediaBar`, then run `AFMediaBar.exe`. The portable build writes no registry entries; replace the file manually to update.
 
-<div align="center">
+**Requirements:** Windows 10 1809 (build 17763) or later, x64. Both packages include the .NET runtime. The system interfaces used by the app are available on 1809, but **.NET 10 officially supports only Windows 10 LTSC and Enterprise editions** (1809 E and 21H2 E); consumer Windows 10 is outside Microsoft support. Windows 11 is unaffected.
 
-![AF Media Bar in action](./docs/assets/运行展示.gif)
+Download a release package rather than GitHub's generated Source code archive. The app is not commercially code-signed, so Windows SmartScreen may show an unknown-publisher warning on first run.
 
-</div>
-
-[Watch the AF Media Bar introduction video on Bilibili](https://www.bilibili.com/video/BV1Bjuq6bErr)
-
-## Overview
-
-AF Media Bar is a portable media controller for Windows 10 and Windows 11. It reads Windows Global System Media Transport Controls (GSMTC) sessions and puts artwork, title, artist, and live lyrics on the taskbar, together with previous, play/pause, next, and source switching; audio devices, per-app volume, spatial audio, and system metrics live in the same interface.
-
-The app runs in its own process and hosts its WPF bar as a taskbar child window. It does not modify or inject code into `explorer.exe`. Any player that publishes a GSMTC session can be discovered and controlled — NetEase Cloud Music, QQ Music, Spotify, major browsers, and others.
+The installer offers an optional desktop shortcut and always creates a Start menu entry. If GitHub access is unreliable, accelerated GH-Proxy links are available on the Releases page; in-app updates also try an accelerator if a direct connection fails.
 
 ## Features
 
-| Category | Capabilities |
+| Area | What you can do |
 | --- | --- |
-| Media | Previous, play/pause, next, repeat, and click-to-position or draggable progress |
-| Source interaction | Bind artwork and title/lyric clicks independently to play/pause, activate the media app, or open the full menu |
-| Live lyrics | Lyrics appear directly on the taskbar with syllable-by-syllable reveal, translation, romanization, and two-line alignment; sources are matched in order across NetEase Cloud Music, LRCLIB, QQ Music, Kugou Music, and Soda Music |
-| Taskbar behavior | Docked as a taskbar child window that avoids icons and system areas; the target display is selectable, and the bar can auto-hide while nothing plays |
-| Appearance | Global fonts, font size, light/dark theme, window material, and material concentration; the accent colour follows the system and can also be picked or entered as hex |
-| Layered information | Hover shows the control buttons; the full layer shows every piece of information |
-| Audio output | Click and wheel switch quickly between the default output device, the current media app's volume, and spatial audio |
-| Quick launch | With nothing playing, click or scroll the note icon to open the quick-launch list |
-| Spectrum and metrics | Four spectrum styles and a performance metrics component |
-| Now-playing notification | A notification appears when a track changes and starts playing |
+| Playback | Previous, play/pause, next, repeat, and click-to-position or draggable progress. Wheel track skipping moves one track at a time; pause for about half a second before another skip |
+| Taskbar lyrics | Syllable-by-syllable live lyrics with translation, romanization, and two-line alignment; sources are tried in order: NetEase Cloud Music, LRCLIB, QQ Music, Kugou Music, and Soda Music |
+| Sources and clicks | Switch media sessions; assign artwork and title/lyric clicks to play/pause, activate the media app, or open the full menu |
+| Audio and system | Click or scroll to switch the default output device, adjust the current media app's volume, and view spatial audio; four spectrum styles and a performance metrics component |
+| Layout and appearance | Avoid taskbar icons and system areas; select a display, auto-hide when nothing plays, and adjust fonts, accent colour, and window material |
+| Shortcuts | Hover for controls, open the full layer for more information, use the note icon for quick launch when idle, and receive a notification when a new track starts |
 
-A media app only appears once it publishes a GSMTC session; some players need "system media controls" or "media keys" enabled in their own settings. Taskbar is the only runtime mode: Dynamic Island, Desktop Card, and Floating Orb in Settings are placeholders that only change the page area.
+**Limits:** Only players that publish a Windows GSMTC session appear. Some players require “system media controls” or “media keys” in their settings. Taskbar is the only runtime mode; Dynamic Island, Desktop Card, and Floating Orb in Settings are placeholders.
 
-## How It Works
+## How it works
+
+AF Media Bar runs as an independent WPF process and hosts its media bar as a taskbar child window. It uses the public Windows GSMTC API for media sessions and Core Audio for devices and volume. It does not modify or inject code into `explorer.exe`.
 
 ```mermaid
 flowchart LR
     A[Media apps] -->|GSMTC sessions| B[AF Media Bar]
-    C[Windows Core Audio] -->|Devices, volume, loopback| B
-    D[Windows 10/11 taskbar] -->|Position and auto-hide state| B
-    B --> E[WPF taskbar child window]
+    C[Windows Core Audio] -->|Devices and volume| B
+    B --> D[WPF taskbar child window]
 ```
 
-The Windows 10/11 media card is an internal Explorer/Shell surface rather than a supported embeddable control. AF Media Bar uses the public GSMTC API behind it and renders its own interface, avoiding the stability and security risks of injecting into Explorer.
-
-## Installation
-
-### Requirements
-
-- Windows 10 version 1809 (build 17763) or later, x64; both the installer and the portable package are self-contained, so no separate .NET installation is needed.
-- Every system interface the app uses is available on 1809, but there is one limit beyond that: **.NET 10 officially supports only the Windows 10 LTSC and Enterprise editions** (1809 E, 21H2 E). Consumer Windows 10 still runs, it is just outside Microsoft support. Windows 11 is unaffected.
-
-### Option 1: installer (recommended)
-
-1. Download `AFMediaBar-Setup-vX.Y.Z-win-x64.exe` from [Releases](https://github.com/Fervent-Tempo/AF-Media-Bar/releases); do not use GitHub's generated source archives.
-2. The wizard first asks for **Simplified Chinese or English**, then shows the license and lets you **choose the install location** and install for the current user or for all users (default `%LOCALAPPDATA%\Programs\AFMediaBar`, no administrator rights needed).
-3. A desktop shortcut is optional, the Start menu entry is always created, and updates can be checked, downloaded, and installed silently from inside the app.
-
-### Option 2: portable package
-
-1. Download `AFMediaBar-vX.Y.Z-win-x64.zip` from the same Releases page.
-2. Unzip it into a long-lived writable folder such as `D:\AFMediaBar` and run the single self-contained `AFMediaBar.exe`; the portable build writes no registry entries, so upgrades mean replacing the file.
-
-Both packages are published on GitHub Releases only. Where GitHub is unreliable, the same page offers GH-Proxy accelerated links (`https://<accelerator>/https://github.com/...`), and the in-app update check and download switch to the accelerators automatically when the direct connection fails.
-
-AF Media Bar is not commercially code-signed, so Windows SmartScreen may warn about an unknown publisher on first run or install.
+NetEase Cloud Music, QQ Music, Spotify, browsers, and other apps can be discovered and controlled when they publish a system media session. The Windows media card is not a public embeddable control; this app reads the public interface behind it and draws its own taskbar UI.
 
 ## Updating and Uninstalling
 
