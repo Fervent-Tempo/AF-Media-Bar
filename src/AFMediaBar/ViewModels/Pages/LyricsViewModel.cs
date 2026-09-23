@@ -45,7 +45,7 @@ public partial class LyricsViewModel : ObservableObject
 
     public bool LyricsEnabled { get => SettingsManager.Current.LyricsEnabled; set { SettingsManager.SetLyricsEnabled(value); RaiseAll(); } }
     public bool TwoLineLyricsEnabled { get => SettingsManager.Current.TwoLineLyricsEnabled; set { SettingsManager.SetTwoLineLyricsEnabled(value); RaiseAll(); } }
-    /// <summary>第二行顺序的可读描述（"翻译 → 音译 → 下一句"），与列表内容同步更新。/ A readable description of the second-line order ("translation, romanization, next line"), kept in step with the list.</summary>
+    /// <summary>第二行顺序的可读描述（"下一句 → 翻译 → 音译"），与列表内容同步更新。/ A readable description of the second-line order ("next line, translation, romanization"), kept in step with the list.</summary>
     public string SecondaryLineOrderText => string.Join(
         " → ",
         SecondaryLineEntries.Select(entry => entry.DisplayName));

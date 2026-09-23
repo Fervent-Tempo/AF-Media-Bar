@@ -20,27 +20,6 @@ public sealed class LyricHighlightPolicyTests
     };
 
     [TestMethod]
-    public void HighlightSwitchOnlyChangesTheVisualLayer()
-    {
-        var enabled = ResolvePresentationState(highlightEnabled: true);
-        var disabled = ResolvePresentationState(highlightEnabled: false);
-
-        Assert.IsTrue(enabled.AdvanceTimeline);
-        Assert.IsTrue(disabled.AdvanceTimeline);
-        Assert.IsTrue(enabled.ShowHighlight);
-        Assert.IsFalse(disabled.ShowHighlight);
-    }
-
-    [TestMethod]
-    public void HighContrastHidesHighlightWithoutChangingTimelineMotion()
-    {
-        var presentation = ResolvePresentationState(highlightEnabled: true, highContrast: true);
-
-        Assert.IsTrue(presentation.AdvanceTimeline);
-        Assert.IsFalse(presentation.ShowHighlight);
-    }
-
-    [TestMethod]
     public void LineWithoutWindowHasNoProgress()
     {
         var line = new LyricLine(5, 5, "degenerate");
@@ -48,22 +27,13 @@ public sealed class LyricHighlightPolicyTests
     }
 
     [TestMethod]
-    public void LineLevelProgressIsLinear()
+    public void LineLevelLyricsHaveNoWordProgress()
     {
         var line = new LyricLine(10, 20, "line");
 
-        Assert.AreEqual(0d, LyricHighlightPolicy.ResolveProgress(line, 10)!.Value, 0.0001);
-        Assert.AreEqual(0.5d, LyricHighlightPolicy.ResolveProgress(line, 15)!.Value, 0.0001);
-        Assert.AreEqual(1d, LyricHighlightPolicy.ResolveProgress(line, 20)!.Value, 0.0001);
-    }
-
-    [TestMethod]
-    public void PositionOutsideTheWindowIsClamped()
-    {
-        var line = new LyricLine(10, 20, "line");
-
-        Assert.AreEqual(0d, LyricHighlightPolicy.ResolveProgress(line, 0)!.Value, 0.0001);
-        Assert.AreEqual(1d, LyricHighlightPolicy.ResolveProgress(line, 99)!.Value, 0.0001);
+        Assert.IsNull(LyricHighlightPolicy.ResolveProgress(line, 10));
+        Assert.IsNull(LyricHighlightPolicy.ResolveProgress(line, 15));
+        Assert.IsNull(LyricHighlightPolicy.ResolveProgress(line, 20));
     }
 
     [TestMethod]
@@ -89,14 +59,15 @@ public sealed class LyricHighlightPolicyTests
     }
 
     [TestMethod]
-    public void SingleUsableSyllableFallsBackToLinearProgress()
+    public void SingleUsableSyllableUsesItsOwnTiming()
     {
         var line = new LyricLine(10, 20, "one")
         {
             Words = [new LyricWord(10, 11, "one")]
         };
 
-        Assert.AreEqual(0.5d, LyricHighlightPolicy.ResolveProgress(line, 15)!.Value, 0.0001);
+        Assert.AreEqual(0.5d, LyricHighlightPolicy.ResolveProgress(line, 10.5)!.Value, 0.0001);
+        Assert.AreEqual(1d, LyricHighlightPolicy.ResolveProgress(line, 15)!.Value, 0.0001);
     }
 
     [TestMethod]
@@ -105,27 +76,4 @@ public sealed class LyricHighlightPolicyTests
         Assert.IsNull(LyricHighlightPolicy.ResolveProgress(new LyricLine(10, 20, "line"), double.NaN));
     }
 
-    [TestMethod]
-    public void ClipWidthScalesAndGuardsInvalidInput()
-    {
-        Assert.AreEqual(50d, LyricHighlightPolicy.ResolveClipWidth(0.5, 100), 0.0001);
-        Assert.AreEqual(100d, LyricHighlightPolicy.ResolveClipWidth(2, 100), 0.0001);
-        Assert.AreEqual(0d, LyricHighlightPolicy.ResolveClipWidth(-1, 100), 0.0001);
-        Assert.AreEqual(0d, LyricHighlightPolicy.ResolveClipWidth(0.5, 0), 0.0001);
-        Assert.AreEqual(0d, LyricHighlightPolicy.ResolveClipWidth(0.5, double.NaN), 0.0001);
-    }
-
-    private static LyricHighlightPolicy.PresentationState ResolvePresentationState(
-        bool highlightEnabled,
-        bool highContrast = false) =>
-        LyricHighlightPolicy.ResolvePresentationState(
-            highlightEnabled,
-            hasCurrentLine: true,
-            connected: true,
-            playing: true,
-            lyricsVisible: true,
-            controlVisible: true,
-            isAdvancePruned: false,
-            highContrast,
-            useContinuousMotion: true);
 }

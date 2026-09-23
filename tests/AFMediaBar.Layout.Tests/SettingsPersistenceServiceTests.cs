@@ -32,7 +32,13 @@ public sealed class SettingsPersistenceServiceTests
     {
         var settings = new AppSettings
         {
-            Appearance = AppearanceSettings.Default with { FontWeight = 700, BackdropMode = ApplicationBackdropMode.Acrylic },
+            Appearance = AppearanceSettings.Default with
+            {
+                FontWeight = 700,
+                BackdropMode = ApplicationBackdropMode.Acrylic,
+                LatinFontFamily = "Arial",
+                CjkFontFamily = "Microsoft YaHei UI"
+            },
             TrayWheelBehavior = TrayWheelBehavior.Disabled,
             LyricsEnabled = false,
             TwoLineLyricsEnabled = true,
@@ -129,6 +135,8 @@ public sealed class SettingsPersistenceServiceTests
         Assert.AreEqual(WindowMode.Taskbar, SettingsManager.Current.WindowMode);
         Assert.AreEqual(DynamicIslandEdge.Right, SettingsManager.Current.DynamicIslandEdge);
         Assert.AreEqual(700, SettingsManager.Current.Appearance.FontWeight);
+        Assert.AreEqual("Arial", SettingsManager.Current.Appearance.LatinFontFamily);
+        Assert.AreEqual("Microsoft YaHei UI", SettingsManager.Current.Appearance.CjkFontFamily);
         Assert.AreEqual(120, SettingsManager.Current.DynamicIslandLeft);
         Assert.AreEqual(PlayerClickAction.ActivateSource, SettingsManager.Current.Interaction.ArtworkClickAction);
         Assert.AreEqual(WheelAction.SwitchMediaSource, SettingsManager.Current.Interaction.PrimaryWheelAction);

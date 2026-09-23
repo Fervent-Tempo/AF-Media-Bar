@@ -35,10 +35,10 @@ public sealed class AppSettings : INotifyPropertyChanged
     private AppearanceSettings _appearance = AppearanceSettings.Default;
     private TrayWheelBehavior _trayWheelBehavior = TrayWheelBehavior.SwitchOutputDevice;
     private bool _lyricsEnabled = true;
-    private bool _twoLineLyricsEnabled;
+    private bool _twoLineLyricsEnabled = true;
     /// <summary>
-    /// 双行歌词第二行的**来源顺序**：列表顺序即优先级（默认 翻译 → 音译 → 下一句），未列出的来源不会被使用。
-    /// Source order of the second lyric line: the list order is the priority (translation, romanization, next line by default) and a source
+    /// 双行歌词第二行的**来源顺序**：列表顺序即优先级（默认 下一句 → 翻译 → 音译），未列出的来源不会被使用。
+    /// Source order of the second lyric line: the list order is the priority (next line, translation, romanization by default) and a source
     /// missing from the list is never used.
     /// </summary>
     private LyricsSecondaryLineSettings _lyricsSecondaryLine = LyricsSecondaryLineSettings.Default;
@@ -64,7 +64,7 @@ public sealed class AppSettings : INotifyPropertyChanged
     private GlobalInteractionSettings _interaction = GlobalInteractionSettings.Default;
     private ModeSurfaceSettings _taskbarSurface = ModeSurfaceSettings.Default;
     private ModeSurfaceSettings _dynamicIslandSurface = ModeSurfaceSettings.Default;
-    private LyricsTextAlignment _lyricsTextAlignment = LyricsTextAlignment.Center;
+    private LyricsTextAlignment _lyricsTextAlignment = LyricsTextAlignment.Left;
     private bool _lyricsSyllableHighlightEnabled = true;
     private int _lyricsUnsungOpacityPercent = LyricsUnsungOpacity.DefaultPercent;
     private bool _lyricsInfoLineFilterEnabled = true;

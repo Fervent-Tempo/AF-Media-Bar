@@ -28,4 +28,55 @@ public sealed class AppearanceSettingsFontTests
         var settings = (AppearanceSettings.Default with { LatinFont = (LatinFontPreset)999 }).Normalize();
         Assert.AreEqual(LatinFontPreset.SystemDefault, settings.LatinFont);
     }
+
+    [TestMethod]
+    public void SelectedInstalledFontNamesOverrideLegacyPresets()
+    {
+        var settings = AppearanceSettings.Default with
+        {
+            LatinFont = LatinFontPreset.Arial,
+            CjkFont = CjkFontPreset.SimSun,
+            LatinFontFamily = "  Test Latin  ",
+            CjkFontFamily = "Test CJK"
+        };
+
+        var resolved = settings.Normalize().ResolveFontFamilySource("System Font");
+        var parts = resolved.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+        Assert.AreEqual("Test Latin", parts[0]);
+        Assert.AreEqual("Test CJK", parts[1]);
+    }
+
+    [TestMethod]
+    public void EmptySelectedFontFollowsSystemWhileMissingFieldKeepsLegacyPreset()
+    {
+        var settings = AppearanceSettings.Default with
+        {
+            LatinFont = LatinFontPreset.Arial,
+            LatinFontFamily = string.Empty
+        };
+
+        Assert.AreEqual("System Font", settings.ResolveFontFamilySource("System Font").Split(',')[0]);
+        Assert.AreEqual("Arial", (settings with { LatinFontFamily = null }).ResolveFontFamilySource("System Font").Split(',')[0]);
+    }
+
+    [TestMethod]
+    public void Normalize_RejectsFallbackListInSelectedFontName()
+    {
+        var settings = (AppearanceSettings.Default with { LatinFontFamily = "Arial, SimSun" }).Normalize();
+        Assert.AreEqual(string.Empty, settings.LatinFontFamily);
+    }
+
+    [TestMethod]
+    public void MatchSelection_UsesInstalledNameFromLegacyFallbackChain()
+    {
+        var choices = new[]
+        {
+            new FontFamilyChoice(string.Empty, "Follow system"),
+            new FontFamilyChoice("Segoe UI", "Segoe UI")
+        };
+
+        Assert.AreEqual("Segoe UI", InstalledFontCatalog.MatchSelection("Segoe UI Variable Text, Segoe UI", choices));
+        Assert.AreEqual(string.Empty, InstalledFontCatalog.MatchSelection("Missing Font", choices));
+    }
 }
