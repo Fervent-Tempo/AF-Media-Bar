@@ -33,7 +33,30 @@ public sealed class MediaSessionService : IDisposable
     private MediaSnapshot _sessionSnapshot = MediaSnapshot.Disconnected;
     private readonly Dictionary<IMediaSourceProvider, MediaSnapshot?> _sourceSnapshots = new();
     private MediaSnapshot _lastSnapshot = MediaSnapshot.Disconnected;
-    private bool _isDisposed;
+    // 释放标记与 generation 会被后台流程读取（取消/过期判定），因此声明为 volatile：写入在 UI 线程，读取在后台线程。
+    // The disposal flag and the generation are read by the background flow (cancellation and staleness checks), so both are volatile:
+    // written on the UI thread and read on the background thread.
+    private volatile bool _isDisposed;
+
+    /// <summary>
+    /// 自动重连看门狗：第三方库的会话字典只在 WinRT 事件触发时才同步（见库自己的 issue #6），换歌瞬间丢一次事件就会永久失明。
+    /// 看门狗按 <see cref="MediaSessionReconcilePolicy"/> 判定节奏，在"断连"时才把探测与恢复交给一个后台 single-flight 流程；
+    /// UI 侧的 tick 只读状态、做时间门控，不执行任何系统调用或库调用。
+    /// Auto-reconcile watchdog: the third-party library only syncs its session dictionary when WinRT events fire (see its own issue #6),
+    /// so one lost event at a track change leaves it blind forever. The watchdog follows
+    /// <see cref="MediaSessionReconcilePolicy"/> and hands probing and recovery to one background single-flight flow while
+    /// disconnected; the UI-side tick only reads state and gates time, making no system or library call.
+    /// </summary>
+    private readonly DispatcherTimer _reconcileWatchdog;
+    private readonly MemoryPruneCoordinator _memoryPrune;
+    private readonly CancellationTokenSource _reconcileCancellation = new();
+    private Task? _reconcileTask;
+    private DateTime _lastReconcileUtc = DateTime.MinValue;
+    private DateTime _reconcileArmedUntilUtc = DateTime.MinValue;
+    private int _consecutiveSlowReconciles;
+    private int _consecutiveFailedReconciles;
+    private volatile int _reconcileGeneration;
+    private int _reconcileInFlight;
 
     /// <summary>
     /// 已经请求过在线取词兜底的那一曲（来源 + 曲名 + 歌手的指纹），只保留最后一个。
@@ -79,13 +102,15 @@ public sealed class MediaSessionService : IDisposable
         MediaSessionSelectionService selection,
         MediaSnapshotBuilder snapshotBuilder,
         IEnumerable<IMediaSourceProvider> sourceProviders,
-        MediaSourceActivationService sourceActivator)
+        MediaSourceActivationService sourceActivator,
+        MemoryPruneCoordinator memoryPrune)
     {
         _catalog = catalog;
         _selection = selection;
         _snapshotBuilder = snapshotBuilder;
         _sourceProviders = sourceProviders.ToArray();
         _sourceActivator = sourceActivator;
+        _memoryPrune = memoryPrune;
         _dispatcher = Application.Current.Dispatcher;
 
         _catalog.AnyMediaPropertyChanged += OnAnyMediaPropertyChanged;
@@ -103,6 +128,15 @@ public sealed class MediaSessionService : IDisposable
             provider.Start();
         }
 
+        // 看门狗挂在 UI 线程上，但优先级取 Background：它的活是"补一次系统查询"，永远不该和输入或渲染抢时序。
+        // The watchdog lives on the UI thread at Background priority: its job is one extra system query and must never race input or rendering.
+        _reconcileWatchdog = new DispatcherTimer(DispatcherPriority.Background, _dispatcher)
+        {
+            Interval = TimeSpan.FromSeconds(1)
+        };
+        _reconcileWatchdog.Tick += OnReconcileWatchdogTick;
+        _reconcileWatchdog.Start();
+
         ScheduleSessionsRefresh();
     }
 
@@ -113,15 +147,17 @@ public sealed class MediaSessionService : IDisposable
     public void RefreshNow() => RefreshSnapshot();
 
     /// <summary>
-    /// 强制底层 SMTC 目录刷新，然后同步重建会话列表和当前快照。
-    /// Forces the underlying SMTC catalog to refresh, then rebuilds the session list and current snapshot.
+    /// 立即请求一次重同步（跳过看门狗的时间门控），并在结果发布完成后返回。
+    /// 探测与恢复在后台 single-flight 流程执行，UI 线程不再被第三方库调用阻塞；已有流程在飞时返回该流程的完成。
+    /// Requests a reconcile immediately (bypassing the watchdog's time gate) and completes after the result has been published.
+    /// Probing and recovery run on the background single-flight flow, so the UI thread is never blocked by the third-party library;
+    /// when a flow is already in flight its completion is returned.
     /// </summary>
+    /// <remarks>必须在 UI 线程调用（命令入口即如此）。/ Must be called on the UI thread, which is how the command path uses it.</remarks>
     public Task ReconnectAsync()
     {
-        _catalog.ForceUpdate();
-        RefreshSessionList();
-        RefreshSnapshot();
-        return Task.CompletedTask;
+        StartReconcile();
+        return _reconcileTask ?? Task.CompletedTask;
     }
 
     /// <summary>
@@ -223,6 +259,14 @@ public sealed class MediaSessionService : IDisposable
         }
 
         _isDisposed = true;
+        _reconcileWatchdog.Stop();
+        _reconcileWatchdog.Tick -= OnReconcileWatchdogTick;
+        // 取消在飞的后台流程并让 generation 失效：库调用本身无法中止，但它完成后不会再发布任何东西。
+        // Cancels the in-flight background flow and invalidates the generation: the library call itself cannot be aborted, but nothing
+        // it produces may be published afterwards.
+        _reconcileCancellation.Cancel();
+        _reconcileCancellation.Dispose();
+        _reconcileGeneration++;
         _catalog.AnyMediaPropertyChanged -= OnAnyMediaPropertyChanged;
         _catalog.AnyPlaybackStateChanged -= OnAnyPlaybackStateChanged;
         _catalog.AnySessionOpened -= OnAnySessionOpened;
@@ -281,7 +325,14 @@ public sealed class MediaSessionService : IDisposable
 
     private void OnAnySessionOpened(MediaSession session) => ScheduleSessionsRefresh();
 
-    private void OnAnySessionClosed(MediaSession session) => ScheduleSessionsRefresh();
+    private void OnAnySessionClosed(MediaSession session)
+    {
+        // 会话关闭是"换歌重建会话"的信号，也正是第三方库漏事件的高发点：武装快速窗口，让看门狗用 1 秒的节奏把新会话捞回来。
+        // A session closing signals a track change and is exactly where the third-party library loses events: arm the fast window so the
+        // watchdog catches the recreated session on a one-second cadence.
+        _reconcileArmedUntilUtc = DateTime.UtcNow + MediaSessionReconcilePolicy.ArmedWindow;
+        ScheduleSessionsRefresh();
+    }
 
     private void OnFocusedSessionChanged(MediaSession session) => ScheduleSessionsRefresh();
 
@@ -300,6 +351,188 @@ public sealed class MediaSessionService : IDisposable
             return;
         _selection.ClearSelection();
         ScheduleSessionsRefresh();
+    }
+
+    /// <summary>
+    /// 看门狗 tick：只做零系统调用的门控。通过后立即消耗探测时隙（因此"没有媒体"的常见状态不会每秒查询一次），
+    /// 再把探测与恢复交给后台 single-flight 流程。UI 线程在这里不做任何系统调用或库调用。
+    /// Watchdog tick: gating only, with zero system calls. Once it passes, the probe slot is consumed immediately (so the common
+    /// "no media at all" state cannot query once per second) and probing plus recovery are handed to the background single-flight
+    /// flow. The UI thread makes no system or library call here.
+    /// </summary>
+    private void OnReconcileWatchdogTick(object? sender, EventArgs e)
+    {
+        if (_isDisposed)
+        {
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+        var signals = new MediaSessionReconcileProbeSignals(
+            IsConnected: _sessionSnapshot.IsConnected,
+            IsGraceActive: _selection.IsMissingSessionGraceActive,
+            IsArmed: now < _reconcileArmedUntilUtc,
+            SinceLastAttempt: _lastReconcileUtc == DateTime.MinValue
+                ? TimeSpan.MaxValue
+                : now - _lastReconcileUtc,
+            PruneLevel: _memoryPrune.CurrentLevel,
+            ConsecutiveSlowReconciles: _consecutiveSlowReconciles);
+
+        if (!MediaSessionReconcilePolicy.ShouldProbe(signals))
+        {
+            return;
+        }
+
+        // 时隙在系统查询之前消耗：无论系统有没有会话，下一次探测都要等一个完整间隔。
+        // The slot is consumed before any system query: whether or not the OS has sessions, the next probe waits a full interval.
+        _lastReconcileUtc = now;
+        StartReconcile();
+    }
+
+    /// <summary>
+    /// 启动一次后台探测与恢复（single-flight）。调用方必须已在 UI 线程消耗探测时隙；
+    /// 已有流程在飞时本方法直接返回，而不会排队第二次。
+    /// Starts one background probe-and-recover (single-flight). The caller must have consumed a probe slot on the UI thread; while a
+    /// flow is in flight this returns immediately instead of queueing a second one.
+    /// </summary>
+    private void StartReconcile()
+    {
+        if (Interlocked.CompareExchange(ref _reconcileInFlight, 1, 0) != 0)
+        {
+            return;
+        }
+
+        var generation = _reconcileGeneration;
+        var failures = _consecutiveFailedReconciles;
+        var token = _reconcileCancellation.Token;
+        _reconcileTask = Task.Run(() => ReconcileInBackground(generation, failures, token));
+    }
+
+    /// <summary>
+    /// 后台探测与恢复：第三方库的会话枚举（ForceUpdate）与目录重建都在这里执行，绝不占用 UI 线程。
+    /// 完成后只把"发布"经 Dispatcher 送回 UI；取消、Dispose 或 generation 变化都会丢弃过期结果。
+    /// 库调用本身无法被取消，取消只保证过期结果不会被发布。
+    /// Background probe and recovery: the third-party library's enumeration (ForceUpdate) and the catalog rebuild run here and never
+    /// occupy the UI thread. Only the publication is marshalled back; cancellation, disposal, or a changed generation discard stale
+    /// results. The library call itself cannot be cancelled — cancellation only guarantees nothing stale is published.
+    /// </summary>
+    private void ReconcileInBackground(int generation, int consecutiveFailures, CancellationToken token)
+    {
+        var started = Stopwatch.GetTimestamp();
+        var osSessionCount = -1;
+        var action = MediaSessionReconcileAction.None;
+        try
+        {
+            if (token.IsCancellationRequested || _isDisposed)
+            {
+                return;
+            }
+
+            osSessionCount = _catalog.GetOsSessionCount();
+            action = MediaSessionReconcilePolicy.DecideAction(osSessionCount, consecutiveFailures);
+            if (action == MediaSessionReconcileAction.RestartCatalog)
+            {
+                _catalog.Restart();
+            }
+            else if (action == MediaSessionReconcileAction.ForceUpdate)
+            {
+                _catalog.ForceUpdate();
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[MediaSessionService] Background reconcile failed: {ex}");
+        }
+        finally
+        {
+            var elapsed = Stopwatch.GetElapsedTime(started);
+            var stale = token.IsCancellationRequested || _isDisposed || generation != _reconcileGeneration ||
+                        _dispatcher.HasShutdownStarted;
+            if (stale)
+            {
+                // 取消 / 已释放 / generation 过期 / Dispatcher 关停：结果直接丢弃，单飞标志照常释放。
+                // Cancelled, disposed, stale generation, or a shutting-down dispatcher: the result is dropped and the single-flight
+                // flag is released either way.
+                Interlocked.Exchange(ref _reconcileInFlight, 0);
+            }
+            else
+            {
+                try
+                {
+                    _dispatcher.BeginInvoke(() => CompleteReconcile(generation, osSessionCount, action, elapsed));
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or TaskCanceledException)
+                {
+                    // Dispatcher 在发布前关停：没有订阅者需要这次结果了。
+                    // The dispatcher shut down before the publication: nobody is left to receive it.
+                    Interlocked.Exchange(ref _reconcileInFlight, 0);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 在 UI 线程收尾一次后台重同步：先重建会话列表与快照，再按结果更新失败/慢调用计数与日志。
+    /// Finishes one background reconcile on the UI thread: rebuilds the session list and snapshot first, then updates the failure and
+    /// slow-call counters and the log from the result.
+    /// </summary>
+    private void CompleteReconcile(
+        int generation,
+        int osSessionCount,
+        MediaSessionReconcileAction action,
+        TimeSpan elapsed)
+    {
+        Interlocked.Exchange(ref _reconcileInFlight, 0);
+        if (_isDisposed || generation != _reconcileGeneration)
+        {
+            return;
+        }
+
+        if (action == MediaSessionReconcileAction.RestartCatalog)
+        {
+            // 系统有会话而目录怎么都读不到：这是 ForceUpdate 救不回的库失效状态（字典里残留了失效条目），整只重建。
+            // The OS has sessions while the catalog stays unreadable: a library broken state ForceUpdate cannot fix (a dead
+            // dictionary entry), so the whole catalog was rebuilt.
+            AppLogService.Current?.Info("Media", "[看门狗] 系统有会话但目录读不到，已重建媒体目录");
+        }
+
+        try
+        {
+            RefreshSessionList();
+            RefreshSnapshot();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[MediaSessionService] Failed to publish reconcile result: {ex}");
+        }
+
+        if (_sessionSnapshot.IsConnected)
+        {
+            _consecutiveFailedReconciles = 0;
+            // 只有真正把会话捞回来时才写一行：空闲时看门狗会持续以低频重试，逐次记录会把日志刷满。
+            // Only a recovered session earns a line: while idle the watchdog keeps retrying at a low cadence, and logging every
+            // attempt would fill the file.
+            AppLogService.Current?.Info(
+                "Media",
+                $"[看门狗] 事件丢失后恢复媒体会话：耗时 {elapsed.TotalMilliseconds:0.0}ms");
+        }
+        else if (osSessionCount > 0)
+        {
+            // 系统有会话却没读回来：累计失败次数，下一次到达阈值时改为重建目录。
+            // The OS has sessions yet none came back: count the failure so the next attempt past the threshold rebuilds the catalog.
+            _consecutiveFailedReconciles++;
+        }
+        else
+        {
+            _consecutiveFailedReconciles = 0;
+        }
+
+        // 慢调用统计覆盖"探测到恢复"的整段耗时（含系统查询）；恢复正常耗时就清零，因此退避不会累积成永久性的慢节奏。
+        // Slow-call accounting covers the whole probe-and-recover attempt (system query included); one normal-duration attempt clears
+        // it, so the backoff can never grow into a permanently slow cadence.
+        _consecutiveSlowReconciles = MediaSessionReconcilePolicy.IsSlowCall(elapsed)
+            ? Math.Min(_consecutiveSlowReconciles + 1, MediaSessionReconcilePolicy.MaximumBackoffShift)
+            : 0;
     }
 
     private void OnSourceSnapshotChanged(IMediaSourceProvider provider, MediaSnapshot? snapshot)
@@ -544,6 +777,16 @@ public sealed class MediaSessionService : IDisposable
     private void Publish(MediaSnapshot snapshot)
     {
         _sessionSnapshot = snapshot;
+        if (snapshot.IsConnected)
+        {
+            // 恢复连接即视为"事件链路已自愈"：解除快速窗口并清退避，让下一次失明从最灵敏的节奏重新开始。
+            // A connected snapshot means the event path healed: disarm the fast window and clear the backoff so the next blindness
+            // starts from the most responsive cadence again.
+            _reconcileArmedUntilUtc = DateTime.MinValue;
+            _consecutiveSlowReconciles = 0;
+            _consecutiveFailedReconciles = 0;
+        }
+
         foreach (var provider in _sourceProviders)
         {
             provider.UpdateSessionSnapshot(snapshot);
