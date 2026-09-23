@@ -12,7 +12,7 @@ Reliability fixes: media-session self-healing, spectrum level calibration, and l
 
 ### Added
 
-- Lyric spacing: the lyrics page now adjusts the two-line gap (0–8 DIP) and the character spacing (0–20% of the font size). The gap is clamped against the available height of the taskbar's media-text area, so no value can push lyrics out of the bar, and the character spacing is a look-only change that keeps English words intact.
+- Lyric spacing: the lyrics page now adjusts the two-line gap (0–8 DIP) and the character spacing (0–20% of the font size in one-percent steps). The gap is clamped against the available height of the taskbar's media-text area, so no value can push lyrics out of the bar, and the character spacing scales the width of a spacer character continuously to the target (switching the lyric rows to Ideal text formatting for sub-pixel precision while it is active), so every step is effective and English words stay intact.
 
 ### Fixed
 
