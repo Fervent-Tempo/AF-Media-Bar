@@ -2074,6 +2074,11 @@ namespace AFMediaBar.Components
 
         private void InteractionSurface_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
         {
+            // 捕获状态或延迟路由可能在指针已离开媒体栏后仍送来滚轮事件；以当前指针位置作最后一道门禁。
+            // Capture or delayed routing can deliver a wheel event after the pointer has left the bar; check its current position.
+            if (!new Rect(InteractionSurface.RenderSize).Contains(Mouse.GetPosition(InteractionSurface)))
+                return;
+
             // Preview events tunnel through this parent before the button handlers.
             // Leave both audio buttons in control so their wheel input never becomes a media gesture.
             // 静置层的同名小组件也要放行：它们与悬停层按钮是同一件事的两个入口，滚轮语义必须一致。
