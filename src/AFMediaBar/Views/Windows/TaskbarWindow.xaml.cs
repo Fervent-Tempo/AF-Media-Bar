@@ -2048,7 +2048,11 @@ public partial class TaskbarWindow : Window
         {
             if (source is FrameworkElement { Tag: "MediaAction" })
                 return true;
-            source = VisualTreeHelper.GetParent(source);
+            // 事件源可能是 Run 等 ContentElement（歌词用多段 Inlines 渲染），
+            // 直接走 VisualTreeHelper 会抛"不是 Visual"；见 VisualTreeWalk。
+            // The event source can be a ContentElement such as a Run (lyrics render with multiple inlines), and walking it through
+            // VisualTreeHelper alone would throw "not a Visual"; see VisualTreeWalk.
+            source = VisualTreeWalk.GetParent(source);
         }
 
         return false;

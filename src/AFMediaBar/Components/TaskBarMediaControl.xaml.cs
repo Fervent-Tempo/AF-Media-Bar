@@ -754,7 +754,9 @@ namespace AFMediaBar.Components
                     return true;
                 }
 
-                source = VisualTreeHelper.GetParent(source);
+                // 事件源可能是 Run 等 ContentElement，直接走 VisualTreeHelper 会抛"不是 Visual"。
+                // The event source can be a ContentElement such as a Run; walking it through VisualTreeHelper alone would throw.
+                source = VisualTreeWalk.GetParent(source);
             }
 
             return false;
