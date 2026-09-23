@@ -655,6 +655,9 @@ internal static class StringsZhHant
         table.Add("Shell.QuickLaunch.Status.Failed", "無法啟動此應用程式，請檢查應用程式是否仍可用。");
         table.Add("Shell.QuickLaunch.Status.InvalidTarget", "啟動目標已失效，請在媒體與通知中重新新增。");
 
+        // ---- Startup ----
+        table.Add("Startup.SingleInstance.AlreadyRunning", "AF Media Bar 已在執行，請查看右下角的系統匣圖示（或點選小箭頭展開隱藏圖示）。");
+
         // ---- Update ----
         table.Add("Update.Channel.Accelerated", "加速站台 {0}");
         table.Add("Update.Channel.Direct", "GitHub 直連");

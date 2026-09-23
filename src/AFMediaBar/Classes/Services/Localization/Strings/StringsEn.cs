@@ -655,6 +655,9 @@ internal static class StringsEn
         table.Add("Shell.QuickLaunch.Status.Failed", "The application could not be started; check that it is still available.");
         table.Add("Shell.QuickLaunch.Status.InvalidTarget", "The launch target is no longer valid; add it again on the Media and notifications page.");
 
+        // ---- Startup ----
+        table.Add("Startup.SingleInstance.AlreadyRunning", "AF Media Bar is already running. Look for its icon in the notification area at the bottom right, or select the arrow to show hidden icons.");
+
         // ---- Update ----
         table.Add("Update.Channel.Accelerated", "Accelerated mirror {0}");
         table.Add("Update.Channel.Direct", "GitHub direct");
