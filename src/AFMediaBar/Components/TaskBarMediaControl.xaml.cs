@@ -1622,7 +1622,8 @@ namespace AFMediaBar.Components
 
                     SongTitle.Text = _actualTitle;
                     SongMetadataPanel.Visibility = Visibility.Visible;
-                    SongLyricsPanel.Visibility = Visibility.Collapsed;
+                    SongLyricsPanel.Opacity = 0;
+                    SongLyricsPanel.IsHitTestVisible = false;
                     UpdateWebLyricsPresentation(allowTransition: false);
                     SongArtist.Text = _actualArtist;
                     SongInfoStackPanel.Visibility = Visibility.Collapsed;
@@ -1767,7 +1768,7 @@ namespace AFMediaBar.Components
             if (_layoutEngine?.CurrentOrientation is not { } orientation)
                 return;
 
-            var lyricsVisible = SongLyricsPanel.Visibility == Visibility.Visible;
+            var lyricsVisible = SongLyricsPanel.Opacity > 0;
             var visibleText = lyricsVisible ? _lyricsFrame.Current : SongTitle.Text;
             var secondaryText = lyricsVisible
                 ? string.IsNullOrEmpty(_lyricsFrame.CurrentTranslation) ? _lyricsFrame.Next : _lyricsFrame.CurrentTranslation

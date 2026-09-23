@@ -194,7 +194,7 @@
                                 </Canvas>
                             </StackPanel>
 
-                            <Grid x:Name="SongLyricsPanel" Visibility="Collapsed" ClipToBounds="True">
+                            <Grid x:Name="SongLyricsPanel" Opacity="0" IsHitTestVisible="False" ClipToBounds="True">
                                 <wv2:WebView2CompositionControl x:Name="LyricsWebView"
                                                                HorizontalAlignment="Stretch"
                                                                VerticalAlignment="Stretch"

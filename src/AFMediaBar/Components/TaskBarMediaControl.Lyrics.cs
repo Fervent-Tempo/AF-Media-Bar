@@ -60,7 +60,10 @@ public partial class TaskBarMediaControl
 
         var showWebLyrics = next.IsVisible && _lyricsWebRenderer?.IsReady == true;
         SongMetadataPanel.Visibility = showWebLyrics ? Visibility.Collapsed : Visibility.Visible;
-        SongLyricsPanel.Visibility = showWebLyrics ? Visibility.Visible : Visibility.Collapsed;
+        // WebView2 must stay in the visible visual tree while it initializes. Hiding this
+        // host until IsReady would prevent navigation from completing on some systems.
+        SongLyricsPanel.Opacity = showWebLyrics ? 1 : 0;
+        SongLyricsPanel.IsHitTestVisible = showWebLyrics;
         _lyricsWebRenderer?.Present(next, allowTransition && lineChanged && MotionPolicy.ResolveCurrent().UseTransitions);
         RefreshWebLyricsTimer();
     }
