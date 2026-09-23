@@ -55,6 +55,7 @@
   <ItemGroup>
     <PackageReference Include="Dubya.WindowsMediaController" Version="2.5.6" />
     <PackageReference Include="Lyricify.Lyrics.Helper" Version="0.2.0" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
     <PackageReference Include="MicaWPF" Version="7.1.0" />
     <PackageReference Include="WPF-UI" Version="4.2.0" />
     <PackageReference Include="WPF-UI.DependencyInjection" Version="4.2.0" />
@@ -84,6 +85,19 @@
     <Resource Include="Assets\Sponsor\*.png" />
     <Resource Include="Assets\Sponsor\*.jpg" />
     <Resource Include="Assets\Sponsor\*.jpeg" />
+    <EmbeddedResource Include="Web\Lyrics\*.html" />
+    <EmbeddedResource Include="Web\Lyrics\*.css" />
+    <EmbeddedResource Include="Web\Lyrics\*.js" />
   </ItemGroup>
+
+  <!-- WebView2's package adds reference XML documentation after the single-file bundle is computed. Those files are not
+       runtime dependencies and violate the installer/release contract that the publish directory contains one executable. -->
+  <Target Name="RemoveWebView2ReferenceDocumentation" AfterTargets="Publish"
+          Condition="'$(PublishSingleFile)' == 'true'">
+    <ItemGroup>
+      <_WebView2ReferenceDocumentation Include="$(PublishDir)Microsoft.Web.WebView2.*.xml" />
+    </ItemGroup>
+    <Delete Files="@(_WebView2ReferenceDocumentation)" />
+  </Target>
 
 </Project>

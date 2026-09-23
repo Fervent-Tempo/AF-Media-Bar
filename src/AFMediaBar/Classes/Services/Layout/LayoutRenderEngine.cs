@@ -43,10 +43,9 @@ public sealed class LayoutRenderEngine
     private readonly FontIcon? _artworkPlaceholder;
     private readonly TextBlock? _songTitle;
     private readonly TextBlock? _songArtist;
-    private readonly TextBlock? _songLyrics;
     private readonly FrameworkElement? _songTitleContainer;
     private readonly FrameworkElement? _songArtistContainer;
-    private readonly FrameworkElement? _songLyricsContainer;
+    private readonly FrameworkElement? _lyricsHost;
 
     private LayoutSchema? _currentLayout;
 
@@ -70,8 +69,7 @@ public sealed class LayoutRenderEngine
         TextBlock? songArtist = null,
         FrameworkElement? songTitleContainer = null,
         FrameworkElement? songArtistContainer = null,
-        TextBlock? songLyrics = null,
-        FrameworkElement? songLyricsContainer = null)
+        FrameworkElement? lyricsHost = null)
     {
         _mainBorder = mainBorder;
         _contentCanvas = contentCanvas;
@@ -81,10 +79,9 @@ public sealed class LayoutRenderEngine
         _artworkPlaceholder = artworkPlaceholder;
         _songTitle = songTitle;
         _songArtist = songArtist;
-        _songLyrics = songLyrics;
         _songTitleContainer = songTitleContainer;
         _songArtistContainer = songArtistContainer;
-        _songLyricsContainer = songLyricsContainer;
+        _lyricsHost = lyricsHost;
     }
 
     /// <summary>
@@ -222,7 +219,7 @@ public sealed class LayoutRenderEngine
                     break;
 
                 case "lyrics":
-                    ApplyElementLayout(_songLyrics, _songLyricsContainer, component, "fontSize", "lyricsFontSize");
+                    ApplyElementLayout(null, _lyricsHost, component, "fontSize", "lyricsFontSize");
                     break;
 
                 case "title":
@@ -297,17 +294,15 @@ public sealed class LayoutRenderEngine
             _songArtistContainer.Width = config.Bounds.Width;
             _songArtistContainer.Height = config.Bounds.Height / 2;
         }
-        if (_songLyricsContainer is not null)
+        if (_lyricsHost is not null)
         {
-            _songLyricsContainer.Width = config.Bounds.Width;
-            _songLyricsContainer.Height = config.Bounds.Height / 2;
+            _lyricsHost.Width = config.Bounds.Width;
+            _lyricsHost.Height = config.Bounds.Height;
         }
         if (_songTitle is not null)
             _songTitle.Width = config.Bounds.Width;
         if (_songArtist is not null)
             _songArtist.Width = config.Bounds.Width;
-        if (_songLyrics is not null)
-            _songLyrics.Width = config.Bounds.Width;
 
         // 设置位置
         // Set position
@@ -353,14 +348,10 @@ public sealed class LayoutRenderEngine
                 _songArtistContainer.Height = Math.Max(roundedArtistFontSize + 5, config.Bounds.Height / 2);
         }
 
-        if (_songLyrics is not null &&
-            config.Properties.TryGetValue("lyricsFontSize", out var lyricsFontSizeValue) &&
+        if (config.Properties.TryGetValue("lyricsFontSize", out var lyricsFontSizeValue) &&
             lyricsFontSizeValue is double lyricsFontSize)
         {
-            // 歌词此前没有字号来源，一直沿用框架默认值；现在与标题、歌手共用同一个缩放设置。
-            // Lyrics had no font-size source before and used the framework default; they now follow the same scale as the
-            // title and artist.
-            _songLyrics.FontSize = Math.Max(1, Math.Round(lyricsFontSize));
+            LyricsFontSize = Math.Max(1, Math.Round(lyricsFontSize));
         }
 
         if (_songArtist is not null &&
@@ -437,6 +428,9 @@ public sealed class LayoutRenderEngine
     /// Get currently applied layout configuration.
     /// </summary>
     public LayoutSchema? CurrentLayout => _currentLayout;
+
+    /// <summary>当前布局解析出的 Web 歌词字号。/ Web-lyrics font size resolved from the current layout.</summary>
+    public double LyricsFontSize { get; private set; } = 12;
 
     /// <summary>
     /// 应用自动尺寸计算得到的主轴长度，不重新创建基础布局。

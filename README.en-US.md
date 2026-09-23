@@ -47,7 +47,7 @@ The app runs in its own process and hosts its WPF bar as a taskbar child window.
 | --- | --- |
 | Media | Previous, play/pause, next, repeat, and click-to-position or draggable progress |
 | Source interaction | Bind artwork and title/lyric clicks independently to play/pause, activate the media app, or open the full layer; right-click the bar to switch sources; an SMTC allow list can be enabled per app under Media & Notifications |
-| Live lyrics | Lyrics appear on the taskbar with syllable-by-syllable reveal, translation, romanization, and two-line alignment; sources are matched in order across NetEase Cloud Music, LRCLIB, QQ Music, Kugou Music, and Soda Music |
+| Live lyrics | A web lyrics engine renders lyrics on the taskbar with translation, romanization, and two-line alignment; syllable reveal runs only when the source supplies a genuine word timeline, while line-synced lyrics change by line only; sources are matched in order across NetEase Cloud Music, LRCLIB, QQ Music, Kugou Music, and Soda Music |
 | Taskbar behavior | Docked as a taskbar child window that avoids icons and system areas; artwork keeps its own aspect ratio and text that does not fit rotates inside its own region; the target display is selectable and the bar can auto-hide while nothing plays |
 | Appearance | Global fonts, font size, light/dark theme, window material, and material concentration; the accent colour follows the system and can also be picked or entered as hex |
 | Interface language | Simplified Chinese, Traditional Chinese, and English; the default follows the Windows display language, and a change applies immediately without restarting |
@@ -78,6 +78,7 @@ The Windows 10/11 media card is an internal Explorer/Shell surface rather than a
 ### Requirements
 
 - Windows 10 version 1809 (build 17763) or later, x64; both the installer and the portable package are self-contained, so no separate .NET installation is needed.
+- Microsoft Edge WebView2 Runtime is required. Windows 11 and supported Windows 10 installations normally include it; stripped-down systems must install the Evergreen Runtime first.
 - Every system interface the app uses is available on 1809, but there is one limit beyond that: **.NET 10 officially supports only the Windows 10 LTSC and Enterprise editions** (1809 E, 21H2 E). Consumer Windows 10 still runs, it is just outside Microsoft support. Windows 11 is unaffected.
 
 ### Option 1: installer (recommended)

@@ -109,18 +109,9 @@ namespace AFMediaBar.Components
             // jumping one character at a time, and it no longer depends on an animation clock being driven by a rendering target.
             AddMarqueeText(SongTitle);
             AddMarqueeText(SongArtist);
-            AddMarqueeText(SongLyrics, SongLyricsHighlight);
-            AddMarqueeText(SongLyricsSecondary);
             _marqueeTimer = new DispatcherTimer(DispatcherPriority.Render) { Interval = MarqueeTiming.FrameInterval };
             _marqueeTimer.Tick += (_, _) => AdvanceMarqueeStep();
-            // 逐字擦亮按帧推进：只有"当前行带音节时间轴且正在播放"时才由呈现状态启动，其余状态在下一帧自停并还原外观。
-            // Syllable highlighting advances frame by frame: the presentation state starts it only while the active line carries
-            // a syllable timeline and playback runs, and it stops itself on the next frame otherwise, restoring the appearance.
-            _lyricHighlightTimer = new DispatcherTimer(DispatcherPriority.Render)
-            {
-                Interval = TimeSpan.FromMilliseconds(LyricHighlightFrameIntervalMilliseconds)
-            };
-            _lyricHighlightTimer.Tick += (_, _) => AdvanceLyricHighlight();
+            InitializeWebLyrics();
             // 提示用同一个实例承载，内容随手势与结果实时改写。
             // One tooltip instance carries the text, which is rewritten live as the gesture and its result change.
             _wheelTooltip = new ToolTip { Placement = System.Windows.Controls.Primitives.PlacementMode.Top };
@@ -144,7 +135,7 @@ namespace AFMediaBar.Components
                 _hoverHideFallbackTimer.Stop();
                 _wheelTooltipTimer.Stop();
                 _marqueeTimer.Stop();
-                _lyricHighlightTimer.Stop();
+                StopWebLyrics();
                 StopMarqueeAnimations();
             };
 
@@ -164,11 +155,6 @@ namespace AFMediaBar.Components
         private bool _canPlayPause;
         private bool _canSkipPrevious;
         private bool _canSkipNext;
-        private string _activeLyric = string.Empty;
-        private string _nextLyric = string.Empty;
-        private string _translatedLyric = string.Empty;
-        private string _romanizedLyric = string.Empty;
-        private string _secondaryLyric = string.Empty;
         private string _lastSizeFingerprint = string.Empty;
         /// <summary>参与跑马灯的文本元素；没有任何一个在推进时计时器必须停止。/ Text elements taking part in the marquee; the timer must be stopped while none of them is advancing.</summary>
         private readonly List<MarqueeTextState> _marqueeTexts = [];
@@ -615,11 +601,6 @@ namespace AFMediaBar.Components
             ApplyAppearanceSettings();
         }
 
-        // === 歌词显示状态 Lyrics Display State ===
-        // 解析后的行缓存 + 当前行下标，避免每个快照重复解析。
-        // Parsed line cache + current line index to avoid re-parsing on every snapshot.
-        private readonly LyricLinePresenter _lyricPresenter = new();
-
         /// <summary>
         /// 初始化布局渲染引擎：将 MainBorder 和 BackgroundImage 传入引擎以便动态调整布局。
         /// Initialize layout render engine: pass MainBorder and BackgroundImage to engine for dynamic layout adjustment.
@@ -637,8 +618,7 @@ namespace AFMediaBar.Components
                 songArtist: SongArtist,
                 songTitleContainer: SongTitleContainer,
                 songArtistContainer: SongArtistContainer,
-                songLyrics: SongLyrics,
-                songLyricsContainer: SongLyricsContainer
+                lyricsHost: SongLyricsPanel
             );
 
             // 应用默认布局（任务栏横向）
@@ -809,12 +789,6 @@ namespace AFMediaBar.Components
             TaskbarHoverLayer.Height = metrics.HoverLayerHeight;
             ApplyTaskbarSectionGeometry(MainBorder.Width);
 
-            var lyricsAlignment = SettingsManager.Current.LyricsTextAlignment switch
-            {
-                LyricsTextAlignment.Left => TextAlignment.Left,
-                LyricsTextAlignment.Right => TextAlignment.Right,
-                _ => TextAlignment.Center
-            };
             SongMetadataPanel.Orientation = Orientation.Vertical;
             SongArtistContainer.Margin = new Thickness(0, -1.5, 0, 0);
             var metadataAlignment = experience.MediaTextAlignment switch
@@ -825,8 +799,7 @@ namespace AFMediaBar.Components
             };
             ApplyConfiguredTextAlignment(SongTitle, metadataAlignment);
             ApplyConfiguredTextAlignment(SongArtist, metadataAlignment);
-            ApplyConfiguredTextAlignment(SongLyrics, lyricsAlignment);
-            ApplyConfiguredTextAlignment(SongLyricsSecondary, lyricsAlignment);
+            ApplyWebLyricsStyle();
             if (isHorizontalTaskbar && SongMetadataPanel.Visibility == Visibility.Visible)
             {
                 if (experience.ContentLayout == TaskbarContentLayout.CompactInline &&
@@ -920,8 +893,7 @@ namespace AFMediaBar.Components
             SongInfoSurface.Width = textWidth;
             SongTitleContainer.Width = textWidth;
             SongArtistContainer.Width = textWidth;
-            SongLyricsContainer.Width = textWidth;
-            SongLyricsSecondaryContainer.Width = textWidth;
+            SongLyricsPanel.Width = textWidth;
 
             // 任务栏的媒体文字宽度由本节几何唯一决定：布局引擎按布局 schema 写入的 TextBlock 宽度仍包含
             // 频谱与性能组件占用的区间，比真实文字区更宽，会让标题按错误宽度裁剪、在容器边缘被硬切；
@@ -932,8 +904,6 @@ namespace AFMediaBar.Components
             // width through the marquee configuration, which is why the defect only shows up after a settings change.
             SongTitle.Width = textWidth;
             SongArtist.Width = textWidth;
-            SongLyrics.Width = textWidth;
-            SongLyricsSecondary.Width = textWidth;
 
             Canvas.SetLeft(SongInfoHoverOverlay, textLeft);
             Canvas.SetTop(SongInfoHoverOverlay, textTop);
@@ -1037,10 +1007,10 @@ namespace AFMediaBar.Components
         /// Stops or restores this control's own timers for the background prune level the host publishes.
         ///
         /// 控件不认识电源状态，也不去查询它：档位由宿主（任务栏窗口）传进来，和外观、布局设置的传达方式一致。屏幕熄灭时进度条、跑马灯与
-        /// 逐字擦亮都没有人看得到，停掉它们省下的是每分钟几百次唤醒；恢复时从下一帧（最多 250 毫秒）继续推进，用户看不到空档。
+        /// Web 歌词推进也没有人看得到，停掉它们省下的是每分钟几百次唤醒；恢复时从下一帧继续推进，用户看不到空档。
         /// The control neither knows the power state nor asks for it: the host — the taskbar window — passes the level in, exactly as it passes the
-        /// appearance and layout settings. While the display is dark nothing can see the progress bar, the marquee, or the syllable highlight, so
-        /// stopping them saves several hundred wakeups a minute; on restore they advance again from the next frame, at most 250 ms later, which the
+        /// appearance and layout settings. While the display is dark nothing can see the progress bar, marquee, or web lyrics, so
+        /// stopping them saves several hundred wakeups a minute; on restore they advance again from the next frame, which the
         /// user never notices.
         /// </summary>
         /// <param name="level">宿主当前应用的剪枝档位。/ The prune level the host currently applies.</param>
@@ -1063,8 +1033,8 @@ namespace AFMediaBar.Components
             _progressTimer.Stop();
             if (level < MemoryPruneLevel.DisplayOff)
             {
-                StopLyricHighlight();
-                ReapplyLyricMarquee();
+                RefreshWebLyricsTimer();
+                ApplyMarqueeLayout(Math.Max(0, SongInfoStackPanel.Width));
                 return;
             }
 
@@ -1072,20 +1042,17 @@ namespace AFMediaBar.Components
             _hoverCloseTimer.Stop();
             _wheelTooltipTimer.Stop();
 
-            // 推进类计时器交给各自的判定路径收尾：停表的条件同时也是"把窗口文字还原成原文"的条件，因此这里重新判定一次，
-            // 而不是直接停表、把半个滚动窗口留在那里。擦亮的停表同样要走它自己的路径，否则 `_lyricHighlightActive` 会停在"开启"上，
-            // 恢复时便再也不会重新启动。
-            // The advance timers are wound down through their own decision path: the condition that stops them is also the one that restores the
-            // window text, so the decision is made again instead of stopping the timer and leaving half a scroll window behind. The reveal has to go
-            // through its own path as well, otherwise `_lyricHighlightActive` would stay on "enabled" and never start again after the restore.
-            StopLyricHighlight();
-            ReapplyLyricMarquee();
+            // 推进类计时器交给各自的判定路径收尾：跑马灯必须恢复原文，Web 歌词必须保留最新目标帧供恢复时继续。
+            // The advance timers wind down through their own decision paths: the marquee restores its source text, while web lyrics retain
+            // the latest target frame for the next resume.
+            RefreshWebLyricsTimer();
+            ApplyMarqueeLayout(Math.Max(0, SongInfoStackPanel.Width));
         }
 
         /// <summary>
-        /// 恢复控件自己的计时器并让推进类逻辑重新判定一次；只重启进度条，其余按需自启（跑马灯与逐字擦亮由呈现状态启动，悬停层与滚轮提示由交互启动）。
+        /// 恢复控件自己的计时器并让推进类逻辑重新判定一次；只重启进度条，其余按需自启。
         /// Restores the control's own timers and lets the advance logic decide again. Only the progress bar is restarted, because the others start on
-        /// demand: the marquee and the syllable highlight from the presentation state, and the hover layer and wheel tooltip from interaction.
+        /// demand from presentation or interaction state.
         /// </summary>
         private void ResumeBackgroundTimers()
         {
@@ -1099,16 +1066,16 @@ namespace AFMediaBar.Components
                 _progressTimer.Start();
             }
 
-            ReapplyLyricMarquee();
-            RefreshLyricHighlightPresentation();
+            ApplyMarqueeLayout(Math.Max(0, SongInfoStackPanel.Width));
+            RefreshWebLyricsTimer();
         }
 
         /// <summary>是否因宿主传达的后台剪枝档位而暂停推进类计时器。/ Whether the advance timers are paused by the prune level the host published.</summary>
         private bool IsBackgroundPruned => _backgroundPruneLevel >= MemoryPruneLevel.DisplayOff;
 
         /// <summary>
-        /// 是否连"推进类"（跑马灯、逐字擦亮）也一并停下：空闲档就停，显示器关闭与睡眠当然也停。
-        /// Whether even the "advance" timers — the marquee and the syllable highlight — stop as well: they stop at the idle level too, and of course while
+        /// 是否连推进类计时器（跑马灯、Web 歌词）也一并停下：空闲档就停，显示器关闭与睡眠当然也停。
+        /// Whether advance timers — marquee and web lyrics — stop as well: they stop at the idle level too, and of course while
         /// the display is dark or the system is suspending.
         ///
         /// 空闲档之所以也停，是因为它的前提就是"没有在播的媒体 + 用户已离开十分钟以上"：此时跑马灯只会为一个不在座位上的人每 16 毫秒推进一次，
@@ -1186,13 +1153,6 @@ namespace AFMediaBar.Components
             }
 
             SongTitle.Foreground = foreground;
-            SongLyrics.Foreground = foreground;
-            // 高亮层与底色层共用同一支自动前景：擦亮只是同一颜色下的明暗对比，不引入第二种文字颜色。
-            // The highlight layer shares the base layer's automatic foreground: the reveal is a contrast within one colour and
-            // never introduces a second text colour.
-            SongLyricsHighlight.Foreground = foreground;
-            SongLyricsSecondary.Foreground = foreground;
-            SongLyricsSecondary.Opacity = SystemParameters.HighContrast ? 1 : 0.68;
             SongArtist.Foreground = foreground;
             TaskbarPerformanceText.Foreground = foreground;
             // 频谱与文字取同一支自动前景：两者铺在同一块任务栏表面上，分开判断只会在同一背景上给出两种颜色。
@@ -1201,6 +1161,7 @@ namespace AFMediaBar.Components
             ApplySpectrumForeground(foreground);
             SongInfoStackPanel.Background = Brushes.Transparent;
             ApplyContrastShadow(presentation.NeedsContrastShadow, presentation.UsesLightText);
+            SetWebLyricsAppearance(foreground, presentation.NeedsContrastShadow, presentation.UsesLightText);
 
             if (_currentMode == WindowMode.Taskbar)
             {
@@ -1248,9 +1209,6 @@ namespace AFMediaBar.Components
 
             SongTitle.Effect = effect;
             SongArtist.Effect = effect;
-            SongLyrics.Effect = effect;
-            SongLyricsHighlight.Effect = effect;
-            SongLyricsSecondary.Effect = effect;
             TaskbarPerformanceText.Effect = effect;
         }
 
@@ -1284,20 +1242,11 @@ namespace AFMediaBar.Components
                     _canPlayPause = false;
                     _canSkipPrevious = false;
                     _canSkipNext = false;
-                    _lyricPresenter.Update(null, 0);
-                    SetCurrentLyricLine(null);
-                    StopLyricHighlight();
-                    _activeLyric = string.Empty;
-                    _nextLyric = string.Empty;
-                    _translatedLyric = string.Empty;
-                    _romanizedLyric = string.Empty;
-                    _secondaryLyric = string.Empty;
 
                     SongTitle.Text = _actualTitle;
-                    SongLyrics.Text = string.Empty;
-                    SongLyricsSecondary.Text = string.Empty;
                     SongMetadataPanel.Visibility = Visibility.Visible;
                     SongLyricsPanel.Visibility = Visibility.Collapsed;
+                    UpdateWebLyricsPresentation(allowTransition: false);
                     SongArtist.Text = _actualArtist;
                     SongInfoStackPanel.Visibility = Visibility.Collapsed;
                     SongInfoStackPanel.IsHitTestVisible = false;
@@ -1356,9 +1305,8 @@ namespace AFMediaBar.Components
                     SongArtist.Text = _actualArtist;
                 }
 
-                // 歌词可用时标题位置显示当前歌词行（随快照位置推进）
-                // Show current lyric line in title slot when lyrics are available (advances with snapshot position)
-                UpdateLyricLine(snapshot);
+                SongTitle.Text = _actualTitle;
+                UpdateWebLyricsPresentation();
 
                 // 完整歌曲信息并入整条媒体栏共用的那个提示：媒体文字区不再自持一个提示，
                 // 否则悬停文字时会盖住滚轮提示，而两者恰恰是同一处需要的两条信息。
@@ -1408,7 +1356,6 @@ namespace AFMediaBar.Components
                 // A new artwork re-derives the box from its aspect, so a non-square cover such as a video's is no longer cropped.
                 ApplyTaskbarArtworkAspect();
 
-                ApplyLyricPresentation();
                 // 文字内容一确定就重跑一次跑马灯，而且必须在**所有**文字写入之后：更长的标题该不该滚动只由这一段文字与当前可用宽度决定，
                 // 而歌词呈现会把整行原文写进歌词两行、顶掉跑马灯的窗口——那时不同步恢复，屏幕上的歌词就会跳回行首。
                 // The marquee is re-applied once the text is settled, and it has to run after **every** text write: whether a longer title has
@@ -1436,49 +1383,6 @@ namespace AFMediaBar.Components
             });
         }
 
-        /// <summary>
-        /// 用快照中的歌词和位置更新标题区域的当前行；无歌词时恢复标题。
-        /// Shows the active lyric line in the title slot from the snapshot; restores the title when lyrics are absent.
-        /// </summary>
-        private void UpdateLyricLine(MediaSnapshot snapshot)
-        {
-            var update = _lyricPresenter.Update(snapshot.Lyrics, snapshot.Position);
-            _activeLyric = update.Text;
-            _nextLyric = update.NextText;
-            _translatedLyric = update.TranslationText;
-            _romanizedLyric = update.RomanizationText;
-            SetCurrentLyricLine(update.CurrentLine);
-            SongTitle.Text = _actualTitle;
-        }
-
-        private void ApplyLyricPresentation()
-        {
-            var settings = SettingsManager.Current;
-            var showLyrics = settings.LyricsEnabled && !string.IsNullOrEmpty(_activeLyric);
-            // 第二行按用户在歌词页里排的顺序取第一个有内容的来源（默认 翻译 → 音译 → 下一句）：某个来源缺失时不再空着。
-            // The second line takes the first source with content along the order the user arranged on the Lyrics page (translation,
-            // romanization, next line by default), so a missing source no longer leaves the row blank.
-            _secondaryLyric = LyricsSecondaryLinePolicy.Resolve(
-                settings.LyricsSecondaryLine,
-                _nextLyric,
-                _translatedLyric,
-                _romanizedLyric);
-            var showSecondary = showLyrics &&
-                                settings.TwoLineLyricsEnabled &&
-                                !string.IsNullOrEmpty(_secondaryLyric);
-
-            SongMetadataPanel.Visibility = showLyrics ? Visibility.Collapsed : Visibility.Visible;
-            SongLyricsPanel.Visibility = showLyrics ? Visibility.Visible : Visibility.Collapsed;
-            SongLyrics.Text = showLyrics ? _activeLyric : string.Empty;
-            SongLyricsSecondary.Text = showSecondary ? _secondaryLyric : string.Empty;
-            SongLyricsSecondaryContainer.Visibility = showSecondary ? Visibility.Visible : Visibility.Collapsed;
-            Grid.SetRowSpan(SongLyricsContainer, showSecondary ? 1 : 2);
-            SongLyricsContainer.VerticalAlignment = showSecondary
-                ? VerticalAlignment.Stretch
-                : VerticalAlignment.Center;
-            RefreshLyricHighlightPresentation();
-        }
-
         /// <summary>根据当前可见文本发布自动尺寸请求。/ Raises an auto-size request for the visible text.</summary>
         /// <param name="isForcedRefresh">是否绕过内容指纹去重。/ Whether the content-fingerprint dedupe is bypassed.</param>
         private void RaiseDesiredSizeChanged(bool isForcedRefresh = false)
@@ -1487,9 +1391,9 @@ namespace AFMediaBar.Components
                 return;
 
             var lyricsVisible = SongLyricsPanel.Visibility == Visibility.Visible;
-            var visibleText = lyricsVisible ? _activeLyric : SongTitle.Text;
-            var secondaryText = lyricsVisible && SongLyricsSecondaryContainer.Visibility == Visibility.Visible
-                ? _secondaryLyric
+            var visibleText = lyricsVisible ? _lyricsFrame.Current : SongTitle.Text;
+            var secondaryText = lyricsVisible
+                ? string.IsNullOrEmpty(_lyricsFrame.CurrentTranslation) ? _lyricsFrame.Next : _lyricsFrame.CurrentTranslation
                 : string.Empty;
             var artist = !lyricsVisible && SongArtistContainer.Visibility == Visibility.Visible ? _actualArtist : string.Empty;
             // Spectrum tuning and metric selection never change their reserved widths. Keeping
@@ -1513,8 +1417,9 @@ namespace AFMediaBar.Components
 
             _lastSizeFingerprint = fingerprint;
             var textWidth = Math.Max(
-                Math.Max(MeasureTextWidth(visibleText, lyricsVisible ? SongLyrics : SongTitle),
-                    MeasureTextWidth(secondaryText, SongLyricsSecondary)),
+                Math.Max(
+                    lyricsVisible ? MeasureWebLyricWidth(visibleText) : MeasureTextWidth(visibleText, SongTitle),
+                    lyricsVisible ? MeasureWebLyricWidth(secondaryText) : 0),
                 MeasureTextWidth(artist, SongArtist));
             var preset = LayoutPresets.GetLayout(_currentMode, orientation);
             var request = LayoutSizeCalculator.Calculate(

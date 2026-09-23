@@ -256,21 +256,6 @@ public sealed class LyricsSettingsTests
         Assert.AreEqual("作词 : 张三", kept.Lines[0].Text);
     }
 
-    [TestMethod]
-    public void PresenterExposesRomanizationForTheSecondLine()
-    {
-        var document = LyricsTextParser.Parse(
-            "[00:01.00]今天我 寒夜里看雪飘过",
-            romanizationText: "[00:01.00]gam tin o hon yei lei hon sv piu guo",
-            request: Request());
-        var presenter = new LyricLinePresenter();
-
-        var update = presenter.Update(new LyricsResult(LyricsSourceCatalog.NetEase, document), 1.2);
-
-        Assert.AreEqual("今天我 寒夜里看雪飘过", update.Text);
-        Assert.AreEqual("gam tin o hon yei lei hon sv piu guo", update.RomanizationText);
-    }
-
     private static LyricsRequest Request() => new("Song", "Artist", "Album", 200, NetEaseSongId: null);
 
     private static IReadOnlyList<ILyricsProvider> Providers() =>

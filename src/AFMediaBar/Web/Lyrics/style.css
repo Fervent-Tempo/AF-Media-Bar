@@ -1,0 +1,576 @@
+@property --word-scan-progress {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 0%;
+}
+
+@property --line-scroll-offset {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+:root {
+  --font-family: "Segoe UI Variable Text", "Microsoft YaHei UI", sans-serif;
+  --font-size: 13px;
+  --font-weight: 500;
+  --primary: rgba(255, 255, 255, 0.90);
+  --secondary: rgba(255, 255, 255, 0.60);
+  --translation: rgba(255, 255, 255, 0.70);
+  --word-scan-overlay: rgba(255, 255, 255, 0.75);
+  --word-scan-base: rgba(255, 255, 255, 0.45);
+  --word-scan-feather-width: 0.12em;
+  --row-height: 14px;
+  --row-gap: 1px;
+  --line-pitch: 15px;
+  --current-size: 13px;
+  --next-size: 12px;
+  --cover-size: 34px;
+  --cover-gap: 8px;
+  --cover-radius: 6px;
+  --layout-padding-inline: 4px;
+  --lyrics-pane-padding-top: 3px;
+  --lyrics-pane-padding-right: 4px;
+  --lyrics-pane-padding-left: 2px;
+  --primary-offset-y: 1px;
+  --secondary-offset-y: 2px;
+  --line-text-padding-bottom: 2px;
+  --surface-radius: 8px;
+  --layer-transition-offset: 2px;
+  --cover-fallback-font-size: 13px;
+  --spectrum-width: 210px;
+  --spectrum-height: 22px;
+  --spectrum-gap: 3px;
+  --spectrum-bar-width: 3px;
+  --spectrum-bar-height: 8px;
+  --spectrum-low-height: 6px;
+  --spectrum-high-height: 18px;
+  --spectrum-middle-height: 11px;
+  --surface-color: transparent;
+  --surface-shadow: none;
+  --text-shadow: 0 1px 2px rgba(0, 0, 0, 0.36);
+  --line-transform-origin: left center;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  font-family: var(--font-family);
+  color: var(--primary);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+
+.layout {
+  width: 100%;
+  height: 100%;
+  padding: 0 var(--layout-padding-inline);
+  overflow: hidden;
+  background: var(--surface-color);
+  border: 0;
+  border-radius: var(--surface-radius);
+  box-shadow: var(--surface-shadow);
+}
+
+.shell {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: var(--cover-size) var(--cover-gap) minmax(0, 1fr);
+  align-items: center;
+}
+
+.cover-hidden .shell {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.cover-hidden :is(.cover, .cover-gap) {
+  display: none;
+}
+
+.cover {
+  width: var(--cover-size);
+  height: var(--cover-size);
+  border-radius: var(--cover-radius);
+  overflow: hidden;
+  position: relative;
+  background: #1f2937;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  opacity: 1;
+  filter: saturate(1) brightness(1);
+  transition:
+    opacity 520ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 520ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 420ms ease;
+}
+
+.cover.switching {
+  opacity: 0.92;
+  filter: saturate(0.94) brightness(0.96);
+}
+
+.cover-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--cover-fallback-font-size);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.96);
+  user-select: none;
+  -webkit-user-select: none;
+  opacity: 1;
+  transition: opacity 360ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cover.switching .cover-fallback {
+  opacity: 0.58;
+}
+
+.cover-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  opacity: 0;
+  transition: opacity 440ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity;
+}
+
+.lyrics-pane {
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  padding: var(--lyrics-pane-padding-top) var(--lyrics-pane-padding-right) 0 var(--lyrics-pane-padding-left);
+}
+
+.lyrics-layer,
+.spectrum-layer {
+  position: absolute;
+  min-width: 0;
+  overflow: hidden;
+  transition:
+    opacity var(--layer-transition-duration, 300ms) cubic-bezier(0.2, 0.9, 0.1, 1),
+    transform var(--layer-transition-duration, 300ms) cubic-bezier(0.2, 0.9, 0.1, 1);
+  will-change: opacity, transform;
+}
+
+.lyrics-layer {
+  inset: var(--lyrics-pane-padding-top) var(--lyrics-pane-padding-right) 0 var(--lyrics-pane-padding-left);
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.spectrum-layer {
+  inset: 0 var(--lyrics-pane-padding-right) 0 var(--lyrics-pane-padding-left);
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  transform: translateY(var(--layer-transition-offset));
+  pointer-events: none;
+}
+
+.layout.spectrum-mode .lyrics-layer {
+  opacity: 0;
+  transform: translateY(calc(-1 * var(--layer-transition-offset)));
+}
+
+.layout.spectrum-mode .spectrum-layer {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Keep the spectrum visible while a non-spectrum frame is prepared below it. */
+.layout.spectrum-mode.spectrum-exiting .lyrics-layer {
+  opacity: 0;
+  transform: translateY(var(--line-pitch));
+}
+
+.layout.spectrum-mode.spectrum-exiting .spectrum-layer {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.layout.spectrum-mode.spectrum-exiting .lyrics-layer,
+.layout.spectrum-mode.spectrum-exiting .spectrum-layer {
+  transition: none;
+}
+
+.layout.spectrum-mode.spectrum-exiting.spectrum-exit-active .lyrics-layer {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity var(--layer-transition-duration, 300ms) cubic-bezier(0.2, 0.9, 0.1, 1),
+    transform var(--layer-transition-duration, 300ms) cubic-bezier(0.2, 0.9, 0.1, 1);
+}
+
+.layout.spectrum-mode.spectrum-exiting.spectrum-exit-active .spectrum-layer {
+  opacity: 0;
+  transform: translateY(calc(-1 * var(--line-pitch)));
+  transition:
+    opacity var(--layer-transition-duration, 300ms) cubic-bezier(0.2, 0.9, 0.1, 1),
+    transform var(--layer-transition-duration, 300ms) cubic-bezier(0.2, 0.9, 0.1, 1);
+}
+
+.layout.spectrum-transitioning .lyrics-layer,
+.layout.spectrum-transitioning .spectrum-layer {
+  transition: none;
+}
+
+.layout.spectrum-transitioning.spectrum-entry-active .lyrics-layer,
+.layout.spectrum-transitioning.spectrum-entry-active .spectrum-layer {
+  transition:
+    opacity var(--layer-transition-duration, 300ms) cubic-bezier(0.22, 0.72, 0.24, 1),
+    transform var(--layer-transition-duration, 300ms) cubic-bezier(0.22, 0.72, 0.24, 1);
+}
+
+.layout.spectrum-transitioning .lyrics-layer {
+  opacity: 0;
+  transform: translateY(calc(-1 * var(--line-pitch)));
+}
+
+.layout.spectrum-transitioning .spectrum-layer {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.layout.spectrum-audio-driven .spectrum span {
+  animation: none;
+  transition: none;
+}
+
+.viewport {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  display: block;
+}
+
+.track {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--row-gap);
+  transform: none;
+}
+
+.track.animating {
+  transition: transform 560ms cubic-bezier(0.22, 0.72, 0.24, 1);
+  will-change: transform;
+}
+
+.track.animating.translation-pair-animating {
+  transition-duration: 760ms;
+}
+
+.track.no-anim {
+  transition: none !important;
+}
+
+.track.no-anim .line {
+  transition: none !important;
+}
+
+.line {
+  position: relative;
+  height: var(--row-height);
+  min-height: var(--row-height);
+  display: flex;
+  align-items: center;
+  line-height: 1.12;
+  letter-spacing: 0;
+  transform-origin: var(--line-transform-origin);
+  text-shadow: var(--text-shadow);
+  overflow: visible;
+  transition:
+    opacity 560ms cubic-bezier(0.22, 0.72, 0.24, 1),
+    color 280ms ease,
+    transform 560ms cubic-bezier(0.22, 0.72, 0.24, 1);
+}
+
+.line-text {
+  grid-area: 1 / 1;
+  display: block;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: inherit;
+  padding-bottom: var(--line-text-padding-bottom);
+}
+
+.line.word-scan-smoothing {
+  transition:
+    opacity 560ms cubic-bezier(0.22, 0.72, 0.24, 1),
+    color 280ms ease,
+    transform 560ms cubic-bezier(0.22, 0.72, 0.24, 1),
+    --word-scan-progress 90ms linear;
+}
+
+.line-text-viewport {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.line-text-stack {
+  display: grid;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+  margin-inline-start: 0;
+  margin-inline-end: auto;
+}
+
+.layout[data-text-alignment="Center"] .line-text-stack {
+  margin-inline: auto;
+}
+
+.layout[data-text-alignment="Right"] .line-text-stack {
+  margin-inline-start: auto;
+  margin-inline-end: 0;
+}
+
+.line.horizontal-scrolling .line-text-stack {
+  width: max-content;
+  max-width: none;
+  margin-inline-start: 0;
+  margin-inline-end: 0;
+  transform: translateX(var(--line-scroll-offset));
+}
+
+.line.horizontal-scrolling .line-text {
+  width: max-content;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.line.horizontal-scrolling.word-scan-smoothing .line-text-stack {
+  transition: transform 90ms linear;
+  will-change: transform;
+}
+
+.line-text-scan {
+  color: var(--primary);
+  visibility: hidden;
+  clip-path: inset(0 100% 0 0);
+  pointer-events: none;
+}
+
+.current-line {
+  font-size: var(--current-size);
+  font-weight: var(--font-weight);
+  color: var(--primary);
+  opacity: 0.98;
+  top: var(--primary-offset-y);
+  transform: none;
+}
+
+.current-line.word-scanning .line-text-base,
+.next-line.promoting.word-scanning .line-text-base {
+  color: var(--word-scan-base);
+  clip-path: inset(0 0 0 var(--word-scan-progress));
+}
+
+.current-line.word-scanning .line-text-scan,
+.next-line.promoting.word-scanning .line-text-scan {
+  visibility: visible;
+  clip-path: inset(0 calc(100% - var(--word-scan-progress)) 0 0);
+}
+
+@supports ((mask-image: linear-gradient(to right, #000, transparent)) or
+  (-webkit-mask-image: linear-gradient(to right, #000, transparent))) {
+  .current-line.word-scanning .line-text-base,
+  .next-line.promoting.word-scanning .line-text-base {
+    clip-path: none;
+  }
+
+  .current-line.word-scanning .line-text-scan,
+  .next-line.promoting.word-scanning .line-text-scan {
+    --word-scan-effective-feather: min(
+      var(--word-scan-feather-width),
+      var(--word-scan-progress),
+      calc(100% - var(--word-scan-progress)));
+    clip-path: none;
+    color: var(--word-scan-overlay);
+    -webkit-mask-image: linear-gradient(
+      to right,
+      #000 0,
+      #000 calc(var(--word-scan-progress) - var(--word-scan-effective-feather)),
+      transparent calc(var(--word-scan-progress) + var(--word-scan-effective-feather)),
+      transparent 100%);
+    mask-image: linear-gradient(
+      to right,
+      #000 0,
+      #000 calc(var(--word-scan-progress) - var(--word-scan-effective-feather)),
+      transparent calc(var(--word-scan-progress) + var(--word-scan-effective-feather)),
+      transparent 100%);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+  }
+}
+
+.next-line {
+  --promotion-scale: 1;
+  font-size: var(--next-size);
+  font-weight: var(--font-weight);
+  color: var(--secondary);
+  opacity: 0.72;
+  top: var(--secondary-offset-y);
+  transform: none;
+}
+
+.incoming-line {
+  opacity: 0;
+}
+
+.layout.translation-mode .track > .next-line:not(.incoming-line),
+.translation-line {
+  font-size: var(--next-size);
+  font-weight: var(--font-weight);
+  color: var(--translation);
+  opacity: 1;
+  top: var(--secondary-offset-y);
+}
+
+.layout.translation-mode .track > .next-line.translation-placeholder:not(.incoming-line),
+.translation-line.translation-placeholder {
+  opacity: 0.55;
+}
+
+.layout.translation-mode .incoming-line {
+  display: none;
+}
+
+.layout.translation-mode .track > .next-line:not(.incoming-line) .line-text-scan {
+  visibility: hidden;
+}
+
+.incoming-translation-pair {
+  display: none;
+  width: 100%;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: var(--row-gap);
+  pointer-events: none;
+}
+
+.layout.translation-mode .incoming-translation-pair.preparing,
+.layout.translation-mode .incoming-translation-pair.entering {
+  display: flex;
+}
+
+.incoming-translation-pair.no-anim {
+  transition: none !important;
+}
+
+.current-line.leaving {
+  opacity: 0.16;
+  transform: scale(0.972);
+}
+
+.next-line.promoting {
+  color: var(--primary);
+  transform: translateY(calc(var(--primary-offset-y) - var(--secondary-offset-y))) scale(var(--promotion-scale));
+}
+
+.track.word-scan-transition .next-line.promoting {
+  color: var(--secondary);
+}
+
+.spectrum {
+  width: min(var(--spectrum-width), 100%);
+  height: var(--spectrum-height);
+  display: flex;
+  align-items: center;
+  gap: var(--spectrum-fitted-gap, var(--spectrum-gap));
+  opacity: 0.92;
+  transition: opacity 260ms ease;
+}
+
+.spectrum span {
+  width: var(--spectrum-fitted-bar-width, var(--spectrum-bar-width));
+  flex: 0 0 var(--spectrum-fitted-bar-width, var(--spectrum-bar-width));
+  height: var(--spectrum-bar-height);
+  border-radius: 999px;
+  background: var(--primary);
+  box-shadow: var(--text-shadow);
+  opacity: 0.72;
+  transform-origin: center bottom;
+  transition: opacity 260ms ease;
+  animation: spectrumPulse 1380ms ease-in-out infinite;
+  animation-delay: calc(var(--i) * -83ms);
+}
+
+.spectrum span:nth-child(3n) {
+  animation-duration: 1160ms;
+  opacity: 0.62;
+}
+
+.spectrum span:nth-child(4n) {
+  animation-duration: 1540ms;
+  opacity: 0.82;
+}
+
+.spectrum span:nth-child(5n) {
+  animation-duration: 1280ms;
+}
+
+@keyframes spectrumPulse {
+  0%, 100% {
+    height: var(--spectrum-low-height);
+    transform: scaleY(0.72);
+  }
+
+  42% {
+    height: var(--spectrum-high-height);
+    transform: scaleY(1);
+  }
+
+  68% {
+    height: var(--spectrum-middle-height);
+    transform: scaleY(0.86);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lyrics-layer,
+  .spectrum-layer,
+  .layout.spectrum-mode.spectrum-exiting.spectrum-exit-active .lyrics-layer,
+  .layout.spectrum-mode.spectrum-exiting.spectrum-exit-active .spectrum-layer,
+  .layout.spectrum-transitioning .lyrics-layer,
+  .layout.spectrum-transitioning .spectrum-layer {
+    transition: none;
+    will-change: auto;
+  }
+
+  .line.word-scan-smoothing {
+    transition: none;
+  }
+
+  .track.animating {
+    transition: none;
+    will-change: auto;
+  }
+
+  .line.horizontal-scrolling.word-scan-smoothing .line-text-stack {
+    transition: none;
+    will-change: auto;
+  }
+}

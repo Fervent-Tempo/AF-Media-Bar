@@ -3,15 +3,11 @@ using AFMediaBar.Classes.Models;
 namespace AFMediaBar.Classes.Services.Lyrics;
 
 /// <summary>
-/// 逐字擦亮的纯策略：把播放位置换算成"当前行已唱到哪一段"以及对应的裁剪宽度。
-/// Pure policy for syllable highlighting: converts a playback position into how far the active line has been sung and
-/// the matching clip width.
+/// 逐字擦亮的纯策略：仅依据真实逐字时间轴，把播放位置换算成当前行的已唱进度。
+/// Pure syllable-highlight policy: converts playback position into sung progress using only a real word timeline.
 ///
-/// 有逐字时间轴时按音节文本长度加权，擦亮边界刚好落在音节上；只有行级窗口时退化为整行线性推进；两者都没有时
-/// 返回 null，调用方不启用高亮层，外观与不启用逐字时完全一致。
-/// With a syllable timeline the progress is weighted by syllable text length, so the boundary lands exactly on a syllable;
-/// with only a line window it degrades to linear progress across the line; with neither it returns null and the caller
-/// keeps the highlight layer off, leaving the appearance exactly as before.
+/// 只有真实逐字时间轴才产生进度；行级歌词不会按整行时长猜测逐字位置。
+/// Only a real syllable timeline produces progress; line-level lyrics never guess a word position from the line window.
 /// </summary>
 public static class LyricHighlightPolicy
 {
@@ -31,29 +27,12 @@ public static class LyricHighlightPolicy
         }
 
         var words = CollectUsableWords(line.Words);
-        if (words.Count >= 2)
+        if (words.Count > 0)
         {
             return ResolveWordProgress(words, positionSeconds);
         }
 
-        return ResolveLineProgress(line, positionSeconds);
-    }
-
-    /// <summary>
-    /// 把进度换算成高亮层的裁剪宽度。
-    /// Converts progress into the clip width of the highlight layer.
-    /// </summary>
-    /// <param name="progress">进度，越界时被夹取 / Progress, clamped into range.</param>
-    /// <param name="measuredTextWidth">当前行文本的实测宽度（DIP）/ Measured width of the active line in DIP.</param>
-    /// <returns>裁剪宽度（DIP）；无有效宽度时返回 0 / Clip width in DIP, or 0 without a usable width.</returns>
-    public static double ResolveClipWidth(double progress, double measuredTextWidth)
-    {
-        if (!double.IsFinite(measuredTextWidth) || measuredTextWidth <= 0 || !double.IsFinite(progress))
-        {
-            return 0;
-        }
-
-        return Math.Clamp(progress, 0, 1) * measuredTextWidth;
+        return null;
     }
 
     private static List<LyricWord> CollectUsableWords(IReadOnlyList<LyricWord> words)
@@ -116,13 +95,4 @@ public static class LyricHighlightPolicy
         return Math.Clamp(sungCharacters / totalCharacters, 0, 1);
     }
 
-    private static double? ResolveLineProgress(LyricLine line, double positionSeconds)
-    {
-        if (!double.IsFinite(line.Start) || !double.IsFinite(line.End) || line.End <= line.Start)
-        {
-            return null;
-        }
-
-        return Math.Clamp((positionSeconds - line.Start) / (line.End - line.Start), 0, 1);
-    }
 }

@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:AFMediaBar.Components"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
              mc:Ignorable="d"
              FontFamily="{DynamicResource AppTextFontFamily}"
              FontWeight="{DynamicResource AppTextFontWeight}"
@@ -162,76 +163,15 @@
                                 </Canvas>
                             </StackPanel>
 
-                            <Grid x:Name="SongLyricsPanel" Visibility="Collapsed">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="*" />
-                                    <RowDefinition Height="*" />
-                                </Grid.RowDefinitions>
-                                <Border x:Name="SongLyricsContainer"
-                                        Grid.Row="0"
-                                        Grid.RowSpan="2"
-                                        Height="19"
-                                        ClipToBounds="True"
-                                        VerticalAlignment="Center"
+                            <Grid x:Name="SongLyricsPanel" Visibility="Collapsed" ClipToBounds="True">
+                                <wv2:WebView2CompositionControl x:Name="LyricsWebView"
+                                                               HorizontalAlignment="Stretch"
+                                                               VerticalAlignment="Stretch"
+                                                               IsHitTestVisible="False" />
+                                <Border Background="Transparent"
                                         Cursor="Hand"
                                         Tag="MediaAction"
-                                        MouseLeftButtonUp="SongTitleContainer_MouseLeftButtonUp">
-                                    <!--
-                                        两层文本：底色层保持原样（布局引擎与跑马灯仍然只写它），高亮层逐字镜像它的文本与度量，
-                                        由自己的裁剪矩形擦亮。BarBorder 只能有一个子级，因此外面这层 Grid 只是为了容纳两层。
-
-                                        Two text layers: the base layer stays as it was (the layout engine and the marquee only
-                                        write to it), while the highlight layer mirrors its text and metrics and is revealed by
-                                        its own clip rectangle. A Border takes one child only, so the Grid exists just to hold
-                                        both layers.
-                                    -->
-                                    <Grid>
-                                        <TextBlock x:Name="SongLyrics"
-                                                   Text=""
-                                                   HorizontalAlignment="Stretch"
-                                                   VerticalAlignment="Center"
-                                                   TextAlignment="Center"
-                                                   TextTrimming="CharacterEllipsis"
-                                                   FontFamily="{DynamicResource AppTextFontFamily}"
-                                                   FontWeight="{DynamicResource AppTextFontWeight}" />
-                                        <TextBlock x:Name="SongLyricsHighlight"
-                                                   Text="{Binding ElementName=SongLyrics, Path=Text}"
-                                                   Width="{Binding ElementName=SongLyrics, Path=Width}"
-                                                   HorizontalAlignment="Stretch"
-                                                   VerticalAlignment="Center"
-                                                   TextAlignment="{Binding ElementName=SongLyrics, Path=TextAlignment}"
-                                                   TextTrimming="{Binding ElementName=SongLyrics, Path=TextTrimming}"
-                                                   FontSize="{Binding ElementName=SongLyrics, Path=FontSize}"
-                                                   FontFamily="{Binding ElementName=SongLyrics, Path=FontFamily}"
-                                                   FontWeight="{Binding ElementName=SongLyrics, Path=FontWeight}"
-                                                   IsHitTestVisible="False"
-                                                   Visibility="Collapsed">
-                                            <TextBlock.Clip>
-                                                <RectangleGeometry x:Name="SongLyricsHighlightClip" Rect="0,0,0,19" />
-                                            </TextBlock.Clip>
-                                        </TextBlock>
-                                    </Grid>
-                                </Border>
-                                <Border x:Name="SongLyricsSecondaryContainer"
-                                        Grid.Row="1"
-                                        Height="{Binding ElementName=SongLyricsContainer, Path=Height}"
-                                        ClipToBounds="True"
-                                        VerticalAlignment="Center"
-                                        Visibility="Collapsed"
-                                        Cursor="Hand"
-                                        Tag="MediaAction"
-                                        MouseLeftButtonUp="SongTitleContainer_MouseLeftButtonUp">
-                                    <TextBlock x:Name="SongLyricsSecondary"
-                                               Text=""
-                                               HorizontalAlignment="Stretch"
-                                               VerticalAlignment="Center"
-                                               TextAlignment="Center"
-                                               TextTrimming="CharacterEllipsis"
-                                               FontFamily="{DynamicResource AppTextFontFamily}"
-                                               FontWeight="{DynamicResource AppTextFontWeight}"
-                                               FontSize="{Binding ElementName=SongLyrics, Path=FontSize}"
-                                               Opacity="0.68" />
-                                </Border>
+                                        MouseLeftButtonUp="SongTitleContainer_MouseLeftButtonUp" />
                             </Grid>
                         </Grid>
                     </StackPanel>
