@@ -17,10 +17,10 @@ AF Media Bar is a portable media controller for the Windows 10/11 taskbar. It re
 ## Live demo
 
 <p align="center">
-  <img src="docs/assets/运行展示.gif" width="100%" alt="AF Media Bar running on a Windows taskbar with artwork, playback controls, and media information">
+  <img src="docs/assets/readme/展示.gif" width="100%" alt="AF Media Bar running on a Windows taskbar with artwork, playback controls, and media information">
 </p>
 
-[Watch the introduction video on Bilibili](https://www.bilibili.com/video/BV1Bjuq6bErr)
+[Watch the introduction video on Bilibili](https://www.bilibili.com/video/BV17yhh6aEgK)
 
 ## Download and run
 

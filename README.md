@@ -14,13 +14,13 @@
 
 AF Media Bar 是一款便携式 Windows 10/11 任务栏媒体控制器。它从系统媒体会话读取正在播放的内容，让封面、歌词、播放控制和音频设备切换留在桌面边缘。
 
-## 真实演示
+## 运行演示
 
 <p align="center">
-  <img src="docs/assets/运行展示.gif" width="100%" alt="AF Media Bar 实际运行演示：任务栏上的封面、播放控制和媒体信息">
+  <img src="docs/assets/readme/展示.gif" width="100%" alt="AF Media Bar 实际运行演示">
 </p>
 
-[观看 Bilibili 介绍视频](https://www.bilibili.com/video/BV1Bjuq6bErr)
+[观看 Bilibili 介绍视频](https://www.bilibili.com/video/BV17yhh6aEgK)
 
 ## 下载安装
 
