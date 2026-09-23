@@ -94,16 +94,11 @@
                             Title="{DynamicResource Loc.Appearance.Row.LatinFont.Title}">
                             <ComboBox
                                 MinWidth="200"
-                                SelectedValue="{Binding ViewModel.LatinFont, Mode=TwoWay}"
-                                SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.LatinFont.FollowSystem}" Tag="{x:Static settings:LatinFontPreset.SystemDefault}" />
-                                <ComboBoxItem Content="Segoe UI" Tag="{x:Static settings:LatinFontPreset.SegoeUi}" />
-                                <ComboBoxItem Content="Arial" Tag="{x:Static settings:LatinFontPreset.Arial}" />
-                                <ComboBoxItem Content="Calibri" Tag="{x:Static settings:LatinFontPreset.Calibri}" />
-                                <ComboBoxItem Content="Verdana" Tag="{x:Static settings:LatinFontPreset.Verdana}" />
-                                <ComboBoxItem Content="Consolas" Tag="{x:Static settings:LatinFontPreset.Consolas}" />
-                                <ComboBoxItem Content="Times New Roman" Tag="{x:Static settings:LatinFontPreset.TimesNewRoman}" />
-                            </ComboBox>
+                                MaxDropDownHeight="360"
+                                ItemsSource="{Binding ViewModel.LatinFontChoices}"
+                                DisplayMemberPath="DisplayName"
+                                SelectedValue="{Binding ViewModel.LatinFontFamily, Mode=TwoWay}"
+                                SelectedValuePath="Name" />
                         </components:SettingsRow>
 
                         <components:SettingsRow
@@ -112,16 +107,11 @@
                             Title="{DynamicResource Loc.Appearance.Row.CjkFont.Title}">
                             <ComboBox
                                 MinWidth="200"
-                                SelectedValue="{Binding ViewModel.CjkFont, Mode=TwoWay}"
-                                SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.CjkFont.FollowSystem}" Tag="{x:Static settings:CjkFontPreset.SystemDefault}" />
-                                <ComboBoxItem Content="微软雅黑" Tag="{x:Static settings:CjkFontPreset.MicrosoftYaHei}" />
-                                <ComboBoxItem Content="等线" Tag="{x:Static settings:CjkFontPreset.DengXian}" />
-                                <ComboBoxItem Content="宋体" Tag="{x:Static settings:CjkFontPreset.SimSun}" />
-                                <ComboBoxItem Content="黑体" Tag="{x:Static settings:CjkFontPreset.SimHei}" />
-                                <ComboBoxItem Content="楷体" Tag="{x:Static settings:CjkFontPreset.KaiTi}" />
-                                <ComboBoxItem Content="仿宋" Tag="{x:Static settings:CjkFontPreset.FangSong}" />
-                            </ComboBox>
+                                MaxDropDownHeight="360"
+                                ItemsSource="{Binding ViewModel.CjkFontChoices}"
+                                DisplayMemberPath="DisplayName"
+                                SelectedValue="{Binding ViewModel.CjkFontFamily, Mode=TwoWay}"
+                                SelectedValuePath="Name" />
                         </components:SettingsRow>
 
                         <!--

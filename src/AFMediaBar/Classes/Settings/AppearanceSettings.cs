@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace AFMediaBar.Classes.Settings;
 
 /// <summary>播放器文字颜色模式。 / Player text color mode.</summary>
@@ -91,7 +93,9 @@ public readonly record struct AppearanceSettings(
     // The nullability is not decoration: an older settings file has no such field, so deserialization hands "missing" over as
     // null, while 0 is a legal input that would merely be clamped to the lower bound. The two have to stay distinguishable, so
     // "not set" is expressed as null and every reader goes through `ResolveBackdropTintOpacityPercent`.
-    int? BackdropTintOpacityPercent)
+    int? BackdropTintOpacityPercent,
+    string? LatinFontFamily = null,
+    string? CjkFontFamily = null)
 {
     /// <summary>
     /// 字体粗细下限。取 OpenType 的 Thin：WPF 只有 100–900 九个真实字重，界面按 100 步进在三者之间取值，
@@ -180,6 +184,8 @@ public readonly record struct AppearanceSettings(
                 ? Classes.Utils.ColorHex.Format(accent)
                 : defaults.AccentColor,
             BackdropTintOpacityPercent = ResolveBackdropTintOpacityPercent(),
+            LatinFontFamily = NormalizeFontName(LatinFontFamily),
+            CjkFontFamily = NormalizeFontName(CjkFontFamily),
             FontWeight = SnapFontWeight(FontWeight)
         };
         return normalized;
@@ -210,27 +216,8 @@ public readonly record struct AppearanceSettings(
     /// <summary>生成西文优先、中文和东亚字符回退在后的字体链。 / Builds a Latin-first fallback chain with CJK coverage.</summary>
     public string ResolveFontFamilySource(string systemFontFamily)
     {
-        var latin = LatinFont switch
-        {
-            LatinFontPreset.SystemDefault => systemFontFamily,
-            LatinFontPreset.SegoeUi => "Segoe UI Variable Text, Segoe UI",
-            LatinFontPreset.Arial => "Arial",
-            LatinFontPreset.Calibri => "Calibri",
-            LatinFontPreset.Verdana => "Verdana",
-            LatinFontPreset.Consolas => "Consolas",
-            LatinFontPreset.TimesNewRoman => "Times New Roman",
-            _ => systemFontFamily
-        };
-        var cjk = CjkFont switch
-        {
-            CjkFontPreset.MicrosoftYaHei => "Microsoft YaHei UI",
-            CjkFontPreset.DengXian => "DengXian",
-            CjkFontPreset.SimSun => "SimSun",
-            CjkFontPreset.SimHei => "SimHei",
-            CjkFontPreset.KaiTi => "KaiTi",
-            CjkFontPreset.FangSong => "FangSong",
-            _ => systemFontFamily
-        };
+        var latin = ResolveSelectedFont(SelectedLatinFontFamily, systemFontFamily);
+        var cjk = ResolveSelectedFont(SelectedCjkFontFamily, systemFontFamily);
 
         return string.Join(", ", new[]
         {
@@ -241,5 +228,42 @@ public readonly record struct AppearanceSettings(
             "Yu Gothic UI",
             "Malgun Gothic"
         }.Where(value => !string.IsNullOrWhiteSpace(value)).Distinct(StringComparer.OrdinalIgnoreCase));
+    }
+
+    // A null name means an older settings file: retain its preset. An empty name explicitly follows the system.
+    [JsonIgnore]
+    public string SelectedLatinFontFamily => LatinFontFamily ?? (LatinFont switch
+        {
+            LatinFontPreset.SystemDefault => string.Empty,
+            LatinFontPreset.SegoeUi => "Segoe UI Variable Text, Segoe UI",
+            LatinFontPreset.Arial => "Arial",
+            LatinFontPreset.Calibri => "Calibri",
+            LatinFontPreset.Verdana => "Verdana",
+            LatinFontPreset.Consolas => "Consolas",
+            LatinFontPreset.TimesNewRoman => "Times New Roman",
+            _ => string.Empty
+        });
+
+    [JsonIgnore]
+    public string SelectedCjkFontFamily => CjkFontFamily ?? (CjkFont switch
+        {
+            CjkFontPreset.MicrosoftYaHei => "Microsoft YaHei UI",
+            CjkFontPreset.DengXian => "DengXian",
+            CjkFontPreset.SimSun => "SimSun",
+            CjkFontPreset.SimHei => "SimHei",
+            CjkFontPreset.KaiTi => "KaiTi",
+            CjkFontPreset.FangSong => "FangSong",
+            _ => string.Empty
+        });
+
+    private static string ResolveSelectedFont(string name, string systemFontFamily) =>
+        string.IsNullOrEmpty(name) ? systemFontFamily : name;
+
+    private static string? NormalizeFontName(string? name)
+    {
+        if (name is null) return null;
+        // WPF uses commas to separate fallback families, so a selected family must be a single name.
+        var trimmed = name.Trim();
+        return trimmed.Contains(',') || trimmed.Length > 200 ? string.Empty : trimmed;
     }
 }

@@ -16,6 +16,10 @@ public partial class AppearanceViewModel : ObservableObject
     private readonly LocalizationService _localization;
     private LatinFontPreset _latinFont;
     private CjkFontPreset _cjkFont;
+    private string _latinFontFamily;
+    private string _cjkFontFamily;
+    private IReadOnlyList<FontFamilyChoice> _latinFontChoices;
+    private IReadOnlyList<FontFamilyChoice> _cjkFontChoices;
     private int _fontWeight;
     private PlayerForegroundMode _playerForegroundMode;
     private ApplicationThemeMode _applicationThemeMode;
@@ -42,8 +46,12 @@ public partial class AppearanceViewModel : ObservableObject
         _localization = localization;
 
         var appearance = SettingsManager.Current.Appearance.Normalize();
+        _latinFontChoices = InstalledFontCatalog.GetChoices("Appearance.LatinFont.FollowSystem");
+        _cjkFontChoices = InstalledFontCatalog.GetChoices("Appearance.CjkFont.FollowSystem");
         _latinFont = appearance.LatinFont;
         _cjkFont = appearance.CjkFont;
+        _latinFontFamily = InstalledFontCatalog.MatchSelection(appearance.SelectedLatinFontFamily, _latinFontChoices);
+        _cjkFontFamily = InstalledFontCatalog.MatchSelection(appearance.SelectedCjkFontFamily, _cjkFontChoices);
         _fontWeight = appearance.FontWeight;
         _playerForegroundMode = appearance.PlayerForegroundMode;
         _applicationThemeMode = appearance.ApplicationThemeMode;
@@ -77,6 +85,46 @@ public partial class AppearanceViewModel : ObservableObject
                 if (!_isRefreshing) Publish();
             }
         }
+    }
+
+    public IReadOnlyList<FontFamilyChoice> LatinFontChoices => _latinFontChoices;
+    public IReadOnlyList<FontFamilyChoice> CjkFontChoices => _cjkFontChoices;
+
+    public string LatinFontFamily
+    {
+        get => _latinFontFamily;
+        set
+        {
+            if (value is not null && SetProperty(ref _latinFontFamily, value) && !_isRefreshing) Publish();
+        }
+    }
+
+    public string CjkFontFamily
+    {
+        get => _cjkFontFamily;
+        set
+        {
+            if (value is not null && SetProperty(ref _cjkFontFamily, value) && !_isRefreshing) Publish();
+        }
+    }
+
+    public void RefreshInstalledFonts()
+    {
+        var latin = LatinFontFamily;
+        var cjk = CjkFontFamily;
+        _isRefreshing = true;
+        try
+        {
+            _latinFontChoices = InstalledFontCatalog.GetChoices("Appearance.LatinFont.FollowSystem");
+            _cjkFontChoices = InstalledFontCatalog.GetChoices("Appearance.CjkFont.FollowSystem");
+            OnPropertyChanged(nameof(LatinFontChoices));
+            OnPropertyChanged(nameof(CjkFontChoices));
+            LatinFontFamily = InstalledFontCatalog.MatchSelection(latin, _latinFontChoices);
+            CjkFontFamily = InstalledFontCatalog.MatchSelection(cjk, _cjkFontChoices);
+            OnPropertyChanged(nameof(LatinFontFamily));
+            OnPropertyChanged(nameof(CjkFontFamily));
+        }
+        finally { _isRefreshing = false; }
     }
 
     public int FontWeight
@@ -233,7 +281,11 @@ public partial class AppearanceViewModel : ObservableObject
     };
 
     /// <summary>界面语言变化后让 WPF 重读全部绑定，本页由代码产出的读数因此一起换语言。/ Makes WPF re-read every binding after a language change, so the readings this page builds in code change language with it.</summary>
-    private void OnLanguageChanged(object? sender, EventArgs e) => OnPropertyChanged(string.Empty);
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        RefreshInstalledFonts();
+        OnPropertyChanged(string.Empty);
+    }
 
     [RelayCommand]
     private void SetPlayerForegroundMode(PlayerForegroundMode mode) => PlayerForegroundMode = mode;
@@ -269,7 +321,9 @@ public partial class AppearanceViewModel : ObservableObject
         BackdropMode,
         AccentColorMode,
         AccentColorHex,
-        BackdropTintOpacityPercent));
+        BackdropTintOpacityPercent,
+        LatinFontFamily,
+        CjkFontFamily));
 
     public void ResetAppearance() => SettingsManager.ResetAppearance();
 
@@ -288,6 +342,8 @@ public partial class AppearanceViewModel : ObservableObject
         {
             LatinFont = appearance.LatinFont;
             CjkFont = appearance.CjkFont;
+            LatinFontFamily = InstalledFontCatalog.MatchSelection(appearance.SelectedLatinFontFamily, _latinFontChoices);
+            CjkFontFamily = InstalledFontCatalog.MatchSelection(appearance.SelectedCjkFontFamily, _cjkFontChoices);
             FontWeight = appearance.FontWeight;
             PlayerForegroundMode = appearance.PlayerForegroundMode;
             ApplicationThemeMode = appearance.ApplicationThemeMode;
