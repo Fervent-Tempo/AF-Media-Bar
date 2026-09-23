@@ -111,7 +111,14 @@ public sealed class AudioMonitorService : IDisposable, IMemoryPrunable
             throw new ArgumentException($"At least {count} bands are required.", nameof(bands));
         }
 
-        if (_disposed || !EnsureCapture())
+        if (_disposed)
+        {
+            Array.Clear(bands, 0, count);
+            return false;
+        }
+
+        _deviceResolver.RequestScan();
+        if (!EnsureCapture())
         {
             Array.Clear(bands, 0, count);
             return false;

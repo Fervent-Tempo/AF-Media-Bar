@@ -51,12 +51,14 @@ public static class AudioCaptureDevicePolicy
     public static readonly TimeSpan PausedScanInterval = TimeSpan.FromSeconds(5);
 
     /// <summary>
-    /// 该档位是否允许枚举。息屏与睡眠档位下只唤醒、不枚举：屏幕已经黑了，端点解析没有意义。
-    /// Whether enumeration is allowed at this level. Under display-off and suspend the loop only wakes without enumerating: the screen
-    /// is dark and endpoint resolution is pointless.
+    /// 仅在频谱最近仍被取样、且剪枝档位允许时枚举；隐藏频谱与息屏时都不需要端点解析。
+    /// Enumerates only while spectrum sampling is recently requested and the prune level allows it; neither a hidden spectrum nor
+    /// a dark display needs endpoint resolution.
     /// </summary>
     /// <param name="level">当前剪枝档位。/ The current prune level.</param>
-    public static bool ShouldScan(MemoryPruneLevel level) => level < MemoryPruneLevel.DisplayOff;
+    /// <param name="hasRecentDemand">频谱是否正在取样。/ Whether spectrum samples are currently requested.</param>
+    public static bool ShouldScan(MemoryPruneLevel level, bool hasRecentDemand) =>
+        hasRecentDemand && level < MemoryPruneLevel.DisplayOff;
 
     /// <summary>按剪枝档位取扫描间隔（息屏/睡眠用唤醒间隔）。/ Resolves the scan interval for a prune level (display-off and suspend use the wake interval).</summary>
     /// <param name="level">当前剪枝档位。/ The current prune level.</param>

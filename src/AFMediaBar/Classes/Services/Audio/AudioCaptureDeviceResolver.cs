@@ -8,13 +8,13 @@ namespace AFMediaBar.Classes.Services;
 /// 后台解析频谱采集的目标输出端点，并把结果缓存下来供采集路径读取。
 ///
 /// 端点和音频会话的枚举（Core Audio + 进程查询）是毫秒级的阻塞调用，不能从频谱的 UI 计时器执行：
-/// 本服务用一条自己的后台循环按档位节奏扫描（正常 2 秒、Idle 10 秒、息屏/睡眠只唤醒不枚举），
+/// 本服务只在频谱持续请求采样时，用一条后台循环按档位节奏扫描（正常 2 秒、Idle 10 秒、息屏/睡眠不枚举），
 /// 选出"正在出声的那个设备"后写入 <see cref="TargetDeviceId"/>；采集路径只读取这个缓存值，不做任何枚举。
 /// Resolves the spectrum capture's target render endpoint on a background loop and caches the result for the capture path.
 ///
 /// Enumerating endpoints and audio sessions (Core Audio plus process queries) consists of blocking calls in the millisecond range and
-/// must not run from the spectrum's UI timer: this service owns a background loop that scans on a level-aware cadence (two seconds
-/// normally, ten when idle, wake-only while the display is off or the system suspends), picks the device that is actually audible and
+/// must not run from the spectrum's UI timer: while spectrum samples are requested, a background loop scans on a level-aware cadence
+/// (two seconds normally, ten when idle, no enumeration while the display is off or the system suspends), picks the audible device and
 /// writes it to <see cref="TargetDeviceId"/>; the capture path only reads that cached value and never enumerates.
 /// </summary>
 public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
@@ -32,9 +32,15 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
         new("77AA99A0-1BD6-484F-8BC7-2C654C9A9B6F");
 
     private readonly CancellationTokenSource _cancellation = new();
+    private readonly SemaphoreSlim _scanRequested = new(0, 1);
+    private long _lastDemandTick = long.MinValue;
     private volatile string? _targetDeviceId;
     private volatile MemoryPruneLevel _pruneLevel;
-    private bool _isDisposed;
+    private volatile bool _isDisposed;
+
+    // 频谱最慢每 200 ms 取样一次；停止请求满一秒即让后台循环停在信号量上，不再周期唤醒。
+    // Spectrum samples arrive at least every 200 ms; after one second without demand the loop parks without periodic wakeups.
+    private const long DemandIdleMilliseconds = 1_000;
 
     /// <summary>最近一次解析出的目标端点标识；尚未解析或解析不出时为空，采集路径遇到空值会回退到系统默认端点。
     /// The endpoint identifier resolved most recently; null before the first resolution or when nothing could be resolved, in which
@@ -45,13 +51,44 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
     public string PruneParticipantName => "audio-capture-device";
 
     /// <summary>
-    /// 启动后台解析循环。首次解析立即执行：启动时系统默认端点可能正是没有声音的那一个，早一次解析就少一段静音窗口。
-    /// Starts the background resolution loop. The first resolution runs immediately: right after startup the system default endpoint
-    /// may be exactly the silent one, and resolving early shortens that silent window.
+    /// 启动按需解析循环；频谱第一次取样时立即解析，避免后台无频谱时仍枚举音频会话。
+    /// Starts the demand-driven resolution loop; the first spectrum sample triggers an immediate scan without background enumeration
+    /// while the spectrum is unused.
     /// </summary>
     public AudioCaptureDeviceResolver()
     {
-        _ = Task.Run(RunLoopAsync);
+        var token = _cancellation.Token;
+        _ = Task.Run(() => RunLoopAsync(token));
+    }
+
+    /// <summary>报告频谱正在取样；从休眠状态恢复时唤醒后台解析器，不在调用线程枚举设备。
+    /// Reports active spectrum sampling and wakes the background resolver when parked, without enumerating on the caller's thread.</summary>
+    public void RequestScan()
+    {
+        if (_isDisposed)
+        {
+            return;
+        }
+
+        var now = Environment.TickCount64;
+        var previous = Interlocked.Exchange(ref _lastDemandTick, now);
+        if (previous != long.MinValue && now - previous <= DemandIdleMilliseconds)
+        {
+            return;
+        }
+
+        try
+        {
+            _scanRequested.Release();
+        }
+        catch (SemaphoreFullException)
+        {
+            // Multiple taskbar hosts can request the same scan; one pending wake-up is enough.
+        }
+        catch (ObjectDisposedException)
+        {
+            // A final UI tick can race with application shutdown.
+        }
     }
 
     /// <summary>记录剪枝档位；循环按档位决定扫描间隔与是否枚举。/ Records the prune level; the loop derives its scan interval and whether to enumerate from it.</summary>
@@ -72,23 +109,37 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
         _cancellation.Dispose();
     }
 
-    private async Task RunLoopAsync()
+    private async Task RunLoopAsync(CancellationToken token)
     {
-        var token = _cancellation.Token;
-        ResolveOnce(token);
-        while (!token.IsCancellationRequested)
+        try
         {
-            try
+            await _scanRequested.WaitAsync(token).ConfigureAwait(false);
+            while (!token.IsCancellationRequested)
             {
-                await Task.Delay(AudioCaptureDevicePolicy.ResolveScanInterval(_pruneLevel), token).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                return;
-            }
+                if (!HasRecentDemand())
+                {
+                    await _scanRequested.WaitAsync(token).ConfigureAwait(false);
+                }
 
-            ResolveOnce(token);
+                ResolveOnce(token);
+                await _scanRequested.WaitAsync(AudioCaptureDevicePolicy.ResolveScanInterval(_pruneLevel), token)
+                    .ConfigureAwait(false);
+            }
         }
+        catch (OperationCanceledException)
+        {
+            // Dispose cancels either wait immediately.
+        }
+        finally
+        {
+            _scanRequested.Dispose();
+        }
+    }
+
+    private bool HasRecentDemand()
+    {
+        var last = Interlocked.Read(ref _lastDemandTick);
+        return last != long.MinValue && Environment.TickCount64 - last <= DemandIdleMilliseconds;
     }
 
     /// <summary>
@@ -97,7 +148,8 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
     /// </summary>
     private void ResolveOnce(CancellationToken token)
     {
-        if (token.IsCancellationRequested || !AudioCaptureDevicePolicy.ShouldScan(_pruneLevel))
+        if (token.IsCancellationRequested ||
+            !AudioCaptureDevicePolicy.ShouldScan(_pruneLevel, HasRecentDemand()))
         {
             return;
         }

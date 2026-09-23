@@ -131,11 +131,13 @@ public sealed class AudioCaptureDevicePolicyTests
         Assert.AreEqual(AudioCaptureDevicePolicy.PausedScanInterval, AudioCaptureDevicePolicy.ResolveScanInterval(MemoryPruneLevel.DisplayOff));
         Assert.AreEqual(AudioCaptureDevicePolicy.PausedScanInterval, AudioCaptureDevicePolicy.ResolveScanInterval(MemoryPruneLevel.Suspended));
 
-        // 正常与空闲档位允许枚举；息屏与睡眠只唤醒观察档位，不枚举。
-        // Normal and idle allow enumeration; display-off and suspend only wake to observe the level and enumerate nothing.
-        Assert.IsTrue(AudioCaptureDevicePolicy.ShouldScan(MemoryPruneLevel.None));
-        Assert.IsTrue(AudioCaptureDevicePolicy.ShouldScan(MemoryPruneLevel.Idle));
-        Assert.IsFalse(AudioCaptureDevicePolicy.ShouldScan(MemoryPruneLevel.DisplayOff));
-        Assert.IsFalse(AudioCaptureDevicePolicy.ShouldScan(MemoryPruneLevel.Suspended));
+        // 有采样需求时正常与空闲档位允许枚举；无需求、息屏与睡眠都不枚举。
+        // Normal and idle allow enumeration only with sample demand; no demand, display-off and suspend do not enumerate.
+        Assert.IsTrue(AudioCaptureDevicePolicy.ShouldScan(MemoryPruneLevel.None, true));
+        Assert.IsTrue(AudioCaptureDevicePolicy.ShouldScan(MemoryPruneLevel.Idle, true));
+        Assert.IsFalse(AudioCaptureDevicePolicy.ShouldScan(MemoryPruneLevel.DisplayOff, true));
+        Assert.IsFalse(AudioCaptureDevicePolicy.ShouldScan(MemoryPruneLevel.Suspended, true));
+        Assert.IsFalse(AudioCaptureDevicePolicy.ShouldScan(MemoryPruneLevel.None, false));
+        Assert.IsFalse(AudioCaptureDevicePolicy.ShouldScan(MemoryPruneLevel.Idle, false));
     }
 }
