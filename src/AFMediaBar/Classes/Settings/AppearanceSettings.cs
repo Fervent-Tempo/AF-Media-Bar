@@ -40,36 +40,13 @@ public enum AccentColorMode
     Custom = 1
 }
 
-/// <summary>西文字体预设。 / Latin font preset.</summary>
-public enum LatinFontPreset
-{
-    SegoeUi = 0,
-    Arial = 1,
-    Calibri = 2,
-    Verdana = 3,
-    Consolas = 4,
-    TimesNewRoman = 5
-}
-
-/// <summary>中文字体预设。 / CJK font preset.</summary>
-public enum CjkFontPreset
-{
-    SystemDefault = 0,
-    MicrosoftYaHei = 1,
-    DengXian = 2,
-    SimSun = 3,
-    SimHei = 4,
-    KaiTi = 5,
-    FangSong = 6
-}
-
 /// <summary>
 /// 集中保存外观页设置，并生成稳定的 WPF 字体回退链。
 /// Stores appearance-page settings and builds a stable WPF font fallback chain.
 /// </summary>
 public readonly record struct AppearanceSettings(
-    LatinFontPreset LatinFont,
-    CjkFontPreset CjkFont,
+    string LatinFont,
+    string CjkFont,
     int FontWeight,
     PlayerForegroundMode PlayerForegroundMode,
     // 该选项已从 UI 与呈现逻辑移除；字段保留在模型里以保持序列化形态不变，值不再影响任何行为。
@@ -148,8 +125,8 @@ public readonly record struct AppearanceSettings(
     public const string DefaultAccentColorHex = "#0078D4";
 
     public static AppearanceSettings Default { get; } = new(
-        LatinFontPreset.SegoeUi,
-        CjkFontPreset.SystemDefault,
+        "Segoe UI",
+        string.Empty,
         400,
         PlayerForegroundMode.Automatic,
         false,
@@ -164,8 +141,12 @@ public readonly record struct AppearanceSettings(
         var defaults = Default;
         var normalized = this with
         {
-            LatinFont = Enum.IsDefined(LatinFont) ? LatinFont : defaults.LatinFont,
-            CjkFont = Enum.IsDefined(CjkFont) ? CjkFont : defaults.CjkFont,
+            // 1.2.0 早期版本把字体写成枚举名。字段仍沿用原 JSON 名称，因此可在不提升 schema 的前提下把旧值
+            // 就地换成真正的字体族名称；其余值来自本机字体列表，只需去掉首尾空白。
+            // Early 1.2.0 builds wrote enum names here. The JSON field names stay unchanged, so those values can be upgraded in
+            // place without a schema bump; every other value comes from the installed-font list and only needs trimming.
+            LatinFont = NormalizeLatinFontFamily(LatinFont, defaults.LatinFont),
+            CjkFont = NormalizeCjkFontFamily(CjkFont),
             PlayerForegroundMode = Enum.IsDefined(PlayerForegroundMode) ? PlayerForegroundMode : defaults.PlayerForegroundMode,
             ApplicationThemeMode = Enum.IsDefined(ApplicationThemeMode) ? ApplicationThemeMode : defaults.ApplicationThemeMode,
             BackdropMode = Enum.IsDefined(BackdropMode) ? BackdropMode : defaults.BackdropMode,
@@ -206,33 +187,40 @@ public readonly record struct AppearanceSettings(
         return Math.Clamp(snapped, MinimumFontWeight, MaximumFontWeight);
     }
 
+    private static string NormalizeLatinFontFamily(string? value, string fallback)
+    {
+        var font = value?.Trim();
+        return font switch
+        {
+            null or "" or "SegoeUi" => fallback,
+            "TimesNewRoman" => "Times New Roman",
+            _ => font
+        };
+    }
+
+    private static string NormalizeCjkFontFamily(string? value)
+    {
+        var font = value?.Trim();
+        return font switch
+        {
+            null or "" or "SystemDefault" => string.Empty,
+            "MicrosoftYaHei" => "Microsoft YaHei UI",
+            _ => font
+        };
+    }
+
     /// <summary>生成西文优先、中文和东亚字符回退在后的字体链。 / Builds a Latin-first fallback chain with CJK coverage.</summary>
     public string ResolveFontFamilySource(string systemFontFamily)
     {
-        var latin = LatinFont switch
-        {
-            LatinFontPreset.Arial => "Arial",
-            LatinFontPreset.Calibri => "Calibri",
-            LatinFontPreset.Verdana => "Verdana",
-            LatinFontPreset.Consolas => "Consolas",
-            LatinFontPreset.TimesNewRoman => "Times New Roman",
-            _ => "Segoe UI Variable Text, Segoe UI"
-        };
-        var cjk = CjkFont switch
-        {
-            CjkFontPreset.MicrosoftYaHei => "Microsoft YaHei UI",
-            CjkFontPreset.DengXian => "DengXian",
-            CjkFontPreset.SimSun => "SimSun",
-            CjkFontPreset.SimHei => "SimHei",
-            CjkFontPreset.KaiTi => "KaiTi",
-            CjkFontPreset.FangSong => "FangSong",
-            _ => systemFontFamily
-        };
+        var normalized = Normalize();
+        var latin = normalized.LatinFont;
+        var cjk = string.IsNullOrWhiteSpace(normalized.CjkFont) ? systemFontFamily : normalized.CjkFont;
 
         return string.Join(", ", new[]
         {
             latin,
             cjk,
+            "Microsoft YaHei UI",
             "Microsoft JhengHei UI",
             "Yu Gothic UI",
             "Malgun Gothic"

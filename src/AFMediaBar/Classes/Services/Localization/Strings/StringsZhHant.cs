@@ -122,11 +122,11 @@ internal static class StringsZhHant
         table.Add("Appearance.Row.Backdrop.Title", "視窗背景材質");
         table.Add("Appearance.Row.BackdropTint.Description", "本程式自行繪製的材質底色濃度（30%–100%）");
         table.Add("Appearance.Row.BackdropTint.Title", "材質濃度");
-        table.Add("Appearance.Row.CjkFont.Description", "漢字使用的字型");
+        table.Add("Appearance.Row.CjkFont.Description", "從本機已安裝字型中選擇漢字字型");
         table.Add("Appearance.Row.CjkFont.Title", "中文字型");
         table.Add("Appearance.Row.FontWeight.Description", "設定視窗、媒體列與通知共用的文字粗細");
         table.Add("Appearance.Row.FontWeight.Title", "字型粗細");
-        table.Add("Appearance.Row.LatinFont.Description", "字母與數字使用的字型");
+        table.Add("Appearance.Row.LatinFont.Description", "從本機已安裝字型中選擇西文字型");
         table.Add("Appearance.Row.LatinFont.Title", "西文字型");
         table.Add("Appearance.Row.MediaFontSize.Description", "依百分比縮放靜置層的標題、歌手與歌詞字級（80%–125%）");
         table.Add("Appearance.Row.MediaFontSize.Title", "媒體文字大小");

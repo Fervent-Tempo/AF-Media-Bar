@@ -122,11 +122,11 @@ internal static class StringsZhHans
         table.Add("Appearance.Row.Backdrop.Title", "窗口背景材质");
         table.Add("Appearance.Row.BackdropTint.Description", "应用自己绘制的材质底色浓度（30%–100%）");
         table.Add("Appearance.Row.BackdropTint.Title", "材质浓度");
-        table.Add("Appearance.Row.CjkFont.Description", "汉字使用的字体");
+        table.Add("Appearance.Row.CjkFont.Description", "从本机已安装字体中选择汉字字体");
         table.Add("Appearance.Row.CjkFont.Title", "中文字体");
         table.Add("Appearance.Row.FontWeight.Description", "设置窗口、媒体栏与通知共用的文字粗细");
         table.Add("Appearance.Row.FontWeight.Title", "字体粗细");
-        table.Add("Appearance.Row.LatinFont.Description", "字母与数字使用的字体");
+        table.Add("Appearance.Row.LatinFont.Description", "从本机已安装字体中选择西文字体");
         table.Add("Appearance.Row.LatinFont.Title", "西文字体");
         table.Add("Appearance.Row.MediaFontSize.Description", "按百分比缩放静置层的标题、歌手与歌词字号（80%–125%）");
         table.Add("Appearance.Row.MediaFontSize.Title", "媒体文字大小");

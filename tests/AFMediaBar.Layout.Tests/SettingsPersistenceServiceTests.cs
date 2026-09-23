@@ -32,7 +32,13 @@ public sealed class SettingsPersistenceServiceTests
     {
         var settings = new AppSettings
         {
-            Appearance = AppearanceSettings.Default with { FontWeight = 700, BackdropMode = ApplicationBackdropMode.Acrylic },
+            Appearance = AppearanceSettings.Default with
+            {
+                LatinFont = "Comic Sans MS",
+                CjkFont = "Microsoft YaHei UI",
+                FontWeight = 700,
+                BackdropMode = ApplicationBackdropMode.Acrylic
+            },
             TrayWheelBehavior = TrayWheelBehavior.Disabled,
             LyricsEnabled = false,
             TwoLineLyricsEnabled = true,
@@ -117,6 +123,8 @@ public sealed class SettingsPersistenceServiceTests
         Assert.AreEqual(WindowMode.Taskbar, SettingsManager.Current.WindowMode);
         Assert.AreEqual(DynamicIslandEdge.Right, SettingsManager.Current.DynamicIslandEdge);
         Assert.AreEqual(700, SettingsManager.Current.Appearance.FontWeight);
+        Assert.AreEqual("Comic Sans MS", SettingsManager.Current.Appearance.LatinFont);
+        Assert.AreEqual("Microsoft YaHei UI", SettingsManager.Current.Appearance.CjkFont);
         Assert.AreEqual(120, SettingsManager.Current.DynamicIslandLeft);
         Assert.AreEqual(PlayerClickAction.ActivateSource, SettingsManager.Current.Interaction.ArtworkClickAction);
         Assert.AreEqual(WheelAction.SwitchMediaSource, SettingsManager.Current.Interaction.PrimaryWheelAction);
@@ -210,6 +218,8 @@ public sealed class SettingsPersistenceServiceTests
         var loaded = SettingsManager.Current.Appearance.Normalize();
         Assert.AreEqual(ApplicationBackdropMode.Acrylic, loaded.BackdropMode);
         Assert.AreEqual(700, loaded.FontWeight);
+        Assert.AreEqual("Segoe UI", loaded.LatinFont);
+        Assert.AreEqual(string.Empty, loaded.CjkFont);
         Assert.AreEqual(AccentColorMode.System, loaded.AccentColorMode);
         Assert.AreEqual(AppearanceSettings.DefaultAccentColorHex, loaded.AccentColor);
         Assert.AreEqual(

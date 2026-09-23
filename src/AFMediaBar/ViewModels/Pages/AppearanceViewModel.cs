@@ -4,6 +4,7 @@ using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Localization;
 using AFMediaBar.Classes.Utils;
 using AFMediaBar.Resources;
+using System.Windows.Media;
 
 namespace AFMediaBar.ViewModels.Pages;
 
@@ -14,8 +15,8 @@ namespace AFMediaBar.ViewModels.Pages;
 public partial class AppearanceViewModel : ObservableObject
 {
     private readonly LocalizationService _localization;
-    private LatinFontPreset _latinFont;
-    private CjkFontPreset _cjkFont;
+    private string _latinFont;
+    private string _cjkFont;
     private int _fontWeight;
     private PlayerForegroundMode _playerForegroundMode;
     private ApplicationThemeMode _applicationThemeMode;
@@ -28,13 +29,12 @@ public partial class AppearanceViewModel : ObservableObject
     /// <summary>
     /// 创建外观页视图模型，并订阅设置变更与界面语言变化。
     ///
-    /// 下拉框的选项名由 XAML 的动态资源提供，页面自己就会换字；本视图模型产出的动效读数是代码拼出来的文案，因此必须
-    /// 订阅语言变化并让 WPF 重读全部绑定。视图模型是单例，两个订阅都与进程同寿命，不需要退订。
+    /// 本视图模型产出的动效读数是代码拼出来的文案，因此必须订阅语言变化并让 WPF 重读全部绑定。
+    /// 视图模型是单例，两个订阅都与进程同寿命，不需要退订。
     /// Creates the appearance view model and subscribes to settings changes and interface-language changes.
     ///
-    /// The drop-down option names come from XAML dynamic resources and follow a language change on their own, while the motion
-    /// reading this view model produces is text built in code, so it has to subscribe and make WPF re-read every binding. The
-    /// view model is a singleton, so both subscriptions live as long as the process and no unsubscription is needed.
+    /// The motion reading this view model produces is text built in code, so it has to subscribe and make WPF re-read every
+    /// binding. The view model is a singleton, so both subscriptions live as long as the process and no unsubscription is needed.
     /// </summary>
     /// <param name="localization">界面语言服务：本页在它变化后刷新自己产出的文案。/ The interface-language service, whose change this page follows to refresh its own text.</param>
     public AppearanceViewModel(LocalizationService localization)
@@ -42,8 +42,8 @@ public partial class AppearanceViewModel : ObservableObject
         _localization = localization;
 
         var appearance = SettingsManager.Current.Appearance.Normalize();
-        _latinFont = appearance.LatinFont;
-        _cjkFont = appearance.CjkFont;
+        _latinFont = ResolveInstalledFont(appearance.LatinFont, AppearanceSettings.Default.LatinFont);
+        _cjkFont = ResolveInstalledFont(appearance.CjkFont, SystemFonts.MessageFontFamily.Source);
         _fontWeight = appearance.FontWeight;
         _playerForegroundMode = appearance.PlayerForegroundMode;
         _applicationThemeMode = appearance.ApplicationThemeMode;
@@ -55,7 +55,12 @@ public partial class AppearanceViewModel : ObservableObject
         _localization.LanguageChanged += OnLanguageChanged;
     }
 
-    public LatinFontPreset LatinFont
+    /// <summary>按名称排序的本机字体族；两个字体选择器共用同一份只读列表。 / Installed local font families, sorted by name and shared by both selectors.</summary>
+    public IReadOnlyList<FontFamily> InstalledFontFamilies { get; } = Fonts.SystemFontFamilies
+        .OrderBy(font => font.Source, StringComparer.CurrentCultureIgnoreCase)
+        .ToArray();
+
+    public string LatinFont
     {
         get => _latinFont;
         set
@@ -67,7 +72,7 @@ public partial class AppearanceViewModel : ObservableObject
         }
     }
 
-    public CjkFontPreset CjkFont
+    public string CjkFont
     {
         get => _cjkFont;
         set
@@ -286,8 +291,8 @@ public partial class AppearanceViewModel : ObservableObject
         _isRefreshing = true;
         try
         {
-            LatinFont = appearance.LatinFont;
-            CjkFont = appearance.CjkFont;
+            LatinFont = ResolveInstalledFont(appearance.LatinFont, AppearanceSettings.Default.LatinFont);
+            CjkFont = ResolveInstalledFont(appearance.CjkFont, SystemFonts.MessageFontFamily.Source);
             FontWeight = appearance.FontWeight;
             PlayerForegroundMode = appearance.PlayerForegroundMode;
             ApplicationThemeMode = appearance.ApplicationThemeMode;
@@ -298,5 +303,18 @@ public partial class AppearanceViewModel : ObservableObject
             MediaFontSizePercent = SettingsManager.Current.TaskbarExperience.Normalize().MediaFontSizePercent;
         }
         finally { _isRefreshing = false; }
+    }
+
+    private string ResolveInstalledFont(string? requested, string fallback)
+    {
+        var requestedName = requested?.Trim();
+        var match = InstalledFontFamilies.FirstOrDefault(font =>
+            string.Equals(font.Source, requestedName, StringComparison.OrdinalIgnoreCase));
+        if (match is not null)
+            return match.Source;
+
+        match = InstalledFontFamilies.FirstOrDefault(font =>
+            string.Equals(font.Source, fallback, StringComparison.OrdinalIgnoreCase));
+        return match?.Source ?? InstalledFontFamilies.FirstOrDefault()?.Source ?? AppearanceSettings.Default.LatinFont;
     }
 }

@@ -122,11 +122,11 @@ internal static class StringsEn
         table.Add("Appearance.Row.Backdrop.Title", "Window backdrop material");
         table.Add("Appearance.Row.BackdropTint.Description", "Tint concentration of the material the application paints itself (30%-100%)");
         table.Add("Appearance.Row.BackdropTint.Title", "Material concentration");
-        table.Add("Appearance.Row.CjkFont.Description", "The font used for Han characters");
+        table.Add("Appearance.Row.CjkFont.Description", "Choose the Han-character font from fonts installed on this PC");
         table.Add("Appearance.Row.CjkFont.Title", "CJK font");
         table.Add("Appearance.Row.FontWeight.Description", "The text weight shared by the settings window, the media bar, and notifications");
         table.Add("Appearance.Row.FontWeight.Title", "Font weight");
-        table.Add("Appearance.Row.LatinFont.Description", "The font used for letters and digits");
+        table.Add("Appearance.Row.LatinFont.Description", "Choose the Latin font from fonts installed on this PC");
         table.Add("Appearance.Row.LatinFont.Title", "Latin font");
         table.Add("Appearance.Row.MediaFontSize.Description", "Scales the rest layer's title, artist, and lyrics type size by a percentage (80%–125%)");
         table.Add("Appearance.Row.MediaFontSize.Title", "Media text size");

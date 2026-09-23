@@ -313,7 +313,7 @@ public static class SettingsSearchIndex
             "Common.Group.Fonts",
             "Search.Appearance.Fonts.Description",
             language,
-            ["字体", "font", "字重", "weight", "粗细", "西文", "英文", "中文", "预览", "preview", "segoe", "雅黑", "字体粗细"]),
+            ["字体", "font", "字重", "weight", "粗细", "西文", "英文", "中文", "本机字体", "已安装字体", "installed fonts", "预览", "preview", "segoe", "雅黑", "字体粗细"]),
         Create(
             SettingsPageKey.Appearance,
             1,
