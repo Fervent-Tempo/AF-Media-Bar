@@ -17,14 +17,15 @@ public readonly record struct AudioEndpointAudibility(string DeviceId, int Rank,
 /// 采集目标是"正在出声的那个设备"，而不是"系统默认设备"：虚拟声卡（SteelSeries Sonar 等）会把不同应用路由到不同端点，
 /// 系统默认端点可能完全没有声音——只认默认端点时，频谱会一直停在静音。选择规则：
 /// 先取可听等级最高的那一档（应用出声 &gt; 仅系统混音出声）；同档内优先保持当前采集的端点（避免来回切换），
-/// 其次是默认端点，最后取峰值最大的端点；整档都不可听时沿用当前端点，没有当前端点则回退默认端点。
+/// 其次是默认端点，最后取峰值最大的端点；整档都不可听时只沿用仍在活动列表中的当前端点，否则回退默认端点。
 /// Target-device selection for the spectrum capture.
 ///
 /// The target is the device that is actually audible, not the system default one: virtual audio drivers (SteelSeries Sonar and
 /// friends) route different applications to different endpoints, and the default endpoint may carry no sound at all — capturing only
 /// the default would leave the spectrum silent. The rules: prefer the highest audibility rank (an application playing beats only the
 /// system mixer playing); within that rank keep the currently captured endpoint first (which avoids switching back and forth), then
-/// the default endpoint, then the loudest one; when nothing is audible, keep the current endpoint, or fall back to the default.
+/// the default endpoint, then the loudest one; when nothing is audible, keep the current endpoint only if it is still active, otherwise
+/// fall back to the default.
 /// </summary>
 public static class AudioCaptureDevicePolicy
 {
@@ -75,10 +76,12 @@ public static class AudioCaptureDevicePolicy
     /// </summary>
     /// <param name="currentDeviceId">当前正在采集的端点，可能为空。/ The endpoint currently captured, possibly empty.</param>
     /// <param name="defaultDeviceId">系统默认端点，可能为空。/ The system default endpoint, possibly empty.</param>
+    /// <param name="activeDeviceIds">本次枚举到的所有活动端点，包括静音端点。/ Every active endpoint found, including silent ones.</param>
     /// <param name="candidates">本次枚举到的可听端点。/ The audible endpoints enumerated this time.</param>
     public static string? SelectTarget(
         string? currentDeviceId,
         string? defaultDeviceId,
+        IReadOnlyCollection<string> activeDeviceIds,
         IReadOnlyList<AudioEndpointAudibility> candidates)
     {
         var currentRank = RankSilent;
@@ -113,9 +116,9 @@ public static class AudioCaptureDevicePolicy
 
         if (bestRank <= RankSilent)
         {
-            // 整档都不可听：保持当前端点（没有就回退默认），避免"没有声音"时反复切换采集。
-            // Nothing audible at all: keep the current endpoint (or fall back to the default) so silence never causes capture churn.
-            return !string.IsNullOrEmpty(currentDeviceId) ? currentDeviceId : defaultDeviceId;
+            // 静音时保持仍然连接的当前端点；设备已拔除时回退默认，避免反复尝试失效 ID。
+            // Keep a still-connected endpoint through silence, but fall back after unplugging rather than retrying a stale ID.
+            return activeDeviceIds.Any(id => SameDevice(id, currentDeviceId)) ? currentDeviceId : defaultDeviceId;
         }
 
         if (currentRank == bestRank)
@@ -128,7 +131,7 @@ public static class AudioCaptureDevicePolicy
             return defaultDeviceId;
         }
 
-        return loudestId ?? (!string.IsNullOrEmpty(currentDeviceId) ? currentDeviceId : defaultDeviceId);
+        return loudestId ?? defaultDeviceId;
     }
 
     private static bool SameDevice(string left, string? right) =>

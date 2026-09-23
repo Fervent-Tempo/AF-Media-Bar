@@ -143,8 +143,8 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
     }
 
     /// <summary>
-    /// 解析一次并更新缓存；失败时保留上一次结果，下一次唤醒再试。
-    /// Resolves once and updates the cache; a failure keeps the previous result and the next wake retries.
+    /// 成功枚举后更新缓存（可清空失效 ID）；枚举失败时保留上一次结果，下一次唤醒再试。
+    /// Updates the cache after a successful enumeration (including clearing a stale ID); an enumeration failure keeps the previous result.
     /// </summary>
     private void ResolveOnce(CancellationToken token)
     {
@@ -156,8 +156,7 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
 
         try
         {
-            var resolved = ResolveTarget();
-            if (!string.IsNullOrEmpty(resolved))
+            if (TryResolveTarget(out var resolved))
             {
                 _targetDeviceId = resolved;
             }
@@ -171,14 +170,16 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
     }
 
     /// <summary>
-    /// 枚举活动端点与会话，按 <see cref="AudioCaptureDevicePolicy.SelectTarget"/> 选出目标标识。
+    /// 枚举活动端点与会话，按 <see cref="AudioCaptureDevicePolicy.SelectTarget"/> 选出目标标识；枚举失败与成功但无端点分开报告。
     /// 每次解析都在当前线程自建并释放 COM 对象，解析之间不共享任何 COM 实例，因此循环运行在线程池线程上也安全。
-    /// Enumerates active endpoints and sessions and picks the target identifier through <see cref="AudioCaptureDevicePolicy.SelectTarget"/>.
+    /// Enumerates active endpoints and sessions and picks the target identifier through <see cref="AudioCaptureDevicePolicy.SelectTarget"/>;
+    /// enumeration failure is distinct from a successful scan with no endpoints.
     /// Every resolution creates and releases its COM objects on the current thread and shares nothing between resolutions, so running
     /// the loop on a thread-pool thread is safe.
     /// </summary>
-    private string? ResolveTarget()
+    private bool TryResolveTarget(out string? targetDeviceId)
     {
+        targetDeviceId = null;
         IMMDeviceEnumerator? enumerator = null;
         IMMDeviceCollection? collection = null;
         try
@@ -186,12 +187,13 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
             enumerator = (IMMDeviceEnumerator)Activator.CreateInstance(
                 Type.GetTypeFromCLSID(AudioDeviceEnumeratorClassId, throwOnError: true)!)!;
             var defaultId = ResolveDefaultEndpointId(enumerator);
+            var activeDeviceIds = new List<string>();
             var candidates = new List<AudioEndpointAudibility>();
             if (enumerator.EnumAudioEndpoints(EDataFlow.Render, DeviceStateActive, out collection) < 0 ||
                 collection is null ||
                 collection.GetCount(out var count) < 0)
             {
-                return null;
+                return false;
             }
 
             for (uint index = 0; index < count; index++)
@@ -208,6 +210,7 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
                         continue;
                     }
 
+                    activeDeviceIds.Add(id);
                     var rank = ResolveAudibilityRank(endpoint, out var peak);
                     if (rank > AudioCaptureDevicePolicy.RankSilent)
                     {
@@ -220,7 +223,8 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
                 }
             }
 
-            return AudioCaptureDevicePolicy.SelectTarget(_targetDeviceId, defaultId, candidates);
+            targetDeviceId = AudioCaptureDevicePolicy.SelectTarget(_targetDeviceId, defaultId, activeDeviceIds, candidates);
+            return true;
         }
         finally
         {

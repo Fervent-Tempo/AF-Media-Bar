@@ -6,9 +6,9 @@ namespace AFMediaBar.Layout.Tests;
 
 /// <summary>
 /// 频谱采集目标设备的选择：先比可听等级，同档内保持当前端点、其次默认端点、最后取最响的端点；
-/// 全部不可听时沿用当前端点，没有则回退默认端点。
+/// 全部不可听时仅沿用仍连接的当前端点，否则回退默认端点。
 /// Target-device selection for the spectrum capture: the highest audibility rank wins, and within that rank the current endpoint is
-/// kept first, then the default one, then the loudest; with nothing audible the current endpoint is kept, or the default falls back.
+/// kept first, then the default one, then the loudest; with nothing audible only an active current endpoint is kept.
 /// </summary>
 [TestClass]
 public sealed class AudioCaptureDevicePolicyTests
@@ -29,6 +29,7 @@ public sealed class AudioCaptureDevicePolicyTests
         var target = AudioCaptureDevicePolicy.SelectTarget(
             Current,
             Default,
+            [Current, Default, Other],
             [Application(Current, 0.05f), Application(Other, 0.5f)]);
 
         Assert.AreEqual(Current, target);
@@ -43,6 +44,7 @@ public sealed class AudioCaptureDevicePolicyTests
         var target = AudioCaptureDevicePolicy.SelectTarget(
             Current,
             Default,
+            [Current, Default, Other],
             [Application(Default, 0.05f), Application(Other, 0.5f)]);
 
         Assert.AreEqual(Default, target);
@@ -54,6 +56,7 @@ public sealed class AudioCaptureDevicePolicyTests
         var target = AudioCaptureDevicePolicy.SelectTarget(
             Current,
             Default,
+            [Current, Default, Other, "quiet"],
             [Application(Other, 0.2f), Application("quiet", 0.01f)]);
 
         Assert.AreEqual(Other, target);
@@ -68,6 +71,7 @@ public sealed class AudioCaptureDevicePolicyTests
         var target = AudioCaptureDevicePolicy.SelectTarget(
             Current,
             Default,
+            [Current, Default, Other],
             [SystemOnly(Default, 0.5f), Application(Other, 0.01f)]);
 
         Assert.AreEqual(Other, target);
@@ -79,20 +83,21 @@ public sealed class AudioCaptureDevicePolicyTests
         var target = AudioCaptureDevicePolicy.SelectTarget(
             Current,
             Default,
+            [Current, Default, Other, "loud"],
             [Application(Other, 0.01f), Application("loud", 0.4f)]);
 
         Assert.AreEqual("loud", target);
     }
 
     [TestMethod]
-    public void NothingAudibleKeepsTheCurrentEndpointOrFallsBackToTheDefault()
+    public void NothingAudibleKeepsOnlyAConnectedCurrentEndpoint()
     {
         Assert.AreEqual(
             Current,
-            AudioCaptureDevicePolicy.SelectTarget(Current, Default, []));
+            AudioCaptureDevicePolicy.SelectTarget(Current, Default, [Current, Default], []));
         Assert.AreEqual(
             Default,
-            AudioCaptureDevicePolicy.SelectTarget(null, Default, []));
+            AudioCaptureDevicePolicy.SelectTarget(null, Default, [Default], []));
         // 候选列表里即使有"静音条目"（等级 0）也不参与选择。
         // Even a silent entry (rank 0) in the candidate list takes no part in the choice.
         Assert.AreEqual(
@@ -100,7 +105,20 @@ public sealed class AudioCaptureDevicePolicyTests
             AudioCaptureDevicePolicy.SelectTarget(
                 Current,
                 Default,
+                [Current, Default, Other],
                 [new AudioEndpointAudibility(Other, AudioCaptureDevicePolicy.RankSilent, 0f)]));
+    }
+
+    [TestMethod]
+    public void UnpluggedCurrentEndpointFallsBackToDefaultInsteadOfRetryingItsId()
+    {
+        Assert.AreEqual(
+            Default,
+            AudioCaptureDevicePolicy.SelectTarget(Current, Default, [Default], []));
+        Assert.IsNull(AudioCaptureDevicePolicy.SelectTarget(Current, null, [], []));
+        Assert.AreEqual(
+            Current,
+            AudioCaptureDevicePolicy.SelectTarget(Current, Default, ["CURRENT", Default], []));
     }
 
     [TestMethod]
@@ -109,6 +127,7 @@ public sealed class AudioCaptureDevicePolicyTests
         var target = AudioCaptureDevicePolicy.SelectTarget(
             "{0.0.0.00000000}.{ABC}",
             Default,
+            ["{0.0.0.00000000}.{abc}", Default],
             [Application("{0.0.0.00000000}.{abc}", 0.05f)]);
 
         Assert.AreEqual("{0.0.0.00000000}.{ABC}", target);
@@ -119,8 +138,8 @@ public sealed class AudioCaptureDevicePolicyTests
     {
         Assert.AreEqual(
             Other,
-            AudioCaptureDevicePolicy.SelectTarget(null, null, [Application(Other, 0.1f)]));
-        Assert.IsNull(AudioCaptureDevicePolicy.SelectTarget(null, null, []));
+            AudioCaptureDevicePolicy.SelectTarget(null, null, [Other], [Application(Other, 0.1f)]));
+        Assert.IsNull(AudioCaptureDevicePolicy.SelectTarget(null, null, [], []));
     }
 
     [TestMethod]
