@@ -1439,6 +1439,13 @@ function resetForTrackSwitch(
   const hasLyricFrame = target.scene === presentationApi.SCENES.LYRICS &&
     Number.isInteger(target.currentLineIndex) &&
     target.currentLineIndex >= 0;
+  if (hasLyricFrame) {
+    // The host already has the lyrics. A track change (or the first timed line
+    // after an instrumental intro) must not invent a visible searching state.
+    trackSwitchSearchTransitionActive = false;
+    renderLyricsFrame(target, false);
+    return;
+  }
   const searchFrame = target.scene === presentationApi.SCENES.SEARCHING
     ? target
     : presentationApi.normalizeFrame({
@@ -1465,19 +1472,6 @@ function resetForTrackSwitch(
       false,
       searchFrame);
     trackSwitchSearchTransitionActive = presentationCoordinator.isTransitioning;
-    if (hasLyricFrame) {
-      applyFrameAfterSearchTransition({
-        current: safeCurrent,
-        next: safeNext,
-        progress,
-        currentLineIndex,
-        wordScanProgress,
-        currentTranslation,
-        nextTranslation,
-        translationMode,
-        targetFrame: target
-      });
-    }
   } else if (target.scene === presentationApi.SCENES.SEARCHING) {
     // A fast switch between tracks can keep the searching scene active. Apply
     // the new metadata frame so the previous track's title cannot linger.
@@ -1497,19 +1491,6 @@ function resetForTrackSwitch(
     presentationCoordinator.setCurrentFrame(searchFrame);
     setSecondaryLine(" ");
     updateSecondaryOpacity(0);
-    if (hasLyricFrame) {
-      applyFrameAfterSearchTransition({
-        current: safeCurrent,
-        next: safeNext,
-        progress,
-        currentLineIndex,
-        wordScanProgress,
-        currentTranslation,
-        nextTranslation,
-        translationMode,
-        targetFrame: target
-      });
-    }
   }
 }
 
