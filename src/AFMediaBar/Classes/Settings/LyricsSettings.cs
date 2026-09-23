@@ -61,6 +61,83 @@ public static class LyricsUnsungOpacity
 }
 
 /// <summary>
+/// 双行歌词的行距：两行文字之间空出的高度（DIP）。
+///
+/// 行距只在双行歌词下有意义，且运行时会被任务栏文字区的可用高度夹取，保证两行加间距绝不超出媒体栏（见 LyricsSpacingPolicy）。
+/// Line gap of two-line lyrics: the height left empty between the two lines in DIP.
+///
+/// It only applies to two-line lyrics and is clamped at runtime against the available height of the taskbar's media-text area, so the
+/// two lines plus the gap can never exceed the bar (see LyricsSpacingPolicy).
+/// </summary>
+public static class LyricsLineGap
+{
+    /// <summary>行距的持久化安全下限。/ Persistence-safe lower bound of the line gap.</summary>
+    public const int MinimumDip = 0;
+
+    /// <summary>行距的持久化安全上限；实际生效值还会被运行时按可用高度进一步压缩。
+    /// Persistence-safe upper bound of the line gap; the effective value is compressed further at runtime by the available height.</summary>
+    public const int MaximumDip = 8;
+
+    /// <summary>行距的步长（DIP）。/ Line-gap step in DIP.</summary>
+    public const int StepDip = 1;
+
+    /// <summary>行距的默认值：0 表示两行紧邻，与升级前的观感一致。
+    /// Default line gap: zero means the two lines sit next to each other, matching the look before this setting existed.</summary>
+    public const int DefaultDip = 0;
+
+    /// <summary>
+    /// 把任意输入吸附到步长网格并夹进区间。
+    /// Snaps any input onto the step grid and clamps it into range.
+    /// </summary>
+    /// <param name="dip">原始 DIP / Raw DIP.</param>
+    /// <returns>可直接写入设置的 DIP / The DIP value that can be written into the settings.</returns>
+    public static int Normalize(int dip) => Math.Clamp(
+        (int)Math.Round(dip / (double)StepDip, MidpointRounding.AwayFromZero) * StepDip,
+        MinimumDip,
+        MaximumDip);
+}
+
+/// <summary>
+/// 歌词字距：以字号的百分比增加字与字之间的空隙。
+///
+/// WPF 的 TextBlock 没有字距属性，因此实现为在显示层给符合条件的字符之间插入窄空格；百分比的含义是
+/// "目标空隙 = 字号 × 百分比"，实现会按当前字体实测候选空格的宽度并取最接近目标的一档，
+/// 字体缺少全部候选字形时退化为不加（见 LyricsSpacingPolicy）。
+/// Lyric character spacing: extra space between characters as a percentage of the font size.
+///
+/// WPF's TextBlock has no letter-spacing property, so this is implemented by inserting narrow space characters between eligible
+/// characters in the displayed text; the percentage means "target gap = font size × percentage", and the implementation measures the
+/// candidate space characters with the actual font and picks the closest one, degrading to no spacing when the font lacks them all
+/// (see LyricsSpacingPolicy).
+/// </summary>
+public static class LyricsCharacterSpacing
+{
+    /// <summary>字距的持久化安全下限（百分比）。/ Persistence-safe lower bound in percent.</summary>
+    public const int MinimumPercent = 0;
+
+    /// <summary>字距的持久化安全上限（百分比）：20% 字号在 12 DIP 字号下约 2.4 DIP，已是任务栏上的可读上限。
+    /// Persistence-safe upper bound in percent: 20% of a 12 DIP font is about 2.4 DIP, already the readability ceiling on a taskbar.</summary>
+    public const int MaximumPercent = 20;
+
+    /// <summary>字距的步长（百分比）。/ Character-spacing step in percent.</summary>
+    public const int StepPercent = 2;
+
+    /// <summary>字距的默认值：0 表示不改动字距，与升级前一致。/ Default spacing: zero, matching the look before this setting existed.</summary>
+    public const int DefaultPercent = 0;
+
+    /// <summary>
+    /// 把任意输入吸附到步长网格并夹进区间。
+    /// Snaps any input onto the step grid and clamps it into range.
+    /// </summary>
+    /// <param name="percent">原始百分比 / Raw percentage.</param>
+    /// <returns>可直接写入设置的百分比 / The percentage that can be written into the settings.</returns>
+    public static int Normalize(int percent) => Math.Clamp(
+        (int)Math.Round(percent / (double)StepPercent, MidpointRounding.AwayFromZero) * StepPercent,
+        MinimumPercent,
+        MaximumPercent);
+}
+
+/// <summary>
 /// 第二行歌词的来源顺序：列表顺序就是优先级，未列出的来源不会被使用。
 /// The second lyric line's source order: the list order is the priority and a source missing from the list is never used.
 ///

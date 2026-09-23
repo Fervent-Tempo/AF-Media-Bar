@@ -67,6 +67,8 @@ public sealed class AppSettings : INotifyPropertyChanged
     private LyricsTextAlignment _lyricsTextAlignment = LyricsTextAlignment.Center;
     private bool _lyricsSyllableHighlightEnabled = true;
     private int _lyricsUnsungOpacityPercent = LyricsUnsungOpacity.DefaultPercent;
+    private int _lyricsLineGapDip = LyricsLineGap.DefaultDip;
+    private int _lyricsCharacterSpacingPercent = LyricsCharacterSpacing.DefaultPercent;
     private bool _lyricsInfoLineFilterEnabled = true;
     private LyricsMatchStrictness _lyricsMatchStrictness = LyricsMatchStrictness.Balanced;
     private LyricsSourceSettings _lyricsSource = LyricsSourceSettings.Default;
@@ -132,6 +134,13 @@ public sealed class AppSettings : INotifyPropertyChanged
     /// <summary>启用逐字擦亮时底色层（未唱部分）的不透明度百分比。/ Opacity percentage of the base (unsung) layer while highlighting is on.</summary>
     public int LyricsUnsungOpacityPercent { get => _lyricsUnsungOpacityPercent; set => Set(ref _lyricsUnsungOpacityPercent, value); }
 
+    /// <summary>双行歌词的行距（DIP）；运行时按可用高度夹取，绝不超出任务栏文字区。
+    /// Line gap of two-line lyrics in DIP; clamped at runtime by the available height so it never exceeds the taskbar's media-text area.</summary>
+    public int LyricsLineGapDip { get => _lyricsLineGapDip; set => Set(ref _lyricsLineGapDip, value); }
+
+    /// <summary>歌词字距（字号的百分比）。/ Lyric character spacing as a percentage of the font size.</summary>
+    public int LyricsCharacterSpacingPercent { get => _lyricsCharacterSpacingPercent; set => Set(ref _lyricsCharacterSpacingPercent, value); }
+
     /// <summary>是否丢弃作者、作曲、制作等信息行。/ Whether credit lines such as writer, composer, and producer are dropped.</summary>
     public bool LyricsInfoLineFilterEnabled { get => _lyricsInfoLineFilterEnabled; set => Set(ref _lyricsInfoLineFilterEnabled, value); }
 
@@ -187,6 +196,8 @@ public sealed class AppSettings : INotifyPropertyChanged
         if (!Enum.IsDefined(result.LyricsTextAlignment)) result.LyricsTextAlignment = defaults.LyricsTextAlignment;
         if (!Enum.IsDefined(result.LyricsMatchStrictness)) result.LyricsMatchStrictness = defaults.LyricsMatchStrictness;
         result.LyricsUnsungOpacityPercent = LyricsUnsungOpacity.Normalize(result.LyricsUnsungOpacityPercent);
+        result.LyricsLineGapDip = LyricsLineGap.Normalize(result.LyricsLineGapDip);
+        result.LyricsCharacterSpacingPercent = LyricsCharacterSpacing.Normalize(result.LyricsCharacterSpacingPercent);
         result.LyricsSource = result.LyricsSource.Normalize();
         result.TaskbarExperience = result.TaskbarExperience.Normalize();
         result.Interaction = result.Interaction.Normalize();
@@ -253,6 +264,8 @@ public sealed class AppSettings : INotifyPropertyChanged
         LyricsTextAlignment = LyricsTextAlignment,
         LyricsSyllableHighlightEnabled = LyricsSyllableHighlightEnabled,
         LyricsUnsungOpacityPercent = LyricsUnsungOpacityPercent,
+        LyricsLineGapDip = LyricsLineGapDip,
+        LyricsCharacterSpacingPercent = LyricsCharacterSpacingPercent,
         LyricsInfoLineFilterEnabled = LyricsInfoLineFilterEnabled,
         LyricsMatchStrictness = LyricsMatchStrictness,
         LyricsSource = LyricsSource,
@@ -349,6 +362,8 @@ public static class SettingsManager
     public static void SetLyricsTextAlignment(LyricsTextAlignment alignment) => Current.LyricsTextAlignment = alignment;
     public static void SetLyricsSyllableHighlightEnabled(bool enabled) => Current.LyricsSyllableHighlightEnabled = enabled;
     public static void SetLyricsUnsungOpacityPercent(int percent) => Current.LyricsUnsungOpacityPercent = LyricsUnsungOpacity.Normalize(percent);
+    public static void SetLyricsLineGapDip(int dip) => Current.LyricsLineGapDip = LyricsLineGap.Normalize(dip);
+    public static void SetLyricsCharacterSpacingPercent(int percent) => Current.LyricsCharacterSpacingPercent = LyricsCharacterSpacing.Normalize(percent);
     public static void SetLyricsInfoLineFilterEnabled(bool enabled) => Current.LyricsInfoLineFilterEnabled = enabled;
     public static void SetLyricsMatchStrictness(LyricsMatchStrictness strictness) => Current.LyricsMatchStrictness = strictness;
     public static void SetLyricsSourceSettings(LyricsSourceSettings settings) => Current.LyricsSource = settings;
@@ -427,6 +442,8 @@ public static class SettingsManager
         next.LyricsSecondaryLine = defaults.LyricsSecondaryLine; next.LyricsTextAlignment = defaults.LyricsTextAlignment;
         next.LyricsSyllableHighlightEnabled = defaults.LyricsSyllableHighlightEnabled;
         next.LyricsUnsungOpacityPercent = defaults.LyricsUnsungOpacityPercent;
+        next.LyricsLineGapDip = defaults.LyricsLineGapDip;
+        next.LyricsCharacterSpacingPercent = defaults.LyricsCharacterSpacingPercent;
         next.LyricsInfoLineFilterEnabled = defaults.LyricsInfoLineFilterEnabled;
         next.LyricsMatchStrictness = defaults.LyricsMatchStrictness;
         next.LyricsSource = defaults.LyricsSource;
@@ -466,6 +483,8 @@ public static class SettingsManager
             case nameof(AppSettings.LyricsSecondaryLine):
             case nameof(AppSettings.LyricsSyllableHighlightEnabled):
             case nameof(AppSettings.LyricsUnsungOpacityPercent):
+            case nameof(AppSettings.LyricsLineGapDip):
+            case nameof(AppSettings.LyricsCharacterSpacingPercent):
             case nameof(AppSettings.LyricsInfoLineFilterEnabled):
             case nameof(AppSettings.LyricsMatchStrictness):
             case nameof(AppSettings.LyricsSource): LyricsSettingsChanged?.Invoke(null, EventArgs.Empty); break;

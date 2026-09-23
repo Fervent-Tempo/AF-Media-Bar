@@ -469,9 +469,14 @@ internal static class StringsEn
         table.Add("Lyrics.Row.TwoLine.Badge", "Enable lyrics first");
         table.Add("Lyrics.Row.TwoLine.Description", "Adds one more line below the current line");
         table.Add("Lyrics.Row.TwoLine.Title", "Two-line lyrics");
-        table.Add("Lyrics.Row.UnsungOpacity.Badge", "Enable the syllable reveal first");
-        table.Add("Lyrics.Row.UnsungOpacity.Description", "Opacity of the text that has not been sung yet; lower means a stronger contrast (45% by default)");
-        table.Add("Lyrics.Row.UnsungOpacity.Title", "Unsung-part opacity");
+table.Add("Lyrics.Row.UnsungOpacity.Badge", "Enable the syllable reveal first");
+table.Add("Lyrics.Row.UnsungOpacity.Description", "Opacity of the text that has not been sung yet; lower means a stronger contrast (45% by default)");
+table.Add("Lyrics.Row.UnsungOpacity.Title", "Unsung-part opacity");
+table.Add("Lyrics.Row.LineGap.Badge", "Enable two-line lyrics first");
+table.Add("Lyrics.Row.LineGap.Description", "Gap between the two lyric lines; tightened automatically when space runs short, so the text never leaves the taskbar (0 by default)");
+table.Add("Lyrics.Row.LineGap.Title", "Two-line gap");
+table.Add("Lyrics.Row.CharacterSpacing.Description", "Widens the gap between characters as a percentage of the font size; English words stay intact (0 by default)");
+table.Add("Lyrics.Row.CharacterSpacing.Title", "Character spacing");
         table.Add("Lyrics.SecondLine.NextLine", "Next lyric line");
         table.Add("Lyrics.SecondLine.Reset.Description", "Restores the order to translation, romanization, next line");
         table.Add("Lyrics.SecondLine.Reset.Title", "Restore the default order");

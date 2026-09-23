@@ -48,6 +48,10 @@ public sealed class LyricsSettingsTests
         Assert.IsTrue(SettingsManager.Current.LyricsInfoLineFilterEnabled);
         Assert.AreEqual(LyricsMatchStrictness.Balanced, SettingsManager.Current.LyricsMatchStrictness);
         Assert.IsNull(SettingsManager.Current.LyricsSource.EnabledSourceIds);
+        // 间距字段同样取默认 0：升级后的外观与升级前完全一致。
+        // The spacing fields take their zero defaults as well: the look after upgrading matches the look before exactly.
+        Assert.AreEqual(LyricsLineGap.DefaultDip, SettingsManager.Current.LyricsLineGapDip);
+        Assert.AreEqual(LyricsCharacterSpacing.DefaultPercent, SettingsManager.Current.LyricsCharacterSpacingPercent);
 
         // 文件里已有的歌词字段照旧保留。
         // Lyric fields the file does carry survive untouched.
@@ -68,6 +72,48 @@ public sealed class LyricsSettingsTests
         // Snapped onto the step grid: 43% lands on 45% instead of staying as it is.
         SettingsManager.Current.LyricsUnsungOpacityPercent = 43;
         Assert.AreEqual(45, SettingsManager.Current.Normalize().LyricsUnsungOpacityPercent);
+    }
+
+    [TestMethod]
+    public void SpacingSettingsAreClampedAndSnappedOnLoad()
+    {
+        SettingsManager.Current.LyricsLineGapDip = 999;
+        SettingsManager.Current.LyricsCharacterSpacingPercent = 999;
+        var normalized = SettingsManager.Current.Normalize();
+        Assert.AreEqual(LyricsLineGap.MaximumDip, normalized.LyricsLineGapDip);
+        Assert.AreEqual(LyricsCharacterSpacing.MaximumPercent, normalized.LyricsCharacterSpacingPercent);
+
+        SettingsManager.Current.LyricsLineGapDip = -3;
+        SettingsManager.Current.LyricsCharacterSpacingPercent = -3;
+        normalized = SettingsManager.Current.Normalize();
+        Assert.AreEqual(LyricsLineGap.MinimumDip, normalized.LyricsLineGapDip);
+        Assert.AreEqual(LyricsCharacterSpacing.MinimumPercent, normalized.LyricsCharacterSpacingPercent);
+
+        // 字距吸附到 2 的网格：9% 落到 10%，行距步长为 1 因此原样保留。
+        // Character spacing snaps onto the 2-percent grid, so 9% lands on 10%, while the line gap keeps its step of one.
+        SettingsManager.Current.LyricsLineGapDip = 5;
+        SettingsManager.Current.LyricsCharacterSpacingPercent = 9;
+        normalized = SettingsManager.Current.Normalize();
+        Assert.AreEqual(5, normalized.LyricsLineGapDip);
+        Assert.AreEqual(10, normalized.LyricsCharacterSpacingPercent);
+
+        // 克隆必须带上这两个字段，否则设置保存会把它们丢掉。
+        // Cloning has to carry both fields, or saving the settings would drop them.
+        var clone = SettingsManager.Current.Clone();
+        Assert.AreEqual(5, clone.LyricsLineGapDip);
+        Assert.AreEqual(9, clone.LyricsCharacterSpacingPercent);
+    }
+
+    [TestMethod]
+    public void ResetLyricsClearsBothSpacingFields()
+    {
+        SettingsManager.SetLyricsLineGapDip(8);
+        SettingsManager.SetLyricsCharacterSpacingPercent(20);
+
+        SettingsManager.ResetLyrics();
+
+        Assert.AreEqual(LyricsLineGap.DefaultDip, SettingsManager.Current.LyricsLineGapDip);
+        Assert.AreEqual(LyricsCharacterSpacing.DefaultPercent, SettingsManager.Current.LyricsCharacterSpacingPercent);
     }
 
     // ---- 来源设置与选择 ----
@@ -230,6 +276,10 @@ public sealed class LyricsSettingsTests
         Assert.IsFalse(LyricsCacheInvalidationPolicy.ShouldClearCache(nameof(AppSettings.LyricsSyllableHighlightEnabled), null));
         Assert.IsFalse(LyricsCacheInvalidationPolicy.ShouldClearCache(nameof(AppSettings.LyricsSecondaryLine), null));
         Assert.IsFalse(LyricsCacheInvalidationPolicy.ShouldClearCache(nameof(AppSettings.LyricsTextAlignment), null));
+        // 间距同样属于呈现：拖动行距或字距滑杆不该重新取词。
+        // Spacing is presentation as well: dragging either spacing slider must not refetch lyrics.
+        Assert.IsFalse(LyricsCacheInvalidationPolicy.ShouldClearCache(nameof(AppSettings.LyricsLineGapDip), null));
+        Assert.IsFalse(LyricsCacheInvalidationPolicy.ShouldClearCache(nameof(AppSettings.LyricsCharacterSpacingPercent), null));
         Assert.IsFalse(LyricsCacheInvalidationPolicy.ShouldClearCache(null, SettingsResetScope.Appearance));
     }
 

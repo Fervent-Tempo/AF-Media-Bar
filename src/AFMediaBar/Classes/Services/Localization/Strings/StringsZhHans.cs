@@ -469,9 +469,14 @@ internal static class StringsZhHans
         table.Add("Lyrics.Row.TwoLine.Badge", "需先启用歌词");
         table.Add("Lyrics.Row.TwoLine.Description", "在当前句下方再显示一行");
         table.Add("Lyrics.Row.TwoLine.Title", "双行歌词");
-        table.Add("Lyrics.Row.UnsungOpacity.Badge", "需先开启逐字擦亮");
-        table.Add("Lyrics.Row.UnsungOpacity.Description", "尚未唱到的文字的不透明度；越低对比越明显（默认 45%）");
-        table.Add("Lyrics.Row.UnsungOpacity.Title", "未唱部分不透明度");
+table.Add("Lyrics.Row.UnsungOpacity.Badge", "需先开启逐字擦亮");
+table.Add("Lyrics.Row.UnsungOpacity.Description", "尚未唱到的文字的不透明度；越低对比越明显（默认 45%）");
+table.Add("Lyrics.Row.UnsungOpacity.Title", "未唱部分不透明度");
+table.Add("Lyrics.Row.LineGap.Badge", "需先开启双行歌词");
+table.Add("Lyrics.Row.LineGap.Description", "两行歌词之间的间距；空间不够时自动收紧，不会挤出任务栏（默认 0）");
+table.Add("Lyrics.Row.LineGap.Title", "双行行距");
+table.Add("Lyrics.Row.CharacterSpacing.Description", "按字号的百分比拉开字距，英文单词保持完整（默认 0）");
+table.Add("Lyrics.Row.CharacterSpacing.Title", "字间距");
         table.Add("Lyrics.SecondLine.NextLine", "下一句歌词");
         table.Add("Lyrics.SecondLine.Reset.Description", "把顺序恢复为 翻译 → 音译 → 下一句");
         table.Add("Lyrics.SecondLine.Reset.Title", "恢复默认顺序");

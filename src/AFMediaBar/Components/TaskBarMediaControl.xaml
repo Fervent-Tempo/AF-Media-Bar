@@ -199,11 +199,15 @@
                                   TextOptions.TextFormattingMode="Display">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="*" />
+                                    <!-- 行距行：双行时按设置撑开，单行或行距为 0 时为 0（网格退化成原来的上下平分）。
+                                         Gap row: opened by the setting for two lines, zero for a single line or a zero gap (the grid
+                                         then degrades to the previous even split). -->
+                                    <RowDefinition x:Name="SongLyricsGapRow" Height="0" />
                                     <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
                                 <Border x:Name="SongLyricsContainer"
                                         Grid.Row="0"
-                                        Grid.RowSpan="2"
+                                        Grid.RowSpan="3"
                                         Height="19"
                                         ClipToBounds="True"
                                         VerticalAlignment="Center"
@@ -247,7 +251,7 @@
                                     </Grid>
                                 </Border>
                                 <Border x:Name="SongLyricsSecondaryContainer"
-                                        Grid.Row="1"
+                                        Grid.Row="2"
                                         Height="{Binding ElementName=SongLyricsContainer, Path=Height}"
                                         ClipToBounds="True"
                                         VerticalAlignment="Center"

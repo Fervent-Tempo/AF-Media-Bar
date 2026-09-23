@@ -1074,7 +1074,10 @@ namespace AFMediaBar.Components
                 // that width, and skipping it leaves the previous result on screen.
                 _isRestLayerEmpty = false;
                 if (_currentMode == WindowMode.Taskbar && !_isVertical)
+                {
+                    ApplyLyricSpacing();
                     ApplyMarqueeLayout(Math.Max(0, SongInfoStackPanel.Width));
+                }
                 return;
             }
 
@@ -1161,6 +1164,7 @@ namespace AFMediaBar.Components
                 HoverRevealClip.Rect = new Rect(0, 0, textWidth, HoverRevealHost.Height);
             }
 
+            ApplyLyricSpacing();
             ApplyMarqueeLayout(textWidth);
         }
 
@@ -1911,10 +1915,11 @@ namespace AFMediaBar.Components
 
             SongMetadataPanel.Visibility = showLyrics ? Visibility.Collapsed : Visibility.Visible;
             SongLyricsPanel.Visibility = showLyrics ? Visibility.Visible : Visibility.Collapsed;
-            SongLyrics.Text = showLyrics ? _activeLyric : string.Empty;
-            SongLyricsSecondary.Text = showSecondary ? _secondaryLyric : string.Empty;
+            // 两行文本与行距布局一起落到视觉树：显示串含字距分隔符，行距由三行网格表达（见 LyricSpacing partial）。
+            // Both rows' text and the row layout land together: the display strings carry the character-spacing separators, and the line gap
+            // is expressed by the three-row grid (see the lyric-spacing partial).
+            RefreshLyricDisplayTexts(showLyrics, showSecondary);
             SongLyricsSecondaryContainer.Visibility = showSecondary ? Visibility.Visible : Visibility.Collapsed;
-            Grid.SetRowSpan(SongLyricsContainer, showSecondary ? 1 : 2);
             SongLyricsContainer.VerticalAlignment = showSecondary
                 ? VerticalAlignment.Stretch
                 : VerticalAlignment.Center;
@@ -1929,9 +1934,9 @@ namespace AFMediaBar.Components
                 return;
 
             var lyricsVisible = SongLyricsPanel.Visibility == Visibility.Visible;
-            var visibleText = lyricsVisible ? _activeLyric : SongTitle.Text;
+            var visibleText = lyricsVisible ? _displayLyric : SongTitle.Text;
             var secondaryText = lyricsVisible && SongLyricsSecondaryContainer.Visibility == Visibility.Visible
-                ? _secondaryLyric
+                ? _displaySecondary
                 : string.Empty;
             var artist = !lyricsVisible && SongArtistContainer.Visibility == Visibility.Visible ? _actualArtist : string.Empty;
             // Spectrum tuning and metric selection never change their reserved widths. Keeping

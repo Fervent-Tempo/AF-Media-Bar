@@ -1,5 +1,6 @@
 using System;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
@@ -43,6 +44,9 @@ public partial class TaskBarMediaControl
     private LyricLine? _measuredLyricLine;
     private double _measuredLyricFontSize = double.NaN;
     private double _measuredLyricAvailableWidth = double.NaN;
+    private string _measuredLyricText = string.Empty;
+    private FontFamily? _measuredLyricFontFamily;
+    private FontWeight _measuredLyricFontWeight;
     private double _activeLyricTextWidth;
     private bool _lyricTimelineActive;
 
@@ -245,8 +249,15 @@ public partial class TaskBarMediaControl
     {
         var fontSize = SongLyrics.FontSize;
         var availableWidth = double.IsFinite(SongLyrics.Width) ? SongLyrics.Width : double.NaN;
+        // 显示串也是缓存键：改字距不会换行，但会改写元素的文字，不重测就会拿着旧宽度去擦亮（亮区与字形错位）。
+        // The display string is part of the cache key as well: changing the character spacing keeps the same line but rewrites the
+        // element's text, and without a re-measure the reveal would use the old width and drift away from the glyphs.
+        var text = SongLyrics.Text;
         if (ReferenceEquals(_measuredLyricLine, line) &&
             Math.Abs(_measuredLyricFontSize - fontSize) < 0.01 &&
+            string.Equals(_measuredLyricText, text, StringComparison.Ordinal) &&
+            Equals(_measuredLyricFontFamily, SongLyrics.FontFamily) &&
+            _measuredLyricFontWeight == SongLyrics.FontWeight &&
             (double.IsNaN(availableWidth) && double.IsNaN(_measuredLyricAvailableWidth) ||
              Math.Abs(_measuredLyricAvailableWidth - availableWidth) < 0.01))
         {
@@ -256,7 +267,10 @@ public partial class TaskBarMediaControl
         _measuredLyricLine = line;
         _measuredLyricFontSize = fontSize;
         _measuredLyricAvailableWidth = availableWidth;
-        _activeLyricTextWidth = MeasureTextWidthExact(SongLyrics.Text, SongLyrics);
+        _measuredLyricText = text;
+        _measuredLyricFontFamily = SongLyrics.FontFamily;
+        _measuredLyricFontWeight = SongLyrics.FontWeight;
+        _activeLyricTextWidth = MeasureTextWidthExact(text, SongLyrics);
     }
 
     /// <summary>
