@@ -4,8 +4,8 @@ namespace AFMediaBar.Classes.Services.Updates;
 /// 与安装程序共享的安装协调互斥体。
 ///
 /// 程序创建它只是为了让 Inno Setup 的 <c>AppMutex</c> 能在交互式安装/卸载时发现"AF Media Bar 正在运行"，
-/// 从而给出"请先关闭程序"的提示，而不是在文件占用上失败。它**不**用于限制单实例：程序本来允许同时运行多个
-/// 实例，加锁、拒绝启动或改变退出语义都会是行为变更，本类型不做这些事。
+/// 从而给出"请先关闭程序"的提示，而不是在文件占用上失败。单实例门禁由
+/// <see cref="AFMediaBar.Classes.Services.Startup.SingleInstanceGuard"/> 独立持有，安装前只需释放本互斥体。
 ///
 /// 自动更新路径必须在启动安装包之前调用 <see cref="Release"/>：Inno Setup 在启动阶段检查该互斥体，
 /// 静默模式下若它仍然存在会直接退出，于是更新会静默失败。释放之后由调用方锁存一次性标记来保证
@@ -14,9 +14,8 @@ namespace AFMediaBar.Classes.Services.Updates;
 ///
 /// The application creates it only so Inno Setup's <c>AppMutex</c> can notice a running AF Media Bar during an
 /// interactive install or uninstall, which turns a file-in-use failure into a clear "close the application"
-/// message. It is deliberately <b>not</b> a single-instance guard: the application has always allowed several
-/// instances, and locking, refusing to start, or changing exit semantics would all be behaviour changes this
-/// type does not make.
+/// message. The single-instance gate is held separately by <see cref="AFMediaBar.Classes.Services.Startup.SingleInstanceGuard"/>;
+/// only this installer-facing mutex has to be released before installation.
 ///
 /// The automatic update path must call <see cref="Release"/> before starting the installer: Inno Setup checks
 /// this mutex while starting up and exits immediately when it still exists in silent mode, which would make the

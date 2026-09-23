@@ -40,13 +40,21 @@
                     <Grid><ui:SymbolIcon x:Name="ArtworkPlaceholder" Symbol="MusicNote220" FontSize="30"/>
                         <Image x:Name="ArtworkImage" Stretch="UniformToFill"/></Grid>
                 </Border>
+                <!--
+                    完整层是"把整首歌的信息看全"的地方，因此这一块的四行 MUST NOT 裁剪：标题、歌手与来源都按可用宽度换行，
+                    面板高度随内容增长（SizeToContent=Height）。省略号留给媒体栏的静置层/悬停层——那里的宽度被任务栏长度限制，
+                    而这里没有这个限制。
+                    The full panel is where the whole track is read, so these four lines MUST NOT be trimmed: the title, the artist, and the
+                    source wrap within the available width and the panel grows with its content (SizeToContent=Height). Ellipses belong to
+                    the rest and hover layers of the bar, whose width is bounded by the taskbar length; this panel has no such bound.
+                -->
                 <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                    <TextBlock x:Name="TitleText" Text="{DynamicResource Loc.Panel.FullPanel.NoMedia}" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                    <TextBlock x:Name="ArtistText" Margin="0,3,0,0" Opacity="0.72" TextTrimming="CharacterEllipsis"/>
-                    <TextBlock x:Name="SourceText" Margin="0,2,0,0" FontSize="11" Opacity="0.5" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock x:Name="TitleText" Text="{DynamicResource Loc.Panel.FullPanel.NoMedia}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="ArtistText" Margin="0,3,0,0" Opacity="0.72" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="SourceText" Margin="0,2,0,0" FontSize="11" Opacity="0.5" TextWrapping="Wrap"/>
                     <!-- 歌词来源：只在当前曲目真的取到歌词时出现，没有歌词时整行收起、不占位置。 -->
                     <!-- The lyric source, shown only while the current track really has lyrics; without them the line collapses and takes no room. -->
-                    <TextBlock x:Name="LyricsSourceText" Margin="0,2,0,0" FontSize="11" Opacity="0.5" TextTrimming="CharacterEllipsis" Visibility="Collapsed"/>
+                    <TextBlock x:Name="LyricsSourceText" Margin="0,2,0,0" FontSize="11" Opacity="0.5" TextWrapping="Wrap" Visibility="Collapsed"/>
                 </StackPanel>
             </Grid>
 

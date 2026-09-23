@@ -42,8 +42,7 @@ git diff --check
 - 保持现有 WPF 与 Win32 的职责边界。
 - 请确定性释放 COM 对象、原生 hook、非托管缓冲区、计时器和事件订阅。
 - 未经过明确设计讨论并补充隐私文档前，不要添加遥测或网络访问。
-- 面向用户可见的变更请记录到 `CHANGELOG.md`。
-- 适用时，请同时维护 `README.md` 和 `README.en-US.md` 中的公开文档。
+- 请提交前审查改动是否符合项目现有架构
 
 ## Pull Request
 
@@ -94,8 +93,8 @@ For behavior changes, verify the relevant taskbar workflow on Windows 10 and Win
 - Preserve the existing WPF and Win32 ownership boundaries.
 - Release COM objects, native hooks, unmanaged buffers, timers, and event subscriptions deterministically.
 - Do not add telemetry or network access without an explicit design discussion and privacy documentation.
-- Document user-visible changes in `CHANGELOG.md`.
-- Keep public documentation in both `README.md` and `README.en-US.md` when applicable.
+- Please review your changes before submitting to ensure they align with the project’s existing architecture.
+
 
 ## Pull Requests
 

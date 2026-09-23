@@ -3,6 +3,7 @@ using AFMediaBar.Classes.Services;
 using AFMediaBar.Components;
 using AFMediaBar.Resources;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -18,8 +19,11 @@ namespace AFMediaBar.Views.Windows
     /// 显示应用设置页面并承载 WPF-UI 导航。
     /// Displays application settings pages and hosts WPF-UI navigation.
     /// </summary>
-    public partial class SettingsWindow : INavigationWindow
+    public partial class SettingsWindow : INavigationWindow, INotifyPropertyChanged
     {
+        private Type? _currentPageType;
+
+        private readonly AppIconService _appIconService;
         /// <summary>
         /// 搜索命中到页面类型的映射。搜索索引刻意不引用任何 View 类型，
         /// 因此这层映射留在视图侧，索引只使用与视图解耦的页面键。
@@ -41,6 +45,15 @@ namespace AFMediaBar.Views.Windows
         public SettingsWindowViewModel ViewModel { get; }
 
         /// <summary>
+        /// 标题栏图标，随主题在两套图形之间切换。
+        /// The title bar icon, which swaps between the two artworks with the theme.
+        /// </summary>
+        public ImageSource? TitleBarIconSource => _appIconService.ResolveImageSource();
+
+        /// <summary>属性变化通知：目前只有标题栏图标会在窗口存活期间改变。/ Property change notifications; only the title bar icon changes while the window lives.</summary>
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        /// <summary>
         /// 创建设置窗口并连接导航和外观服务。
         /// Creates the settings window and connects navigation and appearance services.
         /// </summary>
@@ -48,10 +61,12 @@ namespace AFMediaBar.Views.Windows
             SettingsWindowViewModel viewModel,
             INavigationViewPageProvider navigationViewPageProvider,
             INavigationService navigationService,
-            WindowAppearanceService appearanceService
+            WindowAppearanceService appearanceService,
+            AppIconService appIconService
         )
         {
             ViewModel = viewModel;
+            _appIconService = appIconService;
             DataContext = this;
 
             InitializeComponent();
@@ -64,6 +79,22 @@ namespace AFMediaBar.Views.Windows
 
             navigationService.SetNavigationControl(RootNavigation);
 
+            // 落地页：窗口每次打开都直接落在「显示模式」。
+            //
+            // 不发起导航时内容区是空的：导航控件在收到第一个导航请求之前不会创建任何页面，用户打开设置看到的就是一片
+            // 空白。这里挂在"窗口变为可见"而不是构造函数上——构造函数早于 Show，那时导航视图还没有内容宿主，立刻导航
+            // 等于什么都没发生（MainWindow 里的更新跳转也踩过这一条）；再排到 Loaded 之后，等布局完成。
+            // 由打开方发起的导航（例如更新提示要落在「应用」）排在本次之后，因此仍然由它决定最终页面。
+            // Landing page: the window lands straight on "display modes" every time it opens.
+            //
+            // Without a navigation request the content area is empty: the navigation control creates no page until the first request
+            // arrives, so opening the settings shows nothing at all. This hangs off "window became visible" rather than the
+            // constructor, because the constructor runs before Show, when the navigation view has no content host yet and navigating
+            // does nothing (the update jump in MainWindow hit the same thing); the call is then queued behind Loaded so layout has
+            // finished. A navigation issued by whoever opened the window — the update notice lands on "application" — is queued after
+            // this one and therefore still decides the final page.
+            IsVisibleChanged += OnVisibilityChangedForLandingPage;
+
             // 更新提示的订阅与显示放在窗口构造的最后：它依赖 InitializeComponent 创建好的导航项。
             // The update notice subscribes and renders at the end of the constructor, because it depends on the
             // navigation item created by InitializeComponent.
@@ -71,8 +102,42 @@ namespace AFMediaBar.Views.Windows
             ViewModel.Refresh();
             ViewModel.PropertyChanged += ViewModel_PropertyChanged;
             ApplyUpdateNotice();
+            _appIconService.IconChanged += OnApplicationIconChanged;
             Closed += SettingsWindow_ClosedForUpdateNotice;
         }
+
+        #region Landing page
+
+        /// <summary>
+        /// 窗口从隐藏变为可见时导航到落地页；排到 Loaded 优先级等待导航视图的内容宿主就绪。
+        /// Navigates to the landing page when the window becomes visible, queued at Loaded priority so the navigation view's content
+        /// host exists first.
+        /// </summary>
+        private void OnVisibilityChangedForLandingPage(object? sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (!IsVisible)
+            {
+                return;
+            }
+
+            Dispatcher.BeginInvoke(
+                DispatcherPriority.Loaded,
+                new Action(() => Navigate(typeof(DisplayModesPage))));
+        }
+
+        #endregion Landing page
+
+        #region Window icon
+
+        /// <summary>
+        /// 主题变化后重新发布标题栏图标；窗口图标本身由外观服务写到 <c>Window.Icon</c> 上。
+        /// Republishes the title bar icon after a theme change; the window icon itself is written to <c>Window.Icon</c> by the
+        /// appearance service.
+        /// </summary>
+        private void OnApplicationIconChanged() =>
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(TitleBarIconSource)));
+
+        #endregion Window icon
 
         #region Search
 
@@ -237,6 +302,7 @@ namespace AFMediaBar.Views.Windows
         {
             ViewModel.Unsubscribe();
             ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
+            _appIconService.IconChanged -= OnApplicationIconChanged;
             Closed -= SettingsWindow_ClosedForUpdateNotice;
         }
 
@@ -274,6 +340,12 @@ namespace AFMediaBar.Views.Windows
         public void SetServiceProvider(IServiceProvider serviceProvider)
         {
             throw new NotImplementedException();
+        }
+
+        private void SettingsWindow_OnLoaded(object sender, RoutedEventArgs e)
+        {
+            _currentPageType = typeof(DisplayModesPage);
+            RootNavigation.Navigate(_currentPageType);
         }
     }
 }

@@ -17,8 +17,12 @@ using System.Windows.Threading;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services.Audio;
 using AFMediaBar.Classes.Services.Localization;
+using AFMediaBar.Classes.Services.Startup;
 using AFMediaBar.Classes.Services.Updates;
 using AFMediaBar.Classes.Settings;
+using AFMediaBar.Resources;
+using AFMediaBar.ViewModels.Components;
+using System.Globalization;
 using Wpf.Ui;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
@@ -42,6 +46,8 @@ namespace AFMediaBar
     {
         private static readonly TimeSpan HostShutdownTimeout = TimeSpan.FromSeconds(5);
         private int _exitHandled;
+        private SingleInstanceGuard? _singleInstanceGuard;
+        private bool _isSecondaryInstance;
 
         // .NET Generic Host 提供依赖注入、配置、日志等服务。
         // The .NET Generic Host provides dependency injection, configuration, logging, and other services.
@@ -117,6 +123,11 @@ namespace AFMediaBar
                 services.AddSingleton<GlobalInteractionRouter>();
                 services.AddSingleton<AudioMonitorService>();
                 services.AddSingleton<IMemoryPrunable>(sp => sp.GetRequiredService<AudioMonitorService>());
+                // 频谱采集的目标端点由后台循环解析并缓存，UI 路径只读结果，不做端点/会话枚举。
+                // The spectrum capture's target endpoint is resolved and cached by a background loop; UI paths only read the result and
+                // never enumerate endpoints or sessions.
+                services.AddSingleton<AudioCaptureDeviceResolver>();
+                services.AddSingleton<IMemoryPrunable>(sp => sp.GetRequiredService<AudioCaptureDeviceResolver>());
                 services.AddSingleton<SystemMetricsService>();
                 services.AddSingleton<SystemMetricsMonitorService>();
                 services.AddSingleton<IMemoryPrunable>(sp => sp.GetRequiredService<SystemMetricsMonitorService>());
@@ -126,6 +137,7 @@ namespace AFMediaBar
                 services.AddSingleton<ShellTrayIconService>();
                 services.AddSingleton<NativeMouseInputMonitor>();
                 services.AddSingleton<NativeWindowBackdropAdapter>();
+                services.AddSingleton<AppIconService>();
                 services.AddSingleton<WindowAppearanceService>();
                 services.AddSingleton<ScreenBackgroundSampler>();
                 services.AddSingleton<SettingsPersistenceService>();
@@ -136,8 +148,8 @@ namespace AFMediaBar
                 // resources XAML references.
                 services.AddSingleton<LocalizationService>();
 
-                // 安装协调互斥体：只让安装程序能识别"程序正在运行"，不改变单实例行为。
-                // Install-coordination mutex: lets the installer notice a running instance without changing single-instance behaviour.
+                // 安装协调互斥体只供安装程序识别运行状态，与启动时的单实例门禁分离。
+                // The install-coordination mutex only signals the installer and is separate from the startup instance gate.
                 services.AddSingleton<InstallCoordinatorMutex>();
 
                 // 更新下载器：清单读取、安装包下载与校验、退出时的安装交接。
@@ -154,6 +166,7 @@ namespace AFMediaBar
                 // === 主窗口（隐藏的宿主窗口）Main Window (invisible host window) ===
                 services.AddSingleton<INavigationWindow, MainWindow>();
                 services.AddSingleton<MainWindowViewModel>();
+                services.AddSingleton<TaskbarWindowViewModel>();
                 services.AddSingleton<AudioControlViewModel>();
                 services.AddTransient<DynamicIslandWindow>();
                 services.AddSingleton<AudioControlFlyoutWindow>();
@@ -205,6 +218,9 @@ namespace AFMediaBar
 
                 services.AddSingleton<AboutPage>();
                 services.AddSingleton<AboutViewModel>();
+
+                // 组件相关VM
+                services.AddSingleton<AFContextMenuViewModel>();
             }).Build();
 
         private ApplicationThemeCoordinator? _themeCoordinator;
@@ -229,6 +245,20 @@ namespace AFMediaBar
         /// </summary>
         private async void OnStartup(object sender, StartupEventArgs e)
         {
+            if (!SingleInstanceGuard.TryAcquire(out _singleInstanceGuard))
+            {
+                _isSecondaryInstance = true;
+                // 重复进程不加载或写入设置；提示按 Windows 显示语言选择。
+                // The duplicate does not load or write settings; the prompt follows the Windows display language.
+                System.Windows.MessageBox.Show(
+                    Translations.Get("Startup.SingleInstance.AlreadyRunning", InterfaceLanguagePolicy.ResolveSystem(CultureInfo.InstalledUICulture)),
+                    "AF Media Bar",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Information);
+                Shutdown();
+                return;
+            }
+
             // 日志最先建立：它之后的每一步（设置读写、语言、宿主、托盘、更新）都往里写，出问题时整份目录即可上报。
             // The log comes first: everything after it — settings I/O, language, host, tray, updates — writes into it, so a bug report is just
             // that directory.
@@ -336,6 +366,14 @@ namespace AFMediaBar
                 return;
             }
 
+            if (_isSecondaryInstance)
+            {
+                // 重复进程尚未启动 Host，也未初始化设置或更新；不可走主进程的 Flush/安装交接。
+                // A duplicate has not started the host or initialized settings and updates; skip their exit side effects.
+                _host.Dispose();
+                return;
+            }
+
             // 这两个服务必须在 Host 释放之前取出来。
             // Host.Dispose 同时释放 DI 容器，之后再从 App.Services 解析任何东西都会抛 ObjectDisposedException；
             // 那既会跳过退出时的安装交接，也会把一次正常退出变成一次崩溃（WER 里是 e0434352）。
@@ -431,6 +469,7 @@ namespace AFMediaBar
             }
             finally
             {
+                _singleInstanceGuard?.Dispose();
                 Volatile.Write(ref disposalCompleted, 1);
             }
 
@@ -465,6 +504,7 @@ namespace AFMediaBar
             // Context menus always use an opaque Fluent solid surface. Native
             // Mica/Acrylic on Popup HWNDs leaves transparent hit-test regions
             // that can pass clicks through to the window behind the menu.
+
             var menuColor = dark ? Color.FromRgb(44, 44, 44) : Color.FromRgb(249, 249, 249);
             var menuBrush = new SolidColorBrush(menuColor);
             menuBrush.Freeze();

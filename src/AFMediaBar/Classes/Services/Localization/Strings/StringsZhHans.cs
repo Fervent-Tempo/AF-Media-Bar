@@ -106,6 +106,7 @@ internal static class StringsZhHans
         table.Add("Appearance.Backdrop.Solid", "纯色");
         table.Add("Appearance.BackdropTint.Hint", "只在材质由本程序绘制时生效：Windows 10 上的窗口，以及永不获取焦点的曲目通知（系统材质要求窗口处于前台，通知从不激活，因此它的模糊由本程序绘制）。Windows 11 的云母与亚克力由系统绘制，不受此值影响。值越低越通透，过高则接近纯色。");
         table.Add("Appearance.CjkFont.FollowSystem", "跟随系统");
+        table.Add("Appearance.LatinFont.FollowSystem", "跟随系统");
         table.Add("Appearance.Header.Subtitle", "字体、主题、窗口背景与媒体栏文字");
         table.Add("Appearance.Motion.Detail.Full", "保留展开、反馈和频谱过渡");
         table.Add("Appearance.Motion.Detail.Instant", "跟随系统设置，避免过渡延迟");
@@ -324,12 +325,26 @@ internal static class StringsZhHans
         table.Add("DisplayModes.Placement.Row.AvoidIcons.Title", "避开任务栏图标");
         table.Add("DisplayModes.Placement.Row.Lock.Description", "锁定后阻止拖动");
         table.Add("DisplayModes.Placement.Row.Lock.Title", "锁定位置");
-        table.Add("DisplayModes.Placement.Row.Monitor.Description", "选择承载媒体栏的任务栏所在显示器");
+        table.Add("DisplayModes.Placement.Row.Monitor.Description", "勾选一个或多个显示器；至少保留一个目标");
         table.Add("DisplayModes.Placement.Row.Offset.Description", "沿跨轴微调媒体栏与图标区之间的间距");
         table.Add("DisplayModes.Placement.Row.Offset.Title", "边缘偏移");
         table.Add("DisplayModes.Placement.Row.Orientation.Description", "自动跟随任务栏方向，也可强制横向或纵向");
         table.Add("DisplayModes.Placement.Row.Orientation.Title", "排列方向");
         table.Add("DisplayModes.Placement.Row.Reset.Description", "恢复到自动避让计算出的位置");
+        table.Add("DisplayModes.Rest.Component.Artwork", "封面");
+        table.Add("DisplayModes.Rest.Component.Artwork.Description", "当前曲目的封面；没有媒体时是音符，点击它或在其上滚动可挑选播放器");
+        table.Add("DisplayModes.Rest.Component.MediaText", "媒体文字");
+        table.Add("DisplayModes.Rest.Component.MediaText.Description", "标题与歌手；有歌词时替换为歌词两行");
+        table.Add("DisplayModes.Rest.Component.OutputDevice", "输出设备按钮");
+        table.Add("DisplayModes.Rest.Component.OutputDevice.Description", "点击打开输出设备菜单，在其上滚动切换设备");
+        table.Add("DisplayModes.Rest.Component.Performance", "性能监控");
+        table.Add("DisplayModes.Rest.Component.Performance.Description", "按采样间隔轮换显示内存、处理器等指标");
+        table.Add("DisplayModes.Rest.Component.QuickLaunchNote", "快速启动小音符");
+        table.Add("DisplayModes.Rest.Component.QuickLaunchNote.Description", "没有媒体时显示的音符，点击它或在其上滚动可挑选播放器");
+        table.Add("DisplayModes.Rest.Component.Spectrum", "频谱");
+        table.Add("DisplayModes.Rest.Component.Spectrum.Description", "当前输出设备的实时频谱；有声音就动，与前台播放器无关");
+        table.Add("DisplayModes.Rest.Component.Volume", "音量按钮");
+        table.Add("DisplayModes.Rest.Component.Volume.Description", "点击打开音量菜单，在其上滚动调节当前来源的音量");
         table.Add("DisplayModes.Rest.ContentLayout.AdaptiveStack", "自适应堆叠");
         table.Add("DisplayModes.Rest.ContentLayout.CompactInline", "紧凑行内");
         table.Add("DisplayModes.Rest.Density.Balanced", "均衡");
@@ -337,17 +352,29 @@ internal static class StringsZhHans
         table.Add("DisplayModes.Rest.Density.Minimal", "精简");
         table.Add("DisplayModes.Rest.Group.Description", "始终显示的基础层，承载封面、标题与歌词");
         table.Add("DisplayModes.Rest.Group.Status", "始终开启");
-        table.Add("DisplayModes.Rest.Notice", "频谱与性能组件的开关和参数在「媒体与通知 → 静置层组件」；媒体文字大小在「外观 → 媒体栏文字」。");
+        table.Add("DisplayModes.Rest.Idle.Expander.Description", "没有媒体来源时媒体栏上还留哪些组件；一个都不勾选时整条媒体栏隐藏");
+        table.Add("DisplayModes.Rest.Idle.Expander.Title", "没有媒体时显示");
+        table.Add("DisplayModes.Rest.Idle.Notice", "封面与媒体文字不在这里：没有媒体时它们没有任何内容可显示，因此一定不显示；只留小音符时仍可从它上面滚动挑选播放器。");
+        table.Add("DisplayModes.Rest.Notice", "频谱与性能组件的开关和参数在「媒体与通知 → 静置层组件」；媒体文字大小在「外观 → 媒体栏文字」。频谱采集的是当前输出设备的全部声音。");
+        table.Add("DisplayModes.Rest.Order.Expander.Description", "顺序即媒体栏里从左到右的排列；封面与媒体文字固定在最前面，其余四个可以上下移动");
+        table.Add("DisplayModes.Rest.Order.Expander.Title", "静置层组件顺序");
+        table.Add("DisplayModes.Rest.Order.Notice", "封面与媒体文字固定在媒体栏最前面，不参与排序（前两行没有上下移按钮）。");
+        table.Add("DisplayModes.Rest.Order.Reset.Description", "频谱、性能监控、输出设备按钮、音量按钮");
+        table.Add("DisplayModes.Rest.Order.Reset.Title", "恢复默认顺序");
         table.Add("DisplayModes.Rest.Row.Alignment.Description", "设置媒体文字在媒体栏内的对齐方式");
         table.Add("DisplayModes.Rest.Row.Alignment.Title", "标题与歌手对齐");
         table.Add("DisplayModes.Rest.Row.Density.Description", "调整静置层中各按钮、进度条间的间隔");
         table.Add("DisplayModes.Rest.Row.Density.Title", "静置层间隔");
+        table.Add("DisplayModes.Rest.Row.DeviceButton.Description", "点击打开输出设备菜单，在其上滚动切换设备；常驻会占掉媒体文字的位置");
+        table.Add("DisplayModes.Rest.Row.DeviceButton.Title", "静置层显示输出设备按钮");
         table.Add("DisplayModes.Rest.Row.Entry.Description", "鼠标移入媒体栏或点击文字区顶部细杠时打开完整层");
         table.Add("DisplayModes.Rest.Row.Entry.Title", "显示进入完整层的入口");
         table.Add("DisplayModes.Rest.Row.Layout.Description", "标题与歌手并排一行，或上下堆叠");
         table.Add("DisplayModes.Rest.Row.Layout.Title", "内容排列");
         table.Add("DisplayModes.Rest.Row.Progress.Description", "静置层底部的只读播放进度条；媒体未报告时长时不显示");
         table.Add("DisplayModes.Rest.Row.Progress.Title", "显示播放进度");
+        table.Add("DisplayModes.Rest.Row.VolumeButton.Description", "点击打开音量菜单，在其上滚动调节当前来源的音量；常驻会占掉媒体文字的位置");
+        table.Add("DisplayModes.Rest.Row.VolumeButton.Title", "静置层显示音量按钮");
         table.Add("DisplayModes.Status.Current", "当前：{0}");
         table.Add("DisplayModes.Unimplemented.DesktopCard", "桌面卡片模式尚未实现，暂时没有可调整的设置。每个模式将拥有各自的设置页。");
         table.Add("DisplayModes.Unimplemented.FloatingBall", "悬浮球模式尚未实现，暂时没有可调整的设置。每个模式将拥有各自的设置页。");
@@ -627,6 +654,9 @@ internal static class StringsZhHans
         // ---- Shell ----
         table.Add("Shell.QuickLaunch.Status.Failed", "无法启动此应用，请检查应用是否仍可用。");
         table.Add("Shell.QuickLaunch.Status.InvalidTarget", "启动目标已失效，请在媒体与通知中重新添加。");
+
+        // ---- Startup ----
+        table.Add("Startup.SingleInstance.AlreadyRunning", "AF Media Bar 已在运行，请查看右下角的托盘图标（或点击小箭头展开隐藏图标）。");
 
         // ---- Update ----
         table.Add("Update.Channel.Accelerated", "加速站点 {0}");

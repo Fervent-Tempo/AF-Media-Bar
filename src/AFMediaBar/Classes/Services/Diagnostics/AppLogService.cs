@@ -70,10 +70,11 @@ public sealed class AppLogService : IDisposable
 
     private readonly BlockingCollection<LogEntry> _pending = new(new ConcurrentQueue<LogEntry>(), 4096);
     private readonly Queue<string> _lines = new(MaximumLines + 1);
+    private readonly object _lifecycleGate = new();
     private readonly object _ringGate = new();
     private readonly Task _writer;
     private bool _dirty;
-    private bool _disposed;
+    private volatile bool _disposed;
 
     /// <summary>
     /// 创建日志服务、打开（或在同一文件里接续）日志文件，并启动后台写入线程。
@@ -197,13 +198,26 @@ public sealed class AppLogService : IDisposable
     /// <inheritdoc />
     public void Dispose()
     {
-        if (_disposed)
+        lock (_lifecycleGate)
         {
-            return;
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            if (ReferenceEquals(Current, this))
+            {
+                // 先撤掉静态入口，再关闭队列；退出期间仍在收尾的后台回调会因此直接跳过日志。
+                // Remove the static entry point before closing the queue so late shutdown callbacks simply skip logging.
+                Current = null;
+            }
+
+            // 与 Write 的入队共用一把生命周期锁，因此 TryAdd 不会与 CompleteAdding/Dispose 交叉，也就不会先抛出再由我们吞掉。
+            // This shares the lifecycle gate with Write, so TryAdd cannot cross CompleteAdding/Dispose and need not throw before being swallowed.
+            _pending.CompleteAdding();
         }
 
-        _disposed = true;
-        _pending.CompleteAdding();
         try
         {
             _writer.Wait(TimeSpan.FromSeconds(2));
@@ -222,14 +236,18 @@ public sealed class AppLogService : IDisposable
         }
 
         _pending.Dispose();
-        if (ReferenceEquals(Current, this))
-        {
-            Current = null;
-        }
     }
 
     private void Write(AppLogLevel level, string category, string message, Exception? exception)
     {
+        // 日志是诊断辅助设施；退出边界到达后，迟到的后台任务写入必须成为无操作，不能反过来把正常退出变成崩溃。
+        // Logging is diagnostic infrastructure. Once shutdown reaches this boundary, a late background write must become a no-op instead of
+        // turning a normal exit into a crash.
+        if (_disposed)
+        {
+            return;
+        }
+
         var line = Format(level, category, message);
         Mirror(line);
         if (exception is not null)
@@ -250,7 +268,15 @@ public sealed class AppLogService : IDisposable
         // 错误行立刻落盘：崩溃现场不能等合并窗口。其余行只入队，由写入线程按间隔合并重写。
         // An error line lands on disk immediately, because a crash site must not wait for the coalescing window; other lines are queued and
         // coalesced by the writer thread.
-        _pending.TryAdd(new LogEntry(line, ForceRewrite: level == AppLogLevel.Error));
+        lock (_lifecycleGate)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _pending.TryAdd(new LogEntry(line, ForceRewrite: level == AppLogLevel.Error));
+        }
     }
 
     private static string Format(AppLogLevel level, string category, string message) =>

@@ -89,6 +89,10 @@ public interface ITaskbarDockService
     /// 坐标转换 Coordinate Conversion:
     /// 屏幕坐标 → 任务栏客户端坐标（ScreenToClient）后调用 SetWindowPos。
     /// Coordinates are converted from screen space to taskbar-client space (ScreenToClient) before SetWindowPos.
+    ///
+    /// 这条路径只写任务栏客户区坐标；MUST NOT 在 Shell 自动隐藏期间把子窗口屏幕矩形与一个已经过期的父窗口屏幕矩形做二次纠偏。
+    /// This path writes taskbar-client coordinates only; it MUST NOT apply a second screen-space correction against a parent rectangle that may already
+    /// be stale during the Shell auto-hide animation.
     /// </summary>
     void SetWindowPosition(IntPtr windowHandle, IntPtr taskbarHandle, RECT taskbarRect, int width, int height);
 

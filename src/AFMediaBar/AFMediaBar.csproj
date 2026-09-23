@@ -15,7 +15,7 @@
     -->
     <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>wpfui-icon.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\icon_dark.ico</ApplicationIcon>
     <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -33,7 +33,7 @@
     <AssemblyTitle>AF Media Bar</AssemblyTitle>
     <Product>AF Media Bar</Product>
     <Description>Media control and minor beautification software for Windows 10/11 desktops.</Description>
-    <Version>1.2.0</Version>
+    <Version>1.2.1</Version>
     <Authors>AmorFate</Authors>
     <Copyright>Copyright (c) 2026 AmorFate</Copyright>
     <RepositoryUrl>https://github.com/Fervent-Tempo/AF-Media-Bar</RepositoryUrl>
@@ -49,10 +49,6 @@
 </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="wpfui-icon.ico" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Dubya.WindowsMediaController" Version="2.5.6" />
     <PackageReference Include="Lyricify.Lyrics.Helper" Version="0.2.0" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
@@ -64,8 +60,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="Assets\wpfui-icon-256.png" />
-    <None Remove="Assets\wpfui-icon-1024.png" />
+    <None Remove="Assets\icon_dark.ico" />
+    <None Remove="Assets\icon_white.ico" />
     <!--
       赞助收款码按**通配**打包，而不是逐个文件名列出：这两张图由用户后续放入，文件名也由他自己决定
       （候选名见 CreditLinks）。逐个列出时，放进去的图不会被编进程序集，界面上的表现就是"图不显示"且没有任何错误
@@ -80,8 +76,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Assets\wpfui-icon-256.png" />
-    <Resource Include="Assets\wpfui-icon-1024.png" />
+    <!--
+      程序自身的图标：两套图形按"图形自身的颜色"命名，深色主题用白色图形、浅色主题用深色图形，
+      由 AppIconPolicy 决定当前用哪一套，并在主题变化时重新应用到窗口与托盘。
+      ApplicationIcon 只决定 exe 的静态 Win32 图标（资源管理器里看到的那个），它无法随主题变化，
+      因此取深色图形：它在默认的浅色资源管理器背景上清楚。
+      The application's own icons: the two artworks are named after their own colour, the dark theme uses the white artwork and the
+      light theme the dark one. AppIconPolicy decides which one is current and re-applies it to windows and the tray on theme
+      changes. ApplicationIcon only sets the executable's static Win32 icon (the one Explorer shows), which cannot follow the
+      theme, so it takes the dark artwork: that one reads clearly on Explorer's default light background.
+    -->
+    <Resource Include="Assets\icon_dark.ico" />
+    <Resource Include="Assets\icon_white.ico" />
     <Resource Include="Assets\Sponsor\*.png" />
     <Resource Include="Assets\Sponsor\*.jpg" />
     <Resource Include="Assets\Sponsor\*.jpeg" />

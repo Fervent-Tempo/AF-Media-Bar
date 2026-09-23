@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="480" viewBox="0 0 1200 480" role="img" aria-labelledby="title desc">
+  <title id="title">AF Media Bar：任务栏左侧的媒体栏与其上方的完整媒体弹窗</title>
+  <desc id="desc">柔和桌面背景中，左下角的媒体栏显示封面、歌曲信息、频谱和应用内存；完整媒体弹窗位于正上方；项目名称与简介在右侧。</desc>
+  <defs>
+    <linearGradient id="wallpaper" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#f0efed"/>
+      <stop offset=".55" stop-color="#d9dee2"/>
+      <stop offset="1" stop-color="#bdc9d0"/>
+    </linearGradient>
+    <radialGradient id="warmth">
+      <stop stop-color="#f4dfd7" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#f4dfd7" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="coolness">
+      <stop stop-color="#aed0de" stop-opacity=".48"/>
+      <stop offset="1" stop-color="#aed0de" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="album" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#dfecef"/>
+      <stop offset="1" stop-color="#8eb5c9"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="480" rx="24" fill="url(#wallpaper)"/>
+  <ellipse cx="195" cy="80" rx="380" ry="300" fill="url(#warmth)"/>
+  <ellipse cx="1040" cy="330" rx="450" ry="300" fill="url(#coolness)"/>
+
+  <!-- Expanded media controls sit directly above the lower-left taskbar strip. -->
+  <g id="full-media-popover" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,PingFang SC,sans-serif">
+    <rect x="30" y="27" width="606" height="332" rx="24" fill="#ffffff" fill-opacity=".9" stroke="#ffffff" stroke-opacity=".88" stroke-width="2"/>
+    <rect x="48" y="45" width="570" height="296" rx="18" fill="none" stroke="#777481" stroke-opacity=".19"/>
+
+    <rect x="61" y="59" width="94" height="94" rx="11" fill="url(#album)"/>
+    <circle cx="110" cy="91" r="22" fill="#f6ece3" fill-opacity=".54"/>
+    <path d="M67 134Q86 111 104 127T155 108V153H61Z" fill="#578bab" fill-opacity=".42"/>
+    <text x="173" y="86" fill="#34333a" font-size="25" font-weight="700">正在播放的音乐</text>
+    <text x="173" y="117" fill="#66626b" font-size="20">歌手名称</text>
+    <text x="173" y="143" fill="#89818a" font-size="18">媒体会话</text>
+
+    <path d="M62 181H603" stroke="#d8d3d2" stroke-width="7" stroke-linecap="round"/>
+    <path d="M62 181H185" stroke="#119fde" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="185" cy="181" r="8" fill="#119fde"/>
+    <text x="62" y="210" fill="#716d72" font-size="17">0:01</text>
+    <text x="602" y="210" fill="#716d72" font-size="17" text-anchor="end">4:16</text>
+
+    <g id="playback-controls" stroke="#55535c" stroke-width="3" fill="none" stroke-linejoin="round">
+      <rect x="236" y="219" width="55" height="48" rx="11" fill="#ebe8e6" stroke="none"/>
+      <path d="M268 231l-18 12 18 12zm-20 0v24"/>
+      <rect x="301" y="215" width="61" height="56" rx="12" fill="#e4d7d3" stroke="none"/>
+      <path d="M325 229v28l21-14z"/>
+      <rect x="372" y="219" width="55" height="48" rx="11" fill="#ebe8e6" stroke="none"/>
+      <path d="M389 231l18 12-18 12zm20 0v24"/>
+    </g>
+
+    <text x="62" y="285" fill="#625e66" font-size="18">输出设备</text>
+    <text x="62" y="310" fill="#393841" font-size="21" font-weight="600">耳机</text>
+    <text x="602" y="285" text-anchor="end" fill="#625e66" font-size="18">应用音量 30%</text>
+    <path d="M423 310H601" stroke="#d8d3d2" stroke-width="6" stroke-linecap="round"/>
+    <path d="M423 310H480" stroke="#119fde" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="480" cy="310" r="7" fill="#119fde"/>
+    <path d="M62 322H603" stroke="#cfcaca" stroke-opacity=".65"/>
+    <text x="62" y="344" fill="#69646c" font-size="17">内存 82%</text>
+    <text x="199" y="344" fill="#69646c" font-size="17">CPU 15%</text>
+    <text x="326" y="344" fill="#69646c" font-size="17">GPU 30%</text>
+    <text x="456" y="344" fill="#69646c" font-size="17">APP 200 MB</text>
+  </g>
+
+  <g id="app-icon" transform="translate(691 103) scale(.86)">
+    <path id="backdrop" fill="#010101" fill-rule="evenodd" d="M10.75,10.25 8.75,12.5 7,15.25 5.5,19.75 5.5,79.5 5.75,79.75 5.75,81 6.5,83.25 7.75,85.75 10,88.75 13.25,91.5 16.25,93 19.75,94 20,93.75 20.25,94 79.25,94 79.5,93.75 80.75,93.75 83.25,93 86.25,91.5 88,90.25 90.75,87.5 92.5,85 93.75,82.25 93.75,81.5 94.25,80.25 94.25,78.5 94.5,78.25 94.5,74.75 94.25,74.5 94.25,20.25 94,20 94,19 93.25,16.5 90.75,12.25 87.75,9.25 86,8 83.5,6.75 81.25,6 80,6 79.75,5.75 19.75,5.75 16.25,6.75 13.75,8Z"/>
+    <path id="white" fill="#ffffff" fill-rule="evenodd" d="M54.5,19.25 51.5,18 48.25,18 48,18.25 47.25,18.25 45,19.5 43.5,21 42.25,23 39.5,28.25 36,34 35,36.25 33.5,38.5 32.75,40.25 28,48.25 26,52.25 25.5,52.75 25,54 24.5,54.5 22.75,58 22.25,58.5 21.75,59.75 21.25,60.25 14.25,72.75 13.75,74.5 14,77.75 15,79.75 17.25,81.75 19.25,82.5 22,82.5 24.75,81.25 26,80 27,78.5 34.25,65.5 35.25,64.25 37,64.75 38,64.75 42.25,66 43.25,66 49.5,67.75 52.75,68.25 53,68.5 55.5,68 57.5,66.25 58.25,64.5 58.25,62.75 57.5,61 56.25,59.75 51,58.25 50,58.25 45.75,57 44.75,57 44.5,56.75 38.75,55.5 38.5,55.25 38.5,54.75 43.25,46.75 44,45 45.25,43.25 48,38 49.75,35.5 50.75,36.75 57.25,48.75 57.75,49.25 59.25,52.25 60.25,53.5 61.25,54.25 63.25,55 65,55 67.25,54.25 68,53.75 69.5,52 70.25,50 70,46.75 61,29.5 58.75,25.75 57.25,22.5 56.25,21Z"/>
+    <path id="blue" fill="#00abfe" fill-rule="evenodd" d="M66.5,56.75 64.5,58.5 63.5,60.25 63,61.75 63,64.25 64,66.75 64.5,67.25 71,79.5 72.75,81.5 75.25,82.75 78,83 81,82 82.75,80.5 84.25,77.5 84.25,74 83.25,71.75 82.75,71.25 82,69.5 79.5,65.5 76.75,60.25 75.25,58 73.25,56.5 71.75,56 68.5,56Z M52.5,48 52.25,48.25 52.25,53.25 52.75,53.75 53.25,53.75 54,53 54,48.75 53.5,48Z M45.75,48 45.25,48.5 45.25,53.25 46,53.75 46.5,53.75 47,53.25 47,48.25 46.75,48Z M49.25,44.75 48.75,45.25 48.75,55.25 49.25,55.75 50,55.75 50.5,55.25 50.5,45.25 50,44.75Z"/>
+  </g>
+  <g id="identity" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,PingFang SC,sans-serif">
+    <text x="795" y="121" fill="#48505a" font-size="20" font-weight="600" letter-spacing="1">WINDOWS 桌面 · 任务栏媒体栏</text>
+    <text x="791" y="183" fill="#181c21" font-size="55" font-weight="750" letter-spacing="-2">AF Media Bar</text>
+    <text x="691" y="244" fill="#353c44" font-size="31" font-weight="600">把音乐，放在任务栏。</text>
+    <text x="693" y="286" fill="#58616a" font-size="22">播放控制 · 实时歌词 · 音频设备</text>
+  </g>
+
+  <g id="system-taskbar" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,PingFang SC,sans-serif">
+    <path d="M0 368H1200V480H0Z" fill="#252a30" fill-opacity=".94"/>
+    <path d="M0 368H1200" stroke="#f9f4f1" stroke-opacity=".54" stroke-width="2"/>
+    <g id="media-bar">
+      <rect x="24" y="378" width="755" height="88" rx="17" fill="#626b73" fill-opacity=".48" stroke="#dae4e8" stroke-opacity=".24"/>
+      <rect x="40" y="389" width="66" height="66" rx="10" fill="url(#album)"/>
+      <circle cx="73" cy="413" r="16" fill="#f6ece3" fill-opacity=".48"/>
+      <path d="M44 450Q65 425 83 438T106 425V455H40Z" fill="#578bab" fill-opacity=".42"/>
+      <rect x="53" y="400" width="41" height="44" rx="8" fill="#2c526a" fill-opacity=".55"/>
+      <path d="M67 410v25m13-25v25" stroke="#fffaf7" stroke-width="5" stroke-linecap="round"/>
+      <text x="124" y="418" fill="#fff9f5" font-size="22" font-weight="600">正在播放的音乐</text>
+      <text x="124" y="443" fill="#d5ced2" font-size="19">歌手名称</text>
+      <path d="M124 458H386" stroke="#aaa4ae" stroke-opacity=".42" stroke-width="4" stroke-linecap="round"/>
+      <path d="M124 458H214" stroke="#22b2ed" stroke-width="4" stroke-linecap="round"/>
+      <g id="spectrum" fill="#e2eff4">
+        <rect x="419" y="419" width="5" height="23" rx="2"/>
+        <rect x="430" y="410" width="5" height="32" rx="2"/>
+        <rect x="441" y="403" width="5" height="39" rx="2"/>
+        <rect x="452" y="415" width="5" height="27" rx="2"/>
+        <rect x="463" y="399" width="5" height="43" rx="2"/>
+        <rect x="474" y="407" width="5" height="35" rx="2"/>
+        <rect x="485" y="418" width="5" height="24" rx="2"/>
+        <rect x="496" y="404" width="5" height="38" rx="2"/>
+        <rect x="507" y="412" width="5" height="30" rx="2"/>
+      </g>
+      <rect x="556" y="399" width="171" height="45" rx="22" fill="#242b32" fill-opacity=".8"/>
+      <text x="600" y="428" fill="#f3e9e5" font-size="21" font-weight="600">CPU 15%</text>
+    </g>
+    <g id="system-icons">
+      <rect x="863" y="410" width="16" height="16" fill="#5cc5f3"/>
+      <rect x="883" y="410" width="16" height="16" fill="#5cc5f3"/>
+      <rect x="863" y="430" width="16" height="16" fill="#5cc5f3"/>
+      <rect x="883" y="430" width="16" height="16" fill="#5cc5f3"/>
+      <rect x="938" y="415" width="28" height="28" rx="4" fill="#bac3c9"/>
+      <rect x="953" y="403" width="24" height="24" rx="3" fill="#f1efec"/>
+      <circle cx="1042" cy="423" r="16" fill="#c0ccd1"/>
+      <circle cx="1042" cy="423" r="7" fill="#514e59"/>
+      <path d="M1113 424l10-12v24l-10-12-10 8v-16z" fill="none" stroke="#b7d7e7" stroke-width="5" stroke-linejoin="round"/>
+    </g>
+  </g>
+</svg>

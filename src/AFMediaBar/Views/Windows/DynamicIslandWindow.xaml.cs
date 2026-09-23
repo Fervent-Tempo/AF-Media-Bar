@@ -25,7 +25,7 @@ public partial class DynamicIslandWindow : Window
 {
     private const double EdgeRevealDip = 5;
     private const double EdgeDockThresholdDip = 28;
-    private readonly MainWindowViewModel _viewModel;
+    private readonly TaskbarWindowViewModel _viewModel;
     private readonly DispatcherTimer _sizeAnimationTimer;
     private readonly DispatcherTimer _foregroundSamplingTimer;
     private readonly AdaptiveForegroundSamplingSession _foregroundSamplingSession;
@@ -44,7 +44,7 @@ public partial class DynamicIslandWindow : Window
     /// Creates the dynamic-island media host window.
     /// </summary>
     public DynamicIslandWindow(
-        MainWindowViewModel viewModel,
+        TaskbarWindowViewModel viewModel,
         WindowAppearanceService appearanceService,
         ScreenBackgroundSampler screenBackgroundSampler)
     {
@@ -56,7 +56,7 @@ public partial class DynamicIslandWindow : Window
             Dispatcher,
             GetAdaptiveForegroundSampleBounds,
             MediaControl.ApplyAdaptiveForegroundDecision);
-        DataContext = new MainWindowDataContext(viewModel);
+        DataContext = new DynamicIslandDataContext(viewModel);
         ContextMenuHelper.AttachOutsideClickDismissal(PlayerMenu);
         appearanceService.Attach(PlayerMenu, this);
         MediaControl.TogglePlayPauseRequested += MediaControl_TogglePlayPauseRequested;
@@ -595,10 +595,10 @@ public partial class DynamicIslandWindow : Window
         return false;
     }
 
-    private sealed class MainWindowDataContext
+    private sealed class DynamicIslandDataContext
     {
-        public MainWindowViewModel ViewModel { get; }
+        public TaskbarWindowViewModel ViewModel { get; }
 
-        public MainWindowDataContext(MainWindowViewModel viewModel) => ViewModel = viewModel;
+        public DynamicIslandDataContext(TaskbarWindowViewModel viewModel) => ViewModel = viewModel;
     }
 }

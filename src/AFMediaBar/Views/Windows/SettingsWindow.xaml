@@ -24,6 +24,7 @@
     Background="Transparent"
     WindowCornerPreference="Round"
     WindowStartupLocation="CenterScreen"
+    Loaded="SettingsWindow_OnLoaded"
     mc:Ignorable="d">
     <ui:FluentWindow.InputBindings>
         <KeyBinding
@@ -38,7 +39,14 @@
             Grid.Row="0"
             CloseWindowByDoubleClickOnIcon="True">
             <ui:TitleBar.Icon>
-                <ui:ImageIcon Source="pack://application:,,,/Assets/wpfui-icon-256.png" />
+                <!--
+                    标题栏图标随主题换一套：两套图形（深色/白色）由 AppIconPolicy 按生效主题挑，主题变化时窗口重新发布
+                    这个属性。写死一张图会在另一种主题上变成看不见的深色块或白块。
+                    The title bar icon swaps with the theme: AppIconPolicy picks one of the two artworks (dark and white) for the active
+                    theme and the window republishes this property when it changes. A hardcoded image turns into an invisible dark or
+                    white square on the other theme.
+                -->
+                <ui:ImageIcon Source="{Binding TitleBarIconSource}" />
             </ui:TitleBar.Icon>
         </ui:TitleBar>
         <ui:NavigationView
@@ -52,32 +60,6 @@
             OpenPaneLength="240"
             TransitionDuration="180"
             TitleBar="{Binding ElementName=TitleBar, Mode=OneWay}">
-            <!--
-                侧栏标识块：以前侧栏只有一串导航项，没有任何应用身份。
-                该块位于汉堡按钮与搜索框之间，不占用任何导航项，也不改变导航行为。
-                Pane identity block: the pane previously held nothing but navigation items. This sits between the
-                hamburger and the search box, consumes no navigation item, and changes no navigation behaviour.
-            -->
-            <ui:NavigationView.PaneHeader>
-                <StackPanel Margin="0,2,0,10">
-                    <StackPanel Orientation="Horizontal">
-                        <ui:ImageIcon
-                            Width="20"
-                            Height="20"
-                            Source="pack://application:,,,/Assets/wpfui-icon-256.png" />
-                        <TextBlock
-                            Margin="10,0,0,0"
-                            VerticalAlignment="Center"
-                            FontWeight="{DynamicResource AppTextStrongFontWeight}"
-                            Text="{Binding ViewModel.ApplicationTitle}" />
-                    </StackPanel>
-                    <TextBlock
-                        Margin="30,3,0,0"
-                        FontSize="11"
-                        Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                        Text="{DynamicResource Loc.Common.Settings}" />
-                </StackPanel>
-            </ui:NavigationView.PaneHeader>
             <ui:NavigationView.AutoSuggestBox>
                 <!--
                     搜索框的候选项由设置窗口在 TextChanged 里按 SettingsSearchIndex 填充，

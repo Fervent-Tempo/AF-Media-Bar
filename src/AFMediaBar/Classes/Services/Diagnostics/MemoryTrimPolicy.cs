@@ -25,7 +25,14 @@ public enum MemoryTrimTrigger
     /// Startup has settled: the large batch of pages read during startup — JITed code, WPF and WinRT metadata, one-time initialization — is unlikely to be
     /// touched again, which makes this the most rewarding moment to hand them back.
     /// </summary>
-    StartupSettled = 4
+    StartupSettled = 4,
+
+    /// <summary>
+    /// 自动隐藏任务栏保持收起一段时间：只回收已经失去引用的托管对象，不剥离工作集，避免下一次从屏幕边缘呼出时发生硬缺页。
+    /// The auto-hidden taskbar stayed collapsed for a while: collect only managed objects that are already unreachable and leave the working set alone,
+    /// avoiding hard page faults on the next edge reveal.
+    /// </summary>
+    TaskbarHidden = 5
 }
 
 /// <summary>

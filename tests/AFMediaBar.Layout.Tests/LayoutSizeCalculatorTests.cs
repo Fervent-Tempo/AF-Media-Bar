@@ -223,6 +223,71 @@ public sealed class LayoutSizeCalculatorTests
         Assert.AreEqual(4, placement.Cross);
     }
 
+    /// <summary>
+    /// 媒体栏的顶边在任何输入下都 MUST NOT 落在任务栏顶边之上：居中/偏移算出来的横轴位置一律夹进
+    /// `[0, 任务栏横轴 − 媒体栏横轴]`，而媒体栏比任务栏还高（横轴差为负）时结果是 0——顶边与任务栏顶边对齐，
+    /// 溢出留在下方被裁掉。
+    ///
+    /// 这条守的正是"媒体栏顶边越过任务栏顶边被裁切"：厚度解析器一旦读到错误的 DPI 或过期的任务栏矩形，
+    /// 媒体栏就会比任务栏高（本机实测：任务栏 48 px / DPI 125%，而 44 DIP 的画布是 55 px，高出 7 px），
+    /// 若那时的横轴位置允许为负，界面就会把顶部切掉一截。
+    /// The bar's top edge MUST NOT land above the taskbar's top edge under any input: the centred or offset cross position is always clamped into
+    /// `[0, taskbar cross extent - bar cross extent]`, and when the bar is taller than the taskbar (a negative difference) the result is 0 — the top edge
+    /// lines up with the taskbar's top edge and the overflow stays below, where it is clipped.
+    ///
+    /// This guards exactly "the bar's top edge crosses the taskbar's top edge and is clipped": once the thickness resolver reads a wrong DPI or a stale
+    /// taskbar rectangle the bar becomes taller than the taskbar (measured on this machine: taskbar 48 px at 125% DPI while a 44 DIP canvas is 55 px, so
+    /// 7 px too tall), and a negative cross position there would cut the top off.
+    /// </summary>
+    [TestMethod]
+    public void BarTopEdgeNeverStartsAboveTheTaskbarTopEdge()
+    {
+        // 媒体栏比任务栏高：夹到 0，顶边与任务栏顶边对齐（溢出只能出现在下方）。
+        // The bar is taller than the taskbar: clamped to 0, so the top edges line up and any overflow is below.
+        var taller = TaskbarBarPlacementCalculator.Calculate(
+            primaryLength: 1920,
+            primarySize: 400,
+            crossLength: 48,
+            crossSize: 55,
+            preferredRange: new TaskbarPrimaryRange(20, 1900),
+            position: TaskbarBarPosition.Start,
+            manualPadding: 0,
+            crossAxisOffsetDip: 0,
+            dpiScale: 1.25,
+            edgePadding: 20);
+        Assert.AreEqual(0, taller.Cross, "a bar taller than the taskbar must align with its top edge, never start above it");
+
+        // 负的横轴偏移也不能把它推出任务栏上方。
+        // A negative cross-axis offset must not push it above the taskbar either.
+        var offset = TaskbarBarPlacementCalculator.Calculate(
+            primaryLength: 1920,
+            primarySize: 400,
+            crossLength: 48,
+            crossSize: 44,
+            preferredRange: new TaskbarPrimaryRange(20, 1900),
+            position: TaskbarBarPosition.Start,
+            manualPadding: 0,
+            crossAxisOffsetDip: -20,
+            dpiScale: 1,
+            edgePadding: 20);
+        Assert.AreEqual(0, offset.Cross);
+
+        // 竖向任务栏走同一条规则（横轴是宽度）。
+        // A vertical taskbar follows the same rule (the cross axis is the width there).
+        var vertical = TaskbarBarPlacementCalculator.Calculate(
+            primaryLength: 1080,
+            primarySize: 400,
+            crossLength: 48,
+            crossSize: 60,
+            preferredRange: new TaskbarPrimaryRange(20, 1000),
+            position: TaskbarBarPosition.Start,
+            manualPadding: 0,
+            crossAxisOffsetDip: 0,
+            dpiScale: 1,
+            edgePadding: 20);
+        Assert.AreEqual(0, vertical.Cross);
+    }
+
     [TestMethod]
     public void DominantColorCalculatorReturnsColorForSmallOpaqueArtwork()
     {

@@ -1,6 +1,8 @@
+using System.Diagnostics;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Services.Audio;
 using AFMediaBar.Resources;
+
 namespace AFMediaBar.Classes.Services;
 
 /// <summary>解析并执行播放器表面共用的媒体滚轮语义。 / Resolves and executes media-wheel semantics shared by player surfaces.</summary>
@@ -11,6 +13,7 @@ public sealed class GlobalInteractionRouter
 
     private readonly MediaSessionService _mediaSessionService;
     private readonly AudioInteractionService _audioInteractionService;
+    private readonly TrackSkipWheelGate _trackSkipWheelGate = new();
 
     public GlobalInteractionRouter(
         MediaSessionService mediaSessionService,
@@ -39,12 +42,19 @@ public sealed class GlobalInteractionRouter
         switch (action)
         {
             case WheelAction.PreviousNext:
-                for (var index = 0; index < steps; index++)
+                if (!_trackSkipWheelGate.TryBegin(Stopwatch.GetTimestamp()))
+                    return null;
+
+                try
                 {
                     if (delta > 0)
                         await _mediaSessionService.SkipPreviousAsync();
                     else
                         await _mediaSessionService.SkipNextAsync();
+                }
+                finally
+                {
+                    _trackSkipWheelGate.Complete();
                 }
 
                 // 结果里带上切歌之后的曲名：提示要回答的是"刚才发生了什么"，只写"下一首"等于把用户已经知道的事说了一遍。

@@ -16,6 +16,8 @@ public sealed class ShellTrayIconService : IDisposable
     private const int CallbackMessage = NativeMethods.WM_APP + 17;
     private readonly HwndSource _messageWindow;
     private readonly uint _taskbarCreatedMessage;
+    private readonly AppIconService _appIconService;
+    private AppIconService.TrayIcon? _trayIcon;
     private IntPtr _icon;
     private string _tooltipText = "AF Media Bar";
     private bool _isAdded;
@@ -25,8 +27,10 @@ public sealed class ShellTrayIconService : IDisposable
     /// 创建隐藏消息窗口、注册 Explorer 重建消息并立即安装通知区域图标。
     /// Creates the hidden message window, registers for Explorer recreation, and installs the notification icon immediately.
     /// </summary>
-    public ShellTrayIconService()
+    /// <param name="appIconService">按主题提供托盘图标的服务。/ Service that supplies the tray icon for the active theme.</param>
+    public ShellTrayIconService(AppIconService appIconService)
     {
+        _appIconService = appIconService;
         _messageWindow = new HwndSource(new HwndSourceParameters("AFMediaBar.ShellTrayWindow")
         {
             Width = 0,
@@ -39,6 +43,11 @@ public sealed class ShellTrayIconService : IDisposable
         _messageWindow.AddHook(WindowHook);
         _taskbarCreatedMessage = unchecked((uint)NativeMethods.RegisterWindowMessage("TaskbarCreated"));
         LoadApplicationIcon();
+
+        // 主题换图时托盘跟着换：通知区域本身就是浅色/深色两套，一套图形在另一套上会看不清。
+        // The tray follows an artwork change: the notification area itself comes in light and dark, and one artwork is hard to read
+        // on the other.
+        _appIconService.IconChanged += OnApplicationIconChanged;
         AddIcon();
     }
 
@@ -182,20 +191,56 @@ public sealed class ShellTrayIconService : IDisposable
         return IntPtr.Zero;
     }
 
+    /// <summary>
+    /// 取当前主题对应的托盘图标。
+    ///
+    /// 旧实现是从 exe 的 Win32 图标资源里抽一份：那份图标是静态的，在深色任务栏上永远看不清，而通知区域本身就有浅色与
+    /// 深色两套。现在图标由 <see cref="AppIconService"/> 按主题给出，主题变化时由 <see cref="OnApplicationIconChanged"/>
+    /// 换成另一套。
+    /// Takes the tray icon for the current theme. The previous implementation extracted the executable's static Win32 icon: that one
+    /// can never be read on a dark taskbar, and the notification area itself comes in a light and a dark set. The icon is now
+    /// supplied by <see cref="AppIconService"/> per theme, and <see cref="OnApplicationIconChanged"/> swaps it when the theme moves.
+    /// </summary>
     private void LoadApplicationIcon()
     {
-        var executable = Environment.ProcessPath;
-        if (string.IsNullOrWhiteSpace(executable))
+        _trayIcon?.Dispose();
+        _trayIcon = _appIconService.ResolveTrayIcon();
+        _icon = _trayIcon?.Handle ?? IntPtr.Zero;
+    }
+
+    private void OnApplicationIconChanged()
+    {
+        if (_disposed)
         {
             return;
         }
 
-        _ = NativeMethods.ExtractIconEx(executable, 0, out var large, out var small, 1);
-        _icon = small != IntPtr.Zero ? small : large;
-        if (_icon == small && large != IntPtr.Zero)
+        var next = _appIconService.ResolveTrayIcon();
+        if (next is null)
         {
-            NativeMethods.DestroyIcon(large);
+            // 解析失败就继续用当前图标：托盘留成空白比图标旧一点糟得多。
+            // Resolution failed, so the current icon stays: a blank tray is far worse than a slightly stale icon.
+            return;
         }
+
+        var previous = _trayIcon;
+        _trayIcon = next;
+        _icon = next.Handle;
+        if (_isAdded)
+        {
+            // uFlags 必须写明这次要改的是图标：NIM_MODIFY 的 uFlags 是"改哪些字段"的位掩码，`CreateData` 不设它
+            // （只有 AddIcon 会设），留着 0 就等于告诉 Shell"什么都不用改"，调用返回成功而托盘图标一动不动。
+            // uFlags has to name the field being changed: for NIM_MODIFY it is a bitmask of what to update, and `CreateData`
+            // leaves it unset (only AddIcon sets it). Leaving it at 0 tells the Shell "change nothing": the call succeeds and the
+            // tray icon never moves.
+            var data = CreateData();
+            data.uFlags = NativeMethods.NIF_ICON;
+            NativeMethods.ShellNotifyIcon(NativeMethods.NIM_MODIFY, ref data);
+        }
+
+        // 换图之后再释放旧句柄：Shell 读取的是本次调用时传进去的那一个。
+        // The previous handle is released only after the swap: the Shell read the one handed to it in this call.
+        previous?.Dispose();
     }
 
     private void AddIcon()
@@ -247,10 +292,13 @@ public sealed class ShellTrayIconService : IDisposable
 
         _messageWindow.RemoveHook(WindowHook);
         _messageWindow.Dispose();
-        if (_icon != IntPtr.Zero)
-        {
-            NativeMethods.DestroyIcon(_icon);
-            _icon = IntPtr.Zero;
-        }
+        _appIconService.IconChanged -= OnApplicationIconChanged;
+
+        // 句柄属于 TrayIcon 所有权包，因此这里只释放包本身；再单独 DestroyIcon 会变成一次二次释放。
+        // The handle belongs to the TrayIcon ownership wrapper, so only the wrapper is released here; a separate DestroyIcon call
+        // would free it a second time.
+        _trayIcon?.Dispose();
+        _trayIcon = null;
+        _icon = IntPtr.Zero;
     }
 }
