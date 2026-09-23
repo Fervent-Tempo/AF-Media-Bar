@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:controls="clr-namespace:AFMediaBar.Components"
+
         mc:Ignorable="d"
         Title="TaskbarWindow"
         WindowStyle="None"
@@ -20,45 +21,9 @@
         ContextMenuOpening="Window_ContextMenuOpening"
         Visibility="Collapsed">
     <Window.ContextMenu>
-        <ContextMenu x:Name="PlayerMenu" Width="280"
-                     Padding="4"
-                     StaysOpen="False"
-                     FontFamily="{DynamicResource AppTextFontFamily}"
-                     FontWeight="{DynamicResource AppTextFontWeight}"
-                     Background="{DynamicResource AppMenuBackgroundBrush}"
-                     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                     BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                     BorderThickness="1"
-                     DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-            <ui:MenuItem x:Name="SessionsMenuItem"
-                         Header="{DynamicResource Loc.Common.SwitchMediaSource}"
-                         Icon="{ui:SymbolIcon MusicNote216}" />
-            <Separator />
-            <ui:MenuItem Header="{DynamicResource Loc.Common.ReconnectSmtc}"
-                         Icon="{ui:SymbolIcon ArrowSync24}"
-                         Command="{Binding ReconnectMediaSessionCommand}" />
-            <ui:MenuItem Header="{DynamicResource Loc.Common.ReloadTaskbarHost}"
-                         Icon="{ui:SymbolIcon ArrowSync24}"
-                         Click="ReloadTaskbarHostMenuItem_Click" />
-            <!--
-                媒体栏的右键菜单与托盘菜单是两个独立的菜单，因此更新入口必须在这里也有一份：
-                只加在托盘菜单上时，用户在媒体栏上右键永远看不到更新状态。
-                The media bar and the tray own two separate context menus, so the update entry has to exist here as
-                well: with it only in the tray menu, right-clicking the bar never shows any update state.
-            -->
-            <ui:MenuItem Header="{Binding UpdateMenuHeader}"
-                         Icon="{ui:SymbolIcon ArrowSync24}"
-                         IsEnabled="{Binding IsUpdateMenuEnabled}"
-                         Command="{Binding UpdateMenuCommand}" />
-            <ui:MenuItem Header="{DynamicResource Loc.Common.Settings}"
-                         Icon="{ui:SymbolIcon Settings24}"
-                         Command="{Binding OpenSettingsCommand}" />
-            <Separator />
-            <ui:MenuItem Header="{DynamicResource Loc.Common.Exit}"
-                         Icon="{ui:SymbolIcon ArrowExit20}"
-                         Command="{Binding ExitApplicationCommand}" />
-        </ContextMenu>
+        <controls:AFContextMenu x:Name="PlayerMenu" />
     </Window.ContextMenu>
+
     <Canvas Name="WidgetCanvas" Background="Transparent">
         <controls:TaskBarMediaControl x:Name="MediaControl"
                                       PreviewMouseLeftButtonDown="MediaControl_PreviewMouseLeftButtonDown"

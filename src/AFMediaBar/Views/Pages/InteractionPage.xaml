@@ -63,9 +63,12 @@
                                 MinWidth="150"
                                 SelectedValue="{Binding ViewModel.Modifier, Mode=TwoWay}"
                                 SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.Modifier.Shift}" Tag="{x:Static settings:InteractionModifier.Shift}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.Modifier.LeftMouseButton}" Tag="{x:Static settings:InteractionModifier.LeftMouseButton}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.Modifier.RightMouseButton}" Tag="{x:Static settings:InteractionModifier.RightMouseButton}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Common.Modifier.Shift}"
+                                              Tag="{x:Static settings:InteractionModifier.Shift}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Common.Modifier.LeftMouseButton}"
+                                              Tag="{x:Static settings:InteractionModifier.LeftMouseButton}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Common.Modifier.RightMouseButton}"
+                                              Tag="{x:Static settings:InteractionModifier.RightMouseButton}" />
                             </ComboBox>
                         </components:SettingsRow>
 
@@ -82,6 +85,7 @@
                     Header="{DynamicResource Loc.Common.Group.InAppRestLayer}"
                     Icon="{ui:SymbolIcon CursorClick24}">
                     <StackPanel>
+
                         <components:SettingsDiagram Margin="0,0,0,12" Kind="InputGestures" />
 
                         <components:SettingsRow
@@ -92,10 +96,14 @@
                                 MinWidth="200"
                                 SelectedValue="{Binding ViewModel.ArtworkClickAction, Mode=TwoWay}"
                                 SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.PlayPause}" Tag="{x:Static settings:PlayerClickAction.TogglePlayPause}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.ActivateSourceApplication}" Tag="{x:Static settings:PlayerClickAction.ActivateSource}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.OpenFullPanel}" Tag="{x:Static settings:PlayerClickAction.OpenFullPanel}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.Disabled}" Tag="{x:Static settings:PlayerClickAction.Disabled}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Common.PlayPause}"
+                                              Tag="{x:Static settings:PlayerClickAction.TogglePlayPause}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Common.ActivateSourceApplication}"
+                                              Tag="{x:Static settings:PlayerClickAction.ActivateSource}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Common.OpenFullPanel}"
+                                              Tag="{x:Static settings:PlayerClickAction.OpenFullPanel}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.Disabled}"
+                                              Tag="{x:Static settings:PlayerClickAction.Disabled}" />
                             </ComboBox>
                         </components:SettingsRow>
 
@@ -106,10 +114,14 @@
                                 MinWidth="200"
                                 SelectedValue="{Binding ViewModel.TextClickAction, Mode=TwoWay}"
                                 SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.ActivateSourceApplication}" Tag="{x:Static settings:PlayerClickAction.ActivateSource}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.PlayPause}" Tag="{x:Static settings:PlayerClickAction.TogglePlayPause}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.OpenFullPanel}" Tag="{x:Static settings:PlayerClickAction.OpenFullPanel}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.Disabled}" Tag="{x:Static settings:PlayerClickAction.Disabled}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Common.ActivateSourceApplication}"
+                                              Tag="{x:Static settings:PlayerClickAction.ActivateSource}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Common.PlayPause}"
+                                              Tag="{x:Static settings:PlayerClickAction.TogglePlayPause}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Common.OpenFullPanel}"
+                                              Tag="{x:Static settings:PlayerClickAction.OpenFullPanel}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.Disabled}"
+                                              Tag="{x:Static settings:PlayerClickAction.Disabled}" />
                             </ComboBox>
                         </components:SettingsRow>
 
@@ -121,11 +133,16 @@
                                 MinWidth="200"
                                 SelectedValue="{Binding ViewModel.PrimaryWheelAction, Mode=TwoWay}"
                                 SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.PreviousNextTrack}" Tag="{x:Static settings:WheelAction.PreviousNext}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.SwitchOutputDevice}" Tag="{x:Static settings:WheelAction.OutputDevice}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.AdjustCurrentMediaVolume}" Tag="{x:Static settings:WheelAction.CurrentApplicationVolume}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.SwitchPlayer}" Tag="{x:Static settings:WheelAction.SwitchMediaSource}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.Disabled}" Tag="{x:Static settings:WheelAction.Disabled}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Common.PreviousNextTrack}"
+                                              Tag="{x:Static settings:WheelAction.PreviousNext}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Common.SwitchOutputDevice}"
+                                              Tag="{x:Static settings:WheelAction.OutputDevice}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Common.AdjustCurrentMediaVolume}"
+                                              Tag="{x:Static settings:WheelAction.CurrentApplicationVolume}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Common.SwitchPlayer}"
+                                              Tag="{x:Static settings:WheelAction.SwitchMediaSource}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.Disabled}"
+                                              Tag="{x:Static settings:WheelAction.Disabled}" />
                             </ComboBox>
                         </components:SettingsRow>
 
@@ -137,11 +154,16 @@
                                 MinWidth="200"
                                 SelectedValue="{Binding ViewModel.ChordWheelAction, Mode=TwoWay}"
                                 SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.SwitchPlayer}" Tag="{x:Static settings:WheelAction.SwitchMediaSource}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.AdjustCurrentMediaVolume}" Tag="{x:Static settings:WheelAction.CurrentApplicationVolume}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.SwitchOutputDevice}" Tag="{x:Static settings:WheelAction.OutputDevice}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.PreviousNextTrack}" Tag="{x:Static settings:WheelAction.PreviousNext}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.Disabled}" Tag="{x:Static settings:WheelAction.Disabled}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Common.SwitchPlayer}"
+                                              Tag="{x:Static settings:WheelAction.SwitchMediaSource}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Common.AdjustCurrentMediaVolume}"
+                                              Tag="{x:Static settings:WheelAction.CurrentApplicationVolume}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Common.SwitchOutputDevice}"
+                                              Tag="{x:Static settings:WheelAction.OutputDevice}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Common.PreviousNextTrack}"
+                                              Tag="{x:Static settings:WheelAction.PreviousNext}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.Disabled}"
+                                              Tag="{x:Static settings:WheelAction.Disabled}" />
                             </ComboBox>
                         </components:SettingsRow>
                     </StackPanel>
@@ -159,11 +181,18 @@
                                 MinWidth="200"
                                 SelectedValue="{Binding ViewModel.TrayClickAction, Mode=TwoWay}"
                                 SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.TrayAction.OpenAudioControl}" Tag="{x:Static settings:TrayClickAction.OpenAudioControl}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.TrayAction.OpenOutputDeviceMenu}" Tag="{x:Static settings:TrayClickAction.OpenOutputDeviceMenu}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.TrayAction.OpenCurrentAppVolumeMenu}" Tag="{x:Static settings:TrayClickAction.OpenCurrentAppVolumeMenu}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.TrayAction.OpenSettings}" Tag="{x:Static settings:TrayClickAction.OpenSettings}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.TrayAction.OpenContextMenu}" Tag="{x:Static settings:TrayClickAction.OpenContextMenu}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.TrayAction.OpenAudioControl}"
+                                              Tag="{x:Static settings:TrayClickAction.OpenAudioControl}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Interaction.TrayAction.OpenOutputDeviceMenu}"
+                                    Tag="{x:Static settings:TrayClickAction.OpenOutputDeviceMenu}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Interaction.TrayAction.OpenCurrentAppVolumeMenu}"
+                                    Tag="{x:Static settings:TrayClickAction.OpenCurrentAppVolumeMenu}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.TrayAction.OpenSettings}"
+                                              Tag="{x:Static settings:TrayClickAction.OpenSettings}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.TrayAction.OpenContextMenu}"
+                                              Tag="{x:Static settings:TrayClickAction.OpenContextMenu}" />
                             </ComboBox>
                         </components:SettingsRow>
 
@@ -175,8 +204,10 @@
                                 MinWidth="200"
                                 SelectedValue="{Binding ViewModel.TrayPrimaryWheelAction, Mode=TwoWay}"
                                 SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.SwitchOutputDevice}" Tag="{x:Static settings:TrayWheelBehavior.SwitchOutputDevice}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.AdjustCurrentMediaVolume}" Tag="{x:Static settings:TrayWheelBehavior.AdjustVolume}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Common.SwitchOutputDevice}"
+                                              Tag="{x:Static settings:TrayWheelBehavior.SwitchOutputDevice}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Common.AdjustCurrentMediaVolume}"
+                                              Tag="{x:Static settings:TrayWheelBehavior.AdjustVolume}" />
                             </ComboBox>
                         </components:SettingsRow>
 
@@ -188,8 +219,10 @@
                                 MinWidth="200"
                                 SelectedValue="{Binding ViewModel.TrayChordWheelAction, Mode=TwoWay}"
                                 SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.AdjustCurrentMediaVolume}" Tag="{x:Static settings:TrayWheelBehavior.AdjustVolume}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.SwitchOutputDevice}" Tag="{x:Static settings:TrayWheelBehavior.SwitchOutputDevice}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Common.AdjustCurrentMediaVolume}"
+                                              Tag="{x:Static settings:TrayWheelBehavior.AdjustVolume}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Common.SwitchOutputDevice}"
+                                              Tag="{x:Static settings:TrayWheelBehavior.SwitchOutputDevice}" />
                             </ComboBox>
                         </components:SettingsRow>
                     </StackPanel>

@@ -134,6 +134,7 @@
 
                 <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.ChooseDisplayMode}" Icon="{ui:SymbolIcon WindowConsole20}">
                     <StackPanel>
+
                         <UniformGrid Columns="2">
                             <RadioButton
                                 GroupName="DisplayMode"

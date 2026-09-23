@@ -21,6 +21,8 @@ namespace AFMediaBar.Views.Windows
     /// </summary>
     public partial class SettingsWindow : INavigationWindow, INotifyPropertyChanged
     {
+        private Type? _currentPageType;
+
         private readonly AppIconService _appIconService;
         /// <summary>
         /// 搜索命中到页面类型的映射。搜索索引刻意不引用任何 View 类型，
@@ -338,6 +340,12 @@ namespace AFMediaBar.Views.Windows
         public void SetServiceProvider(IServiceProvider serviceProvider)
         {
             throw new NotImplementedException();
+        }
+
+        private void SettingsWindow_OnLoaded(object sender, RoutedEventArgs e)
+        {
+            _currentPageType = typeof(DisplayModesPage);
+            RootNavigation.Navigate(_currentPageType);
         }
     }
 }

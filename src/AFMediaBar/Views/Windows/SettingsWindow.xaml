@@ -24,6 +24,7 @@
     Background="Transparent"
     WindowCornerPreference="Round"
     WindowStartupLocation="CenterScreen"
+    Loaded="SettingsWindow_OnLoaded"
     mc:Ignorable="d">
     <ui:FluentWindow.InputBindings>
         <KeyBinding

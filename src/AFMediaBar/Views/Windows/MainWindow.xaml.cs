@@ -31,6 +31,7 @@ namespace AFMediaBar.Views.Windows
     {
         public MainWindowViewModel ViewModel { get; }
 
+        private readonly TaskbarWindowViewModel _taskbarViewModel;
         private readonly ITaskbarDockService _taskBarService;
         private readonly MediaSessionService _mediaSessionService;
         private readonly AudioControlViewModel _audioControlViewModel;
@@ -91,8 +92,8 @@ namespace AFMediaBar.Views.Windows
         /// </summary>
         public MainWindow(
             MainWindowViewModel viewModel,
+            TaskbarWindowViewModel taskbarViewModel,
             ITaskbarDockService taskBarService,
-            MediaSessionService mediaSessionService,
             AudioControlViewModel audioControlViewModel,
             AudioControlFlyoutWindow audioControlFlyout,
             NativeMouseInputMonitor mouseInputMonitor,
@@ -115,10 +116,10 @@ namespace AFMediaBar.Views.Windows
             MemoryPruneCoordinator memoryPruneCoordinator)
         {
             ViewModel = viewModel;
+            _taskbarViewModel = taskbarViewModel;
             DataContext = this;
-
+            _mediaSessionService = App.Services.GetRequiredService<MediaSessionService>();
             _taskBarService = taskBarService;
-            _mediaSessionService = mediaSessionService;
             _audioControlViewModel = audioControlViewModel;
             _audioControlFlyout = audioControlFlyout;
             _mouseInputMonitor = mouseInputMonitor;
@@ -155,17 +156,17 @@ namespace AFMediaBar.Views.Windows
             InitializeComponent();
             UpdateSystemThemeWatcher(SettingsManager.Current.Appearance);
 
-            // 托盘菜单由 Shell 消息手动打开，没有 PlacementTarget；显式绑定才能让命令保持有效。
-            // The tray menu is opened from a Shell message without a PlacementTarget; bind explicitly so commands remain active.
-            TrayMenu.DataContext = this;
-            ContextMenuHelper.AttachOutsideClickDismissal(TrayMenu);
-            _appearanceService.Attach(TrayMenu, this);
 
             Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0));
+            ContextMenuHelper.AttachOutsideClickDismissal(TrayMenu);
+            _appearanceService.Attach(TrayMenu, this);
+            TrayMenu.OpenSettingsRequested += ViewModel_OpenSettingsRequested;
+            TrayMenu.OpenUpdateSettingsRequested += ViewModel_OpenUpdateSettingsRequested;
+            TrayMenu.ReloadTaskbarHostRequested += TrayMenu_ReloadTaskbarHostRequested;
 
             // 快照事件已在服务内调度到 UI 线程，这里只负责转发给任务栏窗口。
-            _mediaSessionService.SnapshotChanged += MediaSessionService_OnSnapshotChanged;
-            _mediaSessionService.SessionsChanged += MediaSessionService_OnSessionsChanged;
+            App.Services.GetRequiredService<MediaSessionService>().SnapshotChanged += MediaSessionService_OnSnapshotChanged;
+            App.Services.GetRequiredService<MediaSessionService>().SessionsChanged += MediaSessionService_OnSessionsChanged;
 
             // 订阅布局设置变更事件
             // Subscribe to layout settings changed event
@@ -186,8 +187,8 @@ namespace AFMediaBar.Views.Windows
             _audioControlViewModel.CurrentAppVolumeMenuRequested += AudioControl_OnCurrentAppVolumeMenuRequested;
             _audioControlViewModel.SettingsOpenRequested += ViewModel_OpenSettingsRequested;
             _mouseInputMonitor.LeftButtonPressed += MouseInputMonitor_OnLeftButtonPressed;
-            ViewModel.OpenSettingsRequested += ViewModel_OpenSettingsRequested;
-            ViewModel.OpenUpdateSettingsRequested += ViewModel_OpenUpdateSettingsRequested;
+            _taskbarViewModel.OpenSettingsRequested += ViewModel_OpenSettingsRequested;
+            _taskbarViewModel.OpenUpdateSettingsRequested += ViewModel_OpenUpdateSettingsRequested;
 
             // 发现新版本时由宿主弹一次系统通知，点击通知把用户带到"应用与关于"。
             // 通知只表达"有新版本"：下载与安装都由用户在该页显式触发。
@@ -282,8 +283,8 @@ namespace AFMediaBar.Views.Windows
         {
             base.OnClosed(e);
 
-            _mediaSessionService.SnapshotChanged -= MediaSessionService_OnSnapshotChanged;
-            _mediaSessionService.SessionsChanged -= MediaSessionService_OnSessionsChanged;
+            App.Services.GetRequiredService<MediaSessionService>().SnapshotChanged -= MediaSessionService_OnSnapshotChanged;
+            App.Services.GetRequiredService<MediaSessionService>().SessionsChanged -= MediaSessionService_OnSessionsChanged;
             SettingsManager.LayoutSettingsChanged -= SettingsManager_OnLayoutSettingsChanged;
             SettingsManager.AppearanceSettingsChanged -= SettingsManager_OnAppearanceSettingsChanged;
             ApplicationThemeManager.Changed -= ApplicationThemeManager_OnChanged;
@@ -301,8 +302,11 @@ namespace AFMediaBar.Views.Windows
             _audioControlViewModel.CurrentAppVolumeMenuRequested -= AudioControl_OnCurrentAppVolumeMenuRequested;
             _audioControlViewModel.SettingsOpenRequested -= ViewModel_OpenSettingsRequested;
             _mouseInputMonitor.LeftButtonPressed -= MouseInputMonitor_OnLeftButtonPressed;
-            ViewModel.OpenSettingsRequested -= ViewModel_OpenSettingsRequested;
-            ViewModel.OpenUpdateSettingsRequested -= ViewModel_OpenUpdateSettingsRequested;
+            TrayMenu.OpenSettingsRequested -= ViewModel_OpenSettingsRequested;
+            TrayMenu.OpenUpdateSettingsRequested -= ViewModel_OpenUpdateSettingsRequested;
+            TrayMenu.ReloadTaskbarHostRequested -= TrayMenu_ReloadTaskbarHostRequested;
+            _taskbarViewModel.OpenSettingsRequested -= ViewModel_OpenSettingsRequested;
+            _taskbarViewModel.OpenUpdateSettingsRequested -= ViewModel_OpenUpdateSettingsRequested;
             _updateService.UpdateStateChanged -= UpdateService_OnStateChanged;
             _trayIconService.NotificationClicked -= TrayIconService_OnNotificationClicked;
             // Make sure that closing this window will begin the process of closing the application.
@@ -366,7 +370,6 @@ namespace AFMediaBar.Views.Windows
             if (_isClosing || SettingsManager.Current.WindowMode != WindowMode.Taskbar)
                 return;
 
-            TrayMenu.IsOpen = false;
             RequestTaskbarEnvironmentRecovery();
         }
 
@@ -465,14 +468,14 @@ namespace AFMediaBar.Views.Windows
             _effectiveTaskbarTargetSignature = ResolveEffectiveTaskbarTargetSignature();
 
             // Replay the latest snapshot; if none exists yet, force a synchronous refresh.
-            if (_mediaSessionService.CurrentSnapshot is { } snapshot)
+            if (App.Services.GetRequiredService<MediaSessionService>().CurrentSnapshot is { } snapshot)
             {
                 foreach (var taskbarWindow in _taskbarWindows)
                     taskbarWindow.ApplySnapshot(snapshot);
             }
             else
             {
-                _mediaSessionService.RefreshNow();
+                App.Services.GetRequiredService<MediaSessionService>().RefreshNow();
             }
         }
 
@@ -523,23 +526,7 @@ namespace AFMediaBar.Views.Windows
             foreach (var taskbarWindow in _taskbarWindows)
                 taskbarWindow.ApplySessions(options);
             _dynamicIslandWindow?.ApplySessions(options);
-            ApplyTraySessions(options);
-        }
-
-        private void ApplyTraySessions(IReadOnlyList<MediaSessionOption> options)
-        {
-            TraySessionsMenuItem.Items.Clear();
-            foreach (var option in options)
-            {
-                TraySessionsMenuItem.Items.Add(new MenuItem
-                {
-                    Header = option.DisplayName,
-                    IsCheckable = true,
-                    IsChecked = option.IsSelected,
-                    Command = ViewModel.SelectMediaSessionCommand,
-                    CommandParameter = option.Key
-                });
-            }
+            TrayMenu.ApplySessions(options);
         }
 
         /// <summary>
@@ -583,10 +570,11 @@ namespace AFMediaBar.Views.Windows
             {
                 if (_isClosing)
                     return;
-
                 var snapshot = _mediaSessionService.CurrentSnapshot ?? MediaSnapshot.Disconnected;
                 foreach (var taskbarWindow in _taskbarWindows)
+                {
                     taskbarWindow.ApplySnapshot(snapshot);
+                }
                 _dynamicIslandWindow?.ApplySnapshot(snapshot);
             });
         }
@@ -630,9 +618,9 @@ namespace AFMediaBar.Views.Windows
                 _dynamicIslandWindow ??= App.Services.GetRequiredService<DynamicIslandWindow>();
                 _dynamicIslandWindow.ApplyLayoutSettings(SettingsManager.Current.LayoutOrientationMode);
                 _dynamicIslandWindow.ApplyAppearanceSettings();
-                _dynamicIslandWindow.ApplySessions(_mediaSessionService.CurrentSessionOptions);
+                _dynamicIslandWindow.ApplySessions(App.Services.GetRequiredService<MediaSessionService>().CurrentSessionOptions);
                 _dynamicIslandWindow.Show();
-                if (_mediaSessionService.CurrentSnapshot is { } islandSnapshot)
+                if (App.Services.GetRequiredService<MediaSessionService>().CurrentSnapshot is { } islandSnapshot)
                     _dynamicIslandWindow.ApplySnapshot(islandSnapshot);
                 return;
             }
@@ -645,10 +633,14 @@ namespace AFMediaBar.Views.Windows
                 if (_mediaSessionService.CurrentSnapshot is { } snapshot)
                 {
                     foreach (var taskbarWindow in _taskbarWindows)
+                    {
                         taskbarWindow.ApplySnapshot(snapshot);
+                    }
                 }
                 else
+                {
                     _mediaSessionService.RefreshNow();
+                }
             }
         }
 
@@ -816,7 +808,6 @@ namespace AFMediaBar.Views.Windows
             var window = new TaskbarWindow(
                 _taskBarService,
                 targetDeviceId,
-                ViewModel,
                 this,
                 _appearanceService,
                 _occupiedAreaService,
@@ -971,16 +962,15 @@ namespace AFMediaBar.Views.Windows
                 return;
 
             _audioControlFlyout.Hide();
-            ApplyTraySessions(_mediaSessionService.CurrentSessionOptions);
-            ReloadTaskbarHostMenuItem.IsEnabled =
+            TrayMenu.ApplySessions(App.Services.GetRequiredService<MediaSessionService>().CurrentSessionOptions);
+            TrayMenu.IsReloadTaskbarHostEnabled =
                 SettingsManager.Current.WindowMode == WindowMode.Taskbar;
-            TrayMenu.DataContext = this;
             TrayMenu.PlacementTarget = this;
             TrayMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
             TrayMenu.IsOpen = true;
         }
 
-        private void ReloadTaskbarHostMenuItem_Click(object sender, RoutedEventArgs e) =>
+        private void TrayMenu_ReloadTaskbarHostRequested(object? sender, EventArgs e) =>
             RequestTaskbarHostReload();
 
         private void MouseInputMonitor_OnLeftButtonPressed(object? sender, NativeMouseButtonEventArgs e)

@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-
+        xmlns:controls="clr-namespace:AFMediaBar.Components"
         Title="{Binding ViewModel.ApplicationTitle, Mode=OneWay}"
         Height="40" Width="310"
         WindowStyle="None" ResizeMode="NoResize"
@@ -19,42 +19,6 @@
         Visibility="Collapsed"
         mc:Ignorable="d">
     <Window.ContextMenu>
-        <ContextMenu x:Name="TrayMenu"
-                     Width="240"
-                     Padding="4"
-                     StaysOpen="False"
-                     FontFamily="{DynamicResource AppTextFontFamily}"
-                     FontWeight="{DynamicResource AppTextFontWeight}"
-                     Background="{DynamicResource AppMenuBackgroundBrush}"
-                     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                     BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                     BorderThickness="1">
-            <ui:MenuItem x:Name="TraySessionsMenuItem" Header="{DynamicResource Loc.Common.SwitchMediaSource}"
-                         Icon="{ui:SymbolIcon MusicNote216}" />
-            <Separator />
-            <ui:MenuItem Header="{DynamicResource Loc.Common.ReconnectSmtc}" Icon="{ui:SymbolIcon ArrowSync24}"
-                         Command="{Binding ViewModel.ReconnectMediaSessionCommand}" />
-            <ui:MenuItem x:Name="ReloadTaskbarHostMenuItem"
-                         Header="{DynamicResource Loc.Common.ReloadTaskbarHost}"
-                         Icon="{ui:SymbolIcon ArrowSync24}"
-                         Click="ReloadTaskbarHostMenuItem_Click" />
-            <!--
-                更新入口只有一行，标题随状态变化（检查更新 / 正在下载 45% / 更新已就绪，点击重启安装），
-                因此菜单里就能看到下载进度与重启提示；点击后按当前状态检查、取消下载、打开更新页或立即重启安装。
-                The update entry is a single line whose title follows the state (check for updates / downloading 45% /
-                ready, click to restart and install), which is how the download progress and the restart offer become
-                visible inside the menu. Clicking it checks, cancels, opens the update page or restarts and installs,
-                depending on the state.
-            -->
-            <ui:MenuItem Header="{Binding ViewModel.UpdateMenuHeader}"
-                         Icon="{ui:SymbolIcon ArrowSync24}"
-                         IsEnabled="{Binding ViewModel.IsUpdateMenuEnabled}"
-                         Command="{Binding ViewModel.UpdateMenuCommand}" />
-            <ui:MenuItem Header="{DynamicResource Loc.Common.Settings}" Icon="{ui:SymbolIcon Settings24}"
-                         Command="{Binding ViewModel.OpenSettingsCommand}" />
-            <Separator />
-            <ui:MenuItem Header="{DynamicResource Loc.Common.Exit}" Icon="{ui:SymbolIcon ArrowExit20}"
-                         Command="{Binding ViewModel.ExitApplicationCommand}" />
-        </ContextMenu>
+        <controls:AFContextMenu x:Name="TrayMenu" />
     </Window.ContextMenu>
 </Window>

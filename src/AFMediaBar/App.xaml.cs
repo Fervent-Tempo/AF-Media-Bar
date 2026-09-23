@@ -19,6 +19,7 @@ using AFMediaBar.Classes.Services.Audio;
 using AFMediaBar.Classes.Services.Localization;
 using AFMediaBar.Classes.Services.Updates;
 using AFMediaBar.Classes.Settings;
+using AFMediaBar.ViewModels.Components;
 using Wpf.Ui;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
@@ -160,6 +161,7 @@ namespace AFMediaBar
                 // === 主窗口（隐藏的宿主窗口）Main Window (invisible host window) ===
                 services.AddSingleton<INavigationWindow, MainWindow>();
                 services.AddSingleton<MainWindowViewModel>();
+                services.AddSingleton<TaskbarWindowViewModel>();
                 services.AddSingleton<AudioControlViewModel>();
                 services.AddTransient<DynamicIslandWindow>();
                 services.AddSingleton<AudioControlFlyoutWindow>();
@@ -211,6 +213,9 @@ namespace AFMediaBar
 
                 services.AddSingleton<AboutPage>();
                 services.AddSingleton<AboutViewModel>();
+
+                // 组件相关VM
+                services.AddSingleton<AFContextMenuViewModel>();
             }).Build();
 
         private ApplicationThemeCoordinator? _themeCoordinator;
@@ -471,6 +476,7 @@ namespace AFMediaBar
             // Context menus always use an opaque Fluent solid surface. Native
             // Mica/Acrylic on Popup HWNDs leaves transparent hit-test regions
             // that can pass clicks through to the window behind the menu.
+
             var menuColor = dark ? Color.FromRgb(44, 44, 44) : Color.FromRgb(249, 249, 249);
             var menuBrush = new SolidColorBrush(menuColor);
             menuBrush.Freeze();
