@@ -10,6 +10,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Reliability fixes: media-session self-healing, spectrum level calibration, and lyric advancement.
 
+### Added
+
+- Lyric spacing: the lyrics page now adjusts the two-line gap (0–8 DIP) and the character spacing (0–20% of the font size). The gap is clamped against the available height of the taskbar's media-text area, so no value can push lyrics out of the bar, and the character spacing is a look-only change that keeps English words intact.
+
 ### Fixed
 
 - Losing media sessions permanently after a single missed SMTC event (for example at a track change): an auto-reconcile watchdog now heals on a one-second cadence for thirty seconds after a session closes and falls back to five seconds, and it rebuilds the media catalog when the third-party library is stuck beyond what ForceUpdate can fix.
