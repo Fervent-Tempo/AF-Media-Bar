@@ -53,9 +53,6 @@ public partial class TaskBarMediaControl
     private void UpdateWebLyricsPresentation(bool allowTransition = true)
     {
         var next = LyricsPresentationProjector.Project(_snapshot, SettingsManager.Current, DateTimeOffset.UtcNow);
-        var lineChanged = _lyricsFrame.IsVisible && next.IsVisible &&
-                          string.Equals(_lyricsFrame.TrackId, next.TrackId, StringComparison.Ordinal) &&
-                          _lyricsFrame.CurrentLineIndex != next.CurrentLineIndex;
         _lyricsFrame = next;
 
         var showWebLyrics = next.IsVisible && _lyricsWebRenderer?.IsReady == true;
@@ -64,7 +61,9 @@ public partial class TaskBarMediaControl
         // host until IsReady would prevent navigation from completing on some systems.
         SongLyricsPanel.Opacity = showWebLyrics ? 1 : 0;
         SongLyricsPanel.IsHitTestVisible = showWebLyrics;
-        _lyricsWebRenderer?.Present(next, allowTransition && lineChanged && MotionPolicy.ResolveCurrent().UseTransitions);
+        // The web engine decides whether a frame is a progress patch or a line transition.
+        // Sending false on every 50 ms progress frame interrupts its in-flight roll animation.
+        _lyricsWebRenderer?.Present(next, allowTransition && MotionPolicy.ResolveCurrent().UseTransitions);
         RefreshWebLyricsTimer();
     }
 

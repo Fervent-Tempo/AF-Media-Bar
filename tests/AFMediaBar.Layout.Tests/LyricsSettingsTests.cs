@@ -29,6 +29,17 @@ public sealed class LyricsSettingsTests
     // ---- 缺字段的默认值 / missing-field defaults ----
 
     [TestMethod]
+    public void NewSettingsShowTwoLeftAlignedLinesWithTheNextLyricSecond()
+    {
+        var settings = new AppSettings();
+
+        Assert.IsTrue(settings.TwoLineLyricsEnabled);
+        Assert.AreEqual(LyricsTextAlignment.Left, settings.LyricsTextAlignment);
+        Assert.AreEqual(LyricsSecondaryLineMode.NextLine,
+            LyricsSecondaryLinePolicy.ResolveOrder(settings.LyricsSecondaryLine)[0]);
+    }
+
+    [TestMethod]
     public void MissingLyricFieldsUseTheDocumentedDefaults()
     {
         // 文件里没有五项取词与擦亮设置：每一项都必须取文档化的默认值，尤其是来源列表——null 表示"全部来源"，

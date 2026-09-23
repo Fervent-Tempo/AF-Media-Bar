@@ -473,7 +473,7 @@ internal static class StringsEn
         table.Add("Lyrics.Row.UnsungOpacity.Description", "Opacity of the text that has not been sung yet; lower means a stronger contrast (45% by default)");
         table.Add("Lyrics.Row.UnsungOpacity.Title", "Unsung-part opacity");
         table.Add("Lyrics.SecondLine.NextLine", "Next lyric line");
-        table.Add("Lyrics.SecondLine.Reset.Description", "Restores the order to translation, romanization, next line");
+        table.Add("Lyrics.SecondLine.Reset.Description", "Restores the order to next line, translation, romanization");
         table.Add("Lyrics.SecondLine.Reset.Title", "Restore the default order");
         table.Add("Lyrics.SecondLine.Romanization", "Romanization of the current line");
         table.Add("Lyrics.SecondLine.Translation", "Translation of the current line");

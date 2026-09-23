@@ -30,8 +30,8 @@ public sealed class LyricsSecondaryLineAndArtworkTests
     }
 
     /// <summary>
-    /// 某个来源没有内容时按列表顺序继续往下取：默认顺序是 翻译 → 音译 → 下一句，用户排的顺序优先。
-    /// A source without content falls through to the next one in the list: the default order is translation, romanization, next line, and the order
+    /// 某个来源没有内容时按列表顺序继续往下取：默认顺序是 下一句 → 翻译 → 音译，用户排的顺序优先。
+    /// A source without content falls through to the next one in the list: the default order is next line, translation, romanization, and the order
     /// the user arranged wins.
     /// </summary>
     [TestMethod]
@@ -70,13 +70,13 @@ public sealed class LyricsSecondaryLineAndArtworkTests
         CollectionAssert.AreEqual(
             new[]
             {
+                LyricsSecondaryLineMode.NextLine,
                 LyricsSecondaryLineMode.Translation,
-                LyricsSecondaryLineMode.Romanization,
-                LyricsSecondaryLineMode.NextLine
+                LyricsSecondaryLineMode.Romanization
             },
             LyricsSecondaryLinePolicy.ResolveOrder(LyricsSecondaryLineSettings.Default).ToArray());
         Assert.AreEqual(
-            "译文",
+            "下一句",
             LyricsSecondaryLinePolicy.Resolve(LyricsSecondaryLineSettings.Default, "下一句", "译文", null));
 
         // 显式的空数组表示一个来源都不用：第二行不显示，不会悄悄退回默认顺序。

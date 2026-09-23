@@ -3,12 +3,12 @@ using AFMediaBar.Classes.Settings;
 namespace AFMediaBar.Classes.Services.Lyrics;
 
 /// <summary>
-/// 第二行歌词的取词顺序：**按用户给定的顺序取第一个有内容的来源**，默认顺序是 翻译 → 音译 → 下一句。
+/// 第二行歌词的取词顺序：**按用户给定的顺序取第一个有内容的来源**，默认顺序是 下一句 → 翻译 → 音译。
 ///
 /// 原来只取一个来源：选了"译文"而这一句没有译文时，第二行就空着——而用户手里往往同时有音译或下一句。
 /// 顺序由歌词页按来源列表那种"逐项上移/下移"的方式调整（`LyricsSecondaryLineSettings.Order`），未列出的来源不会被使用。
 /// Source order of the second lyric line: **the first source with content wins, following the user's order**, whose default is
-/// translation, romanization, next line.
+/// next line, translation, romanization.
 ///
 /// Previously only one source was read, so choosing "translation" left the second line blank whenever that line had no translation — even
 /// though a romanization or the next line was available. The order is adjusted on the Lyrics page the same way the source list is, with
@@ -16,12 +16,12 @@ namespace AFMediaBar.Classes.Services.Lyrics;
 /// </summary>
 public static class LyricsSecondaryLinePolicy
 {
-    /// <summary>默认顺序：翻译 → 音译 → 下一句。/ The default order: translation, romanization, next line.</summary>
+    /// <summary>默认顺序：下一句 → 翻译 → 音译。/ The default order: next line, translation, romanization.</summary>
     public static readonly IReadOnlyList<LyricsSecondaryLineMode> DefaultOrder =
     [
+        LyricsSecondaryLineMode.NextLine,
         LyricsSecondaryLineMode.Translation,
-        LyricsSecondaryLineMode.Romanization,
-        LyricsSecondaryLineMode.NextLine
+        LyricsSecondaryLineMode.Romanization
     ];
 
     /// <summary>设置里生效的顺序：未配置（null）时是默认顺序，显式给出的顺序原样使用（空数组表示一个来源都不用）。/ The effective order from the settings: the default order while nothing is configured (null), otherwise the explicit order as given, where an empty array means no source at all.</summary>

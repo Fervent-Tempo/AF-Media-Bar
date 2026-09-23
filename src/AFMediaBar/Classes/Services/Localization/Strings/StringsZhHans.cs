@@ -473,7 +473,7 @@ internal static class StringsZhHans
         table.Add("Lyrics.Row.UnsungOpacity.Description", "尚未唱到的文字的不透明度；越低对比越明显（默认 45%）");
         table.Add("Lyrics.Row.UnsungOpacity.Title", "未唱部分不透明度");
         table.Add("Lyrics.SecondLine.NextLine", "下一句歌词");
-        table.Add("Lyrics.SecondLine.Reset.Description", "把顺序恢复为 翻译 → 音译 → 下一句");
+        table.Add("Lyrics.SecondLine.Reset.Description", "把顺序恢复为 下一句 → 翻译 → 音译");
         table.Add("Lyrics.SecondLine.Reset.Title", "恢复默认顺序");
         table.Add("Lyrics.SecondLine.Romanization", "当前句音译");
         table.Add("Lyrics.SecondLine.Translation", "当前句翻译");
