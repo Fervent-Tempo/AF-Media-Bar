@@ -597,6 +597,7 @@ public sealed class MediaSessionService : IDisposable
         _fallbackLyricsKey = key;
         _snapshotBuilder.RequestOnlineLyrics(
             sessionKey,
+            baseline.SourceId,
             baseline.Title,
             baseline.Artist,
             baseline.Duration > 0 ? baseline.Duration : null);

@@ -202,7 +202,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable
 
         _pendingLyrics.Add(key);
         var duration = (timelineProperties.EndTime - timelineProperties.StartTime).TotalSeconds;
-        _ = LoadLyricsAsync(key, title, artist, songInfo.AlbumTitle ?? string.Empty, duration > 0 ? duration : null);
+        _ = LoadLyricsAsync(key, sourceId, title, artist, songInfo.AlbumTitle ?? string.Empty, duration > 0 ? duration : null);
         return null;
     }
 
@@ -231,10 +231,11 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable
     /// "no media" every 233 milliseconds).
     /// </summary>
     /// <param name="sessionId">SMTC 会话标识，参与歌词缓存键。/ SMTC session identifier, part of the lyric cache key.</param>
+    /// <param name="sourceId">来源应用的 SMTC 标识，随请求带给取词链。/ The source application's SMTC identifier, passed on to the retrieval chain.</param>
     /// <param name="title">曲名。/ Title.</param>
     /// <param name="artist">歌手。/ Artist.</param>
     /// <param name="durationSeconds">曲目时长（秒）；不可用时传 null。/ Track duration in seconds, or null when unavailable.</param>
-    public void RequestOnlineLyrics(string sessionId, string title, string artist, double? durationSeconds)
+    public void RequestOnlineLyrics(string sessionId, string sourceId, string title, string artist, double? durationSeconds)
     {
         if (string.IsNullOrWhiteSpace(sessionId) || string.IsNullOrWhiteSpace(title))
         {
@@ -249,6 +250,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable
 
         _ = LoadLyricsAsync(
             key,
+            sourceId,
             title,
             artist,
             string.Empty,
@@ -257,6 +259,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable
 
     private async Task LoadLyricsAsync(
         string key,
+        string sourceId,
         string title,
         string artist,
         string album,
@@ -270,7 +273,8 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable
                 artist,
                 album,
                 durationSeconds,
-                NetEaseSongId: null);
+                NetEaseSongId: null,
+                SourceAppId: sourceId);
             var result = await _lyricsService.GetLyricsAsync(request, CancellationToken.None);
 
             // 取词过程中设置若被改过（来源、严格度、署名行过滤），这次结果已经不属于当前配置，写入只会让用户以为设置没生效。
