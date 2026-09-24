@@ -450,8 +450,17 @@ internal static class StringsZhHant
         table.Add("Layout.WindowMode.Taskbar", "停靠工作列");
 
         // ---- Lyrics ----
+        table.Add("Lyrics.Adoption.FirstArrival", "先到先得");
+        table.Add("Lyrics.Adoption.PreferDefaultSource", "偏心預設來源");
+        table.Add("Lyrics.Adoption.PreferDefaultSourceWithDeadline", "偏心預設來源（限時）");
         table.Add("Lyrics.Callout.Display", "有歌詞時，媒體列顯示歌詞；沒有歌詞時顯示標題與歌手。");
         table.Add("Lyrics.Header.Subtitle", "在工作列靜置層顯示目前歌詞");
+        table.Add("Lyrics.Row.AdoptionMode.Description", "並發取詞時如何採納結果；「偏心預設來源」優先採用播放器對應的取詞介面");
+        table.Add("Lyrics.Row.AdoptionMode.Title", "結果採納策略");
+        table.Add("Lyrics.Row.BatchSize.Description", "每批同時取詞的來源個數；目前批次全部未命中才會請求下一批");
+        table.Add("Lyrics.Row.BatchSize.Title", "並發批次數");
+        table.Add("Lyrics.Row.Deadline.Description", "優先級來源先返回結果後，再給預設介面這麼長的時間；僅「偏心預設來源（限時）」時生效");
+        table.Add("Lyrics.Row.Deadline.Title", "預設介面倒數");
         table.Add("Lyrics.Row.Alignment.Description", "歌詞在靜置層的對齊方式；標題與歌手的對齊在顯示模式頁");
         table.Add("Lyrics.Row.Alignment.Title", "歌詞對齊");
         table.Add("Lyrics.Row.InfoLines.Description", "隱藏作者、作曲、製作等署名行");

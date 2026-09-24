@@ -94,6 +94,43 @@ public partial class LyricsViewModel : ObservableObject
         set { SettingsManager.SetLyricsMatchStrictness(value); OnPropertyChanged(); }
     }
 
+    /// <summary>并发取词的结果采纳策略。/ The adoption mode for concurrent retrieval.</summary>
+    public LyricsAdoptionMode AdoptionMode
+    {
+        get => SettingsManager.Current.LyricsAdoptionMode;
+        set { SettingsManager.SetLyricsAdoptionMode(value); OnPropertyChanged(); }
+    }
+
+    /// <summary>优先级来源每批并发的个数。/ How many priority sources run concurrently per batch.</summary>
+    public int ConcurrencyBatchSize
+    {
+        get => SettingsManager.Current.LyricsConcurrencyBatchSize;
+        set
+        {
+            SettingsManager.SetLyricsConcurrencyBatchSize(value);
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ConcurrencyBatchSizeText));
+        }
+    }
+
+    /// <summary>批次数的读数文本。/ The batch-size readout text.</summary>
+    public string ConcurrencyBatchSizeText => $"{ConcurrencyBatchSize}";
+
+    /// <summary>候补出现后留给默认接口的倒计时（毫秒）。/ Countdown (milliseconds) left to the default interface once a candidate exists.</summary>
+    public int AdoptionDeadlineMilliseconds
+    {
+        get => SettingsManager.Current.LyricsAdoptionDeadlineMilliseconds;
+        set
+        {
+            SettingsManager.SetLyricsAdoptionDeadlineMilliseconds(value);
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(AdoptionDeadlineText));
+        }
+    }
+
+    /// <summary>倒计时的读数文本（秒）。/ The deadline readout text in seconds.</summary>
+    public string AdoptionDeadlineText => $"{AdoptionDeadlineMilliseconds / 1000.0:0.#} s";
+
     /// <summary>取词来源列表，顺序即优先级。/ The retrieval source list, whose order is the priority.</summary>
     public ObservableCollection<LyricsSourceSettingItem> SourceEntries { get; } = [];
 
@@ -151,6 +188,9 @@ public partial class LyricsViewModel : ObservableObject
         OnPropertyChanged(nameof(SyllableHighlightEnabled)); OnPropertyChanged(nameof(UnsungOpacityPercent));
         OnPropertyChanged(nameof(UnsungOpacityText)); OnPropertyChanged(nameof(InfoLineFilterEnabled));
         OnPropertyChanged(nameof(MatchStrictness));
+        OnPropertyChanged(nameof(AdoptionMode)); OnPropertyChanged(nameof(ConcurrencyBatchSize));
+        OnPropertyChanged(nameof(ConcurrencyBatchSizeText)); OnPropertyChanged(nameof(AdoptionDeadlineMilliseconds));
+        OnPropertyChanged(nameof(AdoptionDeadlineText));
         OnPropertyChanged(nameof(CanConfigureTwoLine)); OnPropertyChanged(nameof(CanConfigureSecondary));
         OnPropertyChanged(nameof(CanConfigureUnsungOpacity)); OnPropertyChanged(nameof(IsEverySourceDisabled));
     }

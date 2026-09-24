@@ -269,6 +269,63 @@
                         </components:SettingsRow>
 
                         <!--
+                            并发取词三件套：采纳策略（下拉）、批次大小（滑杆）、默认接口倒计时（滑杆）。
+                            上下限全部绑定 LyricsConcurrencyDefaults，不在 XAML 里另写字面量（与未唱不透明度同一处理）。
+                            The concurrency trio: adoption mode (select), batch size (slider), and the default-interface deadline
+                            (slider). The bounds all bind to LyricsConcurrencyDefaults and no literal is repeated in XAML — the
+                            same handling as the unsung-opacity slider.
+                        -->
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Lyrics.Row.AdoptionMode.Description}"
+                            Icon="{ui:SymbolIcon LightningBolt24}"
+                            Title="{DynamicResource Loc.Lyrics.Row.AdoptionMode.Title}">
+                            <ComboBox
+                                MinWidth="200"
+                                SelectedValue="{Binding ViewModel.AdoptionMode, Mode=TwoWay}"
+                                SelectedValuePath="Tag">
+                                <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Adoption.FirstArrival}" Tag="{x:Static settings:LyricsAdoptionMode.FirstArrival}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Adoption.PreferDefaultSource}" Tag="{x:Static settings:LyricsAdoptionMode.PreferDefaultSource}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Adoption.PreferDefaultSourceWithDeadline}" Tag="{x:Static settings:LyricsAdoptionMode.PreferDefaultSourceWithDeadline}" />
+                            </ComboBox>
+                        </components:SettingsRow>
+
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Lyrics.Row.BatchSize.Description}"
+                            Icon="{ui:SymbolIcon Options24}"
+                            Title="{DynamicResource Loc.Lyrics.Row.BatchSize.Title}">
+                            <StackPanel Orientation="Horizontal">
+                                <Slider
+                                    IsSnapToTickEnabled="True"
+                                    Maximum="{Binding Source={x:Static settings:LyricsConcurrencyDefaults.BatchSizeMaximum}}"
+                                    Minimum="{Binding Source={x:Static settings:LyricsConcurrencyDefaults.BatchSizeMinimum}}"
+                                    Style="{StaticResource AfSettingsRowSliderStyle}"
+                                    TickFrequency="1"
+                                    Value="{Binding ViewModel.ConcurrencyBatchSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock
+                                    Style="{StaticResource AfSettingsRowValueStyle}"
+                                    Text="{Binding ViewModel.ConcurrencyBatchSizeText}" />
+                            </StackPanel>
+                        </components:SettingsRow>
+
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Lyrics.Row.Deadline.Description}"
+                            Icon="{ui:SymbolIcon Timer24}"
+                            Title="{DynamicResource Loc.Lyrics.Row.Deadline.Title}">
+                            <StackPanel Orientation="Horizontal">
+                                <Slider
+                                    IsSnapToTickEnabled="True"
+                                    Maximum="{Binding Source={x:Static settings:LyricsConcurrencyDefaults.AdoptionDeadlineMillisecondsMaximum}}"
+                                    Minimum="{Binding Source={x:Static settings:LyricsConcurrencyDefaults.AdoptionDeadlineMillisecondsMinimum}}"
+                                    Style="{StaticResource AfSettingsRowSliderStyle}"
+                                    TickFrequency="500"
+                                    Value="{Binding ViewModel.AdoptionDeadlineMilliseconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock
+                                    Style="{StaticResource AfSettingsRowValueStyle}"
+                                    Text="{Binding ViewModel.AdoptionDeadlineText}" />
+                            </StackPanel>
+                        </components:SettingsRow>
+
+                        <!--
                             列表用展开器承载，一行一个来源；顺序即优先级，因此每行自带上下移按钮，
                             与「媒体与通知」页的来源列表、快速启动列表保持同一套写法。
                             The list lives inside an expander with one source per row; the order is the priority, so every row carries

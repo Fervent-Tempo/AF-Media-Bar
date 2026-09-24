@@ -450,8 +450,17 @@ internal static class StringsEn
         table.Add("Layout.WindowMode.Taskbar", "Dock to the taskbar");
 
         // ---- Lyrics ----
+        table.Add("Lyrics.Adoption.FirstArrival", "First arrival");
+        table.Add("Lyrics.Adoption.PreferDefaultSource", "Prefer default source");
+        table.Add("Lyrics.Adoption.PreferDefaultSourceWithDeadline", "Prefer default source (with deadline)");
         table.Add("Lyrics.Callout.Display", "With lyrics available the media bar shows the lyrics; without them it shows the title and artist.");
         table.Add("Lyrics.Header.Subtitle", "The current lyrics in the taskbar rest layer");
+        table.Add("Lyrics.Row.AdoptionMode.Description", "How a concurrent retrieval adopts its result; \"prefer default source\" favours the interface matched to the playing player");
+        table.Add("Lyrics.Row.AdoptionMode.Title", "Result adoption mode");
+        table.Add("Lyrics.Row.BatchSize.Description", "How many sources fetch concurrently per batch; the next batch is requested only after the current one has all missed");
+        table.Add("Lyrics.Row.BatchSize.Title", "Concurrency batch size");
+        table.Add("Lyrics.Row.Deadline.Description", "Once a priority source has answered first, the default interface gets this long; applies only to \"prefer default source (with deadline)\"");
+        table.Add("Lyrics.Row.Deadline.Title", "Default-interface deadline");
         table.Add("Lyrics.Row.Alignment.Description", "How the lyrics are aligned in the rest layer; title and artist alignment is a separate setting on the display mode page");
         table.Add("Lyrics.Row.Alignment.Title", "Lyric alignment");
         table.Add("Lyrics.Row.InfoLines.Description", "Hides credit lines such as writer, composer, and producer");

@@ -450,8 +450,17 @@ internal static class StringsZhHans
         table.Add("Layout.WindowMode.Taskbar", "停靠任务栏");
 
         // ---- Lyrics ----
+        table.Add("Lyrics.Adoption.FirstArrival", "先到先得");
+        table.Add("Lyrics.Adoption.PreferDefaultSource", "偏心默认来源");
+        table.Add("Lyrics.Adoption.PreferDefaultSourceWithDeadline", "偏心默认来源（限时）");
         table.Add("Lyrics.Callout.Display", "有歌词时，媒体栏显示歌词；没有歌词时显示标题与歌手。");
         table.Add("Lyrics.Header.Subtitle", "在任务栏静置层显示当前歌词");
+        table.Add("Lyrics.Row.AdoptionMode.Description", "并发取词时如何采纳结果；「偏心默认来源」优先采用播放器对应的取词接口");
+        table.Add("Lyrics.Row.AdoptionMode.Title", "结果采纳策略");
+        table.Add("Lyrics.Row.BatchSize.Description", "每批同时取词的来源个数；当前批次全部未命中才会请求下一批");
+        table.Add("Lyrics.Row.BatchSize.Title", "并发批次数");
+        table.Add("Lyrics.Row.Deadline.Description", "优先级来源先返回结果后，再给默认接口这么长的时间；仅「偏心默认来源（限时）」时生效");
+        table.Add("Lyrics.Row.Deadline.Title", "默认接口倒计时");
         table.Add("Lyrics.Row.Alignment.Description", "歌词在静置层的对齐方式；标题与歌手的对齐在显示模式页");
         table.Add("Lyrics.Row.Alignment.Title", "歌词对齐");
         table.Add("Lyrics.Row.InfoLines.Description", "隐藏作者、作曲、制作等署名行");
