@@ -277,7 +277,7 @@
                         -->
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Lyrics.Row.AdoptionMode.Description}"
-                            Icon="{ui:SymbolIcon LightningBolt24}"
+                            Icon="{ui:SymbolIcon ArrowSwap24}"
                             Title="{DynamicResource Loc.Lyrics.Row.AdoptionMode.Title}">
                             <ComboBox
                                 MinWidth="200"
