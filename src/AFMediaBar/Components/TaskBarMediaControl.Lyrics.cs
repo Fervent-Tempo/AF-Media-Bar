@@ -129,6 +129,15 @@ public partial class TaskBarMediaControl
         return $"rgba({color.R}, {color.G}, {color.B}, {alpha:0.###})";
     }
 
+    /// <summary>
+    /// Web 歌词视图为文字留出的水平内边距总和（DIP）：`.layout` 左右各 4px 加 `.lyrics-pane` 左 2px、右 4px，共 10px。
+    /// 文本可用宽度 = 宿主宽度 − 该值，自动尺寸 MUST 把它补回来；否则最长的一行在任务栏仍有空闲空间时也会被省略号裁掉右侧几个像素。
+    /// Total horizontal inset the web lyrics view reserves for text, in DIP: `.layout` pads 4px on both sides and `.lyrics-pane`
+    /// adds 2px left and 4px right, ten in total. The usable text width is the host width minus this value, so the auto-size MUST add
+    /// it back; otherwise the longest line loses its right edge to the ellipsis even though the taskbar still has free room.
+    /// </summary>
+    private const double WebLyricsHorizontalInsetDip = 10;
+
     private double MeasureWebLyricWidth(string text)
     {
         if (string.IsNullOrEmpty(text))
@@ -136,7 +145,7 @@ public partial class TaskBarMediaControl
 
         var sourceSize = Math.Max(1, SongArtist.FontSize);
         var targetSize = _layoutEngine?.LyricsFontSize ?? sourceSize;
-        var width = MeasureTextWidthExact(text, SongArtist) * targetSize / sourceSize + 4;
+        var width = MeasureTextWidthExact(text, SongArtist) * targetSize / sourceSize + WebLyricsHorizontalInsetDip;
 
         // Web 歌词用 CSS letter-spacing 拉开字距：每个字符（含空格与末尾字符）都会多出
         // "字号 × 百分比" 的推进量。自动尺寸必须补上同样的宽度，否则拉大字距后整行会超出
