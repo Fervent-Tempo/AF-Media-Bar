@@ -38,12 +38,15 @@ public static class LyricsFormatDetector
         @"^[ \t]*(?:\[\d+:\d{1,2}(?:[.:]\d{1,3})?\])+[^\r\n]*",
         LineOptions);
 
-    /// <summary>QRC Full 的 LyricContent 属性原文：属性值不含未转义引号，因此 [^"] 足够，换行保留在捕获里。
-    /// The raw LyricContent attribute of a QRC Full document: the value carries no unescaped quote, so [^"] suffices and
-    /// the newlines stay inside the capture.</summary>
+    /// <summary>QRC Full 的 LyricContent 属性原文：锚定在 Lyric_1 元素内（译文一类的其他元素不得截胡），
+    /// 属性值不含未转义引号，因此 [^"] 足够，换行保留在捕获里。
+    /// The raw LyricContent attribute of a QRC Full document, anchored to the Lyric_1 element so no other element (a
+    /// translation among them) can supply the match; the value carries no unescaped quote, so [^"] suffices and the
+    /// newlines stay inside the capture.</summary>
     private static readonly Regex QrcContentRegex = new(
-        @"LyricContent\s*=\s*""(?<content>[^""]*)""",
-        RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Singleline);
+        @"<Lyric_1\b[^>]*LyricContent\s*=\s*""(?<content>[^""]*)""",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Singleline,
+        TimeSpan.FromSeconds(1));
 
     /// <summary>Lyricify Lines 与逐字格式共有的行头：[开始,结束] 或 [开始,时长]。
     /// The line header shared by Lyricify Lines and the syllable formats: [start,end] or [start,duration].</summary>
@@ -247,9 +250,9 @@ public static class LyricsFormatDetector
                 }
             }
         }
-        catch
+        catch (RegexMatchTimeoutException)
         {
-            // 退回 XML 解析。 / Falls back to the XML parse.
+            // 正则超时按未命中处理，退回 XML 解析。 / A regex timeout falls back to the XML parse.
         }
 
         try
