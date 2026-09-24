@@ -1,18 +1,19 @@
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services.Lyrics;
+using AFMediaBar.Classes.Settings;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace AFMediaBar.Layout.Tests;
 
 /// <summary>
-/// 歌词兜底链的时间上限与顺序测试。
-/// Tests for the lyric fallback chain's time limits and ordering.
+/// 歌词并发链的时间上限与调度测试。
+/// Tests for the concurrent lyric chain's time limits and dispatching.
 ///
-/// 已引用的歌词库内部请求不接受取消令牌，因此这里断言的是"等待上限"：超时后不再等待该来源并继续下一个，
+/// 已引用的歌词库内部请求不接受取消令牌，因此这里断言的是"等待上限"：超时后不再等待该来源并推进后续批次，
 /// 被放弃的任务不会被观察成未处理异常。
 /// Requests inside the referenced lyric library take no cancellation token, so what these tests assert is a wait limit: after
-/// a timeout the source is no longer awaited and the next one runs, while the abandoned task is not left as an unobserved
+/// a timeout the source is no longer awaited and later batches advance, while the abandoned task is not left as an unobserved
 /// exception.
 /// </summary>
 [TestClass]
@@ -21,33 +22,40 @@ public sealed class LyricsServiceBudgetTests
     private static readonly TimeSpan PerSource = TimeSpan.FromMilliseconds(60);
     private static readonly TimeSpan Total = TimeSpan.FromMilliseconds(400);
 
+    private static readonly LyricsRetrievalOptions Options =
+        new(LyricsAdoptionMode.FirstArrival, LyricsConcurrencyDefaults.BatchSizeDefault, TimeSpan.Zero);
+
     private static LyricsRequest Request() => new("Song", "Artist", "Album", 200, NetEaseSongId: null);
 
     private static LyricsResult Hit(string source) => new(source, LyricDocument.Empty);
 
     [TestMethod]
-    public async Task FirstHitWinsAndLaterProvidersAreNotAsked()
+    public async Task TheEarliestResultInTheBatchWinsEvenWhenAHigherPrioritySourceIsSlower()
     {
+        // 并发语义：同一批里的来源同时被询问，先到先得——高优先级但慢的结果不会赢得比赛。
+        // Concurrent semantics: sources in one batch are asked together, first arrival wins — a higher-priority but slower
+        // result never wins the race.
         var asked = new List<string>();
         var service = new LyricsService(
             PerSource,
             Total,
-            new StubProvider("first", _ =>
+            new StubProvider("slow-first", async _ =>
             {
-                asked.Add("first");
-                return Task.FromResult<LyricsResult?>(Hit("first"));
+                asked.Add("slow-first");
+                await Task.Delay(40);
+                return Hit("slow-first");
             }),
-            new StubProvider("second", _ =>
+            new StubProvider("fast-second", _ =>
             {
-                asked.Add("second");
-                return Task.FromResult<LyricsResult?>(Hit("second"));
+                asked.Add("fast-second");
+                return Task.FromResult<LyricsResult?>(Hit("fast-second"));
             }));
 
-        var result = await service.GetLyricsAsync(Request(), CancellationToken.None);
+        var result = await service.GetLyricsAsync(Request(), Options, CancellationToken.None);
 
         Assert.IsNotNull(result);
-        Assert.AreEqual("first", result!.Source);
-        CollectionAssert.AreEqual(new[] { "first" }, asked);
+        Assert.AreEqual("fast-second", result!.Source);
+        CollectionAssert.AreEqual(new[] { "slow-first", "fast-second" }, asked);
     }
 
     [TestMethod]
@@ -60,7 +68,7 @@ public sealed class LyricsServiceBudgetTests
             new StubProvider("hanging", _ => hang.Task),
             new StubProvider("fallback", _ => Task.FromResult<LyricsResult?>(Hit("fallback"))));
 
-        var result = await service.GetLyricsAsync(Request(), CancellationToken.None);
+        var result = await service.GetLyricsAsync(Request(), Options, CancellationToken.None);
 
         Assert.IsNotNull(result);
         Assert.AreEqual("fallback", result!.Source);
@@ -78,7 +86,7 @@ public sealed class LyricsServiceBudgetTests
             new StubProvider("three", _ => new TaskCompletionSource<LyricsResult?>().Task));
 
         var startedAt = System.Diagnostics.Stopwatch.GetTimestamp();
-        var result = await service.GetLyricsAsync(Request(), CancellationToken.None);
+        var result = await service.GetLyricsAsync(Request(), Options, CancellationToken.None);
         var elapsed = System.Diagnostics.Stopwatch.GetElapsedTime(startedAt);
 
         Assert.IsNull(result);
@@ -94,7 +102,7 @@ public sealed class LyricsServiceBudgetTests
             new StubProvider("faulting", _ => throw new InvalidOperationException("boom")),
             new StubProvider("fallback", _ => Task.FromResult<LyricsResult?>(Hit("fallback"))));
 
-        var result = await service.GetLyricsAsync(Request(), CancellationToken.None);
+        var result = await service.GetLyricsAsync(Request(), Options, CancellationToken.None);
 
         Assert.IsNotNull(result);
         Assert.AreEqual("fallback", result!.Source);
@@ -111,7 +119,7 @@ public sealed class LyricsServiceBudgetTests
         cancellation.Cancel();
 
         await Assert.ThrowsExceptionAsync<OperationCanceledException>(
-            () => service.GetLyricsAsync(Request(), cancellation.Token));
+            () => service.GetLyricsAsync(Request(), Options, cancellation.Token));
     }
 
     [TestMethod]

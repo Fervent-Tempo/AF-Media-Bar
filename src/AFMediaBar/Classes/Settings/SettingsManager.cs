@@ -70,6 +70,9 @@ public sealed class AppSettings : INotifyPropertyChanged
     private bool _lyricsInfoLineFilterEnabled = true;
     private LyricsMatchStrictness _lyricsMatchStrictness = LyricsMatchStrictness.Balanced;
     private LyricsSourceSettings _lyricsSource = LyricsSourceSettings.Default;
+    private LyricsAdoptionMode _lyricsAdoptionMode = LyricsAdoptionMode.PreferDefaultSourceWithDeadline;
+    private int _lyricsConcurrencyBatchSize = LyricsConcurrencyDefaults.BatchSizeDefault;
+    private int _lyricsAdoptionDeadlineMilliseconds = LyricsConcurrencyDefaults.AdoptionDeadlineMillisecondsDefault;
     private TrackChangeNotificationSettings _trackChangeNotification = TrackChangeNotificationSettings.Default;
     private SmtcSourceFilterSettings _smtcSourceFilter = SmtcSourceFilterSettings.Default;
     private QuickLaunchSettings _quickLaunch = QuickLaunchSettings.Default;
@@ -140,6 +143,15 @@ public sealed class AppSettings : INotifyPropertyChanged
 
     /// <summary>启用的歌词来源与它们的优先级顺序。/ The enabled lyric sources and their priority order.</summary>
     public LyricsSourceSettings LyricsSource { get => _lyricsSource; set => Set(ref _lyricsSource, value.Normalize()); }
+
+    /// <summary>并发取词的结果采纳策略。/ The adoption mode for concurrent lyric retrieval.</summary>
+    public LyricsAdoptionMode LyricsAdoptionMode { get => _lyricsAdoptionMode; set => Set(ref _lyricsAdoptionMode, value); }
+
+    /// <summary>优先级来源每次并发发出的个数（默认接口不占批次名额）。/ How many priority sources are dispatched concurrently per batch (the default interface takes no batch slot).</summary>
+    public int LyricsConcurrencyBatchSize { get => _lyricsConcurrencyBatchSize; set => Set(ref _lyricsConcurrencyBatchSize, LyricsConcurrencyDefaults.NormalizeBatchSize(value)); }
+
+    /// <summary>候补结果出现后留给默认接口的倒计时（毫秒）。/ Countdown (milliseconds) left to the default interface once a candidate result exists.</summary>
+    public int LyricsAdoptionDeadlineMilliseconds { get => _lyricsAdoptionDeadlineMilliseconds; set => Set(ref _lyricsAdoptionDeadlineMilliseconds, LyricsConcurrencyDefaults.NormalizeAdoptionDeadlineMilliseconds(value)); }
     public TrackChangeNotificationSettings TrackChangeNotification
     {
         get => _trackChangeNotification;
@@ -188,6 +200,9 @@ public sealed class AppSettings : INotifyPropertyChanged
         if (!Enum.IsDefined(result.LyricsMatchStrictness)) result.LyricsMatchStrictness = defaults.LyricsMatchStrictness;
         result.LyricsUnsungOpacityPercent = LyricsUnsungOpacity.Normalize(result.LyricsUnsungOpacityPercent);
         result.LyricsSource = result.LyricsSource.Normalize();
+        if (!Enum.IsDefined(result.LyricsAdoptionMode)) result.LyricsAdoptionMode = defaults.LyricsAdoptionMode;
+        result.LyricsConcurrencyBatchSize = LyricsConcurrencyDefaults.NormalizeBatchSize(result.LyricsConcurrencyBatchSize);
+        result.LyricsAdoptionDeadlineMilliseconds = LyricsConcurrencyDefaults.NormalizeAdoptionDeadlineMilliseconds(result.LyricsAdoptionDeadlineMilliseconds);
         result.TaskbarExperience = result.TaskbarExperience.Normalize();
         result.Interaction = result.Interaction.Normalize();
         result.TaskbarSurface = result.TaskbarSurface.Normalize();
@@ -256,6 +271,9 @@ public sealed class AppSettings : INotifyPropertyChanged
         LyricsInfoLineFilterEnabled = LyricsInfoLineFilterEnabled,
         LyricsMatchStrictness = LyricsMatchStrictness,
         LyricsSource = LyricsSource,
+        LyricsAdoptionMode = LyricsAdoptionMode,
+        LyricsConcurrencyBatchSize = LyricsConcurrencyBatchSize,
+        LyricsAdoptionDeadlineMilliseconds = LyricsAdoptionDeadlineMilliseconds,
         TrackChangeNotification = TrackChangeNotification,
         SmtcSourceFilter = SmtcSourceFilter,
         QuickLaunch = QuickLaunch,
@@ -352,6 +370,9 @@ public static class SettingsManager
     public static void SetLyricsInfoLineFilterEnabled(bool enabled) => Current.LyricsInfoLineFilterEnabled = enabled;
     public static void SetLyricsMatchStrictness(LyricsMatchStrictness strictness) => Current.LyricsMatchStrictness = strictness;
     public static void SetLyricsSourceSettings(LyricsSourceSettings settings) => Current.LyricsSource = settings;
+    public static void SetLyricsAdoptionMode(LyricsAdoptionMode mode) => Current.LyricsAdoptionMode = mode;
+    public static void SetLyricsConcurrencyBatchSize(int batchSize) => Current.LyricsConcurrencyBatchSize = batchSize;
+    public static void SetLyricsAdoptionDeadlineMilliseconds(int milliseconds) => Current.LyricsAdoptionDeadlineMilliseconds = milliseconds;
     public static void SetAppearanceSettings(AppearanceSettings appearance) => Current.Appearance = appearance;
     public static void SetTaskbarExperienceSettings(TaskbarExperienceSettings settings) => Current.TaskbarExperience = settings;
     public static void SetInteractionSettings(GlobalInteractionSettings settings) => Current.Interaction = settings;
@@ -430,6 +451,9 @@ public static class SettingsManager
         next.LyricsInfoLineFilterEnabled = defaults.LyricsInfoLineFilterEnabled;
         next.LyricsMatchStrictness = defaults.LyricsMatchStrictness;
         next.LyricsSource = defaults.LyricsSource;
+        next.LyricsAdoptionMode = defaults.LyricsAdoptionMode;
+        next.LyricsConcurrencyBatchSize = defaults.LyricsConcurrencyBatchSize;
+        next.LyricsAdoptionDeadlineMilliseconds = defaults.LyricsAdoptionDeadlineMilliseconds;
         Replace(next, SettingsResetScope.Lyrics);
     }
     public static void ResetLayout()
@@ -468,7 +492,10 @@ public static class SettingsManager
             case nameof(AppSettings.LyricsUnsungOpacityPercent):
             case nameof(AppSettings.LyricsInfoLineFilterEnabled):
             case nameof(AppSettings.LyricsMatchStrictness):
-            case nameof(AppSettings.LyricsSource): LyricsSettingsChanged?.Invoke(null, EventArgs.Empty); break;
+            case nameof(AppSettings.LyricsSource):
+            case nameof(AppSettings.LyricsAdoptionMode):
+            case nameof(AppSettings.LyricsConcurrencyBatchSize):
+            case nameof(AppSettings.LyricsAdoptionDeadlineMilliseconds): LyricsSettingsChanged?.Invoke(null, EventArgs.Empty); break;
             case nameof(AppSettings.LyricsTextAlignment): LyricsSettingsChanged?.Invoke(null, EventArgs.Empty); break;
             case nameof(AppSettings.TaskbarExperience): TaskbarExperienceSettingsChanged?.Invoke(null, EventArgs.Empty); break;
             case nameof(AppSettings.Interaction): InteractionSettingsChanged?.Invoke(null, EventArgs.Empty); break;

@@ -35,6 +35,12 @@ public static class LyricsCacheInvalidationPolicy
         return propertyName is
             nameof(AppSettings.LyricsSource) or
             nameof(AppSettings.LyricsMatchStrictness) or
-            nameof(AppSettings.LyricsInfoLineFilterEnabled);
+            nameof(AppSettings.LyricsInfoLineFilterEnabled) or
+            // 并发与采纳设置同样决定"这一次取词用哪些请求、采纳哪个结果"，改了它们旧结果已经不属于当前配置。
+            // The concurrency and adoption settings equally decide which requests a retrieval sends and which result is
+            // adopted, so results fetched under the old values no longer belong to the current configuration.
+            nameof(AppSettings.LyricsAdoptionMode) or
+            nameof(AppSettings.LyricsConcurrencyBatchSize) or
+            nameof(AppSettings.LyricsAdoptionDeadlineMilliseconds);
     }
 }

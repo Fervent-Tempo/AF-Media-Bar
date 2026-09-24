@@ -1,6 +1,67 @@
 namespace AFMediaBar.Classes.Settings;
 
 /// <summary>
+/// 并发取词的结果采纳策略：多个请求同时飞行时，链路按这里选定的规则决定用哪一个结果。
+/// Adoption mode for concurrent retrieval: while several requests are in flight, the chain picks the result to use by
+/// the rule chosen here.
+/// </summary>
+public enum LyricsAdoptionMode
+{
+    /// <summary>先到先得：任一来源先返回非空结果即采纳，其余请求全部放弃。
+    /// First arrival: the first non-null result from any source is adopted and every other request is dropped.</summary>
+    FirstArrival = 0,
+
+    /// <summary>偏心默认来源：AppID 匹配的默认接口命中随时取代优先级批次里先到的候补结果；默认接口未命中时候补转正。
+    /// 候补出现后默认接口一直等到它自己的单源预算为止。
+    /// Prefer the default source: a hit from the AppID-matched default interface replaces the earliest candidate from the
+    /// priority batches at any time, while the candidate wins when the default misses. Once a candidate exists the default
+    /// interface is waited for until its own per-source budget runs out.</summary>
+    PreferDefaultSource = 1,
+
+    /// <summary>偏心默认来源（限时）：在偏心默认的基础上，候补出现后给默认接口一个倒计时；倒计时内没有命中就候补转正，
+    /// 不让慢的默认接口拖住整链。
+    /// Prefer the default source with a deadline: on top of preferring the default, a countdown starts once a candidate
+    /// exists; without a hit inside the countdown the candidate wins, so a slow default interface cannot stall the chain.</summary>
+    PreferDefaultSourceWithDeadline = 2
+}
+
+/// <summary>
+/// 并发取词的权威取值区间与默认值：批次大小与默认接口倒计时的设置项都绑定这里，不在别处重复字面量。
+/// Authoritative ranges and defaults of the concurrency retrieval: the batch-size and default-interface-deadline settings
+/// bind here and no literal is repeated elsewhere.
+/// </summary>
+public static class LyricsConcurrencyDefaults
+{
+    /// <summary>并发批次的默认大小：默认接口之外，优先级列表每次并发发出的来源个数。/ Default concurrency batch size: besides the default interface, how many priority sources are dispatched per batch.</summary>
+    public const int BatchSizeDefault = 3;
+
+    /// <summary>批次大小的最小值。/ Minimum batch size.</summary>
+    public const int BatchSizeMinimum = 1;
+
+    /// <summary>批次大小的最大值：来源总数目前为 6，超过它只会让所有来源挤进同一批，失去分批的意义。
+    /// Maximum batch size: with six sources at present a larger value only packs every source into one batch, defeating batching.</summary>
+    public const int BatchSizeMaximum = 6;
+
+    /// <summary>默认接口倒计时的默认值（毫秒）：候补结果出现后，默认接口还有这么长时间来完成命中。
+    /// Default deadline (milliseconds) of the default interface: after a candidate appears, the default interface has this long to land a hit.</summary>
+    public const int AdoptionDeadlineMillisecondsDefault = 2000;
+
+    /// <summary>倒计时的最小值（毫秒）：低于它倒计时失去等待的意义。/ Minimum deadline (milliseconds): below it the countdown stops being a wait.</summary>
+    public const int AdoptionDeadlineMillisecondsMinimum = 500;
+
+    /// <summary>倒计时的最大值（毫秒）：再长就接近默认接口自己的单源预算，限时失去意义。
+    /// Maximum deadline (milliseconds): beyond it the countdown approaches the default interface's own per-source budget and the limit means nothing.</summary>
+    public const int AdoptionDeadlineMillisecondsMaximum = 10000;
+
+    /// <summary>把任意输入夹进批次大小区间。/ Clamps any input into the batch-size range.</summary>
+    public static int NormalizeBatchSize(int batchSize) => Math.Clamp(batchSize, BatchSizeMinimum, BatchSizeMaximum);
+
+    /// <summary>把任意输入夹进倒计时区间。/ Clamps any input into the deadline range.</summary>
+    public static int NormalizeAdoptionDeadlineMilliseconds(int milliseconds) =>
+        Math.Clamp(milliseconds, AdoptionDeadlineMillisecondsMinimum, AdoptionDeadlineMillisecondsMaximum);
+}
+
+/// <summary>
 /// 搜索型歌词来源的匹配严格度：搜索结果必须达到的最低匹配等级。
 /// Match strictness for search-based lyric sources: the minimum match level a search result has to reach.
 ///
