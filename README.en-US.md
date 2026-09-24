@@ -33,18 +33,16 @@ Open [GitHub Releases](https://github.com/Fervent-Tempo/AF-Media-Bar/releases) a
 
 Download a release package rather than GitHub's generated Source code archive. The app is not commercially code-signed, so Windows SmartScreen may show an unknown-publisher warning on first run.
 
-The installer offers an optional desktop shortcut and always creates a Start menu entry. If GitHub access is unreliable, accelerated GH-Proxy links are available on the Releases page; in-app updates also try an accelerator if a direct connection fails.
-
 ## Features
 
 | Area | What you can do |
 | --- | --- |
-| Playback | Previous, play/pause, next, repeat, and click-to-position or draggable progress. Wheel track skipping moves one track at a time; pause for about half a second before another skip |
-| Taskbar lyrics | Live lyrics rendered by the web lyrics engine, with translation, romanization, and two-line alignment; word highlighting runs only when the source supplies genuine word timing, while line-timed lyrics switch by line; sources are tried in order: NetEase Cloud Music, LRCLIB, QQ Music, Kugou Music, and Soda Music |
+| Playback | Previous, play/pause, next, repeat, and click-to-position or draggable progress. |
+| Taskbar lyrics | Live lyrics rendered by the web lyrics engine, with translation, romanization, and two-line alignment; sources are tried in order: NetEase Cloud Music, LRCLIB, QQ Music, Kugou Music, and Soda Music |
 | Sources and clicks | Switch media sessions; assign artwork and title/lyric clicks to play/pause, activate the media app, or open the full menu |
 | Audio and system | Click or scroll to switch the default output device, adjust the current media app's volume, and view spatial audio; four spectrum styles and a performance metrics component |
 | Layout and appearance | Avoid taskbar icons and system areas; select a display, auto-hide when nothing plays, and adjust fonts, accent colour, and window material |
-| Shortcuts | Hover for controls, open the full layer for more information, use the note icon for quick launch when idle, and receive a notification when a new track starts |
+| Shortcuts | Hover for controls, open the full layer for more information, use the note icon for quick launch, and quickly switch output devices |
 
 **Limits:** Only players that publish a Windows GSMTC session appear. Some players require “system media controls” or “media keys” in their settings. Taskbar is the only runtime mode; Dynamic Island, Desktop Card, and Floating Orb in Settings are placeholders.
 
@@ -65,11 +63,8 @@ NetEase Cloud Music, QQ Music, Spotify, browsers, and other apps can be discover
 
 ### Updating
 
-About 20 seconds after launch the app reads the public version manifest (`docs/latest.json`). When a newer version exists:
-
-- The tray icon shows one system notification whose click opens the Application page, and the tray and media-bar context menus gain a state-aware update entry.
-- That page shows the highlights, the download progress, and every update action.
-- Downloads try GitHub directly first and offer both a GitHub and an accelerated download page. The portable build has no install record, so it only downloads.
+About 20 seconds after launch the app reads the public version manifest (`docs/latest.json`). When a newer version exists, the tray icon shows one system notification whose click opens the Application page.
+The portable build has no install record, so it only downloads.
 
 The install log is written to `%LOCALAPPDATA%\AFMediaBar\updates\install-<version>.log`, and downloaded installers live in the same folder, cleaned up by version on the next launch.
 
@@ -87,9 +82,9 @@ Remove-Item "$env:LOCALAPPDATA\AFMediaBar" -Recurse -Force
 ## Privacy and Security
 
 - No telemetry, ads, account system, or analytics; media information, system metrics, and volume operations are all handled locally.
-- The update check requests two public manifest endpoints (`docs/latest.json` on `raw.githubusercontent.com` and jsDelivr) and never goes through a third-party proxy; an installer may be fetched through the accelerators configured in the manifest, and its SHA-256 always comes from the manifest read through a non-proxy endpoint.
-- Lyrics are requested from the public endpoints of the five sources above (one request per source, stopping at the first hit) and send only title, artist, album, and duration — no device information and no settings.
-- The app runs with the current user's rights, requests no elevation, and injects nothing into Explorer. Report security issues privately as described in [SECURITY.md](SECURITY.md).
+- The update check requests two public manifest endpoints (`docs/latest.json` on `raw.githubusercontent.com` and jsDelivr).
+- Lyrics are requested from the public endpoints of the five sources above (one request per source, stopping at the first hit) and send only title, artist, album, and duration.
+- The app runs with the current user's rights and requests no elevation. Report security issues privately as described in [SECURITY.md](SECURITY.md).
 
 ## Building from Source
 
@@ -136,6 +131,18 @@ AF-Media-Bar/
 ## Contributing
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening an issue or a pull request. Bug reports should include the Windows version, the AF Media Bar version, the media player, and exact reproduction steps. Changes are recorded in [CHANGELOG.md](CHANGELOG.en-US.md).
+
+
+## Acknowledgements
+
+Thank you to all the developers who have contributed to AF Media Bar.
+
+Thanks to the following open-source projects:
+
+- [FluentFlyout](https://github.com/unchihugo/FluentFlyout)
+- [Lyricify-Lyrics-Helper](https://github.com/WXRIW/Lyricify-Lyrics-Helper)
+- [TaskbarLyrics](https://github.com/ANYNC/TaskbarLyrics)
+
 
 ## License
 
