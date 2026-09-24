@@ -10,6 +10,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Reliability fixes: media-session self-healing, spectrum level calibration, and lyric advancement.
 
+### Added
+
+- Lyric spacing: the lyrics page gains a "line gap" and a "character spacing" setting. The line gap adds extra spacing on top of the existing two-row layout (0–24% of the font size in two-percent steps, default 0 meaning the look is unchanged); it scales with the font, tightens automatically when space runs short, and never clips or shrinks the text. The character spacing widens the gap between characters as a percentage of the font size (0–20% in one-percent steps, default 0), scales with the font, applies to CJK and Latin alike, and never breaks words apart. Both are native CSS layout inside the web lyrics view, so they are continuous and take effect immediately.
+
 ### Fixed
 
 - Losing media sessions permanently after a single missed SMTC event (for example at a track change): an auto-reconcile watchdog now heals on a one-second cadence for thirty seconds after a session closes and falls back to five seconds, and it rebuilds the media catalog when the third-party library is stuck beyond what ForceUpdate can fix.
