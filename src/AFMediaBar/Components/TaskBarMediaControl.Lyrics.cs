@@ -136,7 +136,22 @@ public partial class TaskBarMediaControl
 
         var sourceSize = Math.Max(1, SongArtist.FontSize);
         var targetSize = _layoutEngine?.LyricsFontSize ?? sourceSize;
-        return MeasureTextWidthExact(text, SongArtist) * targetSize / sourceSize + 4;
+        var width = MeasureTextWidthExact(text, SongArtist) * targetSize / sourceSize + 4;
+
+        // Web 歌词用 CSS letter-spacing 拉开字距：每个字符（含空格与末尾字符）都会多出
+        // "字号 × 百分比" 的推进量。自动尺寸必须补上同样的宽度，否则拉大字距后整行会超出
+        // 申请到的文字区，右侧被省略号截断——即使任务栏还有空闲空间。
+        // The web lyrics widen with CSS letter-spacing: every character (spaces and the final one included) advances by
+        // "font size × percent". The auto-size has to add the same amount, otherwise a wider spacing overflows the text
+        // area that was requested without it and the right side is clipped with an ellipsis even though the taskbar still
+        // has free room. Measured against the real page: width = base + characters × percent × font size.
+        var percent = LyricsCharacterSpacing.Normalize(SettingsManager.Current.LyricsCharacterSpacingPercent);
+        if (percent > 0)
+        {
+            width += text.Length * targetSize * percent / 100.0;
+        }
+
+        return width;
     }
 
     private void SetWebLyricsAppearance(Brush foreground, bool needsContrastShadow, bool usesLightText)
