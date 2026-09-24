@@ -19,7 +19,7 @@ namespace AFMediaBar.Classes.Services;
 /// Coordinates the session catalog, source selection, snapshot building, and source enrichers,
 /// publishing a unified state to ViewModels.
 /// </summary>
-public sealed class MediaSessionService : IDisposable
+public sealed class MediaSessionService : IDisposable, IMediaSessionSourceScanner
 {
     private readonly MediaSessionCatalog _catalog;
     private readonly MediaSessionSelectionService _selection;

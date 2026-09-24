@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:components="clr-namespace:AFMediaBar.Components"
+    xmlns:lyrics="clr-namespace:AFMediaBar.Classes.Services.Lyrics"
     xmlns:settings="clr-namespace:AFMediaBar.Classes.Settings"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
@@ -331,6 +332,89 @@
                             The list lives inside an expander with one source per row; the order is the priority, so every row carries
                             its own move buttons, matching the source and quick-launch lists on the media page.
                         -->
+                        <!--
+                            默认取词接口绑定：一行一个播放器（内置的、扫描到的或手动添加的），下拉选择默认来源；
+                            空选项 = 移除该播放器的默认接口（内置行承担"删除内置绑定"的职责，因此没有删除按钮）。
+                            The default-interface bindings: one player per row (built-in, scanned, or manually added) with a
+                            select for its default source; the empty option removes the player's default interface and doubles
+                            as the delete action on built-in rows, which therefore carry no delete button.
+                        -->
+                        <ui:CardExpander
+                            Style="{StaticResource AfSettingsExpanderStyle}"
+                            Icon="{ui:SymbolIcon Link24}">
+                            <ui:CardExpander.Header>
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Lyrics.DefaultBindings.Expander.Title}" />
+                                    <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Lyrics.DefaultBindings.Expander.Description}" />
+                                </StackPanel>
+                            </ui:CardExpander.Header>
+                            <StackPanel>
+                                <components:SettingsRow
+                                    Description="{DynamicResource Loc.Lyrics.DefaultBindings.Expander.Description}"
+                                    Icon="{ui:SymbolIcon Search24}"
+                                    IsNested="True"
+                                    Title="{DynamicResource Loc.Lyrics.DefaultBindings.Scan}">
+                                    <ui:Button
+                                        Command="{Binding ViewModel.ScanPlayingPlayersCommand}"
+                                        Content="{DynamicResource Loc.Lyrics.DefaultBindings.Scan}"
+                                        Icon="{ui:SymbolIcon Search24}"
+                                        Style="{StaticResource AfSettingsButtonStyle}" />
+                                </components:SettingsRow>
+
+                                <ItemsControl Margin="0,0,0,4" ItemsSource="{Binding ViewModel.BindingEntries}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <components:SettingsRow
+                                                IsNested="True"
+                                                Title="{Binding DisplayName}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <ComboBox
+                                                        MinWidth="180"
+                                                        SelectedValue="{Binding SelectedSourceId, Mode=TwoWay}"
+                                                        SelectedValuePath="Tag">
+                                                        <ComboBoxItem Content="{DynamicResource Loc.Lyrics.DefaultBindings.None}" Tag="" />
+                                                        <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Source.Netease}" Tag="{x:Static lyrics:LyricsSourceCatalog.NetEase}" />
+                                                        <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Source.NeteaseSearch}" Tag="{x:Static lyrics:LyricsSourceCatalog.NetEaseSearch}" />
+                                                        <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Source.LRCLIB}" Tag="{x:Static lyrics:LyricsSourceCatalog.Lrclib}" />
+                                                        <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Source.QQMusic}" Tag="{x:Static lyrics:LyricsSourceCatalog.QQMusic}" />
+                                                        <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Source.Kugou}" Tag="{x:Static lyrics:LyricsSourceCatalog.Kugou}" />
+                                                        <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Source.SodaMusic}" Tag="{x:Static lyrics:LyricsSourceCatalog.SodaMusic}" />
+                                                    </ComboBox>
+                                                    <ui:Button
+                                                        Margin="8,0,0,0"
+                                                        Command="{Binding DataContext.ViewModel.RemoveBindingCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                        CommandParameter="{Binding}"
+                                                        Icon="{ui:SymbolIcon Delete24}"
+                                                        Style="{StaticResource AfSettingsIconButtonStyle}"
+                                                        ToolTip="{DynamicResource Loc.Lyrics.DefaultBindings.Remove}"
+                                                        Visibility="{Binding IsDeletable, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
+                                                </StackPanel>
+                                            </components:SettingsRow>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <components:SettingsRow
+                                    Icon="{ui:SymbolIcon Add24}"
+                                    IsNested="True"
+                                    Title="{DynamicResource Loc.Lyrics.DefaultBindings.Add}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <ui:TextBox
+                                            MinWidth="240"
+                                            MaxWidth="320"
+                                            PlaceholderText="{DynamicResource Loc.Lyrics.DefaultBindings.Add.Placeholder}"
+                                            Text="{Binding ViewModel.NewPlayerId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                        <ui:Button
+                                            Margin="8,0,0,0"
+                                            Command="{Binding ViewModel.AddPlayerCommand}"
+                                            Content="{DynamicResource Loc.Lyrics.DefaultBindings.Add}"
+                                            Icon="{ui:SymbolIcon Add24}"
+                                            Style="{StaticResource AfSettingsButtonStyle}" />
+                                    </StackPanel>
+                                </components:SettingsRow>
+                            </StackPanel>
+                        </ui:CardExpander>
+
                         <ui:CardExpander
                             Style="{StaticResource AfSettingsExpanderStyle}"
                             Icon="{ui:SymbolIcon CloudArrowDown24}">

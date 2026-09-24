@@ -154,6 +154,71 @@ public readonly record struct LyricsSecondaryLineSettings(IReadOnlyList<LyricsSe
 }
 
 /// <summary>
+/// 一条默认取词接口绑定：播放器标识（AUMID 或它包含的片段）→ 来源 id。
+/// One default-lyrics binding: a player identifier (an AUMID or a fragment it contains) mapped onto a source id.
+///
+/// <paramref name="SourceId"/> 为 null 表示**显式移除**该播放器的默认接口：它同时用于删除内置绑定——
+/// "未配置"（整个绑定表为 null）与"用户明确不要默认接口"是两种不同的意图，必须分别保存。
+/// A null <paramref name="SourceId"/> explicitly removes that player's default interface, which also covers deleting a
+/// built-in binding: "never configured" (the whole table is null) and "the user does not want a default here" are two
+/// different intents and have to be stored differently.
+/// </summary>
+/// <param name="AppId">播放器标识，匹配规则为"来源标识包含此片段" / The player identifier, matched as "the source id contains this fragment".</param>
+/// <param name="SourceId">绑定的来源 id；null 表示移除该播放器的默认接口 / The bound source id, or null to remove the player's default interface.</param>
+public sealed record LyricsDefaultBinding(string AppId, string? SourceId)
+{
+    /// <summary>该条目是否是"移除默认接口"的标记。/ Whether this entry is a removal marker.</summary>
+    public bool IsRemoval => SourceId is null;
+}
+
+/// <summary>
+/// 默认取词接口的用户绑定表，先于内置映射生效。
+/// The user's default-interface binding table, applied before the built-in mapping.
+///
+/// 三种取值含义不同：null 表示从未配置，全部播放器按内置映射；非空数组按条目匹配播放器，
+/// 命中的条目给出来源（或"移除"），未命中的播放器继续走内置映射。归一化不做来源白名单
+/// （设置层不认识提供器），未知来源 id 在使用时按"无默认接口"处理，因此删除一个来源不会让旧设置失效。
+/// The three values mean different things: null was never configured, so every player follows the built-in mapping; a non-empty
+/// array matches players by entry, a hit supplies the source (or a removal), and players without a hit keep the built-in mapping.
+/// Normalization keeps no source allow-list (the settings layer knows nothing about providers): an unknown source id counts as
+/// "no default interface" when used, so removing a source never invalidates an old settings file.
+/// </summary>
+/// <param name="Bindings">绑定条目；null 表示未配置，即全部走内置映射 / The binding entries; null means unconfigured, which follows the built-in mapping.</param>
+public sealed record LyricsDefaultBindingSettings(IReadOnlyList<LyricsDefaultBinding>? Bindings)
+{
+    /// <summary>默认值：从未配置，全部播放器按内置映射。/ The default: never configured, every player follows the built-in mapping.</summary>
+    public static LyricsDefaultBindingSettings Default { get; } =
+        new((IReadOnlyList<LyricsDefaultBinding>?)null);
+
+    /// <summary>
+    /// 去掉空白条目与重复的播放器标识（保留先出现的），并保持"未配置"与"显式绑定"的区别。
+    /// Drops blank entries and duplicate player identifiers (keeping the first), preserving the difference between
+    /// "never configured" and an explicit table.
+    /// </summary>
+    public LyricsDefaultBindingSettings Normalize() => this with
+    {
+        Bindings = Bindings is null
+            ? null
+            : Bindings
+                .Where(static binding => binding is not null && !string.IsNullOrWhiteSpace(binding.AppId))
+                .Select(static binding => new LyricsDefaultBinding(
+                    binding.AppId.Trim(),
+                    string.IsNullOrWhiteSpace(binding.SourceId) ? null : binding.SourceId))
+                .Distinct(new AppIdComparer())
+                .ToArray()
+    };
+
+    private sealed class AppIdComparer : IEqualityComparer<LyricsDefaultBinding>
+    {
+        public bool Equals(LyricsDefaultBinding? left, LyricsDefaultBinding? right) =>
+            string.Equals(left?.AppId, right?.AppId, StringComparison.OrdinalIgnoreCase);
+
+        public int GetHashCode(LyricsDefaultBinding binding) =>
+            StringComparer.OrdinalIgnoreCase.GetHashCode(binding.AppId);
+    }
+}
+
+/// <summary>
 /// 歌词来源偏好：<paramref name="EnabledSourceIds"/> 的顺序就是优先级。
 /// Lyric-source preference: the order of <paramref name="EnabledSourceIds"/> is the priority.
 ///

@@ -34,6 +34,7 @@ public static class LyricsCacheInvalidationPolicy
 
         return propertyName is
             nameof(AppSettings.LyricsSource) or
+            nameof(AppSettings.LyricsDefaultBindings) or
             nameof(AppSettings.LyricsMatchStrictness) or
             nameof(AppSettings.LyricsInfoLineFilterEnabled) or
             // 并发与采纳设置同样决定"这一次取词用哪些请求、采纳哪个结果"，改了它们旧结果已经不属于当前配置。

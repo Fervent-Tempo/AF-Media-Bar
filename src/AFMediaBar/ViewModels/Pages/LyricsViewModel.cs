@@ -1,9 +1,12 @@
 using System.Collections.ObjectModel;
 using System.Windows.Threading;
+using AFMediaBar.Classes.Abstractions;
+using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Localization;
 using AFMediaBar.Classes.Services.Lyrics;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Utils;
+using AFMediaBar.Resources;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -13,6 +16,7 @@ namespace AFMediaBar.ViewModels.Pages;
 public partial class LyricsViewModel : ObservableObject
 {
     private readonly LocalizationService _localization;
+    private readonly IMediaSessionSourceScanner _mediaSessionService;
 
     // 与 ExtraFeaturesViewModel 同理：设置写入可能来自后台线程，而来源列表与第二行列表绑定到界面，
     // 跨线程改它们会被 WPF 的 CollectionView 拒绝，因此重建 MUST 回到 UI 线程。
@@ -34,13 +38,16 @@ public partial class LyricsViewModel : ObservableObject
     /// Creates the lyrics page view model.
     /// </summary>
     /// <param name="localization">语言服务，用于在语言变化时重建来源显示名 / Localization service, used to rebuild source display names after a language change.</param>
-    public LyricsViewModel(LocalizationService localization)
+    /// <param name="mediaSessionService">会话来源快照，供"扫描正在播放"读取当前播放器 / The session-source snapshot whose current players the scan reads.</param>
+    public LyricsViewModel(LocalizationService localization, IMediaSessionSourceScanner mediaSessionService)
     {
         _localization = localization;
+        _mediaSessionService = mediaSessionService;
         SettingsManager.SettingsChanged += OnSettingsChanged;
         _localization.LanguageChanged += OnLanguageChanged;
         RefreshSourceEntries();
         RefreshSecondaryLineEntries();
+        RefreshBindingEntries();
     }
 
     public bool LyricsEnabled { get => SettingsManager.Current.LyricsEnabled; set { SettingsManager.SetLyricsEnabled(value); RaiseAll(); } }
@@ -134,6 +141,17 @@ public partial class LyricsViewModel : ObservableObject
     /// <summary>取词来源列表，顺序即优先级。/ The retrieval source list, whose order is the priority.</summary>
     public ObservableCollection<LyricsSourceSettingItem> SourceEntries { get; } = [];
 
+    /// <summary>
+    /// 默认接口绑定列表：内置播放器在前，用户条目与手动添加的在后；扫描到的播放器追加进来。
+    /// The default-binding list: built-in players first, then the user's entries and manual additions; scanned players are
+    /// appended.
+    /// </summary>
+    public ObservableCollection<LyricsDefaultBindingItem> BindingEntries { get; } = [];
+
+    /// <summary>手动添加播放器的输入框内容。/ The text of the manual-add player input.</summary>
+    [ObservableProperty]
+    private string _newPlayerId = string.Empty;
+
     /// <summary>是否一个来源都没启用：此时不会请求任何歌词服务，页面用提示条说明后果。
     /// Whether no source is enabled: no lyric service is contacted then, and a callout on the page states that consequence.</summary>
     public bool IsEverySourceDisabled => SourceEntries.Count > 0 && SourceEntries.All(entry => !entry.IsEnabled);
@@ -160,6 +178,7 @@ public partial class LyricsViewModel : ObservableObject
         {
             RefreshSourceEntries();
             RefreshSecondaryLineEntries();
+            RefreshBindingEntries();
             RaiseAll();
             return;
         }
@@ -167,6 +186,11 @@ public partial class LyricsViewModel : ObservableObject
         if (e.PropertyName == nameof(AppSettings.LyricsSource) && !_isSavingSources)
         {
             RefreshSourceEntries();
+        }
+
+        if (e.PropertyName == nameof(AppSettings.LyricsDefaultBindings) && !_isSavingBindings)
+        {
+            RefreshBindingEntries();
         }
 
         if (e.PropertyName == nameof(AppSettings.LyricsSecondaryLine))
@@ -179,6 +203,7 @@ public partial class LyricsViewModel : ObservableObject
     {
         RefreshSourceEntries();
         RefreshSecondaryLineEntries();
+        RefreshBindingEntries();
     }
 
     private void RaiseAll()
@@ -256,6 +281,173 @@ public partial class LyricsViewModel : ObservableObject
             OnPropertyChanged(nameof(IsEverySourceDisabled));
         }
         finally { _isRefreshing = false; }
+    }
+
+    // ---- 默认取词接口绑定 ----
+
+    /// <summary>
+    /// 本视图模型正在写绑定表：写回会同步触发设置变更事件，若此时重建列表会与来源列表同一问题。
+    /// This view model is writing the binding table: the write publishes a settings change synchronously, which would
+    /// rebuild the list mid-edit exactly like the source list does.
+    /// </summary>
+    private bool _isSavingBindings;
+
+    /// <summary>
+    /// 重建绑定列表：内置播放器在前（选中值 = 用户覆盖/移除，缺省为内置默认），用户条目与手动添加的随后。
+    /// Rebuilds the binding list: built-in players first (selection = the user's override or removal, defaulting to the
+    /// built-in source), then the user's entries and manual additions.
+    /// </summary>
+    private void RefreshBindingEntries()
+    {
+        _isRefreshing = true;
+        try
+        {
+            var userEntries = SettingsManager.Current.LyricsDefaultBindings.Normalize().Bindings;
+
+            BindingEntries.Clear();
+            foreach (var builtin in LyricsConcurrencyPolicy.BuiltInBindings)
+            {
+                var entry = userEntries?.FirstOrDefault(candidate =>
+                    string.Equals(candidate.AppId, builtin.CanonicalAppId, StringComparison.OrdinalIgnoreCase));
+                var item = new LyricsDefaultBindingItem(
+                    builtin.CanonicalAppId,
+                    Translations.Get($"Lyrics.DefaultBindings.Player.{builtin.NameKey}"),
+                    isBuiltIn: true,
+                    builtInSourceId: builtin.DefaultSourceId,
+                    selectedSourceId: entry?.SourceId ?? builtin.DefaultSourceId);
+                item.BindingChanged += OnBindingChanged;
+                BindingEntries.Add(item);
+            }
+
+            if (userEntries is not null)
+            {
+                foreach (var entry in userEntries)
+                {
+                    if (BindingEntries.Any(row =>
+                            string.Equals(row.AppId, entry.AppId, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        continue;
+                    }
+
+                    var item = new LyricsDefaultBindingItem(entry.AppId, entry.AppId, isBuiltIn: false, null, entry.SourceId);
+                    item.BindingChanged += OnBindingChanged;
+                    BindingEntries.Add(item);
+                }
+            }
+        }
+        finally { _isRefreshing = false; }
+    }
+
+    private void OnBindingChanged(LyricsDefaultBindingItem item)
+    {
+        if (_isRefreshing || _isSavingBindings)
+        {
+            return;
+        }
+
+        SaveBindingEntries();
+    }
+
+    /// <summary>
+    /// 把列表状态写回绑定表：内置行等于内置默认时不写条目；"不绑定"写成移除标记；扫描/手动行未绑定时不进表。
+    /// Writes the list state back into the binding table: a built-in row at its built-in default stores no entry; "not
+    /// bound" stores a removal marker; an unbound scanned or manual row stays out of the table.
+    /// </summary>
+    private void SaveBindingEntries()
+    {
+        var entries = new List<LyricsDefaultBinding>(BindingEntries.Count);
+        foreach (var row in BindingEntries)
+        {
+            var selected = string.IsNullOrWhiteSpace(row.SelectedSourceId) ? null : row.SelectedSourceId;
+            if (row.IsBuiltIn)
+            {
+                if (selected is null)
+                {
+                    entries.Add(new LyricsDefaultBinding(row.AppId, null));
+                }
+                else if (!string.Equals(selected, row.BuiltInSourceId, StringComparison.OrdinalIgnoreCase))
+                {
+                    entries.Add(new LyricsDefaultBinding(row.AppId, selected));
+                }
+            }
+            else if (selected is not null)
+            {
+                entries.Add(new LyricsDefaultBinding(row.AppId, selected));
+            }
+        }
+
+        _isSavingBindings = true;
+        try
+        {
+            // 全部内置都被"不绑定"时必须是显式空数组：写 null 会退回内置映射，语义相反。
+            // An all-removed state must be an explicit empty array: null would fall back to the built-in mapping, the opposite
+            // of what the user asked for.
+            SettingsManager.SetLyricsDefaultBindingSettings(new LyricsDefaultBindingSettings(entries));
+        }
+        finally
+        {
+            _isSavingBindings = false;
+        }
+    }
+
+    /// <summary>
+    /// 扫描当前活动的 SMTC 会话，把尚未出现过的播放器追加成绑定行。
+    /// Scans the active SMTC sessions and appends a binding row for every player not listed yet.
+    /// </summary>
+    [RelayCommand]
+    private void ScanPlayingPlayers()
+    {
+        _isRefreshing = true;
+        try
+        {
+            foreach (var option in _mediaSessionService.CurrentSessionOptions)
+            {
+                var sourceId = option.SourceId;
+                if (string.IsNullOrWhiteSpace(sourceId) ||
+                    BindingEntries.Any(row =>
+                        sourceId.Contains(row.AppId, StringComparison.OrdinalIgnoreCase) ||
+                        row.AppId.Contains(sourceId, StringComparison.OrdinalIgnoreCase)))
+                {
+                    continue;
+                }
+
+                var item = new LyricsDefaultBindingItem(sourceId, option.DisplayName, isBuiltIn: false, null, null);
+                item.BindingChanged += OnBindingChanged;
+                BindingEntries.Add(item);
+            }
+        }
+        finally { _isRefreshing = false; }
+    }
+
+    [RelayCommand]
+    private void AddPlayer()
+    {
+        var appId = NewPlayerId.Trim();
+        if (appId.Length == 0 ||
+            BindingEntries.Any(row => row.AppId.Equals(appId, StringComparison.OrdinalIgnoreCase)))
+        {
+            NewPlayerId = string.Empty;
+            return;
+        }
+
+        var item = new LyricsDefaultBindingItem(appId, appId, isBuiltIn: false, null, null);
+        item.BindingChanged += OnBindingChanged;
+        BindingEntries.Add(item);
+        NewPlayerId = string.Empty;
+    }
+
+    [RelayCommand]
+    private void RemoveBinding(LyricsDefaultBindingItem? item)
+    {
+        if (item is null || item.IsBuiltIn)
+        {
+            return;
+        }
+
+        if (BindingEntries.Remove(item))
+        {
+            SaveBindingEntries();
+        }
     }
 
     private void OnSourceEnabledChanged(LyricsSourceSettingItem item)

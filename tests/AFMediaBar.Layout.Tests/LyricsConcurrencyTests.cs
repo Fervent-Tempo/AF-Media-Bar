@@ -63,6 +63,59 @@ public sealed class LyricsConcurrencyTests
             LyricsConcurrencyPolicy.MapDefaultSource("cloudmusic.exe", "123456"));
     }
 
+    // ---- 用户绑定表 ----
+
+    [TestMethod]
+    public void AUserBindingOverridesTheBuiltInMapping()
+    {
+        var bindings = new LyricsDefaultBindingSettings(
+            new[] { new LyricsDefaultBinding("qqmusic", LyricsSourceCatalog.Kugou) });
+
+        // 内置表里 QQ音乐 → QQMusic，用户改成 Kugou 后以用户为准。
+        // The built-in table maps QQMusic → QQMusic; with the user's override Kugou wins.
+        Assert.AreEqual(
+            LyricsSourceCatalog.Kugou,
+            LyricsConcurrencyPolicy.MapDefaultSource("Tencent.QQMusicDA_something", null, bindings));
+    }
+
+    [TestMethod]
+    public void ARemovalMarkerSuppressesTheBuiltInBinding()
+    {
+        var bindings = new LyricsDefaultBindingSettings(
+            new[] { new LyricsDefaultBinding("cloudmusic", null) });
+
+        Assert.IsNull(LyricsConcurrencyPolicy.MapDefaultSource("cloudmusic.exe", null, bindings));
+        Assert.IsNull(LyricsConcurrencyPolicy.MapDefaultSource("Netease.CloudMusic_wxyz", null, bindings));
+        // 移除标记只压制命中的播放器，其他播放器照走内置映射。
+        // A removal marker suppresses only the matched player; others keep the built-in mapping.
+        Assert.AreEqual(
+            LyricsSourceCatalog.QQMusic,
+            LyricsConcurrencyPolicy.MapDefaultSource("qqmusic.exe", null, bindings));
+    }
+
+    [TestMethod]
+    public void AnUnknownBoundSourceCountsAsNoDefault()
+    {
+        // 绑定表里存了已删除的来源 id：设置层不做白名单，使用时按"无默认接口"处理，不让整条链失效。
+        // The table references a removed source id: the settings layer keeps no allow-list, so this counts as "no default
+        // interface" when used instead of invalidating the chain.
+        var bindings = new LyricsDefaultBindingSettings(
+            new[] { new LyricsDefaultBinding("spotify", "RemovedSource") });
+
+        Assert.IsNull(LyricsConcurrencyPolicy.MapDefaultSource("Spotify.exe", null, bindings));
+    }
+
+    [TestMethod]
+    public void AnUnconfiguredBindingTableFollowsTheBuiltInMapping()
+    {
+        Assert.AreEqual(
+            LyricsSourceCatalog.NetEaseSearch,
+            LyricsConcurrencyPolicy.MapDefaultSource("cloudmusic.exe", null, LyricsDefaultBindingSettings.Default));
+        Assert.AreEqual(
+            LyricsSourceCatalog.SodaMusic,
+            LyricsConcurrencyPolicy.MapDefaultSource("汽水音乐", null, null));
+    }
+
     // ---- 批次计划 ----
 
     [TestMethod]

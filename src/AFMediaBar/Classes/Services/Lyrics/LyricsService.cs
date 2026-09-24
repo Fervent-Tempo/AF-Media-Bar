@@ -115,7 +115,8 @@ public sealed class LyricsService
         // the priority list alone, and a default source the user turned off is still dispatched.
         var defaultSourceName = LyricsConcurrencyPolicy.MapDefaultSource(
             effectiveRequest.SourceAppId,
-            effectiveRequest.NetEaseSongId);
+            effectiveRequest.NetEaseSongId,
+            settings.LyricsDefaultBindings);
         var defaultProvider = defaultSourceName is null
             ? null
             : _providers.FirstOrDefault(provider => string.Equals(provider.SourceName, defaultSourceName, StringComparison.Ordinal));

@@ -37,14 +37,34 @@ public sealed record LyricsRetrievalOptions(
 }
 
 /// <summary>
-/// 并发取词的两个静态决策：AppID 到默认来源的映射，与优先级来源的批次计划。
-/// The two static decisions of concurrent retrieval: the AppID-to-default-source mapping and the batching plan of the
-/// priority sources.
+/// 内置的默认取词接口绑定：一个播放器（显示名）与它的一组识别片段 → 默认来源。
+/// A built-in default-interface binding: one player (display name) with its recognition patterns mapped onto a default source.
 ///
-/// 映射表参考 Lyrix 的 id2player（D:\project\Rust\Lyrix\src\models\music_player.rs），但按"包含"匹配而不是全等：
+/// 第一条识别片段同时是它在用户绑定表里的规范键：用户在设置页修改或删除内置绑定时，设置文件里存的就是这个片段。
+/// The first pattern doubles as the player's canonical key in the user binding table: when the settings page edits or
+/// deletes a built-in binding, this is the fragment stored in the settings file.
+/// </summary>
+/// <param name="Patterns">识别片段（来源标识包含其一即命中） / Recognition patterns, one of which the source id contains.</param>
+/// <param name="NameKey">播放器显示名的文案键尾段（Lyrics.DefaultBindings.Player.{NameKey}） / The tail of the player's display-name text key (Lyrics.DefaultBindings.Player.{NameKey}).</param>
+/// <param name="DefaultSourceId">内置默认来源 id / The built-in default source id.</param>
+public sealed record LyricsBuiltInBinding(
+    IReadOnlyList<string> Patterns,
+    string NameKey,
+    string DefaultSourceId)
+{
+    /// <summary>该播放器在用户绑定表里的规范键（第一条识别片段）。/ The player's canonical key in the user binding table (the first pattern).</summary>
+    public string CanonicalAppId => Patterns[0];
+}
+
+/// <summary>
+/// 并发取词的两个静态决策：AppID 到默认来源的三层映射（用户绑定表 → 内置表 → 无），与优先级来源的批次计划。
+/// The two static decisions of concurrent retrieval: the three-layer AppID-to-default-source mapping (user table, built-in
+/// table, none) and the batching plan of the priority sources.
+///
+/// 映射的内置层参考 Lyrix 的 id2player（D:\project\Rust\Lyrix\src\models\music_player.rs），但按"包含"匹配而不是全等：
 /// SMTC 的 SourceAppUserModelId 各家形态不一（商店版带包名后缀、进程名式、中文显示名式），包含匹配一次覆盖所有形态。
 /// 识别不出的 AppID 返回 null——没有默认接口就退化为纯优先级批次，链路不因此失效。
-/// The mapping follows Lyrix's id2player but matches by containment rather than equality: SMTC source ids vary in shape
+/// The built-in layer follows Lyrix's id2player but matches by containment rather than equality: SMTC source ids vary in shape
 /// (store-package suffixes, process-name style, Chinese display names), and one containment rule covers them all. An
 /// unrecognized id maps to null — without a default interface the chain degrades to plain priority batching and keeps working.
 ///
@@ -55,14 +75,28 @@ public sealed record LyricsRetrievalOptions(
 /// </summary>
 public static class LyricsConcurrencyPolicy
 {
+    /// <summary>内置默认接口绑定表。/ The built-in default-interface bindings.</summary>
+    public static IReadOnlyList<LyricsBuiltInBinding> BuiltInBindings { get; } =
+    [
+        new(["cloudmusic", "netease"], "Netease", LyricsSourceCatalog.NetEaseSearch),
+        new(["qqmusic"], "QQMusic", LyricsSourceCatalog.QQMusic),
+        new(["kugou"], "Kugou", LyricsSourceCatalog.Kugou),
+        new(["汽水", "soda"], "SodaMusic", LyricsSourceCatalog.SodaMusic),
+    ];
+
     /// <summary>
-    /// 把请求携带的来源应用标识映射成默认取词来源 id。
-    /// Maps the request's source-application identifier onto the default lyric-source id.
+    /// 把请求携带的来源应用标识映射成默认取词来源 id：用户绑定表先于内置表，移除标记压制内置绑定。
+    /// Maps the request's source-application identifier onto the default lyric-source id: the user's table runs before the
+    /// built-in one, and a removal marker suppresses the built-in binding.
     /// </summary>
     /// <param name="sourceAppId">SMTC 的 SourceAppUserModelId 原文，未知为 null / The raw SMTC SourceAppUserModelId, null when unknown.</param>
     /// <param name="netEaseSongId">网易云歌曲 id；非空说明走网易直连路径，按 id 精确取词 / NetEase song id; non-null means the NetEase direct path, which retrieves by id.</param>
-    /// <returns>默认来源 id；识别不出时为 null / The default source id, or null when unrecognized.</returns>
-    public static string? MapDefaultSource(string? sourceAppId, string? netEaseSongId)
+    /// <param name="bindings">用户绑定表；null 表示未配置，全部走内置映射 / The user's binding table; null means unconfigured, which follows the built-in mapping.</param>
+    /// <returns>默认来源 id；识别不出或被用户移除时为 null / The default source id, or null when unrecognized or removed by the user.</returns>
+    public static string? MapDefaultSource(
+        string? sourceAppId,
+        string? netEaseSongId,
+        LyricsDefaultBindingSettings? bindings = null)
     {
         // 网易直连路径自带 song id，精确来源就是默认接口，不依赖 AppID。
         // The NetEase direct path carries a song id already, so the exact source is the default interface and no AppID is needed.
@@ -76,29 +110,29 @@ public static class LyricsConcurrencyPolicy
             return null;
         }
 
-        // SMTC 路径没有 song id（系统只给标题与歌手），因此网易云播放器映射到搜索兜底而不是按 id 的精确来源。
-        // The SMTC path has no song id (the system only offers title and artist), so the NetEase player maps onto the
-        // search fallback rather than the id-based exact source.
-        if (sourceAppId.Contains("cloudmusic", StringComparison.OrdinalIgnoreCase) ||
-            sourceAppId.Contains("netease", StringComparison.OrdinalIgnoreCase))
+        // 用户绑定表：第一个包含命中的条目直接决定结果（绑定或移除），未命中的播放器继续走内置映射。
+        // The user's table: the first containment hit decides outright (a binding or a removal), while players without a
+        // hit keep the built-in mapping.
+        if (bindings?.Bindings is { Count: > 0 } entries)
         {
-            return LyricsSourceCatalog.NetEaseSearch;
+            foreach (var entry in entries)
+            {
+                if (!sourceAppId.Contains(entry.AppId, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                return LyricsSourceCatalog.IsKnown(entry.SourceId) ? entry.SourceId : null;
+            }
         }
 
-        if (sourceAppId.Contains("qqmusic", StringComparison.OrdinalIgnoreCase))
+        // 内置表。 / The built-in table.
+        foreach (var binding in BuiltInBindings)
         {
-            return LyricsSourceCatalog.QQMusic;
-        }
-
-        if (sourceAppId.Contains("kugou", StringComparison.OrdinalIgnoreCase))
-        {
-            return LyricsSourceCatalog.Kugou;
-        }
-
-        if (sourceAppId.Contains("soda", StringComparison.OrdinalIgnoreCase) ||
-            sourceAppId.Contains("汽水", StringComparison.Ordinal))
-        {
-            return LyricsSourceCatalog.SodaMusic;
+            if (binding.Patterns.Any(pattern => sourceAppId.Contains(pattern, StringComparison.OrdinalIgnoreCase)))
+            {
+                return binding.DefaultSourceId;
+            }
         }
 
         return null;
