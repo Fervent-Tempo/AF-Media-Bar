@@ -26,6 +26,11 @@ public partial class TaskBarMediaControl
     private bool _lyricsNeedsContrastShadow;
     private bool _lyricsUsesLightText = true;
 
+    /// <summary>上一次尺寸请求所用的歌词文本，用来在换行时立即重新发布尺寸（见 UpdateWebLyricsPresentation）。
+    /// Lyric texts used by the last size request, so a line change can republish the size immediately (see UpdateWebLyricsPresentation).</summary>
+    private string _lastSizeLyricText = string.Empty;
+    private string _lastSizeSecondaryText = string.Empty;
+
     private void InitializeWebLyrics()
     {
         _lyricsWebRenderer = new LyricsWebViewRenderer(LyricsWebView);
@@ -65,6 +70,23 @@ public partial class TaskBarMediaControl
         // Sending false on every 50 ms progress frame interrupts its in-flight roll animation.
         _lyricsWebRenderer?.Present(next, allowTransition && MotionPolicy.ResolveCurrent().UseTransitions);
         RefreshWebLyricsTimer();
+
+        // 行变化后立即重发尺寸请求：自动模式下媒体栏长度跟着歌词内容走，若等到下一次快照才更新，
+        // 新的一句会先按旧宽度渲染、右端短暂出现省略号（随后才恢复）。固定长度模式不依赖这条路径。
+        // Re-issue the size request as soon as the line changes: in auto mode the bar length follows the content, and waiting for the
+        // next snapshot would render the new line at the previous width and briefly show an ellipsis at its right edge. A fixed box does
+        // not depend on this path.
+        var secondaryText = string.IsNullOrEmpty(next.CurrentTranslation) ? next.Next : next.CurrentTranslation;
+        if (!string.Equals(_lastSizeLyricText, next.Current, StringComparison.Ordinal) ||
+            !string.Equals(_lastSizeSecondaryText, secondaryText, StringComparison.Ordinal))
+        {
+            _lastSizeLyricText = next.Current;
+            _lastSizeSecondaryText = secondaryText;
+            // 跳过宿主的长度过渡：过渡期间新句会按旧宽度渲染、右端被省略号截断，而歌词换行是离散切换。
+            // Skip the host's length transition: during it the new line renders at the previous width and gets clipped with an
+            // ellipsis, while a lyric line change is a discrete switch.
+            RaiseDesiredSizeChanged(skipTransition: true);
+        }
     }
 
     private void RefreshWebLyricsTimer()

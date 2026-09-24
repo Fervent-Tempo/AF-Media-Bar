@@ -477,6 +477,11 @@ internal static class StringsZhHant
         table.Add("Lyrics.Row.LineGap.Title", "行距");
         table.Add("Lyrics.Row.CharacterSpacing.Description", "按字號的百分比拉開字距，隨字號等比縮放；中文與英文都生效，但不會拆斷單詞（預設 0）");
         table.Add("Lyrics.Row.CharacterSpacing.Title", "字間距");
+        table.Add("Lyrics.Row.FixedWidth.Badge", "需先啟用歌詞");
+        table.Add("Lyrics.Row.FixedWidth.Description", "開啟後歌詞框保持固定長度，不再隨每句歌詞伸縮；關閉時隨內容自動伸縮（預設關閉）");
+        table.Add("Lyrics.Row.FixedWidth.Title", "固定歌詞框長度");
+        table.Add("Lyrics.Row.FixedWidth.Length.Description", "固定模式下的歌詞框長度（DIP）；工作列空間不足時自動夾取（預設 240）");
+        table.Add("Lyrics.Row.FixedWidth.Length.Title", "歌詞框長度");
         table.Add("Lyrics.SecondLine.NextLine", "下一句歌詞");
         table.Add("Lyrics.SecondLine.Reset.Description", "把順序恢復為 翻譯 → 音譯 → 下一句");
         table.Add("Lyrics.SecondLine.Reset.Title", "恢復預設順序");

@@ -149,6 +149,46 @@ public static class LyricsLineGap
 }
 
 /// <summary>
+/// 歌词框的固定长度：开启后媒体文字区（歌词框）保持固定长度，不再随每句歌词伸缩。
+///
+/// 关闭（默认）时歌词框随当前歌词自动伸缩；开启后长度由用户给定（DIP），任务栏空间不足时按可用长度夹取。
+/// 固定长度可以彻底避免换行瞬间"文字先出现、媒体栏稍后才变长"的短暂截断，也让每句歌词的对齐位置保持稳定。
+/// Fixed width of the lyric box: while enabled, the media-text area (the lyric box) keeps a fixed length instead of resizing with every line.
+///
+/// Disabled (the default) lets the box follow the current lyric; enabled, the length comes from the user in DIP and is clamped by the
+/// available taskbar room. A fixed box removes the brief clip between a line change and the bar catching up, and keeps every line's
+/// alignment stable.
+/// </summary>
+public static class LyricsFixedWidth
+{
+    /// <summary>固定长度的下限（DIP）：比最短的歌词行略宽，保证开启后仍有可读空间。
+    /// Lower bound in DIP, a little wider than the shortest lyric line so the box stays readable.</summary>
+    public const int MinimumDip = 80;
+
+    /// <summary>固定长度的上限（DIP）：任务栏空间不足时运行时还会按可用长度夹取。
+    /// Upper bound in DIP; the runtime clamps it further to the available taskbar room.</summary>
+    public const int MaximumDip = 600;
+
+    /// <summary>固定长度的步长（DIP）。/ Fixed-width step in DIP.</summary>
+    public const int StepDip = 10;
+
+    /// <summary>固定长度的默认值（DIP）：容纳常见短句，也不至于占满任务栏。
+    /// Default fixed width in DIP: roomy enough for common short lines without filling the taskbar.</summary>
+    public const int DefaultDip = 240;
+
+    /// <summary>
+    /// 把任意输入吸附到步长网格并夹进区间。
+    /// Snaps any input onto the step grid and clamps it into range.
+    /// </summary>
+    /// <param name="dip">原始 DIP / Raw DIP.</param>
+    /// <returns>可直接写入设置的 DIP / The DIP value that can be written into the settings.</returns>
+    public static int Normalize(int dip) => Math.Clamp(
+        (int)Math.Round(dip / (double)StepDip, MidpointRounding.AwayFromZero) * StepDip,
+        MinimumDip,
+        MaximumDip);
+}
+
+/// <summary>
 /// 第二行歌词的来源顺序：列表顺序就是优先级，未列出的来源不会被使用。
 /// The second lyric line's source order: the list order is the priority and a source missing from the list is never used.
 ///

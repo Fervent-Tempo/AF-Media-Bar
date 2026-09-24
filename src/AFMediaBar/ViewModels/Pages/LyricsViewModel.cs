@@ -110,6 +110,39 @@ public partial class LyricsViewModel : ObservableObject
     /// <summary>行距的读数文本：加号说明这是"额外"增加的间距，百分号说明它随字号缩放。/ The line-gap readout: the plus sign marks spacing added on top, the percent sign that it scales with the font.</summary>
     public string LineGapText => $"+{LineGapPercent}%";
 
+    /// <summary>歌词框是否固定长度。/ Whether the lyric box keeps a fixed length.</summary>
+    public bool FixedWidthEnabled
+    {
+        get => SettingsManager.Current.LyricsFixedWidthEnabled;
+        set
+        {
+            SettingsManager.SetLyricsFixedWidthEnabled(value);
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(CanConfigureFixedWidthDip));
+        }
+    }
+
+    /// <summary>歌词框固定长度（DIP）。/ Fixed lyric-box length in DIP.</summary>
+    public int FixedWidthDip
+    {
+        get => SettingsManager.Current.LyricsFixedWidthDip;
+        set
+        {
+            SettingsManager.SetLyricsFixedWidthDip(value);
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(FixedWidthText));
+        }
+    }
+
+    /// <summary>固定长度的读数文本。/ The fixed-width readout text.</summary>
+    public string FixedWidthText => $"{FixedWidthDip}";
+
+    /// <summary>歌词框固定长度只在启用歌词时有意义。/ The fixed lyric-box length only applies while lyrics are on.</summary>
+    public bool CanConfigureFixedWidth => LyricsEnabled;
+
+    /// <summary>长度滑杆只在"固定"开启时可用。/ The length slider is available only while the fixed mode is on.</summary>
+    public bool CanConfigureFixedWidthDip => FixedWidthEnabled;
+
     /// <summary>是否丢弃作者、作曲、制作等信息行。/ Whether credit lines are dropped.</summary>
     public bool InfoLineFilterEnabled
     {
@@ -185,6 +218,9 @@ public partial class LyricsViewModel : ObservableObject
         OnPropertyChanged(nameof(UnsungOpacityText)); OnPropertyChanged(nameof(InfoLineFilterEnabled));
         OnPropertyChanged(nameof(CharacterSpacingPercent)); OnPropertyChanged(nameof(CharacterSpacingText));
         OnPropertyChanged(nameof(LineGapPercent)); OnPropertyChanged(nameof(LineGapText));
+        OnPropertyChanged(nameof(FixedWidthEnabled)); OnPropertyChanged(nameof(FixedWidthDip));
+        OnPropertyChanged(nameof(FixedWidthText));
+        OnPropertyChanged(nameof(CanConfigureFixedWidth)); OnPropertyChanged(nameof(CanConfigureFixedWidthDip));
         OnPropertyChanged(nameof(MatchStrictness));
         OnPropertyChanged(nameof(CanConfigureTwoLine)); OnPropertyChanged(nameof(CanConfigureSecondary));
         OnPropertyChanged(nameof(CanConfigureUnsungOpacity)); OnPropertyChanged(nameof(CanConfigureLineGap));

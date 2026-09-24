@@ -9,12 +9,20 @@ namespace AFMediaBar.Classes.Models.Layout;
 /// Whether the request bypassed the content-fingerprint dedupe. The host sets it when it explicitly refreshes its layout
 /// state so an earlier request dropped while the host was not ready cannot dedupe away this authoritative refresh.
 /// </param>
+/// <param name="SkipTransition">
+/// 该请求是否必须立即生效。歌词换行是离散内容切换：宿主的长度过渡动画期间新句会按旧宽度渲染、右端被省略号截断，
+/// 因此这类请求跳过过渡直接落到目标长度；常规请求保持动画。
+/// Whether the request must land immediately. A lyric line change is a discrete content switch: while the host animates the
+/// length the new line renders at the previous width and gets clipped with an ellipsis, so these requests skip the transition;
+/// regular requests keep it.
+/// </param>
 public sealed record MediaBarSizeRequest(
     LayoutOrientation Orientation,
     double Width,
     double Height,
     string ContentFingerprint,
-    bool IsForcedRefresh)
+    bool IsForcedRefresh,
+    bool SkipTransition = false)
 {
     /// <summary>获取当前布局主轴目标尺寸。/ Gets the target size along the layout primary axis.</summary>
     public double PrimaryLength => Orientation == LayoutOrientation.Horizontal ? Width : Height;

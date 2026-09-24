@@ -78,6 +78,23 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+
+        <!--
+            固定歌词框长度只在歌词开启时有意义：关闭歌词时用徽章说明原因。
+            The fixed lyric-box length only matters while lyrics are on: a badge states why when they are off.
+        -->
+        <Style
+            x:Key="FixedWidthRowStyle"
+            BasedOn="{StaticResource {x:Type components:SettingsRow}}"
+            TargetType="{x:Type components:SettingsRow}">
+            <Setter Property="Badge" Value="" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ViewModel.CanConfigureFixedWidth}" Value="False">
+                    <Setter Property="Badge" Value="{DynamicResource Loc.Lyrics.Row.FixedWidth.Badge}" />
+                    <Setter Property="BadgeTone" Value="Attention" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </Page.Resources>
 
     <Grid>
@@ -278,6 +295,33 @@
                                 <TextBlock
                                     Style="{StaticResource AfSettingsRowValueStyle}"
                                     Text="{Binding ViewModel.CharacterSpacingText}" />
+                            </StackPanel>
+                        </components:SettingsRow>
+
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Lyrics.Row.FixedWidth.Description}"
+                            Icon="{ui:SymbolIcon ResizeLarge24}"
+                            Style="{StaticResource FixedWidthRowStyle}"
+                            Title="{DynamicResource Loc.Lyrics.Row.FixedWidth.Title}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.FixedWidthEnabled, Mode=TwoWay}" />
+                        </components:SettingsRow>
+
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Lyrics.Row.FixedWidth.Length.Description}"
+                            Icon="{ui:SymbolIcon ArrowAutofitWidth24}"
+                            Title="{DynamicResource Loc.Lyrics.Row.FixedWidth.Length.Title}">
+                            <StackPanel Orientation="Horizontal">
+                                <Slider
+                                    IsEnabled="{Binding ViewModel.CanConfigureFixedWidthDip}"
+                                    IsSnapToTickEnabled="True"
+                                    Maximum="{Binding Source={x:Static settings:LyricsFixedWidth.MaximumDip}}"
+                                    Minimum="{Binding Source={x:Static settings:LyricsFixedWidth.MinimumDip}}"
+                                    Style="{StaticResource AfSettingsRowSliderStyle}"
+                                    TickFrequency="{Binding Source={x:Static settings:LyricsFixedWidth.StepDip}}"
+                                    Value="{Binding ViewModel.FixedWidthDip, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock
+                                    Style="{StaticResource AfSettingsRowValueStyle}"
+                                    Text="{Binding ViewModel.FixedWidthText}" />
                             </StackPanel>
                         </components:SettingsRow>
                     </StackPanel>

@@ -477,6 +477,11 @@ internal static class StringsZhHans
         table.Add("Lyrics.Row.LineGap.Title", "行距");
         table.Add("Lyrics.Row.CharacterSpacing.Description", "按字号的百分比拉开字距，随字号等比缩放；中文与英文都生效，但不会拆断单词（默认 0）");
         table.Add("Lyrics.Row.CharacterSpacing.Title", "字间距");
+        table.Add("Lyrics.Row.FixedWidth.Badge", "需先启用歌词");
+        table.Add("Lyrics.Row.FixedWidth.Description", "开启后歌词框保持固定长度，不再随每句歌词伸缩；关闭时随内容自动伸缩（默认关闭）");
+        table.Add("Lyrics.Row.FixedWidth.Title", "固定歌词框长度");
+        table.Add("Lyrics.Row.FixedWidth.Length.Description", "固定模式下的歌词框长度（DIP）；任务栏空间不足时自动夹取（默认 240）");
+        table.Add("Lyrics.Row.FixedWidth.Length.Title", "歌词框长度");
         table.Add("Lyrics.SecondLine.NextLine", "下一句歌词");
         table.Add("Lyrics.SecondLine.Reset.Description", "把顺序恢复为 下一句 → 翻译 → 音译");
         table.Add("Lyrics.SecondLine.Reset.Title", "恢复默认顺序");

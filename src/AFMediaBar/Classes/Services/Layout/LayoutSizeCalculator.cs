@@ -15,6 +15,7 @@ public static class LayoutSizeCalculator
     /// Calculates the target canvas size. Length scale affects gaps only; thickness scale affects components only.
     /// </summary>
     /// <param name="isForcedRefresh">该请求是否绕过内容指纹去重。/ Whether the request bypasses the content-fingerprint dedupe.</param>
+    /// <param name="skipTransition">该请求是否必须立即生效。/ Whether the request must land immediately.</param>
     public static MediaBarSizeRequest Calculate(
         LayoutSchema layout,
         double spacingScale,
@@ -22,7 +23,8 @@ public static class LayoutSizeCalculator
         double measuredTextWidthDip,
         double maximumPrimaryLengthDip,
         string contentFingerprint,
-        bool isForcedRefresh = false)
+        bool isForcedRefresh = false,
+        bool skipTransition = false)
     {
         spacingScale = Math.Clamp(spacingScale, 0.7, 1.25);
         thicknessScale = Math.Clamp(thicknessScale, 0.7, 1.25);
@@ -74,7 +76,8 @@ public static class LayoutSizeCalculator
             canvas.Width,
             canvas.Height,
             contentFingerprint,
-            isForcedRefresh);
+            isForcedRefresh,
+            skipTransition);
     }
 
     /// <summary>将当前布局调整到目标主轴长度。/ Resizes an already scaled layout to a target primary length.</summary>
