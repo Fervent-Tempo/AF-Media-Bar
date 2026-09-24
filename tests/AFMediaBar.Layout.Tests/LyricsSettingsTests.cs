@@ -59,6 +59,10 @@ public sealed class LyricsSettingsTests
         Assert.IsTrue(SettingsManager.Current.LyricsInfoLineFilterEnabled);
         Assert.AreEqual(LyricsMatchStrictness.Balanced, SettingsManager.Current.LyricsMatchStrictness);
         Assert.IsNull(SettingsManager.Current.LyricsSource.EnabledSourceIds);
+        // 间距字段同样取默认 0：升级后的外观与升级前逐像素一致。
+        // The spacing fields take their zero defaults as well: the look after upgrading is pixel-identical to before.
+        Assert.AreEqual(LyricsCharacterSpacing.DefaultPercent, SettingsManager.Current.LyricsCharacterSpacingPercent);
+        Assert.AreEqual(LyricsLineGap.DefaultPercent, SettingsManager.Current.LyricsLineGapPercent);
 
         // 文件里已有的歌词字段照旧保留。
         // Lyric fields the file does carry survive untouched.
@@ -79,6 +83,54 @@ public sealed class LyricsSettingsTests
         // Snapped onto the step grid: 43% lands on 45% instead of staying as it is.
         SettingsManager.Current.LyricsUnsungOpacityPercent = 43;
         Assert.AreEqual(45, SettingsManager.Current.Normalize().LyricsUnsungOpacityPercent);
+    }
+
+    [TestMethod]
+    public void SpacingSettingsAreClampedSnappedAndCloned()
+    {
+        SettingsManager.Current.LyricsCharacterSpacingPercent = 999;
+        SettingsManager.Current.LyricsLineGapPercent = 999;
+        var normalized = SettingsManager.Current.Normalize();
+        Assert.AreEqual(
+            LyricsCharacterSpacing.MaximumPercent,
+            normalized.LyricsCharacterSpacingPercent);
+        Assert.AreEqual(LyricsLineGap.MaximumPercent, normalized.LyricsLineGapPercent);
+
+        SettingsManager.Current.LyricsCharacterSpacingPercent = -3;
+        SettingsManager.Current.LyricsLineGapPercent = -3;
+        normalized = SettingsManager.Current.Normalize();
+        Assert.AreEqual(
+            LyricsCharacterSpacing.MinimumPercent,
+            normalized.LyricsCharacterSpacingPercent);
+        Assert.AreEqual(LyricsLineGap.MinimumPercent, normalized.LyricsLineGapPercent);
+
+        // 字距步长 1，区间内的值原样保留；行距步长 2，9% 吸附到 10%（CSS 排版是亚像素的，两档都能看清）。
+        // Character spacing keeps its step of one, so in-range values stay untouched; the line gap steps by two, so 9% lands
+        // on 10% (CSS layout is sub-pixel, so either step is visible).
+        SettingsManager.Current.LyricsCharacterSpacingPercent = 9;
+        SettingsManager.Current.LyricsLineGapPercent = 9;
+        normalized = SettingsManager.Current.Normalize();
+        Assert.AreEqual(9, normalized.LyricsCharacterSpacingPercent);
+        Assert.AreEqual(10, normalized.LyricsLineGapPercent);
+
+        // 克隆必须带上这两个字段，否则设置保存会把它们丢掉。
+        // Cloning has to carry both fields, or saving the settings would drop them.
+        SettingsManager.Current.LyricsLineGapPercent = 8;
+        var clone = SettingsManager.Current.Clone();
+        Assert.AreEqual(9, clone.LyricsCharacterSpacingPercent);
+        Assert.AreEqual(8, clone.LyricsLineGapPercent);
+    }
+
+    [TestMethod]
+    public void ResetLyricsClearsBothSpacingFields()
+    {
+        SettingsManager.SetLyricsCharacterSpacingPercent(20);
+        SettingsManager.SetLyricsLineGapPercent(24);
+
+        SettingsManager.ResetLyrics();
+
+        Assert.AreEqual(LyricsCharacterSpacing.DefaultPercent, SettingsManager.Current.LyricsCharacterSpacingPercent);
+        Assert.AreEqual(LyricsLineGap.DefaultPercent, SettingsManager.Current.LyricsLineGapPercent);
     }
 
     // ---- 来源设置与选择 ----
@@ -241,6 +293,10 @@ public sealed class LyricsSettingsTests
         Assert.IsFalse(LyricsCacheInvalidationPolicy.ShouldClearCache(nameof(AppSettings.LyricsSyllableHighlightEnabled), null));
         Assert.IsFalse(LyricsCacheInvalidationPolicy.ShouldClearCache(nameof(AppSettings.LyricsSecondaryLine), null));
         Assert.IsFalse(LyricsCacheInvalidationPolicy.ShouldClearCache(nameof(AppSettings.LyricsTextAlignment), null));
+        // 间距同样属于呈现：拖动行距或字距滑杆不该重新取词。
+        // Spacing is presentation as well: dragging either spacing slider must not refetch lyrics.
+        Assert.IsFalse(LyricsCacheInvalidationPolicy.ShouldClearCache(nameof(AppSettings.LyricsCharacterSpacingPercent), null));
+        Assert.IsFalse(LyricsCacheInvalidationPolicy.ShouldClearCache(nameof(AppSettings.LyricsLineGapPercent), null));
         Assert.IsFalse(LyricsCacheInvalidationPolicy.ShouldClearCache(null, SettingsResetScope.Appearance));
     }
 

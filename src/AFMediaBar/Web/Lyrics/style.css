@@ -293,7 +293,7 @@ html, body {
   display: flex;
   align-items: center;
   line-height: 1.12;
-  letter-spacing: 0;
+  letter-spacing: var(--letter-spacing, 0);
   transform-origin: var(--line-transform-origin);
   text-shadow: var(--text-shadow);
   overflow: visible;

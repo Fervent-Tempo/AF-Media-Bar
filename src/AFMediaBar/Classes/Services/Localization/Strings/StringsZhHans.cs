@@ -472,6 +472,11 @@ internal static class StringsZhHans
         table.Add("Lyrics.Row.UnsungOpacity.Badge", "需先开启逐字擦亮");
         table.Add("Lyrics.Row.UnsungOpacity.Description", "尚未唱到的文字的不透明度；越低对比越明显（默认 45%）");
         table.Add("Lyrics.Row.UnsungOpacity.Title", "未唱部分不透明度");
+        table.Add("Lyrics.Row.LineGap.Badge", "需先开启双行歌词");
+        table.Add("Lyrics.Row.LineGap.Description", "按字号的百分比在现有两行布局之上额外增加的间距，随字号等比缩放；空间不足时自动收紧，不会裁切文字或缩小字号（默认 0）");
+        table.Add("Lyrics.Row.LineGap.Title", "行距");
+        table.Add("Lyrics.Row.CharacterSpacing.Description", "按字号的百分比拉开字距，随字号等比缩放；中文与英文都生效，但不会拆断单词（默认 0）");
+        table.Add("Lyrics.Row.CharacterSpacing.Title", "字间距");
         table.Add("Lyrics.SecondLine.NextLine", "下一句歌词");
         table.Add("Lyrics.SecondLine.Reset.Description", "把顺序恢复为 下一句 → 翻译 → 音译");
         table.Add("Lyrics.SecondLine.Reset.Title", "恢复默认顺序");

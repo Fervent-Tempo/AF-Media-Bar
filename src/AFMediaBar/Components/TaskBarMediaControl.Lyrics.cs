@@ -111,6 +111,8 @@ public partial class TaskBarMediaControl
             appearance.ResolveFontFamilySource(SystemFonts.MessageFontFamily.Source),
             _layoutEngine?.LyricsFontSize ?? 12,
             appearance.FontWeight,
+            LyricsCharacterSpacing.Normalize(SettingsManager.Current.LyricsCharacterSpacingPercent),
+            LyricsLineGap.Normalize(SettingsManager.Current.LyricsLineGapPercent),
             alignment,
             primary,
             ToCssColor(_lyricsForeground, secondaryOpacity),

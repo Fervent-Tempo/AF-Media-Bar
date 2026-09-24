@@ -80,6 +80,36 @@ public partial class LyricsViewModel : ObservableObject
     /// <summary>不透明度的读数文本。/ The opacity readout text.</summary>
     public string UnsungOpacityText => $"{UnsungOpacityPercent}%";
 
+    /// <summary>歌词字距（字号的百分比）。/ Lyric character spacing as a percentage of the font size.</summary>
+    public int CharacterSpacingPercent
+    {
+        get => SettingsManager.Current.LyricsCharacterSpacingPercent;
+        set
+        {
+            SettingsManager.SetLyricsCharacterSpacingPercent(value);
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(CharacterSpacingText));
+        }
+    }
+
+    /// <summary>字距的读数文本。/ The character-spacing readout text.</summary>
+    public string CharacterSpacingText => $"{CharacterSpacingPercent}%";
+
+    /// <summary>双行歌词额外增加的行距（字号的百分比）。/ Extra line gap for two-line lyrics as a percentage of the font size.</summary>
+    public int LineGapPercent
+    {
+        get => SettingsManager.Current.LyricsLineGapPercent;
+        set
+        {
+            SettingsManager.SetLyricsLineGapPercent(value);
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(LineGapText));
+        }
+    }
+
+    /// <summary>行距的读数文本：加号说明这是"额外"增加的间距，百分号说明它随字号缩放。/ The line-gap readout: the plus sign marks spacing added on top, the percent sign that it scales with the font.</summary>
+    public string LineGapText => $"+{LineGapPercent}%";
+
     /// <summary>是否丢弃作者、作曲、制作等信息行。/ Whether credit lines are dropped.</summary>
     public bool InfoLineFilterEnabled
     {
@@ -106,6 +136,9 @@ public partial class LyricsViewModel : ObservableObject
 
     /// <summary>未唱部分不透明度只在启用逐字擦亮时可用：没有擦亮时它没有作用对象。/ The unsung opacity only applies while highlighting is on.</summary>
     public bool CanConfigureUnsungOpacity => SyllableHighlightEnabled;
+
+    /// <summary>行距只在双行歌词开启时可用：单行时没有"两行之间"可调。/ The line gap applies only while two-line lyrics are on: with a single line there is no "between" to adjust.</summary>
+    public bool CanConfigureLineGap => LyricsEnabled && TwoLineLyricsEnabled;
 
     public void ResetLyrics() => SettingsManager.ResetLyrics();
 
@@ -150,9 +183,12 @@ public partial class LyricsViewModel : ObservableObject
         OnPropertyChanged(nameof(TextAlignment));
         OnPropertyChanged(nameof(SyllableHighlightEnabled)); OnPropertyChanged(nameof(UnsungOpacityPercent));
         OnPropertyChanged(nameof(UnsungOpacityText)); OnPropertyChanged(nameof(InfoLineFilterEnabled));
+        OnPropertyChanged(nameof(CharacterSpacingPercent)); OnPropertyChanged(nameof(CharacterSpacingText));
+        OnPropertyChanged(nameof(LineGapPercent)); OnPropertyChanged(nameof(LineGapText));
         OnPropertyChanged(nameof(MatchStrictness));
         OnPropertyChanged(nameof(CanConfigureTwoLine)); OnPropertyChanged(nameof(CanConfigureSecondary));
-        OnPropertyChanged(nameof(CanConfigureUnsungOpacity)); OnPropertyChanged(nameof(IsEverySourceDisabled));
+        OnPropertyChanged(nameof(CanConfigureUnsungOpacity)); OnPropertyChanged(nameof(CanConfigureLineGap));
+        OnPropertyChanged(nameof(IsEverySourceDisabled));
     }
 
     /// <summary>

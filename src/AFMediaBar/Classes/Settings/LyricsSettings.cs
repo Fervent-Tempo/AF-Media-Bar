@@ -61,6 +61,94 @@ public static class LyricsUnsungOpacity
 }
 
 /// <summary>
+/// 歌词字距：按字号的百分比拉开字与字之间的空隙。
+///
+/// Web 歌词视图用 CSS 的 <c>letter-spacing</c> 实现（值为 <c>百分比 / 100</c> 个 em），因此空隙随字号等比缩放、
+/// 连续无级；中文与英文都按字母拉开，但不会拆断单词。0 表示不改动字距，默认外观与升级前逐像素一致。
+/// Lyric character spacing: extra space between characters as a percentage of the font size.
+///
+/// The web lyrics view implements it with CSS <c>letter-spacing</c> (the value is <c>percent / 100</c> em), so the gap scales
+/// with the font size and is continuously adjustable; CJK and Latin both spread by letter, and no word is broken apart. Zero
+/// leaves the spacing untouched, keeping the default look pixel-identical to the version before this setting existed.
+/// </summary>
+public static class LyricsCharacterSpacing
+{
+    /// <summary>字距的持久化安全下限（百分比）。/ Persistence-safe lower bound in percent.</summary>
+    public const int MinimumPercent = 0;
+
+    /// <summary>字距的持久化安全上限（百分比）：20% 字号在 13 px 字号下约 2.6 px，已是任务栏上的可读上限。
+    /// Persistence-safe upper bound in percent: 20% of a 13 px font is about 2.6 px, already the readability ceiling on a taskbar.</summary>
+    public const int MaximumPercent = 20;
+
+    /// <summary>字距的步长（百分比）：CSS 排版是亚像素的，1% 一档也能看清变化。
+    /// Character-spacing step in percent: CSS layout is sub-pixel, so a one-percent step is still visible.</summary>
+    public const int StepPercent = 1;
+
+    /// <summary>字距的默认值：0 表示不改动字距，与升级前一致。/ Default spacing: zero, matching the look before this setting existed.</summary>
+    public const int DefaultPercent = 0;
+
+    /// <summary>
+    /// 把任意输入吸附到步长网格并夹进区间。
+    /// Snaps any input onto the step grid and clamps it into range.
+    /// </summary>
+    /// <param name="percent">原始百分比 / Raw percentage.</param>
+    /// <returns>可直接写入设置的百分比 / The percentage that can be written into the settings.</returns>
+    public static int Normalize(int percent) => Math.Clamp(
+        (int)Math.Round(percent / (double)StepPercent, MidpointRounding.AwayFromZero) * StepPercent,
+        MinimumPercent,
+        MaximumPercent);
+}
+
+/// <summary>
+/// 双行歌词的行距：在现有两行布局之上**额外**增加的间距，按字号的百分比表示。
+///
+/// 0 表示与升级前的观感逐像素一致（两行各占文字区一半并居中）；调大时两行等距分开，间距随字号等比缩放，
+/// 因此不同厚度/字号下的观感一致。运行时按文字区的可用高度自动夹取，且滑杆全程有效：即使调到上限也不会
+/// 裁切文字或缩小字号（见 Web 歌词视图的 <c>resolveRowMetrics</c>）。
+/// Line gap of two-line lyrics: **extra** spacing added on top of the existing two-row layout, expressed as a percentage of the
+/// font size.
+///
+/// Zero keeps the look of the version before this setting existed pixel-identical (each line centred in one half of the
+/// media-text area); increasing it moves both lines apart by the configured proportion, which scales with the font size so the
+/// look stays consistent across thickness and font-size settings. It is clamped at runtime against the available height, and the
+/// slider stays effective end to end: even at its maximum the text is never clipped or shrunk (see <c>resolveRowMetrics</c> in
+/// the web lyrics view).
+/// </summary>
+public static class LyricsLineGap
+{
+    /// <summary>行距的持久化安全下限：0 表示不额外增加间距。/ Persistence-safe lower bound of the line gap; zero adds nothing.</summary>
+    public const int MinimumPercent = 0;
+
+    /// <summary>
+    /// 行距的持久化安全上限（百分比）：实测"不裁切、不缩小字号"的可用上限在标准厚度下约 30%、最薄的预设下约 25%，
+    /// 取 24% 使得任何厚度下每一档都有真实变化，滑杆不会出现调到顶也没有效果的空档。
+    /// Persistence-safe upper bound in percent: the measured ceiling that neither clips text nor shrinks the font is about 30% of
+    /// the font size at standard thickness and about 25% at the thinnest preset, so 24% keeps every slider step effective at any
+    /// thickness and no step goes to waste.
+    /// </summary>
+    public const int MaximumPercent = 24;
+
+    /// <summary>行距的步长（百分比）：CSS 排版是亚像素的，2% 一档也能看清变化。
+    /// Line-gap step in percent: CSS layout is sub-pixel, so a two-percent step is still visible.</summary>
+    public const int StepPercent = 2;
+
+    /// <summary>行距的默认值：0 表示不额外增加间距，默认外观与升级前一致。
+    /// Default line gap: zero adds nothing, keeping the default look unchanged.</summary>
+    public const int DefaultPercent = 0;
+
+    /// <summary>
+    /// 把任意输入吸附到步长网格并夹进区间。
+    /// Snaps any input onto the step grid and clamps it into range.
+    /// </summary>
+    /// <param name="percent">原始百分比 / Raw percentage.</param>
+    /// <returns>可直接写入设置的百分比 / The percentage that can be written into the settings.</returns>
+    public static int Normalize(int percent) => Math.Clamp(
+        (int)Math.Round(percent / (double)StepPercent, MidpointRounding.AwayFromZero) * StepPercent,
+        MinimumPercent,
+        MaximumPercent);
+}
+
+/// <summary>
 /// 第二行歌词的来源顺序：列表顺序就是优先级，未列出的来源不会被使用。
 /// The second lyric line's source order: the list order is the priority and a source missing from the list is never used.
 ///

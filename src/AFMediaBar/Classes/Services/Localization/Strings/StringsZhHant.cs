@@ -472,6 +472,11 @@ internal static class StringsZhHant
         table.Add("Lyrics.Row.UnsungOpacity.Badge", "需先開啟逐字擦亮");
         table.Add("Lyrics.Row.UnsungOpacity.Description", "尚未唱到的文字的不透明度；越低對比越明顯（預設 45%）");
         table.Add("Lyrics.Row.UnsungOpacity.Title", "未唱部分不透明度");
+        table.Add("Lyrics.Row.LineGap.Badge", "需先開啟雙行歌詞");
+        table.Add("Lyrics.Row.LineGap.Description", "按字號的百分比在現有兩行版面之上額外增加的間距，隨字號等比縮放；空間不足時自動收緊，不會裁切文字或縮小字號（預設 0）");
+        table.Add("Lyrics.Row.LineGap.Title", "行距");
+        table.Add("Lyrics.Row.CharacterSpacing.Description", "按字號的百分比拉開字距，隨字號等比縮放；中文與英文都生效，但不會拆斷單詞（預設 0）");
+        table.Add("Lyrics.Row.CharacterSpacing.Title", "字間距");
         table.Add("Lyrics.SecondLine.NextLine", "下一句歌詞");
         table.Add("Lyrics.SecondLine.Reset.Description", "把順序恢復為 翻譯 → 音譯 → 下一句");
         table.Add("Lyrics.SecondLine.Reset.Title", "恢復預設順序");
