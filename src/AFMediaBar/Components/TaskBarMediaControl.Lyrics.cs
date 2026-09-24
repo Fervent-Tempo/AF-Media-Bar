@@ -52,6 +52,7 @@ public partial class TaskBarMediaControl
 
     private void UpdateWebLyricsPresentation(bool allowTransition = true)
     {
+        var previous = _lyricsFrame;
         var next = LyricsPresentationProjector.Project(_snapshot, SettingsManager.Current, DateTimeOffset.UtcNow);
         _lyricsFrame = next;
 
@@ -63,16 +64,26 @@ public partial class TaskBarMediaControl
         SongLyricsPanel.IsHitTestVisible = showWebLyrics;
         // The web engine decides whether a frame is a progress patch or a line transition.
         // Sending false on every 50 ms progress frame interrupts its in-flight roll animation.
-        _lyricsWebRenderer?.Present(next, allowTransition && MotionPolicy.ResolveCurrent().UseTransitions);
+        if (LyricsPresentationRefreshPolicy.ShouldPresent(next.IsVisible, previous, next))
+            _lyricsWebRenderer?.Present(next, allowTransition && MotionPolicy.ResolveCurrent().UseTransitions);
         RefreshWebLyricsTimer();
     }
 
     private void RefreshWebLyricsTimer()
     {
-        var shouldRun = IsLoaded &&
-                        !IsAdvancePruned &&
-                        _lyricsFrame.IsVisible &&
-                        _lyricsFrame.IsPlaying;
+        // 注意用快照的播放状态而不是 _lyricsFrame.IsPlaying：隐藏帧是同一个 Hidden 单例，它的 IsPlaying 恒为 false，
+        // 拿它判断会让"等待第一句"期间的定时器永远起不来。
+        // Note it reads the snapshot's playback state instead of _lyricsFrame.IsPlaying: a hidden frame is the same
+        // Hidden singleton whose IsPlaying is always false, so judging by it would keep the timer from ever starting
+        // while waiting for the first line.
+        var shouldRun = LyricsPresentationRefreshPolicy.ShouldRunTimer(
+            IsLoaded,
+            IsAdvancePruned,
+            _lyricsFrame.IsVisible,
+            _snapshot.IsPlaying,
+            SettingsManager.Current.LyricsEnabled,
+            _snapshot.IsConnected,
+            _snapshot.Lyrics?.Document.Lines?.Count ?? 0);
         if (shouldRun)
         {
             if (!_lyricsWebTimer.IsEnabled)
