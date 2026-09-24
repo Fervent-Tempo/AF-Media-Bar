@@ -130,13 +130,16 @@ public partial class TaskBarMediaControl
     }
 
     /// <summary>
-    /// Web 歌词视图为文字留出的水平内边距总和（DIP）：`.layout` 左右各 4px 加 `.lyrics-pane` 左 2px、右 4px，共 10px。
-    /// 文本可用宽度 = 宿主宽度 − 该值，自动尺寸 MUST 把它补回来；否则最长的一行在任务栏仍有空闲空间时也会被省略号裁掉右侧几个像素。
-    /// Total horizontal inset the web lyrics view reserves for text, in DIP: `.layout` pads 4px on both sides and `.lyrics-pane`
-    /// adds 2px left and 4px right, ten in total. The usable text width is the host width minus this value, so the auto-size MUST add
-    /// it back; otherwise the longest line loses its right edge to the ellipsis even though the taskbar still has free room.
+    /// Web 歌词视图为文字留出的水平内边距总和（DIP）：`.layout` 左右各 4px（共 8）加 `.lyrics-pane` 左 2px、右 4px（共 6），
+    /// 合计 14px；再加 2px 余量，吸收字体度量取整（实测 WebView 的 clientWidth 会向上取整到物理像素）与亚像素排版。
+    /// 文本可用宽度 = 宿主宽度 − 该值，自动尺寸 MUST 把它补回来；否则最长的一行在任务栏仍有空闲空间时也会被省略号裁掉右侧。
+    /// Total horizontal inset the web lyrics view reserves for text, in DIP: `.layout` pads 4px on both sides (8) and
+    /// `.lyrics-pane` adds 2px left and 4px right (6), fourteen in total, plus a two-pixel allowance that absorbs font-metric
+    /// rounding (the WebView's clientWidth rounds up to physical pixels) and sub-pixel layout. The usable text width is the host
+    /// width minus this value, so the auto-size MUST add it back; otherwise the longest line loses its right edge to the ellipsis
+    /// even though the taskbar still has free room.
     /// </summary>
-    private const double WebLyricsHorizontalInsetDip = 10;
+    private const double WebLyricsHorizontalInsetDip = 16;
 
     private double MeasureWebLyricWidth(string text)
     {
