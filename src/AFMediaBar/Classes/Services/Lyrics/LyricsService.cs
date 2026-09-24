@@ -138,6 +138,28 @@ public sealed class LyricsService
                 defaultProvider, effectiveRequest, ResolveRemainingBudget(startedAt), cancellationToken));
         var candidate = (LyricsResult?)null;
 
+        // 默认接口可能已经同步完成（本地缓存一类的快路径全程无 await）：它的结果必须在这里先查一次，
+        // 否则下面的扇出循环会因为它"已完成"而永远不把它放进当批，命中就这样被静默丢掉。
+        // The default interface may have completed synchronously (fast paths like the local cache never await): its
+        // result has to be checked here once, or the dispatch loop below would leave a completed default out of every
+        // batch and silently drop the hit.
+        if (defaultCall is { } settled && settled.Task.IsCompleted)
+        {
+            var settledResult = await settled.Task.ConfigureAwait(false);
+            defaultCall = null;
+            if (settledResult is not null)
+            {
+                AppLogService.Current?.Info(
+                    "Lyrics",
+                    $"取词命中（默认接口，同步完成）/ hit (default, synchronous): {settledResult.Source} " +
+                    $"{settledResult.Document.SourceFormat}/{settledResult.Document.SyncType} " +
+                    $"lines={settledResult.Document.Lines.Count} ({Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds:0} ms)");
+                return settledResult;
+            }
+
+            AppLogService.Current?.Verbose("Lyrics", "默认接口同步完成但未命中 / the default interface completed synchronously and missed");
+        }
+
         foreach (var batch in batches)
         {
             // 候补到手后不再推进批次：它的价值就是立刻转正或被默认接口取代。

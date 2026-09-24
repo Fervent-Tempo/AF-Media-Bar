@@ -38,6 +38,13 @@ public static class LyricsFormatDetector
         @"^[ \t]*(?:\[\d+:\d{1,2}(?:[.:]\d{1,3})?\])+[^\r\n]*",
         LineOptions);
 
+    /// <summary>QRC Full 的 LyricContent 属性原文：属性值不含未转义引号，因此 [^"] 足够，换行保留在捕获里。
+    /// The raw LyricContent attribute of a QRC Full document: the value carries no unescaped quote, so [^"] suffices and
+    /// the newlines stay inside the capture.</summary>
+    private static readonly Regex QrcContentRegex = new(
+        @"LyricContent\s*=\s*""(?<content>[^""]*)""",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Singleline);
+
     /// <summary>Lyricify Lines 与逐字格式共有的行头：[开始,结束] 或 [开始,时长]。
     /// The line header shared by Lyricify Lines and the syllable formats: [start,end] or [start,duration].</summary>
     private static readonly Regex BracketedLine = new(
@@ -221,6 +228,30 @@ public static class LyricsFormatDetector
 
     private static string? ExtractQrcContent(string text)
     {
+        try
+        {
+            // XML 属性值规范化会把属性里的字面换行折成空格（XML 规范行为），整首歌词会黏成一行，
+            // 库的 QRC 解析器随后只认出元数据头。因此这里用正则取属性原文并自行解码实体，保住换行；
+            // 正则取不到（引号形态意外、转义特殊）再退回 XML 解析——宁可退化也不要因为一个来源丢掉整首歌词。
+            // XML attribute-value normalization folds the literal newlines inside an attribute into spaces (spec
+            // behaviour), gluing the whole lyric into one line that the QRC parser then reads as the metadata header only.
+            // A regex therefore extracts the raw attribute value and decodes the entities here, keeping the newlines; the
+            // XML parse remains the fallback for unexpected quote shapes.
+            var match = QrcContentRegex.Match(text);
+            if (match.Success)
+            {
+                var raw = System.Net.WebUtility.HtmlDecode(match.Groups["content"].Value);
+                if (!string.IsNullOrWhiteSpace(raw))
+                {
+                    return raw;
+                }
+            }
+        }
+        catch
+        {
+            // 退回 XML 解析。 / Falls back to the XML parse.
+        }
+
         try
         {
             var document = XDocument.Parse(text, LoadOptions.PreserveWhitespace);

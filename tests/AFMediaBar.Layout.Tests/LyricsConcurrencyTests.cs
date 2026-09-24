@@ -124,6 +124,31 @@ public sealed class LyricsConcurrencyTests
     // ---- 采纳模式：偏心默认 ----
 
     [TestMethod]
+    public async Task TheDefaultInterfaceHitIsAdoptedWhenItCompletesSynchronously()
+    {
+        // 本地缓存一类的默认接口全程无 await，任务在构造时就已完成：这个结果不能被扇出循环丢掉。
+        // A local-cache-style default interface never awaits, so its task completes at construction: the dispatch loop
+        // must not drop that result.
+        var service = new LyricsService(
+            PerSource,
+            Total,
+            new StubProvider(LyricsSourceCatalog.NetEase, _ => Task.FromResult<LyricsResult?>(Hit(LyricsSourceCatalog.NetEase))),
+            new StubProvider(LyricsSourceCatalog.Lrclib, async _ =>
+            {
+                await Task.Delay(200);
+                return Hit(LyricsSourceCatalog.Lrclib);
+            }));
+
+        var result = await service.GetLyricsAsync(
+            Request(netEaseSongId: "123"),
+            Options(LyricsAdoptionMode.PreferDefaultSource),
+            CancellationToken.None);
+
+        Assert.IsNotNull(result);
+        Assert.AreEqual(LyricsSourceCatalog.NetEase, result!.Source);
+    }
+
+    [TestMethod]
     public async Task TheDefaultInterfaceReplacesAnEarlierCandidate()
     {
         var service = new LyricsService(
@@ -273,13 +298,12 @@ public sealed class LyricsConcurrencyTests
                 CancellationToken.None);
 
             // 用户只开了 QQMusic（优先级），但网易云播放器的默认接口（NeteaseSearch）照发并且赢了。
+            // 默认接口同步命中时直接返回，优先级来源根本不必被询问。
             // The user enabled QQMusic only (priority), yet the NetEase player's default interface (NeteaseSearch) is
-            // still dispatched and wins.
+            // still dispatched and wins; a synchronously-hitting default short-circuits before the priority list is asked.
             Assert.IsNotNull(result);
             Assert.AreEqual(LyricsSourceCatalog.NetEaseSearch, result!.Source);
-            CollectionAssert.AreEqual(
-                new[] { LyricsSourceCatalog.QQMusic, LyricsSourceCatalog.NetEaseSearch }.OrderBy(name => name).ToArray(),
-                asked.OrderBy(name => name).ToArray());
+            CollectionAssert.AreEqual(new[] { LyricsSourceCatalog.NetEaseSearch }, asked);
         }
         finally
         {
