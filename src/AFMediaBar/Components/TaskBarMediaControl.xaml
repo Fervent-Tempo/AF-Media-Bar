@@ -198,6 +198,7 @@
                                 <wv2:WebView2CompositionControl x:Name="LyricsWebView"
                                                                HorizontalAlignment="Stretch"
                                                                VerticalAlignment="Stretch"
+                                                               MinWidth="1" MinHeight="1"
                                                                IsHitTestVisible="False" />
                                 <Border Background="Transparent"
                                         Cursor="Hand"

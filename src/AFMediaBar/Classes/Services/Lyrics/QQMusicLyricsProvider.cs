@@ -10,10 +10,12 @@ namespace AFMediaBar.Classes.Services.Lyrics;
 /// The QQ Music source: searches a track by title and artist, then retrieves the decrypted QRC syllable lyrics plus the
 /// separate translation.
 ///
-/// 两条取词路径按可用性依次尝试：新接口按数字歌曲 id 返回解密后的正文，旧接口按 songmid 返回 base64 正文；
-/// 两条都拿不到正文时按未命中处理。
-/// Two retrieval paths are tried in order: the new endpoint returns decrypted text for the numeric song id, and the legacy
-/// endpoint returns base64 text for the songmid; when neither yields text the source counts as a miss.
+/// 取词按三条路径依次尝试：先读本地缓存（见 <see cref="QQMusicLocalCache"/>），命中即返回、不碰网络；未命中时走两条
+/// 网络路径——新接口按数字歌曲 id 返回解密后的正文，旧接口按 songmid 返回 base64 正文；三条都拿不到正文时按未命中处理。
+/// Retrieval tries three paths in order: the local cache first (see <see cref="QQMusicLocalCache"/>), returning immediately
+/// on a hit without any network traffic; on a miss the two network paths follow — the new endpoint returns decrypted text for
+/// the numeric song id and the legacy endpoint returns base64 text for the songmid; when none yields text the source counts as
+/// a miss.
 /// </summary>
 public sealed class QQMusicLyricsProvider : ILyricsProvider
 {
@@ -28,6 +30,23 @@ public sealed class QQMusicLyricsProvider : ILyricsProvider
         if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Artist))
         {
             return null;
+        }
+
+        // 本地缓存优先：命中时整个取词过程都不联网。
+        // The local cache goes first: a hit keeps the whole lookup off the network.
+        if (QQMusicLocalCache.TryRead(request.Title, request.Album, out var cachedMain, out var cachedTranslation) &&
+            !string.IsNullOrWhiteSpace(cachedMain))
+        {
+            var cachedDocument = LyricsTextParser.Parse(
+                cachedMain!,
+                cachedTranslation,
+                request: request,
+                durationSeconds: request.DurationSeconds,
+                filterInfoLines: request.FilterInfoLines);
+            if (cachedDocument.Lines.Count > 0)
+            {
+                return new LyricsResult(SourceName, cachedDocument);
+            }
         }
 
         var track = LyricsSearch.ToTrackMetadata(request);
