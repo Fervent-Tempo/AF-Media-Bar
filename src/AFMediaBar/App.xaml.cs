@@ -113,6 +113,7 @@ namespace AFMediaBar
                 services.AddSingleton<IMemoryPrunable>(sp => (IMemoryPrunable)sp.GetRequiredService<IMediaSourceProvider>());
                 services.AddSingleton<MediaSourceActivationService>();
                 services.AddSingleton<MediaSessionService>();
+                services.AddSingleton<AFMediaBar.Classes.Abstractions.IMediaSessionSourceScanner>(sp => sp.GetRequiredService<MediaSessionService>());
                 services.AddSingleton<TrackChangeNotificationCoordinator>();
                 services.AddSingleton<MediaSourceProcessResolver>();
                 services.AddSingleton<AudioProcessInfoService>();

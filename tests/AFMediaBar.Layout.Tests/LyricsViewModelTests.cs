@@ -1,3 +1,5 @@
+using AFMediaBar.Classes.Abstractions;
+using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services.Localization;
 using AFMediaBar.Classes.Services.Lyrics;
 using AFMediaBar.Classes.Settings;
@@ -117,5 +119,13 @@ public sealed class LyricsViewModelTests
         Assert.IsFalse(viewModel.IsEverySourceDisabled);
     }
 
-    private static LyricsViewModel CreateViewModel() => new(new LocalizationService());
+    private static LyricsViewModel CreateViewModel() => new(new LocalizationService(), new StubSessionScanner());
+
+    /// <summary>空会话扫描桩：绑定列表的刷新与来源列表共用全局设置，扫描本身另有并发测试覆盖。
+    /// An empty scanner stub: the binding list's refresh shares the global settings with the source list, while the scan
+    /// itself is covered by the concurrency tests.</summary>
+    private sealed class StubSessionScanner : IMediaSessionSourceScanner
+    {
+        public IReadOnlyList<MediaSessionOption> CurrentSessionOptions { get; } = [];
+    }
 }

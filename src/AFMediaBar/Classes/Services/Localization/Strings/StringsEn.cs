@@ -189,7 +189,7 @@ internal static class StringsEn
         table.Add("Common.Group.Licenses", "Open-source licenses");
         table.Add("Common.Group.LyricsAlignment", "Alignment");
         table.Add("Common.Group.LyricsDisplay", "Display");
-        table.Add("Common.Group.LyricsSources", "Sources");
+        table.Add("Common.Group.LyricsSources", "Lyric sources");
         table.Add("Common.Group.MediaBarText", "Media bar text");
         table.Add("Common.Group.MediaBarWidth", "Media bar width");
         table.Add("Common.Group.ProjectInfo", "Project information");
@@ -450,8 +450,33 @@ internal static class StringsEn
         table.Add("Layout.WindowMode.Taskbar", "Dock to the taskbar");
 
         // ---- Lyrics ----
+        table.Add("Lyrics.Adoption.FirstArrival", "First arrival");
+        table.Add("Lyrics.Adoption.PreferDefaultSource", "Prefer default source");
+        table.Add("Lyrics.Adoption.PreferDefaultSourceWithDeadline", "Prefer default source (with deadline)");
+        table.Add("Lyrics.DefaultBindings.Add", "Add player");
+        table.Add("Lyrics.DefaultBindings.Remark.Placeholder", "Remark");
+        table.Add("Lyrics.DefaultBindings.Add.Placeholder", "Enter the AppID (an AUMID or a fragment of it)");
+        table.Add("Lyrics.DefaultBindings.Expander.Description", "Recognize the players now running and pick each one's default lyric interface; players left unbound have no default interface");
+        table.Add("Lyrics.DefaultBindings.Expander.Title", "Default-interface bindings");
+        table.Add("Lyrics.DefaultBindings.None", "Not bound (no default interface)");
+        table.Add("Lyrics.DefaultBindings.Player.Kugou", "Kugou Music");
+        table.Add("Lyrics.DefaultBindings.Player.Netease", "NetEase Music");
+        table.Add("Lyrics.DefaultBindings.Player.QQMusic", "QQ Music");
+        table.Add("Lyrics.DefaultBindings.Player.SodaMusic", "Soda Music");
+        table.Add("Lyrics.DefaultBindings.Remove", "Remove this row");
+        table.Add("Lyrics.DefaultBindings.Scan", "Scan playing players");
+        table.Add("Lyrics.QueryStrategy.Concurrent", "Simultaneous");
+        table.Add("Lyrics.QueryStrategy.Sequential", "Sequential");
         table.Add("Lyrics.Callout.Display", "With lyrics available the media bar shows the lyrics; without them it shows the title and artist.");
         table.Add("Lyrics.Header.Subtitle", "The current lyrics in the taskbar rest layer");
+        table.Add("Lyrics.Row.QueryStrategy.Description", "Try the sources one by one, or send them out at once (the default interface and the priority batches query together); sequential mode keeps only the priority order");
+        table.Add("Lyrics.Row.QueryStrategy.Title", "Query strategy");
+        table.Add("Lyrics.Row.AdoptionMode.Description", "How a concurrent retrieval adopts its result; \"prefer default source\" favours the interface matched to the playing player");
+        table.Add("Lyrics.Row.AdoptionMode.Title", "Result adoption mode");
+        table.Add("Lyrics.Row.BatchSize.Description", "How many sources fetch concurrently per batch; the next batch is requested only after the current one has all missed");
+        table.Add("Lyrics.Row.BatchSize.Title", "Concurrency batch size");
+        table.Add("Lyrics.Row.Deadline.Description", "Once a priority source has answered first, the default interface gets this long; applies only to \"prefer default source (with deadline)\"");
+        table.Add("Lyrics.Row.Deadline.Title", "Default-interface deadline");
         table.Add("Lyrics.Row.Alignment.Description", "How the lyrics are aligned in the rest layer; title and artist alignment is a separate setting on the display mode page");
         table.Add("Lyrics.Row.Alignment.Title", "Lyric alignment");
         table.Add("Lyrics.Row.InfoLines.Description", "Hides credit lines such as writer, composer, and producer");
@@ -497,7 +522,8 @@ internal static class StringsEn
         table.Add("Lyrics.Sources.AllDisabled.Callout", "Every lyric source is off: no lyric request is sent at all, and the media bar shows the title and artist only.");
         table.Add("Lyrics.Sources.Callout", "Lyrics are requested from the enabled sources in the order below, stopping at the first hit; each source is asked once.");
         table.Add("Lyrics.Sources.Expander.Description", "Which sources are enabled and in what priority order");
-        table.Add("Lyrics.Sources.Expander.Title", "Lyric sources");
+        table.Add("Lyrics.Sources.Expander.Title", "Fallback source priority order");
+        table.Add("Lyrics.Sources.Expander.Title.Sequential", "Priority order");
         table.Add("Lyrics.Sources.MoveDown", "Move down");
         table.Add("Lyrics.Sources.MoveUp", "Move up");
         table.Add("Lyrics.Sources.Reset.Action", "Restore defaults");

@@ -189,7 +189,7 @@ internal static class StringsZhHant
         table.Add("Common.Group.Licenses", "開源授權");
         table.Add("Common.Group.LyricsAlignment", "對齊");
         table.Add("Common.Group.LyricsDisplay", "顯示");
-        table.Add("Common.Group.LyricsSources", "來源");
+        table.Add("Common.Group.LyricsSources", "取詞來源");
         table.Add("Common.Group.MediaBarText", "媒體列文字");
         table.Add("Common.Group.MediaBarWidth", "媒體列寬度");
         table.Add("Common.Group.ProjectInfo", "專案資訊");
@@ -450,8 +450,33 @@ internal static class StringsZhHant
         table.Add("Layout.WindowMode.Taskbar", "停靠工作列");
 
         // ---- Lyrics ----
+        table.Add("Lyrics.Adoption.FirstArrival", "先到先得");
+        table.Add("Lyrics.Adoption.PreferDefaultSource", "偏心預設來源");
+        table.Add("Lyrics.Adoption.PreferDefaultSourceWithDeadline", "偏心預設來源（限時）");
+        table.Add("Lyrics.DefaultBindings.Add", "添加播放器");
+        table.Add("Lyrics.DefaultBindings.Remark.Placeholder", "備註名");
+        table.Add("Lyrics.DefaultBindings.Add.Placeholder", "輸入 AppID（AUMID 或其片段）");
+        table.Add("Lyrics.DefaultBindings.Expander.Description", "識別正在播放的播放器，並指定它的預設取詞介面；未綁定的播放器沒有預設介面");
+        table.Add("Lyrics.DefaultBindings.Expander.Title", "預設取詞介面綁定");
+        table.Add("Lyrics.DefaultBindings.None", "不綁定（無預設介面）");
+        table.Add("Lyrics.DefaultBindings.Player.Kugou", "酷狗音樂");
+        table.Add("Lyrics.DefaultBindings.Player.Netease", "網易雲音樂");
+        table.Add("Lyrics.DefaultBindings.Player.QQMusic", "QQ 音樂");
+        table.Add("Lyrics.DefaultBindings.Player.SodaMusic", "汽水音樂");
+        table.Add("Lyrics.DefaultBindings.Remove", "移除此行");
+        table.Add("Lyrics.DefaultBindings.Scan", "掃描正在播放");
+        table.Add("Lyrics.QueryStrategy.Concurrent", "同時查詢");
+        table.Add("Lyrics.QueryStrategy.Sequential", "按序查詢");
         table.Add("Lyrics.Callout.Display", "有歌詞時，媒體列顯示歌詞；沒有歌詞時顯示標題與歌手。");
         table.Add("Lyrics.Header.Subtitle", "在工作列靜置層顯示目前歌詞");
+        table.Add("Lyrics.Row.QueryStrategy.Description", "按序逐個嘗試來源，或同時發出（預設介面與優先級批次同時查詢）；按序時只保留優先級順序");
+        table.Add("Lyrics.Row.QueryStrategy.Title", "查詢策略");
+        table.Add("Lyrics.Row.AdoptionMode.Description", "並發取詞時如何採納結果；「偏心預設來源」優先採用播放器對應的取詞介面");
+        table.Add("Lyrics.Row.AdoptionMode.Title", "結果採納策略");
+        table.Add("Lyrics.Row.BatchSize.Description", "每批同時取詞的來源個數；目前批次全部未命中才會請求下一批");
+        table.Add("Lyrics.Row.BatchSize.Title", "並發批次數");
+        table.Add("Lyrics.Row.Deadline.Description", "優先級來源先返回結果後，再給預設介面這麼長的時間；僅「偏心預設來源（限時）」時生效");
+        table.Add("Lyrics.Row.Deadline.Title", "預設介面倒數");
         table.Add("Lyrics.Row.Alignment.Description", "歌詞在靜置層的對齊方式；標題與歌手的對齊在顯示模式頁");
         table.Add("Lyrics.Row.Alignment.Title", "歌詞對齊");
         table.Add("Lyrics.Row.InfoLines.Description", "隱藏作者、作曲、製作等署名行");
@@ -497,7 +522,8 @@ internal static class StringsZhHant
         table.Add("Lyrics.Sources.AllDisabled.Callout", "已關閉全部歌詞來源：不會再發出任何歌詞請求，媒體列只顯示標題與歌手。");
         table.Add("Lyrics.Sources.Callout", "依下面的順序向已啟用的來源請求歌詞，命中即停止；每個來源只發一次請求。");
         table.Add("Lyrics.Sources.Expander.Description", "啟用哪些來源，以及它們的優先順序");
-        table.Add("Lyrics.Sources.Expander.Title", "歌詞來源");
+        table.Add("Lyrics.Sources.Expander.Title", "備用來源優先級順序");
+        table.Add("Lyrics.Sources.Expander.Title.Sequential", "優先級順序");
         table.Add("Lyrics.Sources.MoveDown", "下移");
         table.Add("Lyrics.Sources.MoveUp", "上移");
         table.Add("Lyrics.Sources.Reset.Action", "恢復預設");

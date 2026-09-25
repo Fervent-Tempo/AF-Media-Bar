@@ -1,6 +1,83 @@
 namespace AFMediaBar.Classes.Settings;
 
 /// <summary>
+/// 取词的查询策略：按序逐个尝试来源，或并发派发。
+/// The retrieval query strategy: try the sources one by one, or dispatch them concurrently.
+/// </summary>
+public enum LyricsQueryStrategy
+{
+    /// <summary>按序查询：按备用来源的优先级顺序逐个尝试，前一个未命中或超时才轮到下一个（传统串行链）。
+    /// Sequential: sources are tried one by one in the fallback priority order; the next one runs only after the previous
+    /// misses or times out (the classic serial chain).</summary>
+    Sequential = 0,
+
+    /// <summary>并发查询：默认接口与优先级批次并发派发，由采纳策略决定用哪个结果。
+    /// Concurrent: the default interface and the priority batches run together, and the adoption mode picks the result.</summary>
+    Concurrent = 1
+}
+
+/// <summary>
+/// 并发取词的结果采纳策略：多个请求同时飞行时，链路按这里选定的规则决定用哪一个结果。
+/// Adoption mode for concurrent retrieval: while several requests are in flight, the chain picks the result to use by
+/// the rule chosen here.
+/// </summary>
+public enum LyricsAdoptionMode
+{
+    /// <summary>先到先得：任一来源先返回非空结果即采纳，其余请求全部放弃。
+    /// First arrival: the first non-null result from any source is adopted and every other request is dropped.</summary>
+    FirstArrival = 0,
+
+    /// <summary>偏心默认来源：AppID 匹配的默认接口命中随时取代优先级批次里先到的候补结果；默认接口未命中时候补转正。
+    /// 候补出现后默认接口一直等到它自己的单源预算为止。
+    /// Prefer the default source: a hit from the AppID-matched default interface replaces the earliest candidate from the
+    /// priority batches at any time, while the candidate wins when the default misses. Once a candidate exists the default
+    /// interface is waited for until its own per-source budget runs out.</summary>
+    PreferDefaultSource = 1,
+
+    /// <summary>偏心默认来源（限时）：在偏心默认的基础上，候补出现后给默认接口一个倒计时；倒计时内没有命中就候补转正，
+    /// 不让慢的默认接口拖住整链。
+    /// Prefer the default source with a deadline: on top of preferring the default, a countdown starts once a candidate
+    /// exists; without a hit inside the countdown the candidate wins, so a slow default interface cannot stall the chain.</summary>
+    PreferDefaultSourceWithDeadline = 2
+}
+
+/// <summary>
+/// 并发取词的权威取值区间与默认值：批次大小与默认接口倒计时的设置项都绑定这里，不在别处重复字面量。
+/// Authoritative ranges and defaults of the concurrency retrieval: the batch-size and default-interface-deadline settings
+/// bind here and no literal is repeated elsewhere.
+/// </summary>
+public static class LyricsConcurrencyDefaults
+{
+    /// <summary>并发批次的默认大小：默认接口之外，优先级列表每次并发发出的来源个数。/ Default concurrency batch size: besides the default interface, how many priority sources are dispatched per batch.</summary>
+    public const int BatchSizeDefault = 3;
+
+    /// <summary>批次大小的最小值。/ Minimum batch size.</summary>
+    public const int BatchSizeMinimum = 1;
+
+    /// <summary>批次大小的最大值：来源总数目前为 6，超过它只会让所有来源挤进同一批，失去分批的意义。
+    /// Maximum batch size: with six sources at present a larger value only packs every source into one batch, defeating batching.</summary>
+    public const int BatchSizeMaximum = 6;
+
+    /// <summary>默认接口倒计时的默认值（毫秒）：候补结果出现后，默认接口还有这么长时间来完成命中。
+    /// Default deadline (milliseconds) of the default interface: after a candidate appears, the default interface has this long to land a hit.</summary>
+    public const int AdoptionDeadlineMillisecondsDefault = 2000;
+
+    /// <summary>倒计时的最小值（毫秒）：低于它倒计时失去等待的意义。/ Minimum deadline (milliseconds): below it the countdown stops being a wait.</summary>
+    public const int AdoptionDeadlineMillisecondsMinimum = 500;
+
+    /// <summary>倒计时的最大值（毫秒）：再长就接近默认接口自己的单源预算，限时失去意义。
+    /// Maximum deadline (milliseconds): beyond it the countdown approaches the default interface's own per-source budget and the limit means nothing.</summary>
+    public const int AdoptionDeadlineMillisecondsMaximum = 10000;
+
+    /// <summary>把任意输入夹进批次大小区间。/ Clamps any input into the batch-size range.</summary>
+    public static int NormalizeBatchSize(int batchSize) => Math.Clamp(batchSize, BatchSizeMinimum, BatchSizeMaximum);
+
+    /// <summary>把任意输入夹进倒计时区间。/ Clamps any input into the deadline range.</summary>
+    public static int NormalizeAdoptionDeadlineMilliseconds(int milliseconds) =>
+        Math.Clamp(milliseconds, AdoptionDeadlineMillisecondsMinimum, AdoptionDeadlineMillisecondsMaximum);
+}
+
+/// <summary>
 /// 搜索型歌词来源的匹配严格度：搜索结果必须达到的最低匹配等级。
 /// Match strictness for search-based lyric sources: the minimum match level a search result has to reach.
 ///
@@ -218,6 +295,73 @@ public readonly record struct LyricsSecondaryLineSettings(IReadOnlyList<LyricsSe
                 .Distinct()
                 .ToArray()
     };
+}
+
+/// <summary>
+/// 一条默认取词接口绑定：播放器标识（AUMID 或它包含的片段）→ 来源 id。
+/// One default-lyrics binding: a player identifier (an AUMID or a fragment it contains) mapped onto a source id.
+///
+/// <paramref name="SourceId"/> 为 null 表示该播放器**没有默认接口**（删除或暂不绑定）：绑定表一旦非 null 就是唯一权威，
+/// 内置映射不再参与；"未配置"（整个绑定表为 null）与"用户明确不要默认接口"是两种不同的意图，必须分别保存。
+/// A null <paramref name="SourceId"/> means the player has **no default interface** (deleted or not bound): a non-null
+/// table is the only authority and the built-in mapping no longer applies; "never configured" (the whole table is null) and
+/// "the user does not want a default here" are two different intents and have to be stored differently.
+/// </summary>
+/// <param name="AppId">播放器标识，匹配规则为"来源标识包含此片段"；创建后不可改，改 = 删除重加 / The player identifier, matched as "the source id contains this fragment"; immutable once created — changing it means delete and re-add.</param>
+/// <param name="SourceId">绑定的来源 id；null 表示该播放器没有默认接口 / The bound source id, or null when the player has no default interface.</param>
+/// <param name="Remark">界面上显示的备注名；null 时回落到内置播放器名或 AppID 原文 / The remark shown on the interface; null falls back to the built-in player's name or the raw AppID.</param>
+public sealed record LyricsDefaultBinding(string AppId, string? SourceId, string? Remark = null)
+{
+    /// <summary>该条目是否是"没有默认接口"的标记。/ Whether this entry marks "no default interface".</summary>
+    public bool IsRemoval => SourceId is null;
+}
+
+/// <summary>
+/// 默认取词接口的用户绑定表，先于内置映射生效。
+/// The user's default-interface binding table, applied before the built-in mapping.
+///
+/// 三种取值含义不同：null 表示从未配置，全部播放器按内置映射；非空数组按条目匹配播放器，
+/// 命中的条目给出来源（或"移除"），未命中的播放器继续走内置映射。归一化不做来源白名单
+/// （设置层不认识提供器），未知来源 id 在使用时按"无默认接口"处理，因此删除一个来源不会让旧设置失效。
+/// The three values mean different things: null was never configured, so every player follows the built-in mapping; a non-empty
+/// array matches players by entry, a hit supplies the source (or a removal), and players without a hit keep the built-in mapping.
+/// Normalization keeps no source allow-list (the settings layer knows nothing about providers): an unknown source id counts as
+/// "no default interface" when used, so removing a source never invalidates an old settings file.
+/// </summary>
+/// <param name="Bindings">绑定条目；null 表示未配置，即全部走内置映射 / The binding entries; null means unconfigured, which follows the built-in mapping.</param>
+public sealed record LyricsDefaultBindingSettings(IReadOnlyList<LyricsDefaultBinding>? Bindings)
+{
+    /// <summary>默认值：从未配置，全部播放器按内置映射。/ The default: never configured, every player follows the built-in mapping.</summary>
+    public static LyricsDefaultBindingSettings Default { get; } =
+        new((IReadOnlyList<LyricsDefaultBinding>?)null);
+
+    /// <summary>
+    /// 去掉空白条目与重复的播放器标识（保留先出现的），并保持"未配置"与"显式绑定"的区别。
+    /// Drops blank entries and duplicate player identifiers (keeping the first), preserving the difference between
+    /// "never configured" and an explicit table.
+    /// </summary>
+    public LyricsDefaultBindingSettings Normalize() => this with
+    {
+        Bindings = Bindings is null
+            ? null
+            : Bindings
+                .Where(static binding => binding is not null && !string.IsNullOrWhiteSpace(binding.AppId))
+                .Select(static binding => new LyricsDefaultBinding(
+                    binding.AppId.Trim(),
+                    string.IsNullOrWhiteSpace(binding.SourceId) ? null : binding.SourceId,
+                    string.IsNullOrWhiteSpace(binding.Remark) ? null : binding.Remark.Trim()))
+                .Distinct(new AppIdComparer())
+                .ToArray()
+    };
+
+    private sealed class AppIdComparer : IEqualityComparer<LyricsDefaultBinding>
+    {
+        public bool Equals(LyricsDefaultBinding? left, LyricsDefaultBinding? right) =>
+            string.Equals(left?.AppId, right?.AppId, StringComparison.OrdinalIgnoreCase);
+
+        public int GetHashCode(LyricsDefaultBinding binding) =>
+            StringComparer.OrdinalIgnoreCase.GetHashCode(binding.AppId);
+    }
 }
 
 /// <summary>
