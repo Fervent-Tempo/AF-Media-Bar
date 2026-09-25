@@ -151,11 +151,10 @@ public sealed class LyricsService
                 defaultProvider, effectiveRequest, ResolveRemainingBudget(startedAt), cancellationToken));
         var candidate = (LyricsResult?)null;
 
-        // 默认接口可能已经同步完成（本地缓存一类的快路径全程无 await）：它的结果必须在这里先查一次，
-        // 否则下面的扇出循环会因为它"已完成"而永远不把它放进当批，命中就这样被静默丢掉。
-        // The default interface may have completed synchronously (fast paths like the local cache never await): its
-        // result has to be checked here once, or the dispatch loop below would leave a completed default out of every
-        // batch and silently drop the hit.
+        // 默认接口可能同步完成（例如本地缓存命中）；提前采纳可避免再启动备用来源。
+        // 若它在此检查之后才完成，后面的批次仍会读取结果。
+        // The default may complete synchronously (for example, on a local cache hit); adopting it here avoids
+        // starting fallback sources. A completion after this check is still handled by the batches below.
         if (defaultCall is { } settled && settled.Task.IsCompleted)
         {
             var settledResult = await settled.Task.ConfigureAwait(false);
@@ -198,7 +197,9 @@ public sealed class LyricsService
                     provider, effectiveRequest, budget, cancellationToken)));
             }
 
-            if (defaultCall is { } pending && !pending.Task.IsCompleted)
+            // 即使刚刚完成也要入队：它可能在上面的首次检查之后、这里之前完成。
+            // Enqueue even a newly completed call: it may have finished between the initial check and this batch.
+            if (defaultCall is { } pending)
             {
                 active.Add(pending);
             }
@@ -217,6 +218,7 @@ public sealed class LyricsService
 
                 if (finished.IsDefault)
                 {
+                    defaultCall = null;
                     // 默认接口命中随时取代一切（包括先到的候补），未命中则继续等优先级。
                     // A default-interface hit replaces everything at any time (including an earlier candidate); a miss
                     // leaves the priority requests alone.
@@ -270,10 +272,10 @@ public sealed class LyricsService
 
         if (candidate is null)
         {
-            // 优先级全部未命中：若默认接口仍在飞，等它收尾——它自己的单源预算兜底，不会无限等。
-            // Every priority source missed: while the default interface is still in flight it is awaited to its own
-            // per-source budget, so the wait is never unbounded.
-            if (defaultCall is { } settle && !settle.Task.IsCompleted)
+            // 优先级全部未命中：读取尚未处理的默认接口，即使它此刻已完成；单源预算限制等待时间。
+            // Every priority source missed: read an unhandled default call even if it has completed by now;
+            // the per-source budget bounds any remaining wait.
+            if (defaultCall is { } settle)
             {
                 var defaultResult = await settle.Task.ConfigureAwait(false);
                 if (defaultResult is not null)

@@ -277,6 +277,32 @@ public sealed class LyricsConcurrencyTests
     }
 
     [TestMethod]
+    public async Task TheDefaultInterfaceCompletedWhileStartingABatchIsNotLost()
+    {
+        var defaultResult = new TaskCompletionSource<LyricsResult?>();
+        var service = new LyricsService(
+            TimeSpan.FromSeconds(2),
+            Total,
+            new StubProvider(LyricsSourceCatalog.NetEase, _ => defaultResult.Task),
+            new StubProvider(LyricsSourceCatalog.Lrclib, _ =>
+            {
+                // 默认来源通过了首次 IsCompleted 检查，随后在本批次提供器启动期间完成。
+                // The default passed the initial IsCompleted check, then finishes while this batch starts.
+                defaultResult.SetResult(Hit(LyricsSourceCatalog.NetEase));
+                Thread.Sleep(50);
+                return Task.FromResult<LyricsResult?>(null);
+            }));
+
+        var result = await service.GetLyricsAsync(
+            Request(netEaseSongId: "123"),
+            Options(LyricsAdoptionMode.PreferDefaultSource),
+            CancellationToken.None);
+
+        Assert.IsNotNull(result);
+        Assert.AreEqual(LyricsSourceCatalog.NetEase, result!.Source);
+    }
+
+    [TestMethod]
     public async Task TheDefaultInterfaceReplacesAnEarlierCandidate()
     {
         var service = new LyricsService(
