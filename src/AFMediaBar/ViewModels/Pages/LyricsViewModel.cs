@@ -383,7 +383,7 @@ public partial class LyricsViewModel : ObservableObject
                 foreach (var builtin in LyricsConcurrencyPolicy.BuiltInBindings)
                 {
                     AddBindingRow(
-                        builtin.CanonicalAppId,
+                        builtin.AppId,
                         Translations.Get($"Lyrics.DefaultBindings.Player.{builtin.NameKey}"),
                         builtin.DefaultSourceId);
                 }
@@ -394,7 +394,7 @@ public partial class LyricsViewModel : ObservableObject
             foreach (var entry in entries)
             {
                 var fallbackName = LyricsConcurrencyPolicy.BuiltInBindings
-                    .Where(builtin => entry.AppId.Contains(builtin.CanonicalAppId, StringComparison.OrdinalIgnoreCase))
+                    .Where(builtin => entry.AppId.Contains(builtin.AppId, StringComparison.OrdinalIgnoreCase))
                     .Select(builtin => Translations.Get($"Lyrics.DefaultBindings.Player.{builtin.NameKey}"))
                     .FirstOrDefault();
                 AddBindingRow(

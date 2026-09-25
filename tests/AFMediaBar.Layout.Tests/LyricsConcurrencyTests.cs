@@ -40,10 +40,8 @@ public sealed class LyricsConcurrencyTests
     public void KnownAppIdsMapOntoTheirSearchFallbackSource()
     {
         Assert.AreEqual(LyricsSourceCatalog.NetEaseSearch, LyricsConcurrencyPolicy.MapDefaultSource("cloudmusic.exe", null));
-        Assert.AreEqual(LyricsSourceCatalog.NetEaseSearch, LyricsConcurrencyPolicy.MapDefaultSource("Netease.Cloudmusic_wxyz", null));
         Assert.AreEqual(LyricsSourceCatalog.QQMusic, LyricsConcurrencyPolicy.MapDefaultSource("qqmusic.exe", null));
-        Assert.AreEqual(LyricsSourceCatalog.QQMusic, LyricsConcurrencyPolicy.MapDefaultSource("Tencent.QQMusicDA_something!App", null));
-        Assert.AreEqual(LyricsSourceCatalog.Kugou, LyricsConcurrencyPolicy.MapDefaultSource("KuGou", null));
+        Assert.AreEqual(LyricsSourceCatalog.Kugou, LyricsConcurrencyPolicy.MapDefaultSource("kugou", null));
         Assert.AreEqual(LyricsSourceCatalog.SodaMusic, LyricsConcurrencyPolicy.MapDefaultSource("汽水音乐", null));
     }
 

@@ -37,36 +37,26 @@ public sealed record LyricsRetrievalOptions(
 }
 
 /// <summary>
-/// 内置的默认取词接口绑定：一个播放器（显示名）与它的一组识别片段 → 默认来源。
-/// A built-in default-interface binding: one player (display name) with its recognition patterns mapped onto a default source.
+/// 内置的默认取词接口绑定：一个播放器的真实 AppID → 默认来源。
+/// A built-in default-interface binding: one player's real AppID mapped onto a default source.
 ///
-/// 第一条识别片段同时是它在用户绑定表里的规范键：用户在设置页修改或删除内置绑定时，设置文件里存的就是这个片段。
-/// The first pattern doubles as the player's canonical key in the user binding table: when the settings page edits or
-/// deletes a built-in binding, this is the fragment stored in the settings file.
+/// 每个播放器只有一条 AppID；内置表只负责在配置文件尚未生成（首次创建或重置）时预填初始列表，
+/// 写回后一切操作都发生在持久化的绑定表上，对初始表不再有任何特判。
+/// Each player carries exactly one AppID; the built-in table only prefills the initial list while the settings file does
+/// not exist yet (first creation or reset), and every later operation happens on the persisted table with no special casing.
 /// </summary>
-/// <param name="Patterns">识别片段（来源标识包含其一即命中） / Recognition patterns, one of which the source id contains.</param>
+/// <param name="AppId">播放器的真实 AppID / The player's real AppID.</param>
 /// <param name="NameKey">播放器显示名的文案键尾段（Lyrics.DefaultBindings.Player.{NameKey}） / The tail of the player's display-name text key (Lyrics.DefaultBindings.Player.{NameKey}).</param>
 /// <param name="DefaultSourceId">内置默认来源 id / The built-in default source id.</param>
 public sealed record LyricsBuiltInBinding(
-    IReadOnlyList<string> Patterns,
+    string AppId,
     string NameKey,
-    string DefaultSourceId)
-{
-    /// <summary>该播放器在用户绑定表里的规范键（第一条识别片段）。/ The player's canonical key in the user binding table (the first pattern).</summary>
-    public string CanonicalAppId => Patterns[0];
-}
+    string DefaultSourceId);
 
 /// <summary>
 /// 并发取词的两个静态决策：AppID 到默认来源的三层映射（用户绑定表 → 内置表 → 无），与优先级来源的批次计划。
 /// The two static decisions of concurrent retrieval: the three-layer AppID-to-default-source mapping (user table, built-in
 /// table, none) and the batching plan of the priority sources.
-///
-/// 映射的内置层参考 Lyrix 的 id2player（D:\project\Rust\Lyrix\src\models\music_player.rs），但按"包含"匹配而不是全等：
-/// SMTC 的 SourceAppUserModelId 各家形态不一（商店版带包名后缀、进程名式、中文显示名式），包含匹配一次覆盖所有形态。
-/// 识别不出的 AppID 返回 null——没有默认接口就退化为纯优先级批次，链路不因此失效。
-/// The built-in layer follows Lyrix's id2player but matches by containment rather than equality: SMTC source ids vary in shape
-/// (store-package suffixes, process-name style, Chinese display names), and one containment rule covers them all. An
-/// unrecognized id maps to null — without a default interface the chain degrades to plain priority batching and keeps working.
 ///
 /// 批次规则：用户关掉的来源不进批次（来源开关只管优先级列表）；默认接口不占批次名额，且若它恰好也在优先级列表里
 /// 则去重只发一次；顺序完全保留用户给定次序。
@@ -75,13 +65,13 @@ public sealed record LyricsBuiltInBinding(
 /// </summary>
 public static class LyricsConcurrencyPolicy
 {
-    /// <summary>内置默认接口绑定表。/ The built-in default-interface bindings.</summary>
+    /// <summary>内置默认接口绑定表：每行一个真实 AppID。/ The built-in default-interface bindings: one real AppID per row.</summary>
     public static IReadOnlyList<LyricsBuiltInBinding> BuiltInBindings { get; } =
     [
-        new(["cloudmusic", "netease"], "Netease", LyricsSourceCatalog.NetEaseSearch),
-        new(["qqmusic"], "QQMusic", LyricsSourceCatalog.QQMusic),
-        new(["kugou"], "Kugou", LyricsSourceCatalog.Kugou),
-        new(["汽水", "soda"], "SodaMusic", LyricsSourceCatalog.SodaMusic),
+        new("cloudmusic.exe", "Netease", LyricsSourceCatalog.NetEaseSearch),
+        new("qqmusic.exe", "QQMusic", LyricsSourceCatalog.QQMusic),
+        new("kugou", "Kugou", LyricsSourceCatalog.Kugou),
+        new("汽水音乐", "SodaMusic", LyricsSourceCatalog.SodaMusic),
     ];
 
     /// <summary>
@@ -133,7 +123,7 @@ public static class LyricsConcurrencyPolicy
         // 内置表（仅未配置时）。 / The built-in table (only while never configured).
         foreach (var binding in BuiltInBindings)
         {
-            if (binding.Patterns.Any(pattern => sourceAppId.Contains(pattern, StringComparison.OrdinalIgnoreCase)))
+            if (sourceAppId.Contains(binding.AppId, StringComparison.OrdinalIgnoreCase))
             {
                 return binding.DefaultSourceId;
             }
