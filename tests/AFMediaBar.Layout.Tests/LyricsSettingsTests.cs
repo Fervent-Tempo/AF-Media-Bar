@@ -59,6 +59,12 @@ public sealed class LyricsSettingsTests
         Assert.IsTrue(SettingsManager.Current.LyricsInfoLineFilterEnabled);
         Assert.AreEqual(LyricsMatchStrictness.Balanced, SettingsManager.Current.LyricsMatchStrictness);
         Assert.IsNull(SettingsManager.Current.LyricsSource.EnabledSourceIds);
+        // 间距字段同样取默认 0：升级后的外观与升级前逐像素一致。
+        // The spacing fields take their zero defaults as well: the look after upgrading is pixel-identical to before.
+        Assert.AreEqual(LyricsCharacterSpacing.DefaultPercent, SettingsManager.Current.LyricsCharacterSpacingPercent);
+        Assert.AreEqual(LyricsLineGap.DefaultPercent, SettingsManager.Current.LyricsLineGapPercent);
+        Assert.IsFalse(SettingsManager.Current.LyricsFixedWidthEnabled);
+        Assert.AreEqual(LyricsFixedWidth.DefaultDip, SettingsManager.Current.LyricsFixedWidthDip);
 
         // 文件里已有的歌词字段照旧保留。
         // Lyric fields the file does carry survive untouched.
@@ -79,6 +85,91 @@ public sealed class LyricsSettingsTests
         // Snapped onto the step grid: 43% lands on 45% instead of staying as it is.
         SettingsManager.Current.LyricsUnsungOpacityPercent = 43;
         Assert.AreEqual(45, SettingsManager.Current.Normalize().LyricsUnsungOpacityPercent);
+    }
+
+    [TestMethod]
+    public void SpacingSettingsAreClampedSnappedAndCloned()
+    {
+        SettingsManager.Current.LyricsCharacterSpacingPercent = 999;
+        SettingsManager.Current.LyricsLineGapPercent = 999;
+        var normalized = SettingsManager.Current.Normalize();
+        Assert.AreEqual(
+            LyricsCharacterSpacing.MaximumPercent,
+            normalized.LyricsCharacterSpacingPercent);
+        Assert.AreEqual(LyricsLineGap.MaximumPercent, normalized.LyricsLineGapPercent);
+
+        SettingsManager.Current.LyricsCharacterSpacingPercent = -3;
+        SettingsManager.Current.LyricsLineGapPercent = -3;
+        normalized = SettingsManager.Current.Normalize();
+        Assert.AreEqual(
+            LyricsCharacterSpacing.MinimumPercent,
+            normalized.LyricsCharacterSpacingPercent);
+        Assert.AreEqual(LyricsLineGap.MinimumPercent, normalized.LyricsLineGapPercent);
+
+        // 字距步长 1，区间内的值原样保留；行距步长 2，9% 吸附到 10%（CSS 排版是亚像素的，两档都能看清）。
+        // Character spacing keeps its step of one, so in-range values stay untouched; the line gap steps by two, so 9% lands
+        // on 10% (CSS layout is sub-pixel, so either step is visible).
+        SettingsManager.Current.LyricsCharacterSpacingPercent = 9;
+        SettingsManager.Current.LyricsLineGapPercent = 9;
+        normalized = SettingsManager.Current.Normalize();
+        Assert.AreEqual(9, normalized.LyricsCharacterSpacingPercent);
+        Assert.AreEqual(10, normalized.LyricsLineGapPercent);
+
+        // 克隆必须带上这两个字段，否则设置保存会把它们丢掉。
+        // Cloning has to carry both fields, or saving the settings would drop them.
+        SettingsManager.Current.LyricsLineGapPercent = 8;
+        var clone = SettingsManager.Current.Clone();
+        Assert.AreEqual(9, clone.LyricsCharacterSpacingPercent);
+        Assert.AreEqual(8, clone.LyricsLineGapPercent);
+    }
+
+    [TestMethod]
+    public void ResetLyricsClearsBothSpacingFields()
+    {
+        SettingsManager.SetLyricsCharacterSpacingPercent(20);
+        SettingsManager.SetLyricsLineGapPercent(40);
+
+        SettingsManager.ResetLyrics();
+
+        Assert.AreEqual(LyricsCharacterSpacing.DefaultPercent, SettingsManager.Current.LyricsCharacterSpacingPercent);
+        Assert.AreEqual(LyricsLineGap.DefaultPercent, SettingsManager.Current.LyricsLineGapPercent);
+    }
+
+    [TestMethod]
+    public void FixedWidthSettingsAreClampedSnappedAndCloned()
+    {
+        SettingsManager.Current.LyricsFixedWidthDip = 999;
+        Assert.AreEqual(LyricsFixedWidth.MaximumDip, SettingsManager.Current.Normalize().LyricsFixedWidthDip);
+
+        SettingsManager.Current.LyricsFixedWidthDip = -5;
+        Assert.AreEqual(LyricsFixedWidth.MinimumDip, SettingsManager.Current.Normalize().LyricsFixedWidthDip);
+
+        // 吸附到 10 的网格：247 落到 250。
+        // Snapped onto the ten-DIP grid: 247 lands on 250.
+        SettingsManager.Current.LyricsFixedWidthDip = 247;
+        Assert.AreEqual(250, SettingsManager.Current.Normalize().LyricsFixedWidthDip);
+
+        // 开关与长度都必须随克隆保留，否则设置保存会丢掉它们。
+        // Both the switch and the length have to survive cloning, or saving the settings would drop them.
+        SettingsManager.Current.LyricsFixedWidthEnabled = true;
+        var clone = SettingsManager.Current.Clone();
+        Assert.IsTrue(clone.LyricsFixedWidthEnabled);
+        Assert.AreEqual(247, clone.LyricsFixedWidthDip);
+
+        SettingsManager.SetLyricsFixedWidthEnabled(false);
+        SettingsManager.SetLyricsFixedWidthDip(LyricsFixedWidth.DefaultDip);
+    }
+
+    [TestMethod]
+    public void ResetLyricsClearsTheFixedWidthSettings()
+    {
+        SettingsManager.SetLyricsFixedWidthEnabled(true);
+        SettingsManager.SetLyricsFixedWidthDip(400);
+
+        SettingsManager.ResetLyrics();
+
+        Assert.IsFalse(SettingsManager.Current.LyricsFixedWidthEnabled);
+        Assert.AreEqual(LyricsFixedWidth.DefaultDip, SettingsManager.Current.LyricsFixedWidthDip);
     }
 
     // ---- 来源设置与选择 ----
@@ -241,6 +332,14 @@ public sealed class LyricsSettingsTests
         Assert.IsFalse(LyricsCacheInvalidationPolicy.ShouldClearCache(nameof(AppSettings.LyricsSyllableHighlightEnabled), null));
         Assert.IsFalse(LyricsCacheInvalidationPolicy.ShouldClearCache(nameof(AppSettings.LyricsSecondaryLine), null));
         Assert.IsFalse(LyricsCacheInvalidationPolicy.ShouldClearCache(nameof(AppSettings.LyricsTextAlignment), null));
+        // 间距同样属于呈现：拖动行距或字距滑杆不该重新取词。
+        // Spacing is presentation as well: dragging either spacing slider must not refetch lyrics.
+        Assert.IsFalse(LyricsCacheInvalidationPolicy.ShouldClearCache(nameof(AppSettings.LyricsCharacterSpacingPercent), null));
+        Assert.IsFalse(LyricsCacheInvalidationPolicy.ShouldClearCache(nameof(AppSettings.LyricsLineGapPercent), null));
+        // 固定歌词框同样属于呈现：切换开关或拖长度滑杆不该重新取词。
+        // The fixed lyric box is presentation as well: toggling it or dragging the length slider must not refetch lyrics.
+        Assert.IsFalse(LyricsCacheInvalidationPolicy.ShouldClearCache(nameof(AppSettings.LyricsFixedWidthEnabled), null));
+        Assert.IsFalse(LyricsCacheInvalidationPolicy.ShouldClearCache(nameof(AppSettings.LyricsFixedWidthDip), null));
         Assert.IsFalse(LyricsCacheInvalidationPolicy.ShouldClearCache(null, SettingsResetScope.Appearance));
     }
 

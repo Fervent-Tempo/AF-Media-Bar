@@ -26,6 +26,11 @@ public partial class TaskBarMediaControl
     private bool _lyricsNeedsContrastShadow;
     private bool _lyricsUsesLightText = true;
 
+    /// <summary>上一次尺寸请求所用的歌词文本，用来在换行时立即重新发布尺寸（见 UpdateWebLyricsPresentation）。
+    /// Lyric texts used by the last size request, so a line change can republish the size immediately (see UpdateWebLyricsPresentation).</summary>
+    private string _lastSizeLyricText = string.Empty;
+    private string _lastSizeSecondaryText = string.Empty;
+
     private void InitializeWebLyrics()
     {
         _lyricsWebRenderer = new LyricsWebViewRenderer(LyricsWebView);
@@ -67,6 +72,23 @@ public partial class TaskBarMediaControl
         if (LyricsPresentationRefreshPolicy.ShouldPresent(next.IsVisible, previous, next))
             _lyricsWebRenderer?.Present(next, allowTransition && MotionPolicy.ResolveCurrent().UseTransitions);
         RefreshWebLyricsTimer();
+
+        // 行变化后立即重发尺寸请求：自动模式下媒体栏长度跟着歌词内容走，若等到下一次快照才更新，
+        // 新的一句会先按旧宽度渲染、右端短暂出现省略号（随后才恢复）。固定长度模式不依赖这条路径。
+        // Re-issue the size request as soon as the line changes: in auto mode the bar length follows the content, and waiting for the
+        // next snapshot would render the new line at the previous width and briefly show an ellipsis at its right edge. A fixed box does
+        // not depend on this path.
+        var secondaryText = string.IsNullOrEmpty(next.CurrentTranslation) ? next.Next : next.CurrentTranslation;
+        if (!string.Equals(_lastSizeLyricText, next.Current, StringComparison.Ordinal) ||
+            !string.Equals(_lastSizeSecondaryText, secondaryText, StringComparison.Ordinal))
+        {
+            _lastSizeLyricText = next.Current;
+            _lastSizeSecondaryText = secondaryText;
+            // 跳过宿主的长度过渡：过渡期间新句会按旧宽度渲染、右端被省略号截断，而歌词换行是离散切换。
+            // Skip the host's length transition: during it the new line renders at the previous width and gets clipped with an
+            // ellipsis, while a lyric line change is a discrete switch.
+            RaiseDesiredSizeChanged(skipTransition: true);
+        }
     }
 
     private void RefreshWebLyricsTimer()
@@ -122,6 +144,8 @@ public partial class TaskBarMediaControl
             appearance.ResolveFontFamilySource(SystemFonts.MessageFontFamily.Source),
             _layoutEngine?.LyricsFontSize ?? 12,
             appearance.FontWeight,
+            LyricsCharacterSpacing.Normalize(SettingsManager.Current.LyricsCharacterSpacingPercent),
+            LyricsLineGap.Normalize(SettingsManager.Current.LyricsLineGapPercent),
             alignment,
             primary,
             ToCssColor(_lyricsForeground, secondaryOpacity),
@@ -138,6 +162,18 @@ public partial class TaskBarMediaControl
         return $"rgba({color.R}, {color.G}, {color.B}, {alpha:0.###})";
     }
 
+    /// <summary>
+    /// Web 歌词视图为文字留出的水平内边距总和（DIP）：`.layout` 左右各 4px（共 8）加 `.lyrics-pane` 左 2px、右 4px（共 6），
+    /// 合计 14px；再加 2px 余量，吸收字体度量取整（实测 WebView 的 clientWidth 会向上取整到物理像素）与亚像素排版。
+    /// 文本可用宽度 = 宿主宽度 − 该值，自动尺寸 MUST 把它补回来；否则最长的一行在任务栏仍有空闲空间时也会被省略号裁掉右侧。
+    /// Total horizontal inset the web lyrics view reserves for text, in DIP: `.layout` pads 4px on both sides (8) and
+    /// `.lyrics-pane` adds 2px left and 4px right (6), fourteen in total, plus a two-pixel allowance that absorbs font-metric
+    /// rounding (the WebView's clientWidth rounds up to physical pixels) and sub-pixel layout. The usable text width is the host
+    /// width minus this value, so the auto-size MUST add it back; otherwise the longest line loses its right edge to the ellipsis
+    /// even though the taskbar still has free room.
+    /// </summary>
+    private const double WebLyricsHorizontalInsetDip = 16;
+
     private double MeasureWebLyricWidth(string text)
     {
         if (string.IsNullOrEmpty(text))
@@ -145,7 +181,22 @@ public partial class TaskBarMediaControl
 
         var sourceSize = Math.Max(1, SongArtist.FontSize);
         var targetSize = _layoutEngine?.LyricsFontSize ?? sourceSize;
-        return MeasureTextWidthExact(text, SongArtist) * targetSize / sourceSize + 4;
+        var width = MeasureTextWidthExact(text, SongArtist) * targetSize / sourceSize + WebLyricsHorizontalInsetDip;
+
+        // Web 歌词用 CSS letter-spacing 拉开字距：每个字符（含空格与末尾字符）都会多出
+        // "字号 × 百分比" 的推进量。自动尺寸必须补上同样的宽度，否则拉大字距后整行会超出
+        // 申请到的文字区，右侧被省略号截断——即使任务栏还有空闲空间。
+        // The web lyrics widen with CSS letter-spacing: every character (spaces and the final one included) advances by
+        // "font size × percent". The auto-size has to add the same amount, otherwise a wider spacing overflows the text
+        // area that was requested without it and the right side is clipped with an ellipsis even though the taskbar still
+        // has free room. Measured against the real page: width = base + characters × percent × font size.
+        var percent = LyricsCharacterSpacing.Normalize(SettingsManager.Current.LyricsCharacterSpacingPercent);
+        if (percent > 0)
+        {
+            width += text.Length * targetSize * percent / 100.0;
+        }
+
+        return width;
     }
 
     private void SetWebLyricsAppearance(Brush foreground, bool needsContrastShadow, bool usesLightText)

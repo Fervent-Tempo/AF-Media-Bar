@@ -35,6 +35,7 @@ let requestedSpectrumBarWidthPx = 3;
 let requestedSpectrumGapPx = 3;
 let rowHeightPx = 14;
 let rowGapPx = 1;
+let requestedLineGapPercent = 0;
 let linePitchPx = 15;
 let transitionStartTime = 0;
 let transitionBaseNextOpacity = 0.72;
@@ -1570,9 +1571,28 @@ function updateMetrics() {
   const measuredViewportHeight = viewportEl.clientHeight || 30;
   const minimumHostHeight = Math.max(2, Math.round(26 * layoutScaleFactor));
   const hostHeight = Math.max(minimumHostHeight, measuredViewportHeight - viewportDescenderBufferPx);
-  rowHeightPx = Math.max(1, Math.floor(hostHeight / 2));
-  rowGapPx = Math.max(0, hostHeight - (rowHeightPx * 2));
-  linePitchPx = rowHeightPx + rowGapPx;
+  // 先按"没有额外行距"的基准算出当前字号与字号夹取的下限：行距的夹取必须保证每行不低于
+  // 字号 ÷ 0.92（字号夹取规则的下限），因此先得到这个下限，再让 resolveRowMetrics 求行高/间隙，
+  // 最后才夹字号。行距按字号的百分比换算成像素，随字号等比缩放。
+  // First derive the base font size and the lower bound of the font clamp from the no-extra-gap layout: the gap clamp has to
+  // keep each row at least font size ÷ 0.92 tall (the floor of the font clamp), so the lower bound is computed first, then
+  // resolveRowMetrics derives the row heights and the gap, and only afterwards is the font size clamped. The percentage gap is
+  // converted into pixels against this font size, so it scales with the font.
+  const baseRowHeightPx = Math.max(1, Math.floor(hostHeight / 2));
+  const baseSizeMax = Math.max(11.2 * layoutScaleFactor, baseRowHeightPx * 0.92);
+  const baseSize = Math.min(requestedFontSize, baseSizeMax);
+  const minimumRowHeightPx = baseSize / 0.92;
+  const requestedGapPx = requestedLineGapPercent > 0
+    ? (requestedLineGapPercent / 100) * baseSize
+    : 0;
+  const rowMetrics = window.taskbarLyricsSpacing.resolveRowMetrics(
+    hostHeight,
+    requestedGapPx,
+    minimumRowHeightPx
+  );
+  rowHeightPx = rowMetrics.rowHeightPx;
+  rowGapPx = rowMetrics.rowGapPx;
+  linePitchPx = rowMetrics.linePitchPx;
   const currentSizeMax = Math.max(11.2 * layoutScaleFactor, rowHeightPx * 0.92);
   currentSize = Math.min(requestedFontSize, currentSizeMax);
   const nextSize = Math.max(9 * layoutScaleFactor, currentSize * 0.92);
@@ -2241,6 +2261,16 @@ const lyricsApi = {
     requestedFontSize = Number(payload.fontSize) || 13;
     root.style.setProperty("--font-size", `${requestedFontSize}px`);
     root.style.setProperty("--font-weight", window.taskbarLyricsState.normalizeWeight(payload.fontWeight));
+    // 字距用 em 下发：每一行按自己的字号解析，因此当前行、第二行与翻译行会等比缩放。
+    // Character spacing is sent in em: every line resolves it against its own font size, so the current line, the second line,
+    // and the translation row all scale proportionally.
+    root.style.setProperty(
+      "--letter-spacing",
+      window.taskbarLyricsSpacing.letterSpacingEm(Number(payload.characterSpacingPercent))
+    );
+    const lineGapPercent = Number(payload.lineGapPercent);
+    requestedLineGapPercent =
+      Number.isFinite(lineGapPercent) && lineGapPercent > 0 ? lineGapPercent : 0;
     root.classList.toggle("cover-hidden", payload.showCover === false);
 
     const coverSize = Number(payload.coverSize);

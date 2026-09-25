@@ -69,6 +69,21 @@ public sealed class LayoutSizeCalculatorTests
     }
 
     [TestMethod]
+    public void SkipTransitionDefaultsToFalseAndIsPreservedWhenRequested()
+    {
+        var layout = LayoutPresets.GetLayout(WindowMode.DynamicIsland, LayoutOrientation.Horizontal);
+
+        // 常规请求保持宿主过渡：只有离散内容切换（如歌词换行）才要求立即落位。
+        // A regular request keeps the host transition: only a discrete content switch (such as a lyric line change) asks
+        // to land immediately.
+        var regular = LayoutSizeCalculator.Calculate(layout, 1, 1, 120, 1000, "line-1");
+        Assert.IsFalse(regular.SkipTransition);
+
+        var immediate = LayoutSizeCalculator.Calculate(layout, 1, 1, 120, 1000, "line-2", skipTransition: true);
+        Assert.IsTrue(immediate.SkipTransition);
+    }
+
+    [TestMethod]
     public void HiddenComponentsDoNotContributeSpacingOrContentWidth()
     {
         var layout = new LayoutSchema

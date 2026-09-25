@@ -1816,7 +1816,10 @@ public partial class TaskbarWindow : Window
         var current = MediaControl.CurrentLayout is { } layout
             ? orientation == LayoutOrientation.Horizontal ? layout.Canvas.Width : layout.Canvas.Height
             : target;
-        if (!motion.UseContinuousMotion || Math.Abs(target - current) < LayoutSizeCalculator.MinimumChangeDip)
+        // 歌词换行等离散内容切换必须立即落到目标长度：过渡动画期间新内容按旧长度渲染会被省略号截断。
+        // Discrete content switches such as a lyric line change must land immediately: while the length animates the new content
+        // renders at the previous length and gets clipped with an ellipsis.
+        if (request.SkipTransition || !motion.UseContinuousMotion || Math.Abs(target - current) < LayoutSizeCalculator.MinimumChangeDip)
         {
             ApplyPrimaryLength(target);
             UpdatePosition();

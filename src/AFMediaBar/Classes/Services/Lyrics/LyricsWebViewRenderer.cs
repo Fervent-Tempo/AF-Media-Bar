@@ -11,6 +11,8 @@ public sealed record LyricsWebStyle(
     string FontFamily,
     double FontSize,
     int FontWeight,
+    double CharacterSpacingPercent,
+    double LineGapPercent,
     string TextAlignment,
     string PrimaryColor,
     string SecondaryColor,
@@ -82,6 +84,8 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
             style.FontFamily,
             style.FontSize,
             style.FontWeight,
+            style.CharacterSpacingPercent,
+            style.LineGapPercent,
             style.TextAlignment,
             showCover = false,
             layoutScalePercent = 100,
@@ -191,6 +195,7 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
         var scripts = string.Join("\n", new[]
         {
             ReadResource("Web.Lyrics.state.js"),
+            ReadResource("Web.Lyrics.spacing.js"),
             ReadResource("Web.Lyrics.presentation.js"),
             ReadResource("Web.Lyrics.app.js")
         }).Replace("</script", "<\\/script", StringComparison.OrdinalIgnoreCase);
