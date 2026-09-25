@@ -916,7 +916,7 @@ public sealed class MediaSessionService : IDisposable
         }
 
         _loggedPositionSeconds = snapshot.Position;
-        log.Verbose("Media", $"进度 / position: {snapshot.Position:0.0}/{snapshot.Duration:0.0}");
+        // log.Verbose("Media", $"进度 / position: {snapshot.Position:0.0}/{snapshot.Duration:0.0}");
     }
 
     private static bool IsPlaying(MediaSession session)

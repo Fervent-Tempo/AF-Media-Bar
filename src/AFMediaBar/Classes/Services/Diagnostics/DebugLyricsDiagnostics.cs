@@ -35,9 +35,9 @@ public sealed class DebugLyricsDiagnostics
 
         _lastIndex = index;
         var line = lyrics.Document.Lines[index];
-        Debug.WriteLine(
-            $"[Lyrics][{lyrics.Source}][{lyrics.Document.SourceFormat}/{lyrics.Document.SyncType}] " +
-            $"{TimeSpan.FromSeconds(line.Start):mm\\:ss} {line.Text} (words={line.Words.Count})");
+        // Debug.WriteLine(
+        //     $"[Lyrics][{lyrics.Source}][{lyrics.Document.SourceFormat}/{lyrics.Document.SyncType}] " +
+        //     $"{TimeSpan.FromSeconds(line.Start):mm\\:ss} {line.Text} (words={line.Words.Count})");
     }
 }
 #endif
