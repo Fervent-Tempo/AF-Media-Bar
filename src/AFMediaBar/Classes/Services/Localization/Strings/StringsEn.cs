@@ -465,8 +465,12 @@ internal static class StringsEn
         table.Add("Lyrics.DefaultBindings.Player.SodaMusic", "Soda Music");
         table.Add("Lyrics.DefaultBindings.Remove", "Remove this row");
         table.Add("Lyrics.DefaultBindings.Scan", "Scan playing players");
+        table.Add("Lyrics.QueryStrategy.Concurrent", "Simultaneous");
+        table.Add("Lyrics.QueryStrategy.Sequential", "Sequential");
         table.Add("Lyrics.Callout.Display", "With lyrics available the media bar shows the lyrics; without them it shows the title and artist.");
         table.Add("Lyrics.Header.Subtitle", "The current lyrics in the taskbar rest layer");
+        table.Add("Lyrics.Row.QueryStrategy.Description", "Try the sources one by one, or send them out at once (the default interface and the priority batches query together); sequential mode keeps only the priority order");
+        table.Add("Lyrics.Row.QueryStrategy.Title", "Query strategy");
         table.Add("Lyrics.Row.AdoptionMode.Description", "How a concurrent retrieval adopts its result; \"prefer default source\" favours the interface matched to the playing player");
         table.Add("Lyrics.Row.AdoptionMode.Title", "Result adoption mode");
         table.Add("Lyrics.Row.BatchSize.Description", "How many sources fetch concurrently per batch; the next batch is requested only after the current one has all missed");
@@ -519,6 +523,7 @@ internal static class StringsEn
         table.Add("Lyrics.Sources.Callout", "Lyrics are requested from the enabled sources in the order below, stopping at the first hit; each source is asked once.");
         table.Add("Lyrics.Sources.Expander.Description", "Which sources are enabled and in what priority order");
         table.Add("Lyrics.Sources.Expander.Title", "Fallback source priority order");
+        table.Add("Lyrics.Sources.Expander.Title.Sequential", "Priority order");
         table.Add("Lyrics.Sources.MoveDown", "Move down");
         table.Add("Lyrics.Sources.MoveUp", "Move up");
         table.Add("Lyrics.Sources.Reset.Action", "Restore defaults");

@@ -23,7 +23,7 @@ public sealed class LyricsServiceBudgetTests
     private static readonly TimeSpan Total = TimeSpan.FromMilliseconds(400);
 
     private static readonly LyricsRetrievalOptions Options =
-        new(LyricsAdoptionMode.FirstArrival, LyricsConcurrencyDefaults.BatchSizeDefault, TimeSpan.Zero);
+        new(LyricsQueryStrategy.Concurrent, LyricsAdoptionMode.FirstArrival, LyricsConcurrencyDefaults.BatchSizeDefault, TimeSpan.Zero);
 
     private static LyricsRequest Request() => new("Song", "Artist", "Album", 200, NetEaseSongId: null);
 

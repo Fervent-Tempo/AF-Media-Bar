@@ -1,6 +1,22 @@
 namespace AFMediaBar.Classes.Settings;
 
 /// <summary>
+/// 取词的查询策略：按序逐个尝试来源，或并发派发。
+/// The retrieval query strategy: try the sources one by one, or dispatch them concurrently.
+/// </summary>
+public enum LyricsQueryStrategy
+{
+    /// <summary>按序查询：按备用来源的优先级顺序逐个尝试，前一个未命中或超时才轮到下一个（传统串行链）。
+    /// Sequential: sources are tried one by one in the fallback priority order; the next one runs only after the previous
+    /// misses or times out (the classic serial chain).</summary>
+    Sequential = 0,
+
+    /// <summary>并发查询：默认接口与优先级批次并发派发，由采纳策略决定用哪个结果。
+    /// Concurrent: the default interface and the priority batches run together, and the adoption mode picks the result.</summary>
+    Concurrent = 1
+}
+
+/// <summary>
 /// 并发取词的结果采纳策略：多个请求同时飞行时，链路按这里选定的规则决定用哪一个结果。
 /// Adoption mode for concurrent retrieval: while several requests are in flight, the chain picks the result to use by
 /// the rule chosen here.

@@ -4,23 +4,37 @@ using AFMediaBar.Classes.Settings;
 namespace AFMediaBar.Classes.Services.Lyrics;
 
 /// <summary>
-/// 一次取词的并发与采纳参数。由 <see cref="LyricsService"/> 在发起前从设置解析，测试因此可以显式注入而不碰全局设置。
-/// Retrieval options of one lookup: concurrency plus adoption. The <see cref="LyricsService"/> resolves them from the
+/// 一次取词的查询策略与采纳参数。由 <see cref="LyricsService"/> 在发起前从设置解析，测试因此可以显式注入而不碰全局设置。
+/// Retrieval options of one lookup: the query strategy plus adoption. The <see cref="LyricsService"/> resolves them from the
 /// settings before dispatching, so tests can inject them explicitly without touching the global settings.
 /// </summary>
+/// <param name="QueryStrategy">查询策略：按序或并发 / The query strategy: sequential or concurrent.</param>
 /// <param name="AdoptionMode">结果采纳策略 / The result-adoption mode.</param>
 /// <param name="BatchSize">优先级来源每批并发个数 / How many priority sources are dispatched per batch.</param>
 /// <param name="AdoptionDeadline">候补出现后留给默认接口的倒计时 / Countdown left to the default interface once a candidate exists.</param>
 public sealed record LyricsRetrievalOptions(
+    LyricsQueryStrategy QueryStrategy,
     LyricsAdoptionMode AdoptionMode,
     int BatchSize,
     TimeSpan AdoptionDeadline)
 {
-    /// <summary>内置默认：偏心默认来源 + 2 秒倒计时 + 批次 3。/ The built-in default: prefer the default source with a 2 s deadline and batches of three.</summary>
+    /// <summary>内置默认：并发 + 偏心默认来源 + 2 秒倒计时 + 批次 3。/ The built-in default: concurrent, prefer the default source with a 2 s deadline and batches of three.</summary>
     public static LyricsRetrievalOptions Default { get; } = new(
+        LyricsQueryStrategy.Concurrent,
         LyricsAdoptionMode.PreferDefaultSourceWithDeadline,
         LyricsConcurrencyDefaults.BatchSizeDefault,
         TimeSpan.FromMilliseconds(LyricsConcurrencyDefaults.AdoptionDeadlineMillisecondsDefault));
+
+    /// <summary>
+    /// 按序查询的等价参数：批次 1 + 先到先得，链路逐个尝试来源——与并发机制同一代码路径，语义即传统串行链。
+    /// The sequential strategy's equivalent options: a batch of one plus first-arrival, so the chain tries sources one by
+    /// one — the same code path as concurrency with the classic serial chain's semantics.
+    /// </summary>
+    public static LyricsRetrievalOptions Sequential { get; } = new(
+        LyricsQueryStrategy.Sequential,
+        LyricsAdoptionMode.FirstArrival,
+        1,
+        TimeSpan.Zero);
 
     /// <summary>
     /// 按当前设置解析参数。
@@ -30,6 +44,7 @@ public sealed record LyricsRetrievalOptions(
     {
         var settings = SettingsManager.Current;
         return new(
+            settings.LyricsQueryStrategy,
             settings.LyricsAdoptionMode,
             settings.LyricsConcurrencyBatchSize,
             TimeSpan.FromMilliseconds(settings.LyricsAdoptionDeadlineMilliseconds));

@@ -465,8 +465,12 @@ internal static class StringsZhHant
         table.Add("Lyrics.DefaultBindings.Player.SodaMusic", "汽水音樂");
         table.Add("Lyrics.DefaultBindings.Remove", "移除此行");
         table.Add("Lyrics.DefaultBindings.Scan", "掃描正在播放");
+        table.Add("Lyrics.QueryStrategy.Concurrent", "同時查詢");
+        table.Add("Lyrics.QueryStrategy.Sequential", "按序查詢");
         table.Add("Lyrics.Callout.Display", "有歌詞時，媒體列顯示歌詞；沒有歌詞時顯示標題與歌手。");
         table.Add("Lyrics.Header.Subtitle", "在工作列靜置層顯示目前歌詞");
+        table.Add("Lyrics.Row.QueryStrategy.Description", "按序逐個嘗試來源，或同時發出（預設介面與優先級批次同時查詢）；按序時只保留優先級順序");
+        table.Add("Lyrics.Row.QueryStrategy.Title", "查詢策略");
         table.Add("Lyrics.Row.AdoptionMode.Description", "並發取詞時如何採納結果；「偏心預設來源」優先採用播放器對應的取詞介面");
         table.Add("Lyrics.Row.AdoptionMode.Title", "結果採納策略");
         table.Add("Lyrics.Row.BatchSize.Description", "每批同時取詞的來源個數；目前批次全部未命中才會請求下一批");
@@ -519,6 +523,7 @@ internal static class StringsZhHant
         table.Add("Lyrics.Sources.Callout", "依下面的順序向已啟用的來源請求歌詞，命中即停止；每個來源只發一次請求。");
         table.Add("Lyrics.Sources.Expander.Description", "啟用哪些來源，以及它們的優先順序");
         table.Add("Lyrics.Sources.Expander.Title", "備用來源優先級順序");
+        table.Add("Lyrics.Sources.Expander.Title.Sequential", "優先級順序");
         table.Add("Lyrics.Sources.MoveDown", "下移");
         table.Add("Lyrics.Sources.MoveUp", "上移");
         table.Add("Lyrics.Sources.Reset.Action", "恢復預設");

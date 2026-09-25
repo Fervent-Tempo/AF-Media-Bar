@@ -381,7 +381,27 @@
                         </components:SettingsRow>
 
                         <!--
-                            并发取词三件套：采纳策略（下拉）、批次大小（滑杆）、默认接口倒计时（滑杆）。
+                            查询策略：按序（传统串行链）或并发（默认接口 + 优先级批次并发）。
+                            按序时并发专属的设置项全部隐藏，来源列表也随之改名为「优先级顺序」。
+                            The query strategy: sequential (the classic serial chain) or concurrent (the default interface plus
+                            concurrent priority batches). Sequential mode hides every concurrency-specific option and renames the
+                            source list to "priority order".
+                        -->
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Lyrics.Row.QueryStrategy.Description}"
+                            Icon="{ui:SymbolIcon ArrowSwap24}"
+                            Title="{DynamicResource Loc.Lyrics.Row.QueryStrategy.Title}">
+                            <ComboBox
+                                MinWidth="160"
+                                SelectedValue="{Binding ViewModel.QueryStrategy, Mode=TwoWay}"
+                                SelectedValuePath="Tag">
+                                <ComboBoxItem Content="{DynamicResource Loc.Lyrics.QueryStrategy.Sequential}" Tag="{x:Static settings:LyricsQueryStrategy.Sequential}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Lyrics.QueryStrategy.Concurrent}" Tag="{x:Static settings:LyricsQueryStrategy.Concurrent}" />
+                            </ComboBox>
+                        </components:SettingsRow>
+
+                        <!--
+                            并发取词三件套：采纳策略（下拉）、批次大小（滑杆）、默认接口倒计时（滑杆）。按序查询时整组隐藏。
                             上下限全部绑定 LyricsConcurrencyDefaults，不在 XAML 里另写字面量（与未唱不透明度同一处理）。
                             The concurrency trio: adoption mode (select), batch size (slider), and the default-interface deadline
                             (slider). The bounds all bind to LyricsConcurrencyDefaults and no literal is repeated in XAML — the
@@ -390,7 +410,7 @@
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Lyrics.Row.AdoptionMode.Description}"
                             Icon="{ui:SymbolIcon ArrowSwap24}"
-                            Title="{DynamicResource Loc.Lyrics.Row.AdoptionMode.Title}">
+                            Title="{DynamicResource Loc.Lyrics.Row.AdoptionMode.Title}" Visibility="{Binding ViewModel.IsConcurrentQuery, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                             <ComboBox
                                 MinWidth="200"
                                 SelectedValue="{Binding ViewModel.AdoptionMode, Mode=TwoWay}"
@@ -404,7 +424,7 @@
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Lyrics.Row.BatchSize.Description}"
                             Icon="{ui:SymbolIcon Options24}"
-                            Title="{DynamicResource Loc.Lyrics.Row.BatchSize.Title}">
+                            Title="{DynamicResource Loc.Lyrics.Row.BatchSize.Title}" Visibility="{Binding ViewModel.IsConcurrentQuery, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                             <StackPanel Orientation="Horizontal">
                                 <Slider
                                     IsSnapToTickEnabled="True"
@@ -422,7 +442,7 @@
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Lyrics.Row.Deadline.Description}"
                             Icon="{ui:SymbolIcon Timer24}"
-                            Title="{DynamicResource Loc.Lyrics.Row.Deadline.Title}">
+                            Title="{DynamicResource Loc.Lyrics.Row.Deadline.Title}" Visibility="{Binding ViewModel.CanConfigureDeadline, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                             <StackPanel Orientation="Horizontal">
                                 <Slider
                                     IsSnapToTickEnabled="True"
@@ -454,6 +474,7 @@
                             row is a plain user entry.
                         -->
                         <ui:CardExpander
+                            Visibility="{Binding ViewModel.IsConcurrentQuery, Converter={StaticResource AfBooleanToVisibilityConverter}}"
                             Style="{StaticResource AfSettingsExpanderStyle}"
                             Icon="{ui:SymbolIcon Link24}">
                             <ui:CardExpander.Header>
@@ -579,7 +600,10 @@
                             Icon="{ui:SymbolIcon CloudArrowDown24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
-                                    <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Lyrics.Sources.Expander.Title}" />
+                                    <!-- 标题随查询策略动态变化：按序时是「优先级顺序」，并发时是「备用来源优先级顺序」。
+                                         The title follows the query strategy: "priority order" in sequential mode, "fallback source priority
+                                         order" in concurrent mode. -->
+                                    <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{Binding ViewModel.SourceExpanderTitle}" />
                                     <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Lyrics.Sources.Expander.Description}" />
                                 </StackPanel>
                             </ui:CardExpander.Header>

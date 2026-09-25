@@ -32,7 +32,7 @@ public sealed class LyricsConcurrencyTests
         LyricsAdoptionMode mode,
         int batchSize = LyricsConcurrencyDefaults.BatchSizeDefault,
         int deadlineMilliseconds = LyricsConcurrencyDefaults.AdoptionDeadlineMillisecondsDefault) =>
-        new(mode, batchSize, TimeSpan.FromMilliseconds(deadlineMilliseconds));
+        new(LyricsQueryStrategy.Concurrent, mode, batchSize, TimeSpan.FromMilliseconds(deadlineMilliseconds));
 
     // ---- AppID → 默认来源映射 ----
 
@@ -120,6 +120,75 @@ public sealed class LyricsConcurrencyTests
         Assert.AreEqual(
             LyricsSourceCatalog.SodaMusic,
             LyricsConcurrencyPolicy.MapDefaultSource("汽水音乐", null, null));
+    }
+
+    // ---- 查询策略：按序 ----
+
+    [TestMethod]
+    public async Task SequentialQueryAdoptsTheHighestPrioritySourceEvenWhenItIsSlower()
+    {
+        // 按序语义 = 批次 1 + 先到先得：第一个来源独自跑完（哪怕慢），后面的来源轮不到，因此优先级胜出——
+        // 这正是传统串行链的行为，与并发模式的同批竞速相对照。
+        // Sequential semantics = a batch of one plus first arrival: the first source runs to completion (slow or not) and
+        // later sources never run, which is exactly the classic serial chain's behaviour against the concurrent race.
+        var asked = new List<string>();
+        var service = new LyricsService(
+            PerSource,
+            Total,
+            new StubProvider("slow-first", async _ =>
+            {
+                asked.Add("slow-first");
+                await Task.Delay(40);
+                return Hit("slow-first");
+            }),
+            new StubProvider("fast-second", _ =>
+            {
+                asked.Add("fast-second");
+                return Task.FromResult<LyricsResult?>(Hit("fast-second"));
+            }));
+
+        var result = await service.GetLyricsAsync(Request(), LyricsRetrievalOptions.Sequential, CancellationToken.None);
+
+        Assert.IsNotNull(result);
+        Assert.AreEqual("slow-first", result!.Source);
+        CollectionAssert.AreEqual(new[] { "slow-first" }, asked);
+    }
+
+    [TestMethod]
+    public async Task SequentialQueryHasNoDefaultInterface()
+    {
+        // 按序查询没有默认接口的概念：来源开关管优先级、AppID 绑定不参与——用户只开 QQMusic，
+        // 网易云播放器也只会按序问 QQMusic，默认接口 NetEaseSearch 不会被跳过开关直接询问。
+        // The sequential strategy has no default interface: with only QQMusic enabled, even a NetEase player asks QQMusic
+        // in order, and the NetEaseSearch default interface is never dispatched around the toggles.
+        var previous = SettingsManager.Current.LyricsSource;
+        SettingsManager.SetLyricsSourceSettings(new LyricsSourceSettings([LyricsSourceCatalog.QQMusic]));
+        try
+        {
+            var defaultAsked = false;
+            var service = new LyricsService(
+                PerSource,
+                Total,
+                new StubProvider(LyricsSourceCatalog.NetEaseSearch, _ =>
+                {
+                    defaultAsked = true;
+                    return Task.FromResult<LyricsResult?>(Hit(LyricsSourceCatalog.NetEaseSearch));
+                }),
+                new StubProvider(LyricsSourceCatalog.QQMusic, _ => Task.FromResult<LyricsResult?>(Hit(LyricsSourceCatalog.QQMusic))));
+
+            var result = await service.GetLyricsAsync(
+                Request(sourceAppId: "cloudmusic.exe"),
+                LyricsRetrievalOptions.Sequential,
+                CancellationToken.None);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(LyricsSourceCatalog.QQMusic, result!.Source);
+            Assert.IsFalse(defaultAsked);
+        }
+        finally
+        {
+            SettingsManager.SetLyricsSourceSettings(previous);
+        }
     }
 
     // ---- 批次计划 ----

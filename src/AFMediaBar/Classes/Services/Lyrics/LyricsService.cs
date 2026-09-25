@@ -97,6 +97,14 @@ public sealed class LyricsService
     {
         cancellationToken.ThrowIfCancellationRequested();
 
+        // 按序查询即传统串行链：批次 1 + 先到先得 + 无默认接口——与并发机制同一代码路径，只是参数等价于逐个尝试。
+        // The sequential strategy is the classic serial chain: a batch of one plus first arrival and no default interface —
+        // the same code path as concurrency with options equivalent to trying sources one by one.
+        if (options.QueryStrategy == LyricsQueryStrategy.Sequential)
+        {
+            options = LyricsRetrievalOptions.Sequential;
+        }
+
         // 取词选项与启用来源都在发起前从设置解析：提供器因此不读设置、保持无状态；"改来源后当前这首也要重新取词"
         // 由缓存失效策略负责（见 LyricsCacheInvalidationPolicy）。
         // Both the retrieval options and the enabled sources are resolved from the settings before the first request, which keeps
@@ -111,12 +119,16 @@ public sealed class LyricsService
         var priority = LyricsSourcePolicy.ResolveActive(_providers, settings.LyricsSource);
 
         // 默认接口在全部提供器里找，而不是只在启用的里面：来源开关只管优先级，用户关掉默认来源也不影响它照发。
+        // 按序查询没有默认接口的概念——策略切换时上面已把选项换成串行参数，这里跳过映射。
         // The default interface is looked up among every provider, not only the enabled ones: the source toggles govern
-        // the priority list alone, and a default source the user turned off is still dispatched.
-        var defaultSourceName = LyricsConcurrencyPolicy.MapDefaultSource(
-            effectiveRequest.SourceAppId,
-            effectiveRequest.NetEaseSongId,
-            settings.LyricsDefaultBindings);
+        // the priority list alone, and a default source the user turned off is still dispatched. The sequential strategy
+        // has no default interface; the mapping is skipped because the strategy swap above already replaced the options.
+        var defaultSourceName = options.QueryStrategy == LyricsQueryStrategy.Sequential
+            ? null
+            : LyricsConcurrencyPolicy.MapDefaultSource(
+                effectiveRequest.SourceAppId,
+                effectiveRequest.NetEaseSongId,
+                settings.LyricsDefaultBindings);
         var defaultProvider = defaultSourceName is null
             ? null
             : _providers.FirstOrDefault(provider => string.Equals(provider.SourceName, defaultSourceName, StringComparison.Ordinal));

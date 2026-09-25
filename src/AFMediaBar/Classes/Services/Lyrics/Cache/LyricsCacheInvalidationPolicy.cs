@@ -35,6 +35,10 @@ public static class LyricsCacheInvalidationPolicy
         return propertyName is
             nameof(AppSettings.LyricsSource) or
             nameof(AppSettings.LyricsDefaultBindings) or
+            // 查询策略决定链路的执行模型本身，切换后旧结果不再属于当前配置。
+            // The query strategy decides the chain's execution model itself, so results fetched under the old strategy
+            // no longer belong to the current configuration.
+            nameof(AppSettings.LyricsQueryStrategy) or
             nameof(AppSettings.LyricsMatchStrictness) or
             nameof(AppSettings.LyricsInfoLineFilterEnabled) or
             // 并发与采纳设置同样决定"这一次取词用哪些请求、采纳哪个结果"，改了它们旧结果已经不属于当前配置。

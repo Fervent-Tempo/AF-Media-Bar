@@ -164,11 +164,40 @@ public partial class LyricsViewModel : ObservableObject
         set { SettingsManager.SetLyricsMatchStrictness(value); OnPropertyChanged(); }
     }
 
+    /// <summary>取词的查询策略：按序或并发。/ The retrieval query strategy: sequential or concurrent.</summary>
+    public LyricsQueryStrategy QueryStrategy
+    {
+        get => SettingsManager.Current.LyricsQueryStrategy;
+        set
+        {
+            SettingsManager.SetLyricsQueryStrategy(value);
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsConcurrentQuery));
+            OnPropertyChanged(nameof(CanConfigureDeadline));
+            OnPropertyChanged(nameof(SourceExpanderTitle));
+        }
+    }
+
+    /// <summary>是否为并发查询：按序查询时并发专属的设置项全部隐藏。
+    /// Whether the query is concurrent: sequential mode hides every concurrency-specific option.</summary>
+    public bool IsConcurrentQuery => QueryStrategy == LyricsQueryStrategy.Concurrent;
+
+    /// <summary>默认接口倒计时只在「偏心默认来源（限时）」下有作用对象：其余模式没有倒计时可言。
+    /// The default-interface deadline only applies in the with-deadline adoption mode: elsewhere there is no countdown at all.</summary>
+    public bool CanConfigureDeadline => IsConcurrentQuery && AdoptionMode == LyricsAdoptionMode.PreferDefaultSourceWithDeadline;
+
+    /// <summary>来源列表展开器的动态标题：按序时是「优先级顺序」，并发时是「备用来源优先级顺序」。
+    /// The source-list expander's dynamic title: "priority order" in sequential mode, "fallback source priority order" in
+    /// concurrent mode.</summary>
+    public string SourceExpanderTitle => Translations.Get(IsConcurrentQuery
+        ? "Lyrics.Sources.Expander.Title"
+        : "Lyrics.Sources.Expander.Title.Sequential");
+
     /// <summary>并发取词的结果采纳策略。/ The adoption mode for concurrent retrieval.</summary>
     public LyricsAdoptionMode AdoptionMode
     {
         get => SettingsManager.Current.LyricsAdoptionMode;
-        set { SettingsManager.SetLyricsAdoptionMode(value); OnPropertyChanged(); }
+        set { SettingsManager.SetLyricsAdoptionMode(value); OnPropertyChanged(); OnPropertyChanged(nameof(CanConfigureDeadline)); }
     }
 
     /// <summary>优先级来源每批并发的个数。/ How many priority sources run concurrently per batch.</summary>
@@ -284,6 +313,8 @@ public partial class LyricsViewModel : ObservableObject
         OnPropertyChanged(nameof(FixedWidthText));
         OnPropertyChanged(nameof(CanConfigureFixedWidth)); OnPropertyChanged(nameof(CanConfigureFixedWidthDip));
         OnPropertyChanged(nameof(MatchStrictness));
+        OnPropertyChanged(nameof(QueryStrategy)); OnPropertyChanged(nameof(IsConcurrentQuery));
+        OnPropertyChanged(nameof(CanConfigureDeadline)); OnPropertyChanged(nameof(SourceExpanderTitle));
         OnPropertyChanged(nameof(AdoptionMode)); OnPropertyChanged(nameof(ConcurrencyBatchSize));
         OnPropertyChanged(nameof(ConcurrencyBatchSizeText)); OnPropertyChanged(nameof(AdoptionDeadlineMilliseconds));
         OnPropertyChanged(nameof(AdoptionDeadlineText));
