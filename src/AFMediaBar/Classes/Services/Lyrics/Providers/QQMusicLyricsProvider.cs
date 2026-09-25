@@ -20,6 +20,17 @@ namespace AFMediaBar.Classes.Services.Lyrics;
 public sealed class QQMusicLyricsProvider : ILyricsProvider
 {
     private readonly Api _api = new();
+    private readonly Func<LyricsRequest, CancellationToken, LyricsResult?> _cacheReader;
+
+    /// <summary>使用应用内 QQ 歌词缓存读取器创建提供器。/ Creates the provider with the app's QQ lyric-cache reader.</summary>
+    public QQMusicLyricsProvider() : this(TryReadCachedLyrics)
+    {
+    }
+
+    internal QQMusicLyricsProvider(Func<LyricsRequest, CancellationToken, LyricsResult?> cacheReader)
+    {
+        _cacheReader = cacheReader ?? throw new ArgumentNullException(nameof(cacheReader));
+    }
 
     public string SourceName => LyricsSourceCatalog.QQMusic;
 
@@ -32,21 +43,14 @@ public sealed class QQMusicLyricsProvider : ILyricsProvider
             return null;
         }
 
-        // 本地缓存优先：命中时整个取词过程都不联网。
-        // The local cache goes first: a hit keeps the whole lookup off the network.
-        if (QQMusicLocalCache.TryRead(request.Title, request.Album, out var cachedMain, out var cachedTranslation) &&
-            !string.IsNullOrWhiteSpace(cachedMain))
+        // 缓存目录扫描、文件读取、解密和解析都可能阻塞，必须在后台执行；命中时仍不访问网络。
+        // Directory scanning, file reads, decryption, and parsing can block, so run them off the UI thread;
+        // a cache hit still avoids the network entirely.
+        var cachedResult = await Task.Run(() => _cacheReader(request, cancellationToken), cancellationToken)
+            .ConfigureAwait(false);
+        if (cachedResult is not null)
         {
-            var cachedDocument = LyricsTextParser.Parse(
-                cachedMain!,
-                cachedTranslation,
-                request: request,
-                durationSeconds: request.DurationSeconds,
-                filterInfoLines: request.FilterInfoLines);
-            if (cachedDocument.Lines.Count > 0)
-            {
-                return new LyricsResult(SourceName, cachedDocument);
-            }
+            return cachedResult;
         }
 
         var track = LyricsSearch.ToTrackMetadata(request);
@@ -71,6 +75,25 @@ public sealed class QQMusicLyricsProvider : ILyricsProvider
             durationSeconds: request.DurationSeconds,
             filterInfoLines: request.FilterInfoLines);
         return document.Lines.Count > 0 ? new LyricsResult(SourceName, document) : null;
+    }
+
+    private static LyricsResult? TryReadCachedLyrics(LyricsRequest request, CancellationToken cancellationToken)
+    {
+        if (!QQMusicLocalCache.TryRead(
+                request.Title, request.Album, cancellationToken, out var main, out var translation) ||
+            string.IsNullOrWhiteSpace(main))
+        {
+            return null;
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        var document = LyricsTextParser.Parse(
+            main,
+            translation,
+            request: request,
+            durationSeconds: request.DurationSeconds,
+            filterInfoLines: request.FilterInfoLines);
+        return document.Lines.Count > 0 ? new LyricsResult(LyricsSourceCatalog.QQMusic, document) : null;
     }
 
     private async Task<(string? Main, string? Translation)> FetchLyricAsync(

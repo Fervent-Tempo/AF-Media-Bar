@@ -48,10 +48,16 @@ internal static class QQMusicLocalCache
     /// 按曲名与专辑在缓存里找 QRC 并解密；未命中或解密失败都返回 false。
     /// Finds and decrypts the cached QRC by title and album; a miss or a failed decryption both return false.
     /// </summary>
-    public static bool TryRead(string title, string album, out string? main, out string? translation)
+    public static bool TryRead(
+        string title,
+        string album,
+        CancellationToken cancellationToken,
+        out string? main,
+        out string? translation)
     {
         main = null;
         translation = null;
+        cancellationToken.ThrowIfCancellationRequested();
 
         title = title.Trim();
         album = album.Trim();
@@ -78,7 +84,21 @@ internal static class QQMusicLocalCache
             return false;
         }
 
-        var mainPath = FindMainFile(directory, title, album);
+        string? mainPath;
+        try
+        {
+            mainPath = FindMainFile(directory, title, album, cancellationToken);
+        }
+        catch (IOException exception)
+        {
+            AppLogService.Current?.Warn("Lyrics", $"QQ 缓存扫描失败，回退在线取词 / cache scan failed: {exception.GetType().Name}");
+            return false;
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            AppLogService.Current?.Warn("Lyrics", $"QQ 缓存扫描无权限，回退在线取词 / cache scan denied: {exception.GetType().Name}");
+            return false;
+        }
         if (mainPath is null)
         {
             AppLogService.Current?.Info(
@@ -89,6 +109,7 @@ internal static class QQMusicLocalCache
 
         // 解密失败按未命中处理，让网络路径继续兜底。
         // A failed decryption counts as a miss and leaves the network path to take over.
+        cancellationToken.ThrowIfCancellationRequested();
         main = DecryptFile(mainPath);
         if (main is null)
         {
@@ -99,6 +120,7 @@ internal static class QQMusicLocalCache
         }
 
         var translationPath = mainPath[..^MainSuffix.Length] + TranslationSuffix;
+        cancellationToken.ThrowIfCancellationRequested();
         translation = File.Exists(translationPath) ? DecryptFile(translationPath) : null;
         AppLogService.Current?.Info(
             "Lyrics",
@@ -158,13 +180,18 @@ internal static class QQMusicLocalCache
     /// Scans the cache directory for a main file whose name parses and whose title and album both match; entries with
     /// unparseable names are skipped.
     /// </summary>
-    private static string? FindMainFile(string directory, string title, string album)
+    private static string? FindMainFile(
+        string directory,
+        string title,
+        string album,
+        CancellationToken cancellationToken)
     {
         string? found = null;
         var scanned = 0;
         var samples = new List<string>(3);
-        foreach (var path in Directory.EnumerateFiles(directory, "*.qrc", SearchOption.TopDirectoryOnly))
+        foreach (var path in Directory.EnumerateFiles(directory, "*_qm.qrc", SearchOption.TopDirectoryOnly))
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var fileName = Path.GetFileName(path);
             var info = ParseFileName(fileName);
             if (info is null)
