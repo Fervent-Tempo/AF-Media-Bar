@@ -157,17 +157,18 @@ public readonly record struct LyricsSecondaryLineSettings(IReadOnlyList<LyricsSe
 /// 一条默认取词接口绑定：播放器标识（AUMID 或它包含的片段）→ 来源 id。
 /// One default-lyrics binding: a player identifier (an AUMID or a fragment it contains) mapped onto a source id.
 ///
-/// <paramref name="SourceId"/> 为 null 表示**显式移除**该播放器的默认接口：它同时用于删除内置绑定——
-/// "未配置"（整个绑定表为 null）与"用户明确不要默认接口"是两种不同的意图，必须分别保存。
-/// A null <paramref name="SourceId"/> explicitly removes that player's default interface, which also covers deleting a
-/// built-in binding: "never configured" (the whole table is null) and "the user does not want a default here" are two
-/// different intents and have to be stored differently.
+/// <paramref name="SourceId"/> 为 null 表示该播放器**没有默认接口**（删除或暂不绑定）：绑定表一旦非 null 就是唯一权威，
+/// 内置映射不再参与；"未配置"（整个绑定表为 null）与"用户明确不要默认接口"是两种不同的意图，必须分别保存。
+/// A null <paramref name="SourceId"/> means the player has **no default interface** (deleted or not bound): a non-null
+/// table is the only authority and the built-in mapping no longer applies; "never configured" (the whole table is null) and
+/// "the user does not want a default here" are two different intents and have to be stored differently.
 /// </summary>
-/// <param name="AppId">播放器标识，匹配规则为"来源标识包含此片段" / The player identifier, matched as "the source id contains this fragment".</param>
-/// <param name="SourceId">绑定的来源 id；null 表示移除该播放器的默认接口 / The bound source id, or null to remove the player's default interface.</param>
-public sealed record LyricsDefaultBinding(string AppId, string? SourceId)
+/// <param name="AppId">播放器标识，匹配规则为"来源标识包含此片段"；创建后不可改，改 = 删除重加 / The player identifier, matched as "the source id contains this fragment"; immutable once created — changing it means delete and re-add.</param>
+/// <param name="SourceId">绑定的来源 id；null 表示该播放器没有默认接口 / The bound source id, or null when the player has no default interface.</param>
+/// <param name="Remark">界面上显示的备注名；null 时回落到内置播放器名或 AppID 原文 / The remark shown on the interface; null falls back to the built-in player's name or the raw AppID.</param>
+public sealed record LyricsDefaultBinding(string AppId, string? SourceId, string? Remark = null)
 {
-    /// <summary>该条目是否是"移除默认接口"的标记。/ Whether this entry is a removal marker.</summary>
+    /// <summary>该条目是否是"没有默认接口"的标记。/ Whether this entry marks "no default interface".</summary>
     public bool IsRemoval => SourceId is null;
 }
 
@@ -203,7 +204,8 @@ public sealed record LyricsDefaultBindingSettings(IReadOnlyList<LyricsDefaultBin
                 .Where(static binding => binding is not null && !string.IsNullOrWhiteSpace(binding.AppId))
                 .Select(static binding => new LyricsDefaultBinding(
                     binding.AppId.Trim(),
-                    string.IsNullOrWhiteSpace(binding.SourceId) ? null : binding.SourceId))
+                    string.IsNullOrWhiteSpace(binding.SourceId) ? null : binding.SourceId,
+                    string.IsNullOrWhiteSpace(binding.Remark) ? null : binding.Remark.Trim()))
                 .Distinct(new AppIdComparer())
                 .ToArray()
     };

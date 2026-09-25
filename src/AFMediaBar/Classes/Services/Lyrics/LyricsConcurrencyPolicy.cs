@@ -110,12 +110,14 @@ public static class LyricsConcurrencyPolicy
             return null;
         }
 
-        // 用户绑定表：第一个包含命中的条目直接决定结果（绑定或移除），未命中的播放器继续走内置映射。
-        // The user's table: the first containment hit decides outright (a binding or a removal), while players without a
-        // hit keep the built-in mapping.
-        if (bindings?.Bindings is { Count: > 0 } entries)
+        // 用户绑定表一旦存在（非 null）就是唯一权威：命中给出来源（或移除），未命中的播放器没有默认接口。
+        // 内置表只在"从未配置"时生效——它只是设置文件尚未生成时的预填，不是与用户条目并行的另一层。
+        // Once the user's table exists (non-null) it is the only authority: a hit supplies the source (or a removal), and
+        // players without a hit have no default interface. The built-in table applies only when never configured — it is
+        // the prefill for a settings file that does not exist yet, not a layer beside the user's entries.
+        if (bindings?.Bindings is not null)
         {
-            foreach (var entry in entries)
+            foreach (var entry in bindings.Bindings)
             {
                 if (!sourceAppId.Contains(entry.AppId, StringComparison.OrdinalIgnoreCase))
                 {
@@ -124,9 +126,11 @@ public static class LyricsConcurrencyPolicy
 
                 return LyricsSourceCatalog.IsKnown(entry.SourceId) ? entry.SourceId : null;
             }
+
+            return null;
         }
 
-        // 内置表。 / The built-in table.
+        // 内置表（仅未配置时）。 / The built-in table (only while never configured).
         foreach (var binding in BuiltInBindings)
         {
             if (binding.Patterns.Any(pattern => sourceAppId.Contains(pattern, StringComparison.OrdinalIgnoreCase)))

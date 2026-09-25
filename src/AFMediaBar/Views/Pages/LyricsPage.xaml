@@ -27,6 +27,16 @@
     -->
     <Page.Resources>
         <!--
+            极简文本框模板：只有内容宿主，无边框无圆角无聚焦弧线——绕开 WPF-UI 的隐式 TextBox 样式，
+            让绑定行的备注默认看起来就是纯文本，点击直接进入编辑。
+            A bare text-box template: the content host only, no border, radius, or focus underline — it bypasses WPF-UI's
+            implicit TextBox style so the binding row's remark reads as plain text until clicked.
+        -->
+        <ControlTemplate x:Key="AfBareTextBoxTemplate" TargetType="{x:Type TextBox}">
+            <ScrollViewer x:Name="PART_ContentHost" Focusable="False" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden" />
+        </ControlTemplate>
+
+        <!--
             歌词关闭时双行开关不可用，用徽章说明原因；父项开关就在上方两行处。
             The two-line switch is unavailable while lyrics are off; a badge states why, and the parent switch is
             two rows above.
@@ -333,11 +343,14 @@
                             its own move buttons, matching the source and quick-launch lists on the media page.
                         -->
                         <!--
-                            默认取词接口绑定：一行一个播放器（内置的、扫描到的或手动添加的），下拉选择默认来源；
-                            空选项 = 移除该播放器的默认接口（内置行承担"删除内置绑定"的职责，因此没有删除按钮）。
-                            The default-interface bindings: one player per row (built-in, scanned, or manually added) with a
-                            select for its default source; the empty option removes the player's default interface and doubles
-                            as the delete action on built-in rows, which therefore carry no delete button.
+                            默认取词接口绑定：一行一个播放器，备注名可编辑（灰字是 AppID 原文，截断防挤占下拉框），
+                            下拉选择默认来源，空选项 = 不绑定；AppID 不可改，想改 = 删除后重新添加。
+                            内置绑定只是配置文件未生成时的预填，写回后所有行一律按用户条目对待。
+                            The default-interface bindings: one player per row with an editable remark (the grey text is the raw
+                            AppID, truncated so it cannot crowd the select), a select for the default source where the empty
+                            option means "not bound"; an AppID is immutable — changing it means delete and re-add. A built-in
+                            binding is only the prefill for a settings file that does not exist yet; after any write-back every
+                            row is a plain user entry.
                         -->
                         <ui:CardExpander
                             Style="{StaticResource AfSettingsExpanderStyle}"
@@ -364,32 +377,77 @@
                                 <ItemsControl Margin="0,0,0,4" ItemsSource="{Binding ViewModel.BindingEntries}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <components:SettingsRow
-                                                IsNested="True"
-                                                Title="{Binding DisplayName}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <ComboBox
-                                                        MinWidth="180"
-                                                        SelectedValue="{Binding SelectedSourceId, Mode=TwoWay}"
-                                                        SelectedValuePath="Tag">
-                                                        <ComboBoxItem Content="{DynamicResource Loc.Lyrics.DefaultBindings.None}" Tag="" />
-                                                        <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Source.Netease}" Tag="{x:Static lyrics:LyricsSourceCatalog.NetEase}" />
-                                                        <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Source.NeteaseSearch}" Tag="{x:Static lyrics:LyricsSourceCatalog.NetEaseSearch}" />
-                                                        <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Source.LRCLIB}" Tag="{x:Static lyrics:LyricsSourceCatalog.Lrclib}" />
-                                                        <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Source.QQMusic}" Tag="{x:Static lyrics:LyricsSourceCatalog.QQMusic}" />
-                                                        <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Source.Kugou}" Tag="{x:Static lyrics:LyricsSourceCatalog.Kugou}" />
-                                                        <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Source.SodaMusic}" Tag="{x:Static lyrics:LyricsSourceCatalog.SodaMusic}" />
-                                                    </ComboBox>
-                                                    <ui:Button
-                                                        Margin="8,0,0,0"
-                                                        Command="{Binding DataContext.ViewModel.RemoveBindingCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                        CommandParameter="{Binding}"
-                                                        Icon="{ui:SymbolIcon Delete24}"
-                                                        Style="{StaticResource AfSettingsIconButtonStyle}"
-                                                        ToolTip="{DynamicResource Loc.Lyrics.DefaultBindings.Remove}"
-                                                        Visibility="{Binding IsDeletable, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
-                                                </StackPanel>
-                                            </components:SettingsRow>
+                                            <!--
+                                                绑定行自绘（IsNested 同款视觉：透明面 + 发丝线 + 缩进）：
+                                                左侧备注是无边框 TextBox——默认看起来是纯文本，点击即进入编辑；
+                                                右侧紧跟灰色小字的 AppID 原文，截断防挤占，悬停看全文；
+                                                AppID 不可编辑——想改 = 删除后重新添加。
+                                                The binding row is self-drawn (the nested-row look: transparent surface, hairline, indent):
+                                                the remark on the left is a borderless TextBox that reads as plain text until clicked,
+                                                followed by the grey raw AppID, truncated with a tooltip; an AppID is immutable —
+                                                changing it means delete and re-add.
+                                            -->
+                                            <Border
+                                                Padding="52,12,16,12"
+                                                Background="Transparent"
+                                                BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+                                                BorderThickness="0,0,0,1">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <TextBox
+                                                            MinWidth="48"
+                                                            MaxWidth="170"
+                                                            Padding="0"
+                                                            VerticalAlignment="Center"
+                                                            Background="Transparent"
+                                                            BorderThickness="0"
+                                                            FontSize="14"
+                                                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                            Template="{StaticResource AfBareTextBoxTemplate}"
+                                                            Text="{Binding DisplayName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                            ToolTip="{DynamicResource Loc.Lyrics.DefaultBindings.Remark.Placeholder}" />
+                                                        <TextBlock
+                                                            Margin="8,0,0,0"
+                                                            MaxWidth="120"
+                                                            VerticalAlignment="Center"
+                                                            FontSize="11"
+                                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                            Opacity="0.7"
+                                                            Text="{Binding AppId}"
+                                                            TextTrimming="CharacterEllipsis"
+                                                            ToolTip="{Binding AppId}" />
+                                                    </StackPanel>
+                                                    <StackPanel
+                                                        Grid.Column="2"
+                                                        Orientation="Horizontal"
+                                                        VerticalAlignment="Center">
+                                                        <ComboBox
+                                                            MinWidth="160"
+                                                            SelectedValue="{Binding SelectedSourceId, Mode=TwoWay}"
+                                                            SelectedValuePath="Tag">
+                                                            <ComboBoxItem Content="{DynamicResource Loc.Lyrics.DefaultBindings.None}" Tag="" />
+                                                            <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Source.Netease}" Tag="{x:Static lyrics:LyricsSourceCatalog.NetEase}" />
+                                                            <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Source.NeteaseSearch}" Tag="{x:Static lyrics:LyricsSourceCatalog.NetEaseSearch}" />
+                                                            <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Source.LRCLIB}" Tag="{x:Static lyrics:LyricsSourceCatalog.Lrclib}" />
+                                                            <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Source.QQMusic}" Tag="{x:Static lyrics:LyricsSourceCatalog.QQMusic}" />
+                                                            <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Source.Kugou}" Tag="{x:Static lyrics:LyricsSourceCatalog.Kugou}" />
+                                                            <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Source.SodaMusic}" Tag="{x:Static lyrics:LyricsSourceCatalog.SodaMusic}" />
+                                                        </ComboBox>
+                                                        <ui:Button
+                                                            Margin="8,0,0,0"
+                                                            Command="{Binding DataContext.ViewModel.RemoveBindingCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                            CommandParameter="{Binding}"
+                                                            Icon="{ui:SymbolIcon Delete24}"
+                                                            Style="{StaticResource AfSettingsIconButtonStyle}"
+                                                            ToolTip="{DynamicResource Loc.Lyrics.DefaultBindings.Remove}" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>

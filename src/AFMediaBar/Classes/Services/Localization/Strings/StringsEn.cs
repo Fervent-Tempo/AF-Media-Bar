@@ -454,7 +454,8 @@ internal static class StringsEn
         table.Add("Lyrics.Adoption.PreferDefaultSource", "Prefer default source");
         table.Add("Lyrics.Adoption.PreferDefaultSourceWithDeadline", "Prefer default source (with deadline)");
         table.Add("Lyrics.DefaultBindings.Add", "Add player");
-        table.Add("Lyrics.DefaultBindings.Add.Placeholder", "Player identifier (an AUMID or a fragment of it)");
+        table.Add("Lyrics.DefaultBindings.Remark.Placeholder", "Remark");
+        table.Add("Lyrics.DefaultBindings.Add.Placeholder", "Enter the AppID (an AUMID or a fragment of it)");
         table.Add("Lyrics.DefaultBindings.Expander.Description", "Recognize the players now running and pick each one's default lyric interface; players left unbound have no default interface");
         table.Add("Lyrics.DefaultBindings.Expander.Title", "Default-interface bindings");
         table.Add("Lyrics.DefaultBindings.None", "Not bound (no default interface)");

@@ -86,11 +86,19 @@ public sealed class LyricsConcurrencyTests
 
         Assert.IsNull(LyricsConcurrencyPolicy.MapDefaultSource("cloudmusic.exe", null, bindings));
         Assert.IsNull(LyricsConcurrencyPolicy.MapDefaultSource("Netease.CloudMusic_wxyz", null, bindings));
-        // 移除标记只压制命中的播放器，其他播放器照走内置映射。
-        // A removal marker suppresses only the matched player; others keep the built-in mapping.
-        Assert.AreEqual(
-            LyricsSourceCatalog.QQMusic,
-            LyricsConcurrencyPolicy.MapDefaultSource("qqmusic.exe", null, bindings));
+    }
+
+    [TestMethod]
+    public void ANonNullBindingTableIsTheOnlyAuthority()
+    {
+        // 绑定表一旦存在就是唯一权威：表里没有的播放器没有默认接口，内置映射不再兜底。
+        // Once the binding table exists it is the only authority: players missing from it have no default interface, and the
+        // built-in mapping no longer backs anything up.
+        var bindings = new LyricsDefaultBindingSettings(
+            new[] { new LyricsDefaultBinding("cloudmusic", null) });
+
+        Assert.IsNull(LyricsConcurrencyPolicy.MapDefaultSource("qqmusic.exe", null, bindings));
+        Assert.IsNull(LyricsConcurrencyPolicy.MapDefaultSource("kugou", null, bindings));
     }
 
     [TestMethod]

@@ -293,49 +293,52 @@ public partial class LyricsViewModel : ObservableObject
     private bool _isSavingBindings;
 
     /// <summary>
-    /// 重建绑定列表：内置播放器在前（选中值 = 用户覆盖/移除，缺省为内置默认），用户条目与手动添加的随后。
-    /// Rebuilds the binding list: built-in players first (selection = the user's override or removal, defaulting to the
-    /// built-in source), then the user's entries and manual additions.
+    /// 重建绑定列表：设置从未配置（null）时按内置绑定预填；一旦配置过，设置文件就是唯一权威，逐条还原行
+    /// （备注回落到内置播放器名或 AppID 原文）。内置条目没有任何特殊分支。
+    /// Rebuilds the binding list: while the settings were never configured (null) the rows are prefilled from the built-in
+    /// bindings; once configured the settings file is the only authority and every row is restored from an entry (the remark
+    /// falls back to the built-in player's name or the raw AppID). Built-in entries take no special branch at all.
     /// </summary>
     private void RefreshBindingEntries()
     {
         _isRefreshing = true;
         try
         {
-            var userEntries = SettingsManager.Current.LyricsDefaultBindings.Normalize().Bindings;
-
             BindingEntries.Clear();
-            foreach (var builtin in LyricsConcurrencyPolicy.BuiltInBindings)
+            var entries = SettingsManager.Current.LyricsDefaultBindings.Normalize().Bindings;
+            if (entries is null)
             {
-                var entry = userEntries?.FirstOrDefault(candidate =>
-                    string.Equals(candidate.AppId, builtin.CanonicalAppId, StringComparison.OrdinalIgnoreCase));
-                var item = new LyricsDefaultBindingItem(
-                    builtin.CanonicalAppId,
-                    Translations.Get($"Lyrics.DefaultBindings.Player.{builtin.NameKey}"),
-                    isBuiltIn: true,
-                    builtInSourceId: builtin.DefaultSourceId,
-                    selectedSourceId: entry?.SourceId ?? builtin.DefaultSourceId);
-                item.BindingChanged += OnBindingChanged;
-                BindingEntries.Add(item);
+                foreach (var builtin in LyricsConcurrencyPolicy.BuiltInBindings)
+                {
+                    AddBindingRow(
+                        builtin.CanonicalAppId,
+                        Translations.Get($"Lyrics.DefaultBindings.Player.{builtin.NameKey}"),
+                        builtin.DefaultSourceId);
+                }
+
+                return;
             }
 
-            if (userEntries is not null)
+            foreach (var entry in entries)
             {
-                foreach (var entry in userEntries)
-                {
-                    if (BindingEntries.Any(row =>
-                            string.Equals(row.AppId, entry.AppId, StringComparison.OrdinalIgnoreCase)))
-                    {
-                        continue;
-                    }
-
-                    var item = new LyricsDefaultBindingItem(entry.AppId, entry.AppId, isBuiltIn: false, null, entry.SourceId);
-                    item.BindingChanged += OnBindingChanged;
-                    BindingEntries.Add(item);
-                }
+                var fallbackName = LyricsConcurrencyPolicy.BuiltInBindings
+                    .Where(builtin => entry.AppId.Contains(builtin.CanonicalAppId, StringComparison.OrdinalIgnoreCase))
+                    .Select(builtin => Translations.Get($"Lyrics.DefaultBindings.Player.{builtin.NameKey}"))
+                    .FirstOrDefault();
+                AddBindingRow(
+                    entry.AppId,
+                    entry.Remark ?? fallbackName ?? entry.AppId,
+                    entry.SourceId);
             }
         }
         finally { _isRefreshing = false; }
+    }
+
+    private void AddBindingRow(string appId, string displayName, string? selectedSourceId)
+    {
+        var item = new LyricsDefaultBindingItem(appId, displayName, selectedSourceId);
+        item.BindingChanged += OnBindingChanged;
+        BindingEntries.Add(item);
     }
 
     private void OnBindingChanged(LyricsDefaultBindingItem item)
@@ -349,39 +352,29 @@ public partial class LyricsViewModel : ObservableObject
     }
 
     /// <summary>
-    /// 把列表状态写回绑定表：内置行等于内置默认时不写条目；"不绑定"写成移除标记；扫描/手动行未绑定时不进表。
-    /// Writes the list state back into the binding table: a built-in row at its built-in default stores no entry; "not
-    /// bound" stores a removal marker; an unbound scanned or manual row stays out of the table.
+    /// 把列表状态写回绑定表，所有行一律按用户条目处理：绑定写来源，"不绑定"与空备注写 null。
+    /// 写回后配置文件即为唯一权威，内置映射不再参与。
+    /// Writes the list state back into the binding table, treating every row as a plain user entry: a bound row stores its
+    /// source, "not bound" and an empty remark store null. After the write the settings file is the only authority and the
+    /// built-in mapping no longer applies.
     /// </summary>
     private void SaveBindingEntries()
     {
-        var entries = new List<LyricsDefaultBinding>(BindingEntries.Count);
-        foreach (var row in BindingEntries)
-        {
-            var selected = string.IsNullOrWhiteSpace(row.SelectedSourceId) ? null : row.SelectedSourceId;
-            if (row.IsBuiltIn)
-            {
-                if (selected is null)
-                {
-                    entries.Add(new LyricsDefaultBinding(row.AppId, null));
-                }
-                else if (!string.Equals(selected, row.BuiltInSourceId, StringComparison.OrdinalIgnoreCase))
-                {
-                    entries.Add(new LyricsDefaultBinding(row.AppId, selected));
-                }
-            }
-            else if (selected is not null)
-            {
-                entries.Add(new LyricsDefaultBinding(row.AppId, selected));
-            }
-        }
+        var entries = BindingEntries
+            .Select(static row => new LyricsDefaultBinding(
+                row.AppId,
+                string.IsNullOrWhiteSpace(row.SelectedSourceId) ? null : row.SelectedSourceId,
+                string.IsNullOrWhiteSpace(row.DisplayName) || string.Equals(row.DisplayName, row.AppId, StringComparison.Ordinal)
+                    ? null
+                    : row.DisplayName))
+            .ToArray();
 
         _isSavingBindings = true;
         try
         {
-            // 全部内置都被"不绑定"时必须是显式空数组：写 null 会退回内置映射，语义相反。
-            // An all-removed state must be an explicit empty array: null would fall back to the built-in mapping, the opposite
-            // of what the user asked for.
+            // 写回总是显式数组（哪怕为空）：null 表示"从未配置"，会退回内置映射，语义相反。
+            // The write-back is always an explicit array (even empty): null means "never configured", which would fall back
+            // to the built-in mapping — the opposite of what the user asked for.
             SettingsManager.SetLyricsDefaultBindingSettings(new LyricsDefaultBindingSettings(entries));
         }
         finally
@@ -411,9 +404,10 @@ public partial class LyricsViewModel : ObservableObject
                     continue;
                 }
 
-                var item = new LyricsDefaultBindingItem(sourceId, option.DisplayName, isBuiltIn: false, null, null);
-                item.BindingChanged += OnBindingChanged;
-                BindingEntries.Add(item);
+                // 扫描行的备注默认用 AppID 原文填充：我们拿不到播放器的"真实名字"，用户可自行改备注。
+                // A scanned row's remark defaults to the raw AppID: we cannot know the player's real name, and the user can
+                // edit the remark themselves.
+                AddBindingRow(sourceId, sourceId, null);
             }
         }
         finally { _isRefreshing = false; }
@@ -430,16 +424,19 @@ public partial class LyricsViewModel : ObservableObject
             return;
         }
 
-        var item = new LyricsDefaultBindingItem(appId, appId, isBuiltIn: false, null, null);
-        item.BindingChanged += OnBindingChanged;
-        BindingEntries.Add(item);
+        AddBindingRow(appId, appId, null);
         NewPlayerId = string.Empty;
     }
 
+    /// <summary>
+    /// 删除一行绑定：内置行删除后留下移除标记（行消失、内置映射被压制），扫描或手动添加可让它回来。
+    /// Deletes one binding row: a deleted built-in row leaves a removal marker behind (the row disappears and the built-in
+    /// mapping is suppressed), and a scan or a manual add brings it back.
+    /// </summary>
     [RelayCommand]
     private void RemoveBinding(LyricsDefaultBindingItem? item)
     {
-        if (item is null || item.IsBuiltIn)
+        if (item is null)
         {
             return;
         }

@@ -454,7 +454,8 @@ internal static class StringsZhHant
         table.Add("Lyrics.Adoption.PreferDefaultSource", "偏心預設來源");
         table.Add("Lyrics.Adoption.PreferDefaultSourceWithDeadline", "偏心預設來源（限時）");
         table.Add("Lyrics.DefaultBindings.Add", "添加播放器");
-        table.Add("Lyrics.DefaultBindings.Add.Placeholder", "播放器標識（AUMID 或其片段）");
+        table.Add("Lyrics.DefaultBindings.Remark.Placeholder", "備註名");
+        table.Add("Lyrics.DefaultBindings.Add.Placeholder", "輸入 AppID（AUMID 或其片段）");
         table.Add("Lyrics.DefaultBindings.Expander.Description", "識別正在播放的播放器，並指定它的預設取詞介面；未綁定的播放器沒有預設介面");
         table.Add("Lyrics.DefaultBindings.Expander.Title", "預設取詞介面綁定");
         table.Add("Lyrics.DefaultBindings.None", "不綁定（無預設介面）");
