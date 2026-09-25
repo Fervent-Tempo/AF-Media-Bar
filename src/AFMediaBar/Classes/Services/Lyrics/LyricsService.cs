@@ -208,9 +208,10 @@ public sealed class LyricsService
                 // WhenAny 的公共类型是 Task（取消哨兵在列）；这里若不是哨兵赢了，赢的一定是某个提供器任务。
                 // WhenAny's common type is Task (the cancellation sentinel is in the set); unless the sentinel won, the
                 // winner is one of the provider tasks.
-                var finishedTask = (Task<LyricsResult?>)await Task.WhenAny(
+                var completedTask = await Task.WhenAny(
                     active.Select(entry => (Task)entry.Task).Append(cancellationWatch)).ConfigureAwait(false);
                 cancellationToken.ThrowIfCancellationRequested();
+                var finishedTask = (Task<LyricsResult?>)completedTask;
                 var finished = active.First(entry => ReferenceEquals(entry.Task, finishedTask));
                 active.Remove(finished);
 

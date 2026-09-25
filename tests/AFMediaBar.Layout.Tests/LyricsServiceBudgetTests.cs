@@ -123,6 +123,25 @@ public sealed class LyricsServiceBudgetTests
     }
 
     [TestMethod]
+    public async Task CallerCancellationWhileProviderIsPendingIsThrown()
+    {
+        var hanging = new TaskCompletionSource<LyricsResult?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var service = new LyricsService(
+            TimeSpan.FromSeconds(5),
+            TimeSpan.FromSeconds(10),
+            new StubProvider("hanging", _ => hanging.Task));
+        using var cancellation = new CancellationTokenSource();
+
+        var lookup = service.GetLyricsAsync(Request(), Options, cancellation.Token);
+        Assert.IsFalse(lookup.IsCompleted);
+        cancellation.Cancel();
+
+        await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+            () => lookup.WaitAsync(TimeSpan.FromSeconds(2)));
+        hanging.SetResult(null);
+    }
+
+    [TestMethod]
     public void DefaultProviderOrderKeepsExactSourcesBeforeFuzzySearches()
     {
         var names = LyricsProviderFactory.CreateDefault().Select(provider => provider.SourceName).ToArray();
