@@ -128,8 +128,16 @@
                         element draws the quick-launch note and carries that note's own preview tooltip instead, swapped in by
                         ApplyArtworkTooltipOwner — the note's wheel picks a player rather than skipping tracks.
                     -->
+                    <!--
+                        封面可点也可拖：不挂 MediaAction，让宿主的拖动逻辑接管按下；没有位移的抬起仍会走
+                        MouseLeftButtonUp 的单击处理。挂上 MediaAction 会让封面变成"只点不拖"，
+                        而那些只该被单击的按钮（悬停层、静置层芯片、拉杆）仍然挂它。
+                        The artwork is both clickable and draggable: it is not tagged MediaAction, so the host's drag logic owns the
+                        press while a release without movement still runs the MouseLeftButtonUp click handler. Tagging it would make
+                        the artwork click-only; buttons that must stay click-only (hover layer, rest-layer chips, pull handle) keep the tag.
+                    -->
                     <Border Name="SongImageBorder" CornerRadius="5" ClipToBounds="True" Width="36" Height="36"
-                            Panel.ZIndex="2" Cursor="Hand" Tag="MediaAction"
+                            Panel.ZIndex="2" Cursor="Hand"
                             ToolTipService.BetweenShowDelay="0"
                             ToolTipService.InitialShowDelay="0"
                             ToolTipService.Placement="Top"
@@ -179,7 +187,9 @@
                                         RenderOptions.ClearTypeHint="Enabled"
                                         TextOptions.TextRenderingMode="ClearType"
                                         TextOptions.TextFormattingMode="Display">
-                                <Canvas x:Name="SongTitleContainer" Height="19" ClipToBounds="True" Cursor="Hand" Tag="MediaAction"
+                                <!-- 标题同样可点（打开播放器菜单）也可拖：原理同封面，不挂 MediaAction。 -->
+                                <!-- The title is clickable (player menu) and draggable as well: same as the artwork, no MediaAction tag. -->
+                                <Canvas x:Name="SongTitleContainer" Height="19" ClipToBounds="True" Cursor="Hand"
                                         MouseLeftButtonUp="SongTitleContainer_MouseLeftButtonUp">
                                     <TextBlock x:Name="SongTitle" Text=""
                                                TextTrimming="CharacterEllipsis"
@@ -213,9 +223,15 @@
                                                                HorizontalAlignment="Stretch"
                                                                VerticalAlignment="Stretch"
                                                                IsHitTestVisible="False" />
+                                <!--
+                                    歌词区的点击捕获层同样可点（打开播放器菜单）也可拖：这是媒体栏上最大的一块，
+                                    挂 MediaAction 会让整个歌词框拖不动，因此只保留单击处理。
+                                    The lyric area's click catcher is clickable (player menu) and draggable as well: it is the largest region of
+                                    the bar, and tagging it MediaAction would make the whole lyric box undraggable, so only the click handler
+                                    stays.
+                                -->
                                 <Border Background="Transparent"
                                         Cursor="Hand"
-                                        Tag="MediaAction"
                                         MouseLeftButtonUp="SongTitleContainer_MouseLeftButtonUp" />
                             </Grid>
                         </Grid>
