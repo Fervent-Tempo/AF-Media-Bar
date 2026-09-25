@@ -19,7 +19,7 @@ public sealed class QQMusicLyricsProviderTests
         var provider = new QQMusicLyricsProvider((_, _) =>
         {
             release.Wait(TimeSpan.FromSeconds(2));
-            return new LyricsResult(LyricsSourceCatalog.QQMusic, LyricDocument.Empty);
+            return new LocalLyricsCacheLookup.CachedText("[00:01.00]Example");
         });
         var request = new LyricsRequest("Song", "Artist", "Album", 200, null);
         var unblock = Task.Run(async () =>

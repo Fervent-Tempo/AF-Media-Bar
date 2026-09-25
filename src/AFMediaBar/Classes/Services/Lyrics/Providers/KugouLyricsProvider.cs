@@ -21,6 +21,17 @@ namespace AFMediaBar.Classes.Services.Lyrics;
 public sealed class KugouLyricsProvider : ILyricsProvider
 {
     private readonly Api _api = new();
+    private readonly Func<LyricsRequest, CancellationToken, LocalLyricsCacheLookup.CachedText?> _cacheReader;
+
+    /// <summary>使用应用内酷狗缓存读取器创建提供器。/ Creates the provider with the app's Kugou cache reader.</summary>
+    public KugouLyricsProvider() : this(KugouLocalCache.TryReadText)
+    {
+    }
+
+    internal KugouLyricsProvider(Func<LyricsRequest, CancellationToken, LocalLyricsCacheLookup.CachedText?> cacheReader)
+    {
+        _cacheReader = cacheReader ?? throw new ArgumentNullException(nameof(cacheReader));
+    }
 
     public string SourceName => LyricsSourceCatalog.Kugou;
 
@@ -31,6 +42,13 @@ public sealed class KugouLyricsProvider : ILyricsProvider
         if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Artist))
         {
             return null;
+        }
+
+        var cachedResult = await LocalLyricsCacheLookup.TryReadAsync(
+            SourceName, request, _cacheReader, cancellationToken).ConfigureAwait(false);
+        if (cachedResult is not null)
+        {
+            return cachedResult;
         }
 
         var track = LyricsSearch.ToTrackMetadata(request);
