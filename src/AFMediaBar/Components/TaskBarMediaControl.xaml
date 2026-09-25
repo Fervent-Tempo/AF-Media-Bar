@@ -222,7 +222,6 @@
                                                                MinHeight="1"
                                                                HorizontalAlignment="Stretch"
                                                                VerticalAlignment="Stretch"
-                                                               MinWidth="1" MinHeight="1"
                                                                IsHitTestVisible="False" />
                                 <!--
                                     歌词区的点击捕获层同样可点（打开播放器菜单）也可拖：这是媒体栏上最大的一块，
