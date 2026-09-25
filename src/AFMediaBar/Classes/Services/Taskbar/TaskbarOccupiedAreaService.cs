@@ -13,7 +13,7 @@ namespace AFMediaBar.Classes.Services;
 /// </summary>
 public sealed class TaskbarOccupiedAreaService
 {
-    private static readonly TimeSpan ProbeCacheDuration = TimeSpan.FromMilliseconds(250);
+    private static readonly TimeSpan ProbeCacheDuration = TimeSpan.FromMilliseconds(150);
     private static readonly TimeSpan ProbeResultTimeout = TimeSpan.FromMilliseconds(1500);
     private readonly ITaskbarOccupiedAreaProbe _probe;
     private readonly object _cacheGate = new();

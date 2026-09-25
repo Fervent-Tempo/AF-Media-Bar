@@ -40,6 +40,9 @@ public partial class TaskbarWindow : Window
     private static readonly TimeSpan TaskbarMotionSampleInterval = TimeSpan.FromMilliseconds(50);
     private static readonly TimeSpan TaskbarHiddenTrimDelay = TimeSpan.FromSeconds(30);
 
+    /// <summary>安全区间向更优位置扩张后、真正切换位置之前需要的持续确认时长。/ How long a better safe range must persist before the bar moves to it.</summary>
+    private static readonly TimeSpan ExpansionConfirmationDuration = TimeSpan.FromMilliseconds(400);
+
     private readonly ITaskbarDockService _taskBarService;
     private readonly string _targetMonitorDeviceId;
     private readonly TaskbarOccupiedAreaService _occupiedAreaService;
@@ -54,6 +57,7 @@ public partial class TaskbarWindow : Window
     private readonly DispatcherTimer _volumeApplyTimer;
     private readonly DispatcherTimer _taskbarMotionSettleTimer;
     private readonly DispatcherTimer _taskbarHiddenTrimTimer;
+    private readonly DispatcherTimer _occupancyProbeTimer;
     private bool _spectrumActive;
     private readonly GlobalInteractionRouter _interactionRouter;
     private readonly AudioInteractionService _audioInteractionService;
@@ -87,6 +91,8 @@ public partial class TaskbarWindow : Window
     private DateTime _suppressContextMenuUntilUtc;
     private DateTime _skipOccupiedAreaProbeUntilUtc;
     private TaskbarSafeRangeSnapshot? _lastStableSafeRange;
+    private TaskbarPrimaryRange? _expansionCandidate;
+    private DateTime _expansionCandidateSinceUtc;
     private bool _hasSafePlacement;
     private WindowMode? _appliedWindowMode;
     private LayoutOrientation? _appliedOrientation;
@@ -210,6 +216,16 @@ public partial class TaskbarWindow : Window
             if (!_isClosing && _taskbarMotionState.IsHidden && !_taskbarMotionState.IsMoving)
                 _memoryPruneCoordinator.RequestTrim(MemoryTrimTrigger.TaskbarHidden);
         };
+
+        // 占用区探测的轻量泵：空闲（无媒体快照驱动）时也持续调用 GetSafePrimaryRanges，保证任务栏图标变化能在缓存过期后
+        // 立即发起下一次探测，而不是等 1.5 s 的显示变化轮询。探测结果由 SafeRangesUpdated 事件驱动重定位，本计时器只负责"触发探测"。
+        // The occupancy probe pump: it keeps calling GetSafePrimaryRanges while idle (no media snapshot driving it), so icon changes start the
+        // next probe as soon as the cache expires instead of waiting for the 1.5 s display-change poll. Repositioning is driven by the
+        // SafeRangesUpdated event; this timer only keeps the probe flowing.
+        _occupancyProbeTimer = new DispatcherTimer(DispatcherPriority.Background)
+            { Interval = TimeSpan.FromMilliseconds(120) };
+        _occupancyProbeTimer.Tick += OccupancyProbeTimer_Tick;
+        _occupancyProbeTimer.Start();
 
         // 后台剪枝：宿主自己订阅档位变化，按档位停掉或恢复自己的计时器与指标订阅。
         // 窗口由 MainWindow 构造（不是容器构造的），因此它不能作为参与者被注入，而是订阅协调器的事件——订阅在 OnClosed 里解除，
@@ -486,6 +502,7 @@ public partial class TaskbarWindow : Window
             _spectrumTimer.Stop();
             _taskbarMotionSettleTimer.Stop();
             _taskbarHiddenTrimTimer.Stop();
+            _occupancyProbeTimer.Stop();
             UnregisterTaskbarLocationHook();
             DisposeMetricsSubscription();
             _outputDeviceApplyTimer.Stop();
@@ -570,6 +587,33 @@ public partial class TaskbarWindow : Window
             if (!_isClosing && !_isEnvironmentSuspended && e.TaskbarHandle == _lastTaskbarHandle)
                 UpdatePosition();
         }, DispatcherPriority.Input);
+    }
+
+    private void OccupancyProbeTimer_Tick(object? sender, EventArgs e)
+    {
+        if (_isClosing || _isEnvironmentSuspended || IsTaskbarPresentationSuspended || _isDragging)
+            return;
+
+        if (!SettingsManager.Current.TaskbarBarAvoidIcons)
+            return;
+
+        if (_lastTaskbarHandle == IntPtr.Zero ||
+            !_taskBarService.TryGetTaskbarRect(_lastTaskbarHandle, out var taskbarRect))
+            return;
+
+        var dpiScale = _taskBarService.GetTaskbarDpiScale(_lastTaskbarHandle);
+        if (dpiScale <= 0)
+            return;
+
+        var orientation = _appliedOrientation ??
+            (taskbarRect.Bottom - taskbarRect.Top > taskbarRect.Right - taskbarRect.Left
+                ? LayoutOrientation.Vertical
+                : LayoutOrientation.Horizontal);
+
+        // 结果用不到：探测完成后 SafeRangesUpdated 会立即重定位。这里只保证缓存过期后能发起下一次探测。
+        // The result is unused: SafeRangesUpdated repositions as soon as the probe completes. This only keeps the probe flowing after cache expiry.
+        _occupiedAreaService.GetSafePrimaryRanges(
+            _lastTaskbarHandle, taskbarRect, orientation, dpiScale, EdgePadding);
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -742,9 +786,23 @@ public partial class TaskbarWindow : Window
         if (DateTime.UtcNow >= _skipOccupiedAreaProbeUntilUtc && maximumPrimary > 0)
         {
             var currentPrimary = orientation == LayoutOrientation.Horizontal ? barWidth : barHeight;
-            if (currentPrimary > maximumPrimary)
+            var contentDesired = _lastDesiredSizeRequest?.PrimaryLength ?? currentPrimary;
+            var targetLength = Math.Min(contentDesired, maximumPrimary);
+
+            // 收缩无条件：空闲区间缩小时媒体栏 MUST 立即夹短，即使正在做尺寸动画也不能越过安全区（与旧行为一致）。
+            // 回长只在尺寸动画空闲时进行：动画本身已经在向内容长度过渡，直接 ApplyPrimaryLength 会打断它；而"任务栏占满后
+            // 关闭窗口、媒体栏仍维持压扁形态"正是旧实现只有收缩、没有恢复造成的，这里用同一目标补上恢复路径。
+            // Shrinking is unconditional: while a size animation is ongoing the bar must still never cross the safe range (unchanged behaviour).
+            // Growing only happens while no size animation is running, because the animation is already transitioning towards the content length and a
+            // direct ApplyPrimaryLength would cut it off. The "bar stays squashed after the taskbar empties" defect came from there being a shrink path
+            // but no grow path — the same target now restores it.
+            var shouldApply = currentPrimary > maximumPrimary ||
+                              (!_sizeAnimationTimer.IsEnabled &&
+                               targetLength > currentPrimary + LayoutSizeCalculator.MinimumChangeDip);
+
+            if (shouldApply && Math.Abs(targetLength - currentPrimary) > LayoutSizeCalculator.MinimumChangeDip)
             {
-                ApplyPrimaryLength(maximumPrimary);
+                ApplyPrimaryLength(targetLength);
                 canvas = MediaControl.CurrentLayout?.Canvas;
                 barWidth = canvas?.Width ?? barWidth;
                 barHeight = canvas?.Height ?? barHeight;
@@ -1124,6 +1182,7 @@ public partial class TaskbarWindow : Window
         _spectrumTimer.Stop();
         _taskbarMotionSettleTimer.Stop();
         _taskbarHiddenTrimTimer.Stop();
+        _occupancyProbeTimer.Stop();
         DisposeMetricsSubscription();
         _outputDeviceApplyTimer.Stop();
         _quickLaunchApplyTimer.Stop();
@@ -1200,6 +1259,7 @@ public partial class TaskbarWindow : Window
 
         _timer.Stop();
         _spectrumTimer.Stop();
+        _occupancyProbeTimer.Stop();
         DisposeMetricsSubscription();
         _pendingSizeRequest = null;
     }
@@ -1221,6 +1281,8 @@ public partial class TaskbarWindow : Window
             _timer.Start();
         if (!_spectrumTimer.IsEnabled)
             _spectrumTimer.Start();
+        if (!_occupancyProbeTimer.IsEnabled)
+            _occupancyProbeTimer.Start();
         ApplyExtraFeaturesSettings();
         UpdatePosition();
         Dispatcher.BeginInvoke(_foregroundSamplingSession.RequestRefresh, DispatcherPriority.ContextIdle);
@@ -1932,31 +1994,69 @@ public partial class TaskbarWindow : Window
             return fallback;
         }
 
-        // UIA 偶尔会漏掉一组图标，表现为安全区间突然扩大。旧区间仍被新结果完整包含时保持原位；
-        // 真正有新图标侵入旧区间时包含关系会失效，下面会立即选择新位置。
+        // UIA 偶尔会漏掉一组图标，表现为安全区间突然扩大。旧区间仍被新结果完整包含时暂时维持原位；
+        // 真正有新图标侵入旧区间时包含关系会失效，下面会立即选择新位置。而"区间持续扩大"（真的关掉窗口）
+        // 与"短暂扩大"（UIA 漏图标）只靠单次探测无法区分，因此对更优的新位置做一次确认窗口：同一个更优区间
+        // 连续存在超过阈值才切过去，否则保持原位，避免图标短暂消失又恢复时来回抖动。
         // UIA can transiently omit an icon group, making a safe range suddenly expand. Keep the old placement while the new result still
         // fully contains it; when icons genuinely invade that range containment fails and a new position is selected immediately below.
+        // A persistent expansion (a window really closing) and a transient one (UIA missing icons) are indistinguishable from one probe,
+        // so a better new position is confirmed over a window: switch to it only once the same better range has persisted past the
+        // threshold, otherwise stay put and avoid bouncing while icons briefly vanish and return.
+        var selected = TaskbarFreeRangeCalculator.Select(ranges, position, requiredPrimaryPixels);
         if (TryReuseStableSafeRange(
                 primaryLength,
                 orientation,
                 dpiScale,
                 position,
                 requiredPrimaryPixels,
-                out var previousRange) &&
-            TaskbarFreeRangeCalculator.TryKeepSelection(
-                ranges,
-                previousRange,
-                requiredPrimaryPixels,
-                out var keptRange))
+                out var previousRange))
         {
-            isSafePlacement = true;
-            return keptRange;
+            if (selected == previousRange)
+            {
+                // 当前位置仍是最优，清除尚未确认的扩张候选。
+                // The current placement is already optimal, so any unconfirmed expansion candidate is dropped.
+                _expansionCandidate = null;
+                isSafePlacement = true;
+                return previousRange;
+            }
+
+            if (TaskbarFreeRangeCalculator.TryKeepSelection(
+                    ranges,
+                    previousRange,
+                    requiredPrimaryPixels,
+                    out var keptRange))
+            {
+                if (_expansionCandidate == selected &&
+                    DateTime.UtcNow - _expansionCandidateSinceUtc >= ExpansionConfirmationDuration)
+                {
+                    _expansionCandidate = null;
+                    _lastStableSafeRange = new TaskbarSafeRangeSnapshot(
+                        _lastTaskbarHandle,
+                        primaryLength,
+                        orientation,
+                        dpiScale,
+                        position,
+                        selected);
+                    isSafePlacement = selected.Length > 0;
+                    return selected;
+                }
+
+                if (_expansionCandidate != selected)
+                {
+                    _expansionCandidate = selected;
+                    _expansionCandidateSinceUtc = DateTime.UtcNow;
+                }
+
+                isSafePlacement = true;
+                return keptRange;
+            }
         }
 
         // 选区间 MUST 用纯策略：空闲区间里可能有比媒体栏还窄的缝隙，"最左边那条"会把媒体栏压细并钉在缝里。
         // The range MUST be chosen by the pure policy: the free ranges can hold a gap narrower than the bar itself, and "the leftmost
         // one" would squash the bar into that sliver.
-        var selected = TaskbarFreeRangeCalculator.Select(ranges, position, requiredPrimaryPixels);
+        _expansionCandidate = null;
         _lastStableSafeRange = new TaskbarSafeRangeSnapshot(
             _lastTaskbarHandle,
             primaryLength,
@@ -2078,6 +2178,7 @@ public partial class TaskbarWindow : Window
         _spectrumTimer.Stop();
         _taskbarMotionSettleTimer.Stop();
         _taskbarHiddenTrimTimer.Stop();
+        _occupancyProbeTimer.Stop();
         UnregisterTaskbarLocationHook();
         _lengthConstraints.Remove(this);
         DisposeMetricsSubscription();
