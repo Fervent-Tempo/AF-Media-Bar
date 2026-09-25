@@ -1764,8 +1764,19 @@ public partial class TaskbarWindow : Window
         if (!_isDragging && !_isDragPending)
             return;
 
+        // 「待定」状态下的抬起仍是一次普通单击：封面、标题与歌词区的单击处理（打开播放器菜单、执行点击绑定）
+        // 必须继续运行，因此这次抬起 MUST NOT 被标记为已处理；只有真正拖动过才吞掉它，避免拖动结束后又触发一次单击。
+        // A release from the pending state is still an ordinary click: the artwork/title/lyric click handlers (opening the player
+        // menu, running the click binding) must keep running, so this release MUST NOT be marked handled. Only a real drag
+        // swallows it, which is what keeps a drag from ending in an extra click.
+        if (_isDragging)
+        {
+            EndTaskbarDrag();
+            e.Handled = true;
+            return;
+        }
+
         EndTaskbarDrag();
-        e.Handled = true;
     }
 
     private void MediaControl_DesiredSizeChanged(object? sender, MediaBarSizeRequestEventArgs eventArgs)
@@ -1805,7 +1816,10 @@ public partial class TaskbarWindow : Window
         var current = MediaControl.CurrentLayout is { } layout
             ? orientation == LayoutOrientation.Horizontal ? layout.Canvas.Width : layout.Canvas.Height
             : target;
-        if (!motion.UseContinuousMotion || Math.Abs(target - current) < LayoutSizeCalculator.MinimumChangeDip)
+        // 歌词换行等离散内容切换必须立即落到目标长度：过渡动画期间新内容按旧长度渲染会被省略号截断。
+        // Discrete content switches such as a lyric line change must land immediately: while the length animates the new content
+        // renders at the previous length and gets clipped with an ellipsis.
+        if (request.SkipTransition || !motion.UseContinuousMotion || Math.Abs(target - current) < LayoutSizeCalculator.MinimumChangeDip)
         {
             ApplyPrimaryLength(target);
             UpdatePosition();

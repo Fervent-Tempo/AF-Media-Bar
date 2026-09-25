@@ -493,6 +493,16 @@ internal static class StringsEn
         table.Add("Lyrics.Row.UnsungOpacity.Badge", "Enable the syllable reveal first");
         table.Add("Lyrics.Row.UnsungOpacity.Description", "Opacity of the text that has not been sung yet; lower means a stronger contrast (45% by default)");
         table.Add("Lyrics.Row.UnsungOpacity.Title", "Unsung-part opacity");
+        table.Add("Lyrics.Row.LineGap.Badge", "Enable two-line lyrics first");
+        table.Add("Lyrics.Row.LineGap.Description", "Extra spacing on top of the two-row layout as a percentage of the font size, scaling with it; tightened automatically when space runs short, so text is never clipped or shrunk (0 by default)");
+        table.Add("Lyrics.Row.LineGap.Title", "Line gap");
+        table.Add("Lyrics.Row.CharacterSpacing.Description", "Widens the gap between characters as a percentage of the font size and scales with it; applies to CJK and Latin without breaking words apart (0 by default)");
+        table.Add("Lyrics.Row.CharacterSpacing.Title", "Character spacing");
+        table.Add("Lyrics.Row.FixedWidth.Badge", "Enable lyrics first");
+        table.Add("Lyrics.Row.FixedWidth.Description", "Keeps the lyric box at a fixed length instead of resizing with every line; when off it follows the content (off by default)");
+        table.Add("Lyrics.Row.FixedWidth.Title", "Fixed lyric-box length");
+        table.Add("Lyrics.Row.FixedWidth.Length.Description", "Length of the lyric box in fixed mode (DIP); clamped automatically when the taskbar runs short (240 by default)");
+        table.Add("Lyrics.Row.FixedWidth.Length.Title", "Lyric-box length");
         table.Add("Lyrics.SecondLine.NextLine", "Next lyric line");
         table.Add("Lyrics.SecondLine.Reset.Description", "Restores the order to next line, translation, romanization");
         table.Add("Lyrics.SecondLine.Reset.Title", "Restore the default order");

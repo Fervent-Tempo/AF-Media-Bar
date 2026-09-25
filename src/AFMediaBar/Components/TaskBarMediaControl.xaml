@@ -128,8 +128,16 @@
                         element draws the quick-launch note and carries that note's own preview tooltip instead, swapped in by
                         ApplyArtworkTooltipOwner — the note's wheel picks a player rather than skipping tracks.
                     -->
+                    <!--
+                        封面可点也可拖：不挂 MediaAction，让宿主的拖动逻辑接管按下；没有位移的抬起仍会走
+                        MouseLeftButtonUp 的单击处理。挂上 MediaAction 会让封面变成"只点不拖"，
+                        而那些只该被单击的按钮（悬停层、静置层芯片、拉杆）仍然挂它。
+                        The artwork is both clickable and draggable: it is not tagged MediaAction, so the host's drag logic owns the
+                        press while a release without movement still runs the MouseLeftButtonUp click handler. Tagging it would make
+                        the artwork click-only; buttons that must stay click-only (hover layer, rest-layer chips, pull handle) keep the tag.
+                    -->
                     <Border Name="SongImageBorder" CornerRadius="5" ClipToBounds="True" Width="36" Height="36"
-                            Panel.ZIndex="2" Cursor="Hand" Tag="MediaAction"
+                            Panel.ZIndex="2" Cursor="Hand"
                             ToolTipService.BetweenShowDelay="0"
                             ToolTipService.InitialShowDelay="0"
                             ToolTipService.Placement="Top"
@@ -179,7 +187,9 @@
                                         RenderOptions.ClearTypeHint="Enabled"
                                         TextOptions.TextRenderingMode="ClearType"
                                         TextOptions.TextFormattingMode="Display">
-                                <Canvas x:Name="SongTitleContainer" Height="19" ClipToBounds="True" Cursor="Hand" Tag="MediaAction"
+                                <!-- 标题同样可点（打开播放器菜单）也可拖：原理同封面，不挂 MediaAction。 -->
+                                <!-- The title is clickable (player menu) and draggable as well: same as the artwork, no MediaAction tag. -->
+                                <Canvas x:Name="SongTitleContainer" Height="19" ClipToBounds="True" Cursor="Hand"
                                         MouseLeftButtonUp="SongTitleContainer_MouseLeftButtonUp">
                                     <TextBlock x:Name="SongTitle" Text=""
                                                TextTrimming="CharacterEllipsis"
@@ -195,14 +205,34 @@
                             </StackPanel>
 
                             <Grid x:Name="SongLyricsPanel" Opacity="0" IsHitTestVisible="False" ClipToBounds="True">
+                                <!--
+                                    最小 1×1：WebView2 的合成控件在 0（或负数）尺寸的 SizeChanged 里会抛 ArgumentException
+                                    （GraphicsItemD3DImage.UpdateSize），媒体栏长度收缩到零时会让整个应用闪退；把最小尺寸钉在
+                                    1 DIP，它最多在裁剪容器里溢出 1 像素，不会再收到零尺寸布局。已用同版本 SDK 的最小重现程序验证：
+                                    0×0 / 0×50 / 50×0 无防护必崩，加上最小尺寸后全部尺寸安全。
+                                    Minimum 1x1: the WebView2 composition control throws ArgumentException from its zero-size
+                                    SizeChanged (GraphicsItemD3DImage.UpdateSize), which crashed the whole app whenever the bar
+                                    shrank to zero length; pinning the minimum size to one DIP lets it overflow the clipped
+                                    container by at most a pixel instead of ever seeing a zero-size layout. Verified with a minimal
+                                    repro against the same SDK version: 0x0, 0x50, and 50x0 crash without the guard and are stable
+                                    with it.
+                                -->
                                 <wv2:WebView2CompositionControl x:Name="LyricsWebView"
+                                                               MinWidth="1"
+                                                               MinHeight="1"
                                                                HorizontalAlignment="Stretch"
                                                                VerticalAlignment="Stretch"
                                                                MinWidth="1" MinHeight="1"
                                                                IsHitTestVisible="False" />
+                                <!--
+                                    歌词区的点击捕获层同样可点（打开播放器菜单）也可拖：这是媒体栏上最大的一块，
+                                    挂 MediaAction 会让整个歌词框拖不动，因此只保留单击处理。
+                                    The lyric area's click catcher is clickable (player menu) and draggable as well: it is the largest region of
+                                    the bar, and tagging it MediaAction would make the whole lyric box undraggable, so only the click handler
+                                    stays.
+                                -->
                                 <Border Background="Transparent"
                                         Cursor="Hand"
-                                        Tag="MediaAction"
                                         MouseLeftButtonUp="SongTitleContainer_MouseLeftButtonUp" />
                             </Grid>
                         </Grid>

@@ -1763,7 +1763,7 @@ namespace AFMediaBar.Components
 
         /// <summary>根据当前可见文本发布自动尺寸请求。/ Raises an auto-size request for the visible text.</summary>
         /// <param name="isForcedRefresh">是否绕过内容指纹去重。/ Whether the content-fingerprint dedupe is bypassed.</param>
-        private void RaiseDesiredSizeChanged(bool isForcedRefresh = false)
+        private void RaiseDesiredSizeChanged(bool isForcedRefresh = false, bool skipTransition = false)
         {
             if (_layoutEngine?.CurrentOrientation is not { } orientation)
                 return;
@@ -1786,7 +1786,15 @@ namespace AFMediaBar.Components
             // The "components kept without media" list has to be spelled out as well: it is a list field, and the record's generated
             // ToString prints only the list's **type name**, so changing that list while there is no media (which changes the bar length)
             // would be deduplicated away and the bar would keep its old length.
-            var fingerprint = $"{orientation}|{visibleText}|{secondaryText}|{artist}|{SongTitle.FontSize:0.##}|{SongArtist.FontSize:0.##}|{SettingsManager.Current.LayoutLengthScalePercent:0.##}|{SettingsManager.Current.LayoutThicknessScalePercent:0.##}|{SettingsManager.Current.LyricsEnabled}|{SettingsManager.Current.TwoLineLyricsEnabled}|{SettingsManager.Current.LyricsSecondaryLine}|{string.Join(',', LyricsSecondaryLinePolicy.ResolveOrder(SettingsManager.Current.LyricsSecondaryLine))}|{SettingsManager.Current.TaskbarExperience}|{SpectrumSurfaceWidth:0.##}|{SettingsManager.Current.SpectrumComponent.ContentHeightDip:0.##}|{_snapshot.IsConnected}|{_snapshot.Duration > 0}|{_isRestLayerEmpty}|{string.Join(',', SettingsManager.Current.TaskbarExperience.IdleComponents ?? [])}";
+            //
+            // 字距同样决定文字宽度：显示文本本身不变（改的是渲染宽度），因此它 MUST 参与指纹，
+            // 否则拉大字距后尺寸请求会被去重挡掉，媒体栏不跟着变宽、文字右侧被省略号截断。
+            // 固定歌词框的两个设置也在这里参与指纹：它们直接决定文字区宽度。
+            // Character spacing decides the text width as well: the display text itself is unchanged (only the rendered width is), so it
+            // MUST be part of the fingerprint; otherwise widening the spacing would be deduplicated away, the bar would keep its old
+            // length, and the right side of the line would be clipped with an ellipsis.
+            // The two fixed-box settings belong here as well: they decide the text area's width directly.
+            var fingerprint = $"{orientation}|{visibleText}|{secondaryText}|{artist}|{SongTitle.FontSize:0.##}|{SongArtist.FontSize:0.##}|{SettingsManager.Current.LayoutLengthScalePercent:0.##}|{SettingsManager.Current.LayoutThicknessScalePercent:0.##}|{SettingsManager.Current.LyricsEnabled}|{SettingsManager.Current.TwoLineLyricsEnabled}|{SettingsManager.Current.LyricsSecondaryLine}|{string.Join(',', LyricsSecondaryLinePolicy.ResolveOrder(SettingsManager.Current.LyricsSecondaryLine))}|{SettingsManager.Current.TaskbarExperience}|{SpectrumSurfaceWidth:0.##}|{SettingsManager.Current.SpectrumComponent.ContentHeightDip:0.##}|{_snapshot.IsConnected}|{_snapshot.Duration > 0}|{_isRestLayerEmpty}|{string.Join(',', SettingsManager.Current.TaskbarExperience.IdleComponents ?? [])}|{SettingsManager.Current.LyricsCharacterSpacingPercent}|{SettingsManager.Current.LyricsFixedWidthEnabled}|{SettingsManager.Current.LyricsFixedWidthDip}";
 
             // 没有订阅者的请求不会被任何宿主消费，因此不能记入指纹；否则订阅后的首次请求会被去重丢弃，
             // 媒体栏在上一次媒体连接之前一直停留在预设长度。
@@ -1800,11 +1808,15 @@ namespace AFMediaBar.Components
                 return;
 
             _lastSizeFingerprint = fingerprint;
-            var textWidth = Math.Max(
-                Math.Max(
-                    lyricsVisible ? MeasureWebLyricWidth(visibleText) : MeasureTextWidth(visibleText, SongTitle),
-                    lyricsVisible ? MeasureWebLyricWidth(secondaryText) : 0),
-                MeasureTextWidth(artist, SongArtist));
+            // 固定歌词框：开启后歌词宽度不再随内容变化，直接使用用户设定的长度；任务栏放不下时由布局引擎按可用长度夹取。
+            // A fixed lyric box: while enabled the lyric width no longer follows the content but uses the configured length; the layout
+            // engine clamps it to the available taskbar room when there is not enough space.
+            var lyricWidth = lyricsVisible
+                ? SettingsManager.Current.LyricsFixedWidthEnabled
+                    ? LyricsFixedWidth.Normalize(SettingsManager.Current.LyricsFixedWidthDip)
+                    : Math.Max(MeasureWebLyricWidth(visibleText), MeasureWebLyricWidth(secondaryText))
+                : MeasureTextWidth(visibleText, SongTitle);
+            var textWidth = Math.Max(lyricWidth, MeasureTextWidth(artist, SongArtist));
             var preset = LayoutPresets.GetLayout(_currentMode, orientation);
             var request = LayoutSizeCalculator.Calculate(
                 preset,
@@ -1813,7 +1825,8 @@ namespace AFMediaBar.Components
                 textWidth,
                 double.PositiveInfinity,
                 fingerprint,
-                isForcedRefresh);
+                isForcedRefresh,
+                skipTransition);
             if (_currentMode == WindowMode.Taskbar && orientation == LayoutOrientation.Horizontal)
             {
                 var experience = SettingsManager.Current.TaskbarExperience.Normalize();

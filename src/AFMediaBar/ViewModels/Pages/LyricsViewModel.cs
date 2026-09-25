@@ -87,6 +87,69 @@ public partial class LyricsViewModel : ObservableObject
     /// <summary>不透明度的读数文本。/ The opacity readout text.</summary>
     public string UnsungOpacityText => $"{UnsungOpacityPercent}%";
 
+    /// <summary>歌词字距（字号的百分比）。/ Lyric character spacing as a percentage of the font size.</summary>
+    public int CharacterSpacingPercent
+    {
+        get => SettingsManager.Current.LyricsCharacterSpacingPercent;
+        set
+        {
+            SettingsManager.SetLyricsCharacterSpacingPercent(value);
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(CharacterSpacingText));
+        }
+    }
+
+    /// <summary>字距的读数文本。/ The character-spacing readout text.</summary>
+    public string CharacterSpacingText => $"{CharacterSpacingPercent}%";
+
+    /// <summary>双行歌词额外增加的行距（字号的百分比）。/ Extra line gap for two-line lyrics as a percentage of the font size.</summary>
+    public int LineGapPercent
+    {
+        get => SettingsManager.Current.LyricsLineGapPercent;
+        set
+        {
+            SettingsManager.SetLyricsLineGapPercent(value);
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(LineGapText));
+        }
+    }
+
+    /// <summary>行距的读数文本：加号说明这是"额外"增加的间距，百分号说明它随字号缩放。/ The line-gap readout: the plus sign marks spacing added on top, the percent sign that it scales with the font.</summary>
+    public string LineGapText => $"+{LineGapPercent}%";
+
+    /// <summary>歌词框是否固定长度。/ Whether the lyric box keeps a fixed length.</summary>
+    public bool FixedWidthEnabled
+    {
+        get => SettingsManager.Current.LyricsFixedWidthEnabled;
+        set
+        {
+            SettingsManager.SetLyricsFixedWidthEnabled(value);
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(CanConfigureFixedWidthDip));
+        }
+    }
+
+    /// <summary>歌词框固定长度（DIP）。/ Fixed lyric-box length in DIP.</summary>
+    public int FixedWidthDip
+    {
+        get => SettingsManager.Current.LyricsFixedWidthDip;
+        set
+        {
+            SettingsManager.SetLyricsFixedWidthDip(value);
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(FixedWidthText));
+        }
+    }
+
+    /// <summary>固定长度的读数文本。/ The fixed-width readout text.</summary>
+    public string FixedWidthText => $"{FixedWidthDip}";
+
+    /// <summary>歌词框固定长度只在启用歌词时有意义。/ The fixed lyric-box length only applies while lyrics are on.</summary>
+    public bool CanConfigureFixedWidth => LyricsEnabled;
+
+    /// <summary>长度滑杆只在"固定"开启时可用。/ The length slider is available only while the fixed mode is on.</summary>
+    public bool CanConfigureFixedWidthDip => FixedWidthEnabled;
+
     /// <summary>是否丢弃作者、作曲、制作等信息行。/ Whether credit lines are dropped.</summary>
     public bool InfoLineFilterEnabled
     {
@@ -162,6 +225,9 @@ public partial class LyricsViewModel : ObservableObject
     /// <summary>未唱部分不透明度只在启用逐字擦亮时可用：没有擦亮时它没有作用对象。/ The unsung opacity only applies while highlighting is on.</summary>
     public bool CanConfigureUnsungOpacity => SyllableHighlightEnabled;
 
+    /// <summary>行距只在双行歌词开启时可用：单行时没有"两行之间"可调。/ The line gap applies only while two-line lyrics are on: with a single line there is no "between" to adjust.</summary>
+    public bool CanConfigureLineGap => LyricsEnabled && TwoLineLyricsEnabled;
+
     public void ResetLyrics() => SettingsManager.ResetLyrics();
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
@@ -212,12 +278,18 @@ public partial class LyricsViewModel : ObservableObject
         OnPropertyChanged(nameof(TextAlignment));
         OnPropertyChanged(nameof(SyllableHighlightEnabled)); OnPropertyChanged(nameof(UnsungOpacityPercent));
         OnPropertyChanged(nameof(UnsungOpacityText)); OnPropertyChanged(nameof(InfoLineFilterEnabled));
+        OnPropertyChanged(nameof(CharacterSpacingPercent)); OnPropertyChanged(nameof(CharacterSpacingText));
+        OnPropertyChanged(nameof(LineGapPercent)); OnPropertyChanged(nameof(LineGapText));
+        OnPropertyChanged(nameof(FixedWidthEnabled)); OnPropertyChanged(nameof(FixedWidthDip));
+        OnPropertyChanged(nameof(FixedWidthText));
+        OnPropertyChanged(nameof(CanConfigureFixedWidth)); OnPropertyChanged(nameof(CanConfigureFixedWidthDip));
         OnPropertyChanged(nameof(MatchStrictness));
         OnPropertyChanged(nameof(AdoptionMode)); OnPropertyChanged(nameof(ConcurrencyBatchSize));
         OnPropertyChanged(nameof(ConcurrencyBatchSizeText)); OnPropertyChanged(nameof(AdoptionDeadlineMilliseconds));
         OnPropertyChanged(nameof(AdoptionDeadlineText));
         OnPropertyChanged(nameof(CanConfigureTwoLine)); OnPropertyChanged(nameof(CanConfigureSecondary));
-        OnPropertyChanged(nameof(CanConfigureUnsungOpacity)); OnPropertyChanged(nameof(IsEverySourceDisabled));
+        OnPropertyChanged(nameof(CanConfigureUnsungOpacity)); OnPropertyChanged(nameof(CanConfigureLineGap));
+        OnPropertyChanged(nameof(IsEverySourceDisabled));
     }
 
     /// <summary>

@@ -71,6 +71,41 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+
+        <!--
+            行距只在双行歌词开启时可用：单行时没有"两行之间"可调，用徽章说明原因而不是留一根无效滑杆。
+            The line gap applies only while two-line lyrics are on: with a single line there is no "between" to adjust, so a badge
+            states why instead of leaving an inert slider behind.
+        -->
+        <Style
+            x:Key="LineGapRowStyle"
+            BasedOn="{StaticResource {x:Type components:SettingsRow}}"
+            TargetType="{x:Type components:SettingsRow}">
+            <Setter Property="Badge" Value="" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ViewModel.CanConfigureLineGap}" Value="False">
+                    <Setter Property="Badge" Value="{DynamicResource Loc.Lyrics.Row.LineGap.Badge}" />
+                    <Setter Property="BadgeTone" Value="Attention" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!--
+            固定歌词框长度只在歌词开启时有意义：关闭歌词时用徽章说明原因。
+            The fixed lyric-box length only matters while lyrics are on: a badge states why when they are off.
+        -->
+        <Style
+            x:Key="FixedWidthRowStyle"
+            BasedOn="{StaticResource {x:Type components:SettingsRow}}"
+            TargetType="{x:Type components:SettingsRow}">
+            <Setter Property="Badge" Value="" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ViewModel.CanConfigureFixedWidth}" Value="False">
+                    <Setter Property="Badge" Value="{DynamicResource Loc.Lyrics.Row.FixedWidth.Badge}" />
+                    <Setter Property="BadgeTone" Value="Attention" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </Page.Resources>
 
     <Grid>
@@ -234,6 +269,72 @@
                                 </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>
+
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Lyrics.Row.LineGap.Description}"
+                            Icon="{ui:SymbolIcon TextAlignJustify24}"
+                            Style="{StaticResource LineGapRowStyle}"
+                            Title="{DynamicResource Loc.Lyrics.Row.LineGap.Title}">
+                            <!-- 上下限用 Binding 而不是 x:Static：与未唱部分不透明度同一处理（x:Static 不做装箱 int 到 double 的转换）。 -->
+                            <StackPanel Orientation="Horizontal">
+                                <Slider
+                                    IsEnabled="{Binding ViewModel.CanConfigureLineGap}"
+                                    IsSnapToTickEnabled="True"
+                                    Maximum="{Binding Source={x:Static settings:LyricsLineGap.MaximumPercent}}"
+                                    Minimum="{Binding Source={x:Static settings:LyricsLineGap.MinimumPercent}}"
+                                    Style="{StaticResource AfSettingsRowSliderStyle}"
+                                    TickFrequency="{Binding Source={x:Static settings:LyricsLineGap.StepPercent}}"
+                                    Value="{Binding ViewModel.LineGapPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock
+                                    Style="{StaticResource AfSettingsRowValueStyle}"
+                                    Text="{Binding ViewModel.LineGapText}" />
+                            </StackPanel>
+                        </components:SettingsRow>
+
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Lyrics.Row.CharacterSpacing.Description}"
+                            Icon="{ui:SymbolIcon TextFont24}"
+                            Title="{DynamicResource Loc.Lyrics.Row.CharacterSpacing.Title}">
+                            <StackPanel Orientation="Horizontal">
+                                <Slider
+                                    IsSnapToTickEnabled="True"
+                                    Maximum="{Binding Source={x:Static settings:LyricsCharacterSpacing.MaximumPercent}}"
+                                    Minimum="{Binding Source={x:Static settings:LyricsCharacterSpacing.MinimumPercent}}"
+                                    Style="{StaticResource AfSettingsRowSliderStyle}"
+                                    TickFrequency="{Binding Source={x:Static settings:LyricsCharacterSpacing.StepPercent}}"
+                                    Value="{Binding ViewModel.CharacterSpacingPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock
+                                    Style="{StaticResource AfSettingsRowValueStyle}"
+                                    Text="{Binding ViewModel.CharacterSpacingText}" />
+                            </StackPanel>
+                        </components:SettingsRow>
+
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Lyrics.Row.FixedWidth.Description}"
+                            Icon="{ui:SymbolIcon ResizeLarge24}"
+                            Style="{StaticResource FixedWidthRowStyle}"
+                            Title="{DynamicResource Loc.Lyrics.Row.FixedWidth.Title}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.FixedWidthEnabled, Mode=TwoWay}" />
+                        </components:SettingsRow>
+
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Lyrics.Row.FixedWidth.Length.Description}"
+                            Icon="{ui:SymbolIcon ArrowAutofitWidth24}"
+                            Title="{DynamicResource Loc.Lyrics.Row.FixedWidth.Length.Title}">
+                            <StackPanel Orientation="Horizontal">
+                                <Slider
+                                    IsEnabled="{Binding ViewModel.CanConfigureFixedWidthDip}"
+                                    IsSnapToTickEnabled="True"
+                                    Maximum="{Binding Source={x:Static settings:LyricsFixedWidth.MaximumDip}}"
+                                    Minimum="{Binding Source={x:Static settings:LyricsFixedWidth.MinimumDip}}"
+                                    Style="{StaticResource AfSettingsRowSliderStyle}"
+                                    TickFrequency="{Binding Source={x:Static settings:LyricsFixedWidth.StepDip}}"
+                                    Value="{Binding ViewModel.FixedWidthDip, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock
+                                    Style="{StaticResource AfSettingsRowValueStyle}"
+                                    Text="{Binding ViewModel.FixedWidthText}" />
+                            </StackPanel>
+                        </components:SettingsRow>
                     </StackPanel>
                 </components:SettingsGroup>
 
