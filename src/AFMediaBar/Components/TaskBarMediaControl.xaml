@@ -195,7 +195,21 @@
                             </StackPanel>
 
                             <Grid x:Name="SongLyricsPanel" Opacity="0" IsHitTestVisible="False" ClipToBounds="True">
+                                <!--
+                                    最小 1×1：WebView2 的合成控件在 0（或负数）尺寸的 SizeChanged 里会抛 ArgumentException
+                                    （GraphicsItemD3DImage.UpdateSize），媒体栏长度收缩到零时会让整个应用闪退；把最小尺寸钉在
+                                    1 DIP，它最多在裁剪容器里溢出 1 像素，不会再收到零尺寸布局。已用同版本 SDK 的最小重现程序验证：
+                                    0×0 / 0×50 / 50×0 无防护必崩，加上最小尺寸后全部尺寸安全。
+                                    Minimum 1x1: the WebView2 composition control throws ArgumentException from its zero-size
+                                    SizeChanged (GraphicsItemD3DImage.UpdateSize), which crashed the whole app whenever the bar
+                                    shrank to zero length; pinning the minimum size to one DIP lets it overflow the clipped
+                                    container by at most a pixel instead of ever seeing a zero-size layout. Verified with a minimal
+                                    repro against the same SDK version: 0x0, 0x50, and 50x0 crash without the guard and are stable
+                                    with it.
+                                -->
                                 <wv2:WebView2CompositionControl x:Name="LyricsWebView"
+                                                               MinWidth="1"
+                                                               MinHeight="1"
                                                                HorizontalAlignment="Stretch"
                                                                VerticalAlignment="Stretch"
                                                                IsHitTestVisible="False" />
