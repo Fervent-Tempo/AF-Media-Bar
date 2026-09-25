@@ -363,7 +363,9 @@ public sealed class TaskbarOccupiedAreaProbe : ITaskbarOccupiedAreaProbe
             var interactiveControlCondition = new OrCondition(
                 new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Button),
                 new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.SplitButton),
-                new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.MenuItem),
+                // https://github.com/Fervent-Tempo/AF-Media-Bar/issues/45
+                // 任务栏右键菜单会被当成MenuItem检测到并避让
+                // new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.MenuItem),
                 new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem));
             var cacheRequest = new CacheRequest
             {
@@ -372,6 +374,9 @@ public sealed class TaskbarOccupiedAreaProbe : ITaskbarOccupiedAreaProbe
             };
             cacheRequest.Add(AutomationElement.IsOffscreenProperty);
             cacheRequest.Add(AutomationElement.BoundingRectangleProperty);
+            cacheRequest.Add(AutomationElement.ControlTypeProperty);
+            cacheRequest.Add(AutomationElement.NameProperty);
+            cacheRequest.Add(AutomationElement.NativeWindowHandleProperty);
 
             AutomationElementCollection elements;
             using (cacheRequest.Activate())
