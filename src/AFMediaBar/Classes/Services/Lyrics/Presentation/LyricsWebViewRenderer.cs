@@ -9,6 +9,8 @@ namespace AFMediaBar.Classes.Services.Lyrics;
 /// <summary>Web 歌词视图的外观输入。/ Appearance input for the web lyrics view.</summary>
 public sealed record LyricsWebStyle(
     string FontFamily,
+    string LatinFontFamily,
+    string CjkFontFamily,
     double FontSize,
     int FontWeight,
     double CharacterSpacingPercent,
@@ -82,6 +84,8 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
         _pendingStyle = SerializeMessage("style", new
         {
             style.FontFamily,
+            style.LatinFontFamily,
+            style.CjkFontFamily,
             style.FontSize,
             style.FontWeight,
             style.CharacterSpacingPercent,

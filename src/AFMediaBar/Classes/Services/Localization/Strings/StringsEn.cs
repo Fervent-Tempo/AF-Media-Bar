@@ -106,7 +106,10 @@ internal static class StringsEn
         table.Add("Appearance.Backdrop.Solid", "Solid");
         table.Add("Appearance.BackdropTint.Hint", "Only applies where the application paints the material itself: windows on Windows 10, and the track notification, which never takes focus (the system materials need a foreground window, and a notification never activates, so its blur is painted by the application). Mica and Acrylic on Windows 11 are painted by the system and ignore this value. Lower is more transparent; very high values approach a solid surface.");
         table.Add("Appearance.CjkFont.FollowSystem", "Follow the system");
+        table.Add("Appearance.CjkFont.Sample", "中文字体示例");
+        table.Add("Appearance.Font.PreviewLabel", "Preview");
         table.Add("Appearance.LatinFont.FollowSystem", "Follow the system");
+        table.Add("Appearance.LatinFont.Sample", "Aa Bb 123");
         table.Add("Appearance.Header.Subtitle", "Fonts, theme, window backdrop, and media-bar text");
         table.Add("Appearance.Motion.Detail.Full", "Keeps expansion, feedback, and spectrum transitions");
         table.Add("Appearance.Motion.Detail.Instant", "Follows the system setting to avoid transition latency");

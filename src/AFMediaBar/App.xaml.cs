@@ -482,7 +482,7 @@ namespace AFMediaBar
 
         private void UpdateAppearanceResources(AppearanceSettings appearance, ApplicationTheme theme, AccentPalette accent)
         {
-            var fontFamily = new FontFamily(appearance.ResolveFontFamilySource(SystemFonts.MessageFontFamily.Source));
+            var fontFamily = InstalledFontCatalog.CreateCompositeFont(appearance, SystemFonts.MessageFontFamily.Source);
             var fontWeight = FontWeight.FromOpenTypeWeight(appearance.FontWeight);
             Resources["AppTextFontFamily"] = fontFamily;
             Resources["ContentControlThemeFontFamily"] = fontFamily;

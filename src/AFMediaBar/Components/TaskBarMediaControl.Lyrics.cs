@@ -142,6 +142,8 @@ public partial class TaskBarMediaControl
 
         _lyricsWebRenderer.ApplyStyle(new LyricsWebStyle(
             appearance.ResolveFontFamilySource(SystemFonts.MessageFontFamily.Source),
+            appearance.ResolveLatinFontFamily(SystemFonts.MessageFontFamily.Source),
+            appearance.ResolveCjkFontFamily(SystemFonts.MessageFontFamily.Source),
             _layoutEngine?.LyricsFontSize ?? 12,
             appearance.FontWeight,
             LyricsCharacterSpacing.Normalize(SettingsManager.Current.LyricsCharacterSpacingPercent),

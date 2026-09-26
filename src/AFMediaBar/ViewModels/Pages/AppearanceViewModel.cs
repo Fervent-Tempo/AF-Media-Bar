@@ -46,8 +46,8 @@ public partial class AppearanceViewModel : ObservableObject
         _localization = localization;
 
         var appearance = SettingsManager.Current.Appearance.Normalize();
-        _latinFontChoices = InstalledFontCatalog.GetChoices("Appearance.LatinFont.FollowSystem");
-        _cjkFontChoices = InstalledFontCatalog.GetChoices("Appearance.CjkFont.FollowSystem");
+        _latinFontChoices = InstalledFontCatalog.GetChoices("Appearance.LatinFont.FollowSystem", cjk: false);
+        _cjkFontChoices = InstalledFontCatalog.GetChoices("Appearance.CjkFont.FollowSystem", cjk: true);
         _latinFont = appearance.LatinFont;
         _cjkFont = appearance.CjkFont;
         _latinFontFamily = InstalledFontCatalog.MatchSelection(appearance.SelectedLatinFontFamily, _latinFontChoices);
@@ -115,8 +115,8 @@ public partial class AppearanceViewModel : ObservableObject
         _isRefreshing = true;
         try
         {
-            _latinFontChoices = InstalledFontCatalog.GetChoices("Appearance.LatinFont.FollowSystem");
-            _cjkFontChoices = InstalledFontCatalog.GetChoices("Appearance.CjkFont.FollowSystem");
+            _latinFontChoices = InstalledFontCatalog.GetChoices("Appearance.LatinFont.FollowSystem", cjk: false);
+            _cjkFontChoices = InstalledFontCatalog.GetChoices("Appearance.CjkFont.FollowSystem", cjk: true);
             OnPropertyChanged(nameof(LatinFontChoices));
             OnPropertyChanged(nameof(CjkFontChoices));
             LatinFontFamily = InstalledFontCatalog.MatchSelection(latin, _latinFontChoices);
