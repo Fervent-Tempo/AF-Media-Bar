@@ -169,6 +169,53 @@ internal sealed class ProcessMemory : IDisposable
         return bytes;
     }
 
+    // 上面的读取不检查 ReadProcessMemory 的返回值：失败时静默返回全零。对"地址必然有效"的既有调用（网易云签名扫描）
+    // 这没问题，但走多级指针链时任何一环都可能失效，调用方必须能区分"读到 0"和"根本没读到"，所以这里有带校验的版本。
+    // The reads above do not check ReadProcessMemory's return: a failure silently yields zeros. That is fine for existing callers whose
+    // addresses are known-valid (the NetEase signature scan), but when walking a multi-level pointer chain any link can fail, and the caller
+    // must tell "read a zero" from "read nothing" — hence these checked variants.
+    public bool TryReadInt32(IntPtr address, out int value)
+    {
+        value = 0;
+        if (!TryReadProcessMemory(address, 4, out var bytes))
+        {
+            return false;
+        }
+
+        value = BitConverter.ToInt32(bytes, 0);
+        return true;
+    }
+
+    public bool TryReadInt64(IntPtr address, out long value)
+    {
+        value = 0;
+        if (!TryReadProcessMemory(address, 8, out var bytes))
+        {
+            return false;
+        }
+
+        value = BitConverter.ToInt64(bytes, 0);
+        return true;
+    }
+
+    public bool TryReadDouble(IntPtr address, out double value)
+    {
+        value = 0;
+        if (!TryReadProcessMemory(address, 8, out var bytes))
+        {
+            return false;
+        }
+
+        value = BitConverter.ToDouble(bytes, 0);
+        return true;
+    }
+
+    private bool TryReadProcessMemory(IntPtr address, int size, out byte[] bytes)
+    {
+        bytes = new byte[size];
+        return ReadProcessMemory(_process, address, bytes, size, out var read) && read == size;
+    }
+
     public float ReadFloat(IntPtr address, int offset = 0)
         => BitConverter.ToSingle(ReadBytes(IntPtr.Add(address, offset), 4), 0);
 
@@ -192,6 +239,9 @@ internal sealed class ProcessMemory : IDisposable
 
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool ReadProcessMemory(IntPtr pHandle, IntPtr address, byte[] buffer, int size, IntPtr bytesRead);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool ReadProcessMemory(IntPtr pHandle, IntPtr address, byte[] buffer, int size, out int bytesRead);
 
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern IntPtr OpenProcess(int dwDesiredAccess, IntPtr bInheritHandle, int dwProcessId);

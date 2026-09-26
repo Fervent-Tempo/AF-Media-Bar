@@ -1,5 +1,6 @@
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services.Localization;
 using AFMediaBar.Classes.Services.Lyrics;
 using AFMediaBar.Classes.Settings;
@@ -120,6 +121,49 @@ public sealed class LyricsViewModelTests
     }
 
     private static LyricsViewModel CreateViewModel() => new(new LocalizationService(), new StubSessionScanner());
+
+    [DataTestMethod]
+    [DataRow(LyricsQueryStrategy.Sequential)]
+    [DataRow(LyricsQueryStrategy.Concurrent)]
+    public async Task QueryStrategyFlowsFromViewModelIntoProviderDispatch(LyricsQueryStrategy strategy)
+    {
+        var viewModel = CreateViewModel();
+        viewModel.ConcurrencyBatchSize = 3;
+        viewModel.QueryStrategy = strategy == LyricsQueryStrategy.Sequential
+            ? LyricsQueryStrategy.Concurrent : LyricsQueryStrategy.Sequential;
+        viewModel.QueryStrategy = strategy;
+        Assert.AreEqual(strategy, LyricsRetrievalOptions.FromSettings().QueryStrategy);
+
+        var releaseFirst = new TaskCompletionSource<LyricsResult?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var first = new DispatchProvider(LyricsSourceCatalog.QQMusic, () => releaseFirst.Task);
+        var second = new DispatchProvider(LyricsSourceCatalog.Kugou, () => Task.FromResult<LyricsResult?>(null));
+        SettingsManager.SetLyricsSourceSettings(new LyricsSourceSettings([first.SourceName, second.SourceName]));
+        var service = new LyricsService(first, second);
+        var retrieval = service.GetLyricsAsync(new LyricsRequest("Song", "Artist", "", null, null), CancellationToken.None);
+        try
+        {
+            Assert.IsTrue(first.Started);
+            Assert.AreEqual(strategy == LyricsQueryStrategy.Concurrent, second.Started,
+                "Only concurrent mode should dispatch the second provider before the first finishes.");
+        }
+        finally
+        {
+            releaseFirst.TrySetResult(null);
+            await retrieval;
+        }
+        Assert.IsTrue(second.Started);
+    }
+
+    private sealed class DispatchProvider(string name, Func<Task<LyricsResult?>> retrieve) : ILyricsProvider
+    {
+        public string SourceName => name;
+        public bool Started { get; private set; }
+        public Task<LyricsResult?> GetLyricsAsync(LyricsRequest request, CancellationToken cancellationToken)
+        {
+            Started = true;
+            return retrieve();
+        }
+    }
 
     /// <summary>空会话扫描桩：绑定列表的刷新与来源列表共用全局设置，扫描本身另有并发测试覆盖。
     /// An empty scanner stub: the binding list's refresh shares the global settings with the source list, while the scan

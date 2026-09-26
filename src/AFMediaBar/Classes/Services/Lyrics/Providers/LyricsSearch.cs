@@ -23,7 +23,9 @@ internal static class LyricsSearch
     {
         Title = request?.Title,
         Artist = request?.Artist,
-        Album = request?.Album,
+        // 库用 null 表示未知；空字符串会作为不匹配的专辑扣分。
+        // The library treats null as unknown, but an empty string as an album mismatch.
+        Album = string.IsNullOrWhiteSpace(request?.Album) ? null : request.Album,
         DurationMs = ToDurationMilliseconds(durationSeconds ?? request?.DurationSeconds)
     };
 
@@ -59,14 +61,19 @@ internal static class LyricsSearch
         {
             var result = await SearchHelper.Search(track, searcher, minimumMatch);
             cancellationToken.ThrowIfCancellationRequested();
+            AppLogService.Current?.Info("Lyrics",
+                $"歌曲匹配 / track match: source={searcher} minimum={minimumMatch} " +
+                $"result={result?.MatchType.ToString() ?? "none"}");
             return result;
         }
         catch (OperationCanceledException)
         {
             throw;
         }
-        catch
+        catch (Exception ex)
         {
+            AppLogService.Current?.Warn("Lyrics",
+                $"歌曲搜索异常 / track search failed: source={searcher} error={ex.GetType().Name}");
             return null;
         }
     }

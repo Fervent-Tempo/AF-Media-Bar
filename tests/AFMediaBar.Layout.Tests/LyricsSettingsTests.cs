@@ -276,6 +276,49 @@ public sealed class LyricsSettingsTests
 
     // ---- 匹配严格度 ----
 
+    [DataTestMethod]
+    [DataRow("张三 / 李四", "张三")]
+    [DataRow("张三、李四", "张三")]
+    [DataRow("张三&李四", "张三")]
+    [DataRow("张三；李四", "张三")]
+    [DataRow("张三,李四", "张三")]
+    [DataRow("  Taylor Swift  ", "Taylor Swift")]
+    [DataRow("", "")]
+    public async Task EveryLyricsSourceReceivesOnlyTheFirstArtist(string artist, string expected)
+    {
+        var providers = new[]
+        {
+            LyricsSourceCatalog.NetEase, LyricsSourceCatalog.NetEaseSearch,
+            LyricsSourceCatalog.QQMusic, LyricsSourceCatalog.Kugou,
+            LyricsSourceCatalog.Lrclib, LyricsSourceCatalog.SodaMusic
+        }.Select(name => new CapturingProvider(name)).ToArray();
+        SettingsManager.SetLyricsSourceSettings(new LyricsSourceSettings(providers.Select(p => p.SourceName).ToArray()));
+        var request = Request() with { Artist = artist };
+
+        await new LyricsService(providers).GetLyricsAsync(request, CancellationToken.None);
+
+        foreach (var provider in providers)
+        {
+            Assert.IsNotNull(provider.Request, provider.SourceName);
+            Assert.AreEqual(expected, provider.Request.Artist, provider.SourceName);
+            Assert.AreEqual(request.Title, provider.Request.Title);
+            Assert.AreEqual(request.DurationSeconds, provider.Request.DurationSeconds);
+        }
+        Assert.AreEqual(artist, request.Artist);
+    }
+
+    private sealed class CapturingProvider(string sourceName) : ILyricsProvider
+    {
+        public string SourceName => sourceName;
+        public LyricsRequest? Request { get; private set; }
+
+        public Task<LyricsResult?> GetLyricsAsync(LyricsRequest request, CancellationToken cancellationToken)
+        {
+            Request = request;
+            return Task.FromResult<LyricsResult?>(null);
+        }
+    }
+
     [TestMethod]
     public void MatchStrictnessMapsOntoTheLibraryLevels()
     {
