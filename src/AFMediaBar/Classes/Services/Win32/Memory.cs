@@ -198,6 +198,18 @@ internal sealed class ProcessMemory : IDisposable
         return true;
     }
 
+    public bool TryReadDouble(IntPtr address, out double value)
+    {
+        value = 0;
+        if (!TryReadProcessMemory(address, 8, out var bytes))
+        {
+            return false;
+        }
+
+        value = BitConverter.ToDouble(bytes, 0);
+        return true;
+    }
+
     private bool TryReadProcessMemory(IntPtr address, int size, out byte[] bytes)
     {
         bytes = new byte[size];

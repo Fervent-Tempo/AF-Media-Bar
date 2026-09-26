@@ -13,11 +13,12 @@ namespace AFMediaBar.Classes.Services;
 public sealed class KuGouMediaProvider : IMediaSourceProvider, IMemoryPrunable
 {
     /// <summary>
-    /// 内存里的进度只有整秒精度，界面按 <c>TimelineUpdatedAt</c> 外推（见 <c>TaskbarExperiencePolicy.GetPosition</c>），
-    /// 因此轮询只需要把时间戳的新鲜度维持在半秒左右；更快的频率改变不了整秒跳变，只是在空转。
-    /// The memory position is whole-second only and the UI extrapolates from <c>TimelineUpdatedAt</c> (see
-    /// <c>TaskbarExperiencePolicy.GetPosition</c>), so polling only has to keep the timestamp fresher than about half a second; a faster
-    /// cadence cannot change the one-second quantization, it would only spin.
+    /// 进度来自 kgplayer.dll 的毫秒级双精度读数，与网易云同一条路：界面按 <c>TimelineUpdatedAt</c> 外推
+    /// （见 <c>TaskbarExperiencePolicy.GetPosition</c>），轮询只需定期把锚点重定到真实进度。
+    /// 233ms 与网易云提供器一致。
+    /// The position comes from a millisecond double inside kgplayer.dll and follows the same path as NetEase: the UI extrapolates from
+    /// <c>TimelineUpdatedAt</c> (see <c>TaskbarExperiencePolicy.GetPosition</c>), and polling only re-anchors to the real position
+    /// periodically. 233ms matches the NetEase provider.
     /// </summary>
     private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(233);
 
@@ -27,7 +28,7 @@ public sealed class KuGouMediaProvider : IMediaSourceProvider, IMemoryPrunable
     /// <summary>曲目时长的可信上限（一天）：酷狗更新移动偏移后读到的会是不相干的数据，用上限挡掉而不是展示。/ Plausible maximum of a track duration (one day): after a KuGou update shifts the offsets the bytes read are unrelated data, which this cap keeps off the UI.</summary>
     private const double MaximumPlausibleDurationSeconds = 86_400;
 
-    /// <summary>进度允许超出时长的舍入余量（秒）：曲末进度与时长各自取整，先后切换一秒是正常的。/ Rounding slack, in seconds, by which the position may exceed the duration: both values are whole seconds and they do not flip in the same poll at a track's end.</summary>
+    /// <summary>进度允许超出时长的余量（秒）：时长是整秒而进度是毫秒级，曲末进度越过整秒时长最多约一秒是正常的。/ Slack, in seconds, by which the position may exceed the duration: the duration is whole seconds while the position is millisecond precision, so near a track's end the position may pass the truncated duration by up to about a second.</summary>
     private const double PositionRoundingSlackSeconds = 2;
 
     private readonly Dispatcher _dispatcher;
