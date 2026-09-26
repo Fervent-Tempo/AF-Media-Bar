@@ -1,5 +1,6 @@
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Abstractions;
+using AFMediaBar.Components;
 using AFMediaBar.Classes.Services.Credits;
 using AFMediaBar.Classes.Services.Lyrics;
 using AFMediaBar.ViewModels.Pages;
@@ -526,6 +527,23 @@ namespace AFMediaBar
         /// </summary>
         private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
         {
+            // WebView2 合成控件的图形层在 D3D 设备不可用时会在尺寸变化路径里空引用（真机日志中两次导致整应用闪退）。
+            // 这一类故障可以被安全拦下：记录后通知媒体控件重建歌词视图；其余异常保持原行为（落盘后交回 WPF 默认处理）。
+            // The WebView2 composition control null-references on its resize path while the D3D device is unavailable
+            // (twice this crashed the whole application in the field log). That one class of fault is safe to intercept:
+            // log it, ask the media controls to rebuild the lyrics view; everything else keeps the old behavior — write the
+            // stack to disk, then hand back to WPF's default handling.
+            if (WebView2GraphicsFaultPolicy.IsGraphicsFault(e.Exception))
+            {
+                AppLogService.Current?.Warn(
+                    "Lyrics",
+                    "WebView2 图形层故障已拦截，将重建歌词视图 / WebView2 graphics fault intercepted; rebuilding the lyrics view",
+                    e.Exception);
+                e.Handled = true;
+                WebLyricsGraphicsRecovery.Request();
+                return;
+            }
+
             // 未处理异常是上报的第一现场：先落盘（含堆栈），再交回 WPF 的默认处理，避免"程序崩了但什么都没有留下"。
             // An unhandled exception is the first thing a report needs: it is written to disk with its stack first, and only then handed back
             // to WPF's default handling, so a crash never leaves nothing behind.
