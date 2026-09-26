@@ -4,6 +4,12 @@ title: "[Feature]: "
 labels:
   - enhancement
 body:
+  - type: markdown
+    attributes:
+      value: |
+        请先查看 [项目方向](https://github.com/Fervent-Tempo/AF-Media-Bar/blob/main/CONTRIBUTING.md#项目方向)、现有设置及相关 Issue/PR，确认需求尚未实现且没有重复工作。准备自己实现时，请在 Issue 留言说明方案和范围；留言不是独占认领。
+        Check the [project direction](https://github.com/Fervent-Tempo/AF-Media-Bar/blob/main/CONTRIBUTING.md#project-direction), existing settings, and related issues/PRs first. If you plan to implement it, comment with your approach and scope; a comment is not an exclusive claim.
+
   - type: textarea
     id: problem
     attributes:
@@ -37,5 +43,7 @@ body:
     attributes:
       label: 范围确认 / Scope Check
       options:
+        - label: 我已检查现有设置及相关 Issue/PR，确认这不是对已有功能的重复描述。 / I checked existing settings and related issues/PRs for duplicates.
+          required: true
         - label: 此建议与 Windows 任务栏媒体、音频、窗口位置或现有 AF Media Bar 使用流程有关。 / This request is related to Windows taskbar media, audio, placement, or the existing AF Media Bar workflow.
           required: true
