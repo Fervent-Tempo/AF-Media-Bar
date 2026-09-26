@@ -371,6 +371,8 @@ internal static class StringsZhHant
         table.Add("DisplayModes.Rest.Row.Entry.Title", "顯示進入完整層的入口");
         table.Add("DisplayModes.Rest.Row.Layout.Description", "標題與歌手並排一行，或上下堆疊");
         table.Add("DisplayModes.Rest.Row.Layout.Title", "內容排列");
+        table.Add("DisplayModes.Rest.Row.Performance.Description", "在靜置層輪流顯示選取的記憶體、處理器等指標");
+        table.Add("DisplayModes.Rest.Row.Performance.Title", "靜置層顯示效能元件");
         table.Add("DisplayModes.Rest.Row.Progress.Description", "靜置層底部的唯讀播放進度條；媒體未回報長度時不顯示");
         table.Add("DisplayModes.Rest.Row.Progress.Title", "顯示播放進度");
         table.Add("DisplayModes.Rest.Row.VolumeButton.Description", "點擊開啟音量選單，在它上面滾動調整目前來源的音量；常駐會佔掉媒體文字的位置");

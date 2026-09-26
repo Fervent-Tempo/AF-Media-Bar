@@ -371,6 +371,8 @@ internal static class StringsEn
         table.Add("DisplayModes.Rest.Row.Entry.Title", "Show the full-panel entry");
         table.Add("DisplayModes.Rest.Row.Layout.Description", "Puts the title and the artist on one line side by side, or stacks them");
         table.Add("DisplayModes.Rest.Row.Layout.Title", "Content layout");
+        table.Add("DisplayModes.Rest.Row.Performance.Description", "Cycles through the selected metrics such as memory and processor in the rest layer");
+        table.Add("DisplayModes.Rest.Row.Performance.Title", "Show the performance component in the rest layer");
         table.Add("DisplayModes.Rest.Row.Progress.Description", "A read-only progress bar along the bottom of the rest layer; it stays hidden while the media reports no duration");
         table.Add("DisplayModes.Rest.Row.Progress.Title", "Show playback progress");
         table.Add("DisplayModes.Rest.Row.VolumeButton.Description", "Opens the volume menu on click and adjusts the current source's volume on the wheel; keeping it there takes room from the media text");

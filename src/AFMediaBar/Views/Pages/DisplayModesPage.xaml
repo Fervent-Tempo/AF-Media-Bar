@@ -441,6 +441,13 @@
                             </components:SettingsRow>
 
                             <components:SettingsRow
+                                Description="{DynamicResource Loc.DisplayModes.Rest.Row.Performance.Description}"
+                                Icon="{ui:SymbolIcon Gauge24}"
+                                Title="{DynamicResource Loc.DisplayModes.Rest.Row.Performance.Title}">
+                                <ui:ToggleSwitch IsChecked="{Binding ViewModel.RestPerformanceVisible, Mode=TwoWay}" />
+                            </components:SettingsRow>
+
+                            <components:SettingsRow
                                 Description="{DynamicResource Loc.DisplayModes.Rest.Row.DeviceButton.Description}"
                                 Icon="{ui:SymbolIcon Speaker224}"
                                 Title="{DynamicResource Loc.DisplayModes.Rest.Row.DeviceButton.Title}">

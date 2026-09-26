@@ -187,7 +187,7 @@ public partial class DisplayModesViewModel : ObservableObject
     }
 
     /// <summary>静置层是否显示性能组件。 / Whether the rest layer shows the performance component.</summary>
-    public bool PerformanceVisible
+    public bool RestPerformanceVisible
     {
         get => SettingsManager.Current.TaskbarExperience.PerformanceVisible;
         set => UpdateExperience(SettingsManager.Current.TaskbarExperience with { PerformanceVisible = value });
@@ -926,7 +926,7 @@ public partial class DisplayModesViewModel : ObservableObject
         OnPropertyChanged(nameof(MediaTextAlignment));
         OnPropertyChanged(nameof(FullPanelEntryVisible));
         OnPropertyChanged(nameof(RestProgressVisible));
-        OnPropertyChanged(nameof(SpectrumVisible)); OnPropertyChanged(nameof(PerformanceVisible));
+        OnPropertyChanged(nameof(SpectrumVisible)); OnPropertyChanged(nameof(RestPerformanceVisible));
         OnPropertyChanged(nameof(HoverPlayPauseVisible)); OnPropertyChanged(nameof(HoverPreviousNextVisible));
         OnPropertyChanged(nameof(HoverOutputDeviceVisible)); OnPropertyChanged(nameof(HoverAudioControlVisible));
         OnPropertyChanged(nameof(HoverProgressVisible));

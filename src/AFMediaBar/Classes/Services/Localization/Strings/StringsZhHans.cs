@@ -371,6 +371,8 @@ internal static class StringsZhHans
         table.Add("DisplayModes.Rest.Row.Entry.Title", "显示进入完整层的入口");
         table.Add("DisplayModes.Rest.Row.Layout.Description", "标题与歌手并排一行，或上下堆叠");
         table.Add("DisplayModes.Rest.Row.Layout.Title", "内容排列");
+        table.Add("DisplayModes.Rest.Row.Performance.Description", "在静置层轮换显示选中的内存、处理器等指标");
+        table.Add("DisplayModes.Rest.Row.Performance.Title", "静置层显示性能组件");
         table.Add("DisplayModes.Rest.Row.Progress.Description", "静置层底部的只读播放进度条；媒体未报告时长时不显示");
         table.Add("DisplayModes.Rest.Row.Progress.Title", "显示播放进度");
         table.Add("DisplayModes.Rest.Row.VolumeButton.Description", "点击打开音量菜单，在其上滚动调节当前来源的音量；常驻会占掉媒体文字的位置");
