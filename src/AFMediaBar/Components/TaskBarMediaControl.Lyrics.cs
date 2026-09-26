@@ -4,6 +4,7 @@ using System.Windows.Threading;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Lyrics;
 using AFMediaBar.Classes.Settings;
+using Microsoft.Web.WebView2.Wpf;
 
 namespace AFMediaBar.Components;
 
@@ -31,12 +32,21 @@ public partial class TaskBarMediaControl
     private string _lastSizeLyricText = string.Empty;
     private string _lastSizeSecondaryText = string.Empty;
 
+    /// <summary>已经为 WebView2 图形层故障重建过几次歌词视图（见 RecoverWebLyricsGraphics）。
+    /// How many times the lyric view has been rebuilt after a WebView2 graphics fault (see RecoverWebLyricsGraphics).</summary>
+    private int _lyricsGraphicsRecoveries;
+
+    /// <summary>重建预算用尽后置位：停用 Web 歌词、退回元数据，避免同一缺陷反复击穿应用。
+    /// Set once the rebuild budget is spent: the web lyrics stay off and the bar falls back to metadata so the same defect cannot take the app down again.</summary>
+    private bool _webLyricsGraphicsDisabled;
+
     private void InitializeWebLyrics()
     {
         _lyricsWebRenderer = new LyricsWebViewRenderer(LyricsWebView);
         _lyricsWebRenderer.Ready += OnWebLyricsReady;
         _lyricsWebTimer.Tick += (_, _) => UpdateWebLyricsPresentation();
         Loaded += OnWebLyricsLoaded;
+        WebLyricsGraphicsRecovery.RecoveryRequested += OnWebLyricsGraphicsRecoveryRequested;
     }
 
     private async void OnWebLyricsLoaded(object sender, RoutedEventArgs e)
@@ -61,7 +71,7 @@ public partial class TaskBarMediaControl
         var next = LyricsPresentationProjector.Project(_snapshot, SettingsManager.Current, DateTimeOffset.UtcNow);
         _lyricsFrame = next;
 
-        var showWebLyrics = next.IsVisible && _lyricsWebRenderer?.IsReady == true;
+        var showWebLyrics = next.IsVisible && !_webLyricsGraphicsDisabled && _lyricsWebRenderer?.IsReady == true;
         SongMetadataPanel.Visibility = showWebLyrics ? Visibility.Collapsed : Visibility.Visible;
         // WebView2 must stay in the visible visual tree while it initializes. Hiding this
         // host until IsReady would prevent navigation from completing on some systems.
@@ -214,5 +224,84 @@ public partial class TaskBarMediaControl
         _lyricsWebTimer.Stop();
         _lyricsWebRenderer?.Dispose();
         _lyricsWebRenderer = null;
+        WebLyricsGraphicsRecovery.RecoveryRequested -= OnWebLyricsGraphicsRecoveryRequested;
+    }
+
+    /// <summary>全局异常处理识别出 WebView2 图形层故障后的回调：在新一帧里执行重建，避免在异常展开的调用栈里改动可视树。
+    /// Called after the global exception handler identifies a WebView2 graphics fault: the rebuild runs on a fresh
+    /// dispatcher frame so the visual tree is never mutated inside the unwinding exception stack.</summary>
+    private void OnWebLyricsGraphicsRecoveryRequested()
+    {
+        if (_webLyricsGraphicsDisabled)
+        {
+            return;
+        }
+
+        Dispatcher.BeginInvoke(RecoverWebLyricsGraphics);
+    }
+
+    /// <summary>
+    /// 重建 Web 歌词视图：故障出在 WebView2 合成控件内部（D3D 设备丢失时 `SetGraphicItem` 空引用），
+    /// 控件本身无法复位，只能整只换掉——把旧控件移出可视树、释放，再放一个全新的合成控件并重新初始化。
+    /// 预算用尽后停用 Web 歌词，退回元数据，保证应用不会再被同一缺陷击穿。
+    /// Rebuilds the web lyrics view: the fault lives inside the WebView2 composition control (a null reference from
+    /// `SetGraphicItem` when the D3D device is gone) and the control cannot be reset, so it is replaced as a whole —
+    /// the old one leaves the tree and is disposed, a fresh composition control is inserted and initialized. Once the
+    /// budget is spent the web lyrics stay off and the bar falls back to metadata, so the same defect cannot take the
+    /// application down again.
+    /// </summary>
+    private void RecoverWebLyricsGraphics()
+    {
+        if (!WebView2GraphicsFaultPolicy.CanRecover(_lyricsGraphicsRecoveries))
+        {
+            _webLyricsGraphicsDisabled = true;
+            StopWebLyrics();
+            ApplyWebLyricsStyle();
+            UpdateWebLyricsPresentation(allowTransition: false);
+            RaiseDesiredSizeChanged(isForcedRefresh: true);
+            AppLogService.Current?.Warn(
+                "Lyrics",
+                $"WebView2 图形层故障已达重建上限（{WebView2GraphicsFaultPolicy.MaximumRecoveries} 次），本次会话停用 Web 歌词并退回元数据");
+            return;
+        }
+
+        _lyricsGraphicsRecoveries++;
+        AppLogService.Current?.Warn(
+            "Lyrics",
+            $"WebView2 图形层故障，正在重建歌词视图（第 {_lyricsGraphicsRecoveries}/{WebView2GraphicsFaultPolicy.MaximumRecoveries} 次）");
+
+        var previousRenderer = _lyricsWebRenderer;
+        var panel = SongLyricsPanel;
+        var oldControl = LyricsWebView;
+        var index = panel.Children.IndexOf(oldControl);
+        if (previousRenderer is not null)
+        {
+            previousRenderer.Ready -= OnWebLyricsReady;
+        }
+
+        // 先把旧控件移出可视树再释放：Dispose 之后它不能再参与任何一次布局。
+        // Remove the old control from the visual tree before disposing it: a disposed one must not take part in any layout pass.
+        if (index >= 0)
+        {
+            panel.Children.RemoveAt(index);
+        }
+
+        previousRenderer?.Dispose();
+
+        var replacement = new WebView2CompositionControl
+        {
+            MinWidth = 1,
+            MinHeight = 1,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Stretch,
+            IsHitTestVisible = false
+        };
+        panel.Children.Insert(index >= 0 ? index : 0, replacement);
+        LyricsWebView = replacement;
+
+        _lyricsWebRenderer = new LyricsWebViewRenderer(replacement);
+        _lyricsWebRenderer.Ready += OnWebLyricsReady;
+        ApplyWebLyricsStyle();
+        _ = _lyricsWebRenderer.InitializeAsync();
     }
 }

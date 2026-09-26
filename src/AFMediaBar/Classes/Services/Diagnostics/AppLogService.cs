@@ -122,6 +122,13 @@ public sealed class AppLogService : IDisposable
     /// <param name="message">内容。/ Message.</param>
     public void Warn(string category, string message) => Write(AppLogLevel.Warning, category, message, null);
 
+    /// <summary>写一条可恢复的问题（带堆栈）。/ Writes one recoverable problem with its stack trace.</summary>
+    /// <param name="category">分类。/ Category.</param>
+    /// <param name="message">内容。/ Message.</param>
+    /// <param name="exception">异常，用于记录堆栈。/ The exception, logged with its stack trace.</param>
+    public void Warn(string category, string message, Exception exception) =>
+        Write(AppLogLevel.Warning, category, message, exception);
+
     /// <summary>写一条异常，带完整堆栈；它会立刻落盘，不参与合并重写。/ Writes one exception with its full stack trace; it lands on disk immediately instead of joining the coalesced rewrite.</summary>
     /// <param name="category">分类。/ Category.</param>
     /// <param name="message">内容。/ Message.</param>
