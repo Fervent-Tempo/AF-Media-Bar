@@ -53,7 +53,7 @@ git diff --check
 ## Pull Request
 
 - 标题用简短的 `fix(scope): ...`、`feat(scope): ...` 或 `docs: ...` 说明结果；
-- 填写 PR 模板：先用普通用户能理解的话说明问题和改动前后，再概述实现、验证证据、未验证场景及风险。构建通过不等于实机通过；界面与任务栏行为改动请尽可能附截图或短录屏。
+- 填写 PR 模板的“改动”和“验证”两节：简要说明问题与结果，只写实际做过的验证；未验证时直接说明。相关 Issue、风险及截图只在适用时补充。构建通过不等于实机通过；界面与任务栏行为改动请尽可能附截图或短录屏。
 - 用 `Refs #123` 关联进行中的 Issue；只有 PR 完整解决该问题时才用 `Closes #123`。保持 PR 范围与关联 Issue 一致。
 - 可以使用 AI 辅助代码或撰写说明，但提交者必须亲自核对描述、测试结果和受影响范围。不要粘贴未经核实的 AI 分析或声称做过未执行的实机测试；优先写一个“改动前 → 改动后”的具体例子。
 - 维护者可能要求拆分过大的改动，或在涉及系统行为时等待真实设备验收。
@@ -114,7 +114,7 @@ When changing a ViewModel, also run `powershell -NoProfile -ExecutionPolicy Bypa
 ## Pull requests
 
 - Use a short result-oriented title such as `fix(scope): ...`, `feat(scope): ...`, or `docs: ...`.
-- Complete the PR template. Explain the user problem and before/after behavior in plain language first, then summarize implementation, actual verification, untested scenarios, and risks. A successful build is not real-device verification; include a screenshot or short recording when practical for UI or taskbar behavior.
+- Complete the template's “Change” and “Verification” sections: briefly explain the problem and result, and report only checks you actually performed. State what remains untested; add a related issue, risks, or screenshots only when applicable. A successful build is not real-device verification; include a screenshot or short recording when practical for UI or taskbar behavior.
 - Use `Refs #123` for related work. Use `Closes #123` only when the PR fully resolves the issue. Keep the PR aligned with its linked issue.
 - AI may assist with code or writing, but the submitter must verify every claim, test result, and affected area. Do not paste unverified AI analysis or claim device testing that was not done. A concrete “before → after” example is more useful.
 - Maintainers may ask to split broad changes or wait for real-device validation of system behavior.
