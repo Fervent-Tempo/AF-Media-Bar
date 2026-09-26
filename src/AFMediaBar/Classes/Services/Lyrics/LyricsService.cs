@@ -140,7 +140,7 @@ public sealed class LyricsService
             $"取词开始 / retrieving: \"{effectiveRequest.Title}\" — \"{effectiveRequest.Artist}\" " +
             $"default={defaultProvider?.SourceName ?? "无 / none"} " +
             $"priority=[{string.Join(", ", priority.Select(provider => provider.SourceName))}] " +
-            $"mode={options.AdoptionMode} batch={options.BatchSize}")
+            $"mode={options.AdoptionMode} batch={options.BatchSize}");
 
         // 取消哨兵：DefaultProvider 挂起时 WhenAny 也要能在调用方取消的那一刻醒来。
         // A cancellation sentinel: while providers hang, WhenAny must still wake the moment the caller cancels.
