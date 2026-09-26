@@ -96,9 +96,28 @@
                                 MinWidth="200"
                                 MaxDropDownHeight="360"
                                 ItemsSource="{Binding ViewModel.LatinFontChoices}"
-                                DisplayMemberPath="DisplayName"
                                 SelectedValue="{Binding ViewModel.LatinFontFamily, Mode=TwoWay}"
-                                SelectedValuePath="Name" />
+                                SelectedValuePath="Name">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel>
+                                            <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding DisplayName}" />
+                                            <StackPanel Margin="0,3,0,0" Orientation="Horizontal">
+                                                <TextBlock
+                                                    Margin="0,2,7,0"
+                                                    FontSize="10"
+                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                    Text="{DynamicResource Loc.Appearance.Font.PreviewLabel}" />
+                                                <TextBlock
+                                                    FontFamily="{Binding PreviewFontFamily}"
+                                                    FontSize="14"
+                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                    Text="{Binding PreviewText}" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
                         </components:SettingsRow>
 
                         <components:SettingsRow
@@ -109,9 +128,28 @@
                                 MinWidth="200"
                                 MaxDropDownHeight="360"
                                 ItemsSource="{Binding ViewModel.CjkFontChoices}"
-                                DisplayMemberPath="DisplayName"
                                 SelectedValue="{Binding ViewModel.CjkFontFamily, Mode=TwoWay}"
-                                SelectedValuePath="Name" />
+                                SelectedValuePath="Name">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel>
+                                            <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding DisplayName}" />
+                                            <StackPanel Margin="0,3,0,0" Orientation="Horizontal">
+                                                <TextBlock
+                                                    Margin="0,2,7,0"
+                                                    FontSize="10"
+                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                    Text="{DynamicResource Loc.Appearance.Font.PreviewLabel}" />
+                                                <TextBlock
+                                                    FontFamily="{Binding PreviewFontFamily}"
+                                                    FontSize="14"
+                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                    Text="{Binding PreviewText}" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
                         </components:SettingsRow>
 
                         <!--

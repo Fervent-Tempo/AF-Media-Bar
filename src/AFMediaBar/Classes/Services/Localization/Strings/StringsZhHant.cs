@@ -106,7 +106,10 @@ internal static class StringsZhHant
         table.Add("Appearance.Backdrop.Solid", "純色");
         table.Add("Appearance.BackdropTint.Hint", "只在材質由本程式繪製時生效：Windows 10 上的視窗，以及永不取得焦點的曲目通知（系統材質要求視窗位於前景，通知從不啟用，因此它的模糊由本程式繪製）。Windows 11 的雲母與壓克力由系統繪製，不受此值影響。值越低越通透，過高則接近純色。");
         table.Add("Appearance.CjkFont.FollowSystem", "跟隨系統");
+        table.Add("Appearance.CjkFont.Sample", "中文字型範例");
+        table.Add("Appearance.Font.PreviewLabel", "預覽");
         table.Add("Appearance.LatinFont.FollowSystem", "跟隨系統");
+        table.Add("Appearance.LatinFont.Sample", "Aa Bb 123");
         table.Add("Appearance.Header.Subtitle", "字型、佈景主題、視窗背景與媒體列文字");
         table.Add("Appearance.Motion.Detail.Full", "保留展開、回饋與頻譜轉場");
         table.Add("Appearance.Motion.Detail.Instant", "跟隨系統設定，避免轉場延遲");

@@ -216,8 +216,8 @@ public readonly record struct AppearanceSettings(
     /// <summary>生成西文优先、中文和东亚字符回退在后的字体链。 / Builds a Latin-first fallback chain with CJK coverage.</summary>
     public string ResolveFontFamilySource(string systemFontFamily)
     {
-        var latin = ResolveSelectedFont(SelectedLatinFontFamily, systemFontFamily);
-        var cjk = ResolveSelectedFont(SelectedCjkFontFamily, systemFontFamily);
+        var latin = ResolveLatinFontFamily(systemFontFamily);
+        var cjk = ResolveCjkFontFamily(systemFontFamily);
 
         return string.Join(", ", new[]
         {
@@ -229,6 +229,12 @@ public readonly record struct AppearanceSettings(
             "Malgun Gothic"
         }.Where(value => !string.IsNullOrWhiteSpace(value)).Distinct(StringComparer.OrdinalIgnoreCase));
     }
+
+    /// <summary>取得西文选择的有效字体，空选择跟随系统。/ Gets the effective Latin font; an empty selection follows the system.</summary>
+    public string ResolveLatinFontFamily(string systemFontFamily) => ResolveSelectedFont(SelectedLatinFontFamily, systemFontFamily);
+
+    /// <summary>取得中文选择的有效字体，空选择跟随系统。/ Gets the effective CJK font; an empty selection follows the system.</summary>
+    public string ResolveCjkFontFamily(string systemFontFamily) => ResolveSelectedFont(SelectedCjkFontFamily, systemFontFamily);
 
     // A null name means an older settings file: retain its preset. An empty name explicitly follows the system.
     [JsonIgnore]

@@ -106,7 +106,10 @@ internal static class StringsZhHans
         table.Add("Appearance.Backdrop.Solid", "纯色");
         table.Add("Appearance.BackdropTint.Hint", "只在材质由本程序绘制时生效：Windows 10 上的窗口，以及永不获取焦点的曲目通知（系统材质要求窗口处于前台，通知从不激活，因此它的模糊由本程序绘制）。Windows 11 的云母与亚克力由系统绘制，不受此值影响。值越低越通透，过高则接近纯色。");
         table.Add("Appearance.CjkFont.FollowSystem", "跟随系统");
+        table.Add("Appearance.CjkFont.Sample", "中文字体示例");
+        table.Add("Appearance.Font.PreviewLabel", "预览");
         table.Add("Appearance.LatinFont.FollowSystem", "跟随系统");
+        table.Add("Appearance.LatinFont.Sample", "Aa Bb 123");
         table.Add("Appearance.Header.Subtitle", "字体、主题、窗口背景与媒体栏文字");
         table.Add("Appearance.Motion.Detail.Full", "保留展开、反馈和频谱过渡");
         table.Add("Appearance.Motion.Detail.Instant", "跟随系统设置，避免过渡延迟");
