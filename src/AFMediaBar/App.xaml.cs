@@ -104,13 +104,20 @@ namespace AFMediaBar
                 services.AddSingleton<MediaSessionCatalog>();
                 services.AddSingleton<MediaSessionSelectionService>();
                 services.AddSingleton<MediaSnapshotBuilder>();
-                services.AddSingleton<IMediaSourceProvider, NetEaseMediaProvider>();
+
+                // 来源提供器可以有多个：各自按 CanHandle 认领 SMTC 来源，令牌互不重叠。
+                // There can be several source providers: each claims its SMTC sources by CanHandle, and the tokens never overlap.
+                services.AddSingleton<NetEaseMediaProvider>();
+                services.AddSingleton<KuGouMediaProvider>();
+                services.AddSingleton<IMediaSourceProvider>(sp => sp.GetRequiredService<NetEaseMediaProvider>());
+                services.AddSingleton<IMediaSourceProvider>(sp => sp.GetRequiredService<KuGouMediaProvider>());
 
                 // 可剪枝的参与者：每个资源的所有者自己实现回收，协调器只按档位发通知。
                 // The prunable participants: each resource owner implements its own reclaim while the coordinator only publishes a level.
                 services.AddSingleton<IMemoryPrunable>(sp => sp.GetRequiredService<MediaSnapshotBuilder>());
                 services.AddSingleton<IMemoryPrunable>(sp => sp.GetRequiredService<MediaSessionSelectionService>());
-                services.AddSingleton<IMemoryPrunable>(sp => (IMemoryPrunable)sp.GetRequiredService<IMediaSourceProvider>());
+                services.AddSingleton<IMemoryPrunable>(sp => sp.GetRequiredService<NetEaseMediaProvider>());
+                services.AddSingleton<IMemoryPrunable>(sp => sp.GetRequiredService<KuGouMediaProvider>());
                 services.AddSingleton<MediaSourceActivationService>();
                 services.AddSingleton<MediaSessionService>();
                 services.AddSingleton<AFMediaBar.Classes.Abstractions.IMediaSessionSourceScanner>(sp => sp.GetRequiredService<MediaSessionService>());
