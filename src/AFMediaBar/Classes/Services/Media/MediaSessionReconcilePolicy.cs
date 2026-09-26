@@ -86,6 +86,19 @@ public static class MediaSessionReconcilePolicy
     public const int CatalogRestartFailureThreshold = 2;
 
     /// <summary>
+    /// 连续重建整个目录的上限；超过后不再重造目录，退回轻量的 ForceUpdate。
+    ///
+    /// 系统查询被挡住的场合（例如全屏独占游戏运行期间）重建目录救不回来，而"有会话但读不到"的判定在游戏结束前一直成立，
+    /// 没有这个上限时看门狗会每 5 秒重建一次目录、无限进行下去（真机日志里出现过 75 秒内 14 次）。
+    /// Maximum number of consecutive full catalog rebuilds; past it the watchdog falls back to plain ForceUpdate.
+    ///
+    /// A catalog rebuild cannot help when the system query itself is blocked (for example while an exclusive-fullscreen game
+    /// runs) and the "sessions exist but stay unreadable" verdict keeps holding until the game exits; without this limit the
+    /// watchdog rebuilt the catalog every five seconds indefinitely (a real log held 14 rebuilds in 75 seconds).
+    /// </summary>
+    public const int CatalogRestartLimit = 3;
+
+    /// <summary>
     /// 这次 tick 是否到了探测时隙。只读门控信号，不做任何系统调用；返回 true 表示调用方应立即消耗该时隙（更新时间戳）并开始一次后台探测。
     /// Whether this tick has reached a probe slot. It only reads gating signals and makes no system call; true means the caller should
     /// consume the slot immediately (update the timestamp) and start one background probe.
@@ -127,7 +140,11 @@ public static class MediaSessionReconcilePolicy
     /// </summary>
     /// <param name="osSessionCount">操作系统当前发布的会话数；0 为确实没有媒体，负值为查询失败。/ Sessions the OS publishes; zero is genuinely no media, negative is a failed query.</param>
     /// <param name="consecutiveFailedReconciles">连续"ForceUpdate 后仍断连且系统有会话"的次数。/ Consecutive reconciles that stayed disconnected while the OS had sessions.</param>
-    public static MediaSessionReconcileAction DecideAction(int osSessionCount, int consecutiveFailedReconciles)
+    /// <param name="consecutiveCatalogRestarts">连续重建整个目录的次数；到达 <see cref="CatalogRestartLimit"/> 后退回 ForceUpdate。/ Consecutive full catalog rebuilds; at <see cref="CatalogRestartLimit"/> the action falls back to ForceUpdate.</param>
+    public static MediaSessionReconcileAction DecideAction(
+        int osSessionCount,
+        int consecutiveFailedReconciles,
+        int consecutiveCatalogRestarts = 0)
     {
         if (osSessionCount == 0)
         {
@@ -139,9 +156,14 @@ public static class MediaSessionReconcilePolicy
             return MediaSessionReconcileAction.ForceUpdate;
         }
 
-        return consecutiveFailedReconciles >= CatalogRestartFailureThreshold
-            ? MediaSessionReconcileAction.RestartCatalog
-            : MediaSessionReconcileAction.ForceUpdate;
+        if (consecutiveFailedReconciles < CatalogRestartFailureThreshold)
+        {
+            return MediaSessionReconcileAction.ForceUpdate;
+        }
+
+        return consecutiveCatalogRestarts >= CatalogRestartLimit
+            ? MediaSessionReconcileAction.ForceUpdate
+            : MediaSessionReconcileAction.RestartCatalog;
     }
 
     /// <summary>单次"探测到恢复"是否慢到需要退避。/ Whether one probe-and-recover attempt was slow enough to warrant backoff.</summary>

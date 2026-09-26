@@ -55,6 +55,7 @@ public sealed class MediaSessionService : IDisposable, IMediaSessionSourceScanne
     private DateTime _reconcileArmedUntilUtc = DateTime.MinValue;
     private int _consecutiveSlowReconciles;
     private int _consecutiveFailedReconciles;
+    private int _consecutiveCatalogRestarts;
     private volatile int _reconcileGeneration;
     private int _reconcileInFlight;
 
@@ -404,8 +405,9 @@ public sealed class MediaSessionService : IDisposable, IMediaSessionSourceScanne
 
         var generation = _reconcileGeneration;
         var failures = _consecutiveFailedReconciles;
+        var catalogRestarts = _consecutiveCatalogRestarts;
         var token = _reconcileCancellation.Token;
-        _reconcileTask = Task.Run(() => ReconcileInBackground(generation, failures, token));
+        _reconcileTask = Task.Run(() => ReconcileInBackground(generation, failures, catalogRestarts, token));
     }
 
     /// <summary>
@@ -416,7 +418,7 @@ public sealed class MediaSessionService : IDisposable, IMediaSessionSourceScanne
     /// occupy the UI thread. Only the publication is marshalled back; cancellation, disposal, or a changed generation discard stale
     /// results. The library call itself cannot be cancelled — cancellation only guarantees nothing stale is published.
     /// </summary>
-    private void ReconcileInBackground(int generation, int consecutiveFailures, CancellationToken token)
+    private void ReconcileInBackground(int generation, int consecutiveFailures, int consecutiveCatalogRestarts, CancellationToken token)
     {
         var started = Stopwatch.GetTimestamp();
         var osSessionCount = -1;
@@ -429,7 +431,7 @@ public sealed class MediaSessionService : IDisposable, IMediaSessionSourceScanne
             }
 
             osSessionCount = _catalog.GetOsSessionCount();
-            action = MediaSessionReconcilePolicy.DecideAction(osSessionCount, consecutiveFailures);
+            action = MediaSessionReconcilePolicy.DecideAction(osSessionCount, consecutiveFailures, consecutiveCatalogRestarts);
             if (action == MediaSessionReconcileAction.RestartCatalog)
             {
                 _catalog.Restart();
@@ -490,10 +492,15 @@ public sealed class MediaSessionService : IDisposable, IMediaSessionSourceScanne
 
         if (action == MediaSessionReconcileAction.RestartCatalog)
         {
+            _consecutiveCatalogRestarts++;
             // 系统有会话而目录怎么都读不到：这是 ForceUpdate 救不回的库失效状态（字典里残留了失效条目），整只重建。
+            // 连续重建到上限后策略会退回 ForceUpdate，不再每几秒重造一次目录（全屏游戏挡住系统查询时曾无限循环）。
             // The OS has sessions while the catalog stays unreadable: a library broken state ForceUpdate cannot fix (a dead
-            // dictionary entry), so the whole catalog was rebuilt.
-            AppLogService.Current?.Info("Media", "[看门狗] 系统有会话但目录读不到，已重建媒体目录");
+            // dictionary entry), so the whole catalog was rebuilt. Past the limit the policy falls back to ForceUpdate instead
+            // of rebuilding the catalog every few seconds (this looped forever while a fullscreen game blocked the OS query).
+            AppLogService.Current?.Info(
+                "Media",
+                $"[看门狗] 系统有会话但目录读不到，已重建媒体目录（连续第 {_consecutiveCatalogRestarts} 次，上限 {MediaSessionReconcilePolicy.CatalogRestartLimit}）");
         }
 
         try
@@ -509,6 +516,7 @@ public sealed class MediaSessionService : IDisposable, IMediaSessionSourceScanne
         if (_sessionSnapshot.IsConnected)
         {
             _consecutiveFailedReconciles = 0;
+            _consecutiveCatalogRestarts = 0;
             // 只有真正把会话捞回来时才写一行：空闲时看门狗会持续以低频重试，逐次记录会把日志刷满。
             // Only a recovered session earns a line: while idle the watchdog keeps retrying at a low cadence, and logging every
             // attempt would fill the file.
@@ -525,6 +533,7 @@ public sealed class MediaSessionService : IDisposable, IMediaSessionSourceScanne
         else
         {
             _consecutiveFailedReconciles = 0;
+            _consecutiveCatalogRestarts = 0;
         }
 
         // 慢调用统计覆盖"探测到恢复"的整段耗时（含系统查询）；恢复正常耗时就清零，因此退避不会累积成永久性的慢节奏。
@@ -786,6 +795,7 @@ public sealed class MediaSessionService : IDisposable, IMediaSessionSourceScanne
             _reconcileArmedUntilUtc = DateTime.MinValue;
             _consecutiveSlowReconciles = 0;
             _consecutiveFailedReconciles = 0;
+            _consecutiveCatalogRestarts = 0;
         }
 
         foreach (var provider in _sourceProviders)
