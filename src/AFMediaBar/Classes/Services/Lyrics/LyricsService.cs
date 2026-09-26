@@ -113,6 +113,7 @@ public sealed class LyricsService
         var settings = SettingsManager.Current;
         var effectiveRequest = request with
         {
+            Artist = LyricsArtistPolicy.FirstArtist(request.Artist),
             MatchStrictness = settings.LyricsMatchStrictness,
             FilterInfoLines = settings.LyricsInfoLineFilterEnabled
         };
@@ -138,6 +139,9 @@ public sealed class LyricsService
         AppLogService.Current?.Info(
             "Lyrics",
             $"取词开始 / retrieving: \"{effectiveRequest.Title}\" — \"{effectiveRequest.Artist}\" " +
+            $"strategy={options.QueryStrategy} album=\"{effectiveRequest.Album}\" " +
+            $"duration={effectiveRequest.DurationSeconds?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? "unknown"} " +
+            $"strictness={effectiveRequest.MatchStrictness} " +
             $"default={defaultProvider?.SourceName ?? "无 / none"} " +
             $"priority=[{string.Join(", ", priority.Select(provider => provider.SourceName))}] " +
             $"mode={options.AdoptionMode} batch={options.BatchSize}");

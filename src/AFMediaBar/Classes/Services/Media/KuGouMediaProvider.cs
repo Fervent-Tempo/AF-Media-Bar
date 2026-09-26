@@ -19,7 +19,7 @@ public sealed class KuGouMediaProvider : IMediaSourceProvider, IMemoryPrunable
     /// <c>TaskbarExperiencePolicy.GetPosition</c>), so polling only has to keep the timestamp fresher than about half a second; a faster
     /// cadence cannot change the one-second quantization, it would only spin.
     /// </summary>
-    private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(500);
+    private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(233);
 
     /// <summary>空闲档位的轮询周期，与网易云提供器一致：空闲时两秒一次足够在按下播放后很快跟上。/ The poll period at the idle level, matching the NetEase provider: once every two seconds still follows a play press closely.</summary>
     private const int IdlePollIntervalMilliseconds = 2_000;
