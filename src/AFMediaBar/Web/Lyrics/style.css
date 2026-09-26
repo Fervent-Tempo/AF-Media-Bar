@@ -253,6 +253,19 @@ html, body {
   transition: none;
 }
 
+/*
+  频谱不可见时（歌词/待机场景）停掉脉冲动画：.spectrum-layer 只靠 opacity 隐藏，CSS 无限动画仍会在后台逐帧运行，
+  而它动画的是 height（每帧触发布局）；实测歌词模式下 Web 渲染进程为此常年多烧约 16% 的 CPU。进入频谱场景后本规则
+  失效，脉冲与音频驱动的淡入都照常。
+  Stop the pulse animation while the spectrum is not visible (lyrics/idle scenes): .spectrum-layer is hidden by opacity
+  alone, so the infinite CSS animation keeps running — and it animates height, which lays out every frame; measured at
+  roughly 16% of a core continuously while the bar only showed lyrics. Entering the spectrum scene lifts this rule, so the
+  idle pulse and the audio-driven fade-in behave exactly as before.
+*/
+.layout:not(.spectrum-mode) .spectrum span {
+  animation: none;
+}
+
 .viewport {
   width: 100%;
   height: 100%;
