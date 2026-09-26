@@ -22,6 +22,9 @@ const coverImageEl = document.getElementById("coverImage");
 const coverImageNextEl = document.getElementById("coverImageNext");
 const coverFallbackEl = document.getElementById("coverFallback");
 const root = document.documentElement;
+const scriptFontStyleEl = document.createElement("style");
+document.head.appendChild(scriptFontStyleEl);
+const quoteCssFont = (name) => `"${String(name || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/[\r\n\f]/g, " ")}"`;
 const spectrumEl = document.querySelector(".spectrum");
 let spectrumBarEls = Array.from(document.querySelectorAll(".spectrum span"));
 
@@ -2252,7 +2255,20 @@ const lyricsApi = {
       return;
     }
 
-    root.style.setProperty("--font-family", payload.fontFamily || "\"SF Pro Display\", \"Segoe UI Variable Display\", \"Segoe UI Variable Text\", \"Microsoft YaHei UI\", sans-serif");
+    // Map Han code points first; otherwise a Latin font that includes Han glyphs masks the Chinese selection.
+    // 汉字单独映射，西文字体即使也有汉字字形，也不能遮住用户选择的中文字体。
+    scriptFontStyleEl.textContent = `
+      @font-face {
+        font-family: "AF Media Bar CJK";
+        src: local(${quoteCssFont(payload.cjkFontFamily)});
+        unicode-range: U+2E80-2FFF, U+3000-303F, U+31C0-31EF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+20000-2FA1F;
+      }
+      @font-face {
+        font-family: "AF Media Bar Latin";
+        src: local(${quoteCssFont(payload.latinFontFamily)});
+        unicode-range: U+0-10FFFF;
+      }`;
+    root.style.setProperty("--font-family", `"AF Media Bar CJK", "AF Media Bar Latin", ${payload.fontFamily || '"Segoe UI Variable Text", "Microsoft YaHei UI", sans-serif'}`);
     applyLyricsTextAlignment(payload.textAlignment);
     const layoutScalePercent = Number(payload.layoutScalePercent);
     if (Number.isFinite(layoutScalePercent) && layoutScalePercent > 0) {
