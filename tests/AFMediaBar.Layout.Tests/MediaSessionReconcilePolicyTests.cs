@@ -134,6 +134,28 @@ public sealed class MediaSessionReconcilePolicyTests
     }
 
     [TestMethod]
+    public void RepeatedCatalogRebuildsFallBackToPlainForceUpdates()
+    {
+        // 全屏独占游戏挡住系统查询时，重建目录救不回来；连续重建到上限后必须退回 ForceUpdate，
+        // 否则看门狗会每几秒重造一次媒体目录（真机日志里出现过 75 秒内 14 次）。
+        // A fullscreen exclusive game that blocks the OS query cannot be healed by rebuilding; past the limit the action must
+        // fall back to ForceUpdate, otherwise the catalog is rebuilt every few seconds (a real log held 14 rebuilds in 75 s).
+        var failures = MediaSessionReconcilePolicy.CatalogRestartFailureThreshold;
+        Assert.AreEqual(
+            MediaSessionReconcileAction.RestartCatalog,
+            MediaSessionReconcilePolicy.DecideAction(
+                osSessionCount: 1,
+                consecutiveFailedReconciles: failures,
+                consecutiveCatalogRestarts: MediaSessionReconcilePolicy.CatalogRestartLimit - 1));
+        Assert.AreEqual(
+            MediaSessionReconcileAction.ForceUpdate,
+            MediaSessionReconcilePolicy.DecideAction(
+                osSessionCount: 1,
+                consecutiveFailedReconciles: failures,
+                consecutiveCatalogRestarts: MediaSessionReconcilePolicy.CatalogRestartLimit));
+    }
+
+    [TestMethod]
     public void SlowCallThresholdSeparatesStallsFromNormalCalls()
     {
         Assert.IsFalse(MediaSessionReconcilePolicy.IsSlowCall(
