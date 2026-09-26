@@ -24,6 +24,7 @@
 
 ## 开始之前
 
+- 如果使用 AI 辅助开发，请先阅读仓库根目录的 [AGENTS.md](AGENTS.md)。它概述了项目结构、文件职责和验证边界，是本指南的补充。
 - 先搜索现有设置、文档、Issue 和 PR，确认功能尚不存在、工作没有重复。可复现缺陷和功能建议分别使用仓库的 Bug Report、Feature Request 表单。
 - 对新功能、设置行为变更或任务栏、媒体会话、音频、歌词等高风险修改，请先在相关 Issue 下说明准备解决的问题、拟采用的方案和大致改动范围，等待维护者确认方向后再投入大量开发。简单的文案或明确的小修复可以直接提 PR。
 - 开始较长的工作时，在 Issue 留言说明正在处理，并尽早建立关联的 Draft PR，让其他人看到进度。留言不是独占认领；如果方案或范围变化，请及时更新。维护者会协调重复工作。
@@ -85,6 +86,7 @@ New display modes or major UI redesigns, incompatible settings changes, new netw
 
 ## Before you start
 
+- If you use AI assistance, read the repository's [AGENTS.md](AGENTS.md) first. It summarizes the project structure, file responsibilities, and validation boundaries alongside this guide.
 - Search existing settings, documentation, issues, and PRs to check whether the feature already exists or someone is doing the same work. Use the Bug Report or Feature Request form as appropriate.
 - For new features, settings behavior changes, or high-risk taskbar, media-session, audio, or lyrics work, comment on a related issue with the problem, proposed approach, and approximate scope. Wait for maintainer feedback before investing substantial work. Small documentation changes and clearly scoped fixes may go straight to a PR.
 - For longer work, leave a progress comment on the issue and open a linked Draft PR early. A comment is not an exclusive reservation; update it if the approach changes. Maintainers will coordinate overlaps.
