@@ -280,6 +280,13 @@ namespace AFMediaBar.Components
         public event EventHandler? OpenFullPanelRequested;
 
         /// <summary>
+        /// 请求把播放位置跳到指定秒数（悬停层进度条拖动）。参数为秒数，已由控件按条内位置夹取到 0–时长。
+        /// Requests seeking playback to the given second (a hover-layer progress drag). The value is the seconds already
+        /// clamped to the bar's 0–duration range by the control.
+        /// </summary>
+        public event EventHandler<double>? SeekRequested;
+
+        /// <summary>
         /// 宿主提供的"这次点击应当被吞掉"查询。组合滚轮（按住鼠标左键或右键再滚动）松键时会合成一次点击，
         /// 用户按下组合键的意图只是滚轮，因此该点击必须被抑制；判定由全局鼠标钩子完成，控件只负责在点击入口询问。
         /// Host-supplied query for "this click has to be swallowed". Releasing the button after a chord wheel synthesizes a click
@@ -2091,16 +2098,25 @@ namespace AFMediaBar.Components
             TaskbarRestProgress.Maximum = Math.Max(1, _snapshot.Duration);
             TaskbarRestProgress.Value = position;
             TaskbarHoverProgress.Maximum = Math.Max(1, _snapshot.Duration);
-            TaskbarHoverProgress.Value = position;
+            // 拖动悬停层进度条期间保持预览值：250ms 的心跳不能把指针位置拉回播放位置。
+            // Keep the drag preview while the hover-layer progress bar is being dragged: the 250 ms heartbeat must not pull the
+            // pointer position back to the playback position.
+            if (!_isSeekingHoverSeek)
+            {
+                TaskbarHoverProgress.Value = position;
+                UpdateHoverSeekThumb(position);
+            }
+
             if (_currentMode == WindowMode.Taskbar && !_isVertical)
             {
                 var experience = SettingsManager.Current.TaskbarExperience.Normalize();
                 TaskbarRestProgress.Visibility = hasDuration && experience.RestProgressVisible
                     ? Visibility.Visible
                     : Visibility.Collapsed;
-                TaskbarHoverProgress.Visibility = hasDuration && experience.HoverControls.ProgressVisible
+                TaskbarHoverSeekSurface.Visibility = hasDuration && experience.HoverControls.ProgressVisible
                     ? Visibility.Visible
                     : Visibility.Collapsed;
+                UpdateHoverSeekAffordances();
             }
         }
 

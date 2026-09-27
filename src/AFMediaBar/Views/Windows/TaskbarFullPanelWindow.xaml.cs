@@ -198,7 +198,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         PlayIcon.Symbol = snapshot.IsPlaying ? SymbolRegular.Pause24 : SymbolRegular.Play24;
         ProgressSlider.IsEnabled = snapshot.CanSeek;
         ProgressSlider.Maximum = Math.Max(1, snapshot.Duration);
-        DurationText.Text = FormatTime(snapshot.Duration);
+        DurationText.Text = PlaybackTimeText.Format(snapshot.Duration);
         UpdateProgress();
     }
 
@@ -419,15 +419,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         var position = TaskbarExperiencePolicy.GetPosition(_snapshot, DateTimeOffset.UtcNow);
         if (!_isSeeking)
             ProgressSlider.Value = position;
-        PositionText.Text = FormatTime(position);
-    }
-
-    private static string FormatTime(double seconds)
-    {
-        if (!double.IsFinite(seconds) || seconds < 0)
-            seconds = 0;
-        var time = TimeSpan.FromSeconds(seconds);
-        return time.TotalHours >= 1 ? time.ToString(@"h\:mm\:ss") : time.ToString(@"m\:ss");
+        PositionText.Text = PlaybackTimeText.Format(position);
     }
 
     private static void SetButtonAvailability(System.Windows.Controls.Button button, bool enabled)

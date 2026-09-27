@@ -19,6 +19,7 @@ Reliability fixes: media-session self-healing, spectrum level calibration, and l
 - Lyric spacing: the lyrics page gains a "line gap" and a "character spacing" setting. The line gap adds extra spacing on top of the existing two-row layout (0–24% of the font size in two-percent steps, default 0 meaning the look is unchanged); it scales with the font, tightens automatically when space runs short, and never clips or shrinks the text. The character spacing widens the gap between characters as a percentage of the font size (0–20% in one-percent steps, default 0), scales with the font, applies to CJK and Latin alike, and never breaks words apart. Both are native CSS layout inside the web lyrics view, so they are continuous and take effect immediately.
 - Fixed lyric-box length: the lyrics page gains a switch and a length slider (80–600 DIP, 240 by default). While enabled the lyric box keeps a fixed length instead of resizing with every line and keeps every line's alignment stable; it is off by default (the box follows the content).
 - Instant line resizing: when the lyric line changes the bar now lands on the new length immediately instead of animating into it, so no brief ellipsis appears right after a line change.
+- The hover-layer progress bar supports drag-to-seek: pressing anywhere on the bar previews that time, dragging adjusts it, and releasing seeks; a thumb dot appears on hover or while dragging and a time bubble follows the pointer during the drag, while non-seekable sources stay display-only.
 
 ### Fixed
 

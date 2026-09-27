@@ -882,6 +882,11 @@ public partial class TaskBarMediaControl
             }
             return;
         }
+        // 正在拖动悬停层进度条：指针可能压到卡片外，但这次手势还没结束，不能把卡片收掉。
+        // A hover-layer progress drag is in flight: the pointer may sit outside the card, but the gesture is still running,
+        // so the card must not be collapsed here.
+        if (_isSeekingHoverSeek)
+            return;
         _hoverCloseTimer.Stop();
         _hoverCloseTimer.Start();
     }
@@ -895,6 +900,10 @@ public partial class TaskBarMediaControl
     private void TaskbarHoverLayer_MouseLeave(object sender, MouseEventArgs e)
     {
         _hoverCloseTimer.Stop();
+        // 拖动悬停层进度条时不收起卡片（同 SongInfoStackPanel_MouseLeave）。
+        // Do not collapse the card while a hover-layer progress drag is in flight (same as SongInfoStackPanel_MouseLeave).
+        if (_isSeekingHoverSeek)
+            return;
         _hoverCloseTimer.Start();
     }
 
@@ -969,6 +978,10 @@ public partial class TaskBarMediaControl
         _hoverOpenTimer.Stop();
         _hoverCloseTimer.Stop();
         _hoverHideFallbackTimer.Stop();
+        // 拖动悬停层进度条期间的收起请求一律推迟：手势结束后由 EndHoverSeek 重新判定。
+        // Collapse requests during a hover-layer progress drag are postponed; EndHoverSeek re-evaluates once the gesture ends.
+        if (_isSeekingHoverSeek && !immediate)
+            return;
         var keepRegularHover = CanUseTaskbarComponentHover() &&
                                (SongInfoStackPanel.IsMouseOver || TaskbarDirectFullPanelHandle.IsMouseOver);
         if (immediate || HoverRevealHost.Visibility != Visibility.Visible)

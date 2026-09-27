@@ -467,17 +467,63 @@
                                         PreviewMouseWheel="TaskbarVolumeButton_PreviewMouseWheel">
                                     <TextBlock Text="&#xE767;" FontFamily="{DynamicResource AppIconFontFamily}" FontSize="14" />
                                 </Button>
-                                <!-- 悬停层进度只展示播放位置：没有滑块、不可拖动，只用强调色段表示进度。 -->
-                                <!-- The hover-layer progress only displays playback position: no thumb, no dragging, accent color only. -->
-                                <ProgressBar x:Name="TaskbarHoverProgress"
-                                             Width="96"
-                                             Height="3"
-                                             Margin="10,0,0,0"
-                                             VerticalAlignment="Center"
-                                             Minimum="0"
-                                             Maximum="1"
-                                             Style="{StaticResource AfAccentProgressBarStyle}"
-                                             Visibility="Collapsed" />
+                                <!--
+                                    悬停层进度条：显示播放位置，也支持在条内拖动跳转——按住任意位置即预览该时间，拖动调整，松开跳转。
+                                    外层透明 Border 提供 14px 高的拖拽命中区（进度条本身只有 3px）；Tag="MediaAction" 让宿主的
+                                    "整条媒体栏拖动"放过按下事件，把手势留给这里的跳转逻辑。圆点仅在悬停或拖动时出现；
+                                    时间气泡是顶层 Popup，不会被卡片的裁剪区域切掉。
+                                    The hover-layer progress bar: shows the playback position and supports drag-to-seek inside the bar —
+                                    pressing previews that time, dragging adjusts it, releasing seeks. The transparent outer border
+                                    provides a 14 px grab area for the 3 px bar; Tag="MediaAction" keeps the host's whole-bar drag out of
+                                    the press so the seek gesture owns it. The thumb dot appears on hover or while dragging, and the time
+                                    bubble is a top-level Popup so the card's clip cannot cut it off.
+                                -->
+                                <Border x:Name="TaskbarHoverSeekSurface"
+                                        Width="96" Height="14" Margin="10,0,0,0"
+                                        VerticalAlignment="Center"
+                                        Background="Transparent"
+                                        Cursor="Hand"
+                                        Tag="MediaAction"
+                                        Visibility="Collapsed"
+                                        MouseEnter="TaskbarHoverSeekSurface_MouseEnter"
+                                        MouseLeave="TaskbarHoverSeekSurface_MouseLeave"
+                                        PreviewMouseLeftButtonDown="TaskbarHoverSeekSurface_PreviewMouseLeftButtonDown"
+                                        PreviewMouseMove="TaskbarHoverSeekSurface_PreviewMouseMove"
+                                        PreviewMouseLeftButtonUp="TaskbarHoverSeekSurface_PreviewMouseLeftButtonUp"
+                                        LostMouseCapture="TaskbarHoverSeekSurface_LostMouseCapture">
+                                    <Grid>
+                                        <ProgressBar x:Name="TaskbarHoverProgress"
+                                                     Height="3"
+                                                     VerticalAlignment="Center"
+                                                     Minimum="0"
+                                                     Maximum="1"
+                                                     Style="{StaticResource AfAccentProgressBarStyle}" />
+                                        <Ellipse x:Name="TaskbarHoverSeekThumb"
+                                                 Width="7" Height="7"
+                                                 HorizontalAlignment="Left"
+                                                 VerticalAlignment="Center"
+                                                 Fill="{DynamicResource AfAccentBrush}"
+                                                 Visibility="Collapsed"
+                                                 IsHitTestVisible="False" />
+                                    </Grid>
+                                </Border>
+                                <Popup x:Name="TaskbarHoverSeekBubble"
+                                       Placement="Mouse"
+                                       VerticalOffset="-30"
+                                       AllowsTransparency="True"
+                                       StaysOpen="True"
+                                       Focusable="False"
+                                       IsHitTestVisible="False">
+                                    <Border CornerRadius="4" Padding="6,2"
+                                            Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                            BorderThickness="1">
+                                        <TextBlock x:Name="TaskbarHoverSeekBubbleText"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                   Text="0:00" />
+                                    </Border>
+                                </Popup>
                             </StackPanel>
                             <Button x:Name="TaskbarFullPanelHandle"
                                     Width="44"

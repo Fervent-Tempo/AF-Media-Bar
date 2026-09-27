@@ -166,6 +166,7 @@ public partial class TaskbarWindow : Window
         MediaControl.SkipNextRequested += MediaControl_SkipNextRequested;
         MediaControl.ActivateSourceRequested += MediaControl_ActivateSourceRequested;
         MediaControl.OpenFullPanelRequested += MediaControl_OpenFullPanelRequested;
+        MediaControl.SeekRequested += MediaControl_SeekRequested;
         MediaControl.OutputDeviceMenuRequested += MediaControl_OutputDeviceMenuRequested;
         MediaControl.OutputDeviceWheelRequested += MediaControl_OutputDeviceWheelRequested;
         MediaControl.VolumeMenuRequested += MediaControl_VolumeMenuRequested;
@@ -1282,6 +1283,21 @@ public partial class TaskbarWindow : Window
     private void MediaControl_OpenFullPanelRequested(object? sender, EventArgs e) =>
         OpenFullPanelRequested?.Invoke(this, EventArgs.Empty);
 
+    /// <summary>悬停层进度条松手后的跳转请求：转交媒体会话服务（只在这里下发一次，拖动过程不刷命令）。
+    /// The seek request raised when the hover-layer progress drag is released: forwarded to the media session service
+    /// (issued exactly once here; the drag itself sends no commands).</summary>
+    private async void MediaControl_SeekRequested(object? sender, double seconds)
+    {
+        try
+        {
+            await ViewModel.SeekAsync(seconds);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[TaskbarWindow] Seek failed: {ex}");
+        }
+    }
+
     private async void MediaControl_WheelRequested(object? sender, PlayerSurfaceWheelEventArgs e)
     {
         if (e.IsLeftButtonDown)
@@ -2118,6 +2134,7 @@ public partial class TaskbarWindow : Window
         MediaControl.SkipNextRequested -= MediaControl_SkipNextRequested;
         MediaControl.ActivateSourceRequested -= MediaControl_ActivateSourceRequested;
         MediaControl.OpenFullPanelRequested -= MediaControl_OpenFullPanelRequested;
+        MediaControl.SeekRequested -= MediaControl_SeekRequested;
         MediaControl.OutputDeviceMenuRequested -= MediaControl_OutputDeviceMenuRequested;
         MediaControl.OutputDeviceWheelRequested -= MediaControl_OutputDeviceWheelRequested;
         MediaControl.VolumeMenuRequested -= MediaControl_VolumeMenuRequested;

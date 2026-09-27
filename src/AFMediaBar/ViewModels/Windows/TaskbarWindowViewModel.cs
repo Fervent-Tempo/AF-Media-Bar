@@ -15,6 +15,7 @@ namespace AFMediaBar.ViewModels.Windows
     /// </summary>
     public partial class TaskbarWindowViewModel : ObservableObject
     {
+        private readonly MediaSessionService _mediaSessionService;
         private readonly UpdateService _updateService;
         private readonly LocalizationService _localization;
 
@@ -88,6 +89,7 @@ namespace AFMediaBar.ViewModels.Windows
             UpdateService updateService,
             LocalizationService localization)
         {
+            _mediaSessionService = mediaSessionService;
             _updateService = updateService;
             _localization = localization;
             SelectMediaSessionCommand = new RelayCommand<string>(key => mediaSessionService.SelectSession(key ?? string.Empty));
@@ -113,6 +115,10 @@ namespace AFMediaBar.ViewModels.Windows
 
             ApplyUpdateState(_updateService.CurrentState);
         }
+
+        /// <summary>把播放位置跳到指定秒数（悬停层进度条拖动）。/ Seeks playback to the given second (a hover-layer progress drag).</summary>
+        /// <param name="seconds">目标秒数 / Target seconds.</param>
+        public Task SeekAsync(double seconds) => _mediaSessionService.SeekAsync(seconds);
 
         private void OnLanguageChanged(object? sender, EventArgs e)
         {
