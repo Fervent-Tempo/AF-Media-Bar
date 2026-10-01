@@ -1753,8 +1753,7 @@ public partial class TaskBarMediaControl
             SongImageScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
             SongImageScale.ScaleX = targetScale;
             SongImageScale.ScaleY = targetScale;
-            SongImageHoverHint.BeginAnimation(UIElement.OpacityProperty, null);
-            SongImageHoverHint.Opacity = hintTargetOpacity;
+            SetArtworkHoverHintOpacity(hintTargetOpacity);
             AnimateArtworkZoomPush(targetPush, TimeSpan.Zero, null);
             if (!growing)
                 ReclaimArtworkZoom(immediate: true);
@@ -2120,8 +2119,7 @@ public partial class TaskBarMediaControl
             SongImageScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
             SongImageScale.ScaleX = scale;
             SongImageScale.ScaleY = scale;
-            SongImageHoverHint.BeginAnimation(UIElement.OpacityProperty, null);
-            SongImageHoverHint.Opacity = hintActive ? 1 : 0;
+            SetArtworkHoverHintOpacity(hintActive ? 1 : 0);
             return;
         }
 
@@ -2182,13 +2180,35 @@ public partial class TaskBarMediaControl
             // 提示层在占位图标之上，两者同时可见会叠出重影；提示激活期间让占位图标让位。
             // The hint layer sits above the placeholder glyph and the two together double up; the placeholder yields while the hint is active.
             SongImagePlaceholder.Visibility = Visibility.Collapsed;
-            SongImageHoverHint.Opacity = 1;
+            SetArtworkHoverHintOpacity(1);
         }
         else
         {
             RestoreArtworkPlaceholderVisibility();
-            SongImageHoverHint.Opacity = 0;
+            SetArtworkHoverHintOpacity(0);
         }
+    }
+
+    /// <summary>
+    /// 给悬停提示层落一个确定的 Opacity：<b>先摘掉动画再赋值</b>——动画一旦在属性上，本地赋值一律被动画值压过。
+    /// 放大动画（<see cref="AnimateArtworkZoom"/> 的 hintTargetOpacity）会给这一层挂动画，左键抬起后的兜底重同步
+    /// （<see cref="ResyncArtworkHoverFromPointer"/>）还会按"抬起那一刻"的播放状态把它重挂一遍；不摘就会把提示层卡在那个旧
+    /// 目标上——表现为"放大动画途中点暂停，白色双杠关不掉、压在取色的占位双杠之上"（提示层在上，看到的自然是白的），
+    /// 或反过来的"恢复播放后提示层长不出来"。凡是给这一层落确定值的地方都走这里（挂动画不算落值，另算），"先摘动画"于是
+    /// 不可能被漏掉。
+    /// Sets a definite Opacity on the hover hint layer, detaching any animation <b>first</b>: while one owns the property a local
+    /// assignment is always overridden by the animated value. The zoom animation (<see cref="AnimateArtworkZoom"/>'s
+    /// hintTargetOpacity) arms one on this layer, and the post-release re-sync (<see cref="ResyncArtworkHoverFromPointer"/>) re-arms
+    /// it from the playback state as of the release — leaving it attached strands the layer at that stale target, which shows up as
+    /// "a pause flip mid-zoom cannot turn the white bars off, so they sit on top of the tinted placeholder bars (the hint layer is
+    /// above, so white is what shows)", or the mirror case "the hint never grows back after playback resumes". Every place that
+    /// lands a definite value on this layer goes through here (arming an animation is a different act, not a landing), so the
+    /// detach can never be skipped.
+    /// </summary>
+    private void SetArtworkHoverHintOpacity(double opacity)
+    {
+        SongImageHoverHint.BeginAnimation(UIElement.OpacityProperty, null);
+        SongImageHoverHint.Opacity = opacity;
     }
 
     /// <summary>按当前播放状态恢复封面占位符的显隐，语义与 UpdateSongInfo 的封面分支一致。
