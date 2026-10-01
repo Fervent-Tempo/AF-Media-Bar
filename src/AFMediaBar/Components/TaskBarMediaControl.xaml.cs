@@ -216,6 +216,13 @@ namespace AFMediaBar.Components
 
         /// <summary>兜底收起比退出动画多等的余量，确保正常动画回调先跑。/ Extra margin the fallback waits beyond the exit animation, so the normal animation callback runs first.</summary>
         private static readonly TimeSpan HoverHideFallbackMargin = TimeSpan.FromMilliseconds(150);
+
+        /// <summary>暂停时盖在主封面上的遮罩不透明度，取 1 − 旧实现的封面画刷不透明度（0.4）：淡化浓度与改动前一致，只是从"压封面画刷"换成"主动盖遮罩"，理由见 <see cref="ApplyArtworkDimming"/>。替身封面共用同一把画刷，浓度自动跟随。/ The opacity of the scrim laid over the main artwork while paused, i.e. 1 − the cover-brush opacity the old implementation used (0.4): the dimming strength matches the previous look and only moves from "lower the cover brush" to "lay a scrim", as <see cref="ApplyArtworkDimming"/> explains. The stand-in cover shares the very same brush, so the strength follows by itself.</summary>
+        private const double ArtworkPausedScrimOpacity = 0.6;
+
+        /// <summary>大图预览的暂停减暗（压低图像不透明度）。预览是独立 Popup、底为不透明黑，透不出任何东西，所以它既不需要遮罩、也不受原地放大影响。/ The large preview's paused dimming (image opacity lowered). The preview is its own Popup over an opaque black root and nothing can show through it, so it needs no scrim and is untroubled by the in-place zoom.</summary>
+        private const double ArtworkPausedDimOpacity = 0.4;
+
         private readonly DispatcherTimer _wheelTooltipTimer;
 
         /// <summary>文字区（全局滚轮面之一）的滚轮提示；内容与封面那份由同一处写入。/ The wheel tooltip of the text region, one of the global wheel surfaces; its content is written from the same place as the artwork's.</summary>
@@ -1861,12 +1868,10 @@ namespace AFMediaBar.Components
                         // show pause icon overlay
                         SongImagePlaceholder.Symbol = SymbolRegular.Pause24;
                         SongImagePlaceholder.Visibility = Visibility.Visible;
-                        SongImage.Opacity = 0.4;
                     }
                     else
                     {
                         SongImagePlaceholder.Visibility = Visibility.Collapsed;
-                        SongImage.Opacity = 1;
                     }
 
                     SongImage.ImageSource = snapshot.Artwork;
@@ -1880,6 +1885,11 @@ namespace AFMediaBar.Components
                     SongImage.ImageSource = null;
                     BackgroundImage.Source = null;
                 }
+
+                // 两条分支都要走到：无封面时必须把遮罩关掉，否则空的封面格上会残留一层遮罩（画刷还有效，只是 ImageSource 空了）。
+                // Both branches must run it: with no artwork the scrim has to go out, or a layer of scrim is left on the empty slot
+                // (the brush is still in effect, only the ImageSource is null).
+                ApplyArtworkDimming();
 
                 // 悬停提示可能正展示时播放状态翻转（点击封面切换了播放）：只让符号与门禁跟随新状态，
                 // 不经 AnimateArtworkHover 的 immediate 路径——那会把生长中的放大动画瞬间拉到目标倍率。
@@ -1927,6 +1937,32 @@ namespace AFMediaBar.Components
                     RaiseDesiredSizeChanged();
             });
         }
+
+        /// <summary>
+        /// 决定主封面的暂停遮罩是否生效，是这件事的<b>唯一决策点</b>（<see cref="UpdateSongInfo"/> 调用它；替身封面共用同一把画刷
+        /// <see cref="SongImagePauseScrimBrush"/>，因此不用另行同步）。
+        /// 做法是给封面盖一层不透明遮罩（<see cref="SongImagePauseScrim"/>），而<b>不是</b>把封面画刷压到半透明：后者要靠"透出下方"
+        /// 才读作变淡，而放大期间封面被移进 Popup、原位留了一份替身封面（见 <see cref="_artworkZoomSubstitute"/>），半透明的封面会把
+        /// 替身透上来——看起来就是"底上还压着一个原来的组件"，暂停时最明显（播放时封面不透明，替身被完全遮住，所以只在那时露馅）。
+        /// 替身不能撤：它挡的正是抽走封面那一帧的空白（原先那个"封面空一帧"的闪烁）。遮罩是不透明的，既复现了淡化，又把替身整个盖住，
+        /// 于是放大态、静态、以及换树那一帧的替身三者合成结果完全一致——用户在暂停态放大时看到的遮罩，与静止时的那层一模一样。
+        /// 判据里的"有封面"一项不能省：无封面时若遮罩还亮着，空的封面格上会残留一层遮罩。
+        /// Decides whether the main artwork's paused scrim is lit, and is the <b>single place</b> that decides it
+        /// (<see cref="UpdateSongInfo"/> calls it; the stand-in cover shares the very same brush <see cref="SongImagePauseScrimBrush"/>,
+        /// so it needs no separate sync). The means is an opaque scrim laid over the cover (<see cref="SongImagePauseScrim"/>),
+        /// <b>not</b> a translucent cover brush: translucency only reads as "dimmed" by showing what lies underneath, and while zoomed the
+        /// cover sits in the Popup with a stand-in left at the original slot (see <see cref="_artworkZoomSubstitute"/>) — a translucent
+        /// cover would show that stand-in through, which reads as "the old component is still sitting underneath", loudest while paused
+        /// (when playing the cover is opaque and hides the stand-in entirely, which is why it never showed there). The stand-in cannot go:
+        /// it covers the blank frame left the instant the cover is pulled out, i.e. the old "one blank frame" flicker. An opaque scrim both
+        /// reproduces the dimming and hides the stand-in whole, so the zoomed cover, the static slot and the stand-in on the hand-off frame
+        /// composite identically — the scrim seen while zooming out of a paused track is the same one seen standing still. The "has artwork"
+        /// clause cannot be dropped: with no artwork a still-lit scrim would leave a patch on the empty slot.
+        /// </summary>
+        private void ApplyArtworkDimming()
+            => SongImagePauseScrimBrush.Opacity = _isPaused && SongImage.ImageSource is not null
+                ? ArtworkPausedScrimOpacity
+                : 0.0;
 
         /// <summary>根据当前可见文本发布自动尺寸请求。/ Raises an auto-size request for the visible text.</summary>
         /// <param name="isForcedRefresh">是否绕过内容指纹去重。/ Whether the content-fingerprint dedupe is bypassed.</param>
