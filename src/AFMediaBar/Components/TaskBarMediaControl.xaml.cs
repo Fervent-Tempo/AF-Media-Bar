@@ -97,11 +97,11 @@ namespace AFMediaBar.Components
                 FinishTaskbarHoverLayerHide();
             };
             // 原地放大收拢的兜底：与悬停层同一种病——收拢动画的 Completed 可能因为渲染时钟停走或动画被顶掉而永远不来，
-            // 封面就会滞留在开着的 Popup 里（IsArtworkZoomActive 恒真、拖动被永久禁用、封面收不到任何鼠标事件）。
+            // 封面就会滞留在开着的 Popup 里（IsArtworkZoomActive 恒真、封面不在主树，收不到任何鼠标事件）。
             // 计时器只依赖 Dispatcher，到点后若收拢仍未完成就强制收回（间隔在每次起表时按当前时长重设）。
             // Fallback for the zoom's collapse: the same disease as the hover layer's — the collapse animation's Completed may
             // never arrive when the render clock stops or the animation is replaced, stranding the artwork inside the open Popup
-            // (IsArtworkZoomActive stuck true, dragging permanently disabled, the cover deaf to every mouse event). The timer
+            // (IsArtworkZoomActive stuck true with the cover outside the main tree, deaf to every mouse event). The timer
             // depends only on the dispatcher; on expiry a collapse that never finished is force-reclaimed (the interval is reset
             // from the current motion each time it starts).
             _artworkZoomReclaimFallbackTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
@@ -380,12 +380,10 @@ namespace AFMediaBar.Components
         /// </summary>
         public event EventHandler<double>? ArtworkZoomExtensionChanged;
 
-        /// <summary>原地放大（Zoom 模式）是否存续：Popup 开着即为真。宿主据此在存续期间禁用媒体栏拖动——按下期间的
-        /// 鼠标捕获会重定向命中测试，封面又已在 Popup 里收不到事件，拖动（哪怕没拖动的尝试）会卡死悬停判定；宿主在
-        /// 每次左键抬起后还会调 <see cref="ResyncArtworkHoverFromPointer"/> 兜底重同步。/ Whether the in-place zoom (Zoom
-        /// mode) is live: true while its Popup is open. The host suppresses bar dragging while it lasts — mouse capture during a
-        /// press redirects hit-testing while the artwork sits in its Popup beyond the events' reach, so a drag (even an attempt
-        /// that never moves) wedges the hover verdicts; the host additionally re-syncs through
+        /// <summary>原地放大（Zoom 模式）是否存续：Popup 开着即为真。<see cref="CollapseArtworkZoomForDrag"/> 据此判断拖动按下时
+        /// 有没有东西要收回；宿主在每次左键抬起后还会调 <see cref="ResyncArtworkHoverFromPointer"/> 兜底重同步。/ Whether the
+        /// in-place zoom (Zoom mode) is live: true while its Popup is open. <see cref="CollapseArtworkZoomForDrag"/> uses it to decide
+        /// whether a drag press has anything to reclaim; the host additionally re-syncs through
         /// <see cref="ResyncArtworkHoverFromPointer"/> after every left release.</summary>
         public bool IsArtworkZoomActive => _artworkHoverZoomPopup?.IsOpen == true;
 

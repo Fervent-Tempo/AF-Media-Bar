@@ -964,12 +964,12 @@ public partial class TaskBarMediaControl
     /// <summary>
     /// 原地放大收拢的兜底计时器：Completed 可能因为渲染时钟停走（任务栏自动隐藏、窗口被遮挡）或动画被顶掉而永不到达
     /// ——悬停层的 <c>_hoverHideFallbackTimer</c> 治的就是同一种病。回调缺席时封面会滞留在开着的 Popup 里：
-    /// IsArtworkZoomActive 恒真（拖动永久被禁）、命中永远够不到。计时器只依赖 Dispatcher，到点后若收拢仍未完成就强制收回。
+    /// IsArtworkZoomActive 恒真、封面又不在主树里，鼠标事件一件都送不到。计时器只依赖 Dispatcher，到点后若收拢仍未完成就强制收回。
     /// The fallback timer for the zoom's collapse: the Completed callback may never arrive when the render clock stops (an
     /// auto-hidden taskbar, an occluded window) or the animation gets replaced — the same disease the hover layer's
     /// <c>_hoverHideFallbackTimer</c> treats. Without the callback the artwork strands inside the open Popup: IsArtworkZoomActive
-    /// stuck true (dragging permanently disabled) and unreachable by hit-testing. The timer depends only on the dispatcher: on
-    /// expiry, a collapse that never finished is force-reclaimed.
+    /// stuck true with the cover outside the main tree, so not a single mouse event reaches it. The timer depends only on the
+    /// dispatcher: on expiry, a collapse that never finished is force-reclaimed.
     /// </summary>
     private readonly System.Windows.Threading.DispatcherTimer _artworkZoomReclaimFallbackTimer;
 
@@ -1991,6 +1991,31 @@ public partial class TaskBarMediaControl
             if (_artworkHoverZoomPopup?.IsOpen == true)
                 AnimateArtworkHover(IsPointerOverArtwork());
         }, System.Windows.Threading.DispatcherPriority.Background);
+    }
+
+    /// <summary>
+    /// 宿主在拖动按下时调用：立即（无动画）收回原地放大，让拖动照常进行。
+    ///
+    /// 收回必须<b>同步且无动画</b>。拖动是"按下即开始"的手势，若放收拢动画跑（约 220 ms），整个拖动过程都会与收拢、
+    /// 推挤复位、封面换树交叠——拖动中收拢、推挤残留、位置基准漂移，正是当初"放大期间索性禁拖"要躲的东西。立即收回
+    /// 把封面送回主树、推挤清零、区域扩展收回，拖动于是落在干净的静态布局上。
+    /// Called by the host on a drag press: immediately (no animation) reclaims the in-place zoom so the drag can proceed.
+    ///
+    /// The reclaim must be <b>synchronous and animation-free</b>. Dragging begins on the press, so letting the ~220 ms collapse
+    /// run would overlap the whole drag with the collapse, the push reset, and the artwork re-parenting — collapsing mid-drag,
+    /// leftover pushes, drifting position bases: precisely what once made "no dragging while zoomed" look attractive. The
+    /// immediate reclaim returns the cover to the main tree, zeroes the push, and retracts the region extension, leaving the
+    /// drag on a clean, static layout.
+    /// </summary>
+    public void CollapseArtworkZoomForDrag()
+    {
+        if (!IsArtworkZoomActive)
+            return;
+
+        // 复用 Unloaded 那条"不等一帧"的收回：缩放归位 + 立即拆 Popup（见 HideArtworkHoverZoom）。
+        // Reuse the "cannot wait a frame" reclaim the Unloaded path uses: reset the scale and tear the Popup down at once
+        // (see HideArtworkHoverZoom).
+        HideArtworkHoverZoom(immediate: true);
     }
 
     /// <summary>把最新快照同步进大图预览：封面源、播放/暂停符号与显隐门禁。暂停语言与主程序封面格一致——图像减暗、

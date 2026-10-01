@@ -1064,7 +1064,7 @@
     <value>显示封面</value>
   </data>
   <data name="DisplayModes.Rest.Row.ArtworkHover.Description" xml:space="preserve">
-    <value>鼠标放到封面上时的放大方式。选原地放大封面会顶出任务栏上方，此时暂时拖不动媒体栏，移开鼠标即可恢复；大图预览是弹出一张独立的大图；关闭则只在栏内轻微放大。</value>
+    <value>鼠标放到封面上时的放大方式。原地放大让封面顶出任务栏上方，大图预览弹出一张独立的大图，关闭则只在栏内轻微放大。</value>
   </data>
   <data name="DisplayModes.Rest.Row.ArtworkHover.Title" xml:space="preserve">
     <value>悬停封面放大</value>
