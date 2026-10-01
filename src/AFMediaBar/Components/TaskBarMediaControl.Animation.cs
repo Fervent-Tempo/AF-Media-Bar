@@ -1529,13 +1529,17 @@ public partial class TaskBarMediaControl
     }
 
     /// <summary>
-    /// 在主画布原格位置放一份替身封面（见 <see cref="_artworkZoomSubstitute"/>）：同一把画刷 → 换歌与暂停减暗自动跟随；
-    /// 占位符号按当前显隐与字形复制。层级压在封面（ZIndex 2）之下，且放大轮廓始终把原格包住，故真封面在场时它完全被
-    /// 遮住、缩到 1× 也不会露边；已存在时先撤旧，连续放大不叠加。
-    /// Places a stand-in cover at the original slot in the main canvas (see <see cref="_artworkZoomSubstitute"/>): sharing the
-    /// brush makes track changes and the paused dimming follow by themselves, and the placeholder glyph is mirrored as is. It
-    /// sits under the artwork (ZIndex 2) and the enlarged outline encloses the original slot, so the real cover hides it whole and
-    /// it never peeks out even at 1×. An existing one is dismissed first, so consecutive zooms never stack.
+    /// 在主画布原格位置放一份替身封面（见 <see cref="_artworkZoomSubstitute"/>）：与真封面<b>同构</b>——同一把封面画刷、同一把暂停遮罩
+    /// （<see cref="SongImagePauseScrimBrush"/>，故换歌与暂停遮罩都自动跟随）、按当前显隐与字形复制的占位符号。层级压在封面（ZIndex 2）
+    /// 之下，且放大轮廓始终把原格包住，故真封面在场时它完全被遮住、缩到 1× 也不会露边；已存在时先撤旧，连续放大不叠加。
+    /// "同构"是刻意的：替身要在真封面离开主树的那几帧里充当"这一格"，合成必须与静态、与放大态一模一样，否则换树处就是一次可见的跳变。
+    /// Places a stand-in cover at the original slot in the main canvas (see <see cref="_artworkZoomSubstitute"/>), <b>isomorphic</b> to the
+    /// real cover: the same cover brush, the same paused scrim (<see cref="SongImagePauseScrimBrush"/>, so track changes and the paused
+    /// dimming both follow by themselves), and the placeholder glyph mirrored with its current visibility and glyph. It sits under the
+    /// artwork (ZIndex 2) and the enlarged outline encloses the original slot, so the real cover hides it whole and it never peeks out even
+    /// at 1×. An existing one is dismissed first, so consecutive zooms never stack. The isomorphism is deliberate: the stand-in stands in
+    /// for the slot during the frames the real cover spends outside the main tree, and its composite has to match the static slot and the
+    /// zoomed cover exactly, or the hand-off becomes a visible jump.
     /// </summary>
     private void ShowArtworkZoomSubstitute()
     {
@@ -1549,6 +1553,14 @@ public partial class TaskBarMediaControl
             Foreground = SongImagePlaceholder.Foreground,
             Visibility = SongImagePlaceholder.Visibility
         };
+        // 与真封面共用同一把遮罩画刷：浓度由那把画刷承担（见 ApplyArtworkDimming），替身因此不需要任何人来同步。
+        // Shares the real cover's scrim brush: that brush owns the strength (see ApplyArtworkDimming), so the stand-in needs
+        // no one to sync it.
+        var scrim = new Border
+        {
+            CornerRadius = SongImageBorder.CornerRadius,
+            Background = SongImagePauseScrimBrush
+        };
         var substitute = new Border
         {
             Width = SongImageBorder.ActualWidth,
@@ -1557,7 +1569,7 @@ public partial class TaskBarMediaControl
             ClipToBounds = true,
             Background = SongImage,
             IsHitTestVisible = false,
-            Child = icon
+            Child = new System.Windows.Controls.Grid { Children = { scrim, icon } }
         };
         Canvas.SetLeft(substitute, Canvas.GetLeft(SongImageBorder));
         Canvas.SetTop(substitute, Canvas.GetTop(SongImageBorder));
@@ -2037,13 +2049,13 @@ public partial class TaskBarMediaControl
             return;
 
         _artworkHoverPreviewImage.Source = _snapshot.Artwork;
-        _artworkHoverPreviewImage.Opacity = _isPaused ? 0.4 : 1.0;
+        _artworkHoverPreviewImage.Opacity = _isPaused ? ArtworkPausedDimOpacity : 1.0;
         var showGlyph = _canPlayPause && ResolveArtworkClickAction() == PlayerClickAction.TogglePlayPause;
         if (_artworkHoverPreviewScrim is not null)
         {
             _artworkHoverPreviewScrim.Visibility = showGlyph ? Visibility.Visible : Visibility.Collapsed;
-            // 暂停时不叠遮罩：主程序此时是"减暗封面 + 双杠"，再压一层灰会把减暗糊成一片。
-            // No scrim while paused: the main program shows "dimmed cover + bars" there, and a grey wash would muddy the dimming.
+            // 暂停时不叠遮罩：主程序此时是"遮罩封面 + 双杠"，再压一层灰会把那张遮罩糊成一片。
+            // No scrim while paused: the main program shows a "scrimmed cover + bars" there, and a grey wash would muddy that scrim.
             _artworkHoverPreviewScrim.Background = _isPaused
                 ? Brushes.Transparent
                 : new SolidColorBrush(Color.FromArgb(0x66, 0, 0, 0));
@@ -2067,13 +2079,13 @@ public partial class TaskBarMediaControl
     /// 封面悬停的放大与播放/暂停提示，三种模式由 <c>ArtworkHoverMode</c> 选择：默认在栏内放大 1.1 倍；原地放大（Zoom）把
     /// 封面元素本体移进透明 Popup、底部锚定放大 2 倍、只往上生长，同时把右侧内容右移同样的放大量；大图模式（Preview）
     /// 经独立 Popup 把放大的封面画到任务栏上方、突出任务栏。提示图标与主程序的封面格同一套语言：播放中显示遮罩+暂停
-    /// 双杠，已暂停时封面格本身就是"双杠+减暗"（UpdateSongInfo 的暂停分支），不再叠加会重影的提示层；点击绑定被用户
+    /// 双杠，已暂停时封面格本身就是"双杠+遮罩"（UpdateSongInfo 的暂停分支），不再叠加会重影的提示层；点击绑定被用户
     /// 改成其它动作时不显示图标，只保留放大。无媒体时这一格是快速启动音符，整体维持原交互。
     /// Artwork hover zoom plus the play/pause hint, three modes chosen by <c>ArtworkHoverMode</c>: the default zooms 1.1× inside the bar;
     /// the in-place zoom (Zoom) moves the artwork element itself into a transparent Popup, anchored at its bottom and grown 2× upward
     /// only, while the right-hand content shifts right by the same amount; the large mode (Preview) renders the enlarged cover through
     /// its own Popup above the taskbar, popping out beyond the bar. The hint glyph speaks the same language as the main program's
-    /// artwork slot: a scrim plus the pause bars while playing, and when paused the slot itself already reads "bars over a dimmed
+    /// artwork slot: a scrim plus the pause bars while playing, and when paused the slot itself already reads "bars over a scrimmed
     /// cover" (UpdateSongInfo's paused branch) so no hint layer is stacked to double the glyph. With the click binding rebound to
     /// another action no glyph appears and only the zoom remains. Without media the slot is the quick-launch note and stays as is.
     /// </summary>

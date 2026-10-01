@@ -173,6 +173,25 @@
                         </TransformGroup>
                     </Border.RenderTransform>
                         <Grid>
+                            <!--
+                                暂停遮罩层：暂停时给封面盖一层不透明遮罩，读作"封面被淡化"。为什么是遮罩、而不是把封面画刷压到半透明，
+                                以及它与替身封面的同构关系，见 ApplyArtworkDimming——那里是这件事唯一的"为什么"。
+                                层级：压在封面画刷之上、占位图标之下，图标因此不被淡化（与改动前的观感一致）。颜色暂取白色——改动前
+                                封面压到 0.4 透出的正是封面格底下的表面，白遮罩先把浅色表面上的观感对齐；浓度由画刷的 Opacity 承担，
+                                替身封面共用同一实例，所以浓度与颜色都自动跟随。
+                                The paused scrim: an opaque layer laid over the cover while paused, read as "the cover is dimmed". For why it is a
+                                scrim rather than a translucent cover brush, and how it relates to the stand-in cover, see ApplyArtworkDimming —
+                                the single authority on the reasoning.
+                                Z-order: above the cover brush, below the placeholder glyph, so the glyph is never dimmed (matching the
+                                pre-change look). The colour is white for now — the old 0.4-opacity cover revealed the taskbar surface
+                                beneath the slot, and a white scrim first matches that look over a light one; the strength lives in the
+                                brush's Opacity — the stand-in cover shares that instance, so both follow by themselves.
+                            -->
+                            <Border x:Name="SongImagePauseScrim" CornerRadius="5" IsHitTestVisible="False">
+                                <Border.Background>
+                                    <SolidColorBrush x:Name="SongImagePauseScrimBrush" Color="White" Opacity="0" />
+                                </Border.Background>
+                            </Border>
                             <ui:SymbolIcon Name="SongImagePlaceholder" Symbol="MusicNote220" FontSize="24"
                                            Filled="True"
                                            Foreground="{DynamicResource AfAccentBrush}" />
@@ -184,10 +203,10 @@
                                     IsHitTestVisible="False" />
                             <!--
                                 悬停提示层：半透明遮罩加暂停双杠，只在播放中出现。已暂停时不再叠这一层——封面格本身就是
-                                "双杠 + 减暗"（UpdateSongInfo 的暂停分支），再叠会与占位双杠重影。显隐与符号由
+                                "双杠 + 遮罩"（UpdateSongInfo 的暂停分支），再叠会与占位双杠重影。显隐与符号由
                                 AnimateArtworkHover 驱动；只有封面点击绑定为切换播放/暂停时才出现。
                                 Hover hint layer: a scrim plus the pause bars, shown only while playing. When paused this layer stays
-                                away — the slot itself already reads "bars over a dimmed cover" (UpdateSongInfo's paused branch) and
+                                away — the slot itself already reads "bars over a scrimmed cover" (UpdateSongInfo's paused branch) and
                                 stacking another would double the glyph. AnimateArtworkHover drives its visibility and glyph; it
                                 appears only when the artwork click binding toggles playback.
                             -->
