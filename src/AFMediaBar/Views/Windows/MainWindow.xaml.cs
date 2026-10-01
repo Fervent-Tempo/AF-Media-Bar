@@ -175,6 +175,7 @@ namespace AFMediaBar.Views.Windows
             // Subscribe to layout settings changed event
             SettingsManager.LayoutSettingsChanged += SettingsManager_OnLayoutSettingsChanged;
             SettingsManager.AppearanceSettingsChanged += SettingsManager_OnAppearanceSettingsChanged;
+            SettingsManager.TaskbarAppearanceSettingsChanged += SettingsManager_OnTaskbarAppearanceSettingsChanged;
             ApplicationThemeManager.Changed += ApplicationThemeManager_OnChanged;
             SettingsManager.LyricsSettingsChanged += SettingsManager_OnLyricsSettingsChanged;
             SettingsManager.TaskbarExperienceSettingsChanged += SettingsManager_OnTaskbarExperienceSettingsChanged;
@@ -285,6 +286,7 @@ namespace AFMediaBar.Views.Windows
             App.Services.GetRequiredService<MediaSessionService>().SessionsChanged -= MediaSessionService_OnSessionsChanged;
             SettingsManager.LayoutSettingsChanged -= SettingsManager_OnLayoutSettingsChanged;
             SettingsManager.AppearanceSettingsChanged -= SettingsManager_OnAppearanceSettingsChanged;
+            SettingsManager.TaskbarAppearanceSettingsChanged -= SettingsManager_OnTaskbarAppearanceSettingsChanged;
             ApplicationThemeManager.Changed -= ApplicationThemeManager_OnChanged;
             SettingsManager.LyricsSettingsChanged -= SettingsManager_OnLyricsSettingsChanged;
             SettingsManager.TaskbarExperienceSettingsChanged -= SettingsManager_OnTaskbarExperienceSettingsChanged;
@@ -560,6 +562,18 @@ namespace AFMediaBar.Views.Windows
                     return;
 
                 UpdateSystemThemeWatcher(e.Appearance);
+                foreach (var taskbarWindow in _taskbarWindows)
+                    taskbarWindow.ApplyAppearanceSettings();
+            });
+        }
+
+        private void SettingsManager_OnTaskbarAppearanceSettingsChanged(object? sender, AppearanceSettingsChangedEventArgs e)
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (_isClosing)
+                    return;
+
                 foreach (var taskbarWindow in _taskbarWindows)
                     taskbarWindow.ApplyAppearanceSettings();
             });

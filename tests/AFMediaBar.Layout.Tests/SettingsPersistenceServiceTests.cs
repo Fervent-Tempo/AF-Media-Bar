@@ -123,7 +123,8 @@ public sealed class SettingsPersistenceServiceTests
             // 刻意取一个非默认的选项：默认值（跟随系统）即使序列化失败也会"看起来正确"。
             // A deliberately non-default option: the default (follow the system) would look correct even if serialization failed.
             InterfaceLanguage = InterfaceLanguage.TraditionalChinese,
-            AllowBrowserAndVideoLyrics = true
+            AllowBrowserAndVideoLyrics = true,
+            TranslucentTbCompatibilityPromptShown = true
         };
         using (var writer = new SettingsPersistenceService(_directory)) { writer.Initialize(); SettingsManager.Replace(settings); writer.Flush(); }
         SettingsManager.ResetAll();
@@ -200,6 +201,7 @@ public sealed class SettingsPersistenceServiceTests
             SettingsManager.Current.Update.LastCheckUtc);
         Assert.IsFalse(SettingsManager.Current.Update.LastCheckSucceeded);
         Assert.AreEqual(InterfaceLanguage.TraditionalChinese, SettingsManager.Current.InterfaceLanguage);
+        Assert.IsTrue(SettingsManager.Current.TranslucentTbCompatibilityPromptShown);
         var persisted = File.ReadAllText(reader.SettingsPath);
         // 断言取当前 schema 常量而不是写死的数字：版本号每升一级都要改七处断言，而这里要证明的是
         // "文件被按当前 schema 重写过"，不是某一个具体数字。
