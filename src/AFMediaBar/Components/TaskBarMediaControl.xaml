@@ -171,16 +171,16 @@
                             <!--
                                 暂停遮罩层：暂停时给封面盖一层不透明遮罩，读作"封面被淡化"。为什么是遮罩、而不是把封面画刷压到半透明，
                                 以及它与替身封面的同构关系，见 ApplyArtworkDimming——那里是这件事唯一的"为什么"。
-                                层级：压在封面画刷之上、占位图标之下，图标因此不被淡化（与改动前的观感一致）。颜色暂取白色——改动前
-                                封面压到 0.4 透出的正是封面格底下的表面，白遮罩先把浅色表面上的观感对齐；浓度由画刷的 Opacity 承担，
+                                层级：压在封面画刷之上、占位图标之下，图标因此不被淡化（与改动前的观感一致）。颜色由 ApplyAppearanceSettings
+                                按任务栏表面的明暗给出（表面亮取白、表面暗取深；这里的白只是它跑之前的默认值）；浓度由画刷的 Opacity 承担，
                                 替身封面共用同一实例，所以浓度与颜色都自动跟随。
                                 The paused scrim: an opaque layer laid over the cover while paused, read as "the cover is dimmed". For why it is a
                                 scrim rather than a translucent cover brush, and how it relates to the stand-in cover, see ApplyArtworkDimming —
                                 the single authority on the reasoning.
                                 Z-order: above the cover brush, below the placeholder glyph, so the glyph is never dimmed (matching the
-                                pre-change look). The colour is white for now — the old 0.4-opacity cover revealed the taskbar surface
-                                beneath the slot, and a white scrim first matches that look over a light one; the strength lives in the
-                                brush's Opacity — the stand-in cover shares that instance, so both follow by themselves.
+                                pre-change look). The colour comes from ApplyAppearanceSettings per the taskbar surface (white over a light one,
+                                dark over a dark one; the white here is only the default until that runs), and the strength lives in the brush's
+                                Opacity — the stand-in cover shares that instance, so both follow by themselves.
                             -->
                             <Border x:Name="SongImagePauseScrim" CornerRadius="5" IsHitTestVisible="False">
                                 <Border.Background>

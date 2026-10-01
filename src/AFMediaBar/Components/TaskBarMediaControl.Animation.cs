@@ -1508,9 +1508,10 @@ public partial class TaskBarMediaControl
             Foreground = SongImagePlaceholder.Foreground,
             Visibility = SongImagePlaceholder.Visibility
         };
-        // 与真封面共用同一把遮罩画刷：浓度由那把画刷承担（见 ApplyArtworkDimming），替身因此不需要任何人来同步。
-        // Shares the real cover's scrim brush: that brush owns the strength (see ApplyArtworkDimming), so the stand-in needs
-        // no one to sync it.
+        // 与真封面共用同一把遮罩画刷：浓度与颜色都由那把画刷承担（见 ApplyArtworkDimming 与 ApplyAppearanceSettings），
+        // 替身因此不需要任何人来同步。
+        // Shares the real cover's scrim brush: that brush owns both the strength and the colour (see ApplyArtworkDimming and
+        // ApplyAppearanceSettings), so the stand-in needs no one to sync it.
         var scrim = new Border
         {
             CornerRadius = SongImageBorder.CornerRadius,
