@@ -226,7 +226,7 @@ namespace AFMediaBar.Components
         /// <summary>兜底收起比退出动画多等的余量，确保正常动画回调先跑。/ Extra margin the fallback waits beyond the exit animation, so the normal animation callback runs first.</summary>
         private static readonly TimeSpan HoverHideFallbackMargin = TimeSpan.FromMilliseconds(150);
 
-        /// <summary>暂停时盖在主封面上的遮罩不透明度，取 1 − 旧实现的封面画刷不透明度（0.4）：淡化浓度与改动前一致，只是从"压封面画刷"换成"主动盖遮罩"，理由见 <see cref="ApplyArtworkDimming"/>。替身封面共用同一把画刷，浓度自动跟随。/ The opacity of the scrim laid over the main artwork while paused, i.e. 1 − the cover-brush opacity the old implementation used (0.4): the dimming strength matches the previous look and only moves from "lower the cover brush" to "lay a scrim", as <see cref="ApplyArtworkDimming"/> explains. The stand-in cover shares the very same brush, so the strength follows by itself.</summary>
+        /// <summary>暂停时盖在主封面上的遮罩不透明度，取 1 − 旧实现的封面画刷不透明度（0.4）：淡化浓度与改动前一致，只是从"压封面画刷"换成"主动盖遮罩"，理由见 <see cref="ApplyArtworkDimming"/>。颜色另由 <see cref="ApplyAppearanceSettings"/> 按任务栏表面的明暗给出。替身封面共用同一把画刷，浓度与颜色都自动跟随。/ The opacity of the scrim laid over the main artwork while paused, i.e. 1 − the cover-brush opacity the old implementation used (0.4): the dimming strength matches the previous look and only moves from "lower the cover brush" to "lay a scrim", as <see cref="ApplyArtworkDimming"/> explains. Its colour is a separate matter, set by <see cref="ApplyAppearanceSettings"/> from the taskbar surface's lightness. The stand-in cover shares the very same brush, so both strength and colour follow by themselves.</summary>
         private const double ArtworkPausedScrimOpacity = 0.6;
 
         /// <summary>大图预览的暂停减暗（压低图像不透明度）。预览是独立 Popup、底为不透明黑，透不出任何东西，所以它既不需要遮罩、也不受原地放大影响。/ The large preview's paused dimming (image opacity lowered). The preview is its own Popup over an opaque black root and nothing can show through it, so it needs no scrim and is untroubled by the in-place zoom.</summary>
@@ -1700,6 +1700,21 @@ namespace AFMediaBar.Components
             // them separately would only produce two colours over one background.
             ApplySpectrumForeground(foreground);
             ApplyTaskbarHoverAppearance(foreground);
+            // 暂停遮罩要伪装成"封面格底下那块任务栏表面"（理由见 ApplyArtworkDimming），所以它的颜色取上面两支文字前景的
+            // <b>另一端</b>：表面亮就盖白、表面暗就盖深、高对比度跟系统窗口底色。于是它跟的不是"系统深浅色"这么粗的一档，而是同一个
+            // 权威判定 presentation——里面还含宿主从真实屏幕背景采样出的自适应决定（ApplyAdaptiveForegroundDecision），所以
+            // 任务栏背景一变，文字与遮罩同时换向。遮罩画刷与替身封面共用同一实例，替身无须另行同步。
+            // The paused scrim impersonates "the taskbar surface under the artwork slot" (see ApplyArtworkDimming), so its colour
+            // takes the <b>other end</b> of the same two-value palette used for the text just above: white over a light surface, dark
+            // over a dark one, and the system window colour under high contrast. It therefore follows something finer than the coarse
+            // "system light/dark setting" — the same authoritative verdict, presentation, which also folds in the decision the host
+            // samples from the real screen background (ApplyAdaptiveForegroundDecision), so when the taskbar surface changes, the text
+            // and the scrim flip together. The scrim brush is the very instance the stand-in cover uses, so the stand-in needs no sync.
+            SongImagePauseScrimBrush.Color = presentation.UsesSystemColors
+                ? SystemColors.WindowColor
+                : presentation.UsesLightText
+                    ? Color.FromRgb(0x1C, 0x1C, 0x1C)
+                    : Colors.White;
             SongInfoStackPanel.Background = Brushes.Transparent;
             SetWebLyricsAppearance(foreground, needsContrastShadow: false, usesLightText: presentation.UsesLightText);
 
@@ -1989,6 +2004,8 @@ namespace AFMediaBar.Components
         /// 替身透上来——看起来就是"底上还压着一个原来的组件"，暂停时最明显（播放时封面不透明，替身被完全遮住，所以只在那时露馅）。
         /// 替身不能撤：它挡的正是抽走封面那一帧的空白（原先那个"封面空一帧"的闪烁）。遮罩是不透明的，既复现了淡化，又把替身整个盖住，
         /// 于是放大态、静态、以及换树那一帧的替身三者合成结果完全一致——用户在暂停态放大时看到的遮罩，与静止时的那层一模一样。
+        /// 遮罩的<b>颜色</b>不在这里定：由 <see cref="ApplyAppearanceSettings"/> 按任务栏表面的明暗给出（表面亮取白、表面暗取深），见那里的说明；
+        /// 这里只管它的浓度。
         /// 判据里的"有封面"一项不能省：无封面时若遮罩还亮着，空的封面格上会残留一层遮罩。
         /// Decides whether the main artwork's paused scrim is lit, and is the <b>single place</b> that decides it
         /// (<see cref="UpdateSongInfo"/> calls it; the stand-in cover shares the very same brush <see cref="SongImagePauseScrimBrush"/>,
@@ -1999,8 +2016,10 @@ namespace AFMediaBar.Components
         /// (when playing the cover is opaque and hides the stand-in entirely, which is why it never showed there). The stand-in cannot go:
         /// it covers the blank frame left the instant the cover is pulled out, i.e. the old "one blank frame" flicker. An opaque scrim both
         /// reproduces the dimming and hides the stand-in whole, so the zoomed cover, the static slot and the stand-in on the hand-off frame
-        /// composite identically — the scrim seen while zooming out of a paused track is the same one seen standing still. The "has artwork"
-        /// clause cannot be dropped: with no artwork a still-lit scrim would leave a patch on the empty slot.
+        /// composite identically — the scrim seen while zooming out of a paused track is the same one seen standing still. The scrim's
+        /// <b>colour</b> is not decided here: <see cref="ApplyAppearanceSettings"/> derives it from the taskbar surface's lightness (white
+        /// over a light one, dark over a dark one), see there; this method only owns its strength. The "has artwork" clause cannot be
+        /// dropped: with no artwork a still-lit scrim would leave a patch on the empty slot.
         /// </summary>
         private void ApplyArtworkDimming()
             => SongImagePauseScrimBrush.Opacity = _isPaused && SongImage.ImageSource is not null
