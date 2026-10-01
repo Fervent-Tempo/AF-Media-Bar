@@ -1853,20 +1853,19 @@ public partial class TaskbarWindow : Window
             return;
         }
 
-        // 原地放大存续期间禁止拖动，原因有两层：①封面元素住在 Popup 里、右侧内容带着推挤变换，拖动与这些瞬态
-        // 状态交叠会触发各种怪异行为（拖动中收拢、推挤残留、位置基准漂移）；②拖动逻辑会捕获鼠标并把命中测试
-        // 重定向到拖动子树，而封面已在子树之外——"拖不动"的尝试也会把封面的悬停判定卡死（抬起有
-        // ResyncArtworkHoverAfterRelease 兜底，捕获残留另有窗口级看门狗 HealStaleMediaControlCapture 随鼠标移动
-        // 与全局左键抬起强制释放）。放大是悬停态、几秒即收，牺牲这几秒的可拖性换取行为可预期。
-        // No dragging while the in-place artwork zoom is live, for two reasons: ① the artwork element lives in its Popup and the
-        // right-hand content carries push transforms, and dragging interleaved with those transient states triggers all kinds of
-        // odd behaviour (collapsing mid-drag, leftover pushes, drifting position bases); ② the drag logic captures the mouse and
-        // redirects hit-testing to the drag subtree, which the artwork has just left — even a blocked drag attempt can wedge the
-        // cover's hover verdicts (the release backstops via ResyncArtworkHoverAfterRelease, and any leftover capture is force-
-        // released by the window-level watchdog HealStaleMediaControlCapture on mouse moves and global left releases). The zoom
-        // is a hover state lasting seconds; sacrificing draggability for those seconds buys predictable behaviour.
-        if (MediaControl.IsArtworkZoomActive)
-            return;
+        // 原地放大存续期间不再禁止拖动（旧版在这里直接 return）。当初禁拖的两层理由后来都被治了：②命中测试被拖动捕获
+        // 重定向这件事，悬停判定已改成屏幕几何（IsPointerOverArtwork，不受捕获影响），陈旧捕获另有窗口级看门狗
+        // （HealStaleMediaControlCapture）与抬起后的 ResyncArtworkHoverFromPointer 兜底；①与放大瞬态交叠这件事，只需在
+        // 按下这一刻**立即收回**放大（同步、无动画）即可——拖动随后落在静态布局上。若留到拖动中途再收，收拢动画就会与
+        // 整个拖动过程交叠（拖动中收拢、推挤残留、位置基准漂移）。未在放大时这是个空操作，故这里不加条件。
+        // No more "no dragging while the in-place zoom is live" (the old code simply returned here). Both reasons behind that
+        // ban were fixed since: ② hit-test redirection by the drag capture no longer matters because the hover verdict is
+        // screen geometry (IsPointerOverArtwork, capture-immune), and stale captures are cleared by the window-level watchdog
+        // (HealStaleMediaControlCapture) plus the post-release ResyncArtworkHoverFromPointer; ① overlap with the zoom's
+        // transient state needs only an <b>immediate</b> reclaim of the zoom on this very press (synchronous, no animation) —
+        // the drag then runs on a static layout. Reclaiming later, mid-drag, would overlap the collapse animation with the whole
+        // drag (collapsing mid-drag, leftover pushes, drifting position bases). It is a no-op when not zoomed, hence no guard.
+        MediaControl.CollapseArtworkZoomForDrag();
 
         // 性能组件是可点击控件而不是可拖动的空白：命中它时不开拖动，否则这次点击的抬起事件会被拖动路径标记为已处理，
         // 组件上声明的 MouseLeftButtonUp 永远不会执行，点击打开任务管理器就永远不生效。
