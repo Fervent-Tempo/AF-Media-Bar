@@ -1063,6 +1063,21 @@
   <data name="DisplayModes.Rest.Row.Artwork.Title" xml:space="preserve">
     <value>顯示封面</value>
   </data>
+  <data name="DisplayModes.Rest.Row.ArtworkHover.Description" xml:space="preserve">
+    <value>滑鼠放到封面上時的放大方式。選原地放大封面會頂出工作列上方，此時暫時拖不動媒體列，移開滑鼠即可恢復；大圖預覽是彈出一張獨立的大圖；關閉則只在列內輕微放大。</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkHover.Title" xml:space="preserve">
+    <value>懸停封面放大</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkHover.Mode.Off" xml:space="preserve">
+    <value>關閉（1.1×）</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkHover.Mode.Zoom" xml:space="preserve">
+    <value>原地放大（2×）</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkHover.Mode.Preview" xml:space="preserve">
+    <value>大圖預覽</value>
+  </data>
   <data name="DisplayModes.Rest.Row.Progress.Title" xml:space="preserve">
     <value>顯示播放進度</value>
   </data>

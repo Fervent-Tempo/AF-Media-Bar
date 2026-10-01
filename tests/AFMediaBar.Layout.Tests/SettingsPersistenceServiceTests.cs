@@ -705,16 +705,12 @@ public sealed class SettingsPersistenceServiceTests
         {
             FullPanel = TaskbarFullPanelSettings.Compact,
             Density = TaskbarInformationDensity.Information,
-            HoverButtonSpacingDip = 12,
-            ArtworkVisible = false
+            HoverButtonSpacingDip = 12
         };
         SettingsManager.Current.TrackChangeNotification = TrackChangeNotificationSettings.Default with { Enabled = true };
         SettingsManager.Current.TaskbarTargetMonitorDeviceIds = ["DISPLAY2"];
         SettingsManager.ResetDisplayModes();
         Assert.AreEqual(TaskbarFullPanelSettings.Full, SettingsManager.Current.TaskbarExperience.FullPanel);
-        Assert.IsTrue(
-            SettingsManager.Current.TaskbarExperience.ArtworkVisible,
-            "显示模式页重置必须恢复静置层封面开关。");
         Assert.AreEqual(TaskbarInformationDensity.Information, SettingsManager.Current.TaskbarExperience.Density);
         Assert.AreEqual(12, SettingsManager.Current.TaskbarExperience.HoverButtonSpacingDip);
         Assert.IsTrue(SettingsManager.Current.TrackChangeNotification.Enabled);

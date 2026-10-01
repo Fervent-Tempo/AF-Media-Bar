@@ -1063,6 +1063,21 @@
   <data name="DisplayModes.Rest.Row.Artwork.Title" xml:space="preserve">
     <value>Show artwork</value>
   </data>
+  <data name="DisplayModes.Rest.Row.ArtworkHover.Description" xml:space="preserve">
+    <value>What happens when you rest the mouse on the cover. In-place zoom grows it above the taskbar — the bar can't be dragged while it's enlarged, just move the mouse away first; large preview pops out a standalone card; off keeps a small zoom inside the bar.</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkHover.Title" xml:space="preserve">
+    <value>Artwork hover zoom</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkHover.Mode.Off" xml:space="preserve">
+    <value>Off (1.1×)</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkHover.Mode.Zoom" xml:space="preserve">
+    <value>In-place zoom (2×)</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkHover.Mode.Preview" xml:space="preserve">
+    <value>Large preview</value>
+  </data>
   <data name="DisplayModes.Rest.Row.Progress.Title" xml:space="preserve">
     <value>Show playback progress</value>
   </data>

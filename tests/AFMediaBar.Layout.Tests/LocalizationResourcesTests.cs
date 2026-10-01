@@ -39,7 +39,7 @@ public sealed class LocalizationResourcesTests
                 Assert.AreEqual(value, Translations.Get(key, language), $"Lookup mismatch: {name}/{key}");
             }
 
-            Assert.AreEqual(691, keys.Count, $"Unexpected translation count: {name}");
+            Assert.AreEqual(696, keys.Count, $"Unexpected translation count: {name}");
             if (baseline is null)
                 baseline = keys;
             else

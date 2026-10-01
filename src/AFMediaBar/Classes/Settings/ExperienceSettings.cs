@@ -449,6 +449,26 @@ public readonly record struct TaskbarHoverControlsSettings(
     public static TaskbarHoverControlsSettings Default { get; } = new(false, false, true, true, true);
 }
 
+/// <summary>
+/// 悬停封面时的放大方式：<see cref="Off"/> 保持栏内紧凑 1.1 倍放大；<see cref="Zoom"/> 把封面组件本身原地放大
+/// （底部锚定、只向上生长，超出任务栏的部分经透明 Popup 呈现）；<see cref="Preview"/> 用独立的大图预览卡片
+/// 突出在任务栏上方。
+/// How the artwork behaves on hover: <see cref="Off"/> keeps the compact 1.1× zoom inside the bar; <see cref="Zoom"/>
+/// enlarges the artwork component itself in place (anchored at its bottom, growing only upward, with the part beyond the
+/// taskbar rendered through a transparent Popup); <see cref="Preview"/> pops a separate large-preview card above the taskbar.
+/// </summary>
+public enum ArtworkHoverMode
+{
+    /// <summary>栏内紧凑放大 1.1 倍（默认）。/ Compact 1.1× zoom inside the bar (default).</summary>
+    Off = 0,
+
+    /// <summary>原地放大：封面组件底部锚定、向上生长 <c>ArtworkHoverZoomScaleFactor</c>（2×），且右侧内容同步右移让位。/ In-place zoom: the artwork grows to <c>ArtworkHoverZoomScaleFactor</c> (2×) upward from its bottom, with the right-hand content shifting right to make room.</summary>
+    Zoom = 1,
+
+    /// <summary>大图预览：独立卡片突出任务栏上方。/ Large preview: a separate card popping above the taskbar.</summary>
+    Preview = 2
+}
+
 /// <summary>任务栏三层体验设置。 / Settings for the three-layer taskbar experience.</summary>
 public readonly record struct TaskbarExperienceSettings(
     bool HoverLayerEnabled,
@@ -475,6 +495,16 @@ public readonly record struct TaskbarExperienceSettings(
     public bool ArtworkVisible { get => _artworkVisible ?? true; init => _artworkVisible = value; }
 
     private readonly bool? _artworkVisible;
+
+    /// <summary>
+    /// 悬停封面时的放大方式。旧设置文件没有该字段时读作 <see cref="ArtworkHoverMode.Off"/>（保持紧凑 1.1 倍放大），
+    /// 见 <c>ArtworkVisible</c> 的兼容写法。
+    /// How the artwork behaves on hover. Settings files that predate the field read as <see cref="ArtworkHoverMode.Off"/>
+    /// (the compact zoom stays); see the compat note on <c>ArtworkVisible</c>.
+    /// </summary>
+    public ArtworkHoverMode ArtworkHoverMode { get => _artworkHoverMode ?? ArtworkHoverMode.Off; init => _artworkHoverMode = value; }
+
+    private readonly ArtworkHoverMode? _artworkHoverMode;
 
     /// <summary>静置层是否显示性能组件。 / Whether the rest layer shows the performance component.</summary>
     public bool PerformanceVisible { get; init; } = true;
@@ -591,6 +621,7 @@ public readonly record struct TaskbarExperienceSettings(
             MediaTextAlignment = Enum.IsDefined(MediaTextAlignment) ? MediaTextAlignment : defaults.MediaTextAlignment,
             FullPanel = FullPanel.Normalize(),
             LengthMode = Enum.IsDefined(LengthMode) ? LengthMode : defaults.LengthMode,
+            ArtworkHoverMode = Enum.IsDefined(ArtworkHoverMode) ? ArtworkHoverMode : defaults.ArtworkHoverMode,
             FixedLengthDip = double.IsFinite(FixedLengthDip) && FixedLengthDip >= MinimumStoredFixedLengthDip
                 ? Math.Clamp(FixedLengthDip, MinimumStoredFixedLengthDip, MaximumStoredFixedLengthDip)
                 : defaults.FixedLengthDip,

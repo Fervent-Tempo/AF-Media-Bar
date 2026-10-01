@@ -109,6 +109,10 @@ public partial class TaskbarWindow : Window
     private IntPtr _inputRegionWindowHandle;
     private RECT _lastInputRegion;
     private bool _hasInputRegion;
+    /// <summary>最近一次定位读到的任务栏 DPI 缩放；区域扩展的 DIP→物理像素换算依赖它。/ DPI scale from the latest positioning pass; the region extension's DIP-to-physical conversion relies on it.</summary>
+    private double _lastDpiScale = 1.0;
+    /// <summary>原地放大激活期间临时扩展到媒体栏右侧的物理像素数；0 表示未扩展。基础矩形存于 _lastInputRegion。/ Physical pixels temporarily extending right of the bar while the in-place artwork zoom is active; 0 when not extended. The base rect lives in _lastInputRegion.</summary>
+    private int _artworkZoomExtensionPx;
     private readonly AudioMonitorService _audioMonitorService;
     private readonly NativeMouseInputMonitor _mouseInputMonitor;
     private readonly AdaptiveForegroundSamplingSession _foregroundSamplingSession;
@@ -184,8 +188,22 @@ public partial class TaskbarWindow : Window
         MediaControl.WheelRequested += MediaControl_WheelRequested;
         MediaControl.DesiredSizeChanged += MediaControl_DesiredSizeChanged;
         MediaControl.RestTransitionFinished += MediaControl_RestTransitionFinished;
+        MediaControl.ArtworkZoomExtensionChanged += MediaControl_ArtworkZoomExtensionChanged;
         MediaControl.OutputDeviceInfoRequested += MediaControl_OutputDeviceInfoRequested;
         MediaControl.VolumeInfoRequested += MediaControl_VolumeInfoRequested;
+        // 陈旧捕获看门狗挂在 Window 而不是 MediaControl 上：MediaControl 的预览处理器收不到 Popup 树内的输入路由，
+        // 而陈旧捕获恰恰会把命中重定向进主树——窗口级的预览隧道无论如何都能看到每一次移动（见 HealStaleMediaControlCapture）。
+        // 但窗口隧道也不是万能的：SubTree 捕获残留期间 WPF 把命中测试沙盒进捕获子树，连窗口隧道都收不到事件——
+        // 因此再挂一条全局左键抬起的钩子事件（MouseInputMonitor_OnLeftButtonReleased），那是唯一不受 WPF 捕获
+        // 影响的输入通道，「抬起」也是每次拖动尝试的确定性终点。
+        // The stale-capture watchdog hooks the Window rather than MediaControl: the control's preview handlers never see input routed
+        // inside Popup trees, while a stale capture redirects hit-testing into the main tree — the window-level tunnel observes every
+        // move either way (see HealStaleMediaControlCapture). Yet the window tunnel is not omnipotent either: while a SubTree capture
+        // lingers, WPF sandboxes hit-testing inside the captured subtree and even the window tunnel receives nothing — hence the extra
+        // global left-release hook (MouseInputMonitor_OnLeftButtonReleased), the one input channel immune to WPF captures, and "release"
+        // being the deterministic endpoint of every drag attempt.
+        PreviewMouseMove += TaskbarWindow_PreviewMouseMove;
+        _mouseInputMonitor.LeftButtonReleased += MouseInputMonitor_OnLeftButtonReleased;
 
         _taskBarService = taskBarService;
         _occupiedAreaService = occupiedAreaService;
@@ -735,6 +753,7 @@ public partial class TaskbarWindow : Window
         {
             // get DPI scaling
             double dpiScale = _taskBarService.GetTaskbarDpiScale(taskbarHandle);
+            _lastDpiScale = dpiScale;
 
             // Guard against invalid DPI (e.g. stale handle during explorer restart)
             if (dpiScale <= 0)
@@ -757,7 +776,7 @@ public partial class TaskbarWindow : Window
             if (!_hasInputRegion || _inputRegionWindowHandle != taskbarWindowHandle ||
                 !SameRect(_lastInputRegion, barRect))
             {
-                _taskBarService.ApplyInputRegion(taskbarWindowHandle, [barRect]);
+                ApplyBarInputRegion(taskbarWindowHandle, barRect);
                 _inputRegionWindowHandle = taskbarWindowHandle;
                 _lastInputRegion = barRect;
                 _hasInputRegion = true;
@@ -863,6 +882,63 @@ public partial class TaskbarWindow : Window
     private static bool SameRect(RECT left, RECT right) =>
         left.Left == right.Left && left.Top == right.Top &&
         left.Right == right.Right && left.Bottom == right.Bottom;
+
+    /// <summary>
+    /// 应用媒体栏的窗口区域：基础矩形右侧叠加当前的原地放大扩展量。窗口本身铺满任务栏，扩展只改区域、不动窗口
+    /// 几何。注意这只解决 HWND 层的 SetWindowRgn 裁切——WPF 层 MainBorder 的 ClipToBounds 由控制件在放大存续期间
+    /// 自行解除（见 TaskBarMediaControl.ShowArtworkHoverZoom），两层缺一组件仍会被吃。
+    /// Applies the media bar's window region: the base rect plus the current in-place zoom extension on its right. The window
+    /// itself covers the whole taskbar, so the extension only widens the region without touching window geometry. Note this
+    /// addresses only the HWND-layer SetWindowRgn clipping — the WPF layer's MainBorder ClipToBounds is released by the control
+    /// itself while the zoom lasts (see TaskBarMediaControl.ShowArtworkHoverZoom); missing either layer still eats the widgets.
+    /// </summary>
+    private void ApplyBarInputRegion(IntPtr taskbarWindowHandle, RECT baseRect)
+    {
+        var effective = baseRect;
+        if (_artworkZoomExtensionPx > 0)
+            effective.Right += _artworkZoomExtensionPx;
+        _taskBarService.ApplyInputRegion(taskbarWindowHandle, [effective]);
+    }
+
+    /// <summary>
+    /// 原地放大激活/收回时重设区域扩展量并立即重应用区域。扩展带只有推挤出去的组件在用，交互语义与栏内一致；
+    /// 该带会暂时覆盖媒体栏右侧的任务栏图标悬停（仅放大存续期间，指针在封面上）。重定位路径（CalculateAndSetPosition）
+    /// 经 ApplyBarInputRegion 也会带上扩展量，任务栏几何变化不会把它冲掉。
+    /// Resizes the region extension when the in-place zoom activates/reclaims and reapplies the region at once. Only the pushed
+    /// widgets occupy the extension strip, keeping their in-bar interaction semantics; the strip temporarily overrides hovering of
+    /// taskbar icons right of the bar (only while the zoom lasts and the pointer sits on the artwork). The repositioning path
+    /// (CalculateAndSetPosition) routes through ApplyBarInputRegion too, so taskbar geometry changes never wash the extension out.
+    /// </summary>
+    private void MediaControl_ArtworkZoomExtensionChanged(object? sender, double extraDip)
+    {
+        if (_isClosing)
+            return;
+
+        // 原地放大只存在于横向任务栏；其它取向下事件不应到达，防御性地按 0 处理。
+        // The in-place zoom exists on the horizontal taskbar only; under any other orientation the event should not arrive —
+        // defensively treat it as 0.
+        if (_appliedOrientation is not { } orientation || orientation != LayoutOrientation.Horizontal)
+            extraDip = 0;
+
+        // 放大激活时若拖动正在进行（含"待定"），立即取消并释放鼠标捕获：捕获会把命中测试重定向到拖动子树，
+        // 而封面此刻已被移进 Popup（不在该子树内）——IsMouseOver 从此谎报、进出事件不再送达封面，"拖不动"
+        // 的尝试也会把悬停状态机卡死。取消拖动 + 释放捕获，放大才能继续正确认指针。
+        // If a drag is underway (including "pending") when the zoom activates, cancel it at once and release the mouse capture:
+        // capture redirects hit-testing to the drag subtree while the artwork has just moved into the Popup — outside that
+        // subtree — so IsMouseOver starts lying and enter/leave events stop reaching the cover; even a drag attempt that never
+        // moves can wedge the hover state machine. Cancelling the drag and dropping the capture keeps the zoom tracking the
+        // pointer correctly.
+        if (extraDip > 0 && (_isDragging || _isDragPending))
+            EndTaskbarDrag();
+
+        var extensionPx = (int)Math.Ceiling(Math.Max(0, extraDip) * _lastDpiScale);
+        if (extensionPx == _artworkZoomExtensionPx)
+            return;
+
+        _artworkZoomExtensionPx = extensionPx;
+        if (_hasInputRegion && _inputRegionWindowHandle != IntPtr.Zero)
+            ApplyBarInputRegion(_inputRegionWindowHandle, _lastInputRegion);
+    }
 
     #endregion
 
@@ -1721,6 +1797,21 @@ public partial class TaskbarWindow : Window
             return;
         }
 
+        // 原地放大存续期间禁止拖动，原因有两层：①封面元素住在 Popup 里、右侧内容带着推挤变换，拖动与这些瞬态
+        // 状态交叠会触发各种怪异行为（拖动中收拢、推挤残留、位置基准漂移）；②拖动逻辑会捕获鼠标并把命中测试
+        // 重定向到拖动子树，而封面已在子树之外——"拖不动"的尝试也会把封面的悬停判定卡死（抬起有
+        // ResyncArtworkHoverAfterRelease 兜底，捕获残留另有窗口级看门狗 HealStaleMediaControlCapture 随鼠标移动
+        // 与全局左键抬起强制释放）。放大是悬停态、几秒即收，牺牲这几秒的可拖性换取行为可预期。
+        // No dragging while the in-place artwork zoom is live, for two reasons: ① the artwork element lives in its Popup and the
+        // right-hand content carries push transforms, and dragging interleaved with those transient states triggers all kinds of
+        // odd behaviour (collapsing mid-drag, leftover pushes, drifting position bases); ② the drag logic captures the mouse and
+        // redirects hit-testing to the drag subtree, which the artwork has just left — even a blocked drag attempt can wedge the
+        // cover's hover verdicts (the release backstops via ResyncArtworkHoverAfterRelease, and any leftover capture is force-
+        // released by the window-level watchdog HealStaleMediaControlCapture on mouse moves and global left releases). The zoom
+        // is a hover state lasting seconds; sacrificing draggability for those seconds buys predictable behaviour.
+        if (MediaControl.IsArtworkZoomActive)
+            return;
+
         // 性能组件是可点击控件而不是可拖动的空白：命中它时不开拖动，否则这次点击的抬起事件会被拖动路径标记为已处理，
         // 组件上声明的 MouseLeftButtonUp 永远不会执行，点击打开任务管理器就永远不生效。
         // The performance component is a clickable control rather than draggable background: a hit on it must not start a
@@ -1835,6 +1926,21 @@ public partial class TaskbarWindow : Window
         if (e.ChangedButton != MouseButton.Left)
             return;
 
+        // 兜底释放遗留的 SubTree 捕获：拖动按下时的 Mouse.Capture(MediaControl, SubTree) 若因竞态遗留（被拦下的
+        // 按下、事件乱序），命中测试会被锁死在捕获子树内——已换树进 Popup 的封面在子树之外，从此收不到任何
+        // 鼠标事件，悬停彻底失聪。正常路径的捕获在抬起时也已结束，此处是纯修复层，不抢合法控件的捕获
+        // （那类捕获挂在子元素上，IsMouseCaptured 只对 MediaControl 本身成立）。
+        // Backstop against a leftover SubTree capture: the Mouse.Capture(MediaControl, SubTree) taken on a drag press can
+        // outlive its release path through races (a blocked press, out-of-order events), and while it lasts hit-testing is
+        // locked inside the captured subtree — the artwork, re-parented into its Popup, sits outside it and never receives
+        // another mouse event, killing hover outright. Legitimate captures have ended by button-up, so this is a pure repair
+        // layer that never steals a control's own capture (those hang on children; IsMouseCaptured holds only for MediaControl).
+        // Releases routed inside a Popup tree never reach this handler; those are the window-level watchdog's beat
+        // (HealStaleMediaControlCapture — now driven both by mouse moves and the global left-release hook, the one channel
+        // a lingering capture cannot silence).
+        if (MediaControl.IsMouseCaptured)
+            MediaControl.ReleaseMouseCapture();
+
         if (_isTaskManagerClickPending)
         {
             _isTaskManagerClickPending = false;
@@ -1847,8 +1953,16 @@ public partial class TaskbarWindow : Window
                 e.Handled = true;
             }
 
+            ResyncArtworkHoverAfterRelease();
             return;
         }
+
+        // 按下期间鼠标捕获（拖动逻辑或被按下的按钮）会让封面的命中判定失真——被拦下的拖动尝试也会留下 stale 状态。
+        // 抬起时捕获已释放，按真实指针位置重同步原地放大；非放大状态下是无操作。
+        // Mouse capture during the press (the drag logic or the pressed button) skews the artwork's hit verdicts — even a
+        // blocked drag attempt leaves stale state behind. Capture is released by the time we get here, so re-sync the in-place
+        // zoom from the real pointer position; a no-op when the zoom is not live.
+        ResyncArtworkHoverAfterRelease();
 
         if (!_isDragging && !_isDragPending)
             return;
@@ -2176,6 +2290,94 @@ public partial class TaskbarWindow : Window
             EndTaskbarDrag(releaseCapture: false);
     }
 
+    private void TaskbarWindow_PreviewMouseMove(object sender, MouseEventArgs e) => HealStaleMediaControlCapture();
+
+    /// <summary>
+    /// 全局左键抬起（低级钩子投递）后跑一遍陈旧捕获看门狗。这是窗口隧道失灵时的第二条通道：SubTree 捕获残留期间
+    /// WPF 把命中测试沙盒进捕获子树，TaskbarWindow_PreviewMouseMove 一件事件都收不到，看门狗若只靠它驱动就与
+    /// 病灶同归于尽；钩子在 WPF 之外观察输入，「抬起」又是每次拖动尝试的确定性终点。检查延迟到 Background 一拍：
+    /// 让 WPF 先把本次抬起路由完毕（ButtonBase 等控件的合法捕获在此刻已自行释放），修复层才不会抢走按住期间
+    /// 的合法捕获。
+    /// Runs the stale-capture watchdog after a global left release (fed by the low-level hook). This is the second channel for
+    /// when the window tunnel goes deaf: while a SubTree capture lingers, WPF sandboxes hit-testing inside the captured subtree
+    /// and TaskbarWindow_PreviewMouseMove receives nothing — a watchdog driven by it alone would share the tomb with the lesion;
+    /// the hook watches input outside WPF, and "release" is the deterministic endpoint of every drag attempt. The check defers
+    /// one Background tick: WPF finishes routing the release first (legitimate control captures like ButtonBase's release
+    /// themselves by then), so the repair layer never steals a capture that is still legally held.
+    /// </summary>
+    private void MouseInputMonitor_OnLeftButtonReleased(object? sender, NativeMouseButtonEventArgs e)
+    {
+        if (_isClosing)
+            return;
+        Dispatcher.BeginInvoke(HealStaleMediaControlCapture, DispatcherPriority.Background);
+    }
+
+    /// <summary>
+    /// 陈旧鼠标捕获的修复层（窗口级）。「拖不动」的按下尝试可能让 Mouse.Capture(MediaControl, SubTree) 或被按下的
+    /// 控件在竞态里把捕获活过抬起——释放兜底只挂在 MediaControl 的预览处理器上，而在 Popup 树内发生的抬起根本
+    /// 到不了那里。捕获存续期间命中测试被锁进捕获子树：主树里的其他组件照常收事件（它们在子树内），唯独已换树进
+    /// Popup 的封面永远收不到一件——悬停彻底失聪，正是"拖动尝试后封面认不出鼠标"的病灶。
+    /// 判据分两支：①捕获挂在<b>已卸载的弹层树</b>上（PresentationSource 断连）——最典型是封面 tooltip 弹层关闭时
+    /// 其内部"点外部关闭"用的捕获没跟着释放，挂在一棵死树上；活着的弹层（菜单、紧凑浮层、打开中的 tooltip）都
+    /// 还有 source，此支碰不到它们，零误伤，因此无条件释放。②捕获挂在 MediaControl 主树（视觉子树）内——窗口级
+    /// 抬起兜底覆盖不到的竞态残留。两支都要求没有任何鼠标键按下、也不在拖动中——合法捕获只存在于按下/拖动期间。
+    /// 释放后按真实指针位置重同步封面悬停（见 ResyncArtworkHoverFromPointer）。
+    /// Repair layer for stale mouse captures (window-level). A "can't-drag" press attempt can let the
+    /// Mouse.Capture(MediaControl, SubTree) or a pressed control's capture outlive its release through races — the release
+    /// backstop hangs off MediaControl's preview handlers, which a release routed inside a Popup tree never reaches. While such
+    /// a capture lasts, hit-testing is locked inside the captured subtree: the other widgets in the main tree keep receiving
+    /// events (they sit inside it) while the artwork — re-parented into its Popup — never receives another one, killing hover
+    /// outright, the very lesion behind "the cover stops recognizing the mouse after a drag attempt". The verdict has two
+    /// branches: ① the capture hangs on an <b>unloaded popup tree</b> (its PresentationSource is gone) — most typically the
+    /// artwork tooltip's internal "dismiss on outside click" capture surviving the tooltip's own closure, stranded on a dead
+    /// tree; live popups (menus, the compact flyout, an open tooltip) still have a source, so this branch cannot touch them and
+    /// releases unconditionally. ② the capture hangs inside MediaControl's main (visual) subtree — a race leftover the
+    /// window-level release backstop cannot reach. Both branches additionally require no mouse button down and no drag live —
+    /// legitimate captures exist only during presses/drags. After the release, the artwork hover re-syncs from the real pointer
+    /// position (see ResyncArtworkHoverFromPointer).
+    /// </summary>
+    private void HealStaleMediaControlCapture()
+    {
+        if (_isClosing || _isDragging || _isDragPending)
+            return;
+        if (Mouse.LeftButton == MouseButtonState.Pressed ||
+            Mouse.RightButton == MouseButtonState.Pressed ||
+            Mouse.MiddleButton == MouseButtonState.Pressed ||
+            Mouse.XButton1 == MouseButtonState.Pressed ||
+            Mouse.XButton2 == MouseButtonState.Pressed)
+            return;
+        if (Mouse.Captured is not Visual captured)
+            return;
+        // 分支①：捕获者已不在任何 PresentationSource——它的树早已卸载（tooltip 弹层关闭后的幽灵最典型），
+        // 一棵死树上的捕获没有任何合法用途，直接释放。
+        // Branch ①: the captor no longer belongs to any PresentationSource — its tree unloaded long ago (the tooltip-popup
+        // ghost being the classic); a capture on a dead tree has no legitimate use, release it outright.
+        if (PresentationSource.FromVisual(captured) is null)
+        {
+            var ghostTypeName = captured.GetType().Name;
+            Mouse.Captured.ReleaseMouseCapture();
+            AppLogService.Current?.Info("Taskbar",
+                $"清除挂在已卸载弹层树上的幽灵鼠标捕获并重同步封面悬停 / released a ghost mouse capture stranded on an unloaded popup tree and re-synced the artwork hover: {ghostTypeName}");
+            ResyncArtworkHoverAfterRelease();
+            return;
+        }
+        for (var node = (DependencyObject?)captured; node is not null; node = VisualTreeHelper.GetParent(node))
+        {
+            if (!ReferenceEquals(node, MediaControl))
+                continue;
+            var capturedTypeName = captured.GetType().Name;
+            Mouse.Captured.ReleaseMouseCapture();
+            AppLogService.Current?.Info("Taskbar",
+                $"清除媒体栏主树内的陈旧鼠标捕获并重同步封面悬停 / cleared a stale mouse capture inside the media bar's main tree and re-synced the artwork hover: {capturedTypeName}");
+            ResyncArtworkHoverAfterRelease();
+            return;
+        }
+    }
+
+    /// <summary>左键抬起后重同步原地放大的悬停：交给控制件按真实指针位置判定（见 ResyncArtworkHoverFromPointer）。
+    /// Re-syncs the in-place zoom's hover after a left release: the control decides from the real pointer position (see ResyncArtworkHoverFromPointer).</summary>
+    private void ResyncArtworkHoverAfterRelease() => MediaControl.ResyncArtworkHoverFromPointer();
+
     private void EndTaskbarDrag(bool releaseCapture = true)
     {
         _isDragging = false;
@@ -2256,6 +2458,9 @@ public partial class TaskbarWindow : Window
         MediaControl.WheelRequested -= MediaControl_WheelRequested;
         MediaControl.DesiredSizeChanged -= MediaControl_DesiredSizeChanged;
         MediaControl.RestTransitionFinished -= MediaControl_RestTransitionFinished;
+        MediaControl.ArtworkZoomExtensionChanged -= MediaControl_ArtworkZoomExtensionChanged;
+        PreviewMouseMove -= TaskbarWindow_PreviewMouseMove;
+        _mouseInputMonitor.LeftButtonReleased -= MouseInputMonitor_OnLeftButtonReleased;
         MediaControl.OutputDeviceInfoRequested -= MediaControl_OutputDeviceInfoRequested;
         MediaControl.VolumeInfoRequested -= MediaControl_VolumeInfoRequested;
         _compactFlyout.Dispose();
