@@ -329,6 +329,38 @@ public sealed class TaskbarOccupiedAreaServiceTests
     }
 
     /// <summary>
+    /// 关闭任务后空闲区间会相对旧选区严格扩大；此时第一次保持以吸收 UIA 瞬时漏报，连续第二次必须放行重新选位，否则媒体栏永不回位。
+    /// Closing a task strictly expands the free range beyond the previous selection. The first hold absorbs a transient UIA omission,
+    /// but the second consecutive expansion must fall through to reselection or the bar never returns.
+    /// </summary>
+    [TestMethod]
+    public void StrictExpansionIsDetectedSoSustainedGrowthCanReselect()
+    {
+        var previous = new TaskbarPrimaryRange(360, 1000);
+        IReadOnlyList<TaskbarPrimaryRange> exactRanges = [new TaskbarPrimaryRange(360, 1000)];
+        IReadOnlyList<TaskbarPrimaryRange> expandedRanges = [new TaskbarPrimaryRange(20, 1000)];
+        IReadOnlyList<TaskbarPrimaryRange> shrunkRanges = [new TaskbarPrimaryRange(500, 1000)];
+
+        Assert.IsFalse(TaskbarFreeRangeCalculator.IsStrictlyExpandedBeyond(exactRanges, previous));
+        Assert.IsFalse(TaskbarFreeRangeCalculator.IsStrictlyExpandedBeyond(shrunkRanges, previous));
+        Assert.IsFalse(TaskbarFreeRangeCalculator.IsStrictlyExpandedBeyond([], previous));
+        Assert.IsTrue(TaskbarFreeRangeCalculator.IsStrictlyExpandedBeyond(expandedRanges, previous));
+        Assert.IsTrue(TaskbarFreeRangeCalculator.IsStrictlyExpandedBeyond(
+            [new TaskbarPrimaryRange(360, 1200)],
+            previous));
+
+        // 区间扩大时 TryKeepSelection 仍然保持（供第一次 UIA 漏报吸收使用）。
+        // While expanded, TryKeepSelection still keeps the selection so the first UIA omission can be absorbed.
+        Assert.IsTrue(TaskbarFreeRangeCalculator.TryKeepSelection(
+            expandedRanges,
+            previous,
+            requiredPrimaryPixels: 500,
+            out var kept));
+        Assert.AreEqual(previous, kept);
+        Assert.IsTrue(TaskbarFreeRangeCalculator.IsStrictlyExpandedBeyond(expandedRanges, kept));
+    }
+
+    /// <summary>
     /// 拖动写回的偏移 MUST 与放置时的加法基准一致：否则媒体栏会与鼠标差出"空闲区间起点 − 边缘留白"，
     /// 自动避让打开、区间起点不在最左边时表现为"拖不动/位置和鼠标不对应"。
     /// The offset written by a drag MUST share the base the placement adds it to: otherwise the bar misses the mouse by

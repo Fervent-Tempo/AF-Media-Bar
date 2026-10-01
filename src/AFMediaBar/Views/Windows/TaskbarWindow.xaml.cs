@@ -40,6 +40,13 @@ public partial class TaskbarWindow : Window
     private static readonly TimeSpan TaskbarMotionSampleInterval = TimeSpan.FromMilliseconds(50);
     private static readonly TimeSpan TaskbarHiddenTrimDelay = TimeSpan.FromSeconds(30);
 
+    /// <summary>
+    /// 空闲区间严格扩大时最多保持旧选区的连续次数：第一次吸收 UIA 瞬时漏报，第二次起按图标真实移除重新选位。
+    /// Maximum consecutive holds of the previous selection while the free range is strictly expanded: the first absorbs a transient
+    /// UIA omission, and from the second on the bar repositions as if icons were really removed.
+    /// </summary>
+    private const int ExpandedSafeRangeHoldLimit = 2;
+
     private readonly ITaskbarDockService _taskBarService;
     private readonly string _targetMonitorDeviceId;
     private readonly TaskbarOccupiedAreaService _occupiedAreaService;
@@ -87,6 +94,13 @@ public partial class TaskbarWindow : Window
     private DateTime _suppressContextMenuUntilUtc;
     private DateTime _skipOccupiedAreaProbeUntilUtc;
     private TaskbarSafeRangeSnapshot? _lastStableSafeRange;
+
+    /// <summary>
+    /// 连续观测到"空闲区间相对旧选区严格扩大"的次数。首次扩大可能是 UIA 瞬时漏报，持续扩大则是图标真实移除。
+    /// Consecutive observations of the free range strictly expanding beyond the previous selection. The first expansion may be a
+    /// transient UIA omission; a sustained one means icons were really removed.
+    /// </summary>
+    private int _expandedSafeRangeHoldCount;
     private bool _hasSafePlacement;
     private WindowMode? _appliedWindowMode;
     private LayoutOrientation? _appliedOrientation;
@@ -1864,6 +1878,7 @@ public partial class TaskbarWindow : Window
         if (!SettingsManager.Current.TaskbarBarAvoidIcons)
         {
             _lastStableSafeRange = null;
+            _expandedSafeRangeHoldCount = 0;
             isSafePlacement = true;
             return fallback;
         }
@@ -1922,6 +1937,10 @@ public partial class TaskbarWindow : Window
         // 真正有新图标侵入旧区间时包含关系会失效，下面会立即选择新位置。
         // UIA can transiently omit an icon group, making a safe range suddenly expand. Keep the old placement while the new result still
         // fully contains it; when icons genuinely invade that range containment fails and a new position is selected immediately below.
+        //
+        // 但"严格扩大"也可能是图标真实移除（关闭任务）：只保持一次以过滤 UIA 瞬时漏报，连续第二次仍扩大则放行 Select 回位。
+        // A strict expansion can also mean icons were really removed (a task was closed): hold only once to absorb a transient UIA
+        // omission, and let Select reposition on the second consecutive expanded observation.
         if (TryReuseStableSafeRange(
                 primaryLength,
                 orientation,
@@ -1935,8 +1954,27 @@ public partial class TaskbarWindow : Window
                 requiredPrimaryPixels,
                 out var keptRange))
         {
-            isSafePlacement = true;
-            return keptRange;
+            if (!TaskbarFreeRangeCalculator.IsStrictlyExpandedBeyond(ranges, previousRange))
+            {
+                _expandedSafeRangeHoldCount = 0;
+                isSafePlacement = true;
+                return keptRange;
+            }
+
+            _expandedSafeRangeHoldCount++;
+            if (_expandedSafeRangeHoldCount < ExpandedSafeRangeHoldLimit)
+            {
+                isSafePlacement = true;
+                return keptRange;
+            }
+
+            // 持续扩大视为真实移除，落入下面的 Select；选区更新后下一轮会回到精确匹配并清零计数。
+            // Sustained expansion is treated as a real removal and falls through to Select below; once the snapshot matches the new
+            // free range exactly on the next round, the counter resets.
+        }
+        else
+        {
+            _expandedSafeRangeHoldCount = 0;
         }
 
         // 选区间 MUST 用纯策略：空闲区间里可能有比媒体栏还窄的缝隙，"最左边那条"会把媒体栏压细并钉在缝里。

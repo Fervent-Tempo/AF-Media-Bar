@@ -117,6 +117,26 @@ public static class TaskbarFreeRangeCalculator
         return true;
     }
 
+    /// <summary>
+    /// 当前结果是否在完整包含旧选区之外还额外扩大了空闲区间。
+    /// 区间与旧选区完全一致说明布局未变；严格扩大既可能是 UIA 瞬时漏报，也可能是图标真实移除，二者几何上无法区分。
+    /// Whether the current result fully contains the previous selection while also strictly expanding the free range.
+    /// An exact match means the layout is unchanged; a strict expansion is either a transient UIA omission or a real icon removal,
+    /// which are geometrically indistinguishable.
+    /// </summary>
+    public static bool IsStrictlyExpandedBeyond(
+        IReadOnlyList<TaskbarPrimaryRange> ranges,
+        TaskbarPrimaryRange previous)
+    {
+        if (previous.Length <= 0)
+            return false;
+
+        return ranges.Any(range =>
+            range.Start <= previous.Start &&
+            range.End >= previous.End &&
+            (range.Start < previous.Start || range.End > previous.End));
+    }
+
     private static IEnumerable<TaskbarPrimaryRange> MergeRanges(IEnumerable<TaskbarPrimaryRange> ranges)    {
         TaskbarPrimaryRange? current = null;
         foreach (var range in ranges)
