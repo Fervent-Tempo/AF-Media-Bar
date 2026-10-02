@@ -28,6 +28,9 @@ public partial class AppearanceViewModel : ObservableObject
     private AccentColorMode _accentColorMode;
     private string _accentColorHex;
     private int _backdropTintOpacityPercent;
+    private TaskbarBackgroundMaterial _taskbarBackgroundMaterial;
+    private TaskbarFrostedStyle _taskbarFrostedStyle;
+    private int _taskbarBackgroundOpacityPercent;
     private bool _isRefreshing;
 
     /// <summary>
@@ -62,6 +65,9 @@ public partial class AppearanceViewModel : ObservableObject
         _accentColorMode = appearance.AccentColorMode;
         _accentColorHex = appearance.AccentColor;
         _backdropTintOpacityPercent = appearance.ResolveBackdropTintOpacityPercent();
+        _taskbarBackgroundMaterial = appearance.TaskbarBackgroundMaterial;
+        _taskbarFrostedStyle = appearance.TaskbarFrostedStyle;
+        _taskbarBackgroundOpacityPercent = appearance.ResolveTaskbarBackgroundOpacityPercent();
         SettingsManager.SettingsChanged += OnSettingsChanged;
         _localization.LanguageChanged += OnLanguageChanged;
         _taskbarLengthConstraints.Changed += OnTaskbarLengthConstraintsChanged;
@@ -249,6 +255,50 @@ public partial class AppearanceViewModel : ObservableObject
         }
     }
 
+    /// <summary>任务栏媒体栏是否使用磨砂背景。 / Whether the taskbar media bar uses a frosted background.</summary>
+    public bool UseFrostedTaskbarBackground
+    {
+        get => _taskbarBackgroundMaterial == TaskbarBackgroundMaterial.Frosted;
+        set
+        {
+            var material = value ? TaskbarBackgroundMaterial.Frosted : TaskbarBackgroundMaterial.Transparent;
+            if (SetProperty(ref _taskbarBackgroundMaterial, material))
+            {
+                if (!_isRefreshing) Publish();
+            }
+        }
+    }
+
+    /// <summary>任务栏磨砂背景的视觉风格。 / Visual style of the frosted taskbar background.</summary>
+    public TaskbarFrostedStyle TaskbarFrostedStyle
+    {
+        get => _taskbarFrostedStyle;
+        set
+        {
+            if (SetProperty(ref _taskbarFrostedStyle, value))
+            {
+                if (!_isRefreshing) Publish();
+            }
+        }
+    }
+
+    /// <summary>任务栏磨砂背景浓度。 / Opacity of the frosted taskbar background.</summary>
+    public int TaskbarBackgroundOpacityPercent
+    {
+        get => _taskbarBackgroundOpacityPercent;
+        set
+        {
+            value = Math.Clamp(
+                value,
+                AppearanceSettings.MinimumTaskbarBackgroundOpacityPercent,
+                AppearanceSettings.MaximumTaskbarBackgroundOpacityPercent);
+            if (SetProperty(ref _taskbarBackgroundOpacityPercent, value))
+            {
+                if (!_isRefreshing) Publish();
+            }
+        }
+    }
+
     /// <summary>
     /// 静置层媒体文字（标题、歌手、歌词）的字号缩放百分比。该值存在任务栏体验设置里，但按界面归属由本页承载：
     /// 「恢复本页默认设置」因此会连同它一起复位。
@@ -328,7 +378,10 @@ public partial class AppearanceViewModel : ObservableObject
         AccentColorHex,
         BackdropTintOpacityPercent,
         LatinFontFamily,
-        CjkFontFamily));
+        CjkFontFamily,
+        _taskbarBackgroundMaterial,
+        TaskbarBackgroundOpacityPercent,
+        TaskbarFrostedStyle));
 
     public void ResetAppearance() => SettingsManager.ResetAppearance();
 
@@ -361,9 +414,15 @@ public partial class AppearanceViewModel : ObservableObject
             AccentColorMode = appearance.AccentColorMode;
             AccentColorHex = appearance.AccentColor;
             BackdropTintOpacityPercent = appearance.ResolveBackdropTintOpacityPercent();
+            _taskbarBackgroundMaterial = appearance.TaskbarBackgroundMaterial;
+            _taskbarFrostedStyle = appearance.TaskbarFrostedStyle;
+            _taskbarBackgroundOpacityPercent = appearance.ResolveTaskbarBackgroundOpacityPercent();
         }
         finally { _isRefreshing = false; }
         OnPropertyChanged(nameof(MediaFontSizePercent));
+        OnPropertyChanged(nameof(UseFrostedTaskbarBackground));
+        OnPropertyChanged(nameof(TaskbarFrostedStyle));
+        OnPropertyChanged(nameof(TaskbarBackgroundOpacityPercent));
         RaiseTaskbarAppearance();
     }
 }

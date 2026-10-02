@@ -155,6 +155,7 @@ namespace AFMediaBar
                 services.AddSingleton<ScreenBackgroundSampler>();
                 services.AddSingleton<SettingsPersistenceService>();
                 services.AddSingleton<StartupRegistrationService>();
+                services.AddSingleton<TranslucentTbProcessDetector>();
 
                 // 界面语言：把设置里的选项解析成生效语言，并重发 XAML 引用的文案资源。
                 // Interface language: resolves the settings option into the language in effect and republishes the text
@@ -332,6 +333,26 @@ namespace AFMediaBar
                 Shutdown();
                 return;
             }
+
+            var translucentTbDecision = TaskbarTransparencyCompatibilityPolicy.Resolve(
+                SettingsManager.Current.TranslucentTbCompatibilityPromptShown,
+                Services.GetRequiredService<TranslucentTbProcessDetector>().IsRunning(),
+                SettingsManager.Current.Appearance.TaskbarBackgroundMaterial);
+            if (translucentTbDecision.ShowPrompt)
+            {
+                if (translucentTbDecision.EnableFrostedBackground)
+                {
+                    SettingsManager.SetAppearanceSettings(SettingsManager.Current.Appearance with
+                    {
+                        TaskbarBackgroundMaterial = TaskbarBackgroundMaterial.Frosted
+                    });
+                }
+
+                // 先记住并同步落盘，再显示提示；即使用户在提示出现时强制结束进程，下次也不会重复打扰。
+                // Remember and flush before showing the prompt, so even a forced exit while it is visible does not repeat it next time.
+                SettingsManager.Current.TranslucentTbCompatibilityPromptShown = true;
+                settingsPersistenceService.Flush();
+            }
             _themeCoordinator = new ApplicationThemeCoordinator(Dispatcher, UpdateAppearanceResources);
             _themeCoordinator.Start();
             _themeCoordinator.Apply(SettingsManager.Current.Appearance);
@@ -342,6 +363,16 @@ namespace AFMediaBar
             Services.GetRequiredService<WindowAppearanceService>().SystemColorizationChanged +=
                 () => _themeCoordinator?.Apply(SettingsManager.Current.Appearance);
             await _host.StartAsync();
+
+            if (translucentTbDecision.ShowPrompt)
+            {
+                _ = Dispatcher.BeginInvoke(() => System.Windows.MessageBox.Show(
+                    Translations.Get("Startup.TranslucentTb.Content"),
+                    Translations.Get("Startup.TranslucentTb.Title"),
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Information),
+                    DispatcherPriority.ApplicationIdle);
+            }
 
             // 安装协调互斥体必须在 Host 启动后创建：更新链路会在启动安装包之前释放它（见 InstallCoordinatorMutex）。
             // The install-coordination mutex is created after the host starts; the update path releases it before

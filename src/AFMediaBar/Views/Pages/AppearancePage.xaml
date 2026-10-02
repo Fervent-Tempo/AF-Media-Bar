@@ -256,6 +256,80 @@
                             </ComboBox>
                         </components:SettingsRow>
 
+                        <Expander Style="{StaticResource AfSettingsInlineExpanderStyle}">
+                            <Expander.Header>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid
+                                        Width="32"
+                                        Height="32"
+                                        Margin="0,0,12,0"
+                                        VerticalAlignment="Center"
+                                        TextElement.Foreground="{DynamicResource AfAccentBrush}">
+                                        <Border
+                                            Background="{DynamicResource AfAccentBrush}"
+                                            CornerRadius="8"
+                                            Opacity="0.14" />
+                                        <ui:SymbolIcon Symbol="Blur24" />
+                                    </Grid>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Appearance.Row.TaskbarBackground.Title}" />
+                                        <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Appearance.Row.TaskbarBackground.Description}" />
+                                    </StackPanel>
+                                    <ToggleButton
+                                        Grid.Column="2"
+                                        IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource AncestorType={x:Type Expander}}, Mode=TwoWay}"
+                                        Style="{StaticResource AfSettingsExpanderChevronStyle}" />
+                                    <ui:ToggleSwitch
+                                        Grid.Column="3"
+                                        VerticalAlignment="Center"
+                                        IsChecked="{Binding ViewModel.UseFrostedTaskbarBackground, Mode=TwoWay}" />
+                                </Grid>
+                            </Expander.Header>
+
+                            <StackPanel>
+                                <components:SettingsRow
+                                Description="{DynamicResource Loc.Appearance.Row.TaskbarFrostedStyle.Description}"
+                                Icon="{ui:SymbolIcon Color24}"
+                                IsEnabled="{Binding ViewModel.UseFrostedTaskbarBackground}"
+                                IsNested="True"
+                                Title="{DynamicResource Loc.Appearance.Row.TaskbarFrostedStyle.Title}">
+                                <ComboBox
+                                    MinWidth="180"
+                                    SelectedValue="{Binding ViewModel.TaskbarFrostedStyle, Mode=TwoWay}"
+                                    SelectedValuePath="Tag">
+                                    <ComboBoxItem Content="{DynamicResource Loc.Appearance.TaskbarFrostedStyle.Neutral}" Tag="{x:Static settings:TaskbarFrostedStyle.Neutral}" />
+                                    <ComboBoxItem Content="{DynamicResource Loc.Appearance.TaskbarFrostedStyle.Cool}" Tag="{x:Static settings:TaskbarFrostedStyle.Cool}" />
+                                    <ComboBoxItem Content="{DynamicResource Loc.Appearance.TaskbarFrostedStyle.Warm}" Tag="{x:Static settings:TaskbarFrostedStyle.Warm}" />
+                                    <ComboBoxItem Content="{DynamicResource Loc.Appearance.TaskbarFrostedStyle.Artwork}" Tag="{x:Static settings:TaskbarFrostedStyle.Artwork}" />
+                                </ComboBox>
+                                </components:SettingsRow>
+
+                                <components:SettingsRow
+                                Description="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundOpacity.Description}"
+                                Icon="{ui:SymbolIcon CircleHalfFill24}"
+                                IsEnabled="{Binding ViewModel.UseFrostedTaskbarBackground}"
+                                IsNested="True"
+                                Title="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundOpacity.Title}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Slider
+                                        IsSnapToTickEnabled="True"
+                                        Maximum="{Binding Source={x:Static settings:AppearanceSettings.MaximumTaskbarBackgroundOpacityPercent}}"
+                                        Minimum="{Binding Source={x:Static settings:AppearanceSettings.MinimumTaskbarBackgroundOpacityPercent}}"
+                                        Style="{StaticResource AfSettingsRowSliderStyle}"
+                                        TickFrequency="{Binding Source={x:Static settings:AppearanceSettings.TaskbarBackgroundOpacityStep}}"
+                                        Value="{Binding ViewModel.TaskbarBackgroundOpacityPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.TaskbarBackgroundOpacityPercent, StringFormat={}{0:0}%}" />
+                                </StackPanel>
+                                </components:SettingsRow>
+                            </StackPanel>
+                        </Expander>
+
                         <!--
                             材质浓度：只作用于"应用自己绘制材质"的两处（Windows 10 的窗口，以及永不激活的曲目通知）。
                             Windows 11 的云母/亚克力/Mica Alt 由 DWM 绘制，浓度对它无效，因此行说明里写清了适用面。
