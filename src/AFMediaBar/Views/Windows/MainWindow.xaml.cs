@@ -10,6 +10,7 @@ using AFMediaBar.Classes.Utils;
 using AFMediaBar.Resources;
 using AFMediaBar.ViewModels.Windows;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -497,6 +498,41 @@ namespace AFMediaBar.Views.Windows
                 catch (InvalidOperationException)
                 {
                     // Explorer may already have destroyed the cross-process child HWND.
+                }
+            }
+        }
+
+        /// <summary>
+        /// 退出边界调用：把任务栏宿主从 Explorer 解挂，但**不关闭窗口**。
+        ///
+        /// 与 <see cref="CloseTaskbarWindows"/> 只差一处——不调用 <c>Close()</c>。退出路径要的只是"Explorer 不再拥有这个
+        /// 子窗口"，关窗留给 WPF 自己的关窗阶段（那一步会走 <see cref="TaskbarWindow"/> 的 OnClosing/OnClosed 完整清理）。
+        /// 动作与 CloseTaskbarWindows 保持一致：先 <c>SuspendForEnvironmentRecovery()</c> 停掉计时器（否则已变成顶层窗口的
+        /// 宿主会被下一拍定位到桌面上闪一下），再 <c>DetachFromTaskbar()</c> 解除父子关系。两处都幂等，重复调用无副作用；
+        /// 窗口已经关掉时集合已空，自然什么都不做。
+        /// Called on the exit boundary: detaches the taskbar hosts from Explorer without closing them.
+        ///
+        /// It differs from <see cref="CloseTaskbarWindows"/> in exactly one way — it does not call <c>Close()</c>. The exit path
+        /// only needs "Explorer no longer owns this child"; closing is left to WPF's own window-closing phase, which runs
+        /// <see cref="TaskbarWindow"/>'s full OnClosing/OnClosed cleanup. The actions match CloseTaskbarWindows:
+        /// <c>SuspendForEnvironmentRecovery()</c> first, so its timers cannot reposition a host that has just become a top-level
+        /// window and flash it onto the desktop, then <c>DetachFromTaskbar()</c> for the parent/child link. Both are idempotent,
+        /// so repeat calls are harmless, and a window that is already closed has left the list, making this a no-op.
+        /// </summary>
+        internal void DetachTaskbarHostsForExit()
+        {
+            foreach (var taskbarWindow in _taskbarWindows)
+            {
+                try
+                {
+                    taskbarWindow.SuspendForEnvironmentRecovery();
+                    taskbarWindow.DetachFromTaskbar();
+                }
+                catch (Exception exception)
+                {
+                    // 单个宿主解挂失败也必须继续：退出流程不能被一个异常打断。
+                    // One host failing to detach must not stop the exit: a single exception cannot break the sequence.
+                    Debug.WriteLine($"[MainWindow] Taskbar host detach failed: {exception}");
                 }
             }
         }

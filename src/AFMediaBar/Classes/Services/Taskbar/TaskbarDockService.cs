@@ -271,7 +271,16 @@ public class TaskbarDockService : ITaskbarDockService
             DeleteObject(newRgn);
         }
 
-        if (!SetWindowRgn(windowHandle, rgn, true))
+        // bRedraw=false：窗口几何始终铺满任务栏，区域只改可见/可命中的形状，WPF 的合成线程持续把内容画进重定向
+        // 表面——扩展带揭示的是已渲染好的像素，收缩带只是隐藏一条，都不需要系统再强制整窗重画一遍（原地放大的
+        // 激活与收回各改一次区域）。错误恢复路径保持 true：那一步把先前被裁掉的区域整个重新可见，旧像素确实需要重画。
+        // bRedraw=false: the window geometry always covers the whole taskbar and the region only reshapes what is
+        // visible/hit-testable, while WPF's composition keeps painting content into the redirection surface — an
+        // extension reveals already-rendered pixels and a shrink merely hides a strip, so neither needs the system to
+        // force a full-window repaint (the in-place zoom's activation and reclaim each change the region once). The
+        // error-recovery path stays true: it re-exposes previously clipped area at once, and those stale pixels do
+        // need a repaint.
+        if (!SetWindowRgn(windowHandle, rgn, false))
             goto on_error;
 
         return;

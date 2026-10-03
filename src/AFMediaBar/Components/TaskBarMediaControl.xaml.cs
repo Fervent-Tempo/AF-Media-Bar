@@ -96,6 +96,28 @@ namespace AFMediaBar.Components
                 _hoverHideFallbackTimer.Stop();
                 FinishTaskbarHoverLayerHide();
             };
+            // 原地放大收拢的兜底：与悬停层同一种病——收拢动画的 Completed 可能因为渲染时钟停走或动画被顶掉而永远不来，
+            // 封面就会滞留在开着的 Popup 里（IsArtworkZoomActive 恒真、封面不在主树，收不到任何鼠标事件）。
+            // 计时器只依赖 Dispatcher，到点后若收拢仍未完成就强制收回（间隔在每次起表时按当前时长重设）。
+            // Fallback for the zoom's collapse: the same disease as the hover layer's — the collapse animation's Completed may
+            // never arrive when the render clock stops or the animation is replaced, stranding the artwork inside the open Popup
+            // (IsArtworkZoomActive stuck true with the cover outside the main tree, deaf to every mouse event). The timer
+            // depends only on the dispatcher; on expiry a collapse that never finished is force-reclaimed (the interval is reset
+            // from the current motion each time it starts).
+            _artworkZoomReclaimFallbackTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+            _artworkZoomReclaimFallbackTimer.Tick += (_, _) =>
+            {
+                _artworkZoomReclaimFallbackTimer.Stop();
+                if (_artworkZoomCollapsing)
+                    ReclaimArtworkZoom();
+            };
+            // 原地放大期间的悬停区轮询：几何判定驱动收/放，不依赖放大后的元素轮廓还能发出鼠标事件
+            // （见 _artworkZoomHoverSyncTimer 的字段说明）。只在放大存续期间运行。
+            // The hover-zone poll while the in-place zoom lasts: the verdict is geometry-driven and does not rely on the
+            // enlarged outline still raising mouse events (see the _artworkZoomHoverSyncTimer field doc). It runs only
+            // while the zoom lasts.
+            _artworkZoomHoverSyncTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(30) };
+            _artworkZoomHoverSyncTimer.Tick += (_, _) => SyncArtworkZoomHoverFromPointer();
             // 滚轮提示的按键轮询：只在指针位于媒体栏上时运行，指针一离开就在下一个 tick 自停。
             // The wheel tooltip's key poll: it only runs while the pointer is over the bar and stops itself on the first tick after
             // the pointer leaves.
@@ -124,6 +146,11 @@ namespace AFMediaBar.Components
             // With no media the frequent action is "pick a player by wheeling over the note", so the note carries a tooltip instance of its own:
             // only a fixed instance lets the content change without closing the bubble (see SetQuickLaunchPreview).
             _quickLaunchTooltip = new ToolTip { Placement = System.Windows.Controls.Primitives.PlacementMode.Top };
+            // 大图预览独立于滚轮提示：后者是 ToolTip 气泡，前者是承载放大封面的透明 Popup，锚在封面上方。
+            // The large preview is separate from the wheel tooltips: those are ToolTip bubbles, this one is a transparent Popup
+            // carrying the enlarged cover, anchored above the artwork.
+            _artworkHoverPreview = BuildArtworkHoverPreviewPopup();
+            _artworkHoverZoomPopup = BuildArtworkHoverZoomPopup();
             ApplyArtworkTooltipOwner();
             _outputDeviceSurface = TaskbarDeviceButton;
             _volumeSurface = TaskbarVolumeButton;
@@ -138,11 +165,22 @@ namespace AFMediaBar.Components
                 _hoverOpenTimer.Stop();
                 _hoverCloseTimer.Stop();
                 _hoverHideFallbackTimer.Stop();
+                _artworkZoomReclaimFallbackTimer.Stop();
+                _artworkZoomHoverSyncTimer.Stop();
                 _wheelTooltipTimer.Stop();
                 CloseWheelTooltips();
                 _marqueeTimer.Stop();
                 StopMarqueeAnimations();
                 StopRestTransitions();
+                // 控件离树时收起大图预览：Popup 有自己的 HWND，不会随宿主一起被移除。
+                // Collapse the large preview when the control leaves the tree: a Popup owns its HWND and does not follow the host out.
+                HideArtworkHoverPreview();
+                // 原地放大更要收回：封面元素本体还在 Popup 宿主里，不送回主画布就会随控件一起丢失。
+                // 离树路径不可等待收拢动画，必须立即收回。
+                // The in-place zoom MUST be reclaimed as well: the artwork element itself still sits in the Popup host and would be
+                // lost with the control unless returned to the main canvas. The off-tree path cannot wait out the collapse
+                // animation, so it reclaims at once.
+                HideArtworkHoverZoom(immediate: true);
             };
 
             // 计时器必须先于布局初始化；布局会立即应用已持久化的悬停层开关。
@@ -187,6 +225,13 @@ namespace AFMediaBar.Components
 
         /// <summary>兜底收起比退出动画多等的余量，确保正常动画回调先跑。/ Extra margin the fallback waits beyond the exit animation, so the normal animation callback runs first.</summary>
         private static readonly TimeSpan HoverHideFallbackMargin = TimeSpan.FromMilliseconds(150);
+
+        /// <summary>暂停时盖在主封面上的遮罩不透明度，取 1 − 旧实现的封面画刷不透明度（0.4）：淡化浓度与改动前一致，只是从"压封面画刷"换成"主动盖遮罩"，理由见 <see cref="ApplyArtworkDimming"/>。颜色另由 <see cref="ApplyAppearanceSettings"/> 按任务栏表面的明暗给出。替身封面共用同一把画刷，浓度与颜色都自动跟随。/ The opacity of the scrim laid over the main artwork while paused, i.e. 1 − the cover-brush opacity the old implementation used (0.4): the dimming strength matches the previous look and only moves from "lower the cover brush" to "lay a scrim", as <see cref="ApplyArtworkDimming"/> explains. Its colour is a separate matter, set by <see cref="ApplyAppearanceSettings"/> from the taskbar surface's lightness. The stand-in cover shares the very same brush, so both strength and colour follow by themselves.</summary>
+        private const double ArtworkPausedScrimOpacity = 0.6;
+
+        /// <summary>大图预览的暂停减暗（压低图像不透明度）。预览是独立 Popup、底为不透明黑，透不出任何东西，所以它既不需要遮罩、也不受原地放大影响。/ The large preview's paused dimming (image opacity lowered). The preview is its own Popup over an opaque black root and nothing can show through it, so it needs no scrim and is untroubled by the in-place zoom.</summary>
+        private const double ArtworkPausedDimOpacity = 0.4;
+
         private readonly DispatcherTimer _wheelTooltipTimer;
 
         /// <summary>文字区（全局滚轮面之一）的滚轮提示；内容与封面那份由同一处写入。/ The wheel tooltip of the text region, one of the global wheel surfaces; its content is written from the same place as the artwork's.</summary>
@@ -197,6 +242,28 @@ namespace AFMediaBar.Components
 
         /// <summary>音符上的快速启动提示；与滚轮提示一样只改内容、不换实例。/ The quick-launch tooltip on the note; like the wheel tooltip its content changes while the instance stays put.</summary>
         private readonly ToolTip _quickLaunchTooltip;
+
+        /// <summary>
+        /// 封面悬停的大图预览 Popup：主窗口只有 44 DIP 高且带裁切，放大的封面必须由独立 Popup 才能画到任务栏上方。
+        /// 显隐与内容由 <c>AnimateArtworkHover</c> 驱动，指针离开封面即收起；不承载交互。创建于构造函数（见
+        /// <c>BuildArtworkHoverPreviewPopup</c>），随控件 Unloaded 关闭。
+        /// The Popup for the large artwork hover preview: the host window is only 44 DIP tall and clips its content, so the enlarged
+        /// cover needs its own Popup to render above the taskbar. <c>AnimateArtworkHover</c> drives its visibility and content; it closes
+        /// when the pointer leaves the artwork and carries no interaction. Built in the constructor (see
+        /// <c>BuildArtworkHoverPreviewPopup</c>) and closed when the control unloads.
+        /// </summary>
+        private readonly System.Windows.Controls.Primitives.Popup? _artworkHoverPreview;
+
+        /// <summary>
+        /// 封面悬停的原地放大 Popup：不画自己的内容，只在悬停期间收留封面这一格的真实元素（见
+        /// <c>BuildArtworkHoverZoomPopup</c>）。可命中，点击与滚轮落在真实封面上；收回时元素无条件送回主画布，
+        /// 随控件 Unloaded 一并收回——否则封面会滞留在已关闭的 Popup 里。
+        /// The Popup for the in-place artwork hover zoom: it draws nothing of its own and only hosts the artwork slot's real element
+        /// while hovered (see <c>BuildArtworkHoverZoomPopup</c>). It is hit-testable, so clicks and the wheel land on the real cover;
+        /// on reclaim the element returns to the main canvas unconditionally, together with the control's Unloaded — otherwise the
+        /// artwork would be stranded inside a closed Popup.
+        /// </summary>
+        private readonly System.Windows.Controls.Primitives.Popup? _artworkHoverZoomPopup;
 
         /// <summary>
         /// 输出设备交互最近落在哪个入口上：悬停层的按钮，或静置层的同名小组件。
@@ -307,6 +374,27 @@ namespace AFMediaBar.Components
         public event EventHandler? OpenTaskManagerRequested;
         public event EventHandler<PlayerSurfaceWheelEventArgs>? WheelRequested;
         public event EventHandler<MediaBarSizeRequestEventArgs>? DesiredSizeChanged;
+
+        /// <summary>
+        /// 原地放大激活/收回时发布：参数是右侧内容被推挤后需要临时扩展到媒体栏右侧的渲染宽度（DIP），0 表示收回。
+        /// 被推开的组件要穿过<b>两层</b>裁切才能完整可见：WPF 层由控制件自己解除 MainBorder 的 ClipToBounds（见
+        /// ShowArtworkHoverZoom/ReclaimArtworkZoom），HWND 层由宿主把 SetWindowRgn 区域右扩——本事件即后者。收回在收拢
+        /// 动画播完（ReclaimArtworkZoom）后才发布 0，收拢途中推挤内容仍完整可见。
+        /// Raised when the in-place zoom activates/reclaims: the argument is the render width (DIP) to extend temporarily right of
+        /// the bar while the pushed-over content slides, 0 on reclaim. The pushed widgets must clear <b>two</b> clipping layers to
+        /// stay fully visible: the WPF layer is handled by the control itself releasing MainBorder's ClipToBounds (see
+        /// ShowArtworkHoverZoom/ReclaimArtworkZoom), the HWND layer by the host widening the SetWindowRgn region — this event
+        /// drives the latter. The 0 arrives only after the collapse finishes (ReclaimArtworkZoom) so the content stays fully
+        /// visible while it slides back.
+        /// </summary>
+        public event EventHandler<double>? ArtworkZoomExtensionChanged;
+
+        /// <summary>原地放大（Zoom 模式）是否存续：Popup 开着即为真。<see cref="CollapseArtworkZoomForDrag"/> 据此判断拖动按下时
+        /// 有没有东西要收回；宿主在每次左键抬起后还会调 <see cref="ResyncArtworkHoverFromPointer"/> 兜底重同步。/ Whether the
+        /// in-place zoom (Zoom mode) is live: true while its Popup is open. <see cref="CollapseArtworkZoomForDrag"/> uses it to decide
+        /// whether a drag press has anything to reclaim; the host additionally re-syncs through
+        /// <see cref="ResyncArtworkHoverFromPointer"/> after every left release.</summary>
+        public bool IsArtworkZoomActive => _artworkHoverZoomPopup?.IsOpen == true;
 
         /// <summary>指针进入输出设备按钮，宿主应刷新该按钮提示。 / Pointer entered the output-device button; the host should refresh its tooltip.</summary>
         public event EventHandler? OutputDeviceInfoRequested;
@@ -1052,6 +1140,9 @@ namespace AFMediaBar.Components
             {
                 StopMarqueeAnimations();
                 AnimateComponentHover(SongImageHoverOverlay, false);
+                // 非横向任务栏不提供封面悬停放大：模式切换后立即归位，避免残留的缩放挂在封面上。
+                // The artwork hover zoom belongs to the horizontal taskbar only: snap it back right after a mode switch so no leftover scale stays on the cover.
+                AnimateArtworkHover(false, immediate: true);
                 AnimateComponentHover(SongInfoHoverOverlay, false);
                 AnimateComponentHover(TaskbarSpectrumHoverSurface, false);
             }
@@ -1247,7 +1338,12 @@ namespace AFMediaBar.Components
             if (_restTransitionKeepsOutgoingText)
                 SongInfoStackPanel.IsHitTestVisible = false;
             if (wasArtworkVisible && !artworkVisible)
+            {
                 AnimateComponentHover(SongImageHoverOverlay, false);
+                // 封面框被布局收起：悬停放大与提示随之撤销，不给一个看不见的格子留下放大的残影。
+                // The layout collapsed the artwork box: undo the hover zoom and hint so an invisible slot keeps no zoomed ghost.
+                AnimateArtworkHover(false, immediate: true);
+            }
         }
 
         /// <summary>
@@ -1612,6 +1708,21 @@ namespace AFMediaBar.Components
             // them separately would only produce two colours over one background.
             ApplySpectrumForeground(foreground);
             ApplyTaskbarHoverAppearance(foreground);
+            // 暂停遮罩要伪装成"封面格底下那块任务栏表面"（理由见 ApplyArtworkDimming），所以它的颜色取上面两支文字前景的
+            // <b>另一端</b>：表面亮就盖白、表面暗就盖深、高对比度跟系统窗口底色。于是它跟的不是"系统深浅色"这么粗的一档，而是同一个
+            // 权威判定 presentation——里面还含宿主从真实屏幕背景采样出的自适应决定（ApplyAdaptiveForegroundDecision），所以
+            // 任务栏背景一变，文字与遮罩同时换向。遮罩画刷与替身封面共用同一实例，替身无须另行同步。
+            // The paused scrim impersonates "the taskbar surface under the artwork slot" (see ApplyArtworkDimming), so its colour
+            // takes the <b>other end</b> of the same two-value palette used for the text just above: white over a light surface, dark
+            // over a dark one, and the system window colour under high contrast. It therefore follows something finer than the coarse
+            // "system light/dark setting" — the same authoritative verdict, presentation, which also folds in the decision the host
+            // samples from the real screen background (ApplyAdaptiveForegroundDecision), so when the taskbar surface changes, the text
+            // and the scrim flip together. The scrim brush is the very instance the stand-in cover uses, so the stand-in needs no sync.
+            SongImagePauseScrimBrush.Color = presentation.UsesSystemColors
+                ? SystemColors.WindowColor
+                : presentation.UsesLightText
+                    ? Color.FromRgb(0x1C, 0x1C, 0x1C)
+                    : Colors.White;
             SongInfoStackPanel.Background = Brushes.Transparent;
             SetWebLyricsAppearance(foreground, needsContrastShadow: false, usesLightText: presentation.UsesLightText);
 
@@ -1697,6 +1808,9 @@ namespace AFMediaBar.Components
                     BackgroundImage.Source = null;
                     BackgroundImage.Visibility = Visibility.Collapsed;
                     SongImageBorder.Margin = new Thickness(0, 0, 0, -3); // align music note better when no cover
+                    // 断开时封面换回音符：撤销可能仍展示着的悬停放大与提示层。
+                    // Disconnecting swaps the cover back to the note: undo any hover zoom and hint still on screen.
+                    AnimateArtworkHover(false, immediate: true);
                     TaskbarPreviousButton.IsEnabled = false;
                     TaskbarPlayPauseButton.IsEnabled = false;
                     TaskbarNextButton.IsEnabled = false;
@@ -1776,12 +1890,10 @@ namespace AFMediaBar.Components
                         // show pause icon overlay
                         SongImagePlaceholder.Symbol = SymbolRegular.Pause24;
                         SongImagePlaceholder.Visibility = Visibility.Visible;
-                        SongImage.Opacity = 0.4;
                     }
                     else
                     {
                         SongImagePlaceholder.Visibility = Visibility.Collapsed;
-                        SongImage.Opacity = 1;
                     }
 
                     SongImage.ImageSource = snapshot.Artwork;
@@ -1795,6 +1907,19 @@ namespace AFMediaBar.Components
                     SongImage.ImageSource = null;
                     BackgroundImage.Source = null;
                 }
+
+                // 两条分支都要走到：无封面时必须把遮罩关掉，否则空的封面格上会残留一层遮罩（画刷还有效，只是 ImageSource 空了）。
+                // Both branches must run it: with no artwork the scrim has to go out, or a layer of scrim is left on the empty slot
+                // (the brush is still in effect, only the ImageSource is null).
+                ApplyArtworkDimming();
+
+                // 悬停提示可能正展示时播放状态翻转（点击封面切换了播放）：只让符号与门禁跟随新状态，
+                // 不经 AnimateArtworkHover 的 immediate 路径——那会把生长中的放大动画瞬间拉到目标倍率。
+                // The playback state can flip while the hover hint is showing (clicking the artwork toggled it): only the glyph
+                // and gates follow, never through AnimateArtworkHover's immediate path — that would teleport a still-growing
+                // zoom animation straight to its target factor.
+                if (_artworkHoverHintActive)
+                    RefreshArtworkHoverPresentation();
 
                 // 封面换了就重新按它的比例定封面框：非正方形封面（视频封面）因此不再被裁切。
                 // A new artwork re-derives the box from its aspect, so a non-square cover such as a video's is no longer cropped.
@@ -1834,6 +1959,36 @@ namespace AFMediaBar.Components
                     RaiseDesiredSizeChanged();
             });
         }
+
+        /// <summary>
+        /// 决定主封面的暂停遮罩是否生效，是这件事的<b>唯一决策点</b>（<see cref="UpdateSongInfo"/> 调用它；替身封面共用同一把画刷
+        /// <see cref="SongImagePauseScrimBrush"/>，因此不用另行同步）。
+        /// 做法是给封面盖一层不透明遮罩（<see cref="SongImagePauseScrim"/>），而<b>不是</b>把封面画刷压到半透明：后者要靠"透出下方"
+        /// 才读作变淡，而放大期间封面被移进 Popup、原位留了一份替身封面（见 <see cref="_artworkZoomSubstitute"/>），半透明的封面会把
+        /// 替身透上来——看起来就是"底上还压着一个原来的组件"，暂停时最明显（播放时封面不透明，替身被完全遮住，所以只在那时露馅）。
+        /// 替身不能撤：它挡的正是抽走封面那一帧的空白（原先那个"封面空一帧"的闪烁）。遮罩是不透明的，既复现了淡化，又把替身整个盖住，
+        /// 于是放大态、静态、以及换树那一帧的替身三者合成结果完全一致——用户在暂停态放大时看到的遮罩，与静止时的那层一模一样。
+        /// 遮罩的<b>颜色</b>不在这里定：由 <see cref="ApplyAppearanceSettings"/> 按任务栏表面的明暗给出（表面亮取白、表面暗取深），见那里的说明；
+        /// 这里只管它的浓度。
+        /// 判据里的"有封面"一项不能省：无封面时若遮罩还亮着，空的封面格上会残留一层遮罩。
+        /// Decides whether the main artwork's paused scrim is lit, and is the <b>single place</b> that decides it
+        /// (<see cref="UpdateSongInfo"/> calls it; the stand-in cover shares the very same brush <see cref="SongImagePauseScrimBrush"/>,
+        /// so it needs no separate sync). The means is an opaque scrim laid over the cover (<see cref="SongImagePauseScrim"/>),
+        /// <b>not</b> a translucent cover brush: translucency only reads as "dimmed" by showing what lies underneath, and while zoomed the
+        /// cover sits in the Popup with a stand-in left at the original slot (see <see cref="_artworkZoomSubstitute"/>) — a translucent
+        /// cover would show that stand-in through, which reads as "the old component is still sitting underneath", loudest while paused
+        /// (when playing the cover is opaque and hides the stand-in entirely, which is why it never showed there). The stand-in cannot go:
+        /// it covers the blank frame left the instant the cover is pulled out, i.e. the old "one blank frame" flicker. An opaque scrim both
+        /// reproduces the dimming and hides the stand-in whole, so the zoomed cover, the static slot and the stand-in on the hand-off frame
+        /// composite identically — the scrim seen while zooming out of a paused track is the same one seen standing still. The scrim's
+        /// <b>colour</b> is not decided here: <see cref="ApplyAppearanceSettings"/> derives it from the taskbar surface's lightness (white
+        /// over a light one, dark over a dark one), see there; this method only owns its strength. The "has artwork" clause cannot be
+        /// dropped: with no artwork a still-lit scrim would leave a patch on the empty slot.
+        /// </summary>
+        private void ApplyArtworkDimming()
+            => SongImagePauseScrimBrush.Opacity = _isPaused && SongImage.ImageSource is not null
+                ? ArtworkPausedScrimOpacity
+                : 0.0;
 
         /// <summary>根据当前可见文本发布自动尺寸请求。/ Raises an auto-size request for the visible text.</summary>
         /// <param name="isForcedRefresh">是否绕过内容指纹去重。/ Whether the content-fingerprint dedupe is bypassed.</param>
@@ -2011,8 +2166,12 @@ namespace AFMediaBar.Components
                 return;
             }
             // 捕获状态或延迟路由可能在指针已离开媒体栏后仍送来滚轮事件；以当前指针位置作最后一道门禁。
+            // 原地放大是例外：封面本体住进 Popup、长到了任务栏上方，指针悬在放大后的封面上时本来就在栏外。
             // Capture or delayed routing can deliver a wheel event after the pointer has left the bar; check its current position.
-            if (!new Rect(InteractionSurface.RenderSize).Contains(Mouse.GetPosition(InteractionSurface)))
+            // The in-place zoom is the exception: the cover itself lives in the Popup and has grown above the taskbar, so a pointer
+            // hovering the enlarged cover is legitimately outside the bar.
+            if (!new Rect(InteractionSurface.RenderSize).Contains(Mouse.GetPosition(InteractionSurface)) &&
+                _artworkHoverZoomPopup?.IsOpen != true)
                 return;
 
             // Preview events tunnel through this parent before the button handlers.

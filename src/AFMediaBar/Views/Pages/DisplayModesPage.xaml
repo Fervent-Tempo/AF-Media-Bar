@@ -326,6 +326,18 @@
                             </components:SettingsRow>
 
                             <components:SettingsRow
+                                Description="{DynamicResource Loc.DisplayModes.Rest.Row.ArtworkHover.Description}"
+                                Icon="{ui:SymbolIcon ZoomIn24}"
+                                Title="{DynamicResource Loc.DisplayModes.Rest.Row.ArtworkHover.Title}">
+                                <ComboBox MinWidth="170"
+                                          SelectedIndex="{Binding ViewModel.RestArtworkHoverModeIndex, Mode=TwoWay}">
+                                    <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Rest.Row.ArtworkHover.Mode.Off}" />
+                                    <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Rest.Row.ArtworkHover.Mode.Zoom}" />
+                                    <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Rest.Row.ArtworkHover.Mode.Preview}" />
+                                </ComboBox>
+                            </components:SettingsRow>
+
+                            <components:SettingsRow
                                 Description="{DynamicResource Loc.DisplayModes.Rest.Row.Progress.Description}"
                                 Icon="{ui:SymbolIcon Play24}"
                                 Title="{DynamicResource Loc.DisplayModes.Rest.Row.Progress.Title}">
