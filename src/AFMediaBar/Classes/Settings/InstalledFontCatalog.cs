@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Windows.Media;
 using System.Windows;
 using System.Windows.Markup;
@@ -15,7 +16,9 @@ public static class InstalledFontCatalog
     // 汉字范围先于兜底映射，避免西文字体自带汉字时遮住用户选的中文字体。
     private const string HanRanges = "2E80-2FFF, 3000-303F, 31C0-31EF, 3400-4DBF, 4E00-9FFF, F900-FAFF, 20000-2FA1F";
     private const string AllCharacters = "0000-10FFFF";
-    private static readonly Dictionary<string, (bool Latin, bool Cjk)> CoverageCache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly ConcurrentDictionary<string, (bool Latin, bool Cjk)> CoverageCache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly object RefreshGate = new();
+    private static Task<(IReadOnlyList<FontFamilyChoice> Latin, IReadOnlyList<FontFamilyChoice> Cjk)>? _inFlightRefresh;
     private static readonly Dictionary<string, string> CommonChineseNames = new(StringComparer.OrdinalIgnoreCase)
     {
         ["YouYuan"] = "幼圆",
@@ -53,6 +56,59 @@ public static class InstalledFontCatalog
             .ToArray();
     }
 
+    /// <summary>
+    /// Supplies a usable system/default selection before the installed-font scan finishes. A saved choice remains visible until validated.
+    /// </summary>
+    public static IReadOnlyList<FontFamilyChoice> GetInitialChoices(string followSystemResourceKey, bool cjk, string selectedName)
+    {
+        var sample = Translations.Get(cjk ? "Appearance.CjkFont.Sample" : "Appearance.LatinFont.Sample");
+        var system = new FontFamilyChoice(string.Empty, Translations.Get(followSystemResourceKey), sample, SystemFonts.MessageFontFamily);
+        var provisionalName = selectedName.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+        return string.IsNullOrWhiteSpace(provisionalName)
+            ? [system]
+            : [system, new FontFamilyChoice(provisionalName, provisionalName, sample, new FontFamily(provisionalName))];
+    }
+
+    /// <summary>
+    /// Scans installed fonts off the UI thread. Navigations share an in-flight scan; cancellation stops waiting, not the shared scan.
+    /// </summary>
+    public static Task<(IReadOnlyList<FontFamilyChoice> Latin, IReadOnlyList<FontFamilyChoice> Cjk)> RefreshChoicesAsync(CancellationToken cancellationToken)
+    {
+        Task<(IReadOnlyList<FontFamilyChoice> Latin, IReadOnlyList<FontFamilyChoice> Cjk)> refresh;
+        lock (RefreshGate)
+        {
+            if (_inFlightRefresh is null || _inFlightRefresh.IsCompleted)
+            {
+                _inFlightRefresh = Task.Run(() => (
+                    GetChoices("Appearance.LatinFont.FollowSystem", cjk: false),
+                    GetChoices("Appearance.CjkFont.FollowSystem", cjk: true)));
+                // The page may cancel its wait before a faulty scan completes; observe that abandoned fault.
+                _ = _inFlightRefresh.ContinueWith(
+                    static completed => _ = completed.Exception,
+                    CancellationToken.None,
+                    TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                    TaskScheduler.Default);
+            }
+
+            refresh = _inFlightRefresh;
+        }
+
+        return refresh.WaitAsync(cancellationToken);
+    }
+
+    /// <summary>Updates preview text and the system option after a language change without rescanning fonts.</summary>
+    public static IReadOnlyList<FontFamilyChoice> RelocalizeChoices(
+        IReadOnlyList<FontFamilyChoice> choices, string followSystemResourceKey, bool cjk)
+    {
+        var sample = Translations.Get(cjk ? "Appearance.CjkFont.Sample" : "Appearance.LatinFont.Sample");
+        var followSystem = Translations.Get(followSystemResourceKey);
+        return choices.Select(choice => choice with
+        {
+            DisplayName = choice.Name.Length == 0 ? followSystem : choice.DisplayName,
+            PreviewText = sample
+        }).ToArray();
+    }
+
     /// <summary>按字符范围创建应用字体，中文选择始终优先于西文字体的汉字字形。/ Creates a script-mapped app font so the CJK choice takes priority over Han glyphs in the Latin font.</summary>
     public static FontFamily CreateCompositeFont(AppearanceSettings appearance, string systemFontFamily)
     {
@@ -71,23 +127,25 @@ public static class InstalledFontCatalog
 
     private static bool SupportsScript(FontFamily family, bool cjk)
     {
-        if (!CoverageCache.TryGetValue(family.Source, out var coverage))
-        {
-            coverage = (false, false);
-            try
-            {
-                foreach (var typeface in family.GetTypefaces())
-                {
-                    if (!typeface.TryGetGlyphTypeface(out var glyphs)) continue;
-                    coverage.Latin |= glyphs.CharacterToGlyphMap.ContainsKey('A') && glyphs.CharacterToGlyphMap.ContainsKey('a');
-                    coverage.Cjk |= glyphs.CharacterToGlyphMap.ContainsKey('中') && glyphs.CharacterToGlyphMap.ContainsKey('文');
-                    if (coverage.Latin && coverage.Cjk) break;
-                }
-            }
-            catch (Exception) { /* An inaccessible or malformed installed font is not a selectable specimen. */ }
-            CoverageCache[family.Source] = coverage;
-        }
+        var coverage = CoverageCache.GetOrAdd(family.Source, _ => ReadCoverage(family));
         return cjk ? coverage.Cjk : coverage.Latin;
+    }
+
+    private static (bool Latin, bool Cjk) ReadCoverage(FontFamily family)
+    {
+        var coverage = (Latin: false, Cjk: false);
+        try
+        {
+            foreach (var typeface in family.GetTypefaces())
+            {
+                if (!typeface.TryGetGlyphTypeface(out var glyphs)) continue;
+                coverage.Latin |= glyphs.CharacterToGlyphMap.ContainsKey('A') && glyphs.CharacterToGlyphMap.ContainsKey('a');
+                coverage.Cjk |= glyphs.CharacterToGlyphMap.ContainsKey('中') && glyphs.CharacterToGlyphMap.ContainsKey('文');
+                if (coverage.Latin && coverage.Cjk) break;
+            }
+        }
+        catch (Exception) { /* An inaccessible or malformed installed font is not a selectable specimen. */ }
+        return coverage;
     }
 
     private static string GetChineseDisplayName(FontFamily family)

@@ -29,6 +29,7 @@ public partial class AppearanceViewModel : ObservableObject
     private string _accentColorHex;
     private int _backdropTintOpacityPercent;
     private bool _isRefreshing;
+    private int _fontRefreshGeneration;
 
     /// <summary>
     /// 创建外观页视图模型，并订阅设置变更与界面语言变化。
@@ -49,8 +50,8 @@ public partial class AppearanceViewModel : ObservableObject
         _taskbarLengthConstraints = taskbarLengthConstraints;
 
         var appearance = SettingsManager.Current.Appearance.Normalize();
-        _latinFontChoices = InstalledFontCatalog.GetChoices("Appearance.LatinFont.FollowSystem", cjk: false);
-        _cjkFontChoices = InstalledFontCatalog.GetChoices("Appearance.CjkFont.FollowSystem", cjk: true);
+        _latinFontChoices = InstalledFontCatalog.GetInitialChoices("Appearance.LatinFont.FollowSystem", cjk: false, appearance.SelectedLatinFontFamily);
+        _cjkFontChoices = InstalledFontCatalog.GetInitialChoices("Appearance.CjkFont.FollowSystem", cjk: true, appearance.SelectedCjkFontFamily);
         _latinFont = appearance.LatinFont;
         _cjkFont = appearance.CjkFont;
         _latinFontFamily = InstalledFontCatalog.MatchSelection(appearance.SelectedLatinFontFamily, _latinFontChoices);
@@ -113,15 +114,21 @@ public partial class AppearanceViewModel : ObservableObject
         }
     }
 
-    public void RefreshInstalledFonts()
+    /// <summary>Scans installed fonts in the background and publishes the completed selectors on the UI thread.</summary>
+    public async Task RefreshInstalledFontsAsync(CancellationToken cancellationToken)
     {
+        var generation = ++_fontRefreshGeneration;
+        var (installedLatin, installedCjk) = await InstalledFontCatalog.RefreshChoicesAsync(cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (generation != _fontRefreshGeneration) return;
+
         var latin = LatinFontFamily;
         var cjk = CjkFontFamily;
         _isRefreshing = true;
         try
         {
-            _latinFontChoices = InstalledFontCatalog.GetChoices("Appearance.LatinFont.FollowSystem", cjk: false);
-            _cjkFontChoices = InstalledFontCatalog.GetChoices("Appearance.CjkFont.FollowSystem", cjk: true);
+            _latinFontChoices = InstalledFontCatalog.RelocalizeChoices(installedLatin, "Appearance.LatinFont.FollowSystem", cjk: false);
+            _cjkFontChoices = InstalledFontCatalog.RelocalizeChoices(installedCjk, "Appearance.CjkFont.FollowSystem", cjk: true);
             OnPropertyChanged(nameof(LatinFontChoices));
             OnPropertyChanged(nameof(CjkFontChoices));
             LatinFontFamily = InstalledFontCatalog.MatchSelection(latin, _latinFontChoices);
@@ -287,9 +294,28 @@ public partial class AppearanceViewModel : ObservableObject
     /// <summary>界面语言变化后让 WPF 重读全部绑定，本页由代码产出的读数因此一起换语言。/ Makes WPF re-read every binding after a language change, so the readings this page builds in code change language with it.</summary>
     private void OnLanguageChanged(object? sender, EventArgs e)
     {
-        RefreshInstalledFonts();
+        RelocalizeInstalledFonts();
         RefreshRestOrderEntries();
         OnPropertyChanged(string.Empty);
+    }
+
+    private void RelocalizeInstalledFonts()
+    {
+        var latin = LatinFontFamily;
+        var cjk = CjkFontFamily;
+        _isRefreshing = true;
+        try
+        {
+            _latinFontChoices = InstalledFontCatalog.RelocalizeChoices(_latinFontChoices, "Appearance.LatinFont.FollowSystem", cjk: false);
+            _cjkFontChoices = InstalledFontCatalog.RelocalizeChoices(_cjkFontChoices, "Appearance.CjkFont.FollowSystem", cjk: true);
+            OnPropertyChanged(nameof(LatinFontChoices));
+            OnPropertyChanged(nameof(CjkFontChoices));
+            LatinFontFamily = InstalledFontCatalog.MatchSelection(latin, _latinFontChoices);
+            CjkFontFamily = InstalledFontCatalog.MatchSelection(cjk, _cjkFontChoices);
+            OnPropertyChanged(nameof(LatinFontFamily));
+            OnPropertyChanged(nameof(CjkFontFamily));
+        }
+        finally { _isRefreshing = false; }
     }
 
     [RelayCommand]

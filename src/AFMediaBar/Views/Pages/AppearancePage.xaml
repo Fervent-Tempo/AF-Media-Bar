@@ -95,7 +95,8 @@
             <StackPanel
                 x:Name="PageRoot"
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
-                Loaded="OnPageLoaded">
+                Loaded="OnPageLoaded"
+                Unloaded="OnPageUnloaded">
                 <Grid Style="{StaticResource AfSettingsPageIntroStyle}">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                     <ContentControl Content="{ui:SymbolIcon PaintBrush24}" Style="{StaticResource AfSettingsPageIconStyle}" />
