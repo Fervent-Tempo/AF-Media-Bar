@@ -68,10 +68,14 @@
                 x:Name="PageRoot"
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
                 Loaded="OnPageLoaded">
-                <StackPanel Margin="0,4,0,20">
-                    <TextBlock Text="{DynamicResource Loc.Common.Page.Components}" FontSize="24" FontWeight="{DynamicResource AppTextStrongFontWeight}" />
-                    <TextBlock Text="{DynamicResource Loc.Components.Header.Subtitle}" Style="{StaticResource AfSettingsRowDescriptionStyle}" Margin="0,4,0,0" />
-                </StackPanel>
+                <Grid Style="{StaticResource AfSettingsPageIntroStyle}">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                    <ContentControl Content="{ui:SymbolIcon DataHistogram24}" Style="{StaticResource AfSettingsPageIconStyle}" />
+                    <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                        <TextBlock Text="{DynamicResource Loc.Common.Page.Components}" Style="{StaticResource AfSettingsPageTitleStyle}" />
+                        <TextBlock Text="{DynamicResource Loc.Components.Header.Subtitle}" Style="{StaticResource AfSettingsPageSubtitleStyle}" />
+                    </StackPanel>
+                </Grid>
                 <components:SettingsGroup
                     Description="{DynamicResource Loc.Media.RestComponents.Description}"
                     Header="{DynamicResource Loc.Common.Group.RestLayerComponents}"
@@ -88,8 +92,7 @@
 
                         <ui:CardExpander
                             Style="{StaticResource AfSettingsExpanderStyle}"
-                            Icon="{ui:SymbolIcon DataBarVertical24}"
-                            IsExpanded="{Binding ViewModel.SpectrumVisible, Mode=OneWay}">
+                            Icon="{ui:SymbolIcon DataBarVertical24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
                                     <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Media.Spectrum.Parameters.Title}" />
@@ -193,8 +196,7 @@
 
                         <ui:CardExpander
                             Style="{StaticResource AfSettingsExpanderStyle}"
-                            Icon="{ui:SymbolIcon Gauge24}"
-                            IsExpanded="{Binding ViewModel.PerformanceVisible, Mode=OneWay}">
+                            Icon="{ui:SymbolIcon Gauge24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
                                     <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Media.Performance.Metrics.Title}" />

@@ -69,27 +69,47 @@
         <Border Grid.Row="1" Background="{DynamicResource AfSettingsNavigationBrush}">
             <ScrollViewer Margin="28,0" MaxWidth="900" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" CanContentScroll="False">
                 <StackPanel x:Name="PrimaryTabs" Orientation="Horizontal">
-                    <ToggleButton Content="{DynamicResource Loc.Common.Page.DisplayModes}" Tag="{x:Type pages:DisplayModesPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}" />
-                    <ToggleButton Content="{DynamicResource Loc.Common.Page.Appearance}" Tag="{x:Type pages:AppearancePage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}" />
-                    <ToggleButton Content="{DynamicResource Loc.Common.Page.Interaction}" Tag="{x:Type pages:InteractionPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}" />
-                    <ToggleButton Content="{DynamicResource Loc.Common.Page.Lyrics}" Tag="{x:Type pages:LyricsPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}" />
-                    <ToggleButton Content="{DynamicResource Loc.Common.Page.Components}" Tag="{x:Type pages:ComponentsSettingsPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}" />
-                    <ToggleButton Content="{DynamicResource Loc.Common.Page.MediaAndNotifications}" Tag="{x:Type pages:ExtraFeaturesPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}" />
-                    <ToggleButton Content="{DynamicResource Loc.Common.Page.Application}" Tag="{x:Type pages:ApplicationPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}" />
+                    <ToggleButton Tag="{x:Type pages:DisplayModesPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}">
+                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="Desktop24" FontSize="16" Foreground="{DynamicResource AfAccentBrush}" Margin="0,0,7,0" /><TextBlock Text="{DynamicResource Loc.Common.Page.DisplayModes}" /></StackPanel>
+                    </ToggleButton>
+                    <ToggleButton Tag="{x:Type pages:AppearancePage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}">
+                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="PaintBrush24" FontSize="16" Foreground="{DynamicResource AfAccentBrush}" Margin="0,0,7,0" /><TextBlock Text="{DynamicResource Loc.Common.Page.Appearance}" /></StackPanel>
+                    </ToggleButton>
+                    <ToggleButton Tag="{x:Type pages:InteractionPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}">
+                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="HandDraw24" FontSize="16" Foreground="{DynamicResource AfAccentBrush}" Margin="0,0,7,0" /><TextBlock Text="{DynamicResource Loc.Common.Page.Interaction}" /></StackPanel>
+                    </ToggleButton>
+                    <ToggleButton Tag="{x:Type pages:LyricsPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}">
+                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="TextQuote24" FontSize="16" Foreground="{DynamicResource AfAccentBrush}" Margin="0,0,7,0" /><TextBlock Text="{DynamicResource Loc.Common.Page.Lyrics}" /></StackPanel>
+                    </ToggleButton>
+                    <ToggleButton Tag="{x:Type pages:ComponentsSettingsPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}">
+                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="DataHistogram24" FontSize="16" Foreground="{DynamicResource AfAccentBrush}" Margin="0,0,7,0" /><TextBlock Text="{DynamicResource Loc.Common.Page.Components}" /></StackPanel>
+                    </ToggleButton>
+                    <ToggleButton Tag="{x:Type pages:ExtraFeaturesPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}">
+                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="PuzzlePiece24" FontSize="16" Foreground="{DynamicResource AfAccentBrush}" Margin="0,0,7,0" /><TextBlock Text="{DynamicResource Loc.Common.Page.MediaAndNotifications}" /></StackPanel>
+                    </ToggleButton>
+                    <ToggleButton Tag="{x:Type pages:ApplicationPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}">
+                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="Settings24" FontSize="16" Foreground="{DynamicResource AfAccentBrush}" Margin="0,0,7,0" /><TextBlock Text="{DynamicResource Loc.Common.Page.Application}" /></StackPanel>
+                    </ToggleButton>
 
                     <ToggleButton x:Name="UpdateNoticeNavItem" Click="UpdateNoticeNavItem_Click" Tag="{x:Type pages:ReleaseHighlightsPage}"
                                   Style="{StaticResource AfSettingsPrimaryTabStyle}">
                         <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="Sparkle24" FontSize="16" Foreground="{DynamicResource AfAccentBrush}" Margin="0,0,7,0" />
                             <TextBlock Text="{DynamicResource Loc.Common.Page.ReleaseHighlights}" />
                             <Ellipse x:Name="UpdateNoticeDot" Width="6" Height="6" Margin="6,0,0,0" VerticalAlignment="Center"
                                      Fill="{DynamicResource AfAccentBrush}" Visibility="Collapsed" />
                         </StackPanel>
                     </ToggleButton>
                     <ToggleButton x:Name="AboutTab" Click="OnPrimaryNavigationClick" Tag="{x:Type pages:AboutPage}"
-                                  Content="{DynamicResource Loc.Common.Page.About}" Style="{StaticResource AfSettingsPrimaryTabStyle}" />
+                                  Style="{StaticResource AfSettingsPrimaryTabStyle}">
+                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="QuestionCircle24" FontSize="16" Foreground="{DynamicResource AfAccentBrush}" Margin="0,0,7,0" /><TextBlock Text="{DynamicResource Loc.Common.Page.About}" /></StackPanel>
+                    </ToggleButton>
                 </StackPanel>
             </ScrollViewer>
         </Border>
+        <!-- The fixed group strip is 45 DIP tall; blend the material just below it into the scroll area. -->
+        <Border Grid.Row="2" Height="96" Margin="0,45,0,0" VerticalAlignment="Top"
+                Background="{DynamicResource AfSettingsHeaderBridgeBrush}" IsHitTestVisible="False" />
         <!-- The existing page provider and journal still own navigation; these menu items are not presented. -->
         <ui:NavigationView x:Name="RootNavigation" Grid.Row="2" PaneDisplayMode="Top" IsPaneVisible="False" IsFooterSeparatorVisible="False"
                            IsBackButtonVisible="Collapsed" IsPaneToggleVisible="False" FrameMargin="0" Background="Transparent">

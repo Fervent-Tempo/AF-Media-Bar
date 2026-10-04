@@ -78,12 +78,12 @@ namespace AFMediaBar.Components
 
             var body = new System.Windows.Controls.TextBlock
             {
-                FontSize = 12,
                 LineHeight = 18,
                 LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
                 TextWrapping = TextWrapping.Wrap
             };
             body.SetBinding(System.Windows.Controls.TextBlock.TextProperty, new Binding(nameof(Text)) { Source = this });
+            body.SetBinding(System.Windows.Controls.TextBlock.FontSizeProperty, new Binding(nameof(FontSize)) { Source = this });
             body.SetResourceReference(ForegroundProperty, "TextFillColorSecondaryBrush");
             Grid.SetColumn(body, 1);
 
@@ -100,7 +100,7 @@ namespace AFMediaBar.Components
                 CornerRadius = new CornerRadius(8),
                 Child = content
             };
-            surface.SetResourceReference(Border.BackgroundProperty, "AfSettingsCardBrush");
+            surface.SetResourceReference(Border.BackgroundProperty, "AfSettingsInfoSurfaceBrush");
             surface.SetResourceReference(Border.BorderBrushProperty, "AfSettingsBorderBrush");
             Content = surface;
         }

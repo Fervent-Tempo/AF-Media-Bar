@@ -516,12 +516,19 @@ namespace AFMediaBar
 
             var dark = theme == ApplicationTheme.Dark || theme == ApplicationTheme.HighContrast && SystemParameters.HighContrast;
             var highContrast = SystemParameters.HighContrast;
-            // Settings surfaces remain opaque over native materials; only their RGB tint follows the accent.
-            Resources["AfSettingsCardBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(TintSettingsSurface(dark ? Color.FromRgb(44, 44, 44) : Colors.White, accent.Accent, dark ? 0.08 : 0.04));
+            var showSettingsMaterial = !highContrast && appearance.BackdropMode != ApplicationBackdropMode.FluentSolid;
+            var cardColor = TintSettingsSurface(dark ? Color.FromRgb(44, 44, 44) : Colors.White, accent.Accent, dark ? 0.08 : 0.04);
+            var groupColor = TintSettingsSurface(dark ? Color.FromRgb(40, 40, 40) : Color.FromRgb(248, 248, 248), accent.Accent, dark ? 0.08 : 0.06);
+            var navigationColor = TintSettingsSurface(dark ? Color.FromRgb(30, 30, 30) : Color.FromRgb(236, 236, 236), accent.Accent, dark ? 0.10 : 0.08);
+            // Alpha belongs to the surface brushes, never to a whole card: labels and controls stay fully legible.
+            Resources["AfSettingsCardBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(WithAlpha(cardColor, showSettingsMaterial ? (byte)(dark ? 240 : 245) : byte.MaxValue));
+            Resources["AfSettingsInfoSurfaceBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(WithAlpha(cardColor, showSettingsMaterial ? (byte)(dark ? 235 : 242) : byte.MaxValue));
+            Resources["AfSettingsGroupSurfaceBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(WithAlpha(groupColor, showSettingsMaterial ? (byte)(dark ? 235 : 242) : byte.MaxValue));
             Resources["AfSettingsInputBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(TintSettingsSurface(dark ? Color.FromRgb(54, 54, 54) : Color.FromRgb(247, 247, 247), accent.Accent, dark ? 0.08 : 0.04));
             Resources["AfSettingsBorderBrush"] = highContrast ? SystemColors.WindowTextBrush : CreateFrozenBrush(TintSettingsSurface(dark ? Color.FromRgb(72, 72, 72) : Color.FromRgb(216, 216, 216), accent.Accent, 0.08));
-            Resources["AfSettingsNavigationBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(TintSettingsSurface(dark ? Color.FromRgb(30, 30, 30) : Color.FromRgb(236, 236, 236), accent.Accent, dark ? 0.10 : 0.08));
-            Resources["AfSettingsSectionBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(TintSettingsSurface(dark ? Color.FromRgb(40, 40, 40) : Color.FromRgb(248, 248, 248), accent.Accent, dark ? 0.08 : 0.06));
+            Resources["AfSettingsNavigationBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(navigationColor);
+            Resources["AfSettingsSectionBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(groupColor);
+            Resources["AfSettingsHeaderBridgeBrush"] = showSettingsMaterial ? CreateSettingsHeaderBridgeBrush(groupColor) : Brushes.Transparent;
             // Context menus always use an opaque Fluent solid surface. Native
             // Mica/Acrylic on Popup HWNDs leaves transparent hit-test regions
             // that can pass clicks through to the window behind the menu.
@@ -538,6 +545,18 @@ namespace AFMediaBar
                 (byte)Math.Round(surface.R + (accent.R - surface.R) * amount),
                 (byte)Math.Round(surface.G + (accent.G - surface.G) * amount),
                 (byte)Math.Round(surface.B + (accent.B - surface.B) * amount));
+
+        private static Color WithAlpha(Color color, byte alpha) => Color.FromArgb(alpha, color.R, color.G, color.B);
+
+        private static LinearGradientBrush CreateSettingsHeaderBridgeBrush(Color color)
+        {
+            var brush = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
+            brush.GradientStops.Add(new GradientStop(WithAlpha(color, 210), 0));
+            brush.GradientStops.Add(new GradientStop(WithAlpha(color, 150), 0.6));
+            brush.GradientStops.Add(new GradientStop(WithAlpha(color, 0), 1));
+            brush.Freeze();
+            return brush;
+        }
 
         private static SolidColorBrush CreateFrozenBrush(Color color)
         {

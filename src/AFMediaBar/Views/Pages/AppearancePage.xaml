@@ -96,10 +96,14 @@
                 x:Name="PageRoot"
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
                 Loaded="OnPageLoaded">
-                <StackPanel Margin="0,4,0,20">
-                    <TextBlock Text="{DynamicResource Loc.Common.Page.Appearance}" FontSize="24" FontWeight="{DynamicResource AppTextStrongFontWeight}" />
-                    <TextBlock Text="{DynamicResource Loc.Appearance.Header.Subtitle}" Style="{StaticResource AfSettingsRowDescriptionStyle}" Margin="0,4,0,0" />
-                </StackPanel>
+                <Grid Style="{StaticResource AfSettingsPageIntroStyle}">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                    <ContentControl Content="{ui:SymbolIcon PaintBrush24}" Style="{StaticResource AfSettingsPageIconStyle}" />
+                    <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                        <TextBlock Text="{DynamicResource Loc.Common.Page.Appearance}" Style="{StaticResource AfSettingsPageTitleStyle}" />
+                        <TextBlock Text="{DynamicResource Loc.Appearance.Header.Subtitle}" Style="{StaticResource AfSettingsPageSubtitleStyle}" />
+                    </StackPanel>
+                </Grid>
 
                 <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.Fonts}" Icon="{ui:SymbolIcon TextFont24}">
                     <StackPanel>
@@ -193,7 +197,7 @@
                         <Border
                             Margin="0,4,0,0"
                             Padding="16,13"
-                            Background="{DynamicResource AfSettingsCardBrush}"
+                            Background="{DynamicResource AfSettingsInfoSurfaceBrush}"
                             BorderBrush="{DynamicResource AfSettingsBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="6">
@@ -307,7 +311,7 @@
                         <Border
                             Margin="0,4,0,0"
                             Padding="14,12"
-                            Background="{DynamicResource AfSettingsCardBrush}"
+                            Background="{DynamicResource AfSettingsInfoSurfaceBrush}"
                             BorderBrush="{DynamicResource AfSettingsBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="6"
@@ -611,8 +615,7 @@
                         </components:SettingsRow>
                         <ui:CardExpander
                             Style="{StaticResource AfSettingsExpanderStyle}"
-                            Icon="{ui:SymbolIcon ArrowSort24}"
-                            IsExpanded="True">
+                            Icon="{ui:SymbolIcon ArrowSort24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
                                     <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.DisplayModes.Rest.Order.Expander.Title}" />
@@ -682,7 +685,6 @@
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Appearance.Row.InteractionButtonSize.Description}"
                             Icon="{ui:SymbolIcon TextAlignJustify24}"
-                            IsNested="True"
                             Title="{DynamicResource Loc.Appearance.Row.InteractionButtonSize.Title}">
                             <ComboBox
                                 MinWidth="200"
@@ -696,7 +698,6 @@
                         <components:SettingsRow
                             Description="{DynamicResource Loc.DisplayModes.Hover.Row.Spacing.Description}"
                             Icon="{ui:SymbolIcon PaddingLeft24}"
-                            IsNested="True"
                             Title="{DynamicResource Loc.DisplayModes.Hover.Row.Spacing.Title}">
                             <StackPanel Orientation="Horizontal">
                                 <Slider

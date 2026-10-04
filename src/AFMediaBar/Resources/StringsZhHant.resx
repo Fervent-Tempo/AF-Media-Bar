@@ -272,7 +272,7 @@
     <value>字型、佈景主題、媒體列寬度與互動按鈕外觀</value>
   </data>
   <data name="Appearance.Group.RestLayout" xml:space="preserve">
-    <value>靜置層外觀</value>
+    <value>常駐狀態外觀</value>
   </data>
   <data name="Appearance.Group.InteractionButtons" xml:space="preserve">
     <value>互動按鈕</value>
@@ -281,7 +281,7 @@
     <value>互動按鈕大小</value>
   </data>
   <data name="Appearance.Row.InteractionButtonSize.Description" xml:space="preserve">
-    <value>調整靜置層和懸停層按鈕及圖示的大小。</value>
+    <value>調整常駐狀態和快捷控制按鈕及圖示的大小。</value>
   </data>
   <data name="Appearance.Motion.Detail.Full" xml:space="preserve">
     <value>保留展開、回饋與頻譜轉場</value>
@@ -488,7 +488,7 @@
     <value>結束</value>
   </data>
   <data name="Common.FullLayer" xml:space="preserve">
-    <value>完整層</value>
+    <value>完整面板</value>
   </data>
   <data name="Common.Group.Application" xml:space="preserve">
     <value>應用程式</value>
@@ -500,7 +500,7 @@
     <value>字型</value>
   </data>
   <data name="Common.Group.InAppRestLayer" xml:space="preserve">
-    <value>程式內（靜置層）</value>
+    <value>程式內（常駐狀態）</value>
   </data>
   <data name="Common.Group.IslandAppearance" xml:space="preserve">
     <value>動態島外觀</value>
@@ -530,7 +530,7 @@
     <value>快速啟動</value>
   </data>
   <data name="Common.Group.RestLayerComponents" xml:space="preserve">
-    <value>靜置層元件</value>
+    <value>常駐狀態元件</value>
   </data>
   <data name="Common.Group.ScreenAndPlacement" xml:space="preserve">
     <value>螢幕與位置</value>
@@ -554,7 +554,7 @@
     <value>曲目切換通知</value>
   </data>
   <data name="Common.HoverLayer" xml:space="preserve">
-    <value>懸停層</value>
+    <value>快捷控制</value>
   </data>
   <data name="Common.MediaSource" xml:space="preserve">
     <value>媒體來源</value>
@@ -584,7 +584,7 @@
     <value>開啟資料夾</value>
   </data>
   <data name="Common.OpenFullPanel" xml:space="preserve">
-    <value>開啟完整層</value>
+    <value>開啟完整面板</value>
   </data>
   <data name="Common.OutputDevice" xml:space="preserve">
     <value>輸出裝置</value>
@@ -647,7 +647,7 @@
     <value>重設位置</value>
   </data>
   <data name="Common.RestLayer" xml:space="preserve">
-    <value>靜置層</value>
+    <value>常駐狀態</value>
   </data>
   <data name="Common.Save" xml:space="preserve">
     <value>儲存</value>
@@ -701,13 +701,13 @@
     <value>滑鼠移入時出現播放、切換、輸出裝置、音量與進度控制，可在下一頁逐項開關。</value>
   </data>
   <data name="Diagram.LayerRest.Caption" xml:space="preserve">
-    <value>永遠顯示封面與標題；頻譜與效能元件重疊在右側，其開關位於「媒體與通知 → 靜置層元件」。</value>
+    <value>永遠顯示封面與標題；頻譜與效能元件重疊在右側，其開關位於「媒體與通知 → 常駐狀態元件」。</value>
   </data>
   <data name="Diagram.LyricsAlignment.Caption" xml:space="preserve">
     <value>僅決定歌詞靠哪一側；標題與歌手的對齊是「顯示模式」頁中的另一項設定。</value>
   </data>
   <data name="Diagram.LyricsTwoLine.Caption" xml:space="preserve">
-    <value>第一行為目前句；第二行為下一句或翻譯，靜置層空間不足時不顯示。</value>
+    <value>第一行為目前句；第二行為下一句或翻譯，常駐狀態空間不足時不顯示。</value>
   </data>
   <data name="Diagram.LyricsTwoLine.Label.FirstLine" xml:space="preserve">
     <value>第一行</value>
@@ -767,10 +767,10 @@
     <value>只有切換裝置和調整音量兩種結果</value>
   </data>
   <data name="DisplayModes.Full.Expander.Description" xml:space="preserve">
-    <value>選擇完整層顯示的區域；至少保留一個。</value>
+    <value>選擇完整面板顯示的區域；至少保留一個。</value>
   </data>
   <data name="DisplayModes.Full.Expander.Title" xml:space="preserve">
-    <value>完整層內容</value>
+    <value>完整面板內容</value>
   </data>
   <data name="DisplayModes.Full.Group.Description" xml:space="preserve">
     <value>點擊媒體列後展開的控制面板。</value>
@@ -788,7 +788,7 @@
     <value>點擊媒體列時開啟完整控制面板。</value>
   </data>
   <data name="DisplayModes.Full.Row.Enable.Title" xml:space="preserve">
-    <value>啟用完整層</value>
+    <value>啟用完整面板</value>
   </data>
   <data name="DisplayModes.Full.Row.MediaControls.Title" xml:space="preserve">
     <value>播放控制</value>
@@ -800,7 +800,7 @@
     <value>效能資訊</value>
   </data>
   <data name="DisplayModes.Full.Row.Preset.Description" xml:space="preserve">
-    <value>快速套用一組完整層配置。</value>
+    <value>快速套用一組完整面板配置。</value>
   </data>
   <data name="DisplayModes.Full.Row.Preset.Title" xml:space="preserve">
     <value>套用預設</value>
@@ -812,7 +812,7 @@
     <value>選擇滑鼠懸停時顯示的控制項。</value>
   </data>
   <data name="DisplayModes.Hover.Expander.Title" xml:space="preserve">
-    <value>懸停層控制</value>
+    <value>快捷控制內容</value>
   </data>
   <data name="DisplayModes.Hover.Group.Description" xml:space="preserve">
     <value>滑鼠移入媒體列時顯示的快速控制。</value>
@@ -821,7 +821,7 @@
     <value>滑鼠移入媒體列時顯示快速控制。</value>
   </data>
   <data name="DisplayModes.Hover.Row.Enable.Title" xml:space="preserve">
-    <value>啟用懸停層</value>
+    <value>啟用快捷控制</value>
   </data>
   <data name="DisplayModes.Hover.Row.Progress.Title" xml:space="preserve">
     <value>進度條</value>
@@ -884,7 +884,7 @@
     <value>工作列</value>
   </data>
   <data name="DisplayModes.Mode.Taskbar.Caption" xml:space="preserve">
-    <value>置於 Windows 工作列，含靜置層、懸停層與完整層</value>
+    <value>置於 Windows 工作列，含常駐狀態、快捷控制與完整面板</value>
   </data>
   <data name="DisplayModes.Monitor.DisconnectedSuffix" xml:space="preserve">
     <value>（目前未連接）</value>
@@ -1013,7 +1013,7 @@
     <value>調整附加元件從左到右的順序；封面和文字固定在前。</value>
   </data>
   <data name="DisplayModes.Rest.Order.Expander.Title" xml:space="preserve">
-    <value>靜置層元件順序</value>
+    <value>常駐狀態元件順序</value>
   </data>
   <data name="DisplayModes.Rest.Order.Notice" xml:space="preserve">
     <value>封面和媒體文字固定在最前，不參與排序。</value>
@@ -1031,13 +1031,13 @@
     <value>標題與歌手對齊</value>
   </data>
   <data name="DisplayModes.Hover.Row.Size.Description" xml:space="preserve">
-    <value>調整懸停按鈕、圖示和進度條，也影響靜置層按鈕。</value>
+    <value>調整懸停按鈕、圖示和進度條，也影響常駐狀態按鈕。</value>
   </data>
   <data name="DisplayModes.Hover.Row.Size.Title" xml:space="preserve">
     <value>控制項尺寸</value>
   </data>
   <data name="DisplayModes.Hover.Row.Spacing.Description" xml:space="preserve">
-    <value>調整懸停層按鈕和進度條之間的距離。</value>
+    <value>調整快捷控制按鈕和進度條之間的距離。</value>
   </data>
   <data name="DisplayModes.Hover.Row.Spacing.Title" xml:space="preserve">
     <value>懸停按鈕間距</value>
@@ -1046,13 +1046,13 @@
     <value>常駐輸出裝置按鈕，佔用文字空間；點擊選裝置，捲動切換。</value>
   </data>
   <data name="DisplayModes.Rest.Row.DeviceButton.Title" xml:space="preserve">
-    <value>靜置層顯示輸出裝置按鈕</value>
+    <value>常駐狀態顯示輸出裝置按鈕</value>
   </data>
   <data name="DisplayModes.Rest.Row.Entry.Description" xml:space="preserve">
-    <value>懸停媒體列或點擊頂部入口，即可開啟完整層。</value>
+    <value>懸停媒體列或點擊頂部入口，即可開啟完整面板。</value>
   </data>
   <data name="DisplayModes.Rest.Row.Entry.Title" xml:space="preserve">
-    <value>顯示進入完整層的入口</value>
+    <value>顯示進入完整面板的入口</value>
   </data>
   <data name="DisplayModes.Rest.Row.Layout.Description" xml:space="preserve">
     <value>標題與歌手並排一行，或上下堆疊</value>
@@ -1061,7 +1061,7 @@
     <value>內容排列</value>
   </data>
   <data name="DisplayModes.Rest.Row.Progress.Description" xml:space="preserve">
-    <value>在靜置層底部顯示唯讀進度；沒有時長時隱藏。</value>
+    <value>在常駐狀態底部顯示唯讀進度；沒有時長時隱藏。</value>
   </data>
   <data name="DisplayModes.Rest.Row.Artwork.Description" xml:space="preserve">
     <value>有媒體時顯示封面；不影響無媒體時的小音符。</value>
@@ -1076,7 +1076,7 @@
     <value>常駐音量按鈕，佔用文字空間；點擊開啟功能表，捲動調整音量。</value>
   </data>
   <data name="DisplayModes.Rest.Row.VolumeButton.Title" xml:space="preserve">
-    <value>靜置層顯示音量按鈕</value>
+    <value>常駐狀態顯示音量按鈕</value>
   </data>
   <data name="DisplayModes.Status.Current" xml:space="preserve">
     <value>目前：{0}</value>
@@ -1118,7 +1118,7 @@
     <value>為媒體列與托盤上的每種操作指定結果</value>
   </data>
   <data name="Interaction.InApp.Group.Description" xml:space="preserve">
-    <value>設定靜置層的點擊與滾輪操作。</value>
+    <value>設定常駐狀態的點擊與滾輪操作。</value>
   </data>
   <data name="Interaction.Row.ArtworkClick.Description" xml:space="preserve">
     <value>單獨設定封面區域的點擊操作。</value>
@@ -1295,7 +1295,7 @@
     <value>有歌詞時，媒體列顯示歌詞；沒有歌詞時顯示標題與歌手。</value>
   </data>
   <data name="Lyrics.Header.Subtitle" xml:space="preserve">
-    <value>在工作列靜置層顯示目前歌詞</value>
+    <value>在工作列常駐狀態顯示目前歌詞</value>
   </data>
   <data name="Lyrics.Row.Alignment.Description" xml:space="preserve">
     <value>調整歌詞的水平對齊；標題對齊在外觀頁設定。</value>
@@ -1466,7 +1466,7 @@
     <value>媒體來源、快速啟動與曲目通知</value>
   </data>
   <data name="Components.Header.Subtitle" xml:space="preserve">
-    <value>靜置層元件的顯示與參數</value>
+    <value>常駐狀態元件的顯示與參數</value>
   </data>
   <data name="Media.Metric.ProcessMemory.Title" xml:space="preserve">
     <value>本程式記憶體</value>
@@ -1556,7 +1556,7 @@
     <value>{0:0.#} 秒</value>
   </data>
   <data name="Media.Performance.Visible.Description" xml:space="preserve">
-    <value>在靜置層顯示選取的效能指標。</value>
+    <value>在常駐狀態顯示選取的效能指標。</value>
   </data>
   <data name="Media.Performance.Visible.Title" xml:space="preserve">
     <value>顯示效能元件</value>
@@ -1589,7 +1589,7 @@
     <value>從快速啟動中移除</value>
   </data>
   <data name="Media.RestComponents.Description" xml:space="preserve">
-    <value>設定靜置層的頻譜和效能元件。</value>
+    <value>設定常駐狀態的頻譜和效能元件。</value>
   </data>
   <data name="Media.SourceFilter.Description" xml:space="preserve">
     <value>僅接收允許清單中的媒體來源；關閉後保留清單。</value>
@@ -1667,7 +1667,7 @@
     <value>波形圖</value>
   </data>
   <data name="Media.Spectrum.Visible.Description" xml:space="preserve">
-    <value>在靜置層顯示目前輸出裝置的即時頻譜。</value>
+    <value>在常駐狀態顯示目前輸出裝置的即時頻譜。</value>
   </data>
   <data name="Media.Spectrum.Visible.Title" xml:space="preserve">
     <value>顯示頻譜</value>
@@ -1796,10 +1796,10 @@
     <value>媒體列寬度、固定長度與元件間距</value>
   </data>
   <data name="Search.Appearance.RestLayout.Description" xml:space="preserve">
-    <value>靜置層內容排列、文字對齊與元件順序</value>
+    <value>常駐狀態內容排列、文字對齊與元件順序</value>
   </data>
   <data name="Search.Appearance.InteractionButtons.Description" xml:space="preserve">
-    <value>靜置層和懸停層按鈕的大小與間距</value>
+    <value>常駐狀態和快捷控制按鈕的大小與間距</value>
   </data>
   <data name="Search.Appearance.ThemeAndBackdrop.Description" xml:space="preserve">
     <value>淺色還是深色，以及視窗背景材質</value>
@@ -1820,13 +1820,13 @@
     <value>寬度跟隨內容、固定寬度與元件間距</value>
   </data>
   <data name="Search.DisplayModes.RestLayer.Description" xml:space="preserve">
-    <value>設定靜置層的顯示內容和完整層入口。</value>
+    <value>設定常駐狀態的顯示內容和完整面板入口。</value>
   </data>
   <data name="Search.DisplayModes.ScreenAndPlacement.Description" xml:space="preserve">
     <value>媒體列所在的螢幕與工作列位置</value>
   </data>
   <data name="Search.Interaction.InAppRestLayer.Description" xml:space="preserve">
-    <value>設定靜置層封面、文字和滾輪操作。</value>
+    <value>設定常駐狀態封面、文字和滾輪操作。</value>
   </data>
   <data name="Search.Interaction.SharedModifier.Description" xml:space="preserve">
     <value>媒體列與托盤共用的組合滾輪按鍵</value>
@@ -1850,7 +1850,7 @@
     <value>沒有媒體時從音符啟動播放器</value>
   </data>
   <data name="Search.Components.RestLayerComponents.Description" xml:space="preserve">
-    <value>設定靜置層的頻譜和效能元件。</value>
+    <value>設定常駐狀態的頻譜和效能元件。</value>
   </data>
   <data name="Search.MediaAndNotifications.TrackChangeNotification.Description" xml:space="preserve">
     <value>曲目切換並開始播放時顯示目前曲目</value>
@@ -2103,4 +2103,6 @@
   <data name="ReleaseHighlights.Status.CacheWriteFailed" xml:space="preserve"><value>已取得最新亮點，但未能儲存離線快取。</value></data>
   <data name="ReleaseHighlights.Application.Description" xml:space="preserve"><value>查看最新版本及所有歷史正式版本的更新亮點。</value></data>
   <data name="ReleaseHighlights.Application.Open" xml:space="preserve"><value>查看更新亮點</value></data>
+  <data name="Settings.Expand" xml:space="preserve"><value>點擊展開</value></data>
+  <data name="Settings.Collapse" xml:space="preserve"><value>點擊收起</value></data>
 </root>

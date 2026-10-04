@@ -65,11 +65,9 @@ public class SettingsGroup : HeaderedContentControl
         new PropertyMetadata(SettingsChipTone.Neutral));
 
     /// <summary>
-    /// 分组说明，一行白话，标题正下方。用于解释「静置层 / 悬停层 / 完整层」这类名字：
-    /// 名字本身保留，因为它同时是分组标签与代码里的层名，但新手需要一句话才知道它指什么。
-    /// Group description: one plain line directly under the header. It exists to explain names such as
-    /// "静置层 / 悬停层 / 完整层", which are kept because they are both the tab labels and the layer names used in
-    /// code, while a newcomer needs one line to know what they mean.
+    /// 分组说明，一行白话，标题正下方。用于解释「常驻状态 / 快捷控制 / 完整面板」等界面名称何时生效。
+    /// Group description: one plain line directly under the header explaining when a view such as
+    /// "Always-on view / Quick controls / Full panel" is shown.
     /// </summary>
     public static readonly DependencyProperty DescriptionProperty = DependencyProperty.Register(
         nameof(Description),

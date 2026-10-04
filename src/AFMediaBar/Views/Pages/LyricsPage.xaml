@@ -132,10 +132,14 @@
                 x:Name="PageRoot"
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
                 Loaded="OnPageLoaded">
-                <StackPanel Margin="0,4,0,20">
-                    <TextBlock Text="{DynamicResource Loc.Common.Page.Lyrics}" FontSize="24" FontWeight="{DynamicResource AppTextStrongFontWeight}" />
-                    <TextBlock Text="{DynamicResource Loc.Lyrics.Header.Subtitle}" Style="{StaticResource AfSettingsRowDescriptionStyle}" Margin="0,4,0,0" />
-                </StackPanel>
+                <Grid Style="{StaticResource AfSettingsPageIntroStyle}">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                    <ContentControl Content="{ui:SymbolIcon TextQuote24}" Style="{StaticResource AfSettingsPageIconStyle}" />
+                    <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                        <TextBlock Text="{DynamicResource Loc.Common.Page.Lyrics}" Style="{StaticResource AfSettingsPageTitleStyle}" />
+                        <TextBlock Text="{DynamicResource Loc.Lyrics.Header.Subtitle}" Style="{StaticResource AfSettingsPageSubtitleStyle}" />
+                    </StackPanel>
+                </Grid>
 
                 <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.LyricsDisplay}"
                                           Icon="{ui:SymbolIcon TextQuote24}">
@@ -206,8 +210,7 @@
 
                         <ui:CardExpander
                             Style="{StaticResource AfSettingsExpanderStyle}"
-                            Icon="{ui:SymbolIcon TextBulletListSquare24}"
-                            IsExpanded="{Binding ViewModel.TwoLineLyricsEnabled, Mode=OneWay}">
+                            Icon="{ui:SymbolIcon TextBulletListSquare24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
                                     <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}"

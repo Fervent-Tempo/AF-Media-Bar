@@ -9,6 +9,7 @@
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     d:DesignHeight="60"
     d:DesignWidth="400"
+    FontSize="12"
     mc:Ignorable="d">
 
     <UserControl.Resources>
@@ -19,7 +20,7 @@
             and accent changes stay owned by DynamicResource and the code-behind only carries data.
         -->
         <Style x:Key="CalloutSurfaceStyle" TargetType="{x:Type Border}">
-            <Setter Property="Background" Value="{DynamicResource AfSettingsCardBrush}" />
+            <Setter Property="Background" Value="{DynamicResource AfSettingsInfoSurfaceBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource AfSettingsBorderBrush}" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding IsAccent, ElementName=Root}" Value="True">
@@ -47,7 +48,7 @@
         </Style>
     </UserControl.Resources>
 
-    <!-- Opaque explanatory cards share settings surfaces; accent tone is conveyed by the stroke and glyph. -->
+    <!-- Explanatory cards share the information surface; accent tone is conveyed by the stroke and glyph. -->
     <Grid>
         <Border
             Padding="14,12"
@@ -67,7 +68,7 @@
                     Symbol="{Binding Symbol, ElementName=Root}" />
                 <TextBlock
                     Grid.Column="1"
-                    FontSize="12"
+                    FontSize="{Binding FontSize, ElementName=Root}"
                     LineHeight="18"
                     LineStackingStrategy="BlockLineHeight"
                     Style="{StaticResource CalloutBodyStyle}"

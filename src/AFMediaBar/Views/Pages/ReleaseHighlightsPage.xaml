@@ -41,17 +41,24 @@
         <components:SettingsGroupStrip Target="{Binding ElementName=PageScroll}" Title="{DynamicResource Loc.Common.Page.ReleaseHighlights}" />
         <ScrollViewer x:Name="PageScroll" Grid.Row="1" Margin="{StaticResource AfSettingsScrollMargin}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel MaxWidth="{StaticResource AfSettingsContentMaxWidth}">
-                <Grid Margin="0,4,0,20"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                    <StackPanel><TextBlock Text="{DynamicResource Loc.Common.Page.ReleaseHighlights}" FontSize="24" FontWeight="{DynamicResource AppTextStrongFontWeight}" />
-                        <TextBlock Text="{DynamicResource Loc.ReleaseHighlights.Header.Subtitle}" Style="{StaticResource AfSettingsRowDescriptionStyle}" />
+                <Grid Style="{StaticResource AfSettingsPageIntroStyle}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ContentControl Content="{ui:SymbolIcon Sparkle24}" Style="{StaticResource AfSettingsPageIconStyle}" />
+                    <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                        <TextBlock Text="{DynamicResource Loc.Common.Page.ReleaseHighlights}" Style="{StaticResource AfSettingsPageTitleStyle}" />
+                        <TextBlock Text="{DynamicResource Loc.ReleaseHighlights.Header.Subtitle}" Style="{StaticResource AfSettingsPageSubtitleStyle}" />
                     </StackPanel>
-                    <ui:Button Grid.Column="1" Content="{DynamicResource Loc.ReleaseHighlights.Refresh}" Command="{Binding ViewModel.RefreshCommand}" VerticalAlignment="Center" Margin="16,0,0,0" />
+                    <ui:Button Grid.Column="2" Content="{DynamicResource Loc.ReleaseHighlights.Refresh}" Command="{Binding ViewModel.RefreshCommand}" VerticalAlignment="Center" Margin="16,0,0,0" />
                 </Grid>
-                <TextBlock Text="{Binding ViewModel.StatusText}" Style="{StaticResource AfSettingsRowDescriptionStyle}" Margin="0,0,0,8" />
+                <TextBlock Text="{Binding ViewModel.StatusText}" Style="{StaticResource AfSettingsRowDescriptionStyle}" Margin="0,8,0,8" />
                 <ProgressBar IsIndeterminate="True" Height="2" Margin="0,0,0,12"
                              Visibility="{Binding ViewModel.IsLoading, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
                 <components:SettingsGroup Header="{DynamicResource Loc.ReleaseHighlights.Latest}" Icon="{ui:SymbolIcon Sparkle24}">
-                    <Border Background="{DynamicResource AfSettingsCardBrush}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1" CornerRadius="8">
+                    <Border Background="{DynamicResource AfSettingsInfoSurfaceBrush}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1" CornerRadius="8">
                         <StackPanel DataContext="{Binding ViewModel.Latest}">
                             <ContentControl Content="{Binding}" ContentTemplate="{StaticResource ReleaseHeader}" Margin="20,20,20,0" />
                             <ContentControl Content="{Binding}" ContentTemplate="{StaticResource ReleaseBody}" />

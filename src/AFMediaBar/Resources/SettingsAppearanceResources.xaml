@@ -313,7 +313,7 @@
     -->
 
     <Style x:Key="AfSettingsPageTitleStyle" TargetType="{x:Type TextBlock}">
-        <Setter Property="FontSize" Value="28" />
+        <Setter Property="FontSize" Value="30" />
         <Setter Property="FontWeight" Value="{DynamicResource AppTextStrongFontWeight}" />
         <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
     </Style>
@@ -324,7 +324,32 @@
         <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
         <Setter Property="TextWrapping" Value="Wrap" />
         <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
-        <Setter Property="Margin" Value="0,6,0,24" />
+        <Setter Property="Margin" Value="0,3,0,0" />
+    </Style>
+
+    <Style x:Key="AfSettingsPageIntroStyle" TargetType="{x:Type Grid}">
+        <Setter Property="Margin" Value="0,4,0,0" />
+    </Style>
+
+    <!-- Page identity scrolls with its content; the fixed strip only navigates groups. -->
+    <Style x:Key="AfSettingsPageIconStyle" TargetType="{x:Type ContentControl}">
+        <Setter Property="Width" Value="38" />
+        <Setter Property="Height" Value="38" />
+        <Setter Property="VerticalAlignment" Value="Top" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Foreground" Value="{DynamicResource AfOnAccentBrush}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ContentControl}">
+                    <Grid Width="38" Height="38" TextElement.Foreground="{DynamicResource AfOnAccentBrush}">
+                        <Border Background="{DynamicResource AfAccentBrush}" CornerRadius="10" />
+                        <ContentControl HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"
+                                        Focusable="False" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style x:Key="AfSettingsSectionTitleStyle" TargetType="{x:Type TextBlock}">
@@ -752,14 +777,17 @@
     </Style>
 
 
-    <!-- Opaque setting surfaces sit above the selected native material; they do not change taskbar brushes. -->
+    <!-- Settings-only surface tiers; the application publishes theme/material-specific alpha at runtime. -->
     <SolidColorBrush x:Key="AfSettingsCardBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="AfSettingsInfoSurfaceBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="AfSettingsGroupSurfaceBrush" Color="#F8F8F8" />
     <SolidColorBrush x:Key="AfSettingsInputBrush" Color="#F7F7F7" />
     <SolidColorBrush x:Key="AfSettingsBorderBrush" Color="#D8D8D8" />
     <SolidColorBrush x:Key="AfSettingsNavigationBrush" Color="#ECECEC" />
     <SolidColorBrush x:Key="AfSettingsSectionBrush" Color="#F8F8F8" />
+    <SolidColorBrush x:Key="AfSettingsHeaderBridgeBrush" Color="Transparent" />
     <Style x:Key="AfSettingsInfoSurfaceStyle" TargetType="{x:Type Border}">
-        <Setter Property="Background" Value="{DynamicResource AfSettingsCardBrush}" />
+        <Setter Property="Background" Value="{DynamicResource AfSettingsInfoSurfaceBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AfSettingsBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="8" />

@@ -199,21 +199,21 @@ public static class SettingsSearchIndex
             "Common.RestLayer",
             "Search.DisplayModes.RestLayer.Description",
             language,
-            ["静置", "常驻", "rest", "完整层入口", "横杆", "细杠", "进入完整层", "进度", "播放进度", "progress", "设备按钮", "输出设备", "音量按钮", "没有媒体", "无媒体", "空闲", "idle", "隐藏", "保留组件", "小音符", "快速启动"]),
+            ["静置", "静置层", "靜置層", "常驻", "常驻状态", "常駐狀態", "rest", "rest layer", "always-on view", "完整层入口", "横杆", "细杠", "进入完整层", "进度", "播放进度", "progress", "设备按钮", "输出设备", "音量按钮", "没有媒体", "无媒体", "空闲", "idle", "隐藏", "保留组件", "小音符", "快速启动"]),
         Create(
             SettingsPageKey.DisplayModes,
             3,
             "Common.HoverLayer",
             "Search.DisplayModes.HoverLayer.Description",
             language,
-            ["悬停", "hover", "鼠标", "按钮", "播放暂停", "上一首", "下一首", "输出设备", "音量", "进度"]),
+            ["悬停", "悬停层", "懸停層", "快捷控制", "hover", "hover layer", "quick controls", "鼠标", "按钮", "播放暂停", "上一首", "下一首", "输出设备", "音量", "进度"]),
         Create(
             SettingsPageKey.DisplayModes,
             4,
             "Common.FullLayer",
             "Search.DisplayModes.FullLayer.Description",
             language,
-            ["完整", "面板", "full", "panel", "预设", "preset", "分区", "媒体信息", "播放控制", "音频控制", "性能", "套用预设"]),
+            ["完整", "完整层", "完整層", "完整面板", "面板", "full", "full layer", "panel", "预设", "preset", "分区", "媒体信息", "播放控制", "音频控制", "性能", "套用预设"]),
 
         // ---- 显示模式 · 灵动岛 / Display modes, dynamic island ----
         Create(

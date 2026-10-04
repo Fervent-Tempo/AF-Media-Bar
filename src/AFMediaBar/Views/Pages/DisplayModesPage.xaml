@@ -109,11 +109,15 @@
                 x:Name="PageRoot"
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
                 Loaded="OnPageLoaded">
-                <StackPanel Margin="0,4,0,20">
-                    <TextBlock Text="{DynamicResource Loc.Common.Page.DisplayModes}" FontSize="24" FontWeight="{DynamicResource AppTextStrongFontWeight}" />
-                    <TextBlock Text="{DynamicResource Loc.DisplayModes.Header.Subtitle}" Style="{StaticResource AfSettingsRowDescriptionStyle}" Margin="0,4,0,0" />
-                    <TextBlock Text="{Binding ViewModel.HostingModeText}" Foreground="{DynamicResource AfAccentBrush}" FontSize="12" Margin="0,6,0,0" />
-                </StackPanel>
+                <Grid Style="{StaticResource AfSettingsPageIntroStyle}">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                    <ContentControl Content="{ui:SymbolIcon Desktop24}" Style="{StaticResource AfSettingsPageIconStyle}" />
+                    <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                        <TextBlock Text="{DynamicResource Loc.Common.Page.DisplayModes}" Style="{StaticResource AfSettingsPageTitleStyle}" />
+                        <TextBlock Text="{DynamicResource Loc.DisplayModes.Header.Subtitle}" Style="{StaticResource AfSettingsPageSubtitleStyle}" />
+                        <TextBlock Text="{Binding ViewModel.HostingModeText}" Foreground="{DynamicResource AfAccentBrush}" FontSize="12" Margin="0,6,0,0" />
+                    </StackPanel>
+                </Grid>
 
                 <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.ChooseDisplayMode}" Icon="{ui:SymbolIcon WindowConsole20}">
                     <StackPanel>
@@ -358,8 +362,7 @@
 
                             <ui:CardExpander
                                 Style="{StaticResource AfSettingsExpanderStyle}"
-                                Icon="{ui:SymbolIcon Eye24}"
-                                IsExpanded="True">
+                                Icon="{ui:SymbolIcon Eye24}">
                                 <ui:CardExpander.Header>
                                     <StackPanel>
                                         <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.DisplayModes.Rest.Idle.Expander.Title}" />
@@ -412,8 +415,7 @@
 
                             <ui:CardExpander
                                 Style="{StaticResource AfSettingsExpanderStyle}"
-                                Icon="{ui:SymbolIcon Layer24}"
-                                IsExpanded="{Binding ViewModel.HoverLayerEnabled, Mode=OneWay}">
+                                Icon="{ui:SymbolIcon Layer24}">
                                 <ui:CardExpander.Header>
                                     <StackPanel>
                                         <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.DisplayModes.Hover.Expander.Title}" />
@@ -473,8 +475,7 @@
 
                             <ui:CardExpander
                                 Style="{StaticResource AfSettingsExpanderStyle}"
-                                Icon="{ui:SymbolIcon Info24}"
-                                IsExpanded="{Binding ViewModel.FullLayerEnabled, Mode=OneWay}">
+                                Icon="{ui:SymbolIcon Info24}">
                                 <ui:CardExpander.Header>
                                     <StackPanel>
                                         <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.DisplayModes.Full.Expander.Title}" />

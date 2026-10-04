@@ -49,10 +49,14 @@
                 x:Name="PageRoot"
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
                 Loaded="OnPageLoaded">
-                <StackPanel Margin="0,4,0,20">
-                    <TextBlock Text="{DynamicResource Loc.Common.Page.Application}" FontSize="24" FontWeight="{DynamicResource AppTextStrongFontWeight}" />
-                    <TextBlock Text="{DynamicResource Loc.Application.Header.Subtitle}" Style="{StaticResource AfSettingsRowDescriptionStyle}" Margin="0,4,0,0" />
-                </StackPanel>
+                <Grid Style="{StaticResource AfSettingsPageIntroStyle}">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                    <ContentControl Content="{ui:SymbolIcon Settings24}" Style="{StaticResource AfSettingsPageIconStyle}" />
+                    <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                        <TextBlock Text="{DynamicResource Loc.Common.Page.Application}" Style="{StaticResource AfSettingsPageTitleStyle}" />
+                        <TextBlock Text="{DynamicResource Loc.Application.Header.Subtitle}" Style="{StaticResource AfSettingsPageSubtitleStyle}" />
+                    </StackPanel>
+                </Grid>
 
                 <components:SettingsGroup
                     Header="{DynamicResource Loc.Common.Group.Application}"
