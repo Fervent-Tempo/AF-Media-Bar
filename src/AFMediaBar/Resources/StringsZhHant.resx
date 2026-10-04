@@ -2086,4 +2086,21 @@
   <data name="Wheel.Line.WithValue" xml:space="preserve">
     <value>{0}：{1}</value>
   </data>
+  <data name="Common.Page.ReleaseHighlights" xml:space="preserve"><value>更新亮點</value></data>
+  <data name="Settings.Navigation.Back" xml:space="preserve"><value>返回</value></data>
+  <data name="ReleaseHighlights.Header.Subtitle" xml:space="preserve"><value>了解最新改進，回顧每個正式版本的變化。</value></data>
+  <data name="ReleaseHighlights.Latest" xml:space="preserve"><value>最新版本</value></data>
+  <data name="ReleaseHighlights.History" xml:space="preserve"><value>歷史版本</value></data>
+  <data name="ReleaseHighlights.Refresh" xml:space="preserve"><value>重新整理亮點</value></data>
+  <data name="ReleaseHighlights.FullNotes" xml:space="preserve"><value>完整版本說明</value></data>
+  <data name="ReleaseHighlights.CurrentVersion" xml:space="preserve"><value>目前版本</value></data>
+  <data name="ReleaseHighlights.OriginalText" xml:space="preserve"><value>此版本尚未提供目前語言的譯文，以下顯示官方原文。</value></data>
+  <data name="ReleaseHighlights.NoHighlights" xml:space="preserve"><value>此版本暫未提供更新亮點，可查看完整版本說明。</value></data>
+  <data name="ReleaseHighlights.Status.Bundled" xml:space="preserve"><value>正在顯示程式內建的版本亮點。</value></data>
+  <data name="ReleaseHighlights.Status.Cached" xml:space="preserve"><value>正在顯示快取內容，最近取得：{0}。</value></data>
+  <data name="ReleaseHighlights.Status.Updated" xml:space="preserve"><value>版本亮點已重新整理：{0}。</value></data>
+  <data name="ReleaseHighlights.Status.RefreshFailed" xml:space="preserve"><value>暫時無法重新整理，仍可瀏覽已儲存的版本亮點。</value></data>
+  <data name="ReleaseHighlights.Status.CacheWriteFailed" xml:space="preserve"><value>已取得最新亮點，但未能儲存離線快取。</value></data>
+  <data name="ReleaseHighlights.Application.Description" xml:space="preserve"><value>查看最新版本及所有歷史正式版本的更新亮點。</value></data>
+  <data name="ReleaseHighlights.Application.Open" xml:space="preserve"><value>查看更新亮點</value></data>
 </root>

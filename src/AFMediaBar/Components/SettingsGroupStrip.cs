@@ -111,6 +111,7 @@ public class SettingsGroupStrip : Control
     private TranslateTransform? _indicatorTranslate;
     private ScaleTransform? _progressScale;
     private bool _isJumping;
+    private int _visibleGroupIndex = -1;
     private double _dividerOpacity = -1d;
 
     /// <summary>创建分组标签条并初始化跳转命令。/ Creates the group strip and its jump command.</summary>
@@ -200,7 +201,9 @@ public class SettingsGroupStrip : Control
     public override void OnApplyTemplate()
     {
         base.OnApplyTemplate();
+        if (_tabs is not null) _tabs.SizeChanged -= OnTabsSizeChanged;
         _tabs = GetTemplateChild("PART_Tabs") as ItemsControl;
+        if (_tabs is not null) _tabs.SizeChanged += OnTabsSizeChanged;
         _indicator = GetTemplateChild("PART_Indicator") as FrameworkElement;
         _progress = GetTemplateChild("PART_Progress") as FrameworkElement;
         _divider = GetTemplateChild("PART_Divider") as FrameworkElement;
@@ -289,6 +292,11 @@ public class SettingsGroupStrip : Control
     /// </summary>
     public void Rebuild()
     {
+        // Generated tab containers are measured after the current layout pass.
+        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(() =>
+        {
+            if (IsLoaded) UpdateIndicator();
+        }));
         var groups = ResolveGroups();
         if (groups.Count == _groups.Count &&
             groups.Select(group => group.Header?.ToString() ?? string.Empty).SequenceEqual(_groups.Select(item => item.Name)))
@@ -297,6 +305,7 @@ public class SettingsGroupStrip : Control
             return;
         }
 
+        _visibleGroupIndex = -1;
         _groups.Clear();
         for (var index = 0; index < groups.Count; index++)
         {
@@ -514,6 +523,8 @@ public class SettingsGroupStrip : Control
     /// animated: width is a layout property, so animating it would run layout every frame, while the movement
     /// itself stays a transform and costs no layout.
     /// </summary>
+    private void OnTabsSizeChanged(object sender, SizeChangedEventArgs e) => UpdateIndicator();
+
     private void UpdateIndicator()
     {
         if (_indicator is null || _indicatorTranslate is null || _tabs is null || Target is null)
@@ -538,6 +549,11 @@ public class SettingsGroupStrip : Control
             return;
         }
 
+        if (_visibleGroupIndex != active.Index)
+        {
+            _visibleGroupIndex = active.Index;
+            container.BringIntoView();
+        }
         _indicator.Visibility = Visibility.Visible;
         _indicator.Width = container.ActualWidth;
 
@@ -570,6 +586,13 @@ public class SettingsGroupStrip : Control
             return;
         }
 
+        // Keyboard navigation and reduced motion complete scrolling immediately.
+        if (InputManager.Current.MostRecentInputDevice is KeyboardDevice || MotionPolicy.ResolveCurrent().Mode != MotionMode.Full)
+        {
+            StopJump();
+            target.ScrollToVerticalOffset(destination);
+            return;
+        }
         _isJumping = true;
         BeginAnimation(
             JumpOffsetProperty,

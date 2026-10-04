@@ -51,6 +51,10 @@
                 x:Name="PageRoot"
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
                 Loaded="OnPageLoaded">
+                <StackPanel Margin="0,4,0,20">
+                    <TextBlock Text="{DynamicResource Loc.Common.Page.Application}" FontSize="24" FontWeight="{DynamicResource AppTextStrongFontWeight}" />
+                    <TextBlock Text="{DynamicResource Loc.Application.Header.Subtitle}" Style="{StaticResource AfSettingsRowDescriptionStyle}" Margin="0,4,0,0" />
+                </StackPanel>
 
                 <components:SettingsGroup
                     Header="{DynamicResource Loc.Common.Group.Application}"
@@ -73,6 +77,11 @@
                                     IsEnabled="{Binding ViewModel.CanCheck}"
                                     Style="{StaticResource AfSettingsButtonStyle}" />
                             </StackPanel>
+                        </components:SettingsRow>
+
+                        <components:SettingsRow Title="{DynamicResource Loc.Common.Page.ReleaseHighlights}"
+                            Description="{DynamicResource Loc.ReleaseHighlights.Application.Description}" Icon="{ui:SymbolIcon Sparkle24}">
+                            <ui:Button Content="{DynamicResource Loc.ReleaseHighlights.Application.Open}" Click="OnOpenHighlights" Style="{StaticResource AfSettingsButtonStyle}" />
                         </components:SettingsRow>
 
                         <components:SettingsRow
@@ -130,20 +139,6 @@
                                         Style="{StaticResource AfSettingsButtonStyle}" />
                                 </StackPanel>
                             </components:SettingsRow>
-
-                            <ItemsControl
-                                Margin="0,0,0,4"
-                                ItemsSource="{Binding ViewModel.HighlightEntries}"
-                                Visibility="{Binding ViewModel.HasHighlights, Converter={StaticResource AfBooleanToVisibilityConverter}}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <components:SettingsRow
-                                            Icon="{ui:SymbolIcon Checkmark24}"
-                                            IsNested="True"
-                                            Title="{Binding}" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
 
                             <components:SettingsCallout
                                 Margin="0,0,0,8"

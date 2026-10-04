@@ -40,6 +40,10 @@
                 x:Name="PageRoot"
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
                 Loaded="OnPageLoaded">
+                <StackPanel Margin="0,4,0,20">
+                    <TextBlock Text="{DynamicResource Loc.Common.Page.About}" FontSize="24" FontWeight="{DynamicResource AppTextStrongFontWeight}" />
+                    <TextBlock Text="{DynamicResource Loc.About.Header.Subtitle}" Style="{StaticResource AfSettingsRowDescriptionStyle}" Margin="0,4,0,0" />
+                </StackPanel>
 
                 <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.ProjectInfo}" Icon="{ui:SymbolIcon Info24}">
                     <components:SettingsRow

@@ -12,7 +12,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - Remove the current user's startup entry when uninstalling the installation it targets, avoiding a registry value pointing to a deleted executable. Preserve entries targeting a copy in another directory.
 
+### Added
+
+- Add a separate release highlights page for the latest and historical stable releases in simplified Chinese, traditional Chinese, and English, with offline content and retention after refresh failures.
+
 ### Changed
+
+- Move settings categories and group navigation to the top; improve the hierarchy of cards, controls, and descriptions while retaining system theme, accent color, and window materials.
 
 - Generate contributor snapshots in Release CI with paginated API requests, review them alongside version metadata on the isolated branch, and synchronize legacy snapshots through a PR.
 - Move release metadata to an isolated branch: Actions generate manifests from final packages and propose preview updates, with manual stable promotion and compatibility manifest synchronization PRs. Packages are published to GitHub Releases.

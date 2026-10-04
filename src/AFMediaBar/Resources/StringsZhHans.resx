@@ -2086,4 +2086,21 @@
   <data name="Wheel.Line.WithValue" xml:space="preserve">
     <value>{0}：{1}</value>
   </data>
+  <data name="Common.Page.ReleaseHighlights" xml:space="preserve"><value>更新亮点</value></data>
+  <data name="Settings.Navigation.Back" xml:space="preserve"><value>返回</value></data>
+  <data name="ReleaseHighlights.Header.Subtitle" xml:space="preserve"><value>了解最新改进，回顾每个正式版本的变化。</value></data>
+  <data name="ReleaseHighlights.Latest" xml:space="preserve"><value>最新版本</value></data>
+  <data name="ReleaseHighlights.History" xml:space="preserve"><value>历史版本</value></data>
+  <data name="ReleaseHighlights.Refresh" xml:space="preserve"><value>刷新亮点</value></data>
+  <data name="ReleaseHighlights.FullNotes" xml:space="preserve"><value>完整发布说明</value></data>
+  <data name="ReleaseHighlights.CurrentVersion" xml:space="preserve"><value>当前版本</value></data>
+  <data name="ReleaseHighlights.OriginalText" xml:space="preserve"><value>此版本尚未提供当前语言的译文，以下显示官方原文。</value></data>
+  <data name="ReleaseHighlights.NoHighlights" xml:space="preserve"><value>此版本暂未提供更新亮点，可查看完整发布说明。</value></data>
+  <data name="ReleaseHighlights.Status.Bundled" xml:space="preserve"><value>正在显示程序内置的版本亮点。</value></data>
+  <data name="ReleaseHighlights.Status.Cached" xml:space="preserve"><value>正在显示缓存内容，最近获取：{0}。</value></data>
+  <data name="ReleaseHighlights.Status.Updated" xml:space="preserve"><value>版本亮点已刷新：{0}。</value></data>
+  <data name="ReleaseHighlights.Status.RefreshFailed" xml:space="preserve"><value>暂时无法刷新，仍可浏览已保存的版本亮点。</value></data>
+  <data name="ReleaseHighlights.Status.CacheWriteFailed" xml:space="preserve"><value>已获取最新亮点，但未能保存离线缓存。</value></data>
+  <data name="ReleaseHighlights.Application.Description" xml:space="preserve"><value>查看最新版本和所有历史正式版本的更新亮点。</value></data>
+  <data name="ReleaseHighlights.Application.Open" xml:space="preserve"><value>查看更新亮点</value></data>
 </root>

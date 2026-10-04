@@ -1,148 +1,90 @@
-<ui:FluentWindow
-    x:Class="AFMediaBar.Views.Windows.SettingsWindow"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:local="clr-namespace:AFMediaBar.Views.Windows"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-
-    xmlns:pages="clr-namespace:AFMediaBar.Views.Pages"
-    Title="{Binding ViewModel.ApplicationTitle, Mode=OneWay}"
-    Width="1100"
-    Height="650"
-    d:DataContext="{d:DesignInstance local:SettingsWindow,
-                                     IsDesignTimeCreatable=True}"
-    d:DesignHeight="450"
-    d:DesignWidth="800"
-    ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
-    ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-    ExtendsContentIntoTitleBar="True"
-    FontFamily="{DynamicResource AppTextFontFamily}"
-    FontWeight="{DynamicResource AppTextFontWeight}"
-    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-    Background="Transparent"
-    WindowCornerPreference="Round"
-    WindowStartupLocation="CenterScreen"
-    Loaded="SettingsWindow_OnLoaded"
-    mc:Ignorable="d">
-    <ui:FluentWindow.InputBindings>
-        <KeyBinding
-            Key="F"
-            Command="{Binding ElementName=AutoSuggestBox, Path=FocusCommand}"
-            Modifiers="Control" />
-    </ui:FluentWindow.InputBindings>
+<!-- Settings shell owns navigation and window chrome; business actions stay in their pages. -->
+<ui:FluentWindow x:Class="AFMediaBar.Views.Windows.SettingsWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" xmlns:pages="clr-namespace:AFMediaBar.Views.Pages"
+    Title="{Binding ViewModel.ApplicationTitle}" Width="1100" Height="650" MinWidth="640" MinHeight="460"
+    FontFamily="{DynamicResource AppTextFontFamily}" FontWeight="{DynamicResource AppTextFontWeight}"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}" Background="Transparent"
+    ExtendsContentIntoTitleBar="True" WindowCornerPreference="Round" WindowStartupLocation="CenterScreen"
+    Loaded="SettingsWindow_OnLoaded" SizeChanged="OnShellSizeChanged">
+    <Window.Resources>
+        <Style TargetType="{x:Type ComboBox}" BasedOn="{StaticResource {x:Type ComboBox}}">
+            <Setter Property="Background" Value="{DynamicResource AfSettingsInputBrush}" />
+        </Style>
+        <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource {x:Type TextBox}}">
+            <Setter Property="Background" Value="{DynamicResource AfSettingsInputBrush}" />
+        </Style>
+    </Window.Resources>
+    <Window.InputBindings><KeyBinding Key="F" Modifiers="Control" Command="{Binding FocusSearchCommand}" /></Window.InputBindings>
     <Grid>
-        <ui:TitleBar
-            x:Name="TitleBar"
-            Title="{Binding ViewModel.ApplicationTitle}"
-            Grid.Row="0"
-            CloseWindowByDoubleClickOnIcon="True">
-            <ui:TitleBar.Icon>
-                <!--
-                    标题栏图标随主题换一套：两套图形（深色/白色）由 AppIconPolicy 按生效主题挑，主题变化时窗口重新发布
-                    这个属性。写死一张图会在另一种主题上变成看不见的深色块或白块。
-                    The title bar icon swaps with the theme: AppIconPolicy picks one of the two artworks (dark and white) for the active
-                    theme and the window republishes this property when it changes. A hardcoded image turns into an invisible dark or
-                    white square on the other theme.
-                -->
-                <ui:ImageIcon Source="{Binding TitleBarIconSource}" />
-            </ui:TitleBar.Icon>
-        </ui:TitleBar>
-        <ui:NavigationView
-            x:Name="RootNavigation"
-            Background="Transparent"
-            FrameMargin="0"
-            IsBackButtonVisible="Visible"
-            IsPaneToggleVisible="true"
-            PaneDisplayMode="Left"
-            IsFooterSeparatorVisible="false"
-            OpenPaneLength="240"
-            TransitionDuration="180"
-            TitleBar="{Binding ElementName=TitleBar, Mode=OneWay}">
-            <ui:NavigationView.AutoSuggestBox>
-                <!--
-                    搜索框的候选项由设置窗口在 TextChanged 里按 SettingsSearchIndex 填充，
-                    因此可以搜到分组名与常见同义词，而不只是导航项文案。
-                    The suggestion list is filled by the settings window from SettingsSearchIndex on TextChanged, so
-                    group names and common synonyms are searchable, not just navigation labels.
-                -->
-                <ui:AutoSuggestBox
-                    x:Name="AutoSuggestBox"
-                    PlaceholderText="{DynamicResource Loc.Settings.Search.Placeholder}"
-                    SuggestionChosen="OnSearchSuggestionChosen"
-                    TextChanged="OnSearchTextChanged">
-                    <ui:AutoSuggestBox.Icon>
-                        <ui:IconSourceElement>
-                            <ui:SymbolIconSource Symbol="Search24" />
-                        </ui:IconSourceElement>
-                    </ui:AutoSuggestBox.Icon>
-                    <!--
-                        两行候选：主行是「页面 › 分组」，副行说明该分组能改什么。
-                        命中只到分组粒度，因此副行是用户确认“是不是这个”的唯一线索。
-                        Two-line suggestions: the primary line is "page › group" and the secondary line says what
-                        the group can change. A hit resolves to a group, so the secondary line is the only clue that
-                        confirms it is the right one.
-                    -->
-                    <ui:AutoSuggestBox.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Margin="0,-2">
+        <Grid.RowDefinitions><RowDefinition Height="48" /><RowDefinition Height="44" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+        <ui:TitleBar x:Name="TitleBar" Title="{Binding ViewModel.ApplicationTitle}" CloseWindowByDoubleClickOnIcon="True">
+            <ui:TitleBar.Icon><ui:ImageIcon Source="{Binding TitleBarIconSource}" /></ui:TitleBar.Icon>
+            <ui:TitleBar.TrailingContent>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
+                    <ui:Button x:Name="SearchToggle" Click="OnFocusSearch" Icon="{ui:SymbolIcon Search24}"
+                               ToolTip="{DynamicResource Loc.Settings.Search.Placeholder}" Visibility="Collapsed" Margin="0,0,8,0" />
+                    <Grid x:Name="SearchHost" Width="220" VerticalAlignment="Center" Margin="0,0,12,0">
+                        <ui:AutoSuggestBox x:Name="AutoSuggestBox" PlaceholderText="{DynamicResource Loc.Settings.Search.Placeholder}"
+                                           SuggestionChosen="OnSearchSuggestionChosen" TextChanged="OnSearchTextChanged">
+                            <ui:AutoSuggestBox.Icon><ui:IconSourceElement><ui:SymbolIconSource Symbol="Search24" /></ui:IconSourceElement></ui:AutoSuggestBox.Icon>
+                            <ui:AutoSuggestBox.ItemTemplate><DataTemplate><StackPanel Margin="0,-2">
                                 <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
-                                <TextBlock
-                                    FontSize="11"
-                                    Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                                    Text="{Binding Subtitle}"
-                                    TextTrimming="CharacterEllipsis" />
-                            </StackPanel>
-                        </DataTemplate>
-                    </ui:AutoSuggestBox.ItemTemplate>
-                </ui:AutoSuggestBox>
-            </ui:NavigationView.AutoSuggestBox>
-
+                                <TextBlock FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="{Binding Subtitle}" TextWrapping="Wrap" />
+                            </StackPanel></DataTemplate></ui:AutoSuggestBox.ItemTemplate>
+                        </ui:AutoSuggestBox>
+                    </Grid>
+                    <ToggleButton x:Name="UpdateNoticeNavItem" Click="UpdateNoticeNavItem_Click" Tag="{x:Type pages:ReleaseHighlightsPage}"
+                                  Content="{DynamicResource Loc.Common.Page.ReleaseHighlights}" Style="{StaticResource AfSettingsUtilityTabStyle}" />
+                    <ToggleButton x:Name="AboutTab" Click="OnPrimaryNavigationClick" Tag="{x:Type pages:AboutPage}"
+                                  Content="{DynamicResource Loc.Common.Page.About}" Style="{StaticResource AfSettingsUtilityTabStyle}" />
+                </StackPanel>
+            </ui:TitleBar.TrailingContent>
+        </ui:TitleBar>
+        <Grid Grid.Row="1" Margin="28,0" MaxWidth="900">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+            <ui:Button x:Name="BackButton" Click="OnGoBack" Icon="{ui:SymbolIcon ArrowLeft24}" IsEnabled="False" Margin="0,0,8,0"
+                       ToolTip="{DynamicResource Loc.Settings.Navigation.Back}" />
+            <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" CanContentScroll="False">
+                <StackPanel x:Name="PrimaryTabs" Orientation="Horizontal">
+                    <ToggleButton Content="{DynamicResource Loc.Common.Page.DisplayModes}" Tag="{x:Type pages:DisplayModesPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}" />
+                    <ToggleButton Content="{DynamicResource Loc.Common.Page.Appearance}" Tag="{x:Type pages:AppearancePage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}" />
+                    <ToggleButton Content="{DynamicResource Loc.Common.Page.Interaction}" Tag="{x:Type pages:InteractionPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}" />
+                    <ToggleButton Content="{DynamicResource Loc.Common.Page.Lyrics}" Tag="{x:Type pages:LyricsPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}" />
+                    <ToggleButton Content="{DynamicResource Loc.Common.Page.Components}" Tag="{x:Type pages:ComponentsSettingsPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}" />
+                    <ToggleButton Content="{DynamicResource Loc.Common.Page.MediaAndNotifications}" Tag="{x:Type pages:ExtraFeaturesPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}" />
+                    <ToggleButton Content="{DynamicResource Loc.Common.Page.Application}" Tag="{x:Type pages:ApplicationPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}" />
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+        <!-- The existing page provider and journal still own navigation; these menu items are not presented. -->
+        <ui:NavigationView x:Name="RootNavigation" Grid.Row="2" PaneDisplayMode="Top" IsPaneVisible="False" IsFooterSeparatorVisible="False"
+                           IsBackButtonVisible="Collapsed" IsPaneToggleVisible="False" FrameMargin="0" Background="Transparent">
+            <ui:NavigationView.Template>
+                <!-- Keep the library page presenter and journal without its built-in pane or content surface. -->
+                <ControlTemplate TargetType="{x:Type ui:NavigationView}">
+                    <Grid Background="Transparent">
+                        <ItemsControl x:Name="PART_MenuItemsItemsControl" Visibility="Collapsed" />
+                        <ItemsControl x:Name="PART_FooterMenuItemsItemsControl" Visibility="Collapsed" />
+                        <ui:NavigationViewContentPresenter x:Name="PART_NavigationViewContentPresenter"
+                            Padding="{TemplateBinding Padding}" Transition="{TemplateBinding Transition}" TransitionDuration="{TemplateBinding TransitionDuration}" />
+                        <ContentPresenter Content="{TemplateBinding ContentOverlay}" />
+                    </Grid>
+                </ControlTemplate>
+            </ui:NavigationView.Template>
             <ui:NavigationView.MenuItems>
-                <!-- 页面按显示、外观、交互、歌词、组件和应用排列；媒体来源与通知仍保留独立入口。 -->
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.DisplayModes}" Icon="{ui:SymbolIcon Desktop24}"
-                                       TargetPageType="{x:Type pages:DisplayModesPage}" />
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Appearance}"
-                                       Icon="{ui:SymbolIcon PaintBrush24}"
-                                       TargetPageType="{x:Type pages:AppearancePage}" />
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Interaction}" Icon="{ui:SymbolIcon HandDraw24}"
-                                       TargetPageType="{x:Type pages:InteractionPage}" />
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Lyrics}" Icon="{ui:SymbolIcon TextQuote24}"
-                                       TargetPageType="{x:Type pages:LyricsPage}" />
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Components}" Icon="{ui:SymbolIcon DataHistogram24}"
-                                       TargetPageType="{x:Type pages:ComponentsSettingsPage}" />
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.MediaAndNotifications}" Icon="{ui:SymbolIcon PuzzlePiece24}"
-                                       TargetPageType="{x:Type pages:ExtraFeaturesPage}" />
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Application}"
-                                       Icon="{ui:SymbolIcon Settings24}"
-                                       TargetPageType="{x:Type pages:ApplicationPage}" />
+                <ui:NavigationViewItem TargetPageType="{x:Type pages:DisplayModesPage}" />
+                <ui:NavigationViewItem TargetPageType="{x:Type pages:AppearancePage}" />
+                <ui:NavigationViewItem TargetPageType="{x:Type pages:InteractionPage}" />
+                <ui:NavigationViewItem TargetPageType="{x:Type pages:LyricsPage}" />
+                <ui:NavigationViewItem TargetPageType="{x:Type pages:ComponentsSettingsPage}" />
+                <ui:NavigationViewItem TargetPageType="{x:Type pages:ExtraFeaturesPage}" />
+                <ui:NavigationViewItem TargetPageType="{x:Type pages:ApplicationPage}" />
+                <ui:NavigationViewItem TargetPageType="{x:Type pages:AboutPage}" />
+                <ui:NavigationViewItem TargetPageType="{x:Type pages:ReleaseHighlightsPage}" />
             </ui:NavigationView.MenuItems>
-
-            <ui:NavigationView.FooterMenuItems>
-                <!--
-                    更新提示：它排在「关于」上方，只在确有可用版本时出现（窗口代码后置按视图模型的纯数据
-                    属性显示或隐藏它）。点击它跳到「应用」，亮点、进度与全部更新操作都在那一页。
-                    Update notice: it sits above "about" and only appears when a newer version really exists; the
-                    window's code-behind shows or hides it from the view model's plain-data property. Clicking it lands
-                    on "application", where the highlights, progress and every update action live.
-                -->
-                <ui:NavigationViewItem
-                    x:Name="UpdateNoticeNavItem"
-                    Click="UpdateNoticeNavItem_Click"
-                    Content="{Binding ViewModel.UpdateNoticeTitle}"
-                    Icon="{ui:SymbolIcon ArrowSync24}"
-                    Visibility="Collapsed" />
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.About}" Icon="{ui:SymbolIcon QuestionCircle24}"
-                                       TargetPageType="{x:Type pages:AboutPage}" />
-            </ui:NavigationView.FooterMenuItems>
-
-            <ui:NavigationView.ContentOverlay>
-                <Grid>
-                    <ui:SnackbarPresenter x:Name="SnackbarPresenter" />
-                </Grid>
-            </ui:NavigationView.ContentOverlay>
+            <ui:NavigationView.ContentOverlay><ui:SnackbarPresenter x:Name="SnackbarPresenter" /></ui:NavigationView.ContentOverlay>
         </ui:NavigationView>
-        <ui:ContentDialogHost x:Name="RootContentDialog" Grid.Row="0" />
+        <ui:ContentDialogHost x:Name="RootContentDialog" Grid.RowSpan="3" />
     </Grid>
 </ui:FluentWindow>

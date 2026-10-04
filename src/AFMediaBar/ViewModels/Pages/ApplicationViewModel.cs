@@ -49,9 +49,6 @@ namespace AFMediaBar.ViewModels.Pages
         [ObservableProperty]
         private bool _hasUpdate;
 
-        [ObservableProperty]
-        private bool _hasHighlights;
-
         /// <summary>
         /// 是否在更新区之外单独显示一条状态说明（检查本身失败、没有清单可展示时）。
         /// Whether a standalone status callout is shown outside the update block, which happens when the check itself
@@ -90,12 +87,6 @@ namespace AFMediaBar.ViewModels.Pages
         /// <summary>当前是否确实记录着"已跳过某个版本"，用于决定"取消跳过"是否可点击。/ Whether a skipped version is actually recorded, which decides if "clear skip" is clickable.</summary>
         [ObservableProperty]
         private bool _hasSkippedVersion;
-
-        /// <summary>
-        /// 更新亮点条目（清单的 <c>changelog</c>）。
-        /// Update highlight entries, taken from the manifest's <c>changelog</c>.
-        /// </summary>
-        public ObservableCollection<string> HighlightEntries { get; } = [];
 
         /// <summary>
         /// 创建应用页视图模型并订阅更新状态。两者都是单例，因此订阅与进程同寿命。
@@ -341,13 +332,6 @@ namespace AFMediaBar.ViewModels.Pages
             HighlightTitle = state.Manifest?.Title ?? (state.AvailableVersion is { } version ? $"AF Media Bar {version}" : string.Empty);
             HighlightDate = state.Manifest?.ReleaseDate is { } date ? date.ToString("yyyy-MM-dd") : string.Empty;
 
-            HighlightEntries.Clear();
-            foreach (var entry in state.Manifest?.Changelog ?? [])
-            {
-                HighlightEntries.Add(entry);
-            }
-
-            HasHighlights = HighlightEntries.Count > 0;
         }
     }
 }

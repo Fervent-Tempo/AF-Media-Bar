@@ -8,6 +8,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
+using CommunityToolkit.Mvvm.Input;
 using Wpf.Ui;
 using Wpf.Ui.Abstractions;
 using Wpf.Ui.Controls;
@@ -41,9 +44,13 @@ namespace AFMediaBar.Views.Windows
                 [SettingsPageKey.Appearance] = typeof(AppearancePage),
                 [SettingsPageKey.Application] = typeof(ApplicationPage),
                 [SettingsPageKey.About] = typeof(AboutPage),
+                [SettingsPageKey.ReleaseHighlights] = typeof(ReleaseHighlightsPage),
             };
 
         public SettingsWindowViewModel ViewModel { get; }
+
+        /// <summary>Focuses the search surface, including compact-window search.</summary>
+        public ICommand FocusSearchCommand { get; }
 
         /// <summary>
         /// 标题栏图标，随主题在两套图形之间切换。
@@ -67,6 +74,7 @@ namespace AFMediaBar.Views.Windows
         )
         {
             ViewModel = viewModel;
+            FocusSearchCommand = new RelayCommand(FocusSearch);
             _appIconService = appIconService;
             DataContext = this;
 
@@ -79,20 +87,22 @@ namespace AFMediaBar.Views.Windows
                 MotionPolicy.ResolveCurrent().StandardDuration.TotalMilliseconds);
 
             navigationService.SetNavigationControl(RootNavigation);
+            RootNavigation.Navigated += (_, _) => Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(SyncNavigation));
+            AutoSuggestBox.LostKeyboardFocus += (_, _) => { if (ActualWidth < 980 && !AutoSuggestBox.IsKeyboardFocusWithin && !AutoSuggestBox.IsSuggestionListOpen) { SearchHost.Visibility = Visibility.Collapsed; SearchToggle.Visibility = Visibility.Visible; } };
 
             // 落地页：窗口每次打开都直接落在「显示模式」。
             //
             // 不发起导航时内容区是空的：导航控件在收到第一个导航请求之前不会创建任何页面，用户打开设置看到的就是一片
             // 空白。这里挂在"窗口变为可见"而不是构造函数上——构造函数早于 Show，那时导航视图还没有内容宿主，立刻导航
             // 等于什么都没发生（MainWindow 里的更新跳转也踩过这一条）；再排到 Loaded 之后，等布局完成。
-            // 由打开方发起的导航（例如更新提示要落在「应用」）排在本次之后，因此仍然由它决定最终页面。
+            // 由打开方发起的导航（例如更新提示要落在「更新亮点」）排在本次之后，因此仍然由它决定最终页面。
             // Landing page: the window lands straight on "display modes" every time it opens.
             //
             // Without a navigation request the content area is empty: the navigation control creates no page until the first request
             // arrives, so opening the settings shows nothing at all. This hangs off "window became visible" rather than the
             // constructor, because the constructor runs before Show, when the navigation view has no content host yet and navigating
             // does nothing (the update jump in MainWindow hit the same thing); the call is then queued behind Loaded so layout has
-            // finished. A navigation issued by whoever opened the window — the update notice lands on "application" — is queued after
+            // finished. A navigation issued by whoever opened the window — the update notice lands on "release highlights" — is queued after
             // this one and therefore still decides the final page.
             IsVisibleChanged += OnVisibilityChangedForLandingPage;
 
@@ -161,7 +171,9 @@ namespace AFMediaBar.Views.Windows
                 return;
             }
 
-            var hits = SettingsSearchPolicy.Search(sender.Text, SettingsSearchIndex.Entries);
+            // The control filters OriginalItemsSource after raising this event unless it is handled.
+            args.Handled = true;
+            var hits = SettingsSearchPolicy.Search(args.Text, SettingsSearchIndex.Entries);
             var suggestions = new List<SettingsSearchSuggestion>(hits.Count);
             foreach (var hit in hits)
             {
@@ -187,6 +199,7 @@ namespace AFMediaBar.Views.Windows
                 return;
             }
 
+            if (ActualWidth < 980) { SearchHost.Visibility = Visibility.Collapsed; SearchToggle.Visibility = Visibility.Visible; }
             var hit = suggestion.Hit;
             if (!Navigate(pageType))
             {
@@ -261,42 +274,40 @@ namespace AFMediaBar.Views.Windows
         #region Update notice
 
         /// <summary>
-        /// 更新提示只在确有可用版本时出现。导航项的内容与徽章都是控件，而视图模型只发布纯数据，
-        /// 因此由窗口按 <see cref="SettingsWindowViewModel.HasUpdateAvailable"/> 安装或移除它们。
+        /// 亮点入口始终可用；有新版本时使用视图模型发布的版本提示。
         ///
         /// 视图模型是单例、窗口是 Transient，因此订阅必须在关闭时退订，否则反复开关设置窗口会累积处理器。
-        /// The update notice only appears when a newer version really exists. Both the navigation item's content and
-        /// its badge are controls while the view model publishes plain data, so the window installs or removes them
-        /// according to <see cref="SettingsWindowViewModel.HasUpdateAvailable"/>.
+        /// The highlights entry is always available; a newer version changes its notice.
         ///
         /// The view model is a singleton and the window is transient, so the subscription must be released on close;
         /// otherwise opening the settings repeatedly would accumulate handlers.
         /// </summary>
         private void UpdateNoticeNavItem_Click(object sender, RoutedEventArgs e)
         {
-            // 提示行本身不是页面，因此点击它等同于导航到「应用」——拆分之后更新操作全部留在那一页。
-            // The notice row is not a page, so clicking it simply navigates to "application", where every update action lives after the split.
-            Navigate(typeof(ApplicationPage));
+            // 更新入口只展示版本亮点；下载和安装仍由应用页负责。
+            Navigate(typeof(ReleaseHighlightsPage));
         }
 
         private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e.PropertyName is nameof(SettingsWindowViewModel.HasUpdateAvailable) or null)
+            if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName is nameof(SettingsWindowViewModel.HasUpdateAvailable) or nameof(SettingsWindowViewModel.UpdateNoticeTitle) or nameof(SettingsWindowViewModel.UpdateNoticeText))
             {
                 ApplyUpdateNotice();
+                if (string.IsNullOrEmpty(e.PropertyName))
+                    Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(SyncNavigation));
             }
         }
 
         private void ApplyUpdateNotice()
         {
-            var visible = ViewModel.HasUpdateAvailable;
-            UpdateNoticeNavItem.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
-
-            // 徽章只是强调；即使它不渲染，提示行本身也仍然带着版本号。
-            // The badge is emphasis only: even if it does not render, the row itself still carries the version.
-            UpdateNoticeNavItem.InfoBadge = visible
-                ? new InfoBadge { Severity = InfoBadgeSeverity.Attention }
-                : null;
+            UpdateNoticeNavItem.Content = ViewModel.HasUpdateAvailable
+                ? ViewModel.UpdateNoticeTitle
+                : Translations.Get("Common.Page.ReleaseHighlights");
+            UpdateNoticeNavItem.ToolTip = ViewModel.HasUpdateAvailable
+                ? ViewModel.UpdateNoticeText
+                : Translations.Get("ReleaseHighlights.Header.Subtitle");
+            UpdateNoticeNavItem.SetResourceReference(Control.ForegroundProperty, ViewModel.HasUpdateAvailable
+                ? "AfAccentBrush" : "TextFillColorSecondaryBrush");
         }
 
         private void SettingsWindow_ClosedForUpdateNotice(object? sender, EventArgs e)
@@ -315,7 +326,51 @@ namespace AFMediaBar.Views.Windows
         public INavigationView GetNavigation() => RootNavigation;
 
         /// <summary>导航到指定页面类型。/ Navigates to the specified page type.</summary>
-        public bool Navigate(Type pageType) => RootNavigation.Navigate(pageType);
+        public bool Navigate(Type pageType)
+        {
+            var succeeded = RootNavigation.Navigate(pageType);
+            if (succeeded) _currentPageType = pageType;
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(SyncNavigation));
+            return succeeded;
+        }
+
+        private void OnPrimaryNavigationClick(object sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton { Tag: Type pageType }) Navigate(pageType);
+        }
+
+        private void OnGoBack(object sender, RoutedEventArgs e) => RootNavigation.GoBack();
+
+        private void SyncNavigation()
+        {
+            var pageType = FindDescendant<Page>(RootNavigation)?.GetType() ?? _currentPageType;
+            foreach (var tab in PrimaryTabs.Children.OfType<ToggleButton>().Concat(new[] { AboutTab, UpdateNoticeNavItem }))
+            {
+                tab.IsChecked = Equals(tab.Tag, pageType);
+                if (tab.IsChecked == true) tab.BringIntoView();
+            }
+            BackButton.IsEnabled = RootNavigation.CanGoBack;
+        }
+
+        private void OnShellSizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (SearchHost is null) return;
+            var compact = ActualWidth < 980;
+            SearchToggle.Visibility = compact ? Visibility.Visible : Visibility.Collapsed;
+            SearchHost.Width = compact ? 180 : 220;
+            SearchHost.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(SyncNavigation));
+        }
+
+        private void OnFocusSearch(object sender, RoutedEventArgs e) => FocusSearch();
+
+        private void FocusSearch()
+        {
+            SearchHost.Visibility = Visibility.Visible;
+            if (ActualWidth < 980) SearchToggle.Visibility = Visibility.Collapsed;
+            AutoSuggestBox.Focus();
+            AutoSuggestBox.FocusCommand.Execute(null);
+        }
 
         /// <summary>设置导航页面提供器。/ Sets the navigation page provider.</summary>
         public void SetPageService(INavigationViewPageProvider navigationViewPageProvider) =>

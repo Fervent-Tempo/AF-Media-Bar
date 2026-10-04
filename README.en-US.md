@@ -65,6 +65,10 @@ NetEase Cloud Music, QQ Music, Spotify, browsers, and other apps can be discover
 
 ### Updating
 
+Settings uses two navigation rows: categories above and groups within the current page below. The top-right What’s new entry shows the latest and historical stable release highlights and displays a version notice when an update is available. Checking, downloading, skipping, and installing updates remain on the Application page.
+
+The highlights page shows a bundled snapshot or local cache first, then refreshes on demand when opened (24-hour cache lifetime). Failed refreshes retain readable content. Maintainers review summaries in simplified Chinese, traditional Chinese, and English before publishing the separate catalogue; see [Release highlights catalogue](docs/release-highlights.md).
+
 About 20 seconds after launch the app reads the stable manifest (`release/latest.json`) on the isolated `release-metadata` branch. When a newer version exists, the tray icon shows one system notification whose click opens the Application page. Release Actions generate metadata automatically; review and stable promotion control when it becomes active. If `main/docs/latest.json` is retained, synchronization PRs update it for older clients. See the [Release CI](.github/workflows/release.yml).
 
 Release CI also generates contributor snapshots, reviewed alongside version manifests at `release-metadata/release/contributors.json`. The app still tries the GitHub contributors API first and falls back to that snapshot; synchronization PRs maintain `docs/contributors.json` on main for compatibility. The sponsor list, `docs/sponsors.json`, remains manually maintained on main.
@@ -86,6 +90,7 @@ Remove-Item "$env:LOCALAPPDATA\AFMediaBar" -Recurse -Force
 ## Privacy and Security
 
 - No telemetry, ads, account system, or analytics; media information, system metrics, and volume operations are all handled locally.
+- The release highlights page requests `release-metadata/release/highlights.json` from `raw.githubusercontent.com` and jsDelivr on demand, without accessing the GitHub Releases API.
 - The update check requests two public manifest endpoints (`release-metadata/release/latest.json` on `raw.githubusercontent.com` and jsDelivr).
 - Lyrics search QQ Music and request its online lyrics first; a result scoring at least 75 is accepted immediately. Otherwise QQ results are retained while fallbacks are queried in parallel. An enabled lyric source matching the current player wins regardless of score; if it is disabled, fails, or returns no result, the highest score wins, with ties favoring QQ. Online searches use track and artist metadata; a source may make multiple requests for search and lyric retrieval. Sources can be disabled in Settings.
 - The app runs with the current user's rights and requests no elevation. Report security issues privately as described in [SECURITY.md](SECURITY.md).

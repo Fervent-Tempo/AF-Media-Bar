@@ -172,6 +172,9 @@ namespace AFMediaBar
                 services.AddSingleton<UpdatePackageDownloader>();
                 services.AddSingleton<InstalledApplicationProbe>();
                 services.AddSingleton<UpdateService>();
+                services.AddSingleton<ReleaseHighlightsService>();
+                services.AddSingleton<ReleaseHighlightsViewModel>();
+                services.AddSingleton<ReleaseHighlightsPage>();
 
                 // 导航服务（页面导航，不依赖具体窗口）Navigation service (page navigation, window-independent)
                 services.AddSingleton<INavigationService, NavigationService>();
@@ -512,6 +515,10 @@ namespace AFMediaBar
             Resources["AfOnAccentBrush"] = CreateFrozenBrush(accent.OnAccent);
 
             var dark = theme == ApplicationTheme.Dark || theme == ApplicationTheme.HighContrast && SystemParameters.HighContrast;
+            var highContrast = SystemParameters.HighContrast;
+            Resources["AfSettingsCardBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(dark ? Color.FromRgb(44, 44, 44) : Colors.White);
+            Resources["AfSettingsInputBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(dark ? Color.FromRgb(54, 54, 54) : Color.FromRgb(247, 247, 247));
+            Resources["AfSettingsBorderBrush"] = highContrast ? SystemColors.WindowTextBrush : CreateFrozenBrush(dark ? Color.FromRgb(72, 72, 72) : Color.FromRgb(216, 216, 216));
             // Context menus always use an opaque Fluent solid surface. Native
             // Mica/Acrylic on Popup HWNDs leaves transparent hit-test regions
             // that can pass clicks through to the window behind the menu.

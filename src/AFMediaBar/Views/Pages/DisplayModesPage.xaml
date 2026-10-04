@@ -111,6 +111,11 @@
                 x:Name="PageRoot"
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
                 Loaded="OnPageLoaded">
+                <StackPanel Margin="0,4,0,20">
+                    <TextBlock Text="{DynamicResource Loc.Common.Page.DisplayModes}" FontSize="24" FontWeight="{DynamicResource AppTextStrongFontWeight}" />
+                    <TextBlock Text="{DynamicResource Loc.DisplayModes.Header.Subtitle}" Style="{StaticResource AfSettingsRowDescriptionStyle}" Margin="0,4,0,0" />
+                    <TextBlock Text="{Binding ViewModel.HostingModeText}" Foreground="{DynamicResource AfAccentBrush}" FontSize="12" Margin="0,6,0,0" />
+                </StackPanel>
 
                 <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.ChooseDisplayMode}" Icon="{ui:SymbolIcon WindowConsole20}">
                     <StackPanel>

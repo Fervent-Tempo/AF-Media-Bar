@@ -148,9 +148,9 @@
         <Setter Property="Padding" Value="16,13" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
-        <Setter Property="Background" Value="{DynamicResource CardBackground}" />
+        <Setter Property="Background" Value="{DynamicResource AfSettingsCardBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource CardForeground}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AfSettingsBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="8" />
         <Setter Property="SnapsToDevicePixels" Value="True" />
@@ -180,11 +180,10 @@
                                 Height="32"
                                 Margin="0,0,14,0"
                                 VerticalAlignment="Center"
-                                TextElement.Foreground="{DynamicResource AfAccentBrush}">
+                                TextElement.Foreground="{DynamicResource TextFillColorSecondaryBrush}">
                                 <Border
-                                    Background="{DynamicResource AfAccentBrush}"
-                                    CornerRadius="8"
-                                    Opacity="0.14" />
+                                    Background="{DynamicResource SubtleFillColorSecondaryBrush}"
+                                    CornerRadius="8" />
                                 <ContentControl
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
@@ -256,7 +255,7 @@
                             <Setter TargetName="IconChip" Property="Margin" Value="0,0,12,0" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Opacity" Value="0.5" />
+                            <Setter TargetName="ControlHost" Property="Opacity" Value="0.45" />
                         </Trigger>
                         <MultiTrigger>
                             <MultiTrigger.Conditions>
@@ -300,9 +299,9 @@
     <Style x:Key="AfSettingsExpanderStyle" TargetType="{x:Type ui:CardExpander}">
         <Setter Property="Margin" Value="{StaticResource AfSettingsRowGap}" />
         <Setter Property="Padding" Value="16,13" />
-        <Setter Property="Background" Value="{DynamicResource CardBackground}" />
+        <Setter Property="Background" Value="{DynamicResource AfSettingsCardBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource CardForeground}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AfSettingsBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="8" />
         <Setter Property="SnapsToDevicePixels" Value="True" />
@@ -443,7 +442,7 @@
                         <TextBlock
                             x:Name="TabText"
                             VerticalAlignment="Center"
-                            FontSize="12.5"
+                            FontSize="13"
                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                             Text="{TemplateBinding Content}" />
                     </Border>
@@ -480,142 +479,25 @@
 
     <Style TargetType="{x:Type components:SettingsGroupStrip}">
         <Setter Property="Focusable" Value="False" />
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="{x:Type components:SettingsGroupStrip}">
-                    <StackPanel Background="Transparent">
-                        <Grid Margin="0,0,0,10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-
-                            <Grid
-                                x:Name="PageIcon"
-                                Width="34"
-                                Height="34"
-                                Margin="0,0,12,0"
-                                VerticalAlignment="Top"
-                                TextElement.Foreground="{DynamicResource AfAccentBrush}">
-                                <Border
-                                    Background="{DynamicResource AfAccentBrush}"
-                                    CornerRadius="9"
-                                    Opacity="0.16" />
-                                <ContentControl
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                    Content="{TemplateBinding PageIcon}"
-                                    Focusable="False"
-                                    KeyboardNavigation.IsTabStop="False" />
-                            </Grid>
-
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                <TextBlock
-                                    FontSize="24"
-                                    FontWeight="{DynamicResource AppTextStrongFontWeight}"
-                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                    Text="{TemplateBinding Title}" />
-                                <TextBlock
-                                    x:Name="PageSubtitle"
-                                    Margin="0,3,0,0"
-                                    FontSize="12"
-                                    LineHeight="17"
-                                    LineStackingStrategy="BlockLineHeight"
-                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                    Text="{TemplateBinding Subtitle}"
-                                    TextWrapping="Wrap" />
-                            </StackPanel>
-
-                            <ContentControl
-                                x:Name="PageStatus"
-                                Grid.Column="2"
-                                Margin="12,4,0,0"
-                                VerticalAlignment="Top"
-                                Style="{StaticResource AfSettingsChipAccentStyle}"
-                                Content="{TemplateBinding StatusText}" />
-                        </Grid>
-
-                        <Grid>
-                            <ItemsControl
-                                x:Name="PART_Tabs"
-                                Focusable="False"
-                                ItemsSource="{Binding Groups, RelativeSource={RelativeSource TemplatedParent}}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <StackPanel Orientation="Horizontal" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Button
-                                            Command="{Binding JumpCommand}"
-                                            CommandParameter="{Binding}"
-                                            Content="{Binding Name}"
-                                            Style="{StaticResource AfSettingsGroupTabStyle}" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <Border
-                                x:Name="PART_Indicator"
-                                Width="0"
-                                Height="2"
-                                Margin="0,0,0,1"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Bottom"
-                                Background="{DynamicResource AfAccentBrush}"
-                                CornerRadius="1">
-                                <Border.RenderTransform>
-                                    <TranslateTransform X="0" />
-                                </Border.RenderTransform>
-                            </Border>
-                        </Grid>
-
-                        <Border
-                            x:Name="PART_Progress"
-                            Height="2"
-                            Margin="0,2,0,0"
-                            HorizontalAlignment="Stretch"
-                            Background="{DynamicResource AfAccentBrush}"
-                            Opacity="0.5"
-                            RenderTransformOrigin="0,0.5">
-                            <Border.RenderTransform>
-                                <ScaleTransform ScaleX="0" ScaleY="1" />
-                            </Border.RenderTransform>
+        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="{x:Type components:SettingsGroupStrip}">
+            <StackPanel Background="Transparent">
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" CanContentScroll="False">
+                    <Grid MinHeight="36">
+                        <ItemsControl x:Name="PART_Tabs" Focusable="False" ItemsSource="{Binding Groups, RelativeSource={RelativeSource TemplatedParent}}">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate><DataTemplate>
+                                <Button Command="{Binding JumpCommand}" CommandParameter="{Binding}" Content="{Binding Name}" Style="{StaticResource AfSettingsGroupTabStyle}" />
+                            </DataTemplate></ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Border x:Name="PART_Indicator" Width="0" Height="2" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                                Background="{DynamicResource AfAccentBrush}" CornerRadius="1">
+                            <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
                         </Border>
-
-                        <!--
-                            滚动分隔线：静止在页面顶部时完全不可见（透明度 0），一旦开始滚动就淡入。
-                            这样页头在亚克力下没有任何永久性的实色块，只在确实有内容被滚上去时才提示分隔。
-                            Scroll divider: invisible at the top of the page (opacity 0) and faded in as soon as
-                            scrolling starts. The header therefore never paints a permanent solid block over
-                            acrylic, and only signals a boundary when content really has scrolled away above.
-                        -->
-                        <Border
-                            x:Name="PART_Divider"
-                            Height="1"
-                            Margin="0,6,0,0"
-                            HorizontalAlignment="Stretch"
-                            Background="{DynamicResource DividerStrokeColorDefaultBrush}"
-                            Opacity="0" />
-                    </StackPanel>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="Subtitle" Value="">
-                            <Setter TargetName="PageSubtitle" Property="Visibility" Value="Collapsed" />
-                        </Trigger>
-                        <Trigger Property="StatusText" Value="">
-                            <Setter TargetName="PageStatus" Property="Visibility" Value="Collapsed" />
-                        </Trigger>
-                        <Trigger Property="StatusTone" Value="Neutral">
-                            <Setter TargetName="PageStatus" Property="Style" Value="{StaticResource AfSettingsChipNeutralStyle}" />
-                        </Trigger>
-                        <Trigger Property="StatusTone" Value="Attention">
-                            <Setter TargetName="PageStatus" Property="Style" Value="{StaticResource AfSettingsChipAttentionStyle}" />
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
+                    </Grid>
+                </ScrollViewer>
+                <Border x:Name="PART_Divider" Height="1" Background="{DynamicResource DividerStrokeColorDefaultBrush}" Opacity="0" />
+            </StackPanel>
+        </ControlTemplate></Setter.Value></Setter>
     </Style>
 
     <!--

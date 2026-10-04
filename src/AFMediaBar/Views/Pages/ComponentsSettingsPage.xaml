@@ -70,6 +70,10 @@
                 x:Name="PageRoot"
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
                 Loaded="OnPageLoaded">
+                <StackPanel Margin="0,4,0,20">
+                    <TextBlock Text="{DynamicResource Loc.Common.Page.Components}" FontSize="24" FontWeight="{DynamicResource AppTextStrongFontWeight}" />
+                    <TextBlock Text="{DynamicResource Loc.Components.Header.Subtitle}" Style="{StaticResource AfSettingsRowDescriptionStyle}" Margin="0,4,0,0" />
+                </StackPanel>
                 <components:SettingsGroup
                     Description="{DynamicResource Loc.Media.RestComponents.Description}"
                     Header="{DynamicResource Loc.Common.Group.RestLayerComponents}"

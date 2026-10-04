@@ -42,6 +42,10 @@
                 x:Name="PageRoot"
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
                 Loaded="OnPageLoaded">
+                <StackPanel Margin="0,4,0,20">
+                    <TextBlock Text="{DynamicResource Loc.Common.Page.MediaAndNotifications}" FontSize="24" FontWeight="{DynamicResource AppTextStrongFontWeight}" />
+                    <TextBlock Text="{DynamicResource Loc.Media.Header.Subtitle}" Style="{StaticResource AfSettingsRowDescriptionStyle}" Margin="0,4,0,0" />
+                </StackPanel>
 
                 <components:SettingsGroup Header="{DynamicResource Loc.Common.MediaSource}" Icon="{ui:SymbolIcon Filter24}">
                     <StackPanel>

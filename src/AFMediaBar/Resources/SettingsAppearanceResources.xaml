@@ -15,7 +15,7 @@
     -->
 
     <!-- 版心与字段宽度 / Content measure and field widths -->
-    <sys:Double x:Key="AfSettingsContentMaxWidth">820</sys:Double>
+    <sys:Double x:Key="AfSettingsContentMaxWidth">900</sys:Double>
     <sys:Double x:Key="AfSettingsFieldWidth">380</sys:Double>
     <sys:Double x:Key="AfSettingsFieldWidthWide">440</sys:Double>
     <!-- 单个下拉框的最小宽度；以前每页各自写 180/190/200/220/320，读起来像随机值。 -->
@@ -34,7 +34,7 @@
         Margins for the pinned header and the scroll area. The header sits outside the scroll container, so it
         carries its own vertical padding; these values used to be repeated in all six pages.
     -->
-    <Thickness x:Key="AfSettingsHeaderMargin">28,20,28,0</Thickness>
+    <Thickness x:Key="AfSettingsHeaderMargin">28,0,28,0</Thickness>
     <Thickness x:Key="AfSettingsScrollMargin">28,14,28,0</Thickness>
 
     <!-- 字段标签列宽：以前交互页在 8 处各写 MinWidth="190"，读起来像随机值。 -->
@@ -56,8 +56,8 @@
     <sys:Double x:Key="AfSettingsRowValueWidth">58</sys:Double>
 
     <Style x:Key="AfSettingsRowTitleStyle" TargetType="{x:Type TextBlock}">
-        <Setter Property="FontSize" Value="14" />
-        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontWeight" Value="{DynamicResource AppTextMediumFontWeight}" />
         <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
@@ -67,7 +67,7 @@
         <Setter Property="LineHeight" Value="17" />
         <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
         <Setter Property="TextWrapping" Value="Wrap" />
-        <Setter Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
         <Setter Property="Margin" Value="0,3,0,0" />
     </Style>
 
@@ -748,6 +748,36 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+
+    <!-- Opaque setting surfaces sit above the selected native material; they do not change taskbar brushes. -->
+    <SolidColorBrush x:Key="AfSettingsCardBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="AfSettingsInputBrush" Color="#F7F7F7" />
+    <SolidColorBrush x:Key="AfSettingsBorderBrush" Color="#D8D8D8" />
+    <Style x:Key="AfSettingsPrimaryTabStyle" TargetType="{x:Type ToggleButton}">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="{DynamicResource AppTextMediumFontWeight}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AfFocusVisualStyle}" />
+        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="{x:Type ToggleButton}">
+            <Grid Background="Transparent" MinHeight="40">
+                <Border x:Name="Surface" Margin="2,4" CornerRadius="6" Background="Transparent" />
+                <ContentPresenter Margin="14,8" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                <Border x:Name="Indicator" Height="3" Margin="14,0,14,0" VerticalAlignment="Bottom"
+                        Background="{DynamicResource AfAccentBrush}" CornerRadius="1.5" Visibility="Collapsed" />
+            </Grid>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsChecked" Value="True">
+                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                    <Setter TargetName="Indicator" Property="Visibility" Value="Visible" />
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" /></Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate></Setter.Value></Setter>
+    </Style>
+    <Style x:Key="AfSettingsUtilityTabStyle" TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource AfSettingsPrimaryTabStyle}">
+        <Setter Property="FontSize" Value="12" />
     </Style>
 
 </ResourceDictionary>

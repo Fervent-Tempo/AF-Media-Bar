@@ -88,6 +88,7 @@ public static class SettingsSearchIndex
         SettingsPageKey.Appearance => "Common.Page.Appearance",
         SettingsPageKey.Application => "Common.Page.Application",
         SettingsPageKey.About => "Common.Page.About",
+        SettingsPageKey.ReleaseHighlights => "Common.Page.ReleaseHighlights",
         _ => string.Empty,
     };
 
@@ -175,6 +176,8 @@ public static class SettingsSearchIndex
     /// </summary>
     private static SettingsSearchEntry[] Build(LocalizationLanguage language) =>
     [
+        Create(SettingsPageKey.ReleaseHighlights, 0, "ReleaseHighlights.Latest", "ReleaseHighlights.Header.Subtitle", language, ["更新亮点", "release notes", "what's new"]),
+        Create(SettingsPageKey.ReleaseHighlights, 1, "ReleaseHighlights.History", "ReleaseHighlights.Application.Description", language, ["历史版本", "version history"]),
         // ---- 显示模式 · 模式选择（四种模式下都可见，因此每种模式各有一条，序号固定为 0）----
         // ---- Display modes, the mode picker, visible in all four modes, so every mode carries it at index 0 ----
         CreateModePicker(SettingsSearchMode.Taskbar, language),

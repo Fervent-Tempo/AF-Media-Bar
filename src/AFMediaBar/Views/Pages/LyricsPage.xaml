@@ -134,6 +134,10 @@
                 x:Name="PageRoot"
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
                 Loaded="OnPageLoaded">
+                <StackPanel Margin="0,4,0,20">
+                    <TextBlock Text="{DynamicResource Loc.Common.Page.Lyrics}" FontSize="24" FontWeight="{DynamicResource AppTextStrongFontWeight}" />
+                    <TextBlock Text="{DynamicResource Loc.Lyrics.Header.Subtitle}" Style="{StaticResource AfSettingsRowDescriptionStyle}" Margin="0,4,0,0" />
+                </StackPanel>
 
                 <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.LyricsDisplay}"
                                           Icon="{ui:SymbolIcon TextQuote24}">

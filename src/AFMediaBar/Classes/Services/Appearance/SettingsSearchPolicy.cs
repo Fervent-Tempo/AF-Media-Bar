@@ -35,6 +35,9 @@ public enum SettingsPageKey
 
     /// <summary>关于页：开发人员、赞助者、赞助入口、开源许可与项目信息。/ About page: developers, sponsors, the support entry, open-source licenses, and project information.</summary>
     About,
+
+    /// <summary>Read-only latest and historical release highlights.</summary>
+    ReleaseHighlights,
 }
 
 /// <summary>

@@ -93,6 +93,7 @@
     <Resource Include="Assets\Sponsor\*.png" />
     <Resource Include="Assets\Sponsor\*.jpg" />
     <Resource Include="Assets\Sponsor\*.jpeg" />
+    <EmbeddedResource Include="Resources\ReleaseHighlights.json" />
     <EmbeddedResource Include="Web\Lyrics\*.html" />
     <EmbeddedResource Include="Web\Lyrics\*.css" />
     <EmbeddedResource Include="Web\Lyrics\*.js" />

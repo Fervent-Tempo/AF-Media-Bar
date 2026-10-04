@@ -2086,4 +2086,21 @@
   <data name="Wheel.Line.WithValue" xml:space="preserve">
     <value>{0}: {1}</value>
   </data>
+  <data name="Common.Page.ReleaseHighlights" xml:space="preserve"><value>What’s new</value></data>
+  <data name="Settings.Navigation.Back" xml:space="preserve"><value>Back</value></data>
+  <data name="ReleaseHighlights.Header.Subtitle" xml:space="preserve"><value>Explore the latest improvements and previous releases.</value></data>
+  <data name="ReleaseHighlights.Latest" xml:space="preserve"><value>Latest release</value></data>
+  <data name="ReleaseHighlights.History" xml:space="preserve"><value>Previous releases</value></data>
+  <data name="ReleaseHighlights.Refresh" xml:space="preserve"><value>Refresh highlights</value></data>
+  <data name="ReleaseHighlights.FullNotes" xml:space="preserve"><value>Full release notes</value></data>
+  <data name="ReleaseHighlights.CurrentVersion" xml:space="preserve"><value>Installed version</value></data>
+  <data name="ReleaseHighlights.OriginalText" xml:space="preserve"><value>A translation is not available. The official original text is shown below.</value></data>
+  <data name="ReleaseHighlights.NoHighlights" xml:space="preserve"><value>Highlights are not available for this release. See the full release notes.</value></data>
+  <data name="ReleaseHighlights.Status.Bundled" xml:space="preserve"><value>Showing the release highlights included with this app.</value></data>
+  <data name="ReleaseHighlights.Status.Cached" xml:space="preserve"><value>Showing cached highlights, last retrieved {0}.</value></data>
+  <data name="ReleaseHighlights.Status.Updated" xml:space="preserve"><value>Release highlights refreshed {0}.</value></data>
+  <data name="ReleaseHighlights.Status.RefreshFailed" xml:space="preserve"><value>Unable to refresh. Saved release highlights are still available.</value></data>
+  <data name="ReleaseHighlights.Status.CacheWriteFailed" xml:space="preserve"><value>Highlights refreshed, but the offline cache could not be saved.</value></data>
+  <data name="ReleaseHighlights.Application.Description" xml:space="preserve"><value>Read highlights from the latest and previous stable releases.</value></data>
+  <data name="ReleaseHighlights.Application.Open" xml:space="preserve"><value>View release highlights</value></data>
 </root>
