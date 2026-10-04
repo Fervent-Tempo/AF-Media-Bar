@@ -100,8 +100,8 @@ namespace AFMediaBar.Components
                 CornerRadius = new CornerRadius(8),
                 Child = content
             };
-            surface.SetResourceReference(Border.BackgroundProperty, "ControlFillColorSecondaryBrush");
-            surface.SetResourceReference(Border.BorderBrushProperty, "ControlStrokeColorDefaultBrush");
+            surface.SetResourceReference(Border.BackgroundProperty, "AfSettingsCardBrush");
+            surface.SetResourceReference(Border.BorderBrushProperty, "AfSettingsBorderBrush");
             Content = surface;
         }
 

@@ -30,8 +30,6 @@
 
         <components:SettingsGroupStrip
             Grid.Row="0"
-            Margin="{StaticResource AfSettingsHeaderMargin}"
-            MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
             PageIcon="{ui:SymbolIcon HandDraw24}"
             Subtitle="{DynamicResource Loc.Interaction.Header.Subtitle}"
             Target="{Binding ElementName=PageScroll}"

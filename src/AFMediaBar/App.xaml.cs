@@ -516,9 +516,12 @@ namespace AFMediaBar
 
             var dark = theme == ApplicationTheme.Dark || theme == ApplicationTheme.HighContrast && SystemParameters.HighContrast;
             var highContrast = SystemParameters.HighContrast;
-            Resources["AfSettingsCardBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(dark ? Color.FromRgb(44, 44, 44) : Colors.White);
-            Resources["AfSettingsInputBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(dark ? Color.FromRgb(54, 54, 54) : Color.FromRgb(247, 247, 247));
-            Resources["AfSettingsBorderBrush"] = highContrast ? SystemColors.WindowTextBrush : CreateFrozenBrush(dark ? Color.FromRgb(72, 72, 72) : Color.FromRgb(216, 216, 216));
+            // Settings surfaces remain opaque over native materials; only their RGB tint follows the accent.
+            Resources["AfSettingsCardBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(TintSettingsSurface(dark ? Color.FromRgb(44, 44, 44) : Colors.White, accent.Accent, dark ? 0.08 : 0.04));
+            Resources["AfSettingsInputBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(TintSettingsSurface(dark ? Color.FromRgb(54, 54, 54) : Color.FromRgb(247, 247, 247), accent.Accent, dark ? 0.08 : 0.04));
+            Resources["AfSettingsBorderBrush"] = highContrast ? SystemColors.WindowTextBrush : CreateFrozenBrush(TintSettingsSurface(dark ? Color.FromRgb(72, 72, 72) : Color.FromRgb(216, 216, 216), accent.Accent, 0.08));
+            Resources["AfSettingsNavigationBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(TintSettingsSurface(dark ? Color.FromRgb(30, 30, 30) : Color.FromRgb(236, 236, 236), accent.Accent, dark ? 0.10 : 0.08));
+            Resources["AfSettingsSectionBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(TintSettingsSurface(dark ? Color.FromRgb(40, 40, 40) : Color.FromRgb(248, 248, 248), accent.Accent, dark ? 0.08 : 0.06));
             // Context menus always use an opaque Fluent solid surface. Native
             // Mica/Acrylic on Popup HWNDs leaves transparent hit-test regions
             // that can pass clicks through to the window behind the menu.
@@ -529,6 +532,12 @@ namespace AFMediaBar
             Resources["AppMenuBackgroundBrush"] = menuBrush;
             Resources["ContextMenuBackground"] = menuBrush;
         }
+
+        private static Color TintSettingsSurface(Color surface, Color accent, double amount) =>
+            Color.FromRgb(
+                (byte)Math.Round(surface.R + (accent.R - surface.R) * amount),
+                (byte)Math.Round(surface.G + (accent.G - surface.G) * amount),
+                (byte)Math.Round(surface.B + (accent.B - surface.B) * amount));
 
         private static SolidColorBrush CreateFrozenBrush(Color color)
         {

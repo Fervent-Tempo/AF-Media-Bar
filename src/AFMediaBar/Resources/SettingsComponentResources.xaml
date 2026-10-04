@@ -332,57 +332,64 @@
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type components:SettingsGroup}">
                     <StackPanel>
-                        <Grid Margin="0,0,0,12">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
+                        <Border Background="{DynamicResource AfSettingsSectionBrush}"
+                                BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1"
+                                CornerRadius="8" Padding="14,10" Margin="0,0,0,12">
+                            <StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
 
-                            <Grid
-                                x:Name="GroupIcon"
-                                Width="26"
-                                Height="26"
-                                Margin="0,0,10,0"
-                                VerticalAlignment="Center"
-                                TextElement.Foreground="{DynamicResource AfAccentBrush}">
-                                <Border
-                                    Background="{DynamicResource AfAccentBrush}"
-                                    CornerRadius="7"
-                                    Opacity="0.16" />
-                                <ContentControl
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                    Content="{TemplateBinding Icon}"
-                                    Focusable="False"
-                                    KeyboardNavigation.IsTabStop="False" />
-                            </Grid>
+                                    <Grid
+                                        x:Name="GroupIcon"
+                                        Width="26"
+                                        Height="26"
+                                        Margin="0,0,10,0"
+                                        VerticalAlignment="Center"
+                                        TextElement.Foreground="{DynamicResource AfAccentBrush}">
+                                        <Border
+                                            Background="{DynamicResource AfAccentBrush}"
+                                            CornerRadius="7"
+                                            Opacity="0.16" />
+                                        <ContentControl
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Content="{TemplateBinding Icon}"
+                                            Focusable="False"
+                                            KeyboardNavigation.IsTabStop="False" />
+                                    </Grid>
 
-                            <TextBlock
-                                Grid.Column="1"
-                                Style="{StaticResource AfSettingsSectionTitleStyle}"
-                                Text="{TemplateBinding Header}" />
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Style="{StaticResource AfSettingsSectionTitleStyle}"
+                                        Text="{TemplateBinding Header}" />
 
-                            <ContentControl
-                                x:Name="GroupStatus"
-                                Grid.Column="2"
-                                Margin="12,0,0,0"
-                                Style="{StaticResource AfSettingsChipNeutralStyle}"
-                                Content="{TemplateBinding StatusText}" />
-                        </Grid>
+                                    <ContentControl
+                                        x:Name="GroupStatus"
+                                        Grid.Column="2"
+                                        Margin="12,0,0,0"
+                                        Style="{StaticResource AfSettingsChipNeutralStyle}"
+                                        Content="{TemplateBinding StatusText}" />
+                                </Grid>
 
-                        <!--
-                            分组说明：一行白话，用来解释「静置层 / 悬停层 / 完整层」这类名字什么时候生效。
-                            缩进 36 DIP 与分组图标底片同宽，因此说明与标题左对齐起点一致。
-                            The group description: one plain line explaining when a name such as "静置层 / 悬停层 /
-                            完整层" applies. The 36 DIP indent matches the header icon plate so the description starts
-                            on the same left edge as the title.
-                        -->
-                        <TextBlock
-                            x:Name="GroupDescription"
-                            Margin="36,0,0,12"
-                            Style="{StaticResource AfSettingsRowDescriptionStyle}"
-                            Text="{TemplateBinding Description}" />
+                                <!--
+                                    分组说明：一行白话，用来解释「静置层 / 悬停层 / 完整层」这类名字什么时候生效。
+                                    缩进 36 DIP 与分组图标底片同宽，因此说明与标题左对齐起点一致。
+                                    The group description: one plain line explaining when a name such as "静置层 / 悬停层 /
+                                    完整层" applies. The 36 DIP indent matches the header icon plate so the description starts
+                                    on the same left edge as the title.
+                                -->
+                                <TextBlock
+                                    x:Name="GroupDescription"
+                                    Margin="36,6,0,0"
+                                    Style="{StaticResource AfSettingsRowDescriptionStyle}"
+                                    Text="{TemplateBinding Description}" />
+
+                            </StackPanel>
+                        </Border>
 
                         <ContentPresenter HorizontalAlignment="Stretch" />
                     </StackPanel>
@@ -463,40 +470,34 @@
         </Setter>
     </Style>
 
-    <!--
-        固定页头 / Pinned page header
-
-        页头与标签条都在滚动容器之外，内容被裁剪在滚动行内，永远不会滚到页头底下。
-        因此页头**不铺任何底色**：它不承担遮挡职责，而不透明底色在亚克力/云母下会变成一条与背景冲突的
-        实色带——这正是它在深浅色下还行、在半透明材质下很突兀的原因。
-        分隔改由下方那条只在滚动后淡入的发丝线承担。
-        The header and tabs sit outside the scroll container, and content is clipped inside the scroll row, so
-        nothing ever scrolls beneath the header. The header therefore paints no background at all: it has no
-        occluding job to do, and an opaque fill turns into a band that fights the acrylic or Mica behind it,
-        which is exactly why it looked fine in light and dark and wrong over translucent material. Separation is
-        left to the hairline below, which fades in only once the content has scrolled.
-    -->
-
+    <!-- The opaque group strip shares the selected primary tab surface. Progress and active-group markers are independent. -->
     <Style TargetType="{x:Type components:SettingsGroupStrip}">
         <Setter Property="Focusable" Value="False" />
         <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="{x:Type components:SettingsGroupStrip}">
-            <StackPanel Background="Transparent">
-                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" CanContentScroll="False">
-                    <Grid MinHeight="36">
-                        <ItemsControl x:Name="PART_Tabs" Focusable="False" ItemsSource="{Binding Groups, RelativeSource={RelativeSource TemplatedParent}}">
-                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate><DataTemplate>
-                                <Button Command="{Binding JumpCommand}" CommandParameter="{Binding}" Content="{Binding Name}" Style="{StaticResource AfSettingsGroupTabStyle}" />
-                            </DataTemplate></ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                        <Border x:Name="PART_Indicator" Width="0" Height="2" HorizontalAlignment="Left" VerticalAlignment="Bottom"
-                                Background="{DynamicResource AfAccentBrush}" CornerRadius="1">
-                            <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
+            <Border Background="{DynamicResource AfSettingsSectionBrush}">
+                <StackPanel Margin="28,0" MaxWidth="900">
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" CanContentScroll="False">
+                        <Grid MinHeight="40">
+                            <ItemsControl x:Name="PART_Tabs" Focusable="False" ItemsSource="{Binding Groups, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate><DataTemplate>
+                                    <Button Command="{Binding JumpCommand}" CommandParameter="{Binding}" Content="{Binding Name}" Style="{StaticResource AfSettingsGroupTabStyle}" />
+                                </DataTemplate></ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <Border x:Name="PART_Indicator" Width="0" Height="2" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                                    Background="{DynamicResource AfAccentBrush}" CornerRadius="1">
+                                <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
+                            </Border>
+                        </Grid>
+                    </ScrollViewer>
+                    <Grid Height="2" Margin="0,2,0,0" Background="{DynamicResource AfSettingsBorderBrush}">
+                        <Border x:Name="PART_Progress" Background="{DynamicResource AfAccentBrush}" Opacity="0.65" RenderTransformOrigin="0,0.5">
+                            <Border.RenderTransform><ScaleTransform ScaleX="0" ScaleY="1" /></Border.RenderTransform>
                         </Border>
                     </Grid>
-                </ScrollViewer>
-                <Border x:Name="PART_Divider" Height="1" Background="{DynamicResource DividerStrokeColorDefaultBrush}" Opacity="0" />
-            </StackPanel>
+                    <Border x:Name="PART_Divider" Height="1" Background="{DynamicResource AfSettingsBorderBrush}" Opacity="0" />
+                </StackPanel>
+            </Border>
         </ControlTemplate></Setter.Value></Setter>
     </Style>
 

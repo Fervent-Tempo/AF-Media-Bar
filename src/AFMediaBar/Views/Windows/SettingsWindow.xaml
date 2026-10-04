@@ -14,17 +14,46 @@
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource {x:Type TextBox}}">
             <Setter Property="Background" Value="{DynamicResource AfSettingsInputBrush}" />
         </Style>
+        <!-- Equal side columns keep CenterContent on the window center while preserving native title-bar parts. -->
+        <Style x:Key="SettingsTitleBarStyle" TargetType="{x:Type ui:TitleBar}" BasedOn="{StaticResource {x:Type ui:TitleBar}}">
+            <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="{x:Type ui:TitleBar}">
+                <Grid x:Name="PART_MainGrid" Background="{TemplateBinding Background}">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="150" /><ColumnDefinition Width="*" /><ColumnDefinition Width="150" /></Grid.ColumnDefinitions>
+                    <StackPanel Orientation="Horizontal" Margin="16,0,0,0" VerticalAlignment="Center">
+                        <ContentPresenter x:Name="PART_Icon" Content="{TemplateBinding Icon}" Width="16" Height="16"
+                                          VerticalAlignment="Center" Focusable="False" AutomationProperties.AutomationId="TitleBarIcon" />
+                        <ContentPresenter Content="{TemplateBinding Header}" Margin="12,0,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <ContentPresenter Grid.Column="1" Content="{TemplateBinding CenterContent}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+                        <ui:TitleBarButton x:Name="PART_HelpButton" ButtonType="Help" AutomationProperties.AutomationId="TitleBarHelpButton" />
+                        <ui:TitleBarButton x:Name="PART_MinimizeButton" ButtonType="Minimize" AutomationProperties.AutomationId="TitleBarMinimizeButton" />
+                        <ui:TitleBarButton x:Name="PART_MaximizeButton" ButtonType="Maximize" AutomationProperties.AutomationId="TitleBarMaximizeButton" />
+                        <ui:TitleBarButton x:Name="PART_CloseButton" ButtonType="Close" AutomationProperties.AutomationId="TitleBarCloseButton"
+                                           MouseOverBackground="{DynamicResource PaletteRedBrush}" MouseOverButtonsForeground="White" />
+                    </StackPanel>
+                </Grid>
+                <ControlTemplate.Triggers>
+                    <Trigger Property="ShowHelp" Value="False"><Setter TargetName="PART_HelpButton" Property="Visibility" Value="Collapsed" /></Trigger>
+                    <Trigger Property="ShowMinimize" Value="False"><Setter TargetName="PART_MinimizeButton" Property="Visibility" Value="Collapsed" /></Trigger>
+                    <Trigger Property="ShowMaximize" Value="False"><Setter TargetName="PART_MaximizeButton" Property="Visibility" Value="Collapsed" /></Trigger>
+                    <Trigger Property="ShowClose" Value="False"><Setter TargetName="PART_CloseButton" Property="Visibility" Value="Collapsed" /></Trigger>
+                    <Trigger Property="Icon" Value="{x:Null}"><Setter TargetName="PART_Icon" Property="Visibility" Value="Collapsed" /></Trigger>
+                    <MultiTrigger><MultiTrigger.Conditions><Condition Property="ShowMaximize" Value="True" /><Condition Property="IsMaximized" Value="True" /></MultiTrigger.Conditions>
+                        <Setter TargetName="PART_MaximizeButton" Property="ButtonType" Value="Restore" />
+                    </MultiTrigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate></Setter.Value></Setter>
+        </Style>
     </Window.Resources>
     <Window.InputBindings><KeyBinding Key="F" Modifiers="Control" Command="{Binding FocusSearchCommand}" /></Window.InputBindings>
     <Grid>
-        <Grid.RowDefinitions><RowDefinition Height="48" /><RowDefinition Height="44" /><RowDefinition Height="*" /></Grid.RowDefinitions>
-        <ui:TitleBar x:Name="TitleBar" Title="{Binding ViewModel.ApplicationTitle}" CloseWindowByDoubleClickOnIcon="True">
+        <Grid.RowDefinitions><RowDefinition Height="48" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+        <ui:TitleBar x:Name="TitleBar" Title="{Binding ViewModel.ApplicationTitle}" Style="{StaticResource SettingsTitleBarStyle}"
+                     Background="{DynamicResource AfSettingsNavigationBrush}" CloseWindowByDoubleClickOnIcon="True">
             <ui:TitleBar.Icon><ui:ImageIcon Source="{Binding TitleBarIconSource}" /></ui:TitleBar.Icon>
-            <ui:TitleBar.TrailingContent>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
-                    <ui:Button x:Name="SearchToggle" Click="OnFocusSearch" Icon="{ui:SymbolIcon Search24}"
-                               ToolTip="{DynamicResource Loc.Settings.Search.Placeholder}" Visibility="Collapsed" Margin="0,0,8,0" />
-                    <Grid x:Name="SearchHost" Width="220" VerticalAlignment="Center" Margin="0,0,12,0">
+            <ui:TitleBar.CenterContent>
+                <Grid x:Name="SearchHost" Width="260" VerticalAlignment="Center">
                         <ui:AutoSuggestBox x:Name="AutoSuggestBox" PlaceholderText="{DynamicResource Loc.Settings.Search.Placeholder}"
                                            SuggestionChosen="OnSearchSuggestionChosen" TextChanged="OnSearchTextChanged">
                             <ui:AutoSuggestBox.Icon><ui:IconSourceElement><ui:SymbolIconSource Symbol="Search24" /></ui:IconSourceElement></ui:AutoSuggestBox.Icon>
@@ -33,19 +62,12 @@
                                 <TextBlock FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="{Binding Subtitle}" TextWrapping="Wrap" />
                             </StackPanel></DataTemplate></ui:AutoSuggestBox.ItemTemplate>
                         </ui:AutoSuggestBox>
-                    </Grid>
-                    <ToggleButton x:Name="UpdateNoticeNavItem" Click="UpdateNoticeNavItem_Click" Tag="{x:Type pages:ReleaseHighlightsPage}"
-                                  Content="{DynamicResource Loc.Common.Page.ReleaseHighlights}" Style="{StaticResource AfSettingsUtilityTabStyle}" />
-                    <ToggleButton x:Name="AboutTab" Click="OnPrimaryNavigationClick" Tag="{x:Type pages:AboutPage}"
-                                  Content="{DynamicResource Loc.Common.Page.About}" Style="{StaticResource AfSettingsUtilityTabStyle}" />
-                </StackPanel>
-            </ui:TitleBar.TrailingContent>
+
+                </Grid>
+            </ui:TitleBar.CenterContent>
         </ui:TitleBar>
-        <Grid Grid.Row="1" Margin="28,0" MaxWidth="900">
-            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-            <ui:Button x:Name="BackButton" Click="OnGoBack" Icon="{ui:SymbolIcon ArrowLeft24}" IsEnabled="False" Margin="0,0,8,0"
-                       ToolTip="{DynamicResource Loc.Settings.Navigation.Back}" />
-            <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" CanContentScroll="False">
+        <Border Grid.Row="1" Background="{DynamicResource AfSettingsNavigationBrush}">
+            <ScrollViewer Margin="28,0" MaxWidth="900" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" CanContentScroll="False">
                 <StackPanel x:Name="PrimaryTabs" Orientation="Horizontal">
                     <ToggleButton Content="{DynamicResource Loc.Common.Page.DisplayModes}" Tag="{x:Type pages:DisplayModesPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}" />
                     <ToggleButton Content="{DynamicResource Loc.Common.Page.Appearance}" Tag="{x:Type pages:AppearancePage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}" />
@@ -54,9 +76,20 @@
                     <ToggleButton Content="{DynamicResource Loc.Common.Page.Components}" Tag="{x:Type pages:ComponentsSettingsPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}" />
                     <ToggleButton Content="{DynamicResource Loc.Common.Page.MediaAndNotifications}" Tag="{x:Type pages:ExtraFeaturesPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}" />
                     <ToggleButton Content="{DynamicResource Loc.Common.Page.Application}" Tag="{x:Type pages:ApplicationPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}" />
+
+                    <ToggleButton x:Name="UpdateNoticeNavItem" Click="UpdateNoticeNavItem_Click" Tag="{x:Type pages:ReleaseHighlightsPage}"
+                                  Style="{StaticResource AfSettingsPrimaryTabStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{DynamicResource Loc.Common.Page.ReleaseHighlights}" />
+                            <Ellipse x:Name="UpdateNoticeDot" Width="6" Height="6" Margin="6,0,0,0" VerticalAlignment="Center"
+                                     Fill="{DynamicResource AfAccentBrush}" Visibility="Collapsed" />
+                        </StackPanel>
+                    </ToggleButton>
+                    <ToggleButton x:Name="AboutTab" Click="OnPrimaryNavigationClick" Tag="{x:Type pages:AboutPage}"
+                                  Content="{DynamicResource Loc.Common.Page.About}" Style="{StaticResource AfSettingsPrimaryTabStyle}" />
                 </StackPanel>
             </ScrollViewer>
-        </Grid>
+        </Border>
         <!-- The existing page provider and journal still own navigation; these menu items are not presented. -->
         <ui:NavigationView x:Name="RootNavigation" Grid.Row="2" PaneDisplayMode="Top" IsPaneVisible="False" IsFooterSeparatorVisible="False"
                            IsBackButtonVisible="Collapsed" IsPaneToggleVisible="False" FrameMargin="0" Background="Transparent">

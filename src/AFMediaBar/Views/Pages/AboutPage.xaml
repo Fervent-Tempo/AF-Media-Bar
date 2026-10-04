@@ -23,8 +23,6 @@
 
         <components:SettingsGroupStrip
             Grid.Row="0"
-            Margin="{StaticResource AfSettingsHeaderMargin}"
-            MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
             PageIcon="{ui:SymbolIcon QuestionCircle24}"
             Subtitle="{DynamicResource Loc.About.Header.Subtitle}"
             Target="{Binding ElementName=PageScroll}"
@@ -107,8 +105,8 @@
                                 <Border
                                     Margin="0,0,10,10"
                                     Padding="10,8"
-                                    Background="{DynamicResource ControlFillColorSecondaryBrush}"
-                                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                    Background="{DynamicResource AfSettingsCardBrush}"
+                                    BorderBrush="{DynamicResource AfSettingsBorderBrush}"
                                     BorderThickness="1"
                                     CornerRadius="8">
                                     <StackPanel Orientation="Horizontal">
@@ -182,10 +180,9 @@
                             Symbol="Heart24"
                             Text="{DynamicResource Loc.Credits.Sponsors.None}"
                             Visibility="{Binding ViewModel.HasNoSponsorsYet, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
-                        <TextBlock
-                            Margin="16,0,0,0"
+                        <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="16,0,0,0"><TextBlock
                             Style="{StaticResource AfSettingsHintTextStyle}"
-                            Text="{Binding ViewModel.SponsorCountText}" />
+                            Text="{Binding ViewModel.SponsorCountText}" /></Border>
                     </StackPanel>
                 </components:SettingsGroup>
 
@@ -218,8 +215,8 @@
                                     <Border
                                         Margin="0,0,12,12"
                                         Padding="24"
-                                        Background="{DynamicResource ControlFillColorSecondaryBrush}"
-                                        BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                        Background="{DynamicResource AfSettingsCardBrush}"
+                                        BorderBrush="{DynamicResource AfSettingsBorderBrush}"
                                         BorderThickness="1"
                                         CornerRadius="8">
                                         <StackPanel Width="300">

@@ -18,7 +18,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
-- Move settings categories and group navigation to the top; improve the hierarchy of cards, controls, and descriptions while retaining system theme, accent color, and window materials.
+- Move settings categories and group navigation to the top with a page scroll progress line; center search, include What’s new and About in primary tabs, and remove the back button. Unify cards, notes, and diagrams with opaque accent-tinted surfaces and clearer section headings while retaining system theme and window materials.
 
 - Generate contributor snapshots in Release CI with paginated API requests, review them alongside version metadata on the isolated branch, and synchronize legacy snapshots through a PR.
 - Move release metadata to an isolated branch: Actions generate manifests from final packages and propose preview updates, with manual stable promotion and compatibility manifest synchronization PRs. Packages are published to GitHub Releases.

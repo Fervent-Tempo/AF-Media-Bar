@@ -18,18 +18,9 @@
             All three tone states are declared with DataTriggers instead of swapping brushes in code, so theme
             and accent changes stay owned by DynamicResource and the code-behind only carries data.
         -->
-        <Style x:Key="CalloutTintStyle" TargetType="{x:Type Border}">
-            <Setter Property="Opacity" Value="0" />
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding IsAccent, ElementName=Root}" Value="True">
-                    <Setter Property="Opacity" Value="0.1" />
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-
         <Style x:Key="CalloutSurfaceStyle" TargetType="{x:Type Border}">
-            <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+            <Setter Property="Background" Value="{DynamicResource AfSettingsCardBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AfSettingsBorderBrush}" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding IsAccent, ElementName=Root}" Value="True">
                     <Setter Property="BorderBrush" Value="{DynamicResource AfAccentBrush}" />
@@ -56,22 +47,8 @@
         </Style>
     </UserControl.Resources>
 
-    <!--
-        设置页说明条 / Settings callout
-
-        这两处说明以前是硬编码色值：交互页和关于页用 #0CFFFFFF（浅色主题下完全不可见），
-        歌词页用 #0D4CC2FF（永远不跟随用户主色）。现在主色语气使用主色描边加一层 10% 主色底片，
-        提示语气保持中性描边；两者都取主题画刷，因此浅色、深色、高对比度和系统主色变化都会自动生效。
-        These notes used to hardcode colour: #0CFFFFFF was invisible on the light theme (interaction and about
-        pages) and #0D4CC2FF ignored the user's accent (lyrics page). Accent tone now paints an accent stroke over
-        a 10% accent tint, hint tone stays neutral, and both read theme brushes so light, dark, high contrast, and
-        accent changes apply automatically.
-    -->
+    <!-- Opaque explanatory cards share settings surfaces; accent tone is conveyed by the stroke and glyph. -->
     <Grid>
-        <Border
-            CornerRadius="8"
-            Style="{StaticResource CalloutTintStyle}"
-            Background="{DynamicResource AfAccentBrush}" />
         <Border
             Padding="14,12"
             BorderThickness="1"

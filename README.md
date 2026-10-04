@@ -66,7 +66,6 @@ flowchart LR
 
 ### 更新
 
-设置页顶部提供两层导航：上层切换设置类别，下层定位本页分组。右上角「更新亮点」展示最新版本和历史正式版本的亮点；检测到新版本时，该入口显示版本提示。「应用」页继续负责检查、下载、跳过版本和安装操作。
 
 亮点页先显示内置快照或本地缓存，打开时按需刷新独立目录（缓存有效期 24 小时）；刷新失败仍可阅读原有内容。目录由维护者审核简体中文、繁体中文和英文摘要后单独发布，维护方法见[版本亮点目录](docs/release-highlights.md)。
 
@@ -91,7 +90,6 @@ Remove-Item "$env:LOCALAPPDATA\AFMediaBar" -Recurse -Force
 ## 隐私与安全
 
 - 不包含遥测、广告、账号系统或联网分析代码；媒体信息、系统指标与音量操作全部在本机处理。
-- 版本亮点页面按需请求 `raw.githubusercontent.com` 与 jsDelivr 上的 `release-metadata/release/highlights.json`，不访问 GitHub Releases API。
 - 更新检查只请求两个公开清单端点（`raw.githubusercontent.com` 与 jsDelivr 上的 `release-metadata/release/latest.json`）。
 - 歌词优先搜索 QQ 音乐并请求其在线歌词接口，结果达到 75 分直接采用；否则保留 QQ 结果并发查询备用源。当前播放器对应的已启用歌词源返回结果时，不限制分数直接采用；对应源未启用、请求失败或未返回结果时按最高分选择，同分优先 QQ。联网检索使用曲名、歌手等元数据；同一来源可能包含搜索与正文获取等多次请求，歌词来源可在设置中关闭。
 - 程序以当前用户权限运行，不请求管理员权限。安全问题请按 [SECURITY.md](SECURITY.md) 私下报告。

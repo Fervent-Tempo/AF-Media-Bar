@@ -25,8 +25,6 @@
 
         <components:SettingsGroupStrip
             Grid.Row="0"
-            Margin="{StaticResource AfSettingsHeaderMargin}"
-            MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
             PageIcon="{ui:SymbolIcon PuzzlePiece24}"
             Subtitle="{DynamicResource Loc.Media.Header.Subtitle}"
             Target="{Binding ElementName=PageScroll}"
@@ -151,10 +149,9 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
-                        <TextBlock
-                            Margin="0,4,0,0"
+                        <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,4,0,0"><TextBlock
                             Style="{StaticResource AfSettingsHintTextStyle}"
-                            Text="{Binding ViewModel.StatusText}" />
+                            Text="{Binding ViewModel.StatusText}" /></Border>
                     </StackPanel>
                 </components:SettingsGroup>
 

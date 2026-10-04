@@ -93,8 +93,6 @@
         <components:SettingsGroupStrip
             x:Name="Strip"
             Grid.Row="0"
-            Margin="{StaticResource AfSettingsHeaderMargin}"
-            MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
             PageIcon="{ui:SymbolIcon Desktop24}"
             StatusText="{Binding ViewModel.HostingModeText}"
             Subtitle="{DynamicResource Loc.DisplayModes.Header.Subtitle}"

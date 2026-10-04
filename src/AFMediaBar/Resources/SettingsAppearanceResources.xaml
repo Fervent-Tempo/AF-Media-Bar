@@ -328,10 +328,11 @@
     </Style>
 
     <Style x:Key="AfSettingsSectionTitleStyle" TargetType="{x:Type TextBlock}">
-        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontSize" Value="18" />
         <Setter Property="FontWeight" Value="{DynamicResource AppTextStrongFontWeight}" />
         <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
         <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
 
     <Style x:Key="AfSettingsCardTitleStyle" TargetType="{x:Type TextBlock}">
@@ -554,8 +555,8 @@
             <Border
                 x:Name="ChoiceBorder"
                 Padding="{TemplateBinding Padding}"
-                Background="{DynamicResource CardBackground}"
-                BorderBrush="{DynamicResource CardBorderBrush}"
+                Background="{DynamicResource AfSettingsCardBrush}"
+                BorderBrush="{DynamicResource AfSettingsBorderBrush}"
                 BorderThickness="1"
                 CornerRadius="8">
                 <ContentPresenter
@@ -602,7 +603,7 @@
                 <Setter TargetName="ChoiceBorder" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}" />
             </Trigger>
             <Trigger Property="IsEnabled" Value="False">
-                <Setter TargetName="ChoiceBorder" Property="Opacity" Value="0.55" />
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
             </Trigger>
         </ControlTemplate.Triggers>
     </ControlTemplate>
@@ -755,29 +756,38 @@
     <SolidColorBrush x:Key="AfSettingsCardBrush" Color="#FFFFFF" />
     <SolidColorBrush x:Key="AfSettingsInputBrush" Color="#F7F7F7" />
     <SolidColorBrush x:Key="AfSettingsBorderBrush" Color="#D8D8D8" />
+    <SolidColorBrush x:Key="AfSettingsNavigationBrush" Color="#ECECEC" />
+    <SolidColorBrush x:Key="AfSettingsSectionBrush" Color="#F8F8F8" />
+    <Style x:Key="AfSettingsInfoSurfaceStyle" TargetType="{x:Type Border}">
+        <Setter Property="Background" Value="{DynamicResource AfSettingsCardBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AfSettingsBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="14,10" />
+    </Style>
     <Style x:Key="AfSettingsPrimaryTabStyle" TargetType="{x:Type ToggleButton}">
         <Setter Property="FontSize" Value="14" />
         <Setter Property="FontWeight" Value="{DynamicResource AppTextMediumFontWeight}" />
         <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
         <Setter Property="FocusVisualStyle" Value="{DynamicResource AfFocusVisualStyle}" />
         <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="{x:Type ToggleButton}">
-            <Grid Background="Transparent" MinHeight="40">
-                <Border x:Name="Surface" Margin="2,4" CornerRadius="6" Background="Transparent" />
-                <ContentPresenter Margin="14,8" VerticalAlignment="Center" HorizontalAlignment="Center" />
-                <Border x:Name="Indicator" Height="3" Margin="14,0,14,0" VerticalAlignment="Bottom"
-                        Background="{DynamicResource AfAccentBrush}" CornerRadius="1.5" Visibility="Collapsed" />
-            </Grid>
+            <Border x:Name="Surface" Margin="2,4,2,0" MinHeight="40" Padding="14,8"
+                    CornerRadius="10,10,0,0" Background="Transparent"
+                    BorderBrush="Transparent" BorderThickness="1,1,1,0">
+                <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center" />
+            </Border>
             <ControlTemplate.Triggers>
-                <Trigger Property="IsChecked" Value="True">
-                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
-                    <Setter TargetName="Indicator" Property="Visibility" Value="Visible" />
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter TargetName="Surface" Property="Background" Value="{DynamicResource AfSettingsInputBrush}" />
                 </Trigger>
-                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" /></Trigger>
+                <Trigger Property="IsChecked" Value="True">
+                    <Setter TargetName="Surface" Property="Background" Value="{DynamicResource AfSettingsSectionBrush}" />
+                    <Setter TargetName="Surface" Property="BorderBrush" Value="{DynamicResource AfSettingsBorderBrush}" />
+                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                    <Setter Property="FontWeight" Value="{DynamicResource AppTextStrongFontWeight}" />
+                </Trigger>
             </ControlTemplate.Triggers>
         </ControlTemplate></Setter.Value></Setter>
-    </Style>
-    <Style x:Key="AfSettingsUtilityTabStyle" TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource AfSettingsPrimaryTabStyle}">
-        <Setter Property="FontSize" Value="12" />
     </Style>
 
 </ResourceDictionary>

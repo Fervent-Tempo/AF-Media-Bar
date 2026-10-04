@@ -49,7 +49,7 @@ namespace AFMediaBar.Views.Windows
 
         public SettingsWindowViewModel ViewModel { get; }
 
-        /// <summary>Focuses the search surface, including compact-window search.</summary>
+        /// <summary>Focuses the search surface, at every window width.</summary>
         public ICommand FocusSearchCommand { get; }
 
         /// <summary>
@@ -88,7 +88,6 @@ namespace AFMediaBar.Views.Windows
 
             navigationService.SetNavigationControl(RootNavigation);
             RootNavigation.Navigated += (_, _) => Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(SyncNavigation));
-            AutoSuggestBox.LostKeyboardFocus += (_, _) => { if (ActualWidth < 980 && !AutoSuggestBox.IsKeyboardFocusWithin && !AutoSuggestBox.IsSuggestionListOpen) { SearchHost.Visibility = Visibility.Collapsed; SearchToggle.Visibility = Visibility.Visible; } };
 
             // 落地页：窗口每次打开都直接落在「显示模式」。
             //
@@ -199,7 +198,6 @@ namespace AFMediaBar.Views.Windows
                 return;
             }
 
-            if (ActualWidth < 980) { SearchHost.Visibility = Visibility.Collapsed; SearchToggle.Visibility = Visibility.Visible; }
             var hit = suggestion.Hit;
             if (!Navigate(pageType))
             {
@@ -245,6 +243,9 @@ namespace AFMediaBar.Views.Windows
 
             /// <summary>副文案。/ Secondary line.</summary>
             public string Subtitle => Hit.Description;
+
+            /// <summary>Uses the localized label when the search control copies a chosen suggestion into its input.</summary>
+            public override string ToString() => Title;
         }
 
         /// <summary>按深度优先在可视树中查找第一个指定类型后代。/ Finds the first descendant of a type, depth first.</summary>
@@ -300,14 +301,10 @@ namespace AFMediaBar.Views.Windows
 
         private void ApplyUpdateNotice()
         {
-            UpdateNoticeNavItem.Content = ViewModel.HasUpdateAvailable
-                ? ViewModel.UpdateNoticeTitle
-                : Translations.Get("Common.Page.ReleaseHighlights");
+            UpdateNoticeDot.Visibility = ViewModel.HasUpdateAvailable ? Visibility.Visible : Visibility.Collapsed;
             UpdateNoticeNavItem.ToolTip = ViewModel.HasUpdateAvailable
                 ? ViewModel.UpdateNoticeText
                 : Translations.Get("ReleaseHighlights.Header.Subtitle");
-            UpdateNoticeNavItem.SetResourceReference(Control.ForegroundProperty, ViewModel.HasUpdateAvailable
-                ? "AfAccentBrush" : "TextFillColorSecondaryBrush");
         }
 
         private void SettingsWindow_ClosedForUpdateNotice(object? sender, EventArgs e)
@@ -339,35 +336,25 @@ namespace AFMediaBar.Views.Windows
             if (sender is ToggleButton { Tag: Type pageType }) Navigate(pageType);
         }
 
-        private void OnGoBack(object sender, RoutedEventArgs e) => RootNavigation.GoBack();
-
         private void SyncNavigation()
         {
             var pageType = FindDescendant<Page>(RootNavigation)?.GetType() ?? _currentPageType;
-            foreach (var tab in PrimaryTabs.Children.OfType<ToggleButton>().Concat(new[] { AboutTab, UpdateNoticeNavItem }))
+            foreach (var tab in PrimaryTabs.Children.OfType<ToggleButton>())
             {
                 tab.IsChecked = Equals(tab.Tag, pageType);
                 if (tab.IsChecked == true) tab.BringIntoView();
             }
-            BackButton.IsEnabled = RootNavigation.CanGoBack;
         }
 
         private void OnShellSizeChanged(object sender, SizeChangedEventArgs e)
         {
             if (SearchHost is null) return;
-            var compact = ActualWidth < 980;
-            SearchToggle.Visibility = compact ? Visibility.Visible : Visibility.Collapsed;
-            SearchHost.Width = compact ? 180 : 220;
-            SearchHost.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+            SearchHost.Width = ActualWidth < 760 ? 220 : 260;
             Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(SyncNavigation));
         }
 
-        private void OnFocusSearch(object sender, RoutedEventArgs e) => FocusSearch();
-
         private void FocusSearch()
         {
-            SearchHost.Visibility = Visibility.Visible;
-            if (ActualWidth < 980) SearchToggle.Visibility = Visibility.Collapsed;
             AutoSuggestBox.Focus();
             AutoSuggestBox.FocusCommand.Execute(null);
         }

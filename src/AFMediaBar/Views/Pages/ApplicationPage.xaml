@@ -34,8 +34,6 @@
 
         <components:SettingsGroupStrip
             Grid.Row="0"
-            Margin="{StaticResource AfSettingsHeaderMargin}"
-            MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
             PageIcon="{ui:SymbolIcon Settings24}"
             Subtitle="{DynamicResource Loc.Application.Header.Subtitle}"
             Target="{Binding ElementName=PageScroll}"
@@ -270,10 +268,9 @@
                                 Style="{StaticResource AfSettingsButtonStyle}" />
                         </components:SettingsRow>
 
-                        <TextBlock
-                            Margin="16,4,0,0"
+                        <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="16,4,0,0"><TextBlock
                             Style="{StaticResource AfSettingsHintTextStyle}"
-                            Text="{Binding ViewModel.StartupStatusText}" />
+                            Text="{Binding ViewModel.StartupStatusText}" /></Border>
                     </StackPanel>
                 </components:SettingsGroup>
 

@@ -483,13 +483,7 @@ public class SettingsGroupStrip : Control
     }
 
     /// <summary>
-    /// 按滚动量淡入淡出页头下方的分隔线。静止在顶部时完全不可见，因此页头在半透明材质上不会留下
-    /// 任何永久性的实色块；只有确实有内容滚上去时才出现一条发丝线。
-    /// 只在目标透明度变化超过千分之一时才启动动画，避免每个滚动事件都重启动画。
-    /// Fades the hairline under the header according to how far the content has scrolled. It is invisible at the
-    /// top, so the header leaves no permanent solid block over translucent material, and a hairline appears only
-    /// once content really has scrolled away above. The animation restarts only when the target opacity moves by
-    /// more than a thousandth, so a stream of scroll events does not restart it continuously.
+    /// 按滚动量淡入分隔线，区分固定导航与滚动内容；底色由模板保持不透明。
     /// </summary>
     private void ApplyDivider(double verticalOffset)
     {

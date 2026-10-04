@@ -38,8 +38,7 @@
     </Page.Resources>
     <Grid>
         <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
-        <components:SettingsGroupStrip Target="{Binding ElementName=PageScroll}" Margin="{StaticResource AfSettingsHeaderMargin}"
-                                       MaxWidth="{StaticResource AfSettingsContentMaxWidth}" Title="{DynamicResource Loc.Common.Page.ReleaseHighlights}" />
+        <components:SettingsGroupStrip Target="{Binding ElementName=PageScroll}" Title="{DynamicResource Loc.Common.Page.ReleaseHighlights}" />
         <ScrollViewer x:Name="PageScroll" Grid.Row="1" Margin="{StaticResource AfSettingsScrollMargin}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel MaxWidth="{StaticResource AfSettingsContentMaxWidth}">
                 <Grid Margin="0,4,0,20"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
