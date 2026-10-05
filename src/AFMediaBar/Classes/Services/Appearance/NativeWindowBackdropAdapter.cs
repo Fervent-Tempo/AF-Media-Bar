@@ -10,6 +10,9 @@ namespace AFMediaBar.Classes.Services;
 /// </summary>
 public sealed class NativeWindowBackdropAdapter
 {
+    private readonly Func<nint, int, int, bool>? _attributeOverride;
+    private readonly Func<nint, bool, bool>? _frameOverride;
+    private readonly int _windowsBuild = Environment.OSVersion.Version.Build;
     private const int DwmUseImmersiveDarkMode = 20;
     private const int DwmUseImmersiveDarkModeLegacy = 19;
     private const int DwmWindowCornerPreference = 33;
@@ -42,6 +45,14 @@ public sealed class NativeWindowBackdropAdapter
     {
     }
 
+    // 在回归测试中注入原生失败结果，覆盖新旧 DWM 路径而不依赖机器实际材质能力。
+    internal NativeWindowBackdropAdapter(int windowsBuild, Func<nint, int, int, bool> attribute, Func<nint, bool, bool> frame)
+    {
+        _windowsBuild = windowsBuild;
+        _attributeOverride = attribute;
+        _frameOverride = frame;
+    }
+
     /// <summary>
     /// 清除句柄上的所有系统背景材质。
     /// Clears all system backdrop materials from the window handle.
@@ -65,9 +76,7 @@ public sealed class NativeWindowBackdropAdapter
     /// <param name="handle">窗口句柄。/ Window handle.</param>
     /// <param name="mode">已经过 <see cref="WindowBackdropPolicy.Resolve"/> 回退的有效材质。/ Effective backdrop already run through <see cref="WindowBackdropPolicy.Resolve"/>.</param>
     /// <param name="tint">Accent 模糊路径的 ARGB 底色（来自材质浓度）。/ ARGB tint for the Accent blur path, taken from the material concentration.</param>
-    /// <returns>材质确实应用上了时为 true；Acrylic 走 Accent 路径失败时返回 false，调用方必须退回纯色。
-    /// True when the material really was applied; false when Acrylic's Accent path failed, in which case the caller has to fall back to a
-    /// solid surface.</returns>
+    /// <returns>必要的边距和材质调用成功时为 true；DWM 或 Accent 失败时调用方必须回退纯色。</returns>
     public bool ApplyBackdrop(nint handle, ApplicationBackdropMode mode, int tint)
     {
         if (handle == nint.Zero)
@@ -77,16 +86,14 @@ public sealed class NativeWindowBackdropAdapter
 
         ResetBackdrop(handle);
 
-        if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22621))
+        if (_windowsBuild >= 22621)
         {
-            SetFrame(handle, extended: true);
-            SetDwmAttribute(handle, DwmSystemBackdropType, mode switch
+            return SetFrame(handle, extended: true) && SetDwmAttribute(handle, DwmSystemBackdropType, mode switch
             {
                 ApplicationBackdropMode.Mica => DwmBackdropMica,
                 ApplicationBackdropMode.MicaAlt => DwmBackdropMicaAlt,
                 _ => DwmBackdropAcrylic
             });
-            return true;
         }
 
         // 22000–22620 上只有旧式云母属性，没有云母 Alt；此处按云母处理，回退链已在上层策略里走过一遍。
@@ -94,13 +101,10 @@ public sealed class NativeWindowBackdropAdapter
         // chain having already run in the policy above.
         if (mode is ApplicationBackdropMode.Mica or ApplicationBackdropMode.MicaAlt)
         {
-            SetFrame(handle, extended: true);
-            SetDwmAttribute(handle, DwmMicaEffect, 1);
-            return true;
+            return SetFrame(handle, extended: true) && SetDwmAttribute(handle, DwmMicaEffect, 1);
         }
 
-        SetFrame(handle, extended: false);
-        return ApplyAccentPolicy(handle, AccentState.EnableAcrylicBlurBehind, tint);
+        return SetFrame(handle, extended: false) && ApplyAccentPolicy(handle, AccentState.EnableAcrylicBlurBehind, tint);
     }
 
     /// <summary>
@@ -139,25 +143,27 @@ public sealed class NativeWindowBackdropAdapter
         }
 
         ResetBackdrop(handle);
-        SetFrame(handle, extended: false);
-        return ApplyAccentPolicy(handle, AccentState.EnableAcrylicBlurBehind, tint);
+        return SetFrame(handle, extended: false) && ApplyAccentPolicy(handle, AccentState.EnableAcrylicBlurBehind, tint);
     }
 
     /// <summary>
     /// 设置 DWM 客户区扩展边距。
     /// Sets the DWM client-area frame extension margins.
     /// </summary>
-    public void SetFrame(nint handle, bool extended)
+    public bool SetFrame(nint handle, bool extended)
     {
         if (handle == nint.Zero)
         {
-            return;
+            return false;
         }
+
+        if (_frameOverride is not null)
+            return _frameOverride(handle, extended);
 
         var margins = extended
             ? new DwmMargins(-1, -1, -1, -1)
             : new DwmMargins(0, 0, 0, 0);
-        _ = DwmExtendFrameIntoClientArea(handle, ref margins);
+        return DwmExtendFrameIntoClientArea(handle, ref margins) >= 0;
     }
 
     /// <summary>
@@ -238,11 +244,10 @@ public sealed class NativeWindowBackdropAdapter
     /// 写一个 DWM 窗口属性。
     /// Writes one DWM window attribute.
     /// </summary>
-    /// <returns>调用成功（HRESULT 为 0）时为 true；属性在该系统上不存在时返回 false，供调用方换一种写法重试。
-    /// True when the call succeeded (a zero HRESULT); false when the attribute does not exist on this system, so the caller can
-    /// retry with another spelling.</returns>
-    private static bool SetDwmAttribute(nint handle, int attribute, int value) =>
-        DwmSetWindowAttribute(handle, attribute, ref value, sizeof(int)) == 0;
+    /// <returns>HRESULT 非负时为 true；失败时调用方重试兼容属性或回退。</returns>
+    private bool SetDwmAttribute(nint handle, int attribute, int value) =>
+        _attributeOverride?.Invoke(handle, attribute, value)
+        ?? DwmSetWindowAttribute(handle, attribute, ref value, sizeof(int)) >= 0;
 
     /// <summary>
     /// 应用 Accent 模糊策略。
