@@ -465,7 +465,7 @@ public static class SettingsManager
         var next = Current.Clone(); var defaults = Defaults;
         next.TrackChangeNotification = defaults.TrackChangeNotification;
         next.SmtcSourceFilter = defaults.SmtcSourceFilter;
-        next.QuickLaunch = QuickLaunchSettings.Default;
+        next.QuickLaunch = defaults.QuickLaunch;
         Replace(next, SettingsResetScope.ExtraFeatures);
     }
     public static void ResetComponents()
