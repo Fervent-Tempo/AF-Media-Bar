@@ -18,6 +18,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
+- Enable track-change notifications by default, including during fullscreen, at the top center for 3 seconds on the foreground window's display. Existing valid settings and user-default snapshots remain in use.
+
 - Generate contributor snapshots in Release CI with paginated API requests, review them alongside version metadata on the isolated branch, and synchronize legacy snapshots through a PR.
 - Move release metadata to an isolated branch: Actions generate manifests from final packages and propose preview updates, with manual stable promotion and compatibility manifest synchronization PRs. Packages are published to GitHub Releases.
 - Include the QQ Music `/` separator in the editable global default list. All players share the search and scoring pipeline; removing every separator disables splitting while preserving the original artist text in the media bar.
