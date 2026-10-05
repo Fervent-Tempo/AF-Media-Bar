@@ -241,6 +241,14 @@ public class SettingsGroupStrip : Control
             SettingsNavigationAnimator.Slide(_tabContent, offset, duration, spline);
     }
 
+    /// <summary>Positions only the group labels before the page's first rendered transition frame.</summary>
+    public void PrepareTabs(double offset)
+    {
+        if (_tabContent is null) ApplyTemplate();
+        if (_tabContent is not null)
+            SettingsNavigationAnimator.PrepareSlide(_tabContent, offset);
+    }
+
     /// <summary>Returns the clipped label viewport for a temporary outgoing-page snapshot; its background and progress line are outside this viewport.</summary>
     public FrameworkElement? GetTabViewport()
     {

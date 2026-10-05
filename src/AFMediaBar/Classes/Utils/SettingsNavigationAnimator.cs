@@ -22,17 +22,12 @@ public static class SettingsNavigationAnimator
         return animation;
     }
 
-    /// <summary>Slides an element from a small horizontal offset without changing its layout or scroll viewport.</summary>
+    /// <summary>Slides an element from its prepared horizontal offset without changing its layout or scroll viewport.</summary>
     public static void Slide(UIElement element, double offset, TimeSpan duration, KeySpline spline)
     {
         if (duration <= TimeSpan.Zero || offset == 0d) return;
-
-        if (element.RenderTransform is not TranslateTransform translation)
-        {
-            if (element.RenderTransform is not null && element.RenderTransform != Transform.Identity) return;
-            translation = new TranslateTransform();
-            element.RenderTransform = translation;
-        }
+        var translation = EnsureTranslation(element);
+        if (translation is null) return;
 
         translation.BeginAnimation(TranslateTransform.XProperty, null);
         translation.X = 0d;
@@ -40,6 +35,24 @@ public static class SettingsNavigationAnimator
             TranslateTransform.XProperty,
             CreateSpline(offset, 0d, duration, spline),
             HandoffBehavior.SnapshotAndReplace);
+    }
+
+    /// <summary>Places an incoming viewport offscreen before its first layout frame, or restores it when navigation is interrupted.</summary>
+    public static void PrepareSlide(UIElement element, double offset)
+    {
+        var translation = EnsureTranslation(element);
+        if (translation is null) return;
+        translation.BeginAnimation(TranslateTransform.XProperty, null);
+        translation.X = offset;
+    }
+
+    private static TranslateTransform? EnsureTranslation(UIElement element)
+    {
+        if (element.RenderTransform is TranslateTransform translation) return translation;
+        if (element.RenderTransform is not null && element.RenderTransform != Transform.Identity) return null;
+        translation = new TranslateTransform();
+        element.RenderTransform = translation;
+        return translation;
     }
 
     /// <summary>Moves a departing snapshot out of its viewport and releases it when the animation finishes.</summary>

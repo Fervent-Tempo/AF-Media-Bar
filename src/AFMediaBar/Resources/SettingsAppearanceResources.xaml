@@ -300,8 +300,8 @@
         is published as a KeySpline and consumed by SettingsRevealAnimator through SplineDoubleKeyFrame.
     -->
     <KeySpline x:Key="AfSplineEaseOut">0.23,1 0.32,1</KeySpline>
-    <!-- The CSS ease-in-out Bézier keeps long tab journeys legible instead of rushing through their midpoint. -->
-    <KeySpline x:Key="AfSplineEaseInOut">0.42,0 0.58,1</KeySpline>
+    <!-- The easeInOutQuart Bézier approximation gives page handoffs a measured start and finish. -->
+    <KeySpline x:Key="AfSplineEaseInOut">0.76,0 0.24,1</KeySpline>
 
     <!--
 

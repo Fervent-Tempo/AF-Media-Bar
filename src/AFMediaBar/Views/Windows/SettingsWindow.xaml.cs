@@ -34,6 +34,9 @@ namespace AFMediaBar.Views.Windows
         private double _indicatorTargetLeft;
         private double _indicatorTargetWidth;
         private readonly List<Image> _outgoingSnapshots = [];
+        private EventHandler? _pendingNavigationStart;
+        private UIElement? _pendingSlideContent;
+        private SettingsGroupStrip? _pendingSlideStrip;
 
         private readonly AppIconService _appIconService;
         /// <summary>
@@ -320,6 +323,7 @@ namespace AFMediaBar.Views.Windows
 
         private void SettingsWindow_ClosedForUpdateNotice(object? sender, EventArgs e)
         {
+            CancelPendingNavigationStart();
             ClearOutgoingSnapshots();
             ViewModel.Unsubscribe();
             ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
@@ -348,6 +352,7 @@ namespace AFMediaBar.Views.Windows
 
         private void CaptureOutgoingPage(object? destination)
         {
+            CancelPendingNavigationStart();
             ClearOutgoingSnapshots();
             if (destination?.GetType() == _currentPageType ||
                 MotionPolicy.ResolveCurrent().Mode != MotionMode.Full ||
@@ -377,7 +382,21 @@ namespace AFMediaBar.Views.Windows
             {
                 var bitmap = new RenderTargetBitmap(pixelWidth, pixelHeight,
                     dpi.PixelsPerInchX, dpi.PixelsPerInchY, PixelFormats.Pbgra32);
-                bitmap.Render(source);
+                // RenderTargetBitmap retains the source's layout offset. Render through an explicit
+                // viewport so the bitmap starts at local (0, 0), then place it once in the overlay.
+                var offset = VisualTreeHelper.GetOffset(source);
+                var visual = new DrawingVisual();
+                using (var context = visual.RenderOpen())
+                {
+                    var brush = new VisualBrush(source)
+                    {
+                        ViewboxUnits = BrushMappingMode.Absolute,
+                        Viewbox = new Rect(offset.X, offset.Y, source.ActualWidth, source.ActualHeight),
+                        Stretch = Stretch.None
+                    };
+                    context.DrawRectangle(brush, null, new Rect(0d, 0d, source.ActualWidth, source.ActualHeight));
+                }
+                bitmap.Render(visual);
                 bitmap.Freeze();
                 var image = new Image
                 {
@@ -408,8 +427,21 @@ namespace AFMediaBar.Views.Windows
             _outgoingSnapshots.Clear();
         }
 
+        private void CancelPendingNavigationStart()
+        {
+            if (_pendingNavigationStart is null) return;
+            CompositionTarget.Rendering -= _pendingNavigationStart;
+            _pendingNavigationStart = null;
+            if (_pendingSlideContent is not null)
+                SettingsNavigationAnimator.PrepareSlide(_pendingSlideContent, 0d);
+            _pendingSlideStrip?.PrepareTabs(0d);
+            _pendingSlideContent = null;
+            _pendingSlideStrip = null;
+        }
+
         private void OnNavigated(NavigationView sender, NavigatedEventArgs args)
         {
+            CancelPendingNavigationStart();
             if (args.Page is not Page page)
             {
                 ClearOutgoingSnapshots();
@@ -422,17 +454,18 @@ namespace AFMediaBar.Views.Windows
             var motion = MotionPolicy.ResolveCurrent();
             var duration = ResolveNavigationDuration(motion, Math.Abs(nextIndex - previousIndex));
             _currentPageType = pageType;
-            SyncNavigation(direction != 0 && motion.Mode == MotionMode.Full, duration);
             if (direction == 0 || motion.Mode == MotionMode.Instant)
             {
+                SyncNavigation();
                 ClearOutgoingSnapshots();
                 return;
             }
 
-            // The destination page has already been constructed here; start its clock before deferred Loaded work can delay it.
+            // Keep the incoming content at its start position while the first layout/render of the destination completes.
             var content = (page.FindName("PageScroll") as ScrollViewer)?.Content as UIElement;
             if (content is null)
             {
+                SyncNavigation();
                 ClearOutgoingSnapshots();
                 return;
             }
@@ -440,19 +473,51 @@ namespace AFMediaBar.Views.Windows
             {
                 var spline = (KeySpline)FindResource("AfSplineEaseInOut");
                 var travel = Math.Max(320d, NavigationTransitionOverlay.ActualWidth);
-                SettingsNavigationAnimator.Slide(content, direction * travel, duration, spline);
-                if (page.Content is Grid root)
-                    root.Children.OfType<SettingsGroupStrip>().FirstOrDefault()?.SlideTabs(direction * travel, duration, spline);
+                var strip = (page.Content as Grid)?.Children.OfType<SettingsGroupStrip>().FirstOrDefault();
+                SettingsNavigationAnimator.PrepareSlide(content, direction * travel);
+                strip?.PrepareTabs(direction * travel);
+                _pendingSlideContent = content;
+                _pendingSlideStrip = strip;
 
-                foreach (var snapshot in _outgoingSnapshots.ToArray())
-                    SettingsNavigationAnimator.SlideOut(snapshot, -direction * travel, duration, spline, () =>
+                // Layout and first paint of a newly constructed page can take longer than the animation itself.
+                // Start every moving layer together on its first render so no motion is consumed while the UI thread is busy.
+                EventHandler? begin = null;
+                begin = (_, _) =>
+                {
+                    CompositionTarget.Rendering -= begin;
+                    // BeginAnimation inside Rendering can inherit that frame's stale media clock and skip its first motion.
+                    Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
                     {
-                        NavigationTransitionOverlay.Children.Remove(snapshot);
-                        _outgoingSnapshots.Remove(snapshot);
-                    });
+                        if (!ReferenceEquals(_pendingNavigationStart, begin)) return;
+                        _pendingNavigationStart = null;
+                        _pendingSlideContent = null;
+                        _pendingSlideStrip = null;
+                        if (!IsVisible)
+                        {
+                            SettingsNavigationAnimator.PrepareSlide(content, 0d);
+                            strip?.PrepareTabs(0d);
+                            ClearOutgoingSnapshots();
+                            SyncNavigation();
+                            return;
+                        }
+
+                        SyncNavigation(animateSelection: true, duration);
+                        SettingsNavigationAnimator.Slide(content, direction * travel, duration, spline);
+                        strip?.SlideTabs(direction * travel, duration, spline);
+                        foreach (var snapshot in _outgoingSnapshots.ToArray())
+                            SettingsNavigationAnimator.SlideOut(snapshot, -direction * travel, duration, spline, () =>
+                            {
+                                NavigationTransitionOverlay.Children.Remove(snapshot);
+                                _outgoingSnapshots.Remove(snapshot);
+                            });
+                    }));
+                };
+                _pendingNavigationStart = begin;
+                CompositionTarget.Rendering += begin;
             }
             else
             {
+                SyncNavigation();
                 ClearOutgoingSnapshots();
                 SettingsNavigationAnimator.Fade(content, duration, (KeySpline)FindResource("AfSplineEaseOut"));
             }
