@@ -8,6 +8,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- Manage global artist separators in a Lyrics settings dialog: add, edit, or remove entries with preserved spaces and multi-character support. Searches and scoring share the rules; confirming saves and rematches lyrics, cancelling discards edits, and the media bar retains the original artist names.
+
 ### Fixed
 
 - Remove the current user's startup entry when uninstalling the installation it targets, avoiding a registry value pointing to a deleted executable. Preserve entries targeting a copy in another directory.
@@ -16,7 +20,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - Generate contributor snapshots in Release CI with paginated API requests, review them alongside version metadata on the isolated branch, and synchronize legacy snapshots through a PR.
 - Move release metadata to an isolated branch: Actions generate manifests from final packages and propose preview updates, with manual stable promotion and compatibility manifest synchronization PRs. Packages are published to GitHub Releases.
-- Split QQ Music artist lists on `/` for individual lyric matching and normalized search queries, while preserving the original artist text in the media bar.
+- Include the QQ Music `/` separator in the editable global default list. All players share the search and scoring pipeline; removing every separator disables splitting while preserving the original artist text in the media bar.
 - Lowered the QQ Music lyrics immediate-acceptance threshold from 85 to 80; on a miss, fallbacks are queried in parallel and an enabled source matching the current player wins regardless of score. Without such a result, QQ remains in the score comparison and wins when highest or tied.
 
 ## [1.3.1] - 2026-10-03

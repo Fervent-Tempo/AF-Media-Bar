@@ -15,10 +15,15 @@ public sealed class LrclibLyricsProvider : ILyricsProvider
     {
         if (string.IsNullOrWhiteSpace(request.Title)) return null;
         var title = LyricsSearchQueryPolicy.WithoutTranslation(request.Title);
-        var artist = LyricsSearchQueryPolicy.WithoutTranslation(request.Artist);
-        var candidates = await _api.Search(title, artist).ConfigureAwait(false);
-        cancellationToken.ThrowIfCancellationRequested();
-        return Resolve(request, candidates ?? [], cancellationToken);
+        foreach (var artist in LyricsSearchQueryPolicy.BuildArtists(request))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var candidates = await _api.Search(title, artist).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            var result = Resolve(request, candidates ?? [], cancellationToken);
+            if (result is not null) return result;
+        }
+        return null;
     }
 
     internal static LyricsResult? Resolve(LyricsRequest request, IEnumerable<SearchResultItem> candidates, CancellationToken cancellationToken)

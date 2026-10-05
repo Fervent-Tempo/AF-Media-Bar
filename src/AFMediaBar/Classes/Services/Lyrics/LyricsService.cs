@@ -33,7 +33,11 @@ public sealed class LyricsService
     {
         cancellationToken.ThrowIfCancellationRequested();
         var settings = SettingsManager.Current;
-        var effectiveRequest = request with { FilterInfoLines = settings.LyricsInfoLineFilterEnabled };
+        var effectiveRequest = request with
+        {
+            FilterInfoLines = settings.LyricsInfoLineFilterEnabled,
+            ArtistSeparators = settings.LyricsArtistSeparators
+        };
         var plan = LyricsRetrievalPolicy.Plan(_providers, LyricsSourcePolicy.ResolveActive(_providers, settings.LyricsSource));
         var started = Stopwatch.GetTimestamp();
         using var work = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
