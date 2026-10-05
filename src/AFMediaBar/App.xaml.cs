@@ -50,6 +50,8 @@ namespace AFMediaBar
     {
         private static readonly TimeSpan HostShutdownTimeout = TimeSpan.FromSeconds(5);
         private int _exitHandled;
+        private PowerStateMonitor? _powerStateMonitor;
+        private MemoryPruneCoordinator? _memoryPruneCoordinator;
         private SingleInstanceGuard? _singleInstanceGuard;
         private bool _isSecondaryInstance;
 
@@ -355,7 +357,10 @@ namespace AFMediaBar
             // （SystemEvents 的回调会从自己的线程进来，本类统一把它们搬回这里）。
             // Background pruning starts last: it can only judge "is anything playing" once the media session catalog is up, and its power message
             // window has to be created on the UI thread, which is also the thread every SystemEvents callback is marshalled back to.
-            Services.GetRequiredService<MemoryPruneCoordinator>().Start();
+            _powerStateMonitor = Services.GetRequiredService<PowerStateMonitor>();
+            _memoryPruneCoordinator = Services.GetRequiredService<MemoryPruneCoordinator>();
+            _powerStateMonitor.Start();
+            _memoryPruneCoordinator.Start();
 
 #if DEBUG
             _debugLyricsDiagnostics = new DebugLyricsDiagnostics();
@@ -394,6 +399,10 @@ namespace AFMediaBar
             // exit into a crash recorded as e0434352.
             var updateService = Services.GetRequiredService<UpdateService>();
             var installCoordinatorMutex = Services.GetRequiredService<InstallCoordinatorMutex>();
+
+            // UI 消息资源先退订与释放，再停止 Host；容器的重复 Dispose 仍然安全。
+            _memoryPruneCoordinator?.Dispose();
+            _powerStateMonitor?.Dispose();
 
 #if DEBUG
             if (_debugLyricsDiagnostics is not null)
