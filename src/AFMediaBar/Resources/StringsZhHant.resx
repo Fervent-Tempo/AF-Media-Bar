@@ -2086,4 +2086,31 @@
   <data name="Wheel.Line.WithValue" xml:space="preserve">
     <value>{0}：{1}</value>
   </data>
+  <data name="Lyrics.Row.ArtistSeparators.Title" xml:space="preserve">
+    <value>藝術家分隔符</value>
+  </data>
+  <data name="Lyrics.Row.ArtistSeparators.Description" xml:space="preserve">
+    <value>自訂歌詞搜尋和比對使用的藝術家分隔符。點擊管理可逐項新增、編輯或刪除，確定後重新比對；不改變藝術家顯示。</value>
+  </data>
+  <data name="Lyrics.Row.ArtistSeparators.Manage" xml:space="preserve">
+    <value>管理藝術家分隔符</value>
+  </data>
+  <data name="Lyrics.ArtistSeparators.Dialog.Hint" xml:space="preserve">
+    <value>保留分隔符首尾空格，字母不區分大小寫。</value>
+  </data>
+  <data name="Lyrics.ArtistSeparators.Dialog.Add" xml:space="preserve">
+    <value>新增</value>
+  </data>
+  <data name="Lyrics.ArtistSeparators.Dialog.Remove" xml:space="preserve">
+    <value>刪除分隔符</value>
+  </data>
+  <data name="Lyrics.ArtistSeparators.Dialog.Confirm" xml:space="preserve">
+    <value>確定</value>
+  </data>
+  <data name="Lyrics.ArtistSeparators.Dialog.Empty" xml:space="preserve">
+    <value>目前沒有分隔符，藝術家分割已關閉。可新增分隔符，或恢復預設的 /。</value>
+  </data>
+  <data name="Lyrics.ArtistSeparators.Dialog.Restore" xml:space="preserve">
+    <value>恢復預設分隔符</value>
+  </data>
 </root>

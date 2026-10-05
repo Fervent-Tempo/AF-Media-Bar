@@ -36,7 +36,8 @@ internal static partial class LyricsMetadataScore
     internal static Breakdown Explain(LyricsRequest request, string[] titles, string[] artists, string[] albums, double? duration)
     {
         var requestArtists = LyricsArtistPolicy.Split(request);
-        var candidateArtists = artists.SelectMany(artist => LyricsArtistPolicy.Split(artist, request.PlaybackSourceId)).ToArray();
+        var candidateArtists = artists.SelectMany(artist =>
+            LyricsArtistPolicy.Split(artist, request.ArtistSeparators)).ToArray();
         if (string.IsNullOrWhiteSpace(request.Title) || !titles.Any(title => !string.IsNullOrWhiteSpace(title)))
         {
             var scores = from requestArtist in requestArtists

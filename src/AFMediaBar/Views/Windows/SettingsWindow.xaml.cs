@@ -72,6 +72,7 @@ namespace AFMediaBar.Views.Windows
 
             InitializeComponent();
             SettingsResetDialog.SetHost(RootContentDialog);
+            ArtistSeparatorsEditor.SetHost(RootContentDialog);
             appearanceService.Attach(this);
             SetPageService(navigationViewPageProvider);
 
