@@ -1364,16 +1364,13 @@ namespace AFMediaBar.Components
         }
 
         /// <summary>
-        /// 按封面自身的宽高比调整封面框：高度取布局引擎给的尺寸，宽度按比例算，因此视频类宽封面不再被裁掉左右两边、
-        /// 竖版封面也不再被裁掉上下两边。比例超出允许范围时改用 <see cref="Stretch.Uniform"/>（留白也不裁切）。
-        /// 只作用于任务栏横向模式：竖向任务栏的封面尺寸仍由布局引擎唯一决定。
-        /// Adjusts the artwork box to the artwork's own aspect: the height comes from the layout engine and the width follows the ratio, so a
-        /// wide video cover is no longer cropped left and right and a portrait cover is no longer cropped top and bottom. Beyond the allowed
-        /// range it switches to <see cref="Stretch.Uniform"/>, which letterboxes instead of cropping. This only applies to the horizontal
-        /// taskbar: on a vertical taskbar the artwork size stays the layout engine's decision alone.
+        /// 横向任务栏按封面比例调整宽度；所有方向都保留完整封面，竖向框尺寸仍由布局引擎决定。
+        /// 极端比例和未知尺寸通过 Uniform 留白，避免方向切换后沿用裁切填充。
         /// </summary>
         private void ApplyTaskbarArtworkAspect()
         {
+            if (SongImage.Stretch != Stretch.Uniform)
+                SongImage.Stretch = Stretch.Uniform;
             if (_currentMode != WindowMode.Taskbar || _isVertical)
                 return;
 
@@ -1385,13 +1382,6 @@ namespace AFMediaBar.Components
             var box = ArtworkBoxPolicy.Resolve(height, artwork?.PixelWidth ?? 0, artwork?.PixelHeight ?? 0);
             if (Math.Abs(SongImageBorder.Width - box.Width) > 0.01)
                 SongImageBorder.Width = box.Width;
-
-            // 比例没被夹取时封面框与封面同比例，UniformToFill 正好铺满且不裁切；被夹取时只能留白。
-            // While the aspect is not clamped the box matches the artwork exactly, so UniformToFill fills it without cropping; once clamped,
-            // letterboxing is the only way to avoid cropping.
-            var stretch = box.Letterbox ? Stretch.Uniform : Stretch.UniformToFill;
-            if (SongImage.Stretch != stretch)
-                SongImage.Stretch = stretch;
         }
 
         /// <summary>当前是否有已连接且正在播放的媒体。/ Indicates whether connected media is currently playing.</summary>

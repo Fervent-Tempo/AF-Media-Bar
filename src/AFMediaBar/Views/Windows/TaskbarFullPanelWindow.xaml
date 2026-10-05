@@ -35,10 +35,10 @@
         </Border.RenderTransform>
         <StackPanel>
             <Grid x:Name="MediaInfoSection" Margin="0,0,0,13">
-                <Grid.ColumnDefinitions><ColumnDefinition Width="76"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                <Grid.ColumnDefinitions><ColumnDefinition x:Name="ArtworkColumn" Width="76"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                 <Border x:Name="ArtworkBorder" Width="76" Height="76" CornerRadius="9" ClipToBounds="True" Background="#18FFFFFF" Cursor="Hand" Tag="MediaAction" MouseLeftButtonUp="ArtworkBorder_MouseLeftButtonUp">
                     <Grid><ui:SymbolIcon x:Name="ArtworkPlaceholder" Symbol="MusicNote220" FontSize="30"/>
-                        <Image x:Name="ArtworkImage" Stretch="UniformToFill"/></Grid>
+                        <Image x:Name="ArtworkImage" Stretch="Uniform"/></Grid>
                 </Border>
                 <!--
                     完整层是"把整首歌的信息看全"的地方，因此这一块的四行 MUST NOT 裁剪：标题、歌手与来源都按可用宽度换行，
