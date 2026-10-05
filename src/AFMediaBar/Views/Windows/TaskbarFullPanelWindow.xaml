@@ -112,13 +112,15 @@
                 </StackPanel>
             </Grid>
 
-            <Border x:Name="PerformanceSection" Padding="10,7" CornerRadius="7" Background="#10FFFFFF">
+            <Border x:Name="PerformanceSection" Padding="10,7" CornerRadius="7"
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1">
                 <Grid>
                     <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
-                    <StackPanel><TextBlock Text="{DynamicResource Loc.Panel.Performance.Memory}" FontSize="10" Opacity="0.55"/><TextBlock x:Name="RamMetric" Text="—" FontWeight="SemiBold"/></StackPanel>
-                    <StackPanel Grid.Column="1"><TextBlock Text="CPU" FontSize="10" Opacity="0.55"/><TextBlock x:Name="CpuMetric" Text="—" FontWeight="SemiBold"/></StackPanel>
-                    <StackPanel Grid.Column="2"><TextBlock Text="GPU" FontSize="10" Opacity="0.55"/><TextBlock x:Name="GpuMetric" Text="—" FontWeight="SemiBold"/></StackPanel>
-                    <StackPanel Grid.Column="3"><TextBlock Text="{DynamicResource Loc.Panel.Performance.ProcessMemory}" FontSize="10" Opacity="0.55"/><TextBlock x:Name="ProcessMetric" Text="—" FontWeight="SemiBold"/></StackPanel>
+                    <StackPanel><TextBlock Text="{DynamicResource Loc.Panel.Performance.Memory}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/><TextBlock x:Name="RamMetric" Text="—" FontWeight="SemiBold"/></StackPanel>
+                    <StackPanel Grid.Column="1"><TextBlock Text="CPU" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/><TextBlock x:Name="CpuMetric" Text="—" FontWeight="SemiBold"/></StackPanel>
+                    <StackPanel Grid.Column="2"><TextBlock Text="GPU" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/><TextBlock x:Name="GpuMetric" Text="—" FontWeight="SemiBold"/></StackPanel>
+                    <StackPanel Grid.Column="3"><TextBlock Text="{DynamicResource Loc.Panel.Performance.ProcessMemory}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/><TextBlock x:Name="ProcessMetric" Text="—" FontWeight="SemiBold"/></StackPanel>
                 </Grid>
             </Border>
         </StackPanel>
