@@ -292,14 +292,16 @@
     </Style>
 
     <!--
-        动效曲线：0.23,1 0.32,1 是强 ease-out，用于入场揭示与选择过渡。
+        动效曲线：0.23,1 0.32,1 是强 ease-out，用于入场揭示与减少动效时的淡入。
         WPF 没有任意贝塞尔缓动函数（只有 CubicEase 等具名曲线），因此以 KeySpline 形式提供，
         由 SettingsRevealAnimator 通过 SplineDoubleKeyFrame 使用。
-        Motion curve: 0.23,1 0.32,1 is the strong ease-out used for the entrance reveal and selection
-        transitions. WPF exposes no arbitrary-bezier easing function, only named curves such as CubicEase, so it
+        Motion curve: 0.23,1 0.32,1 is the strong ease-out used for entrance reveals and reduced-motion fades.
+        WPF exposes no arbitrary-bezier easing function, only named curves such as CubicEase, so it
         is published as a KeySpline and consumed by SettingsRevealAnimator through SplineDoubleKeyFrame.
     -->
     <KeySpline x:Key="AfSplineEaseOut">0.23,1 0.32,1</KeySpline>
+    <!-- The CSS ease-in-out Bézier keeps long tab journeys legible instead of rushing through their midpoint. -->
+    <KeySpline x:Key="AfSplineEaseInOut">0.42,0 0.58,1</KeySpline>
 
     <!--
 
@@ -805,12 +807,14 @@
                 <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center" />
             </Border>
             <ControlTemplate.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="IsMouseOver" Value="True" />
+                        <Condition Property="IsChecked" Value="False" />
+                    </MultiTrigger.Conditions>
                     <Setter TargetName="Surface" Property="Background" Value="{DynamicResource AfSettingsInputBrush}" />
-                </Trigger>
+                </MultiTrigger>
                 <Trigger Property="IsChecked" Value="True">
-                    <Setter TargetName="Surface" Property="Background" Value="{DynamicResource AfSettingsSectionBrush}" />
-                    <Setter TargetName="Surface" Property="BorderBrush" Value="{DynamicResource AfSettingsBorderBrush}" />
                     <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
                     <Setter Property="FontWeight" Value="{DynamicResource AppTextStrongFontWeight}" />
                 </Trigger>

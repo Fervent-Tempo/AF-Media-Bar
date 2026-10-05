@@ -19,20 +19,20 @@ public readonly record struct SettingsReveal(bool ShouldAnimate, TimeSpan Delay,
 ///
 /// 为什么限制错峰块数：错峰是装饰性的，长列表末尾若继续累加延迟，
 /// 用户会先看到一段静止的页面再看到内容出现，那正是“卡顿”的来源。
-/// 上限由时间预算反推而来：块时长取 StandardDuration（180 ms），
-/// 因此最大起始延迟必须不超过 120 ms，才能让整页在 300 ms 内完成揭示。
+/// 上限由时间预算反推而来：块时长取 PositionDuration（220 ms），
+/// 因此最大起始延迟不超过 80 ms，让整页在 300 ms 内完成揭示。
 /// Why the stagger is capped: stagger is decorative, so letting it accumulate down a long list
 /// shows the user a frozen page before content appears, which reads as lag rather than polish.
-/// The cap is derived from the time budget: a block lasts StandardDuration (180 ms), so the largest start
-/// delay must stay at or under 120 ms for the whole reveal to finish inside 300 ms.
+/// The cap is derived from the time budget: a block lasts PositionDuration (220 ms), so the largest start
+/// delay stays at or under 80 ms for the whole reveal to finish inside 300 ms.
 /// </summary>
 public static class SettingsRevealPolicy
 {
     /// <summary>参与错峰的最大块数；其后的块在同一个延迟上一起开始。/ Maximum staggered blocks; later blocks start together at the capped delay.</summary>
     public const int MaxStaggeredBlocks = 5;
 
-    /// <summary>相邻块的错峰步长；取 30 ms 是可见级联的下限，同时不超出时间预算。/ Stagger step between adjacent blocks; 30 ms is the visible-cascade lower bound within the budget.</summary>
-    public static readonly TimeSpan StaggerStep = TimeSpan.FromMilliseconds(30);
+    /// <summary>相邻块的错峰步长；缩短等待，使较长的单块揭示也不拖慢整页。/ Stagger step between adjacent blocks, shortened so a longer reveal does not delay the whole page.</summary>
+    public static readonly TimeSpan StaggerStep = TimeSpan.FromMilliseconds(20);
 
     /// <summary>
     /// 起始纵向位移（DIP）。位移只用于给出方向感，因此保持小于一个行高。
@@ -60,7 +60,7 @@ public static class SettingsRevealPolicy
         return new SettingsReveal(
             ShouldAnimate: true,
             StaggerStep * normalizedIndex,
-            motion.StandardDuration,
+            motion.PositionDuration,
             EntranceOffsetDip);
     }
 }

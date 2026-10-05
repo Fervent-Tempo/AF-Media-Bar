@@ -569,7 +569,7 @@
                         </Border>
                     </Grid>
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" CanContentScroll="False">
-                        <Grid MinHeight="40">
+                        <Grid x:Name="PART_TabContent" MinHeight="40">
                             <ItemsControl x:Name="PART_Tabs" Focusable="False" ItemsSource="{Binding Groups, RelativeSource={RelativeSource TemplatedParent}}">
                                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate><DataTemplate>

@@ -68,6 +68,21 @@
         </ui:TitleBar>
         <Border Grid.Row="1" Background="{DynamicResource AfSettingsNavigationBrush}">
             <ScrollViewer Margin="28,0" MaxWidth="900" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" CanContentScroll="False">
+                <Grid x:Name="PrimaryTabsHost" HorizontalAlignment="Left">
+                <!-- One movable surface connects the selected page tabs across navigation. -->
+                <Canvas IsHitTestVisible="False">
+                    <Border x:Name="PrimaryTabIndicator" Canvas.Top="4" Height="40" Visibility="Collapsed"
+                            Background="{DynamicResource AfSettingsSectionBrush}"
+                            BorderBrush="{DynamicResource AfSettingsBorderBrush}"
+                            BorderThickness="1,1,1,0" CornerRadius="10,10,0,0">
+                        <Border.RenderTransform>
+                            <TransformGroup>
+                                <ScaleTransform x:Name="PrimaryTabIndicatorScale" ScaleX="1" />
+                                <TranslateTransform x:Name="PrimaryTabIndicatorOffset" />
+                            </TransformGroup>
+                        </Border.RenderTransform>
+                    </Border>
+                </Canvas>
                 <StackPanel x:Name="PrimaryTabs" Orientation="Horizontal">
                     <ToggleButton Tag="{x:Type pages:DisplayModesPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}">
                         <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="Desktop24" FontSize="16" Foreground="{DynamicResource AfAccentBrush}" Margin="0,0,7,0" /><TextBlock Text="{DynamicResource Loc.Common.Page.DisplayModes}" /></StackPanel>
@@ -105,6 +120,7 @@
                         <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="QuestionCircle24" FontSize="16" Foreground="{DynamicResource AfAccentBrush}" Margin="0,0,7,0" /><TextBlock Text="{DynamicResource Loc.Common.Page.About}" /></StackPanel>
                     </ToggleButton>
                 </StackPanel>
+                </Grid>
             </ScrollViewer>
         </Border>
         <!-- The fixed group strip is 45 DIP tall; blend the material just below it into the scroll area. -->
@@ -138,6 +154,8 @@
             </ui:NavigationView.MenuItems>
             <ui:NavigationView.ContentOverlay><ui:SnackbarPresenter x:Name="SnackbarPresenter" /></ui:NavigationView.ContentOverlay>
         </ui:NavigationView>
+        <!-- Retain only the departing page's visible content during a directional handoff. -->
+        <Canvas x:Name="NavigationTransitionOverlay" Grid.Row="2" ClipToBounds="True" IsHitTestVisible="False" />
         <ui:ContentDialogHost x:Name="RootContentDialog" Grid.RowSpan="3" />
     </Grid>
 </ui:FluentWindow>
