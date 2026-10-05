@@ -15,7 +15,7 @@ AF Media Bar 是 Windows/WPF 桌面应用，优先防止错媒体、歌词错误
 
 - [MSTest 项目](../tests/AFMediaBar.Layout.Tests/AFMediaBar.Layout.Tests.csproj) 位于 `tests/AFMediaBar.Layout.Tests/`，使用 Windows/WPF 环境。已有歌词解析与缓存、部分 XAML 资源、封面主色、剪枝、材质回退、日志、设置快照和安装准备回归；项目名称不代表所有布局策略已有覆盖。
 - [构建 CI](../.github/workflows/build.yml) 执行还原、Release 构建、测试、单文件发布和安装包产物检查，并验证发布数据与贡献者名单脚本。它没有完整桌面启动、菜单退出、播放器或真实安装验收。
-- [架构检查](../tools/verify-architecture.ps1) 用于 ViewModel 等代码边界；[歌词布局检查](../tools/verify-lyrics-layout.cjs) 使用 Playwright 与 Edge 验证内嵌网页，不能替代 WebView2 宿主验收。均按实际改动选择，运行条件须满足。
+- 仓库尚未提供架构边界和歌词网页布局自动检查脚本。相关修改须人工审查并报告自动检查缺口；网页布局检查也不能替代 WebView2 宿主验收。
 
 覆盖以当前测试源码为准，不根据文件名或历史通过记录推断。已有测试能防止本次回归时直接复用；不能覆盖时，再补最小的有效验证。
 
@@ -40,7 +40,7 @@ AF Media Bar 是 Windows/WPF 桌面应用，优先防止错媒体、歌词错误
 
 1. 先读已有测试、相关入口和功能规则，说明未覆盖的用户风险。修复 bug 时，优先选择修复前失败、修复后通过的回归；无法自动复现时记录替代验证与剩余风险。
 2. 每个测试验证一个清楚的行为，名称说明条件与结果。优先既有纯策略和真实对象，只替换网络、COM、原生调用或进程等必要的外部依赖；不把待验证的解析、哈希或文件写入替换为固定成功。
-3. WPF 测试按需复用 [StaTest](../tests/AFMediaBar.Layout.Tests/StaTest.cs)，在所属线程操作对象，结束时关闭窗口与 Dispatcher。修改 `SettingsManager`、静态缓存或共享资源时禁止并行，并在 `finally` 或清理方法中恢复原状态。
+3. WPF 测试按需复用[StaTest](../tests/AFMediaBar.Layout.Tests/StaTest.cs)，在所属线程操作对象，结束时关闭窗口与 Dispatcher。修改 `SettingsManager`、静态缓存或共享资源时禁止并行，并在 `finally` 或清理方法中恢复原状态。
 4. 文件测试使用独立临时目录，关闭句柄后清理。异步测试优先用同步信号等待条件，设置超时并观察异常；避免依赖固定长延时、精确耗时或无限循环，结束时取消并等待自己启动的任务。
 
 优先测试公开行为，不为测试一处简单逻辑新增服务、接口或大范围重构。现有部分回归使用反射控制状态，应限制在必要的准备与观察中；不要把私有字段名、第三方对象内部结构或固定调用顺序当作测试目标，也不要为消除旧反射顺手重写整套测试。
