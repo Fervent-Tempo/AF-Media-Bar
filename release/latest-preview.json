@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "version": "1.3.1",
+  "releaseDate": "2026-10-03",
+  "minimumSupportedVersion": "1.2.0",
+  "mandatory": false,
+  "title": "AF Media Bar 1.3.1",
+  "changelog": [
+    "歌词显示性能优化，减少 WebView2 的内存与 GPU 占用",
+    "注:安装目录下的 AFMediaBar.exe.WebView2，文件已不再需要，可手动删除。",
+    "媒体栏多项性能优化",
+    "自动隐藏任务栏动画回归",
+    "修复 WebView2 数据目录、封面恢复默认和空间音效状态判断问题",
+    "修复部分情况下无法显示歌词的问题"
+
+  ],
+  "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.3.1",
+  "releasePageUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/latest",
+  "downloads": {
+    "github": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/download/v1.3.1/AFMediaBar-v1.3.1-win-x64.zip"
+  },
+  "packages": [
+    {
+      "url": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/download/v1.3.1/AFMediaBar-Setup-v1.3.1-win-x64.exe",
+      "size": 74073482,
+      "sha256": "53070ccde1b3c832dbf1a74c3aaa406cefc604f255ca166182f62dcd9898bcf6"
+    }
+  ]
+}
