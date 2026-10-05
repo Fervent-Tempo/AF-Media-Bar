@@ -16,10 +16,10 @@ namespace AFMediaBar.Classes.Services.Updates;
 /// <see cref="UpdateState"/>：设置页与托盘菜单因此永远说同一件事，也不需要各自实现一遍重试与回退。
 ///
 /// 三条硬边界：
-/// 1) 检查与下载全部在后台线程，状态只在 Dispatcher 上发布，UI 线程不等待任何 <see cref="Task"/>；
+/// 1) 检查、下载与安装验包在后台执行，状态事件在 Dispatcher 上发布；退出只有界等待已准备好的交接；
 /// 2) 只有通过 SHA-256 校验的文件才会成为"待安装"，校验失败一律删除并且绝不安装；
 /// 3) 安装由安装程序在程序退出之后完成——运行中的单文件可执行文件无法被覆盖——因此本类只负责决定
-///    "退出时是否启动安装包、要不要在装完后重新启动程序"。
+///    启动前或显式重启时的准备与交接，普通退出不会启动安装程序。
 /// Coordinator of the update downloader and the single owner of its state machine.
 ///
 /// It concentrates when to check, where to download from, and when installing is allowed, and publishes nothing
@@ -27,15 +27,15 @@ namespace AFMediaBar.Classes.Services.Updates;
 /// neither has to reimplement retries or fallbacks.
 ///
 /// Three hard boundaries:
-/// 1) checking and downloading happen on background threads, state is published on the dispatcher only, and the UI
-///    thread never waits for a <see cref="Task"/>;
+/// 1) checking, downloading and installation verification run in the background; state events use the dispatcher,
+///    and exit waits only within a bound for a prepared handoff;
 /// 2) only a file that passed its SHA-256 check becomes pending, and a failed check deletes the file and never
 ///    installs it;
 /// 3) installing is performed by the installer after the application exits — a running single-file executable
-///    cannot be overwritten — so this class only decides whether to start the installer on exit and whether the
-///    application should come back afterwards.
+///    cannot be overwritten — so this class prepares and hands off startup or explicit restart installation.
+///    A normal quit does not start the installer.
 /// </summary>
-public sealed class UpdateService : IDisposable
+public sealed partial class UpdateService : IDisposable
 {
     private static readonly TimeSpan ScheduleTickInterval = TimeSpan.FromMinutes(5);
 
@@ -54,7 +54,7 @@ public sealed class UpdateService : IDisposable
     private DispatcherTimer? _scheduleTimer;
     private InstalledApplicationInfo _installInfo = InstalledApplicationInfo.NotInstalled;
     private bool _started;
-    private bool _disposed;
+    private volatile bool _disposed;
     private bool _installHandoffStarted;
     private bool _installOnExit;
     private int _lastReportedPercent = -1;
@@ -329,6 +329,7 @@ public sealed class UpdateService : IDisposable
         lock (_gate)
         {
             _operation?.Cancel();
+            _installPreparation?.Cancel();
         }
     }
 
@@ -343,22 +344,6 @@ public sealed class UpdateService : IDisposable
 
         WriteUpdateSettings(current => current with { SkippedVersion = version });
         PublishState(state with { Phase = UpdatePhase.Skipped, IsSkipped = true });
-    }
-
-    /// <summary>
-    /// 用户要求立即重启并安装：置位后请求宿主退出，安装将在退出之后由安装程序完成。
-    /// The user asked to restart and install now: the flag is set and the host is asked to exit, after which the
-    /// installer performs the installation.
-    /// </summary>
-    public void RequestInstallAndExit()
-    {
-        if (!UpdatePresentationPolicy.CanInstallNow(CurrentState))
-        {
-            return;
-        }
-
-        _installOnExit = true;
-        RaiseOnDispatcher(() => RestartRequested?.Invoke(this, EventArgs.Empty));
     }
 
     /// <summary>
@@ -383,210 +368,10 @@ public sealed class UpdateService : IDisposable
         return TryOpenUrl(page);
     }
 
-    /// <summary>
-    /// 在这次启动"之前"安装待安装的更新：启动安装程序并让调用方立刻结束本次启动。
-    ///
-    /// 这是自动更新的正常路径。退出时安装会把一个安装程序窗口留在用户刚关掉程序之后，看起来像程序自己又启动了
-    /// 一次；放到下次启动之前，用户看到的顺序是"打开程序 → 安装进度 → 新版本启动"，与他的意图一致。
-    ///
-    /// 只有"已安装的副本、没有其它实例在跑、待安装文件与记录完全一致、且版本确实比当前新"时才启动。
-    /// 版本不新时（例如用户已经手动升级过）待安装文件与记录会被清理掉，绝不安装旧版本。
-    /// Installs the pending update *before* this start: the installer is started and the caller ends the current start
-    /// immediately.
-    ///
-    /// This is the normal path for automatic updates. Installing on exit leaves an installer window right after the
-    /// user closed the application, which looks like the application restarting itself; running it before the next
-    /// start makes the order "open the app → install progress → the new version starts", which matches the user's
-    /// intent.
-    ///
-    /// It only starts when the copy is an installed one, no other instance is running, the pending file still matches
-    /// its record, and the version really is newer than the running one. When it is not newer (the user upgraded by
-    /// hand, for example) the pending file and record are cleaned up rather than installing an older version.
-    /// </summary>
-    /// <returns>是否已启动安装程序；为 true 时调用方必须结束本次启动。/ Whether an installer was started, in which case the caller must end this start.</returns>
-    public bool TryLaunchPendingInstallOnStartup()
-    {
-        PendingInstallPlan? plan;
-        lock (_gate)
-        {
-            if (_disposed || _installHandoffStarted)
-            {
-                return false;
-            }
-
-            var record = _store.ReadPendingRecord();
-            if (record is null)
-            {
-                return false;
-            }
-
-            // 记录指出去的位置必须仍在更新目录里。指向别处时只丢掉记录本身：那里的文件不是我们放的，程序没有
-            // 理由去动它。
-            // The recorded location has to stay inside the update directory. Anything else drops the record and
-            // nothing more: whatever lives there was not put there by us, so there is no reason to touch it.
-            if (!_store.IsTrustedInstallerPath(record.Path))
-            {
-                Debug.WriteLine("[Update] Pending record points outside the update directory; discarding it.");
-                _store.ClearPendingRecord();
-                return false;
-            }
-
-            if (!File.Exists(record.Path))
-            {
-                return false;
-            }
-
-            if (!UpdateVersionPolicy.IsUpdateAvailable(CurrentVersion, record.Version))
-            {
-                // 待安装的版本不高于正在运行的版本：它已经过期了（用户可能刚手动升级过），清理掉而不是降级安装。
-                // The pending version is not newer than the running one, so it is stale (the user may have upgraded by
-                // hand); it is cleaned up instead of downgrading anything.
-                Debug.WriteLine($"[Update] Discarding stale pending installer for {record.Version}.");
-                _store.RemoveInstaller(record.Path);
-                _store.ClearPendingRecord();
-                return false;
-            }
-
-            RefreshInstallInfo();
-
-            // 这里传的 asset 只表示"与记录指的是同一个文件"：启动时还没有清单，拿不到独立于记录的哈希，因此它
-            // 不构成任何完整性证据，真正的校验在 ResolvePendingInstallPlan 读回文件时完成。
-            // The asset passed here only says "the same file the record points at": no manifest has been fetched yet at
-            // startup, so no hash independent of the record exists and this argument is no integrity evidence at all.
-            // The real check happens in ResolvePendingInstallPlan, which reads the file back.
-            plan = ResolvePendingInstallPlan(record, new UpdatePackageAsset(string.Empty, record.Size, record.Sha256));
-        }
-
-        return TryStartPendingInstall(plan);
-    }
-
-    /// <summary>
-    /// 在退出边界上安装待安装的更新，且只在用户明确点击"立即重启并安装"之后。
-    ///
-    /// 自动更新已经不在退出时发生（见 <see cref="TryLaunchPendingInstallOnStartup"/>）；这里只服务于那一次显式请求，
-    /// 因此没有该请求时直接返回 false，不会把一个安装程序窗口留在用户退出之后。
-    /// Installs the pending update on the exit boundary, and only after the user explicitly clicked "restart and install
-    /// now".
-    ///
-    /// Automatic updates no longer happen on exit (see <see cref="TryLaunchPendingInstallOnStartup"/>); this serves
-    /// that one explicit request, so without it the call returns false and never leaves an installer window behind a
-    /// user's exit.
-    /// </summary>
-    /// <returns>是否已启动安装程序。/ Whether an installer was started.</returns>
-    public bool TryLaunchPendingInstallOnExit()
-    {
-        PendingInstallPlan? plan;
-        lock (_gate)
-        {
-            if (_disposed || _installHandoffStarted || !_installOnExit)
-            {
-                return false;
-            }
-
-            var record = _store.ReadPendingRecord();
-            if (record is null ||
-                !File.Exists(record.Path) ||
-                _state.Manifest is not { } manifest ||
-                manifest.Packages.Count == 0)
-            {
-                return false;
-            }
-
-            RefreshInstallInfo();
-            plan = ResolvePendingInstallPlan(record, manifest.Packages[0]);
-        }
-
-        return TryStartPendingInstall(plan);
-    }
-
-    /// <summary>
-    /// 判断现在能否安装，并在可以时给出启动参数。所有外部状态（注册表、进程枚举、文件时间戳）都在锁内读取，
-    /// 进程启动留在锁外：持有锁调用外部组件会把一次 UAC 提示变成整个更新状态的阻塞点。
-    /// Decides whether installing is possible now and, when it is, produces the launch arguments. Every external piece
-    /// of state (registry, process enumeration, file timestamps) is read inside the lock while the process itself is
-    /// started outside it: calling an external component under the lock would turn one UAC prompt into a stall of the
-    /// whole update state.
-    /// </summary>
-    private PendingInstallPlan? ResolvePendingInstallPlan(UpdatePendingFileRecord record, UpdatePackageAsset asset)
-    {
-        switch (_store.Evaluate(asset))
-        {
-            case UpdatePendingFileAction.Reuse:
-                // 长度和写入时间都对得上，只说明这段时间没人动过它；记录完全可能被一并改写过，所以这里真的把
-                // 文件读一遍，用哈希确认它仍是当初通过校验的那一份。
-                // Matching length and write time only say nobody touched it since; the record may well have been
-                // rewritten together with it, so the file is read back and confirmed by hash to still be the one that
-                // passed verification.
-                if (!_store.MatchesRecordedHash(record))
-                {
-                    Debug.WriteLine("[Update] Pending installer no longer matches its recorded hash; skipping this install attempt.");
-                    return null;
-                }
-
-                break;
-
-            // 文件被改动过：不做同步重算 70 MB 哈希的阻塞操作，本次不安装，留给下一次启动或用户的显式请求。
-            // The file changed: no synchronous 70 MB re-hash, so this attempt is skipped and left to the next start or
-            // an explicit user request.
-            case UpdatePendingFileAction.VerifyAgain:
-                Debug.WriteLine("[Update] Pending installer changed on disk; skipping this install attempt.");
-                return null;
-
-            default:
-                return null;
-        }
-
-        var decision = ResolveInstallDecision();
-        if (!decision.CanInstall)
-        {
-            Debug.WriteLine($"[Update] Install deferred: {decision.BlockedReason}");
-            return null;
-        }
-
-        // 一次性标记先置位：即使安装程序随后通过 Restart Manager 关闭了本进程，也不会启动第二个安装包。
-        // The one-shot flag is set first, so a second installer is never started even if the installer closes this
-        // process through the Restart Manager.
-        _installHandoffStarted = true;
-
-        // 待安装记录必须在启动安装程序之前清掉，否则安装完成后重新启动的新版本可能再次读到它并再装一遍：
-        // 只要"清单声明的版本"高于"程序集里的版本"（发布侧写错版本号就会这样），每次启动都会启动一次安装程序，
-        // 程序于是永远打不开。代价是安装失败后需要重新下载，这比一个无限安装循环好得多。
-        // The pending record has to be cleared before the installer starts, otherwise the new version started after the
-        // install can read it again and install once more: whenever the version declared by the manifest is higher than
-        // the assembly version (which a wrong version number on the release side produces), every start would launch an
-        // installer and the application could never open. The cost is re-downloading after a failed install, which is
-        // far better than an endless install loop.
-        _store.ClearPendingRecord();
-        return new PendingInstallPlan(
-            record.Path,
-            UpdateInstallPlanPolicy.BuildArguments(relaunchAfterInstall: true, _store.ResolveLogPath(record.Version)),
-            decision.UseRunAs);
-    }
-
-    private bool TryStartPendingInstall(PendingInstallPlan? plan)
-    {
-        if (plan is not { } pending)
-        {
-            return false;
-        }
-
-        // 释放协调互斥体：Inno 在启动阶段检查它，静默模式下若它仍然存在会直接退出。
-        // Release the coordination mutex: Inno checks it while starting up and exits immediately in silent mode when it
-        // still exists.
-        _installMutex.Release();
-        return TryStartInstaller(pending.Path, pending.Arguments, pending.UseRunAs);
-    }
-
-    /// <summary>一次待安装更新的启动参数。/ Launch arguments for one pending update.</summary>
-    /// <param name="Path">安装程序路径。/ Installer path.</param>
-    /// <param name="Arguments">静默安装参数。/ Silent install arguments.</param>
-    /// <param name="UseRunAs">是否需要提权。/ Whether elevation is required.</param>
-    private readonly record struct PendingInstallPlan(string Path, string Arguments, bool UseRunAs);
-
-
     /// <summary>停止排期并取消进行中的操作。/ Stops scheduling and cancels any in-flight operation.</summary>
     public void Dispose()
     {
+        PreparedInstall? prepared;
         lock (_gate)
         {
             if (_disposed)
@@ -596,7 +381,15 @@ public sealed class UpdateService : IDisposable
 
             _disposed = true;
             _operation?.Cancel();
+            _installPreparation?.Cancel();
+            _installGeneration++;
+            prepared = _preparedInstall;
+            _preparedInstall = null;
         }
+
+        prepared?.Dispose();
+        if (prepared is not null)
+            FinishInstallPreparation(prepared.Operation);
 
         SettingsManager.SettingsChanged -= OnSettingsChanged;
         _scheduleTimer?.Stop();
@@ -889,6 +682,11 @@ public sealed class UpdateService : IDisposable
 
     private (bool CanInstall, bool UseRunAs, string? BlockedReason) ResolveInstallDecision()
     {
+        if (_installDecisionOverride is { } decide)
+        {
+            var overridden = decide();
+            return (overridden.CanInstall, overridden.UseRunAs, overridden.BlockedReason);
+        }
         var isInstalledCopy = InstalledApplicationProbe.MatchesRunningProcess(_installInfo, Environment.ProcessPath);
         var others = InstalledApplicationProbe.CountOtherRunningInstances(Environment.ProcessId);
         var decision = UpdateInstallPlanPolicy.Decide(isInstalledCopy, _installInfo.IsMachineWide, IsElevated(), others);
@@ -913,6 +711,8 @@ public sealed class UpdateService : IDisposable
     {
         try
         {
+            if (_installerOverride is { } launch)
+                return launch(path, arguments, useRunAs);
             var startInfo = new ProcessStartInfo(path, arguments)
             {
                 UseShellExecute = useRunAs,
@@ -962,7 +762,15 @@ public sealed class UpdateService : IDisposable
             _state = state;
         }
 
-        RaiseOnDispatcher(() => UpdateStateChanged?.Invoke(state));
+        RaiseOnDispatcher(() =>
+        {
+            lock (_gate)
+            {
+                if (!ReferenceEquals(_state, state))
+                    return;
+            }
+            UpdateStateChanged?.Invoke(state);
+        });
     }
 
     private void RaiseOnDispatcher(Action action)
@@ -972,6 +780,10 @@ public sealed class UpdateService : IDisposable
             return;
         }
 
-        _dispatcher.BeginInvoke(action, DispatcherPriority.Normal);
+        _dispatcher.BeginInvoke(new Action(() =>
+        {
+            if (!_disposed && !_dispatcher.HasShutdownStarted && !_dispatcher.HasShutdownFinished)
+                action();
+        }), DispatcherPriority.Normal);
     }
 }

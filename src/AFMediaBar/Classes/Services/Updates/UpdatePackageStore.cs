@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.IO;
-using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using AFMediaBar.Classes.Models.Updates;
@@ -30,7 +29,6 @@ public sealed class UpdatePackageStore
     private const string InstallerPattern = "AFMediaBar-Setup-*.exe";
     private const string LogPattern = "install-*.log";
     private const string TemporarySuffix = ".tmp";
-    private const int HashBufferSize = 64 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -298,56 +296,6 @@ public sealed class UpdatePackageStore
         }
         catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)
         {
-            return false;
-        }
-    }
-
-    /// <summary>
-    /// 把安装包真的读一遍，确认它的 SHA-256 与记录里写的一致。
-    ///
-    /// 记录自身的自洽说明不了文件有没有被换过：长度和写入时间都可以一并伪造，只有把字节读完算出来的哈希才描述
-    /// 文件本身。因此"可以直接复用"这个结论必须建立在真的读过一遍的基础之上。
-    /// Reads the installer back to confirm that its SHA-256 matches the recorded one.
-    ///
-    /// The record agreeing with itself says nothing about whether the file was swapped: both its length and its write
-    /// time can be forged together, and only a hash computed over the bytes describes the file itself. The decision to
-    /// reuse therefore has to rest on having actually read it.
-    /// </summary>
-    /// <param name="record">待安装记录。/ Pending record.</param>
-    public bool MatchesRecordedHash(UpdatePendingFileRecord record)
-    {
-        try
-        {
-            using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-            using var stream = new FileStream(
-                record.Path,
-                FileMode.Open,
-                FileAccess.Read,
-                FileShare.Read,
-                HashBufferSize,
-                FileOptions.SequentialScan);
-
-            var buffer = new byte[HashBufferSize];
-            while (true)
-            {
-                var count = stream.Read(buffer, 0, buffer.Length);
-                if (count == 0)
-                {
-                    break;
-                }
-
-                hash.AppendData(buffer, 0, count);
-            }
-
-            return string.Equals(
-                Convert.ToHexString(hash.GetHashAndReset()),
-                record.Sha256,
-                StringComparison.OrdinalIgnoreCase);
-        }
-        catch (Exception exception) when (
-            exception is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
-        {
-            Debug.WriteLine($"[Update] Pending installer could not be hashed: {exception.Message}");
             return false;
         }
     }

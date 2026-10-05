@@ -194,21 +194,26 @@ public sealed class UpdatePackageDownloader
     }
 
     /// <summary>
-    /// 重新校验一个已经存在的安装包。文件没有被改动过时走的是"复用"，只有时间戳变了才走到这里。
-    /// Verifies an installer that already exists. An untouched file is reused instead; this path runs only when the
-    /// timestamp changed.
+    /// 对已有安装包执行完整 SHA-256 校验；安装准备始终调用此入口，不依赖时间戳判断可信度。
+    /// Verifies the complete SHA-256 hash of an existing installer, including every installation preparation.
     /// </summary>
     /// <param name="path">安装包路径。/ Installer path.</param>
     /// <param name="asset">清单里的安装包。/ Package from the manifest.</param>
     /// <param name="version">安装包版本。/ Installer version.</param>
     /// <param name="progress">0–100 的进度回调。/ Progress callback reporting 0–100.</param>
     /// <param name="cancellationToken">取消标记。/ Cancellation token.</param>
-    public async Task<UpdateDownloadOutcome> VerifyAsync(
+    public Task<UpdateDownloadOutcome> VerifyAsync(
         string path,
         UpdatePackageAsset asset,
         string version,
         IProgress<double>? progress,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken) =>
+        VerifyAsync(path, asset, version, progress, cancellationToken, persistRecord: true);
+
+    // 安装准备持有额外的只读租约；失败清理须等租约释放，记录只在最终交接时消费。
+    internal async Task<UpdateDownloadOutcome> VerifyAsync(
+        string path, UpdatePackageAsset asset, string version, IProgress<double>? progress,
+        CancellationToken cancellationToken, bool persistRecord)
     {
         try
         {
@@ -240,10 +245,14 @@ public sealed class UpdatePackageDownloader
             }
 
             var actual = Convert.ToHexString(hash.GetHashAndReset());
+            cancellationToken.ThrowIfCancellationRequested();
             if (!string.Equals(actual, asset.Sha256, StringComparison.OrdinalIgnoreCase))
             {
-                _store.RemoveInstaller(path);
-                _store.ClearPendingRecord();
+                if (persistRecord)
+                {
+                    _store.RemoveInstaller(path);
+                    _store.ClearPendingRecord();
+                }
                 return UpdateDownloadOutcome.Failure(
                     Translations.Get("Update.Reason.VerifyHashMismatch"),
                     null);
@@ -255,7 +264,8 @@ public sealed class UpdatePackageDownloader
                 asset,
                 read,
                 new DateTimeOffset(File.GetLastWriteTimeUtc(path), TimeSpan.Zero));
-            _store.WritePendingRecord(record);
+            if (persistRecord)
+                _store.WritePendingRecord(record);
             progress?.Report(100d);
             return UpdateDownloadOutcome.Success(record, null);
         }
@@ -266,8 +276,11 @@ public sealed class UpdatePackageDownloader
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             Debug.WriteLine($"[Update] Re-verification of {path} failed: {exception.Message}");
-            _store.RemoveInstaller(path);
-            _store.ClearPendingRecord();
+            if (persistRecord)
+            {
+                _store.RemoveInstaller(path);
+                _store.ClearPendingRecord();
+            }
             return UpdateDownloadOutcome.Failure(Translations.Get("Update.Reason.VerifyUnreadable"), null);
         }
     }

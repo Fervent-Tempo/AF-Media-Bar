@@ -181,7 +181,8 @@ namespace AFMediaBar.ViewModels.Pages
 
         /// <summary>立即重启并安装：退出后由安装程序静默安装并自动启动新版本。/ Restarts and installs now: the installer runs silently after exit and starts the new version.</summary>
         [RelayCommand]
-        private void InstallAndRestart() => _updateService.RequestInstallAndExit();
+        private async Task InstallAndRestart(CancellationToken cancellationToken) =>
+            await _updateService.RequestInstallAndExitAsync(cancellationToken);
 
         /// <summary>跳过清单中的当前版本。/ Skips the version offered by the manifest.</summary>
         [RelayCommand]
