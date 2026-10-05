@@ -97,7 +97,8 @@
             <StackPanel
                 x:Name="PageRoot"
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
-                Loaded="OnPageLoaded">
+                Loaded="OnPageLoaded"
+                Unloaded="OnPageUnloaded">
 
                 <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.Fonts}" Icon="{ui:SymbolIcon TextFont24}">
                     <StackPanel>
