@@ -84,12 +84,6 @@ public static class LyricsFormatDetector
         @"(?:\(-?\d+,\d+(?:,\d+)?\)|<-?\d+,\d+,\d+>)",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-    /// <summary>XML 无法解析时的 QRC Full 特征：Lyric_1 节点带 LyricContent 属性。
-    /// The QRC Full marker used when the XML cannot be parsed: a Lyric_1 element carrying a LyricContent attribute.</summary>
-    private static readonly Regex QrcFullFallback = new(
-        @"<Lyric_1\b[^>]*\bLyricContent\s*=",
-        RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
-
     /// <summary>
     /// 识别歌词文本的原始格式。
     /// Detects the raw format of lyric text.
@@ -126,6 +120,12 @@ public static class LyricsFormatDetector
             }
         }
 
+        return DetectLines(text);
+    }
+
+    // 包装失败时直接检查原载荷一次，不再进入整段包装识别，避免重复判定同一损坏包装。
+    internal static LyricsRawTypes DetectLines(string text)
+    {
         if (KrcLine.IsMatch(text))
         {
             return LyricsRawTypes.Krc;
@@ -152,6 +152,22 @@ public static class LyricsFormatDetector
         }
 
         return LrcLine.IsMatch(text) ? LyricsRawTypes.Lrc : LyricsRawTypes.Unknown;
+    }
+
+    // 第三方 QRC 解析器会将损坏 XML 头变成空音节行；混合包装回退只传入已识别的歌词行。
+    internal static string ExtractLines(string text, LyricsRawTypes type)
+    {
+        var pattern = type switch
+        {
+            LyricsRawTypes.Lrc => LrcLine,
+            LyricsRawTypes.Qrc => QrcLine,
+            LyricsRawTypes.Krc => KrcLine,
+            LyricsRawTypes.Yrc => YrcLine,
+            LyricsRawTypes.LyricifySyllable => LyricifySyllableLine,
+            LyricsRawTypes.LyricifyLines => BracketedLine,
+            _ => null
+        };
+        return pattern is null ? text : string.Join("\n", pattern.Matches(text).Select(match => match.Value.TrimStart()));
     }
 
     /// <summary>
@@ -201,12 +217,9 @@ public static class LyricsFormatDetector
                 return LyricsRawTypes.Ttml;
             }
         }
-        catch
+        catch (System.Xml.XmlException)
         {
-            if (QrcFullFallback.IsMatch(text))
-            {
-                return LyricsRawTypes.QrcFull;
-            }
+            // 损坏包装不拥有整段载荷，调用方继续扫描有效歌词行。
         }
 
         return LyricsRawTypes.Unknown;
