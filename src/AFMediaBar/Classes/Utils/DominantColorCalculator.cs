@@ -18,7 +18,7 @@ public static class DominantColorCalculator
     /// <param name="colorCount">需要的颜色数量。/ Number of colors requested.</param>
     /// <param name="maxIterations">K-means 最大迭代次数。/ Maximum K-means iterations.</param>
     /// <param name="darkTheme">是否按深色主题提升暗色并降低饱和度。/ Whether to lift dark colors and reduce saturation for dark theme.</param>
-    /// <returns>计算出的不透明颜色；输入无效时返回空集合。单色模式没有有效样本时保留历史直方图回退色。/ Opaque colors, or an empty collection for invalid input. Single-color mode preserves the historical histogram fallback when no valid sample exists.</returns>
+    /// <returns>计算出的不透明颜色；输入无效或没有有效主色时返回空集合，由调用方使用主题回退。</returns>
     public static IReadOnlyList<Color> Calculate(
         ReadOnlySpan<byte> pixels,
         int width,
@@ -54,9 +54,8 @@ public static class DominantColorCalculator
             samples.Add([r, g, b]);
         }
 
-        // The former inline histogram returned the center of bin zero when no opaque/sampled
-        // pixel existed. Preserve that single-color fallback while multi-color mode stays empty.
-        if (samples.Count == 0 && colorCount > 1)
+        // 没有有效像素不代表黑色；空结果让调用方使用当前主题的强调色。
+        if (samples.Count == 0)
         {
             return [];
         }
@@ -64,7 +63,9 @@ public static class DominantColorCalculator
         List<Color> result;
         if (colorCount == 1)
         {
-            result = [FindHistogramPeak(samples)];
+            if (FindHistogramPeak(samples) is not { } peak)
+                return [];
+            result = [peak];
         }
         else
         {
@@ -137,7 +138,7 @@ public static class DominantColorCalculator
         return [.. result.Select(color => AdjustForTheme(color, darkTheme))];
     }
 
-    private static Color FindHistogramPeak(IReadOnlyList<int[]> samples)
+    private static Color? FindHistogramPeak(IReadOnlyList<int[]> samples)
     {
         const int quantBits = 4;
         const int bins = 1 << quantBits;
@@ -172,6 +173,9 @@ public static class DominantColorCalculator
                 peakIndex = index;
             }
         }
+
+        if (histogram[peakIndex] == 0)
+            return null;
 
         var peakR = peakIndex / (bins * bins);
         var peakG = (peakIndex / bins) % bins;
