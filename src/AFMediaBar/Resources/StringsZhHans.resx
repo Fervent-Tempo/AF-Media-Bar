@@ -314,22 +314,22 @@
     <value>跟随 Windows 强调色，或只为本程序选择颜色。</value>
   </data>
   <data name="Appearance.Row.Accent.Title" xml:space="preserve">
-    <value>主题色</value>
+    <value>强调色</value>
   </data>
   <data name="Appearance.Row.Backdrop.Description" xml:space="preserve">
-    <value>设置窗口、托盘弹窗和右键菜单的背景材质。</value>
+    <value>选择设置窗口等窗口表面的背景材质；菜单保持纯色。</value>
   </data>
   <data name="Appearance.Row.Backdrop.Title" xml:space="preserve">
     <value>窗口背景材质</value>
   </data>
   <data name="Appearance.Row.BackdropTint.Description" xml:space="preserve">
-    <value>调整自绘背景的颜色浓度（30%–100%）。</value>
+    <value>调整 Windows 10 窗口和曲目通知的背景浓度（30%–100%）；Windows 11 系统绘制的窗口材质不受影响。</value>
   </data>
   <data name="Appearance.Row.BackdropTint.Title" xml:space="preserve">
     <value>材质浓度</value>
   </data>
   <data name="Appearance.Row.CjkFont.Description" xml:space="preserve">
-    <value>汉字使用的字体</value>
+    <value>选择中文等东亚文字使用的字体。</value>
   </data>
   <data name="Appearance.Row.CjkFont.Title" xml:space="preserve">
     <value>中文字体</value>
@@ -341,7 +341,7 @@
     <value>字体粗细</value>
   </data>
   <data name="Appearance.Row.LatinFont.Description" xml:space="preserve">
-    <value>字母与数字使用的字体</value>
+    <value>选择字母和数字使用的字体。</value>
   </data>
   <data name="Appearance.Row.LatinFont.Title" xml:space="preserve">
     <value>西文字体</value>
@@ -356,7 +356,7 @@
     <value>交互动效</value>
   </data>
   <data name="Appearance.Row.TextColor.Description" xml:space="preserve">
-    <value>根据文字后方的颜色自动选择深色或浅色文字。</value>
+    <value>设置媒体栏文字颜色；自动模式根据背景选择深色或浅色文字。</value>
   </data>
   <data name="Appearance.Row.TextColor.Title" xml:space="preserve">
     <value>文字颜色</value>
@@ -674,7 +674,7 @@
     <value>托盘图标</value>
   </data>
   <data name="Diagram.DynamicIslandSurface.Caption" xml:space="preserve">
-    <value>灵动岛模式尚未实现，因此下面三项当前只读；它的外观与任务栏互不影响。</value>
+    <value>此模式尚未实现，以下选项只读；它们与任务栏设置独立。</value>
   </data>
   <data name="Diagram.InputGestures.Caption" xml:space="preserve">
     <value>媒体栏上仅这两个区域可以点击，并且可分别设置；展开面板中的按钮不受影响。</value>
@@ -686,7 +686,7 @@
     <value>点击标题或歌词</value>
   </data>
   <data name="Diagram.LayerFull.Caption" xml:space="preserve">
-    <value>点击媒体栏展开的面板，四个分区可分别关闭，至少保留一个。</value>
+    <value>点击媒体栏可打开完整面板；四个分区可分别关闭，至少保留一个。</value>
   </data>
   <data name="Diagram.LayerFull.Label.MediaInfo" xml:space="preserve">
     <value>媒体信息</value>
@@ -698,16 +698,16 @@
     <value>播放控制</value>
   </data>
   <data name="Diagram.LayerHover.Caption" xml:space="preserve">
-    <value>鼠标移入时出现播放、切换、输出设备、音量与进度控制，可在下页逐项开关。</value>
+    <value>启用后，鼠标移入媒体栏会显示快捷控制；各项控制可在本组开关。</value>
   </data>
   <data name="Diagram.LayerRest.Caption" xml:space="preserve">
-    <value>始终显示封面与标题；频谱和性能组件叠加在右侧，其开关位于「媒体与通知 → 常驻状态组件」。</value>
+    <value>常驻状态显示媒体信息；封面、进度和入口按钮在本页设置，频谱与性能位于「组件」页。</value>
   </data>
   <data name="Diagram.LyricsAlignment.Caption" xml:space="preserve">
-    <value>仅决定歌词靠哪一侧；标题与歌手的对齐是「显示模式」页中的另一项设置。</value>
+    <value>仅调整歌词对齐；标题与歌手的对齐位于「外观 → 常驻状态外观」。</value>
   </data>
   <data name="Diagram.LyricsTwoLine.Caption" xml:space="preserve">
-    <value>第一行为当前句；第二行为下一句或翻译，常驻状态空间不足时不显示。</value>
+    <value>第一行显示当前歌词；第二行按所选顺序显示下一句、翻译或音译，空间不足时隐藏。</value>
   </data>
   <data name="Diagram.LyricsTwoLine.Label.FirstLine" xml:space="preserve">
     <value>第一行</value>
@@ -728,7 +728,7 @@
     <value>图示为 9 根频谱柱，最右一根处于关闭状态。刷新率决定响应速度，灵敏度决定相同音量下的柱高。</value>
   </data>
   <data name="Diagram.TaskbarLength.Caption" xml:space="preserve">
-    <value>跟随内容时宽度自动变化；关闭跟随后可指定固定宽度，取值范围由当前任务栏决定。</value>
+    <value>跟随内容时宽度自动变化；关闭跟随后可输入固定宽度，范围随任务栏可用空间更新。</value>
   </data>
   <data name="Diagram.TaskbarLength.Label.MinimumWidth" xml:space="preserve">
     <value>所需最小宽度</value>
@@ -737,10 +737,10 @@
     <value>任务栏安全上限</value>
   </data>
   <data name="Diagram.TaskbarPlacement.Caption" xml:space="preserve">
-    <value>媒体栏自动避开任务栏图标；边缘偏移用于调整它与图标区之间的间距。</value>
+    <value>开启避让后，媒体栏会避开任务栏图标；厚度方向偏移用于上下或左右微调。</value>
   </data>
   <data name="Diagram.TaskbarPlacement.Label.EdgeOffset" xml:space="preserve">
-    <value>边缘偏移 −20 ~ +20 像素</value>
+    <value>厚度方向偏移：−20 至 +20 DIP</value>
   </data>
   <data name="Diagram.TaskbarPlacement.Label.TaskbarIcons" xml:space="preserve">
     <value>任务栏图标</value>
@@ -749,7 +749,7 @@
     <value>高亮方块为本程序。图标位于任务栏托盘或隐藏图标区时，点击与滚轮均可生效。</value>
   </data>
   <data name="Diagram.TrayOverflow.Label.OverflowArrow" xml:space="preserve">
-    <value>收进小箭头</value>
+    <value>隐藏图标区</value>
   </data>
   <data name="Diagram.TrayOverflow.Label.TrayArea" xml:space="preserve">
     <value>托盘区</value>
@@ -761,10 +761,10 @@
     <value>媒体栏上</value>
   </data>
   <data name="Diagram.WheelGestures.Label.MediaBarResults" xml:space="preserve">
-    <value>四种结果都能绑：上下首、切换设备或播放器、调节音量</value>
+    <value>上一首/下一首、切换设备、切换播放器或调节音量</value>
   </data>
   <data name="Diagram.WheelGestures.Label.TrayResults" xml:space="preserve">
-    <value>只有切换设备和调节音量两种结果</value>
+    <value>切换设备或调节音量</value>
   </data>
   <data name="DisplayModes.Full.Expander.Description" xml:space="preserve">
     <value>选择完整面板显示的区域；至少保留一个。</value>
@@ -920,10 +920,10 @@
     <value>选择显示媒体栏的屏幕，可多选；至少保留一块。</value>
   </data>
   <data name="DisplayModes.Placement.Row.Offset.Description" xml:space="preserve">
-    <value>微调媒体栏与任务栏图标的距离。</value>
+    <value>沿任务栏厚度方向微调媒体栏位置（−20 至 +20 DIP）。</value>
   </data>
   <data name="DisplayModes.Placement.Row.Offset.Title" xml:space="preserve">
-    <value>边缘偏移</value>
+    <value>厚度方向偏移</value>
   </data>
   <data name="DisplayModes.Placement.Row.Orientation.Description" xml:space="preserve">
     <value>目前仅实现横向排列，暂时不可调整</value>
@@ -1637,13 +1637,13 @@
     <value>频谱参数</value>
   </data>
   <data name="Media.Spectrum.RefreshRate.Description" xml:space="preserve">
-    <value>频谱刷新频率（5–30 Hz）</value>
+    <value>调整频谱刷新频率（5–30 Hz）；数值越高，变化越流畅。</value>
   </data>
   <data name="Media.Spectrum.RefreshRate.Title" xml:space="preserve">
     <value>刷新率</value>
   </data>
   <data name="Media.Spectrum.Sensitivity.Description" xml:space="preserve">
-    <value>设置频谱达到最大高度所需的音量（10%–400%）。</value>
+    <value>调整频谱响应幅度（10%–400%）；数值越高，相同音量下的频谱柱越高。</value>
   </data>
   <data name="Media.Spectrum.Sensitivity.Title" xml:space="preserve">
     <value>灵敏度</value>
@@ -2167,5 +2167,14 @@
   </data>
   <data name="Settings.Numeric.Seconds" xml:space="preserve">
     <value>秒</value>
+  </data>
+  <data name="Appearance.Specimen.Line1" xml:space="preserve">
+    <value>AF Media Bar · 媒体标题与歌词</value>
+  </data>
+  <data name="Appearance.Specimen.Line2" xml:space="preserve">
+    <value>字母 123 · 汉字 · 日本語</value>
+  </data>
+  <data name="Appearance.Specimen.Line3" xml:space="preserve">
+    <value>字体预览 · 가나다 · Sample text</value>
   </data>
 </root>

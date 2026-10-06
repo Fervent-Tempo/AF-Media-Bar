@@ -314,22 +314,22 @@
     <value>跟隨 Windows 強調色，或只為本程式選擇顏色。</value>
   </data>
   <data name="Appearance.Row.Accent.Title" xml:space="preserve">
-    <value>主題色</value>
+    <value>強調色</value>
   </data>
   <data name="Appearance.Row.Backdrop.Description" xml:space="preserve">
-    <value>設定視窗、托盤彈出視窗和右鍵功能表的背景材質。</value>
+    <value>選擇設定視窗等視窗表面的背景材質；選單保持純色。</value>
   </data>
   <data name="Appearance.Row.Backdrop.Title" xml:space="preserve">
     <value>視窗背景材質</value>
   </data>
   <data name="Appearance.Row.BackdropTint.Description" xml:space="preserve">
-    <value>調整自繪背景的色彩濃度（30%–100%）。</value>
+    <value>調整 Windows 10 視窗和曲目通知的背景濃度（30%–100%）；Windows 11 系統繪製的視窗材質不受影響。</value>
   </data>
   <data name="Appearance.Row.BackdropTint.Title" xml:space="preserve">
     <value>材質濃度</value>
   </data>
   <data name="Appearance.Row.CjkFont.Description" xml:space="preserve">
-    <value>漢字使用的字型</value>
+    <value>選擇中文等東亞文字使用的字型。</value>
   </data>
   <data name="Appearance.Row.CjkFont.Title" xml:space="preserve">
     <value>中文字型</value>
@@ -341,7 +341,7 @@
     <value>字型粗細</value>
   </data>
   <data name="Appearance.Row.LatinFont.Description" xml:space="preserve">
-    <value>字母與數字使用的字型</value>
+    <value>選擇字母和數字使用的字型。</value>
   </data>
   <data name="Appearance.Row.LatinFont.Title" xml:space="preserve">
     <value>西文字型</value>
@@ -356,7 +356,7 @@
     <value>互動動效</value>
   </data>
   <data name="Appearance.Row.TextColor.Description" xml:space="preserve">
-    <value>根據文字後方的顏色自動選擇深色或淺色文字。</value>
+    <value>設定媒體列文字顏色；自動模式依背景選擇深色或淺色文字。</value>
   </data>
   <data name="Appearance.Row.TextColor.Title" xml:space="preserve">
     <value>文字顏色</value>
@@ -674,7 +674,7 @@
     <value>托盤圖示</value>
   </data>
   <data name="Diagram.DynamicIslandSurface.Caption" xml:space="preserve">
-    <value>動態島模式尚未實作，因此下面三項目前唯讀；它的外觀與工作列互不影響。</value>
+    <value>此模式尚未實作，以下選項唯讀；它們與工作列設定獨立。</value>
   </data>
   <data name="Diagram.InputGestures.Caption" xml:space="preserve">
     <value>媒體列上僅這兩個區域可以點擊，並且可分別設定；展開面板中的按鈕不受影響。</value>
@@ -686,7 +686,7 @@
     <value>點擊標題或歌詞</value>
   </data>
   <data name="Diagram.LayerFull.Caption" xml:space="preserve">
-    <value>點擊媒體列展開的面板，四個分區可分別關閉，至少保留一個。</value>
+    <value>點擊媒體列可開啟完整面板；四個區塊可分別關閉，至少保留一個。</value>
   </data>
   <data name="Diagram.LayerFull.Label.MediaInfo" xml:space="preserve">
     <value>媒體資訊</value>
@@ -698,16 +698,16 @@
     <value>播放控制</value>
   </data>
   <data name="Diagram.LayerHover.Caption" xml:space="preserve">
-    <value>滑鼠移入時出現播放、切換、輸出裝置、音量與進度控制，可在下一頁逐項開關。</value>
+    <value>啟用後，滑鼠移入媒體列會顯示快捷控制；各項控制可在本組開關。</value>
   </data>
   <data name="Diagram.LayerRest.Caption" xml:space="preserve">
-    <value>永遠顯示封面與標題；頻譜與效能元件重疊在右側，其開關位於「媒體與通知 → 常駐狀態元件」。</value>
+    <value>常駐狀態顯示媒體資訊；封面、進度和入口按鈕在本頁設定，頻譜與效能位於「元件」頁。</value>
   </data>
   <data name="Diagram.LyricsAlignment.Caption" xml:space="preserve">
-    <value>僅決定歌詞靠哪一側；標題與歌手的對齊是「顯示模式」頁中的另一項設定。</value>
+    <value>僅調整歌詞對齊；標題與歌手的對齊位於「外觀 → 常駐狀態外觀」。</value>
   </data>
   <data name="Diagram.LyricsTwoLine.Caption" xml:space="preserve">
-    <value>第一行為目前句；第二行為下一句或翻譯，常駐狀態空間不足時不顯示。</value>
+    <value>第一行顯示目前歌詞；第二行依所選順序顯示下一句、翻譯或音譯，空間不足時隱藏。</value>
   </data>
   <data name="Diagram.LyricsTwoLine.Label.FirstLine" xml:space="preserve">
     <value>第一行</value>
@@ -728,7 +728,7 @@
     <value>圖示為 9 根頻譜柱，最右一根處於關閉狀態。更新頻率決定反應速度，靈敏度決定相同音量下的柱高。</value>
   </data>
   <data name="Diagram.TaskbarLength.Caption" xml:space="preserve">
-    <value>跟隨內容時寬度會自動變化；關閉跟隨後可指定固定寬度，取值範圍由目前工作列決定。</value>
+    <value>跟隨內容時寬度自動變化；關閉跟隨後可輸入固定寬度，範圍隨工作列可用空間更新。</value>
   </data>
   <data name="Diagram.TaskbarLength.Label.MinimumWidth" xml:space="preserve">
     <value>所需最小寬度</value>
@@ -737,10 +737,10 @@
     <value>工作列安全上限</value>
   </data>
   <data name="Diagram.TaskbarPlacement.Caption" xml:space="preserve">
-    <value>媒體列自動避開工作列圖示；邊緣位移用於調整它與圖示區之間的間距。</value>
+    <value>開啟避讓後，媒體列會避開工作列圖示；厚度方向偏移用於上下或左右微調。</value>
   </data>
   <data name="Diagram.TaskbarPlacement.Label.EdgeOffset" xml:space="preserve">
-    <value>邊緣位移 −20 ~ +20 像素</value>
+    <value>厚度方向偏移：−20 至 +20 DIP</value>
   </data>
   <data name="Diagram.TaskbarPlacement.Label.TaskbarIcons" xml:space="preserve">
     <value>工作列圖示</value>
@@ -749,7 +749,7 @@
     <value>高亮方塊為本程式。圖示位於工作列托盤或隱藏圖示區時，點擊與滾輪均可生效。</value>
   </data>
   <data name="Diagram.TrayOverflow.Label.OverflowArrow" xml:space="preserve">
-    <value>收進小箭頭</value>
+    <value>隱藏圖示區</value>
   </data>
   <data name="Diagram.TrayOverflow.Label.TrayArea" xml:space="preserve">
     <value>托盤區</value>
@@ -761,10 +761,10 @@
     <value>媒體列上</value>
   </data>
   <data name="Diagram.WheelGestures.Label.MediaBarResults" xml:space="preserve">
-    <value>四種結果都能繫結：上下首、切換裝置或播放器、調整音量</value>
+    <value>上一首/下一首、切換裝置、切換播放器或調整音量</value>
   </data>
   <data name="Diagram.WheelGestures.Label.TrayResults" xml:space="preserve">
-    <value>只有切換裝置和調整音量兩種結果</value>
+    <value>切換裝置或調整音量</value>
   </data>
   <data name="DisplayModes.Full.Expander.Description" xml:space="preserve">
     <value>選擇完整面板顯示的區域；至少保留一個。</value>
@@ -920,10 +920,10 @@
     <value>選擇顯示媒體列的螢幕，可複選；至少保留一個。</value>
   </data>
   <data name="DisplayModes.Placement.Row.Offset.Description" xml:space="preserve">
-    <value>微調媒體列與工作列圖示的距離。</value>
+    <value>沿工作列厚度方向微調媒體列位置（−20 至 +20 DIP）。</value>
   </data>
   <data name="DisplayModes.Placement.Row.Offset.Title" xml:space="preserve">
-    <value>邊緣位移</value>
+    <value>厚度方向偏移</value>
   </data>
   <data name="DisplayModes.Placement.Row.Orientation.Description" xml:space="preserve">
     <value>目前僅實作橫向排列，暫時無法調整</value>
@@ -1637,13 +1637,13 @@
     <value>頻譜參數</value>
   </data>
   <data name="Media.Spectrum.RefreshRate.Description" xml:space="preserve">
-    <value>頻譜更新頻率（5–30 Hz）</value>
+    <value>調整頻譜更新頻率（5–30 Hz）；數值越高，變化越流暢。</value>
   </data>
   <data name="Media.Spectrum.RefreshRate.Title" xml:space="preserve">
     <value>更新頻率</value>
   </data>
   <data name="Media.Spectrum.Sensitivity.Description" xml:space="preserve">
-    <value>設定頻譜達到最大高度所需的音量（10%–400%）。</value>
+    <value>調整頻譜反應幅度（10%–400%）；數值越高，相同音量下的頻譜柱越高。</value>
   </data>
   <data name="Media.Spectrum.Sensitivity.Title" xml:space="preserve">
     <value>靈敏度</value>
@@ -2167,5 +2167,14 @@
   </data>
   <data name="Settings.Numeric.Seconds" xml:space="preserve">
     <value>秒</value>
+  </data>
+  <data name="Appearance.Specimen.Line1" xml:space="preserve">
+    <value>AF Media Bar · 媒體標題與歌詞</value>
+  </data>
+  <data name="Appearance.Specimen.Line2" xml:space="preserve">
+    <value>字母 123 · 漢字 · 日本語</value>
+  </data>
+  <data name="Appearance.Specimen.Line3" xml:space="preserve">
+    <value>字型預覽 · 가나다 · Sample text</value>
   </data>
 </root>

@@ -107,11 +107,12 @@ public sealed class SettingsNumericEditor : Control
             RefreshHelp();
             return false;
         }
-        _adjusted = !double.TryParse(_input.Text, NumberStyles.Number, CultureInfo.CurrentCulture, out var parsed) || Math.Abs(value - parsed) > 1e-8d;
+        var adjusted = !double.TryParse(_input.Text, NumberStyles.Number, CultureInfo.CurrentCulture, out var parsed) || Math.Abs(value - parsed) > 1e-8d;
         SetValue(HasInputErrorPropertyKey, false);
         SetCurrentValue(ValueProperty, value);
         // Setters can normalize in domain units (for example seconds stored as milliseconds). Show what actually survived.
         GetBindingExpression(ValueProperty)?.UpdateTarget();
+        _adjusted = adjusted || Math.Abs(value - Value) > 1e-8d;
         Refresh(forceText: true);
         return true;
     }
@@ -179,8 +180,13 @@ public sealed class SettingsNumericEditor : Control
     private static string Format(double value) => value.ToString("0.########", CultureInfo.CurrentCulture);
     private static DependencyProperty Register(string name, double initial) =>
         DependencyProperty.Register(name, typeof(double), typeof(SettingsNumericEditor), new PropertyMetadata(initial, OnOptionsChanged));
-    private static void OnValueChanged(DependencyObject sender, DependencyPropertyChangedEventArgs args) =>
-        ((SettingsNumericEditor)sender).Refresh();
+    private static void OnValueChanged(DependencyObject sender, DependencyPropertyChangedEventArgs args)
+    {
+        var editor = (SettingsNumericEditor)sender;
+        editor.SetValue(HasInputErrorPropertyKey, false);
+        editor._adjusted = false;
+        editor.Refresh();
+    }
     private static void OnOptionsChanged(DependencyObject sender, DependencyPropertyChangedEventArgs args) =>
         ((SettingsNumericEditor)sender).Refresh();
 }

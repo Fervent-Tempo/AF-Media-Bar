@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
@@ -55,7 +56,7 @@ public static class SettingsRevealAnimator
             Settle();
             _revealed = true;
             var reveal = SettingsRevealPolicy.Resolve(0, MotionPolicy.ResolveCurrent());
-            if (!reveal.ShouldAnimate) return;
+            if (!reveal.ShouldAnimate || InputManager.Current.MostRecentInputDevice is KeyboardDevice) return;
 
             _running = true;
             host.Opacity = opacity;
@@ -82,32 +83,32 @@ public static class SettingsRevealAnimator
                     return;
                 }
                 _rendering = (_, _) =>
-            {
-                CompositionTarget.Rendering -= _rendering;
-                _rendering = null;
-                _start = host.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
                 {
-                    _start = null;
-                    if (!_running || !host.IsLoaded || Window.GetWindow(host)?.IsVisible != true)
+                    CompositionTarget.Rendering -= _rendering;
+                    _rendering = null;
+                    _start = host.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
                     {
-                        Settle();
-                        return;
-                    }
-                    var spline = host.TryFindResource("AfSplineFluentEntrance") as KeySpline ?? new KeySpline(0d, 0d, 0d, 1d);
-                    var fromOpacity = host.Opacity;
-                    var fromPosition = _offset?.Y ?? 0d;
-                    host.Opacity = 1d;
-                    var fade = CreateAnimation(fromOpacity, 1d, reveal.Duration, spline);
-                    fade.Completed += (_, _) => Settle();
-                    host.BeginAnimation(UIElement.OpacityProperty, fade, HandoffBehavior.SnapshotAndReplace);
-                    if (_offset is not null)
-                    {
-                        _offset.Y = 0d;
-                        _offset.BeginAnimation(TranslateTransform.YProperty,
-                            CreateAnimation(fromPosition, 0d, reveal.Duration, spline), HandoffBehavior.SnapshotAndReplace);
-                    }
-                }));
-            };
+                        _start = null;
+                        if (!_running || !host.IsLoaded || Window.GetWindow(host)?.IsVisible != true)
+                        {
+                            Settle();
+                            return;
+                        }
+                        var spline = host.TryFindResource("AfSplineFluentEntrance") as KeySpline ?? new KeySpline(0d, 0d, 0d, 1d);
+                        var fromOpacity = host.Opacity;
+                        var fromPosition = _offset?.Y ?? 0d;
+                        host.Opacity = 1d;
+                        var fade = CreateAnimation(fromOpacity, 1d, reveal.Duration, spline);
+                        fade.Completed += (_, _) => Settle();
+                        host.BeginAnimation(UIElement.OpacityProperty, fade, HandoffBehavior.SnapshotAndReplace);
+                        if (_offset is not null)
+                        {
+                            _offset.Y = 0d;
+                            _offset.BeginAnimation(TranslateTransform.YProperty,
+                                CreateAnimation(fromPosition, 0d, reveal.Duration, spline), HandoffBehavior.SnapshotAndReplace);
+                        }
+                    }));
+                };
                 CompositionTarget.Rendering += _rendering;
             }));
         }

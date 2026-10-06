@@ -5,6 +5,10 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Data;
+using System.Windows.Markup;
+using System.Windows.Media.Imaging;
+using System.Xml.Linq;
+using AFMediaBar.Resources;
 using AFMediaBar.Components;
 using AFMediaBar.Classes.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -34,6 +38,9 @@ public sealed class SettingsVisualRuntimeTests
                     {
                         Source = new Uri("/AFMediaBar;component/Resources/" + file + ".xaml", UriKind.Relative)
                     });
+                app.Resources["AfAccentBrush"] = new SolidColorBrush(Color.FromRgb(0, 120, 212));
+                app.Resources["AfOnAccentBrush"] = Brushes.White;
+                app.Resources["AfAccentTintBrush"] = new SolidColorBrush(Color.FromArgb(25, 0, 120, 212));
                 var rows = new[] { new SettingsRow { Title = "First", Content = new TextBox() }, new SettingsRow { Title = "Second" } };
                 foreach (var row in rows)
                 {
@@ -58,10 +65,101 @@ public sealed class SettingsVisualRuntimeTests
                 var choice = new RadioButton { Style = (Style)app.Resources["AfSettingsChoiceRadioStyle"], Content = "Mode" };
                 choice.ApplyTemplate();
                 Assert.IsNull(((Border)choice.Template.FindName("ChoiceBorder", choice)).Child);
+                choice.IsChecked = true;
+                var tint = (Border)choice.Template.FindName("ChoiceTint", choice);
+                Assert.AreEqual(0.10d, tint.Opacity);
+                Assert.IsFalse(tint.HasAnimatedProperties, "Selection feedback must also work with all system animation disabled.");
                 VerifyNumericBinding(app);
+                VerifyNarrowRow(app);
+                VerifyPageMarkup(app);
             }
             finally { app.Shutdown(); }
         });
+    }
+
+    private static void VerifyPageMarkup(Application app)
+    {
+        foreach (var key in Translations.Keys) app.Resources["Loc." + key] = Translations.Get(key);
+        app.Resources["AfBooleanToVisibilityConverter"] = new BooleanToVisibilityConverter();
+        app.Resources["BooleanToVisibilityConverter"] = new BooleanToVisibilityConverter();
+        app.Resources["AppTextFontFamily"] = new FontFamily("Segoe UI");
+        app.Resources["AppTextFontWeight"] = FontWeights.Normal;
+        app.Resources["AppTextMediumFontWeight"] = FontWeights.Medium;
+        app.Resources["AppTextStrongFontWeight"] = FontWeights.SemiBold;
+        var root = FindRepository();
+        XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
+        var eventNames = new HashSet<string> { "Loaded", "Unloaded", "Click", "SelectionChanged", "Checked", "Unchecked", "SizeChanged" };
+        foreach (var name in new[] { "DisplayModes", "Appearance", "Interaction", "Lyrics", "ComponentsSettings", "ExtraFeatures", "Application", "ReleaseHighlights", "About" })
+        {
+            var document = XDocument.Load(Path.Combine(root, "src", "AFMediaBar", "Views", "Pages", name + "Page.xaml"));
+            document.Root!.Attribute(x + "Class")!.Remove();
+            foreach (var element in document.Root.DescendantsAndSelf())
+            {
+                foreach (var attribute in element.Attributes().ToArray())
+                {
+                    if (eventNames.Contains(attribute.Name.LocalName)) attribute.Remove();
+                }
+            }
+            // Business dependencies and event handlers are excluded: this checks markup, styles, and runtime literals.
+            var markup = Regex.Replace(document.ToString(), "clr-namespace:AFMediaBar[.A-Za-z]+",
+                match => match.Value + ";assembly=AFMediaBar");
+            var page = (Page)XamlReader.Parse(markup);
+            page.Background = new SolidColorBrush(Color.FromRgb(243, 243, 243));
+            foreach (var width in new[] { 344d, 800d })
+            {
+                page.Measure(new Size(width, 550d));
+                page.Arrange(new Rect(0d, 0d, width, 550d));
+                page.UpdateLayout();
+            }
+            var previewDirectory = Environment.GetEnvironmentVariable("AFMB_SETTINGS_PREVIEW_DIRECTORY");
+            if (!string.IsNullOrEmpty(previewDirectory) && name is "Appearance" or "Lyrics")
+            {
+                Directory.CreateDirectory(previewDirectory);
+                var bitmap = new RenderTargetBitmap(800, 550, 96d, 96d, PixelFormats.Pbgra32);
+                bitmap.Render(page);
+                var encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(bitmap));
+                using var output = File.Create(Path.Combine(previewDirectory, name + ".png"));
+                encoder.Save(output);
+            }
+        }
+    }
+
+    private static void VerifyNarrowRow(Application app)
+    {
+        var row = new SettingsRow
+        {
+            Style = (Style)app.Resources[typeof(SettingsRow)],
+            Title = "A setting with an exact numeric value",
+            Content = new SettingsNumericEditor
+            {
+                Style = (Style)app.Resources[typeof(SettingsNumericEditor)],
+                Value = 200d,
+                Maximum = 4096d,
+                Unit = "DIP"
+            }
+        };
+        row.ApplyTemplate();
+        var controls = (ContentPresenter)row.Template.FindName("ControlHost", row);
+        row.Measure(new Size(344d, 200d));
+        row.Arrange(new Rect(0d, 0d, 344d, 200d));
+        row.UpdateLayout();
+        Assert.IsTrue(row.IsCompact);
+        Assert.AreEqual(1, Grid.GetRow(controls), "A narrow row must place controls below its title.");
+        Assert.IsTrue(controls.TranslatePoint(new Point(controls.ActualWidth, 0d), row).X <= row.ActualWidth,
+            "The numeric editor must fit beside an expanded sidebar.");
+        row.Measure(new Size(800d, 200d));
+        row.Arrange(new Rect(0d, 0d, 800d, 200d));
+        row.UpdateLayout();
+        Assert.IsFalse(row.IsCompact);
+        Assert.AreEqual(0, Grid.GetRow(controls));
+    }
+
+    private static string FindRepository()
+    {
+        var root = new DirectoryInfo(AppContext.BaseDirectory);
+        while (root is not null && !Directory.Exists(Path.Combine(root.FullName, "src", "AFMediaBar"))) root = root.Parent;
+        return root?.FullName ?? throw new DirectoryNotFoundException("Settings markup was not found.");
     }
 
     private static void VerifyNumericBinding(Application app)
@@ -98,6 +196,7 @@ public sealed class SettingsVisualRuntimeTests
         fixture.Value = 160d;
         Assert.AreEqual(160d, editor.Value);
         Assert.AreEqual("160", input.Text, "External resets refresh the displayed value.");
+        Assert.IsFalse(editor.HasInputError, "An external reset also clears stale validation feedback.");
     }
 
     private sealed class NumericFixture : INotifyPropertyChanged

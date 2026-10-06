@@ -569,26 +569,27 @@
         选项卡片 / Choice card
 
         同一个 RadioButton 或 ToggleButton 控件、同一套绑定，只替换外观为分段选择样式。
-        选中时主色描边加一层 10% 主色底片；底片用 120ms 透明度过渡而不是关键帧，便于快速切换时重新定向。
+        选中时主色描边加一层 10% 主色底片，直接更新以保持键盘与关闭系统动效时的反馈。
         同一份控件和绑定保持不变，只把外观换成选项卡片。
         Same RadioButton or ToggleButton control and bindings; only the appearance becomes a segmented
-        choice. Selection paints an accent stroke plus a 10% accent tint. The tint uses a 120ms opacity
-        transition rather than a keyframe so rapid switching retargets smoothly.
+        choice. Selection paints an accent stroke plus a 10% accent tint immediately, including for keyboard input
+        and when system animation is disabled.
     -->
 
     <ControlTemplate x:Key="AfSettingsChoiceTemplate" TargetType="{x:Type ToggleButton}">
         <Grid>
-            <Border
-                x:Name="ChoiceTint"
-                Background="{DynamicResource AfAccentBrush}"
-                CornerRadius="8"
-                Opacity="0" />
+
             <Border
                 x:Name="ChoiceBorder"
                 Background="{DynamicResource AfSettingsCardBrush}"
                 BorderBrush="{DynamicResource AfSettingsBorderBrush}"
                 BorderThickness="1"
                 CornerRadius="8" IsHitTestVisible="False" components:SettingsHoverShadow.IsEnabled="True" />
+<Border
+                x:Name="ChoiceTint"
+                Background="{DynamicResource AfAccentBrush}"
+                CornerRadius="8"
+                Opacity="0" />
             <Border Padding="{TemplateBinding Padding}" BorderThickness="1" BorderBrush="Transparent">
                 <ContentPresenter
                     HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
@@ -603,32 +604,7 @@
             <Trigger Property="IsChecked" Value="True">
                 <Setter TargetName="ChoiceBorder" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}" />
                 <Setter TargetName="ChoiceBorder" Property="BorderThickness" Value="1.5" />
-                <Trigger.EnterActions>
-                    <BeginStoryboard>
-                        <Storyboard>
-                            <DoubleAnimation
-                                Storyboard.TargetName="ChoiceTint"
-                                Storyboard.TargetProperty="Opacity"
-                                To="0.10"
-                                Duration="0:0:0.12">
-                                <DoubleAnimation.EasingFunction>
-                                    <PowerEase EasingMode="EaseOut" Power="3" />
-                                </DoubleAnimation.EasingFunction>
-                            </DoubleAnimation>
-                        </Storyboard>
-                    </BeginStoryboard>
-                </Trigger.EnterActions>
-                <Trigger.ExitActions>
-                    <BeginStoryboard>
-                        <Storyboard>
-                            <DoubleAnimation
-                                Storyboard.TargetName="ChoiceTint"
-                                Storyboard.TargetProperty="Opacity"
-                                To="0"
-                                Duration="0:0:0.12" />
-                        </Storyboard>
-                    </BeginStoryboard>
-                </Trigger.ExitActions>
+                <Setter TargetName="ChoiceTint" Property="Opacity" Value="0.10" />
             </Trigger>
             <Trigger Property="IsPressed" Value="True">
                 <Setter TargetName="ChoiceBorder" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}" />

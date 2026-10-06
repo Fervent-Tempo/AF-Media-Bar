@@ -77,6 +77,8 @@ The install log is written to `%LOCALAPPDATA%\AFMediaBar\updates\install-<versio
 
 Preferences and window state live in `%LOCALAPPDATA%\AFMediaBar\settings.json`; replacing the program files within one version never loses settings, and the Application page opens the settings folder.
 
+Settings sliders also accept direct numeric input: press Enter or move focus to apply, or Esc to cancel. The input tooltip shows the range and permitted step. Less-used settings are collapsed by default; search expands details in the destination group.
+
 ### Uninstalling
 
 - Portable build: delete the program folder.

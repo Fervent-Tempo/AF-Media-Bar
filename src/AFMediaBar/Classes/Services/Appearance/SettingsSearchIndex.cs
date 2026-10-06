@@ -204,7 +204,7 @@ public static class SettingsSearchIndex
             "Common.Group.ScreenAndPlacement",
             "Search.DisplayModes.ScreenAndPlacement.Description",
             language,
-            ["显示器", "屏幕", "monitor", "display", "朝向", "横向", "纵向", "orientation", "避让", "图标", "锁定", "位置", "偏移", "offset", "重置", "承载", "承载显示器", "承载与位置", "边缘偏移", "排列方向"]),
+            ["显示器", "屏幕", "monitor", "display", "朝向", "横向", "纵向", "orientation", "避让", "图标", "锁定", "位置", "偏移", "厚度方向偏移", "offset", "重置", "承载", "承载显示器", "承载与位置", "边缘偏移", "排列方向"]),
         Create(
             SettingsPageKey.DisplayModes,
             2,

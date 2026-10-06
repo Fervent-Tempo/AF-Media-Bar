@@ -520,21 +520,21 @@
                                     FontSize="20"
                                     FontWeight="{DynamicResource AppTextFontWeight}"
                                     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                    Text="AF Media Bar · 你是我的一切" />
+                                    Text="{DynamicResource Loc.Appearance.Specimen.Line1}" />
                                 <TextBlock
                                     Margin="0,8,0,0"
                                     FontFamily="{DynamicResource AppTextFontFamily}"
                                     FontSize="16"
                                     FontWeight="{DynamicResource AppTextFontWeight}"
                                     Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                    Text="You are my everything · 君は私のすべて" />
+                                    Text="{DynamicResource Loc.Appearance.Specimen.Line2}" />
                                 <TextBlock
                                     Margin="0,8,0,0"
                                     FontFamily="{DynamicResource AppTextFontFamily}"
                                     FontSize="13"
                                     FontWeight="{DynamicResource AppTextFontWeight}"
                                     Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                                    Text="당신은 나의 전부 · You are my everything · 你是我的一切" />
+                                    Text="{DynamicResource Loc.Appearance.Specimen.Line3}" />
                             </StackPanel>
                         </Border>
 

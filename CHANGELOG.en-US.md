@@ -18,7 +18,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
-- Move settings categories and group navigation to the top with a page scroll progress line; center search, include What’s new and About in primary tabs, and remove the back button. Unify cards, notes, and diagrams with opaque accent-tinted surfaces and clearer section headings while retaining system theme and window materials.
+- Restore the expanded left sidebar with centered search and no back button; What’s new and About appear in the footer. Merge text and font settings, place common options first, and collapse less-used details by default; search expands destination details.
+- Use a slight upward fade for settings-page transitions and stronger card shadows on hover, respecting system motion and high contrast. Retain asynchronous font loading, window materials, and themed surfaces.
+- Add direct numeric input beside settings sliders, with units and legal precision. Invalid input preserves the setting; narrow content puts controls below titles (#37).
+- Correct setting and vector-diagram descriptions for page locations, material applicability, and thickness-offset units.
 
 - Generate contributor snapshots in Release CI with paginated API requests, review them alongside version metadata on the isolated branch, and synchronize legacy snapshots through a PR.
 - Move release metadata to an isolated branch: Actions generate manifests from final packages and propose preview updates, with manual stable promotion and compatibility manifest synchronization PRs. Packages are published to GitHub Releases.
