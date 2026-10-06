@@ -1318,6 +1318,27 @@
   <data name="Lyrics.Row.InfoLines.Title" xml:space="preserve">
     <value>过滤署名行</value>
   </data>
+  <data name="Lyrics.Row.ChineseConversion.Title" xml:space="preserve">
+    <value>歌词繁简转换</value>
+  </data>
+  <data name="Lyrics.Row.ChineseConversion.Description" xml:space="preserve">
+    <value>把显示的歌词改成简体或繁体；只改显示，不改动取到的歌词本身。</value>
+  </data>
+  <data name="Lyrics.Row.ChineseConversion.Direction.Title" xml:space="preserve">
+    <value>转换方向</value>
+  </data>
+  <data name="Lyrics.Row.ChineseConversion.Direction.Description" xml:space="preserve">
+    <value>选择要转成的字形；选「不转换」时按歌词原样显示。</value>
+  </data>
+  <data name="Lyrics.Row.ChineseConversion.Option.Off" xml:space="preserve">
+    <value>不转换</value>
+  </data>
+  <data name="Lyrics.Row.ChineseConversion.Option.ToTraditional" xml:space="preserve">
+    <value>简体 → 繁体</value>
+  </data>
+  <data name="Lyrics.Row.ChineseConversion.Option.ToSimplified" xml:space="preserve">
+    <value>繁体 → 简体</value>
+  </data>
   <data name="Lyrics.Row.BrowserVideo.Title" xml:space="preserve">
     <value>浏览器及视频应用取词</value>
   </data>

@@ -153,6 +153,72 @@ public partial class LyricsViewModel : ObservableObject
         set { SettingsManager.SetLyricsInfoLineFilterEnabled(value); OnPropertyChanged(); }
     }
 
+    /// <summary>
+    /// 用户上次选过的方向：总开关关掉时方向也一起失效（存 <c>None</c>），再打开时能回到原方向，不必重选。
+    /// The direction the user last picked: turning the master switch off clears the direction as well (stored as <c>None</c>), so
+    /// turning it back on restores that direction instead of asking again.
+    /// </summary>
+    private LyricsChineseConversionMode _lastConversionDirection = LyricsChineseConversionMode.SimplifiedToTraditional;
+
+    /// <summary>
+    /// 歌词繁简转换的总开关：关掉就是 <c>None</c>，歌词按来源原样显示。
+    /// Master switch for the Chinese conversion of lyrics: off means <c>None</c>, so lyrics show exactly as their source wrote them.
+    ///
+    /// 开关与下拉写的是同一个设置，两者不会各说各话：下拉选到"不转换"时开关自然变成关。
+    /// The switch and the list write one and the same setting, so they can never disagree — choosing "off" in the list turns the
+    /// switch off by itself.
+    /// </summary>
+    public bool ChineseConversionEnabled
+    {
+        get => SettingsManager.Current.LyricsChineseConversion != LyricsChineseConversionMode.None;
+        set
+        {
+            var current = SettingsManager.Current.LyricsChineseConversion;
+            if (value)
+            {
+                SettingsManager.SetLyricsChineseConversion(
+                    current != LyricsChineseConversionMode.None ? current : _lastConversionDirection);
+
+                // 打开的这一刻就把词典放到后台加载：第一次转换不必等这笔开销，歌词也不用多渲染一帧原文。
+                // Start loading the dictionary in the background the moment it is enabled, so the first conversion does not pay for it
+                // and lyrics do not show one extra frame of the original text.
+                LyricsChineseConverter.WarmUp();
+            }
+            else
+            {
+                if (current != LyricsChineseConversionMode.None)
+                {
+                    _lastConversionDirection = current;
+                }
+
+                SettingsManager.SetLyricsChineseConversion(LyricsChineseConversionMode.None);
+            }
+
+            RaiseAll();
+        }
+    }
+
+    /// <summary>
+    /// 转换方向。<c>None</c> 表示不转换 / Conversion direction. <c>None</c> means no conversion.
+    /// </summary>
+    public LyricsChineseConversionMode ChineseConversion
+    {
+        get => SettingsManager.Current.LyricsChineseConversion;
+        set
+        {
+            if (value != LyricsChineseConversionMode.None)
+            {
+                _lastConversionDirection = value;
+            }
+
+            SettingsManager.SetLyricsChineseConversion(value);
+            RaiseAll();
+        }
+    }
+
+    /// <summary>方向下拉只在总开关打开时可改。/ The direction list is editable only while the master switch is on.</summary>
+    public bool CanConfigureChineseConversion => ChineseConversionEnabled;
+
     /// <summary>取词来源启用列表，执行顺序由代码策略决定。/ Enabled sources; execution order belongs to the retrieval policy.</summary>
     public ObservableCollection<LyricsSourceSettingItem> SourceEntries { get; } = [];
 
@@ -221,6 +287,8 @@ public partial class LyricsViewModel : ObservableObject
         OnPropertyChanged(nameof(CanConfigureTwoLine)); OnPropertyChanged(nameof(CanConfigureSecondary));
         OnPropertyChanged(nameof(CanConfigureUnsungOpacity)); OnPropertyChanged(nameof(CanConfigureLineGap));
         OnPropertyChanged(nameof(IsEverySourceDisabled));
+        OnPropertyChanged(nameof(ChineseConversionEnabled)); OnPropertyChanged(nameof(ChineseConversion));
+        OnPropertyChanged(nameof(CanConfigureChineseConversion));
     }
 
     /// <summary>
