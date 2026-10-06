@@ -88,6 +88,7 @@ namespace AFMediaBar.Views.Windows
             RootNavigation.TransitionDuration = 0;
 
             navigationService.SetNavigationControl(RootNavigation);
+            RootNavigation.Navigated += OnNavigated;
 
             // 落地页：窗口每次打开都直接落在「显示模式」。
             //
@@ -307,6 +308,7 @@ namespace AFMediaBar.Views.Windows
 
         private void SettingsWindow_ClosedForUpdateNotice(object? sender, EventArgs e)
         {
+            RootNavigation.Navigated -= OnNavigated;
             ViewModel.Unsubscribe();
             ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
             _appIconService.IconChanged -= OnApplicationIconChanged;
@@ -324,6 +326,12 @@ namespace AFMediaBar.Views.Windows
         public bool Navigate(Type pageType)
         {
             return RootNavigation.Navigate(pageType);
+        }
+
+        private void OnNavigated(NavigationView sender, NavigatedEventArgs args)
+        {
+            if (args.Page is Page page && page.FindName("PageScroll") is ScrollViewer { Content: Panel content })
+                SettingsRevealAnimator.Replay(content);
         }
 
         private void OnShellSizeChanged(object sender, SizeChangedEventArgs e)

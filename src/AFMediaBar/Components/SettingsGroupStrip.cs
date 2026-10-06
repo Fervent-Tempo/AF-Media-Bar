@@ -262,17 +262,19 @@ public class SettingsGroupStrip : Control
         ExpandDetails(group);
         group.UpdateLayout();
         JumpTo(groupIndex);
+        if (MotionPolicy.ResolveCurrent().Mode == MotionMode.Instant ||
+            InputManager.Current.MostRecentInputDevice is KeyboardDevice) return;
         var animation = new DoubleAnimationUsingKeyFrames
         {
             BeginTime = TimeSpan.Zero,
-            Duration = new Duration(TimeSpan.FromMilliseconds(440)),
+            Duration = new Duration(TimeSpan.FromMilliseconds(240)),
             FillBehavior = FillBehavior.HoldEnd
         };
         animation.KeyFrames.Add(new LinearDoubleKeyFrame(1d, KeyTime.FromTimeSpan(TimeSpan.Zero)));
-        animation.KeyFrames.Add(new LinearDoubleKeyFrame(0.55d, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(200))));
+        animation.KeyFrames.Add(new LinearDoubleKeyFrame(0.85d, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(80))));
         animation.KeyFrames.Add(new SplineDoubleKeyFrame(
             1d,
-            KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(440)),
+            KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(240)),
             ResolveEaseOut()));
         animation.Completed += (_, _) =>
         {

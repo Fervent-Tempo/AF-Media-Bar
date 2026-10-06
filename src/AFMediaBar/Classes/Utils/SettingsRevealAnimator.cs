@@ -1,194 +1,152 @@
-using System;
+// Owns settings-content entrance clocks and first-frame callbacks; unload or completion releases them.
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using AFMediaBar.Classes.Services;
 
 namespace AFMediaBar.Classes.Utils;
 
-/// <summary>
-/// 设置页入场揭示执行器：按 <see cref="SettingsRevealPolicy"/> 解析出的参数，对页面根容器的直接子块执行
-/// 透明度与纵向位移动画。完成后把元素留在终值上并清除动画，避免动画值长期驻留在可视树上。
-/// Applies what <see cref="SettingsRevealPolicy"/> resolves to the direct children of a settings page root:
-/// opacity plus a vertical offset. Afterwards the element rests on its final value with no animation left
-/// attached, so no animated value lingers on the visual tree.
-///
-/// 只写 Opacity 和 RenderTransform：两者都不触发布局和重绘，这是 WPF 侧唯一等于“只动画 transform 和 opacity”的等价做法。
-/// 元素已经自带非位移变换（例如选项卡片的按下缩放）时只保留透明度，因为覆盖 RenderTransform 会破坏该控件的自身反馈。
-/// Only Opacity and RenderTransform are written, since those are the only WPF properties that skip layout and
-/// paint. When an element already carries a non-translate transform (a choice card's press scale, for example),
-/// only the opacity runs, because overwriting RenderTransform would destroy that control's own feedback.
-/// </summary>
+/// <summary>Applies one Fluent entrance to settings content without moving navigation or changing layout.</summary>
 public static class SettingsRevealAnimator
 {
-    /// <summary>每个页面根容器只揭示一次；重复触发的 Loaded 不再重放动画。/ A page root reveals once; repeated Loaded events do not replay it.</summary>
-    private static readonly DependencyProperty HasRevealedProperty =
-        DependencyProperty.RegisterAttached(
-            "HasRevealed",
-            typeof(bool),
-            typeof(SettingsRevealAnimator),
-            new PropertyMetadata(false));
+    private static readonly DependencyProperty StateProperty = DependencyProperty.RegisterAttached(
+        "State", typeof(RevealState), typeof(SettingsRevealAnimator), new PropertyMetadata(null));
 
-    /// <summary>与 SettingsAppearanceResources.xaml 中 AfSplineEaseOut 保持一致的强 ease-out 兜底曲线。</summary>
-    /// <remarks>资源缺失时仍然使用同一曲线，避免动画在字典未合并时退化成默认缓动。</remarks>
-    private static readonly KeySpline FallbackEaseOut = new(0.23d, 1d, 0.32d, 1d);
-
-    /// <summary>
-    /// 对根容器的直接子块执行入场揭示；空引用、已揭示和无需动画的情况都是无操作。
-    /// Reveals the direct children of the host panel. Null hosts, already-revealed pages, and motion levels that
-    /// resolve to no animation are all no-ops.
-    /// </summary>
-    /// <param name="host">页面根容器，通常是设置页最外层的 StackPanel。/ Page root, normally the outermost settings StackPanel.</param>
+    /// <summary>Reveals a loaded content panel once; page navigation may explicitly replay it.</summary>
     public static void Play(Panel? host)
     {
-        if (host is null || (bool)host.GetValue(HasRevealedProperty))
-            return;
-
-        host.SetValue(HasRevealedProperty, true);
-
-        var motion = MotionPolicy.ResolveCurrent();
-        var spline = ResolveEaseOut();
-
-        for (var index = 0; index < host.Children.Count; index++)
+        if (host is null) return;
+        if (host.GetValue(StateProperty) is not RevealState state)
         {
-            if (host.Children[index] is not UIElement block)
-                continue;
-
-            var reveal = SettingsRevealPolicy.Resolve(index, motion);
-            if (!reveal.ShouldAnimate || reveal.Duration <= TimeSpan.Zero)
-                continue;
-
-            PlayBlock(block, reveal, spline);
+            state = new RevealState(host);
+            host.SetValue(StateProperty, state);
         }
+        state.Play(replay: false);
     }
 
-    /// <summary>
-    /// 重新播放一次揭示，用于同一页面内的内容切换（例如显示模式页切换承载模式）。
-    /// 它会先清掉已揭示标记，因此调用方必须只在内容确实换成新的一组块时调用，
-    /// 否则同一次进入页面会被播放两遍。
-    /// Replays the reveal, for swapping content inside one page, such as switching the hosting mode on the
-    /// display-mode page. It clears the revealed flag first, so callers must only invoke it when the content
-    /// really is a new set of blocks; otherwise one page visit would animate twice.
-    /// </summary>
-    /// <param name="host">刚刚显示出来的内容容器。/ The content container that has just become visible.</param>
+    /// <summary>Replays on navigation or mode changes; an interrupted reveal continues from its current values.</summary>
     public static void Replay(Panel? host)
     {
-        if (host is null)
-        {
-            return;
-        }
-
-        host.ClearValue(HasRevealedProperty);
-        Play(host);
+        if (host is null) return;
+        if (host.GetValue(StateProperty) is RevealState state)
+            state.Play(replay: true);
+        else
+            Play(host);
     }
 
-    private static void PlayBlock(UIElement block, SettingsReveal reveal, KeySpline spline)
+    private sealed class RevealState(Panel host)
     {
-        block.BeginAnimation(UIElement.OpacityProperty, null);
+        private bool _revealed;
+        private bool _running;
+        private TranslateTransform? _offset;
+        private Transform? _originalTransform;
+        private TransformGroup? _ownedTransform;
+        private EventHandler? _rendering;
+        private DispatcherOperation? _start;
 
-        // 位移只在策略给出了非零偏移时才写；减少动效时元素根本不会被挂上变换。
-        // The translate is only wired when the policy asks for a non-zero offset, so reduced motion never
-        // attaches a transform at all.
-        var offset = ResolveOffsetTransform(block, reveal.OffsetY);
-        offset?.BeginAnimation(TranslateTransform.YProperty, null);
-
-        // 起始值写成本地值。错峰块的动画在延迟期间处于“开始之前”阶段，这一阶段生效的正是本地值，
-        // 所以块在轮到自己之前保持不可见；若把本地值设成终值，它会先以完全可见闪一下再重新淡入。
-        // The start state is the local value. A staggered block's animation sits in its before-period during the
-        // delay, and the local value is what applies there, so the block stays hidden until its turn. Writing the
-        // final value as the local value instead would flash it fully visible before fading it back in.
-        block.Opacity = 0d;
-        if (offset is not null)
-            offset.Y = reveal.OffsetY;
-
-        void Settle()
+        public void Play(bool replay)
         {
-            // 顺序很关键：必须先清除动画，再写本地终值。
-            // 反序（先写终值、后清除动画）会让清除动作把元素回退到动画启动时快照下来的起始值，
-            // 结果就是元素永久停在不可见状态——这正是页面标题消失的原因。
-            // Order matters: clear the animation first, then write the final local value. The reverse order
-            // lets the clear restore the start value snapshotted when the animation began, which leaves the
-            // element permanently invisible -- the exact cause of the vanishing page titles.
-            block.BeginAnimation(UIElement.OpacityProperty, null);
-            block.Opacity = 1d;
+            if (_revealed && !replay) return;
+            var opacity = _running ? host.Opacity : 0d;
+            var position = _running ? _offset?.Y : null;
+            Settle();
+            _revealed = true;
+            var reveal = SettingsRevealPolicy.Resolve(0, MotionPolicy.ResolveCurrent());
+            if (!reveal.ShouldAnimate) return;
 
-            offset?.BeginAnimation(TranslateTransform.YProperty, null);
-            if (offset is not null)
-                offset.Y = 0d;
+            _running = true;
+            host.Opacity = opacity;
+            if (reveal.OffsetY != 0d)
+            {
+                _originalTransform = host.RenderTransform;
+                _offset = new TranslateTransform(0d, position ?? reveal.OffsetY);
+                _ownedTransform = new TransformGroup();
+                if (_originalTransform is not null)
+                    _ownedTransform.Children.Add(_originalTransform);
+                _ownedTransform.Children.Add(_offset);
+                host.RenderTransform = _ownedTransform;
+            }
+            host.Unloaded += OnUnloaded;
+            SystemParameters.StaticPropertyChanged += OnEnvironmentChanged;
+            RenderCapability.TierChanged += OnRenderingTierChanged;
+            // Start after the first rendered layout so constructing a complex page cannot consume its entrance.
+            _start = host.Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+            {
+                _start = null;
+                if (!_running || !host.IsLoaded || Window.GetWindow(host)?.IsVisible != true)
+                {
+                    Settle();
+                    return;
+                }
+                _rendering = (_, _) =>
+            {
+                CompositionTarget.Rendering -= _rendering;
+                _rendering = null;
+                _start = host.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                {
+                    _start = null;
+                    if (!_running || !host.IsLoaded || Window.GetWindow(host)?.IsVisible != true)
+                    {
+                        Settle();
+                        return;
+                    }
+                    var spline = host.TryFindResource("AfSplineFluentEntrance") as KeySpline ?? new KeySpline(0d, 0d, 0d, 1d);
+                    var fromOpacity = host.Opacity;
+                    var fromPosition = _offset?.Y ?? 0d;
+                    host.Opacity = 1d;
+                    var fade = CreateAnimation(fromOpacity, 1d, reveal.Duration, spline);
+                    fade.Completed += (_, _) => Settle();
+                    host.BeginAnimation(UIElement.OpacityProperty, fade, HandoffBehavior.SnapshotAndReplace);
+                    if (_offset is not null)
+                    {
+                        _offset.Y = 0d;
+                        _offset.BeginAnimation(TranslateTransform.YProperty,
+                            CreateAnimation(fromPosition, 0d, reveal.Duration, spline), HandoffBehavior.SnapshotAndReplace);
+                    }
+                }));
+            };
+                CompositionTarget.Rendering += _rendering;
+            }));
         }
 
-        block.BeginAnimation(
-            UIElement.OpacityProperty,
-            CreateAnimation(1d, reveal, spline, Settle),
-            HandoffBehavior.SnapshotAndReplace);
+        private void OnUnloaded(object sender, RoutedEventArgs args) => Settle();
+        private void OnRenderingTierChanged(object? sender, EventArgs args) => Settle();
+        private void OnEnvironmentChanged(object? sender, PropertyChangedEventArgs args) => Settle();
 
-        if (offset is not null)
+        private void Settle()
         {
-            offset.BeginAnimation(
-                TranslateTransform.YProperty,
-                CreateAnimation(0d, reveal, spline, onCompleted: null),
-                HandoffBehavior.SnapshotAndReplace);
+            _running = false;
+            if (_rendering is not null) CompositionTarget.Rendering -= _rendering;
+            _rendering = null;
+            _start?.Abort();
+            _start = null;
+            host.Unloaded -= OnUnloaded;
+            SystemParameters.StaticPropertyChanged -= OnEnvironmentChanged;
+            RenderCapability.TierChanged -= OnRenderingTierChanged;
+            host.BeginAnimation(UIElement.OpacityProperty, null);
+            host.Opacity = 1d;
+            _offset?.BeginAnimation(TranslateTransform.YProperty, null);
+            if (ReferenceEquals(host.RenderTransform, _ownedTransform))
+                host.RenderTransform = _originalTransform;
+            _offset = null;
+            _ownedTransform = null;
+            _originalTransform = null;
         }
     }
 
-    /// <summary>
-    /// 在元素没有自带其它变换时挂上位移变换；自带变换时返回 null，只保留透明度揭示。
-    /// Attaches a translate transform when the element carries none, and returns null otherwise so only the
-    /// opacity reveals.
-    /// </summary>
-    private static TranslateTransform? ResolveOffsetTransform(UIElement block, double offsetY)
-    {
-        if (offsetY == 0d)
-            return null;
-
-        return block.RenderTransform switch
-        {
-            null => Attach(block),
-            TranslateTransform existing => existing,
-            _ => null
-        };
-
-        static TranslateTransform Attach(UIElement target)
-        {
-            var created = new TranslateTransform();
-            target.RenderTransform = created;
-            return created;
-        }
-    }
-
-    private static DoubleAnimationUsingKeyFrames CreateAnimation(
-        double to,
-        SettingsReveal reveal,
-        KeySpline spline,
-        Action? onCompleted)
+    private static DoubleAnimationUsingKeyFrames CreateAnimation(double from, double to, TimeSpan duration, KeySpline spline)
     {
         var animation = new DoubleAnimationUsingKeyFrames
         {
-            // BeginTime 必须是 TimeSpan 而不是 null。写成 null（原实现在延迟为 0 时的取值）时，
-            // 动画同样会走完并触发 Completed，但随后清除动画会把这个元素回退到起始值 0，
-            // 于是页面第一个块——页面标题——永久不可见。以 TimeSpan.Zero 表达“立即开始”才是可靠的。
-            // BeginTime must be a TimeSpan, never null. Writing null (what the original code produced when the
-            // delay was zero) still runs the animation and still raises Completed, but clearing the animation
-            // afterwards rolls the element back to its start value of zero, which left the first block on every
-            // settings page -- the page title -- permanently invisible.
-            BeginTime = reveal.Delay,
-            Duration = reveal.Duration,
-            FillBehavior = FillBehavior.HoldEnd
+            BeginTime = TimeSpan.Zero,
+            Duration = duration,
+            FillBehavior = FillBehavior.Stop
         };
-
-        // 起点关键帧必须显式存在：否则首个关键帧之前的时间段会保持本地值，动画会看起来先等一段再突变。
-        // The start keyframe must be explicit, otherwise the span before the first keyframe holds the local value
-        // and the animation would appear to wait and then jump.
-        animation.KeyFrames.Add(new LinearDoubleKeyFrame(0d, KeyTime.FromTimeSpan(TimeSpan.Zero)));
-        animation.KeyFrames.Add(new SplineDoubleKeyFrame(to, KeyTime.FromTimeSpan(reveal.Duration), spline));
-
-        if (onCompleted is not null)
-            animation.Completed += (_, _) => onCompleted();
-
+        animation.KeyFrames.Add(new LinearDoubleKeyFrame(from, KeyTime.FromTimeSpan(TimeSpan.Zero)));
+        animation.KeyFrames.Add(new SplineDoubleKeyFrame(to, KeyTime.FromTimeSpan(duration), spline));
         return animation;
     }
-
-    private static KeySpline ResolveEaseOut() =>
-        Application.Current?.TryFindResource("AfSplineEaseOut") as KeySpline ?? FallbackEaseOut;
 }
