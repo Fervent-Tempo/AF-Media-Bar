@@ -57,7 +57,7 @@
             IsPaneToggleVisible="true"
             PaneDisplayMode="Left"
             IsFooterSeparatorVisible="false"
-            OpenPaneLength="128"
+            OpenPaneLength="228"
             TransitionDuration="180"
             TitleBar="{Binding ElementName=TitleBar, Mode=OneWay}">
             <ui:NavigationView.AutoSuggestBox>
