@@ -328,16 +328,12 @@
                             Description="{DynamicResource Loc.Appearance.Row.BackdropTint.Description}"
                             Icon="{ui:SymbolIcon CircleHalfFill24}"
                             Title="{DynamicResource Loc.Appearance.Row.BackdropTint.Title}">
-                            <StackPanel Orientation="Horizontal">
-                                <Slider
-                                    IsSnapToTickEnabled="True"
-                                    Maximum="{Binding Source={x:Static settings:AppearanceSettings.MaximumBackdropTintOpacityPercent}}"
+                            <components:SettingsNumericEditor
+                                    Value="{Binding ViewModel.BackdropTintOpacityPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                     Minimum="{Binding Source={x:Static settings:AppearanceSettings.MinimumBackdropTintOpacityPercent}}"
-                                    Style="{StaticResource AfSettingsRowSliderStyle}"
-                                    TickFrequency="{Binding Source={x:Static settings:AppearanceSettings.BackdropTintOpacityStep}}"
-                                    Value="{Binding ViewModel.BackdropTintOpacityPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.BackdropTintOpacityPercent, StringFormat={}{0:0}%}" />
-                            </StackPanel>
+                                    Maximum="{Binding Source={x:Static settings:AppearanceSettings.MaximumBackdropTintOpacityPercent}}"
+                                    Step="{Binding Source={x:Static settings:AppearanceSettings.BackdropTintOpacityStep}}"
+                                    Unit="{DynamicResource Loc.Settings.Numeric.Percent}" />
                         </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>
@@ -350,16 +346,12 @@
                             Description="{DynamicResource Loc.Appearance.Row.MediaFontSize.Description}"
                             Icon="{ui:SymbolIcon TextFont24}"
                             Title="{DynamicResource Loc.Appearance.Row.MediaFontSize.Title}">
-                            <StackPanel Orientation="Horizontal">
-                                <Slider
-                                    IsSnapToTickEnabled="True"
-                                    Maximum="125"
-                                    Minimum="80"
-                                    Style="{StaticResource AfSettingsRowSliderStyle}"
-                                    TickFrequency="5"
-                                    Value="{Binding ViewModel.MediaFontSizePercent, Mode=TwoWay}" />
-                                <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.MediaFontSizePercent, StringFormat={}{0:0}%}" />
-                            </StackPanel>
+                            <components:SettingsNumericEditor
+                                    Value="{Binding ViewModel.MediaFontSizePercent, Mode=TwoWay}"
+                                    Minimum="{Binding Source={x:Static settings:TaskbarExperienceSettings.MinimumMediaFontSizePercent}}"
+                                    Maximum="{Binding Source={x:Static settings:TaskbarExperienceSettings.MaximumMediaFontSizePercent}}"
+                                    Step="{Binding Source={x:Static settings:TaskbarExperienceSettings.MediaFontSizeStepPercent}}"
+                                    Unit="{DynamicResource Loc.Settings.Numeric.Percent}" />
                         </components:SettingsRow>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Appearance.Row.TextColor.Description}"
@@ -504,16 +496,11 @@
                             Description="{DynamicResource Loc.Appearance.Row.FontWeight.Description}"
                             Icon="{ui:SymbolIcon TextBold24}"
                             Title="{DynamicResource Loc.Appearance.Row.FontWeight.Title}">
-                            <StackPanel Orientation="Horizontal">
-                                <Slider
-                                    IsSnapToTickEnabled="True"
-                                    Maximum="{Binding Source={x:Static settings:AppearanceSettings.MaximumFontWeight}}"
+                            <components:SettingsNumericEditor
+                                    Value="{Binding ViewModel.FontWeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                     Minimum="{Binding Source={x:Static settings:AppearanceSettings.MinimumFontWeight}}"
-                                    Style="{StaticResource AfSettingsRowSliderStyle}"
-                                    TickFrequency="{Binding Source={x:Static settings:AppearanceSettings.FontWeightStep}}"
-                                    Value="{Binding ViewModel.FontWeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.FontWeight}" />
-                            </StackPanel>
+                                    Maximum="{Binding Source={x:Static settings:AppearanceSettings.MaximumFontWeight}}"
+                                    Step="{Binding Source={x:Static settings:AppearanceSettings.FontWeightStep}}" />
                         </components:SettingsRow>
 
                         <Border
@@ -575,15 +562,13 @@
                             Icon="{ui:SymbolIcon SlideSize24}"
                             Style="{StaticResource FixedLengthRowStyle}"
                             Title="{DynamicResource Loc.DisplayModes.Width.Row.Fixed.Title}">
-                            <StackPanel Orientation="Horizontal">
-                                <Slider
-                                    Maximum="{Binding ViewModel.FixedTaskbarLengthMaximum}"
+                            <components:SettingsNumericEditor
+                                    Value="{Binding ViewModel.FixedTaskbarLengthDip, Mode=TwoWay}"
                                     Minimum="{Binding ViewModel.FixedTaskbarLengthMinimum}"
-                                    Style="{StaticResource AfSettingsRowSliderStyle}"
-                                    ToolTip="{Binding ViewModel.FixedTaskbarLengthRangeText}"
-                                    Value="{Binding ViewModel.FixedTaskbarLengthDip, Mode=TwoWay}" />
-                                <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.FixedTaskbarLengthDip, StringFormat={}{0:0} DIP}" />
-                            </StackPanel>
+                                    Maximum="{Binding ViewModel.FixedTaskbarLengthMaximum}"
+                                    Step="1"
+                                    IsSnapToTickEnabled="False"
+                                    Unit="{DynamicResource Loc.Settings.Numeric.Dip}" />
                         </components:SettingsRow>
 
 
@@ -597,16 +582,12 @@
                             Description="{DynamicResource Loc.DisplayModes.Width.Row.Spacing.Description}"
                             Icon="{ui:SymbolIcon PaddingLeft24}"
                             Title="{DynamicResource Loc.DisplayModes.Width.Row.Spacing.Title}">
-                            <StackPanel Orientation="Horizontal">
-                                <Slider
-                                    Maximum="32"
-                                    Minimum="4"
-                                    Style="{StaticResource AfSettingsRowSliderStyle}"
-                                    IsSnapToTickEnabled="True"
-                                    TickFrequency="1"
-                                    Value="{Binding ViewModel.ComponentSpacingDip, Mode=TwoWay}" />
-                                <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.ComponentSpacingDip, StringFormat={}{0:0} DIP}" />
-                            </StackPanel>
+                            <components:SettingsNumericEditor
+                                    Value="{Binding ViewModel.ComponentSpacingDip, Mode=TwoWay}"
+                                    Minimum="{Binding Source={x:Static settings:TaskbarExperienceSettings.MinimumComponentSpacingDip}}"
+                                    Maximum="{Binding Source={x:Static settings:TaskbarExperienceSettings.MaximumComponentSpacingDip}}"
+                                    Step="1"
+                                    Unit="{DynamicResource Loc.Settings.Numeric.Dip}" />
                         </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>
@@ -726,16 +707,12 @@
                             Description="{DynamicResource Loc.DisplayModes.Hover.Row.Spacing.Description}"
                             Icon="{ui:SymbolIcon PaddingLeft24}"
                             Title="{DynamicResource Loc.DisplayModes.Hover.Row.Spacing.Title}">
-                            <StackPanel Orientation="Horizontal">
-                                <Slider
-                                    Maximum="16"
+                            <components:SettingsNumericEditor
+                                    Value="{Binding ViewModel.HoverButtonSpacingDip, Mode=TwoWay}"
                                     Minimum="0"
-                                    Style="{StaticResource AfSettingsRowSliderStyle}"
-                                    IsSnapToTickEnabled="True"
-                                    TickFrequency="1"
-                                    Value="{Binding ViewModel.HoverButtonSpacingDip, Mode=TwoWay}" />
-                                <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.HoverButtonSpacingDip, StringFormat={}{0:0} DIP}" />
-                            </StackPanel>
+                                    Maximum="{Binding Source={x:Static settings:TaskbarExperienceSettings.MaximumHoverButtonSpacingDip}}"
+                                    Step="1"
+                                    Unit="{DynamicResource Loc.Settings.Numeric.Dip}" />
                         </components:SettingsRow>
                     </StackPanel>
                 </components:SettingsGroup>

@@ -32,6 +32,10 @@ public enum LyricsSecondaryLineMode
 /// <summary>应用全部用户设置，并在属性直接修改时发布变更。 / All user settings; direct mutations publish changes.</summary>
 public sealed class AppSettings : INotifyPropertyChanged
 {
+    /// <summary>Minimum cross-axis taskbar offset in DIP.</summary>
+    public const double MinimumTaskbarCrossAxisOffsetDip = -20d;
+    /// <summary>Maximum cross-axis taskbar offset in DIP.</summary>
+    public const double MaximumTaskbarCrossAxisOffsetDip = 20d;
     private AppearanceSettings _appearance = AppearanceSettings.Default;
     private TrayWheelBehavior _trayWheelBehavior = TrayWheelBehavior.SwitchOutputDevice;
     private bool _lyricsEnabled = true;
@@ -237,7 +241,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         if (!double.IsFinite(result.TaskbarBarCrossAxisOffsetDip)) result.TaskbarBarCrossAxisOffsetDip = defaults.TaskbarBarCrossAxisOffsetDip;
         result.LayoutLengthScalePercent = Math.Clamp(result.LayoutLengthScalePercent, 70, 125);
         result.LayoutThicknessScalePercent = Math.Clamp(result.LayoutThicknessScalePercent, 70, 125);
-        result.TaskbarBarCrossAxisOffsetDip = Math.Clamp(result.TaskbarBarCrossAxisOffsetDip, -20, 20);
+        result.TaskbarBarCrossAxisOffsetDip = Math.Clamp(result.TaskbarBarCrossAxisOffsetDip, MinimumTaskbarCrossAxisOffsetDip, MaximumTaskbarCrossAxisOffsetDip);
         if (result.DynamicIslandLeft is not null && (!double.IsFinite(result.DynamicIslandLeft.Value) || result.DynamicIslandLeft < 0)) result.DynamicIslandLeft = null;
         if (result.DynamicIslandTop is not null && (!double.IsFinite(result.DynamicIslandTop.Value) || result.DynamicIslandTop < 0)) result.DynamicIslandTop = null;
         return result;

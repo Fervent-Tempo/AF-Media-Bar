@@ -2147,4 +2147,25 @@
   <data name="Settings.Advanced.Diagnostics.Description" xml:space="preserve">
     <value>Open the log folder or manually trim working-set memory.</value>
   </data>
+  <data name="Settings.Numeric.Range" xml:space="preserve">
+    <value>Range: {0}–{1} {2}; step: {3}. Press Enter or move focus to apply; Esc cancels.</value>
+  </data>
+  <data name="Settings.Numeric.Invalid" xml:space="preserve">
+    <value>Enter a valid number within the range. The setting has not changed.</value>
+  </data>
+  <data name="Settings.Numeric.Adjusted" xml:space="preserve">
+    <value>Adjusted to {0} {1} using the permitted step.</value>
+  </data>
+  <data name="Settings.Numeric.Percent" xml:space="preserve">
+    <value>%</value>
+  </data>
+  <data name="Settings.Numeric.Dip" xml:space="preserve">
+    <value>DIP</value>
+  </data>
+  <data name="Settings.Numeric.Hertz" xml:space="preserve">
+    <value>Hz</value>
+  </data>
+  <data name="Settings.Numeric.Seconds" xml:space="preserve">
+    <value>s</value>
+  </data>
 </root>

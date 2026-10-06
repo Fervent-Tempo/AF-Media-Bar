@@ -2147,4 +2147,25 @@
   <data name="Settings.Advanced.Diagnostics.Description" xml:space="preserve">
     <value>開啟記錄檔資料夾，或手動釋放工作集記憶體。</value>
   </data>
+  <data name="Settings.Numeric.Range" xml:space="preserve">
+    <value>範圍：{0}–{1} {2}；步長：{3}。輸入後按 Enter 或移開焦點套用，Esc 取消。</value>
+  </data>
+  <data name="Settings.Numeric.Invalid" xml:space="preserve">
+    <value>請輸入範圍內的有效數值；原設定未變更。</value>
+  </data>
+  <data name="Settings.Numeric.Adjusted" xml:space="preserve">
+    <value>已依允許的步長調整為 {0} {1}。</value>
+  </data>
+  <data name="Settings.Numeric.Percent" xml:space="preserve">
+    <value>%</value>
+  </data>
+  <data name="Settings.Numeric.Dip" xml:space="preserve">
+    <value>DIP</value>
+  </data>
+  <data name="Settings.Numeric.Hertz" xml:space="preserve">
+    <value>Hz</value>
+  </data>
+  <data name="Settings.Numeric.Seconds" xml:space="preserve">
+    <value>秒</value>
+  </data>
 </root>

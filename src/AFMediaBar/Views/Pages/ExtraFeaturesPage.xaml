@@ -144,16 +144,12 @@
                                     Icon="{ui:SymbolIcon Timer24}"
                                     IsNested="True"
                                     Title="{DynamicResource Loc.Media.Notification.Duration.Title}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <Slider
-                                            IsSnapToTickEnabled="True"
-                                            Maximum="10"
-                                            Minimum="1"
-                                            Style="{StaticResource AfSettingsRowSliderStyle}"
-                                            TickFrequency="1"
-                                            Value="{Binding ViewModel.TrackChangeNotificationDurationSeconds, Mode=TwoWay}" />
-                                        <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.TrackChangeNotificationDurationText}" />
-                                    </StackPanel>
+                                    <components:SettingsNumericEditor
+                                    Value="{Binding ViewModel.TrackChangeNotificationDurationSeconds, Mode=TwoWay}"
+                                    Minimum="{Binding ViewModel.MinimumTrackChangeNotificationDurationSeconds}"
+                                    Maximum="{Binding ViewModel.MaximumTrackChangeNotificationDurationSeconds}"
+                                    Step="1"
+                                    Unit="{DynamicResource Loc.Settings.Numeric.Seconds}" />
                                 </components:SettingsRow>
                                 <components:SettingsRow
                                     Description="{DynamicResource Loc.Media.Notification.TargetMode.Description}"

@@ -168,6 +168,7 @@
                         SnapsToDevicePixels="True" IsHitTestVisible="False" components:SettingsHoverShadow.IsEnabled="True" />
                     <Border Padding="{TemplateBinding Padding}" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="Transparent">
                         <Grid>
+                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
@@ -195,19 +196,19 @@
                                     KeyboardNavigation.IsTabStop="False" />
                             </Grid>
 
-                            <StackPanel
+                            <StackPanel x:Name="TitleHost"
                                 Grid.Column="1"
                                 VerticalAlignment="Center">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock
+                                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock TextWrapping="Wrap"
                                         Style="{StaticResource AfSettingsRowTitleStyle}"
                                         Text="{TemplateBinding Title}" />
                                     <ContentControl
-                                        x:Name="RowBadge"
+                                        x:Name="RowBadge" Grid.Column="1"
                                         VerticalAlignment="Center"
                                         Content="{TemplateBinding Badge}"
                                         Style="{StaticResource AfSettingsBadgeNeutralStyle}" />
-                                </StackPanel>
+                                </Grid>
                                 <TextBlock
                                     x:Name="RowDescription"
                                     Style="{StaticResource AfSettingsRowDescriptionStyle}"
@@ -225,6 +226,14 @@
                     </Border>
                     </Grid>
                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsCompact" Value="True">
+                            <Setter TargetName="TitleHost" Property="Grid.ColumnSpan" Value="2" />
+                            <Setter TargetName="ControlHost" Property="Grid.Row" Value="1" />
+                            <Setter TargetName="ControlHost" Property="Grid.Column" Value="1" />
+                            <Setter TargetName="ControlHost" Property="Grid.ColumnSpan" Value="2" />
+                            <Setter TargetName="ControlHost" Property="HorizontalAlignment" Value="Left" />
+                            <Setter TargetName="ControlHost" Property="Margin" Value="0,8,0,0" />
+                        </Trigger>
                         <Trigger Property="Icon" Value="{x:Null}">
                             <Setter TargetName="IconChip" Property="Visibility" Value="Collapsed" />
                             <Setter TargetName="IconChip" Property="Margin" Value="0" />
@@ -646,6 +655,33 @@
                 <Setter Property="Template" Value="{StaticResource AfDiagramDynamicIslandSurface}" />
             </DataTrigger>
         </Style.Triggers>
+    </Style>
+
+
+    <!-- Slider values are synchronized by the editor so template/range coercion cannot write settings during construction. -->
+    <Style TargetType="{x:Type components:SettingsNumericEditor}">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="RangeFormat" Value="{DynamicResource Loc.Settings.Numeric.Range}" />
+        <Setter Property="InvalidMessage" Value="{DynamicResource Loc.Settings.Numeric.Invalid}" />
+        <Setter Property="AdjustedFormat" Value="{DynamicResource Loc.Settings.Numeric.Adjusted}" />
+        <Setter Property="AutomationProperties.Name" Value="{Binding Title, RelativeSource={RelativeSource AncestorType={x:Type components:SettingsRow}}}" />
+        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="{x:Type components:SettingsNumericEditor}">
+            <Grid VerticalAlignment="Center">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <Slider x:Name="PART_Slider" Width="120" Style="{StaticResource AfSettingsRowSliderStyle}"
+                        AutomationProperties.Name="{Binding Path=(AutomationProperties.Name), RelativeSource={RelativeSource TemplatedParent}}" />
+                <TextBox x:Name="PART_Input" Grid.Column="1" Width="72" Margin="8,0,0,0" Padding="6,4"
+                         VerticalContentAlignment="Center" HorizontalContentAlignment="Right"
+                         Background="{DynamicResource AfSettingsInputBrush}" Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                         ToolTip="{TemplateBinding HelpText}" AutomationProperties.HelpText="{TemplateBinding HelpText}"
+                         AutomationProperties.Name="{Binding Path=(AutomationProperties.Name), RelativeSource={RelativeSource TemplatedParent}}" />
+                <TextBlock Grid.Column="2" Margin="4,0,0,0" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="{TemplateBinding Unit}" />
+            </Grid>
+            <ControlTemplate.Triggers>
+                <Trigger Property="HasInputError" Value="True"><Setter TargetName="PART_Input" Property="BorderBrush" Value="{DynamicResource SystemFillColorCriticalBrush}" /></Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate></Setter.Value></Setter>
     </Style>
 
 </ResourceDictionary>

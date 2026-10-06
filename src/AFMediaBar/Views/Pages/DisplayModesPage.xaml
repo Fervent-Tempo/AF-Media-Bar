@@ -291,16 +291,12 @@
                                 Description="{DynamicResource Loc.DisplayModes.Placement.Row.Offset.Description}"
                                 Icon="{ui:SymbolIcon ArrowMove24}"
                                 Title="{DynamicResource Loc.DisplayModes.Placement.Row.Offset.Title}">
-                                <StackPanel Orientation="Horizontal">
-                                    <Slider
-                                        IsSnapToTickEnabled="True"
-                                        Maximum="20"
-                                        Minimum="-20"
-                                        Style="{StaticResource RowSliderStyle}"
-                                        TickFrequency="1"
-                                        Value="{Binding ViewModel.TaskbarCrossAxisOffsetDip, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                    <TextBlock Style="{StaticResource RowValueStyle}" Text="{Binding ViewModel.TaskbarCrossAxisOffsetDip, StringFormat={}{0:0} DIP}" />
-                                </StackPanel>
+                                <components:SettingsNumericEditor
+                                    Value="{Binding ViewModel.TaskbarCrossAxisOffsetDip, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    Minimum="{Binding Source={x:Static settings:AppSettings.MinimumTaskbarCrossAxisOffsetDip}}"
+                                    Maximum="{Binding Source={x:Static settings:AppSettings.MaximumTaskbarCrossAxisOffsetDip}}"
+                                    Step="1"
+                                    Unit="{DynamicResource Loc.Settings.Numeric.Dip}" />
                             </components:SettingsRow>
 
                             <components:SettingsRow

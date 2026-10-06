@@ -122,16 +122,11 @@
                                     IsNested="True"
                                     Style="{StaticResource SpectrumParameterRowStyle}"
                                     Title="{DynamicResource Loc.Media.Spectrum.BandCount.Title}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <Slider
-                                            IsSnapToTickEnabled="True"
-                                            Maximum="{Binding ViewModel.MaximumSpectrumBandCount}"
-                                            Minimum="{Binding ViewModel.MinimumSpectrumBandCount}"
-                                            Style="{StaticResource AfSettingsRowSliderStyle}"
-                                            TickFrequency="1"
-                                            Value="{Binding ViewModel.SpectrumBandCount, Mode=TwoWay}" />
-                                        <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.SpectrumBandCountText}" />
-                                    </StackPanel>
+                                    <components:SettingsNumericEditor
+                                    Value="{Binding ViewModel.SpectrumBandCount, Mode=TwoWay}"
+                                    Minimum="{Binding ViewModel.MinimumSpectrumBandCount}"
+                                    Maximum="{Binding ViewModel.MaximumSpectrumBandCount}"
+                                    Step="1" />
                                 </components:SettingsRow>
                                 <components:SettingsRow
                                     Description="{DynamicResource Loc.Media.Spectrum.ContentHeight.Description}"
@@ -139,16 +134,12 @@
                                     IsNested="True"
                                     Style="{StaticResource SpectrumParameterRowStyle}"
                                     Title="{DynamicResource Loc.Media.Spectrum.ContentHeight.Title}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <Slider
-                                            IsSnapToTickEnabled="True"
-                                            Maximum="{Binding ViewModel.MaximumSpectrumContentHeightDip}"
-                                            Minimum="{Binding ViewModel.MinimumSpectrumContentHeightDip}"
-                                            Style="{StaticResource AfSettingsRowSliderStyle}"
-                                            TickFrequency="{Binding ViewModel.SpectrumContentHeightStepDip}"
-                                            Value="{Binding ViewModel.SpectrumContentHeightDip, Mode=TwoWay}" />
-                                        <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.SpectrumContentHeightText}" />
-                                    </StackPanel>
+                                    <components:SettingsNumericEditor
+                                    Value="{Binding ViewModel.SpectrumContentHeightDip, Mode=TwoWay}"
+                                    Minimum="{Binding ViewModel.MinimumSpectrumContentHeightDip}"
+                                    Maximum="{Binding ViewModel.MaximumSpectrumContentHeightDip}"
+                                    Step="{Binding ViewModel.SpectrumContentHeightStepDip}"
+                                    Unit="{DynamicResource Loc.Settings.Numeric.Dip}" />
                                 </components:SettingsRow>
                                 <components:SettingsRow
                                     Description="{DynamicResource Loc.Media.Spectrum.RefreshRate.Description}"
@@ -156,16 +147,12 @@
                                     IsNested="True"
                                     Style="{StaticResource SpectrumParameterRowStyle}"
                                     Title="{DynamicResource Loc.Media.Spectrum.RefreshRate.Title}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <Slider
-                                            IsSnapToTickEnabled="True"
-                                            Maximum="30"
-                                            Minimum="5"
-                                            Style="{StaticResource AfSettingsRowSliderStyle}"
-                                            TickFrequency="1"
-                                            Value="{Binding ViewModel.SpectrumRefreshRateHz, Mode=TwoWay}" />
-                                        <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.SpectrumRefreshRateHz, StringFormat={}{0} Hz}" />
-                                    </StackPanel>
+                                    <components:SettingsNumericEditor
+                                    Value="{Binding ViewModel.SpectrumRefreshRateHz, Mode=TwoWay}"
+                                    Minimum="{Binding Source={x:Static settings:SpectrumComponentSettings.MinimumRefreshRateHz}}"
+                                    Maximum="{Binding Source={x:Static settings:SpectrumComponentSettings.MaximumRefreshRateHz}}"
+                                    Step="1"
+                                    Unit="{DynamicResource Loc.Settings.Numeric.Hertz}" />
                                 </components:SettingsRow>
                                 <components:SettingsRow
                                     Description="{DynamicResource Loc.Media.Spectrum.Sensitivity.Description}"
@@ -173,16 +160,12 @@
                                     IsNested="True"
                                     Style="{StaticResource SpectrumParameterRowStyle}"
                                     Title="{DynamicResource Loc.Media.Spectrum.Sensitivity.Title}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <Slider
-                                            IsSnapToTickEnabled="True"
-                                            Maximum="{Binding ViewModel.MaximumSpectrumSensitivityPercent}"
-                                            Minimum="{Binding ViewModel.MinimumSpectrumSensitivityPercent}"
-                                            Style="{StaticResource AfSettingsRowSliderStyle}"
-                                            TickFrequency="{Binding ViewModel.SpectrumSensitivityStepPercent}"
-                                            Value="{Binding ViewModel.SpectrumSensitivityPercent, Mode=TwoWay}" />
-                                        <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.SpectrumSensitivityPercent, StringFormat={}{0}%}" />
-                                    </StackPanel>
+                                    <components:SettingsNumericEditor
+                                    Value="{Binding ViewModel.SpectrumSensitivityPercent, Mode=TwoWay}"
+                                    Minimum="{Binding ViewModel.MinimumSpectrumSensitivityPercent}"
+                                    Maximum="{Binding ViewModel.MaximumSpectrumSensitivityPercent}"
+                                    Step="{Binding ViewModel.SpectrumSensitivityStepPercent}"
+                                    Unit="{DynamicResource Loc.Settings.Numeric.Percent}" />
                                 </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>
@@ -247,16 +230,12 @@
                                     IsNested="True"
                                     Style="{StaticResource PerformanceParameterRowStyle}"
                                     Title="{DynamicResource Loc.Media.Performance.RefreshInterval.Title}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <Slider
-                                            IsSnapToTickEnabled="True"
-                                            Maximum="{Binding ViewModel.MaximumPerformanceRefreshIntervalSeconds}"
-                                            Minimum="{Binding ViewModel.MinimumPerformanceRefreshIntervalSeconds}"
-                                            Style="{StaticResource AfSettingsRowSliderStyle}"
-                                            TickFrequency="{Binding ViewModel.PerformanceRefreshIntervalStepSeconds}"
-                                            Value="{Binding ViewModel.PerformanceRefreshIntervalSeconds, Mode=TwoWay}" />
-                                        <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.PerformanceRefreshIntervalText}" />
-                                    </StackPanel>
+                                    <components:SettingsNumericEditor
+                                    Value="{Binding ViewModel.PerformanceRefreshIntervalSeconds, Mode=TwoWay}"
+                                    Minimum="{Binding ViewModel.MinimumPerformanceRefreshIntervalSeconds}"
+                                    Maximum="{Binding ViewModel.MaximumPerformanceRefreshIntervalSeconds}"
+                                    Step="{Binding ViewModel.PerformanceRefreshIntervalStepSeconds}"
+                                    Unit="{DynamicResource Loc.Settings.Numeric.Seconds}" />
                                 </components:SettingsRow>
                                 <components:SettingsRow
                                     Description="{DynamicResource Loc.Media.Performance.OpenTaskManager.Description}"

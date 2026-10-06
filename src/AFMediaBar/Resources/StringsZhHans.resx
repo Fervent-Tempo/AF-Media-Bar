@@ -2147,4 +2147,25 @@
   <data name="Settings.Advanced.Diagnostics.Description" xml:space="preserve">
     <value>打开日志文件夹，或手动释放工作集内存。</value>
   </data>
+  <data name="Settings.Numeric.Range" xml:space="preserve">
+    <value>范围：{0}–{1} {2}；步长：{3}。输入后按 Enter 或移开焦点应用，Esc 取消。</value>
+  </data>
+  <data name="Settings.Numeric.Invalid" xml:space="preserve">
+    <value>请输入范围内的有效数值；原设置未改变。</value>
+  </data>
+  <data name="Settings.Numeric.Adjusted" xml:space="preserve">
+    <value>已按允许的步长调整为 {0} {1}。</value>
+  </data>
+  <data name="Settings.Numeric.Percent" xml:space="preserve">
+    <value>%</value>
+  </data>
+  <data name="Settings.Numeric.Dip" xml:space="preserve">
+    <value>DIP</value>
+  </data>
+  <data name="Settings.Numeric.Hertz" xml:space="preserve">
+    <value>Hz</value>
+  </data>
+  <data name="Settings.Numeric.Seconds" xml:space="preserve">
+    <value>秒</value>
+  </data>
 </root>

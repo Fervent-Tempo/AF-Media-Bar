@@ -269,6 +269,11 @@ public partial class ExtraFeaturesViewModel : ObservableObject
     public bool ShowTrackChangeNotificationWhenFullscreen { get => Notification.ShowWhenFullscreen; set => UpdateNotification(Notification with { ShowWhenFullscreen = value }); }
     public int TrackChangeNotificationDurationSeconds { get => Notification.DurationMilliseconds / 1000; set => UpdateNotification(Notification with { DurationMilliseconds = value * 1000 }); }
 
+    /// <summary>Notification duration bounds in the display unit, derived from the persistence contract.</summary>
+    public double MinimumTrackChangeNotificationDurationSeconds => TrackChangeNotificationSettings.MinimumDurationMilliseconds / 1000d;
+    /// <summary>Notification duration upper bound in seconds.</summary>
+    public double MaximumTrackChangeNotificationDurationSeconds => TrackChangeNotificationSettings.MaximumDurationMilliseconds / 1000d;
+
     /// <summary>停留时间滑杆旁的读数，带单位。/ The reading next to the duration slider, with its unit.</summary>
     public string TrackChangeNotificationDurationText => Translations.Format("Media.Notification.Duration.Value", TrackChangeNotificationDurationSeconds);
 

@@ -1,8 +1,10 @@
 // Loads compiled settings templates and checks runtime enum literals, including symbols that the XAML compiler does not validate.
 using System.Text.RegularExpressions;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Data;
 using AFMediaBar.Components;
 using AFMediaBar.Classes.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -56,9 +58,58 @@ public sealed class SettingsVisualRuntimeTests
                 var choice = new RadioButton { Style = (Style)app.Resources["AfSettingsChoiceRadioStyle"], Content = "Mode" };
                 choice.ApplyTemplate();
                 Assert.IsNull(((Border)choice.Template.FindName("ChoiceBorder", choice)).Child);
+                VerifyNumericBinding(app);
             }
             finally { app.Shutdown(); }
         });
+    }
+
+    private static void VerifyNumericBinding(Application app)
+    {
+        var fixture = new NumericFixture();
+        var editor = new SettingsNumericEditor
+        {
+            Style = (Style)app.Resources[typeof(SettingsNumericEditor)],
+            Minimum = 129.25d,
+            Maximum = 4096d,
+            Step = 1d,
+            IsSnapToTickEnabled = false
+        };
+        BindingOperations.SetBinding(editor, SettingsNumericEditor.ValueProperty,
+            new Binding(nameof(NumericFixture.Value)) { Source = fixture, Mode = BindingMode.TwoWay, UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged });
+        editor.ApplyTemplate();
+        var input = (TextBox)editor.Template.FindName("PART_Input", editor);
+        Assert.AreEqual(0, fixture.Writes, "Applying a template must not write a coerced slider default.");
+        input.Text = "200";
+        Assert.AreEqual(300d, fixture.Value, "An unfinished draft must not change settings.");
+        Assert.IsTrue(editor.TryCommit());
+        Assert.AreEqual(200d, fixture.Value);
+        Assert.AreEqual(1, fixture.Writes);
+        Assert.AreEqual("200", input.Text);
+        input.Text = "NaN";
+        Assert.IsFalse(editor.TryCommit());
+        Assert.IsTrue(editor.HasInputError);
+        Assert.AreEqual(200d, fixture.Value);
+        Assert.AreEqual(1, fixture.Writes);
+        input.Text = "200";
+        editor.Maximum = 180d;
+        Assert.IsFalse(editor.TryCommit(), "A stale draft must use the latest taskbar limit.");
+        Assert.AreEqual(1, fixture.Writes);
+        fixture.Value = 160d;
+        Assert.AreEqual(160d, editor.Value);
+        Assert.AreEqual("160", input.Text, "External resets refresh the displayed value.");
+    }
+
+    private sealed class NumericFixture : INotifyPropertyChanged
+    {
+        private double _value = 300d;
+        public int Writes { get; private set; }
+        public double Value
+        {
+            get => _value;
+            set { _value = value; Writes++; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Value))); }
+        }
+        public event PropertyChangedEventHandler? PropertyChanged;
     }
 
     [TestMethod]
