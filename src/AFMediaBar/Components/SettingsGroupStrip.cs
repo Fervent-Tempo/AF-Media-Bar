@@ -251,8 +251,6 @@ public class SettingsGroupStrip : Control
     /// <param name="groupIndex">目标分组序号。/ Target group index.</param>
     public void RevealGroup(int groupIndex)
     {
-        JumpTo(groupIndex);
-
         var groups = ResolveGroups();
         if (groupIndex < 0 || groupIndex >= groups.Count)
         {
@@ -260,6 +258,10 @@ public class SettingsGroupStrip : Control
         }
 
         var group = groups[groupIndex];
+        // Search resolves a group, so reveal its details before measuring the scroll target.
+        ExpandDetails(group);
+        group.UpdateLayout();
+        JumpTo(groupIndex);
         var animation = new DoubleAnimationUsingKeyFrames
         {
             BeginTime = TimeSpan.Zero,
@@ -279,6 +281,14 @@ public class SettingsGroupStrip : Control
         };
 
         group.BeginAnimation(UIElement.OpacityProperty, animation, HandoffBehavior.SnapshotAndReplace);
+    }
+
+    private static void ExpandDetails(DependencyObject element)
+    {
+        if (element is CardExpander expander)
+            expander.IsExpanded = true;
+        foreach (var child in LogicalTreeHelper.GetChildren(element).OfType<DependencyObject>())
+            ExpandDetails(child);
     }
 
     /// <summary>取与设置页外观一致的强 ease-out 曲线；资源缺失时用同一曲线的兜底实例。/ The strong ease-out curve shared with settings appearance, with a fallback of the same shape.</summary>

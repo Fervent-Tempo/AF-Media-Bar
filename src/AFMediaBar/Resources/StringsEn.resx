@@ -2105,4 +2105,46 @@
   <data name="ReleaseHighlights.Application.Open" xml:space="preserve"><value>View release highlights</value></data>
   <data name="Settings.Expand" xml:space="preserve"><value>Click to expand</value></data>
   <data name="Settings.Collapse" xml:space="preserve"><value>Click to collapse</value></data>
+  <data name="Common.Group.TextAndFonts" xml:space="preserve">
+    <value>Text and fonts</value>
+  </data>
+  <data name="Search.Appearance.TextAndFonts.Description" xml:space="preserve">
+    <value>Adjust media text size and color, and the fonts and weight shared by the interface and media bar.</value>
+  </data>
+  <data name="Settings.Advanced.Fonts.Title" xml:space="preserve">
+    <value>Fonts and weight</value>
+  </data>
+  <data name="Settings.Advanced.Fonts.Description" xml:space="preserve">
+    <value>Change the fonts and text weight shared by the interface, media bar, and notifications.</value>
+  </data>
+  <data name="Settings.Advanced.Backdrop.Title" xml:space="preserve">
+    <value>Material details</value>
+  </data>
+  <data name="Settings.Advanced.Backdrop.Description" xml:space="preserve">
+    <value>Adjust the tint of app-rendered backgrounds.</value>
+  </data>
+  <data name="Settings.Advanced.Spacing.Title" xml:space="preserve">
+    <value>Component spacing</value>
+  </data>
+  <data name="Settings.Advanced.Spacing.Description" xml:space="preserve">
+    <value>Fine-tune the space between media bar components.</value>
+  </data>
+  <data name="Settings.Advanced.Lyrics.Title" xml:space="preserve">
+    <value>Lyric layout details</value>
+  </data>
+  <data name="Settings.Advanced.Lyrics.Description" xml:space="preserve">
+    <value>Adjust unsung text, line spacing, character spacing, and fixed width.</value>
+  </data>
+  <data name="Settings.Advanced.Defaults.Title" xml:space="preserve">
+    <value>Custom defaults</value>
+  </data>
+  <data name="Settings.Advanced.Defaults.Description" xml:space="preserve">
+    <value>Save or clear the personal configuration used when restoring defaults.</value>
+  </data>
+  <data name="Settings.Advanced.Diagnostics.Title" xml:space="preserve">
+    <value>Diagnostic tools</value>
+  </data>
+  <data name="Settings.Advanced.Diagnostics.Description" xml:space="preserve">
+    <value>Open the log folder or manually trim working-set memory.</value>
+  </data>
 </root>

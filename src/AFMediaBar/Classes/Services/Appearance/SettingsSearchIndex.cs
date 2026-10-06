@@ -176,8 +176,20 @@ public static class SettingsSearchIndex
     /// </summary>
     private static SettingsSearchEntry[] Build(LocalizationLanguage language) =>
     [
-        Create(SettingsPageKey.ReleaseHighlights, 0, "ReleaseHighlights.Latest", "ReleaseHighlights.Header.Subtitle", language, ["更新亮点", "release notes", "what's new"]),
-        Create(SettingsPageKey.ReleaseHighlights, 1, "ReleaseHighlights.History", "ReleaseHighlights.Application.Description", language, ["历史版本", "version history"]),
+        Create(
+            SettingsPageKey.ReleaseHighlights,
+            0,
+            "ReleaseHighlights.Latest",
+            "ReleaseHighlights.Header.Subtitle",
+            language,
+            ["更新亮点", "release notes", "what's new"]),
+        Create(
+            SettingsPageKey.ReleaseHighlights,
+            1,
+            "ReleaseHighlights.History",
+            "ReleaseHighlights.Application.Description",
+            language,
+            ["历史版本", "version history"]),
         // ---- 显示模式 · 模式选择（四种模式下都可见，因此每种模式各有一条，序号固定为 0）----
         // ---- Display modes, the mode picker, visible in all four modes, so every mode carries it at index 0 ----
         CreateModePicker(SettingsSearchMode.Taskbar, language),
@@ -237,14 +249,14 @@ public static class SettingsSearchIndex
             ["来源", "source", "SMTC", "允许", "过滤", "filter", "白名单", "应用", "播放器", "媒体来源", "已检测来源", "允许列表"]),
         Create(
             SettingsPageKey.MediaAndNotifications,
-            1,
+            2,
             "Common.Group.QuickLaunch",
             "Search.MediaAndNotifications.QuickLaunch.Description",
             language,
             ["快速启动", "quick", "launch", "启动", "音符", "播放器", "exe", "lnk", "浏览", "快捷方式"]),
         Create(
             SettingsPageKey.MediaAndNotifications,
-            2,
+            1,
             "Common.Group.TrackChangeNotification",
             "Search.MediaAndNotifications.TrackChangeNotification.Description",
             language,
@@ -262,21 +274,21 @@ public static class SettingsSearchIndex
         // ---- 交互 / Interaction ----
         Create(
             SettingsPageKey.Interaction,
-            0,
+            2,
             "Common.Group.SharedModifier",
             "Search.Interaction.SharedModifier.Description",
             language,
             ["修饰键", "modifier", "shift", "滚轮", "wheel", "组合", "chord", "左键", "右键", "共用修饰键", "按键"]),
         Create(
             SettingsPageKey.Interaction,
-            1,
+            0,
             "Common.Group.InAppRestLayer",
             "Search.Interaction.InAppRestLayer.Description",
             language,
             ["点击", "click", "封面", "artwork", "标题", "歌词", "程序内", "绑定", "上一首", "下一首", "设备", "音量", "媒体源", "普通滚轮", "组合滚轮", "完整层", "打开完整层", "面板"]),
         Create(
             SettingsPageKey.Interaction,
-            2,
+            1,
             "Common.TrayIcon",
             "Search.Interaction.TrayIcon.Description",
             language,
@@ -309,41 +321,34 @@ public static class SettingsSearchIndex
         Create(
             SettingsPageKey.Appearance,
             0,
-            "Common.Group.Fonts",
-            "Search.Appearance.Fonts.Description",
-            language,
-            ["字体", "font", "字重", "weight", "粗细", "西文", "英文", "中文", "预览", "preview", "segoe", "雅黑", "字体粗细"]),
-        Create(
-            SettingsPageKey.Appearance,
-            1,
             "Common.Group.ThemeAndBackdrop",
             "Search.Appearance.ThemeAndBackdrop.Description",
             language,
             ["主题", "theme", "浅色", "深色", "light", "dark", "材质", "backdrop", "mica", "云母", "acrylic", "亚克力", "动效", "motion", "动画", "背景材质", "交互动效"]),
         Create(
             SettingsPageKey.Appearance,
-            2,
-            "Common.Group.MediaBarText",
-            "Search.Appearance.MediaBarText.Description",
+            1,
+            "Common.Group.TextAndFonts",
+            "Search.Appearance.TextAndFonts.Description",
             language,
-            ["文字颜色", "foreground", "文字", "颜色", "自动", "浅色文字", "深色文字", "对比", "可读", "播放器文字", "媒体文字大小", "字号", "文字大小", "font size", "缩放"]),
+            ["文字颜色", "foreground", "文字", "颜色", "自动", "浅色文字", "深色文字", "对比", "可读", "播放器文字", "媒体文字大小", "字号", "文字大小", "font size", "缩放", "字体", "font", "字重", "weight", "粗细", "西文", "英文", "中文", "预览", "preview", "segoe", "雅黑", "字体粗细"]),
         Create(
             SettingsPageKey.Appearance,
-            3,
+            2,
             "Common.Group.MediaBarWidth",
             "Search.Appearance.MediaBarWidth.Description",
             language,
             ["长度", "尺寸", "宽度", "间距", "spacing", "length", "固定", "跟随", "组件", "width", "固定长度", "组件间距"]),
         Create(
             SettingsPageKey.Appearance,
-            4,
+            3,
             "Appearance.Group.RestLayout",
             "Search.Appearance.RestLayout.Description",
             language,
             ["静置层外观", "rest layout", "排列", "布局", "layout", "对齐", "标题", "歌手", "artist", "内容排列", "顺序", "排序", "order", "组件", "component", "上移", "下移"]),
         Create(
             SettingsPageKey.Appearance,
-            5,
+            4,
             "Appearance.Group.InteractionButtons",
             "Search.Appearance.InteractionButtons.Description",
             language,

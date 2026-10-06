@@ -72,8 +72,8 @@
             <ui:NavigationView.MenuItems>
                 <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.DisplayModes}" Icon="{ui:SymbolIcon Desktop24}" TargetPageType="{x:Type pages:DisplayModesPage}" />
                 <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Appearance}" Icon="{ui:SymbolIcon PaintBrush24}" TargetPageType="{x:Type pages:AppearancePage}" />
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Interaction}" Icon="{ui:SymbolIcon HandDraw24}" TargetPageType="{x:Type pages:InteractionPage}" />
                 <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Lyrics}" Icon="{ui:SymbolIcon TextQuote24}" TargetPageType="{x:Type pages:LyricsPage}" />
+                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Interaction}" Icon="{ui:SymbolIcon HandDraw24}" TargetPageType="{x:Type pages:InteractionPage}" />
                 <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Components}" Icon="{ui:SymbolIcon DataHistogram24}" TargetPageType="{x:Type pages:ComponentsSettingsPage}" />
                 <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.MediaAndNotifications}" Icon="{ui:SymbolIcon PuzzlePiece24}" TargetPageType="{x:Type pages:ExtraFeaturesPage}" />
                 <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Application}" Icon="{ui:SymbolIcon Settings24}" TargetPageType="{x:Type pages:ApplicationPage}" />

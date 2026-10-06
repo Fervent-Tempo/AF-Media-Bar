@@ -96,68 +96,6 @@
                     </StackPanel>
                 </components:SettingsGroup>
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.QuickLaunch}" Icon="{ui:SymbolIcon Rocket24}">
-                    <StackPanel>
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Media.QuickLaunch.FromNote.Description}"
-                            Icon="{ui:SymbolIcon Rocket24}"
-                            Title="{DynamicResource Loc.Media.QuickLaunch.FromNote.Title}">
-                            <ui:Button
-                                Click="BrowseQuickLaunch_Click"
-                                Content="{DynamicResource Loc.Media.QuickLaunch.Browse}"
-                                Icon="{ui:SymbolIcon FolderOpen24}"
-                                Style="{StaticResource AfSettingsButtonStyle}" />
-                        </components:SettingsRow>
-
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Media.QuickLaunch.Entries.Description}"
-                            Icon="{ui:SymbolIcon AppsListDetail24}"
-                            Title="{DynamicResource Loc.Media.QuickLaunch.Entries.Title}">
-                            <TextBlock
-                                Style="{StaticResource AfSettingsRowValueStyle}"
-                                Text="{Binding ViewModel.QuickLaunchEntryCountText}" />
-                        </components:SettingsRow>
-
-                        <ItemsControl Margin="0,0,0,4" ItemsSource="{Binding ViewModel.QuickLaunchEntries}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <components:SettingsRow
-                                        Description="{Binding Target}"
-                                        IsNested="True"
-                                        Title="{Binding DisplayName}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <ui:Button
-                                                Command="{Binding DataContext.ViewModel.MoveQuickLaunchUpCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                CommandParameter="{Binding}"
-                                                Icon="{ui:SymbolIcon ArrowUp24}"
-                                                Style="{StaticResource AfSettingsIconButtonStyle}"
-                                                ToolTip="{DynamicResource Loc.Media.QuickLaunch.MoveUp}" />
-                                            <ui:Button
-                                                Margin="4,0,0,0"
-                                                Command="{Binding DataContext.ViewModel.MoveQuickLaunchDownCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                CommandParameter="{Binding}"
-                                                Icon="{ui:SymbolIcon ArrowDown24}"
-                                                Style="{StaticResource AfSettingsIconButtonStyle}"
-                                                ToolTip="{DynamicResource Loc.Media.QuickLaunch.MoveDown}" />
-                                            <ui:Button
-                                                Margin="4,0,0,0"
-                                                Command="{Binding DataContext.ViewModel.RemoveQuickLaunchCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                CommandParameter="{Binding}"
-                                                Icon="{ui:SymbolIcon Delete24}"
-                                                Style="{StaticResource AfSettingsIconButtonStyle}"
-                                                ToolTip="{DynamicResource Loc.Media.QuickLaunch.Remove}" />
-                                        </StackPanel>
-                                    </components:SettingsRow>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-
-                        <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,4,0,0"><TextBlock
-                            Style="{StaticResource AfSettingsHintTextStyle}"
-                            Text="{Binding ViewModel.StatusText}" /></Border>
-                    </StackPanel>
-                </components:SettingsGroup>
-
                 <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.TrackChangeNotification}" Icon="{ui:SymbolIcon MusicNote220}">
                     <StackPanel>
                         <components:SettingsRow
@@ -244,6 +182,68 @@
                                 </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>
+                    </StackPanel>
+                </components:SettingsGroup>
+
+                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.QuickLaunch}" Icon="{ui:SymbolIcon Rocket24}">
+                    <StackPanel>
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Media.QuickLaunch.FromNote.Description}"
+                            Icon="{ui:SymbolIcon Rocket24}"
+                            Title="{DynamicResource Loc.Media.QuickLaunch.FromNote.Title}">
+                            <ui:Button
+                                Click="BrowseQuickLaunch_Click"
+                                Content="{DynamicResource Loc.Media.QuickLaunch.Browse}"
+                                Icon="{ui:SymbolIcon FolderOpen24}"
+                                Style="{StaticResource AfSettingsButtonStyle}" />
+                        </components:SettingsRow>
+
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Media.QuickLaunch.Entries.Description}"
+                            Icon="{ui:SymbolIcon AppsListDetail24}"
+                            Title="{DynamicResource Loc.Media.QuickLaunch.Entries.Title}">
+                            <TextBlock
+                                Style="{StaticResource AfSettingsRowValueStyle}"
+                                Text="{Binding ViewModel.QuickLaunchEntryCountText}" />
+                        </components:SettingsRow>
+
+                        <ItemsControl Margin="0,0,0,4" ItemsSource="{Binding ViewModel.QuickLaunchEntries}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <components:SettingsRow
+                                        Description="{Binding Target}"
+                                        IsNested="True"
+                                        Title="{Binding DisplayName}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <ui:Button
+                                                Command="{Binding DataContext.ViewModel.MoveQuickLaunchUpCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                CommandParameter="{Binding}"
+                                                Icon="{ui:SymbolIcon ArrowUp24}"
+                                                Style="{StaticResource AfSettingsIconButtonStyle}"
+                                                ToolTip="{DynamicResource Loc.Media.QuickLaunch.MoveUp}" />
+                                            <ui:Button
+                                                Margin="4,0,0,0"
+                                                Command="{Binding DataContext.ViewModel.MoveQuickLaunchDownCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                CommandParameter="{Binding}"
+                                                Icon="{ui:SymbolIcon ArrowDown24}"
+                                                Style="{StaticResource AfSettingsIconButtonStyle}"
+                                                ToolTip="{DynamicResource Loc.Media.QuickLaunch.MoveDown}" />
+                                            <ui:Button
+                                                Margin="4,0,0,0"
+                                                Command="{Binding DataContext.ViewModel.RemoveQuickLaunchCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                CommandParameter="{Binding}"
+                                                Icon="{ui:SymbolIcon Delete24}"
+                                                Style="{StaticResource AfSettingsIconButtonStyle}"
+                                                ToolTip="{DynamicResource Loc.Media.QuickLaunch.Remove}" />
+                                        </StackPanel>
+                                    </components:SettingsRow>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,4,0,0"><TextBlock
+                            Style="{StaticResource AfSettingsHintTextStyle}"
+                            Text="{Binding ViewModel.StatusText}" /></Border>
                     </StackPanel>
                 </components:SettingsGroup>
 

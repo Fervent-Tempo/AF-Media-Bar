@@ -2105,4 +2105,46 @@
   <data name="ReleaseHighlights.Application.Open" xml:space="preserve"><value>查看更新亮点</value></data>
   <data name="Settings.Expand" xml:space="preserve"><value>点击展开</value></data>
   <data name="Settings.Collapse" xml:space="preserve"><value>点击收起</value></data>
+  <data name="Common.Group.TextAndFonts" xml:space="preserve">
+    <value>文字与字体</value>
+  </data>
+  <data name="Search.Appearance.TextAndFonts.Description" xml:space="preserve">
+    <value>调整媒体文字大小、颜色，以及界面和媒体栏共用的字体与粗细。</value>
+  </data>
+  <data name="Settings.Advanced.Fonts.Title" xml:space="preserve">
+    <value>字体与字重</value>
+  </data>
+  <data name="Settings.Advanced.Fonts.Description" xml:space="preserve">
+    <value>调整界面、媒体栏和通知共用的字体与文字粗细。</value>
+  </data>
+  <data name="Settings.Advanced.Backdrop.Title" xml:space="preserve">
+    <value>材质细节</value>
+  </data>
+  <data name="Settings.Advanced.Backdrop.Description" xml:space="preserve">
+    <value>调整自绘背景的颜色浓度。</value>
+  </data>
+  <data name="Settings.Advanced.Spacing.Title" xml:space="preserve">
+    <value>组件间距</value>
+  </data>
+  <data name="Settings.Advanced.Spacing.Description" xml:space="preserve">
+    <value>微调媒体栏中各组件之间的距离。</value>
+  </data>
+  <data name="Settings.Advanced.Lyrics.Title" xml:space="preserve">
+    <value>歌词排版细节</value>
+  </data>
+  <data name="Settings.Advanced.Lyrics.Description" xml:space="preserve">
+    <value>调整未唱文字、行距、字距和固定宽度。</value>
+  </data>
+  <data name="Settings.Advanced.Defaults.Title" xml:space="preserve">
+    <value>自定义默认设置</value>
+  </data>
+  <data name="Settings.Advanced.Defaults.Description" xml:space="preserve">
+    <value>保存或清除恢复默认设置时使用的个人配置。</value>
+  </data>
+  <data name="Settings.Advanced.Diagnostics.Title" xml:space="preserve">
+    <value>诊断工具</value>
+  </data>
+  <data name="Settings.Advanced.Diagnostics.Description" xml:space="preserve">
+    <value>打开日志文件夹，或手动释放工作集内存。</value>
+  </data>
 </root>

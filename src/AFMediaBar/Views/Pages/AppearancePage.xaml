@@ -106,131 +106,7 @@
                     </StackPanel>
                 </Grid>
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.Fonts}" Icon="{ui:SymbolIcon TextFont24}">
-                    <StackPanel>
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Appearance.Row.LatinFont.Description}"
-                            Icon="{ui:SymbolIcon TextFont24}"
-                            Title="{DynamicResource Loc.Appearance.Row.LatinFont.Title}">
-                            <ComboBox
-                                MinWidth="200"
-                                MaxDropDownHeight="360"
-                                ItemsSource="{Binding ViewModel.LatinFontChoices}"
-                                SelectedValue="{Binding ViewModel.LatinFontFamily, Mode=TwoWay}"
-                                SelectedValuePath="Name">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel>
-                                            <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding DisplayName}" />
-                                            <StackPanel Margin="0,3,0,0" Orientation="Horizontal">
-                                                <TextBlock
-                                                    Margin="0,2,7,0"
-                                                    FontSize="10"
-                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                    Text="{DynamicResource Loc.Appearance.Font.PreviewLabel}" />
-                                                <TextBlock
-                                                    FontFamily="{Binding PreviewFontFamily}"
-                                                    FontSize="14"
-                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                    Text="{Binding PreviewText}" />
-                                            </StackPanel>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-                        </components:SettingsRow>
 
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Appearance.Row.CjkFont.Description}"
-                            Icon="{ui:SymbolIcon LocalLanguage24}"
-                            Title="{DynamicResource Loc.Appearance.Row.CjkFont.Title}">
-                            <ComboBox
-                                MinWidth="200"
-                                MaxDropDownHeight="360"
-                                ItemsSource="{Binding ViewModel.CjkFontChoices}"
-                                SelectedValue="{Binding ViewModel.CjkFontFamily, Mode=TwoWay}"
-                                SelectedValuePath="Name">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel>
-                                            <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding DisplayName}" />
-                                            <StackPanel Margin="0,3,0,0" Orientation="Horizontal">
-                                                <TextBlock
-                                                    Margin="0,2,7,0"
-                                                    FontSize="10"
-                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                    Text="{DynamicResource Loc.Appearance.Font.PreviewLabel}" />
-                                                <TextBlock
-                                                    FontFamily="{Binding PreviewFontFamily}"
-                                                    FontSize="14"
-                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                    Text="{Binding PreviewText}" />
-                                            </StackPanel>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-                        </components:SettingsRow>
-
-                        <!--
-                            上下限用 Binding 而不是 x:Static：x:Static 返回装箱的 int，
-                            RangeBase.Maximum 需要 double，标记扩展不做这个转换，而绑定会。
-                            The bounds use Binding rather than x:Static because x:Static yields a boxed int,
-                            RangeBase.Maximum wants a double, and the markup extension performs no conversion
-                            while the binding engine does.
-                        -->
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Appearance.Row.FontWeight.Description}"
-                            Icon="{ui:SymbolIcon TextBold24}"
-                            Title="{DynamicResource Loc.Appearance.Row.FontWeight.Title}">
-                            <StackPanel Orientation="Horizontal">
-                                <Slider
-                                    IsSnapToTickEnabled="True"
-                                    Maximum="{Binding Source={x:Static settings:AppearanceSettings.MaximumFontWeight}}"
-                                    Minimum="{Binding Source={x:Static settings:AppearanceSettings.MinimumFontWeight}}"
-                                    Style="{StaticResource AfSettingsRowSliderStyle}"
-                                    TickFrequency="{Binding Source={x:Static settings:AppearanceSettings.FontWeightStep}}"
-                                    Value="{Binding ViewModel.FontWeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.FontWeight}" />
-                            </StackPanel>
-                        </components:SettingsRow>
-
-                        <Border
-                            Margin="0,4,0,0"
-                            Padding="16,13"
-                            Background="{DynamicResource AfSettingsInfoSurfaceBrush}"
-                            BorderBrush="{DynamicResource AfSettingsBorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="6">
-                            <StackPanel>
-                                <TextBlock
-                                    Margin="0,0,0,8"
-                                    Style="{StaticResource AfSettingsRowDescriptionStyle}"
-                                    Text="{DynamicResource Loc.Appearance.Specimen.Label}" />
-                                <TextBlock
-                                    FontFamily="{DynamicResource AppTextFontFamily}"
-                                    FontSize="20"
-                                    FontWeight="{DynamicResource AppTextFontWeight}"
-                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                    Text="AF Media Bar · 你是我的一切" />
-                                <TextBlock
-                                    Margin="0,8,0,0"
-                                    FontFamily="{DynamicResource AppTextFontFamily}"
-                                    FontSize="16"
-                                    FontWeight="{DynamicResource AppTextFontWeight}"
-                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                    Text="You are my everything · 君は私のすべて" />
-                                <TextBlock
-                                    Margin="0,8,0,0"
-                                    FontFamily="{DynamicResource AppTextFontFamily}"
-                                    FontSize="13"
-                                    FontWeight="{DynamicResource AppTextFontWeight}"
-                                    Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                                    Text="당신은 나의 전부 · You are my everything · 你是我的一切" />
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-                </components:SettingsGroup>
 
                 <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.ThemeAndBackdrop}" Icon="{ui:SymbolIcon Color24}">
                     <StackPanel>
@@ -270,21 +146,7 @@
                             (Windows 10 windows and the never-activating track notification). Mica, Acrylic, and Mica Alt on Windows 11
                             are painted by DWM and ignore it, which the row's description states.
                         -->
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Appearance.Row.BackdropTint.Description}"
-                            Icon="{ui:SymbolIcon CircleHalfFill24}"
-                            Title="{DynamicResource Loc.Appearance.Row.BackdropTint.Title}">
-                            <StackPanel Orientation="Horizontal">
-                                <Slider
-                                    IsSnapToTickEnabled="True"
-                                    Maximum="{Binding Source={x:Static settings:AppearanceSettings.MaximumBackdropTintOpacityPercent}}"
-                                    Minimum="{Binding Source={x:Static settings:AppearanceSettings.MinimumBackdropTintOpacityPercent}}"
-                                    Style="{StaticResource AfSettingsRowSliderStyle}"
-                                    TickFrequency="{Binding Source={x:Static settings:AppearanceSettings.BackdropTintOpacityStep}}"
-                                    Value="{Binding ViewModel.BackdropTintOpacityPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.BackdropTintOpacityPercent, StringFormat={}{0:0}%}" />
-                            </StackPanel>
-                        </components:SettingsRow>
+
                         <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,2,0,4"><TextBlock
                             Style="{StaticResource AfSettingsHintTextStyle}"
                             Text="{DynamicResource Loc.Appearance.BackdropTint.Hint}" /></Border>
@@ -456,11 +318,49 @@
                             Description="{Binding ViewModel.MotionDetailText}"
                             Icon="{ui:SymbolIcon ArrowSync24}"
                             Title="{DynamicResource Loc.Appearance.Row.Motion.Title}" />
+                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="False" Icon="{ui:SymbolIcon CircleHalfFill24}">
+                            <ui:CardExpander.Header><StackPanel>
+                                <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Settings.Advanced.Backdrop.Title}" />
+                                <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Settings.Advanced.Backdrop.Description}" />
+                            </StackPanel></ui:CardExpander.Header>
+                            <StackPanel>
+<components:SettingsRow
+                            Description="{DynamicResource Loc.Appearance.Row.BackdropTint.Description}"
+                            Icon="{ui:SymbolIcon CircleHalfFill24}"
+                            Title="{DynamicResource Loc.Appearance.Row.BackdropTint.Title}">
+                            <StackPanel Orientation="Horizontal">
+                                <Slider
+                                    IsSnapToTickEnabled="True"
+                                    Maximum="{Binding Source={x:Static settings:AppearanceSettings.MaximumBackdropTintOpacityPercent}}"
+                                    Minimum="{Binding Source={x:Static settings:AppearanceSettings.MinimumBackdropTintOpacityPercent}}"
+                                    Style="{StaticResource AfSettingsRowSliderStyle}"
+                                    TickFrequency="{Binding Source={x:Static settings:AppearanceSettings.BackdropTintOpacityStep}}"
+                                    Value="{Binding ViewModel.BackdropTintOpacityPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.BackdropTintOpacityPercent, StringFormat={}{0:0}%}" />
+                            </StackPanel>
+                        </components:SettingsRow>
+                            </StackPanel>
+                        </ui:CardExpander>
                     </StackPanel>
                 </components:SettingsGroup>
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.MediaBarText}" Icon="{ui:SymbolIcon TextColor24}">
+                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.TextAndFonts}" Icon="{ui:SymbolIcon TextColor24}">
                     <StackPanel>
+<components:SettingsRow
+                            Description="{DynamicResource Loc.Appearance.Row.MediaFontSize.Description}"
+                            Icon="{ui:SymbolIcon TextFont24}"
+                            Title="{DynamicResource Loc.Appearance.Row.MediaFontSize.Title}">
+                            <StackPanel Orientation="Horizontal">
+                                <Slider
+                                    IsSnapToTickEnabled="True"
+                                    Maximum="125"
+                                    Minimum="80"
+                                    Style="{StaticResource AfSettingsRowSliderStyle}"
+                                    TickFrequency="5"
+                                    Value="{Binding ViewModel.MediaFontSizePercent, Mode=TwoWay}" />
+                                <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.MediaFontSizePercent, StringFormat={}{0:0}%}" />
+                            </StackPanel>
+                        </components:SettingsRow>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Appearance.Row.TextColor.Description}"
                             Icon="{ui:SymbolIcon TextColor24}"
@@ -482,21 +382,7 @@
                             looks, which is the same subject as this group's colour, typeface, and weight, so it moved here. Its range
                             is unchanged.
                         -->
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Appearance.Row.MediaFontSize.Description}"
-                            Icon="{ui:SymbolIcon TextFont24}"
-                            Title="{DynamicResource Loc.Appearance.Row.MediaFontSize.Title}">
-                            <StackPanel Orientation="Horizontal">
-                                <Slider
-                                    IsSnapToTickEnabled="True"
-                                    Maximum="125"
-                                    Minimum="80"
-                                    Style="{StaticResource AfSettingsRowSliderStyle}"
-                                    TickFrequency="5"
-                                    Value="{Binding ViewModel.MediaFontSizePercent, Mode=TwoWay}" />
-                                <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.MediaFontSizePercent, StringFormat={}{0:0}%}" />
-                            </StackPanel>
-                        </components:SettingsRow>
+
 
                         <Grid Margin="0,4,0,0">
                             <Grid.ColumnDefinitions>
@@ -536,6 +422,137 @@
                         <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,8,0,0"><TextBlock
                             Style="{StaticResource AfSettingsHintTextStyle}"
                             Text="{DynamicResource Loc.Appearance.Preview.Hint}" /></Border>
+                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="False" Icon="{ui:SymbolIcon TextFont24}">
+                            <ui:CardExpander.Header><StackPanel>
+                                <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Settings.Advanced.Fonts.Title}" />
+                                <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Settings.Advanced.Fonts.Description}" />
+                            </StackPanel></ui:CardExpander.Header>
+                            <StackPanel>
+
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Appearance.Row.LatinFont.Description}"
+                            Icon="{ui:SymbolIcon TextFont24}"
+                            Title="{DynamicResource Loc.Appearance.Row.LatinFont.Title}">
+                            <ComboBox
+                                MinWidth="200"
+                                MaxDropDownHeight="360"
+                                ItemsSource="{Binding ViewModel.LatinFontChoices}"
+                                SelectedValue="{Binding ViewModel.LatinFontFamily, Mode=TwoWay}"
+                                SelectedValuePath="Name">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel>
+                                            <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding DisplayName}" />
+                                            <StackPanel Margin="0,3,0,0" Orientation="Horizontal">
+                                                <TextBlock
+                                                    Margin="0,2,7,0"
+                                                    FontSize="10"
+                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                    Text="{DynamicResource Loc.Appearance.Font.PreviewLabel}" />
+                                                <TextBlock
+                                                    FontFamily="{Binding PreviewFontFamily}"
+                                                    FontSize="14"
+                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                    Text="{Binding PreviewText}" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </components:SettingsRow>
+
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Appearance.Row.CjkFont.Description}"
+                            Icon="{ui:SymbolIcon LocalLanguage24}"
+                            Title="{DynamicResource Loc.Appearance.Row.CjkFont.Title}">
+                            <ComboBox
+                                MinWidth="200"
+                                MaxDropDownHeight="360"
+                                ItemsSource="{Binding ViewModel.CjkFontChoices}"
+                                SelectedValue="{Binding ViewModel.CjkFontFamily, Mode=TwoWay}"
+                                SelectedValuePath="Name">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel>
+                                            <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding DisplayName}" />
+                                            <StackPanel Margin="0,3,0,0" Orientation="Horizontal">
+                                                <TextBlock
+                                                    Margin="0,2,7,0"
+                                                    FontSize="10"
+                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                    Text="{DynamicResource Loc.Appearance.Font.PreviewLabel}" />
+                                                <TextBlock
+                                                    FontFamily="{Binding PreviewFontFamily}"
+                                                    FontSize="14"
+                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                    Text="{Binding PreviewText}" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </components:SettingsRow>
+
+                        <!--
+                            上下限用 Binding 而不是 x:Static：x:Static 返回装箱的 int，
+                            RangeBase.Maximum 需要 double，标记扩展不做这个转换，而绑定会。
+                            The bounds use Binding rather than x:Static because x:Static yields a boxed int,
+                            RangeBase.Maximum wants a double, and the markup extension performs no conversion
+                            while the binding engine does.
+                        -->
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Appearance.Row.FontWeight.Description}"
+                            Icon="{ui:SymbolIcon TextBold24}"
+                            Title="{DynamicResource Loc.Appearance.Row.FontWeight.Title}">
+                            <StackPanel Orientation="Horizontal">
+                                <Slider
+                                    IsSnapToTickEnabled="True"
+                                    Maximum="{Binding Source={x:Static settings:AppearanceSettings.MaximumFontWeight}}"
+                                    Minimum="{Binding Source={x:Static settings:AppearanceSettings.MinimumFontWeight}}"
+                                    Style="{StaticResource AfSettingsRowSliderStyle}"
+                                    TickFrequency="{Binding Source={x:Static settings:AppearanceSettings.FontWeightStep}}"
+                                    Value="{Binding ViewModel.FontWeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.FontWeight}" />
+                            </StackPanel>
+                        </components:SettingsRow>
+
+                        <Border
+                            Margin="0,4,0,0"
+                            Padding="16,13"
+                            Background="{DynamicResource AfSettingsInfoSurfaceBrush}"
+                            BorderBrush="{DynamicResource AfSettingsBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6">
+                            <StackPanel>
+                                <TextBlock
+                                    Margin="0,0,0,8"
+                                    Style="{StaticResource AfSettingsRowDescriptionStyle}"
+                                    Text="{DynamicResource Loc.Appearance.Specimen.Label}" />
+                                <TextBlock
+                                    FontFamily="{DynamicResource AppTextFontFamily}"
+                                    FontSize="20"
+                                    FontWeight="{DynamicResource AppTextFontWeight}"
+                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                    Text="AF Media Bar · 你是我的一切" />
+                                <TextBlock
+                                    Margin="0,8,0,0"
+                                    FontFamily="{DynamicResource AppTextFontFamily}"
+                                    FontSize="16"
+                                    FontWeight="{DynamicResource AppTextFontWeight}"
+                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                    Text="You are my everything · 君は私のすべて" />
+                                <TextBlock
+                                    Margin="0,8,0,0"
+                                    FontFamily="{DynamicResource AppTextFontFamily}"
+                                    FontSize="13"
+                                    FontWeight="{DynamicResource AppTextFontWeight}"
+                                    Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                    Text="당신은 나의 전부 · You are my everything · 你是我的一切" />
+                            </StackPanel>
+                        </Border>
+
+                            </StackPanel>
+                        </ui:CardExpander>
                     </StackPanel>
                 </components:SettingsGroup>
 
@@ -569,7 +586,14 @@
                             </StackPanel>
                         </components:SettingsRow>
 
-                        <components:SettingsRow
+
+                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="False" Icon="{ui:SymbolIcon PaddingLeft24}">
+                            <ui:CardExpander.Header><StackPanel>
+                                <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Settings.Advanced.Spacing.Title}" />
+                                <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Settings.Advanced.Spacing.Description}" />
+                            </StackPanel></ui:CardExpander.Header>
+                            <StackPanel>
+<components:SettingsRow
                             Description="{DynamicResource Loc.DisplayModes.Width.Row.Spacing.Description}"
                             Icon="{ui:SymbolIcon PaddingLeft24}"
                             Title="{DynamicResource Loc.DisplayModes.Width.Row.Spacing.Title}">
@@ -584,6 +608,8 @@
                                 <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.ComponentSpacingDip, StringFormat={}{0:0} DIP}" />
                             </StackPanel>
                         </components:SettingsRow>
+                            </StackPanel>
+                        </ui:CardExpander>
                     </StackPanel>
                 </components:SettingsGroup>
 
