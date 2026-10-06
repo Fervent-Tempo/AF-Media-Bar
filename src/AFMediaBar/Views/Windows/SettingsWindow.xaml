@@ -57,7 +57,7 @@
             IsPaneToggleVisible="true"
             PaneDisplayMode="Left"
             IsFooterSeparatorVisible="false"
-            OpenPaneLength="240"
+            OpenPaneLength="128"
             TransitionDuration="180"
             TitleBar="{Binding ElementName=TitleBar, Mode=OneWay}">
             <ui:NavigationView.AutoSuggestBox>
@@ -70,6 +70,7 @@
                 <ui:AutoSuggestBox
                     x:Name="AutoSuggestBox"
                     PlaceholderText="{DynamicResource Loc.Settings.Search.Placeholder}"
+                    ToolTip="{DynamicResource Loc.Settings.Search.Placeholder}"
                     SuggestionChosen="OnSearchSuggestionChosen"
                     TextChanged="OnSearchTextChanged">
                     <ui:AutoSuggestBox.Icon>
@@ -113,6 +114,7 @@
                 <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Components}" Icon="{ui:SymbolIcon DataHistogram24}"
                                        TargetPageType="{x:Type pages:ComponentsSettingsPage}" />
                 <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.MediaAndNotifications}" Icon="{ui:SymbolIcon PuzzlePiece24}"
+                                       ToolTip="{DynamicResource Loc.Common.Page.MediaAndNotifications}"
                                        TargetPageType="{x:Type pages:ExtraFeaturesPage}" />
                 <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Application}"
                                        Icon="{ui:SymbolIcon Settings24}"
