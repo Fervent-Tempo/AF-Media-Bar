@@ -9,9 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.Input;
 using Wpf.Ui;
@@ -19,7 +17,6 @@ using Wpf.Ui.Abstractions;
 using Wpf.Ui.Controls;
 using Wpf.Ui.Animations;
 using AFMediaBar.Views.Pages;
-using Image = System.Windows.Controls.Image;
 
 namespace AFMediaBar.Views.Windows
 {
@@ -29,15 +26,6 @@ namespace AFMediaBar.Views.Windows
     /// </summary>
     public partial class SettingsWindow : INavigationWindow, INotifyPropertyChanged
     {
-        private Type? _currentPageType;
-        private ToggleButton? _indicatorTargetTab;
-        private double _indicatorTargetLeft;
-        private double _indicatorTargetWidth;
-        private readonly List<Image> _outgoingSnapshots = [];
-        private EventHandler? _pendingNavigationStart;
-        private UIElement? _pendingSlideContent;
-        private SettingsGroupStrip? _pendingSlideStrip;
-
         private readonly AppIconService _appIconService;
         /// <summary>
         /// 搜索命中到页面类型的映射。搜索索引刻意不引用任何 View 类型，
@@ -95,13 +83,11 @@ namespace AFMediaBar.Views.Windows
             appearanceService.Attach(this);
             SetPageService(navigationViewPageProvider);
 
-            // Page contents and group labels animate separately, so the library must not move their shared background.
+            // A single content transition is added separately from the sidebar layout.
             RootNavigation.Transition = Transition.None;
             RootNavigation.TransitionDuration = 0;
 
             navigationService.SetNavigationControl(RootNavigation);
-            RootNavigation.Navigating += (_, args) => CaptureOutgoingPage(args.Page);
-            RootNavigation.Navigated += OnNavigated;
 
             // 落地页：窗口每次打开都直接落在「显示模式」。
             //
@@ -308,8 +294,6 @@ namespace AFMediaBar.Views.Windows
             if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName is nameof(SettingsWindowViewModel.HasUpdateAvailable) or nameof(SettingsWindowViewModel.UpdateNoticeTitle) or nameof(SettingsWindowViewModel.UpdateNoticeText))
             {
                 ApplyUpdateNotice();
-                if (string.IsNullOrEmpty(e.PropertyName))
-                    Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(SyncNavigation));
             }
         }
 
@@ -323,8 +307,6 @@ namespace AFMediaBar.Views.Windows
 
         private void SettingsWindow_ClosedForUpdateNotice(object? sender, EventArgs e)
         {
-            CancelPendingNavigationStart();
-            ClearOutgoingSnapshots();
             ViewModel.Unsubscribe();
             ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
             _appIconService.IconChanged -= OnApplicationIconChanged;
@@ -341,278 +323,13 @@ namespace AFMediaBar.Views.Windows
         /// <summary>导航到指定页面类型。/ Navigates to the specified page type.</summary>
         public bool Navigate(Type pageType)
         {
-            var succeeded = RootNavigation.Navigate(pageType);
-            if (!succeeded)
-            {
-                ClearOutgoingSnapshots();
-                Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(SyncNavigation));
-            }
-            return succeeded;
-        }
-
-        private void CaptureOutgoingPage(object? destination)
-        {
-            CancelPendingNavigationStart();
-            ClearOutgoingSnapshots();
-            if (destination?.GetType() == _currentPageType ||
-                MotionPolicy.ResolveCurrent().Mode != MotionMode.Full ||
-                FindDescendant<Page>(RootNavigation) is not { } oldPage)
-                return;
-
-            if (oldPage.FindName("PageScroll") is ScrollViewer scroll)
-                AddOutgoingSnapshot(scroll, scroll.ViewportWidth);
-
-            if (oldPage.Content is Grid root)
-            {
-                var tabs = root.Children.OfType<SettingsGroupStrip>().FirstOrDefault()?.GetTabViewport();
-                if (tabs is not null) AddOutgoingSnapshot(tabs);
-            }
-        }
-
-        private void AddOutgoingSnapshot(FrameworkElement source, double? clipWidth = null)
-        {
-            if (source.ActualWidth < 1d || source.ActualHeight < 1d) return;
-            var dpi = VisualTreeHelper.GetDpi(source);
-            var pixelWidth = (int)Math.Ceiling(source.ActualWidth * dpi.DpiScaleX);
-            var pixelHeight = (int)Math.Ceiling(source.ActualHeight * dpi.DpiScaleY);
-            if (pixelWidth <= 0 || pixelHeight <= 0 || (long)pixelWidth * pixelHeight > 8_000_000) return;
-
-            // Render only the visible scroll viewports; keeping full pages alive would disturb cached page ownership.
-            try
-            {
-                var bitmap = new RenderTargetBitmap(pixelWidth, pixelHeight,
-                    dpi.PixelsPerInchX, dpi.PixelsPerInchY, PixelFormats.Pbgra32);
-                // RenderTargetBitmap retains the source's layout offset. Render through an explicit
-                // viewport so the bitmap starts at local (0, 0), then place it once in the overlay.
-                var offset = VisualTreeHelper.GetOffset(source);
-                var visual = new DrawingVisual();
-                using (var context = visual.RenderOpen())
-                {
-                    var brush = new VisualBrush(source)
-                    {
-                        ViewboxUnits = BrushMappingMode.Absolute,
-                        Viewbox = new Rect(offset.X, offset.Y, source.ActualWidth, source.ActualHeight),
-                        Stretch = Stretch.None
-                    };
-                    context.DrawRectangle(brush, null, new Rect(0d, 0d, source.ActualWidth, source.ActualHeight));
-                }
-                bitmap.Render(visual);
-                bitmap.Freeze();
-                var image = new Image
-                {
-                    Source = bitmap,
-                    Width = source.ActualWidth,
-                    Height = source.ActualHeight,
-                    Stretch = Stretch.Fill,
-                    IsHitTestVisible = false
-                };
-                if (clipWidth is > 0d && clipWidth < source.ActualWidth)
-                    image.Clip = new RectangleGeometry(new Rect(0d, 0d, clipWidth.Value, source.ActualHeight));
-                var position = source.TranslatePoint(new Point(), NavigationTransitionOverlay);
-                Canvas.SetLeft(image, position.X);
-                Canvas.SetTop(image, position.Y);
-                NavigationTransitionOverlay.Children.Add(image);
-                _outgoingSnapshots.Add(image);
-            }
-            catch (Exception error) when (error is InvalidOperationException or ArgumentException or System.Runtime.InteropServices.COMException)
-            {
-                // A visual that cannot be rendered still leaves the incoming page available for navigation.
-            }
-        }
-
-        private void ClearOutgoingSnapshots()
-        {
-            foreach (var image in _outgoingSnapshots)
-                NavigationTransitionOverlay.Children.Remove(image);
-            _outgoingSnapshots.Clear();
-        }
-
-        private void CancelPendingNavigationStart()
-        {
-            if (_pendingNavigationStart is null) return;
-            CompositionTarget.Rendering -= _pendingNavigationStart;
-            _pendingNavigationStart = null;
-            if (_pendingSlideContent is not null)
-                SettingsNavigationAnimator.PrepareSlide(_pendingSlideContent, 0d);
-            _pendingSlideStrip?.PrepareTabs(0d);
-            _pendingSlideContent = null;
-            _pendingSlideStrip = null;
-        }
-
-        private void OnNavigated(NavigationView sender, NavigatedEventArgs args)
-        {
-            CancelPendingNavigationStart();
-            if (args.Page is not Page page)
-            {
-                ClearOutgoingSnapshots();
-                return;
-            }
-            var pageType = page.GetType();
-            var previousIndex = GetTabIndex(_currentPageType);
-            var nextIndex = GetTabIndex(pageType);
-            var direction = previousIndex >= 0 && nextIndex >= 0 ? Math.Sign(nextIndex - previousIndex) : 0;
-            var motion = MotionPolicy.ResolveCurrent();
-            var duration = ResolveNavigationDuration(motion, Math.Abs(nextIndex - previousIndex));
-            _currentPageType = pageType;
-            if (direction == 0 || motion.Mode == MotionMode.Instant)
-            {
-                SyncNavigation();
-                ClearOutgoingSnapshots();
-                return;
-            }
-
-            // Keep the incoming content at its start position while the first layout/render of the destination completes.
-            var content = (page.FindName("PageScroll") as ScrollViewer)?.Content as UIElement;
-            if (content is null)
-            {
-                SyncNavigation();
-                ClearOutgoingSnapshots();
-                return;
-            }
-            if (motion.Mode == MotionMode.Full)
-            {
-                var spline = (KeySpline)FindResource("AfSplineEaseInOut");
-                var travel = Math.Max(320d, NavigationTransitionOverlay.ActualWidth);
-                var strip = (page.Content as Grid)?.Children.OfType<SettingsGroupStrip>().FirstOrDefault();
-                SettingsNavigationAnimator.PrepareSlide(content, direction * travel);
-                strip?.PrepareTabs(direction * travel);
-                _pendingSlideContent = content;
-                _pendingSlideStrip = strip;
-
-                // Layout and first paint of a newly constructed page can take longer than the animation itself.
-                // Start every moving layer together on its first render so no motion is consumed while the UI thread is busy.
-                EventHandler? begin = null;
-                begin = (_, _) =>
-                {
-                    CompositionTarget.Rendering -= begin;
-                    // BeginAnimation inside Rendering can inherit that frame's stale media clock and skip its first motion.
-                    Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
-                    {
-                        if (!ReferenceEquals(_pendingNavigationStart, begin)) return;
-                        _pendingNavigationStart = null;
-                        _pendingSlideContent = null;
-                        _pendingSlideStrip = null;
-                        if (!IsVisible)
-                        {
-                            SettingsNavigationAnimator.PrepareSlide(content, 0d);
-                            strip?.PrepareTabs(0d);
-                            ClearOutgoingSnapshots();
-                            SyncNavigation();
-                            return;
-                        }
-
-                        SyncNavigation(animateSelection: true, duration);
-                        SettingsNavigationAnimator.Slide(content, direction * travel, duration, spline);
-                        strip?.SlideTabs(direction * travel, duration, spline);
-                        foreach (var snapshot in _outgoingSnapshots.ToArray())
-                            SettingsNavigationAnimator.SlideOut(snapshot, -direction * travel, duration, spline, () =>
-                            {
-                                NavigationTransitionOverlay.Children.Remove(snapshot);
-                                _outgoingSnapshots.Remove(snapshot);
-                            });
-                    }));
-                };
-                _pendingNavigationStart = begin;
-                CompositionTarget.Rendering += begin;
-            }
-            else
-            {
-                SyncNavigation();
-                ClearOutgoingSnapshots();
-                SettingsNavigationAnimator.Fade(content, duration, (KeySpline)FindResource("AfSplineEaseOut"));
-            }
-        }
-
-        private static TimeSpan ResolveNavigationDuration(MotionProfile motion, int tabDistance)
-        {
-            if (motion.Mode != MotionMode.Full) return motion.PositionDuration;
-            // A remote tab needs time to cross the strip; the cap keeps the page itself responsive.
-            var extra = Math.Min(100d, Math.Max(0, tabDistance - 1) * 20d);
-            return motion.PositionDuration + TimeSpan.FromMilliseconds(160d + extra);
-        }
-
-        private void OnPrimaryNavigationClick(object sender, RoutedEventArgs e)
-        {
-            if (sender is ToggleButton { Tag: Type pageType }) Navigate(pageType);
-        }
-
-        private int GetTabIndex(Type? pageType)
-        {
-            if (pageType is null) return -1;
-            var index = 0;
-            foreach (var tab in PrimaryTabs.Children.OfType<ToggleButton>())
-            {
-                if (Equals(tab.Tag, pageType)) return index;
-                index++;
-            }
-            return -1;
-        }
-
-        private void SyncNavigation() => SyncNavigation(animateSelection: false, TimeSpan.Zero);
-
-        private void SyncNavigation(bool animateSelection, TimeSpan duration)
-        {
-            var pageType = _currentPageType ?? FindDescendant<Page>(RootNavigation)?.GetType();
-            ToggleButton? selectedTab = null;
-            foreach (var tab in PrimaryTabs.Children.OfType<ToggleButton>())
-            {
-                tab.IsChecked = Equals(tab.Tag, pageType);
-                if (tab.IsChecked == true) selectedTab = tab;
-            }
-
-            selectedTab?.BringIntoView();
-            PrimaryTabsHost.UpdateLayout();
-            MovePrimaryTabIndicator(selectedTab, animateSelection, duration);
-        }
-
-        private void MovePrimaryTabIndicator(ToggleButton? selectedTab, bool animate, TimeSpan duration)
-        {
-            if (selectedTab is null || selectedTab.ActualWidth <= 4)
-            {
-                PrimaryTabIndicator.Visibility = Visibility.Collapsed;
-                return;
-            }
-
-            var left = selectedTab.TranslatePoint(new Point(2, 0), PrimaryTabsHost).X;
-            var width = selectedTab.ActualWidth - 4;
-            if (ReferenceEquals(_indicatorTargetTab, selectedTab) &&
-                Math.Abs(_indicatorTargetLeft - left) < 0.5 && Math.Abs(_indicatorTargetWidth - width) < 0.5)
-                return;
-
-            // Capture the visible surface before stopping its clocks so a rapid second click retargets smoothly.
-            var previousLeft = Canvas.GetLeft(PrimaryTabIndicator) + PrimaryTabIndicatorOffset.X;
-            var previousWidth = PrimaryTabIndicator.Width * PrimaryTabIndicatorScale.ScaleX;
-            PrimaryTabIndicatorOffset.BeginAnimation(TranslateTransform.XProperty, null);
-            PrimaryTabIndicatorScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-
-            Canvas.SetLeft(PrimaryTabIndicator, left);
-            PrimaryTabIndicator.Width = width;
-            PrimaryTabIndicator.Visibility = Visibility.Visible;
-            _indicatorTargetTab = selectedTab;
-            _indicatorTargetLeft = left;
-            _indicatorTargetWidth = width;
-
-            if (!animate || duration <= TimeSpan.Zero || double.IsNaN(previousLeft) || previousWidth <= 0)
-            {
-                PrimaryTabIndicatorOffset.X = 0;
-                PrimaryTabIndicatorScale.ScaleX = 1;
-                return;
-            }
-
-            var spline = (KeySpline)FindResource("AfSplineEaseInOut");
-            PrimaryTabIndicatorOffset.X = 0;
-            PrimaryTabIndicatorScale.ScaleX = 1;
-            PrimaryTabIndicatorOffset.BeginAnimation(TranslateTransform.XProperty,
-                SettingsNavigationAnimator.CreateSpline(previousLeft - left, 0, duration, spline));
-            PrimaryTabIndicatorScale.BeginAnimation(ScaleTransform.ScaleXProperty,
-                SettingsNavigationAnimator.CreateSpline(previousWidth / width, 1, duration, spline));
+            return RootNavigation.Navigate(pageType);
         }
 
         private void OnShellSizeChanged(object sender, SizeChangedEventArgs e)
         {
-            if (SearchHost is null) return;
-            SearchHost.Width = ActualWidth < 760 ? 220 : 260;
-            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(SyncNavigation));
+            if (SearchHost is not null)
+                SearchHost.Width = ActualWidth < 760 ? 220 : 260;
         }
 
         private void FocusSearch()
@@ -649,9 +366,7 @@ namespace AFMediaBar.Views.Windows
 
         private void SettingsWindow_OnLoaded(object sender, RoutedEventArgs e)
         {
-            _currentPageType = typeof(DisplayModesPage);
-            RootNavigation.Navigate(_currentPageType);
-            SyncNavigation();
+            RootNavigation.Navigate(typeof(DisplayModesPage));
         }
     }
 }

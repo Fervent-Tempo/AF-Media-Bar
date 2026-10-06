@@ -795,31 +795,5 @@
         <Setter Property="CornerRadius" Value="8" />
         <Setter Property="Padding" Value="14,10" />
     </Style>
-    <Style x:Key="AfSettingsPrimaryTabStyle" TargetType="{x:Type ToggleButton}">
-        <Setter Property="FontSize" Value="14" />
-        <Setter Property="FontWeight" Value="{DynamicResource AppTextMediumFontWeight}" />
-        <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
-        <Setter Property="FocusVisualStyle" Value="{DynamicResource AfFocusVisualStyle}" />
-        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="{x:Type ToggleButton}">
-            <Border x:Name="Surface" Margin="2,4,2,0" MinHeight="40" Padding="14,8"
-                    CornerRadius="10,10,0,0" Background="Transparent"
-                    BorderBrush="Transparent" BorderThickness="1,1,1,0">
-                <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center" />
-            </Border>
-            <ControlTemplate.Triggers>
-                <MultiTrigger>
-                    <MultiTrigger.Conditions>
-                        <Condition Property="IsMouseOver" Value="True" />
-                        <Condition Property="IsChecked" Value="False" />
-                    </MultiTrigger.Conditions>
-                    <Setter TargetName="Surface" Property="Background" Value="{DynamicResource AfSettingsInputBrush}" />
-                </MultiTrigger>
-                <Trigger Property="IsChecked" Value="True">
-                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
-                    <Setter Property="FontWeight" Value="{DynamicResource AppTextStrongFontWeight}" />
-                </Trigger>
-            </ControlTemplate.Triggers>
-        </ControlTemplate></Setter.Value></Setter>
-    </Style>
 
 </ResourceDictionary>

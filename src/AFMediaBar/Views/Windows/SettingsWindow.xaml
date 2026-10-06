@@ -48,7 +48,7 @@
     </Window.Resources>
     <Window.InputBindings><KeyBinding Key="F" Modifiers="Control" Command="{Binding FocusSearchCommand}" /></Window.InputBindings>
     <Grid>
-        <Grid.RowDefinitions><RowDefinition Height="48" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+        <Grid.RowDefinitions><RowDefinition Height="48" /><RowDefinition Height="*" /></Grid.RowDefinitions>
         <ui:TitleBar x:Name="TitleBar" Title="{Binding ViewModel.ApplicationTitle}" Style="{StaticResource SettingsTitleBarStyle}"
                      Background="{DynamicResource AfSettingsNavigationBrush}" CloseWindowByDoubleClickOnIcon="True">
             <ui:TitleBar.Icon><ui:ImageIcon Source="{Binding TitleBarIconSource}" /></ui:TitleBar.Icon>
@@ -66,96 +66,32 @@
                 </Grid>
             </ui:TitleBar.CenterContent>
         </ui:TitleBar>
-        <Border Grid.Row="1" Background="{DynamicResource AfSettingsNavigationBrush}">
-            <ScrollViewer Margin="28,0" MaxWidth="900" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" CanContentScroll="False">
-                <Grid x:Name="PrimaryTabsHost" HorizontalAlignment="Left">
-                <!-- One movable surface connects the selected page tabs across navigation. -->
-                <Canvas IsHitTestVisible="False">
-                    <Border x:Name="PrimaryTabIndicator" Canvas.Top="4" Height="40" Visibility="Collapsed"
-                            Background="{DynamicResource AfSettingsSectionBrush}"
-                            BorderBrush="{DynamicResource AfSettingsBorderBrush}"
-                            BorderThickness="1,1,1,0" CornerRadius="10,10,0,0">
-                        <Border.RenderTransform>
-                            <TransformGroup>
-                                <ScaleTransform x:Name="PrimaryTabIndicatorScale" ScaleX="1" />
-                                <TranslateTransform x:Name="PrimaryTabIndicatorOffset" />
-                            </TransformGroup>
-                        </Border.RenderTransform>
-                    </Border>
-                </Canvas>
-                <StackPanel x:Name="PrimaryTabs" Orientation="Horizontal">
-                    <ToggleButton Tag="{x:Type pages:DisplayModesPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}">
-                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="Desktop24" FontSize="16" Foreground="{DynamicResource AfAccentBrush}" Margin="0,0,7,0" /><TextBlock Text="{DynamicResource Loc.Common.Page.DisplayModes}" /></StackPanel>
-                    </ToggleButton>
-                    <ToggleButton Tag="{x:Type pages:AppearancePage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}">
-                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="PaintBrush24" FontSize="16" Foreground="{DynamicResource AfAccentBrush}" Margin="0,0,7,0" /><TextBlock Text="{DynamicResource Loc.Common.Page.Appearance}" /></StackPanel>
-                    </ToggleButton>
-                    <ToggleButton Tag="{x:Type pages:InteractionPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}">
-                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="HandDraw24" FontSize="16" Foreground="{DynamicResource AfAccentBrush}" Margin="0,0,7,0" /><TextBlock Text="{DynamicResource Loc.Common.Page.Interaction}" /></StackPanel>
-                    </ToggleButton>
-                    <ToggleButton Tag="{x:Type pages:LyricsPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}">
-                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="TextQuote24" FontSize="16" Foreground="{DynamicResource AfAccentBrush}" Margin="0,0,7,0" /><TextBlock Text="{DynamicResource Loc.Common.Page.Lyrics}" /></StackPanel>
-                    </ToggleButton>
-                    <ToggleButton Tag="{x:Type pages:ComponentsSettingsPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}">
-                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="DataHistogram24" FontSize="16" Foreground="{DynamicResource AfAccentBrush}" Margin="0,0,7,0" /><TextBlock Text="{DynamicResource Loc.Common.Page.Components}" /></StackPanel>
-                    </ToggleButton>
-                    <ToggleButton Tag="{x:Type pages:ExtraFeaturesPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}">
-                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="PuzzlePiece24" FontSize="16" Foreground="{DynamicResource AfAccentBrush}" Margin="0,0,7,0" /><TextBlock Text="{DynamicResource Loc.Common.Page.MediaAndNotifications}" /></StackPanel>
-                    </ToggleButton>
-                    <ToggleButton Tag="{x:Type pages:ApplicationPage}" Click="OnPrimaryNavigationClick" Style="{StaticResource AfSettingsPrimaryTabStyle}">
-                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="Settings24" FontSize="16" Foreground="{DynamicResource AfAccentBrush}" Margin="0,0,7,0" /><TextBlock Text="{DynamicResource Loc.Common.Page.Application}" /></StackPanel>
-                    </ToggleButton>
-
-                    <ToggleButton x:Name="UpdateNoticeNavItem" Click="UpdateNoticeNavItem_Click" Tag="{x:Type pages:ReleaseHighlightsPage}"
-                                  Style="{StaticResource AfSettingsPrimaryTabStyle}">
-                        <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="Sparkle24" FontSize="16" Foreground="{DynamicResource AfAccentBrush}" Margin="0,0,7,0" />
-                            <TextBlock Text="{DynamicResource Loc.Common.Page.ReleaseHighlights}" />
-                            <Ellipse x:Name="UpdateNoticeDot" Width="6" Height="6" Margin="6,0,0,0" VerticalAlignment="Center"
-                                     Fill="{DynamicResource AfAccentBrush}" Visibility="Collapsed" />
-                        </StackPanel>
-                    </ToggleButton>
-                    <ToggleButton x:Name="AboutTab" Click="OnPrimaryNavigationClick" Tag="{x:Type pages:AboutPage}"
-                                  Style="{StaticResource AfSettingsPrimaryTabStyle}">
-                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="QuestionCircle24" FontSize="16" Foreground="{DynamicResource AfAccentBrush}" Margin="0,0,7,0" /><TextBlock Text="{DynamicResource Loc.Common.Page.About}" /></StackPanel>
-                    </ToggleButton>
-                </StackPanel>
-                </Grid>
-            </ScrollViewer>
-        </Border>
-        <!-- The fixed group strip is 45 DIP tall; blend the material just below it into the scroll area. -->
-        <Border Grid.Row="2" Height="96" Margin="0,45,0,0" VerticalAlignment="Top"
-                Background="{DynamicResource AfSettingsHeaderBridgeBrush}" IsHitTestVisible="False" />
-        <!-- The existing page provider and journal still own navigation; these menu items are not presented. -->
-        <ui:NavigationView x:Name="RootNavigation" Grid.Row="2" PaneDisplayMode="Top" IsPaneVisible="False" IsFooterSeparatorVisible="False"
-                           IsBackButtonVisible="Collapsed" IsPaneToggleVisible="False" FrameMargin="0" Background="Transparent">
-            <ui:NavigationView.Template>
-                <!-- Keep the library page presenter and journal without its built-in pane or content surface. -->
-                <ControlTemplate TargetType="{x:Type ui:NavigationView}">
-                    <Grid Background="Transparent">
-                        <ItemsControl x:Name="PART_MenuItemsItemsControl" Visibility="Collapsed" />
-                        <ItemsControl x:Name="PART_FooterMenuItemsItemsControl" Visibility="Collapsed" />
-                        <ui:NavigationViewContentPresenter x:Name="PART_NavigationViewContentPresenter"
-                            Padding="{TemplateBinding Padding}" Transition="{TemplateBinding Transition}" TransitionDuration="{TemplateBinding TransitionDuration}" />
-                        <ContentPresenter Content="{TemplateBinding ContentOverlay}" />
-                    </Grid>
-                </ControlTemplate>
-            </ui:NavigationView.Template>
+        <ui:NavigationView x:Name="RootNavigation" Grid.Row="1" PaneDisplayMode="Left" IsPaneVisible="True" IsPaneOpen="True" OpenPaneLength="240" IsFooterSeparatorVisible="False"
+                           IsBackButtonVisible="Collapsed" IsPaneToggleVisible="True" FrameMargin="0" Background="Transparent"
+                           TitleBar="{Binding ElementName=TitleBar}">
             <ui:NavigationView.MenuItems>
-                <ui:NavigationViewItem TargetPageType="{x:Type pages:DisplayModesPage}" />
-                <ui:NavigationViewItem TargetPageType="{x:Type pages:AppearancePage}" />
-                <ui:NavigationViewItem TargetPageType="{x:Type pages:InteractionPage}" />
-                <ui:NavigationViewItem TargetPageType="{x:Type pages:LyricsPage}" />
-                <ui:NavigationViewItem TargetPageType="{x:Type pages:ComponentsSettingsPage}" />
-                <ui:NavigationViewItem TargetPageType="{x:Type pages:ExtraFeaturesPage}" />
-                <ui:NavigationViewItem TargetPageType="{x:Type pages:ApplicationPage}" />
-                <ui:NavigationViewItem TargetPageType="{x:Type pages:AboutPage}" />
-                <ui:NavigationViewItem TargetPageType="{x:Type pages:ReleaseHighlightsPage}" />
+                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.DisplayModes}" Icon="{ui:SymbolIcon Desktop24}" TargetPageType="{x:Type pages:DisplayModesPage}" />
+                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Appearance}" Icon="{ui:SymbolIcon PaintBrush24}" TargetPageType="{x:Type pages:AppearancePage}" />
+                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Interaction}" Icon="{ui:SymbolIcon HandDraw24}" TargetPageType="{x:Type pages:InteractionPage}" />
+                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Lyrics}" Icon="{ui:SymbolIcon TextQuote24}" TargetPageType="{x:Type pages:LyricsPage}" />
+                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Components}" Icon="{ui:SymbolIcon DataHistogram24}" TargetPageType="{x:Type pages:ComponentsSettingsPage}" />
+                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.MediaAndNotifications}" Icon="{ui:SymbolIcon PuzzlePiece24}" TargetPageType="{x:Type pages:ExtraFeaturesPage}" />
+                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Application}" Icon="{ui:SymbolIcon Settings24}" TargetPageType="{x:Type pages:ApplicationPage}" />
             </ui:NavigationView.MenuItems>
+            <ui:NavigationView.FooterMenuItems>
+                <ui:NavigationViewItem x:Name="UpdateNoticeNavItem" Click="UpdateNoticeNavItem_Click" TargetPageType="{x:Type pages:ReleaseHighlightsPage}">
+                    <ui:NavigationViewItem.Content>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{DynamicResource Loc.Common.Page.ReleaseHighlights}" />
+                            <Ellipse x:Name="UpdateNoticeDot" Width="6" Height="6" Margin="6,0,0,0" VerticalAlignment="Center" Fill="{DynamicResource AfAccentBrush}" Visibility="Collapsed" />
+                        </StackPanel>
+                    </ui:NavigationViewItem.Content>
+                    <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="Sparkle24" /></ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.About}" Icon="{ui:SymbolIcon QuestionCircle24}" TargetPageType="{x:Type pages:AboutPage}" />
+            </ui:NavigationView.FooterMenuItems>
             <ui:NavigationView.ContentOverlay><ui:SnackbarPresenter x:Name="SnackbarPresenter" /></ui:NavigationView.ContentOverlay>
         </ui:NavigationView>
-        <!-- Retain only the departing page's visible content during a directional handoff. -->
-        <Canvas x:Name="NavigationTransitionOverlay" Grid.Row="2" ClipToBounds="True" IsHitTestVisible="False" />
-        <ui:ContentDialogHost x:Name="RootContentDialog" Grid.RowSpan="3" />
+        <ui:ContentDialogHost x:Name="RootContentDialog" Grid.RowSpan="2" />
     </Grid>
 </ui:FluentWindow>

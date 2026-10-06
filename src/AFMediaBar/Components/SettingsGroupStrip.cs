@@ -106,7 +106,6 @@ public class SettingsGroupStrip : Control
 
     private readonly ObservableCollection<SettingsGroupItem> _groups = [];
     private ItemsControl? _tabs;
-    private FrameworkElement? _tabContent;
     private FrameworkElement? _indicator;
     private FrameworkElement? _progress;
     private FrameworkElement? _divider;
@@ -206,7 +205,6 @@ public class SettingsGroupStrip : Control
         if (_tabs is not null) _tabs.SizeChanged -= OnTabsSizeChanged;
         _tabs = GetTemplateChild("PART_Tabs") as ItemsControl;
         if (_tabs is not null) _tabs.SizeChanged += OnTabsSizeChanged;
-        _tabContent = GetTemplateChild("PART_TabContent") as FrameworkElement;
         _indicator = GetTemplateChild("PART_Indicator") as FrameworkElement;
         _progress = GetTemplateChild("PART_Progress") as FrameworkElement;
         _divider = GetTemplateChild("PART_Divider") as FrameworkElement;
@@ -231,35 +229,6 @@ public class SettingsGroupStrip : Control
         }
 
         UpdateIndicator();
-    }
-
-    /// <summary>Slides only the group labels and their selection mark; the strip background and progress track stay fixed.</summary>
-    public void SlideTabs(double offset, TimeSpan duration, KeySpline spline)
-    {
-        if (_tabContent is null) ApplyTemplate();
-        if (_tabContent is not null)
-            SettingsNavigationAnimator.Slide(_tabContent, offset, duration, spline);
-    }
-
-    /// <summary>Positions only the group labels before the page's first rendered transition frame.</summary>
-    public void PrepareTabs(double offset)
-    {
-        if (_tabContent is null) ApplyTemplate();
-        if (_tabContent is not null)
-            SettingsNavigationAnimator.PrepareSlide(_tabContent, offset);
-    }
-
-    /// <summary>Returns the clipped label viewport for a temporary outgoing-page snapshot; its background and progress line are outside this viewport.</summary>
-    public FrameworkElement? GetTabViewport()
-    {
-        if (_tabContent is null) ApplyTemplate();
-        for (DependencyObject? parent = _tabContent; parent is not null; parent = VisualTreeHelper.GetParent(parent))
-        {
-            if (parent is ScrollViewer viewport) return viewport;
-            if (ReferenceEquals(parent, this)) break;
-        }
-
-        return null;
     }
 
     /// <summary>
