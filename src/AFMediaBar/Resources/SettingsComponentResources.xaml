@@ -158,14 +158,15 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type components:SettingsRow}">
-                    <Border
+                    <Grid>
+<Border
                         x:Name="RowSurface"
-                        Padding="{TemplateBinding Padding}"
                         Background="{TemplateBinding Background}"
                         BorderBrush="{TemplateBinding BorderBrush}"
                         BorderThickness="{TemplateBinding BorderThickness}"
                         CornerRadius="{TemplateBinding CornerRadius}"
-                        SnapsToDevicePixels="True">
+                        SnapsToDevicePixels="True" IsHitTestVisible="False" components:SettingsHoverShadow.IsEnabled="True" />
+                    <Border Padding="{TemplateBinding Padding}" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="Transparent">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
@@ -222,6 +223,7 @@
                                 TextElement.Foreground="{TemplateBinding Foreground}" />
                         </Grid>
                     </Border>
+                    </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="Icon" Value="{x:Null}">
                             <Setter TargetName="IconChip" Property="Visibility" Value="Collapsed" />
@@ -351,8 +353,10 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ui:CardExpander}">
-                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}">
+                    <Grid>
+<Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}" IsHitTestVisible="False" components:SettingsHoverShadow.IsEnabled="True" />
+                        <Border BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="Transparent">
                         <StackPanel>
                             <ToggleButton x:Name="ExpanderToggleButton" Padding="{TemplateBinding Padding}"
                                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
@@ -380,6 +384,7 @@
                             </Border>
                         </StackPanel>
                     </Border>
+                    </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsExpanded" Value="True">
                             <Setter TargetName="ExpandedContent" Property="Visibility" Value="Visible" />
