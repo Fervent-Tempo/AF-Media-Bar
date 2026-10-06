@@ -348,7 +348,8 @@ public sealed class SettingsPersistenceService : IDisposable
                 typeof(TEnum) == typeof(TaskbarMediaTextAlignment) ? TaskbarMediaTextAlignment.Left :
                 typeof(TEnum) == typeof(TaskbarLengthMode) ? TaskbarLengthMode.FollowContent :
                 typeof(TEnum) == typeof(PlayerSurfaceStyle) ? PlayerSurfaceStyle.Automatic :
-                typeof(TEnum) == typeof(LyricsTextAlignment) ? LyricsTextAlignment.Center : default(TEnum);
+                typeof(TEnum) == typeof(LyricsTextAlignment) ? LyricsTextAlignment.Center :
+                typeof(TEnum) == typeof(LyricsChineseConversionMode) ? LyricsChineseConversionMode.None : default(TEnum);
             return (TEnum)value;
         }
     }

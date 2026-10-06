@@ -95,14 +95,22 @@ public static class LyricsPresentationProjector
             ? LyricHighlightPolicy.ResolveProgress(currentLine, position)
             : null;
 
+        // 繁简转换落在"文本流向呈现层的最后一步"：当前行、下一句、译文与下一句译文都走同一个设置，
+        // 因此不会出现"主行转了、第二行没转"的半截画面。逐字擦亮是 CSS 按渲染宽度百分比裁剪的，
+        // 不依赖字符索引，所以转换改变字数也不会错位。
+        // Conversion happens where text leaves for the presentation layer: the active line, the next line, and both translations all
+        // follow the one setting, so there is never a half-converted frame. Syllable highlighting clips by rendered-width percentage in
+        // CSS and does not index characters, so a changed character count cannot misalign it.
+        var conversion = settings.LyricsChineseConversion;
+
         return new LyricsPresentationFrame(
             true,
             BuildTrackId(snapshot),
             index,
-            currentLine.Text,
-            visibleNext,
-            currentTranslation,
-            nextTranslation,
+            LyricsChineseConverter.Convert(currentLine.Text, conversion),
+            LyricsChineseConverter.Convert(visibleNext, conversion),
+            LyricsChineseConverter.Convert(currentTranslation, conversion),
+            LyricsChineseConverter.Convert(nextTranslation, conversion),
             translationMode,
             lineProgress,
             wordScanProgress,

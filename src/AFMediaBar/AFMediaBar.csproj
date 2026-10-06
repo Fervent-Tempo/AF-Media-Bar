@@ -58,6 +58,18 @@
     <PackageReference Include="WPF-UI" Version="4.2.0" />
     <PackageReference Include="WPF-UI.DependencyInjection" Version="4.2.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.1" />
+    <!--
+      歌词繁简转换（s2t / t2s）。词典已**内嵌**在该程序集里，因此必须以 ExcludeAssets="contentFiles"
+      挡掉包里那套内容相同的散装词典（dicts\*.txt，约 1.9 MB）：它们一旦被拷到输出目录，PublishSingleFile
+      就不会把它们打进 exe，发布目录里会多出一个 dicts 文件夹，与"发布目录只有一个 exe"的约定冲突。
+      已实测：挡掉后编译、运行、单文件发布均正常，转换结果与有散装词典时逐字相同。
+      Lyrics Simplified/Traditional conversion (s2t/t2s). The dictionary is **embedded** in this assembly, so the package's
+      duplicate loose copies (dicts\*.txt, about 1.9 MB) must be excluded with ExcludeAssets="contentFiles": once they land in
+      the output directory, PublishSingleFile will not fold them into the executable and the publish directory grows a dicts
+      folder, breaking the "one executable in the publish directory" contract. Verified: with the exclusion in place, building,
+      running, and single-file publishing all work and the conversion is byte-identical to running with the loose dictionaries.
+    -->
+    <PackageReference Include="OpenccNetLib" Version="1.7.0" ExcludeAssets="contentFiles" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0 " />
   </ItemGroup>
 

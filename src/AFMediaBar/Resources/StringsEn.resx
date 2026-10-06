@@ -1339,6 +1339,27 @@
   <data name="Lyrics.Row.InfoLines.Title" xml:space="preserve">
     <value>Filter credit lines</value>
   </data>
+  <data name="Lyrics.Row.ChineseConversion.Title" xml:space="preserve">
+    <value>Chinese conversion</value>
+  </data>
+  <data name="Lyrics.Row.ChineseConversion.Description" xml:space="preserve">
+    <value>Show lyrics in Simplified or Traditional Chinese. Only the display changes; the retrieved lyrics stay as they are.</value>
+  </data>
+  <data name="Lyrics.Row.ChineseConversion.Direction.Title" xml:space="preserve">
+    <value>Direction</value>
+  </data>
+  <data name="Lyrics.Row.ChineseConversion.Direction.Description" xml:space="preserve">
+    <value>Pick the script to convert to. "Off" shows lyrics exactly as their source wrote them.</value>
+  </data>
+  <data name="Lyrics.Row.ChineseConversion.Option.Off" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="Lyrics.Row.ChineseConversion.Option.ToTraditional" xml:space="preserve">
+    <value>Simplified → Traditional</value>
+  </data>
+  <data name="Lyrics.Row.ChineseConversion.Option.ToSimplified" xml:space="preserve">
+    <value>Traditional → Simplified</value>
+  </data>
   <data name="Lyrics.Row.BrowserVideo.Title" xml:space="preserve">
     <value>Lyrics for browsers and video apps</value>
   </data>
