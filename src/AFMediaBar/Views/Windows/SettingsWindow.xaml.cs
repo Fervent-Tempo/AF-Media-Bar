@@ -334,16 +334,13 @@ namespace AFMediaBar.Views.Windows
                 SettingsRevealAnimator.Replay(content);
         }
 
-        private void OnShellSizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            if (SearchHost is not null)
-                SearchHost.Width = ActualWidth < 760 ? 220 : 260;
-        }
-
         private void FocusSearch()
         {
-            AutoSuggestBox.Focus();
-            AutoSuggestBox.FocusCommand.Execute(null);
+            RootNavigation.IsPaneOpen = true;
+            Dispatcher.BeginInvoke(DispatcherPriority.Input, new Action(() =>
+            {
+                if (IsVisible) AutoSuggestBox.FocusCommand.Execute(null);
+            }));
         }
 
         /// <summary>设置导航页面提供器。/ Sets the navigation page provider.</summary>

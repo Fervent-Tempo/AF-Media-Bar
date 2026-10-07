@@ -79,7 +79,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <components:SettingsGroupStrip
+        <components:SettingsGroupStrip Margin="{StaticResource AfSettingsHeaderMargin}" MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
             Grid.Row="0"
             PageIcon="{ui:SymbolIcon PaintBrush24}"
             Subtitle="{DynamicResource Loc.Appearance.Header.Subtitle}"
@@ -97,14 +97,7 @@
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
                 Loaded="OnPageLoaded"
                 Unloaded="OnPageUnloaded">
-                <Grid Style="{StaticResource AfSettingsPageIntroStyle}">
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                    <ContentControl Content="{ui:SymbolIcon PaintBrush24}" Style="{StaticResource AfSettingsPageIconStyle}" />
-                    <StackPanel Grid.Column="1" Margin="12,0,0,0">
-                        <TextBlock Text="{DynamicResource Loc.Common.Page.Appearance}" Style="{StaticResource AfSettingsPageTitleStyle}" />
-                        <TextBlock Text="{DynamicResource Loc.Appearance.Header.Subtitle}" Style="{StaticResource AfSettingsPageSubtitleStyle}" />
-                    </StackPanel>
-                </Grid>
+
 
 
 

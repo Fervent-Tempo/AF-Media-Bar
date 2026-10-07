@@ -38,22 +38,10 @@
     </Page.Resources>
     <Grid>
         <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
-        <components:SettingsGroupStrip Target="{Binding ElementName=PageScroll}" Title="{DynamicResource Loc.Common.Page.ReleaseHighlights}" />
+        <components:SettingsGroupStrip Margin="{StaticResource AfSettingsHeaderMargin}" MaxWidth="{StaticResource AfSettingsContentMaxWidth}" Target="{Binding ElementName=PageScroll}" Title="{DynamicResource Loc.Common.Page.ReleaseHighlights}" />
         <ScrollViewer x:Name="PageScroll" Grid.Row="1" Margin="{StaticResource AfSettingsScrollMargin}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel MaxWidth="{StaticResource AfSettingsContentMaxWidth}">
-                <Grid Style="{StaticResource AfSettingsPageIntroStyle}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <ContentControl Content="{ui:SymbolIcon Sparkle24}" Style="{StaticResource AfSettingsPageIconStyle}" />
-                    <StackPanel Grid.Column="1" Margin="12,0,0,0">
-                        <TextBlock Text="{DynamicResource Loc.Common.Page.ReleaseHighlights}" Style="{StaticResource AfSettingsPageTitleStyle}" />
-                        <TextBlock Text="{DynamicResource Loc.ReleaseHighlights.Header.Subtitle}" Style="{StaticResource AfSettingsPageSubtitleStyle}" />
-                    </StackPanel>
-                    <ui:Button Grid.Column="2" Content="{DynamicResource Loc.ReleaseHighlights.Refresh}" Command="{Binding ViewModel.RefreshCommand}" VerticalAlignment="Center" Margin="16,0,0,0" />
-                </Grid>
+
                 <TextBlock Text="{Binding ViewModel.StatusText}" Style="{StaticResource AfSettingsRowDescriptionStyle}" Margin="0,8,0,8" />
                 <ProgressBar IsIndeterminate="True" Height="2" Margin="0,0,0,12"
                              Visibility="{Binding ViewModel.IsLoading, Converter={StaticResource AfBooleanToVisibilityConverter}}" />

@@ -51,7 +51,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <components:SettingsGroupStrip
+        <components:SettingsGroupStrip Margin="{StaticResource AfSettingsHeaderMargin}" MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
             Grid.Row="0"
             PageIcon="{ui:SymbolIcon DataHistogram24}"
             Subtitle="{DynamicResource Loc.Components.Header.Subtitle}"
@@ -68,14 +68,7 @@
                 x:Name="PageRoot"
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
                 Loaded="OnPageLoaded">
-                <Grid Style="{StaticResource AfSettingsPageIntroStyle}">
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                    <ContentControl Content="{ui:SymbolIcon DataHistogram24}" Style="{StaticResource AfSettingsPageIconStyle}" />
-                    <StackPanel Grid.Column="1" Margin="12,0,0,0">
-                        <TextBlock Text="{DynamicResource Loc.Common.Page.Components}" Style="{StaticResource AfSettingsPageTitleStyle}" />
-                        <TextBlock Text="{DynamicResource Loc.Components.Header.Subtitle}" Style="{StaticResource AfSettingsPageSubtitleStyle}" />
-                    </StackPanel>
-                </Grid>
+
                 <components:SettingsGroup
                     Description="{DynamicResource Loc.Media.RestComponents.Description}"
                     Header="{DynamicResource Loc.Common.Group.RestLayerComponents}"

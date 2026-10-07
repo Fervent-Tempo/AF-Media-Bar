@@ -15,7 +15,7 @@
     -->
 
     <!-- 版心与字段宽度 / Content measure and field widths -->
-    <sys:Double x:Key="AfSettingsContentMaxWidth">900</sys:Double>
+    <sys:Double x:Key="AfSettingsContentMaxWidth">820</sys:Double>
     <sys:Double x:Key="AfSettingsFieldWidth">380</sys:Double>
     <sys:Double x:Key="AfSettingsFieldWidthWide">440</sys:Double>
     <!-- 单个下拉框的最小宽度；以前每页各自写 180/190/200/220/320，读起来像随机值。 -->
@@ -34,7 +34,7 @@
         Margins for the pinned header and the scroll area. The header sits outside the scroll container, so it
         carries its own vertical padding; these values used to be repeated in all six pages.
     -->
-    <Thickness x:Key="AfSettingsHeaderMargin">28,0,28,0</Thickness>
+    <Thickness x:Key="AfSettingsHeaderMargin">28,20,28,0</Thickness>
     <Thickness x:Key="AfSettingsScrollMargin">28,14,28,0</Thickness>
 
     <!-- 字段标签列宽：以前交互页在 8 处各写 MinWidth="190"，读起来像随机值。 -->

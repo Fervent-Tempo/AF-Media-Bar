@@ -90,7 +90,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <components:SettingsGroupStrip
+        <components:SettingsGroupStrip Margin="{StaticResource AfSettingsHeaderMargin}" MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
             x:Name="Strip"
             Grid.Row="0"
             PageIcon="{ui:SymbolIcon Desktop24}"
@@ -109,15 +109,7 @@
                 x:Name="PageRoot"
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
                 Loaded="OnPageLoaded">
-                <Grid Style="{StaticResource AfSettingsPageIntroStyle}">
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                    <ContentControl Content="{ui:SymbolIcon Desktop24}" Style="{StaticResource AfSettingsPageIconStyle}" />
-                    <StackPanel Grid.Column="1" Margin="12,0,0,0">
-                        <TextBlock Text="{DynamicResource Loc.Common.Page.DisplayModes}" Style="{StaticResource AfSettingsPageTitleStyle}" />
-                        <TextBlock Text="{DynamicResource Loc.DisplayModes.Header.Subtitle}" Style="{StaticResource AfSettingsPageSubtitleStyle}" />
-                        <TextBlock Text="{Binding ViewModel.HostingModeText}" Foreground="{DynamicResource AfAccentBrush}" FontSize="12" Margin="0,6,0,0" />
-                    </StackPanel>
-                </Grid>
+
 
                 <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.ChooseDisplayMode}" Icon="{ui:SymbolIcon WindowConsole20}">
                     <StackPanel>
