@@ -2161,7 +2161,7 @@ public partial class TaskbarWindow : Window
         // 选区间 MUST 用纯策略：空闲区间里可能有比媒体栏还窄的缝隙，"最左边那条"会把媒体栏压细并钉在缝里。
         // The range MUST be chosen by the pure policy: the free ranges can hold a gap narrower than the bar itself, and "the leftmost
         // one" would squash the bar into that sliver.
-        var selected = TaskbarFreeRangeCalculator.Select(ranges, position, requiredPrimaryPixels);
+        var selected = TaskbarFreeRangeCalculator.Select(ranges, position, requiredPrimaryPixels, primaryLength);
         _lastStableSafeRange = new TaskbarSafeRangeSnapshot(
             _lastTaskbarHandle,
             primaryLength,

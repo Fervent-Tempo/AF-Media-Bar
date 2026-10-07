@@ -33,7 +33,7 @@ public static class TaskbarBarPlacementCalculator
         {
             TaskbarBarPosition.Start => rangeStart,
             TaskbarBarPosition.End => rangeEnd - primarySize,
-            _ => rangeStart + (rangeEnd - rangeStart - primarySize) / 2
+            _ => (primaryLength - primarySize) / 2
         } + manualPadding;
         var crossPosition = (crossLength - crossSize) / 2 +
                             (int)Math.Round(crossAxisOffsetDip * Math.Max(0, dpiScale));
