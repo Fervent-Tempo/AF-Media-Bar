@@ -8,12 +8,12 @@ public readonly record struct SettingsReveal(bool ShouldAnimate, TimeSpan Delay,
 public static class SettingsRevealPolicy
 {
     /// <summary>Small vertical offset in DIP; content enters as one surface without staggered cards.</summary>
-    public const double EntranceOffsetDip = 8d;
+    public const double EntranceOffsetDip = 28d;
 
     /// <summary>Resolves one entrance; the block index is retained for callers and adds no delay.</summary>
     public static SettingsReveal Resolve(int blockIndex, MotionProfile motion) => motion.Mode switch
     {
-        MotionMode.Full => new(true, TimeSpan.Zero, motion.PositionDuration, EntranceOffsetDip),
+        MotionMode.Full => new(true, TimeSpan.Zero, TimeSpan.FromMilliseconds(280), EntranceOffsetDip),
         MotionMode.Reduced => new(true, TimeSpan.Zero, motion.StandardDuration, 0d),
         _ => default
     };

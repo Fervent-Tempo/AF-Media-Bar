@@ -55,7 +55,7 @@
     <sys:Double x:Key="AfSettingsRowSliderWidth">150</sys:Double>
     <sys:Double x:Key="AfSettingsRowValueWidth">58</sys:Double>
     <!-- Fluent page refresh: immediate movement followed by a gentle stop. -->
-    <KeySpline x:Key="AfSplineFluentEntrance">0,0,0,1</KeySpline>
+    <KeySpline x:Key="AfSplineFluentEntrance">0.23,1,0.32,1</KeySpline>
 
     <Style x:Key="AfSettingsRowTitleStyle" TargetType="{x:Type TextBlock}">
         <Setter Property="FontSize" Value="15" />

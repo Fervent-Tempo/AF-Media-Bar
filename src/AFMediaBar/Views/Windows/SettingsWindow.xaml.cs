@@ -26,6 +26,7 @@ namespace AFMediaBar.Views.Windows
     /// </summary>
     public partial class SettingsWindow : INavigationWindow, INotifyPropertyChanged
     {
+        private Panel? _transitionContent;
         private readonly AppIconService _appIconService;
         /// <summary>
         /// 搜索命中到页面类型的映射。搜索索引刻意不引用任何 View 类型，
@@ -308,6 +309,8 @@ namespace AFMediaBar.Views.Windows
 
         private void SettingsWindow_ClosedForUpdateNotice(object? sender, EventArgs e)
         {
+            SettingsRevealAnimator.Cancel(_transitionContent);
+            _transitionContent = null;
             RootNavigation.Navigated -= OnNavigated;
             ViewModel.Unsubscribe();
             ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
@@ -330,8 +333,13 @@ namespace AFMediaBar.Views.Windows
 
         private void OnNavigated(NavigationView sender, NavigatedEventArgs args)
         {
+            SettingsRevealAnimator.Cancel(_transitionContent);
+            _transitionContent = null;
             if (args.Page is Page page && page.FindName("PageScroll") is ScrollViewer { Content: Panel content })
+            {
+                _transitionContent = content;
                 SettingsRevealAnimator.Replay(content);
+            }
         }
 
         private void FocusSearch()

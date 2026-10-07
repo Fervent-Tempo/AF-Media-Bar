@@ -8,19 +8,79 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Components;
+using AFMediaBar.Classes.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Wpf.Ui.Abstractions;
+using Wpf.Ui.Animations;
+using NavigationView = Wpf.Ui.Controls.NavigationView;
+using NavigationViewItem = Wpf.Ui.Controls.NavigationViewItem;
 
 namespace AFMediaBar.Layout.Tests;
 
 internal static class SettingsLiveVisualChecks
 {
+    internal static void VerifyNavigationMotion(Application app)
+    {
+        var provider = new SceneProvider();
+        var navigation = new NavigationView { Transition = Transition.None, IsPaneVisible = false };
+        navigation.MenuItems.Add(new NavigationViewItem { Content = "First", TargetPageType = typeof(FirstScene) });
+        navigation.MenuItems.Add(new NavigationViewItem { Content = "Second", TargetPageType = typeof(SecondScene) });
+        navigation.SetPageProviderService(provider);
+        Panel? arrived = null;
+        navigation.Navigated += (_, args) =>
+        {
+            Assert.IsInstanceOfType<Page>(args.Page, "The real NavigationView must supply the destination page instance.");
+            var page = (Page)args.Page;
+            SettingsRevealAnimator.Cancel(arrived);
+            arrived = (Panel)((ScrollViewer)page.FindName("PageScroll")).Content;
+            SettingsRevealAnimator.Replay(arrived);
+        };
+        var window = CreateWindow(navigation);
+        try
+        {
+            window.Show();
+            Pump(TimeSpan.FromMilliseconds(60));
+            Assert.IsTrue(navigation.Navigate(typeof(FirstScene)));
+            Pump(TimeSpan.FromMilliseconds(400));
+            var seenEntrance = false;
+            EventHandler sample = (_, _) =>
+            {
+                if (arrived?.RenderTransform is not TransformGroup transform) return;
+                var offset = transform.Children.OfType<TranslateTransform>().LastOrDefault();
+                if (arrived.Opacity > 0d && arrived.Opacity < 1d && offset?.Y > 1d) seenEntrance = true;
+            };
+            CompositionTarget.Rendering += sample;
+            try
+            {
+                Assert.IsTrue(navigation.Navigate(typeof(SecondScene)));
+                Assert.IsNotNull(arrived);
+                Pump(TimeSpan.FromMilliseconds(360));
+                if (MotionPolicy.ResolveCurrent().Mode == MotionMode.Full)
+                    Assert.IsTrue(seenEntrance, "Actual navigation must produce a rendered intermediate frame with visible motion and opacity.");
+                Assert.AreEqual(1d, arrived.Opacity);
+                Assert.IsFalse(arrived.HasAnimatedProperties);
+                // Replace a page before its entrance finishes, then close during the next entrance.
+                navigation.Navigate(typeof(FirstScene));
+                Pump(TimeSpan.FromMilliseconds(25));
+                navigation.Navigate(typeof(SecondScene));
+                Pump(TimeSpan.FromMilliseconds(25));
+                SettingsRevealAnimator.Cancel(arrived);
+                Assert.AreEqual(1d, arrived.Opacity);
+                Assert.IsFalse(arrived.HasAnimatedProperties);
+            }
+            finally { CompositionTarget.Rendering -= sample; }
+        }
+        finally { SettingsRevealAnimator.Cancel(arrived); window.Close(); Pump(TimeSpan.FromMilliseconds(30)); }
+    }
+
     internal static void VerifyCardHover(Application app)
     {
         var first = new SettingsRow { Style = (Style)app.Resources[typeof(SettingsRow)], Title = "A normal setting", Content = new CheckBox() };
         var second = new SettingsRow { Style = (Style)app.Resources[typeof(SettingsRow)], Title = "Another setting", Content = new CheckBox() };
         var content = new Border
         {
-            Background = new SolidColorBrush(Color.FromRgb(240, 240, 240)), Padding = new Thickness(24),
+            Background = new SolidColorBrush(Color.FromRgb(240, 240, 240)),
+            Padding = new Thickness(24),
             Child = new StackPanel { Children = { first, second } }
         };
         var window = CreateWindow(content);
@@ -63,8 +123,14 @@ internal static class SettingsLiveVisualChecks
 
     internal static Window CreateWindow(UIElement content) => new()
     {
-        Content = content, Width = 720d, Height = 480d, Left = -10000d, Top = -10000d,
-        ShowInTaskbar = false, ShowActivated = false, WindowStyle = WindowStyle.None
+        Content = content,
+        Width = 720d,
+        Height = 480d,
+        Left = -10000d,
+        Top = -10000d,
+        ShowInTaskbar = false,
+        ShowActivated = false,
+        WindowStyle = WindowStyle.None
     };
 
     internal static void Pump(TimeSpan duration)
@@ -108,4 +174,29 @@ internal static class SettingsLiveVisualChecks
             if (before[pixel] != after[pixel] || before[pixel + 1] != after[pixel + 1] || before[pixel + 2] != after[pixel + 2]) changed++;
         return changed;
     }
+
+    private sealed class SceneProvider : INavigationViewPageProvider
+    {
+        private readonly FirstScene _first = new();
+        private readonly SecondScene _second = new();
+        public object GetPage(Type pageType) => pageType == typeof(FirstScene) ? _first : _second;
+    }
+
+    private class Scene : Page
+    {
+        protected Scene(string title, Brush background)
+        {
+            NameScope.SetNameScope(this, new NameScope());
+            var content = new StackPanel { Background = background };
+            content.Children.Add(new TextBlock { Text = title, FontSize = 28d, Margin = new Thickness(28d) });
+            for (var index = 0; index < 3; index++)
+                content.Children.Add(new SettingsRow { Title = "Setting " + index, Content = new CheckBox() });
+            var scroll = new ScrollViewer { Name = "PageScroll", Content = content };
+            RegisterName("PageScroll", scroll);
+            Content = scroll;
+        }
+    }
+
+    private sealed class FirstScene() : Scene("First page", Brushes.LightGray);
+    private sealed class SecondScene() : Scene("Second page", Brushes.AliceBlue);
 }

@@ -73,6 +73,7 @@ public sealed class SettingsVisualRuntimeTests
                 VerifyNarrowRow(app);
                 SettingsLiveVisualChecks.VerifyCardHover(app);
                 VerifyPageMarkup(app);
+                SettingsLiveVisualChecks.VerifyNavigationMotion(app);
             }
             finally { app.Shutdown(); }
         });
