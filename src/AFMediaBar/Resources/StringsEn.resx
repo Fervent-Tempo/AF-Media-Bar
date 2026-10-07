@@ -2216,4 +2216,10 @@
   <data name="DisplayModes.Mode.AvailabilityNotice" xml:space="preserve">
     <value>Only taskbar mode is currently available. Other modes cannot be activated yet.</value>
   </data>
+  <data name="Appearance.FontsShortcut.Description" xml:space="preserve">
+    <value>Adjust fonts in Application appearance → Fonts.</value>
+  </data>
+  <data name="Appearance.FontsShortcut.Action" xml:space="preserve">
+    <value>Adjust fonts</value>
+  </data>
 </root>

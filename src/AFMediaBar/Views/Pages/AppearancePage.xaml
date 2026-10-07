@@ -166,6 +166,16 @@
                             Style="{StaticResource AfSettingsHintTextStyle}"
                             Text="{DynamicResource Loc.Appearance.Preview.Hint}" /></Border>
 
+                        <components:SettingsRow
+                            Title="{DynamicResource Loc.Common.Group.Fonts}"
+                            Description="{DynamicResource Loc.Appearance.FontsShortcut.Description}"
+                            Icon="{ui:SymbolIcon TextFont24}">
+                            <ui:Button
+                                Click="OpenApplicationFonts_Click"
+                                Content="{DynamicResource Loc.Appearance.FontsShortcut.Action}"
+                                Icon="{ui:SymbolIcon ArrowRight24}"
+                                Style="{StaticResource AfSettingsButtonStyle}" />
+                        </components:SettingsRow>
                     </StackPanel>
                 </components:SettingsGroup>
 

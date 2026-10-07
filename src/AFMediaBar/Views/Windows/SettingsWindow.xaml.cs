@@ -1,5 +1,4 @@
 using AFMediaBar.Classes.Models.Settings;
-using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using AFMediaBar.ViewModels.Windows;
@@ -42,15 +41,6 @@ namespace AFMediaBar.Views.Windows
         private SettingsPageKey _currentPage = SettingsPageKey.DisplayModes;
         private bool _updatingMonitorChoices;
         private bool _closed;
-
-        /// <summary>Describes the actual environment, without promising separate persisted profiles.</summary>
-        public string EditingContextText => Translations.Format("Settings.Context.Summary",
-            Translations.Get(_contexts.Current.Orientation switch
-            {
-                LayoutOrientation.Vertical => "Settings.Context.Vertical",
-                LayoutOrientation.Horizontal => "Settings.Context.Horizontal",
-                _ => "Settings.Context.Unavailable"
-            }), _contexts.Current.IsCompact ? Translations.Get("Settings.Context.Compact") : string.Empty);
 
         public SettingsWindowViewModel ViewModel { get; }
 
@@ -102,6 +92,7 @@ namespace AFMediaBar.Views.Windows
             RootNavigation.TransitionDuration = 0;
 
             AddHandler(ApplicationPage.OpenHighlightsEvent, new RoutedEventHandler(OnOpenHighlightsRequested));
+            AddHandler(AppearancePage.OpenApplicationFontsEvent, new RoutedEventHandler(OnOpenApplicationFontsRequested));
             RootNavigation.Navigated += OnNavigated;
 
             // 落地页：窗口每次打开都直接落在「显示模式」。
@@ -207,25 +198,18 @@ namespace AFMediaBar.Views.Windows
         /// </summary>
         private void OnSearchSuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
         {
-            if (args.SelectedItem is not SettingsSearchSuggestion suggestion ||
-                !SettingsPageProvider.PageTypes.TryGetValue(suggestion.Hit.Page, out var pageType))
-            {
-                return;
-            }
+            if (args.SelectedItem is SettingsSearchSuggestion suggestion)
+                NavigateToGroup(suggestion.Hit.Page, suggestion.Hit.GroupId);
+        }
 
-            var hit = suggestion.Hit;
-            if (!Navigate(pageType))
+        private void NavigateToGroup(SettingsPageKey page, string groupId)
+        {
+            if (!SettingsPageProvider.PageTypes.TryGetValue(page, out var pageType) || !Navigate(pageType)) return;
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
             {
-                return;
-            }
-
-            Dispatcher.BeginInvoke(
-                DispatcherPriority.Loaded,
-                new Action(() =>
-                {
-                    if (_closed || _currentPage != hit.Page) return;
-                    FindDescendant<SettingsGroupStrip>(RootNavigation)?.RevealGroup(hit.GroupId);
-                }));
+                if (_closed || _currentPage != page) return;
+                FindDescendant<SettingsGroupStrip>(RootNavigation)?.RevealGroup(groupId);
+            }));
         }
 
         /// <summary>
@@ -291,6 +275,12 @@ namespace AFMediaBar.Views.Windows
         /// The view model is a singleton and the window is transient, so the subscription must be released on close;
         /// otherwise opening the settings repeatedly would accumulate handlers.
         /// </summary>
+        private void OnOpenApplicationFontsRequested(object sender, RoutedEventArgs e)
+        {
+            e.Handled = true;
+            NavigateToGroup(SettingsPageKey.ApplicationAppearance, "Common.Group.Fonts");
+        }
+
         private void OnOpenHighlightsRequested(object sender, RoutedEventArgs e)
         {
             e.Handled = true;
@@ -305,7 +295,6 @@ namespace AFMediaBar.Views.Windows
 
         private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            PropertyChanged?.Invoke(this, new(nameof(EditingContextText)));
             if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName is nameof(SettingsWindowViewModel.HasUpdateAvailable) or nameof(SettingsWindowViewModel.UpdateNoticeTitle) or nameof(SettingsWindowViewModel.UpdateNoticeText))
             {
                 ApplyUpdateNotice();
@@ -471,8 +460,8 @@ namespace AFMediaBar.Views.Windows
         private void UpdateContextHeader()
         {
             var definition = SettingsPageCatalog.Find(_currentPage, _contexts.Current.Mode);
-            RootNavigation.HeaderVisibility = definition is { IsGlobal: false } || _currentPage == SettingsPageKey.DisplayModes ? Visibility.Visible : Visibility.Collapsed;
-            PropertyChanged?.Invoke(this, new(nameof(EditingContextText)));
+            RootNavigation.HeaderVisibility = _contexts.Monitors.Count > 1 &&
+                (definition is { IsGlobal: false } || _currentPage == SettingsPageKey.DisplayModes) ? Visibility.Visible : Visibility.Collapsed;
         }
         private void OnEditingMonitorChanged(object sender, SelectionChangedEventArgs e)
         {

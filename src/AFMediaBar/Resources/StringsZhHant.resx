@@ -2216,4 +2216,10 @@
   <data name="DisplayModes.Mode.AvailabilityNotice" xml:space="preserve">
     <value>目前僅支援工作列模式。其他模式暫不可切換。</value>
   </data>
+  <data name="Appearance.FontsShortcut.Description" xml:space="preserve">
+    <value>字體請前往應用程式外觀-字體進行調節</value>
+  </data>
+  <data name="Appearance.FontsShortcut.Action" xml:space="preserve">
+    <value>調整字體</value>
+  </data>
 </root>

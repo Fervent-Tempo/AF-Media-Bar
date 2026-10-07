@@ -2216,4 +2216,10 @@
   <data name="DisplayModes.Mode.AvailabilityNotice" xml:space="preserve">
     <value>目前仅支持任务栏模式。其他模式暂不可切换。</value>
   </data>
+  <data name="Appearance.FontsShortcut.Description" xml:space="preserve">
+    <value>字体请前往应用外观-字体进行调节</value>
+  </data>
+  <data name="Appearance.FontsShortcut.Action" xml:space="preserve">
+    <value>调整字体</value>
+  </data>
 </root>

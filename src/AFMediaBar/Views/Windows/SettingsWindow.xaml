@@ -77,7 +77,6 @@
                         <TextBlock Text="{DynamicResource Loc.Settings.Context.EditingMonitor}" VerticalAlignment="Center" Margin="0,0,12,0" />
                         <ComboBox x:Name="EditingMonitorPicker" MinWidth="200" MaxWidth="360" DisplayMemberPath="DeviceName" SelectedValuePath="DeviceId" SelectionChanged="OnEditingMonitorChanged" />
                     </StackPanel>
-                    <TextBlock Text="{Binding EditingContextText}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,4,0,0" />
                 </StackPanel>
             </ui:NavigationView.Header>
             <ui:NavigationView.AutoSuggestBox>

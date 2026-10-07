@@ -18,6 +18,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
+- Remove the settings header environment notice and add a font shortcut below media bar text settings, opening the Fonts group in Application appearance.
+
 - Introduce settings contexts, a page catalog, and a configuration boundary. Separate application appearance, media bar appearance, and component view models; keep the editor display separate from runtime targets and show system taskbar orientation. Isolate page caches by context and search by stable group IDs. Unimplemented modes remain informational; existing persisted settings are unchanged and profiles are not yet isolated.
 
 
