@@ -108,6 +108,9 @@ public sealed class SettingsSidebarSelectionAnimator : IDisposable
         {
             candidate.SetResourceReference(Control.ForegroundProperty, ReferenceEquals(candidate, item) ? "AfAccentBrush" : "TextFillColorPrimaryBrush");
             candidate.SetResourceReference(Control.FontWeightProperty, ReferenceEquals(candidate, item) ? "AppTextStrongFontWeight" : "AppTextFontWeight");
+            // Icons are separate elements and do not inherit the item's local foreground in the library template.
+            candidate.Icon?.SetResourceReference(IconElement.ForegroundProperty,
+                ReferenceEquals(candidate, item) ? "AfAccentBrush" : "TextFillColorPrimaryBrush");
         }
         _surface.Width = bounds.Width;
         _surface.Height = bounds.Height;

@@ -14,6 +14,8 @@ using Wpf.Ui.Abstractions;
 using Wpf.Ui.Animations;
 using NavigationView = Wpf.Ui.Controls.NavigationView;
 using NavigationViewItem = Wpf.Ui.Controls.NavigationViewItem;
+using SymbolIcon = Wpf.Ui.Controls.SymbolIcon;
+using SymbolRegular = Wpf.Ui.Controls.SymbolRegular;
 
 namespace AFMediaBar.Layout.Tests;
 
@@ -23,9 +25,9 @@ internal static class SettingsLiveVisualChecks
     {
         var provider = new SceneProvider();
         var navigation = new NavigationView { Transition = Transition.None, IsPaneVisible = true, IsPaneOpen = true };
-        navigation.MenuItems.Add(new NavigationViewItem { Content = "First", TargetPageType = typeof(FirstScene) });
-        navigation.MenuItems.Add(new NavigationViewItem { Content = "Second", TargetPageType = typeof(SecondScene) });
-        navigation.FooterMenuItems.Add(new NavigationViewItem { Content = "About", TargetPageType = typeof(FooterScene) });
+        navigation.MenuItems.Add(new NavigationViewItem { Content = "First", Icon = new SymbolIcon { Symbol = SymbolRegular.Desktop24 }, TargetPageType = typeof(FirstScene) });
+        navigation.MenuItems.Add(new NavigationViewItem { Content = "Second", Icon = new SymbolIcon { Symbol = SymbolRegular.Settings24 }, TargetPageType = typeof(SecondScene) });
+        navigation.FooterMenuItems.Add(new NavigationViewItem { Content = "About", Icon = new SymbolIcon { Symbol = SymbolRegular.Info24 }, TargetPageType = typeof(FooterScene) });
         navigation.SetPageProviderService(provider);
         Panel? arrived = null;
         navigation.Navigated += (_, args) =>
@@ -75,6 +77,9 @@ internal static class SettingsLiveVisualChecks
                 var expected = selected.TranslatePoint(new Point(2d, 2d), overlay);
                 Assert.AreEqual(expected.Y, indicatorPosition.Y, 0.5d);
                 Assert.AreEqual(FontWeights.SemiBold, selected.FontWeight);
+                Assert.AreSame(selected.Foreground, selected.Icon!.Foreground, "The selected icon and label must use the same live accent brush.");
+                var inactive = (NavigationViewItem)navigation.MenuItems[0];
+                Assert.AreSame(inactive.Foreground, inactive.Icon!.Foreground, "An inactive icon must return to the normal foreground.");
                 Assert.IsFalse(indicatorPosition.HasAnimatedProperties);
                 Save(Capture(shell), "sidebar-selection");
                 Assert.AreEqual(1d, arrived.Opacity);
