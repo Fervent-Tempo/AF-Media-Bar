@@ -22,9 +22,10 @@ internal static class SettingsLiveVisualChecks
     internal static void VerifyNavigationMotion(Application app)
     {
         var provider = new SceneProvider();
-        var navigation = new NavigationView { Transition = Transition.None, IsPaneVisible = false };
+        var navigation = new NavigationView { Transition = Transition.None, IsPaneVisible = true, IsPaneOpen = true };
         navigation.MenuItems.Add(new NavigationViewItem { Content = "First", TargetPageType = typeof(FirstScene) });
         navigation.MenuItems.Add(new NavigationViewItem { Content = "Second", TargetPageType = typeof(SecondScene) });
+        navigation.FooterMenuItems.Add(new NavigationViewItem { Content = "About", TargetPageType = typeof(FooterScene) });
         navigation.SetPageProviderService(provider);
         Panel? arrived = null;
         navigation.Navigated += (_, args) =>
@@ -35,19 +36,29 @@ internal static class SettingsLiveVisualChecks
             arrived = (Panel)((ScrollViewer)page.FindName("PageScroll")).Content;
             SettingsRevealAnimator.Replay(arrived);
         };
-        var window = CreateWindow(navigation);
+        var overlay = new Canvas { IsHitTestVisible = false };
+        var shell = new Grid { Background = new SolidColorBrush(Color.FromRgb(243, 243, 243)), Children = { navigation, overlay } };
+        using var selection = new SettingsSidebarSelectionAnimator(navigation, overlay);
+        var window = CreateWindow(shell);
         try
         {
             window.Show();
             Pump(TimeSpan.FromMilliseconds(60));
             Assert.IsTrue(navigation.Navigate(typeof(FirstScene)));
             Pump(TimeSpan.FromMilliseconds(400));
+            var indicator = (Border)overlay.Children[0];
+            Assert.AreEqual(Visibility.Visible, indicator.Visibility);
+            var indicatorTransform = (TransformGroup)indicator.RenderTransform;
+            var indicatorPosition = indicatorTransform.Children.OfType<TranslateTransform>().Single();
+            var startY = indicatorPosition.Y;
             var seenEntrance = false;
+            var seenSelectionMove = false;
             EventHandler sample = (_, _) =>
             {
                 if (arrived?.RenderTransform is not TransformGroup transform) return;
                 var offset = transform.Children.OfType<TranslateTransform>().LastOrDefault();
                 if (arrived.Opacity > 0d && arrived.Opacity < 1d && offset?.Y > 1d) seenEntrance = true;
+                if (indicatorPosition.HasAnimatedProperties && Math.Abs(indicatorPosition.Y - startY) > 0.1d) seenSelectionMove = true;
             };
             CompositionTarget.Rendering += sample;
             try
@@ -56,7 +67,16 @@ internal static class SettingsLiveVisualChecks
                 Assert.IsNotNull(arrived);
                 Pump(TimeSpan.FromMilliseconds(360));
                 if (MotionPolicy.ResolveCurrent().Mode == MotionMode.Full)
+                {
                     Assert.IsTrue(seenEntrance, "Actual navigation must produce a rendered intermediate frame with visible motion and opacity.");
+                    Assert.IsTrue(seenSelectionMove, "The shared sidebar selection surface must move between items.");
+                }
+                var selected = (NavigationViewItem)navigation.SelectedItem!;
+                var expected = selected.TranslatePoint(new Point(2d, 2d), overlay);
+                Assert.AreEqual(expected.Y, indicatorPosition.Y, 0.5d);
+                Assert.AreEqual(FontWeights.SemiBold, selected.FontWeight);
+                Assert.IsFalse(indicatorPosition.HasAnimatedProperties);
+                Save(Capture(shell), "sidebar-selection");
                 Assert.AreEqual(1d, arrived.Opacity);
                 Assert.IsFalse(arrived.HasAnimatedProperties);
                 // Replace a page before its entrance finishes, then close during the next entrance.
@@ -69,9 +89,20 @@ internal static class SettingsLiveVisualChecks
                 Assert.IsFalse(arrived.HasAnimatedProperties);
             }
             finally { CompositionTarget.Rendering -= sample; }
+            navigation.Navigate(typeof(FooterScene));
+            Pump(TimeSpan.FromMilliseconds(360));
+            var footer = (NavigationViewItem)navigation.SelectedItem!;
+            var footerOrigin = footer.TranslatePoint(new Point(2d, 2d), overlay);
+            Assert.AreEqual(footerOrigin.Y, indicatorPosition.Y, 0.5d, "Footer destinations use the same moving selection surface.");
+            navigation.IsPaneOpen = false;
+            Pump(TimeSpan.FromMilliseconds(100));
+            Assert.IsFalse(indicatorPosition.HasAnimatedProperties, "Pane changes must realign without replaying selection.");
+            selection.Dispose();
+            Assert.AreEqual(0, overlay.Children.Count, "Disposal removes the shared selection surface.");
         }
         finally { SettingsRevealAnimator.Cancel(arrived); window.Close(); Pump(TimeSpan.FromMilliseconds(30)); }
     }
+
 
     internal static void VerifyCardHover(Application app)
     {
@@ -179,7 +210,8 @@ internal static class SettingsLiveVisualChecks
     {
         private readonly FirstScene _first = new();
         private readonly SecondScene _second = new();
-        public object GetPage(Type pageType) => pageType == typeof(FirstScene) ? _first : _second;
+        private readonly FooterScene _footer = new();
+        public object GetPage(Type pageType) => pageType == typeof(FirstScene) ? _first : pageType == typeof(SecondScene) ? _second : _footer;
     }
 
     private class Scene : Page
@@ -199,4 +231,5 @@ internal static class SettingsLiveVisualChecks
 
     private sealed class FirstScene() : Scene("First page", Brushes.LightGray);
     private sealed class SecondScene() : Scene("Second page", Brushes.AliceBlue);
+    private sealed class FooterScene() : Scene("Footer page", Brushes.WhiteSmoke);
 }

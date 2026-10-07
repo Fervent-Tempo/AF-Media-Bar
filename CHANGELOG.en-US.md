@@ -18,6 +18,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
+- Strengthen the settings sidebar selection with an accent surface, outline, and bold label. A shared indicator moves continuously between destinations, retargets from its current position, and stays aligned after pane changes and scrolling.
+
 - Use the main-branch sidebar, sidebar search, and fixed page headers without a back button; What’s new and About appear in the footer. Merge text and font settings, place common options first, and collapse less-used details by default; search expands destination details.
 - Start a 28 DIP upward entrance and 280 ms fade after settings content loads. Fix hover hit testing in normal cards and shadows covered by adjacent cards, with stronger elevation on hover, respecting system motion and high contrast. Retain asynchronous font loading, window materials, and themed surfaces.
 - Add direct numeric input beside settings sliders, with units and legal precision. Invalid input preserves the setting; narrow content puts controls below titles (#37).

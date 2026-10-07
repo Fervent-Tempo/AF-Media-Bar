@@ -27,6 +27,7 @@ namespace AFMediaBar.Views.Windows
     public partial class SettingsWindow : INavigationWindow, INotifyPropertyChanged
     {
         private Panel? _transitionContent;
+        private readonly SettingsSidebarSelectionAnimator _sidebarSelection;
         private readonly AppIconService _appIconService;
         /// <summary>
         /// 搜索命中到页面类型的映射。搜索索引刻意不引用任何 View 类型，
@@ -80,6 +81,7 @@ namespace AFMediaBar.Views.Windows
             DataContext = this;
 
             InitializeComponent();
+            _sidebarSelection = new SettingsSidebarSelectionAnimator(RootNavigation, SidebarSelectionOverlay);
             SettingsResetDialog.SetHost(RootContentDialog);
             appearanceService.Attach(this);
             SetPageService(navigationViewPageProvider);
@@ -309,6 +311,7 @@ namespace AFMediaBar.Views.Windows
 
         private void SettingsWindow_ClosedForUpdateNotice(object? sender, EventArgs e)
         {
+            _sidebarSelection.Dispose();
             SettingsRevealAnimator.Cancel(_transitionContent);
             _transitionContent = null;
             RootNavigation.Navigated -= OnNavigated;

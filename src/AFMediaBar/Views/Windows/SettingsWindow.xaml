@@ -151,6 +151,7 @@
                 </Grid>
             </ui:NavigationView.ContentOverlay>
         </ui:NavigationView>
+        <Canvas x:Name="SidebarSelectionOverlay" IsHitTestVisible="False" ClipToBounds="True" />
         <ui:ContentDialogHost x:Name="RootContentDialog" Grid.Row="0" />
     </Grid>
 </ui:FluentWindow>
