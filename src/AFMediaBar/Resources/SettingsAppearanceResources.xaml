@@ -464,7 +464,7 @@
                         BorderThickness="{TemplateBinding BorderThickness}"
                         CornerRadius="{TemplateBinding CornerRadius}"
                         SnapsToDevicePixels="True" IsHitTestVisible="False" components:SettingsHoverShadow.IsEnabled="True" />
-                    <Border Padding="{TemplateBinding Padding}" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="Transparent">
+                    <Border Padding="{TemplateBinding Padding}" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="Transparent" Background="Transparent">
                         <Grid
                             HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                             VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
@@ -590,7 +590,7 @@
                 Background="{DynamicResource AfAccentBrush}"
                 CornerRadius="8"
                 Opacity="0" />
-            <Border Padding="{TemplateBinding Padding}" BorderThickness="1" BorderBrush="Transparent">
+            <Border Padding="{TemplateBinding Padding}" BorderThickness="1" BorderBrush="Transparent" Background="Transparent">
                 <ContentPresenter
                     HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                     VerticalAlignment="{TemplateBinding VerticalContentAlignment}"

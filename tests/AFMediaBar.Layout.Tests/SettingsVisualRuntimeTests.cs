@@ -71,6 +71,7 @@ public sealed class SettingsVisualRuntimeTests
                 Assert.IsFalse(tint.HasAnimatedProperties, "Selection feedback must also work with all system animation disabled.");
                 VerifyNumericBinding(app);
                 VerifyNarrowRow(app);
+                SettingsLiveVisualChecks.VerifyCardHover(app);
                 VerifyPageMarkup(app);
             }
             finally { app.Shutdown(); }

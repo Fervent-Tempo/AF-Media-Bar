@@ -40,6 +40,7 @@ public static class SettingsHoverShadow
         private Effect? _originalEffect;
         private bool _loaded;
         private bool _mouseHover;
+        private int _originalZIndex;
 
         public ShadowState(FrameworkElement surface)
         {
@@ -57,6 +58,7 @@ public static class SettingsHoverShadow
             if (_loaded) return;
             _loaded = true;
             _owner = _surface.TemplatedParent as FrameworkElement ?? _surface;
+            _originalZIndex = System.Windows.Controls.Panel.GetZIndex(_owner);
             _owner.MouseEnter += OnMouseEnter;
             _owner.MouseLeave += OnMouseLeave;
             _owner.IsEnabledChanged += OnOwnerStateChanged;
@@ -93,16 +95,19 @@ public static class SettingsHoverShadow
             if (!motion.UseDecorativeEffects || _owner?.IsEnabled != true || _owner is SettingsRow { IsNested: true })
             {
                 RemoveEffect();
+                RestoreLayerOrder();
                 return;
             }
+            // The next row otherwise paints over the lower half of the hovered card's shadow.
+            _owner.SetCurrentValue(System.Windows.Controls.Panel.ZIndexProperty, _mouseHover ? _originalZIndex + 1 : _originalZIndex);
             if (_shadow is null)
             {
                 _originalEffect = _surface.Effect;
-                _shadow = new DropShadowEffect { BlurRadius = 10d, ShadowDepth = 1d, Opacity = 0.08d, RenderingBias = RenderingBias.Performance };
+                _shadow = new DropShadowEffect { BlurRadius = 14d, ShadowDepth = 1d, Opacity = 0d, RenderingBias = RenderingBias.Performance };
                 _surface.Effect = _shadow;
             }
-            Animate(DropShadowEffect.ShadowDepthProperty, _mouseHover ? 3d : 1d);
-            Animate(DropShadowEffect.OpacityProperty, _mouseHover ? 0.18d : 0.08d);
+            Animate(DropShadowEffect.ShadowDepthProperty, _mouseHover ? 4d : 1d);
+            Animate(DropShadowEffect.OpacityProperty, _mouseHover ? 0.30d : 0d);
 
             void Animate(DependencyProperty property, double target)
             {
@@ -141,9 +146,12 @@ public static class SettingsHoverShadow
             SystemParameters.StaticPropertyChanged -= OnEnvironmentChanged;
             RenderCapability.TierChanged -= OnTierChanged;
             RemoveEffect();
+            RestoreLayerOrder();
             _mouseHover = false;
             _owner = null;
         }
+
+        private void RestoreLayerOrder() => _owner?.SetCurrentValue(System.Windows.Controls.Panel.ZIndexProperty, _originalZIndex);
 
         public void Dispose()
         {
