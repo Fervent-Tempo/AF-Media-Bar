@@ -79,6 +79,8 @@ Preferences and window state live in `%LOCALAPPDATA%\AFMediaBar\settings.json`; 
 
 Settings sliders also accept direct numeric input: press Enter or move focus to apply, or Esc to cancel. The input tooltip shows the range and permitted step. Less-used settings are collapsed by default; search expands details in the destination group.
 
+Application theme and interface fonts live under Application appearance; media text, dimensions, and layout live under Media bar appearance. With multiple enabled displays, select the display to configure; orientation follows its system taskbar, and the editor selection does not change runtime targets. Displays and orientations still share taskbar settings in this release. Unimplemented modes show information only.
+
 ### Uninstalling
 
 - Portable build: delete the program folder.

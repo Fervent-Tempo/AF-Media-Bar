@@ -71,6 +71,15 @@
             IsPaneOpen="True"
             TransitionDuration="180"
             TitleBar="{Binding ElementName=TitleBar, Mode=OneWay}">
+            <ui:NavigationView.Header>
+                <StackPanel Margin="16,4,16,4">
+                    <StackPanel x:Name="EditingMonitorPanel" Orientation="Horizontal" Visibility="Collapsed">
+                        <TextBlock Text="{DynamicResource Loc.Settings.Context.EditingMonitor}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <ComboBox x:Name="EditingMonitorPicker" MinWidth="200" MaxWidth="360" DisplayMemberPath="DeviceName" SelectedValuePath="DeviceId" SelectionChanged="OnEditingMonitorChanged" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding EditingContextText}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                </StackPanel>
+            </ui:NavigationView.Header>
             <ui:NavigationView.AutoSuggestBox>
                 <!--
                     搜索框的候选项由设置窗口在 TextChanged 里按 SettingsSearchIndex 填充，
@@ -110,32 +119,6 @@
                     </ui:AutoSuggestBox.ItemTemplate>
                 </ui:AutoSuggestBox>
             </ui:NavigationView.AutoSuggestBox>
-
-            <ui:NavigationView.MenuItems>
-                <!-- 页面按显示、外观、交互、歌词、组件和应用排列；媒体来源与通知仍保留独立入口。 -->
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.DisplayModes}" Icon="{ui:SymbolIcon WindowConsole20}"
-                                       TargetPageType="{x:Type pages:DisplayModesPage}" />
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.ScreenAndPlacement}" Icon="{ui:SymbolIcon Desktop24}"
-                                       TargetPageType="{x:Type pages:ScreenAndPlacementPage}" />
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.TaskbarAppearance}"
-                                       Icon="{ui:SymbolIcon PaintBrush24}"
-                                       TargetPageType="{x:Type pages:AppearancePage}" />
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Interaction}" Icon="{ui:SymbolIcon HandDraw24}"
-                                       TargetPageType="{x:Type pages:InteractionPage}" />
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Lyrics}" Icon="{ui:SymbolIcon TextQuote24}"
-                                       TargetPageType="{x:Type pages:LyricsPage}" />
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Components}" Icon="{ui:SymbolIcon DataHistogram24}"
-                                       TargetPageType="{x:Type pages:ComponentsSettingsPage}" />
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.MediaAndNotifications}" Icon="{ui:SymbolIcon PuzzlePiece24}"
-                                       ToolTip="{DynamicResource Loc.Common.Page.MediaAndNotifications}"
-                                       TargetPageType="{x:Type pages:ExtraFeaturesPage}" />
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.ApplicationAppearance}"
-                                       Icon="{ui:SymbolIcon Color24}"
-                                       TargetPageType="{x:Type pages:ApplicationAppearancePage}" />
-<ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Application}"
-                                       Icon="{ui:SymbolIcon Settings24}"
-                                       TargetPageType="{x:Type pages:ApplicationPage}" />
-            </ui:NavigationView.MenuItems>
 
             <ui:NavigationView.FooterMenuItems>
                 <ui:NavigationViewItem x:Name="UpdateNoticeNavItem" Click="UpdateNoticeNavItem_Click" TargetPageType="{x:Type pages:ReleaseHighlightsPage}">

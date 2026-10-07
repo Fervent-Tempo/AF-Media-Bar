@@ -40,7 +40,7 @@
                 Loaded="OnPageLoaded">
 
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.ProjectInfo}" Icon="{ui:SymbolIcon Info24}">
+                <components:SettingsGroup GroupId="Common.Group.ProjectInfo" Header="{DynamicResource Loc.Common.Group.ProjectInfo}" Icon="{ui:SymbolIcon Info24}">
                     <components:SettingsRow
                         Description="{DynamicResource Loc.About.Row.Project.Description}"
                         Icon="{ui:SymbolIcon Info24}"
@@ -86,7 +86,7 @@
                     开发人员只显示头像；名称通过悬停提示与无障碍名称呈现。头像异步到达前使用占位图标。
                     Developers show as avatars; the login remains available by tooltip and accessible name. A fallback glyph appears until the avatar arrives.
                 -->
-                <components:SettingsGroup
+                <components:SettingsGroup GroupId="Common.Group.Developers"
                     Header="{DynamicResource Loc.Common.Group.Developers}"
                     Icon="{ui:SymbolIcon Code24}"
                     Visibility="{Binding ViewModel.HasContributors, Converter={StaticResource AfBooleanToVisibilityConverter}}">
@@ -148,7 +148,7 @@
                     Sponsor list: names only, joined into one wrapping paragraph. There can be dozens of sponsors and a card per person would grow past
                     readability, so this matches the reference project: the list of names is the content.
                 -->
-                <components:SettingsGroup
+                <components:SettingsGroup GroupId="Common.Group.Sponsors"
                     Header="{DynamicResource Loc.Common.Group.Sponsors}"
                     Icon="{ui:SymbolIcon Heart24}"
                     Visibility="{Binding ViewModel.HasSponsors, Converter={StaticResource AfBooleanToVisibilityConverter}}">
@@ -184,7 +184,7 @@
                     Support me: WeChat and Alipay payment codes. The user adds the images under Assets/Sponsor/, and a
                     missing one shows which file is still missing in its own cell instead of breaking the page.
                 -->
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.Support}" Icon="{ui:SymbolIcon Heart24}">
+                <components:SettingsGroup GroupId="Common.Group.Support" Header="{DynamicResource Loc.Common.Group.Support}" Icon="{ui:SymbolIcon Heart24}">
                     <StackPanel>
                         <!--
                             赞助门槛写在这里而不是只写进说明文档：收款码就在下方，用户正是在看到收款码的同一屏里决定要不要在备注里留 id 的。
@@ -251,7 +251,7 @@
                     Open-source licenses: packages first, derived code after. Every row opens its own project address, because the point
                     of this section is that the user can check it themselves.
                 -->
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.Licenses}" Icon="{ui:SymbolIcon DocumentText24}">
+                <components:SettingsGroup GroupId="Common.Group.Licenses" Header="{DynamicResource Loc.Common.Group.Licenses}" Icon="{ui:SymbolIcon DocumentText24}">
                     <ItemsControl ItemsSource="{Binding ViewModel.Licenses}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>

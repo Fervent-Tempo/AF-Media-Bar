@@ -14,6 +14,9 @@ namespace AFMediaBar.ViewModels.Pages;
 public sealed class ComponentsSettingsViewModel : ObservableObject, IDisposable
 {
     private readonly ISettingsConfiguration _configuration;
+    /// <summary>Cancels asynchronous UI work when this editor context becomes inactive.</summary>
+    public CancellationToken ContextCancellationToken => _configuration.CancellationToken;
+
     private readonly LocalizationService _localization;
     private readonly Dispatcher _dispatcher = DispatcherHelper.Current;
     private bool _disposed;
@@ -22,6 +25,7 @@ public sealed class ComponentsSettingsViewModel : ObservableObject, IDisposable
     public ComponentsSettingsViewModel(ISettingsConfiguration configuration, LocalizationService localization)
     {
         _configuration = configuration;
+        configuration.Activated += OnActivated;
         _localization = localization;
         SettingsManager.SettingsChanged += OnSettingsChanged;
         localization.LanguageChanged += OnLanguageChanged;
@@ -226,10 +230,12 @@ public sealed class ComponentsSettingsViewModel : ObservableObject, IDisposable
     });
     private void OnLanguageChanged(object? sender, EventArgs args) { if (!_disposed) OnPropertyChanged(string.Empty); }
     /// <summary>Unsubscribes when the cached page scope is removed.</summary>
+    private void OnActivated(object? sender, EventArgs e) { OnPropertyChanged(string.Empty); }
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
+        _configuration.Activated -= OnActivated;
         SettingsManager.SettingsChanged -= OnSettingsChanged;
         _localization.LanguageChanged -= OnLanguageChanged;
     }

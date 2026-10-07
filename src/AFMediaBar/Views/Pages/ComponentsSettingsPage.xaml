@@ -69,7 +69,7 @@
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
                 Loaded="OnPageLoaded">
 
-                <components:SettingsGroup
+                <components:SettingsGroup GroupId="Common.Group.RestLayerComponents"
                     Description="{DynamicResource Loc.Media.RestComponents.Description}"
                     Header="{DynamicResource Loc.Common.Group.RestLayerComponents}"
                     Icon="{ui:SymbolIcon DataHistogram24}">

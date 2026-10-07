@@ -28,6 +28,9 @@ public sealed class SettingsContextService : IDisposable
         _timer.Tick += OnTick;
     }
 
+    /// <summary>Cancels window-owned operations, including open reset dialogs, on close.</summary>
+    public CancellationToken CancellationToken => _lifetime.Token;
+
     /// <summary>Current immutable editing context; runtime orientation is never written by monitor selection.</summary>
     public SettingsContext Current { get; private set; } = SettingsContext.Initial;
     /// <summary>Enabled displays currently available to the editor.</summary>

@@ -926,10 +926,10 @@
     <value>Thickness offset</value>
   </data>
   <data name="DisplayModes.Placement.Row.Orientation.Description" xml:space="preserve">
-    <value>Only horizontal layout is implemented; this option is temporarily unavailable</value>
+    <value>Automatically follows the system taskbar on this display.</value>
   </data>
   <data name="DisplayModes.Placement.Row.Orientation.Title" xml:space="preserve">
-    <value>Orientation</value>
+    <value>Taskbar orientation</value>
   </data>
   <data name="DisplayModes.Placement.Row.Reset.Description" xml:space="preserve">
     <value>Restore the automatically calculated position.</value>
@@ -2194,5 +2194,26 @@
   </data>
   <data name="TaskbarAppearance.Header.Subtitle" xml:space="preserve">
     <value>Adjust text, dimensions, and component layout for the current taskbar environment.</value>
+  </data>
+  <data name="Settings.Context.EditingMonitor" xml:space="preserve">
+    <value>Display being configured</value>
+  </data>
+  <data name="Settings.Context.Unavailable" xml:space="preserve">
+    <value>Taskbar unavailable</value>
+  </data>
+  <data name="Settings.Context.Compact" xml:space="preserve">
+    <value> · System compact taskbar</value>
+  </data>
+  <data name="Settings.Context.Summary" xml:space="preserve">
+    <value>{0}{1}. Displays and orientations currently share taskbar settings.</value>
+  </data>
+  <data name="Settings.Context.Horizontal" xml:space="preserve">
+    <value>Horizontal taskbar</value>
+  </data>
+  <data name="Settings.Context.Vertical" xml:space="preserve">
+    <value>Vertical taskbar</value>
+  </data>
+  <data name="DisplayModes.Mode.AvailabilityNotice" xml:space="preserve">
+    <value>Only taskbar mode is currently available. Other modes cannot be activated yet.</value>
   </data>
 </root>

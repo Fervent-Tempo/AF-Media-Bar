@@ -14,6 +14,9 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
 {
     private readonly ISettingsConfiguration _configuration;
     private readonly TaskbarLengthConstraintsService _taskbarLengthConstraints;
+    /// <summary>Cancels asynchronous UI work when this editor context becomes inactive.</summary>
+    public CancellationToken ContextCancellationToken => _configuration.CancellationToken;
+
     private readonly LocalizationService _localization;
     private bool _isRefreshing;
     private bool _disposed;
@@ -22,6 +25,7 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
     public TaskbarAppearanceViewModel(ISettingsConfiguration configuration, TaskbarLengthConstraintsService constraints, LocalizationService localization)
     {
         _configuration = configuration;
+        configuration.Activated += OnActivated;
         _taskbarLengthConstraints = constraints;
         _localization = localization;
         constraints.Changed += OnTaskbarLengthConstraintsChanged;
@@ -212,11 +216,13 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
         finally { _isRefreshing = false; }
     }
     private void OnLanguageChanged(object? sender, EventArgs args) { if (!_disposed) { RaiseTaskbarAppearance(); OnPropertyChanged(string.Empty); } }
+    private void OnActivated(object? sender, EventArgs e) { RefreshRestOrderEntries(); OnPropertyChanged(string.Empty); }
     /// <summary>Releases subscriptions owned by this page scope.</summary>
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
+        _configuration.Activated -= OnActivated;
         _taskbarLengthConstraints.Changed -= OnTaskbarLengthConstraintsChanged;
         SettingsManager.SettingsChanged -= OnSettingsChanged;
         _localization.LanguageChanged -= OnLanguageChanged;

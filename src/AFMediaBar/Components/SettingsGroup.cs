@@ -36,6 +36,11 @@ public enum SettingsGroupTint
 /// </summary>
 public class SettingsGroup : HeaderedContentControl
 {
+    /// <summary>Stable search destination, independent of localized labels and group order.</summary>
+    public static readonly DependencyProperty GroupIdProperty = DependencyProperty.Register(nameof(GroupId), typeof(string), typeof(SettingsGroup), new PropertyMetadata(string.Empty));
+    /// <summary>Stable search destination.</summary>
+    public string GroupId { get => (string)GetValue(GroupIdProperty); set => SetValue(GroupIdProperty, value); }
+
     /// <summary>分组标题左侧的图标。/ Icon shown to the left of the group header.</summary>
     public static readonly DependencyProperty IconProperty = DependencyProperty.Register(
         nameof(Icon),

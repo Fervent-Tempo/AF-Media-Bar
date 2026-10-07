@@ -1,3 +1,7 @@
+using AFMediaBar.Classes.Models.Settings;
+using AFMediaBar.Classes.Models.Layout;
+using AFMediaBar.Classes.Services.Settings;
+using Microsoft.Extensions.DependencyInjection;
 using AFMediaBar.ViewModels.Windows;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Utils;
@@ -29,27 +33,24 @@ namespace AFMediaBar.Views.Windows
         private Panel? _transitionContent;
         private readonly SettingsSidebarSelectionAnimator _sidebarSelection;
         private readonly AppIconService _appIconService;
-        /// <summary>
-        /// 搜索命中到页面类型的映射。搜索索引刻意不引用任何 View 类型，
-        /// 因此这层映射留在视图侧，索引只使用与视图解耦的页面键。
-        /// Maps search hits to page types. The search index deliberately references no view type, so this mapping
-        /// lives on the view side and the index uses only view-independent page keys.
-        /// </summary>
-        private static readonly IReadOnlyDictionary<SettingsPageKey, System.Type> SearchPageTypes =
-            new Dictionary<SettingsPageKey, System.Type>
+        private readonly IServiceScope _sessionScope;
+        private readonly SettingsContextService _contexts;
+        private readonly SettingsPageProvider _pages;
+        private readonly AppLogService _log;
+        private SettingsContext _displayedContext = SettingsContext.Initial;
+        private SettingsMode? _navigationMode;
+        private SettingsPageKey _currentPage = SettingsPageKey.DisplayModes;
+        private bool _updatingMonitorChoices;
+        private bool _closed;
+
+        /// <summary>Describes the actual environment, without promising separate persisted profiles.</summary>
+        public string EditingContextText => Translations.Format("Settings.Context.Summary",
+            Translations.Get(_contexts.Current.Orientation switch
             {
-                [SettingsPageKey.DisplayModes] = typeof(DisplayModesPage),
-                [SettingsPageKey.ScreenAndPlacement] = typeof(ScreenAndPlacementPage),
-                [SettingsPageKey.MediaAndNotifications] = typeof(ExtraFeaturesPage),
-                [SettingsPageKey.Components] = typeof(ComponentsSettingsPage),
-                [SettingsPageKey.Interaction] = typeof(InteractionPage),
-                [SettingsPageKey.Lyrics] = typeof(LyricsPage),
-                [SettingsPageKey.Appearance] = typeof(AppearancePage),
-                [SettingsPageKey.ApplicationAppearance] = typeof(ApplicationAppearancePage),
-                [SettingsPageKey.Application] = typeof(ApplicationPage),
-                [SettingsPageKey.About] = typeof(AboutPage),
-                [SettingsPageKey.ReleaseHighlights] = typeof(ReleaseHighlightsPage),
-            };
+                LayoutOrientation.Vertical => "Settings.Context.Vertical",
+                LayoutOrientation.Horizontal => "Settings.Context.Horizontal",
+                _ => "Settings.Context.Unavailable"
+            }), _contexts.Current.IsCompact ? Translations.Get("Settings.Context.Compact") : string.Empty);
 
         public SettingsWindowViewModel ViewModel { get; }
 
@@ -71,8 +72,8 @@ namespace AFMediaBar.Views.Windows
         /// </summary>
         public SettingsWindow(
             SettingsWindowViewModel viewModel,
-            INavigationViewPageProvider navigationViewPageProvider,
-            INavigationService navigationService,
+            IServiceScopeFactory scopeFactory,
+            AppLogService log,
             WindowAppearanceService appearanceService,
             AppIconService appIconService
         )
@@ -80,19 +81,27 @@ namespace AFMediaBar.Views.Windows
             ViewModel = viewModel;
             FocusSearchCommand = new RelayCommand(FocusSearch);
             _appIconService = appIconService;
+            _log = log;
+            _sessionScope = scopeFactory.CreateScope();
+            _contexts = _sessionScope.ServiceProvider.GetRequiredService<SettingsContextService>();
+            _pages = _sessionScope.ServiceProvider.GetRequiredService<SettingsPageProvider>();
             DataContext = this;
 
             InitializeComponent();
             _sidebarSelection = new SettingsSidebarSelectionAnimator(RootNavigation, SidebarSelectionOverlay);
-            SettingsResetDialog.SetHost(RootContentDialog);
+            SettingsResetDialog.SetHost(RootContentDialog, _contexts.CancellationToken);
             appearanceService.Attach(this);
-            SetPageService(navigationViewPageProvider);
+            SetPageService(_pages);
+            RebuildNavigation();
+            _contexts.Changing += OnContextChanging;
+            _contexts.Changed += OnContextChanged;
+            _contexts.RefreshFailed += OnContextRefreshFailed;
 
             // A single content transition is added separately from the sidebar layout.
             RootNavigation.Transition = Transition.None;
             RootNavigation.TransitionDuration = 0;
 
-            navigationService.SetNavigationControl(RootNavigation);
+            AddHandler(ApplicationPage.OpenHighlightsEvent, new RoutedEventHandler(OnOpenHighlightsRequested));
             RootNavigation.Navigated += OnNavigated;
 
             // 落地页：窗口每次打开都直接落在「显示模式」。
@@ -138,7 +147,7 @@ namespace AFMediaBar.Views.Windows
 
             Dispatcher.BeginInvoke(
                 DispatcherPriority.Loaded,
-                new Action(() => Navigate(typeof(DisplayModesPage))));
+                new Action(() => { if (!_closed) Navigate(typeof(DisplayModesPage)); }));
         }
 
         #endregion Landing page
@@ -178,7 +187,7 @@ namespace AFMediaBar.Views.Windows
 
             // The control filters OriginalItemsSource after raising this event unless it is handled.
             args.Handled = true;
-            var hits = SettingsSearchPolicy.Search(args.Text, SettingsSearchIndex.Entries);
+            var hits = SettingsSearchPolicy.Search(args.Text, SettingsSearchIndex.ForContext(_contexts.Current));
             var suggestions = new List<SettingsSearchSuggestion>(hits.Count);
             foreach (var hit in hits)
             {
@@ -199,7 +208,7 @@ namespace AFMediaBar.Views.Windows
         private void OnSearchSuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
         {
             if (args.SelectedItem is not SettingsSearchSuggestion suggestion ||
-                !SearchPageTypes.TryGetValue(suggestion.Hit.Page, out var pageType))
+                !SettingsPageProvider.PageTypes.TryGetValue(suggestion.Hit.Page, out var pageType))
             {
                 return;
             }
@@ -214,15 +223,8 @@ namespace AFMediaBar.Views.Windows
                 DispatcherPriority.Loaded,
                 new Action(() =>
                 {
-                    // 显示模式页的分组序号只在该模式的分区内成立，因此必须先切到命中所属的模式，
-                    // 再让标签条跳到该分区内的分组序号。模式选择是页面自己的状态，因此交给页面处理，
-                    // 而不是在这里从容器里取视图模型。
-                    // A display-mode group index only holds inside its own mode's section, so the hit's mode is
-                    // selected first and only then does the strip jump to that index within the section. Mode
-                    // selection is the page's own state, so the page handles it rather than this window reaching
-                    // into the container for a view model.
-                    FindDescendant<DisplayModesPage>(RootNavigation)?.SelectMode(hit.Mode);
-                    FindDescendant<SettingsGroupStrip>(RootNavigation)?.RevealGroup(hit.GroupIndex);
+                    if (_closed || _currentPage != hit.Page) return;
+                    FindDescendant<SettingsGroupStrip>(RootNavigation)?.RevealGroup(hit.GroupId);
                 }));
         }
 
@@ -289,6 +291,12 @@ namespace AFMediaBar.Views.Windows
         /// The view model is a singleton and the window is transient, so the subscription must be released on close;
         /// otherwise opening the settings repeatedly would accumulate handlers.
         /// </summary>
+        private void OnOpenHighlightsRequested(object sender, RoutedEventArgs e)
+        {
+            e.Handled = true;
+            Navigate(typeof(ReleaseHighlightsPage));
+        }
+
         private void UpdateNoticeNavItem_Click(object sender, RoutedEventArgs e)
         {
             // 更新入口只展示版本亮点；下载和安装仍由应用页负责。
@@ -297,6 +305,7 @@ namespace AFMediaBar.Views.Windows
 
         private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
+            PropertyChanged?.Invoke(this, new(nameof(EditingContextText)));
             if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName is nameof(SettingsWindowViewModel.HasUpdateAvailable) or nameof(SettingsWindowViewModel.UpdateNoticeTitle) or nameof(SettingsWindowViewModel.UpdateNoticeText))
             {
                 ApplyUpdateNotice();
@@ -313,6 +322,13 @@ namespace AFMediaBar.Views.Windows
 
         private void SettingsWindow_ClosedForUpdateNotice(object? sender, EventArgs e)
         {
+            _closed = true;
+            CommitCurrentEdits();
+            _contexts.Changing -= OnContextChanging;
+            _contexts.Changed -= OnContextChanged;
+            _contexts.RefreshFailed -= OnContextRefreshFailed;
+            SettingsResetDialog.ClearHost(RootContentDialog);
+            _sessionScope.Dispose();
             _sidebarSelection.Dispose();
             SettingsRevealAnimator.Cancel(_transitionContent);
             _transitionContent = null;
@@ -338,6 +354,8 @@ namespace AFMediaBar.Views.Windows
 
         private void OnNavigated(NavigationView sender, NavigatedEventArgs args)
         {
+            if (args.Page is Page destination) _currentPage = SettingsPageProvider.PageTypes.First(pair => pair.Value == destination.GetType()).Key;
+            UpdateContextHeader();
             SettingsRevealAnimator.Cancel(_transitionContent);
             _transitionContent = null;
             if (args.Page is Page page && page.FindName("PageScroll") is ScrollViewer { Content: Panel content })
@@ -368,10 +386,7 @@ namespace AFMediaBar.Views.Windows
 
         #endregion INavigationWindow methods
 
-        INavigationView INavigationWindow.GetNavigation()
-        {
-            throw new NotImplementedException();
-        }
+        INavigationView INavigationWindow.GetNavigation() => RootNavigation;
 
         /// <summary>
         /// 为导航页提供应用组合根；该兼容入口只在设置窗口初始化期间调用。
@@ -382,9 +397,87 @@ namespace AFMediaBar.Views.Windows
             throw new NotImplementedException();
         }
 
-        private void SettingsWindow_OnLoaded(object sender, RoutedEventArgs e)
+        private async void SettingsWindow_OnLoaded(object sender, RoutedEventArgs e)
         {
             RootNavigation.Navigate(typeof(DisplayModesPage));
+            await _contexts.StartAsync();
         }
+
+        private void RebuildNavigation()
+        {
+            if (_navigationMode == _contexts.Current.Mode) return;
+            _navigationMode = _contexts.Current.Mode;
+            RootNavigation.MenuItems.Clear();
+            RootNavigation.FooterMenuItems.Clear();
+            foreach (var definition in SettingsPageCatalog.ForMode(_contexts.Current.Mode))
+            {
+                var item = definition.Key == SettingsPageKey.ReleaseHighlights ? UpdateNoticeNavItem : new NavigationViewItem
+                {
+                    TargetPageType = SettingsPageProvider.PageTypes[definition.Key],
+                    Icon = new SymbolIcon(Enum.Parse<SymbolRegular>(definition.IconName))
+                };
+                if (definition.Key != SettingsPageKey.ReleaseHighlights) item.SetResourceReference(ContentControl.ContentProperty, "Loc." + definition.TitleKey);
+                item.NavigationCacheMode = NavigationCacheMode.Disabled;
+                if (definition.IsFooter) RootNavigation.FooterMenuItems.Add(item);
+                else RootNavigation.MenuItems.Add(item);
+            }
+        }
+
+        private void OnContextChanging(object? sender, EventArgs e)
+        {
+            CommitCurrentEdits();
+            SettingsRevealAnimator.Cancel(_transitionContent);
+            _pages.DeactivateContext();
+        }
+        private void CommitCurrentEdits()
+        {
+            foreach (var editor in Descendants(RootNavigation).OfType<SettingsNumericEditor>()) editor.TryCommit();
+            Keyboard.ClearFocus();
+        }
+        private static IEnumerable<DependencyObject> Descendants(DependencyObject parent)
+        {
+            for (var index = 0; index < VisualTreeHelper.GetChildrenCount(parent); index++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, index);
+                yield return child;
+                foreach (var descendant in Descendants(child)) yield return descendant;
+            }
+        }
+        private void OnContextChanged(object? sender, EventArgs e)
+        {
+            if (_closed) return;
+            var contextChanged = _displayedContext != _contexts.Current;
+            _pages.SetContext(_contexts.Current);
+            RebuildNavigation();
+            _updatingMonitorChoices = true;
+            try
+            {
+                EditingMonitorPicker.ItemsSource = _contexts.Monitors;
+                EditingMonitorPicker.SelectedValue = _contexts.Current.MonitorDeviceId;
+                EditingMonitorPanel.Visibility = _contexts.Monitors.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+            }
+            finally { _updatingMonitorChoices = false; }
+            var definition = SettingsPageCatalog.Find(_currentPage, _contexts.Current.Mode);
+            if (definition is null) Navigate(typeof(DisplayModesPage));
+            else if (contextChanged && (!definition.IsGlobal || _currentPage == SettingsPageKey.DisplayModes))
+            {
+                RootNavigation.ReplaceContent((UIElement)_pages.GetPage(SettingsPageProvider.PageTypes[_currentPage])!);
+            }
+            _displayedContext = _contexts.Current;
+            UpdateContextHeader();
+            AutoSuggestBox.IsSuggestionListOpen = false;
+            AutoSuggestBox.ItemsSource = null;
+        }
+        private void UpdateContextHeader()
+        {
+            var definition = SettingsPageCatalog.Find(_currentPage, _contexts.Current.Mode);
+            RootNavigation.HeaderVisibility = definition is { IsGlobal: false } || _currentPage == SettingsPageKey.DisplayModes ? Visibility.Visible : Visibility.Collapsed;
+            PropertyChanged?.Invoke(this, new(nameof(EditingContextText)));
+        }
+        private void OnEditingMonitorChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!_updatingMonitorChoices && EditingMonitorPicker.SelectedValue is string deviceId) _contexts.SelectMonitor(deviceId);
+        }
+        private void OnContextRefreshFailed(object? sender, Exception exception) => _log.Error("Settings", "读取设置页任务栏环境失败，保留上次有效上下文", exception);
     }
 }

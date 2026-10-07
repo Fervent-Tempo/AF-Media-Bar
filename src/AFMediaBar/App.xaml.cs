@@ -174,7 +174,7 @@ namespace AFMediaBar
                 services.AddSingleton<UpdateService>();
                 services.AddSingleton<ReleaseHighlightsService>();
                 services.AddSingleton<ReleaseHighlightsViewModel>();
-                services.AddSingleton<ReleaseHighlightsPage>();
+                services.AddScoped<ReleaseHighlightsPage>();
 
                 // 导航服务（页面导航，不依赖具体窗口）Navigation service (page navigation, window-independent)
                 services.AddSingleton<INavigationService, NavigationService>();
@@ -203,6 +203,8 @@ namespace AFMediaBar
                 services.AddScoped<AFMediaBar.Classes.Services.Settings.SettingsContextService>();
                 services.AddScoped<AFMediaBar.Classes.Services.Settings.SettingsPageContext>();
                 services.AddScoped<AFMediaBar.Classes.Abstractions.ISettingsConfiguration, AFMediaBar.Classes.Services.Settings.LegacySettingsConfiguration>();
+                services.AddScoped<AFMediaBar.Classes.Services.Settings.SettingsPageScopeCache>();
+                services.AddScoped<SettingsPageProvider>();
                 services.AddScoped<AppearancePage>();
                 services.AddScoped<ApplicationAppearancePage>();
                 services.AddScoped<TaskbarAppearanceViewModel>();
@@ -211,19 +213,19 @@ namespace AFMediaBar
                 services.AddSingleton<LayoutPage>();
                 services.AddSingleton<LayoutViewModel>();
 
-                services.AddSingleton<DisplayModesPage>();
-                services.AddSingleton<ScreenAndPlacementPage>();
-                services.AddSingleton<DisplayModesViewModel>();
-                services.AddSingleton<ExtraFeaturesPage>();
+                services.AddScoped<DisplayModesPage>();
+                services.AddScoped<ScreenAndPlacementPage>();
+                services.AddScoped<DisplayModesViewModel>();
+                services.AddScoped<ExtraFeaturesPage>();
                 services.AddSingleton<ExtraFeaturesViewModel>();
                 services.AddScoped<ComponentsSettingsPage>();
                 services.AddScoped<ComponentsSettingsViewModel>();
 
-                services.AddSingleton<InteractionPage>();
-                services.AddSingleton<InteractionViewModel>();
+                services.AddScoped<InteractionPage>();
+                services.AddScoped<InteractionViewModel>();
 
-                services.AddSingleton<LyricsPage>();
-                services.AddSingleton<LyricsViewModel>();
+                services.AddScoped<LyricsPage>();
+                services.AddScoped<LyricsViewModel>();
 
                 services.AddSingleton<SettingsPage>();
                 services.AddSingleton<SettingsViewModel>();
@@ -231,7 +233,7 @@ namespace AFMediaBar
                 // 应用页与关于页由原「应用与关于」拆分而来：设置留在应用页，人与许可移到关于页。
                 // The application and about pages come from splitting the former "application and about": settings stay on the
                 // application page while people and licenses moved to about.
-                services.AddSingleton<ApplicationPage>();
+                services.AddScoped<ApplicationPage>();
                 services.AddSingleton<ApplicationViewModel>();
 
                 // 关于页的名单服务：贡献者与赞助者名单（缓存 + 仓库快照回退），只被关于页使用。
@@ -240,7 +242,7 @@ namespace AFMediaBar
                 services.AddSingleton<CreditsService>();
                 services.AddSingleton<AvatarImageLoader>();
 
-                services.AddSingleton<AboutPage>();
+                services.AddScoped<AboutPage>();
                 services.AddSingleton<AboutViewModel>();
 
                 // 组件相关VM

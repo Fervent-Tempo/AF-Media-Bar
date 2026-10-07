@@ -47,7 +47,7 @@
                 Loaded="OnPageLoaded">
 
 
-                <components:SettingsGroup
+                <components:SettingsGroup GroupId="Common.Group.InAppRestLayer"
                     Description="{DynamicResource Loc.Interaction.InApp.Group.Description}"
                     Header="{DynamicResource Loc.Common.Group.InAppRestLayer}"
                     Icon="{ui:SymbolIcon CursorClick24}">
@@ -143,7 +143,7 @@
                     </StackPanel>
                 </components:SettingsGroup>
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.TrayIcon}" Icon="{ui:SymbolIcon Apps24}">
+                <components:SettingsGroup GroupId="Common.TrayIcon" Header="{DynamicResource Loc.Common.TrayIcon}" Icon="{ui:SymbolIcon Apps24}">
                     <StackPanel>
                         <components:SettingsDiagram Margin="0,0,0,12" Kind="TrayOverflow" />
 
@@ -209,7 +209,7 @@
                     </StackPanel>
                 </components:SettingsGroup>
 
-                <components:SettingsGroup
+                <components:SettingsGroup GroupId="Common.Group.SharedModifier"
                     Description="{DynamicResource Loc.Interaction.SharedModifier.Group.Description}"
                     Header="{DynamicResource Loc.Common.Group.SharedModifier}"
                     Icon="{ui:SymbolIcon Keyboard24}">

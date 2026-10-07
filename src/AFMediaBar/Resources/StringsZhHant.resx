@@ -926,10 +926,10 @@
     <value>厚度方向偏移</value>
   </data>
   <data name="DisplayModes.Placement.Row.Orientation.Description" xml:space="preserve">
-    <value>目前僅實作橫向排列，暫時無法調整</value>
+    <value>由目前顯示器的系統工作列自動決定。</value>
   </data>
   <data name="DisplayModes.Placement.Row.Orientation.Title" xml:space="preserve">
-    <value>排列方向</value>
+    <value>工作列朝向</value>
   </data>
   <data name="DisplayModes.Placement.Row.Reset.Description" xml:space="preserve">
     <value>恢復自動計算的位置。</value>
@@ -2194,5 +2194,26 @@
   </data>
   <data name="TaskbarAppearance.Header.Subtitle" xml:space="preserve">
     <value>調整目前工作列環境中的文字、尺寸和元件配置。</value>
+  </data>
+  <data name="Settings.Context.EditingMonitor" xml:space="preserve">
+    <value>正在設定的顯示器</value>
+  </data>
+  <data name="Settings.Context.Unavailable" xml:space="preserve">
+    <value>暫未讀取到工作列</value>
+  </data>
+  <data name="Settings.Context.Compact" xml:space="preserve">
+    <value> · 系統緊湊工作列</value>
+  </data>
+  <data name="Settings.Context.Summary" xml:space="preserve">
+    <value>{0}{1}。目前版本中，各顯示器及橫豎方向共用工作列設定。</value>
+  </data>
+  <data name="Settings.Context.Horizontal" xml:space="preserve">
+    <value>橫向工作列</value>
+  </data>
+  <data name="Settings.Context.Vertical" xml:space="preserve">
+    <value>豎向工作列</value>
+  </data>
+  <data name="DisplayModes.Mode.AvailabilityNotice" xml:space="preserve">
+    <value>目前僅支援工作列模式。其他模式暫不可切換。</value>
   </data>
 </root>

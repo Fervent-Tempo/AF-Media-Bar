@@ -14,6 +14,9 @@ public sealed class SettingsPageContext : IDisposable
     /// <summary>Cancellation for work belonging to this activation, including asynchronous font choices.</summary>
     public CancellationToken CancellationToken => _activation.Token;
 
+    /// <summary>Signals reactivation so cached editors can refresh their values.</summary>
+    public event EventHandler? Activated;
+
     /// <summary>Seeds a new scope with its permanent context.</summary>
     public void Initialize(SettingsContext context) => Snapshot = context;
     /// <summary>Activates an existing cached scope with a fresh cancellation token.</summary>
@@ -23,6 +26,7 @@ public sealed class SettingsPageContext : IDisposable
         _activation.Dispose();
         _activation = new();
         IsActive = true;
+        Activated?.Invoke(this, EventArgs.Empty);
     }
     /// <summary>Stops edits and cancels work before another scope becomes active.</summary>
     public void Deactivate()

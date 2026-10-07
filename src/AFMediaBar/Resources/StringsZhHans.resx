@@ -926,10 +926,10 @@
     <value>厚度方向偏移</value>
   </data>
   <data name="DisplayModes.Placement.Row.Orientation.Description" xml:space="preserve">
-    <value>目前仅实现横向排列，暂时不可调整</value>
+    <value>由当前显示器的系统任务栏自动决定。</value>
   </data>
   <data name="DisplayModes.Placement.Row.Orientation.Title" xml:space="preserve">
-    <value>排列方向</value>
+    <value>任务栏朝向</value>
   </data>
   <data name="DisplayModes.Placement.Row.Reset.Description" xml:space="preserve">
     <value>恢复自动计算的位置。</value>
@@ -2194,5 +2194,26 @@
   </data>
   <data name="TaskbarAppearance.Header.Subtitle" xml:space="preserve">
     <value>调整当前任务栏环境中的文字、尺寸和组件布局。</value>
+  </data>
+  <data name="Settings.Context.EditingMonitor" xml:space="preserve">
+    <value>正在配置的显示器</value>
+  </data>
+  <data name="Settings.Context.Unavailable" xml:space="preserve">
+    <value>暂未读取到任务栏</value>
+  </data>
+  <data name="Settings.Context.Compact" xml:space="preserve">
+    <value> · 系统紧凑任务栏</value>
+  </data>
+  <data name="Settings.Context.Summary" xml:space="preserve">
+    <value>{0}{1}。当前版本中，各显示器及横竖方向共用任务栏设置。</value>
+  </data>
+  <data name="Settings.Context.Horizontal" xml:space="preserve">
+    <value>横向任务栏</value>
+  </data>
+  <data name="Settings.Context.Vertical" xml:space="preserve">
+    <value>竖向任务栏</value>
+  </data>
+  <data name="DisplayModes.Mode.AvailabilityNotice" xml:space="preserve">
+    <value>目前仅支持任务栏模式。其他模式暂不可切换。</value>
   </data>
 </root>

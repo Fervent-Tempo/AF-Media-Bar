@@ -25,7 +25,7 @@ public partial class ComponentsSettingsPage : INavigableView<ComponentsSettingsV
 
     private async void ResetButton_Click(object sender, RoutedEventArgs e)
     {
-        if (await SettingsResetDialog.ConfirmAsync("Common.Page.Components"))
+        if (await SettingsResetDialog.ConfirmAsync("Common.Page.Components", cancellationToken: ViewModel.ContextCancellationToken))
             ViewModel.ResetComponents();
     }
 }

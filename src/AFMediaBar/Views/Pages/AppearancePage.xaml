@@ -91,7 +91,7 @@
 
 
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.MediaBarText}" Icon="{ui:SymbolIcon TextColor24}">
+                <components:SettingsGroup GroupId="Common.Group.MediaBarText" Header="{DynamicResource Loc.Common.Group.MediaBarText}" Icon="{ui:SymbolIcon TextColor24}">
                     <StackPanel>
 <components:SettingsRow
                             Description="{DynamicResource Loc.Appearance.Row.MediaFontSize.Description}"
@@ -169,7 +169,7 @@
                     </StackPanel>
                 </components:SettingsGroup>
 
-                <components:SettingsGroup
+                <components:SettingsGroup GroupId="Common.Group.MediaBarWidth"
                     Description="{DynamicResource Loc.DisplayModes.Width.Group.Description}"
                     Header="{DynamicResource Loc.Common.Group.MediaBarWidth}"
                     Icon="{ui:SymbolIcon ResizeLarge24}">
@@ -220,7 +220,7 @@
                     </StackPanel>
                 </components:SettingsGroup>
 
-                <components:SettingsGroup Visibility="{Binding ViewModel.IsHorizontalLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}" Header="{DynamicResource Loc.Appearance.Group.RestLayout}" Icon="{ui:SymbolIcon LayoutColumnTwo24}">
+                <components:SettingsGroup GroupId="Appearance.Group.RestLayout" Visibility="{Binding ViewModel.IsHorizontalLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}" Header="{DynamicResource Loc.Appearance.Group.RestLayout}" Icon="{ui:SymbolIcon LayoutColumnTwo24}">
                     <StackPanel>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.DisplayModes.Rest.Row.Layout.Description}"
@@ -314,7 +314,7 @@
                     </StackPanel>
                 </components:SettingsGroup>
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Appearance.Group.InteractionButtons}" Icon="{ui:SymbolIcon CursorClick24}">
+                <components:SettingsGroup GroupId="Appearance.Group.InteractionButtons" Header="{DynamicResource Loc.Appearance.Group.InteractionButtons}" Icon="{ui:SymbolIcon CursorClick24}">
                     <StackPanel>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Appearance.Row.InteractionButtonSize.Description}"

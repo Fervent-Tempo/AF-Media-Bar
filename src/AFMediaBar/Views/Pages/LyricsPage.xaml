@@ -134,7 +134,7 @@
                 Loaded="OnPageLoaded">
 
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.LyricsDisplay}"
+                <components:SettingsGroup GroupId="Common.Group.LyricsDisplay" Header="{DynamicResource Loc.Common.Group.LyricsDisplay}"
                                           Icon="{ui:SymbolIcon TextQuote24}">
                     <StackPanel>
                         <components:SettingsCallout
@@ -329,7 +329,7 @@
                     </StackPanel>
                 </components:SettingsGroup>
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.LyricsAlignment}"
+                <components:SettingsGroup GroupId="Common.Group.LyricsAlignment" Header="{DynamicResource Loc.Common.Group.LyricsAlignment}"
                                           Icon="{ui:SymbolIcon TextAlignLeft24}">
                     <StackPanel>
                         <components:SettingsDiagram Margin="0,0,0,12" Kind="LyricsAlignment" />
@@ -353,7 +353,7 @@
                     </StackPanel>
                 </components:SettingsGroup>
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.LyricsSources}"
+                <components:SettingsGroup GroupId="Common.Group.LyricsSources" Header="{DynamicResource Loc.Common.Group.LyricsSources}"
                                           Icon="{ui:SymbolIcon CloudArrowDown24}">
                     <StackPanel>
                         <components:SettingsRow

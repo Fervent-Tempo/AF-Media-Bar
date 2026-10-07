@@ -51,7 +51,7 @@
                 Loaded="OnPageLoaded">
 
 
-                <components:SettingsGroup
+                <components:SettingsGroup GroupId="Common.Group.Application"
                     Header="{DynamicResource Loc.Common.Group.Application}"
                     Icon="{ui:SymbolIcon Info24}">
                     <StackPanel>
@@ -254,7 +254,7 @@
                     </StackPanel>
                 </components:SettingsGroup>
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.SettingsFile}" Icon="{ui:SymbolIcon FolderOpen24}">
+                <components:SettingsGroup GroupId="Common.Group.SettingsFile" Header="{DynamicResource Loc.Common.Group.SettingsFile}" Icon="{ui:SymbolIcon FolderOpen24}">
                     <StackPanel>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.About.Row.OpenFolder.Description}"
@@ -309,7 +309,7 @@
                     </StackPanel>
                 </components:SettingsGroup>
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.Diagnostics}" Icon="{ui:SymbolIcon Bug24}">
+                <components:SettingsGroup GroupId="Common.Group.Diagnostics" Header="{DynamicResource Loc.Common.Group.Diagnostics}" Icon="{ui:SymbolIcon Bug24}">
                     <!--
                         两个入口：日志是一个文件（logs\app.log，只留最近 1000 条），出问题时把它发出来即可；
                         「压缩内存占用」把工作集交还系统，任务管理器里的读数会立刻下降（提交量不变，说明文案里写清楚了）。

@@ -1,3 +1,4 @@
+<!-- Application-wide theme, window materials and interface typography; media layout belongs to the taskbar page. -->
 <Page
     x:Class="AFMediaBar.Views.Pages.ApplicationAppearancePage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -40,7 +41,7 @@
 
 
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.ThemeAndBackdrop}" Icon="{ui:SymbolIcon Color24}">
+                <components:SettingsGroup GroupId="Common.Group.ThemeAndBackdrop" Header="{DynamicResource Loc.Common.Group.ThemeAndBackdrop}" Icon="{ui:SymbolIcon Color24}">
                     <StackPanel>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Appearance.Row.Theme.Description}"
@@ -271,7 +272,7 @@
                         </ui:CardExpander>
                     </StackPanel>
                 </components:SettingsGroup>
-<components:SettingsGroup Header="{DynamicResource Loc.Common.Group.Fonts}" Icon="{ui:SymbolIcon TextFont24}"><StackPanel>
+<components:SettingsGroup GroupId="Common.Group.Fonts" Header="{DynamicResource Loc.Common.Group.Fonts}" Icon="{ui:SymbolIcon TextFont24}"><StackPanel>
 
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Appearance.Row.LatinFont.Description}"

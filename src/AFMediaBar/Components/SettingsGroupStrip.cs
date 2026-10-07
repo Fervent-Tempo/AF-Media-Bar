@@ -248,16 +248,13 @@ public class SettingsGroupStrip : Control
     /// The pulse writes only Opacity and clears the animation before landing the final value, so the group can
     /// never be left sitting at an intermediate opacity.
     /// </summary>
-    /// <param name="groupIndex">目标分组序号。/ Target group index.</param>
-    public void RevealGroup(int groupIndex)
+    /// <param name="groupId">Stable group identity.</param>
+    public void RevealGroup(string groupId)
     {
         var groups = ResolveGroups();
-        if (groupIndex < 0 || groupIndex >= groups.Count)
-        {
-            return;
-        }
-
-        var group = groups[groupIndex];
+        var group = groups.FirstOrDefault(candidate => candidate.GroupId == groupId);
+        if (group is null) return;
+        var groupIndex = groups.ToList().IndexOf(group);
         // Search resolves a group, so reveal its details before measuring the scroll target.
         ExpandDetails(group);
         group.UpdateLayout();
@@ -353,11 +350,11 @@ public class SettingsGroupStrip : Control
         {
             switch (child)
             {
-                case SettingsGroup group:
+                case SettingsGroup group when group.Visibility == Visibility.Visible:
                     groups.Add(group);
                     break;
                 case Panel section when section.Visibility == Visibility.Visible:
-                    groups.AddRange(section.Children.OfType<SettingsGroup>());
+                    groups.AddRange(section.Children.OfType<SettingsGroup>().Where(group => group.Visibility == Visibility.Visible));
                     break;
             }
         }

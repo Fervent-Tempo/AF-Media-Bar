@@ -1,3 +1,4 @@
+// Presents application-wide appearance; the page cancels its font query on unload while its DI scope owns the view model.
 using System;
 using System.Threading;
 using System.Windows.Controls;

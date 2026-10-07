@@ -42,7 +42,7 @@
                 Loaded="OnPageLoaded">
 
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.MediaSource}" Icon="{ui:SymbolIcon Filter24}">
+                <components:SettingsGroup GroupId="Common.MediaSource" Header="{DynamicResource Loc.Common.MediaSource}" Icon="{ui:SymbolIcon Filter24}">
                     <StackPanel>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Media.SourceFilter.Description}"
@@ -89,7 +89,7 @@
                     </StackPanel>
                 </components:SettingsGroup>
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.TrackChangeNotification}" Icon="{ui:SymbolIcon MusicNote220}">
+                <components:SettingsGroup GroupId="Common.Group.TrackChangeNotification" Header="{DynamicResource Loc.Common.Group.TrackChangeNotification}" Icon="{ui:SymbolIcon MusicNote220}">
                     <StackPanel>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Media.Notification.Enabled.Description}"
@@ -174,7 +174,7 @@
                     </StackPanel>
                 </components:SettingsGroup>
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.QuickLaunch}" Icon="{ui:SymbolIcon Rocket24}">
+                <components:SettingsGroup GroupId="Common.Group.QuickLaunch" Header="{DynamicResource Loc.Common.Group.QuickLaunch}" Icon="{ui:SymbolIcon Rocket24}">
                     <StackPanel>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Media.QuickLaunch.FromNote.Description}"

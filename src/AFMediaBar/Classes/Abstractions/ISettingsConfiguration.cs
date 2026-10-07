@@ -25,4 +25,42 @@ public interface ISettingsConfiguration
     void SetSpectrum(SpectrumComponentSettings settings);
     /// <summary>Replaces performance configuration through its domain normalization.</summary>
     void SetPerformance(PerformanceComponentSettings settings);
+    /// <summary>Notifies a cached editor to refresh after reactivation.</summary>
+    event EventHandler? Activated;
+    /// <summary>Resets one existing settings scope without changing the persisted schema.</summary>
+    void Reset(SettingsResetScope scope);
+    /// <summary>Updates target preferences; independent of the editor's selected display.</summary>
+    void SetTaskbarTargets(IReadOnlyList<string> deviceIds);
+    /// <summary>Updates the existing placement record without overriding automatic taskbar orientation.</summary>
+    void SetTaskbarPlacement(bool? locked = null, bool? avoidIcons = null, double? crossAxisOffsetDip = null, bool reset = false);
+    /// <summary>Publishes this setting through the existing normalization contract.</summary>
+    void SetLyricsEnabled(bool enabled);
+    /// <summary>Publishes this setting through the existing normalization contract.</summary>
+    void SetAllowBrowserAndVideoLyrics(bool enabled);
+    /// <summary>Publishes this setting through the existing normalization contract.</summary>
+    void SetTwoLineLyricsEnabled(bool enabled);
+    /// <summary>Publishes this setting through the existing normalization contract.</summary>
+    void SetLyricsSecondaryLineSettings(LyricsSecondaryLineSettings settings);
+    /// <summary>Publishes this setting through the existing normalization contract.</summary>
+    void SetLyricsTextAlignment(LyricsTextAlignment alignment);
+    /// <summary>Publishes this setting through the existing normalization contract.</summary>
+    void SetLyricsSyllableHighlightEnabled(bool enabled);
+    /// <summary>Publishes this setting through the existing normalization contract.</summary>
+    void SetLyricsUnsungOpacityPercent(int percent);
+    /// <summary>Publishes this setting through the existing normalization contract.</summary>
+    void SetLyricsCharacterSpacingPercent(int percent);
+    /// <summary>Publishes this setting through the existing normalization contract.</summary>
+    void SetLyricsLineGapPercent(int percent);
+    /// <summary>Publishes this setting through the existing normalization contract.</summary>
+    void SetLyricsFixedWidthEnabled(bool enabled);
+    /// <summary>Publishes this setting through the existing normalization contract.</summary>
+    void SetLyricsFixedWidthDip(int dip);
+    /// <summary>Publishes this setting through the existing normalization contract.</summary>
+    void SetLyricsInfoLineFilterEnabled(bool enabled);
+    /// <summary>Publishes this setting through the existing normalization contract.</summary>
+    void SetLyricsSourceSettings(LyricsSourceSettings settings);
+    /// <summary>Publishes this setting through the existing normalization contract.</summary>
+    void SetInteractionSettings(GlobalInteractionSettings settings);
+    /// <summary>Publishes this setting through the existing normalization contract.</summary>
+    void SetTrackChangeNotificationSettings(TrackChangeNotificationSettings settings);
 }

@@ -26,7 +26,10 @@ namespace AFMediaBar.Views.Pages
         private readonly SettingsPersistenceService _persistence;
         private readonly AppLogService _log;
         private readonly MemoryPruneCoordinator _pruneCoordinator;
-        private readonly Wpf.Ui.INavigationService _navigation;
+        /// <summary>Bubbles a semantic navigation request to the owning settings window.</summary>
+        public static readonly RoutedEvent OpenHighlightsEvent = EventManager.RegisterRoutedEvent(nameof(OpenHighlights), RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(ApplicationPage));
+        /// <summary>Requests the common highlights destination without retaining a global navigation control.</summary>
+        public event RoutedEventHandler OpenHighlights { add => AddHandler(OpenHighlightsEvent, value); remove => RemoveHandler(OpenHighlightsEvent, value); }
 
         /// <summary>
         /// 创建应用页并注入它需要的三个入口服务：设置文件、日志与内存回收。
@@ -40,14 +43,12 @@ namespace AFMediaBar.Views.Pages
             ApplicationViewModel viewModel,
             SettingsPersistenceService persistence,
             AppLogService log,
-            MemoryPruneCoordinator pruneCoordinator,
-            Wpf.Ui.INavigationService navigation)
+            MemoryPruneCoordinator pruneCoordinator)
         {
             ViewModel = viewModel;
             _persistence = persistence;
             _log = log;
             _pruneCoordinator = pruneCoordinator;
-            _navigation = navigation;
             DataContext = this;
 
             InitializeComponent();
@@ -56,7 +57,7 @@ namespace AFMediaBar.Views.Pages
         /// <summary>页面首次加载时执行入场揭示。/ Reveals the page on first load.</summary>
         private void OnPageLoaded(object sender, RoutedEventArgs e) => SettingsRevealAnimator.Play(sender as Panel);
 
-        private void OnOpenHighlights(object sender, RoutedEventArgs e) => _navigation.Navigate(typeof(ReleaseHighlightsPage));
+        private void OnOpenHighlights(object sender, RoutedEventArgs e) => RaiseEvent(new RoutedEventArgs(OpenHighlightsEvent));
 
         private void OpenSettingsFolder_Click(object sender, RoutedEventArgs e) => _persistence.OpenSettingsFolder();
 

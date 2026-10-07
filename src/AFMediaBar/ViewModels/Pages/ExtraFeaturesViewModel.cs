@@ -219,7 +219,7 @@ public partial class ExtraFeaturesViewModel : ObservableObject
 
     private void OnDiscoveredSourcesChanged(IReadOnlyList<MediaSourceDescriptor> sources) => RefreshSources();
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e) => DispatcherHelper.Run(_dispatcher, RefreshAll);
-    private void OnMonitorsChanged(object? sender, EventArgs e) => RefreshMonitors();
+    private void OnMonitorsChanged(object? sender, EventArgs e) => DispatcherHelper.Run(_dispatcher, RefreshMonitors);
 
     private void RefreshAll()
     {

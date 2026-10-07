@@ -14,7 +14,7 @@
         <ScrollViewer x:Name="PageScroll" Grid.Row="1" Margin="{StaticResource AfSettingsScrollMargin}"
                       HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <StackPanel x:Name="PageRoot" MaxWidth="{StaticResource AfSettingsContentMaxWidth}" Loaded="OnPageLoaded">
-                <components:SettingsGroup
+                <components:SettingsGroup GroupId="Common.Group.ScreenAndPlacement"
                 Description="{DynamicResource Loc.DisplayModes.Placement.Group.Description}"
                 Header="{DynamicResource Loc.Common.Group.ScreenAndPlacement}"
                 Icon="{ui:SymbolIcon Desktop24}">
@@ -43,16 +43,8 @@
                     <components:SettingsRow
                         Description="{DynamicResource Loc.DisplayModes.Placement.Row.Orientation.Description}"
                         Icon="{ui:SymbolIcon Orientation24}"
-                        IsEnabled="False"
                         Title="{DynamicResource Loc.DisplayModes.Placement.Row.Orientation.Title}">
-                        <ComboBox
-                            MinWidth="200"
-                            SelectedValue="{Binding ViewModel.Orientation, Mode=TwoWay}"
-                            SelectedValuePath="Tag">
-                            <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Placement.Orientation.Auto}" Tag="{x:Static settings:LayoutOrientationMode.Auto}" />
-                            <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Placement.Orientation.Horizontal}" Tag="{x:Static settings:LayoutOrientationMode.Horizontal}" />
-                            <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Placement.Orientation.Vertical}" Tag="{x:Static settings:LayoutOrientationMode.Vertical}" />
-                        </ComboBox>
+                        <TextBlock Text="{Binding ViewModel.OrientationText}" VerticalAlignment="Center" />
                     </components:SettingsRow>
 
                     <components:SettingsRow

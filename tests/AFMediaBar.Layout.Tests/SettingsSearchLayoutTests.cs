@@ -18,32 +18,34 @@ public sealed class SettingsSearchLayoutTests
     [DataRow(SettingsPageKey.Components, "ComponentsSettingsPage")]
     [DataRow(SettingsPageKey.Application, "ApplicationPage")]
     [DataRow(SettingsPageKey.ScreenAndPlacement, "ScreenAndPlacementPage")]
+    [DataRow(SettingsPageKey.DisplayModes, "DisplayModesPage")]
+    [DataRow(SettingsPageKey.About, "AboutPage")]
+    [DataRow(SettingsPageKey.ReleaseHighlights, "ReleaseHighlightsPage")]
     public void SearchDestinationsFollowDeclaredGroups(SettingsPageKey page, string fileName)
     {
         var root = FindRepository();
         var document = XDocument.Load(Path.Combine(root, "src", "AFMediaBar", "Views", "Pages", fileName + ".xaml"));
-        var groupKeys = document.Descendants()
-            .Where(element => element.Name.LocalName == "SettingsGroup")
-            .Select(element => ((string)element.Attribute("Header")!)
-                .Replace("{DynamicResource Loc.", "").TrimEnd('}'))
-            .ToArray();
-        var entries = SettingsSearchIndex.Entries.Where(entry => entry.Page == page).OrderBy(entry => entry.GroupIndex).ToArray();
-        Assert.AreEqual(groupKeys.Length, entries.Length, fileName);
-        for (var index = 0; index < groupKeys.Length; index++)
+        var groups = document.Descendants().Where(element => element.Name.LocalName == "SettingsGroup").ToArray();
+        var entries = SettingsSearchIndex.Entries.Where(entry => entry.Page == page).ToDictionary(entry => entry.GroupId);
+        Assert.AreEqual(groups.Length, entries.Count, fileName);
+        foreach (var group in groups.Reverse())
         {
-            Assert.AreEqual(index, entries[index].GroupIndex, fileName);
-            Assert.AreEqual(Translations.Get(groupKeys[index]), entries[index].Title, fileName + " group " + index);
+            var id = (string?)group.Attribute("GroupId");
+            Assert.IsFalse(string.IsNullOrWhiteSpace(id));
+            Assert.IsTrue(entries.TryGetValue(id!, out var entry), "Missing stable search destination: " + id);
+            var header = ((string)group.Attribute("Header")!).Replace("{DynamicResource Loc.", "").TrimEnd('}');
+            Assert.AreEqual(Translations.Get(header), entry.Title);
         }
     }
 
     [DataTestMethod]
-    [DataRow("字体", SettingsPageKey.ApplicationAppearance, 1)]
-    [DataRow("媒体文字大小", SettingsPageKey.Appearance, 0)]
-    [DataRow("font", SettingsPageKey.ApplicationAppearance, 1)]
-    public void FontAndMediaTextTermsResolveToTheirOwners(string query, SettingsPageKey page, int group)
+    [DataRow("字体", SettingsPageKey.ApplicationAppearance, "Common.Group.Fonts")]
+    [DataRow("媒体文字大小", SettingsPageKey.Appearance, "Common.Group.MediaBarText")]
+    [DataRow("font", SettingsPageKey.ApplicationAppearance, "Common.Group.Fonts")]
+    public void FontAndMediaTextTermsResolveToTheirOwners(string query, SettingsPageKey page, string group)
     {
         var hits = SettingsSearchPolicy.Search(query, SettingsSearchIndex.Entries);
-        Assert.IsTrue(hits.Any(hit => hit.Page == page && hit.GroupIndex == group));
+        Assert.IsTrue(hits.Any(hit => hit.Page == page && hit.GroupId == group));
     }
 
     private static string FindRepository()
@@ -62,26 +64,20 @@ public sealed class SettingsSearchLayoutTests
     public void PlacementKeywordsOpenTheIndependentPage(string query)
     {
         var hits = SettingsSearchPolicy.Search(query, SettingsSearchIndex.Entries);
-        Assert.IsTrue(hits.Any(hit => hit.Page == SettingsPageKey.ScreenAndPlacement && hit.GroupIndex == 0));
+        Assert.IsTrue(hits.Any(hit => hit.Page == SettingsPageKey.ScreenAndPlacement && hit.GroupId == "Common.Group.ScreenAndPlacement"));
         Assert.IsFalse(SettingsSearchIndex.Entries.Any(entry => entry.Page == SettingsPageKey.DisplayModes &&
             entry.Title == Translations.Get("Common.Group.ScreenAndPlacement")));
     }
 
     [TestMethod]
-    public void TaskbarModeDestinationsRemainAlignedAfterMovingPlacement()
+    public void ContextSearchSkipsFutureModesAndHiddenVerticalOrdering()
     {
-        var document = XDocument.Load(Path.Combine(FindRepository(), "src", "AFMediaBar", "Views", "Pages", "DisplayModesPage.xaml"));
-        XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
-        var section = document.Descendants().Single(element => (string?)element.Attribute(x + "Name") == "TaskbarModeSection");
-        var groupKeys = section.Elements().Where(element => element.Name.LocalName == "SettingsGroup")
-            .Select(element => ((string)element.Attribute("Header")!).Replace("{DynamicResource Loc.", "").TrimEnd('}')).ToArray();
-        var entries = SettingsSearchIndex.Entries.Where(entry => entry.Page == SettingsPageKey.DisplayModes &&
-            entry.Mode == SettingsSearchMode.Taskbar && entry.GroupIndex > 0).OrderBy(entry => entry.GroupIndex).ToArray();
-        Assert.AreEqual(groupKeys.Length, entries.Length);
-        for (var index = 0; index < groupKeys.Length; index++)
-        {
-            Assert.AreEqual(index + 1, entries[index].GroupIndex);
-            Assert.AreEqual(Translations.Get(groupKeys[index]), entries[index].Title);
-        }
+        var vertical = new AFMediaBar.Classes.Models.Settings.SettingsContext(AFMediaBar.Classes.Models.Settings.SettingsMode.Taskbar, "vertical", AFMediaBar.Classes.Models.Layout.LayoutOrientation.Vertical, false, true);
+        var entries = SettingsSearchIndex.ForContext(vertical);
+        Assert.IsFalse(entries.Any(entry => entry.GroupId == "Appearance.Group.RestLayout"));
+        Assert.IsTrue(entries.Any(entry => entry.Page == SettingsPageKey.ApplicationAppearance));
+        var future = vertical with { Mode = AFMediaBar.Classes.Models.Settings.SettingsMode.DynamicIsland };
+        Assert.IsTrue(SettingsSearchIndex.ForContext(future).All(entry => entry.Page != SettingsPageKey.Appearance && entry.Page != SettingsPageKey.Components));
+        Assert.IsFalse(SettingsSearchIndex.Entries.Any(entry => entry.GroupId == "Common.Group.IslandAppearance"));
     }
 }

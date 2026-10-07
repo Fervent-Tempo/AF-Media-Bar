@@ -19,6 +19,6 @@ public partial class AppearancePage : INavigableView<TaskbarAppearanceViewModel>
     private void OnPageLoaded(object sender, RoutedEventArgs e) => SettingsRevealAnimator.Play(sender as Panel);
     private async void ResetButton_Click(object sender, RoutedEventArgs e)
     {
-        if (await SettingsResetDialog.ConfirmAsync("Common.Page.TaskbarAppearance")) ViewModel.ResetAppearance();
+        if (await SettingsResetDialog.ConfirmAsync("Common.Page.TaskbarAppearance", cancellationToken: ViewModel.ContextCancellationToken)) ViewModel.ResetAppearance();
     }
 }

@@ -1,4 +1,13 @@
 // Exercises loaded WPF visuals in an offscreen window and captures real animation frames without starting application services.
+using AFMediaBar.Classes.Abstractions;
+using AFMediaBar.Classes.Models.Settings;
+using AFMediaBar.Classes.Models.Layout;
+using AFMediaBar.Classes.Services.Settings;
+using AFMediaBar.Classes.Services.Localization;
+using AFMediaBar.ViewModels.Pages;
+using AFMediaBar.Views.Pages;
+using AFMediaBar.Views.Windows;
+using Microsoft.Extensions.DependencyInjection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -21,6 +30,93 @@ namespace AFMediaBar.Layout.Tests;
 
 internal static class SettingsLiveVisualChecks
 {
+    internal static void VerifyContextNavigation(Application app)
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<LocalizationService>();
+        services.AddSingleton<TaskbarLengthConstraintsService>();
+        services.AddScoped<SettingsPageContext>();
+        services.AddScoped<ISettingsConfiguration, LegacySettingsConfiguration>();
+        services.AddScoped<TaskbarAppearanceViewModel>();
+        services.AddScoped<InteractionViewModel>();
+        services.AddScoped<AppearancePage>();
+        services.AddScoped<InteractionPage>();
+        using var root = services.BuildServiceProvider();
+        using var cache = new SettingsPageScopeCache(root.GetRequiredService<IServiceScopeFactory>());
+        using var provider = new SettingsPageProvider(cache);
+        var horizontal = new SettingsContext(SettingsMode.Taskbar, "primary", LayoutOrientation.Horizontal, false, true);
+        provider.SetContext(horizontal);
+        var navigation = new NavigationView { Transition = Transition.None, IsPaneOpen = true, IsBackButtonVisible = Wpf.Ui.Controls.NavigationViewBackButtonVisible.Collapsed };
+        foreach (var type in new[] { typeof(AppearancePage), typeof(InteractionPage) })
+            navigation.MenuItems.Add(new NavigationViewItem { Content = type.Name, TargetPageType = type, NavigationCacheMode = Wpf.Ui.Controls.NavigationCacheMode.Disabled });
+        navigation.SetPageProviderService(provider);
+        var resetHost = new Wpf.Ui.Controls.ContentDialogHost();
+        var content = new Grid();
+        content.Children.Add(navigation);
+        content.Children.Add(resetHost);
+        var host = new Window { Content = content, Width = 1100, Height = 700, Left = -16000, ShowInTaskbar = false, WindowStyle = WindowStyle.None };
+        Page? arrived = null;
+        navigation.Navigated += (_, args) => arrived = args.Page as Page;
+        host.Show();
+        try
+        {
+            Pump(TimeSpan.FromMilliseconds(80));
+            Assert.IsTrue(navigation.Navigate(typeof(AppearancePage)));
+            Pump(TimeSpan.FromMilliseconds(80));
+            var first = (AppearancePage)provider.GetPage(typeof(AppearancePage))!;
+            Assert.AreSame(first, arrived);
+            provider.SetContext(horizontal with { Orientation = LayoutOrientation.Vertical });
+            var vertical = (AppearancePage)provider.GetPage(typeof(AppearancePage))!;
+            navigation.ReplaceContent(vertical);
+            Pump(TimeSpan.FromMilliseconds(80));
+            Assert.AreNotSame(first, vertical);
+            Assert.IsFalse(vertical.ViewModel.IsHorizontalLayout);
+            var groups = ((Panel)((ScrollViewer)vertical.FindName("PageScroll")).Content).Children.OfType<SettingsGroup>();
+            Assert.AreEqual(Visibility.Collapsed, groups.Single(group => group.GroupId == "Appearance.Group.RestLayout").Visibility);
+            Assert.IsTrue(navigation.Navigate(typeof(InteractionPage)));
+            Assert.IsTrue(navigation.Navigate(typeof(AppearancePage)));
+            Assert.AreSame(vertical, arrived, "NavigationView must ask the provider for the current context rather than reuse its own old page.");
+            provider.SetContext(horizontal);
+            navigation.ReplaceContent((UIElement)provider.GetPage(typeof(AppearancePage))!);
+            Pump(TimeSpan.FromMilliseconds(80));
+            Assert.AreSame(first, provider.GetPage(typeof(AppearancePage)));
+            VerifyResetCancellation(resetHost);
+        }
+        finally { host.Close(); Pump(TimeSpan.FromMilliseconds(30)); }
+    }
+
+    private static void VerifyResetCancellation(Wpf.Ui.Controls.ContentDialogHost host)
+    {
+        var helper = typeof(AppearancePage).Assembly.GetType("AFMediaBar.Views.Pages.SettingsResetDialog")!;
+        var setHost = helper.GetMethod("SetHost")!;
+        var confirm = helper.GetMethod("ConfirmAsync")!;
+        using var window = new CancellationTokenSource();
+        using var context = new CancellationTokenSource();
+        var previousContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher));
+        setHost.Invoke(null, [host, window.Token]);
+        try
+        {
+            var pending = (Task<bool>)confirm.Invoke(null, ["Common.Page.Components", false, context.Token])!;
+            Pump(TimeSpan.FromMilliseconds(40));
+            Assert.IsFalse(pending.IsCompleted, "The live confirmation must remain pending until canceled.");
+            context.Cancel();
+            var until = DateTime.UtcNow + TimeSpan.FromSeconds(3);
+            while (!pending.IsCompleted && DateTime.UtcNow < until) Pump(TimeSpan.FromMilliseconds(20));
+            Assert.IsTrue(pending.IsCompleted, "A departing context must dismiss its pending confirmation.");
+            Assert.IsFalse(pending.GetAwaiter().GetResult());
+            window.Cancel();
+            var closed = (Task<bool>)confirm.Invoke(null, ["Common.Page.Components", false, CancellationToken.None])!;
+            Assert.IsTrue(closed.IsCompletedSuccessfully);
+            Assert.IsFalse(closed.Result, "A closed window must not approve a late reset.");
+        }
+        finally
+        {
+            helper.GetMethod("ClearHost")!.Invoke(null, [host]);
+            SynchronizationContext.SetSynchronizationContext(previousContext);
+        }
+    }
+
     internal static void VerifyNavigationMotion(Application app)
     {
         var provider = new SceneProvider();
@@ -82,6 +178,9 @@ internal static class SettingsLiveVisualChecks
                 Assert.AreSame(inactive.Foreground, inactive.Icon!.Foreground, "An inactive icon must return to the normal foreground.");
                 Assert.IsFalse(indicatorPosition.HasAnimatedProperties);
                 Save(Capture(shell), "sidebar-selection");
+                // Loaded/Render scheduling can put the last frame just before Completed; wait for clock cleanup, not a rounded opacity.
+                var settleDeadline = DateTime.UtcNow + TimeSpan.FromSeconds(1);
+                while (arrived.HasAnimatedProperties && DateTime.UtcNow < settleDeadline) Pump(TimeSpan.FromMilliseconds(20));
                 Assert.AreEqual(1d, arrived.Opacity);
                 Assert.IsFalse(arrived.HasAnimatedProperties);
                 // Replace a page before its entrance finishes, then close during the next entrance.

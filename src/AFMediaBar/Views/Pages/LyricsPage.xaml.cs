@@ -10,5 +10,5 @@ public partial class LyricsPage : INavigableView<LyricsViewModel>
     public LyricsPage(LyricsViewModel viewModel) { ViewModel = viewModel; DataContext = this; InitializeComponent(); }
     /// <summary>页面首次加载时执行入场揭示。/ Reveals the page on first load.</summary>
     private void OnPageLoaded(object sender, RoutedEventArgs e) => SettingsRevealAnimator.Play(sender as Panel);
-    private async void ResetButton_Click(object sender, RoutedEventArgs e) { if (await SettingsResetDialog.ConfirmAsync("Common.Page.Lyrics")) ViewModel.ResetLyrics(); }
+    private async void ResetButton_Click(object sender, RoutedEventArgs e) { if (await SettingsResetDialog.ConfirmAsync("Common.Page.Lyrics", cancellationToken: ViewModel.ContextCancellationToken)) ViewModel.ResetLyrics(); }
 }

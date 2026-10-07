@@ -45,7 +45,7 @@
                 <TextBlock Text="{Binding ViewModel.StatusText}" Style="{StaticResource AfSettingsRowDescriptionStyle}" Margin="0,8,0,8" />
                 <ProgressBar IsIndeterminate="True" Height="2" Margin="0,0,0,12"
                              Visibility="{Binding ViewModel.IsLoading, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
-                <components:SettingsGroup Header="{DynamicResource Loc.ReleaseHighlights.Latest}" Icon="{ui:SymbolIcon Sparkle24}">
+                <components:SettingsGroup GroupId="ReleaseHighlights.Latest" Header="{DynamicResource Loc.ReleaseHighlights.Latest}" Icon="{ui:SymbolIcon Sparkle24}">
                     <Border Background="{DynamicResource AfSettingsInfoSurfaceBrush}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1" CornerRadius="8">
                         <StackPanel DataContext="{Binding ViewModel.Latest}">
                             <ContentControl Content="{Binding}" ContentTemplate="{StaticResource ReleaseHeader}" Margin="20,20,20,0" />
@@ -53,7 +53,7 @@
                         </StackPanel>
                     </Border>
                 </components:SettingsGroup>
-                <components:SettingsGroup Header="{DynamicResource Loc.ReleaseHighlights.History}" Icon="{ui:SymbolIcon History24}">
+                <components:SettingsGroup GroupId="ReleaseHighlights.History" Header="{DynamicResource Loc.ReleaseHighlights.History}" Icon="{ui:SymbolIcon History24}">
                     <ItemsControl ItemsSource="{Binding ViewModel.History}">
                         <ItemsControl.ItemTemplate><DataTemplate>
                             <ui:CardExpander Content="{Binding}" Margin="0,0,0,8">

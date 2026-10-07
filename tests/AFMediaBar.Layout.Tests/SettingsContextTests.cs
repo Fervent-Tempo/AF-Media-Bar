@@ -14,6 +14,8 @@ public sealed class SettingsContextTests
     [TestMethod]
     public void UnsupportedModesCannotExposeTaskbarPages()
     {
+        foreach (var page in SettingsPageCatalog.ForMode(SettingsMode.Taskbar))
+            Assert.IsTrue(Enum.TryParse<Wpf.Ui.Controls.SymbolRegular>(page.IconName, out var icon) && Enum.IsDefined(icon), page.IconName);
         foreach (var mode in new[] { SettingsMode.DynamicIsland, SettingsMode.DesktopCard, SettingsMode.FloatingBall })
         {
             Assert.IsFalse(SettingsPageCatalog.IsImplemented(mode));
@@ -36,6 +38,27 @@ public sealed class SettingsContextTests
         page.Activate();
         Assert.IsFalse(configuration.CancellationToken.IsCancellationRequested);
         Assert.AreEqual(LayoutOrientation.Vertical, configuration.Context.Orientation);
+    }
+
+    [TestMethod]
+    public void UnsupportedAndInactiveContextsCannotOverwriteCurrentSettings()
+    {
+        using var page = new SettingsPageContext();
+        page.Initialize(SettingsContext.Initial with { Mode = SettingsMode.DynamicIsland });
+        var configuration = new LegacySettingsConfiguration(page);
+        var before = configuration.Current.TaskbarExperience;
+        var lyrics = configuration.Current.LyricsEnabled;
+        var spectrum = configuration.Current.SpectrumComponent;
+        configuration.SetTaskbarExperience(before with { HoverLayerEnabled = !before.HoverLayerEnabled });
+        configuration.SetLyricsEnabled(!lyrics);
+        configuration.SetSpectrum(spectrum with { SensitivityPercent = spectrum.SensitivityPercent == 100 ? 101 : 100 });
+        Assert.AreEqual(before, configuration.Current.TaskbarExperience);
+        Assert.AreEqual(lyrics, configuration.Current.LyricsEnabled);
+        Assert.AreEqual(spectrum, configuration.Current.SpectrumComponent);
+        page.Deactivate();
+        page.Initialize(SettingsContext.Initial);
+        configuration.SetTaskbarExperience(before with { HoverLayerEnabled = !before.HoverLayerEnabled });
+        Assert.AreEqual(before, configuration.Current.TaskbarExperience);
     }
 
     [TestMethod]
