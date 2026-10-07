@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace AFMediaBar.Layout.Tests;
 
 [TestClass]
+[DoNotParallelize]
 public sealed class TaskbarAlignmentTests
 {
     [TestMethod]
@@ -41,6 +42,68 @@ public sealed class TaskbarAlignmentTests
         Assert.AreEqual(ranges[2], TaskbarFreeRangeCalculator.Select(ranges, TaskbarBarPosition.End, 200, 2000));
         Assert.AreEqual(ranges[0], TaskbarFreeRangeCalculator.Select(ranges, TaskbarBarPosition.Center, 800, 2000));
         Assert.AreEqual(default(TaskbarPrimaryRange), TaskbarFreeRangeCalculator.Select([], TaskbarBarPosition.Center, 200, 2000));
+    }
+
+    [TestMethod]
+    public void RightArrangementKeepsArtworkAndButtonsStableAcrossWidths()
+    {
+        foreach (var width in new[] { 400.0, 450.0, 600.0 })
+        {
+            var layout = TaskbarRestLayoutPolicy.Arrange(TaskbarRestLayoutPolicy.DefaultOrder,
+                component => component == TaskbarRestComponent.Artwork ? 36 : 40,
+                _ => true, 3, width, 8, 6, fromRight: true);
+            Assert.AreEqual(width - 3, layout.Find(TaskbarRestComponent.Artwork)!.Value.Right);
+            var actions = TaskbarArrangementPolicy.ActionsLeft(width, layout.TextLeft, layout.TextWidth,
+                100, TaskbarArrangement.Right);
+            Assert.AreEqual(width - 3 - 36 - 8 - 6,
+                layout.TextLeft + actions + 100);
+            var placements = layout.Placements;
+            for (var i = 1; i < placements.Count; i++)
+                Assert.IsTrue(placements[i - 1].Right <= placements[i].Left);
+        }
+    }
+
+    [TestMethod]
+    public void CenterButtonsUseBarCenterAndRevealClipsPreserveTheirAnchor()
+    {
+        foreach (var width in new[] { 400.0, 600.0 })
+        {
+            var left = TaskbarArrangementPolicy.ActionsLeft(width, 40, width - 100, 100, TaskbarArrangement.Center);
+            Assert.AreEqual(width / 2, 40 + left + 50);
+        }
+        Assert.AreEqual(250.0, TaskbarArrangementPolicy.RevealLeft(300, 50, TaskbarArrangement.Right));
+        Assert.AreEqual(125.0, TaskbarArrangementPolicy.RevealLeft(300, 50, TaskbarArrangement.Center));
+        Assert.AreEqual(0.0, TaskbarArrangementPolicy.RevealLeft(300, 50, TaskbarArrangement.Left));
+        Assert.AreEqual(5.0, TaskbarArrangementPolicy.ActionsLeft(200, 0, 40, 100, TaskbarArrangement.Right));
+        Assert.IsTrue(TaskbarRestLayoutPolicy.Arrange([], _ => 40, _ => true, 3, 100, 8, 6, true).IsEmpty);
+    }
+
+    [TestMethod]
+    public void ArrangementRoundTripsAndDisplayResetHonorsUserDefaults()
+    {
+        var old = SettingsManager.Current.Clone();
+        var defaults = SettingsManager.UserDefaults;
+        try
+        {
+            var settings = new AppSettings { Position = TaskbarBarPosition.Center };
+            settings.TaskbarExperience = settings.TaskbarExperience with { Arrangement = TaskbarArrangement.Right };
+            var json = System.Text.Json.JsonSerializer.Serialize(settings);
+            var restored = System.Text.Json.JsonSerializer.Deserialize<AppSettings>(json)!;
+            Assert.AreEqual(TaskbarArrangement.Right, restored.Clone().TaskbarExperience.Normalize().Arrangement);
+            Assert.AreEqual(TaskbarArrangement.Automatic,
+                new TaskbarExperienceSettings { Arrangement = (TaskbarArrangement)99 }.Normalize().Arrangement);
+            SettingsManager.SetUserDefaults(settings);
+            SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
+            { Arrangement = TaskbarArrangement.Left };
+            SettingsManager.ResetDisplayModes();
+            Assert.AreEqual(TaskbarArrangement.Right, SettingsManager.Current.TaskbarExperience.Arrangement);
+            Assert.AreEqual(TaskbarBarPosition.Center, SettingsManager.Current.Position);
+        }
+        finally
+        {
+            SettingsManager.SetUserDefaults(defaults);
+            SettingsManager.Replace(old);
+        }
     }
 
     private static TaskbarBarPlacement Place(int width, TaskbarPrimaryRange range, TaskbarBarPosition position) =>

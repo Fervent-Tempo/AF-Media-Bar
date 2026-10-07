@@ -76,6 +76,15 @@ public enum TaskbarMediaTextAlignment
     Right = 2
 }
 
+/// <summary>任务栏组件与快捷控制的排布；自动时跟随任务栏位置。</summary>
+public enum TaskbarArrangement
+{
+    Automatic = 0,
+    Left = 1,
+    Center = 2,
+    Right = 3
+}
+
 /// <summary>任务栏媒体条主轴长度的决定方式。 / How the taskbar media bar resolves its primary-axis length.</summary>
 public enum TaskbarLengthMode
 {
@@ -468,6 +477,9 @@ public readonly record struct TaskbarExperienceSettings(
     /// <summary>标题和歌手文字的对齐方式。 / Alignment of title and artist text.</summary>
     public TaskbarMediaTextAlignment MediaTextAlignment { get; init; } = TaskbarMediaTextAlignment.Left;
 
+    /// <summary>组件排布与快捷控制锚点，独立于标题、歌词的文字对齐。</summary>
+    public TaskbarArrangement Arrangement { get; init; } = TaskbarArrangement.Automatic;
+
     /// <summary>静置层是否显示播放态频谱。 / Whether the rest layer shows the playing spectrum.</summary>
     public bool SpectrumVisible { get; init; } = true;
 
@@ -589,6 +601,7 @@ public readonly record struct TaskbarExperienceSettings(
             Density = Enum.IsDefined(Density) ? Density : defaults.Density,
             ContentLayout = Enum.IsDefined(ContentLayout) ? ContentLayout : defaults.ContentLayout,
             MediaTextAlignment = Enum.IsDefined(MediaTextAlignment) ? MediaTextAlignment : defaults.MediaTextAlignment,
+            Arrangement = Enum.IsDefined(Arrangement) ? Arrangement : defaults.Arrangement,
             FullPanel = FullPanel.Normalize(),
             LengthMode = Enum.IsDefined(LengthMode) ? LengthMode : defaults.LengthMode,
             FixedLengthDip = double.IsFinite(FixedLengthDip) && FixedLengthDip >= MinimumStoredFixedLengthDip

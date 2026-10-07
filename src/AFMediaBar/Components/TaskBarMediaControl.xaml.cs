@@ -987,20 +987,27 @@ namespace AFMediaBar.Components
                     SongInfoStackPanel.IsMouseOver || TaskbarDirectFullPanelHandle.IsMouseOver,
                     immediate: true);
 
+            ApplyTaskbarArrangement();
             var hoverGap = experience.HoverButtonSpacingDip;
-            var visibleHoverButtons = 0;
-            foreach (var button in FindVisualChildren<System.Windows.Controls.Button>(TaskbarHoverActions))
+            var visibleHoverItems = 0;
+            foreach (FrameworkElement child in TaskbarHoverActions.Children)
             {
-                if (ReferenceEquals(button, TaskbarFullPanelHandle))
+                if (child.Visibility != Visibility.Visible)
                     continue;
-                button.Width = metrics.ButtonSize;
-                button.Height = metrics.ButtonSize;
-                if (button.Visibility == Visibility.Visible)
-                    button.Margin = new Thickness(visibleHoverButtons++ == 0 ? 0 : hoverGap, 0, 0, 0);
+                var items = child is StackPanel panel
+                    ? panel.Children.Cast<FrameworkElement>()
+                    : [child];
+                foreach (var item in items)
+                {
+                    if (item is System.Windows.Controls.Button button)
+                    {
+                        button.Width = metrics.ButtonSize;
+                        button.Height = metrics.ButtonSize;
+                    }
+                    if (item.Visibility == Visibility.Visible)
+                        item.Margin = new Thickness(visibleHoverItems++ == 0 ? 0 : hoverGap, 0, 0, 0);
+                }
             }
-            TaskbarHoverProgress.Margin = new Thickness(
-                TaskbarHoverProgress.Visibility == Visibility.Visible && visibleHoverButtons > 0 ? hoverGap : 0,
-                0, 0, 0);
             TaskbarHoverProgress.Width = metrics.ProgressWidth;
             TaskbarHoverLayer.Height = metrics.HoverLayerHeight;
             ApplyTaskbarSectionGeometry(MainBorder.Width);
@@ -1170,6 +1177,7 @@ namespace AFMediaBar.Components
             HoverRevealHost.Margin = new Thickness(textLeft, 1, 0, 1);
             HoverRevealHost.Height = Math.Max(0, MainBorder.Height - 2);
             TaskbarHoverLayer.Width = textWidth;
+            ApplyTaskbarActionsGeometry(primaryLength, textLeft, textWidth);
             TaskbarDirectFullPanelHandle.Width = textWidth;
             TaskbarDirectFullPanelHandle.Margin = new Thickness(textLeft, 1, 0, 0);
             if (HoverRevealHost.Visibility == Visibility.Visible)
@@ -1282,7 +1290,8 @@ namespace AFMediaBar.Components
                 GetTaskbarLeadingInset(),
                 Math.Max(0, primaryLength),
                 TaskbarExperiencePolicy.ResolveSectionGap(experience.Density, experience.ComponentSpacingDip),
-                TaskbarTrailingMargin);
+                TaskbarTrailingMargin,
+                ResolvedTaskbarArrangement == TaskbarArrangement.Right);
         }
 
         /// <summary>把当前设置与快照解析成静置层显隐判定所需的输入。/ Resolves the current settings and snapshot into the rest-layer visibility inputs.</summary>

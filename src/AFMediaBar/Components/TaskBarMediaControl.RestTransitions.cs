@@ -262,7 +262,8 @@ public partial class TaskBarMediaControl
                 _restTextStartVisibleWidth = _restTransitionEntering
                     ? before.TryGetValue(TaskbarRestComponent.MediaText, out var text) ? text.VisibleWidth : 0
                     : _outgoingTextVisibleWidth;
-                _restTextClipScale = new ScaleTransform(0, 1);
+                _restTextClipScale = new ScaleTransform(0, 1,
+                    ResolvedTaskbarArrangement == TaskbarArrangement.Right ? width : 0, 0);
                 SongInfoStackPanel.Clip = new RectangleGeometry(new Rect(0, 0, width, height))
                 {
                     Transform = _restTextClipScale
@@ -336,12 +337,16 @@ public partial class TaskBarMediaControl
         var targetWidth = _restTransitionEntering ? _restTextClipWidth : 0;
         // The rightmost edge of live text must stay behind every retained widget, including when
         // a video cover is wider than the idle note or the idle note has been disabled.
-        var nearestWidgetLeft = _restTransitionMoves.Count == 0
+        var fromRight = ResolvedTaskbarArrangement == TaskbarArrangement.Right;
+        var boundary = _restTransitionMoves.Count == 0
             ? double.PositiveInfinity
-            : _restTransitionMoves.Min(move => move.TargetX + move.Transform.X);
+            : fromRight
+                ? -_restTransitionMoves.Max(move => move.TargetX + move.Transform.X + move.Element.ActualWidth)
+                : _restTransitionMoves.Min(move => move.TargetX + move.Transform.X);
+        var textStart = fromRight ? -(_restTextLeft + _restTextClipWidth) : _restTextLeft;
         var visibleWidth = RestConnectionTransitionPolicy.VisibleTextWidth(
-            _restTextStartVisibleWidth, targetWidth, progress, _restTextLeft,
-            nearestWidgetLeft, _restTextClipWidth);
+            _restTextStartVisibleWidth, targetWidth, progress, textStart,
+            boundary, _restTextClipWidth);
         _restTextClipScale.ScaleX = Math.Clamp(visibleWidth / _restTextClipWidth, 0, 1);
     }
 

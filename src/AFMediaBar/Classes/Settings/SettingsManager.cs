@@ -444,6 +444,7 @@ public static class SettingsManager
             HoverControls = defaults.TaskbarExperience.HoverControls,
             OutputDeviceVisible = defaults.TaskbarExperience.OutputDeviceVisible,
             VolumeVisible = defaults.TaskbarExperience.VolumeVisible,
+            Arrangement = defaults.TaskbarExperience.Arrangement,
             IdleComponents = defaults.TaskbarExperience.IdleComponents
         };
         next.WindowMode = defaults.WindowMode; next.LayoutOrientationMode = defaults.LayoutOrientationMode;
