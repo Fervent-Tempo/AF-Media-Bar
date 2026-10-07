@@ -416,11 +416,19 @@ public partial class DisplayModesViewModel : ObservableObject
         }
     }
 
-    /// <summary>横向任务栏内部排布与快捷控制锚点。</summary>
+    /// <summary>横向任务栏的左侧或右侧内容排布。</summary>
     public TaskbarArrangement TaskbarArrangement
     {
-        get => SettingsManager.Current.TaskbarExperience.Normalize().Arrangement;
+        get => TaskbarArrangementPolicy.ResolveContent(
+            SettingsManager.Current.TaskbarExperience.Normalize().Arrangement, SettingsManager.Current.Position);
         set => UpdateExperience(SettingsManager.Current.TaskbarExperience with { Arrangement = value });
+    }
+
+    /// <summary>横向任务栏悬停按钮对齐，独立于内容排列方向。</summary>
+    public TaskbarArrangement TaskbarHoverAlignment
+    {
+        get => SettingsManager.Current.TaskbarExperience.Normalize().HoverAlignment;
+        set => UpdateExperience(SettingsManager.Current.TaskbarExperience with { HoverAlignment = value });
     }
 
     public bool IsTaskbarPositionLocked
@@ -753,6 +761,7 @@ public partial class DisplayModesViewModel : ObservableObject
     private void RaiseExperience()
     {
         OnPropertyChanged(nameof(TaskbarArrangement));
+        OnPropertyChanged(nameof(TaskbarHoverAlignment));
         OnPropertyChanged(nameof(HoverLayerEnabled)); OnPropertyChanged(nameof(FullLayerEnabled));
         OnPropertyChanged(nameof(FullPanelEntryVisible));
         OnPropertyChanged(nameof(RestProgressVisible));

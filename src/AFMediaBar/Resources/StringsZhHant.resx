@@ -2117,33 +2117,39 @@
     <value>工作列對齊</value>
   </data>
   <data name="DisplayModes.Placement.Row.Alignment.Description" xml:space="preserve">
-    <value>靠左向右展開，靠右向左展開，置中向兩側展開並盡量保持工作列中心；開啟避讓時優先避開圖示。切換對齊會清除拖曳偏移。直向工作列對應頂部、置中、底部。</value>
+    <value>靠左時向右展開，靠右時向左展開，置中時向兩側展開並盡量保持在工作列中心。開啟圖示避讓時優先避讓；切換對齊會清除拖曳偏移。</value>
   </data>
   <data name="DisplayModes.Placement.Alignment.Start" xml:space="preserve">
-    <value>靠左 / 頂部</value>
+    <value>靠左</value>
   </data>
   <data name="DisplayModes.Placement.Alignment.Center" xml:space="preserve">
     <value>置中</value>
   </data>
   <data name="DisplayModes.Placement.Alignment.End" xml:space="preserve">
-    <value>靠右 / 底部</value>
+    <value>靠右</value>
   </data>
   <data name="DisplayModes.Placement.Row.Arrangement.Title" xml:space="preserve">
     <value>內容排列</value>
   </data>
   <data name="DisplayModes.Placement.Row.Arrangement.Description" xml:space="preserve">
-    <value>僅作用於橫向工作列。跟隨對齊時，靠左保留原排列，靠右將封面和常用按鈕放在右側，置中讓快捷控制按鈕置中。可獨立選擇靠左、置中或靠右；不會翻轉文字、封面或圖示。</value>
+    <value>左側排列將封面放在左側，其餘內容依次向右排列；右側排列將封面放在右側，其餘內容依次向左排列。文字、封面和圖示保持原方向。</value>
   </data>
   <data name="DisplayModes.Placement.Arrangement.Automatic" xml:space="preserve">
     <value>跟隨工作列對齊</value>
   </data>
   <data name="DisplayModes.Placement.Arrangement.Left" xml:space="preserve">
-    <value>靠左</value>
+    <value>左側排列</value>
   </data>
   <data name="DisplayModes.Placement.Arrangement.Center" xml:space="preserve">
     <value>置中</value>
   </data>
   <data name="DisplayModes.Placement.Arrangement.Right" xml:space="preserve">
-    <value>靠右</value>
+    <value>右側排列</value>
+  </data>
+  <data name="DisplayModes.Placement.Row.HoverAlignment.Title" xml:space="preserve">
+    <value>懸停按鈕對齊</value>
+  </data>
+  <data name="DisplayModes.Placement.Row.HoverAlignment.Description" xml:space="preserve">
+    <value>選擇懸停按鈕靠左、置中或靠右顯示。預設跟隨工作列對齊；按鈕對齊不改變封面及其他內容的排列。</value>
   </data>
 </root>

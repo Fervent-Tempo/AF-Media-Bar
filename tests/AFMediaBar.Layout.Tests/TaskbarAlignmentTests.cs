@@ -1,4 +1,4 @@
-﻿// Verifies physical taskbar anchors and safe-range selection as content widths change.
+// Verifies physical taskbar anchors and safe-range selection as content widths change.
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace AFMediaBar.Layout.Tests;
 
+/// <summary>验证任务栏定位锚点、排布和设置兼容性。</summary>
 [TestClass]
 [DoNotParallelize]
 public sealed class TaskbarAlignmentTests
@@ -96,17 +97,19 @@ public sealed class TaskbarAlignmentTests
         try
         {
             var settings = new AppSettings { Position = TaskbarBarPosition.Center };
-            settings.TaskbarExperience = settings.TaskbarExperience with { Arrangement = TaskbarArrangement.Right };
+            settings.TaskbarExperience = settings.TaskbarExperience with { Arrangement = TaskbarArrangement.Right, HoverAlignment = TaskbarArrangement.Center };
             var json = System.Text.Json.JsonSerializer.Serialize(settings);
             var restored = System.Text.Json.JsonSerializer.Deserialize<AppSettings>(json)!;
             Assert.AreEqual(TaskbarArrangement.Right, restored.Clone().TaskbarExperience.Normalize().Arrangement);
-            Assert.AreEqual(TaskbarArrangement.Automatic,
+            Assert.AreEqual(TaskbarArrangement.Center, restored.Clone().TaskbarExperience.Normalize().HoverAlignment);
+            Assert.AreEqual(TaskbarArrangement.Left,
                 new TaskbarExperienceSettings { Arrangement = (TaskbarArrangement)99 }.Normalize().Arrangement);
             SettingsManager.SetUserDefaults(settings);
             SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
-            { Arrangement = TaskbarArrangement.Left };
+            { Arrangement = TaskbarArrangement.Left, HoverAlignment = TaskbarArrangement.Right };
             SettingsManager.ResetDisplayModes();
             Assert.AreEqual(TaskbarArrangement.Right, SettingsManager.Current.TaskbarExperience.Arrangement);
+            Assert.AreEqual(TaskbarArrangement.Center, SettingsManager.Current.TaskbarExperience.HoverAlignment);
             Assert.AreEqual(TaskbarBarPosition.Center, SettingsManager.Current.Position);
         }
         finally

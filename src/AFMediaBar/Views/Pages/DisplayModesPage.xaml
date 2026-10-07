@@ -252,21 +252,6 @@
                             </components:SettingsRow>
 
                             <components:SettingsRow
-                                Description="{DynamicResource Loc.DisplayModes.Placement.Row.Orientation.Description}"
-                                Icon="{ui:SymbolIcon Orientation24}"
-                                IsEnabled="False"
-                                Title="{DynamicResource Loc.DisplayModes.Placement.Row.Orientation.Title}">
-                                <ComboBox
-                                    MinWidth="200"
-                                    SelectedValue="{Binding ViewModel.Orientation, Mode=TwoWay}"
-                                    SelectedValuePath="Tag">
-                                    <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Placement.Orientation.Auto}" Tag="{x:Static settings:LayoutOrientationMode.Auto}" />
-                                    <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Placement.Orientation.Horizontal}" Tag="{x:Static settings:LayoutOrientationMode.Horizontal}" />
-                                    <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Placement.Orientation.Vertical}" Tag="{x:Static settings:LayoutOrientationMode.Vertical}" />
-                                </ComboBox>
-                            </components:SettingsRow>
-
-                            <components:SettingsRow
                                 Description="{DynamicResource Loc.DisplayModes.Placement.Row.Alignment.Description}"
                                 Icon="{ui:SymbolIcon ArrowMove24}"
                                 Title="{DynamicResource Loc.DisplayModes.Placement.Row.Alignment.Title}">
@@ -286,9 +271,7 @@
                                 <ComboBox MinWidth="200"
                                           SelectedValue="{Binding ViewModel.TaskbarArrangement, Mode=TwoWay}"
                                           SelectedValuePath="Tag">
-                                    <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Placement.Arrangement.Automatic}" Tag="{x:Static settings:TaskbarArrangement.Automatic}" />
                                     <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Placement.Arrangement.Left}" Tag="{x:Static settings:TaskbarArrangement.Left}" />
-                                    <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Placement.Arrangement.Center}" Tag="{x:Static settings:TaskbarArrangement.Center}" />
                                     <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Placement.Arrangement.Right}" Tag="{x:Static settings:TaskbarArrangement.Right}" />
                                 </ComboBox>
                             </components:SettingsRow>
@@ -432,6 +415,20 @@
                                 Icon="{ui:SymbolIcon HandDraw24}"
                                 Title="{DynamicResource Loc.DisplayModes.Hover.Row.Enable.Title}">
                                 <ui:ToggleSwitch IsChecked="{Binding ViewModel.HoverLayerEnabled, Mode=TwoWay}" />
+                            </components:SettingsRow>
+
+                            <components:SettingsRow
+                                Description="{DynamicResource Loc.DisplayModes.Placement.Row.HoverAlignment.Description}"
+                                Icon="{ui:SymbolIcon ArrowMove24}"
+                                Title="{DynamicResource Loc.DisplayModes.Placement.Row.HoverAlignment.Title}">
+                                <ComboBox MinWidth="200"
+                                          SelectedValue="{Binding ViewModel.TaskbarHoverAlignment, Mode=TwoWay}"
+                                          SelectedValuePath="Tag">
+                                    <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Placement.Arrangement.Automatic}" Tag="{x:Static settings:TaskbarArrangement.Automatic}" />
+                                    <ComboBoxItem Content="{DynamicResource Loc.Common.AlignLeft}" Tag="{x:Static settings:TaskbarArrangement.Left}" />
+                                    <ComboBoxItem Content="{DynamicResource Loc.Common.AlignCenter}" Tag="{x:Static settings:TaskbarArrangement.Center}" />
+                                    <ComboBoxItem Content="{DynamicResource Loc.Common.AlignRight}" Tag="{x:Static settings:TaskbarArrangement.Right}" />
+                                </ComboBox>
                             </components:SettingsRow>
 
                             <ui:CardExpander

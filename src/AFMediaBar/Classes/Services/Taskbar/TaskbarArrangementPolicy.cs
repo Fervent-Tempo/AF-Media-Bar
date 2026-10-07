@@ -17,6 +17,10 @@ public static class TaskbarArrangementPolicy
                 _ => TaskbarArrangement.Left
             };
 
+    /// <summary>内容排布仅有左右两种；兼容早期自动值，居中值按左侧组件顺序处理。</summary>
+    public static TaskbarArrangement ResolveContent(TaskbarArrangement arrangement, TaskbarBarPosition position) =>
+        Resolve(arrangement, position) == TaskbarArrangement.Right ? TaskbarArrangement.Right : TaskbarArrangement.Left;
+
     /// <summary>计算按钮组在文字区中的左缘；居中以整条媒体栏为基准，受文字区边界限制。</summary>
     public static double ActionsLeft(double barWidth, double textLeft, double textWidth,
         double actionsWidth, TaskbarArrangement arrangement)
