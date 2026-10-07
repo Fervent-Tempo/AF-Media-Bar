@@ -91,7 +91,7 @@ public sealed class SettingsVisualRuntimeTests
         var root = FindRepository();
         XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
         var eventNames = new HashSet<string> { "Loaded", "Unloaded", "Click", "SelectionChanged", "Checked", "Unchecked", "SizeChanged" };
-        foreach (var name in new[] { "DisplayModes", "Appearance", "Interaction", "Lyrics", "ComponentsSettings", "ExtraFeatures", "Application", "ReleaseHighlights", "About" })
+        foreach (var name in new[] { "DisplayModes", "ScreenAndPlacement", "Appearance", "Interaction", "Lyrics", "ComponentsSettings", "ExtraFeatures", "Application", "ReleaseHighlights", "About" })
         {
             var document = XDocument.Load(Path.Combine(root, "src", "AFMediaBar", "Views", "Pages", name + "Page.xaml"));
             document.Root!.Attribute(x + "Class")!.Remove();

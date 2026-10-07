@@ -16,6 +16,7 @@ public sealed class SettingsSearchLayoutTests
     [DataRow(SettingsPageKey.Lyrics, "LyricsPage")]
     [DataRow(SettingsPageKey.Components, "ComponentsSettingsPage")]
     [DataRow(SettingsPageKey.Application, "ApplicationPage")]
+    [DataRow(SettingsPageKey.ScreenAndPlacement, "ScreenAndPlacementPage")]
     public void SearchDestinationsFollowDeclaredGroups(SettingsPageKey page, string fileName)
     {
         var root = FindRepository();
@@ -51,5 +52,36 @@ public sealed class SettingsSearchLayoutTests
         while (directory is not null && !Directory.Exists(Path.Combine(directory.FullName, "src", "AFMediaBar")))
             directory = directory.Parent;
         return directory?.FullName ?? throw new DirectoryNotFoundException("Settings page sources were not found.");
+    }
+
+    [DataTestMethod]
+    [DataRow("显示器")]
+    [DataRow("位置")]
+    [DataRow("厚度方向偏移")]
+    [DataRow("monitor")]
+    public void PlacementKeywordsOpenTheIndependentPage(string query)
+    {
+        var hits = SettingsSearchPolicy.Search(query, SettingsSearchIndex.Entries);
+        Assert.IsTrue(hits.Any(hit => hit.Page == SettingsPageKey.ScreenAndPlacement && hit.GroupIndex == 0));
+        Assert.IsFalse(SettingsSearchIndex.Entries.Any(entry => entry.Page == SettingsPageKey.DisplayModes &&
+            entry.Title == Translations.Get("Common.Group.ScreenAndPlacement")));
+    }
+
+    [TestMethod]
+    public void TaskbarModeDestinationsRemainAlignedAfterMovingPlacement()
+    {
+        var document = XDocument.Load(Path.Combine(FindRepository(), "src", "AFMediaBar", "Views", "Pages", "DisplayModesPage.xaml"));
+        XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
+        var section = document.Descendants().Single(element => (string?)element.Attribute(x + "Name") == "TaskbarModeSection");
+        var groupKeys = section.Elements().Where(element => element.Name.LocalName == "SettingsGroup")
+            .Select(element => ((string)element.Attribute("Header")!).Replace("{DynamicResource Loc.", "").TrimEnd('}')).ToArray();
+        var entries = SettingsSearchIndex.Entries.Where(entry => entry.Page == SettingsPageKey.DisplayModes &&
+            entry.Mode == SettingsSearchMode.Taskbar && entry.GroupIndex > 0).OrderBy(entry => entry.GroupIndex).ToArray();
+        Assert.AreEqual(groupKeys.Length, entries.Length);
+        for (var index = 0; index < groupKeys.Length; index++)
+        {
+            Assert.AreEqual(index + 1, entries[index].GroupIndex);
+            Assert.AreEqual(Translations.Get(groupKeys[index]), entries[index].Title);
+        }
     }
 }

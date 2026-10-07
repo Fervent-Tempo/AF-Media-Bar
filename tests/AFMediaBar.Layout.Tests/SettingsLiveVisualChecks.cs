@@ -78,7 +78,7 @@ internal static class SettingsLiveVisualChecks
                 Assert.AreEqual(expected.Y, indicatorPosition.Y, 0.5d);
                 Assert.AreEqual(FontWeights.SemiBold, selected.FontWeight);
                 Assert.AreSame(selected.Foreground, selected.Icon!.Foreground, "The selected icon and label must use the same live accent brush.");
-                var inactive = (NavigationViewItem)navigation.MenuItems[0];
+                var inactive = (NavigationViewItem)navigation.MenuItems[0]!;
                 Assert.AreSame(inactive.Foreground, inactive.Icon!.Foreground, "An inactive icon must return to the normal foreground.");
                 Assert.IsFalse(indicatorPosition.HasAnimatedProperties);
                 Save(Capture(shell), "sidebar-selection");

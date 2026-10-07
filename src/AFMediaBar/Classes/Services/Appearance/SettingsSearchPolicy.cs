@@ -38,6 +38,8 @@ public enum SettingsPageKey
 
     /// <summary>Read-only latest and historical release highlights.</summary>
     ReleaseHighlights,
+    /// <summary>Monitor selection and taskbar placement, independent of display-mode previews.</summary>
+    ScreenAndPlacement,
 }
 
 /// <summary>

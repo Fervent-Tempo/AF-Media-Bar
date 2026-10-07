@@ -1,0 +1,99 @@
+<!-- Presents monitor and taskbar placement settings; the shared display view model owns state and commands. -->
+<Page x:Class="AFMediaBar.Views.Pages.ScreenAndPlacementPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:components="clr-namespace:AFMediaBar.Components"
+      xmlns:settings="clr-namespace:AFMediaBar.Classes.Settings"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False">
+    <Grid>
+        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+        <components:SettingsGroupStrip Grid.Row="0" Margin="{StaticResource AfSettingsHeaderMargin}" MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
+            PageIcon="{ui:SymbolIcon Desktop24}" Title="{DynamicResource Loc.Common.Page.ScreenAndPlacement}"
+            Subtitle="{DynamicResource Loc.ScreenAndPlacement.Header.Subtitle}" Target="{Binding ElementName=PageScroll}" />
+        <ScrollViewer x:Name="PageScroll" Grid.Row="1" Margin="{StaticResource AfSettingsScrollMargin}"
+                      HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="PageRoot" MaxWidth="{StaticResource AfSettingsContentMaxWidth}" Loaded="OnPageLoaded">
+                <components:SettingsGroup
+                Description="{DynamicResource Loc.DisplayModes.Placement.Group.Description}"
+                Header="{DynamicResource Loc.Common.Group.ScreenAndPlacement}"
+                Icon="{ui:SymbolIcon Desktop24}">
+                <StackPanel>
+                    <components:SettingsDiagram Margin="0,0,0,12" Kind="TaskbarPlacement" />
+
+                    <components:SettingsRow
+                        Description="{DynamicResource Loc.DisplayModes.Placement.Row.Monitor.Description}"
+                        Icon="{ui:SymbolIcon Desktop24}"
+                        Title="{DynamicResource Loc.Common.TargetMonitor}">
+                        <ItemsControl
+                            ItemsSource="{Binding ViewModel.TaskbarMonitorOptions}"
+                            MinWidth="260">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ui:ToggleSwitch
+                                        Margin="0,3"
+                                        Content="{Binding DisplayName}"
+                                        IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                        IsEnabled="{Binding CanToggle}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </components:SettingsRow>
+
+                    <components:SettingsRow
+                        Description="{DynamicResource Loc.DisplayModes.Placement.Row.Orientation.Description}"
+                        Icon="{ui:SymbolIcon Orientation24}"
+                        IsEnabled="False"
+                        Title="{DynamicResource Loc.DisplayModes.Placement.Row.Orientation.Title}">
+                        <ComboBox
+                            MinWidth="200"
+                            SelectedValue="{Binding ViewModel.Orientation, Mode=TwoWay}"
+                            SelectedValuePath="Tag">
+                            <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Placement.Orientation.Auto}" Tag="{x:Static settings:LayoutOrientationMode.Auto}" />
+                            <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Placement.Orientation.Horizontal}" Tag="{x:Static settings:LayoutOrientationMode.Horizontal}" />
+                            <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Placement.Orientation.Vertical}" Tag="{x:Static settings:LayoutOrientationMode.Vertical}" />
+                        </ComboBox>
+                    </components:SettingsRow>
+
+                    <components:SettingsRow
+                        Description="{DynamicResource Loc.DisplayModes.Placement.Row.AvoidIcons.Description}"
+                        Icon="{ui:SymbolIcon ArrowMinimize24}"
+                        Title="{DynamicResource Loc.DisplayModes.Placement.Row.AvoidIcons.Title}">
+                        <ui:ToggleSwitch IsChecked="{Binding ViewModel.IsTaskbarAvoidingIcons, Mode=TwoWay}" />
+                    </components:SettingsRow>
+
+                    <components:SettingsRow
+                        Description="{DynamicResource Loc.DisplayModes.Placement.Row.Lock.Description}"
+                        Icon="{ui:SymbolIcon LockClosed24}"
+                        Title="{DynamicResource Loc.DisplayModes.Placement.Row.Lock.Title}">
+                        <ui:ToggleSwitch IsChecked="{Binding ViewModel.IsTaskbarPositionLocked, Mode=TwoWay}" />
+                    </components:SettingsRow>
+
+                    <components:SettingsRow
+                        Description="{DynamicResource Loc.DisplayModes.Placement.Row.Offset.Description}"
+                        Icon="{ui:SymbolIcon ArrowMove24}"
+                        Title="{DynamicResource Loc.DisplayModes.Placement.Row.Offset.Title}">
+                        <components:SettingsNumericEditor
+                            Value="{Binding ViewModel.TaskbarCrossAxisOffsetDip, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            Minimum="{Binding Source={x:Static settings:AppSettings.MinimumTaskbarCrossAxisOffsetDip}}"
+                            Maximum="{Binding Source={x:Static settings:AppSettings.MaximumTaskbarCrossAxisOffsetDip}}"
+                            Step="1"
+                            Unit="{DynamicResource Loc.Settings.Numeric.Dip}" />
+                    </components:SettingsRow>
+
+                    <components:SettingsRow
+                        Description="{DynamicResource Loc.DisplayModes.Placement.Row.Reset.Description}"
+                        Icon="{ui:SymbolIcon ArrowReset24}"
+                        Title="{DynamicResource Loc.Common.ResetPosition}">
+                        <ui:Button
+                            Command="{Binding ViewModel.ResetTaskbarPositionCommand}"
+                            Content="{DynamicResource Loc.DisplayModes.Placement.ResetAction}"
+                            Icon="{ui:SymbolIcon ArrowReset24}"
+                            Style="{StaticResource AfSettingsButtonStyle}" />
+                    </components:SettingsRow>
+                </StackPanel>
+            </components:SettingsGroup>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

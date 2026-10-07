@@ -113,8 +113,10 @@
 
             <ui:NavigationView.MenuItems>
                 <!-- 页面按显示、外观、交互、歌词、组件和应用排列；媒体来源与通知仍保留独立入口。 -->
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.DisplayModes}" Icon="{ui:SymbolIcon Desktop24}"
+                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.DisplayModes}" Icon="{ui:SymbolIcon WindowConsole20}"
                                        TargetPageType="{x:Type pages:DisplayModesPage}" />
+                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.ScreenAndPlacement}" Icon="{ui:SymbolIcon Desktop24}"
+                                       TargetPageType="{x:Type pages:ScreenAndPlacementPage}" />
                 <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Appearance}"
                                        Icon="{ui:SymbolIcon PaintBrush24}"
                                        TargetPageType="{x:Type pages:AppearancePage}" />

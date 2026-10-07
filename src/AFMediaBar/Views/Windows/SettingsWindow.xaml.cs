@@ -39,6 +39,7 @@ namespace AFMediaBar.Views.Windows
             new Dictionary<SettingsPageKey, System.Type>
             {
                 [SettingsPageKey.DisplayModes] = typeof(DisplayModesPage),
+                [SettingsPageKey.ScreenAndPlacement] = typeof(ScreenAndPlacementPage),
                 [SettingsPageKey.MediaAndNotifications] = typeof(ExtraFeaturesPage),
                 [SettingsPageKey.Components] = typeof(ComponentsSettingsPage),
                 [SettingsPageKey.Interaction] = typeof(InteractionPage),

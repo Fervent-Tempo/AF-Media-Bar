@@ -81,6 +81,7 @@ public static class SettingsSearchIndex
     private static string PageTitleKey(SettingsPageKey page) => page switch
     {
         SettingsPageKey.DisplayModes => "Common.Page.DisplayModes",
+        SettingsPageKey.ScreenAndPlacement => "Common.Page.ScreenAndPlacement",
         SettingsPageKey.MediaAndNotifications => "Common.Page.MediaAndNotifications",
         SettingsPageKey.Components => "Common.Page.Components",
         SettingsPageKey.Interaction => "Common.Page.Interaction",
@@ -199,29 +200,29 @@ public static class SettingsSearchIndex
 
         // ---- 显示模式 · 任务栏 / Display modes, taskbar ----
         Create(
-            SettingsPageKey.DisplayModes,
-            1,
+            SettingsPageKey.ScreenAndPlacement,
+            0,
             "Common.Group.ScreenAndPlacement",
             "Search.DisplayModes.ScreenAndPlacement.Description",
             language,
             ["显示器", "屏幕", "monitor", "display", "朝向", "横向", "纵向", "orientation", "避让", "图标", "锁定", "位置", "偏移", "厚度方向偏移", "offset", "重置", "承载", "承载显示器", "承载与位置", "边缘偏移", "排列方向"]),
         Create(
             SettingsPageKey.DisplayModes,
-            2,
+            1,
             "Common.RestLayer",
             "Search.DisplayModes.RestLayer.Description",
             language,
             ["静置", "静置层", "靜置層", "常驻", "常驻状态", "常駐狀態", "rest", "rest layer", "always-on view", "完整层入口", "横杆", "细杠", "进入完整层", "进度", "播放进度", "progress", "设备按钮", "输出设备", "音量按钮", "没有媒体", "无媒体", "空闲", "idle", "隐藏", "保留组件", "小音符", "快速启动"]),
         Create(
             SettingsPageKey.DisplayModes,
-            3,
+            2,
             "Common.HoverLayer",
             "Search.DisplayModes.HoverLayer.Description",
             language,
             ["悬停", "悬停层", "懸停層", "快捷控制", "hover", "hover layer", "quick controls", "鼠标", "按钮", "播放暂停", "上一首", "下一首", "输出设备", "音量", "进度"]),
         Create(
             SettingsPageKey.DisplayModes,
-            4,
+            3,
             "Common.FullLayer",
             "Search.DisplayModes.FullLayer.Description",
             language,

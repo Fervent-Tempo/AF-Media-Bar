@@ -806,7 +806,7 @@
     <value>Apply a preset</value>
   </data>
   <data name="DisplayModes.Header.Subtitle" xml:space="preserve">
-    <value>Where the media bar sits and which layer features are enabled</value>
+    <value>Choose a display mode and configure the always-on view, quick controls, and full panel.</value>
   </data>
   <data name="DisplayModes.Hover.Expander.Description" xml:space="preserve">
     <value>Choose the controls shown on hover.</value>
@@ -2176,5 +2176,11 @@
   </data>
   <data name="Appearance.Specimen.Line3" xml:space="preserve">
     <value>Font preview · 가나다 · 示例文字</value>
+  </data>
+  <data name="Common.Page.ScreenAndPlacement" xml:space="preserve">
+    <value>Screen and placement</value>
+  </data>
+  <data name="ScreenAndPlacement.Header.Subtitle" xml:space="preserve">
+    <value>Choose the media bar’s monitors and adjust taskbar placement and icon avoidance.</value>
   </data>
 </root>

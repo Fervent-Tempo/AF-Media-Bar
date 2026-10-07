@@ -806,7 +806,7 @@
     <value>套用预设</value>
   </data>
   <data name="DisplayModes.Header.Subtitle" xml:space="preserve">
-    <value>媒体栏的显示位置与各层功能开关</value>
+    <value>选择显示模式，配置常驻状态、快捷控制和完整面板。</value>
   </data>
   <data name="DisplayModes.Hover.Expander.Description" xml:space="preserve">
     <value>选择鼠标悬停时显示的控制项。</value>
@@ -2176,5 +2176,11 @@
   </data>
   <data name="Appearance.Specimen.Line3" xml:space="preserve">
     <value>字体预览 · 가나다 · Sample text</value>
+  </data>
+  <data name="Common.Page.ScreenAndPlacement" xml:space="preserve">
+    <value>屏幕与位置</value>
+  </data>
+  <data name="ScreenAndPlacement.Header.Subtitle" xml:space="preserve">
+    <value>选择媒体栏使用的显示器，调整任务栏位置与避让。</value>
   </data>
 </root>

@@ -206,6 +206,7 @@ namespace AFMediaBar
                 services.AddSingleton<LayoutViewModel>();
 
                 services.AddSingleton<DisplayModesPage>();
+                services.AddSingleton<ScreenAndPlacementPage>();
                 services.AddSingleton<DisplayModesViewModel>();
                 services.AddSingleton<ExtraFeaturesPage>();
                 services.AddSingleton<ExtraFeaturesViewModel>();

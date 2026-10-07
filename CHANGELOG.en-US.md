@@ -18,6 +18,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
+- Use the accent color for both the selected sidebar icon and label. Move Screen and placement from Display modes to its own navigation page, retaining settings, position reset, and search destinations.
+
 - Strengthen the settings sidebar selection with an accent surface, outline, and bold label. A shared indicator moves continuously between destinations, retargets from its current position, and stays aligned after pane changes and scrolling.
 
 - Use the main-branch sidebar, sidebar search, and fixed page headers without a back button; What’s new and About appear in the footer. Merge text and font settings, place common options first, and collapse less-used details by default; search expands destination details.

@@ -806,7 +806,7 @@
     <value>套用預設</value>
   </data>
   <data name="DisplayModes.Header.Subtitle" xml:space="preserve">
-    <value>媒體列的顯示位置與各層功能開關</value>
+    <value>選擇顯示模式，設定常駐狀態、快捷控制和完整面板。</value>
   </data>
   <data name="DisplayModes.Hover.Expander.Description" xml:space="preserve">
     <value>選擇滑鼠懸停時顯示的控制項。</value>
@@ -2176,5 +2176,11 @@
   </data>
   <data name="Appearance.Specimen.Line3" xml:space="preserve">
     <value>字型預覽 · 가나다 · Sample text</value>
+  </data>
+  <data name="Common.Page.ScreenAndPlacement" xml:space="preserve">
+    <value>螢幕與位置</value>
+  </data>
+  <data name="ScreenAndPlacement.Header.Subtitle" xml:space="preserve">
+    <value>選擇媒體列使用的螢幕，調整工作列位置與避讓。</value>
   </data>
 </root>
