@@ -39,7 +39,9 @@ jobs:
           if ($release -and -not $release.draft) { throw 'A published release cannot be rebuilt or replaced.' }
       - name: Verify release scripts
         shell: pwsh
-        run: ./tools/verify-release-metadata.ps1
+        run: |
+          ./tools/verify-release-metadata.ps1
+          ./tools/verify-release-highlights.ps1
       - name: Verify contributor snapshot generation
         shell: pwsh
         run: ./tools/verify-contributors-snapshot.ps1
