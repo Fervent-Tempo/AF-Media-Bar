@@ -2183,4 +2183,16 @@
   <data name="ScreenAndPlacement.Header.Subtitle" xml:space="preserve">
     <value>选择媒体栏使用的显示器，调整任务栏位置与避让。</value>
   </data>
+  <data name="Common.Page.ApplicationAppearance" xml:space="preserve">
+    <value>应用外观</value>
+  </data>
+  <data name="Common.Page.TaskbarAppearance" xml:space="preserve">
+    <value>媒体栏外观</value>
+  </data>
+  <data name="ApplicationAppearance.Header.Subtitle" xml:space="preserve">
+    <value>设置应用主题、窗口材质和界面字体。</value>
+  </data>
+  <data name="TaskbarAppearance.Header.Subtitle" xml:space="preserve">
+    <value>调整当前任务栏环境中的文字、尺寸和组件布局。</value>
+  </data>
 </root>

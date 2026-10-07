@@ -45,6 +45,7 @@ namespace AFMediaBar.Views.Windows
                 [SettingsPageKey.Interaction] = typeof(InteractionPage),
                 [SettingsPageKey.Lyrics] = typeof(LyricsPage),
                 [SettingsPageKey.Appearance] = typeof(AppearancePage),
+                [SettingsPageKey.ApplicationAppearance] = typeof(ApplicationAppearancePage),
                 [SettingsPageKey.Application] = typeof(ApplicationPage),
                 [SettingsPageKey.About] = typeof(AboutPage),
                 [SettingsPageKey.ReleaseHighlights] = typeof(ReleaseHighlightsPage),

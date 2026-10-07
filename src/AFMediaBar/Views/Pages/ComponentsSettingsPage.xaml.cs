@@ -6,14 +6,14 @@ using Wpf.Ui.Abstractions.Controls;
 
 namespace AFMediaBar.Views.Pages;
 
-/// <summary>呈现静置层组件的开关和参数，状态由共享的设置视图模型持有。</summary>
-public partial class ComponentsSettingsPage : INavigableView<ExtraFeaturesViewModel>
+/// <summary>呈现静置层组件的开关和参数，状态由专属组件视图模型持有。</summary>
+public partial class ComponentsSettingsPage : INavigableView<ComponentsSettingsViewModel>
 {
-    /// <summary>与媒体和通知页共用的设置状态。</summary>
-    public ExtraFeaturesViewModel ViewModel { get; }
+    /// <summary>当前上下文的组件设置状态。</summary>
+    public ComponentsSettingsViewModel ViewModel { get; }
 
     /// <summary>创建组件设置页。</summary>
-    public ComponentsSettingsPage(ExtraFeaturesViewModel viewModel)
+    public ComponentsSettingsPage(ComponentsSettingsViewModel viewModel)
     {
         ViewModel = viewModel;
         DataContext = this;

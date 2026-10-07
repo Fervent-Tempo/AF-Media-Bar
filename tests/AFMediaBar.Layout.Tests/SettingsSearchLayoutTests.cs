@@ -11,6 +11,7 @@ public sealed class SettingsSearchLayoutTests
 {
     [DataTestMethod]
     [DataRow(SettingsPageKey.Appearance, "AppearancePage")]
+    [DataRow(SettingsPageKey.ApplicationAppearance, "ApplicationAppearancePage")]
     [DataRow(SettingsPageKey.Interaction, "InteractionPage")]
     [DataRow(SettingsPageKey.MediaAndNotifications, "ExtraFeaturesPage")]
     [DataRow(SettingsPageKey.Lyrics, "LyricsPage")]
@@ -36,14 +37,13 @@ public sealed class SettingsSearchLayoutTests
     }
 
     [DataTestMethod]
-    [DataRow("字体", "Common.Group.TextAndFonts")]
-    [DataRow("媒体文字大小", "Common.Group.TextAndFonts")]
-    [DataRow("font", "Common.Group.TextAndFonts")]
-    public void FormerFontAndMediaTextTermsResolveToMergedGroup(string query, string groupKey)
+    [DataRow("字体", SettingsPageKey.ApplicationAppearance, 1)]
+    [DataRow("媒体文字大小", SettingsPageKey.Appearance, 0)]
+    [DataRow("font", SettingsPageKey.ApplicationAppearance, 1)]
+    public void FontAndMediaTextTermsResolveToTheirOwners(string query, SettingsPageKey page, int group)
     {
         var hits = SettingsSearchPolicy.Search(query, SettingsSearchIndex.Entries);
-        Assert.IsTrue(hits.Any(hit => hit.Page == SettingsPageKey.Appearance &&
-            hit.GroupIndex == 1 && hit.Title == Translations.Get(groupKey)));
+        Assert.IsTrue(hits.Any(hit => hit.Page == page && hit.GroupIndex == group));
     }
 
     private static string FindRepository()

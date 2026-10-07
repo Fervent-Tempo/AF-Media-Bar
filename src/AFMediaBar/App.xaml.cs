@@ -203,8 +203,10 @@ namespace AFMediaBar
                 services.AddScoped<AFMediaBar.Classes.Services.Settings.SettingsContextService>();
                 services.AddScoped<AFMediaBar.Classes.Services.Settings.SettingsPageContext>();
                 services.AddScoped<AFMediaBar.Classes.Abstractions.ISettingsConfiguration, AFMediaBar.Classes.Services.Settings.LegacySettingsConfiguration>();
-                services.AddSingleton<AppearancePage>();
-                services.AddSingleton<AppearanceViewModel>();
+                services.AddScoped<AppearancePage>();
+                services.AddScoped<ApplicationAppearancePage>();
+                services.AddScoped<TaskbarAppearanceViewModel>();
+                services.AddScoped<AppearanceViewModel>();
 
                 services.AddSingleton<LayoutPage>();
                 services.AddSingleton<LayoutViewModel>();
@@ -214,7 +216,8 @@ namespace AFMediaBar
                 services.AddSingleton<DisplayModesViewModel>();
                 services.AddSingleton<ExtraFeaturesPage>();
                 services.AddSingleton<ExtraFeaturesViewModel>();
-                services.AddSingleton<ComponentsSettingsPage>();
+                services.AddScoped<ComponentsSettingsPage>();
+                services.AddScoped<ComponentsSettingsViewModel>();
 
                 services.AddSingleton<InteractionPage>();
                 services.AddSingleton<InteractionViewModel>();

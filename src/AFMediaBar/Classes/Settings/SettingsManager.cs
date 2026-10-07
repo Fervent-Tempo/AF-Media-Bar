@@ -424,6 +424,38 @@ public static class SettingsManager
         };
         Replace(next, SettingsResetScope.Appearance);
     }
+    /// <summary>Restores application typography and window theme without replacing media color or taskbar layout.</summary>
+    public static void ResetApplicationAppearance()
+    {
+        var next = Current.Clone();
+        next.Appearance = Defaults.Appearance with { PlayerForegroundMode = next.Appearance.PlayerForegroundMode };
+        Replace(next, SettingsResetScope.Appearance);
+    }
+
+    /// <summary>Restores taskbar appearance while preserving application fonts and theme.</summary>
+    public static void ResetTaskbarAppearance()
+    {
+        var originalAppearance = Current.Appearance;
+        // Preserve the established appearance reset membership, then retain the application-wide fields.
+        var next = Current.Clone();
+        var defaults = Defaults;
+        next.Appearance = originalAppearance with { PlayerForegroundMode = defaults.Appearance.PlayerForegroundMode };
+        next.TaskbarSurface = defaults.TaskbarSurface;
+        next.TaskbarExperience = next.TaskbarExperience with
+        {
+            MediaFontSizePercent = defaults.TaskbarExperience.MediaFontSizePercent,
+            Density = defaults.TaskbarExperience.Density,
+            ContentLayout = defaults.TaskbarExperience.ContentLayout,
+            MediaTextAlignment = defaults.TaskbarExperience.MediaTextAlignment,
+            ComponentSpacingDip = defaults.TaskbarExperience.ComponentSpacingDip,
+            HoverButtonSpacingDip = defaults.TaskbarExperience.HoverButtonSpacingDip,
+            LengthMode = defaults.TaskbarExperience.LengthMode,
+            FixedLengthDip = defaults.TaskbarExperience.FixedLengthDip,
+            RestComponentOrder = defaults.TaskbarExperience.RestComponentOrder
+        };
+        Replace(next, SettingsResetScope.Appearance);
+    }
+
     public static void ResetDisplayModes()
     {
         var next = Current.Clone(); var defaults = Defaults;

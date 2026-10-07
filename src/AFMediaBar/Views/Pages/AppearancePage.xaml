@@ -8,19 +8,7 @@
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     ScrollViewer.CanContentScroll="False">
 
-    <!--
-        外观页 / Appearance page
-
-        字体、主题、媒体文字、媒体栏宽度、静置层布局和交互按钮分组。全部是一行一个选项。
-
-        上一版把字体、字重和字样预览合并成一张纵向大卡，又给主题/材质/文字颜色用了分段药丸；
-        现在字体的三项各占一行，枚举项统一用下拉框，预览与对照图作为该分组的插图放在行下方。
-        Groups cover fonts, theme, media text, bar width, rest layout, and interaction buttons. Each option gets a row.
-
-        The previous version merged font, weight, and specimen into one tall stacked card and used segmented
-        pills for theme, material, and text colour. Now the three font settings each own a row, enumerations use
-        selects, and the specimen and contrast preview sit below the rows as that group's illustration.
-    -->
+    <!-- Taskbar appearance for the editor environment. -->
 
     <Page.Resources>
         <!--
@@ -82,9 +70,9 @@
         <components:SettingsGroupStrip Margin="{StaticResource AfSettingsHeaderMargin}" MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
             Grid.Row="0"
             PageIcon="{ui:SymbolIcon PaintBrush24}"
-            Subtitle="{DynamicResource Loc.Appearance.Header.Subtitle}"
+            Subtitle="{DynamicResource Loc.TaskbarAppearance.Header.Subtitle}"
             Target="{Binding ElementName=PageScroll}"
-            Title="{DynamicResource Loc.Common.Page.Appearance}" />
+            Title="{DynamicResource Loc.Common.Page.TaskbarAppearance}" />
 
         <ScrollViewer
             x:Name="PageScroll"
@@ -96,244 +84,14 @@
                 x:Name="PageRoot"
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
                 Loaded="OnPageLoaded"
-                Unloaded="OnPageUnloaded">
+>
 
 
 
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.ThemeAndBackdrop}" Icon="{ui:SymbolIcon Color24}">
-                    <StackPanel>
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Appearance.Row.Theme.Description}"
-                            Icon="{ui:SymbolIcon Color24}"
-                            Title="{DynamicResource Loc.Appearance.Row.Theme.Title}">
-                            <ComboBox
-                                MinWidth="180"
-                                SelectedValue="{Binding ViewModel.ApplicationThemeMode, Mode=TwoWay}"
-                                SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Theme.Automatic}" Tag="{x:Static settings:ApplicationThemeMode.Automatic}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Theme.Light}" Tag="{x:Static settings:ApplicationThemeMode.Light}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Theme.Dark}" Tag="{x:Static settings:ApplicationThemeMode.Dark}" />
-                            </ComboBox>
-                        </components:SettingsRow>
 
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Appearance.Row.Backdrop.Description}"
-                            Icon="{ui:SymbolIcon WindowConsole20}"
-                            Title="{DynamicResource Loc.Appearance.Row.Backdrop.Title}">
-                            <ComboBox
-                                MinWidth="180"
-                                SelectedValue="{Binding ViewModel.BackdropMode, Mode=TwoWay}"
-                                SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Backdrop.Solid}" Tag="{x:Static settings:ApplicationBackdropMode.FluentSolid}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Backdrop.Mica}" Tag="{x:Static settings:ApplicationBackdropMode.Mica}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Backdrop.MicaAlt}" Tag="{x:Static settings:ApplicationBackdropMode.MicaAlt}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Backdrop.Acrylic}" Tag="{x:Static settings:ApplicationBackdropMode.Acrylic}" />
-                            </ComboBox>
-                        </components:SettingsRow>
 
-                        <!--
-                            材质浓度：只作用于"应用自己绘制材质"的两处（Windows 10 的窗口，以及永不激活的曲目通知）。
-                            Windows 11 的云母/亚克力/Mica Alt 由 DWM 绘制，浓度对它无效，因此行说明里写清了适用面。
-                            Material concentration: it only affects the two places where the application paints the material itself
-                            (Windows 10 windows and the never-activating track notification). Mica, Acrylic, and Mica Alt on Windows 11
-                            are painted by DWM and ignore it, which the row's description states.
-                        -->
-
-                        <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,2,0,4"><TextBlock
-                            Style="{StaticResource AfSettingsHintTextStyle}"
-                            Text="{DynamicResource Loc.Appearance.BackdropTint.Hint}" /></Border>
-
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Appearance.Row.Accent.Description}"
-                            Icon="{ui:SymbolIcon ColorBackground20}"
-                            Title="{DynamicResource Loc.Appearance.Row.Accent.Title}">
-                            <ComboBox
-                                MinWidth="180"
-                                SelectedValue="{Binding ViewModel.AccentColorMode, Mode=TwoWay}"
-                                SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Accent.FollowSystem}" Tag="{x:Static settings:AccentColorMode.System}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Accent.Custom}" Tag="{x:Static settings:AccentColorMode.Custom}" />
-                            </ComboBox>
-                        </components:SettingsRow>
-
-                        <!--
-                            自选色板。这里的颜色是刻意的硬编码：色块展示的就是"用户正在挑选的那个颜色"，它按定义不是主题语义画刷，
-                            与上面模拟任意壁纸的对照预览属于同一类例外。
-                            Custom swatch strip. These colours are deliberately hardcoded: a swatch shows the very colour the user is
-                            picking, which by definition is not a theme semantic brush, making it the same class of exception as the
-                            wallpaper contrast preview above.
-                        -->
-                        <Border
-                            Margin="0,4,0,0"
-                            Padding="14,12"
-                            Background="{DynamicResource AfSettingsInfoSurfaceBrush}"
-                            BorderBrush="{DynamicResource AfSettingsBorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="6"
-                            Visibility="{Binding ViewModel.IsCustomAccent, Converter={StaticResource AfBooleanToVisibilityConverter}}">
-                            <StackPanel>
-                                <TextBlock
-                                    Margin="0,0,0,8"
-                                    Style="{StaticResource AfSettingsRowDescriptionStyle}"
-                                    Text="{DynamicResource Loc.Appearance.Accent.PaletteLabel}" />
-                                <StackPanel Orientation="Horizontal">
-                                    <Button
-                                        Width="26"
-                                        Height="26"
-                                        Margin="0,0,4,0"
-                                        Padding="0"
-                                        Background="#0078D4"
-                                        Command="{Binding ViewModel.SetAccentColorCommand}"
-                                        CommandParameter="#0078D4"
-                                        Style="{StaticResource AfSettingsColorSwatchStyle}"
-                                        Tag="#0078D4"
-                                        ToolTip="#0078D4" />
-                                    <Button
-                                        Width="26"
-                                        Height="26"
-                                        Margin="0,0,4,0"
-                                        Padding="0"
-                                        Background="#0099BC"
-                                        Command="{Binding ViewModel.SetAccentColorCommand}"
-                                        CommandParameter="#0099BC"
-                                        Style="{StaticResource AfSettingsColorSwatchStyle}"
-                                        Tag="#0099BC"
-                                        ToolTip="#0099BC" />
-                                    <Button
-                                        Width="26"
-                                        Height="26"
-                                        Margin="0,0,4,0"
-                                        Padding="0"
-                                        Background="#107C10"
-                                        Command="{Binding ViewModel.SetAccentColorCommand}"
-                                        CommandParameter="#107C10"
-                                        Style="{StaticResource AfSettingsColorSwatchStyle}"
-                                        Tag="#107C10"
-                                        ToolTip="#107C10" />
-                                    <Button
-                                        Width="26"
-                                        Height="26"
-                                        Margin="0,0,4,0"
-                                        Padding="0"
-                                        Background="#876400"
-                                        Command="{Binding ViewModel.SetAccentColorCommand}"
-                                        CommandParameter="#876400"
-                                        Style="{StaticResource AfSettingsColorSwatchStyle}"
-                                        Tag="#876400"
-                                        ToolTip="#876400" />
-                                    <Button
-                                        Width="26"
-                                        Height="26"
-                                        Margin="0,0,4,0"
-                                        Padding="0"
-                                        Background="#C42B1C"
-                                        Command="{Binding ViewModel.SetAccentColorCommand}"
-                                        CommandParameter="#C42B1C"
-                                        Style="{StaticResource AfSettingsColorSwatchStyle}"
-                                        Tag="#C42B1C"
-                                        ToolTip="#C42B1C" />
-                                    <Button
-                                        Width="26"
-                                        Height="26"
-                                        Margin="0,0,4,0"
-                                        Padding="0"
-                                        Background="#E3008C"
-                                        Command="{Binding ViewModel.SetAccentColorCommand}"
-                                        CommandParameter="#E3008C"
-                                        Style="{StaticResource AfSettingsColorSwatchStyle}"
-                                        Tag="#E3008C"
-                                        ToolTip="#E3008C" />
-                                    <Button
-                                        Width="26"
-                                        Height="26"
-                                        Margin="0,0,4,0"
-                                        Padding="0"
-                                        Background="#881798"
-                                        Command="{Binding ViewModel.SetAccentColorCommand}"
-                                        CommandParameter="#881798"
-                                        Style="{StaticResource AfSettingsColorSwatchStyle}"
-                                        Tag="#881798"
-                                        ToolTip="#881798" />
-                                    <Button
-                                        Width="26"
-                                        Height="26"
-                                        Margin="0,0,4,0"
-                                        Padding="0"
-                                        Background="#7C3AED"
-                                        Command="{Binding ViewModel.SetAccentColorCommand}"
-                                        CommandParameter="#7C3AED"
-                                        Style="{StaticResource AfSettingsColorSwatchStyle}"
-                                        Tag="#7C3AED"
-                                        ToolTip="#7C3AED" />
-                                    <Button
-                                        Width="26"
-                                        Height="26"
-                                        Margin="0,0,4,0"
-                                        Padding="0"
-                                        Background="#4A545E"
-                                        Command="{Binding ViewModel.SetAccentColorCommand}"
-                                        CommandParameter="#4A545E"
-                                        Style="{StaticResource AfSettingsColorSwatchStyle}"
-                                        Tag="#4A545E"
-                                        ToolTip="#4A545E" />
-                                    <Button
-                                        Width="26"
-                                        Height="26"
-                                        Padding="0"
-                                        Background="#767676"
-                                        Command="{Binding ViewModel.SetAccentColorCommand}"
-                                        CommandParameter="#767676"
-                                        Style="{StaticResource AfSettingsColorSwatchStyle}"
-                                        Tag="#767676"
-                                        ToolTip="#767676" />
-                                </StackPanel>
-                                <StackPanel Margin="0,10,0,0" Orientation="Horizontal">
-                                    <TextBlock
-                                        VerticalAlignment="Center"
-                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
-                                        Text="{DynamicResource Loc.Appearance.Accent.HexLabel}" />
-                                    <TextBox
-                                        Width="110"
-                                        Margin="8,0,0,0"
-                                        Text="{Binding ViewModel.AccentColorHex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                </StackPanel>
-                            </StackPanel>
-                        </Border>
-
-                        <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,8,0,0"><TextBlock
-                            Style="{StaticResource AfSettingsHintTextStyle}"
-                            Text="{DynamicResource Loc.Appearance.Accent.Hint}" /></Border>
-
-                        <components:SettingsRow
-                            Badge="{Binding ViewModel.MotionModeText}"
-                            BadgeTone="Accent"
-                            Description="{Binding ViewModel.MotionDetailText}"
-                            Icon="{ui:SymbolIcon ArrowSync24}"
-                            Title="{DynamicResource Loc.Appearance.Row.Motion.Title}" />
-                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="False" Icon="{ui:SymbolIcon CircleHalfFill24}">
-                            <ui:CardExpander.Header><StackPanel>
-                                <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Settings.Advanced.Backdrop.Title}" />
-                                <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Settings.Advanced.Backdrop.Description}" />
-                            </StackPanel></ui:CardExpander.Header>
-                            <StackPanel>
-<components:SettingsRow
-                            Description="{DynamicResource Loc.Appearance.Row.BackdropTint.Description}"
-                            Icon="{ui:SymbolIcon CircleHalfFill24}"
-                            Title="{DynamicResource Loc.Appearance.Row.BackdropTint.Title}">
-                            <components:SettingsNumericEditor
-                                    Value="{Binding ViewModel.BackdropTintOpacityPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                    Minimum="{Binding Source={x:Static settings:AppearanceSettings.MinimumBackdropTintOpacityPercent}}"
-                                    Maximum="{Binding Source={x:Static settings:AppearanceSettings.MaximumBackdropTintOpacityPercent}}"
-                                    Step="{Binding Source={x:Static settings:AppearanceSettings.BackdropTintOpacityStep}}"
-                                    Unit="{DynamicResource Loc.Settings.Numeric.Percent}" />
-                        </components:SettingsRow>
-                            </StackPanel>
-                        </ui:CardExpander>
-                    </StackPanel>
-                </components:SettingsGroup>
-
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.TextAndFonts}" Icon="{ui:SymbolIcon TextColor24}">
+                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.MediaBarText}" Icon="{ui:SymbolIcon TextColor24}">
                     <StackPanel>
 <components:SettingsRow
                             Description="{DynamicResource Loc.Appearance.Row.MediaFontSize.Description}"
@@ -407,132 +165,7 @@
                         <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,8,0,0"><TextBlock
                             Style="{StaticResource AfSettingsHintTextStyle}"
                             Text="{DynamicResource Loc.Appearance.Preview.Hint}" /></Border>
-                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="False" Icon="{ui:SymbolIcon TextFont24}">
-                            <ui:CardExpander.Header><StackPanel>
-                                <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Settings.Advanced.Fonts.Title}" />
-                                <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Settings.Advanced.Fonts.Description}" />
-                            </StackPanel></ui:CardExpander.Header>
-                            <StackPanel>
 
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Appearance.Row.LatinFont.Description}"
-                            Icon="{ui:SymbolIcon TextFont24}"
-                            Title="{DynamicResource Loc.Appearance.Row.LatinFont.Title}">
-                            <ComboBox
-                                MinWidth="200"
-                                MaxDropDownHeight="360"
-                                ItemsSource="{Binding ViewModel.LatinFontChoices}"
-                                SelectedValue="{Binding ViewModel.LatinFontFamily, Mode=TwoWay}"
-                                SelectedValuePath="Name">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel>
-                                            <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding DisplayName}" />
-                                            <StackPanel Margin="0,3,0,0" Orientation="Horizontal">
-                                                <TextBlock
-                                                    Margin="0,2,7,0"
-                                                    FontSize="10"
-                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                    Text="{DynamicResource Loc.Appearance.Font.PreviewLabel}" />
-                                                <TextBlock
-                                                    FontFamily="{Binding PreviewFontFamily}"
-                                                    FontSize="14"
-                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                    Text="{Binding PreviewText}" />
-                                            </StackPanel>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-                        </components:SettingsRow>
-
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Appearance.Row.CjkFont.Description}"
-                            Icon="{ui:SymbolIcon LocalLanguage24}"
-                            Title="{DynamicResource Loc.Appearance.Row.CjkFont.Title}">
-                            <ComboBox
-                                MinWidth="200"
-                                MaxDropDownHeight="360"
-                                ItemsSource="{Binding ViewModel.CjkFontChoices}"
-                                SelectedValue="{Binding ViewModel.CjkFontFamily, Mode=TwoWay}"
-                                SelectedValuePath="Name">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel>
-                                            <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding DisplayName}" />
-                                            <StackPanel Margin="0,3,0,0" Orientation="Horizontal">
-                                                <TextBlock
-                                                    Margin="0,2,7,0"
-                                                    FontSize="10"
-                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                    Text="{DynamicResource Loc.Appearance.Font.PreviewLabel}" />
-                                                <TextBlock
-                                                    FontFamily="{Binding PreviewFontFamily}"
-                                                    FontSize="14"
-                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                    Text="{Binding PreviewText}" />
-                                            </StackPanel>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-                        </components:SettingsRow>
-
-                        <!--
-                            上下限用 Binding 而不是 x:Static：x:Static 返回装箱的 int，
-                            RangeBase.Maximum 需要 double，标记扩展不做这个转换，而绑定会。
-                            The bounds use Binding rather than x:Static because x:Static yields a boxed int,
-                            RangeBase.Maximum wants a double, and the markup extension performs no conversion
-                            while the binding engine does.
-                        -->
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Appearance.Row.FontWeight.Description}"
-                            Icon="{ui:SymbolIcon TextBold24}"
-                            Title="{DynamicResource Loc.Appearance.Row.FontWeight.Title}">
-                            <components:SettingsNumericEditor
-                                    Value="{Binding ViewModel.FontWeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                    Minimum="{Binding Source={x:Static settings:AppearanceSettings.MinimumFontWeight}}"
-                                    Maximum="{Binding Source={x:Static settings:AppearanceSettings.MaximumFontWeight}}"
-                                    Step="{Binding Source={x:Static settings:AppearanceSettings.FontWeightStep}}" />
-                        </components:SettingsRow>
-
-                        <Border
-                            Margin="0,4,0,0"
-                            Padding="16,13"
-                            Background="{DynamicResource AfSettingsInfoSurfaceBrush}"
-                            BorderBrush="{DynamicResource AfSettingsBorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="6">
-                            <StackPanel>
-                                <TextBlock
-                                    Margin="0,0,0,8"
-                                    Style="{StaticResource AfSettingsRowDescriptionStyle}"
-                                    Text="{DynamicResource Loc.Appearance.Specimen.Label}" />
-                                <TextBlock
-                                    FontFamily="{DynamicResource AppTextFontFamily}"
-                                    FontSize="20"
-                                    FontWeight="{DynamicResource AppTextFontWeight}"
-                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                    Text="{DynamicResource Loc.Appearance.Specimen.Line1}" />
-                                <TextBlock
-                                    Margin="0,8,0,0"
-                                    FontFamily="{DynamicResource AppTextFontFamily}"
-                                    FontSize="16"
-                                    FontWeight="{DynamicResource AppTextFontWeight}"
-                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                    Text="{DynamicResource Loc.Appearance.Specimen.Line2}" />
-                                <TextBlock
-                                    Margin="0,8,0,0"
-                                    FontFamily="{DynamicResource AppTextFontFamily}"
-                                    FontSize="13"
-                                    FontWeight="{DynamicResource AppTextFontWeight}"
-                                    Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                                    Text="{DynamicResource Loc.Appearance.Specimen.Line3}" />
-                            </StackPanel>
-                        </Border>
-
-                            </StackPanel>
-                        </ui:CardExpander>
                     </StackPanel>
                 </components:SettingsGroup>
 
@@ -587,7 +220,7 @@
                     </StackPanel>
                 </components:SettingsGroup>
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Appearance.Group.RestLayout}" Icon="{ui:SymbolIcon LayoutColumnTwo24}">
+                <components:SettingsGroup Visibility="{Binding ViewModel.IsHorizontalLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}" Header="{DynamicResource Loc.Appearance.Group.RestLayout}" Icon="{ui:SymbolIcon LayoutColumnTwo24}">
                     <StackPanel>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.DisplayModes.Rest.Row.Layout.Description}"

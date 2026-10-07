@@ -2183,4 +2183,16 @@
   <data name="ScreenAndPlacement.Header.Subtitle" xml:space="preserve">
     <value>Choose the media bar’s monitors and adjust taskbar placement and icon avoidance.</value>
   </data>
+  <data name="Common.Page.ApplicationAppearance" xml:space="preserve">
+    <value>Application appearance</value>
+  </data>
+  <data name="Common.Page.TaskbarAppearance" xml:space="preserve">
+    <value>Media bar appearance</value>
+  </data>
+  <data name="ApplicationAppearance.Header.Subtitle" xml:space="preserve">
+    <value>Configure application theme, window materials, and interface fonts.</value>
+  </data>
+  <data name="TaskbarAppearance.Header.Subtitle" xml:space="preserve">
+    <value>Adjust text, dimensions, and component layout for the current taskbar environment.</value>
+  </data>
 </root>

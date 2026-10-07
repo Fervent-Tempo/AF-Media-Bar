@@ -2183,4 +2183,16 @@
   <data name="ScreenAndPlacement.Header.Subtitle" xml:space="preserve">
     <value>選擇媒體列使用的螢幕，調整工作列位置與避讓。</value>
   </data>
+  <data name="Common.Page.ApplicationAppearance" xml:space="preserve">
+    <value>應用程式外觀</value>
+  </data>
+  <data name="Common.Page.TaskbarAppearance" xml:space="preserve">
+    <value>媒體列外觀</value>
+  </data>
+  <data name="ApplicationAppearance.Header.Subtitle" xml:space="preserve">
+    <value>設定應用程式主題、視窗材質和介面字體。</value>
+  </data>
+  <data name="TaskbarAppearance.Header.Subtitle" xml:space="preserve">
+    <value>調整目前工作列環境中的文字、尺寸和元件配置。</value>
+  </data>
 </root>

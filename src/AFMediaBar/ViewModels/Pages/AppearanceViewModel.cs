@@ -1,4 +1,5 @@
 using AFMediaBar.Classes.Settings;
+using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Localization;
@@ -8,13 +9,14 @@ using AFMediaBar.Resources;
 namespace AFMediaBar.ViewModels.Pages;
 
 /// <summary>
-/// 外观页 ViewModel：管理字体、主题、窗口材质和媒体栏的视觉参数。
-/// Appearance-page ViewModel: manages fonts, theme, window material, and visual taskbar settings.
+/// 外观页 ViewModel：管理应用字体、主题与窗口材质；任务栏外观由独立视图模型持有。
+/// Application appearance view model, separate from taskbar layout.
 /// </summary>
-public partial class AppearanceViewModel : ObservableObject
+public partial class AppearanceViewModel : ObservableObject, IDisposable
 {
     private readonly LocalizationService _localization;
-    private readonly TaskbarLengthConstraintsService _taskbarLengthConstraints;
+    private readonly ISettingsConfiguration _configuration;
+    private bool _disposed;
     private LatinFontPreset _latinFont;
     private CjkFontPreset _cjkFont;
     private string _latinFontFamily;
@@ -22,7 +24,6 @@ public partial class AppearanceViewModel : ObservableObject
     private IReadOnlyList<FontFamilyChoice> _latinFontChoices;
     private IReadOnlyList<FontFamilyChoice> _cjkFontChoices;
     private int _fontWeight;
-    private PlayerForegroundMode _playerForegroundMode;
     private ApplicationThemeMode _applicationThemeMode;
     private ApplicationBackdropMode _backdropMode;
     private AccentColorMode _accentColorMode;
@@ -35,21 +36,20 @@ public partial class AppearanceViewModel : ObservableObject
     /// 创建外观页视图模型，并订阅设置变更与界面语言变化。
     ///
     /// 下拉框的选项名由 XAML 的动态资源提供，页面自己就会换字；本视图模型产出的动效读数是代码拼出来的文案，因此必须
-    /// 订阅语言变化并让 WPF 重读全部绑定。视图模型是单例，两个订阅都与进程同寿命，不需要退订。
+    /// 订阅语言变化并让 WPF 重读全部绑定。页面作用域释放时取消字体查询并退订。
     /// Creates the appearance view model and subscribes to settings changes and interface-language changes.
     ///
     /// The drop-down option names come from XAML dynamic resources and follow a language change on their own, while the motion
-    /// reading this view model produces is text built in code, so it has to subscribe and make WPF re-read every binding. The
-    /// view model is a singleton, so both subscriptions live as long as the process and no unsubscription is needed.
+    /// reading this view model produces is text built in code, so it has to subscribe and make WPF re-read every binding. The page scope cancels font work and releases both subscriptions.
     /// </summary>
     /// <param name="localization">界面语言服务：本页在它变化后刷新自己产出的文案。/ The interface-language service, whose change this page follows to refresh its own text.</param>
-    /// <param name="taskbarLengthConstraints">当前任务栏安全宽度范围。/ Current safe width range of the taskbar.</param>
-    public AppearanceViewModel(LocalizationService localization, TaskbarLengthConstraintsService taskbarLengthConstraints)
+    /// <param name="configuration">Application appearance access for this page scope.</param>
+    public AppearanceViewModel(LocalizationService localization, ISettingsConfiguration configuration)
     {
         _localization = localization;
-        _taskbarLengthConstraints = taskbarLengthConstraints;
+        _configuration = configuration;
 
-        var appearance = SettingsManager.Current.Appearance.Normalize();
+        var appearance = _configuration.Current.Appearance.Normalize();
         _latinFontChoices = InstalledFontCatalog.GetInitialChoices("Appearance.LatinFont.FollowSystem", cjk: false, appearance.SelectedLatinFontFamily);
         _cjkFontChoices = InstalledFontCatalog.GetInitialChoices("Appearance.CjkFont.FollowSystem", cjk: true, appearance.SelectedCjkFontFamily);
         _latinFont = appearance.LatinFont;
@@ -57,7 +57,6 @@ public partial class AppearanceViewModel : ObservableObject
         _latinFontFamily = InstalledFontCatalog.MatchSelection(appearance.SelectedLatinFontFamily, _latinFontChoices);
         _cjkFontFamily = InstalledFontCatalog.MatchSelection(appearance.SelectedCjkFontFamily, _cjkFontChoices);
         _fontWeight = appearance.FontWeight;
-        _playerForegroundMode = appearance.PlayerForegroundMode;
         _applicationThemeMode = appearance.ApplicationThemeMode;
         _backdropMode = appearance.BackdropMode;
         _accentColorMode = appearance.AccentColorMode;
@@ -65,8 +64,6 @@ public partial class AppearanceViewModel : ObservableObject
         _backdropTintOpacityPercent = appearance.ResolveBackdropTintOpacityPercent();
         SettingsManager.SettingsChanged += OnSettingsChanged;
         _localization.LanguageChanged += OnLanguageChanged;
-        _taskbarLengthConstraints.Changed += OnTaskbarLengthConstraintsChanged;
-        RefreshRestOrderEntries();
     }
 
     public LatinFontPreset LatinFont
@@ -120,7 +117,7 @@ public partial class AppearanceViewModel : ObservableObject
         var generation = ++_fontRefreshGeneration;
         var (installedLatin, installedCjk) = await InstalledFontCatalog.RefreshChoicesAsync(cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
-        if (generation != _fontRefreshGeneration) return;
+        if (_disposed || !_configuration.IsActive || generation != _fontRefreshGeneration) return;
 
         var latin = LatinFontFamily;
         var cjk = CjkFontFamily;
@@ -146,24 +143,6 @@ public partial class AppearanceViewModel : ObservableObject
         {
             value = Math.Clamp(value, AppearanceSettings.MinimumFontWeight, AppearanceSettings.MaximumFontWeight);
             if (SetProperty(ref _fontWeight, value))
-            {
-                if (!_isRefreshing) Publish();
-            }
-        }
-    }
-
-    /// <summary>
-    /// 播放器文字颜色模式。写入即发布设置，因此下拉框可以直接双向绑定；
-    /// 原有的 <c>SetPlayerForegroundModeCommand</c> 仍走同一条写入路径，两条入口行为一致。
-    /// Player text colour mode. Writing publishes the setting, so a select can bind two-way; the existing
-    /// <c>SetPlayerForegroundModeCommand</c> still runs through the same write path, so both entries behave alike.
-    /// </summary>
-    public PlayerForegroundMode PlayerForegroundMode
-    {
-        get => _playerForegroundMode;
-        set
-        {
-            if (SetProperty(ref _playerForegroundMode, value))
             {
                 if (!_isRefreshing) Publish();
             }
@@ -262,19 +241,6 @@ public partial class AppearanceViewModel : ObservableObject
     /// Font-size scale percentage for the rest-layer media text (title, artist, lyrics). The value lives in the taskbar
     /// experience settings but this page owns it in the interface, so "restore this page's defaults" resets it as well.
     /// </summary>
-    public int MediaFontSizePercent
-    {
-        get => SettingsManager.Current.TaskbarExperience.Normalize().MediaFontSizePercent;
-        set
-        {
-            if (_isRefreshing || value == MediaFontSizePercent)
-                return;
-
-            SettingsManager.SetTaskbarExperienceSettings(
-                SettingsManager.Current.TaskbarExperience with { MediaFontSizePercent = value });
-        }
-    }
-
     /// <summary>当前桌面环境的动效级别。/ Current motion level for the desktop environment.</summary>
     public string MotionModeText => MotionPolicy.ResolveCurrent().Mode switch
     {
@@ -295,7 +261,6 @@ public partial class AppearanceViewModel : ObservableObject
     private void OnLanguageChanged(object? sender, EventArgs e)
     {
         RelocalizeInstalledFonts();
-        RefreshRestOrderEntries();
         OnPropertyChanged(string.Empty);
     }
 
@@ -319,9 +284,6 @@ public partial class AppearanceViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void SetPlayerForegroundMode(PlayerForegroundMode mode) => PlayerForegroundMode = mode;
-
-    [RelayCommand]
     private void SetApplicationThemeMode(ApplicationThemeMode mode) => ApplicationThemeMode = mode;
 
     [RelayCommand]
@@ -342,11 +304,11 @@ public partial class AppearanceViewModel : ObservableObject
         AccentColorHex = ColorHex.Format(color);
     }
 
-    private void Publish() => SettingsManager.SetAppearanceSettings(new AppearanceSettings(
+    private void Publish() => _configuration.SetAppearance(new AppearanceSettings(
         LatinFont,
         CjkFont,
         FontWeight,
-        PlayerForegroundMode,
+        _configuration.Current.Appearance.PlayerForegroundMode,
         false,
         ApplicationThemeMode,
         BackdropMode,
@@ -356,23 +318,15 @@ public partial class AppearanceViewModel : ObservableObject
         LatinFontFamily,
         CjkFontFamily));
 
-    public void ResetAppearance() => SettingsManager.ResetAppearance();
+    public void ResetAppearance() { if (!_disposed && _configuration.IsActive) SettingsManager.ResetApplicationAppearance(); }
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
     {
-        // 媒体栏外观仍存在任务栏体验设置里，外部写入或页面重置后要重读这些绑定。
-        // Taskbar appearance still lives in the experience settings, so external writes and page resets refresh these bindings.
-        if (e.ResetScope is null && e.PropertyName == nameof(AppSettings.TaskbarExperience))
-        {
-            OnPropertyChanged(nameof(MediaFontSizePercent));
-            RaiseTaskbarAppearance();
-            return;
-        }
+        if (_disposed || !_configuration.IsActive) return;
+        if (e.ResetScope is not (SettingsResetScope.Appearance or SettingsResetScope.DisplayModes or SettingsResetScope.All) &&
+            e.PropertyName != nameof(AppSettings.Appearance)) return;
 
-        if (e.ResetScope is not (SettingsResetScope.Appearance or SettingsResetScope.DisplayModes or SettingsResetScope.All))
-            return;
-
-        var appearance = SettingsManager.Current.Appearance;
+        var appearance = _configuration.Current.Appearance;
         _isRefreshing = true;
         try
         {
@@ -381,7 +335,6 @@ public partial class AppearanceViewModel : ObservableObject
             LatinFontFamily = InstalledFontCatalog.MatchSelection(appearance.SelectedLatinFontFamily, _latinFontChoices);
             CjkFontFamily = InstalledFontCatalog.MatchSelection(appearance.SelectedCjkFontFamily, _cjkFontChoices);
             FontWeight = appearance.FontWeight;
-            PlayerForegroundMode = appearance.PlayerForegroundMode;
             ApplicationThemeMode = appearance.ApplicationThemeMode;
             BackdropMode = appearance.BackdropMode;
             AccentColorMode = appearance.AccentColorMode;
@@ -389,7 +342,18 @@ public partial class AppearanceViewModel : ObservableObject
             BackdropTintOpacityPercent = appearance.ResolveBackdropTintOpacityPercent();
         }
         finally { _isRefreshing = false; }
-        OnPropertyChanged(nameof(MediaFontSizePercent));
-        RaiseTaskbarAppearance();
+    }
+
+    /// <summary>Releases application appearance subscriptions when its cached page scope closes.</summary>
+    /// <summary>Cancellation for the active page context.</summary>
+    public CancellationToken ContextCancellationToken => _configuration.CancellationToken;
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _fontRefreshGeneration++;
+        SettingsManager.SettingsChanged -= OnSettingsChanged;
+        _localization.LanguageChanged -= OnLanguageChanged;
     }
 }

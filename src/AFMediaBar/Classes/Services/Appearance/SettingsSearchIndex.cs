@@ -86,7 +86,8 @@ public static class SettingsSearchIndex
         SettingsPageKey.Components => "Common.Page.Components",
         SettingsPageKey.Interaction => "Common.Page.Interaction",
         SettingsPageKey.Lyrics => "Common.Page.Lyrics",
-        SettingsPageKey.Appearance => "Common.Page.Appearance",
+        SettingsPageKey.Appearance => "Common.Page.TaskbarAppearance",
+        SettingsPageKey.ApplicationAppearance => "Common.Page.ApplicationAppearance",
         SettingsPageKey.Application => "Common.Page.Application",
         SettingsPageKey.About => "Common.Page.About",
         SettingsPageKey.ReleaseHighlights => "Common.Page.ReleaseHighlights",
@@ -320,7 +321,7 @@ public static class SettingsSearchIndex
 
         // ---- 外观 / Appearance ----
         Create(
-            SettingsPageKey.Appearance,
+            SettingsPageKey.ApplicationAppearance,
             0,
             "Common.Group.ThemeAndBackdrop",
             "Search.Appearance.ThemeAndBackdrop.Description",
@@ -328,33 +329,35 @@ public static class SettingsSearchIndex
             ["主题", "theme", "浅色", "深色", "light", "dark", "材质", "backdrop", "mica", "云母", "acrylic", "亚克力", "动效", "motion", "动画", "背景材质", "交互动效"]),
         Create(
             SettingsPageKey.Appearance,
-            1,
-            "Common.Group.TextAndFonts",
-            "Search.Appearance.TextAndFonts.Description",
+            0,
+            "Common.Group.MediaBarText",
+            "Search.Appearance.MediaBarText.Description",
             language,
-            ["文字颜色", "foreground", "文字", "颜色", "自动", "浅色文字", "深色文字", "对比", "可读", "播放器文字", "媒体文字大小", "字号", "文字大小", "font size", "缩放", "字体", "font", "字重", "weight", "粗细", "西文", "英文", "中文", "预览", "preview", "segoe", "雅黑", "字体粗细"]),
+            ["文字颜色", "foreground", "文字", "颜色", "自动", "浅色文字", "深色文字", "对比", "可读", "播放器文字", "媒体文字大小", "字号", "文字大小", "font size", "缩放"]),
         Create(
             SettingsPageKey.Appearance,
-            2,
+            1,
             "Common.Group.MediaBarWidth",
             "Search.Appearance.MediaBarWidth.Description",
             language,
             ["长度", "尺寸", "宽度", "间距", "spacing", "length", "固定", "跟随", "组件", "width", "固定长度", "组件间距"]),
         Create(
             SettingsPageKey.Appearance,
-            3,
+            2,
             "Appearance.Group.RestLayout",
             "Search.Appearance.RestLayout.Description",
             language,
             ["静置层外观", "rest layout", "排列", "布局", "layout", "对齐", "标题", "歌手", "artist", "内容排列", "顺序", "排序", "order", "组件", "component", "上移", "下移"]),
         Create(
             SettingsPageKey.Appearance,
-            4,
+            3,
             "Appearance.Group.InteractionButtons",
             "Search.Appearance.InteractionButtons.Description",
             language,
             ["交互按钮大小", "按钮尺寸", "小", "中", "大", "hover button size", "button spacing", "悬停层间距", "静置层按钮", "图标大小"]),
 
+        Create(SettingsPageKey.ApplicationAppearance, 1, "Common.Group.Fonts", "Search.Appearance.Fonts.Description", language,
+            ["字体", "font", "字重", "weight", "西文", "中文", "预览", "segoe", "雅黑"]),
         // ---- 应用 / Application ----
         //
         // 这一页原来是「应用与关于」的前半部分，拆分后只保留"应用自身的设置"：版本与更新、开机自启、界面语言、
