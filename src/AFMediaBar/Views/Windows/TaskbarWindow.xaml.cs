@@ -1850,13 +1850,9 @@ public partial class TaskbarWindow : Window
             _dragStartBarPrimary + cursorPrimary - _dragStartCursorPrimary,
             0,
             _dragPrimaryLimit);
-        SettingsManager.Current.Position = TaskbarBarPosition.Start;
 
-        // 偏移的基准 MUST 与放置时的加法基准一致（空闲区间起点），否则媒体栏会整体偏离鼠标；
-        // 自动避让打开且区间起点不在最左边时，这个差值就是"拖不动"的来源。
-        // The offset's base MUST match the base the placement adds it to (the free range's start), otherwise the bar misses the mouse
-        // by that difference; with "avoid icons" on and a range that does not start at the left edge, that is exactly what makes
-        // dragging feel broken.
+        // Keep the chosen anchor while dragging: forcing Start would also flip automatic right-side presentation.
+        // The placement and drag offset use the same physical-pixel anchor, including the full taskbar center.
         var dragDpiScale = _taskBarService.GetTaskbarDpiScale(_lastTaskbarHandle);
         if (dragDpiScale <= 0 ||
             !_taskBarService.TryGetTaskbarRect(_lastTaskbarHandle, out var dragTaskbarRect))
@@ -1878,7 +1874,9 @@ public partial class TaskbarWindow : Window
             targetPrimary,
             dragRange.Start,
             dragRange.End,
-            dragPrimarySize);
+            dragPrimarySize,
+            dragIsVertical ? dragTaskbarRect.Bottom - dragTaskbarRect.Top : dragTaskbarRect.Right - dragTaskbarRect.Left,
+            SettingsManager.Current.Position);
 
         var windowHandle = new WindowInteropHelper(this).Handle;
         if (_lastTaskbarHandle != IntPtr.Zero && windowHandle != IntPtr.Zero)

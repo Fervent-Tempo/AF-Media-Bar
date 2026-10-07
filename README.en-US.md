@@ -41,7 +41,7 @@ Download a release package rather than a Source code archive. The app is not com
 | Live lyrics | Fetch lyrics automatically and follow playback with word highlighting, translation, romanization, and two-line display. |
 | Audio controls | Quickly switch the default output device, adjust the current media app's volume, and view spatial audio status. |
 | Spectrum and metrics | Choose from four audio spectrum styles and show CPU, GPU, and memory metrics on the taskbar. |
-| Layout and appearance | Avoid taskbar icons and system areas, choose a display, auto-hide when nothing plays, and customize fonts, accent colour, and window material. |
+| Layout and appearance | Left, center, and right alignment with independent content arrangement; avoid taskbar icons and system areas, choose a display, auto-hide when nothing plays, and customize fonts, accent colour, and window material. |
 | Shortcuts | Hover to reveal controls or open the full media popover for more information; customize click actions, quickly launch players, and use the tray menu. |
 
 ## Basic use

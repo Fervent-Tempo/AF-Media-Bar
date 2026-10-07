@@ -64,6 +64,16 @@ public sealed class TaskbarAlignmentTests
     }
 
     [TestMethod]
+    public void NarrowSafeRangeKeepsRightArtworkInsideTheWindow()
+    {
+        var layout = TaskbarRestLayoutPolicy.Arrange(TaskbarRestLayoutPolicy.DefaultOrder,
+            component => component == TaskbarRestComponent.Artwork ? 36 : 40,
+            _ => true, 3, 100, 8, 6, fromRight: true);
+        Assert.AreEqual(97.0, layout.Find(TaskbarRestComponent.Artwork)!.Value.Right);
+        Assert.AreEqual(0.0, layout.TextWidth);
+    }
+
+    [TestMethod]
     public void CenterButtonsUseBarCenterAndRevealClipsPreserveTheirAnchor()
     {
         foreach (var width in new[] { 400.0, 600.0 })
@@ -104,6 +114,20 @@ public sealed class TaskbarAlignmentTests
             SettingsManager.SetUserDefaults(defaults);
             SettingsManager.Replace(old);
         }
+    }
+
+    [TestMethod]
+    public void DragOffsetsRoundTripForAllAnchorsIncludingSafeRangeClamps()
+    {
+        foreach (var position in Enum.GetValues<TaskbarBarPosition>())
+            foreach (var desired in new[] { -50, 450, 1200, 1950 })
+            {
+                var padding = TaskbarBarPlacementCalculator.ResolveManualPadding(desired, 100, 1800, 300, 2000, position);
+                var result = TaskbarBarPlacementCalculator.Calculate(
+                    2000, 300, 48, 40, new TaskbarPrimaryRange(100, 1800), position, padding, 0, 1, 20);
+                Assert.AreEqual(Math.Clamp(desired, 100, 1500), result.Primary);
+            }
+        Assert.AreEqual(350, TaskbarBarPlacementCalculator.ResolveManualPadding(450, 100, 1800, 300));
     }
 
     private static TaskbarBarPlacement Place(int width, TaskbarPrimaryRange range, TaskbarBarPosition position) =>

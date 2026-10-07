@@ -2113,4 +2113,37 @@
   <data name="Lyrics.ArtistSeparators.Dialog.Restore" xml:space="preserve">
     <value>恢复默认分隔符</value>
   </data>
+  <data name="DisplayModes.Placement.Row.Alignment.Title" xml:space="preserve">
+    <value>任务栏对齐</value>
+  </data>
+  <data name="DisplayModes.Placement.Row.Alignment.Description" xml:space="preserve">
+    <value>靠左向右扩展，靠右向左扩展，居中向两侧扩展并尽量保持任务栏中心；开启避让时优先避开图标。切换对齐会清除拖动偏移。竖向任务栏对应顶部、居中、底部。</value>
+  </data>
+  <data name="DisplayModes.Placement.Alignment.Start" xml:space="preserve">
+    <value>靠左 / 顶部</value>
+  </data>
+  <data name="DisplayModes.Placement.Alignment.Center" xml:space="preserve">
+    <value>居中</value>
+  </data>
+  <data name="DisplayModes.Placement.Alignment.End" xml:space="preserve">
+    <value>靠右 / 底部</value>
+  </data>
+  <data name="DisplayModes.Placement.Row.Arrangement.Title" xml:space="preserve">
+    <value>内容排布</value>
+  </data>
+  <data name="DisplayModes.Placement.Row.Arrangement.Description" xml:space="preserve">
+    <value>仅作用于横向任务栏。跟随对齐时，靠左保留原排布，靠右将封面和常用按钮放在右侧，居中让快捷控制按钮居中。可独立选择靠左、居中或靠右；不会翻转文字、封面或图标。</value>
+  </data>
+  <data name="DisplayModes.Placement.Arrangement.Automatic" xml:space="preserve">
+    <value>跟随任务栏对齐</value>
+  </data>
+  <data name="DisplayModes.Placement.Arrangement.Left" xml:space="preserve">
+    <value>靠左</value>
+  </data>
+  <data name="DisplayModes.Placement.Arrangement.Center" xml:space="preserve">
+    <value>居中</value>
+  </data>
+  <data name="DisplayModes.Placement.Arrangement.Right" xml:space="preserve">
+    <value>靠右</value>
+  </data>
 </root>

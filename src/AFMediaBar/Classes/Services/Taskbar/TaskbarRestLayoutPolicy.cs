@@ -306,7 +306,7 @@ public static class TaskbarRestLayoutPolicy
         {
             // Mirror coordinates, never the pixels or the stored logical order. Leading padding
             // belongs to the artwork edge, including when the idle layout uses less than the window.
-            var extent = Math.Max(availableWidth, contentWidth);
+            var extent = Math.Max(0, availableWidth);
             placements = placements.Select(placement => placement with
             {
                 Left = extent - placement.Right

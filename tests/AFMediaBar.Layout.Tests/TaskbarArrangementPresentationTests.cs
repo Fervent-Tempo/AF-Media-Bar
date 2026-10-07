@@ -31,6 +31,8 @@ public sealed class TaskbarArrangementPresentationTests
                     {
                         Source = new Uri($"/AFMediaBar;component/Resources/{resource}.xaml", UriKind.Relative)
                     });
+                // Parse the actual page BAML so enum literals, icons and resources are checked at runtime.
+                _ = new AFMediaBar.Views.Pages.DisplayModesPage(null!);
                 var control = new TaskBarMediaControl();
                 control.UpdateSongInfo(MediaSnapshot.Disconnected with
                 {
@@ -86,6 +88,21 @@ public sealed class TaskbarArrangementPresentationTests
                         Assert.IsTrue(actions.ActualWidth > 0);
                     }
                 }
+                SettingsManager.Current.Position = TaskbarBarPosition.Center;
+                foreach (var arrangement in new[] { TaskbarArrangement.Left, TaskbarArrangement.Center, TaskbarArrangement.Right })
+                {
+                    SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
+                    {
+                        Arrangement = arrangement,
+                        HoverControls = SettingsManager.Current.TaskbarExperience.HoverControls with { ProgressVisible = true }
+                    };
+                    control.ApplyTaskbarExperienceSettings();
+                    var transportButtons = (StackPanel)control.FindName("TaskbarTransportButtons");
+                    Assert.AreSame(control.FindName(arrangement == TaskbarArrangement.Right
+                        ? "TaskbarNextButton" : "TaskbarPreviousButton"), transportButtons.Children[0]);
+                }
+                SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
+                { Arrangement = TaskbarArrangement.Automatic };
                 SettingsManager.Current.Position = TaskbarBarPosition.Start;
                 control.ApplyTaskbarExperienceSettings();
                 var transport = (StackPanel)control.FindName("TaskbarTransportButtons");
@@ -99,6 +116,7 @@ public sealed class TaskbarArrangementPresentationTests
                 app.Shutdown();
             }
         });
+        thread.IsBackground = true;
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
         Assert.IsTrue(thread.Join(TimeSpan.FromSeconds(30)), "WPF layout did not finish");

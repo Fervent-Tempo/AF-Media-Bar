@@ -451,6 +451,7 @@ public static class SettingsManager
         next.TaskbarBarEnabled = defaults.TaskbarBarEnabled;
         next.TaskbarTargetMonitorDeviceIds = defaults.TaskbarTargetMonitorDeviceIds;
         next.TaskbarTargetMonitorDeviceId = defaults.TaskbarTargetMonitorDeviceId;
+        next.TaskbarBarManualPadding = defaults.TaskbarBarManualPadding;
         next.Position = defaults.Position; next.TaskbarBarCrossAxisOffsetDip = defaults.TaskbarBarCrossAxisOffsetDip;
         next.TaskbarBarAvoidIcons = defaults.TaskbarBarAvoidIcons; next.TaskbarBarPositionLocked = defaults.TaskbarBarPositionLocked;
         // 灵动岛外观的 UI 现在位于显示模式页的灵动岛分区，因此它的默认值也归这一页的重置作用域；

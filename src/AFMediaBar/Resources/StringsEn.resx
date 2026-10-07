@@ -2113,4 +2113,37 @@
   <data name="Lyrics.ArtistSeparators.Dialog.Restore" xml:space="preserve">
     <value>Restore defaults</value>
   </data>
+  <data name="DisplayModes.Placement.Row.Alignment.Title" xml:space="preserve">
+    <value>Taskbar alignment</value>
+  </data>
+  <data name="DisplayModes.Placement.Row.Alignment.Description" xml:space="preserve">
+    <value>Left expands rightward, right expands leftward, and center expands both ways toward the taskbar midpoint. Icon avoidance takes priority. Changing alignment clears the drag offset. On vertical taskbars these mean top, center, and bottom.</value>
+  </data>
+  <data name="DisplayModes.Placement.Alignment.Start" xml:space="preserve">
+    <value>Left / Top</value>
+  </data>
+  <data name="DisplayModes.Placement.Alignment.Center" xml:space="preserve">
+    <value>Center</value>
+  </data>
+  <data name="DisplayModes.Placement.Alignment.End" xml:space="preserve">
+    <value>Right / Bottom</value>
+  </data>
+  <data name="DisplayModes.Placement.Row.Arrangement.Title" xml:space="preserve">
+    <value>Content arrangement</value>
+  </data>
+  <data name="DisplayModes.Placement.Row.Arrangement.Description" xml:space="preserve">
+    <value>Horizontal taskbars only. Follow alignment keeps the original layout on the left, places artwork and common buttons on the right, or centers quick controls. Choose left, center, or right independently. Text, artwork, and icons retain their orientation.</value>
+  </data>
+  <data name="DisplayModes.Placement.Arrangement.Automatic" xml:space="preserve">
+    <value>Follow taskbar alignment</value>
+  </data>
+  <data name="DisplayModes.Placement.Arrangement.Left" xml:space="preserve">
+    <value>Left</value>
+  </data>
+  <data name="DisplayModes.Placement.Arrangement.Center" xml:space="preserve">
+    <value>Center</value>
+  </data>
+  <data name="DisplayModes.Placement.Arrangement.Right" xml:space="preserve">
+    <value>Right</value>
+  </data>
 </root>

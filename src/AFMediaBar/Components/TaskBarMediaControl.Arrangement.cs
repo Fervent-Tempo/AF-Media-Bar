@@ -6,6 +6,7 @@ using AFMediaBar.Classes.Settings;
 
 namespace AFMediaBar.Components;
 
+/// <summary>媒体栏横向排布呈现。/ Horizontal arrangement of the media bar.</summary>
 public partial class TaskBarMediaControl
 {
     private TaskbarArrangement ResolvedTaskbarArrangement => TaskbarArrangementPolicy.Resolve(

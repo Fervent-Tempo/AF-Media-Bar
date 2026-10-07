@@ -401,6 +401,28 @@ public partial class DisplayModesViewModel : ObservableObject
         }
     }
 
+    /// <summary>任务栏主轴对齐；切换时清除相对旧锚点的拖动偏移。</summary>
+    public TaskbarBarPosition TaskbarPosition
+    {
+        get => SettingsManager.Current.Position;
+        set
+        {
+            if (_isRefreshing || !IsTaskbarMode || !Enum.IsDefined(value) || SettingsManager.Current.Position == value)
+                return;
+            SettingsManager.Current.TaskbarBarManualPadding = 0;
+            SettingsManager.Current.Position = value;
+            SettingsManager.RaiseLayoutSettingsChanged(CurrentWindowMode, Orientation);
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>横向任务栏内部排布与快捷控制锚点。</summary>
+    public TaskbarArrangement TaskbarArrangement
+    {
+        get => SettingsManager.Current.TaskbarExperience.Normalize().Arrangement;
+        set => UpdateExperience(SettingsManager.Current.TaskbarExperience with { Arrangement = value });
+    }
+
     public bool IsTaskbarPositionLocked
     {
         get => SettingsManager.Current.TaskbarBarPositionLocked;
@@ -719,6 +741,7 @@ public partial class DisplayModesViewModel : ObservableObject
             OnPropertyChanged(nameof(DynamicIslandBackgroundMode)); OnPropertyChanged(nameof(DynamicIslandEdge));
             OnPropertyChanged(nameof(IslandSurfaceStyle)); OnPropertyChanged(nameof(IslandSurfaceOpacityPercent));
             OnPropertyChanged(nameof(IslandSurfaceCornerRadiusDip));
+            OnPropertyChanged(nameof(TaskbarPosition));
             RaiseExperience(); OnPropertyChanged(nameof(Orientation)); OnPropertyChanged(nameof(IsTaskbarPositionLocked));
             OnPropertyChanged(nameof(IsTaskbarAvoidingIcons)); OnPropertyChanged(nameof(TaskbarCrossAxisOffsetDip));
             RefreshMonitorOptions();
@@ -729,6 +752,7 @@ public partial class DisplayModesViewModel : ObservableObject
 
     private void RaiseExperience()
     {
+        OnPropertyChanged(nameof(TaskbarArrangement));
         OnPropertyChanged(nameof(HoverLayerEnabled)); OnPropertyChanged(nameof(FullLayerEnabled));
         OnPropertyChanged(nameof(FullPanelEntryVisible));
         OnPropertyChanged(nameof(RestProgressVisible));
