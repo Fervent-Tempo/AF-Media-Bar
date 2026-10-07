@@ -199,6 +199,10 @@ namespace AFMediaBar
                     () => sp.GetRequiredService<TrackChangeNotificationWindow>());
 
                 // === 设置页面及其 ViewModel Settings Pages and ViewModels ===
+                services.AddSingleton<AFMediaBar.Classes.Abstractions.ISettingsEnvironmentReader, AFMediaBar.Classes.Services.Settings.SettingsEnvironmentReader>();
+                services.AddScoped<AFMediaBar.Classes.Services.Settings.SettingsContextService>();
+                services.AddScoped<AFMediaBar.Classes.Services.Settings.SettingsPageContext>();
+                services.AddScoped<AFMediaBar.Classes.Abstractions.ISettingsConfiguration, AFMediaBar.Classes.Services.Settings.LegacySettingsConfiguration>();
                 services.AddSingleton<AppearancePage>();
                 services.AddSingleton<AppearanceViewModel>();
 

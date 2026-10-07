@@ -40,6 +40,8 @@ public enum SettingsPageKey
     ReleaseHighlights,
     /// <summary>Monitor selection and taskbar placement, independent of display-mode previews.</summary>
     ScreenAndPlacement,
+    /// <summary>Application-wide theme, window material, and interface typography.</summary>
+    ApplicationAppearance,
 }
 
 /// <summary>
