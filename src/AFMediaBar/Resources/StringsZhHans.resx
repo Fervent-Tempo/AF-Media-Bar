@@ -2294,4 +2294,43 @@
   <data name="Appearance.TaskbarBackground.Details.Description" xml:space="preserve">
     <value>调整背景风格与浓度；启用背景层后生效。</value>
   </data>
+  <data name="DisplayModes.Placement.Row.Alignment.Title" xml:space="preserve">
+    <value>任务栏对齐</value>
+  </data>
+  <data name="DisplayModes.Placement.Row.Alignment.Description" xml:space="preserve">
+    <value>靠左时向右扩展，靠右时向左扩展，居中时向两侧扩展并尽量保持在任务栏中心。开启图标避让时优先避让；切换对齐会清除拖动偏移。</value>
+  </data>
+  <data name="DisplayModes.Placement.Alignment.Start" xml:space="preserve">
+    <value>靠左</value>
+  </data>
+  <data name="DisplayModes.Placement.Alignment.Center" xml:space="preserve">
+    <value>居中</value>
+  </data>
+  <data name="DisplayModes.Placement.Alignment.End" xml:space="preserve">
+    <value>靠右</value>
+  </data>
+  <data name="DisplayModes.Placement.Row.Arrangement.Title" xml:space="preserve">
+    <value>内容排布</value>
+  </data>
+  <data name="DisplayModes.Placement.Row.Arrangement.Description" xml:space="preserve">
+    <value>左侧排布将封面放在左侧，其余内容依次向右排列；右侧排布将封面放在右侧，其余内容依次向左排列。文字、封面和图标保持原方向。</value>
+  </data>
+  <data name="DisplayModes.Placement.Arrangement.Left" xml:space="preserve">
+    <value>左侧排布</value>
+  </data>
+  <data name="DisplayModes.Placement.Arrangement.Right" xml:space="preserve">
+    <value>右侧排布</value>
+  </data>
+  <data name="Taskbar.Placement.Notification.Title" xml:space="preserve">
+    <value>任务栏空间不足</value>
+  </data>
+  <data name="Taskbar.Placement.Notification.Hidden" xml:space="preserve">
+    <value>当前任务栏无法容纳最小媒体栏，已暂时隐藏。仍可从托盘控制媒体；空间恢复后会自动显示。</value>
+  </data>
+  <data name="Taskbar.Placement.Notification.Moved" xml:space="preserve">
+    <value>当前任务栏空间不足，媒体栏已临时移到其他可用位置。原位置恢复足够空间后会自动返回。</value>
+  </data>
+  <data name="DisplayModes.Width.NoCommonRange" xml:space="preserve">
+    <value>当前任务栏没有共同可用的固定长度范围。已保存的长度会保留，各任务栏按自身空间限宽。</value>
+  </data>
 </root>

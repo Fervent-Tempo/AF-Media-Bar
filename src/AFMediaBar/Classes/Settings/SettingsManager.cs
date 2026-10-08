@@ -69,7 +69,7 @@ public sealed class AppSettings : INotifyPropertyChanged
     private GlobalInteractionSettings _interaction = GlobalInteractionSettings.Default;
     private ModeSurfaceSettings _taskbarSurface = ModeSurfaceSettings.Default;
     private ModeSurfaceSettings _dynamicIslandSurface = ModeSurfaceSettings.Default;
-    private LyricsTextAlignment _lyricsTextAlignment = LyricsTextAlignment.Left;
+    private LyricsTextAlignment _lyricsTextAlignment = LyricsTextAlignment.Center;
     private bool _lyricsSyllableHighlightEnabled = true;
     private int _lyricsUnsungOpacityPercent = LyricsUnsungOpacity.DefaultPercent;
     private int _lyricsCharacterSpacingPercent = LyricsCharacterSpacing.DefaultPercent;
@@ -527,12 +527,14 @@ public static class SettingsManager
             HoverControls = defaults.TaskbarExperience.HoverControls,
             OutputDeviceVisible = defaults.TaskbarExperience.OutputDeviceVisible,
             VolumeVisible = defaults.TaskbarExperience.VolumeVisible,
+            Arrangement = defaults.TaskbarExperience.Arrangement,
             IdleComponents = defaults.TaskbarExperience.IdleComponents
         };
         next.WindowMode = defaults.WindowMode; next.LayoutOrientationMode = defaults.LayoutOrientationMode;
         next.TaskbarBarEnabled = defaults.TaskbarBarEnabled;
         next.TaskbarTargetMonitorDeviceIds = defaults.TaskbarTargetMonitorDeviceIds;
         next.TaskbarTargetMonitorDeviceId = defaults.TaskbarTargetMonitorDeviceId;
+        next.TaskbarBarManualPadding = defaults.TaskbarBarManualPadding;
         next.Position = defaults.Position; next.TaskbarBarCrossAxisOffsetDip = defaults.TaskbarBarCrossAxisOffsetDip;
         next.TaskbarBarAvoidIcons = defaults.TaskbarBarAvoidIcons; next.TaskbarBarPositionLocked = defaults.TaskbarBarPositionLocked;
         // 灵动岛外观的 UI 现在位于显示模式页的灵动岛分区，因此它的默认值也归这一页的重置作用域；

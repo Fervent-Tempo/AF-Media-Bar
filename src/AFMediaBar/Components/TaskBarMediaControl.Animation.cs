@@ -1011,17 +1011,17 @@ public partial class TaskBarMediaControl
         HoverRevealHost.Width = targetWidth;
         HoverRevealClip.BeginAnimation(RectangleGeometry.RectProperty, null);
         var currentWidth = Math.Clamp(HoverRevealClip.Rect.Width, 0, targetWidth);
-        HoverRevealClip.Rect = new Rect(0, 0, currentWidth, HoverRevealHost.Height);
+        HoverRevealClip.Rect = TaskbarRevealRect(currentWidth);
         if (!CurrentMotion.UseTransitions)
         {
-            HoverRevealClip.Rect = new Rect(0, 0, targetWidth, HoverRevealHost.Height);
+            HoverRevealClip.Rect = TaskbarRevealRect(targetWidth);
             return;
         }
 
         var reveal = new RectAnimation
         {
-            From = new Rect(0, 0, currentWidth, HoverRevealHost.Height),
-            To = new Rect(0, 0, targetWidth, HoverRevealHost.Height),
+            From = TaskbarRevealRect(currentWidth),
+            To = TaskbarRevealRect(targetWidth),
             Duration = CurrentMotion.PanelDuration,
             EasingFunction = CreateEaseOut()
         };
@@ -1038,11 +1038,11 @@ public partial class TaskBarMediaControl
         HoverRevealClip.BeginAnimation(RectangleGeometry.RectProperty, null);
         HoverRevealHost.Width = targetWidth;
         var currentWidth = targetWidth * fraction;
-        HoverRevealClip.Rect = new Rect(0, 0, currentWidth, HoverRevealHost.Height);
+        HoverRevealClip.Rect = TaskbarRevealRect(currentWidth);
         var destinationWidth = _isTaskbarHoverVisible ? targetWidth : 0;
         if (!CurrentMotion.UseTransitions || Math.Abs(destinationWidth - currentWidth) < 0.5)
         {
-            HoverRevealClip.Rect = new Rect(0, 0, destinationWidth, HoverRevealHost.Height);
+            HoverRevealClip.Rect = TaskbarRevealRect(destinationWidth);
             if (!_isTaskbarHoverVisible)
                 FinishTaskbarHoverLayerHide();
             return;
@@ -1053,7 +1053,7 @@ public partial class TaskBarMediaControl
         var animation = new RectAnimation
         {
             From = HoverRevealClip.Rect,
-            To = new Rect(0, 0, destinationWidth, HoverRevealHost.Height),
+            To = TaskbarRevealRect(destinationWidth),
             Duration = TimeSpan.FromMilliseconds(Math.Max(1, duration.TotalMilliseconds * remaining)),
             EasingFunction = _isTaskbarHoverVisible ? CreateEaseOut() : CreateEaseInOut()
         };
@@ -1092,7 +1092,7 @@ public partial class TaskBarMediaControl
         var hide = new RectAnimation
         {
             From = HoverRevealClip.Rect,
-            To = new Rect(0, 0, 0, HoverRevealHost.Height),
+            To = TaskbarRevealRect(0),
             Duration = CurrentMotion.ExitDuration,
             EasingFunction = CreateEaseInOut()
         };
@@ -1118,7 +1118,7 @@ public partial class TaskBarMediaControl
         _hoverHideFallbackTimer.Stop();
         HoverRevealClip.BeginAnimation(RectangleGeometry.RectProperty, null);
         HoverRevealHost.Width = 0;
-        HoverRevealClip.Rect = new Rect(0, 0, 0, HoverRevealHost.Height);
+        HoverRevealClip.Rect = TaskbarRevealRect(0);
         HoverRevealHost.Visibility = Visibility.Collapsed;
         HoverRevealHost.IsHitTestVisible = false;
         _isTaskbarHoverVisible = false;

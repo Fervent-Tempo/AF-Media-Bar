@@ -431,6 +431,9 @@
                                         Orientation="Horizontal"
                                         HorizontalAlignment="Left"
                                         VerticalAlignment="Center">
+                                <StackPanel.RenderTransform>
+                                    <TranslateTransform x:Name="TaskbarHoverActionsOffset" />
+                                </StackPanel.RenderTransform>
                                 <StackPanel x:Name="TaskbarTransportButtons" Orientation="Horizontal">
                                     <Button x:Name="TaskbarPreviousButton"
                                             Style="{StaticResource TaskbarHoverButton}"

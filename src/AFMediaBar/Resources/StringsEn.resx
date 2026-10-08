@@ -2294,4 +2294,43 @@
   <data name="Appearance.TaskbarBackground.Details.Description" xml:space="preserve">
     <value>Adjust the style and opacity. Applies when the background is enabled.</value>
   </data>
+  <data name="DisplayModes.Placement.Row.Alignment.Title" xml:space="preserve">
+    <value>Taskbar alignment</value>
+  </data>
+  <data name="DisplayModes.Placement.Row.Alignment.Description" xml:space="preserve">
+    <value>Left expands rightward, right expands leftward, and center expands both ways toward the taskbar midpoint. Icon avoidance takes priority. Changing alignment clears the drag offset.</value>
+  </data>
+  <data name="DisplayModes.Placement.Alignment.Start" xml:space="preserve">
+    <value>Left</value>
+  </data>
+  <data name="DisplayModes.Placement.Alignment.Center" xml:space="preserve">
+    <value>Center</value>
+  </data>
+  <data name="DisplayModes.Placement.Alignment.End" xml:space="preserve">
+    <value>Right</value>
+  </data>
+  <data name="DisplayModes.Placement.Row.Arrangement.Title" xml:space="preserve">
+    <value>Content arrangement</value>
+  </data>
+  <data name="DisplayModes.Placement.Row.Arrangement.Description" xml:space="preserve">
+    <value>Left arrangement places artwork on the left and the remaining content to its right. Right arrangement places artwork on the right and the remaining content to its left. Text, artwork, and icons retain their orientation.</value>
+  </data>
+  <data name="DisplayModes.Placement.Arrangement.Left" xml:space="preserve">
+    <value>Left arrangement</value>
+  </data>
+  <data name="DisplayModes.Placement.Arrangement.Right" xml:space="preserve">
+    <value>Right arrangement</value>
+  </data>
+  <data name="Taskbar.Placement.Notification.Title" xml:space="preserve">
+    <value>Not enough taskbar space</value>
+  </data>
+  <data name="Taskbar.Placement.Notification.Hidden" xml:space="preserve">
+    <value>The taskbar cannot fit the minimum media bar, so it is temporarily hidden. Tray controls remain available; the bar will return when space recovers.</value>
+  </data>
+  <data name="Taskbar.Placement.Notification.Moved" xml:space="preserve">
+    <value>The media bar has temporarily moved to another free area. It will return when its original position has enough space.</value>
+  </data>
+  <data name="DisplayModes.Width.NoCommonRange" xml:space="preserve">
+    <value>There is no shared fixed-length range for the current taskbars. The saved length is retained; each bar respects its own available space.</value>
+  </data>
 </root>

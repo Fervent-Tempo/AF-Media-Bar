@@ -34,7 +34,7 @@ public interface ISettingsConfiguration
     /// <summary>Updates target preferences; independent of the editor's selected display.</summary>
     void SetTaskbarTargets(IReadOnlyList<string> deviceIds);
     /// <summary>Updates the existing placement record without overriding automatic taskbar orientation.</summary>
-    void SetTaskbarPlacement(bool? locked = null, bool? avoidIcons = null, double? crossAxisOffsetDip = null, bool reset = false);
+    void SetTaskbarPlacement(bool? locked = null, bool? avoidIcons = null, double? crossAxisOffsetDip = null, bool reset = false, TaskbarBarPosition? alignment = null);
     /// <summary>Publishes this setting through the existing normalization contract.</summary>
     void SetLyricsEnabled(bool enabled);
     /// <summary>Publishes this setting through the existing normalization contract.</summary>

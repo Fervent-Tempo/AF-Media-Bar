@@ -165,13 +165,13 @@ public static class TaskbarExperiencePolicy
     {
         var minimum = double.IsFinite(minimumLength) ? Math.Max(0, minimumLength) : 0;
         var maximum = double.IsFinite(maximumLength)
-            ? Math.Max(minimum, maximumLength)
+            ? Math.Max(0, maximumLength)
             : double.PositiveInfinity;
         var content = double.IsFinite(contentLength) ? Math.Max(0, contentLength) : minimum;
         var requested = mode == TaskbarLengthMode.Fixed && double.IsFinite(fixedLength)
             ? fixedLength
             : content;
-        return Math.Clamp(requested, minimum, maximum);
+        return Math.Clamp(requested, Math.Min(minimum, maximum), maximum);
     }
 
     /// <summary>

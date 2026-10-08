@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models.Layout;
@@ -32,6 +33,7 @@ namespace AFMediaBar.Views.Windows
         public MainWindowViewModel ViewModel { get; }
 
         private readonly TaskbarWindowViewModel _taskbarViewModel;
+        private readonly TaskbarFallbackNotificationGate _placementNotificationGate = new();
         private readonly ITaskbarDockService _taskBarService;
         private readonly MediaSessionService _mediaSessionService;
         private readonly AudioControlViewModel _audioControlViewModel;
@@ -493,6 +495,7 @@ namespace AFMediaBar.Views.Windows
             foreach (var taskbarWindow in taskbarWindows)
             {
                 taskbarWindow.OpenFullPanelRequested -= TaskbarWindow_OpenFullPanelRequested;
+                taskbarWindow.PlacementFallbackRequested -= TaskbarWindow_PlacementFallbackRequested;
                 taskbarWindow.SuspendForEnvironmentRecovery();
                 taskbarWindow.DetachFromTaskbar();
                 try
@@ -838,6 +841,7 @@ namespace AFMediaBar.Views.Windows
                 _mouseInputMonitor,
                 _memoryPruneCoordinator);
             window.OpenFullPanelRequested += TaskbarWindow_OpenFullPanelRequested;
+            window.PlacementFallbackRequested += TaskbarWindow_PlacementFallbackRequested;
             return window;
         }
 
@@ -969,6 +973,18 @@ namespace AFMediaBar.Views.Windows
                     if (_isClosing || !ReferenceEquals(_settingsWindow, settingsWindow)) return;
                     settingsWindow.NavigateToGroup(SettingsPageKey.Appearance, "Appearance.Group.TaskbarBackground");
                 }));
+        }
+
+        private void TaskbarWindow_PlacementFallbackRequested(object? sender, TaskbarPlacementFallbackEventArgs e)
+        {
+            if (_isClosing || sender is not TaskbarWindow window || !_taskbarWindows.Contains(window))
+                return;
+            if (!_placementNotificationGate.TryBegin(Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency))
+                return;
+            _trayIconService.TryShowNotification(
+                Translations.Get("Taskbar.Placement.Notification.Title"),
+                Translations.Get(e.IsHidden ? "Taskbar.Placement.Notification.Hidden" : "Taskbar.Placement.Notification.Moved"),
+                ShellNotificationTarget.None);
         }
 
         private void SettingsWindow_Closed(object? sender, EventArgs e)

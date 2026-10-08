@@ -107,29 +107,37 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
         set => UpdateTaskbarExperience(_configuration.Current.TaskbarExperience with
         {
             LengthMode = value ? TaskbarLengthMode.FollowContent : TaskbarLengthMode.Fixed,
-            FixedLengthDip = value
-                ? _configuration.Current.TaskbarExperience.FixedLengthDip
-                : Math.Clamp(_configuration.Current.TaskbarExperience.FixedLengthDip,
-                    FixedTaskbarLengthMinimum, FixedTaskbarLengthMaximum)
+            FixedLengthDip = _configuration.Current.TaskbarExperience.FixedLengthDip
         });
     }
 
     public bool UsesFixedTaskbarLength => !FollowMediaTextLength;
-    public double FixedTaskbarLengthMinimum => Math.Ceiling(_taskbarLengthConstraints.MinimumLengthDip);
-    public double FixedTaskbarLengthMaximum => Math.Max(FixedTaskbarLengthMinimum, Math.Floor(_taskbarLengthConstraints.MaximumLengthDip));
+    private bool HasFixedTaskbarLengthRange => _taskbarLengthConstraints.HasAvailableRange &&
+        Math.Ceiling(_taskbarLengthConstraints.MinimumLengthDip) <= Math.Floor(_taskbarLengthConstraints.MaximumLengthDip);
+    public bool CanEditFixedTaskbarLength => UsesFixedTaskbarLength && HasFixedTaskbarLengthRange;
+    public double FixedTaskbarLengthMinimum => HasFixedTaskbarLengthRange ? Math.Ceiling(_taskbarLengthConstraints.MinimumLengthDip) : 0;
+    public double FixedTaskbarLengthMaximum => HasFixedTaskbarLengthRange ? Math.Floor(_taskbarLengthConstraints.MaximumLengthDip) : 0;
 
     public double FixedTaskbarLengthDip
     {
         get => Math.Clamp(_configuration.Current.TaskbarExperience.FixedLengthDip,
             FixedTaskbarLengthMinimum, FixedTaskbarLengthMaximum);
-        set => UpdateTaskbarExperience(_configuration.Current.TaskbarExperience with
+        set
         {
-            FixedLengthDip = Math.Clamp(value, FixedTaskbarLengthMinimum, FixedTaskbarLengthMaximum)
-        });
+            // Binding coercion after an environment change is presentation, not a new user preference.
+            if (_isRefreshing || !HasFixedTaskbarLengthRange || value == FixedTaskbarLengthDip)
+                return;
+            UpdateTaskbarExperience(_configuration.Current.TaskbarExperience with
+            {
+                FixedLengthDip = Math.Clamp(value, FixedTaskbarLengthMinimum, FixedTaskbarLengthMaximum)
+            });
+        }
     }
 
     public string FixedTaskbarLengthRangeText =>
-        Translations.Format("DisplayModes.Width.RangeText", FixedTaskbarLengthMinimum, FixedTaskbarLengthMaximum);
+        HasFixedTaskbarLengthRange
+            ? Translations.Format("DisplayModes.Width.RangeText", FixedTaskbarLengthMinimum, FixedTaskbarLengthMaximum)
+            : Translations.Get("DisplayModes.Width.NoCommonRange");
 
     public ObservableCollection<TaskbarRestComponentSettingItem> RestOrderEntries { get; } = [];
 
@@ -153,6 +161,7 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(HoverButtonSpacingDip));
         OnPropertyChanged(nameof(FollowMediaTextLength));
         OnPropertyChanged(nameof(UsesFixedTaskbarLength));
+        OnPropertyChanged(nameof(CanEditFixedTaskbarLength));
         OnPropertyChanged(nameof(FixedTaskbarLengthMinimum));
         OnPropertyChanged(nameof(FixedTaskbarLengthMaximum));
         OnPropertyChanged(nameof(FixedTaskbarLengthDip));
@@ -162,10 +171,18 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
 
     private void OnTaskbarLengthConstraintsChanged(object? sender, EventArgs e)
     {
-        OnPropertyChanged(nameof(FixedTaskbarLengthMinimum));
-        OnPropertyChanged(nameof(FixedTaskbarLengthMaximum));
-        OnPropertyChanged(nameof(FixedTaskbarLengthDip));
-        OnPropertyChanged(nameof(FixedTaskbarLengthRangeText));
+        if (_disposed || !_configuration.IsActive) return;
+        var previousRefreshing = _isRefreshing;
+        _isRefreshing = true;
+        try
+        {
+            OnPropertyChanged(nameof(CanEditFixedTaskbarLength));
+            OnPropertyChanged(nameof(FixedTaskbarLengthMinimum));
+            OnPropertyChanged(nameof(FixedTaskbarLengthMaximum));
+            OnPropertyChanged(nameof(FixedTaskbarLengthDip));
+            OnPropertyChanged(nameof(FixedTaskbarLengthRangeText));
+        }
+        finally { _isRefreshing = previousRefreshing; }
     }
 
     private void RefreshRestOrderEntries()
