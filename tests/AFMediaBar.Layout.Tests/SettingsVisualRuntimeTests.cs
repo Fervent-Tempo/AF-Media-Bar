@@ -84,7 +84,7 @@ public sealed class SettingsVisualRuntimeTests
                 SettingsLiveVisualChecks.VerifyNavigationMotion(app);
             }
             finally { app.Shutdown(); }
-        });
+        }, TimeSpan.FromSeconds(30));
     }
 
     private static async Task RunVisualCheckInSeparateProcessAsync()

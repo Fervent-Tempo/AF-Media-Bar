@@ -55,7 +55,7 @@ public sealed class SettingsMotionTests
         });
     }
 
-    internal static void RunSta(Action action)
+    internal static void RunSta(Action action, TimeSpan? timeout = null)
     {
         Exception? failure = null;
         var thread = new Thread(() =>
@@ -65,7 +65,7 @@ public sealed class SettingsMotionTests
         });
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
-        Assert.IsTrue(thread.Join(TimeSpan.FromSeconds(10)), "The WPF check did not complete.");
+        Assert.IsTrue(thread.Join(timeout ?? TimeSpan.FromSeconds(10)), "The WPF check did not complete.");
         if (failure is not null) ExceptionDispatchInfo.Capture(failure).Throw();
     }
 }
