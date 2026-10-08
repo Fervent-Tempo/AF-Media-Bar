@@ -2134,22 +2134,13 @@
   <data name="DisplayModes.Placement.Row.Arrangement.Description" xml:space="preserve">
     <value>左侧排布将封面放在左侧，其余内容依次向右排列；右侧排布将封面放在右侧，其余内容依次向左排列。文字、封面和图标保持原方向。</value>
   </data>
-  <data name="DisplayModes.Placement.Arrangement.Automatic" xml:space="preserve">
-    <value>跟随任务栏对齐</value>
-  </data>
-  <data name="DisplayModes.Placement.Arrangement.Left" xml:space="preserve">
+<data name="DisplayModes.Placement.Arrangement.Left" xml:space="preserve">
     <value>左侧排布</value>
   </data>
-  <data name="DisplayModes.Placement.Arrangement.Center" xml:space="preserve">
-    <value>居中</value>
-  </data>
-  <data name="DisplayModes.Placement.Arrangement.Right" xml:space="preserve">
+<data name="DisplayModes.Placement.Arrangement.Right" xml:space="preserve">
     <value>右侧排布</value>
   </data>
-  <data name="DisplayModes.Placement.Row.HoverAlignment.Title" xml:space="preserve">
-    <value>悬停按钮对齐</value>
-  </data>
-  <data name="DisplayModes.Placement.Row.HoverAlignment.Description" xml:space="preserve">
+<data name="DisplayModes.Placement.Row.HoverAlignment.Description" xml:space="preserve">
     <value>选择悬停按钮靠左、居中或靠右显示。默认跟随任务栏对齐；按钮对齐不改变封面及其他内容的排列。</value>
   </data>
 </root>

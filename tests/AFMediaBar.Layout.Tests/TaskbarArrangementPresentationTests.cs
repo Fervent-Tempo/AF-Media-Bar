@@ -85,8 +85,7 @@ public sealed class TaskbarArrangementPresentationTests
                     SettingsManager.Current.Position = position;
                     SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
                     {
-                        Arrangement = position == TaskbarBarPosition.End ? TaskbarArrangement.Right : TaskbarArrangement.Left,
-                        HoverAlignment = TaskbarArrangement.Automatic,
+                        Arrangement = position == TaskbarBarPosition.End ? TaskbarContentArrangement.Right : TaskbarContentArrangement.Left,
                         SpectrumVisible = false,
                         PerformanceVisible = false,
                         OutputDeviceVisible = false,
@@ -132,7 +131,7 @@ public sealed class TaskbarArrangementPresentationTests
                     }
                 }
                 SettingsManager.Current.Position = TaskbarBarPosition.Center;
-                foreach (var arrangement in new[] { TaskbarArrangement.Left, TaskbarArrangement.Right })
+                foreach (var arrangement in new[] { TaskbarContentArrangement.Left, TaskbarContentArrangement.Right })
                 {
                     SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
                     {
@@ -141,17 +140,17 @@ public sealed class TaskbarArrangementPresentationTests
                     };
                     control.ApplyTaskbarExperienceSettings();
                     var transportButtons = (StackPanel)control.FindName("TaskbarTransportButtons");
-                    Assert.AreSame(control.FindName(arrangement == TaskbarArrangement.Right
+                    Assert.AreSame(control.FindName(arrangement == TaskbarContentArrangement.Right
                         ? "TaskbarNextButton" : "TaskbarPreviousButton"), transportButtons.Children[0]);
                 }
-                foreach (var direction in new[] { TaskbarArrangement.Left, TaskbarArrangement.Right })
-                    foreach (var alignment in new[] { TaskbarArrangement.Left, TaskbarArrangement.Center, TaskbarArrangement.Right })
+                foreach (var direction in new[] { TaskbarContentArrangement.Left, TaskbarContentArrangement.Right })
+                    foreach (var alignment in new[] { TaskbarBarPosition.Start, TaskbarBarPosition.Center, TaskbarBarPosition.End })
                     {
                         SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
                         {
-                            Arrangement = direction,
-                            HoverAlignment = alignment
+                            Arrangement = direction
                         };
+                        SettingsManager.Current.Position = alignment;
                         control.ApplyTaskbarExperienceSettings();
                         typeof(TaskBarMediaControl).GetField("_isTaskbarHoverVisible", BindingFlags.Instance | BindingFlags.NonPublic)!
                             .SetValue(control, true);
@@ -173,7 +172,7 @@ public sealed class TaskbarArrangementPresentationTests
                         }
                     }
                 SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
-                { Arrangement = TaskbarArrangement.Left };
+                { Arrangement = TaskbarContentArrangement.Left };
                 SettingsManager.Current.Position = TaskbarBarPosition.Start;
                 control.ApplyTaskbarExperienceSettings();
                 var transport = (StackPanel)control.FindName("TaskbarTransportButtons");

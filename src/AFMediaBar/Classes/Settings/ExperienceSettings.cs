@@ -76,13 +76,11 @@ public enum TaskbarMediaTextAlignment
     Right = 2
 }
 
-/// <summary>任务栏组件与快捷控制的排布；自动时跟随任务栏位置。</summary>
-public enum TaskbarArrangement
+/// <summary>横向任务栏的内容排列方向；属于开发中新增设置。</summary>
+public enum TaskbarContentArrangement
 {
-    Automatic = 0,
-    Left = 1,
-    Center = 2,
-    Right = 3
+    Left = 0,
+    Right = 1
 }
 
 /// <summary>任务栏媒体条主轴长度的决定方式。 / How the taskbar media bar resolves its primary-axis length.</summary>
@@ -477,11 +475,8 @@ public readonly record struct TaskbarExperienceSettings(
     /// <summary>标题和歌手文字的对齐方式。 / Alignment of title and artist text.</summary>
     public TaskbarMediaTextAlignment MediaTextAlignment { get; init; } = TaskbarMediaTextAlignment.Left;
 
-    /// <summary>横向任务栏内容按左侧或右侧排列，独立于文字和悬停按钮对齐。</summary>
-    public TaskbarArrangement Arrangement { get; init; } = TaskbarArrangement.Left;
-
-    /// <summary>悬停按钮对齐；自动时跟随任务栏位置，独立于内容排列方向。</summary>
-    public TaskbarArrangement HoverAlignment { get; init; } = TaskbarArrangement.Automatic;
+    /// <summary>用户手动选择的内容排布；null 表示跟随任务栏对齐。</summary>
+    public TaskbarContentArrangement? Arrangement { get; init; }
 
     /// <summary>静置层是否显示播放态频谱。 / Whether the rest layer shows the playing spectrum.</summary>
     public bool SpectrumVisible { get; init; } = true;
@@ -604,8 +599,7 @@ public readonly record struct TaskbarExperienceSettings(
             Density = Enum.IsDefined(Density) ? Density : defaults.Density,
             ContentLayout = Enum.IsDefined(ContentLayout) ? ContentLayout : defaults.ContentLayout,
             MediaTextAlignment = Enum.IsDefined(MediaTextAlignment) ? MediaTextAlignment : defaults.MediaTextAlignment,
-            Arrangement = Enum.IsDefined(Arrangement) ? Arrangement : defaults.Arrangement,
-            HoverAlignment = Enum.IsDefined(HoverAlignment) ? HoverAlignment : defaults.HoverAlignment,
+            Arrangement = Arrangement is { } arrangement && Enum.IsDefined(arrangement) ? arrangement : null,
             FullPanel = FullPanel.Normalize(),
             LengthMode = Enum.IsDefined(LengthMode) ? LengthMode : defaults.LengthMode,
             FixedLengthDip = double.IsFinite(FixedLengthDip) && FixedLengthDip >= MinimumStoredFixedLengthDip

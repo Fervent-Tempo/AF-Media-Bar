@@ -55,7 +55,7 @@ public sealed class TaskbarAlignmentTests
                 _ => true, 3, width, 8, 6, fromRight: true);
             Assert.AreEqual(width - 3, layout.Find(TaskbarRestComponent.Artwork)!.Value.Right);
             var actions = TaskbarArrangementPolicy.ActionsLeft(width, layout.TextLeft, layout.TextWidth,
-                100, TaskbarArrangement.Right);
+                100, TaskbarBarPosition.End);
             Assert.AreEqual(width - 3 - 36 - 8 - 6,
                 layout.TextLeft + actions + 100);
             var placements = layout.Placements;
@@ -79,13 +79,13 @@ public sealed class TaskbarAlignmentTests
     {
         foreach (var width in new[] { 400.0, 600.0 })
         {
-            var left = TaskbarArrangementPolicy.ActionsLeft(width, 40, width - 100, 100, TaskbarArrangement.Center);
+            var left = TaskbarArrangementPolicy.ActionsLeft(width, 40, width - 100, 100, TaskbarBarPosition.Center);
             Assert.AreEqual(width / 2, 40 + left + 50);
         }
-        Assert.AreEqual(250.0, TaskbarArrangementPolicy.RevealLeft(300, 50, TaskbarArrangement.Right));
-        Assert.AreEqual(125.0, TaskbarArrangementPolicy.RevealLeft(300, 50, TaskbarArrangement.Center));
-        Assert.AreEqual(0.0, TaskbarArrangementPolicy.RevealLeft(300, 50, TaskbarArrangement.Left));
-        Assert.AreEqual(5.0, TaskbarArrangementPolicy.ActionsLeft(200, 0, 40, 100, TaskbarArrangement.Right));
+        Assert.AreEqual(250.0, TaskbarArrangementPolicy.RevealLeft(300, 50, TaskbarBarPosition.End));
+        Assert.AreEqual(125.0, TaskbarArrangementPolicy.RevealLeft(300, 50, TaskbarBarPosition.Center));
+        Assert.AreEqual(0.0, TaskbarArrangementPolicy.RevealLeft(300, 50, TaskbarBarPosition.Start));
+        Assert.AreEqual(5.0, TaskbarArrangementPolicy.ActionsLeft(200, 0, 40, 100, TaskbarBarPosition.End));
         Assert.IsTrue(TaskbarRestLayoutPolicy.Arrange([], _ => 40, _ => true, 3, 100, 8, 6, true).IsEmpty);
     }
 
@@ -97,19 +97,19 @@ public sealed class TaskbarAlignmentTests
         try
         {
             var settings = new AppSettings { Position = TaskbarBarPosition.Center };
-            settings.TaskbarExperience = settings.TaskbarExperience with { Arrangement = TaskbarArrangement.Right, HoverAlignment = TaskbarArrangement.Center };
+            settings.TaskbarExperience = settings.TaskbarExperience with { Arrangement = TaskbarContentArrangement.Right };
             var json = System.Text.Json.JsonSerializer.Serialize(settings);
             var restored = System.Text.Json.JsonSerializer.Deserialize<AppSettings>(json)!;
-            Assert.AreEqual(TaskbarArrangement.Right, restored.Clone().TaskbarExperience.Normalize().Arrangement);
-            Assert.AreEqual(TaskbarArrangement.Center, restored.Clone().TaskbarExperience.Normalize().HoverAlignment);
-            Assert.AreEqual(TaskbarArrangement.Left,
-                new TaskbarExperienceSettings { Arrangement = (TaskbarArrangement)99 }.Normalize().Arrangement);
+            Assert.AreEqual(TaskbarContentArrangement.Right, restored.Clone().TaskbarExperience.Normalize().Arrangement);
+            Assert.IsNull(new TaskbarExperienceSettings { Arrangement = (TaskbarContentArrangement)99 }.Normalize().Arrangement);
+            var baseline = System.Text.Json.JsonSerializer.Deserialize<AppSettings>("{\"Position\":2}")!;
+            Assert.AreEqual(TaskbarContentArrangement.Right,
+                TaskbarArrangementPolicy.ResolveContent(baseline.TaskbarExperience.Arrangement, baseline.Position));
             SettingsManager.SetUserDefaults(settings);
             SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
-            { Arrangement = TaskbarArrangement.Left, HoverAlignment = TaskbarArrangement.Right };
+            { Arrangement = TaskbarContentArrangement.Left };
             SettingsManager.ResetDisplayModes();
-            Assert.AreEqual(TaskbarArrangement.Right, SettingsManager.Current.TaskbarExperience.Arrangement);
-            Assert.AreEqual(TaskbarArrangement.Center, SettingsManager.Current.TaskbarExperience.HoverAlignment);
+            Assert.AreEqual(TaskbarContentArrangement.Right, SettingsManager.Current.TaskbarExperience.Arrangement);
             Assert.AreEqual(TaskbarBarPosition.Center, SettingsManager.Current.Position);
         }
         finally

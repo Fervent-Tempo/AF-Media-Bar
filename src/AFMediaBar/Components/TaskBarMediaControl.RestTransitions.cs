@@ -263,7 +263,7 @@ public partial class TaskBarMediaControl
                     ? before.TryGetValue(TaskbarRestComponent.MediaText, out var text) ? text.VisibleWidth : 0
                     : _outgoingTextVisibleWidth;
                 _restTextClipScale = new ScaleTransform(0, 1,
-                    ResolvedTaskbarArrangement == TaskbarArrangement.Right ? width : 0, 0);
+                    ResolvedTaskbarArrangement == TaskbarContentArrangement.Right ? width : 0, 0);
                 SongInfoStackPanel.Clip = new RectangleGeometry(new Rect(0, 0, width, height))
                 {
                     Transform = _restTextClipScale
@@ -337,7 +337,7 @@ public partial class TaskBarMediaControl
         var targetWidth = _restTransitionEntering ? _restTextClipWidth : 0;
         // The rightmost edge of live text must stay behind every retained widget, including when
         // a video cover is wider than the idle note or the idle note has been disabled.
-        var fromRight = ResolvedTaskbarArrangement == TaskbarArrangement.Right;
+        var fromRight = ResolvedTaskbarArrangement == TaskbarContentArrangement.Right;
         var boundary = _restTransitionMoves.Count == 0
             ? double.PositiveInfinity
             : fromRight

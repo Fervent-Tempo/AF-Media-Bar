@@ -1291,7 +1291,7 @@ namespace AFMediaBar.Components
                 Math.Max(0, primaryLength),
                 TaskbarExperiencePolicy.ResolveSectionGap(experience.Density, experience.ComponentSpacingDip),
                 TaskbarTrailingMargin,
-                ResolvedTaskbarArrangement == TaskbarArrangement.Right);
+                ResolvedTaskbarArrangement == TaskbarContentArrangement.Right);
         }
 
         /// <summary>把当前设置与快照解析成静置层显隐判定所需的输入。/ Resolves the current settings and snapshot into the rest-layer visibility inputs.</summary>

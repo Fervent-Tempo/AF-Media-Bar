@@ -2134,22 +2134,13 @@
   <data name="DisplayModes.Placement.Row.Arrangement.Description" xml:space="preserve">
     <value>Left arrangement places artwork on the left and the remaining content to its right. Right arrangement places artwork on the right and the remaining content to its left. Text, artwork, and icons retain their orientation.</value>
   </data>
-  <data name="DisplayModes.Placement.Arrangement.Automatic" xml:space="preserve">
-    <value>Follow taskbar alignment</value>
-  </data>
-  <data name="DisplayModes.Placement.Arrangement.Left" xml:space="preserve">
+<data name="DisplayModes.Placement.Arrangement.Left" xml:space="preserve">
     <value>Left arrangement</value>
   </data>
-  <data name="DisplayModes.Placement.Arrangement.Center" xml:space="preserve">
-    <value>Center</value>
-  </data>
-  <data name="DisplayModes.Placement.Arrangement.Right" xml:space="preserve">
+<data name="DisplayModes.Placement.Arrangement.Right" xml:space="preserve">
     <value>Right arrangement</value>
   </data>
-  <data name="DisplayModes.Placement.Row.HoverAlignment.Title" xml:space="preserve">
-    <value>Hover button alignment</value>
-  </data>
-  <data name="DisplayModes.Placement.Row.HoverAlignment.Description" xml:space="preserve">
+<data name="DisplayModes.Placement.Row.HoverAlignment.Description" xml:space="preserve">
     <value>Place hover buttons on the left, in the center, or on the right. Follow taskbar alignment is the default. Button alignment does not change the arrangement of artwork or other content.</value>
   </data>
 </root>

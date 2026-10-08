@@ -10,15 +10,14 @@ namespace AFMediaBar.Components;
 /// <summary>媒体栏横向排布呈现。/ Horizontal arrangement of the media bar.</summary>
 public partial class TaskBarMediaControl
 {
-    private TaskbarArrangement ResolvedTaskbarArrangement => TaskbarArrangementPolicy.ResolveContent(
+    private TaskbarContentArrangement ResolvedTaskbarArrangement => TaskbarArrangementPolicy.ResolveContent(
         SettingsManager.Current.TaskbarExperience.Normalize().Arrangement, SettingsManager.Current.Position);
 
-    private TaskbarArrangement ResolvedTaskbarHoverAlignment => TaskbarArrangementPolicy.Resolve(
-        SettingsManager.Current.TaskbarExperience.Normalize().HoverAlignment, SettingsManager.Current.Position);
+    private TaskbarBarPosition ResolvedTaskbarHoverAlignment => SettingsManager.Current.Position;
 
     private void ApplyTaskbarArrangement()
     {
-        var right = !_isVertical && ResolvedTaskbarArrangement == TaskbarArrangement.Right;
+        var right = !_isVertical && ResolvedTaskbarArrangement == TaskbarContentArrangement.Right;
         Reorder(TaskbarTransportButtons, right
             ? [TaskbarNextButton, TaskbarPlayPauseButton, TaskbarPreviousButton]
             : [TaskbarPreviousButton, TaskbarPlayPauseButton, TaskbarNextButton]);
