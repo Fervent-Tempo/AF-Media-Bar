@@ -2140,7 +2140,7 @@
 <data name="DisplayModes.Placement.Arrangement.Right" xml:space="preserve">
     <value>右侧排布</value>
   </data>
-<data name="DisplayModes.Placement.Row.HoverAlignment.Description" xml:space="preserve">
-    <value>选择悬停按钮靠左、居中或靠右显示。默认跟随任务栏对齐；按钮对齐不改变封面及其他内容的排列。</value>
+  <data name="DisplayModes.Width.NoCommonRange" xml:space="preserve">
+    <value>当前任务栏没有共同可用的固定长度范围。已保存的长度会保留，各任务栏按自身空间限宽。</value>
   </data>
 </root>

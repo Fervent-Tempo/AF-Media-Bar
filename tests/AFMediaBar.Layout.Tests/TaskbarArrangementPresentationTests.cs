@@ -36,6 +36,7 @@ public sealed class TaskbarArrangementPresentationTests
             startInfo.ArgumentList.Add(typeof(TaskbarArrangementPresentationTests).Assembly.Location);
             startInfo.ArgumentList.Add($"/TestCaseFilter:FullyQualifiedName={typeof(TaskbarArrangementPresentationTests).FullName}.{nameof(FractionalWidthRepeatedLayoutKeepsButtonsStableAndResetsDirection)}");
             startInfo.Environment[IsolationVariable] = "1";
+            startInfo.Environment["DOTNET_CLI_UI_LANGUAGE"] = "en-US";
             using var child = Process.Start(startInfo)!;
             var output = child.StandardOutput.ReadToEndAsync();
             var error = child.StandardError.ReadToEndAsync();
@@ -56,6 +57,7 @@ public sealed class TaskbarArrangementPresentationTests
             var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
             try
             {
+                app.Resources["AfBooleanToVisibilityConverter"] = new BooleanToVisibilityConverter();
                 app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ThemesDictionary());
                 app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
                 foreach (var resource in new[] { "MotionResources", "SettingsAppearanceResources", "SettingsDiagrams", "SettingsComponentResources" })
@@ -65,6 +67,7 @@ public sealed class TaskbarArrangementPresentationTests
                     });
                 // Parse the actual page BAML so enum literals, icons and resources are checked at runtime.
                 _ = new AFMediaBar.Views.Pages.DisplayModesPage(null!);
+                _ = new AFMediaBar.Views.Pages.AppearancePage(null!, null!);
                 var control = new TaskBarMediaControl();
                 control.UpdateSongInfo(MediaSnapshot.Disconnected with
                 {
@@ -169,6 +172,36 @@ public sealed class TaskbarArrangementPresentationTests
                             if (anchor is { } expected)
                                 Assert.AreEqual(expected, point, 0.01, $"{direction}/{alignment}: repeated layout moved the button");
                             anchor = point;
+                        }
+                    }
+                SettingsManager.Current.Position = TaskbarBarPosition.Center;
+                SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
+                { Arrangement = TaskbarContentArrangement.Right, SpectrumVisible = true, PerformanceVisible = true };
+                control.ApplyTaskbarExperienceSettings();
+                hover.Visibility = Visibility.Visible;
+                control.UseLayoutRounding = false;
+                foreach (var placement in new[] { TaskbarBarPosition.Start, TaskbarBarPosition.Center, TaskbarBarPosition.End })
+                    foreach (var scale in new[] { 1.0, 1.25, 1.5 })
+                    {
+                        SettingsManager.Current.Position = placement;
+                        var minimum = (int)Math.Ceiling(control.GetMinimumPrimaryLength(scale) * scale);
+                        double? expected = null;
+                        foreach (var width in new[] { minimum, minimum + 1, minimum + 2, minimum + 121 })
+                        {
+                            const long CenterTwice = 2001;
+                            var anchorTwice = placement == TaskbarBarPosition.Center ? CenterTwice : 2000;
+                            var left = AFMediaBar.Classes.Services.TaskbarPlacementPolicy.Position(anchorTwice, width, placement);
+                            control.ApplyPlacementAnchor(left, anchorTwice, scale);
+                            control.ApplyPrimaryLength(width / scale);
+                            hover.Width = ((FrameworkElement)control.FindName("SongInfoStackPanel")).Width;
+                            control.Width = width / scale;
+                            control.Measure(new Size(width / scale, 44));
+                            control.Arrange(new Rect(0, 0, width / scale, 44));
+                            control.UpdateLayout();
+                            var absolute = actions.TranslatePoint(new Point(), control).X * scale + left;
+                            if (expected is { } anchor)
+                                Assert.AreEqual(anchor, absolute, 0.01, $"DPI {scale}: odd/even width moved the actions");
+                            expected = absolute;
                         }
                     }
                 SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with

@@ -63,7 +63,7 @@
             BasedOn="{StaticResource {x:Type components:SettingsRow}}"
             TargetType="{x:Type components:SettingsRow}">
             <Setter Property="Badge" Value="" />
-            <Setter Property="IsEnabled" Value="{Binding ViewModel.UsesFixedTaskbarLength}" />
+            <Setter Property="IsEnabled" Value="{Binding ViewModel.CanEditFixedTaskbarLength}" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding ViewModel.FollowMediaTextLength}" Value="True">
                     <Setter Property="Badge" Value="{DynamicResource Loc.DisplayModes.Width.Row.Fixed.Badge}" />

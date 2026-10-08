@@ -2140,7 +2140,7 @@
 <data name="DisplayModes.Placement.Arrangement.Right" xml:space="preserve">
     <value>Right arrangement</value>
   </data>
-<data name="DisplayModes.Placement.Row.HoverAlignment.Description" xml:space="preserve">
-    <value>Place hover buttons on the left, in the center, or on the right. Follow taskbar alignment is the default. Button alignment does not change the arrangement of artwork or other content.</value>
+  <data name="DisplayModes.Width.NoCommonRange" xml:space="preserve">
+    <value>There is no shared fixed-length range for the current taskbars. The saved length is retained; each bar respects its own available space.</value>
   </data>
 </root>

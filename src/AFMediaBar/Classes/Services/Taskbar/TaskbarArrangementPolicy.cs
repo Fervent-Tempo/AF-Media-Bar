@@ -10,6 +10,12 @@ public static class TaskbarArrangementPolicy
     public static TaskbarContentArrangement ResolveContent(TaskbarContentArrangement? arrangement, TaskbarBarPosition position) =>
         arrangement ?? (position == TaskbarBarPosition.End ? TaskbarContentArrangement.Right : TaskbarContentArrangement.Left);
 
+    /// <summary>居中按钮必须完整落在文字区，固定区包含文字区内留白。</summary>
+    public static double MinimumLength(double leftFixed, double rightFixed, double actionsWidth, TaskbarBarPosition alignment) =>
+        actionsWidth + (alignment == TaskbarBarPosition.Center
+            ? 2 * Math.Max(leftFixed, rightFixed)
+            : leftFixed + rightFixed);
+
     /// <summary>计算按钮组在文字区中的左缘；居中以整条媒体栏为基准，受文字区边界限制。</summary>
     public static double ActionsLeft(double barWidth, double textLeft, double textWidth,
         double actionsWidth, TaskbarBarPosition position)

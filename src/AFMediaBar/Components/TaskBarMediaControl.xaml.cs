@@ -315,7 +315,10 @@ namespace AFMediaBar.Components
         public event EventHandler? VolumeInfoRequested;
 
         /// <summary>当前横向任务栏悬停层和固定组件所需的最小长度。 / Current minimum length required by the horizontal taskbar hover layer and fixed components.</summary>
-        public double MinimumPrimaryLength => _minimumPrimaryLength;
+        public double MinimumPrimaryLength => GetMinimumPrimaryLength(_taskbarPlacementDpiScale);
+
+        /// <summary>静置层没有任何可见组件时，不需要选区或空间不足通知。</summary>
+        public bool IsRestLayerEmpty => _isRestLayerEmpty;
 
         /// <summary>
         /// 返回当前可见文字表面的物理屏幕像素矩形，供宿主采样实际背景。
@@ -1940,7 +1943,7 @@ namespace AFMediaBar.Components
                     Width = _snapshot.IsConnected
                         ? TaskbarExperiencePolicy.ResolvePrimaryLength(
                             contentWidth,
-                            _minimumPrimaryLength,
+                            MinimumPrimaryLength,
                             double.PositiveInfinity,
                             experience.LengthMode,
                             experience.FixedLengthDip)

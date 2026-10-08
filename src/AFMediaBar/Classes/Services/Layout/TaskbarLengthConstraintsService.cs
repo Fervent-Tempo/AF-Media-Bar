@@ -19,13 +19,15 @@ public sealed class TaskbarLengthConstraintsService
     /// <summary>当前任务栏安全区间允许的最大长度。 / Current maximum allowed by the taskbar safe range.</summary>
     public double MaximumLengthDip => _maximumLengthDip;
 
+    /// <summary>当前可显示宿主是否存在共同长度范围。</summary>
+    public bool HasAvailableRange { get; private set; }
+
     /// <summary>运行时长度范围变化时触发。 / Raised when the runtime length range changes.</summary>
     public event EventHandler? Changed;
 
     /// <summary>
-    /// 更新有效长度范围；非有限输入沿用上次值，最大值始终不小于最小值。
-    /// Updates the effective range; non-finite inputs retain the previous value and the maximum
-    /// is always at least the minimum.
+    /// 更新可显示宿主的有效范围；非有限输入忽略，真实上限不因最小要求而抬高。
+    /// Updates a feasible host range without inflating the actual maximum.
     /// </summary>
     public void Update(double minimumLengthDip, double maximumLengthDip)
         => Update(LegacySource, minimumLengthDip, maximumLengthDip);
@@ -40,13 +42,12 @@ public sealed class TaskbarLengthConstraintsService
     public void Update(object source, double minimumLengthDip, double maximumLengthDip)
     {
         ArgumentNullException.ThrowIfNull(source);
-        var minimum = double.IsFinite(minimumLengthDip)
-            ? Math.Max(1, minimumLengthDip)
-            : _minimumLengthDip;
-        var maximum = double.IsFinite(maximumLengthDip) && maximumLengthDip > 0
-            ? Math.Max(minimum, maximumLengthDip)
-            : Math.Max(minimum, _maximumLengthDip);
-        _sources[source] = (minimum, maximum);
+        if (!double.IsFinite(minimumLengthDip) || !double.IsFinite(maximumLengthDip))
+            return;
+        if (minimumLengthDip <= 0 || maximumLengthDip < minimumLengthDip)
+            _sources.Remove(source);
+        else
+            _sources[source] = (minimumLengthDip, maximumLengthDip);
         PublishAggregate();
     }
 
@@ -62,11 +63,12 @@ public sealed class TaskbarLengthConstraintsService
     {
         var minimum = _sources.Count == 0 ? 120 : _sources.Values.Max(value => value.Minimum);
         var maximum = _sources.Count == 0 ? 1200 : _sources.Values.Min(value => value.Maximum);
-        maximum = Math.Max(minimum, maximum);
+        var available = _sources.Count > 0 && maximum >= minimum;
         if (Math.Abs(_minimumLengthDip - minimum) < 0.1 &&
-            Math.Abs(_maximumLengthDip - maximum) < 0.1)
+            Math.Abs(_maximumLengthDip - maximum) < 0.1 && HasAvailableRange == available)
             return;
 
+        HasAvailableRange = available;
         _minimumLengthDip = minimum;
         _maximumLengthDip = maximum;
         Changed?.Invoke(this, EventArgs.Empty);

@@ -412,6 +412,7 @@ public partial class TaskbarWindow : Window
 
         if (suspended)
         {
+            _placementState = TaskbarPlacementPolicy.ClearConfirmation(_placementState);
             MediaControl.ApplyHostVisibilitySuspension(true);
             // 冻结任务栏相对几何供父窗口带动；稳定后仍需重新取得安全区间，才能恢复布局与输入。
             _hasSafePlacement = false;
@@ -796,6 +797,7 @@ public partial class TaskbarWindow : Window
             _placedTaskbarRect = taskbarRect;
             _placedTaskbarDpiScale = dpiScale;
             ApplyMediaBarVisibility();
+            CommitHorizontalPlacement();
         }
         finally
         {
@@ -805,6 +807,10 @@ public partial class TaskbarWindow : Window
 
     private RECT PositionBar(RECT taskbarRect, double dpiScale)
     {
+        if ((_appliedOrientation ?? LayoutOrientation.Horizontal) == LayoutOrientation.Horizontal)
+            return PositionHorizontalBar(taskbarRect, dpiScale);
+        _placementContext = null;
+        _placementState = new();
         int taskbarWidth = taskbarRect.Right - taskbarRect.Left;
         int taskbarHeight = taskbarRect.Bottom - taskbarRect.Top;
 
@@ -1188,7 +1194,8 @@ public partial class TaskbarWindow : Window
             return;
         }
 
-        var hasSafePlacement = !SettingsManager.Current.TaskbarBarAvoidIcons || _hasSafePlacement;
+        var hasSafePlacement = _appliedOrientation == LayoutOrientation.Horizontal
+            ? _hasSafePlacement : !SettingsManager.Current.TaskbarBarAvoidIcons || _hasSafePlacement;
         var reusablePlacement = _hasTaskbarPresentationPlacement && _placedTaskbarHandle == _lastTaskbarHandle &&
             GetParent(_windowHandle) == _lastTaskbarHandle &&
             _taskBarService.GetTaskbarDpiScale(_lastTaskbarHandle) == _placedTaskbarDpiScale &&
@@ -1233,6 +1240,7 @@ public partial class TaskbarWindow : Window
         if (_isEnvironmentSuspended)
             return;
 
+        _placementState = TaskbarPlacementPolicy.ClearConfirmation(_placementState);
         _isEnvironmentSuspended = true;
         _hasTaskbarPresentationPlacement = false;
         Visibility = Visibility.Collapsed;
@@ -1877,6 +1885,8 @@ public partial class TaskbarWindow : Window
             dragPrimarySize,
             dragIsVertical ? dragTaskbarRect.Bottom - dragTaskbarRect.Top : dragTaskbarRect.Right - dragTaskbarRect.Left,
             SettingsManager.Current.Position);
+        if (!dragIsVertical)
+            PrepareHorizontalDrag(targetPrimary, dragPrimarySize, dragRange, dragTaskbarRect, dragDpiScale);
 
         var windowHandle = new WindowInteropHelper(this).Handle;
         if (_lastTaskbarHandle != IntPtr.Zero && windowHandle != IntPtr.Zero)
@@ -1987,6 +1997,12 @@ public partial class TaskbarWindow : Window
             _lengthConstraints.Update(this, minimum, maximum);
         else
             _lengthConstraints.Remove(this);
+        if (orientation == LayoutOrientation.Horizontal && maximum <= 0)
+        {
+            _sizeAnimationTimer.Stop();
+            UpdatePositionImmediately();
+            return;
+        }
         var target = TaskbarExperiencePolicy.ResolvePrimaryLength(
             request.PrimaryLength,
             minimum,
@@ -2038,6 +2054,13 @@ public partial class TaskbarWindow : Window
         if (dpi <= 0)
             return 0;
 
+        if (orientation == LayoutOrientation.Horizontal)
+        {
+            var desired = _lastDesiredSizeRequest?.PrimaryLength ?? MediaControl.CurrentLayout?.Canvas.Width ?? 300;
+            var preview = PreviewHorizontalPlacement(rect, dpi, desired);
+            return preview.State.IsVisible ? preview.State.Budget / dpi : 0;
+        }
+
         // 设置页上限必须取当前媒体栏实际会落入的安全区间；用 0 会选到前方放不下媒体栏的窄缝，
         // 而 PositionBar 会跳过那条缝，导致滑杆与实际可用宽度不一致。
         // Match the safe range used by PositionBar. A zero requirement can select an earlier sliver
@@ -2060,6 +2083,13 @@ public partial class TaskbarWindow : Window
         out bool isSafePlacement)
     {
         isSafePlacement = false;
+        if (orientation == LayoutOrientation.Horizontal)
+        {
+            var preview = PreviewHorizontalPlacement(taskbarRect, dpiScale,
+                _lastDesiredSizeRequest?.PrimaryLength ?? MediaControl.CurrentLayout?.Canvas.Width ?? 300);
+            isSafePlacement = preview.State.IsVisible;
+            return preview.State.Range;
+        }
         var primaryLength = orientation == LayoutOrientation.Horizontal
             ? taskbarRect.Right - taskbarRect.Left
             : taskbarRect.Bottom - taskbarRect.Top;
@@ -2217,11 +2247,9 @@ public partial class TaskbarWindow : Window
             durationMilliseconds: MotionPolicy.ResolveCurrent().PositionDuration.TotalMilliseconds);
         _sizeAnimationProgress = frame.Progress;
         ApplyPrimaryLength(frame.Value);
-        UpdatePositionImmediately();
         if (frame.IsCompleted)
-        {
             _sizeAnimationTimer.Stop();
-        }
+        UpdatePositionImmediately();
     }
 
     private void MediaControl_LostMouseCapture(object sender, MouseEventArgs e)

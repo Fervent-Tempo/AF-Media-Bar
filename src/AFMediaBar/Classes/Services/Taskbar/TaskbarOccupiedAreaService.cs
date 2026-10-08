@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models.Layout;
 using static AFMediaBar.Classes.Interop.NativeMethods;
@@ -18,11 +19,13 @@ public sealed class TaskbarOccupiedAreaService
     private static readonly TimeSpan FailedProbeCooldown = TimeSpan.FromSeconds(2);
     private readonly ITaskbarOccupiedAreaProbe _probe;
     private readonly Func<DateTime> _utcNow;
+    private readonly Func<double> _monotonicSeconds;
     private readonly object _cacheGate = new();
     private readonly Dictionary<ProbeCacheKey, CacheEntry> _cache = [];
     private readonly Dictionary<ProbeCacheKey, ActiveProbe> _activeProbes = [];
     private long _cacheGeneration;
     private long _nextProbeId;
+    private readonly Dictionary<ProbeCacheKey, long> _lastFailures = [];
 
     /// <summary>
     /// 某个任务栏的新安全区间已经发布。事件可能从后台探测线程触发。
@@ -39,10 +42,11 @@ public sealed class TaskbarOccupiedAreaService
     {
     }
 
-    internal TaskbarOccupiedAreaService(ITaskbarOccupiedAreaProbe probe, Func<DateTime> utcNow)
+    internal TaskbarOccupiedAreaService(ITaskbarOccupiedAreaProbe probe, Func<DateTime> utcNow, Func<double>? monotonicSeconds = null)
     {
         _probe = probe ?? throw new ArgumentNullException(nameof(probe));
         _utcNow = utcNow ?? throw new ArgumentNullException(nameof(utcNow));
+        _monotonicSeconds = monotonicSeconds ?? (() => Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency);
     }
 
     /// <summary>
@@ -73,6 +77,7 @@ public sealed class TaskbarOccupiedAreaService
         var probeGeneration = 0L;
         var probeId = 0L;
         var probeStartedAtUtc = default(DateTime);
+        TaskbarSafeRangesUpdatedEventArgs? timedOut = null;
         lock (_cacheGate)
         {
             var now = _utcNow();
@@ -91,6 +96,15 @@ public sealed class TaskbarOccupiedAreaService
             {
                 // Failed scans wait briefly before retrying; expired UIA results release this cache slot,
                 // but the probe keeps its single worker and coalesces queued requests for this taskbar.
+                if (!activeProbe.IsFailed && activeProbe.Generation == _cacheGeneration)
+                {
+                    var failed = new TaskbarOccupancySnapshot(TaskbarProbeStatus.Failed, _cacheGeneration,
+                        activeProbe.Id, _monotonicSeconds(), []);
+                    _lastFailures[key] = activeProbe.Id;
+                    failed = failed with { LastFailurePublicationId = activeProbe.Id };
+                    _cache[key] = new CacheEntry(now, failed);
+                    timedOut = CreateEvent(key, failed);
+                }
                 _activeProbes.Remove(key);
                 availableCache = [];
             }
@@ -104,6 +118,9 @@ public sealed class TaskbarOccupiedAreaService
                 startProbe = true;
             }
         }
+
+        if (timedOut is not null)
+            RaiseSafeRangesUpdated(timedOut);
 
         if (startProbe)
         {
@@ -120,6 +137,21 @@ public sealed class TaskbarOccupiedAreaService
         return availableCache;
     }
 
+    /// <summary>调度探测并读取有状态的缓存；Pending 不表示有效空区或真实失败。</summary>
+    public TaskbarOccupancySnapshot GetSnapshot(IntPtr taskbarHandle, RECT taskbarRect,
+        LayoutOrientation orientation, double dpiScale, int edgePaddingPixels)
+    {
+        GetSafePrimaryRanges(taskbarHandle, taskbarRect, orientation, dpiScale, edgePaddingPixels);
+        var key = new ProbeCacheKey(taskbarHandle, taskbarRect, orientation, dpiScale, edgePaddingPixels);
+        lock (_cacheGate)
+        {
+            if (_cache.TryGetValue(key, out var entry) && entry.Snapshot.Generation == _cacheGeneration &&
+                (entry.Snapshot.Status == TaskbarProbeStatus.Failed || _utcNow() - entry.CachedAtUtc <= ProbeResultTimeout))
+                return entry.Snapshot;
+            return new TaskbarOccupancySnapshot(TaskbarProbeStatus.Pending, _cacheGeneration, 0, 0, []);
+        }
+    }
+
     /// <summary>
     /// 使当前占用区缓存失效；正在运行的旧探测完成后不会发布结果。
     /// Invalidates the current occupancy cache; an in-flight older probe will not publish its result.
@@ -130,6 +162,7 @@ public sealed class TaskbarOccupiedAreaService
         {
             _cacheGeneration++;
             _cache.Clear();
+            _lastFailures.Clear();
         }
     }
 
@@ -177,20 +210,27 @@ public sealed class TaskbarOccupiedAreaService
                 probeGeneration == _cacheGeneration &&
                 completedAtUtc - probeStartedAtUtc <= ProbeResultTimeout)
             {
-                var snapshot = ranges.ToArray();
+                var snapshot = new TaskbarOccupancySnapshot(TaskbarProbeStatus.Success, probeGeneration,
+                    probeId, _monotonicSeconds(), Array.AsReadOnly(ranges.ToArray()),
+                    LastFailurePublicationId: _lastFailures.GetValueOrDefault(key));
                 _cache[key] = new CacheEntry(completedAtUtc, snapshot);
                 PruneOldEntries();
-                updated = new TaskbarSafeRangesUpdatedEventArgs(
-                    key.TaskbarHandle,
-                    key.TaskbarRect,
-                    key.Orientation,
-                    key.DpiScale,
-                    key.EdgePaddingPixels,
-                    snapshot);
+                updated = CreateEvent(key, snapshot);
             }
 
             if (_activeProbes.TryGetValue(key, out activeProbe) && probeId == activeProbe.Id)
+            {
+                if (updated is null && probeGeneration == _cacheGeneration)
+                {
+                    var failure = new TaskbarOccupancySnapshot(TaskbarProbeStatus.Failed, probeGeneration,
+                        probeId, _monotonicSeconds(), []);
+                    _lastFailures[key] = probeId;
+                    failure = failure with { LastFailurePublicationId = probeId };
+                    _cache[key] = new CacheEntry(completedAtUtc, failure);
+                    updated = CreateEvent(key, failure);
+                }
                 _activeProbes.Remove(key);
+            }
         }
 
         if (updated is not null)
@@ -199,13 +239,22 @@ public sealed class TaskbarOccupiedAreaService
 
     private void FailProbe(ProbeCacheKey key, long probeId)
     {
+        TaskbarSafeRangesUpdatedEventArgs? failed = null;
         lock (_cacheGate)
         {
-            if (_activeProbes.TryGetValue(key, out var activeProbe) && probeId == activeProbe.Id)
+            if (_activeProbes.TryGetValue(key, out var activeProbe) && probeId == activeProbe.Id && activeProbe.Generation == _cacheGeneration)
             {
                 // A missing taskbar HWND may persist while a shell flyout is open. Retain a
                 // failed slot briefly instead of queuing another probe every UI tick.
-                _activeProbes[key] = activeProbe with { StartedAtUtc = _utcNow(), IsFailed = true };
+                var now = _utcNow();
+                _activeProbes[key] = activeProbe with { StartedAtUtc = now, IsFailed = true };
+                var snapshot = new TaskbarOccupancySnapshot(TaskbarProbeStatus.Failed, _cacheGeneration,
+                    probeId, _monotonicSeconds(), []);
+                _lastFailures[key] = probeId;
+                snapshot = snapshot with { LastFailurePublicationId = probeId };
+                _cache[key] = new CacheEntry(now, snapshot);
+                PruneOldEntries();
+                failed = CreateEvent(key, snapshot);
                 var staleFailures = _activeProbes.Where(pair => pair.Value.IsFailed)
                     .OrderBy(pair => pair.Value.StartedAtUtc)
                     .Take(Math.Max(0, _activeProbes.Count(pair => pair.Value.IsFailed) - 16))
@@ -215,7 +264,13 @@ public sealed class TaskbarOccupiedAreaService
                     _activeProbes.Remove(staleKey);
             }
         }
+        if (failed is not null)
+            RaiseSafeRangesUpdated(failed);
     }
+
+    private static TaskbarSafeRangesUpdatedEventArgs CreateEvent(ProbeCacheKey key, TaskbarOccupancySnapshot snapshot) =>
+        new(key.TaskbarHandle, key.TaskbarRect, key.Orientation, key.DpiScale,
+            key.EdgePaddingPixels, snapshot.Ranges, snapshot);
 
     private void RaiseSafeRangesUpdated(TaskbarSafeRangesUpdatedEventArgs args)
     {
@@ -247,6 +302,7 @@ public sealed class TaskbarOccupiedAreaService
                      .ToArray())
         {
             _cache.Remove(key);
+            _lastFailures.Remove(key);
         }
     }
 
@@ -259,7 +315,10 @@ public sealed class TaskbarOccupiedAreaService
 
     private readonly record struct ActiveProbe(long Generation, long Id, DateTime StartedAtUtc, bool IsFailed = false);
 
-    private sealed record CacheEntry(DateTime CachedAtUtc, IReadOnlyList<TaskbarPrimaryRange> Ranges);
+    private sealed record CacheEntry(DateTime CachedAtUtc, TaskbarOccupancySnapshot Snapshot)
+    {
+        public IReadOnlyList<TaskbarPrimaryRange> Ranges => Snapshot.Ranges;
+    }
 }
 
 /// <summary>
@@ -275,8 +334,10 @@ public sealed class TaskbarSafeRangesUpdatedEventArgs : EventArgs
         LayoutOrientation orientation,
         double dpiScale,
         int edgePaddingPixels,
-        IReadOnlyList<TaskbarPrimaryRange> ranges)
+        IReadOnlyList<TaskbarPrimaryRange> ranges,
+        TaskbarOccupancySnapshot? snapshot = null)
     {
+        Snapshot = snapshot ?? new TaskbarOccupancySnapshot(TaskbarProbeStatus.Success, 0, 0, 0, ranges);
         TaskbarHandle = taskbarHandle;
         TaskbarRect = taskbarRect;
         Orientation = orientation;
@@ -284,6 +345,9 @@ public sealed class TaskbarSafeRangesUpdatedEventArgs : EventArgs
         EdgePaddingPixels = edgePaddingPixels;
         Ranges = ranges;
     }
+
+    /// <summary>探测状态、环境代、发布 ID 及单调完成时间。</summary>
+    public TaskbarOccupancySnapshot Snapshot { get; }
 
     /// <summary>任务栏窗口句柄。/ Taskbar window handle.</summary>
     public IntPtr TaskbarHandle { get; }

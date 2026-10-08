@@ -2140,7 +2140,7 @@
 <data name="DisplayModes.Placement.Arrangement.Right" xml:space="preserve">
     <value>右側排列</value>
   </data>
-<data name="DisplayModes.Placement.Row.HoverAlignment.Description" xml:space="preserve">
-    <value>選擇懸停按鈕靠左、置中或靠右顯示。預設跟隨工作列對齊；按鈕對齊不改變封面及其他內容的排列。</value>
+  <data name="DisplayModes.Width.NoCommonRange" xml:space="preserve">
+    <value>目前工作列沒有共同可用的固定長度範圍。已儲存的長度會保留，各工作列依自身空間限制寬度。</value>
   </data>
 </root>
