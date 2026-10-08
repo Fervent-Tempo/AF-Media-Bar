@@ -322,6 +322,36 @@
   <data name="Appearance.Row.Backdrop.Title" xml:space="preserve">
     <value>Window backdrop material</value>
   </data>
+  <data name="Appearance.Row.TaskbarBackground.Description" xml:space="preserve">
+    <value>Add a translucent frosted surface so the media bar stays readable on transparent taskbars.</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackground.Title" xml:space="preserve">
+    <value>Frosted taskbar background</value>
+  </data>
+  <data name="Appearance.Row.TaskbarFrostedStyle.Description" xml:space="preserve">
+    <value>Choose a mist tone or make the blurred artwork more visible.</value>
+  </data>
+  <data name="Appearance.Row.TaskbarFrostedStyle.Title" xml:space="preserve">
+    <value>Material style</value>
+  </data>
+  <data name="Appearance.TaskbarFrostedStyle.Neutral" xml:space="preserve">
+    <value>Adaptive grey mist</value>
+  </data>
+  <data name="Appearance.TaskbarFrostedStyle.Cool" xml:space="preserve">
+    <value>Cool grey</value>
+  </data>
+  <data name="Appearance.TaskbarFrostedStyle.Warm" xml:space="preserve">
+    <value>Warm grey</value>
+  </data>
+  <data name="Appearance.TaskbarFrostedStyle.Artwork" xml:space="preserve">
+    <value>Artwork ambience</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundOpacity.Description" xml:space="preserve">
+    <value>Higher values make the grey veil stronger and improve readability on transparent taskbars.</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundOpacity.Title" xml:space="preserve">
+    <value>Frost strength</value>
+  </data>
   <data name="Appearance.Row.BackdropTint.Description" xml:space="preserve">
     <value>Adjust the background tint of Windows 10 windows and track notifications (30%–100%). System-rendered window materials on Windows 11 are unaffected.</value>
   </data>
@@ -1903,6 +1933,12 @@
   <data name="Startup.SingleInstance.AlreadyRunning" xml:space="preserve">
     <value>AF Media Bar is already running. Look for its icon in the notification area at the bottom right, or select the arrow to show hidden icons.</value>
   </data>
+  <data name="Startup.TranslucentTb.Content" xml:space="preserve">
+    <value>TranslucentTB is running. Frosted taskbar background has been kept enabled so media remains readable on a transparent taskbar. You can turn it off any time under Settings &gt; Appearance.</value>
+  </data>
+  <data name="Startup.TranslucentTb.Title" xml:space="preserve">
+    <value>Transparent taskbar detected</value>
+  </data>
   <data name="Update.Channel.Accelerated" xml:space="preserve">
     <value>Accelerated mirror {0}</value>
   </data>
@@ -2248,5 +2284,14 @@
   </data>
   <data name="Lyrics.ArtistSeparators.Dialog.Restore" xml:space="preserve">
     <value>Restore defaults</value>
+  </data>
+  <data name="Appearance.Group.TaskbarBackground" xml:space="preserve">
+    <value>Background</value>
+  </data>
+  <data name="Appearance.TaskbarBackground.Details.Title" xml:space="preserve">
+    <value>Background details</value>
+  </data>
+  <data name="Appearance.TaskbarBackground.Details.Description" xml:space="preserve">
+    <value>Adjust the style and opacity. Applies when the background is enabled.</value>
   </data>
 </root>

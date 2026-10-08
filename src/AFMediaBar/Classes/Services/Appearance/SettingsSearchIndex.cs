@@ -246,6 +246,8 @@ public static class SettingsSearchIndex
             ["来源", "歌词来源", "source", "sources", "网易云", "网易云音乐", "netease", "qq 音乐", "qqmusic", "酷狗", "kugou", "汽水", "soda", "lrclib", "搜索", "search", "匹配", "match", "艺术家分隔符", "artist separators"]),
 
         // ---- 外观 / Appearance ----
+        Create(SettingsPageKey.Appearance, "Appearance.Group.TaskbarBackground", "Appearance.Row.TaskbarBackground.Description", language,
+            ["背景层", "磨砂", "透明任务栏", "frost", "background", "TranslucentTB", "浓度", "opacity"]),
         Create(
             SettingsPageKey.ApplicationAppearance,
             "Common.Group.ThemeAndBackdrop",

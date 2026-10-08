@@ -179,6 +179,56 @@
                     </StackPanel>
                 </components:SettingsGroup>
 
+                <components:SettingsGroup
+                    GroupId="Appearance.Group.TaskbarBackground"
+                    Header="{DynamicResource Loc.Appearance.Group.TaskbarBackground}"
+                    Icon="{ui:SymbolIcon Blur24}">
+                    <StackPanel>
+                        <components:SettingsRow
+                            Title="{DynamicResource Loc.Appearance.Row.TaskbarBackground.Title}"
+                            Description="{DynamicResource Loc.Appearance.Row.TaskbarBackground.Description}"
+                            Icon="{ui:SymbolIcon Blur24}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.UseFrostedTaskbarBackground, Mode=TwoWay}" />
+                        </components:SettingsRow>
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Options24}">
+                            <ui:CardExpander.Header>
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Appearance.TaskbarBackground.Details.Title}" />
+                                    <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Appearance.TaskbarBackground.Details.Description}" />
+                                </StackPanel>
+                            </ui:CardExpander.Header>
+                            <StackPanel>
+                                <components:SettingsRow
+                                    Description="{DynamicResource Loc.Appearance.Row.TaskbarFrostedStyle.Description}"
+                                    Icon="{ui:SymbolIcon Color24}"
+                                    IsEnabled="{Binding ViewModel.UseFrostedTaskbarBackground}"
+                                    IsNested="True"
+                                    Title="{DynamicResource Loc.Appearance.Row.TaskbarFrostedStyle.Title}">
+                                    <ComboBox MinWidth="180" SelectedValue="{Binding ViewModel.TaskbarFrostedStyle, Mode=TwoWay}" SelectedValuePath="Tag">
+                                        <ComboBoxItem Content="{DynamicResource Loc.Appearance.TaskbarFrostedStyle.Neutral}" Tag="{x:Static settings:TaskbarFrostedStyle.Neutral}" />
+                                        <ComboBoxItem Content="{DynamicResource Loc.Appearance.TaskbarFrostedStyle.Cool}" Tag="{x:Static settings:TaskbarFrostedStyle.Cool}" />
+                                        <ComboBoxItem Content="{DynamicResource Loc.Appearance.TaskbarFrostedStyle.Warm}" Tag="{x:Static settings:TaskbarFrostedStyle.Warm}" />
+                                        <ComboBoxItem Content="{DynamicResource Loc.Appearance.TaskbarFrostedStyle.Artwork}" Tag="{x:Static settings:TaskbarFrostedStyle.Artwork}" />
+                                    </ComboBox>
+                                </components:SettingsRow>
+                                <components:SettingsRow
+                                    Description="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundOpacity.Description}"
+                                    Icon="{ui:SymbolIcon CircleHalfFill24}"
+                                    IsEnabled="{Binding ViewModel.UseFrostedTaskbarBackground}"
+                                    IsNested="True"
+                                    Title="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundOpacity.Title}">
+                                    <components:SettingsNumericEditor
+                                        Unit="%"
+                                        Value="{Binding ViewModel.TaskbarBackgroundOpacityPercent, Mode=TwoWay}"
+                                        Minimum="{Binding Source={x:Static settings:AppearanceSettings.MinimumTaskbarBackgroundOpacityPercent}}"
+                                        Maximum="{Binding Source={x:Static settings:AppearanceSettings.MaximumTaskbarBackgroundOpacityPercent}}"
+                                        Step="{Binding Source={x:Static settings:AppearanceSettings.TaskbarBackgroundOpacityStep}}" />
+                                </components:SettingsRow>
+                            </StackPanel>
+                        </ui:CardExpander>
+                    </StackPanel>
+                </components:SettingsGroup>
+
                 <components:SettingsGroup GroupId="Common.Group.MediaBarWidth"
                     Description="{DynamicResource Loc.DisplayModes.Width.Group.Description}"
                     Header="{DynamicResource Loc.Common.Group.MediaBarWidth}"

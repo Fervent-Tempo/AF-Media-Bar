@@ -21,6 +21,8 @@ public interface ISettingsConfiguration
     void SetTaskbarExperience(TaskbarExperienceSettings settings);
     /// <summary>Replaces application appearance through the current storage contract.</summary>
     void SetAppearance(AppearanceSettings settings);
+    /// <summary>Updates taskbar foreground and background while retaining application theme and fonts.</summary>
+    void SetTaskbarAppearance(AppearanceSettings settings);
     /// <summary>Replaces spectrum configuration through its domain normalization.</summary>
     void SetSpectrum(SpectrumComponentSettings settings);
     /// <summary>Replaces performance configuration through its domain normalization.</summary>

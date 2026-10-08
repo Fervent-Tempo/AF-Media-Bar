@@ -322,6 +322,36 @@
   <data name="Appearance.Row.Backdrop.Title" xml:space="preserve">
     <value>視窗背景材質</value>
   </data>
+  <data name="Appearance.Row.TaskbarBackground.Description" xml:space="preserve">
+    <value>為媒體列加入半透明霧面底色，在透明工作列上保持內容清晰。</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackground.Title" xml:space="preserve">
+    <value>工作列霧面背景</value>
+  </data>
+  <data name="Appearance.Row.TaskbarFrostedStyle.Description" xml:space="preserve">
+    <value>選擇灰霧色調，或讓模糊封面更明顯。</value>
+  </data>
+  <data name="Appearance.Row.TaskbarFrostedStyle.Title" xml:space="preserve">
+    <value>材質風格</value>
+  </data>
+  <data name="Appearance.TaskbarFrostedStyle.Neutral" xml:space="preserve">
+    <value>自適應灰霧</value>
+  </data>
+  <data name="Appearance.TaskbarFrostedStyle.Cool" xml:space="preserve">
+    <value>冷灰</value>
+  </data>
+  <data name="Appearance.TaskbarFrostedStyle.Warm" xml:space="preserve">
+    <value>暖灰</value>
+  </data>
+  <data name="Appearance.TaskbarFrostedStyle.Artwork" xml:space="preserve">
+    <value>封面氛圍</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundOpacity.Description" xml:space="preserve">
+    <value>數值越高，灰色遮罩越濃，透明工作列上的內容越清晰。</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundOpacity.Title" xml:space="preserve">
+    <value>霧面程度</value>
+  </data>
   <data name="Appearance.Row.BackdropTint.Description" xml:space="preserve">
     <value>調整 Windows 10 視窗和曲目通知的背景濃度（30%–100%）；Windows 11 系統繪製的視窗材質不受影響。</value>
   </data>
@@ -1903,6 +1933,12 @@
   <data name="Startup.SingleInstance.AlreadyRunning" xml:space="preserve">
     <value>AF Media Bar 已在執行，請查看右下角的系統匣圖示（或點選小箭頭展開隱藏圖示）。</value>
   </data>
+  <data name="Startup.TranslucentTb.Content" xml:space="preserve">
+    <value>偵測到 TranslucentTB 正在執行。為避免透明工作列上的媒體內容難以辨認，已確保開啟「工作列霧面背景」。你可以隨時在「設定 &gt; 外觀」中關閉。</value>
+  </data>
+  <data name="Startup.TranslucentTb.Title" xml:space="preserve">
+    <value>已適配透明工作列</value>
+  </data>
   <data name="Update.Channel.Accelerated" xml:space="preserve">
     <value>加速站台 {0}</value>
   </data>
@@ -2248,5 +2284,14 @@
   </data>
   <data name="Lyrics.ArtistSeparators.Dialog.Restore" xml:space="preserve">
     <value>恢復預設分隔符</value>
+  </data>
+  <data name="Appearance.Group.TaskbarBackground" xml:space="preserve">
+    <value>背景層</value>
+  </data>
+  <data name="Appearance.TaskbarBackground.Details.Title" xml:space="preserve">
+    <value>背景層細節</value>
+  </data>
+  <data name="Appearance.TaskbarBackground.Details.Description" xml:space="preserve">
+    <value>調整背景風格與濃度；啟用背景層後生效。</value>
   </data>
 </root>

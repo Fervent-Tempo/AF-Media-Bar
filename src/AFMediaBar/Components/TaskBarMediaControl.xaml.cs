@@ -1607,7 +1607,50 @@ namespace AFMediaBar.Components
 
             MainBorder.Background = Brushes.Transparent;
             TopBorder.BorderBrush = Brushes.Transparent;
-            BackgroundImage.Visibility = Visibility.Collapsed;
+            ApplyTaskbarBackgroundMaterial(
+                appearance.TaskbarBackgroundMaterial,
+                presentation.UsesLightText,
+                appearance.ResolveTaskbarBackgroundOpacityPercent(),
+                appearance.TaskbarFrostedStyle);
+        }
+
+        private void ApplyTaskbarBackgroundMaterial(
+            TaskbarBackgroundMaterial material,
+            bool usesLightText,
+            int opacityPercent,
+            TaskbarFrostedStyle style)
+        {
+            if (material == TaskbarBackgroundMaterial.Frosted && SystemParameters.HighContrast)
+            {
+                TaskbarMaterialSurface.Background = SystemColors.WindowBrush;
+                TaskbarMaterialSurface.BorderBrush = SystemColors.WindowTextBrush;
+                BackgroundImage.Opacity = 0;
+                BackgroundImage.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            var presentation = TaskbarBackgroundMaterialPolicy.Resolve(
+                material,
+                highContrast: false,
+                usesLightText,
+                opacityPercent,
+                style);
+            TaskbarMaterialSurface.Background = new SolidColorBrush(presentation.Tint);
+            TaskbarMaterialSurface.BorderBrush = new SolidColorBrush(presentation.Stroke);
+            BackgroundImage.Opacity = presentation.ArtworkOpacity;
+            BackgroundImage.Visibility = presentation.ArtworkOpacity > 0 && BackgroundImage.Source is not null
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+
+        private void RefreshTaskbarBackgroundArtwork()
+        {
+            var material = SettingsManager.Current.Appearance.Normalize().TaskbarBackgroundMaterial;
+            BackgroundImage.Visibility = material == TaskbarBackgroundMaterial.Frosted &&
+                                         !SystemParameters.HighContrast &&
+                                         BackgroundImage.Source is not null
+                ? Visibility.Visible
+                : Visibility.Collapsed;
         }
 
         private void ApplyTaskbarHoverAppearance(Brush foreground)
@@ -1798,9 +1841,10 @@ namespace AFMediaBar.Components
                     : Visibility.Collapsed;
                 SongInfoStackPanel.Visibility = _isVertical ? Visibility.Collapsed : Visibility.Visible;
                 SongInfoStackPanel.IsHitTestVisible = !_isVertical;
-                // 任务栏主体保持透明。
-                // Keep the taskbar body transparent; the island retains its existing layout-engine background behavior.
-                BackgroundImage.Visibility = Visibility.Collapsed;
+                // 透明模式保持旧观感；磨砂模式只在确有封面时恢复纹理层，底色本身由外观设置统一维护。
+                // Transparent mode keeps the original appearance; frosted mode restores the texture only when artwork exists,
+                // while the material tint itself remains owned by the appearance path.
+                RefreshTaskbarBackgroundArtwork();
 
                 TaskbarPreviousButton.IsEnabled = _canSkipPrevious;
                 TaskbarPlayPauseButton.IsEnabled = _canPlayPause;

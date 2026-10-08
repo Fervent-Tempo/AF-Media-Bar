@@ -23,6 +23,19 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context) : I
     /// <inheritdoc />
     public void SetAppearance(AppearanceSettings settings) { if (IsActive) SettingsManager.SetAppearanceSettings(settings.Normalize()); }
     /// <inheritdoc />
+    public void SetTaskbarAppearance(AppearanceSettings settings)
+    {
+        if (!IsActive || Context.Mode != SettingsMode.Taskbar) return;
+        var current = Current.Appearance;
+        SettingsManager.SetAppearanceSettings(current with
+        {
+            PlayerForegroundMode = settings.PlayerForegroundMode,
+            TaskbarBackgroundMaterial = settings.TaskbarBackgroundMaterial,
+            TaskbarBackgroundOpacityPercent = settings.TaskbarBackgroundOpacityPercent,
+            TaskbarFrostedStyle = settings.TaskbarFrostedStyle
+        });
+    }
+    /// <inheritdoc />
     public void SetSpectrum(SpectrumComponentSettings settings) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetSpectrumComponentSettings(settings.Normalize()); }
     /// <inheritdoc />
     public void SetPerformance(PerformanceComponentSettings settings) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetPerformanceComponentSettings(settings.Normalize()); }

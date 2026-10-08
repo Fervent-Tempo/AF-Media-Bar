@@ -38,7 +38,7 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
     public PlayerForegroundMode PlayerForegroundMode
     {
         get => _configuration.Current.Appearance.PlayerForegroundMode;
-        set => _configuration.SetAppearance(_configuration.Current.Appearance with { PlayerForegroundMode = value });
+        set => _configuration.SetTaskbarAppearance(_configuration.Current.Appearance with { PlayerForegroundMode = value });
     }
     /// <summary>Media text scale, independent of the settings window's font selectors.</summary>
     public int MediaFontSizePercent
@@ -48,6 +48,28 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
     }
     /// <summary>Whether horizontal-only ordering and spacing controls are meaningful for this environment.</summary>
     public bool IsHorizontalLayout => _configuration.Context.Orientation != AFMediaBar.Classes.Models.Layout.LayoutOrientation.Vertical;
+
+    /// <summary>是否启用当前任务栏的背景层。</summary>
+    public bool UseFrostedTaskbarBackground
+    {
+        get => _configuration.Current.Appearance.TaskbarBackgroundMaterial == TaskbarBackgroundMaterial.Frosted;
+        set => _configuration.SetTaskbarAppearance(_configuration.Current.Appearance with
+        {
+            TaskbarBackgroundMaterial = value ? TaskbarBackgroundMaterial.Frosted : TaskbarBackgroundMaterial.Transparent
+        });
+    }
+    /// <summary>任务栏背景层的风格。</summary>
+    public TaskbarFrostedStyle TaskbarFrostedStyle
+    {
+        get => _configuration.Current.Appearance.TaskbarFrostedStyle;
+        set => _configuration.SetTaskbarAppearance(_configuration.Current.Appearance with { TaskbarFrostedStyle = value });
+    }
+    /// <summary>任务栏背景层的浓度，范围与步长由设置模型约束。</summary>
+    public int TaskbarBackgroundOpacityPercent
+    {
+        get => _configuration.Current.Appearance.ResolveTaskbarBackgroundOpacityPercent();
+        set => _configuration.SetTaskbarAppearance(_configuration.Current.Appearance with { TaskbarBackgroundOpacityPercent = value });
+    }
 
     public TaskbarInformationDensity InteractionButtonSize
     {
@@ -121,6 +143,9 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
 
     private void RaiseTaskbarAppearance()
     {
+        OnPropertyChanged(nameof(UseFrostedTaskbarBackground));
+        OnPropertyChanged(nameof(TaskbarFrostedStyle));
+        OnPropertyChanged(nameof(TaskbarBackgroundOpacityPercent));
         OnPropertyChanged(nameof(InteractionButtonSize));
         OnPropertyChanged(nameof(ContentLayout));
         OnPropertyChanged(nameof(MediaTextAlignment));

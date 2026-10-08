@@ -316,7 +316,10 @@ public partial class AppearanceViewModel : ObservableObject, IDisposable
         AccentColorHex,
         BackdropTintOpacityPercent,
         LatinFontFamily,
-        CjkFontFamily));
+        CjkFontFamily,
+        _configuration.Current.Appearance.TaskbarBackgroundMaterial,
+        _configuration.Current.Appearance.TaskbarBackgroundOpacityPercent,
+        _configuration.Current.Appearance.TaskbarFrostedStyle));
 
     public void ResetAppearance() { if (!_disposed && _configuration.IsActive) SettingsManager.ResetApplicationAppearance(); }
 
