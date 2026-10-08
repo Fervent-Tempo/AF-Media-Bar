@@ -2140,6 +2140,15 @@
 <data name="DisplayModes.Placement.Arrangement.Right" xml:space="preserve">
     <value>右側排列</value>
   </data>
+  <data name="Taskbar.Placement.Notification.Title" xml:space="preserve">
+    <value>工作列空間不足</value>
+  </data>
+  <data name="Taskbar.Placement.Notification.Hidden" xml:space="preserve">
+    <value>目前工作列無法容納最小媒體列，已暫時隱藏。仍可從系統匣控制媒體；空間恢復後會自動顯示。</value>
+  </data>
+  <data name="Taskbar.Placement.Notification.Moved" xml:space="preserve">
+    <value>目前工作列空間不足，媒體列已暫時移到其他可用位置。原位置恢復足夠空間後會自動返回。</value>
+  </data>
   <data name="DisplayModes.Width.NoCommonRange" xml:space="preserve">
     <value>目前工作列沒有共同可用的固定長度範圍。已儲存的長度會保留，各工作列依自身空間限制寬度。</value>
   </data>

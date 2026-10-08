@@ -10,6 +10,7 @@ using AFMediaBar.Classes.Utils;
 using AFMediaBar.Resources;
 using AFMediaBar.ViewModels.Windows;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -32,6 +33,7 @@ namespace AFMediaBar.Views.Windows
         public MainWindowViewModel ViewModel { get; }
 
         private readonly TaskbarWindowViewModel _taskbarViewModel;
+        private readonly TaskbarFallbackNotificationGate _placementNotificationGate = new();
         private readonly ITaskbarDockService _taskBarService;
         private readonly MediaSessionService _mediaSessionService;
         private readonly AudioControlViewModel _audioControlViewModel;
@@ -491,6 +493,7 @@ namespace AFMediaBar.Views.Windows
             foreach (var taskbarWindow in taskbarWindows)
             {
                 taskbarWindow.OpenFullPanelRequested -= TaskbarWindow_OpenFullPanelRequested;
+                taskbarWindow.PlacementFallbackRequested -= TaskbarWindow_PlacementFallbackRequested;
                 taskbarWindow.SuspendForEnvironmentRecovery();
                 taskbarWindow.DetachFromTaskbar();
                 try
@@ -824,6 +827,7 @@ namespace AFMediaBar.Views.Windows
                 _mouseInputMonitor,
                 _memoryPruneCoordinator);
             window.OpenFullPanelRequested += TaskbarWindow_OpenFullPanelRequested;
+            window.PlacementFallbackRequested += TaskbarWindow_PlacementFallbackRequested;
             return window;
         }
 
@@ -934,12 +938,25 @@ namespace AFMediaBar.Views.Windows
                 Translations.Format("Update.Notification.Body", version, state.CurrentVersion));
         }
 
-        private void TrayIconService_OnNotificationClicked(object? sender, EventArgs e)
+        private void TrayIconService_OnNotificationClicked(object? sender, TrayNotificationClickedEventArgs e)
         {
             if (_isClosing)
                 return;
 
-            ViewModel_OpenUpdateSettingsRequested(sender, EventArgs.Empty);
+            if (e.Purpose == TrayNotificationPurpose.Update)
+                ViewModel_OpenUpdateSettingsRequested(sender, EventArgs.Empty);
+        }
+
+        private void TaskbarWindow_PlacementFallbackRequested(object? sender, TaskbarPlacementFallbackEventArgs e)
+        {
+            if (_isClosing || sender is not TaskbarWindow window || !_taskbarWindows.Contains(window))
+                return;
+            if (!_placementNotificationGate.TryBegin(Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency))
+                return;
+            _trayIconService.TryShowNotification(
+                Translations.Get("Taskbar.Placement.Notification.Title"),
+                Translations.Get(e.IsHidden ? "Taskbar.Placement.Notification.Hidden" : "Taskbar.Placement.Notification.Moved"),
+                TrayNotificationPurpose.TaskbarPlacement);
         }
 
         private void SettingsWindow_Closed(object? sender, EventArgs e)
