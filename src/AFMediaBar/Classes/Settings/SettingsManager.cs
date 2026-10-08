@@ -65,7 +65,7 @@ public sealed class AppSettings : INotifyPropertyChanged
     private GlobalInteractionSettings _interaction = GlobalInteractionSettings.Default;
     private ModeSurfaceSettings _taskbarSurface = ModeSurfaceSettings.Default;
     private ModeSurfaceSettings _dynamicIslandSurface = ModeSurfaceSettings.Default;
-    private LyricsTextAlignment _lyricsTextAlignment = LyricsTextAlignment.Left;
+    private LyricsTextAlignment _lyricsTextAlignment = LyricsTextAlignment.Center;
     private bool _lyricsSyllableHighlightEnabled = true;
     private int _lyricsUnsungOpacityPercent = LyricsUnsungOpacity.DefaultPercent;
     private int _lyricsCharacterSpacingPercent = LyricsCharacterSpacing.DefaultPercent;

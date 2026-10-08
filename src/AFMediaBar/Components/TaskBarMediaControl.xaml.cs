@@ -990,7 +990,6 @@ namespace AFMediaBar.Components
                     SongInfoStackPanel.IsMouseOver || TaskbarDirectFullPanelHandle.IsMouseOver,
                     immediate: true);
 
-            ApplyTaskbarArrangement();
             var hoverGap = experience.HoverButtonSpacingDip;
             var visibleHoverItems = 0;
             foreach (FrameworkElement child in TaskbarHoverActions.Children)

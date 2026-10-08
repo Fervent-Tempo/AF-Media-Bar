@@ -473,7 +473,7 @@ public readonly record struct TaskbarExperienceSettings(
     public double HoverButtonSpacingDip { get; init; } = 2;
 
     /// <summary>标题和歌手文字的对齐方式。 / Alignment of title and artist text.</summary>
-    public TaskbarMediaTextAlignment MediaTextAlignment { get; init; } = TaskbarMediaTextAlignment.Left;
+    public TaskbarMediaTextAlignment MediaTextAlignment { get; init; } = TaskbarMediaTextAlignment.Center;
 
     /// <summary>用户手动选择的内容排布；null 表示跟随任务栏对齐。</summary>
     public TaskbarContentArrangement? Arrangement { get; init; }

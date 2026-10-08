@@ -143,8 +143,13 @@ public sealed class TaskbarArrangementPresentationTests
                     };
                     control.ApplyTaskbarExperienceSettings();
                     var transportButtons = (StackPanel)control.FindName("TaskbarTransportButtons");
-                    Assert.AreSame(control.FindName(arrangement == TaskbarContentArrangement.Right
-                        ? "TaskbarNextButton" : "TaskbarPreviousButton"), transportButtons.Children[0]);
+                    Assert.AreSame(control.FindName("TaskbarPreviousButton"), transportButtons.Children[0]);
+                    Assert.AreSame(control.FindName("TaskbarPlayPauseButton"), transportButtons.Children[1]);
+                    Assert.AreSame(control.FindName("TaskbarNextButton"), transportButtons.Children[2]);
+                    Assert.AreSame(transportButtons, actions.Children[0]);
+                    Assert.AreSame(control.FindName("TaskbarDeviceButton"), actions.Children[1]);
+                    Assert.AreSame(control.FindName("TaskbarVolumeButton"), actions.Children[2]);
+                    Assert.AreSame(control.FindName("TaskbarHoverProgress"), actions.Children[3]);
                 }
                 foreach (var direction in new[] { TaskbarContentArrangement.Left, TaskbarContentArrangement.Right })
                     foreach (var alignment in new[] { TaskbarBarPosition.Start, TaskbarBarPosition.Center, TaskbarBarPosition.End })

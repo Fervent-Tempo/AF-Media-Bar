@@ -602,6 +602,21 @@ public partial class DisplayModesViewModel : ObservableObject
     {
         if (e.ResetScope is SettingsResetScope.DisplayModes or SettingsResetScope.Layout or SettingsResetScope.All)
             RaiseAll();
+        else if (!_isRefreshing && (e.PropertyName is nameof(AppSettings.Position) or nameof(AppSettings.TaskbarExperience)))
+        {
+            // Arrangement is derived from both properties. Publish their effective values while
+            // suppressing two-way target refresh from creating a manual override.
+            _isRefreshing = true;
+            try
+            {
+                OnPropertyChanged(nameof(TaskbarPosition));
+                if (e.PropertyName == nameof(AppSettings.TaskbarExperience))
+                    RaiseExperience();
+                else
+                    OnPropertyChanged(nameof(TaskbarArrangement));
+            }
+            finally { _isRefreshing = false; }
+        }
         else if (!_isRefreshing && e.PropertyName is nameof(AppSettings.TaskbarTargetMonitorDeviceIds) or nameof(AppSettings.TaskbarTargetMonitorDeviceId))
             RefreshMonitorOptions();
     }

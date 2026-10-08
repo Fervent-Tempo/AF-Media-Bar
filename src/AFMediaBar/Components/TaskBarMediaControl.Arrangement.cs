@@ -44,26 +44,6 @@ public partial class TaskBarMediaControl
 
     private TaskbarBarPosition ResolvedTaskbarHoverAlignment => SettingsManager.Current.Position;
 
-    private void ApplyTaskbarArrangement()
-    {
-        var right = !_isVertical && ResolvedTaskbarArrangement == TaskbarContentArrangement.Right;
-        Reorder(TaskbarTransportButtons, right
-            ? [TaskbarNextButton, TaskbarPlayPauseButton, TaskbarPreviousButton]
-            : [TaskbarPreviousButton, TaskbarPlayPauseButton, TaskbarNextButton]);
-        Reorder(TaskbarHoverActions, right
-            ? [TaskbarHoverProgress, TaskbarVolumeButton, TaskbarDeviceButton, TaskbarTransportButtons]
-            : [TaskbarTransportButtons, TaskbarDeviceButton, TaskbarVolumeButton, TaskbarHoverProgress]);
-    }
-
-    private static void Reorder(StackPanel panel, UIElement[] children)
-    {
-        if (panel.Children.Cast<UIElement>().SequenceEqual(children))
-            return;
-        panel.Children.Clear();
-        foreach (var child in children)
-            panel.Children.Add(child);
-    }
-
     private void ApplyTaskbarActionsGeometry(double barWidth, double textLeft, double textWidth)
     {
         TaskbarHoverActions.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
