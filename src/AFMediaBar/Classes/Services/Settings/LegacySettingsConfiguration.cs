@@ -86,6 +86,8 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context) : I
     /// <inheritdoc />
     public void SetLyricsSourceSettings(LyricsSourceSettings settings) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetLyricsSourceSettings(settings); }
     /// <inheritdoc />
+    public void SetLyricsArtistSeparators(string separators) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetLyricsArtistSeparators(separators); }
+    /// <inheritdoc />
     public void SetInteractionSettings(GlobalInteractionSettings settings) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetInteractionSettings(settings); }
     /// <inheritdoc />
     public void SetTrackChangeNotificationSettings(TrackChangeNotificationSettings settings) { if (IsActive) SettingsManager.SetTrackChangeNotificationSettings(settings); }

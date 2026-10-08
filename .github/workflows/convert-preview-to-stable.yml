@@ -1,4 +1,4 @@
-# Explicitly publishes a reviewed preview and advances only the stable metadata pointer.
+# Publishes a reviewed preview, then commits its stable pointer and Chinese highlights together.
 name: Convert Preview to Stable
 on:
   workflow_dispatch:
@@ -27,24 +27,37 @@ jobs:
         with:
           ref: release-metadata
           path: metadata
+      - name: Prepare Chinese release highlights
+        shell: pwsh
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: ./source/tools/update-release-highlights.ps1 -ManifestPath metadata/release/latest-preview.json -CataloguePath metadata/release/highlights.json -Repository $env:REPOSITORY
       - name: Verify package and publish stable release
         shell: pwsh
         env:
           TAG: ${{ inputs.tag }}
           GH_TOKEN: ${{ github.token }}
         run: ./source/tools/promote-release.ps1 -Tag $env:TAG -Repository $env:GITHUB_REPOSITORY -MetadataDirectory metadata
-      - name: Commit stable pointer
+      - name: Commit stable pointer and release highlights
         working-directory: metadata
         env:
           TAG: ${{ inputs.tag }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add release/latest.json
+          git add release/latest.json release/highlights.json
           if ! git diff --cached --quiet; then
             git commit -m "Promote $TAG to stable"
             git push origin HEAD:release-metadata
           fi
+      - name: Refresh release highlights CDN cache
+        continue-on-error: true
+        shell: pwsh
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          $url = 'https://purge.jsdelivr.net/gh/' + $env:REPOSITORY + '@release-metadata/release/highlights.json'
+          Invoke-RestMethod -Uri $url -TimeoutSec 30 | Out-Null
       # GITHUB_TOKEN pushes do not trigger push workflows; explicitly dispatch delivery, including on retries.
       - name: Deliver stable metadata
         env:

@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "version": "1.3.2",
+  "releaseDate": "2026-10-06",
+  "minimumSupportedVersion": "1.2.0",
+  "mandatory": false,
+  "title": "AF Media Bar 1.3.2",
+  "changelog": [
+    "外观页打开与切换更顺畅，导航栏收窄，为内容留出更多空间。",
+    "修复设置搜索候选项消失、开机启动设置无效，以及快速打开列表重置不正确的问题。",
+    "歌词设置支持管理全局艺术家分隔符，改善歌词匹配并减少重复加载。",
+    "修复封面不显示、被裁切及透明封面颜色异常的问题。",
+    "完整面板资源监控增加背景和边框，浅色模式更易辨认。",
+    "修复自动隐藏任务栏时媒体栏错位、上下部分被裁切的问题。",
+    "修复任务栏右键菜单打开后媒体栏覆盖小组件的问题。",
+    "修复音量合成器滚动条遮住百分比，以及设备下拉框误选首项的问题。",
+    "改善更新安装的响应与可靠性，修复窗口背景回退、日志保存和电源状态响应问题。"
+  ],
+  "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.3.2",
+  "releasePageUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/latest",
+  "downloads": {
+    "github": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/download/v1.3.2/AFMediaBar-v1.3.2-win-x64.zip"
+  },
+  "packages": [
+    {
+      "url": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/download/v1.3.2/AFMediaBar-Setup-v1.3.2-win-x64.exe",
+      "size": 74093239,
+      "sha256": "27a571dbba27e6032f8cd650725fcc09302538e59dbe3316bba185cab6aa1bc5"
+    }
+  ]
+}

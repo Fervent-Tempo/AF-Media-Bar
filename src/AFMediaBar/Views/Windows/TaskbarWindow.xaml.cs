@@ -751,6 +751,11 @@ public partial class TaskbarWindow : Window
         if (_isClosing || _isEnvironmentSuspended || _positionUpdateInProgress || IsTaskbarPresentationSuspended ||
             taskbarHandle != _lastTaskbarHandle || taskbarWindowHandle != _windowHandle)
             return;
+
+        // 排队定位可能先于 WinEvent 投递执行；写原生几何前重新检查 Shell 是否已经开始移动。
+        ObserveTaskbarMotion(allowStableSample: false);
+        if (IsTaskbarPresentationSuspended)
+            return;
         _positionUpdateInProgress = true;
 
         try
@@ -771,7 +776,7 @@ public partial class TaskbarWindow : Window
                 return;
 
             // Cover the whole taskbar with the child window (taskbar-relative coordinates)
-            _taskBarService.SetWindowPosition(taskbarWindowHandle, taskbarHandle, taskbarRect,
+            _taskBarService.SetWindowPosition(taskbarWindowHandle, taskbarHandle,
                 taskbarWidth, taskbarHeight);
 
             // Place the bar on the canvas and clip the window to it

@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:converters="clr-namespace:AFMediaBar.Classes.Converters"
+        xmlns:components="clr-namespace:AFMediaBar.Components"
         Title="{DynamicResource Loc.Common.AudioControl}"
         Width="320"
         MinWidth="0"
@@ -63,7 +64,8 @@
 
             <TextBlock Grid.Row="1" Text="{DynamicResource Loc.Common.OutputDevice}" FontSize="13"
                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,6" />
-            <ComboBox x:Name="OutputDeviceComboBox"
+            <components:ReleaseOpenComboBox x:Name="OutputDeviceComboBox"
+                      Style="{StaticResource {x:Type ComboBox}}"
                       Grid.Row="2"
                       MinHeight="32"
                       MaxDropDownHeight="240"
@@ -104,6 +106,7 @@
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,6" />
                 <ScrollViewer Grid.Row="1"
                               MaxHeight="114"
+                              Padding="0,0,16,0"
                               PanningMode="VerticalOnly"
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">

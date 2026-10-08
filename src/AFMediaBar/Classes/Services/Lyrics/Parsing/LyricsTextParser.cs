@@ -53,18 +53,13 @@ public static class LyricsTextParser
             return LyricDocument.Empty;
         }
 
-        var rawType = LyricsFormatDetector.Detect(rawText);
-        if (rawType == LyricsRawTypes.Unknown)
-        {
-            return LyricDocument.Empty;
-        }
-
         // 只用枚举名做格式标识：库的显示名辅助在不同版本里位置不同，诊断不依赖它。
         // The enum name alone identifies the format: the library's display-name helper moved between versions, and diagnostics
         // must not depend on it.
+        var (data, rawType) = ParsePayload(rawText);
+        if (rawType == LyricsRawTypes.Unknown)
+            return LyricDocument.Empty;
         var formatName = rawType.ToString();
-        var body = LyricsFormatDetector.TryUnwrap(rawText, rawType);
-        var data = body is null ? null : ParseHelper.ParseLyrics(body, NormalizeRawType(rawType));
         if (data?.Lines is not { Count: > 0 })
         {
             return new LyricDocument([], LyricsSyncType.Unsynced, formatName);
@@ -79,6 +74,8 @@ public static class LyricsTextParser
         for (var i = 0; i < data.Lines.Count; i++)
         {
             var line = data.Lines[i];
+            if (line is SyllableLineInfo { Syllables: not { Count: > 0 } })
+                continue;
             if (line.StartTime is not { } startMilliseconds)
             {
                 // 没有时间戳的行无法参与按位置选行；整首都没有时间戳时下面会按"无时间轴"处理。
@@ -141,14 +138,7 @@ public static class LyricsTextParser
             return [];
         }
 
-        var rawType = LyricsFormatDetector.Detect(text);
-        if (rawType == LyricsRawTypes.Unknown)
-        {
-            return [];
-        }
-
-        var body = LyricsFormatDetector.TryUnwrap(text, rawType);
-        var data = body is null ? null : ParseHelper.ParseLyrics(body, NormalizeRawType(rawType));
+        var (data, _) = ParsePayload(text);
         if (data?.Lines is not { Count: > 0 })
         {
             return [];
@@ -157,6 +147,8 @@ public static class LyricsTextParser
         var fragments = new List<(double Start, string Text)>(data.Lines.Count);
         foreach (var line in data.Lines)
         {
+            if (line is SyllableLineInfo { Syllables: not { Count: > 0 } })
+                continue;
             if (line.StartTime is { } startMilliseconds && !string.IsNullOrWhiteSpace(line.Text))
             {
                 fragments.Add((startMilliseconds / 1000d, line.Text.Trim()));
@@ -165,6 +157,26 @@ public static class LyricsTextParser
 
         fragments.Sort(static (left, right) => left.Start.CompareTo(right.Start));
         return fragments;
+    }
+
+    private static (LyricsData? Data, LyricsRawTypes Type) ParsePayload(string text)
+    {
+        var type = LyricsFormatDetector.Detect(text);
+        if (type == LyricsRawTypes.Unknown)
+            return (null, type);
+
+        var body = LyricsFormatDetector.TryUnwrap(text, type);
+        if (type is not (LyricsRawTypes.QrcFull or LyricsRawTypes.YrcFull or LyricsRawTypes.Ttml) && text.TrimStart().StartsWith('<'))
+            body = LyricsFormatDetector.ExtractLines(text, type);
+        var data = body is null ? null : ParseHelper.ParseLyrics(body, NormalizeRawType(type));
+        if (type is not (LyricsRawTypes.QrcFull or LyricsRawTypes.YrcFull) || data?.Lines?.Any(line =>
+                line is not SyllableLineInfo { Syllables: not { Count: > 0 } } && line.StartTime.HasValue) == true)
+            return (data, type);
+
+        var lineType = LyricsFormatDetector.DetectLines(text);
+        return lineType == LyricsRawTypes.Unknown
+            ? (null, type)
+            : (ParseHelper.ParseLyrics(LyricsFormatDetector.ExtractLines(text, lineType), lineType), lineType);
     }
 
     private static string? FindNearbyText(IReadOnlyList<(double Start, string Text)> fragments, double start)
@@ -270,10 +282,10 @@ public static class LyricsTextParser
     /// Falls back from wrapper formats to a textual form the library parses directly.
     ///
     /// "Full" 变体是同一份歌词的 XML/JSON 包装，库的 <c>ParseHelper</c> 不为它们分发解析器：正文由
-    /// <see cref="LyricsFormatDetector.TryUnwrap"/> 取出后按文本形式解析，取不出来时返回空文档并让兜底链继续走下一个来源。
+    /// <see cref="LyricsFormatDetector.TryUnwrap"/> 取出后按文本形式解析；正文不可用时由 ParsePayload 对原载荷扫描一次。
     /// The "Full" variants wrap the same lyrics in XML or JSON and the library's <c>ParseHelper</c> dispatches no parser for
-    /// them: the body comes out of <see cref="LyricsFormatDetector.TryUnwrap"/> and is parsed as text, and an unextractable
-    /// payload yields an empty document so the fallback chain moves on to the next source.
+    /// them: the body comes out of <see cref="LyricsFormatDetector.TryUnwrap"/> and is parsed as text. ParsePayload scans
+    /// the original payload once when that body is unusable.
     /// </summary>
     private static LyricsRawTypes NormalizeRawType(LyricsRawTypes rawType) => rawType switch
     {

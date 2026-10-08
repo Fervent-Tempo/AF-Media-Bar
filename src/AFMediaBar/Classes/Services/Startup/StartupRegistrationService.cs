@@ -6,19 +6,19 @@ using AFMediaBar.Classes.Settings;
 namespace AFMediaBar.Classes.Services;
 
 /// <summary>
-/// 开机自动启动的注册表登记项：只管理当前用户的 Run 键，不申请提权，也不改动 Windows 自己的启动项审批状态。
+/// 管理当前用户的 Run 登记并读取系统审批状态；仅用户主动开启时解除系统禁用，不申请提权。
 /// 同时拥有设置变更订阅，由组合根启动，DI 容器释放；设置页不直接执行登记。
-/// The run-at-startup registration: it manages the current user's Run key only, asks for no elevation, and never touches Windows'
-/// own per-entry approval state.
+/// Reads Windows approval state and restores approval only when the user explicitly enables startup.
 /// </summary>
 public sealed class StartupRegistrationService : IDisposable
 {
-    private readonly Func<bool, string?> _applyRegistration;
+    private readonly Func<bool, bool, string?> _applyRegistration;
     private readonly Func<bool?> _readRegistration;
     private bool _started;
     private bool _disposed;
     private bool _applying;
     private bool _previousValue;
+    private bool _userAsked;
 
     /// <summary>创建启动项服务；由组合根启动，DI 容器释放设置订阅。</summary>
     public StartupRegistrationService()
@@ -27,7 +27,7 @@ public sealed class StartupRegistrationService : IDisposable
         _readRegistration = IsRegistered;
     }
 
-    internal StartupRegistrationService(Func<bool, string?> applyRegistration, Func<bool?> readRegistration)
+    internal StartupRegistrationService(Func<bool, bool, string?> applyRegistration, Func<bool?> readRegistration)
     {
         _applyRegistration = applyRegistration;
         _readRegistration = readRegistration;
@@ -60,6 +60,15 @@ public sealed class StartupRegistrationService : IDisposable
         return LastFailure;
     }
 
+    /// <summary>处理设置页的主动操作；仅此入口允许开启时解除系统禁用，重置和启动同步不解除。</summary>
+    public void SetLaunchAtStartup(bool enabled)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        _userAsked = true;
+        try { SettingsManager.Current.LaunchAtStartup = enabled; }
+        finally { _userAsked = false; }
+    }
+
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
     {
         if (_disposed || _applying) return;
@@ -72,14 +81,21 @@ public sealed class StartupRegistrationService : IDisposable
         try
         {
             var requested = SettingsManager.Current.LaunchAtStartup;
-            LastFailure = _applyRegistration(requested);
+            LastFailure = _applyRegistration(requested, _userAsked);
             if (LastFailure is null)
             {
-                _previousValue = requested;
-                RegistrationStateUnknown = false;
+                var actual = _readRegistration();
+                RegistrationStateUnknown = actual is null;
+                SettingsManager.Current.LaunchAtStartup = actual ?? requested;
+                _previousValue = SettingsManager.Current.LaunchAtStartup;
             }
             else
-                SettingsManager.Current.LaunchAtStartup = _previousValue;
+            {
+                var actual = _readRegistration();
+                RegistrationStateUnknown = actual is null;
+                SettingsManager.Current.LaunchAtStartup = actual ?? _previousValue;
+                _previousValue = SettingsManager.Current.LaunchAtStartup;
+            }
         }
         finally
         {
@@ -100,6 +116,7 @@ public sealed class StartupRegistrationService : IDisposable
     public const string ValueName = "AFMediaBar";
 
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
+    private const string StartupApprovedRunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
 
     /// <summary>
     /// 登记或取消登记开机自动启动。
@@ -107,7 +124,8 @@ public sealed class StartupRegistrationService : IDisposable
     /// </summary>
     /// <param name="enabled">是否随登录启动。/ Whether the application should start with the session.</param>
     /// <returns>失败原因；成功时为 null。/ The failure reason, or null on success.</returns>
-    public string? Apply(bool enabled)
+    /// <param name="userAsked">是否为用户主动开关操作；启动同步与恢复默认不得解除系统禁用。</param>
+    public string? Apply(bool enabled, bool userAsked = false)
     {
         var executable = ResolveExecutablePath();
         if (executable is null)
@@ -123,10 +141,19 @@ public sealed class StartupRegistrationService : IDisposable
             if (enabled)
             {
                 var command = StartupRegistrationPolicy.BuildCommandLine(executable);
-                if (key.GetValue(ValueName) as string == command)
-                    return null;
+                if (key.GetValue(ValueName) as string != command)
+                    key.SetValue(ValueName, command, RegistryValueKind.String);
 
-                key.SetValue(ValueName, command, RegistryValueKind.String);
+                // Run 项可能早已存在，不能因此跳过用户明确要求的重新启用。
+                if (userAsked)
+                {
+                    using var approvalKey = Registry.CurrentUser.OpenSubKey(StartupApprovedRunKeyPath, writable: true);
+                    var approval = approvalKey?.GetValue(ValueName);
+                    if (StartupRegistrationPolicy.IsStartupApproved(approval) is null)
+                        return Translations.Get("About.Status.StartupUnknown");
+                    if (StartupRegistrationPolicy.BuildEnabledApproval(approval) is { } restored)
+                        approvalKey!.SetValue(ValueName, restored, RegistryValueKind.Binary);
+                }
             }
             else if (key.GetValue(ValueName) is not null)
             {
@@ -143,9 +170,7 @@ public sealed class StartupRegistrationService : IDisposable
     }
 
     /// <summary>
-    /// 读取当前是否已登记开机自动启动。注册表不可读时返回 null，调用方据此保留设置里的意图而不谎报状态。
-    /// Reads whether run-at-startup is currently registered. An unreadable registry returns null so callers can keep the stored
-    /// intent instead of reporting a state they could not verify.
+    /// 读取当前路径是否已登记且系统允许启动；不可读或审批格式未知时返回 null。不修改审批记录。
     /// </summary>
     public bool? IsRegistered()
     {
@@ -157,7 +182,9 @@ public sealed class StartupRegistrationService : IDisposable
         {
             using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable: false);
             var command = key?.GetValue(ValueName) as string;
-            return StartupRegistrationPolicy.Matches(command, executable);
+            if (!StartupRegistrationPolicy.Matches(command, executable)) return false;
+            using var approvalKey = Registry.CurrentUser.OpenSubKey(StartupApprovedRunKeyPath, writable: false);
+            return StartupRegistrationPolicy.IsStartupApproved(approvalKey?.GetValue(ValueName));
         }
         catch (Exception exception)
         {

@@ -38,7 +38,7 @@ public sealed class PowerStateMonitor : IDisposable
     private bool _isDisplayOff;
     private bool _isSessionLocked;
     private bool _started;
-    private bool _disposed;
+    private volatile bool _disposed;
 
     /// <summary>
     /// 创建电源状态监听器；实际注册在 <see cref="Start"/> 中进行，且必须在 UI 线程上调用。
@@ -159,7 +159,12 @@ public sealed class PowerStateMonitor : IDisposable
             return;
         }
 
-        _disposed = true;
+        lock (_gate)
+        {
+            if (_disposed)
+                return;
+            _disposed = true;
+        }
         UnhookSystemEvents();
 
         if (_displayStateNotification != IntPtr.Zero)
@@ -249,7 +254,7 @@ public sealed class PowerStateMonitor : IDisposable
 
     private IntPtr OnMessageSinkMessage(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
-        if (message != NativeMethods.WM_POWERBROADCAST)
+        if (_disposed || message != NativeMethods.WM_POWERBROADCAST)
         {
             return IntPtr.Zero;
         }
@@ -294,7 +299,7 @@ public sealed class PowerStateMonitor : IDisposable
         var isOff = setting.Data is NativeMethods.ConsoleDisplayStateOff or NativeMethods.ConsoleDisplayStateDimmed;
         lock (_gate)
         {
-            if (_isDisplayOff == isOff)
+            if (_disposed || _isDisplayOff == isOff)
             {
                 return;
             }
@@ -342,7 +347,7 @@ public sealed class PowerStateMonitor : IDisposable
 
         lock (_gate)
         {
-            if (_isSessionLocked == value)
+            if (_disposed || _isSessionLocked == value)
             {
                 return;
             }
@@ -358,7 +363,7 @@ public sealed class PowerStateMonitor : IDisposable
     {
         lock (_gate)
         {
-            if (_isSuspended == value)
+            if (_disposed || _isSuspended == value)
             {
                 return;
             }
@@ -372,16 +377,19 @@ public sealed class PowerStateMonitor : IDisposable
 
     private void RaiseStateChanged()
     {
-        var handler = StateChanged;
-        if (handler is null)
-        {
+        var dispatcher = _dispatcher;
+        if (_disposed || dispatcher is null || dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
             return;
+
+        void Publish()
+        {
+            if (!_disposed && !dispatcher.HasShutdownStarted && !dispatcher.HasShutdownFinished)
+                StateChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        var dispatcher = _dispatcher;
-        if (dispatcher is null || dispatcher.CheckAccess())
+        if (dispatcher.CheckAccess())
         {
-            handler(this, EventArgs.Empty);
+            Publish();
             return;
         }
 
@@ -391,7 +399,7 @@ public sealed class PowerStateMonitor : IDisposable
             // 因此在别的线程上直接回调会把"释放资源"变成一次跨线程访问。
             // SystemEvents calls back on its own thread, while the participants' resources — dispatcher timers, WPF bitmaps, caches — belong to
             // the UI thread, so calling straight back from that thread would turn "release the resources" into a cross-thread access.
-            dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => handler(this, EventArgs.Empty)));
+            dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(Publish));
         }
         catch (Exception ex)
         {

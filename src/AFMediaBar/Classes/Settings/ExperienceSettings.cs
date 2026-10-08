@@ -395,11 +395,11 @@ public readonly record struct TrackChangeNotificationSettings(
     public const int MaximumDurationMilliseconds = 10000;
     /// <summary>通知的默认设置。 / Default notification settings.</summary>
     public static TrackChangeNotificationSettings Default { get; } = new(
-        false,
-        false,
-        1000,
-        TrackChangeNotificationPosition.BottomLeft,
-        NotificationTargetMode.Fixed,
+        true,
+        true,
+        3000,
+        TrackChangeNotificationPosition.TopCenter,
+        NotificationTargetMode.ForegroundWindow,
         null);
 
     /// <summary>归一化枚举、时长和设备标识。 / Normalizes enums, duration, and the device identifier.</summary>

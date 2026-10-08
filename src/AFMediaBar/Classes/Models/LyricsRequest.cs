@@ -18,4 +18,8 @@ public sealed record LyricsRequest(
     double? DurationSeconds,
     string? NetEaseSongId,
     bool FilterInfoLines = true,
-    string? PlaybackSourceId = null);
+    string? PlaybackSourceId = null)
+{
+    /// <summary>本次取词固定的自定义分隔符，每行一项；不改变播放器原始艺术家文本。</summary>
+    public string ArtistSeparators { get; init; } = string.Empty;
+}

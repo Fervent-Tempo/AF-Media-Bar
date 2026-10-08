@@ -50,6 +50,9 @@ namespace AFMediaBar
     {
         private static readonly TimeSpan HostShutdownTimeout = TimeSpan.FromSeconds(5);
         private int _exitHandled;
+        private readonly CancellationTokenSource _startupCancellation = new();
+        private PowerStateMonitor? _powerStateMonitor;
+        private MemoryPruneCoordinator? _memoryPruneCoordinator;
         private SingleInstanceGuard? _singleInstanceGuard;
         private bool _isSecondaryInstance;
 
@@ -337,12 +340,14 @@ namespace AFMediaBar
             // the host has started the tray icon and taskbar bar would already exist.
             var updateService = Services.GetRequiredService<UpdateService>();
             updateService.RestartRequested += (_, _) => Shutdown();
-            if (updateService.TryLaunchPendingInstallOnStartup())
+            if (await updateService.TryLaunchPendingInstallOnStartupAsync(_startupCancellation.Token))
             {
                 Debug.WriteLine("[App] A pending update is being installed before this start; exiting now.");
                 Shutdown();
                 return;
             }
+            if (_startupCancellation.IsCancellationRequested || _exitHandled != 0 || Dispatcher.HasShutdownStarted)
+                return;
             _themeCoordinator = new ApplicationThemeCoordinator(Dispatcher, UpdateAppearanceResources);
             _themeCoordinator.Start();
             _themeCoordinator.Apply(SettingsManager.Current.Appearance);
@@ -352,7 +357,16 @@ namespace AFMediaBar
             // the whole set of application-level brushes at once.
             Services.GetRequiredService<WindowAppearanceService>().SystemColorizationChanged +=
                 () => _themeCoordinator?.Apply(SettingsManager.Current.Appearance);
-            await _host.StartAsync();
+            try
+            {
+                await _host.StartAsync(_startupCancellation.Token);
+            }
+            catch (OperationCanceledException) when (_startupCancellation.IsCancellationRequested)
+            {
+                return;
+            }
+            if (_startupCancellation.IsCancellationRequested || _exitHandled != 0 || Dispatcher.HasShutdownStarted)
+                return;
 
             // 安装协调互斥体必须在 Host 启动后创建：更新链路会在启动安装包之前释放它（见 InstallCoordinatorMutex）。
             // The install-coordination mutex is created after the host starts; the update path releases it before
@@ -368,7 +382,10 @@ namespace AFMediaBar
             // （SystemEvents 的回调会从自己的线程进来，本类统一把它们搬回这里）。
             // Background pruning starts last: it can only judge "is anything playing" once the media session catalog is up, and its power message
             // window has to be created on the UI thread, which is also the thread every SystemEvents callback is marshalled back to.
-            Services.GetRequiredService<MemoryPruneCoordinator>().Start();
+            _powerStateMonitor = Services.GetRequiredService<PowerStateMonitor>();
+            _memoryPruneCoordinator = Services.GetRequiredService<MemoryPruneCoordinator>();
+            _powerStateMonitor.Start();
+            _memoryPruneCoordinator.Start();
 
 #if DEBUG
             _debugLyricsDiagnostics = new DebugLyricsDiagnostics();
@@ -390,6 +407,8 @@ namespace AFMediaBar
                 return;
             }
 
+            _startupCancellation.Cancel();
+
             if (_isSecondaryInstance)
             {
                 // 重复进程尚未启动 Host，也未初始化设置或更新；不可走主进程的 Flush/安装交接。
@@ -407,6 +426,11 @@ namespace AFMediaBar
             // exit into a crash recorded as e0434352.
             var updateService = Services.GetRequiredService<UpdateService>();
             var installCoordinatorMutex = Services.GetRequiredService<InstallCoordinatorMutex>();
+            updateService.CancelInstallPreparation();
+
+            // UI 消息资源先退订与释放，再停止 Host；容器的重复 Dispose 仍然安全。
+            _memoryPruneCoordinator?.Dispose();
+            _powerStateMonitor?.Dispose();
 
 #if DEBUG
             if (_debugLyricsDiagnostics is not null)
@@ -445,14 +469,14 @@ namespace AFMediaBar
 
             // 只有用户明确点过"立即重启并安装"时才在退出边界启动安装程序。
             //
-            // 自动更新已经不在退出时发生：它在**下一次启动之前**执行（见 TryLaunchPendingInstallOnStartup），
+            // 自动更新已经不在退出时发生：它在**下一次启动之前**执行（见 TryLaunchPendingInstallOnStartupAsync），
             // 否则安装程序窗口会出现在用户刚关掉程序之后，看起来像程序自己又起来了一次。仍要放在 Dispose 看门狗
             // 之前：看门狗会在 5 秒后直接结束进程，排在它之后就会与之赛跑。
             // The installer is only started on the exit boundary when the user explicitly clicked "restart and install
             // now".
             //
             // Automatic updates no longer happen on exit: they run *before the next start* (see
-            // TryLaunchPendingInstallOnStartup), because otherwise the installer window appears right after the user
+            // TryLaunchPendingInstallOnStartupAsync), because otherwise the installer window appears right after the user
             // closed the application and looks like the application starting itself again. It still has to happen
             // before the disposal watchdog, which ends the process after five seconds and would otherwise win the race.
             try

@@ -279,7 +279,13 @@ public sealed class AppLogService : IDisposable
                 return;
             }
 
-            _pending.TryAdd(new LogEntry(line, ForceRewrite: level == AppLogLevel.Error));
+            var entry = new LogEntry(line, ForceRewrite: level == AppLogLevel.Error);
+            if (!_pending.TryAdd(entry))
+            {
+                // 生产者由生命周期锁串行化；消费者只会释放空间，因此移除最旧项后可立即入队。
+                _pending.TryTake(out _);
+                _pending.TryAdd(entry);
+            }
         }
     }
 
@@ -305,19 +311,22 @@ public sealed class AppLogService : IDisposable
 
     private void WriteLoop()
     {
+        var sinceRewrite = Stopwatch.StartNew();
         while (true)
         {
             LogEntry entry;
             try
             {
-                if (_pending.TryTake(out entry!, RewriteInterval))
+                var remaining = RewriteInterval - sinceRewrite.Elapsed;
+                if (_pending.TryTake(out entry!, remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero))
                 {
                     lock (_ringGate)
                     {
                         AppendLine(entry.Line);
-                        if (entry.ForceRewrite)
+                        if (entry.ForceRewrite || sinceRewrite.Elapsed >= RewriteInterval)
                         {
                             RewriteFile();
+                            sinceRewrite.Restart();
                         }
                     }
 
@@ -340,6 +349,7 @@ public sealed class AppLogService : IDisposable
                 {
                     RewriteFile();
                 }
+                sinceRewrite.Restart();
             }
 
             if (_pending.IsAddingCompleted && _pending.Count == 0)

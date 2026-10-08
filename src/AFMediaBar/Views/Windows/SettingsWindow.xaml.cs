@@ -80,6 +80,7 @@ namespace AFMediaBar.Views.Windows
             InitializeComponent();
             _sidebarSelection = new SettingsSidebarSelectionAnimator(RootNavigation, SidebarSelectionOverlay);
             SettingsResetDialog.SetHost(RootContentDialog, _contexts.CancellationToken);
+            ArtistSeparatorsEditor.SetHost(RootContentDialog, _contexts.CancellationToken);
             appearanceService.Attach(this);
             SetPageService(_pages);
             RebuildNavigation();
@@ -163,11 +164,15 @@ namespace AFMediaBar.Views.Windows
         /// 上一版把候选写进 <c>OriginalItemsSource</c>，让控件自己再按文本过滤一遍；那层过滤只比较候选项
         /// 自身的文本，于是所有靠关键词命中的条目都会被它丢掉，当时只能把关键词拼进候选文案里绕开。
         /// 自己过滤、自己控制下拉框开合之后，候选文案就只是一句人话。
+        /// 必须设置 <c>args.Handled = true</c>：否则 WPF-UI 的 AutoSuggestBox 在事件返回后会继续执行内部的
+        /// DefaultFiltering，而本项目未填 OriginalItemsSource，内部过滤会立刻把 ItemsSource 覆写为空列表。
         /// Filters the suggestions for the current input and writes ItemsSource directly.
         ///
         /// The previous version wrote them into <c>OriginalItemsSource</c> and let the control filter again; that
         /// filter only compares an item's own text, so every keyword hit was dropped and the keyword had to be
         /// spliced into the label to survive. Filtering here keeps a label a plain phrase.
+        /// Setting <c>args.Handled = true</c> is required: otherwise WPF-UI's AutoSuggestBox continues into its
+        /// internal DefaultFiltering after the event, which reads empty OriginalItemsSource and clears ItemsSource.
         /// </summary>
         private void OnSearchTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
         {
@@ -187,6 +192,7 @@ namespace AFMediaBar.Views.Windows
 
             sender.ItemsSource = suggestions;
             sender.IsSuggestionListOpen = suggestions.Count > 0;
+            args.Handled = true;
         }
 
         /// <summary>
@@ -317,6 +323,7 @@ namespace AFMediaBar.Views.Windows
             _contexts.Changed -= OnContextChanged;
             _contexts.RefreshFailed -= OnContextRefreshFailed;
             SettingsResetDialog.ClearHost(RootContentDialog);
+            ArtistSeparatorsEditor.ClearHost(RootContentDialog);
             _sessionScope.Dispose();
             _sidebarSelection.Dispose();
             SettingsRevealAnimator.Cancel(_transitionContent);

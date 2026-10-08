@@ -196,4 +196,8 @@ public static class MemoryTrimPolicy
 
         return sinceStart >= StartupDeadline || userIdle >= StartupUserIdleThreshold;
     }
+
+    /// <summary>启动评估在完成条件满足或期限到达时结束；非 L0 到期只跳过，不补做回收。</summary>
+    public static bool ShouldEndStartupEvaluation(TimeSpan sinceStart, TimeSpan userIdle, bool isLevelNormal) =>
+        sinceStart >= StartupDeadline || ShouldTrimAfterStartup(sinceStart, userIdle, isLevelNormal);
 }

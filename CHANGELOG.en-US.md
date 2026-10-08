@@ -6,37 +6,46 @@ All notable changes to AF Media Bar are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.3.2] - 2026-10-06
 
-### Fixed
-
-- Remove the current user's startup entry when uninstalling the installation it targets, avoiding a registry value pointing to a deleted executable. Preserve entries targeting a copy in another directory.
+Improve Settings responsiveness, lyric matching, and desktop interactions, and fix artwork, startup settings, and update installation.
 
 ### Added
 
-- Add a separate release highlights page for the latest and historical stable releases in simplified Chinese, traditional Chinese, and English, with offline content and retention after refresh failures.
+- Manage global artist separators in Lyrics settings, with add, edit, and remove operations, preserved spaces, and multi-character separators. Search and scoring share the rules while the bar retains the original artist names.
+
+### Improved
+
+- Show system fonts and saved choices immediately in Appearance, then load installed font previews in the background. Repeated navigation shares an active scan, leaving the page cancels its wait, and language changes no longer rescan fonts.
+- Remove total track duration from lyric cache identity, reducing repeated retrieval when the reported duration changes for the same track.
 
 ### Changed
 
-- Remove the settings header environment notice and add a font shortcut below media bar text settings, opening the Fonts group in Application appearance.
+- Narrow the Settings sidebar from 240 DIP to a fixed 228 DIP, sized for navigation titles, the search prompt, and update notices in all three languages. Retain tooltips for the full search prompt and Media and notifications title.
+- Lower the QQ Music immediate-acceptance threshold from 85 to 80. Parallel fallback queries prefer an enabled source matching the current player; without one, candidates continue to compete by score.
+- Enable track-change notifications by default, including during fullscreen, at the top center for 3 seconds on the foreground window's display. Existing valid settings and user-default snapshots remain in use.
+- Add theme-aware card backgrounds, borders, and metric labels to resource monitoring in the full panel, improving readability in light mode.
 
-- Introduce settings contexts, a page catalog, and a configuration boundary. Separate application appearance, media bar appearance, and component view models; keep the editor display separate from runtime targets and show system taskbar orientation. Isolate page caches by context and search by stable group IDs. Unimplemented modes remain informational; existing persisted settings are unchanged and profiles are not yet isolated.
+### Fixed
 
+- Fix artwork failing to display because of color format, and artwork clipping when it did not follow its actual display dimensions. Transparent pixels no longer produce a false dominant color.
+- Fix media-bar displacement and clipping during taskbar auto-hide motion caused by stale parent-window coordinates.
+- Fix the media bar moving onto Widgets when the Windows 11 taskbar context menu is open.
+- Fix the tray mixer scrollbar covering volume percentages, and a device-selector click both opening the list and accidentally selecting its first entry.
+- Fix Settings search candidates disappearing when the control filtered them a second time.
+- Fix startup registration not responding correctly to settings changes. Read existing registration on startup, show its current state, and remove only the current user's entry targeting this installation when uninstalling.
+- Fix Quick Launch reset ignoring the user's default snapshot, and reset prompts describing an inaccurate scope.
+- Continue scanning for valid lyrics after encountering a damaged wrapper.
+- Fall back to a solid background when native backdrop calls fail.
+- Revalidate installers in the background and retain a read-only file lease. Check cancellation and installation conditions before handoff, avoiding synchronous verification stalls and package replacement during preparation.
+- Keep new log entries when the queue is full and flush periodically under continuous load.
+- Connect background pruning to power-state notifications and stop startup-reclaim polling at its deadline.
 
+### Internal and compatibility
 
-- Use the accent color for both the selected sidebar icon and label. Move Screen and placement from Display modes to its own navigation page, retaining settings, position reset, and search destinations.
-
-- Strengthen the settings sidebar selection with an accent surface, outline, and bold label. A shared indicator moves continuously between destinations, retargets from its current position, and stays aligned after pane changes and scrolling.
-
-- Use the main-branch sidebar, sidebar search, and fixed page headers without a back button; What’s new and About appear in the footer. Organize text and font settings by responsibility, place common options first, and collapse less-used details by default; search expands destination details.
-- Start a 28 DIP upward entrance and 280 ms fade after settings content loads. Fix hover hit testing in normal cards and shadows covered by adjacent cards, with stronger elevation on hover, respecting system motion and high contrast. Retain asynchronous font loading, window materials, and themed surfaces.
-- Add direct numeric input beside settings sliders, with units and legal precision. Invalid input preserves the setting; narrow content puts controls below titles (#37).
-- Correct setting and vector-diagram descriptions for page locations, material applicability, and thickness-offset units.
-
-- Generate contributor snapshots in Release CI with paginated API requests, review them alongside version metadata on the isolated branch, and synchronize legacy snapshots through a PR.
-- Move release metadata to an isolated branch: Actions generate manifests from final packages and propose preview updates, with manual stable promotion and compatibility manifest synchronization PRs. Packages are published to GitHub Releases.
-- Split QQ Music artist lists on `/` for individual lyric matching and normalized search queries, while preserving the original artist text in the media bar.
-- Lowered the QQ Music lyrics immediate-acceptance threshold from 85 to 80; on a miss, fallbacks are queried in parallel and an enabled source matching the current player wins regardless of score. Without such a result, QQ remains in the score comparison and wins when highest or tied.
+- Generate checksums from final release packages, create a draft Release and an isolated metadata review PR, and update stable only after explicit promotion. Generate contributor snapshots with release metadata and synchronize legacy client data through a PR.
+- Update architecture, code-style, and test guidelines and add regression coverage for the affected paths.
+- Keep settings schema 2, preserving 1.3.1 settings and user-default snapshots. Update manifests remain schema 1.
 
 ## [1.3.1] - 2026-10-03
 
@@ -232,6 +241,8 @@ The first release of the rebuilt interface and interaction model: taskbar lyrics
 - Restricted native library lookup to System32.
 - Removed generic execution of media-provided `.exe` source identifiers.
 
+[1.3.2]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.3.1...v1.3.2
+[1.3.1]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.1.1...v1.2.0

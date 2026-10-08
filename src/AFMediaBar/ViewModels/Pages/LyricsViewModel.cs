@@ -53,6 +53,15 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         RefreshSecondaryLineEntries();
     }
 
+    /// <summary>已保存的艺术家分隔符；弹窗编辑草稿由呈现层持有。</summary>
+    public string ArtistSeparatorsText => _configuration.Current.LyricsArtistSeparators;
+
+    /// <summary>内置分隔符，供编辑弹窗恢复草稿使用，不覆盖当前配置。</summary>
+    public string DefaultArtistSeparatorsText => new AppSettings().LyricsArtistSeparators;
+
+    /// <summary>用户确认后保存分隔符并重新匹配歌词。</summary>
+    public void ApplyArtistSeparators(string separators) => _configuration.SetLyricsArtistSeparators(separators);
+
     public bool LyricsEnabled { get => _configuration.Current.LyricsEnabled; set { _configuration.SetLyricsEnabled(value); RaiseAll(); } }
     public bool AllowBrowserAndVideoLyrics { get => _configuration.Current.AllowBrowserAndVideoLyrics; set { _configuration.SetAllowBrowserAndVideoLyrics(value); OnPropertyChanged(); } }
     public bool TwoLineLyricsEnabled { get => _configuration.Current.TwoLineLyricsEnabled; set { _configuration.SetTwoLineLyricsEnabled(value); RaiseAll(); } }
@@ -192,6 +201,7 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
 
         if (e.ResetScope is SettingsResetScope.Lyrics or SettingsResetScope.All)
         {
+            OnPropertyChanged(nameof(ArtistSeparatorsText));
             RefreshSourceEntries();
             RefreshSecondaryLineEntries();
             RaiseAll();
@@ -207,6 +217,8 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         {
             RefreshSecondaryLineEntries();
         }
+        if (e.PropertyName == nameof(AppSettings.LyricsArtistSeparators))
+            OnPropertyChanged(nameof(ArtistSeparatorsText));
     }
 
     private void OnLanguageChanged(object? sender, EventArgs e)

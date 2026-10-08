@@ -124,8 +124,8 @@ public partial class AppearanceViewModel : ObservableObject, IDisposable
         _isRefreshing = true;
         try
         {
-            _latinFontChoices = InstalledFontCatalog.RelocalizeChoices(installedLatin, "Appearance.LatinFont.FollowSystem", cjk: false);
-            _cjkFontChoices = InstalledFontCatalog.RelocalizeChoices(installedCjk, "Appearance.CjkFont.FollowSystem", cjk: true);
+            _latinFontChoices = InstalledFontCatalog.RelocalizeChoices(installedLatin, "Appearance.LatinFont.FollowSystem", cjk: false, previousChoices: _latinFontChoices);
+            _cjkFontChoices = InstalledFontCatalog.RelocalizeChoices(installedCjk, "Appearance.CjkFont.FollowSystem", cjk: true, previousChoices: _cjkFontChoices);
             OnPropertyChanged(nameof(LatinFontChoices));
             OnPropertyChanged(nameof(CjkFontChoices));
             LatinFontFamily = InstalledFontCatalog.MatchSelection(latin, _latinFontChoices);

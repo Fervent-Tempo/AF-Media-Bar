@@ -156,7 +156,7 @@
                                     IsHitTestVisible="False" />
                         </Grid>
                         <Border.Background>
-                            <ImageBrush x:Name="SongImage" Stretch="UniformToFill" />
+                            <ImageBrush x:Name="SongImage" Stretch="Uniform" />
                         </Border.Background>
                     </Border>
 

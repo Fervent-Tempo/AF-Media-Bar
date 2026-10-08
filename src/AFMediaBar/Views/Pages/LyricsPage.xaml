@@ -364,6 +364,16 @@
                         </components:SettingsRow>
 
                         <!-- 固定 QQ 优先/并发最高分策略由代码拥有；不再暴露严格度、调度或播放器绑定。 -->
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Lyrics.Row.ArtistSeparators.Description}"
+                            Icon="{ui:SymbolIcon TextFont24}"
+                            Title="{DynamicResource Loc.Lyrics.Row.ArtistSeparators.Title}">
+                            <ui:Button Click="ManageArtistSeparators_Click"
+                                       Icon="{ui:SymbolIcon Edit24}"
+                                       Content="{DynamicResource Loc.Lyrics.Row.ArtistSeparators.Manage}"
+                                       Style="{StaticResource AfSettingsButtonStyle}" />
+                        </components:SettingsRow>
+
                         <ui:CardExpander
                             Style="{StaticResource AfSettingsExpanderStyle}"
                             Icon="{ui:SymbolIcon CloudArrowDown24}">

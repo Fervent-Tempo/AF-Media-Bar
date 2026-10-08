@@ -493,10 +493,7 @@ public sealed class MemoryPruneCoordinator : IDisposable
     /// 每秒问一次"启动后那一次回收到时候了吗"，到点就执行并自停。
     /// Asks once a second whether the post-startup reclaim is due, then runs it and stops itself.
     ///
-    /// 判定为假时唯一要做的事就是继续等，因此这个计时器只在启动后的一小段时间内存在；一旦执行（或协调器被释放）它立刻停止，
-    /// 不会变成一个常驻的每秒唤醒源。
-    /// While the decision is false the only thing to do is keep waiting, so this timer exists only for a short stretch after startup; it stops the moment the
-    /// reclaim runs — or the coordinator is disposed — and never turns into a resident once-a-second wakeup.
+    /// 到期时非常规档位只结束评估，防止锁屏或睡眠后留下常驻的每秒唤醒源。
     /// </summary>
     private void OnStartupTrimTick(object? sender, EventArgs e)
     {
@@ -506,14 +503,18 @@ public sealed class MemoryPruneCoordinator : IDisposable
             return;
         }
 
-        if (!MemoryTrimPolicy.ShouldTrimAfterStartup(_sinceStart.Elapsed, _power.UserIdle, _level == MemoryPruneLevel.None))
+        var elapsed = _sinceStart.Elapsed;
+        var idle = _power.UserIdle;
+        var normal = _level == MemoryPruneLevel.None;
+        if (!MemoryTrimPolicy.ShouldEndStartupEvaluation(elapsed, idle, normal))
         {
             return;
         }
 
         _startupTrimPending = false;
         StopStartupTrimTimer();
-        RequestTrim(MemoryTrimTrigger.StartupSettled);
+        if (MemoryTrimPolicy.ShouldTrimAfterStartup(elapsed, idle, normal))
+            RequestTrim(MemoryTrimTrigger.StartupSettled);
     }
 
     private void StopStartupTrimTimer()

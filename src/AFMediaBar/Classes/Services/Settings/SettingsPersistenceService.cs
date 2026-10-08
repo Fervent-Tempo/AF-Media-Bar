@@ -330,8 +330,8 @@ public sealed class SettingsPersistenceService : IDisposable
                 typeof(TEnum) == typeof(LyricsSecondaryLineMode) ? LyricsSecondaryLineMode.Translation :                typeof(TEnum) == typeof(TaskbarBarPosition) ? TaskbarBarPosition.Start :
                 typeof(TEnum) == typeof(LayoutOrientationMode) ? LayoutOrientationMode.Auto :
                 typeof(TEnum) == typeof(DynamicIslandBackgroundMode) ? DynamicIslandBackgroundMode.SystemTheme :
-                typeof(TEnum) == typeof(TrackChangeNotificationPosition) ? TrackChangeNotificationPosition.BottomLeft :
-                typeof(TEnum) == typeof(NotificationTargetMode) ? NotificationTargetMode.Fixed :
+                typeof(TEnum) == typeof(TrackChangeNotificationPosition) ? TrackChangeNotificationSettings.Default.Position :
+                typeof(TEnum) == typeof(NotificationTargetMode) ? TrackChangeNotificationSettings.Default.TargetMode :
                 typeof(TEnum) == typeof(WindowMode) ? WindowMode.Taskbar :
                 typeof(TEnum) == typeof(DynamicIslandEdge) ? DynamicIslandEdge.Top :
                 typeof(TEnum) == typeof(LatinFontPreset) ? LatinFontPreset.SystemDefault :

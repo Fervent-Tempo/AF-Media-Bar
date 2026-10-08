@@ -17,14 +17,13 @@ public sealed record UpdateInstallDecision(bool CanInstall, bool UseRunAs, strin
 ///
 /// 参数串是与安装程序的公开契约（见 <c>installer/README.md</c>）：<c>/SILENT</c> 不显示向导但保留进度窗口，
 /// 因此不用 <c>/VERYSILENT</c>——用户要求能看到安装进度。是否在装完后启动程序由 <c>AUTORELAUNCH</c> 决定：
-/// 只有"立即重启并安装"传 1，"用户正常退出时顺带安装"传 0，否则用户刚关掉的窗口会自己回来。
+/// 启动前安装和"立即重启并安装"均传 1；普通退出不启动安装程序。
 /// Arguments and preconditions for the silent install.
 ///
 /// The argument string is the public contract with the installer (see <c>installer/README.md</c>): <c>/SILENT</c>
 /// hides the wizard but keeps the progress window, which is why <c>/VERYSILENT</c> is not used — the update is
-/// supposed to be observable. Whether the application comes back is decided by <c>AUTORELAUNCH</c>: only
-/// "restart and install now" passes 1, while "install alongside a normal quit" passes 0 so a window the user just
-/// closed does not return on its own.
+/// supposed to be observable. Both startup installation and "restart and install now" pass <c>AUTORELAUNCH=1</c>.
+/// A normal quit does not start the installer.
 /// </summary>
 public static class UpdateInstallPlanPolicy
 {

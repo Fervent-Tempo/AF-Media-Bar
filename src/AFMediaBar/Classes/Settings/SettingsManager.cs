@@ -78,6 +78,7 @@ public sealed class AppSettings : INotifyPropertyChanged
     private int _lyricsFixedWidthDip = LyricsFixedWidth.DefaultDip;
     private bool _lyricsInfoLineFilterEnabled = true;
     private LyricsSourceSettings _lyricsSource = LyricsSourceSettings.Default;
+    private string _lyricsArtistSeparators = "/";
     private TrackChangeNotificationSettings _trackChangeNotification = TrackChangeNotificationSettings.Default;
     private SmtcSourceFilterSettings _smtcSourceFilter = SmtcSourceFilterSettings.Default;
     private QuickLaunchSettings _quickLaunch = QuickLaunchSettings.Default;
@@ -159,6 +160,9 @@ public sealed class AppSettings : INotifyPropertyChanged
 
     /// <summary>启用的歌词来源；取词顺序由固定策略决定。</summary>
     public LyricsSourceSettings LyricsSource { get => _lyricsSource; set => Set(ref _lyricsSource, value.Normalize()); }
+
+    /// <summary>歌词匹配的全局艺术家分隔符，每行一项，保留首尾空格；默认包含斜杠，空文本关闭分割。</summary>
+    public string LyricsArtistSeparators { get => _lyricsArtistSeparators; set => Set(ref _lyricsArtistSeparators, value ?? string.Empty); }
 
 
 
@@ -286,6 +290,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         LyricsFixedWidthDip = LyricsFixedWidthDip,
         LyricsInfoLineFilterEnabled = LyricsInfoLineFilterEnabled,
         LyricsSource = LyricsSource,
+        LyricsArtistSeparators = LyricsArtistSeparators,
         TrackChangeNotification = TrackChangeNotification,
         SmtcSourceFilter = SmtcSourceFilter,
         QuickLaunch = QuickLaunch,
@@ -386,6 +391,8 @@ public static class SettingsManager
     public static void SetLyricsFixedWidthDip(int dip) => Current.LyricsFixedWidthDip = LyricsFixedWidth.Normalize(dip);
     public static void SetLyricsInfoLineFilterEnabled(bool enabled) => Current.LyricsInfoLineFilterEnabled = enabled;
     public static void SetLyricsSourceSettings(LyricsSourceSettings settings) => Current.LyricsSource = settings;
+    /// <summary>保存自定义艺术家分隔符，触发歌词重新匹配。</summary>
+    public static void SetLyricsArtistSeparators(string separators) => Current.LyricsArtistSeparators = separators;
     public static void SetAppearanceSettings(AppearanceSettings appearance) => Current.Appearance = appearance;
     public static void SetTaskbarExperienceSettings(TaskbarExperienceSettings settings) => Current.TaskbarExperience = settings;
     public static void SetInteractionSettings(GlobalInteractionSettings settings) => Current.Interaction = settings;
@@ -494,7 +501,7 @@ public static class SettingsManager
         var next = Current.Clone(); var defaults = Defaults;
         next.TrackChangeNotification = defaults.TrackChangeNotification;
         next.SmtcSourceFilter = defaults.SmtcSourceFilter;
-        next.QuickLaunch = QuickLaunchSettings.Default;
+        next.QuickLaunch = defaults.QuickLaunch;
         Replace(next, SettingsResetScope.ExtraFeatures);
     }
     public static void ResetComponents()
@@ -524,6 +531,7 @@ public static class SettingsManager
         next.LyricsFixedWidthDip = defaults.LyricsFixedWidthDip;
         next.LyricsInfoLineFilterEnabled = defaults.LyricsInfoLineFilterEnabled;
         next.LyricsSource = defaults.LyricsSource;
+        next.LyricsArtistSeparators = defaults.LyricsArtistSeparators;
         Replace(next, SettingsResetScope.Lyrics);
     }
     public static void ResetLayout()
@@ -566,6 +574,7 @@ public static class SettingsManager
             case nameof(AppSettings.LyricsFixedWidthEnabled):
             case nameof(AppSettings.LyricsFixedWidthDip):
             case nameof(AppSettings.LyricsInfoLineFilterEnabled):
+            case nameof(AppSettings.LyricsArtistSeparators):
             case nameof(AppSettings.LyricsSource): LyricsSettingsChanged?.Invoke(null, EventArgs.Empty); break;
             case nameof(AppSettings.LyricsTextAlignment): LyricsSettingsChanged?.Invoke(null, EventArgs.Empty); break;
             case nameof(AppSettings.TaskbarExperience): TaskbarExperienceSettingsChanged?.Invoke(null, EventArgs.Empty); break;

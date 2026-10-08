@@ -1,5 +1,6 @@
 // Loads compiled settings templates and checks runtime enum literals, including symbols that the XAML compiler does not validate.
 using System.Text.RegularExpressions;
+using System.Diagnostics;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -24,8 +25,14 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class SettingsVisualRuntimeTests
 {
     [TestMethod]
-    public void CompiledCardTemplatesKeepEffectsOffTextAndUseSeparateEffects()
+    public async Task CompiledCardTemplatesKeepEffectsOffTextAndUseSeparateEffects()
     {
+        // WPF Application 关闭会改变进程级资源查找；隔离这个检查，避免污染后续窗口材质测试。
+        if (Environment.GetEnvironmentVariable("AFMB_SETTINGS_VISUAL_TEST_CHILD") != "1")
+        {
+            await RunVisualCheckInSeparateProcessAsync();
+            return;
+        }
         SettingsMotionTests.RunSta(() =>
         {
             var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
@@ -78,6 +85,46 @@ public sealed class SettingsVisualRuntimeTests
             }
             finally { app.Shutdown(); }
         });
+    }
+
+    private static async Task RunVisualCheckInSeparateProcessAsync()
+    {
+        var results = Path.Combine(Path.GetTempPath(), "AFMB-SettingsVisual-" + Guid.NewGuid().ToString("N"));
+        var start = new ProcessStartInfo(Environment.GetEnvironmentVariable("DOTNET_HOST_PATH") ?? "dotnet")
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        start.ArgumentList.Add("vstest");
+        start.ArgumentList.Add(typeof(SettingsVisualRuntimeTests).Assembly.Location);
+        start.ArgumentList.Add("/TestCaseFilter:FullyQualifiedName=" + typeof(SettingsVisualRuntimeTests).FullName + "." + nameof(CompiledCardTemplatesKeepEffectsOffTextAndUseSeparateEffects));
+        start.ArgumentList.Add("/Logger:trx;LogFileName=settings-visual.trx");
+        start.ArgumentList.Add("/ResultsDirectory:" + results);
+        start.Environment["AFMB_SETTINGS_VISUAL_TEST_CHILD"] = "1";
+        using var process = Process.Start(start) ?? throw new InvalidOperationException("Cannot start the isolated WPF check.");
+        var output = process.StandardOutput.ReadToEndAsync();
+        var errors = process.StandardError.ReadToEndAsync();
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+        try
+        {
+            try { await process.WaitForExitAsync(timeout.Token); }
+            catch (OperationCanceledException) when (timeout.IsCancellationRequested)
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync();
+                await output;
+                await errors;
+                Assert.Fail("The isolated WPF check timed out.");
+            }
+            Assert.AreEqual(0, process.ExitCode, (await output) + (await errors));
+            var report = XDocument.Load(Path.Combine(results, "settings-visual.trx"));
+            var counters = report.Descendants().Single(element => element.Name.LocalName == "Counters");
+            Assert.AreEqual("1", counters.Attribute("executed")?.Value, "The child must actually execute the visual check.");
+            Assert.AreEqual("1", counters.Attribute("passed")?.Value);
+        }
+        finally { if (Directory.Exists(results)) Directory.Delete(results, recursive: true); }
     }
 
     private static void VerifyPageMarkup(Application app)

@@ -24,10 +24,10 @@
 
 ## 开始之前
 
-- 如果使用 AI 辅助开发，请先阅读仓库根目录的 [AGENTS.md](AGENTS.md)。它概述了项目结构、文件职责和验证边界，是本指南的补充。
+- 如果使用 AI 辅助开发，请先阅读仓库根目录的 [AGENTS.md](AGENTS.md)。它保留权限、工程底线、阅读入口和文风要求。
 - 先搜索现有设置、文档、Issue 和 PR，确认功能尚不存在、工作没有重复。可复现缺陷和功能建议分别使用仓库的 Bug Report、Feature Request 表单。
 - 对新功能、设置行为变更或任务栏、媒体会话、音频、歌词等高风险修改，请先在相关 Issue 下说明准备解决的问题、拟采用的方案和大致改动范围，等待维护者确认方向后再投入大量开发。简单的文案或明确的小修复可以直接提 PR。
-- 开始较长的工作时，在 Issue 留言说明正在处理，并尽早建立关联的 Draft PR，让其他人看到进度。留言不是独占认领；如果方案或范围变化，请及时更新。维护者会协调重复工作。
+- 开始较长的工作时，在 Issue 留言说明正在处理，取得用户授权后，可尽早建立关联的 Draft PR，让其他人看到进度。留言不是独占认领；如果方案或范围变化，请及时更新。维护者会协调重复工作。
 - 安全问题不要公开提交 Issue，按 [SECURITY.md](SECURITY.md) 私下报告。
 
 ## 开发与验证
@@ -43,7 +43,7 @@ dotnet test .\tests\AFMediaBar.Layout.Tests\AFMediaBar.Layout.Tests.csproj -c Re
 git diff --check
 ```
 
-若修改 ViewModel，还需运行 `powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\verify-architecture.ps1`。按改动范围做真实 Windows 验证；任务栏定位、Explorer 恢复、DPI、音频设备和播放器兼容性不能仅靠构建或单元测试证明。无法覆盖 Windows 10、Windows 11 或特定播放器时，请在 PR 中明确写“未验证”，不要求每位贡献者都拥有所有环境。普通 PR 不需要运行 `dotnet publish`。
+仓库尚未提供 ViewModel 架构自动检查脚本。修改 ViewModel 时须人工审查依赖边界，并说明自动检查缺口。按改动范围做真实 Windows 验证；任务栏定位、Explorer 恢复、DPI、音频设备和播放器兼容性不能仅靠构建或单元测试证明。无法覆盖 Windows 10、Windows 11 或特定播放器时，请在 PR 中明确写“未验证”，不要求每位贡献者都拥有所有环境。普通 PR 不需要运行 `dotnet publish`。
 
 ## 改动边界
 
@@ -53,8 +53,8 @@ git diff --check
 
 ## Pull Request
 
-- 标题用简短的 `fix(scope): ...`、`feat(scope): ...` 或 `docs: ...` 说明结果；
-- 填写 PR 模板的“改动”和“验证”两节：简要说明问题与结果，只写实际做过的验证；未验证时直接说明。相关 Issue、风险及截图只在适用时补充。构建通过不等于实机通过；界面与任务栏行为改动请尽可能附截图或短录屏。
+- 标题和提交消息采用 `type(scope): 简短说明`，scope 可省略，兼容中文冒号 `：`；常用 type 包括 feat、fix、docs、style、refactor、perf、test、build、ci、chore、revert，保留 doc 兼容。说明具体改动或结果，不写空泛描述。
+- PR 描述写清“问题与改动”“实际验证”“未验证风险”：简要说明问题与结果，只写实际做过的验证；未验证时直接说明。相关 Issue、风险及截图只在适用时补充。构建通过不等于实机通过；界面与任务栏行为改动请尽可能附截图或短录屏。
 - 用 `Refs #123` 关联进行中的 Issue；只有 PR 完整解决该问题时才用 `Closes #123`。保持 PR 范围与关联 Issue 一致。
 - 可以使用 AI 辅助代码或撰写说明，但提交者必须亲自核对描述、测试结果和受影响范围。不要粘贴未经核实的 AI 分析或声称做过未执行的实机测试；优先写一个“改动前 → 改动后”的具体例子。
 - 维护者可能要求拆分过大的改动，或在涉及系统行为时等待真实设备验收。
@@ -86,10 +86,10 @@ New display modes or major UI redesigns, incompatible settings changes, new netw
 
 ## Before you start
 
-- If you use AI assistance, read the repository's [AGENTS.md](AGENTS.md) first. It summarizes the project structure, file responsibilities, and validation boundaries alongside this guide.
+- If you use AI assistance, read the repository's [AGENTS.md](AGENTS.md) first. It defines authorization, engineering constraints, task-specific reading, and writing style.
 - Search existing settings, documentation, issues, and PRs to check whether the feature already exists or someone is doing the same work. Use the Bug Report or Feature Request form as appropriate.
 - For new features, settings behavior changes, or high-risk taskbar, media-session, audio, or lyrics work, comment on a related issue with the problem, proposed approach, and approximate scope. Wait for maintainer feedback before investing substantial work. Small documentation changes and clearly scoped fixes may go straight to a PR.
-- For longer work, leave a progress comment on the issue and open a linked Draft PR early. A comment is not an exclusive reservation; update it if the approach changes. Maintainers will coordinate overlaps.
+- For longer work, leave a progress comment on the issue and, when authorized by the user, open a linked Draft PR early. A comment is not an exclusive reservation; update it if the approach changes. Maintainers will coordinate overlaps.
 - Report security issues privately using [SECURITY.md](SECURITY.md), not a public issue.
 
 ## Development and validation
@@ -105,7 +105,7 @@ dotnet test .\tests\AFMediaBar.Layout.Tests\AFMediaBar.Layout.Tests.csproj -c Re
 git diff --check
 ```
 
-When changing a ViewModel, also run `powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\verify-architecture.ps1`. Test relevant behavior on a real Windows desktop: build and unit tests alone cannot establish taskbar placement, Explorer recovery, DPI, audio-device, or player compatibility. If you cannot test a Windows version or player, say “not tested” in the PR; contributors are not expected to own every environment. Ordinary PRs do not need `dotnet publish`.
+The repository does not provide an automated ViewModel architecture check. When changing a ViewModel, review dependency boundaries manually and report this gap. Test relevant behavior on a real Windows desktop: build and unit tests alone cannot establish taskbar placement, Explorer recovery, DPI, audio-device, or player compatibility. If you cannot test a Windows version or player, say “not tested” in the PR; contributors are not expected to own every environment. Ordinary PRs do not need `dotnet publish`.
 
 ## Scope and architecture
 
@@ -115,8 +115,8 @@ When changing a ViewModel, also run `powershell -NoProfile -ExecutionPolicy Bypa
 
 ## Pull requests
 
-- Use a short result-oriented title such as `fix(scope): ...`, `feat(scope): ...`, or `docs: ...`.
-- Complete the template's “Change” and “Verification” sections: briefly explain the problem and result, and report only checks you actually performed. State what remains untested; add a related issue, risks, or screenshots only when applicable. A successful build is not real-device verification; include a screenshot or short recording when practical for UI or taskbar behavior.
+- Use `type(scope): short description` for titles and commit messages; scope is optional and the Chinese colon is accepted. Common types include feat, fix, docs, style, refactor, perf, test, build, ci, chore, and revert; doc remains compatible. Describe the actual change or result.
+- Describe the problem and change, actual verification, and unverified risks: briefly explain the problem and result, and report only checks you actually performed. State what remains untested; add a related issue, risks, or screenshots only when applicable. A successful build is not real-device verification; include a screenshot or short recording when practical for UI or taskbar behavior.
 - Use `Refs #123` for related work. Use `Closes #123` only when the PR fully resolves the issue. Keep the PR aligned with its linked issue.
 - AI may assist with code or writing, but the submitter must verify every claim, test result, and affected area. Do not paste unverified AI analysis or claim device testing that was not done. A concrete “before → after” example is more useful.
 - Maintainers may ask to split broad changes or wait for real-device validation of system behavior.

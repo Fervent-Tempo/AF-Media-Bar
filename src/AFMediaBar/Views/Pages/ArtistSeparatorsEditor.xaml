@@ -1,0 +1,56 @@
+<!-- 仅编辑弹窗内的分隔符草稿；列表增删不写入设置，保存由调用方在确认后完成。 -->
+<UserControl x:Class="AFMediaBar.Views.Pages.ArtistSeparatorsEditor"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             MinWidth="300">
+    <StackPanel>
+        <TextBlock Text="{DynamicResource Loc.Lyrics.ArtistSeparators.Dialog.Hint}"
+                   TextWrapping="Wrap" MaxWidth="340" Margin="0,0,0,12" Opacity="0.7" />
+        <Grid>
+        <ScrollViewer Height="220" VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl x:Name="Rows">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox Text="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     VerticalAlignment="Center" />
+                            <ui:Button Grid.Column="1" Margin="8,0,0,0" Appearance="Transparent"
+                                       Icon="{ui:SymbolIcon Subtract24}"
+                                       ToolTip="{DynamicResource Loc.Lyrics.ArtistSeparators.Dialog.Remove}"
+                                       AutomationProperties.Name="{DynamicResource Loc.Lyrics.ArtistSeparators.Dialog.Remove}"
+                                       Click="Remove_Click" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+        <TextBlock Text="{DynamicResource Loc.Lyrics.ArtistSeparators.Dialog.Empty}"
+                   TextWrapping="Wrap" MaxWidth="280" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.7">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding HasItems, ElementName=Rows}" Value="False">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
+        </Grid>
+        <Grid Margin="0,12,0,0">
+        <ui:Button x:Name="RestoreDefaultsButton" HorizontalAlignment="Left" Appearance="Transparent"
+                   Content="{DynamicResource Loc.Lyrics.ArtistSeparators.Dialog.Restore}"
+                   Click="RestoreDefaults_Click" />
+        <ui:Button HorizontalAlignment="Right" Appearance="Transparent"
+                   Content="{DynamicResource Loc.Lyrics.ArtistSeparators.Dialog.Add}"
+                   Click="Add_Click" />
+        </Grid>
+    </StackPanel>
+</UserControl>

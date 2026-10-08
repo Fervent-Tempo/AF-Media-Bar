@@ -166,7 +166,7 @@ public partial class TrackChangeNotificationWindow : FluentWindow
         var box = ArtworkBoxPolicy.Resolve(ArtworkBorder.Height, bitmap?.PixelWidth ?? 0, bitmap?.PixelHeight ?? 0);
         ArtworkBorder.Width = box.Width;
         ArtworkColumn.Width = new GridLength(box.Width);
-        ArtworkImage.Stretch = box.Letterbox ? Stretch.Uniform : Stretch.UniformToFill;
+        ArtworkImage.Stretch = Stretch.Uniform;
     }
 
     /// <summary>立即隐藏通知并取消动画和计时。 / Immediately hides the notification and cancels animations and timing.</summary>

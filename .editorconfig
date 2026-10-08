@@ -1,0 +1,115 @@
+# 手写代码的基本格式与命名建议；特殊接口保留原约定，不自动改写旧代码。
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{js,css,json,yml,yaml}]
+indent_size = 2
+
+[*.md]
+# Markdown 的两个行尾空格可表示换行。
+trim_trailing_whitespace = false
+
+[*.cs]
+dotnet_diagnostic.IDE1006.severity = suggestion
+
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+dotnet_naming_style.camel_case.capitalization = camel_case
+dotnet_naming_style.private_field.capitalization = camel_case
+dotnet_naming_style.private_field.required_prefix = _
+dotnet_naming_style.interface_name.capitalization = pascal_case
+dotnet_naming_style.interface_name.required_prefix = I
+dotnet_naming_style.type_parameter.capitalization = pascal_case
+dotnet_naming_style.type_parameter.required_prefix = T
+
+dotnet_naming_symbols.types.applicable_kinds = class, struct, enum, delegate
+dotnet_naming_symbols.types.applicable_accessibilities = *
+dotnet_naming_rule.types.symbols = types
+dotnet_naming_rule.types.style = pascal_case
+dotnet_naming_rule.types.severity = suggestion
+
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_symbols.interfaces.applicable_accessibilities = *
+dotnet_naming_rule.interfaces.symbols = interfaces
+dotnet_naming_rule.interfaces.style = interface_name
+dotnet_naming_rule.interfaces.severity = suggestion
+
+dotnet_naming_symbols.members.applicable_kinds = method, local_function, property, event
+dotnet_naming_symbols.members.applicable_accessibilities = *
+dotnet_naming_rule.members.symbols = members
+dotnet_naming_rule.members.style = pascal_case
+dotnet_naming_rule.members.severity = suggestion
+
+dotnet_naming_symbols.public_fields.applicable_kinds = field
+dotnet_naming_symbols.public_fields.applicable_accessibilities = public, protected, protected_internal
+dotnet_naming_rule.public_fields.symbols = public_fields
+dotnet_naming_rule.public_fields.style = pascal_case
+dotnet_naming_rule.public_fields.severity = suggestion
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_rule.private_fields.symbols = private_fields
+dotnet_naming_rule.private_fields.style = private_field
+dotnet_naming_rule.private_fields.severity = suggestion
+
+# const 也是 static/readonly；交叉规则避免常量误用私有字段前缀。
+dotnet_naming_symbols.constants.applicable_kinds = field, local
+dotnet_naming_symbols.constants.applicable_accessibilities = *
+dotnet_naming_symbols.constants.required_modifiers = const
+dotnet_naming_rule.constants.symbols = constants
+dotnet_naming_rule.constants.style = pascal_case
+dotnet_naming_rule.constants.severity = suggestion
+
+dotnet_naming_symbols.private_constants.applicable_kinds = field
+dotnet_naming_symbols.private_constants.applicable_accessibilities = private
+dotnet_naming_symbols.private_constants.required_modifiers = const
+dotnet_naming_rule.private_constants.symbols = private_constants
+dotnet_naming_rule.private_constants.style = pascal_case
+dotnet_naming_rule.private_constants.severity = suggestion
+
+dotnet_naming_symbols.local_constants.applicable_kinds = local
+dotnet_naming_symbols.local_constants.applicable_accessibilities = local
+dotnet_naming_symbols.local_constants.required_modifiers = const
+dotnet_naming_rule.local_constants.symbols = local_constants
+dotnet_naming_rule.local_constants.style = pascal_case
+dotnet_naming_rule.local_constants.severity = suggestion
+
+dotnet_naming_symbols.parameters_and_locals.applicable_kinds = parameter, local
+dotnet_naming_symbols.parameters_and_locals.applicable_accessibilities = *
+dotnet_naming_rule.parameters_and_locals.symbols = parameters_and_locals
+dotnet_naming_rule.parameters_and_locals.style = camel_case
+dotnet_naming_rule.parameters_and_locals.severity = suggestion
+
+dotnet_naming_symbols.type_parameters.applicable_kinds = type_parameter
+dotnet_naming_symbols.type_parameters.applicable_accessibilities = *
+dotnet_naming_rule.type_parameters.symbols = type_parameters
+dotnet_naming_rule.type_parameters.style = type_parameter
+dotnet_naming_rule.type_parameters.severity = suggestion
+
+dotnet_naming_symbols.private_static_readonly_fields.applicable_kinds = field
+dotnet_naming_symbols.private_static_readonly_fields.applicable_accessibilities = private
+dotnet_naming_symbols.private_static_readonly_fields.required_modifiers = static, readonly
+dotnet_naming_rule.private_static_readonly_fields.symbols = private_static_readonly_fields
+dotnet_naming_rule.private_static_readonly_fields.style = private_field
+dotnet_naming_rule.private_static_readonly_fields.severity = suggestion
+
+# 这四个文件含私有 WPF 标识；配置无法按字段类型排除，静态只读字段改为人工复核。
+[src/AFMediaBar/Components/{SettingsDiagram,SettingsGroupStrip,SliderInputBehavior}.cs]
+dotnet_naming_rule.private_static_readonly_fields.severity = none
+
+[src/AFMediaBar/Classes/Utils/SettingsRevealAnimator.cs]
+dotnet_naming_rule.private_static_readonly_fields.severity = none
+
+# 仅跳过原生声明，不跳过同目录的手写包装逻辑。
+[src/AFMediaBar/Classes/Interop/NativeMethods*.cs]
+dotnet_diagnostic.IDE1006.severity = none
+
+[*.{g,g.i,Designer,designer}.cs]
+generated_code = true
+dotnet_diagnostic.IDE1006.severity = none

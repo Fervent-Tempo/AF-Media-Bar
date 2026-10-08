@@ -6,6 +6,29 @@ namespace AFMediaBar.Classes.Services;
 /// </summary>
 public static class StartupRegistrationPolicy
 {
+    /// <summary>读取系统审批状态；无记录表示未禁用，未知格式返回 null。</summary>
+    public static bool? IsStartupApproved(object? approval)
+    {
+        if (approval is null) return true;
+        if (approval is not byte[] { Length: 12 } bytes || bytes[1] != 0 || bytes[2] != 0 || bytes[3] != 0)
+            return null;
+        return bytes[0] switch
+        {
+            0x02 or 0x06 => true,
+            0x03 or 0x07 => false,
+            _ => null
+        };
+    }
+
+    /// <summary>为已知禁用记录生成启用状态并清除禁用时间；不修改输入，未知或无需修复时返回 null。</summary>
+    public static byte[]? BuildEnabledApproval(object? approval)
+    {
+        if (IsStartupApproved(approval) != false) return null;
+        var enabled = new byte[12];
+        enabled[0] = ((byte[])approval!)[0] == 0x07 ? (byte)0x06 : (byte)0x02;
+        return enabled;
+    }
+
     /// <summary>
     /// 拼装启动项命令行。路径一律加引号：程序目录可能含空格，不加引号时 Windows 会把第一个空格当作参数分隔符，
     /// 于是启动的是另一个路径，用户看到的只是"开机后没启动"。

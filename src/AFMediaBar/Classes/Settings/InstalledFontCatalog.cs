@@ -7,7 +7,16 @@ using AFMediaBar.Resources;
 namespace AFMediaBar.Classes.Settings;
 
 /// <summary>外观选择器中的字体及其原字体字样。/ A font and its own specimen in the appearance selectors.</summary>
-public sealed record FontFamilyChoice(string Name, string DisplayName, string PreviewText = "", FontFamily? PreviewFontFamily = null);
+public sealed class FontFamilyChoice(string name, string displayName, string previewText = "", FontFamily? previewFontFamily = null) : ObservableObject
+{
+    private string _displayName = displayName;
+    private string _previewText = previewText;
+
+    public string Name { get; } = name;
+    public FontFamily? PreviewFontFamily { get; } = previewFontFamily;
+    public string DisplayName { get => _displayName; internal set => SetProperty(ref _displayName, value); }
+    public string PreviewText { get => _previewText; internal set => SetProperty(ref _previewText, value); }
+}
 
 /// <summary>枚举本机可用字体，并为 WPF 创建按字符范围选字的组合字体。/ Enumerates installed fonts and builds WPF script-mapped composite fonts.</summary>
 public static class InstalledFontCatalog
@@ -17,7 +26,7 @@ public static class InstalledFontCatalog
     private const string HanRanges = "2E80-2FFF, 3000-303F, 31C0-31EF, 3400-4DBF, 4E00-9FFF, F900-FAFF, 20000-2FA1F";
     private const string AllCharacters = "0000-10FFFF";
     private static readonly ConcurrentDictionary<string, (bool Latin, bool Cjk)> CoverageCache = new(StringComparer.OrdinalIgnoreCase);
-    private static readonly object RefreshGate = new();
+    private static readonly object _refreshGate = new();
     private static Task<(IReadOnlyList<FontFamilyChoice> Latin, IReadOnlyList<FontFamilyChoice> Cjk)>? _inFlightRefresh;
     private static readonly Dictionary<string, string> CommonChineseNames = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -57,7 +66,7 @@ public static class InstalledFontCatalog
     }
 
     /// <summary>
-    /// Supplies a usable system/default selection before the installed-font scan finishes. A saved choice remains visible until validated.
+    /// 扫描完成前提供系统字体和已保存的选择，避免构造页面时枚举所有字体。
     /// </summary>
     public static IReadOnlyList<FontFamilyChoice> GetInitialChoices(string followSystemResourceKey, bool cjk, string selectedName)
     {
@@ -70,19 +79,19 @@ public static class InstalledFontCatalog
     }
 
     /// <summary>
-    /// Scans installed fonts off the UI thread. Navigations share an in-flight scan; cancellation stops waiting, not the shared scan.
+    /// 在后台扫描字体；重复导航共享进行中的扫描，取消只停止当前等待。
     /// </summary>
     public static Task<(IReadOnlyList<FontFamilyChoice> Latin, IReadOnlyList<FontFamilyChoice> Cjk)> RefreshChoicesAsync(CancellationToken cancellationToken)
     {
         Task<(IReadOnlyList<FontFamilyChoice> Latin, IReadOnlyList<FontFamilyChoice> Cjk)> refresh;
-        lock (RefreshGate)
+        lock (_refreshGate)
         {
             if (_inFlightRefresh is null || _inFlightRefresh.IsCompleted)
             {
                 _inFlightRefresh = Task.Run(() => (
                     GetChoices("Appearance.LatinFont.FollowSystem", cjk: false),
                     GetChoices("Appearance.CjkFont.FollowSystem", cjk: true)));
-                // The page may cancel its wait before a faulty scan completes; observe that abandoned fault.
+                // 离页可能提前取消等待，仍需观察共享扫描的异常。
                 _ = _inFlightRefresh.ContinueWith(
                     static completed => _ = completed.Exception,
                     CancellationToken.None,
@@ -96,17 +105,30 @@ public static class InstalledFontCatalog
         return refresh.WaitAsync(cancellationToken);
     }
 
-    /// <summary>Updates preview text and the system option after a language change without rescanning fonts.</summary>
+    /// <summary>在 UI 线程更新字样和系统选项；刷新目录时复用同名选项，保留控件选择。</summary>
     public static IReadOnlyList<FontFamilyChoice> RelocalizeChoices(
-        IReadOnlyList<FontFamilyChoice> choices, string followSystemResourceKey, bool cjk)
+        IReadOnlyList<FontFamilyChoice> choices, string followSystemResourceKey, bool cjk,
+        IReadOnlyList<FontFamilyChoice>? previousChoices = null)
     {
+        if (previousChoices is not null)
+        {
+            var previous = previousChoices.ToDictionary(choice => choice.Name, StringComparer.OrdinalIgnoreCase);
+            choices = choices.Select(choice =>
+            {
+                if (!previous.TryGetValue(choice.Name, out var existing)) return choice;
+                existing.DisplayName = choice.DisplayName;
+                return existing;
+            }).ToArray();
+        }
         var sample = Translations.Get(cjk ? "Appearance.CjkFont.Sample" : "Appearance.LatinFont.Sample");
         var followSystem = Translations.Get(followSystemResourceKey);
-        return choices.Select(choice => choice with
+        // 保留选项对象和集合身份，避免语言刷新清空 ComboBox 的内部选中项。
+        foreach (var choice in choices)
         {
-            DisplayName = choice.Name.Length == 0 ? followSystem : choice.DisplayName,
-            PreviewText = sample
-        }).ToArray();
+            if (choice.Name.Length == 0) choice.DisplayName = followSystem;
+            choice.PreviewText = sample;
+        }
+        return choices;
     }
 
     /// <summary>按字符范围创建应用字体，中文选择始终优先于西文字体的汉字字形。/ Creates a script-mapped app font so the CJK choice takes priority over Han glyphs in the Latin font.</summary>

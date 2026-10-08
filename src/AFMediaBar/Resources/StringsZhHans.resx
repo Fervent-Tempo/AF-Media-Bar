@@ -2222,4 +2222,31 @@
   <data name="Appearance.FontsShortcut.Action" xml:space="preserve">
     <value>调整字体</value>
   </data>
+  <data name="Lyrics.Row.ArtistSeparators.Title" xml:space="preserve">
+    <value>艺术家分隔符</value>
+  </data>
+  <data name="Lyrics.Row.ArtistSeparators.Description" xml:space="preserve">
+    <value>自定义歌词搜索和匹配使用的艺术家分隔符。点击管理可逐项新增、编辑或删除，确定后重新匹配；不改变艺术家显示。</value>
+  </data>
+  <data name="Lyrics.Row.ArtistSeparators.Manage" xml:space="preserve">
+    <value>管理艺术家分隔符</value>
+  </data>
+  <data name="Lyrics.ArtistSeparators.Dialog.Hint" xml:space="preserve">
+    <value>保留分隔符首尾空格，字母不区分大小写。</value>
+  </data>
+  <data name="Lyrics.ArtistSeparators.Dialog.Add" xml:space="preserve">
+    <value>新增</value>
+  </data>
+  <data name="Lyrics.ArtistSeparators.Dialog.Remove" xml:space="preserve">
+    <value>删除分隔符</value>
+  </data>
+  <data name="Lyrics.ArtistSeparators.Dialog.Confirm" xml:space="preserve">
+    <value>确定</value>
+  </data>
+  <data name="Lyrics.ArtistSeparators.Dialog.Empty" xml:space="preserve">
+    <value>当前没有分隔符，艺术家分割已关闭。可新增分隔符，或恢复默认的 /。</value>
+  </data>
+  <data name="Lyrics.ArtistSeparators.Dialog.Restore" xml:space="preserve">
+    <value>恢复默认分隔符</value>
+  </data>
 </root>

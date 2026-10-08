@@ -243,7 +243,7 @@ public static class SettingsSearchIndex
             "Common.Group.LyricsSources",
             "Search.Lyrics.Sources.Description",
             language,
-            ["来源", "歌词来源", "source", "sources", "网易云", "网易云音乐", "netease", "qq 音乐", "qqmusic", "酷狗", "kugou", "汽水", "soda", "lrclib", "搜索", "search", "匹配", "match"]),
+            ["来源", "歌词来源", "source", "sources", "网易云", "网易云音乐", "netease", "qq 音乐", "qqmusic", "酷狗", "kugou", "汽水", "soda", "lrclib", "搜索", "search", "匹配", "match", "艺术家分隔符", "artist separators"]),
 
         // ---- 外观 / Appearance ----
         Create(

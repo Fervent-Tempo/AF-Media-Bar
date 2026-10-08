@@ -59,6 +59,8 @@ public interface ISettingsConfiguration
     void SetLyricsInfoLineFilterEnabled(bool enabled);
     /// <summary>Publishes this setting through the existing normalization contract.</summary>
     void SetLyricsSourceSettings(LyricsSourceSettings settings);
+    /// <summary>Saves artist separators through the existing lyrics matching contract.</summary>
+    void SetLyricsArtistSeparators(string separators);
     /// <summary>Publishes this setting through the existing normalization contract.</summary>
     void SetInteractionSettings(GlobalInteractionSettings settings);
     /// <summary>Publishes this setting through the existing normalization contract.</summary>

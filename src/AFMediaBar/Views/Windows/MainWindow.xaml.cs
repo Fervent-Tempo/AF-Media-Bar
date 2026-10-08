@@ -36,6 +36,7 @@ namespace AFMediaBar.Views.Windows
         private readonly MediaSessionService _mediaSessionService;
         private readonly AudioControlViewModel _audioControlViewModel;
         private readonly AudioControlFlyoutWindow _audioControlFlyout;
+        private readonly AppLogService _logService;
         private readonly NativeMouseInputMonitor _mouseInputMonitor;
         private readonly WindowAppearanceService _appearanceService;
         private readonly ScreenBackgroundSampler _screenBackgroundSampler;
@@ -98,6 +99,7 @@ namespace AFMediaBar.Views.Windows
             ITaskbarDockService taskBarService,
             AudioControlViewModel audioControlViewModel,
             AudioControlFlyoutWindow audioControlFlyout,
+            AppLogService logService,
             NativeMouseInputMonitor mouseInputMonitor,
             WindowAppearanceService appearanceService,
             ScreenBackgroundSampler screenBackgroundSampler,
@@ -124,6 +126,7 @@ namespace AFMediaBar.Views.Windows
             _taskBarService = taskBarService;
             _audioControlViewModel = audioControlViewModel;
             _audioControlFlyout = audioControlFlyout;
+            _logService = logService;
             _mouseInputMonitor = mouseInputMonitor;
             _appearanceService = appearanceService;
             _screenBackgroundSampler = screenBackgroundSampler;
@@ -266,7 +269,7 @@ namespace AFMediaBar.Views.Windows
             }
 
             CloseTaskbarWindows();
-            _audioControlFlyout.Close();
+            _audioControlFlyout.Dispose();
             CloseFullPanelWindows();
             var notificationWindow = _trackChangeNotificationWindow;
             _trackChangeNotificationWindow = null;
@@ -735,7 +738,14 @@ namespace AFMediaBar.Views.Windows
             if (_isClosing)
                 return;
 
-            await _audioControlFlyout.ToggleAsync(bounds);
+            try
+            {
+                await _audioControlFlyout.ToggleAsync(bounds);
+            }
+            catch (Exception exception)
+            {
+                _logService.Error("Audio", "切换托盘音频面板失败", exception);
+            }
         }
 
         /// <summary>
