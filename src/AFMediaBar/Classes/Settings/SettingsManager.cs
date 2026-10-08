@@ -32,6 +32,10 @@ public enum LyricsSecondaryLineMode
 /// <summary>应用全部用户设置，并在属性直接修改时发布变更。 / All user settings; direct mutations publish changes.</summary>
 public sealed class AppSettings : INotifyPropertyChanged
 {
+    /// <summary>Minimum cross-axis taskbar offset in DIP.</summary>
+    public const double MinimumTaskbarCrossAxisOffsetDip = -20d;
+    /// <summary>Maximum cross-axis taskbar offset in DIP.</summary>
+    public const double MaximumTaskbarCrossAxisOffsetDip = 20d;
     private AppearanceSettings _appearance = AppearanceSettings.Default;
     private TrayWheelBehavior _trayWheelBehavior = TrayWheelBehavior.SwitchOutputDevice;
     private bool _lyricsEnabled = true;
@@ -241,7 +245,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         if (!double.IsFinite(result.TaskbarBarCrossAxisOffsetDip)) result.TaskbarBarCrossAxisOffsetDip = defaults.TaskbarBarCrossAxisOffsetDip;
         result.LayoutLengthScalePercent = Math.Clamp(result.LayoutLengthScalePercent, 70, 125);
         result.LayoutThicknessScalePercent = Math.Clamp(result.LayoutThicknessScalePercent, 70, 125);
-        result.TaskbarBarCrossAxisOffsetDip = Math.Clamp(result.TaskbarBarCrossAxisOffsetDip, -20, 20);
+        result.TaskbarBarCrossAxisOffsetDip = Math.Clamp(result.TaskbarBarCrossAxisOffsetDip, MinimumTaskbarCrossAxisOffsetDip, MaximumTaskbarCrossAxisOffsetDip);
         if (result.DynamicIslandLeft is not null && (!double.IsFinite(result.DynamicIslandLeft.Value) || result.DynamicIslandLeft < 0)) result.DynamicIslandLeft = null;
         if (result.DynamicIslandTop is not null && (!double.IsFinite(result.DynamicIslandTop.Value) || result.DynamicIslandTop < 0)) result.DynamicIslandTop = null;
         return result;
@@ -427,6 +431,38 @@ public static class SettingsManager
         };
         Replace(next, SettingsResetScope.Appearance);
     }
+    /// <summary>Restores application typography and window theme without replacing media color or taskbar layout.</summary>
+    public static void ResetApplicationAppearance()
+    {
+        var next = Current.Clone();
+        next.Appearance = Defaults.Appearance with { PlayerForegroundMode = next.Appearance.PlayerForegroundMode };
+        Replace(next, SettingsResetScope.Appearance);
+    }
+
+    /// <summary>Restores taskbar appearance while preserving application fonts and theme.</summary>
+    public static void ResetTaskbarAppearance()
+    {
+        var originalAppearance = Current.Appearance;
+        // Preserve the established appearance reset membership, then retain the application-wide fields.
+        var next = Current.Clone();
+        var defaults = Defaults;
+        next.Appearance = originalAppearance with { PlayerForegroundMode = defaults.Appearance.PlayerForegroundMode };
+        next.TaskbarSurface = defaults.TaskbarSurface;
+        next.TaskbarExperience = next.TaskbarExperience with
+        {
+            MediaFontSizePercent = defaults.TaskbarExperience.MediaFontSizePercent,
+            Density = defaults.TaskbarExperience.Density,
+            ContentLayout = defaults.TaskbarExperience.ContentLayout,
+            MediaTextAlignment = defaults.TaskbarExperience.MediaTextAlignment,
+            ComponentSpacingDip = defaults.TaskbarExperience.ComponentSpacingDip,
+            HoverButtonSpacingDip = defaults.TaskbarExperience.HoverButtonSpacingDip,
+            LengthMode = defaults.TaskbarExperience.LengthMode,
+            FixedLengthDip = defaults.TaskbarExperience.FixedLengthDip,
+            RestComponentOrder = defaults.TaskbarExperience.RestComponentOrder
+        };
+        Replace(next, SettingsResetScope.Appearance);
+    }
+
     public static void ResetDisplayModes()
     {
         var next = Current.Clone(); var defaults = Defaults;

@@ -1,3 +1,4 @@
+<!-- Settings navigation and search follow the main-branch shell; pages retain this branch's setting behavior. -->
 <ui:FluentWindow
     x:Class="AFMediaBar.Views.Windows.SettingsWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -11,6 +12,7 @@
     Title="{Binding ViewModel.ApplicationTitle, Mode=OneWay}"
     Width="1100"
     Height="650"
+    MinWidth="640" MinHeight="460"
     d:DataContext="{d:DesignInstance local:SettingsWindow,
                                      IsDesignTimeCreatable=True}"
     d:DesignHeight="450"
@@ -26,10 +28,18 @@
     WindowStartupLocation="CenterScreen"
     Loaded="SettingsWindow_OnLoaded"
     mc:Ignorable="d">
+    <Window.Resources>
+<Style TargetType="{x:Type ComboBox}" BasedOn="{StaticResource {x:Type ComboBox}}">
+            <Setter Property="Background" Value="{DynamicResource AfSettingsInputBrush}" />
+        </Style>
+<Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource {x:Type TextBox}}">
+            <Setter Property="Background" Value="{DynamicResource AfSettingsInputBrush}" />
+        </Style>
+    </Window.Resources>
     <ui:FluentWindow.InputBindings>
         <KeyBinding
             Key="F"
-            Command="{Binding ElementName=AutoSuggestBox, Path=FocusCommand}"
+            Command="{Binding FocusSearchCommand}"
             Modifiers="Control" />
     </ui:FluentWindow.InputBindings>
     <Grid>
@@ -53,13 +63,22 @@
             x:Name="RootNavigation"
             Background="Transparent"
             FrameMargin="0"
-            IsBackButtonVisible="Visible"
+            IsBackButtonVisible="Collapsed"
             IsPaneToggleVisible="true"
             PaneDisplayMode="Left"
             IsFooterSeparatorVisible="false"
             OpenPaneLength="228"
+            IsPaneOpen="True"
             TransitionDuration="180"
             TitleBar="{Binding ElementName=TitleBar, Mode=OneWay}">
+            <ui:NavigationView.Header>
+                <StackPanel Margin="16,4,16,4">
+                    <StackPanel x:Name="EditingMonitorPanel" Orientation="Horizontal" Visibility="Collapsed">
+                        <TextBlock Text="{DynamicResource Loc.Settings.Context.EditingMonitor}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <ComboBox x:Name="EditingMonitorPicker" MinWidth="200" MaxWidth="360" DisplayMemberPath="DeviceName" SelectedValuePath="DeviceId" SelectionChanged="OnEditingMonitorChanged" />
+                    </StackPanel>
+                </StackPanel>
+            </ui:NavigationView.Header>
             <ui:NavigationView.AutoSuggestBox>
                 <!--
                     搜索框的候选项由设置窗口在 TextChanged 里按 SettingsSearchIndex 填充，
@@ -100,43 +119,17 @@
                 </ui:AutoSuggestBox>
             </ui:NavigationView.AutoSuggestBox>
 
-            <ui:NavigationView.MenuItems>
-                <!-- 页面按显示、外观、交互、歌词、组件和应用排列；媒体来源与通知仍保留独立入口。 -->
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.DisplayModes}" Icon="{ui:SymbolIcon Desktop24}"
-                                       TargetPageType="{x:Type pages:DisplayModesPage}" />
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Appearance}"
-                                       Icon="{ui:SymbolIcon PaintBrush24}"
-                                       TargetPageType="{x:Type pages:AppearancePage}" />
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Interaction}" Icon="{ui:SymbolIcon HandDraw24}"
-                                       TargetPageType="{x:Type pages:InteractionPage}" />
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Lyrics}" Icon="{ui:SymbolIcon TextQuote24}"
-                                       TargetPageType="{x:Type pages:LyricsPage}" />
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Components}" Icon="{ui:SymbolIcon DataHistogram24}"
-                                       TargetPageType="{x:Type pages:ComponentsSettingsPage}" />
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.MediaAndNotifications}" Icon="{ui:SymbolIcon PuzzlePiece24}"
-                                       ToolTip="{DynamicResource Loc.Common.Page.MediaAndNotifications}"
-                                       TargetPageType="{x:Type pages:ExtraFeaturesPage}" />
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.Application}"
-                                       Icon="{ui:SymbolIcon Settings24}"
-                                       TargetPageType="{x:Type pages:ApplicationPage}" />
-            </ui:NavigationView.MenuItems>
-
             <ui:NavigationView.FooterMenuItems>
-                <!--
-                    更新提示：它排在「关于」上方，只在确有可用版本时出现（窗口代码后置按视图模型的纯数据
-                    属性显示或隐藏它）。点击它跳到「应用」，亮点、进度与全部更新操作都在那一页。
-                    Update notice: it sits above "about" and only appears when a newer version really exists; the
-                    window's code-behind shows or hides it from the view model's plain-data property. Clicking it lands
-                    on "application", where the highlights, progress and every update action live.
-                -->
-                <ui:NavigationViewItem
-                    x:Name="UpdateNoticeNavItem"
-                    Click="UpdateNoticeNavItem_Click"
-                    Content="{Binding ViewModel.UpdateNoticeTitle}"
-                    Icon="{ui:SymbolIcon ArrowSync24}"
-                    Visibility="Collapsed" />
-                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.About}" Icon="{ui:SymbolIcon QuestionCircle24}"
-                                       TargetPageType="{x:Type pages:AboutPage}" />
+                <ui:NavigationViewItem x:Name="UpdateNoticeNavItem" Click="UpdateNoticeNavItem_Click" TargetPageType="{x:Type pages:ReleaseHighlightsPage}">
+                    <ui:NavigationViewItem.Content>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{DynamicResource Loc.Common.Page.ReleaseHighlights}" />
+                            <Ellipse x:Name="UpdateNoticeDot" Width="6" Height="6" Margin="6,0,0,0" VerticalAlignment="Center" Fill="{DynamicResource AfAccentBrush}" Visibility="Collapsed" />
+                        </StackPanel>
+                    </ui:NavigationViewItem.Content>
+                    <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="Sparkle24" /></ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem Content="{DynamicResource Loc.Common.Page.About}" Icon="{ui:SymbolIcon QuestionCircle24}" TargetPageType="{x:Type pages:AboutPage}" />
             </ui:NavigationView.FooterMenuItems>
 
             <ui:NavigationView.ContentOverlay>
@@ -145,6 +138,7 @@
                 </Grid>
             </ui:NavigationView.ContentOverlay>
         </ui:NavigationView>
+        <Canvas x:Name="SidebarSelectionOverlay" IsHitTestVisible="False" ClipToBounds="True" />
         <ui:ContentDialogHost x:Name="RootContentDialog" Grid.Row="0" />
     </Grid>
 </ui:FluentWindow>

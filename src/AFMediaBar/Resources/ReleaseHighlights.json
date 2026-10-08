@@ -1,0 +1,286 @@
+{
+  "schemaVersion": 1,
+  "releases": [
+    {
+      "version": "1.3.1",
+      "releaseDate": "2026-10-02",
+      "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.3.1",
+      "localizations": {
+        "zh-Hans": {
+          "title": "性能优化与稳定性修复",
+          "highlights": [
+            "频谱隐藏时停止采样，减少播放进度、文字样式和动画的重复处理。",
+            "歌词按需加载，关闭或持续无歌词时释放资源；关屏和锁屏时尝试挂起。",
+            "媒体栏跟随自动隐藏任务栏滑入、滑出，运动期间暂停交互。",
+            "修复 WebView2 数据目录、恢复默认封面开关及空间音效状态问题。",
+            "再次检查更新保留就绪安装包，安装前重新校验文件与路径。"
+          ]
+        },
+        "zh-Hant": {
+          "title": "效能最佳化與穩定性修正",
+          "highlights": [
+            "頻譜隱藏時停止取樣，減少播放進度、文字樣式和動畫的重複處理。",
+            "歌詞依需求載入，關閉或持續無歌詞時釋放資源；關閉螢幕和鎖定時嘗試暫停。",
+            "媒體列跟隨自動隱藏工作列滑入、滑出，移動期間暫停互動。",
+            "修正 WebView2 資料目錄、還原預設封面開關及空間音效狀態問題。",
+            "再次檢查更新保留就緒安裝套件，安裝前重新驗證檔案與路徑。"
+          ]
+        },
+        "en": {
+          "title": "Performance and stability",
+          "highlights": [
+            "Spectrum sampling stops when hidden; playback, text and animation updates do less repeated work.",
+            "Lyrics load on demand and release unused resources; screen-off and lock states suspend work where possible.",
+            "The media bar follows taskbar auto-hide motion and suspends interaction while moving.",
+            "Fixed WebView2 data paths, artwork reset and spatial-audio status.",
+            "Checking again retains ready installers; files and paths are revalidated before installation."
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.3.0",
+      "releaseDate": "2026-09-30",
+      "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.3.0",
+      "localizations": {
+        "zh-Hans": {
+          "title": "歌词与媒体栏体验更新",
+          "highlights": [
+            "歌词采用 WebView2 呈现，统一逐字高亮、译文和音译，支持行距、字距和区域长度调节。",
+            "无媒体音符与封面、歌词之间连贯展开、收起，减少尺寸调整时的抖动和裁切。",
+            "新增滚轮提示开关、交互按钮尺寸、独立组件设置页及静置层封面开关。",
+            "改进媒体恢复、歌词进度与封面匹配，修复低音量频谱和托盘旧状态提示。",
+            "右键菜单支持快速打开绑定应用，发现新版本时提供更新入口。"
+          ]
+        },
+        "zh-Hant": {
+          "title": "歌詞與媒體列體驗更新",
+          "highlights": [
+            "歌詞採用 WebView2 呈現，統一逐字醒目提示、譯文和音譯，支援行距、字距及區域長度調整。",
+            "無媒體音符與封面、歌詞之間連貫展開、收合，減少尺寸調整時的抖動和裁切。",
+            "新增滾輪提示開關、互動按鈕尺寸、獨立元件設定頁及靜置層封面開關。",
+            "改善媒體恢復、歌詞進度與封面比對，修正低音量頻譜及系統匣舊狀態提示。",
+            "右鍵選單支援快速開啟綁定應用程式，發現新版本時提供更新入口。"
+          ]
+        },
+        "en": {
+          "title": "Lyrics and media bar improvements",
+          "highlights": [
+            "WebView2 lyrics unify syllable highlighting, translation and transliteration, with spacing and width controls.",
+            "Smoother transitions between idle and playback reduce layout jitter and clipping.",
+            "Added wheel hints, button sizing, a component settings page and an independent artwork toggle.",
+            "Improved session recovery, lyric timing and artwork matching; fixed quiet-audio spectrum and stale tray hints.",
+            "Context menus can launch linked apps and show an entry when an update is available."
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.2.1",
+      "releaseDate": "2026-09-21",
+      "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.2.1",
+      "localizations": {
+        "zh-Hans": {
+          "title": "任务栏显隐与多显示器修复",
+          "highlights": [
+            "修复自动隐藏任务栏的卡顿、跳位，以及截图和录屏时的媒体栏错位。",
+            "支持在所有启用的任务栏同时显示，修复切换显示器后的性能监测。",
+            "新增逐字高亮开关，关闭后保留歌词时间轴和滚动轨迹。",
+            "修复内存整理竞争、设置说明条缺失崩溃和窗口稳定性问题。",
+            "调整滚轮命中范围、完整层信息、私人 FM 取词与静置层组件顺序。"
+          ]
+        },
+        "zh-Hant": {
+          "title": "工作列顯隱與多螢幕修正",
+          "highlights": [
+            "修正自動隱藏工作列的延遲、跳位，以及螢幕擷取和錄影時的媒體列錯位。",
+            "支援在所有啟用的工作列同時顯示，修正切換螢幕後的效能監測。",
+            "新增逐字醒目提示開關，關閉後保留歌詞時間軸和捲動軌跡。",
+            "修正記憶體整理競爭、設定說明列缺失當機及視窗穩定性問題。",
+            "調整滾輪作用範圍、完整層資訊、私人 FM 歌詞取得及靜置層元件順序。"
+          ]
+        },
+        "en": {
+          "title": "Taskbar and multiple-display fixes",
+          "highlights": [
+            "Fixed auto-hide stutter and jumps, including displacement during screen capture.",
+            "The bar can appear on all enabled taskbars; metrics recover after display changes.",
+            "Added a syllable-highlight toggle that keeps lyric timing and scrolling unchanged.",
+            "Fixed memory-pruning races, missing-callout crashes and window stability.",
+            "Refined wheel hit areas, full-panel information, private-FM lyrics and component order."
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.2.0",
+      "releaseDate": "2026-09-19",
+      "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.2.0",
+      "localizations": {
+        "zh-Hans": {
+          "title": "全新界面与任务栏歌词",
+          "highlights": [
+            "重做界面与交互，加入任务栏歌词和多来源匹配。",
+            "新增安装程序、程序内下载与静默安装，以及目标显示器选择。",
+            "支持主题、材质、强调色、曲目通知和媒体来源允许列表。",
+            "新增快速启动、托盘滚轮交互、音频面板及波形和像素频谱样式。",
+            "后台内存分档回收；旧版设置留档后需重新配置，竖向任务栏与悬浮模式暂不支持。"
+          ]
+        },
+        "zh-Hant": {
+          "title": "全新介面與工作列歌詞",
+          "highlights": [
+            "重新設計介面與互動，加入工作列歌詞及多來源比對。",
+            "新增安裝程式、程式內下載與無訊息安裝，以及目標螢幕選擇。",
+            "支援佈景主題、材質、強調色、曲目通知及媒體來源允許清單。",
+            "新增快速啟動、系統匣滾輪互動、音訊面板及波形和像素頻譜樣式。",
+            "背景記憶體分級回收；舊版設定保留後需重新設定，垂直工作列及浮動模式暫不支援。"
+          ]
+        },
+        "en": {
+          "title": "Rebuilt interface and taskbar lyrics",
+          "highlights": [
+            "Rebuilt the interface and interactions, with taskbar lyrics and multiple lyric sources.",
+            "Added an installer, in-app download and silent installation, plus target-display selection.",
+            "Added theme, material and accent settings, track notifications and media filtering.",
+            "Added quick launch, tray wheel controls, an audio panel and waveform and pixel spectra.",
+            "Staged background memory trimming. Older settings are archived and must be reconfigured; vertical and floating modes are unavailable."
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.1.1",
+      "releaseDate": "2026-08-17",
+      "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.1.1",
+      "localizations": {
+        "zh-Hans": {
+          "title": "窗口恢复与媒体稳定性",
+          "highlights": [
+            "修复悬浮窗口、托盘唤醒和桌面边缘尺寸恢复。",
+            "修复浏览器封面刷新、断线媒体切换及暂停后的自动切源。",
+            "完善三种界面语言的即时切换，改进设置、日志、字体与外观调节。",
+            "资源监控区域新增任务管理器快捷操作。"
+          ]
+        },
+        "zh-Hant": {
+          "title": "視窗恢復與媒體穩定性",
+          "highlights": [
+            "修正浮動視窗、系統匣喚醒及桌面邊緣尺寸恢復。",
+            "修正瀏覽器封面更新、斷線媒體切換及暫停後自動切換來源。",
+            "完善三種介面語言的即時切換，改善設定、記錄、字型及外觀調整。",
+            "資源監控區域新增工作管理員快捷操作。"
+          ]
+        },
+        "en": {
+          "title": "Window recovery and media stability",
+          "highlights": [
+            "Fixed floating-window recovery, tray wake-up and edge sizing.",
+            "Fixed browser artwork refresh, disconnected-session switching and source changes after pausing.",
+            "Improved live language switching, settings, logs, fonts and appearance controls.",
+            "Added a Task Manager shortcut in the resource-monitoring area."
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.1.0",
+      "releaseDate": "2026-08-14",
+      "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.1.0",
+      "localizations": {
+        "zh-Hans": {
+          "title": "兼容性与外观设置扩展",
+          "highlights": [
+            "加入 Windows 10 支持、系统主题跟随与独立主题设置。",
+            "该版本支持横向、竖向任务栏布局，以及浮动窗口、边缘收起和可见性选项。",
+            "重构设置窗口与任务栏窗口托管，修复右键菜单层级。",
+            "新增自动更新检查、备用清单源与跳过版本。"
+          ]
+        },
+        "zh-Hant": {
+          "title": "相容性與外觀設定擴充",
+          "highlights": [
+            "加入 Windows 10 支援、系統佈景主題跟隨及獨立主題設定。",
+            "該版本支援水平、垂直工作列配置，以及浮動視窗、邊緣收合和可見性選項。",
+            "重構設定視窗與工作列視窗管理，修正右鍵選單層級。",
+            "新增自動更新檢查、備用清單來源及略過版本。"
+          ]
+        },
+        "en": {
+          "title": "Compatibility and appearance settings",
+          "highlights": [
+            "Added Windows 10 support and automatic or independent themes.",
+            "This release supported horizontal and vertical layouts, floating windows and edge visibility options.",
+            "Reworked settings and taskbar window hosting; fixed context-menu layering.",
+            "Added automatic update checks, fallback manifest sources and version skipping."
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.0.1",
+      "releaseDate": "2026-08-10",
+      "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.0.1",
+      "localizations": {
+        "zh-Hans": {
+          "title": "自动隐藏跟随与单文件分发",
+          "highlights": [
+            "缩短 Windows 11 任务栏自动隐藏的跟随延迟，普通显隐过程保持窗口存活。",
+            "更换应用图标与 README 品牌图片。",
+            "自包含 win-x64 发布包改为单个可执行文件，无需另装 .NET 运行时。"
+          ]
+        },
+        "zh-Hant": {
+          "title": "自動隱藏跟隨與單一檔案發佈",
+          "highlights": [
+            "縮短 Windows 11 工作列自動隱藏的跟隨延遲，一般顯隱過程保持視窗運作。",
+            "更新應用程式圖示及 README 品牌圖片。",
+            "獨立 win-x64 發佈套件改為單一執行檔，無需另外安裝 .NET 執行階段。"
+          ]
+        },
+        "en": {
+          "title": "Auto-hide tracking and single-file builds",
+          "highlights": [
+            "Reduced Windows 11 auto-hide tracking delay and avoided recreating windows during ordinary transitions.",
+            "Introduced updated app icons and README branding.",
+            "Self-contained win-x64 builds use a single executable without a separate .NET runtime."
+          ]
+        }
+      }
+    },
+    {
+      "version": "1.0.0",
+      "releaseDate": "2026-08-09",
+      "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.0.0",
+      "localizations": {
+        "zh-Hans": {
+          "title": "首个正式版本",
+          "highlights": [
+            "在 Windows 11 任务栏显示封面、标题、作者和媒体播放控制。",
+            "支持多个 GSMTC 媒体来源，通过滚轮切换。",
+            "支持手动定位、位置锁定、自动隐藏与全屏隐藏。",
+            "切换默认输出设备，调节媒体应用音量，提供音频可视化与可选系统指标。"
+          ]
+        },
+        "zh-Hant": {
+          "title": "首個正式版本",
+          "highlights": [
+            "在 Windows 11 工作列顯示封面、標題、作者及媒體播放控制。",
+            "支援多個 GSMTC 媒體來源，可透過滾輪切換。",
+            "支援手動定位、位置鎖定、自動隱藏及全螢幕隱藏。",
+            "切換預設輸出裝置、調整媒體應用程式音量，提供音訊視覺化及選用系統指標。"
+          ]
+        },
+        "en": {
+          "title": "First stable release",
+          "highlights": [
+            "Shows artwork, title, artist and playback controls on the Windows 11 taskbar.",
+            "Supports multiple GSMTC media sources with wheel switching.",
+            "Provides manual positioning, position locking, auto-hide and full-screen hiding.",
+            "Switches output devices, controls media-app volume, and offers audio visualisation and optional system metrics."
+          ]
+        }
+      }
+    }
+  ]
+}
