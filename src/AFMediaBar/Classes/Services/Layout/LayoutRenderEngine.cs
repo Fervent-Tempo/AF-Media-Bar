@@ -176,8 +176,8 @@ public sealed class LayoutRenderEngine
         // 设置边框粗细
         // Set border thickness
         _mainBorder.BorderThickness = border.TopOnly
-            ? new Thickness(0, border.Thickness, 0, 0)  // 仅顶部 / Top only
-            : new Thickness(border.Thickness);           // 四边 / All sides
+            ? new Thickness(0, border.Thickness, 0, 0)  // 仅顶部
+            : new Thickness(border.Thickness);           // 四边
 
         // 设置边框颜色
         // Set border color

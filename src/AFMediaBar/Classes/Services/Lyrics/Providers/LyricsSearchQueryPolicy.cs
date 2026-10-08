@@ -17,9 +17,20 @@ internal static partial class LyricsSearchQueryPolicy
     public static IReadOnlyList<string> Build(LyricsRequest request)
     {
         var title = WithoutTranslation(request.Title);
-        var artist = WithoutTranslation(request.Artist);
-        return new[] { $"{title} {artist}".Trim(), $"{request.Title} {request.Artist}".Trim(), title }
+        var artist = string.Join(" ", LyricsArtistPolicy.Split(request).Select(WithoutTranslation));
+        return new[] { $"{title} {artist}".Trim(), $"{request.Title} {request.Artist}".Trim() }
+            .Concat(string.IsNullOrWhiteSpace(request.ArtistSeparators) ? [] :
+                LyricsArtistPolicy.Split(request).Select(value => $"{title} {WithoutTranslation(value)}".Trim()))
+            .Append(title)
             .Where(query => query.Length > 0).Distinct(StringComparer.Ordinal).ToArray();
+    }
+
+    internal static IReadOnlyList<string> BuildArtists(LyricsRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.ArtistSeparators))
+            return [WithoutTranslation(request.Artist)];
+        var artists = LyricsArtistPolicy.Split(request).Select(WithoutTranslation).ToArray();
+        return artists.Prepend(string.Join(" ", artists)).Distinct(StringComparer.Ordinal).ToArray();
     }
 
     [GeneratedRegex(@"\s*[（(][^（）()]*[\p{IsCJKUnifiedIdeographs}][^（）()]*[）)]\s*$")]

@@ -9,7 +9,7 @@ namespace AFMediaBar.Classes.Services.Lyrics;
 /// 网易云搜索备用源：用曲名与歌手搜索歌曲 id，再按 id 取歌词。
 /// The NetEase search fallback finds a song id by title and artist, then retrieves lyrics by id.
 ///
-/// 原始搜索候选由统一元数据策略评分，低于固定门槛不采用；不调用库内评分。
+/// 原始搜索候选由统一元数据策略评分；当前播放器为网易云时保留低分候选，否则应用固定门槛。
 /// </summary>
 public sealed class NetEaseSearchLyricsProvider : ILyricsProvider
 {
@@ -26,7 +26,8 @@ public sealed class NetEaseSearchLyricsProvider : ILyricsProvider
             return null;
         }
 
-        var match = await LyricsSearch.MatchAsync(request, Searchers.Netease, cancellationToken);
+        var match = await LyricsSearch.MatchAsync(request, Searchers.Netease, cancellationToken,
+            retainBelowMinimum: LyricsSourcePolicy.IsCurrentPlaybackSource(request.PlaybackSourceId, SourceName));
         if (match?.Candidate is not NeteaseSearchResult netease || string.IsNullOrWhiteSpace(netease.Id))
         {
             return null;

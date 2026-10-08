@@ -49,9 +49,6 @@ namespace AFMediaBar.ViewModels.Pages
         [ObservableProperty]
         private bool _hasUpdate;
 
-        [ObservableProperty]
-        private bool _hasHighlights;
-
         /// <summary>
         /// 是否在更新区之外单独显示一条状态说明（检查本身失败、没有清单可展示时）。
         /// Whether a standalone status callout is shown outside the update block, which happens when the check itself
@@ -92,12 +89,6 @@ namespace AFMediaBar.ViewModels.Pages
         private bool _hasSkippedVersion;
 
         /// <summary>
-        /// 更新亮点条目（清单的 <c>changelog</c>）。
-        /// Update highlight entries, taken from the manifest's <c>changelog</c>.
-        /// </summary>
-        public ObservableCollection<string> HighlightEntries { get; } = [];
-
-        /// <summary>
         /// 创建应用页视图模型并订阅更新状态。两者都是单例，因此订阅与进程同寿命。
         /// Creates the application view model and subscribes to update state. Both are singletons, so the subscription
         /// lives as long as the process.
@@ -115,6 +106,8 @@ namespace AFMediaBar.ViewModels.Pages
             _updateService = updateService;
             _settingsPersistence = settingsPersistence;
             _startupRegistration = startupRegistration;
+            _startupRegistration.StateChanged += OnStartupStateChanged;
+            OnStartupStateChanged(null, EventArgs.Empty);
             _localization = localization;
             CurrentVersion = updateService.CurrentVersion;
             _updateService.UpdateStateChanged += ApplyState;
@@ -144,6 +137,8 @@ namespace AFMediaBar.ViewModels.Pages
         private void OnLanguageChanged(object? sender, EventArgs e)
         {
             ApplyState(_updateService.CurrentState);
+            if (_startupRegistration.RegistrationStateUnknown && _startupRegistration.LastFailure is null)
+                StartupStatusText = Translations.Get("About.Status.StartupUnknown");
             OnPropertyChanged(string.Empty);
         }
 
@@ -177,7 +172,8 @@ namespace AFMediaBar.ViewModels.Pages
 
         /// <summary>立即重启并安装：退出后由安装程序静默安装并自动启动新版本。/ Restarts and installs now: the installer runs silently after exit and starts the new version.</summary>
         [RelayCommand]
-        private void InstallAndRestart() => _updateService.RequestInstallAndExit();
+        private async Task InstallAndRestart(CancellationToken cancellationToken) =>
+            await _updateService.RequestInstallAndExitAsync(cancellationToken);
 
         /// <summary>跳过清单中的当前版本。/ Skips the version offered by the manifest.</summary>
         [RelayCommand]
@@ -197,11 +193,7 @@ namespace AFMediaBar.ViewModels.Pages
             SettingsManager.Current.Update = SettingsManager.Current.Update with { SkippedVersion = null };
 
         /// <summary>
-        /// 随 Windows 登录自动启动。设置是意图、注册表 Run 项是它的执行结果：写入注册表成功之后才更新设置，
-        /// 失败时保留原值并给出原因，避免"开关看着打开了、实际没登记"。
-        /// Whether the application starts with the Windows session. The setting is the intent and the registry Run entry is its
-        /// effect, so the setting is only updated after the registry write succeeds; a failure keeps the previous value and states
-        /// the reason instead of leaving a switch that looks on while nothing is registered.
+        /// 随 Windows 登录自动启动。启动时服务先将实际 Run 登记同步到设置；后续修改写入注册表，失败时回退并通知本页。
         /// </summary>
         public bool LaunchAtStartup
         {
@@ -211,18 +203,19 @@ namespace AFMediaBar.ViewModels.Pages
                 if (SettingsManager.Current.LaunchAtStartup == value)
                     return;
 
-                var failure = _startupRegistration.Apply(value);
-                if (failure is not null)
-                {
-                    StartupStatusText = Translations.Format("About.Status.StartupFailed", failure);
-                    OnPropertyChanged();
-                    return;
-                }
-
-                SettingsManager.Current.LaunchAtStartup = value;
-                StartupStatusText = string.Empty;
+                _startupRegistration.SetLaunchAtStartup(value);
                 OnPropertyChanged();
             }
+        }
+
+        private void OnStartupStateChanged(object? sender, EventArgs e)
+        {
+            StartupStatusText = _startupRegistration.LastFailure is { } failure
+                ? Translations.Format("About.Status.StartupFailed", failure)
+                : _startupRegistration.RegistrationStateUnknown
+                    ? Translations.Get("About.Status.StartupUnknown")
+                    : string.Empty;
+            OnPropertyChanged(nameof(LaunchAtStartup));
         }
 
         /// <summary>当前是否已保存「我的默认设置」快照。/ Whether a user-defaults snapshot is currently saved.</summary>
@@ -340,13 +333,6 @@ namespace AFMediaBar.ViewModels.Pages
             HighlightTitle = state.Manifest?.Title ?? (state.AvailableVersion is { } version ? $"AF Media Bar {version}" : string.Empty);
             HighlightDate = state.Manifest?.ReleaseDate is { } date ? date.ToString("yyyy-MM-dd") : string.Empty;
 
-            HighlightEntries.Clear();
-            foreach (var entry in state.Manifest?.Changelog ?? [])
-            {
-                HighlightEntries.Add(entry);
-            }
-
-            HasHighlights = HighlightEntries.Count > 0;
         }
     }
 }

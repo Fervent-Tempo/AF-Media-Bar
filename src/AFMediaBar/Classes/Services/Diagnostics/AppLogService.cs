@@ -93,7 +93,7 @@ public sealed class AppLogService : IDisposable
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[Log] 无法准备日志目录 / cannot prepare the log directory: {ex.Message}");
+            Debug.WriteLine($"[Log] 无法准备日志目录: {ex.Message}");
         }
 
         _writer = Task.Factory.StartNew(
@@ -152,9 +152,9 @@ public sealed class AppLogService : IDisposable
 #if DEBUG
         isDebug = true;
 #endif
-        Info("App", $"===== 启动 / session start: AF Media Bar {version} ({(isDebug ? "Debug" : "Release")}) =====");
-        Info("App", $"系统 / OS: {Environment.OSVersion.VersionString} (.NET {Environment.Version}), 64-bit={Environment.Is64BitProcess}");
-        Info("App", $"日志文件 / log file: {FilePath}（只保留最近 {MaximumLines} 条 / newest {MaximumLines} lines only）");
+        Info("App", $"===== 启动: AF Media Bar {version} ({(isDebug ? "Debug" : "Release")}) =====");
+        Info("App", $"系统: {Environment.OSVersion.VersionString} (.NET {Environment.Version}), 64-bit={Environment.Is64BitProcess}");
+        Info("App", $"日志文件: {FilePath}（只保留最近 {MaximumLines} 条{MaximumLines} lines only）");
     }
 
     /// <summary>
@@ -164,7 +164,7 @@ public sealed class AppLogService : IDisposable
     /// <param name="source">来源标识，例如 `Dispatcher`。/ Source tag such as `Dispatcher`.</param>
     /// <param name="exception">异常。/ The exception.</param>
     public void CaptureUnhandled(string source, Exception exception) =>
-        Error("Crash", $"未处理异常 / unhandled exception from {source}", exception);
+        Error("Crash", $"未处理异常: {source}", exception);
 
     /// <summary>打开日志文件夹；失败时记一条警告而不是抛给界面。/ Opens the log folder, logging a warning instead of throwing at the interface.</summary>
     public void OpenFolder()
@@ -176,7 +176,7 @@ public sealed class AppLogService : IDisposable
         }
         catch (Exception ex)
         {
-            Warn("App", $"打开日志目录失败 / cannot open the log directory: {ex.Message}");
+            Warn("App", $"打开日志目录失败: {ex.Message}");
         }
     }
 
@@ -228,7 +228,7 @@ public sealed class AppLogService : IDisposable
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[Log] 写入线程未能收尾 / the writer thread did not finish: {ex.Message}");
+            Debug.WriteLine($"[Log] 写入线程未能收尾: {ex.Message}");
         }
 
         lock (_ringGate)
@@ -279,7 +279,13 @@ public sealed class AppLogService : IDisposable
                 return;
             }
 
-            _pending.TryAdd(new LogEntry(line, ForceRewrite: level == AppLogLevel.Error));
+            var entry = new LogEntry(line, ForceRewrite: level == AppLogLevel.Error);
+            if (!_pending.TryAdd(entry))
+            {
+                // 生产者由生命周期锁串行化；消费者只会释放空间，因此移除最旧项后可立即入队。
+                _pending.TryTake(out _);
+                _pending.TryAdd(entry);
+            }
         }
     }
 
@@ -305,19 +311,22 @@ public sealed class AppLogService : IDisposable
 
     private void WriteLoop()
     {
+        var sinceRewrite = Stopwatch.StartNew();
         while (true)
         {
             LogEntry entry;
             try
             {
-                if (_pending.TryTake(out entry!, RewriteInterval))
+                var remaining = RewriteInterval - sinceRewrite.Elapsed;
+                if (_pending.TryTake(out entry!, remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero))
                 {
                     lock (_ringGate)
                     {
                         AppendLine(entry.Line);
-                        if (entry.ForceRewrite)
+                        if (entry.ForceRewrite || sinceRewrite.Elapsed >= RewriteInterval)
                         {
                             RewriteFile();
+                            sinceRewrite.Restart();
                         }
                     }
 
@@ -340,6 +349,7 @@ public sealed class AppLogService : IDisposable
                 {
                     RewriteFile();
                 }
+                sinceRewrite.Restart();
             }
 
             if (_pending.IsAddingCompleted && _pending.Count == 0)
@@ -383,7 +393,7 @@ public sealed class AppLogService : IDisposable
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[Log] 写日志失败 / writing the log failed: {ex.Message}");
+            Debug.WriteLine($"[Log] 写日志失败: {ex.Message}");
         }
     }
 

@@ -141,7 +141,6 @@ namespace AFMediaBar.Components
                 _wheelTooltipTimer.Stop();
                 CloseWheelTooltips();
                 _marqueeTimer.Stop();
-                StopWebLyrics();
                 StopMarqueeAnimations();
                 StopRestTransitions();
             };
@@ -152,6 +151,16 @@ namespace AFMediaBar.Components
         }
 
         // === 内部状态缓存 Internal State Cache ===
+        // These immutable foregrounds are shared; hover surfaces own separate animatable brushes.
+        private static readonly SolidColorBrush DarkPlayerForeground = CreateFrozenBrush(Color.FromRgb(0x1C, 0x1C, 0x1C));
+
+        private static SolidColorBrush CreateFrozenBrush(Color color)
+        {
+            var brush = new SolidColorBrush(color);
+            brush.Freeze();
+            return brush;
+        }
+
         private string _actualTitle = string.Empty;   // 实际标题（不含歌词）Actual title (without lyrics)
         private string _actualArtist = string.Empty;  // 实际艺术家 Actual artist
 
@@ -1355,16 +1364,13 @@ namespace AFMediaBar.Components
         }
 
         /// <summary>
-        /// 按封面自身的宽高比调整封面框：高度取布局引擎给的尺寸，宽度按比例算，因此视频类宽封面不再被裁掉左右两边、
-        /// 竖版封面也不再被裁掉上下两边。比例超出允许范围时改用 <see cref="Stretch.Uniform"/>（留白也不裁切）。
-        /// 只作用于任务栏横向模式：竖向任务栏的封面尺寸仍由布局引擎唯一决定。
-        /// Adjusts the artwork box to the artwork's own aspect: the height comes from the layout engine and the width follows the ratio, so a
-        /// wide video cover is no longer cropped left and right and a portrait cover is no longer cropped top and bottom. Beyond the allowed
-        /// range it switches to <see cref="Stretch.Uniform"/>, which letterboxes instead of cropping. This only applies to the horizontal
-        /// taskbar: on a vertical taskbar the artwork size stays the layout engine's decision alone.
+        /// 横向任务栏按封面比例调整宽度；所有方向都保留完整封面，竖向框尺寸仍由布局引擎决定。
+        /// 极端比例和未知尺寸通过 Uniform 留白，避免方向切换后沿用裁切填充。
         /// </summary>
         private void ApplyTaskbarArtworkAspect()
         {
+            if (SongImage.Stretch != Stretch.Uniform)
+                SongImage.Stretch = Stretch.Uniform;
             if (_currentMode != WindowMode.Taskbar || _isVertical)
                 return;
 
@@ -1376,13 +1382,6 @@ namespace AFMediaBar.Components
             var box = ArtworkBoxPolicy.Resolve(height, artwork?.PixelWidth ?? 0, artwork?.PixelHeight ?? 0);
             if (Math.Abs(SongImageBorder.Width - box.Width) > 0.01)
                 SongImageBorder.Width = box.Width;
-
-            // 比例没被夹取时封面框与封面同比例，UniformToFill 正好铺满且不裁切；被夹取时只能留白。
-            // While the aspect is not clamped the box matches the artwork exactly, so UniformToFill fills it without cropping; once clamped,
-            // letterboxing is the only way to avoid cropping.
-            var stretch = box.Letterbox ? Stretch.Uniform : Stretch.UniformToFill;
-            if (SongImage.Stretch != stretch)
-                SongImage.Stretch = stretch;
         }
 
         /// <summary>当前是否有已连接且正在播放的媒体。/ Indicates whether connected media is currently playing.</summary>
@@ -1404,6 +1403,8 @@ namespace AFMediaBar.Components
         {
             _backgroundPruneLevel = level;
             ApplyTimerSuspensionState();
+            UpdateWebLyricsPowerState();
+            UpdateWebLyricsPresentation(allowTransition: false);
         }
 
         /// <summary>
@@ -1447,6 +1448,8 @@ namespace AFMediaBar.Components
             }
 
             ApplyTimerSuspensionState();
+            UpdateWebLyricsPowerState();
+            UpdateWebLyricsPresentation(allowTransition: false);
         }
 
         private void ApplyTimerSuspensionState()
@@ -1583,9 +1586,7 @@ namespace AFMediaBar.Components
             }
             else
             {
-                foreground = new SolidColorBrush(presentation.UsesLightText
-                    ? Colors.White
-                    : Color.FromRgb(0x1C, 0x1C, 0x1C));
+                foreground = presentation.UsesLightText ? Brushes.White : DarkPlayerForeground;
             }
 
             SongTitle.Foreground = foreground;
@@ -1604,7 +1605,7 @@ namespace AFMediaBar.Components
             SongInfoStackPanel.Background = Brushes.Transparent;
             SetWebLyricsAppearance(foreground, needsContrastShadow: false, usesLightText: presentation.UsesLightText);
 
-            MainBorder.Background = new SolidColorBrush(Colors.Transparent);
+            MainBorder.Background = Brushes.Transparent;
             TopBorder.BorderBrush = Brushes.Transparent;
             ApplyTaskbarBackgroundMaterial(
                 appearance.TaskbarBackgroundMaterial,
@@ -1663,10 +1664,10 @@ namespace AFMediaBar.Components
 
             _taskbarHoverPalette = palette;
             _appliedTaskbarHoverForeground = palette.Foreground;
-            Resources["TaskbarHoverForegroundBrush"] = new SolidColorBrush(_taskbarHoverPalette.Foreground);
-            Resources["TaskbarHoverButtonOverBrush"] = new SolidColorBrush(_taskbarHoverPalette.ButtonHover);
-            Resources["TaskbarHoverButtonPressedBrush"] = new SolidColorBrush(_taskbarHoverPalette.ButtonPressed);
-            Resources["TaskbarHoverHandleBrush"] = new SolidColorBrush(_taskbarHoverPalette.Handle);
+            Resources["TaskbarHoverForegroundBrush"] = CreateFrozenBrush(_taskbarHoverPalette.Foreground);
+            Resources["TaskbarHoverButtonOverBrush"] = CreateFrozenBrush(_taskbarHoverPalette.ButtonHover);
+            Resources["TaskbarHoverButtonPressedBrush"] = CreateFrozenBrush(_taskbarHoverPalette.ButtonPressed);
+            Resources["TaskbarHoverHandleBrush"] = CreateFrozenBrush(_taskbarHoverPalette.Handle);
             RefreshTaskbarHoverAppearance();
         }
 
@@ -1745,8 +1746,7 @@ namespace AFMediaBar.Components
                     // Keep the disconnected taskbar transparent; preserve the dynamic-island layout background.
                     if (_currentMode == WindowMode.Taskbar)
                     {
-                        MainBorder.Background = new SolidColorBrush(Colors.Transparent);
-                        MainBorder.Background.Opacity = 0;
+                        MainBorder.Background = Brushes.Transparent;
                         TopBorder.BorderBrush = Brushes.Transparent;
                     }
 
@@ -1782,7 +1782,6 @@ namespace AFMediaBar.Components
                     SongArtist.Text = _actualArtist;
                 }
 
-                SongTitle.Text = _actualTitle;
                 UpdateWebLyricsPresentation();
 
                 // 有媒体时封面与文字区一起构成"程序内的全局滚轮面"：曲名与歌手不再需要跟着提示走（它们已经在文字区里，
@@ -2040,6 +2039,11 @@ namespace AFMediaBar.Components
 
         private void InteractionSurface_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
         {
+            if (_isHostVisibilitySuspended || !IsHitTestVisible)
+            {
+                e.Handled = true;
+                return;
+            }
             // 捕获状态或延迟路由可能在指针已离开媒体栏后仍送来滚轮事件；以当前指针位置作最后一道门禁。
             // Capture or delayed routing can deliver a wheel event after the pointer has left the bar; check its current position.
             if (!new Rect(InteractionSurface.RenderSize).Contains(Mouse.GetPosition(InteractionSurface)))

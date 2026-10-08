@@ -5,6 +5,7 @@ on:
     branches:
       - main
   pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -24,6 +25,13 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
+
+      - name: Verify release metadata generation and promotion guards
+        shell: pwsh
+        run: ./tools/verify-release-metadata.ps1
+      - name: Verify contributor snapshot generation
+        shell: pwsh
+        run: ./tools/verify-contributors-snapshot.ps1
 
       - name: Restore
         run: dotnet restore .\src\AFMediaBar.slnx -r win-x64

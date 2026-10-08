@@ -182,7 +182,8 @@ public sealed class TaskbarOccupiedAreaProbe : ITaskbarOccupiedAreaProbe, IDispo
             return [];
 
         var occupied = new List<TaskbarPrimaryRange>();
-        TryCollectAutomationRanges(taskbarHandle, taskbarRect, orientation, primaryLength, occupied);
+        if (!TryCollectAutomationRanges(taskbarHandle, taskbarRect, orientation, primaryLength, occupied))
+            return null;
         var hasAutomationRanges = occupied.Count > 0;
 
         // TrayNotifyWnd and taskband remain useful on systems where the XAML taskbar tree is not exposed to UIA.
@@ -312,7 +313,7 @@ public sealed class TaskbarOccupiedAreaProbe : ITaskbarOccupiedAreaProbe, IDispo
 
             LastOverlaySignatures[taskbarHandle] = description;
         }
-        AppLogService.Current?.Info("Taskbar", $"任务栏上的外部窗口 / foreign windows over the taskbar: {description}");
+        AppLogService.Current?.Info("Taskbar", $"任务栏上的外部窗口: {description}");
         return true;
     }
 
@@ -360,7 +361,7 @@ public sealed class TaskbarOccupiedAreaProbe : ITaskbarOccupiedAreaProbe, IDispo
             {
                 var root = GetAncestor(taskbarHandle, GA_ROOT);
                 AppLogService.Current?.Warn("Taskbar",
-                    $"任务栏不在 Z 序枚举中 / taskbar missing from Z-order: hwnd=0x{taskbarHandle.ToInt64():X} root=0x{root.ToInt64():X} {DescribeWindow(taskbarHandle)}");
+                    $"任务栏不在 Z 序枚举中: hwnd=0x{taskbarHandle.ToInt64():X} root=0x{root.ToInt64():X} {DescribeWindow(taskbarHandle)}");
             }
         }
         return reachedTaskbar;
@@ -451,7 +452,7 @@ public sealed class TaskbarOccupiedAreaProbe : ITaskbarOccupiedAreaProbe, IDispo
         return false;
     }
 
-    private static void TryCollectAutomationRanges(
+    private static bool TryCollectAutomationRanges(
         IntPtr taskbarHandle,
         RECT taskbarRect,
         LayoutOrientation orientation,
@@ -464,9 +465,8 @@ public sealed class TaskbarOccupiedAreaProbe : ITaskbarOccupiedAreaProbe, IDispo
             var interactiveControlCondition = new OrCondition(
                 new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Button),
                 new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.SplitButton),
-                // https://github.com/Fervent-Tempo/AF-Media-Bar/issues/45
-                // 任务栏右键菜单会被当成MenuItem检测到并避让
-                // new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.MenuItem),
+                // 菜单项仅用于识别暂时替代任务栏的 UIA 树，不计入占用区。
+                new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.MenuItem),
                 new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem));
             var cacheRequest = new CacheRequest
             {
@@ -492,6 +492,11 @@ public sealed class TaskbarOccupiedAreaProbe : ITaskbarOccupiedAreaProbe, IDispo
                     if (element.Cached.IsOffscreen)
                         continue;
 
+                    // 新版任务栏菜单打开时 FromHandle 可能只返回菜单子树；此时回退会丢掉小组件占用区。
+                    // 丢弃整次快照，让宿主保留已有安全位置，关闭菜单后再恢复正常探测。
+                    if (element.Cached.ControlType == ControlType.MenuItem)
+                        return false;
+
                     AddAutomationRange(
                         element.Cached.BoundingRectangle,
                         taskbarRect,
@@ -516,6 +521,7 @@ public sealed class TaskbarOccupiedAreaProbe : ITaskbarOccupiedAreaProbe, IDispo
         catch (InvalidOperationException)
         {
         }
+        return true;
     }
 
     private static void AddAutomationRange(

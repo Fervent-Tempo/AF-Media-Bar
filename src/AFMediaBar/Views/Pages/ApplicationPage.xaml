@@ -32,10 +32,8 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <components:SettingsGroupStrip
+        <components:SettingsGroupStrip Margin="{StaticResource AfSettingsHeaderMargin}" MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
             Grid.Row="0"
-            Margin="{StaticResource AfSettingsHeaderMargin}"
-            MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
             PageIcon="{ui:SymbolIcon Settings24}"
             Subtitle="{DynamicResource Loc.Application.Header.Subtitle}"
             Target="{Binding ElementName=PageScroll}"
@@ -52,10 +50,31 @@
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
                 Loaded="OnPageLoaded">
 
-                <components:SettingsGroup
+
+                <components:SettingsGroup GroupId="Common.Group.Application"
                     Header="{DynamicResource Loc.Common.Group.Application}"
                     Icon="{ui:SymbolIcon Info24}">
                     <StackPanel>
+<components:SettingsRow
+                            Description="{DynamicResource Loc.About.Language.Description}"
+                            Icon="{ui:SymbolIcon Globe24}"
+                            Title="{DynamicResource Loc.About.Language.Title}">
+                            <ComboBox
+                                MinWidth="150"
+                                SelectedValue="{Binding ViewModel.InterfaceLanguage, Mode=TwoWay}"
+                                SelectedValuePath="Tag">
+                                <ComboBoxItem Content="{DynamicResource Loc.About.Language.FollowSystem}" Tag="{x:Static localization:InterfaceLanguage.System}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.About.Language.SimplifiedChinese}" Tag="{x:Static localization:InterfaceLanguage.SimplifiedChinese}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.About.Language.TraditionalChinese}" Tag="{x:Static localization:InterfaceLanguage.TraditionalChinese}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.About.Language.English}" Tag="{x:Static localization:InterfaceLanguage.English}" />
+                            </ComboBox>
+                        </components:SettingsRow>
+<components:SettingsRow
+                            Description="{DynamicResource Loc.About.Row.Startup.Description}"
+                            Icon="{ui:SymbolIcon ShareScreenStart24}"
+                            Title="{DynamicResource Loc.About.Row.Startup.Title}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.LaunchAtStartup, Mode=TwoWay}" />
+                        </components:SettingsRow>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.About.Row.Version.Description}"
                             Icon="{ui:SymbolIcon Info24}"
@@ -73,6 +92,11 @@
                                     IsEnabled="{Binding ViewModel.CanCheck}"
                                     Style="{StaticResource AfSettingsButtonStyle}" />
                             </StackPanel>
+                        </components:SettingsRow>
+
+                        <components:SettingsRow Title="{DynamicResource Loc.Common.Page.ReleaseHighlights}"
+                            Description="{DynamicResource Loc.ReleaseHighlights.Application.Description}" Icon="{ui:SymbolIcon Sparkle24}">
+                            <ui:Button Content="{DynamicResource Loc.ReleaseHighlights.Application.Open}" Click="OnOpenHighlights" Style="{StaticResource AfSettingsButtonStyle}" />
                         </components:SettingsRow>
 
                         <components:SettingsRow
@@ -130,20 +154,6 @@
                                         Style="{StaticResource AfSettingsButtonStyle}" />
                                 </StackPanel>
                             </components:SettingsRow>
-
-                            <ItemsControl
-                                Margin="0,0,0,4"
-                                ItemsSource="{Binding ViewModel.HighlightEntries}"
-                                Visibility="{Binding ViewModel.HasHighlights, Converter={StaticResource AfBooleanToVisibilityConverter}}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <components:SettingsRow
-                                            Icon="{ui:SymbolIcon Checkmark24}"
-                                            IsNested="True"
-                                            Title="{Binding}" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
 
                             <components:SettingsCallout
                                 Margin="0,0,0,8"
@@ -230,59 +240,21 @@
                             display language and the other three apply directly. The option names use the same resource
                             set, so the row's label and its options turn English together.
                         -->
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.About.Language.Description}"
-                            Icon="{ui:SymbolIcon Globe24}"
-                            Title="{DynamicResource Loc.About.Language.Title}">
-                            <ComboBox
-                                MinWidth="150"
-                                SelectedValue="{Binding ViewModel.InterfaceLanguage, Mode=TwoWay}"
-                                SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.About.Language.FollowSystem}" Tag="{x:Static localization:InterfaceLanguage.System}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.About.Language.SimplifiedChinese}" Tag="{x:Static localization:InterfaceLanguage.SimplifiedChinese}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.About.Language.TraditionalChinese}" Tag="{x:Static localization:InterfaceLanguage.TraditionalChinese}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.About.Language.English}" Tag="{x:Static localization:InterfaceLanguage.English}" />
-                            </ComboBox>
-                        </components:SettingsRow>
 
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.About.Row.Startup.Description}"
-                            Icon="{ui:SymbolIcon ShareScreenStart24}"
-                            Title="{DynamicResource Loc.About.Row.Startup.Title}">
-                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.LaunchAtStartup, Mode=TwoWay}" />
-                        </components:SettingsRow>
 
-                        <components:SettingsRow
-                            Description="{Binding ViewModel.UserDefaultsStatusText}"
-                            Icon="{ui:SymbolIcon Bookmark24}"
-                            Title="{DynamicResource Loc.About.Row.SaveDefaults.Title}">
-                            <ui:Button
-                                Command="{Binding ViewModel.SaveUserDefaultsCommand}"
-                                Content="{DynamicResource Loc.Common.Save}"
-                                Icon="{ui:SymbolIcon Save24}"
-                                Style="{StaticResource AfSettingsButtonStyle}" />
-                        </components:SettingsRow>
 
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.About.Row.ClearDefaults.Description}"
-                            Icon="{ui:SymbolIcon Delete24}"
-                            IsEnabled="{Binding ViewModel.HasUserDefaults}"
-                            Title="{DynamicResource Loc.About.Row.ClearDefaults.Title}">
-                            <ui:Button
-                                Command="{Binding ViewModel.ClearUserDefaultsCommand}"
-                                Content="{DynamicResource Loc.Common.Clear}"
-                                Icon="{ui:SymbolIcon Delete24}"
-                                Style="{StaticResource AfSettingsButtonStyle}" />
-                        </components:SettingsRow>
 
-                        <TextBlock
-                            Margin="16,4,0,0"
+
+
+
+
+                        <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="16,4,0,0"><TextBlock
                             Style="{StaticResource AfSettingsHintTextStyle}"
-                            Text="{Binding ViewModel.StartupStatusText}" />
+                            Text="{Binding ViewModel.StartupStatusText}" /></Border>
                     </StackPanel>
                 </components:SettingsGroup>
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.SettingsFile}" Icon="{ui:SymbolIcon FolderOpen24}">
+                <components:SettingsGroup GroupId="Common.Group.SettingsFile" Header="{DynamicResource Loc.Common.Group.SettingsFile}" Icon="{ui:SymbolIcon FolderOpen24}">
                     <StackPanel>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.About.Row.OpenFolder.Description}"
@@ -305,10 +277,39 @@
                                 Icon="{ui:SymbolIcon ArrowReset24}"
                                 Style="{StaticResource AfSettingsButtonStyle}" />
                         </components:SettingsRow>
+                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="False" Icon="{ui:SymbolIcon Save24}">
+                            <ui:CardExpander.Header><StackPanel>
+                                <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Settings.Advanced.Defaults.Title}" />
+                                <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Settings.Advanced.Defaults.Description}" />
+                            </StackPanel></ui:CardExpander.Header>
+                            <StackPanel>
+<components:SettingsRow
+                            Description="{Binding ViewModel.UserDefaultsStatusText}"
+                            Icon="{ui:SymbolIcon Bookmark24}"
+                            Title="{DynamicResource Loc.About.Row.SaveDefaults.Title}">
+                            <ui:Button
+                                Command="{Binding ViewModel.SaveUserDefaultsCommand}"
+                                Content="{DynamicResource Loc.Common.Save}"
+                                Icon="{ui:SymbolIcon Save24}"
+                                Style="{StaticResource AfSettingsButtonStyle}" />
+                        </components:SettingsRow>
+<components:SettingsRow
+                            Description="{DynamicResource Loc.About.Row.ClearDefaults.Description}"
+                            Icon="{ui:SymbolIcon Delete24}"
+                            IsEnabled="{Binding ViewModel.HasUserDefaults}"
+                            Title="{DynamicResource Loc.About.Row.ClearDefaults.Title}">
+                            <ui:Button
+                                Command="{Binding ViewModel.ClearUserDefaultsCommand}"
+                                Content="{DynamicResource Loc.Common.Clear}"
+                                Icon="{ui:SymbolIcon Delete24}"
+                                Style="{StaticResource AfSettingsButtonStyle}" />
+                        </components:SettingsRow>
+                            </StackPanel>
+                        </ui:CardExpander>
                     </StackPanel>
                 </components:SettingsGroup>
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.Diagnostics}" Icon="{ui:SymbolIcon Bug24}">
+                <components:SettingsGroup GroupId="Common.Group.Diagnostics" Header="{DynamicResource Loc.Common.Group.Diagnostics}" Icon="{ui:SymbolIcon Bug24}">
                     <!--
                         两个入口：日志是一个文件（logs\app.log，只留最近 1000 条），出问题时把它发出来即可；
                         「压缩内存占用」把工作集交还系统，任务管理器里的读数会立刻下降（提交量不变，说明文案里写清楚了）。
@@ -316,7 +317,13 @@
                         "compress memory usage" returns the working set to the system, which makes the figure in Task Manager drop at once (the commit
                         size does not change, and the description says so).
                     -->
-                    <StackPanel>
+                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="False" Icon="{ui:SymbolIcon Bug24}">
+                            <ui:CardExpander.Header><StackPanel>
+                                <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Settings.Advanced.Diagnostics.Title}" />
+                                <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Settings.Advanced.Diagnostics.Description}" />
+                            </StackPanel></ui:CardExpander.Header>
+                            <StackPanel>
+
                         <components:SettingsRow
                             Description="{DynamicResource Loc.About.Row.LogFolder.Description}"
                             Icon="{ui:SymbolIcon FolderOpen24}"
@@ -337,7 +344,9 @@
                                 Icon="{ui:SymbolIcon ArrowMinimize24}"
                                 Style="{StaticResource AfSettingsButtonStyle}" />
                         </components:SettingsRow>
-                    </StackPanel>
+
+                            </StackPanel>
+                        </ui:CardExpander>
                 </components:SettingsGroup>
             </StackPanel>
         </ScrollViewer>

@@ -362,7 +362,8 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
         var version = _version;
         try
         {
-            var request = new LyricsRequest(info.Title, info.Artists, info.Album, info.Duration, info.Identity);
+            var request = new LyricsRequest(info.Title, info.Artists, info.Album, info.Duration, info.Identity,
+                PlaybackSourceId: MemoryPlayerSourceId);
             var result = await _lyricsService.GetLyricsAsync(request, token);
 
             if (token.IsCancellationRequested || _isDisposed || generation != _lyricsCacheGeneration)

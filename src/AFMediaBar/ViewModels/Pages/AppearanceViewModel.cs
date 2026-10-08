@@ -1,4 +1,5 @@
 using AFMediaBar.Classes.Settings;
+using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Localization;
@@ -8,13 +9,14 @@ using AFMediaBar.Resources;
 namespace AFMediaBar.ViewModels.Pages;
 
 /// <summary>
-/// 外观页 ViewModel：管理字体、主题、窗口材质和媒体栏的视觉参数。
-/// Appearance-page ViewModel: manages fonts, theme, window material, and visual taskbar settings.
+/// 外观页 ViewModel：管理应用字体、主题与窗口材质；任务栏外观由独立视图模型持有。
+/// Application appearance view model, separate from taskbar layout.
 /// </summary>
-public partial class AppearanceViewModel : ObservableObject
+public partial class AppearanceViewModel : ObservableObject, IDisposable
 {
     private readonly LocalizationService _localization;
-    private readonly TaskbarLengthConstraintsService _taskbarLengthConstraints;
+    private readonly ISettingsConfiguration _configuration;
+    private bool _disposed;
     private LatinFontPreset _latinFont;
     private CjkFontPreset _cjkFont;
     private string _latinFontFamily;
@@ -22,56 +24,46 @@ public partial class AppearanceViewModel : ObservableObject
     private IReadOnlyList<FontFamilyChoice> _latinFontChoices;
     private IReadOnlyList<FontFamilyChoice> _cjkFontChoices;
     private int _fontWeight;
-    private PlayerForegroundMode _playerForegroundMode;
     private ApplicationThemeMode _applicationThemeMode;
     private ApplicationBackdropMode _backdropMode;
     private AccentColorMode _accentColorMode;
     private string _accentColorHex;
     private int _backdropTintOpacityPercent;
-    private TaskbarBackgroundMaterial _taskbarBackgroundMaterial;
-    private TaskbarFrostedStyle _taskbarFrostedStyle;
-    private int _taskbarBackgroundOpacityPercent;
     private bool _isRefreshing;
+    private int _fontRefreshGeneration;
 
     /// <summary>
     /// 创建外观页视图模型，并订阅设置变更与界面语言变化。
     ///
     /// 下拉框的选项名由 XAML 的动态资源提供，页面自己就会换字；本视图模型产出的动效读数是代码拼出来的文案，因此必须
-    /// 订阅语言变化并让 WPF 重读全部绑定。视图模型是单例，两个订阅都与进程同寿命，不需要退订。
+    /// 订阅语言变化并让 WPF 重读全部绑定。页面作用域释放时取消字体查询并退订。
     /// Creates the appearance view model and subscribes to settings changes and interface-language changes.
     ///
     /// The drop-down option names come from XAML dynamic resources and follow a language change on their own, while the motion
-    /// reading this view model produces is text built in code, so it has to subscribe and make WPF re-read every binding. The
-    /// view model is a singleton, so both subscriptions live as long as the process and no unsubscription is needed.
+    /// reading this view model produces is text built in code, so it has to subscribe and make WPF re-read every binding. The page scope cancels font work and releases both subscriptions.
     /// </summary>
     /// <param name="localization">界面语言服务：本页在它变化后刷新自己产出的文案。/ The interface-language service, whose change this page follows to refresh its own text.</param>
-    /// <param name="taskbarLengthConstraints">当前任务栏安全宽度范围。/ Current safe width range of the taskbar.</param>
-    public AppearanceViewModel(LocalizationService localization, TaskbarLengthConstraintsService taskbarLengthConstraints)
+    /// <param name="configuration">Application appearance access for this page scope.</param>
+    public AppearanceViewModel(LocalizationService localization, ISettingsConfiguration configuration)
     {
         _localization = localization;
-        _taskbarLengthConstraints = taskbarLengthConstraints;
+        _configuration = configuration;
 
-        var appearance = SettingsManager.Current.Appearance.Normalize();
-        _latinFontChoices = InstalledFontCatalog.GetChoices("Appearance.LatinFont.FollowSystem", cjk: false);
-        _cjkFontChoices = InstalledFontCatalog.GetChoices("Appearance.CjkFont.FollowSystem", cjk: true);
+        var appearance = _configuration.Current.Appearance.Normalize();
+        _latinFontChoices = InstalledFontCatalog.GetInitialChoices("Appearance.LatinFont.FollowSystem", cjk: false, appearance.SelectedLatinFontFamily);
+        _cjkFontChoices = InstalledFontCatalog.GetInitialChoices("Appearance.CjkFont.FollowSystem", cjk: true, appearance.SelectedCjkFontFamily);
         _latinFont = appearance.LatinFont;
         _cjkFont = appearance.CjkFont;
         _latinFontFamily = InstalledFontCatalog.MatchSelection(appearance.SelectedLatinFontFamily, _latinFontChoices);
         _cjkFontFamily = InstalledFontCatalog.MatchSelection(appearance.SelectedCjkFontFamily, _cjkFontChoices);
         _fontWeight = appearance.FontWeight;
-        _playerForegroundMode = appearance.PlayerForegroundMode;
         _applicationThemeMode = appearance.ApplicationThemeMode;
         _backdropMode = appearance.BackdropMode;
         _accentColorMode = appearance.AccentColorMode;
         _accentColorHex = appearance.AccentColor;
         _backdropTintOpacityPercent = appearance.ResolveBackdropTintOpacityPercent();
-        _taskbarBackgroundMaterial = appearance.TaskbarBackgroundMaterial;
-        _taskbarFrostedStyle = appearance.TaskbarFrostedStyle;
-        _taskbarBackgroundOpacityPercent = appearance.ResolveTaskbarBackgroundOpacityPercent();
         SettingsManager.SettingsChanged += OnSettingsChanged;
         _localization.LanguageChanged += OnLanguageChanged;
-        _taskbarLengthConstraints.Changed += OnTaskbarLengthConstraintsChanged;
-        RefreshRestOrderEntries();
     }
 
     public LatinFontPreset LatinFont
@@ -119,15 +111,21 @@ public partial class AppearanceViewModel : ObservableObject
         }
     }
 
-    public void RefreshInstalledFonts()
+    /// <summary>Scans installed fonts in the background and publishes the completed selectors on the UI thread.</summary>
+    public async Task RefreshInstalledFontsAsync(CancellationToken cancellationToken)
     {
+        var generation = ++_fontRefreshGeneration;
+        var (installedLatin, installedCjk) = await InstalledFontCatalog.RefreshChoicesAsync(cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (_disposed || !_configuration.IsActive || generation != _fontRefreshGeneration) return;
+
         var latin = LatinFontFamily;
         var cjk = CjkFontFamily;
         _isRefreshing = true;
         try
         {
-            _latinFontChoices = InstalledFontCatalog.GetChoices("Appearance.LatinFont.FollowSystem", cjk: false);
-            _cjkFontChoices = InstalledFontCatalog.GetChoices("Appearance.CjkFont.FollowSystem", cjk: true);
+            _latinFontChoices = InstalledFontCatalog.RelocalizeChoices(installedLatin, "Appearance.LatinFont.FollowSystem", cjk: false, previousChoices: _latinFontChoices);
+            _cjkFontChoices = InstalledFontCatalog.RelocalizeChoices(installedCjk, "Appearance.CjkFont.FollowSystem", cjk: true, previousChoices: _cjkFontChoices);
             OnPropertyChanged(nameof(LatinFontChoices));
             OnPropertyChanged(nameof(CjkFontChoices));
             LatinFontFamily = InstalledFontCatalog.MatchSelection(latin, _latinFontChoices);
@@ -145,24 +143,6 @@ public partial class AppearanceViewModel : ObservableObject
         {
             value = Math.Clamp(value, AppearanceSettings.MinimumFontWeight, AppearanceSettings.MaximumFontWeight);
             if (SetProperty(ref _fontWeight, value))
-            {
-                if (!_isRefreshing) Publish();
-            }
-        }
-    }
-
-    /// <summary>
-    /// 播放器文字颜色模式。写入即发布设置，因此下拉框可以直接双向绑定；
-    /// 原有的 <c>SetPlayerForegroundModeCommand</c> 仍走同一条写入路径，两条入口行为一致。
-    /// Player text colour mode. Writing publishes the setting, so a select can bind two-way; the existing
-    /// <c>SetPlayerForegroundModeCommand</c> still runs through the same write path, so both entries behave alike.
-    /// </summary>
-    public PlayerForegroundMode PlayerForegroundMode
-    {
-        get => _playerForegroundMode;
-        set
-        {
-            if (SetProperty(ref _playerForegroundMode, value))
             {
                 if (!_isRefreshing) Publish();
             }
@@ -255,69 +235,12 @@ public partial class AppearanceViewModel : ObservableObject
         }
     }
 
-    /// <summary>任务栏媒体栏是否使用磨砂背景。 / Whether the taskbar media bar uses a frosted background.</summary>
-    public bool UseFrostedTaskbarBackground
-    {
-        get => _taskbarBackgroundMaterial == TaskbarBackgroundMaterial.Frosted;
-        set
-        {
-            var material = value ? TaskbarBackgroundMaterial.Frosted : TaskbarBackgroundMaterial.Transparent;
-            if (SetProperty(ref _taskbarBackgroundMaterial, material))
-            {
-                if (!_isRefreshing) Publish();
-            }
-        }
-    }
-
-    /// <summary>任务栏磨砂背景的视觉风格。 / Visual style of the frosted taskbar background.</summary>
-    public TaskbarFrostedStyle TaskbarFrostedStyle
-    {
-        get => _taskbarFrostedStyle;
-        set
-        {
-            if (SetProperty(ref _taskbarFrostedStyle, value))
-            {
-                if (!_isRefreshing) Publish();
-            }
-        }
-    }
-
-    /// <summary>任务栏磨砂背景浓度。 / Opacity of the frosted taskbar background.</summary>
-    public int TaskbarBackgroundOpacityPercent
-    {
-        get => _taskbarBackgroundOpacityPercent;
-        set
-        {
-            value = Math.Clamp(
-                value,
-                AppearanceSettings.MinimumTaskbarBackgroundOpacityPercent,
-                AppearanceSettings.MaximumTaskbarBackgroundOpacityPercent);
-            if (SetProperty(ref _taskbarBackgroundOpacityPercent, value))
-            {
-                if (!_isRefreshing) Publish();
-            }
-        }
-    }
-
     /// <summary>
     /// 静置层媒体文字（标题、歌手、歌词）的字号缩放百分比。该值存在任务栏体验设置里，但按界面归属由本页承载：
     /// 「恢复本页默认设置」因此会连同它一起复位。
     /// Font-size scale percentage for the rest-layer media text (title, artist, lyrics). The value lives in the taskbar
     /// experience settings but this page owns it in the interface, so "restore this page's defaults" resets it as well.
     /// </summary>
-    public int MediaFontSizePercent
-    {
-        get => SettingsManager.Current.TaskbarExperience.Normalize().MediaFontSizePercent;
-        set
-        {
-            if (_isRefreshing || value == MediaFontSizePercent)
-                return;
-
-            SettingsManager.SetTaskbarExperienceSettings(
-                SettingsManager.Current.TaskbarExperience with { MediaFontSizePercent = value });
-        }
-    }
-
     /// <summary>当前桌面环境的动效级别。/ Current motion level for the desktop environment.</summary>
     public string MotionModeText => MotionPolicy.ResolveCurrent().Mode switch
     {
@@ -337,13 +260,28 @@ public partial class AppearanceViewModel : ObservableObject
     /// <summary>界面语言变化后让 WPF 重读全部绑定，本页由代码产出的读数因此一起换语言。/ Makes WPF re-read every binding after a language change, so the readings this page builds in code change language with it.</summary>
     private void OnLanguageChanged(object? sender, EventArgs e)
     {
-        RefreshInstalledFonts();
-        RefreshRestOrderEntries();
+        RelocalizeInstalledFonts();
         OnPropertyChanged(string.Empty);
     }
 
-    [RelayCommand]
-    private void SetPlayerForegroundMode(PlayerForegroundMode mode) => PlayerForegroundMode = mode;
+    private void RelocalizeInstalledFonts()
+    {
+        var latin = LatinFontFamily;
+        var cjk = CjkFontFamily;
+        _isRefreshing = true;
+        try
+        {
+            _latinFontChoices = InstalledFontCatalog.RelocalizeChoices(_latinFontChoices, "Appearance.LatinFont.FollowSystem", cjk: false);
+            _cjkFontChoices = InstalledFontCatalog.RelocalizeChoices(_cjkFontChoices, "Appearance.CjkFont.FollowSystem", cjk: true);
+            OnPropertyChanged(nameof(LatinFontChoices));
+            OnPropertyChanged(nameof(CjkFontChoices));
+            LatinFontFamily = InstalledFontCatalog.MatchSelection(latin, _latinFontChoices);
+            CjkFontFamily = InstalledFontCatalog.MatchSelection(cjk, _cjkFontChoices);
+            OnPropertyChanged(nameof(LatinFontFamily));
+            OnPropertyChanged(nameof(CjkFontFamily));
+        }
+        finally { _isRefreshing = false; }
+    }
 
     [RelayCommand]
     private void SetApplicationThemeMode(ApplicationThemeMode mode) => ApplicationThemeMode = mode;
@@ -366,11 +304,11 @@ public partial class AppearanceViewModel : ObservableObject
         AccentColorHex = ColorHex.Format(color);
     }
 
-    private void Publish() => SettingsManager.SetAppearanceSettings(new AppearanceSettings(
+    private void Publish() => _configuration.SetAppearance(new AppearanceSettings(
         LatinFont,
         CjkFont,
         FontWeight,
-        PlayerForegroundMode,
+        _configuration.Current.Appearance.PlayerForegroundMode,
         false,
         ApplicationThemeMode,
         BackdropMode,
@@ -379,27 +317,19 @@ public partial class AppearanceViewModel : ObservableObject
         BackdropTintOpacityPercent,
         LatinFontFamily,
         CjkFontFamily,
-        _taskbarBackgroundMaterial,
-        TaskbarBackgroundOpacityPercent,
-        TaskbarFrostedStyle));
+        _configuration.Current.Appearance.TaskbarBackgroundMaterial,
+        _configuration.Current.Appearance.TaskbarBackgroundOpacityPercent,
+        _configuration.Current.Appearance.TaskbarFrostedStyle));
 
-    public void ResetAppearance() => SettingsManager.ResetAppearance();
+    public void ResetAppearance() { if (!_disposed && _configuration.IsActive) SettingsManager.ResetApplicationAppearance(); }
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
     {
-        // 媒体栏外观仍存在任务栏体验设置里，外部写入或页面重置后要重读这些绑定。
-        // Taskbar appearance still lives in the experience settings, so external writes and page resets refresh these bindings.
-        if (e.ResetScope is null && e.PropertyName == nameof(AppSettings.TaskbarExperience))
-        {
-            OnPropertyChanged(nameof(MediaFontSizePercent));
-            RaiseTaskbarAppearance();
-            return;
-        }
+        if (_disposed || !_configuration.IsActive) return;
+        if (e.ResetScope is not (SettingsResetScope.Appearance or SettingsResetScope.DisplayModes or SettingsResetScope.All) &&
+            e.PropertyName != nameof(AppSettings.Appearance)) return;
 
-        if (e.ResetScope is not (SettingsResetScope.Appearance or SettingsResetScope.DisplayModes or SettingsResetScope.All))
-            return;
-
-        var appearance = SettingsManager.Current.Appearance;
+        var appearance = _configuration.Current.Appearance;
         _isRefreshing = true;
         try
         {
@@ -408,21 +338,25 @@ public partial class AppearanceViewModel : ObservableObject
             LatinFontFamily = InstalledFontCatalog.MatchSelection(appearance.SelectedLatinFontFamily, _latinFontChoices);
             CjkFontFamily = InstalledFontCatalog.MatchSelection(appearance.SelectedCjkFontFamily, _cjkFontChoices);
             FontWeight = appearance.FontWeight;
-            PlayerForegroundMode = appearance.PlayerForegroundMode;
             ApplicationThemeMode = appearance.ApplicationThemeMode;
             BackdropMode = appearance.BackdropMode;
             AccentColorMode = appearance.AccentColorMode;
             AccentColorHex = appearance.AccentColor;
             BackdropTintOpacityPercent = appearance.ResolveBackdropTintOpacityPercent();
-            _taskbarBackgroundMaterial = appearance.TaskbarBackgroundMaterial;
-            _taskbarFrostedStyle = appearance.TaskbarFrostedStyle;
-            _taskbarBackgroundOpacityPercent = appearance.ResolveTaskbarBackgroundOpacityPercent();
         }
         finally { _isRefreshing = false; }
-        OnPropertyChanged(nameof(MediaFontSizePercent));
-        OnPropertyChanged(nameof(UseFrostedTaskbarBackground));
-        OnPropertyChanged(nameof(TaskbarFrostedStyle));
-        OnPropertyChanged(nameof(TaskbarBackgroundOpacityPercent));
-        RaiseTaskbarAppearance();
+    }
+
+    /// <summary>Releases application appearance subscriptions when its cached page scope closes.</summary>
+    /// <summary>Cancellation for the active page context.</summary>
+    public CancellationToken ContextCancellationToken => _configuration.CancellationToken;
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _fontRefreshGeneration++;
+        SettingsManager.SettingsChanged -= OnSettingsChanged;
+        _localization.LanguageChanged -= OnLanguageChanged;
     }
 }

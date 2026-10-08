@@ -389,13 +389,17 @@ public readonly record struct TrackChangeNotificationSettings(
     NotificationTargetMode TargetMode,
     string? FixedMonitorDeviceId)
 {
+    /// <summary>Minimum track notification duration stored in milliseconds.</summary>
+    public const int MinimumDurationMilliseconds = 1000;
+    /// <summary>Maximum track notification duration stored in milliseconds.</summary>
+    public const int MaximumDurationMilliseconds = 10000;
     /// <summary>通知的默认设置。 / Default notification settings.</summary>
     public static TrackChangeNotificationSettings Default { get; } = new(
-        false,
-        false,
-        1000,
-        TrackChangeNotificationPosition.BottomLeft,
-        NotificationTargetMode.Fixed,
+        true,
+        true,
+        3000,
+        TrackChangeNotificationPosition.TopCenter,
+        NotificationTargetMode.ForegroundWindow,
         null);
 
     /// <summary>归一化枚举、时长和设备标识。 / Normalizes enums, duration, and the device identifier.</summary>
@@ -404,7 +408,7 @@ public readonly record struct TrackChangeNotificationSettings(
         var defaults = Default;
         return this with
         {
-            DurationMilliseconds = Math.Clamp(DurationMilliseconds, 1000, 10000),
+            DurationMilliseconds = Math.Clamp(DurationMilliseconds, MinimumDurationMilliseconds, MaximumDurationMilliseconds),
             Position = Enum.IsDefined(Position) ? Position : defaults.Position,
             TargetMode = Enum.IsDefined(TargetMode) ? TargetMode : defaults.TargetMode,
             FixedMonitorDeviceId = string.IsNullOrWhiteSpace(FixedMonitorDeviceId)
@@ -565,6 +569,9 @@ public readonly record struct TaskbarExperienceSettings(
     /// artist must both fit inside it, so the upper bound keeps two lines fully visible.
     /// </summary>
     public const int MaximumMediaFontSizePercent = 125;
+
+    /// <summary>Existing media-font size precision in percent, shared by slider and direct input.</summary>
+    public const int MediaFontSizeStepPercent = 5;
 
     /// <summary>固定长度设置的持久化安全下限。 / Persistence-safe lower bound for the fixed-length setting.</summary>
     public const double MinimumStoredFixedLengthDip = 120;

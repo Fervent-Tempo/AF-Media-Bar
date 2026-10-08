@@ -80,7 +80,7 @@ public partial class TaskBarMediaControl
     /// <param name="enabled">当前是否允许推进。/ Whether advancing is currently allowed.</param>
     /// <param name="availableWidth">可用宽度（DIP）。/ Available width in DIP.</param>
     /// <returns>该元素当前是否正在推进。/ Whether that element is currently advancing.</returns>
-    private bool ConfigureMarqueeText(MarqueeTextState state, bool enabled, double availableWidth)
+    internal static bool ConfigureMarqueeText(MarqueeTextState state, bool enabled, double availableWidth)
     {
         var element = state.Element;
         var available = double.IsFinite(availableWidth) ? Math.Max(0, availableWidth) : 0;
@@ -94,14 +94,15 @@ public partial class TaskBarMediaControl
         if (!state.Advancing)
             state.Alignment = ResolveConfiguredAlignment(element);
 
-        var measured = string.IsNullOrEmpty(state.Base) ? 0 : MeasureTextWidthExact(state.Base, element);
+        var font = MarqueeFontKey.Capture(element);
+        var measured = MeasureMarqueeNaturalWidth(state, font);
         var overflow = enabled && available > 0
             ? TaskbarExperiencePolicy.CalculateMarqueeOverflow(measured, available)
             : 0;
         var advancing = overflow > 1 && state.Base.Length > 0;
         // Width changes during a bar resize must not restart a running marquee from the first character.
-        var key = $"{advancing}|{state.Base}|{element.FontSize:0.##}|{element.FontWeight}|{element.FontFamily.Source}";
-        if (!string.Equals(state.Key, key, StringComparison.Ordinal))
+        var key = new MarqueeLayoutKey(advancing, state.Base, font);
+        if (state.Key != key)
         {
             // 内容、宽度、方式或允许状态变化时从头开始，并重新走一遍起读停留。
             // A content, width, mode, or permission change restarts from the head and repeats the lead-in pause.
@@ -184,30 +185,28 @@ public partial class TaskBarMediaControl
     /// <param name="state">该元素的推进状态。/ Advance state of that element.</param>
     /// <param name="text">要测量的文字。/ The text to measure.</param>
     /// <param name="requiredCharacters">本次至少需要的字符数。/ Characters needed by this step at the very least.</param>
-    private static int EnsurePrefixWidths(MarqueeTextState state, string text, int requiredCharacters)
+    internal static int EnsurePrefixWidths(MarqueeTextState state, string text, int requiredCharacters) =>
+        EnsurePrefixWidths(state, text, requiredCharacters, MarqueeFontKey.Capture(state.Element));
+
+    internal static int EnsurePrefixWidths(MarqueeTextState state, string text, int requiredCharacters, MarqueeFontKey font)
     {
-        var element = state.Element;
         var textLength = text.Length;
         var valid = state.PrefixWidths is { } cached &&
                     cached.Length == textLength + 1 &&
                     string.Equals(state.PrefixContent, text, StringComparison.Ordinal) &&
-                    Math.Abs(state.PrefixFontSize - element.FontSize) < 0.01 &&
-                    state.PrefixFontWeight == element.FontWeight &&
-                    Equals(state.PrefixFontFamily, element.FontFamily);
+                    state.PrefixFont == font;
         if (!valid)
         {
             state.PrefixWidths = new double[textLength + 1];
             state.PrefixMeasuredCharacters = 0;
             state.PrefixContent = text;
-            state.PrefixFontSize = element.FontSize;
-            state.PrefixFontWeight = element.FontWeight;
-            state.PrefixFontFamily = element.FontFamily;
+            state.PrefixFont = font;
         }
 
         var widths = state.PrefixWidths!;
         var target = Math.Clamp(requiredCharacters, state.PrefixMeasuredCharacters, textLength);
         for (var index = state.PrefixMeasuredCharacters + 1; index <= target; index++)
-            widths[index] = MeasureTextWidthExact(text[..index], element);
+            widths[index] = MeasureTextWidthExact(text[..index], font);
 
         state.PrefixMeasuredCharacters = target;
         return target;
@@ -358,7 +357,7 @@ public partial class TaskBarMediaControl
     /// <param name="state">该元素的推进状态。/ Advance state of that element.</param>
     private static void AdvanceRotation(MarqueeTextState state)
     {
-        var source = MarqueeRotationPolicy.BuildSource(state.Base);
+        var source = state.RotationSource;
         if (source.Length == 0 || state.WindowLength <= 0)
         {
             return;
@@ -398,7 +397,7 @@ public partial class TaskBarMediaControl
     /// <param name="state">该元素的推进状态。/ Advance state of that element.</param>
     private static void UpdateRotationOffset(MarqueeTextState state)
     {
-        var source = MarqueeRotationPolicy.BuildSource(state.Base);
+        var source = state.RotationSource;
         if (source.Length == 0)
         {
             state.OffsetDip = 0;
@@ -423,7 +422,7 @@ public partial class TaskBarMediaControl
         _marqueeTimer.Stop();
         foreach (var state in _marqueeTexts)
         {
-            state.Key = string.Empty;
+            state.Key = null;
             state.Position = 0;
             state.WindowStart = -1;
             state.OffsetDip = 0;
@@ -468,7 +467,7 @@ public partial class TaskBarMediaControl
     /// afterwards, so this reads the settings rather than the element, whose own value may already have been overwritten.
     /// </summary>
     /// <param name="element">文本元素。/ Text element.</param>
-    private TextAlignment ResolveConfiguredAlignment(TextBlock element)
+    private static TextAlignment ResolveConfiguredAlignment(TextBlock element)
     {
         return SettingsManager.Current.TaskbarExperience.Normalize().MediaTextAlignment switch
         {
@@ -483,7 +482,7 @@ public partial class TaskBarMediaControl
     /// Advance state of one text element: the content the application wrote, the window written last time, the continuous position, and
     /// the window's cached metrics.
     /// </summary>
-    private sealed class MarqueeTextState(TextBlock element)
+    internal sealed class MarqueeTextState(TextBlock element)
     {
         /// <summary>被推进的文本元素。/ The advanced text element.</summary>
         public TextBlock Element { get; } = element;
@@ -492,13 +491,30 @@ public partial class TaskBarMediaControl
         public TranslateTransform Transform { get; } = new();
 
         /// <summary>应用写入的原文。/ Content written by the application.</summary>
-        public string Base { get; set; } = string.Empty;
+        public string Base
+        {
+            get => _base;
+            set
+            {
+                if (string.Equals(_base, value, StringComparison.Ordinal))
+                    return;
+                _base = value;
+                RotationSource = MarqueeRotationPolicy.BuildSource(value);
+            }
+        }
+        private string _base = string.Empty;
+
+        // This source is reused by both per-frame position calculations.
+        public string RotationSource { get; private set; } = string.Empty;
+        public string? NaturalContent { get; set; }
+        public MarqueeFontKey? NaturalFont { get; set; }
+        public double NaturalWidth { get; set; }
 
         /// <summary>我们最后写进去的窗口文字。/ Window text written last time.</summary>
         public string Window { get; set; } = string.Empty;
 
         /// <summary>决定是否需要重启推进的一致性键。/ Consistency key deciding whether advancing has to restart.</summary>
-        public string Key { get; set; } = string.Empty;
+        public MarqueeLayoutKey? Key { get; set; }
 
         /// <summary>按窗口长度回绕的连续字符位置。/ Continuous character position wrapped by the window length.</summary>
         public double Position { get; set; }
@@ -536,17 +552,44 @@ public partial class TaskBarMediaControl
         /// <summary>前缀宽度表对应的原文，换行时整表重测。/ Content the prefix-width table belongs to; a new line re-measures everything.</summary>
         public string? PrefixContent { get; set; }
 
-        /// <summary>前缀宽度表对应的字号。/ Font size the prefix-width table was measured with.</summary>
-        public double PrefixFontSize { get; set; }
-
-        /// <summary>前缀宽度表对应的字重。/ Font weight the prefix-width table was measured with.</summary>
-        public FontWeight PrefixFontWeight { get; set; }
-
-        /// <summary>前缀宽度表对应的字族。/ Font family the prefix-width table was measured with.</summary>
-        public FontFamily? PrefixFontFamily { get; set; }
+        /// <summary>前缀表使用的完整字体度量条件。</summary>
+        public MarqueeFontKey? PrefixFont { get; set; }
 
         /// <summary>窗口位置到整数起点之间的位移（DIP）。/ Offset in DIP between the exact window position and its integer start.</summary>
         public double OffsetDip { get; set; }
+    }
+
+    /// <summary>Only measurement inputs invalidate text metrics; available width does not change glyph advances.</summary>
+    internal readonly record struct MarqueeFontKey(
+        FontFamily Family, FontStyle Style, FontWeight Weight, FontStretch Stretch,
+        double Size, System.Globalization.CultureInfo Culture, double PixelsPerDip)
+    {
+        // WPF font structs do not all implement IEquatable<T>; default record comparisons box them on every cache hit.
+        public bool Equals(MarqueeFontKey other) =>
+            Equals(Family, other.Family) && Style == other.Style && Weight == other.Weight && Stretch == other.Stretch &&
+            Size == other.Size && Equals(Culture, other.Culture) && PixelsPerDip == other.PixelsPerDip;
+
+        public override int GetHashCode() => HashCode.Combine(
+            Family, Style.GetHashCode(), Weight.GetHashCode(), Stretch.GetHashCode(), Size, Culture, PixelsPerDip);
+
+        internal static MarqueeFontKey Capture(TextBlock element) => new(
+            element.FontFamily, element.FontStyle, element.FontWeight, element.FontStretch,
+            element.FontSize, System.Globalization.CultureInfo.CurrentUICulture,
+            VisualTreeHelper.GetDpi(element).PixelsPerDip);
+    }
+
+    /// <summary>Advancing and content/font changes restart rotation; host width changes preserve its position.</summary>
+    internal readonly record struct MarqueeLayoutKey(bool Advancing, string Content, MarqueeFontKey Font);
+
+    internal static double MeasureMarqueeNaturalWidth(MarqueeTextState state, MarqueeFontKey font)
+    {
+        if (state.NaturalFont != font || !string.Equals(state.NaturalContent, state.Base, StringComparison.Ordinal))
+        {
+            state.NaturalWidth = MeasureTextWidthExact(state.Base, font);
+            state.NaturalContent = state.Base;
+            state.NaturalFont = font;
+        }
+        return state.NaturalWidth;
     }
 
     private static double MeasureTextWidth(string text, TextBlock source) =>
@@ -556,20 +599,22 @@ public partial class TaskBarMediaControl
     /// 测量文字的自然宽度，不含跑马灯为折返预留的 4 DIP。
     /// Measures the natural text width without the 4 DIP the marquee reserves for its turn-around.
     /// </summary>
-    private static double MeasureTextWidthExact(string text, TextBlock source)
+    private static double MeasureTextWidthExact(string text, TextBlock source) =>
+        MeasureTextWidthExact(text, MarqueeFontKey.Capture(source));
+
+    private static double MeasureTextWidthExact(string text, MarqueeFontKey font)
     {
         if (string.IsNullOrEmpty(text))
             return 0;
 
-        var pixelsPerDip = VisualTreeHelper.GetDpi(source).PixelsPerDip;
         var formatted = new FormattedText(
             text,
-            System.Globalization.CultureInfo.CurrentUICulture,
+            font.Culture,
             FlowDirection.LeftToRight,
-            new Typeface(source.FontFamily, source.FontStyle, source.FontWeight, source.FontStretch),
-            source.FontSize,
+            new Typeface(font.Family, font.Style, font.Weight, font.Stretch),
+            font.Size,
             Brushes.Transparent,
-            pixelsPerDip)
+            font.PixelsPerDip)
         {
             Trimming = TextTrimming.None
         };

@@ -11,28 +11,51 @@ internal static partial class LyricsMetadataScore
     // 试听时长不能否决正确曲目：时长仅占 10%，释放的权重均分给标题和歌手。
     // 阈值和权重属于代码策略，不能重新暴露成匹配严格度设置。
     internal const int MinimumScore = 60;
+    internal const double TitleWeight = 0.40;
+    internal const double ArtistWeight = 0.40;
+    internal const double AlbumWeight = 0.10;
+    internal const double DurationWeight = 0.10;
     private static readonly JaroWinkler Similarity = new();
+
+    /// <summary>评分组成；标题缺失时改用标题和歌手合并后的指纹相似度。</summary>
+    internal readonly record struct Breakdown(double Title, double Artist, double Album, double Duration,
+        double? Fingerprint)
+    {
+        public double UnroundedScore => 100 * (Fingerprint ??
+            (TitleWeight * Title + ArtistWeight * Artist + AlbumWeight * Album + DurationWeight * Duration));
+        public int TotalScore => (int)Math.Round(UnroundedScore);
+    }
 
     public static int Calculate(LyricsRequest request, string? title, string? artist, string? album, double? duration) =>
         Calculate(request, [title ?? string.Empty], [artist ?? string.Empty], [album ?? string.Empty], duration);
 
-    public static int Calculate(LyricsRequest request, string[] titles, string[] artists, string[] albums, double? duration)
+    public static int Calculate(LyricsRequest request, string[] titles, string[] artists, string[] albums, double? duration) =>
+        Explain(request, titles, artists, albums, duration).TotalScore;
+
+    /// <summary>返回实际评分路径的各项相似度，供独立测试器解释分数，不执行搜索或取词。</summary>
+    internal static Breakdown Explain(LyricsRequest request, string[] titles, string[] artists, string[] albums, double? duration)
     {
+        var requestArtists = LyricsArtistPolicy.Split(request);
+        var candidateArtists = artists.SelectMany(artist =>
+            LyricsArtistPolicy.Split(artist, request.ArtistSeparators)).ToArray();
         if (string.IsNullOrWhiteSpace(request.Title) || !titles.Any(title => !string.IsNullOrWhiteSpace(title)))
         {
-            var query = Fingerprint($"{request.Title} {request.Artist}");
-            var scores = from title in titles
-                         from artist in artists
+            var scores = from requestArtist in requestArtists
+                         let query = Fingerprint($"{request.Title} {requestArtist}")
+                         from title in titles
+                         from artist in candidateArtists
                          let candidate = Fingerprint($"{title} {artist}")
                          select query.Length == 0 || candidate.Length == 0 ? 0 : Similarity.Similarity(query, candidate);
-            return (int)Math.Round(scores.DefaultIfEmpty(0).Max() * 100);
+            return new(0, 0, 0, 0, scores.DefaultIfEmpty(0).Max());
         }
 
         var titleScore = titles.Select(title => Compare(request.Title, title)).DefaultIfEmpty(0).Max();
-        var artistScore = artists.Select(artist => Compare(request.Artist, artist)).DefaultIfEmpty(0).Max();
+        // Preserve the existing best-artist-match policy, now comparing individual artists on both sides.
+        var artistScore = (from requestArtist in requestArtists
+                           from candidateArtist in candidateArtists
+                           select Compare(requestArtist, candidateArtist)).DefaultIfEmpty(0).Max();
         var albumScore = albums.Select(album => Compare(request.Album, album)).DefaultIfEmpty(0).Max();
-        return (int)Math.Round(100 * (0.40 * titleScore + 0.40 * artistScore + 0.10 * albumScore +
-                                    0.10 * CompareDuration(request.DurationSeconds, duration)));
+        return new(titleScore, artistScore, albumScore, CompareDuration(request.DurationSeconds, duration), null);
     }
 
     private static double Compare(string? left, string? right)

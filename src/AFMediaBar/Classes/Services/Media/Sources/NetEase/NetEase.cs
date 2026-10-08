@@ -257,7 +257,7 @@ public sealed class NetEase : IDisposable
         // (it shows what the memory id and fmPlay each look like).
         AppLogService.Current?.Info(
             "NetEase",
-            $"私人FM 曲目元数据 / private-FM track metadata: id={identity} name=\"{metadata.Title}\" artists=\"{metadata.Artists}\"");
+            $"私人FM 曲目元数据: id={identity} name=\"{metadata.Title}\" artists=\"{metadata.Artists}\"");
         return true;
     }
 

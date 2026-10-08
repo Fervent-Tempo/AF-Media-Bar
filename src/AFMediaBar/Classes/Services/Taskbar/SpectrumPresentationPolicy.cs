@@ -131,55 +131,42 @@ public static class SpectrumPresentationPolicy
     {
         if (bands.Length < 2)
             return [];
-
-        var count = bands.Length;
-        var contentWidth = CalculateContentWidthDip(count);
-        var step = contentWidth / (count - 1);
-        var maximumHalfHeight = ResolveWaveformHalfHeightDip(contentHeightDip);
-        var halfHeights = new double[count];
-        for (var index = 0; index < count; index++)
-        {
-            var level = Math.Clamp(bands[index] * sensitivityPercent / 100f, 0f, 1f);
-            halfHeights[index] = level * maximumHalfHeight;
-        }
-
-        var upper = Interpolate(halfHeights, step, maximumHalfHeight);
-        var outline = new SpectrumPoint[upper.Length * 2];
-        var centre = contentHeightDip / 2;
-        for (var index = 0; index < upper.Length; index++)
-        {
-            outline[index] = new SpectrumPoint(upper[index].X, centre - upper[index].Y);
-        }
-
-        // 下缘用同一组采样点镜像回去，因此两条边在任何音量下都严格对称，不会出现偏向一侧的波形。
-        // The lower edge mirrors the same samples, so both edges stay exactly symmetric at every level instead of leaning to
-        // one side.
-        for (var index = 0; index < upper.Length; index++)
-        {
-            var mirrored = upper[upper.Length - 1 - index];
-            outline[upper.Length + index] = new SpectrumPoint(mirrored.X, centre + mirrored.Y);
-        }
-
+        var outline = new SpectrumPoint[GetWaveformOutlineLength(bands.Length)];
+        WriteWaveformOutline(bands, sensitivityPercent, contentHeightDip, outline);
         return outline;
     }
 
     /// <summary>
-    /// 对半振幅控制点做 Catmull-Rom 插值。频段数量最少只有九个，控制点之间不插值就是一条折线，
-    /// 因此这一段是波形样式与柱状样式的唯一区别所在。
-    /// Runs Catmull-Rom interpolation over the half-amplitude control points. With as few as nine bands the raw control
-    /// points form a polyline, so this interpolation is what separates the waveform style from the bar styles.
+    /// Writes a symmetric Catmull-Rom outline into caller-owned storage, without per-frame arrays.
+    /// Nonfinite levels are silence; a nonfinite or negative height produces a flat outline at zero.
     /// </summary>
-    private static SpectrumPoint[] Interpolate(double[] halfHeights, double step, double maximumHalfHeight)
+    /// <param name="bands">Normalized band samples; fewer than two produce no points.</param>
+    /// <param name="sensitivityPercent">Sensitivity percentage.</param>
+    /// <param name="contentHeightDip">Content height in DIP.</param>
+    /// <param name="destination">Reusable output buffer; its unused suffix is preserved.</param>
+    /// <returns>The number of written points.</returns>
+    /// <exception cref="ArgumentException">The destination is too small; nothing is written.</exception>
+    public static int WriteWaveformOutline(ReadOnlySpan<float> bands, int sensitivityPercent, double contentHeightDip,
+        Span<SpectrumPoint> destination)
     {
-        var count = halfHeights.Length;
+        if (bands.Length < 2)
+            return 0;
+        var length = GetWaveformOutlineLength(bands.Length);
+        if (destination.Length < length)
+            throw new ArgumentException("The waveform destination is too small.", nameof(destination));
+
+        var count = bands.Length;
+        var height = double.IsFinite(contentHeightDip) ? Math.Max(0, contentHeightDip) : 0;
+        var maximumHalfHeight = ResolveWaveformHalfHeightDip(height);
+        var centre = height / 2;
+        var step = CalculateContentWidthDip(count) / (count - 1);
         var segments = WaveformSegmentsPerGap * (count - 1);
-        var points = new SpectrumPoint[segments + 1];
         for (var segment = 0; segment < count - 1; segment++)
         {
-            var p0 = halfHeights[Math.Max(0, segment - 1)];
-            var p1 = halfHeights[segment];
-            var p2 = halfHeights[segment + 1];
-            var p3 = halfHeights[Math.Min(count - 1, segment + 2)];
+            var p0 = ResolveHalfHeight(bands[Math.Max(0, segment - 1)], sensitivityPercent, maximumHalfHeight);
+            var p1 = ResolveHalfHeight(bands[segment], sensitivityPercent, maximumHalfHeight);
+            var p2 = ResolveHalfHeight(bands[segment + 1], sensitivityPercent, maximumHalfHeight);
+            var p3 = ResolveHalfHeight(bands[Math.Min(count - 1, segment + 2)], sensitivityPercent, maximumHalfHeight);
             for (var stepIndex = 0; stepIndex < WaveformSegmentsPerGap; stepIndex++)
             {
                 var t = stepIndex / (double)WaveformSegmentsPerGap;
@@ -187,14 +174,24 @@ public static class SpectrumPresentationPolicy
                                (-p0 + p2) * t +
                                (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t +
                                (-p0 + 3 * p1 - 3 * p2 + p3) * t * t * t);
-                points[segment * WaveformSegmentsPerGap + stepIndex] =
-                    new SpectrumPoint((segment + t) * step, Math.Clamp(y, 0, maximumHalfHeight));
+                var index = segment * WaveformSegmentsPerGap + stepIndex;
+                var x = (segment + t) * step;
+                var amplitude = Math.Clamp(y, 0, maximumHalfHeight);
+                destination[index] = new SpectrumPoint(x, centre - amplitude);
+                destination[length - 1 - index] = new SpectrumPoint(x, centre + amplitude);
             }
         }
 
-        points[segments] = new SpectrumPoint((count - 1) * step, Math.Clamp(halfHeights[count - 1], 0, maximumHalfHeight));
-        return points;
+        var finalHeight = ResolveHalfHeight(bands[count - 1], sensitivityPercent, maximumHalfHeight);
+        destination[segments] = new SpectrumPoint((count - 1) * step, centre - finalHeight);
+        destination[length - 1 - segments] = new SpectrumPoint((count - 1) * step, centre + finalHeight);
+        return length;
     }
+
+    private static int GetWaveformOutlineLength(int count) => checked(2 * (WaveformSegmentsPerGap * (count - 1) + 1));
+
+    private static double ResolveHalfHeight(float value, int sensitivityPercent, double maximumHalfHeight) =>
+        (float.IsFinite(value) ? Math.Clamp(value * sensitivityPercent / 100f, 0f, 1f) : 0f) * maximumHalfHeight;
 
     /// <summary>频谱样式是否以垂直中线为对称轴（波形与对称柱状图）。 / Whether a spectrum style is symmetric about the vertical centre line (waveform and mirrored bars).</summary>
     /// <param name="style">频谱样式。/ Spectrum style.</param>

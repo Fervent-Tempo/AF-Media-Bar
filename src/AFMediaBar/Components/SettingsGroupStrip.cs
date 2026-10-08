@@ -8,6 +8,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using AFMediaBar.Classes.Services;
+using AFMediaBar.Classes.Utils;
 using AFMediaBar.Resources;
 using Wpf.Ui.Controls;
 
@@ -111,6 +112,7 @@ public class SettingsGroupStrip : Control
     private TranslateTransform? _indicatorTranslate;
     private ScaleTransform? _progressScale;
     private bool _isJumping;
+    private int _visibleGroupIndex = -1;
     private double _dividerOpacity = -1d;
 
     /// <summary>创建分组标签条并初始化跳转命令。/ Creates the group strip and its jump command.</summary>
@@ -200,7 +202,9 @@ public class SettingsGroupStrip : Control
     public override void OnApplyTemplate()
     {
         base.OnApplyTemplate();
+        if (_tabs is not null) _tabs.SizeChanged -= OnTabsSizeChanged;
         _tabs = GetTemplateChild("PART_Tabs") as ItemsControl;
+        if (_tabs is not null) _tabs.SizeChanged += OnTabsSizeChanged;
         _indicator = GetTemplateChild("PART_Indicator") as FrameworkElement;
         _progress = GetTemplateChild("PART_Progress") as FrameworkElement;
         _divider = GetTemplateChild("PART_Divider") as FrameworkElement;
@@ -244,29 +248,30 @@ public class SettingsGroupStrip : Control
     /// The pulse writes only Opacity and clears the animation before landing the final value, so the group can
     /// never be left sitting at an intermediate opacity.
     /// </summary>
-    /// <param name="groupIndex">目标分组序号。/ Target group index.</param>
-    public void RevealGroup(int groupIndex)
+    /// <param name="groupId">Stable group identity.</param>
+    public void RevealGroup(string groupId)
     {
-        JumpTo(groupIndex);
-
         var groups = ResolveGroups();
-        if (groupIndex < 0 || groupIndex >= groups.Count)
-        {
-            return;
-        }
-
-        var group = groups[groupIndex];
+        var group = groups.FirstOrDefault(candidate => candidate.GroupId == groupId);
+        if (group is null) return;
+        var groupIndex = groups.ToList().IndexOf(group);
+        // Search resolves a group, so reveal its details before measuring the scroll target.
+        ExpandDetails(group);
+        group.UpdateLayout();
+        JumpTo(groupIndex);
+        if (MotionPolicy.ResolveCurrent().Mode == MotionMode.Instant ||
+            InputManager.Current.MostRecentInputDevice is KeyboardDevice) return;
         var animation = new DoubleAnimationUsingKeyFrames
         {
             BeginTime = TimeSpan.Zero,
-            Duration = new Duration(TimeSpan.FromMilliseconds(440)),
+            Duration = new Duration(TimeSpan.FromMilliseconds(240)),
             FillBehavior = FillBehavior.HoldEnd
         };
         animation.KeyFrames.Add(new LinearDoubleKeyFrame(1d, KeyTime.FromTimeSpan(TimeSpan.Zero)));
-        animation.KeyFrames.Add(new LinearDoubleKeyFrame(0.55d, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(200))));
+        animation.KeyFrames.Add(new LinearDoubleKeyFrame(0.85d, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(80))));
         animation.KeyFrames.Add(new SplineDoubleKeyFrame(
             1d,
-            KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(440)),
+            KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(240)),
             ResolveEaseOut()));
         animation.Completed += (_, _) =>
         {
@@ -275,6 +280,14 @@ public class SettingsGroupStrip : Control
         };
 
         group.BeginAnimation(UIElement.OpacityProperty, animation, HandoffBehavior.SnapshotAndReplace);
+    }
+
+    private static void ExpandDetails(DependencyObject element)
+    {
+        if (element is CardExpander expander)
+            expander.IsExpanded = true;
+        foreach (var child in LogicalTreeHelper.GetChildren(element).OfType<DependencyObject>())
+            ExpandDetails(child);
     }
 
     /// <summary>取与设置页外观一致的强 ease-out 曲线；资源缺失时用同一曲线的兜底实例。/ The strong ease-out curve shared with settings appearance, with a fallback of the same shape.</summary>
@@ -289,6 +302,11 @@ public class SettingsGroupStrip : Control
     /// </summary>
     public void Rebuild()
     {
+        // Generated tab containers are measured after the current layout pass.
+        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(() =>
+        {
+            if (IsLoaded) UpdateIndicator();
+        }));
         var groups = ResolveGroups();
         if (groups.Count == _groups.Count &&
             groups.Select(group => group.Header?.ToString() ?? string.Empty).SequenceEqual(_groups.Select(item => item.Name)))
@@ -297,6 +315,7 @@ public class SettingsGroupStrip : Control
             return;
         }
 
+        _visibleGroupIndex = -1;
         _groups.Clear();
         for (var index = 0; index < groups.Count; index++)
         {
@@ -331,11 +350,11 @@ public class SettingsGroupStrip : Control
         {
             switch (child)
             {
-                case SettingsGroup group:
+                case SettingsGroup group when group.Visibility == Visibility.Visible:
                     groups.Add(group);
                     break;
                 case Panel section when section.Visibility == Visibility.Visible:
-                    groups.AddRange(section.Children.OfType<SettingsGroup>());
+                    groups.AddRange(section.Children.OfType<SettingsGroup>().Where(group => group.Visibility == Visibility.Visible));
                     break;
             }
         }
@@ -474,13 +493,7 @@ public class SettingsGroupStrip : Control
     }
 
     /// <summary>
-    /// 按滚动量淡入淡出页头下方的分隔线。静止在顶部时完全不可见，因此页头在半透明材质上不会留下
-    /// 任何永久性的实色块；只有确实有内容滚上去时才出现一条发丝线。
-    /// 只在目标透明度变化超过千分之一时才启动动画，避免每个滚动事件都重启动画。
-    /// Fades the hairline under the header according to how far the content has scrolled. It is invisible at the
-    /// top, so the header leaves no permanent solid block over translucent material, and a hairline appears only
-    /// once content really has scrolled away above. The animation restarts only when the target opacity moves by
-    /// more than a thousandth, so a stream of scroll events does not restart it continuously.
+    /// 按滚动量淡入分隔线，区分固定导航与滚动内容；底色由模板保持不透明。
     /// </summary>
     private void ApplyDivider(double verticalOffset)
     {
@@ -514,6 +527,8 @@ public class SettingsGroupStrip : Control
     /// animated: width is a layout property, so animating it would run layout every frame, while the movement
     /// itself stays a transform and costs no layout.
     /// </summary>
+    private void OnTabsSizeChanged(object sender, SizeChangedEventArgs e) => UpdateIndicator();
+
     private void UpdateIndicator()
     {
         if (_indicator is null || _indicatorTranslate is null || _tabs is null || Target is null)
@@ -538,6 +553,11 @@ public class SettingsGroupStrip : Control
             return;
         }
 
+        if (_visibleGroupIndex != active.Index)
+        {
+            _visibleGroupIndex = active.Index;
+            container.BringIntoView();
+        }
         _indicator.Visibility = Visibility.Visible;
         _indicator.Width = container.ActualWidth;
 
@@ -570,6 +590,13 @@ public class SettingsGroupStrip : Control
             return;
         }
 
+        // Keyboard navigation and reduced motion complete scrolling immediately.
+        if (InputManager.Current.MostRecentInputDevice is KeyboardDevice || MotionPolicy.ResolveCurrent().Mode != MotionMode.Full)
+        {
+            StopJump();
+            target.ScrollToVerticalOffset(destination);
+            return;
+        }
         _isJumping = true;
         BeginAnimation(
             JumpOffsetProperty,

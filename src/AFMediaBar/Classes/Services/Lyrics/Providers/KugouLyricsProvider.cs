@@ -33,7 +33,8 @@ public sealed class KugouLyricsProvider : ILyricsProvider
             return null;
         }
 
-        var match = await LyricsSearch.MatchAsync(request, Searchers.Kugou, cancellationToken);
+        var match = await LyricsSearch.MatchAsync(request, Searchers.Kugou, cancellationToken,
+            retainBelowMinimum: LyricsSourcePolicy.IsCurrentPlaybackSource(request.PlaybackSourceId, SourceName));
         if (match?.Candidate is not KugouSearchResult kugou || string.IsNullOrWhiteSpace(kugou.Hash))
         {
             return null;

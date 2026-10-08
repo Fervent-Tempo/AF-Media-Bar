@@ -114,7 +114,7 @@ public sealed class SettingsPersistenceService : IDisposable
         }
         catch (Exception exception)
         {
-            AppLogService.Current?.Warn("Settings", $"写入我的默认设置失败 / writing user defaults failed: {exception.Message}");
+            AppLogService.Current?.Warn("Settings", $"写入我的默认设置失败: {exception.Message}");
             Debug.WriteLine($"[Settings] Could not write user defaults: {exception.Message}");
             return exception.Message;
         }
@@ -228,7 +228,7 @@ public sealed class SettingsPersistenceService : IDisposable
         SettingsManager.Replace((loaded ?? new AppSettings()).Normalize());
         AppLogService.Current?.Info(
             "Settings",
-            $"已加载设置 / settings loaded: schema {_loadedSchemaVersion?.ToString() ?? "none"} → {CurrentSchemaVersion}, " +
+            $"已加载设置: schema {_loadedSchemaVersion?.ToString() ?? "none"} → {CurrentSchemaVersion}, " +
             $"file={(File.Exists(_settingsPath) ? _settingsPath : "<none>")}");
         if (!File.Exists(_settingsPath) || loaded is null)
             SaveCore(SettingsManager.Current);
@@ -275,7 +275,7 @@ public sealed class SettingsPersistenceService : IDisposable
         }
         catch (Exception exception)
         {
-            AppLogService.Current?.Error("Settings", "保存设置失败，内存中的设置保留 / saving settings failed, in-memory settings kept", exception);
+            AppLogService.Current?.Error("Settings", "保存设置失败，内存中的设置保留", exception);
             Debug.WriteLine($"[Settings] Save failed; keeping in-memory settings: {exception}");
         }
     }
@@ -286,7 +286,7 @@ public sealed class SettingsPersistenceService : IDisposable
         {
             var target = $"{path}.{reason}-{DateTime.Now:yyyyMMddHHmmssfff}";
             File.Move(path, target, true);
-            AppLogService.Current?.Warn("Settings", $"设置文件不可用，已隔离 / settings file quarantined ({reason}): {target}");
+            AppLogService.Current?.Warn("Settings", $"设置文件不可用，已隔离({reason}): {target}");
         }
         catch (Exception exception) { Debug.WriteLine($"[Settings] Could not quarantine {path}: {exception.Message}"); }
     }
@@ -330,8 +330,8 @@ public sealed class SettingsPersistenceService : IDisposable
                 typeof(TEnum) == typeof(LyricsSecondaryLineMode) ? LyricsSecondaryLineMode.Translation :                typeof(TEnum) == typeof(TaskbarBarPosition) ? TaskbarBarPosition.Start :
                 typeof(TEnum) == typeof(LayoutOrientationMode) ? LayoutOrientationMode.Auto :
                 typeof(TEnum) == typeof(DynamicIslandBackgroundMode) ? DynamicIslandBackgroundMode.SystemTheme :
-                typeof(TEnum) == typeof(TrackChangeNotificationPosition) ? TrackChangeNotificationPosition.BottomLeft :
-                typeof(TEnum) == typeof(NotificationTargetMode) ? NotificationTargetMode.Fixed :
+                typeof(TEnum) == typeof(TrackChangeNotificationPosition) ? TrackChangeNotificationSettings.Default.Position :
+                typeof(TEnum) == typeof(NotificationTargetMode) ? TrackChangeNotificationSettings.Default.TargetMode :
                 typeof(TEnum) == typeof(WindowMode) ? WindowMode.Taskbar :
                 typeof(TEnum) == typeof(DynamicIslandEdge) ? DynamicIslandEdge.Top :
                 typeof(TEnum) == typeof(LatinFontPreset) ? LatinFontPreset.SystemDefault :

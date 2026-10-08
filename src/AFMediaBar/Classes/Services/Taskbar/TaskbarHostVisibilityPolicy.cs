@@ -19,25 +19,22 @@ public static class TaskbarHostVisibilityPolicy
     /// <summary>
     /// 解析宿主窗口这次应当显示还是隐藏。
     ///
-    /// 任务栏移动或稳定收起时，宿主 MUST 自己隐藏窗口：跨进程子窗口不会与 Shell 的合成动画保持逐帧同步，
-    /// 在收起期间继续显示会留角，在展开的第一帧就恢复又会把隐藏位置的旧画面卡到屏幕边缘。只有可见任务栏的矩形重新稳定后，
-    /// 才能按静置层判据显示。
-    /// Decides whether the host window should be shown or hidden this time.
-    ///
-    /// While the taskbar is moving or settled at the hidden edge, the host MUST hide its own window: a cross-process child does not stay in
-    /// frame-by-frame lockstep with the Shell composition animation. Keeping it visible during the hide leaves a corner behind, while restoring it
-    /// on the first reveal frame paints the old hidden position at the screen edge. The rest-layer verdict is applied only after the visible taskbar
-    /// rectangle has settled again.
+    /// 运动期间只有可复用的稳定几何才允许随父任务栏移动；没有几何时隐藏至定位完成。
+    /// 稳定收起必须由宿主自己隐藏，不能依赖父窗口把子窗口带出屏幕。
     /// </summary>
     /// <param name="motion">当前任务栏运动状态。/ Current taskbar motion state.</param>
     /// <param name="restLayerEmpty">静置层是否一个组件都不显示（控件算出的结论）。/ Whether the rest layer shows no component at all, as the control computed it.</param>
-    public static TaskbarHostVisibility Resolve(in TaskbarMotionState motion, bool restLayerEmpty)
+    /// <param name="hasReusablePlacement">是否可复用同一任务栏的稳定定位。/ Whether the same taskbar's stable placement can be reused.</param>
+    public static TaskbarHostVisibility Resolve(in TaskbarMotionState motion, bool restLayerEmpty, bool hasReusablePlacement = false)
     {
-        if (motion.IsMoving || motion.IsHidden)
+        if (restLayerEmpty)
         {
             return TaskbarHostVisibility.Collapsed;
         }
 
-        return restLayerEmpty ? TaskbarHostVisibility.Collapsed : TaskbarHostVisibility.Visible;
+        if (motion.IsMoving)
+            return hasReusablePlacement ? TaskbarHostVisibility.Visible : TaskbarHostVisibility.Collapsed;
+
+        return motion.IsHidden ? TaskbarHostVisibility.Collapsed : TaskbarHostVisibility.Visible;
     }
 }

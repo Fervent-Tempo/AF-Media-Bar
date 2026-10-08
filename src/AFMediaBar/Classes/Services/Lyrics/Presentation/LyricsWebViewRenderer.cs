@@ -36,23 +36,28 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
     };
 
     private readonly WebView2CompositionControl _webView = webView ?? throw new ArgumentNullException(nameof(webView));
+    private LyricsWebStyle? _lastStyle;
     private string? _pendingStyle;
     private string? _pendingLyrics;
     private bool _initializationStarted;
     private bool _documentReady;
     private bool _draining;
+    private bool _deliveryPaused;
     private bool _disposed;
 
     /// <summary>Web 文档已完成导航且可以接收消息时触发。/ Raised when the web document has navigated and can receive messages.</summary>
     public event EventHandler? Ready;
 
+    /// <summary>导航或脚本执行失败时触发，由控件所有者决定是否重建。/ Raised when navigation or script execution fails; the control owner decides whether to rebuild.</summary>
+    public event EventHandler? Failed;
+
     /// <summary>Web 文档是否已可呈现。/ Whether the web document is ready to present.</summary>
     public bool IsReady => _documentReady && !_disposed;
 
-    public async Task InitializeAsync()
+    public async Task<bool> InitializeAsync()
     {
         if (_disposed || _initializationStarted)
-            return;
+            return false;
 
         _initializationStarted = true;
         try
@@ -71,7 +76,7 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
 
             await _webView.EnsureCoreWebView2Async();
             if (_disposed || _webView.CoreWebView2 is null)
-                return;
+                return false;
 
             var settings = _webView.CoreWebView2.Settings;
             settings.AreBrowserAcceleratorKeysEnabled = false;
@@ -82,16 +87,24 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
             settings.IsZoomControlEnabled = false;
             _webView.NavigationCompleted += OnNavigationCompleted;
             _webView.NavigateToString(BuildDocument());
+            return true;
         }
         catch (Exception ex)
         {
             AppLogService.Current?.Error("Lyrics", "Failed to initialize the web lyrics renderer.", ex);
+            return false;
         }
     }
 
     public void ApplyStyle(LyricsWebStyle style)
     {
         ArgumentNullException.ThrowIfNull(style);
+        if (_disposed || Equals(_lastStyle, style))
+            return;
+
+        // Snapshot updates can reapply appearance without changing it; skip the WebView2
+        // round trip and CSS/layout work until an actual style value changes.
+        _lastStyle = style;
         _pendingStyle = SerializeMessage("style", new
         {
             style.FontFamily,
@@ -138,37 +151,93 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
         StartDrain();
     }
 
+    /// <summary>Hold only the newest pending messages while the taskbar cannot be seen. / 任务栏不可见时只保留最新待发送消息。</summary>
+    public void PauseDelivery() => _deliveryPaused = true;
+
+    /// <summary>Resume delivery, sending style before the latest lyrics frame. / 恢复消息投递，先发送样式再发送最新歌词帧。</summary>
+    public void ResumeDelivery()
+    {
+        if (_disposed)
+            return;
+        _deliveryPaused = false;
+        StartDrain();
+    }
+
+    /// <summary>Best-effort renderer suspension after WPF has made the WebView invisible. / WPF 已隐藏视图后的尽力挂起。</summary>
+    public async Task<bool> TrySuspendAsync()
+    {
+        if (_disposed || !_documentReady || _webView.IsVisible || _webView.CoreWebView2 is null)
+            return false;
+
+        try
+        {
+            return await _webView.CoreWebView2.TrySuspendAsync();
+        }
+        catch (Exception ex)
+        {
+            AppLogService.Current?.Warn("Lyrics", $"Web lyrics suspension failed: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>Resume a suspended renderer before making its WPF control visible. / 显示 WPF 控件前恢复挂起的渲染器。</summary>
+    public void Resume()
+    {
+        if (_disposed || _webView.CoreWebView2 is null)
+            return;
+
+        try
+        {
+            _webView.CoreWebView2.Resume();
+        }
+        catch (Exception ex)
+        {
+            AppLogService.Current?.Warn("Lyrics", $"Web lyrics resume failed: {ex.Message}");
+        }
+    }
+
     private async void OnNavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
     {
         if (_disposed)
             return;
 
-        if (!e.IsSuccess)
+        try
         {
-            AppLogService.Current?.Error("Lyrics", $"Web lyrics navigation failed: {e.WebErrorStatus}.");
-            return;
-        }
+            if (!e.IsSuccess)
+            {
+                AppLogService.Current?.Error("Lyrics", $"Web lyrics navigation failed: {e.WebErrorStatus}.");
+                Failed?.Invoke(this, EventArgs.Empty);
+                return;
+            }
 
-        _documentReady = true;
-        await DrainAsync();
-        Ready?.Invoke(this, EventArgs.Empty);
+            _documentReady = true;
+            await DrainAsync();
+            if (!_disposed && _documentReady)
+                Ready?.Invoke(this, EventArgs.Empty);
+        }
+        catch (Exception ex)
+        {
+            AppLogService.Current?.Error("Lyrics", "Web lyrics navigation callback failed.", ex);
+            if (!_disposed)
+                Failed?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     private void StartDrain()
     {
-        if (_documentReady && !_draining && !_disposed)
+        if (_documentReady && !_draining && !_deliveryPaused && !_disposed)
             _ = DrainAsync();
     }
 
     private async Task DrainAsync()
     {
-        if (!_documentReady || _draining || _disposed || _webView.CoreWebView2 is null)
+        if (!_documentReady || _draining || _deliveryPaused || _disposed || _webView.CoreWebView2 is null)
             return;
 
         _draining = true;
         try
         {
-            while (!_disposed)
+            while (!_disposed && !_deliveryPaused)
             {
                 var script = _pendingStyle;
                 if (script is not null)
@@ -188,11 +257,16 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
         catch (Exception ex)
         {
             AppLogService.Current?.Error("Lyrics", "Failed to update the web lyrics renderer.", ex);
+            _documentReady = false;
+            _pendingStyle = null;
+            _pendingLyrics = null;
+            if (!_disposed)
+                Failed?.Invoke(this, EventArgs.Empty);
         }
         finally
         {
             _draining = false;
-            if ((_pendingStyle is not null || _pendingLyrics is not null) && !_disposed)
+            if ((_pendingStyle is not null || _pendingLyrics is not null) && !_deliveryPaused && !_disposed)
                 StartDrain();
         }
     }
@@ -240,6 +314,7 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
         _pendingStyle = null;
         _pendingLyrics = null;
         Ready = null;
+        Failed = null;
         _webView.NavigationCompleted -= OnNavigationCompleted;
         _webView.Dispose();
     }

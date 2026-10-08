@@ -1007,14 +1007,14 @@ public sealed class MediaSessionService : IDisposable
             _loggedPositionSeconds = snapshot.Position;
             log.Info(
                 "Media",
-                $"快照变化 / snapshot changed: {snapshot.SourceName}({snapshot.SourceId}) " +
+                $"快照变化: {snapshot.SourceName}({snapshot.SourceId}) " +
                 $"\"{snapshot.Title}\" — \"{snapshot.Artist}\" " +
                 $"connected={snapshot.IsConnected} playing={snapshot.IsPlaying} " +
                 $"pos={snapshot.Position:0.0}/{snapshot.Duration:0.0} rate={snapshot.PlaybackRate:0.##} " +
                 $"lyrics={(snapshot.Lyrics is null ? "none" : snapshot.Lyrics.Source)}");
             log.Verbose(
                 "Media",
-                $"快照细节 / detail: seek={snapshot.CanSeek} prev={snapshot.CanSkipPrevious} next={snapshot.CanSkipNext} " +
+                $"快照细节: seek={snapshot.CanSeek} prev={snapshot.CanSkipPrevious} next={snapshot.CanSkipNext} " +
                 $"repeat={snapshot.RepeatMode} timelineAt={snapshot.TimelineUpdatedAt:HH:mm:ss.fff}");
             return;
         }

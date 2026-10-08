@@ -21,7 +21,9 @@ public partial class TaskBarMediaControl
     /// <summary>像素柱状图未点亮方块的相对不透明度；留一点亮度才看得出这是一列像素而不是空白。 / Relative opacity of an unlit pixel block; a little brightness is what makes the column read as pixels rather than as empty space.</summary>
     private const double UnlitPixelOpacity = 0.16;
 
-    private readonly List<(Border Bar, ScaleTransform Scale)> _spectrumBars = [];
+    private readonly List<SpectrumBarState> _spectrumBars = [];
+    private readonly SpectrumPoint[] _waveformOutline = new SpectrumPoint[
+        SpectrumPresentationPolicy.CalculateWaveformPointCount(SpectrumComponentSettings.MaximumBandCount)];
     private readonly List<List<Border>> _spectrumPixelColumns = [];
     // 用完整限定名，避免与隐式 using 引入的 System.IO.Path 冲突。
     // Fully qualified so it cannot collide with System.IO.Path, which the implicit usings bring in.
@@ -73,9 +75,9 @@ public partial class TaskBarMediaControl
         if (!SystemParameters.HighContrast && foreground is SolidColorBrush { Color: var resolved })
         {
             color = PlayerForegroundPolicy.ToSpectrumForeground(resolved);
-            var solid = new SolidColorBrush(color.Value);
-            solid.Freeze();
-            brush = solid;
+            if (color == _spectrumForegroundColor)
+                return;
+            brush = CreateFrozenBrush(color.Value);
         }
         else
         {
@@ -87,8 +89,8 @@ public partial class TaskBarMediaControl
 
         _spectrumForegroundColor = color;
         _spectrumForegroundBrush = brush;
-        foreach (var (bar, _) in _spectrumBars)
-            bar.Background = brush;
+        foreach (var state in _spectrumBars)
+            state.Bar.Background = brush;
         foreach (var column in _spectrumPixelColumns)
         {
             foreach (var dot in column)
@@ -150,12 +152,7 @@ public partial class TaskBarMediaControl
                     IsHitTestVisible = false
                 };
                 TaskbarSpectrum.Children.Add(_spectrumWaveform);
-                BuildSpectrumWaveformGeometry(
-                    SpectrumPresentationPolicy.CreateWaveformOutline(
-                        _displayedSpectrum.AsSpan(0, settings.BandCount),
-                        settings.SensitivityPercent,
-                        contentHeight),
-                    settings);
+                BuildSpectrumWaveformGeometry(UpdateWaveformOutline(settings), settings);
                 break;
             case SpectrumStyle.PixelBars:
                 BuildSpectrumPixelColumns(settings.BandCount, contentHeight);
@@ -343,7 +340,7 @@ public partial class TaskBarMediaControl
             Canvas.SetLeft(bar, SpectrumPresentationPolicy.ResolveBarLeftDip(index));
             Canvas.SetTop(bar, 0);
             TaskbarSpectrum.Children.Add(bar);
-            _spectrumBars.Add((bar, scale));
+            _spectrumBars.Add(new SpectrumBarState(bar, scale));
         }
     }
 
@@ -381,29 +378,44 @@ public partial class TaskBarMediaControl
         var motion = CurrentMotion;
         for (var index = 0; index < _spectrumBars.Count; index++)
         {
-            var (_, scale) = _spectrumBars[index];
             var value = index < bands.Length ? bands[index] : 0;
             var targetScale = SpectrumPresentationPolicy.ResolveBarScale(
                 value,
                 settings.SensitivityPercent,
                 SpectrumPresentationPolicy.ResolveContentHeightDip(settings));
-            if (!motion.UseContinuousMotion)
-            {
-                scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-                scale.ScaleY = targetScale;
-                continue;
-            }
-
-            scale.BeginAnimation(
-                ScaleTransform.ScaleYProperty,
-                new DoubleAnimation
-                {
-                    To = targetScale,
-                    Duration = motion.FastDuration,
-                    EasingFunction = CreateEaseOut()
-                },
-                HandoffBehavior.SnapshotAndReplace);
+            ApplySpectrumBarTarget(_spectrumBars[index], targetScale, motion);
         }
+    }
+
+    /// <summary>Owns one bar's visual and submitted animation target; rebuilding the visual also resets deduplication.</summary>
+    internal sealed class SpectrumBarState(Border bar, ScaleTransform scale)
+    {
+        internal Border Bar { get; } = bar;
+        internal ScaleTransform Scale { get; } = scale;
+        internal (double Scale, bool Continuous, TimeSpan Duration)? Target { get; set; }
+    }
+
+    internal static void ApplySpectrumBarTarget(SpectrumBarState state, double targetScale, MotionProfile motion)
+    {
+        var target = (targetScale, motion.UseContinuousMotion, motion.FastDuration);
+        if (state.Target == target)
+            return;
+
+        state.Target = target;
+        if (!motion.UseContinuousMotion)
+        {
+            state.Scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            state.Scale.ScaleY = targetScale;
+            return;
+        }
+
+        // A repeated sample leaves the current clock running to completion, rather than restarting its easing curve.
+        state.Scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation
+        {
+            To = targetScale,
+            Duration = motion.FastDuration,
+            EasingFunction = CreateEaseOut()
+        }, HandoffBehavior.SnapshotAndReplace);
     }
 
     /// <summary>
@@ -443,10 +455,7 @@ public partial class TaskBarMediaControl
         if (_spectrumWaveform is null || _spectrumWaveformSegment is null)
             return;
 
-        var outline = SpectrumPresentationPolicy.CreateWaveformOutline(
-            _displayedSpectrum.AsSpan(0, _appliedSpectrumBandCount),
-            settings.SensitivityPercent,
-            SpectrumPresentationPolicy.ResolveContentHeightDip(settings));
+        var outline = UpdateWaveformOutline(settings);
         if (outline.Length == 0)
         {
             _spectrumWaveform.Data = null;
@@ -465,6 +474,14 @@ public partial class TaskBarMediaControl
 
         for (var index = 0; index < outline.Length; index++)
             points[index] = new Point(outline[index].X, outline[index].Y);
+    }
+
+    private ReadOnlySpan<SpectrumPoint> UpdateWaveformOutline(SpectrumComponentSettings settings)
+    {
+        var count = SpectrumPresentationPolicy.WriteWaveformOutline(
+            _displayedSpectrum.AsSpan(0, settings.BandCount), settings.SensitivityPercent,
+            SpectrumPresentationPolicy.ResolveContentHeightDip(settings), _waveformOutline);
+        return _waveformOutline.AsSpan(0, count);
     }
 
     private void BuildSpectrumWaveformGeometry(ReadOnlySpan<SpectrumPoint> outline, SpectrumComponentSettings settings)

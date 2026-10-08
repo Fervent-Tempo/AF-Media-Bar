@@ -16,6 +16,9 @@ namespace AFMediaBar.Classes.Services.Audio;
 /// </summary>
 public sealed class SpatialAudioService
 {
+    // Windows 用全零 GUID 而非空字符串表示「空间音效未启用」，只判空会把闲置设备误报为已启用。
+    private const string EmptyFormatSubtype = "{00000000-0000-0000-0000-000000000000}";
+
     private static readonly IReadOnlyDictionary<string, string> KnownFormats =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -26,6 +29,12 @@ public sealed class SpatialAudioService
             [SpatialAudioFormatSubtype.DTSHeadphoneX] = "DTS Headphone:X",
             [SpatialAudioFormatSubtype.DTSXUltra] = "DTS:X Ultra"
         };
+
+    private static bool IsActive(string? formatSubtype)
+    {
+        return !string.IsNullOrWhiteSpace(formatSubtype)
+            && !string.Equals(formatSubtype, EmptyFormatSubtype, StringComparison.OrdinalIgnoreCase);
+    }
 
     /// <summary>
     /// 查询指定输出设备的空间音效状态；平台不支持或查询失败时返回不可用快照。
@@ -41,16 +50,17 @@ public sealed class SpatialAudioService
                 return new SpatialAudioSnapshot(false, Translations.Get("Audio.Spatial.Unsupported"), null);
             }
 
+            // 关闭态取 Default 会取到"用户选过但未生效"的格式，同样误报，故只认 Active。
             var active = configuration.ActiveSpatialAudioFormat;
-            var selected = string.IsNullOrWhiteSpace(active)
-                ? configuration.DefaultSpatialAudioFormat
-                : active;
-            var name = string.IsNullOrWhiteSpace(selected)
-                ? Translations.Get("Audio.Spatial.Off")
-                : TryGetKnownFormatName(selected, out var known)
-                    ? known
-                    : Translations.Get("Audio.Spatial.Enabled");
-            return new SpatialAudioSnapshot(true, name, selected);
+            if (!IsActive(active))
+            {
+                return new SpatialAudioSnapshot(true, Translations.Get("Audio.Spatial.Off"), null);
+            }
+
+            var name = TryGetKnownFormatName(active, out var known)
+                ? known
+                : Translations.Get("Audio.Spatial.Enabled");
+            return new SpatialAudioSnapshot(true, name, active);
         }
         catch (Exception exception)
         {

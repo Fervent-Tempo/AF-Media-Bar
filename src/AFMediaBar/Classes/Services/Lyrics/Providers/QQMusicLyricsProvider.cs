@@ -10,7 +10,8 @@ namespace AFMediaBar.Classes.Services.Lyrics;
 /// The QQ Music source: searches a track by title and artist, then retrieves the decrypted QRC syllable lyrics plus the
 /// separate translation.
 ///
-/// 候选至少 85 分才下载正文；先尝试数字歌曲 id 的新接口，再尝试 songmid 的旧接口。
+/// 达到 80 分可直接结束优先阶段；低分候选也取词，供协调器与备用源比较。
+/// 先尝试数字歌曲 id 的新接口，再尝试 songmid 的旧接口。
 /// 旧接口成功返回空正文时确认无歌词；请求或解析失败仍允许备用来源兜底。
 /// </summary>
 public sealed class QQMusicLyricsProvider : ILyricsProvider
@@ -28,9 +29,9 @@ public sealed class QQMusicLyricsProvider : ILyricsProvider
             return null;
         }
 
-        // 在下载歌词之前拒绝低分候选；提高门槛后仍可尝试后续搜索词。
+        // 保留低分候选参与跨源比较，是否直接采纳由 LyricsService 决定。
         var match = await LyricsSearch.MatchAsync(request, Searchers.QQMusic, cancellationToken,
-            LyricsRetrievalPolicy.PreferredMinimumScore);
+            LyricsRetrievalPolicy.PreferredMinimumScore, retainBelowMinimum: true);
         if (match?.Candidate is not QQMusicSearchResult qq)
         {
             return null;

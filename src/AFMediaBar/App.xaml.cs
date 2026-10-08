@@ -50,6 +50,9 @@ namespace AFMediaBar
     {
         private static readonly TimeSpan HostShutdownTimeout = TimeSpan.FromSeconds(5);
         private int _exitHandled;
+        private readonly CancellationTokenSource _startupCancellation = new();
+        private PowerStateMonitor? _powerStateMonitor;
+        private MemoryPruneCoordinator? _memoryPruneCoordinator;
         private SingleInstanceGuard? _singleInstanceGuard;
         private bool _isSecondaryInstance;
 
@@ -173,6 +176,9 @@ namespace AFMediaBar
                 services.AddSingleton<UpdatePackageDownloader>();
                 services.AddSingleton<InstalledApplicationProbe>();
                 services.AddSingleton<UpdateService>();
+                services.AddSingleton<ReleaseHighlightsService>();
+                services.AddSingleton<ReleaseHighlightsViewModel>();
+                services.AddScoped<ReleaseHighlightsPage>();
 
                 // 导航服务（页面导航，不依赖具体窗口）Navigation service (page navigation, window-independent)
                 services.AddSingleton<INavigationService, NavigationService>();
@@ -197,23 +203,33 @@ namespace AFMediaBar
                     () => sp.GetRequiredService<TrackChangeNotificationWindow>());
 
                 // === 设置页面及其 ViewModel Settings Pages and ViewModels ===
-                services.AddSingleton<AppearancePage>();
-                services.AddSingleton<AppearanceViewModel>();
+                services.AddSingleton<AFMediaBar.Classes.Abstractions.ISettingsEnvironmentReader, AFMediaBar.Classes.Services.Settings.SettingsEnvironmentReader>();
+                services.AddScoped<AFMediaBar.Classes.Services.Settings.SettingsContextService>();
+                services.AddScoped<AFMediaBar.Classes.Services.Settings.SettingsPageContext>();
+                services.AddScoped<AFMediaBar.Classes.Abstractions.ISettingsConfiguration, AFMediaBar.Classes.Services.Settings.LegacySettingsConfiguration>();
+                services.AddScoped<AFMediaBar.Classes.Services.Settings.SettingsPageScopeCache>();
+                services.AddScoped<SettingsPageProvider>();
+                services.AddScoped<AppearancePage>();
+                services.AddScoped<ApplicationAppearancePage>();
+                services.AddScoped<TaskbarAppearanceViewModel>();
+                services.AddScoped<AppearanceViewModel>();
 
                 services.AddSingleton<LayoutPage>();
                 services.AddSingleton<LayoutViewModel>();
 
-                services.AddSingleton<DisplayModesPage>();
-                services.AddSingleton<DisplayModesViewModel>();
-                services.AddSingleton<ExtraFeaturesPage>();
+                services.AddScoped<DisplayModesPage>();
+                services.AddScoped<ScreenAndPlacementPage>();
+                services.AddScoped<DisplayModesViewModel>();
+                services.AddScoped<ExtraFeaturesPage>();
                 services.AddSingleton<ExtraFeaturesViewModel>();
-                services.AddSingleton<ComponentsSettingsPage>();
+                services.AddScoped<ComponentsSettingsPage>();
+                services.AddScoped<ComponentsSettingsViewModel>();
 
-                services.AddSingleton<InteractionPage>();
-                services.AddSingleton<InteractionViewModel>();
+                services.AddScoped<InteractionPage>();
+                services.AddScoped<InteractionViewModel>();
 
-                services.AddSingleton<LyricsPage>();
-                services.AddSingleton<LyricsViewModel>();
+                services.AddScoped<LyricsPage>();
+                services.AddScoped<LyricsViewModel>();
 
                 services.AddSingleton<SettingsPage>();
                 services.AddSingleton<SettingsViewModel>();
@@ -221,7 +237,7 @@ namespace AFMediaBar
                 // 应用页与关于页由原「应用与关于」拆分而来：设置留在应用页，人与许可移到关于页。
                 // The application and about pages come from splitting the former "application and about": settings stay on the
                 // application page while people and licenses moved to about.
-                services.AddSingleton<ApplicationPage>();
+                services.AddScoped<ApplicationPage>();
                 services.AddSingleton<ApplicationViewModel>();
 
                 // 关于页的名单服务：贡献者与赞助者名单（缓存 + 仓库快照回退），只被关于页使用。
@@ -230,7 +246,7 @@ namespace AFMediaBar
                 services.AddSingleton<CreditsService>();
                 services.AddSingleton<AvatarImageLoader>();
 
-                services.AddSingleton<AboutPage>();
+                services.AddScoped<AboutPage>();
                 services.AddSingleton<AboutViewModel>();
 
                 // 组件相关VM
@@ -298,12 +314,10 @@ namespace AFMediaBar
             // from the user's own file.
             Services.GetRequiredService<LocalizationService>().Start();
 
-            // 开机自动启动：设置是意图，注册表 Run 项是它的执行结果，因此启动时按设置核对一次。
-            // 只写 HKCU，不提权；写失败只记录原因，不影响启动链。
-            // Run-at-startup: the setting is the intent and the registry Run entry is its effect, so startup reconciles them once.
-            // Only HKCU is written and no elevation is requested; a failure is only logged and never disturbs startup.
+            // 开机自动启动：加载后读取 HKCU Run 登记同步到设置，后续用户修改和整体重置才写登记。
+            // Run-at-startup: read the HKCU Run entry into settings; only later user changes and resets write registration.
             var startupRegistration = Services.GetRequiredService<StartupRegistrationService>();
-            var startupFailure = startupRegistration.Apply(SettingsManager.Current.LaunchAtStartup);
+            var startupFailure = startupRegistration.Start();
             if (startupFailure is not null)
                 Debug.WriteLine($"[App] Run-at-startup registration failed: {startupFailure}");
             // 目标显示器直接按设备标识解析：设置文件只读取当前 schema，旧的"排序索引"不会再出现在内存里，
@@ -327,16 +341,28 @@ namespace AFMediaBar
             // the host has started the tray icon and taskbar bar would already exist.
             var updateService = Services.GetRequiredService<UpdateService>();
             updateService.RestartRequested += (_, _) => Shutdown();
-            if (updateService.TryLaunchPendingInstallOnStartup())
+            if (await updateService.TryLaunchPendingInstallOnStartupAsync(_startupCancellation.Token))
             {
                 Debug.WriteLine("[App] A pending update is being installed before this start; exiting now.");
                 Shutdown();
                 return;
             }
+            if (_startupCancellation.IsCancellationRequested || _exitHandled != 0 || Dispatcher.HasShutdownStarted)
+                return;
+
+            bool translucentTbRunning;
+            var translucentTbDetector = Services.GetRequiredService<TranslucentTbProcessDetector>();
+            try
+            {
+                translucentTbRunning = await Task.Run(translucentTbDetector.IsRunning, _startupCancellation.Token);
+            }
+            catch (OperationCanceledException) when (_startupCancellation.IsCancellationRequested) { return; }
+            if (_startupCancellation.IsCancellationRequested || _exitHandled != 0 || Dispatcher.HasShutdownStarted)
+                return;
 
             var translucentTbDecision = TaskbarTransparencyCompatibilityPolicy.Resolve(
                 SettingsManager.Current.TranslucentTbCompatibilityPromptShown,
-                Services.GetRequiredService<TranslucentTbProcessDetector>().IsRunning(),
+                translucentTbRunning,
                 SettingsManager.Current.Appearance.TaskbarBackgroundMaterial);
             if (translucentTbDecision.ShowPrompt)
             {
@@ -362,16 +388,28 @@ namespace AFMediaBar
             // the whole set of application-level brushes at once.
             Services.GetRequiredService<WindowAppearanceService>().SystemColorizationChanged +=
                 () => _themeCoordinator?.Apply(SettingsManager.Current.Appearance);
-            await _host.StartAsync();
+            try
+            {
+                await _host.StartAsync(_startupCancellation.Token);
+            }
+            catch (OperationCanceledException) when (_startupCancellation.IsCancellationRequested)
+            {
+                return;
+            }
+            if (_startupCancellation.IsCancellationRequested || _exitHandled != 0 || Dispatcher.HasShutdownStarted)
+                return;
 
             if (translucentTbDecision.ShowPrompt)
             {
-                _ = Dispatcher.BeginInvoke(() => System.Windows.MessageBox.Show(
-                    Translations.Get("Startup.TranslucentTb.Content"),
-                    Translations.Get("Startup.TranslucentTb.Title"),
-                    System.Windows.MessageBoxButton.OK,
-                    System.Windows.MessageBoxImage.Information),
-                    DispatcherPriority.ApplicationIdle);
+                _ = Dispatcher.BeginInvoke(() =>
+                {
+                    if (_startupCancellation.IsCancellationRequested || _exitHandled != 0 || Dispatcher.HasShutdownStarted) return;
+                    System.Windows.MessageBox.Show(
+                        Translations.Get("Startup.TranslucentTb.Content"),
+                        Translations.Get("Startup.TranslucentTb.Title"),
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Information);
+                }, DispatcherPriority.ApplicationIdle);
             }
 
             // 安装协调互斥体必须在 Host 启动后创建：更新链路会在启动安装包之前释放它（见 InstallCoordinatorMutex）。
@@ -388,7 +426,10 @@ namespace AFMediaBar
             // （SystemEvents 的回调会从自己的线程进来，本类统一把它们搬回这里）。
             // Background pruning starts last: it can only judge "is anything playing" once the media session catalog is up, and its power message
             // window has to be created on the UI thread, which is also the thread every SystemEvents callback is marshalled back to.
-            Services.GetRequiredService<MemoryPruneCoordinator>().Start();
+            _powerStateMonitor = Services.GetRequiredService<PowerStateMonitor>();
+            _memoryPruneCoordinator = Services.GetRequiredService<MemoryPruneCoordinator>();
+            _powerStateMonitor.Start();
+            _memoryPruneCoordinator.Start();
 
 #if DEBUG
             _debugLyricsDiagnostics = new DebugLyricsDiagnostics();
@@ -410,6 +451,8 @@ namespace AFMediaBar
                 return;
             }
 
+            _startupCancellation.Cancel();
+
             if (_isSecondaryInstance)
             {
                 // 重复进程尚未启动 Host，也未初始化设置或更新；不可走主进程的 Flush/安装交接。
@@ -427,6 +470,11 @@ namespace AFMediaBar
             // exit into a crash recorded as e0434352.
             var updateService = Services.GetRequiredService<UpdateService>();
             var installCoordinatorMutex = Services.GetRequiredService<InstallCoordinatorMutex>();
+            updateService.CancelInstallPreparation();
+
+            // UI 消息资源先退订与释放，再停止 Host；容器的重复 Dispose 仍然安全。
+            _memoryPruneCoordinator?.Dispose();
+            _powerStateMonitor?.Dispose();
 
 #if DEBUG
             if (_debugLyricsDiagnostics is not null)
@@ -465,14 +513,14 @@ namespace AFMediaBar
 
             // 只有用户明确点过"立即重启并安装"时才在退出边界启动安装程序。
             //
-            // 自动更新已经不在退出时发生：它在**下一次启动之前**执行（见 TryLaunchPendingInstallOnStartup），
+            // 自动更新已经不在退出时发生：它在**下一次启动之前**执行（见 TryLaunchPendingInstallOnStartupAsync），
             // 否则安装程序窗口会出现在用户刚关掉程序之后，看起来像程序自己又起来了一次。仍要放在 Dispose 看门狗
             // 之前：看门狗会在 5 秒后直接结束进程，排在它之后就会与之赛跑。
             // The installer is only started on the exit boundary when the user explicitly clicked "restart and install
             // now".
             //
             // Automatic updates no longer happen on exit: they run *before the next start* (see
-            // TryLaunchPendingInstallOnStartup), because otherwise the installer window appears right after the user
+            // TryLaunchPendingInstallOnStartupAsync), because otherwise the installer window appears right after the user
             // closed the application and looks like the application starting itself again. It still has to happen
             // before the disposal watchdog, which ends the process after five seconds and would otherwise win the race.
             try
@@ -545,6 +593,20 @@ namespace AFMediaBar
             Resources["AfOnAccentBrush"] = CreateFrozenBrush(accent.OnAccent);
 
             var dark = theme == ApplicationTheme.Dark || theme == ApplicationTheme.HighContrast && SystemParameters.HighContrast;
+            var highContrast = SystemParameters.HighContrast;
+            var showSettingsMaterial = !highContrast && appearance.BackdropMode != ApplicationBackdropMode.FluentSolid;
+            var cardColor = TintSettingsSurface(dark ? Color.FromRgb(44, 44, 44) : Colors.White, accent.Accent, dark ? 0.08 : 0.04);
+            var groupColor = TintSettingsSurface(dark ? Color.FromRgb(40, 40, 40) : Color.FromRgb(248, 248, 248), accent.Accent, dark ? 0.08 : 0.06);
+            var navigationColor = TintSettingsSurface(dark ? Color.FromRgb(30, 30, 30) : Color.FromRgb(236, 236, 236), accent.Accent, dark ? 0.10 : 0.08);
+            // Alpha belongs to the surface brushes, never to a whole card: labels and controls stay fully legible.
+            Resources["AfSettingsCardBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(WithAlpha(cardColor, showSettingsMaterial ? (byte)(dark ? 240 : 245) : byte.MaxValue));
+            Resources["AfSettingsInfoSurfaceBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(WithAlpha(cardColor, showSettingsMaterial ? (byte)(dark ? 235 : 242) : byte.MaxValue));
+            Resources["AfSettingsGroupSurfaceBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(WithAlpha(groupColor, showSettingsMaterial ? (byte)(dark ? 235 : 242) : byte.MaxValue));
+            Resources["AfSettingsInputBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(TintSettingsSurface(dark ? Color.FromRgb(54, 54, 54) : Color.FromRgb(247, 247, 247), accent.Accent, dark ? 0.08 : 0.04));
+            Resources["AfSettingsBorderBrush"] = highContrast ? SystemColors.WindowTextBrush : CreateFrozenBrush(TintSettingsSurface(dark ? Color.FromRgb(72, 72, 72) : Color.FromRgb(216, 216, 216), accent.Accent, 0.08));
+            Resources["AfSettingsNavigationBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(navigationColor);
+            Resources["AfSettingsSectionBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(groupColor);
+            Resources["AfSettingsHeaderBridgeBrush"] = showSettingsMaterial ? CreateSettingsHeaderBridgeBrush(groupColor) : Brushes.Transparent;
             // Context menus always use an opaque Fluent solid surface. Native
             // Mica/Acrylic on Popup HWNDs leaves transparent hit-test regions
             // that can pass clicks through to the window behind the menu.
@@ -554,6 +616,24 @@ namespace AFMediaBar
             menuBrush.Freeze();
             Resources["AppMenuBackgroundBrush"] = menuBrush;
             Resources["ContextMenuBackground"] = menuBrush;
+        }
+
+        private static Color TintSettingsSurface(Color surface, Color accent, double amount) =>
+            Color.FromRgb(
+                (byte)Math.Round(surface.R + (accent.R - surface.R) * amount),
+                (byte)Math.Round(surface.G + (accent.G - surface.G) * amount),
+                (byte)Math.Round(surface.B + (accent.B - surface.B) * amount));
+
+        private static Color WithAlpha(Color color, byte alpha) => Color.FromArgb(alpha, color.R, color.G, color.B);
+
+        private static LinearGradientBrush CreateSettingsHeaderBridgeBrush(Color color)
+        {
+            var brush = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
+            brush.GradientStops.Add(new GradientStop(WithAlpha(color, 210), 0));
+            brush.GradientStops.Add(new GradientStop(WithAlpha(color, 150), 0.6));
+            brush.GradientStops.Add(new GradientStop(WithAlpha(color, 0), 1));
+            brush.Freeze();
+            return brush;
         }
 
         private static SolidColorBrush CreateFrozenBrush(Color color)
@@ -579,7 +659,7 @@ namespace AFMediaBar
             {
                 AppLogService.Current?.Warn(
                     "Lyrics",
-                    "WebView2 图形层故障已拦截，将重建歌词视图 / WebView2 graphics fault intercepted; rebuilding the lyrics view",
+                    "WebView2 图形层故障已拦截，将重建歌词视图",
                     e.Exception);
                 e.Handled = true;
                 WebLyricsGraphicsRecovery.Request();

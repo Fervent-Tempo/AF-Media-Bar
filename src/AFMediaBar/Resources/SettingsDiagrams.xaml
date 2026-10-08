@@ -4,7 +4,7 @@
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
 
     <!--
-        设置页矢量说明图 / Settings vector diagrams
+        设置页矢量说明图 / Settings vector diagrams 
 
         每张图都紧挨着它所解释的控件，并且自带唯一一句说明；页面不再需要另写一条说明来解释同一件事。
         所有颜色都取自主题画刷，因此浅色、深色、高对比度和系统主色变化都不需要额外处理。
@@ -37,8 +37,8 @@
     </Style>
 
     <Style x:Key="AfDiagramSurfaceStyle" TargetType="{x:Type Border}">
-        <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+        <Setter Property="Background" Value="{DynamicResource AfSettingsInfoSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AfSettingsBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="6" />
     </Style>
@@ -261,7 +261,7 @@
             Padding="12,10"
             Style="{StaticResource AfDiagramSurfaceStyle}">
             <StackPanel>
-                <Grid Height="44">
+                <Grid Height="64">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
@@ -294,13 +294,13 @@
                         Grid.Column="1"
                         Margin="16,0,0,0"
                         HorizontalAlignment="Left"
-                        VerticalAlignment="Bottom"
-                        Orientation="Horizontal">
+                        VerticalAlignment="Center"
+                        Orientation="Vertical">
                         <ui:SymbolIcon
-                            Margin="0,0,4,0"
+                            Margin="0,0,0,2"
                             VerticalAlignment="Center"
                             FontSize="13"
-                            Symbol="ArrowLeft24" />
+                            Symbol="ArrowUp24" />
                         <Border
                             Width="150"
                             Height="22"
@@ -308,19 +308,20 @@
                             CornerRadius="4"
                             Opacity="0.8" />
                         <ui:SymbolIcon
-                            Margin="4,0,0,0"
+                            Margin="0,2,0,0"
                             VerticalAlignment="Center"
                             FontSize="13"
-                            Symbol="ArrowRight24" />
+                            Symbol="ArrowDown24" />
                     </StackPanel>
                 </Grid>
 
                 <Border Height="1" Background="{DynamicResource DividerStrokeColorDefaultBrush}" />
 
                 <Grid Margin="0,8,0,0">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                     <TextBlock Style="{StaticResource AfDiagramLabelStyle}" Text="{DynamicResource Loc.Diagram.TaskbarPlacement.Label.TaskbarIcons}" />
                     <TextBlock
-                        HorizontalAlignment="Right"
+                        Grid.Column="1" Margin="16,0,0,0" HorizontalAlignment="Right"
                         Style="{StaticResource AfDiagramLabelStyle}"
                         Text="{DynamicResource Loc.Diagram.TaskbarPlacement.Label.EdgeOffset}" />
                 </Grid>

@@ -11,11 +11,11 @@ internal static class LyricsSearch
     internal sealed record Match(ISearchResult Candidate, int Score);
 
     public static Task<Match?> MatchAsync(LyricsRequest request, Searchers source, CancellationToken token,
-        int minimumScore = LyricsMetadataScore.MinimumScore) =>
-        MatchAsync(request, source.GetSearcher(), token, minimumScore);
+        int minimumScore = LyricsMetadataScore.MinimumScore, bool retainBelowMinimum = false) =>
+        MatchAsync(request, source.GetSearcher(), token, minimumScore, retainBelowMinimum);
 
     internal static async Task<Match?> MatchAsync(LyricsRequest request, ISearcher searcher, CancellationToken token,
-        int minimumScore = LyricsMetadataScore.MinimumScore)
+        int minimumScore = LyricsMetadataScore.MinimumScore, bool retainBelowMinimum = false)
     {
         Match? best = null;
         int? bestCandidateScore = null;
@@ -31,7 +31,7 @@ internal static class LyricsSearch
             catch (OperationCanceledException) { throw; }
             catch (Exception exception)
             {
-                AppLogService.Current?.Warn("Lyrics", $"歌曲搜索异常 / search failed: {searcher.Name} {exception.GetType().Name}");
+                AppLogService.Current?.Warn("Lyrics", $"歌曲搜索异常: {searcher.Name} {exception.GetType().Name}");
                 continue;
             }
             token.ThrowIfCancellationRequested();
@@ -40,12 +40,13 @@ internal static class LyricsSearch
                 var score = LyricsMetadataScore.Calculate(request, [candidate.Title], candidate.Artists,
                     [candidate.Album], candidate.DurationMs / 1000d);
                 bestCandidateScore = Math.Max(bestCandidateScore ?? 0, score);
-                if (score >= minimumScore && (best is null || score > best.Score))
+                if ((retainBelowMinimum || score >= minimumScore) && (best is null || score > best.Score))
                     best = new Match(candidate, score);
             }
-            if (best is not null) break;
+            // A low QQ candidate is kept for cross-source comparison, but must not stop later search queries.
+            if (best is not null && best.Score >= minimumScore) break;
         }
-        AppLogService.Current?.Info("Lyrics", $"歌曲匹配 / match: source={searcher.Name} score={best?.Score.ToString() ?? "none"} " +
+        AppLogService.Current?.Info("Lyrics", $"歌曲匹配: source={searcher.Name} score={best?.Score.ToString() ?? "none"} " +
             $"bestCandidateScore={bestCandidateScore?.ToString() ?? "none"} minimum={minimumScore}");
         return best;
     }

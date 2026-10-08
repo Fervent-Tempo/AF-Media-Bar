@@ -296,4 +296,4 @@ Write-Host "Size:      $sizeMb MB"
 Write-Host "SHA-256:   $hash"
 Write-Host "Checksum:  $checksumPath"
 Write-Host ''
-Write-Host 'Write the size and SHA-256 above into docs\latest.json packages[] when publishing this version.'
+Write-Host 'Release CI generates metadata from the final packages with tools/new-release-manifest.ps1.'

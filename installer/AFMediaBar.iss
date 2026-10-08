@@ -141,6 +141,60 @@ Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChang
 Filename: "{app}\{#MyAppExeName}"; Flags: nowait; Check: ShouldRelaunchAfterUpdate
 
 [Code]
+// 与应用的 StartupRegistrationPolicy 保持相同的路径判定：允许引号和参数，忽略大小写。
+// 只匹配完整可执行文件路径，避免卸载一个副本时移除另一个副本的启动项。
+function StartupCommandMatchesInstallation(Command: String): Boolean;
+var
+  Separator: Integer;
+begin
+  Result := False;
+  Command := Trim(Command);
+  if Command = '' then
+    Exit;
+
+  if Command[1] = '"' then
+  begin
+    Delete(Command, 1, 1);
+    Separator := Pos('"', Command);
+    if Separator = 0 then
+      Exit;
+    Command := Copy(Command, 1, Separator - 1);
+  end
+  else
+  begin
+    Separator := Pos(' ', Command);
+    if Separator > 0 then
+      Command := Copy(Command, 1, Separator - 1);
+  end;
+
+  Result := CompareText(Command, ExpandConstant('{app}\{#MyAppExeName}')) = 0;
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  RunKey: String;
+  Command: String;
+begin
+  // 启动项由应用运行时写入，不在 Inno 的安装记录中；只在实际卸载开始后清理。
+  // 显式使用 HKCU，不随全用户安装切换到 HKLM，也不加载其他用户的注册表。
+  if CurUninstallStep <> usUninstall then
+    Exit;
+
+  RunKey := 'Software\Microsoft\Windows\CurrentVersion\Run';
+  if not RegQueryStringValue(HKCU64, RunKey, 'AFMediaBar', Command) then
+    Exit;
+  if not StartupCommandMatchesInstallation(Command) then
+  begin
+    Log('Preserving AFMediaBar startup entry: it does not target this installation.');
+    Exit;
+  end;
+
+  if RegDeleteValue(HKCU64, RunKey, 'AFMediaBar') then
+    Log('Removed AFMediaBar startup entry for this installation.')
+  else
+    Log('Failed to remove AFMediaBar startup entry for this installation.');
+end;
+
 /// <summary>
 /// 判断本次安装是否由程序的"立即重启并安装"发起：只有显式传入 AUTORELAUNCH=1 才在安装完成后启动程序。
 /// 程序正常退出触发的静默安装不带该参数，因此装完不会把用户刚关掉的窗口再拉起来。

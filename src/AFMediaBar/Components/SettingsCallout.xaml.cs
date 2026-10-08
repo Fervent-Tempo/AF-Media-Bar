@@ -59,7 +59,7 @@ namespace AFMediaBar.Components
                 // instead of letting a right-click settings action terminate the process.
                 AppLogService.Current?.Error(
                     "Settings",
-                    "说明条 XAML 资源不可用，已使用安全后备 / SettingsCallout XAML unavailable; using safe fallback",
+                    "说明条 XAML 资源不可用，已使用安全后备",
                     exception);
                 BuildFallbackContent();
             }
@@ -78,12 +78,12 @@ namespace AFMediaBar.Components
 
             var body = new System.Windows.Controls.TextBlock
             {
-                FontSize = 12,
                 LineHeight = 18,
                 LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
                 TextWrapping = TextWrapping.Wrap
             };
             body.SetBinding(System.Windows.Controls.TextBlock.TextProperty, new Binding(nameof(Text)) { Source = this });
+            body.SetBinding(System.Windows.Controls.TextBlock.FontSizeProperty, new Binding(nameof(FontSize)) { Source = this });
             body.SetResourceReference(ForegroundProperty, "TextFillColorSecondaryBrush");
             Grid.SetColumn(body, 1);
 
@@ -100,8 +100,8 @@ namespace AFMediaBar.Components
                 CornerRadius = new CornerRadius(8),
                 Child = content
             };
-            surface.SetResourceReference(Border.BackgroundProperty, "ControlFillColorSecondaryBrush");
-            surface.SetResourceReference(Border.BorderBrushProperty, "ControlStrokeColorDefaultBrush");
+            surface.SetResourceReference(Border.BackgroundProperty, "AfSettingsInfoSurfaceBrush");
+            surface.SetResourceReference(Border.BorderBrushProperty, "AfSettingsBorderBrush");
             Content = surface;
         }
 

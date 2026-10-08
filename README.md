@@ -12,7 +12,7 @@
   <a href="#下载安装">下载运行</a> · <a href="#功能一览">功能一览</a> · <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/issues/new?template=bug_report.yml">报告问题</a> · <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/issues/new?template=feature_request.yml">功能建议</a>
 </p>
 
-AF Media Bar 是一款便携式 Windows 10/11 任务栏媒体控制器。它从系统媒体会话读取正在播放的内容，让封面、歌词、播放控制和音频设备切换留在桌面边缘。
+AF Media Bar 是一款 Windows 10/11 任务栏媒体控制器。它从系统媒体会话读取正在播放的内容，让封面、歌词、播放控制和音频设备切换留在桌面边缘。
 
 ## 运行演示
 
@@ -26,66 +26,43 @@ AF Media Bar 是一款便携式 Windows 10/11 任务栏媒体控制器。它从�
 
 前往 [GitHub Releases](https://github.com/Fervent-Tempo/AF-Media-Bar/releases)，选择一种方式：
 
-1. **安装程序（推荐）：** 下载 `AFMediaBar-Setup-vX.Y.Z-win-x64.exe`，运行向导并选择语言、安装位置及当前用户/所有用户。默认安装位置为 `%LOCALAPPDATA%\Programs\AFMediaBar`；安装版支持程序内检查、下载与安装更新。
-2. **便携版：** 下载 `AFMediaBar-vX.Y.Z-win-x64.zip`，解压到长期保留且可写的目录（如 `D:\AFMediaBar`），运行其中的 `AFMediaBar.exe`。便携版不写注册表，更新时手动替换文件。
+1. **安装程序（推荐）：** 下载 `AFMediaBar-Setup-vX.Y.Z-win-x64.exe`，按向导安装。
+2. **便携版：** 下载 `AFMediaBar-vX.Y.Z-win-x64.zip`，解压到可写目录，运行 `AFMediaBar.exe`。
 
-**系统要求：** Windows 10 1809（内部版本 17763）或更新的 x64 系统，并需要 Microsoft Edge WebView2 Runtime。Windows 11 与仍受支持的 Windows 10 通常已预装；精简系统若缺失，需先安装 Evergreen Runtime。两种包都自带 .NET 运行时，不需要另行安装。程序用到的系统接口可在 1809 使用，但 **.NET 10 官方仅支持 Windows 10 的长期服务版与企业版**（1809 E、21H2 E）；消费版 Windows 10 不在 Microsoft 的支持范围内。Windows 11 不受此限制。
+**系统要求：** Windows 10 1809 或更新的 x64 系统，需要 Microsoft Edge WebView2 Runtime；缺失时先安装 Evergreen Runtime。发布包自带 .NET 运行时。**.NET 10 对 Windows 10 的官方支持仅限长期服务版与企业版**，消费版不在支持范围内；Windows 11 不受此限制。
 
-请下载上述发布包，不要使用 GitHub 自动生成的 Source code 压缩包。程序尚未进行商业代码签名，首次运行时 Windows SmartScreen 可能提示“未知发布者”。
-
+请下载发布包，不要使用 Source code 压缩包。程序尚未进行商业代码签名，首次运行时 Windows SmartScreen 可能提示“未知发布者”。
 
 ## 功能一览
 
-| 场景 | 可以做什么 |
+| 功能 | 描述 |
 | --- | --- |
-| 音乐控制 | 上一首、播放/暂停、下一首、循环；点击或拖动进度条跳转。 |
-| 任务栏歌词 | 由 Web 歌词引擎显示实时歌词，支持译文、音译与双行对齐；优先搜索已启用的 QQ 音乐，候选达到 85 分才取词；否则并发查询其他启用来源，采用最高分结果，确认无歌词也视为有效结果 |
-| 来源与交互 | 切换媒体会话；封面、标题与歌词的点击操作可分别设为播放/暂停、切回媒体应用或打开完整菜单 |
-| 音频与系统 | 点击或滚轮切换默认输出设备、调整当前媒体应用音量、查看空间音效；提供四种频谱样式与性能检测组件 |
-| 布局与外观 | 自动避让任务栏图标及系统区域，可选目标屏幕、无播放时自动隐藏；可调字体、主题色与窗口材质 |
-| 快捷操作 | 悬停显示控制按钮，完整层展示更多信息；音符图标、媒体栏或托盘右键菜单可打开快速启动列表；快速切换输出设备 |
+| 播放与来源 | 查看封面与曲目信息，切换媒体来源；支持上一首、播放/暂停、下一首、循环及进度跳转。 |
+| 实时歌词 | 自动获取歌词，支持逐字高亮、译文、音译与双行显示，让歌词随播放进度同步呈现。 |
+| 音频控制 | 快速切换默认输出设备，调整当前媒体应用的音量，查看空间音效状态。 |
+| 频谱与指标 | 提供四种音频频谱样式，可在任务栏显示 CPU、GPU 和内存等性能指标。 |
+| 布局与外观 | 自动避让任务栏图标及系统区域，选择显示屏、无播放时自动隐藏；可调整字体、主题色与窗口材质。 |
+| 快捷操作 | 悬停显示控制按钮，打开完整媒体弹窗查看更多信息；支持自定义点击操作、快速启动常用播放器与托盘菜单。 |
 
-**使用边界：** 一般播放器需要向 Windows 发布 GSMTC 媒体会话；部分播放器需要在自身设置中启用“系统媒体控制”或“媒体键”。网易云音乐也可通过内存读取独立识别，包括没有 SMTC 的 Store 版；信息和歌词以内存读取为主，封面与播放控制需要其 SMTC 支持。封面仅从 SMTC 读取，不另行下载；没有同曲目 SMTC 封面时不显示封面。来源列表只显示一个网易云音乐，启用来源过滤并隐藏它时会停止内存读取。当前仅有任务栏运行模式；设置中的灵动岛、桌面卡片、悬浮球是占位选项。
+## 基本使用
 
-## 工作方式
+- 启动播放器并播放歌曲，媒体栏会显示当前曲目。部分播放器需先启用“系统媒体控制”或“媒体键”。
+- 悬停媒体栏显示控制按钮；点击或拖动进度条可跳转播放位置。
+- 通过托盘右键菜单打开设置、快速启动列表或退出程序。
 
-AF Media Bar 以独立 WPF 进程运行，将媒体栏挂载为任务栏子窗口。它使用 Windows 的公开 GSMTC 接口读取媒体会话，通过 Core Audio 处理设备与音量，不修改或向 `explorer.exe` 注入代码。
-
-```mermaid
-flowchart LR
-    A[媒体应用] -->|GSMTC 会话| B[AF Media Bar]
-    C[Windows Core Audio] -->|设备与音量| B
-    B --> D[WPF 任务栏子窗口]
-```
-
-网易云音乐、QQ 音乐、Spotify、浏览器等应用只要发布系统媒体会话，就可以被发现和控制。Windows 控制中心的媒体卡片不是公开可嵌入的控件；本项目读取其背后的公开接口并自行渲染任务栏界面。
+**兼容说明：** 大多数播放器依赖 Windows 系统媒体会话。网易云音乐可独立识别曲目信息，但封面和播放控制仍需其系统媒体控制支持。当前仅支持任务栏模式，其他显示模式尚未开放。
 
 ## 更新与卸载
 
-### 更新
-
-程序启动约 20 秒后读取公开版本清单（`docs/latest.json`）。发现新版本时：托盘图标弹出一次系统通知，点击直接打开「应用」页。
-便携版没有安装记录，只下载不安装。
-
-安装日志在 `%LOCALAPPDATA%\AFMediaBar\updates\install-<版本>.log`；已下载的安装包放在同一目录，并在下次启动时按版本清理。
-
-用户偏好与窗口状态保存在 `%LOCALAPPDATA%\AFMediaBar\settings.json`，同一版本内替换程序文件不会丢失设置；「应用」页可打开设置文件夹。
-
-### 卸载
-
-- 便携版：直接删除程序目录。
-- 安装版：在“设置 > 应用 > 已安装的应用”中卸载，或使用开始菜单的卸载项；卸载只删除程序目录与快捷方式，需要使用下面命令或手动删除 `%LOCALAPPDATA%\AFMediaBar`。
-
-```powershell
-Remove-Item "$env:LOCALAPPDATA\AFMediaBar" -Recurse -Force
-```
+- **更新：** 发现新版本时会提示，可在「应用」页检查更新。安装版支持程序内下载与安装；便携版需手动替换程序文件。
+- **设置：** 保存在 `%LOCALAPPDATA%\AFMediaBar\settings.json`，可从「应用」页打开设置文件夹。
+- **卸载：** 安装版通过 Windows“已安装的应用”或开始菜单卸载；便携版直接删除程序目录。若要清除设置与缓存，再手动删除 `%LOCALAPPDATA%\AFMediaBar`。
 
 ## 隐私与安全
 
-- 不包含遥测、广告、账号系统或联网分析代码；媒体信息、系统指标与音量操作全部在本机处理。
-- 更新检查只请求两个公开清单端点（`raw.githubusercontent.com` 与 jsDelivr 上的 `docs/latest.json`）。
-- 歌词优先搜索 QQ 音乐，匹配达到 85 分才请求其在线歌词接口，否则按需并发请求其他启用来源。联网检索使用曲名、歌手等元数据；同一来源可能包含搜索与正文获取等多次请求，歌词来源可在设置中关闭。
-- 程序以当前用户权限运行，不请求管理员权限。安全问题请按 [SECURITY.md](SECURITY.md) 私下报告。
+- 不含遥测、广告或账号系统；媒体控制与音量操作在本机处理。
+- 更新检查与在线歌词检索会联网；歌词检索使用曲名、歌手等信息，可在设置中关闭歌词来源。
+- 程序以当前用户权限运行。安全问题请按 [SECURITY.md](SECURITY.md) 私下报告。
 
 ## 从源码构建
 
@@ -94,9 +71,9 @@ Remove-Item "$env:LOCALAPPDATA\AFMediaBar" -Recurse -Force
 ```powershell
 git clone https://github.com/Fervent-Tempo/AF-Media-Bar.git
 cd AF-Media-Bar
-dotnet restore .\src\AFMediaBar.slnx
-dotnet build .\src\AFMediaBar.slnx -c Release --no-restore
-dotnet test .\src\AFMediaBar.slnx -c Release --no-build
+dotnet restore .\src\AFMediaBar.slnx -r win-x64
+dotnet build .\src\AFMediaBar.slnx -c Release --no-restore -p:ContinuousIntegrationBuild=true -p:BuildInParallel=false
+dotnet test .\tests\AFMediaBar.Layout.Tests\AFMediaBar.Layout.Tests.csproj -c Release --no-build --no-restore
 dotnet run --project .\src\AFMediaBar\AFMediaBar.csproj
 ```
 
@@ -131,8 +108,9 @@ AF-Media-Bar/
 
 ## 参与贡献
 
-提交问题或代码前请阅读[贡献指南与项目方向](CONTRIBUTING.md)。错误报告请附 Windows 版本、AF Media Bar 版本、媒体播放器与完整复现步骤。版本变化记录见 [CHANGELOG.md](CHANGELOG.md)。
+参与贡献前请阅读 [贡献指南](CONTRIBUTING.md)，架构边界见 [架构文档](docs/architecture.md)。
 
+报告问题时请附 Windows 版本、程序版本、播放器与复现步骤。版本记录见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 致谢
 

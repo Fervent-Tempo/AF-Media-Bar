@@ -203,7 +203,8 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         var sourceId = read.SourceId;
         var title = read.Title;
         var artist = read.Artist;
-        var request = new LyricsRequest(title, artist, read.Album, duration > 0 ? duration : null, null);
+        var request = new LyricsRequest(title, artist, read.Album, duration > 0 ? duration : null, null,
+            PlaybackSourceId: sourceId);
         var lyrics = GetLyrics(session.Id, sourceId, request, read.IsVideo);
 
         return new MediaSnapshot(
@@ -246,8 +247,9 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         if (_disposed) return null;
         if (!LyricsMediaEligibilityPolicy.ShouldFetch(sourceId, isVideo, SettingsManager.Current.AllowBrowserAndVideoLyrics))
             return null;
-        // Structured keys include every matching input and cannot collide through separator characters.
-        var key = (sessionId, request);
+        request = request with { PlaybackSourceId = sourceId };
+        // SMTC 的总时长可能随时间轴更新变化；它用于匹配，不用于缓存或在途请求的曲目身份。
+        var key = (sessionId, request with { DurationSeconds = null });
         _lastLyricsKey = key;
         if (_lyricsCache.TryGetValue(key, out var cached))
         {
@@ -261,7 +263,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         }
 
         _pendingLyrics.Add(key);
-        _ = LoadLyricsAsync(key);
+        _ = LoadLyricsAsync(key, request);
         return null;
     }
 
@@ -302,26 +304,27 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
             return;
         }
 
-        var request = new LyricsRequest(title, artist, string.Empty, durationSeconds is > 0 ? durationSeconds : null, null);
+        var request = new LyricsRequest(title, artist, string.Empty, durationSeconds is > 0 ? durationSeconds : null, null,
+            PlaybackSourceId: sourceId);
         // The service snapshot has no album field; reuse the matching request already read from SMTC.
-        var key = _lastLyricsKey is { } last && last.SessionId == sessionId &&
-                  last.Request.Title == title && last.Request.Artist == artist &&
-                  last.Request.DurationSeconds == request.DurationSeconds
-            ? last : (sessionId, request);
+        (string SessionId, LyricsRequest Request) key = _lastLyricsKey is { } last && last.SessionId == sessionId &&
+                  last.Request.PlaybackSourceId == sourceId &&
+                  last.Request.Title == title && last.Request.Artist == artist
+            ? last : (sessionId, request with { DurationSeconds = null });
         if (_lyricsCache.TryGetValue(key, out _) || !_pendingLyrics.Add(key))
         {
             return;
         }
 
-        _ = LoadLyricsAsync(key);
+        _ = LoadLyricsAsync(key, request with { Album = key.Request.Album });
     }
 
-    private async Task LoadLyricsAsync((string SessionId, LyricsRequest Request) key)
+    private async Task LoadLyricsAsync((string SessionId, LyricsRequest Request) key, LyricsRequest request)
     {
         var generation = _lyricsCacheGeneration;
         try
         {
-            var result = await _lyricsService.GetLyricsAsync(key.Request, _lifetime.Token);
+            var result = await _lyricsService.GetLyricsAsync(request, _lifetime.Token);
 
             // 取词过程中设置若被改过（来源、署名行过滤），这次结果已经不属于当前配置，写入只会让用户以为设置没生效。
             // If the settings changed while this retrieval ran (sources, credit filtering), the result no longer belongs

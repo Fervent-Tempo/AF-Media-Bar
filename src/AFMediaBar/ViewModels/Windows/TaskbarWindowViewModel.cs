@@ -94,7 +94,7 @@ namespace AFMediaBar.ViewModels.Windows
             ReconnectMediaSessionCommand = new AsyncRelayCommand(() => mediaSessionService.ReconnectAsync());
             OpenSettingsCommand = new RelayCommand(() => OpenSettingsRequested?.Invoke(this, EventArgs.Empty));
             ExitApplicationCommand = new RelayCommand(() => Application.Current.Shutdown());
-            UpdateMenuCommand = new RelayCommand(ExecuteUpdateAction);
+            UpdateMenuCommand = new AsyncRelayCommand(ExecuteUpdateActionAsync);
             TogglePlayPauseCommand = new AsyncRelayCommand(mediaSessionService.TogglePlayPauseAsync);
             SkipPreviousCommand = new AsyncRelayCommand(mediaSessionService.SkipPreviousAsync);
             SkipNextCommand = new AsyncRelayCommand(mediaSessionService.SkipNextAsync);
@@ -130,12 +130,12 @@ namespace AFMediaBar.ViewModels.Windows
             IsUpdateMenuEnabled = UpdatePresentationPolicy.IsTrayHeaderEnabled(state);
         }
 
-        private void ExecuteUpdateAction()
+        private async Task ExecuteUpdateActionAsync()
         {
             switch (UpdatePresentationPolicy.ResolveTrayAction(_updateService.CurrentState))
             {
                 case UpdateTrayAction.Check:
-                    _ = CheckForUpdatesAsync();
+                    await CheckForUpdatesAsync();
                     break;
 
                 case UpdateTrayAction.Cancel:
@@ -143,7 +143,7 @@ namespace AFMediaBar.ViewModels.Windows
                     break;
 
                 case UpdateTrayAction.InstallAndRestart:
-                    _updateService.RequestInstallAndExit();
+                    await _updateService.RequestInstallAndExitAsync();
                     break;
 
                 case UpdateTrayAction.OpenUpdatePage:

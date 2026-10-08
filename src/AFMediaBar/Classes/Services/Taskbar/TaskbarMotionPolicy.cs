@@ -17,12 +17,29 @@ public static class TaskbarMotionPolicy
     /// <summary>任务栏只在屏幕边缘留下不超过这些物理像素时视为已自动隐藏。/ Maximum visible physical pixels that count as auto-hidden.</summary>
     public const int HiddenEdgePixels = 4;
 
+    /// <summary>
+    /// 仅复用沿任务栏横轴平移的稳定几何；尺寸或主轴变化意味着换屏、停靠边或布局变化，必须重新定位。
+    /// Only cross-axis translation can reuse stable placement; size or primary-axis changes require fresh placement.
+    /// </summary>
+    public static bool CanReusePlacement(NativeMethods.RECT stableRect, NativeMethods.RECT currentRect, LayoutOrientation orientation)
+    {
+        if (!IsValid(stableRect) || !IsValid(currentRect) ||
+            stableRect.Right - stableRect.Left != currentRect.Right - currentRect.Left ||
+            stableRect.Bottom - stableRect.Top != currentRect.Bottom - currentRect.Top)
+            return false;
+
+        return orientation == LayoutOrientation.Horizontal
+            ? stableRect.Left == currentRect.Left && stableRect.Right == currentRect.Right
+            : stableRect.Top == currentRect.Top && stableRect.Bottom == currentRect.Bottom;
+    }
+
     /// <summary>推进一次任务栏矩形观察。/ Advances one taskbar-rectangle observation.</summary>
     public static TaskbarMotionState Observe(
         TaskbarMotionState previous,
         NativeMethods.RECT taskbarRect,
         Rect monitorBounds,
-        LayoutOrientation orientation)
+        LayoutOrientation orientation,
+        bool allowStableSample = true)
     {
         if (!IsValid(taskbarRect) || monitorBounds.Width <= 0 || monitorBounds.Height <= 0)
             return previous;
@@ -38,6 +55,8 @@ public static class TaskbarMotionPolicy
         }
 
         var changed = !taskbarRect.Equals(previous.LastRect);
+        if (!changed && !allowStableSample)
+            return previous;
         var stableSamples = changed ? 0 : Math.Min(RequiredStableSamples, previous.StableSamples + 1);
         var isMoving = changed || previous.IsMoving && stableSamples < RequiredStableSamples;
         var hidden = isMoving ? previous.IsHidden : IsHidden(taskbarRect, monitorBounds, orientation);

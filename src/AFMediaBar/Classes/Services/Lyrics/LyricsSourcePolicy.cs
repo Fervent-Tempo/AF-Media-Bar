@@ -9,6 +9,21 @@ namespace AFMediaBar.Classes.Services.Lyrics;
 /// </summary>
 public static class LyricsSourcePolicy
 {
+    /// <summary>将播放器标识与歌词目录关联；不判断启用状态，也不依赖播放器适配器实现。</summary>
+    public static bool IsCurrentPlaybackSource(string? playbackSourceId, string lyricsSourceId)
+    {
+        if (string.IsNullOrWhiteSpace(playbackSourceId)) return false;
+        string[] markers = lyricsSourceId switch
+        {
+            LyricsSourceCatalog.QQMusic => ["qqmusic"],
+            LyricsSourceCatalog.NetEase or LyricsSourceCatalog.NetEaseSearch => ["cloudmusic", "netease", "163music"],
+            LyricsSourceCatalog.Kugou => ["kugou", "kgmusic"],
+            LyricsSourceCatalog.SodaMusic => ["sodamusic", "汽水音乐"],
+            _ => []
+        };
+        return markers.Any(marker => playbackSourceId.Contains(marker, StringComparison.OrdinalIgnoreCase));
+    }
+
     /// <summary>
     /// 解析本次取词要用的提供器。
     /// Resolves the providers one retrieval uses.

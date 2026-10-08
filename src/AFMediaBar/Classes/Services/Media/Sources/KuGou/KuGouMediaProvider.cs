@@ -94,7 +94,7 @@ public sealed class KuGouMediaProvider : IMediaSourceProvider, IMemoryPrunable
             }
             catch (Exception exception)
             {
-                AppLogService.Current?.Error("Media", "酷狗内存轮询意外停止 / KuGou memory polling stopped unexpectedly", exception);
+                AppLogService.Current?.Error("Media", "酷狗内存轮询意外停止", exception);
             }
             finally
             {

@@ -26,7 +26,7 @@ public static class CreditsSourcePolicy
 
     /// <summary>仓库里的贡献者快照，用作 API 不可用时的回退。/ The contributor snapshot in the repository, used when the API is unavailable.</summary>
     public static string ContributorsSnapshotUrl =>
-        $"https://raw.githubusercontent.com/{CreditLinks.RepositoryOwner}/{CreditLinks.RepositoryName}/{CreditLinks.DefaultBranch}/docs/contributors.json";
+        $"https://raw.githubusercontent.com/{CreditLinks.RepositoryOwner}/{CreditLinks.RepositoryName}/release-metadata/release/contributors.json";
 
     /// <summary>仓库里的赞助名单。/ The sponsor list in the repository.</summary>
     public static string SponsorsUrl =>

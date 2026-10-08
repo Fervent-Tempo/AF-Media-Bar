@@ -90,11 +90,9 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <components:SettingsGroupStrip
+        <components:SettingsGroupStrip Margin="{StaticResource AfSettingsHeaderMargin}" MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
             x:Name="Strip"
             Grid.Row="0"
-            Margin="{StaticResource AfSettingsHeaderMargin}"
-            MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
             PageIcon="{ui:SymbolIcon Desktop24}"
             StatusText="{Binding ViewModel.HostingModeText}"
             Subtitle="{DynamicResource Loc.DisplayModes.Header.Subtitle}"
@@ -112,7 +110,8 @@
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
                 Loaded="OnPageLoaded">
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.ChooseDisplayMode}" Icon="{ui:SymbolIcon WindowConsole20}">
+
+                <components:SettingsGroup GroupId="Common.Group.ChooseDisplayMode" Header="{DynamicResource Loc.Common.Group.ChooseDisplayMode}" Icon="{ui:SymbolIcon WindowConsole20}">
                     <StackPanel>
 
                         <UniformGrid Columns="2">
@@ -145,7 +144,7 @@
                             <RadioButton
                                 GroupName="DisplayMode"
                                 IsChecked="{Binding ViewModel.IsDynamicIslandMode, Mode=OneWay}"
-                                Command="{Binding ViewModel.SwitchToDynamicIslandModeCommand}"
+                                IsEnabled="False"
                                 Style="{StaticResource ModeChoiceStyle}">
                                 <StackPanel>
                                     <DockPanel>
@@ -168,7 +167,7 @@
                             <RadioButton
                                 GroupName="DisplayMode"
                                 IsChecked="{Binding ViewModel.IsDesktopCardMode, Mode=OneWay}"
-                                Command="{Binding ViewModel.SwitchToDesktopCardModeCommand}"
+                                IsEnabled="False"
                                 Style="{StaticResource ModeChoiceStyle}">
                                 <StackPanel>
                                     <DockPanel>
@@ -191,7 +190,7 @@
                             <RadioButton
                                 GroupName="DisplayMode"
                                 IsChecked="{Binding ViewModel.IsFloatingBallMode, Mode=OneWay}"
-                                Command="{Binding ViewModel.SwitchToFloatingBallModeCommand}"
+                                IsEnabled="False"
                                 Style="{StaticResource ModeChoiceStyle}">
                                 <StackPanel>
                                     <DockPanel>
@@ -216,7 +215,7 @@
                             Margin="0,4,0,0"
                             IsAccent="False"
                             Symbol="Info24"
-                            Text="{DynamicResource Loc.DisplayModes.Mode.PreviewNotice}" />
+                            Text="{DynamicResource Loc.DisplayModes.Mode.AvailabilityNotice}" />
                     </StackPanel>
                 </components:SettingsGroup>
 
@@ -225,91 +224,9 @@
                     x:Name="TaskbarModeSection"
                     Visibility="{Binding ViewModel.IsTaskbarMode, Converter={StaticResource BooleanToVisibilityConverter}}">
 
-                    <components:SettingsGroup
-                        Description="{DynamicResource Loc.DisplayModes.Placement.Group.Description}"
-                        Header="{DynamicResource Loc.Common.Group.ScreenAndPlacement}"
-                        Icon="{ui:SymbolIcon Desktop24}">
-                        <StackPanel>
-                            <components:SettingsDiagram Margin="0,0,0,12" Kind="TaskbarPlacement" />
 
-                            <components:SettingsRow
-                                Description="{DynamicResource Loc.DisplayModes.Placement.Row.Monitor.Description}"
-                                Icon="{ui:SymbolIcon Desktop24}"
-                                Title="{DynamicResource Loc.Common.TargetMonitor}">
-                                <ItemsControl
-                                    ItemsSource="{Binding ViewModel.TaskbarMonitorOptions}"
-                                    MinWidth="260">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <ui:ToggleSwitch
-                                                Margin="0,3"
-                                                Content="{Binding DisplayName}"
-                                                IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                                IsEnabled="{Binding CanToggle}" />
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </components:SettingsRow>
 
-                            <components:SettingsRow
-                                Description="{DynamicResource Loc.DisplayModes.Placement.Row.Orientation.Description}"
-                                Icon="{ui:SymbolIcon Orientation24}"
-                                IsEnabled="False"
-                                Title="{DynamicResource Loc.DisplayModes.Placement.Row.Orientation.Title}">
-                                <ComboBox
-                                    MinWidth="200"
-                                    SelectedValue="{Binding ViewModel.Orientation, Mode=TwoWay}"
-                                    SelectedValuePath="Tag">
-                                    <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Placement.Orientation.Auto}" Tag="{x:Static settings:LayoutOrientationMode.Auto}" />
-                                    <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Placement.Orientation.Horizontal}" Tag="{x:Static settings:LayoutOrientationMode.Horizontal}" />
-                                    <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Placement.Orientation.Vertical}" Tag="{x:Static settings:LayoutOrientationMode.Vertical}" />
-                                </ComboBox>
-                            </components:SettingsRow>
-
-                            <components:SettingsRow
-                                Description="{DynamicResource Loc.DisplayModes.Placement.Row.AvoidIcons.Description}"
-                                Icon="{ui:SymbolIcon ArrowMinimize24}"
-                                Title="{DynamicResource Loc.DisplayModes.Placement.Row.AvoidIcons.Title}">
-                                <ui:ToggleSwitch IsChecked="{Binding ViewModel.IsTaskbarAvoidingIcons, Mode=TwoWay}" />
-                            </components:SettingsRow>
-
-                            <components:SettingsRow
-                                Description="{DynamicResource Loc.DisplayModes.Placement.Row.Lock.Description}"
-                                Icon="{ui:SymbolIcon LockClosed24}"
-                                Title="{DynamicResource Loc.DisplayModes.Placement.Row.Lock.Title}">
-                                <ui:ToggleSwitch IsChecked="{Binding ViewModel.IsTaskbarPositionLocked, Mode=TwoWay}" />
-                            </components:SettingsRow>
-
-                            <components:SettingsRow
-                                Description="{DynamicResource Loc.DisplayModes.Placement.Row.Offset.Description}"
-                                Icon="{ui:SymbolIcon ArrowMove24}"
-                                Title="{DynamicResource Loc.DisplayModes.Placement.Row.Offset.Title}">
-                                <StackPanel Orientation="Horizontal">
-                                    <Slider
-                                        IsSnapToTickEnabled="True"
-                                        Maximum="20"
-                                        Minimum="-20"
-                                        Style="{StaticResource RowSliderStyle}"
-                                        TickFrequency="1"
-                                        Value="{Binding ViewModel.TaskbarCrossAxisOffsetDip, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                    <TextBlock Style="{StaticResource RowValueStyle}" Text="{Binding ViewModel.TaskbarCrossAxisOffsetDip, StringFormat={}{0:0} DIP}" />
-                                </StackPanel>
-                            </components:SettingsRow>
-
-                            <components:SettingsRow
-                                Description="{DynamicResource Loc.DisplayModes.Placement.Row.Reset.Description}"
-                                Icon="{ui:SymbolIcon ArrowReset24}"
-                                Title="{DynamicResource Loc.Common.ResetPosition}">
-                                <ui:Button
-                                    Command="{Binding ViewModel.ResetTaskbarPositionCommand}"
-                                    Content="{DynamicResource Loc.DisplayModes.Placement.ResetAction}"
-                                    Icon="{ui:SymbolIcon ArrowReset24}"
-                                    Style="{StaticResource AfSettingsButtonStyle}" />
-                            </components:SettingsRow>
-                        </StackPanel>
-                    </components:SettingsGroup>
-
-                    <components:SettingsGroup
+                    <components:SettingsGroup GroupId="Common.RestLayer"
                         Description="{DynamicResource Loc.DisplayModes.Rest.Group.Description}"
                         Header="{DynamicResource Loc.Common.RestLayer}"
                         Icon="{ui:SymbolIcon Layer24}"
@@ -355,8 +272,7 @@
 
                             <ui:CardExpander
                                 Style="{StaticResource AfSettingsExpanderStyle}"
-                                Icon="{ui:SymbolIcon Eye24}"
-                                IsExpanded="True">
+                                Icon="{ui:SymbolIcon Eye24}">
                                 <ui:CardExpander.Header>
                                     <StackPanel>
                                         <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.DisplayModes.Rest.Idle.Expander.Title}" />
@@ -393,7 +309,7 @@
                         </StackPanel>
                     </components:SettingsGroup>
 
-                    <components:SettingsGroup
+                    <components:SettingsGroup GroupId="Common.HoverLayer"
                         Description="{DynamicResource Loc.DisplayModes.Hover.Group.Description}"
                         Header="{DynamicResource Loc.Common.HoverLayer}"
                         Icon="{ui:SymbolIcon HandDraw24}">
@@ -409,8 +325,7 @@
 
                             <ui:CardExpander
                                 Style="{StaticResource AfSettingsExpanderStyle}"
-                                Icon="{ui:SymbolIcon Layer24}"
-                                IsExpanded="{Binding ViewModel.HoverLayerEnabled, Mode=OneWay}">
+                                Icon="{ui:SymbolIcon Layer24}">
                                 <ui:CardExpander.Header>
                                     <StackPanel>
                                         <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.DisplayModes.Hover.Expander.Title}" />
@@ -454,7 +369,7 @@
                         </StackPanel>
                     </components:SettingsGroup>
 
-                    <components:SettingsGroup
+                    <components:SettingsGroup GroupId="Common.FullLayer"
                         Description="{DynamicResource Loc.DisplayModes.Full.Group.Description}"
                         Header="{DynamicResource Loc.Common.FullLayer}"
                         Icon="{ui:SymbolIcon ProjectionScreen24}">
@@ -470,8 +385,7 @@
 
                             <ui:CardExpander
                                 Style="{StaticResource AfSettingsExpanderStyle}"
-                                Icon="{ui:SymbolIcon Info24}"
-                                IsExpanded="{Binding ViewModel.FullLayerEnabled, Mode=OneWay}">
+                                Icon="{ui:SymbolIcon Info24}">
                                 <ui:CardExpander.Header>
                                     <StackPanel>
                                         <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.DisplayModes.Full.Expander.Title}" />
@@ -536,94 +450,12 @@
                 </StackPanel>
 
                 <!--  ============ 灵动岛模式 ============  -->
-                <StackPanel
-                    x:Name="DynamicIslandModeSection"
-                    Visibility="{Binding ViewModel.IsDynamicIslandMode, Converter={StaticResource BooleanToVisibilityConverter}}">
 
-                    <components:SettingsGroup
-                        Description="{DynamicResource Loc.DisplayModes.Island.Group.Description}"
-                        Header="{DynamicResource Loc.Common.Group.IslandAppearance}"
-                        Icon="{ui:SymbolIcon Window24}"
-                        StatusText="{DynamicResource Loc.Common.NotImplemented}"
-                        StatusTone="Neutral"
-                        Tint="Muted">
-                        <StackPanel>
-                            <components:SettingsCallout
-                                Margin="0,0,0,12"
-                                IsAccent="False"
-                                Symbol="Info24"
-                                Text="{DynamicResource Loc.DisplayModes.Island.Notice}" />
-
-                            <components:SettingsDiagram Margin="0,0,0,12" Kind="DynamicIslandSurface" />
-
-                            <components:SettingsRow
-                                Description="{DynamicResource Loc.DisplayModes.Island.Row.Surface.Description}"
-                                Icon="{ui:SymbolIcon Square24}"
-                                IsEnabled="False"
-                                Title="{DynamicResource Loc.DisplayModes.Island.Row.Surface.Title}">
-                                <ComboBox
-                                    MinWidth="140"
-                                    SelectedValue="{Binding ViewModel.IslandSurfaceStyle, Mode=OneWay}"
-                                    SelectedValuePath="Tag">
-                                    <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Island.Surface.Automatic}" Tag="{x:Static settings:PlayerSurfaceStyle.Automatic}" />
-                                    <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Island.Surface.Solid}" Tag="{x:Static settings:PlayerSurfaceStyle.Solid}" />
-                                    <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Island.Surface.ThemeTint}" Tag="{x:Static settings:PlayerSurfaceStyle.ThemeTint}" />
-                                </ComboBox>
-                            </components:SettingsRow>
-
-                            <components:SettingsRow
-                                Description="{DynamicResource Loc.DisplayModes.Island.Row.Opacity.Description}"
-                                Icon="{ui:SymbolIcon Eye24}"
-                                IsEnabled="False"
-                                Title="{DynamicResource Loc.DisplayModes.Island.Row.Opacity.Title}">
-                                <StackPanel Orientation="Horizontal">
-                                    <Slider
-                                        Maximum="100"
-                                        Minimum="0"
-                                        Style="{StaticResource RowSliderStyle}"
-                                        Value="{Binding ViewModel.IslandSurfaceOpacityPercent, Mode=OneWay}" />
-                                    <TextBlock Style="{StaticResource RowValueStyle}" Text="{Binding ViewModel.IslandSurfaceOpacityPercent, StringFormat={}{0}%}" />
-                                </StackPanel>
-                            </components:SettingsRow>
-
-                            <components:SettingsRow
-                                Description="{DynamicResource Loc.DisplayModes.Island.Row.Corner.Description}"
-                                Icon="{ui:SymbolIcon BorderNone24}"
-                                IsEnabled="False"
-                                Title="{DynamicResource Loc.DisplayModes.Island.Row.Corner.Title}">
-                                <StackPanel Orientation="Horizontal">
-                                    <Slider
-                                        Maximum="24"
-                                        Minimum="0"
-                                        Style="{StaticResource RowSliderStyle}"
-                                        Value="{Binding ViewModel.IslandSurfaceCornerRadiusDip, Mode=OneWay}" />
-                                    <TextBlock Style="{StaticResource RowValueStyle}" Text="{Binding ViewModel.IslandSurfaceCornerRadiusDip, StringFormat={}{0:0.#} DIP}" />
-                                </StackPanel>
-                            </components:SettingsRow>
-                        </StackPanel>
-                    </components:SettingsGroup>
-                </StackPanel>
 
                 <!--  ============ 桌面卡片 / 悬浮球：未实现 ============  -->
-                <StackPanel
-                    x:Name="DesktopCardModeSection"
-                    Visibility="{Binding ViewModel.IsDesktopCardMode, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <components:SettingsCallout
-                        Margin="0,0,0,4"
-                        IsAccent="False"
-                        Symbol="WindowConsole20"
-                        Text="{DynamicResource Loc.DisplayModes.Unimplemented.DesktopCard}" />
-                </StackPanel>
 
-                <StackPanel
-                    x:Name="FloatingBallModeSection"
-                    Visibility="{Binding ViewModel.IsFloatingBallMode, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <components:SettingsCallout
-                        Margin="0,0,0,4"
-                        IsAccent="False"
-                        Symbol="WindowConsole20"
-                        Text="{DynamicResource Loc.DisplayModes.Unimplemented.FloatingBall}" />
-                </StackPanel>
+
+
 
                 <ui:Button
                     Margin="0,16,0,40"

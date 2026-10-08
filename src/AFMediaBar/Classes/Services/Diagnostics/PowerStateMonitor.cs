@@ -38,7 +38,7 @@ public sealed class PowerStateMonitor : IDisposable
     private bool _isDisplayOff;
     private bool _isSessionLocked;
     private bool _started;
-    private bool _disposed;
+    private volatile bool _disposed;
 
     /// <summary>
     /// 创建电源状态监听器；实际注册在 <see cref="Start"/> 中进行，且必须在 UI 线程上调用。
@@ -147,7 +147,7 @@ public sealed class PowerStateMonitor : IDisposable
 
         _log?.Info(
             "Prune",
-            $"电源状态监听已启动 / power state monitor started（显示器通知 display notifications=" +
+            $"电源状态监听已启动（显示器通知 display notifications=" +
             $"{(SupportsDisplayStateNotifications ? "on" : "off")}）");
     }
 
@@ -159,7 +159,12 @@ public sealed class PowerStateMonitor : IDisposable
             return;
         }
 
-        _disposed = true;
+        lock (_gate)
+        {
+            if (_disposed)
+                return;
+            _disposed = true;
+        }
         UnhookSystemEvents();
 
         if (_displayStateNotification != IntPtr.Zero)
@@ -209,13 +214,13 @@ public sealed class PowerStateMonitor : IDisposable
             {
                 _log?.Warn(
                     "Prune",
-                    "注册显示器状态通知失败，只能依赖睡眠与锁屏信号 / registering the display-state notification failed; only suspend and " +
+                    "注册显示器状态通知失败，只能依赖睡眠与锁屏信号" +
                     "lock signals remain");
             }
         }
         catch (Exception ex)
         {
-            _log?.Warn("Prune", $"创建电源消息窗口失败 / creating the power message window failed: {ex.Message}");
+            _log?.Warn("Prune", $"创建电源消息窗口失败: {ex.Message}");
         }
     }
 
@@ -230,7 +235,7 @@ public sealed class PowerStateMonitor : IDisposable
         {
             // 无消息泵的环境（例如部分测试宿主）会在这里失败；此时只保留窗口消息一路。
             // Environments without a message pump fail here; the window-message path stays available.
-            _log?.Warn("Prune", $"订阅系统电源事件失败 / subscribing to system power events failed: {ex.Message}");
+            _log?.Warn("Prune", $"订阅系统电源事件失败: {ex.Message}");
         }
     }
 
@@ -243,13 +248,13 @@ public sealed class PowerStateMonitor : IDisposable
         }
         catch (Exception ex)
         {
-            _log?.Warn("Prune", $"退订系统电源事件失败 / unsubscribing from system power events failed: {ex.Message}");
+            _log?.Warn("Prune", $"退订系统电源事件失败: {ex.Message}");
         }
     }
 
     private IntPtr OnMessageSinkMessage(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
-        if (message != NativeMethods.WM_POWERBROADCAST)
+        if (_disposed || message != NativeMethods.WM_POWERBROADCAST)
         {
             return IntPtr.Zero;
         }
@@ -294,7 +299,7 @@ public sealed class PowerStateMonitor : IDisposable
         var isOff = setting.Data is NativeMethods.ConsoleDisplayStateOff or NativeMethods.ConsoleDisplayStateDimmed;
         lock (_gate)
         {
-            if (_isDisplayOff == isOff)
+            if (_disposed || _isDisplayOff == isOff)
             {
                 return;
             }
@@ -302,7 +307,7 @@ public sealed class PowerStateMonitor : IDisposable
             _isDisplayOff = isOff;
         }
 
-        _log?.Info("Prune", isOff ? "显示器已关闭 / display off" : "显示器已打开 / display on");
+        _log?.Info("Prune", isOff ? "显示器已关闭" : "显示器已打开");
         RaiseStateChanged();
     }
 
@@ -342,7 +347,7 @@ public sealed class PowerStateMonitor : IDisposable
 
         lock (_gate)
         {
-            if (_isSessionLocked == value)
+            if (_disposed || _isSessionLocked == value)
             {
                 return;
             }
@@ -350,7 +355,7 @@ public sealed class PowerStateMonitor : IDisposable
             _isSessionLocked = value;
         }
 
-        _log?.Info("Prune", value ? "会话已锁定 / session locked" : "会话已解锁 / session unlocked");
+        _log?.Info("Prune", value ? "会话已锁定" : "会话已解锁");
         RaiseStateChanged();
     }
 
@@ -358,7 +363,7 @@ public sealed class PowerStateMonitor : IDisposable
     {
         lock (_gate)
         {
-            if (_isSuspended == value)
+            if (_disposed || _isSuspended == value)
             {
                 return;
             }
@@ -366,22 +371,25 @@ public sealed class PowerStateMonitor : IDisposable
             _isSuspended = value;
         }
 
-        _log?.Info("Prune", value ? "系统即将睡眠 / system suspending" : "系统已唤醒 / system resumed");
+        _log?.Info("Prune", value ? "系统即将睡眠" : "系统已唤醒");
         RaiseStateChanged();
     }
 
     private void RaiseStateChanged()
     {
-        var handler = StateChanged;
-        if (handler is null)
-        {
+        var dispatcher = _dispatcher;
+        if (_disposed || dispatcher is null || dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
             return;
+
+        void Publish()
+        {
+            if (!_disposed && !dispatcher.HasShutdownStarted && !dispatcher.HasShutdownFinished)
+                StateChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        var dispatcher = _dispatcher;
-        if (dispatcher is null || dispatcher.CheckAccess())
+        if (dispatcher.CheckAccess())
         {
-            handler(this, EventArgs.Empty);
+            Publish();
             return;
         }
 
@@ -391,11 +399,11 @@ public sealed class PowerStateMonitor : IDisposable
             // 因此在别的线程上直接回调会把"释放资源"变成一次跨线程访问。
             // SystemEvents calls back on its own thread, while the participants' resources — dispatcher timers, WPF bitmaps, caches — belong to
             // the UI thread, so calling straight back from that thread would turn "release the resources" into a cross-thread access.
-            dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => handler(this, EventArgs.Empty)));
+            dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(Publish));
         }
         catch (Exception ex)
         {
-            _log?.Warn("Prune", $"投递电源状态变化失败 / dispatching the power state change failed: {ex.Message}");
+            _log?.Warn("Prune", $"投递电源状态变化失败: {ex.Message}");
         }
     }
 }

@@ -25,7 +25,8 @@ public sealed class SodaMusicLyricsProvider : ILyricsProvider
             return null;
         }
 
-        var match = await LyricsSearch.MatchAsync(request, Searchers.SodaMusic, cancellationToken);
+        var match = await LyricsSearch.MatchAsync(request, Searchers.SodaMusic, cancellationToken,
+            retainBelowMinimum: LyricsSourcePolicy.IsCurrentPlaybackSource(request.PlaybackSourceId, SourceName));
         if (match?.Candidate is not SodaMusicSearchResult soda || string.IsNullOrWhiteSpace(soda.Id))
         {
             return null;

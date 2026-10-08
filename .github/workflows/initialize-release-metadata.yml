@@ -1,0 +1,55 @@
+# Bootstraps an isolated metadata branch once; live package metadata is seeded from the existing stable manifest.
+name: Initialize Release Metadata
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: release-metadata
+  cancel-in-progress: false
+jobs:
+  initialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.METADATA_TOKEN || github.token }}
+      - name: Create branch only if absent
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.METADATA_TOKEN || github.token }}
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --heads origin release-metadata; then
+            echo 'release-metadata already exists; no files were changed.'
+            exit 0
+          else
+            status=$?
+            if [ "$status" -ne 2 ]; then exit "$status"; fi
+          fi
+          mkdir -p "$RUNNER_TEMP/release-metadata/release" "$RUNNER_TEMP/release-metadata/.github/workflows"
+          if [ -f docs/latest.json ]; then
+            cp docs/latest.json "$RUNNER_TEMP/release-metadata/release/latest.json"
+          else
+            # main may have retired its manifest; seed the branch from the last committed snapshot.
+            for revision in $(git rev-list HEAD -- docs/latest.json); do
+              if git cat-file -e "$revision:docs/latest.json" 2>/dev/null; then
+                git show "$revision:docs/latest.json" > "$RUNNER_TEMP/release-metadata/release/latest.json"
+                break
+              fi
+            done
+            test -s "$RUNNER_TEMP/release-metadata/release/latest.json"
+          fi
+          cp "$RUNNER_TEMP/release-metadata/release/latest.json" "$RUNNER_TEMP/release-metadata/release/latest-preview.json"
+          cp docs/contributors.json "$RUNNER_TEMP/release-metadata/release/contributors.json"
+          cp .github/workflows/upload-release-metadata.yml "$RUNNER_TEMP/release-metadata/.github/workflows/upload.yml"
+          cd "$RUNNER_TEMP/release-metadata"
+          git init -b release-metadata
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .
+          git commit -m 'Initialize isolated release metadata'
+          gh auth setup-git
+          git remote add origin "https://github.com/$GITHUB_REPOSITORY.git"
+          git push origin release-metadata

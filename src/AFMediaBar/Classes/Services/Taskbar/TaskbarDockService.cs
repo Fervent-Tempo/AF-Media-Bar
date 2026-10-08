@@ -221,23 +221,20 @@ public class TaskbarDockService : ITaskbarDockService
     }
 
     /// <summary>
-    /// 将屏幕物理坐标转换为任务栏客户区坐标，并定位已停靠窗口。调用在窗口所属的 UI 线程上同步完成，
+    /// 将已停靠窗口固定在任务栏客户区原点。调用在窗口所属的 UI 线程上同步完成，
     /// 不强制显示窗口；定位与显隐因此可以保持"先落地稳定几何，再恢复显示"的顺序。
-    /// Converts physical screen coordinates to taskbar-client coordinates and positions the docked window. The call completes synchronously on the UI
+    /// Anchors the docked window at the taskbar-client origin. The call completes synchronously on the UI
     /// thread that owns the window and never forces it visible, preserving the ordering "land stable geometry first, then restore visibility".
     /// </summary>
-    public void SetWindowPosition(IntPtr windowHandle, IntPtr taskbarHandle, RECT taskbarRect, int width, int height)
+    public void SetWindowPosition(IntPtr windowHandle, IntPtr taskbarHandle, int width, int height)
     {
         if (windowHandle == IntPtr.Zero || taskbarHandle == IntPtr.Zero)
             return;
 
-        // SetWindowPos positions the child relative to its parent, so convert screen coords first.
-        POINT containerPos = new() { X = taskbarRect.Left, Y = taskbarRect.Top };
-        if (!ScreenToClient(taskbarHandle, ref containerPos))
-            return;
-
+        // Shell 可能在矩形采样后移动；将旧屏幕坐标转为当前客户区坐标会引入偏移，并在运动冻结期间持续裁切。
+        // 宿主覆盖整个父窗口，始终使用客户区原点，由父 HWND 直接带动。
         SetWindowPos(windowHandle, 0,
-            containerPos.X, containerPos.Y,
+            0, 0,
             width, height,
             SWP_NOZORDER | SWP_NOACTIVATE);
     }

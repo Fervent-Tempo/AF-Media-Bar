@@ -26,6 +26,10 @@ namespace AFMediaBar.Views.Pages
         private readonly SettingsPersistenceService _persistence;
         private readonly AppLogService _log;
         private readonly MemoryPruneCoordinator _pruneCoordinator;
+        /// <summary>Bubbles a semantic navigation request to the owning settings window.</summary>
+        public static readonly RoutedEvent OpenHighlightsEvent = EventManager.RegisterRoutedEvent(nameof(OpenHighlights), RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(ApplicationPage));
+        /// <summary>Requests the common highlights destination without retaining a global navigation control.</summary>
+        public event RoutedEventHandler OpenHighlights { add => AddHandler(OpenHighlightsEvent, value); remove => RemoveHandler(OpenHighlightsEvent, value); }
 
         /// <summary>
         /// 创建应用页并注入它需要的三个入口服务：设置文件、日志与内存回收。
@@ -53,6 +57,8 @@ namespace AFMediaBar.Views.Pages
         /// <summary>页面首次加载时执行入场揭示。/ Reveals the page on first load.</summary>
         private void OnPageLoaded(object sender, RoutedEventArgs e) => SettingsRevealAnimator.Play(sender as Panel);
 
+        private void OnOpenHighlights(object sender, RoutedEventArgs e) => RaiseEvent(new RoutedEventArgs(OpenHighlightsEvent));
+
         private void OpenSettingsFolder_Click(object sender, RoutedEventArgs e) => _persistence.OpenSettingsFolder();
 
         /// <summary>打开日志目录：日志只有一个文件，出问题时用户把这一份发出来即可。/ Opens the log directory; the log is one file and that one file is what the user sends when something breaks.</summary>
@@ -76,7 +82,7 @@ namespace AFMediaBar.Views.Pages
             // 本页没有属于自己的设置，因此只提供“重置全部”，不再提供一个语义含糊的“本页默认”。
             // This page owns no settings of its own, so it offers only a full reset instead of an ambiguous
             // "this page's defaults".
-            if (await SettingsResetDialog.ConfirmAsync("About.ResetScope")) ViewModel.ResetAll();
+            if (await SettingsResetDialog.ConfirmAsync("About.ResetScope", resetAll: true)) ViewModel.ResetAll();
         }
     }
 }

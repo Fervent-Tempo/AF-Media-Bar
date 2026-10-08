@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Windows.Media.Imaging;
 using Windows.Storage.Streams;
@@ -57,7 +58,7 @@ internal static class ArtworkLoader
     /// </summary>
     /// <param name="thumbnail">缩略图流引用。/ Thumbnail stream reference.</param>
     /// <param name="maxThumbnailSize">最大解码宽度。/ Maximum decoded width.</param>
-    /// <returns>冻结的 WPF 位图；输入无效时返回 null。/ Frozen WPF bitmap, or null for invalid input.</returns>
+    /// <returns>冻结的 WPF 位图；输入无效、无法读取或解码时返回 null。</returns>
     internal static BitmapImage? GetThumbnail(
         IRandomAccessStreamReference? thumbnail,
         int maxThumbnailSize = MaxThumbnailSize)
@@ -75,19 +76,44 @@ internal static class ArtworkLoader
             return cachedImage;
         }
 
-        BitmapImage image = new();
-        using (var imageStream = thumbnail.OpenReadAsync().GetAwaiter().GetResult().AsStreamForRead())
+        BitmapImage image;
+        try
         {
-            image.BeginInit();
-            image.CacheOption = BitmapCacheOption.OnLoad;
-            image.DecodePixelWidth = maxThumbnailSize;
-            image.StreamSource = imageStream;
-            image.EndInit();
+            try
+            {
+                image = DecodeThumbnail(thumbnail, maxThumbnailSize, BitmapCreateOptions.None);
+            }
+            catch (IOException exception) when (exception.InnerException is COMException { HResult: unchecked((int)0x88982F72) })
+            {
+                // QQ Music can publish valid JPEG pixels with truncated EXIF metadata. WIC's color-context read
+                // then fails with WINCODEC_ERR_STREAMREAD; retry without color management before dropping artwork.
+                image = DecodeThumbnail(thumbnail, maxThumbnailSize, BitmapCreateOptions.IgnoreColorProfile);
+            }
+        }
+        catch (Exception exception) when (exception is IOException or COMException or NotSupportedException or FileFormatException)
+        {
+            // Artwork is optional: a broken player stream or image/color profile must not discard the media snapshot.
+            // Failed loads are not cached, so a later refresh can retry the same artwork.
+            return null;
         }
 
-        image.Freeze();
         ThumbnailCache.Set(hashCode, image);
         SetCurrentHash(hashCode);
+        return image;
+    }
+
+    private static BitmapImage DecodeThumbnail(
+        IRandomAccessStreamReference thumbnail, int maxThumbnailSize, BitmapCreateOptions options)
+    {
+        using var imageStream = thumbnail.OpenReadAsync().GetAwaiter().GetResult().AsStreamForRead();
+        BitmapImage image = new();
+        image.BeginInit();
+        image.CacheOption = BitmapCacheOption.OnLoad;
+        image.CreateOptions = options;
+        image.DecodePixelWidth = maxThumbnailSize;
+        image.StreamSource = imageStream;
+        image.EndInit();
+        image.Freeze();
         return image;
     }
 

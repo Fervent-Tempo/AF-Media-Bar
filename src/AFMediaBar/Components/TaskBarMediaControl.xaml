@@ -5,7 +5,6 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:AFMediaBar.Components"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-             xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
              mc:Ignorable="d"
              FontFamily="{DynamicResource AppTextFontFamily}"
              FontWeight="{DynamicResource AppTextFontWeight}"
@@ -163,7 +162,7 @@
                                     IsHitTestVisible="False" />
                         </Grid>
                         <Border.Background>
-                            <ImageBrush x:Name="SongImage" Stretch="UniformToFill" />
+                            <ImageBrush x:Name="SongImage" Stretch="Uniform" />
                         </Border.Background>
                     </Border>
 
@@ -223,12 +222,10 @@
                                     repro against the same SDK version: 0x0, 0x50, and 50x0 crash without the guard and are stable
                                     with it.
                                 -->
-                                <wv2:WebView2CompositionControl x:Name="LyricsWebView"
-                                                               MinWidth="1"
-                                                               MinHeight="1"
-                                                               HorizontalAlignment="Stretch"
-                                                               VerticalAlignment="Stretch"
-                                                               IsHitTestVisible="False" />
+                                <Border x:Name="LyricsWebViewHost"
+                                        MinWidth="1"
+                                        MinHeight="1"
+                                        IsHitTestVisible="False" />
                                 <!--
                                     歌词区的点击捕获层同样可点（打开播放器菜单）也可拖：这是媒体栏上最大的一块，
                                     挂 MediaAction 会让整个歌词框拖不动，因此只保留单击处理。

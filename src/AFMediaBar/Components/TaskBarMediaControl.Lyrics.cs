@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
+using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Lyrics;
 using AFMediaBar.Classes.Settings;
@@ -21,7 +22,20 @@ public partial class TaskBarMediaControl
     {
         Interval = LyricsFrameInterval
     };
+    private readonly DispatcherTimer _lyricsReleaseTimer = new(DispatcherPriority.Background)
+    {
+        Interval = LyricsWebViewLifetimePolicy.NoLyricsGracePeriod
+    };
+    private readonly DispatcherTimer _lyricsRetryTimer = new(DispatcherPriority.Background)
+    {
+        Interval = TimeSpan.FromSeconds(2)
+    };
     private LyricsWebViewRenderer? _lyricsWebRenderer;
+    private bool _lyricsHostLoaded;
+    private int _lyricsRendererGeneration;
+    private int _lyricsCreationFailures;
+    private int _lyricsSuspendGeneration;
+    private bool _lyricsSuspendRequested;
     private LyricsPresentationFrame _lyricsFrame = LyricsPresentationFrame.Hidden;
     private Brush _lyricsForeground = Brushes.White;
     private bool _lyricsNeedsContrastShadow;
@@ -43,31 +57,253 @@ public partial class TaskBarMediaControl
 
     private void InitializeWebLyrics()
     {
-        _lyricsWebRenderer = new LyricsWebViewRenderer(LyricsWebView);
-        _lyricsWebRenderer.Ready += OnWebLyricsReady;
         _lyricsWebTimer.Tick += (_, _) => UpdateWebLyricsPresentation();
+        _lyricsReleaseTimer.Tick += OnWebLyricsReleaseTimerTick;
+        _lyricsRetryTimer.Tick += OnWebLyricsRetryTimerTick;
         Loaded += OnWebLyricsLoaded;
-        WebLyricsGraphicsRecovery.RecoveryRequested += OnWebLyricsGraphicsRecoveryRequested;
+        Unloaded += OnWebLyricsUnloaded;
     }
 
-    private async void OnWebLyricsLoaded(object sender, RoutedEventArgs e)
+    private void OnWebLyricsLoaded(object sender, RoutedEventArgs e)
     {
-        if (_lyricsWebRenderer is null)
+        if (_lyricsHostLoaded)
             return;
 
-        ApplyWebLyricsStyle();
-        await _lyricsWebRenderer.InitializeAsync();
+        _lyricsHostLoaded = true;
+        SettingsManager.LyricsSettingsChanged += OnWebLyricsSettingsChanged;
+        WebLyricsGraphicsRecovery.RecoveryRequested += OnWebLyricsGraphicsRecoveryRequested;
         UpdateWebLyricsPresentation(allowTransition: false);
+    }
+
+    private void OnWebLyricsUnloaded(object sender, RoutedEventArgs e)
+    {
+        if (!_lyricsHostLoaded)
+            return;
+
+        _lyricsHostLoaded = false;
+        SettingsManager.LyricsSettingsChanged -= OnWebLyricsSettingsChanged;
+        WebLyricsGraphicsRecovery.RecoveryRequested -= OnWebLyricsGraphicsRecoveryRequested;
+        StopWebLyrics();
+    }
+
+    private void OnWebLyricsSettingsChanged(object? sender, EventArgs e)
+    {
+        // A settings change must release an idle host even while snapshot delivery is paused.
+        if (!Dispatcher.CheckAccess())
+        {
+            if (!Dispatcher.HasShutdownStarted && !Dispatcher.HasShutdownFinished)
+                Dispatcher.BeginInvoke(() => OnWebLyricsSettingsChanged(sender, e));
+            return;
+        }
+        if (_lyricsHostLoaded)
+            UpdateWebLyricsPresentation(allowTransition: false);
     }
 
     private void OnWebLyricsReady(object? sender, EventArgs e)
     {
+        if (!_lyricsHostLoaded || !ReferenceEquals(sender, _lyricsWebRenderer))
+            return;
+
+        _lyricsRetryTimer.Stop();
+        UpdateWebLyricsPowerState();
         UpdateWebLyricsPresentation(allowTransition: false);
         RaiseDesiredSizeChanged(isForcedRefresh: true);
     }
 
+    private void OnWebLyricsFailed(object? sender, EventArgs e)
+    {
+        if (!ReferenceEquals(sender, _lyricsWebRenderer))
+            return;
+
+        var generation = _lyricsRendererGeneration;
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (_lyricsHostLoaded && generation == _lyricsRendererGeneration &&
+                ReferenceEquals(sender, _lyricsWebRenderer))
+                HandleWebLyricsFailure();
+        });
+    }
+
+    private async Task EnsureWebLyricsAsync()
+    {
+        var generation = ++_lyricsRendererGeneration;
+        LyricsWebViewRenderer? renderer = null;
+        WebView2CompositionControl? webView = null;
+        try
+        {
+            // A disposed composition control cannot reenter WPF layout; every new renderer owns a fresh control.
+            webView = new WebView2CompositionControl
+            {
+                MinWidth = 1,
+                MinHeight = 1,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch,
+                IsHitTestVisible = false
+            };
+            renderer = new LyricsWebViewRenderer(webView);
+            _lyricsWebRenderer = renderer;
+            renderer.Ready += OnWebLyricsReady;
+            renderer.Failed += OnWebLyricsFailed;
+            LyricsWebViewHost.Child = webView;
+            ApplyWebLyricsStyle();
+
+            var initialized = await renderer.InitializeAsync();
+            if (generation != _lyricsRendererGeneration || !ReferenceEquals(renderer, _lyricsWebRenderer))
+                return;
+
+            if (!initialized)
+            {
+                HandleWebLyricsFailure();
+                return;
+            }
+
+            UpdateWebLyricsPresentation(allowTransition: false);
+        }
+        catch (Exception ex)
+        {
+            AppLogService.Current?.Error("Lyrics", "Failed to create the web lyrics host.", ex);
+            if (generation == _lyricsRendererGeneration)
+                HandleWebLyricsFailure();
+            else if (renderer is null)
+                webView?.Dispose();
+        }
+    }
+
+    private void HandleWebLyricsFailure()
+    {
+        ReleaseWebLyricsRenderer();
+        _lyricsCreationFailures++;
+        if (_lyricsHostLoaded && _lyricsCreationFailures == 1)
+            _lyricsRetryTimer.Start();
+    }
+
+    private void OnWebLyricsRetryTimerTick(object? sender, EventArgs e)
+    {
+        _lyricsRetryTimer.Stop();
+        if (_lyricsHostLoaded)
+            UpdateWebLyricsPresentation(allowTransition: false);
+    }
+
+    private void OnWebLyricsReleaseTimerTick(object? sender, EventArgs e)
+    {
+        _lyricsReleaseTimer.Stop();
+        if (LyricsWebViewLifetimePolicy.Resolve(
+                _lyricsHostLoaded, SettingsManager.Current.LyricsEnabled, _webLyricsGraphicsDisabled,
+                _snapshot.IsConnected, _snapshot.Lyrics?.Document.Lines?.Count ?? 0,
+                _lyricsWebRenderer is not null) == LyricsWebViewLifetimeAction.ReleaseAfterGrace)
+            ReleaseWebLyricsRenderer();
+    }
+
+    private void ApplyWebLyricsLifetime()
+    {
+        var action = LyricsWebViewLifetimePolicy.Resolve(
+            _lyricsHostLoaded, SettingsManager.Current.LyricsEnabled, _webLyricsGraphicsDisabled,
+            _snapshot.IsConnected, _snapshot.Lyrics?.Document.Lines?.Count ?? 0,
+            _lyricsWebRenderer is not null);
+        switch (action)
+        {
+            case LyricsWebViewLifetimeAction.Create:
+                _lyricsReleaseTimer.Stop();
+                if (_backgroundPruneLevel < MemoryPruneLevel.DisplayOff && !_isHostVisibilitySuspended &&
+                    !_lyricsRetryTimer.IsEnabled && _lyricsCreationFailures < 2)
+                    _ = EnsureWebLyricsAsync();
+                break;
+            case LyricsWebViewLifetimeAction.Retain:
+                _lyricsReleaseTimer.Stop();
+                break;
+            case LyricsWebViewLifetimeAction.ReleaseAfterGrace:
+                if (!_lyricsReleaseTimer.IsEnabled)
+                    _lyricsReleaseTimer.Start();
+                break;
+            case LyricsWebViewLifetimeAction.ReleaseNow:
+                _lyricsReleaseTimer.Stop();
+                _lyricsRetryTimer.Stop();
+                ReleaseWebLyricsRenderer();
+                _lyricsCreationFailures = 0;
+                break;
+            default:
+                _lyricsReleaseTimer.Stop();
+                if (!_snapshot.IsConnected || !SettingsManager.Current.LyricsEnabled)
+                    _lyricsCreationFailures = 0;
+                break;
+        }
+    }
+
+    private void UpdateWebLyricsPowerState()
+    {
+        if (_lyricsWebRenderer is not { IsReady: true } renderer ||
+            LyricsWebViewHost.Child is not WebView2CompositionControl webView)
+            return;
+
+        // The host owns visibility while following Shell motion. Keep the current composition
+        // frame instead of replacing lyrics with metadata in the middle of the taskbar slide.
+        if (_isHostVisibilitySuspended && _backgroundPruneLevel < MemoryPruneLevel.DisplayOff)
+        {
+            renderer.PauseDelivery();
+            return;
+        }
+
+        var hidden = _backgroundPruneLevel >= MemoryPruneLevel.DisplayOff;
+        if (hidden)
+        {
+            renderer.PauseDelivery();
+            // Hidden keeps the 1x1 layout guard while making the WPF view genuinely invisible to WebView2.
+            webView.Visibility = Visibility.Hidden;
+            SongLyricsPanel.Opacity = 0;
+            SongMetadataPanel.Visibility = Visibility.Visible;
+            if (_backgroundPruneLevel >= MemoryPruneLevel.DisplayOff && !_lyricsSuspendRequested)
+            {
+                _lyricsSuspendRequested = true;
+                var generation = ++_lyricsSuspendGeneration;
+                _ = SuspendWebLyricsAfterLayoutAsync(renderer, generation);
+            }
+            return;
+        }
+
+        var needsRefresh = webView.Visibility != Visibility.Visible || _lyricsSuspendRequested;
+        if (_lyricsSuspendRequested)
+        {
+            _lyricsSuspendRequested = false;
+            _lyricsSuspendGeneration++;
+            renderer.Resume();
+        }
+        webView.Visibility = Visibility.Visible;
+        renderer.ResumeDelivery();
+        if (needsRefresh)
+            UpdateWebLyricsPresentation(allowTransition: false);
+    }
+
+    private async Task SuspendWebLyricsAfterLayoutAsync(LyricsWebViewRenderer renderer, int generation)
+    {
+        try
+        {
+            // Let WPF propagate Visibility.Hidden to the WebView2 controller before TrySuspendAsync.
+            await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Background);
+            if (generation != _lyricsSuspendGeneration || !ReferenceEquals(renderer, _lyricsWebRenderer) ||
+                _backgroundPruneLevel < MemoryPruneLevel.DisplayOff)
+                return;
+
+            var suspended = await renderer.TrySuspendAsync();
+            if (generation != _lyricsSuspendGeneration || !ReferenceEquals(renderer, _lyricsWebRenderer) ||
+                _backgroundPruneLevel < MemoryPruneLevel.DisplayOff)
+            {
+                if (suspended && ReferenceEquals(renderer, _lyricsWebRenderer))
+                    renderer.Resume();
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLogService.Current?.Warn("Lyrics", $"Web lyrics suspend handoff failed: {ex.Message}");
+        }
+    }
+
     private void UpdateWebLyricsPresentation(bool allowTransition = true)
     {
+        // Resource release still applies while the host's presentation is frozen.
+        ApplyWebLyricsLifetime();
+        if (_isHostVisibilitySuspended)
+            return;
+
         // Keep the outgoing live lyrics until the connection clip has fully retracted.
         if (_restTransitionKeepsOutgoingText)
             return;
@@ -76,7 +312,9 @@ public partial class TaskBarMediaControl
         var next = LyricsPresentationProjector.Project(_snapshot, SettingsManager.Current, DateTimeOffset.UtcNow);
         _lyricsFrame = next;
 
-        var showWebLyrics = next.IsVisible && !_webLyricsGraphicsDisabled && _lyricsWebRenderer?.IsReady == true;
+        var showWebLyrics = next.IsVisible && !_webLyricsGraphicsDisabled &&
+                            _backgroundPruneLevel < MemoryPruneLevel.DisplayOff && !_isHostVisibilitySuspended &&
+                            _lyricsWebRenderer?.IsReady == true;
         SongMetadataPanel.Visibility = showWebLyrics ? Visibility.Collapsed : Visibility.Visible;
         // WebView2 must stay in the visible visual tree while it initializes. Hiding this
         // host until IsReady would prevent navigation from completing on some systems.
@@ -84,7 +322,7 @@ public partial class TaskBarMediaControl
         SongLyricsPanel.IsHitTestVisible = showWebLyrics;
         // The web engine decides whether a frame is a progress patch or a line transition.
         // Sending false on every 50 ms progress frame interrupts its in-flight roll animation.
-        if (LyricsPresentationRefreshPolicy.ShouldPresent(next.IsVisible, previous, next))
+        if (!IsBackgroundPruned && LyricsPresentationRefreshPolicy.ShouldPresent(next.IsVisible, previous, next))
             _lyricsWebRenderer?.Present(next, allowTransition && MotionPolicy.ResolveCurrent().UseTransitions);
         RefreshWebLyricsTimer();
 
@@ -227,9 +465,31 @@ public partial class TaskBarMediaControl
     private void StopWebLyrics()
     {
         _lyricsWebTimer.Stop();
-        _lyricsWebRenderer?.Dispose();
+        _lyricsReleaseTimer.Stop();
+        _lyricsRetryTimer.Stop();
+        ReleaseWebLyricsRenderer();
+        _lyricsCreationFailures = 0;
+    }
+
+    private void ReleaseWebLyricsRenderer()
+    {
+        _lyricsRendererGeneration++;
+        _lyricsSuspendGeneration++;
+        _lyricsSuspendRequested = false;
+        var renderer = _lyricsWebRenderer;
         _lyricsWebRenderer = null;
-        WebLyricsGraphicsRecovery.RecoveryRequested -= OnWebLyricsGraphicsRecoveryRequested;
+        if (renderer is not null)
+        {
+            renderer.Ready -= OnWebLyricsReady;
+            renderer.Failed -= OnWebLyricsFailed;
+        }
+
+        // A disposed composition control must not participate in another WPF layout pass.
+        LyricsWebViewHost.Child = null;
+        renderer?.Dispose();
+        SongLyricsPanel.Opacity = 0;
+        SongLyricsPanel.IsHitTestVisible = false;
+        SongMetadataPanel.Visibility = Visibility.Visible;
     }
 
     /// <summary>全局异常处理识别出 WebView2 图形层故障后的回调：在新一帧里执行重建，避免在异常展开的调用栈里改动可视树。
@@ -268,7 +528,6 @@ public partial class TaskBarMediaControl
             _webLyricsGraphicsDisabled = true;
             // A transparent WebView still participates in WPF layout and may throw the same
             // graphics fault again. Detach it before disposing the renderer.
-            SongLyricsPanel.Children.Remove(LyricsWebView);
             StopWebLyrics();
             SongLyricsPanel.Visibility = Visibility.Collapsed;
             ApplyWebLyricsStyle();
@@ -285,38 +544,8 @@ public partial class TaskBarMediaControl
             "Lyrics",
             $"WebView2 图形层故障，正在重建歌词视图（第 {_lyricsGraphicsRecoveries}/{WebView2GraphicsFaultPolicy.MaximumRecoveries} 次）");
 
-        var previousRenderer = _lyricsWebRenderer;
-        var panel = SongLyricsPanel;
-        var oldControl = LyricsWebView;
-        var index = panel.Children.IndexOf(oldControl);
-        if (previousRenderer is not null)
-        {
-            previousRenderer.Ready -= OnWebLyricsReady;
-        }
-
-        // 先把旧控件移出可视树再释放：Dispose 之后它不能再参与任何一次布局。
-        // Remove the old control from the visual tree before disposing it: a disposed one must not take part in any layout pass.
-        if (index >= 0)
-        {
-            panel.Children.RemoveAt(index);
-        }
-
-        previousRenderer?.Dispose();
-
-        var replacement = new WebView2CompositionControl
-        {
-            MinWidth = 1,
-            MinHeight = 1,
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-            VerticalAlignment = VerticalAlignment.Stretch,
-            IsHitTestVisible = false
-        };
-        panel.Children.Insert(index >= 0 ? index : 0, replacement);
-        LyricsWebView = replacement;
-
-        _lyricsWebRenderer = new LyricsWebViewRenderer(replacement);
-        _lyricsWebRenderer.Ready += OnWebLyricsReady;
-        ApplyWebLyricsStyle();
-        _ = _lyricsWebRenderer.InitializeAsync();
+        ReleaseWebLyricsRenderer();
+        _lyricsCreationFailures = 0;
+        UpdateWebLyricsPresentation(allowTransition: false);
     }
 }

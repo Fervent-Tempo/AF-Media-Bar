@@ -108,7 +108,7 @@ public sealed class SystemMetricsMonitorService : IDisposable, IMemoryPrunable
         if (_disposed || _paused) return;
         if (failure is not null)
         {
-            AppLogService.Current?.Warn("Metrics", $"性能采样失败 / metrics sampling failed: {failure.Message}");
+            AppLogService.Current?.Warn("Metrics", $"性能采样失败: {failure.Message}");
             return;
         }
 
@@ -132,7 +132,7 @@ public sealed class SystemMetricsMonitorService : IDisposable, IMemoryPrunable
                 // A stale control on one monitor must not interrupt other subscribers or the DispatcherTimer; log it and continue.
                 AppLogService.Current?.Warn(
                     "Metrics",
-                    $"性能采样订阅回调失败 / metrics subscriber callback failed: {exception.Message}");
+                    $"性能采样订阅回调失败: {exception.Message}");
             }
         }
     }

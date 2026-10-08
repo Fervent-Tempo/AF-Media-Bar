@@ -6,7 +6,7 @@ using AFMediaBar.Classes.Settings;
 
 namespace AFMediaBar.Classes.Services.Lyrics;
 
-/// <summary>QQ 优先、未命中后并发备用来源并采纳最高分。/ Preferred lookup followed by scored parallel fallbacks.</summary>
+/// <summary>QQ 优先；低于门槛时并发备用源，优先当前播放器对应源，再按分数选择。</summary>
 public sealed class LyricsService
 {
     /// <summary>单源等待上限。/ Per-source wait limit.</summary>
@@ -33,27 +33,41 @@ public sealed class LyricsService
     {
         cancellationToken.ThrowIfCancellationRequested();
         var settings = SettingsManager.Current;
-        var effectiveRequest = request with { FilterInfoLines = settings.LyricsInfoLineFilterEnabled };
+        var effectiveRequest = request with
+        {
+            FilterInfoLines = settings.LyricsInfoLineFilterEnabled,
+            ArtistSeparators = settings.LyricsArtistSeparators
+        };
         var plan = LyricsRetrievalPolicy.Plan(_providers, LyricsSourcePolicy.ResolveActive(_providers, settings.LyricsSource));
         var started = Stopwatch.GetTimestamp();
         using var work = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        LyricsResult? preferredResult = null;
         try
         {
             if (plan.Preferred is { } preferred)
             {
-                var result = await TryProviderAsync(preferred, effectiveRequest, Remaining(started), work.Token).ConfigureAwait(false);
+                preferredResult = await TryProviderAsync(preferred, effectiveRequest, Remaining(started), work.Token).ConfigureAwait(false);
                 cancellationToken.ThrowIfCancellationRequested();
-                if (result is not null && result.MatchScore >= LyricsRetrievalPolicy.PreferredMinimumScore)
-                    return LogResult(result, started);
+                if (preferredResult is not null && preferredResult.MatchScore >= LyricsRetrievalPolicy.PreferredMinimumScore)
+                    return LogResult(preferredResult, started);
             }
             cancellationToken.ThrowIfCancellationRequested();
             var budget = Remaining(started);
-            if (budget <= TimeSpan.Zero) return null;
+            if (budget <= TimeSpan.Zero) return LogResult(preferredResult, started);
             // 等的是各自受预算约束的包装任务，不会无限等待底层歌词库。
             var tasks = plan.Fallbacks.Select(provider => TryProviderAsync(provider, effectiveRequest, budget, work.Token)).ToArray();
             var results = await Task.WhenAll(tasks).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
-            return LogResult(LyricsRetrievalPolicy.Select(results), started);
+            // Provider identity owns routing; a result's display/source label may differ from SourceName.
+            var currentPlayback = plan.Preferred is { } currentPreferred &&
+                LyricsSourcePolicy.IsCurrentPlaybackSource(effectiveRequest.PlaybackSourceId, currentPreferred.SourceName)
+                ? preferredResult : null;
+            for (var index = 0; currentPlayback is null && index < plan.Fallbacks.Count; index++)
+            {
+                if (LyricsSourcePolicy.IsCurrentPlaybackSource(effectiveRequest.PlaybackSourceId, plan.Fallbacks[index].SourceName))
+                    currentPlayback = results[index];
+            }
+            return LogResult(LyricsRetrievalPolicy.Select(results, preferredResult, currentPlayback), started);
         }
         finally { work.Cancel(); }
     }
@@ -74,7 +88,7 @@ public sealed class LyricsService
         {
             task = provider.GetLyricsAsync(request, source.Token);
             var result = await task.WaitAsync(budget, token).ConfigureAwait(false);
-            AppLogService.Current?.Info("Lyrics", $"来源取词结果 / provider result: source={provider.SourceName} " +
+            AppLogService.Current?.Info("Lyrics", $"来源取词结果: source={provider.SourceName} " +
                 $"status={result?.Status.ToString() ?? "FailedOrUnmatched"} score={result?.MatchScore.ToString() ?? "none"}");
             return result;
         }
@@ -86,7 +100,7 @@ public sealed class LyricsService
         }
         catch (Exception exception)
         {
-            AppLogService.Current?.Warn("Lyrics", $"来源取词失败 / provider failed: {provider.SourceName} {exception.GetType().Name}");
+            AppLogService.Current?.Warn("Lyrics", $"来源取词失败: {provider.SourceName} {exception.GetType().Name}");
             return null;
         }
         finally
@@ -100,7 +114,7 @@ public sealed class LyricsService
 
     private static LyricsResult? LogResult(LyricsResult? result, long started)
     {
-        AppLogService.Current?.Info("Lyrics", $"取词结束 / retrieval completed: source={result?.Source ?? "none"} " +
+        AppLogService.Current?.Info("Lyrics", $"取词结束: source={result?.Source ?? "none"} " +
             $"score={result?.MatchScore.ToString() ?? "none"} status={result?.Status.ToString() ?? "FailedOrUnmatched"} " +
             $"elapsed={Stopwatch.GetElapsedTime(started).TotalMilliseconds:0}ms");
         return result;

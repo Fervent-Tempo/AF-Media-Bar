@@ -1,132 +1,181 @@
+# Builds a preview release and proposes metadata separately, following Starward's publish/review/promote boundary.
 name: Release
-
 on:
   push:
-    tags:
-      - "v*"
-
+    tags: ['v*']
 permissions:
-  contents: write
-
+  contents: read
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
-
 jobs:
-  release:
-    name: Publish ${{ github.ref_name }}
+  build-pack:
+    name: Build and pack (win-x64)
     runs-on: windows-latest
     timeout-minutes: 30
-
+    permissions:
+      contents: read
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up .NET 10
-        uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
-
-      - name: Verify tag matches project version
+      - name: Validate version and configuration
+        shell: pwsh
+        env:
+          TAG: ${{ github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ($env:TAG -notmatch '^v(\d+\.\d+\.\d+(?:\.\d+)?)$') { throw 'Expected a numeric v-prefixed version tag.' }
+          $version = $Matches[1]
+          [xml]$project = Get-Content src/AFMediaBar/AFMediaBar.csproj
+          if (@($project.Project.PropertyGroup.Version | Where-Object { $_ })[0] -ne $version) { throw 'Tag and project version differ.' }
+          if ((Get-Content RELEASE_NOTES.md -Raw) -notmatch "(?m)^# AF Media Bar $([regex]::Escape($version))(?:\s|$)") { throw 'Release notes version differs.' }
+          $headers = @{ Authorization = "Bearer $env:GH_TOKEN"; Accept = 'application/vnd.github+json' }
+          Invoke-RestMethod "https://api.github.com/repos/$env:GITHUB_REPOSITORY/branches/release-metadata" -Headers $headers | Out-Null
+          $release = $null
+          try { $release = Invoke-RestMethod "https://api.github.com/repos/$env:GITHUB_REPOSITORY/releases/tags/$env:TAG" -Headers $headers }
+          catch { if ([int]$_.Exception.Response.StatusCode -ne 404) { throw } }
+          if ($release -and -not $release.draft) { throw 'A published release cannot be rebuilt or replaced.' }
+      - name: Verify release scripts
         shell: pwsh
         run: |
-          [xml]$project = Get-Content .\src\AFMediaBar\AFMediaBar.csproj
-          $projectVersion = @($project.Project.PropertyGroup.Version | Where-Object { $_ })[0]
-          $tagVersion = $env:GITHUB_REF_NAME.TrimStart('v')
-          if ($projectVersion -ne $tagVersion) {
-            throw "Tag $env:GITHUB_REF_NAME does not match project version $projectVersion."
-          }
-          $releaseNotes = Get-Content .\RELEASE_NOTES.md -Raw
-          if ($releaseNotes -notmatch [regex]::Escape($projectVersion)) {
-            throw "RELEASE_NOTES.md does not mention version $projectVersion."
-          }
-          "VERSION=$projectVersion" >> $env:GITHUB_ENV
-
+          ./tools/verify-release-metadata.ps1
+          ./tools/verify-release-highlights.ps1
+      - name: Verify contributor snapshot generation
+        shell: pwsh
+        run: ./tools/verify-contributors-snapshot.ps1
       - name: Restore
-        run: dotnet restore .\src\AFMediaBar.slnx -r win-x64
-
+        run: dotnet restore ./src/AFMediaBar.slnx -r win-x64
       - name: Build
-        run: dotnet build .\src\AFMediaBar.slnx -c Release --no-restore -p:ContinuousIntegrationBuild=true -p:BuildInParallel=false
-
+        run: dotnet build ./src/AFMediaBar.slnx -c Release --no-restore -p:ContinuousIntegrationBuild=true -p:BuildInParallel=false
       - name: Test layout, policies and settings
-        run: dotnet test .\tests\AFMediaBar.Layout.Tests\AFMediaBar.Layout.Tests.csproj -c Release --no-build --no-restore
-
-      - name: Publish self-contained single-file application
-        run: dotnet publish .\src\AFMediaBar\AFMediaBar.csproj -c Release -r win-x64 --self-contained true --no-restore -p:ContinuousIntegrationBuild=true -p:BuildInParallel=false -o .\artifacts\publish
-
+        run: dotnet test ./tests/AFMediaBar.Layout.Tests/AFMediaBar.Layout.Tests.csproj -c Release --no-build --no-restore
+      - name: Publish single-file application
+        run: dotnet publish ./src/AFMediaBar/AFMediaBar.csproj -c Release -r win-x64 --self-contained true --no-restore -p:ContinuousIntegrationBuild=true -p:BuildInParallel=false -o ./artifacts/publish
       - name: Verify single-file output
         shell: pwsh
         run: |
-          $files = @(Get-ChildItem .\artifacts\publish -File)
-          if ($files.Count -ne 1 -or $files[0].Name -ne "AFMediaBar.exe") {
-            throw "Expected only AFMediaBar.exe, found: $($files.Name -join ', ')"
-          }
-
-      # 安装包由与本地构建完全相同的脚本产出；-SkipPublish 复用上一步的发布目录。
-      # The installer is produced by the exact script used locally; -SkipPublish reuses the publish directory above.
+          $files = @(Get-ChildItem artifacts/publish -File)
+          if ($files.Count -ne 1 -or $files[0].Name -ne 'AFMediaBar.exe') { throw 'Expected only AFMediaBar.exe.' }
       - name: Build installer
         shell: pwsh
-        run: .\installer\build-installer.ps1 -SkipPublish -EnsureIscc
-
-      - name: Create portable archive and checksums
+        run: ./installer/build-installer.ps1 -SkipPublish -EnsureIscc
+      - name: Pack portable archive
         shell: pwsh
-        run: |
-          $archiveName = "AFMediaBar-v$env:VERSION-win-x64.zip"
-          $archivePath = Join-Path .\artifacts $archiveName
-          Compress-Archive -LiteralPath .\artifacts\publish\AFMediaBar.exe -DestinationPath $archivePath -CompressionLevel Optimal
+        env:
+          TAG: ${{ github.ref_name }}
+        run: Compress-Archive -LiteralPath artifacts/publish/AFMediaBar.exe -DestinationPath "artifacts/AFMediaBar-$env:TAG-win-x64.zip" -CompressionLevel Optimal
+      - name: Upload final packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: packages-${{ github.ref_name }}
+          path: |
+            artifacts/AFMediaBar-Setup-*.exe
+            artifacts/AFMediaBar-v*-win-x64.zip
+          if-no-files-found: error
+          retention-days: 7
 
-          $installer = @(Get-ChildItem .\artifacts -Filter 'AFMediaBar-Setup-*.exe' -File)
-          if ($installer.Count -ne 1) {
-            throw "Expected exactly one installer, found: $($installer.Name -join ', ')"
-          }
-          $installerFile = $installer[0]
-
-          $archiveHash = (Get-FileHash $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
-          $installerHash = (Get-FileHash $installerFile.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
-          @(
-            "$archiveHash  $archiveName"
-            "$installerHash  $($installerFile.Name)"
-          ) | Set-Content .\artifacts\SHA256SUMS.txt -Encoding ascii
-
-          "ARCHIVE_NAME=$archiveName" >> $env:GITHUB_ENV
-          "INSTALLER_NAME=$($installerFile.Name)" >> $env:GITHUB_ENV
-          "INSTALLER_HASH=$installerHash" >> $env:GITHUB_ENV
-          "INSTALLER_SIZE=$($installerFile.Length)" >> $env:GITHUB_ENV
-
-      # docs/latest.json 的 packages[] 只能人工填写（含镜像顺序），因此把需要抄写的值直接放进摘要。
-      # packages[] in docs/latest.json is filled in by hand (mirror order included), so the values to copy
-      # are printed straight into the job summary.
-      - name: Summarize manifest values
+  manifest:
+    runs-on: ubuntu-latest
+    needs: build-pack
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v8
+        with:
+          name: packages-${{ github.ref_name }}
+          path: artifacts
+      - name: Generate metadata and final checksums
         shell: pwsh
-        run: |
-          $sizeMb = [math]::Round([int64]$env:INSTALLER_SIZE / 1MB, 1)
-          @(
-            "### AF Media Bar $env:VERSION"
-            ""
-            "Update `docs/latest.json` before publishing the manifest:"
-            ""
-            '```json'
-            '"installer": { "version": "' + $env:VERSION + '" },'
-            '"packages": ['
-            '  { "url": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/download/v' + $env:VERSION + '/' + $env:INSTALLER_NAME + '",'
-            '    "size": ' + $env:INSTALLER_SIZE + ', "sha256": "' + $env:INSTALLER_HASH + '" }'
-            ']'
-            '```'
-            ""
-            "- Installer: ``$env:INSTALLER_NAME`` ($sizeMb MB)"
-            "- SHA-256: ``$env:INSTALLER_HASH``"
-            "- Portable archive: ``$env:ARCHIVE_NAME``"
-          ) | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
-
-      - name: Create GitHub Release
+        env:
+          TAG: ${{ github.ref_name }}
+        run: ./tools/new-release-manifest.ps1 -Tag $env:TAG -Repository $env:GITHUB_REPOSITORY
+      - name: Generate contributors snapshot
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
+        run: ./tools/update-contributors.ps1 -Repository $env:GITHUB_REPOSITORY -OutputPath artifacts/metadata/contributors.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-info-${{ github.ref_name }}
+          path: artifacts/metadata
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@v7
+        with:
+          name: checksums-${{ github.ref_name }}
+          path: artifacts/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 7
+
+  merge-publish:
+    runs-on: ubuntu-latest
+    needs: manifest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v8
+        with:
+          name: packages-${{ github.ref_name }}
+          path: artifacts/packages
+      - uses: actions/download-artifact@v8
+        with:
+          name: checksums-${{ github.ref_name }}
+          path: artifacts/packages
+      - name: Create preview release
+        uses: softprops/action-gh-release@v3
+        with:
+          draft: true
+          prerelease: true
+          name: AF Media Bar ${{ github.ref_name }}
+          body_path: RELEASE_NOTES.md
+          fail_on_unmatched_files: true
+          files: artifacts/packages/*
+
+  release-metadata:
+    runs-on: ubuntu-latest
+    needs: merge-publish
+    concurrency:
+      group: release-metadata
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout release metadata
+        uses: actions/checkout@v6
+        with:
+          ref: release-metadata
+          path: metadata
+          token: ${{ secrets.METADATA_TOKEN || github.token }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-info-${{ github.ref_name }}
+          path: generated
+      - name: Stage preview metadata
+        shell: pwsh
         run: |
-          gh release create $env:GITHUB_REF_NAME `
-            ".\artifacts\$env:INSTALLER_NAME" `
-            ".\artifacts\$env:ARCHIVE_NAME" `
-            ".\artifacts\SHA256SUMS.txt" `
-            --verify-tag `
-            --title "AF Media Bar $env:GITHUB_REF_NAME" `
-            --notes-file ".\RELEASE_NOTES.md"
+          $incoming = Get-Content generated/latest-preview.json -Raw | ConvertFrom-Json
+          $current = Get-Content metadata/release/latest-preview.json -Raw | ConvertFrom-Json
+          $stable = Get-Content metadata/release/latest.json -Raw | ConvertFrom-Json
+          if ([version]$incoming.version -lt [version]$current.version -or [version]$incoming.version -le [version]$stable.version) { throw 'Refusing a stale preview or replacement of an existing stable release.' }
+          New-Item -ItemType Directory -Path metadata/release/version -Force | Out-Null
+          Copy-Item generated/latest-preview.json metadata/release/latest-preview.json -Force
+          Copy-Item generated/version/*.json metadata/release/version/ -Force
+          Copy-Item generated/contributors.json metadata/release/contributors.json -Force
+      - name: Propose metadata update
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.METADATA_TOKEN || github.token }}
+          path: metadata
+          base: release-metadata
+          branch: update-release-metadata
+          delete-branch: true
+          add-paths: release
+          title: Update release metadata ${{ github.ref_name }}
+          commit-message: Update release metadata ${{ github.ref_name }}
+          body: |
+            Version metadata is generated from final packages; contributors are fetched from the GitHub API.
+            Review the preview channel and contributor snapshot before merging.
+            This does not change the stable channel. Publish the draft release before offering this preview publicly.

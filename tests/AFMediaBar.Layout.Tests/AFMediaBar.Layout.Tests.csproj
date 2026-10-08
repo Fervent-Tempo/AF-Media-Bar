@@ -18,6 +18,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Using Include="System.IO" />
+    <Content Include="..\..\src\AFMediaBar\Views\Pages\LyricsPage.xaml" Link="LyricsPage.xaml" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\src\AFMediaBar\Views\Pages\ArtistSeparatorsEditor.xaml" Link="ArtistSeparatorsEditor.xaml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\AFMediaBar\AFMediaBar.csproj" />

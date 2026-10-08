@@ -33,7 +33,7 @@
             <Border x:Name="ArtworkBorder" Width="44" Height="44" CornerRadius="7" ClipToBounds="True" Background="#18FFFFFF">
                 <Grid>
                     <ui:SymbolIcon x:Name="ArtworkPlaceholder" Symbol="MusicNote220" FontSize="24" />
-                    <Image x:Name="ArtworkImage" Stretch="UniformToFill" />
+                    <Image x:Name="ArtworkImage" Stretch="Uniform" />
                 </Grid>
             </Border>
             <StackPanel Grid.Column="2" VerticalAlignment="Center" MinWidth="96" MaxWidth="240">

@@ -24,7 +24,7 @@ public readonly record struct ProcessMemoryCounters(
     /// <summary>格式化为一行便于对比的读数（MB，一位小数）。/ Formats the reading as one comparable line in megabytes with one decimal.</summary>
     /// <returns>读数文本。/ The formatted reading.</returns>
     public string Describe() =>
-        $"WorkSet {Megabytes(WorkingSetBytes)} / Private {Megabytes(PrivateBytes)} / GC {Megabytes(ManagedHeapBytes)} / " +
+        $"WorkSet {Megabytes(WorkingSetBytes)}{Megabytes(PrivateBytes)}{Megabytes(ManagedHeapBytes)} / " +
         $"句柄 handles {HandleCount} / 线程 threads {ThreadCount}";
 
     private static string Megabytes(long bytes) => $"{bytes / 1024d / 1024d:0.0} MB";
@@ -119,7 +119,7 @@ public sealed class ProcessMemoryTrimmer
         {
             // 进程对象在极端情况下（句柄被回收）会失败，读数只是诊断，不能影响剪枝本身。
             // The process object can fail in edge cases; the reading is diagnostics only and must never break the prune itself.
-            _log?.Warn("Prune", $"读取内存读数失败 / cannot read memory counters: {ex.Message}");
+            _log?.Warn("Prune", $"读取内存读数失败: {ex.Message}");
             return default;
         }
     }
@@ -261,7 +261,7 @@ public sealed class ProcessMemoryTrimmer
         }
 
         var error = Marshal.GetLastWin32Error();
-        _log?.Warn("Prune", $"设置工作集上限失败 / setting the working-set size failed (error {error})");
+        _log?.Warn("Prune", $"设置工作集上限失败(error {error})");
         return false;
     }
 
@@ -273,7 +273,7 @@ public sealed class ProcessMemoryTrimmer
         }
 
         var error = Marshal.GetLastWin32Error();
-        _log?.Warn("Prune", $"交还工作集失败 / returning the working set failed (error {error})");
+        _log?.Warn("Prune", $"交还工作集失败(error {error})");
         return false;
     }
 
@@ -291,7 +291,7 @@ public sealed class ProcessMemoryTrimmer
         }
 
         var error = Marshal.GetLastWin32Error();
-        _log?.Warn("Prune", $"设置内存优先级失败 / setting the memory priority failed (error {error})");
+        _log?.Warn("Prune", $"设置内存优先级失败(error {error})");
         return false;
     }
 
@@ -315,7 +315,7 @@ public sealed class ProcessMemoryTrimmer
         }
 
         var error = Marshal.GetLastWin32Error();
-        _log?.Warn("Prune", $"设置电源节流失败 / setting power throttling failed (error {error})");
+        _log?.Warn("Prune", $"设置电源节流失败(error {error})");
         return _ecoQosEnabled;
     }
 }

@@ -69,7 +69,7 @@ internal static class NetEaseLyricFetcher
         }
         catch (Exception exception)
         {
-            AppLogService.Current?.Warn("Lyrics", $"网易云歌词端点失败 / NetEase endpoint failed: endpoint={endpoint} {exception.GetType().Name}");
+            AppLogService.Current?.Warn("Lyrics", $"网易云歌词端点失败: endpoint={endpoint} {exception.GetType().Name}");
             return null;
         }
     }

@@ -13,16 +13,18 @@ using Wpf.Ui.Controls;
 namespace AFMediaBar.Views.Windows;
 
 /// <summary>锚定自有托盘图标的紧凑音频面板。 / Compact audio flyout anchored to the app's own tray icon.</summary>
-public partial class AudioControlFlyoutWindow : FluentWindow
+public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
 {
     private bool _isOutputDeviceDropDownOpen;
     private bool _isHiding;
+    private bool _isToggling;
+    private bool _isDisposed;
+    private int _animationVersion;
 
     public AudioControlViewModel ViewModel { get; }
 
     /// <summary>
-    /// 创建由注入 ViewModel 驱动的短生命周期音频浮窗，并注册统一窗口外观管理。
-    /// Creates the transient audio flyout backed by the injected ViewModel and registers it with shared appearance management.
+    /// 创建由 MainWindow 持有并释放的可复用音频浮窗，注册统一窗口外观管理。
     /// </summary>
     public AudioControlFlyoutWindow(AudioControlViewModel viewModel, WindowAppearanceService appearanceService)
     {
@@ -39,32 +41,53 @@ public partial class AudioControlFlyoutWindow : FluentWindow
     /// </summary>
     public async Task ToggleAsync(TrayIconBounds? bounds)
     {
-        if (IsVisible)
-        {
-            BeginHideAnimation();
+        if (_isDisposed || _isToggling || Dispatcher.HasShutdownStarted)
             return;
-        }
 
-        _isHiding = false;
-        await ViewModel.RefreshAsync();
-        ApplyMotionEffects();
-        FlyoutRoot.BeginAnimation(OpacityProperty, null);
-        FlyoutScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-        FlyoutScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-        var motion = MotionPolicy.ResolveCurrent();
-        FlyoutRoot.Opacity = motion.UseTransitions ? 0 : 1;
-        FlyoutScale.ScaleX = motion.UseTransitions ? 0.98 : 1;
-        FlyoutScale.ScaleY = motion.UseTransitions ? 0.98 : 1;
-        Show();
-        Activate();
-        UpdateLayout();
-        PositionNear(bounds);
-        if (motion.UseTransitions)
+        // 门禁覆盖刷新和 HWND 创建；同步完成的刷新也必须先退出托盘原生消息回调。
+        _isToggling = true;
+        try
         {
-            var ease = new PowerEase { Power = 3, EasingMode = EasingMode.EaseOut };
-            FlyoutRoot.BeginAnimation(OpacityProperty, new DoubleAnimation(1, motion.PanelDuration) { EasingFunction = ease });
-            FlyoutScale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1, motion.PanelDuration) { EasingFunction = ease });
-            FlyoutScale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1, motion.PanelDuration) { EasingFunction = ease });
+            await Dispatcher.Yield(DispatcherPriority.Background);
+            if (_isDisposed || Dispatcher.HasShutdownStarted)
+                return;
+
+            if (IsVisible && !_isHiding)
+            {
+                BeginHideAnimation();
+                return;
+            }
+
+            await ViewModel.RefreshAsync();
+            if (_isDisposed || Dispatcher.HasShutdownStarted)
+                return;
+
+            _animationVersion++;
+            _isHiding = false;
+            ApplyMotionEffects();
+            FlyoutRoot.BeginAnimation(OpacityProperty, null);
+            FlyoutScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+            FlyoutScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            var motion = MotionPolicy.ResolveCurrent();
+            FlyoutRoot.Opacity = motion.UseTransitions ? 0 : 1;
+            FlyoutScale.ScaleX = motion.UseTransitions ? 0.98 : 1;
+            FlyoutScale.ScaleY = motion.UseTransitions ? 0.98 : 1;
+            if (!IsVisible)
+                Show();
+            Activate();
+            UpdateLayout();
+            PositionNear(bounds);
+            if (motion.UseTransitions)
+            {
+                var ease = new PowerEase { Power = 3, EasingMode = EasingMode.EaseOut };
+                FlyoutRoot.BeginAnimation(OpacityProperty, new DoubleAnimation(1, motion.PanelDuration) { EasingFunction = ease });
+                FlyoutScale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1, motion.PanelDuration) { EasingFunction = ease });
+                FlyoutScale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1, motion.PanelDuration) { EasingFunction = ease });
+            }
+        }
+        finally
+        {
+            _isToggling = false;
         }
     }
 
@@ -156,7 +179,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow
         // The ComboBox list uses a separate Popup; wait for its state to settle before treating deactivation as an outside click.
         Dispatcher.BeginInvoke(() =>
         {
-            if (IsVisible && !_isOutputDeviceDropDownOpen && !OutputDeviceComboBox.IsDropDownOpen && !IsActive)
+            if (!_isDisposed && IsVisible && !_isOutputDeviceDropDownOpen && !OutputDeviceComboBox.IsDropDownOpen && !IsActive)
             {
                 BeginHideAnimation();
             }
@@ -166,7 +189,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow
     /// <summary>处理面板关闭请求并保留托盘复用实例。/ Handles closing while retaining the tray flyout instance.</summary>
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
-        if (Application.Current?.Dispatcher.HasShutdownStarted != true)
+        if (!_isDisposed && Application.Current?.Dispatcher.HasShutdownStarted != true)
         {
             e.Cancel = true;
             BeginHideAnimation();
@@ -176,10 +199,11 @@ public partial class AudioControlFlyoutWindow : FluentWindow
 
     private void BeginHideAnimation()
     {
-        if (_isHiding || !IsVisible)
+        if (_isDisposed || _isHiding || !IsVisible)
             return;
 
         _isHiding = true;
+        var version = ++_animationVersion;
         var motion = MotionPolicy.ResolveCurrent();
         if (!motion.UseTransitions)
         {
@@ -198,7 +222,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow
         };
         closeAnimation.Completed += (_, _) =>
         {
-            if (!IsVisible)
+            if (_isDisposed || !IsVisible || version != _animationVersion)
                 return;
             Hide();
             _isHiding = false;
@@ -215,5 +239,20 @@ public partial class AudioControlFlyoutWindow : FluentWindow
             FlyoutRoot.SetResourceReference(Border.EffectProperty, "AfFlyoutShadowEffect");
         else
             FlyoutRoot.Effect = null;
+    }
+
+    /// <summary>永久关闭浮窗，取消动画并阻止待完成的显示请求重新打开窗口。</summary>
+    public void Dispose()
+    {
+        if (_isDisposed)
+            return;
+
+        _isDisposed = true;
+        _animationVersion++;
+        OutputDeviceComboBox.IsDropDownOpen = false;
+        FlyoutRoot.BeginAnimation(OpacityProperty, null);
+        FlyoutScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        FlyoutScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        Close();
     }
 }

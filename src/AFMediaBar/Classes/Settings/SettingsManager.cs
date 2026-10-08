@@ -32,6 +32,10 @@ public enum LyricsSecondaryLineMode
 /// <summary>应用全部用户设置，并在属性直接修改时发布变更。 / All user settings; direct mutations publish changes.</summary>
 public sealed class AppSettings : INotifyPropertyChanged
 {
+    /// <summary>Minimum cross-axis taskbar offset in DIP.</summary>
+    public const double MinimumTaskbarCrossAxisOffsetDip = -20d;
+    /// <summary>Maximum cross-axis taskbar offset in DIP.</summary>
+    public const double MaximumTaskbarCrossAxisOffsetDip = 20d;
     private AppearanceSettings _appearance = AppearanceSettings.Default;
     private TrayWheelBehavior _trayWheelBehavior = TrayWheelBehavior.SwitchOutputDevice;
     private bool _lyricsEnabled = true;
@@ -74,6 +78,7 @@ public sealed class AppSettings : INotifyPropertyChanged
     private int _lyricsFixedWidthDip = LyricsFixedWidth.DefaultDip;
     private bool _lyricsInfoLineFilterEnabled = true;
     private LyricsSourceSettings _lyricsSource = LyricsSourceSettings.Default;
+    private string _lyricsArtistSeparators = "/";
     private TrackChangeNotificationSettings _trackChangeNotification = TrackChangeNotificationSettings.Default;
     private SmtcSourceFilterSettings _smtcSourceFilter = SmtcSourceFilterSettings.Default;
     private QuickLaunchSettings _quickLaunch = QuickLaunchSettings.Default;
@@ -156,6 +161,9 @@ public sealed class AppSettings : INotifyPropertyChanged
 
     /// <summary>启用的歌词来源；取词顺序由固定策略决定。</summary>
     public LyricsSourceSettings LyricsSource { get => _lyricsSource; set => Set(ref _lyricsSource, value.Normalize()); }
+
+    /// <summary>歌词匹配的全局艺术家分隔符，每行一项，保留首尾空格；默认包含斜杠，空文本关闭分割。</summary>
+    public string LyricsArtistSeparators { get => _lyricsArtistSeparators; set => Set(ref _lyricsArtistSeparators, value ?? string.Empty); }
 
 
 
@@ -249,7 +257,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         if (!double.IsFinite(result.TaskbarBarCrossAxisOffsetDip)) result.TaskbarBarCrossAxisOffsetDip = defaults.TaskbarBarCrossAxisOffsetDip;
         result.LayoutLengthScalePercent = Math.Clamp(result.LayoutLengthScalePercent, 70, 125);
         result.LayoutThicknessScalePercent = Math.Clamp(result.LayoutThicknessScalePercent, 70, 125);
-        result.TaskbarBarCrossAxisOffsetDip = Math.Clamp(result.TaskbarBarCrossAxisOffsetDip, -20, 20);
+        result.TaskbarBarCrossAxisOffsetDip = Math.Clamp(result.TaskbarBarCrossAxisOffsetDip, MinimumTaskbarCrossAxisOffsetDip, MaximumTaskbarCrossAxisOffsetDip);
         if (result.DynamicIslandLeft is not null && (!double.IsFinite(result.DynamicIslandLeft.Value) || result.DynamicIslandLeft < 0)) result.DynamicIslandLeft = null;
         if (result.DynamicIslandTop is not null && (!double.IsFinite(result.DynamicIslandTop.Value) || result.DynamicIslandTop < 0)) result.DynamicIslandTop = null;
         return result;
@@ -294,6 +302,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         LyricsFixedWidthDip = LyricsFixedWidthDip,
         LyricsInfoLineFilterEnabled = LyricsInfoLineFilterEnabled,
         LyricsSource = LyricsSource,
+        LyricsArtistSeparators = LyricsArtistSeparators,
         TrackChangeNotification = TrackChangeNotification,
         SmtcSourceFilter = SmtcSourceFilter,
         QuickLaunch = QuickLaunch,
@@ -397,6 +406,8 @@ public static class SettingsManager
     public static void SetLyricsFixedWidthDip(int dip) => Current.LyricsFixedWidthDip = LyricsFixedWidth.Normalize(dip);
     public static void SetLyricsInfoLineFilterEnabled(bool enabled) => Current.LyricsInfoLineFilterEnabled = enabled;
     public static void SetLyricsSourceSettings(LyricsSourceSettings settings) => Current.LyricsSource = settings;
+    /// <summary>保存自定义艺术家分隔符，触发歌词重新匹配。</summary>
+    public static void SetLyricsArtistSeparators(string separators) => Current.LyricsArtistSeparators = separators;
     public static void SetAppearanceSettings(AppearanceSettings appearance)
     {
         var current = Current.Appearance.Normalize();
@@ -455,6 +466,50 @@ public static class SettingsManager
         };
         Replace(next, SettingsResetScope.Appearance);
     }
+    /// <summary>Restores application typography and window theme without replacing media color or taskbar layout.</summary>
+    public static void ResetApplicationAppearance()
+    {
+        var next = Current.Clone();
+        next.Appearance = Defaults.Appearance with
+        {
+            PlayerForegroundMode = next.Appearance.PlayerForegroundMode,
+            TaskbarBackgroundMaterial = next.Appearance.TaskbarBackgroundMaterial,
+            TaskbarBackgroundOpacityPercent = next.Appearance.TaskbarBackgroundOpacityPercent,
+            TaskbarFrostedStyle = next.Appearance.TaskbarFrostedStyle
+        };
+        Replace(next, SettingsResetScope.Appearance);
+    }
+
+    /// <summary>Restores taskbar appearance while preserving application fonts and theme.</summary>
+    public static void ResetTaskbarAppearance()
+    {
+        var originalAppearance = Current.Appearance;
+        // Preserve the established appearance reset membership, then retain the application-wide fields.
+        var next = Current.Clone();
+        var defaults = Defaults;
+        next.Appearance = originalAppearance with
+        {
+            PlayerForegroundMode = defaults.Appearance.PlayerForegroundMode,
+            TaskbarBackgroundMaterial = defaults.Appearance.TaskbarBackgroundMaterial,
+            TaskbarBackgroundOpacityPercent = defaults.Appearance.TaskbarBackgroundOpacityPercent,
+            TaskbarFrostedStyle = defaults.Appearance.TaskbarFrostedStyle
+        };
+        next.TaskbarSurface = defaults.TaskbarSurface;
+        next.TaskbarExperience = next.TaskbarExperience with
+        {
+            MediaFontSizePercent = defaults.TaskbarExperience.MediaFontSizePercent,
+            Density = defaults.TaskbarExperience.Density,
+            ContentLayout = defaults.TaskbarExperience.ContentLayout,
+            MediaTextAlignment = defaults.TaskbarExperience.MediaTextAlignment,
+            ComponentSpacingDip = defaults.TaskbarExperience.ComponentSpacingDip,
+            HoverButtonSpacingDip = defaults.TaskbarExperience.HoverButtonSpacingDip,
+            LengthMode = defaults.TaskbarExperience.LengthMode,
+            FixedLengthDip = defaults.TaskbarExperience.FixedLengthDip,
+            RestComponentOrder = defaults.TaskbarExperience.RestComponentOrder
+        };
+        Replace(next, SettingsResetScope.Appearance);
+    }
+
     public static void ResetDisplayModes()
     {
         var next = Current.Clone(); var defaults = Defaults;
@@ -493,7 +548,7 @@ public static class SettingsManager
         var next = Current.Clone(); var defaults = Defaults;
         next.TrackChangeNotification = defaults.TrackChangeNotification;
         next.SmtcSourceFilter = defaults.SmtcSourceFilter;
-        next.QuickLaunch = QuickLaunchSettings.Default;
+        next.QuickLaunch = defaults.QuickLaunch;
         Replace(next, SettingsResetScope.ExtraFeatures);
     }
     public static void ResetComponents()
@@ -523,6 +578,7 @@ public static class SettingsManager
         next.LyricsFixedWidthDip = defaults.LyricsFixedWidthDip;
         next.LyricsInfoLineFilterEnabled = defaults.LyricsInfoLineFilterEnabled;
         next.LyricsSource = defaults.LyricsSource;
+        next.LyricsArtistSeparators = defaults.LyricsArtistSeparators;
         Replace(next, SettingsResetScope.Lyrics);
     }
     public static void ResetLayout()
@@ -578,6 +634,7 @@ public static class SettingsManager
             case nameof(AppSettings.LyricsFixedWidthEnabled):
             case nameof(AppSettings.LyricsFixedWidthDip):
             case nameof(AppSettings.LyricsInfoLineFilterEnabled):
+            case nameof(AppSettings.LyricsArtistSeparators):
             case nameof(AppSettings.LyricsSource): LyricsSettingsChanged?.Invoke(null, EventArgs.Empty); break;
             case nameof(AppSettings.LyricsTextAlignment): LyricsSettingsChanged?.Invoke(null, EventArgs.Empty); break;
             case nameof(AppSettings.TaskbarExperience): TaskbarExperienceSettingsChanged?.Invoke(null, EventArgs.Empty); break;

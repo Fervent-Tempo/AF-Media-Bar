@@ -1,6 +1,7 @@
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Audio;
+using AFMediaBar.Classes.Services.Layout;
 using AFMediaBar.Classes.Services.Lyrics;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Resources;
@@ -9,6 +10,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Wpf.Ui.Controls;
 
@@ -184,6 +186,11 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         ApplyLyricsSourceLine(snapshot);
         ArtworkImage.Source = snapshot.Artwork;
         ArtworkPlaceholder.Visibility = snapshot.Artwork is null ? Visibility.Visible : Visibility.Collapsed;
+        // 与媒体栏、通知共用比例上限，给文字保留空间；Uniform 在极端比例或未知尺寸时仍显示完整封面。
+        var artwork = snapshot.Artwork as BitmapSource;
+        var box = ArtworkBoxPolicy.Resolve(ArtworkBorder.Height, artwork?.PixelWidth ?? 0, artwork?.PixelHeight ?? 0);
+        ArtworkBorder.Width = box.Width;
+        ArtworkColumn.Width = new GridLength(box.Width);
         SetButtonAvailability(PreviousButton, snapshot.CanSkipPrevious);
         SetButtonAvailability(NextButton, snapshot.CanSkipNext);
         SetButtonAvailability(PlayButton, snapshot.CanPlayPause);
