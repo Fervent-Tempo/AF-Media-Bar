@@ -1934,7 +1934,7 @@
     <value>AF Media Bar is already running. Look for its icon in the notification area at the bottom right, or select the arrow to show hidden icons.</value>
   </data>
   <data name="Startup.TranslucentTb.Content" xml:space="preserve">
-    <value>TranslucentTB is running. Frosted taskbar background has been kept enabled so media remains readable on a transparent taskbar. You can turn it off any time under Settings &gt; Appearance.</value>
+    <value>TranslucentTB was detected. The frosted taskbar background is enabled to keep media content readable. Click to adjust it in Media bar appearance → Background.</value>
   </data>
   <data name="Startup.TranslucentTb.Title" xml:space="preserve">
     <value>Transparent taskbar detected</value>

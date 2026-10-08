@@ -1934,7 +1934,7 @@
     <value>AF Media Bar 已在运行，请查看右下角的托盘图标（或点击小箭头展开隐藏图标）。</value>
   </data>
   <data name="Startup.TranslucentTb.Content" xml:space="preserve">
-    <value>检测到 TranslucentTB 正在运行。为避免透明任务栏上的媒体内容难以辨认，已确保开启“任务栏磨砂背景”。你可以随时在“设置 &gt; 外观”中关闭。</value>
+    <value>检测到 TranslucentTB，已开启任务栏磨砂背景，便于辨认媒体内容。点击通知可前往“媒体栏外观 → 背景层”调整。</value>
   </data>
   <data name="Startup.TranslucentTb.Title" xml:space="preserve">
     <value>已适配透明任务栏</value>

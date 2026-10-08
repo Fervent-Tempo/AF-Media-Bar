@@ -404,11 +404,10 @@ namespace AFMediaBar
                 _ = Dispatcher.BeginInvoke(() =>
                 {
                     if (_startupCancellation.IsCancellationRequested || _exitHandled != 0 || Dispatcher.HasShutdownStarted) return;
-                    System.Windows.MessageBox.Show(
-                        Translations.Get("Startup.TranslucentTb.Content"),
+                    Services.GetRequiredService<ShellTrayIconService>().TryShowNotification(
                         Translations.Get("Startup.TranslucentTb.Title"),
-                        System.Windows.MessageBoxButton.OK,
-                        System.Windows.MessageBoxImage.Information);
+                        Translations.Get("Startup.TranslucentTb.Content"),
+                        ShellNotificationTarget.TaskbarBackground);
                 }, DispatcherPriority.ApplicationIdle);
             }
 

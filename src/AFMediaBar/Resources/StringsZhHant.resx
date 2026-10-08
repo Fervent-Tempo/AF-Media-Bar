@@ -1934,7 +1934,7 @@
     <value>AF Media Bar 已在執行，請查看右下角的系統匣圖示（或點選小箭頭展開隱藏圖示）。</value>
   </data>
   <data name="Startup.TranslucentTb.Content" xml:space="preserve">
-    <value>偵測到 TranslucentTB 正在執行。為避免透明工作列上的媒體內容難以辨認，已確保開啟「工作列霧面背景」。你可以隨時在「設定 &gt; 外觀」中關閉。</value>
+    <value>偵測到 TranslucentTB，已啟用工作列磨砂背景，便於辨識媒體內容。點選通知可前往「媒體列外觀 → 背景層」調整。</value>
   </data>
   <data name="Startup.TranslucentTb.Title" xml:space="preserve">
     <value>已適配透明工作列</value>

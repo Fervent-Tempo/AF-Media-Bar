@@ -208,8 +208,10 @@ namespace AFMediaBar.Views.Windows
                 NavigateToGroup(suggestion.Hit.Page, suggestion.Hit.GroupId);
         }
 
-        private void NavigateToGroup(SettingsPageKey page, string groupId)
+        /// <summary>通过稳定页面与分组标识定位设置，供搜索、快捷入口和系统通知复用。</summary>
+        public void NavigateToGroup(SettingsPageKey page, string groupId)
         {
+            if (_closed) return;
             if (!SettingsPageProvider.PageTypes.TryGetValue(page, out var pageType) || !Navigate(pageType)) return;
             Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
             {

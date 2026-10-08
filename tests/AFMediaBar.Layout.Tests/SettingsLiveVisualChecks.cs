@@ -65,6 +65,13 @@ internal static class SettingsLiveVisualChecks
             Pump(TimeSpan.FromMilliseconds(80));
             var first = (AppearancePage)provider.GetPage(typeof(AppearancePage))!;
             Assert.AreSame(first, arrived);
+            var background = ((Panel)((ScrollViewer)first.FindName("PageScroll")).Content).Children.OfType<SettingsGroup>()
+                .Single(group => group.GroupId == "Appearance.Group.TaskbarBackground");
+            var details = ((Panel)background.Content).Children.OfType<Wpf.Ui.Controls.CardExpander>().Single();
+            details.IsExpanded = false;
+            ((Grid)first.Content).Children.OfType<SettingsGroupStrip>().Single().RevealGroup(background.GroupId);
+            Pump(TimeSpan.FromMilliseconds(300));
+            Assert.IsTrue(details.IsExpanded, "Landing on the notification target must expand its background options.");
             provider.SetContext(horizontal with { Orientation = LayoutOrientation.Vertical });
             var vertical = (AppearancePage)provider.GetPage(typeof(AppearancePage))!;
             navigation.ReplaceContent(vertical);

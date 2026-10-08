@@ -898,6 +898,7 @@ namespace AFMediaBar.Views.Windows
             _settingsWindow.Closed -= SettingsWindow_Closed;
             _settingsWindow.Closed += SettingsWindow_Closed;
             _settingsWindow.Show();
+            if (_settingsWindow.WindowState == WindowState.Minimized) _settingsWindow.WindowState = WindowState.Normal;
             _settingsWindow.Activate();
         }
 
@@ -945,15 +946,29 @@ namespace AFMediaBar.Views.Windows
             // caching it in a field would keep announcing in the old language after a switch.
             _trayIconService.TryShowNotification(
                 Translations.Get("Update.Notification.Title"),
-                Translations.Format("Update.Notification.Body", version, state.CurrentVersion));
+                Translations.Format("Update.Notification.Body", version, state.CurrentVersion),
+                ShellNotificationTarget.Application);
         }
 
-        private void TrayIconService_OnNotificationClicked(object? sender, EventArgs e)
+        private void TrayIconService_OnNotificationClicked(ShellNotificationTarget target)
         {
-            if (_isClosing)
+            if (_isClosing) return;
+            if (target == ShellNotificationTarget.Application)
+            {
+                ViewModel_OpenUpdateSettingsRequested(this, EventArgs.Empty);
                 return;
+            }
+            if (target != ShellNotificationTarget.TaskbarBackground) return;
 
-            ViewModel_OpenUpdateSettingsRequested(sender, EventArgs.Empty);
+            ViewModel_OpenSettingsRequested(this, EventArgs.Empty);
+            if (_settingsWindow is not { } settingsWindow) return;
+            settingsWindow.Dispatcher.BeginInvoke(
+                System.Windows.Threading.DispatcherPriority.Loaded,
+                new Action(() =>
+                {
+                    if (_isClosing || !ReferenceEquals(_settingsWindow, settingsWindow)) return;
+                    settingsWindow.NavigateToGroup(SettingsPageKey.Appearance, "Appearance.Group.TaskbarBackground");
+                }));
         }
 
         private void SettingsWindow_Closed(object? sender, EventArgs e)
