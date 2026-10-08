@@ -19,6 +19,19 @@ namespace AFMediaBar.Components;
 /// </summary>
 public class SettingsRow : HeaderedContentControl
 {
+    private static readonly DependencyPropertyKey IsCompactPropertyKey = DependencyProperty.RegisterReadOnly(
+        nameof(IsCompact), typeof(bool), typeof(SettingsRow), new PropertyMetadata(false));
+    /// <summary>Moves controls below the title when the sidebar leaves too little width for two columns.</summary>
+    public static readonly DependencyProperty IsCompactProperty = IsCompactPropertyKey.DependencyProperty;
+    /// <summary>Whether this row uses the narrow-content layout.</summary>
+    public bool IsCompact => (bool)GetValue(IsCompactProperty);
+
+    /// <inheritdoc />
+    protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
+    {
+        base.OnRenderSizeChanged(sizeInfo);
+        SetValue(IsCompactPropertyKey, sizeInfo.NewSize.Width < 520d);
+    }
     /// <summary>行标题左侧的图标。/ Icon to the left of the row title.</summary>
     public static readonly DependencyProperty IconProperty = DependencyProperty.Register(
         nameof(Icon),

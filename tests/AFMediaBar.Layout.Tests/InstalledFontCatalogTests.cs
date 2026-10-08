@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Windows.Controls;
 using System.Windows.Data;
 using AFMediaBar.Classes.Services;
+using AFMediaBar.Classes.Services.Settings;
 using AFMediaBar.Classes.Services.Localization;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Resources;
@@ -89,7 +90,7 @@ public sealed class InstalledFontCatalogTests
             {
                 SettingsManager.Current = new AppSettings();
                 localization.Apply(InterfaceLanguage.SimplifiedChinese);
-                viewModel = new AppearanceViewModel(localization, new TaskbarLengthConstraintsService());
+                viewModel = new AppearanceViewModel(localization, new LegacySettingsConfiguration(new SettingsPageContext()));
                 var latin = CreateSelector(viewModel, nameof(AppearanceViewModel.LatinFontChoices), nameof(AppearanceViewModel.LatinFontFamily));
                 var cjk = CreateSelector(viewModel, nameof(AppearanceViewModel.CjkFontChoices), nameof(AppearanceViewModel.CjkFontFamily));
                 Assert.IsNotNull(latin.SelectedItem);
@@ -106,14 +107,7 @@ public sealed class InstalledFontCatalogTests
             }
             finally
             {
-                // 生产 ViewModel 与进程同寿命；测试需移除它对全局设置的订阅。
-                if (viewModel is not null)
-                {
-                    var handlers = (EventHandler<SettingsChangedEventArgs>?)typeof(SettingsManager)
-                        .GetField("SettingsChanged", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null);
-                    foreach (var handler in handlers?.GetInvocationList() ?? [])
-                        if (ReferenceEquals(handler.Target, viewModel)) SettingsManager.SettingsChanged -= (EventHandler<SettingsChangedEventArgs>)handler;
-                }
+                viewModel?.Dispose();
                 SettingsManager.Current = originalSettings;
                 localization.Apply(originalLanguage switch
                 {

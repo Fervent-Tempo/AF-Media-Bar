@@ -67,7 +67,8 @@ public sealed class TaskbarArrangementPresentationTests
                     });
                 // Parse the actual page BAML so enum literals, icons and resources are checked at runtime.
                 _ = new AFMediaBar.Views.Pages.DisplayModesPage(null!);
-                _ = new AFMediaBar.Views.Pages.AppearancePage(null!, null!);
+                _ = new AFMediaBar.Views.Pages.AppearancePage(null!);
+                _ = new AFMediaBar.Views.Pages.ScreenAndPlacementPage(null!);
                 var control = new TaskBarMediaControl();
                 control.UpdateSongInfo(MediaSnapshot.Disconnected with
                 {

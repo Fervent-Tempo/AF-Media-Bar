@@ -11,7 +11,8 @@ namespace AFMediaBar.Views.Pages;
 /// <summary>可添加和删除条目的分隔符编辑弹窗；取消时丢弃草稿。</summary>
 public partial class ArtistSeparatorsEditor : UserControl
 {
-    private static readonly ContentDialogService DialogService = new();
+    private static WeakReference<ContentDialogHost>? _host;
+    private static CancellationToken _lifetime;
     private readonly ObservableCollection<SeparatorEntry> _entries = [];
     private readonly string _defaults;
 
@@ -30,10 +31,27 @@ public partial class ArtistSeparatorsEditor : UserControl
             if (!string.IsNullOrWhiteSpace(text)) _entries.Add(new SeparatorEntry { Text = text });
     }
 
-    internal static void SetHost(ContentDialogHost host) => DialogService.SetDialogHost(host);
-
-    internal static async Task<string?> EditAsync(string current, string defaults)
+    internal static void SetHost(ContentDialogHost host, CancellationToken lifetime)
     {
+        _host = new(host);
+        _lifetime = lifetime;
+    }
+
+    internal static void ClearHost(ContentDialogHost host)
+    {
+        if (_host?.TryGetTarget(out var current) == true && ReferenceEquals(current, host))
+        {
+            _host = null;
+            _lifetime = CancellationToken.None;
+        }
+    }
+
+    internal static async Task<string?> EditAsync(string current, string defaults, CancellationToken cancellationToken = default)
+    {
+        if (_lifetime.IsCancellationRequested || cancellationToken.IsCancellationRequested || _host is null || !_host.TryGetTarget(out var host) || host is null) return null;
+        using var request = CancellationTokenSource.CreateLinkedTokenSource(_lifetime, cancellationToken);
+        var service = new ContentDialogService();
+        service.SetDialogHost(host);
         var editor = new ArtistSeparatorsEditor(current, defaults);
         var dialog = new ContentDialog
         {
@@ -43,8 +61,12 @@ public partial class ArtistSeparatorsEditor : UserControl
             CloseButtonText = Translations.Get("Common.Cancel"),
             DefaultButton = ContentDialogButton.Close
         };
-        return await DialogService.ShowAsync(dialog, CancellationToken.None) == ContentDialogResult.Primary
-            ? editor.GetSeparators() : null;
+        try
+        {
+            return await service.ShowAsync(dialog, request.Token) == ContentDialogResult.Primary
+                ? editor.GetSeparators() : null;
+        }
+        catch (OperationCanceledException) when (request.IsCancellationRequested) { return null; }
     }
 
     internal string GetSeparators() => string.Join("\n", _entries.Select(entry => entry.Text)
@@ -57,6 +79,7 @@ public partial class ArtistSeparatorsEditor : UserControl
         // 容器生成后聚焦新条目，让“新增”后可以直接输入。
         Dispatcher.BeginInvoke(new Action(() =>
         {
+            if (!IsLoaded) return;
             if (Rows.ItemContainerGenerator.ContainerFromItem(entry) is ContentPresenter presenter)
             {
                 presenter.ApplyTemplate();

@@ -13,32 +13,33 @@ namespace AFMediaBar.Classes.Services;
 public sealed class ShellTrayIconService : IDisposable
 {
     private const uint IconId = 1;
+    private const uint BackgroundNotificationId = 2;
+    private const uint GenericNotificationId = 3;
+    private readonly HashSet<uint> _notificationIcons = [];
+    private readonly NotifyIconCall _notifyIcon;
+
+    internal delegate bool NotifyIconCall(uint message, ref NativeMethods.NOTIFYICONDATA data);
     private const int CallbackMessage = NativeMethods.WM_APP + 17;
     private readonly HwndSource _messageWindow;
-    private readonly Func<uint, NativeMethods.NOTIFYICONDATA, bool> _shellNotify;
     private readonly uint _taskbarCreatedMessage;
     private readonly AppIconService _appIconService;
     private AppIconService.TrayIcon? _trayIcon;
     private IntPtr _icon;
     private string _tooltipText = "AF Media Bar";
     private bool _isAdded;
+    private bool _mainUsesVersion4;
     private bool _disposed;
-    private TrayNotificationPurpose _notificationPurpose;
 
     /// <summary>
     /// 创建隐藏消息窗口、注册 Explorer 重建消息并立即安装通知区域图标。
     /// Creates the hidden message window, registers for Explorer recreation, and installs the notification icon immediately.
     /// </summary>
     /// <param name="appIconService">按主题提供托盘图标的服务。/ Service that supplies the tray icon for the active theme.</param>
-    public ShellTrayIconService(AppIconService appIconService)
-        : this(appIconService, (message, data) => NativeMethods.ShellNotifyIcon(message, ref data))
-    {
-    }
+    public ShellTrayIconService(AppIconService appIconService) : this(appIconService, NativeMethods.ShellNotifyIcon) { }
 
-    internal ShellTrayIconService(AppIconService appIconService,
-        Func<uint, NativeMethods.NOTIFYICONDATA, bool> shellNotify)
+    internal ShellTrayIconService(AppIconService appIconService, NotifyIconCall notifyIcon)
     {
-        _shellNotify = shellNotify;
+        _notifyIcon = notifyIcon;
         _appIconService = appIconService;
         _messageWindow = new HwndSource(new HwndSourceParameters("AFMediaBar.ShellTrayWindow")
         {
@@ -71,7 +72,7 @@ public sealed class ShellTrayIconService : IDisposable
     /// The user clicked the balloon notification, rather than letting it time out or dismissing it. Callers use this
     /// to take the user to the relevant surface.
     /// </summary>
-    public event EventHandler<TrayNotificationClickedEventArgs>? NotificationClicked;
+    public event Action<ShellNotificationTarget>? NotificationClicked;
 
     /// <summary>
     /// 弹出一次 Shell 气泡通知（Windows 10/11 上以系统通知的形式呈现）。
@@ -86,15 +87,22 @@ public sealed class ShellTrayIconService : IDisposable
     /// </summary>
     /// <param name="title">通知标题。/ Notification title.</param>
     /// <param name="message">通知正文。/ Notification body.</param>
+    /// <param name="target">点击目标。隐藏的通知标识隔离不同意图，不增加可见托盘图标。</param>
     /// <returns>Shell 是否接受了这次通知。/ Whether the Shell accepted the notification.</returns>
-    public bool TryShowNotification(string title, string message, TrayNotificationPurpose purpose = TrayNotificationPurpose.Update)
+    public bool TryShowNotification(string title, string message, ShellNotificationTarget target = ShellNotificationTarget.None)
     {
-        if (!_isAdded)
+        if (_disposed || !_isAdded) return false;
+        var iconId = target switch
         {
-            return false;
-        }
+            ShellNotificationTarget.Application => IconId,
+            ShellNotificationTarget.TaskbarBackground => BackgroundNotificationId,
+            ShellNotificationTarget.None => GenericNotificationId,
+            _ => throw new ArgumentOutOfRangeException(nameof(target))
+        };
+        if (iconId != IconId && !EnsureNotificationIcon(iconId)) return false;
 
         var data = CreateData();
+        data.uID = iconId;
         data.uFlags = NativeMethods.NIF_INFO;
         data.szInfoTitle = Truncate(title, 63);
         data.szInfo = Truncate(message, 255);
@@ -104,10 +112,28 @@ public sealed class ShellTrayIconService : IDisposable
         // Since NOTIFYICON_VERSION_4 the Shell decides how long the balloon stays, so this value is unused while
         // still carrying a meaningful default.
         data.uTimeoutOrVersion = 10000;
-        var accepted = _shellNotify(NativeMethods.NIM_MODIFY, data);
-        if (accepted)
-            _notificationPurpose = purpose;
-        return accepted;
+        return _notifyIcon(NativeMethods.NIM_MODIFY, ref data);
+    }
+
+    private bool EnsureNotificationIcon(uint iconId)
+    {
+        if (_notificationIcons.Contains(iconId)) return true;
+        if (_disposed || !_isAdded) return false;
+        // Shell 只回传图标 ID；不同点击意图使用隐藏标识，历史通知也不会被后来的通知改写目标。
+        var data = CreateData();
+        data.uID = iconId;
+        data.uFlags = NativeMethods.NIF_MESSAGE | NativeMethods.NIF_ICON | NativeMethods.NIF_STATE;
+        data.dwState = NativeMethods.NIS_HIDDEN;
+        data.dwStateMask = NativeMethods.NIS_HIDDEN;
+        if (!_notifyIcon(NativeMethods.NIM_ADD, ref data)) return false;
+        data.uTimeoutOrVersion = NativeMethods.NOTIFYICON_VERSION_4;
+        if (!_notifyIcon(NativeMethods.NIM_SETVERSION, ref data))
+        {
+            _notifyIcon(NativeMethods.NIM_DELETE, ref data);
+            return false;
+        }
+        _notificationIcons.Add(iconId);
+        return true;
     }
 
     private static string Truncate(string? text, int maximumLength)
@@ -162,15 +188,19 @@ public sealed class ShellTrayIconService : IDisposable
 
         var data = CreateData();
         data.uFlags = NativeMethods.NIF_TIP | NativeMethods.NIF_SHOWTIP;
-        _ = _shellNotify(NativeMethods.NIM_MODIFY, data);
+        _ = _notifyIcon(NativeMethods.NIM_MODIFY, ref data);
     }
 
     private IntPtr WindowHook(IntPtr window, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
+        if (_disposed) return IntPtr.Zero;
         if (unchecked((uint)message) == _taskbarCreatedMessage)
         {
+            var notificationIds = _notificationIcons.ToArray();
+            _notificationIcons.Clear();
             _isAdded = false;
             AddIcon();
+            foreach (var iconId in notificationIds) EnsureNotificationIcon(iconId);
             ShellRestarted?.Invoke(this, EventArgs.Empty);
             return IntPtr.Zero;
         }
@@ -181,6 +211,21 @@ public sealed class ShellTrayIconService : IDisposable
         }
 
         var notification = unchecked((int)(lParam.ToInt64() & 0xFFFF));
+        var sourceIconId = unchecked((uint)((lParam.ToInt64() >> 16) & 0xFFFF));
+        if (sourceIconId == 0 && !_mainUsesVersion4) sourceIconId = unchecked((uint)wParam.ToInt64());
+        if (notification == NativeMethods.NIN_BALLOONUSERCLICK)
+        {
+            var target = sourceIconId switch
+            {
+                IconId => ShellNotificationTarget.Application,
+                BackgroundNotificationId when _notificationIcons.Contains(sourceIconId) => ShellNotificationTarget.TaskbarBackground,
+                _ => ShellNotificationTarget.None
+            };
+            if (target != ShellNotificationTarget.None) NotificationClicked?.Invoke(target);
+            handled = true;
+            return IntPtr.Zero;
+        }
+        if (sourceIconId != IconId) return IntPtr.Zero;
         if (notification == NativeMethods.WM_MOUSEMOVE)
         {
             PointerMovedOverIcon?.Invoke(this, EventArgs.Empty);
@@ -198,11 +243,6 @@ public sealed class ShellTrayIconService : IDisposable
         else if (notification == NativeMethods.NIN_POPUPOPEN)
         {
             TooltipOpening?.Invoke(this, EventArgs.Empty);
-        }
-        else if (notification == NativeMethods.NIN_BALLOONUSERCLICK)
-        {
-            NotificationClicked?.Invoke(this, new TrayNotificationClickedEventArgs(_notificationPurpose));
-            handled = true;
         }
 
         return IntPtr.Zero;
@@ -252,7 +292,12 @@ public sealed class ShellTrayIconService : IDisposable
             // tray icon never moves.
             var data = CreateData();
             data.uFlags = NativeMethods.NIF_ICON;
-            _shellNotify(NativeMethods.NIM_MODIFY, data);
+            _notifyIcon(NativeMethods.NIM_MODIFY, ref data);
+            foreach (var iconId in _notificationIcons)
+            {
+                data.uID = iconId;
+                _notifyIcon(NativeMethods.NIM_MODIFY, ref data);
+            }
         }
 
         // 换图之后再释放旧句柄：Shell 读取的是本次调用时传进去的那一个。
@@ -265,7 +310,7 @@ public sealed class ShellTrayIconService : IDisposable
         var data = CreateData();
         data.uFlags = NativeMethods.NIF_MESSAGE | NativeMethods.NIF_ICON |
             NativeMethods.NIF_TIP | NativeMethods.NIF_SHOWTIP;
-        _isAdded = _shellNotify(NativeMethods.NIM_ADD, data);
+        _isAdded = _notifyIcon(NativeMethods.NIM_ADD, ref data);
         if (!_isAdded)
         {
             Debug.WriteLine($"[ShellTrayIconService] Add failed: {Marshal.GetLastWin32Error()}");
@@ -273,7 +318,7 @@ public sealed class ShellTrayIconService : IDisposable
         }
 
         data.uTimeoutOrVersion = NativeMethods.NOTIFYICON_VERSION_4;
-        _shellNotify(NativeMethods.NIM_SETVERSION, data);
+        _mainUsesVersion4 = _notifyIcon(NativeMethods.NIM_SETVERSION, ref data);
     }
 
     private NativeMethods.NOTIFYICONDATA CreateData() => new()
@@ -300,10 +345,17 @@ public sealed class ShellTrayIconService : IDisposable
         }
 
         _disposed = true;
+        foreach (var iconId in _notificationIcons)
+        {
+            var notificationData = CreateData();
+            notificationData.uID = iconId;
+            _notifyIcon(NativeMethods.NIM_DELETE, ref notificationData);
+        }
+        _notificationIcons.Clear();
         if (_isAdded)
         {
             var data = CreateData();
-            _shellNotify(NativeMethods.NIM_DELETE, data);
+            _notifyIcon(NativeMethods.NIM_DELETE, ref data);
             _isAdded = false;
         }
 

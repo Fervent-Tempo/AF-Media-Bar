@@ -22,27 +22,31 @@ public sealed class TaskbarFallbackNotificationTests
         Assert.IsFalse(gate.TryBegin(double.NaN));
     }
     [TestMethod]
-    public void PlacementClickDoesNotCarryTheUpdatePurposeAndRejectedNoticeKeepsPreviousPurpose()
+    public void PlacementClickDoesNotOpenUpdatesOrChangeAnEarlierUpdateTarget()
     {
         StaTest.Run(_ =>
         {
             using var icons = new AppIconService();
-            var accept = true;
-            using var tray = new ShellTrayIconService(icons, (_, _) => accept);
-            TrayNotificationPurpose? received = null;
-            tray.NotificationClicked += (_, args) => received = args.Purpose;
-            void Click() => typeof(ShellTrayIconService).GetMethod("WindowHook", BindingFlags.Instance | BindingFlags.NonPublic)!
-                .Invoke(tray, [nint.Zero, NativeMethods.WM_APP + 17, nint.Zero, (nint)NativeMethods.NIN_BALLOONUSERCLICK, false]);
-            Assert.IsTrue(tray.TryShowNotification("Update", "Available"));
-            Click();
-            Assert.AreEqual(TrayNotificationPurpose.Update, received);
-            Assert.IsTrue(tray.TryShowNotification("Space", "Moved", TrayNotificationPurpose.TaskbarPlacement));
-            Click();
-            Assert.AreEqual(TrayNotificationPurpose.TaskbarPlacement, received);
-            accept = false;
-            Assert.IsFalse(tray.TryShowNotification("Update", "Rejected"));
-            Click();
-            Assert.AreEqual(TrayNotificationPurpose.TaskbarPlacement, received);
+            NativeMethods.NOTIFYICONDATA notice = default;
+            bool Notify(uint command, ref NativeMethods.NOTIFYICONDATA data)
+            {
+                if ((data.uFlags & NativeMethods.NIF_INFO) != 0) notice = data;
+                return true;
+            }
+            using var tray = new ShellTrayIconService(icons, Notify);
+            var targets = new List<ShellNotificationTarget>();
+            tray.NotificationClicked += targets.Add;
+            void Click(NativeMethods.NOTIFYICONDATA data) =>
+                typeof(ShellTrayIconService).GetMethod("WindowHook", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(tray, [data.hWnd, (int)data.uCallbackMessage, nint.Zero,
+                        new IntPtr(((long)data.uID << 16) | NativeMethods.NIN_BALLOONUSERCLICK), false]);
+            Assert.IsTrue(tray.TryShowNotification("Update", "Available", ShellNotificationTarget.Application));
+            var update = notice;
+            Assert.IsTrue(tray.TryShowNotification("Space", "Moved", ShellNotificationTarget.None));
+            Click(notice);
+            Assert.AreEqual(0, targets.Count);
+            Click(update);
+            CollectionAssert.AreEqual(new[] { ShellNotificationTarget.Application }, targets);
             return Task.CompletedTask;
         });
     }

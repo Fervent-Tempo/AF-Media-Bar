@@ -115,10 +115,8 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <components:SettingsGroupStrip
+        <components:SettingsGroupStrip Margin="{StaticResource AfSettingsHeaderMargin}" MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
             Grid.Row="0"
-            Margin="{StaticResource AfSettingsHeaderMargin}"
-            MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
             PageIcon="{ui:SymbolIcon TextQuote24}"
             Subtitle="{DynamicResource Loc.Lyrics.Header.Subtitle}"
             Target="{Binding ElementName=PageScroll}"
@@ -135,7 +133,8 @@
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
                 Loaded="OnPageLoaded">
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.LyricsDisplay}"
+
+                <components:SettingsGroup GroupId="Common.Group.LyricsDisplay" Header="{DynamicResource Loc.Common.Group.LyricsDisplay}"
                                           Icon="{ui:SymbolIcon TextQuote24}">
                     <StackPanel>
                         <components:SettingsCallout
@@ -158,32 +157,7 @@
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.SyllableHighlightEnabled, Mode=TwoWay}" />
                         </components:SettingsRow>
 
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Lyrics.Row.UnsungOpacity.Description}"
-                            Icon="{ui:SymbolIcon CircleHalfFill24}"
-                            Style="{StaticResource UnsungOpacityRowStyle}"
-                            Title="{DynamicResource Loc.Lyrics.Row.UnsungOpacity.Title}">
-                            <!--
-                                上下限用 Binding 而不是 x:Static：x:Static 返回装箱的 int，RangeBase.Maximum 需要 double，
-                                标记扩展不做这个转换，而绑定会（与外观页的字重滑杆同一处理）。
-                                The bounds use Binding rather than x:Static because x:Static yields a boxed int, RangeBase.Maximum
-                                wants a double, and the markup extension performs no conversion while the binding engine does —
-                                the same handling as the font-weight slider on the appearance page.
-                            -->
-                            <StackPanel Orientation="Horizontal">
-                                <Slider
-                                    IsEnabled="{Binding ViewModel.CanConfigureUnsungOpacity}"
-                                    IsSnapToTickEnabled="True"
-                                    Maximum="{Binding Source={x:Static settings:LyricsUnsungOpacity.MaximumPercent}}"
-                                    Minimum="{Binding Source={x:Static settings:LyricsUnsungOpacity.MinimumPercent}}"
-                                    Style="{StaticResource AfSettingsRowSliderStyle}"
-                                    TickFrequency="{Binding Source={x:Static settings:LyricsUnsungOpacity.StepPercent}}"
-                                    Value="{Binding ViewModel.UnsungOpacityPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <TextBlock
-                                    Style="{StaticResource AfSettingsRowValueStyle}"
-                                    Text="{Binding ViewModel.UnsungOpacityText}" />
-                            </StackPanel>
-                        </components:SettingsRow>
+
 
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Lyrics.Row.InfoLines.Description}"
@@ -204,8 +178,7 @@
 
                         <ui:CardExpander
                             Style="{StaticResource AfSettingsExpanderStyle}"
-                            Icon="{ui:SymbolIcon TextBulletListSquare24}"
-                            IsExpanded="{Binding ViewModel.TwoLineLyricsEnabled, Mode=OneWay}">
+                            Icon="{ui:SymbolIcon TextBulletListSquare24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
                                     <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}"
@@ -274,75 +247,89 @@
                             </StackPanel>
                         </ui:CardExpander>
 
-                        <components:SettingsRow
+
+
+
+
+
+
+
+                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="False" Icon="{ui:SymbolIcon TextParagraph24}">
+                            <ui:CardExpander.Header><StackPanel>
+                                <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Settings.Advanced.Lyrics.Title}" />
+                                <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Settings.Advanced.Lyrics.Description}" />
+                            </StackPanel></ui:CardExpander.Header>
+                            <StackPanel>
+<components:SettingsRow
+                            Description="{DynamicResource Loc.Lyrics.Row.UnsungOpacity.Description}"
+                            Icon="{ui:SymbolIcon CircleHalfFill24}"
+                            Style="{StaticResource UnsungOpacityRowStyle}"
+                            Title="{DynamicResource Loc.Lyrics.Row.UnsungOpacity.Title}">
+                            <!--
+                                上下限用 Binding 而不是 x:Static：x:Static 返回装箱的 int，RangeBase.Maximum 需要 double，
+                                标记扩展不做这个转换，而绑定会（与外观页的字重滑杆同一处理）。
+                                The bounds use Binding rather than x:Static because x:Static yields a boxed int, RangeBase.Maximum
+                                wants a double, and the markup extension performs no conversion while the binding engine does —
+                                the same handling as the font-weight slider on the appearance page.
+                            -->
+                            <components:SettingsNumericEditor
+                                    Value="{Binding ViewModel.UnsungOpacityPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    Minimum="{Binding Source={x:Static settings:LyricsUnsungOpacity.MinimumPercent}}"
+                                    Maximum="{Binding Source={x:Static settings:LyricsUnsungOpacity.MaximumPercent}}"
+                                    Step="{Binding Source={x:Static settings:LyricsUnsungOpacity.StepPercent}}"
+                                    IsEnabled="{Binding ViewModel.CanConfigureUnsungOpacity}"
+                                    Unit="{DynamicResource Loc.Settings.Numeric.Percent}" />
+                        </components:SettingsRow>
+<components:SettingsRow
                             Description="{DynamicResource Loc.Lyrics.Row.LineGap.Description}"
                             Icon="{ui:SymbolIcon TextAlignJustify24}"
                             Style="{StaticResource LineGapRowStyle}"
                             Title="{DynamicResource Loc.Lyrics.Row.LineGap.Title}">
                             <!-- 上下限用 Binding 而不是 x:Static：与未唱部分不透明度同一处理（x:Static 不做装箱 int 到 double 的转换）。 -->
-                            <StackPanel Orientation="Horizontal">
-                                <Slider
-                                    IsEnabled="{Binding ViewModel.CanConfigureLineGap}"
-                                    IsSnapToTickEnabled="True"
-                                    Maximum="{Binding Source={x:Static settings:LyricsLineGap.MaximumPercent}}"
+                            <components:SettingsNumericEditor
+                                    Value="{Binding ViewModel.LineGapPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                     Minimum="{Binding Source={x:Static settings:LyricsLineGap.MinimumPercent}}"
-                                    Style="{StaticResource AfSettingsRowSliderStyle}"
-                                    TickFrequency="{Binding Source={x:Static settings:LyricsLineGap.StepPercent}}"
-                                    Value="{Binding ViewModel.LineGapPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <TextBlock
-                                    Style="{StaticResource AfSettingsRowValueStyle}"
-                                    Text="{Binding ViewModel.LineGapText}" />
-                            </StackPanel>
+                                    Maximum="{Binding Source={x:Static settings:LyricsLineGap.MaximumPercent}}"
+                                    Step="{Binding Source={x:Static settings:LyricsLineGap.StepPercent}}"
+                                    IsEnabled="{Binding ViewModel.CanConfigureLineGap}"
+                                    Unit="{DynamicResource Loc.Settings.Numeric.Percent}" />
                         </components:SettingsRow>
-
-                        <components:SettingsRow
+<components:SettingsRow
                             Description="{DynamicResource Loc.Lyrics.Row.CharacterSpacing.Description}"
                             Icon="{ui:SymbolIcon TextFont24}"
                             Title="{DynamicResource Loc.Lyrics.Row.CharacterSpacing.Title}">
-                            <StackPanel Orientation="Horizontal">
-                                <Slider
-                                    IsSnapToTickEnabled="True"
-                                    Maximum="{Binding Source={x:Static settings:LyricsCharacterSpacing.MaximumPercent}}"
+                            <components:SettingsNumericEditor
+                                    Value="{Binding ViewModel.CharacterSpacingPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                     Minimum="{Binding Source={x:Static settings:LyricsCharacterSpacing.MinimumPercent}}"
-                                    Style="{StaticResource AfSettingsRowSliderStyle}"
-                                    TickFrequency="{Binding Source={x:Static settings:LyricsCharacterSpacing.StepPercent}}"
-                                    Value="{Binding ViewModel.CharacterSpacingPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <TextBlock
-                                    Style="{StaticResource AfSettingsRowValueStyle}"
-                                    Text="{Binding ViewModel.CharacterSpacingText}" />
-                            </StackPanel>
+                                    Maximum="{Binding Source={x:Static settings:LyricsCharacterSpacing.MaximumPercent}}"
+                                    Step="{Binding Source={x:Static settings:LyricsCharacterSpacing.StepPercent}}"
+                                    Unit="{DynamicResource Loc.Settings.Numeric.Percent}" />
                         </components:SettingsRow>
-
-                        <components:SettingsRow
+<components:SettingsRow
                             Description="{DynamicResource Loc.Lyrics.Row.FixedWidth.Description}"
                             Icon="{ui:SymbolIcon ResizeLarge24}"
                             Style="{StaticResource FixedWidthRowStyle}"
                             Title="{DynamicResource Loc.Lyrics.Row.FixedWidth.Title}">
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.FixedWidthEnabled, Mode=TwoWay}" />
                         </components:SettingsRow>
-
-                        <components:SettingsRow
+<components:SettingsRow
                             Description="{DynamicResource Loc.Lyrics.Row.FixedWidth.Length.Description}"
                             Icon="{ui:SymbolIcon ArrowAutofitWidth24}"
                             Title="{DynamicResource Loc.Lyrics.Row.FixedWidth.Length.Title}">
-                            <StackPanel Orientation="Horizontal">
-                                <Slider
-                                    IsEnabled="{Binding ViewModel.CanConfigureFixedWidthDip}"
-                                    IsSnapToTickEnabled="True"
-                                    Maximum="{Binding Source={x:Static settings:LyricsFixedWidth.MaximumDip}}"
+                            <components:SettingsNumericEditor
+                                    Value="{Binding ViewModel.FixedWidthDip, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                     Minimum="{Binding Source={x:Static settings:LyricsFixedWidth.MinimumDip}}"
-                                    Style="{StaticResource AfSettingsRowSliderStyle}"
-                                    TickFrequency="{Binding Source={x:Static settings:LyricsFixedWidth.StepDip}}"
-                                    Value="{Binding ViewModel.FixedWidthDip, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <TextBlock
-                                    Style="{StaticResource AfSettingsRowValueStyle}"
-                                    Text="{Binding ViewModel.FixedWidthText}" />
-                            </StackPanel>
+                                    Maximum="{Binding Source={x:Static settings:LyricsFixedWidth.MaximumDip}}"
+                                    Step="{Binding Source={x:Static settings:LyricsFixedWidth.StepDip}}"
+                                    IsEnabled="{Binding ViewModel.CanConfigureFixedWidthDip}"
+                                    Unit="{DynamicResource Loc.Settings.Numeric.Dip}" />
                         </components:SettingsRow>
+                            </StackPanel>
+                        </ui:CardExpander>
                     </StackPanel>
                 </components:SettingsGroup>
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.LyricsAlignment}"
+                <components:SettingsGroup GroupId="Common.Group.LyricsAlignment" Header="{DynamicResource Loc.Common.Group.LyricsAlignment}"
                                           Icon="{ui:SymbolIcon TextAlignLeft24}">
                     <StackPanel>
                         <components:SettingsDiagram Margin="0,0,0,12" Kind="LyricsAlignment" />
@@ -366,7 +353,7 @@
                     </StackPanel>
                 </components:SettingsGroup>
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.LyricsSources}"
+                <components:SettingsGroup GroupId="Common.Group.LyricsSources" Header="{DynamicResource Loc.Common.Group.LyricsSources}"
                                           Icon="{ui:SymbolIcon CloudArrowDown24}">
                     <StackPanel>
                         <components:SettingsRow

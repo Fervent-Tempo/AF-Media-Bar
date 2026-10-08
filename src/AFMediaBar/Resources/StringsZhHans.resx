@@ -272,7 +272,7 @@
     <value>字体、主题、媒体栏宽度与交互按钮外观</value>
   </data>
   <data name="Appearance.Group.RestLayout" xml:space="preserve">
-    <value>静置层外观</value>
+    <value>常驻状态外观</value>
   </data>
   <data name="Appearance.Group.InteractionButtons" xml:space="preserve">
     <value>交互按钮</value>
@@ -281,7 +281,7 @@
     <value>交互按钮大小</value>
   </data>
   <data name="Appearance.Row.InteractionButtonSize.Description" xml:space="preserve">
-    <value>调整静置层和悬停层按钮及图标的大小。</value>
+    <value>调整常驻状态和快捷控制按钮及图标的大小。</value>
   </data>
   <data name="Appearance.Motion.Detail.Full" xml:space="preserve">
     <value>保留展开、反馈和频谱过渡</value>
@@ -314,22 +314,52 @@
     <value>跟随 Windows 强调色，或只为本程序选择颜色。</value>
   </data>
   <data name="Appearance.Row.Accent.Title" xml:space="preserve">
-    <value>主题色</value>
+    <value>强调色</value>
   </data>
   <data name="Appearance.Row.Backdrop.Description" xml:space="preserve">
-    <value>设置窗口、托盘弹窗和右键菜单的背景材质。</value>
+    <value>选择设置窗口等窗口表面的背景材质；菜单保持纯色。</value>
   </data>
   <data name="Appearance.Row.Backdrop.Title" xml:space="preserve">
     <value>窗口背景材质</value>
   </data>
+  <data name="Appearance.Row.TaskbarBackground.Description" xml:space="preserve">
+    <value>为媒体栏添加半透明磨砂底色，在透明任务栏上保持内容清晰。</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackground.Title" xml:space="preserve">
+    <value>任务栏磨砂背景</value>
+  </data>
+  <data name="Appearance.Row.TaskbarFrostedStyle.Description" xml:space="preserve">
+    <value>选择灰雾色调，或让模糊封面更明显。</value>
+  </data>
+  <data name="Appearance.Row.TaskbarFrostedStyle.Title" xml:space="preserve">
+    <value>材质风格</value>
+  </data>
+  <data name="Appearance.TaskbarFrostedStyle.Neutral" xml:space="preserve">
+    <value>自适应灰雾</value>
+  </data>
+  <data name="Appearance.TaskbarFrostedStyle.Cool" xml:space="preserve">
+    <value>冷灰</value>
+  </data>
+  <data name="Appearance.TaskbarFrostedStyle.Warm" xml:space="preserve">
+    <value>暖灰</value>
+  </data>
+  <data name="Appearance.TaskbarFrostedStyle.Artwork" xml:space="preserve">
+    <value>封面氛围</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundOpacity.Description" xml:space="preserve">
+    <value>数值越高，灰色遮罩越浓，透明任务栏上的内容越清晰。</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundOpacity.Title" xml:space="preserve">
+    <value>磨砂程度</value>
+  </data>
   <data name="Appearance.Row.BackdropTint.Description" xml:space="preserve">
-    <value>调整自绘背景的颜色浓度（30%–100%）。</value>
+    <value>调整 Windows 10 窗口和曲目通知的背景浓度（30%–100%）；Windows 11 系统绘制的窗口材质不受影响。</value>
   </data>
   <data name="Appearance.Row.BackdropTint.Title" xml:space="preserve">
     <value>材质浓度</value>
   </data>
   <data name="Appearance.Row.CjkFont.Description" xml:space="preserve">
-    <value>汉字使用的字体</value>
+    <value>选择中文等东亚文字使用的字体。</value>
   </data>
   <data name="Appearance.Row.CjkFont.Title" xml:space="preserve">
     <value>中文字体</value>
@@ -341,7 +371,7 @@
     <value>字体粗细</value>
   </data>
   <data name="Appearance.Row.LatinFont.Description" xml:space="preserve">
-    <value>字母与数字使用的字体</value>
+    <value>选择字母和数字使用的字体。</value>
   </data>
   <data name="Appearance.Row.LatinFont.Title" xml:space="preserve">
     <value>西文字体</value>
@@ -356,7 +386,7 @@
     <value>交互动效</value>
   </data>
   <data name="Appearance.Row.TextColor.Description" xml:space="preserve">
-    <value>根据文字后方的颜色自动选择深色或浅色文字。</value>
+    <value>设置媒体栏文字颜色；自动模式根据背景选择深色或浅色文字。</value>
   </data>
   <data name="Appearance.Row.TextColor.Title" xml:space="preserve">
     <value>文字颜色</value>
@@ -488,7 +518,7 @@
     <value>退出</value>
   </data>
   <data name="Common.FullLayer" xml:space="preserve">
-    <value>完整层</value>
+    <value>完整面板</value>
   </data>
   <data name="Common.Group.Application" xml:space="preserve">
     <value>应用</value>
@@ -500,7 +530,7 @@
     <value>字体</value>
   </data>
   <data name="Common.Group.InAppRestLayer" xml:space="preserve">
-    <value>程序内（静置层）</value>
+    <value>程序内（常驻状态）</value>
   </data>
   <data name="Common.Group.IslandAppearance" xml:space="preserve">
     <value>灵动岛外观</value>
@@ -530,7 +560,7 @@
     <value>快速启动</value>
   </data>
   <data name="Common.Group.RestLayerComponents" xml:space="preserve">
-    <value>静置层组件</value>
+    <value>常驻状态组件</value>
   </data>
   <data name="Common.Group.ScreenAndPlacement" xml:space="preserve">
     <value>屏幕与位置</value>
@@ -554,7 +584,7 @@
     <value>曲目切换通知</value>
   </data>
   <data name="Common.HoverLayer" xml:space="preserve">
-    <value>悬停层</value>
+    <value>快捷控制</value>
   </data>
   <data name="Common.MediaSource" xml:space="preserve">
     <value>媒体来源</value>
@@ -584,7 +614,7 @@
     <value>打开文件夹</value>
   </data>
   <data name="Common.OpenFullPanel" xml:space="preserve">
-    <value>打开完整层</value>
+    <value>打开完整面板</value>
   </data>
   <data name="Common.OutputDevice" xml:space="preserve">
     <value>输出设备</value>
@@ -647,7 +677,7 @@
     <value>重置位置</value>
   </data>
   <data name="Common.RestLayer" xml:space="preserve">
-    <value>静置层</value>
+    <value>常驻状态</value>
   </data>
   <data name="Common.Save" xml:space="preserve">
     <value>保存</value>
@@ -674,7 +704,7 @@
     <value>托盘图标</value>
   </data>
   <data name="Diagram.DynamicIslandSurface.Caption" xml:space="preserve">
-    <value>灵动岛模式尚未实现，因此下面三项当前只读；它的外观与任务栏互不影响。</value>
+    <value>此模式尚未实现，以下选项只读；它们与任务栏设置独立。</value>
   </data>
   <data name="Diagram.InputGestures.Caption" xml:space="preserve">
     <value>媒体栏上仅这两个区域可以点击，并且可分别设置；展开面板中的按钮不受影响。</value>
@@ -686,7 +716,7 @@
     <value>点击标题或歌词</value>
   </data>
   <data name="Diagram.LayerFull.Caption" xml:space="preserve">
-    <value>点击媒体栏展开的面板，四个分区可分别关闭，至少保留一个。</value>
+    <value>点击媒体栏可打开完整面板；四个分区可分别关闭，至少保留一个。</value>
   </data>
   <data name="Diagram.LayerFull.Label.MediaInfo" xml:space="preserve">
     <value>媒体信息</value>
@@ -698,16 +728,16 @@
     <value>播放控制</value>
   </data>
   <data name="Diagram.LayerHover.Caption" xml:space="preserve">
-    <value>鼠标移入时出现播放、切换、输出设备、音量与进度控制，可在下页逐项开关。</value>
+    <value>启用后，鼠标移入媒体栏会显示快捷控制；各项控制可在本组开关。</value>
   </data>
   <data name="Diagram.LayerRest.Caption" xml:space="preserve">
-    <value>始终显示封面与标题；频谱和性能组件叠加在右侧，其开关位于「媒体与通知 → 静置层组件」。</value>
+    <value>常驻状态显示媒体信息；封面、进度和入口按钮在本页设置，频谱与性能位于「组件」页。</value>
   </data>
   <data name="Diagram.LyricsAlignment.Caption" xml:space="preserve">
-    <value>仅决定歌词靠哪一侧；标题与歌手的对齐是「显示模式」页中的另一项设置。</value>
+    <value>仅调整歌词对齐；标题与歌手的对齐位于「外观 → 常驻状态外观」。</value>
   </data>
   <data name="Diagram.LyricsTwoLine.Caption" xml:space="preserve">
-    <value>第一行为当前句；第二行为下一句或翻译，静置层空间不足时不显示。</value>
+    <value>第一行显示当前歌词；第二行按所选顺序显示下一句、翻译或音译，空间不足时隐藏。</value>
   </data>
   <data name="Diagram.LyricsTwoLine.Label.FirstLine" xml:space="preserve">
     <value>第一行</value>
@@ -728,7 +758,7 @@
     <value>图示为 9 根频谱柱，最右一根处于关闭状态。刷新率决定响应速度，灵敏度决定相同音量下的柱高。</value>
   </data>
   <data name="Diagram.TaskbarLength.Caption" xml:space="preserve">
-    <value>跟随内容时宽度自动变化；关闭跟随后可指定固定宽度，取值范围由当前任务栏决定。</value>
+    <value>跟随内容时宽度自动变化；关闭跟随后可输入固定宽度，范围随任务栏可用空间更新。</value>
   </data>
   <data name="Diagram.TaskbarLength.Label.MinimumWidth" xml:space="preserve">
     <value>所需最小宽度</value>
@@ -737,10 +767,10 @@
     <value>任务栏安全上限</value>
   </data>
   <data name="Diagram.TaskbarPlacement.Caption" xml:space="preserve">
-    <value>媒体栏自动避开任务栏图标；边缘偏移用于调整它与图标区之间的间距。</value>
+    <value>开启避让后，媒体栏会避开任务栏图标；厚度方向偏移用于上下或左右微调。</value>
   </data>
   <data name="Diagram.TaskbarPlacement.Label.EdgeOffset" xml:space="preserve">
-    <value>边缘偏移 −20 ~ +20 像素</value>
+    <value>厚度方向偏移：−20 至 +20 DIP</value>
   </data>
   <data name="Diagram.TaskbarPlacement.Label.TaskbarIcons" xml:space="preserve">
     <value>任务栏图标</value>
@@ -749,7 +779,7 @@
     <value>高亮方块为本程序。图标位于任务栏托盘或隐藏图标区时，点击与滚轮均可生效。</value>
   </data>
   <data name="Diagram.TrayOverflow.Label.OverflowArrow" xml:space="preserve">
-    <value>收进小箭头</value>
+    <value>隐藏图标区</value>
   </data>
   <data name="Diagram.TrayOverflow.Label.TrayArea" xml:space="preserve">
     <value>托盘区</value>
@@ -761,16 +791,16 @@
     <value>媒体栏上</value>
   </data>
   <data name="Diagram.WheelGestures.Label.MediaBarResults" xml:space="preserve">
-    <value>四种结果都能绑：上下首、切换设备或播放器、调节音量</value>
+    <value>上一首/下一首、切换设备、切换播放器或调节音量</value>
   </data>
   <data name="Diagram.WheelGestures.Label.TrayResults" xml:space="preserve">
-    <value>只有切换设备和调节音量两种结果</value>
+    <value>切换设备或调节音量</value>
   </data>
   <data name="DisplayModes.Full.Expander.Description" xml:space="preserve">
-    <value>选择完整层显示的区域；至少保留一个。</value>
+    <value>选择完整面板显示的区域；至少保留一个。</value>
   </data>
   <data name="DisplayModes.Full.Expander.Title" xml:space="preserve">
-    <value>完整层内容</value>
+    <value>完整面板内容</value>
   </data>
   <data name="DisplayModes.Full.Group.Description" xml:space="preserve">
     <value>点击媒体栏后展开的控制面板。</value>
@@ -788,7 +818,7 @@
     <value>点击媒体栏时打开完整控制面板。</value>
   </data>
   <data name="DisplayModes.Full.Row.Enable.Title" xml:space="preserve">
-    <value>启用完整层</value>
+    <value>启用完整面板</value>
   </data>
   <data name="DisplayModes.Full.Row.MediaControls.Title" xml:space="preserve">
     <value>播放控制</value>
@@ -800,19 +830,19 @@
     <value>性能信息</value>
   </data>
   <data name="DisplayModes.Full.Row.Preset.Description" xml:space="preserve">
-    <value>快速套用一组完整层布局。</value>
+    <value>快速套用一组完整面板布局。</value>
   </data>
   <data name="DisplayModes.Full.Row.Preset.Title" xml:space="preserve">
     <value>套用预设</value>
   </data>
   <data name="DisplayModes.Header.Subtitle" xml:space="preserve">
-    <value>媒体栏的显示位置与各层功能开关</value>
+    <value>选择显示模式，配置常驻状态、快捷控制和完整面板。</value>
   </data>
   <data name="DisplayModes.Hover.Expander.Description" xml:space="preserve">
     <value>选择鼠标悬停时显示的控制项。</value>
   </data>
   <data name="DisplayModes.Hover.Expander.Title" xml:space="preserve">
-    <value>悬停层控制</value>
+    <value>快捷控制内容</value>
   </data>
   <data name="DisplayModes.Hover.Group.Description" xml:space="preserve">
     <value>鼠标移入媒体栏时显示的快捷控制。</value>
@@ -821,7 +851,7 @@
     <value>鼠标移入媒体栏时显示快捷控制。</value>
   </data>
   <data name="DisplayModes.Hover.Row.Enable.Title" xml:space="preserve">
-    <value>启用悬停层</value>
+    <value>启用快捷控制</value>
   </data>
   <data name="DisplayModes.Hover.Row.Progress.Title" xml:space="preserve">
     <value>进度条</value>
@@ -884,7 +914,7 @@
     <value>任务栏</value>
   </data>
   <data name="DisplayModes.Mode.Taskbar.Caption" xml:space="preserve">
-    <value>置于 Windows 任务栏，含静置层、悬停层与完整层</value>
+    <value>置于 Windows 任务栏，含常驻状态、快捷控制与完整面板</value>
   </data>
   <data name="DisplayModes.Monitor.DisconnectedSuffix" xml:space="preserve">
     <value>（当前未连接）</value>
@@ -920,16 +950,16 @@
     <value>选择显示媒体栏的屏幕，可多选；至少保留一块。</value>
   </data>
   <data name="DisplayModes.Placement.Row.Offset.Description" xml:space="preserve">
-    <value>微调媒体栏与任务栏图标的距离。</value>
+    <value>沿任务栏厚度方向微调媒体栏位置（−20 至 +20 DIP）。</value>
   </data>
   <data name="DisplayModes.Placement.Row.Offset.Title" xml:space="preserve">
-    <value>边缘偏移</value>
+    <value>厚度方向偏移</value>
   </data>
   <data name="DisplayModes.Placement.Row.Orientation.Description" xml:space="preserve">
-    <value>目前仅实现横向排列，暂时不可调整</value>
+    <value>由当前显示器的系统任务栏自动决定。</value>
   </data>
   <data name="DisplayModes.Placement.Row.Orientation.Title" xml:space="preserve">
-    <value>排列方向</value>
+    <value>任务栏朝向</value>
   </data>
   <data name="DisplayModes.Placement.Row.Reset.Description" xml:space="preserve">
     <value>恢复自动计算的位置。</value>
@@ -1013,7 +1043,7 @@
     <value>调整附加组件从左到右的顺序；封面和文字固定在前。</value>
   </data>
   <data name="DisplayModes.Rest.Order.Expander.Title" xml:space="preserve">
-    <value>静置层组件顺序</value>
+    <value>常驻状态组件顺序</value>
   </data>
   <data name="DisplayModes.Rest.Order.Notice" xml:space="preserve">
     <value>封面和媒体文字固定在最前，不参与排序。</value>
@@ -1031,13 +1061,13 @@
     <value>标题与歌手对齐</value>
   </data>
   <data name="DisplayModes.Hover.Row.Size.Description" xml:space="preserve">
-    <value>调整悬停按钮、图标和进度条，也影响静置层按钮。</value>
+    <value>调整悬停按钮、图标和进度条，也影响常驻状态按钮。</value>
   </data>
   <data name="DisplayModes.Hover.Row.Size.Title" xml:space="preserve">
     <value>控件尺寸</value>
   </data>
   <data name="DisplayModes.Hover.Row.Spacing.Description" xml:space="preserve">
-    <value>调整悬停层按钮和进度条之间的距离。</value>
+    <value>调整快捷控制按钮和进度条之间的距离。</value>
   </data>
   <data name="DisplayModes.Hover.Row.Spacing.Title" xml:space="preserve">
     <value>悬停按钮间距</value>
@@ -1046,13 +1076,13 @@
     <value>常驻输出设备按钮，占用文字空间；点击选设备，滚动切换。</value>
   </data>
   <data name="DisplayModes.Rest.Row.DeviceButton.Title" xml:space="preserve">
-    <value>静置层显示输出设备按钮</value>
+    <value>常驻状态显示输出设备按钮</value>
   </data>
   <data name="DisplayModes.Rest.Row.Entry.Description" xml:space="preserve">
-    <value>通过悬停媒体栏或点击顶部入口打开完整层。</value>
+    <value>通过悬停媒体栏或点击顶部入口打开完整面板。</value>
   </data>
   <data name="DisplayModes.Rest.Row.Entry.Title" xml:space="preserve">
-    <value>显示进入完整层的入口</value>
+    <value>显示进入完整面板的入口</value>
   </data>
   <data name="DisplayModes.Rest.Row.Layout.Description" xml:space="preserve">
     <value>标题与歌手并排一行，或上下堆叠</value>
@@ -1061,7 +1091,7 @@
     <value>内容排列</value>
   </data>
   <data name="DisplayModes.Rest.Row.Progress.Description" xml:space="preserve">
-    <value>在静置层底部显示只读进度；无时长时隐藏。</value>
+    <value>在常驻状态底部显示只读进度；无时长时隐藏。</value>
   </data>
   <data name="DisplayModes.Rest.Row.Artwork.Description" xml:space="preserve">
     <value>有媒体时显示封面；不影响无媒体时的小音符。</value>
@@ -1076,7 +1106,7 @@
     <value>常驻音量按钮，占用文字空间；点击打开菜单，滚动调节音量。</value>
   </data>
   <data name="DisplayModes.Rest.Row.VolumeButton.Title" xml:space="preserve">
-    <value>静置层显示音量按钮</value>
+    <value>常驻状态显示音量按钮</value>
   </data>
   <data name="DisplayModes.Status.Current" xml:space="preserve">
     <value>当前：{0}</value>
@@ -1118,7 +1148,7 @@
     <value>为媒体栏与托盘上的每种操作指定结果</value>
   </data>
   <data name="Interaction.InApp.Group.Description" xml:space="preserve">
-    <value>设置静置层的点击与滚轮操作。</value>
+    <value>设置常驻状态的点击与滚轮操作。</value>
   </data>
   <data name="Interaction.Row.ArtworkClick.Description" xml:space="preserve">
     <value>单独设置封面区域的点击操作。</value>
@@ -1295,7 +1325,7 @@
     <value>有歌词时，媒体栏显示歌词；没有歌词时显示标题与歌手。</value>
   </data>
   <data name="Lyrics.Header.Subtitle" xml:space="preserve">
-    <value>在任务栏静置层显示当前歌词</value>
+    <value>在任务栏常驻状态显示当前歌词</value>
   </data>
   <data name="Lyrics.Row.Alignment.Description" xml:space="preserve">
     <value>调整歌词的水平对齐；标题对齐在外观页设置。</value>
@@ -1466,7 +1496,7 @@
     <value>媒体来源、快速启动与曲目通知</value>
   </data>
   <data name="Components.Header.Subtitle" xml:space="preserve">
-    <value>静置层组件的显示与参数</value>
+    <value>常驻状态组件的显示与参数</value>
   </data>
   <data name="Media.Metric.ProcessMemory.Title" xml:space="preserve">
     <value>本程序内存</value>
@@ -1556,7 +1586,7 @@
     <value>{0:0.#} 秒</value>
   </data>
   <data name="Media.Performance.Visible.Description" xml:space="preserve">
-    <value>在静置层显示所选性能指标。</value>
+    <value>在常驻状态显示所选性能指标。</value>
   </data>
   <data name="Media.Performance.Visible.Title" xml:space="preserve">
     <value>显示性能组件</value>
@@ -1589,7 +1619,7 @@
     <value>从快速启动中移除</value>
   </data>
   <data name="Media.RestComponents.Description" xml:space="preserve">
-    <value>设置静置层的频谱和性能组件。</value>
+    <value>设置常驻状态的频谱和性能组件。</value>
   </data>
   <data name="Media.SourceFilter.Description" xml:space="preserve">
     <value>仅接收允许列表中的媒体来源；关闭后保留列表。</value>
@@ -1637,13 +1667,13 @@
     <value>频谱参数</value>
   </data>
   <data name="Media.Spectrum.RefreshRate.Description" xml:space="preserve">
-    <value>频谱刷新频率（5–30 Hz）</value>
+    <value>调整频谱刷新频率（5–30 Hz）；数值越高，变化越流畅。</value>
   </data>
   <data name="Media.Spectrum.RefreshRate.Title" xml:space="preserve">
     <value>刷新率</value>
   </data>
   <data name="Media.Spectrum.Sensitivity.Description" xml:space="preserve">
-    <value>设置频谱达到最大高度所需的音量（10%–400%）。</value>
+    <value>调整频谱响应幅度（10%–400%）；数值越高，相同音量下的频谱柱越高。</value>
   </data>
   <data name="Media.Spectrum.Sensitivity.Title" xml:space="preserve">
     <value>灵敏度</value>
@@ -1667,7 +1697,7 @@
     <value>波形图</value>
   </data>
   <data name="Media.Spectrum.Visible.Description" xml:space="preserve">
-    <value>在静置层显示当前输出设备的实时频谱。</value>
+    <value>在常驻状态显示当前输出设备的实时频谱。</value>
   </data>
   <data name="Media.Spectrum.Visible.Title" xml:space="preserve">
     <value>显示频谱</value>
@@ -1796,10 +1826,10 @@
     <value>媒体栏宽度、固定长度与组件间距</value>
   </data>
   <data name="Search.Appearance.RestLayout.Description" xml:space="preserve">
-    <value>静置层内容排列、文字对齐与组件顺序</value>
+    <value>常驻状态内容排列、文字对齐与组件顺序</value>
   </data>
   <data name="Search.Appearance.InteractionButtons.Description" xml:space="preserve">
-    <value>静置层和悬停层按钮的大小与间距</value>
+    <value>常驻状态和快捷控制按钮的大小与间距</value>
   </data>
   <data name="Search.Appearance.ThemeAndBackdrop.Description" xml:space="preserve">
     <value>浅色还是深色，以及窗口背景材质</value>
@@ -1820,13 +1850,13 @@
     <value>宽度跟随内容、固定宽度与组件间距</value>
   </data>
   <data name="Search.DisplayModes.RestLayer.Description" xml:space="preserve">
-    <value>设置静置层的显示内容和完整层入口。</value>
+    <value>设置常驻状态的显示内容和完整面板入口。</value>
   </data>
   <data name="Search.DisplayModes.ScreenAndPlacement.Description" xml:space="preserve">
     <value>媒体栏所在的显示器与任务栏位置</value>
   </data>
   <data name="Search.Interaction.InAppRestLayer.Description" xml:space="preserve">
-    <value>设置静置层封面、文字和滚轮操作。</value>
+    <value>设置常驻状态封面、文字和滚轮操作。</value>
   </data>
   <data name="Search.Interaction.SharedModifier.Description" xml:space="preserve">
     <value>媒体栏与托盘共用的组合滚轮按键</value>
@@ -1850,7 +1880,7 @@
     <value>无媒体时从音符启动播放器</value>
   </data>
   <data name="Search.Components.RestLayerComponents.Description" xml:space="preserve">
-    <value>设置静置层的频谱和性能组件。</value>
+    <value>设置常驻状态的频谱和性能组件。</value>
   </data>
   <data name="Search.MediaAndNotifications.TrackChangeNotification.Description" xml:space="preserve">
     <value>曲目切换并开始播放时显示当前曲目</value>
@@ -1902,6 +1932,12 @@
   </data>
   <data name="Startup.SingleInstance.AlreadyRunning" xml:space="preserve">
     <value>AF Media Bar 已在运行，请查看右下角的托盘图标（或点击小箭头展开隐藏图标）。</value>
+  </data>
+  <data name="Startup.TranslucentTb.Content" xml:space="preserve">
+    <value>检测到 TranslucentTB，已开启任务栏磨砂背景，便于辨认媒体内容。点击通知可前往“媒体栏外观 → 背景层”调整。</value>
+  </data>
+  <data name="Startup.TranslucentTb.Title" xml:space="preserve">
+    <value>已适配透明任务栏</value>
   </data>
   <data name="Update.Channel.Accelerated" xml:space="preserve">
     <value>加速站点 {0}</value>
@@ -2086,6 +2122,142 @@
   <data name="Wheel.Line.WithValue" xml:space="preserve">
     <value>{0}：{1}</value>
   </data>
+  <data name="Common.Page.ReleaseHighlights" xml:space="preserve"><value>更新亮点</value></data>
+  <data name="Settings.Navigation.Back" xml:space="preserve"><value>返回</value></data>
+  <data name="ReleaseHighlights.Header.Subtitle" xml:space="preserve"><value>了解最新改进，回顾每个正式版本的变化。</value></data>
+  <data name="ReleaseHighlights.Latest" xml:space="preserve"><value>最新版本</value></data>
+  <data name="ReleaseHighlights.History" xml:space="preserve"><value>历史版本</value></data>
+  <data name="ReleaseHighlights.Refresh" xml:space="preserve"><value>刷新亮点</value></data>
+  <data name="ReleaseHighlights.FullNotes" xml:space="preserve"><value>完整发布说明</value></data>
+  <data name="ReleaseHighlights.CurrentVersion" xml:space="preserve"><value>当前版本</value></data>
+  <data name="ReleaseHighlights.OriginalText" xml:space="preserve"><value>此版本尚未提供当前语言的译文，以下显示官方原文。</value></data>
+  <data name="ReleaseHighlights.NoHighlights" xml:space="preserve"><value>此版本暂未提供更新亮点，可查看完整发布说明。</value></data>
+  <data name="ReleaseHighlights.Status.Bundled" xml:space="preserve"><value>正在显示程序内置的版本亮点。</value></data>
+  <data name="ReleaseHighlights.Status.Cached" xml:space="preserve"><value>正在显示缓存内容，最近获取：{0}。</value></data>
+  <data name="ReleaseHighlights.Status.Updated" xml:space="preserve"><value>版本亮点已刷新：{0}。</value></data>
+  <data name="ReleaseHighlights.Status.RefreshFailed" xml:space="preserve"><value>暂时无法刷新，仍可浏览已保存的版本亮点。</value></data>
+  <data name="ReleaseHighlights.Status.CacheWriteFailed" xml:space="preserve"><value>已获取最新亮点，但未能保存离线缓存。</value></data>
+  <data name="ReleaseHighlights.Application.Description" xml:space="preserve"><value>查看最新版本和所有历史正式版本的更新亮点。</value></data>
+  <data name="ReleaseHighlights.Application.Open" xml:space="preserve"><value>查看更新亮点</value></data>
+  <data name="Settings.Expand" xml:space="preserve"><value>点击展开</value></data>
+  <data name="Settings.Collapse" xml:space="preserve"><value>点击收起</value></data>
+  <data name="Common.Group.TextAndFonts" xml:space="preserve">
+    <value>文字与字体</value>
+  </data>
+  <data name="Search.Appearance.TextAndFonts.Description" xml:space="preserve">
+    <value>调整媒体文字大小、颜色，以及界面和媒体栏共用的字体与粗细。</value>
+  </data>
+  <data name="Settings.Advanced.Fonts.Title" xml:space="preserve">
+    <value>字体与字重</value>
+  </data>
+  <data name="Settings.Advanced.Fonts.Description" xml:space="preserve">
+    <value>调整界面、媒体栏和通知共用的字体与文字粗细。</value>
+  </data>
+  <data name="Settings.Advanced.Backdrop.Title" xml:space="preserve">
+    <value>材质细节</value>
+  </data>
+  <data name="Settings.Advanced.Backdrop.Description" xml:space="preserve">
+    <value>调整自绘背景的颜色浓度。</value>
+  </data>
+  <data name="Settings.Advanced.Spacing.Title" xml:space="preserve">
+    <value>组件间距</value>
+  </data>
+  <data name="Settings.Advanced.Spacing.Description" xml:space="preserve">
+    <value>微调媒体栏中各组件之间的距离。</value>
+  </data>
+  <data name="Settings.Advanced.Lyrics.Title" xml:space="preserve">
+    <value>歌词排版细节</value>
+  </data>
+  <data name="Settings.Advanced.Lyrics.Description" xml:space="preserve">
+    <value>调整未唱文字、行距、字距和固定宽度。</value>
+  </data>
+  <data name="Settings.Advanced.Defaults.Title" xml:space="preserve">
+    <value>自定义默认设置</value>
+  </data>
+  <data name="Settings.Advanced.Defaults.Description" xml:space="preserve">
+    <value>保存或清除恢复默认设置时使用的个人配置。</value>
+  </data>
+  <data name="Settings.Advanced.Diagnostics.Title" xml:space="preserve">
+    <value>诊断工具</value>
+  </data>
+  <data name="Settings.Advanced.Diagnostics.Description" xml:space="preserve">
+    <value>打开日志文件夹，或手动释放工作集内存。</value>
+  </data>
+  <data name="Settings.Numeric.Range" xml:space="preserve">
+    <value>范围：{0}–{1} {2}；步长：{3}。输入后按 Enter 或移开焦点应用，Esc 取消。</value>
+  </data>
+  <data name="Settings.Numeric.Invalid" xml:space="preserve">
+    <value>请输入范围内的有效数值；原设置未改变。</value>
+  </data>
+  <data name="Settings.Numeric.Adjusted" xml:space="preserve">
+    <value>已按允许的步长调整为 {0} {1}。</value>
+  </data>
+  <data name="Settings.Numeric.Percent" xml:space="preserve">
+    <value>%</value>
+  </data>
+  <data name="Settings.Numeric.Dip" xml:space="preserve">
+    <value>DIP</value>
+  </data>
+  <data name="Settings.Numeric.Hertz" xml:space="preserve">
+    <value>Hz</value>
+  </data>
+  <data name="Settings.Numeric.Seconds" xml:space="preserve">
+    <value>秒</value>
+  </data>
+  <data name="Appearance.Specimen.Line1" xml:space="preserve">
+    <value>AF Media Bar · 媒体标题与歌词</value>
+  </data>
+  <data name="Appearance.Specimen.Line2" xml:space="preserve">
+    <value>字母 123 · 汉字 · 日本語</value>
+  </data>
+  <data name="Appearance.Specimen.Line3" xml:space="preserve">
+    <value>字体预览 · 가나다 · Sample text</value>
+  </data>
+  <data name="Common.Page.ScreenAndPlacement" xml:space="preserve">
+    <value>屏幕与位置</value>
+  </data>
+  <data name="ScreenAndPlacement.Header.Subtitle" xml:space="preserve">
+    <value>选择媒体栏使用的显示器，调整任务栏位置与避让。</value>
+  </data>
+  <data name="Common.Page.ApplicationAppearance" xml:space="preserve">
+    <value>应用外观</value>
+  </data>
+  <data name="Common.Page.TaskbarAppearance" xml:space="preserve">
+    <value>媒体栏外观</value>
+  </data>
+  <data name="ApplicationAppearance.Header.Subtitle" xml:space="preserve">
+    <value>设置应用主题、窗口材质和界面字体。</value>
+  </data>
+  <data name="TaskbarAppearance.Header.Subtitle" xml:space="preserve">
+    <value>调整当前任务栏环境中的文字、尺寸和组件布局。</value>
+  </data>
+  <data name="Settings.Context.EditingMonitor" xml:space="preserve">
+    <value>正在配置的显示器</value>
+  </data>
+  <data name="Settings.Context.Unavailable" xml:space="preserve">
+    <value>暂未读取到任务栏</value>
+  </data>
+  <data name="Settings.Context.Compact" xml:space="preserve">
+    <value> · 系统紧凑任务栏</value>
+  </data>
+  <data name="Settings.Context.Summary" xml:space="preserve">
+    <value>{0}{1}。当前版本中，各显示器及横竖方向共用任务栏设置。</value>
+  </data>
+  <data name="Settings.Context.Horizontal" xml:space="preserve">
+    <value>横向任务栏</value>
+  </data>
+  <data name="Settings.Context.Vertical" xml:space="preserve">
+    <value>竖向任务栏</value>
+  </data>
+  <data name="DisplayModes.Mode.AvailabilityNotice" xml:space="preserve">
+    <value>目前仅支持任务栏模式。其他模式暂不可切换。</value>
+  </data>
+  <data name="Appearance.FontsShortcut.Description" xml:space="preserve">
+    <value>字体请前往应用外观-字体进行调节</value>
+  </data>
+  <data name="Appearance.FontsShortcut.Action" xml:space="preserve">
+    <value>调整字体</value>
+  </data>
   <data name="Lyrics.Row.ArtistSeparators.Title" xml:space="preserve">
     <value>艺术家分隔符</value>
   </data>
@@ -2113,6 +2285,15 @@
   <data name="Lyrics.ArtistSeparators.Dialog.Restore" xml:space="preserve">
     <value>恢复默认分隔符</value>
   </data>
+  <data name="Appearance.Group.TaskbarBackground" xml:space="preserve">
+    <value>背景层</value>
+  </data>
+  <data name="Appearance.TaskbarBackground.Details.Title" xml:space="preserve">
+    <value>背景层细节</value>
+  </data>
+  <data name="Appearance.TaskbarBackground.Details.Description" xml:space="preserve">
+    <value>调整背景风格与浓度；启用背景层后生效。</value>
+  </data>
   <data name="DisplayModes.Placement.Row.Alignment.Title" xml:space="preserve">
     <value>任务栏对齐</value>
   </data>
@@ -2134,10 +2315,10 @@
   <data name="DisplayModes.Placement.Row.Arrangement.Description" xml:space="preserve">
     <value>左侧排布将封面放在左侧，其余内容依次向右排列；右侧排布将封面放在右侧，其余内容依次向左排列。文字、封面和图标保持原方向。</value>
   </data>
-<data name="DisplayModes.Placement.Arrangement.Left" xml:space="preserve">
+  <data name="DisplayModes.Placement.Arrangement.Left" xml:space="preserve">
     <value>左侧排布</value>
   </data>
-<data name="DisplayModes.Placement.Arrangement.Right" xml:space="preserve">
+  <data name="DisplayModes.Placement.Arrangement.Right" xml:space="preserve">
     <value>右侧排布</value>
   </data>
   <data name="Taskbar.Placement.Notification.Title" xml:space="preserve">

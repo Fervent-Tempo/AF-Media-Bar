@@ -1,11 +1,11 @@
 // 验证对齐变化能同步刷新实际下拉框，以及新默认值不会覆盖已保存的选择。
-using System.Reflection;
 using System.Text.Json;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
+using AFMediaBar.Classes.Services.Settings;
 using AFMediaBar.Classes.Services.Localization;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.ViewModels.Pages;
@@ -36,10 +36,12 @@ public sealed class TaskbarArrangementSettingsTests
             var original = SettingsManager.Current.Clone();
             DisplayModesViewModel? vm = null;
             using var localization = new LocalizationService();
+            using var context = new SettingsPageContext();
+            var configuration = new LegacySettingsConfiguration(context);
             try
             {
                 SettingsManager.Current = new AppSettings { Position = TaskbarBarPosition.End };
-                vm = new DisplayModesViewModel(new Monitors(), localization);
+                vm = new DisplayModesViewModel(new Monitors(), localization, configuration);
                 var combo = new ComboBox { DataContext = vm, SelectedValuePath = "Tag" };
                 combo.Items.Add(new ComboBoxItem { Tag = TaskbarContentArrangement.Left });
                 combo.Items.Add(new ComboBoxItem { Tag = TaskbarContentArrangement.Right });
@@ -56,16 +58,22 @@ public sealed class TaskbarArrangementSettingsTests
                 Assert.IsNull(SettingsManager.Current.TaskbarExperience.Arrangement);
                 SettingsManager.Current.Position = TaskbarBarPosition.Start;
                 Assert.AreEqual(TaskbarContentArrangement.Left, combo.SelectedValue);
+                combo.SelectedValue = TaskbarContentArrangement.Right;
+                SettingsManager.Current.TaskbarBarManualPadding = 24;
+                context.Deactivate();
+                vm.TaskbarPosition = TaskbarBarPosition.End;
+                vm.TaskbarArrangement = TaskbarContentArrangement.Left;
+                Assert.AreEqual(TaskbarBarPosition.Start, SettingsManager.Current.Position);
+                Assert.AreEqual(TaskbarContentArrangement.Right, SettingsManager.Current.TaskbarExperience.Arrangement);
+                Assert.AreEqual(24.0, SettingsManager.Current.TaskbarBarManualPadding);
+                context.Activate();
+                vm.TaskbarPosition = TaskbarBarPosition.End;
+                Assert.IsNull(SettingsManager.Current.TaskbarExperience.Arrangement);
+                Assert.AreEqual(0.0, SettingsManager.Current.TaskbarBarManualPadding);
             }
             finally
             {
-                if (vm is not null)
-                {
-                    var handlers = (EventHandler<SettingsChangedEventArgs>?)typeof(SettingsManager)
-                        .GetField("SettingsChanged", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null);
-                    foreach (var handler in handlers?.GetInvocationList() ?? [])
-                        if (ReferenceEquals(handler.Target, vm)) SettingsManager.SettingsChanged -= (EventHandler<SettingsChangedEventArgs>)handler;
-                }
+                vm?.Dispose();
                 SettingsManager.Replace(original);
             }
             return Task.CompletedTask;

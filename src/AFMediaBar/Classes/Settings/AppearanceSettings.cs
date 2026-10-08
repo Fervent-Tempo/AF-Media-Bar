@@ -32,6 +32,32 @@ public enum ApplicationBackdropMode
     MicaAlt = 3
 }
 
+/// <summary>任务栏媒体栏使用的背景材质。 / Background material used by the taskbar media bar.</summary>
+public enum TaskbarBackgroundMaterial
+{
+    /// <summary>保留任务栏原始背景。 / Preserve the taskbar's original background.</summary>
+    Transparent = 0,
+
+    /// <summary>使用带封面模糊纹理的半透明磨砂底色。 / Use a translucent frosted tint with blurred artwork texture.</summary>
+    Frosted = 1
+}
+
+/// <summary>任务栏磨砂背景的视觉风格。 / Visual style of the frosted taskbar background.</summary>
+public enum TaskbarFrostedStyle
+{
+    /// <summary>根据前景自动选择中性灰。 / Choose a neutral grey for the current foreground automatically.</summary>
+    Neutral = 0,
+
+    /// <summary>使用偏冷的石板灰。 / Use a cool slate grey.</summary>
+    Cool = 1,
+
+    /// <summary>使用偏暖的烟灰色。 / Use a warm smoke grey.</summary>
+    Warm = 2,
+
+    /// <summary>提高模糊封面纹理的存在感。 / Give the blurred artwork texture more presence.</summary>
+    Artwork = 3
+}
+
 /// <summary>强调色来源。 / Source of the accent color.</summary>
 public enum AccentColorMode
 {
@@ -95,7 +121,10 @@ public readonly record struct AppearanceSettings(
     // "not set" is expressed as null and every reader goes through `ResolveBackdropTintOpacityPercent`.
     int? BackdropTintOpacityPercent,
     string? LatinFontFamily = null,
-    string? CjkFontFamily = null)
+    string? CjkFontFamily = null,
+    TaskbarBackgroundMaterial TaskbarBackgroundMaterial = TaskbarBackgroundMaterial.Transparent,
+    int? TaskbarBackgroundOpacityPercent = null,
+    TaskbarFrostedStyle TaskbarFrostedStyle = TaskbarFrostedStyle.Neutral)
 {
     /// <summary>
     /// 字体粗细下限。取 OpenType 的 Thin：WPF 只有 100–900 九个真实字重，界面按 100 步进在三者之间取值，
@@ -145,6 +174,18 @@ public readonly record struct AppearanceSettings(
     /// </summary>
     public const int DefaultBackdropTintOpacityPercent = 60;
 
+    /// <summary>任务栏磨砂背景的最低浓度。 / Minimum opacity of the frosted taskbar background.</summary>
+    public const int MinimumTaskbarBackgroundOpacityPercent = 35;
+
+    /// <summary>任务栏磨砂背景的最高浓度。 / Maximum opacity of the frosted taskbar background.</summary>
+    public const int MaximumTaskbarBackgroundOpacityPercent = 90;
+
+    /// <summary>任务栏磨砂背景的浓度步进。 / Opacity step of the frosted taskbar background.</summary>
+    public const int TaskbarBackgroundOpacityStep = 1;
+
+    /// <summary>任务栏磨砂背景的默认浓度，与首次提供该功能时的灰雾观感一致。 / Default opacity, matching the initial neutral-grey frosted appearance.</summary>
+    public const int DefaultTaskbarBackgroundOpacityPercent = 72;
+
     /// <summary>
     /// 自选强调色的出厂值：Windows 默认强调蓝。选到"自定义"但还没挑颜色时用它，界面上因此永远有一个具体颜色可显示。
     /// Factory value of the custom accent: the Windows default accent blue. It is used when "custom" is selected but no colour has
@@ -162,7 +203,10 @@ public readonly record struct AppearanceSettings(
         ApplicationBackdropMode.Mica,
         AccentColorMode.System,
         DefaultAccentColorHex,
-        DefaultBackdropTintOpacityPercent);
+        DefaultBackdropTintOpacityPercent,
+        TaskbarBackgroundMaterial: TaskbarBackgroundMaterial.Transparent,
+        TaskbarBackgroundOpacityPercent: DefaultTaskbarBackgroundOpacityPercent,
+        TaskbarFrostedStyle: TaskbarFrostedStyle.Neutral);
 
     public AppearanceSettings Normalize()
     {
@@ -174,6 +218,13 @@ public readonly record struct AppearanceSettings(
             PlayerForegroundMode = Enum.IsDefined(PlayerForegroundMode) ? PlayerForegroundMode : defaults.PlayerForegroundMode,
             ApplicationThemeMode = Enum.IsDefined(ApplicationThemeMode) ? ApplicationThemeMode : defaults.ApplicationThemeMode,
             BackdropMode = Enum.IsDefined(BackdropMode) ? BackdropMode : defaults.BackdropMode,
+            TaskbarBackgroundMaterial = Enum.IsDefined(TaskbarBackgroundMaterial)
+                ? TaskbarBackgroundMaterial
+                : defaults.TaskbarBackgroundMaterial,
+            TaskbarFrostedStyle = Enum.IsDefined(TaskbarFrostedStyle)
+                ? TaskbarFrostedStyle
+                : defaults.TaskbarFrostedStyle,
+            TaskbarBackgroundOpacityPercent = ResolveTaskbarBackgroundOpacityPercent(),
             AccentColorMode = Enum.IsDefined(AccentColorMode) ? AccentColorMode : defaults.AccentColorMode,
             // 强调色存的是十六进制文本：旧文件、手改文件或将来格式变化都可能给出无法解析的值，此时 MUST 回退到默认色
             // 而不是把空值写进调色板（那会让整套强调色画刷变成透明）。
@@ -199,6 +250,11 @@ public readonly record struct AppearanceSettings(
     public int ResolveBackdropTintOpacityPercent() => BackdropTintOpacityPercent is { } percent
         ? Math.Clamp(percent, MinimumBackdropTintOpacityPercent, MaximumBackdropTintOpacityPercent)
         : DefaultBackdropTintOpacityPercent;
+
+    /// <summary>取得任务栏磨砂背景的有效浓度。 / Gets the effective opacity of the frosted taskbar background.</summary>
+    public int ResolveTaskbarBackgroundOpacityPercent() => TaskbarBackgroundOpacityPercent is { } percent
+        ? Math.Clamp(percent, MinimumTaskbarBackgroundOpacityPercent, MaximumTaskbarBackgroundOpacityPercent)
+        : DefaultTaskbarBackgroundOpacityPercent;
 
     /// <summary>
     /// 把任意粗细吸附到最近的真实字重并夹取。旧设置文件里可能存在 350 或 250 这类值，

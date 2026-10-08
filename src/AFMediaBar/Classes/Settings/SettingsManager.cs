@@ -32,6 +32,10 @@ public enum LyricsSecondaryLineMode
 /// <summary>应用全部用户设置，并在属性直接修改时发布变更。 / All user settings; direct mutations publish changes.</summary>
 public sealed class AppSettings : INotifyPropertyChanged
 {
+    /// <summary>Minimum cross-axis taskbar offset in DIP.</summary>
+    public const double MinimumTaskbarCrossAxisOffsetDip = -20d;
+    /// <summary>Maximum cross-axis taskbar offset in DIP.</summary>
+    public const double MaximumTaskbarCrossAxisOffsetDip = 20d;
     private AppearanceSettings _appearance = AppearanceSettings.Default;
     private TrayWheelBehavior _trayWheelBehavior = TrayWheelBehavior.SwitchOutputDevice;
     private bool _lyricsEnabled = true;
@@ -83,6 +87,7 @@ public sealed class AppSettings : INotifyPropertyChanged
     private UpdateSettings _update = UpdateSettings.Default;
     private bool _launchAtStartup = true;
     private InterfaceLanguage _interfaceLanguage = InterfaceLanguage.System;
+    private bool _translucentTbCompatibilityPromptShown;
 
     public AppearanceSettings Appearance { get => _appearance; set => Set(ref _appearance, value.Normalize()); }
     public TrayWheelBehavior TrayWheelBehavior { get => _trayWheelBehavior; set => Set(ref _trayWheelBehavior, value); }
@@ -194,6 +199,17 @@ public sealed class AppSettings : INotifyPropertyChanged
     /// </summary>
     public InterfaceLanguage InterfaceLanguage { get => _interfaceLanguage; set => Set(ref _interfaceLanguage, value); }
 
+    /// <summary>
+    /// 是否已经向用户说明过 TranslucentTB 兼容处理；一旦为 true，后续启动不再自动改动磨砂设置。
+    /// Whether the TranslucentTB compatibility action has already been explained; once true, later starts never change the
+    /// frosted-background setting automatically.
+    /// </summary>
+    public bool TranslucentTbCompatibilityPromptShown
+    {
+        get => _translucentTbCompatibilityPromptShown;
+        set => Set(ref _translucentTbCompatibilityPromptShown, value);
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public AppSettings Normalize()
@@ -241,7 +257,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         if (!double.IsFinite(result.TaskbarBarCrossAxisOffsetDip)) result.TaskbarBarCrossAxisOffsetDip = defaults.TaskbarBarCrossAxisOffsetDip;
         result.LayoutLengthScalePercent = Math.Clamp(result.LayoutLengthScalePercent, 70, 125);
         result.LayoutThicknessScalePercent = Math.Clamp(result.LayoutThicknessScalePercent, 70, 125);
-        result.TaskbarBarCrossAxisOffsetDip = Math.Clamp(result.TaskbarBarCrossAxisOffsetDip, -20, 20);
+        result.TaskbarBarCrossAxisOffsetDip = Math.Clamp(result.TaskbarBarCrossAxisOffsetDip, MinimumTaskbarCrossAxisOffsetDip, MaximumTaskbarCrossAxisOffsetDip);
         if (result.DynamicIslandLeft is not null && (!double.IsFinite(result.DynamicIslandLeft.Value) || result.DynamicIslandLeft < 0)) result.DynamicIslandLeft = null;
         if (result.DynamicIslandTop is not null && (!double.IsFinite(result.DynamicIslandTop.Value) || result.DynamicIslandTop < 0)) result.DynamicIslandTop = null;
         return result;
@@ -294,7 +310,8 @@ public sealed class AppSettings : INotifyPropertyChanged
         PerformanceComponent = PerformanceComponent,
         Update = Update,
         LaunchAtStartup = LaunchAtStartup,
-        InterfaceLanguage = InterfaceLanguage
+        InterfaceLanguage = InterfaceLanguage,
+        TranslucentTbCompatibilityPromptShown = TranslucentTbCompatibilityPromptShown
     };
 
     private static IReadOnlyList<string>? NormalizeMonitorDeviceIds(IEnumerable<string>? deviceIds)
@@ -332,6 +349,7 @@ public static class SettingsManager
 {
     private static AppSettings _current = new();
     private static AppSettings? _userDefaults;
+    private static bool _publishingTaskbarAppearanceOnly;
 
     /// <summary>
     /// 用户自己保存的默认设置。存在时所有"恢复默认设置"入口都以它为准，而不是程序内置默认值；
@@ -353,6 +371,7 @@ public static class SettingsManager
     public static AppSettings Current { get => _current; set => Replace(value); }
     public static event EventHandler<SettingsChangedEventArgs>? SettingsChanged;
     public static event EventHandler<AppearanceSettingsChangedEventArgs>? AppearanceSettingsChanged;
+    public static event EventHandler<AppearanceSettingsChangedEventArgs>? TaskbarAppearanceSettingsChanged;
     public static event EventHandler? TrayWheelBehaviorChanged;
     public static event EventHandler? LyricsSettingsChanged;
     public static event EventHandler<LayoutSettingsChangedEventArgs>? LayoutSettingsChanged;
@@ -389,7 +408,27 @@ public static class SettingsManager
     public static void SetLyricsSourceSettings(LyricsSourceSettings settings) => Current.LyricsSource = settings;
     /// <summary>保存自定义艺术家分隔符，触发歌词重新匹配。</summary>
     public static void SetLyricsArtistSeparators(string separators) => Current.LyricsArtistSeparators = separators;
-    public static void SetAppearanceSettings(AppearanceSettings appearance) => Current.Appearance = appearance;
+    public static void SetAppearanceSettings(AppearanceSettings appearance)
+    {
+        var current = Current.Appearance.Normalize();
+        var normalized = appearance.Normalize();
+        var differsOnlyInTaskbarMaterial = current with
+        {
+            TaskbarBackgroundMaterial = normalized.TaskbarBackgroundMaterial,
+            TaskbarBackgroundOpacityPercent = normalized.TaskbarBackgroundOpacityPercent,
+            TaskbarFrostedStyle = normalized.TaskbarFrostedStyle
+        } == normalized;
+
+        _publishingTaskbarAppearanceOnly = differsOnlyInTaskbarMaterial;
+        try
+        {
+            Current.Appearance = normalized;
+        }
+        finally
+        {
+            _publishingTaskbarAppearanceOnly = false;
+        }
+    }
     public static void SetTaskbarExperienceSettings(TaskbarExperienceSettings settings) => Current.TaskbarExperience = settings;
     public static void SetInteractionSettings(GlobalInteractionSettings settings) => Current.Interaction = settings;
     public static void SetTrackChangeNotificationSettings(TrackChangeNotificationSettings settings) => Current.TrackChangeNotification = settings;
@@ -427,6 +466,50 @@ public static class SettingsManager
         };
         Replace(next, SettingsResetScope.Appearance);
     }
+    /// <summary>Restores application typography and window theme without replacing media color or taskbar layout.</summary>
+    public static void ResetApplicationAppearance()
+    {
+        var next = Current.Clone();
+        next.Appearance = Defaults.Appearance with
+        {
+            PlayerForegroundMode = next.Appearance.PlayerForegroundMode,
+            TaskbarBackgroundMaterial = next.Appearance.TaskbarBackgroundMaterial,
+            TaskbarBackgroundOpacityPercent = next.Appearance.TaskbarBackgroundOpacityPercent,
+            TaskbarFrostedStyle = next.Appearance.TaskbarFrostedStyle
+        };
+        Replace(next, SettingsResetScope.Appearance);
+    }
+
+    /// <summary>Restores taskbar appearance while preserving application fonts and theme.</summary>
+    public static void ResetTaskbarAppearance()
+    {
+        var originalAppearance = Current.Appearance;
+        // Preserve the established appearance reset membership, then retain the application-wide fields.
+        var next = Current.Clone();
+        var defaults = Defaults;
+        next.Appearance = originalAppearance with
+        {
+            PlayerForegroundMode = defaults.Appearance.PlayerForegroundMode,
+            TaskbarBackgroundMaterial = defaults.Appearance.TaskbarBackgroundMaterial,
+            TaskbarBackgroundOpacityPercent = defaults.Appearance.TaskbarBackgroundOpacityPercent,
+            TaskbarFrostedStyle = defaults.Appearance.TaskbarFrostedStyle
+        };
+        next.TaskbarSurface = defaults.TaskbarSurface;
+        next.TaskbarExperience = next.TaskbarExperience with
+        {
+            MediaFontSizePercent = defaults.TaskbarExperience.MediaFontSizePercent,
+            Density = defaults.TaskbarExperience.Density,
+            ContentLayout = defaults.TaskbarExperience.ContentLayout,
+            MediaTextAlignment = defaults.TaskbarExperience.MediaTextAlignment,
+            ComponentSpacingDip = defaults.TaskbarExperience.ComponentSpacingDip,
+            HoverButtonSpacingDip = defaults.TaskbarExperience.HoverButtonSpacingDip,
+            LengthMode = defaults.TaskbarExperience.LengthMode,
+            FixedLengthDip = defaults.TaskbarExperience.FixedLengthDip,
+            RestComponentOrder = defaults.TaskbarExperience.RestComponentOrder
+        };
+        Replace(next, SettingsResetScope.Appearance);
+    }
+
     public static void ResetDisplayModes()
     {
         var next = Current.Clone(); var defaults = Defaults;
@@ -518,7 +601,15 @@ public static class SettingsManager
     /// 全部恢复默认：以用户保存的默认设置为准，没有快照时回到程序内置默认。
     /// Restores everything: the user's saved defaults when they exist, the built-in defaults otherwise.
     /// </summary>
-    public static void ResetAll() => Replace(Defaults.Clone(), SettingsResetScope.All);
+    public static void ResetAll()
+    {
+        var next = Defaults.Clone();
+        // 兼容提示属于一次性启动状态，不是用户外观偏好；恢复默认不能让它再次弹出或再次强制开启材质。
+        // The compatibility notice is one-time startup state rather than an appearance preference; resetting settings must not
+        // make it appear again or automatically force the material on again.
+        next.TranslucentTbCompatibilityPromptShown = Current.TranslucentTbCompatibilityPromptShown;
+        Replace(next, SettingsResetScope.All);
+    }
 
     private static void Subscribe(AppSettings settings) => settings.PropertyChanged += OnPropertyChanged;
     private static void Unsubscribe(AppSettings settings) => settings.PropertyChanged -= OnPropertyChanged;
@@ -527,7 +618,12 @@ public static class SettingsManager
         SettingsChanged?.Invoke(null, new SettingsChangedEventArgs(propertyName: e.PropertyName));
         switch (e.PropertyName)
         {
-            case nameof(AppSettings.Appearance): AppearanceSettingsChanged?.Invoke(null, new AppearanceSettingsChangedEventArgs(Current.Appearance)); break;
+            case nameof(AppSettings.Appearance):
+                if (_publishingTaskbarAppearanceOnly)
+                    TaskbarAppearanceSettingsChanged?.Invoke(null, new AppearanceSettingsChangedEventArgs(Current.Appearance));
+                else
+                    AppearanceSettingsChanged?.Invoke(null, new AppearanceSettingsChangedEventArgs(Current.Appearance));
+                break;
             case nameof(AppSettings.TrayWheelBehavior): TrayWheelBehaviorChanged?.Invoke(null, EventArgs.Empty); break;
             case nameof(AppSettings.LyricsEnabled):
             case nameof(AppSettings.AllowBrowserAndVideoLyrics):

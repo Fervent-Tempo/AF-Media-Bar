@@ -37,8 +37,8 @@
     </Style>
 
     <Style x:Key="AfDiagramSurfaceStyle" TargetType="{x:Type Border}">
-        <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+        <Setter Property="Background" Value="{DynamicResource AfSettingsInfoSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AfSettingsBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="6" />
     </Style>
@@ -261,7 +261,7 @@
             Padding="12,10"
             Style="{StaticResource AfDiagramSurfaceStyle}">
             <StackPanel>
-                <Grid Height="44">
+                <Grid Height="64">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
@@ -294,13 +294,13 @@
                         Grid.Column="1"
                         Margin="16,0,0,0"
                         HorizontalAlignment="Left"
-                        VerticalAlignment="Bottom"
-                        Orientation="Horizontal">
+                        VerticalAlignment="Center"
+                        Orientation="Vertical">
                         <ui:SymbolIcon
-                            Margin="0,0,4,0"
+                            Margin="0,0,0,2"
                             VerticalAlignment="Center"
                             FontSize="13"
-                            Symbol="ArrowLeft24" />
+                            Symbol="ArrowUp24" />
                         <Border
                             Width="150"
                             Height="22"
@@ -308,19 +308,20 @@
                             CornerRadius="4"
                             Opacity="0.8" />
                         <ui:SymbolIcon
-                            Margin="4,0,0,0"
+                            Margin="0,2,0,0"
                             VerticalAlignment="Center"
                             FontSize="13"
-                            Symbol="ArrowRight24" />
+                            Symbol="ArrowDown24" />
                     </StackPanel>
                 </Grid>
 
                 <Border Height="1" Background="{DynamicResource DividerStrokeColorDefaultBrush}" />
 
                 <Grid Margin="0,8,0,0">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                     <TextBlock Style="{StaticResource AfDiagramLabelStyle}" Text="{DynamicResource Loc.Diagram.TaskbarPlacement.Label.TaskbarIcons}" />
                     <TextBlock
-                        HorizontalAlignment="Right"
+                        Grid.Column="1" Margin="16,0,0,0" HorizontalAlignment="Right"
                         Style="{StaticResource AfDiagramLabelStyle}"
                         Text="{DynamicResource Loc.Diagram.TaskbarPlacement.Label.EdgeOffset}" />
                 </Grid>

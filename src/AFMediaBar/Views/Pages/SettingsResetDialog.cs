@@ -6,9 +6,22 @@ using Wpf.Ui.Controls;
 
 internal static class SettingsResetDialog
 {
-    private static readonly ContentDialogService DialogService = new();
-
-    public static void SetHost(ContentDialogHost host) => DialogService.SetDialogHost(host);
+    // A process-wide strong dialog host would retain the closed window and its last cached page.
+    private static WeakReference<ContentDialogHost>? _host;
+    private static CancellationToken _lifetime;
+    public static void SetHost(ContentDialogHost host, CancellationToken lifetime)
+    {
+        _host = new(host);
+        _lifetime = lifetime;
+    }
+    public static void ClearHost(ContentDialogHost host)
+    {
+        if (_host?.TryGetTarget(out var current) == true && ReferenceEquals(current, host))
+        {
+            _host = null;
+            _lifetime = CancellationToken.None;
+        }
+    }
 
     /// <summary>
     /// 询问是否恢复默认设置。
@@ -23,8 +36,14 @@ internal static class SettingsResetDialog
     /// </summary>
     /// <param name="scopeKey">作用域名称的文案键，例如 <c>Common.Page.Lyrics</c>。/ Localization key of the scope name, such as <c>Common.Page.Lyrics</c>.</param>
     /// <param name="resetAll">是否使用覆盖所有页面的全局重置提示。</param>
-    public static async Task<bool> ConfirmAsync(string scopeKey, bool resetAll = false)
+    /// <param name="cancellationToken">Cancellation for the editor whose reset is being confirmed.</param>
+    public static async Task<bool> ConfirmAsync(string scopeKey, bool resetAll = false, CancellationToken cancellationToken = default)
     {
+        if (_lifetime.IsCancellationRequested || cancellationToken.IsCancellationRequested || _host is null || !_host.TryGetTarget(out var host) || host is null) return false;
+        using var request = CancellationTokenSource.CreateLinkedTokenSource(_lifetime, cancellationToken);
+        var lifetime = request.Token;
+        var service = new ContentDialogService();
+        service.SetDialogHost(host);
         var dialog = new ContentDialog
         {
             Title = Translations.Get("Common.ResetDialog.Title"),
@@ -35,6 +54,7 @@ internal static class SettingsResetDialog
             CloseButtonText = Translations.Get("Common.Cancel"),
             DefaultButton = ContentDialogButton.Close
         };
-        return await DialogService.ShowAsync(dialog, CancellationToken.None) == ContentDialogResult.Primary;
+        try { return await service.ShowAsync(dialog, lifetime) == ContentDialogResult.Primary; }
+        catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { return false; }
     }
 }

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models.Layout;
@@ -10,7 +11,6 @@ using AFMediaBar.Classes.Utils;
 using AFMediaBar.Resources;
 using AFMediaBar.ViewModels.Windows;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -180,6 +180,7 @@ namespace AFMediaBar.Views.Windows
             // Subscribe to layout settings changed event
             SettingsManager.LayoutSettingsChanged += SettingsManager_OnLayoutSettingsChanged;
             SettingsManager.AppearanceSettingsChanged += SettingsManager_OnAppearanceSettingsChanged;
+            SettingsManager.TaskbarAppearanceSettingsChanged += SettingsManager_OnTaskbarAppearanceSettingsChanged;
             ApplicationThemeManager.Changed += ApplicationThemeManager_OnChanged;
             SettingsManager.LyricsSettingsChanged += SettingsManager_OnLyricsSettingsChanged;
             SettingsManager.TaskbarExperienceSettingsChanged += SettingsManager_OnTaskbarExperienceSettingsChanged;
@@ -290,6 +291,7 @@ namespace AFMediaBar.Views.Windows
             App.Services.GetRequiredService<MediaSessionService>().SessionsChanged -= MediaSessionService_OnSessionsChanged;
             SettingsManager.LayoutSettingsChanged -= SettingsManager_OnLayoutSettingsChanged;
             SettingsManager.AppearanceSettingsChanged -= SettingsManager_OnAppearanceSettingsChanged;
+            SettingsManager.TaskbarAppearanceSettingsChanged -= SettingsManager_OnTaskbarAppearanceSettingsChanged;
             ApplicationThemeManager.Changed -= ApplicationThemeManager_OnChanged;
             SettingsManager.LyricsSettingsChanged -= SettingsManager_OnLyricsSettingsChanged;
             SettingsManager.TaskbarExperienceSettingsChanged -= SettingsManager_OnTaskbarExperienceSettingsChanged;
@@ -566,6 +568,18 @@ namespace AFMediaBar.Views.Windows
                     return;
 
                 UpdateSystemThemeWatcher(e.Appearance);
+                foreach (var taskbarWindow in _taskbarWindows)
+                    taskbarWindow.ApplyAppearanceSettings();
+            });
+        }
+
+        private void SettingsManager_OnTaskbarAppearanceSettingsChanged(object? sender, AppearanceSettingsChangedEventArgs e)
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (_isClosing)
+                    return;
+
                 foreach (var taskbarWindow in _taskbarWindows)
                     taskbarWindow.ApplyAppearanceSettings();
             });
@@ -888,6 +902,7 @@ namespace AFMediaBar.Views.Windows
             _settingsWindow.Closed -= SettingsWindow_Closed;
             _settingsWindow.Closed += SettingsWindow_Closed;
             _settingsWindow.Show();
+            if (_settingsWindow.WindowState == WindowState.Minimized) _settingsWindow.WindowState = WindowState.Normal;
             _settingsWindow.Activate();
         }
 
@@ -935,16 +950,29 @@ namespace AFMediaBar.Views.Windows
             // caching it in a field would keep announcing in the old language after a switch.
             _trayIconService.TryShowNotification(
                 Translations.Get("Update.Notification.Title"),
-                Translations.Format("Update.Notification.Body", version, state.CurrentVersion));
+                Translations.Format("Update.Notification.Body", version, state.CurrentVersion),
+                ShellNotificationTarget.Application);
         }
 
-        private void TrayIconService_OnNotificationClicked(object? sender, TrayNotificationClickedEventArgs e)
+        private void TrayIconService_OnNotificationClicked(ShellNotificationTarget target)
         {
-            if (_isClosing)
+            if (_isClosing) return;
+            if (target == ShellNotificationTarget.Application)
+            {
+                ViewModel_OpenUpdateSettingsRequested(this, EventArgs.Empty);
                 return;
+            }
+            if (target != ShellNotificationTarget.TaskbarBackground) return;
 
-            if (e.Purpose == TrayNotificationPurpose.Update)
-                ViewModel_OpenUpdateSettingsRequested(sender, EventArgs.Empty);
+            ViewModel_OpenSettingsRequested(this, EventArgs.Empty);
+            if (_settingsWindow is not { } settingsWindow) return;
+            settingsWindow.Dispatcher.BeginInvoke(
+                System.Windows.Threading.DispatcherPriority.Loaded,
+                new Action(() =>
+                {
+                    if (_isClosing || !ReferenceEquals(_settingsWindow, settingsWindow)) return;
+                    settingsWindow.NavigateToGroup(SettingsPageKey.Appearance, "Appearance.Group.TaskbarBackground");
+                }));
         }
 
         private void TaskbarWindow_PlacementFallbackRequested(object? sender, TaskbarPlacementFallbackEventArgs e)
@@ -956,7 +984,7 @@ namespace AFMediaBar.Views.Windows
             _trayIconService.TryShowNotification(
                 Translations.Get("Taskbar.Placement.Notification.Title"),
                 Translations.Get(e.IsHidden ? "Taskbar.Placement.Notification.Hidden" : "Taskbar.Placement.Notification.Moved"),
-                TrayNotificationPurpose.TaskbarPlacement);
+                ShellNotificationTarget.None);
         }
 
         private void SettingsWindow_Closed(object? sender, EventArgs e)
