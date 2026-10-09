@@ -1138,6 +1138,21 @@
   <data name="Interaction.Row.ArtworkClick.Title" xml:space="preserve">
     <value>Nhấn vào ảnh bìa</value>
   </data>
+  <data name="Interaction.Row.ArtworkHover.Description" xml:space="preserve">
+    <value>Cách phóng to khi bạn đưa chuột lên ảnh bìa. Phóng to tại chỗ làm ảnh nhô lên phía trên thanh tác vụ, xem trước lớn mở một thẻ riêng, còn tắt chỉ phóng nhẹ bên trong thanh.</value>
+  </data>
+  <data name="Interaction.Row.ArtworkHover.Title" xml:space="preserve">
+    <value>Phóng to ảnh bìa khi di chuột</value>
+  </data>
+  <data name="Interaction.Row.ArtworkHover.Mode.Off" xml:space="preserve">
+    <value>Tắt (1.1×)</value>
+  </data>
+  <data name="Interaction.Row.ArtworkHover.Mode.Zoom" xml:space="preserve">
+    <value>Phóng to tại chỗ (2×)</value>
+  </data>
+  <data name="Interaction.Row.ArtworkHover.Mode.Preview" xml:space="preserve">
+    <value>Xem trước lớn</value>
+  </data>
   <data name="Interaction.Row.ChordWheel.Description" xml:space="preserve">
     <value>Chọn thao tác khi cuộn chuột trong khi giữ phím bổ trợ.</value>
   </data>

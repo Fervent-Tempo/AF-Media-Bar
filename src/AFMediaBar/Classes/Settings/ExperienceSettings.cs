@@ -510,16 +510,6 @@ public readonly record struct TaskbarExperienceSettings(
 
     private readonly bool? _artworkVisible;
 
-    /// <summary>
-    /// 悬停封面时的放大方式。旧设置文件没有该字段时读作 <see cref="ArtworkHoverMode.Off"/>（保持紧凑 1.1 倍放大），
-    /// 见 <c>ArtworkVisible</c> 的兼容写法。
-    /// How the artwork behaves on hover. Settings files that predate the field read as <see cref="ArtworkHoverMode.Off"/>
-    /// (the compact zoom stays); see the compat note on <c>ArtworkVisible</c>.
-    /// </summary>
-    public ArtworkHoverMode ArtworkHoverMode { get => _artworkHoverMode ?? ArtworkHoverMode.Off; init => _artworkHoverMode = value; }
-
-    private readonly ArtworkHoverMode? _artworkHoverMode;
-
     /// <summary>静置层是否显示性能组件。 / Whether the rest layer shows the performance component.</summary>
     public bool PerformanceVisible { get; init; } = true;
 
@@ -639,7 +629,6 @@ public readonly record struct TaskbarExperienceSettings(
             Arrangement = Arrangement is { } arrangement && Enum.IsDefined(arrangement) ? arrangement : null,
             FullPanel = FullPanel.Normalize(),
             LengthMode = Enum.IsDefined(LengthMode) ? LengthMode : defaults.LengthMode,
-            ArtworkHoverMode = Enum.IsDefined(ArtworkHoverMode) ? ArtworkHoverMode : defaults.ArtworkHoverMode,
             FixedLengthDip = double.IsFinite(FixedLengthDip) && FixedLengthDip >= MinimumStoredFixedLengthDip
                 ? Math.Clamp(FixedLengthDip, MinimumStoredFixedLengthDip, MaximumStoredFixedLengthDip)
                 : defaults.FixedLengthDip,
@@ -705,6 +694,15 @@ public readonly record struct GlobalInteractionSettings(
     /// <summary>是否显示媒体栏与托盘的滚轮操作提示；托盘音频状态和滚动结果仍可见。/ Whether to show wheel action hints on the bar and tray; tray audio status and wheel results remain visible.</summary>
     public bool ShowWheelTooltips { get; init; } = true;
 
+    /// <summary>
+    /// 悬停封面时的放大方式。旧设置文件没有该字段时读作 <see cref="ArtworkHoverMode.Off"/>（保持紧凑 1.1 倍放大）。
+    /// How the artwork behaves on hover. Settings files that predate the field read as <see cref="ArtworkHoverMode.Off"/>
+    /// (the compact 1.1× zoom stays).
+    /// </summary>
+    public ArtworkHoverMode ArtworkHoverMode { get => _artworkHoverMode ?? ArtworkHoverMode.Off; init => _artworkHoverMode = value; }
+
+    private readonly ArtworkHoverMode? _artworkHoverMode;
+
     public static GlobalInteractionSettings Default { get; } = new(
         PlayerClickAction.TogglePlayPause,
         PlayerClickAction.ActivateSource,
@@ -734,7 +732,8 @@ public readonly record struct GlobalInteractionSettings(
                 ? TrayClickAction
                 : defaults.TrayClickAction,
             TrayPrimaryWheelAction = NormalizeTrayWheelAction(TrayPrimaryWheelAction, defaults.TrayPrimaryWheelAction),
-            TrayChordWheelAction = NormalizeTrayWheelAction(TrayChordWheelAction, defaults.TrayChordWheelAction)
+            TrayChordWheelAction = NormalizeTrayWheelAction(TrayChordWheelAction, defaults.TrayChordWheelAction),
+            ArtworkHoverMode = Enum.IsDefined(ArtworkHoverMode) ? ArtworkHoverMode : defaults.ArtworkHoverMode
         };
     }
 
