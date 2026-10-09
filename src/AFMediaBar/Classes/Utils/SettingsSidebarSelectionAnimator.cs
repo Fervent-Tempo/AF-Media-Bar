@@ -71,7 +71,7 @@ public sealed class SettingsSidebarSelectionAnimator : IDisposable
 
     private void Align(bool animate, bool force = false)
     {
-        if (_disposed || !_navigation.IsLoaded) return;
+        if (_disposed || !_navigation.IsLoaded || !_navigation.IsVisible) return;
         if (_navigation.SelectedItem is not NavigationViewItem item || !item.IsVisible || item.ActualWidth < 8d || item.ActualHeight < 8d)
         {
             Stop();
@@ -90,9 +90,11 @@ public sealed class SettingsSidebarSelectionAnimator : IDisposable
         if (ancestor is ScrollViewer viewport)
         {
             var viewportOrigin = viewport.TranslatePoint(new Point(), _overlay);
-            _overlay.Clip = new RectangleGeometry(new Rect(viewportOrigin, viewport.RenderSize));
+            var clipBounds = new Rect(viewportOrigin, viewport.RenderSize);
+            if (_overlay.Clip is not RectangleGeometry clip || clip.Rect != clipBounds)
+                _overlay.Clip = new RectangleGeometry(clipBounds);
         }
-        else _overlay.Clip = null;
+        else if (_overlay.Clip is not null) _overlay.Clip = null;
         if (!force && ReferenceEquals(item, _target) && bounds == _targetBounds) return;
         // LayoutUpdated can precede the deferred selection callback; changing item still deserves a transition.
         animate |= _target is not null && !ReferenceEquals(item, _target);
