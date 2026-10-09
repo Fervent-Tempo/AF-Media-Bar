@@ -46,6 +46,7 @@ public static class SettingsSearchIndex
         LocalizationLanguage.SimplifiedChinese,
         LocalizationLanguage.TraditionalChinese,
         LocalizationLanguage.English,
+        LocalizationLanguage.Vietnamese,
     ];
 
     /// <summary>
