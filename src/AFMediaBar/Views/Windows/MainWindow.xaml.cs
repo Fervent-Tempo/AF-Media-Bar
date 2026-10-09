@@ -67,12 +67,10 @@ namespace AFMediaBar.Views.Windows
         private TrackChangeNotificationWindow? _trackChangeNotificationWindow;
         private string? _effectiveTaskbarTargetSignature;
         private int _taskbarCreatedMessage;
-        private bool _isSystemThemeWatcherActive;
         private bool _isClosing;
         private bool _layoutSettingsUpdateScheduled;
         private bool _experienceSettingsUpdateScheduled;
         private LayoutSettingsChangedEventArgs? _latestLayoutSettings;
-        private ApplicationBackdropMode? _watchedBackdropMode;
         private CancellationTokenSource? _taskbarRecoveryCancellation;
 
         /// <summary>
@@ -159,7 +157,6 @@ namespace AFMediaBar.Views.Windows
             };
 
             InitializeComponent();
-            UpdateSystemThemeWatcher(SettingsManager.Current.Appearance);
 
 
             Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0));
@@ -254,20 +251,6 @@ namespace AFMediaBar.Views.Windows
             TrayMenu.IsOpen = false;
             foreach (var taskbarWindow in _taskbarWindows)
                 taskbarWindow.ClosePlayerMenu();
-
-            if (_isSystemThemeWatcherActive)
-            {
-                try
-                {
-                    SystemThemeWatcher.UnWatch(this);
-                }
-                catch (InvalidOperationException)
-                {
-                    // 窗口句柄可能已被异常的显示环境恢复销毁；关闭路径必须继续完成。
-                    // An abnormal display recovery may already have destroyed the HWND; shutdown must continue.
-                }
-                _isSystemThemeWatcherActive = false;
-            }
 
             CloseTaskbarWindows();
             _audioControlFlyout.Dispose();
@@ -564,7 +547,6 @@ namespace AFMediaBar.Views.Windows
                 if (_isClosing)
                     return;
 
-                UpdateSystemThemeWatcher(e.Appearance);
                 foreach (var taskbarWindow in _taskbarWindows)
                     taskbarWindow.ApplyAppearanceSettings();
             });
@@ -594,35 +576,6 @@ namespace AFMediaBar.Views.Windows
                     taskbarWindow.ApplySnapshot(snapshot);
                 }
             });
-        }
-
-        private void UpdateSystemThemeWatcher(AppearanceSettings appearance)
-        {
-            if (_isClosing)
-                return;
-
-            var shouldWatch = appearance.ApplicationThemeMode == ApplicationThemeMode.Automatic;
-            if (shouldWatch == _isSystemThemeWatcherActive &&
-                (!shouldWatch || _watchedBackdropMode == appearance.BackdropMode))
-            {
-                return;
-            }
-
-            if (_isSystemThemeWatcherActive)
-            {
-                SystemThemeWatcher.UnWatch(this);
-            }
-
-            if (shouldWatch)
-            {
-                SystemThemeWatcher.Watch(
-                    this,
-                    WindowBackdropType.None,
-                    updateAccents: true);
-            }
-
-            _isSystemThemeWatcherActive = shouldWatch;
-            _watchedBackdropMode = shouldWatch ? appearance.BackdropMode : null;
         }
 
         private void ActivateTaskbarMode()
