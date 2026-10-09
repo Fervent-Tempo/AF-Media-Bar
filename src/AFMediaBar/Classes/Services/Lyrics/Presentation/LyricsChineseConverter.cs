@@ -39,8 +39,7 @@ public static class LyricsChineseConverter
     }
 
     /// <summary>
-    /// 提前把两个方向的转换器加载到后台线程：设置刚打开时不用等第一帧自己付这笔账。
-    /// Loads both directions on a background thread ahead of time, so enabling the setting does not make the first frame pay for it.
+    /// 在后台完成两个方向的首次转换，避免 UI 线程初始化延迟加载的转换计划。
     /// </summary>
     public static void WarmUp() => RequestWarmUp();
 
@@ -93,6 +92,9 @@ public static class LyricsChineseConverter
         // 构造不持发布锁，呈现线程也不获取这把锁，避免首次加载阻塞 UI。
         var simplifiedToTraditional = new Opencc(OpenccConfig.S2T);
         var traditionalToSimplified = new Opencc(OpenccConfig.T2S);
+        // Opencc 的转换计划延迟到实际 Convert 时加载，构造成功不代表可以发布就绪。
+        _ = simplifiedToTraditional.Convert("简体歌词转换");
+        _ = traditionalToSimplified.Convert("繁體歌詞轉換");
         lock (_sync)
         {
             if (_simplifiedToTraditional is null)
