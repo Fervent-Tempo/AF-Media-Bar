@@ -1,51 +1,22 @@
 <Page
-    x:Class="AFMediaBar.Views.Pages.LyricsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:components="clr-namespace:AFMediaBar.Components"
     xmlns:lyrics="clr-namespace:AFMediaBar.Classes.Services.Lyrics"
     xmlns:settings="clr-namespace:AFMediaBar.Classes.Settings"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    x:Class="AFMediaBar.Views.Pages.LyricsPage"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     ScrollViewer.CanContentScroll="False">
-
-    <!--
-        歌词页 / Lyrics page
-
-        两个分组：显示（开关、双行、第二行内容）与对齐（歌词对齐）。全部是一行一个选项。
-
-        这里的依赖关系由展开器表达：第二行内容只属于双行歌词，因此它住在双行歌词的展开体里，
-        双行歌词关闭时整块收起，不会留下一排点不动的下拉框。
-        对齐卡片的说明与源码一致：歌词对齐只作用于歌词本身，标题与歌手的对齐是显示模式页的另一项设置。
-
-        Two groups: display (switch, two lines, second line) and alignment, every one of them a single row.
-
-        The dependency is expressed by an expander: the second line only exists for two-line lyrics, so it lives
-        inside that expander's body and disappears with it, instead of leaving a row of dead selects behind. The
-        alignment row's description matches the source: lyric alignment affects only the lyrics, while title and
-        artist alignment is a separate setting on the display-modes page.
-    -->
     <Page.Resources>
-        <!--
-            极简文本框模板：只有内容宿主，无边框无圆角无聚焦弧线——绕开 WPF-UI 的隐式 TextBox 样式，
-            让绑定行的备注默认看起来就是纯文本，点击直接进入编辑。
-            A bare text-box template: the content host only, no border, radius, or focus underline — it bypasses WPF-UI's
-            implicit TextBox style so the binding row's remark reads as plain text until clicked.
-        -->
         <ControlTemplate x:Key="AfBareTextBoxTemplate" TargetType="{x:Type TextBox}">
-            <ScrollViewer x:Name="PART_ContentHost" Focusable="False" HorizontalScrollBarVisibility="Hidden"
-                          VerticalScrollBarVisibility="Hidden" />
+            <ScrollViewer
+                x:Name="PART_ContentHost"
+                Focusable="False"
+                HorizontalScrollBarVisibility="Hidden"
+                VerticalScrollBarVisibility="Hidden" />
         </ControlTemplate>
-
-        <!--
-            歌词关闭时双行开关不可用，用徽章说明原因；父项开关就在上方两行处。
-            The two-line switch is unavailable while lyrics are off; a badge states why, and the parent switch is
-            two rows above.
-        -->
-        <Style
-            x:Key="TwoLineRowStyle"
-            BasedOn="{StaticResource {x:Type components:SettingsRow}}"
-            TargetType="{x:Type components:SettingsRow}">
+        <Style x:Key="TwoLineRowStyle" BasedOn="{StaticResource {x:Type components:SettingsRow}}" TargetType="{x:Type components:SettingsRow}">
             <Setter Property="Badge" Value="" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding ViewModel.CanConfigureTwoLine}" Value="False">
@@ -54,12 +25,6 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
-
-        <!--
-            未唱部分不透明度只在启用逐字擦亮时才有作用对象：关闭时用徽章说明原因，而不是把滑杆静默变灰。
-            The unsung opacity only has a target while syllable highlighting is on: a badge states why when it is off, instead of
-            leaving a silently greyed slider behind.
-        -->
         <Style
             x:Key="UnsungOpacityRowStyle"
             BasedOn="{StaticResource {x:Type components:SettingsRow}}"
@@ -72,16 +37,7 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
-
-        <!--
-            行距只在双行歌词开启时可用：单行时没有"两行之间"可调，用徽章说明原因而不是留一根无效滑杆。
-            The line gap applies only while two-line lyrics are on: with a single line there is no "between" to adjust, so a badge
-            states why instead of leaving an inert slider behind.
-        -->
-        <Style
-            x:Key="LineGapRowStyle"
-            BasedOn="{StaticResource {x:Type components:SettingsRow}}"
-            TargetType="{x:Type components:SettingsRow}">
+        <Style x:Key="LineGapRowStyle" BasedOn="{StaticResource {x:Type components:SettingsRow}}" TargetType="{x:Type components:SettingsRow}">
             <Setter Property="Badge" Value="" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding ViewModel.CanConfigureLineGap}" Value="False">
@@ -90,108 +46,43 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
-
-        <!--
-            固定歌词框长度只在歌词开启时有意义：关闭歌词时用徽章说明原因。
-            The fixed lyric-box length only matters while lyrics are on: a badge states why when they are off.
-        -->
-        <Style
-            x:Key="FixedWidthRowStyle"
-            BasedOn="{StaticResource {x:Type components:SettingsRow}}"
-            TargetType="{x:Type components:SettingsRow}">
-            <Setter Property="Badge" Value="" />
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding ViewModel.CanConfigureFixedWidth}" Value="False">
-                    <Setter Property="Badge" Value="{DynamicResource Loc.Lyrics.Row.FixedWidth.Badge}" />
-                    <Setter Property="BadgeTone" Value="Attention" />
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
     </Page.Resources>
-
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-
         <components:SettingsGroupStrip
-            Grid.Row="0"
             Margin="{StaticResource AfSettingsHeaderMargin}"
             MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
+            Grid.Row="0"
             PageIcon="{ui:SymbolIcon TextQuote24}"
             Subtitle="{DynamicResource Loc.Lyrics.Header.Subtitle}"
             Target="{Binding ElementName=PageScroll}"
             Title="{DynamicResource Loc.Common.Page.Lyrics}" />
-
         <ScrollViewer
             x:Name="PageScroll"
             Grid.Row="1"
             Margin="{StaticResource AfSettingsScrollMargin}"
             HorizontalScrollBarVisibility="Disabled"
             VerticalScrollBarVisibility="Auto">
-            <StackPanel
-                x:Name="PageRoot"
-                MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
-                Loaded="OnPageLoaded">
-
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.LyricsDisplay}"
-                                          Icon="{ui:SymbolIcon TextQuote24}">
+            <StackPanel x:Name="PageRoot" MaxWidth="{StaticResource AfSettingsContentMaxWidth}" Loaded="OnPageLoaded">
+                <components:SettingsGroup
+                    GroupId="Common.Group.LyricsDisplay"
+                    Header="{DynamicResource Loc.Common.Group.LyricsDisplay}"
+                    Icon="{ui:SymbolIcon TextQuote24}">
                     <StackPanel>
                         <components:SettingsCallout
                             Margin="0,0,0,12"
                             IsAccent="True"
                             Symbol="TextQuote24"
                             Text="{DynamicResource Loc.Lyrics.Callout.Display}" />
-
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Lyrics.Row.ShowLyrics.Description}"
                             Icon="{ui:SymbolIcon TextQuote24}"
                             Title="{DynamicResource Loc.Lyrics.Row.ShowLyrics.Title}">
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.LyricsEnabled, Mode=TwoWay}" />
                         </components:SettingsRow>
-
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Lyrics.Row.SyllableHighlight.Description}"
-                            Icon="{ui:SymbolIcon TextColor24}"
-                            Title="{DynamicResource Loc.Lyrics.Row.SyllableHighlight.Title}">
-                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.SyllableHighlightEnabled, Mode=TwoWay}" />
-                        </components:SettingsRow>
-
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Lyrics.Row.UnsungOpacity.Description}"
-                            Icon="{ui:SymbolIcon CircleHalfFill24}"
-                            Style="{StaticResource UnsungOpacityRowStyle}"
-                            Title="{DynamicResource Loc.Lyrics.Row.UnsungOpacity.Title}">
-                            <!--
-                                上下限用 Binding 而不是 x:Static：x:Static 返回装箱的 int，RangeBase.Maximum 需要 double，
-                                标记扩展不做这个转换，而绑定会（与外观页的字重滑杆同一处理）。
-                                The bounds use Binding rather than x:Static because x:Static yields a boxed int, RangeBase.Maximum
-                                wants a double, and the markup extension performs no conversion while the binding engine does —
-                                the same handling as the font-weight slider on the appearance page.
-                            -->
-                            <StackPanel Orientation="Horizontal">
-                                <Slider
-                                    IsEnabled="{Binding ViewModel.CanConfigureUnsungOpacity}"
-                                    IsSnapToTickEnabled="True"
-                                    Maximum="{Binding Source={x:Static settings:LyricsUnsungOpacity.MaximumPercent}}"
-                                    Minimum="{Binding Source={x:Static settings:LyricsUnsungOpacity.MinimumPercent}}"
-                                    Style="{StaticResource AfSettingsRowSliderStyle}"
-                                    TickFrequency="{Binding Source={x:Static settings:LyricsUnsungOpacity.StepPercent}}"
-                                    Value="{Binding ViewModel.UnsungOpacityPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <TextBlock
-                                    Style="{StaticResource AfSettingsRowValueStyle}"
-                                    Text="{Binding ViewModel.UnsungOpacityText}" />
-                            </StackPanel>
-                        </components:SettingsRow>
-
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Lyrics.Row.InfoLines.Description}"
-                            Icon="{ui:SymbolIcon TextGrammarWand24}"
-                            Title="{DynamicResource Loc.Lyrics.Row.InfoLines.Title}">
-                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.InfoLineFilterEnabled, Mode=TwoWay}" />
-                        </components:SettingsRow>
-
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Lyrics.Row.TwoLine.Description}"
                             Icon="{ui:SymbolIcon TextAlignJustify24}"
@@ -201,22 +92,19 @@
                                 IsChecked="{Binding ViewModel.TwoLineLyricsEnabled, Mode=TwoWay}"
                                 IsEnabled="{Binding ViewModel.CanConfigureTwoLine}" />
                         </components:SettingsRow>
-
-                        <ui:CardExpander
-                            Style="{StaticResource AfSettingsExpanderStyle}"
-                            Icon="{ui:SymbolIcon TextBulletListSquare24}"
-                            IsExpanded="{Binding ViewModel.TwoLineLyricsEnabled, Mode=OneWay}">
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon TextBulletListSquare24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
-                                    <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}"
-                                               Text="{DynamicResource Loc.Lyrics.Row.SecondLine.Title}" />
-                                    <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}"
-                                               Text="{DynamicResource Loc.Lyrics.Row.SecondLine.Description}" />
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowTitleStyle}"
+                                        Text="{DynamicResource Loc.Lyrics.Row.SecondLine.Title}" />
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
+                                        Text="{DynamicResource Loc.Lyrics.Row.SecondLine.Description}" />
                                 </StackPanel>
                             </ui:CardExpander.Header>
                             <StackPanel>
                                 <components:SettingsDiagram Margin="0,0,0,12" Kind="LyricsTwoLine" />
-
                                 <components:SettingsRow
                                     Description="{DynamicResource Loc.Lyrics.Row.SecondLine.Note}"
                                     Icon="{ui:SymbolIcon TextBulletListSquare24}"
@@ -228,11 +116,6 @@
                                         Text="{Binding ViewModel.SecondaryLineOrderText}"
                                         TextWrapping="Wrap" />
                                 </components:SettingsRow>
-
-                                <!--
-                                    顺序即优先级，与来源列表同一套写法：一行一种来源，自带上下移按钮。
-                                    The order is the priority, written exactly like the source list: one source per row with its own move buttons.
-                                -->
                                 <ItemsControl Margin="0,0,0,4" ItemsSource="{Binding ViewModel.SecondaryLineEntries}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
@@ -259,7 +142,6 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-
                                 <components:SettingsRow
                                     Description="{DynamicResource Loc.Lyrics.SecondLine.Reset.Description}"
                                     Icon="{ui:SymbolIcon ArrowReset24}"
@@ -273,101 +155,94 @@
                                 </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>
-
                         <components:SettingsRow
-                            Description="{DynamicResource Loc.Lyrics.Row.LineGap.Description}"
-                            Icon="{ui:SymbolIcon TextAlignJustify24}"
-                            Style="{StaticResource LineGapRowStyle}"
-                            Title="{DynamicResource Loc.Lyrics.Row.LineGap.Title}">
-                            <!-- 上下限用 Binding 而不是 x:Static：与未唱部分不透明度同一处理（x:Static 不做装箱 int 到 double 的转换）。 -->
-                            <StackPanel Orientation="Horizontal">
-                                <Slider
-                                    IsEnabled="{Binding ViewModel.CanConfigureLineGap}"
-                                    IsSnapToTickEnabled="True"
-                                    Maximum="{Binding Source={x:Static settings:LyricsLineGap.MaximumPercent}}"
-                                    Minimum="{Binding Source={x:Static settings:LyricsLineGap.MinimumPercent}}"
-                                    Style="{StaticResource AfSettingsRowSliderStyle}"
-                                    TickFrequency="{Binding Source={x:Static settings:LyricsLineGap.StepPercent}}"
-                                    Value="{Binding ViewModel.LineGapPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <TextBlock
-                                    Style="{StaticResource AfSettingsRowValueStyle}"
-                                    Text="{Binding ViewModel.LineGapText}" />
-                            </StackPanel>
-                        </components:SettingsRow>
-
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Lyrics.Row.CharacterSpacing.Description}"
-                            Icon="{ui:SymbolIcon TextFont24}"
-                            Title="{DynamicResource Loc.Lyrics.Row.CharacterSpacing.Title}">
-                            <StackPanel Orientation="Horizontal">
-                                <Slider
-                                    IsSnapToTickEnabled="True"
-                                    Maximum="{Binding Source={x:Static settings:LyricsCharacterSpacing.MaximumPercent}}"
-                                    Minimum="{Binding Source={x:Static settings:LyricsCharacterSpacing.MinimumPercent}}"
-                                    Style="{StaticResource AfSettingsRowSliderStyle}"
-                                    TickFrequency="{Binding Source={x:Static settings:LyricsCharacterSpacing.StepPercent}}"
-                                    Value="{Binding ViewModel.CharacterSpacingPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <TextBlock
-                                    Style="{StaticResource AfSettingsRowValueStyle}"
-                                    Text="{Binding ViewModel.CharacterSpacingText}" />
-                            </StackPanel>
-                        </components:SettingsRow>
-
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Lyrics.Row.FixedWidth.Description}"
-                            Icon="{ui:SymbolIcon ResizeLarge24}"
-                            Style="{StaticResource FixedWidthRowStyle}"
-                            Title="{DynamicResource Loc.Lyrics.Row.FixedWidth.Title}">
-                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.FixedWidthEnabled, Mode=TwoWay}" />
-                        </components:SettingsRow>
-
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Lyrics.Row.FixedWidth.Length.Description}"
-                            Icon="{ui:SymbolIcon ArrowAutofitWidth24}"
-                            Title="{DynamicResource Loc.Lyrics.Row.FixedWidth.Length.Title}">
-                            <StackPanel Orientation="Horizontal">
-                                <Slider
-                                    IsEnabled="{Binding ViewModel.CanConfigureFixedWidthDip}"
-                                    IsSnapToTickEnabled="True"
-                                    Maximum="{Binding Source={x:Static settings:LyricsFixedWidth.MaximumDip}}"
-                                    Minimum="{Binding Source={x:Static settings:LyricsFixedWidth.MinimumDip}}"
-                                    Style="{StaticResource AfSettingsRowSliderStyle}"
-                                    TickFrequency="{Binding Source={x:Static settings:LyricsFixedWidth.StepDip}}"
-                                    Value="{Binding ViewModel.FixedWidthDip, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <TextBlock
-                                    Style="{StaticResource AfSettingsRowValueStyle}"
-                                    Text="{Binding ViewModel.FixedWidthText}" />
-                            </StackPanel>
+                            Title="{DynamicResource Loc.ContentLayout.Text.Shortcut.Title}"
+                            Description="{DynamicResource Loc.ContentLayout.Text.Shortcut.Description}"
+                            Icon="{ui:SymbolIcon TextAlignCenter24}">
+                            <ui:Button
+                                Click="OpenTextLayout_Click"
+                                Content="{DynamicResource Loc.ContentLayout.Text.Shortcut.Action}"
+                                Style="{StaticResource AfSettingsButtonStyle}" />
                         </components:SettingsRow>
                     </StackPanel>
                 </components:SettingsGroup>
-
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.LyricsAlignment}"
-                                          Icon="{ui:SymbolIcon TextAlignLeft24}">
+                <components:SettingsGroup
+                    GroupId="Lyrics.Group.Presentation"
+                    Header="{DynamicResource Loc.Lyrics.Group.Presentation}"
+                    Icon="{ui:SymbolIcon TextColor24}">
                     <StackPanel>
-                        <components:SettingsDiagram Margin="0,0,0,12" Kind="LyricsAlignment" />
-
                         <components:SettingsRow
-                            Description="{DynamicResource Loc.Lyrics.Row.Alignment.Description}"
-                            Icon="{ui:SymbolIcon TextAlignLeft24}"
-                            Title="{DynamicResource Loc.Lyrics.Row.Alignment.Title}">
-                            <ComboBox
-                                MinWidth="160"
-                                SelectedValue="{Binding ViewModel.TextAlignment, Mode=TwoWay}"
-                                SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.AlignLeft}"
-                                              Tag="{x:Static settings:LyricsTextAlignment.Left}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.AlignCenter}"
-                                              Tag="{x:Static settings:LyricsTextAlignment.Center}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.AlignRight}"
-                                              Tag="{x:Static settings:LyricsTextAlignment.Right}" />
-                            </ComboBox>
+                            Description="{DynamicResource Loc.Lyrics.Row.SyllableHighlight.Description}"
+                            Icon="{ui:SymbolIcon TextColor24}"
+                            Title="{DynamicResource Loc.Lyrics.Row.SyllableHighlight.Title}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.SyllableHighlightEnabled, Mode=TwoWay}" />
                         </components:SettingsRow>
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Lyrics.Row.InfoLines.Description}"
+                            Icon="{ui:SymbolIcon TextGrammarWand24}"
+                            Title="{DynamicResource Loc.Lyrics.Row.InfoLines.Title}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.InfoLineFilterEnabled, Mode=TwoWay}" />
+                        </components:SettingsRow>
+                        <ui:CardExpander
+                            Style="{StaticResource AfSettingsExpanderStyle}"
+                            IsExpanded="False"
+                            Icon="{ui:SymbolIcon TextParagraph24}">
+                            <ui:CardExpander.Header>
+                                <StackPanel>
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowTitleStyle}"
+                                        Text="{DynamicResource Loc.Settings.Advanced.Lyrics.Title}" />
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
+                                        Text="{DynamicResource Loc.Settings.Advanced.Lyrics.Description}" />
+                                </StackPanel>
+                            </ui:CardExpander.Header>
+                            <StackPanel>
+                                <components:SettingsRow
+                                    Description="{DynamicResource Loc.Lyrics.Row.UnsungOpacity.Description}"
+                                    Icon="{ui:SymbolIcon CircleHalfFill24}"
+                                    Style="{StaticResource UnsungOpacityRowStyle}"
+                                    Title="{DynamicResource Loc.Lyrics.Row.UnsungOpacity.Title}">
+                                    <components:SettingsNumericEditor
+                                        Value="{Binding ViewModel.UnsungOpacityPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        Minimum="{Binding Source={x:Static settings:LyricsUnsungOpacity.MinimumPercent}}"
+                                        Maximum="{Binding Source={x:Static settings:LyricsUnsungOpacity.MaximumPercent}}"
+                                        Step="{Binding Source={x:Static settings:LyricsUnsungOpacity.StepPercent}}"
+                                        IsEnabled="{Binding ViewModel.CanConfigureUnsungOpacity}"
+                                        Unit="{DynamicResource Loc.Settings.Numeric.Percent}" />
+                                </components:SettingsRow>
+                                <components:SettingsRow
+                                    Description="{DynamicResource Loc.Lyrics.Row.LineGap.Description}"
+                                    Icon="{ui:SymbolIcon TextAlignJustify24}"
+                                    Style="{StaticResource LineGapRowStyle}"
+                                    Title="{DynamicResource Loc.Lyrics.Row.LineGap.Title}">
+                                    <components:SettingsNumericEditor
+                                        Value="{Binding ViewModel.LineGapPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        Minimum="{Binding Source={x:Static settings:LyricsLineGap.MinimumPercent}}"
+                                        Maximum="{Binding Source={x:Static settings:LyricsLineGap.MaximumPercent}}"
+                                        Step="{Binding Source={x:Static settings:LyricsLineGap.StepPercent}}"
+                                        IsEnabled="{Binding ViewModel.CanConfigureLineGap}"
+                                        Unit="{DynamicResource Loc.Settings.Numeric.Percent}" />
+                                </components:SettingsRow>
+                                <components:SettingsRow
+                                    Description="{DynamicResource Loc.Lyrics.Row.CharacterSpacing.Description}"
+                                    Icon="{ui:SymbolIcon TextFont24}"
+                                    Title="{DynamicResource Loc.Lyrics.Row.CharacterSpacing.Title}">
+                                    <components:SettingsNumericEditor
+                                        Value="{Binding ViewModel.CharacterSpacingPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        Minimum="{Binding Source={x:Static settings:LyricsCharacterSpacing.MinimumPercent}}"
+                                        Maximum="{Binding Source={x:Static settings:LyricsCharacterSpacing.MaximumPercent}}"
+                                        Step="{Binding Source={x:Static settings:LyricsCharacterSpacing.StepPercent}}"
+                                        Unit="{DynamicResource Loc.Settings.Numeric.Percent}" />
+                                </components:SettingsRow>
+                            </StackPanel>
+                        </ui:CardExpander>
                     </StackPanel>
                 </components:SettingsGroup>
-
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.LyricsSources}"
-                                          Icon="{ui:SymbolIcon CloudArrowDown24}">
+                <components:SettingsGroup
+                    GroupId="Common.Group.LyricsSources"
+                    Header="{DynamicResource Loc.Common.Group.LyricsSources}"
+                    Icon="{ui:SymbolIcon CloudArrowDown24}">
                     <StackPanel>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Lyrics.Row.BrowserVideo.Description}"
@@ -375,27 +250,25 @@
                             Title="{DynamicResource Loc.Lyrics.Row.BrowserVideo.Title}">
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.AllowBrowserAndVideoLyrics, Mode=TwoWay}" />
                         </components:SettingsRow>
-
-                        <!-- 固定 QQ 优先/并发最高分策略由代码拥有；不再暴露严格度、调度或播放器绑定。 -->
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Lyrics.Row.ArtistSeparators.Description}"
                             Icon="{ui:SymbolIcon TextFont24}"
                             Title="{DynamicResource Loc.Lyrics.Row.ArtistSeparators.Title}">
-                            <ui:Button Click="ManageArtistSeparators_Click"
-                                       Icon="{ui:SymbolIcon Edit24}"
-                                       Content="{DynamicResource Loc.Lyrics.Row.ArtistSeparators.Manage}"
-                                       Style="{StaticResource AfSettingsButtonStyle}" />
+                            <ui:Button
+                                Click="ManageArtistSeparators_Click"
+                                Icon="{ui:SymbolIcon Edit24}"
+                                Content="{DynamicResource Loc.Lyrics.Row.ArtistSeparators.Manage}"
+                                Style="{StaticResource AfSettingsButtonStyle}" />
                         </components:SettingsRow>
-
-                        <ui:CardExpander
-                            Style="{StaticResource AfSettingsExpanderStyle}"
-                            Icon="{ui:SymbolIcon CloudArrowDown24}">
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon CloudArrowDown24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
-                                    <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}"
-                                               Text="{DynamicResource Loc.Lyrics.Sources.Expander.Title}" />
-                                    <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}"
-                                               Text="{DynamicResource Loc.Lyrics.Sources.Expander.Description}" />
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowTitleStyle}"
+                                        Text="{DynamicResource Loc.Lyrics.Sources.Expander.Title}" />
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
+                                        Text="{DynamicResource Loc.Lyrics.Sources.Expander.Description}" />
                                 </StackPanel>
                             </ui:CardExpander.Header>
                             <StackPanel>
@@ -410,7 +283,6 @@
                                         Icon="{ui:SymbolIcon ArrowReset24}"
                                         Style="{StaticResource AfSettingsButtonStyle}" />
                                 </components:SettingsRow>
-
                                 <ItemsControl Margin="0,0,0,4" ItemsSource="{Binding ViewModel.SourceEntries}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
@@ -425,18 +297,13 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-
-                                <!-- 全部来源关闭时说明后果：这时不会有任何歌词请求，媒体栏只显示标题与歌手。 -->
-                                <!-- With every source off the callout states the consequence: no lyric request is made at all and the bar shows title and artist only. -->
-                                <components:SettingsCallout
-                                    Text="{DynamicResource Loc.Lyrics.Sources.AllDisabled.Callout}">
+                                <components:SettingsCallout Text="{DynamicResource Loc.Lyrics.Sources.AllDisabled.Callout}">
                                     <components:SettingsCallout.Style>
                                         <Style TargetType="{x:Type components:SettingsCallout}">
                                             <Setter Property="Margin" Value="0,8,0,0" />
                                             <Setter Property="Visibility" Value="Collapsed" />
                                             <Style.Triggers>
-                                                <DataTrigger Binding="{Binding ViewModel.IsEverySourceDisabled}"
-                                                             Value="True">
+                                                <DataTrigger Binding="{Binding ViewModel.IsEverySourceDisabled}" Value="True">
                                                     <Setter Property="Visibility" Value="Visible" />
                                                 </DataTrigger>
                                             </Style.Triggers>
@@ -447,7 +314,6 @@
                         </ui:CardExpander>
                     </StackPanel>
                 </components:SettingsGroup>
-
                 <ui:Button
                     Margin="0,16,0,40"
                     HorizontalAlignment="Left"

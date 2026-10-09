@@ -54,10 +54,12 @@
     <Thickness x:Key="AfSettingsRowGapLast">0,0,0,20</Thickness>
     <sys:Double x:Key="AfSettingsRowSliderWidth">150</sys:Double>
     <sys:Double x:Key="AfSettingsRowValueWidth">58</sys:Double>
+    <!-- Fluent page refresh: immediate movement followed by a gentle stop. -->
+    <KeySpline x:Key="AfSplineFluentEntrance">0.23,1,0.32,1</KeySpline>
 
     <Style x:Key="AfSettingsRowTitleStyle" TargetType="{x:Type TextBlock}">
-        <Setter Property="FontSize" Value="14" />
-        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontWeight" Value="{DynamicResource AppTextMediumFontWeight}" />
         <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
@@ -67,7 +69,7 @@
         <Setter Property="LineHeight" Value="17" />
         <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
         <Setter Property="TextWrapping" Value="Wrap" />
-        <Setter Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
         <Setter Property="Margin" Value="0,3,0,0" />
     </Style>
 
@@ -292,14 +294,16 @@
     </Style>
 
     <!--
-        动效曲线：0.23,1 0.32,1 是强 ease-out，用于入场揭示与选择过渡。
+        动效曲线：0.23,1 0.32,1 是强 ease-out，用于入场揭示与减少动效时的淡入。
         WPF 没有任意贝塞尔缓动函数（只有 CubicEase 等具名曲线），因此以 KeySpline 形式提供，
         由 SettingsRevealAnimator 通过 SplineDoubleKeyFrame 使用。
-        Motion curve: 0.23,1 0.32,1 is the strong ease-out used for the entrance reveal and selection
-        transitions. WPF exposes no arbitrary-bezier easing function, only named curves such as CubicEase, so it
+        Motion curve: 0.23,1 0.32,1 is the strong ease-out used for entrance reveals and reduced-motion fades.
+        WPF exposes no arbitrary-bezier easing function, only named curves such as CubicEase, so it
         is published as a KeySpline and consumed by SettingsRevealAnimator through SplineDoubleKeyFrame.
     -->
     <KeySpline x:Key="AfSplineEaseOut">0.23,1 0.32,1</KeySpline>
+    <!-- The easeInOutQuart Bézier approximation gives page handoffs a measured start and finish. -->
+    <KeySpline x:Key="AfSplineEaseInOut">0.76,0 0.24,1</KeySpline>
 
     <!--
 
@@ -313,7 +317,7 @@
     -->
 
     <Style x:Key="AfSettingsPageTitleStyle" TargetType="{x:Type TextBlock}">
-        <Setter Property="FontSize" Value="28" />
+        <Setter Property="FontSize" Value="30" />
         <Setter Property="FontWeight" Value="{DynamicResource AppTextStrongFontWeight}" />
         <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
     </Style>
@@ -324,14 +328,40 @@
         <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
         <Setter Property="TextWrapping" Value="Wrap" />
         <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
-        <Setter Property="Margin" Value="0,6,0,24" />
+        <Setter Property="Margin" Value="0,3,0,0" />
+    </Style>
+
+    <Style x:Key="AfSettingsPageIntroStyle" TargetType="{x:Type Grid}">
+        <Setter Property="Margin" Value="0,4,0,0" />
+    </Style>
+
+    <!-- Page identity scrolls with its content; the fixed strip only navigates groups. -->
+    <Style x:Key="AfSettingsPageIconStyle" TargetType="{x:Type ContentControl}">
+        <Setter Property="Width" Value="38" />
+        <Setter Property="Height" Value="38" />
+        <Setter Property="VerticalAlignment" Value="Top" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Foreground" Value="{DynamicResource AfOnAccentBrush}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ContentControl}">
+                    <Grid Width="38" Height="38" TextElement.Foreground="{DynamicResource AfOnAccentBrush}">
+                        <Border Background="{DynamicResource AfAccentBrush}" CornerRadius="10" />
+                        <ContentControl HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"
+                                        Focusable="False" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style x:Key="AfSettingsSectionTitleStyle" TargetType="{x:Type TextBlock}">
-        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontSize" Value="18" />
         <Setter Property="FontWeight" Value="{DynamicResource AppTextStrongFontWeight}" />
         <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
         <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
 
     <Style x:Key="AfSettingsCardTitleStyle" TargetType="{x:Type TextBlock}">
@@ -426,14 +456,15 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ui:CardControl}">
-                    <Border
+                    <Grid>
+<Border
                         x:Name="CardBorder"
-                        Padding="{TemplateBinding Padding}"
                         Background="{TemplateBinding Background}"
                         BorderBrush="{TemplateBinding BorderBrush}"
                         BorderThickness="{TemplateBinding BorderThickness}"
                         CornerRadius="{TemplateBinding CornerRadius}"
-                        SnapsToDevicePixels="True">
+                        SnapsToDevicePixels="True" IsHitTestVisible="False" components:SettingsHoverShadow.IsEnabled="True" />
+                    <Border Padding="{TemplateBinding Padding}" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="Transparent" Background="Transparent">
                         <Grid
                             HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                             VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
@@ -480,6 +511,7 @@
                                 TextElement.Foreground="{TemplateBinding Foreground}" />
                         </Grid>
                     </Border>
+                    </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="Icon" Value="{x:Null}">
                             <Setter TargetName="IconChip" Property="Margin" Value="0" />
@@ -537,27 +569,28 @@
         选项卡片 / Choice card
 
         同一个 RadioButton 或 ToggleButton 控件、同一套绑定，只替换外观为分段选择样式。
-        选中时主色描边加一层 10% 主色底片；底片用 120ms 透明度过渡而不是关键帧，便于快速切换时重新定向。
+        选中时主色描边加一层 10% 主色底片，直接更新以保持键盘与关闭系统动效时的反馈。
         同一份控件和绑定保持不变，只把外观换成选项卡片。
         Same RadioButton or ToggleButton control and bindings; only the appearance becomes a segmented
-        choice. Selection paints an accent stroke plus a 10% accent tint. The tint uses a 120ms opacity
-        transition rather than a keyframe so rapid switching retargets smoothly.
+        choice. Selection paints an accent stroke plus a 10% accent tint immediately, including for keyboard input
+        and when system animation is disabled.
     -->
 
     <ControlTemplate x:Key="AfSettingsChoiceTemplate" TargetType="{x:Type ToggleButton}">
         <Grid>
+
             <Border
+                x:Name="ChoiceBorder"
+                Background="{DynamicResource AfSettingsCardBrush}"
+                BorderBrush="{DynamicResource AfSettingsBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="8" IsHitTestVisible="False" components:SettingsHoverShadow.IsEnabled="True" />
+<Border
                 x:Name="ChoiceTint"
                 Background="{DynamicResource AfAccentBrush}"
                 CornerRadius="8"
                 Opacity="0" />
-            <Border
-                x:Name="ChoiceBorder"
-                Padding="{TemplateBinding Padding}"
-                Background="{DynamicResource CardBackground}"
-                BorderBrush="{DynamicResource CardBorderBrush}"
-                BorderThickness="1"
-                CornerRadius="8">
+            <Border Padding="{TemplateBinding Padding}" BorderThickness="1" BorderBrush="Transparent" Background="Transparent">
                 <ContentPresenter
                     HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                     VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
@@ -571,38 +604,13 @@
             <Trigger Property="IsChecked" Value="True">
                 <Setter TargetName="ChoiceBorder" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}" />
                 <Setter TargetName="ChoiceBorder" Property="BorderThickness" Value="1.5" />
-                <Trigger.EnterActions>
-                    <BeginStoryboard>
-                        <Storyboard>
-                            <DoubleAnimation
-                                Storyboard.TargetName="ChoiceTint"
-                                Storyboard.TargetProperty="Opacity"
-                                To="0.10"
-                                Duration="0:0:0.12">
-                                <DoubleAnimation.EasingFunction>
-                                    <PowerEase EasingMode="EaseOut" Power="3" />
-                                </DoubleAnimation.EasingFunction>
-                            </DoubleAnimation>
-                        </Storyboard>
-                    </BeginStoryboard>
-                </Trigger.EnterActions>
-                <Trigger.ExitActions>
-                    <BeginStoryboard>
-                        <Storyboard>
-                            <DoubleAnimation
-                                Storyboard.TargetName="ChoiceTint"
-                                Storyboard.TargetProperty="Opacity"
-                                To="0"
-                                Duration="0:0:0.12" />
-                        </Storyboard>
-                    </BeginStoryboard>
-                </Trigger.ExitActions>
+                <Setter TargetName="ChoiceTint" Property="Opacity" Value="0.10" />
             </Trigger>
             <Trigger Property="IsPressed" Value="True">
                 <Setter TargetName="ChoiceBorder" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}" />
             </Trigger>
             <Trigger Property="IsEnabled" Value="False">
-                <Setter TargetName="ChoiceBorder" Property="Opacity" Value="0.55" />
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
             </Trigger>
         </ControlTemplate.Triggers>
     </ControlTemplate>
@@ -748,6 +756,24 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+
+    <!-- Settings-only surface tiers; the application publishes theme/material-specific alpha at runtime. -->
+    <SolidColorBrush x:Key="AfSettingsCardBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="AfSettingsInfoSurfaceBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="AfSettingsGroupSurfaceBrush" Color="#F8F8F8" />
+    <SolidColorBrush x:Key="AfSettingsInputBrush" Color="#F7F7F7" />
+    <SolidColorBrush x:Key="AfSettingsBorderBrush" Color="#D8D8D8" />
+    <SolidColorBrush x:Key="AfSettingsNavigationBrush" Color="#ECECEC" />
+    <SolidColorBrush x:Key="AfSettingsSectionBrush" Color="#F8F8F8" />
+    <SolidColorBrush x:Key="AfSettingsHeaderBridgeBrush" Color="Transparent" />
+    <Style x:Key="AfSettingsInfoSurfaceStyle" TargetType="{x:Type Border}">
+        <Setter Property="Background" Value="{DynamicResource AfSettingsInfoSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AfSettingsBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="14,10" />
     </Style>
 
 </ResourceDictionary>

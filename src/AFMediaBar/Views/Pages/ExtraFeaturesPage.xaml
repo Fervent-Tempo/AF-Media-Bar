@@ -23,10 +23,8 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <components:SettingsGroupStrip
+        <components:SettingsGroupStrip Margin="{StaticResource AfSettingsHeaderMargin}" MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
             Grid.Row="0"
-            Margin="{StaticResource AfSettingsHeaderMargin}"
-            MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
             PageIcon="{ui:SymbolIcon PuzzlePiece24}"
             Subtitle="{DynamicResource Loc.Media.Header.Subtitle}"
             Target="{Binding ElementName=PageScroll}"
@@ -43,7 +41,8 @@
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
                 Loaded="OnPageLoaded">
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.MediaSource}" Icon="{ui:SymbolIcon Filter24}">
+
+                <components:SettingsGroup GroupId="Common.MediaSource" Header="{DynamicResource Loc.Common.MediaSource}" Icon="{ui:SymbolIcon Filter24}">
                     <StackPanel>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Media.SourceFilter.Description}"
@@ -54,8 +53,7 @@
 
                         <ui:CardExpander
                             Style="{StaticResource AfSettingsExpanderStyle}"
-                            Icon="{ui:SymbolIcon AppsList24}"
-                            IsExpanded="True">
+                            Icon="{ui:SymbolIcon AppsList24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
                                     <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Media.SourceList.Title}" />
@@ -91,7 +89,7 @@
                     </StackPanel>
                 </components:SettingsGroup>
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.QuickLaunch}" Icon="{ui:SymbolIcon Rocket24}">
+                <components:SettingsGroup GroupId="Common.Group.QuickLaunch" Header="{DynamicResource Loc.Common.Group.QuickLaunch}" Icon="{ui:SymbolIcon Rocket24}">
                     <StackPanel>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Media.QuickLaunch.FromNote.Description}"
@@ -147,14 +145,13 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
-                        <TextBlock
-                            Margin="0,4,0,0"
+                        <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,4,0,0"><TextBlock
                             Style="{StaticResource AfSettingsHintTextStyle}"
-                            Text="{Binding ViewModel.StatusText}" />
+                            Text="{Binding ViewModel.StatusText}" /></Border>
                     </StackPanel>
                 </components:SettingsGroup>
 
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.TrackChangeNotification}" Icon="{ui:SymbolIcon MusicNote220}">
+                <components:SettingsGroup GroupId="Common.Group.TrackChangeNotification" Header="{DynamicResource Loc.Common.Group.TrackChangeNotification}" Icon="{ui:SymbolIcon MusicNote220}">
                     <StackPanel>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Media.Notification.Enabled.Description}"
@@ -165,8 +162,7 @@
 
                         <ui:CardExpander
                             Style="{StaticResource AfSettingsExpanderStyle}"
-                            Icon="{ui:SymbolIcon Settings24}"
-                            IsExpanded="{Binding ViewModel.TrackChangeNotificationEnabled, Mode=OneWay}">
+                            Icon="{ui:SymbolIcon Settings24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
                                     <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Media.Notification.Details.Title}" />
@@ -203,16 +199,12 @@
                                     Icon="{ui:SymbolIcon Timer24}"
                                     IsNested="True"
                                     Title="{DynamicResource Loc.Media.Notification.Duration.Title}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <Slider
-                                            IsSnapToTickEnabled="True"
-                                            Maximum="10"
-                                            Minimum="1"
-                                            Style="{StaticResource AfSettingsRowSliderStyle}"
-                                            TickFrequency="1"
-                                            Value="{Binding ViewModel.TrackChangeNotificationDurationSeconds, Mode=TwoWay}" />
-                                        <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.TrackChangeNotificationDurationText}" />
-                                    </StackPanel>
+                                    <components:SettingsNumericEditor
+                                    Value="{Binding ViewModel.TrackChangeNotificationDurationSeconds, Mode=TwoWay}"
+                                    Minimum="{Binding ViewModel.MinimumTrackChangeNotificationDurationSeconds}"
+                                    Maximum="{Binding ViewModel.MaximumTrackChangeNotificationDurationSeconds}"
+                                    Step="1"
+                                    Unit="{DynamicResource Loc.Settings.Numeric.Seconds}" />
                                 </components:SettingsRow>
                                 <components:SettingsRow
                                     Description="{DynamicResource Loc.Media.Notification.TargetMode.Description}"

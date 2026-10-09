@@ -412,6 +412,7 @@ public partial class TaskbarWindow : Window
 
         if (suspended)
         {
+            _placementState = TaskbarPlacementPolicy.ClearConfirmation(_placementState);
             MediaControl.ApplyHostVisibilitySuspension(true);
             // 冻结任务栏相对几何供父窗口带动；稳定后仍需重新取得安全区间，才能恢复布局与输入。
             _hasSafePlacement = false;
@@ -796,6 +797,7 @@ public partial class TaskbarWindow : Window
             _placedTaskbarRect = taskbarRect;
             _placedTaskbarDpiScale = dpiScale;
             ApplyMediaBarVisibility();
+            CommitHorizontalPlacement();
         }
         finally
         {
@@ -805,6 +807,10 @@ public partial class TaskbarWindow : Window
 
     private RECT PositionBar(RECT taskbarRect, double dpiScale)
     {
+        if ((_appliedOrientation ?? LayoutOrientation.Horizontal) == LayoutOrientation.Horizontal)
+            return PositionHorizontalBar(taskbarRect, dpiScale);
+        _placementContext = null;
+        _placementState = new();
         int taskbarWidth = taskbarRect.Right - taskbarRect.Left;
         int taskbarHeight = taskbarRect.Bottom - taskbarRect.Top;
 
@@ -1188,7 +1194,8 @@ public partial class TaskbarWindow : Window
             return;
         }
 
-        var hasSafePlacement = !SettingsManager.Current.TaskbarBarAvoidIcons || _hasSafePlacement;
+        var hasSafePlacement = _appliedOrientation == LayoutOrientation.Horizontal
+            ? _hasSafePlacement : !SettingsManager.Current.TaskbarBarAvoidIcons || _hasSafePlacement;
         var reusablePlacement = _hasTaskbarPresentationPlacement && _placedTaskbarHandle == _lastTaskbarHandle &&
             GetParent(_windowHandle) == _lastTaskbarHandle &&
             _taskBarService.GetTaskbarDpiScale(_lastTaskbarHandle) == _placedTaskbarDpiScale &&
@@ -1233,6 +1240,7 @@ public partial class TaskbarWindow : Window
         if (_isEnvironmentSuspended)
             return;
 
+        _placementState = TaskbarPlacementPolicy.ClearConfirmation(_placementState);
         _isEnvironmentSuspended = true;
         _hasTaskbarPresentationPlacement = false;
         Visibility = Visibility.Collapsed;
@@ -1850,13 +1858,9 @@ public partial class TaskbarWindow : Window
             _dragStartBarPrimary + cursorPrimary - _dragStartCursorPrimary,
             0,
             _dragPrimaryLimit);
-        SettingsManager.Current.Position = TaskbarBarPosition.Start;
 
-        // 偏移的基准 MUST 与放置时的加法基准一致（空闲区间起点），否则媒体栏会整体偏离鼠标；
-        // 自动避让打开且区间起点不在最左边时，这个差值就是"拖不动"的来源。
-        // The offset's base MUST match the base the placement adds it to (the free range's start), otherwise the bar misses the mouse
-        // by that difference; with "avoid icons" on and a range that does not start at the left edge, that is exactly what makes
-        // dragging feel broken.
+        // Keep the chosen anchor while dragging: forcing Start would also flip automatic right-side presentation.
+        // The placement and drag offset use the same physical-pixel anchor, including the full taskbar center.
         var dragDpiScale = _taskBarService.GetTaskbarDpiScale(_lastTaskbarHandle);
         if (dragDpiScale <= 0 ||
             !_taskBarService.TryGetTaskbarRect(_lastTaskbarHandle, out var dragTaskbarRect))
@@ -1878,7 +1882,11 @@ public partial class TaskbarWindow : Window
             targetPrimary,
             dragRange.Start,
             dragRange.End,
-            dragPrimarySize);
+            dragPrimarySize,
+            dragIsVertical ? dragTaskbarRect.Bottom - dragTaskbarRect.Top : dragTaskbarRect.Right - dragTaskbarRect.Left,
+            SettingsManager.Current.Position);
+        if (!dragIsVertical)
+            PrepareHorizontalDrag(targetPrimary, dragPrimarySize, dragRange, dragTaskbarRect, dragDpiScale);
 
         var windowHandle = new WindowInteropHelper(this).Handle;
         if (_lastTaskbarHandle != IntPtr.Zero && windowHandle != IntPtr.Zero)
@@ -1989,6 +1997,12 @@ public partial class TaskbarWindow : Window
             _lengthConstraints.Update(this, minimum, maximum);
         else
             _lengthConstraints.Remove(this);
+        if (orientation == LayoutOrientation.Horizontal && maximum <= 0)
+        {
+            _sizeAnimationTimer.Stop();
+            UpdatePositionImmediately();
+            return;
+        }
         var target = TaskbarExperiencePolicy.ResolvePrimaryLength(
             request.PrimaryLength,
             minimum,
@@ -2040,6 +2054,13 @@ public partial class TaskbarWindow : Window
         if (dpi <= 0)
             return 0;
 
+        if (orientation == LayoutOrientation.Horizontal)
+        {
+            var desired = _lastDesiredSizeRequest?.PrimaryLength ?? MediaControl.CurrentLayout?.Canvas.Width ?? 300;
+            var preview = PreviewHorizontalPlacement(rect, dpi, desired);
+            return preview.State.IsVisible ? preview.State.Budget / dpi : 0;
+        }
+
         // 设置页上限必须取当前媒体栏实际会落入的安全区间；用 0 会选到前方放不下媒体栏的窄缝，
         // 而 PositionBar 会跳过那条缝，导致滑杆与实际可用宽度不一致。
         // Match the safe range used by PositionBar. A zero requirement can select an earlier sliver
@@ -2062,6 +2083,13 @@ public partial class TaskbarWindow : Window
         out bool isSafePlacement)
     {
         isSafePlacement = false;
+        if (orientation == LayoutOrientation.Horizontal)
+        {
+            var preview = PreviewHorizontalPlacement(taskbarRect, dpiScale,
+                _lastDesiredSizeRequest?.PrimaryLength ?? MediaControl.CurrentLayout?.Canvas.Width ?? 300);
+            isSafePlacement = preview.State.IsVisible;
+            return preview.State.Range;
+        }
         var primaryLength = orientation == LayoutOrientation.Horizontal
             ? taskbarRect.Right - taskbarRect.Left
             : taskbarRect.Bottom - taskbarRect.Top;
@@ -2161,7 +2189,7 @@ public partial class TaskbarWindow : Window
         // 选区间 MUST 用纯策略：空闲区间里可能有比媒体栏还窄的缝隙，"最左边那条"会把媒体栏压细并钉在缝里。
         // The range MUST be chosen by the pure policy: the free ranges can hold a gap narrower than the bar itself, and "the leftmost
         // one" would squash the bar into that sliver.
-        var selected = TaskbarFreeRangeCalculator.Select(ranges, position, requiredPrimaryPixels);
+        var selected = TaskbarFreeRangeCalculator.Select(ranges, position, requiredPrimaryPixels, primaryLength);
         _lastStableSafeRange = new TaskbarSafeRangeSnapshot(
             _lastTaskbarHandle,
             primaryLength,
@@ -2219,11 +2247,9 @@ public partial class TaskbarWindow : Window
             durationMilliseconds: MotionPolicy.ResolveCurrent().PositionDuration.TotalMilliseconds);
         _sizeAnimationProgress = frame.Progress;
         ApplyPrimaryLength(frame.Value);
-        UpdatePositionImmediately();
         if (frame.IsCompleted)
-        {
             _sizeAnimationTimer.Stop();
-        }
+        UpdatePositionImmediately();
     }
 
     private void MediaControl_LostMouseCapture(object sender, MouseEventArgs e)

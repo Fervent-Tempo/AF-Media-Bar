@@ -1,4 +1,8 @@
 using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Models.Settings;
+using AFMediaBar.Classes.Abstractions;
+using AFMediaBar.Classes.Utils;
+using System.Windows.Threading;
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Localization;
@@ -20,38 +24,33 @@ public enum DisplayModeSelection
 }
 
 /// <summary>四种显示模式及各层功能开关。 / Four display modes and their layer feature switches.</summary>
-public partial class DisplayModesViewModel : ObservableObject
+public partial class DisplayModesViewModel : ObservableObject, IDisposable
 {
     private readonly IDisplayMonitorService _displayMonitorService;
+    /// <summary>Cancels asynchronous UI work when this editor context becomes inactive.</summary>
+    public CancellationToken ContextCancellationToken => _configuration.CancellationToken;
+
     private readonly LocalizationService _localization;
     private bool _isRefreshing;
-    private DisplayModeSelection _selectedMode = DisplayModeSelection.Taskbar;
-    private IReadOnlyList<DisplayMonitorOption> _monitorOptions = Array.Empty<DisplayMonitorOption>();
+    private readonly ISettingsConfiguration _configuration;
+    private readonly Dispatcher _dispatcher = DispatcherHelper.Current;
+    private bool _disposed;
     private IReadOnlyList<TaskbarMonitorSelectionItem> _taskbarMonitorOptions = Array.Empty<TaskbarMonitorSelectionItem>();
 
-    public IReadOnlyList<DisplayMonitorOption> MonitorOptions => _monitorOptions;
     /// <summary>可逐项勾选的任务栏目标列表；至少保留一项，既支持单选也支持多选。/ Individually selectable taskbar targets; at least one remains selected, supporting one or many.</summary>
     public IReadOnlyList<TaskbarMonitorSelectionItem> TaskbarMonitorOptions => _taskbarMonitorOptions;
-    public WindowMode CurrentWindowMode => SettingsManager.Current.WindowMode;
-    public DisplayModeSelection SelectedMode => _selectedMode;
+    public WindowMode CurrentWindowMode => _configuration.Current.WindowMode;
+    public DisplayModeSelection SelectedMode => (DisplayModeSelection)_configuration.Context.Mode;
     public bool IsTaskbarMode => SelectedMode == DisplayModeSelection.Taskbar;
     public bool IsDynamicIslandMode => SelectedMode == DisplayModeSelection.DynamicIsland;
     public bool IsDesktopCardMode => SelectedMode == DisplayModeSelection.DesktopCard;
     public bool IsFloatingBallMode => SelectedMode == DisplayModeSelection.FloatingBall;
     public bool IsUnimplementedMode => !IsTaskbarMode;
 
-    /// <summary>
-    /// 当前显示模式的文本，供页头状态芯片显示。它读的是真实 <see cref="WindowMode"/>，
-    /// 而不是本页的预览选择——页内选择只改变高亮，从不切换窗口，两者不能混为一谈。
-    /// 模式名取自与模式卡片相同的键，因此芯片与卡片任何时候都写作同一个词。
-    /// Text for the header status chip. It reads the real <see cref="WindowMode"/> rather than this page's
-    /// preview selection, because the in-page selection only changes the highlight and never switches the
-    /// window; the two must not be conflated. The mode name comes from the same keys the mode cards use, so the
-    /// chip and the cards always read as one word.
-    /// </summary>
+    /// <summary>Name of the actual running family supplied by the settings context.</summary>
     public string HostingModeText => Translations.Format(
         "DisplayModes.Status.Current",
-        Translations.Get(CurrentWindowMode == WindowMode.Taskbar ? "DisplayModes.Mode.Taskbar" : "Common.DynamicIsland"));
+        Translations.Get(IsTaskbarMode ? "DisplayModes.Mode.Taskbar" : "Common.DynamicIsland"));
 
     /// <summary>
     /// 任务栏是否就是当前运行模式。模式卡片用它决定“当前模式”芯片是否显示，
@@ -59,84 +58,18 @@ public partial class DisplayModesViewModel : ObservableObject
     /// Whether the taskbar really is the running mode. The mode cards use it to decide whether the
     /// "current mode" chip shows, replacing the chip that used to be hardcoded on the taskbar card.
     /// </summary>
-    public bool IsTaskbarHostingActive => CurrentWindowMode == WindowMode.Taskbar;
-
-    /// <summary>灵动岛背景方案。/ Dynamic-island background scheme.</summary>
-    public DynamicIslandBackgroundMode DynamicIslandBackgroundMode
-    {
-        get => SettingsManager.Current.DynamicIslandBackgroundMode;
-        set
-        {
-            if (_isRefreshing || SettingsManager.Current.DynamicIslandBackgroundMode == value) return;
-            SettingsManager.Current.DynamicIslandBackgroundMode = value;
-            SettingsManager.RaiseLayoutSettingsChanged(CurrentWindowMode, Orientation);
-            OnPropertyChanged();
-        }
-    }
-
-    /// <summary>灵动岛贴靠边缘。/ Edge where the dynamic island docks.</summary>
-    public DynamicIslandEdge DynamicIslandEdge
-    {
-        get => SettingsManager.Current.DynamicIslandEdge;
-        set
-        {
-            if (_isRefreshing || SettingsManager.Current.DynamicIslandEdge == value) return;
-            SettingsManager.Current.DynamicIslandEdge = value;
-            SettingsManager.Current.DynamicIslandEdgeDocked = true;
-            SettingsManager.RaiseLayoutSettingsChanged(CurrentWindowMode, Orientation);
-            OnPropertyChanged();
-        }
-    }
-
-    public bool TrackChangeNotificationEnabled
-    {
-        get => NotificationSettings.Enabled;
-        set => UpdateNotification(NotificationSettings with { Enabled = value });
-    }
-
-    public bool ShowTrackChangeNotificationWhenFullscreen
-    {
-        get => NotificationSettings.ShowWhenFullscreen;
-        set => UpdateNotification(NotificationSettings with { ShowWhenFullscreen = value });
-    }
-
-    public int TrackChangeNotificationDurationSeconds
-    {
-        get => NotificationSettings.DurationMilliseconds / 1000;
-        set => UpdateNotification(NotificationSettings with { DurationMilliseconds = value * 1000 });
-    }
-
-    public TrackChangeNotificationPosition TrackChangeNotificationPosition
-    {
-        get => NotificationSettings.Position;
-        set => UpdateNotification(NotificationSettings with { Position = value });
-    }
-
-    public NotificationTargetMode TrackChangeNotificationTargetMode
-    {
-        get => NotificationSettings.TargetMode;
-        set => UpdateNotification(NotificationSettings with { TargetMode = value });
-    }
-
-    public string? TrackChangeNotificationFixedMonitorDeviceId
-    {
-        get => NotificationSettings.FixedMonitorDeviceId ?? _displayMonitorService.ResolveFixedMonitor(null)?.DeviceId;
-        set => UpdateNotification(NotificationSettings with { FixedMonitorDeviceId = value });
-    }
-
-    public bool CanSelectTrackChangeNotificationMonitor =>
-        TrackChangeNotificationEnabled && TrackChangeNotificationTargetMode == NotificationTargetMode.Fixed;
+    public bool IsTaskbarHostingActive => IsTaskbarMode;
 
     public bool HoverLayerEnabled
     {
-        get => SettingsManager.Current.TaskbarExperience.HoverLayerEnabled;
-        set => UpdateExperience(SettingsManager.Current.TaskbarExperience with { HoverLayerEnabled = value });
+        get => _configuration.Current.TaskbarExperience.HoverLayerEnabled;
+        set => UpdateExperience(_configuration.Current.TaskbarExperience with { HoverLayerEnabled = value });
     }
 
     public bool FullLayerEnabled
     {
-        get => SettingsManager.Current.TaskbarExperience.FullLayerEnabled;
-        set => UpdateExperience(SettingsManager.Current.TaskbarExperience with { FullLayerEnabled = value });
+        get => _configuration.Current.TaskbarExperience.FullLayerEnabled;
+        set => UpdateExperience(_configuration.Current.TaskbarExperience with { FullLayerEnabled = value });
     }
 
     /// <summary>
@@ -148,50 +81,50 @@ public partial class DisplayModesViewModel : ObservableObject
     /// </summary>
     public bool FullPanelEntryVisible
     {
-        get => SettingsManager.Current.TaskbarExperience.FullPanelEntryVisible;
-        set => UpdateExperience(SettingsManager.Current.TaskbarExperience with { FullPanelEntryVisible = value });
+        get => _configuration.Current.TaskbarExperience.FullPanelEntryVisible;
+        set => UpdateExperience(_configuration.Current.TaskbarExperience with { FullPanelEntryVisible = value });
     }
 
     /// <summary>静置层是否显示底部的播放进度条。 / Whether the rest layer shows its bottom playback-progress bar.</summary>
     public bool RestProgressVisible
     {
-        get => SettingsManager.Current.TaskbarExperience.RestProgressVisible;
-        set => UpdateExperience(SettingsManager.Current.TaskbarExperience with { RestProgressVisible = value });
+        get => _configuration.Current.TaskbarExperience.RestProgressVisible;
+        set => UpdateExperience(_configuration.Current.TaskbarExperience with { RestProgressVisible = value });
     }
 
     /// <summary>有媒体时是否显示静置层封面；无媒体时的小音符由另一个设置控制。/ Whether to show artwork with media; the idle note is controlled separately.</summary>
     public bool RestArtworkVisible
     {
-        get => SettingsManager.Current.TaskbarExperience.ArtworkVisible;
-        set => UpdateExperience(SettingsManager.Current.TaskbarExperience with { ArtworkVisible = value });
+        get => _configuration.Current.TaskbarExperience.ArtworkVisible;
+        set => UpdateExperience(_configuration.Current.TaskbarExperience with { ArtworkVisible = value });
     }
 
     /// <summary>静置层是否显示频谱组件。 / Whether the rest layer shows the spectrum component.</summary>
     public bool SpectrumVisible
     {
-        get => SettingsManager.Current.TaskbarExperience.SpectrumVisible;
-        set => UpdateExperience(SettingsManager.Current.TaskbarExperience with { SpectrumVisible = value });
+        get => _configuration.Current.TaskbarExperience.SpectrumVisible;
+        set => UpdateExperience(_configuration.Current.TaskbarExperience with { SpectrumVisible = value });
     }
 
     /// <summary>静置层是否显示性能组件。 / Whether the rest layer shows the performance component.</summary>
     public bool PerformanceVisible
     {
-        get => SettingsManager.Current.TaskbarExperience.PerformanceVisible;
-        set => UpdateExperience(SettingsManager.Current.TaskbarExperience with { PerformanceVisible = value });
+        get => _configuration.Current.TaskbarExperience.PerformanceVisible;
+        set => UpdateExperience(_configuration.Current.TaskbarExperience with { PerformanceVisible = value });
     }
 
     /// <summary>静置层是否显示输出设备按钮（点击打开设备菜单，滚轮切换设备）。 / Whether the rest layer shows the output-device button, which opens the device menu on click and switches devices on the wheel.</summary>
     public bool RestOutputDeviceVisible
     {
-        get => SettingsManager.Current.TaskbarExperience.OutputDeviceVisible;
-        set => UpdateExperience(SettingsManager.Current.TaskbarExperience with { OutputDeviceVisible = value });
+        get => _configuration.Current.TaskbarExperience.OutputDeviceVisible;
+        set => UpdateExperience(_configuration.Current.TaskbarExperience with { OutputDeviceVisible = value });
     }
 
     /// <summary>静置层是否显示音量按钮（点击打开音量菜单，滚轮调节当前来源音量）。 / Whether the rest layer shows the volume button, which opens the volume menu on click and adjusts the current source on the wheel.</summary>
     public bool RestVolumeVisible
     {
-        get => SettingsManager.Current.TaskbarExperience.VolumeVisible;
-        set => UpdateExperience(SettingsManager.Current.TaskbarExperience with { VolumeVisible = value });
+        get => _configuration.Current.TaskbarExperience.VolumeVisible;
+        set => UpdateExperience(_configuration.Current.TaskbarExperience with { VolumeVisible = value });
     }
 
     /// <summary>
@@ -212,7 +145,7 @@ public partial class DisplayModesViewModel : ObservableObject
     /// </summary>
     private void RefreshIdleComponentEntries()
     {
-        var kept = TaskbarRestLayoutPolicy.ResolveIdleComponents(SettingsManager.Current.TaskbarExperience.IdleComponents);
+        var kept = TaskbarRestLayoutPolicy.ResolveIdleComponents(_configuration.Current.TaskbarExperience.IdleComponents);
         var unchanged = IdleComponentEntries.Count == IdleVisibilityOrder.Count &&
                         IdleComponentEntries.Select(entry => entry.Component).SequenceEqual(IdleVisibilityOrder) &&
                         IdleComponentEntries.All(entry => entry.IsVisible == kept.Contains(entry.Component));
@@ -271,7 +204,7 @@ public partial class DisplayModesViewModel : ObservableObject
             .Select(entry => entry.Component)
             .ToArray();
         var isDefault = selected.SequenceEqual(TaskbarRestLayoutPolicy.DefaultIdleComponents);
-        UpdateExperience(SettingsManager.Current.TaskbarExperience with
+        UpdateExperience(_configuration.Current.TaskbarExperience with
         {
             IdleComponents = isDefault ? null : selected
         });
@@ -308,7 +241,7 @@ public partial class DisplayModesViewModel : ObservableObject
     }
 
     private TaskbarHoverControlsSettings HoverControls =>
-        SettingsManager.Current.TaskbarExperience.HoverControls;
+        _configuration.Current.TaskbarExperience.HoverControls;
 
     public bool FullPanelMediaInfoVisible
     {
@@ -350,90 +283,90 @@ public partial class DisplayModesViewModel : ObservableObject
             ? Translations.Get("DisplayModes.Full.Preset.Full")
             : Translations.Get("DisplayModes.Full.Preset.Custom");
 
-    private TaskbarFullPanelSettings FullPanelSettings => SettingsManager.Current.TaskbarExperience.FullPanel.Normalize();
+    private TaskbarFullPanelSettings FullPanelSettings => _configuration.Current.TaskbarExperience.FullPanel.Normalize();
 
-    /// <summary>
-    /// 灵动岛模式自己的背景样式。它写在 <c>DynamicIslandSurface</c> 上，与任务栏表面互相独立。
-    /// 界面位于显示模式页的灵动岛分区，因此属性也归这里，避免同一份设置被两个视图模型各写一次。
-    /// The dynamic island's own background style, stored on <c>DynamicIslandSurface</c> and independent of the
-    /// taskbar surface. The interface lives in the display-mode page's island section, so the property lives here
-    /// too and one setting is never written from two view models.
-    /// </summary>
-    public PlayerSurfaceStyle IslandSurfaceStyle
+    public LayoutOrientationMode Orientation => LayoutOrientationMode.Auto;
+    /// <summary>Actual taskbar orientation on the editor display.</summary>
+    public string OrientationText => Translations.Get(_configuration.Context.Orientation switch
     {
-        get => IslandSurface.Style;
-        set => PublishIslandSurface(IslandSurface with { Style = value });
-    }
+        LayoutOrientation.Vertical => "DisplayModes.Placement.Orientation.Vertical",
+        LayoutOrientation.Horizontal => "DisplayModes.Placement.Orientation.Horizontal",
+        _ => "Settings.Context.Unavailable"
+    });
 
-    /// <inheritdoc cref="IslandSurfaceStyle" />
-    public int IslandSurfaceOpacityPercent
+    /// <summary>横向任务栏对齐设置是否适用于当前编辑环境。</summary>
+    public bool IsHorizontalLayout => _configuration.Context.Orientation != LayoutOrientation.Vertical;
+
+    /// <summary>任务栏主轴对齐；切换时清除拖动偏移和手动内容排布。</summary>
+    public TaskbarBarPosition TaskbarPosition
     {
-        get => IslandSurface.BackgroundOpacityPercent;
-        set => PublishIslandSurface(IslandSurface with { BackgroundOpacityPercent = value });
-    }
-
-    /// <inheritdoc cref="IslandSurfaceStyle" />
-    public double IslandSurfaceCornerRadiusDip
-    {
-        get => IslandSurface.CornerRadiusDip;
-        set => PublishIslandSurface(IslandSurface with { CornerRadiusDip = value });
-    }
-
-    private static ModeSurfaceSettings IslandSurface => SettingsManager.Current.DynamicIslandSurface;
-
-    private void PublishIslandSurface(ModeSurfaceSettings settings)
-    {
-        SettingsManager.Current.DynamicIslandSurface = settings.Normalize();
-        OnPropertyChanged(nameof(IslandSurfaceStyle));
-        OnPropertyChanged(nameof(IslandSurfaceOpacityPercent));
-        OnPropertyChanged(nameof(IslandSurfaceCornerRadiusDip));
-    }
-
-    public LayoutOrientationMode Orientation
-    {
-        get => SettingsManager.Current.LayoutOrientationMode;
+        get => _configuration.Current.Position;
         set
         {
-            if (_isRefreshing || SettingsManager.Current.LayoutOrientationMode == value) return;
-            SettingsManager.Current.LayoutOrientationMode = value;
-            SettingsManager.RaiseLayoutSettingsChanged(SettingsManager.Current.WindowMode, value);
-            OnPropertyChanged();
+            if (_disposed || !_configuration.IsActive || _isRefreshing || !IsTaskbarMode ||
+                !Enum.IsDefined(value) || _configuration.Current.Position == value)
+                return;
+            _configuration.SetTaskbarPlacement(alignment: value);
+        }
+    }
+
+    /// <summary>横向任务栏的左侧或右侧内容排布。</summary>
+    public TaskbarContentArrangement TaskbarArrangement
+    {
+        get => TaskbarArrangementPolicy.ResolveContent(
+            _configuration.Current.TaskbarExperience.Normalize().Arrangement, _configuration.Current.Position);
+        set => UpdateExperience(_configuration.Current.TaskbarExperience with { Arrangement = value });
+    }
+
+    /// <summary>null 表示跟随位置，不把自动推导的方向误存为手动覆盖。</summary>
+    public TaskbarContentArrangement? TaskbarArrangementOverride
+    {
+        get => _configuration.Current.TaskbarExperience.Arrangement;
+        set => UpdateExperience(_configuration.Current.TaskbarExperience with { Arrangement = value });
+    }
+
+    /// <summary>界面选择序号不参与存储，自动项仍写入 null。</summary>
+    public int TaskbarArrangementIndex
+    {
+        get => TaskbarArrangementOverride switch { TaskbarContentArrangement.Left => 1, TaskbarContentArrangement.Right => 2, _ => 0 };
+        set
+        {
+            if (value is < 0 or > 2) return;
+            TaskbarArrangementOverride = value switch { 1 => TaskbarContentArrangement.Left, 2 => TaskbarContentArrangement.Right, _ => null };
         }
     }
 
     public bool IsTaskbarPositionLocked
     {
-        get => SettingsManager.Current.TaskbarBarPositionLocked;
-        set { SettingsManager.Current.TaskbarBarPositionLocked = value; OnPropertyChanged(); }
+        get => _configuration.Current.TaskbarBarPositionLocked;
+        set { _configuration.SetTaskbarPlacement(locked: value); OnPropertyChanged(); }
     }
 
     public bool IsTaskbarAvoidingIcons
     {
-        get => SettingsManager.Current.TaskbarBarAvoidIcons;
+        get => _configuration.Current.TaskbarBarAvoidIcons;
         set
         {
-            SettingsManager.Current.TaskbarBarAvoidIcons = value;
-            SettingsManager.RaiseLayoutSettingsChanged(CurrentWindowMode, Orientation);
+            _configuration.SetTaskbarPlacement(avoidIcons: value);
             OnPropertyChanged();
         }
     }
 
     public double TaskbarCrossAxisOffsetDip
     {
-        get => SettingsManager.Current.TaskbarBarCrossAxisOffsetDip;
+        get => _configuration.Current.TaskbarBarCrossAxisOffsetDip;
         set
         {
-            SettingsManager.Current.TaskbarBarCrossAxisOffsetDip = value;
-            SettingsManager.RaiseLayoutSettingsChanged(CurrentWindowMode, Orientation);
+            _configuration.SetTaskbarPlacement(crossAxisOffsetDip: value);
             OnPropertyChanged();
         }
     }
 
     /// <summary>
     /// 创建显示模式页的视图模型并订阅设置、显示器与语言变化。
-    /// 三个订阅源都是单例，因此订阅与进程同寿命，不需要退订。
+    /// 页面缓存释放时退订；显示器快照由平台服务提供。
     /// Creates the display-mode view model and subscribes to settings, monitor, and language changes.
-    /// All three sources are singletons, so the subscriptions live as long as the process and never need cancelling.
+    /// Subscriptions are released with this page scope; platform queries belong to the environment reader.
     /// </summary>
     /// <param name="displayMonitorService">显示器目录，供目标显示器下拉框使用。/ Display catalog behind the target-monitor drop-down.</param>
     /// <param name="localization">
@@ -445,10 +378,12 @@ public partial class DisplayModesViewModel : ObservableObject
     /// </param>
     public DisplayModesViewModel(
         IDisplayMonitorService displayMonitorService,
-        LocalizationService localization)
+        LocalizationService localization, ISettingsConfiguration configuration)
     {
         _displayMonitorService = displayMonitorService;
         _localization = localization;
+        _configuration = configuration;
+        configuration.Activated += OnActivated;
         SettingsManager.SettingsChanged += OnSettingsChanged;
         _displayMonitorService.MonitorsChanged += OnMonitorsChanged;
 
@@ -457,7 +392,6 @@ public partial class DisplayModesViewModel : ObservableObject
         // changes.
         _localization.LanguageChanged += OnLanguageChanged;
 
-        _displayMonitorService.Refresh();
         RefreshMonitorOptions();
         // 无媒体时保留组件列表由代码构建，首次打开页面前必须填充。
         // The idle-component list is built in code and must be populated before the page first opens.
@@ -493,48 +427,25 @@ public partial class DisplayModesViewModel : ObservableObject
     [RelayCommand]
     private void ResetTaskbarPosition()
     {
-        SettingsManager.Current.Position = TaskbarBarPosition.Start;
-        SettingsManager.Current.TaskbarBarManualPadding = 0;
-        TaskbarCrossAxisOffsetDip = 0;
-        SettingsManager.RaiseLayoutSettingsChanged(CurrentWindowMode, Orientation);
+        _configuration.SetTaskbarPlacement(reset: true);
     }
 
     private void SelectMode(DisplayModeSelection mode)
     {
-        if (_selectedMode == mode) return;
-        _selectedMode = mode;
+        // No other runtime host is implemented. Preview clicks must never mutate runtime mode or expose fake editors.
+        if (mode != DisplayModeSelection.Taskbar) return;
         OnPropertyChanged(nameof(SelectedMode));
-        OnPropertyChanged(nameof(IsTaskbarMode));
-        OnPropertyChanged(nameof(IsDynamicIslandMode));
-        OnPropertyChanged(nameof(IsDesktopCardMode));
-        OnPropertyChanged(nameof(IsFloatingBallMode));
-        OnPropertyChanged(nameof(IsUnimplementedMode));
     }
 
     private void UpdateExperience(TaskbarExperienceSettings value)
     {
-        // 页面上高亮一个未实现的承载模式时，任务栏专属设置不接受写入——这是既有且受测试保护的不变量。
-        // 代价是那些控件会“看着能改、实际不保存”，因此页面在同一状态下会显示一条明确的只读提示，
-        // 而不是让用户自己猜。提示由 DisplayModesPage 绑定 IsUnimplementedMode 呈现。
-        // While an unimplemented hosting mode is highlighted, taskbar-only settings refuse writes: that is an
-        // existing invariant guarded by a test. The cost is controls that look editable without saving, so the
-        // page shows an explicit read-only notice in that state instead of leaving the user to guess.
-        if (_isRefreshing || !IsTaskbarMode) return;
-        SettingsManager.SetTaskbarExperienceSettings(value.Normalize());
+        if (_disposed || !_configuration.IsActive || _isRefreshing || !IsTaskbarMode) return;
+        _configuration.SetTaskbarExperience(value.Normalize());
         RaiseExperience();
     }
 
     private void UpdateHoverControls(TaskbarHoverControlsSettings controls) =>
-        UpdateExperience(SettingsManager.Current.TaskbarExperience with { HoverControls = controls });
-
-    private void UpdateNotification(TrackChangeNotificationSettings value)
-    {
-        if (_isRefreshing)
-            return;
-
-        SettingsManager.SetTrackChangeNotificationSettings(value.Normalize());
-        RaiseNotification();
-    }
+        UpdateExperience(_configuration.Current.TaskbarExperience with { HoverControls = controls });
 
     private void UpdateFullPanelGroup(FullPanelGroup group, bool visible)
     {
@@ -558,7 +469,7 @@ public partial class DisplayModesViewModel : ObservableObject
     }
 
     private void UpdateFullPanel(TaskbarFullPanelSettings settings) =>
-        UpdateExperience(SettingsManager.Current.TaskbarExperience with { FullPanel = settings.Normalize() });
+        UpdateExperience(_configuration.Current.TaskbarExperience with { FullPanel = settings.Normalize() });
 
     private bool CanToggleFullPanelGroup(bool visible) => !visible || VisibleFullPanelGroupCount() > 1;
 
@@ -571,18 +482,38 @@ public partial class DisplayModesViewModel : ObservableObject
                (settings.PerformanceVisible ? 1 : 0);
     }
 
-    public void ResetDisplayModes() => SettingsManager.ResetDisplayModes();
-    public void ResetExtraFeatures() => SettingsManager.ResetExtraFeatures();
+    public void ResetDisplayModes() => _configuration.Reset(SettingsResetScope.DisplayModes);
+    public void ResetScreenAndPlacement()
+    {
+        if (!_disposed && _configuration.IsActive && IsTaskbarMode) SettingsManager.ResetScreenAndPlacement();
+    }
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
     {
-        if (e.ResetScope is SettingsResetScope.DisplayModes or SettingsResetScope.Layout or SettingsResetScope.All)
+        if (_disposed || !_configuration.IsActive) return;
+        if (!_dispatcher.CheckAccess()) { DispatcherHelper.Run(_dispatcher, () => OnSettingsChanged(sender, e)); return; }
+        if (e.ResetScope is SettingsResetScope.DisplayModes or SettingsResetScope.Layout or SettingsResetScope.Components or SettingsResetScope.All)
             RaiseAll();
+        else if (!_isRefreshing && (e.PropertyName is nameof(AppSettings.Position) or nameof(AppSettings.TaskbarExperience)))
+        {
+            // Arrangement is derived from both properties. Publish their effective values while
+            // suppressing two-way target refresh from creating a manual override.
+            _isRefreshing = true;
+            try
+            {
+                OnPropertyChanged(nameof(TaskbarPosition));
+                if (e.PropertyName == nameof(AppSettings.TaskbarExperience))
+                    RaiseExperience();
+                else
+                    OnPropertyChanged(nameof(TaskbarArrangement));
+            }
+            finally { _isRefreshing = false; }
+        }
         else if (!_isRefreshing && e.PropertyName is nameof(AppSettings.TaskbarTargetMonitorDeviceIds) or nameof(AppSettings.TaskbarTargetMonitorDeviceId))
             RefreshMonitorOptions();
     }
 
-    private void OnMonitorsChanged(object? sender, EventArgs e) => RefreshMonitorOptions();
+    private void OnMonitorsChanged(object? sender, EventArgs e) => DispatcherHelper.Run(_dispatcher, () => { if (!_disposed && _configuration.IsActive) RefreshMonitorOptions(); });
 
     private void RefreshMonitorOptions()
     {
@@ -602,7 +533,6 @@ public partial class DisplayModesViewModel : ObservableObject
                 monitor.IsPrimary))
             .ToList();
 
-        var options = availableOptions.ToList();
 
         var selectedTaskbarIds = ResolveConfiguredTaskbarSelection(monitors);
         var taskbarOptions = availableOptions
@@ -614,25 +544,6 @@ public partial class DisplayModesViewModel : ObservableObject
                 selectedTaskbarIds.Contains(option.DeviceId)))
             .ToList();
 
-        static void AddDisconnected(
-            List<DisplayMonitorOption> target,
-            IReadOnlyList<DisplayMonitorOption> available,
-            string? preferredId,
-            string suffix,
-            int index)
-        {
-            if (string.IsNullOrWhiteSpace(preferredId) ||
-                available.Any(option => string.Equals(option.DeviceId, preferredId, StringComparison.OrdinalIgnoreCase)))
-                return;
-
-            target.Insert(index, new DisplayMonitorOption(
-                preferredId,
-                $"{preferredId}{suffix}",
-                false,
-                false));
-        }
-
-        AddDisconnected(options, availableOptions, NotificationSettings.FixedMonitorDeviceId, disconnectedSuffix, 0);
         foreach (var deviceId in selectedTaskbarIds.Where(deviceId =>
                      availableOptions.All(option => !string.Equals(option.DeviceId, deviceId, StringComparison.OrdinalIgnoreCase))))
         {
@@ -644,26 +555,24 @@ public partial class DisplayModesViewModel : ObservableObject
                 true));
         }
 
+        foreach (var option in _taskbarMonitorOptions) option.SelectionChanged -= OnTaskbarMonitorSelectionChanged;
         foreach (var option in taskbarOptions)
             option.SelectionChanged += OnTaskbarMonitorSelectionChanged;
 
-        _monitorOptions = options;
         _taskbarMonitorOptions = taskbarOptions;
         UpdateTaskbarMonitorToggleState();
-        OnPropertyChanged(nameof(MonitorOptions));
         OnPropertyChanged(nameof(TaskbarMonitorOptions));
-        OnPropertyChanged(nameof(TrackChangeNotificationFixedMonitorDeviceId));
     }
 
     private HashSet<string> ResolveConfiguredTaskbarSelection(IReadOnlyList<DisplayMonitorInfo> monitors)
     {
-        var selected = (SettingsManager.Current.TaskbarTargetMonitorDeviceIds ?? [])
+        var selected = (_configuration.Current.TaskbarTargetMonitorDeviceIds ?? [])
             .Where(deviceId => !string.IsNullOrWhiteSpace(deviceId))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         if (selected.Count > 0)
             return selected;
 
-        var legacy = SettingsManager.Current.TaskbarTargetMonitorDeviceId;
+        var legacy = _configuration.Current.TaskbarTargetMonitorDeviceId;
         if (TaskbarTargetPolicy.IsLegacyAllTaskbars(legacy))
             selected.UnionWith(monitors.Select(monitor => monitor.DeviceId));
         else if (!string.IsNullOrWhiteSpace(legacy))
@@ -675,7 +584,7 @@ public partial class DisplayModesViewModel : ObservableObject
 
     private void OnTaskbarMonitorSelectionChanged(TaskbarMonitorSelectionItem changed)
     {
-        if (_isRefreshing)
+        if (_disposed || !_configuration.IsActive || _isRefreshing)
             return;
 
         var selected = _taskbarMonitorOptions.Where(option => option.IsSelected).ToArray();
@@ -686,13 +595,11 @@ public partial class DisplayModesViewModel : ObservableObject
         }
 
         var deviceIds = selected.Select(option => option.DeviceId).ToArray();
-        var current = SettingsManager.Current.TaskbarTargetMonitorDeviceIds ?? [];
+        var current = _configuration.Current.TaskbarTargetMonitorDeviceIds ?? [];
         _isRefreshing = true;
         try
         {
-            if (!current.SequenceEqual(deviceIds, StringComparer.OrdinalIgnoreCase))
-                SettingsManager.Current.TaskbarTargetMonitorDeviceIds = deviceIds;
-            SettingsManager.Current.TaskbarTargetMonitorDeviceId = null;
+            _configuration.SetTaskbarTargets(deviceIds);
         }
         finally
         {
@@ -716,19 +623,19 @@ public partial class DisplayModesViewModel : ObservableObject
             OnPropertyChanged(nameof(CurrentWindowMode)); OnPropertyChanged(nameof(IsTaskbarMode)); OnPropertyChanged(nameof(IsDynamicIslandMode));
             OnPropertyChanged(nameof(IsDesktopCardMode)); OnPropertyChanged(nameof(IsFloatingBallMode)); OnPropertyChanged(nameof(IsUnimplementedMode));
             OnPropertyChanged(nameof(HostingModeText)); OnPropertyChanged(nameof(IsTaskbarHostingActive));
-            OnPropertyChanged(nameof(DynamicIslandBackgroundMode)); OnPropertyChanged(nameof(DynamicIslandEdge));
-            OnPropertyChanged(nameof(IslandSurfaceStyle)); OnPropertyChanged(nameof(IslandSurfaceOpacityPercent));
-            OnPropertyChanged(nameof(IslandSurfaceCornerRadiusDip));
+            OnPropertyChanged(nameof(TaskbarPosition));
             RaiseExperience(); OnPropertyChanged(nameof(Orientation)); OnPropertyChanged(nameof(IsTaskbarPositionLocked));
             OnPropertyChanged(nameof(IsTaskbarAvoidingIcons)); OnPropertyChanged(nameof(TaskbarCrossAxisOffsetDip));
             RefreshMonitorOptions();
-            RaiseNotification();
         }
         finally { _isRefreshing = false; }
     }
 
     private void RaiseExperience()
     {
+        OnPropertyChanged(nameof(TaskbarArrangementOverride));
+        OnPropertyChanged(nameof(TaskbarArrangementIndex));
+        OnPropertyChanged(nameof(TaskbarArrangement));
         OnPropertyChanged(nameof(HoverLayerEnabled)); OnPropertyChanged(nameof(FullLayerEnabled));
         OnPropertyChanged(nameof(FullPanelEntryVisible));
         OnPropertyChanged(nameof(RestProgressVisible));
@@ -741,20 +648,6 @@ public partial class DisplayModesViewModel : ObservableObject
         RefreshIdleComponentEntries();
         RaiseFullPanel();
     }
-
-    private void RaiseNotification()
-    {
-        OnPropertyChanged(nameof(TrackChangeNotificationEnabled));
-        OnPropertyChanged(nameof(ShowTrackChangeNotificationWhenFullscreen));
-        OnPropertyChanged(nameof(TrackChangeNotificationDurationSeconds));
-        OnPropertyChanged(nameof(TrackChangeNotificationPosition));
-        OnPropertyChanged(nameof(TrackChangeNotificationTargetMode));
-        OnPropertyChanged(nameof(TrackChangeNotificationFixedMonitorDeviceId));
-        OnPropertyChanged(nameof(CanSelectTrackChangeNotificationMonitor));
-    }
-
-    private TrackChangeNotificationSettings NotificationSettings =>
-        SettingsManager.Current.TrackChangeNotification.Normalize();
 
     private void RaiseFullPanel()
     {
@@ -776,4 +669,18 @@ public partial class DisplayModesViewModel : ObservableObject
         AudioControls,
         Performance
     }
+
+    private void OnActivated(object? sender, EventArgs e) => RaiseAll();
+    /// <summary>Releases monitor, language and settings subscriptions when this page scope closes.</summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        SettingsManager.SettingsChanged -= OnSettingsChanged;
+        _displayMonitorService.MonitorsChanged -= OnMonitorsChanged;
+        _localization.LanguageChanged -= OnLanguageChanged;
+        _configuration.Activated -= OnActivated;
+        foreach (var item in _taskbarMonitorOptions) item.SelectionChanged -= OnTaskbarMonitorSelectionChanged;
+    }
+
 }

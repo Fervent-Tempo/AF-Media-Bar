@@ -1,232 +1,62 @@
 <Page
-    x:Class="AFMediaBar.Views.Pages.AppearancePage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:components="clr-namespace:AFMediaBar.Components"
     xmlns:settings="clr-namespace:AFMediaBar.Classes.Settings"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    x:Class="AFMediaBar.Views.Pages.AppearancePage"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     ScrollViewer.CanContentScroll="False">
-
-    <!--
-        外观页 / Appearance page
-
-        字体、主题、媒体文字、媒体栏宽度、静置层布局和交互按钮分组。全部是一行一个选项。
-
-        上一版把字体、字重和字样预览合并成一张纵向大卡，又给主题/材质/文字颜色用了分段药丸；
-        现在字体的三项各占一行，枚举项统一用下拉框，预览与对照图作为该分组的插图放在行下方。
-        Groups cover fonts, theme, media text, bar width, rest layout, and interaction buttons. Each option gets a row.
-
-        The previous version merged font, weight, and specimen into one tall stacked card and used segmented
-        pills for theme, material, and text colour. Now the three font settings each own a row, enumerations use
-        selects, and the specimen and contrast preview sit below the rows as that group's illustration.
-    -->
-
     <Page.Resources>
-        <!--
-            对照预览：两块模拟背景，用来展示当前文字颜色选项在深色与浅色壁纸上的结果。
-            这里的黑白色是刻意的硬编码——它模拟的是任意壁纸，而不是主题表面，因此不应该跟随主题。
-            Contrast preview: two simulated backdrops showing what the chosen text colour produces on a dark and
-            a light wallpaper. White and black are deliberately hardcoded because they simulate an arbitrary
-            wallpaper rather than a themed surface, and must not follow the theme.
-        -->
         <Style x:Key="ForegroundPreviewTextStyle" TargetType="{x:Type TextBlock}">
             <Setter Property="FontSize" Value="13" />
             <Setter Property="FontWeight" Value="{DynamicResource AppTextStrongFontWeight}" />
             <Setter Property="Text" Value="AF Media Bar" />
             <Style.Triggers>
-                <DataTrigger Binding="{Binding ViewModel.PlayerForegroundMode}" Value="Automatic">
+                <DataTrigger Binding="{Binding Taskbar.PlayerForegroundMode}" Value="Automatic">
                     <Setter Property="Foreground" Value="White" />
                 </DataTrigger>
-                <DataTrigger Binding="{Binding ViewModel.PlayerForegroundMode}" Value="LightText">
+                <DataTrigger Binding="{Binding Taskbar.PlayerForegroundMode}" Value="LightText">
                     <Setter Property="Foreground" Value="White" />
                 </DataTrigger>
-                <DataTrigger Binding="{Binding ViewModel.PlayerForegroundMode}" Value="DarkText">
+                <DataTrigger Binding="{Binding Taskbar.PlayerForegroundMode}" Value="DarkText">
                     <Setter Property="Foreground" Value="#FF1A1A1A" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
-
-        <Style
-            x:Key="ForegroundPreviewOnLightTextStyle"
-            BasedOn="{StaticResource ForegroundPreviewTextStyle}"
-            TargetType="{x:Type TextBlock}">
+        <Style x:Key="ForegroundPreviewOnLightTextStyle" BasedOn="{StaticResource ForegroundPreviewTextStyle}" TargetType="{x:Type TextBlock}">
             <Style.Triggers>
-                <DataTrigger Binding="{Binding ViewModel.PlayerForegroundMode}" Value="Automatic">
+                <DataTrigger Binding="{Binding Taskbar.PlayerForegroundMode}" Value="Automatic">
                     <Setter Property="Foreground" Value="#FF1A1A1A" />
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-        <!-- Fixed width becomes available when following content length is turned off. -->
-        <Style
-            x:Key="FixedLengthRowStyle"
-            BasedOn="{StaticResource {x:Type components:SettingsRow}}"
-            TargetType="{x:Type components:SettingsRow}">
-            <Setter Property="Badge" Value="" />
-            <Setter Property="IsEnabled" Value="{Binding ViewModel.UsesFixedTaskbarLength}" />
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding ViewModel.FollowMediaTextLength}" Value="True">
-                    <Setter Property="Badge" Value="{DynamicResource Loc.DisplayModes.Width.Row.Fixed.Badge}" />
-                    <Setter Property="BadgeTone" Value="Attention" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
     </Page.Resources>
-
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-
         <components:SettingsGroupStrip
-            Grid.Row="0"
             Margin="{StaticResource AfSettingsHeaderMargin}"
             MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
+            Grid.Row="0"
             PageIcon="{ui:SymbolIcon PaintBrush24}"
-            Subtitle="{DynamicResource Loc.Appearance.Header.Subtitle}"
+            Subtitle="{DynamicResource Loc.Appearance.Unified.Header.Subtitle}"
             Target="{Binding ElementName=PageScroll}"
             Title="{DynamicResource Loc.Common.Page.Appearance}" />
-
         <ScrollViewer
             x:Name="PageScroll"
             Grid.Row="1"
             Margin="{StaticResource AfSettingsScrollMargin}"
             HorizontalScrollBarVisibility="Disabled"
             VerticalScrollBarVisibility="Auto">
-            <StackPanel
-                x:Name="PageRoot"
-                MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
-                Loaded="OnPageLoaded"
-                Unloaded="OnPageUnloaded">
-
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.Fonts}" Icon="{ui:SymbolIcon TextFont24}">
-                    <StackPanel>
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Appearance.Row.LatinFont.Description}"
-                            Icon="{ui:SymbolIcon TextFont24}"
-                            Title="{DynamicResource Loc.Appearance.Row.LatinFont.Title}">
-                            <ComboBox
-                                MinWidth="200"
-                                MaxDropDownHeight="360"
-                                ItemsSource="{Binding ViewModel.LatinFontChoices}"
-                                SelectedValue="{Binding ViewModel.LatinFontFamily, Mode=TwoWay}"
-                                SelectedValuePath="Name">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel>
-                                            <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding DisplayName}" />
-                                            <StackPanel Margin="0,3,0,0" Orientation="Horizontal">
-                                                <TextBlock
-                                                    Margin="0,2,7,0"
-                                                    FontSize="10"
-                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                    Text="{DynamicResource Loc.Appearance.Font.PreviewLabel}" />
-                                                <TextBlock
-                                                    FontFamily="{Binding PreviewFontFamily}"
-                                                    FontSize="14"
-                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                    Text="{Binding PreviewText}" />
-                                            </StackPanel>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-                        </components:SettingsRow>
-
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Appearance.Row.CjkFont.Description}"
-                            Icon="{ui:SymbolIcon LocalLanguage24}"
-                            Title="{DynamicResource Loc.Appearance.Row.CjkFont.Title}">
-                            <ComboBox
-                                MinWidth="200"
-                                MaxDropDownHeight="360"
-                                ItemsSource="{Binding ViewModel.CjkFontChoices}"
-                                SelectedValue="{Binding ViewModel.CjkFontFamily, Mode=TwoWay}"
-                                SelectedValuePath="Name">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel>
-                                            <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding DisplayName}" />
-                                            <StackPanel Margin="0,3,0,0" Orientation="Horizontal">
-                                                <TextBlock
-                                                    Margin="0,2,7,0"
-                                                    FontSize="10"
-                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                    Text="{DynamicResource Loc.Appearance.Font.PreviewLabel}" />
-                                                <TextBlock
-                                                    FontFamily="{Binding PreviewFontFamily}"
-                                                    FontSize="14"
-                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                    Text="{Binding PreviewText}" />
-                                            </StackPanel>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-                        </components:SettingsRow>
-
-                        <!--
-                            上下限用 Binding 而不是 x:Static：x:Static 返回装箱的 int，
-                            RangeBase.Maximum 需要 double，标记扩展不做这个转换，而绑定会。
-                            The bounds use Binding rather than x:Static because x:Static yields a boxed int,
-                            RangeBase.Maximum wants a double, and the markup extension performs no conversion
-                            while the binding engine does.
-                        -->
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Appearance.Row.FontWeight.Description}"
-                            Icon="{ui:SymbolIcon TextBold24}"
-                            Title="{DynamicResource Loc.Appearance.Row.FontWeight.Title}">
-                            <StackPanel Orientation="Horizontal">
-                                <Slider
-                                    IsSnapToTickEnabled="True"
-                                    Maximum="{Binding Source={x:Static settings:AppearanceSettings.MaximumFontWeight}}"
-                                    Minimum="{Binding Source={x:Static settings:AppearanceSettings.MinimumFontWeight}}"
-                                    Style="{StaticResource AfSettingsRowSliderStyle}"
-                                    TickFrequency="{Binding Source={x:Static settings:AppearanceSettings.FontWeightStep}}"
-                                    Value="{Binding ViewModel.FontWeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.FontWeight}" />
-                            </StackPanel>
-                        </components:SettingsRow>
-
-                        <Border
-                            Margin="0,4,0,0"
-                            Padding="16,13"
-                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-                            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                            BorderThickness="1"
-                            CornerRadius="6">
-                            <StackPanel>
-                                <TextBlock
-                                    Margin="0,0,0,8"
-                                    Style="{StaticResource AfSettingsRowDescriptionStyle}"
-                                    Text="{DynamicResource Loc.Appearance.Specimen.Label}" />
-                                <TextBlock
-                                    FontFamily="{DynamicResource AppTextFontFamily}"
-                                    FontSize="20"
-                                    FontWeight="{DynamicResource AppTextFontWeight}"
-                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                    Text="AF Media Bar · 你是我的一切" />
-                                <TextBlock
-                                    Margin="0,8,0,0"
-                                    FontFamily="{DynamicResource AppTextFontFamily}"
-                                    FontSize="16"
-                                    FontWeight="{DynamicResource AppTextFontWeight}"
-                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                    Text="You are my everything · 君は私のすべて" />
-                                <TextBlock
-                                    Margin="0,8,0,0"
-                                    FontFamily="{DynamicResource AppTextFontFamily}"
-                                    FontSize="13"
-                                    FontWeight="{DynamicResource AppTextFontWeight}"
-                                    Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                                    Text="당신은 나의 전부 · You are my everything · 你是我的一切" />
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-                </components:SettingsGroup>
-
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.ThemeAndBackdrop}" Icon="{ui:SymbolIcon Color24}">
+            <StackPanel x:Name="PageRoot" MaxWidth="{StaticResource AfSettingsContentMaxWidth}" Loaded="OnPageLoaded" Unloaded="OnPageUnloaded">
+                <components:SettingsGroup
+                    GroupId="Common.Group.ThemeAndBackdrop"
+                    Header="{DynamicResource Loc.Common.Group.ThemeAndBackdrop}"
+                    Icon="{ui:SymbolIcon Color24}"
+                    Description="{DynamicResource Loc.Appearance.Scope.Global}">
                     <StackPanel>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Appearance.Row.Theme.Description}"
@@ -236,79 +66,59 @@
                                 MinWidth="180"
                                 SelectedValue="{Binding ViewModel.ApplicationThemeMode, Mode=TwoWay}"
                                 SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Theme.Automatic}" Tag="{x:Static settings:ApplicationThemeMode.Automatic}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Theme.Light}" Tag="{x:Static settings:ApplicationThemeMode.Light}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Theme.Dark}" Tag="{x:Static settings:ApplicationThemeMode.Dark}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Appearance.Theme.Automatic}"
+                                    Tag="{x:Static settings:ApplicationThemeMode.Automatic}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Appearance.Theme.Light}"
+                                    Tag="{x:Static settings:ApplicationThemeMode.Light}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Appearance.Theme.Dark}"
+                                    Tag="{x:Static settings:ApplicationThemeMode.Dark}" />
                             </ComboBox>
                         </components:SettingsRow>
-
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Appearance.Row.Backdrop.Description}"
                             Icon="{ui:SymbolIcon WindowConsole20}"
                             Title="{DynamicResource Loc.Appearance.Row.Backdrop.Title}">
-                            <ComboBox
-                                MinWidth="180"
-                                SelectedValue="{Binding ViewModel.BackdropMode, Mode=TwoWay}"
-                                SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Backdrop.Solid}" Tag="{x:Static settings:ApplicationBackdropMode.FluentSolid}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Backdrop.Mica}" Tag="{x:Static settings:ApplicationBackdropMode.Mica}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Backdrop.MicaAlt}" Tag="{x:Static settings:ApplicationBackdropMode.MicaAlt}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Backdrop.Acrylic}" Tag="{x:Static settings:ApplicationBackdropMode.Acrylic}" />
+                            <ComboBox MinWidth="180" SelectedValue="{Binding ViewModel.BackdropMode, Mode=TwoWay}" SelectedValuePath="Tag">
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Appearance.Backdrop.Solid}"
+                                    Tag="{x:Static settings:ApplicationBackdropMode.FluentSolid}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Appearance.Backdrop.Mica}"
+                                    Tag="{x:Static settings:ApplicationBackdropMode.Mica}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Appearance.Backdrop.MicaAlt}"
+                                    Tag="{x:Static settings:ApplicationBackdropMode.MicaAlt}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Appearance.Backdrop.Acrylic}"
+                                    Tag="{x:Static settings:ApplicationBackdropMode.Acrylic}" />
                             </ComboBox>
                         </components:SettingsRow>
-
-                        <!--
-                            材质浓度：只作用于"应用自己绘制材质"的两处（Windows 10 的窗口，以及永不激活的曲目通知）。
-                            Windows 11 的云母/亚克力/Mica Alt 由 DWM 绘制，浓度对它无效，因此行说明里写清了适用面。
-                            Material concentration: it only affects the two places where the application paints the material itself
-                            (Windows 10 windows and the never-activating track notification). Mica, Acrylic, and Mica Alt on Windows 11
-                            are painted by DWM and ignore it, which the row's description states.
-                        -->
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Appearance.Row.BackdropTint.Description}"
-                            Icon="{ui:SymbolIcon CircleHalfFill24}"
-                            Title="{DynamicResource Loc.Appearance.Row.BackdropTint.Title}">
-                            <StackPanel Orientation="Horizontal">
-                                <Slider
-                                    IsSnapToTickEnabled="True"
-                                    Maximum="{Binding Source={x:Static settings:AppearanceSettings.MaximumBackdropTintOpacityPercent}}"
-                                    Minimum="{Binding Source={x:Static settings:AppearanceSettings.MinimumBackdropTintOpacityPercent}}"
-                                    Style="{StaticResource AfSettingsRowSliderStyle}"
-                                    TickFrequency="{Binding Source={x:Static settings:AppearanceSettings.BackdropTintOpacityStep}}"
-                                    Value="{Binding ViewModel.BackdropTintOpacityPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.BackdropTintOpacityPercent, StringFormat={}{0:0}%}" />
-                            </StackPanel>
-                        </components:SettingsRow>
-                        <TextBlock
-                            Margin="0,2,0,4"
-                            Style="{StaticResource AfSettingsHintTextStyle}"
-                            Text="{DynamicResource Loc.Appearance.BackdropTint.Hint}" />
-
+                        <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,2,0,4">
+                            <TextBlock
+                                Style="{StaticResource AfSettingsHintTextStyle}"
+                                Text="{DynamicResource Loc.Appearance.BackdropTint.Hint}" />
+                        </Border>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Appearance.Row.Accent.Description}"
                             Icon="{ui:SymbolIcon ColorBackground20}"
                             Title="{DynamicResource Loc.Appearance.Row.Accent.Title}">
-                            <ComboBox
-                                MinWidth="180"
-                                SelectedValue="{Binding ViewModel.AccentColorMode, Mode=TwoWay}"
-                                SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Accent.FollowSystem}" Tag="{x:Static settings:AccentColorMode.System}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Accent.Custom}" Tag="{x:Static settings:AccentColorMode.Custom}" />
+                            <ComboBox MinWidth="180" SelectedValue="{Binding ViewModel.AccentColorMode, Mode=TwoWay}" SelectedValuePath="Tag">
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Appearance.Accent.FollowSystem}"
+                                    Tag="{x:Static settings:AccentColorMode.System}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Appearance.Accent.Custom}"
+                                    Tag="{x:Static settings:AccentColorMode.Custom}" />
                             </ComboBox>
                         </components:SettingsRow>
-
-                        <!--
-                            自选色板。这里的颜色是刻意的硬编码：色块展示的就是"用户正在挑选的那个颜色"，它按定义不是主题语义画刷，
-                            与上面模拟任意壁纸的对照预览属于同一类例外。
-                            Custom swatch strip. These colours are deliberately hardcoded: a swatch shows the very colour the user is
-                            picking, which by definition is not a theme semantic brush, making it the same class of exception as the
-                            wallpaper contrast preview above.
-                        -->
                         <Border
                             Margin="0,4,0,0"
                             Padding="14,12"
-                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-                            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                            Background="{DynamicResource AfSettingsInfoSurfaceBrush}"
+                            BorderBrush="{DynamicResource AfSettingsBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="6"
                             Visibility="{Binding ViewModel.IsCustomAccent, Converter={StaticResource AfBooleanToVisibilityConverter}}">
@@ -440,71 +250,197 @@
                                 </StackPanel>
                             </StackPanel>
                         </Border>
-
-                        <TextBlock
-                            Margin="0,8,0,0"
-                            Style="{StaticResource AfSettingsHintTextStyle}"
-                            Text="{DynamicResource Loc.Appearance.Accent.Hint}" />
-
-                        <components:SettingsRow
-                            Badge="{Binding ViewModel.MotionModeText}"
-                            BadgeTone="Accent"
-                            Description="{Binding ViewModel.MotionDetailText}"
-                            Icon="{ui:SymbolIcon ArrowSync24}"
-                            Title="{DynamicResource Loc.Appearance.Row.Motion.Title}" />
+                        <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,8,0,0">
+                            <TextBlock Style="{StaticResource AfSettingsHintTextStyle}" Text="{DynamicResource Loc.Appearance.Accent.Hint}" />
+                        </Border>
+                        <ui:CardExpander
+                            Style="{StaticResource AfSettingsExpanderStyle}"
+                            IsExpanded="False"
+                            Icon="{ui:SymbolIcon CircleHalfFill24}">
+                            <ui:CardExpander.Header>
+                                <StackPanel>
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowTitleStyle}"
+                                        Text="{DynamicResource Loc.Settings.Advanced.Backdrop.Title}" />
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
+                                        Text="{DynamicResource Loc.Settings.Advanced.Backdrop.Description}" />
+                                </StackPanel>
+                            </ui:CardExpander.Header>
+                            <StackPanel>
+                                <components:SettingsRow
+                                    Description="{DynamicResource Loc.Appearance.Row.BackdropTint.Description}"
+                                    Icon="{ui:SymbolIcon CircleHalfFill24}"
+                                    Title="{DynamicResource Loc.Appearance.Row.BackdropTint.Title}">
+                                    <components:SettingsNumericEditor
+                                        Value="{Binding ViewModel.BackdropTintOpacityPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        Minimum="{Binding Source={x:Static settings:AppearanceSettings.MinimumBackdropTintOpacityPercent}}"
+                                        Maximum="{Binding Source={x:Static settings:AppearanceSettings.MaximumBackdropTintOpacityPercent}}"
+                                        Step="{Binding Source={x:Static settings:AppearanceSettings.BackdropTintOpacityStep}}"
+                                        Unit="{DynamicResource Loc.Settings.Numeric.Percent}" />
+                                </components:SettingsRow>
+                            </StackPanel>
+                        </ui:CardExpander>
+                        <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,8,0,0">
+                            <TextBlock Style="{StaticResource AfSettingsHintTextStyle}" Text="{Binding ViewModel.MotionDetailText}" />
+                        </Border>
                     </StackPanel>
                 </components:SettingsGroup>
-
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.Group.MediaBarText}" Icon="{ui:SymbolIcon TextColor24}">
+                <components:SettingsGroup
+                    GroupId="Common.Group.Fonts"
+                    Header="{DynamicResource Loc.Common.Group.Fonts}"
+                    Icon="{ui:SymbolIcon TextFont24}"
+                    Description="{DynamicResource Loc.Appearance.Scope.Fonts}">
                     <StackPanel>
                         <components:SettingsRow
-                            Description="{DynamicResource Loc.Appearance.Row.TextColor.Description}"
-                            Icon="{ui:SymbolIcon TextColor24}"
-                            Title="{DynamicResource Loc.Appearance.Row.TextColor.Title}">
+                            Description="{DynamicResource Loc.Appearance.Row.LatinFont.Description}"
+                            Icon="{ui:SymbolIcon TextFont24}"
+                            Title="{DynamicResource Loc.Appearance.Row.LatinFont.Title}">
                             <ComboBox
                                 MinWidth="200"
-                                SelectedValue="{Binding ViewModel.PlayerForegroundMode, Mode=TwoWay}"
-                                SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.TextColor.Automatic}" Tag="{x:Static settings:PlayerForegroundMode.Automatic}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.TextColor.LightText}" Tag="{x:Static settings:PlayerForegroundMode.LightText}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.TextColor.DarkText}" Tag="{x:Static settings:PlayerForegroundMode.DarkText}" />
+                                MaxDropDownHeight="360"
+                                ItemsSource="{Binding ViewModel.LatinFontChoices}"
+                                SelectedValue="{Binding ViewModel.LatinFontFamily, Mode=TwoWay}"
+                                SelectedValuePath="Name">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel>
+                                            <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding DisplayName}" />
+                                            <StackPanel Margin="0,3,0,0" Orientation="Horizontal">
+                                                <TextBlock
+                                                    Margin="0,2,7,0"
+                                                    FontSize="10"
+                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                    Text="{DynamicResource Loc.Appearance.Font.PreviewLabel}" />
+                                                <TextBlock
+                                                    FontFamily="{Binding PreviewFontFamily}"
+                                                    FontSize="14"
+                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                    Text="{Binding PreviewText}" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
                             </ComboBox>
                         </components:SettingsRow>
-
-                        <!--
-                            媒体文字大小原本在「显示模式 → 静置层」，但它是"媒体栏上的文字长什么样"，
-                            与同组的颜色、字号、粗细属于同一件事，因此并入本页；取值范围不变。
-                            The media text size used to live under Display Modes → Rest, but it describes how the media bar's text
-                            looks, which is the same subject as this group's colour, typeface, and weight, so it moved here. Its range
-                            is unchanged.
-                        -->
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Appearance.Row.CjkFont.Description}"
+                            Icon="{ui:SymbolIcon LocalLanguage24}"
+                            Title="{DynamicResource Loc.Appearance.Row.CjkFont.Title}">
+                            <ComboBox
+                                MinWidth="200"
+                                MaxDropDownHeight="360"
+                                ItemsSource="{Binding ViewModel.CjkFontChoices}"
+                                SelectedValue="{Binding ViewModel.CjkFontFamily, Mode=TwoWay}"
+                                SelectedValuePath="Name">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel>
+                                            <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding DisplayName}" />
+                                            <StackPanel Margin="0,3,0,0" Orientation="Horizontal">
+                                                <TextBlock
+                                                    Margin="0,2,7,0"
+                                                    FontSize="10"
+                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                    Text="{DynamicResource Loc.Appearance.Font.PreviewLabel}" />
+                                                <TextBlock
+                                                    FontFamily="{Binding PreviewFontFamily}"
+                                                    FontSize="14"
+                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                    Text="{Binding PreviewText}" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </components:SettingsRow>
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Appearance.Row.FontWeight.Description}"
+                            Icon="{ui:SymbolIcon TextBold24}"
+                            Title="{DynamicResource Loc.Appearance.Row.FontWeight.Title}">
+                            <components:SettingsNumericEditor
+                                Value="{Binding ViewModel.FontWeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                Minimum="{Binding Source={x:Static settings:AppearanceSettings.MinimumFontWeight}}"
+                                Maximum="{Binding Source={x:Static settings:AppearanceSettings.MaximumFontWeight}}"
+                                Step="{Binding Source={x:Static settings:AppearanceSettings.FontWeightStep}}" />
+                        </components:SettingsRow>
+                        <Border
+                            Margin="0,4,0,0"
+                            Padding="16,13"
+                            Background="{DynamicResource AfSettingsInfoSurfaceBrush}"
+                            BorderBrush="{DynamicResource AfSettingsBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6">
+                            <StackPanel>
+                                <TextBlock
+                                    Margin="0,0,0,8"
+                                    Style="{StaticResource AfSettingsRowDescriptionStyle}"
+                                    Text="{DynamicResource Loc.Appearance.Specimen.Label}" />
+                                <TextBlock
+                                    FontFamily="{DynamicResource AppTextFontFamily}"
+                                    FontSize="20"
+                                    FontWeight="{DynamicResource AppTextFontWeight}"
+                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                    Text="{DynamicResource Loc.Appearance.Specimen.Line1}" />
+                                <TextBlock
+                                    Margin="0,8,0,0"
+                                    FontFamily="{DynamicResource AppTextFontFamily}"
+                                    FontSize="16"
+                                    FontWeight="{DynamicResource AppTextFontWeight}"
+                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                    Text="{DynamicResource Loc.Appearance.Specimen.Line2}" />
+                                <TextBlock
+                                    Margin="0,8,0,0"
+                                    FontFamily="{DynamicResource AppTextFontFamily}"
+                                    FontSize="13"
+                                    FontWeight="{DynamicResource AppTextFontWeight}"
+                                    Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                    Text="{DynamicResource Loc.Appearance.Specimen.Line3}" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </components:SettingsGroup>
+                <components:SettingsGroup
+                    GroupId="Common.Group.MediaBarText"
+                    Header="{DynamicResource Loc.Common.Group.MediaBarText}"
+                    Icon="{ui:SymbolIcon TextColor24}"
+                    Visibility="{Binding HasTaskbarSettings, Converter={StaticResource AfBooleanToVisibilityConverter}}"
+                    Description="{DynamicResource Loc.Appearance.Scope.Taskbar}">
+                    <StackPanel>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Appearance.Row.MediaFontSize.Description}"
                             Icon="{ui:SymbolIcon TextFont24}"
                             Title="{DynamicResource Loc.Appearance.Row.MediaFontSize.Title}">
-                            <StackPanel Orientation="Horizontal">
-                                <Slider
-                                    IsSnapToTickEnabled="True"
-                                    Maximum="125"
-                                    Minimum="80"
-                                    Style="{StaticResource AfSettingsRowSliderStyle}"
-                                    TickFrequency="5"
-                                    Value="{Binding ViewModel.MediaFontSizePercent, Mode=TwoWay}" />
-                                <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.MediaFontSizePercent, StringFormat={}{0:0}%}" />
-                            </StackPanel>
+                            <components:SettingsNumericEditor
+                                Value="{Binding Taskbar.MediaFontSizePercent, Mode=TwoWay}"
+                                Minimum="{Binding Source={x:Static settings:TaskbarExperienceSettings.MinimumMediaFontSizePercent}}"
+                                Maximum="{Binding Source={x:Static settings:TaskbarExperienceSettings.MaximumMediaFontSizePercent}}"
+                                Step="{Binding Source={x:Static settings:TaskbarExperienceSettings.MediaFontSizeStepPercent}}"
+                                Unit="{DynamicResource Loc.Settings.Numeric.Percent}" />
                         </components:SettingsRow>
-
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Appearance.Row.TextColor.Description}"
+                            Icon="{ui:SymbolIcon TextColor24}"
+                            Title="{DynamicResource Loc.Appearance.Row.TextColor.Title}">
+                            <ComboBox MinWidth="200" SelectedValue="{Binding Taskbar.PlayerForegroundMode, Mode=TwoWay}" SelectedValuePath="Tag">
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Appearance.TextColor.Automatic}"
+                                    Tag="{x:Static settings:PlayerForegroundMode.Automatic}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Appearance.TextColor.LightText}"
+                                    Tag="{x:Static settings:PlayerForegroundMode.LightText}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Appearance.TextColor.DarkText}"
+                                    Tag="{x:Static settings:PlayerForegroundMode.DarkText}" />
+                            </ComboBox>
+                        </components:SettingsRow>
                         <Grid Margin="0,4,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="12" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <Border
-                                Grid.Column="0"
-                                Padding="14,10"
-                                Background="#FF202020"
-                                CornerRadius="6">
+                            <Border Grid.Column="0" Padding="14,10" Background="#FF202020" CornerRadius="6">
                                 <StackPanel>
                                     <TextBlock Style="{StaticResource ForegroundPreviewTextStyle}" />
                                     <TextBlock
@@ -514,11 +450,7 @@
                                         Text="{DynamicResource Loc.Appearance.Preview.DarkWallpaper}" />
                                 </StackPanel>
                             </Border>
-                            <Border
-                                Grid.Column="2"
-                                Padding="14,10"
-                                Background="#FFF2F2F2"
-                                CornerRadius="6">
+                            <Border Grid.Column="2" Padding="14,10" Background="#FFF2F2F2" CornerRadius="6">
                                 <StackPanel>
                                     <TextBlock Style="{StaticResource ForegroundPreviewOnLightTextStyle}" />
                                     <TextBlock
@@ -529,191 +461,89 @@
                                 </StackPanel>
                             </Border>
                         </Grid>
-                        <TextBlock
-                            Margin="0,8,0,0"
-                            Style="{StaticResource AfSettingsHintTextStyle}"
-                            Text="{DynamicResource Loc.Appearance.Preview.Hint}" />
+                        <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,8,0,0">
+                            <TextBlock Style="{StaticResource AfSettingsHintTextStyle}" Text="{DynamicResource Loc.Appearance.Preview.Hint}" />
+                        </Border>
                     </StackPanel>
                 </components:SettingsGroup>
-
                 <components:SettingsGroup
-                    Description="{DynamicResource Loc.DisplayModes.Width.Group.Description}"
-                    Header="{DynamicResource Loc.Common.Group.MediaBarWidth}"
-                    Icon="{ui:SymbolIcon ResizeLarge24}">
-                    <StackPanel>
-                        <components:SettingsDiagram Margin="0,0,0,12" Kind="TaskbarLength" />
-
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.DisplayModes.Width.Row.Follow.Description}"
-                            Icon="{ui:SymbolIcon ArrowAutofitWidth24}"
-                            Title="{DynamicResource Loc.DisplayModes.Width.Row.Follow.Title}">
-                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.FollowMediaTextLength, Mode=TwoWay}" />
-                        </components:SettingsRow>
-
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.DisplayModes.Width.Row.Fixed.Description}"
-                            Icon="{ui:SymbolIcon SlideSize24}"
-                            Style="{StaticResource FixedLengthRowStyle}"
-                            Title="{DynamicResource Loc.DisplayModes.Width.Row.Fixed.Title}">
-                            <StackPanel Orientation="Horizontal">
-                                <Slider
-                                    Maximum="{Binding ViewModel.FixedTaskbarLengthMaximum}"
-                                    Minimum="{Binding ViewModel.FixedTaskbarLengthMinimum}"
-                                    Style="{StaticResource AfSettingsRowSliderStyle}"
-                                    ToolTip="{Binding ViewModel.FixedTaskbarLengthRangeText}"
-                                    Value="{Binding ViewModel.FixedTaskbarLengthDip, Mode=TwoWay}" />
-                                <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.FixedTaskbarLengthDip, StringFormat={}{0:0} DIP}" />
-                            </StackPanel>
-                        </components:SettingsRow>
-
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.DisplayModes.Width.Row.Spacing.Description}"
-                            Icon="{ui:SymbolIcon PaddingLeft24}"
-                            Title="{DynamicResource Loc.DisplayModes.Width.Row.Spacing.Title}">
-                            <StackPanel Orientation="Horizontal">
-                                <Slider
-                                    Maximum="32"
-                                    Minimum="4"
-                                    Style="{StaticResource AfSettingsRowSliderStyle}"
-                                    IsSnapToTickEnabled="True"
-                                    TickFrequency="1"
-                                    Value="{Binding ViewModel.ComponentSpacingDip, Mode=TwoWay}" />
-                                <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.ComponentSpacingDip, StringFormat={}{0:0} DIP}" />
-                            </StackPanel>
-                        </components:SettingsRow>
-                    </StackPanel>
-                </components:SettingsGroup>
-
-                <components:SettingsGroup Header="{DynamicResource Loc.Appearance.Group.RestLayout}" Icon="{ui:SymbolIcon LayoutColumnTwo24}">
+                    GroupId="Appearance.Group.TaskbarBackground"
+                    Header="{DynamicResource Loc.Appearance.Group.TaskbarBackground}"
+                    Icon="{ui:SymbolIcon Blur24}"
+                    Visibility="{Binding HasTaskbarSettings, Converter={StaticResource AfBooleanToVisibilityConverter}}"
+                    Description="{DynamicResource Loc.Appearance.Scope.Taskbar}">
                     <StackPanel>
                         <components:SettingsRow
-                            Description="{DynamicResource Loc.DisplayModes.Rest.Row.Layout.Description}"
-                            Icon="{ui:SymbolIcon LayoutColumnTwo24}"
-                            Title="{DynamicResource Loc.DisplayModes.Rest.Row.Layout.Title}">
-                            <ComboBox
-                                MinWidth="200"
-                                SelectedValue="{Binding ViewModel.ContentLayout, Mode=TwoWay}"
-                                SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Rest.ContentLayout.CompactInline}" Tag="{x:Static settings:TaskbarContentLayout.CompactInline}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Rest.ContentLayout.AdaptiveStack}" Tag="{x:Static settings:TaskbarContentLayout.AdaptiveStack}" />
-                            </ComboBox>
+                            Title="{DynamicResource Loc.Appearance.Row.TaskbarBackground.Title}"
+                            Description="{DynamicResource Loc.Appearance.Row.TaskbarBackground.Description}"
+                            Icon="{ui:SymbolIcon Blur24}">
+                            <ui:ToggleSwitch IsChecked="{Binding Taskbar.UseFrostedTaskbarBackground, Mode=TwoWay}" />
                         </components:SettingsRow>
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.DisplayModes.Rest.Row.Alignment.Description}"
-                            Icon="{ui:SymbolIcon TextAlignLeft24}"
-                            Title="{DynamicResource Loc.DisplayModes.Rest.Row.Alignment.Title}">
-                            <ComboBox
-                                MinWidth="200"
-                                SelectedValue="{Binding ViewModel.MediaTextAlignment, Mode=TwoWay}"
-                                SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.AlignLeft}" Tag="{x:Static settings:TaskbarMediaTextAlignment.Left}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.AlignCenter}" Tag="{x:Static settings:TaskbarMediaTextAlignment.Center}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.AlignRight}" Tag="{x:Static settings:TaskbarMediaTextAlignment.Right}" />
-                            </ComboBox>
-                        </components:SettingsRow>
-                        <ui:CardExpander
-                            Style="{StaticResource AfSettingsExpanderStyle}"
-                            Icon="{ui:SymbolIcon ArrowSort24}"
-                            IsExpanded="True">
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Options24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
-                                    <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.DisplayModes.Rest.Order.Expander.Title}" />
-                                    <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.DisplayModes.Rest.Order.Expander.Description}" />
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowTitleStyle}"
+                                        Text="{DynamicResource Loc.Appearance.TaskbarBackground.Details.Title}" />
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
+                                        Text="{DynamicResource Loc.Appearance.TaskbarBackground.Details.Description}" />
                                 </StackPanel>
                             </ui:CardExpander.Header>
-
                             <StackPanel>
-                                <components:SettingsCallout
-                                    Margin="0,0,0,4"
-                                    Symbol="Info24"
-                                    Text="{DynamicResource Loc.DisplayModes.Rest.Order.Notice}" />
-
-                                <ItemsControl Margin="0,0,0,4" ItemsSource="{Binding ViewModel.RestOrderEntries}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <components:SettingsRow
-                                                Description="{Binding Description}"
-                                                IsNested="True"
-                                                Title="{Binding DisplayName}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <!--
-                                                        固定在最前面的两行没有按钮：它们在提示条里说明了不参与排序，而一个点不动的按钮比没有按钮更难懂。
-                                                        The two pinned rows carry no buttons: the callout says they take no part in ordering, and a button that does
-                                                        nothing is harder to understand than no button at all.
-                                                    -->
-                                                    <ui:Button
-                                                        Margin="8,0,0,0"
-                                                        Command="{Binding DataContext.ViewModel.MoveRestComponentUpCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                        CommandParameter="{Binding}"
-                                                        Icon="{ui:SymbolIcon ArrowUp24}"
-                                                        Style="{StaticResource AfSettingsIconButtonStyle}"
-                                                        ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveUp}"
-                                                        Visibility="{Binding CanMove, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
-                                                    <ui:Button
-                                                        Margin="4,0,0,0"
-                                                        Command="{Binding DataContext.ViewModel.MoveRestComponentDownCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                        CommandParameter="{Binding}"
-                                                        Icon="{ui:SymbolIcon ArrowDown24}"
-                                                        Style="{StaticResource AfSettingsIconButtonStyle}"
-                                                        ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveDown}"
-                                                        Visibility="{Binding CanMove, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
-                                                </StackPanel>
-                                            </components:SettingsRow>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-
+                                <TextBlock Text="{DynamicResource Loc.Appearance.Background.Prerequisite}" Margin="0,0,0,8">
+                                    <TextBlock.Style>
+                                        <Style BasedOn="{StaticResource AfSettingsHintTextStyle}" TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Taskbar.UseFrostedTaskbarBackground}" Value="False">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                                 <components:SettingsRow
-                                    Description="{DynamicResource Loc.DisplayModes.Rest.Order.Reset.Description}"
-                                    Icon="{ui:SymbolIcon ArrowReset24}"
+                                    Description="{DynamicResource Loc.Appearance.Row.TaskbarFrostedStyle.Description}"
+                                    Icon="{ui:SymbolIcon Color24}"
+                                    IsEnabled="{Binding Taskbar.UseFrostedTaskbarBackground}"
                                     IsNested="True"
-                                    Title="{DynamicResource Loc.DisplayModes.Rest.Order.Reset.Title}">
-                                    <ui:Button
-                                        Command="{Binding ViewModel.ResetRestComponentOrderCommand}"
-                                        Content="{DynamicResource Loc.Lyrics.Sources.Reset.Action}"
-                                        Icon="{ui:SymbolIcon ArrowReset24}"
-                                        Style="{StaticResource AfSettingsButtonStyle}" />
+                                    Title="{DynamicResource Loc.Appearance.Row.TaskbarFrostedStyle.Title}">
+                                    <ComboBox
+                                        MinWidth="180"
+                                        SelectedValue="{Binding Taskbar.TaskbarFrostedStyle, Mode=TwoWay}"
+                                        SelectedValuePath="Tag">
+                                        <ComboBoxItem
+                                            Content="{DynamicResource Loc.Appearance.TaskbarFrostedStyle.Neutral}"
+                                            Tag="{x:Static settings:TaskbarFrostedStyle.Neutral}" />
+                                        <ComboBoxItem
+                                            Content="{DynamicResource Loc.Appearance.TaskbarFrostedStyle.Cool}"
+                                            Tag="{x:Static settings:TaskbarFrostedStyle.Cool}" />
+                                        <ComboBoxItem
+                                            Content="{DynamicResource Loc.Appearance.TaskbarFrostedStyle.Warm}"
+                                            Tag="{x:Static settings:TaskbarFrostedStyle.Warm}" />
+                                        <ComboBoxItem
+                                            Content="{DynamicResource Loc.Appearance.TaskbarFrostedStyle.Artwork}"
+                                            Tag="{x:Static settings:TaskbarFrostedStyle.Artwork}" />
+                                    </ComboBox>
+                                </components:SettingsRow>
+                                <components:SettingsRow
+                                    Description="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundOpacity.Description}"
+                                    Icon="{ui:SymbolIcon CircleHalfFill24}"
+                                    IsEnabled="{Binding Taskbar.UseFrostedTaskbarBackground}"
+                                    IsNested="True"
+                                    Title="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundOpacity.Title}">
+                                    <components:SettingsNumericEditor
+                                        Unit="%"
+                                        Value="{Binding Taskbar.TaskbarBackgroundOpacityPercent, Mode=TwoWay}"
+                                        Minimum="{Binding Source={x:Static settings:AppearanceSettings.MinimumTaskbarBackgroundOpacityPercent}}"
+                                        Maximum="{Binding Source={x:Static settings:AppearanceSettings.MaximumTaskbarBackgroundOpacityPercent}}"
+                                        Step="{Binding Source={x:Static settings:AppearanceSettings.TaskbarBackgroundOpacityStep}}" />
                                 </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>
                     </StackPanel>
                 </components:SettingsGroup>
-
-                <components:SettingsGroup Header="{DynamicResource Loc.Appearance.Group.InteractionButtons}" Icon="{ui:SymbolIcon CursorClick24}">
-                    <StackPanel>
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Appearance.Row.InteractionButtonSize.Description}"
-                            Icon="{ui:SymbolIcon TextAlignJustify24}"
-                            IsNested="True"
-                            Title="{DynamicResource Loc.Appearance.Row.InteractionButtonSize.Title}">
-                            <ComboBox
-                                MinWidth="200"
-                                SelectedValue="{Binding ViewModel.InteractionButtonSize, Mode=TwoWay}"
-                                SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Rest.Density.Minimal}" Tag="{x:Static settings:TaskbarInformationDensity.Minimal}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Rest.Density.Balanced}" Tag="{x:Static settings:TaskbarInformationDensity.Balanced}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Rest.Density.Information}" Tag="{x:Static settings:TaskbarInformationDensity.Information}" />
-                            </ComboBox>
-                        </components:SettingsRow>
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.DisplayModes.Hover.Row.Spacing.Description}"
-                            Icon="{ui:SymbolIcon PaddingLeft24}"
-                            IsNested="True"
-                            Title="{DynamicResource Loc.DisplayModes.Hover.Row.Spacing.Title}">
-                            <StackPanel Orientation="Horizontal">
-                                <Slider
-                                    Maximum="16"
-                                    Minimum="0"
-                                    Style="{StaticResource AfSettingsRowSliderStyle}"
-                                    IsSnapToTickEnabled="True"
-                                    TickFrequency="1"
-                                    Value="{Binding ViewModel.HoverButtonSpacingDip, Mode=TwoWay}" />
-                                <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.HoverButtonSpacingDip, StringFormat={}{0:0} DIP}" />
-                            </StackPanel>
-                        </components:SettingsRow>
-                    </StackPanel>
-                </components:SettingsGroup>
-
                 <ui:Button
                     Margin="0,16,0,40"
                     HorizontalAlignment="Left"

@@ -4,6 +4,7 @@ using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Localization;
 using AFMediaBar.Classes.Services.Lyrics;
 using AFMediaBar.Classes.Settings;
+using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Utils;
 using AFMediaBar.Resources;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -12,9 +13,14 @@ using CommunityToolkit.Mvvm.Input;
 namespace AFMediaBar.ViewModels.Pages;
 
 /// <summary>歌词呈现、取词来源与对齐设置。 / Lyric presentation, retrieval sources, and alignment settings.</summary>
-public partial class LyricsViewModel : ObservableObject
+public partial class LyricsViewModel : ObservableObject, IDisposable
 {
+    /// <summary>Cancels asynchronous UI work when this editor context becomes inactive.</summary>
+    public CancellationToken ContextCancellationToken => _configuration.CancellationToken;
+
     private readonly LocalizationService _localization;
+    private readonly ISettingsConfiguration _configuration;
+    private bool _disposed;
 
     // 与 ExtraFeaturesViewModel 同理：设置写入可能来自后台线程，而来源列表与第二行列表绑定到界面，
     // 跨线程改它们会被 WPF 的 CollectionView 拒绝，因此重建 MUST 回到 UI 线程。
@@ -36,9 +42,11 @@ public partial class LyricsViewModel : ObservableObject
     /// Creates the lyrics page view model.
     /// </summary>
     /// <param name="localization">语言服务，用于在语言变化时重建来源显示名 / Localization service, used to rebuild source display names after a language change.</param>
-    public LyricsViewModel(LocalizationService localization)
+    public LyricsViewModel(LocalizationService localization, ISettingsConfiguration configuration)
     {
         _localization = localization;
+        _configuration = configuration;
+        configuration.Activated += OnActivated;
         SettingsManager.SettingsChanged += OnSettingsChanged;
         _localization.LanguageChanged += OnLanguageChanged;
         RefreshSourceEntries();
@@ -46,17 +54,17 @@ public partial class LyricsViewModel : ObservableObject
     }
 
     /// <summary>已保存的艺术家分隔符；弹窗编辑草稿由呈现层持有。</summary>
-    public string ArtistSeparatorsText => SettingsManager.Current.LyricsArtistSeparators;
+    public string ArtistSeparatorsText => _configuration.Current.LyricsArtistSeparators;
 
     /// <summary>内置分隔符，供编辑弹窗恢复草稿使用，不覆盖当前配置。</summary>
     public string DefaultArtistSeparatorsText => new AppSettings().LyricsArtistSeparators;
 
     /// <summary>用户确认后保存分隔符并重新匹配歌词。</summary>
-    public void ApplyArtistSeparators(string separators) => SettingsManager.SetLyricsArtistSeparators(separators);
+    public void ApplyArtistSeparators(string separators) => _configuration.SetLyricsArtistSeparators(separators);
 
-    public bool LyricsEnabled { get => SettingsManager.Current.LyricsEnabled; set { SettingsManager.SetLyricsEnabled(value); RaiseAll(); } }
-    public bool AllowBrowserAndVideoLyrics { get => SettingsManager.Current.AllowBrowserAndVideoLyrics; set { SettingsManager.SetAllowBrowserAndVideoLyrics(value); OnPropertyChanged(); } }
-    public bool TwoLineLyricsEnabled { get => SettingsManager.Current.TwoLineLyricsEnabled; set { SettingsManager.SetTwoLineLyricsEnabled(value); RaiseAll(); } }
+    public bool LyricsEnabled { get => _configuration.Current.LyricsEnabled; set { _configuration.SetLyricsEnabled(value); RaiseAll(); } }
+    public bool AllowBrowserAndVideoLyrics { get => _configuration.Current.AllowBrowserAndVideoLyrics; set { _configuration.SetAllowBrowserAndVideoLyrics(value); OnPropertyChanged(); } }
+    public bool TwoLineLyricsEnabled { get => _configuration.Current.TwoLineLyricsEnabled; set { _configuration.SetTwoLineLyricsEnabled(value); RaiseAll(); } }
     /// <summary>第二行顺序的可读描述（"下一句 → 翻译 → 音译"），与列表内容同步更新。/ A readable description of the second-line order ("next line, translation, romanization"), kept in step with the list.</summary>
     public string SecondaryLineOrderText => string.Join(
         " → ",
@@ -68,22 +76,22 @@ public partial class LyricsViewModel : ObservableObject
     /// buttons, exactly like the source list.
     /// </summary>
     public ObservableCollection<LyricsSecondaryLineSettingItem> SecondaryLineEntries { get; } = [];
-    public LyricsTextAlignment TextAlignment { get => SettingsManager.Current.LyricsTextAlignment; set { SettingsManager.SetLyricsTextAlignment(value); OnPropertyChanged(); } }
+    public LyricsTextAlignment TextAlignment { get => _configuration.Current.LyricsTextAlignment; set { _configuration.SetLyricsTextAlignment(value); OnPropertyChanged(); } }
 
     /// <summary>是否启用逐字擦亮。/ Whether syllable highlighting is enabled.</summary>
     public bool SyllableHighlightEnabled
     {
-        get => SettingsManager.Current.LyricsSyllableHighlightEnabled;
-        set { SettingsManager.SetLyricsSyllableHighlightEnabled(value); RaiseAll(); }
+        get => _configuration.Current.LyricsSyllableHighlightEnabled;
+        set { _configuration.SetLyricsSyllableHighlightEnabled(value); RaiseAll(); }
     }
 
     /// <summary>启用逐字擦亮时底色层（未唱部分）的不透明度百分比。/ Opacity percentage of the base (unsung) layer while highlighting is on.</summary>
     public int UnsungOpacityPercent
     {
-        get => SettingsManager.Current.LyricsUnsungOpacityPercent;
+        get => _configuration.Current.LyricsUnsungOpacityPercent;
         set
         {
-            SettingsManager.SetLyricsUnsungOpacityPercent(value);
+            _configuration.SetLyricsUnsungOpacityPercent(value);
             OnPropertyChanged();
             OnPropertyChanged(nameof(UnsungOpacityText));
         }
@@ -95,10 +103,10 @@ public partial class LyricsViewModel : ObservableObject
     /// <summary>歌词字距（字号的百分比）。/ Lyric character spacing as a percentage of the font size.</summary>
     public int CharacterSpacingPercent
     {
-        get => SettingsManager.Current.LyricsCharacterSpacingPercent;
+        get => _configuration.Current.LyricsCharacterSpacingPercent;
         set
         {
-            SettingsManager.SetLyricsCharacterSpacingPercent(value);
+            _configuration.SetLyricsCharacterSpacingPercent(value);
             OnPropertyChanged();
             OnPropertyChanged(nameof(CharacterSpacingText));
         }
@@ -110,10 +118,10 @@ public partial class LyricsViewModel : ObservableObject
     /// <summary>双行歌词额外增加的行距（字号的百分比）。/ Extra line gap for two-line lyrics as a percentage of the font size.</summary>
     public int LineGapPercent
     {
-        get => SettingsManager.Current.LyricsLineGapPercent;
+        get => _configuration.Current.LyricsLineGapPercent;
         set
         {
-            SettingsManager.SetLyricsLineGapPercent(value);
+            _configuration.SetLyricsLineGapPercent(value);
             OnPropertyChanged();
             OnPropertyChanged(nameof(LineGapText));
         }
@@ -125,10 +133,10 @@ public partial class LyricsViewModel : ObservableObject
     /// <summary>歌词框是否固定长度。/ Whether the lyric box keeps a fixed length.</summary>
     public bool FixedWidthEnabled
     {
-        get => SettingsManager.Current.LyricsFixedWidthEnabled;
+        get => _configuration.Current.LyricsFixedWidthEnabled;
         set
         {
-            SettingsManager.SetLyricsFixedWidthEnabled(value);
+            _configuration.SetLyricsFixedWidthEnabled(value);
             OnPropertyChanged();
             OnPropertyChanged(nameof(CanConfigureFixedWidthDip));
         }
@@ -137,10 +145,10 @@ public partial class LyricsViewModel : ObservableObject
     /// <summary>歌词框固定长度（DIP）。/ Fixed lyric-box length in DIP.</summary>
     public int FixedWidthDip
     {
-        get => SettingsManager.Current.LyricsFixedWidthDip;
+        get => _configuration.Current.LyricsFixedWidthDip;
         set
         {
-            SettingsManager.SetLyricsFixedWidthDip(value);
+            _configuration.SetLyricsFixedWidthDip(value);
             OnPropertyChanged();
             OnPropertyChanged(nameof(FixedWidthText));
         }
@@ -153,13 +161,13 @@ public partial class LyricsViewModel : ObservableObject
     public bool CanConfigureFixedWidth => LyricsEnabled;
 
     /// <summary>长度滑杆只在"固定"开启时可用。/ The length slider is available only while the fixed mode is on.</summary>
-    public bool CanConfigureFixedWidthDip => FixedWidthEnabled;
+    public bool CanConfigureFixedWidthDip => LyricsEnabled && FixedWidthEnabled;
 
     /// <summary>是否丢弃作者、作曲、制作等信息行。/ Whether credit lines are dropped.</summary>
     public bool InfoLineFilterEnabled
     {
-        get => SettingsManager.Current.LyricsInfoLineFilterEnabled;
-        set { SettingsManager.SetLyricsInfoLineFilterEnabled(value); OnPropertyChanged(); }
+        get => _configuration.Current.LyricsInfoLineFilterEnabled;
+        set { _configuration.SetLyricsInfoLineFilterEnabled(value); OnPropertyChanged(); }
     }
 
     /// <summary>取词来源启用列表，执行顺序由代码策略决定。/ Enabled sources; execution order belongs to the retrieval policy.</summary>
@@ -178,10 +186,11 @@ public partial class LyricsViewModel : ObservableObject
     /// <summary>行距只在双行歌词开启时可用：单行时没有"两行之间"可调。/ The line gap applies only while two-line lyrics are on: with a single line there is no "between" to adjust.</summary>
     public bool CanConfigureLineGap => LyricsEnabled && TwoLineLyricsEnabled;
 
-    public void ResetLyrics() => SettingsManager.ResetLyrics();
+    public void ResetLyrics() => _configuration.Reset(SettingsResetScope.Lyrics);
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
     {
+        if (_disposed || !_configuration.IsActive) return;
         // 重建来源列表的动作全部回到 UI 线程（写设置的一方可能在后台线程上）。
         // Everything that rebuilds a bound list goes back to the UI thread (whoever writes the settings may be on a background one).
         if (!_dispatcher.CheckAccess())
@@ -210,6 +219,10 @@ public partial class LyricsViewModel : ObservableObject
         }
         if (e.PropertyName == nameof(AppSettings.LyricsArtistSeparators))
             OnPropertyChanged(nameof(ArtistSeparatorsText));
+        if (e.ResetScope == SettingsResetScope.Components || e.PropertyName is nameof(AppSettings.LyricsEnabled)
+            or nameof(AppSettings.TwoLineLyricsEnabled) or nameof(AppSettings.LyricsTextAlignment)
+            or nameof(AppSettings.LyricsFixedWidthEnabled) or nameof(AppSettings.LyricsFixedWidthDip))
+            RaiseAll();
     }
 
     private void OnLanguageChanged(object? sender, EventArgs e)
@@ -244,7 +257,7 @@ public partial class LyricsViewModel : ObservableObject
         _isRefreshing = true;
         try
         {
-            var enabledIds = SettingsManager.Current.LyricsSource.Normalize().EnabledSourceIds;
+            var enabledIds = _configuration.Current.LyricsSource.Normalize().EnabledSourceIds;
             var enabled = enabledIds is null
                 ? null
                 : new HashSet<string>(enabledIds, StringComparer.Ordinal);
@@ -276,7 +289,7 @@ public partial class LyricsViewModel : ObservableObject
 
     private void OnSourceEnabledChanged(LyricsSourceSettingItem item)
     {
-        if (_isRefreshing)
+        if (_disposed || !_configuration.IsActive || _isRefreshing)
         {
             return;
         }
@@ -297,7 +310,7 @@ public partial class LyricsViewModel : ObservableObject
         _isSavingSources = true;
         try
         {
-            SettingsManager.SetLyricsSourceSettings(settings);
+            _configuration.SetLyricsSourceSettings(settings);
         }
         finally
         {
@@ -336,7 +349,7 @@ public partial class LyricsViewModel : ObservableObject
     private void RefreshSecondaryLineEntries()
     {
         var order = new List<LyricsSecondaryLineMode>(LyricsSecondaryLinePolicy.DefaultOrder.Count);
-        foreach (var mode in LyricsSecondaryLinePolicy.ResolveOrder(SettingsManager.Current.LyricsSecondaryLine))
+        foreach (var mode in LyricsSecondaryLinePolicy.ResolveOrder(_configuration.Current.LyricsSecondaryLine))
         {
             if (!order.Contains(mode))
             {
@@ -368,7 +381,7 @@ public partial class LyricsViewModel : ObservableObject
         var ordered = SecondaryLineEntries.Select(entry => entry.Mode).ToArray();
         var isDefaultOrder = ordered.Length == LyricsSecondaryLinePolicy.DefaultOrder.Count &&
                              ordered.SequenceEqual(LyricsSecondaryLinePolicy.DefaultOrder);
-        SettingsManager.SetLyricsSecondaryLineSettings(new LyricsSecondaryLineSettings(isDefaultOrder ? null : ordered));
+        _configuration.SetLyricsSecondaryLineSettings(new LyricsSecondaryLineSettings(isDefaultOrder ? null : ordered));
     }
 
     private static string SecondaryLineLabelKey(LyricsSecondaryLineMode mode) =>
@@ -415,4 +428,16 @@ public partial class LyricsViewModel : ObservableObject
 
         SaveSecondaryLineEntries();
     }
+    private void OnActivated(object? sender, EventArgs e) { RefreshSourceEntries(); RefreshSecondaryLineEntries(); RaiseAll(); }
+    /// <summary>Releases settings and language subscriptions for this cached editor.</summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        SettingsManager.SettingsChanged -= OnSettingsChanged;
+        _localization.LanguageChanged -= OnLanguageChanged;
+        _configuration.Activated -= OnActivated;
+        foreach (var item in SourceEntries) item.EnabledChanged -= OnSourceEnabledChanged;
+    }
+
 }

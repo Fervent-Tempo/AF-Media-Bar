@@ -45,14 +45,14 @@ public readonly record struct TaskbarRestLayout(
 }
 
 /// <summary>
-/// 静置层组件的顺序、显隐与横向排布的纯策略：封面与媒体文字固定在最前面，其余组件由用户排序；宽度由各自组件决定，媒体文字吃掉剩余长度。
+/// 静置层组件的顺序、显隐与横向排布的纯策略：封面与媒体文字固定在逻辑起始侧，其余组件由用户排序；宽度由各自组件决定，媒体文字吃掉剩余长度。
 /// Pure policy for the rest-layer components' order, visibility, and horizontal arrangement: the artwork and the media text are pinned to the front
 /// while the user orders the rest; every other component brings its own width and the media text absorbs whatever is left.
 /// </summary>
 public static class TaskbarRestLayoutPolicy
 {
     /// <summary>
-    /// 固定在媒体栏最前面的组件，顺序不可更改：封面，然后是媒体文字。
+    /// 固定在媒体栏锚点一侧的组件，逻辑顺序不可更改：封面，然后是媒体文字。靠右排布时坐标反向。
     ///
     /// 这两个是静置层的主干（"谁在放"与"放的是什么"），把它们排到别处只会让这条媒体栏读不出来；用户报告的实际表现是
     /// 顺序一变界面就错乱，因此它们不再参与排序，设置里也不存它们的顺序。
@@ -244,6 +244,7 @@ public static class TaskbarRestLayoutPolicy
     /// <param name="availableWidth">媒体栏长度（DIP）。/ Bar length in DIP.</param>
     /// <param name="sectionGap">组件间距（DIP）。/ Gap between components, in DIP.</param>
     /// <param name="trailingMargin">尾部留白（DIP）。/ Trailing margin in DIP.</param>
+    /// <param name="fromRight">从右侧锚点向左排列，保留设置中的逻辑顺序。</param>
     public static TaskbarRestLayout Arrange(
         IReadOnlyList<TaskbarRestComponent> order,
         Func<TaskbarRestComponent, double> widthOf,
@@ -251,7 +252,8 @@ public static class TaskbarRestLayoutPolicy
         double leadingInset,
         double availableWidth,
         double sectionGap,
-        double trailingMargin)
+        double trailingMargin,
+        bool fromRight = false)
     {
         var visible = new List<TaskbarRestComponent>(order.Count);
         foreach (var component in order)
@@ -299,6 +301,17 @@ public static class TaskbarRestLayoutPolicy
             }
         }
 
-        return new TaskbarRestLayout(placements, cursor + Math.Max(0, trailingMargin));
+        var contentWidth = cursor + Math.Max(0, trailingMargin);
+        if (fromRight)
+        {
+            // Mirror coordinates, never the pixels or the stored logical order. Leading padding
+            // belongs to the artwork edge, including when the idle layout uses less than the window.
+            var extent = Math.Max(0, availableWidth);
+            placements = placements.Select(placement => placement with
+            {
+                Left = extent - placement.Right
+            }).Reverse().ToList();
+        }
+        return new TaskbarRestLayout(placements, contentWidth);
     }
 }

@@ -69,6 +69,8 @@ public static partial class NativeMethods
     internal const uint PdhStatusNewData = 0x00000001;
 
     // Shell notification icon protocol
+    public const uint NIF_STATE = 0x00000008;
+    public const uint NIS_HIDDEN = 0x00000001;
     public const uint NIM_ADD = 0;
     public const uint NIM_MODIFY = 1;
     public const uint NIM_DELETE = 2;

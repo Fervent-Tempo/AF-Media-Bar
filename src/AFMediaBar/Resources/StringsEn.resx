@@ -275,7 +275,7 @@
     <value>Fonts, theme, media-bar width, and interaction button appearance</value>
   </data>
   <data name="Appearance.Group.RestLayout" xml:space="preserve">
-    <value>Rest-layer appearance</value>
+    <value>Text layout</value>
   </data>
   <data name="Appearance.Group.InteractionButtons" xml:space="preserve">
     <value>Interaction buttons</value>
@@ -284,7 +284,7 @@
     <value>Interaction button size</value>
   </data>
   <data name="Appearance.Row.InteractionButtonSize.Description" xml:space="preserve">
-    <value>Resize buttons and icons in the rest and hover layers.</value>
+    <value>Resize buttons and icons in the always-on view and quick controls.</value>
   </data>
   <data name="Appearance.Motion.Detail.Full" xml:space="preserve">
     <value>Keeps expansion, feedback, and spectrum transitions</value>
@@ -317,22 +317,52 @@
     <value>Use the Windows accent color or choose one for this app only.</value>
   </data>
   <data name="Appearance.Row.Accent.Title" xml:space="preserve">
-    <value>Accent colour</value>
+    <value>Accent color</value>
   </data>
   <data name="Appearance.Row.Backdrop.Description" xml:space="preserve">
-    <value>Choose the background material for settings, tray panels, and context menus.</value>
+    <value>Choose the background material for windows such as Settings. Menus keep a solid background.</value>
   </data>
   <data name="Appearance.Row.Backdrop.Title" xml:space="preserve">
     <value>Window backdrop material</value>
   </data>
+  <data name="Appearance.Row.TaskbarBackground.Description" xml:space="preserve">
+    <value>Add a translucent frosted surface so the media bar stays readable on transparent taskbars.</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackground.Title" xml:space="preserve">
+    <value>Frosted taskbar background</value>
+  </data>
+  <data name="Appearance.Row.TaskbarFrostedStyle.Description" xml:space="preserve">
+    <value>Choose a mist tone or make the blurred artwork more visible.</value>
+  </data>
+  <data name="Appearance.Row.TaskbarFrostedStyle.Title" xml:space="preserve">
+    <value>Material style</value>
+  </data>
+  <data name="Appearance.TaskbarFrostedStyle.Neutral" xml:space="preserve">
+    <value>Adaptive grey mist</value>
+  </data>
+  <data name="Appearance.TaskbarFrostedStyle.Cool" xml:space="preserve">
+    <value>Cool grey</value>
+  </data>
+  <data name="Appearance.TaskbarFrostedStyle.Warm" xml:space="preserve">
+    <value>Warm grey</value>
+  </data>
+  <data name="Appearance.TaskbarFrostedStyle.Artwork" xml:space="preserve">
+    <value>Artwork ambience</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundOpacity.Description" xml:space="preserve">
+    <value>Higher values make the grey veil stronger and improve readability on transparent taskbars.</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundOpacity.Title" xml:space="preserve">
+    <value>Frost strength</value>
+  </data>
   <data name="Appearance.Row.BackdropTint.Description" xml:space="preserve">
-    <value>Adjust the tint strength of app-drawn backgrounds (30%–100%).</value>
+    <value>Adjust the background tint of Windows 10 windows and track notifications (30%–100%). System-rendered window materials on Windows 11 are unaffected.</value>
   </data>
   <data name="Appearance.Row.BackdropTint.Title" xml:space="preserve">
     <value>Material concentration</value>
   </data>
   <data name="Appearance.Row.CjkFont.Description" xml:space="preserve">
-    <value>The font used for Han characters</value>
+    <value>Choose the font used for Chinese and other East Asian text.</value>
   </data>
   <data name="Appearance.Row.CjkFont.Title" xml:space="preserve">
     <value>CJK font</value>
@@ -344,7 +374,7 @@
     <value>Font weight</value>
   </data>
   <data name="Appearance.Row.LatinFont.Description" xml:space="preserve">
-    <value>The font used for letters and digits</value>
+    <value>Choose the font used for letters and numbers.</value>
   </data>
   <data name="Appearance.Row.LatinFont.Title" xml:space="preserve">
     <value>Latin font</value>
@@ -359,7 +389,7 @@
     <value>Interaction motion</value>
   </data>
   <data name="Appearance.Row.TextColor.Description" xml:space="preserve">
-    <value>Choose light or dark text based on the background behind it.</value>
+    <value>Set media bar text color. Automatic mode chooses dark or light text to suit the background.</value>
   </data>
   <data name="Appearance.Row.TextColor.Title" xml:space="preserve">
     <value>Text color</value>
@@ -497,13 +527,13 @@
     <value>Application</value>
   </data>
   <data name="Common.Group.ChooseDisplayMode" xml:space="preserve">
-    <value>Choose a display mode</value>
+    <value>Running mode</value>
   </data>
   <data name="Common.Group.Fonts" xml:space="preserve">
-    <value>Fonts</value>
+    <value>Shared fonts</value>
   </data>
   <data name="Common.Group.InAppRestLayer" xml:space="preserve">
-    <value>In the application (rest layer)</value>
+    <value>Media bar clicks</value>
   </data>
   <data name="Common.Group.IslandAppearance" xml:space="preserve">
     <value>Dynamic island appearance</value>
@@ -524,7 +554,7 @@
     <value>Media bar text</value>
   </data>
   <data name="Common.Group.MediaBarWidth" xml:space="preserve">
-    <value>Media bar width</value>
+    <value>Length &amp; spacing</value>
   </data>
   <data name="Common.Group.ProjectInfo" xml:space="preserve">
     <value>Project information</value>
@@ -533,7 +563,7 @@
     <value>Quick launch</value>
   </data>
   <data name="Common.Group.RestLayerComponents" xml:space="preserve">
-    <value>Rest-layer components</value>
+    <value>Always-on view components</value>
   </data>
   <data name="Common.Group.ScreenAndPlacement" xml:space="preserve">
     <value>Screen and placement</value>
@@ -551,13 +581,13 @@
     <value>Support me</value>
   </data>
   <data name="Common.Group.ThemeAndBackdrop" xml:space="preserve">
-    <value>Theme and backdrop</value>
+    <value>All windows</value>
   </data>
   <data name="Common.Group.TrackChangeNotification" xml:space="preserve">
     <value>Track-change notification</value>
   </data>
   <data name="Common.HoverLayer" xml:space="preserve">
-    <value>Hover layer</value>
+    <value>Quick controls</value>
   </data>
   <data name="Common.MediaSource" xml:space="preserve">
     <value>Media source</value>
@@ -650,7 +680,7 @@
     <value>Reset position</value>
   </data>
   <data name="Common.RestLayer" xml:space="preserve">
-    <value>Rest layer</value>
+    <value>Always-on view</value>
   </data>
   <data name="Common.Save" xml:space="preserve">
     <value>Save</value>
@@ -677,7 +707,7 @@
     <value>Tray icon</value>
   </data>
   <data name="Diagram.DynamicIslandSurface.Caption" xml:space="preserve">
-    <value>Dynamic island mode is not implemented, so the three options below are read-only; its appearance and the taskbar do not affect each other.</value>
+    <value>This mode is not implemented. The options below are read-only and separate from taskbar settings.</value>
   </data>
   <data name="Diagram.InputGestures.Caption" xml:space="preserve">
     <value>These are the only two clickable areas on the media bar and each is set separately; buttons in the expanded panel are unaffected.</value>
@@ -689,7 +719,7 @@
     <value>Title or lyrics click</value>
   </data>
   <data name="Diagram.LayerFull.Caption" xml:space="preserve">
-    <value>The panel opened from the media bar has four sections; each can be turned off, but at least one stays on.</value>
+    <value>Click the media bar to open the full panel. Its four sections can be turned off individually; keep at least one.</value>
   </data>
   <data name="Diagram.LayerFull.Label.MediaInfo" xml:space="preserve">
     <value>Media info</value>
@@ -701,16 +731,16 @@
     <value>Playback</value>
   </data>
   <data name="Diagram.LayerHover.Caption" xml:space="preserve">
-    <value>Hovering reveals playback, switching, output device, volume, and progress controls, each with its own switch on the next page.</value>
+    <value>When enabled, quick controls appear as the pointer enters the media bar. Turn individual controls on or off in this group.</value>
   </data>
   <data name="Diagram.LayerRest.Caption" xml:space="preserve">
-    <value>Cover and title are always shown; the spectrum and performance components sit on the right and are switched in "Media and notifications → Rest-layer components".</value>
+    <value>Configure persistent content, component details and order together on this page.</value>
   </data>
   <data name="Diagram.LyricsAlignment.Caption" xml:space="preserve">
-    <value>It only decides which side the lyrics take; title and artist alignment is a separate setting on the "Display mode" page.</value>
+    <value>Only changes lyric alignment. Title and artist alignment is under Appearance &gt; Always-on view appearance.</value>
   </data>
   <data name="Diagram.LyricsTwoLine.Caption" xml:space="preserve">
-    <value>The first line is the current line; the second is the next line or a translation and is hidden when the rest layer runs out of room.</value>
+    <value>The first line shows the current lyric. The second follows your priority for next line, translation, or romanization, and hides when space is insufficient.</value>
   </data>
   <data name="Diagram.LyricsTwoLine.Label.FirstLine" xml:space="preserve">
     <value>First line</value>
@@ -731,7 +761,7 @@
     <value>The example shows 9 spectrum bars with the rightmost one off; the refresh rate sets how fast it reacts and the sensitivity sets the bar height at a given volume.</value>
   </data>
   <data name="Diagram.TaskbarLength.Caption" xml:space="preserve">
-    <value>The width follows the content; with following off a fixed width applies instead, and its range is set by the current taskbar.</value>
+    <value>Width follows the content automatically. Turn this off to enter a fixed width; the range follows available taskbar space.</value>
   </data>
   <data name="Diagram.TaskbarLength.Label.MinimumWidth" xml:space="preserve">
     <value>Minimum required width</value>
@@ -740,10 +770,10 @@
     <value>Taskbar safe limit</value>
   </data>
   <data name="Diagram.TaskbarPlacement.Caption" xml:space="preserve">
-    <value>The media bar avoids the taskbar icons automatically; the edge offset adjusts the gap between it and the icon area.</value>
+    <value>With avoidance enabled, the media bar stays clear of taskbar icons. Thickness offset fine-tunes its position vertically or horizontally.</value>
   </data>
   <data name="Diagram.TaskbarPlacement.Label.EdgeOffset" xml:space="preserve">
-    <value>Edge offset −20 ~ +20 px</value>
+    <value>Thickness offset: −20 to +20 DIP</value>
   </data>
   <data name="Diagram.TaskbarPlacement.Label.TaskbarIcons" xml:space="preserve">
     <value>Taskbar icons</value>
@@ -752,7 +782,7 @@
     <value>The highlighted square is this app. Clicks and wheel input work whether the icon is visible on the taskbar or in the hidden-icon area.</value>
   </data>
   <data name="Diagram.TrayOverflow.Label.OverflowArrow" xml:space="preserve">
-    <value>Collapsed into the arrow</value>
+    <value>Hidden icons</value>
   </data>
   <data name="Diagram.TrayOverflow.Label.TrayArea" xml:space="preserve">
     <value>Tray area</value>
@@ -764,10 +794,10 @@
     <value>On the media bar</value>
   </data>
   <data name="Diagram.WheelGestures.Label.MediaBarResults" xml:space="preserve">
-    <value>All four results can be bound: previous/next, device or player, volume</value>
+    <value>Previous/next track, switch device, switch player, or adjust volume</value>
   </data>
   <data name="Diagram.WheelGestures.Label.TrayResults" xml:space="preserve">
-    <value>Only device switching and volume</value>
+    <value>Switch device or adjust volume</value>
   </data>
   <data name="DisplayModes.Full.Expander.Description" xml:space="preserve">
     <value>Choose sections for the full panel; at least one must remain.</value>
@@ -809,13 +839,13 @@
     <value>Apply a preset</value>
   </data>
   <data name="DisplayModes.Header.Subtitle" xml:space="preserve">
-    <value>Where the media bar sits and which layer features are enabled</value>
+    <value>Choose a display mode and configure the always-on view, quick controls, and full panel.</value>
   </data>
   <data name="DisplayModes.Hover.Expander.Description" xml:space="preserve">
     <value>Choose the controls shown on hover.</value>
   </data>
   <data name="DisplayModes.Hover.Expander.Title" xml:space="preserve">
-    <value>Hover-layer controls</value>
+    <value>Quick controls layout</value>
   </data>
   <data name="DisplayModes.Hover.Group.Description" xml:space="preserve">
     <value>Quick controls shown when the pointer enters the media bar.</value>
@@ -824,7 +854,7 @@
     <value>Show quick controls when the pointer enters the media bar.</value>
   </data>
   <data name="DisplayModes.Hover.Row.Enable.Title" xml:space="preserve">
-    <value>Enable the hover layer</value>
+    <value>Enable the quick controls</value>
   </data>
   <data name="DisplayModes.Hover.Row.Progress.Title" xml:space="preserve">
     <value>Progress bar</value>
@@ -887,7 +917,7 @@
     <value>Taskbar</value>
   </data>
   <data name="DisplayModes.Mode.Taskbar.Caption" xml:space="preserve">
-    <value>Runs in the Windows taskbar and provides the rest layer, the hover layer, and the full panel</value>
+    <value>Runs in the Windows taskbar and provides the always-on view, the quick controls, and the full panel</value>
   </data>
   <data name="DisplayModes.Monitor.DisconnectedSuffix" xml:space="preserve">
     <value> (not connected)</value>
@@ -923,16 +953,16 @@
     <value>Choose one or more monitors for the media bar; at least one must remain.</value>
   </data>
   <data name="DisplayModes.Placement.Row.Offset.Description" xml:space="preserve">
-    <value>Fine-tune the distance between the media bar and taskbar icons.</value>
+    <value>Fine-tune the media bar across the taskbar thickness (−20 to +20 DIP).</value>
   </data>
   <data name="DisplayModes.Placement.Row.Offset.Title" xml:space="preserve">
-    <value>Edge offset</value>
+    <value>Thickness offset</value>
   </data>
   <data name="DisplayModes.Placement.Row.Orientation.Description" xml:space="preserve">
-    <value>Only horizontal layout is implemented; this option is temporarily unavailable</value>
+    <value>Automatically follows the system taskbar on this display.</value>
   </data>
   <data name="DisplayModes.Placement.Row.Orientation.Title" xml:space="preserve">
-    <value>Orientation</value>
+    <value>Taskbar orientation</value>
   </data>
   <data name="DisplayModes.Placement.Row.Reset.Description" xml:space="preserve">
     <value>Restore the automatically calculated position.</value>
@@ -980,10 +1010,10 @@
     <value>Click to open the volume menu or scroll to adjust the current source.</value>
   </data>
   <data name="DisplayModes.Rest.ContentLayout.AdaptiveStack" xml:space="preserve">
-    <value>Adaptive stack</value>
+    <value>Two lines</value>
   </data>
   <data name="DisplayModes.Rest.ContentLayout.CompactInline" xml:space="preserve">
-    <value>Compact inline</value>
+    <value>Single line</value>
   </data>
   <data name="DisplayModes.Rest.Density.Balanced" xml:space="preserve">
     <value>Medium</value>
@@ -1010,16 +1040,16 @@
     <value>Artwork and media text need an active source. Keep the note visible for quick launch when no media is playing.</value>
   </data>
   <data name="DisplayModes.Rest.Notice" xml:space="preserve">
-    <value>Configure spectrum and performance under Components, and text size under Appearance. The spectrum uses audio from the current output device.</value>
+    <value>Spectrum captures the current output device. Edit component parameters in this group and text size in Appearance.</value>
   </data>
   <data name="DisplayModes.Rest.Order.Expander.Description" xml:space="preserve">
-    <value>Order optional components from left to right; artwork and text stay first.</value>
+    <value>Artwork and text stay at the logical start. Reorder additional components; content direction determines their screen coordinates.</value>
   </data>
   <data name="DisplayModes.Rest.Order.Expander.Title" xml:space="preserve">
-    <value>Rest-layer component order</value>
+    <value>Always-on view component order</value>
   </data>
   <data name="DisplayModes.Rest.Order.Notice" xml:space="preserve">
-    <value>Artwork and media text stay first and cannot be reordered.</value>
+    <value>Artwork and media text stay at the logical start and cannot be reordered.</value>
   </data>
   <data name="DisplayModes.Rest.Order.Reset.Description" xml:space="preserve">
     <value>Spectrum, performance monitor, output-device button, volume button</value>
@@ -1034,7 +1064,7 @@
     <value>Title and artist alignment</value>
   </data>
   <data name="DisplayModes.Hover.Row.Size.Description" xml:space="preserve">
-    <value>Resize hover buttons, icons, and the progress bar; rest-layer buttons change too.</value>
+    <value>Resize hover buttons, icons, and the progress bar; always-on view buttons change too.</value>
   </data>
   <data name="DisplayModes.Hover.Row.Size.Title" xml:space="preserve">
     <value>Control size</value>
@@ -1049,7 +1079,7 @@
     <value>Keep the device button visible, using text space; click to choose or scroll to switch devices.</value>
   </data>
   <data name="DisplayModes.Rest.Row.DeviceButton.Title" xml:space="preserve">
-    <value>Show the output-device button in the rest layer</value>
+    <value>Show the output-device button in the always-on view</value>
   </data>
   <data name="DisplayModes.Rest.Row.Entry.Description" xml:space="preserve">
     <value>Open the full panel by hovering over the bar or clicking the top entry.</value>
@@ -1058,13 +1088,13 @@
     <value>Show the full-panel entry</value>
   </data>
   <data name="DisplayModes.Rest.Row.Layout.Description" xml:space="preserve">
-    <value>Puts the title and the artist on one line side by side, or stacks them</value>
+    <value>Show title and artist on one or two lines. Compact taskbars may show only the title.</value>
   </data>
   <data name="DisplayModes.Rest.Row.Layout.Title" xml:space="preserve">
-    <value>Content layout</value>
+    <value>Title and artist layout</value>
   </data>
   <data name="DisplayModes.Rest.Row.Progress.Description" xml:space="preserve">
-    <value>Show read-only progress at the bottom of the rest layer; hide it when duration is unavailable.</value>
+    <value>Show read-only progress at the bottom of the always-on view; hide it when duration is unavailable.</value>
   </data>
   <data name="DisplayModes.Rest.Row.Artwork.Description" xml:space="preserve">
     <value>Show artwork while media is connected; the idle note has its own setting.</value>
@@ -1079,7 +1109,7 @@
     <value>Keep the volume button visible, using text space; click for its menu or scroll to adjust volume.</value>
   </data>
   <data name="DisplayModes.Rest.Row.VolumeButton.Title" xml:space="preserve">
-    <value>Show the volume button in the rest layer</value>
+    <value>Show the volume button in the always-on view</value>
   </data>
   <data name="DisplayModes.Status.Current" xml:space="preserve">
     <value>Current: {0}</value>
@@ -1091,7 +1121,7 @@
     <value>The floating ball mode is not implemented yet, so there are no settings to change for now. Every mode will get its own settings page.</value>
   </data>
   <data name="DisplayModes.Width.Group.Description" xml:space="preserve">
-    <value>Width of the media bar and the spacing inside it</value>
+    <value>Overall length, lyric region length and component spacing.</value>
   </data>
   <data name="DisplayModes.Width.RangeText" xml:space="preserve">
     <value>Available range: {0:0}–{1:0} DIP</value>
@@ -1103,7 +1133,7 @@
     <value>Set a width between the required minimum and available taskbar space.</value>
   </data>
   <data name="DisplayModes.Width.Row.Fixed.Title" xml:space="preserve">
-    <value>Fixed width</value>
+    <value>Fixed length</value>
   </data>
   <data name="DisplayModes.Width.Row.Follow.Description" xml:space="preserve">
     <value>Resize automatically to fit media content.</value>
@@ -1121,7 +1151,7 @@
     <value>The result of each interaction on the media bar and the tray icon</value>
   </data>
   <data name="Interaction.InApp.Group.Description" xml:space="preserve">
-    <value>Set click and wheel actions on the rest layer.</value>
+    <value>Set click and wheel actions on the always-on view.</value>
   </data>
   <data name="Interaction.Row.ArtworkClick.Description" xml:space="preserve">
     <value>Choose what clicking the artwork does.</value>
@@ -1163,7 +1193,7 @@
     <value>Works only while the pointer is over the tray icon.</value>
   </data>
   <data name="Interaction.SharedModifier.Callout" xml:space="preserve">
-    <value>When the left or right mouse button is the modifier, the click or menu produced after a wheel gesture is suppressed to avoid an accidental action.</value>
+    <value>The modifier applies to media bar wheel gestures. Tray chord-wheel editing is currently unavailable.</value>
   </data>
   <data name="Interaction.SharedModifier.Group.Description" xml:space="preserve">
     <value>Choose the key that activates chord wheel actions.</value>
@@ -1298,10 +1328,10 @@
     <value>With lyrics available the media bar shows the lyrics; without them it shows the title and artist.</value>
   </data>
   <data name="Lyrics.Header.Subtitle" xml:space="preserve">
-    <value>The current lyrics in the taskbar rest layer</value>
+    <value>The current lyrics in the taskbar always-on view</value>
   </data>
   <data name="Lyrics.Row.Alignment.Description" xml:space="preserve">
-    <value>Align lyrics horizontally; set title alignment under Appearance.</value>
+    <value>Align lyrics inside their text region. Title and artist text can use a different alignment.</value>
   </data>
   <data name="Lyrics.Row.Alignment.Title" xml:space="preserve">
     <value>Lyric alignment</value>
@@ -1469,7 +1499,7 @@
     <value>Media sources, quick launch, and track notifications</value>
   </data>
   <data name="Components.Header.Subtitle" xml:space="preserve">
-    <value>Visibility and options for rest-layer components</value>
+    <value>Visibility and options for always-on view components</value>
   </data>
   <data name="Media.Metric.ProcessMemory.Title" xml:space="preserve">
     <value>Memory used by this application</value>
@@ -1559,7 +1589,7 @@
     <value>{0:0.#} s</value>
   </data>
   <data name="Media.Performance.Visible.Description" xml:space="preserve">
-    <value>Show selected performance metrics in the rest layer.</value>
+    <value>Show selected performance metrics in the always-on view.</value>
   </data>
   <data name="Media.Performance.Visible.Title" xml:space="preserve">
     <value>Show performance component</value>
@@ -1592,7 +1622,7 @@
     <value>Remove from quick launch</value>
   </data>
   <data name="Media.RestComponents.Description" xml:space="preserve">
-    <value>Configure spectrum and performance components in the rest layer.</value>
+    <value>Configure spectrum and performance components in the always-on view.</value>
   </data>
   <data name="Media.SourceFilter.Description" xml:space="preserve">
     <value>Accept only allowed media sources; disabling the filter keeps the list.</value>
@@ -1640,13 +1670,13 @@
     <value>Spectrum parameters</value>
   </data>
   <data name="Media.Spectrum.RefreshRate.Description" xml:space="preserve">
-    <value>How often the spectrum refreshes (5–30 Hz)</value>
+    <value>Adjust the spectrum refresh rate (5–30 Hz). Higher values make changes smoother.</value>
   </data>
   <data name="Media.Spectrum.RefreshRate.Title" xml:space="preserve">
     <value>Refresh rate</value>
   </data>
   <data name="Media.Spectrum.Sensitivity.Description" xml:space="preserve">
-    <value>Set the audio level needed for full-height spectrum bars (10%–400%).</value>
+    <value>Adjust spectrum response (10%–400%). Higher values make the bars taller at the same volume.</value>
   </data>
   <data name="Media.Spectrum.Sensitivity.Title" xml:space="preserve">
     <value>Sensitivity</value>
@@ -1778,7 +1808,7 @@
     <value>WeChat and Alipay payment codes</value>
   </data>
   <data name="Search.Application.Application.Description" xml:space="preserve">
-    <value>Version information, update checks, automatic updates, launch at sign-in, and the interface language</value>
+    <value>Choose interface language and startup behavior.</value>
   </data>
   <data name="Search.Application.Diagnostics.Description" xml:space="preserve">
     <value>Open logs or manually return unused physical memory to Windows.</value>
@@ -1796,19 +1826,19 @@
     <value>Color and size of the text on the media bar</value>
   </data>
   <data name="Search.Appearance.MediaBarWidth.Description" xml:space="preserve">
-    <value>Media-bar width, fixed length, and component spacing</value>
+    <value>Set bar and lyric region length, and component spacing.</value>
   </data>
   <data name="Search.Appearance.RestLayout.Description" xml:space="preserve">
-    <value>Rest-layer content layout, text alignment, and component order</value>
+    <value>Set title layout, title and lyric alignment, and content direction.</value>
   </data>
   <data name="Search.Appearance.InteractionButtons.Description" xml:space="preserve">
-    <value>Button size and spacing in the rest and hover layers</value>
+    <value>Button size and spacing in the always-on view and quick controls</value>
   </data>
   <data name="Search.Appearance.ThemeAndBackdrop.Description" xml:space="preserve">
     <value>Light or dark appearance, and the window backdrop material</value>
   </data>
   <data name="Search.DisplayModes.ChooseDisplayMode.Description" xml:space="preserve">
-    <value>Display mode used by the media bar: taskbar, dynamic island, desktop card, or floating ball</value>
+    <value>View the running mode and future display modes.</value>
   </data>
   <data name="Search.DisplayModes.FullLayer.Description" xml:space="preserve">
     <value>Sections of the panel that opens when the media bar is clicked</value>
@@ -1823,16 +1853,16 @@
     <value>Content-driven or fixed width, and component spacing</value>
   </data>
   <data name="Search.DisplayModes.RestLayer.Description" xml:space="preserve">
-    <value>Set rest-layer content and the full-panel entry point.</value>
+    <value>Set always-on view content and the full-panel entry point.</value>
   </data>
   <data name="Search.DisplayModes.ScreenAndPlacement.Description" xml:space="preserve">
     <value>Monitor hosting the media bar and its taskbar placement</value>
   </data>
   <data name="Search.Interaction.InAppRestLayer.Description" xml:space="preserve">
-    <value>Set artwork, text, and wheel actions on the rest layer.</value>
+    <value>Choose click actions for artwork and title or lyrics.</value>
   </data>
   <data name="Search.Interaction.SharedModifier.Description" xml:space="preserve">
-    <value>Chord-wheel modifier shared by the media bar and the tray</value>
+    <value>Set media bar wheel gestures, chord gestures and the modifier.</value>
   </data>
   <data name="Search.Interaction.TrayIcon.Description" xml:space="preserve">
     <value>Click and wheel behavior of the tray icon</value>
@@ -1841,7 +1871,7 @@
     <value>Left, center, or right alignment of the lyrics</value>
   </data>
   <data name="Search.Lyrics.Display.Description" xml:space="preserve">
-    <value>Set lyric display, the second line, and word highlighting.</value>
+    <value>Enable live lyrics and configure one or two lines and secondary-line priority.</value>
   </data>
   <data name="Search.Lyrics.Sources.Description" xml:space="preserve">
     <value>Choose which lyric sources are enabled; the app manages retrieval order and scoring</value>
@@ -1853,7 +1883,7 @@
     <value>Launching a player from the note glyph when no media is playing</value>
   </data>
   <data name="Search.Components.RestLayerComponents.Description" xml:space="preserve">
-    <value>Configure spectrum and performance components in the rest layer.</value>
+    <value>Configure spectrum and performance components in the always-on view.</value>
   </data>
   <data name="Search.MediaAndNotifications.TrackChangeNotification.Description" xml:space="preserve">
     <value>Showing the current track when a new track starts playing</value>
@@ -1905,6 +1935,12 @@
   </data>
   <data name="Startup.SingleInstance.AlreadyRunning" xml:space="preserve">
     <value>AF Media Bar is already running. Look for its icon in the notification area at the bottom right, or select the arrow to show hidden icons.</value>
+  </data>
+  <data name="Startup.TranslucentTb.Content" xml:space="preserve">
+    <value>TranslucentTB was detected. The frosted taskbar background is enabled to keep media content readable. Click to adjust it in Media bar appearance → Background.</value>
+  </data>
+  <data name="Startup.TranslucentTb.Title" xml:space="preserve">
+    <value>Transparent taskbar detected</value>
   </data>
   <data name="Update.Channel.Accelerated" xml:space="preserve">
     <value>Accelerated mirror {0}</value>
@@ -2089,6 +2125,142 @@
   <data name="Wheel.Line.WithValue" xml:space="preserve">
     <value>{0}: {1}</value>
   </data>
+  <data name="Common.Page.ReleaseHighlights" xml:space="preserve"><value>What’s new</value></data>
+  <data name="Settings.Navigation.Back" xml:space="preserve"><value>Back</value></data>
+  <data name="ReleaseHighlights.Header.Subtitle" xml:space="preserve"><value>Explore the latest improvements and previous releases.</value></data>
+  <data name="ReleaseHighlights.Latest" xml:space="preserve"><value>Latest release</value></data>
+  <data name="ReleaseHighlights.History" xml:space="preserve"><value>Previous releases</value></data>
+  <data name="ReleaseHighlights.Refresh" xml:space="preserve"><value>Refresh highlights</value></data>
+  <data name="ReleaseHighlights.FullNotes" xml:space="preserve"><value>Full release notes</value></data>
+  <data name="ReleaseHighlights.CurrentVersion" xml:space="preserve"><value>Installed version</value></data>
+  <data name="ReleaseHighlights.OriginalText" xml:space="preserve"><value>A translation is not available. The official original text is shown below.</value></data>
+  <data name="ReleaseHighlights.NoHighlights" xml:space="preserve"><value>Highlights are not available for this release. See the full release notes.</value></data>
+  <data name="ReleaseHighlights.Status.Bundled" xml:space="preserve"><value>Showing the release highlights included with this app.</value></data>
+  <data name="ReleaseHighlights.Status.Cached" xml:space="preserve"><value>Showing cached highlights, last retrieved {0}.</value></data>
+  <data name="ReleaseHighlights.Status.Updated" xml:space="preserve"><value>Release highlights refreshed {0}.</value></data>
+  <data name="ReleaseHighlights.Status.RefreshFailed" xml:space="preserve"><value>Unable to refresh. Saved release highlights are still available.</value></data>
+  <data name="ReleaseHighlights.Status.CacheWriteFailed" xml:space="preserve"><value>Highlights refreshed, but the offline cache could not be saved.</value></data>
+  <data name="ReleaseHighlights.Application.Description" xml:space="preserve"><value>Read highlights from the latest and previous stable releases.</value></data>
+  <data name="ReleaseHighlights.Application.Open" xml:space="preserve"><value>View release highlights</value></data>
+  <data name="Settings.Expand" xml:space="preserve"><value>Click to expand</value></data>
+  <data name="Settings.Collapse" xml:space="preserve"><value>Click to collapse</value></data>
+  <data name="Common.Group.TextAndFonts" xml:space="preserve">
+    <value>Text and fonts</value>
+  </data>
+  <data name="Search.Appearance.TextAndFonts.Description" xml:space="preserve">
+    <value>Adjust media text size and color, and the fonts and weight shared by the interface and media bar.</value>
+  </data>
+  <data name="Settings.Advanced.Fonts.Title" xml:space="preserve">
+    <value>Fonts and weight</value>
+  </data>
+  <data name="Settings.Advanced.Fonts.Description" xml:space="preserve">
+    <value>Change the fonts and text weight shared by the interface, media bar, and notifications.</value>
+  </data>
+  <data name="Settings.Advanced.Backdrop.Title" xml:space="preserve">
+    <value>Material details</value>
+  </data>
+  <data name="Settings.Advanced.Backdrop.Description" xml:space="preserve">
+    <value>Adjust the tint of app-rendered backgrounds.</value>
+  </data>
+  <data name="Settings.Advanced.Spacing.Title" xml:space="preserve">
+    <value>Component spacing</value>
+  </data>
+  <data name="Settings.Advanced.Spacing.Description" xml:space="preserve">
+    <value>Fine-tune the space between media bar components.</value>
+  </data>
+  <data name="Settings.Advanced.Lyrics.Title" xml:space="preserve">
+    <value>Lyric layout details</value>
+  </data>
+  <data name="Settings.Advanced.Lyrics.Description" xml:space="preserve">
+    <value>Adjust unsung text, line spacing and character spacing. Alignment and length are in Content &amp; layout.</value>
+  </data>
+  <data name="Settings.Advanced.Defaults.Title" xml:space="preserve">
+    <value>Custom defaults</value>
+  </data>
+  <data name="Settings.Advanced.Defaults.Description" xml:space="preserve">
+    <value>Save or clear the personal configuration used when restoring defaults.</value>
+  </data>
+  <data name="Settings.Advanced.Diagnostics.Title" xml:space="preserve">
+    <value>Diagnostic tools</value>
+  </data>
+  <data name="Settings.Advanced.Diagnostics.Description" xml:space="preserve">
+    <value>Open the log folder or manually trim working-set memory.</value>
+  </data>
+  <data name="Settings.Numeric.Range" xml:space="preserve">
+    <value>Range: {0}–{1} {2}; step: {3}. Press Enter or move focus to apply; Esc cancels.</value>
+  </data>
+  <data name="Settings.Numeric.Invalid" xml:space="preserve">
+    <value>Enter a valid number within the range. The setting has not changed.</value>
+  </data>
+  <data name="Settings.Numeric.Adjusted" xml:space="preserve">
+    <value>Adjusted to {0} {1} using the permitted step.</value>
+  </data>
+  <data name="Settings.Numeric.Percent" xml:space="preserve">
+    <value>%</value>
+  </data>
+  <data name="Settings.Numeric.Dip" xml:space="preserve">
+    <value>DIP</value>
+  </data>
+  <data name="Settings.Numeric.Hertz" xml:space="preserve">
+    <value>Hz</value>
+  </data>
+  <data name="Settings.Numeric.Seconds" xml:space="preserve">
+    <value>s</value>
+  </data>
+  <data name="Appearance.Specimen.Line1" xml:space="preserve">
+    <value>AF Media Bar · Track title and lyrics</value>
+  </data>
+  <data name="Appearance.Specimen.Line2" xml:space="preserve">
+    <value>Letters 123 · 汉字 · 日本語</value>
+  </data>
+  <data name="Appearance.Specimen.Line3" xml:space="preserve">
+    <value>Font preview · 가나다 · 示例文字</value>
+  </data>
+  <data name="Common.Page.ScreenAndPlacement" xml:space="preserve">
+    <value>Display &amp; placement</value>
+  </data>
+  <data name="ScreenAndPlacement.Header.Subtitle" xml:space="preserve">
+    <value>Choose screens and media bar placement. The system taskbar determines orientation.</value>
+  </data>
+  <data name="Common.Page.ApplicationAppearance" xml:space="preserve">
+    <value>Application appearance</value>
+  </data>
+  <data name="Common.Page.TaskbarAppearance" xml:space="preserve">
+    <value>Media bar appearance</value>
+  </data>
+  <data name="ApplicationAppearance.Header.Subtitle" xml:space="preserve">
+    <value>Configure application theme, window materials, and interface fonts.</value>
+  </data>
+  <data name="TaskbarAppearance.Header.Subtitle" xml:space="preserve">
+    <value>Adjust text, dimensions, and component layout for the current taskbar environment.</value>
+  </data>
+  <data name="Settings.Context.EditingMonitor" xml:space="preserve">
+    <value>Display being configured</value>
+  </data>
+  <data name="Settings.Context.Unavailable" xml:space="preserve">
+    <value>Taskbar unavailable</value>
+  </data>
+  <data name="Settings.Context.Compact" xml:space="preserve">
+    <value> · System compact taskbar</value>
+  </data>
+  <data name="Settings.Context.Summary" xml:space="preserve">
+    <value>{0}{1}. Displays and orientations currently share taskbar settings.</value>
+  </data>
+  <data name="Settings.Context.Horizontal" xml:space="preserve">
+    <value>Horizontal taskbar</value>
+  </data>
+  <data name="Settings.Context.Vertical" xml:space="preserve">
+    <value>Vertical taskbar</value>
+  </data>
+  <data name="DisplayModes.Mode.AvailabilityNotice" xml:space="preserve">
+    <value>Only taskbar mode is currently available. Other modes cannot be activated yet.</value>
+  </data>
+  <data name="Appearance.FontsShortcut.Description" xml:space="preserve">
+    <value>Fonts are configured in Appearance → Shared fonts.</value>
+  </data>
+  <data name="Appearance.FontsShortcut.Action" xml:space="preserve">
+    <value>Adjust fonts</value>
+  </data>
   <data name="Lyrics.Row.ArtistSeparators.Title" xml:space="preserve">
     <value>Artist separators</value>
   </data>
@@ -2115,5 +2287,146 @@
   </data>
   <data name="Lyrics.ArtistSeparators.Dialog.Restore" xml:space="preserve">
     <value>Restore defaults</value>
+  </data>
+  <data name="Appearance.Group.TaskbarBackground" xml:space="preserve">
+    <value>Media bar background</value>
+  </data>
+  <data name="Appearance.TaskbarBackground.Details.Title" xml:space="preserve">
+    <value>Background details</value>
+  </data>
+  <data name="Appearance.TaskbarBackground.Details.Description" xml:space="preserve">
+    <value>Adjust the style and opacity. Applies when the background is enabled.</value>
+  </data>
+  <data name="DisplayModes.Placement.Row.Alignment.Title" xml:space="preserve">
+    <value>Media bar position</value>
+  </data>
+  <data name="DisplayModes.Placement.Row.Alignment.Description" xml:space="preserve">
+    <value>Place the entire bar. Changing position clears the drag offset and restores automatic content direction.</value>
+  </data>
+  <data name="DisplayModes.Placement.Alignment.Start" xml:space="preserve">
+    <value>Left</value>
+  </data>
+  <data name="DisplayModes.Placement.Alignment.Center" xml:space="preserve">
+    <value>Center</value>
+  </data>
+  <data name="DisplayModes.Placement.Alignment.End" xml:space="preserve">
+    <value>Right</value>
+  </data>
+  <data name="DisplayModes.Placement.Row.Arrangement.Title" xml:space="preserve">
+    <value>Content direction</value>
+  </data>
+  <data name="DisplayModes.Placement.Row.Arrangement.Description" xml:space="preserve">
+    <value>Choose which side content starts from, without changing bar placement or the saved logical component order.</value>
+  </data>
+  <data name="DisplayModes.Placement.Arrangement.Left" xml:space="preserve">
+    <value>Start from the left</value>
+  </data>
+  <data name="DisplayModes.Placement.Arrangement.Right" xml:space="preserve">
+    <value>Start from the right</value>
+  </data>
+  <data name="Taskbar.Placement.Notification.Title" xml:space="preserve">
+    <value>Not enough taskbar space</value>
+  </data>
+  <data name="Taskbar.Placement.Notification.Hidden" xml:space="preserve">
+    <value>The taskbar cannot fit the minimum media bar, so it is temporarily hidden. Tray controls remain available; the bar will return when space recovers.</value>
+  </data>
+  <data name="Taskbar.Placement.Notification.Moved" xml:space="preserve">
+    <value>The media bar has temporarily moved to another free area. It will return when its original position has enough space.</value>
+  </data>
+  <data name="DisplayModes.Width.NoCommonRange" xml:space="preserve">
+    <value>There is no shared fixed-length range for the current taskbars. The saved length is retained; each bar respects its own available space.</value>
+  </data>
+  <data name="Common.Page.ContentLayout" xml:space="preserve">
+    <value>Content &amp; layout</value>
+  </data>
+  <data name="ContentLayout.Header.Subtitle" xml:space="preserve">
+    <value>Choose persistent content, text layout, component details and control panels.</value>
+  </data>
+  <data name="Appearance.Unified.Header.Subtitle" xml:space="preserve">
+    <value>Set shared themes and fonts, plus media bar text and background.</value>
+  </data>
+  <data name="Appearance.Scope.Global" xml:space="preserve">
+    <value>Theme, accent and materials apply to application windows. Menus use solid backgrounds.</value>
+  </data>
+  <data name="Appearance.Scope.Fonts" xml:space="preserve">
+    <value>Fonts and weight apply to settings, the media bar and notifications. Media bar text has its own size scale.</value>
+  </data>
+  <data name="Appearance.Scope.Taskbar" xml:space="preserve">
+    <value>Applies only to the media bar, preserving other windows' theme and fonts.</value>
+  </data>
+  <data name="Appearance.Background.Prerequisite" xml:space="preserve">
+    <value>Enable the media bar frosted background to apply its style and opacity.</value>
+  </data>
+  <data name="ContentLayout.Arrangement.Auto" xml:space="preserve">
+    <value>Follow media bar position</value>
+  </data>
+  <data name="ContentLayout.Text.Details.Title" xml:space="preserve">
+    <value>Alignment &amp; content direction</value>
+  </data>
+  <data name="ContentLayout.Text.Details.Description" xml:space="preserve">
+    <value>Set title and lyric alignment independently, and override automatic content direction when needed.</value>
+  </data>
+  <data name="ContentLayout.LengthMode.Title" xml:space="preserve">
+    <value>Media bar length</value>
+  </data>
+  <data name="ContentLayout.LengthMode.Description" xml:space="preserve">
+    <value>Control the entire bar length, within component minimums and available taskbar space.</value>
+  </data>
+  <data name="ContentLayout.LengthMode.Follow" xml:space="preserve">
+    <value>Follow content</value>
+  </data>
+  <data name="ContentLayout.LengthMode.Fixed" xml:space="preserve">
+    <value>Fixed length</value>
+  </data>
+  <data name="ContentLayout.LyricsLength.Title" xml:space="preserve">
+    <value>Lyric region length</value>
+  </data>
+  <data name="ContentLayout.LyricsLength.Description" xml:space="preserve">
+    <value>While following content, fix the lyric region to reduce resizing between lines. This does not change a fixed bar's total length.</value>
+  </data>
+  <data name="ContentLayout.Text.Shortcut.Title" xml:space="preserve">
+    <value>Text layout &amp; length</value>
+  </data>
+  <data name="ContentLayout.Text.Shortcut.Description" xml:space="preserve">
+    <value>Configure title and lyric alignment, bar length and lyric region length in Content &amp; layout.</value>
+  </data>
+  <data name="ContentLayout.Text.Shortcut.Action" xml:space="preserve">
+    <value>Open text layout</value>
+  </data>
+  <data name="Placement.FutureModes.Title" xml:space="preserve">
+    <value>Other display modes</value>
+  </data>
+  <data name="Placement.FutureModes.Description" xml:space="preserve">
+    <value>These modes are not implemented and cannot be selected or configured yet.</value>
+  </data>
+  <data name="Lyrics.Group.Presentation" xml:space="preserve">
+    <value>Highlighting &amp; text processing</value>
+  </data>
+  <data name="Interaction.Group.Wheel" xml:space="preserve">
+    <value>Media bar wheel</value>
+  </data>
+  <data name="Application.Group.Updates" xml:space="preserve">
+    <value>Updates</value>
+  </data>
+  <data name="Search.Lyrics.Presentation.Description" xml:space="preserve">
+    <value>Configure word highlighting, credit filtering and text spacing.</value>
+  </data>
+  <data name="Search.Application.Updates.Description" xml:space="preserve">
+    <value>Check for, download and install updates, or skip a version.</value>
+  </data>
+  <data name="ContentLayout.Hover.Prerequisite" xml:space="preserve">
+    <value>These controls appear when Quick controls is enabled. You can configure them while it is off.</value>
+  </data>
+  <data name="ContentLayout.Full.Prerequisite" xml:space="preserve">
+    <value>These entries and sections apply when the full panel is enabled. You can configure them while it is off.</value>
+  </data>
+  <data name="Search.ContentLayout.Vertical.Rest" xml:space="preserve">
+    <value>Configure persistent and idle content, plus spectrum and performance parameters.</value>
+  </data>
+  <data name="Search.ContentLayout.Vertical.Text" xml:space="preserve">
+    <value>Align lyrics inside the text region.</value>
+  </data>
+  <data name="Search.Placement.Vertical" xml:space="preserve">
+    <value>Choose screens, view system orientation, and configure avoidance, locking and offsets.</value>
   </data>
 </root>

@@ -1,77 +1,148 @@
 <Page
-    x:Class="AFMediaBar.Views.Pages.InteractionPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:components="clr-namespace:AFMediaBar.Components"
     xmlns:settings="clr-namespace:AFMediaBar.Classes.Settings"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    x:Class="AFMediaBar.Views.Pages.InteractionPage"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     ScrollViewer.CanContentScroll="False">
-
-    <!--
-        交互页 / Interaction page
-
-                        按「先选按键，再分别设置媒体栏和托盘」排列，共三个分组。
-
-        排布规则：一行一个绑定，一行恰好一个下拉框，全部单列。上一版把「程序内」的两张卡并排成两列，
-        在 820 DIP 版心内每列只剩约 370，标题与控件挤在一起——这正是「杂糅」的另一个来源。
-
-        Laid out as "pick the modifier first, then configure each surface", across three groups.
-
-        Layout rule: one binding per row, exactly one select per row, all in a single column. The previous version
-        put the program-in cards side by side, which inside an 820 DIP measure left about 370 per column and
-        squeezed title and control together; that was another source of the clutter.
-    -->
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-
         <components:SettingsGroupStrip
-            Grid.Row="0"
             Margin="{StaticResource AfSettingsHeaderMargin}"
             MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
+            Grid.Row="0"
             PageIcon="{ui:SymbolIcon HandDraw24}"
             Subtitle="{DynamicResource Loc.Interaction.Header.Subtitle}"
             Target="{Binding ElementName=PageScroll}"
             Title="{DynamicResource Loc.Common.Page.Interaction}" />
-
         <ScrollViewer
             x:Name="PageScroll"
             Grid.Row="1"
             Margin="{StaticResource AfSettingsScrollMargin}"
             HorizontalScrollBarVisibility="Disabled"
             VerticalScrollBarVisibility="Auto">
-            <StackPanel
-                x:Name="PageRoot"
-                MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
-                Loaded="OnPageLoaded">
-
+            <StackPanel x:Name="PageRoot" MaxWidth="{StaticResource AfSettingsContentMaxWidth}" Loaded="OnPageLoaded">
                 <components:SettingsGroup
-                    Description="{DynamicResource Loc.Interaction.SharedModifier.Group.Description}"
-                    Header="{DynamicResource Loc.Common.Group.SharedModifier}"
-                    Icon="{ui:SymbolIcon Keyboard24}">
+                    GroupId="Common.Group.InAppRestLayer"
+                    Description="{DynamicResource Loc.Interaction.InApp.Group.Description}"
+                    Header="{DynamicResource Loc.Common.Group.InAppRestLayer}"
+                    Icon="{ui:SymbolIcon CursorClick24}">
+                    <StackPanel>
+                        <components:SettingsDiagram Margin="0,0,0,12" Kind="InputGestures" />
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Interaction.Row.ArtworkClick.Description}"
+                            Icon="{ui:SymbolIcon Play24}"
+                            Title="{DynamicResource Loc.Interaction.Row.ArtworkClick.Title}">
+                            <ComboBox MinWidth="200" SelectedValue="{Binding ViewModel.ArtworkClickAction, Mode=TwoWay}" SelectedValuePath="Tag">
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Common.PlayPause}"
+                                    Tag="{x:Static settings:PlayerClickAction.TogglePlayPause}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Common.ActivateSourceApplication}"
+                                    Tag="{x:Static settings:PlayerClickAction.ActivateSource}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Common.OpenFullPanel}"
+                                    Tag="{x:Static settings:PlayerClickAction.OpenFullPanel}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Interaction.Disabled}"
+                                    Tag="{x:Static settings:PlayerClickAction.Disabled}" />
+                            </ComboBox>
+                        </components:SettingsRow>
+                        <components:SettingsRow Icon="{ui:SymbolIcon TextQuote24}" Title="{DynamicResource Loc.Interaction.Row.TextClick.Title}">
+                            <ComboBox MinWidth="200" SelectedValue="{Binding ViewModel.TextClickAction, Mode=TwoWay}" SelectedValuePath="Tag">
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Common.ActivateSourceApplication}"
+                                    Tag="{x:Static settings:PlayerClickAction.ActivateSource}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Common.PlayPause}"
+                                    Tag="{x:Static settings:PlayerClickAction.TogglePlayPause}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Common.OpenFullPanel}"
+                                    Tag="{x:Static settings:PlayerClickAction.OpenFullPanel}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Interaction.Disabled}"
+                                    Tag="{x:Static settings:PlayerClickAction.Disabled}" />
+                            </ComboBox>
+                        </components:SettingsRow>
+                    </StackPanel>
+                </components:SettingsGroup>
+                <components:SettingsGroup
+                    GroupId="Interaction.Group.Wheel"
+                    Header="{DynamicResource Loc.Interaction.Group.Wheel}"
+                    Icon="{ui:SymbolIcon Cursor24}">
                     <StackPanel>
                         <components:SettingsDiagram Margin="0,0,0,12" Kind="WheelGestures" />
-
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Interaction.Row.PrimaryWheel.Description}"
+                            Icon="{ui:SymbolIcon Cursor24}"
+                            Title="{DynamicResource Loc.Interaction.Wheel.Primary.Title}">
+                            <ComboBox MinWidth="200" SelectedValue="{Binding ViewModel.PrimaryWheelAction, Mode=TwoWay}" SelectedValuePath="Tag">
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Common.PreviousNextTrack}"
+                                    Tag="{x:Static settings:WheelAction.PreviousNext}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Common.SwitchOutputDevice}"
+                                    Tag="{x:Static settings:WheelAction.OutputDevice}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Common.AdjustCurrentMediaVolume}"
+                                    Tag="{x:Static settings:WheelAction.CurrentApplicationVolume}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Common.SwitchPlayer}"
+                                    Tag="{x:Static settings:WheelAction.SwitchMediaSource}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Interaction.Disabled}"
+                                    Tag="{x:Static settings:WheelAction.Disabled}" />
+                            </ComboBox>
+                        </components:SettingsRow>
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Interaction.Row.ChordWheel.Description}"
+                            Icon="{ui:SymbolIcon Keyboard24}"
+                            Title="{DynamicResource Loc.Interaction.Wheel.Chord.Title}">
+                            <ComboBox MinWidth="200" SelectedValue="{Binding ViewModel.ChordWheelAction, Mode=TwoWay}" SelectedValuePath="Tag">
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Common.SwitchPlayer}"
+                                    Tag="{x:Static settings:WheelAction.SwitchMediaSource}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Common.AdjustCurrentMediaVolume}"
+                                    Tag="{x:Static settings:WheelAction.CurrentApplicationVolume}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Common.SwitchOutputDevice}"
+                                    Tag="{x:Static settings:WheelAction.OutputDevice}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Common.PreviousNextTrack}"
+                                    Tag="{x:Static settings:WheelAction.PreviousNext}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Interaction.Disabled}"
+                                    Tag="{x:Static settings:WheelAction.Disabled}" />
+                            </ComboBox>
+                        </components:SettingsRow>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Interaction.Row.Modifier.Description}"
                             Icon="{ui:SymbolIcon Keyboard24}"
                             Title="{DynamicResource Loc.Interaction.Row.Modifier.Title}">
-                            <ComboBox
-                                MinWidth="150"
-                                SelectedValue="{Binding ViewModel.Modifier, Mode=TwoWay}"
-                                SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.Modifier.Shift}"
-                                              Tag="{x:Static settings:InteractionModifier.Shift}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.Modifier.LeftMouseButton}"
-                                              Tag="{x:Static settings:InteractionModifier.LeftMouseButton}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.Modifier.RightMouseButton}"
-                                              Tag="{x:Static settings:InteractionModifier.RightMouseButton}" />
+                            <ComboBox MinWidth="150" SelectedValue="{Binding ViewModel.Modifier, Mode=TwoWay}" SelectedValuePath="Tag">
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Common.Modifier.Shift}"
+                                    Tag="{x:Static settings:InteractionModifier.Shift}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Common.Modifier.LeftMouseButton}"
+                                    Tag="{x:Static settings:InteractionModifier.LeftMouseButton}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Common.Modifier.RightMouseButton}"
+                                    Tag="{x:Static settings:InteractionModifier.RightMouseButton}" />
                             </ComboBox>
                         </components:SettingsRow>
-
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Interaction.Row.WheelTooltip.Description}"
+                            Icon="{ui:SymbolIcon Info24}"
+                            Title="{DynamicResource Loc.Interaction.Row.WheelTooltip.Title}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.ShowWheelTooltips, Mode=TwoWay}" />
+                        </components:SettingsRow>
                         <components:SettingsCallout
                             Margin="0,4,0,0"
                             IsAccent="False"
@@ -79,132 +150,34 @@
                             Text="{DynamicResource Loc.Interaction.SharedModifier.Callout}" />
                     </StackPanel>
                 </components:SettingsGroup>
-
-                <components:SettingsGroup
-                    Description="{DynamicResource Loc.Interaction.InApp.Group.Description}"
-                    Header="{DynamicResource Loc.Common.Group.InAppRestLayer}"
-                    Icon="{ui:SymbolIcon CursorClick24}">
-                    <StackPanel>
-
-                        <components:SettingsDiagram Margin="0,0,0,12" Kind="InputGestures" />
-
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Interaction.Row.ArtworkClick.Description}"
-                            Icon="{ui:SymbolIcon Play24}"
-                            Title="{DynamicResource Loc.Interaction.Row.ArtworkClick.Title}">
-                            <ComboBox
-                                MinWidth="200"
-                                SelectedValue="{Binding ViewModel.ArtworkClickAction, Mode=TwoWay}"
-                                SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.PlayPause}"
-                                              Tag="{x:Static settings:PlayerClickAction.TogglePlayPause}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.ActivateSourceApplication}"
-                                              Tag="{x:Static settings:PlayerClickAction.ActivateSource}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.OpenFullPanel}"
-                                              Tag="{x:Static settings:PlayerClickAction.OpenFullPanel}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.Disabled}"
-                                              Tag="{x:Static settings:PlayerClickAction.Disabled}" />
-                            </ComboBox>
-                        </components:SettingsRow>
-
-                        <components:SettingsRow
-                            Icon="{ui:SymbolIcon TextQuote24}"
-                            Title="{DynamicResource Loc.Interaction.Row.TextClick.Title}">
-                            <ComboBox
-                                MinWidth="200"
-                                SelectedValue="{Binding ViewModel.TextClickAction, Mode=TwoWay}"
-                                SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.ActivateSourceApplication}"
-                                              Tag="{x:Static settings:PlayerClickAction.ActivateSource}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.PlayPause}"
-                                              Tag="{x:Static settings:PlayerClickAction.TogglePlayPause}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.OpenFullPanel}"
-                                              Tag="{x:Static settings:PlayerClickAction.OpenFullPanel}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.Disabled}"
-                                              Tag="{x:Static settings:PlayerClickAction.Disabled}" />
-                            </ComboBox>
-                        </components:SettingsRow>
-
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Interaction.Row.PrimaryWheel.Description}"
-                            Icon="{ui:SymbolIcon Cursor24}"
-                            Title="{DynamicResource Loc.Interaction.Wheel.Primary.Title}">
-                            <ComboBox
-                                MinWidth="200"
-                                SelectedValue="{Binding ViewModel.PrimaryWheelAction, Mode=TwoWay}"
-                                SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.PreviousNextTrack}"
-                                              Tag="{x:Static settings:WheelAction.PreviousNext}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.SwitchOutputDevice}"
-                                              Tag="{x:Static settings:WheelAction.OutputDevice}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.AdjustCurrentMediaVolume}"
-                                              Tag="{x:Static settings:WheelAction.CurrentApplicationVolume}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.SwitchPlayer}"
-                                              Tag="{x:Static settings:WheelAction.SwitchMediaSource}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.Disabled}"
-                                              Tag="{x:Static settings:WheelAction.Disabled}" />
-                            </ComboBox>
-                        </components:SettingsRow>
-
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Interaction.Row.ChordWheel.Description}"
-                            Icon="{ui:SymbolIcon Keyboard24}"
-                            Title="{DynamicResource Loc.Interaction.Wheel.Chord.Title}">
-                            <ComboBox
-                                MinWidth="200"
-                                SelectedValue="{Binding ViewModel.ChordWheelAction, Mode=TwoWay}"
-                                SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.SwitchPlayer}"
-                                              Tag="{x:Static settings:WheelAction.SwitchMediaSource}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.AdjustCurrentMediaVolume}"
-                                              Tag="{x:Static settings:WheelAction.CurrentApplicationVolume}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.SwitchOutputDevice}"
-                                              Tag="{x:Static settings:WheelAction.OutputDevice}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.PreviousNextTrack}"
-                                              Tag="{x:Static settings:WheelAction.PreviousNext}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.Disabled}"
-                                              Tag="{x:Static settings:WheelAction.Disabled}" />
-                            </ComboBox>
-                        </components:SettingsRow>
-
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Interaction.Row.WheelTooltip.Description}"
-                            Icon="{ui:SymbolIcon Info24}"
-                            Title="{DynamicResource Loc.Interaction.Row.WheelTooltip.Title}">
-                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.ShowWheelTooltips, Mode=TwoWay}" />
-                        </components:SettingsRow>
-                    </StackPanel>
-                </components:SettingsGroup>
-
-                <components:SettingsGroup Header="{DynamicResource Loc.Common.TrayIcon}" Icon="{ui:SymbolIcon Apps24}">
+                <components:SettingsGroup GroupId="Common.TrayIcon" Header="{DynamicResource Loc.Common.TrayIcon}" Icon="{ui:SymbolIcon Apps24}">
                     <StackPanel>
                         <components:SettingsDiagram Margin="0,0,0,12" Kind="TrayOverflow" />
-
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Interaction.Row.TrayClick.Description}"
                             Icon="{ui:SymbolIcon CursorClick24}"
                             Title="{DynamicResource Loc.Interaction.Row.TrayClick.Title}">
-                            <ComboBox
-                                MinWidth="200"
-                                SelectedValue="{Binding ViewModel.TrayClickAction, Mode=TwoWay}"
-                                SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.TrayAction.OpenAudioControl}"
-                                              Tag="{x:Static settings:TrayClickAction.OpenAudioControl}" />
+                            <ComboBox MinWidth="200" SelectedValue="{Binding ViewModel.TrayClickAction, Mode=TwoWay}" SelectedValuePath="Tag">
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Interaction.TrayAction.OpenAudioControl}"
+                                    Tag="{x:Static settings:TrayClickAction.OpenAudioControl}" />
                                 <ComboBoxItem
                                     Content="{DynamicResource Loc.Interaction.TrayAction.OpenOutputDeviceMenu}"
                                     Tag="{x:Static settings:TrayClickAction.OpenOutputDeviceMenu}" />
                                 <ComboBoxItem
                                     Content="{DynamicResource Loc.Interaction.TrayAction.OpenCurrentAppVolumeMenu}"
                                     Tag="{x:Static settings:TrayClickAction.OpenCurrentAppVolumeMenu}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.TrayAction.OpenSettings}"
-                                              Tag="{x:Static settings:TrayClickAction.OpenSettings}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.TrayAction.OpenContextMenu}"
-                                              Tag="{x:Static settings:TrayClickAction.OpenContextMenu}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.Disabled}"
-                                              Tag="{x:Static settings:TrayClickAction.None}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Interaction.TrayAction.OpenSettings}"
+                                    Tag="{x:Static settings:TrayClickAction.OpenSettings}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Interaction.TrayAction.OpenContextMenu}"
+                                    Tag="{x:Static settings:TrayClickAction.OpenContextMenu}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Interaction.Disabled}"
+                                    Tag="{x:Static settings:TrayClickAction.None}" />
                             </ComboBox>
                         </components:SettingsRow>
-
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Interaction.Row.TrayPrimaryWheel.Description}"
                             Icon="{ui:SymbolIcon Cursor24}"
@@ -213,35 +186,19 @@
                                 MinWidth="200"
                                 SelectedValue="{Binding ViewModel.TrayPrimaryWheelAction, Mode=TwoWay}"
                                 SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.SwitchOutputDevice}"
-                                              Tag="{x:Static settings:TrayWheelBehavior.SwitchOutputDevice}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.AdjustCurrentMediaVolume}"
-                                              Tag="{x:Static settings:TrayWheelBehavior.AdjustVolume}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.Disabled}"
-                                              Tag="{x:Static settings:TrayWheelBehavior.Disabled}" />
-                            </ComboBox>
-                        </components:SettingsRow>
-
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Interaction.Row.TrayChordWheel.Description}"
-                            Icon="{ui:SymbolIcon Keyboard24}"
-                            IsEnabled="False"
-                            Title="{DynamicResource Loc.Interaction.Wheel.Chord.Title}">
-                            <ComboBox
-                                MinWidth="200"
-                                SelectedValue="{Binding ViewModel.TrayChordWheelAction, Mode=TwoWay}"
-                                SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.AdjustCurrentMediaVolume}"
-                                              Tag="{x:Static settings:TrayWheelBehavior.AdjustVolume}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Common.SwitchOutputDevice}"
-                                              Tag="{x:Static settings:TrayWheelBehavior.SwitchOutputDevice}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Interaction.Disabled}"
-                                              Tag="{x:Static settings:TrayWheelBehavior.Disabled}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Common.SwitchOutputDevice}"
+                                    Tag="{x:Static settings:TrayWheelBehavior.SwitchOutputDevice}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Common.AdjustCurrentMediaVolume}"
+                                    Tag="{x:Static settings:TrayWheelBehavior.AdjustVolume}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Interaction.Disabled}"
+                                    Tag="{x:Static settings:TrayWheelBehavior.Disabled}" />
                             </ComboBox>
                         </components:SettingsRow>
                     </StackPanel>
                 </components:SettingsGroup>
-
                 <ui:Button
                     Margin="0,16,0,40"
                     HorizontalAlignment="Left"

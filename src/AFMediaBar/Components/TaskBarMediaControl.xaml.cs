@@ -315,7 +315,10 @@ namespace AFMediaBar.Components
         public event EventHandler? VolumeInfoRequested;
 
         /// <summary>当前横向任务栏悬停层和固定组件所需的最小长度。 / Current minimum length required by the horizontal taskbar hover layer and fixed components.</summary>
-        public double MinimumPrimaryLength => _minimumPrimaryLength;
+        public double MinimumPrimaryLength => GetMinimumPrimaryLength(_taskbarPlacementDpiScale);
+
+        /// <summary>静置层没有任何可见组件时，不需要选区或空间不足通知。</summary>
+        public bool IsRestLayerEmpty => _isRestLayerEmpty;
 
         /// <summary>
         /// 返回当前可见文字表面的物理屏幕像素矩形，供宿主采样实际背景。
@@ -988,19 +991,25 @@ namespace AFMediaBar.Components
                     immediate: true);
 
             var hoverGap = experience.HoverButtonSpacingDip;
-            var visibleHoverButtons = 0;
-            foreach (var button in FindVisualChildren<System.Windows.Controls.Button>(TaskbarHoverActions))
+            var visibleHoverItems = 0;
+            foreach (FrameworkElement child in TaskbarHoverActions.Children)
             {
-                if (ReferenceEquals(button, TaskbarFullPanelHandle))
+                if (child.Visibility != Visibility.Visible)
                     continue;
-                button.Width = metrics.ButtonSize;
-                button.Height = metrics.ButtonSize;
-                if (button.Visibility == Visibility.Visible)
-                    button.Margin = new Thickness(visibleHoverButtons++ == 0 ? 0 : hoverGap, 0, 0, 0);
+                var items = child is StackPanel panel
+                    ? panel.Children.Cast<FrameworkElement>()
+                    : [child];
+                foreach (var item in items)
+                {
+                    if (item is System.Windows.Controls.Button button)
+                    {
+                        button.Width = metrics.ButtonSize;
+                        button.Height = metrics.ButtonSize;
+                    }
+                    if (item.Visibility == Visibility.Visible)
+                        item.Margin = new Thickness(visibleHoverItems++ == 0 ? 0 : hoverGap, 0, 0, 0);
+                }
             }
-            TaskbarHoverProgress.Margin = new Thickness(
-                TaskbarHoverProgress.Visibility == Visibility.Visible && visibleHoverButtons > 0 ? hoverGap : 0,
-                0, 0, 0);
             TaskbarHoverProgress.Width = metrics.ProgressWidth;
             TaskbarHoverLayer.Height = metrics.HoverLayerHeight;
             ApplyTaskbarSectionGeometry(MainBorder.Width);
@@ -1170,6 +1179,7 @@ namespace AFMediaBar.Components
             HoverRevealHost.Margin = new Thickness(textLeft, 1, 0, 1);
             HoverRevealHost.Height = Math.Max(0, MainBorder.Height - 2);
             TaskbarHoverLayer.Width = textWidth;
+            ApplyTaskbarActionsGeometry(primaryLength, textLeft, textWidth);
             TaskbarDirectFullPanelHandle.Width = textWidth;
             TaskbarDirectFullPanelHandle.Margin = new Thickness(textLeft, 1, 0, 0);
             if (HoverRevealHost.Visibility == Visibility.Visible)
@@ -1282,7 +1292,8 @@ namespace AFMediaBar.Components
                 GetTaskbarLeadingInset(),
                 Math.Max(0, primaryLength),
                 TaskbarExperiencePolicy.ResolveSectionGap(experience.Density, experience.ComponentSpacingDip),
-                TaskbarTrailingMargin);
+                TaskbarTrailingMargin,
+                ResolvedTaskbarArrangement == TaskbarContentArrangement.Right);
         }
 
         /// <summary>把当前设置与快照解析成静置层显隐判定所需的输入。/ Resolves the current settings and snapshot into the rest-layer visibility inputs.</summary>
@@ -1607,7 +1618,50 @@ namespace AFMediaBar.Components
 
             MainBorder.Background = Brushes.Transparent;
             TopBorder.BorderBrush = Brushes.Transparent;
-            BackgroundImage.Visibility = Visibility.Collapsed;
+            ApplyTaskbarBackgroundMaterial(
+                appearance.TaskbarBackgroundMaterial,
+                presentation.UsesLightText,
+                appearance.ResolveTaskbarBackgroundOpacityPercent(),
+                appearance.TaskbarFrostedStyle);
+        }
+
+        private void ApplyTaskbarBackgroundMaterial(
+            TaskbarBackgroundMaterial material,
+            bool usesLightText,
+            int opacityPercent,
+            TaskbarFrostedStyle style)
+        {
+            if (material == TaskbarBackgroundMaterial.Frosted && SystemParameters.HighContrast)
+            {
+                TaskbarMaterialSurface.Background = SystemColors.WindowBrush;
+                TaskbarMaterialSurface.BorderBrush = SystemColors.WindowTextBrush;
+                BackgroundImage.Opacity = 0;
+                BackgroundImage.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            var presentation = TaskbarBackgroundMaterialPolicy.Resolve(
+                material,
+                highContrast: false,
+                usesLightText,
+                opacityPercent,
+                style);
+            TaskbarMaterialSurface.Background = new SolidColorBrush(presentation.Tint);
+            TaskbarMaterialSurface.BorderBrush = new SolidColorBrush(presentation.Stroke);
+            BackgroundImage.Opacity = presentation.ArtworkOpacity;
+            BackgroundImage.Visibility = presentation.ArtworkOpacity > 0 && BackgroundImage.Source is not null
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+
+        private void RefreshTaskbarBackgroundArtwork()
+        {
+            var material = SettingsManager.Current.Appearance.Normalize().TaskbarBackgroundMaterial;
+            BackgroundImage.Visibility = material == TaskbarBackgroundMaterial.Frosted &&
+                                         !SystemParameters.HighContrast &&
+                                         BackgroundImage.Source is not null
+                ? Visibility.Visible
+                : Visibility.Collapsed;
         }
 
         private void ApplyTaskbarHoverAppearance(Brush foreground)
@@ -1798,9 +1852,10 @@ namespace AFMediaBar.Components
                     : Visibility.Collapsed;
                 SongInfoStackPanel.Visibility = _isVertical ? Visibility.Collapsed : Visibility.Visible;
                 SongInfoStackPanel.IsHitTestVisible = !_isVertical;
-                // 任务栏主体保持透明。
-                // Keep the taskbar body transparent; the island retains its existing layout-engine background behavior.
-                BackgroundImage.Visibility = Visibility.Collapsed;
+                // 透明模式保持旧观感；磨砂模式只在确有封面时恢复纹理层，底色本身由外观设置统一维护。
+                // Transparent mode keeps the original appearance; frosted mode restores the texture only when artwork exists,
+                // while the material tint itself remains owned by the appearance path.
+                RefreshTaskbarBackgroundArtwork();
 
                 TaskbarPreviousButton.IsEnabled = _canSkipPrevious;
                 TaskbarPlayPauseButton.IsEnabled = _canPlayPause;
@@ -1931,7 +1986,7 @@ namespace AFMediaBar.Components
                     Width = _snapshot.IsConnected
                         ? TaskbarExperiencePolicy.ResolvePrimaryLength(
                             contentWidth,
-                            _minimumPrimaryLength,
+                            MinimumPrimaryLength,
                             double.PositiveInfinity,
                             experience.LengthMode,
                             experience.FixedLengthDip)

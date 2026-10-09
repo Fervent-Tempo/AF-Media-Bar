@@ -148,9 +148,9 @@
         <Setter Property="Padding" Value="16,13" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
-        <Setter Property="Background" Value="{DynamicResource CardBackground}" />
+        <Setter Property="Background" Value="{DynamicResource AfSettingsCardBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource CardForeground}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AfSettingsBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="8" />
         <Setter Property="SnapsToDevicePixels" Value="True" />
@@ -158,15 +158,17 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type components:SettingsRow}">
-                    <Border
+                    <Grid>
+<Border
                         x:Name="RowSurface"
-                        Padding="{TemplateBinding Padding}"
                         Background="{TemplateBinding Background}"
                         BorderBrush="{TemplateBinding BorderBrush}"
                         BorderThickness="{TemplateBinding BorderThickness}"
                         CornerRadius="{TemplateBinding CornerRadius}"
-                        SnapsToDevicePixels="True">
+                        SnapsToDevicePixels="True" IsHitTestVisible="False" components:SettingsHoverShadow.IsEnabled="True" />
+                    <Border Padding="{TemplateBinding Padding}" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="Transparent" Background="Transparent">
                         <Grid>
+                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
@@ -180,32 +182,33 @@
                                 Height="32"
                                 Margin="0,0,14,0"
                                 VerticalAlignment="Center"
-                                TextElement.Foreground="{DynamicResource AfAccentBrush}">
+                                TextElement.Foreground="{DynamicResource AfOnAccentBrush}">
                                 <Border
                                     Background="{DynamicResource AfAccentBrush}"
-                                    CornerRadius="8"
-                                    Opacity="0.14" />
+                                    CornerRadius="8" />
                                 <ContentControl
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
                                     Content="{TemplateBinding Icon}"
+                                    FontSize="18"
+                                    Foreground="{DynamicResource AfOnAccentBrush}"
                                     Focusable="False"
                                     KeyboardNavigation.IsTabStop="False" />
                             </Grid>
 
-                            <StackPanel
+                            <StackPanel x:Name="TitleHost"
                                 Grid.Column="1"
                                 VerticalAlignment="Center">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock
+                                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock TextWrapping="Wrap"
                                         Style="{StaticResource AfSettingsRowTitleStyle}"
                                         Text="{TemplateBinding Title}" />
                                     <ContentControl
-                                        x:Name="RowBadge"
+                                        x:Name="RowBadge" Grid.Column="1"
                                         VerticalAlignment="Center"
                                         Content="{TemplateBinding Badge}"
                                         Style="{StaticResource AfSettingsBadgeNeutralStyle}" />
-                                </StackPanel>
+                                </Grid>
                                 <TextBlock
                                     x:Name="RowDescription"
                                     Style="{StaticResource AfSettingsRowDescriptionStyle}"
@@ -221,7 +224,16 @@
                                 TextElement.Foreground="{TemplateBinding Foreground}" />
                         </Grid>
                     </Border>
+                    </Grid>
                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsCompact" Value="True">
+                            <Setter TargetName="TitleHost" Property="Grid.ColumnSpan" Value="2" />
+                            <Setter TargetName="ControlHost" Property="Grid.Row" Value="1" />
+                            <Setter TargetName="ControlHost" Property="Grid.Column" Value="1" />
+                            <Setter TargetName="ControlHost" Property="Grid.ColumnSpan" Value="2" />
+                            <Setter TargetName="ControlHost" Property="HorizontalAlignment" Value="Left" />
+                            <Setter TargetName="ControlHost" Property="Margin" Value="0,8,0,0" />
+                        </Trigger>
                         <Trigger Property="Icon" Value="{x:Null}">
                             <Setter TargetName="IconChip" Property="Visibility" Value="Collapsed" />
                             <Setter TargetName="IconChip" Property="Margin" Value="0" />
@@ -256,7 +268,7 @@
                             <Setter TargetName="IconChip" Property="Margin" Value="0,0,12,0" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Opacity" Value="0.5" />
+                            <Setter TargetName="ControlHost" Property="Opacity" Value="0.45" />
                         </Trigger>
                         <MultiTrigger>
                             <MultiTrigger.Conditions>
@@ -297,16 +309,105 @@
         optional switch shape, and the body is indented identical rows. The 52 DIP indent matches the nested
         row's left padding, so the body icons line up under the parent title's left edge.
     -->
+    <ControlTemplate x:Key="AfSettingsExpanderIconTemplate" TargetType="{x:Type ContentControl}">
+        <Border Width="32" Height="32" Background="{DynamicResource AfAccentBrush}" CornerRadius="8"
+                TextElement.Foreground="{DynamicResource AfOnAccentBrush}">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Content="{TemplateBinding Content}" />
+        </Border>
+    </ControlTemplate>
+
+    <ControlTemplate x:Key="AfSettingsExpanderToggleTemplate" TargetType="{x:Type ToggleButton}">
+        <Border x:Name="HeaderSurface" Padding="{TemplateBinding Padding}" Background="Transparent" CornerRadius="8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <ContentPresenter VerticalAlignment="Center" Content="{TemplateBinding Content}" />
+                <Border Grid.Column="1" Margin="12,0,0,0" Padding="10,6" VerticalAlignment="Center"
+                        Background="{DynamicResource AfAccentTintBrush}" BorderBrush="{DynamicResource AfAccentBrush}"
+                        BorderThickness="1" CornerRadius="8">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="ExpandHint" Margin="0,0,8,0" VerticalAlignment="Center"
+                                   FontSize="12" FontWeight="{DynamicResource AppTextMediumFontWeight}"
+                                   Foreground="{DynamicResource AfAccentBrush}" Text="{DynamicResource Loc.Settings.Expand}" />
+                        <ui:SymbolIcon x:Name="ExpandChevron" FontSize="16" Foreground="{DynamicResource AfAccentBrush}"
+                                       Symbol="ChevronDown24" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+        <ControlTemplate.Triggers>
+            <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="ExpandHint" Property="Text" Value="{DynamicResource Loc.Settings.Collapse}" />
+                <Setter TargetName="ExpandChevron" Property="Symbol" Value="ChevronUp24" />
+            </Trigger>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="HeaderSurface" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
     <Style x:Key="AfSettingsExpanderStyle" TargetType="{x:Type ui:CardExpander}">
+        <Setter Property="IsExpanded" Value="False" />
         <Setter Property="Margin" Value="{StaticResource AfSettingsRowGap}" />
         <Setter Property="Padding" Value="16,13" />
-        <Setter Property="Background" Value="{DynamicResource CardBackground}" />
+        <Setter Property="Background" Value="{DynamicResource AfSettingsCardBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource CardForeground}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AfSettingsBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="8" />
         <Setter Property="SnapsToDevicePixels" Value="True" />
         <Setter Property="ContentPadding" Value="0" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ui:CardExpander}">
+                    <Grid>
+<Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}" IsHitTestVisible="False" components:SettingsHoverShadow.IsEnabled="True" />
+                        <Border BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="Transparent" Background="Transparent">
+                        <StackPanel>
+                            <ToggleButton x:Name="ExpanderToggleButton" Padding="{TemplateBinding Padding}"
+                                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                          Foreground="{TemplateBinding Foreground}" FocusVisualStyle="{DynamicResource AfFocusVisualStyle}"
+                                          Cursor="Hand"
+                                          IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                          Template="{StaticResource AfSettingsExpanderToggleTemplate}">
+                                <ToggleButton.Content>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <ContentControl x:Name="ControlIcon" Margin="0,0,14,0" VerticalAlignment="Center"
+                                                        Content="{TemplateBinding Icon}" FontSize="18" Focusable="False"
+                                                        Foreground="{DynamicResource AfOnAccentBrush}"
+                                                        Template="{StaticResource AfSettingsExpanderIconTemplate}" />
+                                        <ContentPresenter Grid.Column="1" VerticalAlignment="Center"
+                                                          Content="{TemplateBinding Header}" />
+                                    </Grid>
+                                </ToggleButton.Content>
+                            </ToggleButton>
+                            <Border x:Name="ExpandedContent" Padding="{TemplateBinding ContentPadding}" Visibility="Collapsed">
+                                <ContentPresenter Content="{TemplateBinding Content}"
+                                                  ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                  HorizontalAlignment="Stretch" />
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsExpanded" Value="True">
+                            <Setter TargetName="ExpandedContent" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="Icon" Value="{x:Null}">
+                            <Setter TargetName="ControlIcon" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="ControlIcon" Property="Margin" Value="0" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
         <!--
             Header 默认按内容宽度排布，于是头部里的开关会紧贴在说明文字后面，而不是贴到卡片右缘。
             拉成 Stretch 后，头部那行才与普通设置行的右列落在同一条竖线上。
@@ -333,57 +434,65 @@
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type components:SettingsGroup}">
                     <StackPanel>
-                        <Grid Margin="0,0,0,12">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
+                        <Border Background="{DynamicResource AfSettingsGroupSurfaceBrush}"
+                                BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1"
+                                CornerRadius="8" Padding="14,10" Margin="0,0,0,12">
+                            <StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
 
-                            <Grid
-                                x:Name="GroupIcon"
-                                Width="26"
-                                Height="26"
-                                Margin="0,0,10,0"
-                                VerticalAlignment="Center"
-                                TextElement.Foreground="{DynamicResource AfAccentBrush}">
-                                <Border
-                                    Background="{DynamicResource AfAccentBrush}"
-                                    CornerRadius="7"
-                                    Opacity="0.16" />
-                                <ContentControl
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                    Content="{TemplateBinding Icon}"
-                                    Focusable="False"
-                                    KeyboardNavigation.IsTabStop="False" />
-                            </Grid>
+                                    <Grid
+                                        x:Name="GroupIcon"
+                                        Width="40"
+                                        Height="40"
+                                        Margin="0,0,10,0"
+                                        VerticalAlignment="Center"
+                                        TextElement.Foreground="{DynamicResource AfOnAccentBrush}">
+                                        <Border
+                                            Background="{DynamicResource AfAccentBrush}"
+                                            CornerRadius="10" />
+                                        <ContentControl
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Content="{TemplateBinding Icon}"
+                                            FontSize="22"
+                                            Foreground="{DynamicResource AfOnAccentBrush}"
+                                            Focusable="False"
+                                            KeyboardNavigation.IsTabStop="False" />
+                                    </Grid>
 
-                            <TextBlock
-                                Grid.Column="1"
-                                Style="{StaticResource AfSettingsSectionTitleStyle}"
-                                Text="{TemplateBinding Header}" />
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Style="{StaticResource AfSettingsSectionTitleStyle}"
+                                        Text="{TemplateBinding Header}" />
 
-                            <ContentControl
-                                x:Name="GroupStatus"
-                                Grid.Column="2"
-                                Margin="12,0,0,0"
-                                Style="{StaticResource AfSettingsChipNeutralStyle}"
-                                Content="{TemplateBinding StatusText}" />
-                        </Grid>
+                                    <ContentControl
+                                        x:Name="GroupStatus"
+                                        Grid.Column="2"
+                                        Margin="12,0,0,0"
+                                        Style="{StaticResource AfSettingsChipNeutralStyle}"
+                                        Content="{TemplateBinding StatusText}" />
+                                </Grid>
 
-                        <!--
-                            分组说明：一行白话，用来解释「静置层 / 悬停层 / 完整层」这类名字什么时候生效。
-                            缩进 36 DIP 与分组图标底片同宽，因此说明与标题左对齐起点一致。
-                            The group description: one plain line explaining when a name such as "静置层 / 悬停层 /
-                            完整层" applies. The 36 DIP indent matches the header icon plate so the description starts
-                            on the same left edge as the title.
-                        -->
-                        <TextBlock
-                            x:Name="GroupDescription"
-                            Margin="36,0,0,12"
-                            Style="{StaticResource AfSettingsRowDescriptionStyle}"
-                            Text="{TemplateBinding Description}" />
+                                <!--
+                                    分组说明：一行白话，用来解释「常驻状态 / 快捷控制 / 完整面板」等名称什么时候生效。
+                                    缩进 50 DIP 与分组图标底片及右侧间距同宽，因此说明与标题左对齐起点一致。
+                                    The group description: one plain line explaining when a view such as "Always-on view / Quick controls /
+                                    Full panel" applies. The 50 DIP indent matches the header icon plate and gap so the description starts
+                                    on the same left edge as the title.
+                                -->
+                                <TextBlock
+                                    x:Name="GroupDescription"
+                                    Margin="50,6,0,0"
+                                    Style="{StaticResource AfSettingsRowDescriptionStyle}"
+                                    Text="{TemplateBinding Description}" />
+
+                            </StackPanel>
+                        </Border>
 
                         <ContentPresenter HorizontalAlignment="Stretch" />
                     </StackPanel>
@@ -464,20 +573,7 @@
         </Setter>
     </Style>
 
-    <!--
-        固定页头 / Pinned page header
-
-        页头与标签条都在滚动容器之外，内容被裁剪在滚动行内，永远不会滚到页头底下。
-        因此页头**不铺任何底色**：它不承担遮挡职责，而不透明底色在亚克力/云母下会变成一条与背景冲突的
-        实色带——这正是它在深浅色下还行、在半透明材质下很突兀的原因。
-        分隔改由下方那条只在滚动后淡入的发丝线承担。
-        The header and tabs sit outside the scroll container, and content is clipped inside the scroll row, so
-        nothing ever scrolls beneath the header. The header therefore paints no background at all: it has no
-        occluding job to do, and an opaque fill turns into a band that fights the acrylic or Mica behind it,
-        which is exactly why it looked fine in light and dark and wrong over translucent material. Separation is
-        left to the hairline below, which fades in only once the content has scrolled.
-    -->
-
+    <!-- Progress sits between primary and group navigation; the selected group marker stays beneath its label. -->
     <Style TargetType="{x:Type components:SettingsGroupStrip}">
         <Setter Property="Focusable" Value="False" />
         <Setter Property="Template">
@@ -671,6 +767,33 @@
                 <Setter Property="Template" Value="{StaticResource AfDiagramDynamicIslandSurface}" />
             </DataTrigger>
         </Style.Triggers>
+    </Style>
+
+
+    <!-- Slider values are synchronized by the editor so template/range coercion cannot write settings during construction. -->
+    <Style TargetType="{x:Type components:SettingsNumericEditor}">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="RangeFormat" Value="{DynamicResource Loc.Settings.Numeric.Range}" />
+        <Setter Property="InvalidMessage" Value="{DynamicResource Loc.Settings.Numeric.Invalid}" />
+        <Setter Property="AdjustedFormat" Value="{DynamicResource Loc.Settings.Numeric.Adjusted}" />
+        <Setter Property="AutomationProperties.Name" Value="{Binding Title, RelativeSource={RelativeSource AncestorType={x:Type components:SettingsRow}}}" />
+        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="{x:Type components:SettingsNumericEditor}">
+            <Grid VerticalAlignment="Center">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <Slider x:Name="PART_Slider" Width="120" Style="{StaticResource AfSettingsRowSliderStyle}"
+                        AutomationProperties.Name="{Binding Path=(AutomationProperties.Name), RelativeSource={RelativeSource TemplatedParent}}" />
+                <TextBox x:Name="PART_Input" Grid.Column="1" Width="72" Margin="8,0,0,0" Padding="6,4"
+                         VerticalContentAlignment="Center" HorizontalContentAlignment="Right"
+                         Background="{DynamicResource AfSettingsInputBrush}" Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                         ToolTip="{TemplateBinding HelpText}" AutomationProperties.HelpText="{TemplateBinding HelpText}"
+                         AutomationProperties.Name="{Binding Path=(AutomationProperties.Name), RelativeSource={RelativeSource TemplatedParent}}" />
+                <TextBlock Grid.Column="2" Margin="4,0,0,0" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="{TemplateBinding Unit}" />
+            </Grid>
+            <ControlTemplate.Triggers>
+                <Trigger Property="HasInputError" Value="True"><Setter TargetName="PART_Input" Property="BorderBrush" Value="{DynamicResource SystemFillColorCriticalBrush}" /></Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate></Setter.Value></Setter>
     </Style>
 
 </ResourceDictionary>
