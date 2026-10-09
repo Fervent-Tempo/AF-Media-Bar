@@ -2116,4 +2116,355 @@
   <data name="Wheel.Line.WithValue" xml:space="preserve">
     <value>{0}: {1}</value>
   </data>
+  <data name="Appearance.Background.Prerequisite" xml:space="preserve">
+    <value>Bật nền mờ thanh media bar để áp dụng kiểu dáng và độ mờ.</value>
+  </data>
+  <data name="Appearance.FontsShortcut.Action" xml:space="preserve">
+    <value>Điều chỉnh phông chữ</value>
+  </data>
+  <data name="Appearance.FontsShortcut.Description" xml:space="preserve">
+    <value>Phông chữ được cấu hình trong Giao diện → Phông chữ dùng chung.</value>
+  </data>
+  <data name="Appearance.Group.TaskbarBackground" xml:space="preserve">
+    <value>Nền thanh media bar</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackground.Description" xml:space="preserve">
+    <value>Thêm hiệu ứng nền mờ (frosted) phía sau thanh media bar.</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackground.Title" xml:space="preserve">
+    <value>Bật nền thanh media</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundOpacity.Description" xml:space="preserve">
+    <value>Điều chỉnh độ trong suốt/mờ đục của lớp nền.</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundOpacity.Title" xml:space="preserve">
+    <value>Độ mờ nền</value>
+  </data>
+  <data name="Appearance.Row.TaskbarFrostedStyle.Description" xml:space="preserve">
+    <value>Chọn tông màu và kiểu dáng cho lớp nền mờ.</value>
+  </data>
+  <data name="Appearance.Row.TaskbarFrostedStyle.Title" xml:space="preserve">
+    <value>Kiểu chất liệu</value>
+  </data>
+  <data name="Appearance.Scope.Fonts" xml:space="preserve">
+    <value>Phông chữ và độ đậm áp dụng cho cài đặt, thanh media và thông báo. Văn bản thanh media có tỷ lệ kích thước riêng.</value>
+  </data>
+  <data name="Appearance.Scope.Global" xml:space="preserve">
+    <value>Chủ đề, màu nhấn và chất liệu áp dụng cho các cửa sổ ứng dụng. Menu sử dụng nền đơn sắc.</value>
+  </data>
+  <data name="Appearance.Scope.Taskbar" xml:space="preserve">
+    <value>Chỉ áp dụng cho thanh media, giữ nguyên chủ đề và phông chữ của các cửa sổ khác.</value>
+  </data>
+  <data name="Appearance.Specimen.Line1" xml:space="preserve">
+    <value>Gió cuốn mây trôi · 1234567890</value>
+  </data>
+  <data name="Appearance.Specimen.Line2" xml:space="preserve">
+    <value>Ký tự 123 · Chữ Hán · 日本語</value>
+  </data>
+  <data name="Appearance.Specimen.Line3" xml:space="preserve">
+    <value>Xem trước phông chữ · 가나다 · Văn bản mẫu</value>
+  </data>
+  <data name="Appearance.TaskbarBackground.Details.Description" xml:space="preserve">
+    <value>Điều chỉnh kiểu dáng và độ mờ đục. Áp dụng khi nền thanh media được bật.</value>
+  </data>
+  <data name="Appearance.TaskbarBackground.Details.Title" xml:space="preserve">
+    <value>Chi tiết nền</value>
+  </data>
+  <data name="Appearance.TaskbarFrostedStyle.Artwork" xml:space="preserve">
+    <value>Màu theo bìa bài hát</value>
+  </data>
+  <data name="Appearance.TaskbarFrostedStyle.Cool" xml:space="preserve">
+    <value>Xám lạnh</value>
+  </data>
+  <data name="Appearance.TaskbarFrostedStyle.Neutral" xml:space="preserve">
+    <value>Xám trung tính</value>
+  </data>
+  <data name="Appearance.TaskbarFrostedStyle.Warm" xml:space="preserve">
+    <value>Xám ấm</value>
+  </data>
+  <data name="Appearance.Unified.Header.Subtitle" xml:space="preserve">
+    <value>Thiết lập chủ đề và phông chữ chung, cùng văn bản và nền của thanh media bar.</value>
+  </data>
+  <data name="Application.Group.Updates" xml:space="preserve">
+    <value>Cập nhật</value>
+  </data>
+  <data name="ApplicationAppearance.Header.Subtitle" xml:space="preserve">
+    <value>Cấu hình chủ đề ứng dụng, chất liệu cửa sổ và phông chữ giao diện.</value>
+  </data>
+  <data name="Common.Group.TextAndFonts" xml:space="preserve">
+    <value>Văn bản và phông chữ</value>
+  </data>
+  <data name="Common.Page.ApplicationAppearance" xml:space="preserve">
+    <value>Giao diện ứng dụng</value>
+  </data>
+  <data name="Common.Page.ContentLayout" xml:space="preserve">
+    <value>Nội dung &amp; bố cục</value>
+  </data>
+  <data name="Common.Page.ReleaseHighlights" xml:space="preserve">
+    <value>Điểm mới của phiên bản</value>
+  </data>
+  <data name="Common.Page.ScreenAndPlacement" xml:space="preserve">
+    <value>Màn hình &amp; vị trí</value>
+  </data>
+  <data name="Common.Page.TaskbarAppearance" xml:space="preserve">
+    <value>Giao diện thanh media</value>
+  </data>
+  <data name="ContentLayout.Arrangement.Auto" xml:space="preserve">
+    <value>Theo vị trí thanh media bar</value>
+  </data>
+  <data name="ContentLayout.Full.Prerequisite" xml:space="preserve">
+    <value>Các mục và phần này áp dụng khi bảng điều khiển đầy đủ được bật. Bạn có thể cấu hình trước khi nó đang tắt.</value>
+  </data>
+  <data name="ContentLayout.Header.Subtitle" xml:space="preserve">
+    <value>Tùy chọn nội dung thường trực, bố cục văn bản, chi tiết thành phần và bảng điều khiển.</value>
+  </data>
+  <data name="ContentLayout.Hover.Prerequisite" xml:space="preserve">
+    <value>Các điều khiển này xuất hiện khi bật Điều khiển nhanh. Bạn có thể cấu hình trước khi nó đang tắt.</value>
+  </data>
+  <data name="ContentLayout.LengthMode.Description" xml:space="preserve">
+    <value>Điều khiển tổng chiều dài của thanh trong phạm vi giới hạn thành phần và không gian thanh tác vụ.</value>
+  </data>
+  <data name="ContentLayout.LengthMode.Fixed" xml:space="preserve">
+    <value>Chiều dài cố định</value>
+  </data>
+  <data name="ContentLayout.LengthMode.Follow" xml:space="preserve">
+    <value>Theo nội dung</value>
+  </data>
+  <data name="ContentLayout.LengthMode.Title" xml:space="preserve">
+    <value>Chiều dài thanh media bar</value>
+  </data>
+  <data name="ContentLayout.LyricsLength.Description" xml:space="preserve">
+    <value>Khi theo nội dung, cố định vùng lời bài hát để giảm co giãn giữa các câu. Không thay đổi tổng chiều dài khi thanh cố định.</value>
+  </data>
+  <data name="ContentLayout.LyricsLength.Title" xml:space="preserve">
+    <value>Chiều dài vùng lời bài hát</value>
+  </data>
+  <data name="ContentLayout.Text.Details.Description" xml:space="preserve">
+    <value>Thiết lập độc lập căn lề tiêu đề và lời bài hát, và ghi đè hướng hiển thị tự động khi cần.</value>
+  </data>
+  <data name="ContentLayout.Text.Details.Title" xml:space="preserve">
+    <value>Căn lề &amp; hướng hiển thị</value>
+  </data>
+  <data name="ContentLayout.Text.Shortcut.Action" xml:space="preserve">
+    <value>Mở bố cục văn bản</value>
+  </data>
+  <data name="ContentLayout.Text.Shortcut.Description" xml:space="preserve">
+    <value>Cấu hình căn lề tiêu đề và lời bài hát, chiều dài thanh và vùng lời bài hát trong Nội dung &amp; bố cục.</value>
+  </data>
+  <data name="ContentLayout.Text.Shortcut.Title" xml:space="preserve">
+    <value>Bố cục văn bản &amp; chiều dài</value>
+  </data>
+  <data name="DisplayModes.Mode.AvailabilityNotice" xml:space="preserve">
+    <value>Hiện tại chỉ hỗ trợ chế độ thanh tác vụ. Chưa thể chuyển sang các chế độ khác.</value>
+  </data>
+  <data name="DisplayModes.Placement.Alignment.Center" xml:space="preserve">
+    <value>Ở giữa</value>
+  </data>
+  <data name="DisplayModes.Placement.Alignment.End" xml:space="preserve">
+    <value>Bên phải</value>
+  </data>
+  <data name="DisplayModes.Placement.Alignment.Start" xml:space="preserve">
+    <value>Bên trái</value>
+  </data>
+  <data name="DisplayModes.Placement.Arrangement.Left" xml:space="preserve">
+    <value>Bắt đầu từ bên trái</value>
+  </data>
+  <data name="DisplayModes.Placement.Arrangement.Right" xml:space="preserve">
+    <value>Bắt đầu từ bên phải</value>
+  </data>
+  <data name="DisplayModes.Placement.Row.Alignment.Description" xml:space="preserve">
+    <value>Đặt vị trí toàn bộ thanh. Thay đổi vị trí sẽ xóa độ lệch kéo và khôi phục hướng hiển thị nội dung tự động.</value>
+  </data>
+  <data name="DisplayModes.Placement.Row.Alignment.Title" xml:space="preserve">
+    <value>Vị trí thanh media bar</value>
+  </data>
+  <data name="DisplayModes.Placement.Row.Arrangement.Description" xml:space="preserve">
+    <value>Chọn phía bắt đầu của nội dung mà không làm đổi vị trí thanh hoặc thứ tự logic đã lưu của các thành phần.</value>
+  </data>
+  <data name="DisplayModes.Placement.Row.Arrangement.Title" xml:space="preserve">
+    <value>Hướng hiển thị nội dung</value>
+  </data>
+  <data name="DisplayModes.Width.NoCommonRange" xml:space="preserve">
+    <value>Không có dải chiều dài cố định chung cho các thanh tác vụ hiện tại. Chiều dài đã lưu vẫn được giữ nguyên; mỗi thanh tuân theo không gian khả dụng của riêng nó.</value>
+  </data>
+  <data name="Interaction.Group.Wheel" xml:space="preserve">
+    <value>Con lăn chuột trên thanh media</value>
+  </data>
+  <data name="Lyrics.Group.Presentation" xml:space="preserve">
+    <value>Làm nổi bật &amp; xử lý văn bản</value>
+  </data>
+  <data name="Placement.FutureModes.Description" xml:space="preserve">
+    <value>Các chế độ này chưa được phát triển và hiện chưa thể chọn hoặc cấu hình.</value>
+  </data>
+  <data name="Placement.FutureModes.Title" xml:space="preserve">
+    <value>Các chế độ hiển thị khác</value>
+  </data>
+  <data name="ReleaseHighlights.Application.Description" xml:space="preserve">
+    <value>Xem các điểm mới nổi bật từ phiên bản mới nhất và các phiên bản chính thức trước đó.</value>
+  </data>
+  <data name="ReleaseHighlights.Application.Open" xml:space="preserve">
+    <value>Xem điểm mới cập nhật</value>
+  </data>
+  <data name="ReleaseHighlights.CurrentVersion" xml:space="preserve">
+    <value>Phiên bản hiện tại</value>
+  </data>
+  <data name="ReleaseHighlights.FullNotes" xml:space="preserve">
+    <value>Xem toàn bộ ghi chú phát hành</value>
+  </data>
+  <data name="ReleaseHighlights.Header.Subtitle" xml:space="preserve">
+    <value>Xem các tính năng mới và cải tiến trong các bản cập nhật gần đây.</value>
+  </data>
+  <data name="ReleaseHighlights.History" xml:space="preserve">
+    <value>Lịch sử cập nhật</value>
+  </data>
+  <data name="ReleaseHighlights.Latest" xml:space="preserve">
+    <value>Phiên bản mới nhất</value>
+  </data>
+  <data name="ReleaseHighlights.NoHighlights" xml:space="preserve">
+    <value>Phiên bản này chưa có điểm mới nổi bật. Xem toàn bộ ghi chú phát hành.</value>
+  </data>
+  <data name="ReleaseHighlights.OriginalText" xml:space="preserve">
+    <value>Chưa có bản dịch cho ngôn ngữ hiện tại. Nội dung gốc chính thức được hiển thị bên dưới.</value>
+  </data>
+  <data name="ReleaseHighlights.Refresh" xml:space="preserve">
+    <value>Làm mới điểm mới</value>
+  </data>
+  <data name="ReleaseHighlights.Status.Bundled" xml:space="preserve">
+    <value>Đang hiển thị các điểm mới đi kèm trong ứng dụng.</value>
+  </data>
+  <data name="ReleaseHighlights.Status.Cached" xml:space="preserve">
+    <value>Đang hiển thị nội dung lưu tạm, lấy lúc {0}.</value>
+  </data>
+  <data name="ReleaseHighlights.Status.CacheWriteFailed" xml:space="preserve">
+    <value>Đã lấy điểm mới, nhưng không thể lưu vào bộ nhớ tạm ngoại tuyến.</value>
+  </data>
+  <data name="ReleaseHighlights.Status.RefreshFailed" xml:space="preserve">
+    <value>Tạm thời không thể làm mới. Vẫn có thể xem các điểm mới đã lưu.</value>
+  </data>
+  <data name="ReleaseHighlights.Status.Updated" xml:space="preserve">
+    <value>Điểm mới của phiên bản đã làm mới: {0}.</value>
+  </data>
+  <data name="ScreenAndPlacement.Header.Subtitle" xml:space="preserve">
+    <value>Chọn màn hình hiển thị và vị trí thanh media; hướng xoay được xác định bởi thanh tác vụ hệ thống.</value>
+  </data>
+  <data name="Search.Appearance.TextAndFonts.Description" xml:space="preserve">
+    <value>Điều chỉnh kích thước và màu sắc chữ media, cùng phông chữ và độ đậm dùng chung cho giao diện và thanh media.</value>
+  </data>
+  <data name="Search.Application.Updates.Description" xml:space="preserve">
+    <value>Kiểm tra, tải xuống và cài đặt bản cập nhật, hoặc bỏ qua một phiên bản.</value>
+  </data>
+  <data name="Search.ContentLayout.Vertical.Rest" xml:space="preserve">
+    <value>Cấu hình nội dung thường trực và khi không có media, cùng tham số quang phổ và hiệu năng.</value>
+  </data>
+  <data name="Search.ContentLayout.Vertical.Text" xml:space="preserve">
+    <value>Căn chỉnh lời bài hát trong vùng văn bản.</value>
+  </data>
+  <data name="Search.Lyrics.Presentation.Description" xml:space="preserve">
+    <value>Cấu hình làm sáng từng từ, lọc người đóng góp, khoảng cách ký tự và khoảng cách dòng.</value>
+  </data>
+  <data name="Search.Placement.Vertical" xml:space="preserve">
+    <value>Chọn màn hình hiển thị, xem hướng hệ thống, và cấu hình tránh né, khóa vị trí và độ lệch.</value>
+  </data>
+  <data name="Settings.Advanced.Backdrop.Description" xml:space="preserve">
+    <value>Điều chỉnh độ đậm nhạt màu sắc của nền do ứng dụng tự vẽ.</value>
+  </data>
+  <data name="Settings.Advanced.Backdrop.Title" xml:space="preserve">
+    <value>Chi tiết chất liệu</value>
+  </data>
+  <data name="Settings.Advanced.Defaults.Description" xml:space="preserve">
+    <value>Lưu hoặc xóa cấu hình cá nhân được sử dụng khi khôi phục cài đặt mặc định.</value>
+  </data>
+  <data name="Settings.Advanced.Defaults.Title" xml:space="preserve">
+    <value>Mặc định tùy chỉnh</value>
+  </data>
+  <data name="Settings.Advanced.Diagnostics.Description" xml:space="preserve">
+    <value>Mở thư mục nhật ký hoặc giải phóng bộ nhớ tập làm việc thủ công.</value>
+  </data>
+  <data name="Settings.Advanced.Diagnostics.Title" xml:space="preserve">
+    <value>Công cụ chẩn đoán</value>
+  </data>
+  <data name="Settings.Advanced.Fonts.Description" xml:space="preserve">
+    <value>Thay đổi phông chữ và độ đậm chữ dùng chung cho giao diện, thanh media và thông báo.</value>
+  </data>
+  <data name="Settings.Advanced.Fonts.Title" xml:space="preserve">
+    <value>Phông chữ và độ đậm</value>
+  </data>
+  <data name="Settings.Advanced.Lyrics.Description" xml:space="preserve">
+    <value>Điều chỉnh chữ chưa hát, khoảng cách dòng và khoảng cách ký tự. Căn lề và chiều dài được thiết lập trong Nội dung &amp; bố cục.</value>
+  </data>
+  <data name="Settings.Advanced.Lyrics.Title" xml:space="preserve">
+    <value>Chi tiết bố cục lời bài hát</value>
+  </data>
+  <data name="Settings.Advanced.Spacing.Description" xml:space="preserve">
+    <value>Tinh chỉnh khoảng cách giữa các thành phần trên thanh media bar.</value>
+  </data>
+  <data name="Settings.Advanced.Spacing.Title" xml:space="preserve">
+    <value>Khoảng cách thành phần</value>
+  </data>
+  <data name="Settings.Collapse" xml:space="preserve">
+    <value>Nhấp để thu gọn</value>
+  </data>
+  <data name="Settings.Context.Compact" xml:space="preserve">
+    <value> · Thanh tác vụ thu gọn của hệ thống</value>
+  </data>
+  <data name="Settings.Context.EditingMonitor" xml:space="preserve">
+    <value>Màn hình đang cấu hình</value>
+  </data>
+  <data name="Settings.Context.Horizontal" xml:space="preserve">
+    <value>Thanh tác vụ ngang</value>
+  </data>
+  <data name="Settings.Context.Summary" xml:space="preserve">
+    <value>{0}{1}. Trong phiên bản hiện tại, các màn hình và hướng xoay dùng chung thiết lập thanh tác vụ.</value>
+  </data>
+  <data name="Settings.Context.Unavailable" xml:space="preserve">
+    <value>Chưa nhận diện được thanh tác vụ</value>
+  </data>
+  <data name="Settings.Context.Vertical" xml:space="preserve">
+    <value>Thanh tác vụ dọc</value>
+  </data>
+  <data name="Settings.Expand" xml:space="preserve">
+    <value>Nhấp để mở rộng</value>
+  </data>
+  <data name="Settings.Navigation.Back" xml:space="preserve">
+    <value>Quay lại</value>
+  </data>
+  <data name="Settings.Numeric.Adjusted" xml:space="preserve">
+    <value>Đã điều chỉnh thành {0} {1} theo bước nhảy cho phép.</value>
+  </data>
+  <data name="Settings.Numeric.Dip" xml:space="preserve">
+    <value>DIP</value>
+  </data>
+  <data name="Settings.Numeric.Hertz" xml:space="preserve">
+    <value>Hz</value>
+  </data>
+  <data name="Settings.Numeric.Invalid" xml:space="preserve">
+    <value>Vui lòng nhập giá trị hợp lệ trong phạm vi; thiết lập cũ không đổi.</value>
+  </data>
+  <data name="Settings.Numeric.Percent" xml:space="preserve">
+    <value>%</value>
+  </data>
+  <data name="Settings.Numeric.Range" xml:space="preserve">
+    <value>Phạm vi: {0}–{1} {2}; bước nhảy: {3}. Nhấn Enter hoặc chuyển tiêu điểm để áp dụng; Esc để hủy.</value>
+  </data>
+  <data name="Settings.Numeric.Seconds" xml:space="preserve">
+    <value>giây</value>
+  </data>
+  <data name="Startup.TranslucentTb.Content" xml:space="preserve">
+    <value>Đã phát hiện TranslucentTB. Nền mờ thanh tác vụ đã được bật để giữ nội dung media dễ đọc. Nhấp vào đây để điều chỉnh trong Giao diện thanh media → Nền.</value>
+  </data>
+  <data name="Startup.TranslucentTb.Title" xml:space="preserve">
+    <value>Đã thích ứng với thanh tác vụ trong suốt</value>
+  </data>
+  <data name="Taskbar.Placement.Notification.Hidden" xml:space="preserve">
+    <value>Thanh tác vụ hiện tại không đủ chỗ chứa thanh media tối thiểu, nên đã tạm thời ẩn. Bạn vẫn có thể điều khiển từ khay hệ thống; thanh sẽ tự động hiển thị lại khi có đủ chỗ.</value>
+  </data>
+  <data name="Taskbar.Placement.Notification.Moved" xml:space="preserve">
+    <value>Không gian thanh tác vụ hiện tại không đủ, thanh media đã tạm chuyển sang vùng trống khác. Sẽ tự quay về vị trí ban đầu khi có đủ không gian.</value>
+  </data>
+  <data name="Taskbar.Placement.Notification.Title" xml:space="preserve">
+    <value>Không đủ không gian trên thanh tác vụ</value>
+  </data>
+  <data name="TaskbarAppearance.Header.Subtitle" xml:space="preserve">
+    <value>Điều chỉnh văn bản, kích thước và bố cục thành phần cho môi trường thanh tác vụ hiện tại.</value>
+  </data>
 </root>
