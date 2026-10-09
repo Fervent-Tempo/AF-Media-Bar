@@ -30,8 +30,8 @@ public sealed class SettingsPageScopeCache(IServiceScopeFactory scopeFactory) : 
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (SettingsPageCatalog.Find(definition.Key, _context.Mode) is null) throw new InvalidOperationException("Page unavailable in this runtime family.");
-        // The current display-mode page also owns taskbar layer controls, so its editor follows the environment.
-        var key = (definition.Key, definition.IsGlobal && definition.Key != SettingsPageKey.DisplayModes ? null : (SettingsContext?)_context);
+        // 混合页可分别缓存全局页面和上下文编辑器；离开环境只取消后者。
+        var key = (definition.Key, definition.IsGlobal && !definition.HasModeContent ? null : (SettingsContext?)_context);
         if (_cache.TryGetValue(key, out var cached)) return cached.Page;
         var scope = scopeFactory.CreateScope();
         try

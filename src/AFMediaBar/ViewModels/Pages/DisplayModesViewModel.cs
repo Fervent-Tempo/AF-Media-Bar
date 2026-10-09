@@ -294,6 +294,48 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         _ => "Settings.Context.Unavailable"
     });
 
+    /// <summary>横向任务栏对齐设置是否适用于当前编辑环境。</summary>
+    public bool IsHorizontalLayout => _configuration.Context.Orientation != LayoutOrientation.Vertical;
+
+    /// <summary>任务栏主轴对齐；切换时清除拖动偏移和手动内容排布。</summary>
+    public TaskbarBarPosition TaskbarPosition
+    {
+        get => _configuration.Current.Position;
+        set
+        {
+            if (_disposed || !_configuration.IsActive || _isRefreshing || !IsTaskbarMode ||
+                !Enum.IsDefined(value) || _configuration.Current.Position == value)
+                return;
+            _configuration.SetTaskbarPlacement(alignment: value);
+        }
+    }
+
+    /// <summary>横向任务栏的左侧或右侧内容排布。</summary>
+    public TaskbarContentArrangement TaskbarArrangement
+    {
+        get => TaskbarArrangementPolicy.ResolveContent(
+            _configuration.Current.TaskbarExperience.Normalize().Arrangement, _configuration.Current.Position);
+        set => UpdateExperience(_configuration.Current.TaskbarExperience with { Arrangement = value });
+    }
+
+    /// <summary>null 表示跟随位置，不把自动推导的方向误存为手动覆盖。</summary>
+    public TaskbarContentArrangement? TaskbarArrangementOverride
+    {
+        get => _configuration.Current.TaskbarExperience.Arrangement;
+        set => UpdateExperience(_configuration.Current.TaskbarExperience with { Arrangement = value });
+    }
+
+    /// <summary>界面选择序号不参与存储，自动项仍写入 null。</summary>
+    public int TaskbarArrangementIndex
+    {
+        get => TaskbarArrangementOverride switch { TaskbarContentArrangement.Left => 1, TaskbarContentArrangement.Right => 2, _ => 0 };
+        set
+        {
+            if (value is < 0 or > 2) return;
+            TaskbarArrangementOverride = value switch { 1 => TaskbarContentArrangement.Left, 2 => TaskbarContentArrangement.Right, _ => null };
+        }
+    }
+
     public bool IsTaskbarPositionLocked
     {
         get => _configuration.Current.TaskbarBarPositionLocked;
@@ -441,13 +483,32 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     }
 
     public void ResetDisplayModes() => _configuration.Reset(SettingsResetScope.DisplayModes);
+    public void ResetScreenAndPlacement()
+    {
+        if (!_disposed && _configuration.IsActive && IsTaskbarMode) SettingsManager.ResetScreenAndPlacement();
+    }
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
     {
         if (_disposed || !_configuration.IsActive) return;
         if (!_dispatcher.CheckAccess()) { DispatcherHelper.Run(_dispatcher, () => OnSettingsChanged(sender, e)); return; }
-        if (e.ResetScope is SettingsResetScope.DisplayModes or SettingsResetScope.Layout or SettingsResetScope.All)
+        if (e.ResetScope is SettingsResetScope.DisplayModes or SettingsResetScope.Layout or SettingsResetScope.Components or SettingsResetScope.All)
             RaiseAll();
+        else if (!_isRefreshing && (e.PropertyName is nameof(AppSettings.Position) or nameof(AppSettings.TaskbarExperience)))
+        {
+            // Arrangement is derived from both properties. Publish their effective values while
+            // suppressing two-way target refresh from creating a manual override.
+            _isRefreshing = true;
+            try
+            {
+                OnPropertyChanged(nameof(TaskbarPosition));
+                if (e.PropertyName == nameof(AppSettings.TaskbarExperience))
+                    RaiseExperience();
+                else
+                    OnPropertyChanged(nameof(TaskbarArrangement));
+            }
+            finally { _isRefreshing = false; }
+        }
         else if (!_isRefreshing && e.PropertyName is nameof(AppSettings.TaskbarTargetMonitorDeviceIds) or nameof(AppSettings.TaskbarTargetMonitorDeviceId))
             RefreshMonitorOptions();
     }
@@ -562,6 +623,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(CurrentWindowMode)); OnPropertyChanged(nameof(IsTaskbarMode)); OnPropertyChanged(nameof(IsDynamicIslandMode));
             OnPropertyChanged(nameof(IsDesktopCardMode)); OnPropertyChanged(nameof(IsFloatingBallMode)); OnPropertyChanged(nameof(IsUnimplementedMode));
             OnPropertyChanged(nameof(HostingModeText)); OnPropertyChanged(nameof(IsTaskbarHostingActive));
+            OnPropertyChanged(nameof(TaskbarPosition));
             RaiseExperience(); OnPropertyChanged(nameof(Orientation)); OnPropertyChanged(nameof(IsTaskbarPositionLocked));
             OnPropertyChanged(nameof(IsTaskbarAvoidingIcons)); OnPropertyChanged(nameof(TaskbarCrossAxisOffsetDip));
             RefreshMonitorOptions();
@@ -571,6 +633,9 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
 
     private void RaiseExperience()
     {
+        OnPropertyChanged(nameof(TaskbarArrangementOverride));
+        OnPropertyChanged(nameof(TaskbarArrangementIndex));
+        OnPropertyChanged(nameof(TaskbarArrangement));
         OnPropertyChanged(nameof(HoverLayerEnabled)); OnPropertyChanged(nameof(FullLayerEnabled));
         OnPropertyChanged(nameof(FullPanelEntryVisible));
         OnPropertyChanged(nameof(RestProgressVisible));

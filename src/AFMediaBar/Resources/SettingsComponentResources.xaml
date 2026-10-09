@@ -389,7 +389,9 @@
                                 </ToggleButton.Content>
                             </ToggleButton>
                             <Border x:Name="ExpandedContent" Padding="{TemplateBinding ContentPadding}" Visibility="Collapsed">
-                                <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Stretch" />
+                                <ContentPresenter Content="{TemplateBinding Content}"
+                                                  ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                  HorizontalAlignment="Stretch" />
                             </Border>
                         </StackPanel>
                     </Border>

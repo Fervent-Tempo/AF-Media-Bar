@@ -7,7 +7,7 @@
   <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/releases"><img src="https://img.shields.io/github/downloads/Fervent-Tempo/AF-Media-Bar/total?style=flat-square" alt="下载次数"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/Fervent-Tempo/AF-Media-Bar?style=flat-square" alt="MIT 许可证"></a>
   <br>
-  简体中文 · <a href="README.en-US.md">English</a>
+  简体中文 · <a href="README.en-US.md">English</a> · <a href="README.vi-VN.md">Tiếng Việt</a>
   <br>
   <a href="#下载安装">下载运行</a> · <a href="#功能一览">功能一览</a> · <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/issues/new?template=bug_report.yml">报告问题</a> · <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/issues/new?template=feature_request.yml">功能建议</a>
 </p>
@@ -41,7 +41,7 @@ AF Media Bar 是一款 Windows 10/11 任务栏媒体控制器。它从系统媒�
 | 实时歌词 | 自动获取歌词，支持逐字高亮、译文、音译与双行显示，让歌词随播放进度同步呈现。 |
 | 音频控制 | 快速切换默认输出设备，调整当前媒体应用的音量，查看空间音效状态。 |
 | 频谱与指标 | 提供四种音频频谱样式，可在任务栏显示 CPU、GPU 和内存等性能指标。 |
-| 布局与外观 | 自动避让任务栏图标及系统区域，选择显示屏、无播放时自动隐藏；可调整字体、主题色与窗口材质。 |
+| 布局与外观 | 支持靠左、居中、靠右对齐及独立内容排布；自动避让任务栏图标及系统区域，选择显示屏、无播放时自动隐藏；可调整字体、主题色与窗口材质。 |
 | 快捷操作 | 悬停显示控制按钮，打开完整媒体弹窗查看更多信息；支持自定义点击操作、快速启动常用播放器与托盘菜单。 |
 
 ## 基本使用

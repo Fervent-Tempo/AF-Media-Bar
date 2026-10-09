@@ -161,7 +161,7 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
     public bool CanConfigureFixedWidth => LyricsEnabled;
 
     /// <summary>长度滑杆只在"固定"开启时可用。/ The length slider is available only while the fixed mode is on.</summary>
-    public bool CanConfigureFixedWidthDip => FixedWidthEnabled;
+    public bool CanConfigureFixedWidthDip => LyricsEnabled && FixedWidthEnabled;
 
     /// <summary>是否丢弃作者、作曲、制作等信息行。/ Whether credit lines are dropped.</summary>
     public bool InfoLineFilterEnabled
@@ -285,6 +285,10 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         }
         if (e.PropertyName == nameof(AppSettings.LyricsArtistSeparators))
             OnPropertyChanged(nameof(ArtistSeparatorsText));
+        if (e.ResetScope == SettingsResetScope.Components || e.PropertyName is nameof(AppSettings.LyricsEnabled)
+            or nameof(AppSettings.TwoLineLyricsEnabled) or nameof(AppSettings.LyricsTextAlignment)
+            or nameof(AppSettings.LyricsFixedWidthEnabled) or nameof(AppSettings.LyricsFixedWidthDip))
+            RaiseAll();
     }
 
     private void OnLanguageChanged(object? sender, EventArgs e)

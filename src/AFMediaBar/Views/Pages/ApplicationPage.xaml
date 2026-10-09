@@ -1,80 +1,72 @@
 <Page
-    x:Class="AFMediaBar.Views.Pages.ApplicationPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:components="clr-namespace:AFMediaBar.Components"
     xmlns:localization="clr-namespace:AFMediaBar.Classes.Services.Localization"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    x:Class="AFMediaBar.Views.Pages.ApplicationPage"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     ScrollViewer.CanContentScroll="False">
-
-    <!--
-        应用页 / Application page
-
-        它由原「应用与关于」页的前半部分拆出：凡是"改了会影响程序怎么跑"的设置都留在这一页（版本与更新、
-        开机自启、界面语言、设置文件、诊断日志），而"人、赞助与许可"移到页脚的「关于」。
-        这样做的好处是导航栏里「外观」与「应用」相邻，两者都是应用自身的设置，用户不需要再往页脚找。
-
-        这一页的文案全部走 {DynamicResource Loc.*}：界面语言切换后，设置窗口里已经建好的页面不需要重建，
-        WPF 会按新的资源值重新解析这些引用。
-        This page was split out as the first half of the former "application and about" page: everything that changes how
-        the program behaves stays here (version and updates, run-at-startup, interface language, the settings file,
-        diagnostics), while people, sponsors, and licenses moved to "about" in the footer. The benefit is that
-        "appearance" and "application" end up next to each other in the navigation, since both are the application's own
-        settings, and the user no longer has to look in the footer.
-
-        Every string here goes through {DynamicResource Loc.*}: after a language switch the pages already built inside
-        the settings window do not have to be recreated, because WPF re-resolves these references against the new values.
-    -->
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-
-        <components:SettingsGroupStrip Margin="{StaticResource AfSettingsHeaderMargin}" MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
+        <components:SettingsGroupStrip
+            Margin="{StaticResource AfSettingsHeaderMargin}"
+            MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
             Grid.Row="0"
             PageIcon="{ui:SymbolIcon Settings24}"
             Subtitle="{DynamicResource Loc.Application.Header.Subtitle}"
             Target="{Binding ElementName=PageScroll}"
             Title="{DynamicResource Loc.Common.Page.Application}" />
-
         <ScrollViewer
             x:Name="PageScroll"
             Grid.Row="1"
             Margin="{StaticResource AfSettingsScrollMargin}"
             HorizontalScrollBarVisibility="Disabled"
             VerticalScrollBarVisibility="Auto">
-            <StackPanel
-                x:Name="PageRoot"
-                MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
-                Loaded="OnPageLoaded">
-
-
-                <components:SettingsGroup GroupId="Common.Group.Application"
+            <StackPanel x:Name="PageRoot" MaxWidth="{StaticResource AfSettingsContentMaxWidth}" Loaded="OnPageLoaded">
+                <components:SettingsGroup
+                    GroupId="Common.Group.Application"
                     Header="{DynamicResource Loc.Common.Group.Application}"
                     Icon="{ui:SymbolIcon Info24}">
                     <StackPanel>
-<components:SettingsRow
+                        <components:SettingsRow
                             Description="{DynamicResource Loc.About.Language.Description}"
                             Icon="{ui:SymbolIcon Globe24}"
                             Title="{DynamicResource Loc.About.Language.Title}">
-                            <ComboBox
-                                MinWidth="150"
-                                SelectedValue="{Binding ViewModel.InterfaceLanguage, Mode=TwoWay}"
-                                SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.About.Language.FollowSystem}" Tag="{x:Static localization:InterfaceLanguage.System}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.About.Language.SimplifiedChinese}" Tag="{x:Static localization:InterfaceLanguage.SimplifiedChinese}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.About.Language.TraditionalChinese}" Tag="{x:Static localization:InterfaceLanguage.TraditionalChinese}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.About.Language.English}" Tag="{x:Static localization:InterfaceLanguage.English}" />
+                            <ComboBox MinWidth="150" SelectedValue="{Binding ViewModel.InterfaceLanguage, Mode=TwoWay}" SelectedValuePath="Tag">
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.About.Language.FollowSystem}"
+                                    Tag="{x:Static localization:InterfaceLanguage.System}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.About.Language.SimplifiedChinese}"
+                                    Tag="{x:Static localization:InterfaceLanguage.SimplifiedChinese}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.About.Language.TraditionalChinese}"
+                                    Tag="{x:Static localization:InterfaceLanguage.TraditionalChinese}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.About.Language.English}"
+                                    Tag="{x:Static localization:InterfaceLanguage.English}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.About.Language.Vietnamese}"
+                                    Tag="{x:Static localization:InterfaceLanguage.Vietnamese}" />
                             </ComboBox>
                         </components:SettingsRow>
-<components:SettingsRow
+                        <components:SettingsRow
                             Description="{DynamicResource Loc.About.Row.Startup.Description}"
                             Icon="{ui:SymbolIcon ShareScreenStart24}"
                             Title="{DynamicResource Loc.About.Row.Startup.Title}">
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.LaunchAtStartup, Mode=TwoWay}" />
                         </components:SettingsRow>
+                    </StackPanel>
+                </components:SettingsGroup>
+                <components:SettingsGroup
+                    GroupId="Application.Group.Updates"
+                    Header="{DynamicResource Loc.Application.Group.Updates}"
+                    Icon="{ui:SymbolIcon ArrowSync24}">
+                    <StackPanel>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.About.Row.Version.Description}"
                             Icon="{ui:SymbolIcon Info24}"
@@ -93,47 +85,33 @@
                                     Style="{StaticResource AfSettingsButtonStyle}" />
                             </StackPanel>
                         </components:SettingsRow>
-
-                        <components:SettingsRow Title="{DynamicResource Loc.Common.Page.ReleaseHighlights}"
-                            Description="{DynamicResource Loc.ReleaseHighlights.Application.Description}" Icon="{ui:SymbolIcon Sparkle24}">
-                            <ui:Button Content="{DynamicResource Loc.ReleaseHighlights.Application.Open}" Click="OnOpenHighlights" Style="{StaticResource AfSettingsButtonStyle}" />
+                        <components:SettingsRow
+                            Title="{DynamicResource Loc.Common.Page.ReleaseHighlights}"
+                            Description="{DynamicResource Loc.ReleaseHighlights.Application.Description}"
+                            Icon="{ui:SymbolIcon Sparkle24}">
+                            <ui:Button
+                                Content="{DynamicResource Loc.ReleaseHighlights.Application.Open}"
+                                Click="OnOpenHighlights"
+                                Style="{StaticResource AfSettingsButtonStyle}" />
                         </components:SettingsRow>
-
                         <components:SettingsRow
                             Description="{DynamicResource Loc.About.Row.AutoCheck.Description}"
                             Icon="{ui:SymbolIcon ArrowSync24}"
                             Title="{DynamicResource Loc.About.Row.AutoCheck.Title}">
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.AutoCheckEnabled, Mode=TwoWay}" />
                         </components:SettingsRow>
-
-                        <!--
-                            检查本身失败时没有清单可展示，更新区不会出现；这时失败原因必须有一条自己的状态行，
-                            否则"检查失败"和"什么都没发生"在界面上完全一样。
-                            When the check itself failed there is no manifest to show and the update section stays
-                            hidden, so the failure needs a status row of its own; otherwise "the check failed" and
-                            "nothing happened" look identical.
-                        -->
                         <components:SettingsCallout
                             Margin="0,0,0,8"
                             IsAccent="False"
                             Symbol="Warning24"
                             Text="{Binding ViewModel.StatusText}"
                             Visibility="{Binding ViewModel.ShowStatusNotice, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
-
                         <components:SettingsRow
                             Badge="{DynamicResource Loc.About.Row.Portable.Badge}"
                             Description="{DynamicResource Loc.About.Row.Portable.Description}"
                             Icon="{ui:SymbolIcon Warning24}"
                             Title="{DynamicResource Loc.About.Row.Portable.Title}"
                             Visibility="{Binding ViewModel.IsPortable, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
-
-                        <!--
-                            更新区：只有确实存在可用版本时才出现，因此"已是最新"状态下这一页仍然只有几行。
-                            亮点、状态与进度都来自更新服务发布的同一个快照，页面本身不做任何判断。
-                            Update section: it only appears when a newer version really exists, so an up-to-date
-                            page still shows just a few rows. The highlights, the status and the progress all come from
-                            the same snapshot published by the update service, and the page itself decides nothing.
-                        -->
                         <StackPanel Visibility="{Binding ViewModel.HasUpdate, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                             <components:SettingsRow
                                 Description="{Binding ViewModel.HighlightDate}"
@@ -154,13 +132,7 @@
                                         Style="{StaticResource AfSettingsButtonStyle}" />
                                 </StackPanel>
                             </components:SettingsRow>
-
-                            <components:SettingsCallout
-                                Margin="0,0,0,8"
-                                IsAccent="True"
-                                Symbol="Info24"
-                                Text="{Binding ViewModel.StatusText}" />
-
+                            <components:SettingsCallout Margin="0,0,0,8" IsAccent="True" Symbol="Info24" Text="{Binding ViewModel.StatusText}" />
                             <components:SettingsRow
                                 Description="{Binding ViewModel.ChannelText}"
                                 Icon="{ui:SymbolIcon ArrowSync24}"
@@ -181,7 +153,6 @@
                                         Text="{Binding ViewModel.ProgressPercent, StringFormat={}{0:0}%}" />
                                 </StackPanel>
                             </components:SettingsRow>
-
                             <components:SettingsRow
                                 Description="{DynamicResource Loc.About.Row.Install.Description}"
                                 Icon="{ui:SymbolIcon ArrowClockwise24}"
@@ -193,7 +164,6 @@
                                     IsEnabled="{Binding ViewModel.CanInstallNow}"
                                     Style="{StaticResource AfSettingsButtonStyle}" />
                             </components:SettingsRow>
-
                             <components:SettingsRow
                                 Description="{DynamicResource Loc.About.Row.Skip.Description}"
                                 Icon="{ui:SymbolIcon Dismiss24}"
@@ -212,7 +182,6 @@
                                         Style="{StaticResource AfSettingsButtonStyle}" />
                                 </StackPanel>
                             </components:SettingsRow>
-
                             <components:SettingsRow
                                 Description="{DynamicResource Loc.About.Row.DownloadPage.Description}"
                                 Icon="{ui:SymbolIcon Globe24}"
@@ -232,29 +201,15 @@
                                 </StackPanel>
                             </components:SettingsRow>
                         </StackPanel>
-
-                        <!--
-                            界面语言：四种选项里「跟随系统」按 Windows 显示语言解析，其余三种直接生效。
-                            选项名称走同一套资源，因此切到英文后这一行的标签与选项一起换成英文。
-                            Interface language: of the four options, "follow the system" resolves against the Windows
-                            display language and the other three apply directly. The option names use the same resource
-                            set, so the row's label and its options turn English together.
-                        -->
-
-
-
-
-
-
-
-
-                        <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="16,4,0,0"><TextBlock
-                            Style="{StaticResource AfSettingsHintTextStyle}"
-                            Text="{Binding ViewModel.StartupStatusText}" /></Border>
+                        <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="16,4,0,0">
+                            <TextBlock Style="{StaticResource AfSettingsHintTextStyle}" Text="{Binding ViewModel.StartupStatusText}" />
+                        </Border>
                     </StackPanel>
                 </components:SettingsGroup>
-
-                <components:SettingsGroup GroupId="Common.Group.SettingsFile" Header="{DynamicResource Loc.Common.Group.SettingsFile}" Icon="{ui:SymbolIcon FolderOpen24}">
+                <components:SettingsGroup
+                    GroupId="Common.Group.SettingsFile"
+                    Header="{DynamicResource Loc.Common.Group.SettingsFile}"
+                    Icon="{ui:SymbolIcon FolderOpen24}">
                     <StackPanel>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.About.Row.OpenFolder.Description}"
@@ -266,7 +221,6 @@
                                 Icon="{ui:SymbolIcon FolderOpen24}"
                                 Style="{StaticResource AfSettingsButtonStyle}" />
                         </components:SettingsRow>
-
                         <components:SettingsRow
                             Description="{DynamicResource Loc.About.Row.ResetAll.Description}"
                             Icon="{ui:SymbolIcon ArrowReset24}"
@@ -277,76 +231,81 @@
                                 Icon="{ui:SymbolIcon ArrowReset24}"
                                 Style="{StaticResource AfSettingsButtonStyle}" />
                         </components:SettingsRow>
-                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="False" Icon="{ui:SymbolIcon Save24}">
-                            <ui:CardExpander.Header><StackPanel>
-                                <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Settings.Advanced.Defaults.Title}" />
-                                <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Settings.Advanced.Defaults.Description}" />
-                            </StackPanel></ui:CardExpander.Header>
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="False" Icon="{ui:SymbolIcon Save24}">
+                            <ui:CardExpander.Header>
+                                <StackPanel>
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowTitleStyle}"
+                                        Text="{DynamicResource Loc.Settings.Advanced.Defaults.Title}" />
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
+                                        Text="{DynamicResource Loc.Settings.Advanced.Defaults.Description}" />
+                                </StackPanel>
+                            </ui:CardExpander.Header>
                             <StackPanel>
-<components:SettingsRow
-                            Description="{Binding ViewModel.UserDefaultsStatusText}"
-                            Icon="{ui:SymbolIcon Bookmark24}"
-                            Title="{DynamicResource Loc.About.Row.SaveDefaults.Title}">
-                            <ui:Button
-                                Command="{Binding ViewModel.SaveUserDefaultsCommand}"
-                                Content="{DynamicResource Loc.Common.Save}"
-                                Icon="{ui:SymbolIcon Save24}"
-                                Style="{StaticResource AfSettingsButtonStyle}" />
-                        </components:SettingsRow>
-<components:SettingsRow
-                            Description="{DynamicResource Loc.About.Row.ClearDefaults.Description}"
-                            Icon="{ui:SymbolIcon Delete24}"
-                            IsEnabled="{Binding ViewModel.HasUserDefaults}"
-                            Title="{DynamicResource Loc.About.Row.ClearDefaults.Title}">
-                            <ui:Button
-                                Command="{Binding ViewModel.ClearUserDefaultsCommand}"
-                                Content="{DynamicResource Loc.Common.Clear}"
-                                Icon="{ui:SymbolIcon Delete24}"
-                                Style="{StaticResource AfSettingsButtonStyle}" />
-                        </components:SettingsRow>
+                                <components:SettingsRow
+                                    Description="{Binding ViewModel.UserDefaultsStatusText}"
+                                    Icon="{ui:SymbolIcon Bookmark24}"
+                                    Title="{DynamicResource Loc.About.Row.SaveDefaults.Title}">
+                                    <ui:Button
+                                        Command="{Binding ViewModel.SaveUserDefaultsCommand}"
+                                        Content="{DynamicResource Loc.Common.Save}"
+                                        Icon="{ui:SymbolIcon Save24}"
+                                        Style="{StaticResource AfSettingsButtonStyle}" />
+                                </components:SettingsRow>
+                                <components:SettingsRow
+                                    Description="{DynamicResource Loc.About.Row.ClearDefaults.Description}"
+                                    Icon="{ui:SymbolIcon Delete24}"
+                                    IsEnabled="{Binding ViewModel.HasUserDefaults}"
+                                    Title="{DynamicResource Loc.About.Row.ClearDefaults.Title}">
+                                    <ui:Button
+                                        Command="{Binding ViewModel.ClearUserDefaultsCommand}"
+                                        Content="{DynamicResource Loc.Common.Clear}"
+                                        Icon="{ui:SymbolIcon Delete24}"
+                                        Style="{StaticResource AfSettingsButtonStyle}" />
+                                </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>
                     </StackPanel>
                 </components:SettingsGroup>
-
-                <components:SettingsGroup GroupId="Common.Group.Diagnostics" Header="{DynamicResource Loc.Common.Group.Diagnostics}" Icon="{ui:SymbolIcon Bug24}">
-                    <!--
-                        两个入口：日志是一个文件（logs\app.log，只留最近 1000 条），出问题时把它发出来即可；
-                        「压缩内存占用」把工作集交还系统，任务管理器里的读数会立刻下降（提交量不变，说明文案里写清楚了）。
-                        Two entry points: the log is a single file (logs\app.log, newest 1000 lines) and that is what to send when something breaks, and
-                        "compress memory usage" returns the working set to the system, which makes the figure in Task Manager drop at once (the commit
-                        size does not change, and the description says so).
-                    -->
+                <components:SettingsGroup
+                    GroupId="Common.Group.Diagnostics"
+                    Header="{DynamicResource Loc.Common.Group.Diagnostics}"
+                    Icon="{ui:SymbolIcon Bug24}">
                     <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="False" Icon="{ui:SymbolIcon Bug24}">
-                            <ui:CardExpander.Header><StackPanel>
-                                <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Settings.Advanced.Diagnostics.Title}" />
-                                <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Settings.Advanced.Diagnostics.Description}" />
-                            </StackPanel></ui:CardExpander.Header>
+                        <ui:CardExpander.Header>
                             <StackPanel>
-
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.About.Row.LogFolder.Description}"
-                            Icon="{ui:SymbolIcon FolderOpen24}"
-                            Title="{DynamicResource Loc.About.Row.LogFolder.Title}">
-                            <ui:Button
-                                Click="OpenLogFolder_Click"
-                                Content="{DynamicResource Loc.Common.OpenFolder}"
-                                Icon="{ui:SymbolIcon FolderOpen24}"
-                                Style="{StaticResource AfSettingsButtonStyle}" />
-                        </components:SettingsRow>
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.About.Row.TrimMemory.Description}"
-                            Icon="{ui:SymbolIcon ArrowMinimize24}"
-                            Title="{DynamicResource Loc.About.Row.TrimMemory.Title}">
-                            <ui:Button
-                                Click="TrimMemory_Click"
-                                Content="{DynamicResource Loc.About.Row.TrimMemory.Button}"
-                                Icon="{ui:SymbolIcon ArrowMinimize24}"
-                                Style="{StaticResource AfSettingsButtonStyle}" />
-                        </components:SettingsRow>
-
+                                <TextBlock
+                                    Style="{StaticResource AfSettingsRowTitleStyle}"
+                                    Text="{DynamicResource Loc.Settings.Advanced.Diagnostics.Title}" />
+                                <TextBlock
+                                    Style="{StaticResource AfSettingsRowDescriptionStyle}"
+                                    Text="{DynamicResource Loc.Settings.Advanced.Diagnostics.Description}" />
                             </StackPanel>
-                        </ui:CardExpander>
+                        </ui:CardExpander.Header>
+                        <StackPanel>
+                            <components:SettingsRow
+                                Description="{DynamicResource Loc.About.Row.LogFolder.Description}"
+                                Icon="{ui:SymbolIcon FolderOpen24}"
+                                Title="{DynamicResource Loc.About.Row.LogFolder.Title}">
+                                <ui:Button
+                                    Click="OpenLogFolder_Click"
+                                    Content="{DynamicResource Loc.Common.OpenFolder}"
+                                    Icon="{ui:SymbolIcon FolderOpen24}"
+                                    Style="{StaticResource AfSettingsButtonStyle}" />
+                            </components:SettingsRow>
+                            <components:SettingsRow
+                                Description="{DynamicResource Loc.About.Row.TrimMemory.Description}"
+                                Icon="{ui:SymbolIcon ArrowMinimize24}"
+                                Title="{DynamicResource Loc.About.Row.TrimMemory.Title}">
+                                <ui:Button
+                                    Click="TrimMemory_Click"
+                                    Content="{DynamicResource Loc.About.Row.TrimMemory.Button}"
+                                    Icon="{ui:SymbolIcon ArrowMinimize24}"
+                                    Style="{StaticResource AfSettingsButtonStyle}" />
+                            </components:SettingsRow>
+                        </StackPanel>
+                    </ui:CardExpander>
                 </components:SettingsGroup>
             </StackPanel>
         </ScrollViewer>

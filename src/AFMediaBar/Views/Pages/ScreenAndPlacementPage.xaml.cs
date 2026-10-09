@@ -21,4 +21,9 @@ public partial class ScreenAndPlacementPage : INavigableView<DisplayModesViewMod
     }
 
     private void OnPageLoaded(object sender, RoutedEventArgs args) => SettingsRevealAnimator.Play(sender as Panel);
+    private async void ResetButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (await SettingsResetDialog.ConfirmAsync("Common.Page.ScreenAndPlacement", cancellationToken: ViewModel.ContextCancellationToken))
+            ViewModel.ResetScreenAndPlacement();
+    }
 }

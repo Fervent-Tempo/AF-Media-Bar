@@ -48,13 +48,12 @@ public static class TaskbarFreeRangeCalculator
     }
 
     /// <summary>
-    /// 按位置偏好在空闲区间里挑一个：Start 取第一个**放得下**的区间，End 取最后一个放得下的，Center 取最长的。
+    /// 按位置偏好在空闲区间里挑一个：Start 取第一个**放得下**的区间，End 取最后一个放得下的，Center 优先取能让媒体栏最接近任务栏中心的区间。
     ///
     /// "放得下"是必须的：空闲区间里可能有比媒体栏最小长度还窄的缝隙（例如图标之间被挤出来的那一段），取到它会把媒体栏
     /// 压成一条细条并钉在缝隙里。所有区间都放不下时退回最长的那个，此时长度由调用方夹到区间宽度——至少是"尽可能大的位置"，
     /// 而不是"最左边那条缝"。
-    /// Picks a free range by position preference: Start takes the first one that **fits**, End the last that fits, and Center the
-    /// longest.
+    /// Picks a free range by position preference: Start takes the first one that **fits**, End the last that fits, and Center the range nearest the taskbar center when its length is provided.
     ///
     /// Fitting matters: the free ranges can include a gap narrower than the bar's minimum length (the sliver squeezed between two
     /// icons, for instance), and picking it would squash the bar into a strip pinned inside that gap. When nothing fits, the longest
@@ -64,10 +63,12 @@ public static class TaskbarFreeRangeCalculator
     /// <param name="ranges">按主轴排序的空闲区间。/ Free ranges ordered along the primary axis.</param>
     /// <param name="position">位置偏好。/ Position preference.</param>
     /// <param name="requiredPrimaryPixels">媒体栏当前占用的主轴长度（物理像素），0 表示不做放得下判断。/ The bar's current primary-axis length in physical pixels; 0 skips the fitting test.</param>
+    /// <param name="primaryLength">任务栏物理主轴长度；缺省时保留最长区间策略。</param>
     public static TaskbarPrimaryRange Select(
         IReadOnlyList<TaskbarPrimaryRange> ranges,
         TaskbarBarPosition position,
-        int requiredPrimaryPixels)
+        int requiredPrimaryPixels,
+        int? primaryLength = null)
     {
         if (ranges.Count == 0)
             return default;
@@ -78,7 +79,7 @@ public static class TaskbarFreeRangeCalculator
             return position switch
             {
                 TaskbarBarPosition.End => ranges[^1],
-                TaskbarBarPosition.Center => longest,
+                TaskbarBarPosition.Center => SelectCentered(ranges, 0, primaryLength),
                 _ => ranges[0]
             };
         }
@@ -90,9 +91,25 @@ public static class TaskbarFreeRangeCalculator
         return position switch
         {
             TaskbarBarPosition.End => fitting[^1],
-            TaskbarBarPosition.Center => fitting.OrderByDescending(range => range.Length).First(),
+            TaskbarBarPosition.Center => SelectCentered(fitting, requiredPrimaryPixels, primaryLength),
             _ => fitting[0]
         };
+    }
+
+    // Compare attainable bar centers, rather than free-range midpoints: a large off-center gap
+    // must not win over one that can keep the bar at the taskbar's actual center.
+    private static TaskbarPrimaryRange SelectCentered(
+        IReadOnlyList<TaskbarPrimaryRange> ranges, int requiredPrimaryPixels, int? primaryLength)
+    {
+        if (primaryLength is not { } length)
+            return ranges.OrderByDescending(range => range.Length).First();
+
+        var desiredStart = (length - requiredPrimaryPixels) / 2.0;
+        return ranges.OrderBy(range => Math.Abs(
+                Math.Clamp(desiredStart, range.Start, Math.Max(range.Start, range.End - requiredPrimaryPixels)) - desiredStart))
+            .ThenByDescending(range => range.Length)
+            .ThenBy(range => range.Start)
+            .First();
     }
 
     /// <summary>

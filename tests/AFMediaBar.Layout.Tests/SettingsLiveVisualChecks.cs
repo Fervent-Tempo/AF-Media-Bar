@@ -16,8 +16,11 @@ using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Services;
+using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Settings;
 using AFMediaBar.Components;
 using AFMediaBar.Classes.Utils;
+using AFMediaBar.Resources;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Wpf.Ui.Abstractions;
 using Wpf.Ui.Animations;
@@ -30,14 +33,34 @@ namespace AFMediaBar.Layout.Tests;
 
 internal static class SettingsLiveVisualChecks
 {
+    private sealed class PreviewMonitors : IDisplayMonitorService
+    {
+        public event EventHandler? MonitorsChanged { add { } remove { } }
+        public IReadOnlyList<DisplayMonitorInfo> GetMonitors() => [];
+        public void Refresh() { }
+        public DisplayMonitorInfo? ResolveFixedMonitor(string? deviceId) => null;
+        public DisplayMonitorInfo? ResolveNotificationMonitor(NotificationTargetMode mode, string? fixedDeviceId) => null;
+        public bool IsForegroundWindowFullscreen() => false;
+    }
+
     internal static void VerifyContextNavigation(Application app)
     {
+        var previousSettings = SettingsManager.Current.Clone();
+        foreach (var key in Translations.Keys) app.Resources["Loc." + key] = Translations.Get(key);
         var services = new ServiceCollection();
         services.AddSingleton<LocalizationService>();
         services.AddSingleton<TaskbarLengthConstraintsService>();
+        services.AddSingleton<IDisplayMonitorService, PreviewMonitors>();
+        services.AddSingleton(_ => new AppLogService(Path.Combine(Path.GetTempPath(), "afmb-settings-visual-" + Guid.NewGuid().ToString("N"))));
         services.AddScoped<SettingsPageContext>();
         services.AddScoped<ISettingsConfiguration, LegacySettingsConfiguration>();
         services.AddScoped<TaskbarAppearanceViewModel>();
+        services.AddScoped<AppearanceViewModel>();
+        services.AddScoped<DisplayModesViewModel>();
+        services.AddScoped<LyricsViewModel>();
+        services.AddScoped<ComponentsSettingsViewModel>();
+        services.AddScoped<ContentLayoutViewModel>();
+        services.AddScoped<ComponentsSettingsPage>();
         services.AddScoped<InteractionViewModel>();
         services.AddScoped<AppearancePage>();
         services.AddScoped<InteractionPage>();
@@ -47,8 +70,17 @@ internal static class SettingsLiveVisualChecks
         var horizontal = new SettingsContext(SettingsMode.Taskbar, "primary", LayoutOrientation.Horizontal, false, true);
         provider.SetContext(horizontal);
         var navigation = new NavigationView { Transition = Transition.None, IsPaneOpen = true, IsBackButtonVisible = Wpf.Ui.Controls.NavigationViewBackButtonVisible.Collapsed };
-        foreach (var type in new[] { typeof(AppearancePage), typeof(InteractionPage) })
-            navigation.MenuItems.Add(new NavigationViewItem { Content = type.Name, TargetPageType = type, NavigationCacheMode = Wpf.Ui.Controls.NavigationCacheMode.Disabled });
+        foreach (var destination in SettingsPageCatalog.ForMode(SettingsMode.Taskbar))
+        {
+            var item = new NavigationViewItem
+            {
+                Content = Translations.Get(destination.TitleKey),
+                TargetPageType = SettingsPageProvider.PageTypes[destination.Key],
+                NavigationCacheMode = Wpf.Ui.Controls.NavigationCacheMode.Disabled
+            };
+            if (destination.IsFooter) navigation.FooterMenuItems.Add(item);
+            else navigation.MenuItems.Add(item);
+        }
         navigation.SetPageProviderService(provider);
         var resetHost = new Wpf.Ui.Controls.ContentDialogHost();
         var content = new Grid();
@@ -65,14 +97,33 @@ internal static class SettingsLiveVisualChecks
             Pump(TimeSpan.FromMilliseconds(80));
             var first = (AppearancePage)provider.GetPage(typeof(AppearancePage))!;
             Assert.AreSame(first, arrived);
+            CapturePreview(host, "UnifiedAppearance");
+            var background = ((Panel)((ScrollViewer)first.FindName("PageScroll")).Content).Children.OfType<SettingsGroup>()
+                .Single(group => group.GroupId == "Appearance.Group.TaskbarBackground");
+            var details = ((Panel)background.Content).Children.OfType<Wpf.Ui.Controls.CardExpander>().Single();
+            details.IsExpanded = false;
+            ((Grid)first.Content).Children.OfType<SettingsGroupStrip>().Single().RevealGroup(background.GroupId);
+            Pump(TimeSpan.FromMilliseconds(300));
+            Assert.IsTrue(details.IsExpanded, "Landing on the notification target must expand its background options.");
+            var firstEditor = first.Taskbar;
+            var firstEditorToken = firstEditor!.ContextCancellationToken;
             provider.SetContext(horizontal with { Orientation = LayoutOrientation.Vertical });
             var vertical = (AppearancePage)provider.GetPage(typeof(AppearancePage))!;
-            navigation.ReplaceContent(vertical);
             Pump(TimeSpan.FromMilliseconds(80));
-            Assert.AreNotSame(first, vertical);
-            Assert.IsFalse(vertical.ViewModel.IsHorizontalLayout);
-            var groups = ((Panel)((ScrollViewer)vertical.FindName("PageScroll")).Content).Children.OfType<SettingsGroup>();
-            Assert.AreEqual(Visibility.Collapsed, groups.Single(group => group.GroupId == "Appearance.Group.RestLayout").Visibility);
+            Assert.AreSame(first, vertical, "Global appearance and font queries must keep their window-owned scope.");
+            Assert.AreNotSame(firstEditor, vertical.Taskbar);
+            Assert.IsTrue(firstEditorToken.IsCancellationRequested);
+            Assert.IsFalse(vertical.Taskbar!.IsHorizontalLayout);
+            var layout = (ComponentsSettingsPage)provider.GetPage(typeof(ComponentsSettingsPage))!;
+            var groups = ((Panel)((ScrollViewer)layout.FindName("PageScroll")).Content).Children.OfType<SettingsGroup>();
+            Assert.AreEqual(Visibility.Visible, groups.Single(group => group.GroupId == "Appearance.Group.RestLayout").Visibility);
+            Assert.IsTrue(navigation.Navigate(typeof(ComponentsSettingsPage)));
+            Pump(TimeSpan.FromMilliseconds(100));
+            Assert.AreSame(layout, arrived);
+            var restPanel = (Panel)groups.Single(group => group.GroupId == "Common.RestLayer").Content;
+            var ordered = restPanel.Children.OfType<Wpf.Ui.Controls.CardExpander>().Single(expander =>
+                expander.Content is Panel panel && panel.Children.OfType<ItemsControl>().Any(items => items.ItemsSource == layout.ViewModel.Layout.RestOrderEntries));
+            Assert.AreEqual(Visibility.Collapsed, ordered.Visibility, "Vertical taskbars must not expose horizontal component sorting.");
             Assert.IsTrue(navigation.Navigate(typeof(InteractionPage)));
             Assert.IsTrue(navigation.Navigate(typeof(AppearancePage)));
             Assert.AreSame(vertical, arrived, "NavigationView must ask the provider for the current context rather than reuse its own old page.");
@@ -80,9 +131,56 @@ internal static class SettingsLiveVisualChecks
             navigation.ReplaceContent((UIElement)provider.GetPage(typeof(AppearancePage))!);
             Pump(TimeSpan.FromMilliseconds(80));
             Assert.AreSame(first, provider.GetPage(typeof(AppearancePage)));
+            Assert.AreSame(firstEditor, first.Taskbar);
+            Assert.IsTrue(navigation.Navigate(typeof(ComponentsSettingsPage)));
+            Pump(TimeSpan.FromMilliseconds(100));
+            var horizontalLayout = (ComponentsSettingsPage)provider.GetPage(typeof(ComponentsSettingsPage))!;
+            Assert.AreNotSame(layout, horizontalLayout);
+            var arrangement = (System.Windows.Controls.ComboBox)horizontalLayout.FindName("ArrangementPicker");
+            horizontalLayout.ViewModel.Layers.TaskbarArrangementIndex = 0;
+            Assert.AreEqual(0, arrangement.SelectedIndex, "Automatic direction must be an actual selected option.");
+            arrangement.SelectedIndex = 2;
+            Assert.AreEqual(TaskbarContentArrangement.Right, SettingsManager.Current.TaskbarExperience.Arrangement);
+            horizontalLayout.ViewModel.Layers.TaskbarPosition = TaskbarBarPosition.Center;
+            Pump(TimeSpan.FromMilliseconds(20));
+            Assert.IsNull(SettingsManager.Current.TaskbarExperience.Arrangement);
+            Assert.AreEqual(0, arrangement.SelectedIndex, "Changing placement must visibly restore automatic direction.");
+            CapturePreview(host, "ContentLayout");
+            ((Grid)horizontalLayout.Content).Children.OfType<SettingsGroupStrip>().Single().RevealGroup("Appearance.Group.RestLayout");
+            Pump(TimeSpan.FromMilliseconds(350));
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AFMB_SETTINGS_PREVIEW_DIR")))
+            {
+                var scroll = (ScrollViewer)horizontalLayout.FindName("PageScroll");
+                var textGroup = ((Panel)scroll.Content).Children.OfType<SettingsGroup>().Single(group => group.GroupId == "Appearance.Group.RestLayout");
+                scroll.ScrollToVerticalOffset(scroll.VerticalOffset + textGroup.TranslatePoint(new Point(), scroll).Y);
+                horizontalLayout.UpdateLayout();
+            }
+            CapturePreview(host, "TextLayout");
             VerifyResetCancellation(resetHost);
         }
-        finally { host.Close(); Pump(TimeSpan.FromMilliseconds(30)); }
+        finally { host.Close(); Pump(TimeSpan.FromMilliseconds(30)); SettingsManager.Replace(previousSettings); }
+    }
+
+    private static void CapturePreview(FrameworkElement visual, string name)
+    {
+        var directory = Environment.GetEnvironmentVariable("AFMB_SETTINGS_PREVIEW_DIR");
+        if (string.IsNullOrEmpty(directory)) return;
+        SettlePreview(visual);
+        visual.UpdateLayout();
+        Directory.CreateDirectory(directory);
+        var bitmap = new RenderTargetBitmap((int)Math.Ceiling(visual.ActualWidth), (int)Math.Ceiling(visual.ActualHeight), 96d, 96d, PixelFormats.Pbgra32);
+        bitmap.Render(visual);
+        var encoder = new PngBitmapEncoder();
+        encoder.Frames.Add(BitmapFrame.Create(bitmap));
+        using var output = File.Create(Path.Combine(directory, name + ".png"));
+        encoder.Save(output);
+    }
+
+    private static void SettlePreview(DependencyObject visual)
+    {
+        if (visual is Panel panel) SettingsRevealAnimator.Cancel(panel);
+        for (var index = 0; index < VisualTreeHelper.GetChildrenCount(visual); index++)
+            SettlePreview(VisualTreeHelper.GetChild(visual, index));
     }
 
     private static void VerifyResetCancellation(Wpf.Ui.Controls.ContentDialogHost host)
@@ -197,6 +295,10 @@ internal static class SettingsLiveVisualChecks
             Pump(TimeSpan.FromMilliseconds(360));
             var footer = (NavigationViewItem)navigation.SelectedItem!;
             var footerOrigin = footer.TranslatePoint(new Point(2d, 2d), overlay);
+            // 新页面包含字体查询等后台工作，按渲染结果等待收尾，不把一次固定延时当作动画完成。
+            var until = DateTime.UtcNow + TimeSpan.FromSeconds(2);
+            while (Math.Abs(footerOrigin.Y - indicatorPosition.Y) > 0.5d && DateTime.UtcNow < until)
+                Pump(TimeSpan.FromMilliseconds(20));
             Assert.AreEqual(footerOrigin.Y, indicatorPosition.Y, 0.5d, "Footer destinations use the same moving selection surface.");
             navigation.IsPaneOpen = false;
             Pump(TimeSpan.FromMilliseconds(100));

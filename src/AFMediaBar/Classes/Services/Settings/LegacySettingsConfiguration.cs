@@ -63,9 +63,15 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context) : I
         Current.TaskbarTargetMonitorDeviceId = null;
     }
     /// <inheritdoc />
-    public void SetTaskbarPlacement(bool? locked = null, bool? avoidIcons = null, double? crossAxisOffsetDip = null, bool reset = false)
+    public void SetTaskbarPlacement(bool? locked = null, bool? avoidIcons = null, double? crossAxisOffsetDip = null, bool reset = false, TaskbarBarPosition? alignment = null)
     {
         if (!IsActive || Context.Mode != SettingsMode.Taskbar) return;
+        if (alignment is { } position && Enum.IsDefined(position) && Current.Position != position)
+        {
+            Current.TaskbarBarManualPadding = 0;
+            Current.TaskbarExperience = Current.TaskbarExperience with { Arrangement = null };
+            Current.Position = position;
+        }
         if (locked is { } lockValue) Current.TaskbarBarPositionLocked = lockValue;
         if (avoidIcons is { } avoidValue) Current.TaskbarBarAvoidIcons = avoidValue;
         if (crossAxisOffsetDip is { } offset) Current.TaskbarBarCrossAxisOffsetDip = offset;

@@ -170,7 +170,7 @@ public partial class AppearanceViewModel : ObservableObject, IDisposable
         {
             if (SetProperty(ref _backdropMode, value))
             {
-                Publish();
+                if (!_isRefreshing) Publish();
             }
         }
     }
@@ -184,7 +184,7 @@ public partial class AppearanceViewModel : ObservableObject, IDisposable
             if (SetProperty(ref _accentColorMode, value))
             {
                 OnPropertyChanged(nameof(IsCustomAccent));
-                Publish();
+                if (!_isRefreshing) Publish();
             }
         }
     }
@@ -230,7 +230,7 @@ public partial class AppearanceViewModel : ObservableObject, IDisposable
                 AppearanceSettings.MaximumBackdropTintOpacityPercent);
             if (SetProperty(ref _backdropTintOpacityPercent, value))
             {
-                Publish();
+                if (!_isRefreshing) Publish();
             }
         }
     }

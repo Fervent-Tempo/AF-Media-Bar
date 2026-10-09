@@ -21,7 +21,7 @@ public sealed class SettingsPageScopeTests
         using var cache = new SettingsPageScopeCache(provider.GetRequiredService<IServiceScopeFactory>());
         var horizontal = new SettingsContext(SettingsMode.Taskbar, "primary", LayoutOrientation.Horizontal, false, true);
         var definition = SettingsPageCatalog.Find(SettingsPageKey.Components, SettingsMode.Taskbar)!;
-        var global = SettingsPageCatalog.Find(SettingsPageKey.ApplicationAppearance, SettingsMode.Taskbar)!;
+        var global = SettingsPageCatalog.Find(SettingsPageKey.Appearance, SettingsMode.Taskbar)! with { HasModeContent = false };
         cache.SetContext(horizontal);
         var first = (Probe)cache.Get(typeof(Probe), definition);
         var application = (Probe)cache.Get(typeof(Probe), global);

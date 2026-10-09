@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models.Layout;
@@ -32,6 +33,7 @@ namespace AFMediaBar.Views.Windows
         public MainWindowViewModel ViewModel { get; }
 
         private readonly TaskbarWindowViewModel _taskbarViewModel;
+        private readonly TaskbarFallbackNotificationGate _placementNotificationGate = new();
         private readonly ITaskbarDockService _taskBarService;
         private readonly MediaSessionService _mediaSessionService;
         private readonly AudioControlViewModel _audioControlViewModel;
@@ -67,12 +69,10 @@ namespace AFMediaBar.Views.Windows
         private TrackChangeNotificationWindow? _trackChangeNotificationWindow;
         private string? _effectiveTaskbarTargetSignature;
         private int _taskbarCreatedMessage;
-        private bool _isSystemThemeWatcherActive;
         private bool _isClosing;
         private bool _layoutSettingsUpdateScheduled;
         private bool _experienceSettingsUpdateScheduled;
         private LayoutSettingsChangedEventArgs? _latestLayoutSettings;
-        private ApplicationBackdropMode? _watchedBackdropMode;
         private CancellationTokenSource? _taskbarRecoveryCancellation;
 
         /// <summary>
@@ -159,7 +159,6 @@ namespace AFMediaBar.Views.Windows
             };
 
             InitializeComponent();
-            UpdateSystemThemeWatcher(SettingsManager.Current.Appearance);
 
 
             Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0));
@@ -254,20 +253,6 @@ namespace AFMediaBar.Views.Windows
             TrayMenu.IsOpen = false;
             foreach (var taskbarWindow in _taskbarWindows)
                 taskbarWindow.ClosePlayerMenu();
-
-            if (_isSystemThemeWatcherActive)
-            {
-                try
-                {
-                    SystemThemeWatcher.UnWatch(this);
-                }
-                catch (InvalidOperationException)
-                {
-                    // 窗口句柄可能已被异常的显示环境恢复销毁；关闭路径必须继续完成。
-                    // An abnormal display recovery may already have destroyed the HWND; shutdown must continue.
-                }
-                _isSystemThemeWatcherActive = false;
-            }
 
             CloseTaskbarWindows();
             _audioControlFlyout.Dispose();
@@ -493,6 +478,7 @@ namespace AFMediaBar.Views.Windows
             foreach (var taskbarWindow in taskbarWindows)
             {
                 taskbarWindow.OpenFullPanelRequested -= TaskbarWindow_OpenFullPanelRequested;
+                taskbarWindow.PlacementFallbackRequested -= TaskbarWindow_PlacementFallbackRequested;
                 taskbarWindow.SuspendForEnvironmentRecovery();
                 taskbarWindow.DetachFromTaskbar();
                 try
@@ -564,7 +550,6 @@ namespace AFMediaBar.Views.Windows
                 if (_isClosing)
                     return;
 
-                UpdateSystemThemeWatcher(e.Appearance);
                 foreach (var taskbarWindow in _taskbarWindows)
                     taskbarWindow.ApplyAppearanceSettings();
             });
@@ -594,35 +579,6 @@ namespace AFMediaBar.Views.Windows
                     taskbarWindow.ApplySnapshot(snapshot);
                 }
             });
-        }
-
-        private void UpdateSystemThemeWatcher(AppearanceSettings appearance)
-        {
-            if (_isClosing)
-                return;
-
-            var shouldWatch = appearance.ApplicationThemeMode == ApplicationThemeMode.Automatic;
-            if (shouldWatch == _isSystemThemeWatcherActive &&
-                (!shouldWatch || _watchedBackdropMode == appearance.BackdropMode))
-            {
-                return;
-            }
-
-            if (_isSystemThemeWatcherActive)
-            {
-                SystemThemeWatcher.UnWatch(this);
-            }
-
-            if (shouldWatch)
-            {
-                SystemThemeWatcher.Watch(
-                    this,
-                    WindowBackdropType.None,
-                    updateAccents: true);
-            }
-
-            _isSystemThemeWatcherActive = shouldWatch;
-            _watchedBackdropMode = shouldWatch ? appearance.BackdropMode : null;
         }
 
         private void ActivateTaskbarMode()
@@ -838,6 +794,7 @@ namespace AFMediaBar.Views.Windows
                 _mouseInputMonitor,
                 _memoryPruneCoordinator);
             window.OpenFullPanelRequested += TaskbarWindow_OpenFullPanelRequested;
+            window.PlacementFallbackRequested += TaskbarWindow_PlacementFallbackRequested;
             return window;
         }
 
@@ -898,6 +855,7 @@ namespace AFMediaBar.Views.Windows
             _settingsWindow.Closed -= SettingsWindow_Closed;
             _settingsWindow.Closed += SettingsWindow_Closed;
             _settingsWindow.Show();
+            if (_settingsWindow.WindowState == WindowState.Minimized) _settingsWindow.WindowState = WindowState.Normal;
             _settingsWindow.Activate();
         }
 
@@ -945,15 +903,41 @@ namespace AFMediaBar.Views.Windows
             // caching it in a field would keep announcing in the old language after a switch.
             _trayIconService.TryShowNotification(
                 Translations.Get("Update.Notification.Title"),
-                Translations.Format("Update.Notification.Body", version, state.CurrentVersion));
+                Translations.Format("Update.Notification.Body", version, state.CurrentVersion),
+                ShellNotificationTarget.Application);
         }
 
-        private void TrayIconService_OnNotificationClicked(object? sender, EventArgs e)
+        private void TrayIconService_OnNotificationClicked(ShellNotificationTarget target)
         {
-            if (_isClosing)
+            if (_isClosing) return;
+            if (target == ShellNotificationTarget.Application)
+            {
+                ViewModel_OpenUpdateSettingsRequested(this, EventArgs.Empty);
                 return;
+            }
+            if (target != ShellNotificationTarget.TaskbarBackground) return;
 
-            ViewModel_OpenUpdateSettingsRequested(sender, EventArgs.Empty);
+            ViewModel_OpenSettingsRequested(this, EventArgs.Empty);
+            if (_settingsWindow is not { } settingsWindow) return;
+            settingsWindow.Dispatcher.BeginInvoke(
+                System.Windows.Threading.DispatcherPriority.Loaded,
+                new Action(() =>
+                {
+                    if (_isClosing || !ReferenceEquals(_settingsWindow, settingsWindow)) return;
+                    settingsWindow.NavigateToGroup(SettingsPageKey.Appearance, "Appearance.Group.TaskbarBackground");
+                }));
+        }
+
+        private void TaskbarWindow_PlacementFallbackRequested(object? sender, TaskbarPlacementFallbackEventArgs e)
+        {
+            if (_isClosing || sender is not TaskbarWindow window || !_taskbarWindows.Contains(window))
+                return;
+            if (!_placementNotificationGate.TryBegin(Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency))
+                return;
+            _trayIconService.TryShowNotification(
+                Translations.Get("Taskbar.Placement.Notification.Title"),
+                Translations.Get(e.IsHidden ? "Taskbar.Placement.Notification.Hidden" : "Taskbar.Placement.Notification.Moved"),
+                ShellNotificationTarget.None);
         }
 
         private void SettingsWindow_Closed(object? sender, EventArgs e)

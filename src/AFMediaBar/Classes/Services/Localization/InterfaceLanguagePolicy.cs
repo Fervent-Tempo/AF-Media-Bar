@@ -27,6 +27,7 @@ public static class InterfaceLanguagePolicy
         InterfaceLanguage.SimplifiedChinese => LocalizationLanguage.SimplifiedChinese,
         InterfaceLanguage.TraditionalChinese => LocalizationLanguage.TraditionalChinese,
         InterfaceLanguage.English => LocalizationLanguage.English,
+        InterfaceLanguage.Vietnamese => LocalizationLanguage.Vietnamese,
         _ => ResolveSystem(systemCulture),
     };
 
@@ -34,21 +35,31 @@ public static class InterfaceLanguagePolicy
     /// 按系统 UI 区域性解析语言。
     ///
     /// 规则：中文系统按正体/简体分成两支——区域名带 <c>Hant</c>、<c>TW</c>、<c>HK</c>、<c>MO</c> 或 <c>CHT</c>
-    /// 的是繁体，其余中文（含中性的 <c>zh</c>）是简体；非中文系统一律回到英文，因为英文是这三种语言里唯一
-    /// 面向非中文用户的，而"跟随系统"得到不支持的语言时不能把界面留空。
+    /// 的是繁体，其余中文（含中性的 <c>zh</c>）是简体；越南语系统解析为越南语；其余非中文系统一律回到英文，
+    /// 因为英文面向非中文用户，而"跟随系统"得到不支持的语言时不能把界面留空。
     /// Resolves the language from the system UI culture.
     ///
     /// The rule: a Chinese system splits into the traditional and simplified branches — a region name carrying
     /// <c>Hant</c>, <c>TW</c>, <c>HK</c>, <c>MO</c>, or <c>CHT</c> is traditional and every other Chinese culture
-    /// (including the neutral <c>zh</c>) is simplified; a non-Chinese system falls back to English, because English is
-    /// the only one of the three aimed at non-Chinese users and "follow the system" must never leave the interface empty
-    /// when it resolves to a language the application does not carry.
+    /// (including the neutral <c>zh</c>) is simplified; a Vietnamese system resolves to Vietnamese; every other
+    /// non-Chinese system falls back to English, because English is aimed at non-Chinese users and "follow the system"
+    /// must never leave the interface empty when it resolves to a language the application does not carry.
     /// </summary>
     /// <param name="systemCulture">系统 UI 区域性；为 null 时按英文处理。/ The system UI culture, treated as English when null.</param>
     public static LocalizationLanguage ResolveSystem(CultureInfo? systemCulture)
     {
         var name = systemCulture?.Name;
-        if (string.IsNullOrEmpty(name) || !name.StartsWith("zh", StringComparison.OrdinalIgnoreCase))
+        if (string.IsNullOrEmpty(name))
+        {
+            return LocalizationLanguage.English;
+        }
+
+        if (name.StartsWith("vi", StringComparison.OrdinalIgnoreCase))
+        {
+            return LocalizationLanguage.Vietnamese;
+        }
+
+        if (!name.StartsWith("zh", StringComparison.OrdinalIgnoreCase))
         {
             return LocalizationLanguage.English;
         }
@@ -72,6 +83,7 @@ public static class InterfaceLanguagePolicy
     {
         LocalizationLanguage.TraditionalChinese => "zh-Hant",
         LocalizationLanguage.English => "en",
+        LocalizationLanguage.Vietnamese => "vi",
         _ => "zh-Hans",
     };
 }

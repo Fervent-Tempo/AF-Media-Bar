@@ -113,6 +113,7 @@ public sealed class InstalledFontCatalogTests
                 {
                     LocalizationLanguage.English => InterfaceLanguage.English,
                     LocalizationLanguage.TraditionalChinese => InterfaceLanguage.TraditionalChinese,
+                    LocalizationLanguage.Vietnamese => InterfaceLanguage.Vietnamese,
                     _ => InterfaceLanguage.SimplifiedChinese
                 });
             }

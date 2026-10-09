@@ -69,6 +69,7 @@ public static class Translations
         {
             LocalizationLanguage.TraditionalChinese => text.TraditionalChinese,
             LocalizationLanguage.English => text.English,
+            LocalizationLanguage.Vietnamese => text.Vietnamese,
             _ => text.SimplifiedChinese,
         };
 
@@ -139,10 +140,12 @@ public static class Translations
         var simplifiedChinese = Load("StringsZhHans");
         var traditionalChinese = Load("StringsZhHant");
         var english = Load("StringsEn");
+        var vietnamese = Load("StringsVi");
 
         var keys = new SortedSet<string>(simplifiedChinese.Keys, StringComparer.Ordinal);
         keys.UnionWith(traditionalChinese.Keys);
         keys.UnionWith(english.Keys);
+        keys.UnionWith(vietnamese.Keys);
 
         var table = new Dictionary<string, LocalizedText>(keys.Count, StringComparer.Ordinal);
         foreach (var key in keys)
@@ -150,7 +153,8 @@ public static class Translations
             table[key] = new LocalizedText(
                 simplifiedChinese.GetValueOrDefault(key, string.Empty),
                 traditionalChinese.GetValueOrDefault(key, string.Empty),
-                english.GetValueOrDefault(key, string.Empty));
+                english.GetValueOrDefault(key, string.Empty),
+                vietnamese.GetValueOrDefault(key, string.Empty));
         }
 
         return table;
@@ -185,8 +189,9 @@ public static class Translations
     }
 }
 
-/// <summary>一条界面文案的三种语言取值。/ The three language values of one interface string.</summary>
+/// <summary>一条界面文案的四种语言取值。/ The four language values of one interface string.</summary>
 /// <param name="SimplifiedChinese">简体中文，兼作回退。/ Simplified Chinese, also the fallback.</param>
 /// <param name="TraditionalChinese">繁体中文。/ Traditional Chinese.</param>
 /// <param name="English">英文。/ English.</param>
-internal readonly record struct LocalizedText(string SimplifiedChinese, string TraditionalChinese, string English);
+/// <param name="Vietnamese">越南语。/ Vietnamese.</param>
+internal readonly record struct LocalizedText(string SimplifiedChinese, string TraditionalChinese, string English, string Vietnamese);
