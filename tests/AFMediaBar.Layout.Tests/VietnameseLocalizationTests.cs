@@ -1,10 +1,12 @@
 using System.Globalization;
+using System.Resources;
 using AFMediaBar.Classes.Services.Localization;
 using AFMediaBar.Resources;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace AFMediaBar.Layout.Tests;
 
+/// <summary>验证越南语选择与原始资源完整性，防止语言回退掩盖缺项。</summary>
 [TestClass]
 public sealed class VietnameseLocalizationTests
 {
@@ -37,9 +39,15 @@ public sealed class VietnameseLocalizationTests
     {
         Assert.IsTrue(Translations.Keys.Count > 700);
 
+        var manager = new ResourceManager("AFMediaBar.Resources.StringsVi", typeof(Translations).Assembly);
+        using var resources = manager.GetResourceSet(CultureInfo.InvariantCulture, createIfNotExists: true, tryParents: false);
+        Assert.IsNotNull(resources);
+        var missing = Translations.Keys.Where(key => string.IsNullOrWhiteSpace(resources.GetString(key))).ToArray();
+        Assert.AreEqual(0, missing.Length, $"Missing Vietnamese resources: {string.Join(", ", missing)}");
+
         foreach (var key in Translations.Keys)
         {
-            var text = Translations.Get(key, LocalizationLanguage.Vietnamese);
+            var text = resources.GetString(key);
             Assert.IsFalse(string.IsNullOrWhiteSpace(text), $"Vietnamese translation for '{key}' is empty");
             Assert.AreNotEqual(key, text, $"Missing Vietnamese translation for key '{key}'");
         }

@@ -1057,6 +1057,21 @@
   <data name="DisplayModes.Rest.Row.Artwork.Title" xml:space="preserve">
     <value>Hiển thị ảnh bìa</value>
   </data>
+  <data name="DisplayModes.Rest.Row.ArtworkHover.Description" xml:space="preserve">
+    <value>Chọn cách hiển thị khi di chuột lên ảnh bìa. Phóng to tại chỗ mở rộng ảnh lên phía trên thanh tác vụ, xem trước ảnh lớn hiển thị một thẻ riêng, còn chế độ tắt vẫn phóng to nhẹ trong thanh media.</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkHover.Mode.Off" xml:space="preserve">
+    <value>Tắt (1.1×)</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkHover.Mode.Preview" xml:space="preserve">
+    <value>Xem trước ảnh lớn</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkHover.Mode.Zoom" xml:space="preserve">
+    <value>Phóng to tại chỗ (2×)</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkHover.Title" xml:space="preserve">
+    <value>Phóng to ảnh bìa khi di chuột</value>
+  </data>
   <data name="DisplayModes.Rest.Row.DeviceButton.Description" xml:space="preserve">
     <value>Giữ nút thiết bị hiển thị, dùng khoảng trống của chữ; nhấp để chọn hoặc cuộn để chuyển thiết bị.</value>
   </data>
@@ -1350,6 +1365,27 @@
   </data>
   <data name="Lyrics.Row.CharacterSpacing.Title" xml:space="preserve">
     <value>Khoảng cách ký tự</value>
+  </data>
+  <data name="Lyrics.Row.ChineseConversion.Description" xml:space="preserve">
+    <value>Hiển thị lời bài hát bằng chữ giản thể hoặc phồn thể. Chỉ thay đổi cách hiển thị; lời bài hát đã lấy vẫn giữ nguyên.</value>
+  </data>
+  <data name="Lyrics.Row.ChineseConversion.Direction.Description" xml:space="preserve">
+    <value>Chọn dạng chữ muốn chuyển sang. Chọn “Tắt” để hiển thị lời bài hát đúng như nguồn cung cấp.</value>
+  </data>
+  <data name="Lyrics.Row.ChineseConversion.Direction.Title" xml:space="preserve">
+    <value>Hướng chuyển đổi</value>
+  </data>
+  <data name="Lyrics.Row.ChineseConversion.Option.Off" xml:space="preserve">
+    <value>Tắt</value>
+  </data>
+  <data name="Lyrics.Row.ChineseConversion.Option.ToSimplified" xml:space="preserve">
+    <value>Phồn thể → Giản thể</value>
+  </data>
+  <data name="Lyrics.Row.ChineseConversion.Option.ToTraditional" xml:space="preserve">
+    <value>Giản thể → Phồn thể</value>
+  </data>
+  <data name="Lyrics.Row.ChineseConversion.Title" xml:space="preserve">
+    <value>Chuyển đổi giản thể/phồn thể</value>
   </data>
   <data name="Lyrics.Row.FixedWidth.Badge" xml:space="preserve">
     <value>Hãy bật lời bài hát trước</value>
