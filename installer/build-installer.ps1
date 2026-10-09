@@ -1,4 +1,4 @@
-﻿# AF Media Bar 安装包构建脚本 / AF Media Bar installer build script
+# AF Media Bar 安装包构建脚本 / AF Media Bar installer build script
 #
 # 本地与 CI 共用同一条链路：读取项目版本 -> 单文件自包含发布 -> Inno Setup 编译 -> 校验产物与哈希。
 # The local and CI paths are the same chain: read the project version, publish the self-contained single
@@ -231,6 +231,25 @@ The file must have SHA-256 $expectedSha256.
 "@
 }
 
+function Resolve-VietnameseMessagesFile {
+    param([string]$IsccPath)
+
+    $cacheDirectory = Join-Path $PSScriptRoot 'languages'
+    $cachePath = Join-Path $cacheDirectory 'Vietnamese.isl'
+    if (Test-Path -LiteralPath $cachePath) {
+        Write-Host "Vietnamese messages file: $cachePath (repository cache)"
+        return (Resolve-Path -LiteralPath $cachePath).Path
+    }
+
+    $installed = Join-Path (Split-Path -Parent $IsccPath) 'Languages\Vietnamese.isl'
+    if (Test-Path -LiteralPath $installed) {
+        Write-Host "Vietnamese messages file: $installed (installed Inno Setup)"
+        return (Resolve-Path -LiteralPath $installed).Path
+    }
+
+    throw "The Vietnamese messages file could not be located at $cachePath."
+}
+
 $appVersion = Resolve-Version
 Write-Host "AF Media Bar version: $appVersion"
 
@@ -238,6 +257,7 @@ Write-Host "AF Media Bar version: $appVersion"
 # The compiler is located before publishing so a missing tool fails immediately instead of after a full publish.
 $iscc = Resolve-Iscc
 $chineseMessagesFile = Resolve-ChineseMessagesFile -IsccPath $iscc
+$vietnameseMessagesFile = Resolve-VietnameseMessagesFile -IsccPath $iscc
 
 if (-not $SkipPublish) {
     if (-not $NoRestore) {
@@ -272,8 +292,8 @@ if ($publishedFiles.Count -ne 1 -or $publishedFiles[0].Name -ne $exeName) {
 Write-Host "Inno Setup compiler: $iscc"
 
 New-Item -ItemType Directory -Force -Path $outputPath | Out-Null
-Write-Host "> ISCC.exe /DMyAppVersion=$appVersion /DPublishDir=$publishPath /DChineseMessagesFile=$chineseMessagesFile"
-& $iscc "/DMyAppVersion=$appVersion" "/DPublishDir=$publishPath" "/DChineseMessagesFile=$chineseMessagesFile" $issPath
+Write-Host "> ISCC.exe /DMyAppVersion=$appVersion /DPublishDir=$publishPath /DChineseMessagesFile=$chineseMessagesFile /DVietnameseMessagesFile=$vietnameseMessagesFile"
+& $iscc "/DMyAppVersion=$appVersion" "/DPublishDir=$publishPath" "/DChineseMessagesFile=$chineseMessagesFile" "/DVietnameseMessagesFile=$vietnameseMessagesFile" $issPath
 if ($LASTEXITCODE -ne 0) {
     throw "ISCC failed with exit code $LASTEXITCODE."
 }
