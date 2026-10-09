@@ -76,6 +76,8 @@ public sealed class SettingsVisualRuntimeTests
                 var tint = (Border)choice.Template.FindName("ChoiceTint", choice);
                 Assert.AreEqual(0.10d, tint.Opacity);
                 Assert.IsFalse(tint.HasAnimatedProperties, "Selection feedback must also work with all system animation disabled.");
+                WindowBackdropRefreshChecks.VerifyLiveSelection(app);
+                WindowBackdropRefreshChecks.VerifyNativeSelection(app);
                 VerifyNumericBinding(app);
                 VerifyNarrowRow(app);
                 SettingsLiveVisualChecks.VerifyCardHover(app);

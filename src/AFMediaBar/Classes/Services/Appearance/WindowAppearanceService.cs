@@ -32,7 +32,9 @@ public sealed class WindowAppearanceService : IDisposable
     private readonly Dictionary<FluentWindow, HwndSource> _windowSources = [];
     private readonly HashSet<ContextMenu> _menus = [];
     private readonly Dictionary<ContextMenu, Window> _menuOwners = [];
-    private bool _applyQueued;
+    private readonly Dispatcher _dispatcher = Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
+    private DispatcherOperation? _refreshOperation;
+    private int _refreshGeneration;
     private bool _disposed;
 
     /// <summary>
@@ -124,10 +126,11 @@ public sealed class WindowAppearanceService : IDisposable
 
     private void RegisterWindowSource(FluentWindow window)
     {
-        if (_windowSources.ContainsKey(window) || PresentationSource.FromVisual(window) is not HwndSource source)
-        {
-            return;
-        }
+        if (_windowSources.ContainsKey(window)) return;
+        var source = PresentationSource.FromVisual(window) as HwndSource;
+        var handle = new WindowInteropHelper(window).Handle;
+        if (source is null && handle != nint.Zero) source = HwndSource.FromHwnd(handle);
+        if (source is null || source.IsDisposed) return;
 
         source.AddHook(WindowProc);
         _windowSources.Add(window, source);
@@ -135,8 +138,9 @@ public sealed class WindowAppearanceService : IDisposable
 
     private void OnWindowLoaded(object sender, RoutedEventArgs e)
     {
-        if (sender is FluentWindow window)
+        if (sender is FluentWindow window && !_disposed && _windows.Contains(window))
         {
+            RegisterWindowSource(window);
             ApplyWindow(window);
         }
     }
@@ -166,6 +170,7 @@ public sealed class WindowAppearanceService : IDisposable
         {
             source.RemoveHook(WindowProc);
         }
+        if (_windows.Count == 0 && _menus.Count == 0) CancelPendingRefresh();
     }
 
     private void OnMenuOpened(object? sender, RoutedEventArgs e)
@@ -212,6 +217,7 @@ public sealed class WindowAppearanceService : IDisposable
         }
 
         owner.Closed -= OnMenuOwnerClosed;
+        if (_windows.Count == 0 && _menus.Count == 0) CancelPendingRefresh();
     }
 
     private nint WindowProc(nint hwnd, int message, nint wParam, nint lParam, ref bool handled)
@@ -222,31 +228,45 @@ public sealed class WindowAppearanceService : IDisposable
             if (message == WmDwmColorizationColorChanged)
                 SystemColorizationChanged?.Invoke();
 
-            QueueApplyAll();
+            RequestRefresh();
         }
 
         return nint.Zero;
     }
 
-    private void OnAppearanceSettingsChanged(object? sender, AppearanceSettingsChangedEventArgs e) => QueueApplyAll();
+    private void OnAppearanceSettingsChanged(object? sender, AppearanceSettingsChangedEventArgs e) => RequestRefresh();
 
-    private void OnApplicationThemeChanged(ApplicationTheme theme, System.Windows.Media.Color accent) => QueueApplyAll();
+    private void OnApplicationThemeChanged(ApplicationTheme theme, System.Windows.Media.Color accent) => RequestRefresh();
 
-    private void OnApplicationIconChanged() => QueueApplyAll();
+    private void OnApplicationIconChanged() => RequestRefresh();
 
-    private void QueueApplyAll()
+    /// <summary>合并材质刷新请求，在主题资源发布后应用最新配置；允许从其他线程请求。</summary>
+    public void RequestRefresh()
     {
-        if (_disposed || _applyQueued || Application.Current?.Dispatcher is not { } dispatcher)
+        if (_disposed || _dispatcher.HasShutdownStarted || _dispatcher.HasShutdownFinished) return;
+        var generation = _refreshGeneration;
+        if (!_dispatcher.CheckAccess())
         {
+            _dispatcher.BeginInvoke(() =>
+            {
+                if (!_disposed && generation == _refreshGeneration) RequestRefresh();
+            }, DispatcherPriority.Loaded);
             return;
         }
-
-        _applyQueued = true;
-        dispatcher.BeginInvoke(() =>
+        if (_windows.Count == 0 && _menus.Count == 0 || _refreshOperation?.Status == DispatcherOperationStatus.Pending) return;
+        _refreshOperation = _dispatcher.BeginInvoke(() =>
         {
-            _applyQueued = false;
+            _refreshOperation = null;
+            if (_disposed || generation != _refreshGeneration) return;
             ApplyAll();
-        }, DispatcherPriority.ContextIdle);
+        }, DispatcherPriority.Loaded);
+    }
+
+    private void CancelPendingRefresh()
+    {
+        _refreshGeneration++;
+        _refreshOperation?.Abort();
+        _refreshOperation = null;
     }
 
     private void ApplyAll()
@@ -264,6 +284,7 @@ public sealed class WindowAppearanceService : IDisposable
 
     private void ApplyWindow(FluentWindow window)
     {
+        if (_disposed || !_windows.Contains(window)) return;
         // 图标先于句柄判断：没有句柄的窗口也可能已经显示过（任务栏按钮已存在），主题变化时它同样要换图。
         // The icon comes before the handle check: a window without a handle may already have been shown (its taskbar button exists)
         // and still has to swap artwork on a theme change.
@@ -444,6 +465,7 @@ public sealed class WindowAppearanceService : IDisposable
         }
 
         _disposed = true;
+        CancelPendingRefresh();
         SettingsManager.AppearanceSettingsChanged -= OnAppearanceSettingsChanged;
         ApplicationThemeManager.Changed -= OnApplicationThemeChanged;
         _appIconService.IconChanged -= OnApplicationIconChanged;

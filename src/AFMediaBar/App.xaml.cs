@@ -386,8 +386,10 @@ namespace AFMediaBar
             // DWM 的强调色变化消息由窗口外观服务统一接收；转交协调器后整套应用级画刷会一起更新。
             // The window appearance service receives DWM's accent-change message; forwarding it makes the coordinator refresh
             // the whole set of application-level brushes at once.
-            Services.GetRequiredService<WindowAppearanceService>().SystemColorizationChanged +=
+            var windowAppearance = Services.GetRequiredService<WindowAppearanceService>();
+            windowAppearance.SystemColorizationChanged +=
                 () => _themeCoordinator?.Apply(SettingsManager.Current.Appearance);
+            _themeCoordinator.AppearanceResourcesApplied += windowAppearance.RequestRefresh;
             try
             {
                 await _host.StartAsync(_startupCancellation.Token);

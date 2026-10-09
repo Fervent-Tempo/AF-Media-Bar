@@ -32,6 +32,9 @@ public sealed class ApplicationThemeCoordinator : IDisposable
     private bool _started;
     private bool _disposed;
 
+    /// <summary>主题、强调色与外观资源完成更新后，通知组合根重新应用窗口材质。</summary>
+    public event Action? AppearanceResourcesApplied;
+
     /// <summary>
     /// 创建主题协调器。
     /// Creates the application theme coordinator.
@@ -187,6 +190,7 @@ public sealed class ApplicationThemeCoordinator : IDisposable
         ApplicationThemeManager.Apply(theme, WindowBackdropType.None, updateAccent: false);
 
         _updateResources(appearance, theme, palette);
+        if (!_disposed) AppearanceResourcesApplied?.Invoke();
     }
 
     /// <summary>
@@ -245,12 +249,13 @@ public sealed class ApplicationThemeCoordinator : IDisposable
 
     private void OnUserPreferenceChanged(object? sender, UserPreferenceChangedEventArgs e)
     {
-        if (SettingsManager.Current.Appearance.ApplicationThemeMode == ApplicationThemeMode.Automatic)
-            QueueSystemThemeRefresh();
+        // 手动主题仍需响应系统强调色、高对比度及透明效果的变化；主题解析会保留用户的模式。
+        QueueSystemThemeRefresh();
     }
 
     private void QueueSystemThemeRefresh()
     {
+        if (_disposed || _dispatcher.HasShutdownStarted || _dispatcher.HasShutdownFinished) return;
         if (!_dispatcher.CheckAccess())
         {
             _dispatcher.BeginInvoke(QueueSystemThemeRefresh, DispatcherPriority.DataBind);
@@ -263,8 +268,7 @@ public sealed class ApplicationThemeCoordinator : IDisposable
             (_, _) =>
             {
                 _systemThemeRefreshTimer!.Stop();
-                if (SettingsManager.Current.Appearance.ApplicationThemeMode == ApplicationThemeMode.Automatic)
-                    Apply(SettingsManager.Current.Appearance);
+                if (!_disposed) Apply(SettingsManager.Current.Appearance);
             },
             _dispatcher);
 
@@ -282,6 +286,7 @@ public sealed class ApplicationThemeCoordinator : IDisposable
             return;
 
         _disposed = true;
+        AppearanceResourcesApplied = null;
         SettingsManager.AppearanceSettingsChanged -= OnAppearanceSettingsChanged;
         ApplicationThemeManager.Changed -= OnApplicationThemeChanged;
         SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
