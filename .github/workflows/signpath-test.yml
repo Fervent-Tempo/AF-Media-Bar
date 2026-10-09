@@ -84,35 +84,56 @@ jobs:
           output-artifact-directory: artifacts/signpath/signed
           parameters: |
             version: ${{ toJSON(steps.metadata.outputs.version) }}
+      # 先保存签名产物，后续 Windows 校验失败时仍可下载并排查。
+      - name: Upload test-signed application
+        uses: actions/upload-artifact@v7
+        with:
+          name: signpath-test-signed-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/signpath/signed/AFMediaBar.exe
+          if-no-files-found: error
+          retention-days: 7
       - name: Verify test signature and write report
+        timeout-minutes: 5
         env:
           SIGNING_REQUEST_ID: ${{ steps.signing.outputs.signing-request-id }}
           SIGNING_REQUEST_URL: ${{ steps.signing.outputs.signing-request-web-url }}
           EXPECTED_PRODUCT_VERSION: ${{ steps.metadata.outputs.version }}
         run: |
+          Write-Host 'Checking signed artifact metadata.'
           $files = @(Get-ChildItem artifacts/signpath/signed -File -Recurse)
           if ($files.Count -ne 1 -or $files[0].FullName -ne (Join-Path $PWD 'artifacts/signpath/signed/AFMediaBar.exe')) { throw 'Expected only the signed AFMediaBar.exe at the artifact root.' }
           $exe = $files[0]
           if ($exe.VersionInfo.ProductName -ne 'AF Media Bar' -or $exe.VersionInfo.ProductVersion -ne $env:EXPECTED_PRODUCT_VERSION) { throw 'Signed application metadata differs from the build.' }
+          Write-Host 'Reading the Authenticode signature.'
           $signature = Get-AuthenticodeSignature -LiteralPath $exe.FullName
           $certificate = $signature.SignerCertificate
           if (-not $certificate) { throw 'The returned application has no Authenticode signer certificate.' }
           if ($certificate.Subject -ne $certificate.Issuer) { throw 'Expected a self-signed test certificate.' }
 
-          # 测试证书自签名；仅在临时 runner 中信任它，校验后移除新增的信任。
+          # 在临时管理员 runner 的机器存储中导入，避免用户 Root 存储的交互提示；校验后移除。
           $certificatePath = Join-Path $env:RUNNER_TEMP 'signpath-test-signer.cer'
-          $rootPath = "Cert:\CurrentUser\Root\$($certificate.Thumbprint)"
+          $rootPath = "Cert:\LocalMachine\Root\$($certificate.Thumbprint)"
+          Write-Host "Preparing temporary trust for test certificate $($certificate.Thumbprint)."
           $alreadyTrusted = Test-Path -LiteralPath $rootPath
-          Export-Certificate -Cert $certificate -FilePath $certificatePath | Out-Null
+          Export-Certificate -Cert $certificate -FilePath $certificatePath -Confirm:$false | Out-Null
           try {
-            if (-not $alreadyTrusted) { Import-Certificate -FilePath $certificatePath -CertStoreLocation Cert:\CurrentUser\Root | Out-Null }
+            if (-not $alreadyTrusted) {
+              Write-Host 'Importing the test certificate into the temporary runner machine root store.'
+              Import-Certificate -FilePath $certificatePath -CertStoreLocation Cert:\LocalMachine\Root -Confirm:$false | Out-Null
+            }
+            Write-Host 'Verifying the Authenticode signature with temporary test certificate trust.'
             $signature = Get-AuthenticodeSignature -LiteralPath $exe.FullName
+            Write-Host "Signature verification returned $($signature.Status)."
             if ($signature.Status -ne 'Valid') { throw "Test signature verification failed: $($signature.Status) - $($signature.StatusMessage)" }
           }
           finally {
-            if (-not $alreadyTrusted -and (Test-Path -LiteralPath $rootPath)) { Remove-Item -LiteralPath $rootPath -Force }
+            if (-not $alreadyTrusted -and (Test-Path -LiteralPath $rootPath)) {
+              Write-Host 'Removing temporary test certificate trust.'
+              Remove-Item -LiteralPath $rootPath -Force -Confirm:$false
+            }
           }
 
+          Write-Host 'Writing the signature report.'
           $report = [ordered]@{
             purpose = 'Test signing only; not a production release'
             commit = $env:GITHUB_SHA
@@ -136,12 +157,10 @@ jobs:
             "签名请求：$env:SIGNING_REQUEST_URL"
             "SHA-256：$($report.sha256)"
           ) | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
-      - name: Upload test-signed application and report
+      - name: Upload signature report
         uses: actions/upload-artifact@v7
         with:
-          name: signpath-test-signed-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            artifacts/signpath/signed/AFMediaBar.exe
-            artifacts/signpath/signature-report.json
+          name: signpath-test-report-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/signpath/signature-report.json
           if-no-files-found: error
           retention-days: 7
