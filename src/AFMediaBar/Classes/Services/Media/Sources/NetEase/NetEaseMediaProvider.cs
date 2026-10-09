@@ -23,7 +23,7 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
     public IMediaSourcePolicy SourcePolicy => _sourcePolicy;
 
     private const string MemoryPlayerSourceId = NetEaseSourcePolicy.SourceId;
-    private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(100);
+    private static readonly TimeSpan _pollInterval = TimeSpan.FromMilliseconds(100);
 
     /// <summary>
     /// 空闲档位的轮询周期。空闲意味着已经有五分钟没有媒体、十分钟没有用户操作：此时连"有没有在放"都不需要每秒问四次，
@@ -61,6 +61,7 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
     private MemoryPruneLevel _pruneLevel;
     private int _currentProcessId;
     private PlayerInfo? _currentInfo;
+    private DateTimeOffset _currentInfoReadAt;
     private MediaSnapshot _sessionSnapshot = MediaSnapshot.Disconnected;
     private int _version;
     private volatile bool _isDisposed;
@@ -69,7 +70,7 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
     /// 轮询周期。剪枝会改写它，而轮询线程在另一个线程上读取，因此这是一个 volatile 字段而不是配置常量。
     /// The poll period. Pruning rewrites it and the polling thread reads it from another thread, so it is a volatile field rather than a constant.
     /// </summary>
-    private volatile int _pollIntervalMilliseconds = (int)PollInterval.TotalMilliseconds;
+    private volatile int _pollIntervalMilliseconds = (int)_pollInterval.TotalMilliseconds;
 
     public event Action<IMediaSourceProvider, MediaSnapshot?>? SnapshotChanged;
 
@@ -201,7 +202,7 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
 
         _pollIntervalMilliseconds = level == MemoryPruneLevel.Idle
             ? IdlePollIntervalMilliseconds
-            : (int)PollInterval.TotalMilliseconds;
+            : (int)_pollInterval.TotalMilliseconds;
 
         // 从 L2/L3 回到 L0/L1 时轮询是停着的，这里按需重启（Start 自身幂等）。
         // Coming back from L2/L3 the poll is stopped, so it is restarted here on demand; Start is idempotent by itself.
@@ -244,7 +245,8 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
                 var result = await Task.Run(() =>
                 {
                     reader ??= _createReader();
-                    return reader.Read(title);
+                    var read = reader.Read(title);
+                    return (read.Info, read.ProcessId, ReadAt: DateTimeOffset.UtcNow);
                 }, token).ConfigureAwait(false);
                 token.ThrowIfCancellationRequested();
                 await _dispatcher.InvokeAsync(() =>
@@ -259,7 +261,7 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
                         _continuity.Clear();
                     }
                     if (result.Info is { } info)
-                        PublishPlayerInfo(info, token);
+                        PublishPlayerInfo(info, result.ReadAt, token);
                     else
                     {
                         // 迟到的同曲歌词不能覆盖失败缓冲或已退出的进程。
@@ -310,23 +312,24 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
         }
     }
 
-    private void PublishPlayerInfo(PlayerInfo info, CancellationToken token)
+    private void PublishPlayerInfo(PlayerInfo info, DateTimeOffset readAt, CancellationToken token)
     {
         if (_currentInfo is not { } current ||
             !string.Equals(current.Identity, info.Identity, StringComparison.Ordinal))
             _version++;
         _currentInfo = info;
+        _currentInfoReadAt = readAt;
 
         var hasCachedLyrics = _lyricsCache.TryGetValue(info.Identity, out var lyrics);
         var shouldLoadLyrics = !hasCachedLyrics && _pendingLyrics.Add(info.Identity);
-        PublishSnapshot(_continuity.Update(CreateSnapshot(info, lyrics), true, DateTimeOffset.UtcNow), token);
+        PublishSnapshot(_continuity.Update(CreateSnapshot(info, lyrics, readAt), true, DateTimeOffset.UtcNow), token);
         if (shouldLoadLyrics)
         {
             _ = LoadLyricsAsync(info, token);
         }
     }
 
-    private MediaSnapshot CreateSnapshot(PlayerInfo info, LyricsResult? lyrics) =>
+    private MediaSnapshot CreateSnapshot(PlayerInfo info, LyricsResult? lyrics, DateTimeOffset readAt) =>
         new(
             true,
             !info.Pause,
@@ -345,7 +348,7 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
             false,
             MediaRepeatMode.Unavailable,
             1,
-            DateTimeOffset.UtcNow);
+            readAt);
 
     private void PublishSnapshot(MediaSnapshot? snapshot, CancellationToken token)
     {
@@ -380,7 +383,8 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
             if (!_isDisposed && version == _version && _currentInfo is { } current &&
                 string.Equals(current.Identity, info.Identity, StringComparison.Ordinal))
             {
-                PublishSnapshot(_continuity.Update(CreateSnapshot(current, result), true, DateTimeOffset.UtcNow), token);
+                // 歌词补全不等于重新读取进度，必须保留最近一次真实内存读取的时间。
+                PublishSnapshot(_continuity.Update(CreateSnapshot(current, result, _currentInfoReadAt), true, DateTimeOffset.UtcNow), token);
             }
         }
         catch (OperationCanceledException)
