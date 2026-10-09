@@ -122,6 +122,46 @@ public sealed class SettingsOrganizationTests
         Assert.AreEqual(content, SettingsManager.Current.TaskbarExperience);
     }
 
+    [DataTestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public void DisplayModeResetRestoresArtworkSettingsAndPreservesContentLayout(bool useUserDefaults)
+    {
+        var defaults = new AppSettings();
+        if (useUserDefaults)
+        {
+            defaults.TaskbarExperience = defaults.TaskbarExperience with
+            {
+                ArtworkVisible = false,
+                ArtworkHoverMode = ArtworkHoverMode.Preview
+            };
+            SettingsManager.SetUserDefaults(defaults);
+        }
+
+        SettingsManager.Current.TaskbarExperience = (SettingsManager.Current.TaskbarExperience with
+        {
+            ArtworkVisible = !defaults.TaskbarExperience.ArtworkVisible,
+            ArtworkHoverMode = ArtworkHoverMode.Zoom,
+            ContentLayout = TaskbarContentLayout.CompactInline,
+            MediaTextAlignment = TaskbarMediaTextAlignment.Right,
+            MediaFontSizePercent = 120,
+            ComponentSpacingDip = 18,
+            RestComponentOrder = [TaskbarRestComponent.Volume, TaskbarRestComponent.MediaText]
+        }).Normalize();
+        var before = SettingsManager.Current.TaskbarExperience;
+
+        SettingsManager.ResetDisplayModes();
+
+        var actual = SettingsManager.Current.TaskbarExperience;
+        Assert.AreEqual(defaults.TaskbarExperience.ArtworkVisible, actual.ArtworkVisible);
+        Assert.AreEqual(defaults.TaskbarExperience.ArtworkHoverMode, actual.ArtworkHoverMode);
+        Assert.AreEqual(before.ContentLayout, actual.ContentLayout);
+        Assert.AreEqual(before.MediaTextAlignment, actual.MediaTextAlignment);
+        Assert.AreEqual(before.MediaFontSizePercent, actual.MediaFontSizePercent);
+        Assert.AreEqual(before.ComponentSpacingDip, actual.ComponentSpacingDip);
+        CollectionAssert.AreEqual(before.RestComponentOrder!.ToArray(), actual.RestComponentOrder!.ToArray());
+    }
+
     [TestMethod]
     public void SevenMainPagesAndLegacyDestinationsResolveToActualGroups()
     {
