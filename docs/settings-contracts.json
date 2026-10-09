@@ -1,0 +1,6024 @@
+{
+  "formatVersion": 1,
+  "verifiedDate": "2026-10-10",
+  "mainCommit": "09e9cf19d85f73ce3601036fce28c7c5baf81069",
+  "latestRelease": "v1.3.2",
+  "latestReleaseCommit": "a781620ea37df526ab87e62d2f7c51fea289f863",
+  "settingsSchemaVersion": 2,
+  "releaseEvidence": [
+    {
+      "version": "v1.2.0",
+      "commit": "c8ade673938c8db989788b7f6d2198e6e2b13f86"
+    },
+    {
+      "version": "v1.2.1",
+      "commit": "6f075068907c06141289bc19ea9a6836ff0e53e6"
+    },
+    {
+      "version": "v1.3.0",
+      "commit": "515dd65707dd7c1d5db0946bc6b5cd237b0681e7"
+    },
+    {
+      "version": "v1.3.1",
+      "commit": "7be0a78918f91db0c7cf9971d8cde627d8fe3dea"
+    },
+    {
+      "version": "v1.3.2",
+      "commit": "a781620ea37df526ab87e62d2f7c51fea289f863"
+    }
+  ],
+  "counts": {
+    "paths": 138,
+    "rootProperties": 48,
+    "enumTypes": 35,
+    "enumMembers": 125,
+    "unreleasedPaths": 7,
+    "unreleasedEnumMembers": 15
+  },
+  "sourceFiles": [
+    {
+      "path": "src/AFMediaBar/App.xaml.cs",
+      "sha256": "e27292c7fcfd53b2a22251a47a98d505cf8eeced7de4f3af34d5234518b74c3c"
+    },
+    {
+      "path": "src/AFMediaBar/Classes/Models/ExtraFeatureModels.cs",
+      "sha256": "8662de43a2e4358002bd76ad215433d90f8887767a434c60e52f16d39901fbf1"
+    },
+    {
+      "path": "src/AFMediaBar/Classes/Models/Layout/LayoutEnums.cs",
+      "sha256": "c589ebc1c43f6dcde5326f340dae37ee8e91b7666e79d0a71e1a5334aa995a72"
+    },
+    {
+      "path": "src/AFMediaBar/Classes/Services/Localization/InterfaceLanguage.cs",
+      "sha256": "9dde36f237654fb713a780cf9a71da37bee10dfac231c97a62ca329ed152da9b"
+    },
+    {
+      "path": "src/AFMediaBar/Classes/Services/Localization/InterfaceLanguagePolicy.cs",
+      "sha256": "5a663fb33a1e102f763c62b40bc2ecf596481c9a8002f98c74374d23fd4b95cf"
+    },
+    {
+      "path": "src/AFMediaBar/Classes/Services/Lyrics/LyricsSourceCatalog.cs",
+      "sha256": "d25cf2b6a12208f686486a455d6b3a67692989f91bc8c654889aadf618d34285"
+    },
+    {
+      "path": "src/AFMediaBar/Classes/Services/Lyrics/LyricsSourcePolicy.cs",
+      "sha256": "4e56bfb670ed040a1bf7a550bf9155316d81e36177ecca02c5e8cf08d95033c6"
+    },
+    {
+      "path": "src/AFMediaBar/Classes/Services/Media/MediaSourceFilterPolicy.cs",
+      "sha256": "191a879772469d3dd3757a89d4fd6d8003419f9e041b100ff42981810de633a7"
+    },
+    {
+      "path": "src/AFMediaBar/Classes/Services/Media/Sources/NetEase/NetEaseSourcePolicy.cs",
+      "sha256": "575f4edf36a6df278d49cb7d3a75c8d24241cc83c5c0a8fae680133195a5b5e6"
+    },
+    {
+      "path": "src/AFMediaBar/Classes/Services/Settings/LegacySettingsConfiguration.cs",
+      "sha256": "a6d036af3b21d31c8561f542516add1c0a69102b60a79bf34511a1f42ee693fa"
+    },
+    {
+      "path": "src/AFMediaBar/Classes/Services/Settings/SettingsPageCatalog.cs",
+      "sha256": "9e57cb6fbf1be33c65baa630d594383c87d685b88e0147120cc673597e9dbf05"
+    },
+    {
+      "path": "src/AFMediaBar/Classes/Services/Settings/SettingsPersistenceService.cs",
+      "sha256": "bda6292ed9a94b307a07e29e6f12ad58971979dbafe1725014bd2e0786a4a251"
+    },
+    {
+      "path": "src/AFMediaBar/Classes/Services/Startup/StartupRegistrationService.cs",
+      "sha256": "a1aa817e1569508deb0c0404d47694dd471a4cf3c035a5a55abe11479d7345ee"
+    },
+    {
+      "path": "src/AFMediaBar/Classes/Services/Startup/TranslucentTbProcessDetector.cs",
+      "sha256": "9ed63d41a6901cb694f4ce35995016bad634581069d064b012a77a1600001fe9"
+    },
+    {
+      "path": "src/AFMediaBar/Classes/Services/Taskbar/TaskbarArrangementPolicy.cs",
+      "sha256": "30f452db5ff57115ab6306a0200006482939ff5c7fa3a0264be0e06a82562b8a"
+    },
+    {
+      "path": "src/AFMediaBar/Classes/Services/Taskbar/TaskbarRestLayoutPolicy.cs",
+      "sha256": "d8e171675d62d5239606cb51b9e5fb1e51d952d5b7dbdeb9a706154f92575b8f"
+    },
+    {
+      "path": "src/AFMediaBar/Classes/Services/Taskbar/TaskbarTargetPolicy.cs",
+      "sha256": "349956a25af102ccae122944f1a8b4540244db41488626f77ca4384a637887c5"
+    },
+    {
+      "path": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
+      "sha256": "cc4a3fd8ee3c1533ca7c0dd72d0e2618d759a61666443c2cbe04ebbba4c45e8f"
+    },
+    {
+      "path": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sha256": "a464d9fd3df03d315bcf56a7358f73f068fa2a82bef227ea1eb774601385261a"
+    },
+    {
+      "path": "src/AFMediaBar/Classes/Settings/LyricsSettings.cs",
+      "sha256": "b366ff0af4448d916664aa2906008e896acd20c26f9d8ef758f28cfbf9df1f73"
+    },
+    {
+      "path": "src/AFMediaBar/Classes/Settings/LyricsSourceSettings.cs",
+      "sha256": "4b4f65aac4c0b1b63e33491b2a5abd13b46d6bc26c749b130cfaada908a2a718"
+    },
+    {
+      "path": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sha256": "8965fe4e497b68b468f391a6e85db90616c1bc47c79541fb3b341f815beae7a1"
+    },
+    {
+      "path": "src/AFMediaBar/Classes/Settings/UpdateSettings.cs",
+      "sha256": "93ee5feb9ac3db6e52832a50de85edd4a0ad73084ffaa078d4ba9978a419530a"
+    },
+    {
+      "path": "src/AFMediaBar/Classes/Utils/ColorHex.cs",
+      "sha256": "c172d2621937e6f12ebf39f186aa4c3129c5d119b313eb295ffa8cd027fa8c87"
+    },
+    {
+      "path": "src/AFMediaBar/Views/Pages/ComponentsSettingsPage.xaml",
+      "sha256": "9c7cefc4a6de509b90d1d26e08e16ca680de832a83d0bcd8b708aebde1c966d4"
+    },
+    {
+      "path": "src/AFMediaBar/Views/Pages/InteractionPage.xaml",
+      "sha256": "a2900fd2ca284102da8959128480d49f0196ea3f56eeeb134a73f03c24b31a30"
+    },
+    {
+      "path": "src/AFMediaBar/Views/Windows/SettingsPageProvider.cs",
+      "sha256": "7af5bfded0d3d928b7ad50684901eb12d2d8b4c3d2b2a5a543a319ea081674b5"
+    }
+  ],
+  "fields": [
+    {
+      "path": "settings.allowBrowserAndVideoLyrics",
+      "declaringType": "AppSettings",
+      "clrProperty": "AllowBrowserAndVideoLyrics",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": false,
+      "normalizedDefault": false,
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 116,
+      "firstReleased": "v1.3.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": false,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.appearance",
+      "declaringType": "AppSettings",
+      "clrProperty": "Appearance",
+      "type": "AppearanceSettings",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": {
+        "latinFont": "SystemDefault",
+        "cjkFont": "SystemDefault",
+        "fontWeight": 400,
+        "playerForegroundMode": "Automatic",
+        "enhancedReadability": false,
+        "applicationThemeMode": "Automatic",
+        "backdropMode": "Mica",
+        "accentColorMode": "System",
+        "accentColor": "#0078D4",
+        "backdropTintOpacityPercent": 60,
+        "latinFontFamily": null,
+        "cjkFontFamily": null,
+        "taskbarBackgroundMaterial": "Transparent",
+        "taskbarBackgroundOpacityPercent": 72,
+        "taskbarFrostedStyle": "Neutral"
+      },
+      "normalizedDefault": {
+        "latinFont": "SystemDefault",
+        "cjkFont": "SystemDefault",
+        "fontWeight": 400,
+        "playerForegroundMode": "Automatic",
+        "enhancedReadability": false,
+        "applicationThemeMode": "Automatic",
+        "backdropMode": "Mica",
+        "accentColorMode": "System",
+        "accentColor": "#0078D4",
+        "backdropTintOpacityPercent": 60,
+        "latinFontFamily": null,
+        "cjkFontFamily": null,
+        "taskbarBackgroundMaterial": "Transparent",
+        "taskbarBackgroundOpacityPercent": 72,
+        "taskbarFrostedStyle": "Neutral"
+      },
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 113,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": {
+        "latinFont": "SystemDefault",
+        "cjkFont": "SystemDefault",
+        "fontWeight": 400,
+        "playerForegroundMode": "Automatic",
+        "enhancedReadability": false,
+        "applicationThemeMode": "Automatic",
+        "backdropMode": "Mica",
+        "accentColorMode": "System",
+        "accentColor": "#0078D4",
+        "backdropTintOpacityPercent": 60,
+        "latinFontFamily": null,
+        "cjkFontFamily": null
+      },
+      "defaultChangedSinceLatestRelease": true,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": {
+          "latinFont": "SystemDefault",
+          "cjkFont": "SystemDefault",
+          "fontWeight": 400,
+          "playerForegroundMode": "Automatic",
+          "enhancedReadability": false,
+          "applicationThemeMode": "Automatic",
+          "backdropMode": "Mica",
+          "accentColorMode": "System",
+          "accentColor": "#0078D4",
+          "backdropTintOpacityPercent": 60,
+          "latinFontFamily": null,
+          "cjkFontFamily": null,
+          "taskbarBackgroundMaterial": "Transparent",
+          "taskbarBackgroundOpacityPercent": 72,
+          "taskbarFrostedStyle": "Neutral"
+        }
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.appearance.accentColor",
+      "declaringType": "AppearanceSettings",
+      "clrProperty": "AccentColor",
+      "type": "string",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": "#0078D4",
+      "normalizedDefault": "#0078D4",
+      "source": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
+      "sourceLine": 116,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "#0078D4",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "#0078D4"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "#0078D4"
+      }
+    },
+    {
+      "path": "settings.appearance.accentColorMode",
+      "declaringType": "AppearanceSettings",
+      "clrProperty": "AccentColorMode",
+      "type": "AccentColorMode",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "AccentColorMode",
+      "rawDefault": "System",
+      "normalizedDefault": "System",
+      "source": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
+      "sourceLine": 115,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "System",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "System"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "System"
+      }
+    },
+    {
+      "path": "settings.appearance.applicationThemeMode",
+      "declaringType": "AppearanceSettings",
+      "clrProperty": "ApplicationThemeMode",
+      "type": "ApplicationThemeMode",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "ApplicationThemeMode",
+      "rawDefault": "Automatic",
+      "normalizedDefault": "Automatic",
+      "source": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
+      "sourceLine": 108,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "Automatic",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "Automatic"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "Automatic"
+      }
+    },
+    {
+      "path": "settings.appearance.backdropMode",
+      "declaringType": "AppearanceSettings",
+      "clrProperty": "BackdropMode",
+      "type": "ApplicationBackdropMode",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "ApplicationBackdropMode",
+      "rawDefault": "Mica",
+      "normalizedDefault": "Mica",
+      "source": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
+      "sourceLine": 109,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "Mica",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "FluentSolid"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "Mica"
+      }
+    },
+    {
+      "path": "settings.appearance.backdropTintOpacityPercent",
+      "declaringType": "AppearanceSettings",
+      "clrProperty": "BackdropTintOpacityPercent",
+      "type": "int?",
+      "nullable": true,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": 60,
+      "normalizedDefault": 60,
+      "source": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
+      "sourceLine": 122,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": 60,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": 60
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": 60
+      }
+    },
+    {
+      "path": "settings.appearance.cjkFont",
+      "declaringType": "AppearanceSettings",
+      "clrProperty": "CjkFont",
+      "type": "CjkFontPreset",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "CjkFontPreset",
+      "rawDefault": "SystemDefault",
+      "normalizedDefault": "SystemDefault",
+      "source": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
+      "sourceLine": 101,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "SystemDefault",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "SystemDefault"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "SystemDefault"
+      }
+    },
+    {
+      "path": "settings.appearance.cjkFontFamily",
+      "declaringType": "AppearanceSettings",
+      "clrProperty": "CjkFontFamily",
+      "type": "string?",
+      "nullable": true,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": null,
+      "normalizedDefault": null,
+      "source": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
+      "sourceLine": 124,
+      "firstReleased": "v1.3.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      }
+    },
+    {
+      "path": "settings.appearance.enhancedReadability",
+      "declaringType": "AppearanceSettings",
+      "clrProperty": "EnhancedReadability",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": false,
+      "normalizedDefault": false,
+      "source": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
+      "sourceLine": 107,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": false,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.appearance.fontWeight",
+      "declaringType": "AppearanceSettings",
+      "clrProperty": "FontWeight",
+      "type": "int",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": 400,
+      "normalizedDefault": 400,
+      "source": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
+      "sourceLine": 102,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": 400,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": 100
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.appearance.latinFont",
+      "declaringType": "AppearanceSettings",
+      "clrProperty": "LatinFont",
+      "type": "LatinFontPreset",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "LatinFontPreset",
+      "rawDefault": "SystemDefault",
+      "normalizedDefault": "SystemDefault",
+      "source": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
+      "sourceLine": 100,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "SystemDefault",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "SegoeUi"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "SystemDefault"
+      }
+    },
+    {
+      "path": "settings.appearance.latinFontFamily",
+      "declaringType": "AppearanceSettings",
+      "clrProperty": "LatinFontFamily",
+      "type": "string?",
+      "nullable": true,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": null,
+      "normalizedDefault": null,
+      "source": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
+      "sourceLine": 123,
+      "firstReleased": "v1.3.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      }
+    },
+    {
+      "path": "settings.appearance.playerForegroundMode",
+      "declaringType": "AppearanceSettings",
+      "clrProperty": "PlayerForegroundMode",
+      "type": "PlayerForegroundMode",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "PlayerForegroundMode",
+      "rawDefault": "Automatic",
+      "normalizedDefault": "Automatic",
+      "source": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
+      "sourceLine": 103,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "Automatic",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "Automatic"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "Automatic"
+      }
+    },
+    {
+      "path": "settings.appearance.taskbarBackgroundMaterial",
+      "declaringType": "AppearanceSettings",
+      "clrProperty": "TaskbarBackgroundMaterial",
+      "type": "TaskbarBackgroundMaterial",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "TaskbarBackgroundMaterial",
+      "rawDefault": "Transparent",
+      "normalizedDefault": "Transparent",
+      "source": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
+      "sourceLine": 125,
+      "firstReleased": null,
+      "releaseStatus": "unreleased",
+      "presentInLatestRelease": false,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "Transparent"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "Transparent"
+      }
+    },
+    {
+      "path": "settings.appearance.taskbarBackgroundOpacityPercent",
+      "declaringType": "AppearanceSettings",
+      "clrProperty": "TaskbarBackgroundOpacityPercent",
+      "type": "int?",
+      "nullable": true,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": 72,
+      "normalizedDefault": 72,
+      "source": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
+      "sourceLine": 126,
+      "firstReleased": null,
+      "releaseStatus": "unreleased",
+      "presentInLatestRelease": false,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": 72
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": 72
+      }
+    },
+    {
+      "path": "settings.appearance.taskbarFrostedStyle",
+      "declaringType": "AppearanceSettings",
+      "clrProperty": "TaskbarFrostedStyle",
+      "type": "TaskbarFrostedStyle",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "TaskbarFrostedStyle",
+      "rawDefault": "Neutral",
+      "normalizedDefault": "Neutral",
+      "source": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
+      "sourceLine": 127,
+      "firstReleased": null,
+      "releaseStatus": "unreleased",
+      "presentInLatestRelease": false,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "Neutral"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "Neutral"
+      }
+    },
+    {
+      "path": "settings.dynamicIslandBackgroundMode",
+      "declaringType": "AppSettings",
+      "clrProperty": "DynamicIslandBackgroundMode",
+      "type": "DynamicIslandBackgroundMode",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "DynamicIslandBackgroundMode",
+      "rawDefault": "SystemTheme",
+      "normalizedDefault": "SystemTheme",
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 147,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "SystemTheme",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "SystemTheme"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "SystemTheme"
+      }
+    },
+    {
+      "path": "settings.dynamicIslandEdge",
+      "declaringType": "AppSettings",
+      "clrProperty": "DynamicIslandEdge",
+      "type": "DynamicIslandEdge",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "DynamicIslandEdge",
+      "rawDefault": "Top",
+      "normalizedDefault": "Top",
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 153,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "Top",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "Top"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "Top"
+      }
+    },
+    {
+      "path": "settings.dynamicIslandEdgeDocked",
+      "declaringType": "AppSettings",
+      "clrProperty": "DynamicIslandEdgeDocked",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 154,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": true
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.dynamicIslandLeft",
+      "declaringType": "AppSettings",
+      "clrProperty": "DynamicIslandLeft",
+      "type": "double?",
+      "nullable": true,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": null,
+      "normalizedDefault": null,
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 151,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      }
+    },
+    {
+      "path": "settings.dynamicIslandSurface",
+      "declaringType": "AppSettings",
+      "clrProperty": "DynamicIslandSurface",
+      "type": "ModeSurfaceSettings",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": {
+        "style": "Automatic",
+        "backgroundOpacityPercent": 100,
+        "cornerRadiusDip": 6
+      },
+      "normalizedDefault": {
+        "style": "Automatic",
+        "backgroundOpacityPercent": 100,
+        "cornerRadiusDip": 6
+      },
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 158,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": {
+        "style": "Automatic",
+        "backgroundOpacityPercent": 100,
+        "cornerRadiusDip": 6
+      },
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": {
+          "style": "Automatic",
+          "backgroundOpacityPercent": 100,
+          "cornerRadiusDip": 6
+        }
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.dynamicIslandSurface.backgroundOpacityPercent",
+      "declaringType": "ModeSurfaceSettings",
+      "clrProperty": "BackgroundOpacityPercent",
+      "type": "int",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": 100,
+      "normalizedDefault": 100,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 748,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": 100,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": 0
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.dynamicIslandSurface.cornerRadiusDip",
+      "declaringType": "ModeSurfaceSettings",
+      "clrProperty": "CornerRadiusDip",
+      "type": "double",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": 6,
+      "normalizedDefault": 6,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 749,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": 6,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": 0
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.dynamicIslandSurface.style",
+      "declaringType": "ModeSurfaceSettings",
+      "clrProperty": "Style",
+      "type": "PlayerSurfaceStyle",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "PlayerSurfaceStyle",
+      "rawDefault": "Automatic",
+      "normalizedDefault": "Automatic",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 747,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "Automatic",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "Automatic"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "Automatic"
+      }
+    },
+    {
+      "path": "settings.dynamicIslandTop",
+      "declaringType": "AppSettings",
+      "clrProperty": "DynamicIslandTop",
+      "type": "double?",
+      "nullable": true,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": null,
+      "normalizedDefault": null,
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 152,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      }
+    },
+    {
+      "path": "settings.interaction",
+      "declaringType": "AppSettings",
+      "clrProperty": "Interaction",
+      "type": "GlobalInteractionSettings",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": {
+        "artworkClickAction": "TogglePlayPause",
+        "textClickAction": "ActivateSource",
+        "primaryWheelAction": "PreviousNext",
+        "modifier": "Shift",
+        "chordWheelAction": "SwitchMediaSource",
+        "trayClickAction": "OpenAudioControl",
+        "trayPrimaryWheelAction": "SwitchOutputDevice",
+        "trayChordWheelAction": "AdjustVolume",
+        "showWheelTooltips": true
+      },
+      "normalizedDefault": {
+        "artworkClickAction": "TogglePlayPause",
+        "textClickAction": "ActivateSource",
+        "primaryWheelAction": "PreviousNext",
+        "modifier": "Shift",
+        "chordWheelAction": "SwitchMediaSource",
+        "trayClickAction": "OpenAudioControl",
+        "trayPrimaryWheelAction": "SwitchOutputDevice",
+        "trayChordWheelAction": "AdjustVolume",
+        "showWheelTooltips": true
+      },
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 156,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": {
+        "artworkClickAction": "TogglePlayPause",
+        "textClickAction": "ActivateSource",
+        "primaryWheelAction": "PreviousNext",
+        "modifier": "Shift",
+        "chordWheelAction": "SwitchMediaSource",
+        "trayClickAction": "OpenAudioControl",
+        "trayPrimaryWheelAction": "SwitchOutputDevice",
+        "trayChordWheelAction": "AdjustVolume",
+        "showWheelTooltips": true
+      },
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": {
+          "artworkClickAction": "TogglePlayPause",
+          "textClickAction": "ActivateSource",
+          "primaryWheelAction": "PreviousNext",
+          "modifier": "Shift",
+          "chordWheelAction": "SwitchMediaSource",
+          "trayClickAction": "OpenAudioControl",
+          "trayPrimaryWheelAction": "SwitchOutputDevice",
+          "trayChordWheelAction": "AdjustVolume",
+          "showWheelTooltips": true
+        }
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.interaction.artworkClickAction",
+      "declaringType": "GlobalInteractionSettings",
+      "clrProperty": "ArtworkClickAction",
+      "type": "PlayerClickAction",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "PlayerClickAction",
+      "rawDefault": "TogglePlayPause",
+      "normalizedDefault": "TogglePlayPause",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 696,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "TogglePlayPause",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "TogglePlayPause"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "TogglePlayPause"
+      }
+    },
+    {
+      "path": "settings.interaction.chordWheelAction",
+      "declaringType": "GlobalInteractionSettings",
+      "clrProperty": "ChordWheelAction",
+      "type": "WheelAction",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "WheelAction",
+      "rawDefault": "SwitchMediaSource",
+      "normalizedDefault": "SwitchMediaSource",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 700,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "SwitchMediaSource",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "PreviousNext"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "PreviousNext"
+      }
+    },
+    {
+      "path": "settings.interaction.modifier",
+      "declaringType": "GlobalInteractionSettings",
+      "clrProperty": "Modifier",
+      "type": "InteractionModifier",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "InteractionModifier",
+      "rawDefault": "Shift",
+      "normalizedDefault": "Shift",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 699,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "Shift",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "Shift"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "Shift"
+      }
+    },
+    {
+      "path": "settings.interaction.primaryWheelAction",
+      "declaringType": "GlobalInteractionSettings",
+      "clrProperty": "PrimaryWheelAction",
+      "type": "WheelAction",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "WheelAction",
+      "rawDefault": "PreviousNext",
+      "normalizedDefault": "PreviousNext",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 698,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "PreviousNext",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "PreviousNext"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "PreviousNext"
+      }
+    },
+    {
+      "path": "settings.interaction.showWheelTooltips",
+      "declaringType": "GlobalInteractionSettings",
+      "clrProperty": "ShowWheelTooltips",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 706,
+      "firstReleased": "v1.3.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.interaction.textClickAction",
+      "declaringType": "GlobalInteractionSettings",
+      "clrProperty": "TextClickAction",
+      "type": "PlayerClickAction",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "PlayerClickAction",
+      "rawDefault": "ActivateSource",
+      "normalizedDefault": "ActivateSource",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 697,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "ActivateSource",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "TogglePlayPause"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "TogglePlayPause"
+      }
+    },
+    {
+      "path": "settings.interaction.trayChordWheelAction",
+      "declaringType": "GlobalInteractionSettings",
+      "clrProperty": "TrayChordWheelAction",
+      "type": "TrayWheelBehavior",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "TrayWheelBehavior",
+      "rawDefault": "AdjustVolume",
+      "normalizedDefault": "AdjustVolume",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 703,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "AdjustVolume",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "AdjustVolume"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "SwitchOutputDevice"
+      }
+    },
+    {
+      "path": "settings.interaction.trayClickAction",
+      "declaringType": "GlobalInteractionSettings",
+      "clrProperty": "TrayClickAction",
+      "type": "TrayClickAction",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "TrayClickAction",
+      "rawDefault": "OpenAudioControl",
+      "normalizedDefault": "OpenAudioControl",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 701,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "OpenAudioControl",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "None"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "OpenAudioControl"
+      }
+    },
+    {
+      "path": "settings.interaction.trayPrimaryWheelAction",
+      "declaringType": "GlobalInteractionSettings",
+      "clrProperty": "TrayPrimaryWheelAction",
+      "type": "TrayWheelBehavior",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "TrayWheelBehavior",
+      "rawDefault": "SwitchOutputDevice",
+      "normalizedDefault": "SwitchOutputDevice",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 702,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "SwitchOutputDevice",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "AdjustVolume"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "SwitchOutputDevice"
+      }
+    },
+    {
+      "path": "settings.interfaceLanguage",
+      "declaringType": "AppSettings",
+      "clrProperty": "InterfaceLanguage",
+      "type": "InterfaceLanguage",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "InterfaceLanguage",
+      "rawDefault": "System",
+      "normalizedDefault": "System",
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 232,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "System",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "System"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "System"
+      }
+    },
+    {
+      "path": "settings.launchAtStartup",
+      "declaringType": "AppSettings",
+      "clrProperty": "LaunchAtStartup",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 223,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": true
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.layoutLengthScalePercent",
+      "declaringType": "AppSettings",
+      "clrProperty": "LayoutLengthScalePercent",
+      "type": "double",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": 100,
+      "normalizedDefault": 100,
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 145,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": 100,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": 100
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": 100
+      }
+    },
+    {
+      "path": "settings.layoutOrientationMode",
+      "declaringType": "AppSettings",
+      "clrProperty": "LayoutOrientationMode",
+      "type": "LayoutOrientationMode",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "LayoutOrientationMode",
+      "rawDefault": "Auto",
+      "normalizedDefault": "Auto",
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 144,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "Auto",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "Auto"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "Auto"
+      }
+    },
+    {
+      "path": "settings.layoutThicknessScalePercent",
+      "declaringType": "AppSettings",
+      "clrProperty": "LayoutThicknessScalePercent",
+      "type": "double",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": 100,
+      "normalizedDefault": 100,
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 146,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": 100,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": 100
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": 100
+      }
+    },
+    {
+      "path": "settings.lyricsArtistSeparators",
+      "declaringType": "AppSettings",
+      "clrProperty": "LyricsArtistSeparators",
+      "type": "string",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": "/",
+      "normalizedDefault": "/",
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 198,
+      "firstReleased": "v1.3.2",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "/",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "/"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": ""
+      }
+    },
+    {
+      "path": "settings.lyricsCharacterSpacingPercent",
+      "declaringType": "AppSettings",
+      "clrProperty": "LyricsCharacterSpacingPercent",
+      "type": "int",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": 0,
+      "normalizedDefault": 0,
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 168,
+      "firstReleased": "v1.3.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": 0,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": 0
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.lyricsChineseConversion",
+      "declaringType": "AppSettings",
+      "clrProperty": "LyricsChineseConversion",
+      "type": "LyricsChineseConversionMode",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "LyricsChineseConversionMode",
+      "rawDefault": "None",
+      "normalizedDefault": "None",
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 187,
+      "firstReleased": null,
+      "releaseStatus": "unreleased",
+      "presentInLatestRelease": false,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "None"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "None"
+      }
+    },
+    {
+      "path": "settings.lyricsEnabled",
+      "declaringType": "AppSettings",
+      "clrProperty": "LyricsEnabled",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 115,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": true
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.lyricsFixedWidthDip",
+      "declaringType": "AppSettings",
+      "clrProperty": "LyricsFixedWidthDip",
+      "type": "int",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": 240,
+      "normalizedDefault": 240,
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 177,
+      "firstReleased": "v1.3.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": 240,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": 240
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.lyricsFixedWidthEnabled",
+      "declaringType": "AppSettings",
+      "clrProperty": "LyricsFixedWidthEnabled",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": false,
+      "normalizedDefault": false,
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 174,
+      "firstReleased": "v1.3.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": false,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.lyricsInfoLineFilterEnabled",
+      "declaringType": "AppSettings",
+      "clrProperty": "LyricsInfoLineFilterEnabled",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 180,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": true
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.lyricsLineGapPercent",
+      "declaringType": "AppSettings",
+      "clrProperty": "LyricsLineGapPercent",
+      "type": "int",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": 0,
+      "normalizedDefault": 0,
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 171,
+      "firstReleased": "v1.3.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": 0,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": 0
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.lyricsSecondaryLine",
+      "declaringType": "AppSettings",
+      "clrProperty": "LyricsSecondaryLine",
+      "type": "LyricsSecondaryLineSettings",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": {
+        "order": null
+      },
+      "normalizedDefault": {
+        "order": null
+      },
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 118,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": {
+        "order": null
+      },
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": {
+          "order": null
+        }
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.lyricsSecondaryLine.order",
+      "declaringType": "LyricsSecondaryLineSettings",
+      "clrProperty": "Order",
+      "type": "IReadOnlyList<LyricsSecondaryLineMode>?",
+      "nullable": true,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "LyricsSecondaryLineMode",
+      "rawDefault": null,
+      "normalizedDefault": null,
+      "source": "src/AFMediaBar/Classes/Settings/LyricsSettings.cs",
+      "sourceLine": 180,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      }
+    },
+    {
+      "path": "settings.lyricsSource",
+      "declaringType": "AppSettings",
+      "clrProperty": "LyricsSource",
+      "type": "LyricsSourceSettings",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": {
+        "enabledSourceIds": null
+      },
+      "normalizedDefault": {
+        "enabledSourceIds": null
+      },
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 195,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": {
+        "enabledSourceIds": null
+      },
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": {
+          "enabledSourceIds": null
+        }
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.lyricsSource.enabledSourceIds",
+      "declaringType": "LyricsSourceSettings",
+      "clrProperty": "EnabledSourceIds",
+      "type": "IReadOnlyList<string>?",
+      "nullable": true,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": null,
+      "normalizedDefault": null,
+      "source": "src/AFMediaBar/Classes/Settings/LyricsSourceSettings.cs",
+      "sourceLine": 21,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      }
+    },
+    {
+      "path": "settings.lyricsSyllableHighlightEnabled",
+      "declaringType": "AppSettings",
+      "clrProperty": "LyricsSyllableHighlightEnabled",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 162,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": true
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.lyricsTextAlignment",
+      "declaringType": "AppSettings",
+      "clrProperty": "LyricsTextAlignment",
+      "type": "LyricsTextAlignment",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "LyricsTextAlignment",
+      "rawDefault": "Center",
+      "normalizedDefault": "Center",
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 159,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "Left",
+      "defaultChangedSinceLatestRelease": true,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "Center"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "Center"
+      }
+    },
+    {
+      "path": "settings.lyricsUnsungOpacityPercent",
+      "declaringType": "AppSettings",
+      "clrProperty": "LyricsUnsungOpacityPercent",
+      "type": "int",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": 45,
+      "normalizedDefault": 45,
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 165,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": 45,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": 45
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.performanceComponent",
+      "declaringType": "AppSettings",
+      "clrProperty": "PerformanceComponent",
+      "type": "PerformanceComponentSettings",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": {
+        "metrics": [
+          "SystemMemory"
+        ],
+        "refreshIntervalMilliseconds": 2500,
+        "openTaskManagerOnClick": true
+      },
+      "normalizedDefault": {
+        "metrics": [
+          "SystemMemory"
+        ],
+        "refreshIntervalMilliseconds": 2500,
+        "openTaskManagerOnClick": true
+      },
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 212,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": {
+        "metrics": [
+          "SystemMemory"
+        ],
+        "refreshIntervalMilliseconds": 2500,
+        "openTaskManagerOnClick": true
+      },
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": {
+          "metrics": [
+            "SystemMemory"
+          ],
+          "refreshIntervalMilliseconds": 2500,
+          "openTaskManagerOnClick": true
+        }
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.performanceComponent.metrics",
+      "declaringType": "PerformanceComponentSettings",
+      "clrProperty": "Metrics",
+      "type": "IReadOnlyList<MetricKind>?",
+      "nullable": true,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "MetricKind",
+      "rawDefault": [
+        "SystemMemory"
+      ],
+      "normalizedDefault": [
+        "SystemMemory"
+      ],
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 313,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": [
+        "SystemMemory"
+      ],
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": [
+          "SystemMemory"
+        ]
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": [
+          "SystemMemory"
+        ]
+      }
+    },
+    {
+      "path": "settings.performanceComponent.openTaskManagerOnClick",
+      "declaringType": "PerformanceComponentSettings",
+      "clrProperty": "OpenTaskManagerOnClick",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 315,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.performanceComponent.refreshIntervalMilliseconds",
+      "declaringType": "PerformanceComponentSettings",
+      "clrProperty": "RefreshIntervalMilliseconds",
+      "type": "int",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": 2500,
+      "normalizedDefault": 2500,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 314,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": 2500,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": 500
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.position",
+      "declaringType": "AppSettings",
+      "clrProperty": "Position",
+      "type": "TaskbarBarPosition",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "TaskbarBarPosition",
+      "rawDefault": "Start",
+      "normalizedDefault": "Start",
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 140,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "Start",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "Start"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "Start"
+      }
+    },
+    {
+      "path": "settings.quickLaunch",
+      "declaringType": "AppSettings",
+      "clrProperty": "QuickLaunch",
+      "type": "QuickLaunchSettings",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": {
+        "entries": []
+      },
+      "normalizedDefault": {
+        "entries": []
+      },
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 210,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": {
+        "entries": []
+      },
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": {
+          "entries": []
+        }
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.quickLaunch.entries",
+      "declaringType": "QuickLaunchSettings",
+      "clrProperty": "Entries",
+      "type": "IReadOnlyList<QuickLaunchEntry>?",
+      "nullable": true,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": [],
+      "normalizedDefault": [],
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 151,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": [],
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": []
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": []
+      }
+    },
+    {
+      "path": "settings.quickLaunch.entries[].displayName",
+      "declaringType": "QuickLaunchEntry",
+      "clrProperty": "DisplayName",
+      "type": "string",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": true,
+      "enumType": null,
+      "rawDefault": null,
+      "normalizedDefault": null,
+      "source": "src/AFMediaBar/Classes/Models/ExtraFeatureModels.cs",
+      "sourceLine": 14,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "fixture"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "fixture"
+      }
+    },
+    {
+      "path": "settings.quickLaunch.entries[].id",
+      "declaringType": "QuickLaunchEntry",
+      "clrProperty": "Id",
+      "type": "string",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": true,
+      "enumType": null,
+      "rawDefault": null,
+      "normalizedDefault": null,
+      "source": "src/AFMediaBar/Classes/Models/ExtraFeatureModels.cs",
+      "sourceLine": 13,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "generated-guid-N",
+        "value": null
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "generated-guid-N",
+        "value": null
+      }
+    },
+    {
+      "path": "settings.quickLaunch.entries[].kind",
+      "declaringType": "QuickLaunchEntry",
+      "clrProperty": "Kind",
+      "type": "QuickLaunchTargetKind",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": true,
+      "enumType": "QuickLaunchTargetKind",
+      "rawDefault": null,
+      "normalizedDefault": null,
+      "source": "src/AFMediaBar/Classes/Models/ExtraFeatureModels.cs",
+      "sourceLine": 15,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "Executable"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "Executable"
+      }
+    },
+    {
+      "path": "settings.quickLaunch.entries[].sourceId",
+      "declaringType": "QuickLaunchEntry",
+      "clrProperty": "SourceId",
+      "type": "string?",
+      "nullable": true,
+      "writable": true,
+      "collectionElement": true,
+      "enumType": null,
+      "rawDefault": null,
+      "normalizedDefault": null,
+      "source": "src/AFMediaBar/Classes/Models/ExtraFeatureModels.cs",
+      "sourceLine": 17,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      }
+    },
+    {
+      "path": "settings.quickLaunch.entries[].target",
+      "declaringType": "QuickLaunchEntry",
+      "clrProperty": "Target",
+      "type": "string",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": true,
+      "enumType": null,
+      "rawDefault": null,
+      "normalizedDefault": null,
+      "source": "src/AFMediaBar/Classes/Models/ExtraFeatureModels.cs",
+      "sourceLine": 16,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "entry-removed",
+        "value": null
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "entry-removed",
+        "value": null
+      }
+    },
+    {
+      "path": "settings.smtcSourceFilter",
+      "declaringType": "AppSettings",
+      "clrProperty": "SmtcSourceFilter",
+      "type": "SmtcSourceFilterSettings",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": {
+        "enabled": false,
+        "allowedSourceIds": []
+      },
+      "normalizedDefault": {
+        "enabled": false,
+        "allowedSourceIds": []
+      },
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 209,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": {
+        "enabled": false,
+        "allowedSourceIds": []
+      },
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": {
+          "enabled": false,
+          "allowedSourceIds": []
+        }
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.smtcSourceFilter.allowedSourceIds",
+      "declaringType": "SmtcSourceFilterSettings",
+      "clrProperty": "AllowedSourceIds",
+      "type": "IReadOnlyList<string>?",
+      "nullable": true,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": [],
+      "normalizedDefault": [],
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 135,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": [],
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": []
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": []
+      }
+    },
+    {
+      "path": "settings.smtcSourceFilter.enabled",
+      "declaringType": "SmtcSourceFilterSettings",
+      "clrProperty": "Enabled",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": false,
+      "normalizedDefault": false,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 135,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": false,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.spectrumComponent",
+      "declaringType": "AppSettings",
+      "clrProperty": "SpectrumComponent",
+      "type": "SpectrumComponentSettings",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": {
+        "bandCount": 9,
+        "refreshRateHz": 20,
+        "sensitivityPercent": 100,
+        "style": "Bars",
+        "contentHeightDip": 26
+      },
+      "normalizedDefault": {
+        "bandCount": 9,
+        "refreshRateHz": 20,
+        "sensitivityPercent": 100,
+        "style": "Bars",
+        "contentHeightDip": 26
+      },
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 211,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": {
+        "bandCount": 9,
+        "refreshRateHz": 20,
+        "sensitivityPercent": 100,
+        "style": "Bars",
+        "contentHeightDip": 26
+      },
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": {
+          "bandCount": 9,
+          "refreshRateHz": 20,
+          "sensitivityPercent": 100,
+          "style": "Bars",
+          "contentHeightDip": 26
+        }
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.spectrumComponent.bandCount",
+      "declaringType": "SpectrumComponentSettings",
+      "clrProperty": "BandCount",
+      "type": "int",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": 9,
+      "normalizedDefault": 9,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 199,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": 9,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": 9
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.spectrumComponent.contentHeightDip",
+      "declaringType": "SpectrumComponentSettings",
+      "clrProperty": "ContentHeightDip",
+      "type": "double",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": 26,
+      "normalizedDefault": 26,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 248,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": 26,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": 14
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.spectrumComponent.refreshRateHz",
+      "declaringType": "SpectrumComponentSettings",
+      "clrProperty": "RefreshRateHz",
+      "type": "int",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": 20,
+      "normalizedDefault": 20,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 199,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": 20,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": 5
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.spectrumComponent.sensitivityPercent",
+      "declaringType": "SpectrumComponentSettings",
+      "clrProperty": "SensitivityPercent",
+      "type": "int",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": 100,
+      "normalizedDefault": 100,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 199,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": 100,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": 10
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.spectrumComponent.style",
+      "declaringType": "SpectrumComponentSettings",
+      "clrProperty": "Style",
+      "type": "SpectrumStyle",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "SpectrumStyle",
+      "rawDefault": "Bars",
+      "normalizedDefault": "Bars",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 208,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "Bars",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "Bars"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "Bars"
+      }
+    },
+    {
+      "path": "settings.taskbarBarAvoidIcons",
+      "declaringType": "AppSettings",
+      "clrProperty": "TaskbarBarAvoidIcons",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 149,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": true
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarBarBackgroundBlur",
+      "declaringType": "AppSettings",
+      "clrProperty": "TaskbarBarBackgroundBlur",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": false,
+      "normalizedDefault": false,
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 141,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": false,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarBarCrossAxisOffsetDip",
+      "declaringType": "AppSettings",
+      "clrProperty": "TaskbarBarCrossAxisOffsetDip",
+      "type": "double",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": 0,
+      "normalizedDefault": 0,
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 148,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": 0,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": 0
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": 0
+      }
+    },
+    {
+      "path": "settings.taskbarBarEnabled",
+      "declaringType": "AppSettings",
+      "clrProperty": "TaskbarBarEnabled",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 119,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": true
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarBarManualPadding",
+      "declaringType": "AppSettings",
+      "clrProperty": "TaskbarBarManualPadding",
+      "type": "int",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": 0,
+      "normalizedDefault": 0,
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 142,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": 0,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": 0
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarBarPositionLocked",
+      "declaringType": "AppSettings",
+      "clrProperty": "TaskbarBarPositionLocked",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": false,
+      "normalizedDefault": false,
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 150,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": false,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience",
+      "declaringType": "AppSettings",
+      "clrProperty": "TaskbarExperience",
+      "type": "TaskbarExperienceSettings",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": {
+        "hoverLayerEnabled": true,
+        "fullLayerEnabled": true,
+        "density": "Balanced",
+        "contentLayout": "AdaptiveStack",
+        "fullPanel": {
+          "mediaInfoVisible": true,
+          "mediaControlsVisible": true,
+          "audioControlsVisible": true,
+          "performanceVisible": true
+        },
+        "lengthMode": "FollowContent",
+        "fixedLengthDip": 360,
+        "componentSpacingDip": 12,
+        "hoverButtonSpacingDip": 2,
+        "mediaTextAlignment": "Center",
+        "arrangement": null,
+        "spectrumVisible": true,
+        "artworkVisible": true,
+        "artworkHoverMode": "Off",
+        "performanceVisible": true,
+        "restProgressVisible": false,
+        "fullPanelEntryVisible": true,
+        "hoverControls": {
+          "playPauseVisible": false,
+          "previousNextVisible": false,
+          "outputDeviceVisible": true,
+          "audioControlVisible": true,
+          "progressVisible": true
+        },
+        "outputDeviceVisible": false,
+        "volumeVisible": false,
+        "restComponentOrder": null,
+        "idleComponents": null,
+        "mediaFontSizePercent": 100
+      },
+      "normalizedDefault": {
+        "hoverLayerEnabled": true,
+        "fullLayerEnabled": true,
+        "density": "Balanced",
+        "contentLayout": "AdaptiveStack",
+        "fullPanel": {
+          "mediaInfoVisible": true,
+          "mediaControlsVisible": true,
+          "audioControlsVisible": true,
+          "performanceVisible": true
+        },
+        "lengthMode": "FollowContent",
+        "fixedLengthDip": 360,
+        "componentSpacingDip": 12,
+        "hoverButtonSpacingDip": 2,
+        "mediaTextAlignment": "Center",
+        "arrangement": null,
+        "spectrumVisible": true,
+        "artworkVisible": true,
+        "artworkHoverMode": "Off",
+        "performanceVisible": true,
+        "restProgressVisible": false,
+        "fullPanelEntryVisible": true,
+        "hoverControls": {
+          "playPauseVisible": false,
+          "previousNextVisible": false,
+          "outputDeviceVisible": true,
+          "audioControlVisible": true,
+          "progressVisible": true
+        },
+        "outputDeviceVisible": false,
+        "volumeVisible": false,
+        "restComponentOrder": null,
+        "idleComponents": null,
+        "mediaFontSizePercent": 100
+      },
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 155,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": {
+        "hoverLayerEnabled": true,
+        "fullLayerEnabled": true,
+        "density": "Balanced",
+        "contentLayout": "AdaptiveStack",
+        "fullPanel": {
+          "mediaInfoVisible": true,
+          "mediaControlsVisible": true,
+          "audioControlsVisible": true,
+          "performanceVisible": true
+        },
+        "lengthMode": "FollowContent",
+        "fixedLengthDip": 360,
+        "componentSpacingDip": 12,
+        "hoverButtonSpacingDip": 2,
+        "mediaTextAlignment": "Left",
+        "spectrumVisible": true,
+        "artworkVisible": true,
+        "performanceVisible": true,
+        "restProgressVisible": false,
+        "fullPanelEntryVisible": true,
+        "hoverControls": {
+          "playPauseVisible": false,
+          "previousNextVisible": false,
+          "outputDeviceVisible": true,
+          "audioControlVisible": true,
+          "progressVisible": true
+        },
+        "outputDeviceVisible": false,
+        "volumeVisible": false,
+        "restComponentOrder": null,
+        "idleComponents": null,
+        "mediaFontSizePercent": 100
+      },
+      "defaultChangedSinceLatestRelease": true,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": {
+          "hoverLayerEnabled": true,
+          "fullLayerEnabled": true,
+          "density": "Balanced",
+          "contentLayout": "AdaptiveStack",
+          "fullPanel": {
+            "mediaInfoVisible": true,
+            "mediaControlsVisible": true,
+            "audioControlsVisible": true,
+            "performanceVisible": true
+          },
+          "lengthMode": "FollowContent",
+          "fixedLengthDip": 360,
+          "componentSpacingDip": 12,
+          "hoverButtonSpacingDip": 2,
+          "mediaTextAlignment": "Center",
+          "arrangement": null,
+          "spectrumVisible": true,
+          "artworkVisible": true,
+          "artworkHoverMode": "Off",
+          "performanceVisible": true,
+          "restProgressVisible": false,
+          "fullPanelEntryVisible": true,
+          "hoverControls": {
+            "playPauseVisible": false,
+            "previousNextVisible": false,
+            "outputDeviceVisible": true,
+            "audioControlVisible": true,
+            "progressVisible": true
+          },
+          "outputDeviceVisible": false,
+          "volumeVisible": false,
+          "restComponentOrder": null,
+          "idleComponents": null,
+          "mediaFontSizePercent": 100
+        }
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.arrangement",
+      "declaringType": "TaskbarExperienceSettings",
+      "clrProperty": "Arrangement",
+      "type": "TaskbarContentArrangement?",
+      "nullable": true,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "TaskbarContentArrangement",
+      "rawDefault": null,
+      "normalizedDefault": null,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 503,
+      "firstReleased": null,
+      "releaseStatus": "unreleased",
+      "presentInLatestRelease": false,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.artworkHoverMode",
+      "declaringType": "TaskbarExperienceSettings",
+      "clrProperty": "ArtworkHoverMode",
+      "type": "ArtworkHoverMode",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "ArtworkHoverMode",
+      "rawDefault": "Off",
+      "normalizedDefault": "Off",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 519,
+      "firstReleased": null,
+      "releaseStatus": "unreleased",
+      "presentInLatestRelease": false,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "Off"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "Off"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.artworkVisible",
+      "declaringType": "TaskbarExperienceSettings",
+      "clrProperty": "ArtworkVisible",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 509,
+      "firstReleased": "v1.3.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": true
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.componentSpacingDip",
+      "declaringType": "TaskbarExperienceSettings",
+      "clrProperty": "ComponentSpacingDip",
+      "type": "double",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": 12,
+      "normalizedDefault": 12,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 494,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": 12,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": 4
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.contentLayout",
+      "declaringType": "TaskbarExperienceSettings",
+      "clrProperty": "ContentLayout",
+      "type": "TaskbarContentLayout",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "TaskbarContentLayout",
+      "rawDefault": "AdaptiveStack",
+      "normalizedDefault": "AdaptiveStack",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 488,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "AdaptiveStack",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "CompactInline"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "AdaptiveStack"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.density",
+      "declaringType": "TaskbarExperienceSettings",
+      "clrProperty": "Density",
+      "type": "TaskbarInformationDensity",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "TaskbarInformationDensity",
+      "rawDefault": "Balanced",
+      "normalizedDefault": "Balanced",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 487,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "Balanced",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "Minimal"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "Balanced"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.fixedLengthDip",
+      "declaringType": "TaskbarExperienceSettings",
+      "clrProperty": "FixedLengthDip",
+      "type": "double",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": 360,
+      "normalizedDefault": 360,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 491,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": 360,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": 360
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.fullLayerEnabled",
+      "declaringType": "TaskbarExperienceSettings",
+      "clrProperty": "FullLayerEnabled",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 486,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.fullPanel",
+      "declaringType": "TaskbarExperienceSettings",
+      "clrProperty": "FullPanel",
+      "type": "TaskbarFullPanelSettings",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": {
+        "mediaInfoVisible": true,
+        "mediaControlsVisible": true,
+        "audioControlsVisible": true,
+        "performanceVisible": true
+      },
+      "normalizedDefault": {
+        "mediaInfoVisible": true,
+        "mediaControlsVisible": true,
+        "audioControlsVisible": true,
+        "performanceVisible": true
+      },
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 489,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": {
+        "mediaInfoVisible": true,
+        "mediaControlsVisible": true,
+        "audioControlsVisible": true,
+        "performanceVisible": true
+      },
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": {
+          "mediaInfoVisible": true,
+          "mediaControlsVisible": true,
+          "audioControlsVisible": false,
+          "performanceVisible": false
+        }
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.fullPanel.audioControlsVisible",
+      "declaringType": "TaskbarFullPanelSettings",
+      "clrProperty": "AudioControlsVisible",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 432,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.fullPanel.mediaControlsVisible",
+      "declaringType": "TaskbarFullPanelSettings",
+      "clrProperty": "MediaControlsVisible",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 431,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.fullPanel.mediaInfoVisible",
+      "declaringType": "TaskbarFullPanelSettings",
+      "clrProperty": "MediaInfoVisible",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 430,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.fullPanel.performanceVisible",
+      "declaringType": "TaskbarFullPanelSettings",
+      "clrProperty": "PerformanceVisible",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 433,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.fullPanelEntryVisible",
+      "declaringType": "TaskbarExperienceSettings",
+      "clrProperty": "FullPanelEntryVisible",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 541,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.hoverButtonSpacingDip",
+      "declaringType": "TaskbarExperienceSettings",
+      "clrProperty": "HoverButtonSpacingDip",
+      "type": "double",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": 2,
+      "normalizedDefault": 2,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 497,
+      "firstReleased": "v1.3.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": 2,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": 0
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.hoverControls",
+      "declaringType": "TaskbarExperienceSettings",
+      "clrProperty": "HoverControls",
+      "type": "TaskbarHoverControlsSettings",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": {
+        "playPauseVisible": false,
+        "previousNextVisible": false,
+        "outputDeviceVisible": true,
+        "audioControlVisible": true,
+        "progressVisible": true
+      },
+      "normalizedDefault": {
+        "playPauseVisible": false,
+        "previousNextVisible": false,
+        "outputDeviceVisible": true,
+        "audioControlVisible": true,
+        "progressVisible": true
+      },
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 544,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": {
+        "playPauseVisible": false,
+        "previousNextVisible": false,
+        "outputDeviceVisible": true,
+        "audioControlVisible": true,
+        "progressVisible": true
+      },
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": {
+          "playPauseVisible": false,
+          "previousNextVisible": false,
+          "outputDeviceVisible": false,
+          "audioControlVisible": false,
+          "progressVisible": false
+        }
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.hoverControls.audioControlVisible",
+      "declaringType": "TaskbarHoverControlsSettings",
+      "clrProperty": "AudioControlVisible",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 456,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.hoverControls.outputDeviceVisible",
+      "declaringType": "TaskbarHoverControlsSettings",
+      "clrProperty": "OutputDeviceVisible",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 455,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.hoverControls.playPauseVisible",
+      "declaringType": "TaskbarHoverControlsSettings",
+      "clrProperty": "PlayPauseVisible",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": false,
+      "normalizedDefault": false,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 453,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": false,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.hoverControls.previousNextVisible",
+      "declaringType": "TaskbarHoverControlsSettings",
+      "clrProperty": "PreviousNextVisible",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": false,
+      "normalizedDefault": false,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 454,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": false,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.hoverControls.progressVisible",
+      "declaringType": "TaskbarHoverControlsSettings",
+      "clrProperty": "ProgressVisible",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 457,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.hoverLayerEnabled",
+      "declaringType": "TaskbarExperienceSettings",
+      "clrProperty": "HoverLayerEnabled",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 485,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.idleComponents",
+      "declaringType": "TaskbarExperienceSettings",
+      "clrProperty": "IdleComponents",
+      "type": "IReadOnlyList<TaskbarRestComponent>?",
+      "nullable": true,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "TaskbarRestComponent",
+      "rawDefault": null,
+      "normalizedDefault": null,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 585,
+      "firstReleased": "v1.2.1",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.lengthMode",
+      "declaringType": "TaskbarExperienceSettings",
+      "clrProperty": "LengthMode",
+      "type": "TaskbarLengthMode",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "TaskbarLengthMode",
+      "rawDefault": "FollowContent",
+      "normalizedDefault": "FollowContent",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 490,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "FollowContent",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "FollowContent"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "FollowContent"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.mediaFontSizePercent",
+      "declaringType": "TaskbarExperienceSettings",
+      "clrProperty": "MediaFontSizePercent",
+      "type": "int",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": 100,
+      "normalizedDefault": 100,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 591,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": 100,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": 100
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.mediaTextAlignment",
+      "declaringType": "TaskbarExperienceSettings",
+      "clrProperty": "MediaTextAlignment",
+      "type": "TaskbarMediaTextAlignment",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "TaskbarMediaTextAlignment",
+      "rawDefault": "Center",
+      "normalizedDefault": "Center",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 500,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "Left",
+      "defaultChangedSinceLatestRelease": true,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "Left"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "Left"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.outputDeviceVisible",
+      "declaringType": "TaskbarExperienceSettings",
+      "clrProperty": "OutputDeviceVisible",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": false,
+      "normalizedDefault": false,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 552,
+      "firstReleased": "v1.2.1",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": false,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.performanceVisible",
+      "declaringType": "TaskbarExperienceSettings",
+      "clrProperty": "PerformanceVisible",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 524,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.restComponentOrder",
+      "declaringType": "TaskbarExperienceSettings",
+      "clrProperty": "RestComponentOrder",
+      "type": "IReadOnlyList<TaskbarRestComponent>?",
+      "nullable": true,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "TaskbarRestComponent",
+      "rawDefault": null,
+      "normalizedDefault": null,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 571,
+      "firstReleased": "v1.2.1",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.restProgressVisible",
+      "declaringType": "TaskbarExperienceSettings",
+      "clrProperty": "RestProgressVisible",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": false,
+      "normalizedDefault": false,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 532,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": false,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.spectrumVisible",
+      "declaringType": "TaskbarExperienceSettings",
+      "clrProperty": "SpectrumVisible",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 506,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarExperience.volumeVisible",
+      "declaringType": "TaskbarExperienceSettings",
+      "clrProperty": "VolumeVisible",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": false,
+      "normalizedDefault": false,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 555,
+      "firstReleased": "v1.2.1",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": false,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarSurface",
+      "declaringType": "AppSettings",
+      "clrProperty": "TaskbarSurface",
+      "type": "ModeSurfaceSettings",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": {
+        "style": "Automatic",
+        "backgroundOpacityPercent": 100,
+        "cornerRadiusDip": 6
+      },
+      "normalizedDefault": {
+        "style": "Automatic",
+        "backgroundOpacityPercent": 100,
+        "cornerRadiusDip": 6
+      },
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 157,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": {
+        "style": "Automatic",
+        "backgroundOpacityPercent": 100,
+        "cornerRadiusDip": 6
+      },
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": {
+          "style": "Automatic",
+          "backgroundOpacityPercent": 100,
+          "cornerRadiusDip": 6
+        }
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarSurface.backgroundOpacityPercent",
+      "declaringType": "ModeSurfaceSettings",
+      "clrProperty": "BackgroundOpacityPercent",
+      "type": "int",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": 100,
+      "normalizedDefault": 100,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 748,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": 100,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": 0
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarSurface.cornerRadiusDip",
+      "declaringType": "ModeSurfaceSettings",
+      "clrProperty": "CornerRadiusDip",
+      "type": "double",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": 6,
+      "normalizedDefault": 6,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 749,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": 6,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": 0
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.taskbarSurface.style",
+      "declaringType": "ModeSurfaceSettings",
+      "clrProperty": "Style",
+      "type": "PlayerSurfaceStyle",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "PlayerSurfaceStyle",
+      "rawDefault": "Automatic",
+      "normalizedDefault": "Automatic",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 747,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "Automatic",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "Automatic"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "Automatic"
+      }
+    },
+    {
+      "path": "settings.taskbarTargetMonitorDeviceId",
+      "declaringType": "AppSettings",
+      "clrProperty": "TaskbarTargetMonitorDeviceId",
+      "type": "string?",
+      "nullable": true,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": null,
+      "normalizedDefault": null,
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 135,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      }
+    },
+    {
+      "path": "settings.taskbarTargetMonitorDeviceIds",
+      "declaringType": "AppSettings",
+      "clrProperty": "TaskbarTargetMonitorDeviceIds",
+      "type": "IReadOnlyList<string>?",
+      "nullable": true,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": null,
+      "normalizedDefault": null,
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 125,
+      "firstReleased": "v1.2.1",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      }
+    },
+    {
+      "path": "settings.trackChangeNotification",
+      "declaringType": "AppSettings",
+      "clrProperty": "TrackChangeNotification",
+      "type": "TrackChangeNotificationSettings",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": {
+        "enabled": true,
+        "showWhenFullscreen": true,
+        "durationMilliseconds": 3000,
+        "position": "TopCenter",
+        "targetMode": "ForegroundWindow",
+        "fixedMonitorDeviceId": null
+      },
+      "normalizedDefault": {
+        "enabled": true,
+        "showWhenFullscreen": true,
+        "durationMilliseconds": 3000,
+        "position": "TopCenter",
+        "targetMode": "ForegroundWindow",
+        "fixedMonitorDeviceId": null
+      },
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 204,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": {
+        "enabled": true,
+        "showWhenFullscreen": true,
+        "durationMilliseconds": 3000,
+        "position": "TopCenter",
+        "targetMode": "ForegroundWindow",
+        "fixedMonitorDeviceId": null
+      },
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": {
+          "enabled": true,
+          "showWhenFullscreen": true,
+          "durationMilliseconds": 3000,
+          "position": "TopCenter",
+          "targetMode": "ForegroundWindow",
+          "fixedMonitorDeviceId": null
+        }
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.trackChangeNotification.durationMilliseconds",
+      "declaringType": "TrackChangeNotificationSettings",
+      "clrProperty": "DurationMilliseconds",
+      "type": "int",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": 3000,
+      "normalizedDefault": 3000,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 394,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": 3000,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": 1000
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.trackChangeNotification.enabled",
+      "declaringType": "TrackChangeNotificationSettings",
+      "clrProperty": "Enabled",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 392,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.trackChangeNotification.fixedMonitorDeviceId",
+      "declaringType": "TrackChangeNotificationSettings",
+      "clrProperty": "FixedMonitorDeviceId",
+      "type": "string?",
+      "nullable": true,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": null,
+      "normalizedDefault": null,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 397,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      }
+    },
+    {
+      "path": "settings.trackChangeNotification.position",
+      "declaringType": "TrackChangeNotificationSettings",
+      "clrProperty": "Position",
+      "type": "TrackChangeNotificationPosition",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "TrackChangeNotificationPosition",
+      "rawDefault": "TopCenter",
+      "normalizedDefault": "TopCenter",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 395,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "TopCenter",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "BottomLeft"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "TopCenter"
+      }
+    },
+    {
+      "path": "settings.trackChangeNotification.showWhenFullscreen",
+      "declaringType": "TrackChangeNotificationSettings",
+      "clrProperty": "ShowWhenFullscreen",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 393,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.trackChangeNotification.targetMode",
+      "declaringType": "TrackChangeNotificationSettings",
+      "clrProperty": "TargetMode",
+      "type": "NotificationTargetMode",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "NotificationTargetMode",
+      "rawDefault": "ForegroundWindow",
+      "normalizedDefault": "ForegroundWindow",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 396,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "ForegroundWindow",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "Fixed"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "ForegroundWindow"
+      }
+    },
+    {
+      "path": "settings.translucentTbCompatibilityPromptShown",
+      "declaringType": "AppSettings",
+      "clrProperty": "TranslucentTbCompatibilityPromptShown",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": false,
+      "normalizedDefault": false,
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 239,
+      "firstReleased": null,
+      "releaseStatus": "unreleased",
+      "presentInLatestRelease": false,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.trayWheelBehavior",
+      "declaringType": "AppSettings",
+      "clrProperty": "TrayWheelBehavior",
+      "type": "TrayWheelBehavior",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "TrayWheelBehavior",
+      "rawDefault": "SwitchOutputDevice",
+      "normalizedDefault": "SwitchOutputDevice",
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 114,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "SwitchOutputDevice",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "SwitchOutputDevice"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "SwitchOutputDevice"
+      }
+    },
+    {
+      "path": "settings.twoLineLyricsEnabled",
+      "declaringType": "AppSettings",
+      "clrProperty": "TwoLineLyricsEnabled",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 117,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": true
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.update",
+      "declaringType": "AppSettings",
+      "clrProperty": "Update",
+      "type": "UpdateSettings",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": {
+        "autoCheckEnabled": true,
+        "skippedVersion": null,
+        "lastCheckUtc": null,
+        "lastCheckSucceeded": null
+      },
+      "normalizedDefault": {
+        "autoCheckEnabled": true,
+        "skippedVersion": null,
+        "lastCheckUtc": null,
+        "lastCheckSucceeded": null
+      },
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 215,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": {
+        "autoCheckEnabled": true,
+        "skippedVersion": null,
+        "lastCheckUtc": null,
+        "lastCheckSucceeded": null
+      },
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": {
+          "autoCheckEnabled": true,
+          "skippedVersion": null,
+          "lastCheckUtc": null,
+          "lastCheckSucceeded": null
+        }
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.update.autoCheckEnabled",
+      "declaringType": "UpdateSettings",
+      "clrProperty": "AutoCheckEnabled",
+      "type": "bool",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": true,
+      "normalizedDefault": true,
+      "source": "src/AFMediaBar/Classes/Settings/UpdateSettings.cs",
+      "sourceLine": 26,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": true,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": false
+      },
+      "onExplicitNull": {
+        "accepted": false,
+        "error": "JsonException"
+      }
+    },
+    {
+      "path": "settings.update.lastCheckSucceeded",
+      "declaringType": "UpdateSettings",
+      "clrProperty": "LastCheckSucceeded",
+      "type": "bool?",
+      "nullable": true,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": null,
+      "normalizedDefault": null,
+      "source": "src/AFMediaBar/Classes/Settings/UpdateSettings.cs",
+      "sourceLine": 29,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      }
+    },
+    {
+      "path": "settings.update.lastCheckUtc",
+      "declaringType": "UpdateSettings",
+      "clrProperty": "LastCheckUtc",
+      "type": "DateTimeOffset?",
+      "nullable": true,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": null,
+      "normalizedDefault": null,
+      "source": "src/AFMediaBar/Classes/Settings/UpdateSettings.cs",
+      "sourceLine": 28,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      }
+    },
+    {
+      "path": "settings.update.skippedVersion",
+      "declaringType": "UpdateSettings",
+      "clrProperty": "SkippedVersion",
+      "type": "string?",
+      "nullable": true,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": null,
+      "normalizedDefault": null,
+      "source": "src/AFMediaBar/Classes/Settings/UpdateSettings.cs",
+      "sourceLine": 27,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      }
+    },
+    {
+      "path": "settings.windowMode",
+      "declaringType": "AppSettings",
+      "clrProperty": "WindowMode",
+      "type": "WindowMode",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "WindowMode",
+      "rawDefault": "Taskbar",
+      "normalizedDefault": "Taskbar",
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 143,
+      "firstReleased": "v1.2.0",
+      "releaseStatus": "released",
+      "presentInLatestRelease": true,
+      "latestReleaseDefault": "Taskbar",
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "Taskbar"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "Taskbar"
+      }
+    }
+  ],
+  "enums": [
+    {
+      "fullName": "AFMediaBar.Classes.Settings.AccentColorMode",
+      "invalidInputFallback": "System",
+      "members": [
+        {
+          "name": "System",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Custom",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "AccentColorMode",
+      "source": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
+      "sourceLine": 65
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.ApplicationBackdropMode",
+      "invalidInputFallback": "Mica",
+      "members": [
+        {
+          "name": "FluentSolid",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Mica",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Acrylic",
+          "value": 2,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "MicaAlt",
+          "value": 3,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "ApplicationBackdropMode",
+      "source": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
+      "sourceLine": 24
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.ApplicationThemeMode",
+      "invalidInputFallback": "Automatic",
+      "members": [
+        {
+          "name": "Automatic",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Light",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Dark",
+          "value": 2,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "ApplicationThemeMode",
+      "source": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
+      "sourceLine": 16
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.ArtworkHoverMode",
+      "invalidInputFallback": "Off",
+      "members": [
+        {
+          "name": "Off",
+          "value": 0,
+          "firstReleased": null,
+          "releaseStatus": "unreleased"
+        },
+        {
+          "name": "Zoom",
+          "value": 1,
+          "firstReleased": null,
+          "releaseStatus": "unreleased"
+        },
+        {
+          "name": "Preview",
+          "value": 2,
+          "firstReleased": null,
+          "releaseStatus": "unreleased"
+        }
+      ],
+      "name": "ArtworkHoverMode",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 474
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.CjkFontPreset",
+      "invalidInputFallback": "SystemDefault",
+      "members": [
+        {
+          "name": "SystemDefault",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "MicrosoftYaHei",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "DengXian",
+          "value": 2,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "SimSun",
+          "value": 3,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "SimHei",
+          "value": 4,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "KaiTi",
+          "value": 5,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "FangSong",
+          "value": 6,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "CjkFontPreset",
+      "source": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
+      "sourceLine": 86
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.DynamicIslandBackgroundMode",
+      "invalidInputFallback": "SystemTheme",
+      "members": [
+        {
+          "name": "SystemTheme",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Transparent",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "DynamicIslandBackgroundMode",
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 14
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Models.Layout.DynamicIslandEdge",
+      "invalidInputFallback": "Top",
+      "members": [
+        {
+          "name": "Top",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Right",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Bottom",
+          "value": 2,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Left",
+          "value": 3,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "DynamicIslandEdge",
+      "source": "src/AFMediaBar/Classes/Models/Layout/LayoutEnums.cs",
+      "sourceLine": 38
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.InteractionModifier",
+      "invalidInputFallback": "Shift",
+      "members": [
+        {
+          "name": "Shift",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "LeftMouseButton",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "RightMouseButton",
+          "value": 2,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "InteractionModifier",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 50
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Services.Localization.InterfaceLanguage",
+      "invalidInputFallback": "System",
+      "members": [
+        {
+          "name": "System",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "SimplifiedChinese",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "TraditionalChinese",
+          "value": 2,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "English",
+          "value": 3,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Vietnamese",
+          "value": 4,
+          "firstReleased": null,
+          "releaseStatus": "unreleased"
+        }
+      ],
+      "name": "InterfaceLanguage",
+      "source": "src/AFMediaBar/Classes/Services/Localization/InterfaceLanguage.cs",
+      "sourceLine": 17
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.LatinFontPreset",
+      "invalidInputFallback": "SystemDefault",
+      "members": [
+        {
+          "name": "SegoeUi",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Arial",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Calibri",
+          "value": 2,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Verdana",
+          "value": 3,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Consolas",
+          "value": 4,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "TimesNewRoman",
+          "value": 5,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "SystemDefault",
+          "value": 6,
+          "firstReleased": "v1.3.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "LatinFontPreset",
+      "source": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
+      "sourceLine": 74
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.LayoutOrientationMode",
+      "invalidInputFallback": "Auto",
+      "members": [
+        {
+          "name": "Auto",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Horizontal",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Vertical",
+          "value": 2,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "LayoutOrientationMode",
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 12
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.LyricsChineseConversionMode",
+      "invalidInputFallback": "None",
+      "members": [
+        {
+          "name": "None",
+          "value": 0,
+          "firstReleased": null,
+          "releaseStatus": "unreleased"
+        },
+        {
+          "name": "SimplifiedToTraditional",
+          "value": 1,
+          "firstReleased": null,
+          "releaseStatus": "unreleased"
+        },
+        {
+          "name": "TraditionalToSimplified",
+          "value": 2,
+          "firstReleased": null,
+          "releaseStatus": "unreleased"
+        }
+      ],
+      "name": "LyricsChineseConversionMode",
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 43
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.LyricsSecondaryLineMode",
+      "invalidInputFallback": "Translation",
+      "members": [
+        {
+          "name": "NextLine",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Translation",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Romanization",
+          "value": 2,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "LyricsSecondaryLineMode",
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 21
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.LyricsTextAlignment",
+      "invalidInputFallback": "Center",
+      "members": [
+        {
+          "name": "Left",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Center",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Right",
+          "value": 2,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "LyricsTextAlignment",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 129
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Models.MetricKind",
+      "invalidInputFallback": "SystemMemory",
+      "members": [
+        {
+          "name": "SystemMemory",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "SystemCpu",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "SystemGpu",
+          "value": 2,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "ProcessMemory",
+          "value": 3,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "MetricKind",
+      "source": "src/AFMediaBar/Classes/Models/ExtraFeatureModels.cs",
+      "sourceLine": 32
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.NotificationTargetMode",
+      "invalidInputFallback": "ForegroundWindow",
+      "members": [
+        {
+          "name": "Fixed",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "ForegroundWindow",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "NotificationTargetMode",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 386
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.PlayerClickAction",
+      "invalidInputFallback": "TogglePlayPause",
+      "members": [
+        {
+          "name": "TogglePlayPause",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "ActivateSource",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "OpenFullPanel",
+          "value": 2,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Disabled",
+          "value": 3,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "PlayerClickAction",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 37
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.PlayerForegroundMode",
+      "invalidInputFallback": "Automatic",
+      "members": [
+        {
+          "name": "Automatic",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "LightText",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "DarkText",
+          "value": 2,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "PlayerForegroundMode",
+      "source": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
+      "sourceLine": 8
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.PlayerSurfaceStyle",
+      "invalidInputFallback": "Automatic",
+      "members": [
+        {
+          "name": "Automatic",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Solid",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "ThemeTint",
+          "value": 2,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "PlayerSurfaceStyle",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 121
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Models.QuickLaunchTargetKind",
+      "invalidInputFallback": "Executable",
+      "members": [
+        {
+          "name": "Executable",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Shortcut",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "AppUserModelId",
+          "value": 2,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "QuickLaunchTargetKind",
+      "source": "src/AFMediaBar/Classes/Models/ExtraFeatureModels.cs",
+      "sourceLine": 6
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.SpectrumStyle",
+      "invalidInputFallback": "Bars",
+      "members": [
+        {
+          "name": "Bars",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Waveform",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "PixelBars",
+          "value": 2,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "MirroredBars",
+          "value": 3,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "SpectrumStyle",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 186
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.TaskbarBackgroundMaterial",
+      "invalidInputFallback": "Transparent",
+      "members": [
+        {
+          "name": "Transparent",
+          "value": 0,
+          "firstReleased": null,
+          "releaseStatus": "unreleased"
+        },
+        {
+          "name": "Frosted",
+          "value": 1,
+          "firstReleased": null,
+          "releaseStatus": "unreleased"
+        }
+      ],
+      "name": "TaskbarBackgroundMaterial",
+      "source": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
+      "sourceLine": 39
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.TaskbarBarPosition",
+      "invalidInputFallback": "Start",
+      "members": [
+        {
+          "name": "Start",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Center",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "End",
+          "value": 2,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "TaskbarBarPosition",
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 10
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.TaskbarContentArrangement",
+      "invalidInputFallback": "Left",
+      "members": [
+        {
+          "name": "Left",
+          "value": 0,
+          "firstReleased": null,
+          "releaseStatus": "unreleased"
+        },
+        {
+          "name": "Right",
+          "value": 1,
+          "firstReleased": null,
+          "releaseStatus": "unreleased"
+        }
+      ],
+      "name": "TaskbarContentArrangement",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 82
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.TaskbarContentLayout",
+      "invalidInputFallback": "AdaptiveStack",
+      "members": [
+        {
+          "name": "CompactInline",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "AdaptiveStack",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "CenteredStack",
+          "value": 2,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "TaskbarContentLayout",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 66
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.TaskbarFrostedStyle",
+      "invalidInputFallback": "Neutral",
+      "members": [
+        {
+          "name": "Neutral",
+          "value": 0,
+          "firstReleased": null,
+          "releaseStatus": "unreleased"
+        },
+        {
+          "name": "Cool",
+          "value": 1,
+          "firstReleased": null,
+          "releaseStatus": "unreleased"
+        },
+        {
+          "name": "Warm",
+          "value": 2,
+          "firstReleased": null,
+          "releaseStatus": "unreleased"
+        },
+        {
+          "name": "Artwork",
+          "value": 3,
+          "firstReleased": null,
+          "releaseStatus": "unreleased"
+        }
+      ],
+      "name": "TaskbarFrostedStyle",
+      "source": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
+      "sourceLine": 49
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.TaskbarInformationDensity",
+      "invalidInputFallback": "Balanced",
+      "members": [
+        {
+          "name": "Minimal",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Balanced",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Information",
+          "value": 2,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "TaskbarInformationDensity",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 58
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.TaskbarLengthMode",
+      "invalidInputFallback": "FollowContent",
+      "members": [
+        {
+          "name": "FollowContent",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Fixed",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "TaskbarLengthMode",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 89
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.TaskbarMediaTextAlignment",
+      "invalidInputFallback": "Left",
+      "members": [
+        {
+          "name": "Left",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Center",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Right",
+          "value": 2,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "TaskbarMediaTextAlignment",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 74
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.TaskbarRestComponent",
+      "invalidInputFallback": "Artwork",
+      "members": [
+        {
+          "name": "Artwork",
+          "value": 0,
+          "firstReleased": "v1.2.1",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "MediaText",
+          "value": 1,
+          "firstReleased": "v1.2.1",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Spectrum",
+          "value": 2,
+          "firstReleased": "v1.2.1",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Performance",
+          "value": 3,
+          "firstReleased": "v1.2.1",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "OutputDevice",
+          "value": 4,
+          "firstReleased": "v1.2.1",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Volume",
+          "value": 5,
+          "firstReleased": "v1.2.1",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "TaskbarRestComponent",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 100
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.TrackChangeNotificationPosition",
+      "invalidInputFallback": "TopCenter",
+      "members": [
+        {
+          "name": "BottomLeft",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "TopLeft",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "TopCenter",
+          "value": 2,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "TopRight",
+          "value": 3,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "BottomCenter",
+          "value": 4,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "BottomRight",
+          "value": 5,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "TrackChangeNotificationPosition",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 375
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.TrayClickAction",
+      "invalidInputFallback": "OpenAudioControl",
+      "members": [
+        {
+          "name": "None",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "OpenSettings",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "OpenAudioControl",
+          "value": 2,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "OpenContextMenu",
+          "value": 3,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "OpenOutputDeviceMenu",
+          "value": 4,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "OpenCurrentAppVolumeMenu",
+          "value": 5,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "TrayClickAction",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 22
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.TrayWheelBehavior",
+      "invalidInputFallback": "SwitchOutputDevice",
+      "members": [
+        {
+          "name": "AdjustVolume",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "SwitchOutputDevice",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Disabled",
+          "value": 2,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "TrayWheelBehavior",
+      "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
+      "sourceLine": 16
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Settings.WheelAction",
+      "invalidInputFallback": "PreviousNext",
+      "members": [
+        {
+          "name": "PreviousNext",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "CurrentApplicationVolume",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "OutputDevice",
+          "value": 2,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "SwitchMediaSource",
+          "value": 3,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "Disabled",
+          "value": 4,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "WheelAction",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 9
+    },
+    {
+      "fullName": "AFMediaBar.Classes.Models.Layout.WindowMode",
+      "invalidInputFallback": "Taskbar",
+      "members": [
+        {
+          "name": "Taskbar",
+          "value": 0,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        },
+        {
+          "name": "DynamicIsland",
+          "value": 1,
+          "firstReleased": "v1.2.0",
+          "releaseStatus": "released"
+        }
+      ],
+      "name": "WindowMode",
+      "source": "src/AFMediaBar/Classes/Models/Layout/LayoutEnums.cs",
+      "sourceLine": 29
+    }
+  ],
+  "limits": {
+    "AppearanceSettings": {
+      "MinimumFontWeight": 100,
+      "MaximumFontWeight": 900,
+      "FontWeightStep": 100,
+      "MinimumBackdropTintOpacityPercent": 30,
+      "MaximumBackdropTintOpacityPercent": 100,
+      "BackdropTintOpacityStep": 5,
+      "DefaultBackdropTintOpacityPercent": 60,
+      "MinimumTaskbarBackgroundOpacityPercent": 35,
+      "MaximumTaskbarBackgroundOpacityPercent": 90,
+      "TaskbarBackgroundOpacityStep": 1,
+      "DefaultTaskbarBackgroundOpacityPercent": 72,
+      "DefaultAccentColorHex": "#0078D4"
+    },
+    "SpectrumComponentSettings": {
+      "MinimumBandCount": 9,
+      "MaximumBandCount": 24,
+      "DefaultBandCount": 9,
+      "MinimumRefreshRateHz": 5,
+      "MaximumRefreshRateHz": 30,
+      "MinimumSensitivityPercent": 10,
+      "MaximumSensitivityPercent": 400,
+      "MinimumContentHeightDip": 14,
+      "MaximumContentHeightDip": 34,
+      "ContentHeightStepDip": 2,
+      "DefaultContentHeightDip": 26,
+      "SensitivityStepPercent": 10
+    },
+    "PerformanceComponentSettings": {
+      "MinimumRefreshIntervalMilliseconds": 500,
+      "MaximumRefreshIntervalMilliseconds": 5000,
+      "DefaultRefreshIntervalMilliseconds": 2500,
+      "RefreshIntervalStepMilliseconds": 500
+    },
+    "TrackChangeNotificationSettings": {
+      "MinimumDurationMilliseconds": 1000,
+      "MaximumDurationMilliseconds": 10000
+    },
+    "TaskbarExperienceSettings": {
+      "MinimumComponentSpacingDip": 4,
+      "MaximumComponentSpacingDip": 32,
+      "MaximumHoverButtonSpacingDip": 16,
+      "MinimumMediaFontSizePercent": 80,
+      "MaximumMediaFontSizePercent": 125,
+      "MediaFontSizeStepPercent": 5,
+      "MinimumStoredFixedLengthDip": 120,
+      "MaximumStoredFixedLengthDip": 4096
+    },
+    "LyricsUnsungOpacity": {
+      "MinimumPercent": 20,
+      "MaximumPercent": 80,
+      "StepPercent": 5,
+      "DefaultPercent": 45
+    },
+    "LyricsCharacterSpacing": {
+      "MinimumPercent": 0,
+      "MaximumPercent": 20,
+      "StepPercent": 1,
+      "DefaultPercent": 0
+    },
+    "LyricsLineGap": {
+      "MinimumPercent": 0,
+      "MaximumPercent": 24,
+      "StepPercent": 2,
+      "DefaultPercent": 0
+    },
+    "LyricsFixedWidth": {
+      "MinimumDip": 80,
+      "MaximumDip": 600,
+      "StepDip": 10,
+      "DefaultDip": 240
+    },
+    "AppSettings": {
+      "MinimumTaskbarCrossAxisOffsetDip": -20,
+      "MaximumTaskbarCrossAxisOffsetDip": 20
+    },
+    "UpdateSettings": {
+      "MaximumSkippedVersionLength": 32
+    }
+  },
+  "envelopeFields": [
+    {
+      "path": "schemaVersion",
+      "type": "int",
+      "nullable": false,
+      "firstReleased": "v1.2.0",
+      "currentValue": 2,
+      "onMissing": "0 -> unsupported schema",
+      "onDifferentValue": "quarantine primary/user-defaults; backup only ignored"
+    },
+    {
+      "path": "settings",
+      "type": "AppSettings?",
+      "nullable": true,
+      "firstReleased": "v1.2.0",
+      "onMissing": "new AppSettings().Normalize()",
+      "onExplicitNull": "new AppSettings().Normalize()"
+    }
+  ],
+  "defaults": {
+    "appearance": {
+      "latinFont": "SystemDefault",
+      "cjkFont": "SystemDefault",
+      "fontWeight": 400,
+      "playerForegroundMode": "Automatic",
+      "enhancedReadability": false,
+      "applicationThemeMode": "Automatic",
+      "backdropMode": "Mica",
+      "accentColorMode": "System",
+      "accentColor": "#0078D4",
+      "backdropTintOpacityPercent": 60,
+      "latinFontFamily": null,
+      "cjkFontFamily": null,
+      "taskbarBackgroundMaterial": "Transparent",
+      "taskbarBackgroundOpacityPercent": 72,
+      "taskbarFrostedStyle": "Neutral"
+    },
+    "trayWheelBehavior": "SwitchOutputDevice",
+    "lyricsEnabled": true,
+    "allowBrowserAndVideoLyrics": false,
+    "twoLineLyricsEnabled": true,
+    "lyricsSecondaryLine": {
+      "order": null
+    },
+    "taskbarBarEnabled": true,
+    "taskbarTargetMonitorDeviceIds": null,
+    "taskbarTargetMonitorDeviceId": null,
+    "position": "Start",
+    "taskbarBarBackgroundBlur": false,
+    "taskbarBarManualPadding": 0,
+    "windowMode": "Taskbar",
+    "layoutOrientationMode": "Auto",
+    "layoutLengthScalePercent": 100,
+    "layoutThicknessScalePercent": 100,
+    "dynamicIslandBackgroundMode": "SystemTheme",
+    "taskbarBarCrossAxisOffsetDip": 0,
+    "taskbarBarAvoidIcons": true,
+    "taskbarBarPositionLocked": false,
+    "dynamicIslandLeft": null,
+    "dynamicIslandTop": null,
+    "dynamicIslandEdge": "Top",
+    "dynamicIslandEdgeDocked": true,
+    "taskbarExperience": {
+      "hoverLayerEnabled": true,
+      "fullLayerEnabled": true,
+      "density": "Balanced",
+      "contentLayout": "AdaptiveStack",
+      "fullPanel": {
+        "mediaInfoVisible": true,
+        "mediaControlsVisible": true,
+        "audioControlsVisible": true,
+        "performanceVisible": true
+      },
+      "lengthMode": "FollowContent",
+      "fixedLengthDip": 360,
+      "componentSpacingDip": 12,
+      "hoverButtonSpacingDip": 2,
+      "mediaTextAlignment": "Center",
+      "arrangement": null,
+      "spectrumVisible": true,
+      "artworkVisible": true,
+      "artworkHoverMode": "Off",
+      "performanceVisible": true,
+      "restProgressVisible": false,
+      "fullPanelEntryVisible": true,
+      "hoverControls": {
+        "playPauseVisible": false,
+        "previousNextVisible": false,
+        "outputDeviceVisible": true,
+        "audioControlVisible": true,
+        "progressVisible": true
+      },
+      "outputDeviceVisible": false,
+      "volumeVisible": false,
+      "restComponentOrder": null,
+      "idleComponents": null,
+      "mediaFontSizePercent": 100
+    },
+    "interaction": {
+      "artworkClickAction": "TogglePlayPause",
+      "textClickAction": "ActivateSource",
+      "primaryWheelAction": "PreviousNext",
+      "modifier": "Shift",
+      "chordWheelAction": "SwitchMediaSource",
+      "trayClickAction": "OpenAudioControl",
+      "trayPrimaryWheelAction": "SwitchOutputDevice",
+      "trayChordWheelAction": "AdjustVolume",
+      "showWheelTooltips": true
+    },
+    "taskbarSurface": {
+      "style": "Automatic",
+      "backgroundOpacityPercent": 100,
+      "cornerRadiusDip": 6
+    },
+    "dynamicIslandSurface": {
+      "style": "Automatic",
+      "backgroundOpacityPercent": 100,
+      "cornerRadiusDip": 6
+    },
+    "lyricsTextAlignment": "Center",
+    "lyricsSyllableHighlightEnabled": true,
+    "lyricsUnsungOpacityPercent": 45,
+    "lyricsCharacterSpacingPercent": 0,
+    "lyricsLineGapPercent": 0,
+    "lyricsFixedWidthEnabled": false,
+    "lyricsFixedWidthDip": 240,
+    "lyricsInfoLineFilterEnabled": true,
+    "lyricsChineseConversion": "None",
+    "lyricsSource": {
+      "enabledSourceIds": null
+    },
+    "lyricsArtistSeparators": "/",
+    "trackChangeNotification": {
+      "enabled": true,
+      "showWhenFullscreen": true,
+      "durationMilliseconds": 3000,
+      "position": "TopCenter",
+      "targetMode": "ForegroundWindow",
+      "fixedMonitorDeviceId": null
+    },
+    "smtcSourceFilter": {
+      "enabled": false,
+      "allowedSourceIds": []
+    },
+    "quickLaunch": {
+      "entries": []
+    },
+    "spectrumComponent": {
+      "bandCount": 9,
+      "refreshRateHz": 20,
+      "sensitivityPercent": 100,
+      "style": "Bars",
+      "contentHeightDip": 26
+    },
+    "performanceComponent": {
+      "metrics": [
+        "SystemMemory"
+      ],
+      "refreshIntervalMilliseconds": 2500,
+      "openTaskManagerOnClick": true
+    },
+    "update": {
+      "autoCheckEnabled": true,
+      "skippedVersion": null,
+      "lastCheckUtc": null,
+      "lastCheckSucceeded": null
+    },
+    "launchAtStartup": true,
+    "interfaceLanguage": "System",
+    "translucentTbCompatibilityPromptShown": false
+  },
+  "latestReleaseDefaults": {
+    "appearance": {
+      "latinFont": "SystemDefault",
+      "cjkFont": "SystemDefault",
+      "fontWeight": 400,
+      "playerForegroundMode": "Automatic",
+      "enhancedReadability": false,
+      "applicationThemeMode": "Automatic",
+      "backdropMode": "Mica",
+      "accentColorMode": "System",
+      "accentColor": "#0078D4",
+      "backdropTintOpacityPercent": 60,
+      "latinFontFamily": null,
+      "cjkFontFamily": null
+    },
+    "trayWheelBehavior": "SwitchOutputDevice",
+    "lyricsEnabled": true,
+    "allowBrowserAndVideoLyrics": false,
+    "twoLineLyricsEnabled": true,
+    "lyricsSecondaryLine": {
+      "order": null
+    },
+    "taskbarBarEnabled": true,
+    "taskbarTargetMonitorDeviceIds": null,
+    "taskbarTargetMonitorDeviceId": null,
+    "position": "Start",
+    "taskbarBarBackgroundBlur": false,
+    "taskbarBarManualPadding": 0,
+    "windowMode": "Taskbar",
+    "layoutOrientationMode": "Auto",
+    "layoutLengthScalePercent": 100,
+    "layoutThicknessScalePercent": 100,
+    "dynamicIslandBackgroundMode": "SystemTheme",
+    "taskbarBarCrossAxisOffsetDip": 0,
+    "taskbarBarAvoidIcons": true,
+    "taskbarBarPositionLocked": false,
+    "dynamicIslandLeft": null,
+    "dynamicIslandTop": null,
+    "dynamicIslandEdge": "Top",
+    "dynamicIslandEdgeDocked": true,
+    "taskbarExperience": {
+      "hoverLayerEnabled": true,
+      "fullLayerEnabled": true,
+      "density": "Balanced",
+      "contentLayout": "AdaptiveStack",
+      "fullPanel": {
+        "mediaInfoVisible": true,
+        "mediaControlsVisible": true,
+        "audioControlsVisible": true,
+        "performanceVisible": true
+      },
+      "lengthMode": "FollowContent",
+      "fixedLengthDip": 360,
+      "componentSpacingDip": 12,
+      "hoverButtonSpacingDip": 2,
+      "mediaTextAlignment": "Left",
+      "spectrumVisible": true,
+      "artworkVisible": true,
+      "performanceVisible": true,
+      "restProgressVisible": false,
+      "fullPanelEntryVisible": true,
+      "hoverControls": {
+        "playPauseVisible": false,
+        "previousNextVisible": false,
+        "outputDeviceVisible": true,
+        "audioControlVisible": true,
+        "progressVisible": true
+      },
+      "outputDeviceVisible": false,
+      "volumeVisible": false,
+      "restComponentOrder": null,
+      "idleComponents": null,
+      "mediaFontSizePercent": 100
+    },
+    "interaction": {
+      "artworkClickAction": "TogglePlayPause",
+      "textClickAction": "ActivateSource",
+      "primaryWheelAction": "PreviousNext",
+      "modifier": "Shift",
+      "chordWheelAction": "SwitchMediaSource",
+      "trayClickAction": "OpenAudioControl",
+      "trayPrimaryWheelAction": "SwitchOutputDevice",
+      "trayChordWheelAction": "AdjustVolume",
+      "showWheelTooltips": true
+    },
+    "taskbarSurface": {
+      "style": "Automatic",
+      "backgroundOpacityPercent": 100,
+      "cornerRadiusDip": 6
+    },
+    "dynamicIslandSurface": {
+      "style": "Automatic",
+      "backgroundOpacityPercent": 100,
+      "cornerRadiusDip": 6
+    },
+    "lyricsTextAlignment": "Left",
+    "lyricsSyllableHighlightEnabled": true,
+    "lyricsUnsungOpacityPercent": 45,
+    "lyricsCharacterSpacingPercent": 0,
+    "lyricsLineGapPercent": 0,
+    "lyricsFixedWidthEnabled": false,
+    "lyricsFixedWidthDip": 240,
+    "lyricsInfoLineFilterEnabled": true,
+    "lyricsSource": {
+      "enabledSourceIds": null
+    },
+    "lyricsArtistSeparators": "/",
+    "trackChangeNotification": {
+      "enabled": true,
+      "showWhenFullscreen": true,
+      "durationMilliseconds": 3000,
+      "position": "TopCenter",
+      "targetMode": "ForegroundWindow",
+      "fixedMonitorDeviceId": null
+    },
+    "smtcSourceFilter": {
+      "enabled": false,
+      "allowedSourceIds": []
+    },
+    "quickLaunch": {
+      "entries": []
+    },
+    "spectrumComponent": {
+      "bandCount": 9,
+      "refreshRateHz": 20,
+      "sensitivityPercent": 100,
+      "style": "Bars",
+      "contentHeightDip": 26
+    },
+    "performanceComponent": {
+      "metrics": [
+        "SystemMemory"
+      ],
+      "refreshIntervalMilliseconds": 2500,
+      "openTaskManagerOnClick": true
+    },
+    "update": {
+      "autoCheckEnabled": true,
+      "skippedVersion": null,
+      "lastCheckUtc": null,
+      "lastCheckSucceeded": null
+    },
+    "launchAtStartup": true,
+    "interfaceLanguage": "System"
+  },
+  "removedReleasedFields": [
+    {
+      "path": "settings.lyricsMatchStrictness",
+      "type": "LyricsMatchStrictness",
+      "firstReleased": "v1.2.0",
+      "lastPresentRelease": "v1.2.1",
+      "firstAbsentRelease": "v1.3.0",
+      "currentHandling": "unknown field ignored; not migrated or written",
+      "members": [
+        {
+          "name": "Balanced",
+          "value": 0
+        },
+        {
+          "name": "Strict",
+          "value": 1
+        },
+        {
+          "name": "Exact",
+          "value": 2
+        }
+      ]
+    }
+  ]
+}
