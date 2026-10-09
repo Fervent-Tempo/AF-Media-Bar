@@ -28,6 +28,9 @@
   <data name="About.Language.TraditionalChinese" xml:space="preserve">
     <value>繁體中文</value>
   </data>
+  <data name="About.Language.Vietnamese" xml:space="preserve">
+    <value>Tiếng Việt</value>
+  </data>
   <data name="About.ResetScope" xml:space="preserve">
     <value>所有设置</value>
   </data>

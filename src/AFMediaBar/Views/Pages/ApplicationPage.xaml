@@ -49,6 +49,9 @@
                                 <ComboBoxItem
                                     Content="{DynamicResource Loc.About.Language.English}"
                                     Tag="{x:Static localization:InterfaceLanguage.English}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.About.Language.Vietnamese}"
+                                    Tag="{x:Static localization:InterfaceLanguage.Vietnamese}" />
                             </ComboBox>
                         </components:SettingsRow>
                         <components:SettingsRow
