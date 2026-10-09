@@ -12,11 +12,14 @@ using System.Xml.Linq;
 using AFMediaBar.Resources;
 using AFMediaBar.Components;
 using AFMediaBar.Classes.Services;
+using AFMediaBar.ViewModels.Pages;
+using AFMediaBar.Views.Pages;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 using Wpf.Ui.Markup;
 using TextBox = System.Windows.Controls.TextBox;
+using TextBlock = System.Windows.Controls.TextBlock;
 
 namespace AFMediaBar.Layout.Tests;
 
@@ -82,6 +85,7 @@ public sealed class SettingsVisualRuntimeTests
                 VerifyNarrowRow(app);
                 SettingsLiveVisualChecks.VerifyCardHover(app);
                 VerifyPageMarkup(app);
+                VerifyReleaseHistoryBody();
                 SettingsLiveVisualChecks.VerifyContextNavigation(app);
                 SettingsLiveVisualChecks.VerifyNavigationMotion(app);
             }
@@ -174,6 +178,54 @@ public sealed class SettingsVisualRuntimeTests
                 using var output = File.Create(Path.Combine(previewDirectory, name + ".png"));
                 encoder.Save(output);
             }
+        }
+    }
+
+    private static void VerifyReleaseHistoryBody()
+    {
+        // 只取编译页面的历史项模板，不挂载页面，避免启动网络读取或更新服务。
+        var page = new ReleaseHighlightsPage(null!);
+        var scroll = (ScrollViewer)page.FindName("PageScroll");
+        var history = ((Panel)scroll.Content).Children.OfType<SettingsGroup>().Single(group => group.GroupId == "ReleaseHighlights.History");
+        var template = ((ItemsControl)history.Content).ItemTemplate;
+        var card = (CardExpander)template.LoadContent();
+        var item = new ReleaseHighlightsItem("1.2.3", "Historical release", "2026-09-21",
+            ["Historical improvement", "Historical fix"], "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.2.3", string.Empty, true);
+        card.DataContext = item;
+        var window = SettingsLiveVisualChecks.CreateWindow(card);
+        try
+        {
+            window.Show();
+            SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(80));
+            var body = (Border)card.Template.FindName("ExpandedContent", card);
+            Assert.AreEqual(Visibility.Collapsed, body.Visibility);
+            card.IsExpanded = true;
+            window.UpdateLayout();
+            SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(80));
+            var rendered = VisualDescendants(body).OfType<TextBlock>().Select(block => block.Text).ToArray();
+            CollectionAssert.Contains(rendered, "Historical improvement", "Expanded historical releases must render their highlight text.");
+            CollectionAssert.Contains(rendered, "Historical fix");
+            CollectionAssert.Contains(rendered, item.OriginalNotice);
+            Assert.IsTrue(VisualDescendants(body).OfType<Wpf.Ui.Controls.Button>().Any(button => button.Visibility == Visibility.Visible));
+            card.IsExpanded = false;
+            Assert.AreEqual(Visibility.Collapsed, body.Visibility);
+            card.DataContext = item with { Highlights = [], ReleaseNotesUrl = null, IsOriginal = false };
+            card.IsExpanded = true;
+            window.UpdateLayout();
+            SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(30));
+            Assert.IsTrue(VisualDescendants(body).OfType<TextBlock>().Any(block => block.Text == Translations.Get("ReleaseHighlights.NoHighlights") && block.Visibility == Visibility.Visible));
+            Assert.IsFalse(VisualDescendants(body).OfType<Wpf.Ui.Controls.Button>().Any(button => button.Visibility == Visibility.Visible));
+        }
+        finally { window.Close(); }
+    }
+
+    private static IEnumerable<DependencyObject> VisualDescendants(DependencyObject root)
+    {
+        for (var index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
+        {
+            var child = VisualTreeHelper.GetChild(root, index);
+            yield return child;
+            foreach (var descendant in VisualDescendants(child)) yield return descendant;
         }
     }
 
