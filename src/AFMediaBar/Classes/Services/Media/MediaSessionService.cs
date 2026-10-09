@@ -41,6 +41,7 @@ public sealed class MediaSessionService : IDisposable
     private string? _selectedSessionKey;
     private bool _snapshotBuildInFlight;
     private bool _snapshotBuildPending;
+    private int _refreshQueued;
     private readonly CancellationTokenSource _snapshotBuildCancellation = new();
     private readonly BrowserMissingPresentationState _browserPresentation = new();
     private DispatcherTimer? _browserPresentationTimer;
@@ -539,7 +540,7 @@ public sealed class MediaSessionService : IDisposable
 
         try
         {
-            RefreshSessionList();
+            RefreshSnapshot();
         }
         catch (Exception ex)
         {
@@ -597,10 +598,10 @@ public sealed class MediaSessionService : IDisposable
         if (_isDisposed)
             return;
         _sourceSnapshots[provider] = snapshot;
+        // 当前选择的播放状态先发布，不能等候选刷新或在途 SMTC 补全结束。
+        PublishResolved(ResolveSnapshot(_sessionSnapshot));
         if (!_candidates.SequenceEqual(BuildCandidates()))
             RefreshSnapshot(_lastSessions);
-        else
-            PublishResolved(ResolveSnapshot(_sessionSnapshot));
 
         // 提供器可能每 233 毫秒报告读取失败；快照构建器负责在途去重和失败冷却，允许网络恢复后重试。
         if (snapshot is null)
@@ -658,25 +659,20 @@ public sealed class MediaSessionService : IDisposable
 
     private void ScheduleRefresh()
     {
-        if (_dispatcher.HasShutdownStarted || _isDisposed)
+        if (_dispatcher.HasShutdownStarted || _isDisposed ||
+            Interlocked.Exchange(ref _refreshQueued, 1) != 0)
         {
             return;
         }
 
-        _dispatcher.BeginInvoke(RefreshSnapshot, DispatcherPriority.Normal);
-    }
-
-    private void ScheduleSessionsRefresh()
-    {
-        if (_dispatcher.HasShutdownStarted || _isDisposed)
+        _dispatcher.BeginInvoke(() =>
         {
-            return;
-        }
-
-        _dispatcher.BeginInvoke(RefreshSessionList, DispatcherPriority.Normal);
+            Interlocked.Exchange(ref _refreshQueued, 0);
+            RefreshSnapshot();
+        }, DispatcherPriority.Normal);
     }
 
-    private void RefreshSessionList() => RefreshSnapshot();
+    private void ScheduleSessionsRefresh() => ScheduleRefresh();
 
     private void RefreshSnapshot()
     {
