@@ -11,14 +11,12 @@ public sealed class SettingsSearchLayoutTests
 {
     [DataTestMethod]
     [DataRow(SettingsPageKey.Appearance, "AppearancePage")]
-    [DataRow(SettingsPageKey.ApplicationAppearance, "ApplicationAppearancePage")]
     [DataRow(SettingsPageKey.Interaction, "InteractionPage")]
     [DataRow(SettingsPageKey.MediaAndNotifications, "ExtraFeaturesPage")]
     [DataRow(SettingsPageKey.Lyrics, "LyricsPage")]
     [DataRow(SettingsPageKey.Components, "ComponentsSettingsPage")]
     [DataRow(SettingsPageKey.Application, "ApplicationPage")]
     [DataRow(SettingsPageKey.ScreenAndPlacement, "ScreenAndPlacementPage")]
-    [DataRow(SettingsPageKey.DisplayModes, "DisplayModesPage")]
     [DataRow(SettingsPageKey.About, "AboutPage")]
     [DataRow(SettingsPageKey.ReleaseHighlights, "ReleaseHighlightsPage")]
     public void SearchDestinationsFollowDeclaredGroups(SettingsPageKey page, string fileName)
@@ -39,9 +37,12 @@ public sealed class SettingsSearchLayoutTests
     }
 
     [DataTestMethod]
-    [DataRow("字体", SettingsPageKey.ApplicationAppearance, "Common.Group.Fonts")]
+    [DataRow("字体", SettingsPageKey.Appearance, "Common.Group.Fonts")]
     [DataRow("媒体文字大小", SettingsPageKey.Appearance, "Common.Group.MediaBarText")]
-    [DataRow("font", SettingsPageKey.ApplicationAppearance, "Common.Group.Fonts")]
+    [DataRow("font", SettingsPageKey.Appearance, "Common.Group.Fonts")]
+    [DataRow("组件设置", SettingsPageKey.Components, "Common.RestLayer")]
+    [DataRow("应用外观", SettingsPageKey.Appearance, "Common.Group.ThemeAndBackdrop")]
+    [DataRow("歌词对齐", SettingsPageKey.Components, "Appearance.Group.RestLayout")]
     public void FontAndMediaTextTermsResolveToTheirOwners(string query, SettingsPageKey page, string group)
     {
         var hits = SettingsSearchPolicy.Search(query, SettingsSearchIndex.Entries);
@@ -70,14 +71,18 @@ public sealed class SettingsSearchLayoutTests
     }
 
     [TestMethod]
-    public void ContextSearchSkipsFutureModesAndHiddenVerticalOrdering()
+    public void ContextSearchRetainsVerticalTextLayoutAndHidesUnsupportedModeSections()
     {
         var vertical = new AFMediaBar.Classes.Models.Settings.SettingsContext(AFMediaBar.Classes.Models.Settings.SettingsMode.Taskbar, "vertical", AFMediaBar.Classes.Models.Layout.LayoutOrientation.Vertical, false, true);
         var entries = SettingsSearchIndex.ForContext(vertical);
-        Assert.IsFalse(entries.Any(entry => entry.GroupId == "Appearance.Group.RestLayout"));
-        Assert.IsTrue(entries.Any(entry => entry.Page == SettingsPageKey.ApplicationAppearance));
+        Assert.IsTrue(entries.Any(entry => entry.GroupId == "Appearance.Group.RestLayout"));
+        Assert.IsTrue(entries.Any(entry => entry.Page == SettingsPageKey.Appearance && entry.GroupId == "Common.Group.Fonts"));
+        Assert.AreEqual(0, SettingsSearchPolicy.Search("组件顺序", entries).Count);
+        Assert.AreEqual(0, SettingsSearchPolicy.Search("展开方向", entries).Count);
+        Assert.IsTrue(SettingsSearchPolicy.Search("歌词对齐", entries).Any(hit => hit.GroupId == "Appearance.Group.RestLayout"));
         var future = vertical with { Mode = AFMediaBar.Classes.Models.Settings.SettingsMode.DynamicIsland };
-        Assert.IsTrue(SettingsSearchIndex.ForContext(future).All(entry => entry.Page != SettingsPageKey.Appearance && entry.Page != SettingsPageKey.Components));
+        Assert.IsTrue(SettingsSearchIndex.ForContext(future).All(entry => entry.Page != SettingsPageKey.Components &&
+            (entry.Page != SettingsPageKey.Appearance || entry.GroupId is "Common.Group.Fonts" or "Common.Group.ThemeAndBackdrop")));
         Assert.IsFalse(SettingsSearchIndex.Entries.Any(entry => entry.GroupId == "Common.Group.IslandAppearance"));
     }
 }

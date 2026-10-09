@@ -3,6 +3,7 @@ using AFMediaBar.Classes.Models.Settings;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Settings;
 using AFMediaBar.Views.Pages;
+using AFMediaBar.ViewModels.Pages;
 using Microsoft.Extensions.DependencyInjection;
 using Wpf.Ui.Abstractions;
 
@@ -14,14 +15,12 @@ public sealed class SettingsPageProvider(SettingsPageScopeCache cache) : INaviga
     /// <summary>View-layer mapping for semantic navigation and search destinations.</summary>
     public static IReadOnlyDictionary<SettingsPageKey, Type> PageTypes { get; } = new Dictionary<SettingsPageKey, Type>
     {
-        [SettingsPageKey.DisplayModes] = typeof(DisplayModesPage),
         [SettingsPageKey.ScreenAndPlacement] = typeof(ScreenAndPlacementPage),
         [SettingsPageKey.Appearance] = typeof(AppearancePage),
         [SettingsPageKey.Interaction] = typeof(InteractionPage),
         [SettingsPageKey.Lyrics] = typeof(LyricsPage),
         [SettingsPageKey.Components] = typeof(ComponentsSettingsPage),
         [SettingsPageKey.MediaAndNotifications] = typeof(ExtraFeaturesPage),
-        [SettingsPageKey.ApplicationAppearance] = typeof(ApplicationAppearancePage),
         [SettingsPageKey.Application] = typeof(ApplicationPage),
         [SettingsPageKey.ReleaseHighlights] = typeof(ReleaseHighlightsPage),
         [SettingsPageKey.About] = typeof(AboutPage)
@@ -34,10 +33,23 @@ public sealed class SettingsPageProvider(SettingsPageScopeCache cache) : INaviga
     /// <inheritdoc />
     public object? GetPage(Type pageType)
     {
+        pageType = ResolvePageType(pageType);
         var match = PageTypes.FirstOrDefault(pair => pair.Value == pageType);
         if (match.Value is null || SettingsPageCatalog.Find(match.Key, _context.Mode) is not { } definition) return null;
+        if (pageType == typeof(AppearancePage))
+        {
+            var page = (AppearancePage)cache.Get(pageType, definition with { HasModeContent = false });
+            var editor = SettingsPageCatalog.IsImplemented(_context.Mode)
+                ? (TaskbarAppearanceViewModel)cache.Get(typeof(TaskbarAppearanceViewModel), definition with { IsGlobal = false })
+                : null;
+            page.SetTaskbarEditor(editor);
+            return page;
+        }
         return cache.Get(pageType, definition);
     }
+    /// <summary>保留调用方的旧页面类型入口，不创建重复设置页。</summary>
+    public static Type ResolvePageType(Type pageType) => pageType == typeof(DisplayModesPage) ? typeof(ScreenAndPlacementPage)
+        : pageType == typeof(ApplicationAppearancePage) ? typeof(AppearancePage) : pageType;
     /// <summary>Releases cached objects when the settings window closes.</summary>
     public void Dispose() => cache.Dispose();
 }

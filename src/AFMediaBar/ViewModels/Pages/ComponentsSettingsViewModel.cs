@@ -196,6 +196,12 @@ public sealed class ComponentsSettingsViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>无媒体时独立保留的组件也允许调整参数。</summary>
+    public bool CanConfigureSpectrum => SpectrumVisible || TaskbarRestLayoutPolicy.ResolveIdleComponents(
+        _configuration.Current.TaskbarExperience.IdleComponents).Contains(TaskbarRestComponent.Spectrum);
+    public bool CanConfigurePerformance => PerformanceVisible || TaskbarRestLayoutPolicy.ResolveIdleComponents(
+        _configuration.Current.TaskbarExperience.IdleComponents).Contains(TaskbarRestComponent.Performance);
+
     private bool HasMetric(MetricKind metric) => _configuration.Current.PerformanceComponent.Metrics!.Contains(metric);
 
     private bool CanUncheck(MetricKind metric) =>

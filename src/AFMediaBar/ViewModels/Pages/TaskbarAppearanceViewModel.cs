@@ -9,7 +9,7 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace AFMediaBar.ViewModels.Pages;
 
-/// <summary>提供外观页中的任务栏布局与交互按钮设置。</summary>
+/// <summary>提供当前任务栏的外观与布局设置，分别由两个设置页组合呈现。</summary>
 public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
 {
     private readonly ISettingsConfiguration _configuration;
@@ -111,6 +111,13 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
         });
     }
 
+    /// <summary>整体长度方式与已有布尔入口共用同一配置字段。</summary>
+    public TaskbarLengthMode LengthMode
+    {
+        get => _configuration.Current.TaskbarExperience.LengthMode;
+        set => FollowMediaTextLength = value == TaskbarLengthMode.FollowContent;
+    }
+
     public bool UsesFixedTaskbarLength => !FollowMediaTextLength;
     private bool HasFixedTaskbarLengthRange => _taskbarLengthConstraints.HasAvailableRange &&
         Math.Ceiling(_taskbarLengthConstraints.MinimumLengthDip) <= Math.Floor(_taskbarLengthConstraints.MaximumLengthDip);
@@ -151,6 +158,7 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
 
     private void RaiseTaskbarAppearance()
     {
+        OnPropertyChanged(nameof(LengthMode));
         OnPropertyChanged(nameof(UseFrostedTaskbarBackground));
         OnPropertyChanged(nameof(TaskbarFrostedStyle));
         OnPropertyChanged(nameof(TaskbarBackgroundOpacityPercent));

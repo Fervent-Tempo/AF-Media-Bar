@@ -1,95 +1,149 @@
 <Page
-    x:Class="AFMediaBar.Views.Pages.ComponentsSettingsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:components="clr-namespace:AFMediaBar.Components"
     xmlns:settings="clr-namespace:AFMediaBar.Classes.Settings"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    x:Class="AFMediaBar.Views.Pages.ComponentsSettingsPage"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     ScrollViewer.CanContentScroll="False">
-
-    <!-- 静置层组件的开关和参数归本页；设置状态由共享的 ExtraFeaturesViewModel 持有。 -->
     <Page.Resources>
-        <!--
-            依赖未满足时才出现的徽章：组件关闭时它的参数行只读。
-            父项开关就在行内，因此徽章只需要一句话。
-            A badge that appears only while its dependency is unmet: a component's parameter rows are read-only
-            while the component is off. The parent switch is on the same card, so one short phrase is enough.
-        -->
         <Style
             x:Key="SpectrumParameterRowStyle"
             BasedOn="{StaticResource {x:Type components:SettingsRow}}"
             TargetType="{x:Type components:SettingsRow}">
             <Setter Property="Badge" Value="" />
-            <Setter Property="IsEnabled" Value="{Binding ViewModel.SpectrumVisible}" />
+            <Setter Property="IsEnabled" Value="{Binding ViewModel.Components.CanConfigureSpectrum}" />
             <Style.Triggers>
-                <DataTrigger Binding="{Binding ViewModel.SpectrumVisible}" Value="False">
+                <DataTrigger Binding="{Binding ViewModel.Components.CanConfigureSpectrum}" Value="False">
                     <Setter Property="Badge" Value="{DynamicResource Loc.Media.Badge.EnableFirst}" />
                     <Setter Property="BadgeTone" Value="Attention" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
-
         <Style
             x:Key="PerformanceParameterRowStyle"
             BasedOn="{StaticResource {x:Type components:SettingsRow}}"
             TargetType="{x:Type components:SettingsRow}">
             <Setter Property="Badge" Value="" />
-            <Setter Property="IsEnabled" Value="{Binding ViewModel.PerformanceVisible}" />
+            <Setter Property="IsEnabled" Value="{Binding ViewModel.Components.CanConfigurePerformance}" />
             <Style.Triggers>
-                <DataTrigger Binding="{Binding ViewModel.PerformanceVisible}" Value="False">
+                <DataTrigger Binding="{Binding ViewModel.Components.CanConfigurePerformance}" Value="False">
                     <Setter Property="Badge" Value="{DynamicResource Loc.Media.Badge.EnableFirst}" />
                     <Setter Property="BadgeTone" Value="Attention" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+        <Style
+            x:Key="FixedLengthRowStyle"
+            BasedOn="{StaticResource {x:Type components:SettingsRow}}"
+            TargetType="{x:Type components:SettingsRow}">
+            <Setter Property="Badge" Value="" />
+            <Setter Property="IsEnabled" Value="{Binding ViewModel.Layout.CanEditFixedTaskbarLength}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ViewModel.Layout.FollowMediaTextLength}" Value="True">
+                    <Setter Property="Badge" Value="{DynamicResource Loc.DisplayModes.Width.Row.Fixed.Badge}" />
+                    <Setter Property="BadgeTone" Value="Attention" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style
+            x:Key="FixedWidthRowStyle"
+            BasedOn="{StaticResource {x:Type components:SettingsRow}}"
+            TargetType="{x:Type components:SettingsRow}">
+            <Setter Property="Badge" Value="" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ViewModel.Lyrics.CanConfigureFixedWidth}" Value="False">
+                    <Setter Property="Badge" Value="{DynamicResource Loc.Lyrics.Row.FixedWidth.Badge}" />
+                    <Setter Property="BadgeTone" Value="Attention" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="HoverDependencyHintStyle" BasedOn="{StaticResource AfSettingsHintTextStyle}" TargetType="TextBlock">
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ViewModel.Layers.HoverLayerEnabled}" Value="False">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="FullDependencyHintStyle" BasedOn="{StaticResource AfSettingsHintTextStyle}" TargetType="TextBlock">
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ViewModel.Layers.FullLayerEnabled}" Value="False">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </Page.Resources>
-
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-
-        <components:SettingsGroupStrip Margin="{StaticResource AfSettingsHeaderMargin}" MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
+        <components:SettingsGroupStrip
+            Margin="{StaticResource AfSettingsHeaderMargin}"
+            MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
             Grid.Row="0"
-            PageIcon="{ui:SymbolIcon DataHistogram24}"
-            Subtitle="{DynamicResource Loc.Components.Header.Subtitle}"
+            PageIcon="{ui:SymbolIcon LayoutColumnTwo24}"
+            Subtitle="{DynamicResource Loc.ContentLayout.Header.Subtitle}"
             Target="{Binding ElementName=PageScroll}"
-            Title="{DynamicResource Loc.Common.Page.Components}" />
-
+            Title="{DynamicResource Loc.Common.Page.ContentLayout}" />
         <ScrollViewer
             x:Name="PageScroll"
             Grid.Row="1"
             Margin="{StaticResource AfSettingsScrollMargin}"
             HorizontalScrollBarVisibility="Disabled"
             VerticalScrollBarVisibility="Auto">
-            <StackPanel
-                x:Name="PageRoot"
-                MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
-                Loaded="OnPageLoaded">
-
-                <components:SettingsGroup GroupId="Common.Group.RestLayerComponents"
-                    Description="{DynamicResource Loc.Media.RestComponents.Description}"
-                    Header="{DynamicResource Loc.Common.Group.RestLayerComponents}"
-                    Icon="{ui:SymbolIcon DataHistogram24}">
+            <StackPanel x:Name="PageRoot" MaxWidth="{StaticResource AfSettingsContentMaxWidth}" Loaded="OnPageLoaded">
+                <components:SettingsGroup
+                    GroupId="Common.RestLayer"
+                    Description="{DynamicResource Loc.DisplayModes.Rest.Group.Description}"
+                    Header="{DynamicResource Loc.Common.RestLayer}"
+                    Icon="{ui:SymbolIcon Layer24}"
+                    StatusText="{DynamicResource Loc.DisplayModes.Rest.Group.Status}"
+                    StatusTone="Accent">
                     <StackPanel>
-                        <components:SettingsDiagram Margin="0,0,0,12" Kind="Spectrum" />
-
+                        <components:SettingsDiagram Margin="0,0,0,12" Kind="LayerRest" />
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.DisplayModes.Rest.Row.Artwork.Description}"
+                            Icon="{ui:SymbolIcon Image24}"
+                            Title="{DynamicResource Loc.DisplayModes.Rest.Row.Artwork.Title}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.RestArtworkVisible, Mode=TwoWay}" />
+                        </components:SettingsRow>
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.DisplayModes.Rest.Row.Progress.Description}"
+                            Icon="{ui:SymbolIcon Play24}"
+                            Title="{DynamicResource Loc.DisplayModes.Rest.Row.Progress.Title}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.RestProgressVisible, Mode=TwoWay}" />
+                        </components:SettingsRow>
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.DisplayModes.Rest.Row.DeviceButton.Description}"
+                            Icon="{ui:SymbolIcon Speaker224}"
+                            Title="{DynamicResource Loc.DisplayModes.Rest.Row.DeviceButton.Title}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.RestOutputDeviceVisible, Mode=TwoWay}" />
+                        </components:SettingsRow>
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.DisplayModes.Rest.Row.VolumeButton.Description}"
+                            Icon="{ui:SymbolIcon Speaker124}"
+                            Title="{DynamicResource Loc.DisplayModes.Rest.Row.VolumeButton.Title}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.RestVolumeVisible, Mode=TwoWay}" />
+                        </components:SettingsRow>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Media.Spectrum.Visible.Description}"
                             Icon="{ui:SymbolIcon DataHistogram24}"
                             Title="{DynamicResource Loc.Media.Spectrum.Visible.Title}">
-                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.SpectrumVisible, Mode=TwoWay}" />
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.SpectrumVisible, Mode=TwoWay}" />
                         </components:SettingsRow>
-
-                        <ui:CardExpander
-                            Style="{StaticResource AfSettingsExpanderStyle}"
-                            Icon="{ui:SymbolIcon DataBarVertical24}">
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon DataBarVertical24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
-                                    <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Media.Spectrum.Parameters.Title}" />
-                                    <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Media.Spectrum.Parameters.Description}" />
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowTitleStyle}"
+                                        Text="{DynamicResource Loc.Media.Spectrum.Parameters.Title}" />
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
+                                        Text="{DynamicResource Loc.Media.Spectrum.Parameters.Description}" />
                                 </StackPanel>
                             </ui:CardExpander.Header>
                             <StackPanel>
@@ -101,12 +155,20 @@
                                     Title="{DynamicResource Loc.Media.Spectrum.Style.Title}">
                                     <ComboBox
                                         MinWidth="160"
-                                        SelectedValue="{Binding ViewModel.SpectrumStyle, Mode=TwoWay}"
+                                        SelectedValue="{Binding ViewModel.Components.SpectrumStyle, Mode=TwoWay}"
                                         SelectedValuePath="Tag">
-                                        <ComboBoxItem Content="{DynamicResource Loc.Media.Spectrum.Style.Bars}" Tag="{x:Static settings:SpectrumStyle.Bars}" />
-                                        <ComboBoxItem Content="{DynamicResource Loc.Media.Spectrum.Style.Waveform}" Tag="{x:Static settings:SpectrumStyle.Waveform}" />
-                                        <ComboBoxItem Content="{DynamicResource Loc.Media.Spectrum.Style.PixelBars}" Tag="{x:Static settings:SpectrumStyle.PixelBars}" />
-                                        <ComboBoxItem Content="{DynamicResource Loc.Media.Spectrum.Style.MirroredBars}" Tag="{x:Static settings:SpectrumStyle.MirroredBars}" />
+                                        <ComboBoxItem
+                                            Content="{DynamicResource Loc.Media.Spectrum.Style.Bars}"
+                                            Tag="{x:Static settings:SpectrumStyle.Bars}" />
+                                        <ComboBoxItem
+                                            Content="{DynamicResource Loc.Media.Spectrum.Style.Waveform}"
+                                            Tag="{x:Static settings:SpectrumStyle.Waveform}" />
+                                        <ComboBoxItem
+                                            Content="{DynamicResource Loc.Media.Spectrum.Style.PixelBars}"
+                                            Tag="{x:Static settings:SpectrumStyle.PixelBars}" />
+                                        <ComboBoxItem
+                                            Content="{DynamicResource Loc.Media.Spectrum.Style.MirroredBars}"
+                                            Tag="{x:Static settings:SpectrumStyle.MirroredBars}" />
                                     </ComboBox>
                                 </components:SettingsRow>
                                 <components:SettingsRow
@@ -116,10 +178,10 @@
                                     Style="{StaticResource SpectrumParameterRowStyle}"
                                     Title="{DynamicResource Loc.Media.Spectrum.BandCount.Title}">
                                     <components:SettingsNumericEditor
-                                    Value="{Binding ViewModel.SpectrumBandCount, Mode=TwoWay}"
-                                    Minimum="{Binding ViewModel.MinimumSpectrumBandCount}"
-                                    Maximum="{Binding ViewModel.MaximumSpectrumBandCount}"
-                                    Step="1" />
+                                        Value="{Binding ViewModel.Components.SpectrumBandCount, Mode=TwoWay}"
+                                        Minimum="{Binding ViewModel.Components.MinimumSpectrumBandCount}"
+                                        Maximum="{Binding ViewModel.Components.MaximumSpectrumBandCount}"
+                                        Step="1" />
                                 </components:SettingsRow>
                                 <components:SettingsRow
                                     Description="{DynamicResource Loc.Media.Spectrum.ContentHeight.Description}"
@@ -128,11 +190,11 @@
                                     Style="{StaticResource SpectrumParameterRowStyle}"
                                     Title="{DynamicResource Loc.Media.Spectrum.ContentHeight.Title}">
                                     <components:SettingsNumericEditor
-                                    Value="{Binding ViewModel.SpectrumContentHeightDip, Mode=TwoWay}"
-                                    Minimum="{Binding ViewModel.MinimumSpectrumContentHeightDip}"
-                                    Maximum="{Binding ViewModel.MaximumSpectrumContentHeightDip}"
-                                    Step="{Binding ViewModel.SpectrumContentHeightStepDip}"
-                                    Unit="{DynamicResource Loc.Settings.Numeric.Dip}" />
+                                        Value="{Binding ViewModel.Components.SpectrumContentHeightDip, Mode=TwoWay}"
+                                        Minimum="{Binding ViewModel.Components.MinimumSpectrumContentHeightDip}"
+                                        Maximum="{Binding ViewModel.Components.MaximumSpectrumContentHeightDip}"
+                                        Step="{Binding ViewModel.Components.SpectrumContentHeightStepDip}"
+                                        Unit="{DynamicResource Loc.Settings.Numeric.Dip}" />
                                 </components:SettingsRow>
                                 <components:SettingsRow
                                     Description="{DynamicResource Loc.Media.Spectrum.RefreshRate.Description}"
@@ -141,11 +203,11 @@
                                     Style="{StaticResource SpectrumParameterRowStyle}"
                                     Title="{DynamicResource Loc.Media.Spectrum.RefreshRate.Title}">
                                     <components:SettingsNumericEditor
-                                    Value="{Binding ViewModel.SpectrumRefreshRateHz, Mode=TwoWay}"
-                                    Minimum="{Binding Source={x:Static settings:SpectrumComponentSettings.MinimumRefreshRateHz}}"
-                                    Maximum="{Binding Source={x:Static settings:SpectrumComponentSettings.MaximumRefreshRateHz}}"
-                                    Step="1"
-                                    Unit="{DynamicResource Loc.Settings.Numeric.Hertz}" />
+                                        Value="{Binding ViewModel.Components.SpectrumRefreshRateHz, Mode=TwoWay}"
+                                        Minimum="{Binding Source={x:Static settings:SpectrumComponentSettings.MinimumRefreshRateHz}}"
+                                        Maximum="{Binding Source={x:Static settings:SpectrumComponentSettings.MaximumRefreshRateHz}}"
+                                        Step="1"
+                                        Unit="{DynamicResource Loc.Settings.Numeric.Hertz}" />
                                 </components:SettingsRow>
                                 <components:SettingsRow
                                     Description="{DynamicResource Loc.Media.Spectrum.Sensitivity.Description}"
@@ -154,29 +216,29 @@
                                     Style="{StaticResource SpectrumParameterRowStyle}"
                                     Title="{DynamicResource Loc.Media.Spectrum.Sensitivity.Title}">
                                     <components:SettingsNumericEditor
-                                    Value="{Binding ViewModel.SpectrumSensitivityPercent, Mode=TwoWay}"
-                                    Minimum="{Binding ViewModel.MinimumSpectrumSensitivityPercent}"
-                                    Maximum="{Binding ViewModel.MaximumSpectrumSensitivityPercent}"
-                                    Step="{Binding ViewModel.SpectrumSensitivityStepPercent}"
-                                    Unit="{DynamicResource Loc.Settings.Numeric.Percent}" />
+                                        Value="{Binding ViewModel.Components.SpectrumSensitivityPercent, Mode=TwoWay}"
+                                        Minimum="{Binding ViewModel.Components.MinimumSpectrumSensitivityPercent}"
+                                        Maximum="{Binding ViewModel.Components.MaximumSpectrumSensitivityPercent}"
+                                        Step="{Binding ViewModel.Components.SpectrumSensitivityStepPercent}"
+                                        Unit="{DynamicResource Loc.Settings.Numeric.Percent}" />
                                 </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>
-
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Media.Performance.Visible.Description}"
                             Icon="{ui:SymbolIcon Gauge24}"
                             Title="{DynamicResource Loc.Media.Performance.Visible.Title}">
-                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.PerformanceVisible, Mode=TwoWay}" />
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.PerformanceVisible, Mode=TwoWay}" />
                         </components:SettingsRow>
-
-                        <ui:CardExpander
-                            Style="{StaticResource AfSettingsExpanderStyle}"
-                            Icon="{ui:SymbolIcon Gauge24}">
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Gauge24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
-                                    <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Media.Performance.Metrics.Title}" />
-                                    <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Media.Performance.Metrics.Description}" />
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowTitleStyle}"
+                                        Text="{DynamicResource Loc.Media.Performance.Metrics.Title}" />
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
+                                        Text="{DynamicResource Loc.Media.Performance.Metrics.Description}" />
                                 </StackPanel>
                             </ui:CardExpander.Header>
                             <StackPanel>
@@ -187,8 +249,8 @@
                                     Style="{StaticResource PerformanceParameterRowStyle}"
                                     Title="{DynamicResource Loc.Media.Metric.SystemMemory.Title}">
                                     <ui:ToggleSwitch
-                                        IsChecked="{Binding ViewModel.ShowSystemMemory, Mode=TwoWay}"
-                                        IsEnabled="{Binding ViewModel.CanUncheckSystemMemory}" />
+                                        IsChecked="{Binding ViewModel.Components.ShowSystemMemory, Mode=TwoWay}"
+                                        IsEnabled="{Binding ViewModel.Components.CanUncheckSystemMemory}" />
                                 </components:SettingsRow>
                                 <components:SettingsRow
                                     Icon="{ui:SymbolIcon DeveloperBoard24}"
@@ -196,8 +258,8 @@
                                     Style="{StaticResource PerformanceParameterRowStyle}"
                                     Title="CPU">
                                     <ui:ToggleSwitch
-                                        IsChecked="{Binding ViewModel.ShowSystemCpu, Mode=TwoWay}"
-                                        IsEnabled="{Binding ViewModel.CanUncheckSystemCpu}" />
+                                        IsChecked="{Binding ViewModel.Components.ShowSystemCpu, Mode=TwoWay}"
+                                        IsEnabled="{Binding ViewModel.Components.CanUncheckSystemCpu}" />
                                 </components:SettingsRow>
                                 <components:SettingsRow
                                     Icon="{ui:SymbolIcon VideoClip24}"
@@ -205,8 +267,8 @@
                                     Style="{StaticResource PerformanceParameterRowStyle}"
                                     Title="GPU">
                                     <ui:ToggleSwitch
-                                        IsChecked="{Binding ViewModel.ShowSystemGpu, Mode=TwoWay}"
-                                        IsEnabled="{Binding ViewModel.CanUncheckSystemGpu}" />
+                                        IsChecked="{Binding ViewModel.Components.ShowSystemGpu, Mode=TwoWay}"
+                                        IsEnabled="{Binding ViewModel.Components.CanUncheckSystemGpu}" />
                                 </components:SettingsRow>
                                 <components:SettingsRow
                                     Icon="{ui:SymbolIcon Apps24}"
@@ -214,8 +276,8 @@
                                     Style="{StaticResource PerformanceParameterRowStyle}"
                                     Title="{DynamicResource Loc.Media.Metric.ProcessMemory.Title}">
                                     <ui:ToggleSwitch
-                                        IsChecked="{Binding ViewModel.ShowProcessMemory, Mode=TwoWay}"
-                                        IsEnabled="{Binding ViewModel.CanUncheckProcessMemory}" />
+                                        IsChecked="{Binding ViewModel.Components.ShowProcessMemory, Mode=TwoWay}"
+                                        IsEnabled="{Binding ViewModel.Components.CanUncheckProcessMemory}" />
                                 </components:SettingsRow>
                                 <components:SettingsRow
                                     Description="{DynamicResource Loc.Media.Performance.RefreshInterval.Description}"
@@ -224,11 +286,11 @@
                                     Style="{StaticResource PerformanceParameterRowStyle}"
                                     Title="{DynamicResource Loc.Media.Performance.RefreshInterval.Title}">
                                     <components:SettingsNumericEditor
-                                    Value="{Binding ViewModel.PerformanceRefreshIntervalSeconds, Mode=TwoWay}"
-                                    Minimum="{Binding ViewModel.MinimumPerformanceRefreshIntervalSeconds}"
-                                    Maximum="{Binding ViewModel.MaximumPerformanceRefreshIntervalSeconds}"
-                                    Step="{Binding ViewModel.PerformanceRefreshIntervalStepSeconds}"
-                                    Unit="{DynamicResource Loc.Settings.Numeric.Seconds}" />
+                                        Value="{Binding ViewModel.Components.PerformanceRefreshIntervalSeconds, Mode=TwoWay}"
+                                        Minimum="{Binding ViewModel.Components.MinimumPerformanceRefreshIntervalSeconds}"
+                                        Maximum="{Binding ViewModel.Components.MaximumPerformanceRefreshIntervalSeconds}"
+                                        Step="{Binding ViewModel.Components.PerformanceRefreshIntervalStepSeconds}"
+                                        Unit="{DynamicResource Loc.Settings.Numeric.Seconds}" />
                                 </components:SettingsRow>
                                 <components:SettingsRow
                                     Description="{DynamicResource Loc.Media.Performance.OpenTaskManager.Description}"
@@ -236,13 +298,488 @@
                                     IsNested="True"
                                     Style="{StaticResource PerformanceParameterRowStyle}"
                                     Title="{DynamicResource Loc.Media.Performance.OpenTaskManager.Title}">
-                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.OpenTaskManagerOnMetricsClick, Mode=TwoWay}" />
+                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.OpenTaskManagerOnMetricsClick, Mode=TwoWay}" />
+                                </components:SettingsRow>
+                            </StackPanel>
+                        </ui:CardExpander>
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Eye24}">
+                            <ui:CardExpander.Header>
+                                <StackPanel>
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowTitleStyle}"
+                                        Text="{DynamicResource Loc.DisplayModes.Rest.Idle.Expander.Title}" />
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
+                                        Text="{DynamicResource Loc.DisplayModes.Rest.Idle.Expander.Description}" />
+                                </StackPanel>
+                            </ui:CardExpander.Header>
+                            <StackPanel>
+                                <components:SettingsCallout
+                                    Margin="0,0,0,4"
+                                    Symbol="Info24"
+                                    Text="{DynamicResource Loc.DisplayModes.Rest.Idle.Notice}" />
+                                <ItemsControl Margin="0,0,0,4" ItemsSource="{Binding ViewModel.Layers.IdleComponentEntries}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <components:SettingsRow
+                                                Description="{Binding Description}"
+                                                IsNested="True"
+                                                Title="{Binding DisplayName}">
+                                                <ui:ToggleSwitch IsChecked="{Binding IsVisible, Mode=TwoWay}" />
+                                            </components:SettingsRow>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </ui:CardExpander>
+                        <components:SettingsCallout
+                            Margin="0,4,0,0"
+                            IsAccent="True"
+                            Symbol="DataHistogram24"
+                            Text="{DynamicResource Loc.DisplayModes.Rest.Notice}" />
+                        <ui:CardExpander
+                            Style="{StaticResource AfSettingsExpanderStyle}"
+                            Icon="{ui:SymbolIcon ArrowSort24}"
+                            Visibility="{Binding ViewModel.Layout.IsHorizontalLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                            <ui:CardExpander.Header>
+                                <StackPanel>
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowTitleStyle}"
+                                        Text="{DynamicResource Loc.DisplayModes.Rest.Order.Expander.Title}" />
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
+                                        Text="{DynamicResource Loc.DisplayModes.Rest.Order.Expander.Description}" />
+                                </StackPanel>
+                            </ui:CardExpander.Header>
+                            <StackPanel>
+                                <components:SettingsCallout
+                                    Margin="0,0,0,4"
+                                    Symbol="Info24"
+                                    Text="{DynamicResource Loc.DisplayModes.Rest.Order.Notice}" />
+                                <ItemsControl Margin="0,0,0,4" ItemsSource="{Binding ViewModel.Layout.RestOrderEntries}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <components:SettingsRow
+                                                Description="{Binding Description}"
+                                                IsNested="True"
+                                                Title="{Binding DisplayName}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <ui:Button
+                                                        Margin="8,0,0,0"
+                                                        Command="{Binding DataContext.ViewModel.Layout.MoveRestComponentUpCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                        CommandParameter="{Binding}"
+                                                        Icon="{ui:SymbolIcon ArrowUp24}"
+                                                        Style="{StaticResource AfSettingsIconButtonStyle}"
+                                                        ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveUp}"
+                                                        Visibility="{Binding CanMove, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
+                                                    <ui:Button
+                                                        Margin="4,0,0,0"
+                                                        Command="{Binding DataContext.ViewModel.Layout.MoveRestComponentDownCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                        CommandParameter="{Binding}"
+                                                        Icon="{ui:SymbolIcon ArrowDown24}"
+                                                        Style="{StaticResource AfSettingsIconButtonStyle}"
+                                                        ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveDown}"
+                                                        Visibility="{Binding CanMove, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
+                                                </StackPanel>
+                                            </components:SettingsRow>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <components:SettingsRow
+                                    Description="{DynamicResource Loc.DisplayModes.Rest.Order.Reset.Description}"
+                                    Icon="{ui:SymbolIcon ArrowReset24}"
+                                    IsNested="True"
+                                    Title="{DynamicResource Loc.DisplayModes.Rest.Order.Reset.Title}">
+                                    <ui:Button
+                                        Command="{Binding ViewModel.Layout.ResetRestComponentOrderCommand}"
+                                        Content="{DynamicResource Loc.Lyrics.Sources.Reset.Action}"
+                                        Icon="{ui:SymbolIcon ArrowReset24}"
+                                        Style="{StaticResource AfSettingsButtonStyle}" />
                                 </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>
                     </StackPanel>
                 </components:SettingsGroup>
-
+                <components:SettingsGroup
+                    GroupId="Appearance.Group.RestLayout"
+                    Header="{DynamicResource Loc.Appearance.Group.RestLayout}"
+                    Icon="{ui:SymbolIcon LayoutColumnTwo24}">
+                    <StackPanel>
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.DisplayModes.Rest.Row.Layout.Description}"
+                            Icon="{ui:SymbolIcon LayoutColumnTwo24}"
+                            Title="{DynamicResource Loc.DisplayModes.Rest.Row.Layout.Title}"
+                            Visibility="{Binding ViewModel.Layout.IsHorizontalLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                            <ComboBox
+                                MinWidth="200"
+                                SelectedValue="{Binding ViewModel.Layout.ContentLayout, Mode=TwoWay}"
+                                SelectedValuePath="Tag">
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.DisplayModes.Rest.ContentLayout.CompactInline}"
+                                    Tag="{x:Static settings:TaskbarContentLayout.CompactInline}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.DisplayModes.Rest.ContentLayout.AdaptiveStack}"
+                                    Tag="{x:Static settings:TaskbarContentLayout.AdaptiveStack}" />
+                            </ComboBox>
+                        </components:SettingsRow>
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="False" Icon="{ui:SymbolIcon Options24}">
+                            <ui:CardExpander.Header>
+                                <StackPanel>
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowTitleStyle}"
+                                        Text="{DynamicResource Loc.ContentLayout.Text.Details.Title}" />
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
+                                        Text="{DynamicResource Loc.ContentLayout.Text.Details.Description}" />
+                                </StackPanel>
+                            </ui:CardExpander.Header>
+                            <StackPanel>
+                                <components:SettingsRow
+                                    Description="{DynamicResource Loc.DisplayModes.Rest.Row.Alignment.Description}"
+                                    Icon="{ui:SymbolIcon TextAlignLeft24}"
+                                    Title="{DynamicResource Loc.DisplayModes.Rest.Row.Alignment.Title}"
+                                    Visibility="{Binding ViewModel.Layout.IsHorizontalLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                                    <ComboBox
+                                        MinWidth="200"
+                                        SelectedValue="{Binding ViewModel.Layout.MediaTextAlignment, Mode=TwoWay}"
+                                        SelectedValuePath="Tag">
+                                        <ComboBoxItem
+                                            Content="{DynamicResource Loc.Common.AlignLeft}"
+                                            Tag="{x:Static settings:TaskbarMediaTextAlignment.Left}" />
+                                        <ComboBoxItem
+                                            Content="{DynamicResource Loc.Common.AlignCenter}"
+                                            Tag="{x:Static settings:TaskbarMediaTextAlignment.Center}" />
+                                        <ComboBoxItem
+                                            Content="{DynamicResource Loc.Common.AlignRight}"
+                                            Tag="{x:Static settings:TaskbarMediaTextAlignment.Right}" />
+                                    </ComboBox>
+                                </components:SettingsRow>
+                                <components:SettingsRow
+                                    Description="{DynamicResource Loc.Lyrics.Row.Alignment.Description}"
+                                    Icon="{ui:SymbolIcon TextAlignLeft24}"
+                                    Title="{DynamicResource Loc.Lyrics.Row.Alignment.Title}">
+                                    <ComboBox
+                                        MinWidth="160"
+                                        SelectedValue="{Binding ViewModel.Lyrics.TextAlignment, Mode=TwoWay}"
+                                        SelectedValuePath="Tag">
+                                        <ComboBoxItem
+                                            Content="{DynamicResource Loc.Common.AlignLeft}"
+                                            Tag="{x:Static settings:LyricsTextAlignment.Left}" />
+                                        <ComboBoxItem
+                                            Content="{DynamicResource Loc.Common.AlignCenter}"
+                                            Tag="{x:Static settings:LyricsTextAlignment.Center}" />
+                                        <ComboBoxItem
+                                            Content="{DynamicResource Loc.Common.AlignRight}"
+                                            Tag="{x:Static settings:LyricsTextAlignment.Right}" />
+                                    </ComboBox>
+                                </components:SettingsRow>
+                                <components:SettingsRow
+                                    Visibility="{Binding ViewModel.Layers.IsHorizontalLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}"
+                                    Description="{DynamicResource Loc.DisplayModes.Placement.Row.Arrangement.Description}"
+                                    Icon="{ui:SymbolIcon ArrowMove24}"
+                                    Title="{DynamicResource Loc.DisplayModes.Placement.Row.Arrangement.Title}">
+                                    <ComboBox
+                                        MinWidth="200"
+                                        x:Name="ArrangementPicker"
+                                        SelectedIndex="{Binding ViewModel.Layers.TaskbarArrangementIndex, Mode=TwoWay}">
+                                        <ComboBoxItem Content="{DynamicResource Loc.ContentLayout.Arrangement.Auto}" Tag="{x:Null}" />
+                                        <ComboBoxItem
+                                            Content="{DynamicResource Loc.DisplayModes.Placement.Arrangement.Left}"
+                                            Tag="{x:Static settings:TaskbarContentArrangement.Left}" />
+                                        <ComboBoxItem
+                                            Content="{DynamicResource Loc.DisplayModes.Placement.Arrangement.Right}"
+                                            Tag="{x:Static settings:TaskbarContentArrangement.Right}" />
+                                    </ComboBox>
+                                </components:SettingsRow>
+                            </StackPanel>
+                        </ui:CardExpander>
+                    </StackPanel>
+                </components:SettingsGroup>
+                <components:SettingsGroup
+                    GroupId="Common.Group.MediaBarWidth"
+                    Description="{DynamicResource Loc.DisplayModes.Width.Group.Description}"
+                    Header="{DynamicResource Loc.Common.Group.MediaBarWidth}"
+                    Icon="{ui:SymbolIcon ResizeLarge24}">
+                    <StackPanel>
+                        <components:SettingsDiagram Margin="0,0,0,12" Kind="TaskbarLength" />
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.ContentLayout.LengthMode.Description}"
+                            Icon="{ui:SymbolIcon ArrowAutofitWidth24}"
+                            Title="{DynamicResource Loc.ContentLayout.LengthMode.Title}">
+                            <ComboBox MinWidth="200" SelectedValue="{Binding ViewModel.Layout.LengthMode, Mode=TwoWay}" SelectedValuePath="Tag">
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.ContentLayout.LengthMode.Follow}"
+                                    Tag="{x:Static settings:TaskbarLengthMode.FollowContent}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.ContentLayout.LengthMode.Fixed}"
+                                    Tag="{x:Static settings:TaskbarLengthMode.Fixed}" />
+                            </ComboBox>
+                        </components:SettingsRow>
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.DisplayModes.Width.Row.Fixed.Description}"
+                            Icon="{ui:SymbolIcon SlideSize24}"
+                            Style="{StaticResource FixedLengthRowStyle}"
+                            Title="{DynamicResource Loc.DisplayModes.Width.Row.Fixed.Title}"
+                            Visibility="{Binding ViewModel.Layout.UsesFixedTaskbarLength, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                            <components:SettingsNumericEditor
+                                Value="{Binding ViewModel.Layout.FixedTaskbarLengthDip, Mode=TwoWay}"
+                                Minimum="{Binding ViewModel.Layout.FixedTaskbarLengthMinimum}"
+                                Maximum="{Binding ViewModel.Layout.FixedTaskbarLengthMaximum}"
+                                Step="1"
+                                IsSnapToTickEnabled="False"
+                                Unit="{DynamicResource Loc.Settings.Numeric.Dip}" />
+                        </components:SettingsRow>
+                        <TextBlock
+                            Style="{StaticResource AfSettingsHintTextStyle}"
+                            Margin="0,4,0,8"
+                            Text="{Binding ViewModel.Layout.FixedTaskbarLengthRangeText}"
+                            Visibility="{Binding ViewModel.Layout.UsesFixedTaskbarLength, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
+                        <ui:CardExpander
+                            Style="{StaticResource AfSettingsExpanderStyle}"
+                            IsExpanded="False"
+                            Icon="{ui:SymbolIcon PaddingLeft24}">
+                            <ui:CardExpander.Header>
+                                <StackPanel>
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowTitleStyle}"
+                                        Text="{DynamicResource Loc.Settings.Advanced.Spacing.Title}" />
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
+                                        Text="{DynamicResource Loc.Settings.Advanced.Spacing.Description}" />
+                                </StackPanel>
+                            </ui:CardExpander.Header>
+                            <StackPanel>
+                                <components:SettingsRow
+                                    Description="{DynamicResource Loc.DisplayModes.Width.Row.Spacing.Description}"
+                                    Icon="{ui:SymbolIcon PaddingLeft24}"
+                                    Title="{DynamicResource Loc.DisplayModes.Width.Row.Spacing.Title}">
+                                    <components:SettingsNumericEditor
+                                        Value="{Binding ViewModel.Layout.ComponentSpacingDip, Mode=TwoWay}"
+                                        Minimum="{Binding Source={x:Static settings:TaskbarExperienceSettings.MinimumComponentSpacingDip}}"
+                                        Maximum="{Binding Source={x:Static settings:TaskbarExperienceSettings.MaximumComponentSpacingDip}}"
+                                        Step="1"
+                                        Unit="{DynamicResource Loc.Settings.Numeric.Dip}" />
+                                </components:SettingsRow>
+                            </StackPanel>
+                        </ui:CardExpander>
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="False" Icon="{ui:SymbolIcon Options24}">
+                            <ui:CardExpander.Header>
+                                <StackPanel>
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowTitleStyle}"
+                                        Text="{DynamicResource Loc.ContentLayout.LyricsLength.Title}" />
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
+                                        Text="{DynamicResource Loc.ContentLayout.LyricsLength.Description}" />
+                                </StackPanel>
+                            </ui:CardExpander.Header>
+                            <StackPanel>
+                                <components:SettingsRow
+                                    Description="{DynamicResource Loc.Lyrics.Row.FixedWidth.Description}"
+                                    Icon="{ui:SymbolIcon ResizeLarge24}"
+                                    Style="{StaticResource FixedWidthRowStyle}"
+                                    Title="{DynamicResource Loc.Lyrics.Row.FixedWidth.Title}">
+                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.Lyrics.FixedWidthEnabled, Mode=TwoWay}" />
+                                </components:SettingsRow>
+                                <components:SettingsRow
+                                    Description="{DynamicResource Loc.Lyrics.Row.FixedWidth.Length.Description}"
+                                    Icon="{ui:SymbolIcon ArrowAutofitWidth24}"
+                                    Title="{DynamicResource Loc.Lyrics.Row.FixedWidth.Length.Title}"
+                                    Visibility="{Binding ViewModel.Lyrics.FixedWidthEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                                    <components:SettingsNumericEditor
+                                        Value="{Binding ViewModel.Lyrics.FixedWidthDip, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        Minimum="{Binding Source={x:Static settings:LyricsFixedWidth.MinimumDip}}"
+                                        Maximum="{Binding Source={x:Static settings:LyricsFixedWidth.MaximumDip}}"
+                                        Step="{Binding Source={x:Static settings:LyricsFixedWidth.StepDip}}"
+                                        IsEnabled="{Binding ViewModel.Lyrics.CanConfigureFixedWidthDip}"
+                                        Unit="{DynamicResource Loc.Settings.Numeric.Dip}" />
+                                </components:SettingsRow>
+                            </StackPanel>
+                        </ui:CardExpander>
+                    </StackPanel>
+                </components:SettingsGroup>
+                <components:SettingsGroup
+                    GroupId="Appearance.Group.InteractionButtons"
+                    Header="{DynamicResource Loc.Appearance.Group.InteractionButtons}"
+                    Icon="{ui:SymbolIcon CursorClick24}">
+                    <StackPanel>
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Appearance.Row.InteractionButtonSize.Description}"
+                            Icon="{ui:SymbolIcon TextAlignJustify24}"
+                            Title="{DynamicResource Loc.Appearance.Row.InteractionButtonSize.Title}">
+                            <ComboBox
+                                MinWidth="200"
+                                SelectedValue="{Binding ViewModel.Layout.InteractionButtonSize, Mode=TwoWay}"
+                                SelectedValuePath="Tag">
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.DisplayModes.Rest.Density.Minimal}"
+                                    Tag="{x:Static settings:TaskbarInformationDensity.Minimal}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.DisplayModes.Rest.Density.Balanced}"
+                                    Tag="{x:Static settings:TaskbarInformationDensity.Balanced}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.DisplayModes.Rest.Density.Information}"
+                                    Tag="{x:Static settings:TaskbarInformationDensity.Information}" />
+                            </ComboBox>
+                        </components:SettingsRow>
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.DisplayModes.Hover.Row.Spacing.Description}"
+                            Icon="{ui:SymbolIcon PaddingLeft24}"
+                            Title="{DynamicResource Loc.DisplayModes.Hover.Row.Spacing.Title}">
+                            <components:SettingsNumericEditor
+                                Value="{Binding ViewModel.Layout.HoverButtonSpacingDip, Mode=TwoWay}"
+                                Minimum="0"
+                                Maximum="{Binding Source={x:Static settings:TaskbarExperienceSettings.MaximumHoverButtonSpacingDip}}"
+                                Step="1"
+                                Unit="{DynamicResource Loc.Settings.Numeric.Dip}" />
+                        </components:SettingsRow>
+                    </StackPanel>
+                </components:SettingsGroup>
+                <components:SettingsGroup
+                    GroupId="Common.HoverLayer"
+                    Description="{DynamicResource Loc.DisplayModes.Hover.Group.Description}"
+                    Header="{DynamicResource Loc.Common.HoverLayer}"
+                    Icon="{ui:SymbolIcon HandDraw24}">
+                    <StackPanel>
+                        <components:SettingsDiagram Margin="0,0,0,12" Kind="LayerHover" />
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.DisplayModes.Hover.Row.Enable.Description}"
+                            Icon="{ui:SymbolIcon HandDraw24}"
+                            Title="{DynamicResource Loc.DisplayModes.Hover.Row.Enable.Title}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverLayerEnabled, Mode=TwoWay}" />
+                        </components:SettingsRow>
+                        <TextBlock Style="{StaticResource HoverDependencyHintStyle}" Margin="0,4,0,8" Text="{DynamicResource Loc.ContentLayout.Hover.Prerequisite}" />
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Layer24}">
+                            <ui:CardExpander.Header>
+                                <StackPanel>
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowTitleStyle}"
+                                        Text="{DynamicResource Loc.DisplayModes.Hover.Expander.Title}" />
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
+                                        Text="{DynamicResource Loc.DisplayModes.Hover.Expander.Description}" />
+                                </StackPanel>
+                            </ui:CardExpander.Header>
+                            <StackPanel>
+                                <components:SettingsRow
+                                    Icon="{ui:SymbolIcon Play24}"
+                                    IsNested="True"
+                                    Title="{DynamicResource Loc.Common.PlayPause}">
+                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverPlayPauseVisible, Mode=TwoWay}" />
+                                </components:SettingsRow>
+                                <components:SettingsRow
+                                    Icon="{ui:SymbolIcon Previous24}"
+                                    IsNested="True"
+                                    Title="{DynamicResource Loc.Common.PreviousNextTrack}">
+                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverPreviousNextVisible, Mode=TwoWay}" />
+                                </components:SettingsRow>
+                                <components:SettingsRow
+                                    Icon="{ui:SymbolIcon Speaker224}"
+                                    IsNested="True"
+                                    Title="{DynamicResource Loc.Common.OutputDevice}">
+                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverOutputDeviceVisible, Mode=TwoWay}" />
+                                </components:SettingsRow>
+                                <components:SettingsRow
+                                    Icon="{ui:SymbolIcon Speaker124}"
+                                    IsNested="True"
+                                    Title="{DynamicResource Loc.Common.AudioControl}">
+                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverAudioControlVisible, Mode=TwoWay}" />
+                                </components:SettingsRow>
+                                <components:SettingsRow
+                                    Icon="{ui:SymbolIcon DataBarVertical24}"
+                                    IsNested="True"
+                                    Title="{DynamicResource Loc.DisplayModes.Hover.Row.Progress.Title}">
+                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverProgressVisible, Mode=TwoWay}" />
+                                </components:SettingsRow>
+                            </StackPanel>
+                        </ui:CardExpander>
+                    </StackPanel>
+                </components:SettingsGroup>
+                <components:SettingsGroup
+                    GroupId="Common.FullLayer"
+                    Description="{DynamicResource Loc.DisplayModes.Full.Group.Description}"
+                    Header="{DynamicResource Loc.Common.FullLayer}"
+                    Icon="{ui:SymbolIcon ProjectionScreen24}">
+                    <StackPanel>
+                        <components:SettingsDiagram Margin="0,0,0,12" Kind="LayerFull" />
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.DisplayModes.Full.Row.Enable.Description}"
+                            Icon="{ui:SymbolIcon ProjectionScreen24}"
+                            Title="{DynamicResource Loc.DisplayModes.Full.Row.Enable.Title}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.FullLayerEnabled, Mode=TwoWay}" />
+                        </components:SettingsRow>
+                        <TextBlock Style="{StaticResource FullDependencyHintStyle}" Margin="0,4,0,8" Text="{DynamicResource Loc.ContentLayout.Full.Prerequisite}" />
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.DisplayModes.Rest.Row.Entry.Description}"
+                            Icon="{ui:SymbolIcon ChevronUp24}"
+                            Title="{DynamicResource Loc.DisplayModes.Rest.Row.Entry.Title}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.FullPanelEntryVisible, Mode=TwoWay}" />
+                        </components:SettingsRow>
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Info24}">
+                            <ui:CardExpander.Header>
+                                <StackPanel>
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowTitleStyle}"
+                                        Text="{DynamicResource Loc.DisplayModes.Full.Expander.Title}" />
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
+                                        Text="{DynamicResource Loc.DisplayModes.Full.Expander.Description}" />
+                                </StackPanel>
+                            </ui:CardExpander.Header>
+                            <StackPanel>
+                                <components:SettingsRow
+                                    Description="{DynamicResource Loc.DisplayModes.Full.Row.Preset.Description}"
+                                    Icon="{ui:SymbolIcon ArrowSync24}"
+                                    IsNested="True"
+                                    Title="{DynamicResource Loc.DisplayModes.Full.Row.Preset.Title}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <ui:Button
+                                            Margin="0,0,8,0"
+                                            Command="{Binding ViewModel.Layers.ApplyCompactFullPanelPresetCommand}"
+                                            Content="{DynamicResource Loc.DisplayModes.Full.Preset.Compact}"
+                                            Style="{StaticResource AfSettingsButtonStyle}" />
+                                        <ui:Button
+                                            Command="{Binding ViewModel.Layers.ApplyFullFullPanelPresetCommand}"
+                                            Content="{DynamicResource Loc.DisplayModes.Full.Preset.Full}"
+                                            Style="{StaticResource AfSettingsButtonStyle}" />
+                                    </StackPanel>
+                                </components:SettingsRow>
+                                <components:SettingsRow
+                                    Icon="{ui:SymbolIcon Info24}"
+                                    IsNested="True"
+                                    Title="{DynamicResource Loc.DisplayModes.Full.Row.MediaInfo.Title}">
+                                    <ui:ToggleSwitch
+                                        IsChecked="{Binding ViewModel.Layers.FullPanelMediaInfoVisible, Mode=TwoWay}"
+                                        IsEnabled="{Binding ViewModel.Layers.CanToggleFullPanelMediaInfo}" />
+                                </components:SettingsRow>
+                                <components:SettingsRow
+                                    Icon="{ui:SymbolIcon Play24}"
+                                    IsNested="True"
+                                    Title="{DynamicResource Loc.DisplayModes.Full.Row.MediaControls.Title}">
+                                    <ui:ToggleSwitch
+                                        IsChecked="{Binding ViewModel.Layers.FullPanelMediaControlsVisible, Mode=TwoWay}"
+                                        IsEnabled="{Binding ViewModel.Layers.CanToggleFullPanelMediaControls}" />
+                                </components:SettingsRow>
+                                <components:SettingsRow
+                                    Icon="{ui:SymbolIcon Speaker124}"
+                                    IsNested="True"
+                                    Title="{DynamicResource Loc.Common.AudioControl}">
+                                    <ui:ToggleSwitch
+                                        IsChecked="{Binding ViewModel.Layers.FullPanelAudioControlsVisible, Mode=TwoWay}"
+                                        IsEnabled="{Binding ViewModel.Layers.CanToggleFullPanelAudioControls}" />
+                                </components:SettingsRow>
+                                <components:SettingsRow
+                                    Icon="{ui:SymbolIcon Gauge24}"
+                                    IsNested="True"
+                                    Title="{DynamicResource Loc.DisplayModes.Full.Row.Performance.Title}">
+                                    <ui:ToggleSwitch
+                                        IsChecked="{Binding ViewModel.Layers.FullPanelPerformanceVisible, Mode=TwoWay}"
+                                        IsEnabled="{Binding ViewModel.Layers.CanToggleFullPanelPerformance}" />
+                                </components:SettingsRow>
+                            </StackPanel>
+                        </ui:CardExpander>
+                    </StackPanel>
+                </components:SettingsGroup>
                 <ui:Button
                     Margin="0,16,0,40"
                     HorizontalAlignment="Left"

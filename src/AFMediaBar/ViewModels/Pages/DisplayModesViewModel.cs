@@ -318,6 +318,24 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         set => UpdateExperience(_configuration.Current.TaskbarExperience with { Arrangement = value });
     }
 
+    /// <summary>null 表示跟随位置，不把自动推导的方向误存为手动覆盖。</summary>
+    public TaskbarContentArrangement? TaskbarArrangementOverride
+    {
+        get => _configuration.Current.TaskbarExperience.Arrangement;
+        set => UpdateExperience(_configuration.Current.TaskbarExperience with { Arrangement = value });
+    }
+
+    /// <summary>界面选择序号不参与存储，自动项仍写入 null。</summary>
+    public int TaskbarArrangementIndex
+    {
+        get => TaskbarArrangementOverride switch { TaskbarContentArrangement.Left => 1, TaskbarContentArrangement.Right => 2, _ => 0 };
+        set
+        {
+            if (value is < 0 or > 2) return;
+            TaskbarArrangementOverride = value switch { 1 => TaskbarContentArrangement.Left, 2 => TaskbarContentArrangement.Right, _ => null };
+        }
+    }
+
     public bool IsTaskbarPositionLocked
     {
         get => _configuration.Current.TaskbarBarPositionLocked;
@@ -465,12 +483,16 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     }
 
     public void ResetDisplayModes() => _configuration.Reset(SettingsResetScope.DisplayModes);
+    public void ResetScreenAndPlacement()
+    {
+        if (!_disposed && _configuration.IsActive && IsTaskbarMode) SettingsManager.ResetScreenAndPlacement();
+    }
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
     {
         if (_disposed || !_configuration.IsActive) return;
         if (!_dispatcher.CheckAccess()) { DispatcherHelper.Run(_dispatcher, () => OnSettingsChanged(sender, e)); return; }
-        if (e.ResetScope is SettingsResetScope.DisplayModes or SettingsResetScope.Layout or SettingsResetScope.All)
+        if (e.ResetScope is SettingsResetScope.DisplayModes or SettingsResetScope.Layout or SettingsResetScope.Components or SettingsResetScope.All)
             RaiseAll();
         else if (!_isRefreshing && (e.PropertyName is nameof(AppSettings.Position) or nameof(AppSettings.TaskbarExperience)))
         {
@@ -611,6 +633,8 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
 
     private void RaiseExperience()
     {
+        OnPropertyChanged(nameof(TaskbarArrangementOverride));
+        OnPropertyChanged(nameof(TaskbarArrangementIndex));
         OnPropertyChanged(nameof(TaskbarArrangement));
         OnPropertyChanged(nameof(HoverLayerEnabled)); OnPropertyChanged(nameof(FullLayerEnabled));
         OnPropertyChanged(nameof(FullPanelEntryVisible));

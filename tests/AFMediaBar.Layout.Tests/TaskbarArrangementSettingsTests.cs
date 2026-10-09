@@ -95,12 +95,12 @@ public sealed class TaskbarArrangementSettingsTests
             Assert.AreEqual(LyricsTextAlignment.Left, saved.Clone().LyricsTextAlignment);
             SettingsManager.SetUserDefaults(saved);
             SettingsManager.ResetAppearance();
-            SettingsManager.ResetLyrics();
+            SettingsManager.ResetContentLayout();
             Assert.AreEqual(TaskbarMediaTextAlignment.Left, SettingsManager.Current.TaskbarExperience.MediaTextAlignment);
             Assert.AreEqual(LyricsTextAlignment.Left, SettingsManager.Current.LyricsTextAlignment);
             SettingsManager.SetUserDefaults(null);
             SettingsManager.ResetAppearance();
-            SettingsManager.ResetLyrics();
+            SettingsManager.ResetContentLayout();
             Assert.AreEqual(TaskbarMediaTextAlignment.Center, SettingsManager.Current.TaskbarExperience.MediaTextAlignment);
             Assert.AreEqual(LyricsTextAlignment.Center, SettingsManager.Current.LyricsTextAlignment);
         }

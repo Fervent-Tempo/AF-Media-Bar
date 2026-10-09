@@ -224,6 +224,7 @@ namespace AFMediaBar
                 services.AddSingleton<ExtraFeaturesViewModel>();
                 services.AddScoped<ComponentsSettingsPage>();
                 services.AddScoped<ComponentsSettingsViewModel>();
+                services.AddScoped<ContentLayoutViewModel>();
 
                 services.AddScoped<InteractionPage>();
                 services.AddScoped<InteractionViewModel>();

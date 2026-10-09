@@ -484,7 +484,7 @@ public static class SettingsManager
     public static void ResetTaskbarAppearance()
     {
         var originalAppearance = Current.Appearance;
-        // Preserve the established appearance reset membership, then retain the application-wide fields.
+        // 布局已移到内容与布局页，本入口只恢复媒体栏视觉字段。
         var next = Current.Clone();
         var defaults = Defaults;
         next.Appearance = originalAppearance with
@@ -494,20 +494,43 @@ public static class SettingsManager
             TaskbarBackgroundOpacityPercent = defaults.Appearance.TaskbarBackgroundOpacityPercent,
             TaskbarFrostedStyle = defaults.Appearance.TaskbarFrostedStyle
         };
-        next.TaskbarSurface = defaults.TaskbarSurface;
         next.TaskbarExperience = next.TaskbarExperience with
         {
-            MediaFontSizePercent = defaults.TaskbarExperience.MediaFontSizePercent,
-            Density = defaults.TaskbarExperience.Density,
-            ContentLayout = defaults.TaskbarExperience.ContentLayout,
-            MediaTextAlignment = defaults.TaskbarExperience.MediaTextAlignment,
-            ComponentSpacingDip = defaults.TaskbarExperience.ComponentSpacingDip,
-            HoverButtonSpacingDip = defaults.TaskbarExperience.HoverButtonSpacingDip,
-            LengthMode = defaults.TaskbarExperience.LengthMode,
-            FixedLengthDip = defaults.TaskbarExperience.FixedLengthDip,
-            RestComponentOrder = defaults.TaskbarExperience.RestComponentOrder
+            MediaFontSizePercent = defaults.TaskbarExperience.MediaFontSizePercent
         };
         Replace(next, SettingsResetScope.Appearance);
+    }
+
+    /// <summary>恢复内容与布局，不改屏幕位置、外观或歌词取词及文本处理偏好。</summary>
+    public static void ResetContentLayout()
+    {
+        var next = Current.Clone();
+        var defaults = Defaults;
+        next.TaskbarExperience = defaults.TaskbarExperience with
+        {
+            MediaFontSizePercent = next.TaskbarExperience.MediaFontSizePercent
+        };
+        next.SpectrumComponent = defaults.SpectrumComponent;
+        next.PerformanceComponent = defaults.PerformanceComponent;
+        next.LyricsTextAlignment = defaults.LyricsTextAlignment;
+        next.LyricsFixedWidthEnabled = defaults.LyricsFixedWidthEnabled;
+        next.LyricsFixedWidthDip = defaults.LyricsFixedWidthDip;
+        Replace(next, SettingsResetScope.Components);
+    }
+
+    /// <summary>恢复显示目标与定位，不恢复各层内容及外观。</summary>
+    public static void ResetScreenAndPlacement()
+    {
+        var next = Current.Clone();
+        var defaults = Defaults;
+        next.TaskbarTargetMonitorDeviceIds = defaults.TaskbarTargetMonitorDeviceIds;
+        next.TaskbarTargetMonitorDeviceId = defaults.TaskbarTargetMonitorDeviceId;
+        next.Position = defaults.Position;
+        next.TaskbarBarManualPadding = defaults.TaskbarBarManualPadding;
+        next.TaskbarBarCrossAxisOffsetDip = defaults.TaskbarBarCrossAxisOffsetDip;
+        next.TaskbarBarAvoidIcons = defaults.TaskbarBarAvoidIcons;
+        next.TaskbarBarPositionLocked = defaults.TaskbarBarPositionLocked;
+        Replace(next, SettingsResetScope.Layout);
     }
 
     public static void ResetDisplayModes()
@@ -571,13 +594,11 @@ public static class SettingsManager
         var next = Current.Clone(); var defaults = Defaults;
         next.LyricsEnabled = defaults.LyricsEnabled; next.TwoLineLyricsEnabled = defaults.TwoLineLyricsEnabled;
         next.AllowBrowserAndVideoLyrics = defaults.AllowBrowserAndVideoLyrics;
-        next.LyricsSecondaryLine = defaults.LyricsSecondaryLine; next.LyricsTextAlignment = defaults.LyricsTextAlignment;
+        next.LyricsSecondaryLine = defaults.LyricsSecondaryLine;
         next.LyricsSyllableHighlightEnabled = defaults.LyricsSyllableHighlightEnabled;
         next.LyricsUnsungOpacityPercent = defaults.LyricsUnsungOpacityPercent;
         next.LyricsCharacterSpacingPercent = defaults.LyricsCharacterSpacingPercent;
         next.LyricsLineGapPercent = defaults.LyricsLineGapPercent;
-        next.LyricsFixedWidthEnabled = defaults.LyricsFixedWidthEnabled;
-        next.LyricsFixedWidthDip = defaults.LyricsFixedWidthDip;
         next.LyricsInfoLineFilterEnabled = defaults.LyricsInfoLineFilterEnabled;
         next.LyricsSource = defaults.LyricsSource;
         next.LyricsArtistSeparators = defaults.LyricsArtistSeparators;

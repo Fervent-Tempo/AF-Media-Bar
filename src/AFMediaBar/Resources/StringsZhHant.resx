@@ -272,7 +272,7 @@
     <value>字型、佈景主題、媒體列寬度與互動按鈕外觀</value>
   </data>
   <data name="Appearance.Group.RestLayout" xml:space="preserve">
-    <value>常駐狀態外觀</value>
+    <value>文字配置</value>
   </data>
   <data name="Appearance.Group.InteractionButtons" xml:space="preserve">
     <value>互動按鈕</value>
@@ -524,13 +524,13 @@
     <value>應用程式</value>
   </data>
   <data name="Common.Group.ChooseDisplayMode" xml:space="preserve">
-    <value>選擇顯示模式</value>
+    <value>執行模式</value>
   </data>
   <data name="Common.Group.Fonts" xml:space="preserve">
-    <value>字型</value>
+    <value>通用字型</value>
   </data>
   <data name="Common.Group.InAppRestLayer" xml:space="preserve">
-    <value>程式內（常駐狀態）</value>
+    <value>媒體列點擊</value>
   </data>
   <data name="Common.Group.IslandAppearance" xml:space="preserve">
     <value>動態島外觀</value>
@@ -551,7 +551,7 @@
     <value>媒體列文字</value>
   </data>
   <data name="Common.Group.MediaBarWidth" xml:space="preserve">
-    <value>媒體列寬度</value>
+    <value>長度與間距</value>
   </data>
   <data name="Common.Group.ProjectInfo" xml:space="preserve">
     <value>專案資訊</value>
@@ -578,7 +578,7 @@
     <value>贊助我</value>
   </data>
   <data name="Common.Group.ThemeAndBackdrop" xml:space="preserve">
-    <value>佈景主題與背景</value>
+    <value>所有視窗</value>
   </data>
   <data name="Common.Group.TrackChangeNotification" xml:space="preserve">
     <value>曲目切換通知</value>
@@ -731,7 +731,7 @@
     <value>啟用後，滑鼠移入媒體列會顯示快捷控制；各項控制可在本組開關。</value>
   </data>
   <data name="Diagram.LayerRest.Caption" xml:space="preserve">
-    <value>常駐狀態顯示媒體資訊；封面、進度和入口按鈕在本頁設定，頻譜與效能位於「元件」頁。</value>
+    <value>常駐狀態顯示媒體資訊；顯示、元件參數和順序統一在本頁設定。</value>
   </data>
   <data name="Diagram.LyricsAlignment.Caption" xml:space="preserve">
     <value>僅調整歌詞對齊；標題與歌手的對齊位於「外觀 → 常駐狀態外觀」。</value>
@@ -1007,10 +1007,10 @@
     <value>點擊開啟音量功能表，捲動調整目前來源的音量。</value>
   </data>
   <data name="DisplayModes.Rest.ContentLayout.AdaptiveStack" xml:space="preserve">
-    <value>自適應堆疊</value>
+    <value>上下兩行</value>
   </data>
   <data name="DisplayModes.Rest.ContentLayout.CompactInline" xml:space="preserve">
-    <value>精簡行內</value>
+    <value>單行顯示</value>
   </data>
   <data name="DisplayModes.Rest.Density.Balanced" xml:space="preserve">
     <value>中</value>
@@ -1037,16 +1037,16 @@
     <value>封面和媒體文字僅在有媒體時顯示；沒有媒體時可保留小音符，用於快速啟動播放器。</value>
   </data>
   <data name="DisplayModes.Rest.Notice" xml:space="preserve">
-    <value>頻譜和效能在「元件設定」中調整，文字大小在「外觀」中調整。頻譜擷取目前輸出裝置的聲音。</value>
+    <value>頻譜擷取目前輸出裝置的聲音；元件參數在本群組詳細資料中調整，文字大小在外觀中調整。</value>
   </data>
   <data name="DisplayModes.Rest.Order.Expander.Description" xml:space="preserve">
-    <value>調整附加元件從左到右的順序；封面和文字固定在前。</value>
+    <value>封面和文字固定在邏輯起始側；排序僅調整附加元件，展開方向決定實際座標方向。</value>
   </data>
   <data name="DisplayModes.Rest.Order.Expander.Title" xml:space="preserve">
     <value>常駐狀態元件順序</value>
   </data>
   <data name="DisplayModes.Rest.Order.Notice" xml:space="preserve">
-    <value>封面和媒體文字固定在最前，不參與排序。</value>
+    <value>封面和媒體文字固定在邏輯起始側，不參與排序。</value>
   </data>
   <data name="DisplayModes.Rest.Order.Reset.Description" xml:space="preserve">
     <value>頻譜、效能監控、輸出裝置按鈕、音量按鈕</value>
@@ -1085,10 +1085,10 @@
     <value>顯示進入完整面板的入口</value>
   </data>
   <data name="DisplayModes.Rest.Row.Layout.Description" xml:space="preserve">
-    <value>標題與歌手並排一行，或上下堆疊</value>
+    <value>標題與歌手並排單行，或上下兩行；緊湊工作列可能僅顯示標題。</value>
   </data>
   <data name="DisplayModes.Rest.Row.Layout.Title" xml:space="preserve">
-    <value>內容排列</value>
+    <value>標題與歌手顯示方式</value>
   </data>
   <data name="DisplayModes.Rest.Row.Progress.Description" xml:space="preserve">
     <value>在常駐狀態底部顯示唯讀進度；沒有時長時隱藏。</value>
@@ -1118,7 +1118,7 @@
     <value>懸浮球模式尚未實作，暫時沒有可調整的設定。每個模式將擁有各自的設定頁。</value>
   </data>
   <data name="DisplayModes.Width.Group.Description" xml:space="preserve">
-    <value>媒體列的寬度與內部間距</value>
+    <value>整體長度、歌詞區域長度及元件間距。</value>
   </data>
   <data name="DisplayModes.Width.RangeText" xml:space="preserve">
     <value>可用範圍：{0:0}–{1:0} DIP</value>
@@ -1130,7 +1130,7 @@
     <value>在所需最小寬度與工作列可用寬度之間調整。</value>
   </data>
   <data name="DisplayModes.Width.Row.Fixed.Title" xml:space="preserve">
-    <value>固定寬度</value>
+    <value>固定長度</value>
   </data>
   <data name="DisplayModes.Width.Row.Follow.Description" xml:space="preserve">
     <value>根據媒體內容自動調整寬度。</value>
@@ -1190,7 +1190,7 @@
     <value>僅在滑鼠指向托盤圖示時生效。</value>
   </data>
   <data name="Interaction.SharedModifier.Callout" xml:space="preserve">
-    <value>使用滑鼠左鍵或右鍵作為按鍵時，滾輪後產生的點擊或功能表會被抑制，避免誤觸。</value>
+    <value>組合鍵用於媒體列滾輪。系統匣組合滾輪目前不提供編輯入口。</value>
   </data>
   <data name="Interaction.SharedModifier.Group.Description" xml:space="preserve">
     <value>選擇觸發組合滾輪操作的按鍵。</value>
@@ -1328,7 +1328,7 @@
     <value>在工作列常駐狀態顯示目前歌詞</value>
   </data>
   <data name="Lyrics.Row.Alignment.Description" xml:space="preserve">
-    <value>調整歌詞的水平對齊；標題對齊在外觀頁設定。</value>
+    <value>僅調整歌詞在文字區域內的對齊；標題與歌手可使用不同的對齊方式。</value>
   </data>
   <data name="Lyrics.Row.Alignment.Title" xml:space="preserve">
     <value>歌詞對齊</value>
@@ -1805,7 +1805,7 @@
     <value>微信與支付寶收款碼</value>
   </data>
   <data name="Search.Application.Application.Description" xml:space="preserve">
-    <value>版本資訊、檢查更新、自動更新、開機自動啟動與介面語言</value>
+    <value>選擇介面語言與開機自動啟動。</value>
   </data>
   <data name="Search.Application.Diagnostics.Description" xml:space="preserve">
     <value>開啟記錄檔資料夾，或手動釋放暫時不用的實體記憶體。</value>
@@ -1823,10 +1823,10 @@
     <value>媒體列上文字的顏色與大小</value>
   </data>
   <data name="Search.Appearance.MediaBarWidth.Description" xml:space="preserve">
-    <value>媒體列寬度、固定長度與元件間距</value>
+    <value>設定媒體列與歌詞區域長度、元件間距。</value>
   </data>
   <data name="Search.Appearance.RestLayout.Description" xml:space="preserve">
-    <value>常駐狀態內容排列、文字對齊與元件順序</value>
+    <value>調整標題顯示方式、標題與歌詞對齊，以及內容展開方向。</value>
   </data>
   <data name="Search.Appearance.InteractionButtons.Description" xml:space="preserve">
     <value>常駐狀態和快捷控制按鈕的大小與間距</value>
@@ -1835,7 +1835,7 @@
     <value>淺色還是深色，以及視窗背景材質</value>
   </data>
   <data name="Search.DisplayModes.ChooseDisplayMode.Description" xml:space="preserve">
-    <value>選擇工作列、動態島、桌面卡片或懸浮球</value>
+    <value>檢視實際執行模式與後續顯示模式。</value>
   </data>
   <data name="Search.DisplayModes.FullLayer.Description" xml:space="preserve">
     <value>點選媒體列展開的面板包含哪些分區</value>
@@ -1856,10 +1856,10 @@
     <value>媒體列所在的螢幕與工作列位置</value>
   </data>
   <data name="Search.Interaction.InAppRestLayer.Description" xml:space="preserve">
-    <value>設定常駐狀態封面、文字和滾輪操作。</value>
+    <value>設定封面和標題或歌詞的點擊動作。</value>
   </data>
   <data name="Search.Interaction.SharedModifier.Description" xml:space="preserve">
-    <value>媒體列與托盤共用的組合滾輪按鍵</value>
+    <value>設定媒體列一般滾輪、組合滾輪與組合按鍵。</value>
   </data>
   <data name="Search.Interaction.TrayIcon.Description" xml:space="preserve">
     <value>托盤圖示的點選與滾輪行為</value>
@@ -1868,7 +1868,7 @@
     <value>歌詞靠左、置中還是靠右</value>
   </data>
   <data name="Search.Lyrics.Display.Description" xml:space="preserve">
-    <value>設定歌詞顯示、第二行和逐字高亮。</value>
+    <value>啟用即時歌詞，設定單雙行與第二行內容優先順序。</value>
   </data>
   <data name="Search.Lyrics.Sources.Description" xml:space="preserve">
     <value>選擇啟用的歌詞來源；取詞順序與評分由應用管理</value>
@@ -2169,7 +2169,7 @@
     <value>歌詞排版細節</value>
   </data>
   <data name="Settings.Advanced.Lyrics.Description" xml:space="preserve">
-    <value>調整未唱文字、行距、字距和固定寬度。</value>
+    <value>調整未唱文字、行距與字距；對齊與長度在內容與配置中設定。</value>
   </data>
   <data name="Settings.Advanced.Defaults.Title" xml:space="preserve">
     <value>自訂預設設定</value>
@@ -2214,10 +2214,10 @@
     <value>字型預覽 · 가나다 · Sample text</value>
   </data>
   <data name="Common.Page.ScreenAndPlacement" xml:space="preserve">
-    <value>螢幕與位置</value>
+    <value>顯示與位置</value>
   </data>
   <data name="ScreenAndPlacement.Header.Subtitle" xml:space="preserve">
-    <value>選擇媒體列使用的螢幕，調整工作列位置與避讓。</value>
+    <value>選擇顯示螢幕，調整媒體列位置；方向由系統工作列決定。</value>
   </data>
   <data name="Common.Page.ApplicationAppearance" xml:space="preserve">
     <value>應用程式外觀</value>
@@ -2253,7 +2253,7 @@
     <value>目前僅支援工作列模式。其他模式暫不可切換。</value>
   </data>
   <data name="Appearance.FontsShortcut.Description" xml:space="preserve">
-    <value>字體請前往應用程式外觀-字體進行調節</value>
+    <value>字型統一在外觀的通用字型群組中設定。</value>
   </data>
   <data name="Appearance.FontsShortcut.Action" xml:space="preserve">
     <value>調整字體</value>
@@ -2286,7 +2286,7 @@
     <value>恢復預設分隔符</value>
   </data>
   <data name="Appearance.Group.TaskbarBackground" xml:space="preserve">
-    <value>背景層</value>
+    <value>媒體列背景</value>
   </data>
   <data name="Appearance.TaskbarBackground.Details.Title" xml:space="preserve">
     <value>背景層細節</value>
@@ -2295,10 +2295,10 @@
     <value>調整背景風格與濃度；啟用背景層後生效。</value>
   </data>
   <data name="DisplayModes.Placement.Row.Alignment.Title" xml:space="preserve">
-    <value>工作列對齊</value>
+    <value>媒體列位置</value>
   </data>
   <data name="DisplayModes.Placement.Row.Alignment.Description" xml:space="preserve">
-    <value>靠左時向右展開，靠右時向左展開，置中時向兩側展開並盡量保持在工作列中心。開啟圖示避讓時優先避讓；切換對齊會清除拖曳偏移。</value>
+    <value>決定整條媒體列的位置。切換時清除拖曳偏移，並恢復自動內容配置。</value>
   </data>
   <data name="DisplayModes.Placement.Alignment.Start" xml:space="preserve">
     <value>靠左</value>
@@ -2310,16 +2310,16 @@
     <value>靠右</value>
   </data>
   <data name="DisplayModes.Placement.Row.Arrangement.Title" xml:space="preserve">
-    <value>內容排列</value>
+    <value>內容展開方向</value>
   </data>
   <data name="DisplayModes.Placement.Row.Arrangement.Description" xml:space="preserve">
-    <value>左側排列將封面放在左側，其餘內容依次向右排列；右側排列將封面放在右側，其餘內容依次向左排列。文字、封面和圖示保持原方向。</value>
+    <value>決定封面和元件從哪側展開，不變更媒體列位置或儲存的元件邏輯順序。</value>
   </data>
   <data name="DisplayModes.Placement.Arrangement.Left" xml:space="preserve">
-    <value>左側排列</value>
+    <value>從左側展開</value>
   </data>
   <data name="DisplayModes.Placement.Arrangement.Right" xml:space="preserve">
-    <value>右側排列</value>
+    <value>從右側展開</value>
   </data>
   <data name="Taskbar.Placement.Notification.Title" xml:space="preserve">
     <value>工作列空間不足</value>
@@ -2332,5 +2332,98 @@
   </data>
   <data name="DisplayModes.Width.NoCommonRange" xml:space="preserve">
     <value>目前工作列沒有共同可用的固定長度範圍。已儲存的長度會保留，各工作列依自身空間限制寬度。</value>
+  </data>
+  <data name="Common.Page.ContentLayout" xml:space="preserve">
+    <value>內容與配置</value>
+  </data>
+  <data name="ContentLayout.Header.Subtitle" xml:space="preserve">
+    <value>設定常駐內容、文字配置、元件參數和控制面板。</value>
+  </data>
+  <data name="Appearance.Unified.Header.Subtitle" xml:space="preserve">
+    <value>設定通用佈景主題與字型，以及媒體列專用文字和背景。</value>
+  </data>
+  <data name="Appearance.Scope.Global" xml:space="preserve">
+    <value>佈景主題、強調色和材質用於應用程式視窗；選單維持純色。</value>
+  </data>
+  <data name="Appearance.Scope.Fonts" xml:space="preserve">
+    <value>字型與粗細用於設定、媒體列和通知；媒體列字級可單獨縮放。</value>
+  </data>
+  <data name="Appearance.Scope.Taskbar" xml:space="preserve">
+    <value>僅影響媒體列，不變更其他視窗的佈景主題或字型。</value>
+  </data>
+  <data name="Appearance.Background.Prerequisite" xml:space="preserve">
+    <value>開啟媒體列磨砂背景後，風格和濃度才會生效。</value>
+  </data>
+  <data name="ContentLayout.Arrangement.Auto" xml:space="preserve">
+    <value>跟隨媒體列位置</value>
+  </data>
+  <data name="ContentLayout.Text.Details.Title" xml:space="preserve">
+    <value>對齊與展開方向</value>
+  </data>
+  <data name="ContentLayout.Text.Details.Description" xml:space="preserve">
+    <value>分別設定標題和歌詞對齊；需要時覆寫自動展開方向。</value>
+  </data>
+  <data name="ContentLayout.LengthMode.Title" xml:space="preserve">
+    <value>媒體列長度模式</value>
+  </data>
+  <data name="ContentLayout.LengthMode.Description" xml:space="preserve">
+    <value>控制整條媒體列的長度，仍受元件最低需求及工作列可用空間限制。</value>
+  </data>
+  <data name="ContentLayout.LengthMode.Follow" xml:space="preserve">
+    <value>隨內容變化</value>
+  </data>
+  <data name="ContentLayout.LengthMode.Fixed" xml:space="preserve">
+    <value>固定長度</value>
+  </data>
+  <data name="ContentLayout.LyricsLength.Title" xml:space="preserve">
+    <value>歌詞區域長度</value>
+  </data>
+  <data name="ContentLayout.LyricsLength.Description" xml:space="preserve">
+    <value>整體隨內容變化時，可固定歌詞區域以減少換句伸縮。整體固定長度時，不變更媒體列總長度。</value>
+  </data>
+  <data name="ContentLayout.Text.Shortcut.Title" xml:space="preserve">
+    <value>文字配置與長度</value>
+  </data>
+  <data name="ContentLayout.Text.Shortcut.Description" xml:space="preserve">
+    <value>標題與歌詞對齊、媒體列和歌詞區域長度統一在內容與配置中設定。</value>
+  </data>
+  <data name="ContentLayout.Text.Shortcut.Action" xml:space="preserve">
+    <value>前往文字配置</value>
+  </data>
+  <data name="Placement.FutureModes.Title" xml:space="preserve">
+    <value>其他顯示模式</value>
+  </data>
+  <data name="Placement.FutureModes.Description" xml:space="preserve">
+    <value>以下模式尚未實作，目前無法切換或設定。</value>
+  </data>
+  <data name="Lyrics.Group.Presentation" xml:space="preserve">
+    <value>擦亮與文字處理</value>
+  </data>
+  <data name="Interaction.Group.Wheel" xml:space="preserve">
+    <value>媒體列滾輪</value>
+  </data>
+  <data name="Application.Group.Updates" xml:space="preserve">
+    <value>更新</value>
+  </data>
+  <data name="Search.Lyrics.Presentation.Description" xml:space="preserve">
+    <value>設定逐字擦亮、署名過濾、字距與行距。</value>
+  </data>
+  <data name="Search.Application.Updates.Description" xml:space="preserve">
+    <value>檢查、下載、安裝更新，或略過指定版本。</value>
+  </data>
+  <data name="ContentLayout.Hover.Prerequisite" xml:space="preserve">
+    <value>開啟快捷控制後顯示以下內容；關閉時仍可預先設定。</value>
+  </data>
+  <data name="ContentLayout.Full.Prerequisite" xml:space="preserve">
+    <value>開啟完整面板後使用以下入口和內容；關閉時仍可預先設定。</value>
+  </data>
+  <data name="Search.ContentLayout.Vertical.Rest" xml:space="preserve">
+    <value>設定常駐與無媒體內容，以及頻譜和效能參數。</value>
+  </data>
+  <data name="Search.ContentLayout.Vertical.Text" xml:space="preserve">
+    <value>調整歌詞在文字區域內的對齊。</value>
+  </data>
+  <data name="Search.Placement.Vertical" xml:space="preserve">
+    <value>選擇顯示螢幕，檢視系統方向，設定避讓、鎖定與偏移。</value>
   </data>
 </root>

@@ -38,7 +38,7 @@ namespace AFMediaBar.Views.Windows
         private readonly AppLogService _log;
         private SettingsContext _displayedContext = SettingsContext.Initial;
         private SettingsMode? _navigationMode;
-        private SettingsPageKey _currentPage = SettingsPageKey.DisplayModes;
+        private SettingsPageKey _currentPage = SettingsPageKey.ScreenAndPlacement;
         private bool _updatingMonitorChoices;
         private bool _closed;
 
@@ -94,15 +94,16 @@ namespace AFMediaBar.Views.Windows
 
             AddHandler(ApplicationPage.OpenHighlightsEvent, new RoutedEventHandler(OnOpenHighlightsRequested));
             AddHandler(AppearancePage.OpenApplicationFontsEvent, new RoutedEventHandler(OnOpenApplicationFontsRequested));
+            AddHandler(LyricsPage.OpenTextLayoutEvent, new RoutedEventHandler(OnOpenTextLayoutRequested));
             RootNavigation.Navigated += OnNavigated;
 
-            // 落地页：窗口每次打开都直接落在「显示模式」。
+            // 落地页：窗口每次打开都直接落在「显示与位置」。
             //
             // 不发起导航时内容区是空的：导航控件在收到第一个导航请求之前不会创建任何页面，用户打开设置看到的就是一片
             // 空白。这里挂在"窗口变为可见"而不是构造函数上——构造函数早于 Show，那时导航视图还没有内容宿主，立刻导航
             // 等于什么都没发生（MainWindow 里的更新跳转也踩过这一条）；再排到 Loaded 之后，等布局完成。
             // 由打开方发起的导航（例如更新提示要落在「更新亮点」）排在本次之后，因此仍然由它决定最终页面。
-            // Landing page: the window lands straight on "display modes" every time it opens.
+            // Landing page: the window lands straight on "display and placement" every time it opens.
             //
             // Without a navigation request the content area is empty: the navigation control creates no page until the first request
             // arrives, so opening the settings shows nothing at all. This hangs off "window became visible" rather than the
@@ -212,6 +213,7 @@ namespace AFMediaBar.Views.Windows
         public void NavigateToGroup(SettingsPageKey page, string groupId)
         {
             if (_closed) return;
+            (page, groupId) = SettingsPageCatalog.ResolveDestination(page, groupId);
             if (!SettingsPageProvider.PageTypes.TryGetValue(page, out var pageType) || !Navigate(pageType)) return;
             Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
             {
@@ -289,6 +291,12 @@ namespace AFMediaBar.Views.Windows
             NavigateToGroup(SettingsPageKey.ApplicationAppearance, "Common.Group.Fonts");
         }
 
+        private void OnOpenTextLayoutRequested(object sender, RoutedEventArgs e)
+        {
+            e.Handled = true;
+            NavigateToGroup(SettingsPageKey.Components, "Appearance.Group.RestLayout");
+        }
+
         private void OnOpenHighlightsRequested(object sender, RoutedEventArgs e)
         {
             e.Handled = true;
@@ -347,7 +355,7 @@ namespace AFMediaBar.Views.Windows
         /// <summary>导航到指定页面类型。/ Navigates to the specified page type.</summary>
         public bool Navigate(Type pageType)
         {
-            return RootNavigation.Navigate(pageType);
+            return RootNavigation.Navigate(SettingsPageProvider.ResolvePageType(pageType));
         }
 
         private void OnNavigated(NavigationView sender, NavigatedEventArgs args)
@@ -397,7 +405,7 @@ namespace AFMediaBar.Views.Windows
 
         private async void SettingsWindow_OnLoaded(object sender, RoutedEventArgs e)
         {
-            RootNavigation.Navigate(typeof(DisplayModesPage));
+            Navigate(typeof(ScreenAndPlacementPage));
             await _contexts.StartAsync();
         }
 
@@ -456,10 +464,11 @@ namespace AFMediaBar.Views.Windows
             }
             finally { _updatingMonitorChoices = false; }
             var definition = SettingsPageCatalog.Find(_currentPage, _contexts.Current.Mode);
-            if (definition is null) Navigate(typeof(DisplayModesPage));
-            else if (contextChanged && (!definition.IsGlobal || _currentPage == SettingsPageKey.DisplayModes))
+            if (definition is null) Navigate(typeof(ScreenAndPlacementPage));
+            else if (contextChanged && (!definition.IsGlobal || definition.HasModeContent))
             {
-                RootNavigation.ReplaceContent((UIElement)_pages.GetPage(SettingsPageProvider.PageTypes[_currentPage])!);
+                var content = (UIElement)_pages.GetPage(SettingsPageProvider.PageTypes[_currentPage])!;
+                if (!definition.IsGlobal || _currentPage == SettingsPageKey.ScreenAndPlacement) RootNavigation.ReplaceContent(content);
             }
             _displayedContext = _contexts.Current;
             UpdateContextHeader();
@@ -470,7 +479,7 @@ namespace AFMediaBar.Views.Windows
         {
             var definition = SettingsPageCatalog.Find(_currentPage, _contexts.Current.Mode);
             RootNavigation.HeaderVisibility = _contexts.Monitors.Count > 1 &&
-                (definition is { IsGlobal: false } || _currentPage == SettingsPageKey.DisplayModes) ? Visibility.Visible : Visibility.Collapsed;
+                (definition is { IsGlobal: false } or { HasModeContent: true }) ? Visibility.Visible : Visibility.Collapsed;
         }
         private void OnEditingMonitorChanged(object sender, SelectionChangedEventArgs e)
         {

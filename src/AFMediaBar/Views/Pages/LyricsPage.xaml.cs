@@ -7,6 +7,10 @@ namespace AFMediaBar.Views.Pages;
 public partial class LyricsPage : INavigableView<LyricsViewModel>
 {
     public LyricsViewModel ViewModel { get; }
+    /// <summary>请求文字布局入口，由当前设置窗口负责导航。</summary>
+    public static readonly RoutedEvent OpenTextLayoutEvent = EventManager.RegisterRoutedEvent(nameof(OpenTextLayout), RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(LyricsPage));
+    public event RoutedEventHandler OpenTextLayout { add => AddHandler(OpenTextLayoutEvent, value); remove => RemoveHandler(OpenTextLayoutEvent, value); }
+    private void OpenTextLayout_Click(object sender, RoutedEventArgs e) => RaiseEvent(new RoutedEventArgs(OpenTextLayoutEvent));
     public LyricsPage(LyricsViewModel viewModel) { ViewModel = viewModel; DataContext = this; InitializeComponent(); }
     /// <summary>页面首次加载时执行入场揭示。/ Reveals the page on first load.</summary>
     private void OnPageLoaded(object sender, RoutedEventArgs e) => SettingsRevealAnimator.Play(sender as Panel);
