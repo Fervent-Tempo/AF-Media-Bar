@@ -47,6 +47,8 @@ public interface ISettingsConfiguration
     void SetLyricsTextAlignment(LyricsTextAlignment alignment);
     /// <summary>Publishes this setting through the existing normalization contract.</summary>
     void SetLyricsSyllableHighlightEnabled(bool enabled);
+    /// <summary>通过当前配置上下文更新歌词简繁转换方向。</summary>
+    void SetLyricsChineseConversion(LyricsChineseConversionMode mode);
     /// <summary>Publishes this setting through the existing normalization contract.</summary>
     void SetLyricsUnsungOpacityPercent(int percent);
     /// <summary>Publishes this setting through the existing normalization contract.</summary>

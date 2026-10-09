@@ -16,6 +16,37 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class SettingsIntegrationTests
 {
     [TestMethod]
+    public void ChineseConversionOnlyRefreshesRelatedBindingsAndHonorsInactiveContext()
+    {
+        StaTest.Run(_ =>
+        {
+            var previous = SettingsManager.Current;
+            using var context = new SettingsPageContext();
+            using var localization = new LocalizationService();
+            try
+            {
+                SettingsManager.Current = new AppSettings();
+                using var viewModel = new LyricsViewModel(localization, new LegacySettingsConfiguration(context));
+                var notifications = new List<string?>();
+                viewModel.PropertyChanged += (_, e) => notifications.Add(e.PropertyName);
+                viewModel.ChineseConversionEnabled = true;
+                CollectionAssert.AreEquivalent(new[] { nameof(viewModel.ChineseConversionEnabled),
+                    nameof(viewModel.ChineseConversion), nameof(viewModel.CanConfigureChineseConversion) }, notifications);
+                notifications.Clear();
+                viewModel.ChineseConversionEnabled = true;
+                viewModel.ChineseConversion = viewModel.ChineseConversion;
+                Assert.AreEqual(0, notifications.Count);
+                context.Deactivate();
+                viewModel.ChineseConversionEnabled = false;
+                Assert.AreEqual(LyricsChineseConversionMode.SimplifiedToTraditional, SettingsManager.Current.LyricsChineseConversion);
+                Assert.AreEqual(0, notifications.Count);
+            }
+            finally { SettingsManager.Current = previous; }
+            return Task.CompletedTask;
+        });
+    }
+
+    [TestMethod]
     public void EditingApplicationAppearancePreservesTaskbarMaterialAndViceVersa()
     {
         StaTest.Run(_ =>

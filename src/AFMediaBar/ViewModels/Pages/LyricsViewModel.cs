@@ -187,31 +187,14 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
     /// </summary>
     public bool ChineseConversionEnabled
     {
-        get => SettingsManager.Current.LyricsChineseConversion != LyricsChineseConversionMode.None;
+        get => _configuration.Current.LyricsChineseConversion != LyricsChineseConversionMode.None;
         set
         {
-            var current = SettingsManager.Current.LyricsChineseConversion;
-            if (value)
-            {
-                SettingsManager.SetLyricsChineseConversion(
-                    current != LyricsChineseConversionMode.None ? current : _lastConversionDirection);
-
-                // 打开的这一刻就把词典放到后台加载：第一次转换不必等这笔开销，歌词也不用多渲染一帧原文。
-                // Start loading the dictionary in the background the moment it is enabled, so the first conversion does not pay for it
-                // and lyrics do not show one extra frame of the original text.
-                LyricsChineseConverter.WarmUp();
-            }
-            else
-            {
-                if (current != LyricsChineseConversionMode.None)
-                {
-                    _lastConversionDirection = current;
-                }
-
-                SettingsManager.SetLyricsChineseConversion(LyricsChineseConversionMode.None);
-            }
-
-            RaiseAll();
+            if (value == ChineseConversionEnabled)
+                return;
+            if (!value)
+                _lastConversionDirection = ChineseConversion;
+            ChineseConversion = value ? _lastConversionDirection : LyricsChineseConversionMode.None;
         }
     }
 
@@ -220,16 +203,19 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
     /// </summary>
     public LyricsChineseConversionMode ChineseConversion
     {
-        get => SettingsManager.Current.LyricsChineseConversion;
+        get => _configuration.Current.LyricsChineseConversion;
         set
         {
+            if (!_configuration.IsActive || value == ChineseConversion)
+                return;
             if (value != LyricsChineseConversionMode.None)
             {
                 _lastConversionDirection = value;
             }
 
-            SettingsManager.SetLyricsChineseConversion(value);
-            RaiseAll();
+            if (value != LyricsChineseConversionMode.None)
+                LyricsChineseConverter.WarmUp();
+            _configuration.SetLyricsChineseConversion(value);
         }
     }
 
@@ -285,6 +271,8 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         }
         if (e.PropertyName == nameof(AppSettings.LyricsArtistSeparators))
             OnPropertyChanged(nameof(ArtistSeparatorsText));
+        if (e.PropertyName == nameof(AppSettings.LyricsChineseConversion))
+            RaiseChineseConversionProperties();
         if (e.ResetScope == SettingsResetScope.Components || e.PropertyName is nameof(AppSettings.LyricsEnabled)
             or nameof(AppSettings.TwoLineLyricsEnabled) or nameof(AppSettings.LyricsTextAlignment)
             or nameof(AppSettings.LyricsFixedWidthEnabled) or nameof(AppSettings.LyricsFixedWidthDip))
@@ -312,7 +300,13 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(CanConfigureTwoLine)); OnPropertyChanged(nameof(CanConfigureSecondary));
         OnPropertyChanged(nameof(CanConfigureUnsungOpacity)); OnPropertyChanged(nameof(CanConfigureLineGap));
         OnPropertyChanged(nameof(IsEverySourceDisabled));
-        OnPropertyChanged(nameof(ChineseConversionEnabled)); OnPropertyChanged(nameof(ChineseConversion));
+        RaiseChineseConversionProperties();
+    }
+
+    private void RaiseChineseConversionProperties()
+    {
+        OnPropertyChanged(nameof(ChineseConversionEnabled));
+        OnPropertyChanged(nameof(ChineseConversion));
         OnPropertyChanged(nameof(CanConfigureChineseConversion));
     }
 

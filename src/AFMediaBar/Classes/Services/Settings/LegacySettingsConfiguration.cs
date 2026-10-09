@@ -91,6 +91,8 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context) : I
     /// <inheritdoc />
     public void SetLyricsSyllableHighlightEnabled(bool enabled) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetLyricsSyllableHighlightEnabled(enabled); }
     /// <inheritdoc />
+    public void SetLyricsChineseConversion(LyricsChineseConversionMode mode) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetLyricsChineseConversion(mode); }
+    /// <inheritdoc />
     public void SetLyricsUnsungOpacityPercent(int percent) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetLyricsUnsungOpacityPercent(percent); }
     /// <inheritdoc />
     public void SetLyricsCharacterSpacingPercent(int percent) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetLyricsCharacterSpacingPercent(percent); }
