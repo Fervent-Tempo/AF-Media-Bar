@@ -24,8 +24,13 @@ public static class OpenSourceLicenseCatalog
     [
         new("CommunityToolkit.Mvvm", "8.4.0", "MIT", "https://github.com/CommunityToolkit/dotnet"),
         new("Dubya.WindowsMediaController", "2.5.6", "MIT", "https://github.com/DubyaDude/WindowsMediaController"),
+        new("F23.StringSimilarity", "7.0.1", "MIT", "https://github.com/feature23/StringSimilarity.NET"),
         new("Lyricify.Lyrics.Helper", "0.2.0", "Apache-2.0", "https://github.com/WXRIW/Lyricify-Lyrics-Helper"),
+        new("MicaWPF", "7.1.0", "MIT", "https://github.com/Simnico99/MicaWPF"),
         new("Microsoft.Extensions.Hosting", "10.0.1", "MIT", "https://github.com/dotnet/runtime"),
+        new("Microsoft.Web.WebView2", "1.0.4191.47", "BSD-3-Clause", "https://aka.ms/webview"),
+        new("NAudio.Wasapi", "3.1.0", "MIT", "https://github.com/naudio/NAudio"),
+        new("OpenccNetLib", "1.7.0", "MIT", "https://github.com/laisuk/OpenccNet"),
         new("WPF-UI", "4.2.0", "MIT", "https://github.com/lepoco/wpfui"),
         new("WPF-UI.DependencyInjection", "4.2.0", "MIT", "https://github.com/lepoco/wpfui")
     ];
