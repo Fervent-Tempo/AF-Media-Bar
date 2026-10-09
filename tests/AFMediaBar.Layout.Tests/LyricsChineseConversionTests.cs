@@ -13,13 +13,17 @@ public sealed class LyricsChineseConversionTests
 {
     private static readonly DateTimeOffset _now = new(2026, 9, 23, 8, 0, 0, TimeSpan.Zero);
 
-    // 这里同步加载转换器：生产路径由投影自身转到后台加载（见 LyricsChineseConverter.WarmUp），
-    // 若测试也走那条路，断言会在词典就绪之前跑完，结果就是随机成败。
-    // Loaded synchronously here: production lets projection itself kick off the background load (see
-    // LyricsChineseConverter.WarmUp); if the test took that path too, the assertions would run before the dictionary is
-    // ready and would pass or fail at random.
+    // 等待真实后台转换，投影断言只检查已准备好的结果；非阻塞行为由独立缓存回归覆盖。
     [TestInitialize]
-    public void Initialize() => LyricsChineseConverter.LoadNow();
+    public async Task Initialize()
+    {
+        string[] texts = ["我在这里等你", "数据库连接池", "岁月如歌", "下一句译文",
+            "我在這裡等你", "資料庫連接池", "歲月如歌", "下一句譯文"];
+        foreach (var mode in new[] { LyricsChineseConversionMode.SimplifiedToTraditional, LyricsChineseConversionMode.TraditionalToSimplified })
+            foreach (var text in texts)
+                _ = LyricsChineseConverter.Convert(text, mode);
+        await LyricsChineseConverter.WaitForIdleAsync().WaitAsync(TimeSpan.FromSeconds(10));
+    }
 
     [TestMethod]
     public async Task ConversionDoesNotWaitForConverterPublication()

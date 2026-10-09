@@ -5,14 +5,23 @@ namespace AFMediaBar.Classes.Services.Lyrics;
 
 /// <summary>
 /// 按设置转换歌词呈现文本，不修改歌词文档或取词缓存。
-/// 词典在后台构造，呈现调用只读取已发布实例，未就绪时返回原文。
+/// 词典与文本转换均在后台完成，呈现只读取有界缓存，未就绪时返回原文。
 /// </summary>
 public static class LyricsChineseConverter
 {
     private static readonly object _sync = new();
+    private static readonly object _loadSync = new();
+    private static readonly LyricsChineseConversionCache _cache = new(ConvertInBackground);
     private static Opencc? _simplifiedToTraditional;
     private static Opencc? _traditionalToSimplified;
     private static int _warmUpStarted;
+
+    /// <summary>后台结果就绪通知；订阅者应合并刷新并在自身 UI 线程重读当前状态。</summary>
+    public static event Action? Updated
+    {
+        add => _cache.Updated += value;
+        remove => _cache.Updated -= value;
+    }
 
     /// <summary>
     /// 按给定方向转换一段歌词文本。
@@ -28,14 +37,15 @@ public static class LyricsChineseConverter
             return text;
         }
 
-        var converter = TryGetConverter(mode);
-        if (converter is null)
-        {
-            RequestWarmUp();
-            return text;
-        }
+        return _cache.GetOrRequest(text, mode);
+    }
 
-        return converter.Convert(text);
+    internal static Task WaitForIdleAsync() => _cache.WaitForIdleAsync();
+
+    private static string ConvertInBackground(string text, LyricsChineseConversionMode mode)
+    {
+        TryLoad();
+        return TryGetConverter(mode)?.Convert(text) ?? text;
     }
 
     /// <summary>
@@ -84,6 +94,13 @@ public static class LyricsChineseConverter
     internal static void LoadNow() => TryLoad();
 
     private static void TryLoad()
+    {
+        // 仅后台及测试入口取得加载锁，呈现入口不等待词典或转换工作。
+        lock (_loadSync)
+            LoadConverters();
+    }
+
+    private static void LoadConverters()
     {
         if (Volatile.Read(ref _simplifiedToTraditional) is not null &&
             Volatile.Read(ref _traditionalToSimplified) is not null)

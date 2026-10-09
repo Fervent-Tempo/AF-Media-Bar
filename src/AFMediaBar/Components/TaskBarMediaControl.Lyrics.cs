@@ -16,11 +16,11 @@ namespace AFMediaBar.Components;
 /// </summary>
 public partial class TaskBarMediaControl
 {
-    private static readonly TimeSpan LyricsFrameInterval = TimeSpan.FromMilliseconds(50);
+    private static readonly TimeSpan _lyricsFrameInterval = TimeSpan.FromMilliseconds(50);
 
     private readonly DispatcherTimer _lyricsWebTimer = new(DispatcherPriority.Render)
     {
-        Interval = LyricsFrameInterval
+        Interval = _lyricsFrameInterval
     };
     private readonly DispatcherTimer _lyricsReleaseTimer = new(DispatcherPriority.Background)
     {
@@ -32,6 +32,7 @@ public partial class TaskBarMediaControl
     };
     private LyricsWebViewRenderer? _lyricsWebRenderer;
     private bool _lyricsHostLoaded;
+    private int _lyricsConversionRefreshQueued;
     private int _lyricsRendererGeneration;
     private int _lyricsCreationFailures;
     private int _lyricsSuspendGeneration;
@@ -71,6 +72,7 @@ public partial class TaskBarMediaControl
 
         _lyricsHostLoaded = true;
         SettingsManager.LyricsSettingsChanged += OnWebLyricsSettingsChanged;
+        LyricsChineseConverter.Updated += OnChineseConversionUpdated;
         WebLyricsGraphicsRecovery.RecoveryRequested += OnWebLyricsGraphicsRecoveryRequested;
         UpdateWebLyricsPresentation(allowTransition: false);
     }
@@ -82,8 +84,24 @@ public partial class TaskBarMediaControl
 
         _lyricsHostLoaded = false;
         SettingsManager.LyricsSettingsChanged -= OnWebLyricsSettingsChanged;
+        LyricsChineseConverter.Updated -= OnChineseConversionUpdated;
         WebLyricsGraphicsRecovery.RecoveryRequested -= OnWebLyricsGraphicsRecoveryRequested;
         StopWebLyrics();
+    }
+
+    private void OnChineseConversionUpdated()
+    {
+        if (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished ||
+            Interlocked.Exchange(ref _lyricsConversionRefreshQueued, 1) != 0)
+            return;
+
+        Dispatcher.BeginInvoke(() =>
+        {
+            Interlocked.Exchange(ref _lyricsConversionRefreshQueued, 0);
+            // 通知不携带旧曲目或文本，恢复时按最新快照与转换方向重新投影。
+            if (_lyricsHostLoaded)
+                UpdateWebLyricsPresentation(allowTransition: false);
+        });
     }
 
     private void OnWebLyricsSettingsChanged(object? sender, EventArgs e)
