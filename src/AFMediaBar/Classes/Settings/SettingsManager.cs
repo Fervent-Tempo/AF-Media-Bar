@@ -29,6 +29,26 @@ public enum LyricsSecondaryLineMode
     Romanization = 2
 }
 
+/// <summary>
+/// 歌词文本的简繁转换方向：只在显示前改写呈现文本，不动取词结果本身。
+/// Conversion direction of lyric text: it only rewrites the presented text, never the retrieved lyric document itself.
+///
+/// 成员值参与序列化，因此只能追加、不能改值或重排。默认 <c>None</c>，即升级前的观感完全不变。
+/// Member values take part in serialization, so members may only be appended, never renumbered or reordered. The default is
+/// <c>None</c>, which leaves the look exactly as it was before this setting existed.
+/// </summary>
+public enum LyricsChineseConversionMode
+{
+    /// <summary>不做转换，歌词按来源原样显示。/ No conversion; lyrics show exactly as their source wrote them.</summary>
+    None = 0,
+
+    /// <summary>简体转繁体。/ Convert Simplified Chinese to Traditional Chinese.</summary>
+    SimplifiedToTraditional = 1,
+
+    /// <summary>繁体转简体。/ Convert Traditional Chinese to Simplified Chinese.</summary>
+    TraditionalToSimplified = 2
+}
+
 /// <summary>应用全部用户设置，并在属性直接修改时发布变更。 / All user settings; direct mutations publish changes.</summary>
 public sealed class AppSettings : INotifyPropertyChanged
 {
@@ -77,6 +97,7 @@ public sealed class AppSettings : INotifyPropertyChanged
     private bool _lyricsFixedWidthEnabled;
     private int _lyricsFixedWidthDip = LyricsFixedWidth.DefaultDip;
     private bool _lyricsInfoLineFilterEnabled = true;
+    private LyricsChineseConversionMode _lyricsChineseConversion = LyricsChineseConversionMode.None;
     private LyricsSourceSettings _lyricsSource = LyricsSourceSettings.Default;
     private string _lyricsArtistSeparators = "/";
     private TrackChangeNotificationSettings _trackChangeNotification = TrackChangeNotificationSettings.Default;
@@ -158,6 +179,17 @@ public sealed class AppSettings : INotifyPropertyChanged
     /// <summary>是否丢弃作者、作曲、制作等信息行。/ Whether credit lines such as writer, composer, and producer are dropped.</summary>
     public bool LyricsInfoLineFilterEnabled { get => _lyricsInfoLineFilterEnabled; set => Set(ref _lyricsInfoLineFilterEnabled, value); }
 
+    /// <summary>
+    /// 歌词文本的简繁转换方向：<c>None</c> 表示不做转换。它只影响呈现，因此改变它不必清空取词缓存。
+    /// Conversion direction of lyric text: <c>None</c> means no conversion. It only affects presentation, so changing it does not
+    /// require clearing the retrieval cache.
+    /// </summary>
+    public LyricsChineseConversionMode LyricsChineseConversion
+    {
+        get => _lyricsChineseConversion;
+        set => Set(ref _lyricsChineseConversion, value);
+    }
+
 
     /// <summary>启用的歌词来源；取词顺序由固定策略决定。</summary>
     public LyricsSourceSettings LyricsSource { get => _lyricsSource; set => Set(ref _lyricsSource, value.Normalize()); }
@@ -225,6 +257,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         if (!Enum.IsDefined(result.DynamicIslandBackgroundMode)) result.DynamicIslandBackgroundMode = defaults.DynamicIslandBackgroundMode;
         if (!Enum.IsDefined(result.DynamicIslandEdge)) result.DynamicIslandEdge = defaults.DynamicIslandEdge;
         if (!Enum.IsDefined(result.LyricsTextAlignment)) result.LyricsTextAlignment = defaults.LyricsTextAlignment;
+        if (!Enum.IsDefined(result.LyricsChineseConversion)) result.LyricsChineseConversion = defaults.LyricsChineseConversion;
         result.LyricsUnsungOpacityPercent = LyricsUnsungOpacity.Normalize(result.LyricsUnsungOpacityPercent);
         result.LyricsCharacterSpacingPercent = LyricsCharacterSpacing.Normalize(result.LyricsCharacterSpacingPercent);
         result.LyricsLineGapPercent = LyricsLineGap.Normalize(result.LyricsLineGapPercent);
@@ -301,6 +334,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         LyricsFixedWidthEnabled = LyricsFixedWidthEnabled,
         LyricsFixedWidthDip = LyricsFixedWidthDip,
         LyricsInfoLineFilterEnabled = LyricsInfoLineFilterEnabled,
+        LyricsChineseConversion = LyricsChineseConversion,
         LyricsSource = LyricsSource,
         LyricsArtistSeparators = LyricsArtistSeparators,
         TrackChangeNotification = TrackChangeNotification,
@@ -405,6 +439,7 @@ public static class SettingsManager
     public static void SetLyricsFixedWidthEnabled(bool enabled) => Current.LyricsFixedWidthEnabled = enabled;
     public static void SetLyricsFixedWidthDip(int dip) => Current.LyricsFixedWidthDip = LyricsFixedWidth.Normalize(dip);
     public static void SetLyricsInfoLineFilterEnabled(bool enabled) => Current.LyricsInfoLineFilterEnabled = enabled;
+    public static void SetLyricsChineseConversion(LyricsChineseConversionMode mode) => Current.LyricsChineseConversion = mode;
     public static void SetLyricsSourceSettings(LyricsSourceSettings settings) => Current.LyricsSource = settings;
     /// <summary>保存自定义艺术家分隔符，触发歌词重新匹配。</summary>
     public static void SetLyricsArtistSeparators(string separators) => Current.LyricsArtistSeparators = separators;
@@ -599,6 +634,7 @@ public static class SettingsManager
         next.LyricsCharacterSpacingPercent = defaults.LyricsCharacterSpacingPercent;
         next.LyricsLineGapPercent = defaults.LyricsLineGapPercent;
         next.LyricsInfoLineFilterEnabled = defaults.LyricsInfoLineFilterEnabled;
+        next.LyricsChineseConversion = defaults.LyricsChineseConversion;
         next.LyricsSource = defaults.LyricsSource;
         next.LyricsArtistSeparators = defaults.LyricsArtistSeparators;
         Replace(next, SettingsResetScope.Lyrics);
@@ -655,6 +691,7 @@ public static class SettingsManager
             case nameof(AppSettings.LyricsLineGapPercent):
             case nameof(AppSettings.LyricsFixedWidthEnabled):
             case nameof(AppSettings.LyricsFixedWidthDip):
+            case nameof(AppSettings.LyricsChineseConversion):
             case nameof(AppSettings.LyricsInfoLineFilterEnabled):
             case nameof(AppSettings.LyricsArtistSeparators):
             case nameof(AppSettings.LyricsSource): LyricsSettingsChanged?.Invoke(null, EventArgs.Empty); break;

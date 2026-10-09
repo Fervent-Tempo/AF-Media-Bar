@@ -183,6 +183,30 @@
                             Title="{DynamicResource Loc.Lyrics.Row.InfoLines.Title}">
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.InfoLineFilterEnabled, Mode=TwoWay}" />
                         </components:SettingsRow>
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Lyrics.Row.ChineseConversion.Description}"
+                            Icon="{ui:SymbolIcon Translate24}"
+                            Title="{DynamicResource Loc.Lyrics.Row.ChineseConversion.Title}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.ChineseConversionEnabled, Mode=TwoWay}" />
+                        </components:SettingsRow>
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Lyrics.Row.ChineseConversion.Direction.Description}"
+                            Icon="{ui:SymbolIcon ArrowSwap24}"
+                            IsNested="True"
+                            Title="{DynamicResource Loc.Lyrics.Row.ChineseConversion.Direction.Title}">
+                            <ComboBox
+                                MinWidth="160"
+                                IsEnabled="{Binding ViewModel.CanConfigureChineseConversion}"
+                                SelectedValue="{Binding ViewModel.ChineseConversion, Mode=TwoWay}"
+                                SelectedValuePath="Tag">
+                                <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Row.ChineseConversion.Option.Off}"
+                                              Tag="{x:Static settings:LyricsChineseConversionMode.None}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Row.ChineseConversion.Option.ToTraditional}"
+                                              Tag="{x:Static settings:LyricsChineseConversionMode.SimplifiedToTraditional}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Row.ChineseConversion.Option.ToSimplified}"
+                                              Tag="{x:Static settings:LyricsChineseConversionMode.TraditionalToSimplified}" />
+                            </ComboBox>
+                        </components:SettingsRow>
                         <ui:CardExpander
                             Style="{StaticResource AfSettingsExpanderStyle}"
                             IsExpanded="False"
