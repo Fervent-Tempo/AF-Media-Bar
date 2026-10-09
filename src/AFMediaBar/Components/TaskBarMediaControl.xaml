@@ -142,7 +142,7 @@
                         the artwork click-only; buttons that must stay click-only (hover layer, rest-layer chips, pull handle) keep the tag.
                     -->
                     <Border Name="SongImageBorder" CornerRadius="5" ClipToBounds="True" Width="36" Height="36"
-                            Panel.ZIndex="2" Cursor="Hand"
+                            Panel.ZIndex="2" Cursor="Hand" RenderTransformOrigin="0.5,0.5"
                             ToolTipService.BetweenShowDelay="0"
                             ToolTipService.InitialShowDelay="0"
                             ToolTipService.Placement="Top"
@@ -150,7 +150,48 @@
                             MouseEnter="SongImageBorder_MouseEnter"
                             MouseLeave="SongImageBorder_MouseLeave"
                             MouseLeftButtonUp="SongImageBorder_MouseLeftButtonUp">
+                    <Border.RenderTransform>
+                        <!-- 悬停放大用的缩放变换：RenderTransform 不参与布局，Canvas 不会因此重排文字起点。
+                             外面包一层 TransformGroup，第二位的 SongImageSettleTranslate 身兼三职：
+                             ① 放大期间的"宿主内位移层"——驮着预夹持补偿与渲染偏移校准 E，让放大态封面仍渲染在主树原位；
+                             ② 开窗校准的落点——开窗即校准（CalibrateArtworkZoomOnShow）量出的差量在此挪正第一帧；
+                             ③ 收拢送回主树时的"落位层"——两条像素舍入管道（主树逐级 UseLayoutRounding、Popup 是独立
+                             HWND 各自舍入）的残差由 80ms 微移动画吸收，切换全程视觉连续不跳变。
+                             送回时缩放必为 1 倍，group 内先后顺序不影响结果。
+                             Scale transform for the hover zoom: a RenderTransform stays out of layout, so the Canvas never re-flows
+                             the text origin. It sits inside a TransformGroup whose second child, SongImageSettleTranslate, serves
+                             three roles: (1) the in-host shift layer while zoomed — carrying the pre-clamp compensation and the
+                             rendered-offset calibration so the enlarged cover still renders on the main-tree spot; (2) the landing
+                             point of the on-show calibration (CalibrateArtworkZoomOnShow), which corrects the first frame by the
+                             gap it measures; (3) the settle layer for the return to the main tree — the residual between the two
+                             pixel-rounding pipelines (the main tree aligns every layout hop via UseLayoutRounding, the Popup is an
+                             independent HWND rounding on its own) is absorbed by an 80 ms micro-slide, so the switch stays visually
+                             continuous. The scale is always 1× at reclaim time, so the group's child order does not affect the result. -->
+                        <TransformGroup>
+                            <ScaleTransform x:Name="SongImageScale" ScaleX="1" ScaleY="1" />
+                            <TranslateTransform x:Name="SongImageSettleTranslate" />
+                        </TransformGroup>
+                    </Border.RenderTransform>
                         <Grid>
+                            <!--
+                                暂停遮罩层：暂停时给封面盖一层不透明遮罩，读作"封面被淡化"。为什么是遮罩、而不是把封面画刷压到半透明，
+                                以及它与替身封面的同构关系，见 ApplyArtworkDimming——那里是这件事唯一的"为什么"。
+                                层级：压在封面画刷之上、占位图标之下，图标因此不被淡化（与改动前的观感一致）。颜色由 ApplyAppearanceSettings
+                                按任务栏表面的明暗给出（表面亮取白、表面暗取深；这里的白只是它跑之前的默认值）；浓度由画刷的 Opacity 承担，
+                                替身封面共用同一实例，所以浓度与颜色都自动跟随。
+                                The paused scrim: an opaque layer laid over the cover while paused, read as "the cover is dimmed". For why it is a
+                                scrim rather than a translucent cover brush, and how it relates to the stand-in cover, see ApplyArtworkDimming —
+                                the single authority on the reasoning.
+                                Z-order: above the cover brush, below the placeholder glyph, so the glyph is never dimmed (matching the
+                                pre-change look). The colour comes from ApplyAppearanceSettings per the taskbar surface (white over a light one,
+                                dark over a dark one; the white here is only the default until that runs), and the strength lives in the brush's
+                                Opacity — the stand-in cover shares that instance, so both follow by themselves.
+                            -->
+                            <Border x:Name="SongImagePauseScrim" CornerRadius="5" IsHitTestVisible="False">
+                                <Border.Background>
+                                    <SolidColorBrush x:Name="SongImagePauseScrimBrush" Color="White" Opacity="0" />
+                                </Border.Background>
+                            </Border>
                             <ui:SymbolIcon Name="SongImagePlaceholder" Symbol="MusicNote220" FontSize="24"
                                            Filled="True"
                                            Foreground="{DynamicResource AfAccentBrush}" />
@@ -160,6 +201,24 @@
                                     BorderBrush="Transparent"
                                     BorderThickness="0,1.25,0,0"
                                     IsHitTestVisible="False" />
+                            <!--
+                                悬停提示层：半透明遮罩加暂停双杠，只在播放中出现。已暂停时不再叠这一层——封面格本身就是
+                                "双杠 + 遮罩"（UpdateSongInfo 的暂停分支），再叠会与占位双杠重影。显隐与符号由
+                                AnimateArtworkHover 驱动；只有封面点击绑定为切换播放/暂停时才出现。
+                                Hover hint layer: a scrim plus the pause bars, shown only while playing. When paused this layer stays
+                                away — the slot itself already reads "bars over a scrimmed cover" (UpdateSongInfo's paused branch) and
+                                stacking another would double the glyph. AnimateArtworkHover drives its visibility and glyph; it
+                                appears only when the artwork click binding toggles playback.
+                            -->
+                            <Border x:Name="SongImageHoverHint"
+                                    CornerRadius="5"
+                                    Background="#66000000"
+                                    Opacity="0"
+                                    IsHitTestVisible="False">
+                                <ui:SymbolIcon x:Name="SongImageHoverHintIcon" Symbol="Pause24" Filled="True"
+                                               FontSize="18" Foreground="White"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
                         </Grid>
                         <Border.Background>
                             <ImageBrush x:Name="SongImage" Stretch="Uniform" />

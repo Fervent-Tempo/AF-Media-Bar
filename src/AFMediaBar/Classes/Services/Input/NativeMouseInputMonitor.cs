@@ -55,6 +55,15 @@ public sealed class NativeMouseInputMonitor : IDisposable
     public event EventHandler<TrayWheelEventArgs>? WheelChanged;
     public event EventHandler<NativeMouseButtonEventArgs>? LeftButtonPressed;
 
+    /// <summary>
+    /// 全局左键抬起（钩子线程观察到后投递到 UI 线程）。陈旧鼠标捕获存续期间 WPF 会把命中测试整体锁进捕获子树，
+    /// 主窗口的预览隧道一件事件都收不到——宿主的修复层挂在这条钩子事件上才能在「抬起」这个确定性终点仍然运行。
+    /// Global left-button release (observed on the hook thread, posted to the UI thread). While a stale mouse capture lasts, WPF
+    /// locks hit-testing inside the captured subtree and the main window's preview tunnel receives nothing at all — the host's
+    /// repair layer hooks this hook-fed event so it still runs at the deterministic endpoint of a release.
+    /// </summary>
+    public event EventHandler<NativeMouseButtonEventArgs>? LeftButtonReleased;
+
     /// <summary>鼠标左键当前是否按住（钩子线程维护的物理状态）。 / Whether the left button is currently held, as tracked by the hook thread.</summary>
     public bool IsLeftButtonDown => _isLeftButtonDown;
 
@@ -181,6 +190,9 @@ public sealed class NativeMouseInputMonitor : IDisposable
                 {
                     _isLeftButtonDown = false;
                     MarkChordWheelClickSuppression();
+                    Post(() => LeftButtonReleased?.Invoke(
+                        this,
+                        new NativeMouseButtonEventArgs(data.Point.X, data.Point.Y)));
                 }
                 else if (message == NativeMethods.WM_RBUTTONDOWN)
                 {
@@ -291,5 +303,6 @@ public sealed class NativeMouseInputMonitor : IDisposable
 
         WheelChanged = null;
         LeftButtonPressed = null;
+        LeftButtonReleased = null;
     }
 }

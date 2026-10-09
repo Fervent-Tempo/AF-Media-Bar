@@ -99,6 +99,30 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         set => UpdateExperience(_configuration.Current.TaskbarExperience with { ArtworkVisible = value });
     }
 
+    /// <summary>
+    /// 悬停封面放大模式的下拉序，与设置页 ComboBox 的项序一一对应：0=关闭（栏内 1.1× 紧凑放大）、1=原地放大、2=大图预览。
+    /// The dropdown order of the artwork hover modes, matching the settings page ComboBox item by item: 0=off (the compact 1.1×
+    /// zoom inside the bar), 1=in-place zoom, 2=large preview.
+    /// </summary>
+    public int RestArtworkHoverModeIndex
+    {
+        get => SettingsManager.Current.TaskbarExperience.ArtworkHoverMode switch
+        {
+            ArtworkHoverMode.Zoom => 1,
+            ArtworkHoverMode.Preview => 2,
+            _ => 0
+        };
+        set => UpdateExperience(SettingsManager.Current.TaskbarExperience with
+        {
+            ArtworkHoverMode = value switch
+            {
+                1 => ArtworkHoverMode.Zoom,
+                2 => ArtworkHoverMode.Preview,
+                _ => ArtworkHoverMode.Off
+            }
+        });
+    }
+
     /// <summary>静置层是否显示频谱组件。 / Whether the rest layer shows the spectrum component.</summary>
     public bool SpectrumVisible
     {
@@ -640,6 +664,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(FullPanelEntryVisible));
         OnPropertyChanged(nameof(RestProgressVisible));
         OnPropertyChanged(nameof(RestArtworkVisible));
+        OnPropertyChanged(nameof(RestArtworkHoverModeIndex));
         OnPropertyChanged(nameof(SpectrumVisible)); OnPropertyChanged(nameof(PerformanceVisible));
         OnPropertyChanged(nameof(HoverPlayPauseVisible)); OnPropertyChanged(nameof(HoverPreviousNextVisible));
         OnPropertyChanged(nameof(HoverOutputDeviceVisible)); OnPropertyChanged(nameof(HoverAudioControlVisible));
