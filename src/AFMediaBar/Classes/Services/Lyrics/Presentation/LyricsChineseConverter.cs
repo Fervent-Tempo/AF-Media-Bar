@@ -4,30 +4,15 @@ using OpenccNetLib;
 namespace AFMediaBar.Classes.Services.Lyrics;
 
 /// <summary>
-/// 歌词文本的简繁转换：按设置把**呈现**文本改写成用户想看的字形，字典一侧由 OpenCC 引擎负责。
-/// Converts lyric text between Simplified and Traditional Chinese for **presentation** only; the OpenCC engine owns the dictionary side.
-///
-/// 只改写即将送去呈现引擎的那几个字符串，从不触碰取回的歌词文档：设置一关就回到原文，
-/// 因此改变它不需要重新取词（见 <c>LyricsCacheInvalidationPolicy</c>——纯呈现设置不该重新发起网络请求）。
-/// Only the strings headed for the presentation engine are rewritten; the retrieved document is never touched. Turning the setting off
-/// brings the original text straight back, so changing it never refetches (see <c>LyricsCacheInvalidationPolicy</c>: presentation-only
-/// settings must not trigger a request).
-///
-/// 为什么不再同步等待词典加载：首次构造转换器要把内嵌词典展开（实测约 160 ms），而投影跑在 UI 线程上，
-/// 在这条线程上付这笔账会卡掉一帧。这里的做法是——转换时只使用**已经就绪**的转换器，没就绪就在后台加载并
-/// 先原样返回；投影每几百毫秒重跑一次，下一帧自然变成转换结果，界面全程不等。
-/// Why nothing waits synchronously for the dictionary: constructing the converter for the first time expands the embedded
-/// dictionary (measured at roughly 160 ms), and projection runs on the UI thread, which would drop a frame paying that cost here.
-/// So conversion only uses a converter that is **already warm**; otherwise it starts loading in the background and returns the text
-/// unchanged. Projection re-runs every few hundred milliseconds, so the very next frames carry the converted text and the interface
-/// never blocks.
+/// 按设置转换歌词呈现文本，不修改歌词文档或取词缓存。
+/// 词典在后台构造，呈现调用只读取已发布实例，未就绪时返回原文。
 /// </summary>
 public static class LyricsChineseConverter
 {
-    private static readonly object Sync = new();
+    private static readonly object _sync = new();
     private static Opencc? _simplifiedToTraditional;
     private static Opencc? _traditionalToSimplified;
-    private static bool _warmUpStarted;
+    private static int _warmUpStarted;
 
     /// <summary>
     /// 按给定方向转换一段歌词文本。
@@ -61,30 +46,20 @@ public static class LyricsChineseConverter
 
     private static Opencc? TryGetConverter(LyricsChineseConversionMode mode)
     {
-        lock (Sync)
+        return mode switch
         {
-            return mode switch
-            {
-                LyricsChineseConversionMode.SimplifiedToTraditional => _simplifiedToTraditional,
-                LyricsChineseConversionMode.TraditionalToSimplified => _traditionalToSimplified,
-                _ => null
-            };
-        }
+            LyricsChineseConversionMode.SimplifiedToTraditional => Volatile.Read(ref _simplifiedToTraditional),
+            LyricsChineseConversionMode.TraditionalToSimplified => Volatile.Read(ref _traditionalToSimplified),
+            _ => null
+        };
     }
 
     private static void RequestWarmUp()
     {
-        lock (Sync)
-        {
-            if (_warmUpStarted)
-            {
-                return;
-            }
+        if (Interlocked.CompareExchange(ref _warmUpStarted, 1, 0) != 0)
+            return;
 
-            _warmUpStarted = true;
-        }
-
-        Task.Run(() =>
+        _ = Task.Run(() =>
         {
             try
             {
@@ -111,13 +86,19 @@ public static class LyricsChineseConverter
 
     private static void TryLoad()
     {
-        // 词典在包里只存一份，构造第二个方向几乎是零成本；两个方向都备好，切换方向时不再有任何延迟。
-        // One dictionary copy ships with the package, so building the second direction costs almost nothing; preparing both means
-        // switching direction later has no delay at all.
-        lock (Sync)
+        if (Volatile.Read(ref _simplifiedToTraditional) is not null &&
+            Volatile.Read(ref _traditionalToSimplified) is not null)
+            return;
+
+        // 构造不持发布锁，呈现线程也不获取这把锁，避免首次加载阻塞 UI。
+        var simplifiedToTraditional = new Opencc(OpenccConfig.S2T);
+        var traditionalToSimplified = new Opencc(OpenccConfig.T2S);
+        lock (_sync)
         {
-            _simplifiedToTraditional ??= new Opencc(OpenccConfig.S2T);
-            _traditionalToSimplified ??= new Opencc(OpenccConfig.T2S);
+            if (_simplifiedToTraditional is null)
+                Volatile.Write(ref _simplifiedToTraditional, simplifiedToTraditional);
+            if (_traditionalToSimplified is null)
+                Volatile.Write(ref _traditionalToSimplified, traditionalToSimplified);
         }
     }
 }

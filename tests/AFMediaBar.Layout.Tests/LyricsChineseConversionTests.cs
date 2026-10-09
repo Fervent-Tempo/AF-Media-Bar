@@ -3,6 +3,7 @@ using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services.Lyrics;
 using AFMediaBar.Classes.Settings;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Reflection;
 
 namespace AFMediaBar.Layout.Tests;
 
@@ -10,7 +11,7 @@ namespace AFMediaBar.Layout.Tests;
 [DoNotParallelize]
 public sealed class LyricsChineseConversionTests
 {
-    private static readonly DateTimeOffset Now = new(2026, 9, 23, 8, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset _now = new(2026, 9, 23, 8, 0, 0, TimeSpan.Zero);
 
     // 这里同步加载转换器：生产路径由投影自身转到后台加载（见 LyricsChineseConverter.WarmUp），
     // 若测试也走那条路，断言会在词典就绪之前跑完，结果就是随机成败。
@@ -19,6 +20,38 @@ public sealed class LyricsChineseConversionTests
     // ready and would pass or fail at random.
     [TestInitialize]
     public void Initialize() => LyricsChineseConverter.LoadNow();
+
+    [TestMethod]
+    public async Task ConversionDoesNotWaitForConverterPublication()
+    {
+        // 控制初始化的发布锁，验证呈现调用不会等待后台加载或发布。
+        var sync = typeof(LyricsChineseConverter).GetField("_sync", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+        using var acquired = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        var publisher = Task.Run(() =>
+        {
+            lock (sync)
+            {
+                acquired.Set();
+                Assert.IsTrue(release.Wait(TimeSpan.FromSeconds(10)), "发布锁未及时释放。");
+            }
+        });
+        Task<string>? conversion = null;
+        try
+        {
+            Assert.IsTrue(acquired.Wait(TimeSpan.FromSeconds(5)), "后台未取得发布锁。");
+            conversion = Task.Run(() => LyricsChineseConverter.Convert(
+                "我在这里等你", LyricsChineseConversionMode.SimplifiedToTraditional));
+            Assert.AreEqual("我在這裡等你", await conversion.WaitAsync(TimeSpan.FromSeconds(2)));
+        }
+        finally
+        {
+            release.Set();
+            await publisher.WaitAsync(TimeSpan.FromSeconds(5));
+            if (conversion is not null)
+                await conversion.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+    }
 
     [TestMethod]
     public void ConversionRewritesEveryPresentedText()
@@ -76,7 +109,7 @@ public sealed class LyricsChineseConversionTests
             LyricsEnabled = true,
             TwoLineLyricsEnabled = true,
             LyricsSecondaryLine = new LyricsSecondaryLineSettings([LyricsSecondaryLineMode.NextLine])
-        }, Now);
+        }, _now);
 
         Assert.AreEqual("我在这里等你", frame.Current);
         Assert.AreEqual("Never Gonna Give You Up", frame.Next);
@@ -100,7 +133,7 @@ public sealed class LyricsChineseConversionTests
             TwoLineLyricsEnabled = true,
             LyricsSecondaryLine = new LyricsSecondaryLineSettings([secondaryLine]),
             LyricsChineseConversion = conversion
-        }, Now);
+        }, _now);
 
     private static MediaSnapshot Snapshot(IReadOnlyList<LyricLine> lines, double position) => new(
         true,
@@ -120,5 +153,5 @@ public sealed class LyricsChineseConversionTests
         false,
         MediaRepeatMode.Off,
         1,
-        Now);
+        _now);
 }
