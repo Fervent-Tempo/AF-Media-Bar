@@ -31,7 +31,7 @@
     { "id": "source-filter", "prefixes": ["settings.smtcSourceFilter"], "text": "enabled=false 不过滤；true且空列表不允许任何来源。列表Trim、忽略大小写去重并排序，使用时归一化媒体别名。", "relatedPaths": ["settings.smtcSourceFilter.enabled", "settings.smtcSourceFilter.allowedSourceIds"] },
     { "id": "quick-launch", "prefixes": ["settings.quickLaunch"], "text": "entries=null→空；空目标或代码非法Kind过滤；按Kind+Target忽略大小写去重。空Id生成GUID，空名称取文件名，SourceId空白回null。JSON非法Kind可能先回Executable。" },
     { "id": "media-source-id", "paths": ["settings.smtcSourceFilter.allowedSourceIds", "settings.quickLaunch.entries[].sourceId"], "text": "媒体ID是开放的SMTC集合。网易云SourceId=cloudmusic、选择键source:cloudmusic；cloudmusic/netease/163music别名不区分大小写，与歌词来源ID不是同一契约。" },
-    { "id": "components", "prefixes": ["settings.spectrumComponent", "settings.performanceComponent"], "text": "频谱及性能由 ResetComponents/ResetContentLayout 恢复。性能metrics空或全无效回SystemMemory；模型范围和吸附规则按所属类型核对，UI步长不保证都在Normalize吸附。" },
+    { "id": "components", "prefixes": ["settings.spectrumComponent", "settings.performanceComponent"], "text": "频谱及性能由 ResetComponents/ResetContentLayout 恢复。性能metrics空或全无效回SystemMemory；模型范围和吸附规则按所属类型核对，UI步长不保证都在Normalize吸附。 性能displayMode默认Cycle；metricOrder只决定已选指标显示顺序，轮换和并排共用；缺失或null使用原指标顺序。" },
     { "id": "notifications", "prefixes": ["settings.trackChangeNotification"], "text": "通知由媒体与通知重置；时长夹1000–10000ms。固定显示器丢失时运行回退，不清除用户选择。" },
     { "id": "update", "prefixes": ["settings.update"], "text": "跳过版本Trim、空回null、最长32字符；未来检查时间由调度按到期处理。检查记录是状态字段，没有自动下载开关。" },
     { "id": "startup", "paths": ["settings.launchAtStartup"], "text": "启动先读实际注册/Windows禁用状态同步；未知时保留意图。只有用户主动开启才允许解除禁用，失败回实际状态或上次值。" },

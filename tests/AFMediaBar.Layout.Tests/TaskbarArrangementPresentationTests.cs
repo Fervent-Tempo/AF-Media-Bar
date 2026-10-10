@@ -217,6 +217,7 @@ public sealed class TaskbarArrangementPresentationTests
                 control.ApplyTaskbarExperienceSettings();
                 var transport = (StackPanel)control.FindName("TaskbarTransportButtons");
                 Assert.AreSame(control.FindName("TaskbarPreviousButton"), transport.Children[0]);
+                AssertPerformanceLayout(control);
                 control.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent));
             }
             catch (Exception error) { failure = error; }
@@ -232,5 +233,44 @@ public sealed class TaskbarArrangementPresentationTests
         Assert.IsTrue(thread.Join(TimeSpan.FromSeconds(30)), "WPF layout did not finish");
         if (failure is not null)
             ExceptionDispatchInfo.Capture(failure).Throw();
+    }
+    private static void AssertPerformanceLayout(TaskBarMediaControl control)
+    {
+        SettingsManager.Current.PerformanceComponent = new PerformanceComponentSettings(
+            [MetricKind.SystemMemory, MetricKind.SystemCpu, MetricKind.SystemNetwork], 500, true)
+        {
+            DisplayMode = PerformanceDisplayMode.Parallel,
+            MetricOrder = [MetricKind.SystemNetwork, MetricKind.SystemCpu, MetricKind.SystemMemory]
+        };
+        SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with { PerformanceVisible = true };
+        control.ApplyTaskbarExperienceSettings();
+        control.ApplyPerformanceSnapshot(new(40, 60, null, null, 1024, 2048), 0, true);
+        var items = (StackPanel)control.FindName("TaskbarPerformanceItems");
+        var surface = (Border)control.FindName("TaskbarPerformanceSurface");
+        var cells = items.Children.Cast<TextBlock>().ToArray();
+        Assert.AreEqual(3, cells.Length);
+        Assert.IsTrue(cells.All(item => item.Visibility == Visibility.Visible));
+        Assert.IsTrue(cells[0].Text.StartsWith("↑ ") && cells[0].Text.Contains("\n↓ "));
+        Assert.IsTrue(cells[1].Text.StartsWith("CPU "));
+        Assert.IsTrue(cells[2].Text.StartsWith("MEM "));
+        var parallelWidth = surface.Width;
+        control.ApplyPerformanceSnapshot(new(80, 100, null, null, 0, 0), 2, true);
+        Assert.AreEqual(parallelWidth, surface.Width, "Changing ordinary readings must not resize the widget.");
+
+        SettingsManager.Current.PerformanceComponent = SettingsManager.Current.PerformanceComponent with { DisplayMode = PerformanceDisplayMode.Cycle };
+        control.ApplyTaskbarExperienceSettings();
+        control.ApplyPerformanceSnapshot(new(40, 60, null, null, 1024, 2048), 0, true);
+        var cycleWidth = surface.Width;
+        control.ApplyPerformanceSnapshot(new(40, 60, null, null, 1024, 2048), 1, true);
+        Assert.AreEqual(cycleWidth, surface.Width, "Cycling reserves the widest selected metric.");
+        Assert.AreEqual(1, items.Children.Cast<TextBlock>().Count(item => item.Visibility == Visibility.Visible));
+        Assert.IsTrue(items.Children.Cast<TextBlock>().Single(item => item.Visibility == Visibility.Visible).Text.StartsWith("CPU "));
+        Assert.IsTrue(cycleWidth < parallelWidth);
+
+        SettingsManager.Current.PerformanceComponent = new([MetricKind.SystemNetwork], 500, true);
+        control.ApplyTaskbarExperienceSettings();
+        Assert.AreEqual(1, items.Children.Count);
+        control.ApplyPerformanceSnapshot(default, 0, true);
+        Assert.IsTrue(((TextBlock)items.Children[0]).Text.Contains("—"));
     }
 }

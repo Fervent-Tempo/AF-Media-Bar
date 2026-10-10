@@ -1,4 +1,5 @@
 using AFMediaBar.Classes.Models;
+using System.Globalization;
 
 namespace AFMediaBar.Classes.Services;
 
@@ -28,12 +29,33 @@ public static class MetricPresentationPolicy
 
     public static string Format(MetricKind metric, SystemMetricsSnapshot snapshot) => metric switch
     {
-        MetricKind.SystemMemory => $"MEM {snapshot.SystemMemoryPercent}%",
+        MetricKind.SystemMemory => snapshot.SystemMemoryPercent is int memory ? $"MEM {memory}%" : "MEM —",
         MetricKind.SystemCpu => snapshot.SystemCpuPercent is int cpu ? $"CPU {cpu}%" : "CPU —",
         MetricKind.SystemGpu => snapshot.SystemGpuPercent is int gpu ? $"GPU {gpu}%" : "GPU —",
-        MetricKind.ProcessMemory => $"APP {snapshot.ProcessMemoryMegabytes} MB",
+        MetricKind.ProcessMemory => snapshot.ProcessMemoryMegabytes is long process ? $"APP {process} MB" : "APP —",
+        MetricKind.SystemNetwork => $"↑ {FormatRate(snapshot.NetworkUploadBytesPerSecond)}\n↓ {FormatRate(snapshot.NetworkDownloadBytesPerSecond)}",
         _ => "—"
     };
+
+    public static string FormatRate(double? bytesPerSecond)
+    {
+        if (bytesPerSecond is not double value || !double.IsFinite(value) || value < 0)
+            return "—";
+        string[] units = ["B/s", "KiB/s", "MiB/s", "GiB/s"];
+        var unit = 0;
+        while (unit < units.Length - 1 && value >= 1024)
+        {
+            value /= 1024;
+            unit++;
+        }
+        // 四舍五入跨过边界时也提升单位，避免显示 1024.0 KiB/s。
+        if (unit < units.Length - 1 && Math.Round(value, unit == 0 ? 0 : 1) >= 1024)
+        {
+            value /= 1024;
+            unit++;
+        }
+        return $"{value.ToString(unit == 0 ? "0" : "0.0", CultureInfo.CurrentCulture)} {units[unit]}";
+    }
 
     /// <summary>
     /// 根据控件最终显隐、当前租约和设置是否变化决定租约转换；普通媒体快照不得续租，避免反复重置刷新节奏。

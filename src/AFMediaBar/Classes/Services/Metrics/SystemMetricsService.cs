@@ -1,7 +1,9 @@
+// 平台性能计数器由本服务拥有；监视器串行采样，释放请求不阻塞调用线程。
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using AFMediaBar.Classes.Interop;
 using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Abstractions;
 
 namespace AFMediaBar.Classes.Services;
 
@@ -9,67 +11,154 @@ namespace AFMediaBar.Classes.Services;
 /// 采样系统内存、CPU、GPU 与当前进程内存，并复用跨周期计数器状态。
 /// Samples system and process metrics while reusing counters across sampling intervals.
 /// </summary>
-public sealed class SystemMetricsService : IDisposable
+public sealed class SystemMetricsService : IDisposable, ISystemMetricsSampler
 {
+    private readonly object _gate = new();
+    private readonly HashSet<MetricKind> _demand = [];
+    private readonly NetworkUsageSampler _network = new();
+    private int _disposed;
+    private bool _resourcesReleased;
+    private long? _gpuRetryTimestamp;
     private readonly Process _currentProcess = Process.GetCurrentProcess();
-    private ulong _previousIdle;
-    private ulong _previousKernel;
-    private ulong _previousUser;
-    private bool _hasPreviousCpuSample;
+    private readonly CpuUsagePolicy _cpu = new();
     private GpuUsageSampler? _gpuUsageSampler;
 
-    public SystemMetricsSnapshot Sample(bool includeGpu = true)
+    public void SetDemand(IReadOnlyCollection<MetricKind> metrics)
     {
-        var systemMemoryPercent = ReadSystemMemoryPercent();
-        var systemCpuPercent = ReadSystemCpuPercent();
-        var systemGpuPercent = ReadSystemGpuPercent(includeGpu);
-        _currentProcess.Refresh();
-        var processMemoryMegabytes = (long)Math.Round(
-            _currentProcess.WorkingSet64 / 1024d / 1024d);
+        lock (_gate)
+        {
+            try
+            {
+                if (Volatile.Read(ref _disposed) != 0)
+                    return;
+                if (!metrics.Contains(MetricKind.SystemCpu))
+                    ResetCpuSample();
+                if (!metrics.Contains(MetricKind.SystemGpu))
+                    ReleaseGpu();
+                if (!metrics.Contains(MetricKind.SystemNetwork))
+                    _network.Reset();
+                _demand.Clear();
+                _demand.UnionWith(metrics);
+            }
+            finally
+            {
+                if (Volatile.Read(ref _disposed) != 0)
+                    ReleaseResources();
+            }
+        }
+    }
 
-        return new SystemMetricsSnapshot(
-            systemMemoryPercent,
-            systemCpuPercent,
-            systemGpuPercent,
-            processMemoryMegabytes);
+    public SystemMetricsSnapshot Sample()
+    {
+        lock (_gate)
+        {
+            if (Volatile.Read(ref _disposed) != 0)
+            {
+                ReleaseResources();
+                return default;
+            }
+            try
+            {
+                var memory = ReadIfRequested(MetricKind.SystemMemory, ReadSystemMemoryPercent);
+                var cpu = ReadIfRequested(MetricKind.SystemCpu, ReadSystemCpuPercent);
+                var gpu = ReadIfRequested(MetricKind.SystemGpu, ReadSystemGpuPercent);
+                var process = ReadIfRequested(MetricKind.ProcessMemory, ReadProcessMemoryMegabytes);
+                (double? Upload, double? Download) network = (null, null);
+                if (_demand.Contains(MetricKind.SystemNetwork))
+                {
+                    try { network = _network.Sample(); }
+                    catch (Exception exception)
+                    {
+                        _network.Reset();
+                        AppLogService.Current?.Warn("Metrics", $"网络采样失败: {exception.Message}");
+                    }
+                }
+                return new(memory, cpu, gpu, process, network.Upload, network.Download);
+            }
+            finally
+            {
+                if (Volatile.Read(ref _disposed) != 0)
+                    ReleaseResources();
+            }
+        }
+    }
+
+    private T? ReadIfRequested<T>(MetricKind metric, Func<T?> read) where T : struct
+    {
+        if (!_demand.Contains(metric))
+            return null;
+        try { return read(); }
+        catch (Exception exception)
+        {
+            if (metric == MetricKind.SystemGpu)
+            {
+                ReleaseGpu();
+                _gpuRetryTimestamp = Stopwatch.GetTimestamp();
+            }
+            if (metric == MetricKind.SystemCpu)
+                ResetCpuSample();
+            AppLogService.Current?.Warn("Metrics", $"{metric} 采样失败: {exception.Message}");
+            return null;
+        }
+    }
+
+    private long? ReadProcessMemoryMegabytes()
+    {
+        _currentProcess.Refresh();
+        return (long)Math.Round(_currentProcess.WorkingSet64 / 1024d / 1024d);
+    }
+
+    public void Reset()
+    {
+        lock (_gate)
+        {
+            ResetCpuSample();
+            ReleaseGpu();
+            _network.Reset();
+            if (Volatile.Read(ref _disposed) != 0)
+                ReleaseResources();
+        }
     }
 
     private int? ResetCpuSample()
     {
-        _hasPreviousCpuSample = false;
+        _cpu.Reset();
         return null;
     }
 
-    private int? ReadSystemGpuPercent(bool includeGpu)
+    private int? ReadSystemGpuPercent()
     {
-        if (!includeGpu)
-        {
-            // PDH 查询持有原生句柄和非托管缓冲区，禁用 GPU 指标时立即释放。
-            // PDH owns native handles and buffers; release them as soon as GPU metrics stop.
-            _gpuUsageSampler?.Dispose();
-            _gpuUsageSampler = null;
+        if (_gpuRetryTimestamp is long retry && Stopwatch.GetElapsedTime(retry).TotalSeconds < 5)
             return null;
-        }
-
+        _gpuRetryTimestamp = null;
         _gpuUsageSampler ??= new GpuUsageSampler();
-        return _gpuUsageSampler.Sample();
+        var value = _gpuUsageSampler.Sample();
+        if (_gpuUsageSampler.IsFailed)
+        {
+            ReleaseGpu();
+            _gpuRetryTimestamp = Stopwatch.GetTimestamp();
+        }
+        return value;
     }
 
     /// <summary>在没有消费者请求 GPU 时立即释放 PDH 查询。 / Releases the PDH GPU query when no consumer requests it.</summary>
-    public void ReleaseGpu()
+    private void ReleaseGpu()
     {
         _gpuUsageSampler?.Dispose();
         _gpuUsageSampler = null;
+        _gpuRetryTimestamp = null;
     }
 
-    private static int ReadSystemMemoryPercent()
+    private static int? ReadSystemMemoryPercent()
     {
         var status = NativeMethods.MemoryStatusEx.Create();
         if (!NativeMethods.GlobalMemoryStatusEx(ref status) || status.TotalPhysical == 0)
         {
-            return 0;
+            return null;
         }
 
+        if (status.AvailablePhysical > status.TotalPhysical)
+            return null;
         var used = status.TotalPhysical - status.AvailablePhysical;
         return (int)Math.Clamp(Math.Round(used * 100d / status.TotalPhysical), 0, 100);
     }
@@ -78,42 +167,30 @@ public sealed class SystemMetricsService : IDisposable
     {
         if (!NativeMethods.GetSystemTimes(out var idle, out var kernel, out var user))
         {
-            return null;
+            return ResetCpuSample();
         }
 
-        var currentIdle = idle.ToUInt64();
-        var currentKernel = kernel.ToUInt64();
-        var currentUser = user.ToUInt64();
-
-        if (!_hasPreviousCpuSample)
-        {
-            _previousIdle = currentIdle;
-            _previousKernel = currentKernel;
-            _previousUser = currentUser;
-            _hasPreviousCpuSample = true;
-            return null;
-        }
-
-        var idleDelta = currentIdle - _previousIdle;
-        var kernelDelta = currentKernel - _previousKernel;
-        var userDelta = currentUser - _previousUser;
-        var totalDelta = kernelDelta + userDelta;
-
-        _previousIdle = currentIdle;
-        _previousKernel = currentKernel;
-        _previousUser = currentUser;
-
-        if (totalDelta == 0)
-        {
-            return 0;
-        }
-
-        return (int)Math.Clamp(Math.Round((totalDelta - idleDelta) * 100d / totalDelta), 0, 100);
+        return _cpu.Sample(idle.ToUInt64(), kernel.ToUInt64(), user.ToUInt64());
     }
 
     public void Dispose()
     {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            return;
+        // 容器停止超时时也不在 UI 线程等待采样；正在运行的 Sample 会在 finally 释放。
+        if (!Monitor.TryEnter(_gate))
+            return;
+        try { ReleaseResources(); }
+        finally { Monitor.Exit(_gate); }
+    }
+
+    private void ReleaseResources()
+    {
+        if (_resourcesReleased)
+            return;
+        _resourcesReleased = true;
         ReleaseGpu();
+        _network.Reset();
         _currentProcess.Dispose();
     }
 
@@ -131,6 +208,7 @@ public sealed class SystemMetricsService : IDisposable
         private nint _buffer;
         private uint _bufferCapacity;
         private bool _hasBaseline;
+        public bool IsFailed { get; private set; }
 
         internal GpuUsageSampler()
         {
@@ -160,6 +238,7 @@ public sealed class SystemMetricsService : IDisposable
             if (_query == nint.Zero ||
                 NativeMethods.PdhCollectQueryData(_query) != NativeMethods.ErrorSuccess)
             {
+                IsFailed = true;
                 return null;
             }
 
@@ -179,6 +258,7 @@ public sealed class SystemMetricsService : IDisposable
                 nint.Zero);
             if (status != NativeMethods.PdhMoreData || bufferSize == 0 || itemCount == 0)
             {
+                IsFailed = true;
                 return null;
             }
 
@@ -192,6 +272,7 @@ public sealed class SystemMetricsService : IDisposable
                 _buffer);
             if (status != NativeMethods.ErrorSuccess)
             {
+                IsFailed = true;
                 return null;
             }
 
@@ -207,6 +288,8 @@ public sealed class SystemMetricsService : IDisposable
                 {
                     continue;
                 }
+                if (item.Name == nint.Zero || !double.IsFinite(item.Value.DoubleValue))
+                    continue;
 
                 var key = GetEngineKey(item.Name);
                 _engineTotals.TryGetValue(key, out var total);
@@ -229,12 +312,14 @@ public sealed class SystemMetricsService : IDisposable
                 return;
             }
 
+            // 先分配新缓冲区；分配失败时旧地址仍有效，随后清理不会重复释放旧地址。
+            var buffer = Marshal.AllocHGlobal(checked((int)requiredCapacity));
             if (_buffer != nint.Zero)
             {
                 Marshal.FreeHGlobal(_buffer);
             }
 
-            _buffer = Marshal.AllocHGlobal(checked((int)requiredCapacity));
+            _buffer = buffer;
             _bufferCapacity = requiredCapacity;
         }
 

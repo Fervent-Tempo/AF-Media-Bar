@@ -1787,7 +1787,7 @@ public partial class TaskbarWindow : Window
 
     private void SynchronizeMetricsSubscription(PerformanceComponentSettings performance)
     {
-        var metrics = (performance.Metrics ?? [MetricKind.SystemMemory]).Distinct().ToArray();
+        var metrics = performance.GetOrderedMetrics().ToArray();
         var interval = TimeSpan.FromMilliseconds(performance.RefreshIntervalMilliseconds);
         var shouldSubscribe = !_isClosing && !_isEnvironmentSuspended && !IsBackgroundPruned &&
                               !IsTaskbarPresentationSuspended && MediaControl.IsPerformanceComponentVisible;
@@ -1826,13 +1826,13 @@ public partial class TaskbarWindow : Window
             IsTaskbarPresentationSuspended)
             return;
         var settings = SettingsManager.Current.PerformanceComponent.Normalize();
-        var metrics = settings.Metrics ?? [MetricKind.SystemMemory];
+        var metrics = settings.GetOrderedMetrics();
         if (metrics.Count == 0)
             return;
         _metricCycleIndex = Math.Clamp(_metricCycleIndex, 0, metrics.Count - 1);
         _metricSampleCount++;
         _metricCycleIndex = MetricPresentationPolicy.Advance(_metricCycleIndex, _metricSampleCount, metrics.Count);
-        MediaControl.ApplyPerformanceText(MetricPresentationPolicy.Format(metrics[_metricCycleIndex], snapshot),
+        MediaControl.ApplyPerformanceSnapshot(snapshot, _metricCycleIndex,
             settings.OpenTaskManagerOnClick);
         _foregroundSamplingSession.RequestRefresh();
     }

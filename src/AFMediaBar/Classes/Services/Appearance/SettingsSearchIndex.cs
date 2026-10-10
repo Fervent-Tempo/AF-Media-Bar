@@ -184,7 +184,7 @@ public static class SettingsSearchIndex
             "Common.RestLayer",
             "Search.DisplayModes.RestLayer.Description",
             language,
-            ["静置", "静置层", "靜置層", "常驻", "常驻状态", "常駐狀態", "rest", "rest layer", "always-on view", "进度", "播放进度", "progress", "设备按钮", "输出设备", "音量按钮", "没有媒体", "无媒体", "空闲", "idle", "隐藏", "保留组件", "小音符", "组件设置", "components", "频谱", "spectrum", "柱数", "刷新率", "灵敏度", "性能", "performance", "内存", "cpu", "gpu", "任务管理器", "波形", "像素", "上下对称", "采样间隔", "刷新间隔", "顺序", "排序", "order", "组件", "上移", "下移", "封面放大", "artwork zoom"]),
+            ["静置", "静置层", "靜置層", "常驻", "常驻状态", "常駐狀態", "rest", "rest layer", "always-on view", "进度", "播放进度", "progress", "设备按钮", "输出设备", "音量按钮", "没有媒体", "无媒体", "空闲", "idle", "隐藏", "保留组件", "小音符", "组件设置", "components", "频谱", "spectrum", "柱数", "刷新率", "灵敏度", "性能", "performance", "网速", "网络速率", "網路速率", "上传", "下载", "轮换", "並排", "并排", "network", "upload", "download", "cycle", "side by side", "tốc độ mạng", "luân phiên", "cạnh nhau", "内存", "cpu", "gpu", "任务管理器", "波形", "像素", "上下对称", "采样间隔", "刷新间隔", "顺序", "排序", "order", "组件", "上移", "下移", "封面放大", "artwork zoom"]),
         Create(
             SettingsPageKey.Components,
             "Common.HoverLayer",

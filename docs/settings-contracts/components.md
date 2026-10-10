@@ -8,13 +8,15 @@
 
 ## 关联规则
 
-- 频谱及性能由 ResetComponents/ResetContentLayout 恢复。性能metrics空或全无效回SystemMemory；模型范围和吸附规则按所属类型核对，UI步长不保证都在Normalize吸附。
+- 频谱及性能由 ResetComponents/ResetContentLayout 恢复。性能metrics空或全无效回SystemMemory；模型范围和吸附规则按所属类型核对，UI步长不保证都在Normalize吸附。 性能displayMode默认Cycle；metricOrder只决定已选指标显示顺序，轮换和并排共用；缺失或null使用原指标顺序。
 
 ## 字段
 
 | JSON路径 | 类型 | 默认 | 缺失后值 | null读取 | 首次发布 |
 |---|---|---|---|---|---|
 | `settings.performanceComponent` | `PerformanceComponentSettings` | 对象，见子字段 | 对象，查询-Details | "读取失败：JsonException" | v1.2.0 |
+| `settings.performanceComponent.displayMode` | `PerformanceDisplayMode` | "Cycle" | "Cycle" | "Cycle" | **未发布** |
+| `settings.performanceComponent.metricOrder` | `IReadOnlyList<MetricKind>?` | null | null | null | **未发布** |
 | `settings.performanceComponent.metrics` | `IReadOnlyList<MetricKind>?` | ["SystemMemory"] | ["SystemMemory"] | ["SystemMemory"] | v1.2.0 |
 | `settings.performanceComponent.openTaskManagerOnClick` | `bool` | true | false | "读取失败：JsonException" | v1.2.0 |
 | `settings.performanceComponent.refreshIntervalMilliseconds` | `int` | 2500 | 500 | "读取失败：JsonException" | v1.2.0 |
@@ -29,6 +31,15 @@
 
 JSON无效项先采用类型回退，再归一化；成员发布状态独立于字段。
 
+### PerformanceDisplayMode
+
+JSON无效输入回退：Cycle。
+
+| 名称 | 数值 | 首次发布 |
+|---|---|---|
+| `Cycle` | 0 | **未发布** |
+| `Parallel` | 1 | **未发布** |
+
 ### MetricKind
 
 JSON无效输入回退：SystemMemory。
@@ -39,6 +50,7 @@ JSON无效输入回退：SystemMemory。
 | `SystemCpu` | 1 | v1.2.0 |
 | `SystemGpu` | 2 | v1.2.0 |
 | `ProcessMemory` | 3 | v1.2.0 |
+| `SystemNetwork` | 4 | **未发布** |
 
 ### SpectrumStyle
 

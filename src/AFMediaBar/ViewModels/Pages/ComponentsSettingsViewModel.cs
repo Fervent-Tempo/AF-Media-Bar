@@ -7,6 +7,7 @@ using AFMediaBar.Classes.Services.Localization;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Utils;
 using AFMediaBar.Resources;
+using CommunityToolkit.Mvvm.Input;
 
 namespace AFMediaBar.ViewModels.Pages;
 
@@ -25,6 +26,8 @@ public sealed class ComponentsSettingsViewModel : ObservableObject, IDisposable
     public ComponentsSettingsViewModel(ISettingsConfiguration configuration, LocalizationService localization)
     {
         _configuration = configuration;
+        MoveMetricUpCommand = new RelayCommand<PerformanceMetricSettingItem>(item => MoveMetric(item, -1));
+        MoveMetricDownCommand = new RelayCommand<PerformanceMetricSettingItem>(item => MoveMetric(item, 1));
         configuration.Activated += OnActivated;
         _localization = localization;
         SettingsManager.SettingsChanged += OnSettingsChanged;
@@ -148,6 +151,51 @@ public sealed class ComponentsSettingsViewModel : ObservableObject, IDisposable
     public bool ShowSystemCpu { get => HasMetric(MetricKind.SystemCpu); set => SetMetric(MetricKind.SystemCpu, value); }
     public bool ShowSystemGpu { get => HasMetric(MetricKind.SystemGpu); set => SetMetric(MetricKind.SystemGpu, value); }
     public bool ShowProcessMemory { get => HasMetric(MetricKind.ProcessMemory); set => SetMetric(MetricKind.ProcessMemory, value); }
+    public bool ShowSystemNetwork { get => HasMetric(MetricKind.SystemNetwork); set => SetMetric(MetricKind.SystemNetwork, value); }
+
+    public PerformanceDisplayMode PerformanceMode
+    {
+        get => _configuration.Current.PerformanceComponent.DisplayMode;
+        set
+        {
+            _configuration.SetPerformance(_configuration.Current.PerformanceComponent with { DisplayMode = value });
+            OnPropertyChanged();
+        }
+    }
+
+    public IRelayCommand<PerformanceMetricSettingItem> MoveMetricUpCommand { get; }
+    public IRelayCommand<PerformanceMetricSettingItem> MoveMetricDownCommand { get; }
+
+    public IReadOnlyList<PerformanceMetricSettingItem> MetricOrderEntries
+    {
+        get
+        {
+            var metrics = _configuration.Current.PerformanceComponent.Normalize().GetOrderedMetrics();
+            return metrics.Select((metric, index) => new PerformanceMetricSettingItem(metric, metric switch
+            {
+                MetricKind.SystemMemory => Translations.Get("Media.Metric.SystemMemory.Title"),
+                MetricKind.ProcessMemory => Translations.Get("Media.Metric.ProcessMemory.Title"),
+                MetricKind.SystemNetwork => Translations.Get("Media.Metric.SystemNetwork.Title"),
+                MetricKind.SystemGpu => "GPU",
+                _ => "CPU"
+            }, index > 0, index < metrics.Count - 1)).ToArray();
+        }
+    }
+
+    private void MoveMetric(PerformanceMetricSettingItem? item, int offset)
+    {
+        if (item is null || _disposed || !_configuration.IsActive)
+            return;
+        var settings = _configuration.Current.PerformanceComponent.Normalize();
+        var order = settings.GetOrderedMetrics().ToList();
+        var index = order.IndexOf(item.Metric);
+        var target = index + offset;
+        if (index < 0 || target < 0 || target >= order.Count)
+            return;
+        (order[index], order[target]) = (order[target], order[index]);
+        _configuration.SetPerformance(settings with { MetricOrder = order });
+        OnPropertyChanged(nameof(MetricOrderEntries));
+    }
 
     /// <summary>
     /// 该指标当前能否取消勾选。性能组件至少需要一个指标，因此最后一个勾选项的复选框必须禁用；
@@ -166,6 +214,7 @@ public sealed class ComponentsSettingsViewModel : ObservableObject, IDisposable
 
     /// <inheritdoc cref="CanUncheckSystemMemory" />
     public bool CanUncheckProcessMemory => CanUncheck(MetricKind.ProcessMemory);
+    public bool CanUncheckSystemNetwork => CanUncheck(MetricKind.SystemNetwork);
 
     /// <summary>
     /// 频谱组件是否显示在静置层。它和参数放在同一页，这样“这个组件要不要用”和“它怎么表现”
@@ -210,9 +259,12 @@ public sealed class ComponentsSettingsViewModel : ObservableObject, IDisposable
     private void SetMetric(MetricKind metric, bool enabled)
     {
         var metrics = _configuration.Current.PerformanceComponent.Metrics!.ToList();
+        var order = _configuration.Current.PerformanceComponent.GetOrderedMetrics().ToList();
         if (enabled && !metrics.Contains(metric)) metrics.Add(metric);
         if (!enabled && metrics.Count > 1) metrics.Remove(metric);
-        _configuration.SetPerformance(_configuration.Current.PerformanceComponent with { Metrics = metrics });
+        order.RemoveAll(metric => !metrics.Contains(metric));
+        order.AddRange(metrics.Where(metric => !order.Contains(metric)));
+        _configuration.SetPerformance(_configuration.Current.PerformanceComponent with { Metrics = metrics, MetricOrder = order });
         RaiseMetricProperties();
     }
 
@@ -222,10 +274,13 @@ public sealed class ComponentsSettingsViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ShowSystemCpu));
         OnPropertyChanged(nameof(ShowSystemGpu));
         OnPropertyChanged(nameof(ShowProcessMemory));
+        OnPropertyChanged(nameof(ShowSystemNetwork));
+        OnPropertyChanged(nameof(MetricOrderEntries));
         OnPropertyChanged(nameof(CanUncheckSystemMemory));
         OnPropertyChanged(nameof(CanUncheckSystemCpu));
         OnPropertyChanged(nameof(CanUncheckSystemGpu));
         OnPropertyChanged(nameof(CanUncheckProcessMemory));
+        OnPropertyChanged(nameof(CanUncheckSystemNetwork));
     }
     /// <summary>Restores only spectrum and performance defaults through the existing reset contract.</summary>
     public void ResetComponents() { if (!_disposed && _configuration.IsActive) SettingsManager.ResetComponents(); }

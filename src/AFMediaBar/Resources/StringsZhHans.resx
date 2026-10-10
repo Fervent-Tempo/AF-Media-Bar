@@ -2489,4 +2489,31 @@
   <data name="Lyrics.Recovery.RestartReason" xml:space="preserve">
     <value>歌词显示已暂停。重启 AF Media Bar 可尝试恢复歌词，其他功能仍可继续使用。是否现在重启？</value>
   </data>
+  <data name="Media.Metric.SystemNetwork.Title" xml:space="preserve">
+    <value>网络速率</value>
+  </data>
+  <data name="Media.Metric.SystemNetwork.Description" xml:space="preserve">
+    <value>显示已连接物理网卡的上传和下载速率。</value>
+  </data>
+  <data name="Media.Performance.DisplayMode.Title" xml:space="preserve">
+    <value>显示方式</value>
+  </data>
+  <data name="Media.Performance.DisplayMode.Description" xml:space="preserve">
+    <value>轮换显示单个指标，或并排显示全部已选指标。</value>
+  </data>
+  <data name="Media.Performance.DisplayMode.Cycle" xml:space="preserve">
+    <value>轮换显示</value>
+  </data>
+  <data name="Media.Performance.DisplayMode.Parallel" xml:space="preserve">
+    <value>并排显示</value>
+  </data>
+  <data name="Media.Performance.Order.Description" xml:space="preserve">
+    <value>使用上下按钮调整已选指标顺序；两种显示方式共用顺序，至少保留一个指标。</value>
+  </data>
+  <data name="Panel.Performance.Upload" xml:space="preserve">
+    <value>上传</value>
+  </data>
+  <data name="Panel.Performance.Download" xml:space="preserve">
+    <value>下载</value>
+  </data>
 </root>

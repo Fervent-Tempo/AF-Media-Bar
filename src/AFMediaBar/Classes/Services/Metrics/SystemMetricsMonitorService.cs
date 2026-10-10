@@ -1,192 +1,256 @@
+// 一个后台循环拥有采样和资源重置；租约状态受锁保护，UI 回调另行检查代际和释放状态。
+using System.Diagnostics;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
+using Microsoft.Extensions.Hosting;
 
 namespace AFMediaBar.Classes.Services;
 
-/// <summary>在多个可见表面之间合并性能采样计时和 GPU 需求。 / Coalesces metric sampling and GPU demand across visible surfaces.</summary>
-public sealed class SystemMetricsMonitorService : IDisposable, IMemoryPrunable
+/// <summary>在多个可见表面之间共享按需采样，停止时等待后台资源清理。</summary>
+public sealed class SystemMetricsMonitorService : IDisposable, IMemoryPrunable, IHostedService
 {
-    /// <summary>
-    /// 空闲档位的采样间隔倍数。性能文字是给人看的，而空闲意味着没有媒体、也没有人操作：把采样放慢四倍仍然看得出趋势，
-    /// 而 PDH 查询（含 GPU 计数器）的开销直接降到四分之一。
-    /// The sampling-interval multiplier at the idle level. Performance text is meant for a person, and idle means no media and no user input: sampling
-    /// four times slower still shows the trend, while the cost of the PDH queries, GPU counters included, drops to a quarter.
-    /// </summary>
     private const double IdleIntervalScale = 4d;
-
-    private readonly SystemMetricsService _sampler;
-    private readonly DispatcherTimer _timer = new();
+    private readonly ISystemMetricsSampler _sampler;
+    private readonly Dispatcher _dispatcher;
+    private readonly object _gate = new();
     private readonly List<Subscription> _subscriptions = [];
-    private readonly object _samplerGate = new();
+    private readonly Dictionary<Subscription, (int Generation, SystemMetricsSnapshot Snapshot)> _pending = [];
+    private bool _publicationQueued;
+    private readonly SemaphoreSlim _wake = new(0, 1);
+    private Task? _worker;
     private double _intervalScale = 1d;
-    private bool _sampleInFlight;
     private bool _paused;
     private bool _disposed;
+    private int _generation;
+    private bool _resetRequired;
 
-    public SystemMetricsMonitorService(SystemMetricsService sampler)
+    public SystemMetricsMonitorService(ISystemMetricsSampler sampler)
     {
         _sampler = sampler;
-        _timer.Tick += OnTick;
+        _dispatcher = Dispatcher.CurrentDispatcher;
     }
 
-    /// <summary>参与者名称，只用于诊断。/ Participant name, used for diagnostics only.</summary>
     public string PruneParticipantName => "metrics-monitor";
 
-    /// <summary>
-    /// 按档位放慢采样或停掉整个采样计时器并释放 GPU 计数器。
-    /// Slows sampling down for the level, or stops the whole sampling timer and releases the GPU counters.
-    ///
-    /// 订阅关系本身不动：消费者手里那个 <see cref="IDisposable"/> 仍然有效，恢复后继续收到回调。剪枝期间只是没人报警，
-    /// 而不是"订阅被悄悄取消"。
-    /// The subscriptions themselves stay untouched: the <see cref="IDisposable"/> a consumer holds keeps working and receives callbacks again after the
-    /// restore. While pruned it simply goes quiet, rather than having its subscription silently cancelled.
-    /// </summary>
-    /// <param name="level">目标档位。/ The target level.</param>
+    public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    public async Task StopAsync(CancellationToken cancellationToken)
+    {
+        Dispose();
+        Task? worker;
+        lock (_gate)
+            worker = _worker;
+        if (worker is not null)
+            await worker.WaitAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     public void Prune(MemoryPruneLevel level)
     {
-        if (_disposed)
+        lock (_gate)
         {
-            return;
+            if (_disposed)
+                return;
+            var paused = level >= MemoryPruneLevel.DisplayOff;
+            if (paused != _paused)
+            {
+                _resetRequired = true;
+                foreach (var item in _subscriptions)
+                    item.LastSampleTimestamp = null;
+            }
+            _paused = paused;
+            _intervalScale = level == MemoryPruneLevel.Idle ? IdleIntervalScale : 1d;
+            Changed();
         }
-
-        if (level >= MemoryPruneLevel.DisplayOff)
-        {
-            _paused = true;
-            _timer.Stop();
-            ReleaseGpuInBackground();
-            return;
-        }
-
-        _paused = false;
-        _intervalScale = level == MemoryPruneLevel.Idle ? IdleIntervalScale : 1d;
-        ReconfigureTimer();
     }
 
     public IDisposable Subscribe(IReadOnlyCollection<MetricKind> metrics, TimeSpan interval, Action<SystemMetricsSnapshot> callback)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        var subscription = new Subscription(this, metrics.Distinct().ToArray(),
-            TimeSpan.FromMilliseconds(Math.Clamp(interval.TotalMilliseconds, 250, 60000)), callback);
-        _subscriptions.Add(subscription);
-        ReconfigureTimer();
-        SampleDue(force: subscription);
-        return subscription;
+        lock (_gate)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            var subscription = new Subscription(this, metrics.Where(Enum.IsDefined).Distinct().ToArray(),
+                TimeSpan.FromMilliseconds(Math.Clamp(interval.TotalMilliseconds, 250, 60000)), callback);
+            _subscriptions.Add(subscription);
+            _worker ??= Task.Run(WorkerAsync);
+            Changed();
+            return subscription;
+        }
     }
 
-    private void OnTick(object? sender, EventArgs e) => SampleDue();
-
-    private void SampleDue(Subscription? force = null)
+    // 仅在 _gate 内调用；信号合并后仍由代际保证循环能看见最新状态。
+    private void Changed()
     {
-        if (_disposed || _paused || _sampleInFlight || _subscriptions.Count == 0) return;
-        var now = DateTime.UtcNow;
-        var due = _subscriptions.Where(item => ReferenceEquals(item, force) || item.NextDueUtc <= now).ToArray();
-        if (due.Length == 0) return;
-        var includeGpu = _subscriptions.Any(item => !item.IsDisposed && item.Metrics.Contains(MetricKind.SystemGpu));
-        _sampleInFlight = true;
-        _ = Task.Run(() =>
-        {
-            SystemMetricsSnapshot? snapshot = null;
-            Exception? failure = null;
-            try
-            {
-                lock (_samplerGate)
-                    snapshot = _sampler.Sample(includeGpu);
-            }
-            catch (Exception exception)
-            {
-                failure = exception;
-            }
-
-            _timer.Dispatcher.BeginInvoke(() => CompleteSample(due, snapshot, failure));
-        });
-    }
-
-    private void CompleteSample(Subscription[] due, SystemMetricsSnapshot? snapshot, Exception? failure)
-    {
-        _sampleInFlight = false;
-        if (_disposed || _paused) return;
-        if (failure is not null)
-        {
-            AppLogService.Current?.Warn("Metrics", $"性能采样失败: {failure.Message}");
-            return;
-        }
-
-        if (snapshot is null) return;
-        var now = DateTime.UtcNow;
-        foreach (var item in due)
-        {
-            // 前一个回调可能同步关闭另一个显示器宿主；快照里的已释放订阅绝不能再回调旧控件。
-            // A preceding callback may synchronously close another monitor host; a disposed subscription captured in this snapshot must not reach stale UI.
-            if (item.IsDisposed)
-                continue;
-
-            item.NextDueUtc = now + item.Interval;
-            try
-            {
-                item.Callback(snapshot.Value);
-            }
-            catch (Exception exception)
-            {
-                // 一个显示器上的控件失效不能中断其余订阅者或 DispatcherTimer；记录后让下一项继续。
-                // A stale control on one monitor must not interrupt other subscribers or the DispatcherTimer; log it and continue.
-                AppLogService.Current?.Warn(
-                    "Metrics",
-                    $"性能采样订阅回调失败: {exception.Message}");
-            }
-        }
+        _generation++;
+        _pending.Clear();
+        if (_wake.CurrentCount == 0)
+            _wake.Release();
     }
 
     private void Remove(Subscription subscription)
     {
-        _subscriptions.Remove(subscription);
-        ReconfigureTimer();
-        if (_subscriptions.All(item => !item.Metrics.Contains(MetricKind.SystemGpu)))
-            ReleaseGpuInBackground();
+        lock (_gate)
+        {
+            _subscriptions.Remove(subscription);
+            if (_subscriptions.Count == 0)
+                _resetRequired = true;
+            Changed();
+        }
     }
 
-    private void ReleaseGpuInBackground() => _ = Task.Run(() =>
+    private async Task WorkerAsync()
     {
-        lock (_samplerGate)
-            _sampler.ReleaseGpu();
-    });
+        try
+        {
+            while (true)
+            {
+                MetricKind[] demand;
+                Subscription[] due;
+                int generation;
+                bool reset;
+                TimeSpan delay;
+                lock (_gate)
+                {
+                    if (_disposed)
+                        return;
+                    generation = _generation;
+                    reset = _resetRequired;
+                    _resetRequired = false;
+                    demand = _paused ? [] : _subscriptions.SelectMany(item => item.Metrics).Distinct().ToArray();
+                    var now = Stopwatch.GetTimestamp();
+                    due = _paused ? [] : _subscriptions.Where(item => Remaining(item, now) <= TimeSpan.Zero).ToArray();
+                    delay = _paused || _subscriptions.Count == 0 ? Timeout.InfiniteTimeSpan :
+                        _subscriptions.Min(item => Remaining(item, now));
+                }
 
-    private void ReconfigureTimer()
+                if (reset)
+                    _sampler.Reset();
+                _sampler.SetDemand(demand);
+                if (due.Length > 0)
+                {
+                    SystemMetricsSnapshot? snapshot = null;
+                    try
+                    {
+                        snapshot = _sampler.Sample();
+                    }
+                    catch (Exception exception)
+                    {
+                        AppLogService.Current?.Warn("Metrics", $"性能采样失败: {exception.Message}");
+                    }
+
+                    lock (_gate)
+                    {
+                        if (_disposed || _paused || generation != _generation)
+                            continue;
+                        var timestamp = Stopwatch.GetTimestamp();
+                        foreach (var item in due)
+                            item.LastSampleTimestamp = timestamp;
+                    }
+                    if (snapshot is { } value)
+                        QueuePublication(generation, due, value);
+                    continue;
+                }
+
+                await _wake.WaitAsync(delay < TimeSpan.Zero && delay != Timeout.InfiniteTimeSpan ? TimeSpan.Zero : delay)
+                    .ConfigureAwait(false);
+            }
+        }
+        catch (Exception exception)
+        {
+            AppLogService.Current?.Warn("Metrics", $"性能监视器停止: {exception.Message}");
+        }
+        finally
+        {
+            // 不等待 Dispatcher；Host.StopAsync 即使由退出边界调用也能完成。
+            try
+            {
+                _sampler.SetDemand([]);
+                _sampler.Reset();
+            }
+            catch (Exception exception)
+            {
+                AppLogService.Current?.Warn("Metrics", $"性能资源清理失败: {exception.Message}");
+            }
+        }
+    }
+
+    private TimeSpan Remaining(Subscription item, long now) => item.LastSampleTimestamp is long last
+        ? TimeSpan.FromMilliseconds(item.Interval.TotalMilliseconds * _intervalScale) - Stopwatch.GetElapsedTime(last, now)
+        : TimeSpan.Zero;
+
+    private void QueuePublication(int generation, Subscription[] due, SystemMetricsSnapshot snapshot)
     {
-        _timer.Stop();
-        if (_subscriptions.Count == 0) return;
-        var baseInterval = _subscriptions.Min(item => item.Interval.TotalMilliseconds);
-        _timer.Interval = TimeSpan.FromMilliseconds(baseInterval * _intervalScale);
-        _timer.Start();
+        lock (_gate)
+        {
+            if (_disposed || _paused || generation != _generation || _dispatcher.HasShutdownStarted)
+                return;
+            foreach (var item in due.Where(item => !item.IsDisposed))
+                _pending[item] = (generation, snapshot);
+            if (_publicationQueued)
+                return;
+            _publicationQueued = true;
+        }
+        // Dispatcher 堵塞时每个租约只保留最新结果，避免恢复后回放大量过期读数。
+        _ = _dispatcher.BeginInvoke(PublishPending);
+    }
+
+    private void PublishPending()
+    {
+        KeyValuePair<Subscription, (int Generation, SystemMetricsSnapshot Snapshot)>[] pending;
+        lock (_gate)
+        {
+            pending = _pending.ToArray();
+            _pending.Clear();
+            _publicationQueued = false;
+        }
+        foreach (var entry in pending)
+        {
+            var item = entry.Key;
+            lock (_gate)
+            {
+                if (_disposed || _paused || entry.Value.Generation != _generation)
+                    return;
+                if (item.IsDisposed)
+                    continue;
+            }
+            try
+            {
+                item.Callback(entry.Value.Snapshot);
+            }
+            catch (Exception exception)
+            {
+                AppLogService.Current?.Warn("Metrics", $"性能采样订阅回调失败: {exception.Message}");
+            }
+        }
     }
 
     public void Dispose()
     {
-        if (_disposed) return;
-        _disposed = true;
-        _timer.Stop();
-        _timer.Tick -= OnTick;
-        _subscriptions.Clear();
-        ReleaseGpuInBackground();
+        lock (_gate)
+        {
+            if (_disposed)
+                return;
+            _disposed = true;
+            _subscriptions.Clear();
+            Changed();
+        }
+        // 未创建 WaitHandle；晚到的租约释放仍可唤醒循环，不依赖已停止的 Dispatcher。
     }
 
-    private sealed class Subscription(
-        SystemMetricsMonitorService owner,
-        MetricKind[] metrics,
-        TimeSpan interval,
-        Action<SystemMetricsSnapshot> callback) : IDisposable
+    private sealed class Subscription(SystemMetricsMonitorService owner, MetricKind[] metrics,
+        TimeSpan interval, Action<SystemMetricsSnapshot> callback) : IDisposable
     {
         public MetricKind[] Metrics { get; } = metrics;
         public TimeSpan Interval { get; } = interval;
         public Action<SystemMetricsSnapshot> Callback { get; } = callback;
-        public DateTime NextDueUtc { get; set; }
-        private bool _disposed;
-        public bool IsDisposed => _disposed;
+        public long? LastSampleTimestamp { get; set; }
+        private int _disposed;
+        public bool IsDisposed => Volatile.Read(ref _disposed) != 0;
+
         public void Dispose()
         {
-            if (_disposed) return;
-            _disposed = true;
-            owner.Remove(this);
+            if (Interlocked.Exchange(ref _disposed, 1) == 0)
+                owner.Remove(this);
         }
     }
 }

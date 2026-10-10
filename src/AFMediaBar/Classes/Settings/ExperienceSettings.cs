@@ -308,12 +308,31 @@ public readonly record struct SpectrumComponentSettings(int BandCount, int Refre
     }
 }
 
+/// <summary>性能组件的指标呈现方式，值用于设置持久化。</summary>
+public enum PerformanceDisplayMode
+{
+    Cycle = 0,
+    Parallel = 1
+}
+
 /// <summary>任务栏性能组件设置。 / Taskbar performance component settings.</summary>
 public readonly record struct PerformanceComponentSettings(
     IReadOnlyList<MetricKind>? Metrics,
     int RefreshIntervalMilliseconds,
     bool OpenTaskManagerOnClick)
 {
+    public PerformanceDisplayMode DisplayMode { get; init; } = PerformanceDisplayMode.Cycle;
+    public IReadOnlyList<MetricKind>? MetricOrder { get; init; }
+
+    /// <summary>在保留既有指标集合语义的同时解析显示顺序。</summary>
+    public IReadOnlyList<MetricKind> GetOrderedMetrics()
+    {
+        var selected = Metrics ?? [MetricKind.SystemMemory];
+        var order = MetricOrder ?? [];
+        return order.Where(selected.Contains).Distinct()
+            .Concat(selected.Where(metric => !order.Contains(metric))).ToArray();
+    }
+
     /// <summary>
     /// 采样间隔下限（毫秒）。旧范围（250–60000 毫秒）里真正可用的部分只占一小段，滑杆其余行程全是没人会选的取值，
     /// 因此收敛到 0.5–5 秒。
@@ -353,10 +372,16 @@ public readonly record struct PerformanceComponentSettings(
             .ToArray();
         if (metrics.Length == 0)
             metrics = [MetricKind.SystemMemory];
+        var order = MetricOrder;
         return new PerformanceComponentSettings(
             metrics,
             SnapRefreshIntervalMilliseconds(RefreshIntervalMilliseconds),
-            OpenTaskManagerOnClick);
+            OpenTaskManagerOnClick)
+        {
+            DisplayMode = Enum.IsDefined(DisplayMode) ? DisplayMode : PerformanceDisplayMode.Cycle,
+            MetricOrder = order is null ? null : order.Where(metrics.Contains).Distinct()
+                .Concat(metrics.Where(metric => !order.Contains(metric))).ToArray()
+        };
     }
 
     /// <summary>把采样间隔吸附到界面步长网格并夹取到安全区间。 / Snaps the sampling interval onto the interface step grid and clamps it to the safe range.</summary>

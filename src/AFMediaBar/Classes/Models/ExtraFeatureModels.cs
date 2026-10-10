@@ -32,7 +32,8 @@ public enum MetricKind
     SystemMemory = 0,
     SystemCpu = 1,
     SystemGpu = 2,
-    ProcessMemory = 3
+    ProcessMemory = 3,
+    SystemNetwork = 4
 }
 
 /// <summary>快速启动执行结果。 / Result of a quick-launch request.</summary>

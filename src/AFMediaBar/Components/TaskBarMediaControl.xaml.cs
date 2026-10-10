@@ -294,7 +294,6 @@ namespace AFMediaBar.Components
         private Color? _appliedTaskbarHoverForeground;
         private IReadOnlyList<QuickLaunchEntry> _quickLaunchEntries = Array.Empty<QuickLaunchEntry>();
         private DateTime _suppressSurfaceClickUntilUtc;
-        private const double TaskbarPerformanceWidth = 74;
         private const double TaskbarTrailingMargin = 4;
 
         /// <summary>
@@ -835,14 +834,6 @@ namespace AFMediaBar.Components
                 (int)Math.Round(point.Y + element.ActualHeight * dpi.DpiScaleY));
         }
 
-        public void ApplyPerformanceText(string text, bool canOpenTaskManager)
-        {
-            TaskbarPerformanceText.Text = text;
-            var cursor = canOpenTaskManager ? Cursors.Hand : Cursors.Arrow;
-            TaskbarPerformanceSurface.Cursor = cursor;
-            TaskbarPerformanceHoverSurface.Cursor = cursor;
-        }
-
         /// <summary>
         /// 判断一次命中的元素是否位于性能组件内部。宿主的拖动逻辑按「左键按下是否落在媒体动作上」决定要不要开始拖动，
         /// 而性能组件本身不是媒体动作，因此它必须能单独被识别出来。
@@ -1021,6 +1012,7 @@ namespace AFMediaBar.Components
             // The spectrum's bar count and style decide how much width it occupies, so the visual tree is rebuilt before any
             // width is computed.
             ConfigureSpectrum();
+            var performanceWidthChanged = ConfigurePerformance();
             var progressVisible = _snapshot.Duration > 0;
             var controls = experience.HoverControls;
             // 静置层组件的显隐由本方法末尾的 ApplyTaskbarSectionGeometry 按算出的布局落地（那条路径同时覆盖尺寸动画的每一帧）。
@@ -1157,7 +1149,7 @@ namespace AFMediaBar.Components
             }
 
             if (publishSize)
-                RaiseDesiredSizeChanged();
+                RaiseDesiredSizeChanged(isForcedRefresh: performanceWidthChanged);
 
             // 跑马灯 MUST 放在本方法所有文字写入之后重跑：上面按内容布局写的标题会把正在滚动的窗口顶掉，而
             // ApplyTaskbarSectionGeometry（以及它内部的跑马灯配置）发生在那之前，于是屏幕上会先留下原文开头，
@@ -1415,7 +1407,7 @@ namespace AFMediaBar.Components
         {
             TaskbarRestComponent.Artwork => Math.Max(0, SongImageBorder.Width),
             TaskbarRestComponent.Spectrum => SpectrumSurfaceWidth,
-            TaskbarRestComponent.Performance => TaskbarPerformanceWidth + TaskbarWidgetPadding * 2,
+            TaskbarRestComponent.Performance => _performanceWidth + TaskbarWidgetPadding * 2,
             TaskbarRestComponent.OutputDevice => metrics.ButtonSize + TaskbarWidgetPadding * 2,
             TaskbarRestComponent.Volume => metrics.ButtonSize + TaskbarWidgetPadding * 2,
             _ => 0
@@ -1698,7 +1690,7 @@ namespace AFMediaBar.Components
 
             SongTitle.Foreground = foreground;
             SongArtist.Foreground = foreground;
-            TaskbarPerformanceText.Foreground = foreground;
+            System.Windows.Documents.TextElement.SetForeground(TaskbarPerformanceItems, foreground);
             // 静置层的设备与音量图标和媒体文字取同一支自动前景：它们铺在同一块任务栏表面上。
             // The rest layer's device and volume glyphs take the same automatic foreground as the media text: they sit on the same
             // taskbar surface.
