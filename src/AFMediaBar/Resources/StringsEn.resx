@@ -2574,4 +2574,31 @@
   <data name="Developer.Description.Logs" xml:space="preserve"><value>Opens the existing log folder without uploading or exporting data.</value></data>
   <data name="Developer.Action.Help" xml:space="preserve"><value>Command help</value></data>
   <data name="Developer.Description.Help" xml:space="preserve"><value>Lists commands, descriptions and effects from the shared action catalog.</value></data>
+  <data name="Media.Metric.SystemNetwork.Title" xml:space="preserve">
+    <value>Network speed</value>
+  </data>
+  <data name="Media.Metric.SystemNetwork.Description" xml:space="preserve">
+    <value>Show upload and download rates across connected physical adapters.</value>
+  </data>
+  <data name="Media.Performance.DisplayMode.Title" xml:space="preserve">
+    <value>Display mode</value>
+  </data>
+  <data name="Media.Performance.DisplayMode.Description" xml:space="preserve">
+    <value>Cycle through metrics or show all selected metrics side by side.</value>
+  </data>
+  <data name="Media.Performance.DisplayMode.Cycle" xml:space="preserve">
+    <value>Cycle</value>
+  </data>
+  <data name="Media.Performance.DisplayMode.Parallel" xml:space="preserve">
+    <value>Side by side</value>
+  </data>
+  <data name="Media.Performance.Order.Description" xml:space="preserve">
+    <value>Use the arrow buttons to reorder selected metrics. Both modes share this order; keep at least one metric selected.</value>
+  </data>
+  <data name="Panel.Performance.Upload" xml:space="preserve">
+    <value>Upload</value>
+  </data>
+  <data name="Panel.Performance.Download" xml:space="preserve">
+    <value>Download</value>
+  </data>
 </root>

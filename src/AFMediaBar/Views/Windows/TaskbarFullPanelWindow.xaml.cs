@@ -408,10 +408,12 @@ public partial class TaskbarFullPanelWindow : FluentWindow
     {
         if (generation != _metricsSubscriptionGeneration || _isClosing || !_performanceVisible)
             return;
-        RamMetric.Text = $"{metrics.SystemMemoryPercent}%";
+        RamMetric.Text = metrics.SystemMemoryPercent is int memory ? $"{memory}%" : "—";
         CpuMetric.Text = metrics.SystemCpuPercent is int cpu ? $"{cpu}%" : "—";
         GpuMetric.Text = metrics.SystemGpuPercent is int gpu ? $"{gpu}%" : "—";
-        ProcessMetric.Text = $"{metrics.ProcessMemoryMegabytes} MB";
+        ProcessMetric.Text = metrics.ProcessMemoryMegabytes is long process ? $"{process} MB" : "—";
+        UploadMetric.Text = MetricPresentationPolicy.FormatRate(metrics.NetworkUploadBytesPerSecond);
+        DownloadMetric.Text = MetricPresentationPolicy.FormatRate(metrics.NetworkDownloadBytesPerSecond);
     }
 
     private void DisposeMetricsSubscription()

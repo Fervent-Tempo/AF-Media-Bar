@@ -117,10 +117,13 @@
                     BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1">
                 <Grid>
                     <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions><RowDefinition/><RowDefinition/></Grid.RowDefinitions>
                     <StackPanel><TextBlock Text="{DynamicResource Loc.Panel.Performance.Memory}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/><TextBlock x:Name="RamMetric" Text="—" FontWeight="SemiBold"/></StackPanel>
                     <StackPanel Grid.Column="1"><TextBlock Text="CPU" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/><TextBlock x:Name="CpuMetric" Text="—" FontWeight="SemiBold"/></StackPanel>
                     <StackPanel Grid.Column="2"><TextBlock Text="GPU" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/><TextBlock x:Name="GpuMetric" Text="—" FontWeight="SemiBold"/></StackPanel>
                     <StackPanel Grid.Column="3"><TextBlock Text="{DynamicResource Loc.Panel.Performance.ProcessMemory}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/><TextBlock x:Name="ProcessMetric" Text="—" FontWeight="SemiBold"/></StackPanel>
+                    <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="0,8,0,0"><TextBlock Text="{DynamicResource Loc.Panel.Performance.Upload}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/><TextBlock x:Name="UploadMetric" Text="—" FontWeight="SemiBold"/></StackPanel>
+                    <StackPanel Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2" Margin="0,8,0,0"><TextBlock Text="{DynamicResource Loc.Panel.Performance.Download}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/><TextBlock x:Name="DownloadMetric" Text="—" FontWeight="SemiBold"/></StackPanel>
                 </Grid>
             </Border>
         </StackPanel>

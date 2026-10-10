@@ -2574,4 +2574,31 @@
   <data name="Developer.Description.Logs" xml:space="preserve"><value>打开现有日志文件夹，不额外上传或导出数据。</value></data>
   <data name="Developer.Action.Help" xml:space="preserve"><value>指令帮助</value></data>
   <data name="Developer.Description.Help" xml:space="preserve"><value>列出同一动作目录的命令、说明和影响范围。</value></data>
+  <data name="Media.Metric.SystemNetwork.Title" xml:space="preserve">
+    <value>网络速率</value>
+  </data>
+  <data name="Media.Metric.SystemNetwork.Description" xml:space="preserve">
+    <value>显示已连接物理网卡的上传和下载速率。</value>
+  </data>
+  <data name="Media.Performance.DisplayMode.Title" xml:space="preserve">
+    <value>显示方式</value>
+  </data>
+  <data name="Media.Performance.DisplayMode.Description" xml:space="preserve">
+    <value>轮换显示单个指标，或并排显示全部已选指标。</value>
+  </data>
+  <data name="Media.Performance.DisplayMode.Cycle" xml:space="preserve">
+    <value>轮换显示</value>
+  </data>
+  <data name="Media.Performance.DisplayMode.Parallel" xml:space="preserve">
+    <value>并排显示</value>
+  </data>
+  <data name="Media.Performance.Order.Description" xml:space="preserve">
+    <value>使用上下按钮调整已选指标顺序；两种显示方式共用顺序，至少保留一个指标。</value>
+  </data>
+  <data name="Panel.Performance.Upload" xml:space="preserve">
+    <value>上传</value>
+  </data>
+  <data name="Panel.Performance.Download" xml:space="preserve">
+    <value>下载</value>
+  </data>
 </root>

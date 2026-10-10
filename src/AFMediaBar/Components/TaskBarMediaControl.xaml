@@ -403,9 +403,7 @@
                         TextOptions.TextRenderingMode="ClearType"
                         TextOptions.TextFormattingMode="Display"
                         Cursor="Arrow" Visibility="Collapsed">
-                    <TextBlock x:Name="TaskbarPerformanceText" Text="MEM —" FontSize="12"
-                               FontWeight="{DynamicResource AppTextMediumFontWeight}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                               TextTrimming="CharacterEllipsis" IsHitTestVisible="False"/>
+                    <StackPanel x:Name="TaskbarPerformanceItems" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"/>
                 </Border>
             </Border>
             <!--

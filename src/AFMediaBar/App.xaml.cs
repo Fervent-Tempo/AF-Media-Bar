@@ -157,7 +157,9 @@ namespace AFMediaBar
                 services.AddSingleton<AudioCaptureDeviceResolver>();
                 services.AddSingleton<IMemoryPrunable>(sp => sp.GetRequiredService<AudioCaptureDeviceResolver>());
                 services.AddSingleton<SystemMetricsService>();
+                services.AddSingleton<ISystemMetricsSampler>(sp => sp.GetRequiredService<SystemMetricsService>());
                 services.AddSingleton<SystemMetricsMonitorService>();
+                services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<SystemMetricsMonitorService>());
                 services.AddSingleton<IMemoryPrunable>(sp => sp.GetRequiredService<SystemMetricsMonitorService>());
                 services.AddSingleton<SpatialAudioService>();
                 // 自有 Shell 托盘图标与统一鼠标输入监听

@@ -2612,4 +2612,31 @@
   <data name="Developer.Description.Logs" xml:space="preserve"><value>Mở thư mục nhật ký hiện có, không tải lên hoặc xuất dữ liệu.</value></data>
   <data name="Developer.Action.Help" xml:space="preserve"><value>Trợ giúp lệnh</value></data>
   <data name="Developer.Description.Help" xml:space="preserve"><value>Liệt kê lệnh, mô tả và tác động từ danh mục chung.</value></data>
+  <data name="Media.Metric.SystemNetwork.Title" xml:space="preserve">
+    <value>Tốc độ mạng</value>
+  </data>
+  <data name="Media.Metric.SystemNetwork.Description" xml:space="preserve">
+    <value>Hiển thị tốc độ tải lên và tải xuống của các bộ điều hợp mạng vật lý đang kết nối.</value>
+  </data>
+  <data name="Media.Performance.DisplayMode.Title" xml:space="preserve">
+    <value>Chế độ hiển thị</value>
+  </data>
+  <data name="Media.Performance.DisplayMode.Description" xml:space="preserve">
+    <value>Luân phiên từng chỉ số hoặc hiển thị tất cả chỉ số đã chọn cạnh nhau.</value>
+  </data>
+  <data name="Media.Performance.DisplayMode.Cycle" xml:space="preserve">
+    <value>Luân phiên</value>
+  </data>
+  <data name="Media.Performance.DisplayMode.Parallel" xml:space="preserve">
+    <value>Cạnh nhau</value>
+  </data>
+  <data name="Media.Performance.Order.Description" xml:space="preserve">
+    <value>Dùng các nút mũi tên để sắp xếp chỉ số đã chọn. Hai chế độ dùng chung thứ tự; chọn ít nhất một chỉ số.</value>
+  </data>
+  <data name="Panel.Performance.Upload" xml:space="preserve">
+    <value>Tải lên</value>
+  </data>
+  <data name="Panel.Performance.Download" xml:space="preserve">
+    <value>Tải xuống</value>
+  </data>
 </root>

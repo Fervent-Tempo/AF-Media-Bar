@@ -293,6 +293,48 @@
                                         Unit="{DynamicResource Loc.Settings.Numeric.Seconds}" />
                                 </components:SettingsRow>
                                 <components:SettingsRow
+                                    Description="{DynamicResource Loc.Media.Metric.SystemNetwork.Description}"
+                                    IsNested="True"
+                                    Style="{StaticResource PerformanceParameterRowStyle}"
+                                    Title="{DynamicResource Loc.Media.Metric.SystemNetwork.Title}">
+                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.ShowSystemNetwork, Mode=TwoWay}"
+                                                     IsEnabled="{Binding ViewModel.Components.CanUncheckSystemNetwork}" />
+                                </components:SettingsRow>
+                                <components:SettingsRow
+                                    Description="{DynamicResource Loc.Media.Performance.DisplayMode.Description}"
+                                    IsNested="True"
+                                    Style="{StaticResource PerformanceParameterRowStyle}"
+                                    Title="{DynamicResource Loc.Media.Performance.DisplayMode.Title}">
+                                    <ComboBox SelectedValue="{Binding ViewModel.Components.PerformanceMode, Mode=TwoWay}"
+                                              SelectedValuePath="Tag" MinWidth="160">
+                                        <ComboBoxItem Content="{DynamicResource Loc.Media.Performance.DisplayMode.Cycle}"
+                                                      Tag="{x:Static settings:PerformanceDisplayMode.Cycle}" />
+                                        <ComboBoxItem Content="{DynamicResource Loc.Media.Performance.DisplayMode.Parallel}"
+                                                      Tag="{x:Static settings:PerformanceDisplayMode.Parallel}" />
+                                    </ComboBox>
+                                </components:SettingsRow>
+                                <components:SettingsCallout Margin="0,4,0,4" Text="{DynamicResource Loc.Media.Performance.Order.Description}" />
+                                <ItemsControl ItemsSource="{Binding ViewModel.Components.MetricOrderEntries}"
+                                              IsEnabled="{Binding ViewModel.Components.CanConfigurePerformance}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <components:SettingsRow IsNested="True"
+                                                                    Title="{Binding DisplayName}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <ui:Button Command="{Binding DataContext.ViewModel.Components.MoveMetricUpCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                               CommandParameter="{Binding}" IsEnabled="{Binding CanMoveUp}"
+                                                               Icon="{ui:SymbolIcon ArrowUp24}" Style="{StaticResource AfSettingsIconButtonStyle}"
+                                                               ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveUp}" />
+                                                    <ui:Button Margin="4,0,0,0" Command="{Binding DataContext.ViewModel.Components.MoveMetricDownCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                               CommandParameter="{Binding}" IsEnabled="{Binding CanMoveDown}"
+                                                               Icon="{ui:SymbolIcon ArrowDown24}" Style="{StaticResource AfSettingsIconButtonStyle}"
+                                                               ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveDown}" />
+                                                </StackPanel>
+                                            </components:SettingsRow>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <components:SettingsRow
                                     Description="{DynamicResource Loc.Media.Performance.OpenTaskManager.Description}"
                                     Icon="{ui:SymbolIcon CursorClick24}"
                                     IsNested="True"
