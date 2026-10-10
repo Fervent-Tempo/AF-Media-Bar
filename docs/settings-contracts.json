@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "verifiedDate": "2026-10-10",
-  "mainCommit": "09e9cf19d85f73ce3601036fce28c7c5baf81069",
+  "mainCommit": "6ba5cf2b763ea6b0faa95f3920fbeeddcbfd59d3",
   "latestRelease": "v1.3.2",
   "latestReleaseCommit": "a781620ea37df526ab87e62d2f7c51fea289f863",
   "settingsSchemaVersion": 2,
@@ -110,7 +110,7 @@
     },
     {
       "path": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sha256": "a464d9fd3df03d315bcf56a7358f73f068fa2a82bef227ea1eb774601385261a"
+      "sha256": "0417d7a1929321e0242a6ff000d930bdc9cc49876cb483e52ecbb16efac2ed0f"
     },
     {
       "path": "src/AFMediaBar/Classes/Settings/LyricsSettings.cs",
@@ -122,7 +122,7 @@
     },
     {
       "path": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
-      "sha256": "8965fe4e497b68b468f391a6e85db90616c1bc47c79541fb3b341f815beae7a1"
+      "sha256": "f6c59a8723cb44fc22f8fe8a3ca03d482bb52c214e79d09b21631de5b98c2734"
     },
     {
       "path": "src/AFMediaBar/Classes/Settings/UpdateSettings.cs",
@@ -138,7 +138,7 @@
     },
     {
       "path": "src/AFMediaBar/Views/Pages/InteractionPage.xaml",
-      "sha256": "a2900fd2ca284102da8959128480d49f0196ea3f56eeeb134a73f03c24b31a30"
+      "sha256": "ed2e5246be5f486b5818f40fea0d122cd55e509a88683e5ca3cdb0e77cc11f1c"
     },
     {
       "path": "src/AFMediaBar/Views/Windows/SettingsPageProvider.cs",
@@ -867,7 +867,7 @@
       "rawDefault": 100,
       "normalizedDefault": 100,
       "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sourceLine": 748,
+      "sourceLine": 747,
       "firstReleased": "v1.2.0",
       "releaseStatus": "released",
       "presentInLatestRelease": true,
@@ -895,7 +895,7 @@
       "rawDefault": 6,
       "normalizedDefault": 6,
       "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sourceLine": 749,
+      "sourceLine": 748,
       "firstReleased": "v1.2.0",
       "releaseStatus": "released",
       "presentInLatestRelease": true,
@@ -923,7 +923,7 @@
       "rawDefault": "Automatic",
       "normalizedDefault": "Automatic",
       "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sourceLine": 747,
+      "sourceLine": 746,
       "firstReleased": "v1.2.0",
       "releaseStatus": "released",
       "presentInLatestRelease": true,
@@ -987,7 +987,8 @@
         "trayClickAction": "OpenAudioControl",
         "trayPrimaryWheelAction": "SwitchOutputDevice",
         "trayChordWheelAction": "AdjustVolume",
-        "showWheelTooltips": true
+        "showWheelTooltips": true,
+        "artworkHoverMode": "Off"
       },
       "normalizedDefault": {
         "artworkClickAction": "TogglePlayPause",
@@ -998,7 +999,8 @@
         "trayClickAction": "OpenAudioControl",
         "trayPrimaryWheelAction": "SwitchOutputDevice",
         "trayChordWheelAction": "AdjustVolume",
-        "showWheelTooltips": true
+        "showWheelTooltips": true,
+        "artworkHoverMode": "Off"
       },
       "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
       "sourceLine": 156,
@@ -1016,7 +1018,7 @@
         "trayChordWheelAction": "AdjustVolume",
         "showWheelTooltips": true
       },
-      "defaultChangedSinceLatestRelease": false,
+      "defaultChangedSinceLatestRelease": true,
       "onMissing": {
         "accepted": true,
         "state": "value",
@@ -1029,7 +1031,8 @@
           "trayClickAction": "OpenAudioControl",
           "trayPrimaryWheelAction": "SwitchOutputDevice",
           "trayChordWheelAction": "AdjustVolume",
-          "showWheelTooltips": true
+          "showWheelTooltips": true,
+          "artworkHoverMode": "Off"
         }
       },
       "onExplicitNull": {
@@ -1049,7 +1052,7 @@
       "rawDefault": "TogglePlayPause",
       "normalizedDefault": "TogglePlayPause",
       "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sourceLine": 696,
+      "sourceLine": 685,
       "firstReleased": "v1.2.0",
       "releaseStatus": "released",
       "presentInLatestRelease": true,
@@ -1067,6 +1070,35 @@
       }
     },
     {
+      "path": "settings.interaction.artworkHoverMode",
+      "declaringType": "GlobalInteractionSettings",
+      "clrProperty": "ArtworkHoverMode",
+      "type": "ArtworkHoverMode",
+      "nullable": false,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": "ArtworkHoverMode",
+      "rawDefault": "Off",
+      "normalizedDefault": "Off",
+      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
+      "sourceLine": 702,
+      "firstReleased": null,
+      "releaseStatus": "unreleased",
+      "presentInLatestRelease": false,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": "Off"
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": "Off"
+      }
+    },
+    {
       "path": "settings.interaction.chordWheelAction",
       "declaringType": "GlobalInteractionSettings",
       "clrProperty": "ChordWheelAction",
@@ -1078,7 +1110,7 @@
       "rawDefault": "SwitchMediaSource",
       "normalizedDefault": "SwitchMediaSource",
       "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sourceLine": 700,
+      "sourceLine": 689,
       "firstReleased": "v1.2.0",
       "releaseStatus": "released",
       "presentInLatestRelease": true,
@@ -1107,7 +1139,7 @@
       "rawDefault": "Shift",
       "normalizedDefault": "Shift",
       "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sourceLine": 699,
+      "sourceLine": 688,
       "firstReleased": "v1.2.0",
       "releaseStatus": "released",
       "presentInLatestRelease": true,
@@ -1136,7 +1168,7 @@
       "rawDefault": "PreviousNext",
       "normalizedDefault": "PreviousNext",
       "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sourceLine": 698,
+      "sourceLine": 687,
       "firstReleased": "v1.2.0",
       "releaseStatus": "released",
       "presentInLatestRelease": true,
@@ -1165,7 +1197,7 @@
       "rawDefault": true,
       "normalizedDefault": true,
       "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sourceLine": 706,
+      "sourceLine": 695,
       "firstReleased": "v1.3.0",
       "releaseStatus": "released",
       "presentInLatestRelease": true,
@@ -1193,7 +1225,7 @@
       "rawDefault": "ActivateSource",
       "normalizedDefault": "ActivateSource",
       "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sourceLine": 697,
+      "sourceLine": 686,
       "firstReleased": "v1.2.0",
       "releaseStatus": "released",
       "presentInLatestRelease": true,
@@ -1222,7 +1254,7 @@
       "rawDefault": "AdjustVolume",
       "normalizedDefault": "AdjustVolume",
       "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sourceLine": 703,
+      "sourceLine": 692,
       "firstReleased": "v1.2.0",
       "releaseStatus": "released",
       "presentInLatestRelease": true,
@@ -1251,7 +1283,7 @@
       "rawDefault": "OpenAudioControl",
       "normalizedDefault": "OpenAudioControl",
       "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sourceLine": 701,
+      "sourceLine": 690,
       "firstReleased": "v1.2.0",
       "releaseStatus": "released",
       "presentInLatestRelease": true,
@@ -1280,7 +1312,7 @@
       "rawDefault": "SwitchOutputDevice",
       "normalizedDefault": "SwitchOutputDevice",
       "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sourceLine": 702,
+      "sourceLine": 691,
       "firstReleased": "v1.2.0",
       "releaseStatus": "released",
       "presentInLatestRelease": true,
@@ -2755,7 +2787,6 @@
         "arrangement": null,
         "spectrumVisible": true,
         "artworkVisible": true,
-        "artworkHoverMode": "Off",
         "performanceVisible": true,
         "restProgressVisible": false,
         "fullPanelEntryVisible": true,
@@ -2791,7 +2822,6 @@
         "arrangement": null,
         "spectrumVisible": true,
         "artworkVisible": true,
-        "artworkHoverMode": "Off",
         "performanceVisible": true,
         "restProgressVisible": false,
         "fullPanelEntryVisible": true,
@@ -2870,7 +2900,6 @@
           "arrangement": null,
           "spectrumVisible": true,
           "artworkVisible": true,
-          "artworkHoverMode": "Off",
           "performanceVisible": true,
           "restProgressVisible": false,
           "fullPanelEntryVisible": true,
@@ -2920,35 +2949,6 @@
         "accepted": true,
         "state": "value",
         "value": null
-      }
-    },
-    {
-      "path": "settings.taskbarExperience.artworkHoverMode",
-      "declaringType": "TaskbarExperienceSettings",
-      "clrProperty": "ArtworkHoverMode",
-      "type": "ArtworkHoverMode",
-      "nullable": false,
-      "writable": true,
-      "collectionElement": false,
-      "enumType": "ArtworkHoverMode",
-      "rawDefault": "Off",
-      "normalizedDefault": "Off",
-      "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sourceLine": 519,
-      "firstReleased": null,
-      "releaseStatus": "unreleased",
-      "presentInLatestRelease": false,
-      "latestReleaseDefault": null,
-      "defaultChangedSinceLatestRelease": false,
-      "onMissing": {
-        "accepted": true,
-        "state": "value",
-        "value": "Off"
-      },
-      "onExplicitNull": {
-        "accepted": true,
-        "state": "value",
-        "value": "Off"
       }
     },
     {
@@ -3293,7 +3293,7 @@
       "rawDefault": true,
       "normalizedDefault": true,
       "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sourceLine": 541,
+      "sourceLine": 531,
       "firstReleased": "v1.2.0",
       "releaseStatus": "released",
       "presentInLatestRelease": true,
@@ -3361,7 +3361,7 @@
         "progressVisible": true
       },
       "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sourceLine": 544,
+      "sourceLine": 534,
       "firstReleased": "v1.2.0",
       "releaseStatus": "released",
       "presentInLatestRelease": true,
@@ -3569,7 +3569,7 @@
       "rawDefault": null,
       "normalizedDefault": null,
       "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sourceLine": 585,
+      "sourceLine": 575,
       "firstReleased": "v1.2.1",
       "releaseStatus": "released",
       "presentInLatestRelease": true,
@@ -3627,7 +3627,7 @@
       "rawDefault": 100,
       "normalizedDefault": 100,
       "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sourceLine": 591,
+      "sourceLine": 581,
       "firstReleased": "v1.2.0",
       "releaseStatus": "released",
       "presentInLatestRelease": true,
@@ -3684,7 +3684,7 @@
       "rawDefault": false,
       "normalizedDefault": false,
       "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sourceLine": 552,
+      "sourceLine": 542,
       "firstReleased": "v1.2.1",
       "releaseStatus": "released",
       "presentInLatestRelease": true,
@@ -3712,7 +3712,7 @@
       "rawDefault": true,
       "normalizedDefault": true,
       "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sourceLine": 524,
+      "sourceLine": 514,
       "firstReleased": "v1.2.0",
       "releaseStatus": "released",
       "presentInLatestRelease": true,
@@ -3740,7 +3740,7 @@
       "rawDefault": null,
       "normalizedDefault": null,
       "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sourceLine": 571,
+      "sourceLine": 561,
       "firstReleased": "v1.2.1",
       "releaseStatus": "released",
       "presentInLatestRelease": true,
@@ -3769,7 +3769,7 @@
       "rawDefault": false,
       "normalizedDefault": false,
       "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sourceLine": 532,
+      "sourceLine": 522,
       "firstReleased": "v1.2.0",
       "releaseStatus": "released",
       "presentInLatestRelease": true,
@@ -3825,7 +3825,7 @@
       "rawDefault": false,
       "normalizedDefault": false,
       "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sourceLine": 555,
+      "sourceLine": 545,
       "firstReleased": "v1.2.1",
       "releaseStatus": "released",
       "presentInLatestRelease": true,
@@ -3897,7 +3897,7 @@
       "rawDefault": 100,
       "normalizedDefault": 100,
       "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sourceLine": 748,
+      "sourceLine": 747,
       "firstReleased": "v1.2.0",
       "releaseStatus": "released",
       "presentInLatestRelease": true,
@@ -3925,7 +3925,7 @@
       "rawDefault": 6,
       "normalizedDefault": 6,
       "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sourceLine": 749,
+      "sourceLine": 748,
       "firstReleased": "v1.2.0",
       "releaseStatus": "released",
       "presentInLatestRelease": true,
@@ -3953,7 +3953,7 @@
       "rawDefault": "Automatic",
       "normalizedDefault": "Automatic",
       "source": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
-      "sourceLine": 747,
+      "sourceLine": 746,
       "firstReleased": "v1.2.0",
       "releaseStatus": "released",
       "presentInLatestRelease": true,
@@ -5762,7 +5762,6 @@
       "arrangement": null,
       "spectrumVisible": true,
       "artworkVisible": true,
-      "artworkHoverMode": "Off",
       "performanceVisible": true,
       "restProgressVisible": false,
       "fullPanelEntryVisible": true,
@@ -5788,7 +5787,8 @@
       "trayClickAction": "OpenAudioControl",
       "trayPrimaryWheelAction": "SwitchOutputDevice",
       "trayChordWheelAction": "AdjustVolume",
-      "showWheelTooltips": true
+      "showWheelTooltips": true,
+      "artworkHoverMode": "Off"
     },
     "taskbarSurface": {
       "style": "Automatic",

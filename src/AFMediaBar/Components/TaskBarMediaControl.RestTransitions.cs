@@ -170,7 +170,22 @@ public partial class TaskBarMediaControl
         // connection clip takes over, so two independent opacity/translation clocks cannot fight.
         SongInfoStackPanel.BeginAnimation(OpacityProperty, null);
         SongInfoStackPanel.Opacity = 1;
-        if (SongInfoStackPanel.RenderTransform is TranslateTransform textTransform)
+        // 文字区的 RenderTransform 现在是 TransformGroup（含放大推挤支与入场位移支），逐支归零；
+        // 裸 TranslateTransform 的旧形态也保留兼容。
+        // The text region's RenderTransform is now a TransformGroup (zoom-push branch plus entrance branch); zero each branch.
+        // The legacy bare TranslateTransform shape is still handled for compatibility.
+        if (SongInfoStackPanel.RenderTransform is TransformGroup group)
+        {
+            foreach (var child in group.Children)
+            {
+                if (child is TranslateTransform branch)
+                {
+                    branch.BeginAnimation(TranslateTransform.XProperty, null);
+                    branch.X = 0;
+                }
+            }
+        }
+        else if (SongInfoStackPanel.RenderTransform is TranslateTransform textTransform)
         {
             textTransform.BeginAnimation(TranslateTransform.XProperty, null);
             textTransform.X = 0;

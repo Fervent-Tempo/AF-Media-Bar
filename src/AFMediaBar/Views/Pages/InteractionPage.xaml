@@ -69,6 +69,22 @@
                                     Tag="{x:Static settings:PlayerClickAction.Disabled}" />
                             </ComboBox>
                         </components:SettingsRow>
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Interaction.Row.ArtworkHover.Description}"
+                            Icon="{ui:SymbolIcon ZoomIn24}"
+                            Title="{DynamicResource Loc.Interaction.Row.ArtworkHover.Title}">
+                            <ComboBox MinWidth="200" SelectedValue="{Binding ViewModel.ArtworkHoverMode, Mode=TwoWay}" SelectedValuePath="Tag">
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Interaction.Row.ArtworkHover.Mode.Off}"
+                                    Tag="{x:Static settings:ArtworkHoverMode.Off}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Interaction.Row.ArtworkHover.Mode.Zoom}"
+                                    Tag="{x:Static settings:ArtworkHoverMode.Zoom}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Interaction.Row.ArtworkHover.Mode.Preview}"
+                                    Tag="{x:Static settings:ArtworkHoverMode.Preview}" />
+                            </ComboBox>
+                        </components:SettingsRow>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup

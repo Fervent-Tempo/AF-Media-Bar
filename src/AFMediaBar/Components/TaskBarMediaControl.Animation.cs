@@ -636,10 +636,12 @@ public partial class TaskBarMediaControl
             {
                 SongInfoStackPanel.BeginAnimation(OpacityProperty, null);
                 SongInfoStackPanel.Opacity = _isTaskbarHoverVisible ? TaskbarCoveredOpacity : 1;
-                if (SongInfoStackPanel.RenderTransform is TranslateTransform instantTransform)
+                // 只归位入场位移支（不动放大推挤支）。
+                // Only settle the entrance branch; leave the zoom-push branch untouched.
+                if (_songInfoEntranceTransform is not null)
                 {
-                    instantTransform.BeginAnimation(TranslateTransform.XProperty, null);
-                    instantTransform.X = 0;
+                    _songInfoEntranceTransform.BeginAnimation(TranslateTransform.XProperty, null);
+                    _songInfoEntranceTransform.X = 0;
                 }
                 return;
             }
@@ -661,14 +663,47 @@ public partial class TaskBarMediaControl
             };
 
             SongInfoStackPanel.BeginAnimation(OpacityProperty, opacityAnimation);
-            var translateTransform = new TranslateTransform();
-            SongInfoStackPanel.RenderTransform = translateTransform;
-            translateTransform.BeginAnimation(TranslateTransform.XProperty, translateAnimation);
+            // 入场位移走专用支（与放大推挤支同处一个 TransformGroup），换歌时不再整体换掉 RenderTransform，
+            // 推挤位移因此得以保留（BUG 2 修复）。
+            // The entrance slide uses its dedicated branch (sharing a TransformGroup with the zoom-push branch), so a track
+            // change no longer replaces the whole RenderTransform and the push survives (BUG 2 fix).
+            var entrance = EnsureSongInfoEntranceTransform();
+            entrance.BeginAnimation(TranslateTransform.XProperty, translateAnimation);
         }
         catch (Exception ex)
         {
             Debug.WriteLine(ex);
         }
+    }
+
+    /// <summary>
+    /// 取得（或建立）文字区入场位移支，并保证它与放大推挤支同处一个 TransformGroup：两者若共用同一个 RenderTransform
+    /// 实例，换歌时的入场动画会整体换掉它、抹掉推挤（BUG 2 根因）。
+    /// Gets (or builds) the text region's entrance branch and ensures it shares a TransformGroup with the zoom-push branch: had
+    /// the two shared one RenderTransform instance, the track-change entrance would replace it outright and wipe the push
+    /// (root of BUG 2).
+    /// </summary>
+    private TranslateTransform EnsureSongInfoEntranceTransform()
+    {
+        _songInfoEntranceTransform ??= new TranslateTransform();
+        if (SongInfoStackPanel.RenderTransform is TransformGroup group)
+        {
+            if (!group.Children.Contains(_songInfoEntranceTransform))
+            {
+                if (_songInfoPushTransform is not null && !group.Children.Contains(_songInfoPushTransform))
+                    group.Children.Add(_songInfoPushTransform);
+                group.Children.Add(_songInfoEntranceTransform);
+            }
+        }
+        else
+        {
+            var newGroup = new TransformGroup();
+            if (_songInfoPushTransform is not null)
+                newGroup.Children.Add(_songInfoPushTransform);
+            newGroup.Children.Add(_songInfoEntranceTransform);
+            SongInfoStackPanel.RenderTransform = newGroup;
+        }
+        return _songInfoEntranceTransform;
     }
 
     private bool CanUseTaskbarComponentHover() =>
@@ -1031,8 +1066,26 @@ public partial class TaskBarMediaControl
     /// <summary>本次放大的推挤量（DIP）：封面宽度增长的一半，右侧内容右移同样的距离以维持间距。/ This activation's push amount (DIP): half the artwork's width growth, matched by the right-hand content to keep the gap.</summary>
     private double _artworkZoomPushOffset;
 
-    /// <summary>推挤变换清单：每次激活重建（入场动画可能换掉文字区的变换实例），收回时清零并丢弃。/ The push transforms, rebuilt per activation (entrance animations can swap the text region's instance) and zeroed then dropped on reclaim.</summary>
+    /// <summary>推挤变换清单：每次激活重建，收回时清零并丢弃。/ The push transforms, rebuilt per activation and zeroed then dropped on reclaim.</summary>
     private List<TranslateTransform>? _artworkZoomPushTransforms;
+
+    /// <summary>文字区推挤支的专用 TranslateTransform：与入场位移支同处一个 TransformGroup，二者因此互不覆盖。
+    /// 放大中切歌时入场动画只改自己的支，推挤位移得以保留（修复 BUG 2）。/ The text region's dedicated push-transform
+    /// branch: it shares one TransformGroup with the entrance-transform branch, so the two never overwrite each other. A track
+    /// change mid-zoom touches only the entrance branch, leaving the push intact (fixes BUG 2).</summary>
+    private TranslateTransform? _songInfoPushTransform;
+
+    /// <summary>文字区入场位移支的专用 TranslateTransform：由 <see cref="AnimateEntrance"/> 使用，与推挤支分离。
+    /// / The text region's dedicated entrance-transform branch, used by <see cref="AnimateEntrance"/> and kept apart from the push branch.</summary>
+    private TranslateTransform? _songInfoEntranceTransform;
+
+    /// <summary>最近一次激活原地放大的时间戳（Stopwatch ticks），用于区分换树副作用导致的误发离开与真实离开。
+    /// / Timestamp of the most recent in-place zoom activation (Stopwatch ticks), used to tell a re-parent's spurious leave from a real one.</summary>
+    private long _artworkZoomShowStamp;
+
+    /// <summary>换树（封面移入 Popup）后这段时间内到达的 MouseLeave 视为重挂窗口的副作用，直接忽略——真实离开发生得更晚。
+    /// / A MouseLeave that arrives within this window after the re-parent is treated as the re-parent's artifact and ignored; a real leave comes later.</summary>
+    private const double ArtworkZoomReparentGuardMs = 80.0;
 
     /// <summary>
     /// 构建封面大图预览的 Popup：主窗口只有 44 DIP 高且裁切内容，放大的封面必须由独立 Popup 才能画到任务栏上方。
@@ -1170,6 +1223,11 @@ public partial class TaskBarMediaControl
     {
         if (_artworkHoverZoomPopup is not { } popup || _artworkHoverZoomHost is not { } host)
             return;
+        // 记下激活时刻：换树（封面移入 Popup）那一瞬 WPF 会先丢一次命中而误发 MouseLeave，以"show 之后多久"判断其
+        // 是否为重挂窗口的副作用（见 VerifyArtworkZoomLeave），避免把它当成真实离开提前收回。
+        // Stamp the activation moment: the re-parent (cover moved into the Popup) drops the hit for a moment and spuriously
+        // raises MouseLeave; gating on how long since the show tells that artifact from a real leave (see VerifyArtworkZoomLeave).
+        _artworkZoomShowStamp = Stopwatch.GetTimestamp();
         // 指针回来了（可能正处在收拢动画里）：清掉收拢标记，随后的动画把倍率重新拉起来，元素仍在宿主中无需换树。
         // 收拢兜底计时器一并停掉，免得它把正在重新长开的放大强行收回。
         // The pointer returned (possibly mid-collapse): clear the collapse flag, the following animation pulls the factor back
@@ -1401,7 +1459,14 @@ public partial class TaskBarMediaControl
         // fresh zoom has already carried the cover back into the host, this yields — that zoom runs its own machine.
         Dispatcher.BeginInvoke(() =>
         {
-            if (!ReferenceEquals(SongImageBorder.Parent, _artworkHoverZoomHost) && IsPointerOverArtwork())
+            // 收回后复核是否要重新长开：优先用真实可靠的 IsMouseOver（收回后封面回到主树、无捕获）。
+            // 不再依赖几何判定——它在陈旧捕获或跨屏 DPI 下会误报"仍在"，把刚收回的放大又顶回来，正是放大卡死在
+            // 完全放大帧的另一条路径（收回→几何误报→重新长开→再收回…循环）。
+            // After the reclaim, re-check whether to grow again using the truthful IsMouseOver (the cover is back in the main
+            // tree with no capture). We no longer lean on the geometry verdict, which misreports "still over" under a stale
+            // capture or cross-screen DPI and bounces the just-reclaimed zoom back up — another path to the stuck zoom
+            // (reclaim → geometry misfire → regrow → reclaim…).
+            if (!ReferenceEquals(SongImageBorder.Parent, _artworkHoverZoomHost) && SongImageBorder.IsMouseOver)
                 AnimateArtworkHover(true);
         }, System.Windows.Threading.DispatcherPriority.Background);
     }
@@ -1700,30 +1765,78 @@ public partial class TaskBarMediaControl
     /// <summary>
     /// 收集原地放大期间需要向右避让的元素并准备它们的推挤变换：文字区、文字悬停块、静置层四个小组件、静置进度条
     /// 与悬停层宿主都住在封面右侧，封面放大时把它们整体右移同样的量，放大于是读作"推开布局"而不是"盖在文字上"。
-    /// 渲染变换不参与布局，位置引擎随时重写 Canvas.SetLeft/Margin 也冲不掉推挤。文字区的变换与入场动画共用实例，
-    /// 入场会整个换掉它——换歌恰逢悬停时推挤暂时丢失，属可接受的罕见交叠，下次悬停重建。
+    /// 渲染变换不参与布局，位置引擎随时重写 Canvas.SetLeft/Margin 也冲不掉推挤。文字区的推挤走专用支，不与入场动画
+    /// 共用实例——否则换歌恰逢悬停时入场动画会整体换掉 RenderTransform、抹掉推挤，标题/艺术家因此停止随放大移动
+    /// （BUG 2 的根因）。
     /// Collects the elements that must yield to the right during the in-place zoom and prepares their push transforms: the text
     /// region, its hover block, the rest layer's four widgets, the rest progress, and the hover-layer host all live right of the
     /// artwork, and shifting them right by the same amount makes the zoom read as "pushing the layout apart" rather than "covering
     /// the text". A render transform stays out of layout, so the position engine rewriting Canvas.SetLeft/Margin never washes the
-    /// push away. The text region's transform instance is shared with the entrance animation, which replaces it outright — a track
-    /// change while hovering drops the push until the next hover rebuilds it, an accepted rare overlap.
+    /// push away. The text region's push lives on its own branch, not shared with the entrance animation — otherwise a track change
+    /// while hovering would replace the whole RenderTransform and erase the push, freezing the title/artist against the zoom
+    /// (root of BUG 2).
     /// </summary>
     private void BuildArtworkZoomPushTransforms()
     {
         _artworkZoomPushTransforms = new List<TranslateTransform>();
         foreach (var element in ArtworkZoomPushElements())
+            _artworkZoomPushTransforms.Add(GetOrCreatePushTransform(element));
+    }
+
+    /// <summary>
+    /// 取得（或建立）某个元素的推挤变换。文字区不能让入场动画与放大推挤共用同一个 RenderTransform：
+    /// 前者换歌时整体换掉它。因此文字区的推挤走 TransformGroup 中的专用支，其余元素维持原来的裸 TranslateTransform。
+    /// Gets (or builds) an element's push transform. The text region must not let the entrance animation and the zoom-push share
+    /// one RenderTransform — the former replaces it outright on a track change — so its push lives on a dedicated branch of a
+    /// TransformGroup while the other elements keep their bare TranslateTransform.
+    /// </summary>
+    private TranslateTransform GetOrCreatePushTransform(UIElement element)
+    {
+        if (ReferenceEquals(element, SongInfoStackPanel))
+            return GetOrCreateSongInfoPushTransform();
+        if (element.RenderTransform is TranslateTransform existing)
+            return existing;
+        var transform = new TranslateTransform();
+        element.RenderTransform = transform;
+        return transform;
+    }
+
+    /// <summary>
+    /// 取得（或建立）文字区的推挤支，并保证它与入场位移支同处一个 TransformGroup：两者若共用同一个 RenderTransform
+    /// 实例，换歌时的入场动画会整体换掉它、抹掉推挤（BUG 2 根因）。推挤支与入场支是两个独立的 TranslateTransform，
+    /// 分别由放大推挤动画与入场动画驱动，互不覆盖。
+    /// Gets (or builds) the text region's push branch and ensures it shares a TransformGroup with the entrance branch: had the two
+    /// shared one RenderTransform instance, the track-change entrance would replace it outright and wipe the push (root of BUG 2).
+    /// The push and entrance branches are two independent TranslateTransforms, driven by the zoom-push and entrance animations
+    /// respectively, so neither overwrites the other.
+    /// </summary>
+    private TranslateTransform GetOrCreateSongInfoPushTransform()
+    {
+        _songInfoPushTransform ??= new TranslateTransform();
+        if (SongInfoStackPanel.RenderTransform is TransformGroup group)
         {
-            TranslateTransform transform;
-            if (element.RenderTransform is TranslateTransform existing)
-                transform = existing;
-            else
-            {
-                transform = new TranslateTransform();
-                element.RenderTransform = transform;
-            }
-            _artworkZoomPushTransforms.Add(transform);
+            if (!group.Children.Contains(_songInfoPushTransform))
+                group.Children.Add(_songInfoPushTransform);
         }
+        else if (SongInfoStackPanel.RenderTransform is TranslateTransform bare)
+        {
+            // 入场动画留下的裸 TranslateTransform 当作入场支，推挤支补进来，合成一个 group。
+            // A bare TranslateTransform left by the entrance animation becomes the entrance branch; the push branch is added.
+            _songInfoEntranceTransform ??= bare;
+            var merged = new TransformGroup();
+            merged.Children.Add(_songInfoPushTransform);
+            merged.Children.Add(_songInfoEntranceTransform);
+            SongInfoStackPanel.RenderTransform = merged;
+        }
+        else
+        {
+            _songInfoEntranceTransform ??= new TranslateTransform();
+            var newGroup = new TransformGroup();
+            newGroup.Children.Add(_songInfoPushTransform);
+            newGroup.Children.Add(_songInfoEntranceTransform);
+            SongInfoStackPanel.RenderTransform = newGroup;
+        }
+        return _songInfoPushTransform;
     }
 
     /// <summary>封面右侧需要推挤避让的全部元素；横向任务栏里它们按布局引擎的排布都在封面之右。/ All elements that must yield right of the artwork; in a horizontal taskbar the layout engine keeps every one of them right of the cover.</summary>
@@ -1860,14 +1973,21 @@ public partial class TaskBarMediaControl
     /// </summary>
     private void VerifyArtworkZoomLeave()
     {
-        if (_artworkHoverZoomPopup?.IsOpen != true || IsPointerOverArtwork())
+        if (_artworkHoverZoomPopup?.IsOpen != true)
             return;
 
-        Dispatcher.BeginInvoke(() =>
-        {
-            if (_artworkHoverZoomPopup?.IsOpen == true && !IsPointerOverArtwork())
-                AnimateArtworkHover(false);
-        }, System.Windows.Threading.DispatcherPriority.Background);
+        // 换树（封面移入 Popup）那一瞬 WPF 会先丢一次命中而误发离开：以「show 之后多久」判断是否在重挂窗口内，
+        // 窗口内忽略（那是换树的副作用）；窗口外才是真实离开。真实离开不再依赖几何判定——几何判定在陈旧捕获或跨屏
+        // DPI 下可能误报"仍在"，正是放大卡死在完全放大帧的根因之一——直接收回，更可靠。
+        // The re-parent (cover moved into the Popup) drops the hit for a moment and spuriously raises leave: gate on how long
+        // since the show to detect that artifact; within the window it is ignored. A real leave afterwards no longer leans on
+        // the geometry verdict, which can misreport "still over" under a stale capture or cross-screen DPI — a root of the
+        // zoom getting stuck at full size — and reclaims outright, more reliably.
+        var sinceShow = Stopwatch.GetElapsedTime(_artworkZoomShowStamp).TotalMilliseconds;
+        if (sinceShow < ArtworkZoomReparentGuardMs)
+            return;
+
+        AnimateArtworkHover(false);
     }
 
     /// <summary>
@@ -1908,7 +2028,12 @@ public partial class TaskBarMediaControl
         if (width <= 0 || height <= 0 || double.IsNaN(width) || double.IsNaN(height))
             return false;
 
-        var dpiScale = PresentationSource.FromVisual(this)?.CompositionTarget?.TransformToDevice.M11 ?? 1.0;
+        // 用封面自身的呈现源取 DPI：放大时封面在 Popup 里，Popup 可能与主窗口不在同一块屏幕（DPI 不同），
+        // 用主窗口的 DPI 会把原格矩形算错，导致几何判定误报"仍在"或"已离开"——前者正是放大卡死的根因之一。
+        // Use the cover's own presentation source for the DPI: while zoomed the cover lives in the Popup, which can sit on a
+        // different monitor (different DPI) than the main window; the main window's DPI would mis-size the slot rectangle and
+        // make the geometry verdict misreport "still over" or "already left" — the former being a root of the stuck zoom.
+        var dpiScale = PresentationSource.FromVisual(SongImageBorder)?.CompositionTarget?.TransformToDevice.M11 ?? 1.0;
         var tolerance = ArtworkHoverEdgeToleranceDip * dpiScale;
         // 锚点取"底边中点"：放大以它为原点（RenderTransformOrigin=(0.5,1)），该点在 1× 与放大态下屏幕位置相同，
         // 于是同一个锚点就能还原出原格；缩放到 1× 时原点取值根本不影响 PointToScreen。
@@ -2116,7 +2241,7 @@ public partial class TaskBarMediaControl
     /// </summary>
     private void AnimateArtworkHover(bool isHovered, bool immediate = false)
     {
-        var hoverMode = SettingsManager.Current.TaskbarExperience.ArtworkHoverMode;
+        var hoverMode = SettingsManager.Current.Interaction.ArtworkHoverMode;
         var hoverEligible = isHovered && CanUseTaskbarComponentHover() && _snapshot.Artwork is not null;
         var previewActive = hoverEligible && hoverMode == ArtworkHoverMode.Preview;
         var zoomActive = hoverEligible && hoverMode == ArtworkHoverMode.Zoom;
@@ -2232,7 +2357,7 @@ public partial class TaskBarMediaControl
             return;
         }
 
-        var hoverMode = SettingsManager.Current.TaskbarExperience.ArtworkHoverMode;
+        var hoverMode = SettingsManager.Current.Interaction.ArtworkHoverMode;
         // 门禁用 IsPointerOverArtwork（屏幕几何）而非 IsMouseOver：封面的悬停快照刷新可能恰逢陈旧捕获存续——
         // 那时 IsMouseOver 谎报 false，正在放大的封面会被一次普通的换歌/暂停刷新误收。其余组件不换树，无需此防。
         // The gate reads IsPointerOverArtwork (screen geometry) rather than IsMouseOver: a hover-time snapshot refresh can land

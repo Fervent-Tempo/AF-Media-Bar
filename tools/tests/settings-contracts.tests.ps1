@@ -21,11 +21,11 @@ function Invoke-ContractTool {
     [pscustomobject]@{ Data = $data; Bytes = [Text.Encoding]::UTF8.GetByteCount($text); Text = $text }
 }
 try {
-    $cover = Invoke-ContractTool -Arguments @('-Path', 'settings.taskbarExperience.artworkHoverMode')
+    $cover = Invoke-ContractTool -Arguments @('-Path', 'settings.interaction.artworkHoverMode')
     Assert-ContractQuery (@($cover.Data.fields).Count -eq 1) '封面查询返回了无关字段。'
     Assert-ContractQuery ($cover.Data.fields[0].status -eq 'unreleased' -and $cover.Data.fields[0].default -eq 'Off') '封面发布状态或默认值改变。'
     Assert-ContractQuery (@($cover.Data.enums).Count -eq 1 -and @($cover.Data.enums[0].members).Count -eq 3) '封面查询缺少相关枚举。'
-    Assert-ContractQuery ('artwork-hover' -in $cover.Data.rules.id -and 'taskbar-reset' -in $cover.Data.rules.id) '封面查询缺少行为或重置规则。'
+    Assert-ContractQuery ('artwork-hover' -in $cover.Data.rules.id -and 'interaction' -in $cover.Data.rules.id) '封面查询缺少行为或重置规则。'
     Assert-ContractQuery ('settings.taskbarExperience.artworkVisible' -in $cover.Data.relatedPaths) '封面查询丢失关联条件。'
     Assert-ContractQuery ($cover.Bytes -le 3072 -and -not $cover.Text.Contains('sourceFiles')) '单字段默认查询超过3KB或读入了无关证据。'
 

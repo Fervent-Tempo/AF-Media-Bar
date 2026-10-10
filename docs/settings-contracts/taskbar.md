@@ -2,14 +2,13 @@
 
 本页由机器清单和查询索引生成；只在修改本专题时读取。字段元数据改机器清单，关联规则改 query-index.json，再运行导出工具。
 
-基线：main 09e9cf1；正式版 v1.3.2；schema 2；核对日 2026-10-10。
+基线：main 6ba5cf2；正式版 v1.3.2；schema 2；核对日 2026-10-10。
 
 [简短入口](../settings-contracts.md)；[完整参考](reference.md)。对象默认看子字段；缺字段测试保留父对象，列表项是固定示例。可空声明不等于JSON一定拒绝null。
 
 ## 关联规则
 
-- ResetContentLayout 恢复任务栏体验但保留媒体字号；字号由 ResetTaskbarAppearance 恢复。旧 ResetDisplayModes 仍会恢复封面模式、显隐等，不等于当前页面重置。
-- Off 仍有栏内1.1×，Zoom 为2×，Preview 为独立预览。当前模式在 taskbarExperience，交互重置不含它；旧页面不可达，当前入口遗漏，#179 尚未合并。
+- ResetContentLayout 恢复任务栏体验但保留媒体字号；字号由 ResetTaskbarAppearance 恢复。旧 ResetDisplayModes 仍会恢复组件显隐等，不等于当前页面重置；两者均保留交互中的封面悬停模式。
 - null 时 position=End 解析为 Right，其余为 Left；显式值优先。
 - 四项全关时回 Compact：媒体信息和控制开启，音频与性能关闭；不可只孤立判断一个开关。
 - null 用默认顺序；封面和媒体文字固定在前，只排序尾部。遗漏的已知尾部会补全，因此空数组不表示隐藏组件。
@@ -21,7 +20,6 @@
 |---|---|---|---|---|---|
 | `settings.taskbarExperience` | `TaskbarExperienceSettings` | 对象，见子字段 | 对象，查询-Details | "读取失败：JsonException" | v1.2.0 |
 | `settings.taskbarExperience.arrangement` | `TaskbarContentArrangement?` | null | null | null | **未发布** |
-| `settings.taskbarExperience.artworkHoverMode` | `ArtworkHoverMode` | "Off" | "Off" | "Off" | **未发布** |
 | `settings.taskbarExperience.artworkVisible` | `bool` | true | true | "读取失败：JsonException" | v1.3.0 |
 | `settings.taskbarExperience.componentSpacingDip` | `double` | 12 | 4 | "读取失败：JsonException" | v1.2.0 |
 | `settings.taskbarExperience.contentLayout` | `TaskbarContentLayout` | "AdaptiveStack" | "CompactInline" | "AdaptiveStack" | v1.2.0 |
@@ -65,16 +63,6 @@ JSON无效输入回退：Left。
 |---|---|---|
 | `Left` | 0 | **未发布** |
 | `Right` | 1 | **未发布** |
-
-### ArtworkHoverMode
-
-JSON无效输入回退：Off。
-
-| 名称 | 数值 | 首次发布 |
-|---|---|---|
-| `Off` | 0 | **未发布** |
-| `Zoom` | 1 | **未发布** |
-| `Preview` | 2 | **未发布** |
 
 ### TaskbarContentLayout
 

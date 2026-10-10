@@ -2,12 +2,13 @@
 
 本页由机器清单和查询索引生成；只在修改本专题时读取。字段元数据改机器清单，关联规则改 query-index.json，再运行导出工具。
 
-基线：main 09e9cf1；正式版 v1.3.2；schema 2；核对日 2026-10-10。
+基线：main 6ba5cf2；正式版 v1.3.2；schema 2；核对日 2026-10-10。
 
 [简短入口](../settings-contracts.md)；[完整参考](reference.md)。对象默认看子字段；缺字段测试保留父对象，列表项是固定示例。可空声明不等于JSON一定拒绝null。
 
 ## 关联规则
 
+- Off 仍有栏内1.1×，Zoom 为2×，Preview 为独立预览。模式存储在 interaction，由交互页提供选项并重置；封面显隐仍归任务栏内容。未发布的开发旧路径不迁移，缺字段回 Off。
 - ResetInteraction 恢复整段。托盘点击仅接受模型白名单，其他已定义旧值也可回默认；两个滚轮字段不要用根级旧字段代替。
 - 这些旧字段仍写入文件。EnhancedReadability无呈现效果；托盘使用interaction映射，未通用转接根滚轮字段；删除前仍按发布证据判断。
 
@@ -17,6 +18,7 @@
 |---|---|---|---|---|---|
 | `settings.interaction` | `GlobalInteractionSettings` | 对象，见子字段 | 对象，查询-Details | "读取失败：JsonException" | v1.2.0 |
 | `settings.interaction.artworkClickAction` | `PlayerClickAction` | "TogglePlayPause" | "TogglePlayPause" | "TogglePlayPause" | v1.2.0 |
+| `settings.interaction.artworkHoverMode` | `ArtworkHoverMode` | "Off" | "Off" | "Off" | **未发布** |
 | `settings.interaction.chordWheelAction` | `WheelAction` | "SwitchMediaSource" | "PreviousNext" | "PreviousNext" | v1.2.0 |
 | `settings.interaction.modifier` | `InteractionModifier` | "Shift" | "Shift" | "Shift" | v1.2.0 |
 | `settings.interaction.primaryWheelAction` | `WheelAction` | "PreviousNext" | "PreviousNext" | "PreviousNext" | v1.2.0 |
@@ -41,6 +43,16 @@ JSON无效输入回退：TogglePlayPause。
 | `ActivateSource` | 1 | v1.2.0 |
 | `OpenFullPanel` | 2 | v1.2.0 |
 | `Disabled` | 3 | v1.2.0 |
+
+### ArtworkHoverMode
+
+JSON无效输入回退：Off。
+
+| 名称 | 数值 | 首次发布 |
+|---|---|---|
+| `Off` | 0 | **未发布** |
+| `Zoom` | 1 | **未发布** |
+| `Preview` | 2 | **未发布** |
 
 ### WheelAction
 
