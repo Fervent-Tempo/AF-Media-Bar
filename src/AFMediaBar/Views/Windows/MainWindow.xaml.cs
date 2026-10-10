@@ -55,6 +55,7 @@ namespace AFMediaBar.Views.Windows
         private readonly TrackChangeNotificationCoordinator _trackChangeNotificationCoordinator;
         private readonly Func<TrackChangeNotificationWindow> _trackChangeNotificationFactory;
         private readonly ShellTrayIconService _trayIconService;
+        private readonly ISystemNotificationService _systemNotifications;
         private readonly UpdateService _updateService;
         private readonly DispatcherTimer _taskbarTopologyTimer;
 
@@ -116,6 +117,7 @@ namespace AFMediaBar.Views.Windows
             TrackChangeNotificationCoordinator trackChangeNotificationCoordinator,
             Func<TrackChangeNotificationWindow> trackChangeNotificationFactory,
             ShellTrayIconService trayIconService,
+            ISystemNotificationService systemNotifications,
             UpdateService updateService,
             MemoryPruneCoordinator memoryPruneCoordinator)
         {
@@ -143,6 +145,7 @@ namespace AFMediaBar.Views.Windows
             _trackChangeNotificationCoordinator = trackChangeNotificationCoordinator;
             _trackChangeNotificationFactory = trackChangeNotificationFactory;
             _trayIconService = trayIconService;
+            _systemNotifications = systemNotifications;
             _updateService = updateService;
             _memoryPruneCoordinator = memoryPruneCoordinator;
 
@@ -202,7 +205,7 @@ namespace AFMediaBar.Views.Windows
             // to "application and about". The notification only says "a newer version exists": both downloading and
             // installing are started explicitly on that page.
             _updateService.UpdateStateChanged += UpdateService_OnStateChanged;
-            _trayIconService.NotificationClicked += TrayIconService_OnNotificationClicked;
+            _systemNotifications.NotificationClicked += TrayIconService_OnNotificationClicked;
 
             // evaluate the initial state once the window is loaded
             Loaded += MainWindow_Loaded;
@@ -297,7 +300,7 @@ namespace AFMediaBar.Views.Windows
             _taskbarViewModel.OpenSettingsRequested -= ViewModel_OpenSettingsRequested;
             _taskbarViewModel.OpenUpdateSettingsRequested -= ViewModel_OpenUpdateSettingsRequested;
             _updateService.UpdateStateChanged -= UpdateService_OnStateChanged;
-            _trayIconService.NotificationClicked -= TrayIconService_OnNotificationClicked;
+            _systemNotifications.NotificationClicked -= TrayIconService_OnNotificationClicked;
             // Make sure that closing this window will begin the process of closing the application.
             Application.Current.Shutdown();
         }
@@ -901,7 +904,7 @@ namespace AFMediaBar.Views.Windows
             // 通知文本在发布的这一刻才取：窗口长期存活，缓存成字段就会在切换语言后继续用旧语言弹通知。
             // The notification text is fetched at the moment it is raised: this window lives as long as the process, so
             // caching it in a field would keep announcing in the old language after a switch.
-            _trayIconService.TryShowNotification(
+            _systemNotifications.TryShowNotification(
                 Translations.Get("Update.Notification.Title"),
                 Translations.Format("Update.Notification.Body", version, state.CurrentVersion),
                 ShellNotificationTarget.Application);
@@ -934,7 +937,7 @@ namespace AFMediaBar.Views.Windows
                 return;
             if (!_placementNotificationGate.TryBegin(Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency))
                 return;
-            _trayIconService.TryShowNotification(
+            _systemNotifications.TryShowNotification(
                 Translations.Get("Taskbar.Placement.Notification.Title"),
                 Translations.Get(e.IsHidden ? "Taskbar.Placement.Notification.Hidden" : "Taskbar.Placement.Notification.Moved"),
                 ShellNotificationTarget.None);
@@ -981,7 +984,7 @@ namespace AFMediaBar.Views.Windows
             if (_isClosing || result == QuickLaunchResult.Success)
                 return;
 
-            _trayIconService.TryShowNotification(
+            _systemNotifications.TryShowNotification(
                 Translations.Get("Panel.QuickLaunch.Title"),
                 Translations.Get(result == QuickLaunchResult.InvalidTarget
                     ? "Shell.QuickLaunch.Status.InvalidTarget"

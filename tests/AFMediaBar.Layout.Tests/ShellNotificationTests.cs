@@ -1,5 +1,6 @@
 // 用可控 Shell 调用验证真实托盘服务的通知标识、点击与资源清理；不安装图标或向桌面发送通知。
 using System.Reflection;
+using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Interop;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
@@ -21,11 +22,12 @@ public sealed class ShellNotificationTests
             var calls = new List<(uint Command, NativeMethods.NOTIFYICONDATA Data)>();
             bool Notify(uint command, ref NativeMethods.NOTIFYICONDATA data) { calls.Add((command, data)); return true; }
             using var tray = new ShellTrayIconService(icons, Notify);
+            ISystemNotificationService notifications = tray;
             var targets = new List<ShellNotificationTarget>();
-            tray.NotificationClicked += targets.Add;
-            Assert.IsTrue(tray.TryShowNotification("background", "body", ShellNotificationTarget.TaskbarBackground));
+            notifications.NotificationClicked += targets.Add;
+            Assert.IsTrue(notifications.TryShowNotification("background", "body", ShellNotificationTarget.TaskbarBackground));
             var background = calls.Last().Data;
-            Assert.IsTrue(tray.TryShowNotification("update", "body", ShellNotificationTarget.Application));
+            Assert.IsTrue(notifications.TryShowNotification("update", "body", ShellNotificationTarget.Application));
             var update = calls.Last().Data;
             Assert.AreNotEqual(background.uID, update.uID);
             var registration = calls.Single(call => call.Command == NativeMethods.NIM_ADD && call.Data.uID == background.uID).Data;

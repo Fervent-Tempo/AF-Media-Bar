@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Interop;
 using AFMediaBar.Classes.Interop;
 using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Abstractions;
 
 namespace AFMediaBar.Classes.Services;
 
@@ -10,7 +11,7 @@ namespace AFMediaBar.Classes.Services;
 /// 管理 AF Media Bar 的 Shell 通知区域图标及 Explorer 重启恢复。
 /// Manages the AF Media Bar Shell notification icon and Explorer restart recovery.
 /// </summary>
-public sealed class ShellTrayIconService : IDisposable
+public sealed class ShellTrayIconService : ISystemNotificationService, IDisposable
 {
     private const uint IconId = 1;
     private const uint BackgroundNotificationId = 2;
