@@ -63,9 +63,9 @@
                         PreviewMouseWheel="VolumePanel_PreviewMouseWheel">
                 <!-- 竖向音量面板：来源名称在上、百分比在滑块上方、滑块占满剩余高度。 -->
                 <!-- Vertical volume panel: source name on top, percentage above the slider, slider fills the rest. -->
-                <TextBlock x:Name="VolumeSourceText" FontSize="14" MaxWidth="72"
+                <TextBlock x:Name="VolumeSourceText" FontSize="14" MaxWidth="100"
                            HorizontalAlignment="Center" TextAlignment="Center"
-                           TextTrimming="CharacterEllipsis"/>
+                           TextWrapping="Wrap"/>
                 <TextBlock x:Name="VolumePercentText" FontSize="12" Margin="0,6,0,0" Opacity="0.68"
                            HorizontalAlignment="Center"/>
                 <Slider x:Name="VolumeSlider" Orientation="Vertical" Height="150" Margin="0,8,0,0"

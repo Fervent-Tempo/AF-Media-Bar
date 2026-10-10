@@ -78,7 +78,7 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
         VolumeSlider.Value = volume ?? 0;
         VolumePercentText.Text = volume is int value ? $"{value}%" : Translations.Get("Panel.Volume.Unavailable");
         _isUpdating = false;
-        Width = 100;
+        Width = 132;
         ShowMode(TaskbarCompactFlyoutMode.Volume, anchor);
     }
 

@@ -181,7 +181,11 @@ public partial class TaskbarFullPanelWindow : FluentWindow
     {
         _snapshot = snapshot;
         TitleText.Text = string.IsNullOrWhiteSpace(snapshot.Title) ? Translations.Get("Panel.FullPanel.NoMedia") : snapshot.Title;
-        ArtistText.Text = string.IsNullOrWhiteSpace(snapshot.Artist) ? snapshot.SourceName : snapshot.Artist;
+        ArtistText.Text = snapshot.Artist;
+        ArtistText.Visibility = string.IsNullOrWhiteSpace(snapshot.Artist) ||
+            string.Equals(snapshot.Artist.Trim(), snapshot.SourceName.Trim(), StringComparison.OrdinalIgnoreCase)
+            ? Visibility.Collapsed
+            : Visibility.Visible;
         SourceText.Text = snapshot.SourceName;
         ApplyLyricsSourceLine(snapshot);
         ArtworkImage.Source = snapshot.Artwork;
