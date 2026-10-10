@@ -70,6 +70,8 @@ internal sealed class RestartConfirmationService(WindowAppearanceService appeara
             var dialog = new FluentWindow
             {
                 Title = Translations.Get(_developerPurpose is null ? "Restart.Dialog.Title" : "Developer.Window.Title"), Content = content, Width = 460,
+                // 覆盖 FluentWindow 的默认最小高度，短提示也按内容收紧。
+                MinHeight = 0,
                 SizeToContent = SizeToContent.Height, ResizeMode = ResizeMode.NoResize,
                 ShowInTaskbar = true, WindowStartupLocation = WindowStartupLocation.CenterScreen
             };
