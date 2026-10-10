@@ -6,12 +6,25 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'settings-contract-data.ps1')
 try {
     $workspaceRoot = (Resolve-Path -LiteralPath $Workspace).Path
     $catalogPath = if ($ContractFile) { (Resolve-Path -LiteralPath $ContractFile).Path } else { Join-Path $workspaceRoot 'docs/settings-contracts.json' }
     $catalog = Get-Content -LiteralPath $catalogPath -Raw -Encoding utf8 | ConvertFrom-Json
     if ($catalog.formatVersion -ne 1) { throw '不支持的契约清单格式。' }
-    $markdown = Get-Content -LiteralPath (Join-Path $workspaceRoot 'docs/settings-contracts.md') -Raw -Encoding utf8
+    $markdown = Get-Content -LiteralPath (Join-Path $workspaceRoot 'docs/settings-contracts/reference.md') -Raw -Encoding utf8
+    $entryPath = Join-Path $workspaceRoot 'docs/settings-contracts.md'
+    if ((Get-Item -LiteralPath $entryPath).Length -gt 3072) { throw '默认读取入口超过3KB。' }
+    $data = Read-SettingsContractData $workspaceRoot $catalogPath
+    foreach ($field in $catalog.fields) { $null = Get-SettingsContractGroup $data.Index $field.path }
+    $knownPaths = @($catalog.fields.path) + @($catalog.removedReleasedFields.path)
+    foreach ($rule in $data.Index.rules) {
+        foreach ($related in $rule.relatedPaths) {
+            if ($related -cnotin $knownPaths) { throw "关联规则引用未知路径：$related" }
+        }
+    }
+    & pwsh -NoProfile -File (Join-Path $PSScriptRoot 'export-settings-contract-topics.ps1') -Workspace $workspaceRoot -Check
+    if ($LASTEXITCODE -ne 0) { throw '生成专题与清单不一致。' }
     $fields = @($catalog.fields)
     $enums = @($catalog.enums)
     $members = @($enums | ForEach-Object { $_.members })
