@@ -61,6 +61,8 @@ namespace AFMediaBar
         private bool _isRestartStartup;
         private bool _ordinaryRestartRequested;
         private IApplicationRestartService? _restartService;
+        private DeveloperModeService? _developerMode;
+        private DeveloperToolsWindowHost? _developerToolsHost;
         private RestartConfirmationService? _restartConfirmation;
         private LyricsRecoveryNotificationCoordinator? _lyricsRecoveryNotifications;
 
@@ -194,6 +196,15 @@ namespace AFMediaBar
                 services.AddSingleton<RestartConfirmationService>();
                 services.AddSingleton<IRestartConfirmationService>(sp => sp.GetRequiredService<RestartConfirmationService>());
                 services.AddSingleton<LyricsRecoveryNotificationCoordinator>();
+                services.AddSingleton<IDeveloperConfirmationService>(sp => sp.GetRequiredService<RestartConfirmationService>());
+                services.AddSingleton<Func<IDeveloperHostActions>>(sp => () => (IDeveloperHostActions)sp.GetRequiredService<INavigationWindow>());
+                services.AddSingleton<DeveloperScenarioService>();
+                services.AddSingleton<IDeveloperScenarioService>(sp => sp.GetRequiredService<DeveloperScenarioService>());
+                services.AddSingleton<Func<DeveloperToolsWindow>>(sp => () => new DeveloperToolsWindow(
+                    new DeveloperToolsViewModel(sp.GetRequiredService<IDeveloperModeService>(),
+                        sp.GetRequiredService<IDeveloperScenarioService>(), sp.GetRequiredService<LocalizationService>()),
+                    sp.GetRequiredService<WindowAppearanceService>()));
+                services.AddSingleton<DeveloperToolsWindowHost>();
                 services.AddSingleton<ReleaseHighlightsService>();
                 services.AddSingleton<ReleaseHighlightsViewModel>();
                 services.AddScoped<ReleaseHighlightsPage>();
@@ -376,6 +387,8 @@ namespace AFMediaBar
             _restartService = Services.GetRequiredService<IApplicationRestartService>();
             _restartService.RestartRequested += OnOrdinaryRestartRequested;
             _restartConfirmation = Services.GetRequiredService<RestartConfirmationService>();
+            _developerMode = Services.GetRequiredService<DeveloperModeService>();
+            _developerToolsHost = Services.GetRequiredService<DeveloperToolsWindowHost>();
             if (!_isRestartStartup && await updateService.TryLaunchPendingInstallOnStartupAsync(_startupCancellation.Token))
             {
                 Debug.WriteLine("[App] A pending update is being installed before this start; exiting now.");
@@ -489,6 +502,8 @@ namespace AFMediaBar
             }
 
             _startupCancellation.Cancel();
+            _developerToolsHost?.Dispose();
+            _developerMode?.Dispose();
             _lyricsRecoveryNotifications?.Dispose();
             _restartConfirmation?.Dispose();
             if (_restartService is IDisposable restartLifetime) restartLifetime.Dispose();

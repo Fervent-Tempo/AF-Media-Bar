@@ -102,4 +102,26 @@ public sealed class WebLyricsRecoveryTests
             return Task.CompletedTask;
         });
     }
+
+    [TestMethod]
+    public void DeveloperSignalUsesTheSameFailureThresholdAndHonorsPausedDelivery()
+    {
+        StaTest.Run(_ =>
+        {
+            using var renderer = new LyricsWebViewRenderer(new WebView2CompositionControl());
+            var failures = 0;
+            renderer.Failed += (_, _) => failures++;
+            renderer.PauseDelivery();
+            Assert.IsFalse(renderer.CanInjectDeveloperFailure(CoreWebView2ProcessFailedKind.RenderProcessUnresponsive));
+            renderer.ResumeDelivery();
+            renderer.HandleProcessFailure(CoreWebView2ProcessFailedKind.GpuProcessExited, CoreWebView2ProcessFailedReason.Unexpected, 0, developerInjected: true);
+            Assert.AreEqual(0, failures);
+            renderer.HandleProcessFailure(CoreWebView2ProcessFailedKind.RenderProcessUnresponsive, CoreWebView2ProcessFailedReason.Unresponsive, 0, developerInjected: true);
+            Assert.AreEqual(0, failures);
+            renderer.HandleProcessFailure(CoreWebView2ProcessFailedKind.RenderProcessUnresponsive, CoreWebView2ProcessFailedReason.Unresponsive, 0, developerInjected: true);
+            Assert.AreEqual(1, failures);
+            Assert.IsFalse(renderer.CanInjectDeveloperFailure(CoreWebView2ProcessFailedKind.RenderProcessExited));
+            return Task.CompletedTask;
+        });
+    }
 }

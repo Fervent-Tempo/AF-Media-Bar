@@ -57,6 +57,10 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
     public event EventHandler? Failed;
 
     /// <summary>Web 文档是否已可呈现。/ Whether the web document is ready to present.</summary>
+    internal string RuntimeVersion => _runtimeVersion;
+    internal bool CanInjectDeveloperFailure(CoreWebView2ProcessFailedKind kind) => !_disposed && !_failed &&
+        (kind != CoreWebView2ProcessFailedKind.RenderProcessUnresponsive || !_deliveryPaused);
+
     public bool IsReady => _documentReady && !_disposed && !_failed;
 
     public async Task<bool> InitializeAsync()
@@ -223,10 +227,10 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
         }
     }
 
-    internal void HandleProcessFailure(CoreWebView2ProcessFailedKind kind, CoreWebView2ProcessFailedReason reason, int exitCode)
+    internal void HandleProcessFailure(CoreWebView2ProcessFailedKind kind, CoreWebView2ProcessFailedReason reason, int exitCode, bool developerInjected = false)
     {
         if (_disposed || _failed) return;
-        AppLogService.Current?.Warn("Lyrics", $"WebView2 process failure: kind={kind}, reason={reason}, exitCode=0x{exitCode:X8}, runtime={_runtimeVersion}");
+        AppLogService.Current?.Warn("Lyrics", $"WebView2 process failure: origin={(developerInjected ? "DeveloperInjected" : "Runtime")}, kind={kind}, reason={reason}, exitCode=0x{exitCode:X8}, runtime={_runtimeVersion}");
         if (kind == CoreWebView2ProcessFailedKind.RenderProcessUnresponsive)
         {
             if (_deliveryPaused || ++_unresponsiveNotifications < 2) return;

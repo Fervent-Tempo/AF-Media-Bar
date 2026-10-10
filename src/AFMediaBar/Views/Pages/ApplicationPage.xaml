@@ -287,6 +287,9 @@
                             <components:SettingsRow Title="{DynamicResource Loc.Developer.Mode.Title}" Description="{DynamicResource Loc.Developer.Mode.Description}" Icon="{ui:SymbolIcon Bug24}">
                                 <ui:ToggleSwitch IsChecked="{Binding ViewModel.DeveloperModeEnabled, Mode=TwoWay}" />
                             </components:SettingsRow>
+                            <components:SettingsRow Title="{DynamicResource Loc.Developer.Tools.Title}" Description="{DynamicResource Loc.Developer.Tools.Description}" Visibility="{Binding ViewModel.DeveloperModeEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}" Icon="{ui:SymbolIcon Bug24}">
+                                <ui:Button Content="{DynamicResource Loc.Developer.Open}" Command="{Binding ViewModel.OpenDeveloperToolsCommand}" Style="{StaticResource AfSettingsButtonStyle}" />
+                            </components:SettingsRow>
                             <components:SettingsRow
                                 Description="{DynamicResource Loc.About.Row.LogFolder.Description}"
                                 Icon="{ui:SymbolIcon FolderOpen24}"

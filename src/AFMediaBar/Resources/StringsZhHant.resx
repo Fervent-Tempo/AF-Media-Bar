@@ -2491,4 +2491,87 @@
   </data>
   <data name="Developer.Mode.Title" xml:space="preserve"><value>開發者模式</value></data>
   <data name="Developer.Mode.Description" xml:space="preserve"><value>手動測試通知與復原流程。測試操作可能影響目前工作階段。</value></data>
+  <data name="Developer.Tools.Title" xml:space="preserve"><value>測試工具</value></data>
+  <data name="Developer.Tools.Description" xml:space="preserve"><value>預覽通知、測試復原流程並查看執行狀態。</value></data>
+  <data name="Developer.Open" xml:space="preserve"><value>開啟測試工具</value></data>
+  <data name="Developer.Window.Title" xml:space="preserve"><value>AF 開發者工具</value></data>
+  <data name="Developer.Window.Description" xml:space="preserve"><value>預覽可重複執行。工作階段操作使用實際復原額度，可能觸發正式故障通知；停用歌詞後需重新啟動才能復原。</value></data>
+  <data name="Developer.Host" xml:space="preserve"><value>歌詞宿主</value></data>
+  <data name="Developer.Refresh" xml:space="preserve"><value>重新整理宿主</value></data>
+  <data name="Developer.CommandHint" xml:space="preserve"><value>輸入指令或選擇建議，例如 notify lyrics</value></data>
+  <data name="Developer.Execute" xml:space="preserve"><value>執行</value></data>
+  <data name="Developer.Copy" xml:space="preserve"><value>複製結果與診斷</value></data>
+  <data name="Developer.Impact.Preview" xml:space="preserve"><value>通知與介面預覽</value></data>
+  <data name="Developer.Impact.Session" xml:space="preserve"><value>目前工作階段操作</value></data>
+  <data name="Developer.Impact.Diagnostic" xml:space="preserve"><value>狀態與記錄</value></data>
+  <data name="Developer.Result.Completed" xml:space="preserve"><value>已完成</value></data>
+  <data name="Developer.Result.Accepted" xml:space="preserve"><value>請求已接受</value></data>
+  <data name="Developer.Result.Queued" xml:space="preserve"><value>已排入佇列</value></data>
+  <data name="Developer.Result.Unavailable" xml:space="preserve"><value>條件不符</value></data>
+  <data name="Developer.Result.Busy" xml:space="preserve"><value>忙碌</value></data>
+  <data name="Developer.Result.Canceled" xml:space="preserve"><value>已取消</value></data>
+  <data name="Developer.Result.Failed" xml:space="preserve"><value>失敗</value></data>
+  <data name="Developer.UnknownCommand" xml:space="preserve"><value>無法辨識指令，請選擇建議或輸入 help。</value></data>
+  <data name="Developer.NoRenderer" xml:space="preserve"><value>所選宿主沒有可用的歌詞轉譯器，請播放有歌詞的歌曲並重新整理宿主。</value></data>
+  <data name="Developer.DeliveryPaused" xml:space="preserve"><value>轉譯器已失效或暫停傳送，本次訊號未注入。</value></data>
+  <data name="Developer.GpuIgnored" xml:space="preserve"><value>已記錄 GPU 測試故障，未主動重建檢視。</value></data>
+  <data name="Developer.FailureInjected" xml:space="preserve"><value>已注入測試訊號，後續結果請查看狀態與記錄。</value></data>
+  <data name="Developer.PreviewConfirmed" xml:space="preserve"><value>已選擇確認；這是預覽，未要求重新啟動。</value></data>
+  <data name="Developer.Confirm.Preview" xml:space="preserve"><value>僅預覽重新啟動確認介面。按「確認（僅預覽）」不會重新啟動 AF。</value></data>
+  <data name="Developer.Confirm.PreviewButton" xml:space="preserve"><value>確認（僅預覽）</value></data>
+  <data name="Developer.Confirm.Disable" xml:space="preserve"><value>此測試會停用本次工作階段的全部 Web 歌詞，並可能傳送正式故障通知。其他功能仍可使用；需要重新啟動 AF 才能嘗試復原。</value></data>
+  <data name="Developer.Confirm.DisableButton" xml:space="preserve"><value>停用本次工作階段歌詞</value></data>
+  <data name="Developer.Confirm.Restart" xml:space="preserve"><value>重新啟動 AF Media Bar，嘗試復原歌詞。此操作使用一般重新啟動流程，不安裝待更新套件。</value></data>
+  <data name="Developer.Notification.Prefix" xml:space="preserve"><value>[測試]</value></data>
+  <data name="Developer.Notification.Update" xml:space="preserve"><value>更新通知預覽。按一下可前往應用程式設定，不變更更新狀態。</value></data>
+  <data name="Developer.Notification.Lyrics" xml:space="preserve"><value>歌詞故障通知預覽。按一下僅預覽確認介面，不會重新啟動 AF。</value></data>
+  <data name="Developer.Notification.Submitted" xml:space="preserve"><value>傳回值僅表示 Windows 是否接受請求，不證明通知已顯示。</value></data>
+  <data name="Developer.State.Power" xml:space="preserve"><value>電源：關閉顯示器={0}，鎖定={1}，睡眠={2}，顯示通知支援={3}，修剪等級={4}</value></data>
+  <data name="Developer.State.Host" xml:space="preserve"><value>宿主復原={0}，工作階段停用={1}，已降級={2}，媒體來源={3}</value></data>
+  <data name="Developer.State.Memory" xml:space="preserve"><value>記憶體：工作集={0:0.0} MB，私人位元組={1:0.0} MB，受控堆積={2:0.0} MB，控制代碼={3}，執行緒={4}</value></data>
+  <data name="Developer.State.MemoryUnavailable" xml:space="preserve"><value>記憶體讀數無法使用</value></data>
+  <data name="Developer.Build" xml:space="preserve"><value>組建</value></data>
+  <data name="Developer.Redacted" xml:space="preserve"><value>已隱藏路徑</value></data>
+  <data name="Developer.Sample.Title" xml:space="preserve"><value>[測試] 範例歌曲</value></data>
+  <data name="Developer.Sample.Artist" xml:space="preserve"><value>開發者工具</value></data>
+  <data name="Developer.Action.Update" xml:space="preserve"><value>更新通知</value></data>
+  <data name="Developer.Description.Update" xml:space="preserve"><value>重複預覽；按一下前往應用程式設定，不檢查或下載更新。</value></data>
+  <data name="Developer.Action.Moved" xml:space="preserve"><value>工作列移動通知</value></data>
+  <data name="Developer.Description.Moved" xml:space="preserve"><value>僅預覽空間不足時的移動提示，不變更位置。</value></data>
+  <data name="Developer.Action.Hidden" xml:space="preserve"><value>工作列隱藏通知</value></data>
+  <data name="Developer.Description.Hidden" xml:space="preserve"><value>僅預覽空間不足時的隱藏提示，不隱藏宿主。</value></data>
+  <data name="Developer.Action.Background" xml:space="preserve"><value>TranslucentTB 通知</value></data>
+  <data name="Developer.Description.Background" xml:space="preserve"><value>按一下前往背景設定；不變更背景或已提示標記。</value></data>
+  <data name="Developer.Action.Lyrics" xml:space="preserve"><value>歌詞故障通知</value></data>
+  <data name="Developer.Description.Lyrics" xml:space="preserve"><value>獨立測試點擊目標；按一下僅預覽確認，不重新啟動。</value></data>
+  <data name="Developer.Action.RestartBusy" xml:space="preserve"><value>重新啟動忙碌通知</value></data>
+  <data name="Developer.Description.RestartBusy" xml:space="preserve"><value>僅預覽，不取得重新啟動或更新預約。</value></data>
+  <data name="Developer.Action.RestartFailed" xml:space="preserve"><value>重新啟動失敗通知</value></data>
+  <data name="Developer.Description.RestartFailed" xml:space="preserve"><value>僅預覽，不啟動等候程序。</value></data>
+  <data name="Developer.Action.Track" xml:space="preserve"><value>歌曲通知預覽</value></data>
+  <data name="Developer.Description.Track" xml:space="preserve"><value>使用獨立範例視窗與目前通知版面，不變更實際媒體。</value></data>
+  <data name="Developer.Action.Confirm" xml:space="preserve"><value>重新啟動確認預覽</value></data>
+  <data name="Developer.Description.Confirm" xml:space="preserve"><value>僅記錄選擇；即使確認也不呼叫重新啟動服務。</value></data>
+  <data name="Developer.Action.Restart" xml:space="preserve"><value>重新啟動 AF</value></data>
+  <data name="Developer.Description.Restart" xml:space="preserve"><value>確認後執行實際一般重新啟動，與更新安裝互斥。</value></data>
+  <data name="Developer.Action.Rebuild" xml:space="preserve"><value>重建歌詞檢視</value></data>
+  <data name="Developer.Description.Rebuild" xml:space="preserve"><value>作用於所選宿主，消耗既有三次重建額度；耗盡後降級。</value></data>
+  <data name="Developer.Action.Renderer" xml:space="preserve"><value>注入轉譯程序失敗</value></data>
+  <data name="Developer.Description.Renderer" xml:space="preserve"><value>測試共同失敗流程與兩秒後的一次重試，不終止實際程序。</value></data>
+  <data name="Developer.Action.Unresponsive" xml:space="preserve"><value>注入一次無回應</value></data>
+  <data name="Developer.Description.Unresponsive" xml:space="preserve"><value>連續兩次進入失敗流程；傳送暫停時不注入，成功指令碼會歸零。</value></data>
+  <data name="Developer.Action.Gpu" xml:space="preserve"><value>注入 GPU 結束診斷</value></data>
+  <data name="Developer.Description.Gpu" xml:space="preserve"><value>僅驗證診斷分支，不主動重建，不讓實際 GPU 程序崩潰。</value></data>
+  <data name="Developer.Action.Disable" xml:space="preserve"><value>停用工作階段歌詞</value></data>
+  <data name="Developer.Description.Disable" xml:space="preserve"><value>確認後對全部宿主生效，跨 Explorer 重新啟動保留；需重新啟動 AF 嘗試復原。</value></data>
+  <data name="Developer.Action.Reload" xml:space="preserve"><value>安全重新載入工作列</value></data>
+  <data name="Developer.Description.Reload" xml:space="preserve"><value>重用既有宿主重新載入，不終止 Explorer。</value></data>
+  <data name="Developer.Action.State" xml:space="preserve"><value>讀取狀態快照</value></data>
+  <data name="Developer.Description.State" xml:space="preserve"><value>讀取版本、顯示器、復原、電源與記憶體；不預設複製歌曲或路徑。</value></data>
+  <data name="Developer.Action.Trim" xml:space="preserve"><value>手動整理記憶體</value></data>
+  <data name="Developer.Description.Trim" xml:space="preserve"><value>使用既有手動入口；接受請求不表示回收已完成。</value></data>
+  <data name="Developer.Action.Logs" xml:space="preserve"><value>開啟記錄目錄</value></data>
+  <data name="Developer.Description.Logs" xml:space="preserve"><value>開啟既有記錄資料夾，不額外上傳或匯出資料。</value></data>
+  <data name="Developer.Action.Help" xml:space="preserve"><value>指令說明</value></data>
+  <data name="Developer.Description.Help" xml:space="preserve"><value>列出同一動作目錄的指令、說明與影響範圍。</value></data>
 </root>

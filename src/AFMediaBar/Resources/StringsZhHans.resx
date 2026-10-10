@@ -2491,4 +2491,87 @@
   </data>
   <data name="Developer.Mode.Title" xml:space="preserve"><value>开发者模式</value></data>
   <data name="Developer.Mode.Description" xml:space="preserve"><value>手动测试通知和恢复流程。测试操作可能影响当前会话。</value></data>
+  <data name="Developer.Tools.Title" xml:space="preserve"><value>测试工具</value></data>
+  <data name="Developer.Tools.Description" xml:space="preserve"><value>预览通知、测试恢复流程并查看运行状态。</value></data>
+  <data name="Developer.Open" xml:space="preserve"><value>打开测试工具</value></data>
+  <data name="Developer.Window.Title" xml:space="preserve"><value>AF 开发者工具</value></data>
+  <data name="Developer.Window.Description" xml:space="preserve"><value>预览可重复执行。会话操作使用真实恢复预算，可能触发正式故障通知；停用歌词后需重启才能恢复。</value></data>
+  <data name="Developer.Host" xml:space="preserve"><value>歌词宿主</value></data>
+  <data name="Developer.Refresh" xml:space="preserve"><value>刷新宿主</value></data>
+  <data name="Developer.CommandHint" xml:space="preserve"><value>输入指令或选择建议，例如 notify lyrics</value></data>
+  <data name="Developer.Execute" xml:space="preserve"><value>执行</value></data>
+  <data name="Developer.Copy" xml:space="preserve"><value>复制结果与诊断</value></data>
+  <data name="Developer.Impact.Preview" xml:space="preserve"><value>通知与界面预览</value></data>
+  <data name="Developer.Impact.Session" xml:space="preserve"><value>当前会话操作</value></data>
+  <data name="Developer.Impact.Diagnostic" xml:space="preserve"><value>状态与日志</value></data>
+  <data name="Developer.Result.Completed" xml:space="preserve"><value>已完成</value></data>
+  <data name="Developer.Result.Accepted" xml:space="preserve"><value>请求已接受</value></data>
+  <data name="Developer.Result.Queued" xml:space="preserve"><value>已排队</value></data>
+  <data name="Developer.Result.Unavailable" xml:space="preserve"><value>条件不满足</value></data>
+  <data name="Developer.Result.Busy" xml:space="preserve"><value>忙碌</value></data>
+  <data name="Developer.Result.Canceled" xml:space="preserve"><value>已取消</value></data>
+  <data name="Developer.Result.Failed" xml:space="preserve"><value>失败</value></data>
+  <data name="Developer.UnknownCommand" xml:space="preserve"><value>未识别指令，请选择建议或输入 help。</value></data>
+  <data name="Developer.NoRenderer" xml:space="preserve"><value>所选宿主没有可用的歌词渲染器，请播放有歌词的歌曲并刷新宿主。</value></data>
+  <data name="Developer.DeliveryPaused" xml:space="preserve"><value>渲染器已失效或暂停投递，本次信号未注入。</value></data>
+  <data name="Developer.GpuIgnored" xml:space="preserve"><value>已记录 GPU 测试故障，未主动重建视图。</value></data>
+  <data name="Developer.FailureInjected" xml:space="preserve"><value>已注入测试信号，后续结果请查看状态与日志。</value></data>
+  <data name="Developer.PreviewConfirmed" xml:space="preserve"><value>已选择确认；这是预览，未请求重启。</value></data>
+  <data name="Developer.Confirm.Preview" xml:space="preserve"><value>仅预览重启确认界面。点击“确认（仅预览）”不会重启 AF。</value></data>
+  <data name="Developer.Confirm.PreviewButton" xml:space="preserve"><value>确认（仅预览）</value></data>
+  <data name="Developer.Confirm.Disable" xml:space="preserve"><value>此测试会停用本次会话的全部 Web 歌词，并可能发送正式故障通知。其他功能仍可使用；需要重启 AF 才能尝试恢复。</value></data>
+  <data name="Developer.Confirm.DisableButton" xml:space="preserve"><value>停用本次会话歌词</value></data>
+  <data name="Developer.Confirm.Restart" xml:space="preserve"><value>重启 AF Media Bar，尝试恢复歌词。此操作使用普通重启流程，不安装待更新包。</value></data>
+  <data name="Developer.Notification.Prefix" xml:space="preserve"><value>[测试]</value></data>
+  <data name="Developer.Notification.Update" xml:space="preserve"><value>更新通知预览。点击可前往应用设置，不改变更新状态。</value></data>
+  <data name="Developer.Notification.Lyrics" xml:space="preserve"><value>歌词故障通知预览。点击仅预览确认界面，不会重启 AF。</value></data>
+  <data name="Developer.Notification.Submitted" xml:space="preserve"><value>返回值只表示 Windows 是否接受请求，不证明通知已显示。</value></data>
+  <data name="Developer.State.Power" xml:space="preserve"><value>电源：关闭显示器={0}，锁屏={1}，睡眠={2}，显示通知支持={3}，剪枝档位={4}</value></data>
+  <data name="Developer.State.Host" xml:space="preserve"><value>宿主恢复={0}，会话停用={1}，已降级={2}，媒体来源={3}</value></data>
+  <data name="Developer.State.Memory" xml:space="preserve"><value>内存：工作集={0:0.0} MB，私有字节={1:0.0} MB，托管堆={2:0.0} MB，句柄={3}，线程={4}</value></data>
+  <data name="Developer.State.MemoryUnavailable" xml:space="preserve"><value>内存读数不可用</value></data>
+  <data name="Developer.Build" xml:space="preserve"><value>构建</value></data>
+  <data name="Developer.Redacted" xml:space="preserve"><value>已隐藏路径</value></data>
+  <data name="Developer.Sample.Title" xml:space="preserve"><value>[测试] 示例歌曲</value></data>
+  <data name="Developer.Sample.Artist" xml:space="preserve"><value>开发者工具</value></data>
+  <data name="Developer.Action.Update" xml:space="preserve"><value>更新通知</value></data>
+  <data name="Developer.Description.Update" xml:space="preserve"><value>重复预览；点击前往应用设置，不检查或下载更新。</value></data>
+  <data name="Developer.Action.Moved" xml:space="preserve"><value>任务栏移动通知</value></data>
+  <data name="Developer.Description.Moved" xml:space="preserve"><value>仅预览空间不足时的移动提示，不改变位置。</value></data>
+  <data name="Developer.Action.Hidden" xml:space="preserve"><value>任务栏隐藏通知</value></data>
+  <data name="Developer.Description.Hidden" xml:space="preserve"><value>仅预览空间不足时的隐藏提示，不隐藏宿主。</value></data>
+  <data name="Developer.Action.Background" xml:space="preserve"><value>TranslucentTB 通知</value></data>
+  <data name="Developer.Description.Background" xml:space="preserve"><value>点击前往背景设置；不改背景或已提示标记。</value></data>
+  <data name="Developer.Action.Lyrics" xml:space="preserve"><value>歌词故障通知</value></data>
+  <data name="Developer.Description.Lyrics" xml:space="preserve"><value>独立测试点击目标；点击仅预览确认，不重启。</value></data>
+  <data name="Developer.Action.RestartBusy" xml:space="preserve"><value>重启忙碌通知</value></data>
+  <data name="Developer.Description.RestartBusy" xml:space="preserve"><value>仅预览，不取得重启或更新预约。</value></data>
+  <data name="Developer.Action.RestartFailed" xml:space="preserve"><value>重启失败通知</value></data>
+  <data name="Developer.Description.RestartFailed" xml:space="preserve"><value>仅预览，不启动等待进程。</value></data>
+  <data name="Developer.Action.Track" xml:space="preserve"><value>歌曲通知预览</value></data>
+  <data name="Developer.Description.Track" xml:space="preserve"><value>使用独立样例窗口和当前通知布局，不改变真实媒体。</value></data>
+  <data name="Developer.Action.Confirm" xml:space="preserve"><value>重启确认预览</value></data>
+  <data name="Developer.Description.Confirm" xml:space="preserve"><value>只记录选择；即使确认也不调用重启服务。</value></data>
+  <data name="Developer.Action.Restart" xml:space="preserve"><value>重启 AF</value></data>
+  <data name="Developer.Description.Restart" xml:space="preserve"><value>确认后执行真实普通重启，与更新安装互斥。</value></data>
+  <data name="Developer.Action.Rebuild" xml:space="preserve"><value>重建歌词视图</value></data>
+  <data name="Developer.Description.Rebuild" xml:space="preserve"><value>作用于所选宿主，消耗现有三次重建预算；耗尽后降级。</value></data>
+  <data name="Developer.Action.Renderer" xml:space="preserve"><value>注入渲染进程失败</value></data>
+  <data name="Developer.Description.Renderer" xml:space="preserve"><value>测试共同失败流程和两秒后的一次重试，不终止真实进程。</value></data>
+  <data name="Developer.Action.Unresponsive" xml:space="preserve"><value>注入一次不响应</value></data>
+  <data name="Developer.Description.Unresponsive" xml:space="preserve"><value>连续两次进入失败流程；投递暂停时不注入，成功脚本会清零。</value></data>
+  <data name="Developer.Action.Gpu" xml:space="preserve"><value>注入 GPU 退出诊断</value></data>
+  <data name="Developer.Description.Gpu" xml:space="preserve"><value>仅验证诊断分支，不主动重建，不让真实 GPU 进程崩溃。</value></data>
+  <data name="Developer.Action.Disable" xml:space="preserve"><value>停用会话歌词</value></data>
+  <data name="Developer.Description.Disable" xml:space="preserve"><value>确认后对全部宿主生效，跨 Explorer 重启保留；需重启 AF 尝试恢复。</value></data>
+  <data name="Developer.Action.Reload" xml:space="preserve"><value>安全重载任务栏</value></data>
+  <data name="Developer.Description.Reload" xml:space="preserve"><value>复用现有宿主重载，不终止 Explorer。</value></data>
+  <data name="Developer.Action.State" xml:space="preserve"><value>读取状态快照</value></data>
+  <data name="Developer.Description.State" xml:space="preserve"><value>读取版本、显示器、恢复、电源与内存；不默认复制歌曲或路径。</value></data>
+  <data name="Developer.Action.Trim" xml:space="preserve"><value>手动整理内存</value></data>
+  <data name="Developer.Description.Trim" xml:space="preserve"><value>使用现有手动入口；接受请求不表示回收已完成。</value></data>
+  <data name="Developer.Action.Logs" xml:space="preserve"><value>打开日志目录</value></data>
+  <data name="Developer.Description.Logs" xml:space="preserve"><value>打开现有日志文件夹，不额外上传或导出数据。</value></data>
+  <data name="Developer.Action.Help" xml:space="preserve"><value>指令帮助</value></data>
+  <data name="Developer.Description.Help" xml:space="preserve"><value>列出同一动作目录的命令、说明和影响范围。</value></data>
 </root>

@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using AFMediaBar.Classes.Abstractions;
+using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Resources;
 using Wpf.Ui.Controls;
@@ -11,18 +12,44 @@ using TextBlock = System.Windows.Controls.TextBlock;
 namespace AFMediaBar.Views.Dialogs;
 
 /// <summary>用独立 WPF-UI 窗口确认普通重启，无需设置窗口存在。</summary>
-internal sealed class RestartConfirmationService(WindowAppearanceService appearance) : IRestartConfirmationService, IDisposable
+internal sealed class RestartConfirmationService(WindowAppearanceService appearance) : IRestartConfirmationService, IDeveloperConfirmationService, IDisposable
 {
     private readonly CancellationTokenSource _lifetime = new();
     private FluentWindow? _dialog;
     private Task<bool>? _pending;
+    private Task<DeveloperConfirmationResult>? _developerPending;
+    private string? _developerPurpose;
     private bool _disposed;
+
+    public bool IsPreviewActive => _developerPending is not null;
 
     public Task<bool> ConfirmAsync(string reasonResourceKey, CancellationToken cancellationToken = default)
     {
         if (_disposed || cancellationToken.IsCancellationRequested) return Task.FromResult(false);
         ArgumentException.ThrowIfNullOrWhiteSpace(reasonResourceKey);
+        if (_developerPending is not null) return Task.FromResult(false);
         return _pending ??= ShowAsync(reasonResourceKey, cancellationToken);
+    }
+
+    public Task<DeveloperConfirmationResult> ShowPreviewAsync(CancellationToken cancellationToken) =>
+        ShowDeveloperAsync("Preview", "Developer.Confirm.Preview", cancellationToken);
+
+    public Task<DeveloperConfirmationResult> ConfirmLyricsDisableAsync(CancellationToken cancellationToken) =>
+        ShowDeveloperAsync("Disable", "Developer.Confirm.Disable", cancellationToken);
+
+    private Task<DeveloperConfirmationResult> ShowDeveloperAsync(string purpose, string reason, CancellationToken token)
+    {
+        if (_disposed || token.IsCancellationRequested) return Task.FromResult(DeveloperConfirmationResult.Declined);
+        if (_pending is not null || (_developerPending is not null && _developerPurpose != purpose))
+            return Task.FromResult(DeveloperConfirmationResult.Busy);
+        _developerPurpose = purpose;
+        return _developerPending ??= ShowDeveloperCoreAsync(reason, token);
+    }
+
+    private async Task<DeveloperConfirmationResult> ShowDeveloperCoreAsync(string reason, CancellationToken token)
+    {
+        try { return await ShowAsync(reason, token) ? DeveloperConfirmationResult.Confirmed : DeveloperConfirmationResult.Declined; }
+        finally { _developerPending = null; _developerPurpose = null; }
     }
 
     private async Task<bool> ShowAsync(string reasonResourceKey, CancellationToken cancellationToken)
@@ -37,12 +64,12 @@ internal sealed class RestartConfirmationService(WindowAppearanceService appeara
             var content = new StackPanel { Margin = new Thickness(24) };
             content.Children.Add(new TextBlock { Text = Translations.Get(reasonResourceKey), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 24) });
             var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
-            var restart = new DialogButton { Content = Translations.Get("Restart.Dialog.Confirm"), Appearance = ControlAppearance.Primary, Margin = new Thickness(0, 0, 8, 0), MinWidth = 90 };
+            var restart = new DialogButton { Content = Translations.Get(_developerPurpose == "Preview" ? "Developer.Confirm.PreviewButton" : _developerPurpose == "Disable" ? "Developer.Confirm.DisableButton" : "Restart.Dialog.Confirm"), Appearance = ControlAppearance.Primary, Margin = new Thickness(0, 0, 8, 0), MinWidth = 90 };
             var later = new DialogButton { Content = Translations.Get("Restart.Dialog.Later"), IsDefault = true, IsCancel = true, MinWidth = 90 };
             buttons.Children.Add(restart); buttons.Children.Add(later); content.Children.Add(buttons);
             var dialog = new FluentWindow
             {
-                Title = Translations.Get("Restart.Dialog.Title"), Content = content, Width = 460,
+                Title = Translations.Get(_developerPurpose is null ? "Restart.Dialog.Title" : "Developer.Window.Title"), Content = content, Width = 460,
                 SizeToContent = SizeToContent.Height, ResizeMode = ResizeMode.NoResize,
                 ShowInTaskbar = true, WindowStartupLocation = WindowStartupLocation.CenterScreen
             };
