@@ -54,10 +54,11 @@ public partial class TaskBarMediaControl
     /// <summary>重建预算用尽后置位：停用 Web 歌词、退回元数据，避免同一缺陷反复击穿应用。
     /// Set once the rebuild budget is spent: the web lyrics stay off and the bar falls back to metadata so the same defect cannot take the app down again.</summary>
     private bool _webLyricsGraphicsDisabled;
-    private bool _lyricsGraphicsRecoveryQueued;
+    private WebLyricsRecoveryQueue? _lyricsGraphicsRecoveryQueue;
 
     private void InitializeWebLyrics()
     {
+        _lyricsGraphicsRecoveryQueue = new(Dispatcher);
         _lyricsWebTimer.Tick += (_, _) => UpdateWebLyricsPresentation();
         _lyricsReleaseTimer.Tick += OnWebLyricsReleaseTimerTick;
         _lyricsRetryTimer.Tick += OnWebLyricsRetryTimerTick;
@@ -71,9 +72,10 @@ public partial class TaskBarMediaControl
             return;
 
         _lyricsHostLoaded = true;
+        _webLyricsGraphicsDisabled |= WebLyricsGraphicsRecovery.Session.IsDisabled;
         SettingsManager.LyricsSettingsChanged += OnWebLyricsSettingsChanged;
         LyricsChineseConverter.Updated += OnChineseConversionUpdated;
-        WebLyricsGraphicsRecovery.RecoveryRequested += OnWebLyricsGraphicsRecoveryRequested;
+        WebLyricsGraphicsRecovery.Session.RecoveryRequested += OnWebLyricsGraphicsRecoveryRequested;
         UpdateWebLyricsPresentation(allowTransition: false);
     }
 
@@ -85,7 +87,7 @@ public partial class TaskBarMediaControl
         _lyricsHostLoaded = false;
         SettingsManager.LyricsSettingsChanged -= OnWebLyricsSettingsChanged;
         LyricsChineseConverter.Updated -= OnChineseConversionUpdated;
-        WebLyricsGraphicsRecovery.RecoveryRequested -= OnWebLyricsGraphicsRecoveryRequested;
+        WebLyricsGraphicsRecovery.Session.RecoveryRequested -= OnWebLyricsGraphicsRecoveryRequested;
         StopWebLyrics();
     }
 
@@ -130,13 +132,14 @@ public partial class TaskBarMediaControl
 
     private void OnWebLyricsFailed(object? sender, EventArgs e)
     {
-        if (!ReferenceEquals(sender, _lyricsWebRenderer))
+        if (!_lyricsHostLoaded || Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished ||
+            !ReferenceEquals(sender, _lyricsWebRenderer))
             return;
 
         var generation = _lyricsRendererGeneration;
         Dispatcher.BeginInvoke(() =>
         {
-            if (_lyricsHostLoaded && generation == _lyricsRendererGeneration &&
+            if (_lyricsHostLoaded && !Dispatcher.HasShutdownStarted && generation == _lyricsRendererGeneration &&
                 ReferenceEquals(sender, _lyricsWebRenderer))
                 HandleWebLyricsFailure();
         });
@@ -193,6 +196,8 @@ public partial class TaskBarMediaControl
         _lyricsCreationFailures++;
         if (_lyricsHostLoaded && _lyricsCreationFailures == 1)
             _lyricsRetryTimer.Start();
+        else if (_lyricsHostLoaded && _lyricsCreationFailures >= 2)
+            WebLyricsGraphicsRecovery.Session.ReportDegraded();
     }
 
     private void OnWebLyricsRetryTimerTick(object? sender, EventArgs e)
@@ -214,6 +219,7 @@ public partial class TaskBarMediaControl
 
     private void ApplyWebLyricsLifetime()
     {
+        _webLyricsGraphicsDisabled |= WebLyricsGraphicsRecovery.Session.IsDisabled;
         var action = LyricsWebViewLifetimePolicy.Resolve(
             _lyricsHostLoaded, SettingsManager.Current.LyricsEnabled, _webLyricsGraphicsDisabled,
             _snapshot.IsConnected, _snapshot.Lyrics?.Document.Lines?.Count ?? 0,
@@ -245,6 +251,8 @@ public partial class TaskBarMediaControl
                     _lyricsCreationFailures = 0;
                 break;
         }
+        if (_lyricsHostLoaded && WebLyricsGraphicsRecovery.Session.IsDisabled)
+            WebLyricsGraphicsRecovery.Session.ReportDegraded();
     }
 
     private void UpdateWebLyricsPowerState()
@@ -284,6 +292,7 @@ public partial class TaskBarMediaControl
             _lyricsSuspendRequested = false;
             _lyricsSuspendGeneration++;
             renderer.Resume();
+            if (!renderer.IsReady) return;
         }
         webView.Visibility = Visibility.Visible;
         renderer.ResumeDelivery();
@@ -491,6 +500,7 @@ public partial class TaskBarMediaControl
 
     private void ReleaseWebLyricsRenderer()
     {
+        _lyricsGraphicsRecoveryQueue?.Cancel();
         _lyricsRendererGeneration++;
         _lyricsSuspendGeneration++;
         _lyricsSuspendRequested = false;
@@ -503,30 +513,47 @@ public partial class TaskBarMediaControl
         }
 
         // A disposed composition control must not participate in another WPF layout pass.
-        LyricsWebViewHost.Child = null;
-        renderer?.Dispose();
-        SongLyricsPanel.Opacity = 0;
-        SongLyricsPanel.IsHitTestVisible = false;
-        SongMetadataPanel.Visibility = Visibility.Visible;
+        try { LyricsWebViewHost.Child = null; }
+        finally
+        {
+            try { renderer?.Dispose(); }
+            finally
+            {
+                SongLyricsPanel.Opacity = 0;
+                SongLyricsPanel.IsHitTestVisible = false;
+                SongMetadataPanel.Visibility = Visibility.Visible;
+            }
+        }
     }
 
     /// <summary>全局异常处理识别出 WebView2 图形层故障后的回调：在新一帧里执行重建，避免在异常展开的调用栈里改动可视树。
     /// Called after the global exception handler identifies a WebView2 graphics fault: the rebuild runs on a fresh
     /// dispatcher frame so the visual tree is never mutated inside the unwinding exception stack.</summary>
-    private void OnWebLyricsGraphicsRecoveryRequested()
+    private bool OnWebLyricsGraphicsRecoveryRequested(WebLyricsRecoveryAction action)
     {
-        if (_webLyricsGraphicsDisabled || _lyricsGraphicsRecoveryQueued || _lyricsWebRenderer is null)
+        if (!_lyricsHostLoaded || Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished ||
+            (_lyricsWebRenderer is null && action != WebLyricsRecoveryAction.DisableForSession)) return false;
+        var renderer = _lyricsWebRenderer;
+        var generation = _lyricsRendererGeneration;
+        return _lyricsGraphicsRecoveryQueue?.TryQueue(action,
+            () => _lyricsHostLoaded && generation == _lyricsRendererGeneration && ReferenceEquals(renderer, _lyricsWebRenderer),
+            pending =>
         {
-            return;
-        }
-
-        _lyricsGraphicsRecoveryQueued = true;
-        Dispatcher.BeginInvoke(() =>
-        {
-            _lyricsGraphicsRecoveryQueued = false;
-            if (_lyricsWebRenderer is not null && !_webLyricsGraphicsDisabled)
+            if (pending == WebLyricsRecoveryAction.DisableForSession || WebLyricsGraphicsRecovery.Session.IsDisabled)
+                DisableWebLyricsGraphics();
+            else if (!_webLyricsGraphicsDisabled)
                 RecoverWebLyricsGraphics();
-        });
+        }) == true;
+    }
+
+    private void DisableWebLyricsGraphics()
+    {
+        _webLyricsGraphicsDisabled = true;
+        StopWebLyrics();
+        SongLyricsPanel.Visibility = Visibility.Collapsed;
+        UpdateWebLyricsPresentation(allowTransition: false);
+        RaiseDesiredSizeChanged(isForcedRefresh: true);
+        WebLyricsGraphicsRecovery.Session.ReportDegraded();
     }
 
     /// <summary>
@@ -543,14 +570,9 @@ public partial class TaskBarMediaControl
     {
         if (!WebView2GraphicsFaultPolicy.CanRecover(_lyricsGraphicsRecoveries))
         {
-            _webLyricsGraphicsDisabled = true;
             // A transparent WebView still participates in WPF layout and may throw the same
             // graphics fault again. Detach it before disposing the renderer.
-            StopWebLyrics();
-            SongLyricsPanel.Visibility = Visibility.Collapsed;
-            ApplyWebLyricsStyle();
-            UpdateWebLyricsPresentation(allowTransition: false);
-            RaiseDesiredSizeChanged(isForcedRefresh: true);
+            DisableWebLyricsGraphics();
             AppLogService.Current?.Warn(
                 "Lyrics",
                 $"WebView2 图形层故障已达重建上限（{WebView2GraphicsFaultPolicy.MaximumRecoveries} 次），本次会话停用 Web 歌词并退回元数据");

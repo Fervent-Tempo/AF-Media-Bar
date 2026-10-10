@@ -652,20 +652,16 @@ namespace AFMediaBar
         /// </summary>
         private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
         {
-            // WebView2 合成控件的图形层在 D3D 设备不可用时会在尺寸变化路径里空引用（真机日志中两次导致整应用闪退）。
-            // 这一类故障可以被安全拦下：记录后通知媒体控件重建歌词视图；其余异常保持原行为（落盘后交回 WPF 默认处理）。
-            // The WebView2 composition control null-references on its resize path while the D3D device is unavailable
-            // (twice this crashed the whole application in the field log). That one class of fault is safe to intercept:
-            // log it, ask the media controls to rebuild the lyrics view; everything else keeps the old behavior — write the
-            // stack to disk, then hand back to WPF's default handling.
-            if (WebView2GraphicsFaultPolicy.IsGraphicsFault(e.Exception))
+            // 原生图形故障没有应用调用点可包裹；仅在堆栈匹配且有效宿主接受处理时拦截。
+            var recoveryAction = WebView2GraphicsFaultPolicy.Classify(e.Exception);
+            if (recoveryAction != WebLyricsRecoveryAction.None &&
+                WebLyricsGraphicsRecovery.Session.Request(recoveryAction))
             {
                 AppLogService.Current?.Warn(
                     "Lyrics",
-                    "WebView2 图形层故障已拦截，将重建歌词视图",
+                    $"WebView2 图形层故障已接收: action={recoveryAction}, HRESULT=0x{e.Exception.HResult:X8}",
                     e.Exception);
                 e.Handled = true;
-                WebLyricsGraphicsRecovery.Request();
                 return;
             }
 
