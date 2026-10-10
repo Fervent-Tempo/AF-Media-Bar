@@ -466,6 +466,45 @@
                         </Border>
                     </StackPanel>
                 </components:SettingsGroup>
+                <components:SettingsGroup GroupId="Appearance.IdleNote.Title"
+                    Header="{DynamicResource Loc.Appearance.IdleNote.Title}"
+                    Description="{DynamicResource Loc.Appearance.IdleNote.Description}"
+                    Icon="{ui:SymbolIcon MusicNote220}"
+                    Visibility="{Binding HasTaskbarSettings, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                    <StackPanel>
+                        <components:SettingsRow Title="{DynamicResource Loc.Appearance.IdleNote.Custom}"
+                            Description="{DynamicResource Loc.Appearance.IdleNote.Hint}" Icon="{ui:SymbolIcon Color24}">
+                            <ui:ToggleSwitch IsChecked="{Binding Taskbar.UseCustomIdleNoteColor, Mode=TwoWay}" />
+                        </components:SettingsRow>
+                        <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,4,0,0"
+                                Visibility="{Binding Taskbar.UseCustomIdleNoteColor, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                            <StackPanel>
+                                <!-- 色块展示待选颜色，沿用现有色板样式。 -->
+                                <WrapPanel Margin="0,0,0,10">
+                                    <Button Background="#0078D4" Margin="0,0,6,0" ToolTip="#0078D4" Style="{StaticResource AfSettingsColorSwatchStyle}"
+                                            Command="{Binding Taskbar.SetIdleNoteColorCommand}" CommandParameter="#0078D4" />
+                                    <Button Background="#FF8A8A" Margin="0,0,6,0" ToolTip="#FF8A8A" Style="{StaticResource AfSettingsColorSwatchStyle}"
+                                            Command="{Binding Taskbar.SetIdleNoteColorCommand}" CommandParameter="#FF8A8A" />
+                                    <Button Background="#F7C948" Margin="0,0,6,0" ToolTip="#F7C948" Style="{StaticResource AfSettingsColorSwatchStyle}"
+                                            Command="{Binding Taskbar.SetIdleNoteColorCommand}" CommandParameter="#F7C948" />
+                                    <Button Background="#42CBA6" Margin="0,0,6,0" ToolTip="#42CBA6" Style="{StaticResource AfSettingsColorSwatchStyle}"
+                                            Command="{Binding Taskbar.SetIdleNoteColorCommand}" CommandParameter="#42CBA6" />
+                                    <Button Background="#9C7CFF" Margin="0,0,6,0" ToolTip="#9C7CFF" Style="{StaticResource AfSettingsColorSwatchStyle}"
+                                            Command="{Binding Taskbar.SetIdleNoteColorCommand}" CommandParameter="#9C7CFF" />
+                                    <Button Background="#FFFFFF" ToolTip="#FFFFFF" Style="{StaticResource AfSettingsColorSwatchStyle}"
+                                            Command="{Binding Taskbar.SetIdleNoteColorCommand}" CommandParameter="#FFFFFF" />
+                                </WrapPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{DynamicResource Loc.Appearance.Accent.HexLabel}" VerticalAlignment="Center" />
+                                    <TextBox Width="110" Margin="8,0,0,0" MaxLength="9"
+                                             Text="{Binding Taskbar.IdleNoteColorHex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <ui:Button Margin="8,0,0,0" Content="{DynamicResource Loc.Appearance.IdleNote.FollowAccent}"
+                                            Command="{Binding Taskbar.ResetIdleNoteColorCommand}" Style="{StaticResource AfSettingsButtonStyle}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </components:SettingsGroup>
                 <components:SettingsGroup
                     GroupId="Appearance.Group.TaskbarBackground"
                     Header="{DynamicResource Loc.Appearance.Group.TaskbarBackground}"

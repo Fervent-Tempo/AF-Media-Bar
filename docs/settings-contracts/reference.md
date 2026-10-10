@@ -29,6 +29,7 @@
 
 | JSON 路径 | 当前含义 |
 |---|---|
+| `settings.appearance.idleNoteColor` | 小音符自定义颜色；null 跟随强调色，非法值回 null；高对比度使用系统文字色 |
 | `settings.appearance.taskbarBackgroundMaterial` | 任务栏透明/磨砂背景 |
 | `settings.appearance.taskbarBackgroundOpacityPercent` | 磨砂浓度 |
 | `settings.appearance.taskbarFrostedStyle` | 磨砂风格 |
@@ -167,6 +168,8 @@ TranslucentTB 被检测到且 `translucentTbCompatibilityPromptShown=false` 时�
 
 封面边缘进度使用独立开关，旧 `hoverControls.progressVisible` 保留读取和写回，但不再绘制悬停进度或预留宽度，也不映射到新开关。`restProgressVisible` 继续只控制文字下方进度；新开关由内容布局重置，优先用户默认快照，不改变 schema。新增字段已验证缺失、显式关闭、null 拒绝及序列化/克隆。
 
+小音符颜色接受现有 ColorHex 格式并规范化为 #RRGGBB；null、缺字段或非法值跟随强调色，媒体封面上的播放/暂停图标继续取封面主题色。任务栏外观重置优先用户默认快照；应用外观编辑和重置保留该值，不调整 schema。
+
 ## 配置路径全集
 
 路径相对于文件根；`[]` 表示列表条目。对象行也计入路径数。内置默认值取真实 `new AppSettings().Normalize()`，不代表用户默认快照；原始构造默认值及 v1.3.2 默认值见 JSON 清单。可空列表示 CLR 声明，JSON 的 null 接受性以实际读取结果列为准。
@@ -241,6 +244,7 @@ TranslucentTB 被检测到且 `translucentTbCompatibilityPromptShown=false` 时�
 | `settings.appearance.enhancedReadability` | `bool`；否 | `false` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/AppearanceSettings.cs#L107) |
 | `settings.appearance.fontWeight` | `int`；否 | `400` | `100` | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/AppearanceSettings.cs#L102) |
 | `settings.appearance.latinFont` | `LatinFontPreset`；否 | `"SystemDefault"` | `"SegoeUi"` | `"SystemDefault"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/AppearanceSettings.cs#L100) |
+| `settings.appearance.idleNoteColor` | `string?`；是 | `null` | 同内置默认 | `null` | **未发布** | [源码](../../src/AFMediaBar/Classes/Settings/AppearanceSettings.cs#L130) |
 | `settings.appearance.latinFontFamily` | `string?`；是 | `null` | 同内置默认 | `null` | v1.3.0 | [源码](../../src/AFMediaBar/Classes/Settings/AppearanceSettings.cs#L123) |
 | `settings.appearance.playerForegroundMode` | `PlayerForegroundMode`；否 | `"Automatic"` | 同内置默认 | `"Automatic"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/AppearanceSettings.cs#L103) |
 | `settings.appearance.taskbarBackgroundMaterial` | `TaskbarBackgroundMaterial`；否 | `"Transparent"` | 同内置默认 | `"Transparent"` | **未发布** | [源码](../../src/AFMediaBar/Classes/Settings/AppearanceSettings.cs#L125) |

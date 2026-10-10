@@ -32,7 +32,8 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context) : I
             PlayerForegroundMode = settings.PlayerForegroundMode,
             TaskbarBackgroundMaterial = settings.TaskbarBackgroundMaterial,
             TaskbarBackgroundOpacityPercent = settings.TaskbarBackgroundOpacityPercent,
-            TaskbarFrostedStyle = settings.TaskbarFrostedStyle
+            TaskbarFrostedStyle = settings.TaskbarFrostedStyle,
+            IdleNoteColor = settings.IdleNoteColor
         });
     }
     /// <inheritdoc />

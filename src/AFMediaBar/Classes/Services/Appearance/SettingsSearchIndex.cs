@@ -157,6 +157,8 @@ public static class SettingsSearchIndex
     /// <summary>Builds localized labels while keeping page and group identities stable.</summary>
     private static SettingsSearchEntry[] Build(LocalizationLanguage language) =>
     [
+        Create(SettingsPageKey.Appearance, "Appearance.IdleNote.Title", "Appearance.IdleNote.Description", language,
+            ["小音符", "音符颜色", "music note", "note color", "占位图标", "自定义音符"]),
         Create(
             SettingsPageKey.ReleaseHighlights,
             "ReleaseHighlights.Latest",

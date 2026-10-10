@@ -2634,4 +2634,19 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Startup.Service.Unidentified" xml:space="preserve">
     <value>No missing service was confirmed. Check system components using the error below and the log.</value>
   </data>
+  <data name="Appearance.IdleNote.Custom" xml:space="preserve">
+    <value>Custom music note color</value>
+  </data>
+  <data name="Appearance.IdleNote.Description" xml:space="preserve">
+    <value>Choose the color of the music note shown when no artwork is available. Artwork playback icons keep their own color.</value>
+  </data>
+  <data name="Appearance.IdleNote.FollowAccent" xml:space="preserve">
+    <value>Follow accent</value>
+  </data>
+  <data name="Appearance.IdleNote.Hint" xml:space="preserve">
+    <value>When off, follow the accent color. High contrast uses the system text color.</value>
+  </data>
+  <data name="Appearance.IdleNote.Title" xml:space="preserve">
+    <value>Music note color</value>
+  </data>
 </root>

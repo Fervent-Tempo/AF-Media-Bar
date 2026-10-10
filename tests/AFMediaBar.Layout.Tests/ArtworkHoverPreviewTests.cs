@@ -75,6 +75,7 @@ public sealed class ArtworkHoverPreviewTests
                 var root = (Border)popup.Child;
                 var refresh = typeof(TaskBarMediaControl).GetMethod("RefreshArtworkHoverPreviewContent", BindingFlags.Instance | BindingFlags.NonPublic)!;
                 VerifyPlaybackHints(control, refresh);
+                VerifyNoteColor(control);
                 foreach (var (width, height, expectedWidth) in new[]
                 {
                     (160, 90, 120d * 16 / 9), (90, 160, 72d), (64, 64, 120d),
@@ -120,6 +121,39 @@ public sealed class ArtworkHoverPreviewTests
         Assert.IsTrue(thread.Join(TimeSpan.FromSeconds(30)), "封面预览渲染未结束。");
         if (failure is not null)
             ExceptionDispatchInfo.Capture(failure).Throw();
+    }
+
+    private static void VerifyNoteColor(TaskBarMediaControl control)
+    {
+        var original = SettingsManager.Current.Appearance;
+        var placeholder = (SymbolIcon)control.FindName("SongImagePlaceholder");
+        var custom = Color.FromRgb(0x42, 0xCB, 0xA6);
+        try
+        {
+            SettingsManager.Current.Appearance = original with { IdleNoteColor = "#42CBA6" };
+            control.UpdateSongInfo(MediaSnapshot.Disconnected);
+            Assert.AreEqual(SymbolRegular.MusicNote220, placeholder.Symbol);
+            Assert.AreEqual(SystemParameters.HighContrast ? SystemColors.WindowTextColor : custom, ((SolidColorBrush)placeholder.Foreground).Color);
+
+            control.UpdateSongInfo(MediaSnapshot.Disconnected with { IsConnected = true, IsPlaying = true, Artwork = CreateMarkedArtwork(160, 90) });
+            var artworkBrush = placeholder.Foreground;
+            SettingsManager.Current.Appearance = original with { IdleNoteColor = "#FF8A8A" };
+            control.ApplyAppearanceSettings();
+            Assert.AreSame(artworkBrush, placeholder.Foreground, "自定义音符色不能覆盖媒体封面图标的取色。");
+
+            control.UpdateSongInfo(MediaSnapshot.Disconnected with { IsConnected = true });
+            Assert.AreEqual(SystemParameters.HighContrast ? SystemColors.WindowTextColor : Color.FromRgb(0xFF, 0x8A, 0x8A), ((SolidColorBrush)placeholder.Foreground).Color);
+
+            SettingsManager.Current.Appearance = original with { IdleNoteColor = null };
+            control.ApplyAppearanceSettings();
+            var accent = Application.Current.TryFindResource("AfAccentBrush") as SolidColorBrush ?? SystemColors.HighlightBrush;
+            Assert.AreEqual(SystemParameters.HighContrast ? SystemColors.WindowTextColor : accent.Color, ((SolidColorBrush)placeholder.Foreground).Color);
+        }
+        finally
+        {
+            SettingsManager.Current.Appearance = original;
+            control.ApplyAppearanceSettings();
+        }
     }
 
     private static void VerifyPlaybackHints(TaskBarMediaControl control, MethodInfo refreshPreview)

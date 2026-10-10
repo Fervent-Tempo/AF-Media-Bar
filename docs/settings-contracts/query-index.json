@@ -22,6 +22,7 @@
     { "id": "rest-order", "paths": ["settings.taskbarExperience.restComponentOrder"], "text": "null 用默认顺序；封面和媒体文字固定在前，只排序尾部。遗漏的已知尾部会补全，因此空数组不表示隐藏组件。" },
     { "id": "idle-components", "paths": ["settings.taskbarExperience.idleComponents"], "text": "null 默认只留 Artwork（无媒体时指快速启动音符）；空数组全部隐藏；显式列表控制无媒体保留项。封面显隐不能替代它。", "relatedPaths": ["settings.taskbarExperience.artworkVisible"] },
     { "id": "font-family", "prefixes": ["settings.appearance.latinFont", "settings.appearance.cjkFont"], "text": "family=null 保留旧预设，空串跟随系统；Trim 后含逗号或超过200字符回空串。派生的 SelectedFontFamily 不序列化。", "relatedPaths": ["settings.appearance.latinFont", "settings.appearance.latinFontFamily", "settings.appearance.cjkFont", "settings.appearance.cjkFontFamily"] },
+    { "id": "idle-note-color", "paths": ["settings.appearance.idleNoteColor"], "text": "null、缺字段或非法色跟随强调色；颜色使用 ColorHex 格式并规范化为 #RRGGBB、丢弃 alpha。只影响无封面的小音符，高对比度使用系统文字色。任务栏外观重置优先用户快照；应用外观编辑/重置保留，schema 不变。" },
     { "id": "accent-color", "paths": ["settings.appearance.accentColor"], "text": "接受带/不带#的6位RGB和8位ARGB；规范化成大写#RRGGBB并丢弃alpha，非法值回#0078D4。" },
     { "id": "appearance-reset", "prefixes": ["settings.appearance", "settings.taskbarSurface", "settings.dynamicIslandSurface"], "text": "应用外观重置保留媒体文字色和任务栏背景；任务栏外观重置保留全局主题字体。旧 ResetAppearance 还覆盖布局，须核对实际调用方。" },
     { "id": "lyrics-reset", "prefixes": ["settings.lyrics"], "paths": ["settings.allowBrowserAndVideoLyrics", "settings.twoLineLyricsEnabled"], "text": "ResetLyrics 保留歌词对齐与固定宽度，它们归内容布局重置；简繁、来源、分隔符等仍归歌词重置。" },

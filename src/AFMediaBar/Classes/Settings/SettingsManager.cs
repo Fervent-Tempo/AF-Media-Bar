@@ -515,7 +515,8 @@ public static class SettingsManager
             PlayerForegroundMode = next.Appearance.PlayerForegroundMode,
             TaskbarBackgroundMaterial = next.Appearance.TaskbarBackgroundMaterial,
             TaskbarBackgroundOpacityPercent = next.Appearance.TaskbarBackgroundOpacityPercent,
-            TaskbarFrostedStyle = next.Appearance.TaskbarFrostedStyle
+            TaskbarFrostedStyle = next.Appearance.TaskbarFrostedStyle,
+            IdleNoteColor = next.Appearance.IdleNoteColor
         };
         Replace(next, SettingsResetScope.Appearance);
     }
@@ -532,7 +533,8 @@ public static class SettingsManager
             PlayerForegroundMode = defaults.Appearance.PlayerForegroundMode,
             TaskbarBackgroundMaterial = defaults.Appearance.TaskbarBackgroundMaterial,
             TaskbarBackgroundOpacityPercent = defaults.Appearance.TaskbarBackgroundOpacityPercent,
-            TaskbarFrostedStyle = defaults.Appearance.TaskbarFrostedStyle
+            TaskbarFrostedStyle = defaults.Appearance.TaskbarFrostedStyle,
+            IdleNoteColor = defaults.Appearance.IdleNoteColor
         };
         next.TaskbarExperience = next.TaskbarExperience with
         {

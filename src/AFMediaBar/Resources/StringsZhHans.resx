@@ -2634,4 +2634,19 @@
   <data name="Startup.Service.Unidentified" xml:space="preserve">
     <value>未确认具体缺失的服务，请结合下方错误和日志检查系统组件。</value>
   </data>
+  <data name="Appearance.IdleNote.Custom" xml:space="preserve">
+    <value>自定义音符颜色</value>
+  </data>
+  <data name="Appearance.IdleNote.Description" xml:space="preserve">
+    <value>设置没有封面时小音符的颜色，不影响封面上的播放、暂停图标。</value>
+  </data>
+  <data name="Appearance.IdleNote.FollowAccent" xml:space="preserve">
+    <value>跟随强调色</value>
+  </data>
+  <data name="Appearance.IdleNote.Hint" xml:space="preserve">
+    <value>关闭时跟随强调色。高对比度模式使用系统文字色。</value>
+  </data>
+  <data name="Appearance.IdleNote.Title" xml:space="preserve">
+    <value>小音符颜色</value>
+  </data>
 </root>

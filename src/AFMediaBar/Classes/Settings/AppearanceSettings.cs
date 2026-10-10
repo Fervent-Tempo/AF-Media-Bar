@@ -126,6 +126,9 @@ public readonly record struct AppearanceSettings(
     int? TaskbarBackgroundOpacityPercent = null,
     TaskbarFrostedStyle TaskbarFrostedStyle = TaskbarFrostedStyle.Neutral)
 {
+    /// <summary>小音符的自定义 RGB 颜色；null 表示跟随强调色。</summary>
+    public string? IdleNoteColor { get; init; }
+
     /// <summary>
     /// 字体粗细下限。取 OpenType 的 Thin：WPF 只有 100–900 九个真实字重，界面按 100 步进在三者之间取值，
     /// 因此下限必须落在真实字重上，否则滑杆会停在一个会被就近取整的值上。
@@ -234,6 +237,9 @@ public readonly record struct AppearanceSettings(
             AccentColor = Classes.Utils.ColorHex.TryParse(AccentColor, out var accent)
                 ? Classes.Utils.ColorHex.Format(accent)
                 : defaults.AccentColor,
+            IdleNoteColor = Classes.Utils.ColorHex.TryParse(IdleNoteColor, out var noteColor)
+                ? Classes.Utils.ColorHex.Format(noteColor)
+                : null,
             BackdropTintOpacityPercent = ResolveBackdropTintOpacityPercent(),
             LatinFontFamily = NormalizeFontName(LatinFontFamily),
             CjkFontFamily = NormalizeFontName(CjkFontFamily),

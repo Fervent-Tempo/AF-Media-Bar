@@ -319,7 +319,10 @@ public partial class AppearanceViewModel : ObservableObject, IDisposable
         CjkFontFamily,
         _configuration.Current.Appearance.TaskbarBackgroundMaterial,
         _configuration.Current.Appearance.TaskbarBackgroundOpacityPercent,
-        _configuration.Current.Appearance.TaskbarFrostedStyle));
+        _configuration.Current.Appearance.TaskbarFrostedStyle)
+    {
+        IdleNoteColor = _configuration.Current.Appearance.IdleNoteColor
+    });
 
     public void ResetAppearance() { if (!_disposed && _configuration.IsActive) SettingsManager.ResetApplicationAppearance(); }
 

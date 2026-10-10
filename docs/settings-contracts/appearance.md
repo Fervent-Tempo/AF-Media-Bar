@@ -9,6 +9,7 @@
 ## 关联规则
 
 - family=null 保留旧预设，空串跟随系统；Trim 后含逗号或超过200字符回空串。派生的 SelectedFontFamily 不序列化。
+- null、缺字段或非法色跟随强调色；颜色使用 ColorHex 格式并规范化为 #RRGGBB、丢弃 alpha。只影响无封面的小音符，高对比度使用系统文字色。任务栏外观重置优先用户快照；应用外观编辑/重置保留，schema 不变。
 - 接受带/不带#的6位RGB和8位ARGB；规范化成大写#RRGGBB并丢弃alpha，非法值回#0078D4。
 - 应用外观重置保留媒体文字色和任务栏背景；任务栏外观重置保留全局主题字体。旧 ResetAppearance 还覆盖布局，须核对实际调用方。
 - 检测到TranslucentTB且未提示时可开启磨砂、先标记落盘再提示；ResetAll保留当前提示标记，用户默认快照不能重新触发。
@@ -31,6 +32,7 @@
 | `settings.appearance.enhancedReadability` | `bool` | false | false | "读取失败：JsonException" | v1.2.0 |
 | `settings.appearance.fontWeight` | `int` | 400 | 100 | "读取失败：JsonException" | v1.2.0 |
 | `settings.appearance.latinFont` | `LatinFontPreset` | "SystemDefault" | "SegoeUi" | "SystemDefault" | v1.2.0 |
+| `settings.appearance.idleNoteColor` | `string?` | null | null | null | **未发布** |
 | `settings.appearance.latinFontFamily` | `string?` | null | null | null | v1.3.0 |
 | `settings.appearance.playerForegroundMode` | `PlayerForegroundMode` | "Automatic" | "Automatic" | "Automatic" | v1.2.0 |
 | `settings.appearance.taskbarBackgroundMaterial` | `TaskbarBackgroundMaterial` | "Transparent" | "Transparent" | "Transparent" | **未发布** |

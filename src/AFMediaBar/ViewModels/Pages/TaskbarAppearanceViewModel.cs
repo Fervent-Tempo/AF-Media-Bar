@@ -6,6 +6,7 @@ using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Resources;
 using CommunityToolkit.Mvvm.Input;
+using AFMediaBar.Classes.Utils;
 
 namespace AFMediaBar.ViewModels.Pages;
 
@@ -20,11 +21,13 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
     private readonly LocalizationService _localization;
     private bool _isRefreshing;
     private bool _disposed;
+    private string _idleNoteColorHex;
 
     /// <summary>Creates a taskbar-only appearance editor for the cached page scope.</summary>
     public TaskbarAppearanceViewModel(ISettingsConfiguration configuration, TaskbarLengthConstraintsService constraints, LocalizationService localization)
     {
         _configuration = configuration;
+        _idleNoteColorHex = configuration.Current.Appearance.IdleNoteColor ?? configuration.Current.Appearance.AccentColor;
         configuration.Activated += OnActivated;
         _taskbarLengthConstraints = constraints;
         _localization = localization;
@@ -39,6 +42,50 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
     {
         get => _configuration.Current.Appearance.PlayerForegroundMode;
         set => _configuration.SetTaskbarAppearance(_configuration.Current.Appearance with { PlayerForegroundMode = value });
+    }
+
+    /// <summary>关闭自定义色后小音符跟随强调色，不修改媒体封面的取色。</summary>
+    public bool UseCustomIdleNoteColor
+    {
+        get => _configuration.Current.Appearance.IdleNoteColor is not null;
+        set
+        {
+            if (_disposed || !_configuration.IsActive || _isRefreshing || value == UseCustomIdleNoteColor) return;
+            var color = ColorHex.TryParse(_idleNoteColorHex, out var parsed)
+                ? ColorHex.Format(parsed) : AppearanceSettings.DefaultAccentColorHex;
+            _configuration.SetTaskbarAppearance(_configuration.Current.Appearance with { IdleNoteColor = value ? color : null });
+        }
+    }
+
+    /// <summary>保留未输入完整的文本，只在颜色有效且开启自定义时写入设置。</summary>
+    public string IdleNoteColorHex
+    {
+        get => _idleNoteColorHex;
+        set
+        {
+            if (_disposed || !_configuration.IsActive) return;
+            if (!SetProperty(ref _idleNoteColorHex, value ?? string.Empty)) return;
+            if (_isRefreshing || !UseCustomIdleNoteColor ||
+                !ColorHex.TryParse(_idleNoteColorHex, out var color)) return;
+            _configuration.SetTaskbarAppearance(_configuration.Current.Appearance with { IdleNoteColor = ColorHex.Format(color) });
+        }
+    }
+
+    [RelayCommand]
+    private void SetIdleNoteColor(string? hex)
+    {
+        if (_disposed || !_configuration.IsActive || !ColorHex.TryParse(hex, out var color)) return;
+        _configuration.SetTaskbarAppearance(_configuration.Current.Appearance with { IdleNoteColor = ColorHex.Format(color) });
+    }
+
+    [RelayCommand]
+    private void ResetIdleNoteColor() => UseCustomIdleNoteColor = false;
+
+    private void RefreshIdleNoteColor()
+    {
+        if (_configuration.Current.Appearance.IdleNoteColor is { } hex)
+            SetProperty(ref _idleNoteColorHex, hex, nameof(IdleNoteColorHex));
+        OnPropertyChanged(nameof(UseCustomIdleNoteColor));
     }
     /// <summary>Media text scale, independent of the settings window's font selectors.</summary>
     public int MediaFontSizePercent
@@ -262,11 +309,18 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
     {
         if (_disposed || !_configuration.IsActive) return;
         _isRefreshing = true;
-        try { RaiseTaskbarAppearance(); OnPropertyChanged(nameof(PlayerForegroundMode)); OnPropertyChanged(nameof(MediaFontSizePercent)); }
+        try
+        {
+            if (args.PropertyName == nameof(AppSettings.Appearance) || args.ResetScope is SettingsResetScope.Appearance or SettingsResetScope.All)
+                RefreshIdleNoteColor();
+            RaiseTaskbarAppearance();
+            OnPropertyChanged(nameof(PlayerForegroundMode));
+            OnPropertyChanged(nameof(MediaFontSizePercent));
+        }
         finally { _isRefreshing = false; }
     }
     private void OnLanguageChanged(object? sender, EventArgs args) { if (!_disposed) { RaiseTaskbarAppearance(); OnPropertyChanged(string.Empty); } }
-    private void OnActivated(object? sender, EventArgs e) { RefreshRestOrderEntries(); OnPropertyChanged(string.Empty); }
+    private void OnActivated(object? sender, EventArgs e) { RefreshIdleNoteColor(); RefreshRestOrderEntries(); OnPropertyChanged(string.Empty); }
     /// <summary>Releases subscriptions owned by this page scope.</summary>
     public void Dispose()
     {

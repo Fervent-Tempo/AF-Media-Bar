@@ -2672,4 +2672,19 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   <data name="Startup.Service.Unidentified" xml:space="preserve">
     <value>Chưa xác định được dịch vụ bị thiếu. Hãy kiểm tra thành phần hệ thống theo lỗi bên dưới và nhật ký.</value>
   </data>
+  <data name="Appearance.IdleNote.Custom" xml:space="preserve">
+    <value>Tùy chỉnh màu nốt nhạc</value>
+  </data>
+  <data name="Appearance.IdleNote.Description" xml:space="preserve">
+    <value>Chọn màu nốt nhạc khi không có ảnh bìa. Biểu tượng phát và tạm dừng trên ảnh bìa giữ màu riêng.</value>
+  </data>
+  <data name="Appearance.IdleNote.FollowAccent" xml:space="preserve">
+    <value>Theo màu nhấn</value>
+  </data>
+  <data name="Appearance.IdleNote.Hint" xml:space="preserve">
+    <value>Khi tắt, dùng màu nhấn. Chế độ tương phản cao dùng màu chữ của hệ thống.</value>
+  </data>
+  <data name="Appearance.IdleNote.Title" xml:space="preserve">
+    <value>Màu biểu tượng nốt nhạc</value>
+  </data>
 </root>

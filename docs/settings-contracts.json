@@ -28,11 +28,11 @@
     }
   ],
   "counts": {
-    "paths": 142,
+    "paths": 143,
     "rootProperties": 49,
     "enumTypes": 36,
     "enumMembers": 128,
-    "unreleasedPaths": 11,
+    "unreleasedPaths": 12,
     "unreleasedEnumMembers": 18
   },
   "sourceFiles": [
@@ -74,7 +74,7 @@
     },
     {
       "path": "src/AFMediaBar/Classes/Services/Settings/LegacySettingsConfiguration.cs",
-      "sha256": "a6d036af3b21d31c8561f542516add1c0a69102b60a79bf34511a1f42ee693fa"
+      "sha256": "5029c9f486cec8cc0044076f191766d4203a074de98f3c4f2d7f517211b48381"
     },
     {
       "path": "src/AFMediaBar/Classes/Services/Settings/SettingsPageCatalog.cs",
@@ -106,7 +106,7 @@
     },
     {
       "path": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
-      "sha256": "cc4a3fd8ee3c1533ca7c0dd72d0e2618d759a61666443c2cbe04ebbba4c45e8f"
+      "sha256": "a3ab6c32beea5a1c97f5b2575e91a7bcfea2785e0faeac0613acdfeb5666440d"
     },
     {
       "path": "src/AFMediaBar/Classes/Settings/ExperienceSettings.cs",
@@ -122,7 +122,7 @@
     },
     {
       "path": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
-      "sha256": "a5b24cbd9ece54ad940137537749da58de865929dc53d864edb6498dc949c0b6"
+      "sha256": "053433a33464159dea6f45f8f3850fe449c52043571f345ff95e50bfb5666f19"
     },
     {
       "path": "src/AFMediaBar/Classes/Settings/UpdateSettings.cs",
@@ -198,7 +198,8 @@
         "cjkFontFamily": null,
         "taskbarBackgroundMaterial": "Transparent",
         "taskbarBackgroundOpacityPercent": 72,
-        "taskbarFrostedStyle": "Neutral"
+        "taskbarFrostedStyle": "Neutral",
+        "idleNoteColor": null
       },
       "normalizedDefault": {
         "latinFont": "SystemDefault",
@@ -215,7 +216,8 @@
         "cjkFontFamily": null,
         "taskbarBackgroundMaterial": "Transparent",
         "taskbarBackgroundOpacityPercent": 72,
-        "taskbarFrostedStyle": "Neutral"
+        "taskbarFrostedStyle": "Neutral",
+        "idleNoteColor": null
       },
       "source": "src/AFMediaBar/Classes/Settings/SettingsManager.cs",
       "sourceLine": 114,
@@ -255,7 +257,8 @@
           "cjkFontFamily": null,
           "taskbarBackgroundMaterial": "Transparent",
           "taskbarBackgroundOpacityPercent": 72,
-          "taskbarFrostedStyle": "Neutral"
+          "taskbarFrostedStyle": "Neutral",
+          "idleNoteColor": null
         }
       },
       "onExplicitNull": {
@@ -549,6 +552,35 @@
         "accepted": true,
         "state": "value",
         "value": "SystemDefault"
+      }
+    },
+    {
+      "path": "settings.appearance.idleNoteColor",
+      "declaringType": "AppearanceSettings",
+      "clrProperty": "IdleNoteColor",
+      "type": "string?",
+      "nullable": true,
+      "writable": true,
+      "collectionElement": false,
+      "enumType": null,
+      "rawDefault": null,
+      "normalizedDefault": null,
+      "source": "src/AFMediaBar/Classes/Settings/AppearanceSettings.cs",
+      "sourceLine": 130,
+      "firstReleased": null,
+      "releaseStatus": "unreleased",
+      "presentInLatestRelease": false,
+      "latestReleaseDefault": null,
+      "defaultChangedSinceLatestRelease": false,
+      "onMissing": {
+        "accepted": true,
+        "state": "value",
+        "value": null
+      },
+      "onExplicitNull": {
+        "accepted": true,
+        "state": "value",
+        "value": null
       }
     },
     {

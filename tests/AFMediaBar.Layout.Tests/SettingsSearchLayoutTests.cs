@@ -43,6 +43,8 @@ public sealed class SettingsSearchLayoutTests
     [DataRow("组件设置", SettingsPageKey.Components, "Common.RestLayer")]
     [DataRow("应用外观", SettingsPageKey.Appearance, "Common.Group.ThemeAndBackdrop")]
     [DataRow("歌词对齐", SettingsPageKey.Components, "Appearance.Group.RestLayout")]
+    [DataRow("小音符", SettingsPageKey.Appearance, "Appearance.IdleNote.Title")]
+    [DataRow("note color", SettingsPageKey.Appearance, "Appearance.IdleNote.Title")]
     public void FontAndMediaTextTermsResolveToTheirOwners(string query, SettingsPageKey page, string group)
     {
         var hits = SettingsSearchPolicy.Search(query, SettingsSearchIndex.Entries);

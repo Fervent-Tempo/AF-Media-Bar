@@ -63,7 +63,13 @@ public sealed class SettingsIntegrationTests
                 taskbar.UseFrostedTaskbarBackground = true;
                 taskbar.TaskbarFrostedStyle = TaskbarFrostedStyle.Warm;
                 taskbar.TaskbarBackgroundOpacityPercent = 75;
+                taskbar.SetIdleNoteColorCommand.Execute("#42cba6");
                 application.FontWeight = 700;
+                Assert.AreEqual("#42CBA6", SettingsManager.Current.Appearance.IdleNoteColor);
+                taskbar.IdleNoteColorHex = "#12";
+                Assert.AreEqual("#42CBA6", SettingsManager.Current.Appearance.IdleNoteColor);
+                taskbar.ComponentSpacingDip = 18;
+                Assert.AreEqual("#12", taskbar.IdleNoteColorHex, "无关布局更新不应清除尚未输入完整的颜色。");
                 Assert.IsTrue(taskbar.UseFrostedTaskbarBackground);
                 Assert.AreEqual(TaskbarFrostedStyle.Warm, taskbar.TaskbarFrostedStyle);
                 Assert.AreEqual(75, taskbar.TaskbarBackgroundOpacityPercent);
@@ -72,11 +78,13 @@ public sealed class SettingsIntegrationTests
                 var before = SettingsManager.Current.Appearance;
                 context.Deactivate();
                 taskbar.UseFrostedTaskbarBackground = false;
+                taskbar.ResetIdleNoteColorCommand.Execute(null);
                 application.FontWeight = 400;
                 Assert.AreEqual(before, SettingsManager.Current.Appearance);
                 context.Initialize(SettingsContext.Initial with { Mode = SettingsMode.DynamicIsland });
                 context.Activate();
                 taskbar.UseFrostedTaskbarBackground = false;
+                taskbar.SetIdleNoteColorCommand.Execute("#112233");
                 Assert.AreEqual(before, SettingsManager.Current.Appearance);
             }
             finally { SettingsManager.Current = previous; }
@@ -99,7 +107,8 @@ public sealed class SettingsIntegrationTests
                     PlayerForegroundMode = PlayerForegroundMode.LightText,
                     TaskbarBackgroundMaterial = TaskbarBackgroundMaterial.Frosted,
                     TaskbarFrostedStyle = TaskbarFrostedStyle.Warm,
-                    TaskbarBackgroundOpacityPercent = 75
+                    TaskbarBackgroundOpacityPercent = 75,
+                    IdleNoteColor = "#42CBA6"
                 }
             };
             SettingsManager.SetUserDefaults(saved);
@@ -108,7 +117,8 @@ public sealed class SettingsIntegrationTests
                 FontWeight = 800,
                 PlayerForegroundMode = PlayerForegroundMode.DarkText,
                 TaskbarFrostedStyle = TaskbarFrostedStyle.Cool,
-                TaskbarBackgroundOpacityPercent = 90
+                TaskbarBackgroundOpacityPercent = 90,
+                IdleNoteColor = "#FF8A8A"
             };
             SettingsManager.Current = new AppSettings { Appearance = current };
             SettingsManager.ResetApplicationAppearance();
@@ -116,6 +126,7 @@ public sealed class SettingsIntegrationTests
             Assert.AreEqual(PlayerForegroundMode.DarkText, SettingsManager.Current.Appearance.PlayerForegroundMode);
             Assert.AreEqual(TaskbarFrostedStyle.Cool, SettingsManager.Current.Appearance.TaskbarFrostedStyle);
             Assert.AreEqual(90, SettingsManager.Current.Appearance.TaskbarBackgroundOpacityPercent);
+            Assert.AreEqual(current.IdleNoteColor, SettingsManager.Current.Appearance.IdleNoteColor);
             SettingsManager.Current.Appearance = current;
             SettingsManager.ResetTaskbarAppearance();
             Assert.AreEqual(800, SettingsManager.Current.Appearance.FontWeight);
@@ -123,9 +134,22 @@ public sealed class SettingsIntegrationTests
             Assert.AreEqual(saved.Appearance.TaskbarBackgroundMaterial, SettingsManager.Current.Appearance.TaskbarBackgroundMaterial);
             Assert.AreEqual(saved.Appearance.TaskbarFrostedStyle, SettingsManager.Current.Appearance.TaskbarFrostedStyle);
             Assert.AreEqual(saved.Appearance.TaskbarBackgroundOpacityPercent, SettingsManager.Current.Appearance.TaskbarBackgroundOpacityPercent);
+            Assert.AreEqual(saved.Appearance.IdleNoteColor, SettingsManager.Current.Appearance.IdleNoteColor);
             Assert.AreEqual(saved.Appearance, SettingsManager.UserDefaults!.Appearance);
         }
         finally { SettingsManager.SetUserDefaults(previousDefaults); SettingsManager.Current = previous; }
+    }
+
+    [TestMethod]
+    public void IdleNoteColorNormalizesAndRoundTripsWithoutRequiringOldSettingsToContainIt()
+    {
+        var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+        foreach (var json in new[] { "{\"appearance\":{}}", "{\"appearance\":{\"idleNoteColor\":null}}", "{\"appearance\":{\"idleNoteColor\":\"invalid\"}}" })
+            Assert.IsNull(JsonSerializer.Deserialize<AppSettings>(json, options)!.Normalize().Appearance.IdleNoteColor);
+        var settings = JsonSerializer.Deserialize<AppSettings>("{\"appearance\":{\"idleNoteColor\":\" #8842cba6 \"}}", options)!.Normalize();
+        Assert.AreEqual("#42CBA6", settings.Appearance.IdleNoteColor);
+        var loaded = JsonSerializer.Deserialize<AppSettings>(JsonSerializer.Serialize(settings, options), options)!.Normalize().Clone();
+        Assert.AreEqual("#42CBA6", loaded.Appearance.IdleNoteColor);
     }
 
     [TestMethod]

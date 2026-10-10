@@ -1645,6 +1645,7 @@ namespace AFMediaBar.Components
         public void ApplyAppearanceSettings()
         {
             var appearance = SettingsManager.Current.Appearance.Normalize();
+            ApplyNoteColor();
             var appTheme = ApplicationThemeManager.GetAppTheme();
             var isDark = appTheme == ApplicationTheme.Dark;
             if (appTheme == ApplicationTheme.Unknown)
@@ -1737,6 +1738,20 @@ namespace AFMediaBar.Components
                 : Visibility.Collapsed;
         }
 
+        private void ApplyNoteColor()
+        {
+            if (SongImage.ImageSource is not null) return;
+            var customColor = SettingsManager.Current.Appearance.Normalize().IdleNoteColor;
+            if (SystemParameters.HighContrast)
+                SongImagePlaceholder.Foreground = SystemColors.WindowTextBrush;
+            else if (ColorHex.TryParse(customColor, out var color))
+                SongImagePlaceholder.Foreground = CreateFrozenBrush(color);
+            else if (TryFindResource("AfAccentBrush") is Brush)
+                SongImagePlaceholder.SetResourceReference(SymbolIcon.ForegroundProperty, "AfAccentBrush");
+            else
+                SongImagePlaceholder.Foreground = SystemColors.HighlightBrush;
+        }
+
         private void RefreshTaskbarBackgroundArtwork()
         {
             var material = SettingsManager.Current.Appearance.Normalize().TaskbarBackgroundMaterial;
@@ -1822,6 +1837,7 @@ namespace AFMediaBar.Components
                     SongImagePlaceholder.Visibility = Visibility.Visible;
                     SongImage.ImageSource = null;
                     BackgroundImage.Source = null;
+                    ApplyNoteColor();
                     BackgroundImage.Visibility = Visibility.Collapsed;
                     SongImageBorder.Margin = new Thickness(0, 0, 0, -3); // align music note better when no cover
                     // 断开时封面换回音符：撤销可能仍展示着的悬停放大与提示层。
@@ -1924,6 +1940,7 @@ namespace AFMediaBar.Components
                     BackgroundImage.Source = null;
                 }
 
+                ApplyNoteColor();
                 // 两条分支都要走到：无封面时必须把遮罩关掉，否则空的封面格上会残留一层遮罩（画刷还有效，只是 ImageSource 空了）。
                 // Both branches must run it: with no artwork the scrim has to go out, or a layer of scrim is left on the empty slot
                 // (the brush is still in effect, only the ImageSource is null).
