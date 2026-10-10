@@ -8,7 +8,7 @@
 
 | 项目 | 核对结果 |
 |---|---|
-| 当前 main 功能基线 | `09e9cf19d85f73ce3601036fce28c7c5baf81069` |
+| 当前 main 功能基线 | `6ba5cf2b763ea6b0faa95f3920fbeeddcbfd59d3` |
 | 最新正式发布 | `v1.3.2`，2026-10-06；tag 提交 `a781620ea37df526ab87e62d2f7c51fea289f863` |
 | 当前设置文件编号 | `schemaVersion=2`；v1.2.0 至 v1.3.2 同为 2 |
 | 核对日期 | 2026-10-10 |
@@ -21,7 +21,7 @@
 - 已发布字段的路径、类型、枚举名称/编号、缺省及 null/空集合含义都属于契约。变更时明确选择保留、映射迁移、归一化、隔离重置或停止支持，说明用户影响并验证；不要求一律保留旧值。
 - 字段已发布不等于所有成员已发布，例如 `interfaceLanguage` 已发布，`Vietnamese=4` 尚未发布。既有“只能追加”的序列化注释应结合已发布成员理解。
 - 清单缺项或证据不明时，先核对正式 tag，不能直接按“未发布”处理。清单与源码不一致时先定位变化，不照旧表改代码。
-- 本次只登记当前实现，没有合并 #179；当前封面模式仍位于 `taskbarExperience.artworkHoverMode`。
+- #179 将未发布的封面模式移至 `interaction.artworkHoverMode`，交互页提供三个选项并负责重置；开发旧路径不迁移，缺字段回 Off。
 
 ## 当前 main 相对正式版的变化
 
@@ -34,7 +34,7 @@
 | `settings.appearance.taskbarFrostedStyle` | 磨砂风格 |
 | `settings.lyricsChineseConversion` | 歌词简繁转换方向 |
 | `settings.taskbarExperience.arrangement` | 静置内容左右排布；null 时 position=End 取 Right，其余取 Left |
-| `settings.taskbarExperience.artworkHoverMode` | 封面悬停放大形态 |
+| `settings.interaction.artworkHoverMode` | 封面悬停放大形态 |
 | `settings.translucentTbCompatibilityPromptShown` | TranslucentTB 一次性处理状态 |
 
 两个已发布叶子字段的内置默认值从 v1.3.2 的 `Left` 改为 main 的 `Center`：`settings.lyricsTextAlignment` 和 `settings.taskbarExperience.mediaTextAlignment`。明确保存的 Left 不会被强制改为 Center；字段缺失时的实际行为见逐项读取列，不能把两者混同。
@@ -117,7 +117,7 @@
 | 根 `trayWheelBehavior` | 已发布旧字段；仍克隆/归一化/保存。当前托盘输入映射使用 interaction 的两个滚轮字段，没有通用旧值→新字段转接。 |
 | `taskbarBarBackgroundBlur`、灵动岛相关位置/表面 | 保留旧模型和序列化；当前可运行模式只有任务栏，WindowMode 被归一化为 Taskbar。不能因字段存在就宣称模式已实现。 |
 | `settings.lyricsMatchStrictness` | v1.2.0/v1.2.1 发布过，v1.3.0 起移除；历史成员 Balanced=0、Strict=1、Exact=2。当前按未知字段忽略，不转接、不写回；保留历史记录，不能误标为未发布。 |
-| DisplayModesPage | 旧完整页面仍留在源码和 DI/测试中，实际解析映射到 ScreenAndPlacementPage。封面放大控件仅留在旧页，当前可达页面遗漏该编辑入口；本清单不修复 UI。 |
+| DisplayModesPage | 旧完整页面仍留在源码和 DI/测试中，实际解析映射到 ScreenAndPlacementPage。封面放大控件已移至可达的 InteractionPage，旧页不再重复保留该控件。 |
 | ApplicationAppearancePage | 旧类型入口映射到统一 AppearancePage，不创建重复设置页。 |
 | 旧页面键/分组 | DisplayModes 的三层分组映射到 Components；其余到 ScreenAndPlacement。旧外观布局组、歌词对齐及组件组映射到当前内容页；旧共享组合键组映射到交互滚轮组。见目录映射。 |
 | 模式/显示器/方向编辑上下文 | 缓存按环境隔离，不等于存储隔离；HasIndependentProfiles=false，各任务栏共享当前配置。 |
@@ -140,16 +140,16 @@ TranslucentTB 被检测到且 `translucentTbCompatibilityPromptShown=false` 时�
 |---|---|
 | ResetApplicationAppearance | 应用字体、主题、材质；保留媒体文字色、任务栏背景/浓度/风格。 |
 | ResetTaskbarAppearance | 媒体文字色、任务栏背景/浓度/风格、媒体字号；保留全局主题字体及布局。 |
-| ResetContentLayout | 整段 TaskbarExperience，但保留当前媒体字号；频谱、性能、歌词对齐及固定长度设置；不改位置、取词和文本处理。 |
+| ResetContentLayout | 整段 TaskbarExperience，但保留当前媒体字号；频谱、性能、歌词对齐及固定长度设置；不改位置、取词、文本处理和封面悬停模式。 |
 | ResetScreenAndPlacement | 目标列表/旧目标、位置、手动 padding、跨轴偏移、避让、锁定；不恢复各层内容。 |
 | ResetLyrics | 歌词启用、双行与来源顺序、浏览器许可、擦亮/不透明度/字距/行距、过滤/简繁、来源/艺术家分隔符；保留已移出的对齐与固定长度。 |
-| ResetInteraction | 整段 Interaction；当前不含 taskbarExperience.artworkHoverMode。 |
+| ResetInteraction | 整段 Interaction，包含封面悬停模式；保留封面显隐。 |
 | ResetExtraFeatures | 通知、SMTC 过滤、快速启动。 |
 | ResetComponents | 频谱、性能两段；与新内容页整体重置区分。 |
 | ResetGeneral | 克隆当前值并发布 General 重置边界，不改变偏好。 |
 | ResetAll | 从生效 Defaults 克隆全部设置，但保留当前 TranslucentTB 已提示标记。 |
 | 旧 ResetAppearance | 整段外观、两个基础表面，以及字号/密度/文字排列对齐/间距/整体长度/静置顺序；不是新外观页重置。 |
-| 旧 ResetDisplayModes | 层和组件显隐、封面模式、完整/悬停控制、左右排布、无媒体保留项，以及模式/朝向/显示目标/定位和灵动岛表面；保留媒体字号、排序及长度。 |
+| 旧 ResetDisplayModes | 层和组件显隐、完整/悬停控制、左右排布、无媒体保留项，以及模式/朝向/显示目标/定位和灵动岛表面；保留媒体字号、排序及长度。 |
 | 旧 ResetLayout | 根级模式/定位/比例/灵动岛位置等；不是新内容页整体重置。 |
 
 上述为 [SettingsManager](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs) 的实际范围。旧 API 保留不表示新页面仍调用旧重置；改调用方时应核对 ViewModel 和配置上下文。
@@ -246,23 +246,24 @@ TranslucentTB 被检测到且 `translucentTbCompatibilityPromptShown=false` 时�
 
 | JSON 路径 | 类型；可空 | 内置有效默认值 | 缺字段后值 | 显式 null 读取 | 首次发布 | 定义 |
 |---|---|---|---|---|---|---|
-| `settings.dynamicIslandSurface.backgroundOpacityPercent` | `int`；否 | `100` | `0` | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L748) |
-| `settings.dynamicIslandSurface.cornerRadiusDip` | `double`；否 | `6` | `0` | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L749) |
-| `settings.dynamicIslandSurface.style` | `PlayerSurfaceStyle`；否 | `"Automatic"` | 同内置默认 | `"Automatic"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L747) |
+| `settings.dynamicIslandSurface.backgroundOpacityPercent` | `int`；否 | `100` | `0` | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L747) |
+| `settings.dynamicIslandSurface.cornerRadiusDip` | `double`；否 | `6` | `0` | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L748) |
+| `settings.dynamicIslandSurface.style` | `PlayerSurfaceStyle`；否 | `"Automatic"` | 同内置默认 | `"Automatic"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L746) |
 
 ### interaction
 
 | JSON 路径 | 类型；可空 | 内置有效默认值 | 缺字段后值 | 显式 null 读取 | 首次发布 | 定义 |
 |---|---|---|---|---|---|---|
-| `settings.interaction.artworkClickAction` | `PlayerClickAction`；否 | `"TogglePlayPause"` | 同内置默认 | `"TogglePlayPause"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L696) |
-| `settings.interaction.chordWheelAction` | `WheelAction`；否 | `"SwitchMediaSource"` | `"PreviousNext"` | `"PreviousNext"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L700) |
-| `settings.interaction.modifier` | `InteractionModifier`；否 | `"Shift"` | 同内置默认 | `"Shift"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L699) |
-| `settings.interaction.primaryWheelAction` | `WheelAction`；否 | `"PreviousNext"` | 同内置默认 | `"PreviousNext"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L698) |
-| `settings.interaction.showWheelTooltips` | `bool`；否 | `true` | `false` | 读取失败：`JsonException` | v1.3.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L706) |
-| `settings.interaction.textClickAction` | `PlayerClickAction`；否 | `"ActivateSource"` | `"TogglePlayPause"` | `"TogglePlayPause"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L697) |
-| `settings.interaction.trayChordWheelAction` | `TrayWheelBehavior`；否 | `"AdjustVolume"` | 同内置默认 | `"SwitchOutputDevice"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L703) |
-| `settings.interaction.trayClickAction` | `TrayClickAction`；否 | `"OpenAudioControl"` | `"None"` | `"OpenAudioControl"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L701) |
-| `settings.interaction.trayPrimaryWheelAction` | `TrayWheelBehavior`；否 | `"SwitchOutputDevice"` | `"AdjustVolume"` | `"SwitchOutputDevice"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L702) |
+| `settings.interaction.artworkClickAction` | `PlayerClickAction`；否 | `"TogglePlayPause"` | 同内置默认 | `"TogglePlayPause"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L685) |
+| `settings.interaction.artworkHoverMode` | `ArtworkHoverMode`；否 | `"Off"` | 同内置默认 | `"Off"` | **未发布** | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L702) |
+| `settings.interaction.chordWheelAction` | `WheelAction`；否 | `"SwitchMediaSource"` | `"PreviousNext"` | `"PreviousNext"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L689) |
+| `settings.interaction.modifier` | `InteractionModifier`；否 | `"Shift"` | 同内置默认 | `"Shift"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L688) |
+| `settings.interaction.primaryWheelAction` | `WheelAction`；否 | `"PreviousNext"` | 同内置默认 | `"PreviousNext"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L687) |
+| `settings.interaction.showWheelTooltips` | `bool`；否 | `true` | `false` | 读取失败：`JsonException` | v1.3.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L695) |
+| `settings.interaction.textClickAction` | `PlayerClickAction`；否 | `"ActivateSource"` | `"TogglePlayPause"` | `"TogglePlayPause"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L686) |
+| `settings.interaction.trayChordWheelAction` | `TrayWheelBehavior`；否 | `"AdjustVolume"` | 同内置默认 | `"SwitchOutputDevice"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L692) |
+| `settings.interaction.trayClickAction` | `TrayClickAction`；否 | `"OpenAudioControl"` | `"None"` | `"OpenAudioControl"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L690) |
+| `settings.interaction.trayPrimaryWheelAction` | `TrayWheelBehavior`；否 | `"SwitchOutputDevice"` | `"AdjustVolume"` | `"SwitchOutputDevice"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L691) |
 
 ### lyricsSecondaryLine
 
@@ -317,7 +318,6 @@ TranslucentTB 被检测到且 `translucentTbCompatibilityPromptShown=false` 时�
 | JSON 路径 | 类型；可空 | 内置有效默认值 | 缺字段后值 | 显式 null 读取 | 首次发布 | 定义 |
 |---|---|---|---|---|---|---|
 | `settings.taskbarExperience.arrangement` | `TaskbarContentArrangement?`；是 | `null` | 同内置默认 | `null` | **未发布** | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L503) |
-| `settings.taskbarExperience.artworkHoverMode` | `ArtworkHoverMode`；否 | `"Off"` | 同内置默认 | `"Off"` | **未发布** | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L519) |
 | `settings.taskbarExperience.artworkVisible` | `bool`；否 | `true` | 同内置默认 | 读取失败：`JsonException` | v1.3.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L509) |
 | `settings.taskbarExperience.componentSpacingDip` | `double`；否 | `12` | `4` | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L494) |
 | `settings.taskbarExperience.contentLayout` | `TaskbarContentLayout`；否 | `"AdaptiveStack"` | `"CompactInline"` | `"AdaptiveStack"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L488) |
@@ -329,33 +329,33 @@ TranslucentTB 被检测到且 `translucentTbCompatibilityPromptShown=false` 时�
 | `settings.taskbarExperience.fullPanel.mediaControlsVisible` | `bool`；否 | `true` | `false` | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L431) |
 | `settings.taskbarExperience.fullPanel.mediaInfoVisible` | `bool`；否 | `true` | `false` | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L430) |
 | `settings.taskbarExperience.fullPanel.performanceVisible` | `bool`；否 | `true` | `false` | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L433) |
-| `settings.taskbarExperience.fullPanelEntryVisible` | `bool`；否 | `true` | `false` | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L541) |
+| `settings.taskbarExperience.fullPanelEntryVisible` | `bool`；否 | `true` | `false` | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L531) |
 | `settings.taskbarExperience.hoverButtonSpacingDip` | `double`；否 | `2` | `0` | 读取失败：`JsonException` | v1.3.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L497) |
-| `settings.taskbarExperience.hoverControls` | `TaskbarHoverControlsSettings`；否 | 对象，见下级字段 | `{"playPauseVisible":false,"previousNextVisible":false,"outputDeviceVisible":false,"audioControlVisible":false,"progressVisible":false}` | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L544) |
+| `settings.taskbarExperience.hoverControls` | `TaskbarHoverControlsSettings`；否 | 对象，见下级字段 | `{"playPauseVisible":false,"previousNextVisible":false,"outputDeviceVisible":false,"audioControlVisible":false,"progressVisible":false}` | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L534) |
 | `settings.taskbarExperience.hoverControls.audioControlVisible` | `bool`；否 | `true` | `false` | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L456) |
 | `settings.taskbarExperience.hoverControls.outputDeviceVisible` | `bool`；否 | `true` | `false` | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L455) |
 | `settings.taskbarExperience.hoverControls.playPauseVisible` | `bool`；否 | `false` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L453) |
 | `settings.taskbarExperience.hoverControls.previousNextVisible` | `bool`；否 | `false` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L454) |
 | `settings.taskbarExperience.hoverControls.progressVisible` | `bool`；否 | `true` | `false` | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L457) |
 | `settings.taskbarExperience.hoverLayerEnabled` | `bool`；否 | `true` | `false` | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L485) |
-| `settings.taskbarExperience.idleComponents` | `IReadOnlyList<TaskbarRestComponent>?`；是 | `null` | 同内置默认 | `null` | v1.2.1 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L585) |
+| `settings.taskbarExperience.idleComponents` | `IReadOnlyList<TaskbarRestComponent>?`；是 | `null` | 同内置默认 | `null` | v1.2.1 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L575) |
 | `settings.taskbarExperience.lengthMode` | `TaskbarLengthMode`；否 | `"FollowContent"` | 同内置默认 | `"FollowContent"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L490) |
-| `settings.taskbarExperience.mediaFontSizePercent` | `int`；否 | `100` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L591) |
+| `settings.taskbarExperience.mediaFontSizePercent` | `int`；否 | `100` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L581) |
 | `settings.taskbarExperience.mediaTextAlignment` | `TaskbarMediaTextAlignment`；否 | `"Center"` | `"Left"` | `"Left"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L500) |
-| `settings.taskbarExperience.outputDeviceVisible` | `bool`；否 | `false` | 同内置默认 | 读取失败：`JsonException` | v1.2.1 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L552) |
-| `settings.taskbarExperience.performanceVisible` | `bool`；否 | `true` | `false` | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L524) |
-| `settings.taskbarExperience.restComponentOrder` | `IReadOnlyList<TaskbarRestComponent>?`；是 | `null` | 同内置默认 | `null` | v1.2.1 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L571) |
-| `settings.taskbarExperience.restProgressVisible` | `bool`；否 | `false` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L532) |
+| `settings.taskbarExperience.outputDeviceVisible` | `bool`；否 | `false` | 同内置默认 | 读取失败：`JsonException` | v1.2.1 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L542) |
+| `settings.taskbarExperience.performanceVisible` | `bool`；否 | `true` | `false` | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L514) |
+| `settings.taskbarExperience.restComponentOrder` | `IReadOnlyList<TaskbarRestComponent>?`；是 | `null` | 同内置默认 | `null` | v1.2.1 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L561) |
+| `settings.taskbarExperience.restProgressVisible` | `bool`；否 | `false` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L522) |
 | `settings.taskbarExperience.spectrumVisible` | `bool`；否 | `true` | `false` | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L506) |
-| `settings.taskbarExperience.volumeVisible` | `bool`；否 | `false` | 同内置默认 | 读取失败：`JsonException` | v1.2.1 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L555) |
+| `settings.taskbarExperience.volumeVisible` | `bool`；否 | `false` | 同内置默认 | 读取失败：`JsonException` | v1.2.1 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L545) |
 
 ### taskbarSurface
 
 | JSON 路径 | 类型；可空 | 内置有效默认值 | 缺字段后值 | 显式 null 读取 | 首次发布 | 定义 |
 |---|---|---|---|---|---|---|
-| `settings.taskbarSurface.backgroundOpacityPercent` | `int`；否 | `100` | `0` | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L748) |
-| `settings.taskbarSurface.cornerRadiusDip` | `double`；否 | `6` | `0` | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L749) |
-| `settings.taskbarSurface.style` | `PlayerSurfaceStyle`；否 | `"Automatic"` | 同内置默认 | `"Automatic"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L747) |
+| `settings.taskbarSurface.backgroundOpacityPercent` | `int`；否 | `100` | `0` | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L747) |
+| `settings.taskbarSurface.cornerRadiusDip` | `double`；否 | `6` | `0` | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L748) |
+| `settings.taskbarSurface.style` | `PlayerSurfaceStyle`；否 | `"Automatic"` | 同内置默认 | `"Automatic"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L746) |
 
 ### trackChangeNotification
 

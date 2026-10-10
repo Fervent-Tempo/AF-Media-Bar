@@ -1,6 +1,6 @@
 # 设置契约：按需读取
 
-基线：main 功能提交 `09e9cf1`；正式版 `v1.3.2`；schema `2`；核对日 2026-10-10。清单是已核对快照，源码变化时先重新核对。
+基线：main 功能提交 `6ba5cf2`；正式版 `v1.3.2`；schema `2`；核对日 2026-10-10。清单是已核对快照，源码变化时先重新核对。
 
 ## 默认读取顺序
 
@@ -9,7 +9,7 @@
 3. 需要更多背景才读对应专题；发布、历史清点或校验失败调查才读完整存档。
 
 ```powershell
-pwsh -NoProfile -File tools/settings-contracts.ps1 -Action Query -Path settings.taskbarExperience.artworkHoverMode
+pwsh -NoProfile -File tools/settings-contracts.ps1 -Action Query -Path settings.interaction.artworkHoverMode
 pwsh -NoProfile -File tools/settings-contracts.ps1 -Action Generate
 pwsh -NoProfile -File tools/settings-contracts.ps1 -Action Verify
 ```
