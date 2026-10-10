@@ -107,6 +107,7 @@ public sealed class AppSettings : INotifyPropertyChanged
     private PerformanceComponentSettings _performanceComponent = PerformanceComponentSettings.Default;
     private UpdateSettings _update = UpdateSettings.Default;
     private bool _launchAtStartup = true;
+    private bool _developerModeEnabled;
     private InterfaceLanguage _interfaceLanguage = InterfaceLanguage.System;
     private bool _translucentTbCompatibilityPromptShown;
 
@@ -220,6 +221,9 @@ public sealed class AppSettings : INotifyPropertyChanged
     /// Whether the application starts with the Windows session. On by default: the settings file stores the intent while the
     /// registry Run entry is its effect, so startup reconciles the registration against this value once.
     /// </summary>
+    /// <summary>手动开启开发者工具，默认关闭；参与用户默认快照。</summary>
+    public bool DeveloperModeEnabled { get => _developerModeEnabled; set => Set(ref _developerModeEnabled, value); }
+
     public bool LaunchAtStartup { get => _launchAtStartup; set => Set(ref _launchAtStartup, value); }
 
     /// <summary>
@@ -343,6 +347,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         SpectrumComponent = SpectrumComponent,
         PerformanceComponent = PerformanceComponent,
         Update = Update,
+        DeveloperModeEnabled = DeveloperModeEnabled,
         LaunchAtStartup = LaunchAtStartup,
         InterfaceLanguage = InterfaceLanguage,
         TranslucentTbCompatibilityPromptShown = TranslucentTbCompatibilityPromptShown

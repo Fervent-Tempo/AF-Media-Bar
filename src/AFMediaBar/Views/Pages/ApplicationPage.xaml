@@ -284,6 +284,9 @@
                             </StackPanel>
                         </ui:CardExpander.Header>
                         <StackPanel>
+                            <components:SettingsRow Title="{DynamicResource Loc.Developer.Mode.Title}" Description="{DynamicResource Loc.Developer.Mode.Description}" Icon="{ui:SymbolIcon Bug24}">
+                                <ui:ToggleSwitch IsChecked="{Binding ViewModel.DeveloperModeEnabled, Mode=TwoWay}" />
+                            </components:SettingsRow>
                             <components:SettingsRow
                                 Description="{DynamicResource Loc.About.Row.LogFolder.Description}"
                                 Icon="{ui:SymbolIcon FolderOpen24}"

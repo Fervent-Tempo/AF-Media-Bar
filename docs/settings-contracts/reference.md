@@ -25,7 +25,7 @@
 
 ## 当前 main 相对正式版的变化
 
-七个未发布字段：
+八个未发布字段：
 
 | JSON 路径 | 当前含义 |
 |---|---|
@@ -36,6 +36,7 @@
 | `settings.taskbarExperience.arrangement` | 静置内容左右排布；null 时 position=End 取 Right，其余取 Left |
 | `settings.interaction.artworkHoverMode` | 封面悬停放大形态 |
 | `settings.translucentTbCompatibilityPromptShown` | TranslucentTB 一次性处理状态 |
+| `settings.developerModeEnabled` | 默认关闭的开发者工具入口 |
 
 两个已发布叶子字段的内置默认值从 v1.3.2 的 `Left` 改为 main 的 `Center`：`settings.lyricsTextAlignment` 和 `settings.taskbarExperience.mediaTextAlignment`。明确保存的 Left 不会被强制改为 Center；字段缺失时的实际行为见逐项读取列，不能把两者混同。
 
@@ -167,7 +168,7 @@ TranslucentTB 被检测到且 `translucentTbCompatibilityPromptShown=false` 时�
 
 路径相对于文件根；`[]` 表示列表条目。对象行也计入路径数。内置默认值取真实 `new AppSettings().Normalize()`，不代表用户默认快照；原始构造默认值及 v1.3.2 默认值见 JSON 清单。可空列表示 CLR 声明，JSON 的 null 接受性以实际读取结果列为准。
 
-缺字段测试保留父对象及其他默认字段，仅删除目标属性；不能等同于整个父对象缺失。列表条目使用固定示例 `id=contract, displayName=fixture, kind=Executable, target=fixture.exe, sourceId=null`，示例不是用户默认条目。138 个路径均用真实 ReadEnvelope 核对缺失及显式 null，共 276 次读取。
+缺字段测试保留父对象及其他默认字段，仅删除目标属性；不能等同于整个父对象缺失。列表条目使用固定示例 `id=contract, displayName=fixture, kind=Executable, target=fixture.exe, sourceId=null`，示例不是用户默认条目。138 个路径均用真实 ReadEnvelope 核对缺失及显式 null，共 276 次读取。新增 developerModeEnabled 用独立临时文件经同一 ReadEnvelope 补测缺失与 null：缺失为 false，null 拒绝；该设置参与用户默认快照，关闭不重置生产恢复状态。
 
 ### 根级设置
 
@@ -182,6 +183,7 @@ TranslucentTB 被检测到且 `translucentTbCompatibilityPromptShown=false` 时�
 | `settings.dynamicIslandSurface` | `ModeSurfaceSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L158) |
 | `settings.dynamicIslandTop` | `double?`；是 | `null` | 同内置默认 | `null` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L152) |
 | `settings.interaction` | `GlobalInteractionSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L156) |
+| `settings.developerModeEnabled` | `bool`；否 | `false` | 同内置默认 | 读取失败：`JsonException` | **未发布** | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L225) |
 | `settings.interfaceLanguage` | `InterfaceLanguage`；否 | `"System"` | 同内置默认 | `"System"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L232) |
 | `settings.launchAtStartup` | `bool`；否 | `true` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L223) |
 | `settings.layoutLengthScalePercent` | `double`；否 | `100` | 同内置默认 | `100` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L145) |
@@ -869,7 +871,7 @@ TranslucentTB 被检测到且 `translucentTbCompatibilityPromptShown=false` 时�
 
 ## 快照覆盖与验证
 
-当前共有 138 个配置路径（含对象和列表条目模板）、48 个根级属性、35 类枚举、125 个枚举成员。与 v1.3.2 对比新增 7 个字段、15 个枚举成员；两个已发布叶子字段的内置默认值改变，已在前文记录。
+当前共有 139 个配置路径（含对象和列表条目模板）、49 个根级属性、35 类枚举、125 个枚举成员。与 v1.3.2 对比新增 8 个字段、15 个枚举成员；两个已发布叶子字段的内置默认值改变，已在前文记录。
 
 字段与枚举来自真实 main 程序集的 System.Text.Json 元数据、实际私有枚举转换器及模型归一化；再以 C# 语法树独立核对字段集合。v1.3.2 使用 tag 源码的独立构建核对默认值，v1.2.0 至 v1.3.2 按发布 tag 核对路径及枚举成员。历史发布路径差集也已核对，唯一已发布后删除项为 lyricsMatchStrictness。读取边界使用真实 ReadEnvelope 与独立临时文件核对，不读取或写入用户配置。
 

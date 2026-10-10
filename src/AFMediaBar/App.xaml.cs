@@ -5,6 +5,7 @@ using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Components;
 using AFMediaBar.Classes.Services.Credits;
+using AFMediaBar.Classes.Services.Diagnostics;
 using AFMediaBar.Classes.Services.Lyrics;
 using AFMediaBar.Classes.Services.Notifications;
 using AFMediaBar.ViewModels.Pages;
@@ -84,6 +85,8 @@ namespace AFMediaBar
                 // 后台内存与休眠剪枝：电源状态监听 → 参与者各自回收自己的资源 → 进程级回收。
                 // Background memory and suspend pruning: the power state monitor, then each participant reclaiming its own resources, then the
                 // process-level reclaim.
+                services.AddSingleton<DeveloperModeService>();
+                services.AddSingleton<IDeveloperModeService>(sp => sp.GetRequiredService<DeveloperModeService>());
                 services.AddSingleton<PowerStateMonitor>();
                 services.AddSingleton<ProcessMemoryTrimmer>();
                 services.AddSingleton<MemoryPruneCoordinator>();

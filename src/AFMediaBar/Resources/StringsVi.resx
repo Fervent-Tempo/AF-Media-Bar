@@ -2527,4 +2527,6 @@
   <data name="Lyrics.Recovery.RestartReason" xml:space="preserve">
     <value>Hiển thị lời bài hát đã tạm dừng. Khởi động lại AF Media Bar có thể khôi phục; các tính năng khác vẫn hoạt động. Khởi động lại ngay?</value>
   </data>
+  <data name="Developer.Mode.Title" xml:space="preserve"><value>Chế độ nhà phát triển</value></data>
+  <data name="Developer.Mode.Description" xml:space="preserve"><value>Kiểm tra thủ công thông báo và khôi phục. Thao tác kiểm tra có thể ảnh hưởng phiên hiện tại.</value></data>
 </root>

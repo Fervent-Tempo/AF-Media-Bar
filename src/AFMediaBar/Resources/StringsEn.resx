@@ -2489,4 +2489,6 @@
   <data name="Lyrics.Recovery.RestartReason" xml:space="preserve">
     <value>Lyrics display is paused. Restarting AF Media Bar may restore it; other features remain available. Restart now?</value>
   </data>
+  <data name="Developer.Mode.Title" xml:space="preserve"><value>Developer mode</value></data>
+  <data name="Developer.Mode.Description" xml:space="preserve"><value>Manually test notifications and recovery. Test actions may affect the current session.</value></data>
 </root>
