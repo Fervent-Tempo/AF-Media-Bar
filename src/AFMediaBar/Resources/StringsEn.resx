@@ -2465,4 +2465,19 @@
   <data name="Search.Placement.Vertical" xml:space="preserve">
     <value>Choose screens, view system orientation, and configure avoidance, locking and offsets.</value>
   </data>
+  <data name="Restart.Dialog.Title" xml:space="preserve">
+    <value>Restart AF Media Bar</value>
+  </data>
+  <data name="Restart.Dialog.Confirm" xml:space="preserve">
+    <value>Restart</value>
+  </data>
+  <data name="Restart.Dialog.Later" xml:space="preserve">
+    <value>Later</value>
+  </data>
+  <data name="Restart.Failed" xml:space="preserve">
+    <value>Unable to restart. Try again later, or quit and reopen AF Media Bar.</value>
+  </data>
+  <data name="Restart.Busy" xml:space="preserve">
+    <value>An update installation or restart is in progress. Try again later.</value>
+  </data>
 </root>

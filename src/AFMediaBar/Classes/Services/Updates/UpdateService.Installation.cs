@@ -9,6 +9,28 @@ namespace AFMediaBar.Classes.Services.Updates;
 /// <summary>更新协调器的安装准备与启动、退出交接边界。</summary>
 public sealed partial class UpdateService
 {
+    private bool _ordinaryRestartReserved;
+
+    internal IDisposable? TryReserveOrdinaryRestart()
+    {
+        lock (_gate)
+        {
+            if (_disposed || _ordinaryRestartReserved || _installPreparation is not null || _installOnExit || _installHandoffStarted)
+                return null;
+            _ordinaryRestartReserved = true;
+            return new OrdinaryRestartReservation(this);
+        }
+    }
+
+    private sealed class OrdinaryRestartReservation(UpdateService owner) : IDisposable
+    {
+        private int _released;
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _released, 1) != 0) return;
+            lock (owner._gate) owner._ordinaryRestartReserved = false;
+        }
+    }
     private CancellationTokenSource? _installPreparation;
     private PreparedInstall? _preparedInstall;
     private long _installGeneration;
@@ -160,7 +182,7 @@ public sealed partial class UpdateService
         UpdateState previous;
         lock (_gate)
         {
-            if (_disposed || _installHandoffStarted || _installPreparation is not null || _state.IsBusy ||
+            if (_disposed || _ordinaryRestartReserved || _installHandoffStarted || _installPreparation is not null || _state.IsBusy ||
                 (!startup && !UpdatePresentationPolicy.CanInstallNow(_state)))
                 return null;
             previous = _state;

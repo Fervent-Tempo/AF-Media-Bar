@@ -14,6 +14,21 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class UpdateInstallPreparationTests
 {
     [TestMethod]
+    public void OrdinaryRestartReservationBlocksInstallationAndReleasesIdempotently()
+    {
+        StaTest.Run(async dispatcher =>
+        {
+            using var fixture = new Fixture(dispatcher);
+            using var reservation = fixture.Service.TryReserveOrdinaryRestart();
+            Assert.IsNotNull(reservation);
+            Assert.IsNull(fixture.Service.TryReserveOrdinaryRestart());
+            Assert.IsFalse(await fixture.Service.TryLaunchPendingInstallOnStartupAsync());
+            Assert.IsNotNull(fixture.Store.ReadPendingRecord());
+            reservation.Dispose(); reservation.Dispose();
+            Assert.IsTrue(await fixture.Service.TryLaunchPendingInstallOnStartupAsync());
+        });
+    }
+    [TestMethod]
     public void StartupVerificationKeepsDispatcherResponsiveAndLaunchesOnlyOnce()
     {
         StaTest.Run(async dispatcher =>
@@ -75,6 +90,7 @@ public sealed class UpdateInstallPreparationTests
             fixture.Service.RestartRequested += (_, _) => restarts++;
             Assert.IsTrue(await fixture.Service.RequestInstallAndExitAsync());
             Assert.AreEqual(1, restarts);
+            Assert.IsNull(fixture.Service.TryReserveOrdinaryRestart());
             Assert.ThrowsException<IOException>(() => File.WriteAllText(fixture.Record.Path, "changed"));
             Assert.ThrowsException<IOException>(() => File.Delete(fixture.Record.Path));
             Assert.IsFalse(await fixture.Service.RequestInstallAndExitAsync());

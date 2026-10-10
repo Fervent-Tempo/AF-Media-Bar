@@ -2465,4 +2465,19 @@
   <data name="Search.Placement.Vertical" xml:space="preserve">
     <value>选择显示屏幕，查看系统朝向，设置避让、锁定与偏移。</value>
   </data>
+  <data name="Restart.Dialog.Title" xml:space="preserve">
+    <value>重启 AF Media Bar</value>
+  </data>
+  <data name="Restart.Dialog.Confirm" xml:space="preserve">
+    <value>重启</value>
+  </data>
+  <data name="Restart.Dialog.Later" xml:space="preserve">
+    <value>稍后</value>
+  </data>
+  <data name="Restart.Failed" xml:space="preserve">
+    <value>无法完成重启，请稍后重试或退出后重新打开 AF Media Bar。</value>
+  </data>
+  <data name="Restart.Busy" xml:space="preserve">
+    <value>更新安装或重启正在进行，请稍后再试。</value>
+  </data>
 </root>

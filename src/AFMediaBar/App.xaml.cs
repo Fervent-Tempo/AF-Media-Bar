@@ -10,6 +10,7 @@ using AFMediaBar.ViewModels.Pages;
 using AFMediaBar.ViewModels.Windows;
 using AFMediaBar.Views.Pages;
 using AFMediaBar.Views.Windows;
+using AFMediaBar.Views.Dialogs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -55,6 +56,10 @@ namespace AFMediaBar
         private MemoryPruneCoordinator? _memoryPruneCoordinator;
         private SingleInstanceGuard? _singleInstanceGuard;
         private bool _isSecondaryInstance;
+        private bool _isRestartStartup;
+        private bool _ordinaryRestartRequested;
+        private IApplicationRestartService? _restartService;
+        private RestartConfirmationService? _restartConfirmation;
 
         // .NET Generic Host 提供依赖注入、配置、日志等服务。
         // The .NET Generic Host provides dependency injection, configuration, logging, and other services.
@@ -177,6 +182,12 @@ namespace AFMediaBar
                 services.AddSingleton<UpdatePackageDownloader>();
                 services.AddSingleton<InstalledApplicationProbe>();
                 services.AddSingleton<UpdateService>();
+                services.AddSingleton<IApplicationRestartService>(sp => new ApplicationRestartService(
+                    sp.GetRequiredService<UpdateService>().TryReserveOrdinaryRestart,
+                    RestartProcessHandoff.PrepareCurrentProcessAsync,
+                    sp.GetRequiredService<AppLogService>()));
+                services.AddSingleton<RestartConfirmationService>();
+                services.AddSingleton<IRestartConfirmationService>(sp => sp.GetRequiredService<RestartConfirmationService>());
                 services.AddSingleton<ReleaseHighlightsService>();
                 services.AddSingleton<ReleaseHighlightsViewModel>();
                 services.AddScoped<ReleaseHighlightsPage>();
@@ -277,6 +288,19 @@ namespace AFMediaBar
         /// </summary>
         private async void OnStartup(object sender, StartupEventArgs e)
         {
+            if (e.Args.Any(argument => argument.StartsWith(RestartProcessHandoff.ArgumentPrefix, StringComparison.Ordinal)))
+            {
+                // 等待阶段没有启动副作用；失败时复用早期退出，不保存尚未加载的设置。
+                _isSecondaryInstance = true;
+                if (!RestartProcessHandoff.TryParse(e.Args, out var handoff) ||
+                    !await RestartProcessHandoff.WaitForParentAsync(handoff!, RestartProcessHandoff.ExitTimeout, _startupCancellation.Token))
+                {
+                    Shutdown();
+                    return;
+                }
+                _isSecondaryInstance = false;
+                _isRestartStartup = true;
+            }
             if (!SingleInstanceGuard.TryAcquire(out _singleInstanceGuard))
             {
                 _isSecondaryInstance = true;
@@ -343,7 +367,10 @@ namespace AFMediaBar
             // the host has started the tray icon and taskbar bar would already exist.
             var updateService = Services.GetRequiredService<UpdateService>();
             updateService.RestartRequested += (_, _) => Shutdown();
-            if (await updateService.TryLaunchPendingInstallOnStartupAsync(_startupCancellation.Token))
+            _restartService = Services.GetRequiredService<IApplicationRestartService>();
+            _restartService.RestartRequested += OnOrdinaryRestartRequested;
+            _restartConfirmation = Services.GetRequiredService<RestartConfirmationService>();
+            if (!_isRestartStartup && await updateService.TryLaunchPendingInstallOnStartupAsync(_startupCancellation.Token))
             {
                 Debug.WriteLine("[App] A pending update is being installed before this start; exiting now.");
                 Shutdown();
@@ -455,6 +482,8 @@ namespace AFMediaBar
             }
 
             _startupCancellation.Cancel();
+            _restartConfirmation?.Dispose();
+            if (_restartService is IDisposable restartLifetime) restartLifetime.Dispose();
 
             if (_isSecondaryInstance)
             {
@@ -528,7 +557,7 @@ namespace AFMediaBar
             // before the disposal watchdog, which ends the process after five seconds and would otherwise win the race.
             try
             {
-                updateService.TryLaunchPendingInstallOnExit();
+                if (!_ordinaryRestartRequested) updateService.TryLaunchPendingInstallOnExit();
             }
             catch (Exception exception)
             {
@@ -572,6 +601,13 @@ namespace AFMediaBar
             // may own non-background threads. Explicitly terminate after all synchronous
             // cleanup has completed so the process cannot remain in the background.
             Environment.Exit(e.ApplicationExitCode);
+        }
+
+        private void OnOrdinaryRestartRequested(object? sender, EventArgs e)
+        {
+            if (_exitHandled != 0 || _startupCancellation.IsCancellationRequested) return;
+            _ordinaryRestartRequested = true;
+            _ = Dispatcher.BeginInvoke(() => Shutdown());
         }
 
         private void UpdateAppearanceResources(AppearanceSettings appearance, ApplicationTheme theme, AccentPalette accent)
