@@ -1753,7 +1753,7 @@ public partial class TaskBarMediaControl
         var previewActive = hoverEligible && hoverMode == ArtworkHoverMode.Preview;
         var zoomActive = hoverEligible && hoverMode == ArtworkHoverMode.Zoom;
         var inlineZoomActive = hoverEligible && hoverMode == ArtworkHoverMode.Off;
-        var hintActive = (inlineZoomActive || zoomActive) && !_isPaused && _canPlayPause
+        var hintActive = hoverEligible && _canPlayPause
             && ResolveArtworkClickAction() == PlayerClickAction.TogglePlayPause;
         // 快照更新（换歌、播放状态翻转）据此在悬停期间刷新提示：暂停↔播放的翻转在任何悬停形态下都可能发生。
         // Snapshot updates (track change, playback flip) refresh the presentation off this flag: a pause/play flip can happen
@@ -1789,7 +1789,9 @@ public partial class TaskBarMediaControl
 
         if (hintActive)
         {
-            SongImageHoverHintIcon.Symbol = Wpf.Ui.Controls.SymbolRegular.Pause24;
+            SongImageHoverHintIcon.Data = Geometry.Parse(_isPaused
+                ? "M 4,2 L 14,8 L 4,14 Z"
+                : "M 3,2 H 6 V 14 H 3 Z M 10,2 H 13 V 14 H 10 Z");
             // 提示层在占位图标之上，两者同时可见会叠出重影；提示激活期间让占位图标让位。
             // The hint layer sits above the placeholder glyph and the two together double up; the placeholder yields while the hint is active.
             SongImagePlaceholder.Visibility = Visibility.Collapsed;
@@ -1861,24 +1863,22 @@ public partial class TaskBarMediaControl
         if (_artworkHoverPreview?.IsOpen == true)
         {
             RefreshArtworkHoverPreviewContent();
-            return;
         }
 
-        var hoverMode = SettingsManager.Current.Interaction.ArtworkHoverMode;
         // 门禁用 IsPointerOverArtwork（屏幕几何）而非 IsMouseOver：封面的悬停快照刷新可能恰逢陈旧捕获存续——
         // 那时 IsMouseOver 谎报 false，正在放大的封面会被一次普通的换歌/暂停刷新误收。其余组件不换树，无需此防。
         // The gate reads IsPointerOverArtwork (screen geometry) rather than IsMouseOver: a hover-time snapshot refresh can land
         // while a stale capture lingers — IsMouseOver then lies false and an enlarged cover gets wrongly collapsed by an
         // ordinary track change or pause flip. The other widgets never re-parent, so they need no such guard.
         var hoverEligible = IsPointerOverArtwork() && CanUseTaskbarComponentHover() && _snapshot.Artwork is not null;
-        var inlineZoomActive = hoverEligible && hoverMode == ArtworkHoverMode.Off;
-        var zoomActive = hoverEligible && hoverMode == ArtworkHoverMode.Zoom;
-        var hintActive = (inlineZoomActive || zoomActive) && !_isPaused && _canPlayPause
+        var hintActive = hoverEligible && _canPlayPause
             && ResolveArtworkClickAction() == PlayerClickAction.TogglePlayPause;
 
         if (hintActive)
         {
-            SongImageHoverHintIcon.Symbol = Wpf.Ui.Controls.SymbolRegular.Pause24;
+            SongImageHoverHintIcon.Data = Geometry.Parse(_isPaused
+                ? "M 4,2 L 14,8 L 4,14 Z"
+                : "M 3,2 H 6 V 14 H 3 Z M 10,2 H 13 V 14 H 10 Z");
             // 提示层在占位图标之上，两者同时可见会叠出重影；提示激活期间让占位图标让位。
             // The hint layer sits above the placeholder glyph and the two together double up; the placeholder yields while the hint is active.
             SongImagePlaceholder.Visibility = Visibility.Collapsed;

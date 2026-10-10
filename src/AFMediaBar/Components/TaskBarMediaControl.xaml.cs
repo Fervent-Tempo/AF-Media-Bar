@@ -1038,9 +1038,6 @@ namespace AFMediaBar.Components
                 : Visibility.Collapsed;
             TaskbarDeviceButton.Visibility = controls.OutputDeviceVisible ? Visibility.Visible : Visibility.Collapsed;
             TaskbarVolumeButton.Visibility = controls.AudioControlVisible ? Visibility.Visible : Visibility.Collapsed;
-            TaskbarHoverProgress.Visibility = controls.ProgressVisible && progressVisible
-                ? Visibility.Visible
-                : Visibility.Collapsed;
             // 完整层入口开关同时作用于悬停层的完整层按钮与静置层文字区顶部那条细杠：用户看到的只是"要不要这个入口"，
             // 因此两个入口必须一起消失，否则关掉开关后细杠没了、悬停按钮还留着。
             // The full-layer entry switch covers both the hover layer's button and the thin bar above the rest-layer text: what the
@@ -1081,7 +1078,6 @@ namespace AFMediaBar.Components
                         item.Margin = new Thickness(visibleHoverItems++ == 0 ? 0 : hoverGap, 0, 0, 0);
                 }
             }
-            TaskbarHoverProgress.Width = metrics.ProgressWidth;
             TaskbarHoverLayer.Height = metrics.HoverLayerHeight;
             ApplyTaskbarSectionGeometry(MainBorder.Width);
             // 频谱被收起时把柱清空一次，免得下次显示时先闪出上一帧的高度；清空的时机放在几何之后，因为它决定频谱这次可不可见。
@@ -2352,15 +2348,13 @@ namespace AFMediaBar.Components
             var hasDuration = _snapshot.Duration > 0;
             TaskbarRestProgress.Maximum = Math.Max(1, _snapshot.Duration);
             TaskbarRestProgress.Value = position;
-            TaskbarHoverProgress.Maximum = Math.Max(1, _snapshot.Duration);
-            TaskbarHoverProgress.Value = position;
+            var experience = SettingsManager.Current.TaskbarExperience.Normalize();
+            SongImageProgress.Progress = hasDuration ? position / _snapshot.Duration : 0;
+            SongImageProgress.Visibility = _isConnected && hasDuration && experience.ArtworkProgressVisible
+                ? Visibility.Visible : Visibility.Collapsed;
             if (_currentMode == WindowMode.Taskbar && !_isVertical)
             {
-                var experience = SettingsManager.Current.TaskbarExperience.Normalize();
                 TaskbarRestProgress.Visibility = hasDuration && experience.RestProgressVisible
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
-                TaskbarHoverProgress.Visibility = hasDuration && experience.HoverControls.ProgressVisible
                     ? Visibility.Visible
                     : Visibility.Collapsed;
             }

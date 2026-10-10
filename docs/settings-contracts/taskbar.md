@@ -9,6 +9,7 @@
 ## 关联规则
 
 - ResetContentLayout 恢复任务栏体验但保留媒体字号；字号由 ResetTaskbarAppearance 恢复。旧 ResetDisplayModes 仍会恢复组件显隐等，不等于当前页面重置；两者均保留交互中的封面悬停模式。
+- 封面边缘进度默认开启，缺字段回开启；显式关闭保持。旧悬停进度字段仅保留读写，不再呈现或预留宽度，不映射到新开关。静置文字进度独立；内容布局重置优先用户快照，schema 不变。
 - null 时 position=End 解析为 Right，其余为 Left；显式值优先。
 - 四项全关时回 Compact：媒体信息和控制开启，音频与性能关闭；不可只孤立判断一个开关。
 - null 用默认顺序；封面和媒体文字固定在前，只排序尾部。遗漏的已知尾部会补全，因此空数组不表示隐藏组件。
@@ -48,6 +49,7 @@
 | `settings.taskbarExperience.performanceVisible` | `bool` | true | false | "读取失败：JsonException" | v1.2.0 |
 | `settings.taskbarExperience.restComponentOrder` | `IReadOnlyList<TaskbarRestComponent>?` | null | null | null | v1.2.1 |
 | `settings.taskbarExperience.restProgressVisible` | `bool` | false | false | "读取失败：JsonException" | v1.2.0 |
+| `settings.taskbarExperience.artworkProgressVisible` | `bool` | true | true | "读取失败：JsonException" | **未发布** |
 | `settings.taskbarExperience.spectrumVisible` | `bool` | true | false | "读取失败：JsonException" | v1.2.0 |
 | `settings.taskbarExperience.volumeVisible` | `bool` | false | false | "读取失败：JsonException" | v1.2.1 |
 

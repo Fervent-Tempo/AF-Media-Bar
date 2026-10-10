@@ -112,6 +112,12 @@
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.RestArtworkVisible, Mode=TwoWay}" />
                         </components:SettingsRow>
                         <components:SettingsRow
+                            Description="{DynamicResource Loc.DisplayModes.Rest.Row.ArtworkProgress.Description}"
+                            Icon="{ui:SymbolIcon DataBarVertical24}"
+                            Title="{DynamicResource Loc.DisplayModes.Rest.Row.ArtworkProgress.Title}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.ArtworkProgressVisible, Mode=TwoWay}" />
+                        </components:SettingsRow>
+                        <components:SettingsRow
                             Description="{DynamicResource Loc.DisplayModes.Rest.Row.Progress.Description}"
                             Icon="{ui:SymbolIcon Play24}"
                             Title="{DynamicResource Loc.DisplayModes.Rest.Row.Progress.Title}">
@@ -726,12 +732,6 @@
                                     IsNested="True"
                                     Title="{DynamicResource Loc.Common.AudioControl}">
                                     <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverAudioControlVisible, Mode=TwoWay}" />
-                                </components:SettingsRow>
-                                <components:SettingsRow
-                                    Icon="{ui:SymbolIcon DataBarVertical24}"
-                                    IsNested="True"
-                                    Title="{DynamicResource Loc.DisplayModes.Hover.Row.Progress.Title}">
-                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverProgressVisible, Mode=TwoWay}" />
                                 </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>

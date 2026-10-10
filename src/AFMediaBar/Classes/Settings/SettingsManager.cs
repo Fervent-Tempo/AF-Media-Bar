@@ -585,6 +585,7 @@ public static class SettingsManager
             SpectrumVisible = defaults.TaskbarExperience.SpectrumVisible,
             PerformanceVisible = defaults.TaskbarExperience.PerformanceVisible,
             RestProgressVisible = defaults.TaskbarExperience.RestProgressVisible,
+            ArtworkProgressVisible = defaults.TaskbarExperience.ArtworkProgressVisible,
             ArtworkVisible = defaults.TaskbarExperience.ArtworkVisible,
             FullPanelEntryVisible = defaults.TaskbarExperience.FullPanelEntryVisible,
             HoverControls = defaults.TaskbarExperience.HoverControls,

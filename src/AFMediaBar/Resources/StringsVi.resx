@@ -707,7 +707,7 @@
     <value>Điều khiển phát lại</value>
   </data>
   <data name="Diagram.LayerHover.Caption" xml:space="preserve">
-    <value>Khi di chuột vào sẽ hiển thị các nút điều khiển phát lại, chuyển bài, thiết bị đầu ra, âm lượng và thanh tiến trình, mỗi mục có công tắc riêng ở trang tiếp theo.</value>
+    <value>Khi bật, các nút điều khiển nhanh xuất hiện khi con trỏ vào thanh media. Bật hoặc tắt từng nút trong nhóm này.</value>
   </data>
   <data name="Diagram.LayerRest.Caption" xml:space="preserve">
     <value>Ảnh bìa và tiêu đề luôn được hiển thị; sóng nhạc và hiệu năng nằm ở bên phải và được chuyển đổi trong &quot;Media và thông báo → Thành phần lớp trạng thái tĩnh&quot;.</value>
@@ -832,17 +832,14 @@
   <data name="DisplayModes.Hover.Row.Enable.Title" xml:space="preserve">
     <value>Bật lớp khi di chuột (Hover layer)</value>
   </data>
-  <data name="DisplayModes.Hover.Row.Progress.Title" xml:space="preserve">
-    <value>Thanh tiến trình</value>
-  </data>
   <data name="DisplayModes.Hover.Row.Size.Description" xml:space="preserve">
-    <value>Điều chỉnh kích thước nút, biểu tượng và thanh tiến trình di chuột; nút ở lớp tĩnh cũng thay đổi.</value>
+    <value>Điều chỉnh kích thước nút và biểu tượng khi di chuột; nút ở lớp tĩnh cũng thay đổi.</value>
   </data>
   <data name="DisplayModes.Hover.Row.Size.Title" xml:space="preserve">
     <value>Kích thước điều khiển</value>
   </data>
   <data name="DisplayModes.Hover.Row.Spacing.Description" xml:space="preserve">
-    <value>Điều chỉnh khoảng cách giữa các nút điều khiển di chuột và thanh tiến trình.</value>
+    <value>Điều chỉnh khoảng cách giữa các nút điều khiển khi di chuột.</value>
   </data>
   <data name="DisplayModes.Hover.Row.Spacing.Title" xml:space="preserve">
     <value>Khoảng cách nút di chuột</value>
@@ -2638,5 +2635,11 @@
   </data>
   <data name="Panel.Performance.Download" xml:space="preserve">
     <value>Tải xuống</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkProgress.Description" xml:space="preserve">
+    <value>Hiển thị tiến độ phát quanh ảnh bìa, theo kích thước và độ phóng khi di chuột.</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkProgress.Title" xml:space="preserve">
+    <value>Tiến độ quanh ảnh bìa</value>
   </data>
 </root>

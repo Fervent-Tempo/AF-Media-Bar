@@ -151,7 +151,7 @@ public sealed class TaskbarArrangementPresentationTests
                     Assert.AreSame(transportButtons, actions.Children[0]);
                     Assert.AreSame(control.FindName("TaskbarDeviceButton"), actions.Children[1]);
                     Assert.AreSame(control.FindName("TaskbarVolumeButton"), actions.Children[2]);
-                    Assert.AreSame(control.FindName("TaskbarHoverProgress"), actions.Children[3]);
+                    Assert.AreEqual(3, actions.Children.Count, "悬停层不应再保留只读进度控件。");
                 }
                 foreach (var direction in new[] { TaskbarContentArrangement.Left, TaskbarContentArrangement.Right })
                     foreach (var alignment in new[] { TaskbarBarPosition.Start, TaskbarBarPosition.Center, TaskbarBarPosition.End })

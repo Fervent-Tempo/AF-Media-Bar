@@ -479,6 +479,7 @@ public readonly record struct TaskbarHoverControlsSettings(
     bool PreviousNextVisible,
     bool OutputDeviceVisible,
     bool AudioControlVisible,
+    // 保留已发布字段的读取，悬停层进度已移除，不再参与呈现或宽度计算。
     bool ProgressVisible)
 {
     /// <summary>手势优先的默认悬停控制组合。 / Default gesture-first hover-control combination.</summary>
@@ -540,11 +541,16 @@ public readonly record struct TaskbarExperienceSettings(
 
     /// <summary>
     /// 静置层是否显示底部的播放进度条，默认关闭。关闭后只在媒体报告了时长时消失的那条进度不再绘制，
-    /// 悬停层与完整层的进度不受影响。
+    /// 封面边缘与完整层的进度不受影响。
     /// Whether the rest layer shows its bottom playback-progress bar. Off by default. Turning it off only removes that bar, which otherwise
-    /// appears whenever the session reports a duration; the hover and full layers keep their own progress.
+    /// appears whenever the session reports a duration; the artwork edge and full panel keep their own progress.
     /// </summary>
     public bool RestProgressVisible { get; init; } = false;
+
+    /// <summary>在封面边缘显示播放进度；与文字下方的静置进度独立。</summary>
+    public bool ArtworkProgressVisible { get => _artworkProgressVisible ?? true; init => _artworkProgressVisible = value; }
+
+    private readonly bool? _artworkProgressVisible;
 
     /// <summary>
     /// 静置层与悬停层是否提供进入完整层的入口。关闭后静置层文字区顶部那条细杠不再绘制、也不再可点，

@@ -856,9 +856,6 @@
   <data name="DisplayModes.Hover.Row.Enable.Title" xml:space="preserve">
     <value>Enable the quick controls</value>
   </data>
-  <data name="DisplayModes.Hover.Row.Progress.Title" xml:space="preserve">
-    <value>Progress bar</value>
-  </data>
   <data name="DisplayModes.Island.Group.Description" xml:space="preserve">
     <value>Appearance settings for dynamic island; they do not affect the taskbar.</value>
   </data>
@@ -1064,13 +1061,13 @@
     <value>Title and artist alignment</value>
   </data>
   <data name="DisplayModes.Hover.Row.Size.Description" xml:space="preserve">
-    <value>Resize hover buttons, icons, and the progress bar; always-on view buttons change too.</value>
+    <value>Resize hover buttons and icons; always-on view buttons change too.</value>
   </data>
   <data name="DisplayModes.Hover.Row.Size.Title" xml:space="preserve">
     <value>Control size</value>
   </data>
   <data name="DisplayModes.Hover.Row.Spacing.Description" xml:space="preserve">
-    <value>Adjust spacing between hover controls and the progress bar.</value>
+    <value>Adjust spacing between hover control buttons.</value>
   </data>
   <data name="DisplayModes.Hover.Row.Spacing.Title" xml:space="preserve">
     <value>Hover button spacing</value>
@@ -2600,5 +2597,11 @@
   </data>
   <data name="Panel.Performance.Download" xml:space="preserve">
     <value>Download</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkProgress.Description" xml:space="preserve">
+    <value>Show playback progress around the artwork, following its size and hover zoom.</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkProgress.Title" xml:space="preserve">
+    <value>Artwork edge progress</value>
   </data>
 </root>

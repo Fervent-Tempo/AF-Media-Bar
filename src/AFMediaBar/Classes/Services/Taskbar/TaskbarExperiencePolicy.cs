@@ -213,8 +213,7 @@ public static class TaskbarExperiencePolicy
         var sectionGap = ResolveHoverButtonGap(metrics, hoverButtonSpacingDip);
         var buttonCount = transportVisible ? 5 : 2;
         var buttons = buttonCount * metrics.ButtonSize + Math.Max(0, buttonCount - 1) * sectionGap;
-        var progress = progressVisible ? sectionGap + metrics.ProgressWidth : 0;
-        return 11 + buttons + progress;
+        return 11 + buttons;
     }
 
     /// <summary>按独立控制显隐计算悬停层最小宽度。 / Calculates hover width from independently visible controls.</summary>
@@ -231,8 +230,7 @@ public static class TaskbarExperiencePolicy
                           (controls.OutputDeviceVisible ? 1 : 0) +
                           (controls.AudioControlVisible ? 1 : 0);
         var buttons = buttonCount == 0 ? 0 : buttonCount * metrics.ButtonSize + (buttonCount - 1) * sectionGap;
-        var progress = controls.ProgressVisible && progressAvailable ? (buttonCount > 0 ? sectionGap : 0) + metrics.ProgressWidth : 0;
-        return 11 + buttons + progress;
+        return 11 + buttons;
     }
 
     /// <summary>

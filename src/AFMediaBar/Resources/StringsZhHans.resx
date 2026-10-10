@@ -856,9 +856,6 @@
   <data name="DisplayModes.Hover.Row.Enable.Title" xml:space="preserve">
     <value>启用快捷控制</value>
   </data>
-  <data name="DisplayModes.Hover.Row.Progress.Title" xml:space="preserve">
-    <value>进度条</value>
-  </data>
   <data name="DisplayModes.Island.Group.Description" xml:space="preserve">
     <value>灵动岛的外观设置，不影响任务栏。</value>
   </data>
@@ -1064,13 +1061,13 @@
     <value>标题与歌手对齐</value>
   </data>
   <data name="DisplayModes.Hover.Row.Size.Description" xml:space="preserve">
-    <value>调整悬停按钮、图标和进度条，也影响常驻状态按钮。</value>
+    <value>调整悬停按钮和图标，也影响常驻状态按钮。</value>
   </data>
   <data name="DisplayModes.Hover.Row.Size.Title" xml:space="preserve">
     <value>控件尺寸</value>
   </data>
   <data name="DisplayModes.Hover.Row.Spacing.Description" xml:space="preserve">
-    <value>调整快捷控制按钮和进度条之间的距离。</value>
+    <value>调整快捷控制按钮之间的距离。</value>
   </data>
   <data name="DisplayModes.Hover.Row.Spacing.Title" xml:space="preserve">
     <value>悬停按钮间距</value>
@@ -2600,5 +2597,11 @@
   </data>
   <data name="Panel.Performance.Download" xml:space="preserve">
     <value>下载</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkProgress.Description" xml:space="preserve">
+    <value>沿封面边缘显示播放进度，随封面尺寸和悬停放大调整。</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkProgress.Title" xml:space="preserve">
+    <value>封面边缘进度</value>
   </data>
 </root>

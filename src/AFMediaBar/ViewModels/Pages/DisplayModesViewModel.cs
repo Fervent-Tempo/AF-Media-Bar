@@ -86,6 +86,12 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>静置层是否显示底部的播放进度条。 / Whether the rest layer shows its bottom playback-progress bar.</summary>
+    public bool ArtworkProgressVisible
+    {
+        get => _configuration.Current.TaskbarExperience.ArtworkProgressVisible;
+        set => UpdateExperience(_configuration.Current.TaskbarExperience with { ArtworkProgressVisible = value });
+    }
+
     public bool RestProgressVisible
     {
         get => _configuration.Current.TaskbarExperience.RestProgressVisible;
@@ -234,11 +240,6 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         set => UpdateHoverControls(HoverControls with { AudioControlVisible = value });
     }
 
-    public bool HoverProgressVisible
-    {
-        get => HoverControls.ProgressVisible;
-        set => UpdateHoverControls(HoverControls with { ProgressVisible = value });
-    }
 
     private TaskbarHoverControlsSettings HoverControls =>
         _configuration.Current.TaskbarExperience.HoverControls;
@@ -639,11 +640,11 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(HoverLayerEnabled)); OnPropertyChanged(nameof(FullLayerEnabled));
         OnPropertyChanged(nameof(FullPanelEntryVisible));
         OnPropertyChanged(nameof(RestProgressVisible));
+        OnPropertyChanged(nameof(ArtworkProgressVisible));
         OnPropertyChanged(nameof(RestArtworkVisible));
         OnPropertyChanged(nameof(SpectrumVisible)); OnPropertyChanged(nameof(PerformanceVisible));
         OnPropertyChanged(nameof(HoverPlayPauseVisible)); OnPropertyChanged(nameof(HoverPreviousNextVisible));
         OnPropertyChanged(nameof(HoverOutputDeviceVisible)); OnPropertyChanged(nameof(HoverAudioControlVisible));
-        OnPropertyChanged(nameof(HoverProgressVisible));
         OnPropertyChanged(nameof(RestOutputDeviceVisible)); OnPropertyChanged(nameof(RestVolumeVisible));
         RefreshIdleComponentEntries();
         RaiseFullPanel();

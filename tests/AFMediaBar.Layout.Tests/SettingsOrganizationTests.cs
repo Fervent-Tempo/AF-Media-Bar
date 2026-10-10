@@ -41,6 +41,7 @@ public sealed class SettingsOrganizationTests
             {
                 SpectrumVisible = false,
                 PerformanceVisible = false,
+                ArtworkProgressVisible = false,
                 MediaTextAlignment = TaskbarMediaTextAlignment.Right,
                 RestComponentOrder = [TaskbarRestComponent.Volume, TaskbarRestComponent.Spectrum],
                 FixedLengthDip = 420
@@ -54,7 +55,7 @@ public sealed class SettingsOrganizationTests
         SettingsManager.SetUserDefaults(saved);
         var current = SettingsManager.Current;
         current.Appearance = current.Appearance with { FontWeight = 700, TaskbarFrostedStyle = TaskbarFrostedStyle.Warm };
-        current.TaskbarExperience = current.TaskbarExperience with { MediaFontSizePercent = 120 };
+        current.TaskbarExperience = current.TaskbarExperience with { MediaFontSizePercent = 120, ArtworkProgressVisible = true };
         current.Position = TaskbarBarPosition.End;
         current.TaskbarTargetMonitorDeviceIds = ["secondary"];
         current.LyricsEnabled = false;

@@ -129,6 +129,18 @@ public sealed class SettingsIntegrationTests
     }
 
     [TestMethod]
+    public void ArtworkProgressReadsOldSettingsAndPreservesExplicitChoice()
+    {
+        var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+        var oldSettings = JsonSerializer.Deserialize<AppSettings>("{\"taskbarExperience\":{\"hoverControls\":{\"progressVisible\":false}}}", options)!.Normalize();
+        Assert.IsTrue(oldSettings.TaskbarExperience.ArtworkProgressVisible, "旧悬停进度开关不得控制新增封面进度。");
+        oldSettings.TaskbarExperience = oldSettings.TaskbarExperience with { ArtworkProgressVisible = false };
+        var roundTrip = JsonSerializer.Deserialize<AppSettings>(JsonSerializer.Serialize(oldSettings, options), options)!.Normalize().Clone();
+        Assert.IsFalse(roundTrip.TaskbarExperience.ArtworkProgressVisible);
+        Assert.ThrowsException<JsonException>(() => JsonSerializer.Deserialize<AppSettings>("{\"taskbarExperience\":{\"artworkProgressVisible\":null}}", options));
+    }
+
+    [TestMethod]
     public void AcknowledgedCompatibilitySurvivesSerializationAndReset()
     {
         var previous = SettingsManager.Current;

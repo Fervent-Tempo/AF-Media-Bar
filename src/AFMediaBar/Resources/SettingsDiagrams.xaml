@@ -171,12 +171,6 @@
                         Background="{DynamicResource SubtleFillColorSecondaryBrush}"
                         CornerRadius="11" />
                     <Border
-                        Width="74"
-                        Height="22"
-                        Margin="12,0,0,0"
-                        Background="{DynamicResource SubtleFillColorSecondaryBrush}"
-                        CornerRadius="11" />
-                    <Border
                         Width="12"
                         Height="12"
                         Margin="12,0,0,0"
