@@ -7,10 +7,12 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Interop;
 using AFMediaBar.Classes.Services;
+using AFMediaBar.Classes.Services.Layout;
 using AFMediaBar.Classes.Settings;
 
 namespace AFMediaBar.Components;
@@ -914,9 +916,8 @@ public partial class TaskBarMediaControl
     /// The artwork hover zoom factor: a 40 px cover in a 44 px canvas grows to exactly the canvas height at 1.1, so nothing gets clipped.</summary>
     private const double ArtworkHoverScaleFactor = 1.1;
 
-    /// <summary>大图预览的边长（DIP）：突出任务栏上方的正方形预览窗，带圆角与投影。
-    /// Side length of the large preview (DIP): the square preview window popping above the taskbar, rounded and shadowed.</summary>
-    private const double ArtworkHoverPreviewSizeDip = 120;
+    /// <summary>大图预览的高度（DIP）；宽度由共享封面比例策略确定。</summary>
+    private const double ArtworkHoverPreviewHeightDip = 120;
 
     /// <summary>封面悬停提示是否处于激活状态（紧凑提示或大图预览任一）；快照更新据此在播放状态翻转时刷新符号（见 AnimateArtworkHover）。
     /// Whether the artwork hover hint is active (either the compact hint or the large preview); snapshot updates key off it to refresh the
@@ -1096,7 +1097,7 @@ public partial class TaskBarMediaControl
     /// </summary>
     private System.Windows.Controls.Primitives.Popup BuildArtworkHoverPreviewPopup()
     {
-        _artworkHoverPreviewImage = new Image { Stretch = Stretch.UniformToFill };
+        _artworkHoverPreviewImage = new Image { Stretch = Stretch.Uniform };
         _artworkHoverPreviewIcon = new Wpf.Ui.Controls.SymbolIcon
         {
             Symbol = Wpf.Ui.Controls.SymbolRegular.Pause24,
@@ -1112,8 +1113,8 @@ public partial class TaskBarMediaControl
         };
         var root = new Border
         {
-            Width = ArtworkHoverPreviewSizeDip,
-            Height = ArtworkHoverPreviewSizeDip,
+            Width = ArtworkHoverPreviewHeightDip,
+            Height = ArtworkHoverPreviewHeightDip,
             CornerRadius = new CornerRadius(10),
             ClipToBounds = true,
             Background = Brushes.Black,
@@ -2199,6 +2200,13 @@ public partial class TaskBarMediaControl
             return;
 
         _artworkHoverPreviewImage.Source = _snapshot.Artwork;
+        if (_artworkHoverPreview?.Child is Border root)
+        {
+            // 与通知和完整层共用框比例上限；极端比例或未知尺寸由 Uniform 留白，保留整张封面。
+            var artwork = _snapshot.Artwork as BitmapSource;
+            root.Width = ArtworkBoxPolicy.Resolve(ArtworkHoverPreviewHeightDip,
+                artwork?.PixelWidth ?? 0, artwork?.PixelHeight ?? 0).Width;
+        }
         _artworkHoverPreviewImage.Opacity = _isPaused ? ArtworkPausedDimOpacity : 1.0;
         var showGlyph = _canPlayPause && ResolveArtworkClickAction() == PlayerClickAction.TogglePlayPause;
         if (_artworkHoverPreviewScrim is not null)
