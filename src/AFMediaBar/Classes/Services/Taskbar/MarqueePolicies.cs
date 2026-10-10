@@ -9,13 +9,13 @@ public static class MarqueeTiming
     public static readonly TimeSpan FrameInterval = TimeSpan.FromMilliseconds(16);
 
     /// <summary>恒定滚动速度（DIP/秒）。/ Constant scroll speed in DIP per second.</summary>
-    public const double ScrollSpeedDipPerSecond = 60;
+    public const double ScrollSpeedDipPerSecond = 40;
 
     /// <summary>每帧推进距离（DIP）。/ Distance advanced per frame in DIP.</summary>
     public static double DipPerFrame => ScrollSpeedDipPerSecond * FrameInterval.TotalMilliseconds / 1000;
 
     /// <summary>开始滚动前的停留时间。/ Lead-in pause before scrolling.</summary>
-    public static readonly TimeSpan LeadInDuration = TimeSpan.FromMilliseconds(660);
+    public static readonly TimeSpan LeadInDuration = TimeSpan.FromSeconds(1);
 }
 
 /// <summary>

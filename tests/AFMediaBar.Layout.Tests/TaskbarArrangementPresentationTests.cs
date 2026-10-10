@@ -218,6 +218,7 @@ public sealed class TaskbarArrangementPresentationTests
                 var transport = (StackPanel)control.FindName("TaskbarTransportButtons");
                 Assert.AreSame(control.FindName("TaskbarPreviousButton"), transport.Children[0]);
                 control.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent));
+                MetadataMarqueePresentationChecks.Verify();
             }
             catch (Exception error) { failure = error; }
             finally

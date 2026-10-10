@@ -16,6 +16,7 @@ public partial class TaskbarWindow
     private PlacementContext? _placementContext;
     private TaskbarPlacementDecision? _pendingPlacementDecision;
     private PlacementContext? _pendingPlacementContext;
+    private TaskbarOccupancySnapshot? _pendingPlacementSnapshot;
     private TaskbarPlacementState? _dragPlacementSeed;
     private PlacementContext? _dragPlacementContext;
 
@@ -29,13 +30,16 @@ public partial class TaskbarWindow
         _lastTaskbarHandle, rect.Right - rect.Left, dpi, SettingsManager.Current.Position,
         SettingsManager.Current.TaskbarBarManualPadding, SettingsManager.Current.TaskbarBarAvoidIcons);
 
-    private TaskbarPlacementDecision PreviewHorizontalPlacement(RECT rect, double dpi, double desiredDip)
+    private TaskbarPlacementDecision PreviewHorizontalPlacement(RECT rect, double dpi, double desiredDip) =>
+        PreviewHorizontalPlacement(rect, dpi, desiredDip, out _);
+
+    private TaskbarPlacementDecision PreviewHorizontalPlacement(RECT rect, double dpi, double desiredDip,
+        out TaskbarOccupancySnapshot snapshot)
     {
         var context = GetPlacementContext(rect, dpi);
         var state = _dragPlacementContext == context && _dragPlacementSeed is { } seed ? seed
             : _placementContext == context ? _placementState : new TaskbarPlacementState();
         var minimum = MediaControl.IsRestLayerEmpty ? 0 : (int)Math.Ceiling(MediaControl.GetMinimumPrimaryLength(dpi) * dpi);
-        TaskbarOccupancySnapshot snapshot;
         if (!context.Avoid)
             snapshot = new(TaskbarProbeStatus.Success, 0, 0, Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency,
                 [new TaskbarPrimaryRange(Math.Min(EdgePadding, context.Length), Math.Max(Math.Min(EdgePadding, context.Length), context.Length - EdgePadding))], true);
@@ -51,9 +55,10 @@ public partial class TaskbarWindow
     {
         var canvas = MediaControl.CurrentLayout?.Canvas;
         var desired = _sizeAnimationTimer.IsEnabled ? canvas?.Width ?? 300 : _lastDesiredSizeRequest?.PrimaryLength ?? canvas?.Width ?? 300;
-        var decision = PreviewHorizontalPlacement(rect, dpi, desired);
+        var decision = PreviewHorizontalPlacement(rect, dpi, desired, out var snapshot);
         _pendingPlacementContext = GetPlacementContext(rect, dpi);
         _pendingPlacementDecision = decision;
+        _pendingPlacementSnapshot = snapshot;
         _hasSafePlacement = decision.State.IsVisible;
         if (!_hasSafePlacement)
         {
@@ -111,9 +116,22 @@ public partial class TaskbarWindow
     {
         if (_pendingPlacementDecision is not { } decision || _isClosing)
             return;
+        var previous = _placementState;
+        if (!_isDragging && !_isDragPending && !MediaControl.IsRestLayerEmpty && (decision.NotifyFallback || previous.HasHome &&
+            (previous.IsVisible && !decision.State.IsVisible ||
+             previous.IsVisible && decision.State.IsVisible && previous.AppliedAnchorTwice != decision.State.AppliedAnchorTwice)))
+        {
+            var ranges = _pendingPlacementSnapshot is { } snapshot
+                ? string.Join(",", snapshot.Ranges.Select(range => $"[{range.Start},{range.End}]")) : "unknown";
+            AppLogService.Current?.Info("Taskbar", $"Placement monitor={_targetMonitorDeviceId}, visible={decision.State.IsVisible}, " +
+                $"minimumPx={decision.State.Minimum}, rangePx=[{decision.State.Range.Start},{decision.State.Range.End}], " +
+                $"availablePx={ranges}, probe={_pendingPlacementSnapshot?.Status}, budgetPx={decision.State.Budget}, " +
+                $"desiredDip={_lastDesiredSizeRequest?.PrimaryLength:F1}, actualPx={decision.Width}");
+        }
         _placementState = decision.State;
         _placementContext = _pendingPlacementContext;
         _pendingPlacementDecision = null;
+        _pendingPlacementSnapshot = null;
         _dragPlacementSeed = null;
         _dragPlacementContext = null;
         if (decision.NotifyFallback && !MediaControl.IsRestLayerEmpty)

@@ -123,15 +123,9 @@ namespace AFMediaBar.Components
             // the pointer leaves.
             _wheelTooltipTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(120) };
             _wheelTooltipTimer.Tick += (_, _) => AdvanceWheelTooltip();
-            // 跑马灯按帧推进：位置是连续的小数，窗口字符串只在整数位置跨过时改写，小数部分由渲染变换补上，
-            // 因此滚动是连续的（不是一个字一个字地跳），也不依赖动画时钟是否被渲染目标驱动。
-            // The marquee advances frame by frame: the position is a continuous fraction, the window string is rewritten only when the
-            // integer position crosses, and the fraction is drawn with a render transform. The scroll is therefore continuous instead of
-            // jumping one character at a time, and it no longer depends on an animation clock being driven by a rendering target.
-            AddMarqueeText(SongTitle);
-            AddMarqueeText(SongArtist);
-            _marqueeTimer = new DispatcherTimer(DispatcherPriority.Render) { Interval = MarqueeTiming.FrameInterval };
-            _marqueeTimer.Tick += (_, _) => AdvanceMarqueeStep();
+            _marqueeTexts.Add(new MetadataMarqueePresenter(SongTitle, SongTitleDuplicate));
+            _marqueeTexts.Add(new MetadataMarqueePresenter(SongArtist, SongArtistDuplicate));
+            IsVisibleChanged += (_, _) => ApplyMarqueeLayout(Math.Max(0, SongInfoStackPanel.Width));
             InitializeWebLyrics();
             // 程序内的全局滚轮提示各挂在一个全局滚轮面上：文字区与封面。两个 ToolTip 实例不能共用（一个实例只属于一个元素），
             // 因此实例各自独立、**内容**由同一处写入，随手势与结果实时改写。
@@ -169,7 +163,6 @@ namespace AFMediaBar.Components
                 _artworkZoomHoverSyncTimer.Stop();
                 _wheelTooltipTimer.Stop();
                 CloseWheelTooltips();
-                _marqueeTimer.Stop();
                 StopMarqueeAnimations();
                 StopRestTransitions();
                 // 控件离树时收起大图预览：Popup 有自己的 HWND，不会随宿主一起被移除。
@@ -210,9 +203,7 @@ namespace AFMediaBar.Components
         private bool _canSkipPrevious;
         private bool _canSkipNext;
         private string _lastSizeFingerprint = string.Empty;
-        /// <summary>参与跑马灯的文本元素；没有任何一个在推进时计时器必须停止。/ Text elements taking part in the marquee; the timer must be stopped while none of them is advancing.</summary>
-        private readonly List<MarqueeTextState> _marqueeTexts = [];
-        private readonly DispatcherTimer _marqueeTimer;
+        private readonly List<MetadataMarqueePresenter> _marqueeTexts = [];
         private double _minimumPrimaryLength = 120;
         private readonly DispatcherTimer _progressTimer;
         private readonly DispatcherTimer _hoverOpenTimer;
@@ -1157,14 +1148,7 @@ namespace AFMediaBar.Components
             if (publishSize)
                 RaiseDesiredSizeChanged();
 
-            // 跑马灯 MUST 放在本方法所有文字写入之后重跑：上面按内容布局写的标题会把正在滚动的窗口顶掉，而
-            // ApplyTaskbarSectionGeometry（以及它内部的跑马灯配置）发生在那之前，于是屏幕上会先留下原文开头，
-            // 直到下一帧推进才跳回窗口的位置——指针移入文字区（悬停进入也调用本方法）或每次快照轮询都会这样闪一下。
-            // The marquee must be re-applied after every text write in this method: the title written above for the content layout
-            // replaces the scrolling window, while ApplyTaskbarSectionGeometry — including the marquee configuration inside it — runs
-            // before that. The head of the content would then stay on screen until the next advance frame snaps back to the window's
-            // position, which is one visible jump each time the pointer enters the text area (hover entry calls this method too) and on
-            // every snapshot poll.
+            // 文字或几何变化后同步更新溢出判据与时钟。
             if (isHorizontalTaskbar && !_restTransitionKeepsOutgoingText)
                 ApplyMarqueeLayout(Math.Max(0, SongInfoStackPanel.Width));
         }
@@ -1277,8 +1261,7 @@ namespace AFMediaBar.Components
                     RetargetHoverRevealWidth(textWidth);
             }
 
-            if (!_restTransitionKeepsOutgoingText)
-                ApplyMarqueeLayout(textWidth);
+            ApplyMarqueeLayout(_restTransitionKeepsOutgoingText ? _outgoingTextWidth : textWidth);
         }
 
         /// <summary>
@@ -1584,8 +1567,8 @@ namespace AFMediaBar.Components
             _hoverCloseTimer.Stop();
             _wheelTooltipTimer.Stop();
 
-            // 推进类计时器交给各自的判定路径收尾：跑马灯必须恢复原文，Web 歌词必须保留最新目标帧供恢复时继续。
-            // The advance timers wind down through their own decision paths: the marquee restores its source text, while web lyrics retain
+            // 跑马灯暂停时钟，Web 歌词保留最新目标帧供恢复时继续。
+            // The advance timers wind down through their own decision paths: the marquee pauses its clock, while web lyrics retain
             // the latest target frame for the next resume.
             RefreshWebLyricsTimer();
             ApplyMarqueeLayout(Math.Max(0, SongInfoStackPanel.Width));
@@ -1621,11 +1604,7 @@ namespace AFMediaBar.Components
         /// Whether advance timers — marquee and web lyrics — stop as well: they stop at the idle level too, and of course while
         /// the display is dark or the system is suspending.
         ///
-        /// 空闲档之所以也停，是因为它的前提就是"没有在播的媒体 + 用户已离开十分钟以上"：此时跑马灯只会为一个不在座位上的人每 16 毫秒推进一次，
-        /// 而恢复的代价最多是一次评估周期（用户一有输入，档位就回到常规）。
-        /// The idle level stops them because its premise is exactly "no playing media and a user gone for over ten minutes": the marquee would then advance
-        /// once every 16 ms for somebody who is not at their desk, while the restore costs at most one evaluation period, since any input returns the level
-        /// to normal.
+        /// 空闲档下用户已离开且没有播放媒体，暂停不可见的阅读动效；用户回来后继续。
         /// </summary>
         private bool IsAdvancePruned =>
             _isHostVisibilitySuspended || _backgroundPruneLevel != MemoryPruneLevel.None;
@@ -2089,12 +2068,13 @@ namespace AFMediaBar.Components
             // 固定歌词框：开启后歌词宽度不再随内容变化，直接使用用户设定的长度；任务栏放不下时由布局引擎按可用长度夹取。
             // A fixed lyric box: while enabled the lyric width no longer follows the content but uses the configured length; the layout
             // engine clamps it to the available taskbar room when there is not enough space.
+            var isHorizontalMetadata = !lyricsVisible && _currentMode == WindowMode.Taskbar && orientation == LayoutOrientation.Horizontal;
             var lyricWidth = lyricsVisible
                 ? SettingsManager.Current.LyricsFixedWidthEnabled
                     ? LyricsFixedWidth.Normalize(SettingsManager.Current.LyricsFixedWidthDip)
                     : Math.Max(MeasureWebLyricWidth(visibleText), MeasureWebLyricWidth(secondaryText))
-                : MeasureTextWidth(visibleText, SongTitle);
-            var textWidth = Math.Max(lyricWidth, MeasureTextWidth(artist, SongArtist));
+                : MeasureTextWidth(visibleText, SongTitle, isHorizontalMetadata);
+            var textWidth = Math.Max(lyricWidth, MeasureTextWidth(artist, SongArtist, isHorizontalMetadata));
             var preset = LayoutPresets.GetLayout(_currentMode, orientation);
             var request = LayoutSizeCalculator.Calculate(
                 preset,
