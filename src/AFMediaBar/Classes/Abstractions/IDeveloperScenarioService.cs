@@ -3,7 +3,7 @@ using AFMediaBar.Classes.Models;
 
 namespace AFMediaBar.Classes.Abstractions;
 
-/// <summary>执行固定动作并读取有效宿主，不解释任意脚本。</summary>
+/// <summary>在 UI 线程执行固定动作并读取有效宿主，不解释任意脚本。</summary>
 public interface IDeveloperScenarioService
 {
     event Action<string, DeveloperActionResult>? ResultObserved;

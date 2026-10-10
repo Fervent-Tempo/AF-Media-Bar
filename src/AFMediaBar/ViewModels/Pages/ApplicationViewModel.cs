@@ -147,7 +147,7 @@ namespace AFMediaBar.ViewModels.Pages
             OnPropertyChanged(string.Empty);
         }
 
-        /// <summary>自动检查更新开关；与设置文件双向同步。/ Automatic update check toggle, synchronized with the settings file.</summary>
+        /// <summary>手动开启开发者工具；服务协调关闭时的取消与代际。</summary>
         public bool DeveloperModeEnabled
         {
             get => _developerMode.IsEnabled;
@@ -157,6 +157,7 @@ namespace AFMediaBar.ViewModels.Pages
         [RelayCommand]
         private void OpenDeveloperTools() => _developerMode.OpenTools();
 
+        /// <summary>自动检查更新开关；与设置文件双向同步。/ Automatic update check toggle, synchronized with the settings file.</summary>
         public bool AutoCheckEnabled
         {
             get => SettingsManager.Current.Update.AutoCheckEnabled;

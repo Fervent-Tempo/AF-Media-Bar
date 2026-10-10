@@ -9,6 +9,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace AFMediaBar.Layout.Tests;
 
+/// <summary>开发者设置的读取、重置与请求取消回归。</summary>
 [TestClass, DoNotParallelize]
 public sealed class DeveloperModeTests
 {

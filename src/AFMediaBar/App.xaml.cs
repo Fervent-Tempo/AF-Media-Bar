@@ -200,10 +200,13 @@ namespace AFMediaBar
                 services.AddSingleton<Func<IDeveloperHostActions>>(sp => () => (IDeveloperHostActions)sp.GetRequiredService<INavigationWindow>());
                 services.AddSingleton<DeveloperScenarioService>();
                 services.AddSingleton<IDeveloperScenarioService>(sp => sp.GetRequiredService<DeveloperScenarioService>());
-                services.AddSingleton<Func<DeveloperToolsWindow>>(sp => () => new DeveloperToolsWindow(
-                    new DeveloperToolsViewModel(sp.GetRequiredService<IDeveloperModeService>(),
-                        sp.GetRequiredService<IDeveloperScenarioService>(), sp.GetRequiredService<LocalizationService>()),
-                    sp.GetRequiredService<WindowAppearanceService>()));
+                services.AddSingleton<Func<DeveloperToolsWindow>>(sp => () =>
+                {
+                    var viewModel = new DeveloperToolsViewModel(sp.GetRequiredService<IDeveloperModeService>(),
+                        sp.GetRequiredService<IDeveloperScenarioService>(), sp.GetRequiredService<LocalizationService>());
+                    try { return new DeveloperToolsWindow(viewModel, sp.GetRequiredService<WindowAppearanceService>()); }
+                    catch { viewModel.Dispose(); throw; }
+                });
                 services.AddSingleton<DeveloperToolsWindowHost>();
                 services.AddSingleton<ReleaseHighlightsService>();
                 services.AddSingleton<ReleaseHighlightsViewModel>();

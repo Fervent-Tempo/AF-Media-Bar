@@ -82,6 +82,19 @@ public sealed class DeveloperScenarioTests
     }
 
     [TestMethod]
+    public async Task DisposingExecutorDuringConfirmationCannotRequestRestartLater()
+    {
+        using var fixture = new Fixture();
+        var choice = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        fixture.Confirmation.RestartChoice = () => choice.Task;
+        var request = fixture.Service.ExecuteAsync("app restart", null, CancellationToken.None);
+        fixture.Service.Dispose(); fixture.Service.Dispose();
+        choice.SetResult(true);
+        Assert.AreEqual(DeveloperActionStatus.Canceled, (await request).Status);
+        Assert.AreEqual(0, fixture.Restart.Requests);
+    }
+
+    [TestMethod]
     public async Task RealRestartRequiresConfirmationAndPreviewActivityRejectsIt()
     {
         using var fixture = new Fixture();
@@ -175,6 +188,28 @@ public sealed class DeveloperScenarioTests
         }
     }
 
+    [TestMethod]
+    public void ButtonAndCommandShareTheSameActionAndHistoryRemainsBounded()
+    {
+        StaTest.Run(async _ =>
+        {
+            using var fixture = new Fixture();
+            using var localization = new LocalizationService();
+            var scenarios = new ImmediateScenarios();
+            using var viewModel = new DeveloperToolsViewModel(fixture.Mode, scenarios, localization);
+            var item = viewModel.Actions.Single(item => item.Command == "notify lyrics");
+            await viewModel.ExecuteActionCommand.ExecuteAsync(item);
+            viewModel.CommandText = " NOTIFY  LYRICS ";
+            await viewModel.ExecuteCommandCommand.ExecuteAsync(null);
+            CollectionAssert.AreEqual(new[] { item.Command, item.Command }, scenarios.Commands);
+            for (var index = 0; index < 101; index++) await viewModel.ExecuteActionCommand.ExecuteAsync(item);
+            Assert.AreEqual(100, System.Text.RegularExpressions.Regex.Matches(viewModel.Output, "result-\\d+").Count);
+            Assert.IsFalse(System.Text.RegularExpressions.Regex.IsMatch(viewModel.Output, "result-1(?:\\r?\\n|$)"));
+            Assert.IsTrue(viewModel.Output.EndsWith("result-103", StringComparison.Ordinal));
+            Assert.IsTrue(viewModel.CanRunCommands);
+        });
+    }
+
     private sealed class Fixture : IDisposable
     {
         private readonly AppSettings _previous = SettingsManager.Current;
@@ -249,5 +284,18 @@ public sealed class DeveloperScenarioTests
         public Task<DeveloperActionResult> ExecuteAsync(string command, string? hostId, CancellationToken cancellationToken)
         { LastCommand = command; Token = cancellationToken; return Result.Task; }
         public void ClosePreviews() => CloseCount++;
+    }
+
+    private sealed class ImmediateScenarios : IDeveloperScenarioService
+    {
+        public List<string> Commands { get; } = [];
+        public event Action<string, DeveloperActionResult>? ResultObserved { add { } remove { } }
+        public IReadOnlyList<DeveloperLyricsHostState> GetLyricsHosts() => [];
+        public Task<DeveloperActionResult> ExecuteAsync(string command, string? hostId, CancellationToken cancellationToken)
+        {
+            Commands.Add(command);
+            return Task.FromResult(new DeveloperActionResult(DeveloperActionStatus.Completed, "result-" + Commands.Count));
+        }
+        public void ClosePreviews() { }
     }
 }

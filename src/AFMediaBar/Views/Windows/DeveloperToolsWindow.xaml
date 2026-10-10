@@ -39,7 +39,7 @@
                 <ui:TextBox Text="{Binding CommandText, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{DynamicResource Loc.Developer.CommandHint}">
                     <ui:TextBox.InputBindings><KeyBinding Key="Enter" Command="{Binding ExecuteCommandCommand}" /></ui:TextBox.InputBindings>
                 </ui:TextBox>
-                <ui:Button Grid.Column="1" Content="{DynamicResource Loc.Developer.Execute}" Command="{Binding ExecuteCommandCommand}" Margin="8,0,0,0" />
+                <ui:Button Grid.Column="1" Content="{DynamicResource Loc.Developer.Execute}" IsEnabled="{Binding CanRunCommands}" Command="{Binding ExecuteCommandCommand}" Margin="8,0,0,0" />
             </Grid>
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" MaxHeight="46" Margin="0,4,0,0">
                 <ItemsControl ItemsSource="{Binding Suggestions}">

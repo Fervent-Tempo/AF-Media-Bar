@@ -3,6 +3,7 @@ using System.Diagnostics;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Resources;
+using Microsoft.Web.WebView2.Core;
 
 namespace AFMediaBar.Classes.Services.Diagnostics;
 
@@ -20,6 +21,7 @@ public sealed class DeveloperScenarioService : IDeveloperScenarioService, IDispo
     private readonly PowerStateMonitor _power;
     private readonly MemoryPruneCoordinator _prune;
     private readonly AppLogService? _log;
+    private readonly CancellationTokenSource _lifetime = new();
     private CancellationTokenSource? _previewLifetime;
     private int _busy;
     private bool _disposed;
@@ -50,7 +52,7 @@ public sealed class DeveloperScenarioService : IDeveloperScenarioService, IDispo
         if (Interlocked.CompareExchange(ref _busy, 1, 0) != 0) return new(DeveloperActionStatus.Busy);
         var generation = _mode.Generation;
         var elapsed = Stopwatch.StartNew();
-        using var request = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _mode.SessionToken);
+        using var request = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _mode.SessionToken, _lifetime.Token);
         DeveloperActionResult result;
         try
         {
@@ -150,8 +152,11 @@ public sealed class DeveloperScenarioService : IDeveloperScenarioService, IDispo
         token.ThrowIfCancellationRequested();
         try
         {
+            string runtime;
+            try { runtime = CoreWebView2Environment.GetAvailableBrowserVersionString(); }
+            catch { runtime = Translations.Get("Developer.Result.Unavailable"); }
             using var process = Process.GetCurrentProcess();
-            return Translations.Format("Developer.State.Memory", process.WorkingSet64 / 1048576d,
+            return $"WebView2 Runtime: {runtime}" + Environment.NewLine + Translations.Format("Developer.State.Memory", process.WorkingSet64 / 1048576d,
                 process.PrivateMemorySize64 / 1048576d, GC.GetTotalMemory(false) / 1048576d, process.HandleCount, process.Threads.Count);
         }
         catch { return Translations.Get("Developer.State.MemoryUnavailable"); }
@@ -176,15 +181,21 @@ public sealed class DeveloperScenarioService : IDeveloperScenarioService, IDispo
     public void ClosePreviews()
     {
         _previewLifetime?.Cancel(); _previewLifetime?.Dispose(); _previewLifetime = null;
-        if (!_disposed) _resolvedHost?.ClosePreviews();
+        if (_resolvedHost is not null)
+        {
+            try { _resolvedHost?.ClosePreviews(); }
+            catch (Exception ex) { _log?.Warn("Developer", "关闭测试预览失败", ex); }
+        }
     }
 
     public void Dispose()
     {
         if (_disposed) return;
-        ClosePreviews();
         _disposed = true;
+        _lifetime.Cancel();
+        ClosePreviews();
         _notifications.NotificationClicked -= OnNotificationClicked;
         _mode.EnabledChanged -= OnModeChanged;
+        _lifetime.Dispose();
     }
 }

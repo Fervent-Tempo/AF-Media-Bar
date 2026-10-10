@@ -41,6 +41,7 @@ public sealed partial class DeveloperToolsViewModel : ObservableObject, IDisposa
     public IEnumerable<DeveloperActionItem> PreviewActions => Actions.Where(item => item.Action.Impact == DeveloperActionImpact.Preview);
     public IEnumerable<DeveloperActionItem> SessionActions => Actions.Where(item => item.Action.Impact == DeveloperActionImpact.Session);
     public IEnumerable<DeveloperActionItem> DiagnosticActions => Actions.Where(item => item.Action.Impact == DeveloperActionImpact.Diagnostic);
+    public bool CanRunCommands => !_disposed && _mode.IsEnabled && !IsBusy;
     public event Action<string>? CopyRequested;
 
     public DeveloperToolsViewModel(IDeveloperModeService mode, IDeveloperScenarioService scenarios, LocalizationService localization)
@@ -49,13 +50,17 @@ public sealed partial class DeveloperToolsViewModel : ObservableObject, IDisposa
         _mode.EnabledChanged += OnModeChanged;
         _localization.LanguageChanged += OnLanguageChanged;
         _scenarios.ResultObserved += OnResultObserved;
-        RefreshHosts();
-        RefreshSuggestions();
+        try { RefreshHosts(); RefreshSuggestions(); }
+        catch { Dispose(); throw; }
     }
 
     partial void OnCommandTextChanged(string value) => RefreshSuggestions();
     partial void OnSelectedHostChanged(DeveloperLyricsHostState? value) => RefreshAvailability();
-    partial void OnIsBusyChanged(bool value) => RefreshAvailability();
+    partial void OnIsBusyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanRunCommands));
+        RefreshAvailability();
+    }
 
     private void RefreshSuggestions()
     {
@@ -93,6 +98,11 @@ public sealed partial class DeveloperToolsViewModel : ObservableObject, IDisposa
             RefreshHosts();
         }
         catch (OperationCanceledException) { }
+        catch (Exception)
+        {
+            if (!_disposed && _mode.IsEnabled && modeGeneration == _mode.Generation)
+                AddResult(action.Command, new(DeveloperActionStatus.Failed));
+        }
         finally { if (!_disposed) IsBusy = false; }
     }
 
@@ -142,6 +152,7 @@ public sealed partial class DeveloperToolsViewModel : ObservableObject, IDisposa
     private void OnModeChanged(object? sender, EventArgs e)
     {
         if (!_mode.IsEnabled) _lifetime.Cancel();
+        OnPropertyChanged(nameof(CanRunCommands));
         RefreshAvailability();
     }
 
@@ -157,10 +168,13 @@ public sealed partial class DeveloperToolsViewModel : ObservableObject, IDisposa
         _disposed = true;
         _requestGeneration++;
         _lifetime.Cancel();
-        _scenarios.ClosePreviews();
-        _mode.EnabledChanged -= OnModeChanged;
-        _localization.LanguageChanged -= OnLanguageChanged;
-        _scenarios.ResultObserved -= OnResultObserved;
-        _lifetime.Dispose();
+        try { _scenarios.ClosePreviews(); }
+        finally
+        {
+            _mode.EnabledChanged -= OnModeChanged;
+            _localization.LanguageChanged -= OnLanguageChanged;
+            _scenarios.ResultObserved -= OnResultObserved;
+            _lifetime.Dispose();
+        }
     }
 }
