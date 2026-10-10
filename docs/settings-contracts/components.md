@@ -51,4 +51,4 @@ JSON无效输入回退：Bars。
 | `PixelBars` | 2 | v1.2.0 |
 | `MirroredBars` | 3 | v1.2.0 |
 
-源码位置、原始/发布默认和范围：用 query-settings-contracts.ps1 -Path 路径 -Details 查询。不要为查询一个字段全文读取JSON存档。
+源码位置、原始/发布默认和范围：用 settings-contracts.ps1 -Action Query -Path 路径 -Details 查询。不要为查询一个字段全文读取JSON存档。

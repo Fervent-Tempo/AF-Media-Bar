@@ -25,7 +25,7 @@
 |---|---|
 | 职责、依赖或生命周期 | [架构边界](docs/architecture.md) |
 | 手写代码的注释、命名与特殊接口 | [代码风格](docs/code-style.md)；格式由 `.editorconfig` 和工具检查 |
-| 设置字段、枚举、默认语义、兼容、重置或发布 | 先读[简短契约入口](docs/settings-contracts.md)，再用 `tools/query-settings-contracts.ps1` 查询目标路径及关联规则。普通修改不全文读入机器清单或完整参考；专题按需读取，发布/历史清点才读取完整存档。变更后运行 `tools/verify-settings-contracts.ps1` |
+| 设置字段、枚举、默认语义、兼容、重置或发布 | 先读[简短契约入口](docs/settings-contracts.md)，再用 `tools/settings-contracts.ps1 -Action Query` 查询目标路径及关联规则。普通修改不全文读入机器清单或完整参考；专题按需读取，发布/历史清点才读取完整存档。变更后运行 `tools/settings-contracts.ps1 -Action Verify` |
 | 媒体适配器、身份或双通道仲裁 | [媒体接入](docs/media-adapters.md) |
 | 编写或调整测试 | [测试规范](docs/testing-guidelines.md)，先查已有覆盖 |
 | 构建、提交或 PR | [贡献指南](CONTRIBUTING.md)，WPF 构建与测试串行执行 |

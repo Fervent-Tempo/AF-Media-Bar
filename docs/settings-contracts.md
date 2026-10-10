@@ -9,12 +9,12 @@
 3. 需要更多背景才读对应专题；发布、历史清点或校验失败调查才读完整存档。
 
 ```powershell
-pwsh -NoProfile -File tools/query-settings-contracts.ps1 -Path settings.taskbarExperience.artworkHoverMode
-pwsh -NoProfile -File tools/query-settings-contracts.ps1 -Path settings.interfaceLanguage -Details
-pwsh -NoProfile -File tools/query-settings-contracts.ps1 -List
+pwsh -NoProfile -File tools/settings-contracts.ps1 -Action Query -Path settings.taskbarExperience.artworkHoverMode
+pwsh -NoProfile -File tools/settings-contracts.ps1 -Action Generate
+pwsh -NoProfile -File tools/settings-contracts.ps1 -Action Verify
 ```
 
-也支持 `-Prefix` 或 `-Enum`。前缀默认最多8项，超出直接拒绝；可显式提高 `-MaxFields`，最多32。`-Details` 才增加原始/发布默认、完整读取结果和范围。无此路径不等于未发布，先查 tag；历史删除项可按原路径查询。
+Query也支持 `-Prefix`、`-Enum`、`-List`专题目录。前缀默认最多8项，超出直接拒绝；可显式提高 `-MaxFields`，最多32。`-Details` 才增加原始/发布默认、完整读取结果和范围。无此路径不等于未发布，先查 tag；历史删除项可按原路径查询。
 
 ## 判断规则
 
@@ -39,4 +39,4 @@ pwsh -NoProfile -File tools/query-settings-contracts.ps1 -List
 
 [完整参考](settings-contracts/reference.md)保留存储、兼容、历史及全部字段证据；[机器存档](settings-contracts.json)供工具使用。完整存档不是普通修改的默认上下文。
 
-维护字段数据改机器清单，关联摘要改查询索引；运行 `tools/export-settings-contract-topics.ps1` 生成专题，再运行 `tools/verify-settings-contracts.ps1`。发布时核对实际tag，更新标记与正式默认快照；源码指纹只在重新核实后更新。
+维护字段数据改机器清单，关联摘要改查询索引；运行 `tools/settings-contracts.ps1 -Action Generate` 生成专题，再运行 `tools/settings-contracts.ps1 -Action Verify`。发布时核对实际tag，更新标记与正式默认快照；源码指纹只在重新核实后更新。

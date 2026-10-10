@@ -873,4 +873,4 @@ TranslucentTB 被检测到且 `translucentTbCompatibilityPromptShown=false` 时�
 
 字段与枚举来自真实 main 程序集的 System.Text.Json 元数据、实际私有枚举转换器及模型归一化；再以 C# 语法树独立核对字段集合。v1.3.2 使用 tag 源码的独立构建核对默认值，v1.2.0 至 v1.3.2 按发布 tag 核对路径及枚举成员。历史发布路径差集也已核对，唯一已发布后删除项为 lyricsMatchStrictness。读取边界使用真实 ReadEnvelope 与独立临时文件核对，不读取或写入用户配置。
 
-执行 `pwsh -NoProfile -File tools/verify-settings-contracts.ps1` 核对清单结构、文档覆盖、发布 tag 及已核对源码指纹。它不运行应用、不构建、不访问网络，也不代替默认语义或桌面验收；源码指纹变化意味着需要重新调查并更新清单，不能只重写哈希消除提示。
+执行 `pwsh -NoProfile -File tools/settings-contracts.ps1 -Action Verify` 核对清单结构、文档覆盖、发布 tag 及已核对源码指纹。它不运行应用、不构建、不访问网络，也不代替默认语义或桌面验收；源码指纹变化意味着需要重新调查并更新清单，不能只重写哈希消除提示。
