@@ -2642,4 +2642,34 @@
   <data name="DisplayModes.Rest.Row.ArtworkProgress.Title" xml:space="preserve">
     <value>Tiến độ quanh ảnh bìa</value>
   </data>
+  <data name="Media.ControlUnavailable.Body" xml:space="preserve">
+    <value>Bật SMTC (điều khiển phát của hệ thống) hoặc tùy chọn tương tự trong cài đặt trình phát. Nếu không có, hãy kiểm tra hỗ trợ SMTC. AF Media Bar không thể điều khiển nguồn không hỗ trợ.</value>
+  </data>
+  <data name="Media.ControlUnavailable.Title" xml:space="preserve">
+    <value>Không thể điều khiển nguồn phát</value>
+  </data>
+  <data name="Startup.FailureBody" xml:space="preserve">
+    <value>Không thể hoàn tất khởi động. Hãy kiểm tra môi trường theo lỗi bên dưới. Chi tiết đã được ghi vào nhật ký.</value>
+  </data>
+  <data name="Startup.FailureTitle" xml:space="preserve">
+    <value>AF Media Bar không thể khởi động</value>
+  </data>
+  <data name="Startup.Service.Disabled" xml:space="preserve">
+    <value>Đã tắt</value>
+  </data>
+  <data name="Startup.Service.FailureBody" xml:space="preserve">
+    <value>Không thể sử dụng dịch vụ hoặc thành phần Windows. Các vấn đề dịch vụ đã phát hiện:
+{0}
+
+Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các dịch vụ và thành phần hệ thống liên quan, rồi khởi động lại ứng dụng.</value>
+  </data>
+  <data name="Startup.Service.Missing" xml:space="preserve">
+    <value>Bị thiếu</value>
+  </data>
+  <data name="Startup.Service.Stopped" xml:space="preserve">
+    <value>Đã dừng</value>
+  </data>
+  <data name="Startup.Service.Unidentified" xml:space="preserve">
+    <value>Chưa xác định được dịch vụ bị thiếu. Hãy kiểm tra thành phần hệ thống theo lỗi bên dưới và nhật ký.</value>
+  </data>
 </root>

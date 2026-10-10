@@ -2604,4 +2604,34 @@
   <data name="DisplayModes.Rest.Row.ArtworkProgress.Title" xml:space="preserve">
     <value>封面边缘进度</value>
   </data>
+  <data name="Media.ControlUnavailable.Body" xml:space="preserve">
+    <value>请在播放器设置中打开 SMTC（系统播放控件）或类似选项。如果没有此选项，请查询软件是否支持 SMTC；不支持的媒体源无法通过本程序控制。</value>
+  </data>
+  <data name="Media.ControlUnavailable.Title" xml:space="preserve">
+    <value>无法控制当前媒体源</value>
+  </data>
+  <data name="Startup.FailureBody" xml:space="preserve">
+    <value>程序未能完成启动。请根据以下错误检查运行环境；详细信息已记录到日志。</value>
+  </data>
+  <data name="Startup.FailureTitle" xml:space="preserve">
+    <value>AF Media Bar 启动失败</value>
+  </data>
+  <data name="Startup.Service.Disabled" xml:space="preserve">
+    <value>已禁用</value>
+  </data>
+  <data name="Startup.Service.FailureBody" xml:space="preserve">
+    <value>无法使用 Windows 系统服务或组件。检测到的服务异常：
+{0}
+
+是否使用了精简版系统？请尝试恢复相关服务及系统组件，修复后重新启动。</value>
+  </data>
+  <data name="Startup.Service.Missing" xml:space="preserve">
+    <value>缺失</value>
+  </data>
+  <data name="Startup.Service.Stopped" xml:space="preserve">
+    <value>未运行</value>
+  </data>
+  <data name="Startup.Service.Unidentified" xml:space="preserve">
+    <value>未确认具体缺失的服务，请结合下方错误和日志检查系统组件。</value>
+  </data>
 </root>

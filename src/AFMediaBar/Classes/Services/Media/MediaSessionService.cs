@@ -24,6 +24,9 @@ public sealed class MediaSessionService : IDisposable
 {
     private readonly MediaSourceRegistry _sources;
     private readonly MediaSessionCatalog _catalog;
+    private readonly ISystemNotificationService _notifications;
+    private string? _lastControlNotificationSource;
+    private DateTimeOffset _lastControlNotificationUtc;
     private readonly MediaSessionSelectionService _selection;
     private readonly MediaSnapshotBuilder _snapshotBuilder;
     private readonly IReadOnlyList<IMediaSourceProvider> _sourceProviders;
@@ -39,6 +42,8 @@ public sealed class MediaSessionService : IDisposable
     private IReadOnlyList<MediaSourceCandidate> _smtcCandidates = Array.Empty<MediaSourceCandidate>();
     private IReadOnlyList<MediaSourceCandidate> _candidates = Array.Empty<MediaSourceCandidate>();
     private string? _selectedSessionKey;
+    private string? _controlSelectionKey;
+    private int _controlSelectionRevision;
     private bool _snapshotBuildInFlight;
     private bool _snapshotBuildPending;
     private int _refreshQueued;
@@ -120,7 +125,8 @@ public sealed class MediaSessionService : IDisposable
         MediaSnapshotBuilder snapshotBuilder,
         IEnumerable<IMediaSourceProvider> sourceProviders,
         MediaSourceActivationService sourceActivator,
-        MemoryPruneCoordinator memoryPrune)
+        MemoryPruneCoordinator memoryPrune,
+        ISystemNotificationService notifications)
     {
         _sources = sources;
         _catalog = catalog;
@@ -129,6 +135,7 @@ public sealed class MediaSessionService : IDisposable
         _sourceProviders = sourceProviders.ToArray();
         _sourceActivator = sourceActivator;
         _memoryPrune = memoryPrune;
+        _notifications = notifications;
         _dispatcher = Application.Current.Dispatcher;
 
         _catalog.AnyMediaPropertyChanged += OnAnyMediaPropertyChanged;
@@ -203,7 +210,8 @@ public sealed class MediaSessionService : IDisposable
     /// </summary>
     public Task TogglePlayPauseAsync() => ExecuteOnSelectedAsync(async controlSession =>
     {
-        await controlSession.TryTogglePlayPauseAsync();
+        return controlSession.GetPlaybackInfo().Controls?.IsPlayPauseToggleEnabled == true &&
+            await controlSession.TryTogglePlayPauseAsync();
     });
 
     /// <summary>
@@ -212,7 +220,7 @@ public sealed class MediaSessionService : IDisposable
     /// </summary>
     public Task SkipPreviousAsync() => ExecuteOnSelectedAsync(async controlSession =>
     {
-        await controlSession.TrySkipPreviousAsync();
+        return await controlSession.TrySkipPreviousAsync();
     });
 
     /// <summary>
@@ -221,7 +229,7 @@ public sealed class MediaSessionService : IDisposable
     /// </summary>
     public Task SkipNextAsync() => ExecuteOnSelectedAsync(async controlSession =>
     {
-        await controlSession.TrySkipNextAsync();
+        return await controlSession.TrySkipNextAsync();
     });
 
     /// <summary>跳转到当前媒体的相对播放位置。 / Seeks to a relative position in the selected media item.</summary>
@@ -232,11 +240,11 @@ public sealed class MediaSessionService : IDisposable
         var duration = Math.Max(0, (timeline.EndTime - timeline.StartTime).TotalSeconds);
         if (duration <= 0 || controls?.IsPlaybackPositionEnabled != true)
         {
-            return;
+            return false;
         }
 
         var target = timeline.StartTime + TimeSpan.FromSeconds(Math.Clamp(positionSeconds, 0, duration));
-        await controlSession.TryChangePlaybackPositionAsync(target.Ticks);
+        return await controlSession.TryChangePlaybackPositionAsync(target.Ticks);
     });
 
     /// <summary>在关闭、列表和单曲循环之间切换。 / Cycles repeat between off, list, and track.</summary>
@@ -245,7 +253,7 @@ public sealed class MediaSessionService : IDisposable
         var playback = controlSession.GetPlaybackInfo();
         if (playback.Controls?.IsRepeatEnabled != true)
         {
-            return;
+            return false;
         }
 
         var next = playback.AutoRepeatMode switch
@@ -254,7 +262,7 @@ public sealed class MediaSessionService : IDisposable
             MediaPlaybackAutoRepeatMode.Track => MediaPlaybackAutoRepeatMode.None,
             _ => MediaPlaybackAutoRepeatMode.List
         };
-        await controlSession.TryChangeAutoRepeatModeAsync(next);
+        return await controlSession.TryChangeAutoRepeatModeAsync(next);
     });
 
     /// <summary>
@@ -305,10 +313,14 @@ public sealed class MediaSessionService : IDisposable
     }
 
     private async Task ExecuteOnSelectedAsync(
-        Func<GlobalSystemMediaTransportControlsSession, Task> action)
+        Func<GlobalSystemMediaTransportControlsSession, Task<bool>> action)
     {
+        if (_isDisposed) return;
+        var sourceId = SelectedSourceId;
+        var selectionRevision = _controlSelectionRevision;
         if (!_catalog.TryGetSnapshot(out var sessions))
         {
+            ReportControlUnavailable(sourceId);
             return;
         }
 
@@ -325,16 +337,42 @@ public sealed class MediaSessionService : IDisposable
         var controlSession = selected?.ControlSession;
         if (controlSession is null)
         {
+            ReportControlUnavailable(sourceId);
             return;
         }
 
         try
         {
-            await action(controlSession);
+            var accepted = await Task.Run(() => action(controlSession));
+            if (!accepted && selectionRevision == _controlSelectionRevision)
+                ReportControlUnavailable(sourceId);
         }
         catch (Exception ex) when (ex is COMException or InvalidOperationException or ObjectDisposedException)
         {
             Debug.WriteLine($"[MediaSessionService] Media command failed: {ex}");
+            if (selectionRevision == _controlSelectionRevision)
+                ReportControlUnavailable(sourceId);
+        }
+    }
+
+    private void ReportControlUnavailable(string sourceId)
+    {
+        if (_isDisposed || !_lastSnapshot.IsConnected ||
+            !_sources.IsAllowed(sourceId, SettingsManager.Current.SmtcSourceFilter) ||
+            !string.Equals(sourceId, SelectedSourceId, StringComparison.OrdinalIgnoreCase)) return;
+        var now = DateTimeOffset.UtcNow;
+        if (string.Equals(sourceId, _lastControlNotificationSource, StringComparison.OrdinalIgnoreCase) &&
+            now - _lastControlNotificationUtc < TimeSpan.FromSeconds(30)) return;
+        _lastControlNotificationSource = sourceId;
+        _lastControlNotificationUtc = now;
+        try
+        {
+            _notifications.TryShowNotification(Translations.Get("Media.ControlUnavailable.Title"),
+                Translations.Get("Media.ControlUnavailable.Body"));
+        }
+        catch (Exception exception)
+        {
+            AppLogService.Current?.Warn("Media", "媒体控制失败通知发送失败", exception);
         }
     }
 
@@ -714,6 +752,12 @@ public sealed class MediaSessionService : IDisposable
             if (_selection.TryAutoSwitchToPlaying(_candidates))
                 selected = _candidates.FirstOrDefault(source => source.Key == _selection.SelectedKey);
 
+            if (!string.Equals(_controlSelectionKey, selected?.Key, StringComparison.Ordinal) ||
+                !string.Equals(_selectedSessionKey, selected?.SessionKey, StringComparison.Ordinal))
+            {
+                _controlSelectionKey = selected?.Key;
+                _controlSelectionRevision++;
+            }
             _selectedSessionKey = selected?.SessionKey;
             var session = _lastSessions.FirstOrDefault(item => item.Id == _selectedSessionKey);
             PublishSessions(_candidates);
@@ -951,6 +995,9 @@ public sealed class MediaSessionService : IDisposable
         }
 
         snapshot = _browserPresentation.Project(snapshot);
+        var notifyUnavailable = snapshot.IsConnected && !snapshot.CanPlayPause &&
+            (!_lastSnapshot.IsConnected || _lastSnapshot.CanPlayPause ||
+             !string.Equals(snapshot.SourceId, _lastSnapshot.SourceId, StringComparison.OrdinalIgnoreCase));
 
         lock (_publishGate)
         {
@@ -964,6 +1011,8 @@ public sealed class MediaSessionService : IDisposable
             LogSnapshot(snapshot);
             SnapshotChanged?.Invoke(this, snapshot);
         }
+        if (notifyUnavailable)
+            ReportControlUnavailable(snapshot.SourceId);
     }
 
     /// <summary>

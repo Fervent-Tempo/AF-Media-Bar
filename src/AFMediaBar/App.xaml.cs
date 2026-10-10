@@ -59,6 +59,7 @@ namespace AFMediaBar
         private SingleInstanceGuard? _singleInstanceGuard;
         private bool _isSecondaryInstance;
         private bool _isRestartStartup;
+        private bool _startupFailed;
         private bool _ordinaryRestartRequested;
         private IApplicationRestartService? _restartService;
         private DeveloperModeService? _developerMode;
@@ -310,6 +311,42 @@ namespace AFMediaBar
         /// </summary>
         private async void OnStartup(object sender, StartupEventArgs e)
         {
+            try
+            {
+                await StartApplicationAsync(e);
+            }
+            catch (OperationCanceledException) when (_startupCancellation.IsCancellationRequested)
+            {
+            }
+            catch (Exception exception)
+            {
+                _startupFailed = true;
+                AppLogService.Current?.CaptureUnhandled("Startup", exception);
+                var serviceFailure = StartupServiceDiagnostics.IsServiceFailure(exception);
+                IReadOnlyList<StartupServiceDiagnostics.ServiceFault> faults = [];
+                if (serviceFailure)
+                {
+                    try { faults = await Task.Run(StartupServiceDiagnostics.Inspect); }
+                    catch (Exception diagnosticException)
+                    {
+                        AppLogService.Current?.Warn("Startup", "系统服务诊断失败", diagnosticException);
+                    }
+                }
+                if (_startupCancellation.IsCancellationRequested || Dispatcher.HasShutdownStarted) return;
+                var details = faults.Count > 0
+                    ? string.Join(Environment.NewLine, faults.Select(fault => $"{fault.Name} — {Translations.Get(fault.StatusKey)}"))
+                    : Translations.Get("Startup.Service.Unidentified");
+                var message = serviceFailure
+                    ? Translations.Format("Startup.Service.FailureBody", details)
+                    : Translations.Get("Startup.FailureBody");
+                System.Windows.MessageBox.Show($"{message}\n\n{exception.GetBaseException().Message}\nHRESULT: 0x{exception.GetBaseException().HResult:X8}",
+                    Translations.Get("Startup.FailureTitle"), System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                Shutdown(1);
+            }
+        }
+
+        private async Task StartApplicationAsync(StartupEventArgs e)
+        {
             if (e.Args.Any(argument => argument.StartsWith(RestartProcessHandoff.ArgumentPrefix, StringComparison.Ordinal)))
             {
                 // 等待阶段没有启动副作用；失败时复用早期退出，不保存尚未加载的设置。
@@ -521,6 +558,17 @@ namespace AFMediaBar
                 return;
             }
 
+            if (_startupFailed)
+            {
+                // 不完整的容器只能释放已创建资源，不能再次解析失败的服务或保存未完成加载的设置。
+                _memoryPruneCoordinator?.Dispose();
+                _powerStateMonitor?.Dispose();
+                _themeCoordinator?.Dispose();
+                _themeCoordinator = null;
+                DisposeHostAndExit(e.ApplicationExitCode);
+                return;
+            }
+
             // 这两个服务必须在 Host 释放之前取出来。
             // Host.Dispose 同时释放 DI 容器，之后再从 App.Services 解析任何东西都会抛 ObjectDisposedException；
             // 那既会跳过退出时的安装交接，也会把一次正常退出变成一次崩溃（WER 里是 e0434352）。
@@ -597,6 +645,11 @@ namespace AFMediaBar
             // it disappears with the process in every other case.
             installCoordinatorMutex.Dispose();
 
+            DisposeHostAndExit(e.ApplicationExitCode);
+        }
+
+        private void DisposeHostAndExit(int exitCode)
+        {
             // A media-session/native component can occasionally block while disposing
             // after Explorer or a tray Popup has already been torn down. Keep a bounded
             // watchdog so an explicit user exit can never leave AFMediaBar alive forever.
@@ -606,7 +659,7 @@ namespace AFMediaBar
                 await Task.Delay(HostShutdownTimeout).ConfigureAwait(false);
                 if (Volatile.Read(ref disposalCompleted) == 0)
                 {
-                    Environment.Exit(e.ApplicationExitCode);
+                    Environment.Exit(exitCode);
                 }
             });
 
@@ -628,7 +681,7 @@ namespace AFMediaBar
             // WPF has completed its Exit event, but third-party native media components
             // may own non-background threads. Explicitly terminate after all synchronous
             // cleanup has completed so the process cannot remain in the background.
-            Environment.Exit(e.ApplicationExitCode);
+            Environment.Exit(exitCode);
         }
 
         private void OnOrdinaryRestartRequested(object? sender, EventArgs e)

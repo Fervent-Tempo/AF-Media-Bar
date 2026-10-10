@@ -2155,8 +2155,6 @@ namespace AFMediaBar.Components
             switch (action)
             {
                 case PlayerClickAction.TogglePlayPause:
-                    if (!_canPlayPause)
-                        return;
                     TogglePlayPauseRequested?.Invoke(this, EventArgs.Empty);
                     break;
                 case PlayerClickAction.OpenFullPanel:

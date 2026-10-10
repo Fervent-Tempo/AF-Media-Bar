@@ -2604,4 +2604,34 @@
   <data name="DisplayModes.Rest.Row.ArtworkProgress.Title" xml:space="preserve">
     <value>Artwork edge progress</value>
   </data>
+  <data name="Media.ControlUnavailable.Body" xml:space="preserve">
+    <value>Enable SMTC (system media controls) or a similar option in the player settings. If no such option exists, check whether the player supports SMTC. Unsupported sources cannot be controlled by AF Media Bar.</value>
+  </data>
+  <data name="Media.ControlUnavailable.Title" xml:space="preserve">
+    <value>Media control unavailable</value>
+  </data>
+  <data name="Startup.FailureBody" xml:space="preserve">
+    <value>Startup could not complete. Check the environment using the error below. Details have been recorded in the log.</value>
+  </data>
+  <data name="Startup.FailureTitle" xml:space="preserve">
+    <value>AF Media Bar could not start</value>
+  </data>
+  <data name="Startup.Service.Disabled" xml:space="preserve">
+    <value>Disabled</value>
+  </data>
+  <data name="Startup.Service.FailureBody" xml:space="preserve">
+    <value>A Windows service or component is unavailable. Detected service issues:
+{0}
+
+Are you using a stripped-down Windows installation? Try restoring the affected services and system components, then restart the app.</value>
+  </data>
+  <data name="Startup.Service.Missing" xml:space="preserve">
+    <value>Missing</value>
+  </data>
+  <data name="Startup.Service.Stopped" xml:space="preserve">
+    <value>Stopped</value>
+  </data>
+  <data name="Startup.Service.Unidentified" xml:space="preserve">
+    <value>No missing service was confirmed. Check system components using the error below and the log.</value>
+  </data>
 </root>
