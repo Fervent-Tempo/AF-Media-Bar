@@ -1125,9 +1125,7 @@ namespace AFMediaBar.Components
                 if (experience.ContentLayout == TaskbarContentLayout.CompactInline &&
                     !string.IsNullOrEmpty(_actualArtist))
                 {
-                    SongTitle.Text = string.IsNullOrEmpty(_actualTitle)
-                        ? _actualArtist
-                        : $"{_actualTitle} · {_actualArtist}";
+                    SongTitle.Text = TaskbarExperiencePolicy.FormatMetadataTitle(_actualTitle, _actualArtist, experience.ContentLayout);
                     SongArtistContainer.Visibility = Visibility.Collapsed;
                 }
                 else
@@ -2046,7 +2044,10 @@ namespace AFMediaBar.Components
                 return;
 
             var lyricsVisible = SongLyricsPanel.Opacity > 0;
-            var visibleText = !_isConnected ? string.Empty : lyricsVisible ? _lyricsFrame.Current : SongTitle.Text;
+            var metadataTitle = _currentMode == WindowMode.Taskbar && orientation == LayoutOrientation.Horizontal
+                ? TaskbarExperiencePolicy.FormatMetadataTitle(_actualTitle, _actualArtist, SettingsManager.Current.TaskbarExperience.ContentLayout)
+                : _actualTitle;
+            var visibleText = !_isConnected ? string.Empty : lyricsVisible ? _lyricsFrame.Current : metadataTitle;
             var secondaryText = _isConnected && lyricsVisible
                 ? string.IsNullOrEmpty(_lyricsFrame.CurrentTranslation) ? _lyricsFrame.Next : _lyricsFrame.CurrentTranslation
                 : string.Empty;
@@ -2134,7 +2135,10 @@ namespace AFMediaBar.Components
                     component => ResolveRestComponentWidth(component, metrics),
                     double.PositiveInfinity);
 
-                var contentWidth = ContentWidth(textWidth);
+                var metadataWidth = !lyricsVisible && experience.LengthMode == TaskbarLengthMode.FollowContent
+                    ? TaskbarExperiencePolicy.ResolveMetadataTextWidth(textWidth, hoverMinimum)
+                    : textWidth;
+                var contentWidth = ContentWidth(metadataWidth);
                 _minimumPrimaryLength = ContentWidth(0);
                 request = request with
                 {
