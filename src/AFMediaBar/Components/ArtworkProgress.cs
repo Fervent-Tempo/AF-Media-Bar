@@ -30,12 +30,25 @@ public sealed class ArtworkProgress : FrameworkElement
     private Size _pathSize;
     private Point[] _points = [];
     private double _perimeter;
-    private const double StrokeWidth = 1.5;
+    private const double StrokeWidth = 2.5;
+    private const double OutlineWidth = 4;
     private static readonly Pen _trackPen = CreateTrackPen();
+    private static readonly Pen _outlinePen = CreateOutlinePen();
 
     private static Pen CreateTrackPen()
     {
-        var pen = new Pen(new SolidColorBrush(Color.FromArgb(100, 0, 0, 0)), StrokeWidth);
+        var pen = new Pen(new SolidColorBrush(Color.FromArgb(150, 0, 0, 0)), StrokeWidth);
+        pen.Freeze();
+        return pen;
+    }
+
+    private static Pen CreateOutlinePen()
+    {
+        var pen = new Pen(new SolidColorBrush(Color.FromArgb(220, 0, 0, 0)), OutlineWidth)
+        {
+            StartLineCap = PenLineCap.Round,
+            EndLineCap = PenLineCap.Round
+        };
         pen.Freeze();
         return pen;
     }
@@ -43,15 +56,15 @@ public sealed class ArtworkProgress : FrameworkElement
     protected override void OnRender(DrawingContext drawingContext)
     {
         base.OnRender(drawingContext);
-        if (RenderSize.Width <= StrokeWidth || RenderSize.Height <= StrokeWidth)
+        if (RenderSize.Width <= OutlineWidth || RenderSize.Height <= OutlineWidth)
             return;
 
         if (_pathSize != RenderSize || _points.Length == 0)
         {
             _pathSize = RenderSize;
-            var inset = StrokeWidth / 2;
-            var bounds = new Rect(inset, inset, RenderSize.Width - StrokeWidth, RenderSize.Height - StrokeWidth);
-            var radius = Math.Min(4.25, Math.Min(bounds.Width, bounds.Height) / 2);
+            var inset = OutlineWidth / 2;
+            var bounds = new Rect(inset, inset, RenderSize.Width - OutlineWidth, RenderSize.Height - OutlineWidth);
+            var radius = Math.Min(5 - inset, Math.Min(bounds.Width, bounds.Height) / 2);
             var path = new PathFigure { StartPoint = new Point(bounds.Left + bounds.Width / 2, bounds.Top), IsClosed = true };
             void Line(double x, double y) => path.Segments.Add(new LineSegment(new Point(x, y), true));
             void Arc(double x, double y) => path.Segments.Add(new ArcSegment(new Point(x, y), new Size(radius, radius), 0, false, SweepDirection.Clockwise, true));
@@ -78,7 +91,12 @@ public sealed class ArtworkProgress : FrameworkElement
         drawingContext.DrawGeometry(null, _trackPen, BuildPath(1));
         var progress = double.IsFinite(Progress) ? Math.Clamp(Progress, 0, 1) : 0;
         if (progress > 0)
-            drawingContext.DrawGeometry(null, new Pen(Stroke, StrokeWidth) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round }, BuildPath(progress));
+        {
+            var progressPath = BuildPath(progress);
+            // 深色描边把进度与封面纹理隔开，常态小尺寸也能看清已播放部分。
+            drawingContext.DrawGeometry(null, _outlinePen, progressPath);
+            drawingContext.DrawGeometry(null, new Pen(Stroke, StrokeWidth) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round }, progressPath);
+        }
     }
 
     private StreamGeometry BuildPath(double progress)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -70,6 +71,12 @@ namespace AFMediaBar.Components
         public TaskBarMediaControl()
         {
             InitializeComponent();
+
+            // 显式绑定真实封面图标，重挂到放大 Popup 后仍保持相同颜色和尺寸。
+            SongImageHoverHintIcon.SetBinding(SymbolIcon.ForegroundProperty,
+                new Binding(nameof(SymbolIcon.Foreground)) { Source = SongImagePlaceholder });
+            SongImageHoverHintIcon.SetBinding(SymbolIcon.FontSizeProperty,
+                new Binding(nameof(SymbolIcon.FontSize)) { Source = SongImagePlaceholder });
 
             _progressTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
             _progressTimer.Tick += (_, _) => UpdateTaskbarProgress();
@@ -1896,8 +1903,8 @@ namespace AFMediaBar.Components
                 {
                     if (_isPaused)
                     {
-                        // show pause icon overlay
-                        SongImagePlaceholder.Symbol = SymbolRegular.Pause24;
+                        // 暂停时常驻播放图标，提示点击继续播放。
+                        SongImagePlaceholder.Symbol = SymbolRegular.Play24;
                         SongImagePlaceholder.Visibility = Visibility.Visible;
                     }
                     else

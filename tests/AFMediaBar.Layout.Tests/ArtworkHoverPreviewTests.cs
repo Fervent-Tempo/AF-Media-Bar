@@ -11,6 +11,8 @@ using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Components;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using SymbolIcon = Wpf.Ui.Controls.SymbolIcon;
+using SymbolRegular = Wpf.Ui.Controls.SymbolRegular;
 
 namespace AFMediaBar.Layout.Tests;
 
@@ -72,6 +74,7 @@ public sealed class ArtworkHoverPreviewTests
                     .GetValue(control)!;
                 var root = (Border)popup.Child;
                 var refresh = typeof(TaskBarMediaControl).GetMethod("RefreshArtworkHoverPreviewContent", BindingFlags.Instance | BindingFlags.NonPublic)!;
+                VerifyPlaybackHints(control, refresh);
                 foreach (var (width, height, expectedWidth) in new[]
                 {
                     (160, 90, 120d * 16 / 9), (90, 160, 72d), (64, 64, 120d),
@@ -117,6 +120,45 @@ public sealed class ArtworkHoverPreviewTests
         Assert.IsTrue(thread.Join(TimeSpan.FromSeconds(30)), "封面预览渲染未结束。");
         if (failure is not null)
             ExceptionDispatchInfo.Capture(failure).Throw();
+    }
+
+    private static void VerifyPlaybackHints(TaskBarMediaControl control, MethodInfo refreshPreview)
+    {
+        var placeholder = (SymbolIcon)control.FindName("SongImagePlaceholder");
+        var hintIcon = (SymbolIcon)control.FindName("SongImageHoverHintIcon");
+        var hint = (Border)control.FindName("SongImageHoverHint");
+        var animateHover = typeof(TaskBarMediaControl).GetMethod("AnimateArtworkHover", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var previewIcon = (SymbolIcon)typeof(TaskBarMediaControl).GetField("_artworkHoverPreviewIcon", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetValue(control)!;
+        var artwork = CreateMarkedArtwork(160, 90);
+        foreach (var playing in new[] { false, true, false })
+        {
+            control.UpdateSongInfo(MediaSnapshot.Disconnected with
+            {
+                IsConnected = true,
+                IsPlaying = playing,
+                CanPlayPause = true,
+                Artwork = artwork
+            });
+            animateHover.Invoke(control, [false, true]);
+            Assert.AreEqual(playing ? Visibility.Collapsed : Visibility.Visible, placeholder.Visibility);
+            if (!playing)
+                Assert.AreEqual(SymbolRegular.Play24, placeholder.Symbol, "暂停时常驻图标应表达继续播放。");
+            Assert.AreEqual(0d, hint.Opacity);
+
+            animateHover.Invoke(control, [true, true]);
+            Assert.AreEqual(playing ? 1d : 0d, hint.Opacity, "暂停时悬停应保持原播放图标，不再叠加另一种样式。");
+            Assert.AreEqual(playing ? Visibility.Collapsed : Visibility.Visible, placeholder.Visibility);
+            Assert.AreEqual(SymbolRegular.Pause24, hintIcon.Symbol);
+            Assert.IsTrue(hintIcon.Filled);
+            Assert.AreEqual(placeholder.FontSize, hintIcon.FontSize);
+            Assert.AreSame(placeholder.Foreground, hintIcon.Foreground, "悬停图标应复用封面主题色。");
+
+            refreshPreview.Invoke(control, null);
+            Assert.AreEqual(playing ? SymbolRegular.Pause24 : SymbolRegular.Play24, previewIcon.Symbol);
+            Assert.AreSame(placeholder.Foreground, previewIcon.Foreground);
+            animateHover.Invoke(control, [false, true]);
+        }
     }
 
     private static BitmapSource CreateMarkedArtwork(int width, int height)
