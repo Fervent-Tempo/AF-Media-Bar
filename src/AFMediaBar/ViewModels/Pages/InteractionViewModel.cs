@@ -26,6 +26,19 @@ public partial class InteractionViewModel : ObservableObject, IDisposable
         set => Update(Current with { TextClickAction = value });
     }
 
+    /// <summary>
+    /// 鼠标停在封面上时封面的放大方式：<see cref="ArtworkHoverMode.Off"/> 保持栏内 1.1 倍紧凑放大，
+    /// <see cref="ArtworkHoverMode.Zoom"/> 原地放大 2 倍，<see cref="ArtworkHoverMode.Preview"/> 弹出独立大图。
+    /// How the artwork behaves while the pointer rests on it: <see cref="ArtworkHoverMode.Off"/> keeps the compact 1.1× zoom
+    /// inside the bar, <see cref="ArtworkHoverMode.Zoom"/> grows it in place to 2×, and <see cref="ArtworkHoverMode.Preview"/>
+    /// pops a separate large card.
+    /// </summary>
+    public ArtworkHoverMode ArtworkHoverMode
+    {
+        get => Current.ArtworkHoverMode;
+        set => Update(Current with { ArtworkHoverMode = value });
+    }
+
     public WheelAction PrimaryWheelAction
     {
         get => Current.PrimaryWheelAction;
@@ -112,6 +125,7 @@ public partial class InteractionViewModel : ObservableObject, IDisposable
     {
         OnPropertyChanged(nameof(ArtworkClickAction));
         OnPropertyChanged(nameof(TextClickAction));
+        OnPropertyChanged(nameof(ArtworkHoverMode));
         OnPropertyChanged(nameof(PrimaryWheelAction));
         OnPropertyChanged(nameof(Modifier));
         OnPropertyChanged(nameof(ChordWheelAction));

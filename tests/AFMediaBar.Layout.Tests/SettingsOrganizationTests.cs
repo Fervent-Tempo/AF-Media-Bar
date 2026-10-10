@@ -60,6 +60,7 @@ public sealed class SettingsOrganizationTests
         current.LyricsEnabled = false;
         current.LyricsCharacterSpacingPercent = 10;
         current.LyricsSource = new LyricsSourceSettings([]);
+        current.Interaction = current.Interaction with { ArtworkHoverMode = ArtworkHoverMode.Zoom };
         var appearance = current.Appearance;
 
         SettingsManager.ResetContentLayout();
@@ -79,6 +80,7 @@ public sealed class SettingsOrganizationTests
         Assert.IsFalse(current.LyricsEnabled);
         Assert.AreEqual(10, current.LyricsCharacterSpacingPercent);
         Assert.AreEqual(0, current.LyricsSource.EnabledSourceIds!.Count);
+        Assert.AreEqual(ArtworkHoverMode.Zoom, current.Interaction.ArtworkHoverMode);
     }
 
     [TestMethod]
@@ -132,8 +134,7 @@ public sealed class SettingsOrganizationTests
         {
             defaults.TaskbarExperience = defaults.TaskbarExperience with
             {
-                ArtworkVisible = false,
-                ArtworkHoverMode = ArtworkHoverMode.Preview
+                ArtworkVisible = false
             };
             SettingsManager.SetUserDefaults(defaults);
         }
@@ -141,7 +142,6 @@ public sealed class SettingsOrganizationTests
         SettingsManager.Current.TaskbarExperience = (SettingsManager.Current.TaskbarExperience with
         {
             ArtworkVisible = !defaults.TaskbarExperience.ArtworkVisible,
-            ArtworkHoverMode = ArtworkHoverMode.Zoom,
             ContentLayout = TaskbarContentLayout.CompactInline,
             MediaTextAlignment = TaskbarMediaTextAlignment.Right,
             MediaFontSizePercent = 120,
@@ -149,17 +149,38 @@ public sealed class SettingsOrganizationTests
             RestComponentOrder = [TaskbarRestComponent.Volume, TaskbarRestComponent.MediaText]
         }).Normalize();
         var before = SettingsManager.Current.TaskbarExperience;
+        SettingsManager.Current.Interaction = SettingsManager.Current.Interaction with { ArtworkHoverMode = ArtworkHoverMode.Zoom };
 
         SettingsManager.ResetDisplayModes();
 
         var actual = SettingsManager.Current.TaskbarExperience;
         Assert.AreEqual(defaults.TaskbarExperience.ArtworkVisible, actual.ArtworkVisible);
-        Assert.AreEqual(defaults.TaskbarExperience.ArtworkHoverMode, actual.ArtworkHoverMode);
+        Assert.AreEqual(ArtworkHoverMode.Zoom, SettingsManager.Current.Interaction.ArtworkHoverMode);
         Assert.AreEqual(before.ContentLayout, actual.ContentLayout);
         Assert.AreEqual(before.MediaTextAlignment, actual.MediaTextAlignment);
         Assert.AreEqual(before.MediaFontSizePercent, actual.MediaFontSizePercent);
         Assert.AreEqual(before.ComponentSpacingDip, actual.ComponentSpacingDip);
         CollectionAssert.AreEqual(before.RestComponentOrder!.ToArray(), actual.RestComponentOrder!.ToArray());
+    }
+
+    [DataTestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public void InteractionResetRestoresArtworkHoverModeAndPreservesArtworkVisibility(bool useUserDefaults)
+    {
+        var defaults = new AppSettings();
+        if (useUserDefaults)
+        {
+            defaults.Interaction = defaults.Interaction with { ArtworkHoverMode = ArtworkHoverMode.Preview };
+            SettingsManager.SetUserDefaults(defaults);
+        }
+        SettingsManager.Current.Interaction = SettingsManager.Current.Interaction with { ArtworkHoverMode = ArtworkHoverMode.Zoom };
+        SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with { ArtworkVisible = false };
+
+        SettingsManager.ResetInteraction();
+
+        Assert.AreEqual(defaults.Interaction.ArtworkHoverMode, SettingsManager.Current.Interaction.ArtworkHoverMode);
+        Assert.IsFalse(SettingsManager.Current.TaskbarExperience.ArtworkVisible);
     }
 
     [TestMethod]

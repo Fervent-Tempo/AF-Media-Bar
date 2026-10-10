@@ -581,7 +581,6 @@ public static class SettingsManager
             PerformanceVisible = defaults.TaskbarExperience.PerformanceVisible,
             RestProgressVisible = defaults.TaskbarExperience.RestProgressVisible,
             ArtworkVisible = defaults.TaskbarExperience.ArtworkVisible,
-            ArtworkHoverMode = defaults.TaskbarExperience.ArtworkHoverMode,
             FullPanelEntryVisible = defaults.TaskbarExperience.FullPanelEntryVisible,
             HoverControls = defaults.TaskbarExperience.HoverControls,
             OutputDeviceVisible = defaults.TaskbarExperience.OutputDeviceVisible,
