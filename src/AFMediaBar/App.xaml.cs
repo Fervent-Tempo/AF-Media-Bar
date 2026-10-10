@@ -3,6 +3,7 @@ using AFMediaBar.Classes.Services.Media.Sources.NetEase;
 using AFMediaBar.Classes.Services.Media.Smtc;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Abstractions;
+using AFMediaBar.Classes.Interop;
 using AFMediaBar.Components;
 using AFMediaBar.Classes.Services.Credits;
 using AFMediaBar.Classes.Services.Diagnostics;
@@ -52,7 +53,22 @@ namespace AFMediaBar
     public partial class App
     {
         private static readonly TimeSpan HostShutdownTimeout = TimeSpan.FromSeconds(5);
+
+        /// <summary>
+        /// 收尾总预算：超过它仍未结束就强制终止进程。
+        ///
+        /// 它保护的是"桌面不因为我们卡住而冻结"，不是"清理一定要跑完"——所以到点宁可丢掉最后的清理。
+        /// 必须比 <see cref="HostShutdownTimeout"/> 宽：后者只覆盖 Host 停止这一段，前面还有解挂与设置落盘。
+        /// The overall teardown budget; past it the process is terminated outright.
+        ///
+        /// It protects "the desktop must not freeze because we are stuck", not "the cleanup must finish", so the last cleanup
+        /// steps are sacrificed at the deadline. It has to be wider than <see cref="HostShutdownTimeout"/>, which only covers the
+        /// host-stop segment; detaching and the settings flush come before it.
+        /// </summary>
+        private static readonly TimeSpan ForcedExitTimeout = TimeSpan.FromSeconds(10);
+
         private int _exitHandled;
+        private int _teardownCompleted;
         private readonly CancellationTokenSource _startupCancellation = new();
         private PowerStateMonitor? _powerStateMonitor;
         private MemoryPruneCoordinator? _memoryPruneCoordinator;
@@ -504,6 +520,16 @@ namespace AFMediaBar
                 return;
             }
 
+            // 硬退出看门狗必须**最先**武装：这一步之后，无论哪一段收尾卡住（跨进程 Shell 调用、媒体原生组件、
+            // 音频采集线程、Explorer 没在应答的 UIA），进程都会在期限到达时被强制终止。
+            // 原先这里没有武装它：它排在 Host.StopAsync 之后，于是那一步之前的一切都没有上限——这正是
+            // "退出即卡死、只能靠任务管理器终结"的成因之一，安全网自己先被卡在了卡点后面。
+            // The hard-exit watchdog is armed *first*: past this point the process is terminated at the deadline no matter
+            // which part of the teardown hangs (cross-process Shell calls, native media components, the audio capture thread,
+            // UI Automation waiting on an Explorer that never answers). Nothing used to be armed here — it sat after
+            // Host.StopAsync, leaving everything before that point unbounded — one of the reasons "exit hangs and only Task
+            // Manager recovers it" happened at all: the safety net itself was queued behind the hang.
+            ArmForcedExitWatchdog(e.ApplicationExitCode);
             _startupCancellation.Cancel();
             _developerToolsHost?.Dispose();
             _developerMode?.Dispose();
@@ -518,6 +544,22 @@ namespace AFMediaBar
                 _host.Dispose();
                 return;
             }
+
+            // 退出阶段的分段日志：退出路径原先一行日志都没有，事故现场只能靠猜——上一次"退出卡死"正是因此无法定位。
+            // Phase breadcrumbs for the exit: the exit path used to log nothing, so an incident could only be guessed at,
+            // which is exactly why the last "exit hangs" report was so hard to pin down.
+            var log = Services.GetRequiredService<AppLogService>();
+            log.Info("App", "退出 / exit: 收尾开始 / teardown starts");
+
+            // 解挂任务栏宿主是退出的**第一个实质动作**，必须排在所有可能阻塞的收尾（Host 停止、Host 释放、
+            // 托盘图标删除）之前。理由见方法自身的说明：只要媒体栏还是 Explorer 任务栏的子窗口，而这条 UI 线程
+            // 又在同步等待，Explorer 发给那个子窗口的同步消息就永远等不到回复，整个桌面会跟着冻住。
+            // Detaching the taskbar hosts is the *first* real act of the exit, ahead of every teardown step that may block
+            // (host stop, host disposal, tray-icon removal). The method itself explains why: as long as the media bar is a
+            // child of the Explorer taskbar while this UI thread waits synchronously, the synchronous messages Explorer
+            // sends to that child are never answered and the whole desktop freezes along with us.
+            DetachTaskbarHostsFromExplorer();
+            log.Info("App", "退出 / exit: 任务栏宿主已从 Explorer 解挂 / taskbar hosts detached from Explorer");
 
             // 这两个服务必须在 Host 释放之前取出来。
             // Host.Dispose 同时释放 DI 容器，之后再从 App.Services 解析任何东西都会抛 ObjectDisposedException；
@@ -569,6 +611,8 @@ namespace AFMediaBar
                 Debug.WriteLine($"[App] Host shutdown failed: {exception}");
             }
 
+            log.Info("App", "退出 / exit: Host 已停止 / host stopped");
+
             // 只有用户明确点过"立即重启并安装"时才在退出边界启动安装程序。
             //
             // 自动更新已经不在退出时发生：它在**下一次启动之前**执行（见 TryLaunchPendingInstallOnStartupAsync），
@@ -595,19 +639,13 @@ namespace AFMediaBar
             // it disappears with the process in every other case.
             installCoordinatorMutex.Dispose();
 
-            // A media-session/native component can occasionally block while disposing
-            // after Explorer or a tray Popup has already been torn down. Keep a bounded
-            // watchdog so an explicit user exit can never leave AFMediaBar alive forever.
-            var disposalCompleted = 0;
-            _ = Task.Run(async () =>
-            {
-                await Task.Delay(HostShutdownTimeout).ConfigureAwait(false);
-                if (Volatile.Read(ref disposalCompleted) == 0)
-                {
-                    Environment.Exit(e.ApplicationExitCode);
-                }
-            });
+            log.Info("App", "退出 / exit: 安装交接完成，开始释放 Host / install hand-off done, disposing the host");
 
+            // 这一段起没有托管日志可用：AppLogService 随 DI 容器一起释放，之后的写入会被它自己忽略。
+            // 因此最后一步走 Debug 通道——VS 输出窗口看得到，文件日志里没有。
+            // No managed log is available from here on: AppLogService is disposed with the container and ignores later
+            // writes, so the last step reports through the Debug channel — visible in the VS output window, absent from
+            // the file log.
             try
             {
                 _host.Dispose();
@@ -620,13 +658,125 @@ namespace AFMediaBar
             finally
             {
                 _singleInstanceGuard?.Dispose();
-                Volatile.Write(ref disposalCompleted, 1);
             }
 
-            // WPF has completed its Exit event, but third-party native media components
-            // may own non-background threads. Explicitly terminate after all synchronous
-            // cleanup has completed so the process cannot remain in the background.
-            Environment.Exit(e.ApplicationExitCode);
+            // 收尾到此结束，看门狗可以收工。
+            // The teardown is over, so the watchdog stands down.
+            Volatile.Write(ref _teardownCompleted, 1);
+            Debug.WriteLine("[App] 退出 / exit: Host 释放完成，即将终止进程 / host disposed, terminating the process");
+
+            // 用原生终止而不是 Environment.Exit：后者要先跑托管退出处理器与仍存活对象的终结器，那一步在本程序里
+            // 会卡住（见 NativeMethods.TerminateProcess 的说明），而所有该做的托管清理都已经在上面做完了。
+            // Terminate natively instead of Environment.Exit: the latter first runs managed exit handlers and the
+            // finalizers of every live object, which is where this app hangs (see NativeMethods.TerminateProcess), and
+            // all the managed cleanup worth doing has already run above.
+            ForceTerminateProcess(e.ApplicationExitCode);
+        }
+
+        /// <summary>
+        /// 武装硬退出看门狗：期限到达时若收尾仍未结束，直接终止进程。
+        ///
+        /// 退出前会先把任务栏宿主从 Explorer 解挂，因此此时再卡住也只影响我们自己的进程，不会连累桌面；
+        /// 这一层保险防的是"进程赖着不走"。
+        ///
+        /// 补救动作必须是 <see cref="ForceTerminateProcess"/> 而<b>不能</b>是 <see cref="Environment.Exit"/>：后者自己就会卡
+        /// （见 <see cref="NativeMethods.TerminateProcess"/>），用它当看门狗等于让保险丝和故障一起熔断——这正是"明明加了看门狗
+        /// 还是卡死"的原因。
+        /// Arms the hard-exit watchdog: if the teardown has not finished by the deadline, the process is terminated outright.
+        ///
+        /// The taskbar hosts have been detached from Explorer before this matters, so a hang here costs only our own process and
+        /// never the desktop; what this backstop prevents is a process that simply refuses to leave.
+        ///
+        /// The remedy has to be <see cref="ForceTerminateProcess"/> and *not* <see cref="Environment.Exit"/>: the latter hangs by
+        /// itself (see <see cref="NativeMethods.TerminateProcess"/>), so using it here wires the fuse to the very fault it guards
+        /// against — which is why "the watchdog was added and it still hangs".
+        /// </summary>
+        private void ArmForcedExitWatchdog(int exitCode)
+        {
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(ForcedExitTimeout).ConfigureAwait(false);
+                if (Volatile.Read(ref _teardownCompleted) == 0)
+                {
+                    ForceTerminateProcess(exitCode);
+                }
+            });
+        }
+
+        /// <summary>
+        /// 立即结束当前进程，不运行托管退出处理器、也不等待终结器。
+        ///
+        /// 之所以不能用 <see cref="Environment.Exit"/>：它先跑 `AppDomain.ProcessExit` 与仍存活对象的终结器，而本程序持有
+        /// NAudio/WASAPI、WinRT SMTC、UIA 等原生/COM 对象，任一个在那一步阻塞都会让它永不返回——所有线程都已正常退出、
+        /// 进程却一直挂着，只能由任务管理器终结（任务管理器用的正是同一个原生函数）。该做的托管清理（设置落盘、日志落盘、
+        /// Host 释放、任务栏解挂、托盘图标移除）都在调用它之前完成，因此跳过托管关闭流程没有额外代价。
+        /// Ends the current process at once, running no managed exit handler and waiting for no finalizer.
+        ///
+        /// <see cref="Environment.Exit"/> cannot be used: it first runs `AppDomain.ProcessExit` and the finalizers of every live
+        /// object, while this app holds NAudio/WASAPI, WinRT SMTC, and UIA native/COM objects — a block in any of them makes it
+        /// never return (every thread had exited cleanly while the process stayed alive until Task Manager ended it, and Task
+        /// Manager calls this very native function). The managed cleanup worth doing — settings flush, log flush, host disposal,
+        /// taskbar detach, tray-icon removal — has already run by then, so skipping the managed shutdown costs nothing.
+        /// </summary>
+        private static void ForceTerminateProcess(int exitCode)
+        {
+            try
+            {
+                if (NativeMethods.TerminateProcess(NativeMethods.GetCurrentProcess(), exitCode))
+                    return;
+            }
+            catch (Exception exception)
+            {
+                Debug.WriteLine($"[App] TerminateProcess failed: {exception}");
+            }
+
+            // 原生终止被拒时退回托管退出：至少别让进程留下来。
+            // If the native termination was refused, fall back to the managed exit so the process at least does not linger.
+            Environment.Exit(exitCode);
+        }
+
+        /// <summary>
+        /// 退出边界：把每个任务栏宿主从 Explorer 任务栏解挂。
+        ///
+        /// 为什么必须最先做：媒体栏是 <c>SetParent</c> 到 <c>Shell_TrayWnd</c> 的**子窗口**。只要它还是 Explorer 的子窗口，
+        /// 而我们又在这条 UI 线程上同步等待（<c>Host.StopAsync</c>，以及 <c>Host.Dispose</c> 里托盘图标的跨进程
+        /// <c>Shell_NotifyIcon</c>），Explorer 发给这个子窗口的同步消息（定位、重绘、销毁通知）就永远等不到回复——
+        /// 表现就是"退出时整个桌面连同资源管理器一起卡死，终结进程才恢复"。先解挂即切断这条等待链：Explorer 不再拥有一个
+        /// 由我们阻塞线程所有的窗口，之后的收尾再慢也只影响我们自己。
+        ///
+        /// 用 <c>Application.Current.Windows</c> 找宿主而**不是**从容器解析：解析 <c>INavigationWindow</c> 会在
+        /// "宿主尚未启动就退出"的路径上（重复实例、启动前安装更新）**新建**一个 MainWindow，那正是退出时最不该做的事。
+        /// 主窗口已经关掉时这里自然什么都不做——它的任务栏宿主早已随 <c>CloseTaskbarWindows</c> 解挂。
+        /// The exit boundary: detaches every taskbar host from the Explorer taskbar.
+        ///
+        /// Why it has to come first: the media bar is a <c>SetParent</c>-ed *child* of <c>Shell_TrayWnd</c>. As long as it is
+        /// Explorer's child while this UI thread waits synchronously (<c>Host.StopAsync</c>, and the tray icon's cross-process
+        /// <c>Shell_NotifyIcon</c> inside <c>Host.Dispose</c>), the synchronous messages Explorer sends to that child (position,
+        /// repaint, destroy notifications) are never answered — which is exactly "the whole desktop, Explorer included, freezes on
+        /// exit and only killing the process recovers it". Detaching first breaks that wait chain: Explorer no longer owns a window
+        /// whose thread we are blocking, so however slow the rest of the teardown is only affects us.
+        ///
+        /// The host is found through <c>Application.Current.Windows</c> rather than by resolving it from the container: resolving
+        /// <c>INavigationWindow</c> would *construct* a MainWindow on the paths that exit before the host ever starts (a duplicate
+        /// instance, or installing an update before startup) — the last thing an exit should do. When the main window is already
+        /// closed this is a no-op, because its taskbar hosts were detached with <c>CloseTaskbarWindows</c>.
+        /// </summary>
+        private static void DetachTaskbarHostsFromExplorer()
+        {
+            try
+            {
+                foreach (System.Windows.Window window in Application.Current.Windows)
+                {
+                    if (window is MainWindow mainWindow)
+                        mainWindow.DetachTaskbarHostsForExit();
+                }
+            }
+            catch (Exception exception)
+            {
+                // 解挂只是"别让 Explorer 等我们"的尽力而为：失败也必须继续退出。
+                // Detaching is a best effort at "stop making Explorer wait for us"; a failure must still let the exit continue.
+                Debug.WriteLine($"[App] Taskbar host detach failed: {exception}");
+            }
         }
 
         private void OnOrdinaryRestartRequested(object? sender, EventArgs e)

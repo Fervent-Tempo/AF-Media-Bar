@@ -464,6 +464,30 @@ public static partial class NativeMethods
     [DllImport("kernel32.dll")]
     public static extern uint GetCurrentThreadId();
 
+    /// <summary>
+    /// 返回当前进程的伪句柄；它是常量、无需关闭，且始终带完整访问权限。
+    /// Returns the current process's pseudo-handle: a constant, never needing to be closed, always carrying full access.
+    /// </summary>
+    [DllImport("kernel32.dll")]
+    public static extern IntPtr GetCurrentProcess();
+
+    /// <summary>
+    /// 立即终止指定进程，不运行托管退出处理器、也不等待终结器。
+    ///
+    /// 与 <see cref="System.Environment.Exit"/> 的区别就在这里：后者会先跑 `AppDomain.ProcessExit` 处理器与仍然存活对象的终结器，
+    /// 本程序持有 NAudio/WASAPI、WinRT SMTC、UIA 等原生/COM 对象，任何一个在那一步阻塞都会让它永远不返回
+    /// （实测：所有线程都已正常退出、进程却一直挂着，只能由任务管理器终结）。任务管理器终结进程用的就是这个函数。
+    /// Terminates the process at once, running no managed exit handler and waiting for no finalizer.
+    ///
+    /// That is exactly how it differs from <see cref="System.Environment.Exit"/>, which first runs `AppDomain.ProcessExit`
+    /// handlers and the finalizers of every object still alive; this app holds NAudio/WASAPI, WinRT SMTC, and UIA native/COM
+    /// objects, and a block in any of them makes that call never return (measured: every thread had exited cleanly while the
+    /// process stayed alive until Task Manager ended it). Task Manager ends a process with this very function.
+    /// </summary>
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool TerminateProcess(IntPtr processHandle, int exitCode);
+
     [DllImport("kernel32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool GlobalMemoryStatusEx(ref MemoryStatusEx status);
