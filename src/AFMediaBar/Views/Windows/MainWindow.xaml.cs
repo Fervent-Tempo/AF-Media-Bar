@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using AFMediaBar.Classes.Models;
+using AFMediaBar.Components;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Models.Updates;
@@ -7,6 +8,7 @@ using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Services.Audio;
 using AFMediaBar.Classes.Services.Updates;
+using AFMediaBar.Classes.Services.Notifications;
 using AFMediaBar.Classes.Utils;
 using AFMediaBar.Resources;
 using AFMediaBar.ViewModels.Windows;
@@ -56,6 +58,7 @@ namespace AFMediaBar.Views.Windows
         private readonly Func<TrackChangeNotificationWindow> _trackChangeNotificationFactory;
         private readonly ShellTrayIconService _trayIconService;
         private readonly ISystemNotificationService _systemNotifications;
+        private readonly LyricsRecoveryNotificationCoordinator _lyricsRecoveryNotifications;
         private readonly UpdateService _updateService;
         private readonly DispatcherTimer _taskbarTopologyTimer;
 
@@ -118,6 +121,7 @@ namespace AFMediaBar.Views.Windows
             Func<TrackChangeNotificationWindow> trackChangeNotificationFactory,
             ShellTrayIconService trayIconService,
             ISystemNotificationService systemNotifications,
+            LyricsRecoveryNotificationCoordinator lyricsRecoveryNotifications,
             UpdateService updateService,
             MemoryPruneCoordinator memoryPruneCoordinator)
         {
@@ -146,6 +150,7 @@ namespace AFMediaBar.Views.Windows
             _trackChangeNotificationFactory = trackChangeNotificationFactory;
             _trayIconService = trayIconService;
             _systemNotifications = systemNotifications;
+            _lyricsRecoveryNotifications = lyricsRecoveryNotifications;
             _updateService = updateService;
             _memoryPruneCoordinator = memoryPruneCoordinator;
 
@@ -206,6 +211,8 @@ namespace AFMediaBar.Views.Windows
             // installing are started explicitly on that page.
             _updateService.UpdateStateChanged += UpdateService_OnStateChanged;
             _systemNotifications.NotificationClicked += TrayIconService_OnNotificationClicked;
+            _trayIconService.ShellRestarted += OnNotificationShellRestored;
+            WebLyricsGraphicsRecovery.Session.Degraded += OnWebLyricsDegraded;
 
             // evaluate the initial state once the window is loaded
             Loaded += MainWindow_Loaded;
@@ -245,6 +252,7 @@ namespace AFMediaBar.Views.Windows
                 return;
 
             _isClosing = true;
+            _lyricsRecoveryNotifications.CancelPendingRequests();
             _taskbarTopologyTimer.Stop();
             _taskbarRecoveryCancellation?.Cancel();
             _taskbarRecoveryCancellation?.Dispose();
@@ -301,6 +309,8 @@ namespace AFMediaBar.Views.Windows
             _taskbarViewModel.OpenUpdateSettingsRequested -= ViewModel_OpenUpdateSettingsRequested;
             _updateService.UpdateStateChanged -= UpdateService_OnStateChanged;
             _systemNotifications.NotificationClicked -= TrayIconService_OnNotificationClicked;
+            _trayIconService.ShellRestarted -= OnNotificationShellRestored;
+            WebLyricsGraphicsRecovery.Session.Degraded -= OnWebLyricsDegraded;
             // Make sure that closing this window will begin the process of closing the application.
             Application.Current.Shutdown();
         }
@@ -612,6 +622,7 @@ namespace AFMediaBar.Views.Windows
             _effectiveTaskbarTargetSignature = ResolveEffectiveTaskbarTargetSignature();
             ActivateTaskbarMode();
             _taskbarTopologyTimer.Start();
+            if (WebLyricsGraphicsRecovery.Session.HasDegraded) OnWebLyricsDegraded();
         }
 
         private void TrackChangeNotificationCoordinator_OnNotificationRequested(
@@ -908,6 +919,20 @@ namespace AFMediaBar.Views.Windows
                 Translations.Get("Update.Notification.Title"),
                 Translations.Format("Update.Notification.Body", version, state.CurrentVersion),
                 ShellNotificationTarget.Application);
+        }
+
+        private void OnNotificationShellRestored(object? sender, EventArgs e)
+        {
+            if (!_isClosing) _lyricsRecoveryNotifications.OnShellRestored();
+        }
+
+        private void OnWebLyricsDegraded()
+        {
+            if (_isClosing || Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished) return;
+            _ = Dispatcher.BeginInvoke(() =>
+            {
+                if (!_isClosing && !Dispatcher.HasShutdownStarted) _lyricsRecoveryNotifications.ReportDegraded();
+            });
         }
 
         private void TrayIconService_OnNotificationClicked(ShellNotificationTarget target)

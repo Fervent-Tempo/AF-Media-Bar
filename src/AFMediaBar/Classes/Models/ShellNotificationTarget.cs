@@ -6,5 +6,6 @@ public enum ShellNotificationTarget
 {
     None,
     Application,
-    TaskbarBackground
+    TaskbarBackground,
+    LyricsRecovery
 }

@@ -2480,4 +2480,13 @@
   <data name="Restart.Busy" xml:space="preserve">
     <value>An update installation or restart is in progress. Try again later.</value>
   </data>
+  <data name="Lyrics.Recovery.Notification.Title" xml:space="preserve">
+    <value>Lyrics display paused</value>
+  </data>
+  <data name="Lyrics.Recovery.Notification.Body" xml:space="preserve">
+    <value>Lyrics display failed. Song information is shown instead; other features remain available. Click this notification to confirm restarting AF Media Bar and try to restore lyrics.</value>
+  </data>
+  <data name="Lyrics.Recovery.RestartReason" xml:space="preserve">
+    <value>Lyrics display is paused. Restarting AF Media Bar may restore it; other features remain available. Restart now?</value>
+  </data>
 </root>

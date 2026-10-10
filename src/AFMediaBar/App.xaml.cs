@@ -6,6 +6,7 @@ using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Components;
 using AFMediaBar.Classes.Services.Credits;
 using AFMediaBar.Classes.Services.Lyrics;
+using AFMediaBar.Classes.Services.Notifications;
 using AFMediaBar.ViewModels.Pages;
 using AFMediaBar.ViewModels.Windows;
 using AFMediaBar.Views.Pages;
@@ -60,6 +61,7 @@ namespace AFMediaBar
         private bool _ordinaryRestartRequested;
         private IApplicationRestartService? _restartService;
         private RestartConfirmationService? _restartConfirmation;
+        private LyricsRecoveryNotificationCoordinator? _lyricsRecoveryNotifications;
 
         // .NET Generic Host 提供依赖注入、配置、日志等服务。
         // The .NET Generic Host provides dependency injection, configuration, logging, and other services.
@@ -188,6 +190,7 @@ namespace AFMediaBar
                     sp.GetRequiredService<AppLogService>()));
                 services.AddSingleton<RestartConfirmationService>();
                 services.AddSingleton<IRestartConfirmationService>(sp => sp.GetRequiredService<RestartConfirmationService>());
+                services.AddSingleton<LyricsRecoveryNotificationCoordinator>();
                 services.AddSingleton<ReleaseHighlightsService>();
                 services.AddSingleton<ReleaseHighlightsViewModel>();
                 services.AddScoped<ReleaseHighlightsPage>();
@@ -422,6 +425,7 @@ namespace AFMediaBar
             try
             {
                 await _host.StartAsync(_startupCancellation.Token);
+                _lyricsRecoveryNotifications = Services.GetRequiredService<LyricsRecoveryNotificationCoordinator>();
             }
             catch (OperationCanceledException) when (_startupCancellation.IsCancellationRequested)
             {
@@ -482,6 +486,7 @@ namespace AFMediaBar
             }
 
             _startupCancellation.Cancel();
+            _lyricsRecoveryNotifications?.Dispose();
             _restartConfirmation?.Dispose();
             if (_restartService is IDisposable restartLifetime) restartLifetime.Dispose();
 

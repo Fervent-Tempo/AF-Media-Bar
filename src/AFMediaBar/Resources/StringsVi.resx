@@ -2518,4 +2518,13 @@
   <data name="Restart.Busy" xml:space="preserve">
     <value>Đang cài đặt bản cập nhật hoặc khởi động lại. Hãy thử lại sau.</value>
   </data>
+  <data name="Lyrics.Recovery.Notification.Title" xml:space="preserve">
+    <value>Đã tạm dừng hiển thị lời bài hát</value>
+  </data>
+  <data name="Lyrics.Recovery.Notification.Body" xml:space="preserve">
+    <value>Hiển thị lời bài hát gặp lỗi, thay bằng thông tin bài hát. Các tính năng khác vẫn hoạt động. Nhấn thông báo để xác nhận khởi động lại AF Media Bar và thử khôi phục lời bài hát.</value>
+  </data>
+  <data name="Lyrics.Recovery.RestartReason" xml:space="preserve">
+    <value>Hiển thị lời bài hát đã tạm dừng. Khởi động lại AF Media Bar có thể khôi phục; các tính năng khác vẫn hoạt động. Khởi động lại ngay?</value>
+  </data>
 </root>

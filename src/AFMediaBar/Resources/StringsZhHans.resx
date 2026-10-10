@@ -2480,4 +2480,13 @@
   <data name="Restart.Busy" xml:space="preserve">
     <value>更新安装或重启正在进行，请稍后再试。</value>
   </data>
+  <data name="Lyrics.Recovery.Notification.Title" xml:space="preserve">
+    <value>歌词显示已暂停</value>
+  </data>
+  <data name="Lyrics.Recovery.Notification.Body" xml:space="preserve">
+    <value>歌词显示异常，已改为显示歌曲信息。其他功能仍可使用。点击此通知可确认重启 AF Media Bar，尝试恢复歌词。</value>
+  </data>
+  <data name="Lyrics.Recovery.RestartReason" xml:space="preserve">
+    <value>歌词显示已暂停。重启 AF Media Bar 可尝试恢复歌词，其他功能仍可继续使用。是否现在重启？</value>
+  </data>
 </root>

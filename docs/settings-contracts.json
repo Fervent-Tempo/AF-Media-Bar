@@ -38,7 +38,7 @@
   "sourceFiles": [
     {
       "path": "src/AFMediaBar/App.xaml.cs",
-      "sha256": "cf352c844e935185979863ea9cc8719b21d6ba3ca4ba98564b61d6ba4141e55f"
+      "sha256": "23ff06a0821300e9d2d312cbb1fa5f1fb4b8b5ebe3dca278f4e0e9edc05f0989"
     },
     {
       "path": "src/AFMediaBar/Classes/Models/ExtraFeatureModels.cs",

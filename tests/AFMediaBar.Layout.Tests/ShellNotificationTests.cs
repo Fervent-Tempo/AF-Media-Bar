@@ -27,16 +27,21 @@ public sealed class ShellNotificationTests
             notifications.NotificationClicked += targets.Add;
             Assert.IsTrue(notifications.TryShowNotification("background", "body", ShellNotificationTarget.TaskbarBackground));
             var background = calls.Last().Data;
+            Assert.IsTrue(notifications.TryShowNotification("lyrics", "body", ShellNotificationTarget.LyricsRecovery));
+            var lyrics = calls.Last().Data;
             Assert.IsTrue(notifications.TryShowNotification("update", "body", ShellNotificationTarget.Application));
             var update = calls.Last().Data;
             Assert.AreNotEqual(background.uID, update.uID);
+            Assert.AreNotEqual(lyrics.uID, update.uID);
+            Assert.AreNotEqual(lyrics.uID, background.uID);
             var registration = calls.Single(call => call.Command == NativeMethods.NIM_ADD && call.Data.uID == background.uID).Data;
             Assert.AreEqual(NativeMethods.NIS_HIDDEN, registration.dwState & registration.dwStateMask);
             Click(tray, background);
+            Click(tray, lyrics);
             Click(tray, update);
             Assert.IsTrue(tray.TryShowNotification("generic", "body"));
             Click(tray, calls.Last().Data);
-            CollectionAssert.AreEqual(new[] { ShellNotificationTarget.TaskbarBackground, ShellNotificationTarget.Application }, targets);
+            CollectionAssert.AreEqual(new[] { ShellNotificationTarget.TaskbarBackground, ShellNotificationTarget.LyricsRecovery, ShellNotificationTarget.Application }, targets);
             return Task.CompletedTask;
         });
     }

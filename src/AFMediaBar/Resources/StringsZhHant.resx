@@ -2480,4 +2480,13 @@
   <data name="Restart.Busy" xml:space="preserve">
     <value>更新安裝或重新啟動正在進行，請稍後再試。</value>
   </data>
+  <data name="Lyrics.Recovery.Notification.Title" xml:space="preserve">
+    <value>歌詞顯示已暫停</value>
+  </data>
+  <data name="Lyrics.Recovery.Notification.Body" xml:space="preserve">
+    <value>歌詞顯示異常，已改為顯示歌曲資訊。其他功能仍可使用。點擊此通知可確認重新啟動 AF Media Bar，嘗試恢復歌詞。</value>
+  </data>
+  <data name="Lyrics.Recovery.RestartReason" xml:space="preserve">
+    <value>歌詞顯示已暫停。重新啟動 AF Media Bar 可嘗試恢復歌詞，其他功能仍可繼續使用。是否現在重新啟動？</value>
+  </data>
 </root>
