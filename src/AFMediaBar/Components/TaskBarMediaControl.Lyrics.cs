@@ -342,7 +342,12 @@ public partial class TaskBarMediaControl
         var showWebLyrics = next.IsVisible && !_webLyricsGraphicsDisabled &&
                             _backgroundPruneLevel < MemoryPruneLevel.DisplayOff && !_isHostVisibilitySuspended &&
                             _lyricsWebRenderer?.IsReady == true;
-        SongMetadataPanel.Visibility = showWebLyrics ? Visibility.Collapsed : Visibility.Visible;
+        var metadataVisibility = showWebLyrics ? Visibility.Collapsed : Visibility.Visible;
+        if (SongMetadataPanel.Visibility != metadataVisibility)
+        {
+            SongMetadataPanel.Visibility = metadataVisibility;
+            ApplyMarqueeLayout(Math.Max(0, SongInfoStackPanel.Width));
+        }
         // WebView2 must stay in the visible visual tree while it initializes. Hiding this
         // host until IsReady would prevent navigation from completing on some systems.
         SongLyricsPanel.Opacity = showWebLyrics ? 1 : 0;

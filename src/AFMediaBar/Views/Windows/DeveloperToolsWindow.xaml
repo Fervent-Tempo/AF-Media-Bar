@@ -1,0 +1,62 @@
+<ui:FluentWindow x:Class="AFMediaBar.Views.Windows.DeveloperToolsWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Width="960" Height="760" MinWidth="720" MinHeight="560" WindowStartupLocation="CenterScreen"
+    Title="{DynamicResource Loc.Developer.Window.Title}" ExtendsContentIntoTitleBar="True">
+    <ui:FluentWindow.Resources>
+        <DataTemplate x:Key="ActionTemplate">
+            <Grid Margin="0,5">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="210" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                <StackPanel>
+                    <ui:Button Content="{Binding Title}" IsEnabled="{Binding IsAvailable}"
+                        Command="{Binding DataContext.ExecuteActionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                        CommandParameter="{Binding}" HorizontalAlignment="Stretch" />
+                    <TextBlock Text="{Binding Command}" FontFamily="Consolas" Opacity="0.7" Margin="0,4,0,0" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Margin="16,0,0,0">
+                    <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding UnavailableReason}" TextWrapping="Wrap" Opacity="0.7" Margin="0,3,0,0" />
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+    </ui:FluentWindow.Resources>
+    <Grid>
+        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="180" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+        <ui:TitleBar Title="{DynamicResource Loc.Developer.Window.Title}" />
+        <StackPanel Grid.Row="1" Margin="24,12,24,8">
+            <TextBlock Text="{DynamicResource Loc.Developer.Window.Description}" TextWrapping="Wrap" Margin="0,0,0,8" />
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <TextBlock Text="{DynamicResource Loc.Developer.Host}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                <ComboBox Grid.Column="1" ItemsSource="{Binding Hosts}" SelectedItem="{Binding SelectedHost}" DisplayMemberPath="DisplayName" />
+                <ui:Button Grid.Column="2" Content="{DynamicResource Loc.Developer.Refresh}" Command="{Binding RefreshHostsCommand}" Margin="8,0,0,0" />
+            </Grid>
+        </StackPanel>
+        <StackPanel Grid.Row="2" Margin="24,0,24,8">
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <ui:TextBox Text="{Binding CommandText, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{DynamicResource Loc.Developer.CommandHint}">
+                    <ui:TextBox.InputBindings><KeyBinding Key="Enter" Command="{Binding ExecuteCommandCommand}" /></ui:TextBox.InputBindings>
+                </ui:TextBox>
+                <ui:Button Grid.Column="1" Content="{DynamicResource Loc.Developer.Execute}" IsEnabled="{Binding CanRunCommands}" Command="{Binding ExecuteCommandCommand}" Margin="8,0,0,0" />
+            </Grid>
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" MaxHeight="46" Margin="0,4,0,0">
+                <ItemsControl ItemsSource="{Binding Suggestions}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate><DataTemplate>
+                        <ui:Button Content="{Binding Command}" Margin="0,0,4,0" Padding="6,3"
+                            Command="{Binding DataContext.SelectSuggestionCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
+                    </DataTemplate></ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </StackPanel>
+        <TabControl Grid.Row="3" Margin="24,0,24,8">
+            <TabItem Header="{DynamicResource Loc.Developer.Impact.Preview}"><ScrollViewer VerticalScrollBarVisibility="Auto"><ItemsControl ItemsSource="{Binding PreviewActions}" ItemTemplate="{StaticResource ActionTemplate}" Margin="8" /></ScrollViewer></TabItem>
+            <TabItem Header="{DynamicResource Loc.Developer.Impact.Session}"><ScrollViewer VerticalScrollBarVisibility="Auto"><ItemsControl ItemsSource="{Binding SessionActions}" ItemTemplate="{StaticResource ActionTemplate}" Margin="8" /></ScrollViewer></TabItem>
+            <TabItem Header="{DynamicResource Loc.Developer.Impact.Diagnostic}"><ScrollViewer VerticalScrollBarVisibility="Auto"><ItemsControl ItemsSource="{Binding DiagnosticActions}" ItemTemplate="{StaticResource ActionTemplate}" Margin="8" /></ScrollViewer></TabItem>
+        </TabControl>
+        <TextBox Grid.Row="4" Margin="24,0,24,8" Text="{Binding Output, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
+        <ui:Button Grid.Row="5" Margin="24,0,24,16" HorizontalAlignment="Right" Content="{DynamicResource Loc.Developer.Copy}" Command="{Binding CopyOutputCommand}" />
+    </Grid>
+</ui:FluentWindow>

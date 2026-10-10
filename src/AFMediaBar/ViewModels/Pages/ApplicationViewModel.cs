@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models.Updates;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Localization;
@@ -26,6 +27,7 @@ namespace AFMediaBar.ViewModels.Pages
         private readonly SettingsPersistenceService _settingsPersistence;
         private readonly StartupRegistrationService _startupRegistration;
         private readonly LocalizationService _localization;
+        private readonly IDeveloperModeService _developerMode;
 
         /// <summary>设置启动自动启动之后的状态说明；失败原因必须可见，而不是让开关静默弹回。/ Status text after applying run-at-startup; a failure reason has to be visible instead of the switch silently bouncing back.</summary>
         [ObservableProperty]
@@ -101,8 +103,11 @@ namespace AFMediaBar.ViewModels.Pages
             UpdateService updateService,
             SettingsPersistenceService settingsPersistence,
             StartupRegistrationService startupRegistration,
-            LocalizationService localization)
+            LocalizationService localization,
+            IDeveloperModeService developerMode)
         {
+            _developerMode = developerMode;
+            _developerMode.EnabledChanged += (_, _) => OnPropertyChanged(nameof(DeveloperModeEnabled));
             _updateService = updateService;
             _settingsPersistence = settingsPersistence;
             _startupRegistration = startupRegistration;
@@ -141,6 +146,16 @@ namespace AFMediaBar.ViewModels.Pages
                 StartupStatusText = Translations.Get("About.Status.StartupUnknown");
             OnPropertyChanged(string.Empty);
         }
+
+        /// <summary>手动开启开发者工具；服务协调关闭时的取消与代际。</summary>
+        public bool DeveloperModeEnabled
+        {
+            get => _developerMode.IsEnabled;
+            set => _developerMode.SetEnabled(value);
+        }
+
+        [RelayCommand]
+        private void OpenDeveloperTools() => _developerMode.OpenTools();
 
         /// <summary>自动检查更新开关；与设置文件双向同步。/ Automatic update check toggle, synchronized with the settings file.</summary>
         public bool AutoCheckEnabled

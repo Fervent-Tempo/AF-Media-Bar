@@ -64,6 +64,7 @@
             Background="Transparent"
             FrameMargin="0"
             IsBackButtonVisible="Collapsed"
+            HeaderVisibility="Collapsed"
             IsPaneToggleVisible="true"
             PaneDisplayMode="Left"
             IsFooterSeparatorVisible="false"

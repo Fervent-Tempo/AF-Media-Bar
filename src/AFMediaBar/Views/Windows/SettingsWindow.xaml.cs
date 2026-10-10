@@ -477,9 +477,8 @@ namespace AFMediaBar.Views.Windows
         }
         private void UpdateContextHeader()
         {
-            var definition = SettingsPageCatalog.Find(_currentPage, _contexts.Current.Mode);
-            RootNavigation.HeaderVisibility = _contexts.Monitors.Count > 1 &&
-                (definition is { IsGlobal: false } or { HasModeContent: true }) ? Visibility.Visible : Visibility.Collapsed;
+            // 设置仍由所有显示器共用，先隐藏仅切换环境上下文的显示器选择器。
+            RootNavigation.HeaderVisibility = Visibility.Collapsed;
         }
         private void OnEditingMonitorChanged(object sender, SelectionChangedEventArgs e)
         {

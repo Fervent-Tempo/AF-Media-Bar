@@ -25,7 +25,7 @@
 
 ## 当前 main 相对正式版的变化
 
-七个未发布字段：
+八个未发布字段：
 
 | JSON 路径 | 当前含义 |
 |---|---|
@@ -36,10 +36,11 @@
 | `settings.taskbarExperience.arrangement` | 静置内容左右排布；null 时 position=End 取 Right，其余取 Left |
 | `settings.interaction.artworkHoverMode` | 封面悬停放大形态 |
 | `settings.translucentTbCompatibilityPromptShown` | TranslucentTB 一次性处理状态 |
+| `settings.developerModeEnabled` | 默认关闭的开发者工具入口 |
 
 两个已发布叶子字段的内置默认值从 v1.3.2 的 `Left` 改为 main 的 `Center`：`settings.lyricsTextAlignment` 和 `settings.taskbarExperience.mediaTextAlignment`。明确保存的 Left 不会被强制改为 Center；字段缺失时的实际行为见逐项读取列，不能把两者混同。
 
-未发布枚举成员共 18 个：新增六类枚举的全部成员，以及 `InterfaceLanguage.Vietnamese=4`、`MetricKind.SystemNetwork=4`。名称与数值逐项列在后文。
+未发布枚举成员共 18 个；名称与数值逐项列在后文，包括本次补记的PerformanceDisplayMode和MetricKind.SystemNetwork。
 
 ## 存储与格式契约
 
@@ -167,60 +168,61 @@ TranslucentTB 被检测到且 `translucentTbCompatibilityPromptShown=false` 时�
 
 路径相对于文件根；`[]` 表示列表条目。对象行也计入路径数。内置默认值取真实 `new AppSettings().Normalize()`，不代表用户默认快照；原始构造默认值及 v1.3.2 默认值见 JSON 清单。可空列表示 CLR 声明，JSON 的 null 接受性以实际读取结果列为准。
 
-缺字段测试保留父对象及其他默认字段，仅删除目标属性；不能等同于整个父对象缺失。列表条目使用固定示例 `id=contract, displayName=fixture, kind=Executable, target=fixture.exe, sourceId=null`，示例不是用户默认条目。原138个路径曾用真实 ReadEnvelope 核对缺失及显式null，共276次读取；本次补记displayMode、metricOrder两个未发布路径，其缺失/null行为另由真实设置读取回归验证。
+缺字段测试保留父对象及其他默认字段，仅删除目标属性；不能等同于整个父对象缺失。列表条目使用固定示例 `id=contract, displayName=fixture, kind=Executable, target=fixture.exe, sourceId=null`，示例不是用户默认条目。138 个路径均用真实 ReadEnvelope 核对缺失及显式 null，共 276 次读取。新增 developerModeEnabled 用独立临时文件经同一 ReadEnvelope 补测缺失与 null：缺失为 false，null 拒绝；该设置参与用户默认快照，关闭不重置生产恢复状态。
 
 ### 根级设置
 
 | JSON 路径 | 类型；可空 | 内置有效默认值 | 缺字段后值 | 显式 null 读取 | 首次发布 | 定义 |
 |---|---|---|---|---|---|---|
-| `settings.allowBrowserAndVideoLyrics` | `bool`；否 | `false` | 同内置默认 | 读取失败：`JsonException` | v1.3.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L116) |
-| `settings.appearance` | `AppearanceSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L113) |
-| `settings.dynamicIslandBackgroundMode` | `DynamicIslandBackgroundMode`；否 | `"SystemTheme"` | 同内置默认 | `"SystemTheme"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L147) |
-| `settings.dynamicIslandEdge` | `DynamicIslandEdge`；否 | `"Top"` | 同内置默认 | `"Top"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L153) |
-| `settings.dynamicIslandEdgeDocked` | `bool`；否 | `true` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L154) |
-| `settings.dynamicIslandLeft` | `double?`；是 | `null` | 同内置默认 | `null` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L151) |
-| `settings.dynamicIslandSurface` | `ModeSurfaceSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L158) |
-| `settings.dynamicIslandTop` | `double?`；是 | `null` | 同内置默认 | `null` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L152) |
-| `settings.interaction` | `GlobalInteractionSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L156) |
-| `settings.interfaceLanguage` | `InterfaceLanguage`；否 | `"System"` | 同内置默认 | `"System"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L232) |
-| `settings.launchAtStartup` | `bool`；否 | `true` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L223) |
-| `settings.layoutLengthScalePercent` | `double`；否 | `100` | 同内置默认 | `100` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L145) |
-| `settings.layoutOrientationMode` | `LayoutOrientationMode`；否 | `"Auto"` | 同内置默认 | `"Auto"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L144) |
-| `settings.layoutThicknessScalePercent` | `double`；否 | `100` | 同内置默认 | `100` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L146) |
-| `settings.lyricsArtistSeparators` | `string`；否 | `"/"` | 同内置默认 | `""` | v1.3.2 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L198) |
-| `settings.lyricsCharacterSpacingPercent` | `int`；否 | `0` | 同内置默认 | 读取失败：`JsonException` | v1.3.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L168) |
-| `settings.lyricsChineseConversion` | `LyricsChineseConversionMode`；否 | `"None"` | 同内置默认 | `"None"` | **未发布** | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L187) |
-| `settings.lyricsEnabled` | `bool`；否 | `true` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L115) |
-| `settings.lyricsFixedWidthDip` | `int`；否 | `240` | 同内置默认 | 读取失败：`JsonException` | v1.3.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L177) |
-| `settings.lyricsFixedWidthEnabled` | `bool`；否 | `false` | 同内置默认 | 读取失败：`JsonException` | v1.3.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L174) |
-| `settings.lyricsInfoLineFilterEnabled` | `bool`；否 | `true` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L180) |
-| `settings.lyricsLineGapPercent` | `int`；否 | `0` | 同内置默认 | 读取失败：`JsonException` | v1.3.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L171) |
-| `settings.lyricsSecondaryLine` | `LyricsSecondaryLineSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L118) |
-| `settings.lyricsSource` | `LyricsSourceSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L195) |
-| `settings.lyricsSyllableHighlightEnabled` | `bool`；否 | `true` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L162) |
-| `settings.lyricsTextAlignment` | `LyricsTextAlignment`；否 | `"Center"` | 同内置默认 | `"Center"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L159) |
-| `settings.lyricsUnsungOpacityPercent` | `int`；否 | `45` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L165) |
-| `settings.performanceComponent` | `PerformanceComponentSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L212) |
-| `settings.position` | `TaskbarBarPosition`；否 | `"Start"` | 同内置默认 | `"Start"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L140) |
-| `settings.quickLaunch` | `QuickLaunchSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L210) |
-| `settings.smtcSourceFilter` | `SmtcSourceFilterSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L209) |
-| `settings.spectrumComponent` | `SpectrumComponentSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L211) |
-| `settings.taskbarBarAvoidIcons` | `bool`；否 | `true` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L149) |
-| `settings.taskbarBarBackgroundBlur` | `bool`；否 | `false` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L141) |
-| `settings.taskbarBarCrossAxisOffsetDip` | `double`；否 | `0` | 同内置默认 | `0` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L148) |
-| `settings.taskbarBarEnabled` | `bool`；否 | `true` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L119) |
-| `settings.taskbarBarManualPadding` | `int`；否 | `0` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L142) |
-| `settings.taskbarBarPositionLocked` | `bool`；否 | `false` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L150) |
-| `settings.taskbarExperience` | `TaskbarExperienceSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L155) |
-| `settings.taskbarSurface` | `ModeSurfaceSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L157) |
-| `settings.taskbarTargetMonitorDeviceId` | `string?`；是 | `null` | 同内置默认 | `null` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L135) |
-| `settings.taskbarTargetMonitorDeviceIds` | `IReadOnlyList<string>?`；是 | `null` | 同内置默认 | `null` | v1.2.1 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L125) |
-| `settings.trackChangeNotification` | `TrackChangeNotificationSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L204) |
-| `settings.translucentTbCompatibilityPromptShown` | `bool`；否 | `false` | 同内置默认 | 读取失败：`JsonException` | **未发布** | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L239) |
-| `settings.trayWheelBehavior` | `TrayWheelBehavior`；否 | `"SwitchOutputDevice"` | 同内置默认 | `"SwitchOutputDevice"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L114) |
-| `settings.twoLineLyricsEnabled` | `bool`；否 | `true` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L117) |
-| `settings.update` | `UpdateSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L215) |
-| `settings.windowMode` | `WindowMode`；否 | `"Taskbar"` | 同内置默认 | `"Taskbar"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L143) |
+| `settings.allowBrowserAndVideoLyrics` | `bool`；否 | `false` | 同内置默认 | 读取失败：`JsonException` | v1.3.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L117) |
+| `settings.appearance` | `AppearanceSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L114) |
+| `settings.dynamicIslandBackgroundMode` | `DynamicIslandBackgroundMode`；否 | `"SystemTheme"` | 同内置默认 | `"SystemTheme"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L148) |
+| `settings.dynamicIslandEdge` | `DynamicIslandEdge`；否 | `"Top"` | 同内置默认 | `"Top"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L154) |
+| `settings.dynamicIslandEdgeDocked` | `bool`；否 | `true` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L155) |
+| `settings.dynamicIslandLeft` | `double?`；是 | `null` | 同内置默认 | `null` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L152) |
+| `settings.dynamicIslandSurface` | `ModeSurfaceSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L159) |
+| `settings.dynamicIslandTop` | `double?`；是 | `null` | 同内置默认 | `null` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L153) |
+| `settings.interaction` | `GlobalInteractionSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L157) |
+| `settings.developerModeEnabled` | `bool`；否 | `false` | 同内置默认 | 读取失败：`JsonException` | **未发布** | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L225) |
+| `settings.interfaceLanguage` | `InterfaceLanguage`；否 | `"System"` | 同内置默认 | `"System"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L236) |
+| `settings.launchAtStartup` | `bool`；否 | `true` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L227) |
+| `settings.layoutLengthScalePercent` | `double`；否 | `100` | 同内置默认 | `100` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L146) |
+| `settings.layoutOrientationMode` | `LayoutOrientationMode`；否 | `"Auto"` | 同内置默认 | `"Auto"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L145) |
+| `settings.layoutThicknessScalePercent` | `double`；否 | `100` | 同内置默认 | `100` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L147) |
+| `settings.lyricsArtistSeparators` | `string`；否 | `"/"` | 同内置默认 | `""` | v1.3.2 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L199) |
+| `settings.lyricsCharacterSpacingPercent` | `int`；否 | `0` | 同内置默认 | 读取失败：`JsonException` | v1.3.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L169) |
+| `settings.lyricsChineseConversion` | `LyricsChineseConversionMode`；否 | `"None"` | 同内置默认 | `"None"` | **未发布** | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L188) |
+| `settings.lyricsEnabled` | `bool`；否 | `true` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L116) |
+| `settings.lyricsFixedWidthDip` | `int`；否 | `240` | 同内置默认 | 读取失败：`JsonException` | v1.3.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L178) |
+| `settings.lyricsFixedWidthEnabled` | `bool`；否 | `false` | 同内置默认 | 读取失败：`JsonException` | v1.3.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L175) |
+| `settings.lyricsInfoLineFilterEnabled` | `bool`；否 | `true` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L181) |
+| `settings.lyricsLineGapPercent` | `int`；否 | `0` | 同内置默认 | 读取失败：`JsonException` | v1.3.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L172) |
+| `settings.lyricsSecondaryLine` | `LyricsSecondaryLineSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L119) |
+| `settings.lyricsSource` | `LyricsSourceSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L196) |
+| `settings.lyricsSyllableHighlightEnabled` | `bool`；否 | `true` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L163) |
+| `settings.lyricsTextAlignment` | `LyricsTextAlignment`；否 | `"Center"` | 同内置默认 | `"Center"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L160) |
+| `settings.lyricsUnsungOpacityPercent` | `int`；否 | `45` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L166) |
+| `settings.performanceComponent` | `PerformanceComponentSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L213) |
+| `settings.position` | `TaskbarBarPosition`；否 | `"Start"` | 同内置默认 | `"Start"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L141) |
+| `settings.quickLaunch` | `QuickLaunchSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L211) |
+| `settings.smtcSourceFilter` | `SmtcSourceFilterSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L210) |
+| `settings.spectrumComponent` | `SpectrumComponentSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L212) |
+| `settings.taskbarBarAvoidIcons` | `bool`；否 | `true` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L150) |
+| `settings.taskbarBarBackgroundBlur` | `bool`；否 | `false` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L142) |
+| `settings.taskbarBarCrossAxisOffsetDip` | `double`；否 | `0` | 同内置默认 | `0` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L149) |
+| `settings.taskbarBarEnabled` | `bool`；否 | `true` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L120) |
+| `settings.taskbarBarManualPadding` | `int`；否 | `0` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L143) |
+| `settings.taskbarBarPositionLocked` | `bool`；否 | `false` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L151) |
+| `settings.taskbarExperience` | `TaskbarExperienceSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L156) |
+| `settings.taskbarSurface` | `ModeSurfaceSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L158) |
+| `settings.taskbarTargetMonitorDeviceId` | `string?`；是 | `null` | 同内置默认 | `null` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L136) |
+| `settings.taskbarTargetMonitorDeviceIds` | `IReadOnlyList<string>?`；是 | `null` | 同内置默认 | `null` | v1.2.1 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L126) |
+| `settings.trackChangeNotification` | `TrackChangeNotificationSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L205) |
+| `settings.translucentTbCompatibilityPromptShown` | `bool`；否 | `false` | 同内置默认 | 读取失败：`JsonException` | **未发布** | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L243) |
+| `settings.trayWheelBehavior` | `TrayWheelBehavior`；否 | `"SwitchOutputDevice"` | 同内置默认 | `"SwitchOutputDevice"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L115) |
+| `settings.twoLineLyricsEnabled` | `bool`；否 | `true` | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L118) |
+| `settings.update` | `UpdateSettings`；否 | 对象，见下级字段 | 同内置默认 | 读取失败：`JsonException` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L216) |
+| `settings.windowMode` | `WindowMode`；否 | `"Taskbar"` | 同内置默认 | `"Taskbar"` | v1.2.0 | [源码](../../src/AFMediaBar/Classes/Settings/SettingsManager.cs#L144) |
 
 ### appearance
 
@@ -415,7 +417,7 @@ TranslucentTB 被检测到且 `translucentTbCompatibilityPromptShown=false` 时�
 
 ### ArtworkHoverMode
 
-[源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L499)；JSON 无效输入回退：`Off`。
+[源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L474)；JSON 无效输入回退：`Off`。
 
 | 名称 | 数值 | 首次发布 |
 |---|---|---|
@@ -547,7 +549,7 @@ TranslucentTB 被检测到且 `translucentTbCompatibilityPromptShown=false` 时�
 
 ### NotificationTargetMode
 
-[源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L411)；JSON 无效输入回退：`ForegroundWindow`。
+[源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L386)；JSON 无效输入回退：`ForegroundWindow`。
 
 | 名称 | 数值 | 首次发布 |
 |---|---|---|
@@ -708,7 +710,7 @@ JSON无效输入回退：Cycle。
 
 ### TrackChangeNotificationPosition
 
-[源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L400)；JSON 无效输入回退：`TopCenter`。
+[源码](../../src/AFMediaBar/Classes/Settings/ExperienceSettings.cs#L375)；JSON 无效输入回退：`TopCenter`。
 
 | 名称 | 数值 | 首次发布 |
 |---|---|---|
@@ -881,7 +883,7 @@ JSON无效输入回退：Cycle。
 
 ## 快照覆盖与验证
 
-当前共有 138 个配置路径（含对象和列表条目模板）、48 个根级属性、35 类枚举、125 个枚举成员。与 v1.3.2 对比新增 7 个字段、15 个枚举成员；两个已发布叶子字段的内置默认值改变，已在前文记录。
+当前共有 139 个配置路径（含对象和列表条目模板）、49 个根级属性、35 类枚举、125 个枚举成员。与 v1.3.2 对比新增 8 个字段、15 个枚举成员；两个已发布叶子字段的内置默认值改变，已在前文记录。
 
 字段与枚举来自真实 main 程序集的 System.Text.Json 元数据、实际私有枚举转换器及模型归一化；再以 C# 语法树独立核对字段集合。v1.3.2 使用 tag 源码的独立构建核对默认值，v1.2.0 至 v1.3.2 按发布 tag 核对路径及枚举成员。历史发布路径差集也已核对，唯一已发布后删除项为 lyricsMatchStrictness。读取边界使用真实 ReadEnvelope 与独立临时文件核对，不读取或写入用户配置。
 

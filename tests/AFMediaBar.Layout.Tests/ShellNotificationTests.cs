@@ -29,19 +29,26 @@ public sealed class ShellNotificationTests
             var background = calls.Last().Data;
             Assert.IsTrue(notifications.TryShowNotification("lyrics", "body", ShellNotificationTarget.LyricsRecovery));
             var lyrics = calls.Last().Data;
+            Assert.IsTrue(notifications.TryShowNotification("preview", "body", ShellNotificationTarget.DeveloperLyricsPreview));
+            var preview = calls.Last().Data;
             Assert.IsTrue(notifications.TryShowNotification("update", "body", ShellNotificationTarget.Application));
             var update = calls.Last().Data;
             Assert.AreNotEqual(background.uID, update.uID);
             Assert.AreNotEqual(lyrics.uID, update.uID);
             Assert.AreNotEqual(lyrics.uID, background.uID);
+            Assert.AreNotEqual(preview.uID, lyrics.uID);
+            Assert.AreNotEqual(preview.uID, background.uID);
+            Assert.AreNotEqual(preview.uID, update.uID);
             var registration = calls.Single(call => call.Command == NativeMethods.NIM_ADD && call.Data.uID == background.uID).Data;
             Assert.AreEqual(NativeMethods.NIS_HIDDEN, registration.dwState & registration.dwStateMask);
             Click(tray, background);
             Click(tray, lyrics);
+            Click(tray, preview);
             Click(tray, update);
             Assert.IsTrue(tray.TryShowNotification("generic", "body"));
             Click(tray, calls.Last().Data);
-            CollectionAssert.AreEqual(new[] { ShellNotificationTarget.TaskbarBackground, ShellNotificationTarget.LyricsRecovery, ShellNotificationTarget.Application }, targets);
+            CollectionAssert.AreEqual(new[] { ShellNotificationTarget.TaskbarBackground, ShellNotificationTarget.LyricsRecovery,
+                ShellNotificationTarget.DeveloperLyricsPreview, ShellNotificationTarget.Application }, targets);
             return Task.CompletedTask;
         });
     }
@@ -94,8 +101,10 @@ public sealed class ShellNotificationTests
         });
     }
 
-    [TestMethod]
-    public void ShellRecreationRestoresTheSameHiddenNotificationIdentity()
+    [DataTestMethod]
+    [DataRow(ShellNotificationTarget.TaskbarBackground)]
+    [DataRow(ShellNotificationTarget.DeveloperLyricsPreview)]
+    public void ShellRecreationRestoresTheSameHiddenNotificationIdentity(ShellNotificationTarget target)
     {
         StaTest.Run(_ =>
         {
@@ -111,13 +120,13 @@ public sealed class ShellNotificationTests
             using var tray = new ShellTrayIconService(icons, Notify);
             var targets = new List<ShellNotificationTarget>();
             tray.NotificationClicked += targets.Add;
-            tray.TryShowNotification("background", "body", ShellNotificationTarget.TaskbarBackground);
+            tray.TryShowNotification("notice", "body", target);
             var restart = (int)NativeMethods.RegisterWindowMessage("TaskbarCreated");
             typeof(ShellTrayIconService).GetMethod("WindowHook", BindingFlags.Instance | BindingFlags.NonPublic)!
                 .Invoke(tray, [notice.hWnd, restart, IntPtr.Zero, IntPtr.Zero, false]);
             Assert.AreEqual(2, registrations.Count(id => id == notice.uID));
             Click(tray, notice);
-            CollectionAssert.AreEqual(new[] { ShellNotificationTarget.TaskbarBackground }, targets);
+            CollectionAssert.AreEqual(new[] { target }, targets);
             return Task.CompletedTask;
         });
     }

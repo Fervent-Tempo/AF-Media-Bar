@@ -7,7 +7,7 @@
     { "id": "interaction", "title": "交互与托盘", "prefixes": ["settings.interaction"], "paths": ["settings.trayWheelBehavior"] },
     { "id": "media", "title": "媒体、通知与快速启动", "prefixes": ["settings.smtcSourceFilter", "settings.trackChangeNotification", "settings.quickLaunch"] },
     { "id": "components", "title": "频谱与性能", "prefixes": ["settings.spectrumComponent", "settings.performanceComponent"] },
-    { "id": "application", "title": "应用、更新与启动状态", "prefixes": ["settings.update"], "paths": ["settings.launchAtStartup", "settings.interfaceLanguage", "settings.translucentTbCompatibilityPromptShown"] },
+    { "id": "application", "title": "应用、更新与启动状态", "prefixes": ["settings.update"], "paths": ["settings.launchAtStartup", "settings.interfaceLanguage", "settings.developerModeEnabled", "settings.translucentTbCompatibilityPromptShown"] },
     { "id": "placement", "title": "显示目标与旧定位字段", "prefixes": ["settings.taskbarTargetMonitorDeviceId", "settings.taskbarBar", "settings.dynamicIsland"], "excludePrefixes": ["settings.dynamicIslandSurface"], "paths": ["settings.position", "settings.windowMode", "settings.layoutOrientationMode", "settings.layoutLengthScalePercent", "settings.layoutThicknessScalePercent"] }
   ],
   "rules": [
@@ -34,6 +34,7 @@
     { "id": "components", "prefixes": ["settings.spectrumComponent", "settings.performanceComponent"], "text": "频谱及性能由 ResetComponents/ResetContentLayout 恢复。性能metrics空或全无效回SystemMemory；模型范围和吸附规则按所属类型核对，UI步长不保证都在Normalize吸附。 性能displayMode默认Cycle；metricOrder只决定已选指标显示顺序，轮换和并排共用；缺失或null使用原指标顺序。" },
     { "id": "notifications", "prefixes": ["settings.trackChangeNotification"], "text": "通知由媒体与通知重置；时长夹1000–10000ms。固定显示器丢失时运行回退，不清除用户选择。" },
     { "id": "update", "prefixes": ["settings.update"], "text": "跳过版本Trim、空回null、最长32字符；未来检查时间由调度按到期处理。检查记录是状态字段，没有自动下载开关。" },
+    { "id": "developer-mode", "paths": ["settings.developerModeEnabled"], "text": "未发布的开发者入口默认关闭；缺字段为false，显式null按非可空bool拒绝。参与用户默认快照，ResetAll优先快照；关闭取消开发者请求，不清除生产恢复预算。" },
     { "id": "startup", "paths": ["settings.launchAtStartup"], "text": "启动先读实际注册/Windows禁用状态同步；未知时保留意图。只有用户主动开启才允许解除禁用，失败回实际状态或上次值。" },
     { "id": "translucent-tb", "paths": ["settings.translucentTbCompatibilityPromptShown", "settings.appearance.taskbarBackgroundMaterial"], "text": "检测到TranslucentTB且未提示时可开启磨砂、先标记落盘再提示；ResetAll保留当前提示标记，用户默认快照不能重新触发。", "relatedPaths": ["settings.translucentTbCompatibilityPromptShown", "settings.appearance.taskbarBackgroundMaterial"] },
     { "id": "language", "paths": ["settings.interfaceLanguage"], "text": "System保存选择而非生效语言：zh的Hant/TW/HK/MO/CHT为繁体，其他中文为简体；vi为越南语，其他或未知为英文。越南语成员尚未发布。" },

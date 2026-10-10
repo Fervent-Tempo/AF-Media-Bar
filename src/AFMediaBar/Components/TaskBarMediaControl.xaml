@@ -259,12 +259,30 @@
                                                TextTrimming="CharacterEllipsis"
                                                FontFamily="{DynamicResource AppTextFontFamily}"
                                                FontWeight="{DynamicResource AppTextFontWeight}" />
+                                    <TextBlock x:Name="SongTitleDuplicate" Visibility="Collapsed" IsHitTestVisible="False"
+                                               FontFamily="{Binding FontFamily, ElementName=SongTitle}"
+                                               FontSize="{Binding FontSize, ElementName=SongTitle}"
+                                               FontWeight="{Binding FontWeight, ElementName=SongTitle}"
+                                               FontStyle="{Binding FontStyle, ElementName=SongTitle}"
+                                               FontStretch="{Binding FontStretch, ElementName=SongTitle}"
+                                               Foreground="{Binding Foreground, ElementName=SongTitle}"
+                                               Opacity="{Binding Opacity, ElementName=SongTitle}"
+                                               FlowDirection="{Binding FlowDirection, ElementName=SongTitle}" />
                                 </Canvas>
                                 <Canvas x:Name="SongArtistContainer" Margin="0,-1.5,0,0" Height="19" ClipToBounds="True">
                                     <TextBlock x:Name="SongArtist" Text="" Opacity="0.5"
                                                TextTrimming="CharacterEllipsis"
                                                FontFamily="{DynamicResource AppTextFontFamily}"
                                                FontWeight="{DynamicResource AppTextFontWeight}" />
+                                    <TextBlock x:Name="SongArtistDuplicate" Visibility="Collapsed" IsHitTestVisible="False"
+                                               FontFamily="{Binding FontFamily, ElementName=SongArtist}"
+                                               FontSize="{Binding FontSize, ElementName=SongArtist}"
+                                               FontWeight="{Binding FontWeight, ElementName=SongArtist}"
+                                               FontStyle="{Binding FontStyle, ElementName=SongArtist}"
+                                               FontStretch="{Binding FontStretch, ElementName=SongArtist}"
+                                               Foreground="{Binding Foreground, ElementName=SongArtist}"
+                                               Opacity="{Binding Opacity, ElementName=SongArtist}"
+                                               FlowDirection="{Binding FlowDirection, ElementName=SongArtist}" />
                                 </Canvas>
                             </StackPanel>
 

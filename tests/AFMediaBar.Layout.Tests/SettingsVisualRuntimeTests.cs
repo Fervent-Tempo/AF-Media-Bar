@@ -85,6 +85,7 @@ public sealed class SettingsVisualRuntimeTests
                 VerifyNarrowRow(app);
                 SettingsLiveVisualChecks.VerifyCardHover(app);
                 VerifyPageMarkup(app);
+                DeveloperToolsMarkupChecks.Verify(app, FindRepository());
                 VerifyReleaseHistoryBody();
                 SettingsLiveVisualChecks.VerifyContextNavigation(app);
                 SettingsLiveVisualChecks.VerifyNavigationMotion(app);

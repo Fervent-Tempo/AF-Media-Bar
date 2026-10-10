@@ -17,6 +17,7 @@ public sealed class ShellTrayIconService : ISystemNotificationService, IDisposab
     private const uint BackgroundNotificationId = 2;
     private const uint GenericNotificationId = 3;
     private const uint LyricsRecoveryNotificationId = 4;
+    private const uint DeveloperLyricsNotificationId = 5;
     private readonly HashSet<uint> _notificationIcons = [];
     private readonly NotifyIconCall _notifyIcon;
 
@@ -100,6 +101,7 @@ public sealed class ShellTrayIconService : ISystemNotificationService, IDisposab
             ShellNotificationTarget.TaskbarBackground => BackgroundNotificationId,
             ShellNotificationTarget.None => GenericNotificationId,
             ShellNotificationTarget.LyricsRecovery => LyricsRecoveryNotificationId,
+            ShellNotificationTarget.DeveloperLyricsPreview => DeveloperLyricsNotificationId,
             _ => throw new ArgumentOutOfRangeException(nameof(target))
         };
         if (iconId != IconId && !EnsureNotificationIcon(iconId)) return false;
@@ -222,6 +224,7 @@ public sealed class ShellTrayIconService : ISystemNotificationService, IDisposab
             {
                 IconId => ShellNotificationTarget.Application,
                 BackgroundNotificationId when _notificationIcons.Contains(sourceIconId) => ShellNotificationTarget.TaskbarBackground,
+                DeveloperLyricsNotificationId when _notificationIcons.Contains(sourceIconId) => ShellNotificationTarget.DeveloperLyricsPreview,
                 LyricsRecoveryNotificationId when _notificationIcons.Contains(sourceIconId) => ShellNotificationTarget.LyricsRecovery,
                 _ => ShellNotificationTarget.None
             };

@@ -2527,6 +2527,91 @@
   <data name="Lyrics.Recovery.RestartReason" xml:space="preserve">
     <value>Hiển thị lời bài hát đã tạm dừng. Khởi động lại AF Media Bar có thể khôi phục; các tính năng khác vẫn hoạt động. Khởi động lại ngay?</value>
   </data>
+  <data name="Developer.Mode.Title" xml:space="preserve"><value>Chế độ nhà phát triển</value></data>
+  <data name="Developer.Mode.Description" xml:space="preserve"><value>Kiểm tra thủ công thông báo và khôi phục. Thao tác kiểm tra có thể ảnh hưởng phiên hiện tại.</value></data>
+  <data name="Developer.Tools.Title" xml:space="preserve"><value>Công cụ kiểm tra</value></data>
+  <data name="Developer.Tools.Description" xml:space="preserve"><value>Xem trước thông báo, kiểm tra khôi phục và trạng thái chạy.</value></data>
+  <data name="Developer.Open" xml:space="preserve"><value>Mở công cụ kiểm tra</value></data>
+  <data name="Developer.Window.Title" xml:space="preserve"><value>Công cụ nhà phát triển AF</value></data>
+  <data name="Developer.Window.Description" xml:space="preserve"><value>Có thể lặp lại xem trước. Thao tác phiên dùng ngân sách khôi phục thực và có thể kích hoạt thông báo lỗi thật. Cần khởi động lại để khôi phục lời bài hát đã tắt.</value></data>
+  <data name="Developer.Host" xml:space="preserve"><value>Cửa sổ lời bài hát</value></data>
+  <data name="Developer.Refresh" xml:space="preserve"><value>Làm mới cửa sổ</value></data>
+  <data name="Developer.CommandHint" xml:space="preserve"><value>Nhập lệnh hoặc chọn gợi ý, ví dụ notify lyrics</value></data>
+  <data name="Developer.Execute" xml:space="preserve"><value>Thực hiện</value></data>
+  <data name="Developer.Copy" xml:space="preserve"><value>Sao chép kết quả và chẩn đoán</value></data>
+  <data name="Developer.Impact.Preview" xml:space="preserve"><value>Xem trước thông báo và giao diện</value></data>
+  <data name="Developer.Impact.Session" xml:space="preserve"><value>Thao tác phiên hiện tại</value></data>
+  <data name="Developer.Impact.Diagnostic" xml:space="preserve"><value>Trạng thái và nhật ký</value></data>
+  <data name="Developer.Result.Completed" xml:space="preserve"><value>Đã hoàn tất</value></data>
+  <data name="Developer.Result.Accepted" xml:space="preserve"><value>Đã nhận yêu cầu</value></data>
+  <data name="Developer.Result.Queued" xml:space="preserve"><value>Đã xếp hàng</value></data>
+  <data name="Developer.Result.Unavailable" xml:space="preserve"><value>Không khả dụng</value></data>
+  <data name="Developer.Result.Busy" xml:space="preserve"><value>Đang bận</value></data>
+  <data name="Developer.Result.Canceled" xml:space="preserve"><value>Đã hủy</value></data>
+  <data name="Developer.Result.Failed" xml:space="preserve"><value>Thất bại</value></data>
+  <data name="Developer.UnknownCommand" xml:space="preserve"><value>Lệnh không xác định. Chọn gợi ý hoặc nhập help.</value></data>
+  <data name="Developer.NoRenderer" xml:space="preserve"><value>Cửa sổ đã chọn không có bộ dựng lời bài hát khả dụng. Phát bài có lời và làm mới.</value></data>
+  <data name="Developer.DeliveryPaused" xml:space="preserve"><value>Bộ dựng đã lỗi hoặc đang tạm dừng truyền. Không chèn tín hiệu.</value></data>
+  <data name="Developer.GpuIgnored" xml:space="preserve"><value>Đã ghi lỗi GPU kiểm tra; không yêu cầu dựng lại giao diện.</value></data>
+  <data name="Developer.FailureInjected" xml:space="preserve"><value>Đã chèn tín hiệu kiểm tra. Xem trạng thái và nhật ký để biết kết quả.</value></data>
+  <data name="Developer.PreviewConfirmed" xml:space="preserve"><value>Đã xác nhận trong xem trước; không yêu cầu khởi động lại.</value></data>
+  <data name="Developer.Confirm.Preview" xml:space="preserve"><value>Xem trước hộp thoại xác nhận. Xác nhận xem trước sẽ không khởi động lại AF.</value></data>
+  <data name="Developer.Confirm.PreviewButton" xml:space="preserve"><value>Xác nhận (chỉ xem trước)</value></data>
+  <data name="Developer.Confirm.Disable" xml:space="preserve"><value>Kiểm tra này tắt toàn bộ lời Web trong phiên và có thể gửi thông báo lỗi thật. Tính năng khác vẫn dùng được. Khởi động lại AF để thử khôi phục.</value></data>
+  <data name="Developer.Confirm.DisableButton" xml:space="preserve"><value>Tắt lời trong phiên</value></data>
+  <data name="Developer.Confirm.Restart" xml:space="preserve"><value>Khởi động lại AF Media Bar để thử khôi phục lời. Dùng quy trình khởi động lại thông thường, không cài bản cập nhật đang chờ.</value></data>
+  <data name="Developer.Notification.Prefix" xml:space="preserve"><value>[Kiểm tra]</value></data>
+  <data name="Developer.Notification.Update" xml:space="preserve"><value>Xem trước thông báo cập nhật. Nhấn để mở cài đặt ứng dụng; trạng thái cập nhật không đổi.</value></data>
+  <data name="Developer.Notification.Lyrics" xml:space="preserve"><value>Xem trước thông báo lỗi lời bài hát. Nhấn để xem trước xác nhận; AF sẽ không khởi động lại.</value></data>
+  <data name="Developer.Notification.Submitted" xml:space="preserve"><value>Kết quả chỉ cho biết Windows có nhận yêu cầu, không chứng minh thông báo đã hiển thị.</value></data>
+  <data name="Developer.State.Power" xml:space="preserve"><value>Nguồn: màn hình tắt={0}, khóa={1}, ngủ={2}, hỗ trợ thông báo màn hình={3}, mức thu gọn={4}</value></data>
+  <data name="Developer.State.Host" xml:space="preserve"><value>Khôi phục cửa sổ={0}, phiên đã tắt={1}, đã giảm cấp={2}, nguồn phương tiện={3}</value></data>
+  <data name="Developer.State.Memory" xml:space="preserve"><value>Bộ nhớ: tập làm việc={0:0.0} MB, byte riêng={1:0.0} MB, heap quản lý={2:0.0} MB, handle={3}, luồng={4}</value></data>
+  <data name="Developer.State.MemoryUnavailable" xml:space="preserve"><value>Không có số liệu bộ nhớ</value></data>
+  <data name="Developer.Build" xml:space="preserve"><value>Bản dựng</value></data>
+  <data name="Developer.Redacted" xml:space="preserve"><value>Đã ẩn đường dẫn</value></data>
+  <data name="Developer.Sample.Title" xml:space="preserve"><value>[Kiểm tra] Bài hát mẫu</value></data>
+  <data name="Developer.Sample.Artist" xml:space="preserve"><value>Công cụ nhà phát triển</value></data>
+  <data name="Developer.Action.Update" xml:space="preserve"><value>Thông báo cập nhật</value></data>
+  <data name="Developer.Description.Update" xml:space="preserve"><value>Xem trước lặp lại; nhấn mở cài đặt, không kiểm tra hoặc tải cập nhật.</value></data>
+  <data name="Developer.Action.Moved" xml:space="preserve"><value>Thông báo di chuyển thanh tác vụ</value></data>
+  <data name="Developer.Description.Moved" xml:space="preserve"><value>Xem trước thông báo di chuyển do thiếu chỗ, không đổi vị trí.</value></data>
+  <data name="Developer.Action.Hidden" xml:space="preserve"><value>Thông báo ẩn thanh tác vụ</value></data>
+  <data name="Developer.Description.Hidden" xml:space="preserve"><value>Xem trước thông báo ẩn do thiếu chỗ, không ẩn cửa sổ.</value></data>
+  <data name="Developer.Action.Background" xml:space="preserve"><value>Thông báo TranslucentTB</value></data>
+  <data name="Developer.Description.Background" xml:space="preserve"><value>Nhấn mở cài đặt nền; không đổi nền hoặc dấu đã thông báo.</value></data>
+  <data name="Developer.Action.Lyrics" xml:space="preserve"><value>Thông báo lỗi lời bài hát</value></data>
+  <data name="Developer.Description.Lyrics" xml:space="preserve"><value>Đích nhấn kiểm tra riêng; chỉ xem trước xác nhận, không khởi động lại.</value></data>
+  <data name="Developer.Action.RestartBusy" xml:space="preserve"><value>Thông báo khởi động lại bận</value></data>
+  <data name="Developer.Description.RestartBusy" xml:space="preserve"><value>Chỉ xem trước; không đặt trước thao tác khởi động lại hoặc cập nhật.</value></data>
+  <data name="Developer.Action.RestartFailed" xml:space="preserve"><value>Thông báo khởi động lại thất bại</value></data>
+  <data name="Developer.Description.RestartFailed" xml:space="preserve"><value>Chỉ xem trước; không chạy tiến trình chuyển giao.</value></data>
+  <data name="Developer.Action.Track" xml:space="preserve"><value>Xem trước thông báo bài hát</value></data>
+  <data name="Developer.Description.Track" xml:space="preserve"><value>Dùng cửa sổ mẫu riêng và bố cục thông báo hiện tại; không đổi phương tiện thật.</value></data>
+  <data name="Developer.Action.Confirm" xml:space="preserve"><value>Xem trước xác nhận khởi động lại</value></data>
+  <data name="Developer.Description.Confirm" xml:space="preserve"><value>Chỉ ghi lựa chọn; xác nhận không yêu cầu khởi động lại.</value></data>
+  <data name="Developer.Action.Restart" xml:space="preserve"><value>Khởi động lại AF</value></data>
+  <data name="Developer.Description.Restart" xml:space="preserve"><value>Sau xác nhận, khởi động lại thông thường, loại trừ cài cập nhật.</value></data>
+  <data name="Developer.Action.Rebuild" xml:space="preserve"><value>Dựng lại lời bài hát</value></data>
+  <data name="Developer.Description.Rebuild" xml:space="preserve"><value>Tác động cửa sổ đã chọn, dùng ngân sách ba lần dựng lại; hết ngân sách sẽ giảm cấp.</value></data>
+  <data name="Developer.Action.Renderer" xml:space="preserve"><value>Chèn lỗi tiến trình dựng</value></data>
+  <data name="Developer.Description.Renderer" xml:space="preserve"><value>Kiểm tra luồng lỗi chung và một lần thử lại sau hai giây, không kết thúc tiến trình.</value></data>
+  <data name="Developer.Action.Unresponsive" xml:space="preserve"><value>Chèn một tín hiệu không phản hồi</value></data>
+  <data name="Developer.Description.Unresponsive" xml:space="preserve"><value>Hai tín hiệu liên tiếp vào xử lý lỗi; không chèn khi tạm dừng, script thành công đặt lại bộ đếm.</value></data>
+  <data name="Developer.Action.Gpu" xml:space="preserve"><value>Chèn chẩn đoán GPU thoát</value></data>
+  <data name="Developer.Description.Gpu" xml:space="preserve"><value>Chỉ kiểm tra chẩn đoán; không dựng lại hoặc làm sập tiến trình GPU.</value></data>
+  <data name="Developer.Action.Disable" xml:space="preserve"><value>Tắt lời trong phiên</value></data>
+  <data name="Developer.Description.Disable" xml:space="preserve"><value>Sau xác nhận tác động mọi cửa sổ, giữ qua khởi động lại Explorer; khởi động lại AF để thử khôi phục.</value></data>
+  <data name="Developer.Action.Reload" xml:space="preserve"><value>Tải lại cửa sổ thanh tác vụ an toàn</value></data>
+  <data name="Developer.Description.Reload" xml:space="preserve"><value>Dùng tải lại cửa sổ hiện có, không kết thúc Explorer.</value></data>
+  <data name="Developer.Action.State" xml:space="preserve"><value>Chụp trạng thái</value></data>
+  <data name="Developer.Description.State" xml:space="preserve"><value>Đọc phiên bản, màn hình, khôi phục, nguồn và bộ nhớ; mặc định loại bài hát và đường dẫn người dùng.</value></data>
+  <data name="Developer.Action.Trim" xml:space="preserve"><value>Thu gọn bộ nhớ thủ công</value></data>
+  <data name="Developer.Description.Trim" xml:space="preserve"><value>Dùng thao tác thủ công hiện có; nhận yêu cầu không nghĩa đã thu gọn xong.</value></data>
+  <data name="Developer.Action.Logs" xml:space="preserve"><value>Mở thư mục nhật ký</value></data>
+  <data name="Developer.Description.Logs" xml:space="preserve"><value>Mở thư mục nhật ký hiện có, không tải lên hoặc xuất dữ liệu.</value></data>
+  <data name="Developer.Action.Help" xml:space="preserve"><value>Trợ giúp lệnh</value></data>
+  <data name="Developer.Description.Help" xml:space="preserve"><value>Liệt kê lệnh, mô tả và tác động từ danh mục chung.</value></data>
   <data name="Media.Metric.SystemNetwork.Title" xml:space="preserve">
     <value>Tốc độ mạng</value>
   </data>

@@ -7,5 +7,6 @@ public enum ShellNotificationTarget
     None,
     Application,
     TaskbarBackground,
-    LyricsRecovery
+    LyricsRecovery,
+    DeveloperLyricsPreview
 }

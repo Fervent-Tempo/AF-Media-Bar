@@ -203,6 +203,7 @@ public partial class TaskBarMediaControl
             _outgoingTextHeight = text.Height;
             _outgoingTextVisibleWidth = text.VisibleWidth;
         }
+        ApplyMarqueeLayout(Math.Max(0, SongInfoStackPanel.Width));
     }
 
     private void PublishRestTransitionTargetSize()
@@ -392,6 +393,7 @@ public partial class TaskBarMediaControl
         _restTextClipScale = null;
         _restTransitionEase = null;
         ClearRestTransitionGhosts();
+        ApplyMarqueeLayout(Math.Max(0, SongInfoStackPanel.Width));
         if (wasActive)
         {
             RestTransitionFinished?.Invoke(this, EventArgs.Empty);

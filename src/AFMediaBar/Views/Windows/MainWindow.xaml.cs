@@ -252,6 +252,7 @@ namespace AFMediaBar.Views.Windows
                 return;
 
             _isClosing = true;
+            CloseDeveloperPreviews();
             _lyricsRecoveryNotifications.CancelPendingRequests();
             _taskbarTopologyTimer.Stop();
             _taskbarRecoveryCancellation?.Cancel();

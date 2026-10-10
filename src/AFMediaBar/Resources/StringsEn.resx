@@ -2489,6 +2489,91 @@
   <data name="Lyrics.Recovery.RestartReason" xml:space="preserve">
     <value>Lyrics display is paused. Restarting AF Media Bar may restore it; other features remain available. Restart now?</value>
   </data>
+  <data name="Developer.Mode.Title" xml:space="preserve"><value>Developer mode</value></data>
+  <data name="Developer.Mode.Description" xml:space="preserve"><value>Manually test notifications and recovery. Test actions may affect the current session.</value></data>
+  <data name="Developer.Tools.Title" xml:space="preserve"><value>Test tools</value></data>
+  <data name="Developer.Tools.Description" xml:space="preserve"><value>Preview notifications, test recovery, and inspect runtime state.</value></data>
+  <data name="Developer.Open" xml:space="preserve"><value>Open test tools</value></data>
+  <data name="Developer.Window.Title" xml:space="preserve"><value>AF developer tools</value></data>
+  <data name="Developer.Window.Description" xml:space="preserve"><value>Previews can be repeated. Session actions use real recovery budgets and may trigger production fault notifications. Disabled lyrics require a restart.</value></data>
+  <data name="Developer.Host" xml:space="preserve"><value>Lyrics host</value></data>
+  <data name="Developer.Refresh" xml:space="preserve"><value>Refresh hosts</value></data>
+  <data name="Developer.CommandHint" xml:space="preserve"><value>Enter a command or select a suggestion, e.g. notify lyrics</value></data>
+  <data name="Developer.Execute" xml:space="preserve"><value>Execute</value></data>
+  <data name="Developer.Copy" xml:space="preserve"><value>Copy results and diagnostics</value></data>
+  <data name="Developer.Impact.Preview" xml:space="preserve"><value>Notification and UI previews</value></data>
+  <data name="Developer.Impact.Session" xml:space="preserve"><value>Current session actions</value></data>
+  <data name="Developer.Impact.Diagnostic" xml:space="preserve"><value>State and logs</value></data>
+  <data name="Developer.Result.Completed" xml:space="preserve"><value>Completed</value></data>
+  <data name="Developer.Result.Accepted" xml:space="preserve"><value>Request accepted</value></data>
+  <data name="Developer.Result.Queued" xml:space="preserve"><value>Queued</value></data>
+  <data name="Developer.Result.Unavailable" xml:space="preserve"><value>Unavailable</value></data>
+  <data name="Developer.Result.Busy" xml:space="preserve"><value>Busy</value></data>
+  <data name="Developer.Result.Canceled" xml:space="preserve"><value>Canceled</value></data>
+  <data name="Developer.Result.Failed" xml:space="preserve"><value>Failed</value></data>
+  <data name="Developer.UnknownCommand" xml:space="preserve"><value>Unknown command. Select a suggestion or enter help.</value></data>
+  <data name="Developer.NoRenderer" xml:space="preserve"><value>The selected host has no available lyrics renderer. Play a track with lyrics and refresh hosts.</value></data>
+  <data name="Developer.DeliveryPaused" xml:space="preserve"><value>The renderer failed or delivery is paused. No signal was injected.</value></data>
+  <data name="Developer.GpuIgnored" xml:space="preserve"><value>GPU test failure recorded; no view rebuild was requested.</value></data>
+  <data name="Developer.FailureInjected" xml:space="preserve"><value>Test signal injected. Inspect state and logs for the outcome.</value></data>
+  <data name="Developer.PreviewConfirmed" xml:space="preserve"><value>Confirmed in preview; no restart was requested.</value></data>
+  <data name="Developer.Confirm.Preview" xml:space="preserve"><value>Preview the restart confirmation UI. Confirming this preview will not restart AF.</value></data>
+  <data name="Developer.Confirm.PreviewButton" xml:space="preserve"><value>Confirm (preview only)</value></data>
+  <data name="Developer.Confirm.Disable" xml:space="preserve"><value>This test disables all web lyrics for this session and may send a production fault notification. Other features remain usable. Restart AF to attempt recovery.</value></data>
+  <data name="Developer.Confirm.DisableButton" xml:space="preserve"><value>Disable session lyrics</value></data>
+  <data name="Developer.Confirm.Restart" xml:space="preserve"><value>Restart AF Media Bar to attempt lyrics recovery. This uses the ordinary restart flow and does not install pending updates.</value></data>
+  <data name="Developer.Notification.Prefix" xml:space="preserve"><value>[Test]</value></data>
+  <data name="Developer.Notification.Update" xml:space="preserve"><value>Update notification preview. Click to open application settings; update state is unchanged.</value></data>
+  <data name="Developer.Notification.Lyrics" xml:space="preserve"><value>Lyrics fault notification preview. Click to preview confirmation; AF will not restart.</value></data>
+  <data name="Developer.Notification.Submitted" xml:space="preserve"><value>The result only indicates whether Windows accepted the request, not whether the notification was displayed.</value></data>
+  <data name="Developer.State.Power" xml:space="preserve"><value>Power: displayOff={0}, locked={1}, suspended={2}, displayNotifications={3}, pruneLevel={4}</value></data>
+  <data name="Developer.State.Host" xml:space="preserve"><value>Host recovery={0}, sessionDisabled={1}, degraded={2}, mediaSource={3}</value></data>
+  <data name="Developer.State.Memory" xml:space="preserve"><value>Memory: workingSet={0:0.0} MB, privateBytes={1:0.0} MB, managedHeap={2:0.0} MB, handles={3}, threads={4}</value></data>
+  <data name="Developer.State.MemoryUnavailable" xml:space="preserve"><value>Memory counters unavailable</value></data>
+  <data name="Developer.Build" xml:space="preserve"><value>Build</value></data>
+  <data name="Developer.Redacted" xml:space="preserve"><value>Path omitted</value></data>
+  <data name="Developer.Sample.Title" xml:space="preserve"><value>[Test] Sample track</value></data>
+  <data name="Developer.Sample.Artist" xml:space="preserve"><value>Developer tools</value></data>
+  <data name="Developer.Action.Update" xml:space="preserve"><value>Update notification</value></data>
+  <data name="Developer.Description.Update" xml:space="preserve"><value>Repeatable preview; click opens application settings without checking or downloading updates.</value></data>
+  <data name="Developer.Action.Moved" xml:space="preserve"><value>Taskbar moved notification</value></data>
+  <data name="Developer.Description.Moved" xml:space="preserve"><value>Preview the insufficient-space move notice without changing placement.</value></data>
+  <data name="Developer.Action.Hidden" xml:space="preserve"><value>Taskbar hidden notification</value></data>
+  <data name="Developer.Description.Hidden" xml:space="preserve"><value>Preview the insufficient-space hide notice without hiding hosts.</value></data>
+  <data name="Developer.Action.Background" xml:space="preserve"><value>TranslucentTB notification</value></data>
+  <data name="Developer.Description.Background" xml:space="preserve"><value>Click opens background settings; background and prompt markers are unchanged.</value></data>
+  <data name="Developer.Action.Lyrics" xml:space="preserve"><value>Lyrics fault notification</value></data>
+  <data name="Developer.Description.Lyrics" xml:space="preserve"><value>Separate test click target; only previews confirmation, without restarting.</value></data>
+  <data name="Developer.Action.RestartBusy" xml:space="preserve"><value>Restart busy notification</value></data>
+  <data name="Developer.Description.RestartBusy" xml:space="preserve"><value>Preview only; does not reserve restart or update operations.</value></data>
+  <data name="Developer.Action.RestartFailed" xml:space="preserve"><value>Restart failed notification</value></data>
+  <data name="Developer.Description.RestartFailed" xml:space="preserve"><value>Preview only; does not launch a handoff process.</value></data>
+  <data name="Developer.Action.Track" xml:space="preserve"><value>Track notification preview</value></data>
+  <data name="Developer.Description.Track" xml:space="preserve"><value>Uses a separate sample window and current notification layout; media is unchanged.</value></data>
+  <data name="Developer.Action.Confirm" xml:space="preserve"><value>Restart confirmation preview</value></data>
+  <data name="Developer.Description.Confirm" xml:space="preserve"><value>Records the choice only; confirming never requests restart.</value></data>
+  <data name="Developer.Action.Restart" xml:space="preserve"><value>Restart AF</value></data>
+  <data name="Developer.Description.Restart" xml:space="preserve"><value>After confirmation, performs an ordinary restart mutually exclusive with update installation.</value></data>
+  <data name="Developer.Action.Rebuild" xml:space="preserve"><value>Rebuild lyrics view</value></data>
+  <data name="Developer.Description.Rebuild" xml:space="preserve"><value>Affects the selected host and uses its three-rebuild budget; exhaustion degrades lyrics.</value></data>
+  <data name="Developer.Action.Renderer" xml:space="preserve"><value>Inject renderer failure</value></data>
+  <data name="Developer.Description.Renderer" xml:space="preserve"><value>Tests the shared failure flow and one retry after two seconds without terminating processes.</value></data>
+  <data name="Developer.Action.Unresponsive" xml:space="preserve"><value>Inject one unresponsive signal</value></data>
+  <data name="Developer.Description.Unresponsive" xml:space="preserve"><value>Two consecutive signals enter failure handling; paused delivery excludes injection and successful scripts reset the count.</value></data>
+  <data name="Developer.Action.Gpu" xml:space="preserve"><value>Inject GPU exit diagnostic</value></data>
+  <data name="Developer.Description.Gpu" xml:space="preserve"><value>Only tests diagnostics; does not rebuild or crash a GPU process.</value></data>
+  <data name="Developer.Action.Disable" xml:space="preserve"><value>Disable session lyrics</value></data>
+  <data name="Developer.Description.Disable" xml:space="preserve"><value>After confirmation affects all hosts and survives Explorer restart; restart AF to attempt recovery.</value></data>
+  <data name="Developer.Action.Reload" xml:space="preserve"><value>Safely reload taskbar hosts</value></data>
+  <data name="Developer.Description.Reload" xml:space="preserve"><value>Uses existing host reload without terminating Explorer.</value></data>
+  <data name="Developer.Action.State" xml:space="preserve"><value>Capture state</value></data>
+  <data name="Developer.Description.State" xml:space="preserve"><value>Reads versions, displays, recovery, power and memory; excludes tracks and user paths by default.</value></data>
+  <data name="Developer.Action.Trim" xml:space="preserve"><value>Manual memory trim</value></data>
+  <data name="Developer.Description.Trim" xml:space="preserve"><value>Uses the existing manual entry; acceptance does not mean trimming completed.</value></data>
+  <data name="Developer.Action.Logs" xml:space="preserve"><value>Open log folder</value></data>
+  <data name="Developer.Description.Logs" xml:space="preserve"><value>Opens the existing log folder without uploading or exporting data.</value></data>
+  <data name="Developer.Action.Help" xml:space="preserve"><value>Command help</value></data>
+  <data name="Developer.Description.Help" xml:space="preserve"><value>Lists commands, descriptions and effects from the shared action catalog.</value></data>
   <data name="Media.Metric.SystemNetwork.Title" xml:space="preserve">
     <value>Network speed</value>
   </data>

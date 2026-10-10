@@ -5,6 +5,7 @@ using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Components;
 using AFMediaBar.Classes.Services.Credits;
+using AFMediaBar.Classes.Services.Diagnostics;
 using AFMediaBar.Classes.Services.Lyrics;
 using AFMediaBar.Classes.Services.Notifications;
 using AFMediaBar.ViewModels.Pages;
@@ -60,6 +61,8 @@ namespace AFMediaBar
         private bool _isRestartStartup;
         private bool _ordinaryRestartRequested;
         private IApplicationRestartService? _restartService;
+        private DeveloperModeService? _developerMode;
+        private DeveloperToolsWindowHost? _developerToolsHost;
         private RestartConfirmationService? _restartConfirmation;
         private LyricsRecoveryNotificationCoordinator? _lyricsRecoveryNotifications;
 
@@ -84,6 +87,8 @@ namespace AFMediaBar
                 // 后台内存与休眠剪枝：电源状态监听 → 参与者各自回收自己的资源 → 进程级回收。
                 // Background memory and suspend pruning: the power state monitor, then each participant reclaiming its own resources, then the
                 // process-level reclaim.
+                services.AddSingleton<DeveloperModeService>();
+                services.AddSingleton<IDeveloperModeService>(sp => sp.GetRequiredService<DeveloperModeService>());
                 services.AddSingleton<PowerStateMonitor>();
                 services.AddSingleton<ProcessMemoryTrimmer>();
                 services.AddSingleton<MemoryPruneCoordinator>();
@@ -193,6 +198,18 @@ namespace AFMediaBar
                 services.AddSingleton<RestartConfirmationService>();
                 services.AddSingleton<IRestartConfirmationService>(sp => sp.GetRequiredService<RestartConfirmationService>());
                 services.AddSingleton<LyricsRecoveryNotificationCoordinator>();
+                services.AddSingleton<IDeveloperConfirmationService>(sp => sp.GetRequiredService<RestartConfirmationService>());
+                services.AddSingleton<Func<IDeveloperHostActions>>(sp => () => (IDeveloperHostActions)sp.GetRequiredService<INavigationWindow>());
+                services.AddSingleton<DeveloperScenarioService>();
+                services.AddSingleton<IDeveloperScenarioService>(sp => sp.GetRequiredService<DeveloperScenarioService>());
+                services.AddSingleton<Func<DeveloperToolsWindow>>(sp => () =>
+                {
+                    var viewModel = new DeveloperToolsViewModel(sp.GetRequiredService<IDeveloperModeService>(),
+                        sp.GetRequiredService<IDeveloperScenarioService>(), sp.GetRequiredService<LocalizationService>());
+                    try { return new DeveloperToolsWindow(viewModel, sp.GetRequiredService<WindowAppearanceService>()); }
+                    catch { viewModel.Dispose(); throw; }
+                });
+                services.AddSingleton<DeveloperToolsWindowHost>();
                 services.AddSingleton<ReleaseHighlightsService>();
                 services.AddSingleton<ReleaseHighlightsViewModel>();
                 services.AddScoped<ReleaseHighlightsPage>();
@@ -375,6 +392,8 @@ namespace AFMediaBar
             _restartService = Services.GetRequiredService<IApplicationRestartService>();
             _restartService.RestartRequested += OnOrdinaryRestartRequested;
             _restartConfirmation = Services.GetRequiredService<RestartConfirmationService>();
+            _developerMode = Services.GetRequiredService<DeveloperModeService>();
+            _developerToolsHost = Services.GetRequiredService<DeveloperToolsWindowHost>();
             if (!_isRestartStartup && await updateService.TryLaunchPendingInstallOnStartupAsync(_startupCancellation.Token))
             {
                 Debug.WriteLine("[App] A pending update is being installed before this start; exiting now.");
@@ -488,6 +507,8 @@ namespace AFMediaBar
             }
 
             _startupCancellation.Cancel();
+            _developerToolsHost?.Dispose();
+            _developerMode?.Dispose();
             _lyricsRecoveryNotifications?.Dispose();
             _restartConfirmation?.Dispose();
             if (_restartService is IDisposable restartLifetime) restartLifetime.Dispose();

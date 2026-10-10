@@ -22,6 +22,17 @@ public readonly record struct TaskbarDensityMetrics(
 /// <summary>任务栏媒体呈现、内容宽度和播放进度的纯策略。 / Pure policies for taskbar media presentation, content width, and playback progress.</summary>
 public static class TaskbarExperiencePolicy
 {
+    // 上限只用于自动长度模式的媒体文字；悬停控件的完整布局优先。
+    internal const double MaximumMetadataTextWidthDip = 240;
+
+    internal static double ResolveMetadataTextWidth(double measuredWidth, double hoverMinimum) =>
+        Math.Max(Math.Max(0, hoverMinimum), Math.Min(Math.Max(0, measuredWidth), MaximumMetadataTextWidthDip));
+
+    internal static string FormatMetadataTitle(string title, string artist, TaskbarContentLayout layout) =>
+        layout == TaskbarContentLayout.CompactInline && !string.IsNullOrEmpty(artist)
+            ? string.IsNullOrEmpty(title) ? artist : $"{title} · {artist}"
+            : title;
+
     /// <summary>
     /// 计算横向任务栏媒体条宽度；连接期间固定预留频谱位置，断开时移除该位置。
     /// Calculates horizontal taskbar media-bar width, reserving spectrum space for every connected state.
