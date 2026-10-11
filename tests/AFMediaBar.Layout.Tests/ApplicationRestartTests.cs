@@ -115,18 +115,33 @@ public sealed class ApplicationRestartTests
         foreach (var signalReady in new[] { true, false })
         {
             var eventName = @"Local\AFMediaBar.Restart." + Guid.NewGuid().ToString("N");
-            var script = (signalReady ? "$ready = [Threading.EventWaitHandle]::OpenExisting('" + eventName + "'); $null = $ready.Set(); $ready.Dispose(); " : "") +
+            var launchName = releaseName + "." + Guid.NewGuid().ToString("N");
+            using var launch = new EventWaitHandle(false, EventResetMode.ManualReset, launchName);
+            // CI 的 PowerShell 冷启动不属于握手断言；先确认子进程可运行，再打开本次握手门禁。
+            var script = "$launch = [Threading.EventWaitHandle]::OpenExisting('" + launchName + "'); " +
+                "[Console]::WriteLine('WaitingForHandoff'); if (-not $launch.WaitOne(30000)) { throw 'Launch gate timed out' }; $launch.Dispose(); " +
+                (signalReady ? "$ready = [Threading.EventWaitHandle]::OpenExisting('" + eventName + "'); $null = $ready.Set(); $ready.Dispose(); " : "") +
                 "$release = [Threading.EventWaitHandle]::OpenExisting('" + releaseName + "'); $null = $release.WaitOne(15000); $release.Dispose()";
             Process? child = null;
             Process? observation = null;
+            Task<string>? errors = null;
             try
             {
-                var preparation = await RestartProcessHandoff.PrepareAsync(BuildPowerShellStart(script), eventName, TimeSpan.FromSeconds(5), default,
-                    start => { child = Process.Start(start); observation = Process.GetProcessById(child!.Id); return child; });
-                Assert.IsNotNull(observation);
+                var start = BuildPowerShellStart(script, captureOutput: true);
+                child = Process.Start(start);
+                Assert.IsNotNull(child);
+                observation = Process.GetProcessById(child.Id);
+                _ = observation.SafeHandle;
+                errors = child.StandardError.ReadToEndAsync();
+                var startup = await child.StandardOutput.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(30));
+                if (startup != "WaitingForHandoff")
+                    Assert.Fail("测试子进程未就绪：" + await errors.WaitAsync(TimeSpan.FromSeconds(5)));
+                await using var preparation = await RestartProcessHandoff.PrepareAsync(start, eventName,
+                    signalReady ? TimeSpan.FromSeconds(5) : TimeSpan.FromMilliseconds(200), default,
+                    _ => { launch.Set(); return child; });
                 if (signalReady)
                 {
-                    Assert.IsNotNull(preparation);
+                    Assert.IsNotNull(preparation, errors.IsCompleted ? await errors : "已就绪的测试子进程未完成握手。");
                     Assert.IsFalse(observation.HasExited);
                     // 未提交的成功握手也必须在请求被放弃时终止等待实例。
                     await preparation.DisposeAsync();
@@ -136,13 +151,22 @@ public sealed class ApplicationRestartTests
             }
             finally
             {
-                if (observation is not null)
+                try
                 {
-                    if (!observation.HasExited) observation.Kill();
-                    await observation.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
-                    observation.Dispose();
+                    var owned = observation ?? child;
+                    if (owned is not null)
+                    {
+                        if (!owned.HasExited) owned.Kill();
+                        await owned.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+                    }
+                    if (errors is not null)
+                        await errors.WaitAsync(TimeSpan.FromSeconds(5));
                 }
-                child?.Dispose();
+                finally
+                {
+                    observation?.Dispose();
+                    child?.Dispose();
+                }
             }
         }
     }
@@ -203,12 +227,19 @@ public sealed class ApplicationRestartTests
         }
     }
 
-    private static ProcessStartInfo BuildPowerShellStart(string script)
+    private static ProcessStartInfo BuildPowerShellStart(string script, bool captureOutput = false)
     {
         var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe");
-        var start = new ProcessStartInfo(path) { UseShellExecute = false, CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden };
+        var start = new ProcessStartInfo(path)
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WindowStyle = ProcessWindowStyle.Hidden,
+            RedirectStandardOutput = captureOutput,
+            RedirectStandardError = captureOutput
+        };
         start.ArgumentList.Add("-NoProfile"); start.ArgumentList.Add("-NonInteractive"); start.ArgumentList.Add("-Command");
-        start.ArgumentList.Add(script);
+        start.ArgumentList.Add("$ErrorActionPreference = 'Stop'; " + script);
         return start;
     }
 
