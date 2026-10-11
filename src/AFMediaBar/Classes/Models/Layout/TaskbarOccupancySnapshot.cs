@@ -4,6 +4,9 @@ namespace AFMediaBar.Classes.Models.Layout;
 /// <summary>一次探测的状态；成功的空集合与尚未完成或失败分别处理。</summary>
 public enum TaskbarProbeStatus { Pending, Success, Failed }
 
+/// <summary>真实空间压力，与探测等待和动画中间帧分别处理。</summary>
+public enum TaskbarSpacePressure { Normal, Constrained, Hidden }
+
 /// <summary>当前环境代的一次不可变探测结果，时间使用单调秒数。</summary>
 public sealed record TaskbarOccupancySnapshot(
     TaskbarProbeStatus Status, long Generation, long PublicationId,
@@ -44,8 +47,14 @@ public sealed record TaskbarRangeObservation(double Seconds, IReadOnlyList<Taskb
 public sealed record TaskbarPlacementDecision(
     TaskbarPlacementState State, int Position, int Width, bool NotifyFallback);
 
-/// <summary>媒体栏确实进入空间不足回退后发布的呈现结果。</summary>
-public sealed class TaskbarPlacementFallbackEventArgs(bool isHidden) : EventArgs
+/// <summary>应用布局后发布的真实空间观察；空内容不参与空间提示。</summary>
+public sealed class TaskbarPlacementFallbackEventArgs(TaskbarSpacePressure pressure, bool ample,
+    long generation, long publicationId, bool hasContent = true, long lastFailurePublicationId = 0) : EventArgs
 {
-    public bool IsHidden { get; } = isHidden;
+    public long LastFailurePublicationId { get; } = lastFailurePublicationId;
+    public bool HasContent { get; } = hasContent;
+    public TaskbarSpacePressure Pressure { get; } = pressure;
+    public bool HasAmpleSpace { get; } = ample;
+    public long Generation { get; } = generation;
+    public long PublicationId { get; } = publicationId;
 }

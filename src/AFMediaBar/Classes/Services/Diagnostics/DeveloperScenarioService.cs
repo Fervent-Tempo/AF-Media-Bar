@@ -122,7 +122,7 @@ public sealed class DeveloperScenarioService : IDeveloperScenarioService, IDispo
         var (title, body, target) = command switch
         {
             "notify update" => ("Update.Notification.Title", "Developer.Notification.Update", ShellNotificationTarget.Application),
-            "notify taskbar moved" => ("Taskbar.Placement.Notification.Title", "Taskbar.Placement.Notification.Moved", ShellNotificationTarget.None),
+            "notify taskbar moved" => ("Taskbar.Placement.Notification.Title", "Taskbar.Placement.Notification.Constrained", ShellNotificationTarget.None),
             "notify taskbar hidden" => ("Taskbar.Placement.Notification.Title", "Taskbar.Placement.Notification.Hidden", ShellNotificationTarget.None),
             "notify background" => ("Startup.TranslucentTb.Title", "Startup.TranslucentTb.Content", ShellNotificationTarget.TaskbarBackground),
             "notify lyrics" => ("Lyrics.Recovery.Notification.Title", "Developer.Notification.Lyrics", ShellNotificationTarget.DeveloperLyricsPreview),

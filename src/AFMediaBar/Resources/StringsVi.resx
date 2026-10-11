@@ -2491,8 +2491,8 @@
   <data name="Taskbar.Placement.Notification.Hidden" xml:space="preserve">
     <value>Thanh tác vụ hiện tại không đủ chỗ chứa thanh media tối thiểu, nên đã tạm thời ẩn. Bạn vẫn có thể điều khiển từ khay hệ thống; thanh sẽ tự động hiển thị lại khi có đủ chỗ.</value>
   </data>
-  <data name="Taskbar.Placement.Notification.Moved" xml:space="preserve">
-    <value>Không gian thanh tác vụ hiện tại không đủ, thanh media đã tạm chuyển sang vùng trống khác. Sẽ tự quay về vị trí ban đầu khi có đủ không gian.</value>
+  <data name="Taskbar.Placement.Notification.Constrained" xml:space="preserve">
+    <value>Thanh media đã thu hẹp vì thanh tác vụ thiếu chỗ. Chiều rộng sẽ tự khôi phục khi đóng bớt biểu tượng trên thanh tác vụ.</value>
   </data>
   <data name="Taskbar.Placement.Notification.Title" xml:space="preserve">
     <value>Không đủ không gian trên thanh tác vụ</value>

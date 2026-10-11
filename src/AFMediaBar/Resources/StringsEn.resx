@@ -2363,8 +2363,8 @@
   <data name="Taskbar.Placement.Notification.Hidden" xml:space="preserve">
     <value>The taskbar cannot fit the minimum media bar, so it is temporarily hidden. Tray controls remain available; the bar will return when space recovers.</value>
   </data>
-  <data name="Taskbar.Placement.Notification.Moved" xml:space="preserve">
-    <value>The media bar has temporarily moved to another free area. It will return when its original position has enough space.</value>
+  <data name="Taskbar.Placement.Notification.Constrained" xml:space="preserve">
+    <value>The media bar has narrowed because taskbar space is limited. It will restore its width when some taskbar icons are closed.</value>
   </data>
   <data name="DisplayModes.Width.NoCommonRange" xml:space="preserve">
     <value>There is no shared fixed-length range for the current taskbars. The saved length is retained; each bar respects its own available space.</value>

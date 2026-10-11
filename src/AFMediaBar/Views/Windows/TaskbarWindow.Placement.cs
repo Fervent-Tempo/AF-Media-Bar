@@ -247,11 +247,27 @@ public partial class TaskbarWindow
         }
         _placementState = decision.State with { IsDragSeed = false };
         _placementContext = _pendingPlacementContext;
+        var observation = _pendingPlacementSnapshot;
         _pendingPlacementDecision = null;
         _pendingPlacementSnapshot = null;
         _dragPlacementSeed = null;
         _dragPlacementContext = null;
-        if (decision.NotifyFallback && !MediaControl.IsRestLayerEmpty)
-            PlacementFallbackRequested?.Invoke(this, new TaskbarPlacementFallbackEventArgs(!decision.State.IsVisible));
+        if (MediaControl.IsRestLayerEmpty || _placementContext is { Avoid: false })
+            PlacementFallbackRequested?.Invoke(this, new(TaskbarSpacePressure.Normal, false, 0, 0, false));
+        else if (!_isDragging && !_isDragPending && observation is { Status: TaskbarProbeStatus.Success } &&
+            _placementContext is { } context && decision.State.Minimum > 0)
+        {
+            // 压力按最新真实空间判断，确认延迟和动画中间宽度不构成拥挤。
+            var desired = Math.Max(decision.State.Minimum,
+                (int)Math.Ceiling((_lastDesiredSizeRequest?.PrimaryLength ?? decision.Width / context.Dpi) * context.Dpi));
+            var raw = TaskbarPlacementPolicy.Evaluate(new(), observation with { IsTrustedGeometry = true },
+                context.Alignment, context.Length, context.Padding, decision.State.Minimum, desired);
+            var pressure = !raw.State.IsVisible ? TaskbarSpacePressure.Hidden
+                : raw.Width < desired ? TaskbarSpacePressure.Constrained : TaskbarSpacePressure.Normal;
+            var ample = raw.State.Budget >= desired + (int)Math.Ceiling(96 * context.Dpi);
+            PlacementFallbackRequested?.Invoke(this, new(pressure, ample, observation.Generation,
+                observation.IsTrustedGeometry ? Stopwatch.GetTimestamp() : observation.PublicationId,
+                lastFailurePublicationId: observation.LastFailurePublicationId));
+        }
     }
 }

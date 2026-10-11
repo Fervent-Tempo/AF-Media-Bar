@@ -494,6 +494,7 @@ namespace AFMediaBar.Views.Windows
                 taskbarWindow.OpenFullPanelRequested -= TaskbarWindow_OpenFullPanelRequested;
                 taskbarWindow.PlacementTransitionStarted -= TaskbarWindow_PlacementTransitionStarted;
                 taskbarWindow.PlacementFallbackRequested -= TaskbarWindow_PlacementFallbackRequested;
+                _placementNotificationGate.ForgetHost(taskbarWindow.TargetMonitorDeviceId);
                 taskbarWindow.SuspendForEnvironmentRecovery();
                 taskbarWindow.DetachFromTaskbar();
                 try
@@ -969,11 +970,18 @@ namespace AFMediaBar.Views.Windows
         {
             if (_isClosing || sender is not TaskbarWindow window || !_taskbarWindows.Contains(window))
                 return;
-            if (!_placementNotificationGate.TryBegin(Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency))
+            if (!e.HasContent)
+            {
+                _placementNotificationGate.ForgetHost(window.TargetMonitorDeviceId);
+                return;
+            }
+            var pressure = _placementNotificationGate.Observe(window.TargetMonitorDeviceId, e.Pressure,
+                e.HasAmpleSpace, Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency, e.Generation, e.PublicationId, e.LastFailurePublicationId);
+            if (pressure is null)
                 return;
             _systemNotifications.TryShowNotification(
                 Translations.Get("Taskbar.Placement.Notification.Title"),
-                Translations.Get(e.IsHidden ? "Taskbar.Placement.Notification.Hidden" : "Taskbar.Placement.Notification.Moved"),
+                Translations.Get(pressure == TaskbarSpacePressure.Hidden ? "Taskbar.Placement.Notification.Hidden" : "Taskbar.Placement.Notification.Constrained"),
                 ShellNotificationTarget.None);
         }
 
