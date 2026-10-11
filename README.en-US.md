@@ -44,14 +44,6 @@ Download a release package rather than a Source code archive. The app is not com
 | Layout and appearance | Left, center, and right alignment with independent content arrangement; avoid taskbar icons and system areas, choose a display, auto-hide when nothing plays, and customize fonts, accent colour, and window material. |
 | Shortcuts | Hover to reveal controls or open the full media popover for more information; customize click actions, quickly launch players, and use the tray menu. |
 
-## Basic use
-
-- Start your player and play a track. The media bar shows the current song; some players require “system media controls” or “media keys” to be enabled first.
-- Hover over the media bar to reveal controls. Click or drag the progress bar to seek.
-- Use the tray icon's context menu to open Settings, access quick launch, or exit.
-
-**Compatibility:** Most players rely on Windows system media sessions. NetEase Cloud Music can be detected independently for track information, but artwork and playback controls still require its system media control support. Only taskbar mode is available; other display modes are not yet supported.
-
 ## Updating and uninstalling
 
 - **Updates:** The app notifies you when a new version is available. Check for updates on the Application page. Installed builds can download and install updates in the app; portable builds require manual file replacement.

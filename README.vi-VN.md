@@ -46,12 +46,6 @@ Khuyến nghị tải gói phát hành (Release) thay vì tệp mã nguồn nén
 | Bố cục và giao diện | Tự động tránh biểu tượng Taskbar và khu vực khay hệ thống; chọn màn hình hiển thị, tự động ẩn khi không phát nhạc, tùy chỉnh phông chữ, màu nhấn (accent) và chất liệu nền cửa sổ. |
 | Phím tắt & Thao tác nhanh | Di chuột để mở các nút điều khiển, mở bảng đầy đủ để xem thêm thông tin, dùng biểu tượng nốt nhạc hoặc menu chuột phải trên thanh media và khay hệ thống để khởi chạy nhanh, và chuyển nhanh thiết bị âm thanh. |
 
-**Giới hạn:** Hầu hết các trình phát nhạc cần phát phiên GSMTC của Windows; một số trình phát yêu cầu bật tính năng "điều khiển đa phương tiện hệ thống" hoặc "phím media" trong phần cài đặt của chúng. NetEase Cloud Music còn có thể nhận diện thông qua đọc bộ nhớ RAM, bao gồm cả bản Store không có SMTC. Dữ liệu bộ nhớ được ưu tiên cho thông tin bài hát và lời bài hát; ảnh bìa và các nút điều khiển phát lại cần sự hỗ trợ của SMTC. Ảnh bìa chỉ được đọc từ SMTC chứ không tải về riêng; không hiển thị ảnh bìa nếu SMTC không có ảnh cho bài đó. NetEase xuất hiện một lần trong danh sách nguồn, và việc ẩn nguồn này khi bật bộ lọc nguồn sẽ dừng việc đọc bộ nhớ. Hiện tại Taskbar là chế độ chạy duy nhất; các mục Dynamic Island, Thẻ desktop và Bóng nổi trong Cài đặt hiện chỉ là vị trí chờ (placeholder).
-
-## Cơ chế hoạt động
-
-AF Media Bar chạy dưới dạng một tiến trình WPF độc lập và gắn thanh media như một cửa sổ con của thanh Taskbar. Ứng dụng sử dụng API Windows GSMTC công khai cho các phiên media và Windows Core Audio cho thiết bị cùng âm lượng. Ứng dụng **không chỉnh sửa hay can thiệp (inject code) vào tiến trình `explorer.exe`**.
-
 ```mermaid
 flowchart LR
     A[Ứng dụng phát Media] -->|Phiên GSMTC| B[AF Media Bar]
