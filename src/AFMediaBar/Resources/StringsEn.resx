@@ -1687,6 +1687,27 @@
   <data name="Media.Spectrum.BandCount.Value" xml:space="preserve">
     <value>{0} bars</value>
   </data>
+  <data name="Media.Spectrum.CaptureSource.Title" xml:space="preserve">
+    <value>Audio capture scope</value>
+  </data>
+  <data name="Media.Spectrum.CaptureSource.Description" xml:space="preserve">
+    <value>Capture the current device mix, all applications across devices, or the application shown in the media bar.</value>
+  </data>
+  <data name="Media.Spectrum.CaptureSource.CurrentDevice" xml:space="preserve">
+    <value>All audio on current device</value>
+  </data>
+  <data name="Media.Spectrum.CaptureSource.AllApplications" xml:space="preserve">
+    <value>All applications</value>
+  </data>
+  <data name="Media.Spectrum.CaptureSource.CurrentMediaApplication" xml:space="preserve">
+    <value>Current media application</value>
+  </data>
+  <data name="Media.Spectrum.CaptureSource.Requirements" xml:space="preserve">
+    <value>Application modes require Windows 11 or a system that supports process loopback. The current application follows the media bar; capture stops when it cannot be identified. Browser audio is captured per application, not per tab.</value>
+  </data>
+  <data name="Media.Spectrum.CaptureSource.Compatibility" xml:space="preserve">
+    <value>All-application mode excludes AF and its child processes. Current-device and all-application modes may trigger automatic muting rules in Wallpaper Engine and similar software.</value>
+  </data>
   <data name="Media.Spectrum.ContentHeight.Description" xml:space="preserve">
     <value>Set spectrum height (14–34 DIP) without changing its width.</value>
   </data>
@@ -1697,7 +1718,7 @@
     <value>{0:0} DIP</value>
   </data>
   <data name="Media.Spectrum.Parameters.Description" xml:space="preserve">
-    <value>Adjust spectrum style, bars, height, refresh rate, and sensitivity.</value>
+    <value>Adjust audio capture scope, style, bars, height, refresh rate, and sensitivity.</value>
   </data>
   <data name="Media.Spectrum.Parameters.Title" xml:space="preserve">
     <value>Spectrum parameters</value>
@@ -1733,7 +1754,7 @@
     <value>Waveform</value>
   </data>
   <data name="Media.Spectrum.Visible.Description" xml:space="preserve">
-    <value>Show a live spectrum of audio from the current output device.</value>
+    <value>Show a live spectrum of the selected audio scope.</value>
   </data>
   <data name="Media.Spectrum.Visible.Title" xml:space="preserve">
     <value>Show spectrum</value>

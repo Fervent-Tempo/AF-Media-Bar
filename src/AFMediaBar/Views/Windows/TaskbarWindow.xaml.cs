@@ -594,9 +594,9 @@ public partial class TaskbarWindow : Window
         _spectrumRequestInFlight = true;
         try
         {
-            var available = await _audioMonitorService.GetSpectrumAsync(_spectrumWorkerBands, bandCount);
+            var sample = await _audioMonitorService.GetSpectrumAsync(_spectrumWorkerBands, bandCount);
             if (!_isClosing && !IsTaskbarPresentationSuspended && _appliedOrientation == LayoutOrientation.Horizontal &&
-                MediaControl.IsSpectrumComponentVisible && available)
+                MediaControl.IsSpectrumComponentVisible && sample.IsAvailable && _audioMonitorService.IsCaptureCurrent(sample.CaptureVersion))
             {
                 Array.Copy(_spectrumWorkerBands, _spectrumBands, bandCount);
                 _spectrumActive = true;

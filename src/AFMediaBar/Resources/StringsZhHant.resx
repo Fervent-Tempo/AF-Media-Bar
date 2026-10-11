@@ -1687,6 +1687,27 @@
   <data name="Media.Spectrum.BandCount.Value" xml:space="preserve">
     <value>{0} 根</value>
   </data>
+  <data name="Media.Spectrum.CaptureSource.Title" xml:space="preserve">
+    <value>音訊擷取範圍</value>
+  </data>
+  <data name="Media.Spectrum.CaptureSource.Description" xml:space="preserve">
+    <value>選擇目前裝置的混音、跨裝置的所有程式，或媒體列目前顯示的程式。</value>
+  </data>
+  <data name="Media.Spectrum.CaptureSource.CurrentDevice" xml:space="preserve">
+    <value>目前裝置全部音訊</value>
+  </data>
+  <data name="Media.Spectrum.CaptureSource.AllApplications" xml:space="preserve">
+    <value>所有程式音訊</value>
+  </data>
+  <data name="Media.Spectrum.CaptureSource.CurrentMediaApplication" xml:space="preserve">
+    <value>前景程式音訊</value>
+  </data>
+  <data name="Media.Spectrum.CaptureSource.Requirements" xml:space="preserve">
+    <value>程式模式需要 Windows 11 或支援程序回送的系統。前景程式指媒體列目前顯示的來源，無法識別時停止擷取；瀏覽器按程式擷取，無法區分分頁。</value>
+  </data>
+  <data name="Media.Spectrum.CaptureSource.Compatibility" xml:space="preserve">
+    <value>所有程式模式排除 AF 及其子程序。目前裝置和所有程式模式可能觸發 Wallpaper Engine 等軟體的自動靜音規則。</value>
+  </data>
   <data name="Media.Spectrum.ContentHeight.Description" xml:space="preserve">
     <value>調整頻譜高度（14–34 DIP），不影響佔用寬度。</value>
   </data>
@@ -1697,7 +1718,7 @@
     <value>{0:0} DIP</value>
   </data>
   <data name="Media.Spectrum.Parameters.Description" xml:space="preserve">
-    <value>調整頻譜樣式、柱數、高度、更新率和靈敏度。</value>
+    <value>調整音訊擷取範圍、樣式、柱數、高度、更新率與靈敏度。</value>
   </data>
   <data name="Media.Spectrum.Parameters.Title" xml:space="preserve">
     <value>頻譜參數</value>
@@ -1733,7 +1754,7 @@
     <value>波形圖</value>
   </data>
   <data name="Media.Spectrum.Visible.Description" xml:space="preserve">
-    <value>在常駐狀態顯示目前輸出裝置的即時頻譜。</value>
+    <value>顯示所選音訊範圍的即時頻譜。</value>
   </data>
   <data name="Media.Spectrum.Visible.Title" xml:space="preserve">
     <value>顯示頻譜</value>

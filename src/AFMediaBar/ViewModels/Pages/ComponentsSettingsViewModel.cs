@@ -65,6 +65,14 @@ public sealed class ComponentsSettingsViewModel : ObservableObject, IDisposable
         set { _configuration.SetSpectrum(_configuration.Current.SpectrumComponent with { Style = value }); OnPropertyChanged(); }
     }
 
+    public SpectrumCaptureSource SpectrumCaptureSource
+    {
+        get => _configuration.Current.SpectrumComponent.CaptureSource;
+        set { _configuration.SetSpectrum(_configuration.Current.SpectrumComponent with { CaptureSource = value }); OnPropertyChanged(); }
+    }
+
+    public bool IsProcessLoopbackSupported => OperatingSystem.IsWindowsVersionAtLeast(10, 0, 20348);
+
     /// <summary>
     /// 频谱内容区的横轴尺寸（横向任务栏就是高度）。它只影响柱子能长多高，宽度仍由柱数决定。
     /// Cross-axis size of the spectrum content area, which is the height on a horizontal taskbar. It only decides how tall the bars can grow;

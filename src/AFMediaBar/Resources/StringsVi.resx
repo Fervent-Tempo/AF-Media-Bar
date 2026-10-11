@@ -1687,6 +1687,27 @@
   <data name="Media.Spectrum.BandCount.Value" xml:space="preserve">
     <value>{0} cột</value>
   </data>
+  <data name="Media.Spectrum.CaptureSource.Title" xml:space="preserve">
+    <value>Phạm vi thu âm thanh</value>
+  </data>
+  <data name="Media.Spectrum.CaptureSource.Description" xml:space="preserve">
+    <value>Thu âm thanh của thiết bị hiện tại, tất cả ứng dụng trên các thiết bị, hoặc ứng dụng đang hiển thị trên thanh phương tiện.</value>
+  </data>
+  <data name="Media.Spectrum.CaptureSource.CurrentDevice" xml:space="preserve">
+    <value>Toàn bộ âm thanh của thiết bị hiện tại</value>
+  </data>
+  <data name="Media.Spectrum.CaptureSource.AllApplications" xml:space="preserve">
+    <value>Âm thanh của tất cả ứng dụng</value>
+  </data>
+  <data name="Media.Spectrum.CaptureSource.CurrentMediaApplication" xml:space="preserve">
+    <value>Ứng dụng phương tiện hiện tại</value>
+  </data>
+  <data name="Media.Spectrum.CaptureSource.Requirements" xml:space="preserve">
+    <value>Chế độ ứng dụng yêu cầu Windows 11 hoặc hệ thống hỗ trợ thu âm theo tiến trình. Ứng dụng hiện tại là nguồn hiển thị trên thanh phương tiện; dừng thu khi không xác định được nguồn. Âm thanh trình duyệt được thu theo ứng dụng, không theo thẻ.</value>
+  </data>
+  <data name="Media.Spectrum.CaptureSource.Compatibility" xml:space="preserve">
+    <value>Chế độ tất cả ứng dụng loại trừ AF và các tiến trình con của AF. Chế độ thiết bị hiện tại và tất cả ứng dụng có thể kích hoạt quy tắc tự động tắt tiếng của Wallpaper Engine và phần mềm tương tự.</value>
+  </data>
   <data name="Media.Spectrum.ContentHeight.Description" xml:space="preserve">
     <value>Đặt chiều cao sóng nhạc (14–34 DIP) mà không làm thay đổi chiều rộng.</value>
   </data>
@@ -1697,7 +1718,7 @@
     <value>{0:0} DIP</value>
   </data>
   <data name="Media.Spectrum.Parameters.Description" xml:space="preserve">
-    <value>Điều chỉnh kiểu dáng, số cột, chiều cao, tốc độ làm mới và độ nhạy của sóng nhạc.</value>
+    <value>Điều chỉnh phạm vi thu âm thanh, kiểu, số cột, chiều cao, tần số làm mới và độ nhạy.</value>
   </data>
   <data name="Media.Spectrum.Parameters.Title" xml:space="preserve">
     <value>Thông số sóng nhạc</value>
@@ -1733,7 +1754,7 @@
     <value>Dạng sóng (Waveform)</value>
   </data>
   <data name="Media.Spectrum.Visible.Description" xml:space="preserve">
-    <value>Hiển thị sóng âm thanh trực tiếp từ thiết bị đầu ra hiện tại.</value>
+    <value>Hiển thị phổ âm thanh trực tiếp của phạm vi đã chọn.</value>
   </data>
   <data name="Media.Spectrum.Visible.Title" xml:space="preserve">
     <value>Hiển thị sóng nhạc</value>

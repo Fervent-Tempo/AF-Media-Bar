@@ -4,6 +4,7 @@ using System.Diagnostics;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Services.Audio;
+using AFMediaBar.Classes.Models;
 using Microsoft.Extensions.Hosting;
 using NAudio.CoreAudioApi;
 using NAudio.Wave;
@@ -18,14 +19,20 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
 {
     private const int MinimumRingSize = 4_096;
     private readonly AudioCaptureDeviceResolver _deviceResolver;
+    private readonly SpectrumCaptureProcessResolver _processResolver;
+    private volatile SpectrumCaptureSource _captureSource;
+    private SpectrumCaptureProcessResolver.MediaIdentity _mediaSource =
+        SpectrumCaptureProcessResolver.MediaIdentity.FromSnapshot(MediaSnapshot.Disconnected);
+    private readonly object _sourceGate = new();
     private readonly object _gate = new();
     private readonly SemaphoreSlim _demand = new(0, 1);
     private int _wakePending;
     private long _lastDemandTick = long.MinValue;
     private int _captureVersion;
-    private bool _disposed;
+    private int _activeCaptureVersion;
+    private volatile bool _disposed;
     private bool _disposeCalled;
-    private bool _captureReady;
+    private volatile bool _captureReady;
     private MemoryPruneLevel _pruneLevel;
     private int _sampleWriteIndex;
     private int _sampleCount;
@@ -54,14 +61,73 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
     private readonly double[] _bandMagnitudes = new double[SpectrumComponentSettings.MaximumBandCount];
 
     /// <summary>创建由宿主控制生命周期的频谱服务。 / Creates the host-managed spectrum service.</summary>
-    public AudioMonitorService(AudioCaptureDeviceResolver deviceResolver) => _deviceResolver = deviceResolver;
+    public AudioMonitorService(AudioCaptureDeviceResolver deviceResolver,
+        SpectrumCaptureProcessResolver processResolver)
+    {
+        _deviceResolver = deviceResolver;
+        _processResolver = processResolver;
+        SettingsManager.SettingsChanged += OnSettingsChanged;
+        lock (_sourceGate)
+        {
+            _captureSource = SettingsManager.Current.SpectrumComponent.Normalize().CaptureSource;
+        }
+    }
+
+    /// <summary>组合根转发媒体栏实际呈现的来源；这里只保存身份，不持有媒体服务或曲目内容。</summary>
+    public void UpdateMediaSource(MediaSnapshot snapshot)
+    {
+        lock (_sourceGate)
+        {
+            if (_disposed) return;
+            var changed = _mediaSource.IsConnected != snapshot.IsConnected ||
+                !string.Equals(_mediaSource.SourceId, snapshot.SourceId, StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(_mediaSource.SourceName, snapshot.SourceName, StringComparison.OrdinalIgnoreCase);
+            _mediaSource = SpectrumCaptureProcessResolver.MediaIdentity.FromSnapshot(snapshot);
+            if (changed && _captureSource == SpectrumCaptureSource.CurrentMediaApplication)
+            {
+                InvalidateSourceCapture();
+                WakeWorker();
+            }
+        }
+    }
+
+    private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args)
+    {
+        var source = SettingsManager.Current.SpectrumComponent.Normalize().CaptureSource;
+        lock (_sourceGate)
+        {
+            if (_disposed || source == _captureSource) return;
+            _captureSource = source;
+            InvalidateSourceCapture();
+            WakeWorker();
+        }
+    }
+
+    private void Unsubscribe()
+    {
+        SettingsManager.SettingsChanged -= OnSettingsChanged;
+    }
+
+    private void InvalidateSourceCapture()
+    {
+        // 来源通知可能在 UI 线程到达；只作废代际，不等待采样回调或 FFT 持有的锁。
+        Interlocked.Increment(ref _captureVersion);
+        _captureReady = false;
+    }
 
     /// <summary>
     /// 在后台计算频谱并把结果交给 UI；UI 线程不等待采样回调持有的锁或 FFT。
     /// Computes the spectrum in the background so the UI never waits on the capture callback's gate or FFT.
     /// </summary>
-    public Task<bool> GetSpectrumAsync(float[] bands, int bandCount) =>
-        Task.Run(() => GetSpectrum(bands, bandCount));
+    public Task<(bool IsAvailable, int CaptureVersion)> GetSpectrumAsync(float[] bands, int bandCount) =>
+        Task.Run(() =>
+        {
+            var version = Volatile.Read(ref _captureVersion);
+            return (GetSpectrum(bands, bandCount) && IsCaptureCurrent(version), version);
+        });
+
+    /// <summary>界面应用异步结果前检查采集代际；切换来源、范围或退出后拒绝旧帧。</summary>
+    public bool IsCaptureCurrent(int version) => !_disposed && _captureReady && version == Volatile.Read(ref _captureVersion);
 
     /// <summary>从缓存样本填充频谱；不会等待音频设备或后台采集。 / Fills bands from cached samples without waiting on audio devices.</summary>
     public bool GetSpectrum(float[] bands, int bandCount)
@@ -75,9 +141,9 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
             if (_disposed || _pruneLevel >= MemoryPruneLevel.DisplayOff)
                 return false;
             _lastDemandTick = Environment.TickCount64;
-            _deviceResolver.RequestScan();
+            if (_captureSource == SpectrumCaptureSource.CurrentDevice) _deviceResolver.RequestScan();
             WakeWorker();
-            if (!_captureReady)
+            if (!_captureReady || _activeCaptureVersion != Volatile.Read(ref _captureVersion))
                 return false;
             if (_sampleCount < _fftSize || Environment.TickCount64 - _lastPacketTick > 180)
             {
@@ -125,6 +191,7 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
     /// <inheritdoc />
     public override Task StopAsync(CancellationToken cancellationToken)
     {
+        Unsubscribe();
         lock (_gate)
         {
             _disposed = true;
@@ -136,6 +203,7 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
     /// <inheritdoc />
     public override void Dispose()
     {
+        Unsubscribe();
         lock (_gate)
         {
             if (_disposeCalled) return;
@@ -174,6 +242,7 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
                 catch (Exception exception)
                 {
                     Debug.WriteLine($"[AudioMonitorService] Capture failed: {exception.Message}");
+                    if (failures == 0) AppLogService.Current?.Warn("Audio", $"频谱采集失败：{exception.Message}");
                     failures = Math.Min(failures + 1, 4);
                     var delay = failures switch { 1 => 100, 2 => 500, 3 => 1000, _ => 3000 };
                     await Task.Delay(delay, stoppingToken).ConfigureAwait(false);
@@ -195,22 +264,51 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
 
     private async Task CaptureAsync(int version, CancellationToken token)
     {
-        using var enumerator = new MMDeviceEnumerator();
+        SpectrumCaptureSource source;
+        SpectrumCaptureProcessResolver.MediaIdentity media;
+        lock (_sourceGate)
+        {
+            source = _captureSource;
+            media = _mediaSource;
+        }
+        if (!HasDemand(version)) return;
+        uint? processId = null;
+        if (source != SpectrumCaptureSource.CurrentDevice)
+        {
+            if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 20348))
+            {
+                await Task.Delay(1000, token).ConfigureAwait(false);
+                return;
+            }
+            processId = source == SpectrumCaptureSource.AllApplications
+                ? (uint)Environment.ProcessId
+                : _processResolver.ResolveProcessId(media, null, token);
+            if (processId is null)
+            {
+                await Task.Delay(1000, token).ConfigureAwait(false);
+                return;
+            }
+        }
+        using var enumerator = source == SpectrumCaptureSource.CurrentDevice ? new MMDeviceEnumerator() : null;
         var target = _deviceResolver.TargetDeviceId;
-        using var device = string.IsNullOrEmpty(target)
-            ? enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia)
-            : enumerator.GetDevice(target);
-        using var capture = new WasapiRecorderBuilder().WithDevice(device).WithLoopbackCapture().Build();
+        using var device = source != SpectrumCaptureSource.CurrentDevice ? null : string.IsNullOrEmpty(target)
+            ? enumerator!.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia)
+            : enumerator!.GetDevice(target);
+        using var capture = processId is { } pid
+            ? await CreateProcessCaptureAsync(pid, source == SpectrumCaptureSource.AllApplications
+                ? ProcessLoopbackMode.ExcludeTargetProcessTree : ProcessLoopbackMode.IncludeTargetProcessTree, token).ConfigureAwait(false)
+            : new WasapiRecorderBuilder().WithDevice(device!).WithLoopbackCapture().Build();
         var format = capture.WaveFormat;
         var reader = new LoopbackSampleReader(format, PushSample);
         var stopped = new TaskCompletionSource<Exception?>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var deviceId = device.ID;
+        var deviceId = device?.ID;
         lock (_gate)
         {
             if (!HasDemandCore(version)) return;
             _sampleRate = format.SampleRate;
             ConfigureFft(_sampleRate);
             ClearSamples();
+            _activeCaptureVersion = version;
             _captureReady = true;
         }
         CaptureDataAvailableHandler onData = (buffer, _, _, _) =>
@@ -228,11 +326,22 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
         try
         {
             capture.StartRecording();
+            AppLogService.Current?.Info("Audio", $"频谱采集已启动：范围={source}，PID={processId}，格式={format}");
+            var lastProcessCheck = Environment.TickCount64;
             while (HasDemand(version) && !token.IsCancellationRequested)
             {
-                var nextTarget = _deviceResolver.TargetDeviceId;
-                if (!string.IsNullOrEmpty(nextTarget) && !string.Equals(nextTarget, deviceId, StringComparison.OrdinalIgnoreCase))
-                    break;
+                if (source == SpectrumCaptureSource.CurrentDevice)
+                {
+                    var nextTarget = _deviceResolver.TargetDeviceId;
+                    if (!string.IsNullOrEmpty(nextTarget) && !string.Equals(nextTarget, deviceId, StringComparison.OrdinalIgnoreCase)) break;
+                }
+                else if (source == SpectrumCaptureSource.CurrentMediaApplication &&
+                    Environment.TickCount64 - lastProcessCheck >= 2000)
+                {
+                    lastProcessCheck = Environment.TickCount64;
+                    // 捕获的进程退出或重启时释放旧树；新来源/范围会由代际检查立即使本次采集失效。
+                    if (_processResolver.ResolveProcessId(media, processId, token) != processId) break;
+                }
                 if (stopped.Task.IsCompleted)
                     throw await stopped.Task.ConfigureAwait(false) ?? new InvalidOperationException("Loopback capture stopped unexpectedly.");
                 await Task.Delay(50, token).ConfigureAwait(false);
@@ -251,12 +360,39 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
         }
     }
 
+    private static async Task<WasapiRecorder> CreateProcessCaptureAsync(uint processId, ProcessLoopbackMode mode, CancellationToken token)
+    {
+        var activation = new WasapiRecorderBuilder().WithProcessLoopback(processId, mode).BuildAsync();
+        try
+        {
+            return await activation.WaitAsync(TimeSpan.FromSeconds(5), token).ConfigureAwait(false);
+        }
+        catch
+        {
+            // WASAPI 激活没有取消入口；观察迟到结果并释放，不能在超时或退出后遗留采集客户端。
+            _ = DisposeLateCaptureAsync(activation);
+            throw;
+        }
+    }
+
+    private static async Task DisposeLateCaptureAsync(Task<WasapiRecorder> activation)
+    {
+        try
+        {
+            using var capture = await activation.ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            Debug.WriteLine($"[AudioMonitorService] Late activation: {exception.Message}");
+        }
+    }
+
     private bool HasDemand(int version)
     {
         lock (_gate) return HasDemandCore(version);
     }
 
-    private bool HasDemandCore(int version) => !_disposed && version == _captureVersion &&
+    private bool HasDemandCore(int version) => !_disposed && version == Volatile.Read(ref _captureVersion) &&
         _pruneLevel < MemoryPruneLevel.DisplayOff && _lastDemandTick != long.MinValue &&
         Environment.TickCount64 - _lastDemandTick <= 1000;
 
@@ -272,7 +408,7 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
 
     private void InvalidateCapture()
     {
-        _captureVersion++;
+        Interlocked.Increment(ref _captureVersion);
         _captureReady = false;
         ClearSamples();
     }

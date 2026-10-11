@@ -154,6 +154,37 @@
                             </ui:CardExpander.Header>
                             <StackPanel>
                                 <components:SettingsRow
+                                    Description="{DynamicResource Loc.Media.Spectrum.CaptureSource.Description}"
+                                    Icon="{ui:SymbolIcon Speaker224}"
+                                    IsNested="True"
+                                    Style="{StaticResource SpectrumParameterRowStyle}"
+                                    Title="{DynamicResource Loc.Media.Spectrum.CaptureSource.Title}">
+                                    <ComboBox
+                                        MinWidth="160"
+                                        SelectedValue="{Binding ViewModel.Components.SpectrumCaptureSource, Mode=TwoWay}"
+                                        SelectedValuePath="Tag">
+                                        <ComboBoxItem
+                                            Content="{DynamicResource Loc.Media.Spectrum.CaptureSource.CurrentDevice}"
+                                            Tag="{x:Static settings:SpectrumCaptureSource.CurrentDevice}" />
+                                        <ComboBoxItem
+                                            Content="{DynamicResource Loc.Media.Spectrum.CaptureSource.AllApplications}"
+                                            IsEnabled="{Binding ViewModel.Components.IsProcessLoopbackSupported}"
+                                            Tag="{x:Static settings:SpectrumCaptureSource.AllApplications}" />
+                                        <ComboBoxItem
+                                            Content="{DynamicResource Loc.Media.Spectrum.CaptureSource.CurrentMediaApplication}"
+                                            IsEnabled="{Binding ViewModel.Components.IsProcessLoopbackSupported}"
+                                            Tag="{x:Static settings:SpectrumCaptureSource.CurrentMediaApplication}" />
+                                    </ComboBox>
+                                </components:SettingsRow>
+                                <TextBlock
+                                    Margin="0,0,0,8"
+                                    Style="{StaticResource AfSettingsHintTextStyle}"
+                                    Text="{DynamicResource Loc.Media.Spectrum.CaptureSource.Requirements}" />
+                                <TextBlock
+                                    Margin="0,0,0,8"
+                                    Style="{StaticResource AfSettingsHintTextStyle}"
+                                    Text="{DynamicResource Loc.Media.Spectrum.CaptureSource.Compatibility}" />
+                                <components:SettingsRow
                                     Description="{DynamicResource Loc.Media.Spectrum.Style.Description}"
                                     Icon="{ui:SymbolIcon PaintBrush24}"
                                     IsNested="True"
