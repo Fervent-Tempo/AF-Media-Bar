@@ -135,6 +135,110 @@
                             Title="{DynamicResource Loc.DisplayModes.Rest.Row.VolumeButton.Title}">
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.RestVolumeVisible, Mode=TwoWay}" />
                         </components:SettingsRow>
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Eye24}">
+                            <ui:CardExpander.Header>
+                                <StackPanel>
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowTitleStyle}"
+                                        Text="{DynamicResource Loc.DisplayModes.Rest.Idle.Expander.Title}" />
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
+                                        Text="{DynamicResource Loc.DisplayModes.Rest.Idle.Expander.Description}" />
+                                </StackPanel>
+                            </ui:CardExpander.Header>
+                            <StackPanel>
+                                <components:SettingsCallout
+                                    Margin="0,0,0,4"
+                                    Symbol="Info24"
+                                    Text="{DynamicResource Loc.DisplayModes.Rest.Idle.Notice}" />
+                                <ItemsControl Margin="0,0,0,4" ItemsSource="{Binding ViewModel.Layers.IdleComponentEntries}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <components:SettingsRow
+                                                Description="{Binding Description}"
+                                                IsNested="True"
+                                                Title="{Binding DisplayName}">
+                                                <ui:ToggleSwitch IsChecked="{Binding IsVisible, Mode=TwoWay}" />
+                                            </components:SettingsRow>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </ui:CardExpander>
+                        <components:SettingsCallout
+                            Margin="0,4,0,0"
+                            IsAccent="True"
+                            Symbol="DataHistogram24"
+                            Text="{DynamicResource Loc.DisplayModes.Rest.Notice}" />
+                    </StackPanel>
+                </components:SettingsGroup>
+                <components:SettingsGroup
+                    GroupId="Common.Group.Widgets"
+                    Description="{DynamicResource Loc.Common.Widgets.Description}"
+                    Header="{DynamicResource Loc.Common.Group.Widgets}"
+                    Icon="{ui:SymbolIcon Apps24}">
+                    <StackPanel>
+                        <ui:CardExpander
+                            Style="{StaticResource AfSettingsExpanderStyle}"
+                            Icon="{ui:SymbolIcon ArrowSort24}"
+                            Visibility="{Binding ViewModel.Layout.IsHorizontalLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                            <ui:CardExpander.Header>
+                                <StackPanel>
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowTitleStyle}"
+                                        Text="{DynamicResource Loc.DisplayModes.Rest.Order.Expander.Title}" />
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
+                                        Text="{DynamicResource Loc.DisplayModes.Rest.Order.Expander.Description}" />
+                                </StackPanel>
+                            </ui:CardExpander.Header>
+                            <StackPanel>
+                                <components:SettingsCallout
+                                    Margin="0,0,0,4"
+                                    Symbol="Info24"
+                                    Text="{DynamicResource Loc.DisplayModes.Rest.Order.Notice}" />
+                                <ItemsControl Margin="0,0,0,4" ItemsSource="{Binding ViewModel.Layout.RestOrderEntries}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <components:SettingsRow
+                                                Description="{Binding Description}"
+                                                IsNested="True"
+                                                Title="{Binding DisplayName}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <ui:Button
+                                                        Margin="8,0,0,0"
+                                                        Command="{Binding DataContext.ViewModel.Layout.MoveRestComponentUpCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                        CommandParameter="{Binding}"
+                                                        Icon="{ui:SymbolIcon ArrowUp24}"
+                                                        Style="{StaticResource AfSettingsIconButtonStyle}"
+                                                        ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveUp}"
+                                                        Visibility="{Binding CanMove, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
+                                                    <ui:Button
+                                                        Margin="4,0,0,0"
+                                                        Command="{Binding DataContext.ViewModel.Layout.MoveRestComponentDownCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                        CommandParameter="{Binding}"
+                                                        Icon="{ui:SymbolIcon ArrowDown24}"
+                                                        Style="{StaticResource AfSettingsIconButtonStyle}"
+                                                        ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveDown}"
+                                                        Visibility="{Binding CanMove, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
+                                                </StackPanel>
+                                            </components:SettingsRow>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <components:SettingsRow
+                                    Description="{DynamicResource Loc.DisplayModes.Rest.Order.Reset.Description}"
+                                    Icon="{ui:SymbolIcon ArrowReset24}"
+                                    IsNested="True"
+                                    Title="{DynamicResource Loc.DisplayModes.Rest.Order.Reset.Title}">
+                                    <ui:Button
+                                        Command="{Binding ViewModel.Layout.ResetRestComponentOrderCommand}"
+                                        Content="{DynamicResource Loc.Lyrics.Sources.Reset.Action}"
+                                        Icon="{ui:SymbolIcon ArrowReset24}"
+                                        Style="{StaticResource AfSettingsButtonStyle}" />
+                                </components:SettingsRow>
+                            </StackPanel>
+                        </ui:CardExpander>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Media.Spectrum.Visible.Description}"
                             Icon="{ui:SymbolIcon DataHistogram24}"
@@ -378,102 +482,6 @@
                                     Style="{StaticResource PerformanceParameterRowStyle}"
                                     Title="{DynamicResource Loc.Media.Performance.OpenTaskManager.Title}">
                                     <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.OpenTaskManagerOnMetricsClick, Mode=TwoWay}" />
-                                </components:SettingsRow>
-                            </StackPanel>
-                        </ui:CardExpander>
-                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Eye24}">
-                            <ui:CardExpander.Header>
-                                <StackPanel>
-                                    <TextBlock
-                                        Style="{StaticResource AfSettingsRowTitleStyle}"
-                                        Text="{DynamicResource Loc.DisplayModes.Rest.Idle.Expander.Title}" />
-                                    <TextBlock
-                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
-                                        Text="{DynamicResource Loc.DisplayModes.Rest.Idle.Expander.Description}" />
-                                </StackPanel>
-                            </ui:CardExpander.Header>
-                            <StackPanel>
-                                <components:SettingsCallout
-                                    Margin="0,0,0,4"
-                                    Symbol="Info24"
-                                    Text="{DynamicResource Loc.DisplayModes.Rest.Idle.Notice}" />
-                                <ItemsControl Margin="0,0,0,4" ItemsSource="{Binding ViewModel.Layers.IdleComponentEntries}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <components:SettingsRow
-                                                Description="{Binding Description}"
-                                                IsNested="True"
-                                                Title="{Binding DisplayName}">
-                                                <ui:ToggleSwitch IsChecked="{Binding IsVisible, Mode=TwoWay}" />
-                                            </components:SettingsRow>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                        </ui:CardExpander>
-                        <components:SettingsCallout
-                            Margin="0,4,0,0"
-                            IsAccent="True"
-                            Symbol="DataHistogram24"
-                            Text="{DynamicResource Loc.DisplayModes.Rest.Notice}" />
-                        <ui:CardExpander
-                            Style="{StaticResource AfSettingsExpanderStyle}"
-                            Icon="{ui:SymbolIcon ArrowSort24}"
-                            Visibility="{Binding ViewModel.Layout.IsHorizontalLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}">
-                            <ui:CardExpander.Header>
-                                <StackPanel>
-                                    <TextBlock
-                                        Style="{StaticResource AfSettingsRowTitleStyle}"
-                                        Text="{DynamicResource Loc.DisplayModes.Rest.Order.Expander.Title}" />
-                                    <TextBlock
-                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
-                                        Text="{DynamicResource Loc.DisplayModes.Rest.Order.Expander.Description}" />
-                                </StackPanel>
-                            </ui:CardExpander.Header>
-                            <StackPanel>
-                                <components:SettingsCallout
-                                    Margin="0,0,0,4"
-                                    Symbol="Info24"
-                                    Text="{DynamicResource Loc.DisplayModes.Rest.Order.Notice}" />
-                                <ItemsControl Margin="0,0,0,4" ItemsSource="{Binding ViewModel.Layout.RestOrderEntries}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <components:SettingsRow
-                                                Description="{Binding Description}"
-                                                IsNested="True"
-                                                Title="{Binding DisplayName}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <ui:Button
-                                                        Margin="8,0,0,0"
-                                                        Command="{Binding DataContext.ViewModel.Layout.MoveRestComponentUpCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                        CommandParameter="{Binding}"
-                                                        Icon="{ui:SymbolIcon ArrowUp24}"
-                                                        Style="{StaticResource AfSettingsIconButtonStyle}"
-                                                        ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveUp}"
-                                                        Visibility="{Binding CanMove, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
-                                                    <ui:Button
-                                                        Margin="4,0,0,0"
-                                                        Command="{Binding DataContext.ViewModel.Layout.MoveRestComponentDownCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                        CommandParameter="{Binding}"
-                                                        Icon="{ui:SymbolIcon ArrowDown24}"
-                                                        Style="{StaticResource AfSettingsIconButtonStyle}"
-                                                        ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveDown}"
-                                                        Visibility="{Binding CanMove, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
-                                                </StackPanel>
-                                            </components:SettingsRow>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                                <components:SettingsRow
-                                    Description="{DynamicResource Loc.DisplayModes.Rest.Order.Reset.Description}"
-                                    Icon="{ui:SymbolIcon ArrowReset24}"
-                                    IsNested="True"
-                                    Title="{DynamicResource Loc.DisplayModes.Rest.Order.Reset.Title}">
-                                    <ui:Button
-                                        Command="{Binding ViewModel.Layout.ResetRestComponentOrderCommand}"
-                                        Content="{DynamicResource Loc.Lyrics.Sources.Reset.Action}"
-                                        Icon="{ui:SymbolIcon ArrowReset24}"
-                                        Style="{StaticResource AfSettingsButtonStyle}" />
                                 </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>

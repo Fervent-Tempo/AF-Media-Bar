@@ -120,8 +120,8 @@ internal static class SettingsLiveVisualChecks
             Assert.IsTrue(navigation.Navigate(typeof(ComponentsSettingsPage)));
             Pump(TimeSpan.FromMilliseconds(100));
             Assert.AreSame(layout, arrived);
-            var restPanel = (Panel)groups.Single(group => group.GroupId == "Common.RestLayer").Content;
-            var ordered = restPanel.Children.OfType<Wpf.Ui.Controls.CardExpander>().Single(expander =>
+            var widgetsPanel = (Panel)groups.Single(group => group.GroupId == "Common.Group.Widgets").Content;
+            var ordered = widgetsPanel.Children.OfType<Wpf.Ui.Controls.CardExpander>().Single(expander =>
                 expander.Content is Panel panel && panel.Children.OfType<ItemsControl>().Any(items => items.ItemsSource == layout.ViewModel.Layout.RestOrderEntries));
             Assert.AreEqual(Visibility.Collapsed, ordered.Visibility, "Vertical taskbars must not expose horizontal component sorting.");
             Assert.IsTrue(navigation.Navigate(typeof(InteractionPage)));

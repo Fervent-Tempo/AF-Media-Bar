@@ -1037,7 +1037,7 @@
     <value>封面和媒體文字僅在有媒體時顯示；沒有媒體時可保留小音符，用於快速啟動播放器。</value>
   </data>
   <data name="DisplayModes.Rest.Notice" xml:space="preserve">
-    <value>頻譜擷取目前輸出裝置的聲音；元件參數在本群組詳細資料中調整，文字大小在外觀中調整。</value>
+    <value>頻譜與效能參數在「小元件」群組中調整，文字大小在「外觀」頁調整。</value>
   </data>
   <data name="DisplayModes.Rest.Order.Expander.Description" xml:space="preserve">
     <value>封面和文字固定在邏輯起始側；排序僅調整附加元件，展開方向決定實際座標方向。</value>
@@ -2669,5 +2669,11 @@
   </data>
   <data name="Appearance.IdleNote.Title" xml:space="preserve">
     <value>小音符顏色</value>
+  </data>
+  <data name="Common.Group.Widgets" xml:space="preserve">
+    <value>小元件</value>
+  </data>
+  <data name="Common.Widgets.Description" xml:space="preserve">
+    <value>調整頻譜與效能小元件的顯示和參數。</value>
   </data>
 </root>

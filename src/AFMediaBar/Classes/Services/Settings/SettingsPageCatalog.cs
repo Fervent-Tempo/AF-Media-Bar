@@ -38,7 +38,7 @@ public static class SettingsPageCatalog
         (SettingsPageKey.ApplicationAppearance, _) => (SettingsPageKey.Appearance, groupId),
         (SettingsPageKey.Appearance, "Common.Group.MediaBarWidth" or "Appearance.Group.RestLayout" or "Appearance.Group.InteractionButtons") => (SettingsPageKey.Components, groupId),
         (SettingsPageKey.Lyrics, "Common.Group.LyricsAlignment") => (SettingsPageKey.Components, "Appearance.Group.RestLayout"),
-        (SettingsPageKey.Components, "Common.Group.RestLayerComponents") => (SettingsPageKey.Components, "Common.RestLayer"),
+        (SettingsPageKey.Components, "Common.Group.RestLayerComponents") => (SettingsPageKey.Components, "Common.Group.Widgets"),
         (SettingsPageKey.Interaction, "Common.Group.SharedModifier") => (SettingsPageKey.Interaction, "Interaction.Group.Wheel"),
         _ => (page, groupId)
     };

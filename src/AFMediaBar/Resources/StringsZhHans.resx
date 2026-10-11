@@ -1037,7 +1037,7 @@
     <value>封面和媒体文字仅在有媒体时显示；无媒体时可保留小音符，用于快速启动播放器。</value>
   </data>
   <data name="DisplayModes.Rest.Notice" xml:space="preserve">
-    <value>频谱采集当前输出设备的声音；组件参数在本组详情中调整，文字大小在外观中调整。</value>
+    <value>频谱与性能参数在“小组件”分组中调整，文字大小在“外观”页调整。</value>
   </data>
   <data name="DisplayModes.Rest.Order.Expander.Description" xml:space="preserve">
     <value>封面和文字固定在逻辑起始侧；排序仅调整附加组件，展开方向决定实际坐标方向。</value>
@@ -2669,5 +2669,11 @@
   </data>
   <data name="Appearance.IdleNote.Title" xml:space="preserve">
     <value>小音符颜色</value>
+  </data>
+  <data name="Common.Group.Widgets" xml:space="preserve">
+    <value>小组件</value>
+  </data>
+  <data name="Common.Widgets.Description" xml:space="preserve">
+    <value>调整频谱与性能小组件的显示和参数。</value>
   </data>
 </root>

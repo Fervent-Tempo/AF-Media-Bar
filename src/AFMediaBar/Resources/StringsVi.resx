@@ -1025,7 +1025,7 @@
     <value>Ảnh bìa và văn bản media cần nguồn phát hoạt động. Giữ nốt nhạc hiển thị để khởi chạy nhanh khi không có nhạc.</value>
   </data>
   <data name="DisplayModes.Rest.Notice" xml:space="preserve">
-    <value>Cấu hình sóng nhạc và hiệu năng trong Thành phần, và cỡ chữ trong Giao diện. Sóng nhạc dùng âm thanh từ thiết bị đầu ra hiện tại.</value>
+    <value>Chỉnh phổ âm thanh và hiệu năng trong Tiện ích, và cỡ chữ trong Giao diện.</value>
   </data>
   <data name="DisplayModes.Rest.Order.Expander.Description" xml:space="preserve">
     <value>Sắp xếp thứ tự thành phần tùy chọn từ trái sang phải; ảnh bìa và văn bản luôn ở đầu.</value>
@@ -2707,5 +2707,11 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   </data>
   <data name="Appearance.IdleNote.Title" xml:space="preserve">
     <value>Màu biểu tượng nốt nhạc</value>
+  </data>
+  <data name="Common.Group.Widgets" xml:space="preserve">
+    <value>Tiện ích</value>
+  </data>
+  <data name="Common.Widgets.Description" xml:space="preserve">
+    <value>Hiển thị và cấu hình tiện ích phổ âm thanh và hiệu năng.</value>
   </data>
 </root>

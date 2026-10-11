@@ -1037,7 +1037,7 @@
     <value>Artwork and media text need an active source. Keep the note visible for quick launch when no media is playing.</value>
   </data>
   <data name="DisplayModes.Rest.Notice" xml:space="preserve">
-    <value>Spectrum captures the current output device. Edit component parameters in this group and text size in Appearance.</value>
+    <value>Edit spectrum and performance parameters in Widgets, and text size in Appearance.</value>
   </data>
   <data name="DisplayModes.Rest.Order.Expander.Description" xml:space="preserve">
     <value>Artwork and text stay at the logical start. Reorder additional components; content direction determines their screen coordinates.</value>
@@ -2669,5 +2669,11 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   </data>
   <data name="Appearance.IdleNote.Title" xml:space="preserve">
     <value>Music note color</value>
+  </data>
+  <data name="Common.Group.Widgets" xml:space="preserve">
+    <value>Widgets</value>
+  </data>
+  <data name="Common.Widgets.Description" xml:space="preserve">
+    <value>Show and configure spectrum and performance widgets.</value>
   </data>
 </root>
