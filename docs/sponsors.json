@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedUtc": "2026-09-29T12:50:52Z",
+  "updatedUtc": "2026-10-11T04:47:00Z",
   "sponsors": [
     {
       "name": "好奇怪",
@@ -41,7 +41,9 @@
     {
       "name": "Nchoneko",
       "since": "2026-10"
+    },
+    {
+      "name": "凛澈"
     }
-
   ]
 }
