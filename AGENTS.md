@@ -16,7 +16,7 @@
 - View/控件只呈现与表达输入意图，ViewModel 协调状态和命令，服务拥有业务与外部资源。负责 HWND/Explorer/Popup 的宿主可调用注入的平台服务，不实现媒体、网络、文件或音频算法。
 - UI 线程不得同步等待 Task、Explorer/UIA、网络、Core Audio 或进程读取。后台结果应用前检查取消、代际与释放状态；设置模型写入回 UI 线程。`async void` 仅用于事件处理器，后台异常必须被观察。
 - 明确 COM、句柄、Hook、计时器、订阅与窗口的所有者；停止和 Dispose 必须幂等，释放后不向 UI 发布结果。退出、恢复及多屏重建遵守资源释放顺序。
-- 未经明确讨论，不新增联网或遥测，不变更已发布的组件/来源 ID。设置字段、枚举与默认语义以[设置契约清单](docs/settings-contracts.md)的正式发布证据为基线：未发布项不为开发中间构建保留兼容；已发布变更须明确旧数据处理选择、用户影响与验证，不要求一律迁移。schema 只在发布批次处理。界面文案使用现有本地化资源并检查所有支持语言。
+- 未经明确讨论，不新增联网或遥测，不变更已发布的组件/来源 ID。设置字段与枚举的发布状态按[设置发布登记](docs/settings-contracts.md)及正式 release/tag 核对；默认语义、读取与重置行为核对源码和相关测试：未发布项不为开发中间构建保留兼容；已发布变更须明确旧数据处理选择、用户影响与验证，不要求一律迁移。schema 只在发布批次处理。界面文案使用现有本地化资源并检查所有支持语言。
 - 自动检查不证明桌面体验或资源安全。任务栏、Explorer、DPI、Popup、Hook、退出、schema 与跨模块生命周期变更须真实 Windows 验收；未做时写“待维护者验收”。如实报告失败及重跑，不以构建、截图或短时启动代替实机通过。
 
 ## 按任务读取
@@ -25,7 +25,7 @@
 |---|---|
 | 职责、依赖或生命周期 | [架构边界](docs/architecture.md) |
 | 手写代码的注释、命名与特殊接口 | [代码风格](docs/code-style.md)；格式由 `.editorconfig` 和工具检查 |
-| 设置字段、枚举、默认语义、兼容、重置或发布 | 先读[简短契约入口](docs/settings-contracts.md)，再用 `tools/settings-contracts.ps1 -Action Query` 查询目标路径及关联规则。普通修改不全文读入机器清单或完整参考；专题按需读取，发布/历史清点才读取完整存档。变更后运行 `tools/settings-contracts.ps1 -Action Verify` |
+| 设置字段、枚举、默认语义、兼容、重置或发布 | 先读[发布登记入口](docs/settings-contracts.md)，用 `tools/settings-contracts.ps1 -Action Query` 查询目标路径、枚举和兼容例外；默认值、读取与重置核对源码并运行相关测试。登记格式可用 `-Action Verify` 检查，不作为业务验证 |
 | 媒体适配器、身份或双通道仲裁 | [媒体接入](docs/media-adapters.md) |
 | 编写或调整测试 | [测试规范](docs/testing-guidelines.md)，先查已有覆盖 |
 | 构建、提交或 PR | [贡献指南](CONTRIBUTING.md)，WPF 构建与测试串行执行 |

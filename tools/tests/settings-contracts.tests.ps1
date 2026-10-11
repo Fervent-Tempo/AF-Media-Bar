@@ -1,75 +1,82 @@
-# 验证查询只返回目标及关联信息，保留数组/发布状态，并拒绝宽查询和未知项；不启动应用。
+# 验证发布登记查询不混同字段/枚举/历史状态，并拒绝格式错误；不构建或启动应用。
 [CmdletBinding()]
 param([string]$Workspace = (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)))
 $ErrorActionPreference = 'Stop'
-function Assert-ContractQuery {
+$tool = Join-Path $Workspace 'tools/settings-contracts.ps1'
+$registryPath = Join-Path $Workspace 'docs/settings-contracts.json'
+$fixture = Join-Path ([IO.Path]::GetTempPath()) ("settings-registry-$([Guid]::NewGuid().ToString('N')).json")
+
+function Assert-Registry {
     param([bool]$Condition, [string]$Message)
     if (-not $Condition) { throw $Message }
 }
-function Invoke-ContractTool {
+function Invoke-RegistryTool {
     param([string[]]$Arguments, [string]$Failure, [string]$Action = 'Query')
-    $output = & pwsh -NoProfile -File (Join-Path (Split-Path -Parent $PSScriptRoot) 'settings-contracts.ps1') -Action $Action -Workspace $Workspace @Arguments 2>&1
+    $output = & pwsh -NoProfile -File $tool -Action $Action -Workspace $Workspace @Arguments 2>&1
     $code = $LASTEXITCODE
     $text = $output -join "`n"
     if ($Failure) {
-        Assert-ContractQuery ($code -eq 1 -and $text -match $Failure) "查询未按预期拒绝：$Failure"
-        Assert-ContractQuery ($text.Length -lt 600) '拒绝宽查询时不应输出完整清单。'
+        Assert-Registry ($code -eq 1 -and $text -match $Failure) "未按预期拒绝：$text"
         return $null
     }
-    Assert-ContractQuery ($code -eq 0) "查询失败：$text"
-    $data = if ($Action -eq 'Query') { $text | ConvertFrom-Json } else { $null }
-    [pscustomobject]@{ Data = $data; Bytes = [Text.Encoding]::UTF8.GetByteCount($text); Text = $text }
+    Assert-Registry ($code -eq 0) "查询失败：$text"
+    [pscustomobject]@{ Text = $text; Data = $(if ($Action -eq 'Query') { $text | ConvertFrom-Json });
+        Bytes = [Text.Encoding]::UTF8.GetByteCount($text) }
 }
+function Write-Fixture {
+    param([object]$Value)
+    [IO.File]::WriteAllText($fixture, ($Value | ConvertTo-Json -Depth 50), [Text.UTF8Encoding]::new($false))
+}
+
 try {
-    $cover = Invoke-ContractTool -Arguments @('-Path', 'settings.interaction.artworkHoverMode')
-    Assert-ContractQuery (@($cover.Data.fields).Count -eq 1) '封面查询返回了无关字段。'
-    Assert-ContractQuery ($cover.Data.fields[0].status -eq 'unreleased' -and $cover.Data.fields[0].default -eq 'Off') '封面发布状态或默认值改变。'
-    Assert-ContractQuery (@($cover.Data.enums).Count -eq 1 -and @($cover.Data.enums[0].members).Count -eq 3) '封面查询缺少相关枚举。'
-    Assert-ContractQuery ('artwork-hover' -in $cover.Data.rules.id -and 'interaction' -in $cover.Data.rules.id) '封面查询缺少行为或重置规则。'
-    Assert-ContractQuery ('settings.taskbarExperience.artworkVisible' -in $cover.Data.relatedPaths) '封面查询丢失关联条件。'
-    Assert-ContractQuery ($cover.Bytes -le 3072 -and -not $cover.Text.Contains('sourceFiles')) '单字段默认查询超过3KB或读入了无关证据。'
-
-    $language = Invoke-ContractTool -Arguments @('-Path', 'settings.interfaceLanguage')
+    $before = (Get-Item -LiteralPath $registryPath).LastWriteTimeUtc.Ticks
+    $cover = Invoke-RegistryTool -Arguments @('-Path', 'settings.interaction.artworkHoverMode')
+    Assert-Registry (@($cover.Data.fields).Count -eq 1 -and $cover.Data.fields[0].release -eq 'unreleased') '封面模式的开发状态丢失。'
+    Assert-Registry (@($cover.Data.enums[0].members).Count -eq 3 -and 'artwork-hover' -in $cover.Data.rules.id) '封面枚举或关联规则丢失。'
+    Assert-Registry ($cover.Bytes -le 3072 -and 'default' -notin $cover.Data.fields[0].PSObject.Properties.Name -and
+        'source' -notin $cover.Data.fields[0].PSObject.Properties.Name) '查询重新带入默认快照或源码位置。'
+    $language = Invoke-RegistryTool -Arguments @('-Path', 'settings.interfaceLanguage')
     $vietnamese = $language.Data.enums[0].members | Where-Object name -EQ 'Vietnamese'
-    Assert-ContractQuery ($language.Data.fields[0].status -eq 'released' -and $null -eq $vietnamese.release) '父字段与新增枚举成员的发布状态被混同。'
-
-    $metrics = Invoke-ContractTool -Arguments @('-Path', 'settings.performanceComponent.metrics')
-    Assert-ContractQuery ($metrics.Data.fields[0].default -is [array] -and @($metrics.Data.fields[0].missing).Count -eq 1) '单项数组被压成标量。'
-
-    $panel = Invoke-ContractTool -Arguments @('-Path', 'settings.taskbarExperience.fullPanel.mediaInfoVisible')
-    Assert-ContractQuery ('full-panel' -in $panel.Data.rules.id -and @($panel.Data.relatedPaths).Count -eq 3) '完整面板查询丢失四开关联动。'
-
-    $old = Invoke-ContractTool -Arguments @('-Path', 'settings.lyricsMatchStrictness')
-    Assert-ContractQuery (@($old.Data.fields).Count -eq 0 -and $old.Data.removed[0].firstReleased -eq 'v1.2.0') '历史删除项被误判为未发布。'
-    Assert-ContractQuery (@($old.Data.rules).Count -eq 1 -and $old.Data.rules[0].id -eq 'removed-strictness') '历史查询混入了当前字段规则。'
-
-    $enum = Invoke-ContractTool -Arguments @('-Enum', 'ArtworkHoverMode')
-    Assert-ContractQuery (@($enum.Data.fields).Count -eq 0 -and @($enum.Data.rules).Count -eq 1) '纯枚举查询混入字段规则。'
-    $detail = Invoke-ContractTool -Arguments @('-Path', 'settings.appearance.fontWeight', '-Details')
-    Assert-ContractQuery ($detail.Data.fields[0].latestReleaseDefault -eq 400 -and $detail.Data.fields[0].missing -eq 100) '详细查询丢失已核对的缺字段差异。'
-    $prefix = Invoke-ContractTool -Arguments @('-Prefix', 'settings.taskbarExperience.hoverControls')
-    Assert-ContractQuery (@($prefix.Data.fields).Count -eq 6) '限定前缀没有完整返回匹配项。'
-    $list = Invoke-ContractTool -Arguments @('-List')
-    $groupPathCount = ($list.Data.groups | ForEach-Object { $_.count } | Measure-Object -Sum).Sum
-    Assert-ContractQuery (@($list.Data.groups).Count -eq 8 -and $groupPathCount -eq 138) '专题索引覆盖不完整。'
-
-    Invoke-ContractTool -Arguments @('-Prefix', 'settings') -Failure '超过8项' | Out-Null
-    Invoke-ContractTool -Arguments @('-Path', 'settings.notRegistered') -Failure '不能据此视为未发布' | Out-Null
-    Invoke-ContractTool -Arguments @('-Enum', 'NotRegistered') -Failure '清单无此枚举' | Out-Null
-    Invoke-ContractTool -Arguments @('-Path', 'settings.position', '-Enum', 'ArtworkHoverMode') -Failure '只接受Path' | Out-Null
-    Invoke-ContractTool -Action Generate -Arguments @('-Details') -Failure '不接受查询参数' | Out-Null
-    Invoke-ContractTool -Action Verify -Arguments @('-Check') -Failure 'Check仅用于Generate' | Out-Null
-    $topicFiles = Get-ChildItem -LiteralPath (Join-Path $Workspace 'docs/settings-contracts') -File -Filter '*.md'
-    $timestampsBefore = @($topicFiles | Sort-Object Name | ForEach-Object { $_.LastWriteTimeUtc.Ticks })
-    $generateCheck = Invoke-ContractTool -Action Generate -Arguments @('-Check')
-    Assert-ContractQuery ($generateCheck.Text -match '8 个专题与机器清单一致') 'Generate -Check 未验证所有专题。'
-    $verify = Invoke-ContractTool -Action Verify
-    Assert-ContractQuery ($verify.Text -match '138 个配置路径') 'Verify 未完整校验清单。'
-    $timestampsAfter = @(Get-ChildItem -LiteralPath (Join-Path $Workspace 'docs/settings-contracts') -File -Filter '*.md' | Sort-Object Name | ForEach-Object { $_.LastWriteTimeUtc.Ticks })
-    Assert-ContractQuery (-not (Compare-Object $timestampsBefore $timestampsAfter)) '只读校验改写了专题文件。'
-    Write-Host "通过：9类查询、6类拒绝、Generate/Verify只读校验；封面摘要$($cover.Bytes)字节。"
+    Assert-Registry ($language.Data.fields[0].status -eq 'released' -and $vietnamese.release -eq 'unreleased') '字段与新枚举成员发布状态被混同。'
+    $entry = Invoke-RegistryTool -Arguments @('-Path', 'settings.quickLaunch.entries[].target')
+    Assert-Registry ($entry.Data.fields[0].release -eq 'v1.2.0') '列表条目路径无法查询。'
+    $old = Invoke-RegistryTool -Arguments @('-Path', 'settings.lyricsMatchStrictness')
+    Assert-Registry (@($old.Data.fields).Count -eq 0 -and $old.Data.removed[0].history.firstReleased -eq 'v1.2.0' -and
+        'removed-strictness' -in $old.Data.rules.id) '已删除的发布项被误当成开发项。'
+    $enums = Invoke-RegistryTool -Arguments @('-Enum', 'ArtworkHoverMode')
+    Assert-Registry (@($enums.Data.fields).Count -eq 0 -and @($enums.Data.enums).Count -eq 1) '纯枚举查询混入字段。'
+    $prefix = Invoke-RegistryTool -Arguments @('-Prefix', 'settings.taskbarExperience.hoverControls')
+    Assert-Registry (@($prefix.Data.fields).Count -eq 6) '指定前缀遗漏当前成员。'
+    $list = Invoke-RegistryTool -Arguments @('-List')
+    Assert-Registry ('settings.appearance.idleNoteColor' -in $list.Data.unreleasedPaths -and @($list.Data.sections).Count -gt 0) '开发项目录缺失。'
+    Invoke-RegistryTool -Arguments @('-Prefix', 'settings') -Failure '超过 8 项' | Out-Null
+    Invoke-RegistryTool -Arguments @('-Path', 'settings.notRegistered') -Failure '不能据此视为未发布' | Out-Null
+    Invoke-RegistryTool -Arguments @('-Enum', 'NotRegistered') -Failure '登记无此枚举' | Out-Null
+    Invoke-RegistryTool -Arguments @('-Path', 'settings.position', '-Enum', 'ArtworkHoverMode') -Failure '一种选择' | Out-Null
+    Invoke-RegistryTool -Action Verify -Arguments @('-Path', 'settings.position') -Failure '不接受查询参数' | Out-Null
+    $verify = Invoke-RegistryTool -Action Verify
+    Assert-Registry ($verify.Text -match '不证明源码覆盖') '格式检查夸大验证范围。'
+    Assert-Registry ((Get-Item -LiteralPath $registryPath).LastWriteTimeUtc.Ticks -eq $before) '查询或格式检查改写了登记文件。'
+    $data = Get-Content -LiteralPath $registryPath -Raw | ConvertFrom-Json -AsHashtable
+    $data.settings.appearance.fontWeight = 'released'
+    Write-Fixture $data
+    Invoke-RegistryTool -Action Verify -Arguments @('-ContractFile', $fixture) -Failure '发布标记只能' | Out-Null
+    $data.settings.appearance.fontWeight = 'v1.2.0'
+    $data.enums.InterfaceLanguage.paths = @('settings.notRegistered')
+    Write-Fixture $data
+    Invoke-RegistryTool -Action Verify -Arguments @('-ContractFile', $fixture) -Failure '引用未知或重复路径' | Out-Null
+    [IO.File]::WriteAllText($fixture, '{"formatVersion":2,"formatVersion":2}')
+    Invoke-RegistryTool -Action Verify -Arguments @('-ContractFile', $fixture) -Failure 'JSON 键重复' | Out-Null
+    $data = Get-Content -LiteralPath $registryPath -Raw | ConvertFrom-Json -AsHashtable
+    $data.latestRelease = 'v9.9.9'
+    Write-Fixture $data
+    # 形式合法的版本无需在本地存在 tag；通过不能作为正式发布证明。
+    Invoke-RegistryTool -Action Verify -Arguments @('-ContractFile', $fixture) | Out-Null
+    Write-Output '通过：字段/枚举/历史查询、列表模板、输出范围、错误登记拒绝及只读格式检查。'
     exit 0
 } catch {
-    Write-Error "契约查询验证失败：$($_.Exception.Message)" -ErrorAction Continue
+    Write-Error "设置登记测试失败：$($_.Exception.Message)" -ErrorAction Continue
     exit 1
+} finally {
+    if (Test-Path -LiteralPath $fixture) { Remove-Item -LiteralPath $fixture }
 }
