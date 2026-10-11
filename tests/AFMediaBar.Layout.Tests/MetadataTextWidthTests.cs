@@ -39,7 +39,7 @@ public sealed class MetadataTextWidthTests
         Assert.AreEqual(300, longTitle.Width);
         Assert.IsFalse(longTitle.NotifyFallback);
         var noRoom = TaskbarPlacementPolicy.Evaluate(longTitle.State, Snapshot(3, 20, 280), TaskbarBarPosition.Start, 1600, 0, 280, 440);
-        Assert.IsTrue(noRoom.NotifyFallback);
+        Assert.IsFalse(noRoom.NotifyFallback);
         Assert.IsTrue(noRoom.Position >= 1000);
     }
 

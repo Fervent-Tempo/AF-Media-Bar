@@ -103,6 +103,7 @@ public partial class TaskbarWindow
         _dragPlacementContext = GetPlacementContext(rect, dpi);
         _dragPlacementSeed = TaskbarPlacementPolicy.ClearConfirmation(_placementState) with
         {
+            IsDragSeed = true,
             HasHome = true,
             HomeAnchorTwice = anchor,
             AppliedAnchorTwice = anchor,
@@ -128,7 +129,7 @@ public partial class TaskbarWindow
                 $"availablePx={ranges}, probe={_pendingPlacementSnapshot?.Status}, budgetPx={decision.State.Budget}, " +
                 $"desiredDip={_lastDesiredSizeRequest?.PrimaryLength:F1}, actualPx={decision.Width}");
         }
-        _placementState = decision.State;
+        _placementState = decision.State with { IsDragSeed = false };
         _placementContext = _pendingPlacementContext;
         _pendingPlacementDecision = null;
         _pendingPlacementSnapshot = null;

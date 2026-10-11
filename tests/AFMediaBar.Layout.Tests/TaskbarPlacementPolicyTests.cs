@@ -25,7 +25,7 @@ public sealed class TaskbarPlacementPolicyTests
     }
 
     [TestMethod]
-    public void ExpansionRaisesBudgetAfterNewSamplesButNeverReanchorsIssue148()
+    public void ExpansionFollowsCurrentBoundaryButCachedReadsDoNotConfirmSpace()
     {
         var first = Plan(new(), 1, 0, TaskbarBarPosition.Start, 800, new TaskbarPrimaryRange(400, 1000));
         var expanded = Plan(first.State, 2, 1.5, TaskbarBarPosition.Start, 800, new TaskbarPrimaryRange(200, 1200));
@@ -35,9 +35,8 @@ public sealed class TaskbarPlacementPolicyTests
         Assert.AreEqual(expanded.State.ConfirmationCount, cached.State.ConfirmationCount);
         var middle = Plan(cached.State, 3, 3, TaskbarBarPosition.Start, 800, new TaskbarPrimaryRange(200, 1190));
         var stable = Plan(middle.State, 4, 4.5, TaskbarBarPosition.Start, 800, new TaskbarPrimaryRange(180, 1200));
-        Assert.AreEqual(400, stable.Position);
-        Assert.AreEqual(790, stable.Width);
-        Assert.AreEqual(first.State.HomeAnchorTwice, stable.State.HomeAnchorTwice);
+        Assert.AreEqual(200, stable.Position);
+        Assert.AreEqual(800, stable.Width);
     }
 
     [TestMethod]
@@ -49,8 +48,7 @@ public sealed class TaskbarPlacementPolicyTests
         Assert.AreEqual(300, smaller.Width);
         Assert.IsFalse(smaller.NotifyFallback);
         var moved = Plan(smaller.State, 3, 2, TaskbarBarPosition.End, 800, new TaskbarPrimaryRange(20, 1000), new TaskbarPrimaryRange(1750, 1900));
-        Assert.IsTrue(moved.NotifyFallback);
-        Assert.AreEqual(first.State.HomeAnchorTwice, moved.State.HomeAnchorTwice);
+        Assert.IsFalse(moved.NotifyFallback);
         var again = Plan(moved.State, 4, 3, TaskbarBarPosition.End, 800, new TaskbarPrimaryRange(20, 900), new TaskbarPrimaryRange(1750, 1900));
         Assert.IsFalse(again.NotifyFallback);
     }
@@ -65,7 +63,7 @@ public sealed class TaskbarPlacementPolicyTests
         Assert.AreEqual(begin.State.ConfirmationCount, pending.State.ConfirmationCount);
         var next = Plan(pending.State, 4, 3.5, TaskbarBarPosition.End, 300, new TaskbarPrimaryRange(20, 1000), new TaskbarPrimaryRange(1200, 1950));
         var restored = Plan(next.State, 5, 5, TaskbarBarPosition.End, 300, new TaskbarPrimaryRange(20, 1000), new TaskbarPrimaryRange(1200, 1950));
-        Assert.AreEqual(1900, restored.Position + restored.Width);
+        Assert.AreEqual(1950, restored.Position + restored.Width);
         Assert.IsFalse(restored.NotifyFallback);
     }
 
@@ -192,12 +190,38 @@ public sealed class TaskbarPlacementPolicyTests
     {
         var first = Plan(new(), 1, 0, TaskbarBarPosition.End, 300, new TaskbarPrimaryRange(200, 1000));
         var dragged = TaskbarPlacementPolicy.ClearConfirmation(first.State) with
-        { HomeAnchorTwice = 1800, AppliedAnchorTwice = 1800 };
+        { HomeAnchorTwice = 1800, AppliedAnchorTwice = 1800, IsDragSeed = true };
         var next = Plan(dragged, 2, 1, TaskbarBarPosition.End, 300,
             new TaskbarPrimaryRange(200, 1000), new TaskbarPrimaryRange(1400, 1900));
         Assert.AreEqual(900, next.Position + next.Width);
         Assert.AreEqual(1800L, next.State.HomeAnchorTwice);
         Assert.IsFalse(next.NotifyFallback);
+    }
+
+    [DataTestMethod]
+    [DataRow(TaskbarBarPosition.Start)]
+    [DataRow(TaskbarBarPosition.End)]
+    public void ConsecutiveClosuresRecoverBeyondTheFirstObservedBoundary(TaskbarBarPosition alignment)
+    {
+        TaskbarPrimaryRange Range(int boundary) => alignment == TaskbarBarPosition.Start ? new(boundary, 1900) : new(100, 2000 - boundary);
+        var first = Plan(new(), 1, 0, alignment, 300, Range(400));
+        var intrusion = Plan(first.State, 2, 1, alignment, 300, Range(600));
+        var freeing = Plan(intrusion.State, 3, 1.1, alignment, 300, Range(500));
+        var more = Plan(freeing.State, 4, 1.2, alignment, 300, Range(300));
+        var partial = Plan(more.State, 5, 1.3, alignment, 300, Range(300));
+        Assert.AreEqual(500, alignment == TaskbarBarPosition.Start ? partial.Position : 2000 - partial.Position - partial.Width);
+        var final = Plan(partial.State, 6, 1.4, alignment, 300, Range(300));
+        Assert.AreEqual(300, alignment == TaskbarBarPosition.Start ? final.Position : 2000 - final.Position - final.Width);
+    }
+
+    [TestMethod]
+    public void CenterMovesCloserEvenBeforeItsExactCenterCanFit()
+    {
+        var first = Plan(new(), 1, 0, TaskbarBarPosition.Center, 200, new TaskbarPrimaryRange(1100, 1900));
+        var freeing = Plan(first.State, 2, 1, TaskbarBarPosition.Center, 200, new TaskbarPrimaryRange(1000, 1900));
+        var confirmed = Plan(freeing.State, 3, 1.2, TaskbarBarPosition.Center, 200, new TaskbarPrimaryRange(1000, 1900));
+        Assert.AreEqual(1000, confirmed.Position);
+        Assert.AreEqual(2000L, confirmed.State.HomeAnchorTwice);
     }
 
 }

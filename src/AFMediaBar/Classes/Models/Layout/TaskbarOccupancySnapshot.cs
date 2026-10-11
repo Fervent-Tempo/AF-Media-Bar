@@ -9,7 +9,7 @@ public sealed record TaskbarOccupancySnapshot(
     TaskbarProbeStatus Status, long Generation, long PublicationId,
     double CompletedSeconds, IReadOnlyList<TaskbarPrimaryRange> Ranges, bool IsTrustedGeometry = false, long LastFailurePublicationId = 0);
 
-/// <summary>单个宿主的已应用锚点和探测确认状态；宿主拥有并在实际应用后替换。</summary>
+/// <summary>单个宿主已接受的目标和安全区确认；实际动画帧由宿主另行持有。</summary>
 public sealed record TaskbarPlacementState
 {
     public long Generation { get; init; } = -1;
@@ -32,7 +32,13 @@ public sealed record TaskbarPlacementState
     public double LastConfirmationSeconds { get; init; }
     public int ConfirmationCount { get; init; }
     public int ConfirmationBudget { get; init; }
+    public IReadOnlyList<TaskbarPrimaryRange> SafeRanges { get; init; } = [];
+    public IReadOnlyList<TaskbarRangeObservation> Observations { get; init; } = [];
+    public bool IsDragSeed { get; init; }
 }
+
+/// <summary>一份新发布的成功占用区观察，用于确认持续空闲的交集。</summary>
+public sealed record TaskbarRangeObservation(double Seconds, IReadOnlyList<TaskbarPrimaryRange> Ranges);
 
 /// <summary>一次可预览的布局结果；只有宿主应用后才能提交 State 或发出通知。</summary>
 public sealed record TaskbarPlacementDecision(
