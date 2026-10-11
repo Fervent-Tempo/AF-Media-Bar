@@ -492,6 +492,7 @@ namespace AFMediaBar.Views.Windows
             foreach (var taskbarWindow in taskbarWindows)
             {
                 taskbarWindow.OpenFullPanelRequested -= TaskbarWindow_OpenFullPanelRequested;
+                taskbarWindow.PlacementTransitionStarted -= TaskbarWindow_PlacementTransitionStarted;
                 taskbarWindow.PlacementFallbackRequested -= TaskbarWindow_PlacementFallbackRequested;
                 taskbarWindow.SuspendForEnvironmentRecovery();
                 taskbarWindow.DetachFromTaskbar();
@@ -809,8 +810,15 @@ namespace AFMediaBar.Views.Windows
                 _mouseInputMonitor,
                 _memoryPruneCoordinator);
             window.OpenFullPanelRequested += TaskbarWindow_OpenFullPanelRequested;
+            window.PlacementTransitionStarted += TaskbarWindow_PlacementTransitionStarted;
             window.PlacementFallbackRequested += TaskbarWindow_PlacementFallbackRequested;
             return window;
+        }
+
+        private void TaskbarWindow_PlacementTransitionStarted(object? sender, EventArgs e)
+        {
+            if (sender is TaskbarWindow window && _fullPanelWindows.TryGetValue(window.TargetMonitorDeviceId, out var panel))
+                panel.RequestClose();
         }
 
         private void TaskbarWindow_OpenFullPanelRequested(object? sender, EventArgs e)

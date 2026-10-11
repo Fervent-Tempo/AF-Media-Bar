@@ -19,6 +19,35 @@ public sealed class TaskbarOccupancySnapshotTests
     }
 
     [TestMethod]
+    public void EventRefreshBypassesYoungCacheButNeverDuplicatesActiveOrFailedProbe()
+    {
+        var clock = DateTime.UtcNow;
+        var probe = new Probe();
+        var service = new TaskbarOccupiedAreaService(probe, () => clock);
+        var rect = new RECT { Right = 2000, Bottom = 48 };
+        TaskbarOccupancySnapshot Get(bool force = false) => service.GetSnapshot((nint)1, rect, LayoutOrientation.Horizontal, 1, 20, force);
+        Get();
+        probe.Requests[0].Success([new(500, 1900)]);
+        clock = clock.AddMilliseconds(100);
+        Get();
+        Assert.AreEqual(1, probe.Requests.Count);
+        Get(true);
+        Get(true);
+        Assert.AreEqual(2, probe.Requests.Count);
+        probe.Requests[1].Success([new(300, 1900)]);
+        Assert.AreEqual(300, Get().Ranges[0].Start);
+        Get(true);
+        probe.Requests[2].Failure();
+        clock = clock.AddMilliseconds(500);
+        Get(true);
+        Assert.AreEqual(3, probe.Requests.Count);
+        clock = clock.AddSeconds(2);
+        Get(true);
+        Assert.AreEqual(4, probe.Requests.Count);
+        probe.Requests[3].Success([new(200, 1900)]);
+    }
+
+    [TestMethod]
     public void PendingSuccessfulEmptyAndFailureHaveDifferentStatuses()
     {
         var clock = DateTime.UtcNow;

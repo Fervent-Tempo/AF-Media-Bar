@@ -207,12 +207,26 @@ public partial class TaskBarMediaControl
         return _songInfoEntranceTransform;
     }
 
+    private bool _isPlacementMotionActive;
+
+    /// <summary>位置恢复期间收起悬停呈现；不暂停媒体、歌词或业务服务。</summary>
+    public void ApplyPlacementMotionSuspension(bool suspended)
+    {
+        if (_isPlacementMotionActive == suspended) return;
+        _isPlacementMotionActive = suspended;
+        if (suspended)
+        {
+            AnimateArtworkHover(false, immediate: true);
+            HideTaskbarHoverLayer(immediate: true);
+        }
+    }
+
     private bool CanUseTaskbarComponentHover() =>
-        _isConnected && _currentMode == WindowMode.Taskbar && !_isVertical;
+        !_isPlacementMotionActive && _isConnected && _currentMode == WindowMode.Taskbar && !_isVertical;
 
     private bool CanUseTaskbarRestHover(Border surface)
     {
-        if (_currentMode != WindowMode.Taskbar || _isVertical || _restTransitionActive)
+        if (_isPlacementMotionActive || _currentMode != WindowMode.Taskbar || _isVertical || _restTransitionActive)
             return false;
 
         if (_isConnected)

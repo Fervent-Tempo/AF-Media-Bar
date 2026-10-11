@@ -86,6 +86,9 @@ public partial class TaskbarWindow : Window
     private IntPtr _taskbarLocationHook;
     private IntPtr _hookedTaskbarHandle;
     private WinEventProc? _taskbarLocationCallback;
+    private uint _taskbarThreadId;
+    private readonly TaskbarOccupancyRefreshPolicy _occupancyRefresh = new();
+    private readonly DispatcherTimer _occupancyRefreshTimer;
     private bool _environmentLayoutQueued;
     private bool _isDragging;
     private bool _isDragPending;
@@ -255,6 +258,8 @@ public partial class TaskbarWindow : Window
         _memoryPruneCoordinator.LevelChanged += MemoryPruneCoordinator_LevelChanged;
         _backgroundPruneLevel = _memoryPruneCoordinator.CurrentLevel;
 
+        _occupancyRefreshTimer = new DispatcherTimer(DispatcherPriority.Input) { Interval = TimeSpan.FromMilliseconds(50) };
+        _occupancyRefreshTimer.Tick += OccupancyRefreshTimer_Tick;
         _sizeAnimationTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
         _sizeAnimationTimer.Tick += (_, _) => AdvanceSizeAnimation();
         _spectrumTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
@@ -345,22 +350,29 @@ public partial class TaskbarWindow : Window
             return;
 
         UnregisterTaskbarLocationHook();
-        _taskbarLocationCallback ??= (_, eventType, hwnd, objectId, _, _, _) =>
+        _taskbarLocationCallback ??= (_, eventType, hwnd, objectId, _, eventThread, _) =>
         {
-            if (eventType != EVENT_OBJECT_LOCATIONCHANGE || hwnd != _lastTaskbarHandle || objectId != OBJID_WINDOW)
+            if (_isClosing) return;
+            if (eventType == EVENT_OBJECT_LOCATIONCHANGE && hwnd == _lastTaskbarHandle && objectId == OBJID_WINDOW)
+            {
+                Dispatcher.BeginInvoke(() => ObserveTaskbarMotion(allowStableSample: false), DispatcherPriority.Send);
                 return;
-
-            Dispatcher.BeginInvoke(() => ObserveTaskbarMotion(allowStableSample: false), DispatcherPriority.Send);
+            }
+            if (eventType is not (0x8000 or 0x8001 or 0x8002 or 0x8003 or 0x8004 or EVENT_OBJECT_LOCATIONCHANGE)) return;
+            // 销毁后父子关系已不可查询，绑定线程内的销毁只请求受控补探测。
+            if (hwnd != _lastTaskbarHandle && !IsChild(_lastTaskbarHandle, hwnd) &&
+                !(eventType == 0x8001 && eventThread == _taskbarThreadId)) return;
+            QueueOccupancyRefresh();
         };
 
-        var threadId = GetWindowThreadProcessId(taskbarHandle, out var processId);
+        _taskbarThreadId = GetWindowThreadProcessId(taskbarHandle, out var processId);
         _taskbarLocationHook = SetWinEventHook(
-            EVENT_OBJECT_LOCATIONCHANGE,
+            0x8000,
             EVENT_OBJECT_LOCATIONCHANGE,
             IntPtr.Zero,
             _taskbarLocationCallback,
             unchecked((uint)processId),
-            threadId,
+            0,
             WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
         if (_taskbarLocationHook != IntPtr.Zero)
             _hookedTaskbarHandle = taskbarHandle;
@@ -430,11 +442,12 @@ public partial class TaskbarWindow : Window
 
         if (suspended)
         {
+            StopOccupancyRefresh();
             _placementState = TaskbarPlacementPolicy.ClearConfirmation(_placementState);
             MediaControl.ApplyHostVisibilitySuspension(true);
             // 冻结任务栏相对几何供父窗口带动；稳定后仍需重新取得安全区间，才能恢复布局与输入。
             _hasSafePlacement = false;
-            _sizeAnimationTimer.Stop();
+            StopLayoutTransition();
             if (_lastDesiredSizeRequest is { } desiredSize)
                 _pendingSizeRequest = desiredSize;
             _spectrumTimer.Stop();
@@ -505,9 +518,10 @@ public partial class TaskbarWindow : Window
             // Explorer destroys taskbar child HWNDs before TaskbarCreated reaches MainWindow;
             // block media callbacks immediately so they cannot show an already closed Window.
             _isClosing = true;
+            StopOccupancyRefresh();
             _windowHandle = IntPtr.Zero;
             _timer.Stop();
-            _sizeAnimationTimer.Stop();
+            StopLayoutTransition();
             _spectrumTimer.Stop();
             _taskbarMotionSettleTimer.Stop();
             _taskbarHiddenTrimTimer.Stop();
@@ -529,7 +543,7 @@ public partial class TaskbarWindow : Window
             // UI Automation probing cannot deadlock with the Shell during repeated display changes.
             _skipOccupiedAreaProbeUntilUtc = DateTime.UtcNow + EnvironmentChangeProbeCooldown;
             _occupiedAreaService.InvalidateCache();
-            _sizeAnimationTimer.Stop();
+            StopLayoutTransition();
             if (_lastDesiredSizeRequest is { } desiredSize)
                 _pendingSizeRequest = desiredSize;
             if (!_environmentLayoutQueued)
@@ -642,7 +656,7 @@ public partial class TaskbarWindow : Window
         Dispatcher.BeginInvoke(() =>
         {
             if (!_isClosing && !_isEnvironmentSuspended && e.TaskbarHandle == _lastTaskbarHandle)
-                UpdatePosition();
+                UpdatePositionImmediately();
         }, DispatcherPriority.Input);
     }
 
@@ -1303,6 +1317,7 @@ public partial class TaskbarWindow : Window
             return;
 
         _isClosing = true;
+        StopOccupancyRefresh();
         SuspendForEnvironmentRecovery();
         DetachFromTaskbar();
     }
@@ -1318,11 +1333,12 @@ public partial class TaskbarWindow : Window
 
         _placementState = TaskbarPlacementPolicy.ClearConfirmation(_placementState);
         _isEnvironmentSuspended = true;
+        StopOccupancyRefresh();
         _hasTaskbarPresentationPlacement = false;
         Visibility = Visibility.Collapsed;
         UnregisterTaskbarLocationHook();
         _timer.Stop();
-        _sizeAnimationTimer.Stop();
+        StopLayoutTransition();
         _spectrumTimer.Stop();
         _taskbarMotionSettleTimer.Stop();
         _taskbarHiddenTrimTimer.Stop();
@@ -1404,6 +1420,8 @@ public partial class TaskbarWindow : Window
         }
 
         _timer.Stop();
+        StopOccupancyRefresh();
+        StopLayoutTransition();
         _spectrumTimer.Stop();
         DisposeMetricsSubscription();
         _pendingSizeRequest = null;
@@ -2062,7 +2080,7 @@ public partial class TaskbarWindow : Window
 
         if (MediaControl.IsRestConnectionTransitionActive && orientation == LayoutOrientation.Horizontal)
         {
-            _sizeAnimationTimer.Stop();
+            StopLayoutTransition();
             if (MediaControl.IsRestConnectionTransitionEntering)
             {
                 _pendingRestExitSizeRequest = null;
@@ -2112,7 +2130,7 @@ public partial class TaskbarWindow : Window
             _lengthConstraints.Remove(this);
         if (orientation == LayoutOrientation.Horizontal && maximum <= 0)
         {
-            _sizeAnimationTimer.Stop();
+            StopLayoutTransition();
             UpdatePositionImmediately();
             return;
         }
@@ -2132,13 +2150,22 @@ public partial class TaskbarWindow : Window
         // renders at the previous length and gets clipped with an ellipsis.
         if (_applySettingsSizeImmediately || request.SkipTransition || !motion.UseContinuousMotion || Math.Abs(target - current) < LayoutSizeCalculator.MinimumChangeDip)
         {
-            _sizeAnimationTimer.Stop();
+            StopLayoutTransition();
             ApplyPrimaryLength(target);
             if (!_applySettingsSizeImmediately)
-                UpdatePositionImmediately();
+            {
+                _skipPlacementTransition = true;
+                try { UpdatePositionImmediately(); }
+                finally { _skipPlacementTransition = false; }
+            }
             return;
         }
 
+        if (orientation == LayoutOrientation.Horizontal)
+        {
+            UpdatePositionImmediately();
+            return;
+        }
         _sizeAnimationStart = current;
         _sizeAnimationTarget = target;
         _sizeAnimationProgress = 0;
@@ -2343,9 +2370,14 @@ public partial class TaskbarWindow : Window
 
     private void AdvanceSizeAnimation()
     {
+        if (_returnTransition.IsActive)
+        {
+            AdvanceReturnTransition();
+            return;
+        }
         if (_isClosing || _isDragging || IsTaskbarPresentationSuspended)
         {
-            _sizeAnimationTimer.Stop();
+            StopLayoutTransition();
             return;
         }
 
@@ -2361,7 +2393,7 @@ public partial class TaskbarWindow : Window
         _sizeAnimationProgress = frame.Progress;
         ApplyPrimaryLength(frame.Value);
         if (frame.IsCompleted)
-            _sizeAnimationTimer.Stop();
+            StopLayoutTransition();
         UpdatePositionImmediately();
     }
 
@@ -2514,9 +2546,10 @@ public partial class TaskbarWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _isClosing = true;
+        StopOccupancyRefresh();
         _memoryPruneCoordinator.LevelChanged -= MemoryPruneCoordinator_LevelChanged;
         _timer.Stop();
-        _sizeAnimationTimer.Stop();
+        StopLayoutTransition();
         _spectrumTimer.Stop();
         _taskbarMotionSettleTimer.Stop();
         _taskbarHiddenTrimTimer.Stop();

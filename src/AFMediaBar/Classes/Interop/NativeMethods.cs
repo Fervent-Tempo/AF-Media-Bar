@@ -309,6 +309,10 @@ public static partial class NativeMethods
     [LibraryImport("user32.dll", SetLastError = true)]
     public static partial IntPtr GetParent(IntPtr hWnd);
 
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool IsChild(IntPtr parent, IntPtr child);
+
     [LibraryImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool GetWindowRect(IntPtr hWnd, out RECT lpRect);

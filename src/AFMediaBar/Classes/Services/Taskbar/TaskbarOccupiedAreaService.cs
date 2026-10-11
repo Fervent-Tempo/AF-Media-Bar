@@ -64,7 +64,8 @@ public sealed class TaskbarOccupiedAreaService
         RECT taskbarRect,
         LayoutOrientation orientation,
         double dpiScale,
-        int edgePaddingPixels)
+        int edgePaddingPixels,
+        bool requestRefresh = false)
     {
         var key = new ProbeCacheKey(
             taskbarHandle,
@@ -83,7 +84,7 @@ public sealed class TaskbarOccupiedAreaService
             var now = _utcNow();
             if (_cache.TryGetValue(key, out var entry))
             {
-                if (now - entry.CachedAtUtc < ProbeCacheDuration)
+                if (!requestRefresh && now - entry.CachedAtUtc < ProbeCacheDuration)
                     return entry.Ranges;
                 if (now - entry.CachedAtUtc <= ProbeResultTimeout)
                     availableCache = entry.Ranges;
@@ -139,9 +140,9 @@ public sealed class TaskbarOccupiedAreaService
 
     /// <summary>调度探测并读取有状态的缓存；Pending 不表示有效空区或真实失败。</summary>
     public TaskbarOccupancySnapshot GetSnapshot(IntPtr taskbarHandle, RECT taskbarRect,
-        LayoutOrientation orientation, double dpiScale, int edgePaddingPixels)
+        LayoutOrientation orientation, double dpiScale, int edgePaddingPixels, bool requestRefresh = false)
     {
-        GetSafePrimaryRanges(taskbarHandle, taskbarRect, orientation, dpiScale, edgePaddingPixels);
+        GetSafePrimaryRanges(taskbarHandle, taskbarRect, orientation, dpiScale, edgePaddingPixels, requestRefresh);
         var key = new ProbeCacheKey(taskbarHandle, taskbarRect, orientation, dpiScale, edgePaddingPixels);
         lock (_cacheGate)
         {
