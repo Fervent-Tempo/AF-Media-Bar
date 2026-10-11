@@ -102,6 +102,7 @@
     "spectrumComponent": {
       "$release": "v1.2.0",
       "bandCount": "v1.2.0",
+      "captureSource": "unreleased",
       "contentHeightDip": "v1.2.0",
       "refreshRateHz": "v1.2.0",
       "sensitivityPercent": "v1.2.0",
@@ -352,6 +353,14 @@
         "Executable": {"value": 0, "release": "v1.2.0"},
         "Shortcut": {"value": 1, "release": "v1.2.0"},
         "AppUserModelId": {"value": 2, "release": "v1.2.0"}
+      }
+    },
+    "SpectrumCaptureSource": {
+      "paths": ["settings.spectrumComponent.captureSource"],
+      "members": {
+        "CurrentDevice": {"value": 0, "release": "unreleased"},
+        "AllApplications": {"value": 1, "release": "unreleased"},
+        "CurrentMediaApplication": {"value": 2, "release": "unreleased"}
       }
     },
     "SpectrumStyle": {

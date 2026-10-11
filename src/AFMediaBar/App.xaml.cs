@@ -66,6 +66,8 @@ namespace AFMediaBar
         private DeveloperToolsWindowHost? _developerToolsHost;
         private RestartConfirmationService? _restartConfirmation;
         private LyricsRecoveryNotificationCoordinator? _lyricsRecoveryNotifications;
+        private MediaSessionService? _spectrumMediaSessions;
+        private EventHandler<MediaSnapshot>? _spectrumSnapshotHandler;
 
         // .NET Generic Host 提供依赖注入、配置、日志等服务。
         // The .NET Generic Host provides dependency injection, configuration, logging, and other services.
@@ -143,6 +145,7 @@ namespace AFMediaBar
                 services.AddSingleton<MediaSessionService>();
                 services.AddSingleton<TrackChangeNotificationCoordinator>();
                 services.AddSingleton<MediaSourceProcessResolver>();
+                services.AddSingleton<SpectrumCaptureProcessResolver>();
                 services.AddSingleton<AudioProcessInfoService>();
                 services.AddSingleton<ApplicationIconService>();
                 services.AddSingleton<ApplicationVolumeService>();
@@ -492,6 +495,8 @@ namespace AFMediaBar
             if (_startupCancellation.IsCancellationRequested || _exitHandled != 0 || Dispatcher.HasShutdownStarted)
                 return;
 
+            AttachSpectrumMediaSource();
+
             if (translucentTbDecision.ShowPrompt)
             {
                 _ = Dispatcher.BeginInvoke(() =>
@@ -529,6 +534,24 @@ namespace AFMediaBar
 #endif
         }
 
+        private void AttachSpectrumMediaSource()
+        {
+            // 在组合根接通快照输入，避免媒体服务、剪枝参与者和频谱之间形成构造依赖环。
+            var audioMonitor = Services.GetRequiredService<AudioMonitorService>();
+            _spectrumMediaSessions = Services.GetRequiredService<MediaSessionService>();
+            _spectrumSnapshotHandler = (_, snapshot) => audioMonitor.UpdateMediaSource(snapshot);
+            _spectrumMediaSessions.SnapshotChanged += _spectrumSnapshotHandler;
+            audioMonitor.UpdateMediaSource(_spectrumMediaSessions.CurrentSnapshot ?? MediaSnapshot.Disconnected);
+        }
+
+        private void DetachSpectrumMediaSource()
+        {
+            if (_spectrumMediaSessions is not null && _spectrumSnapshotHandler is not null)
+                _spectrumMediaSessions.SnapshotChanged -= _spectrumSnapshotHandler;
+            _spectrumMediaSessions = null;
+            _spectrumSnapshotHandler = null;
+        }
+
         /// <summary>
         /// 应用退出事件：停止 Host 并释放资源。
         /// Application exit event: stops the Host and disposes resources.
@@ -544,6 +567,7 @@ namespace AFMediaBar
             }
 
             _startupCancellation.Cancel();
+            DetachSpectrumMediaSource();
             _developerToolsHost?.Dispose();
             _developerMode?.Dispose();
             _lyricsRecoveryNotifications?.Dispose();

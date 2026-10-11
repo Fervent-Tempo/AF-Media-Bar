@@ -195,6 +195,17 @@ public enum SpectrumStyle
     MirroredBars = 3
 }
 
+/// <summary>频谱采集的音频范围；程序范围不依赖输出设备。</summary>
+public enum SpectrumCaptureSource
+{
+    /// <summary>采集后台选定的当前输出端点混音。</summary>
+    CurrentDevice = 0,
+    /// <summary>跨输出端点采集所有程序，排除 AF 及其子进程。</summary>
+    AllApplications = 1,
+    /// <summary>仅采集媒体栏当前显示的程序树；无法识别时不采集。</summary>
+    CurrentMediaApplication = 2
+}
+
 /// <summary>任务栏频谱组件设置。 / Taskbar spectrum component settings.</summary>
 public readonly record struct SpectrumComponentSettings(int BandCount, int RefreshRateHz, int SensitivityPercent)
 {
@@ -206,6 +217,9 @@ public readonly record struct SpectrumComponentSettings(int BandCount, int Refre
     /// never read as some other style.
     /// </summary>
     public SpectrumStyle Style { get; init; } = SpectrumStyle.Bars;
+
+    /// <summary>缺少字段的旧设置继续采集当前设备；程序模式无法解析时不扩大采集范围。</summary>
+    public SpectrumCaptureSource CaptureSource { get; init; } = SpectrumCaptureSource.CurrentDevice;
 
     /// <summary>
     /// 柱数下限。频谱组件宽度随柱数增长，柱宽保持固定，因此柱数不能再降到 9 以下：
@@ -290,6 +304,7 @@ public readonly record struct SpectrumComponentSettings(int BandCount, int Refre
         SnapSensitivityPercent(SensitivityPercent))
     {
         Style = Enum.IsDefined(Style) ? Style : SpectrumStyle.Bars,
+        CaptureSource = Enum.IsDefined(CaptureSource) ? CaptureSource : SpectrumCaptureSource.CurrentDevice,
         ContentHeightDip = SnapContentHeightDip(ContentHeightDip)
     };
 
