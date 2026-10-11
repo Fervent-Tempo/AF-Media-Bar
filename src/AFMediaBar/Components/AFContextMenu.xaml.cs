@@ -29,7 +29,7 @@ namespace AFMediaBar.Components
 
         /// <summary>退出整个程序。/ Exits the application.</summary>
         [RelayCommand]
-        private void ExitApplication() => Application.Current.Shutdown();
+        private void ExitApplication() => ExitRequested?.Invoke(this, EventArgs.Empty);
 
         /// <summary>切换到指定媒体会话（参数为会话 Key）。/ Switches to the session identified by the parameter key.</summary>
         [RelayCommand]
@@ -46,6 +46,9 @@ namespace AFMediaBar.Components
         }
 
         public event EventHandler? OpenSettingsRequested;
+
+        /// <summary>请求宿主通过统一退出入口关闭程序。</summary>
+        public event EventHandler? ExitRequested;
 
         public event EventHandler? OpenUpdateSettingsRequested;
 

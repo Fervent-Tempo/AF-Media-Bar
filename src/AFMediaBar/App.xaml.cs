@@ -53,8 +53,8 @@ namespace AFMediaBar
     public partial class App
     {
         private static readonly TimeSpan HostShutdownTimeout = TimeSpan.FromSeconds(5);
-        private static readonly TimeSpan ForcedExitTimeout = TimeSpan.FromSeconds(10);
-        private int _teardownCompleted;
+        private static readonly ApplicationExitCoordinator _exitCoordinator = new(ForceTerminateProcess);
+        private bool _hostStopAttempted;
         private int _exitHandled;
         private readonly CancellationTokenSource _startupCancellation = new();
         private PowerStateMonitor? _powerStateMonitor;
@@ -85,6 +85,8 @@ namespace AFMediaBar
 
                 // === 应用生命周期宿主服务 Application Lifecycle Host Service ===
                 services.AddHostedService<ApplicationHostService>();
+                // 由 App 拥有；容器释放时不能撤掉仍在保护进程退出的看门狗。
+                services.AddSingleton<IApplicationExitService>(_exitCoordinator);
 
                 // 程序日志：其它服务的构造都会经过它（设置加载、媒体切换、音频应用、更新链路、退出）。
                 // The application log: every other service writes into it (settings loads, media switches, audio applies, the update chain, exit).
@@ -317,6 +319,7 @@ namespace AFMediaBar
         /// </summary>
         private async void OnStartup(object sender, StartupEventArgs e)
         {
+            _exitCoordinator.ExitRequested += OnExitRequested;
             try
             {
                 await StartApplicationAsync(e);
@@ -347,7 +350,7 @@ namespace AFMediaBar
                     : Translations.Get("Startup.FailureBody");
                 System.Windows.MessageBox.Show($"{message}\n\n{exception.GetBaseException().Message}\nHRESULT: 0x{exception.GetBaseException().HResult:X8}",
                     Translations.Get("Startup.FailureTitle"), System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
-                Shutdown(1);
+                _exitCoordinator.RequestExit(1);
             }
         }
 
@@ -360,7 +363,7 @@ namespace AFMediaBar
                 if (!RestartProcessHandoff.TryParse(e.Args, out var handoff) ||
                     !await RestartProcessHandoff.WaitForParentAsync(handoff!, RestartProcessHandoff.ExitTimeout, _startupCancellation.Token))
                 {
-                    Shutdown();
+                    _exitCoordinator.RequestExit();
                     return;
                 }
                 _isSecondaryInstance = false;
@@ -376,7 +379,7 @@ namespace AFMediaBar
                     "AF Media Bar",
                     System.Windows.MessageBoxButton.OK,
                     System.Windows.MessageBoxImage.Information);
-                Shutdown();
+                _exitCoordinator.RequestExit();
                 return;
             }
 
@@ -431,7 +434,7 @@ namespace AFMediaBar
             // starts: without loaded settings, the flush in OnExit would write defaults over the user's file, and once
             // the host has started the tray icon and taskbar bar would already exist.
             var updateService = Services.GetRequiredService<UpdateService>();
-            updateService.RestartRequested += (_, _) => Shutdown();
+            updateService.RestartRequested += (_, _) => _exitCoordinator.RequestExit();
             _restartService = Services.GetRequiredService<IApplicationRestartService>();
             _restartService.RestartRequested += OnOrdinaryRestartRequested;
             _restartConfirmation = Services.GetRequiredService<RestartConfirmationService>();
@@ -440,7 +443,7 @@ namespace AFMediaBar
             if (!_isRestartStartup && await updateService.TryLaunchPendingInstallOnStartupAsync(_startupCancellation.Token))
             {
                 Debug.WriteLine("[App] A pending update is being installed before this start; exiting now.");
-                Shutdown();
+                _exitCoordinator.RequestExit();
                 return;
             }
             if (_startupCancellation.IsCancellationRequested || _exitHandled != 0 || Dispatcher.HasShutdownStarted)
@@ -569,7 +572,7 @@ namespace AFMediaBar
                 return;
             }
 
-            ArmForcedExitWatchdog(e.ApplicationExitCode);
+            _exitCoordinator.ArmExitProtection();
             _startupCancellation.Cancel();
             DetachSpectrumMediaSource();
             _developerToolsHost?.Dispose();
@@ -605,9 +608,8 @@ namespace AFMediaBar
             // throws ObjectDisposedException, which would both skip the install hand-off on exit and turn a normal
             // exit into a crash recorded as e0434352.
             var log = Services.GetRequiredService<AppLogService>();
-            log.Info("App", "退出：开始解挂任务栏宿主");
-            DetachTaskbarHostsFromExplorer();
-            log.Info("App", "退出：任务栏宿主解挂尝试完成");
+            log.Info("App", "退出：进入最终收尾");
+            if (!_hostStopAttempted) log.Warn("App", "退出：WPF 直接关闭，最终收尾不等待异步服务");
             var updateService = Services.GetRequiredService<UpdateService>();
             var installCoordinatorMutex = Services.GetRequiredService<InstallCoordinatorMutex>();
             updateService.CancelInstallPreparation();
@@ -633,36 +635,16 @@ namespace AFMediaBar
                 Debug.WriteLine($"[App] Settings flush failed: {exception}");
             }
 
-            // WPF 正在关闭 Dispatcher 时不能从 async void Exit 处理器等待后再恢复到 UI 线程，
-            // 否则 Host.Dispose 可能永远不执行，媒体与 Shell 服务会让进程残留。
-            // Do not await from an async-void Exit handler while WPF is shutting down its
-            // Dispatcher; the continuation may never run and leave hosted resources alive.
-            using var shutdown = new CancellationTokenSource(HostShutdownTimeout);
-            try
-            {
-                _host.StopAsync(shutdown.Token).GetAwaiter().GetResult();
-            }
-            catch (OperationCanceledException) when (shutdown.IsCancellationRequested)
-            {
-                Debug.WriteLine("[App] Host shutdown timed out; disposing remaining services.");
-            }
-            catch (Exception exception)
-            {
-                Debug.WriteLine($"[App] Host shutdown failed: {exception}");
-            }
-
             // 只有用户明确点过"立即重启并安装"时才在退出边界启动安装程序。
             //
             // 自动更新已经不在退出时发生：它在**下一次启动之前**执行（见 TryLaunchPendingInstallOnStartupAsync），
-            // 否则安装程序窗口会出现在用户刚关掉程序之后，看起来像程序自己又起来了一次。仍要放在 Dispose 看门狗
-            // 之前：看门狗会在 5 秒后直接结束进程，排在它之后就会与之赛跑。
+            // 否则安装程序窗口会出现在用户刚关掉程序之后，看起来像程序自己又起来了一次。安装交接仍在容器释放前进行；总退出预算保护全部收尾。
             // The installer is only started on the exit boundary when the user explicitly clicked "restart and install
             // now".
             //
             // Automatic updates no longer happen on exit: they run *before the next start* (see
             // TryLaunchPendingInstallOnStartupAsync), because otherwise the installer window appears right after the user
-            // closed the application and looks like the application starting itself again. It still has to happen
-            // before the disposal watchdog, which ends the process after five seconds and would otherwise win the race.
+            // closed the application and looks like the application starting itself again.
             try
             {
                 if (!_ordinaryRestartRequested) updateService.TryLaunchPendingInstallOnExit();
@@ -682,116 +664,70 @@ namespace AFMediaBar
 
         private void DisposeHostAndExit(int exitCode)
         {
-            // A media-session/native component can occasionally block while disposing
-            // after Explorer or a tray Popup has already been torn down. Keep a bounded
-            // watchdog so an explicit user exit can never leave AFMediaBar alive forever.
-            try
-            {
-                _host.Dispose();
-            }
-            catch (Exception exception)
-            {
-                // Cleanup must not cancel the final process-termination step.
-                Debug.WriteLine($"[App] Host disposal failed: {exception}");
-            }
-            finally
-            {
-                _singleInstanceGuard?.Dispose();
-
-            }
-
-            // WPF has completed its Exit event, but third-party native media components
-            // may own non-background threads. Explicitly terminate after all synchronous
-            // cleanup has completed so the process cannot remain in the background.
-            Volatile.Write(ref _teardownCompleted, 1);
-            ForceTerminateProcess(exitCode);
-        }
-
-        private void ArmForcedExitWatchdog(int exitCode)
-        {
-            _ = Task.Run(async () =>
-            {
-                await Task.Delay(ForcedExitTimeout).ConfigureAwait(false);
-                if (Volatile.Read(ref _teardownCompleted) == 0)
-                {
-                    ForceTerminateProcess(exitCode);
-                }
-            });
-        }
-
-        /// <summary>
-        /// 立即结束当前进程，不运行托管退出处理器、也不等待终结器。
-        ///
-        /// 之所以不能用 <see cref="Environment.Exit"/>：它先跑 `AppDomain.ProcessExit` 与仍存活对象的终结器，而本程序持有
-        /// NAudio/WASAPI、WinRT SMTC、UIA 等原生/COM 对象，任一个在那一步阻塞都会让它永不返回——所有线程都已正常退出、
-        /// 进程却一直挂着，只能由任务管理器终结（任务管理器用的正是同一个原生函数）。该做的托管清理（设置落盘、日志落盘、
-        /// Host 释放、任务栏解挂、托盘图标移除）都在调用它之前完成，因此跳过托管关闭流程没有额外代价。
-        /// Ends the current process at once, running no managed exit handler and waiting for no finalizer.
-        ///
-        /// <see cref="Environment.Exit"/> cannot be used: it first runs `AppDomain.ProcessExit` and the finalizers of every live
-        /// object, while this app holds NAudio/WASAPI, WinRT SMTC, and UIA native/COM objects — a block in any of them makes it
-        /// never return (every thread had exited cleanly while the process stayed alive until Task Manager ended it, and Task
-        /// Manager calls this very native function). The managed cleanup worth doing — settings flush, log flush, host disposal,
-        /// taskbar detach, tray-icon removal — has already run by then, so skipping the managed shutdown costs nothing.
-        /// </summary>
-        private static void ForceTerminateProcess(int exitCode)
-        {
-            try
-            {
-                if (NativeMethods.TerminateProcess(NativeMethods.GetCurrentProcess(), exitCode))
-                    return;
-            }
-            catch (Exception exception)
-            {
-                Debug.WriteLine($"[App] TerminateProcess failed: {exception}");
-            }
-
-            // 原生终止被拒时退回托管退出：至少别让进程留下来。
-            // If the native termination was refused, fall back to the managed exit so the process at least does not linger.
+            var started = Stopwatch.GetTimestamp();
+            AppLogService.Current?.Info("App", "退出：开始释放 Host");
+            try { _host.Dispose(); }
+            catch (Exception exception) { Debug.WriteLine($"[App] Host 释放失败: {exception}"); }
+            finally { _singleInstanceGuard?.Dispose(); }
+            Debug.WriteLine($"[App] 退出：Host 释放结束，耗时 {Stopwatch.GetElapsedTime(started).TotalMilliseconds:F0} ms");
+            // 正常路径保留托管退出；保护线程继续存活，覆盖 ProcessExit 和原生退出尾段的阻塞。
             Environment.Exit(exitCode);
         }
 
-        /// <summary>
-        /// 退出边界：把每个任务栏宿主从 Explorer 任务栏解挂。
-        ///
-        /// 为什么必须最先做：媒体栏是 <c>SetParent</c> 到 <c>Shell_TrayWnd</c> 的**子窗口**。只要它还是 Explorer 的子窗口，
-        /// 而我们又在这条 UI 线程上同步等待（<c>Host.StopAsync</c>，以及 <c>Host.Dispose</c> 里托盘图标的跨进程
-        /// <c>Shell_NotifyIcon</c>），Explorer 发给这个子窗口的同步消息（定位、重绘、销毁通知）就永远等不到回复——
-        /// 表现就是"退出时整个桌面连同资源管理器一起卡死，终结进程才恢复"。先解挂即切断这条等待链：Explorer 不再拥有一个
-        /// 由我们阻塞线程所有的窗口，之后的收尾再慢也只影响我们自己。
-        ///
-        /// 用 <c>Application.Current.Windows</c> 找宿主而**不是**从容器解析：解析 <c>INavigationWindow</c> 会在
-        /// "宿主尚未启动就退出"的路径上（重复实例、启动前安装更新）**新建**一个 MainWindow，那正是退出时最不该做的事。
-        /// 主窗口已经关掉时这里自然什么都不做——它的任务栏宿主早已随 <c>CloseTaskbarWindows</c> 解挂。
-        /// The exit boundary: detaches every taskbar host from the Explorer taskbar.
-        ///
-        /// Why it has to come first: the media bar is a <c>SetParent</c>-ed *child* of <c>Shell_TrayWnd</c>. As long as it is
-        /// Explorer's child while this UI thread waits synchronously (<c>Host.StopAsync</c>, and the tray icon's cross-process
-        /// <c>Shell_NotifyIcon</c> inside <c>Host.Dispose</c>), the synchronous messages Explorer sends to that child (position,
-        /// repaint, destroy notifications) are never answered — which is exactly "the whole desktop, Explorer included, freezes on
-        /// exit and only killing the process recovers it". Detaching first breaks that wait chain: Explorer no longer owns a window
-        /// whose thread we are blocking, so however slow the rest of the teardown is only affects us.
-        ///
-        /// The host is found through <c>Application.Current.Windows</c> rather than by resolving it from the container: resolving
-        /// <c>INavigationWindow</c> would *construct* a MainWindow on the paths that exit before the host ever starts (a duplicate
-        /// instance, or installing an update before startup) — the last thing an exit should do. When the main window is already
-        /// closed this is a no-op, because its taskbar hosts were detached with <c>CloseTaskbarWindows</c>.
-        /// </summary>
-        private static void DetachTaskbarHostsFromExplorer()
+        private static bool ForceTerminateProcess(int exitCode)
         {
+            // 终止前不访问日志锁或 Dispatcher，避免后备线程也等待卡住的收尾。
+            return NativeMethods.TerminateProcess(NativeMethods.GetCurrentProcess(), exitCode);
+        }
+
+        private async void OnExitRequested(int exitCode)
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                _ = Dispatcher.BeginInvoke(() => OnExitRequested(exitCode));
+                return;
+            }
+            if (Dispatcher.HasShutdownStarted) return;
             try
             {
-                foreach (System.Windows.Window window in Application.Current.Windows)
+                _startupCancellation.Cancel();
+                var started = Stopwatch.GetTimestamp();
+                AppLogService.Current?.Info("App", "退出：开始撤下窗口及任务栏宿主");
+                foreach (var mainWindow in Windows.OfType<MainWindow>().ToArray())
+                    mainWindow.PrepareForExit();
+                foreach (System.Windows.Window window in Windows)
                 {
-                    if (window is MainWindow mainWindow)
-                        mainWindow.DetachTaskbarHostsForExit();
+                    window.IsEnabled = false;
+                    window.Hide();
+                }
+                AppLogService.Current?.Info("App", $"退出：窗口准备结束，耗时 {Stopwatch.GetElapsedTime(started).TotalMilliseconds:F0} ms");
+                if (!_isSecondaryInstance && !_startupFailed)
+                {
+                    _hostStopAttempted = true;
+                    using var shutdown = new CancellationTokenSource(HostShutdownTimeout);
+                    started = Stopwatch.GetTimestamp();
+                    AppLogService.Current?.Info("App", "退出：开始停止 Host");
+                    try
+                    {
+                        // Dispatcher 仍运行；后台停止中的 UI 回调可被处理，不在退出事件里同步等 Task。
+                        await Task.Run(() => _host.StopAsync(shutdown.Token)).ConfigureAwait(false);
+                        AppLogService.Current?.Info("App", $"退出：Host 停止完成，耗时 {Stopwatch.GetElapsedTime(started).TotalMilliseconds:F0} ms");
+                    }
+                    catch (OperationCanceledException) when (shutdown.IsCancellationRequested)
+                    {
+                        AppLogService.Current?.Warn("App", "退出：Host 停止已取消，继续释放资源");
+                    }
                 }
             }
-            catch (Exception exception)
+            catch (Exception exception) { AppLogService.Current?.Error("App", "退出准备失败，继续关闭", exception); }
+            finally
             {
-                // 解挂只是"别让 Explorer 等我们"的尽力而为：失败也必须继续退出。
-                // Detaching is a best effort at "stop making Explorer wait for us"; a failure must still let the exit continue.
-                Debug.WriteLine($"[App] Taskbar host detach failed: {exception}");
+                // 系统可能已直接开始 WPF 关闭；后台停止结果仍被观察，但不再向已关闭的 Dispatcher 投递。
+                if (Volatile.Read(ref _exitHandled) == 0 && !Dispatcher.HasShutdownStarted)
+                {
+                    if (Dispatcher.CheckAccess()) Shutdown(exitCode);
+                    else _ = Dispatcher.BeginInvoke(() => Shutdown(exitCode));
+                }
             }
         }
 
@@ -799,7 +735,7 @@ namespace AFMediaBar
         {
             if (_exitHandled != 0 || _startupCancellation.IsCancellationRequested) return;
             _ordinaryRestartRequested = true;
-            _ = Dispatcher.BeginInvoke(() => Shutdown());
+            _exitCoordinator.RequestExit();
         }
 
         private void UpdateAppearanceResources(AppearanceSettings appearance, ApplicationTheme theme, AccentPalette accent)

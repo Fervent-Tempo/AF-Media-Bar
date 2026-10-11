@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Windows.Input;
+using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models.Updates;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Localization;
@@ -86,14 +87,15 @@ namespace AFMediaBar.ViewModels.Windows
         public TaskbarWindowViewModel(
             MediaSessionService mediaSessionService,
             UpdateService updateService,
-            LocalizationService localization)
+            LocalizationService localization,
+            IApplicationExitService exitService)
         {
             _updateService = updateService;
             _localization = localization;
             SelectMediaSessionCommand = new RelayCommand<string>(key => mediaSessionService.SelectSession(key ?? string.Empty));
             ReconnectMediaSessionCommand = new AsyncRelayCommand(() => mediaSessionService.ReconnectAsync());
             OpenSettingsCommand = new RelayCommand(() => OpenSettingsRequested?.Invoke(this, EventArgs.Empty));
-            ExitApplicationCommand = new RelayCommand(() => Application.Current.Shutdown());
+            ExitApplicationCommand = new RelayCommand(() => exitService.RequestExit());
             UpdateMenuCommand = new AsyncRelayCommand(ExecuteUpdateActionAsync);
             TogglePlayPauseCommand = new AsyncRelayCommand(mediaSessionService.TogglePlayPauseAsync);
             SkipPreviousCommand = new AsyncRelayCommand(mediaSessionService.SkipPreviousAsync);

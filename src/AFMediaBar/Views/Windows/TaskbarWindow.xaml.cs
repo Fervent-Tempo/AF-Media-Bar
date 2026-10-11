@@ -168,6 +168,7 @@ public partial class TaskbarWindow : Window
         ContextMenuHelper.AttachOutsideClickDismissal(PlayerMenu);
         appearanceService.Attach(PlayerMenu, this);
         PlayerMenu.OpenSettingsRequested += PlayerMenu_OpenSettingsRequested;
+        PlayerMenu.ExitRequested += PlayerMenu_ExitRequested;
         PlayerMenu.OpenUpdateSettingsRequested += PlayerMenu_OpenUpdateSettingsRequested;
         PlayerMenu.ReloadTaskbarHostRequested += PlayerMenu_ReloadTaskbarHostRequested;
         PlayerMenu.QuickLaunchRequested += PlayerMenu_QuickLaunchRequested;
@@ -2176,6 +2177,8 @@ public partial class TaskbarWindow : Window
     private void PlayerMenu_OpenSettingsRequested(object? sender, EventArgs e) =>
         ViewModel.RaiseOpenSettingsRequested();
 
+    private void PlayerMenu_ExitRequested(object? sender, EventArgs e) => Execute(ViewModel.ExitApplicationCommand);
+
     private void PlayerMenu_OpenUpdateSettingsRequested(object? sender, EventArgs e) =>
         ViewModel.RaiseOpenUpdateSettingsRequested();
 
@@ -2546,6 +2549,7 @@ public partial class TaskbarWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _isClosing = true;
+        PlayerMenu.ExitRequested -= PlayerMenu_ExitRequested;
         StopOccupancyRefresh();
         _memoryPruneCoordinator.LevelChanged -= MemoryPruneCoordinator_LevelChanged;
         _timer.Stop();

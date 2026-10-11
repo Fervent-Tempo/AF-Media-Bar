@@ -13,7 +13,6 @@ using AFMediaBar.Classes.Utils;
 using AFMediaBar.Resources;
 using AFMediaBar.ViewModels.Windows;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -34,6 +33,7 @@ namespace AFMediaBar.Views.Windows
     public partial class MainWindow : INavigationWindow, ITaskbarWindowHostActions
     {
         public MainWindowViewModel ViewModel { get; }
+        private readonly IApplicationExitService _exitService;
 
         private readonly TaskbarWindowViewModel _taskbarViewModel;
         private readonly TaskbarFallbackNotificationGate _placementNotificationGate = new();
@@ -124,9 +124,11 @@ namespace AFMediaBar.Views.Windows
             ISystemNotificationService systemNotifications,
             LyricsRecoveryNotificationCoordinator lyricsRecoveryNotifications,
             UpdateService updateService,
-            MemoryPruneCoordinator memoryPruneCoordinator)
+            MemoryPruneCoordinator memoryPruneCoordinator,
+            IApplicationExitService exitService)
         {
             ViewModel = viewModel;
+            _exitService = exitService;
             _taskbarViewModel = taskbarViewModel;
             DataContext = this;
             _mediaSessionService = App.Services.GetRequiredService<MediaSessionService>();
@@ -174,6 +176,7 @@ namespace AFMediaBar.Views.Windows
             ContextMenuHelper.AttachOutsideClickDismissal(TrayMenu);
             _appearanceService.Attach(TrayMenu, this);
             TrayMenu.OpenSettingsRequested += ViewModel_OpenSettingsRequested;
+            TrayMenu.ExitRequested += TrayMenu_ExitRequested;
             TrayMenu.OpenUpdateSettingsRequested += ViewModel_OpenUpdateSettingsRequested;
             TrayMenu.ReloadTaskbarHostRequested += TrayMenu_ReloadTaskbarHostRequested;
             TrayMenu.QuickLaunchRequested += TrayMenu_QuickLaunchRequested;
@@ -252,7 +255,17 @@ namespace AFMediaBar.Views.Windows
             if (e.Cancel)
                 return;
 
+            _exitService.ArmExitProtection();
+            PrepareForExit();
+        }
+
+        /// <summary>在 Dispatcher 仍运行时撤下宿主及浮层；最终关窗重复调用不会重做清理。</summary>
+        internal void PrepareForExit()
+        {
+            if (_isClosing) return;
+
             _isClosing = true;
+            DetachTaskbarHostsForExit();
             CloseDeveloperPreviews();
             _lyricsRecoveryNotifications.CancelPendingRequests();
             _taskbarTopologyTimer.Stop();
@@ -304,6 +317,7 @@ namespace AFMediaBar.Views.Windows
             _audioControlViewModel.SettingsOpenRequested -= ViewModel_OpenSettingsRequested;
             _mouseInputMonitor.LeftButtonPressed -= MouseInputMonitor_OnLeftButtonPressed;
             TrayMenu.OpenSettingsRequested -= ViewModel_OpenSettingsRequested;
+            TrayMenu.ExitRequested -= TrayMenu_ExitRequested;
             TrayMenu.OpenUpdateSettingsRequested -= ViewModel_OpenUpdateSettingsRequested;
             TrayMenu.ReloadTaskbarHostRequested -= TrayMenu_ReloadTaskbarHostRequested;
             TrayMenu.QuickLaunchRequested -= TrayMenu_QuickLaunchRequested;
@@ -314,7 +328,7 @@ namespace AFMediaBar.Views.Windows
             _trayIconService.ShellRestarted -= OnNotificationShellRestored;
             WebLyricsGraphicsRecovery.Session.Degraded -= OnWebLyricsDegraded;
             // Make sure that closing this window will begin the process of closing the application.
-            Application.Current.Shutdown();
+            _exitService.RequestExit();
         }
 
         /// <summary>初始化主窗口消息钩子和 TaskbarCreated 注册。/ Initializes the main-window hook and TaskbarCreated registration.</summary>
@@ -510,25 +524,11 @@ namespace AFMediaBar.Views.Windows
         }
 
         /// <summary>
-        /// 退出边界调用：把任务栏宿主从 Explorer 解挂，但**不关闭窗口**。
-        ///
-        /// 与 <see cref="CloseTaskbarWindows"/> 只差一处——不调用 <c>Close()</c>。退出路径要的只是"Explorer 不再拥有这个
-        /// 子窗口"，关窗留给 WPF 自己的关窗阶段（那一步会走 <see cref="TaskbarWindow"/> 的 OnClosing/OnClosed 完整清理）。
-        /// 动作与 CloseTaskbarWindows 保持一致：先 <c>SuspendForEnvironmentRecovery()</c> 停掉计时器（否则已变成顶层窗口的
-        /// 宿主会被下一拍定位到桌面上闪一下），再 <c>DetachFromTaskbar()</c> 解除父子关系。两处都幂等，重复调用无副作用；
-        /// 窗口已经关掉时集合已空，自然什么都不做。
-        /// Called on the exit boundary: detaches the taskbar hosts from Explorer without closing them.
-        ///
-        /// It differs from <see cref="CloseTaskbarWindows"/> in exactly one way — it does not call <c>Close()</c>. The exit path
-        /// only needs "Explorer no longer owns this child"; closing is left to WPF's own window-closing phase, which runs
-        /// <see cref="TaskbarWindow"/>'s full OnClosing/OnClosed cleanup. The actions match CloseTaskbarWindows:
-        /// <c>SuspendForEnvironmentRecovery()</c> first, so its timers cannot reposition a host that has just become a top-level
-        /// window and flash it onto the desktop, then <c>DetachFromTaskbar()</c> for the parent/child link. Both are idempotent,
-        /// so repeat calls are harmless, and a window that is already closed has left the list, making this a no-op.
+        /// 在其他退出清理前挂起并解挂全部任务栏宿主；随后由 CloseTaskbarWindows 完成关窗释放。
         /// </summary>
         internal void DetachTaskbarHostsForExit()
         {
-            foreach (var taskbarWindow in _taskbarWindows)
+            foreach (var taskbarWindow in _taskbarWindows.ToArray())
             {
                 try
                 {
@@ -539,7 +539,7 @@ namespace AFMediaBar.Views.Windows
                 {
                     // 单个宿主解挂失败也必须继续：退出流程不能被一个异常打断。
                     // One host failing to detach must not stop the exit: a single exception cannot break the sequence.
-                    Debug.WriteLine($"[MainWindow] Taskbar host detach failed: {exception}");
+                    _logService.Error("Exit", "任务栏宿主解挂失败", exception);
                 }
             }
         }
@@ -1052,6 +1052,8 @@ namespace AFMediaBar.Views.Windows
             TrayMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
             TrayMenu.IsOpen = true;
         }
+
+        private void TrayMenu_ExitRequested(object? sender, EventArgs e) => _exitService.RequestExit();
 
         private void TrayMenu_ReloadTaskbarHostRequested(object? sender, EventArgs e) =>
             RequestTaskbarHostReload();
