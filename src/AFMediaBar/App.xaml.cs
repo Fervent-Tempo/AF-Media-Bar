@@ -3,6 +3,7 @@ using AFMediaBar.Classes.Services.Media.Sources.NetEase;
 using AFMediaBar.Classes.Services.Media.Smtc;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Abstractions;
+using AFMediaBar.Classes.Interop;
 using AFMediaBar.Components;
 using AFMediaBar.Classes.Services.Credits;
 using AFMediaBar.Classes.Services.Diagnostics;
@@ -52,6 +53,8 @@ namespace AFMediaBar
     public partial class App
     {
         private static readonly TimeSpan HostShutdownTimeout = TimeSpan.FromSeconds(5);
+        private static readonly TimeSpan ForcedExitTimeout = TimeSpan.FromSeconds(10);
+        private int _teardownCompleted;
         private int _exitHandled;
         private readonly CancellationTokenSource _startupCancellation = new();
         private PowerStateMonitor? _powerStateMonitor;
@@ -566,6 +569,7 @@ namespace AFMediaBar
                 return;
             }
 
+            ArmForcedExitWatchdog(e.ApplicationExitCode);
             _startupCancellation.Cancel();
             DetachSpectrumMediaSource();
             _developerToolsHost?.Dispose();
@@ -600,6 +604,10 @@ namespace AFMediaBar
             // Host.Dispose also disposes the DI container, and resolving anything from App.Services afterwards
             // throws ObjectDisposedException, which would both skip the install hand-off on exit and turn a normal
             // exit into a crash recorded as e0434352.
+            var log = Services.GetRequiredService<AppLogService>();
+            log.Info("App", "退出：开始解挂任务栏宿主");
+            DetachTaskbarHostsFromExplorer();
+            log.Info("App", "退出：任务栏宿主解挂尝试完成");
             var updateService = Services.GetRequiredService<UpdateService>();
             var installCoordinatorMutex = Services.GetRequiredService<InstallCoordinatorMutex>();
             updateService.CancelInstallPreparation();
@@ -677,16 +685,6 @@ namespace AFMediaBar
             // A media-session/native component can occasionally block while disposing
             // after Explorer or a tray Popup has already been torn down. Keep a bounded
             // watchdog so an explicit user exit can never leave AFMediaBar alive forever.
-            var disposalCompleted = 0;
-            _ = Task.Run(async () =>
-            {
-                await Task.Delay(HostShutdownTimeout).ConfigureAwait(false);
-                if (Volatile.Read(ref disposalCompleted) == 0)
-                {
-                    Environment.Exit(exitCode);
-                }
-            });
-
             try
             {
                 _host.Dispose();
@@ -699,13 +697,102 @@ namespace AFMediaBar
             finally
             {
                 _singleInstanceGuard?.Dispose();
-                Volatile.Write(ref disposalCompleted, 1);
+
             }
 
             // WPF has completed its Exit event, but third-party native media components
             // may own non-background threads. Explicitly terminate after all synchronous
             // cleanup has completed so the process cannot remain in the background.
+            Volatile.Write(ref _teardownCompleted, 1);
+            ForceTerminateProcess(exitCode);
+        }
+
+        private void ArmForcedExitWatchdog(int exitCode)
+        {
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(ForcedExitTimeout).ConfigureAwait(false);
+                if (Volatile.Read(ref _teardownCompleted) == 0)
+                {
+                    ForceTerminateProcess(exitCode);
+                }
+            });
+        }
+
+        /// <summary>
+        /// 立即结束当前进程，不运行托管退出处理器、也不等待终结器。
+        ///
+        /// 之所以不能用 <see cref="Environment.Exit"/>：它先跑 `AppDomain.ProcessExit` 与仍存活对象的终结器，而本程序持有
+        /// NAudio/WASAPI、WinRT SMTC、UIA 等原生/COM 对象，任一个在那一步阻塞都会让它永不返回——所有线程都已正常退出、
+        /// 进程却一直挂着，只能由任务管理器终结（任务管理器用的正是同一个原生函数）。该做的托管清理（设置落盘、日志落盘、
+        /// Host 释放、任务栏解挂、托盘图标移除）都在调用它之前完成，因此跳过托管关闭流程没有额外代价。
+        /// Ends the current process at once, running no managed exit handler and waiting for no finalizer.
+        ///
+        /// <see cref="Environment.Exit"/> cannot be used: it first runs `AppDomain.ProcessExit` and the finalizers of every live
+        /// object, while this app holds NAudio/WASAPI, WinRT SMTC, and UIA native/COM objects — a block in any of them makes it
+        /// never return (every thread had exited cleanly while the process stayed alive until Task Manager ended it, and Task
+        /// Manager calls this very native function). The managed cleanup worth doing — settings flush, log flush, host disposal,
+        /// taskbar detach, tray-icon removal — has already run by then, so skipping the managed shutdown costs nothing.
+        /// </summary>
+        private static void ForceTerminateProcess(int exitCode)
+        {
+            try
+            {
+                if (NativeMethods.TerminateProcess(NativeMethods.GetCurrentProcess(), exitCode))
+                    return;
+            }
+            catch (Exception exception)
+            {
+                Debug.WriteLine($"[App] TerminateProcess failed: {exception}");
+            }
+
+            // 原生终止被拒时退回托管退出：至少别让进程留下来。
+            // If the native termination was refused, fall back to the managed exit so the process at least does not linger.
             Environment.Exit(exitCode);
+        }
+
+        /// <summary>
+        /// 退出边界：把每个任务栏宿主从 Explorer 任务栏解挂。
+        ///
+        /// 为什么必须最先做：媒体栏是 <c>SetParent</c> 到 <c>Shell_TrayWnd</c> 的**子窗口**。只要它还是 Explorer 的子窗口，
+        /// 而我们又在这条 UI 线程上同步等待（<c>Host.StopAsync</c>，以及 <c>Host.Dispose</c> 里托盘图标的跨进程
+        /// <c>Shell_NotifyIcon</c>），Explorer 发给这个子窗口的同步消息（定位、重绘、销毁通知）就永远等不到回复——
+        /// 表现就是"退出时整个桌面连同资源管理器一起卡死，终结进程才恢复"。先解挂即切断这条等待链：Explorer 不再拥有一个
+        /// 由我们阻塞线程所有的窗口，之后的收尾再慢也只影响我们自己。
+        ///
+        /// 用 <c>Application.Current.Windows</c> 找宿主而**不是**从容器解析：解析 <c>INavigationWindow</c> 会在
+        /// "宿主尚未启动就退出"的路径上（重复实例、启动前安装更新）**新建**一个 MainWindow，那正是退出时最不该做的事。
+        /// 主窗口已经关掉时这里自然什么都不做——它的任务栏宿主早已随 <c>CloseTaskbarWindows</c> 解挂。
+        /// The exit boundary: detaches every taskbar host from the Explorer taskbar.
+        ///
+        /// Why it has to come first: the media bar is a <c>SetParent</c>-ed *child* of <c>Shell_TrayWnd</c>. As long as it is
+        /// Explorer's child while this UI thread waits synchronously (<c>Host.StopAsync</c>, and the tray icon's cross-process
+        /// <c>Shell_NotifyIcon</c> inside <c>Host.Dispose</c>), the synchronous messages Explorer sends to that child (position,
+        /// repaint, destroy notifications) are never answered — which is exactly "the whole desktop, Explorer included, freezes on
+        /// exit and only killing the process recovers it". Detaching first breaks that wait chain: Explorer no longer owns a window
+        /// whose thread we are blocking, so however slow the rest of the teardown is only affects us.
+        ///
+        /// The host is found through <c>Application.Current.Windows</c> rather than by resolving it from the container: resolving
+        /// <c>INavigationWindow</c> would *construct* a MainWindow on the paths that exit before the host ever starts (a duplicate
+        /// instance, or installing an update before startup) — the last thing an exit should do. When the main window is already
+        /// closed this is a no-op, because its taskbar hosts were detached with <c>CloseTaskbarWindows</c>.
+        /// </summary>
+        private static void DetachTaskbarHostsFromExplorer()
+        {
+            try
+            {
+                foreach (System.Windows.Window window in Application.Current.Windows)
+                {
+                    if (window is MainWindow mainWindow)
+                        mainWindow.DetachTaskbarHostsForExit();
+                }
+            }
+            catch (Exception exception)
+            {
+                // 解挂只是"别让 Explorer 等我们"的尽力而为：失败也必须继续退出。
+                // Detaching is a best effort at "stop making Explorer wait for us"; a failure must still let the exit continue.
+                Debug.WriteLine($"[App] Taskbar host detach failed: {exception}");
+            }
         }
 
         private void OnOrdinaryRestartRequested(object? sender, EventArgs e)
