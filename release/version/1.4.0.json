@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "version": "1.4.0",
+  "releaseDate": "2026-10-12",
+  "minimumSupportedVersion": "1.2.0",
+  "mandatory": false,
+  "title": "AF Media Bar 1.4.0",
+  "changelog": [
+    "这次更新重新整理设置页，增加任务栏背景、封面、歌词和性能组件选项，并改善任务栏定位、媒体恢复与退出。",
+    "设置页类别重构；滑杆支持精确数值输入。",
+    "新增越南语界面与安装向导。",
+    "新增磨砂背景选项；小音符支持自选颜色。",
+    "支持左右内容排布、封面悬停放大和大图预览；新增封面边缘播放进度。",
+    "优化任务栏图标避让算法、空间缩窄提醒与恢复、长标题循环滚动。",
+    "歌词可在简体与繁体间转换；歌词显示异常时提供恢复或重启提示。",
+    "频谱可选择采集当前输出设备、所有应用、当前媒体应用。",
+    "性能组件增加网络上传和下载速率，支持轮换、并排显示和指标排序。",
+    "改善媒体来源与播放进度更新，修复音频浮窗、窗口材质切换及设置导航问题。",
+    "改进退出、后台资源停止和重启交接，减少退出卡住桌面或残留进程的风险。",
+    "开发人员与赞助名单提供离线副本和更新按钮。"
+  ],
+  "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.4.0",
+  "releasePageUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/latest",
+  "downloads": {
+    "github": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/download/v1.4.0/AFMediaBar-v1.4.0-win-x64.zip"
+  },
+  "packages": [
+    {
+      "url": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/download/v1.4.0/AFMediaBar-Setup-v1.4.0-win-x64.exe",
+      "size": 74986885,
+      "sha256": "142eeb81da6918afecad4a54e5155912defaee04359292084ca5d8d668a8d8b9"
+    }
+  ]
+}
