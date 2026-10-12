@@ -15,7 +15,7 @@
                     <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                     <StackPanel VerticalAlignment="Center" Margin="0,0,20,0">
                         <TextBlock Text="{Binding DisplayName}" TextWrapping="Wrap" FontSize="14" />
-                        <TextBlock Text="{Binding StateText}" FontSize="12" Margin="0,4,0,0"
+                        <TextBlock Text="{DynamicResource Loc.Audio.Device.Disconnected}" FontSize="12" Margin="0,4,0,0"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}">
                             <TextBlock.Style><Style TargetType="TextBlock"><Style.Triggers>
                                 <DataTrigger Binding="{Binding StateText}" Value=""><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
