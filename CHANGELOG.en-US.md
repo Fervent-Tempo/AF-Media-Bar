@@ -6,6 +6,43 @@ All notable changes to AF Media Bar are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-10-12
+
+Reorganize Settings, extend taskbar appearance, artwork, lyrics and metrics, and improve placement, media recovery and shutdown reliability.
+
+### Added
+
+- Customize the frosted taskbar background with opacity and neutral, cool, warm or artwork styles. Control tint, borders, texture and idle background independently; receive a one-time compatibility notice when using a transparent taskbar. Choose an idle-note color, with the accent color remaining the default.
+- Choose left or right content arrangement, following taskbar alignment until explicitly selected. Add artwork-edge playback progress, enabled by default, and off, in-place zoom or large-preview artwork hover modes.
+- Convert displayed lyrics between Simplified and Traditional Chinese, off by default. Conversion does not change lyric sources or fetch lyrics again.
+- Add network upload and download rates, cycling or parallel display, and metric ordering to the performance widget.
+- Select spectrum capture from the current output device, all applications or the current media application. Existing settings continue using the current device.
+- Add Vietnamese to the interface and installer. Add release history to Application settings; stable promotion appends Chinese highlights while retaining earlier releases.
+- Offer lyric-view recovery or restart through system notifications. Add restart confirmation and process handoff, plus notification previews, lyric recovery and diagnostic tools in developer mode, off by default.
+
+### Changed
+
+- Separate application appearance, taskbar appearance, content and layout, and screen and placement in Settings. Retain stable search navigation; support precise slider input and improve page transitions, selection feedback and card interactions.
+- Group component visibility and ordering separately. Reset settings according to each page's responsibility, preferring user-default snapshots. Hide the monitor selector for independent configuration that is not implemented yet.
+- Center media text in new settings while retaining explicitly saved alignment. Use theme colors consistently for playback feedback and artwork progress.
+- Keep settings schema 2 and continue reading 1.3.2 settings and user-default snapshots, using defaults for added fields. Keep update-manifest schema 1, in-app updates for installed copies, and no automatic installation for portable copies.
+
+### Fixed and improved
+
+- Respond more promptly to taskbar icon changes and available space. Limit width or hide when space shrinks, then return to the original position after stable recovery. Coalesce repeated space notices and fix hover-button jitter and placement recovery.
+- Fix state conflicts between artwork zoom, pause feedback and dragging, and a pause overlay remaining after media disconnects. Preserve artwork proportions in large previews.
+- Measure long titles using their original text and scroll two copies continuously. Limit text-region width and improve clipping and loop seams.
+- Coalesce queued media refreshes and prioritize source state. Retain the actual read time for NetEase progress to improve timeline accuracy. Show readable failures for system media controls and startup services.
+- Warm up Chinese-conversion dictionaries and convert text in the background, reusing presentation text. Improve WebView2 failure fallback, recovery, cancellation and disposal.
+- Fix tray audio-flyout display and disposal timing, show full volume-source names, and remove duplicate media information.
+- Protect window closure before shutdown, stop background services asynchronously and bound final cleanup. Improve restart handshakes, reducing the risk of desktop stalls or lingering processes.
+- Fix native backdrop changes not refreshing immediately, repeated sidebar clipping updates, and related Settings navigation issues.
+
+### Internal and release
+
+- Update settings release registration, third-party notices and sponsors, with regression coverage for Settings, taskbar, media, spectrum and lifecycle behavior.
+- Retain draft preview releases, candidate-metadata review and explicit stable promotion, generating checksums from final packages. The production release pipeline does not currently include code signing.
+
 ## [1.3.2] - 2026-10-06
 
 Improve Settings responsiveness, lyric matching, and desktop interactions, and fix artwork, startup settings, and update installation.
@@ -241,6 +278,7 @@ The first release of the rebuilt interface and interaction model: taskbar lyrics
 - Restricted native library lookup to System32.
 - Removed generic execution of media-provided `.exe` source identifiers.
 
+[1.4.0]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.3.2...v1.4.0
 [1.3.2]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.2.1...v1.3.0

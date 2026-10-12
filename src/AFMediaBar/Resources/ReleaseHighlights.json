@@ -2,8 +2,55 @@
   "schemaVersion": 1,
   "releases": [
     {
+      "version": "1.3.2",
+      "releaseDate": "2026-10-06",
+      "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.3.2",
+      "localizations": {
+        "zh-Hans": {
+          "title": "设置体验与稳定性修复",
+          "highlights": [
+            "外观页打开与切换更顺畅，改善设置搜索、开机启动和快速打开列表重置。",
+            "新增全局艺术家分隔符管理，改善歌词匹配并减少重复加载。",
+            "修复封面不显示、裁切及透明封面颜色异常，提升浅色模式下资源监控的可读性。",
+            "修复自动隐藏任务栏时的媒体栏错位，以及任务栏右键菜单打开后的避让问题。",
+            "修复音量合成器遮挡和设备下拉框误选，改善更新安装、背景回退与日志保存。"
+          ]
+        },
+        "zh-Hant": {
+          "title": "設定體驗與穩定性修正",
+          "highlights": [
+            "外觀頁開啟與切換更順暢，改善設定搜尋、開機啟動和快速開啟清單重設。",
+            "新增全域藝術家分隔符管理，改善歌詞匹配並減少重複載入。",
+            "修正封面不顯示、裁切及透明封面顏色異常，提升淺色模式下資源監控的可讀性。",
+            "修正自動隱藏工作列時的媒體列錯位，以及工作列右鍵選單開啟後的避讓問題。",
+            "修正音量混音器遮擋和裝置下拉選單誤選，改善更新安裝、背景回退與日誌儲存。"
+          ]
+        },
+        "en": {
+          "title": "Settings responsiveness and stability",
+          "highlights": [
+            "Open and switch Appearance settings more smoothly, with fixes for search, startup and Quick Launch resets.",
+            "Manage global artist separators to improve lyric matching and reduce repeated retrieval.",
+            "Fix missing or clipped artwork and incorrect transparent-artwork colors; improve resource-monitor readability in light mode.",
+            "Fix media-bar placement during taskbar auto-hide and avoidance when the taskbar context menu is open.",
+            "Fix mixer overlap and accidental device selection, and improve update installation, backdrop fallback and log saving."
+          ]
+        },
+        "vi": {
+          "title": "Cải thiện phần cài đặt và độ ổn định",
+          "highlights": [
+            "Mở và chuyển trang Giao diện mượt hơn; sửa tìm kiếm, khởi động cùng Windows và đặt lại danh sách mở nhanh.",
+            "Quản lý dấu phân cách tên nghệ sĩ để cải thiện việc tìm lời và giảm tải lại.",
+            "Sửa ảnh bìa không hiển thị, bị cắt và màu ảnh trong suốt; cải thiện bảng tài nguyên ở giao diện sáng.",
+            "Sửa vị trí thanh nhạc khi thanh tác vụ tự ẩn và khi mở menu chuột phải.",
+            "Sửa nội dung bộ trộn âm lượng bị che và chọn nhầm thiết bị; cải thiện cài đặt cập nhật, nền và lưu nhật ký."
+          ]
+        }
+      }
+    },
+    {
       "version": "1.3.1",
-      "releaseDate": "2026-10-02",
+      "releaseDate": "2026-10-03",
       "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.3.1",
       "localizations": {
         "zh-Hans": {
