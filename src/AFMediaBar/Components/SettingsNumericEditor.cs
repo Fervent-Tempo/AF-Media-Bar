@@ -79,6 +79,7 @@ public sealed class SettingsNumericEditor : Control
         if (_slider is not null) _slider.ValueChanged -= OnSliderChanged;
         if (_input is not null)
         {
+            _input.PreviewMouseLeftButtonDown -= OnInputMouseDown;
             _input.PreviewKeyDown -= OnInputKeyDown;
             _input.LostKeyboardFocus -= OnInputLostFocus;
             _input.TextChanged -= OnInputTextChanged;
@@ -89,6 +90,7 @@ public sealed class SettingsNumericEditor : Control
         if (_slider is not null) _slider.ValueChanged += OnSliderChanged;
         if (_input is not null)
         {
+            _input.PreviewMouseLeftButtonDown += OnInputMouseDown;
             _input.PreviewKeyDown += OnInputKeyDown;
             _input.LostKeyboardFocus += OnInputLostFocus;
             _input.TextChanged += OnInputTextChanged;
@@ -115,6 +117,14 @@ public sealed class SettingsNumericEditor : Control
         _adjusted = adjusted || Math.Abs(value - Value) > 1e-8d;
         Refresh(forceText: true);
         return true;
+    }
+
+    private void OnInputMouseDown(object sender, MouseButtonEventArgs args)
+    {
+        if (_input is null || _input.IsKeyboardFocusWithin || !_input.Focus()) return;
+        _input.Select(_input.Text.Length, 0);
+        // 首次点击以末尾开始编辑，阻止 TextBox 随后按点击位置重新放置光标。
+        args.Handled = true;
     }
 
     private void OnInputKeyDown(object sender, KeyEventArgs args)
