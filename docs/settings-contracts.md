@@ -19,7 +19,7 @@ pwsh -NoProfile -File tools/settings-contracts.ps1 -Action Query -List
 - `enums` 记录关联字段及各成员的数值、发布时间。父字段已经发布，不代表新增成员也已发布；已发布数值不能随意重排。
 - `removed` 保留发布后删除的字段、版本与当前处理；`rules` 只记录必要兼容例外，不复刻所有字段的默认值和归一化细节。
 
-例如，当前 `settings.appearance.fontWeight` 为 `v1.2.0`，`settings.appearance.idleNoteColor` 为 `unreleased`。这些值表示发布时间，不表示字体字重或颜色。
+例如，当前 `settings.appearance.fontWeight` 为 `v1.2.0`，`settings.appearance.idleNoteColor` 为 `v1.4.0`。这些值表示发布时间，不表示字体字重或颜色。
 
 ## 修改与发布
 

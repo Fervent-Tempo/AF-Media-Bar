@@ -1,6 +1,6 @@
 {
   "formatVersion": 2,
-  "latestRelease": "v1.3.2",
+  "latestRelease": "v1.4.0",
   "settingsSchemaVersion": 2,
   "settings": {
     "allowBrowserAndVideoLyrics": "v1.3.0",
@@ -15,19 +15,19 @@
       "cjkFontFamily": "v1.3.0",
       "enhancedReadability": "v1.2.0",
       "fontWeight": "v1.2.0",
-      "idleNoteColor": "unreleased",
+      "idleNoteColor": "v1.4.0",
       "latinFont": "v1.2.0",
       "latinFontFamily": "v1.3.0",
       "playerForegroundMode": "v1.2.0",
-      "showTaskbarBackgroundWhenIdle": "unreleased",
-      "showTaskbarBackgroundTint": "unreleased",
-      "showTaskbarBackgroundBorder": "unreleased",
-      "showTaskbarBackgroundTexture": "unreleased",
-      "taskbarBackgroundMaterial": "unreleased",
-      "taskbarBackgroundOpacityPercent": "unreleased",
-      "taskbarFrostedStyle": "unreleased"
+      "showTaskbarBackgroundWhenIdle": "v1.4.0",
+      "showTaskbarBackgroundTint": "v1.4.0",
+      "showTaskbarBackgroundBorder": "v1.4.0",
+      "showTaskbarBackgroundTexture": "v1.4.0",
+      "taskbarBackgroundMaterial": "v1.4.0",
+      "taskbarBackgroundOpacityPercent": "v1.4.0",
+      "taskbarFrostedStyle": "v1.4.0"
     },
-    "developerModeEnabled": "unreleased",
+    "developerModeEnabled": "v1.4.0",
     "dynamicIslandBackgroundMode": "v1.2.0",
     "dynamicIslandEdge": "v1.2.0",
     "dynamicIslandEdgeDocked": "v1.2.0",
@@ -42,7 +42,7 @@
     "interaction": {
       "$release": "v1.2.0",
       "artworkClickAction": "v1.2.0",
-      "artworkHoverMode": "unreleased",
+      "artworkHoverMode": "v1.4.0",
       "chordWheelAction": "v1.2.0",
       "modifier": "v1.2.0",
       "primaryWheelAction": "v1.2.0",
@@ -59,7 +59,7 @@
     "layoutThicknessScalePercent": "v1.2.0",
     "lyricsArtistSeparators": "v1.3.2",
     "lyricsCharacterSpacingPercent": "v1.3.0",
-    "lyricsChineseConversion": "unreleased",
+    "lyricsChineseConversion": "v1.4.0",
     "lyricsEnabled": "v1.2.0",
     "lyricsFixedWidthDip": "v1.3.0",
     "lyricsFixedWidthEnabled": "v1.3.0",
@@ -78,8 +78,8 @@
     "lyricsUnsungOpacityPercent": "v1.2.0",
     "performanceComponent": {
       "$release": "v1.2.0",
-      "displayMode": "unreleased",
-      "metricOrder": "unreleased",
+      "displayMode": "v1.4.0",
+      "metricOrder": "v1.4.0",
       "metrics": "v1.2.0",
       "openTaskManagerOnClick": "v1.2.0",
       "refreshIntervalMilliseconds": "v1.2.0"
@@ -106,7 +106,7 @@
     "spectrumComponent": {
       "$release": "v1.2.0",
       "bandCount": "v1.2.0",
-      "captureSource": "unreleased",
+      "captureSource": "v1.4.0",
       "contentHeightDip": "v1.2.0",
       "refreshRateHz": "v1.2.0",
       "sensitivityPercent": "v1.2.0",
@@ -120,8 +120,8 @@
     "taskbarBarPositionLocked": "v1.2.0",
     "taskbarExperience": {
       "$release": "v1.2.0",
-      "arrangement": "unreleased",
-      "artworkProgressVisible": "unreleased",
+      "arrangement": "v1.4.0",
+      "artworkProgressVisible": "v1.4.0",
       "artworkVisible": "v1.3.0",
       "componentSpacingDip": "v1.2.0",
       "contentLayout": "v1.2.0",
@@ -174,7 +174,7 @@
       "showWhenFullscreen": "v1.2.0",
       "targetMode": "v1.2.0"
     },
-    "translucentTbCompatibilityPromptShown": "unreleased",
+    "translucentTbCompatibilityPromptShown": "v1.4.0",
     "trayWheelBehavior": "v1.2.0",
     "twoLineLyricsEnabled": "v1.2.0",
     "update": {
@@ -214,9 +214,9 @@
     "ArtworkHoverMode": {
       "paths": ["settings.interaction.artworkHoverMode"],
       "members": {
-        "Off": {"value": 0, "release": "unreleased"},
-        "Zoom": {"value": 1, "release": "unreleased"},
-        "Preview": {"value": 2, "release": "unreleased"}
+        "Off": {"value": 0, "release": "v1.4.0"},
+        "Zoom": {"value": 1, "release": "v1.4.0"},
+        "Preview": {"value": 2, "release": "v1.4.0"}
       }
     },
     "CjkFontPreset": {
@@ -262,7 +262,7 @@
         "SimplifiedChinese": {"value": 1, "release": "v1.2.0"},
         "TraditionalChinese": {"value": 2, "release": "v1.2.0"},
         "English": {"value": 3, "release": "v1.2.0"},
-        "Vietnamese": {"value": 4, "release": "unreleased"}
+        "Vietnamese": {"value": 4, "release": "v1.4.0"}
       }
     },
     "LatinFontPreset": {
@@ -288,9 +288,9 @@
     "LyricsChineseConversionMode": {
       "paths": ["settings.lyricsChineseConversion"],
       "members": {
-        "None": {"value": 0, "release": "unreleased"},
-        "SimplifiedToTraditional": {"value": 1, "release": "unreleased"},
-        "TraditionalToSimplified": {"value": 2, "release": "unreleased"}
+        "None": {"value": 0, "release": "v1.4.0"},
+        "SimplifiedToTraditional": {"value": 1, "release": "v1.4.0"},
+        "TraditionalToSimplified": {"value": 2, "release": "v1.4.0"}
       }
     },
     "LyricsSecondaryLineMode": {
@@ -316,7 +316,7 @@
         "SystemCpu": {"value": 1, "release": "v1.2.0"},
         "SystemGpu": {"value": 2, "release": "v1.2.0"},
         "ProcessMemory": {"value": 3, "release": "v1.2.0"},
-        "SystemNetwork": {"value": 4, "release": "unreleased"}
+        "SystemNetwork": {"value": 4, "release": "v1.4.0"}
       }
     },
     "NotificationTargetMode": {
@@ -362,9 +362,9 @@
     "SpectrumCaptureSource": {
       "paths": ["settings.spectrumComponent.captureSource"],
       "members": {
-        "CurrentDevice": {"value": 0, "release": "unreleased"},
-        "AllApplications": {"value": 1, "release": "unreleased"},
-        "CurrentMediaApplication": {"value": 2, "release": "unreleased"}
+        "CurrentDevice": {"value": 0, "release": "v1.4.0"},
+        "AllApplications": {"value": 1, "release": "v1.4.0"},
+        "CurrentMediaApplication": {"value": 2, "release": "v1.4.0"}
       }
     },
     "SpectrumStyle": {
@@ -379,8 +379,8 @@
     "TaskbarBackgroundMaterial": {
       "paths": ["settings.appearance.taskbarBackgroundMaterial"],
       "members": {
-        "Transparent": {"value": 0, "release": "unreleased"},
-        "Frosted": {"value": 1, "release": "unreleased"}
+        "Transparent": {"value": 0, "release": "v1.4.0"},
+        "Frosted": {"value": 1, "release": "v1.4.0"}
       }
     },
     "TaskbarBarPosition": {
@@ -394,8 +394,8 @@
     "TaskbarContentArrangement": {
       "paths": ["settings.taskbarExperience.arrangement"],
       "members": {
-        "Left": {"value": 0, "release": "unreleased"},
-        "Right": {"value": 1, "release": "unreleased"}
+        "Left": {"value": 0, "release": "v1.4.0"},
+        "Right": {"value": 1, "release": "v1.4.0"}
       }
     },
     "TaskbarContentLayout": {
@@ -409,10 +409,10 @@
     "TaskbarFrostedStyle": {
       "paths": ["settings.appearance.taskbarFrostedStyle"],
       "members": {
-        "Neutral": {"value": 0, "release": "unreleased"},
-        "Cool": {"value": 1, "release": "unreleased"},
-        "Warm": {"value": 2, "release": "unreleased"},
-        "Artwork": {"value": 3, "release": "unreleased"}
+        "Neutral": {"value": 0, "release": "v1.4.0"},
+        "Cool": {"value": 1, "release": "v1.4.0"},
+        "Warm": {"value": 2, "release": "v1.4.0"},
+        "Artwork": {"value": 3, "release": "v1.4.0"}
       }
     },
     "TaskbarInformationDensity": {
@@ -499,8 +499,8 @@
     "PerformanceDisplayMode": {
       "paths": ["settings.performanceComponent.displayMode"],
       "members": {
-        "Cycle": {"value": 0, "release": "unreleased"},
-        "Parallel": {"value": 1, "release": "unreleased"}
+        "Cycle": {"value": 0, "release": "v1.4.0"},
+        "Parallel": {"value": 1, "release": "v1.4.0"}
       }
     }
   },
