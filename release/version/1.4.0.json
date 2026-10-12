@@ -17,7 +17,7 @@
     "性能组件增加网络上传和下载速率，支持轮换、并排显示和指标排序。",
     "改善媒体来源与播放进度更新，修复音频浮窗、窗口材质切换及设置导航问题。",
     "改进退出、后台资源停止和重启交接，减少退出卡住桌面或残留进程的风险。",
-    "开发人员与赞助名单提供离线副本，更新失败仍可查看；改进重试提示与精确输入框的光标位置。"
+    "开发人员与赞助名单提供离线副本和更新按钮。"
   ],
   "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.4.0",
   "releasePageUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/latest",
