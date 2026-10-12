@@ -169,6 +169,9 @@
   <data name="Credits.Reason.InvalidJson" xml:space="preserve">
     <value>名单内容不是有效的 JSON</value>
   </data>
+  <data name="Credits.Reason.Unavailable" xml:space="preserve">
+    <value>在线名单暂不可用，请稍后重试。</value>
+  </data>
   <data name="Credits.Reason.SchemaTooNew" xml:space="preserve">
     <value>赞助名单的结构版本（{0}）高于本程序支持的版本（{1}）</value>
   </data>
@@ -188,16 +191,22 @@
     <value>暂时无法获取名单：{0}</value>
   </data>
   <data name="Credits.Status.Partial" xml:space="preserve">
-    <value>部分名单暂时无法获取：{0}</value>
+    <value>部分名单暂未更新，已保留现有内容。</value>
   </data>
   <data name="Credits.Status.PartialCached" xml:space="preserve">
     <value>上次只取到一部分名单</value>
   </data>
   <data name="Credits.Status.Loading" xml:space="preserve">
-    <value>正在获取开发人员与赞助者名单…</value>
+    <value>正在更新开发人员与赞助者名单…</value>
   </data>
   <data name="Credits.Retry" xml:space="preserve">
     <value>重试</value>
+  </data>
+  <data name="Credits.Status.Title" xml:space="preserve">
+    <value>名单更新</value>
+  </data>
+  <data name="Credits.Updating" xml:space="preserve">
+    <value>更新中…</value>
   </data>
   <data name="About.Row.Startup.Description" xml:space="preserve">
     <value>登录 Windows 后自动启动，仅影响当前用户。</value>

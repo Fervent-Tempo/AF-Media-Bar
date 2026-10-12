@@ -652,11 +652,20 @@
   <data name="Credits.Reason.InvalidJson" xml:space="preserve">
     <value>Danh sách không phải là JSON hợp lệ</value>
   </data>
+  <data name="Credits.Reason.Unavailable" xml:space="preserve">
+    <value>Chưa thể tải danh sách trực tuyến. Hãy thử lại sau.</value>
+  </data>
   <data name="Credits.Reason.SchemaTooNew" xml:space="preserve">
     <value>Danh sách nhà tài trợ có phiên bản sơ đồ {0}, mới hơn phiên bản được hỗ trợ {1}</value>
   </data>
   <data name="Credits.Reason.SponsorsShape" xml:space="preserve">
     <value>Danh sách nhà tài trợ có định dạng không mong muốn</value>
+  </data>
+  <data name="Credits.Status.Title" xml:space="preserve">
+    <value>Cập nhật danh sách</value>
+  </data>
+  <data name="Credits.Updating" xml:space="preserve">
+    <value>Đang cập nhật…</value>
   </data>
   <data name="Credits.Retry" xml:space="preserve">
     <value>Thử lại</value>
@@ -674,10 +683,10 @@
     <value>Hiện không thể tải danh sách: {0}</value>
   </data>
   <data name="Credits.Status.Loading" xml:space="preserve">
-    <value>Đang tải danh sách nhà phát triển và nhà tài trợ…</value>
+    <value>Đang cập nhật danh sách nhà phát triển và nhà tài trợ…</value>
   </data>
   <data name="Credits.Status.Partial" xml:space="preserve">
-    <value>Hiện chỉ tải được một phần danh sách: {0}</value>
+    <value>Một số danh sách chưa được cập nhật; nội dung hiện có được giữ lại.</value>
   </data>
   <data name="Credits.Status.PartialCached" xml:space="preserve">
     <value>Chỉ một phần danh sách được lấy lần trước</value>

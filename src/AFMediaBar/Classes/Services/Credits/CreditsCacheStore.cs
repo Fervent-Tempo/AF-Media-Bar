@@ -95,12 +95,16 @@ public sealed class CreditsCacheStore
 
             var partial = root.TryGetProperty("partial", out var partialElement) &&
                           partialElement.ValueKind == JsonValueKind.True;
+            bool? sponsorsLoaded = root.TryGetProperty("sponsorsLoaded", out var loadedElement) &&
+                loadedElement.ValueKind is JsonValueKind.True or JsonValueKind.False
+                    ? loadedElement.GetBoolean() : null;
 
             return new CachedCredits(
                 contributors.Contributors ?? [],
                 sponsors.Sponsors ?? [],
                 fetchedUtc,
-                partial);
+                partial,
+                SponsorsLoaded: sponsors.Succeeded ? sponsorsLoaded : false);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
         {
@@ -117,12 +121,14 @@ public sealed class CreditsCacheStore
     /// <param name="sponsors">赞助者。/ Sponsors.</param>
     /// <param name="fetchedUtc">写入时间。/ When the data was written.</param>
     /// <param name="isPartial">是否只取到一部分名单（决定缓存时效）。/ Whether only part of the lists arrived, which decides the cache lifetime.</param>
+    /// <param name="sponsorsLoaded">是否有有效赞助名单；区分合法空名单与没有取到。</param>
     /// <returns>是否写入成功。/ Whether the write succeeded.</returns>
     public bool TryWrite(
         IReadOnlyList<ContributorInfo> contributors,
         IReadOnlyList<SponsorInfo> sponsors,
         DateTimeOffset fetchedUtc,
-        bool isPartial = false)
+        bool isPartial = false,
+        bool sponsorsLoaded = true)
     {
         try
         {
@@ -137,6 +143,7 @@ public sealed class CreditsCacheStore
                 cacheSchemaVersion = CurrentSchemaVersion,
                 fetchedUtc = fetchedUtc.ToString("O"),
                 partial = isPartial,
+                sponsorsLoaded,
                 contributors = contributors.Select(contributor => new
                 {
                     login = contributor.Login,
@@ -177,8 +184,10 @@ public sealed class CreditsCacheStore
 /// <param name="Sponsors">赞助者。/ Sponsors.</param>
 /// <param name="FetchedUtc">写入时间。/ When it was written.</param>
 /// <param name="Partial">是否只取到一部分名单。/ Whether only part of the lists arrived.</param>
+/// <param name="SponsorsLoaded">赞助名单有效状态；旧缓存缺字段时保留原有推断。</param>
 public sealed record CachedCredits(
     IReadOnlyList<ContributorInfo> Contributors,
     IReadOnlyList<SponsorInfo> Sponsors,
     DateTimeOffset FetchedUtc,
-    bool Partial = false);
+    bool Partial = false,
+    bool? SponsorsLoaded = null);

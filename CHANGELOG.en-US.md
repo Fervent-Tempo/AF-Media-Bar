@@ -18,6 +18,7 @@ Reorganize Settings, extend taskbar appearance, artwork, lyrics and metrics, and
 - Add network upload and download rates, cycling or parallel display, and metric ordering to the performance widget.
 - Select spectrum capture from the current output device, all applications or the current media application. Existing settings continue using the current device.
 - Add Vietnamese to the interface and installer. Add release history to Application settings; stable promotion appends Chinese highlights while retaining earlier releases.
+- Bundle developer and sponsor lists in About, showing local content before an on-demand refresh. Older online snapshots cannot replace newer bundled lists; failed updates retain names and offer a retry.
 - Offer lyric-view recovery or restart through system notifications. Add restart confirmation and process handoff, plus notification previews, lyric recovery and diagnostic tools in developer mode, off by default.
 
 ### Changed
@@ -37,6 +38,7 @@ Reorganize Settings, extend taskbar appearance, artwork, lyrics and metrics, and
 - Fix tray audio-flyout display and disposal timing, show full volume-source names, and remove duplicate media information.
 - Protect window closure before shutdown, stop background services asynchronously and bound final cleanup. Improve restart handshakes, reducing the risk of desktop stalls or lingering processes.
 - Fix native backdrop changes not refreshing immediately, repeated sidebar clipping updates, and related Settings navigation issues.
+- Place the caret at the end on the first click in an exact numeric input, while retaining normal selection during editing. Combine list-update feedback and retry at the top of Developers; retain the button position and prevent repeated clicks while updating.
 
 ### Internal and release
 

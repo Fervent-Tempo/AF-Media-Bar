@@ -169,6 +169,9 @@
   <data name="Credits.Reason.InvalidJson" xml:space="preserve">
     <value>名單內容不是有效的 JSON</value>
   </data>
+  <data name="Credits.Reason.Unavailable" xml:space="preserve">
+    <value>線上名單暫時無法取得，請稍後重試。</value>
+  </data>
   <data name="Credits.Reason.SchemaTooNew" xml:space="preserve">
     <value>贊助名單的結構版本（{0}）高於本程式支援的版本（{1}）</value>
   </data>
@@ -188,16 +191,22 @@
     <value>暫時無法取得名單：{0}</value>
   </data>
   <data name="Credits.Status.Partial" xml:space="preserve">
-    <value>部分名單暫時無法取得：{0}</value>
+    <value>部分名單尚未更新，已保留現有內容。</value>
   </data>
   <data name="Credits.Status.PartialCached" xml:space="preserve">
     <value>上次只取到一部分名單</value>
   </data>
   <data name="Credits.Status.Loading" xml:space="preserve">
-    <value>正在取得開發人員與贊助者名單…</value>
+    <value>正在更新開發人員與贊助者名單…</value>
   </data>
   <data name="Credits.Retry" xml:space="preserve">
     <value>重試</value>
+  </data>
+  <data name="Credits.Status.Title" xml:space="preserve">
+    <value>名單更新</value>
+  </data>
+  <data name="Credits.Updating" xml:space="preserve">
+    <value>更新中…</value>
   </data>
   <data name="About.Row.Startup.Description" xml:space="preserve">
     <value>登入 Windows 後自動啟動，僅影響目前使用者。</value>

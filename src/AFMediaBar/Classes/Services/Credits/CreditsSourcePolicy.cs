@@ -9,14 +9,13 @@ namespace AFMediaBar.Classes.Services.Credits;
 /// 与更新清单同一套取舍：**先直连、再加速**，且加速只用于内容不改写的端点。
 /// 名单本身没有哈希兜底（不像安装包有清单里的 SHA-256），因此它只能从"不改写内容"的地址读取：
 /// raw.githubusercontent.com、jsDelivr，以及更新清单里发布侧实测过的加速站点——最后这一档是**备选**，
-/// 用户在国内网络下没有它就只能看到空名单，而名单被替换的后果是"显示错的名字"，远轻于装错包。
+/// 远端来源都不可用时，由名单服务保留内置副本或有效缓存。
 /// The same trade-off as the update manifest: **direct first, accelerators second**, and accelerators only for endpoints that do not
 /// rewrite content.
 ///
 /// The lists have no hash backstop, unlike an installer which is verified against the SHA-256 in the manifest, so they may only be read
 /// from addresses that do not rewrite content: raw.githubusercontent.com, jsDelivr, and the accelerator sites the release side has
-/// verified in the update manifest. That last tier is a **fallback**: without it a user in China would simply see empty lists, and a
-/// substituted list only means wrong names on screen, which is far lighter than installing a wrong package.
+/// verified in the update manifest. If every remote source is unavailable, the service retains bundled lists or usable cached content.
 /// </summary>
 public static class CreditsSourcePolicy
 {

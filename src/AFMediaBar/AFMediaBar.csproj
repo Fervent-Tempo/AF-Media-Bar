@@ -106,6 +106,8 @@
     <Resource Include="Assets\Sponsor\*.jpg" />
     <Resource Include="Assets\Sponsor\*.jpeg" />
     <EmbeddedResource Include="Resources\ReleaseHighlights.json" />
+    <EmbeddedResource Include="..\..\docs\contributors.json" LogicalName="AFMediaBar.Resources.Contributors.json" />
+    <EmbeddedResource Include="..\..\docs\sponsors.json" LogicalName="AFMediaBar.Resources.Sponsors.json" />
     <EmbeddedResource Include="Web\Lyrics\*.html" />
     <EmbeddedResource Include="Web\Lyrics\*.css" />
     <EmbeddedResource Include="Web\Lyrics\*.js" />

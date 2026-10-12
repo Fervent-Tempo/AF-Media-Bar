@@ -134,9 +134,11 @@ namespace AFMediaBar.ViewModels.Pages
 
         /// <summary>是否正在取名单。/ Whether a fetch is in flight.</summary>
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(CreditsRefreshButtonText))]
+        [NotifyCanExecuteChangedFor(nameof(RefreshCreditsCommand))]
         private bool _isCreditsLoading;
 
-        /// <summary>取名单失败且没有可用内容，用于显示失败提示与重试按钮。/ A fetch failed with nothing to show, which reveals the failure note and the retry button.</summary>
+        /// <summary>在线更新失败，包括仍有本地名单可显示的情况。</summary>
         [ObservableProperty]
         private bool _hasCreditsFailure;
 
@@ -215,6 +217,11 @@ namespace AFMediaBar.ViewModels.Pages
         /// <summary>是否有名单状态要说（正在取或取失败）。/ Whether there is any list status to show: a fetch in flight, or a failure.</summary>
         public bool HasCreditsStatus => IsCreditsLoading || HasCreditsFailure;
 
+        /// <summary>没有开发人员数据时仍显示名单状态与重试入口。</summary>
+        public bool HasDevelopersSection => HasContributors || HasCreditsStatus;
+
+        public string CreditsRefreshButtonText => Translations.Get(IsCreditsLoading ? "Credits.Updating" : "Credits.Retry");
+
         /// <summary>仓库地址。/ The repository address.</summary>
         public string RepositoryUrl => CreditLinks.RepositoryDisplayUrl;
 
@@ -254,8 +261,10 @@ namespace AFMediaBar.ViewModels.Pages
         private static void OpenUrl(string? url) => ExternalLinkLauncher.TryOpen(url);
 
         /// <summary>手动重取名单（忽略缓存有效期）。/ Fetches the lists again on request, ignoring the cache lifetime.</summary>
-        [RelayCommand]
+        [RelayCommand(CanExecute = nameof(CanRefreshCredits))]
         private void RefreshCredits() => _credits.RequestRefresh(isManual: true);
+
+        private bool CanRefreshCredits() => !IsCreditsLoading;
 
         /// <summary>
         /// 名单快照变化：切回 UI 线程后按快照重建内容并更新状态文案。
@@ -288,13 +297,14 @@ namespace AFMediaBar.ViewModels.Pages
                     : snapshot.IsPartial
                         // 一部分取到了、一部分没取到：这是最容易被静默吞掉的状态，必须说出来并给出重试。
                         // Part of the lists arrived and part did not: this is the state most easily swallowed silently, so it is stated and a retry is offered.
-                        ? Translations.Format("Credits.Status.Partial", reason)
+                        ? Translations.Get("Credits.Status.Partial")
                         : Translations.Format("Credits.Status.Failed", reason);
 
             OnPropertyChanged(nameof(HasContributors));
             OnPropertyChanged(nameof(HasSponsors));
             OnPropertyChanged(nameof(HasNoSponsorsYet));
             OnPropertyChanged(nameof(HasCreditsStatus));
+            OnPropertyChanged(nameof(HasDevelopersSection));
         }
 
         /// <summary>

@@ -60,86 +60,80 @@
                 </components:SettingsGroup>
 
                 <!--
-                    名单状态：正在取或取失败时才出现。取失败时给一个重试按钮——名单是联网取的，而用户看到"暂时无法获取"
-                    时唯一想做的事就是再试一次，让他去重启程序是说不过去的。
-                    List status: it appears only while a fetch is in flight or after a failure. A failure also offers a retry button, because the lists
-                    come from the network and the only thing a user wants to do after reading "cannot be loaded right now" is try again; asking them to
-                    restart the program would not be reasonable.
-                -->
-                <StackPanel Visibility="{Binding ViewModel.HasCreditsStatus, Converter={StaticResource AfBooleanToVisibilityConverter}}">
-                    <components:SettingsCallout
-                        Margin="0,0,0,8"
-                        IsAccent="False"
-                        Symbol="Info24"
-                        Text="{Binding ViewModel.CreditsStatusText}" />
-                    <ui:Button
-                        Margin="0,0,0,12"
-                        HorizontalAlignment="Left"
-                        Command="{Binding ViewModel.RefreshCreditsCommand}"
-                        Content="{DynamicResource Loc.Credits.Retry}"
-                        Icon="{ui:SymbolIcon ArrowSync24}"
-                        Style="{StaticResource AfSettingsButtonStyle}"
-                        Visibility="{Binding ViewModel.HasCreditsFailure, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
-                </StackPanel>
-
-                <!--
                     开发人员只显示头像；名称通过悬停提示与无障碍名称呈现。头像异步到达前使用占位图标。
                     Developers show as avatars; the login remains available by tooltip and accessible name. A fallback glyph appears until the avatar arrives.
                 -->
                 <components:SettingsGroup GroupId="Common.Group.Developers"
                     Header="{DynamicResource Loc.Common.Group.Developers}"
                     Icon="{ui:SymbolIcon Code24}"
-                    Visibility="{Binding ViewModel.HasContributors, Converter={StaticResource AfBooleanToVisibilityConverter}}">
-                    <ItemsControl ItemsSource="{Binding ViewModel.Contributors}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel Orientation="Horizontal" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border
-                                    Margin="0,0,10,10"
-                                    Padding="7"
-                                    Background="{DynamicResource AfSettingsCardBrush}"
-                                    BorderBrush="{DynamicResource AfSettingsBorderBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="8"
-                                    ToolTip="{Binding Login}"
-                                    AutomationProperties.Name="{Binding Login}">
-                                        <!--
-                                            占位图标画在下层、头像画在上层：头像为空时上层隐藏，于是露出图标，
-                                            不需要一个"取反可见性"的转换器，也不会留下空框。
-                                            头像是 Image 而不是 ImageBrush：Image 是普通元素，DataContext 一定继承得到，
-                                            而 Freezable（画刷）在模板里继承 DataContext 有额外条件，静默失败时表现恰好就是"头像不显示"。
-                                            The fallback glyph sits underneath and the avatar on top: while the avatar is null the top layer is hidden, which
-                                            reveals the glyph without needing an inverted-visibility converter and never leaves an empty box.
-                                            The avatar is an Image rather than an ImageBrush, because an Image is an ordinary element whose DataContext is
-                                            always inherited, while a Freezable (a brush) in a template inherits DataContext only under extra conditions and
-                                            fails silently in exactly the way "the avatar never appears".
-                                        -->
-                                        <Grid Width="40" Height="40" VerticalAlignment="Center">
-                                            <ui:SymbolIcon
-                                                HorizontalAlignment="Center"
-                                                VerticalAlignment="Center"
-                                                FontSize="24"
-                                                Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                                                Symbol="Person24" />
-                                            <Image
-                                                Width="40"
-                                                Height="40"
-                                                Source="{Binding Avatar}"
-                                                Stretch="UniformToFill"
-                                                Visibility="{Binding HasAvatar, Converter={StaticResource AfBooleanToVisibilityConverter}}">
-                                                <Image.Clip>
-                                                    <EllipseGeometry Center="20,20" RadiusX="20" RadiusY="20" />
-                                                </Image.Clip>
-                                            </Image>
-                                        </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    Visibility="{Binding ViewModel.HasDevelopersSection, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                    <StackPanel>
+                        <!-- 名单状态与动作共用一行，导航到开发人员时也能看到重试入口。 -->
+                        <components:SettingsRow
+                            x:Name="CreditsStatusRow"
+                            MinHeight="84"
+                            Description="{Binding ViewModel.CreditsStatusText}"
+                            Icon="{ui:SymbolIcon Info24}"
+                            Title="{DynamicResource Loc.Credits.Status.Title}"
+                            Visibility="{Binding ViewModel.HasCreditsStatus, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                            <ui:Button
+                                Width="148"
+                                Command="{Binding ViewModel.RefreshCreditsCommand}"
+                                Content="{Binding ViewModel.CreditsRefreshButtonText}"
+                                Icon="{ui:SymbolIcon ArrowSync24}"
+                                Style="{StaticResource AfSettingsButtonStyle}" />
+                        </components:SettingsRow>
+                        <ItemsControl ItemsSource="{Binding ViewModel.Contributors}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border
+                                        Margin="0,0,10,10"
+                                        Padding="7"
+                                        Background="{DynamicResource AfSettingsCardBrush}"
+                                        BorderBrush="{DynamicResource AfSettingsBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        ToolTip="{Binding Login}"
+                                        AutomationProperties.Name="{Binding Login}">
+                                            <!--
+                                                占位图标画在下层、头像画在上层：头像为空时上层隐藏，于是露出图标，
+                                                不需要一个"取反可见性"的转换器，也不会留下空框。
+                                                头像是 Image 而不是 ImageBrush：Image 是普通元素，DataContext 一定继承得到，
+                                                而 Freezable（画刷）在模板里继承 DataContext 有额外条件，静默失败时表现恰好就是"头像不显示"。
+                                                The fallback glyph sits underneath and the avatar on top: while the avatar is null the top layer is hidden, which
+                                                reveals the glyph without needing an inverted-visibility converter and never leaves an empty box.
+                                                The avatar is an Image rather than an ImageBrush, because an Image is an ordinary element whose DataContext is
+                                                always inherited, while a Freezable (a brush) in a template inherits DataContext only under extra conditions and
+                                                fails silently in exactly the way "the avatar never appears".
+                                            -->
+                                            <Grid Width="40" Height="40" VerticalAlignment="Center">
+                                                <ui:SymbolIcon
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    FontSize="24"
+                                                    Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                                    Symbol="Person24" />
+                                                <Image
+                                                    Width="40"
+                                                    Height="40"
+                                                    Source="{Binding Avatar}"
+                                                    Stretch="UniformToFill"
+                                                    Visibility="{Binding HasAvatar, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                                                    <Image.Clip>
+                                                        <EllipseGeometry Center="20,20" RadiusX="20" RadiusY="20" />
+                                                    </Image.Clip>
+                                                </Image>
+                                            </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
                 </components:SettingsGroup>
 
                 <!--
