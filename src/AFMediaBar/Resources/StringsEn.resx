@@ -2805,4 +2805,13 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Audio.Target.Foreground" xml:space="preserve">
     <value>Foreground application device</value>
   </data>
+  <data name="Audio.Settings.OutputList" xml:space="preserve">
+    <value>Choose speakers and headphones available for switching in AF.</value>
+  </data>
+  <data name="Audio.Settings.InputList" xml:space="preserve">
+    <value>Choose microphones available for switching in AF.</value>
+  </data>
+  <data name="Audio.Settings.AdvancedDescription" xml:space="preserve">
+    <value>Configure button targets and communication devices for each direction.</value>
+  </data>
 </root>

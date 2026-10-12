@@ -2843,4 +2843,13 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   <data name="Audio.Target.Foreground" xml:space="preserve">
     <value>Thiết bị của ứng dụng phía trước</value>
   </data>
+  <data name="Audio.Settings.OutputList" xml:space="preserve">
+    <value>Chọn loa và tai nghe có thể chuyển đổi trong AF.</value>
+  </data>
+  <data name="Audio.Settings.InputList" xml:space="preserve">
+    <value>Chọn micrô có thể chuyển đổi trong AF.</value>
+  </data>
+  <data name="Audio.Settings.AdvancedDescription" xml:space="preserve">
+    <value>Cấu hình đích thao tác của nút và thiết bị liên lạc cho từng hướng.</value>
+  </data>
 </root>

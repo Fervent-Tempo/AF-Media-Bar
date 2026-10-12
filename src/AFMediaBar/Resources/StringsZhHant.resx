@@ -2805,4 +2805,13 @@
   <data name="Audio.Target.Foreground" xml:space="preserve">
     <value>前景應用程式裝置</value>
   </data>
+  <data name="Audio.Settings.OutputList" xml:space="preserve">
+    <value>選擇可在 AF 中切換的喇叭和耳機。</value>
+  </data>
+  <data name="Audio.Settings.InputList" xml:space="preserve">
+    <value>選擇可在 AF 中切換的麥克風。</value>
+  </data>
+  <data name="Audio.Settings.AdvancedDescription" xml:space="preserve">
+    <value>分別設定輸入、輸出按鈕的操作目標和通訊裝置。</value>
+  </data>
 </root>

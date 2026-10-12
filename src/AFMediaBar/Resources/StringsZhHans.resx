@@ -2805,4 +2805,13 @@
   <data name="Audio.Target.Foreground" xml:space="preserve">
     <value>前台应用设备</value>
   </data>
+  <data name="Audio.Settings.OutputList" xml:space="preserve">
+    <value>选择可在 AF 中切换的扬声器和耳机。</value>
+  </data>
+  <data name="Audio.Settings.InputList" xml:space="preserve">
+    <value>选择可在 AF 中切换的麦克风。</value>
+  </data>
+  <data name="Audio.Settings.AdvancedDescription" xml:space="preserve">
+    <value>分别配置输入、输出按钮的操作目标和通信设备。</value>
+  </data>
 </root>
