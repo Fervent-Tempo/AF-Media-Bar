@@ -105,7 +105,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
         NativeMethods.GetMonitorInfo(monitor, ref info);
         var dpi = NativeMethods.GetDpiForMonitor(monitor, NativeMethods.MonitorDpiType.MDT_EFFECTIVE_DPI, out var dpiX, out _) == 0 ? dpiX / 96d : 1d;
         MaxHeight = Math.Min(620, Math.Max(0, (info.rcWork.Bottom - info.rcWork.Top) / dpi - 16));
-        ApplicationsScrollViewer.MaxHeight = Math.Max(0, Math.Min(260, MaxHeight - 300));
+        ApplicationsScrollViewer.MaxHeight = Math.Max(0, Math.Min(300, MaxHeight - 300));
         UpdateLayout();
         var width = (int)Math.Ceiling(ActualWidth * dpi);
         var height = (int)Math.Ceiling(ActualHeight * dpi);

@@ -57,7 +57,7 @@
                           DropDownOpened="OutputDeviceComboBox_DropDownOpened"
                           DropDownClosed="OutputDeviceComboBox_DropDownClosed"
                           PreviewMouseWheel="OutputDeviceComboBox_PreviewMouseWheel"/>
-                <TextBlock x:Name="DeviceStatusText" FontSize="12" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                <TextBlock x:Name="DeviceStatusText" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,6,0,0" />
             </StackPanel>
 
             <StackPanel x:Name="VolumePanel" Visibility="Collapsed" HorizontalAlignment="Center"
