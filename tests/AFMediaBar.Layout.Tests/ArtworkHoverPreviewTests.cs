@@ -152,6 +152,12 @@ public sealed class ArtworkHoverPreviewTests
             Assert.IsTrue(((SolidColorBrush)surface.BorderBrush).Color.A > 0);
             control.UpdateSongInfo(connected with { IsPlaying = false });
             Assert.IsTrue(((SolidColorBrush)surface.Background).Color.A > 0, "暂停不能视为无媒体。");
+            control.UpdateSongInfo(MediaSnapshot.Disconnected);
+            var scrim = (Border)control.FindName("SongImagePauseScrim");
+            Assert.AreEqual(0d, scrim.Background.Opacity, "暂停后断开媒体必须清除封面遮罩，不能在小音符后留下底色。");
+            Assert.AreEqual(0, ((SolidColorBrush)surface.Background).Color.A);
+            Assert.AreEqual(0, ((SolidColorBrush)surface.BorderBrush).Color.A);
+            control.UpdateSongInfo(connected);
             SettingsManager.Current.Appearance = appearance with { ShowTaskbarBackgroundTexture = false };
             control.ApplyAppearanceSettings();
             control.UpdateSongInfo(connected with { Artwork = CreateMarkedArtwork(90, 160) });

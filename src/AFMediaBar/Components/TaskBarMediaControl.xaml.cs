@@ -1816,6 +1816,8 @@ namespace AFMediaBar.Components
                     SongImagePlaceholder.Symbol = SymbolRegular.MusicNote220;
                     SongImagePlaceholder.Visibility = Visibility.Visible;
                     SongImage.ImageSource = null;
+                    // 暂停遮罩独立于封面画刷，清空封面后也要撤销，避免残留在小音符后面。
+                    ApplyArtworkDimming();
                     BackgroundImage.Source = null;
                     ApplyNoteColor();
                     BackgroundImage.Visibility = Visibility.Collapsed;
