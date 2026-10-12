@@ -2188,6 +2188,30 @@
   <data name="Appearance.Row.TaskbarBackground.Title" xml:space="preserve">
     <value>Bật nền thanh media</value>
   </data>
+  <data name="Appearance.Row.TaskbarBackgroundWhenIdle.Description" xml:space="preserve">
+    <value>Hiện nền khi không kết nối nội dung đa phương tiện. Khi tắt, nốt nhạc và các thành phần thường trực vẫn hiển thị.</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundWhenIdle.Title" xml:space="preserve">
+    <value>Hiện nền khi không có nội dung đa phương tiện</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundBorder.Description" xml:space="preserve">
+    <value>Hiện đường viền mảnh quanh thanh đa phương tiện.</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundBorder.Title" xml:space="preserve">
+    <value>Hiện đường viền</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundTexture.Description" xml:space="preserve">
+    <value>Hiện họa tiết làm mờ khi có ảnh bìa. Không hiển thị trong chế độ tương phản cao.</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundTexture.Title" xml:space="preserve">
+    <value>Hiện họa tiết ảnh bìa</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundTint.Description" xml:space="preserve">
+    <value>Hiện màu nền mờ, độc lập với đường viền và họa tiết ảnh bìa.</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundTint.Title" xml:space="preserve">
+    <value>Hiện màu nền</value>
+  </data>
   <data name="Appearance.Row.TaskbarBackgroundOpacity.Description" xml:space="preserve">
     <value>Điều chỉnh độ trong suốt/mờ đục của lớp nền.</value>
   </data>

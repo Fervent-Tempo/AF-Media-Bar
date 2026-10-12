@@ -76,6 +76,7 @@ public sealed class ArtworkHoverPreviewTests
                 var refresh = typeof(TaskBarMediaControl).GetMethod("RefreshArtworkHoverPreviewContent", BindingFlags.Instance | BindingFlags.NonPublic)!;
                 VerifyPlaybackHints(control, refresh);
                 VerifyNoteColor(control);
+                VerifyTaskbarBackgroundLayers(control);
                 foreach (var (width, height, expectedWidth) in new[]
                 {
                     (160, 90, 120d * 16 / 9), (90, 160, 72d), (64, 64, 120d),
@@ -121,6 +122,62 @@ public sealed class ArtworkHoverPreviewTests
         Assert.IsTrue(thread.Join(TimeSpan.FromSeconds(30)), "封面预览渲染未结束。");
         if (failure is not null)
             ExceptionDispatchInfo.Capture(failure).Throw();
+    }
+
+    private static void VerifyTaskbarBackgroundLayers(TaskBarMediaControl control)
+    {
+        var original = SettingsManager.Current.Appearance;
+        var surface = (Border)control.FindName("TaskbarMaterialSurface");
+        var texture = (Image)control.FindName("BackgroundImage");
+        var appearance = original with
+        {
+            TaskbarBackgroundMaterial = TaskbarBackgroundMaterial.Frosted,
+            ShowTaskbarBackgroundWhenIdle = false,
+            ShowTaskbarBackgroundTint = true,
+            ShowTaskbarBackgroundBorder = true,
+            ShowTaskbarBackgroundTexture = true
+        };
+        var connected = MediaSnapshot.Disconnected with
+        {
+            IsConnected = true, IsPlaying = true, Artwork = CreateMarkedArtwork(160, 90)
+        };
+        try
+        {
+            SettingsManager.Current.Appearance = appearance;
+            control.UpdateSongInfo(MediaSnapshot.Disconnected);
+            Assert.AreEqual(0, ((SolidColorBrush)surface.Background).Color.A);
+            Assert.AreEqual(0, ((SolidColorBrush)surface.BorderBrush).Color.A);
+            control.UpdateSongInfo(connected);
+            Assert.IsTrue(((SolidColorBrush)surface.Background).Color.A > 0, "重新连接后应恢复底色。");
+            Assert.IsTrue(((SolidColorBrush)surface.BorderBrush).Color.A > 0);
+            control.UpdateSongInfo(connected with { IsPlaying = false });
+            Assert.IsTrue(((SolidColorBrush)surface.Background).Color.A > 0, "暂停不能视为无媒体。");
+            SettingsManager.Current.Appearance = appearance with { ShowTaskbarBackgroundTexture = false };
+            control.ApplyAppearanceSettings();
+            control.UpdateSongInfo(connected with { Artwork = CreateMarkedArtwork(90, 160) });
+            Assert.AreEqual(Visibility.Collapsed, texture.Visibility, "更换封面不能重新启用已关闭的纹理。");
+            SettingsManager.Current.Appearance = appearance with
+            {
+                ShowTaskbarBackgroundTint = false, ShowTaskbarBackgroundBorder = false
+            };
+            control.ApplyAppearanceSettings();
+            Assert.AreEqual(0, ((SolidColorBrush)surface.Background).Color.A);
+            Assert.AreEqual(0, ((SolidColorBrush)surface.BorderBrush).Color.A);
+            Assert.AreEqual(SystemParameters.HighContrast ? Visibility.Collapsed : Visibility.Visible, texture.Visibility);
+            SettingsManager.Current.Appearance = appearance with { ShowTaskbarBackgroundWhenIdle = true };
+            control.UpdateSongInfo(MediaSnapshot.Disconnected);
+            Assert.IsTrue(((SolidColorBrush)surface.Background).Color.A > 0, "开启无媒体背景后应保留底色。");
+            SettingsManager.Current.Appearance = appearance;
+            control.ApplyAppearanceSettings();
+            Assert.AreEqual(0, ((SolidColorBrush)surface.Background).Color.A);
+            Assert.AreEqual(Visibility.Collapsed, texture.Visibility);
+            Assert.AreEqual(Visibility.Visible, ((SymbolIcon)control.FindName("SongImagePlaceholder")).Visibility);
+        }
+        finally
+        {
+            SettingsManager.Current.Appearance = original;
+            control.ApplyAppearanceSettings();
+        }
     }
 
     private static void VerifyNoteColor(TaskBarMediaControl control)

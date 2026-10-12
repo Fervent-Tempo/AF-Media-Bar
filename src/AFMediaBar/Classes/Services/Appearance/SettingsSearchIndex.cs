@@ -269,7 +269,7 @@ public static class SettingsSearchIndex
 
         // ---- 外观 / Appearance ----
         Create(SettingsPageKey.Appearance, "Appearance.Group.TaskbarBackground", "Appearance.Row.TaskbarBackground.Description", language,
-            ["背景层", "磨砂", "透明任务栏", "frost", "background", "TranslucentTB", "浓度", "opacity"]),
+            ["背景层", "磨砂", "透明任务栏", "frost", "background", "TranslucentTB", "浓度", "opacity", "无媒体", "無媒體", "idle", "底色", "tint", "边框", "邊框", "border", "封面纹理", "封面紋理", "texture", "không có nội dung", "màu nền", "đường viền", "họa tiết"]),
         Create(
             SettingsPageKey.Appearance,
             "Common.Group.ThemeAndBackdrop",

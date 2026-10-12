@@ -321,7 +321,11 @@ public partial class AppearanceViewModel : ObservableObject, IDisposable
         _configuration.Current.Appearance.TaskbarBackgroundOpacityPercent,
         _configuration.Current.Appearance.TaskbarFrostedStyle)
     {
-        IdleNoteColor = _configuration.Current.Appearance.IdleNoteColor
+        IdleNoteColor = _configuration.Current.Appearance.IdleNoteColor,
+        ShowTaskbarBackgroundWhenIdle = _configuration.Current.Appearance.ShowTaskbarBackgroundWhenIdle,
+        ShowTaskbarBackgroundTint = _configuration.Current.Appearance.ShowTaskbarBackgroundTint,
+        ShowTaskbarBackgroundBorder = _configuration.Current.Appearance.ShowTaskbarBackgroundBorder,
+        ShowTaskbarBackgroundTexture = _configuration.Current.Appearance.ShowTaskbarBackgroundTexture
     });
 
     public void ResetAppearance() { if (!_disposed && _configuration.IsActive) SettingsManager.ResetApplicationAppearance(); }

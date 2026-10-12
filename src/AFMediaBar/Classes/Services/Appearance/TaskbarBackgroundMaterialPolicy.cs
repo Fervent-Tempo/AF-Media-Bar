@@ -7,6 +7,23 @@ namespace AFMediaBar.Classes.Services;
 /// <summary>任务栏背景材质的可测试呈现策略。 / Testable presentation policy for the taskbar background material.</summary>
 public static class TaskbarBackgroundMaterialPolicy
 {
+    /// <summary>按媒体连接状态和各背景层开关生成呈现；暂停仍属于有媒体。</summary>
+    public static TaskbarBackgroundMaterialPresentation Resolve(
+        AppearanceSettings appearance, bool isConnected, bool highContrast, bool usesLightText)
+    {
+        if (!isConnected && !appearance.ShowTaskbarBackgroundWhenIdle)
+            return new(Colors.Transparent, Colors.Transparent, 0);
+
+        var presentation = Resolve(appearance.TaskbarBackgroundMaterial, highContrast, usesLightText,
+            appearance.ResolveTaskbarBackgroundOpacityPercent(), appearance.TaskbarFrostedStyle);
+        return presentation with
+        {
+            Tint = appearance.ShowTaskbarBackgroundTint ? presentation.Tint : Colors.Transparent,
+            Stroke = appearance.ShowTaskbarBackgroundBorder ? presentation.Stroke : Colors.Transparent,
+            ArtworkOpacity = appearance.ShowTaskbarBackgroundTexture ? presentation.ArtworkOpacity : 0
+        };
+    }
+
     /// <summary>解析材质底色、描边与封面纹理透明度。 / Resolves the material tint, stroke, and artwork-texture opacity.</summary>
     public static TaskbarBackgroundMaterialPresentation Resolve(
         TaskbarBackgroundMaterial material,

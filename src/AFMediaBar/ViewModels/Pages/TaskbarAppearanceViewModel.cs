@@ -105,6 +105,47 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
             TaskbarBackgroundMaterial = value ? TaskbarBackgroundMaterial.Frosted : TaskbarBackgroundMaterial.Transparent
         });
     }
+
+    public bool ShowTaskbarBackgroundWhenIdle
+    {
+        get => _configuration.Current.Appearance.ShowTaskbarBackgroundWhenIdle;
+        set
+        {
+            if (_disposed || !_configuration.IsActive || _isRefreshing || value == ShowTaskbarBackgroundWhenIdle) return;
+            _configuration.SetTaskbarAppearance(_configuration.Current.Appearance with { ShowTaskbarBackgroundWhenIdle = value });
+        }
+    }
+
+    public bool ShowTaskbarBackgroundTint
+    {
+        get => _configuration.Current.Appearance.ShowTaskbarBackgroundTint;
+        set
+        {
+            if (_disposed || !_configuration.IsActive || _isRefreshing || value == ShowTaskbarBackgroundTint) return;
+            _configuration.SetTaskbarAppearance(_configuration.Current.Appearance with { ShowTaskbarBackgroundTint = value });
+        }
+    }
+
+    public bool ShowTaskbarBackgroundBorder
+    {
+        get => _configuration.Current.Appearance.ShowTaskbarBackgroundBorder;
+        set
+        {
+            if (_disposed || !_configuration.IsActive || _isRefreshing || value == ShowTaskbarBackgroundBorder) return;
+            _configuration.SetTaskbarAppearance(_configuration.Current.Appearance with { ShowTaskbarBackgroundBorder = value });
+        }
+    }
+
+    public bool ShowTaskbarBackgroundTexture
+    {
+        get => _configuration.Current.Appearance.ShowTaskbarBackgroundTexture;
+        set
+        {
+            if (_disposed || !_configuration.IsActive || _isRefreshing || value == ShowTaskbarBackgroundTexture) return;
+            _configuration.SetTaskbarAppearance(_configuration.Current.Appearance with { ShowTaskbarBackgroundTexture = value });
+        }
+    }
+
     /// <summary>任务栏背景层的风格。</summary>
     public TaskbarFrostedStyle TaskbarFrostedStyle
     {
@@ -117,6 +158,8 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
         get => _configuration.Current.Appearance.ResolveTaskbarBackgroundOpacityPercent();
         set => _configuration.SetTaskbarAppearance(_configuration.Current.Appearance with { TaskbarBackgroundOpacityPercent = value });
     }
+
+    public bool CanEditTaskbarBackgroundOpacity => UseFrostedTaskbarBackground && ShowTaskbarBackgroundTint;
 
     public TaskbarInformationDensity InteractionButtonSize
     {
@@ -207,8 +250,13 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
     {
         OnPropertyChanged(nameof(LengthMode));
         OnPropertyChanged(nameof(UseFrostedTaskbarBackground));
+        OnPropertyChanged(nameof(ShowTaskbarBackgroundWhenIdle));
+        OnPropertyChanged(nameof(ShowTaskbarBackgroundTint));
+        OnPropertyChanged(nameof(ShowTaskbarBackgroundBorder));
+        OnPropertyChanged(nameof(ShowTaskbarBackgroundTexture));
         OnPropertyChanged(nameof(TaskbarFrostedStyle));
         OnPropertyChanged(nameof(TaskbarBackgroundOpacityPercent));
+        OnPropertyChanged(nameof(CanEditTaskbarBackgroundOpacity));
         OnPropertyChanged(nameof(InteractionButtonSize));
         OnPropertyChanged(nameof(ContentLayout));
         OnPropertyChanged(nameof(MediaTextAlignment));

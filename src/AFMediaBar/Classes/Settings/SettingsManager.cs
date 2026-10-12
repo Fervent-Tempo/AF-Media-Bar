@@ -456,6 +456,10 @@ public static class SettingsManager
         {
             TaskbarBackgroundMaterial = normalized.TaskbarBackgroundMaterial,
             TaskbarBackgroundOpacityPercent = normalized.TaskbarBackgroundOpacityPercent,
+            ShowTaskbarBackgroundWhenIdle = normalized.ShowTaskbarBackgroundWhenIdle,
+            ShowTaskbarBackgroundTint = normalized.ShowTaskbarBackgroundTint,
+            ShowTaskbarBackgroundBorder = normalized.ShowTaskbarBackgroundBorder,
+            ShowTaskbarBackgroundTexture = normalized.ShowTaskbarBackgroundTexture,
             TaskbarFrostedStyle = normalized.TaskbarFrostedStyle
         } == normalized;
 
@@ -515,6 +519,10 @@ public static class SettingsManager
             PlayerForegroundMode = next.Appearance.PlayerForegroundMode,
             TaskbarBackgroundMaterial = next.Appearance.TaskbarBackgroundMaterial,
             TaskbarBackgroundOpacityPercent = next.Appearance.TaskbarBackgroundOpacityPercent,
+            ShowTaskbarBackgroundWhenIdle = next.Appearance.ShowTaskbarBackgroundWhenIdle,
+            ShowTaskbarBackgroundTint = next.Appearance.ShowTaskbarBackgroundTint,
+            ShowTaskbarBackgroundBorder = next.Appearance.ShowTaskbarBackgroundBorder,
+            ShowTaskbarBackgroundTexture = next.Appearance.ShowTaskbarBackgroundTexture,
             TaskbarFrostedStyle = next.Appearance.TaskbarFrostedStyle,
             IdleNoteColor = next.Appearance.IdleNoteColor
         };
@@ -533,6 +541,10 @@ public static class SettingsManager
             PlayerForegroundMode = defaults.Appearance.PlayerForegroundMode,
             TaskbarBackgroundMaterial = defaults.Appearance.TaskbarBackgroundMaterial,
             TaskbarBackgroundOpacityPercent = defaults.Appearance.TaskbarBackgroundOpacityPercent,
+            ShowTaskbarBackgroundWhenIdle = defaults.Appearance.ShowTaskbarBackgroundWhenIdle,
+            ShowTaskbarBackgroundTint = defaults.Appearance.ShowTaskbarBackgroundTint,
+            ShowTaskbarBackgroundBorder = defaults.Appearance.ShowTaskbarBackgroundBorder,
+            ShowTaskbarBackgroundTexture = defaults.Appearance.ShowTaskbarBackgroundTexture,
             TaskbarFrostedStyle = defaults.Appearance.TaskbarFrostedStyle,
             IdleNoteColor = defaults.Appearance.IdleNoteColor
         };

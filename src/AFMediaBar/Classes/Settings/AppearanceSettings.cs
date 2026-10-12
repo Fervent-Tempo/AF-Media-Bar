@@ -129,6 +129,19 @@ public readonly record struct AppearanceSettings(
     /// <summary>小音符的自定义 RGB 颜色；null 表示跟随强调色。</summary>
     public string? IdleNoteColor { get; init; }
 
+    /// <summary>无媒体时仍显示背景；缺字段时保留原有外观。</summary>
+    public bool ShowTaskbarBackgroundWhenIdle { get => _showTaskbarBackgroundWhenIdle ?? true; init => _showTaskbarBackgroundWhenIdle = value; }
+
+    public bool ShowTaskbarBackgroundTint { get => _showTaskbarBackgroundTint ?? true; init => _showTaskbarBackgroundTint = value; }
+    public bool ShowTaskbarBackgroundBorder { get => _showTaskbarBackgroundBorder ?? true; init => _showTaskbarBackgroundBorder = value; }
+    public bool ShowTaskbarBackgroundTexture { get => _showTaskbarBackgroundTexture ?? true; init => _showTaskbarBackgroundTexture = value; }
+
+    // 区分旧文件缺字段与用户明确关闭，序列化仍输出普通布尔值。
+    private readonly bool? _showTaskbarBackgroundWhenIdle;
+    private readonly bool? _showTaskbarBackgroundTint;
+    private readonly bool? _showTaskbarBackgroundBorder;
+    private readonly bool? _showTaskbarBackgroundTexture;
+
     /// <summary>
     /// 字体粗细下限。取 OpenType 的 Thin：WPF 只有 100–900 九个真实字重，界面按 100 步进在三者之间取值，
     /// 因此下限必须落在真实字重上，否则滑杆会停在一个会被就近取整的值上。
@@ -228,6 +241,10 @@ public readonly record struct AppearanceSettings(
                 ? TaskbarFrostedStyle
                 : defaults.TaskbarFrostedStyle,
             TaskbarBackgroundOpacityPercent = ResolveTaskbarBackgroundOpacityPercent(),
+            ShowTaskbarBackgroundWhenIdle = ShowTaskbarBackgroundWhenIdle,
+            ShowTaskbarBackgroundTint = ShowTaskbarBackgroundTint,
+            ShowTaskbarBackgroundBorder = ShowTaskbarBackgroundBorder,
+            ShowTaskbarBackgroundTexture = ShowTaskbarBackgroundTexture,
             AccentColorMode = Enum.IsDefined(AccentColorMode) ? AccentColorMode : defaults.AccentColorMode,
             // 强调色存的是十六进制文本：旧文件、手改文件或将来格式变化都可能给出无法解析的值，此时 MUST 回退到默认色
             // 而不是把空值写进调色板（那会让整套强调色画刷变成透明）。

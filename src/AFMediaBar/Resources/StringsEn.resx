@@ -349,6 +349,30 @@
   <data name="Appearance.TaskbarFrostedStyle.Artwork" xml:space="preserve">
     <value>Artwork ambience</value>
   </data>
+  <data name="Appearance.Row.TaskbarBackgroundWhenIdle.Description" xml:space="preserve">
+    <value>Show the background when no media is connected. Turning this off keeps the music note and persistent components visible.</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundWhenIdle.Title" xml:space="preserve">
+    <value>Show background without media</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundBorder.Description" xml:space="preserve">
+    <value>Draw a thin border around the media bar.</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundBorder.Title" xml:space="preserve">
+    <value>Show border</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundTexture.Description" xml:space="preserve">
+    <value>Show a blurred texture when artwork is available. Hidden in high contrast mode.</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundTexture.Title" xml:space="preserve">
+    <value>Show artwork texture</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundTint.Description" xml:space="preserve">
+    <value>Show the frosted tint, independently of the border and artwork texture.</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundTint.Title" xml:space="preserve">
+    <value>Show tint</value>
+  </data>
   <data name="Appearance.Row.TaskbarBackgroundOpacity.Description" xml:space="preserve">
     <value>Higher values make the grey veil stronger and improve readability on transparent taskbars.</value>
   </data>

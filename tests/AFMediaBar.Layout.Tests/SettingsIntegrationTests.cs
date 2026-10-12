@@ -63,6 +63,10 @@ public sealed class SettingsIntegrationTests
                 taskbar.UseFrostedTaskbarBackground = true;
                 taskbar.TaskbarFrostedStyle = TaskbarFrostedStyle.Warm;
                 taskbar.TaskbarBackgroundOpacityPercent = 75;
+                taskbar.ShowTaskbarBackgroundWhenIdle = false;
+                taskbar.ShowTaskbarBackgroundTint = false;
+                taskbar.ShowTaskbarBackgroundBorder = false;
+                taskbar.ShowTaskbarBackgroundTexture = false;
                 taskbar.SetIdleNoteColorCommand.Execute("#42cba6");
                 application.FontWeight = 700;
                 Assert.AreEqual("#42CBA6", SettingsManager.Current.Appearance.IdleNoteColor);
@@ -73,11 +77,19 @@ public sealed class SettingsIntegrationTests
                 Assert.IsTrue(taskbar.UseFrostedTaskbarBackground);
                 Assert.AreEqual(TaskbarFrostedStyle.Warm, taskbar.TaskbarFrostedStyle);
                 Assert.AreEqual(75, taskbar.TaskbarBackgroundOpacityPercent);
+                Assert.IsFalse(taskbar.ShowTaskbarBackgroundWhenIdle);
+                Assert.IsFalse(taskbar.ShowTaskbarBackgroundTint);
+                Assert.IsFalse(taskbar.ShowTaskbarBackgroundBorder);
+                Assert.IsFalse(taskbar.ShowTaskbarBackgroundTexture);
                 taskbar.TaskbarFrostedStyle = TaskbarFrostedStyle.Cool;
                 Assert.AreEqual(700, application.FontWeight);
                 var before = SettingsManager.Current.Appearance;
                 context.Deactivate();
                 taskbar.UseFrostedTaskbarBackground = false;
+                taskbar.ShowTaskbarBackgroundWhenIdle = true;
+                taskbar.ShowTaskbarBackgroundTint = true;
+                taskbar.ShowTaskbarBackgroundBorder = true;
+                taskbar.ShowTaskbarBackgroundTexture = true;
                 taskbar.ResetIdleNoteColorCommand.Execute(null);
                 application.FontWeight = 400;
                 Assert.AreEqual(before, SettingsManager.Current.Appearance);
@@ -108,6 +120,10 @@ public sealed class SettingsIntegrationTests
                     TaskbarBackgroundMaterial = TaskbarBackgroundMaterial.Frosted,
                     TaskbarFrostedStyle = TaskbarFrostedStyle.Warm,
                     TaskbarBackgroundOpacityPercent = 75,
+                    ShowTaskbarBackgroundWhenIdle = false,
+                    ShowTaskbarBackgroundTint = false,
+                    ShowTaskbarBackgroundBorder = false,
+                    ShowTaskbarBackgroundTexture = false,
                     IdleNoteColor = "#42CBA6"
                 }
             };
@@ -118,6 +134,10 @@ public sealed class SettingsIntegrationTests
                 PlayerForegroundMode = PlayerForegroundMode.DarkText,
                 TaskbarFrostedStyle = TaskbarFrostedStyle.Cool,
                 TaskbarBackgroundOpacityPercent = 90,
+                ShowTaskbarBackgroundWhenIdle = true,
+                ShowTaskbarBackgroundTint = true,
+                ShowTaskbarBackgroundBorder = true,
+                ShowTaskbarBackgroundTexture = true,
                 IdleNoteColor = "#FF8A8A"
             };
             SettingsManager.Current = new AppSettings { Appearance = current };
@@ -126,6 +146,10 @@ public sealed class SettingsIntegrationTests
             Assert.AreEqual(PlayerForegroundMode.DarkText, SettingsManager.Current.Appearance.PlayerForegroundMode);
             Assert.AreEqual(TaskbarFrostedStyle.Cool, SettingsManager.Current.Appearance.TaskbarFrostedStyle);
             Assert.AreEqual(90, SettingsManager.Current.Appearance.TaskbarBackgroundOpacityPercent);
+            Assert.IsTrue(SettingsManager.Current.Appearance.ShowTaskbarBackgroundWhenIdle);
+            Assert.IsTrue(SettingsManager.Current.Appearance.ShowTaskbarBackgroundTint);
+            Assert.IsTrue(SettingsManager.Current.Appearance.ShowTaskbarBackgroundBorder);
+            Assert.IsTrue(SettingsManager.Current.Appearance.ShowTaskbarBackgroundTexture);
             Assert.AreEqual(current.IdleNoteColor, SettingsManager.Current.Appearance.IdleNoteColor);
             SettingsManager.Current.Appearance = current;
             SettingsManager.ResetTaskbarAppearance();
@@ -134,6 +158,10 @@ public sealed class SettingsIntegrationTests
             Assert.AreEqual(saved.Appearance.TaskbarBackgroundMaterial, SettingsManager.Current.Appearance.TaskbarBackgroundMaterial);
             Assert.AreEqual(saved.Appearance.TaskbarFrostedStyle, SettingsManager.Current.Appearance.TaskbarFrostedStyle);
             Assert.AreEqual(saved.Appearance.TaskbarBackgroundOpacityPercent, SettingsManager.Current.Appearance.TaskbarBackgroundOpacityPercent);
+            Assert.IsFalse(SettingsManager.Current.Appearance.ShowTaskbarBackgroundWhenIdle);
+            Assert.IsFalse(SettingsManager.Current.Appearance.ShowTaskbarBackgroundTint);
+            Assert.IsFalse(SettingsManager.Current.Appearance.ShowTaskbarBackgroundBorder);
+            Assert.IsFalse(SettingsManager.Current.Appearance.ShowTaskbarBackgroundTexture);
             Assert.AreEqual(saved.Appearance.IdleNoteColor, SettingsManager.Current.Appearance.IdleNoteColor);
             Assert.AreEqual(saved.Appearance, SettingsManager.UserDefaults!.Appearance);
         }
@@ -150,6 +178,38 @@ public sealed class SettingsIntegrationTests
         Assert.AreEqual("#42CBA6", settings.Appearance.IdleNoteColor);
         var loaded = JsonSerializer.Deserialize<AppSettings>(JsonSerializer.Serialize(settings, options), options)!.Normalize().Clone();
         Assert.AreEqual("#42CBA6", loaded.Appearance.IdleNoteColor);
+    }
+
+    [TestMethod]
+    public void BackgroundLayerChoicesPreserveOldDefaultsAndRoundTripExplicitOff()
+    {
+        var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+        foreach (var json in new[] { "{}", "{\"appearance\":{}}" })
+        {
+            var old = JsonSerializer.Deserialize<AppSettings>(json, options)!.Normalize().Appearance;
+            Assert.IsTrue(old.ShowTaskbarBackgroundWhenIdle);
+            Assert.IsTrue(old.ShowTaskbarBackgroundTint);
+            Assert.IsTrue(old.ShowTaskbarBackgroundBorder);
+            Assert.IsTrue(old.ShowTaskbarBackgroundTexture);
+        }
+        var settings = new AppSettings
+        {
+            Appearance = AppearanceSettings.Default with
+            {
+                ShowTaskbarBackgroundWhenIdle = false,
+                ShowTaskbarBackgroundTint = false,
+                ShowTaskbarBackgroundBorder = false,
+                ShowTaskbarBackgroundTexture = false,
+            }
+        };
+        var loaded = JsonSerializer.Deserialize<AppSettings>(JsonSerializer.Serialize(settings, options), options)!.Normalize().Clone();
+        Assert.IsFalse(loaded.Appearance.ShowTaskbarBackgroundWhenIdle);
+        Assert.IsFalse(loaded.Appearance.ShowTaskbarBackgroundTint);
+        Assert.IsFalse(loaded.Appearance.ShowTaskbarBackgroundBorder);
+        Assert.IsFalse(loaded.Appearance.ShowTaskbarBackgroundTexture);
+        foreach (var key in new[] { "showTaskbarBackgroundWhenIdle", "showTaskbarBackgroundTint", "showTaskbarBackgroundBorder", "showTaskbarBackgroundTexture" })
+            Assert.ThrowsException<JsonException>(() => JsonSerializer.Deserialize<AppSettings>(
+                "{\"appearance\":{\"" + key + "\":null}}", options));
     }
 
     [TestMethod]

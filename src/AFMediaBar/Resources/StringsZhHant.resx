@@ -349,6 +349,30 @@
   <data name="Appearance.TaskbarFrostedStyle.Artwork" xml:space="preserve">
     <value>封面氛圍</value>
   </data>
+  <data name="Appearance.Row.TaskbarBackgroundWhenIdle.Description" xml:space="preserve">
+    <value>未連接媒體時也顯示背景；關閉後保留小音符及常駐元件。</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundWhenIdle.Title" xml:space="preserve">
+    <value>無媒體時顯示背景</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundBorder.Description" xml:space="preserve">
+    <value>在媒體列邊緣顯示細邊框。</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundBorder.Title" xml:space="preserve">
+    <value>顯示邊框</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundTexture.Description" xml:space="preserve">
+    <value>有封面時顯示模糊紋理；高對比模式下不顯示。</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundTexture.Title" xml:space="preserve">
+    <value>顯示封面紋理</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundTint.Description" xml:space="preserve">
+    <value>顯示磨砂底色，可獨立搭配邊框和封面紋理。</value>
+  </data>
+  <data name="Appearance.Row.TaskbarBackgroundTint.Title" xml:space="preserve">
+    <value>顯示底色</value>
+  </data>
   <data name="Appearance.Row.TaskbarBackgroundOpacity.Description" xml:space="preserve">
     <value>數值越高，灰色遮罩越濃，透明工作列上的內容越清晰。</value>
   </data>

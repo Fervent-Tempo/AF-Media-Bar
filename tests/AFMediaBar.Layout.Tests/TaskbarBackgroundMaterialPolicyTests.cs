@@ -11,6 +11,49 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class TaskbarBackgroundMaterialPolicyTests
 {
     [TestMethod]
+    public void IdlePreferenceHidesAllLayersAndConnectedMediaRestoresThem()
+    {
+        var appearance = AppearanceSettings.Default with
+        {
+            TaskbarBackgroundMaterial = TaskbarBackgroundMaterial.Frosted,
+            ShowTaskbarBackgroundWhenIdle = false
+        };
+        foreach (var highContrast in new[] { false, true })
+        {
+            var idle = TaskbarBackgroundMaterialPolicy.Resolve(appearance, false, highContrast, true);
+            Assert.AreEqual(Colors.Transparent, idle.Tint);
+            Assert.AreEqual(Colors.Transparent, idle.Stroke);
+            Assert.AreEqual(0, idle.ArtworkOpacity);
+            var connected = TaskbarBackgroundMaterialPolicy.Resolve(appearance, true, highContrast, true);
+            Assert.IsTrue(connected.Tint.A > 0);
+            Assert.IsTrue(connected.Stroke.A > 0);
+        }
+    }
+
+    [TestMethod]
+    [DataRow(false, true, true)]
+    [DataRow(true, false, true)]
+    [DataRow(true, true, false)]
+    [DataRow(false, false, false)]
+    public void BackgroundLayersCanBeHiddenIndependently(bool tint, bool border, bool texture)
+    {
+        var appearance = AppearanceSettings.Default with
+        {
+            TaskbarBackgroundMaterial = TaskbarBackgroundMaterial.Frosted,
+            ShowTaskbarBackgroundTint = tint,
+            ShowTaskbarBackgroundBorder = border,
+            ShowTaskbarBackgroundTexture = texture
+        };
+        foreach (var highContrast in new[] { false, true })
+        {
+            var result = TaskbarBackgroundMaterialPolicy.Resolve(appearance, true, highContrast, true);
+            Assert.AreEqual(tint, result.Tint.A > 0);
+            Assert.AreEqual(border, result.Stroke.A > 0);
+            Assert.AreEqual(texture && !highContrast, result.ArtworkOpacity > 0);
+        }
+    }
+
+    [TestMethod]
     public void TransparentMaterialDoesNotDrawSurface()
     {
         var result = TaskbarBackgroundMaterialPolicy.Resolve(TaskbarBackgroundMaterial.Transparent, false, true, 72);
@@ -148,7 +191,11 @@ public sealed class TaskbarBackgroundMaterialPolicyTests
 
             SettingsManager.SetAppearanceSettings(AppearanceSettings.Default with
             {
-                TaskbarBackgroundOpacityPercent = AppearanceSettings.DefaultTaskbarBackgroundOpacityPercent + 1
+                TaskbarBackgroundOpacityPercent = AppearanceSettings.DefaultTaskbarBackgroundOpacityPercent + 1,
+                ShowTaskbarBackgroundWhenIdle = false,
+                ShowTaskbarBackgroundTint = false,
+                ShowTaskbarBackgroundBorder = false,
+                ShowTaskbarBackgroundTexture = false
             });
 
             Assert.AreEqual(0, globalRefreshes);

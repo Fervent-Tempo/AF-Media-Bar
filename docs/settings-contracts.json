@@ -19,6 +19,10 @@
       "latinFont": "v1.2.0",
       "latinFontFamily": "v1.3.0",
       "playerForegroundMode": "v1.2.0",
+      "showTaskbarBackgroundWhenIdle": "unreleased",
+      "showTaskbarBackgroundTint": "unreleased",
+      "showTaskbarBackgroundBorder": "unreleased",
+      "showTaskbarBackgroundTexture": "unreleased",
       "taskbarBackgroundMaterial": "unreleased",
       "taskbarBackgroundOpacityPercent": "unreleased",
       "taskbarFrostedStyle": "unreleased"

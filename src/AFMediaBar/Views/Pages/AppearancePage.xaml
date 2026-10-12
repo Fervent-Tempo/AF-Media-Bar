@@ -543,6 +543,38 @@
                                     </TextBlock.Style>
                                 </TextBlock>
                                 <components:SettingsRow
+                                    Title="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundWhenIdle.Title}"
+                                    Description="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundWhenIdle.Description}"
+                                    Icon="{ui:SymbolIcon MusicNote220}"
+                                    IsEnabled="{Binding Taskbar.UseFrostedTaskbarBackground}"
+                                    IsNested="True">
+                                    <ui:ToggleSwitch IsChecked="{Binding Taskbar.ShowTaskbarBackgroundWhenIdle, Mode=TwoWay}" />
+                                </components:SettingsRow>
+                                <components:SettingsRow
+                                    Title="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundBorder.Title}"
+                                    Description="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundBorder.Description}"
+                                    Icon="{ui:SymbolIcon Square24}"
+                                    IsEnabled="{Binding Taskbar.UseFrostedTaskbarBackground}"
+                                    IsNested="True">
+                                    <ui:ToggleSwitch IsChecked="{Binding Taskbar.ShowTaskbarBackgroundBorder, Mode=TwoWay}" />
+                                </components:SettingsRow>
+                                <components:SettingsRow
+                                    Title="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundTexture.Title}"
+                                    Description="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundTexture.Description}"
+                                    Icon="{ui:SymbolIcon Image24}"
+                                    IsEnabled="{Binding Taskbar.UseFrostedTaskbarBackground}"
+                                    IsNested="True">
+                                    <ui:ToggleSwitch IsChecked="{Binding Taskbar.ShowTaskbarBackgroundTexture, Mode=TwoWay}" />
+                                </components:SettingsRow>
+                                <components:SettingsRow
+                                    Title="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundTint.Title}"
+                                    Description="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundTint.Description}"
+                                    Icon="{ui:SymbolIcon Color24}"
+                                    IsEnabled="{Binding Taskbar.UseFrostedTaskbarBackground}"
+                                    IsNested="True">
+                                    <ui:ToggleSwitch IsChecked="{Binding Taskbar.ShowTaskbarBackgroundTint, Mode=TwoWay}" />
+                                </components:SettingsRow>
+                                <components:SettingsRow
                                     Description="{DynamicResource Loc.Appearance.Row.TaskbarFrostedStyle.Description}"
                                     Icon="{ui:SymbolIcon Color24}"
                                     IsEnabled="{Binding Taskbar.UseFrostedTaskbarBackground}"
@@ -569,7 +601,7 @@
                                 <components:SettingsRow
                                     Description="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundOpacity.Description}"
                                     Icon="{ui:SymbolIcon CircleHalfFill24}"
-                                    IsEnabled="{Binding Taskbar.UseFrostedTaskbarBackground}"
+                                    IsEnabled="{Binding Taskbar.CanEditTaskbarBackgroundOpacity}"
                                     IsNested="True"
                                     Title="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundOpacity.Title}">
                                     <components:SettingsNumericEditor
