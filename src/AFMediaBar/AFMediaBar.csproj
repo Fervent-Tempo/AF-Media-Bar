@@ -108,6 +108,7 @@
     <EmbeddedResource Include="Resources\ReleaseHighlights.json" />
     <EmbeddedResource Include="..\..\docs\contributors.json" LogicalName="AFMediaBar.Resources.Contributors.json" />
     <EmbeddedResource Include="..\..\docs\sponsors.json" LogicalName="AFMediaBar.Resources.Sponsors.json" />
+    <EmbeddedResource Include="..\..\docs\third-party-audio-notices.md" Link="Resources\ThirdPartyAudioNotices.md" />
     <EmbeddedResource Include="Web\Lyrics\*.html" />
     <EmbeddedResource Include="Web\Lyrics\*.css" />
     <EmbeddedResource Include="Web\Lyrics\*.js" />

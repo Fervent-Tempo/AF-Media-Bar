@@ -228,6 +228,7 @@ public static class TaskbarExperiencePolicy
         var buttonCount = (controls.PlayPauseVisible ? 1 : 0) +
                           (controls.PreviousNextVisible ? 2 : 0) +
                           (controls.OutputDeviceVisible ? 1 : 0) +
+                          (controls.InputDeviceVisible ? 1 : 0) +
                           (controls.AudioControlVisible ? 1 : 0);
         var buttons = buttonCount == 0 ? 0 : buttonCount * metrics.ButtonSize + (buttonCount - 1) * sectionGap;
         return 11 + buttons;

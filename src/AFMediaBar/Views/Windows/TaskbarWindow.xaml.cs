@@ -49,7 +49,6 @@ public partial class TaskbarWindow : Window
     private readonly DispatcherTimer _timer;
     private readonly DispatcherTimer _sizeAnimationTimer;
     private readonly DispatcherTimer _spectrumTimer;
-    private readonly DispatcherTimer _outputDeviceApplyTimer;
     private readonly DispatcherTimer _quickLaunchApplyTimer;
     private readonly DispatcherTimer _volumeApplyTimer;
     private readonly DispatcherTimer _taskbarMotionSettleTimer;
@@ -127,8 +126,7 @@ public partial class TaskbarWindow : Window
     private readonly float[] _spectrumBands = new float[SpectrumComponentSettings.MaximumBandCount];
     private readonly float[] _spectrumWorkerBands = new float[SpectrumComponentSettings.MaximumBandCount];
     private MediaSnapshot _lastSnapshot = MediaSnapshot.Disconnected;
-    private IReadOnlyList<AudioDeviceOption> _outputDevices = Array.Empty<AudioDeviceOption>();
-    private AudioDeviceOption? _pendingOutputDevice;
+    private AudioDeviceTarget? _deviceMenuTarget;
     private QuickLaunchEntry? _pendingQuickLaunch;
     private ApplicationVolumeSnapshot? _currentVolume;
     private int? _pendingVolume;
@@ -188,6 +186,9 @@ public partial class TaskbarWindow : Window
         MediaControl.ActivateSourceRequested += MediaControl_ActivateSourceRequested;
         MediaControl.OpenFullPanelRequested += MediaControl_OpenFullPanelRequested;
         MediaControl.OutputDeviceMenuRequested += MediaControl_OutputDeviceMenuRequested;
+        MediaControl.InputDeviceMenuRequested += MediaControl_InputDeviceMenuRequested;
+        MediaControl.InputDeviceWheelRequested += MediaControl_InputDeviceWheelRequested;
+        MediaControl.InputDeviceInfoRequested += MediaControl_InputDeviceInfoRequested;
         MediaControl.OutputDeviceWheelRequested += MediaControl_OutputDeviceWheelRequested;
         MediaControl.VolumeMenuRequested += MediaControl_VolumeMenuRequested;
         MediaControl.VolumeWheelRequested += MediaControl_VolumeWheelRequested;
@@ -221,6 +222,8 @@ public partial class TaskbarWindow : Window
         _hostActions = hostActions;
         _interactionRouter = interactionRouter;
         _audioInteractionService = audioInteractionService;
+        _audioInteractionService.DeviceSwitches.Updated += OnAudioDeviceSwitchUpdated;
+        _audioInteractionService.DeviceSwitches.Invalidated += OnAudioDeviceInvalidated;
         _audioMonitorService = audioMonitorService;
         _sourceActivationService = sourceActivationService;
         _metricsMonitor = metricsMonitor;
@@ -275,20 +278,6 @@ public partial class TaskbarWindow : Window
             ApplyBackgroundPruneLevel(_backgroundPruneLevel);
         }
 
-        _outputDeviceApplyTimer = new DispatcherTimer
-            { Interval = TimeSpan.FromMilliseconds(AudioApplyPolicy.OutputDevicePreviewDelayMilliseconds) };
-        _outputDeviceApplyTimer.Tick += async (_, _) =>
-        {
-            _outputDeviceApplyTimer.Stop();
-            var pending = _pendingOutputDevice;
-            _pendingOutputDevice = null;
-            if (pending is not null && !_isClosing)
-            {
-                await _audioInteractionService.SetOutputDeviceAsync(pending);
-                if (_compactFlyout.IsShowing(TaskbarCompactFlyoutMode.OutputDevice))
-                    _compactFlyout.Dismiss();
-            }
-        };
         _quickLaunchApplyTimer = new DispatcherTimer
             { Interval = TimeSpan.FromMilliseconds(AudioApplyPolicy.OutputDevicePreviewDelayMilliseconds) };
         _quickLaunchApplyTimer.Tick += async (_, _) =>
@@ -528,7 +517,6 @@ public partial class TaskbarWindow : Window
             _taskbarHiddenTrimTimer.Stop();
             UnregisterTaskbarLocationHook();
             DisposeMetricsSubscription();
-            _outputDeviceApplyTimer.Stop();
             _quickLaunchApplyTimer.Stop();
             _volumeApplyTimer.Stop();
             _compactFlyout.Dismiss();
@@ -1329,6 +1317,7 @@ public partial class TaskbarWindow : Window
     /// </summary>
     internal void SuspendForEnvironmentRecovery()
     {
+        _audioInteractionService.CancelDeviceOwner(this);
         if (_isEnvironmentSuspended)
             return;
 
@@ -1344,10 +1333,8 @@ public partial class TaskbarWindow : Window
         _taskbarMotionSettleTimer.Stop();
         _taskbarHiddenTrimTimer.Stop();
         DisposeMetricsSubscription();
-        _outputDeviceApplyTimer.Stop();
         _quickLaunchApplyTimer.Stop();
         _volumeApplyTimer.Stop();
-        _pendingOutputDevice = null;
         _pendingQuickLaunch = null;
         _pendingVolume = null;
         _foregroundSamplingSession.Invalidate(clearDecision: false);
@@ -1498,81 +1485,130 @@ public partial class TaskbarWindow : Window
             MediaControl.SetWheelResult(wheelResult);
     }
 
-    private async void MediaControl_OutputDeviceMenuRequested(object? sender, EventArgs e)
+
+    private async void MediaControl_OutputDeviceMenuRequested(object? sender, EventArgs e) =>
+        await ShowDeviceMenuAsync(AudioDeviceDirection.Output, SettingsManager.Current.Interaction.OutputDeviceClickTarget, MediaControl.GetOutputDeviceAnchor());
+    private async void MediaControl_InputDeviceMenuRequested(object? sender, EventArgs e) =>
+        await ShowDeviceMenuAsync(AudioDeviceDirection.Input, SettingsManager.Current.Interaction.InputDeviceClickTarget, MediaControl.GetInputDeviceAnchor());
+    private async Task ShowDeviceMenuAsync(AudioDeviceDirection direction, AudioDeviceSwitchTarget scope, TrayIconBounds anchor)
     {
-        if (_compactFlyout.IsShowing(TaskbarCompactFlyoutMode.OutputDevice))
+        if (_isClosing || scope == AudioDeviceSwitchTarget.Disabled) return;
+        var mode = direction == AudioDeviceDirection.Output ? TaskbarCompactFlyoutMode.OutputDevice : TaskbarCompactFlyoutMode.InputDevice;
+        if (_compactFlyout.IsShowing(mode)) { _compactFlyout.Dismiss(); return; }
+        try
         {
-            _compactFlyout.Dismiss();
-            return;
+            var target = await _audioInteractionService.ResolveTargetAsync(direction, scope, this, false);
+            if (_isClosing) return;
+            if (target is null) { MediaControl.SetDeviceTooltip(direction, Translations.Get("Audio.App.Unavailable")); return; }
+            var devices = await _audioInteractionService.DeviceSwitches.GetChoicesAsync(target);
+            var selected = await _audioInteractionService.DeviceSwitches.GetSelectedAsync(target, devices);
+            var route = await _audioInteractionService.DeviceSwitches.ReadRouteAsync(target);
+            if (_isClosing) return;
+            _deviceMenuTarget = target;
+            _compactFlyout.ShowDevices(target, devices, selected, anchor, route.IsSupported && route.Error is null);
+            if (!route.IsSupported || route.Error is not null)
+            {
+                _compactFlyout.ShowDeviceStatus(Translations.Get(route.Error ?? "Audio.Route.Unsupported"));
+                return;
+            }
+            if (selected is null) _compactFlyout.ShowDeviceStatus(target.Application is null ?
+                await _audioInteractionService.GetDeviceDescriptionAsync(direction) : Translations.Get("Audio.Route.HiddenOrDisconnected"));
         }
-
-        _outputDevices = await _audioInteractionService.GetOutputDevicesAsync();
-        if (_isClosing) return;
-        _compactFlyout.ShowOutputDevices(
-            _outputDevices,
-            _outputDevices.FirstOrDefault(device => device.IsDefault),
-            MediaControl.GetOutputDeviceAnchor());
+        catch (Exception exception) { Debug.WriteLine(exception); if (!_isClosing) MediaControl.SetDeviceTooltip(direction, Translations.Get("Audio.Route.Failed")); }
     }
-
-    private async void MediaControl_OutputDeviceWheelRequested(object? sender, PlayerSurfaceWheelEventArgs e)
-        => await PreviewOutputDeviceAsync(e.Delta,
-            updateFlyout: _compactFlyout.IsShowing(TaskbarCompactFlyoutMode.OutputDevice));
-
-    /// <summary>
-    /// 指针进入输出设备按钮时刷新提示；滚轮预览尚未落地时显示待应用候选，避免提示回退到旧设备。
-    /// Refreshes the tooltip when the pointer enters the output-device button; while a wheel preview is still pending it
-    /// shows that candidate so the tooltip cannot fall back to the previously applied device.
-    /// </summary>
-    private async void MediaControl_OutputDeviceInfoRequested(object? sender, EventArgs e)
+    private async void MediaControl_OutputDeviceWheelRequested(object? sender, PlayerSurfaceWheelEventArgs e) =>
+        await PreviewDeviceAsync(AudioDeviceDirection.Output, e.Delta);
+    private async void MediaControl_InputDeviceWheelRequested(object? sender, PlayerSurfaceWheelEventArgs e) =>
+        await PreviewDeviceAsync(AudioDeviceDirection.Input, e.Delta);
+    private async Task PreviewDeviceAsync(AudioDeviceDirection direction, int delta)
     {
-        if (_pendingOutputDevice is { } pending)
+        try
         {
-            MediaControl.SetOutputDevicePreview(pending);
-            return;
+            var settings = SettingsManager.Current.Interaction;
+            var scope = direction == AudioDeviceDirection.Output ? settings.OutputDeviceWheelTarget : settings.InputDeviceWheelTarget;
+            if (_isClosing || scope == AudioDeviceSwitchTarget.Disabled) return;
+            var target = await _audioInteractionService.ResolveTargetAsync(direction, scope, this, true);
+            if (_isClosing) return;
+            if (target is null) { MediaControl.SetDeviceTooltip(direction, Translations.Get("Audio.App.Unavailable")); return; }
+            await _audioInteractionService.DeviceSwitches.PreviewAsync(target, TrayWheelPolicy.GetDeviceSteps(delta), this);
         }
-
-        if (_isClosing) return;
-        // 每次悬停都重新枚举，避免显示已被系统切换过的旧默认设备。
-        // Re-enumerate on every hover so a default device changed elsewhere is not reported stale.
-        _outputDevices = await _audioInteractionService.GetOutputDevicesAsync();
-        if (_isClosing) return;
-        var current = _outputDevices.FirstOrDefault(device => device.IsDefault) ?? _outputDevices.FirstOrDefault();
-        if (current is null)
-            MediaControl.SetOutputDeviceUnavailable();
-        else
-            MediaControl.SetOutputDevicePreview(current);
+        catch (Exception exception) { Debug.WriteLine(exception); if (!_isClosing) MediaControl.SetDeviceTooltip(direction, Translations.Get("Audio.Route.Failed")); }
     }
-
     private async void CompactFlyout_OutputDeviceWheelRequested(int delta)
-        => await PreviewOutputDeviceAsync(delta, updateFlyout: true);
-
-    private async Task PreviewOutputDeviceAsync(int delta, bool updateFlyout)
     {
-        if (_outputDevices.Count == 0) _outputDevices = await _audioInteractionService.GetOutputDevicesAsync();
-        if (_outputDevices.Count == 0)
-        {
-            MediaControl.SetOutputDeviceUnavailable();
-            return;
-        }
-
-        var current = _pendingOutputDevice is null
-            ? _outputDevices.ToList().FindIndex(device => device.IsDefault)
-            : _outputDevices.ToList().FindIndex(device => device.Id == _pendingOutputDevice.Id);
-        var index = DeferredCircularSelection.Move(current, delta, _outputDevices.Count);
-        if (index < 0) return;
-        _pendingOutputDevice = _outputDevices[index];
-        MediaControl.SetOutputDevicePreview(_pendingOutputDevice);
-        if (updateFlyout) _compactFlyout.SetOutputDevicePreview(_pendingOutputDevice);
-        _outputDeviceApplyTimer.Stop();
-        _outputDeviceApplyTimer.Start();
+        if (_deviceMenuTarget is not { } target || _isClosing) return;
+        try { await _audioInteractionService.DeviceSwitches.PreviewAsync(target, TrayWheelPolicy.GetDeviceSteps(delta), this); }
+        catch (Exception exception) { Debug.WriteLine(exception); }
     }
-
     private async void MediaControl_OutputDeviceSelected(AudioDeviceOption device)
     {
-        _outputDeviceApplyTimer.Stop();
-        _pendingOutputDevice = null;
-        MediaControl.SetOutputDevicePreview(device);
-        await _audioInteractionService.SetOutputDeviceAsync(device);
+        if (_deviceMenuTarget is not { } target || _isClosing) return;
+        try
+        {
+            var result = await _audioInteractionService.DeviceSwitches.SelectAsync(target, device, this);
+            if (!_isClosing) MediaControl.SetDeviceTooltip(target.Direction, AudioDevicePresentation.GetResultText(result, target.Application is not null));
+        }
+        catch (Exception exception) { Debug.WriteLine(exception); }
+    }
+    private async void MediaControl_OutputDeviceInfoRequested(object? sender, EventArgs e) => await RefreshDeviceTooltipAsync(AudioDeviceDirection.Output);
+    private async void MediaControl_InputDeviceInfoRequested(object? sender, EventArgs e) => await RefreshDeviceTooltipAsync(AudioDeviceDirection.Input);
+    private async Task RefreshDeviceTooltipAsync(AudioDeviceDirection direction)
+    {
+        try
+        {
+            var settings = SettingsManager.Current.Interaction;
+            var scope = direction == AudioDeviceDirection.Output ? settings.OutputDeviceWheelTarget : settings.InputDeviceWheelTarget;
+            if (scope == AudioDeviceSwitchTarget.Disabled) { MediaControl.SetDeviceTooltip(direction, Translations.Get("Audio.Device.Disabled")); return; }
+            var target = await _audioInteractionService.ResolveTargetAsync(direction, scope, this, true);
+            if (_isClosing) return;
+            if (target is null) { MediaControl.SetDeviceTooltip(direction, Translations.Get("Audio.App.Unavailable")); return; }
+            var choices = await _audioInteractionService.DeviceSwitches.GetChoicesAsync(target);
+            var selected = await _audioInteractionService.DeviceSwitches.GetSelectedAsync(target, choices);
+            var route = await _audioInteractionService.DeviceSwitches.ReadRouteAsync(target);
+            var detail = !route.IsSupported || route.Error is not null ? Translations.Get(route.Error ?? "Audio.Route.Unsupported") :
+                selected?.DisplayName ?? (target.Application is null ? await _audioInteractionService.GetDeviceDescriptionAsync(direction) :
+                    Translations.Get("Audio.Route.HiddenOrDisconnected"));
+            if (!_isClosing) MediaControl.SetDeviceTooltip(direction, (target.Application is null ? string.Empty : target.Application.DisplayName + " · ") + detail);
+        }
+        catch (Exception exception) { Debug.WriteLine(exception); }
+    }
+    private void OnAudioDeviceSwitchUpdated(AudioDeviceSwitchUpdate update) => Dispatcher.BeginInvoke(() =>
+    {
+        if (_isClosing) return;
+        var settings = SettingsManager.Current.Interaction;
+        var scope = update.Target.Direction == AudioDeviceDirection.Output ? settings.OutputDeviceWheelTarget : settings.InputDeviceWheelTarget;
+        if ((scope == AudioDeviceSwitchTarget.SystemDefault && update.Target.Application is null) ||
+            (scope == AudioDeviceSwitchTarget.ForegroundApplication && update.Target.Application is not null))
+            MediaControl.SetDeviceTooltip(update.Target.Direction,
+                (update.Target.Application is null ? string.Empty : update.Target.Application.DisplayName + " · ") +
+                (update.Result is null ? update.Candidate?.DisplayName ?? Translations.Get("Audio.Device.Unavailable") :
+                    AudioDevicePresentation.GetResultText(update.Result, update.Target.Application is not null)));
+        if (_deviceMenuTarget?.Key == update.Target.Key && _compactFlyout.IsVisible)
+        {
+            if (update.Result is null && update.Candidate is { } candidate) _compactFlyout.SetOutputDevicePreview(candidate);
+            else if (update.Result is { } result)
+            {
+                _compactFlyout.ShowDeviceStatus(AudioDevicePresentation.GetResultText(result, update.Target.Application is not null));
+                _ = RefreshOpenDeviceMenuAsync();
+            }
+        }
+    });
+    private void OnAudioDeviceInvalidated(object? sender, EventArgs args) => Dispatcher.BeginInvoke(() =>
+    {
+        if (!_isClosing) _ = RefreshOpenDeviceMenuAsync();
+    });
+    private async Task RefreshOpenDeviceMenuAsync()
+    {
+        if (_deviceMenuTarget is not { } target || !_compactFlyout.IsVisible ||
+            !_compactFlyout.IsShowing(target.Direction == AudioDeviceDirection.Output ? TaskbarCompactFlyoutMode.OutputDevice : TaskbarCompactFlyoutMode.InputDevice)) return;
+        try
+        {
+            var devices = await _audioInteractionService.DeviceSwitches.GetChoicesAsync(target);
+            var selected = await _audioInteractionService.DeviceSwitches.GetSelectedAsync(target, devices);
+            if (_isClosing || !_compactFlyout.IsVisible || _deviceMenuTarget?.Key != target.Key) return;
+            _compactFlyout.UpdateDevices(devices, selected);
+        }
+        catch (Exception exception) { Debug.WriteLine(exception); }
     }
 
     private async void MediaControl_VolumeMenuRequested(object? sender, EventArgs e)
@@ -1602,7 +1638,7 @@ public partial class TaskbarWindow : Window
     /// <param name="anchor">菜单锚点；为空时退回媒体栏上的对应按钮。/ Menu anchor, falling back to the matching media-bar button when null.</param>
     public async Task ShowCompactMenuAsync(TaskbarCompactFlyoutMode mode, TrayIconBounds? anchor)
     {
-        if (_isClosing || mode is not (TaskbarCompactFlyoutMode.OutputDevice or TaskbarCompactFlyoutMode.Volume))
+        if (_isClosing || mode is not (TaskbarCompactFlyoutMode.OutputDevice or TaskbarCompactFlyoutMode.InputDevice or TaskbarCompactFlyoutMode.Volume))
             return;
 
         if (_compactFlyout.IsShowing(mode))
@@ -1611,14 +1647,12 @@ public partial class TaskbarWindow : Window
             return;
         }
 
-        if (mode == TaskbarCompactFlyoutMode.OutputDevice)
+
+        if (mode is TaskbarCompactFlyoutMode.OutputDevice or TaskbarCompactFlyoutMode.InputDevice)
         {
-            _outputDevices = await _audioInteractionService.GetOutputDevicesAsync();
-            if (_isClosing) return;
-            _compactFlyout.ShowOutputDevices(
-                _outputDevices,
-                _outputDevices.FirstOrDefault(device => device.IsDefault),
-                anchor ?? MediaControl.GetOutputDeviceAnchor());
+            var direction = mode == TaskbarCompactFlyoutMode.OutputDevice ? AudioDeviceDirection.Output : AudioDeviceDirection.Input;
+            await ShowDeviceMenuAsync(direction, AudioDeviceSwitchTarget.SystemDefault,
+                anchor ?? (direction == AudioDeviceDirection.Output ? MediaControl.GetOutputDeviceAnchor() : MediaControl.GetInputDeviceAnchor()));
             return;
         }
 
@@ -2560,7 +2594,6 @@ public partial class TaskbarWindow : Window
         UnregisterTaskbarLocationHook();
         _lengthConstraints.Remove(this);
         DisposeMetricsSubscription();
-        _outputDeviceApplyTimer.Stop();
         _quickLaunchApplyTimer.Stop();
         _volumeApplyTimer.Stop();
         SettingsManager.ExtraFeaturesSettingsChanged -= SettingsManager_ExtraFeaturesSettingsChanged;
@@ -2572,6 +2605,12 @@ public partial class TaskbarWindow : Window
         MediaControl.ActivateSourceRequested -= MediaControl_ActivateSourceRequested;
         MediaControl.OpenFullPanelRequested -= MediaControl_OpenFullPanelRequested;
         MediaControl.OutputDeviceMenuRequested -= MediaControl_OutputDeviceMenuRequested;
+        MediaControl.InputDeviceMenuRequested -= MediaControl_InputDeviceMenuRequested;
+        MediaControl.InputDeviceWheelRequested -= MediaControl_InputDeviceWheelRequested;
+        MediaControl.InputDeviceInfoRequested -= MediaControl_InputDeviceInfoRequested;
+        _audioInteractionService.DeviceSwitches.Updated -= OnAudioDeviceSwitchUpdated;
+        _audioInteractionService.DeviceSwitches.Invalidated -= OnAudioDeviceInvalidated;
+        _audioInteractionService.CancelDeviceOwner(this);
         MediaControl.OutputDeviceWheelRequested -= MediaControl_OutputDeviceWheelRequested;
         MediaControl.VolumeMenuRequested -= MediaControl_VolumeMenuRequested;
         MediaControl.VolumeWheelRequested -= MediaControl_VolumeWheelRequested;

@@ -12,7 +12,8 @@ public enum WheelAction
     SwitchMediaSource = 3,
 
     /// <summary>不绑定：滚轮在媒体栏上不做任何事（提示仍会说明"已禁用"）。成员值参与序列化，因此只能追加。 / Not bound: the wheel does nothing over the media bar, while the tooltip still states that it is disabled. Member values take part in serialization, so this may only be appended.</summary>
-    Disabled = 4
+    Disabled = 4,
+    InputDevice = 5
 }
 
 /// <summary>单击通知区域图标时执行的动作。 / Action performed when the notification-area icon is clicked.</summary>
@@ -28,7 +29,8 @@ public enum TrayClickAction
     OpenOutputDeviceMenu = 4,
 
     /// <summary>打开当前应用音量菜单。 / Opens the current application's volume menu.</summary>
-    OpenCurrentAppVolumeMenu = 5
+    OpenCurrentAppVolumeMenu = 5,
+    OpenInputDeviceMenu = 6
 }
 
 /// <summary>任务栏静置内容的点击结果。 / Result of clicking taskbar rest-layer content.</summary>
@@ -112,7 +114,8 @@ public enum TaskbarRestComponent
     OutputDevice = 4,
 
     /// <summary>音量按钮：点击打开音量菜单，滚轮调节当前媒体来源的音量。 / Volume button: clicking opens the volume menu, the wheel adjusts the current source's volume.</summary>
-    Volume = 5
+    Volume = 5,
+    InputDevice = 6
 }
 
 /// <summary>播放器表面的基础背景方案。 / Basic background style for a player surface.</summary>
@@ -498,6 +501,8 @@ public readonly record struct TaskbarHoverControlsSettings(
     bool ProgressVisible)
 {
     /// <summary>手势优先的默认悬停控制组合。 / Default gesture-first hover-control combination.</summary>
+    public bool InputDeviceVisible { get; init; }
+
     public static TaskbarHoverControlsSettings Default { get; } = new(false, false, true, true, true);
 }
 
@@ -586,6 +591,7 @@ public readonly record struct TaskbarExperienceSettings(
     /// hover-layer button, and a permanently visible button takes room from the media text, so the user turns it on explicitly.
     /// </summary>
     public bool OutputDeviceVisible { get; init; }
+    public bool InputDeviceVisible { get; init; }
 
     /// <summary>静置层是否显示音量按钮。默认关闭，理由同 <see cref="OutputDeviceVisible"/>。/ Whether the rest layer shows the volume button. Off by default, for the same reason as <see cref="OutputDeviceVisible"/>.</summary>
     public bool VolumeVisible { get; init; }
@@ -739,6 +745,11 @@ public readonly record struct GlobalInteractionSettings(
 {
     /// <summary>是否显示媒体栏与托盘的滚轮操作提示；托盘音频状态和滚动结果仍可见。/ Whether to show wheel action hints on the bar and tray; tray audio status and wheel results remain visible.</summary>
     public bool ShowWheelTooltips { get; init; } = true;
+    public AudioDeviceSwitchTarget OutputDeviceClickTarget { get; init; }
+    public AudioDeviceSwitchTarget OutputDeviceWheelTarget { get; init; }
+    public AudioDeviceSwitchTarget InputDeviceClickTarget { get; init; }
+    public AudioDeviceSwitchTarget InputDeviceWheelTarget { get; init; }
+
 
     /// <summary>
     /// 悬停封面时的放大方式。旧设置文件没有该字段时读作 <see cref="ArtworkHoverMode.Off"/>（保持紧凑 1.1 倍放大）。
@@ -775,16 +786,24 @@ public readonly record struct GlobalInteractionSettings(
                 or TrayClickAction.OpenContextMenu
                 or TrayClickAction.OpenOutputDeviceMenu
                 or TrayClickAction.OpenCurrentAppVolumeMenu
+                or TrayClickAction.OpenInputDeviceMenu
                 ? TrayClickAction
                 : defaults.TrayClickAction,
             TrayPrimaryWheelAction = NormalizeTrayWheelAction(TrayPrimaryWheelAction, defaults.TrayPrimaryWheelAction),
             TrayChordWheelAction = NormalizeTrayWheelAction(TrayChordWheelAction, defaults.TrayChordWheelAction),
-            ArtworkHoverMode = Enum.IsDefined(ArtworkHoverMode) ? ArtworkHoverMode : defaults.ArtworkHoverMode
+            ArtworkHoverMode = Enum.IsDefined(ArtworkHoverMode) ? ArtworkHoverMode : defaults.ArtworkHoverMode,
+            OutputDeviceClickTarget = NormalizeDeviceTarget(OutputDeviceClickTarget),
+            OutputDeviceWheelTarget = NormalizeDeviceTarget(OutputDeviceWheelTarget),
+            InputDeviceClickTarget = NormalizeDeviceTarget(InputDeviceClickTarget),
+            InputDeviceWheelTarget = NormalizeDeviceTarget(InputDeviceWheelTarget)
         };
     }
 
+    private static AudioDeviceSwitchTarget NormalizeDeviceTarget(AudioDeviceSwitchTarget target) =>
+        Enum.IsDefined(target) ? target : AudioDeviceSwitchTarget.SystemDefault;
+
     private static TrayWheelBehavior NormalizeTrayWheelAction(TrayWheelBehavior action, TrayWheelBehavior fallback) =>
-        action is TrayWheelBehavior.AdjustVolume or TrayWheelBehavior.SwitchOutputDevice or TrayWheelBehavior.Disabled ? action : fallback;
+        action is TrayWheelBehavior.AdjustVolume or TrayWheelBehavior.SwitchOutputDevice or TrayWheelBehavior.SwitchInputDevice or TrayWheelBehavior.Disabled ? action : fallback;
 }
 
 /// <summary>一个显示模式的基础表面外观。 / Basic surface appearance for one display mode.</summary>

@@ -28,6 +28,7 @@ public static class AudioTooltipPolicy
         {
             TrayWheelBehavior.AdjustVolume => BuildMediaVolume(application?.DisplayName, application?.VolumePercent),
             TrayWheelBehavior.SwitchOutputDevice => BuildOutputDevice(device),
+            TrayWheelBehavior.SwitchInputDevice => device?.DisplayName ?? Translations.Get("Audio.Device.Unavailable"),
             _ => Translations.Get("Audio.Tooltip.WheelDisabled")
         };
     }

@@ -13,6 +13,11 @@ public partial class InteractionViewModel : ObservableObject, IDisposable
     private readonly LocalizationService _localization;
     private readonly ISettingsConfiguration _configuration;
     private bool _disposed;
+    public AudioDeviceSettingsViewModel AudioDevices { get; }
+    public AudioDeviceSwitchTarget OutputDeviceClickTarget { get => Current.OutputDeviceClickTarget; set => Update(Current with { OutputDeviceClickTarget = value }); }
+    public AudioDeviceSwitchTarget OutputDeviceWheelTarget { get => Current.OutputDeviceWheelTarget; set => Update(Current with { OutputDeviceWheelTarget = value }); }
+    public AudioDeviceSwitchTarget InputDeviceClickTarget { get => Current.InputDeviceClickTarget; set => Update(Current with { InputDeviceClickTarget = value }); }
+    public AudioDeviceSwitchTarget InputDeviceWheelTarget { get => Current.InputDeviceWheelTarget; set => Update(Current with { InputDeviceWheelTarget = value }); }
 
     public PlayerClickAction ArtworkClickAction
     {
@@ -95,10 +100,11 @@ public partial class InteractionViewModel : ObservableObject, IDisposable
     /// page is left in the old text. Both subscriptions are released with the page scope.
     /// </summary>
     /// <param name="localization">界面语言服务：本页在它变化后刷新自己产出的文案。/ The interface-language service, whose change this page follows to refresh its own text.</param>
-    public InteractionViewModel(LocalizationService localization, ISettingsConfiguration configuration)
+    public InteractionViewModel(LocalizationService localization, ISettingsConfiguration configuration, AFMediaBar.Classes.Services.Audio.IAudioDeviceCatalog devices)
     {
         _localization = localization;
         _configuration = configuration;
+        AudioDevices = new(devices, configuration);
         configuration.Activated += OnActivated;
         SettingsManager.SettingsChanged += OnSettingsChanged;
         _localization.LanguageChanged += OnLanguageChanged;
@@ -123,6 +129,7 @@ public partial class InteractionViewModel : ObservableObject, IDisposable
 
     private void RaiseAll()
     {
+        OnPropertyChanged(string.Empty);
         OnPropertyChanged(nameof(ArtworkClickAction));
         OnPropertyChanged(nameof(TextClickAction));
         OnPropertyChanged(nameof(ArtworkHoverMode));
@@ -140,6 +147,7 @@ public partial class InteractionViewModel : ObservableObject, IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        AudioDevices.Dispose();
         SettingsManager.SettingsChanged -= OnSettingsChanged;
         _localization.LanguageChanged -= OnLanguageChanged;
         _configuration.Activated -= OnActivated;

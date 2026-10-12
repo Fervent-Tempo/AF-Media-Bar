@@ -2747,4 +2747,100 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   <data name="Common.Widgets.Description" xml:space="preserve">
     <value>Hiển thị và cấu hình tiện ích phổ âm thanh và hiệu năng.</value>
   </data>
+  <data name="Common.InputDevice" xml:space="preserve">
+    <value>Thiết bị đầu vào</value>
+  </data>
+  <data name="Common.SwitchInputDevice" xml:space="preserve">
+    <value>Chuyển thiết bị đầu vào</value>
+  </data>
+  <data name="Audio.Device.Unavailable" xml:space="preserve">
+    <value>Không có thiết bị để chuyển</value>
+  </data>
+  <data name="Audio.Device.Hidden" xml:space="preserve">
+    <value>Thiết bị hiện tại đã bị ẩn</value>
+  </data>
+  <data name="Audio.Device.Applied" xml:space="preserve">
+    <value>Đã đổi thiết bị mặc định</value>
+  </data>
+  <data name="Audio.Device.Unchanged" xml:space="preserve">
+    <value>Thiết bị không thay đổi</value>
+  </data>
+  <data name="Audio.Device.Cancelled" xml:space="preserve">
+    <value>Đã hủy chuyển thiết bị</value>
+  </data>
+  <data name="Audio.Device.Disabled" xml:space="preserve">
+    <value>Thao tác thiết bị bị tắt</value>
+  </data>
+  <data name="Audio.Device.Disconnected" xml:space="preserve">
+    <value>Không khả dụng hoặc đã ngắt kết nối</value>
+  </data>
+  <data name="Audio.Device.InputDescription" xml:space="preserve">
+    <value>Nhấp để chọn đầu vào; cuộn để xem trước và chuyển micrô.</value>
+  </data>
+  <data name="Audio.App.Unavailable" xml:space="preserve">
+    <value>Không xác định được ứng dụng phía trước có phiên âm thanh</value>
+  </data>
+  <data name="Audio.Route.FollowDefault" xml:space="preserve">
+    <value>Theo mặc định hệ thống</value>
+  </data>
+  <data name="Audio.Route.Unsupported" xml:space="preserve">
+    <value>Hệ thống này không hỗ trợ định tuyến thiết bị cho ứng dụng</value>
+  </data>
+  <data name="Audio.Route.ReadFailed" xml:space="preserve">
+    <value>Không đọc được định tuyến thiết bị của ứng dụng</value>
+  </data>
+  <data name="Audio.Route.Mixed" xml:space="preserve">
+    <value>Tùy chọn thiết bị khác nhau giữa các tiến trình hoặc vai trò</value>
+  </data>
+  <data name="Audio.Route.HiddenOrDisconnected" xml:space="preserve">
+    <value>Thiết bị hiện tại bị ẩn, ngắt kết nối hoặc có tùy chọn khác nhau</value>
+  </data>
+  <data name="Audio.Route.Saved" xml:space="preserve">
+    <value>Đã lưu tùy chọn định tuyến; thời điểm áp dụng phụ thuộc ứng dụng</value>
+  </data>
+  <data name="Audio.Route.Partial" xml:space="preserve">
+    <value>Chỉ áp dụng được một phần; hãy kiểm tra ứng dụng và cài đặt hệ thống</value>
+  </data>
+  <data name="Audio.Route.Failed" xml:space="preserve">
+    <value>Chuyển thiết bị thất bại; hãy kiểm tra trạng thái thiết bị</value>
+  </data>
+  <data name="Audio.Route.NoPlayback" xml:space="preserve">
+    <value>Không có phiên phát âm thanh</value>
+  </data>
+  <data name="Audio.Settings.Title" xml:space="preserve">
+    <value>Thiết bị âm thanh</value>
+  </data>
+  <data name="Audio.Settings.Description" xml:space="preserve">
+    <value>Chọn thiết bị có thể chuyển trong AF. Bỏ chọn sẽ ẩn khỏi mọi bộ chọn nhưng không tắt thiết bị Windows; mặc định hệ thống vẫn có thể dùng thiết bị đó.</value>
+  </data>
+  <data name="Audio.Settings.Allow" xml:space="preserve">
+    <value>Cho phép chuyển</value>
+  </data>
+  <data name="Audio.Settings.Advanced" xml:space="preserve">
+    <value>Tương tác thiết bị nâng cao</value>
+  </data>
+  <data name="Audio.Settings.OutputCommunications" xml:space="preserve">
+    <value>Đồng thời chuyển đầu ra liên lạc mặc định</value>
+  </data>
+  <data name="Audio.Settings.InputCommunications" xml:space="preserve">
+    <value>Đồng thời chuyển đầu vào liên lạc mặc định</value>
+  </data>
+  <data name="Audio.Settings.OutputClick" xml:space="preserve">
+    <value>Mục tiêu nhấp nút đầu ra</value>
+  </data>
+  <data name="Audio.Settings.OutputWheel" xml:space="preserve">
+    <value>Mục tiêu cuộn nút đầu ra</value>
+  </data>
+  <data name="Audio.Settings.InputClick" xml:space="preserve">
+    <value>Mục tiêu nhấp nút đầu vào</value>
+  </data>
+  <data name="Audio.Settings.InputWheel" xml:space="preserve">
+    <value>Mục tiêu cuộn nút đầu vào</value>
+  </data>
+  <data name="Audio.Target.System" xml:space="preserve">
+    <value>Thiết bị mặc định hệ thống</value>
+  </data>
+  <data name="Audio.Target.Foreground" xml:space="preserve">
+    <value>Thiết bị của ứng dụng phía trước</value>
+  </data>
 </root>

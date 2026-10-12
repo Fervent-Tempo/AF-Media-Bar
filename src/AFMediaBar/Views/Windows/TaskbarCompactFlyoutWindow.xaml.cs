@@ -17,6 +17,7 @@ namespace AFMediaBar.Views.Windows;
 public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
 {
     private TaskbarCompactFlyoutMode _mode;
+    public AudioDeviceTarget? DeviceTarget { get; private set; }
     private bool _isUpdating;
     private bool _isOutputDropDownOpen;
     private bool _isHiding;
@@ -53,14 +54,22 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
     }
 
     /// <summary>显示与托盘面板同宽的输出设备选择器。 / Shows the output-device selector at the tray-panel width.</summary>
-    public void ShowOutputDevices(IReadOnlyList<AudioDeviceOption> devices, AudioDeviceOption? selected, TrayIconBounds anchor)
+    public void ShowOutputDevices(IReadOnlyList<AudioDeviceOption> devices, AudioDeviceOption? selected, TrayIconBounds anchor) =>
+        ShowDevices(new(AudioDeviceDirection.Output), devices, selected, anchor);
+
+    public void ShowDevices(AudioDeviceTarget target, IReadOnlyList<AudioDeviceOption> devices, AudioDeviceOption? selected, TrayIconBounds anchor, bool isSupported = true)
     {
+        DeviceTarget = target;
+        OutputDeviceComboBox.IsEnabled = isSupported;
+        DeviceTitleText.Text = Translations.Get(target.Direction == AudioDeviceDirection.Output ? "Common.OutputDevice" : "Common.InputDevice") +
+            (target.Application is null ? string.Empty : " · " + target.Application.DisplayName);
+        DeviceStatusText.Text = devices.Count == 0 ? Translations.Get("Audio.Device.Unavailable") : string.Empty;
         _isUpdating = true;
         OutputDeviceComboBox.ItemsSource = devices;
         OutputDeviceComboBox.SelectedItem = selected;
         _isUpdating = false;
         Width = 320;
-        ShowMode(TaskbarCompactFlyoutMode.OutputDevice, anchor);
+        ShowMode(target.Direction == AudioDeviceDirection.Output ? TaskbarCompactFlyoutMode.OutputDevice : TaskbarCompactFlyoutMode.InputDevice, anchor);
     }
 
     /// <summary>
@@ -83,6 +92,17 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
     }
 
     /// <summary>更新滚轮预览的输出设备。 / Updates the wheel-previewed output device.</summary>
+    public void UpdateDevices(IReadOnlyList<AudioDeviceOption> devices, AudioDeviceOption? selected)
+    {
+        _isUpdating = true;
+        OutputDeviceComboBox.ItemsSource = devices;
+        OutputDeviceComboBox.SelectedItem = selected;
+        _isUpdating = false;
+        if (selected is null) DeviceStatusText.Text = Translations.Get("Audio.Route.HiddenOrDisconnected");
+    }
+
+    public void ShowDeviceStatus(string text) => DeviceStatusText.Text = text;
+
     public void SetOutputDevicePreview(AudioDeviceOption device)
     {
         _isUpdating = true;
@@ -117,7 +137,7 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
         _animationVersion++;
         _mode = mode;
         QuickLaunchPanel.Visibility = mode == TaskbarCompactFlyoutMode.QuickLaunch ? Visibility.Visible : Visibility.Collapsed;
-        OutputDevicePanel.Visibility = mode == TaskbarCompactFlyoutMode.OutputDevice ? Visibility.Visible : Visibility.Collapsed;
+        OutputDevicePanel.Visibility = mode is TaskbarCompactFlyoutMode.OutputDevice or TaskbarCompactFlyoutMode.InputDevice ? Visibility.Visible : Visibility.Collapsed;
         VolumePanel.Visibility = mode == TaskbarCompactFlyoutMode.Volume ? Visibility.Visible : Visibility.Collapsed;
         _isHiding = false;
         ApplyMotionEffects();
@@ -288,5 +308,6 @@ public enum TaskbarCompactFlyoutMode
 {
     QuickLaunch,
     OutputDevice,
-    Volume
+    Volume,
+    InputDevice
 }

@@ -50,13 +50,14 @@
             </StackPanel>
 
             <StackPanel x:Name="OutputDevicePanel" Visibility="Collapsed" PreviewMouseWheel="OutputDevicePanel_PreviewMouseWheel">
-                <TextBlock Text="{DynamicResource Loc.Common.OutputDevice}" FontSize="16" FontWeight="{DynamicResource AppTextStrongFontWeight}" Margin="0,0,0,8"/>
+                <TextBlock x:Name="DeviceTitleText" Text="{DynamicResource Loc.Common.OutputDevice}" TextWrapping="Wrap" FontSize="16" FontWeight="{DynamicResource AppTextStrongFontWeight}" Margin="0,0,0,8"/>
                 <components:ReleaseOpenComboBox x:Name="OutputDeviceComboBox" MinHeight="32" MaxDropDownHeight="240"
                           Style="{StaticResource {x:Type ComboBox}}"
                           DisplayMemberPath="DisplayName" SelectionChanged="OutputDeviceComboBox_SelectionChanged"
                           DropDownOpened="OutputDeviceComboBox_DropDownOpened"
                           DropDownClosed="OutputDeviceComboBox_DropDownClosed"
                           PreviewMouseWheel="OutputDeviceComboBox_PreviewMouseWheel"/>
+                <TextBlock x:Name="DeviceStatusText" FontSize="12" TextWrapping="Wrap" Margin="0,6,0,0"/>
             </StackPanel>
 
             <StackPanel x:Name="VolumePanel" Visibility="Collapsed" HorizontalAlignment="Center"

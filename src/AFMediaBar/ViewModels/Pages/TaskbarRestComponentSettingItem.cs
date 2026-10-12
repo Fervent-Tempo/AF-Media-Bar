@@ -85,6 +85,7 @@ public partial class TaskbarRestComponentSettingItem : ObservableObject
         TaskbarRestComponent.Spectrum => "DisplayModes.Rest.Component.Spectrum",
         TaskbarRestComponent.Performance => "DisplayModes.Rest.Component.Performance",
         TaskbarRestComponent.OutputDevice => "DisplayModes.Rest.Component.OutputDevice",
+        TaskbarRestComponent.InputDevice => "Common.InputDevice",
         TaskbarRestComponent.Volume => "DisplayModes.Rest.Component.Volume",
         _ => "DisplayModes.Rest.Component.Artwork"
     };
@@ -97,6 +98,7 @@ public partial class TaskbarRestComponentSettingItem : ObservableObject
         TaskbarRestComponent.Spectrum => "DisplayModes.Rest.Component.Spectrum.Description",
         TaskbarRestComponent.Performance => "DisplayModes.Rest.Component.Performance.Description",
         TaskbarRestComponent.OutputDevice => "DisplayModes.Rest.Component.OutputDevice.Description",
+        TaskbarRestComponent.InputDevice => "Audio.Device.InputDescription",
         TaskbarRestComponent.Volume => "DisplayModes.Rest.Component.Volume.Description",
         _ => "DisplayModes.Rest.Component.Artwork.Description"
     };

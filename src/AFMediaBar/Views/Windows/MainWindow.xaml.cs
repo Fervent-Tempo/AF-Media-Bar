@@ -202,6 +202,7 @@ namespace AFMediaBar.Views.Windows
             _audioControlViewModel.FlyoutToggleRequested += AudioControl_OnFlyoutToggleRequested;
             _audioControlViewModel.TrayContextMenuRequested += AudioControl_OnTrayContextMenuRequested;
             _audioControlViewModel.OutputDeviceMenuRequested += AudioControl_OnOutputDeviceMenuRequested;
+            _audioControlViewModel.InputDeviceMenuRequested += AudioControl_OnInputDeviceMenuRequested;
             _audioControlViewModel.CurrentAppVolumeMenuRequested += AudioControl_OnCurrentAppVolumeMenuRequested;
             _audioControlViewModel.SettingsOpenRequested += ViewModel_OpenSettingsRequested;
             _mouseInputMonitor.LeftButtonPressed += MouseInputMonitor_OnLeftButtonPressed;
@@ -313,6 +314,7 @@ namespace AFMediaBar.Views.Windows
             _audioControlViewModel.FlyoutToggleRequested -= AudioControl_OnFlyoutToggleRequested;
             _audioControlViewModel.TrayContextMenuRequested -= AudioControl_OnTrayContextMenuRequested;
             _audioControlViewModel.OutputDeviceMenuRequested -= AudioControl_OnOutputDeviceMenuRequested;
+            _audioControlViewModel.InputDeviceMenuRequested -= AudioControl_OnInputDeviceMenuRequested;
             _audioControlViewModel.CurrentAppVolumeMenuRequested -= AudioControl_OnCurrentAppVolumeMenuRequested;
             _audioControlViewModel.SettingsOpenRequested -= ViewModel_OpenSettingsRequested;
             _mouseInputMonitor.LeftButtonPressed -= MouseInputMonitor_OnLeftButtonPressed;
@@ -777,6 +779,9 @@ namespace AFMediaBar.Views.Windows
         /// The tray click asks for the output-device menu: the taskbar host owns that compact menu, and the anchor is the tray
         /// icon's position, so the menu appears where the user just clicked.
         /// </summary>
+        private async void AudioControl_OnInputDeviceMenuRequested(TrayIconBounds? bounds) =>
+            await ShowTrayCompactMenuAsync(TaskbarCompactFlyoutMode.InputDevice, bounds);
+
         private async void AudioControl_OnOutputDeviceMenuRequested(TrayIconBounds? bounds) =>
             await ShowTrayCompactMenuAsync(TaskbarCompactFlyoutMode.OutputDevice, bounds);
 

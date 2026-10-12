@@ -79,6 +79,7 @@ public static class TaskbarRestLayoutPolicy
         TaskbarRestComponent.Spectrum,
         TaskbarRestComponent.Performance,
         TaskbarRestComponent.OutputDevice,
+        TaskbarRestComponent.InputDevice,
         TaskbarRestComponent.Volume
     ];
 
@@ -176,7 +177,8 @@ public static class TaskbarRestLayoutPolicy
         bool PerformanceEnabled,
         bool OutputDeviceEnabled,
         bool VolumeEnabled,
-        bool ArtworkEnabled = true);
+        bool ArtworkEnabled = true,
+        bool InputDeviceEnabled = false);
 
     /// <summary>
     /// 判定一个静置层组件这次是否可见。
@@ -218,6 +220,7 @@ public static class TaskbarRestLayoutPolicy
             TaskbarRestComponent.Spectrum => visibility.SpectrumEnabled,
             TaskbarRestComponent.Performance => visibility.PerformanceEnabled,
             TaskbarRestComponent.OutputDevice => visibility.OutputDeviceEnabled,
+            TaskbarRestComponent.InputDevice => visibility.InputDeviceEnabled,
             TaskbarRestComponent.Volume => visibility.VolumeEnabled,
             _ => false
         };

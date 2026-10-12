@@ -120,6 +120,12 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>静置层是否显示输出设备按钮（点击打开设备菜单，滚轮切换设备）。 / Whether the rest layer shows the output-device button, which opens the device menu on click and switches devices on the wheel.</summary>
+    public bool RestInputDeviceVisible
+    {
+        get => _configuration.Current.TaskbarExperience.InputDeviceVisible;
+        set => UpdateExperience(_configuration.Current.TaskbarExperience with { InputDeviceVisible = value });
+    }
+
     public bool RestOutputDeviceVisible
     {
         get => _configuration.Current.TaskbarExperience.OutputDeviceVisible;
@@ -191,6 +197,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         TaskbarRestComponent.Spectrum,
         TaskbarRestComponent.Performance,
         TaskbarRestComponent.OutputDevice,
+        TaskbarRestComponent.InputDevice,
         TaskbarRestComponent.Volume
     ];
 
@@ -226,6 +233,12 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     {
         get => HoverControls.PreviousNextVisible;
         set => UpdateHoverControls(HoverControls with { PreviousNextVisible = value });
+    }
+
+    public bool HoverInputDeviceVisible
+    {
+        get => HoverControls.InputDeviceVisible;
+        set => UpdateHoverControls(HoverControls with { InputDeviceVisible = value });
     }
 
     public bool HoverOutputDeviceVisible
@@ -645,6 +658,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(SpectrumVisible)); OnPropertyChanged(nameof(PerformanceVisible));
         OnPropertyChanged(nameof(HoverPlayPauseVisible)); OnPropertyChanged(nameof(HoverPreviousNextVisible));
         OnPropertyChanged(nameof(HoverOutputDeviceVisible)); OnPropertyChanged(nameof(HoverAudioControlVisible));
+        OnPropertyChanged(nameof(RestInputDeviceVisible)); OnPropertyChanged(nameof(HoverInputDeviceVisible));
         OnPropertyChanged(nameof(RestOutputDeviceVisible)); OnPropertyChanged(nameof(RestVolumeVisible));
         RefreshIdleComponentEntries();
         RaiseFullPanel();

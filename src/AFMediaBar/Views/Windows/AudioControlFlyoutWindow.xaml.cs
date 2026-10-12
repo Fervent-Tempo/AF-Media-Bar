@@ -104,6 +104,9 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
         var info = new NativeMethods.MONITORINFOEX { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<NativeMethods.MONITORINFOEX>() };
         NativeMethods.GetMonitorInfo(monitor, ref info);
         var dpi = NativeMethods.GetDpiForMonitor(monitor, NativeMethods.MonitorDpiType.MDT_EFFECTIVE_DPI, out var dpiX, out _) == 0 ? dpiX / 96d : 1d;
+        MaxHeight = Math.Min(620, Math.Max(0, (info.rcWork.Bottom - info.rcWork.Top) / dpi - 16));
+        ApplicationsScrollViewer.MaxHeight = Math.Max(0, Math.Min(260, MaxHeight - 300));
+        UpdateLayout();
         var width = (int)Math.Ceiling(ActualWidth * dpi);
         var height = (int)Math.Ceiling(ActualHeight * dpi);
         var x = Math.Clamp(icon.Right - width, info.rcWork.Left, info.rcWork.Right - width);
@@ -118,6 +121,17 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
             NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE | NativeMethods.SWP_SHOWWINDOW);
     }
 
+    private async void ApplicationDevice_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        e.Handled = true;
+        if (sender is ComboBox { DataContext: ApplicationAudioItemViewModel row } combo)
+            await row.PreviewDeviceAsync(combo.Tag as string == "Input" ? AFMediaBar.Classes.Models.AudioDeviceDirection.Input :
+                AFMediaBar.Classes.Models.AudioDeviceDirection.Output, TrayWheelPolicy.GetDeviceSteps(e.Delta));
+    }
+
+    private void InputDevice_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    { ViewModel.PreviewInputDeviceWheel(e.Delta); e.Handled = true; }
+
     private void OutputDevice_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
         ViewModel.PreviewOutputDeviceWheel(e.Delta);
@@ -126,7 +140,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
 
     private void ApplicationVolumeSlider_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
-        if (sender is Slider { DataContext: ApplicationVolumeItemViewModel application })
+        if (sender is Slider { DataContext: ApplicationAudioItemViewModel { Volume: { } application } })
         {
             application.SetApplyImmediately(false);
             var notches = Math.Max(1, Math.Abs(e.Delta) / Mouse.MouseWheelDeltaForOneLine);
@@ -137,7 +151,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
 
     private void ApplicationVolumeSlider_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (sender is Slider { DataContext: ApplicationVolumeItemViewModel application })
+        if (sender is Slider { DataContext: ApplicationAudioItemViewModel { Volume: { } application } })
         {
             application.SetApplyImmediately(true);
         }
@@ -145,7 +159,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
 
     private void ApplicationVolumeSlider_OnPreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
-        if (sender is Slider { DataContext: ApplicationVolumeItemViewModel application })
+        if (sender is Slider { DataContext: ApplicationAudioItemViewModel { Volume: { } application } })
         {
             application.SetApplyImmediately(false);
         }
@@ -153,7 +167,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
 
     private void ApplicationVolumeSlider_OnLostMouseCapture(object sender, MouseEventArgs e)
     {
-        if (sender is Slider { DataContext: ApplicationVolumeItemViewModel application })
+        if (sender is Slider { DataContext: ApplicationAudioItemViewModel { Volume: { } application } })
         {
             application.SetApplyImmediately(false);
         }
@@ -161,7 +175,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
 
     private void ApplicationVolumeSlider_OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (sender is Slider { DataContext: ApplicationVolumeItemViewModel application })
+        if (sender is Slider { DataContext: ApplicationAudioItemViewModel { Volume: { } application } })
         {
             application.SetApplyImmediately(true);
         }
@@ -179,7 +193,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
         // The ComboBox list uses a separate Popup; wait for its state to settle before treating deactivation as an outside click.
         Dispatcher.BeginInvoke(() =>
         {
-            if (!_isDisposed && IsVisible && !_isOutputDeviceDropDownOpen && !OutputDeviceComboBox.IsDropDownOpen && !IsActive)
+            if (!_isDisposed && IsVisible && !_isOutputDeviceDropDownOpen && !OutputDeviceComboBox.IsDropDownOpen && !InputDeviceComboBox.IsDropDownOpen && !IsActive)
             {
                 BeginHideAnimation();
             }

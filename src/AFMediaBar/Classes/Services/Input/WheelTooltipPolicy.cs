@@ -52,6 +52,7 @@ public static class WheelTooltipPolicy
     {
         WheelAction.PreviousNext => Translations.Get("Common.PreviousNextTrack"),
         WheelAction.SwitchMediaSource => Translations.Get("Common.SwitchPlayer"),
+        WheelAction.InputDevice => Translations.Get("Common.SwitchInputDevice"),
         WheelAction.OutputDevice => Translations.Get("Common.SwitchOutputDevice"),
         WheelAction.CurrentApplicationVolume => Translations.Get("Common.AdjustCurrentMediaVolume"),
         _ => Translations.Get("Common.NotBound")
@@ -61,6 +62,7 @@ public static class WheelTooltipPolicy
     /// <param name="behavior">托盘滚轮行为。/ Tray wheel behavior.</param>
     public static string BuildActionName(TrayWheelBehavior behavior) => behavior switch
     {
+        TrayWheelBehavior.SwitchInputDevice => Translations.Get("Common.SwitchInputDevice"),
         TrayWheelBehavior.SwitchOutputDevice => Translations.Get("Common.SwitchOutputDevice"),
         TrayWheelBehavior.AdjustVolume => Translations.Get("Common.AdjustCurrentMediaVolume"),
         _ => Translations.Get("Common.NotBound")

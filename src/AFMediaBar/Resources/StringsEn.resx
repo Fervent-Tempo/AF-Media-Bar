@@ -2709,4 +2709,100 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Common.Widgets.Description" xml:space="preserve">
     <value>Show and configure spectrum and performance widgets.</value>
   </data>
+  <data name="Common.InputDevice" xml:space="preserve">
+    <value>Input device</value>
+  </data>
+  <data name="Common.SwitchInputDevice" xml:space="preserve">
+    <value>Switch input device</value>
+  </data>
+  <data name="Audio.Device.Unavailable" xml:space="preserve">
+    <value>No device available to switch</value>
+  </data>
+  <data name="Audio.Device.Hidden" xml:space="preserve">
+    <value>Current device is hidden</value>
+  </data>
+  <data name="Audio.Device.Applied" xml:space="preserve">
+    <value>Default device changed</value>
+  </data>
+  <data name="Audio.Device.Unchanged" xml:space="preserve">
+    <value>Device unchanged</value>
+  </data>
+  <data name="Audio.Device.Cancelled" xml:space="preserve">
+    <value>Device switch cancelled</value>
+  </data>
+  <data name="Audio.Device.Disabled" xml:space="preserve">
+    <value>Device action disabled</value>
+  </data>
+  <data name="Audio.Device.Disconnected" xml:space="preserve">
+    <value>Unavailable or disconnected</value>
+  </data>
+  <data name="Audio.Device.InputDescription" xml:space="preserve">
+    <value>Click to choose an input device; scroll to preview and switch microphones.</value>
+  </data>
+  <data name="Audio.App.Unavailable" xml:space="preserve">
+    <value>Cannot identify a foreground application with an audio session</value>
+  </data>
+  <data name="Audio.Route.FollowDefault" xml:space="preserve">
+    <value>Follow system default</value>
+  </data>
+  <data name="Audio.Route.Unsupported" xml:space="preserve">
+    <value>Application device routing is unavailable on this system</value>
+  </data>
+  <data name="Audio.Route.ReadFailed" xml:space="preserve">
+    <value>Could not read application device routing</value>
+  </data>
+  <data name="Audio.Route.Mixed" xml:space="preserve">
+    <value>Device preferences differ between processes or roles</value>
+  </data>
+  <data name="Audio.Route.HiddenOrDisconnected" xml:space="preserve">
+    <value>Current device is hidden, disconnected, or has mixed preferences</value>
+  </data>
+  <data name="Audio.Route.Saved" xml:space="preserve">
+    <value>Application routing preference saved; activation depends on the application</value>
+  </data>
+  <data name="Audio.Route.Partial" xml:space="preserve">
+    <value>Device preferences were only partially applied; check the application and system settings</value>
+  </data>
+  <data name="Audio.Route.Failed" xml:space="preserve">
+    <value>Device switch failed; check the current device state</value>
+  </data>
+  <data name="Audio.Route.NoPlayback" xml:space="preserve">
+    <value>No playback session</value>
+  </data>
+  <data name="Audio.Settings.Title" xml:space="preserve">
+    <value>Audio devices</value>
+  </data>
+  <data name="Audio.Settings.Description" xml:space="preserve">
+    <value>Choose devices available in AF selectors. Unchecking hides them from every selector without disabling Windows devices; following the system default can still use them.</value>
+  </data>
+  <data name="Audio.Settings.Allow" xml:space="preserve">
+    <value>Allow switching</value>
+  </data>
+  <data name="Audio.Settings.Advanced" xml:space="preserve">
+    <value>Advanced device interaction</value>
+  </data>
+  <data name="Audio.Settings.OutputCommunications" xml:space="preserve">
+    <value>Also switch the default communications output</value>
+  </data>
+  <data name="Audio.Settings.InputCommunications" xml:space="preserve">
+    <value>Also switch the default communications input</value>
+  </data>
+  <data name="Audio.Settings.OutputClick" xml:space="preserve">
+    <value>Output button click target</value>
+  </data>
+  <data name="Audio.Settings.OutputWheel" xml:space="preserve">
+    <value>Output button wheel target</value>
+  </data>
+  <data name="Audio.Settings.InputClick" xml:space="preserve">
+    <value>Input button click target</value>
+  </data>
+  <data name="Audio.Settings.InputWheel" xml:space="preserve">
+    <value>Input button wheel target</value>
+  </data>
+  <data name="Audio.Target.System" xml:space="preserve">
+    <value>System default device</value>
+  </data>
+  <data name="Audio.Target.Foreground" xml:space="preserve">
+    <value>Foreground application device</value>
+  </data>
 </root>

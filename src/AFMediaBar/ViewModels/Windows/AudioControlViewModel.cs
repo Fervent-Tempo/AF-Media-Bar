@@ -30,6 +30,10 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     private static readonly TimeSpan VolumeApplyDelay =
         TimeSpan.FromMilliseconds(AudioApplyPolicy.ApplicationVolumeDelayMilliseconds);
     private readonly AudioDeviceService _deviceService;
+    private readonly AudioInteractionService _audioInteraction;
+    private readonly ApplicationAudioRoutingService _routing;
+    private int _audioRefreshVersion;
+    private bool _refreshRequested;
     private readonly SpatialAudioService _spatialAudioService;
     private readonly ApplicationVolumeService _volumeService;
     private readonly MediaSessionService _mediaSessionService;
@@ -40,7 +44,6 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     private readonly Dictionary<string, int> _volumeApplyVersions = new(StringComparer.OrdinalIgnoreCase);
     private int _deviceApplyVersion;
     private bool _isRefreshing;
-    private bool _isPreviewingOutputDevice;
     private int _pendingTrayDeviceSteps;
     private bool _isProcessingTrayDevice;
     private int _pendingTrayVolumeSteps;
@@ -58,6 +61,11 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<AudioDeviceOption> OutputDevices { get; } = [];
     public ObservableCollection<ApplicationVolumeItemViewModel> Applications { get; } = [];
+    public ObservableCollection<ApplicationAudioItemViewModel> AudioApplications { get; } = [];
+    public ObservableCollection<AudioDeviceOption> InputDevices { get; } = [];
+    [ObservableProperty] private AudioDeviceOption? _selectedInputDevice;
+    [ObservableProperty] private string _inputDeviceStatus = string.Empty;
+    [ObservableProperty] private string _outputDeviceStatus = string.Empty;
 
     [ObservableProperty] private AudioDeviceOption? _selectedOutputDevice;
     [ObservableProperty] private string _spatialAudioText = Translations.Get("Audio.Spatial.Unavailable");
@@ -77,6 +85,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     /// intent and carries the anchor.
     /// </summary>
     public event Action<TrayIconBounds?>? OutputDeviceMenuRequested;
+    public event Action<TrayIconBounds?>? InputDeviceMenuRequested;
 
     /// <summary>请求在托盘图标处打开当前应用音量菜单。/ Requests the current application's volume menu to open at the tray icon.</summary>
     public event Action<TrayIconBounds?>? CurrentAppVolumeMenuRequested;
@@ -94,9 +103,15 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         ShellTrayIconService trayIconService,
         NativeMouseInputMonitor mouseInputMonitor,
         AudioMonitorService audioMonitorService,
-        LocalizationService localization)
+        LocalizationService localization,
+        AudioInteractionService audioInteraction,
+        ApplicationAudioRoutingService routing)
     {
         _deviceService = deviceService;
+        _audioInteraction = audioInteraction;
+        _routing = routing;
+        _audioInteraction.DeviceSwitches.Updated += OnDeviceSwitchUpdated;
+        _audioInteraction.DeviceSwitches.Invalidated += OnAudioDevicesInvalidated;
         _spatialAudioService = spatialAudioService;
         _volumeService = volumeService;
         _mediaSessionService = mediaSessionService;
@@ -130,13 +145,16 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     {
         if (IsBusy)
         {
+            _refreshRequested = true;
             return;
         }
 
         IsBusy = true;
+        var audioVersion = ++_audioRefreshVersion;
         try
         {
             var devices = await _deviceService.GetRenderDevicesAsync().WaitAsync(TimeSpan.FromSeconds(3));
+            if (_disposed || audioVersion != _audioRefreshVersion) return;
             _isRefreshing = true;
             OutputDevices.Clear();
             foreach (var device in devices)
@@ -144,20 +162,51 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
                 OutputDevices.Add(device);
             }
 
-            SelectedOutputDevice = devices.FirstOrDefault(device => device.IsDefault) ?? devices.FirstOrDefault();
+            var outputPreview = _audioInteraction.DeviceSwitches.GetPreview(new(AudioDeviceDirection.Output));
+            SelectedOutputDevice = outputPreview is null ? devices.FirstOrDefault(device => device.IsDefault) : devices.FirstOrDefault(device => device.PolicyId == outputPreview.PolicyId);
+            var inputs = await _deviceService.GetDevicesAsync(AudioDeviceDirection.Input);
+            if (_disposed || audioVersion != _audioRefreshVersion) return;
+            InputDevices.Clear(); foreach (var input in inputs) InputDevices.Add(input);
+            var inputPreview = _audioInteraction.DeviceSwitches.GetPreview(new(AudioDeviceDirection.Input));
+            SelectedInputDevice = inputPreview is null ? inputs.FirstOrDefault(input => input.IsDefault) : inputs.FirstOrDefault(input => input.PolicyId == inputPreview.PolicyId);
+            InputDeviceStatus = await _deviceService.GetDefaultDescriptionAsync(AudioDeviceDirection.Input);
+            OutputDeviceStatus = await _deviceService.GetDefaultDescriptionAsync(AudioDeviceDirection.Output);
+            if (_disposed || audioVersion != _audioRefreshVersion) return;
             _isRefreshing = false;
             RefreshSpatialAudio();
 
             var applications = await Task.Run(() => _volumeService.GetApplications(
                 _mediaSessionService.SelectedSourceId,
                 _mediaSessionService.SelectedSourceName)).WaitAsync(TimeSpan.FromSeconds(3));
+            var audioApps = await _routing.GetApplicationsAsync();
+            if (_disposed || audioVersion != _audioRefreshVersion) return;
             Applications.Clear();
             foreach (var application in applications)
             {
                 Applications.Add(new ApplicationVolumeItemViewModel(application, QueueApplicationVolume));
             }
 
-            StatusText = applications.Count == 0 ? Translations.Get("Audio.Status.NoSessions") : string.Empty;
+            var existing = AudioApplications.ToDictionary(row => row.Key, StringComparer.OrdinalIgnoreCase);
+            var rows = new List<ApplicationAudioItemViewModel>();
+            foreach (var app in audioApps)
+            {
+                var volume = Applications.FirstOrDefault(item => string.Equals(item.ProcessName, app.ProcessName, StringComparison.OrdinalIgnoreCase));
+                if (existing.Remove(app.Identity, out var row)) row.Synchronize(app, volume);
+                else row = new(app, volume, _routing, _audioInteraction.DeviceSwitches);
+                rows.Add(row);
+            }
+            foreach (var volume in Applications.Where(item => !audioApps.Any(app =>
+                string.Equals(app.ProcessName, item.ProcessName, StringComparison.OrdinalIgnoreCase))))
+            {
+                var key = "volume:" + volume.ProcessName;
+                if (existing.Remove(key, out var row)) row.Synchronize(null, volume);
+                else row = new(null, volume, _routing, _audioInteraction.DeviceSwitches);
+                rows.Add(row);
+            }
+            foreach (var old in existing.Values) { old.Dispose(); AudioApplications.Remove(old); }
+            foreach (var row in rows)
+                if (!AudioApplications.Contains(row)) AudioApplications.Add(row);
+            StatusText = rows.Count == 0 ? Translations.Get("Audio.Status.NoSessions") : string.Empty;
             UpdateTooltipFromLoadedState();
         }
         catch (Exception exception)
@@ -168,7 +217,9 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         }
         finally
         {
+            _isRefreshing = false;
             IsBusy = false;
+            if (_refreshRequested && !_disposed) { _refreshRequested = false; _ = RefreshAsync(); }
         }
     }
 
@@ -177,90 +228,54 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     /// Previews the next output device for a tray-wheel delta.
     /// </summary>
     /// <param name="delta">滚轮增量 / Wheel delta.</param>
-    public void PreviewOutputDeviceWheel(int delta)
+
+    public void PreviewOutputDeviceWheel(int delta) => _ = PreviewDeviceAsync(AudioDeviceDirection.Output, TrayWheelPolicy.GetDeviceSteps(delta));
+    public void PreviewInputDeviceWheel(int delta) => _ = PreviewDeviceAsync(AudioDeviceDirection.Input, TrayWheelPolicy.GetDeviceSteps(delta));
+    private void PreviewOutputDeviceSteps(int steps) => _ = PreviewDeviceAsync(AudioDeviceDirection.Output, steps);
+    private async Task PreviewDeviceAsync(AudioDeviceDirection direction, int steps)
     {
-        PreviewOutputDeviceSteps(TrayWheelPolicy.GetDeviceSteps(delta));
+        try { await _audioInteraction.DeviceSwitches.PreviewAsync(new(direction), steps, this); }
+        catch (Exception) { if (!_disposed) StatusText = Translations.Get("Audio.Route.Failed"); }
     }
-
-    private void PreviewOutputDeviceSteps(int signedSteps)
-    {
-        if (OutputDevices.Count == 0 || signedSteps == 0)
-        {
-            return;
-        }
-
-        var current = Math.Max(0, SelectedOutputDevice is null ? 0 : OutputDevices.IndexOf(SelectedOutputDevice));
-        var device = OutputDevices[WheelInput.MoveCircular(current, signedSteps, OutputDevices.Count)];
-
-        _isPreviewingOutputDevice = true;
-        try
-        {
-            SelectedOutputDevice = device;
-        }
-        finally
-        {
-            _isPreviewingOutputDevice = false;
-        }
-
-        // 单设备或循环回原设备时属性值不会变化，也必须即时刷新原生提示。
-        // Refresh the native tooltip immediately even when one device or a full cycle keeps the same selection.
-        SetTrayTooltip(AudioTooltipPolicy.BuildOutputDevice(device));
-    }
-
     partial void OnSelectedOutputDeviceChanged(AudioDeviceOption? value)
-    {
-        if (!_isRefreshing && value is not null)
-        {
-            StartOutputDeviceApply(
-                value,
-                _isPreviewingOutputDevice ? DeviceApplyDelay : TimeSpan.Zero);
-        }
-    }
-
-    private void StartOutputDeviceApply(AudioDeviceOption device, TimeSpan delay)
-    {
-        var version = ++_deviceApplyVersion;
-        _ = ApplyOutputDeviceAsync(device, version, delay);
-        SetTrayTooltip(AudioTooltipPolicy.BuildOutputDevice(device));
-    }
-
-    private async Task ApplyOutputDeviceAsync(AudioDeviceOption device, int version, TimeSpan delay)
+    { if (!_isRefreshing && value is not null) _ = SelectDeviceAsync(value); }
+    partial void OnSelectedInputDeviceChanged(AudioDeviceOption? value)
+    { if (!_isRefreshing && value is not null) _ = SelectDeviceAsync(value); }
+    private async Task SelectDeviceAsync(AudioDeviceOption device)
     {
         try
         {
-            if (delay > TimeSpan.Zero)
-            {
-                await Task.Delay(delay);
-            }
-
-            if (!AudioApplyPolicy.IsCurrent(_disposed, version, _deviceApplyVersion))
-            {
-                return;
-            }
-
-            // 缓冲结束后再次读取系统默认设备；循环滚回原设备时不要重复切换而打断音频。
-            // Recheck the system default after buffering so cycling back does not interrupt audio with a redundant switch.
-            if (await Task.Run(() => _deviceService.IsDefaultRenderDevice(device.Id)))
-            {
-                return;
-            }
-
-            if (!AudioApplyPolicy.IsCurrent(_disposed, version, _deviceApplyVersion))
-                return;
-            await Task.Run(() => _deviceService.SetDefaultRenderDevice(device.PolicyId));
-            _audioMonitorService.ResetAfterEnvironmentChange();
-            if (!AudioApplyPolicy.IsCurrent(_disposed, version, _deviceApplyVersion))
-                return;
+            var result = await _audioInteraction.DeviceSwitches.SelectAsync(new(device.Direction), device, this);
+            if (_disposed) return;
             await RefreshAsync();
+            if (!_disposed) StatusText = AudioDevicePresentation.GetResultText(result, false);
         }
-        catch (Exception exception)
-        {
-            if (!AudioApplyPolicy.IsCurrent(_disposed, version, _deviceApplyVersion))
-                return;
-            StatusText = Translations.Format("Audio.Status.SwitchOutputDeviceFailed", exception.Message);
-            SetTrayTooltip(Translations.Get("Audio.Tooltip.SwitchOutputDeviceFailed"));
-        }
+        catch (Exception) { if (!_disposed) StatusText = Translations.Get("Audio.Route.Failed"); }
     }
+    private void OnDeviceSwitchUpdated(AudioDeviceSwitchUpdate update)
+    {
+        if (_disposed || update.Target.Application is not null) return;
+        Application.Current?.Dispatcher.BeginInvoke(() =>
+        {
+            if (_disposed) return;
+            if (update.Result is null)
+            {
+                _isRefreshing = true;
+                if (update.Target.Direction == AudioDeviceDirection.Output)
+                    SelectedOutputDevice = OutputDevices.FirstOrDefault(device => device.PolicyId == update.Candidate?.PolicyId);
+                else SelectedInputDevice = InputDevices.FirstOrDefault(device => device.PolicyId == update.Candidate?.PolicyId);
+                _isRefreshing = false;
+                SetTrayTooltip(update.Candidate?.DisplayName ?? Translations.Get("Audio.Device.Unavailable"));
+            }
+            else
+            {
+                StatusText = AudioDevicePresentation.GetResultText(update.Result, false);
+                _ = RefreshAsync();
+            }
+        });
+    }
+    private void OnAudioDevicesInvalidated(object? sender, EventArgs args) =>
+        Application.Current?.Dispatcher.BeginInvoke(() => { if (!_disposed) { _audioRefreshVersion++; _ = RefreshAsync(); } });
 
     private void QueueApplicationVolume(
         ApplicationVolumeItemViewModel application,
@@ -342,6 +357,9 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
                 _pendingTrayVolumeSteps += TrayWheelPolicy.GetVolumeSteps(e.Delta);
                 _ = ProcessTrayVolumeAsync();
                 break;
+            case TrayWheelBehavior.SwitchInputDevice:
+                _ = PreviewDeviceAsync(AudioDeviceDirection.Input, TrayWheelPolicy.GetDeviceSteps(e.Delta));
+                break;
             case TrayWheelBehavior.SwitchOutputDevice:
                 _pendingTrayDeviceSteps += TrayWheelPolicy.GetDeviceSteps(e.Delta);
                 _ = ProcessTrayDeviceAsync();
@@ -400,7 +418,8 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
             OutputDevices.Clear();
             foreach (var device in devices)
                 OutputDevices.Add(device);
-            SelectedOutputDevice = devices.FirstOrDefault(device => device.IsDefault) ?? devices.FirstOrDefault();
+            var outputPreview = _audioInteraction.DeviceSwitches.GetPreview(new(AudioDeviceDirection.Output));
+            SelectedOutputDevice = outputPreview is null ? devices.FirstOrDefault(device => device.IsDefault) : devices.FirstOrDefault(device => device.PolicyId == outputPreview.PolicyId);
         }
         finally
         {
@@ -498,6 +517,9 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
             case TrayClickAction.OpenAudioControl:
                 FlyoutToggleRequested?.Invoke(GetTrayBounds());
                 break;
+            case TrayClickAction.OpenInputDeviceMenu:
+                InputDeviceMenuRequested?.Invoke(GetTrayBounds());
+                break;
             case TrayClickAction.OpenOutputDeviceMenu:
                 OutputDeviceMenuRequested?.Invoke(GetTrayBounds());
                 break;
@@ -593,10 +615,10 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
                     _mediaSessionService.SelectedSourceId,
                     _mediaSessionService.SelectedSourceName));
             }
-            else if (behavior == TrayWheelBehavior.SwitchOutputDevice)
+            else if (behavior is TrayWheelBehavior.SwitchOutputDevice or TrayWheelBehavior.SwitchInputDevice)
             {
-                var devices = await _deviceService.GetRenderDevicesAsync();
-                device = devices.FirstOrDefault(candidate => candidate.IsDefault) ?? devices.FirstOrDefault();
+                var devices = await _deviceService.GetDevicesAsync(behavior == TrayWheelBehavior.SwitchInputDevice ? AudioDeviceDirection.Input : AudioDeviceDirection.Output);
+                device = devices.FirstOrDefault(candidate => candidate.IsDefault);
             }
 
             // 关闭滚轮操作提示只去掉手势说明；当前设备/音量仍用悬停层组件同款状态文案。
@@ -693,6 +715,11 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         _mouseInputMonitor.WheelChanged -= OnTrayWheelChanged;
         _mediaSessionService.SnapshotChanged -= OnMediaSnapshotChanged;
         SettingsManager.InteractionSettingsChanged -= OnInteractionSettingsChanged;
+        _audioRefreshVersion++;
+        _audioInteraction.DeviceSwitches.Updated -= OnDeviceSwitchUpdated;
+        _audioInteraction.DeviceSwitches.Invalidated -= OnAudioDevicesInvalidated;
+        _audioInteraction.CancelDeviceOwner(this);
+        foreach (var row in AudioApplications) row.Dispose();
         _mouseInputMonitor.Dispose();
         _deviceApplyVersion++;
         _pendingTrayDeviceSteps = 0;
