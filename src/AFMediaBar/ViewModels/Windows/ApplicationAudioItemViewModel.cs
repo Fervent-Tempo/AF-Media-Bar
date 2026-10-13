@@ -9,7 +9,6 @@ namespace AFMediaBar.ViewModels.Windows;
 /// <summary>应用面板中的音量及输入/输出路由，不为仅录音应用伪造音量。</summary>
 public partial class ApplicationAudioItemViewModel : ObservableObject, IDisposable
 {
-    private readonly ApplicationAudioRoutingService _routing;
     private readonly AudioDeviceSwitchCoordinator _switches;
     private bool _loading;
     private bool _disposed;
@@ -26,19 +25,24 @@ public partial class ApplicationAudioItemViewModel : ObservableObject, IDisposab
     public string IconToolTip => CanAdjustVolume ? Volume!.MuteToolTip : DisplayName + " · " + Translations.Get("Audio.Route.NoPlayback");
     public ObservableCollection<AudioDeviceOption> OutputDevices { get; } = [];
     public ObservableCollection<AudioDeviceOption> InputDevices { get; } = [];
-    [ObservableProperty] private bool _isExpanded;
+    [ObservableProperty] private bool _isDetailSelected;
     [ObservableProperty] private bool _isRouteSupported = true;
-    [ObservableProperty] private AudioDeviceOption? _selectedOutputDevice;
-    [ObservableProperty] private AudioDeviceOption? _selectedInputDevice;
-    [ObservableProperty] private string _statusText = string.Empty;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(OutputDeviceToolTip))] private AudioDeviceOption? _selectedOutputDevice;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(InputDeviceToolTip))] private AudioDeviceOption? _selectedInputDevice;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(OutputDeviceToolTip)), NotifyPropertyChangedFor(nameof(InputDeviceToolTip))]
+    private string _statusText = string.Empty;
+    public string OutputDeviceToolTip => DeviceToolTip(SelectedOutputDevice);
+    public string InputDeviceToolTip => DeviceToolTip(SelectedInputDevice);
+    private string DeviceToolTip(AudioDeviceOption? device) => string.IsNullOrEmpty(StatusText)
+        ? device?.DisplayName ?? Translations.Get("Audio.Route.HiddenOrDisconnected")
+        : (device is null ? string.Empty : device.DisplayName + "\n") + StatusText;
 
     public ApplicationAudioItemViewModel(ApplicationAudioSnapshot? application, ApplicationVolumeItemViewModel? volume,
-        ApplicationAudioRoutingService routing, AudioDeviceSwitchCoordinator switches)
+        AudioDeviceSwitchCoordinator switches)
     {
         Application = application;
         Volume = volume;
         if (Volume is not null) Volume.PropertyChanged += OnVolumeChanged;
-        _routing = routing;
         _switches = switches;
         _switches.Updated += OnSwitchUpdated;
     }
@@ -49,7 +53,7 @@ public partial class ApplicationAudioItemViewModel : ObservableObject, IDisposab
         Volume = volume;
         if (Volume is not null) Volume.PropertyChanged += OnVolumeChanged;
         OnPropertyChanged(string.Empty);
-        if (IsExpanded) _ = RefreshAsync();
+        if (IsDetailSelected) _ = RefreshAsync();
     }
     private void OnVolumeChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args) => OnPropertyChanged(nameof(IconToolTip));
     public void RefreshLabels()
@@ -75,7 +79,6 @@ public partial class ApplicationAudioItemViewModel : ObservableObject, IDisposab
         }
         finally { _loading = wasLoading; }
     }
-    partial void OnIsExpandedChanged(bool value) { if (value) _ = RefreshAsync(); }
     partial void OnSelectedOutputDeviceChanged(AudioDeviceOption? value) { if (!_loading && value is not null) _ = ApplyAsync(AudioDeviceDirection.Output, value); }
     partial void OnSelectedInputDeviceChanged(AudioDeviceOption? value) { if (!_loading && value is not null) _ = ApplyAsync(AudioDeviceDirection.Input, value); }
 
@@ -87,8 +90,8 @@ public partial class ApplicationAudioItemViewModel : ObservableObject, IDisposab
         {
             var output = await _switches.GetChoicesAsync(new(AudioDeviceDirection.Output, app));
             var input = await _switches.GetChoicesAsync(new(AudioDeviceDirection.Input, app));
-            var outputRoute = await _routing.ReadRouteAsync(app, AudioDeviceDirection.Output);
-            var inputRoute = await _routing.ReadRouteAsync(app, AudioDeviceDirection.Input);
+            var outputRoute = await _switches.ReadRouteAsync(new(AudioDeviceDirection.Output, app));
+            var inputRoute = await _switches.ReadRouteAsync(new(AudioDeviceDirection.Input, app));
             if (_disposed || version != _version) return;
             _loading = true;
             OutputDevices.Clear(); foreach (var device in output) OutputDevices.Add(device);

@@ -20,6 +20,9 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
     private bool _isToggling;
     private bool _isDisposed;
     private int _animationVersion;
+    private int _navigationVersion;
+    private double _applicationListOffset;
+    private WeakReference<IInputElement>? _applicationListFocus;
 
     public AudioControlViewModel ViewModel { get; }
 
@@ -31,6 +34,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
         ViewModel = viewModel;
         DataContext = viewModel;
         InitializeComponent();
+        ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         ApplyMotionEffects();
         appearanceService.Attach(this);
     }
@@ -104,8 +108,11 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
         var info = new NativeMethods.MONITORINFOEX { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<NativeMethods.MONITORINFOEX>() };
         NativeMethods.GetMonitorInfo(monitor, ref info);
         var dpi = NativeMethods.GetDpiForMonitor(monitor, NativeMethods.MonitorDpiType.MDT_EFFECTIVE_DPI, out var dpiX, out _) == 0 ? dpiX / 96d : 1d;
+        ApplicationsViewport.Height = 132;
+        FlyoutRoot.Measure(new Size(ActualWidth, double.PositiveInfinity));
+        var nonApplicationHeight = FlyoutRoot.DesiredSize.Height - 132;
         MaxHeight = Math.Min(620, Math.Max(0, (info.rcWork.Bottom - info.rcWork.Top) / dpi - 16));
-        ApplicationsScrollViewer.MaxHeight = Math.Max(0, Math.Min(300, MaxHeight - 300));
+        ApplicationsViewport.Height = Math.Clamp(MaxHeight - nonApplicationHeight, 0, 132);
         UpdateLayout();
         var width = (int)Math.Ceiling(ActualWidth * dpi);
         var height = (int)Math.Ceiling(ActualHeight * dpi);
@@ -127,6 +134,49 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
         if (sender is ComboBox { DataContext: ApplicationAudioItemViewModel row } combo)
             await row.PreviewDeviceAsync(combo.Tag as string == "Input" ? AFMediaBar.Classes.Models.AudioDeviceDirection.Input :
                 AFMediaBar.Classes.Models.AudioDeviceDirection.Output, TrayWheelPolicy.GetDeviceSteps(e.Delta));
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
+    {
+        if (_isDisposed || args.PropertyName != nameof(AudioControlViewModel.SelectedAudioApplication)) return;
+        ApplicationOutputDeviceComboBox.IsDropDownOpen = false;
+        ApplicationInputDeviceComboBox.IsDropDownOpen = false;
+        var version = ++_navigationVersion;
+        if (ViewModel.IsApplicationDetailVisible)
+        {
+            _applicationListOffset = ApplicationsScrollViewer.VerticalOffset;
+            if (Keyboard.FocusedElement is { } focus) _applicationListFocus = new(focus);
+        }
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (_isDisposed || version != _navigationVersion) return;
+            if (ViewModel.IsApplicationDetailVisible)
+            {
+                ApplicationDetailScrollViewer.ScrollToTop();
+                ApplicationDetailScrollViewer.MoveFocus(new TraversalRequest(FocusNavigationDirection.First));
+            }
+            else
+            {
+                ApplicationsScrollViewer.ScrollToVerticalOffset(_applicationListOffset);
+                if (_applicationListFocus?.TryGetTarget(out var focus) == true) Keyboard.Focus(focus);
+            }
+        }, DispatcherPriority.Loaded);
+    }
+
+    private void ApplicationDetail_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        // 控件保留自身滚轮语义；详情空白只在受限工作区内滚动详情。
+        var source = e.OriginalSource as DependencyObject;
+        for (var current = source; current is not null && !ReferenceEquals(current, sender);)
+        {
+            if (current is Slider or ComboBox) return;
+            current = current is Visual or System.Windows.Media.Media3D.Visual3D
+                ? VisualTreeHelper.GetParent(current) : LogicalTreeHelper.GetParent(current);
+        }
+        e.Handled = true;
+        if (ApplicationDetailScrollViewer.ScrollableHeight <= 0) return;
+        if (e.Delta > 0) ApplicationDetailScrollViewer.LineUp();
+        else ApplicationDetailScrollViewer.LineDown();
     }
 
     private void InputDevice_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
@@ -193,7 +243,8 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
         // The ComboBox list uses a separate Popup; wait for its state to settle before treating deactivation as an outside click.
         Dispatcher.BeginInvoke(() =>
         {
-            if (!_isDisposed && IsVisible && !_isOutputDeviceDropDownOpen && !OutputDeviceComboBox.IsDropDownOpen && !InputDeviceComboBox.IsDropDownOpen && !IsActive)
+            if (!_isDisposed && IsVisible && !_isOutputDeviceDropDownOpen && !OutputDeviceComboBox.IsDropDownOpen && !InputDeviceComboBox.IsDropDownOpen &&
+                !ApplicationOutputDeviceComboBox.IsDropDownOpen && !ApplicationInputDeviceComboBox.IsDropDownOpen && !IsActive)
             {
                 BeginHideAnimation();
             }
@@ -217,6 +268,9 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
             return;
 
         _isHiding = true;
+        OutputDeviceComboBox.IsDropDownOpen = false;
+        InputDeviceComboBox.IsDropDownOpen = false;
+        ViewModel.CloseApplicationDetail();
         var version = ++_animationVersion;
         var motion = MotionPolicy.ResolveCurrent();
         if (!motion.UseTransitions)
@@ -262,8 +316,14 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
             return;
 
         _isDisposed = true;
+        _navigationVersion++;
+        ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        ViewModel.CloseApplicationDetail();
         _animationVersion++;
         OutputDeviceComboBox.IsDropDownOpen = false;
+        InputDeviceComboBox.IsDropDownOpen = false;
+        ApplicationOutputDeviceComboBox.IsDropDownOpen = false;
+        ApplicationInputDeviceComboBox.IsDropDownOpen = false;
         FlyoutRoot.BeginAnimation(OpacityProperty, null);
         FlyoutScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
         FlyoutScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);

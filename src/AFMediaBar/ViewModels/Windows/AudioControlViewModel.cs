@@ -61,6 +61,34 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     public ObservableCollection<AudioDeviceOption> OutputDevices { get; } = [];
     public ObservableCollection<ApplicationVolumeItemViewModel> Applications { get; } = [];
     public ObservableCollection<ApplicationAudioItemViewModel> AudioApplications { get; } = [];
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsApplicationDetailVisible))]
+    private ApplicationAudioItemViewModel? _selectedAudioApplication;
+    public bool IsApplicationDetailVisible => SelectedAudioApplication is not null;
+
+    [RelayCommand]
+    private void ToggleAudioApplication(ApplicationAudioItemViewModel? row)
+    {
+        if (_disposed || row is null || !row.CanRoute || !AudioApplications.Contains(row)) return;
+        SelectedAudioApplication = ReferenceEquals(SelectedAudioApplication, row) ? null : row;
+    }
+
+    partial void OnSelectedAudioApplicationChanged(ApplicationAudioItemViewModel? oldValue, ApplicationAudioItemViewModel? newValue)
+    {
+        if (oldValue is not null) oldValue.IsDetailSelected = false;
+        if (newValue is not null)
+        {
+            newValue.IsDetailSelected = true;
+            _ = newValue.RefreshAsync();
+        }
+    }
+
+    public void CloseApplicationDetail() => SelectedAudioApplication = null;
+
+    private void OnAudioApplicationsChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs args)
+    {
+        if (SelectedAudioApplication is { } selected && !AudioApplications.Contains(selected)) CloseApplicationDetail();
+    }
     public ObservableCollection<AudioDeviceOption> InputDevices { get; } = [];
     [ObservableProperty] private AudioDeviceOption? _selectedInputDevice;
     [ObservableProperty] private string _inputDeviceStatus = string.Empty;
@@ -108,6 +136,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         ApplicationAudioControlCoordinator applicationControl)
     {
         _deviceService = deviceService;
+        AudioApplications.CollectionChanged += OnAudioApplicationsChanged;
         _audioInteraction = audioInteraction;
         _routing = routing;
         _applicationControl = applicationControl;
@@ -198,7 +227,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
             {
                 var volume = Applications.FirstOrDefault(item => string.Equals(item.ProcessName, app.ProcessName, StringComparison.OrdinalIgnoreCase));
                 if (existing.Remove(app.Identity, out var row)) row.Synchronize(app, volume);
-                else row = new(app, volume, _routing, _audioInteraction.DeviceSwitches);
+                else row = new(app, volume, _audioInteraction.DeviceSwitches);
                 rows.Add(row);
             }
             foreach (var volume in Applications.Where(item => !audioApps.Any(app =>
@@ -206,7 +235,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
             {
                 var key = "volume:" + volume.ProcessName;
                 if (existing.Remove(key, out var row)) row.Synchronize(null, volume);
-                else row = new(null, volume, _routing, _audioInteraction.DeviceSwitches);
+                else row = new(null, volume, _audioInteraction.DeviceSwitches);
                 rows.Add(row);
             }
             foreach (var old in existing.Values) { old.Dispose(); AudioApplications.Remove(old); }
@@ -717,6 +746,8 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         _audioInteraction.DeviceSwitches.Updated -= OnDeviceSwitchUpdated;
         _audioInteraction.DeviceSwitches.Invalidated -= OnAudioDevicesInvalidated;
         _audioInteraction.CancelDeviceOwner(this);
+        AudioApplications.CollectionChanged -= OnAudioApplicationsChanged;
+        CloseApplicationDetail();
         foreach (var row in AudioApplications) row.Dispose();
         _mouseInputMonitor.Dispose();
         _deviceApplyVersion++;
