@@ -128,6 +128,7 @@ public partial class TaskbarWindow : Window
     private MediaSnapshot _lastSnapshot = MediaSnapshot.Disconnected;
     private AudioDeviceTarget? _deviceMenuTarget;
     private int _menuEnvironmentVersion;
+    private TrayIconBounds? _playerMenuOpeningAnchor;
     private QuickLaunchEntry? _pendingQuickLaunch;
     private ApplicationVolumeSnapshot? _currentVolume;
     private int? _pendingVolume;
@@ -137,6 +138,9 @@ public partial class TaskbarWindow : Window
     private TimeSpan? _subscribedMetricInterval;
 
     public event EventHandler? OpenFullPanelRequested;
+    /// <summary>请求稳定宿主打开右键菜单；坐标为空表示鼠标入口，否则为键盘入口的物理屏幕锚点。</summary>
+    public event Action<TaskbarWindow, Point?>? PlayerMenuOpenRequested;
+    internal ContextMenu PlayerContextMenu => PlayerMenu;
 
     /// <summary>
     /// 创建任务栏媒体宿主并连接其基础设施动作。
@@ -448,7 +452,6 @@ public partial class TaskbarWindow : Window
             DisposeMetricsSubscription();
             _foregroundSamplingSession.Invalidate(clearDecision: false);
             // 点击浮窗使用独立 HWND；这里只挂起媒体栏，任务栏收起不结束菜单交互。
-            PlayerMenu.IsOpen = false;
             _isTaskManagerClickPending = false;
             if (_isDragging || _isDragPending)
             {
@@ -1206,7 +1209,11 @@ public partial class TaskbarWindow : Window
         ContextMenuHelper.CloseIfOutside(PlayerMenu, screenX, screenY);
 
     /// <summary>关闭任务栏媒体菜单。/ Closes the taskbar media menu.</summary>
-    internal void ClosePlayerMenu() => PlayerMenu.IsOpen = false;
+    internal void ClosePlayerMenu()
+    {
+        PlayerMenu.IsOpen = false;
+        PlayerMenu.PlacementTarget = null;
+    }
 
     /// <summary>此宿主所绑定的显示器稳定标识。/ Stable monitor identifier bound to this host.</summary>
     internal string TargetMonitorDeviceId => _targetMonitorDeviceId;
@@ -1696,15 +1703,16 @@ public partial class TaskbarWindow : Window
     /// </summary>
     private async void MediaControl_VolumeInfoRequested(object? sender, EventArgs e)
     {
+        var environmentVersion = _menuEnvironmentVersion;
+        if (!CanPublishMenu(environmentVersion)) return;
         if (_pendingVolume is { } pending)
         {
             MediaControl.SetVolumePreview(pending);
             return;
         }
 
-        if (_isClosing) return;
         var volume = await Task.Run(_audioInteractionService.GetCurrentMediaVolume);
-        if (_isClosing) return;
+        if (!CanPublishMenu(environmentVersion)) return;
         _currentVolume = volume;
         if (volume is null)
             MediaControl.SetVolumeUnavailable();
@@ -1717,7 +1725,11 @@ public partial class TaskbarWindow : Window
 
     private async Task PreviewVolumeAsync(int delta, bool updateFlyout)
     {
-        _currentVolume ??= await Task.Run(_audioInteractionService.GetCurrentMediaVolume);
+        var environmentVersion = _menuEnvironmentVersion;
+        if (!CanPublishMenu(environmentVersion)) return;
+        var volume = _currentVolume ?? await Task.Run(_audioInteractionService.GetCurrentMediaVolume);
+        if (!CanPublishMenu(environmentVersion)) return;
+        _currentVolume ??= volume;
         if (_currentVolume is null)
         {
             MediaControl.SetVolumeUnavailable();
@@ -1749,6 +1761,7 @@ public partial class TaskbarWindow : Window
 
     private async void MediaControl_QuickLaunchRequested(QuickLaunchEntry entry)
     {
+        if (!CanPublishMenu(_menuEnvironmentVersion)) return;
         _quickLaunchApplyTimer.Stop();
         _pendingQuickLaunch = null;
         var environmentVersion = _menuEnvironmentVersion;
@@ -1759,8 +1772,9 @@ public partial class TaskbarWindow : Window
 
     private async void PlayerMenu_QuickLaunchRequested(QuickLaunchEntry entry)
     {
+        if (!CanPublishMenu(_menuEnvironmentVersion)) return;
         var environmentVersion = _menuEnvironmentVersion;
-        var anchor = GetMediaBarScreenPhysicalBounds();
+        var anchor = _playerMenuOpeningAnchor ?? GetMediaBarScreenPhysicalBounds();
         var result = await _sourceActivationService.LaunchAsync(entry);
         if (CanPublishMenu(environmentVersion)) ShowQuickLaunchResult(result, anchor);
     }
@@ -2573,7 +2587,9 @@ public partial class TaskbarWindow : Window
 
     private void Window_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
-        if (IsTaskbarPresentationSuspended || _isRestoringTaskbarPresentation || _isEnvironmentSuspended)
+        // 阻止 WPF 把 Popup 绑定到会随 Explorer 收起的任务栏子窗口。
+        e.Handled = true;
+        if (!CanPublishMenu(_menuEnvironmentVersion) || IsTaskbarPresentationSuspended || _isRestoringTaskbarPresentation)
         {
             e.Handled = true;
             PlayerMenu.IsOpen = false;
@@ -2591,6 +2607,10 @@ public partial class TaskbarWindow : Window
         }
 
         PlayerMenu.ApplyQuickLaunchEntries(SettingsManager.Current.QuickLaunch.Entries ?? []);
+        _playerMenuOpeningAnchor = GetMediaBarScreenPhysicalBounds();
+        Point? keyboardAnchor = e.CursorLeft < 0 && e.CursorTop < 0
+            ? new Point(_playerMenuOpeningAnchor.Value.Left, _playerMenuOpeningAnchor.Value.Top) : null;
+        PlayerMenuOpenRequested?.Invoke(this, keyboardAnchor);
     }
 
     private static bool IsMediaAction(DependencyObject? source)
@@ -2653,6 +2673,8 @@ public partial class TaskbarWindow : Window
         MediaControl.OutputDeviceInfoRequested -= MediaControl_OutputDeviceInfoRequested;
         MediaControl.VolumeInfoRequested -= MediaControl_VolumeInfoRequested;
         _compactFlyout.Dispose();
+        ClosePlayerMenu();
+        PlayerMenuOpenRequested = null;
         base.OnClosed(e);
     }
 

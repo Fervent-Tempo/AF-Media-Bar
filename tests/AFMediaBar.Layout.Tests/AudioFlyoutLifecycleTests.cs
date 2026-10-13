@@ -182,7 +182,8 @@ public sealed class AudioFlyoutLifecycleTests
                 var outputName = Descendants(output).OfType<TextBlock>().First(block => block.Text == rows[1].SelectedOutputDevice!.DisplayName);
                 var labelCenter = outputLabel.TranslatePoint(new Point(0, outputLabel.ActualHeight / 2), detail).Y;
                 var nameCenter = outputName.TranslatePoint(new Point(0, outputName.ActualHeight / 2), detail).Y;
-                Assert.AreEqual(labelCenter, nameCenter, 1, "设备名和方向标签必须垂直对齐，允许控件模板的像素取整。");
+                Assert.AreEqual(Math.Round(labelCenter, 3), Math.Round(nameCenter, 3), 1,
+                    "设备名和方向标签必须垂直对齐，允许控件模板的像素取整及坐标变换的浮点误差。");
                 Assert.IsTrue(outputName.TranslatePoint(new Point(0, outputName.ActualHeight), output).Y <= output.ActualHeight,
                     "设备名底部不能被 32 DIP 设备框裁切。");
                 var slider = Descendants(detail).OfType<Slider>().Single();

@@ -509,6 +509,7 @@ namespace AFMediaBar.Views.Windows
             foreach (var taskbarWindow in taskbarWindows)
             {
                 taskbarWindow.OpenFullPanelRequested -= TaskbarWindow_OpenFullPanelRequested;
+                taskbarWindow.PlayerMenuOpenRequested -= TaskbarWindow_PlayerMenuOpenRequested;
                 taskbarWindow.PlacementTransitionStarted -= TaskbarWindow_PlacementTransitionStarted;
                 taskbarWindow.PlacementFallbackRequested -= TaskbarWindow_PlacementFallbackRequested;
                 _placementNotificationGate.ForgetHost(taskbarWindow.TargetMonitorDeviceId);
@@ -852,6 +853,7 @@ namespace AFMediaBar.Views.Windows
                 _mouseInputMonitor,
                 _memoryPruneCoordinator);
             window.OpenFullPanelRequested += TaskbarWindow_OpenFullPanelRequested;
+            window.PlayerMenuOpenRequested += TaskbarWindow_PlayerMenuOpenRequested;
             window.PlacementTransitionStarted += TaskbarWindow_PlacementTransitionStarted;
             window.PlacementFallbackRequested += TaskbarWindow_PlacementFallbackRequested;
             return window;
@@ -861,6 +863,12 @@ namespace AFMediaBar.Views.Windows
         {
             if (sender is TaskbarWindow window && _fullPanelWindows.TryGetValue(window.TargetMonitorDeviceId, out var panel))
                 panel.RequestClose();
+        }
+
+        private void TaskbarWindow_PlayerMenuOpenRequested(TaskbarWindow host, Point? screenAnchor)
+        {
+            if (_isClosing || TaskbarEnvironmentRecovering || !_taskbarWindows.Contains(host)) return;
+            ContextMenuHelper.OpenAtScreenAnchor(host.PlayerContextMenu, this, screenAnchor);
         }
 
         private void TaskbarWindow_OpenFullPanelRequested(object? sender, EventArgs e)

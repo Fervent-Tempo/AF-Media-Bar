@@ -577,8 +577,11 @@ public partial class TaskbarFullPanelWindow : FluentWindow
 
     private void Window_Deactivated(object sender, EventArgs e)
     {
-        if (!DeviceCombo.IsDropDownOpen)
-            RequestClose();
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (!_isClosing && IsVisible && !IsActive && !DeviceCombo.IsDropDownOpen && !InputDeviceCombo.IsDropDownOpen)
+                RequestClose();
+        }, DispatcherPriority.ContextIdle);
     }
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
