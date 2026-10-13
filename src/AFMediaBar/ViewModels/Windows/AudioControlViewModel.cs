@@ -309,6 +309,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
             if (result.Snapshot is { } snapshot) current?.Synchronize(snapshot, updateMetadata: false);
             if (result.Operation.Status is AudioDeviceOperationStatus.Failed or AudioDeviceOperationStatus.Partial or AudioDeviceOperationStatus.Unavailable)
             {
+                if (result.Snapshot is null) current?.RestoreConfirmedState();
                 StatusText = Translations.Format("Audio.Mute.WriteFailed", application.DisplayName);
                 await RefreshAsync();
                 if (!_disposed && _applicationControl.IsCurrent(application.ProcessName, result.Version))

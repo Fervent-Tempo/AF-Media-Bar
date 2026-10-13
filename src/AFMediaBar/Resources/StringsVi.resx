@@ -2871,7 +2871,7 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
     <value>{0} · Đã tắt tiếng; nhấp để bật tiếng</value>
   </data>
   <data name="Audio.Mute.WriteFailed" xml:space="preserve">
-    <value>Không thể cập nhật đầy đủ âm lượng hoặc trạng thái tắt tiếng của {0}. Đã đọc lại trạng thái.</value>
+    <value>Không thể cập nhật đầy đủ âm lượng hoặc trạng thái tắt tiếng của {0}. Vui lòng kiểm tra trạng thái hiện tại.</value>
   </data>
   <data name="Audio.Route.Expand" xml:space="preserve">
     <value>Mở định tuyến thiết bị</value>

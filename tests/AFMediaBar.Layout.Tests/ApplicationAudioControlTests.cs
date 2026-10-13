@@ -11,7 +11,7 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class ApplicationAudioControlTests
 {
     [TestMethod]
-    public void ReadbackKeepsIconsAndRefreshUpdatesSourceMetadataWithoutWritingVolume()
+    public void ReadbackAndFailureRestoreDoNotWriteVolumeOrEraseMetadata()
     {
         var writes = 0;
         var icon = new byte[] { 1, 2 };
@@ -27,6 +27,13 @@ public sealed class ApplicationAudioControlTests
         Assert.AreSame(replacement, row.IconData);
         Assert.IsFalse(row.IsCurrentMedia);
         Assert.AreEqual(0, writes, "刷新与回读都不能反向写入音量。");
+        row.VolumePercent = 20;
+        row.IsMuted = true;
+        Assert.AreEqual(1, writes);
+        row.RestoreConfirmedState();
+        Assert.AreEqual(50, row.VolumePercent);
+        Assert.IsFalse(row.IsMuted);
+        Assert.AreEqual(1, writes, "恢复最后确认状态不能生成另一次音量请求。");
     }
 
     [TestMethod]

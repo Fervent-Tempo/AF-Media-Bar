@@ -9,6 +9,8 @@ public partial class ApplicationVolumeItemViewModel : ObservableObject
     private readonly Func<ApplicationVolumeItemViewModel, Task>? _muteChanged;
     private bool _isSynchronizing;
     private bool _applyImmediately;
+    private int _confirmedVolume;
+    private bool _confirmedMuted;
 
     public string ProcessName { get; }
     [ObservableProperty]
@@ -35,12 +37,17 @@ public partial class ApplicationVolumeItemViewModel : ObservableObject
 
     public void Synchronize(ApplicationVolumeSnapshot snapshot, bool updateMetadata = true)
     {
+        _confirmedVolume = snapshot.VolumePercent;
+        _confirmedMuted = snapshot.IsMuted;
         SynchronizeVolume(snapshot.VolumePercent);
         IsMuted = snapshot.IsMuted;
         if (updateMetadata)
         { DisplayName = snapshot.DisplayName; IsCurrentMedia = snapshot.IsCurrentMedia; IconData = snapshot.IconData; }
         RefreshLabels();
     }
+
+    public void RestoreConfirmedState()
+    { SynchronizeVolume(_confirmedVolume); IsMuted = _confirmedMuted; }
 
     public string Initial => string.IsNullOrWhiteSpace(DisplayName) ? "?" : DisplayName[..1].ToUpperInvariant();
 
@@ -54,6 +61,8 @@ public partial class ApplicationVolumeItemViewModel : ObservableObject
         _isCurrentMedia = snapshot.IsCurrentMedia;
         _iconData = snapshot.IconData;
         _volumePercent = snapshot.VolumePercent;
+        _confirmedVolume = snapshot.VolumePercent;
+        _confirmedMuted = snapshot.IsMuted;
         _volumeChanged = volumeChanged;
         _muteChanged = muteChanged;
         _isMuted = snapshot.IsMuted;

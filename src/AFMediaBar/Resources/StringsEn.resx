@@ -2833,7 +2833,7 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
     <value>{0} · Muted; click to unmute</value>
   </data>
   <data name="Audio.Mute.WriteFailed" xml:space="preserve">
-    <value>Could not fully update volume or mute for {0}. State has been refreshed.</value>
+    <value>Could not fully update volume or mute for {0}. Please check the current state.</value>
   </data>
   <data name="Audio.Route.Expand" xml:space="preserve">
     <value>Expand device routing</value>

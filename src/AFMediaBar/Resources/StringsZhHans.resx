@@ -2833,7 +2833,7 @@
     <value>{0} · 已静音，点击取消静音</value>
   </data>
   <data name="Audio.Mute.WriteFailed" xml:space="preserve">
-    <value>未能完整更新 {0} 的音量或静音状态，已重新读取。</value>
+    <value>未能完整更新 {0} 的音量或静音状态，请检查当前状态。</value>
   </data>
   <data name="Audio.Route.Expand" xml:space="preserve">
     <value>展开设备路由</value>
