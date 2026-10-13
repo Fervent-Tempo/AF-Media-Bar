@@ -136,6 +136,19 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
                 AFMediaBar.Classes.Models.AudioDeviceDirection.Output, TrayWheelPolicy.GetDeviceSteps(e.Delta));
     }
 
+    private void ApplicationCard_OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (_isDisposed || sender is not Border { DataContext: ApplicationAudioItemViewModel row }) return;
+        for (var current = e.OriginalSource as DependencyObject; current is not null && !ReferenceEquals(current, sender);)
+        {
+            if (current is System.Windows.Controls.Button or Slider or ComboBox) return;
+            current = current is Visual or System.Windows.Media.Media3D.Visual3D
+                ? VisualTreeHelper.GetParent(current) : LogicalTreeHelper.GetParent(current);
+        }
+        ViewModel.ToggleAudioApplicationCommand.Execute(row);
+        e.Handled = true;
+    }
+
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
     {
         if (_isDisposed || args.PropertyName != nameof(AudioControlViewModel.SelectedAudioApplication)) return;

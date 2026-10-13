@@ -41,24 +41,37 @@
                 <Trigger Property="Text" Value="{x:Null}"><Setter Property="Visibility" Value="Collapsed" /></Trigger>
             </Style.Triggers>
         </Style>
+        <Style x:Key="AudioCardActionStyle" TargetType="Button">
+            <Setter Property="MinWidth" Value="0" /><Setter Property="MinHeight" Value="0" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" /><Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
+                <Border Background="Transparent" CornerRadius="4">
+                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+            </ControlTemplate></Setter.Value></Setter>
+        </Style>
         <DataTemplate x:Key="ApplicationRouteDeviceTemplate">
-            <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayName}" />
+            <TextBlock Text="{Binding DisplayName}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayName}" />
         </DataTemplate>
         <DataTemplate x:Key="AudioApplicationCardTemplate">
             <Border Height="40" Margin="0,0,0,4" CornerRadius="6" BorderThickness="1" Padding="8,0"
-                    Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                    MouseLeftButtonUp="ApplicationCard_OnMouseLeftButtonUp"
                     BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">
+                <Border.Style><Style TargetType="Border">
+                    <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
+                    <Style.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="{DynamicResource ControlFillColorDefaultBrush}" /></Trigger></Style.Triggers>
+                </Style></Border.Style>
                 <Grid Height="38">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="28" /><ColumnDefinition Width="8" />
                         <ColumnDefinition /><ColumnDefinition Width="36" /><ColumnDefinition Width="24" />
                     </Grid.ColumnDefinitions>
-                    <Button Foreground="{DynamicResource TextFillColorPrimaryBrush}" Grid.ColumnSpan="5" Background="Transparent" BorderThickness="0" Padding="0"
+                    <Button Style="{StaticResource AudioCardActionStyle}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Grid.ColumnSpan="5" Background="Transparent" BorderThickness="0" Padding="0"
                             FocusVisualStyle="{DynamicResource AfFocusVisualStyle}"
                             IsEnabled="{Binding CanRoute}" AutomationProperties.Name="{Binding DisplayName}"
                             Command="{Binding DataContext.ToggleAudioApplicationCommand, RelativeSource={RelativeSource AncestorType=ui:FluentWindow}}"
                             CommandParameter="{Binding}" />
-                    <Button Foreground="{DynamicResource TextFillColorPrimaryBrush}" Width="28" Height="28" Padding="0" BorderThickness="0" Background="Transparent"
+                    <Button Style="{StaticResource AudioCardActionStyle}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Width="28" Height="28" Padding="0" BorderThickness="0" Background="Transparent"
                             Command="{Binding Volume.ToggleMuteCommand}" IsEnabled="{Binding CanAdjustVolume}"
                             ToolTip="{Binding IconToolTip}" ToolTipService.ShowOnDisabled="True"
                             AutomationProperties.Name="{Binding IconToolTip}">
@@ -114,7 +127,7 @@
                             FocusVisualStyle="{DynamicResource AfFocusVisualStyle}"
                             Command="{Binding DataContext.ToggleAudioApplicationCommand, RelativeSource={RelativeSource AncestorType=ui:FluentWindow}}"
                             CommandParameter="{Binding}">
-                        <Button.Style><Style TargetType="Button"><Style.Triggers>
+                        <Button.Style><Style TargetType="Button" BasedOn="{StaticResource AudioCardActionStyle}"><Style.Triggers>
                             <DataTrigger Binding="{Binding CanRoute}" Value="False"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
                         </Style.Triggers></Style></Button.Style>
                         <ui:SymbolIcon FontSize="12">
@@ -240,33 +253,33 @@
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,6" />
                 <Grid x:Name="ApplicationsViewport" Grid.Row="1" Height="132">
                     <ScrollViewer x:Name="ApplicationsScrollViewer" Padding="12,0,12,0"
-                                  PanningMode="VerticalOnly" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                  PanningMode="VerticalOnly" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Disabled">
                         <ScrollViewer.Style><Style TargetType="ScrollViewer"><Style.Triggers>
                             <DataTrigger Binding="{Binding IsApplicationDetailVisible}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
                         </Style.Triggers></Style></ScrollViewer.Style>
                         <ItemsControl x:Name="ApplicationCards" ItemsSource="{Binding AudioApplications}" ItemTemplate="{StaticResource AudioApplicationCardTemplate}" />
                     </ScrollViewer>
                     <ScrollViewer x:Name="ApplicationDetailScrollViewer" PreviewMouseWheel="ApplicationDetail_OnPreviewMouseWheel"
-                                  Padding="12,0,12,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                  Padding="12,0,12,0" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Disabled">
                         <ScrollViewer.Style><Style TargetType="ScrollViewer"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers>
                             <DataTrigger Binding="{Binding IsApplicationDetailVisible}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
                         </Style.Triggers></Style></ScrollViewer.Style>
                         <Grid DataContext="{Binding SelectedAudioApplication}" Height="132">
                             <Grid.RowDefinitions><RowDefinition Height="44" /><RowDefinition Height="88" /></Grid.RowDefinitions>
-                            <ContentControl Content="{Binding}" ContentTemplate="{StaticResource AudioApplicationCardTemplate}" />
+                            <ContentControl Content="{Binding}" ContentTemplate="{StaticResource AudioApplicationCardTemplate}" HorizontalContentAlignment="Stretch" />
                             <Border Grid.Row="1" CornerRadius="6" Padding="8" Background="{DynamicResource ControlFillColorSecondaryBrush}"
                                     BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1">
                                 <Grid>
                                     <Grid.RowDefinitions><RowDefinition Height="32" /><RowDefinition Height="6" /><RowDefinition Height="32" /></Grid.RowDefinitions>
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="6" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                                     <TextBlock Text="{DynamicResource Loc.Common.OutputDevice}" FontSize="12" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                    <components:ReleaseOpenComboBox x:Name="ApplicationOutputDeviceComboBox" Grid.Column="2" Tag="Output" Height="32" MinHeight="32" MinWidth="0" MaxWidth="220" HorizontalAlignment="Stretch"
+                                    <components:ReleaseOpenComboBox x:Name="ApplicationOutputDeviceComboBox" Grid.Column="2" Tag="Output" Height="32" MinHeight="32" MinWidth="0" MaxWidth="220" HorizontalAlignment="Stretch" VerticalContentAlignment="Center" Padding="8,2"
                                         PreviewMouseWheel="ApplicationDevice_OnPreviewMouseWheel" DropDownOpened="OutputDevice_OnDropDownOpened" DropDownClosed="OutputDevice_OnDropDownClosed"
                                         ItemsSource="{Binding OutputDevices}" ItemTemplate="{StaticResource ApplicationRouteDeviceTemplate}" IsEnabled="{Binding IsRouteSupported}"
                                         SelectedItem="{Binding SelectedOutputDevice, Mode=TwoWay}" Style="{StaticResource {x:Type ComboBox}}" MaxDropDownHeight="220"
                                         ToolTip="{Binding OutputDeviceToolTip}" ToolTipService.ShowOnDisabled="True" />
                                     <TextBlock Grid.Row="2" Text="{DynamicResource Loc.Common.InputDevice}" FontSize="12" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                    <components:ReleaseOpenComboBox x:Name="ApplicationInputDeviceComboBox" Grid.Row="2" Grid.Column="2" Tag="Input" Height="32" MinHeight="32" MinWidth="0" MaxWidth="220" HorizontalAlignment="Stretch"
+                                    <components:ReleaseOpenComboBox x:Name="ApplicationInputDeviceComboBox" Grid.Row="2" Grid.Column="2" Tag="Input" Height="32" MinHeight="32" MinWidth="0" MaxWidth="220" HorizontalAlignment="Stretch" VerticalContentAlignment="Center" Padding="8,2"
                                         PreviewMouseWheel="ApplicationDevice_OnPreviewMouseWheel" DropDownOpened="OutputDevice_OnDropDownOpened" DropDownClosed="OutputDevice_OnDropDownClosed"
                                         ItemsSource="{Binding InputDevices}" ItemTemplate="{StaticResource ApplicationRouteDeviceTemplate}" IsEnabled="{Binding IsRouteSupported}"
                                         SelectedItem="{Binding SelectedInputDevice, Mode=TwoWay}" Style="{StaticResource {x:Type ComboBox}}" MaxDropDownHeight="220"

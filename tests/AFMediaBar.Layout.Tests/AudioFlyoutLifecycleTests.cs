@@ -140,6 +140,8 @@ public sealed class AudioFlyoutLifecycleTests
                     rows.Add(new(new(name, name, name, [], true, false), volume, switches));
                 }
                 vm.IsBusy = true;
+                app.Resources["Loc.Common.OutputDevice"] = "输出设备";
+                app.Resources["Loc.Common.InputDevice"] = "输入设备";
                 window = CreateWindow(vm, appearance);
                 await window.ToggleAsync(null);
                 await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
@@ -156,17 +158,33 @@ public sealed class AudioFlyoutLifecycleTests
                 var height = window.ActualHeight;
                 var cards = Descendants(list).OfType<Button>().Where(button => ReferenceEquals(button.Command, vm.ToggleAudioApplicationCommand)).ToArray();
                 var opener = cards.First(button => ReferenceEquals(button.DataContext, rows[1]));
-                InvokeButton(opener);
+                var listCard = (Border)((Grid)opener.Parent).Parent;
+                var cardWidth = listCard.ActualWidth;
+                var blank = (UIElement)listCard.InputHitTest(new Point(2, 20));
+                var blankClick = new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left)
+                    { RoutedEvent = UIElement.MouseLeftButtonUpEvent };
+                blank.RaiseEvent(blankClick);
+                Assert.IsTrue(blankClick.Handled, "卡片内边距空白也必须能打开详情。");
                 await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
                 Assert.AreSame(rows[1], vm.SelectedAudioApplication);
                 Assert.AreEqual(Visibility.Collapsed, list.Visibility);
                 Assert.AreEqual(Visibility.Visible, detail.Visibility);
                 Assert.AreEqual(height, window.ActualHeight, 0.1);
                 Assert.AreEqual(0d, detail.ScrollableHeight);
+                var detailOpener = Descendants(detail).OfType<Button>().First(button => ReferenceEquals(button.Command, vm.ToggleAudioApplicationCommand));
+                Assert.AreEqual(cardWidth, ((Border)((Grid)detailOpener.Parent).Parent).ActualWidth, 0.1,
+                    "列表滚动条不能使详情卡片变宽。");
                 var output = (ComboBox)window.FindName("ApplicationOutputDeviceComboBox");
                 var input = (ComboBox)window.FindName("ApplicationInputDeviceComboBox");
                 Assert.AreEqual(32d, output.ActualHeight);
                 Assert.AreEqual(32d, input.ActualHeight);
+                var outputLabel = Descendants(detail).OfType<TextBlock>().Single(block => block.Text == "输出设备");
+                var outputName = Descendants(output).OfType<TextBlock>().First(block => block.Text == rows[1].SelectedOutputDevice!.DisplayName);
+                var labelCenter = outputLabel.TranslatePoint(new Point(0, outputLabel.ActualHeight / 2), detail).Y;
+                var nameCenter = outputName.TranslatePoint(new Point(0, outputName.ActualHeight / 2), detail).Y;
+                Assert.AreEqual(labelCenter, nameCenter, 1, "设备名和方向标签必须垂直对齐，允许控件模板的像素取整。");
+                Assert.IsTrue(outputName.TranslatePoint(new Point(0, outputName.ActualHeight), output).Y <= output.ActualHeight,
+                    "设备名底部不能被 32 DIP 设备框裁切。");
                 var slider = Descendants(detail).OfType<Slider>().Single();
                 slider.Value = 60;
                 Assert.AreEqual(1, volumeWrites);
