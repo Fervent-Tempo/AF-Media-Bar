@@ -11,6 +11,25 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class ApplicationAudioControlTests
 {
     [TestMethod]
+    public void ReadbackKeepsIconsAndRefreshUpdatesSourceMetadataWithoutWritingVolume()
+    {
+        var writes = 0;
+        var icon = new byte[] { 1, 2 };
+        var row = new AFMediaBar.ViewModels.Windows.ApplicationVolumeItemViewModel(new("A", "Old", 72, false, true, icon), (_, _, _) => writes++);
+        row.Synchronize(new("A", "Fallback", 72, true, false, null), updateMetadata: false);
+        Assert.AreSame(icon, row.IconData);
+        Assert.IsTrue(row.IsCurrentMedia);
+        Assert.AreEqual("Old", row.DisplayName);
+        Assert.IsTrue(row.IsMuted);
+        var replacement = new byte[] { 3 };
+        row.Synchronize(new("A", "Renamed", 50, false, false, replacement));
+        Assert.AreEqual("Renamed", row.DisplayName);
+        Assert.AreSame(replacement, row.IconData);
+        Assert.IsFalse(row.IsCurrentMedia);
+        Assert.AreEqual(0, writes, "刷新与回读都不能反向写入音量。");
+    }
+
+    [TestMethod]
     public async Task MuteSupersedesDelayedVolumeWithoutChangingReadbackLevel()
     {
         var control = new Control();

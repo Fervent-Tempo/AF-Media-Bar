@@ -306,7 +306,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
                 await _applicationControl.SetVolumeAsync(application.ProcessName, percent ?? 0, immediately, token);
             if (_disposed || token.IsCancellationRequested || !_applicationControl.IsCurrent(application.ProcessName, result.Version)) return;
             var current = Applications.FirstOrDefault(row => row.ProcessName.Equals(application.ProcessName, StringComparison.OrdinalIgnoreCase));
-            if (result.Snapshot is { } snapshot) current?.Synchronize(snapshot);
+            if (result.Snapshot is { } snapshot) current?.Synchronize(snapshot, updateMetadata: false);
             if (result.Operation.Status is AudioDeviceOperationStatus.Failed or AudioDeviceOperationStatus.Partial or AudioDeviceOperationStatus.Unavailable)
             {
                 StatusText = Translations.Format("Audio.Mute.WriteFailed", application.DisplayName);
@@ -440,7 +440,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
                 var applied = await _applicationControl.SetVolumeAsync(current.ProcessName, next, true, _applicationCancellation.Token);
                 if (_disposed || !_applicationControl.IsCurrent(current.ProcessName, applied.Version)) return;
                 if (applied.Snapshot is { } snapshot)
-                    Applications.FirstOrDefault(item => string.Equals(item.ProcessName, current.ProcessName, StringComparison.OrdinalIgnoreCase))?.Synchronize(snapshot);
+                    Applications.FirstOrDefault(item => string.Equals(item.ProcessName, current.ProcessName, StringComparison.OrdinalIgnoreCase))?.Synchronize(snapshot, updateMetadata: false);
                 SetTrayTooltip(applied.Operation.Status == AudioDeviceOperationStatus.Applied ?
                     AudioTooltipPolicy.BuildMediaVolume(current.DisplayName, next) : Translations.Get("Audio.Tooltip.AdjustVolumeFailed"));
             }
@@ -487,7 +487,12 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     /// re-reads every binding when it receives an empty property name.
     /// </summary>
     private void OnLanguageChanged(object? sender, EventArgs e)
-    { foreach (var row in Applications) row.RefreshLabels(); OnPropertyChanged(string.Empty); }
+    {
+        foreach (var row in Applications) row.RefreshLabels();
+        foreach (var row in AudioApplications) row.RefreshLabels();
+        OnPropertyChanged(string.Empty);
+        if (!_disposed) _ = RefreshAsync();
+    }
 
     private void OnTrayLeftClicked(object? sender, EventArgs e)
     {

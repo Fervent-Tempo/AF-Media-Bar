@@ -11,9 +11,12 @@ public partial class ApplicationVolumeItemViewModel : ObservableObject
     private bool _applyImmediately;
 
     public string ProcessName { get; }
-    public string DisplayName { get; }
-    public bool IsCurrentMedia { get; }
-    public byte[]? IconData { get; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Initial))]
+    [NotifyPropertyChangedFor(nameof(MuteToolTip))]
+    private string _displayName;
+    [ObservableProperty] private bool _isCurrentMedia;
+    [ObservableProperty] private byte[]? _iconData;
 
     [ObservableProperty]
     private int _volumePercent;
@@ -30,8 +33,14 @@ public partial class ApplicationVolumeItemViewModel : ObservableObject
 
     public void RefreshLabels() => OnPropertyChanged(nameof(MuteToolTip));
 
-    public void Synchronize(ApplicationVolumeSnapshot snapshot)
-    { SynchronizeVolume(snapshot.VolumePercent); IsMuted = snapshot.IsMuted; OnPropertyChanged(nameof(MuteToolTip)); }
+    public void Synchronize(ApplicationVolumeSnapshot snapshot, bool updateMetadata = true)
+    {
+        SynchronizeVolume(snapshot.VolumePercent);
+        IsMuted = snapshot.IsMuted;
+        if (updateMetadata)
+        { DisplayName = snapshot.DisplayName; IsCurrentMedia = snapshot.IsCurrentMedia; IconData = snapshot.IconData; }
+        RefreshLabels();
+    }
 
     public string Initial => string.IsNullOrWhiteSpace(DisplayName) ? "?" : DisplayName[..1].ToUpperInvariant();
 
@@ -41,9 +50,9 @@ public partial class ApplicationVolumeItemViewModel : ObservableObject
         Func<ApplicationVolumeItemViewModel, Task>? muteChanged = null)
     {
         ProcessName = snapshot.ProcessName;
-        DisplayName = snapshot.DisplayName;
-        IsCurrentMedia = snapshot.IsCurrentMedia;
-        IconData = snapshot.IconData;
+        _displayName = snapshot.DisplayName;
+        _isCurrentMedia = snapshot.IsCurrentMedia;
+        _iconData = snapshot.IconData;
         _volumePercent = snapshot.VolumePercent;
         _volumeChanged = volumeChanged;
         _muteChanged = muteChanged;

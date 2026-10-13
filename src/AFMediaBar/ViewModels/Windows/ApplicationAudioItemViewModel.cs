@@ -52,6 +52,29 @@ public partial class ApplicationAudioItemViewModel : ObservableObject, IDisposab
         if (IsExpanded) _ = RefreshAsync();
     }
     private void OnVolumeChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args) => OnPropertyChanged(nameof(IconToolTip));
+    public void RefreshLabels()
+    {
+        var wasLoading = _loading;
+        _loading = true;
+        try
+        {
+            foreach (var direction in Enum.GetValues<AudioDeviceDirection>())
+            {
+                var choices = direction == AudioDeviceDirection.Output ? OutputDevices : InputDevices;
+                for (var index = 0; index < choices.Count; index++)
+                {
+                    var old = choices[index];
+                    if (!old.IsSystemDefaultChoice) continue;
+                    var replacement = old with { DisplayName = Translations.Get("Audio.Route.FollowDefault") };
+                    choices[index] = replacement;
+                    if (direction == AudioDeviceDirection.Output && ReferenceEquals(SelectedOutputDevice, old)) SelectedOutputDevice = replacement;
+                    if (direction == AudioDeviceDirection.Input && ReferenceEquals(SelectedInputDevice, old)) SelectedInputDevice = replacement;
+                }
+            }
+            OnPropertyChanged(nameof(IconToolTip));
+        }
+        finally { _loading = wasLoading; }
+    }
     partial void OnIsExpandedChanged(bool value) { if (value) _ = RefreshAsync(); }
     partial void OnSelectedOutputDeviceChanged(AudioDeviceOption? value) { if (!_loading && value is not null) _ = ApplyAsync(AudioDeviceDirection.Output, value); }
     partial void OnSelectedInputDeviceChanged(AudioDeviceOption? value) { if (!_loading && value is not null) _ = ApplyAsync(AudioDeviceDirection.Input, value); }
