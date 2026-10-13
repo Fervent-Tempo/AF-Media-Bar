@@ -116,13 +116,13 @@
                 </ui:Button>
             </Grid>
 
-            <StackPanel Grid.Row="1" Width="220" HorizontalAlignment="Center" Orientation="Horizontal" Margin="0,4,0,0">
+            <StackPanel Grid.Row="1" HorizontalAlignment="Stretch" Orientation="Horizontal" Margin="0,4,0,0">
                 <ui:SymbolIcon Symbol="Speaker224" FontSize="14" Margin="0,0,6,6" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                 <TextBlock Text="{DynamicResource Loc.Common.OutputDevice}" Style="{StaticResource AudioDeviceLabelStyle}" />
             </StackPanel>
             <components:ReleaseOpenComboBox x:Name="OutputDeviceComboBox"
                       Style="{StaticResource {x:Type ComboBox}}"
-                      Grid.Row="2" Width="220" HorizontalAlignment="Center"
+                      Grid.Row="2" HorizontalAlignment="Stretch"
                       MinHeight="32"
                       MaxDropDownHeight="240"
                       ItemsSource="{Binding OutputDevices}"
@@ -139,7 +139,7 @@
                 </Style></TextBlock.Style>
             </TextBlock>
 
-            <StackPanel Grid.Row="4" Width="220" HorizontalAlignment="Center" Margin="0,12,0,0">
+            <StackPanel Grid.Row="4" HorizontalAlignment="Stretch" Margin="0,12,0,0">
                 <StackPanel Orientation="Horizontal">
                     <ui:SymbolIcon Symbol="Mic24" FontSize="14" Margin="0,0,6,6" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                     <TextBlock Text="{DynamicResource Loc.Common.InputDevice}" Style="{StaticResource AudioDeviceLabelStyle}" />

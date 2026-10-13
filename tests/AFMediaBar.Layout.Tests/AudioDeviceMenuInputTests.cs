@@ -62,6 +62,17 @@ public sealed class AudioDeviceMenuInputTests
                 root.Measure(new Size(320, 440)); root.Arrange(new Rect(0, 0, 320, root.DesiredSize.Height)); root.UpdateLayout();
                 Assert.AreEqual(0, clicks);
                 var button = Descendants(list).OfType<Button>().First();
+                var deviceName = Descendants(button).OfType<TextBlock>().First();
+                foreach (var brush in new[] { Brushes.White, Brushes.Black })
+                {
+                    application.Resources["TextFillColorPrimaryBrush"] = brush;
+                    root.UpdateLayout();
+                    Assert.AreEqual(brush.Color, ((SolidColorBrush)button.Foreground).Color);
+                    Assert.AreEqual(brush.Color, ((SolidColorBrush)deviceName.Foreground).Color);
+                }
+                window.ShowDeviceStatus("Unchanged");
+                Assert.AreEqual(string.Empty, ((TextBlock)window.FindName("DeviceUnavailableText")).Text,
+                    "普通结果只能进入提示，不能重新出现底部状态行。");
                 foreach (var surface in new[] { root, (FrameworkElement)window.FindName("DeviceTitleText"), button })
                 {
                     var wheel = new MouseWheelEventArgs(Mouse.PrimaryDevice, Environment.TickCount, 120) { RoutedEvent = UIElement.PreviewMouseWheelEvent };

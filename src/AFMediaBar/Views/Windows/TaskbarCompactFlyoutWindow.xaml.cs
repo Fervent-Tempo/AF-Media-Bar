@@ -21,7 +21,6 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
     private bool _isUpdating;
     private TrayIconBounds? _anchor;
     private bool _isPositioning;
-    private bool _deviceStatusIsResult;
     private bool _isHiding;
     private bool _allowClose;
     private int _animationVersion;
@@ -67,7 +66,6 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
         DeviceTitleText.Text = Translations.Get(target.Direction == AudioDeviceDirection.Output ? "Common.OutputDevice" : "Common.InputDevice");
         DeviceApplicationText.Text = target.Application?.DisplayName ?? string.Empty;
         DeviceApplicationText.Visibility = target.Application is null ? Visibility.Collapsed : Visibility.Visible;
-        _deviceStatusIsResult = false;
         UpdateDevices(devices, selected);
         Width = 320;
         ShowMode(target.Direction == AudioDeviceDirection.Output ? TaskbarCompactFlyoutMode.OutputDevice : TaskbarCompactFlyoutMode.InputDevice, anchor);
@@ -99,18 +97,17 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
         OutputDeviceList.ItemsSource = devices;
         OutputDeviceList.SelectedItem = selected;
         CurrentDeviceText.Text = selected?.DisplayName ?? Translations.Get("Audio.Device.Unavailable");
-        if (pending) { _deviceStatusIsResult = false; DeviceStatusText.Text = Translations.Get("Audio.Device.Pending"); }
-        else if (devices.Count == 0) DeviceStatusText.Text = Translations.Get("Audio.Device.Unavailable");
-        else if (selected is null) DeviceStatusText.Text = Translations.Get("Audio.Route.HiddenOrDisconnected");
-        else if (!_deviceStatusIsResult) DeviceStatusText.Text = string.Empty;
+        DeviceUnavailableText.Text = !OutputDeviceList.IsEnabled ? Translations.Get("Audio.Route.Unsupported") :
+            devices.Count == 0 ? Translations.Get("Audio.Device.Unavailable") : string.Empty;
+        if (pending) CurrentDeviceText.ToolTip = selected?.DisplayName;
         RevealCandidate(selected);
     }
 
     public void ShowDeviceStatus(string text)
     {
         if (_allowClose) return;
-        _deviceStatusIsResult = true;
-        DeviceStatusText.Text = text;
+        CurrentDeviceText.ToolTip = text;
+        if (!OutputDeviceList.IsEnabled || OutputDeviceList.Items.Count == 0) DeviceUnavailableText.Text = text;
         RepositionVisibleMenu();
     }
 
@@ -121,8 +118,7 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
             .FirstOrDefault(item => item.PolicyId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase));
         if (OutputDeviceList.SelectedItem is not AudioDeviceOption candidate) return;
         CurrentDeviceText.Text = candidate.DisplayName;
-        _deviceStatusIsResult = false;
-        DeviceStatusText.Text = Translations.Get("Audio.Device.Pending");
+        CurrentDeviceText.ToolTip = candidate.DisplayName;
         RevealCandidate(OutputDeviceList.SelectedItem as AudioDeviceOption);
     }
 
@@ -200,7 +196,7 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
             if (_mode is TaskbarCompactFlyoutMode.OutputDevice or TaskbarCompactFlyoutMode.InputDevice)
             {
                 var reserved = 30 + DeviceHeaderPanel.ActualHeight + DeviceHeaderPanel.Margin.Bottom +
-                    (DeviceStatusText.Visibility == Visibility.Visible ? DeviceStatusText.ActualHeight + DeviceStatusText.Margin.Top : 0);
+                    (DeviceUnavailableText.Visibility == Visibility.Visible ? DeviceUnavailableText.ActualHeight + DeviceUnavailableText.Margin.Top : 0);
                 OutputDeviceList.MaxHeight = Math.Max(0, Math.Min(280, MaxHeight - reserved));
                 UpdateLayout();
             }
