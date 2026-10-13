@@ -127,6 +127,7 @@ public partial class TaskbarWindow : Window
     private readonly float[] _spectrumWorkerBands = new float[SpectrumComponentSettings.MaximumBandCount];
     private MediaSnapshot _lastSnapshot = MediaSnapshot.Disconnected;
     private AudioDeviceTarget? _deviceMenuTarget;
+    private int _menuEnvironmentVersion;
     private QuickLaunchEntry? _pendingQuickLaunch;
     private ApplicationVolumeSnapshot? _currentVolume;
     private int? _pendingVolume;
@@ -285,12 +286,14 @@ public partial class TaskbarWindow : Window
             _quickLaunchApplyTimer.Stop();
             var pending = _pendingQuickLaunch;
             _pendingQuickLaunch = null;
-            if (pending is not null && !_isClosing && !_lastSnapshot.IsConnected)
+            if (pending is not null && CanPublishMenu(_menuEnvironmentVersion) && !_lastSnapshot.IsConnected)
             {
                 if (_compactFlyout.IsShowing(TaskbarCompactFlyoutMode.QuickLaunch))
                     _compactFlyout.Dismiss();
+                var environmentVersion = _menuEnvironmentVersion;
+                var anchor = MediaControl.GetQuickLaunchAnchor();
                 var result = await _sourceActivationService.LaunchAsync(pending);
-                ShowQuickLaunchResult(result);
+                if (CanPublishMenu(environmentVersion)) ShowQuickLaunchResult(result, anchor);
             }
         };
         _volumeApplyTimer = new DispatcherTimer
@@ -301,10 +304,11 @@ public partial class TaskbarWindow : Window
             var pending = _pendingVolume;
             var volume = _currentVolume;
             _pendingVolume = null;
-            if (pending is not null && volume is not null && !_isClosing)
+            if (pending is not null && volume is not null && CanPublishMenu(_menuEnvironmentVersion))
             {
+                var environmentVersion = _menuEnvironmentVersion;
                 await Task.Run(() => _audioInteractionService.SetApplicationVolume(volume.ProcessName, pending.Value));
-                _currentVolume = volume with { VolumePercent = pending.Value, IsMuted = false };
+                if (CanPublishMenu(environmentVersion)) _currentVolume = volume with { VolumePercent = pending.Value, IsMuted = false };
             }
         };
         SettingsManager.ExtraFeaturesSettingsChanged += SettingsManager_ExtraFeaturesSettingsChanged;
@@ -443,7 +447,7 @@ public partial class TaskbarWindow : Window
             _spectrumTimer.Stop();
             DisposeMetricsSubscription();
             _foregroundSamplingSession.Invalidate(clearDecision: false);
-            _compactFlyout.Dismiss();
+            // 点击浮窗使用独立 HWND；这里只挂起媒体栏，任务栏收起不结束菜单交互。
             PlayerMenu.IsOpen = false;
             _isTaskManagerClickPending = false;
             if (_isDragging || _isDragPending)
@@ -508,6 +512,8 @@ public partial class TaskbarWindow : Window
             // Explorer destroys taskbar child HWNDs before TaskbarCreated reaches MainWindow;
             // block media callbacks immediately so they cannot show an already closed Window.
             _isClosing = true;
+            _menuEnvironmentVersion++;
+            PlayerMenu.IsOpen = false;
             StopOccupancyRefresh();
             _windowHandle = IntPtr.Zero;
             _timer.Stop();
@@ -1007,7 +1013,7 @@ public partial class TaskbarWindow : Window
             _pendingRestExitSizeRequest = null;
             _quickLaunchApplyTimer.Stop();
             _pendingQuickLaunch = null;
-            _compactFlyout.Dismiss();
+            if (_compactFlyout.IsShowing(TaskbarCompactFlyoutMode.QuickLaunch)) _compactFlyout.Dismiss();
         }
 
         if (!_timer.IsEnabled && !IsTaskbarPresentationSuspended)
@@ -1323,6 +1329,7 @@ public partial class TaskbarWindow : Window
 
         _placementState = TaskbarPlacementPolicy.ClearConfirmation(_placementState);
         _isEnvironmentSuspended = true;
+        _menuEnvironmentVersion++;
         StopOccupancyRefresh();
         _hasTaskbarPresentationPlacement = false;
         Visibility = Visibility.Collapsed;
@@ -1407,6 +1414,14 @@ public partial class TaskbarWindow : Window
             return;
         }
 
+        _menuEnvironmentVersion++;
+        _compactFlyout.Dismiss();
+        PlayerMenu.IsOpen = false;
+        _audioInteractionService.CancelDeviceOwner(this);
+        _quickLaunchApplyTimer?.Stop();
+        _volumeApplyTimer?.Stop();
+        _pendingQuickLaunch = null;
+        _pendingVolume = null;
         _timer.Stop();
         StopOccupancyRefresh();
         StopLayoutTransition();
@@ -1490,20 +1505,24 @@ public partial class TaskbarWindow : Window
         await ShowDeviceMenuAsync(AudioDeviceDirection.Output, SettingsManager.Current.Interaction.OutputDeviceClickTarget, MediaControl.GetOutputDeviceAnchor());
     private async void MediaControl_InputDeviceMenuRequested(object? sender, EventArgs e) =>
         await ShowDeviceMenuAsync(AudioDeviceDirection.Input, SettingsManager.Current.Interaction.InputDeviceClickTarget, MediaControl.GetInputDeviceAnchor());
+    private bool CanPublishMenu(int environmentVersion) =>
+        !_isClosing && !_isEnvironmentSuspended && !IsBackgroundPruned && environmentVersion == _menuEnvironmentVersion;
+
     private async Task ShowDeviceMenuAsync(AudioDeviceDirection direction, AudioDeviceSwitchTarget scope, TrayIconBounds anchor)
     {
-        if (_isClosing || scope == AudioDeviceSwitchTarget.Disabled) return;
+        if (!CanPublishMenu(_menuEnvironmentVersion) || scope == AudioDeviceSwitchTarget.Disabled) return;
+        var environmentVersion = _menuEnvironmentVersion;
         var mode = direction == AudioDeviceDirection.Output ? TaskbarCompactFlyoutMode.OutputDevice : TaskbarCompactFlyoutMode.InputDevice;
         if (_compactFlyout.IsShowing(mode)) { _compactFlyout.Dismiss(); return; }
         try
         {
             var target = await _audioInteractionService.ResolveTargetAsync(direction, scope, this, false);
-            if (_isClosing) return;
+            if (!CanPublishMenu(environmentVersion)) return;
             if (target is null) { MediaControl.SetDeviceTooltip(direction, Translations.Get("Audio.App.Unavailable")); return; }
             var devices = await _audioInteractionService.DeviceSwitches.GetChoicesAsync(target);
             var selected = await _audioInteractionService.DeviceSwitches.GetSelectedAsync(target, devices);
             var route = await _audioInteractionService.DeviceSwitches.ReadRouteAsync(target);
-            if (_isClosing) return;
+            if (!CanPublishMenu(environmentVersion)) return;
             _deviceMenuTarget = target;
             _compactFlyout.ShowDevices(target, devices, selected, anchor, route.IsSupported && route.Error is null);
             if (!route.IsSupported || route.Error is not null)
@@ -1526,9 +1545,10 @@ public partial class TaskbarWindow : Window
         {
             var settings = SettingsManager.Current.Interaction;
             var scope = direction == AudioDeviceDirection.Output ? settings.OutputDeviceWheelTarget : settings.InputDeviceWheelTarget;
-            if (_isClosing || scope == AudioDeviceSwitchTarget.Disabled) return;
+            if (!CanPublishMenu(_menuEnvironmentVersion) || scope == AudioDeviceSwitchTarget.Disabled) return;
+            var environmentVersion = _menuEnvironmentVersion;
             var target = await _audioInteractionService.ResolveTargetAsync(direction, scope, this, true);
-            if (_isClosing) return;
+            if (!CanPublishMenu(environmentVersion)) return;
             if (target is null) { MediaControl.SetDeviceTooltip(direction, Translations.Get("Audio.App.Unavailable")); return; }
             await _audioInteractionService.DeviceSwitches.PreviewAsync(target, TrayWheelPolicy.GetDeviceSteps(delta), this);
         }
@@ -1599,13 +1619,14 @@ public partial class TaskbarWindow : Window
     });
     private async Task RefreshOpenDeviceMenuAsync()
     {
+        var environmentVersion = _menuEnvironmentVersion;
         if (_deviceMenuTarget is not { } target || !_compactFlyout.IsVisible ||
             !_compactFlyout.IsShowing(target.Direction == AudioDeviceDirection.Output ? TaskbarCompactFlyoutMode.OutputDevice : TaskbarCompactFlyoutMode.InputDevice)) return;
         try
         {
             var devices = await _audioInteractionService.DeviceSwitches.GetChoicesAsync(target);
             var selected = await _audioInteractionService.DeviceSwitches.GetSelectedAsync(target, devices);
-            if (_isClosing || !_compactFlyout.IsVisible || _deviceMenuTarget?.Key != target.Key) return;
+            if (!CanPublishMenu(environmentVersion) || !_compactFlyout.IsVisible || _deviceMenuTarget?.Key != target.Key) return;
             _compactFlyout.UpdateDevices(devices, selected, _audioInteractionService.DeviceSwitches.HasPending(target));
         }
         catch (Exception exception) { Debug.WriteLine(exception); }
@@ -1619,12 +1640,13 @@ public partial class TaskbarWindow : Window
             return;
         }
 
-        _currentVolume = await Task.Run(_audioInteractionService.GetCurrentMediaVolume);
-        if (_isClosing) return;
-        _compactFlyout.ShowVolume(
-            _lastSnapshot.SourceName,
-            _currentVolume?.VolumePercent,
-            MediaControl.GetVolumeAnchor());
+        if (!CanPublishMenu(_menuEnvironmentVersion)) return;
+        var environmentVersion = _menuEnvironmentVersion;
+        var openingAnchor = MediaControl.GetVolumeAnchor();
+        var volume = await Task.Run(_audioInteractionService.GetCurrentMediaVolume);
+        if (!CanPublishMenu(environmentVersion)) return;
+        _currentVolume = volume;
+        _compactFlyout.ShowVolume(_lastSnapshot.SourceName, volume?.VolumePercent, openingAnchor);
     }
 
     /// <summary>
@@ -1638,7 +1660,7 @@ public partial class TaskbarWindow : Window
     /// <param name="anchor">菜单锚点；为空时退回媒体栏上的对应按钮。/ Menu anchor, falling back to the matching media-bar button when null.</param>
     public async Task ShowCompactMenuAsync(TaskbarCompactFlyoutMode mode, TrayIconBounds? anchor)
     {
-        if (_isClosing || mode is not (TaskbarCompactFlyoutMode.OutputDevice or TaskbarCompactFlyoutMode.InputDevice or TaskbarCompactFlyoutMode.Volume))
+        if (!CanPublishMenu(_menuEnvironmentVersion) || mode is not (TaskbarCompactFlyoutMode.OutputDevice or TaskbarCompactFlyoutMode.InputDevice or TaskbarCompactFlyoutMode.Volume))
             return;
 
         if (_compactFlyout.IsShowing(mode))
@@ -1656,12 +1678,12 @@ public partial class TaskbarWindow : Window
             return;
         }
 
-        _currentVolume = await Task.Run(_audioInteractionService.GetCurrentMediaVolume);
-        if (_isClosing) return;
-        _compactFlyout.ShowVolume(
-            _lastSnapshot.SourceName,
-            _currentVolume?.VolumePercent,
-            anchor ?? MediaControl.GetVolumeAnchor());
+        var environmentVersion = _menuEnvironmentVersion;
+        var openingAnchor = anchor ?? MediaControl.GetVolumeAnchor();
+        var volume = await Task.Run(_audioInteractionService.GetCurrentMediaVolume);
+        if (!CanPublishMenu(environmentVersion)) return;
+        _currentVolume = volume;
+        _compactFlyout.ShowVolume(_lastSnapshot.SourceName, volume?.VolumePercent, openingAnchor);
     }
 
     private async void MediaControl_VolumeWheelRequested(object? sender, PlayerSurfaceWheelEventArgs e)
@@ -1719,7 +1741,7 @@ public partial class TaskbarWindow : Window
 
     private void QueueVolume(int value)
     {
-        if (_currentVolume is null) return;
+        if (_currentVolume is null || !CanPublishMenu(_menuEnvironmentVersion)) return;
         _pendingVolume = Math.Clamp(value, 0, 100);
         _volumeApplyTimer.Stop();
         _volumeApplyTimer.Start();
@@ -1729,20 +1751,23 @@ public partial class TaskbarWindow : Window
     {
         _quickLaunchApplyTimer.Stop();
         _pendingQuickLaunch = null;
+        var environmentVersion = _menuEnvironmentVersion;
+        var anchor = MediaControl.GetQuickLaunchAnchor();
         var result = await _sourceActivationService.LaunchAsync(entry);
-        ShowQuickLaunchResult(result);
+        if (CanPublishMenu(environmentVersion)) ShowQuickLaunchResult(result, anchor);
     }
 
     private async void PlayerMenu_QuickLaunchRequested(QuickLaunchEntry entry)
     {
+        var environmentVersion = _menuEnvironmentVersion;
+        var anchor = GetMediaBarScreenPhysicalBounds();
         var result = await _sourceActivationService.LaunchAsync(entry);
-        if (_isClosing) return;
-        ShowQuickLaunchResult(result, GetMediaBarScreenPhysicalBounds());
+        if (CanPublishMenu(environmentVersion)) ShowQuickLaunchResult(result, anchor);
     }
 
     private void ShowQuickLaunchResult(QuickLaunchResult result, TrayIconBounds? anchor = null)
     {
-        if (_isClosing || result == QuickLaunchResult.Success) return;
+        if (!CanPublishMenu(_menuEnvironmentVersion) || result == QuickLaunchResult.Success) return;
         _compactFlyout.ShowQuickLaunch(
             SettingsManager.Current.QuickLaunch.Entries ?? [],
             anchor ?? MediaControl.GetQuickLaunchAnchor());
@@ -1764,6 +1789,7 @@ public partial class TaskbarWindow : Window
 
     private void MediaControl_QuickLaunchMenuRequested(object? sender, EventArgs e)
     {
+        if (!CanPublishMenu(_menuEnvironmentVersion)) return;
         if (_compactFlyout.IsShowing(TaskbarCompactFlyoutMode.QuickLaunch))
         {
             _compactFlyout.Dismiss();
