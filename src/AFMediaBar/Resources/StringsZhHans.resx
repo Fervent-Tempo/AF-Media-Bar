@@ -2826,4 +2826,16 @@
   <data name="Audio.Settings.AvailabilityHint" xml:space="preserve">
     <value>切换菜单只显示当前活动且允许切换的设备。其他设备包含断开和历史端点；允许切换不会启用 Windows 设备。</value>
   </data>
+  <data name="Audio.Mute.MuteHint" xml:space="preserve">
+    <value>{0} · 点击静音</value>
+  </data>
+  <data name="Audio.Mute.UnmuteHint" xml:space="preserve">
+    <value>{0} · 已静音，点击取消静音</value>
+  </data>
+  <data name="Audio.Mute.WriteFailed" xml:space="preserve">
+    <value>未能完整更新 {0} 的音量或静音状态，已重新读取。</value>
+  </data>
+  <data name="Audio.Route.Expand" xml:space="preserve">
+    <value>展开设备路由</value>
+  </data>
 </root>

@@ -23,6 +23,7 @@ public partial class ApplicationAudioItemViewModel : ObservableObject, IDisposab
     public bool IsCurrentMedia => Volume?.IsCurrentMedia == true;
     public bool CanAdjustVolume => Volume is not null && Application?.HasOutputSessions != false;
     public bool CanRoute => Application is not null;
+    public string IconToolTip => CanAdjustVolume ? Volume!.MuteToolTip : DisplayName + " · " + Translations.Get("Audio.Route.NoPlayback");
     public ObservableCollection<AudioDeviceOption> OutputDevices { get; } = [];
     public ObservableCollection<AudioDeviceOption> InputDevices { get; } = [];
     [ObservableProperty] private bool _isExpanded;
@@ -36,6 +37,7 @@ public partial class ApplicationAudioItemViewModel : ObservableObject, IDisposab
     {
         Application = application;
         Volume = volume;
+        if (Volume is not null) Volume.PropertyChanged += OnVolumeChanged;
         _routing = routing;
         _switches = switches;
         _switches.Updated += OnSwitchUpdated;
@@ -43,10 +45,13 @@ public partial class ApplicationAudioItemViewModel : ObservableObject, IDisposab
     public void Synchronize(ApplicationAudioSnapshot? application, ApplicationVolumeItemViewModel? volume)
     {
         Application = application;
+        if (Volume is not null) Volume.PropertyChanged -= OnVolumeChanged;
         Volume = volume;
+        if (Volume is not null) Volume.PropertyChanged += OnVolumeChanged;
         OnPropertyChanged(string.Empty);
         if (IsExpanded) _ = RefreshAsync();
     }
+    private void OnVolumeChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args) => OnPropertyChanged(nameof(IconToolTip));
     partial void OnIsExpandedChanged(bool value) { if (value) _ = RefreshAsync(); }
     partial void OnSelectedOutputDeviceChanged(AudioDeviceOption? value) { if (!_loading && value is not null) _ = ApplyAsync(AudioDeviceDirection.Output, value); }
     partial void OnSelectedInputDeviceChanged(AudioDeviceOption? value) { if (!_loading && value is not null) _ = ApplyAsync(AudioDeviceDirection.Input, value); }
@@ -136,6 +141,7 @@ public partial class ApplicationAudioItemViewModel : ObservableObject, IDisposab
         if (_disposed) return;
         _disposed = true;
         _version++;
+        if (Volume is not null) Volume.PropertyChanged -= OnVolumeChanged;
         _switches.Updated -= OnSwitchUpdated;
         _switches.CancelOwner(this);
     }

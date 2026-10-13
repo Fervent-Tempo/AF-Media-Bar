@@ -2826,4 +2826,16 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Audio.Settings.AvailabilityHint" xml:space="preserve">
     <value>Selectors show only active devices allowed for switching. Other devices include disconnected and historical endpoints; allowing switching does not enable devices in Windows.</value>
   </data>
+  <data name="Audio.Mute.MuteHint" xml:space="preserve">
+    <value>{0} · Click to mute</value>
+  </data>
+  <data name="Audio.Mute.UnmuteHint" xml:space="preserve">
+    <value>{0} · Muted; click to unmute</value>
+  </data>
+  <data name="Audio.Mute.WriteFailed" xml:space="preserve">
+    <value>Could not fully update volume or mute for {0}. State has been refreshed.</value>
+  </data>
+  <data name="Audio.Route.Expand" xml:space="preserve">
+    <value>Expand device routing</value>
+  </data>
 </root>

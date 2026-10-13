@@ -25,6 +25,7 @@
         d:DesignHeight="500">
     <ui:FluentWindow.Resources>
         <converters:ByteArrayToImageSourceConverter x:Key="ByteArrayToImageSourceConverter" />
+        <BooleanToVisibilityConverter x:Key="AfBooleanToVisibilityConverter" />
         <Style x:Key="AudioDeviceLabelStyle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="12" />
             <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
@@ -39,6 +40,42 @@
                 <Trigger Property="Text" Value=""><Setter Property="Visibility" Value="Collapsed" /></Trigger>
                 <Trigger Property="Text" Value="{x:Null}"><Setter Property="Visibility" Value="Collapsed" /></Trigger>
             </Style.Triggers>
+        </Style>
+        <Style x:Key="AudioApplicationExpanderStyle" TargetType="Expander">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Expander">
+                        <Border CornerRadius="6" BorderThickness="1" Padding="8,0"
+                                Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">
+                            <StackPanel>
+                                <Grid MinHeight="44">
+                                    <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="24" /></Grid.ColumnDefinitions>
+                                    <ContentPresenter ContentSource="Header" VerticalAlignment="Center" />
+                                    <ToggleButton Grid.Column="1" Width="24" Height="28" Padding="0" Background="Transparent" BorderThickness="0"
+                                                  ToolTip="{DynamicResource Loc.Audio.Route.Expand}" AutomationProperties.Name="{DynamicResource Loc.Audio.Route.Expand}"
+                                                  FocusVisualStyle="{DynamicResource AfFocusVisualStyle}"
+                                                  IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                        <ToggleButton.Style><Style TargetType="ToggleButton" BasedOn="{StaticResource {x:Type ToggleButton}}"><Style.Triggers>
+                                            <DataTrigger Binding="{Binding CanRoute}" Value="False"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                                        </Style.Triggers></Style></ToggleButton.Style>
+                                        <ui:SymbolIcon x:Name="RouteChevron" Symbol="ChevronDown24" FontSize="12" />
+                                    </ToggleButton>
+                                </Grid>
+                                <ContentPresenter x:Name="RoutingContent" Visibility="Collapsed" ContentSource="Content" />
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsExpanded" Value="True">
+                                <Setter TargetName="RoutingContent" Property="Visibility" Value="Visible" />
+                                <Setter TargetName="RouteChevron" Property="Symbol" Value="ChevronUp24" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </ui:FluentWindow.Resources>
     <Border x:Name="FlyoutRoot" Margin="4"
@@ -79,13 +116,13 @@
                 </ui:Button>
             </Grid>
 
-            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,4,0,0">
+            <StackPanel Grid.Row="1" Width="220" HorizontalAlignment="Center" Orientation="Horizontal" Margin="0,4,0,0">
                 <ui:SymbolIcon Symbol="Speaker224" FontSize="14" Margin="0,0,6,6" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                 <TextBlock Text="{DynamicResource Loc.Common.OutputDevice}" Style="{StaticResource AudioDeviceLabelStyle}" />
             </StackPanel>
             <components:ReleaseOpenComboBox x:Name="OutputDeviceComboBox"
                       Style="{StaticResource {x:Type ComboBox}}"
-                      Grid.Row="2"
+                      Grid.Row="2" Width="220" HorizontalAlignment="Center"
                       MinHeight="32"
                       MaxDropDownHeight="240"
                       ItemsSource="{Binding OutputDevices}"
@@ -102,7 +139,7 @@
                 </Style></TextBlock.Style>
             </TextBlock>
 
-            <StackPanel Grid.Row="4" Margin="0,12,0,0">
+            <StackPanel Grid.Row="4" Width="220" HorizontalAlignment="Center" Margin="0,12,0,0">
                 <StackPanel Orientation="Horizontal">
                     <ui:SymbolIcon Symbol="Mic24" FontSize="14" Margin="0,0,6,6" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                     <TextBlock Text="{DynamicResource Loc.Common.InputDevice}" Style="{StaticResource AudioDeviceLabelStyle}" />
@@ -154,107 +191,92 @@
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,6" />
                 <ScrollViewer x:Name="ApplicationsScrollViewer" Grid.Row="1"
                               MaxHeight="300"
-                              Padding="0,0,6,0"
+                              Padding="12,0,12,0"
                               PanningMode="VerticalOnly"
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
                     <ItemsControl ItemsSource="{Binding AudioApplications}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-
-                                <Expander IsExpanded="{Binding IsExpanded, Mode=TwoWay}" HorizontalContentAlignment="Stretch" Margin="0,0,0,8">
+                                <Expander IsExpanded="{Binding IsExpanded, Mode=TwoWay}" Style="{StaticResource AudioApplicationExpanderStyle}">
                                     <Expander.Header>
-                                        <Grid MinHeight="64">
-                                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-                                            <Grid>
-                                                <Grid.ColumnDefinitions><ColumnDefinition Width="28" /><ColumnDefinition /></Grid.ColumnDefinitions>
-                                                <Border Width="28" Height="28" CornerRadius="6"
-                                                        Background="{DynamicResource ControlFillColorSecondaryBrush}">
-                                                    <Grid>
-                                                        <TextBlock Text="{Binding Initial}" HorizontalAlignment="Center"
-                                                                   VerticalAlignment="Center" FontWeight="{DynamicResource AppTextStrongFontWeight}">
-                                                            <TextBlock.Style>
-                                                                <Style TargetType="TextBlock">
-                                                                    <Setter Property="Visibility" Value="Collapsed" />
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding IconData}" Value="{x:Null}">
-                                                                            <Setter Property="Visibility" Value="Visible" />
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </TextBlock.Style>
-                                                        </TextBlock>
-                                                        <Image Width="18" Height="18"
-                                                               RenderOptions.BitmapScalingMode="HighQuality"
-                                                               Source="{Binding IconData, Converter={StaticResource ByteArrayToImageSourceConverter}}"
-                                                               Stretch="Uniform" />
-                                                    </Grid>
-                                                </Border>
-                                                <TextBlock Grid.Column="1" Text="{Binding DisplayName}" Margin="8,0,0,0"
-                                                           VerticalAlignment="Center" TextWrapping="Wrap" ToolTip="{Binding DisplayName}">
-                                                    <TextBlock.Style>
-                                                        <Style TargetType="TextBlock">
-                                                            <Setter Property="FontWeight" Value="{DynamicResource AppTextFontWeight}" />
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsCurrentMedia}" Value="True">
-                                                                    <Setter Property="FontWeight" Value="{DynamicResource AppTextStrongFontWeight}" />
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBlock.Style>
-                                                </TextBlock>
-                                            </Grid>
-                                            <Grid Grid.Row="1" Margin="0,6,0,0">
-                                                <Grid.Style><Style TargetType="Grid"><Style.Triggers>
+                                        <Grid MinHeight="44">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="28" /><ColumnDefinition Width="8" />
+                                                <ColumnDefinition /><ColumnDefinition Width="36" />
+                                            </Grid.ColumnDefinitions>
+                                            <Button Width="28" Height="28" Padding="0" BorderThickness="0" Background="Transparent"
+                                                    Command="{Binding Volume.ToggleMuteCommand}" IsEnabled="{Binding CanAdjustVolume}"
+                                                    ToolTip="{Binding IconToolTip}" ToolTipService.ShowOnDisabled="True"
+                                                    AutomationProperties.Name="{Binding IconToolTip}">
+                                                <Grid>
+                                                    <TextBlock Text="{Binding Initial}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                               FontWeight="{DynamicResource AppTextStrongFontWeight}">
+                                                        <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IconData}" Value="{x:Null}"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+                                                        </Style.Triggers></Style></TextBlock.Style>
+                                                    </TextBlock>
+                                                    <Image Width="20" Height="20" RenderOptions.BitmapScalingMode="HighQuality"
+                                                           Source="{Binding IconData, Converter={StaticResource ByteArrayToImageSourceConverter}}" Stretch="Uniform" />
+                                                    <Border Background="{DynamicResource ControlSolidFillColorDefaultBrush}" CornerRadius="4"
+                                                            HorizontalAlignment="Right" VerticalAlignment="Bottom" Padding="1">
+                                                        <Border.Style><Style TargetType="Border"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Volume.IsMuted}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+                                                        </Style.Triggers></Style></Border.Style>
+                                                        <ui:SymbolIcon Symbol="SpeakerMute24" FontSize="10" />
+                                                    </Border>
+                                                </Grid>
+                                            </Button>
+                                        <Slider Grid.Column="2" Minimum="0" Maximum="100"
+                                                MinWidth="0" MaxWidth="160"
+                                                Style="{StaticResource AfAccentSliderStyle}"
+                                                FocusVisualStyle="{DynamicResource AfFocusVisualStyle}"
+                                                Margin="0,0,10,0"
+                                                Visibility="{Binding CanAdjustVolume, Converter={StaticResource AfBooleanToVisibilityConverter}}" IsEnabled="{Binding CanAdjustVolume}" Value="{Binding Volume.VolumePercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                PreviewMouseLeftButtonDown="ApplicationVolumeSlider_OnPreviewMouseLeftButtonDown"
+                                                PreviewMouseLeftButtonUp="ApplicationVolumeSlider_OnPreviewMouseLeftButtonUp"
+                                                LostMouseCapture="ApplicationVolumeSlider_OnLostMouseCapture"
+                                                PreviewKeyDown="ApplicationVolumeSlider_OnPreviewKeyDown"
+                                                IsMoveToPointEnabled="True"
+                                                LargeChange="10"
+                                                SmallChange="2"
+                                                PreviewMouseWheel="ApplicationVolumeSlider_OnPreviewMouseWheel"
+                                                VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="3" Text="{Binding Volume.VolumePercent, StringFormat={}{0}%}"
+                                                       FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                       HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                <TextBlock.Style><Style TargetType="TextBlock"><Style.Triggers>
                                                     <DataTrigger Binding="{Binding CanAdjustVolume}" Value="False"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
-                                                </Style.Triggers></Style></Grid.Style>
-                                                <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="40" /></Grid.ColumnDefinitions>
-                                                <Slider Grid.Column="0" Minimum="0" Maximum="100"
-                                                        MinWidth="0"
-                                                        Style="{StaticResource AfAccentSliderStyle}"
-                                                        FocusVisualStyle="{DynamicResource AfFocusVisualStyle}"
-                                                        Margin="0,0,10,0"
-                                                        IsEnabled="{Binding CanAdjustVolume}" Value="{Binding Volume.VolumePercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                        PreviewMouseLeftButtonDown="ApplicationVolumeSlider_OnPreviewMouseLeftButtonDown"
-                                                        PreviewMouseLeftButtonUp="ApplicationVolumeSlider_OnPreviewMouseLeftButtonUp"
-                                                        LostMouseCapture="ApplicationVolumeSlider_OnLostMouseCapture"
-                                                        PreviewKeyDown="ApplicationVolumeSlider_OnPreviewKeyDown"
-                                                        IsMoveToPointEnabled="True"
-                                                        LargeChange="10"
-                                                        SmallChange="2"
-                                                        PreviewMouseWheel="ApplicationVolumeSlider_OnPreviewMouseWheel"
-                                                        VerticalAlignment="Center" />
-                                                <TextBlock Grid.Column="1" Text="{Binding Volume.VolumePercent, StringFormat={}{0}%}"
-                                                           FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                           HorizontalAlignment="Right" VerticalAlignment="Center" />
-                                            </Grid>
-                                            <TextBlock Grid.Row="1" Text="{DynamicResource Loc.Audio.Route.NoPlayback}"
-                                                       FontSize="12">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock" BasedOn="{StaticResource AudioStatusStyle}">
-                                                        <Setter Property="Visibility" Value="Collapsed" />
-                                                        <Style.Triggers><DataTrigger Binding="{Binding CanAdjustVolume}" Value="False"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
+                                                </Style.Triggers></Style></TextBlock.Style>
+                                            </TextBlock>
+                                            <TextBlock Grid.Column="2" Grid.ColumnSpan="2" Text="{DynamicResource Loc.Audio.Route.NoPlayback}"
+                                                       FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center">
+                                                <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers>
+                                                    <DataTrigger Binding="{Binding CanAdjustVolume}" Value="False"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+                                                </Style.Triggers></Style></TextBlock.Style>
                                             </TextBlock>
                                         </Grid>
                                     </Expander.Header>
-                                    <StackPanel Margin="4,10,4,12">
+                                    <StackPanel MaxWidth="220" HorizontalAlignment="Center" Margin="0,4,0,12">
                                         <StackPanel.Style><Style TargetType="StackPanel"><Style.Triggers>
-                                            <DataTrigger Binding="{Binding CanRoute}" Value="False"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger>
+                                            <DataTrigger Binding="{Binding CanRoute}" Value="False"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
                                         </Style.Triggers></Style></StackPanel.Style>
                                         <TextBlock Text="{DynamicResource Loc.Common.OutputDevice}" Style="{StaticResource AudioDeviceLabelStyle}" />
-                                        <components:ReleaseOpenComboBox Tag="Output" PreviewMouseWheel="ApplicationDevice_OnPreviewMouseWheel"
+                                        <components:ReleaseOpenComboBox Tag="Output" MinHeight="32" Width="220" MaxWidth="220"
+                                            PreviewMouseWheel="ApplicationDevice_OnPreviewMouseWheel"
                                             DropDownOpened="OutputDevice_OnDropDownOpened" DropDownClosed="OutputDevice_OnDropDownClosed"
                                             ItemsSource="{Binding OutputDevices}" DisplayMemberPath="DisplayName"
                                             IsEnabled="{Binding IsRouteSupported}" SelectedItem="{Binding SelectedOutputDevice, Mode=TwoWay}"
-                                            Style="{StaticResource {x:Type ComboBox}}" MinHeight="32" MaxDropDownHeight="220" />
+                                            Style="{StaticResource {x:Type ComboBox}}" MaxDropDownHeight="220"
+                                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=SelectedItem.DisplayName}" />
                                         <TextBlock Text="{DynamicResource Loc.Common.InputDevice}" Style="{StaticResource AudioDeviceLabelStyle}" Margin="0,12,0,6" />
-                                        <components:ReleaseOpenComboBox Tag="Input" PreviewMouseWheel="ApplicationDevice_OnPreviewMouseWheel"
+                                        <components:ReleaseOpenComboBox Tag="Input" MinHeight="32" Width="220" MaxWidth="220"
+                                            PreviewMouseWheel="ApplicationDevice_OnPreviewMouseWheel"
                                             DropDownOpened="OutputDevice_OnDropDownOpened" DropDownClosed="OutputDevice_OnDropDownClosed"
                                             ItemsSource="{Binding InputDevices}" DisplayMemberPath="DisplayName"
                                             IsEnabled="{Binding IsRouteSupported}" SelectedItem="{Binding SelectedInputDevice, Mode=TwoWay}"
-                                            Style="{StaticResource {x:Type ComboBox}}" MinHeight="32" MaxDropDownHeight="220" />
+                                            Style="{StaticResource {x:Type ComboBox}}" MaxDropDownHeight="220"
+                                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=SelectedItem.DisplayName}" />
                                         <TextBlock Text="{Binding StatusText}" Style="{StaticResource AudioStatusStyle}" />
                                     </StackPanel>
                                 </Expander>

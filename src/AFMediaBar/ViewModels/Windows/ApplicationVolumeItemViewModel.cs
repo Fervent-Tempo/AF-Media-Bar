@@ -6,6 +6,7 @@ namespace AFMediaBar.ViewModels.Windows;
 public partial class ApplicationVolumeItemViewModel : ObservableObject
 {
     private readonly Action<ApplicationVolumeItemViewModel, int, bool> _volumeChanged;
+    private readonly Func<ApplicationVolumeItemViewModel, Task>? _muteChanged;
     private bool _isSynchronizing;
     private bool _applyImmediately;
 
@@ -17,11 +18,27 @@ public partial class ApplicationVolumeItemViewModel : ObservableObject
     [ObservableProperty]
     private int _volumePercent;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(MuteToolTip))]
+    private bool _isMuted;
+
+    public string MuteToolTip => AFMediaBar.Resources.Translations.Format(IsMuted ? "Audio.Mute.UnmuteHint" : "Audio.Mute.MuteHint", DisplayName);
+
+    [RelayCommand]
+    private async Task ToggleMuteAsync()
+    { if (_muteChanged is not null) await _muteChanged(this); }
+
+    public void RefreshLabels() => OnPropertyChanged(nameof(MuteToolTip));
+
+    public void Synchronize(ApplicationVolumeSnapshot snapshot)
+    { SynchronizeVolume(snapshot.VolumePercent); IsMuted = snapshot.IsMuted; OnPropertyChanged(nameof(MuteToolTip)); }
+
     public string Initial => string.IsNullOrWhiteSpace(DisplayName) ? "?" : DisplayName[..1].ToUpperInvariant();
 
     public ApplicationVolumeItemViewModel(
         ApplicationVolumeSnapshot snapshot,
-        Action<ApplicationVolumeItemViewModel, int, bool> volumeChanged)
+        Action<ApplicationVolumeItemViewModel, int, bool> volumeChanged,
+        Func<ApplicationVolumeItemViewModel, Task>? muteChanged = null)
     {
         ProcessName = snapshot.ProcessName;
         DisplayName = snapshot.DisplayName;
@@ -29,6 +46,8 @@ public partial class ApplicationVolumeItemViewModel : ObservableObject
         IconData = snapshot.IconData;
         _volumePercent = snapshot.VolumePercent;
         _volumeChanged = volumeChanged;
+        _muteChanged = muteChanged;
+        _isMuted = snapshot.IsMuted;
     }
 
     partial void OnVolumePercentChanged(int value)

@@ -27,8 +27,6 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     private const bool TrayChordWheelEnabled = false;
     private static readonly TimeSpan DeviceApplyDelay =
         TimeSpan.FromMilliseconds(AudioApplyPolicy.OutputDevicePreviewDelayMilliseconds);
-    private static readonly TimeSpan VolumeApplyDelay =
-        TimeSpan.FromMilliseconds(AudioApplyPolicy.ApplicationVolumeDelayMilliseconds);
     private readonly AudioDeviceService _deviceService;
     private readonly AudioInteractionService _audioInteraction;
     private readonly ApplicationAudioRoutingService _routing;
@@ -36,12 +34,13 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     private bool _refreshRequested;
     private readonly SpatialAudioService _spatialAudioService;
     private readonly ApplicationVolumeService _volumeService;
+    private readonly ApplicationAudioControlCoordinator _applicationControl;
+    private readonly CancellationTokenSource _applicationCancellation = new();
     private readonly MediaSessionService _mediaSessionService;
     private readonly ShellTrayIconService _trayIconService;
     private readonly NativeMouseInputMonitor _mouseInputMonitor;
     private readonly AudioMonitorService _audioMonitorService;
     private readonly LocalizationService _localization;
-    private readonly Dictionary<string, int> _volumeApplyVersions = new(StringComparer.OrdinalIgnoreCase);
     private int _deviceApplyVersion;
     private bool _isRefreshing;
     private int _pendingTrayDeviceSteps;
@@ -105,11 +104,13 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         AudioMonitorService audioMonitorService,
         LocalizationService localization,
         AudioInteractionService audioInteraction,
-        ApplicationAudioRoutingService routing)
+        ApplicationAudioRoutingService routing,
+        ApplicationAudioControlCoordinator applicationControl)
     {
         _deviceService = deviceService;
         _audioInteraction = audioInteraction;
         _routing = routing;
+        _applicationControl = applicationControl;
         _audioInteraction.DeviceSwitches.Updated += OnDeviceSwitchUpdated;
         _audioInteraction.DeviceSwitches.Invalidated += OnAudioDevicesInvalidated;
         _spatialAudioService = spatialAudioService;
@@ -175,15 +176,20 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
             _isRefreshing = false;
             RefreshSpatialAudio();
 
+            var pendingVolumes = Applications.Where(row => _applicationControl.IsPending(row.ProcessName)).Select(row => row.ProcessName).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var applications = await Task.Run(() => _volumeService.GetApplications(
                 _mediaSessionService.SelectedSourceId,
                 _mediaSessionService.SelectedSourceName)).WaitAsync(TimeSpan.FromSeconds(3));
             var audioApps = await _routing.GetApplicationsAsync();
             if (_disposed || audioVersion != _audioRefreshVersion) return;
+            var existingVolumes = Applications.ToDictionary(row => row.ProcessName, StringComparer.OrdinalIgnoreCase);
             Applications.Clear();
             foreach (var application in applications)
             {
-                Applications.Add(new ApplicationVolumeItemViewModel(application, QueueApplicationVolume));
+                if (existingVolumes.TryGetValue(application.ProcessName, out var volumeRow))
+                { if (!pendingVolumes.Contains(application.ProcessName) && !_applicationControl.IsPending(application.ProcessName)) volumeRow.Synchronize(application); }
+                else volumeRow = new(application, QueueApplicationVolume, ToggleApplicationMuteAsync);
+                Applications.Add(volumeRow);
             }
 
             var existing = AudioApplications.ToDictionary(row => row.Key, StringComparer.OrdinalIgnoreCase);
@@ -277,61 +283,40 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     private void OnAudioDevicesInvalidated(object? sender, EventArgs args) =>
         Application.Current?.Dispatcher.BeginInvoke(() => { if (!_disposed) { _audioRefreshVersion++; _ = RefreshAsync(); } });
 
-    private void QueueApplicationVolume(
-        ApplicationVolumeItemViewModel application,
-        int volumePercent,
-        bool applyImmediately)
+    private void QueueApplicationVolume(ApplicationVolumeItemViewModel application, int volumePercent, bool applyImmediately) =>
+        _ = ApplyApplicationControlAsync(application, volumePercent, applyImmediately, null);
+
+    private Task ToggleApplicationMuteAsync(ApplicationVolumeItemViewModel application)
     {
-        StartApplicationVolumeApply(
-            application,
-            volumePercent,
-            applyImmediately ? TimeSpan.Zero : VolumeApplyDelay);
+        if (_disposed) return Task.CompletedTask;
+        var muted = !application.IsMuted;
+        application.IsMuted = muted;
+        return ApplyApplicationControlAsync(application, null, true, muted);
     }
 
-    private void StartApplicationVolumeApply(
-        ApplicationVolumeItemViewModel application,
-        int volumePercent,
-        TimeSpan delay)
+    private async Task ApplyApplicationControlAsync(ApplicationVolumeItemViewModel application, int? percent, bool immediately, bool? muted)
     {
-        var version = _volumeApplyVersions.GetValueOrDefault(application.ProcessName) + 1;
-        _volumeApplyVersions[application.ProcessName] = version;
-        _ = ApplyApplicationVolumeAsync(application, volumePercent, version, delay);
-    }
-
-    private async Task ApplyApplicationVolumeAsync(
-        ApplicationVolumeItemViewModel application,
-        int volumePercent,
-        int version,
-        TimeSpan delay)
-    {
+        if (_disposed) return;
+        _audioRefreshVersion++;
         try
         {
-            if (delay > TimeSpan.Zero)
+            var token = _applicationCancellation.Token;
+            var result = muted is { } mute ?
+                await _applicationControl.SetMuteAsync(application.ProcessName, mute, token) :
+                await _applicationControl.SetVolumeAsync(application.ProcessName, percent ?? 0, immediately, token);
+            if (_disposed || token.IsCancellationRequested || !_applicationControl.IsCurrent(application.ProcessName, result.Version)) return;
+            var current = Applications.FirstOrDefault(row => row.ProcessName.Equals(application.ProcessName, StringComparison.OrdinalIgnoreCase));
+            if (result.Snapshot is { } snapshot) current?.Synchronize(snapshot);
+            if (result.Operation.Status is AudioDeviceOperationStatus.Failed or AudioDeviceOperationStatus.Partial or AudioDeviceOperationStatus.Unavailable)
             {
-                await Task.Delay(delay);
-            }
-
-            if (_disposed || !_volumeApplyVersions.TryGetValue(application.ProcessName, out var current) || current != version)
-            {
-                return;
-            }
-
-            await Task.Run(() => _volumeService.SetApplicationVolume(application.ProcessName, volumePercent));
-        }
-        catch (Exception exception)
-        {
-            StatusText = Translations.Format(
-                "Audio.Status.AdjustApplicationVolumeFailed",
-                application.DisplayName,
-                exception.Message);
-        }
-        finally
-        {
-            if (_volumeApplyVersions.TryGetValue(application.ProcessName, out var current) && current == version)
-            {
-                _volumeApplyVersions.Remove(application.ProcessName);
+                StatusText = Translations.Format("Audio.Mute.WriteFailed", application.DisplayName);
+                await RefreshAsync();
+                if (!_disposed && _applicationControl.IsCurrent(application.ProcessName, result.Version))
+                    StatusText = Translations.Format("Audio.Mute.WriteFailed", application.DisplayName);
             }
         }
+        catch (Exception)
+        { if (!_disposed) StatusText = Translations.Format("Audio.Mute.WriteFailed", application.DisplayName); }
     }
 
     private void OnTrayWheelChanged(object? sender, TrayWheelEventArgs e)
@@ -444,6 +429,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
                 var current = await Task.Run(() => _volumeService.GetCurrentMediaVolume(
                     _mediaSessionService.SelectedSourceId,
                     _mediaSessionService.SelectedSourceName));
+                if (_disposed) return;
                 if (current is null)
                 {
                     SetTrayTooltip(AudioTooltipPolicy.BuildMediaVolume(null, null));
@@ -451,9 +437,12 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
                 }
 
                 var next = Math.Clamp(current.VolumePercent + steps * VolumeStepPercent, 0, 100);
-                await Task.Run(() => _volumeService.SetApplicationVolume(current.ProcessName, next));
-                Applications.FirstOrDefault(item => string.Equals(item.ProcessName, current.ProcessName, StringComparison.OrdinalIgnoreCase))?.SynchronizeVolume(next);
-                SetTrayTooltip(AudioTooltipPolicy.BuildMediaVolume(current.DisplayName, next));
+                var applied = await _applicationControl.SetVolumeAsync(current.ProcessName, next, true, _applicationCancellation.Token);
+                if (_disposed || !_applicationControl.IsCurrent(current.ProcessName, applied.Version)) return;
+                if (applied.Snapshot is { } snapshot)
+                    Applications.FirstOrDefault(item => string.Equals(item.ProcessName, current.ProcessName, StringComparison.OrdinalIgnoreCase))?.Synchronize(snapshot);
+                SetTrayTooltip(applied.Operation.Status == AudioDeviceOperationStatus.Applied ?
+                    AudioTooltipPolicy.BuildMediaVolume(current.DisplayName, next) : Translations.Get("Audio.Tooltip.AdjustVolumeFailed"));
             }
         }
         catch (Exception exception)
@@ -497,7 +486,8 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     /// code and do not follow the resources on their own, and <see cref="ObservableObject.OnPropertyChanged(string)"/>
     /// re-reads every binding when it receives an empty property name.
     /// </summary>
-    private void OnLanguageChanged(object? sender, EventArgs e) => OnPropertyChanged(string.Empty);
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    { foreach (var row in Applications) row.RefreshLabels(); OnPropertyChanged(string.Empty); }
 
     private void OnTrayLeftClicked(object? sender, EventArgs e)
     {
@@ -686,6 +676,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
 
     private void SetTrayTooltip(string text)
     {
+        if (_disposed) return;
         _tooltipRefreshVersion++;
         // 暂留滚轮结果供确认，之后恢复实时读取，避免系统设置中的变化被旧结果永久遮住。
         _appliedTrayWheelSlot = SettingsManager.Current.Interaction.ShowWheelTooltips && ChordWheelHeld
@@ -704,6 +695,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     /// </summary>
     public void Dispose()
     {
+        if (_disposed) return;
         _disposed = true;
         _tooltipRefreshVersion++;
         _localization.LanguageChanged -= OnLanguageChanged;
@@ -724,6 +716,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         _deviceApplyVersion++;
         _pendingTrayDeviceSteps = 0;
         _pendingTrayVolumeSteps = 0;
-        _volumeApplyVersions.Clear();
+        _applicationCancellation.Cancel();
+        _applicationCancellation.Dispose();
     }
 }

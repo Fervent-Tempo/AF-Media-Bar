@@ -154,6 +154,8 @@ namespace AFMediaBar
                 services.AddSingleton<AudioProcessInfoService>();
                 services.AddSingleton<ApplicationIconService>();
                 services.AddSingleton<ApplicationVolumeService>();
+                services.AddSingleton<IApplicationAudioControl>(provider => provider.GetRequiredService<ApplicationVolumeService>());
+                services.AddSingleton<ApplicationAudioControlCoordinator>();
                 services.AddSingleton<AudioPlatformService>();
                 services.AddSingleton<AudioDeviceService>();
                 services.AddSingleton<IAudioDeviceCatalog>(sp => sp.GetRequiredService<AudioDeviceService>());

@@ -2864,4 +2864,16 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   <data name="Audio.Settings.AvailabilityHint" xml:space="preserve">
     <value>Bộ chọn chỉ hiển thị thiết bị đang hoạt động và được phép chuyển. Thiết bị khác gồm các điểm cuối đã ngắt kết nối và trước đây; cho phép chuyển không bật thiết bị trong Windows.</value>
   </data>
+  <data name="Audio.Mute.MuteHint" xml:space="preserve">
+    <value>{0} · Nhấp để tắt tiếng</value>
+  </data>
+  <data name="Audio.Mute.UnmuteHint" xml:space="preserve">
+    <value>{0} · Đã tắt tiếng; nhấp để bật tiếng</value>
+  </data>
+  <data name="Audio.Mute.WriteFailed" xml:space="preserve">
+    <value>Không thể cập nhật đầy đủ âm lượng hoặc trạng thái tắt tiếng của {0}. Đã đọc lại trạng thái.</value>
+  </data>
+  <data name="Audio.Route.Expand" xml:space="preserve">
+    <value>Mở định tuyến thiết bị</value>
+  </data>
 </root>

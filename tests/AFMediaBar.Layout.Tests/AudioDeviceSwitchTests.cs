@@ -212,7 +212,8 @@ public sealed class AudioDeviceSwitchTests
         public int DeviceCount { get; set; } = 3;
         public TaskCompletionSource? EnumerationGate { get; set; }
         public AudioDeviceOperationResult Result { get; set; } = new(AudioDeviceOperationStatus.Applied);
-        public List<string> Applied { get; } = [];
+        // 两个方向的延迟可并发完成，记录必须与平台操作一样保证线程安全。
+        public System.Collections.Concurrent.ConcurrentQueue<string> Applied { get; } = new();
         public void Invalidate(bool cancelPending = true) { Version++; if (cancelPending) PolicyVersion++; Changed?.Invoke(this, new AudioDeviceInvalidationEventArgs(cancelPending)); }
         public static AudioDeviceOption Device(string id, AudioDeviceDirection direction) => new(id, id, id, false) { Direction = direction };
         public async Task<IReadOnlyList<AudioDeviceOption>> GetDevicesAsync(AudioDeviceDirection direction, CancellationToken token)
@@ -225,7 +226,7 @@ public sealed class AudioDeviceSwitchTests
         public Task<AudioDeviceOperationResult> ApplyAsync(AudioDeviceTarget target, AudioDeviceOption? device, CancellationToken token, Func<bool> isCurrent)
         {
             if (token.IsCancellationRequested || !isCurrent()) return Task.FromResult(new AudioDeviceOperationResult(AudioDeviceOperationStatus.Cancelled));
-            Applied.Add(target.Key + ":" + (device?.PolicyId ?? "default"));
+            Applied.Enqueue(target.Key + ":" + (device?.PolicyId ?? "default"));
             if (NotifyOnApply) Invalidate(false);
             return Task.FromResult(Result);
         }
