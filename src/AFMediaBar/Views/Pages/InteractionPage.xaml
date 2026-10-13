@@ -18,7 +18,7 @@
                         <TextBlock Text="{Binding DisplayName}" TextWrapping="Wrap" FontSize="14" />
                         <TextBlock FontSize="12" Margin="0,4,0,0"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                            <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Text" Value="{DynamicResource Loc.Audio.Device.Unavailable}" /><Style.Triggers>
+                            <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Text" Value="{DynamicResource Loc.Audio.Device.NotPresent}" /><Style.Triggers>
                                 <DataTrigger Binding="{Binding Availability}" Value="{x:Static models:AudioDeviceAvailability.Active}"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
                                 <DataTrigger Binding="{Binding Availability}" Value="{x:Static models:AudioDeviceAvailability.Disabled}"><Setter Property="Text" Value="{DynamicResource Loc.Audio.Device.SystemDisabled}" /></DataTrigger>
                                 <DataTrigger Binding="{Binding Availability}" Value="{x:Static models:AudioDeviceAvailability.Unplugged}"><Setter Property="Text" Value="{DynamicResource Loc.Audio.Device.Unplugged}" /></DataTrigger>

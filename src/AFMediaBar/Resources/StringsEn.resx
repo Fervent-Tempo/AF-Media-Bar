@@ -2841,4 +2841,7 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Audio.Device.Pending" xml:space="preserve">
     <value>Waiting to apply…</value>
   </data>
+  <data name="Audio.Device.NotPresent" xml:space="preserve">
+    <value>Currently unavailable</value>
+  </data>
 </root>

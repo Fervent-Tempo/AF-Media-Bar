@@ -2841,4 +2841,7 @@
   <data name="Audio.Device.Pending" xml:space="preserve">
     <value>等待应用…</value>
   </data>
+  <data name="Audio.Device.NotPresent" xml:space="preserve">
+    <value>当前不可用</value>
+  </data>
 </root>

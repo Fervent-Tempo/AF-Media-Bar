@@ -2879,4 +2879,7 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   <data name="Audio.Device.Pending" xml:space="preserve">
     <value>Đang chờ áp dụng…</value>
   </data>
+  <data name="Audio.Device.NotPresent" xml:space="preserve">
+    <value>Hiện không khả dụng</value>
+  </data>
 </root>

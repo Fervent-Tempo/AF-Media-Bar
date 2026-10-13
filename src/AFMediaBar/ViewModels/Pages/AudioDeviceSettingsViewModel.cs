@@ -119,7 +119,7 @@ public sealed class AudioDevicePermissionItemViewModel(AudioDeviceOption device,
         AudioDeviceAvailability.Active => string.Empty,
         AudioDeviceAvailability.Disabled => Translations.Get("Audio.Device.SystemDisabled"),
         AudioDeviceAvailability.Unplugged => Translations.Get("Audio.Device.Unplugged"),
-        _ => Translations.Get("Audio.Device.Unavailable")
+        _ => Translations.Get("Audio.Device.NotPresent")
     };
     public bool IsAllowed
     {
