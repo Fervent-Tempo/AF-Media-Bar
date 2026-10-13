@@ -1606,7 +1606,7 @@ public partial class TaskbarWindow : Window
             var devices = await _audioInteractionService.DeviceSwitches.GetChoicesAsync(target);
             var selected = await _audioInteractionService.DeviceSwitches.GetSelectedAsync(target, devices);
             if (_isClosing || !_compactFlyout.IsVisible || _deviceMenuTarget?.Key != target.Key) return;
-            _compactFlyout.UpdateDevices(devices, selected);
+            _compactFlyout.UpdateDevices(devices, selected, _audioInteractionService.DeviceSwitches.HasPending(target));
         }
         catch (Exception exception) { Debug.WriteLine(exception); }
     }

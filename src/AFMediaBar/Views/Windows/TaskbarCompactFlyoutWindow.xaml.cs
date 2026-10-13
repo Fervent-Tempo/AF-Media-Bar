@@ -19,7 +19,9 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
     private TaskbarCompactFlyoutMode _mode;
     public AudioDeviceTarget? DeviceTarget { get; private set; }
     private bool _isUpdating;
-    private bool _isOutputDropDownOpen;
+    private TrayIconBounds? _anchor;
+    private bool _isPositioning;
+    private bool _deviceStatusIsResult;
     private bool _isHiding;
     private bool _allowClose;
     private int _animationVersion;
@@ -59,15 +61,14 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
 
     public void ShowDevices(AudioDeviceTarget target, IReadOnlyList<AudioDeviceOption> devices, AudioDeviceOption? selected, TrayIconBounds anchor, bool isSupported = true)
     {
+        if (_allowClose) return;
         DeviceTarget = target;
-        OutputDeviceComboBox.IsEnabled = isSupported;
-        DeviceTitleText.Text = Translations.Get(target.Direction == AudioDeviceDirection.Output ? "Common.OutputDevice" : "Common.InputDevice") +
-            (target.Application is null ? string.Empty : " · " + target.Application.DisplayName);
-        DeviceStatusText.Text = devices.Count == 0 ? Translations.Get("Audio.Device.Unavailable") : string.Empty;
-        _isUpdating = true;
-        OutputDeviceComboBox.ItemsSource = devices;
-        OutputDeviceComboBox.SelectedItem = selected;
-        _isUpdating = false;
+        OutputDeviceList.IsEnabled = isSupported;
+        DeviceTitleText.Text = Translations.Get(target.Direction == AudioDeviceDirection.Output ? "Common.OutputDevice" : "Common.InputDevice");
+        DeviceApplicationText.Text = target.Application?.DisplayName ?? string.Empty;
+        DeviceApplicationText.Visibility = target.Application is null ? Visibility.Collapsed : Visibility.Visible;
+        _deviceStatusIsResult = false;
+        UpdateDevices(devices, selected);
         Width = 320;
         ShowMode(target.Direction == AudioDeviceDirection.Output ? TaskbarCompactFlyoutMode.OutputDevice : TaskbarCompactFlyoutMode.InputDevice, anchor);
     }
@@ -92,23 +93,47 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
     }
 
     /// <summary>更新滚轮预览的输出设备。 / Updates the wheel-previewed output device.</summary>
-    public void UpdateDevices(IReadOnlyList<AudioDeviceOption> devices, AudioDeviceOption? selected)
+    public void UpdateDevices(IReadOnlyList<AudioDeviceOption> devices, AudioDeviceOption? selected, bool pending = false)
     {
-        _isUpdating = true;
-        OutputDeviceComboBox.ItemsSource = devices;
-        OutputDeviceComboBox.SelectedItem = selected;
-        _isUpdating = false;
-        if (selected is null) DeviceStatusText.Text = Translations.Get("Audio.Route.HiddenOrDisconnected");
+        if (_allowClose) return;
+        OutputDeviceList.ItemsSource = devices;
+        OutputDeviceList.SelectedItem = selected;
+        CurrentDeviceText.Text = selected?.DisplayName ?? Translations.Get("Audio.Device.Unavailable");
+        if (pending) { _deviceStatusIsResult = false; DeviceStatusText.Text = Translations.Get("Audio.Device.Pending"); }
+        else if (devices.Count == 0) DeviceStatusText.Text = Translations.Get("Audio.Device.Unavailable");
+        else if (selected is null) DeviceStatusText.Text = Translations.Get("Audio.Route.HiddenOrDisconnected");
+        else if (!_deviceStatusIsResult) DeviceStatusText.Text = string.Empty;
+        RevealCandidate(selected);
     }
 
-    public void ShowDeviceStatus(string text) => DeviceStatusText.Text = text;
+    public void ShowDeviceStatus(string text)
+    {
+        if (_allowClose) return;
+        _deviceStatusIsResult = true;
+        DeviceStatusText.Text = text;
+        RepositionVisibleMenu();
+    }
 
     public void SetOutputDevicePreview(AudioDeviceOption device)
     {
-        _isUpdating = true;
-        OutputDeviceComboBox.SelectedItem = device;
-        _isUpdating = false;
+        if (_allowClose) return;
+        OutputDeviceList.SelectedItem = OutputDeviceList.Items.Cast<AudioDeviceOption>()
+            .FirstOrDefault(item => item.PolicyId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase));
+        if (OutputDeviceList.SelectedItem is not AudioDeviceOption candidate) return;
+        CurrentDeviceText.Text = candidate.DisplayName;
+        _deviceStatusIsResult = false;
+        DeviceStatusText.Text = Translations.Get("Audio.Device.Pending");
+        RevealCandidate(OutputDeviceList.SelectedItem as AudioDeviceOption);
     }
+
+    private void RevealCandidate(AudioDeviceOption? device)
+    {
+        OutputDeviceList.UpdateLayout();
+        if (device is not null) OutputDeviceList.ScrollIntoView(device);
+        RepositionVisibleMenu();
+    }
+    private void RepositionVisibleMenu()
+    { if (!_allowClose && IsVisible && _anchor is { } anchor) { UpdateLayout(); PositionNear(anchor); } }
 
     /// <summary>更新滚轮预览的媒体音量。 / Updates the wheel-previewed media volume.</summary>
     public void SetVolumePreview(int volume)
@@ -134,6 +159,8 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
 
     private void ShowMode(TaskbarCompactFlyoutMode mode, TrayIconBounds anchor)
     {
+        if (_allowClose) return;
+        _anchor = anchor;
         _animationVersion++;
         _mode = mode;
         QuickLaunchPanel.Visibility = mode == TaskbarCompactFlyoutMode.QuickLaunch ? Visibility.Visible : Visibility.Collapsed;
@@ -160,19 +187,33 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
 
     private void PositionNear(TrayIconBounds anchor)
     {
-        var point = new NativeMethods.POINT { X = (anchor.Left + anchor.Right) / 2, Y = (anchor.Top + anchor.Bottom) / 2 };
-        var monitor = NativeMethods.MonitorFromPoint(point, NativeMethods.MONITOR_DEFAULTTONEAREST);
-        var info = new NativeMethods.MONITORINFOEX { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<NativeMethods.MONITORINFOEX>() };
-        NativeMethods.GetMonitorInfo(monitor, ref info);
-        var scale = NativeMethods.GetDpiForMonitor(monitor, NativeMethods.MonitorDpiType.MDT_EFFECTIVE_DPI, out var dpiX, out _) == 0 ? dpiX / 96d : 1d;
-        var width = (int)Math.Ceiling(ActualWidth * scale);
-        var height = (int)Math.Ceiling(ActualHeight * scale);
-        var x = Math.Clamp((anchor.Left + anchor.Right - width) / 2, info.rcWork.Left, info.rcWork.Right - width);
-        var y = anchor.Top - info.rcWork.Top >= height + 8 ? anchor.Top - height - 8 : anchor.Bottom + 8;
-        y = Math.Clamp(y, info.rcWork.Top, info.rcWork.Bottom - height);
-        FlyoutRoot.RenderTransformOrigin = y < anchor.Top ? new Point(0.5, 1) : new Point(0.5, 0);
-        NativeMethods.SetWindowPos(new WindowInteropHelper(this).Handle, -1, x, y, 0, 0,
-            NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE | NativeMethods.SWP_SHOWWINDOW);
+        if (_isPositioning || _allowClose) return;
+        _isPositioning = true;
+        try
+        {
+            var point = new NativeMethods.POINT { X = (anchor.Left + anchor.Right) / 2, Y = (anchor.Top + anchor.Bottom) / 2 };
+            var monitor = NativeMethods.MonitorFromPoint(point, NativeMethods.MONITOR_DEFAULTTONEAREST);
+            var info = new NativeMethods.MONITORINFOEX { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<NativeMethods.MONITORINFOEX>() };
+            NativeMethods.GetMonitorInfo(monitor, ref info);
+            var scale = NativeMethods.GetDpiForMonitor(monitor, NativeMethods.MonitorDpiType.MDT_EFFECTIVE_DPI, out var dpiX, out _) == 0 ? dpiX / 96d : 1d;
+            MaxHeight = Math.Min(440, Math.Max(0, (info.rcWork.Bottom - info.rcWork.Top) / scale - 16));
+            if (_mode is TaskbarCompactFlyoutMode.OutputDevice or TaskbarCompactFlyoutMode.InputDevice)
+            {
+                var reserved = 30 + DeviceHeaderPanel.ActualHeight + DeviceHeaderPanel.Margin.Bottom +
+                    (DeviceStatusText.Visibility == Visibility.Visible ? DeviceStatusText.ActualHeight + DeviceStatusText.Margin.Top : 0);
+                OutputDeviceList.MaxHeight = Math.Max(0, Math.Min(280, MaxHeight - reserved));
+                UpdateLayout();
+            }
+            var width = (int)Math.Ceiling(ActualWidth * scale);
+            var height = (int)Math.Ceiling(ActualHeight * scale);
+            var x = Math.Clamp((anchor.Left + anchor.Right - width) / 2, info.rcWork.Left, Math.Max(info.rcWork.Left, info.rcWork.Right - width));
+            var y = anchor.Top - info.rcWork.Top >= height + 8 ? anchor.Top - height - 8 : anchor.Bottom + 8;
+            y = Math.Clamp(y, info.rcWork.Top, Math.Max(info.rcWork.Top, info.rcWork.Bottom - height));
+            FlyoutRoot.RenderTransformOrigin = y < anchor.Top ? new Point(0.5, 1) : new Point(0.5, 0);
+            NativeMethods.SetWindowPos(new WindowInteropHelper(this).Handle, -1, x, y, 0, 0,
+                NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE | NativeMethods.SWP_SHOWWINDOW);
+        }
+        finally { _isPositioning = false; }
     }
 
     private void QuickLaunchItem_Click(object sender, RoutedEventArgs e)
@@ -184,32 +225,22 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
         }
     }
 
-    private void OutputDeviceComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void DeviceItem_Click(object sender, RoutedEventArgs e)
     {
-        if (!_isUpdating && OutputDeviceComboBox.SelectedItem is AudioDeviceOption device)
-        {
-            Dismiss();
-            OutputDeviceSelected?.Invoke(device);
-        }
+        if (_allowClose || !OutputDeviceList.IsEnabled || sender is not Button { DataContext: AudioDeviceOption device }) return;
+        e.Handled = true;
+        OutputDeviceList.SelectedItem = device;
+        Dismiss();
+        OutputDeviceSelected?.Invoke(device);
     }
 
-    private void OutputDeviceComboBox_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    // 根容器接管设备模式的滚轮，标题和内边距也命中；子列表不会再次滚动或重复推进。
+    private void FlyoutRoot_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
-        OutputDeviceWheelRequested?.Invoke(e.Delta);
+        if (_mode is not (TaskbarCompactFlyoutMode.OutputDevice or TaskbarCompactFlyoutMode.InputDevice) || e.Handled) return;
         e.Handled = true;
-    }
-
-    /// <summary>
-    /// 菜单任意位置的滚轮都按设备候选推进；菜单内滚轮因此不会冒泡为播放器手势。
-    /// Wheel anywhere in the menu advances the device candidate, so an in-menu wheel never bubbles up to a player gesture.
-    /// </summary>
-    private void OutputDevicePanel_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
-    {
-        if (e.Handled)
-            return;
-
-        OutputDeviceWheelRequested?.Invoke(e.Delta);
-        e.Handled = true;
+        if (!_allowClose && OutputDeviceList.IsEnabled && OutputDeviceList.Items.Count > 0)
+            OutputDeviceWheelRequested?.Invoke(e.Delta);
     }
 
     /// <summary>菜单任意位置的滚轮都按 2% 调节当前媒体音量。/ Wheel anywhere in the menu adjusts the current media volume by 2%.</summary>
@@ -236,13 +267,14 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
         VolumeValueRequested?.Invoke(value);
     }
 
-    private void OutputDeviceComboBox_DropDownOpened(object? sender, EventArgs e) => _isOutputDropDownOpen = true;
-    private void OutputDeviceComboBox_DropDownClosed(object? sender, EventArgs e) => _isOutputDropDownOpen = false;
-
-    private void Window_OnDeactivated(object? sender, EventArgs e) => Dispatcher.BeginInvoke(() =>
+    private void Window_OnDeactivated(object? sender, EventArgs e)
     {
-        if (IsVisible && !_isOutputDropDownOpen && !OutputDeviceComboBox.IsDropDownOpen && !IsActive) BeginHideAnimation();
-    }, DispatcherPriority.ContextIdle);
+        var version = _animationVersion;
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (!_allowClose && version == _animationVersion && IsVisible && !IsActive) BeginHideAnimation();
+        }, DispatcherPriority.ContextIdle);
+    }
 
     private void Window_OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
@@ -294,6 +326,10 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
     {
         if (_allowClose) return;
         _allowClose = true;
+        _animationVersion++;
+        FlyoutRoot.BeginAnimation(OpacityProperty, null);
+        FlyoutScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        FlyoutScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
         QuickLaunchSelected = null;
         OutputDeviceSelected = null;
         OutputDeviceWheelRequested = null;

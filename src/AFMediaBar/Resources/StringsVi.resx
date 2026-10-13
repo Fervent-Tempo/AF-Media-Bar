@@ -2876,4 +2876,7 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   <data name="Audio.Route.Expand" xml:space="preserve">
     <value>Mở định tuyến thiết bị</value>
   </data>
+  <data name="Audio.Device.Pending" xml:space="preserve">
+    <value>Đang chờ áp dụng…</value>
+  </data>
 </root>

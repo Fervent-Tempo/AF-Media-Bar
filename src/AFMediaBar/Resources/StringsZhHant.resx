@@ -2838,4 +2838,7 @@
   <data name="Audio.Route.Expand" xml:space="preserve">
     <value>展開裝置路由</value>
   </data>
+  <data name="Audio.Device.Pending" xml:space="preserve">
+    <value>等待套用…</value>
+  </data>
 </root>

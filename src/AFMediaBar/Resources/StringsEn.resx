@@ -2838,4 +2838,7 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Audio.Route.Expand" xml:space="preserve">
     <value>Expand device routing</value>
   </data>
+  <data name="Audio.Device.Pending" xml:space="preserve">
+    <value>Waiting to apply…</value>
+  </data>
 </root>
