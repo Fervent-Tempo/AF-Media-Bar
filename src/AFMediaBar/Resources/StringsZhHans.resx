@@ -2814,4 +2814,16 @@
   <data name="Audio.Settings.AdvancedDescription" xml:space="preserve">
     <value>分别配置输入、输出按钮的操作目标和通信设备。</value>
   </data>
+  <data name="Audio.Settings.OtherDevices" xml:space="preserve">
+    <value>其他设备</value>
+  </data>
+  <data name="Audio.Device.SystemDisabled" xml:space="preserve">
+    <value>已在 Windows 中禁用</value>
+  </data>
+  <data name="Audio.Device.Unplugged" xml:space="preserve">
+    <value>未连接</value>
+  </data>
+  <data name="Audio.Settings.AvailabilityHint" xml:space="preserve">
+    <value>切换菜单只显示当前活动且允许切换的设备。其他设备包含断开和历史端点；允许切换不会启用 Windows 设备。</value>
+  </data>
 </root>

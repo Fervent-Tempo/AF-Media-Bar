@@ -64,7 +64,14 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
                 var name = device.FriendlyName;
                 options.Add(new AudioDeviceOption(@"\\?\SWD#MMDEVAPI#" + id + "#{" + suffix + "}",
                     id, string.IsNullOrWhiteSpace(name) ? id : name, string.Equals(id, defaultId, StringComparison.OrdinalIgnoreCase))
-                { Direction = direction, IsActive = device.State == DeviceState.Active });
+                { Direction = direction, IsActive = device.State == DeviceState.Active,
+                    Availability = device.State switch
+                    {
+                        DeviceState.Active => AudioDeviceAvailability.Active,
+                        DeviceState.Disabled => AudioDeviceAvailability.Disabled,
+                        DeviceState.Unplugged => AudioDeviceAvailability.Unplugged,
+                        _ => AudioDeviceAvailability.Unavailable
+                    } });
             }
             catch (COMException) { }
         }

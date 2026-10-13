@@ -17,6 +17,8 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
     private int _version;
     public ObservableCollection<AudioDevicePermissionItemViewModel> OutputDevices { get; } = [];
     public ObservableCollection<AudioDevicePermissionItemViewModel> InputDevices { get; } = [];
+    public ObservableCollection<AudioDevicePermissionItemViewModel> OtherOutputDevices { get; } = [];
+    public ObservableCollection<AudioDevicePermissionItemViewModel> OtherInputDevices { get; } = [];
     private string _statusText = string.Empty;
     public string StatusText { get => _statusText; private set => SetProperty(ref _statusText, value); }
     public bool SwitchOutputCommunications
@@ -51,8 +53,8 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
             var inputNames = UpdateNames(settings.InputBlacklist, input);
             if (!settings.OutputBlacklist.SequenceEqual(outputNames) || !settings.InputBlacklist.SequenceEqual(inputNames))
                 _configuration.SetAudioDeviceSettings(settings with { OutputBlacklist = outputNames, InputBlacklist = inputNames });
-            Synchronize(OutputDevices, output, AudioDeviceDirection.Output);
-            Synchronize(InputDevices, input, AudioDeviceDirection.Input);
+            Synchronize(OutputDevices, OtherOutputDevices, output, AudioDeviceDirection.Output);
+            Synchronize(InputDevices, OtherInputDevices, input, AudioDeviceDirection.Input);
             StatusText = string.Empty;
             OnPropertyChanged(string.Empty);
         }
@@ -64,15 +66,22 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
             entry with { DisplayName = device.DisplayName } : entry).ToArray();
 
     private void Synchronize(ObservableCollection<AudioDevicePermissionItemViewModel> rows,
+        ObservableCollection<AudioDevicePermissionItemViewModel> otherRows,
         IReadOnlyList<AudioDeviceOption> devices, AudioDeviceDirection direction)
     {
         var settings = _configuration.Current.AudioDevices;
         var blocked = direction == AudioDeviceDirection.Output ? settings.OutputBlacklist : settings.InputBlacklist;
         var all = devices.Concat(blocked.Where(entry => !devices.Any(device => device.PolicyId.Equals(entry.EndpointId, StringComparison.OrdinalIgnoreCase)))
-            .Select(entry => new AudioDeviceOption(entry.EndpointId, entry.EndpointId, entry.DisplayName, false) { Direction = direction, IsActive = false }));
+            .Select(entry => new AudioDeviceOption(entry.EndpointId, entry.EndpointId, entry.DisplayName, false) { Direction = direction, IsActive = false, Availability = AudioDeviceAvailability.Unavailable }));
         rows.Clear();
-        foreach (var device in all.OrderBy(device => device.DisplayName, StringComparer.CurrentCultureIgnoreCase).ThenBy(device => device.PolicyId, StringComparer.OrdinalIgnoreCase))
-            rows.Add(new(device, settings.IsAllowed(direction, device.PolicyId), allowed => SetAllowed(device, allowed)));
+        otherRows.Clear();
+        foreach (var device in all.GroupBy(device => device.PolicyId, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.OrderByDescending(device => device.IsActive).First())
+            .OrderBy(device => device.DisplayName, StringComparer.CurrentCultureIgnoreCase).ThenBy(device => device.PolicyId, StringComparer.OrdinalIgnoreCase))
+        {
+            var destination = device.IsActive ? rows : otherRows;
+            destination.Add(new(device, settings.IsAllowed(direction, device.PolicyId), allowed => SetAllowed(device, allowed)));
+        }
     }
     private void SetAllowed(AudioDeviceOption device, bool allowed)
     {
@@ -103,7 +112,15 @@ public sealed class AudioDevicePermissionItemViewModel(AudioDeviceOption device,
     private bool _isAllowed = allowed;
     public string DisplayName => device.DisplayName;
     public string EndpointId => device.PolicyId;
-    public string StateText => device.IsActive ? string.Empty : Translations.Get("Audio.Device.Disconnected");
+    public AudioDeviceAvailability Availability => device.IsActive ? AudioDeviceAvailability.Active :
+        device.Availability == AudioDeviceAvailability.Active ? AudioDeviceAvailability.Unavailable : device.Availability;
+    public string StateText => Availability switch
+    {
+        AudioDeviceAvailability.Active => string.Empty,
+        AudioDeviceAvailability.Disabled => Translations.Get("Audio.Device.SystemDisabled"),
+        AudioDeviceAvailability.Unplugged => Translations.Get("Audio.Device.Unplugged"),
+        _ => Translations.Get("Audio.Device.Unavailable")
+    };
     public bool IsAllowed
     {
         get => _isAllowed;

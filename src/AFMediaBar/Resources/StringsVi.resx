@@ -2852,4 +2852,16 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   <data name="Audio.Settings.AdvancedDescription" xml:space="preserve">
     <value>Cấu hình đích thao tác của nút và thiết bị liên lạc cho từng hướng.</value>
   </data>
+  <data name="Audio.Settings.OtherDevices" xml:space="preserve">
+    <value>Thiết bị khác</value>
+  </data>
+  <data name="Audio.Device.SystemDisabled" xml:space="preserve">
+    <value>Đã tắt trong Windows</value>
+  </data>
+  <data name="Audio.Device.Unplugged" xml:space="preserve">
+    <value>Chưa kết nối</value>
+  </data>
+  <data name="Audio.Settings.AvailabilityHint" xml:space="preserve">
+    <value>Bộ chọn chỉ hiển thị thiết bị đang hoạt động và được phép chuyển. Thiết bị khác gồm các điểm cuối đã ngắt kết nối và trước đây; cho phép chuyển không bật thiết bị trong Windows.</value>
+  </data>
 </root>

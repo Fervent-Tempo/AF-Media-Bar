@@ -2814,4 +2814,16 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Audio.Settings.AdvancedDescription" xml:space="preserve">
     <value>Configure button targets and communication devices for each direction.</value>
   </data>
+  <data name="Audio.Settings.OtherDevices" xml:space="preserve">
+    <value>Other devices</value>
+  </data>
+  <data name="Audio.Device.SystemDisabled" xml:space="preserve">
+    <value>Disabled in Windows</value>
+  </data>
+  <data name="Audio.Device.Unplugged" xml:space="preserve">
+    <value>Not connected</value>
+  </data>
+  <data name="Audio.Settings.AvailabilityHint" xml:space="preserve">
+    <value>Selectors show only active devices allowed for switching. Other devices include disconnected and historical endpoints; allowing switching does not enable devices in Windows.</value>
+  </data>
 </root>

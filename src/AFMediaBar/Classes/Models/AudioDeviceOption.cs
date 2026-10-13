@@ -4,11 +4,15 @@ namespace AFMediaBar.Classes.Models;
 /// <summary>Windows 音频端点方向。</summary>
 public enum AudioDeviceDirection { Output = 0, Input = 1 }
 
+/// <summary>端点当前可用状态，不参与设置持久化。</summary>
+public enum AudioDeviceAvailability { Active, Disabled, Unplugged, Unavailable }
+
 /// <summary>可用的 Windows 音频设备；Id 保留现有输出接口标识。</summary>
 public sealed record AudioDeviceOption(string Id, string PolicyId, string DisplayName, bool IsDefault)
 {
     public AudioDeviceDirection Direction { get; init; }
     public bool IsActive { get; init; } = true;
+    public AudioDeviceAvailability Availability { get; init; } = AudioDeviceAvailability.Active;
     public bool IsSystemDefaultChoice { get; init; }
 }
 
