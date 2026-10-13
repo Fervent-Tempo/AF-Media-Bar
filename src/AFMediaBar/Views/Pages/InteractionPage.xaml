@@ -272,7 +272,7 @@
                                     <Expander.Style><Style TargetType="Expander" BasedOn="{StaticResource {x:Type Expander}}"><Style.Triggers>
                                         <DataTrigger Binding="{Binding ViewModel.AudioDevices.OtherOutputDevices.Count}" Value="0"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
                                     </Style.Triggers></Style></Expander.Style>
-                                    <Expander.Header><TextBlock><Run Text="{DynamicResource Loc.Audio.Settings.OtherDevices}" /><Run Text=" " /><Run Text="{Binding ViewModel.AudioDevices.OtherOutputDevices.Count, StringFormat={}{0}}" /></TextBlock></Expander.Header>
+                                    <Expander.Header><TextBlock><Run Text="{DynamicResource Loc.Audio.Settings.OtherDevices}" /><Run Text=" " /><Run Text="{Binding ViewModel.AudioDevices.OtherOutputDevices.Count, Mode=OneWay, StringFormat={}{0}}" /></TextBlock></Expander.Header>
                                     <ItemsControl ItemsSource="{Binding ViewModel.AudioDevices.OtherOutputDevices}" ItemTemplate="{StaticResource AudioDevicePermissionTemplate}" />
                                 </Expander>
                             </StackPanel>
@@ -291,7 +291,7 @@
                                     <Expander.Style><Style TargetType="Expander" BasedOn="{StaticResource {x:Type Expander}}"><Style.Triggers>
                                         <DataTrigger Binding="{Binding ViewModel.AudioDevices.OtherInputDevices.Count}" Value="0"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
                                     </Style.Triggers></Style></Expander.Style>
-                                    <Expander.Header><TextBlock><Run Text="{DynamicResource Loc.Audio.Settings.OtherDevices}" /><Run Text=" " /><Run Text="{Binding ViewModel.AudioDevices.OtherInputDevices.Count, StringFormat={}{0}}" /></TextBlock></Expander.Header>
+                                    <Expander.Header><TextBlock><Run Text="{DynamicResource Loc.Audio.Settings.OtherDevices}" /><Run Text=" " /><Run Text="{Binding ViewModel.AudioDevices.OtherInputDevices.Count, Mode=OneWay, StringFormat={}{0}}" /></TextBlock></Expander.Header>
                                     <ItemsControl ItemsSource="{Binding ViewModel.AudioDevices.OtherInputDevices}" ItemTemplate="{StaticResource AudioDevicePermissionTemplate}" />
                                 </Expander>
                             </StackPanel>
