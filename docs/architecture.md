@@ -1,6 +1,31 @@
 # 架构边界
 
-本文用于职责、依赖、线程及资源所有权变更；权限和通用底线以根目录 AGENTS.md 为准。
+本文说明仓库目录、职责、依赖、线程及资源所有权；权限和通用底线以根目录 AGENTS.md 为准。
+
+## 仓库目录
+
+以下列出主要代码与开发目录，路径相对仓库根目录。
+
+```text
+AF-Media-Bar/
+├── .github/workflows/        # 构建与发布工作流
+├── src/AFMediaBar/           # WPF 应用主项目
+│   ├── Classes/              # 分层业务代码
+│   │   ├── Abstractions/     # 跨模块契约
+│   │   ├── Interop/          # Windows API 互操作
+│   │   ├── Models/           # 数据模型（含布局 schema）
+│   │   ├── Services/         # 按所有权分目录的服务（Media、Lyrics、Audio、Updates…）
+│   │   ├── Settings/         # 设置模型与兼容门面
+│   │   └── Utils/            # 无状态辅助与有界缓存
+│   ├── Components/           # 可复用 WPF 控件
+│   ├── Resources/            # 主题、样式与语言文案
+│   ├── ViewModels/           # MVVM 视图模型
+│   └── Views/                # 页面与宿主窗口
+├── tests/AFMediaBar.Layout.Tests/   # 纯逻辑、策略与设置测试
+├── tools/                    # 架构静态检查等脚本
+├── installer/                # Inno Setup 安装脚本
+└── docs/                     # 项目文档、资源与版本清单
+```
 
 ## 职责与入口
 

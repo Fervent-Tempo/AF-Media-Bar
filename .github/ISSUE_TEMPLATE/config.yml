@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: 讨论与使用求助 / Discussions and help
+    url: https://github.com/Fervent-Tempo/AF-Media-Bar/discussions
+    about: 使用问题或尚未成形的想法可在讨论区交流。 / Ask for help or discuss early ideas.
   - name: 报告安全漏洞 / Security Vulnerability
     url: https://github.com/Fervent-Tempo/AF-Media-Bar/security/advisories/new
     about: 请私下报告安全问题，不要公开创建 Issue。 / Report security issues privately. Do not open a public Issue.

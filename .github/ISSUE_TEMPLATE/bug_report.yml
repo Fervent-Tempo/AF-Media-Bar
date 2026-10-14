@@ -1,5 +1,5 @@
 name: 报告问题 / Bug report
-description: 告诉我们哪里出了问题。 / Tell us what went wrong.
+description: 报告程序问题，包括偶发异常。 / Report app problems, including intermittent issues.
 title: "[Bug]: "
 labels:
   - bug
@@ -7,14 +7,18 @@ body:
   - type: markdown
     attributes:
       value: |
-        提交前请搜索相似 Issue。安全问题请[私下报告](https://github.com/Fervent-Tempo/AF-Media-Bar/security/advisories/new)。
-        Search for similar issues first. [Report security issues privately](https://github.com/Fervent-Tempo/AF-Media-Bar/security/advisories/new).
+        提交前请[搜索相似 Issue](https://github.com/Fervent-Tempo/AF-Media-Bar/issues?q=is%3Aissue)。每个 Issue 描述一个问题；偶发问题也欢迎反馈。
+        Search for similar issues first. Describe one problem per issue; intermittent problems are welcome too.
+        安全问题请[私下报告](https://github.com/Fervent-Tempo/AF-Media-Bar/security/advisories/new)，分享附件前请删除隐私信息。
+        Report security issues privately and remove private information from attachments.
 
   - type: textarea
     id: description
     attributes:
       label: 问题描述 / What happened
-      description: 说说实际发生了什么，以及你原本希望怎样。 / Describe what happened and what you expected.
+      description: 描述实际情况；如期望不明显，也请说明期望结果。 / Describe what happened and, if not obvious, what you expected.
+      placeholder: >-
+        例如：切换到第二台显示器后，媒体栏挡住了任务栏图标。 / Example: The media bar overlaps taskbar icons after switching to my second monitor.
     validations:
       required: true
 
@@ -22,12 +26,38 @@ body:
     id: steps
     attributes:
       label: 复现方法 / How to reproduce
-      description: 简单写下操作过程；如果偶尔出现，也请说明。 / List the steps, or say if it happens only sometimes.
+      description: 写下操作过程；偶发问题可说明发生条件与频率。 / List the steps, or the conditions and frequency for intermittent issues.
+      placeholder: |
+        1. …
+        2. …
+        发生频率 / Frequency: …
     validations:
       required: true
+
+  - type: input
+    id: app_version
+    attributes:
+      label: AF Media Bar 版本 / App version
+      description: 见「应用」页；包含预览版后缀，无法查看时可写「不确定」。 / See the Application page; include any preview suffix, or write “not sure” if unavailable.
+      placeholder: 1.x.x
+    validations:
+      required: true
+
+  - type: input
+    id: windows_version
+    attributes:
+      label: Windows 版本（选填） / Windows version (optional)
+      description: 按 Win+R，运行 winver，填写版本与 OS 内部版本。 / Press Win+R, run winver, and include the version and OS build.
+      placeholder: Windows 11 24H2 / OS build …
+
+  - type: input
+    id: player
+    attributes:
+      label: 播放器或网站（选填） / Player or website (optional)
+      description: 媒体或歌词问题请填写播放器版本；网页播放请同时注明浏览器。 / For media or lyric issues, include the player version; for websites, include the browser.
 
   - type: textarea
     id: context
     attributes:
-      label: 环境与附件 / Environment and attachments
-      description: 如果方便，请提供 AF Media Bar 和 Windows 版本、播放器或网站，以及截图、录屏或错误信息。分享前请删除隐私信息。 / If available, add app and Windows versions, player or website, screenshots, recordings, or errors. Remove private information first.
+      label: 补充信息（选填） / Additional context (optional)
+      description: 可附截图、错误信息、安装方式或已尝试的办法；任务栏问题可补充显示器数量、缩放与自动隐藏状态。 / Add screenshots, errors, package type, or workarounds; for taskbar issues, include monitor count, scaling, and auto-hide state.

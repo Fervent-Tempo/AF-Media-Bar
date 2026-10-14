@@ -2,6 +2,8 @@
 
 感谢你参与改进 AF Media Bar。开放的 Issue 是问题记录，不代表所有方案都已获准实施。
 
+欢迎所有语言的翻译贡献，参与方式见 [翻译贡献指南](docs/localization.md)。
+
 ## 项目方向
 
 以下方向不承诺发布日期或某个 Issue 一定会采用。具体需求与进度以 [Issues](https://github.com/Fervent-Tempo/AF-Media-Bar/issues) 和关联 PR 为准。
@@ -64,6 +66,8 @@ git diff --check
 # Contributing to AF Media Bar
 
 Thank you for helping improve AF Media Bar. An open issue records a problem, but does not mean every proposed solution has been accepted.
+
+Translation contributions in every language are welcome. See the [translation contribution guide](docs/localization.md#translation-guide) to get started.
 
 ## Project direction
 

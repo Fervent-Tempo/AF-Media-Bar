@@ -1,0 +1,40 @@
+name: 翻译贡献与反馈 / Translation contributions and feedback
+description: 提交任意语言的翻译，或反馈文案问题。 / Contribute translations in any language or report wording issues.
+title: "[I18N]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提交前请[搜索相似 Issue](https://github.com/Fervent-Tempo/AF-Media-Bar/issues?q=is%3Aissue)。翻译文件与参与方式见[翻译贡献指南](https://github.com/Fervent-Tempo/AF-Media-Bar/blob/main/docs/localization.md)。
+        Search for similar issues first. See the translation guide for resource files and how to contribute.
+        欢迎所有语言的翻译贡献，截图与附件请删除隐私信息。
+        Translations in every language are welcome. Remove private information from attachments.
+
+  - type: input
+    id: language
+    attributes:
+      label: 语言 / Language
+      description: 填写受影响或希望新增的语言。 / Enter the affected language or the language you would like to add.
+      placeholder: 简体中文 / 繁體中文 / English / Tiếng Việt / …
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: 出现位置（选填） / Location (optional)
+      description: 填写应用页面、README 章节或资源键；新增语言可留空。 / Give the app page, README section, or resource key; leave blank for a new language.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 问题或翻译贡献 / Issue or translation contribution
+      description: 说明问题，可附原文与建议译文并保留格式占位符；新增语言请介绍希望参与的内容。 / Describe the issue; include current and suggested wording if available, preserving placeholders. For a new language, describe your contribution.
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 版本与附件（选填） / Version and attachments (optional)
+      description: 应用问题可提供版本；显示问题可附截图和缩放比例。 / Add the app version if relevant; for display issues, include screenshots and scaling.

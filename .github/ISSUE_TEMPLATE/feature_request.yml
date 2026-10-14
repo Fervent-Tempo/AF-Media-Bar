@@ -1,5 +1,5 @@
 name: 功能建议 / Feature request
-description: 说说你希望改进什么。 / Tell us what you would like to improve.
+description: 说明使用场景和期望的改进。 / Describe your use case and suggested improvement.
 title: "[Feature]: "
 labels:
   - enhancement
@@ -7,14 +7,17 @@ body:
   - type: markdown
     attributes:
       value: |
-        提交前请搜索相似 Issue。欢迎用中文或 English 描述想法。
-        Search for similar issues first. Chinese and English are both welcome.
+        提交前请[搜索相似 Issue](https://github.com/Fervent-Tempo/AF-Media-Bar/issues?q=is%3Aissue)，每个 Issue 提出一项改进。
+        Search for similar issues first and suggest one improvement per issue.
+        使用求助或初步想法可在 [Discussions](https://github.com/Fervent-Tempo/AF-Media-Bar/discussions) 交流；附件请删除隐私信息。
+        Use Discussions for help or early ideas, and remove private information from attachments.
 
   - type: textarea
     id: problem
     attributes:
       label: 使用场景 / Use case
-      description: 你遇到了什么不便？ / What problem or inconvenience do you face?
+      description: 在什么场景下遇到不便？ / When and how does the inconvenience occur?
+      placeholder: 当我……时，需要……，目前只能……。 / When I …, I need …, but currently I have to ….
     validations:
       required: true
 
@@ -22,12 +25,12 @@ body:
     id: proposal
     attributes:
       label: 期望的改进 / Suggested improvement
-      description: 你希望它如何工作？ / How would you like it to work?
+      description: 描述期望的操作和结果，无需提供技术实现。 / Describe the interaction and result you want; an implementation proposal is not required.
     validations:
       required: true
 
   - type: textarea
     id: context
     attributes:
-      label: 补充信息 / Additional context
-      description: 可添加截图、示例或目前的解决办法。 / Add screenshots, examples, or workarounds if helpful.
+      label: 补充信息（选填） / Additional context (optional)
+      description: 可提供截图、示例或目前的解决办法。 / Add screenshots, examples, or your current workaround.

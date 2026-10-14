@@ -3,21 +3,26 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/releases"><img src="https://img.shields.io/github/v/release/Fervent-Tempo/AF-Media-Bar?style=flat-square" alt="Latest release"></a>
-  <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/releases"><img src="https://img.shields.io/github/downloads/Fervent-Tempo/AF-Media-Bar/total?style=flat-square" alt="Downloads"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/Fervent-Tempo/AF-Media-Bar?style=flat-square" alt="MIT License"></a>
+  <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/releases"><img src="https://img.shields.io/github/v/release/Fervent-Tempo/AF-Media-Bar?style=flat-square&amp;label=release" alt="release"></a>
+  <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/releases"><img src="https://img.shields.io/github/downloads/Fervent-Tempo/AF-Media-Bar/total?style=flat-square&amp;label=downloads" alt="downloads"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/Fervent-Tempo/AF-Media-Bar?style=flat-square&amp;label=license" alt="license"></a>
+  <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/actions/workflows/build.yml"><img src="https://img.shields.io/github/actions/workflow/status/Fervent-Tempo/AF-Media-Bar/build.yml?style=flat-square&amp;label=build&amp;branch=main" alt="build"></a>
+  <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/stargazers"><img src="https://img.shields.io/github/stars/Fervent-Tempo/AF-Media-Bar?style=flat-square&amp;label=Stars&amp;color=gold" alt="Stars"></a>
+  <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/forks"><img src="https://img.shields.io/github/forks/Fervent-Tempo/AF-Media-Bar?style=flat-square&amp;label=Forks" alt="Forks"></a>
+  <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/graphs/contributors"><img src="https://img.shields.io/github/contributors/Fervent-Tempo/AF-Media-Bar?style=flat-square&amp;label=contributors" alt="contributors"></a>
+  <a href="docs/localization.md"><img src="https://img.shields.io/badge/UI%20languages-4-0078d4?style=flat-square" alt="UI languages"></a>
   <br>
   <a href="README.md">简体中文</a> · English · <a href="README.vi-VN.md">Tiếng Việt</a>
   <br>
-  <a href="#download-and-run">Download</a> · <a href="#features">Features</a> · <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/issues/new?template=bug_report.yml">Report a bug</a> · <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/issues/new?template=feature_request.yml">Request a feature</a>
+  <a href="#download-and-run">Download</a> · <a href="#live-demo">Live demo</a> · <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/issues/new?template=bug_report.yml">Report a bug</a> · <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/issues/new?template=feature_request.yml">Request a feature</a> · <a href="docs/localization.md">Help translate</a> · <a href="https://github.com/Fervent-Tempo/AF-Media-Bar/discussions">Discussions and help</a>
 </p>
 
-AF Media Bar is a media controller for the Windows 10/11 taskbar. It reads the system media session and keeps artwork, lyrics, playback controls, and audio device switching at the edge of your desktop.
+AF Media Bar is a media controller for the Windows 10/11 taskbar. It reads what's playing from the system media session and makes media information, lyrics, playback controls, and device switching easier to see and use on your desktop.
 
 ## Live demo
 
 <p align="center">
-  <img src="docs/assets/readme/展示.gif" width="100%" alt="AF Media Bar running on a Windows taskbar with artwork, playback controls, and media information">
+  <img src="docs/assets/readme/展示.gif" width="80%" alt="AF Media Bar running on a Windows taskbar with artwork, playback controls, and media information">
 </p>
 
 [Watch the introduction video on Bilibili](https://www.bilibili.com/video/BV17yhh6aEgK)
@@ -29,20 +34,7 @@ Open [GitHub Releases](https://github.com/Fervent-Tempo/AF-Media-Bar/releases) a
 1. **Installer (recommended):** Download `AFMediaBar-Setup-vX.Y.Z-win-x64.exe` and follow the installation wizard.
 2. **Portable:** Download `AFMediaBar-vX.Y.Z-win-x64.zip`, extract it to a writable folder, and run `AFMediaBar.exe`.
 
-**Requirements:** Windows 10 1809 or later, x64, with Microsoft Edge WebView2 Runtime. Install the Evergreen Runtime if it is missing. Release packages include the .NET runtime. **.NET 10 officially supports only Windows 10 LTSC and Enterprise editions**; consumer editions are outside its support scope. Windows 11 is unaffected.
-
-Download a release package rather than a Source code archive. The app is not commercially code-signed, so Windows SmartScreen may show an unknown-publisher warning on first run.
-
-## Features
-
-| Feature | Description |
-| --- | --- |
-| Playback and sources | View artwork and track information, switch media sources, and use previous, play/pause, next, repeat, and seeking controls. |
-| Live lyrics | Fetch lyrics automatically and follow playback with word highlighting, translation, romanization, and two-line display. |
-| Audio controls | Quickly switch the default output device, adjust the current media app's volume, and view spatial audio status. |
-| Spectrum and metrics | Choose from four audio spectrum styles and show CPU, GPU, and memory metrics on the taskbar. |
-| Layout and appearance | Left, center, and right alignment with independent content arrangement; avoid taskbar icons and system areas, choose a display, auto-hide when nothing plays, and customize fonts, accent colour, and window material. |
-| Shortcuts | Hover to reveal controls or open the full media popover for more information; customize click actions, quickly launch players, and use the tray menu. |
+**Requirements:** Windows 10 1809 or later, x64, with Microsoft Edge WebView2 Runtime. Install the Evergreen Runtime if it is missing. Release packages include the .NET runtime.
 
 ## Updating and uninstalling
 
@@ -56,47 +48,23 @@ Download a release package rather than a Source code archive. The app is not com
 - Update checks and online lyric searches use the internet. Lyric searches use track and artist information; lyric sources can be disabled in Settings.
 - The app runs with the current user's rights. Report security issues privately as described in [SECURITY.md](SECURITY.md).
 
-## Building from Source
+## Star history
 
-Windows 10 1809 or later, the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0), and PowerShell are required; the repository pins the supported SDK feature band through `global.json`.
+<a href="https://www.star-history.com/?repos=Fervent-Tempo%2FAF-Media-Bar&amp;type=date&amp;legend=top-left">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=Fervent-Tempo/AF-Media-Bar&amp;type=date&amp;theme=dark&amp;legend=top-left">
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=Fervent-Tempo/AF-Media-Bar&amp;type=date&amp;legend=top-left">
+    <img src="https://api.star-history.com/chart?repos=Fervent-Tempo/AF-Media-Bar&amp;type=date&amp;legend=top-left" width="100%" alt="AF Media Bar GitHub star count over time">
+  </picture>
+</a>
 
-```powershell
-git clone https://github.com/Fervent-Tempo/AF-Media-Bar.git
-cd AF-Media-Bar
-dotnet restore .\src\AFMediaBar.slnx -r win-x64
-dotnet build .\src\AFMediaBar.slnx -c Release --no-restore -p:ContinuousIntegrationBuild=true -p:BuildInParallel=false
-dotnet test .\tests\AFMediaBar.Layout.Tests\AFMediaBar.Layout.Tests.csproj -c Release --no-build --no-restore
-dotnet run --project .\src\AFMediaBar\AFMediaBar.csproj
-```
+### Project activity
 
-To produce the self-contained single file users download:
-
-```powershell
-dotnet publish .\src\AFMediaBar\AFMediaBar.csproj -c Release -r win-x64 --self-contained true -o .\artifacts\AFMediaBar-win-x64
-```
+![AF Media Bar repository activity and contribution statistics](https://repobeats.axiom.co/api/embed/5c84aada847e73d1f944fc22151a821d0fb2a9a9.svg "Repobeats analytics image")
 
 ## Project Structure
 
-```text
-AF-Media-Bar/
-├── .github/workflows/        # Build and release workflows
-├── src/AFMediaBar/           # The WPF application
-│   ├── Classes/              # Layered application code
-│   │   ├── Abstractions/     # Cross-module contracts
-│   │   ├── Interop/          # Windows API interop
-│   │   ├── Models/           # Data models, layout schema included
-│   │   ├── Services/         # Ownership-scoped services (Media, Lyrics, Audio, Updates…)
-│   │   ├── Settings/         # Settings model and compatibility facade
-│   │   └── Utils/            # Stateless helpers and bounded caches
-│   ├── Components/           # Reusable WPF controls
-│   ├── Resources/            # Theme, styles, and three-language strings
-│   ├── ViewModels/           # MVVM view models
-│   └── Views/                # Pages and host windows
-├── tests/AFMediaBar.Layout.Tests/   # Pure-logic, policy, and settings tests
-├── tools/                    # Architecture static checks and helper scripts
-├── installer/                # Inno Setup script
-└── docs/                     # Documentation, assets, and the version manifest
-```
+Application source is in `src/`, tests in `tests/`, and development tools in `tools/`. See the [architecture document](docs/architecture.md#仓库目录) for the directory overview and responsibilities, and the [contribution guide](CONTRIBUTING.md#development-and-validation) for build and test instructions.
 
 ## Contributing
 
@@ -104,28 +72,37 @@ Read the [contribution guide](CONTRIBUTING.md) before contributing, and see the 
 
 Bug reports should include your Windows version, app version, player, and reproduction steps. See [CHANGELOG.en-US.md](CHANGELOG.en-US.md) for version history.
 
+## Localization and translation
+
+The interface currently supports **简体中文, 繁體中文, English, and Tiếng Việt**. Choose a language on the Application page. The README is available in Chinese, English, and Vietnamese.
+
+Translation contributions in every language are welcome, including new languages and improvements to existing wording. See the [translation contribution guide](docs/localization.md#translation-guide). Use [translation feedback](https://github.com/Fervent-Tempo/AF-Media-Bar/issues/new?template=localization.yml) to report incorrect, missing, or clipped text, or to contribute a new language.
+
 ## Acknowledgements
 
+### Contributors
+
 Thank you to all the developers who have contributed to AF Media Bar.
+
+[![AF Media Bar contributors](https://contrib.nn.ci/api?repo=Fervent-Tempo/AF-Media-Bar&cols=12&radius=24&no_bot=true)](https://github.com/Fervent-Tempo/AF-Media-Bar/graphs/contributors)
+
+### Open-source projects
 
 Thanks to the following open-source projects:
 
 - [FluentFlyout](https://github.com/unchihugo/FluentFlyout): A simple, modern Windows volume flyout.
 - [Lyricify-Lyrics-Helper](https://github.com/WXRIW/Lyricify-Lyrics-Helper): A Lyricify lyrics library for parsing, generating, searching, decrypting, and refining lyrics.
 - [TaskbarLyrics](https://github.com/ANYNC/TaskbarLyrics): A Windows taskbar lyrics tool.
+- [NAudio](https://github.com/naudio/NAudio): Windows audio capture and processing.
+- [WPF UI](https://github.com/lepoco/wpfui): Fluent WPF controls.
 
-
-## License
-
-AF Media Bar is released under the [MIT License](LICENSE).
+## Sponsor
 
 <div align="center">
 
 If AF Media Bar helps you, a Star is appreciated ❤️
 
 </div>
-
-## Sponsor
 
 Buy me a coffee. **Sponsorships above 10 CNY can join the sponsor list — please leave your ID in the payment note.**
 
