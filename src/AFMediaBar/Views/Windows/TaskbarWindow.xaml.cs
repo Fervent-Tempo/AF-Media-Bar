@@ -822,6 +822,8 @@ public partial class TaskbarWindow : Window
                 _lastInputRegion = barRect;
                 _hasInputRegion = true;
             }
+            if (!_returnTransition.IsActive)
+                ResumePlacementInteraction();
             // 首次占用区探测完成前宿主保持隐藏；发布事件会立即重跑定位并在安全几何落地后显示。
             // Keep the host hidden until its first occupancy probe completes; publication immediately repositions and reveals it after safe geometry lands.
             _hasTaskbarPresentationPlacement = _hasSafePlacement;
@@ -2226,8 +2228,11 @@ public partial class TaskbarWindow : Window
         // renders at the previous length and gets clipped with an ellipsis.
         if (_applySettingsSizeImmediately || request.SkipTransition || !motion.UseContinuousMotion || Math.Abs(target - current) < LayoutSizeCalculator.MinimumChangeDip)
         {
-            StopLayoutTransition();
-            ApplyPrimaryLength(target);
+            if (_applySettingsSizeImmediately || orientation != LayoutOrientation.Horizontal)
+            {
+                StopLayoutTransition();
+                ApplyPrimaryLength(target);
+            }
             if (!_applySettingsSizeImmediately)
             {
                 _skipPlacementTransition = true;

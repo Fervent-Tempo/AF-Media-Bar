@@ -162,9 +162,14 @@ namespace AFMediaBar.Components
             // 那时直接 Start 会让剪枝白做。
             // The progress timer starts according to whether a prune level is in effect: the window can be loaded while the level already holds —
             // a taskbar rebuilt during a dark screen, for instance — and starting it outright there would undo the prune.
-            Loaded += (_, _) => ResumeBackgroundTimers();
+            Loaded += (_, _) =>
+            {
+                MainCanvas.LayoutUpdated += OnArtworkPopupLayoutUpdated;
+                ResumeBackgroundTimers();
+            };
             Unloaded += (_, _) =>
             {
+                MainCanvas.LayoutUpdated -= OnArtworkPopupLayoutUpdated;
                 _progressTimer.Stop();
                 _hoverOpenTimer.Stop();
                 _hoverCloseTimer.Stop();
@@ -1222,6 +1227,11 @@ namespace AFMediaBar.Components
                 // Only the padding before the first component comes from the layout preset; every other position is derived from the
                 // order, which is why the artwork moves with it too.
                 Canvas.SetLeft(SongImageBorder, artworkPlacement.Left);
+                if (_artworkZoomSubstitute is { } substitute)
+                {
+                    Canvas.SetLeft(substitute, artworkPlacement.Left);
+                    Canvas.SetTop(substitute, Canvas.GetTop(SongImageBorder));
+                }
             }
 
             Canvas.SetLeft(SongInfoStackPanel, textLeft);

@@ -14,6 +14,46 @@ public sealed class TaskbarPlacementPolicyTests
         TaskbarBarPosition alignment, int desired, params TaskbarPrimaryRange[] ranges) =>
         TaskbarPlacementPolicy.Evaluate(state, new(TaskbarProbeStatus.Success, 1, id, time, ranges), alignment, 2000, 0, 200, desired);
 
+    [DataTestMethod]
+    [DataRow(TaskbarBarPosition.Start)]
+    [DataRow(TaskbarBarPosition.Center)]
+    [DataRow(TaskbarBarPosition.End)]
+    public void ContentWidthChangesPreserveInteractionAtTheSameAnchor(TaskbarBarPosition alignment)
+    {
+        var range = new TaskbarPrimaryRange(20, 1900);
+        var first = Plan(new(), 1, 0, alignment, 300, range);
+        var longer = Plan(first.State, 1, 0, alignment, 601, range);
+        var shorter = Plan(longer.State, 1, 0, alignment, 250, range);
+        Assert.AreNotEqual(first.Width, longer.Width);
+        if (alignment != TaskbarBarPosition.Start)
+            Assert.AreNotEqual(first.Position, longer.Position, "左边界变化不能误判为逻辑锚点移动。");
+        Assert.IsTrue(TaskbarPlacementPolicy.CanPreserveInteraction(first.State, longer.State, true, true));
+        Assert.IsTrue(TaskbarPlacementPolicy.CanPreserveInteraction(longer.State, shorter.State, true, true));
+        Assert.IsFalse(TaskbarPlacementPolicy.CanPreserveInteraction(first.State, longer.State, false, true),
+            "DPI、对齐或宿主环境变化不能沿用内容变化的交互状态。");
+        Assert.IsFalse(TaskbarPlacementPolicy.CanPreserveInteraction(first.State, longer.State, true, false));
+    }
+
+    [TestMethod]
+    public void SpaceChangesAndVisibilityLossStillRequireInteractionCleanup()
+    {
+        var first = Plan(new(), 1, 0, TaskbarBarPosition.End, 800, new TaskbarPrimaryRange(1200, 1900));
+        var constrained = Plan(first.State, 2, 1, TaskbarBarPosition.End, 800, new TaskbarPrimaryRange(1500, 1900));
+        Assert.AreEqual(first.State.AppliedAnchorTwice, constrained.State.AppliedAnchorTwice);
+        Assert.IsFalse(TaskbarPlacementPolicy.CanPreserveInteraction(first.State, constrained.State, true, true),
+            "锚点未移动也必须识别真实空间收缩。");
+        var freeing = Plan(constrained.State, 3, 2, TaskbarBarPosition.End, 800, new TaskbarPrimaryRange(1200, 1900));
+        var restored = Plan(freeing.State, 4, 2.3, TaskbarBarPosition.End, 800, new TaskbarPrimaryRange(1200, 1900));
+        Assert.IsFalse(TaskbarPlacementPolicy.CanPreserveInteraction(constrained.State, restored.State, true, true));
+        var moved = Plan(first.State, 5, 3, TaskbarBarPosition.End, 800, new TaskbarPrimaryRange(1200, 1800));
+        Assert.AreNotEqual(first.State.AppliedAnchorTwice, moved.State.AppliedAnchorTwice);
+        Assert.IsFalse(TaskbarPlacementPolicy.CanPreserveInteraction(first.State, moved.State, true, true));
+        var hidden = Plan(first.State, 6, 4, TaskbarBarPosition.End, 800, new TaskbarPrimaryRange(1850, 1900));
+        Assert.IsFalse(hidden.State.IsVisible);
+        Assert.IsFalse(TaskbarPlacementPolicy.CanPreserveInteraction(first.State, hidden.State, true, true));
+        Assert.IsFalse(TaskbarPlacementPolicy.CanPreserveInteraction(first.State, first.State with { Generation = 2 }, true, true));
+    }
+
     [TestMethod]
     public void LongTitleClampsBeforeConsideringAnotherRange()
     {

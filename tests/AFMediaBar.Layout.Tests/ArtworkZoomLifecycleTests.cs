@@ -120,6 +120,66 @@ public sealed class ArtworkZoomLifecycleTests
     });
 
     [TestMethod]
+    public void ContentResizeKeepsZoomTreeAndFollowsTheArtworkSlot() => RunIsolated(nameof(ContentResizeKeepsZoomTreeAndFollowsTheArtworkSlot), (control, dispatcher) =>
+    {
+        SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
+        {
+            Arrangement = TaskbarContentArrangement.Right,
+            SpectrumVisible = false,
+            PerformanceVisible = false,
+            InputDeviceVisible = false,
+            OutputDeviceVisible = false,
+            VolumeVisible = false
+        };
+        control.ApplyTaskbarExperienceSettings();
+        Invoke(control, "ShowArtworkHoverZoom");
+        var popup = GetPopup(control);
+        var host = (Grid)popup.Child;
+        var artwork = (Border)control.FindName("SongImageBorder");
+        var scale = (ScaleTransform)control.FindName("SongImageScale");
+        scale.ScaleX = scale.ScaleY = 1.5;
+        // 不操纵系统鼠标；本回归只检查布局，不由实际指针决定是否收起。
+        foreach (var field in new[] { "_artworkZoomHoverSyncTimer", "_wheelTooltipTimer" })
+            ((DispatcherTimer)typeof(TaskBarMediaControl).GetField(field, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!).Stop();
+        var generation = typeof(TaskBarMediaControl).GetField("_artworkZoomGeneration", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var openedGeneration = generation.GetValue(control);
+        var hover = (Grid)control.FindName("HoverRevealHost");
+        typeof(TaskBarMediaControl).GetField("_isTaskbarHoverVisible", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(control, true);
+        hover.Visibility = Visibility.Visible;
+        hover.IsHitTestVisible = true;
+        foreach (var width in new[] { 640d, 380d, 520d })
+        {
+            control.ApplyPrimaryLength(width);
+            control.Width = width;
+            control.Measure(new Size(width, 44));
+            control.Arrange(new Rect(0, 0, width, 44));
+            control.UpdateLayout();
+            Assert.IsTrue(popup.IsOpen);
+            Assert.AreSame(host, artwork.Parent, "内容变长、变短不能重新换树。");
+            Assert.AreEqual(openedGeneration, generation.GetValue(control), "尺寸更新不能重新开始放大。");
+            Assert.AreEqual(1.5, scale.ScaleX);
+            Assert.AreEqual(Visibility.Visible, hover.Visibility, "尺寸变化不能隐藏悬停控制层。");
+            Assert.IsTrue(hover.IsHitTestVisible);
+            var substitute = (Border)typeof(TaskBarMediaControl).GetField("_artworkZoomSubstitute", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
+            Assert.AreEqual(Canvas.GetLeft(artwork), Canvas.GetLeft(substitute), 0.01, "替身必须跟随最新封面位置。");
+            var expected = substitute.PointToScreen(new Point(substitute.ActualWidth / 2, substitute.ActualHeight));
+            var actual = artwork.PointToScreen(new Point(artwork.ActualWidth / 2, artwork.ActualHeight));
+            Assert.AreEqual(expected.X, actual.X, 1.1, "独立 Popup 必须跟随主树封面锚点。");
+            Assert.AreEqual(expected.Y, actual.Y, 1.1);
+        }
+        control.ApplyPlacementMotionSuspension(true);
+        AssertRestored(control);
+        control.ApplyPrimaryLength(580);
+        Invoke(control, "ShowArtworkHoverZoom");
+        AssertRestored(control);
+        control.ApplyPlacementMotionSuspension(false);
+        Invoke(control, "ShowArtworkHoverZoom");
+        Assert.IsTrue(popup.IsOpen, "位置恢复结束后必须还能重新展开。");
+        Invoke(control, "HideArtworkHoverZoom", true);
+        return Task.CompletedTask;
+    });
+
+    [TestMethod]
     public void ZoomTooltipRetainsHintAndClosesOnReclaim() => RunIsolated(nameof(ZoomTooltipRetainsHintAndClosesOnReclaim), (control, dispatcher) =>
     {
         Invoke(control, "ShowArtworkHoverZoom");

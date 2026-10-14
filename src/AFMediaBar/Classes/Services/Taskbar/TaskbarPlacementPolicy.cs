@@ -11,6 +11,15 @@ public static class TaskbarPlacementPolicy
     public const double ConfirmationSeconds = 0.2;
     private const double MaximumSampleGapSeconds = 4;
 
+    // 内容宽度不参与逻辑锚点判断；居中或靠右时，左边界会随宽度变化。
+    internal static bool CanPreserveInteraction(TaskbarPlacementState previous,
+        TaskbarPlacementState next, bool sameContext, bool sameCrossAxis) =>
+        sameContext && sameCrossAxis && previous.IsVisible && next.IsVisible &&
+        previous.HasHome && next.HasHome && !previous.NeedsSpaceRecovery && !next.NeedsSpaceRecovery &&
+        !previous.IsDragSeed && !next.IsDragSeed && previous.Generation == next.Generation &&
+        previous.Minimum == next.Minimum && previous.AppliedAnchorTwice == next.AppliedAnchorTwice &&
+        previous.Range == next.Range && previous.Budget == next.Budget;
+
     public static TaskbarPlacementDecision Evaluate(TaskbarPlacementState previous,
         TaskbarOccupancySnapshot snapshot, TaskbarBarPosition alignment,
         int taskbarLength, int manualPadding, int minimum, int desired)

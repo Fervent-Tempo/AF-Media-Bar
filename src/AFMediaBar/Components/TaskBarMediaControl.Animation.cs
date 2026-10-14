@@ -547,6 +547,9 @@ public partial class TaskBarMediaControl
     /// position is stashed here for the callback to hand out.</summary>
     private double _artworkZoomPendingPlacementX;
     private double _artworkZoomPendingPlacementY;
+    private Point _artworkZoomPlacementHome;
+    private Point _artworkZoomPlacementOrigin;
+    private Point? _artworkPreviewPlacementAnchor;
 
     /// <summary>
     /// 送回主树时的落位时长：主树与 Popup 是两条像素舍入管道（主树逐级 UseLayoutRounding、Popup 是独立 HWND 各自
@@ -831,30 +834,7 @@ public partial class TaskBarMediaControl
         // while the shift's calibration (_artworkZoomCoverOffsetCalibrationX/Y, learned where the field doc says) only
         // absorbs the cover's rendered offset.
         var dpiScale = PresentationSource.FromVisual(this)?.CompositionTarget?.TransformToDevice.M11 ?? 1.0;
-        var canvasOrigin = MainCanvas.PointToScreen(new Point(0, 0));
-        var marginPx = (scaledWidth - width) / 2 * dpiScale;
-        var topPx = (scaledHeight - height) * dpiScale;
-        var screenLeft = SystemParameters.VirtualScreenLeft * dpiScale;
-        var screenTop = SystemParameters.VirtualScreenTop * dpiScale;
-        var screenRight = screenLeft + SystemParameters.VirtualScreenWidth * dpiScale;
-        var screenBottom = screenTop + SystemParameters.VirtualScreenHeight * dpiScale;
-        // 理想 host 左上 = 封面基准 − 宿主内边距，再按屏幕边界预夹持（WPF 对 Custom 摆放同样夹持，自己先夹才知道
-        // 夹了多少）。宿主内位移直接以「收拢终态 = 封面基准」为目标：位移 = 基准 − 夹持后host − 内边距 − 校准 E，
-        // 被屏幕裁掉的只有看不见的空边距，放大态封面依旧渲染在主树原位上。
-        // Ideal host top-left = baseline minus paddings, pre-clamped to the screen bounds (WPF clamps Custom placements
-        // too, so clamping first tells us how much will be cut). The in-host shift targets "collapsed final spot = baseline"
-        // directly: shift = baseline − clamped host − paddings − calibration E; the screen crops only the invisible empty
-        // margin, so the enlarged cover still renders on the main-tree spot.
-        var idealHostX = homeScreen.X - marginPx;
-        var idealHostY = homeScreen.Y - topPx;
-        var clampedX = Math.Max(screenLeft, Math.Min(idealHostX, screenRight - scaledWidth * dpiScale));
-        var clampedY = Math.Max(screenTop, Math.Min(idealHostY, screenBottom - scaledHeight * dpiScale));
-        var shiftPxX = homeScreen.X - clampedX - marginPx - _artworkZoomCoverOffsetCalibrationX;
-        var shiftPxY = homeScreen.Y - clampedY - topPx - _artworkZoomCoverOffsetCalibrationY;
-        SongImageSettleTranslate.X = shiftPxX / dpiScale;
-        SongImageSettleTranslate.Y = shiftPxY / dpiScale;
-        _artworkZoomPendingPlacementX = clampedX - canvasOrigin.X;
-        _artworkZoomPendingPlacementY = clampedY - canvasOrigin.Y;
+        PositionArtworkHoverZoom(homeScreen, dpiScale, host);
 
         popup.IsOpen = true;
         // 开窗即刻校准封面渲染偏移：本会话的第一次放大若等到第一次收回才学，就会带着 3~4px 的未校准偏差长出来。
@@ -875,6 +855,69 @@ public partial class TaskBarMediaControl
         // raises no event at all, which only a geometry poll can catch.
         _artworkZoomHoverSyncTimer.Start();
         _wheelTooltipTimer.Start();
+    }
+
+    // 在主树布局落地后同步独立 Popup；订阅由控件 Loaded/Unloaded 配对管理。
+    private void OnArtworkPopupLayoutUpdated(object? sender, EventArgs e)
+    {
+        if (!IsLoaded || (_artworkHoverZoomPopup?.IsOpen != true && _artworkHoverPreview?.IsOpen != true) ||
+            PresentationSource.FromVisual(MainCanvas) is null)
+            return;
+
+        if (_artworkHoverZoomPopup is { IsOpen: true } zoom && _artworkZoomSubstitute is { } substitute &&
+            _artworkHoverZoomHost is { } host && ReferenceEquals(SongImageBorder.Parent, host))
+        {
+            var home = substitute.PointToScreen(new Point());
+            var origin = MainCanvas.PointToScreen(new Point());
+            if (home == _artworkZoomPlacementHome && origin == _artworkZoomPlacementOrigin)
+                return;
+
+            // 旧校准回调带着开窗时的位置，不能覆盖换行后的锚点；缩放时钟与换树状态保持不动。
+            _artworkZoomShowCalibrationGeneration++;
+            _artworkZoomSettleGeneration++;
+            SongImageSettleTranslate.BeginAnimation(TranslateTransform.XProperty, null);
+            SongImageSettleTranslate.BeginAnimation(TranslateTransform.YProperty, null);
+            var dpi = PresentationSource.FromVisual(MainCanvas)!.CompositionTarget.TransformToDevice.M11;
+            PositionArtworkHoverZoom(home, dpi, host);
+            RefreshArtworkPopupPosition(zoom);
+            CalibrateArtworkZoomOnShow(home, dpi, host, zoom);
+        }
+        else if (_artworkHoverPreview is { IsOpen: true } preview && PresentationSource.FromVisual(SongImageBorder) is not null)
+        {
+            var anchor = SongImageBorder.PointToScreen(new Point());
+            if (_artworkPreviewPlacementAnchor == anchor)
+                return;
+            _artworkPreviewPlacementAnchor = anchor;
+            RefreshArtworkPopupPosition(preview);
+        }
+    }
+
+    private void PositionArtworkHoverZoom(Point homeScreen, double dpiScale, Grid host)
+    {
+        var canvasOrigin = MainCanvas.PointToScreen(new Point());
+        var marginPx = (host.Width - SongImageBorder.ActualWidth) / 2 * dpiScale;
+        var topPx = (host.Height - SongImageBorder.ActualHeight) * dpiScale;
+        var screenLeft = SystemParameters.VirtualScreenLeft * dpiScale;
+        var screenTop = SystemParameters.VirtualScreenTop * dpiScale;
+        var screenRight = screenLeft + SystemParameters.VirtualScreenWidth * dpiScale;
+        var screenBottom = screenTop + SystemParameters.VirtualScreenHeight * dpiScale;
+        // 沿用开窗时的屏幕夹持与内部补偿，封面底边仍落在主树原格上。
+        var clampedX = Math.Max(screenLeft, Math.Min(homeScreen.X - marginPx, screenRight - host.Width * dpiScale));
+        var clampedY = Math.Max(screenTop, Math.Min(homeScreen.Y - topPx, screenBottom - host.Height * dpiScale));
+        SongImageSettleTranslate.X = (homeScreen.X - clampedX - marginPx - _artworkZoomCoverOffsetCalibrationX) / dpiScale;
+        SongImageSettleTranslate.Y = (homeScreen.Y - clampedY - topPx - _artworkZoomCoverOffsetCalibrationY) / dpiScale;
+        _artworkZoomPendingPlacementX = clampedX - canvasOrigin.X;
+        _artworkZoomPendingPlacementY = clampedY - canvasOrigin.Y;
+        _artworkZoomPlacementHome = homeScreen;
+        _artworkZoomPlacementOrigin = canvasOrigin;
+    }
+
+    private static void RefreshArtworkPopupPosition(System.Windows.Controls.Primitives.Popup popup)
+    {
+        // WPF 没有公开的 Reposition；触发偏移属性变更以重算锚点，最终偏移保持原值。
+        var offset = popup.HorizontalOffset;
+        popup.SetCurrentValue(System.Windows.Controls.Primitives.Popup.HorizontalOffsetProperty, offset + 1);
+        popup.SetCurrentValue(System.Windows.Controls.Primitives.Popup.HorizontalOffsetProperty, offset);
     }
 
     /// <summary>

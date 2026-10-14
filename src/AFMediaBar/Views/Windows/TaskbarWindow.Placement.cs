@@ -23,6 +23,7 @@ public partial class TaskbarWindow
     private readonly TaskbarReturnTransition _returnTransition = new();
     private RECT? _renderedHorizontalRect;
     private bool _skipPlacementTransition;
+    private bool _isPlacementInteractionSuspended;
     private double _returnDpi;
     private int _returnCross;
     private int _returnThickness;
@@ -33,15 +34,23 @@ public partial class TaskbarWindow
     /// <summary>开始移动前关闭依赖封面位置的浮层。</summary>
     public event EventHandler? PlacementTransitionStarted;
 
-    private void StopLayoutTransition()
+    private void StopLayoutTransition(bool resumeInteraction = true)
     {
         _sizeAnimationTimer?.Stop();
         _returnTransition.Stop();
+        if (resumeInteraction)
+            ResumePlacementInteraction();
+    }
+
+    private void ResumePlacementInteraction()
+    {
         MediaControl.ApplyPlacementMotionSuspension(false);
+        _isPlacementInteractionSuspended = false;
     }
 
     private void ClosePlacementPopups()
     {
+        _isPlacementInteractionSuspended = true;
         MediaControl.ApplyPlacementMotionSuspension(true);
         _compactFlyout.Dismiss();
         PlayerMenu.IsOpen = false;
@@ -128,9 +137,10 @@ public partial class TaskbarWindow
             (int)Math.Round(SettingsManager.Current.TaskbarBarCrossAxisOffsetDip * dpi), 0, Math.Max(0, rect.Bottom - rect.Top - thickness));
         var motion = MotionPolicy.ResolveCurrent();
         var now = Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency;
-        if (!_returnTransition.IsActive && _renderedHorizontalRect is { } rendered &&
-            (rendered.Left != decision.Position || rendered.Right - rendered.Left != decision.Width ||
-             rendered.Top != cross || rendered.Bottom - rendered.Top != thickness))
+        var preserveInteraction = TaskbarPlacementPolicy.CanPreserveInteraction(
+            _placementState, decision.State, _placementContext == _pendingPlacementContext,
+            _renderedHorizontalRect is { } previousRect && previousRect.Top == cross && previousRect.Bottom == cross + thickness);
+        if (!preserveInteraction && !_isPlacementInteractionSuspended && _renderedHorizontalRect is not null)
             ClosePlacementPopups();
         var canReturn = !_skipPlacementTransition && !_applySettingsSizeImmediately && !_isDragging &&
             !_isRestoringTaskbarPresentation && !MediaControl.IsRestConnectionTransitionActive &&
@@ -140,15 +150,10 @@ public partial class TaskbarWindow
             current.Left >= decision.State.Range.Start && current.Right <= decision.State.Range.End;
         if (canReturn && _renderedHorizontalRect is { } previous)
         {
-            var wasActive = _returnTransition.IsActive;
             _returnTransition.Retarget(previous.Left, previous.Right - previous.Left,
                 decision.Position, decision.Width, now, motion.PositionDuration.TotalSeconds);
             if (_returnTransition.IsActive)
             {
-                if (!wasActive)
-                {
-                    MediaControl.ApplyPlacementMotionSuspension(true);
-                }
                 _returnDpi = dpi;
                 _returnCross = cross;
                 _returnThickness = thickness;
@@ -157,13 +162,15 @@ public partial class TaskbarWindow
                 _sizeAnimationTimer.Start();
                 var frame = _returnTransition.Advance(now);
                 _lengthConstraints.Update(this, decision.State.Minimum / dpi, decision.State.Budget / dpi);
-                if (!_returnTransition.IsActive) StopLayoutTransition();
+                if (!_returnTransition.IsActive) StopLayoutTransition(resumeInteraction: false);
                 return ApplyHorizontalFrame(frame.Position, frame.Width, dpi, cross, thickness);
             }
         }
-        StopLayoutTransition();
         _lengthConstraints.Update(this, decision.State.Minimum / dpi, decision.State.Budget / dpi);
-        return ApplyHorizontalFrame(decision.Position, decision.Width, dpi, cross, thickness);
+        var result = ApplyHorizontalFrame(decision.Position, decision.Width, dpi, cross, thickness);
+        // 输入区域由调用方随后写入；离散内容请求不能提前解除位置恢复的交互保护。
+        StopLayoutTransition(resumeInteraction: false);
+        return result;
     }
 
     private RECT ApplyHorizontalFrame(double position, double width, double dpi, int cross, int thickness)
