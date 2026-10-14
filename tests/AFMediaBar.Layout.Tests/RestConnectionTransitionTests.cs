@@ -6,6 +6,7 @@ using System.Windows.Threading;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Settings;
+using AFMediaBar.Classes.Services;
 using AFMediaBar.Components;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -27,7 +28,9 @@ public sealed class RestConnectionTransitionTests
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                CreateNoWindow = true
+                CreateNoWindow = true,
+                StandardOutputEncoding = System.Text.Encoding.UTF8,
+                StandardErrorEncoding = System.Text.Encoding.UTF8
             };
             startInfo.ArgumentList.Add("vstest");
             startInfo.ArgumentList.Add(typeof(RestConnectionTransitionTests).Assembly.Location);
@@ -49,7 +52,6 @@ public sealed class RestConnectionTransitionTests
 
         StaTest.Run(async dispatcher =>
         {
-            Assert.IsTrue(SystemParameters.ClientAreaAnimation, "此回归需要启用 Windows 客户区动画。");
             var original = SettingsManager.Current;
             var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
             Window? window = null;
@@ -88,28 +90,33 @@ public sealed class RestConnectionTransitionTests
                     Title = "Connection test",
                     Artist = "Artist"
                 };
-                foreach (var (enabled, retained) in new[] { (false, false), (true, false), (true, true) })
+                // 不假定 CI 的桌面偏好；两种宿主开关都验证，系统关闭动画时还要验证即时落地。
+                foreach (var allowTransitions in new[] { false, true })
                 {
-                    control.AllowRestConnectionTransition = false;
-                    SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
+                    foreach (var (enabled, retained) in new[] { (false, false), (true, false), (true, true) })
                     {
-                        InputDeviceVisible = enabled,
-                        IdleComponents = retained
-                            ? [TaskbarRestComponent.Artwork, TaskbarRestComponent.InputDevice]
-                            : [TaskbarRestComponent.Artwork]
-                    };
-                    control.UpdateSongInfo(connected);
-                    control.UpdateLayout();
-                    Assert.AreEqual(enabled ? Visibility.Visible : Visibility.Collapsed, input.Visibility);
-                    control.AllowRestConnectionTransition = true;
+                        control.AllowRestConnectionTransition = false;
+                        SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
+                        {
+                            InputDeviceVisible = enabled,
+                            IdleComponents = retained
+                                ? [TaskbarRestComponent.Artwork, TaskbarRestComponent.InputDevice]
+                                : [TaskbarRestComponent.Artwork]
+                        };
+                        control.UpdateSongInfo(connected);
+                        control.UpdateLayout();
+                        Assert.AreEqual(enabled ? Visibility.Visible : Visibility.Collapsed, input.Visibility);
+                        control.AllowRestConnectionTransition = allowTransitions;
+                        var expectTransition = allowTransitions && MotionPolicy.ResolveCurrent().UseTransitions;
 
-                    await ChangeConnectionAsync(control, MediaSnapshot.Disconnected);
-                    Assert.AreEqual(retained ? Visibility.Visible : Visibility.Collapsed, input.Visibility);
-                    Assert.AreEqual(Visibility.Collapsed, ((FrameworkElement)control.FindName("SongInfoStackPanel")).Visibility);
-                    await ChangeConnectionAsync(control, connected);
-                    Assert.AreEqual(enabled ? Visibility.Visible : Visibility.Collapsed, input.Visibility);
-                    Assert.AreEqual(1d, input.Opacity, "连接过渡结束后输入设备透明度必须恢复。");
-                    Assert.IsTrue(((FrameworkElement)control.FindName("InteractionSurface")).IsHitTestVisible);
+                        await ChangeConnectionAsync(control, MediaSnapshot.Disconnected, expectTransition);
+                        Assert.AreEqual(retained ? Visibility.Visible : Visibility.Collapsed, input.Visibility);
+                        Assert.AreEqual(Visibility.Collapsed, ((FrameworkElement)control.FindName("SongInfoStackPanel")).Visibility);
+                        await ChangeConnectionAsync(control, connected, expectTransition);
+                        Assert.AreEqual(enabled ? Visibility.Visible : Visibility.Collapsed, input.Visibility);
+                        Assert.AreEqual(1d, input.Opacity, "连接过渡结束后输入设备透明度必须恢复。");
+                        Assert.IsTrue(((FrameworkElement)control.FindName("InteractionSurface")).IsHitTestVisible);
+                    }
                 }
             }
             finally
@@ -121,7 +128,7 @@ public sealed class RestConnectionTransitionTests
         });
     }
 
-    private static async Task ChangeConnectionAsync(TaskBarMediaControl control, MediaSnapshot snapshot)
+    private static async Task ChangeConnectionAsync(TaskBarMediaControl control, MediaSnapshot snapshot, bool expectTransition)
     {
         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         void OnFinished(object? sender, EventArgs args) => completion.TrySetResult();
@@ -129,8 +136,11 @@ public sealed class RestConnectionTransitionTests
         try
         {
             control.UpdateSongInfo(snapshot);
-            Assert.IsTrue(control.IsRestConnectionTransitionActive, "必须实际执行连接过渡，不能退回无动画路径。");
-            await completion.Task.WaitAsync(TimeSpan.FromSeconds(3));
+            if (expectTransition)
+            {
+                Assert.IsTrue(control.IsRestConnectionTransitionActive, "允许动效时必须实际执行连接过渡。");
+                await completion.Task.WaitAsync(TimeSpan.FromSeconds(3));
+            }
             Assert.IsFalse(control.IsRestConnectionTransitionActive);
         }
         finally
