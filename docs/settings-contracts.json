@@ -50,7 +50,11 @@
       "textClickAction": "v1.2.0",
       "trayChordWheelAction": "v1.2.0",
       "trayClickAction": "v1.2.0",
-      "trayPrimaryWheelAction": "v1.2.0"
+      "trayPrimaryWheelAction": "v1.2.0",
+      "outputDeviceClickTarget": "unreleased",
+      "outputDeviceWheelTarget": "unreleased",
+      "inputDeviceClickTarget": "unreleased",
+      "inputDeviceWheelTarget": "unreleased"
     },
     "interfaceLanguage": "v1.2.0",
     "launchAtStartup": "v1.2.0",
@@ -143,7 +147,8 @@
         "outputDeviceVisible": "v1.2.0",
         "playPauseVisible": "v1.2.0",
         "previousNextVisible": "v1.2.0",
-        "progressVisible": "v1.2.0"
+        "progressVisible": "v1.2.0",
+        "inputDeviceVisible": "unreleased"
       },
       "hoverLayerEnabled": "v1.2.0",
       "idleComponents": "v1.2.1",
@@ -155,7 +160,8 @@
       "restComponentOrder": "v1.2.1",
       "restProgressVisible": "v1.2.0",
       "spectrumVisible": "v1.2.0",
-      "volumeVisible": "v1.2.1"
+      "volumeVisible": "v1.2.1",
+      "inputDeviceVisible": "unreleased"
     },
     "taskbarSurface": {
       "$release": "v1.2.0",
@@ -184,7 +190,26 @@
       "lastCheckUtc": "v1.2.0",
       "skippedVersion": "v1.2.0"
     },
-    "windowMode": "v1.2.0"
+    "windowMode": "v1.2.0",
+    "audioDevices": {
+      "$release": "unreleased",
+      "outputBlacklist": {
+        "$release": "unreleased",
+        "$items": {
+          "endpointId": "unreleased",
+          "displayName": "unreleased"
+        }
+      },
+      "inputBlacklist": {
+        "$release": "unreleased",
+        "$items": {
+          "endpointId": "unreleased",
+          "displayName": "unreleased"
+        }
+      },
+      "switchOutputCommunications": "unreleased",
+      "switchInputCommunications": "unreleased"
+    }
   },
   "enums": {
     "AccentColorMode": {
@@ -446,7 +471,11 @@
         "Spectrum": {"value": 2, "release": "v1.2.1"},
         "Performance": {"value": 3, "release": "v1.2.1"},
         "OutputDevice": {"value": 4, "release": "v1.2.1"},
-        "Volume": {"value": 5, "release": "v1.2.1"}
+        "Volume": {"value": 5, "release": "v1.2.1"},
+        "InputDevice": {
+          "value": 6,
+          "release": "unreleased"
+        }
       }
     },
     "TrackChangeNotificationPosition": {
@@ -468,7 +497,11 @@
         "OpenAudioControl": {"value": 2, "release": "v1.2.0"},
         "OpenContextMenu": {"value": 3, "release": "v1.2.0"},
         "OpenOutputDeviceMenu": {"value": 4, "release": "v1.2.0"},
-        "OpenCurrentAppVolumeMenu": {"value": 5, "release": "v1.2.0"}
+        "OpenCurrentAppVolumeMenu": {"value": 5, "release": "v1.2.0"},
+        "OpenInputDeviceMenu": {
+          "value": 6,
+          "release": "unreleased"
+        }
       }
     },
     "TrayWheelBehavior": {
@@ -476,7 +509,11 @@
       "members": {
         "AdjustVolume": {"value": 0, "release": "v1.2.0"},
         "SwitchOutputDevice": {"value": 1, "release": "v1.2.0"},
-        "Disabled": {"value": 2, "release": "v1.2.0"}
+        "Disabled": {"value": 2, "release": "v1.2.0"},
+        "SwitchInputDevice": {
+          "value": 3,
+          "release": "unreleased"
+        }
       }
     },
     "WheelAction": {
@@ -486,7 +523,11 @@
         "CurrentApplicationVolume": {"value": 1, "release": "v1.2.0"},
         "OutputDevice": {"value": 2, "release": "v1.2.0"},
         "SwitchMediaSource": {"value": 3, "release": "v1.2.0"},
-        "Disabled": {"value": 4, "release": "v1.2.0"}
+        "Disabled": {"value": 4, "release": "v1.2.0"},
+        "InputDevice": {
+          "value": 5,
+          "release": "unreleased"
+        }
       }
     },
     "WindowMode": {
@@ -501,6 +542,28 @@
       "members": {
         "Cycle": {"value": 0, "release": "v1.4.0"},
         "Parallel": {"value": 1, "release": "v1.4.0"}
+      }
+    },
+    "AudioDeviceSwitchTarget": {
+      "paths": [
+        "settings.interaction.outputDeviceClickTarget",
+        "settings.interaction.outputDeviceWheelTarget",
+        "settings.interaction.inputDeviceClickTarget",
+        "settings.interaction.inputDeviceWheelTarget"
+      ],
+      "members": {
+        "SystemDefault": {
+          "value": 0,
+          "release": "unreleased"
+        },
+        "ForegroundApplication": {
+          "value": 1,
+          "release": "unreleased"
+        },
+        "Disabled": {
+          "value": 2,
+          "release": "unreleased"
+        }
       }
     }
   },

@@ -82,7 +82,8 @@ public partial class TaskBarMediaControl
             experience.PerformanceVisible,
             experience.OutputDeviceVisible,
             experience.VolumeVisible,
-            experience.ArtworkVisible);
+            experience.ArtworkVisible,
+            experience.InputDeviceVisible);
         var visuals = new Dictionary<TaskbarRestComponent, RestVisual>();
         foreach (var component in TaskbarRestLayoutPolicy.DefaultOrder)
         {
@@ -133,6 +134,7 @@ public partial class TaskBarMediaControl
         TaskbarRestComponent.Spectrum => TaskbarSpectrumHoverSurface,
         TaskbarRestComponent.Performance => TaskbarPerformanceHoverSurface,
         TaskbarRestComponent.OutputDevice => TaskbarOutputDeviceHoverSurface,
+        TaskbarRestComponent.InputDevice => TaskbarInputDeviceHoverSurface,
         TaskbarRestComponent.Volume => TaskbarVolumeHoverSurface,
         _ => throw new ArgumentOutOfRangeException(nameof(component))
     };

@@ -2709,4 +2709,139 @@
   <data name="Common.Widgets.Description" xml:space="preserve">
     <value>调整频谱与性能小组件的显示和参数。</value>
   </data>
+  <data name="Common.InputDevice" xml:space="preserve">
+    <value>输入设备</value>
+  </data>
+  <data name="Common.SwitchInputDevice" xml:space="preserve">
+    <value>切换输入设备</value>
+  </data>
+  <data name="Audio.Device.Unavailable" xml:space="preserve">
+    <value>没有可切换的设备</value>
+  </data>
+  <data name="Audio.Device.Hidden" xml:space="preserve">
+    <value>当前设备已隐藏</value>
+  </data>
+  <data name="Audio.Device.Applied" xml:space="preserve">
+    <value>默认设备已切换</value>
+  </data>
+  <data name="Audio.Device.Unchanged" xml:space="preserve">
+    <value>设备未变化</value>
+  </data>
+  <data name="Audio.Device.Cancelled" xml:space="preserve">
+    <value>设备切换已取消</value>
+  </data>
+  <data name="Audio.Device.Disabled" xml:space="preserve">
+    <value>设备操作已禁用</value>
+  </data>
+  <data name="Audio.Device.Disconnected" xml:space="preserve">
+    <value>设备不可用或已断开</value>
+  </data>
+  <data name="Audio.Device.InputDescription" xml:space="preserve">
+    <value>点击打开输入设备菜单，滚轮预览并切换麦克风。</value>
+  </data>
+  <data name="Audio.App.Unavailable" xml:space="preserve">
+    <value>无法识别有音频会话的前台应用</value>
+  </data>
+  <data name="Audio.Route.FollowDefault" xml:space="preserve">
+    <value>跟随系统默认</value>
+  </data>
+  <data name="Audio.Route.Unsupported" xml:space="preserve">
+    <value>此系统不支持应用设备路由</value>
+  </data>
+  <data name="Audio.Route.ReadFailed" xml:space="preserve">
+    <value>无法读取应用设备路由</value>
+  </data>
+  <data name="Audio.Route.Mixed" xml:space="preserve">
+    <value>不同进程或角色的设备设置不一致</value>
+  </data>
+  <data name="Audio.Route.HiddenOrDisconnected" xml:space="preserve">
+    <value>当前设备已隐藏、已断开或设置不一致</value>
+  </data>
+  <data name="Audio.Route.Saved" xml:space="preserve">
+    <value>应用路由偏好已保存；生效时间取决于应用</value>
+  </data>
+  <data name="Audio.Route.Partial" xml:space="preserve">
+    <value>设备设置仅部分成功，请检查应用与系统设置</value>
+  </data>
+  <data name="Audio.Route.Failed" xml:space="preserve">
+    <value>设备切换失败，请检查当前设备状态</value>
+  </data>
+  <data name="Audio.Route.NoPlayback" xml:space="preserve">
+    <value>无播放会话</value>
+  </data>
+  <data name="Audio.Settings.Title" xml:space="preserve">
+    <value>音频设备</value>
+  </data>
+  <data name="Audio.Settings.Description" xml:space="preserve">
+    <value>勾选允许在 AF 中切换的设备。取消勾选会从所有切换入口隐藏设备，不会禁用 Windows 设备；跟随系统默认仍可使用它。</value>
+  </data>
+  <data name="Audio.Settings.Allow" xml:space="preserve">
+    <value>允许切换</value>
+  </data>
+  <data name="Audio.Settings.Advanced" xml:space="preserve">
+    <value>高级设备交互</value>
+  </data>
+  <data name="Audio.Settings.OutputCommunications" xml:space="preserve">
+    <value>切换输出时同时切换通信设备</value>
+  </data>
+  <data name="Audio.Settings.InputCommunications" xml:space="preserve">
+    <value>切换输入时同时切换通信设备</value>
+  </data>
+  <data name="Audio.Settings.OutputClick" xml:space="preserve">
+    <value>输出按钮点击目标</value>
+  </data>
+  <data name="Audio.Settings.OutputWheel" xml:space="preserve">
+    <value>输出按钮滚轮目标</value>
+  </data>
+  <data name="Audio.Settings.InputClick" xml:space="preserve">
+    <value>输入按钮点击目标</value>
+  </data>
+  <data name="Audio.Settings.InputWheel" xml:space="preserve">
+    <value>输入按钮滚轮目标</value>
+  </data>
+  <data name="Audio.Target.System" xml:space="preserve">
+    <value>系统默认设备</value>
+  </data>
+  <data name="Audio.Target.Foreground" xml:space="preserve">
+    <value>前台应用设备</value>
+  </data>
+  <data name="Audio.Settings.OutputList" xml:space="preserve">
+    <value>选择可在 AF 中切换的扬声器和耳机。</value>
+  </data>
+  <data name="Audio.Settings.InputList" xml:space="preserve">
+    <value>选择可在 AF 中切换的麦克风。</value>
+  </data>
+  <data name="Audio.Settings.AdvancedDescription" xml:space="preserve">
+    <value>分别配置输入、输出按钮的操作目标和通信设备。</value>
+  </data>
+  <data name="Audio.Settings.OtherDevices" xml:space="preserve">
+    <value>其他设备</value>
+  </data>
+  <data name="Audio.Device.SystemDisabled" xml:space="preserve">
+    <value>已在 Windows 中禁用</value>
+  </data>
+  <data name="Audio.Device.Unplugged" xml:space="preserve">
+    <value>未连接</value>
+  </data>
+  <data name="Audio.Settings.AvailabilityHint" xml:space="preserve">
+    <value>切换菜单只显示当前活动且允许切换的设备。其他设备包含断开和历史端点；允许切换不会启用 Windows 设备。</value>
+  </data>
+  <data name="Audio.Mute.MuteHint" xml:space="preserve">
+    <value>{0} · 点击静音</value>
+  </data>
+  <data name="Audio.Mute.UnmuteHint" xml:space="preserve">
+    <value>{0} · 已静音，点击取消静音</value>
+  </data>
+  <data name="Audio.Mute.WriteFailed" xml:space="preserve">
+    <value>未能完整更新 {0} 的音量或静音状态，请检查当前状态。</value>
+  </data>
+  <data name="Audio.Route.Expand" xml:space="preserve">
+    <value>展开设备路由</value>
+  </data>
+  <data name="Audio.Device.Pending" xml:space="preserve">
+    <value>等待应用…</value>
+  </data>
+  <data name="Audio.Device.NotPresent" xml:space="preserve">
+    <value>当前不可用</value>
+  </data>
 </root>

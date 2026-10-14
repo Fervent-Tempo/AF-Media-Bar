@@ -18,7 +18,7 @@ namespace AFMediaBar.Classes.Services.Audio;
 /// Session display names and process names come from the system; only the system-sounds entry is named by this application
 /// and therefore follows the active interface language.
 /// </summary>
-public sealed class ApplicationVolumeService
+public sealed class ApplicationVolumeService : IApplicationAudioControl
 {
     private const string SystemSoundsProcessName = "AFMediaBar.SystemSounds";
     private readonly object _gate = new();
@@ -128,6 +128,41 @@ public sealed class ApplicationVolumeService
         }
     }
 
+    /// <summary>在后台队列中写入并回读；静音不修改会话音量，所有原生包装在本次枚举内释放。</summary>
+    public ApplicationAudioControlResult Apply(string processName, int? volumePercent, bool? muted, Func<bool> isCurrent)
+    {
+        lock (_gate)
+        {
+            if (!isCurrent()) return new(new(AudioDeviceOperationStatus.Cancelled));
+            var aggregate = new Aggregate(processName, processName == SystemSoundsProcessName);
+            var matched = 0;
+            var applied = 0;
+            var failed = 0;
+            ForEachSession((_, candidate, name, icon, state, _, _, volume) =>
+            {
+                if (!string.Equals(candidate, processName, StringComparison.OrdinalIgnoreCase) || !isCurrent()) return;
+                matched++;
+                try
+                {
+                    if (volumePercent is { } percent)
+                    {
+                        volume.Volume = Math.Clamp(percent, 0, 100) / 100f;
+                        if (percent > 0) volume.Mute = false;
+                    }
+                    if (muted is { } mute) volume.Mute = mute;
+                    applied++;
+                }
+                catch (Exception) { failed++; }
+                try { aggregate.Add(name, state, volume.Volume, volume.Mute, null); }
+                catch (Exception) { failed++; }
+            });
+            if (!isCurrent()) return new(new(AudioDeviceOperationStatus.Cancelled));
+            var status = matched == 0 ? AudioDeviceOperationStatus.Unavailable :
+                failed == 0 ? AudioDeviceOperationStatus.Applied : applied > 0 ? AudioDeviceOperationStatus.Partial : AudioDeviceOperationStatus.Failed;
+            return new(new(status), aggregate.Count > 0 ? aggregate.Create(false) : null);
+        }
+    }
+
     private void ForEachSession(Action<uint, string, string?, string?, AudioSessionState, float, bool, SimpleAudioVolume> visitor)
     {
         using var enumerator = new MMDeviceEnumerator();
@@ -192,6 +227,7 @@ public sealed class ApplicationVolumeService
         private string? _sessionName;
         private byte[]? _iconData;
 
+        public int Count => _count;
         public string ProcessName { get; } = processName;
         public string DisplayName => isSystemSounds
             ? Translations.Get("Audio.Application.SystemSounds")

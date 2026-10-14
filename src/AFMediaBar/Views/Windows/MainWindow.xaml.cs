@@ -202,6 +202,7 @@ namespace AFMediaBar.Views.Windows
             _audioControlViewModel.FlyoutToggleRequested += AudioControl_OnFlyoutToggleRequested;
             _audioControlViewModel.TrayContextMenuRequested += AudioControl_OnTrayContextMenuRequested;
             _audioControlViewModel.OutputDeviceMenuRequested += AudioControl_OnOutputDeviceMenuRequested;
+            _audioControlViewModel.InputDeviceMenuRequested += AudioControl_OnInputDeviceMenuRequested;
             _audioControlViewModel.CurrentAppVolumeMenuRequested += AudioControl_OnCurrentAppVolumeMenuRequested;
             _audioControlViewModel.SettingsOpenRequested += ViewModel_OpenSettingsRequested;
             _mouseInputMonitor.LeftButtonPressed += MouseInputMonitor_OnLeftButtonPressed;
@@ -313,6 +314,7 @@ namespace AFMediaBar.Views.Windows
             _audioControlViewModel.FlyoutToggleRequested -= AudioControl_OnFlyoutToggleRequested;
             _audioControlViewModel.TrayContextMenuRequested -= AudioControl_OnTrayContextMenuRequested;
             _audioControlViewModel.OutputDeviceMenuRequested -= AudioControl_OnOutputDeviceMenuRequested;
+            _audioControlViewModel.InputDeviceMenuRequested -= AudioControl_OnInputDeviceMenuRequested;
             _audioControlViewModel.CurrentAppVolumeMenuRequested -= AudioControl_OnCurrentAppVolumeMenuRequested;
             _audioControlViewModel.SettingsOpenRequested -= ViewModel_OpenSettingsRequested;
             _mouseInputMonitor.LeftButtonPressed -= MouseInputMonitor_OnLeftButtonPressed;
@@ -507,6 +509,7 @@ namespace AFMediaBar.Views.Windows
             foreach (var taskbarWindow in taskbarWindows)
             {
                 taskbarWindow.OpenFullPanelRequested -= TaskbarWindow_OpenFullPanelRequested;
+                taskbarWindow.PlayerMenuOpenRequested -= TaskbarWindow_PlayerMenuOpenRequested;
                 taskbarWindow.PlacementTransitionStarted -= TaskbarWindow_PlacementTransitionStarted;
                 taskbarWindow.PlacementFallbackRequested -= TaskbarWindow_PlacementFallbackRequested;
                 _placementNotificationGate.ForgetHost(taskbarWindow.TargetMonitorDeviceId);
@@ -777,6 +780,9 @@ namespace AFMediaBar.Views.Windows
         /// The tray click asks for the output-device menu: the taskbar host owns that compact menu, and the anchor is the tray
         /// icon's position, so the menu appears where the user just clicked.
         /// </summary>
+        private async void AudioControl_OnInputDeviceMenuRequested(TrayIconBounds? bounds) =>
+            await ShowTrayCompactMenuAsync(TaskbarCompactFlyoutMode.InputDevice, bounds);
+
         private async void AudioControl_OnOutputDeviceMenuRequested(TrayIconBounds? bounds) =>
             await ShowTrayCompactMenuAsync(TaskbarCompactFlyoutMode.OutputDevice, bounds);
 
@@ -847,6 +853,7 @@ namespace AFMediaBar.Views.Windows
                 _mouseInputMonitor,
                 _memoryPruneCoordinator);
             window.OpenFullPanelRequested += TaskbarWindow_OpenFullPanelRequested;
+            window.PlayerMenuOpenRequested += TaskbarWindow_PlayerMenuOpenRequested;
             window.PlacementTransitionStarted += TaskbarWindow_PlacementTransitionStarted;
             window.PlacementFallbackRequested += TaskbarWindow_PlacementFallbackRequested;
             return window;
@@ -856,6 +863,12 @@ namespace AFMediaBar.Views.Windows
         {
             if (sender is TaskbarWindow window && _fullPanelWindows.TryGetValue(window.TargetMonitorDeviceId, out var panel))
                 panel.RequestClose();
+        }
+
+        private void TaskbarWindow_PlayerMenuOpenRequested(TaskbarWindow host, Point? screenAnchor)
+        {
+            if (_isClosing || TaskbarEnvironmentRecovering || !_taskbarWindows.Contains(host)) return;
+            ContextMenuHelper.OpenAtScreenAnchor(host.PlayerContextMenu, this, screenAnchor);
         }
 
         private void TaskbarWindow_OpenFullPanelRequested(object? sender, EventArgs e)

@@ -8,7 +8,7 @@ internal static class AudioPolicyConfig
 {
     private static readonly Guid PolicyConfigClientClassId = new("870AF99C-171D-4F9E-AF0D-E63DF40C2BC9");
 
-    internal static void SetDefaultRenderDevice(string policyDeviceId)
+    internal static void SetDefaultDevice(string policyDeviceId, bool communications, Func<bool> isCurrent)
     {
         if (string.IsNullOrWhiteSpace(policyDeviceId))
             return;
@@ -20,8 +20,12 @@ internal static class AudioPolicyConfig
             client = Activator.CreateInstance(type) ??
                 throw new InvalidOperationException(Translations.Get("Audio.Error.CreatePolicyConfig"));
             var policy = (IPolicyConfig)client;
-            Marshal.ThrowExceptionForHR(policy.SetDefaultEndpoint(policyDeviceId, ERole.Console));
-            Marshal.ThrowExceptionForHR(policy.SetDefaultEndpoint(policyDeviceId, ERole.Multimedia));
+            var roles = communications ? new[] { ERole.Console, ERole.Multimedia, ERole.Communications } : new[] { ERole.Console, ERole.Multimedia };
+            foreach (var role in roles)
+            {
+                if (!isCurrent()) throw new OperationCanceledException();
+                Marshal.ThrowExceptionForHR(policy.SetDefaultEndpoint(policyDeviceId, role));
+            }
         }
         finally
         {

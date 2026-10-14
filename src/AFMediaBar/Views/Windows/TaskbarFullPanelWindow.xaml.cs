@@ -19,8 +19,6 @@ namespace AFMediaBar.Views.Windows;
 /// <summary>任务栏外的完整媒体、音频与性能面板。 / Full media, audio, and performance panel outside the taskbar.</summary>
 public partial class TaskbarFullPanelWindow : FluentWindow
 {
-    private static readonly TimeSpan DeviceWheelApplyDelay =
-        TimeSpan.FromMilliseconds(AudioApplyPolicy.OutputDevicePreviewDelayMilliseconds);
     private static readonly TimeSpan VolumeWheelApplyDelay =
         TimeSpan.FromMilliseconds(AudioApplyPolicy.ApplicationVolumeDelayMilliseconds);
     private readonly MediaSessionService _mediaSessionService;
@@ -33,11 +31,11 @@ public partial class TaskbarFullPanelWindow : FluentWindow
     private MediaSnapshot _snapshot = MediaSnapshot.Disconnected;
     private ApplicationVolumeSnapshot? _currentVolume;
     private bool _isLoadingDevices;
+    private int _audioRefreshGeneration;
     private bool _isSeeking;
     private bool _audioControlsVisible;
     private bool _performanceVisible;
     private bool _isClosing;
-    private int _deviceApplyVersion;
     private int _volumeApplyVersion;
     private int _sectionAnimationVersion;
     private Rect? _anchor;
@@ -54,6 +52,8 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         ApplyMotionEffects();
         _mediaSessionService = mediaSessionService;
         _audioInteractionService = audioInteractionService;
+        _audioInteractionService.DeviceSwitches.Updated += OnAudioDeviceSwitchUpdated;
+        _audioInteractionService.DeviceSwitches.Invalidated += OnAudioDeviceInvalidated;
         _metricsMonitor = metricsMonitor;
         _displayMonitorService = displayMonitorService;
         appearanceService.Attach(this);
@@ -97,6 +97,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
             return;
 
         _isClosing = true;
+        _audioInteractionService.CancelDeviceOwner(this);
         var motion = MotionPolicy.ResolveCurrent();
         if (!IsVisible || !motion.UseTransitions)
         {
@@ -383,23 +384,33 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         }
     }
 
+
     private async Task RefreshAudioAsync()
     {
+        var generation = ++_audioRefreshGeneration;
+        var devices = await _audioInteractionService.GetOutputDevicesAsync();
+        var inputs = await _audioInteractionService.GetInputDevicesAsync();
+        var volume = await Task.Run(_audioInteractionService.GetCurrentMediaVolume);
+        if (_isClosing || generation != _audioRefreshGeneration) return;
+        _isLoadingDevices = true;
         try
         {
-            _isLoadingDevices = true;
-            var devices = await _audioInteractionService.GetOutputDevicesAsync();
             DeviceCombo.ItemsSource = devices;
-            DeviceCombo.SelectedItem = devices.FirstOrDefault(device => device.IsDefault);
-            _currentVolume = await Task.Run(_audioInteractionService.GetCurrentMediaVolume);
-            VolumeSlider.IsEnabled = _currentVolume is not null;
-            VolumeSlider.Value = _currentVolume?.VolumePercent ?? 0;
-            VolumeText.Text = _currentVolume is null ? Translations.Get("Panel.Volume.Unavailable") : $"{_currentVolume.VolumePercent}%";
+            InputDeviceCombo.ItemsSource = inputs;
+            var outputPreview = _audioInteractionService.DeviceSwitches.GetPreview(new(AudioDeviceDirection.Output));
+            var inputPreview = _audioInteractionService.DeviceSwitches.GetPreview(new(AudioDeviceDirection.Input));
+            DeviceCombo.SelectedItem = outputPreview is null ? devices.FirstOrDefault(device => device.IsDefault) :
+                devices.FirstOrDefault(device => device.PolicyId == outputPreview.PolicyId);
+            InputDeviceCombo.SelectedItem = inputPreview is null ? inputs.FirstOrDefault(device => device.IsDefault) :
+                inputs.FirstOrDefault(device => device.PolicyId == inputPreview.PolicyId);
+            AudioDeviceStatusText.Text = DeviceCombo.SelectedItem is null || InputDeviceCombo.SelectedItem is null ?
+                Translations.Get("Audio.Route.HiddenOrDisconnected") : string.Empty;
+            _currentVolume = volume;
+            VolumeSlider.IsEnabled = volume is not null;
+            VolumeSlider.Value = volume?.VolumePercent ?? 0;
+            VolumeText.Text = volume is null ? Translations.Get("Panel.Volume.Unavailable") : $"{volume.VolumePercent}%";
         }
-        finally
-        {
-            _isLoadingDevices = false;
-        }
+        finally { _isLoadingDevices = false; }
     }
 
     private void Timer_Tick(object? sender, EventArgs e)
@@ -473,56 +484,51 @@ public partial class TaskbarFullPanelWindow : FluentWindow
 
     private void ProgressSlider_LostMouseCapture(object sender, MouseEventArgs e) => _isSeeking = false;
 
+
     private async void DeviceCombo_DropDownOpened(object sender, EventArgs e) => await RefreshAudioAsync();
+    private async void InputDeviceCombo_DropDownOpened(object sender, EventArgs e) => await RefreshAudioAsync();
     private async void DeviceCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    { if (!_isLoadingDevices && DeviceCombo.SelectedItem is AudioDeviceOption device) await SelectDeviceAsync(device); }
+    private async void InputDeviceCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    { if (!_isLoadingDevices && InputDeviceCombo.SelectedItem is AudioDeviceOption device) await SelectDeviceAsync(device); }
+    private async Task SelectDeviceAsync(AudioDeviceOption device)
     {
-        if (!_isLoadingDevices && DeviceCombo.SelectedItem is AudioDeviceOption device)
-        {
-            var version = ++_deviceApplyVersion;
-            await ApplyOutputDeviceAsync(device, version, TimeSpan.Zero);
-        }
-    }
-
-    private void DeviceCombo_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
-    {
-        var devices = DeviceCombo.Items.OfType<AudioDeviceOption>().ToList();
-        var signedSteps = TrayWheelPolicy.GetDeviceSteps(e.Delta);
-        if (devices.Count == 0 || signedSteps == 0)
-            return;
-
-        var current = DeviceCombo.SelectedItem is AudioDeviceOption selected
-            ? Math.Max(0, devices.IndexOf(selected))
-            : 0;
-        var target = devices[WheelInput.MoveCircular(current, signedSteps, devices.Count)];
-        _isLoadingDevices = true;
         try
         {
-            DeviceCombo.SelectedItem = target;
+            var result = await _audioInteractionService.DeviceSwitches.SelectAsync(new(device.Direction), device, this);
+            if (_isClosing) return;
+            await RefreshAudioSafelyAsync();
+            if (!_isClosing) AudioDeviceStatusText.Text = AudioDevicePresentation.GetResultText(result, false);
         }
-        finally
+        catch (Exception exception) { Debug.WriteLine(exception); if (!_isClosing) AudioDeviceStatusText.Text = Translations.Get("Audio.Route.Failed"); }
+    }
+    private async void DeviceCombo_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    { e.Handled = true; await PreviewDeviceAsync(AudioDeviceDirection.Output, e.Delta); }
+    private async void InputDeviceCombo_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    { e.Handled = true; await PreviewDeviceAsync(AudioDeviceDirection.Input, e.Delta); }
+    private async Task PreviewDeviceAsync(AudioDeviceDirection direction, int delta)
+    {
+        try { await _audioInteractionService.DeviceSwitches.PreviewAsync(new(direction), TrayWheelPolicy.GetDeviceSteps(delta), this); }
+        catch (Exception exception) { Debug.WriteLine(exception); }
+    }
+    private void OnAudioDeviceSwitchUpdated(AudioDeviceSwitchUpdate update) => Dispatcher.BeginInvoke(() =>
+    {
+        if (_isClosing || update.Target.Application is not null) return;
+        if (update.Result is null)
         {
+            _isLoadingDevices = true;
+            var combo = update.Target.Direction == AudioDeviceDirection.Output ? DeviceCombo : InputDeviceCombo;
+            combo.SelectedItem = combo.Items.OfType<AudioDeviceOption>().FirstOrDefault(device => device.PolicyId == update.Candidate?.PolicyId);
             _isLoadingDevices = false;
         }
-
-        var version = ++_deviceApplyVersion;
-        _ = ApplyOutputDeviceAsync(target, version, DeviceWheelApplyDelay);
-        e.Handled = true;
-    }
-
-    private async Task ApplyOutputDeviceAsync(AudioDeviceOption device, int version, TimeSpan delay)
+        else AudioDeviceStatusText.Text = AudioDevicePresentation.GetResultText(update.Result, false);
+    });
+    private void OnAudioDeviceInvalidated(object? sender, EventArgs args) => Dispatcher.BeginInvoke(() =>
+    { if (!_isClosing && IsVisible) _ = RefreshAudioSafelyAsync(); });
+    private async Task RefreshAudioSafelyAsync()
     {
-        try
-        {
-            if (delay > TimeSpan.Zero)
-                await Task.Delay(delay);
-            if (_isClosing || version != _deviceApplyVersion)
-                return;
-            await _audioInteractionService.SetOutputDeviceAsync(device);
-        }
-        catch (Exception exception)
-        {
-            Debug.WriteLine($"[TaskbarFullPanelWindow] Output-device change failed: {exception}");
-        }
+        try { await RefreshAudioAsync(); }
+        catch (Exception exception) { Debug.WriteLine(exception); }
     }
 
     private async void VolumeSlider_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -571,8 +577,11 @@ public partial class TaskbarFullPanelWindow : FluentWindow
 
     private void Window_Deactivated(object sender, EventArgs e)
     {
-        if (!DeviceCombo.IsDropDownOpen)
-            RequestClose();
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (!_isClosing && IsVisible && !IsActive && !DeviceCombo.IsDropDownOpen && !InputDeviceCombo.IsDropDownOpen)
+                RequestClose();
+        }, DispatcherPriority.ContextIdle);
     }
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -585,6 +594,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
         _isClosing = true;
+        _audioInteractionService.CancelDeviceOwner(this);
         base.OnClosing(e);
         if (e.Cancel)
             _isClosing = false;
@@ -592,7 +602,9 @@ public partial class TaskbarFullPanelWindow : FluentWindow
 
     private void OnClosed(object? sender, EventArgs e)
     {
-        _deviceApplyVersion++;
+        _audioInteractionService.DeviceSwitches.Updated -= OnAudioDeviceSwitchUpdated;
+        _audioInteractionService.DeviceSwitches.Invalidated -= OnAudioDeviceInvalidated;
+        _audioInteractionService.CancelDeviceOwner(this);
         _volumeApplyVersion++;
         _timer.Stop();
         DisposeMetricsSubscription();

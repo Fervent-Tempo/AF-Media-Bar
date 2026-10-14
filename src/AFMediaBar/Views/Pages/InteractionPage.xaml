@@ -1,12 +1,38 @@
 <Page
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:models="clr-namespace:AFMediaBar.Classes.Models"
     xmlns:components="clr-namespace:AFMediaBar.Components"
     xmlns:settings="clr-namespace:AFMediaBar.Classes.Settings"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     x:Class="AFMediaBar.Views.Pages.InteractionPage"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     ScrollViewer.CanContentScroll="False">
+    <Page.Resources>
+        <DataTemplate x:Key="AudioDevicePermissionTemplate">
+            <Border Padding="16,12" BorderThickness="0,1,0,0"
+                    BorderBrush="{DynamicResource AfSettingsBorderBrush}">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Margin="0,0,20,0">
+                        <TextBlock Text="{Binding DisplayName}" TextWrapping="Wrap" FontSize="14" />
+                        <TextBlock FontSize="12" Margin="0,4,0,0"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                            <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Text" Value="{DynamicResource Loc.Audio.Device.NotPresent}" /><Style.Triggers>
+                                <DataTrigger Binding="{Binding Availability}" Value="{x:Static models:AudioDeviceAvailability.Active}"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                                <DataTrigger Binding="{Binding Availability}" Value="{x:Static models:AudioDeviceAvailability.Disabled}"><Setter Property="Text" Value="{DynamicResource Loc.Audio.Device.SystemDisabled}" /></DataTrigger>
+                                <DataTrigger Binding="{Binding Availability}" Value="{x:Static models:AudioDeviceAvailability.Unplugged}"><Setter Property="Text" Value="{DynamicResource Loc.Audio.Device.Unplugged}" /></DataTrigger>
+                            </Style.Triggers></Style></TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                    <CheckBox Grid.Column="1" VerticalAlignment="Center"
+                              Content="{DynamicResource Loc.Audio.Settings.Allow}"
+                              AutomationProperties.Name="{Binding DisplayName}"
+                              IsChecked="{Binding IsAllowed, Mode=TwoWay}" />
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </Page.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -105,6 +131,9 @@
                                     Content="{DynamicResource Loc.Common.SwitchOutputDevice}"
                                     Tag="{x:Static settings:WheelAction.OutputDevice}" />
                                 <ComboBoxItem
+                                    Content="{DynamicResource Loc.Common.SwitchInputDevice}"
+                                    Tag="{x:Static settings:WheelAction.InputDevice}" />
+                                <ComboBoxItem
                                     Content="{DynamicResource Loc.Common.AdjustCurrentMediaVolume}"
                                     Tag="{x:Static settings:WheelAction.CurrentApplicationVolume}" />
                                 <ComboBoxItem
@@ -129,6 +158,9 @@
                                 <ComboBoxItem
                                     Content="{DynamicResource Loc.Common.SwitchOutputDevice}"
                                     Tag="{x:Static settings:WheelAction.OutputDevice}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Common.SwitchInputDevice}"
+                                    Tag="{x:Static settings:WheelAction.InputDevice}" />
                                 <ComboBoxItem
                                     Content="{DynamicResource Loc.Common.PreviousNextTrack}"
                                     Tag="{x:Static settings:WheelAction.PreviousNext}" />
@@ -181,6 +213,9 @@
                                     Content="{DynamicResource Loc.Interaction.TrayAction.OpenOutputDeviceMenu}"
                                     Tag="{x:Static settings:TrayClickAction.OpenOutputDeviceMenu}" />
                                 <ComboBoxItem
+                                    Content="{DynamicResource Loc.Common.InputDevice}"
+                                    Tag="{x:Static settings:TrayClickAction.OpenInputDeviceMenu}" />
+                                <ComboBoxItem
                                     Content="{DynamicResource Loc.Interaction.TrayAction.OpenCurrentAppVolumeMenu}"
                                     Tag="{x:Static settings:TrayClickAction.OpenCurrentAppVolumeMenu}" />
                                 <ComboBoxItem
@@ -206,6 +241,9 @@
                                     Content="{DynamicResource Loc.Common.SwitchOutputDevice}"
                                     Tag="{x:Static settings:TrayWheelBehavior.SwitchOutputDevice}" />
                                 <ComboBoxItem
+                                    Content="{DynamicResource Loc.Common.SwitchInputDevice}"
+                                    Tag="{x:Static settings:TrayWheelBehavior.SwitchInputDevice}" />
+                                <ComboBoxItem
                                     Content="{DynamicResource Loc.Common.AdjustCurrentMediaVolume}"
                                     Tag="{x:Static settings:TrayWheelBehavior.AdjustVolume}" />
                                 <ComboBoxItem
@@ -213,6 +251,103 @@
                                     Tag="{x:Static settings:TrayWheelBehavior.Disabled}" />
                             </ComboBox>
                         </components:SettingsRow>
+                    </StackPanel>
+                </components:SettingsGroup>
+
+                <components:SettingsGroup GroupId="Audio.Settings.Title" Header="{DynamicResource Loc.Audio.Settings.Title}"
+                    Description="{DynamicResource Loc.Audio.Settings.Description}" Icon="{ui:SymbolIcon Speaker224}">
+                    <StackPanel>
+                        <components:SettingsCallout IsAccent="False" Symbol="Info24" Margin="0,0,0,12" Text="{DynamicResource Loc.Audio.Settings.AvailabilityHint}" />
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Speaker224}">
+                            <ui:CardExpander.Header>
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Common.OutputDevice}" />
+                                    <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Audio.Settings.OutputList}" />
+                                </StackPanel>
+                            </ui:CardExpander.Header>
+                            <StackPanel>
+                                <ItemsControl ItemsSource="{Binding ViewModel.AudioDevices.OutputDevices}"
+                                              ItemTemplate="{StaticResource AudioDevicePermissionTemplate}" />
+                                <Expander Margin="12,8,12,12" HorizontalContentAlignment="Stretch">
+                                    <Expander.Style><Style TargetType="Expander" BasedOn="{StaticResource {x:Type Expander}}"><Style.Triggers>
+                                        <DataTrigger Binding="{Binding ViewModel.AudioDevices.OtherOutputDevices.Count}" Value="0"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                                    </Style.Triggers></Style></Expander.Style>
+                                    <Expander.Header><TextBlock><Run Text="{DynamicResource Loc.Audio.Settings.OtherDevices}" /><Run Text=" " /><Run Text="{Binding ViewModel.AudioDevices.OtherOutputDevices.Count, Mode=OneWay, StringFormat={}{0}}" /></TextBlock></Expander.Header>
+                                    <ItemsControl ItemsSource="{Binding ViewModel.AudioDevices.OtherOutputDevices}" ItemTemplate="{StaticResource AudioDevicePermissionTemplate}" />
+                                </Expander>
+                            </StackPanel>
+                        </ui:CardExpander>
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Mic24}">
+                            <ui:CardExpander.Header>
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Common.InputDevice}" />
+                                    <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Audio.Settings.InputList}" />
+                                </StackPanel>
+                            </ui:CardExpander.Header>
+                            <StackPanel>
+                                <ItemsControl ItemsSource="{Binding ViewModel.AudioDevices.InputDevices}"
+                                              ItemTemplate="{StaticResource AudioDevicePermissionTemplate}" />
+                                <Expander Margin="12,8,12,12" HorizontalContentAlignment="Stretch">
+                                    <Expander.Style><Style TargetType="Expander" BasedOn="{StaticResource {x:Type Expander}}"><Style.Triggers>
+                                        <DataTrigger Binding="{Binding ViewModel.AudioDevices.OtherInputDevices.Count}" Value="0"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                                    </Style.Triggers></Style></Expander.Style>
+                                    <Expander.Header><TextBlock><Run Text="{DynamicResource Loc.Audio.Settings.OtherDevices}" /><Run Text=" " /><Run Text="{Binding ViewModel.AudioDevices.OtherInputDevices.Count, Mode=OneWay, StringFormat={}{0}}" /></TextBlock></Expander.Header>
+                                    <ItemsControl ItemsSource="{Binding ViewModel.AudioDevices.OtherInputDevices}" ItemTemplate="{StaticResource AudioDevicePermissionTemplate}" />
+                                </Expander>
+                            </StackPanel>
+                        </ui:CardExpander>
+                        <TextBlock Text="{Binding ViewModel.AudioDevices.StatusText}" TextWrapping="Wrap" FontSize="12"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                            <TextBlock.Style><Style TargetType="TextBlock"><Style.Triggers>
+                                <DataTrigger Binding="{Binding ViewModel.AudioDevices.StatusText}" Value=""><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                            </Style.Triggers></Style></TextBlock.Style>
+                        </TextBlock>
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Options24}" Margin="0,12,0,4">
+                            <ui:CardExpander.Header>
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Audio.Settings.Advanced}" />
+                                    <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Audio.Settings.AdvancedDescription}" />
+                                </StackPanel>
+                            </ui:CardExpander.Header>
+                            <StackPanel Margin="16,0,16,12">
+                                <TextBlock Text="{DynamicResource Loc.Common.OutputDevice}" Style="{StaticResource AfSettingsCardTitleStyle}" Margin="0,12,0,8" />
+                            <components:SettingsRow Title="{DynamicResource Loc.Audio.Settings.OutputCommunications}">
+                                <ui:ToggleSwitch IsChecked="{Binding ViewModel.AudioDevices.SwitchOutputCommunications, Mode=TwoWay}"/>
+                            </components:SettingsRow>
+                            <components:SettingsRow Title="{DynamicResource Loc.Audio.Settings.OutputClick}">
+                                <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValuePath="Tag" SelectedValue="{Binding ViewModel.OutputDeviceClickTarget, Mode=TwoWay}">
+                                    <ComboBoxItem Content="{DynamicResource Loc.Audio.Target.System}" Tag="{x:Static settings:AudioDeviceSwitchTarget.SystemDefault}"/>
+                                    <ComboBoxItem Content="{DynamicResource Loc.Audio.Target.Foreground}" Tag="{x:Static settings:AudioDeviceSwitchTarget.ForegroundApplication}"/>
+                                    <ComboBoxItem Content="{DynamicResource Loc.Interaction.Disabled}" Tag="{x:Static settings:AudioDeviceSwitchTarget.Disabled}"/>
+                                </ComboBox>
+                            </components:SettingsRow>
+                            <components:SettingsRow Title="{DynamicResource Loc.Audio.Settings.OutputWheel}">
+                                <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValuePath="Tag" SelectedValue="{Binding ViewModel.OutputDeviceWheelTarget, Mode=TwoWay}">
+                                    <ComboBoxItem Content="{DynamicResource Loc.Audio.Target.System}" Tag="{x:Static settings:AudioDeviceSwitchTarget.SystemDefault}"/>
+                                    <ComboBoxItem Content="{DynamicResource Loc.Audio.Target.Foreground}" Tag="{x:Static settings:AudioDeviceSwitchTarget.ForegroundApplication}"/>
+                                    <ComboBoxItem Content="{DynamicResource Loc.Interaction.Disabled}" Tag="{x:Static settings:AudioDeviceSwitchTarget.Disabled}"/>
+                                </ComboBox>
+                            </components:SettingsRow>
+                            <TextBlock Text="{DynamicResource Loc.Common.InputDevice}" Style="{StaticResource AfSettingsCardTitleStyle}" Margin="0,16,0,8" />
+                            <components:SettingsRow Title="{DynamicResource Loc.Audio.Settings.InputCommunications}">
+                                <ui:ToggleSwitch IsChecked="{Binding ViewModel.AudioDevices.SwitchInputCommunications, Mode=TwoWay}"/>
+                            </components:SettingsRow>
+                            <components:SettingsRow Title="{DynamicResource Loc.Audio.Settings.InputClick}">
+                                <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValuePath="Tag" SelectedValue="{Binding ViewModel.InputDeviceClickTarget, Mode=TwoWay}">
+                                    <ComboBoxItem Content="{DynamicResource Loc.Audio.Target.System}" Tag="{x:Static settings:AudioDeviceSwitchTarget.SystemDefault}"/>
+                                    <ComboBoxItem Content="{DynamicResource Loc.Audio.Target.Foreground}" Tag="{x:Static settings:AudioDeviceSwitchTarget.ForegroundApplication}"/>
+                                    <ComboBoxItem Content="{DynamicResource Loc.Interaction.Disabled}" Tag="{x:Static settings:AudioDeviceSwitchTarget.Disabled}"/>
+                                </ComboBox>
+                            </components:SettingsRow>
+                            <components:SettingsRow Title="{DynamicResource Loc.Audio.Settings.InputWheel}">
+                                <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValuePath="Tag" SelectedValue="{Binding ViewModel.InputDeviceWheelTarget, Mode=TwoWay}">
+                                    <ComboBoxItem Content="{DynamicResource Loc.Audio.Target.System}" Tag="{x:Static settings:AudioDeviceSwitchTarget.SystemDefault}"/>
+                                    <ComboBoxItem Content="{DynamicResource Loc.Audio.Target.Foreground}" Tag="{x:Static settings:AudioDeviceSwitchTarget.ForegroundApplication}"/>
+                                    <ComboBoxItem Content="{DynamicResource Loc.Interaction.Disabled}" Tag="{x:Static settings:AudioDeviceSwitchTarget.Disabled}"/>
+                                </ComboBox>
+                            </components:SettingsRow>
+                            </StackPanel>
+                        </ui:CardExpander>
                     </StackPanel>
                 </components:SettingsGroup>
                 <ui:Button

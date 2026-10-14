@@ -78,6 +78,12 @@ public sealed class GlobalInteractionRouter
                 return new WheelTooltipResult(Translations.Get("Wheel.Action.CurrentMediaVolume"), detail);
             }
 
+            case WheelAction.InputDevice:
+                {
+                    var detail = await _audioInteractionService.CycleDeviceAsync(AFMediaBar.Classes.Models.AudioDeviceDirection.Input, delta > 0 ? -steps : steps);
+                    return new WheelTooltipResult(Translations.Get("Common.InputDevice"), detail);
+                }
+
             case WheelAction.OutputDevice:
             {
                 var detail = await _audioInteractionService.CycleOutputDeviceAsync(delta > 0 ? -steps : steps, deferApply: true);

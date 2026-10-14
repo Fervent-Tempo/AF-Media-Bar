@@ -85,7 +85,7 @@
             <Grid x:Name="AudioControlsSection" Margin="0,0,0,12">
                 <Grid.ColumnDefinitions><ColumnDefinition Width="300"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                 <StackPanel>
-                    <TextBlock Text="{DynamicResource Loc.Common.OutputDevice}" FontSize="11" Opacity="0.62"/>
+                    <TextBlock Text="{DynamicResource Loc.Common.OutputDevice}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,6" />
                     <components:ReleaseOpenComboBox x:Name="DeviceCombo"
                               DisplayMemberPath="DisplayName"
                               ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=SelectedItem.DisplayName}"
@@ -98,6 +98,21 @@
                             </Style>
                         </components:ReleaseOpenComboBox.Style>
                     </components:ReleaseOpenComboBox>
+                    <TextBlock Text="{DynamicResource Loc.Common.InputDevice}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,12,0,6" />
+                    <components:ReleaseOpenComboBox x:Name="InputDeviceCombo"
+                              DisplayMemberPath="DisplayName"
+                              ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=SelectedItem.DisplayName}"
+                              DropDownOpened="InputDeviceCombo_DropDownOpened"
+                              SelectionChanged="InputDeviceCombo_SelectionChanged"
+                              PreviewMouseWheel="InputDeviceCombo_PreviewMouseWheel">
+                        <components:ReleaseOpenComboBox.Style>
+                            <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+                                <Setter Property="Popup.Placement" Value="Top" />
+                            </Style>
+                        </components:ReleaseOpenComboBox.Style>
+                    </components:ReleaseOpenComboBox>
+                    <TextBlock x:Name="AudioDeviceStatusText" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0" />
+
                 </StackPanel>
                 <StackPanel Grid.Column="2">
                     <Grid><TextBlock Text="{DynamicResource Loc.Panel.Volume.CurrentAppVolume}" FontSize="11" Opacity="0.62"/>

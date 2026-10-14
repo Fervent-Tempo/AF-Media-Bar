@@ -18,7 +18,43 @@
         Background="Transparent"
         Deactivated="Window_OnDeactivated"
         PreviewKeyDown="Window_OnPreviewKeyDown">
-    <Border x:Name="FlyoutRoot" Margin="4" Padding="10" CornerRadius="8"
+    <ui:FluentWindow.Resources>
+        <Style x:Key="DeviceOptionButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+            <Setter Property="MinHeight" Value="36" /><Setter Property="Padding" Value="8,8" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" /><Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" /><Setter Property="FocusVisualStyle" Value="{DynamicResource AfFocusVisualStyle}" />
+            <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
+                <Border x:Name="ButtonSurface" Background="{TemplateBinding Background}" CornerRadius="5" Padding="{TemplateBinding Padding}">
+                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" />
+                </Border>
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ButtonSurface" Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" /></Trigger>
+                    <Trigger Property="IsPressed" Value="True"><Setter TargetName="ButtonSurface" Property="Background" Value="{DynamicResource ControlFillColorTertiaryBrush}" /></Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate></Setter.Value></Setter>
+        </Style>
+        <Style x:Key="DeviceOptionContainerStyle" TargetType="ListBoxItem">
+            <Setter Property="Padding" Value="0" /><Setter Property="Margin" Value="0,2" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" /><Setter Property="Focusable" Value="False" />
+            <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem">
+                <Border x:Name="ItemSurface" Background="Transparent" CornerRadius="6">
+                    <Grid>
+                        <Border x:Name="CandidateMark" Width="3" CornerRadius="1" Margin="1,8,0,8" HorizontalAlignment="Left"
+                                Background="{DynamicResource AfAccentBrush}" Visibility="Collapsed" />
+                        <ContentPresenter Margin="5,0,0,0" HorizontalAlignment="Stretch" />
+                    </Grid>
+                </Border>
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsSelected" Value="True">
+                        <Setter TargetName="ItemSurface" Property="Background" Value="{DynamicResource AfAccentTintBrush}" />
+                        <Setter TargetName="CandidateMark" Property="Visibility" Value="Visible" />
+                    </Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate></Setter.Value></Setter>
+        </Style>
+    </ui:FluentWindow.Resources>
+    <Border x:Name="FlyoutRoot" Margin="4" Padding="10" CornerRadius="8" PreviewMouseWheel="FlyoutRoot_PreviewMouseWheel"
             Background="Transparent"
             BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
             BorderThickness="1"
@@ -49,14 +85,32 @@
                 </ScrollViewer>
             </StackPanel>
 
-            <StackPanel x:Name="OutputDevicePanel" Visibility="Collapsed" PreviewMouseWheel="OutputDevicePanel_PreviewMouseWheel">
-                <TextBlock Text="{DynamicResource Loc.Common.OutputDevice}" FontSize="16" FontWeight="{DynamicResource AppTextStrongFontWeight}" Margin="0,0,0,8"/>
-                <components:ReleaseOpenComboBox x:Name="OutputDeviceComboBox" MinHeight="32" MaxDropDownHeight="240"
-                          Style="{StaticResource {x:Type ComboBox}}"
-                          DisplayMemberPath="DisplayName" SelectionChanged="OutputDeviceComboBox_SelectionChanged"
-                          DropDownOpened="OutputDeviceComboBox_DropDownOpened"
-                          DropDownClosed="OutputDeviceComboBox_DropDownClosed"
-                          PreviewMouseWheel="OutputDeviceComboBox_PreviewMouseWheel"/>
+            <StackPanel x:Name="OutputDevicePanel" Visibility="Collapsed">
+                <StackPanel x:Name="DeviceHeaderPanel" Margin="0,0,0,8">
+                    <Grid>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="8" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                        <TextBlock x:Name="DeviceTitleText" FontSize="16" FontWeight="{DynamicResource AppTextStrongFontWeight}" VerticalAlignment="Top" />
+                        <TextBlock x:Name="CurrentDeviceText" Grid.Column="2" TextWrapping="Wrap" FontSize="12" TextAlignment="Right"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                    </Grid>
+                    <TextBlock x:Name="DeviceApplicationText" Margin="0,6,0,0" TextWrapping="Wrap" FontSize="12"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" Visibility="Collapsed" />
+                </StackPanel>
+                <ListBox x:Name="OutputDeviceList" MinHeight="0" MaxHeight="280" BorderThickness="0" Padding="0"
+                         Background="Transparent" Focusable="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto" ItemContainerStyle="{StaticResource DeviceOptionContainerStyle}">
+                    <ListBox.ItemTemplate><DataTemplate>
+                        <Button Style="{StaticResource DeviceOptionButtonStyle}" Click="DeviceItem_Click"
+                                AutomationProperties.Name="{Binding DisplayName}">
+                            <TextBlock Text="{Binding DisplayName}" TextWrapping="Wrap" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                        </Button>
+                    </DataTemplate></ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock x:Name="DeviceUnavailableText" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,6,0,0">
+                    <TextBlock.Style><Style TargetType="TextBlock"><Style.Triggers>
+                        <Trigger Property="Text" Value=""><Setter Property="Visibility" Value="Collapsed" /></Trigger>
+                    </Style.Triggers></Style></TextBlock.Style>
+                </TextBlock>
             </StackPanel>
 
             <StackPanel x:Name="VolumePanel" Visibility="Collapsed" HorizontalAlignment="Center"

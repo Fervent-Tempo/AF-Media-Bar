@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using AFMediaBar.Classes.Interop;
@@ -12,6 +13,27 @@ namespace AFMediaBar.Classes.Utils;
 /// </summary>
 public static class ContextMenuHelper
 {
+    /// <summary>以稳定宿主承载菜单；键盘入口将物理屏幕锚点转换为宿主坐标，鼠标入口使用打开时的位置。</summary>
+    public static void OpenAtScreenAnchor(ContextMenu menu, FrameworkElement stableTarget, Point? screenAnchor)
+    {
+        if (stableTarget is Window window) new WindowInteropHelper(window).EnsureHandle();
+        menu.PlacementTarget = stableTarget;
+        if (screenAnchor is { } point)
+        {
+            var offset = stableTarget.PointFromScreen(point);
+            menu.Placement = PlacementMode.RelativePoint;
+            menu.HorizontalOffset = offset.X;
+            menu.VerticalOffset = offset.Y;
+        }
+        else
+        {
+            menu.Placement = PlacementMode.MousePoint;
+            menu.HorizontalOffset = 0;
+            menu.VerticalOffset = 0;
+        }
+        menu.IsOpen = true;
+    }
+
     /// <summary>注册 WPF 原生菜单外部点击关闭，作为全局鼠标观察的同进程补充。 / Registers WPF's native outside-click dismissal as an in-process fallback to global mouse observation.</summary>
     public static void AttachOutsideClickDismissal(ContextMenu menu) =>
         Mouse.AddPreviewMouseDownOutsideCapturedElementHandler(menu, OnPreviewMouseDownOutsideCapturedElement);

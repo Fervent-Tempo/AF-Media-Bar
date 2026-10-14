@@ -154,7 +154,17 @@ namespace AFMediaBar
                 services.AddSingleton<AudioProcessInfoService>();
                 services.AddSingleton<ApplicationIconService>();
                 services.AddSingleton<ApplicationVolumeService>();
+                services.AddSingleton<IApplicationAudioControl>(provider => provider.GetRequiredService<ApplicationVolumeService>());
+                services.AddSingleton<ApplicationAudioControlCoordinator>();
+                services.AddSingleton<AudioPlatformService>();
                 services.AddSingleton<AudioDeviceService>();
+                services.AddSingleton<IAudioDeviceCatalog>(sp => sp.GetRequiredService<AudioDeviceService>());
+                services.AddSingleton<ApplicationAudioRoutingService>();
+                services.AddSingleton<ForegroundAudioApplicationService>();
+                services.AddSingleton<IForegroundAudioApplicationResolver>(sp => sp.GetRequiredService<ForegroundAudioApplicationService>());
+                services.AddSingleton<IAudioDeviceSwitchOperations, AudioDeviceSwitchOperations>();
+                services.AddSingleton<AudioDeviceSwitchCoordinator>();
+                services.AddHostedService(sp => sp.GetRequiredService<AudioDeviceSwitchCoordinator>());
                 services.AddSingleton<AudioInteractionService>();
                 services.AddSingleton<GlobalInteractionRouter>();
                 services.AddSingleton<AudioMonitorService>();

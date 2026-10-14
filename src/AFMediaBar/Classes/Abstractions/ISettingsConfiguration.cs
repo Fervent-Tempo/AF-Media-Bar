@@ -67,6 +67,11 @@ public interface ISettingsConfiguration
     void SetLyricsArtistSeparators(string separators);
     /// <summary>Publishes this setting through the existing normalization contract.</summary>
     void SetInteractionSettings(GlobalInteractionSettings settings);
+    /// <summary>更新跨入口的全局设备策略，不改变系统设备或路由。</summary>
+    void SetAudioDeviceSettings(AudioDeviceSettings settings)
+    {
+        if (IsActive) Current.AudioDevices = settings.Normalize();
+    }
     /// <summary>Publishes this setting through the existing normalization contract.</summary>
     void SetTrackChangeNotificationSettings(TrackChangeNotificationSettings settings);
 }

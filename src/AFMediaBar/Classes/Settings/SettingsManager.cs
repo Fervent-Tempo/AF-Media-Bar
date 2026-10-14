@@ -13,7 +13,7 @@ public enum LayoutOrientationMode { Auto = 0, Horizontal = 1, Vertical = 2 }
 /// <summary>灵动岛背景模式。 / Dynamic-island background mode.</summary>
 public enum DynamicIslandBackgroundMode { SystemTheme = 0, Transparent = 1 }
 /// <summary>托盘滚轮行为。 / Tray-wheel behavior.</summary>
-public enum TrayWheelBehavior { AdjustVolume = 0, SwitchOutputDevice = 1, Disabled = 2 }
+public enum TrayWheelBehavior { AdjustVolume = 0, SwitchOutputDevice = 1, Disabled = 2, SwitchInputDevice = 3 }
 /// <summary>双行歌词第二行模式。 / Secondary lyric-line mode.</summary>
 public enum LyricsSecondaryLineMode
 {
@@ -86,6 +86,7 @@ public sealed class AppSettings : INotifyPropertyChanged
     private DynamicIslandEdge _dynamicIslandEdge = DynamicIslandEdge.Top;
     private bool _dynamicIslandEdgeDocked = true;
     private TaskbarExperienceSettings _taskbarExperience = TaskbarExperienceSettings.Default;
+    private AudioDeviceSettings _audioDevices = AudioDeviceSettings.Default;
     private GlobalInteractionSettings _interaction = GlobalInteractionSettings.Default;
     private ModeSurfaceSettings _taskbarSurface = ModeSurfaceSettings.Default;
     private ModeSurfaceSettings _dynamicIslandSurface = ModeSurfaceSettings.Default;
@@ -154,6 +155,7 @@ public sealed class AppSettings : INotifyPropertyChanged
     public DynamicIslandEdge DynamicIslandEdge { get => _dynamicIslandEdge; set => Set(ref _dynamicIslandEdge, value); }
     public bool DynamicIslandEdgeDocked { get => _dynamicIslandEdgeDocked; set => Set(ref _dynamicIslandEdgeDocked, value); }
     public TaskbarExperienceSettings TaskbarExperience { get => _taskbarExperience; set => Set(ref _taskbarExperience, value.Normalize()); }
+    public AudioDeviceSettings AudioDevices { get => _audioDevices; set => Set(ref _audioDevices, (value ?? AudioDeviceSettings.Default).Normalize()); }
     public GlobalInteractionSettings Interaction { get => _interaction; set => Set(ref _interaction, value.Normalize()); }
     public ModeSurfaceSettings TaskbarSurface { get => _taskbarSurface; set => Set(ref _taskbarSurface, value.Normalize()); }
     public ModeSurfaceSettings DynamicIslandSurface { get => _dynamicIslandSurface; set => Set(ref _dynamicIslandSurface, value.Normalize()); }
@@ -269,6 +271,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         result.LyricsSource = result.LyricsSource.Normalize();
         result.TaskbarExperience = result.TaskbarExperience.Normalize();
         result.Interaction = result.Interaction.Normalize();
+        result.AudioDevices = result.AudioDevices.Normalize();
         result.TaskbarSurface = result.TaskbarSurface.Normalize();
         result.DynamicIslandSurface = result.DynamicIslandSurface.Normalize();
         result.TrackChangeNotification = result.TrackChangeNotification.Normalize();
@@ -328,6 +331,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         DynamicIslandEdgeDocked = DynamicIslandEdgeDocked,
         TaskbarExperience = TaskbarExperience,
         Interaction = Interaction,
+        AudioDevices = AudioDevices.Normalize(),
         TaskbarSurface = TaskbarSurface,
         DynamicIslandSurface = DynamicIslandSurface,
         LyricsTextAlignment = LyricsTextAlignment,
@@ -604,6 +608,7 @@ public static class SettingsManager
             FullPanelEntryVisible = defaults.TaskbarExperience.FullPanelEntryVisible,
             HoverControls = defaults.TaskbarExperience.HoverControls,
             OutputDeviceVisible = defaults.TaskbarExperience.OutputDeviceVisible,
+            InputDeviceVisible = defaults.TaskbarExperience.InputDeviceVisible,
             VolumeVisible = defaults.TaskbarExperience.VolumeVisible,
             Arrangement = defaults.TaskbarExperience.Arrangement,
             IdleComponents = defaults.TaskbarExperience.IdleComponents
@@ -642,6 +647,7 @@ public static class SettingsManager
     {
         var next = Current.Clone();
         next.Interaction = Defaults.Interaction;
+        next.AudioDevices = Defaults.AudioDevices.Normalize();
         Replace(next, SettingsResetScope.Interaction);
     }
     public static void ResetLyrics()

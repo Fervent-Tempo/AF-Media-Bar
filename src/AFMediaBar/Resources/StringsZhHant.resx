@@ -2709,4 +2709,139 @@
   <data name="Common.Widgets.Description" xml:space="preserve">
     <value>調整頻譜與效能小元件的顯示和參數。</value>
   </data>
+  <data name="Common.InputDevice" xml:space="preserve">
+    <value>輸入裝置</value>
+  </data>
+  <data name="Common.SwitchInputDevice" xml:space="preserve">
+    <value>切換輸入裝置</value>
+  </data>
+  <data name="Audio.Device.Unavailable" xml:space="preserve">
+    <value>沒有可切換的裝置</value>
+  </data>
+  <data name="Audio.Device.Hidden" xml:space="preserve">
+    <value>目前裝置已隱藏</value>
+  </data>
+  <data name="Audio.Device.Applied" xml:space="preserve">
+    <value>預設裝置已切換</value>
+  </data>
+  <data name="Audio.Device.Unchanged" xml:space="preserve">
+    <value>裝置未變更</value>
+  </data>
+  <data name="Audio.Device.Cancelled" xml:space="preserve">
+    <value>裝置切換已取消</value>
+  </data>
+  <data name="Audio.Device.Disabled" xml:space="preserve">
+    <value>裝置操作已停用</value>
+  </data>
+  <data name="Audio.Device.Disconnected" xml:space="preserve">
+    <value>裝置無法使用或已中斷連線</value>
+  </data>
+  <data name="Audio.Device.InputDescription" xml:space="preserve">
+    <value>點擊開啟輸入裝置選單，滾輪預覽並切換麥克風。</value>
+  </data>
+  <data name="Audio.App.Unavailable" xml:space="preserve">
+    <value>無法識別具有音訊工作階段的前景應用程式</value>
+  </data>
+  <data name="Audio.Route.FollowDefault" xml:space="preserve">
+    <value>跟隨系統預設</value>
+  </data>
+  <data name="Audio.Route.Unsupported" xml:space="preserve">
+    <value>此系統不支援應用程式裝置路由</value>
+  </data>
+  <data name="Audio.Route.ReadFailed" xml:space="preserve">
+    <value>無法讀取應用程式裝置路由</value>
+  </data>
+  <data name="Audio.Route.Mixed" xml:space="preserve">
+    <value>不同處理程序或角色的裝置設定不一致</value>
+  </data>
+  <data name="Audio.Route.HiddenOrDisconnected" xml:space="preserve">
+    <value>目前裝置已隱藏、中斷連線或設定不一致</value>
+  </data>
+  <data name="Audio.Route.Saved" xml:space="preserve">
+    <value>應用程式路由偏好已儲存；生效時間取決於應用程式</value>
+  </data>
+  <data name="Audio.Route.Partial" xml:space="preserve">
+    <value>裝置設定僅部分成功，請檢查應用程式與系統設定</value>
+  </data>
+  <data name="Audio.Route.Failed" xml:space="preserve">
+    <value>裝置切換失敗，請檢查目前裝置狀態</value>
+  </data>
+  <data name="Audio.Route.NoPlayback" xml:space="preserve">
+    <value>沒有播放工作階段</value>
+  </data>
+  <data name="Audio.Settings.Title" xml:space="preserve">
+    <value>音訊裝置</value>
+  </data>
+  <data name="Audio.Settings.Description" xml:space="preserve">
+    <value>勾選允許在 AF 中切換的裝置。取消勾選會從所有切換入口隱藏裝置，不會停用 Windows 裝置；跟隨系統預設仍可使用它。</value>
+  </data>
+  <data name="Audio.Settings.Allow" xml:space="preserve">
+    <value>允許切換</value>
+  </data>
+  <data name="Audio.Settings.Advanced" xml:space="preserve">
+    <value>進階裝置互動</value>
+  </data>
+  <data name="Audio.Settings.OutputCommunications" xml:space="preserve">
+    <value>切換輸出時同時切換通訊裝置</value>
+  </data>
+  <data name="Audio.Settings.InputCommunications" xml:space="preserve">
+    <value>切換輸入時同時切換通訊裝置</value>
+  </data>
+  <data name="Audio.Settings.OutputClick" xml:space="preserve">
+    <value>輸出按鈕點擊目標</value>
+  </data>
+  <data name="Audio.Settings.OutputWheel" xml:space="preserve">
+    <value>輸出按鈕滾輪目標</value>
+  </data>
+  <data name="Audio.Settings.InputClick" xml:space="preserve">
+    <value>輸入按鈕點擊目標</value>
+  </data>
+  <data name="Audio.Settings.InputWheel" xml:space="preserve">
+    <value>輸入按鈕滾輪目標</value>
+  </data>
+  <data name="Audio.Target.System" xml:space="preserve">
+    <value>系統預設裝置</value>
+  </data>
+  <data name="Audio.Target.Foreground" xml:space="preserve">
+    <value>前景應用程式裝置</value>
+  </data>
+  <data name="Audio.Settings.OutputList" xml:space="preserve">
+    <value>選擇可在 AF 中切換的喇叭和耳機。</value>
+  </data>
+  <data name="Audio.Settings.InputList" xml:space="preserve">
+    <value>選擇可在 AF 中切換的麥克風。</value>
+  </data>
+  <data name="Audio.Settings.AdvancedDescription" xml:space="preserve">
+    <value>分別設定輸入、輸出按鈕的操作目標和通訊裝置。</value>
+  </data>
+  <data name="Audio.Settings.OtherDevices" xml:space="preserve">
+    <value>其他裝置</value>
+  </data>
+  <data name="Audio.Device.SystemDisabled" xml:space="preserve">
+    <value>已在 Windows 中停用</value>
+  </data>
+  <data name="Audio.Device.Unplugged" xml:space="preserve">
+    <value>未連接</value>
+  </data>
+  <data name="Audio.Settings.AvailabilityHint" xml:space="preserve">
+    <value>切換選單只顯示目前啟用且允許切換的裝置。其他裝置包含中斷與歷史端點；允許切換不會啟用 Windows 裝置。</value>
+  </data>
+  <data name="Audio.Mute.MuteHint" xml:space="preserve">
+    <value>{0} · 點擊靜音</value>
+  </data>
+  <data name="Audio.Mute.UnmuteHint" xml:space="preserve">
+    <value>{0} · 已靜音，點擊取消靜音</value>
+  </data>
+  <data name="Audio.Mute.WriteFailed" xml:space="preserve">
+    <value>未能完整更新 {0} 的音量或靜音狀態，請檢查目前狀態。</value>
+  </data>
+  <data name="Audio.Route.Expand" xml:space="preserve">
+    <value>展開裝置路由</value>
+  </data>
+  <data name="Audio.Device.Pending" xml:space="preserve">
+    <value>等待套用…</value>
+  </data>
+  <data name="Audio.Device.NotPresent" xml:space="preserve">
+    <value>目前無法使用</value>
+  </data>
 </root>

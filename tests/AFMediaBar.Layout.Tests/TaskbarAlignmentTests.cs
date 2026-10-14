@@ -48,7 +48,7 @@ public sealed class TaskbarAlignmentTests
     [TestMethod]
     public void RightArrangementKeepsArtworkAndButtonsStableAcrossWidths()
     {
-        foreach (var width in new[] { 400.0, 450.0, 600.0 })
+        foreach (var width in new[] { 450.0, 500.0, 600.0 })
         {
             var layout = TaskbarRestLayoutPolicy.Arrange(TaskbarRestLayoutPolicy.DefaultOrder,
                 component => component == TaskbarRestComponent.Artwork ? 36 : 40,

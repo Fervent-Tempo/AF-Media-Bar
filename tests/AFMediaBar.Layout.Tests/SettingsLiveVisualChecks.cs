@@ -33,6 +33,14 @@ namespace AFMediaBar.Layout.Tests;
 
 internal static class SettingsLiveVisualChecks
 {
+    private sealed class EmptyAudioDeviceCatalog : AFMediaBar.Classes.Services.Audio.IAudioDeviceCatalog
+    {
+        public event EventHandler? Changed { add { } remove { } }
+        public Task<IReadOnlyList<AFMediaBar.Classes.Models.AudioDeviceOption>> GetDevicesAsync(AFMediaBar.Classes.Models.AudioDeviceDirection direction,
+            bool includeHidden = false, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<AFMediaBar.Classes.Models.AudioDeviceOption>>([]);
+    }
+
     private sealed class PreviewMonitors : IDisplayMonitorService
     {
         public event EventHandler? MonitorsChanged { add { } remove { } }
@@ -61,6 +69,7 @@ internal static class SettingsLiveVisualChecks
         services.AddScoped<ComponentsSettingsViewModel>();
         services.AddScoped<ContentLayoutViewModel>();
         services.AddScoped<ComponentsSettingsPage>();
+        services.AddSingleton<AFMediaBar.Classes.Services.Audio.IAudioDeviceCatalog, EmptyAudioDeviceCatalog>();
         services.AddScoped<InteractionViewModel>();
         services.AddScoped<AppearancePage>();
         services.AddScoped<InteractionPage>();

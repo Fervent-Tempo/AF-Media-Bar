@@ -2,9 +2,19 @@
 // 使用忙碌的空 ViewModel 跳过真实音频读取，不启动托盘、播放器或全局 Hook。
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Collections.ObjectModel;
+using System.Reflection;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Automation.Peers;
+using System.Windows.Automation.Provider;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Threading;
 using System.Windows.Interop;
+using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
+using AFMediaBar.Classes.Services.Audio;
 using AFMediaBar.ViewModels.Windows;
 using AFMediaBar.Views.Windows;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -19,35 +29,7 @@ public sealed class AudioFlyoutLifecycleTests
     [TestMethod]
     public void ToggleDefersWindowCreationCoalescesReentryAndStopsAfterDisposal()
     {
-        const string IsolationVariable = "AFMB_AUDIO_FLYOUT_ISOLATED";
-        if (Environment.GetEnvironmentVariable(IsolationVariable) != "1")
-        {
-            // Application 的关闭状态属于进程；隔离实际 BAML 所需的应用资源，避免影响其他 STA 测试。
-            var startInfo = new ProcessStartInfo("dotnet")
-            {
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                StandardOutputEncoding = System.Text.Encoding.UTF8,
-                StandardErrorEncoding = System.Text.Encoding.UTF8,
-                CreateNoWindow = true
-            };
-            startInfo.ArgumentList.Add("vstest");
-            startInfo.ArgumentList.Add(typeof(AudioFlyoutLifecycleTests).Assembly.Location);
-            startInfo.ArgumentList.Add($"/TestCaseFilter:FullyQualifiedName={typeof(AudioFlyoutLifecycleTests).FullName}.{nameof(ToggleDefersWindowCreationCoalescesReentryAndStopsAfterDisposal)}");
-            startInfo.Environment[IsolationVariable] = "1";
-            using var child = Process.Start(startInfo)!;
-            var output = child.StandardOutput.ReadToEndAsync();
-            var error = child.StandardError.ReadToEndAsync();
-            if (!child.WaitForExit(60000))
-            {
-                child.Kill(entireProcessTree: true);
-                child.WaitForExit();
-                Assert.Fail("Isolated audio flyout test timed out");
-            }
-            Assert.AreEqual(0, child.ExitCode, output.GetAwaiter().GetResult() + error.GetAwaiter().GetResult());
-            return;
-        }
+        if (RunIsolated(nameof(ToggleDefersWindowCreationCoalescesReentryAndStopsAfterDisposal))) return;
 
         StaTest.Run(async _ =>
         {
@@ -121,6 +103,188 @@ public sealed class AudioFlyoutLifecycleTests
                 app.Shutdown();
             }
         });
+    }
+
+    [TestMethod]
+    public void ThreeCardViewportReplacesListWithEqualHeightDetailAndRestoresScroll()
+    {
+        if (RunIsolated(nameof(ThreeCardViewportReplacesListWithEqualHeightDetailAndRestoresScroll))) return;
+        StaTest.Run(async dispatcher =>
+        {
+            var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+            using var icons = new AppIconService();
+            using var appearance = new WindowAppearanceService(new NativeWindowBackdropAdapter(), icons);
+            using var switches = new AudioDeviceSwitchCoordinator(new DeviceOperations());
+            AudioControlFlyoutWindow? window = null;
+            var rows = new ObservableCollection<ApplicationAudioItemViewModel>();
+            try
+            {
+                app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ThemesDictionary());
+                app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
+                foreach (var resource in new[] { "MotionResources", "SettingsAppearanceResources" })
+                    app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri($"/AFMediaBar;component/Resources/{resource}.xaml", UriKind.Relative) });
+                // 只初始化本次导航使用的集合；不构造托盘、Hook 或真实音频服务。
+                var vm = (AudioControlViewModel)RuntimeHelpers.GetUninitializedObject(typeof(AudioControlViewModel));
+                typeof(AudioControlViewModel).GetField("<AudioApplications>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(vm, rows);
+                var removed = (System.Collections.Specialized.NotifyCollectionChangedEventHandler)Delegate.CreateDelegate(
+                    typeof(System.Collections.Specialized.NotifyCollectionChangedEventHandler), vm,
+                    typeof(AudioControlViewModel).GetMethod("OnAudioApplicationsChanged", BindingFlags.Instance | BindingFlags.NonPublic)!);
+                rows.CollectionChanged += removed;
+                var muteWrites = 0;
+                var volumeWrites = 0;
+                for (var index = 0; index < 5; index++)
+                {
+                    var name = "App" + index;
+                    var volume = new ApplicationVolumeItemViewModel(new(name, name, 50, false, false, null),
+                        (_, _, _) => volumeWrites++, _ => { muteWrites++; return Task.CompletedTask; });
+                    rows.Add(new(new(name, name, name, [], true, false), volume, switches));
+                }
+                vm.IsBusy = true;
+                app.Resources["Loc.Common.OutputDevice"] = "输出设备";
+                app.Resources["Loc.Common.InputDevice"] = "输入设备";
+                window = CreateWindow(vm, appearance);
+                await window.ToggleAsync(null);
+                await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+                window.UpdateLayout();
+                var viewport = (FrameworkElement)window.FindName("ApplicationsViewport");
+                var list = (ScrollViewer)window.FindName("ApplicationsScrollViewer");
+                var detail = (ScrollViewer)window.FindName("ApplicationDetailScrollViewer");
+                Assert.AreEqual(132d, viewport.ActualHeight);
+                Assert.AreEqual(220d, list.ExtentHeight, 0.1, "五项各占 44 DIP，不能另加行间距。");
+                Assert.AreEqual(132d, list.ViewportHeight, 0.1);
+                list.ScrollToVerticalOffset(44);
+                await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+                var offset = list.VerticalOffset;
+                var height = window.ActualHeight;
+                var cards = Descendants(list).OfType<Button>().Where(button => ReferenceEquals(button.Command, vm.ToggleAudioApplicationCommand)).ToArray();
+                var opener = cards.First(button => ReferenceEquals(button.DataContext, rows[1]));
+                var listCard = (Border)((Grid)opener.Parent).Parent;
+                var cardWidth = listCard.ActualWidth;
+                var blank = (UIElement)listCard.InputHitTest(new Point(2, 20));
+                var blankClick = new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left)
+                    { RoutedEvent = UIElement.MouseLeftButtonUpEvent };
+                blank.RaiseEvent(blankClick);
+                Assert.IsTrue(blankClick.Handled, "卡片内边距空白也必须能打开详情。");
+                await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+                Assert.AreSame(rows[1], vm.SelectedAudioApplication);
+                Assert.AreEqual(Visibility.Collapsed, list.Visibility);
+                Assert.AreEqual(Visibility.Visible, detail.Visibility);
+                Assert.AreEqual(height, window.ActualHeight, 0.1);
+                Assert.AreEqual(0d, detail.ScrollableHeight);
+                var detailOpener = Descendants(detail).OfType<Button>().First(button => ReferenceEquals(button.Command, vm.ToggleAudioApplicationCommand));
+                Assert.AreEqual(cardWidth, ((Border)((Grid)detailOpener.Parent).Parent).ActualWidth, 0.1,
+                    "列表滚动条不能使详情卡片变宽。");
+                var output = (ComboBox)window.FindName("ApplicationOutputDeviceComboBox");
+                var input = (ComboBox)window.FindName("ApplicationInputDeviceComboBox");
+                Assert.AreEqual(32d, output.ActualHeight);
+                Assert.AreEqual(32d, input.ActualHeight);
+                var outputLabel = Descendants(detail).OfType<TextBlock>().Single(block => block.Text == "输出设备");
+                var outputName = Descendants(output).OfType<TextBlock>().First(block => block.Text == rows[1].SelectedOutputDevice!.DisplayName);
+                var labelCenter = outputLabel.TranslatePoint(new Point(0, outputLabel.ActualHeight / 2), detail).Y;
+                var nameCenter = outputName.TranslatePoint(new Point(0, outputName.ActualHeight / 2), detail).Y;
+                Assert.AreEqual(Math.Round(labelCenter, 3), Math.Round(nameCenter, 3), 1,
+                    "设备名和方向标签必须垂直对齐，允许控件模板的像素取整及坐标变换的浮点误差。");
+                Assert.IsTrue(outputName.TranslatePoint(new Point(0, outputName.ActualHeight), output).Y <= output.ActualHeight,
+                    "设备名底部不能被 32 DIP 设备框裁切。");
+                var slider = Descendants(detail).OfType<Slider>().Single();
+                slider.Value = 60;
+                Assert.AreEqual(1, volumeWrites);
+                var volumeWheel = new MouseWheelEventArgs(Mouse.PrimaryDevice, Environment.TickCount, 120) { RoutedEvent = UIElement.PreviewMouseWheelEvent };
+                slider.RaiseEvent(volumeWheel);
+                Assert.IsTrue(volumeWheel.Handled);
+                Assert.AreEqual(62, rows[1].Volume!.VolumePercent);
+                Assert.AreEqual(2, volumeWrites);
+                var mute = Descendants(detail).OfType<Button>().Single(button => ReferenceEquals(button.Command, rows[1].Volume!.ToggleMuteCommand));
+                InvokeButton(mute);
+                await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+                Assert.AreEqual(1, muteWrites);
+                Assert.AreSame(rows[1], vm.SelectedAudioApplication, "音量与静音不能触发详情返回。");
+                var wheel = new MouseWheelEventArgs(Mouse.PrimaryDevice, Environment.TickCount, -120) { RoutedEvent = UIElement.PreviewMouseWheelEvent };
+                detail.RaiseEvent(wheel);
+                Assert.IsTrue(wheel.Handled);
+                Assert.AreSame(rows[1], vm.SelectedAudioApplication);
+                var back = Descendants(detail).OfType<Button>().First(button => ReferenceEquals(button.Command, vm.ToggleAudioApplicationCommand));
+                InvokeButton(back);
+                await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+                Assert.IsNull(vm.SelectedAudioApplication);
+                Assert.AreEqual(offset, list.VerticalOffset, 0.1);
+                Assert.AreEqual(height, window.ActualHeight, 0.1);
+                vm.ToggleAudioApplicationCommand.Execute(rows[2]);
+                rows.RemoveAt(2);
+                Assert.IsNull(vm.SelectedAudioApplication, "应用消失必须返回列表。");
+                vm.ToggleAudioApplicationCommand.Execute(rows[0]);
+                await window.ToggleAsync(null);
+                Assert.IsNull(vm.SelectedAudioApplication, "隐藏复用窗口也必须清除详情。");
+            }
+            finally
+            {
+                window?.Dispose();
+                foreach (var row in rows) row.Dispose();
+                app.Shutdown();
+            }
+        });
+    }
+
+    private static IEnumerable<DependencyObject> Descendants(DependencyObject root)
+    {
+        for (var index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
+        {
+            var child = VisualTreeHelper.GetChild(root, index);
+            yield return child;
+            foreach (var descendant in Descendants(child)) yield return descendant;
+        }
+    }
+
+    private static void InvokeButton(Button button) =>
+        ((IInvokeProvider)new ButtonAutomationPeer(button).GetPattern(PatternInterface.Invoke)).Invoke();
+
+    private sealed class DeviceOperations : IAudioDeviceSwitchOperations
+    {
+        public int Version => 0;
+        public int PolicyVersion => 0;
+        public event EventHandler? Changed { add { } remove { } }
+        public bool IsAllowed(AudioDeviceOption device) => true;
+        public Task<IReadOnlyList<AudioDeviceOption>> GetDevicesAsync(AudioDeviceDirection direction, CancellationToken token) =>
+            Task.FromResult<IReadOnlyList<AudioDeviceOption>>([new("device", "device", "Device", true) { Direction = direction }]);
+        public Task<ApplicationAudioRoute> ReadRouteAsync(ApplicationAudioSnapshot app, AudioDeviceDirection direction, CancellationToken token) =>
+            Task.FromResult(new ApplicationAudioRoute(null, false, true));
+        public Task<AudioDeviceOperationResult> ApplyAsync(AudioDeviceTarget target, AudioDeviceOption? device, CancellationToken token, Func<bool> isCurrent) =>
+            throw new AssertFailedException("导航与加载不能写入设备。");
+    }
+
+    private static bool RunIsolated(string testName)
+    {
+        const string IsolationVariable = "AFMB_AUDIO_FLYOUT_ISOLATED";
+        if (Environment.GetEnvironmentVariable(IsolationVariable) != "1")
+        {
+            // Application 的关闭状态属于进程；隔离实际 BAML 所需的应用资源，避免影响其他 STA 测试。
+            var startInfo = new ProcessStartInfo("dotnet")
+            {
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                StandardOutputEncoding = System.Text.Encoding.UTF8,
+                StandardErrorEncoding = System.Text.Encoding.UTF8,
+                CreateNoWindow = true
+            };
+            startInfo.ArgumentList.Add("vstest");
+            startInfo.ArgumentList.Add(typeof(AudioFlyoutLifecycleTests).Assembly.Location);
+            startInfo.ArgumentList.Add($"/TestCaseFilter:FullyQualifiedName={typeof(AudioFlyoutLifecycleTests).FullName}.{testName}");
+            startInfo.Environment[IsolationVariable] = "1";
+            using var child = Process.Start(startInfo)!;
+            var output = child.StandardOutput.ReadToEndAsync();
+            var error = child.StandardError.ReadToEndAsync();
+            if (!child.WaitForExit(60000))
+            {
+                child.Kill(entireProcessTree: true);
+                child.WaitForExit();
+                Assert.Fail("Isolated audio flyout test timed out");
+            }
+            Assert.AreEqual(0, child.ExitCode, output.GetAwaiter().GetResult() + error.GetAwaiter().GetResult());
+            return true;
+        }
+
+        return false;
     }
 
     private static AudioControlFlyoutWindow CreateWindow(AudioControlViewModel viewModel, WindowAppearanceService appearance) =>

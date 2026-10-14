@@ -154,6 +154,7 @@ namespace AFMediaBar.Components
             _artworkHoverZoomPopup = BuildArtworkHoverZoomPopup();
             ApplyArtworkTooltipOwner();
             _outputDeviceSurface = TaskbarDeviceButton;
+            _inputDeviceSurface = TaskbarInputDeviceButton;
             _volumeSurface = TaskbarVolumeButton;
             // 进度条计时器按"当前是否处于剪枝档位"启动：窗口可能在档位已经生效时才加载出来（任务栏在屏幕关闭期间重建），
             // 那时直接 Start 会让剪枝白做。
@@ -277,6 +278,7 @@ namespace AFMediaBar.Components
         /// click all update it first, so what it holds is always the one just interacted with.
         /// </summary>
         private FrameworkElement _outputDeviceSurface;
+        private FrameworkElement _inputDeviceSurface;
 
         /// <summary>音量交互最近落在哪个入口上；语义与 <see cref="_outputDeviceSurface"/> 相同。/ Which entry the volume interaction last landed on; the same reasoning as <see cref="_outputDeviceSurface"/>.</summary>
         private FrameworkElement _volumeSurface;
@@ -363,7 +365,9 @@ namespace AFMediaBar.Components
         /// </summary>
         public Func<bool>? SuppressedClickSource { get; set; }
         public event EventHandler? OutputDeviceMenuRequested;
+        public event EventHandler? InputDeviceMenuRequested;
         public event EventHandler<PlayerSurfaceWheelEventArgs>? OutputDeviceWheelRequested;
+        public event EventHandler<PlayerSurfaceWheelEventArgs>? InputDeviceWheelRequested;
         public event EventHandler? VolumeMenuRequested;
         public event EventHandler<PlayerSurfaceWheelEventArgs>? VolumeWheelRequested;
         public event EventHandler? QuickLaunchMenuRequested;
@@ -395,6 +399,7 @@ namespace AFMediaBar.Components
 
         /// <summary>指针进入输出设备按钮，宿主应刷新该按钮提示。 / Pointer entered the output-device button; the host should refresh its tooltip.</summary>
         public event EventHandler? OutputDeviceInfoRequested;
+        public event EventHandler? InputDeviceInfoRequested;
 
         /// <summary>指针进入音量按钮，宿主应刷新该按钮提示。 / Pointer entered the volume button; the host should refresh its tooltip.</summary>
         public event EventHandler? VolumeInfoRequested;
@@ -817,6 +822,9 @@ namespace AFMediaBar.Components
 
         /// <summary>返回输出设备菜单的物理屏幕锚点，取自最近交互的那个设备入口。 / Returns the physical screen anchor for the output-device menu, taken from the device entry last interacted with.</summary>
         public TrayIconBounds GetOutputDeviceAnchor() => GetScreenBounds(_outputDeviceSurface);
+        public TrayIconBounds GetInputDeviceAnchor() => GetScreenBounds(_inputDeviceSurface);
+        public void SetDeviceTooltip(AudioDeviceDirection direction, string text) =>
+            (direction == AudioDeviceDirection.Output ? _outputDeviceSurface : _inputDeviceSurface).ToolTip = text;
 
         /// <summary>返回音量菜单的物理屏幕锚点，取自最近交互的那个音量入口。 / Returns the physical screen anchor for the volume menu, taken from the volume entry last interacted with.</summary>
         public TrayIconBounds GetVolumeAnchor() => GetScreenBounds(_volumeSurface);
@@ -1021,15 +1029,19 @@ namespace AFMediaBar.Components
             // The rest layer's device and volume buttons are optional widgets: the inner chip follows the information density and the outer
             // hover surface matches it with one DIP of padding on each side.
             TaskbarOutputDeviceSurface.Width = metrics.ButtonSize;
+            TaskbarInputDeviceSurface.Width = metrics.ButtonSize;
             TaskbarOutputDeviceSurface.Height = metrics.ButtonSize;
+            TaskbarInputDeviceSurface.Height = metrics.ButtonSize;
             TaskbarVolumeSurface.Width = metrics.ButtonSize;
             TaskbarVolumeSurface.Height = metrics.ButtonSize;
             TaskbarOutputDeviceGlyph.FontSize = metrics.IconSize;
+            TaskbarInputDeviceGlyph.FontSize = metrics.IconSize;
             TaskbarVolumeGlyph.FontSize = metrics.IconSize;
             TaskbarPreviousIcon.FontSize = metrics.IconSize;
             TaskbarPlayPauseIcon.FontSize = metrics.IconSize;
             TaskbarNextIcon.FontSize = metrics.IconSize;
             TaskbarHoverDeviceGlyph.FontSize = metrics.IconSize;
+            TaskbarHoverInputDeviceGlyph.FontSize = metrics.IconSize;
             TaskbarHoverVolumeGlyph.FontSize = metrics.IconSize;
             // 静置层进度条只在媒体报告了时长、且开关打开时显示；开关是用户对"静置层要不要这条进度"的回答。
             // The rest-layer progress bar appears only while the session reports a duration and the switch is on; the switch is the
@@ -1044,6 +1056,7 @@ namespace AFMediaBar.Components
                 ? Visibility.Visible
                 : Visibility.Collapsed;
             TaskbarDeviceButton.Visibility = controls.OutputDeviceVisible ? Visibility.Visible : Visibility.Collapsed;
+            TaskbarInputDeviceButton.Visibility = controls.InputDeviceVisible ? Visibility.Visible : Visibility.Collapsed;
             TaskbarVolumeButton.Visibility = controls.AudioControlVisible ? Visibility.Visible : Visibility.Collapsed;
             // 完整层入口开关同时作用于悬停层的完整层按钮与静置层文字区顶部那条细杠：用户看到的只是"要不要这个入口"，
             // 因此两个入口必须一起消失，否则关掉开关后细杠没了、悬停按钮还留着。
@@ -1236,6 +1249,7 @@ namespace AFMediaBar.Components
             PlaceRestWidget(TaskbarSpectrumHoverSurface, layout.Find(TaskbarRestComponent.Spectrum), hoverHeight);
             PlaceRestWidget(TaskbarPerformanceHoverSurface, layout.Find(TaskbarRestComponent.Performance), hoverHeight);
             PlaceRestWidget(TaskbarOutputDeviceHoverSurface, layout.Find(TaskbarRestComponent.OutputDevice), hoverHeight);
+            PlaceRestWidget(TaskbarInputDeviceHoverSurface, layout.Find(TaskbarRestComponent.InputDevice), hoverHeight);
             PlaceRestWidget(TaskbarVolumeHoverSurface, layout.Find(TaskbarRestComponent.Volume), hoverHeight);
 
             TaskbarRestProgress.Margin = new Thickness(
@@ -1278,6 +1292,7 @@ namespace AFMediaBar.Components
 
             var wasSpectrumVisible = TaskbarSpectrumHoverSurface.Visibility == Visibility.Visible;
             var wasPerformanceVisible = TaskbarPerformanceHoverSurface.Visibility == Visibility.Visible;
+            var wasInputDeviceVisible = TaskbarInputDeviceHoverSurface.Visibility == Visibility.Visible;
             var wasOutputDeviceVisible = TaskbarOutputDeviceHoverSurface.Visibility == Visibility.Visible;
             var wasVolumeVisible = TaskbarVolumeHoverSurface.Visibility == Visibility.Visible;
             var wasArtworkVisible = SongImageBorder.Visibility == Visibility.Visible;
@@ -1290,6 +1305,7 @@ namespace AFMediaBar.Components
             var performanceVisible = Visible(TaskbarRestComponent.Performance);
             IsPerformanceComponentVisible = performanceVisible;
             var outputDeviceVisible = Visible(TaskbarRestComponent.OutputDevice);
+            var inputDeviceVisible = Visible(TaskbarRestComponent.InputDevice);
             var volumeVisible = Visible(TaskbarRestComponent.Volume);
 
             SetRestComponentVisible(TaskbarSpectrumHoverSurface, spectrumVisible);
@@ -1297,6 +1313,8 @@ namespace AFMediaBar.Components
             SetRestComponentVisible(TaskbarPerformanceSurface, performanceVisible);
             SetRestComponentVisible(TaskbarOutputDeviceHoverSurface, outputDeviceVisible);
             SetRestComponentVisible(TaskbarOutputDeviceSurface, outputDeviceVisible);
+            SetRestComponentVisible(TaskbarInputDeviceHoverSurface, inputDeviceVisible);
+            SetRestComponentVisible(TaskbarInputDeviceSurface, inputDeviceVisible);
             SetRestComponentVisible(TaskbarVolumeHoverSurface, volumeVisible);
             SetRestComponentVisible(TaskbarVolumeSurface, volumeVisible);
 
@@ -1309,6 +1327,8 @@ namespace AFMediaBar.Components
                 AnimateComponentHover(TaskbarSpectrumHoverSurface, false);
             if (wasPerformanceVisible && !performanceVisible)
                 AnimateComponentHover(TaskbarPerformanceHoverSurface, false);
+            if (wasInputDeviceVisible && !inputDeviceVisible)
+                AnimateComponentHover(TaskbarInputDeviceHoverSurface, false);
             if (wasOutputDeviceVisible && !outputDeviceVisible)
                 AnimateComponentHover(TaskbarOutputDeviceHoverSurface, false);
             if (wasVolumeVisible && !volumeVisible)
@@ -1381,7 +1401,7 @@ namespace AFMediaBar.Components
                 experience.PerformanceVisible,
                 experience.OutputDeviceVisible,
                 experience.VolumeVisible,
-                experience.ArtworkVisible);
+                experience.ArtworkVisible, experience.InputDeviceVisible);
 
         /// <summary>
         /// 一个静置层组件占用的固定宽度；媒体文字不吃固定宽度，它取剩余长度。
@@ -1393,6 +1413,7 @@ namespace AFMediaBar.Components
             TaskbarRestComponent.Spectrum => SpectrumSurfaceWidth,
             TaskbarRestComponent.Performance => _performanceWidth + TaskbarWidgetPadding * 2,
             TaskbarRestComponent.OutputDevice => metrics.ButtonSize + TaskbarWidgetPadding * 2,
+            TaskbarRestComponent.InputDevice => metrics.ButtonSize + TaskbarWidgetPadding * 2,
             TaskbarRestComponent.Volume => metrics.ButtonSize + TaskbarWidgetPadding * 2,
             _ => 0
         };
@@ -1676,6 +1697,7 @@ namespace AFMediaBar.Components
             // The rest layer's device and volume glyphs take the same automatic foreground as the media text: they sit on the same
             // taskbar surface.
             TaskbarOutputDeviceGlyph.Foreground = foreground;
+            TaskbarInputDeviceGlyph.Foreground = foreground;
             TaskbarVolumeGlyph.Foreground = foreground;
             // 频谱与文字取同一支自动前景：两者铺在同一块任务栏表面上，分开判断只会在同一背景上给出两种颜色。
             // The spectrum takes the same automatic foreground as the text: both sit on the same taskbar surface, and judging
@@ -2199,7 +2221,7 @@ namespace AFMediaBar.Components
             // 静置层的同名小组件也要放行：它们与悬停层按钮是同一件事的两个入口，滚轮语义必须一致。
             // The rest-layer widgets of the same name are released for the same reason: they are one of two entries for the same thing as
             // the hover-layer buttons, so the wheel semantics have to match.
-            if (TaskbarDeviceButton.IsMouseOver || TaskbarVolumeButton.IsMouseOver ||
+            if (TaskbarInputDeviceButton.IsMouseOver || TaskbarInputDeviceSurface.IsMouseOver || TaskbarDeviceButton.IsMouseOver || TaskbarVolumeButton.IsMouseOver ||
                 TaskbarOutputDeviceSurface.IsMouseOver || TaskbarVolumeSurface.IsMouseOver)
                 return;
 
@@ -2254,8 +2276,11 @@ namespace AFMediaBar.Components
         private void TaskbarNextButton_Click(object sender, RoutedEventArgs e) =>
             SkipNextRequested?.Invoke(this, EventArgs.Empty);
 
-        private void TaskbarDeviceButton_Click(object sender, RoutedEventArgs e) =>
+        private void TaskbarDeviceButton_Click(object sender, RoutedEventArgs e)
+        {
+            _outputDeviceSurface = TaskbarDeviceButton;
             OutputDeviceMenuRequested?.Invoke(this, EventArgs.Empty);
+        }
 
         private void TaskbarVolumeButton_Click(object sender, RoutedEventArgs e) =>
             VolumeMenuRequested?.Invoke(this, EventArgs.Empty);
@@ -2339,6 +2364,53 @@ namespace AFMediaBar.Components
         {
             _volumeSurface = TaskbarVolumeSurface;
             VolumeWheelRequested?.Invoke(this, new PlayerSurfaceWheelEventArgs(e.Delta, false, false, false));
+            e.Handled = true;
+        }
+
+        private void TaskbarInputDeviceButton_Click(object sender, RoutedEventArgs e)
+        {
+            _inputDeviceSurface = TaskbarInputDeviceButton;
+            InputDeviceMenuRequested?.Invoke(this, EventArgs.Empty);
+        }
+
+
+
+
+        private void TaskbarInputDeviceButton_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            _inputDeviceSurface = TaskbarInputDeviceButton;
+            InputDeviceWheelRequested?.Invoke(this, new PlayerSurfaceWheelEventArgs(e.Delta, false, false, false));
+            e.Handled = true;
+        }
+
+        private void TaskbarInputDeviceButton_MouseEnter(object sender, MouseEventArgs e)
+        {
+            _inputDeviceSurface = TaskbarInputDeviceButton;
+            InputDeviceInfoRequested?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void TaskbarInputDeviceSurface_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton != MouseButton.Left || ShouldSuppressSurfaceClick())
+            {
+                return;
+            }
+
+            _inputDeviceSurface = TaskbarInputDeviceSurface;
+            InputDeviceMenuRequested?.Invoke(this, EventArgs.Empty);
+            e.Handled = true;
+        }
+
+        private void TaskbarInputDeviceSurface_MouseEnter(object sender, MouseEventArgs e)
+        {
+            _inputDeviceSurface = TaskbarInputDeviceSurface;
+            InputDeviceInfoRequested?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void TaskbarInputDeviceSurface_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            _inputDeviceSurface = TaskbarInputDeviceSurface;
+            InputDeviceWheelRequested?.Invoke(this, new PlayerSurfaceWheelEventArgs(e.Delta, false, false, false));
             e.Handled = true;
         }
 

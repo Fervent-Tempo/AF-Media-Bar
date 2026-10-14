@@ -436,6 +436,35 @@
                                IsHitTestVisible="False" />
                 </Border>
             </Border>
+            <Border x:Name="TaskbarInputDeviceHoverSurface"
+                    Panel.ZIndex="4"
+                    Width="26"
+                    Height="32"
+                    Margin="0"
+                    Padding="1"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    CornerRadius="5"
+                    Background="Transparent"
+                    BorderBrush="Transparent"
+                    BorderThickness="0,1.25,0,0"
+                    Visibility="Collapsed"
+                    MouseEnter="TaskbarSpectrumHoverSurface_MouseEnter"
+                    MouseLeave="TaskbarSpectrumHoverSurface_MouseLeave">
+                <Border x:Name="TaskbarInputDeviceSurface"
+                        Width="24" Height="24"
+                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                        CornerRadius="12" Background="#16000000"
+                        Cursor="Hand" Tag="MediaAction" Visibility="Collapsed"
+                        MouseEnter="TaskbarInputDeviceSurface_MouseEnter"
+                        PreviewMouseWheel="TaskbarInputDeviceSurface_PreviewMouseWheel"
+                        MouseLeftButtonUp="TaskbarInputDeviceSurface_MouseLeftButtonUp">
+                    <TextBlock x:Name="TaskbarInputDeviceGlyph" Text="&#xE720;"
+                               FontFamily="{DynamicResource AppIconFontFamily}" FontSize="14"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               IsHitTestVisible="False" />
+                </Border>
+            </Border>
             <Border x:Name="TaskbarVolumeHoverSurface"
                     Panel.ZIndex="4"
                     Width="26"
@@ -531,6 +560,16 @@
                                         MouseEnter="TaskbarDeviceButton_MouseEnter"
                                         PreviewMouseWheel="TaskbarDeviceButton_PreviewMouseWheel">
                                     <TextBlock x:Name="TaskbarHoverDeviceGlyph" Text="&#xE7F5;" FontFamily="{DynamicResource AppIconFontFamily}" FontSize="14" />
+                                </Button>
+                                <Button x:Name="TaskbarInputDeviceButton"
+                                        Style="{StaticResource TaskbarHoverButton}"
+                                        Margin="4,0,1,0"
+                                        ToolTip="{DynamicResource Loc.Common.SwitchInputDevice}"
+                                        ToolTipService.InitialShowDelay="200"
+                                        Click="TaskbarInputDeviceButton_Click"
+                                        MouseEnter="TaskbarInputDeviceButton_MouseEnter"
+                                        PreviewMouseWheel="TaskbarInputDeviceButton_PreviewMouseWheel">
+                                    <TextBlock x:Name="TaskbarHoverInputDeviceGlyph" Text="&#xE720;" FontFamily="{DynamicResource AppIconFontFamily}" FontSize="14" />
                                 </Button>
                                 <Button x:Name="TaskbarVolumeButton"
                                         Style="{StaticResource TaskbarHoverButton}"

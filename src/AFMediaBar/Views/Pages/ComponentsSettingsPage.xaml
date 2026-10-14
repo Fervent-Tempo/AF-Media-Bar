@@ -130,6 +130,12 @@
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.RestOutputDeviceVisible, Mode=TwoWay}" />
                         </components:SettingsRow>
                         <components:SettingsRow
+                            Description="{DynamicResource Loc.Audio.Device.InputDescription}"
+                            Icon="{ui:SymbolIcon Mic24}"
+                            Title="{DynamicResource Loc.Common.InputDevice}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.RestInputDeviceVisible, Mode=TwoWay}" />
+                        </components:SettingsRow>
+                        <components:SettingsRow
                             Description="{DynamicResource Loc.DisplayModes.Rest.Row.VolumeButton.Description}"
                             Icon="{ui:SymbolIcon Speaker124}"
                             Title="{DynamicResource Loc.DisplayModes.Rest.Row.VolumeButton.Title}">
@@ -765,6 +771,12 @@
                                     IsNested="True"
                                     Title="{DynamicResource Loc.Common.OutputDevice}">
                                     <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverOutputDeviceVisible, Mode=TwoWay}" />
+                                </components:SettingsRow>
+                        <components:SettingsRow
+                                    Icon="{ui:SymbolIcon Mic24}"
+                                    IsNested="True"
+                                    Title="{DynamicResource Loc.Common.InputDevice}">
+                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverInputDeviceVisible, Mode=TwoWay}" />
                                 </components:SettingsRow>
                                 <components:SettingsRow
                                     Icon="{ui:SymbolIcon Speaker124}"
