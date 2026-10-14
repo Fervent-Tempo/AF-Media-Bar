@@ -9,6 +9,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Interop;
 using AFMediaBar.Classes.Services;
@@ -222,7 +223,9 @@ public partial class TaskBarMediaControl
     }
 
     private bool CanUseTaskbarComponentHover() =>
-        !_isPlacementMotionActive && _isConnected && _currentMode == WindowMode.Taskbar && !_isVertical;
+        !_isPlacementMotionActive && !_isHostVisibilitySuspended && !_restTransitionActive &&
+        _backgroundPruneLevel < MemoryPruneLevel.DisplayOff &&
+        _isConnected && _currentMode == WindowMode.Taskbar && !_isVertical;
 
     private bool CanUseTaskbarRestHover(Border surface)
     {
@@ -534,6 +537,7 @@ public partial class TaskBarMediaControl
     /// still matches (no new activation in between) — otherwise it would calibrate this round's cover off the last
     /// round's baseline.</summary>
     private int _artworkZoomShowCalibrationGeneration;
+    private int _artworkZoomGeneration;
 
     /// <summary>Custom 摆放回调要用的摆放点（物理像素，相对 PlacementTarget = MainCanvas 原点）。实测确认回调收发
     /// 均为物理像素（popupSize=120 = 80 DIP × 1.5），传 DIP 会被放大 1.5 倍；Custom 模式下 HorizontalOffset/
@@ -679,6 +683,8 @@ public partial class TaskBarMediaControl
         // The global wheel gesture lives only on the main interaction surface; while the artwork stays in the Popup the wheel is
         // forwarded back so the volume/track gestures and the wheel tooltips survive.
         _artworkHoverZoomHost.PreviewMouseWheel += (_, e) => InteractionSurface_PreviewMouseWheel(InteractionSurface, e);
+        // Popup 不把鼠标输入路由回 PlacementTarget，按下意图交给现有宿主。
+        _artworkHoverZoomHost.PreviewMouseLeftButtonDown += (_, e) => ArtworkPointerPressed?.Invoke(this, e);
         return new System.Windows.Controls.Primitives.Popup
         {
             AllowsTransparency = true,
@@ -735,12 +741,15 @@ public partial class TaskBarMediaControl
     /// </summary>
     private void ShowArtworkHoverZoom()
     {
+        if (!IsLoaded || !CanUseTaskbarComponentHover() || PresentationSource.FromVisual(MainCanvas) is null)
+            return;
         if (_artworkHoverZoomPopup is not { } popup || _artworkHoverZoomHost is not { } host)
             return;
         // 记下激活时刻：换树（封面移入 Popup）那一瞬 WPF 会先丢一次命中而误发 MouseLeave，以"show 之后多久"判断其
         // 是否为重挂窗口的副作用（见 VerifyArtworkZoomLeave），避免把它当成真实离开提前收回。
         // Stamp the activation moment: the re-parent (cover moved into the Popup) drops the hit for a moment and spuriously
         // raises MouseLeave; gating on how long since the show tells that artifact from a real leave (see VerifyArtworkZoomLeave).
+        _artworkZoomGeneration++;
         _artworkZoomShowStamp = Stopwatch.GetTimestamp();
         // 指针回来了（可能正处在收拢动画里）：清掉收拢标记，随后的动画把倍率重新拉起来，元素仍在宿主中无需换树。
         // 收拢兜底计时器一并停掉，免得它把正在重新长开的放大强行收回。
@@ -755,15 +764,9 @@ public partial class TaskBarMediaControl
         if (popup.IsOpen)
             return;
 
-        // 换树前先收掉打开中的封面 tooltip：tooltip 弹层内部为"点外部关闭"持有鼠标捕获，而换树会把它的触发
-        // 元素（封面）移出主树——弹层关闭与换树交错时，那份捕获可能被遗留在一棵已卸载的树上成幽灵，把此后
-        // 所有命中测试锁进死树，封面悬停彻底失聪。先收再换，竞态从源头消失。
-        // Close an open artwork tooltip before the re-parent: the tooltip popup internally holds a mouse capture for its
-        // "dismiss on outside click", and the re-parent moves its trigger element (the artwork) out of the main tree — when
-        // the tooltip's closure interleaves with that, the capture can be stranded on an unloaded tree as a ghost, locking all
-        // subsequent hit-testing inside a dead tree and killing the artwork's hover outright. Closing first removes the race
-        // at its source.
-        if (SongImageBorder.ToolTip is System.Windows.Controls.ToolTip { IsOpen: true } openTooltip)
+        // 换树前收起气泡，避免提示定位读取过渡中的封面。WPF 提示归属留在 MainCanvas，
+        // 不能把 IsOpen=false 当作其内部安全区域已经清理的保证。
+        if (MainCanvas.ToolTip is System.Windows.Controls.ToolTip { IsOpen: true } openTooltip)
             openTooltip.IsOpen = false;
 
         var width = SongImageBorder.ActualWidth;
@@ -871,6 +874,7 @@ public partial class TaskBarMediaControl
         // outline can no longer serve as the hover zone — it encloses the original slot whole, and a pointer at its edge
         // raises no event at all, which only a geometry poll can catch.
         _artworkZoomHoverSyncTimer.Start();
+        _wheelTooltipTimer.Start();
     }
 
     /// <summary>
@@ -886,9 +890,9 @@ public partial class TaskBarMediaControl
     {
         if (_artworkHoverZoomPopup is not { } popup || _artworkHoverZoomHost is not { } host)
             return;
-        if (popup.IsOpen)
+        if (popup.IsOpen || ReferenceEquals(SongImageBorder.Parent, host))
         {
-            if (immediate || !CurrentMotion.UseTransitions)
+            if (immediate || !popup.IsOpen || !CurrentMotion.UseTransitions)
             {
                 SongImageScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
                 SongImageScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
@@ -940,6 +944,9 @@ public partial class TaskBarMediaControl
     {
         if (_artworkHoverZoomPopup is not { } popup || _artworkHoverZoomHost is not { } host)
             return;
+        var generation = ++_artworkZoomGeneration;
+        _artworkZoomShowCalibrationGeneration++;
+        _artworkZoomSettleGeneration++;
         _artworkZoomCollapsing = false;
         // 收回既已落地，兜底计时器与悬停区轮询都失去使命；重复收回是幂等的，重复 Stop 亦然。
         // With the reclaim landed both the fallback timer and the hover-zone poll have served their purpose; a repeated
@@ -980,7 +987,8 @@ public partial class TaskBarMediaControl
             // tree with no capture). We no longer lean on the geometry verdict, which misreports "still over" under a stale
             // capture or cross-screen DPI and bounces the just-reclaimed zoom back up — another path to the stuck zoom
             // (reclaim → geometry misfire → regrow → reclaim…).
-            if (!ReferenceEquals(SongImageBorder.Parent, _artworkHoverZoomHost) && SongImageBorder.IsMouseOver)
+            if (generation == _artworkZoomGeneration && IsLoaded && CanUseTaskbarComponentHover() &&
+                !ReferenceEquals(SongImageBorder.Parent, _artworkHoverZoomHost) && SongImageBorder.IsMouseOver)
                 AnimateArtworkHover(true);
         }, System.Windows.Threading.DispatcherPriority.Background);
     }
@@ -1003,6 +1011,8 @@ public partial class TaskBarMediaControl
         System.Windows.Controls.Grid host,
         Point? settleFrom)
     {
+        _artworkWheelTooltip.IsOpen = false;
+        _quickLaunchTooltip.IsOpen = false;
         if (popup.IsOpen)
             popup.IsOpen = false;
 
@@ -1415,6 +1425,7 @@ public partial class TaskBarMediaControl
     /// </summary>
     private void AnimateArtworkZoom(bool growing, bool immediate, double hintTargetOpacity)
     {
+        var generation = _artworkZoomGeneration;
         var motion = CurrentMotion;
         var targetScale = growing ? ArtworkHoverZoomScaleFactor : 1.0;
         var targetPush = growing ? _artworkZoomPushOffset : 0.0;
@@ -1464,7 +1475,7 @@ public partial class TaskBarMediaControl
         {
             scaleXAnimation.Completed += (_, _) =>
             {
-                if (_artworkZoomCollapsing)
+                if (generation == _artworkZoomGeneration && _artworkZoomCollapsing)
                     ReclaimArtworkZoom();
             };
         }
@@ -1591,11 +1602,33 @@ public partial class TaskBarMediaControl
         // Leave a settled zoom alone; a pointer back inside mid-collapse grows it again at once.
         if (_artworkZoomCollapsing)
             AnimateArtworkHover(true);
+        RefreshArtworkZoomTooltip();
+    }
+
+    private void RefreshArtworkZoomTooltip()
+    {
+        // Popup 的自动提示不跨树寻找主窗口 owner；手动显示同一实例，保留原有延迟和时长。
+        if (!CanShowPlayerTooltip || _artworkHoverZoomPopup?.IsOpen != true ||
+            !ReferenceEquals(MainCanvas.ToolTip, _artworkWheelTooltip))
+            return;
+        var elapsed = Stopwatch.GetElapsedTime(_artworkZoomShowStamp).TotalMilliseconds;
+        var delay = ToolTipService.GetInitialShowDelay(SongImageBorder);
+        if (elapsed < delay)
+            return;
+        if (!ChordWheelHeld && elapsed >= delay + ToolTipService.GetShowDuration(SongImageBorder))
+        {
+            _artworkWheelTooltip.IsOpen = false;
+            return;
+        }
+        _artworkWheelTooltip.PlacementTarget = SongImageBorder;
+        _artworkWheelTooltip.IsOpen = true;
     }
 
     /// <summary>显示大图预览；已打开时只刷新内容，不重播进入动画。/ Shows the large preview; an already-open popup only refreshes its content without replaying the entrance.</summary>
     private void ShowArtworkHoverPreview(bool immediate = false)
     {
+        if (!IsLoaded || !CanUseTaskbarComponentHover())
+            return;
         if (_artworkHoverPreview is not { } popup)
             return;
 
@@ -1670,9 +1703,11 @@ public partial class TaskBarMediaControl
         if (_artworkHoverZoomPopup?.IsOpen != true)
             return;
 
+        var generation = _artworkZoomGeneration;
         Dispatcher.BeginInvoke(() =>
         {
-            if (_artworkHoverZoomPopup?.IsOpen == true)
+            if (generation == _artworkZoomGeneration && IsLoaded && CanUseTaskbarComponentHover() &&
+                _artworkHoverZoomPopup?.IsOpen == true)
                 AnimateArtworkHover(IsPointerOverArtwork());
         }, System.Windows.Threading.DispatcherPriority.Background);
     }
@@ -1948,6 +1983,7 @@ public partial class TaskBarMediaControl
 
     private void SongImageBorder_MouseLeave(object sender, MouseEventArgs e)
     {
+        _quickLaunchTooltip.IsOpen = false;
         AnimateComponentHover(SongImageHoverOverlay, false);
         if (_artworkHoverZoomPopup?.IsOpen == true)
         {

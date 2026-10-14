@@ -147,6 +147,8 @@ namespace AFMediaBar.Components
             // With no media the frequent action is "pick a player by wheeling over the note", so the note carries a tooltip instance of its own:
             // only a fixed instance lets the content change without closing the bubble (see SetQuickLaunchPreview).
             _quickLaunchTooltip = new ToolTip { Placement = System.Windows.Controls.Primitives.PlacementMode.Top };
+            // 提示归属留在主窗口；真实封面会移入 Popup，不能成为 WPF 安全区域的缓存来源。
+            MainCanvas.ToolTipOpening += ArtworkTooltipOwner_ToolTipOpening;
             // 大图预览独立于滚轮提示：后者是 ToolTip 气泡，前者是承载放大封面的透明 Popup，锚在封面上方。
             // The large preview is separate from the wheel tooltips: those are ToolTip bubbles, this one is a transparent Popup
             // carrying the enlarged cover, anchored above the artwork.
@@ -171,6 +173,7 @@ namespace AFMediaBar.Components
                 _artworkZoomHoverSyncTimer.Stop();
                 _wheelTooltipTimer.Stop();
                 CloseWheelTooltips();
+                _quickLaunchTooltip.IsOpen = false;
                 StopMarqueeAnimations();
                 StopRestTransitions();
                 // 控件离树时收起大图预览：Popup 有自己的 HWND，不会随宿主一起被移除。
@@ -374,6 +377,9 @@ namespace AFMediaBar.Components
         public event EventHandler<PlayerSurfaceWheelEventArgs>? QuickLaunchWheelRequested;
         public event EventHandler? OpenTaskManagerRequested;
         public event EventHandler<PlayerSurfaceWheelEventArgs>? WheelRequested;
+
+        /// <summary>独立封面 Popup 内的按下意图，由宿主沿用原有拖动与点击判定。</summary>
+        public event MouseButtonEventHandler? ArtworkPointerPressed;
         public event EventHandler<MediaBarSizeRequestEventArgs>? DesiredSizeChanged;
 
         /// <summary>
@@ -509,7 +515,7 @@ namespace AFMediaBar.Components
         /// </summary>
         private void ReassertQuickLaunchTooltip()
         {
-            if (!SongImageBorder.IsMouseOver)
+            if (!CanShowPlayerTooltip || !SongImageBorder.IsMouseOver)
             {
                 return;
             }
@@ -647,8 +653,10 @@ namespace AFMediaBar.Components
         /// </summary>
         private void ReassertChordWheelTooltip()
         {
-            if (!ChordWheelHeld || ResolveGlobalWheelSurface() is not { } surface ||
-                !ReferenceEquals(surface.Surface.ToolTip, surface.Tooltip))
+            if (!ChordWheelHeld || ResolveGlobalWheelSurface() is not { } surface)
+                return;
+            var owner = ReferenceEquals(surface.Surface, SongImageBorder) ? MainCanvas : surface.Surface;
+            if (!ReferenceEquals(owner.ToolTip, surface.Tooltip))
                 return;
 
             surface.Tooltip.PlacementTarget = surface.Surface;
@@ -689,6 +697,8 @@ namespace AFMediaBar.Components
         /// </summary>
         private (FrameworkElement Surface, ToolTip Tooltip)? ResolveGlobalWheelSurface()
         {
+            if (!CanShowPlayerTooltip)
+                return null;
             if (_isConnected && SongImageBorder.IsMouseOver)
                 return (SongImageBorder, _artworkWheelTooltip);
             return IsTextSurfaceHovered ? (SongInfoStackPanel, _wheelTooltip) : null;
@@ -720,17 +730,28 @@ namespace AFMediaBar.Components
 
         private void SetArtworkTooltipOwner(ToolTip? owner)
         {
-            if (ReferenceEquals(SongImageBorder.ToolTip, owner))
+            if (ReferenceEquals(MainCanvas.ToolTip, owner))
                 return;
 
             CloseWheelTooltips();
             _quickLaunchTooltip.IsOpen = false;
-            SongImageBorder.ToolTip = owner;
-            // 换过来的实例可能还没有内容（从来没有人滚动过），而提示是按悬停自动打开的：先写一次当前提示，
-            // 否则悬停封面会先弹出一个空气泡。
-            // The instance just swapped in may still be empty when nobody has scrolled yet, and the tooltip opens by itself on hover:
-            // writing the current hint once keeps hovering the artwork from popping an empty bubble.
+            MainCanvas.ToolTip = owner;
+            if (owner is not null)
+                owner.PlacementTarget = SongImageBorder;
         }
+
+        private void ArtworkTooltipOwner_ToolTipOpening(object sender, ToolTipEventArgs e)
+        {
+            // 不拦截文字区及设备按钮冒泡来的提示。
+            if (ReferenceEquals(e.Source, MainCanvas) &&
+                (!CanShowPlayerTooltip ||
+                 SongImageBorder.Visibility != Visibility.Visible ||
+                 !SongImageBorder.IsMouseOver && !IsPointerOverArtwork()))
+                e.Handled = true;
+        }
+
+        private bool CanShowPlayerTooltip => IsLoaded && !_isHostVisibilitySuspended &&
+            !_isPlacementMotionActive && !_restTransitionActive && _backgroundPruneLevel < MemoryPruneLevel.DisplayOff;
 
         /// <summary>
         /// 指针移动时维护滚轮提示的轮询：只在指针位于全局滚轮面上时运行，一离开那两个面就立刻停表并收起气泡。
@@ -1506,27 +1527,17 @@ namespace AFMediaBar.Components
         public void ApplyBackgroundPruneLevel(MemoryPruneLevel level)
         {
             _backgroundPruneLevel = level;
+            if (level >= MemoryPruneLevel.DisplayOff)
+            {
+                SettleTaskbarPointerVisuals();
+                AnimateArtworkHover(false, immediate: true);
+            }
             ApplyTimerSuspensionState();
             UpdateWebLyricsPowerState();
             UpdateWebLyricsPresentation(allowTransition: false);
         }
 
-        /// <summary>
-        /// 在任务栏自动隐藏或显隐动画期间暂停不可见呈现与交互计时器；恢复时按当前媒体状态重新判定。
-        /// Suspends invisible presentation and interaction timers while the taskbar is auto-hidden or moving, then re-evaluates them from the current
-        /// media state when the host becomes visible again.
-        ///
-        /// 进入挂起时悬停层 MUST 立刻收干净：悬停展开会给整块文字区装上 `BlurEffect`（文字被渲染到中间表面再模糊，每帧的合成成本都落在与
-        /// 任务栏动画同一条 DWM 合成管线上），而"收起"原本只依赖 250 毫秒的悬停收起计时器——挂起恰好把它停掉，于是那块模糊会一直留到
-        /// 用户下一次把指针移回媒体栏。指针离开任务栏才会触发自动隐藏，所以这一刻悬停层本来就该收起来，立刻收起既省掉了这段成本，
-/// 也与预期行为一致。
-        /// On suspension the hover layer MUST be collapsed at once: revealing it installs a `BlurEffect` on the whole text area (the text is rendered into
-        /// an intermediate surface and blurred, and that per-frame compositing cost lands on the same DWM pipeline as the taskbar animation), while the
-        /// collapse otherwise depends only on a 250 ms hover-close timer — which the suspension stops, so the blur would stay until the user next moved the
-        /// pointer back onto the bar. Auto-hide only starts once the pointer has left the taskbar, so the layer should be closing at that moment anyway;
-        /// collapsing it immediately both removes that cost and matches the intended behaviour.
-        /// </summary>
-        /// <param name="suspended">宿主当前是否不可见或正在移动。/ Whether the host is currently invisible or moving.</param>
+        /// <summary>宿主挂起时立即收回悬停层和封面 Popup；恢复后按指针状态重新排入悬停。</summary>
         public void ApplyHostVisibilitySuspension(bool suspended)
         {
             if (_isHostVisibilitySuspended == suspended)
@@ -1536,6 +1547,7 @@ namespace AFMediaBar.Components
             if (suspended)
             {
                 SettleTaskbarPointerVisuals();
+                AnimateArtworkHover(false, immediate: true);
             }
             else
             {

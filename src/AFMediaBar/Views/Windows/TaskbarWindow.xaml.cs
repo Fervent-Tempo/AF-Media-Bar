@@ -516,6 +516,7 @@ public partial class TaskbarWindow : Window
             // block media callbacks immediately so they cannot show an already closed Window.
             _isClosing = true;
             _menuEnvironmentVersion++;
+            MediaControl.ApplyHostVisibilitySuspension(true);
             PlayerMenu.IsOpen = false;
             StopOccupancyRefresh();
             _windowHandle = IntPtr.Zero;

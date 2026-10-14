@@ -27,6 +27,7 @@
     <Canvas Name="WidgetCanvas" Background="Transparent">
         <controls:TaskBarMediaControl x:Name="MediaControl"
                                       PreviewMouseLeftButtonDown="MediaControl_PreviewMouseLeftButtonDown"
+                                      ArtworkPointerPressed="MediaControl_PreviewMouseLeftButtonDown"
                                       PreviewMouseMove="MediaControl_PreviewMouseMove"
                                       PreviewMouseLeftButtonUp="MediaControl_PreviewMouseLeftButtonUp"
                                       LostMouseCapture="MediaControl_LostMouseCapture" />
