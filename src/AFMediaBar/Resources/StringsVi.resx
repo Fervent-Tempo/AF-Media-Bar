@@ -2954,4 +2954,5 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   <data name="Experimental.OpenAppearance" xml:space="preserve"><value>Mở cài đặt giao diện</value></data>
   <data name="Experimental.Vertical.Notification.Title" xml:space="preserve"><value>Đã phát hiện thanh tác vụ dọc</value></data>
   <data name="Experimental.Vertical.Notification.Body" xml:space="preserve"><value>Bật thử nghiệm thanh tác vụ dọc để hiển thị thanh phương tiện tại đây. Nhấn để mở Tính năng thử nghiệm.</value></data>
+  <data name="Experimental.Audio.RoutingPreserved" xml:space="preserve"><value>Tắt thử nghiệm sẽ giữ cài đặt đã lưu và tùy chọn định tuyến âm thanh ứng dụng hiện có của Windows.</value></data>
 </root>

@@ -139,7 +139,7 @@ public sealed class AudioDeviceSwitchTests
         var platform = new FakeOperations();
         using var coordinator = new AudioDeviceSwitchCoordinator(platform);
         var foreground = new FakeForeground { Current = new("A", "app", "A", [], true, true) };
-        var interaction = new AudioInteractionService(null!, null!, null!, null!, coordinator, foreground);
+        var interaction = new AudioInteractionService(null!, null!, null!, null!, coordinator, foreground, () => true);
         var first = await interaction.ResolveTargetAsync(AudioDeviceDirection.Output, AudioDeviceSwitchTarget.ForegroundApplication, this, true);
         await coordinator.PreviewAsync(first!, 1, this);
         foreground.Current = foreground.Current with { Identity = "B" };
@@ -160,7 +160,7 @@ public sealed class AudioDeviceSwitchTests
             Current = new("A", "app", "A", [], true, true),
             Gate = new(TaskCreationOptions.RunContinuationsAsynchronously)
         };
-        var interaction = new AudioInteractionService(null!, null!, null!, null!, coordinator, foreground);
+        var interaction = new AudioInteractionService(null!, null!, null!, null!, coordinator, foreground, () => true);
         var first = interaction.ResolveTargetAsync(AudioDeviceDirection.Input, AudioDeviceSwitchTarget.ForegroundApplication, this, true);
         foreground.Current = foreground.Current with { Identity = "B" };
         var second = interaction.ResolveTargetAsync(AudioDeviceDirection.Input, AudioDeviceSwitchTarget.ForegroundApplication, this, true);
@@ -184,6 +184,39 @@ public sealed class AudioDeviceSwitchTests
         await coordinator.PreviewAsync(new(AudioDeviceDirection.Input), 1, this);
         await coordinator.DrainAsync().WaitAsync(TimeSpan.FromSeconds(5));
         CollectionAssert.AreEquivalent(new[] { "Output:system:B", "Input:system:B" }, platform.Applied.ToArray());
+    }
+
+    [TestMethod]
+    public async Task DisabledExperimentDoesNotCaptureApplicationsOrAllowInputTargets()
+    {
+        var platform = new FakeOperations();
+        using var coordinator = new AudioDeviceSwitchCoordinator(platform);
+        var foreground = new FakeForeground { Current = new("A", "app", "A", [], true, true) };
+        var interaction = new AudioInteractionService(null!, null!, null!, null!, coordinator, foreground, () => false);
+        Assert.IsNull(await interaction.ResolveTargetAsync(AudioDeviceDirection.Input, AudioDeviceSwitchTarget.ForegroundApplication, this, true));
+        var output = await interaction.ResolveTargetAsync(AudioDeviceDirection.Output, AudioDeviceSwitchTarget.ForegroundApplication, this, true);
+        Assert.IsNotNull(output);
+        Assert.IsNull(output.Application);
+        Assert.AreEqual(0, foreground.Reads);
+    }
+
+    [TestMethod]
+    public async Task DisablingExperimentDropsPendingForegroundIdentity()
+    {
+        var platform = new FakeOperations();
+        using var coordinator = new AudioDeviceSwitchCoordinator(platform);
+        var foreground = new FakeForeground
+        {
+            Current = new("A", "app", "A", [], true, true),
+            Gate = new(TaskCreationOptions.RunContinuationsAsynchronously)
+        };
+        var enabled = true;
+        var interaction = new AudioInteractionService(null!, null!, null!, null!, coordinator, foreground, () => enabled);
+        var pending = interaction.ResolveTargetAsync(AudioDeviceDirection.Output, AudioDeviceSwitchTarget.ForegroundApplication, this, true);
+        enabled = false;
+        foreground.Gate.SetResult();
+        Assert.IsNull(await pending);
+        Assert.AreEqual(0, platform.Applied.Count);
     }
 
     private sealed class FakeForeground : IForegroundAudioApplicationResolver

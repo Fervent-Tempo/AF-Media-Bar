@@ -43,6 +43,9 @@ public partial class TaskbarWindow : Window
     private readonly ITaskbarDockService _taskBarService;
     private readonly string _targetMonitorDeviceId;
     private readonly TaskbarOccupiedAreaService _occupiedAreaService;
+    private GlobalInteractionSettings EffectiveInteraction => ExperimentalAudioPolicy.Interaction(
+        SettingsManager.Current.Interaction, SettingsManager.Current.Experiments.NewAudioControl);
+
     private readonly TaskbarLengthConstraintsService _lengthConstraints;
     public TaskbarWindowViewModel ViewModel { get; }
     private readonly ITaskbarWindowHostActions _hostActions;
@@ -1004,7 +1007,7 @@ public partial class TaskbarWindow : Window
             taskbarHandle,
             orientation,
             SettingsManager.Current.LayoutThicknessScalePercent);
-        var mediaFontSizePercent = SettingsManager.Current.TaskbarExperience.Normalize().MediaFontSizePercent;
+        var mediaFontSizePercent = ExperimentalAudioPolicy.Experience(SettingsManager.Current.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl).Normalize().MediaFontSizePercent;
         var layoutChanged = _appliedWindowMode != windowMode ||
                             orientationChanged ||
                             !lengthScalePercent.Equals(_appliedLengthScalePercent) ||
@@ -1144,6 +1147,11 @@ public partial class TaskbarWindow : Window
 
     public void ApplyExperienceSettings()
     {
+        _menuEnvironmentVersion++;
+        _compactFlyout.Dismiss();
+        _volumeApplyTimer.Stop();
+        _pendingVolume = null;
+        _audioInteractionService.CancelDeviceOwner(this);
         var previousImmediate = _applySettingsSizeImmediately;
         _applySettingsSizeImmediately = true;
         try
@@ -1407,14 +1415,19 @@ public partial class TaskbarWindow : Window
 
 
     private async void MediaControl_OutputDeviceMenuRequested(object? sender, EventArgs e) =>
-        await ShowDeviceMenuAsync(AudioDeviceDirection.Output, SettingsManager.Current.Interaction.OutputDeviceClickTarget, MediaControl.GetOutputDeviceAnchor());
+        await ShowDeviceMenuAsync(AudioDeviceDirection.Output, EffectiveInteraction.OutputDeviceClickTarget, MediaControl.GetOutputDeviceAnchor());
     private async void MediaControl_InputDeviceMenuRequested(object? sender, EventArgs e) =>
-        await ShowDeviceMenuAsync(AudioDeviceDirection.Input, SettingsManager.Current.Interaction.InputDeviceClickTarget, MediaControl.GetInputDeviceAnchor());
+        await ShowDeviceMenuAsync(AudioDeviceDirection.Input, EffectiveInteraction.InputDeviceClickTarget, MediaControl.GetInputDeviceAnchor());
     private bool CanPublishMenu(int environmentVersion) =>
         !_isClosing && !_isEnvironmentSuspended && !IsBackgroundPruned && environmentVersion == _menuEnvironmentVersion;
 
     private async Task ShowDeviceMenuAsync(AudioDeviceDirection direction, AudioDeviceSwitchTarget scope, TrayIconBounds anchor)
     {
+        if (!SettingsManager.Current.Experiments.NewAudioControl)
+        {
+            if (direction == AudioDeviceDirection.Input) return;
+            scope = AudioDeviceSwitchTarget.SystemDefault;
+        }
         if (!CanPublishMenu(_menuEnvironmentVersion) || scope == AudioDeviceSwitchTarget.Disabled) return;
         var environmentVersion = _menuEnvironmentVersion;
         var mode = direction == AudioDeviceDirection.Output ? TaskbarCompactFlyoutMode.OutputDevice : TaskbarCompactFlyoutMode.InputDevice;
@@ -1448,7 +1461,7 @@ public partial class TaskbarWindow : Window
     {
         try
         {
-            var settings = SettingsManager.Current.Interaction;
+            var settings = EffectiveInteraction;
             var scope = direction == AudioDeviceDirection.Output ? settings.OutputDeviceWheelTarget : settings.InputDeviceWheelTarget;
             if (!CanPublishMenu(_menuEnvironmentVersion) || scope == AudioDeviceSwitchTarget.Disabled) return;
             var environmentVersion = _menuEnvironmentVersion;
@@ -1481,7 +1494,7 @@ public partial class TaskbarWindow : Window
     {
         try
         {
-            var settings = SettingsManager.Current.Interaction;
+            var settings = EffectiveInteraction;
             var scope = direction == AudioDeviceDirection.Output ? settings.OutputDeviceWheelTarget : settings.InputDeviceWheelTarget;
             if (scope == AudioDeviceSwitchTarget.Disabled) { MediaControl.SetDeviceTooltip(direction, Translations.Get("Audio.Device.Disabled")); return; }
             var target = await _audioInteractionService.ResolveTargetAsync(direction, scope, this, true);
@@ -1500,7 +1513,7 @@ public partial class TaskbarWindow : Window
     private void OnAudioDeviceSwitchUpdated(AudioDeviceSwitchUpdate update) => Dispatcher.BeginInvoke(() =>
     {
         if (_isClosing) return;
-        var settings = SettingsManager.Current.Interaction;
+        var settings = EffectiveInteraction;
         var scope = update.Target.Direction == AudioDeviceDirection.Output ? settings.OutputDeviceWheelTarget : settings.InputDeviceWheelTarget;
         if ((scope == AudioDeviceSwitchTarget.SystemDefault && update.Target.Application is null) ||
             (scope == AudioDeviceSwitchTarget.ForegroundApplication && update.Target.Application is not null))

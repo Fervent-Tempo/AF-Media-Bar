@@ -816,6 +816,11 @@ namespace AFMediaBar.Views.Windows
                 _experienceSettingsUpdateScheduled = false;
                 if (_isClosing)
                     return;
+                if (_lastAudioExperiment != SettingsManager.Current.Experiments.NewAudioControl)
+                {
+                    _lastAudioExperiment = SettingsManager.Current.Experiments.NewAudioControl;
+                    CloseFullPanelWindows();
+                }
                 foreach (var taskbarWindow in _taskbarWindows)
                     taskbarWindow.ApplyExperienceSettings();
             }, DispatcherPriority.Render);

@@ -2916,4 +2916,5 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Experimental.OpenAppearance" xml:space="preserve"><value>Open appearance settings</value></data>
   <data name="Experimental.Vertical.Notification.Title" xml:space="preserve"><value>Vertical taskbar detected</value></data>
   <data name="Experimental.Vertical.Notification.Body" xml:space="preserve"><value>Enable the vertical taskbar experiment to show the media bar here. Click to open Experimental features.</value></data>
+  <data name="Experimental.Audio.RoutingPreserved" xml:space="preserve"><value>Turning this experiment off keeps its saved settings and existing Windows application routing preferences.</value></data>
 </root>

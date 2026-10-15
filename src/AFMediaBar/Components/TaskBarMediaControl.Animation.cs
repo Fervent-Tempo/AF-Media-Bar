@@ -59,7 +59,7 @@ public partial class TaskBarMediaControl
     }
 
     private static TextAlignment ResolveConfiguredAlignment(TextBlock element) =>
-        SettingsManager.Current.TaskbarExperience.Normalize().MediaTextAlignment switch
+        ExperimentalAudioPolicy.Experience(SettingsManager.Current.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl).Normalize().MediaTextAlignment switch
         {
             TaskbarMediaTextAlignment.Center => TextAlignment.Center,
             TaskbarMediaTextAlignment.Right => TextAlignment.Right,
@@ -1830,7 +1830,7 @@ public partial class TaskBarMediaControl
     /// <summary>封面这一格当前绑定的点击动作；门禁与提示符号都由它决定。/ The click action currently bound to the artwork slot; it gates the hint and picks its glyph.</summary>
     private PlayerClickAction ResolveArtworkClickAction() =>
         _currentMode == WindowMode.Taskbar
-            ? PlayerClickBindingPolicy.Resolve(SettingsManager.Current.Interaction, artwork: true)
+            ? PlayerClickBindingPolicy.Resolve(EffectiveInteraction, artwork: true)
             : PlayerClickAction.TogglePlayPause;
 
     /// <summary>
@@ -1849,7 +1849,7 @@ public partial class TaskBarMediaControl
     /// </summary>
     private void AnimateArtworkHover(bool isHovered, bool immediate = false)
     {
-        var hoverMode = SettingsManager.Current.Interaction.ArtworkHoverMode;
+        var hoverMode = EffectiveInteraction.ArtworkHoverMode;
         var hoverEligible = isHovered && CanUseTaskbarComponentHover() && _snapshot.Artwork is not null;
         var previewActive = hoverEligible && hoverMode == ArtworkHoverMode.Preview;
         var zoomActive = hoverEligible && hoverMode == ArtworkHoverMode.Zoom;

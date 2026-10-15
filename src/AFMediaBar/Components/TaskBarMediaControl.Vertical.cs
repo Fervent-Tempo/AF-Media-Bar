@@ -22,9 +22,9 @@ public partial class TaskBarMediaControl
     private double _verticalSpectrumLength = 28;
     private bool VerticalTextRequired => _isVertical && _snapshot.IsConnected;
     private double VerticalPrimaryFontSize => VerticalTaskbarPresentationPolicy.PrimaryFontSizeDip *
-        SettingsManager.Current.TaskbarExperience.Normalize().MediaFontSizePercent / 100d;
+        ExperimentalAudioPolicy.Experience(SettingsManager.Current.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl).Normalize().MediaFontSizePercent / 100d;
     private double VerticalSecondaryFontSize => VerticalTaskbarPresentationPolicy.SecondaryFontSizeDip *
-        SettingsManager.Current.TaskbarExperience.Normalize().MediaFontSizePercent / 100d;
+        ExperimentalAudioPolicy.Experience(SettingsManager.Current.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl).Normalize().MediaFontSizePercent / 100d;
 
     public void ApplyVerticalTaskbarSide(bool onLeft)
     {
@@ -92,7 +92,7 @@ public partial class TaskBarMediaControl
 
     private TaskbarRestLayout ResolveVerticalLayout(double primaryLength)
     {
-        var experience = SettingsManager.Current.TaskbarExperience.Normalize();
+        var experience = ExperimentalAudioPolicy.Experience(SettingsManager.Current.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl).Normalize();
         var visibility = ResolveRestVisibility(experience);
         var metrics = TaskbarDensityMetrics.From(experience.Density);
         return TaskbarRestLayoutPolicy.Arrange(
@@ -119,7 +119,7 @@ public partial class TaskBarMediaControl
 
     private MediaBarSizeRequest BuildVerticalSizeRequest(MediaBarSizeRequest request, bool lyricsVisible, string current, string secondary)
     {
-        var experience = SettingsManager.Current.TaskbarExperience.Normalize();
+        var experience = ExperimentalAudioPolicy.Experience(SettingsManager.Current.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl).Normalize();
         double Measure(string text, double fontSize) => VerticalTaskbarPresentationPolicy.MeasureText(
             text, fontSize, lyricsVisible ? SettingsManager.Current.LyricsCharacterSpacingPercent : 0,
             sideways => MeasureTextWidthExact(sideways, SongTitle) * fontSize / Math.Max(1, SongTitle.FontSize));
@@ -149,7 +149,7 @@ public partial class TaskBarMediaControl
         _verticalSpectrumLength = Math.Min(24, SettingsManager.Current.SpectrumComponent.Normalize().ContentHeightDip) + 4;
         var width = Math.Max(1, MainBorder.Width);
         var innerWidth = Math.Max(1, width - 4);
-        var experience = SettingsManager.Current.TaskbarExperience.Normalize();
+        var experience = ExperimentalAudioPolicy.Experience(SettingsManager.Current.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl).Normalize();
         var tooltipPlacement = _verticalTaskbarOnLeft ? PlacementMode.Right : PlacementMode.Left;
         _wheelTooltip.Placement = tooltipPlacement;
         _artworkWheelTooltip.Placement = tooltipPlacement;
@@ -231,7 +231,7 @@ public partial class TaskBarMediaControl
 
     private void ConfigureVerticalHoverGeometry()
     {
-        var experience = SettingsManager.Current.TaskbarExperience.Normalize();
+        var experience = ExperimentalAudioPolicy.Experience(SettingsManager.Current.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl).Normalize();
         var size = Math.Max(24, TaskbarDensityMetrics.From(experience.Density).ButtonSize);
         var count = 0;
         foreach (FrameworkElement group in TaskbarHoverActions.Children)

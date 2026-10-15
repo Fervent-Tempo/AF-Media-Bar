@@ -64,7 +64,7 @@ public sealed class RestConnectionTransitionTests
                     {
                         Source = new Uri($"/AFMediaBar;component/Resources/{resource}.xaml", UriKind.Relative)
                     });
-                SettingsManager.Current = new AppSettings();
+                SettingsManager.Current = new AppSettings { Experiments = new() { NewAudioControl = true } };
                 var control = new TaskBarMediaControl { AllowRestConnectionTransition = false };
                 control.ApplyLayout(WindowMode.Taskbar, LayoutOrientation.Horizontal);
                 control.ApplyPrimaryLength(500);

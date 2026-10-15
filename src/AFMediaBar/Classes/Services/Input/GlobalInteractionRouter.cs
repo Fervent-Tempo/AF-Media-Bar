@@ -29,7 +29,7 @@ public sealed class GlobalInteractionRouter
         bool isLeftButtonDown,
         bool isRightButtonDown)
     {
-        var settings = SettingsManager.Current.Interaction;
+        var settings = ExperimentalAudioPolicy.Interaction(SettingsManager.Current.Interaction, SettingsManager.Current.Experiments.NewAudioControl);
         var action = GlobalWheelGesturePolicy.Resolve(
             settings,
             isShiftDown,

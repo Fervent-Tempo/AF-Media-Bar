@@ -62,6 +62,9 @@ namespace AFMediaBar.Components
     {
         // === 布局渲染引擎 Layout Render Engine ===
         private LayoutRenderEngine? _layoutEngine;
+        private GlobalInteractionSettings EffectiveInteraction => ExperimentalAudioPolicy.Interaction(
+            SettingsManager.Current.Interaction, SettingsManager.Current.Experiments.NewAudioControl);
+
         private WindowMode _currentMode = WindowMode.Taskbar;  // 当前窗口模式 Current window mode
 
         /// <summary>
@@ -545,7 +548,7 @@ namespace AFMediaBar.Components
         public void RefreshWheelTooltip()
         {
             var slot = ChordWheelHeld ? WheelGestureSlot.Chord : WheelGestureSlot.Primary;
-            var settings = SettingsManager.Current.Interaction.Normalize();
+            var settings = EffectiveInteraction.Normalize();
             var action = slot == WheelGestureSlot.Chord ? settings.ChordWheelAction : settings.PrimaryWheelAction;
             var showHint = settings.ShowWheelTooltips && action != WheelAction.Disabled;
             var textOwner = showHint ? _wheelTooltip : null;
@@ -580,7 +583,7 @@ namespace AFMediaBar.Components
         /// <param name="result">滚轮手势结果。/ Wheel gesture result.</param>
         public void SetWheelResult(WheelTooltipResult result)
         {
-            if (!SettingsManager.Current.Interaction.ShowWheelTooltips)
+            if (!EffectiveInteraction.ShowWheelTooltips)
                 return;
             _appliedWheelSlot = ChordWheelHeld ? WheelGestureSlot.Chord : WheelGestureSlot.Primary;
             _wheelResultShown = true;
@@ -620,7 +623,7 @@ namespace AFMediaBar.Components
         /// shared with the tray.
         /// </summary>
         private bool ChordWheelHeld => GlobalWheelGesturePolicy.IsChordHeld(
-            SettingsManager.Current.Interaction,
+            EffectiveInteraction,
             Keyboard.Modifiers.HasFlag(ModifierKeys.Shift),
             Mouse.LeftButton == MouseButtonState.Pressed,
             Mouse.RightButton == MouseButtonState.Pressed);
@@ -728,7 +731,7 @@ namespace AFMediaBar.Components
         /// </summary>
         private void ApplyArtworkTooltipOwner()
         {
-            var settings = SettingsManager.Current.Interaction.Normalize();
+            var settings = EffectiveInteraction.Normalize();
             var action = ChordWheelHeld ? settings.ChordWheelAction : settings.PrimaryWheelAction;
             var owner = _isConnected
                 ? settings.ShowWheelTooltips && action != WheelAction.Disabled ? _artworkWheelTooltip : null
@@ -991,7 +994,7 @@ namespace AFMediaBar.Components
             // 字号设置只作用于任务栏静置层的媒体文字。
             // The font-size setting only scales taskbar rest-layer media text; the island keeps its preset sizes.
             var mediaFontScale = mode == WindowMode.Taskbar
-                ? SettingsManager.Current.TaskbarExperience.Normalize().MediaFontSizePercent / 100.0
+                ? ExperimentalAudioPolicy.Experience(SettingsManager.Current.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl).Normalize().MediaFontSizePercent / 100.0
                 : 1.0;
 
             // 应用布局
@@ -1050,7 +1053,7 @@ namespace AFMediaBar.Components
             RefreshWheelTooltip();
             var isHorizontalTaskbar = _currentMode == WindowMode.Taskbar && !_isVertical;
             var isTaskbar = _currentMode == WindowMode.Taskbar;
-            var experience = SettingsManager.Current.TaskbarExperience.Normalize();
+            var experience = ExperimentalAudioPolicy.Experience(SettingsManager.Current.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl).Normalize();
             var metrics = TaskbarDensityMetrics.From(experience.Density);
             // 频谱的柱数与样式决定它占用的宽度，因此必须在任何宽度计算之前先重建视觉树。
             // The spectrum's bar count and style decide how much width it occupies, so the visual tree is rebuilt before any
@@ -1229,7 +1232,7 @@ namespace AFMediaBar.Components
                 return;
             }
 
-            var experience = SettingsManager.Current.TaskbarExperience.Normalize();
+            var experience = ExperimentalAudioPolicy.Experience(SettingsManager.Current.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl).Normalize();
             var layout = ResolveRestLayout(experience, primaryLength);
             _isRestLayerEmpty = layout.IsEmpty;
             // 布局本身表达了谁可见；这里统一落地显隐，避免设置与尺寸路径的判据漂移。
@@ -1585,7 +1588,7 @@ namespace AFMediaBar.Components
                 // 否则用户要先把指针移开再移回来才会看到悬停按钮。
                 // The hover layer was collapsed outright on suspension instead of through its own close timer; if the pointer is still over the text
                 // region when the host comes back, queue it again, otherwise the user has to move the pointer away and back to see the hover buttons.
-                if (SettingsManager.Current.TaskbarExperience.Normalize().HoverLayerEnabled &&
+                if (ExperimentalAudioPolicy.Experience(SettingsManager.Current.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl).Normalize().HoverLayerEnabled &&
                     (SongInfoStackPanel.IsMouseOver || HoverRevealHost.IsMouseOver))
                 {
                     _hoverOpenTimer.Stop();
@@ -2144,7 +2147,7 @@ namespace AFMediaBar.Components
                 skipTransition);
             if (_currentMode == WindowMode.Taskbar && orientation == LayoutOrientation.Horizontal)
             {
-                var experience = SettingsManager.Current.TaskbarExperience.Normalize();
+                var experience = ExperimentalAudioPolicy.Experience(SettingsManager.Current.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl).Normalize();
                 var progressVisible = _snapshot.Duration > 0;
                 var restVisibility = ResolveRestVisibility(experience);
                 var visibleComponents = TaskbarRestLayoutPolicy
@@ -2210,7 +2213,7 @@ namespace AFMediaBar.Components
             }
 
             var action = _currentMode == WindowMode.Taskbar
-                ? PlayerClickBindingPolicy.Resolve(SettingsManager.Current.Interaction, artwork: true)
+                ? PlayerClickBindingPolicy.Resolve(EffectiveInteraction, artwork: true)
                 : PlayerClickAction.TogglePlayPause;
             ExecutePlayerClickAction(action);
             e.Handled = true;
@@ -2292,7 +2295,7 @@ namespace AFMediaBar.Components
                 var leftDown = Mouse.LeftButton == MouseButtonState.Pressed;
                 var rightDown = Mouse.RightButton == MouseButtonState.Pressed;
                 var shiftDown = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
-                var modifier = SettingsManager.Current.Interaction.Normalize().Modifier;
+                var modifier = EffectiveInteraction.Normalize().Modifier;
                 if ((modifier == InteractionModifier.LeftMouseButton && leftDown) ||
                     (modifier == InteractionModifier.RightMouseButton && rightDown))
                     _suppressSurfaceClickUntilUtc = DateTime.UtcNow.AddMilliseconds(350);
@@ -2467,7 +2470,7 @@ namespace AFMediaBar.Components
             var hasDuration = _snapshot.Duration > 0;
             TaskbarRestProgress.Maximum = Math.Max(1, _snapshot.Duration);
             TaskbarRestProgress.Value = position;
-            var experience = SettingsManager.Current.TaskbarExperience.Normalize();
+            var experience = ExperimentalAudioPolicy.Experience(SettingsManager.Current.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl).Normalize();
             SongImageProgress.Progress = hasDuration ? position / _snapshot.Duration : 0;
             SongImageProgress.Visibility = _isConnected && hasDuration && experience.ArtworkProgressVisible
                 ? Visibility.Visible : Visibility.Collapsed;
@@ -2497,7 +2500,7 @@ namespace AFMediaBar.Components
                 return;
 
             var action = _currentMode == WindowMode.Taskbar
-                ? PlayerClickBindingPolicy.Resolve(SettingsManager.Current.Interaction, artwork: false)
+                ? PlayerClickBindingPolicy.Resolve(EffectiveInteraction, artwork: false)
                 : PlayerClickAction.ActivateSource;
             ExecutePlayerClickAction(action);
             e.Handled = true;

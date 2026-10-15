@@ -264,6 +264,9 @@ public partial class TaskbarFullPanelWindow : FluentWindow
             return;
 
         var settings = SettingsManager.Current.TaskbarExperience.FullPanel.Normalize();
+        var inputVisibility = SettingsManager.Current.Experiments.NewAudioControl ? Visibility.Visible : Visibility.Collapsed;
+        InputDeviceLabel.Visibility = inputVisibility;
+        InputDeviceCombo.Visibility = inputVisibility;
         var animationVersion = ++_sectionAnimationVersion;
         var audioBecameVisible = !_audioControlsVisible && settings.AudioControlsVisible;
         var mediaInfoWasVisible = MediaInfoSection.Visibility == Visibility.Visible;
@@ -413,7 +416,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
                 devices.FirstOrDefault(device => device.PolicyId == outputPreview.PolicyId);
             InputDeviceCombo.SelectedItem = inputPreview is null ? inputs.FirstOrDefault(device => device.IsDefault) :
                 inputs.FirstOrDefault(device => device.PolicyId == inputPreview.PolicyId);
-            AudioDeviceStatusText.Text = DeviceCombo.SelectedItem is null || InputDeviceCombo.SelectedItem is null ?
+            AudioDeviceStatusText.Text = DeviceCombo.SelectedItem is null || (SettingsManager.Current.Experiments.NewAudioControl && InputDeviceCombo.SelectedItem is null) ?
                 Translations.Get("Audio.Route.HiddenOrDisconnected") : string.Empty;
             _currentVolume = volume;
             VolumeSlider.IsEnabled = volume is not null;

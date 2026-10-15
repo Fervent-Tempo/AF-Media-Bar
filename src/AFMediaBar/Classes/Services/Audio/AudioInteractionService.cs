@@ -21,6 +21,7 @@ public sealed class AudioInteractionService
     private readonly AudioMonitorService _audioMonitorService;
     private readonly AudioDeviceSwitchCoordinator _switches;
     private readonly IForegroundAudioApplicationResolver _foreground;
+    private readonly Func<bool> _isExperimentalAudioEnabled;
     private readonly Dictionary<(object Owner, AudioDeviceDirection Direction), AudioDeviceTarget> _gestureTargets = new();
     private readonly Dictionary<(object Owner, AudioDeviceDirection Direction), Task<ApplicationAudioSnapshot?>> _captures = new();
     private readonly System.Runtime.CompilerServices.ConditionalWeakTable<object, OwnerState> _owners = new();
@@ -36,7 +37,8 @@ public sealed class AudioInteractionService
         MediaSessionService mediaSessionService,
         AudioMonitorService audioMonitorService,
         AudioDeviceSwitchCoordinator switches,
-        IForegroundAudioApplicationResolver foreground)
+        IForegroundAudioApplicationResolver foreground,
+        Func<bool>? isExperimentalAudioEnabled = null)
     {
         _deviceService = deviceService;
         _volumeService = volumeService;
@@ -44,6 +46,7 @@ public sealed class AudioInteractionService
         _audioMonitorService = audioMonitorService;
         _switches = switches;
         _foreground = foreground;
+        _isExperimentalAudioEnabled = isExperimentalAudioEnabled ?? (() => _deviceService.ExperimentalAudioEnabled);
     }
 
     public Task<string> GetDeviceDescriptionAsync(AudioDeviceDirection direction) => _deviceService.GetDefaultDescriptionAsync(direction);
@@ -91,6 +94,11 @@ public sealed class AudioInteractionService
     public async Task<AudioDeviceTarget?> ResolveTargetAsync(AudioDeviceDirection direction,
         AFMediaBar.Classes.Settings.AudioDeviceSwitchTarget scope, object owner, bool wheel)
     {
+        if (!_isExperimentalAudioEnabled())
+        {
+            if (direction == AudioDeviceDirection.Input) return null;
+            scope = AFMediaBar.Classes.Settings.AudioDeviceSwitchTarget.SystemDefault;
+        }
         if (scope == AFMediaBar.Classes.Settings.AudioDeviceSwitchTarget.Disabled) return null;
         if (scope == AFMediaBar.Classes.Settings.AudioDeviceSwitchTarget.SystemDefault) return new(direction);
         var ownerState = _owners.GetValue(owner, static _ => new OwnerState());
@@ -118,7 +126,7 @@ public sealed class AudioInteractionService
             lock (_targetGate)
                 if (ReferenceEquals(_captures.GetValueOrDefault(key), capture)) _captures.Remove(key);
         }
-        if (app is null) return null;
+        if (app is null || !_isExperimentalAudioEnabled()) return null;
         var target = new AudioDeviceTarget(direction, app);
         lock (_targetGate)
         {

@@ -96,6 +96,9 @@
                     <TextBlock x:Name="DeviceApplicationText" Margin="0,6,0,0" TextWrapping="Wrap" FontSize="12"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" Visibility="Collapsed" />
                 </StackPanel>
+                <components:ReleaseOpenComboBox x:Name="LegacyOutputDeviceComboBox" Visibility="Collapsed"
+                    Style="{StaticResource {x:Type ComboBox}}" MinHeight="32" MaxDropDownHeight="240"
+                    DisplayMemberPath="DisplayName" SelectionChanged="LegacyOutputDeviceComboBox_SelectionChanged" />
                 <ListBox x:Name="OutputDeviceList" MinHeight="0" MaxHeight="280" BorderThickness="0" Padding="0"
                          Background="Transparent" Focusable="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          ScrollViewer.VerticalScrollBarVisibility="Auto" ItemContainerStyle="{StaticResource DeviceOptionContainerStyle}">

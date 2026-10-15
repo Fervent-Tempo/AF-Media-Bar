@@ -76,7 +76,7 @@ public partial class TaskBarMediaControl
             _isVertical || !CurrentMotion.UseTransitions)
             return null;
 
-        var experience = SettingsManager.Current.TaskbarExperience.Normalize();
+        var experience = ExperimentalAudioPolicy.Experience(SettingsManager.Current.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl).Normalize();
         var targetVisibility = new TaskbarRestLayoutPolicy.Visibility(
             targetConnected,
             experience.IdleComponents,

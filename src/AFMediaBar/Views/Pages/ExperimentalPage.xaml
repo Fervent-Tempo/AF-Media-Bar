@@ -22,6 +22,7 @@
                         <components:SettingsRow Title="{DynamicResource Loc.Experimental.Enable}">
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.NewAudioControl, Mode=TwoWay}" />
                         </components:SettingsRow>
+                        <TextBlock Text="{DynamicResource Loc.Experimental.Audio.RoutingPreserved}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,8,0,0" />
                         <StackPanel Visibility="{Binding ViewModel.NewAudioControl, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                             <TextBlock Text="{DynamicResource Loc.Experimental.Audio.RoutesNotice}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,8,0,12" />
                             <components:SettingsRow Title="{DynamicResource Loc.Audio.Settings.Title}"
