@@ -172,6 +172,8 @@ namespace AFMediaBar.Components
             Unloaded += (_, _) =>
             {
                 MainCanvas.LayoutUpdated -= OnArtworkPopupLayoutUpdated;
+                HideTaskbarHoverLayer(immediate: true);
+                CloseVerticalHoverLayer();
                 _progressTimer.Stop();
                 _hoverOpenTimer.Stop();
                 _hoverCloseTimer.Stop();
@@ -964,7 +966,8 @@ namespace AFMediaBar.Components
             WindowMode mode,
             LayoutOrientation orientation,
             double lengthScalePercent,
-            double thicknessScalePercent)
+            double thicknessScalePercent,
+            double? crossAxisDip = null)
         {
             var previousLayout = _layoutEngine?.CurrentLayout;
             var previousPrimary = previousLayout is null
@@ -978,6 +981,12 @@ namespace AFMediaBar.Components
             // 从预设中获取布局
             // Get layout from presets
             var layout = LayoutPresets.GetLayout(mode, orientation);
+            if (mode == WindowMode.Taskbar && orientation == LayoutOrientation.Vertical)
+            {
+                layout = layout with { Canvas = layout.Canvas with { Width = Math.Max(1, crossAxisDip ?? 48) } };
+                thicknessScalePercent = 100;
+            }
+            ConfigureVerticalHost(orientation == LayoutOrientation.Vertical);
 
             // 字号设置只作用于任务栏静置层的媒体文字。
             // The font-size setting only scales taskbar rest-layer media text; the island keeps its preset sizes.
@@ -1040,6 +1049,7 @@ namespace AFMediaBar.Components
         {
             RefreshWheelTooltip();
             var isHorizontalTaskbar = _currentMode == WindowMode.Taskbar && !_isVertical;
+            var isTaskbar = _currentMode == WindowMode.Taskbar;
             var experience = SettingsManager.Current.TaskbarExperience.Normalize();
             var metrics = TaskbarDensityMetrics.From(experience.Density);
             // 频谱的柱数与样式决定它占用的宽度，因此必须在任何宽度计算之前先重建视觉树。
@@ -1127,7 +1137,7 @@ namespace AFMediaBar.Components
                 }
             }
             TaskbarHoverLayer.Height = metrics.HoverLayerHeight;
-            ApplyTaskbarSectionGeometry(MainBorder.Width);
+            ApplyTaskbarSectionGeometry(_isVertical ? MainBorder.Height : MainBorder.Width);
             // 频谱被收起时把柱清空一次，免得下次显示时先闪出上一帧的高度；清空的时机放在几何之后，因为它决定频谱这次可不可见。
             // Clearing the bars once while the spectrum is collapsed keeps the next reveal from flashing the previous frame's heights; it happens
             // after the geometry because that pass decides whether the spectrum is visible this time.
@@ -1168,14 +1178,13 @@ namespace AFMediaBar.Components
                 SongTitle.Text = _actualTitle;
             }
 
-            if (!isHorizontalTaskbar || !experience.HoverLayerEnabled)
+            if (!isTaskbar || !experience.HoverLayerEnabled)
                 HideTaskbarHoverLayer(immediate: true);
-            if (!isHorizontalTaskbar)
+            if (!isTaskbar)
             {
                 StopMarqueeAnimations();
                 AnimateComponentHover(SongImageHoverOverlay, false);
-                // 非横向任务栏不提供封面悬停放大：模式切换后立即归位，避免残留的缩放挂在封面上。
-                // The artwork hover zoom belongs to the horizontal taskbar only: snap it back right after a mode switch so no leftover scale stays on the cover.
+                // 离开任务栏呈现时立即收回独立封面弹层。
                 AnimateArtworkHover(false, immediate: true);
                 AnimateComponentHover(SongInfoHoverOverlay, false);
                 AnimateComponentHover(TaskbarSpectrumHoverSurface, false);
@@ -1183,6 +1192,8 @@ namespace AFMediaBar.Components
 
             if (publishSize)
                 RaiseDesiredSizeChanged(isForcedRefresh: performanceWidthChanged);
+
+            if (_isVertical) ApplyVerticalSectionGeometry(MainBorder.Height);
 
             // 文字或几何变化后同步更新溢出判据与时钟。
             if (isHorizontalTaskbar && !_restTransitionKeepsOutgoingText)
@@ -1200,7 +1211,12 @@ namespace AFMediaBar.Components
             // The artwork box is corrected to the artwork's own aspect first, because the text start and the whole length below are derived
             // from the artwork's right edge, which therefore has to be final.
             ApplyTaskbarArtworkAspect();
-            if (_currentMode != WindowMode.Taskbar || _isVertical || !double.IsFinite(primaryLength))
+            if (_currentMode == WindowMode.Taskbar && _isVertical && double.IsFinite(primaryLength))
+            {
+                ApplyVerticalSectionGeometry(primaryLength);
+                return;
+            }
+            if (_currentMode != WindowMode.Taskbar || !double.IsFinite(primaryLength))
             {
                 // 几何拿不到有效长度时仍然按现有文字宽度重跑一次跑马灯：一次无效的长度不该让正在滚动的文字退回被裁状态，
                 // 而宽度与裁剪方式只由这里和几何写入，跳过就等于把上一次的结果留在屏幕上。
@@ -1992,8 +2008,8 @@ namespace AFMediaBar.Components
                 SongArtistContainer.Visibility = !_isSmallTaskbar && !_isVertical && !string.IsNullOrEmpty(_actualArtist)
                     ? Visibility.Visible
                     : Visibility.Collapsed;
-                SongInfoStackPanel.Visibility = _isVertical ? Visibility.Collapsed : Visibility.Visible;
-                SongInfoStackPanel.IsHitTestVisible = !_isVertical;
+                SongInfoStackPanel.Visibility = Visibility.Visible;
+                SongInfoStackPanel.IsHitTestVisible = true;
                 // 首次连接恢复背景层；封面切换只刷新纹理可见性，避免每次进度快照重算主题。
                 if (!wasConnected && _currentMode == WindowMode.Taskbar)
                     ApplyAppearanceSettings();
@@ -2173,6 +2189,8 @@ namespace AFMediaBar.Components
                         : contentWidth
                 };
             }
+            if (_currentMode == WindowMode.Taskbar && _isVertical)
+                request = BuildVerticalSizeRequest(request, lyricsVisible, visibleText, secondaryText);
             DesiredSizeChanged?.Invoke(this, new MediaBarSizeRequestEventArgs(request));
         }
 
@@ -2183,7 +2201,7 @@ namespace AFMediaBar.Components
 
             if (!_isConnected)
             {
-                if (_currentMode == WindowMode.Taskbar && !_isVertical)
+                if (_currentMode == WindowMode.Taskbar)
                 {
                     QuickLaunchMenuRequested?.Invoke(this, EventArgs.Empty);
                     e.Handled = true;
@@ -2253,7 +2271,7 @@ namespace AFMediaBar.Components
 
             if (!_isConnected)
             {
-                if (_currentMode == WindowMode.Taskbar && !_isVertical && SongImageBorder.IsMouseOver && _quickLaunchEntries.Count > 0)
+                if (_currentMode == WindowMode.Taskbar && SongImageBorder.IsMouseOver && _quickLaunchEntries.Count > 0)
                 {
                     QuickLaunchWheelRequested?.Invoke(this, new PlayerSurfaceWheelEventArgs(e.Delta, false, false, false));
                     e.Handled = true;

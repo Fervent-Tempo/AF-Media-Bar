@@ -2914,4 +2914,6 @@
   <data name="Experimental.OpenInteraction" xml:space="preserve"><value>前往互動設定</value></data>
   <data name="Experimental.OpenContentLayout" xml:space="preserve"><value>前往內容與版面配置</value></data>
   <data name="Experimental.OpenAppearance" xml:space="preserve"><value>前往外觀設定</value></data>
+  <data name="Experimental.Vertical.Notification.Title" xml:space="preserve"><value>已偵測到直向工作列</value></data>
+  <data name="Experimental.Vertical.Notification.Body" xml:space="preserve"><value>啟用直向工作列實驗後即可在此顯示媒體列。點擊前往實驗性功能。</value></data>
 </root>

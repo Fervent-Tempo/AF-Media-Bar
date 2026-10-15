@@ -94,8 +94,6 @@ public partial class TaskbarWindow : Window
     private bool _isTaskManagerClickPending;
     private DateTime _suppressContextMenuUntilUtc;
     private DateTime _skipOccupiedAreaProbeUntilUtc;
-    private TaskbarSafeRangeSnapshot? _lastStableSafeRange;
-    private readonly TaskbarSafeRangeExpansionTracker _safeRangeExpansion = new();
     private bool _hasSafePlacement;
     private WindowMode? _appliedWindowMode;
     private LayoutOrientation? _appliedOrientation;
@@ -105,10 +103,6 @@ public partial class TaskbarWindow : Window
     private int _dragStartCursorPrimary;
     private int _dragStartBarPrimary;
     private int _dragPrimaryLimit;
-    private double _sizeAnimationStart;
-    private double _sizeAnimationTarget;
-    private double _sizeAnimationProgress;
-    private long _sizeAnimationLastTimestamp;
     private bool _applySettingsSizeImmediately;
     private MediaBarSizeRequest? _pendingSizeRequest;
     private MediaBarSizeRequest? _pendingRestExitSizeRequest;
@@ -583,7 +577,7 @@ public partial class TaskbarWindow : Window
         var bandCount = SettingsManager.Current.SpectrumComponent.Normalize().BandCount;
         // Only the visible spectrum samples audio. Its COM calls and FFT run on AudioMonitorService's worker;
         // this dispatcher callback only presents the completed frame, and never queues overlapping reads.
-        if (_isClosing || IsTaskbarPresentationSuspended || _appliedOrientation != LayoutOrientation.Horizontal ||
+        if (_isClosing || IsTaskbarPresentationSuspended ||
             !MediaControl.IsSpectrumComponentVisible)
         {
             ClearSpectrum(bandCount);
@@ -594,7 +588,7 @@ public partial class TaskbarWindow : Window
         try
         {
             var sample = await _audioMonitorService.GetSpectrumAsync(_spectrumWorkerBands, bandCount);
-            if (!_isClosing && !IsTaskbarPresentationSuspended && _appliedOrientation == LayoutOrientation.Horizontal &&
+            if (!_isClosing && !IsTaskbarPresentationSuspended && _appliedOrientation.HasValue &&
                 MediaControl.IsSpectrumComponentVisible && sample.IsAvailable && _audioMonitorService.IsCaptureCurrent(sample.CaptureVersion))
             {
                 Array.Copy(_spectrumWorkerBands, _spectrumBands, bandCount);
@@ -831,7 +825,7 @@ public partial class TaskbarWindow : Window
             _placedTaskbarRect = taskbarRect;
             _placedTaskbarDpiScale = dpiScale;
             ApplyMediaBarVisibility();
-            CommitHorizontalPlacement();
+            CommitPlacement();
         }
         finally
         {
@@ -839,97 +833,7 @@ public partial class TaskbarWindow : Window
         }
     }
 
-    private RECT PositionBar(RECT taskbarRect, double dpiScale)
-    {
-        if ((_appliedOrientation ?? LayoutOrientation.Horizontal) == LayoutOrientation.Horizontal)
-            return PositionHorizontalBar(taskbarRect, dpiScale);
-        _placementContext = null;
-        _placementState = new();
-        int taskbarWidth = taskbarRect.Right - taskbarRect.Left;
-        int taskbarHeight = taskbarRect.Bottom - taskbarRect.Top;
-
-        var canvas = MediaControl.CurrentLayout?.Canvas;
-        double barWidth = canvas?.Width ?? 300;
-        double barHeight = canvas?.Height ?? 44;
-        var orientation = _appliedOrientation ?? LayoutOrientation.Horizontal;
-        var preferredRange = GetPreferredSafeRange(
-            taskbarRect,
-            orientation,
-            dpiScale,
-            (int)Math.Round((orientation == LayoutOrientation.Horizontal ? barWidth : barHeight) * dpiScale),
-            out var safePlacementResolved);
-        var maximumPrimary = preferredRange.Length / dpiScale;
-        if (orientation == LayoutOrientation.Horizontal)
-            _lengthConstraints.Update(this, MediaControl.MinimumPrimaryLength, maximumPrimary);
-        else
-            _lengthConstraints.Remove(this);
-        if (DateTime.UtcNow >= _skipOccupiedAreaProbeUntilUtc && maximumPrimary > 0)
-        {
-            var currentPrimary = orientation == LayoutOrientation.Horizontal ? barWidth : barHeight;
-            if (currentPrimary > maximumPrimary)
-            {
-                ApplyPrimaryLength(maximumPrimary);
-                canvas = MediaControl.CurrentLayout?.Canvas;
-                barWidth = canvas?.Width ?? barWidth;
-                barHeight = canvas?.Height ?? barHeight;
-            }
-        }
-
-        int physicalWidth = (int)Math.Round(barWidth * dpiScale);
-        int physicalHeight = (int)Math.Round(barHeight * dpiScale);
-
-        bool isVertical = _appliedOrientation == LayoutOrientation.Vertical;
-
-        // 横轴最后一道保证：媒体栏 MUST NOT 比任务栏更高（竖向任务栏则是更宽）。`ResolveTaskbarThicknessScalePercent`
-        // 正常时它本来就装得下——它按任务栏横轴尺寸与预设画布算出厚度上限；而它一旦读到错误的 DPI 或过期的任务栏矩形
-        // （自动隐藏动画期间与多显示器切换时都可能），算出来的上限就偏大，媒体栏于是比任务栏高。这里把寄主的框直接夹到
-        // 任务栏的横轴尺寸：宁可让内容在底部被裁掉，也绝不让顶边越过任务栏顶边——顶边越界正是用户看到的那种裁切。
-        // Last-resort guarantee on the cross axis: the bar MUST NOT be taller than the taskbar (nor wider, on a vertical taskbar).
-        // `ResolveTaskbarThicknessScalePercent` normally makes it fit — it derives the thickness ceiling from the taskbar's cross extent and the preset
-        // canvas — but once it reads a wrong DPI or a stale taskbar rectangle (both possible during the auto-hide animation and on multi-monitor switches)
-        // that ceiling comes out too large and the bar ends up taller than the taskbar. This clamps the host's own box to the taskbar's cross extent:
-        // content being cut at the bottom is preferable to the top edge crossing the taskbar's top edge, which is exactly the clipping reported.
-        if (isVertical)
-            physicalWidth = Math.Min(physicalWidth, Math.Max(1, taskbarWidth));
-        else
-            physicalHeight = Math.Min(physicalHeight, Math.Max(1, taskbarHeight));
-
-        int primaryLength = isVertical ? taskbarHeight : taskbarWidth;
-        int primarySize = isVertical ? physicalHeight : physicalWidth;
-        int crossLength = isVertical ? taskbarWidth : taskbarHeight;
-        int crossSize = isVertical ? physicalWidth : physicalHeight;
-
-        var placement = TaskbarBarPlacementCalculator.Calculate(
-            primaryLength,
-            primarySize,
-            crossLength,
-            crossSize,
-            preferredRange,
-            SettingsManager.Current.Position,
-            SettingsManager.Current.TaskbarBarManualPadding,
-            SettingsManager.Current.TaskbarBarCrossAxisOffsetDip,
-            dpiScale,
-            EdgePadding);
-        var primaryPos = placement.Primary;
-        var crossPos = placement.Cross;
-
-        // Canvas coordinates and control size are DIPs, hence the dpiScale conversion
-        Canvas.SetLeft(MediaControl, (isVertical ? crossPos : primaryPos) / dpiScale);
-        Canvas.SetTop(MediaControl, (isVertical ? primaryPos : crossPos) / dpiScale);
-        MediaControl.Width = physicalWidth / dpiScale;
-        MediaControl.Height = physicalHeight / dpiScale;
-        // 只有实际画布坐标与尺寸都写入后，安全区间才算真正落地；单纯查询最大长度不能提前放行窗口显示。
-        // A safe range counts as applied only after the actual canvas coordinates and size have landed; a maximum-length query must not reveal the window early.
-        _hasSafePlacement = !SettingsManager.Current.TaskbarBarAvoidIcons || safePlacementResolved;
-
-        return new RECT
-        {
-            Left = isVertical ? crossPos : primaryPos,
-            Top = isVertical ? primaryPos : crossPos,
-            Right = (isVertical ? crossPos : primaryPos) + physicalWidth,
-            Bottom = (isVertical ? primaryPos : crossPos) + physicalHeight
-        };
-    }
+    private RECT PositionBar(RECT taskbarRect, double dpiScale) => PositionPrimaryBar(taskbarRect, dpiScale);
 
     private static bool SameRect(RECT left, RECT right) =>
         left.Left == right.Left && left.Top == right.Top &&
@@ -966,10 +870,8 @@ public partial class TaskbarWindow : Window
         if (_isClosing)
             return;
 
-        // 原地放大只存在于横向任务栏；其它取向下事件不应到达，防御性地按 0 处理。
-        // The in-place zoom exists on the horizontal taskbar only; under any other orientation the event should not arrive —
-        // defensively treat it as 0.
-        if (_appliedOrientation is not { } orientation || orientation != LayoutOrientation.Horizontal)
+        // 竖向原地放大向屏幕内侧生长，不扩展任务栏子窗口的输入区。
+        if (_appliedOrientation != LayoutOrientation.Horizontal)
             extraDip = 0;
 
         // 放大激活时若拖动正在进行（含"待定"），立即取消并释放鼠标捕获：捕获会把命中测试重定向到拖动子树，
@@ -1081,25 +983,17 @@ public partial class TaskbarWindow : Window
         if (_isClosing)
             return;
 
-        // 将 LayoutOrientationMode 转换为 LayoutOrientation
-        // Convert LayoutOrientationMode to LayoutOrientation
-        LayoutOrientation orientation;
-
-        if (orientationMode == LayoutOrientationMode.Auto)
+        var orientation = _taskBarService.IsTaskbarVertical(taskbarHandle)
+            ? LayoutOrientation.Vertical : LayoutOrientation.Horizontal;
+        double? crossAxisDip = null;
+        if (orientation == LayoutOrientation.Vertical && _taskBarService.TryGetTaskbarRect(taskbarHandle, out var actualRect))
         {
-            // 自动模式直接根据当前任务栏矩形判定，任务栏在左右边缘时为竖向。
-            // Auto mode resolves the current taskbar rectangle; left/right docking is vertical.
-            orientation = _taskBarService.IsTaskbarVertical(taskbarHandle)
-                ? LayoutOrientation.Vertical
-                : LayoutOrientation.Horizontal;
-        }
-        else
-        {
-            // 手动模式：直接映射
-            // Manual mode: direct mapping
-            orientation = orientationMode == LayoutOrientationMode.Horizontal
-                ? LayoutOrientation.Horizontal
-                : LayoutOrientation.Vertical;
+            var actualDpi = _taskBarService.GetTaskbarDpiScale(taskbarHandle);
+            crossAxisDip = Math.Max(1, (actualRect.Right - actualRect.Left) / Math.Max(0.1, actualDpi));
+            var monitor = MonitorFromWindow(taskbarHandle, 2);
+            var info = new MONITORINFOEX { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<MONITORINFOEX>(), szDevice = string.Empty };
+            if (GetMonitorInfo(monitor, ref info))
+                MediaControl.ApplyVerticalTaskbarSide(actualRect.Left + actualRect.Right < info.rcMonitor.Left + info.rcMonitor.Right);
         }
 
         // 应用布局到媒体控件
@@ -1115,6 +1009,7 @@ public partial class TaskbarWindow : Window
                             orientationChanged ||
                             !lengthScalePercent.Equals(_appliedLengthScalePercent) ||
                             !thicknessScalePercent.Equals(_appliedThicknessScalePercent) ||
+                            (crossAxisDip.HasValue && Math.Abs((MediaControl.CurrentLayout?.Canvas.Width ?? 0) - crossAxisDip.Value) > 0.1) ||
                             mediaFontSizePercent != _appliedMediaFontSizePercent;
         if (layoutChanged)
         {
@@ -1122,7 +1017,7 @@ public partial class TaskbarWindow : Window
             _applySettingsSizeImmediately = true;
             try
             {
-                MediaControl.ApplyLayout(windowMode, orientation, lengthScalePercent, thicknessScalePercent);
+                MediaControl.ApplyLayout(windowMode, orientation, lengthScalePercent, thicknessScalePercent, crossAxisDip);
                 MediaControl.ApplyAppearanceSettings();
                 _appliedWindowMode = windowMode;
                 _appliedOrientation = orientation;
@@ -1867,7 +1762,7 @@ public partial class TaskbarWindow : Window
     private void SynchronizeSpectrumTimer()
     {
         var shouldRun = !_isClosing && !_isEnvironmentSuspended && !IsBackgroundPruned &&
-                        !IsTaskbarPresentationSuspended && _appliedOrientation == LayoutOrientation.Horizontal &&
+                        !IsTaskbarPresentationSuspended && _appliedOrientation.HasValue &&
                         MediaControl.IsSpectrumComponentVisible;
         if (shouldRun)
         {
@@ -2071,8 +1966,7 @@ public partial class TaskbarWindow : Window
             dragPrimarySize,
             dragIsVertical ? dragTaskbarRect.Bottom - dragTaskbarRect.Top : dragTaskbarRect.Right - dragTaskbarRect.Left,
             SettingsManager.Current.Position);
-        if (!dragIsVertical)
-            PrepareHorizontalDrag(targetPrimary, dragPrimarySize, dragRange, dragTaskbarRect, dragDpiScale);
+        PreparePrimaryDrag(targetPrimary, dragPrimarySize, dragRange, dragTaskbarRect, dragDpiScale);
 
         var windowHandle = new WindowInteropHelper(this).Handle;
         if (_lastTaskbarHandle != IntPtr.Zero && windowHandle != IntPtr.Zero)
@@ -2199,59 +2093,19 @@ public partial class TaskbarWindow : Window
     private void ApplyDesiredSizeRequest(MediaBarSizeRequest request, LayoutOrientation orientation)
     {
         var maximum = GetAvailablePrimaryLengthDip(orientation);
-        var minimum = orientation == LayoutOrientation.Horizontal
-            ? MediaControl.MinimumPrimaryLength
-            : 1;
-        if (orientation == LayoutOrientation.Horizontal)
-            _lengthConstraints.Update(this, minimum, maximum);
-        else
-            _lengthConstraints.Remove(this);
-        if (orientation == LayoutOrientation.Horizontal && maximum <= 0)
+        var minimum = MediaControl.MinimumPrimaryLength;
+        _lengthConstraints.Update(this, minimum, maximum);
+        if (maximum <= 0)
         {
             StopLayoutTransition();
             UpdatePositionImmediately();
             return;
         }
-        var target = TaskbarExperiencePolicy.ResolvePrimaryLength(
-            request.PrimaryLength,
-            minimum,
-            maximum > 0 ? maximum : double.PositiveInfinity,
-            TaskbarLengthMode.FollowContent,
-            request.PrimaryLength);
         var motion = MotionPolicy.ResolveCurrent();
 
-        var current = MediaControl.CurrentLayout is { } layout
-            ? orientation == LayoutOrientation.Horizontal ? layout.Canvas.Width : layout.Canvas.Height
-            : target;
-        // 歌词换行等离散内容切换必须立即落到目标长度：过渡动画期间新内容按旧长度渲染会被省略号截断。
-        // Discrete content switches such as a lyric line change must land immediately: while the length animates the new content
-        // renders at the previous length and gets clipped with an ellipsis.
-        if (_applySettingsSizeImmediately || request.SkipTransition || !motion.UseContinuousMotion || Math.Abs(target - current) < LayoutSizeCalculator.MinimumChangeDip)
-        {
-            if (_applySettingsSizeImmediately || orientation != LayoutOrientation.Horizontal)
-            {
-                StopLayoutTransition();
-                ApplyPrimaryLength(target);
-            }
-            if (!_applySettingsSizeImmediately)
-            {
-                _skipPlacementTransition = true;
-                try { UpdatePositionImmediately(); }
-                finally { _skipPlacementTransition = false; }
-            }
-            return;
-        }
-
-        if (orientation == LayoutOrientation.Horizontal)
-        {
-            UpdatePositionImmediately();
-            return;
-        }
-        _sizeAnimationStart = current;
-        _sizeAnimationTarget = target;
-        _sizeAnimationProgress = 0;
-        _sizeAnimationLastTimestamp = Stopwatch.GetTimestamp();
-        _sizeAnimationTimer.Start();
+        _skipPlacementTransition = request.SkipTransition || !motion.UseContinuousMotion;
+        try { UpdatePositionImmediately(); }
+        finally { _skipPlacementTransition = false; }
     }
 
     private void PlayerMenu_OpenSettingsRequested(object? sender, EventArgs e) =>
@@ -2270,214 +2124,28 @@ public partial class TaskbarWindow : Window
 
     private double GetAvailablePrimaryLengthDip(LayoutOrientation orientation)
     {
-        if (_lastTaskbarHandle == IntPtr.Zero || !_taskBarService.TryGetTaskbarRect(_lastTaskbarHandle, out var rect))
-            return 0;
-
+        if (_lastTaskbarHandle == IntPtr.Zero || !_taskBarService.TryGetTaskbarRect(_lastTaskbarHandle, out var rect)) return 0;
         var dpi = _taskBarService.GetTaskbarDpiScale(_lastTaskbarHandle);
-        if (dpi <= 0)
-            return 0;
-
-        if (orientation == LayoutOrientation.Horizontal)
-        {
-            var desired = _lastDesiredSizeRequest?.PrimaryLength ?? MediaControl.CurrentLayout?.Canvas.Width ?? 300;
-            var preview = PreviewHorizontalPlacement(rect, dpi, desired);
-            return preview.State.IsVisible ? preview.State.Budget / dpi : 0;
-        }
-
-        // 设置页上限必须取当前媒体栏实际会落入的安全区间；用 0 会选到前方放不下媒体栏的窄缝，
-        // 而 PositionBar 会跳过那条缝，导致滑杆与实际可用宽度不一致。
-        // Match the safe range used by PositionBar. A zero requirement can select an earlier sliver
-        // that cannot fit the bar, giving the settings slider a different maximum from the placed bar.
-        var currentPrimary = MediaControl.CurrentLayout?.Canvas is { } canvas
-            ? orientation == LayoutOrientation.Horizontal ? canvas.Width : canvas.Height
-            : MediaControl.MinimumPrimaryLength;
-        var requiredPixels = double.IsFinite(currentPrimary) && currentPrimary > 0
-            ? (int)Math.Round(currentPrimary * dpi)
-            : (int)Math.Round(MediaControl.MinimumPrimaryLength * dpi);
-        var range = GetPreferredSafeRange(rect, orientation, dpi, requiredPixels, out _);
-        return Math.Max(1, range.Length / dpi);
+        if (dpi <= 0) return 0;
+        var desired = _lastDesiredSizeRequest?.PrimaryLength ?? MediaControl.MinimumPrimaryLength;
+        var preview = PreviewPlacement(rect, dpi, desired);
+        return preview.State.IsVisible ? preview.State.Budget / dpi : 0;
     }
 
     private TaskbarPrimaryRange GetPreferredSafeRange(
-        RECT taskbarRect,
-        LayoutOrientation orientation,
-        double dpiScale,
-        int requiredPrimaryPixels,
-        out bool isSafePlacement)
+        RECT taskbarRect, LayoutOrientation orientation, double dpiScale,
+        int requiredPrimaryPixels, out bool isSafePlacement)
     {
-        isSafePlacement = false;
-        if (orientation == LayoutOrientation.Horizontal)
-        {
-            var preview = PreviewHorizontalPlacement(taskbarRect, dpiScale,
-                _lastDesiredSizeRequest?.PrimaryLength ?? MediaControl.CurrentLayout?.Canvas.Width ?? 300);
-            isSafePlacement = preview.State.IsVisible;
-            return preview.State.Range;
-        }
-        var primaryLength = orientation == LayoutOrientation.Horizontal
-            ? taskbarRect.Right - taskbarRect.Left
-            : taskbarRect.Bottom - taskbarRect.Top;
-        var fallback = new TaskbarPrimaryRange(
-            Math.Min(EdgePadding, primaryLength),
-            Math.Max(Math.Min(EdgePadding, primaryLength), primaryLength - EdgePadding));
-        var position = SettingsManager.Current.Position;
-
-        if (!SettingsManager.Current.TaskbarBarAvoidIcons)
-        {
-            _lastStableSafeRange = null;
-            _safeRangeExpansion.Reset();
-            isSafePlacement = true;
-            return fallback;
-        }
-
-        if (_lastTaskbarHandle == IntPtr.Zero)
-            return fallback;
-
-        // 自动隐藏后会短暂冻结占用区探测；这时不能把媒体栏退回整条任务栏的保守区间，否则 Start 定位会立即跳到左侧 20 px，
-        // 然后只能等下一次 1.5 s 定位轮询才回到原位。同一任务栏、主轴长度、DPI、方向和位置偏好下，上一个已发布的安全区间比保守回退更安全。
-        // Auto-hide briefly freezes occupied-area probing. Falling back to the whole taskbar here would immediately move Start placement to the left 20 px
-        // and leave it there until the next 1.5 s position tick. For the same taskbar, primary length, DPI, orientation, and position preference, the last
-        // published safe range is safer than that fallback.
-        if (_hostActions.IsEnvironmentRecovering ||
-            IsTaskbarPresentationSuspended ||
-            DateTime.UtcNow < _skipOccupiedAreaProbeUntilUtc)
-        {
-            _safeRangeExpansion.Reset();
-            if (TryReuseStableSafeRange(
-                    primaryLength,
-                    orientation,
-                    dpiScale,
-                    position,
-                    requiredPrimaryPixels,
-                    out var stableRange))
-            {
-                isSafePlacement = true;
-                return stableRange;
-            }
-
-            return fallback;
-        }
-
-        var ranges = _occupiedAreaService.GetSafePrimaryRanges(
-            _lastTaskbarHandle,
-            taskbarRect,
-            orientation,
-            dpiScale,
-            EdgePadding);
-        if (ranges.Count == 0)
-        {
-            _safeRangeExpansion.Reset();
-            if (TryReuseStableSafeRange(
-                    primaryLength,
-                    orientation,
-                    dpiScale,
-                    position,
-                    requiredPrimaryPixels,
-                    out var stableRange))
-            {
-                isSafePlacement = true;
-                return stableRange;
-            }
-
-            return fallback;
-        }
-
-        // UIA 偶尔会漏报图标：先保留旧区间，扩大结果连续稳定后再采用；真正有图标侵入则立即重新选区。
-        // UIA can briefly omit icons. Keep the previous range until an expanded result remains stable; shrink immediately on an intrusion.
-        if (TryReuseStableSafeRange(
-                primaryLength,
-                orientation,
-                dpiScale,
-                position,
-                requiredPrimaryPixels,
-                out var previousRange) &&
-            TaskbarFreeRangeCalculator.TryKeepSelection(
-                ranges,
-                previousRange,
-                requiredPrimaryPixels,
-                out var keptRange))
-        {
-            if (_safeRangeExpansion.TryAccept(ranges, previousRange, DateTime.UtcNow, out var expandedRange))
-            {
-                _lastStableSafeRange = new TaskbarSafeRangeSnapshot(
-                    _lastTaskbarHandle, primaryLength, orientation, dpiScale, position, expandedRange);
-                isSafePlacement = true;
-                return expandedRange;
-            }
-
-            isSafePlacement = true;
-            return keptRange;
-        }
-
-        _safeRangeExpansion.Reset();
-        // 选区间 MUST 用纯策略：空闲区间里可能有比媒体栏还窄的缝隙，"最左边那条"会把媒体栏压细并钉在缝里。
-        // The range MUST be chosen by the pure policy: the free ranges can hold a gap narrower than the bar itself, and "the leftmost
-        // one" would squash the bar into that sliver.
-        var selected = TaskbarFreeRangeCalculator.Select(ranges, position, requiredPrimaryPixels, primaryLength);
-        _lastStableSafeRange = new TaskbarSafeRangeSnapshot(
-            _lastTaskbarHandle,
-            primaryLength,
-            orientation,
-            dpiScale,
-            position,
-            selected);
-        isSafePlacement = selected.Length > 0;
-        return selected;
-    }
-
-    private bool TryReuseStableSafeRange(
-        int primaryLength,
-        LayoutOrientation orientation,
-        double dpiScale,
-        TaskbarBarPosition position,
-        int requiredPrimaryPixels,
-        out TaskbarPrimaryRange range)
-    {
-        range = default;
-        if (_lastStableSafeRange is not { } snapshot ||
-            snapshot.TaskbarHandle != _lastTaskbarHandle ||
-            snapshot.PrimaryLength != primaryLength ||
-            snapshot.Orientation != orientation ||
-            !snapshot.DpiScale.Equals(dpiScale) ||
-            snapshot.Position != position ||
-            snapshot.Range.Start < 0 ||
-            snapshot.Range.End > primaryLength ||
-            snapshot.Range.Length <= 0 ||
-            requiredPrimaryPixels > 0 && snapshot.Range.Length < requiredPrimaryPixels)
-        {
-            return false;
-        }
-
-        range = snapshot.Range;
-        return true;
+        var preview = PreviewPlacement(taskbarRect, dpiScale,
+            _lastDesiredSizeRequest?.PrimaryLength ?? MediaControl.MinimumPrimaryLength);
+        isSafePlacement = preview.State.IsVisible;
+        return preview.State.Range;
     }
 
     private void AdvanceSizeAnimation()
     {
-        if (_returnTransition.IsActive)
-        {
-            AdvanceReturnTransition();
-            return;
-        }
-        if (_isClosing || _isDragging || IsTaskbarPresentationSuspended)
-        {
-            StopLayoutTransition();
-            return;
-        }
-
-        var now = Stopwatch.GetTimestamp();
-        var elapsedMilliseconds = Stopwatch.GetElapsedTime(_sizeAnimationLastTimestamp, now).TotalMilliseconds;
-        _sizeAnimationLastTimestamp = now;
-        var frame = MediaBarSizeAnimationCalculator.Advance(
-            _sizeAnimationStart,
-            _sizeAnimationTarget,
-            _sizeAnimationProgress,
-            elapsedMilliseconds,
-            durationMilliseconds: MotionPolicy.ResolveCurrent().PositionDuration.TotalMilliseconds);
-        _sizeAnimationProgress = frame.Progress;
-        ApplyPrimaryLength(frame.Value);
-        if (frame.IsCompleted)
-            StopLayoutTransition();
-        UpdatePositionImmediately();
+        if (_returnTransition.IsActive) AdvanceReturnTransition();
+        else StopLayoutTransition();
     }
 
     private void MediaControl_LostMouseCapture(object sender, MouseEventArgs e)

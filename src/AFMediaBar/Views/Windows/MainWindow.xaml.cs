@@ -221,6 +221,7 @@ namespace AFMediaBar.Views.Windows
 
             // evaluate the initial state once the window is loaded
             Loaded += MainWindow_Loaded;
+            InitializeExperimentalHostWatcher();
         }
 
         #region INavigationWindow methods
@@ -829,6 +830,11 @@ namespace AFMediaBar.Views.Windows
                 if (handle == IntPtr.Zero || !seenTaskbars.Add(handle))
                     continue;
 
+                if (_taskBarService.IsTaskbarVertical(handle) && !SettingsManager.Current.Experiments.VerticalTaskbar)
+                {
+                    NotifyVerticalExperimentRequired();
+                    continue;
+                }
                 var window = CreateTaskbarWindow(targetDeviceId);
                 _taskbarWindows.Add(window);
                 window.ApplyAppearanceSettings();
@@ -892,7 +898,7 @@ namespace AFMediaBar.Views.Windows
 
             panel.Closed -= FullPanelWindow_Closed;
             panel.Closed += FullPanelWindow_Closed;
-            panel.ToggleNear(taskbarWindow.GetMediaBarScreenBounds(), targetDeviceId);
+            panel.ToggleNear(taskbarWindow.GetMediaBarScreenBounds(), targetDeviceId, taskbarWindow.IsVerticalPresentation);
         }
 
         private void FullPanelWindow_Closed(object? sender, EventArgs e)
@@ -1000,6 +1006,12 @@ namespace AFMediaBar.Views.Windows
             if (target == ShellNotificationTarget.Application)
             {
                 ViewModel_OpenUpdateSettingsRequested(this, EventArgs.Empty);
+                return;
+            }
+            if (target == ShellNotificationTarget.VerticalTaskbarExperiment)
+            {
+                ViewModel_OpenSettingsRequested(this, EventArgs.Empty);
+                _settingsWindow?.NavigateToGroup(SettingsPageKey.Experimental, "Experimental.Vertical.Title");
                 return;
             }
             if (target != ShellNotificationTarget.TaskbarBackground) return;

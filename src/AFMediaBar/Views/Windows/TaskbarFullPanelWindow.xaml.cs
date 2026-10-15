@@ -68,7 +68,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         ApplyFullPanelSettings(animate: false);
     }
 
-    public void ToggleNear(Rect anchor, string targetMonitorDeviceId)
+    public void ToggleNear(Rect anchor, string targetMonitorDeviceId, bool verticalAnchor = false)
     {
         if (_isClosing)
             return;
@@ -85,6 +85,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         ApplyMotionEffects();
         Show();
         UpdateLayout();
+        _verticalAnchor = verticalAnchor;
         PositionNear(anchor, targetMonitorDeviceId);
         BeginOpenAnimation(anchor);
         Activate();
@@ -157,6 +158,8 @@ public partial class TaskbarFullPanelWindow : FluentWindow
             PanelRoot.Effect = null;
     }
 
+    private bool _verticalAnchor;
+
     private void PositionNear(Rect anchor, string targetMonitorDeviceId)
     {
         var monitor = _displayMonitorService.ResolveFixedMonitor(targetMonitorDeviceId);
@@ -169,6 +172,13 @@ public partial class TaskbarFullPanelWindow : FluentWindow
                 monitor.WorkArea.Top / scaleY,
                 monitor.WorkArea.Width / scaleX,
                 monitor.WorkArea.Height / scaleY);
+        if (_verticalAnchor)
+        {
+            var onLeft = anchor.Left + anchor.Width / 2 < work.Left + work.Width / 2;
+            Left = Math.Clamp(onLeft ? anchor.Right + 8 : anchor.Left - ActualWidth - 8, work.Left, Math.Max(work.Left, work.Right - ActualWidth));
+            Top = Math.Clamp(anchor.Top + (anchor.Height - ActualHeight) / 2, work.Top, Math.Max(work.Top, work.Bottom - ActualHeight));
+            return;
+        }
         Left = Math.Clamp(anchor.Left + (anchor.Width - ActualWidth) / 2, work.Left, Math.Max(work.Left, work.Right - ActualWidth));
         var above = anchor.Top - ActualHeight - 8;
         var below = anchor.Bottom + 8;

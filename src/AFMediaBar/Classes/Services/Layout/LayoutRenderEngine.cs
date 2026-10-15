@@ -449,8 +449,7 @@ public sealed class LayoutRenderEngine
         _mainBorder.Height = resized.Canvas.Height;
         // Horizontal taskbar rest components are placed by TaskBarMediaControl's section geometry.
         // Reapplying the preset here first would write competing positions and visibility every frame.
-        if (resized.Orientation == LayoutOrientation.Vertical)
-            ApplyComponentLayout(resized.Components);
+        // Taskbar section geometry owns component placement after resizing.
     }
 
     /// <summary>

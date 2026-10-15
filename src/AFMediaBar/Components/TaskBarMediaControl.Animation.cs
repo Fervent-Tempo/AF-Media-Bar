@@ -227,11 +227,11 @@ public partial class TaskBarMediaControl
     private bool CanUseTaskbarComponentHover() =>
         !_isPlacementMotionActive && !_isHostVisibilitySuspended && !_restTransitionActive &&
         _backgroundPruneLevel < MemoryPruneLevel.DisplayOff &&
-        _isConnected && _currentMode == WindowMode.Taskbar && !_isVertical;
+        _isConnected && _currentMode == WindowMode.Taskbar;
 
     private bool CanUseTaskbarRestHover(Border surface)
     {
-        if (_isPlacementMotionActive || _currentMode != WindowMode.Taskbar || _isVertical || _restTransitionActive)
+        if (_isPlacementMotionActive || _currentMode != WindowMode.Taskbar || _restTransitionActive)
             return false;
 
         if (_isConnected)
@@ -785,11 +785,11 @@ public partial class TaskBarMediaControl
         host.Height = scaledHeight;
         _artworkZoomRestoreHorizontalAlignment = SongImageBorder.HorizontalAlignment;
         _artworkZoomRestoreVerticalAlignment = SongImageBorder.VerticalAlignment;
-        SongImageBorder.HorizontalAlignment = HorizontalAlignment.Center;
-        SongImageBorder.VerticalAlignment = VerticalAlignment.Bottom;
+        SongImageBorder.HorizontalAlignment = _isVertical ? (_verticalTaskbarOnLeft ? HorizontalAlignment.Left : HorizontalAlignment.Right) : HorizontalAlignment.Center;
+        SongImageBorder.VerticalAlignment = _isVertical ? VerticalAlignment.Center : VerticalAlignment.Bottom;
         // 底部中心为原点：缩放把封面往上、往左右对称地推，底边留在原地。
         // Bottom-centre origin: the scale pushes the cover upward and symmetrically sideways while the bottom edge stays put.
-        SongImageBorder.RenderTransformOrigin = new Point(0.5, 1);
+        SongImageBorder.RenderTransformOrigin = _isVertical ? new Point(_verticalTaskbarOnLeft ? 0 : 1, 0.5) : new Point(0.5, 1);
 
         // 生长必须从恰好 1 倍开始：上一次紧凑悬停可能留下 1.1 的残留，直接换树会让封面跳一下再长。
         // Growth must start from exactly 1×: a previous compact hover can leave 1.1 behind, and re-parenting with that residue
@@ -815,7 +815,7 @@ public partial class TaskBarMediaControl
 
         // 推挤量 = 宽度增长的一半：右侧内容右移同样的距离，封面与它们的间距维持不变。
         // The push equals half the width growth: the right-hand content shifts by the same distance, keeping its gap to the cover.
-        _artworkZoomPushOffset = width * (ArtworkHoverZoomScaleFactor - 1) / 2;
+        _artworkZoomPushOffset = _isVertical ? 0 : width * (ArtworkHoverZoomScaleFactor - 1) / 2;
         BuildArtworkZoomPushTransforms();
 
         // 替身先就位、再抽走真封面：主画布这一格里永远有封面（见 _artworkZoomSubstitute）——送进 Popup 的那一帧
@@ -839,6 +839,7 @@ public partial class TaskBarMediaControl
         PositionArtworkHoverZoom(homeScreen, dpiScale, host);
 
         popup.IsOpen = true;
+        if (_isVertical) RaisePopupAboveTaskbar(host);
         // 开窗即刻校准封面渲染偏移：本会话的第一次放大若等到第一次收回才学，就会带着 3~4px 的未校准偏差长出来。
         // Calibrate the rendered offset the moment the Popup opens: a session's first zoom that waits for the first reclaim
         // would grow out carrying 3-4 px of un-calibrated bias.
@@ -897,12 +898,13 @@ public partial class TaskBarMediaControl
     private void PositionArtworkHoverZoom(Point homeScreen, double dpiScale, Grid host)
     {
         var canvasOrigin = MainCanvas.PointToScreen(new Point());
-        var marginPx = (host.Width - SongImageBorder.ActualWidth) / 2 * dpiScale;
-        var topPx = (host.Height - SongImageBorder.ActualHeight) * dpiScale;
-        var screenLeft = SystemParameters.VirtualScreenLeft * dpiScale;
-        var screenTop = SystemParameters.VirtualScreenTop * dpiScale;
-        var screenRight = screenLeft + SystemParameters.VirtualScreenWidth * dpiScale;
-        var screenBottom = screenTop + SystemParameters.VirtualScreenHeight * dpiScale;
+        var marginPx = (host.Width - SongImageBorder.ActualWidth) * SongImageBorder.RenderTransformOrigin.X * dpiScale;
+        var topPx = (host.Height - SongImageBorder.ActualHeight) * SongImageBorder.RenderTransformOrigin.Y * dpiScale;
+        var work = GetPopupMonitorWorkArea(homeScreen);
+        var screenLeft = _isVertical ? Math.Min(work.Left, homeScreen.X) : SystemParameters.VirtualScreenLeft * dpiScale;
+        var screenTop = _isVertical ? Math.Min(work.Top, homeScreen.Y) : SystemParameters.VirtualScreenTop * dpiScale;
+        var screenRight = _isVertical ? Math.Max(work.Right, homeScreen.X + SongImageBorder.ActualWidth * dpiScale) : screenLeft + SystemParameters.VirtualScreenWidth * dpiScale;
+        var screenBottom = _isVertical ? Math.Max(work.Bottom, homeScreen.Y + SongImageBorder.ActualHeight * dpiScale) : screenTop + SystemParameters.VirtualScreenHeight * dpiScale;
         // 沿用开窗时的屏幕夹持与内部补偿，封面底边仍落在主树原格上。
         var clampedX = Math.Max(screenLeft, Math.Min(homeScreen.X - marginPx, screenRight - host.Width * dpiScale));
         var clampedY = Math.Max(screenTop, Math.Min(homeScreen.Y - topPx, screenBottom - host.Height * dpiScale));
@@ -1282,8 +1284,8 @@ public partial class TaskBarMediaControl
         // the scale's own displacement is subtracted first and only the layout-level bias is left.
         var scale = SongImageScale.ScaleX;
         var measured = SongImageBorder.PointToScreen(new Point(0, 0));
-        var dx = measured.X - 0.5 * SongImageBorder.ActualWidth * (1 - scale) * dpiScale - homeScreen.X;
-        var dy = measured.Y - SongImageBorder.ActualHeight * (1 - scale) * dpiScale - homeScreen.Y;
+        var dx = measured.X - SongImageBorder.RenderTransformOrigin.X * SongImageBorder.ActualWidth * (1 - scale) * dpiScale - homeScreen.X;
+        var dy = measured.Y - SongImageBorder.RenderTransformOrigin.Y * SongImageBorder.ActualHeight * (1 - scale) * dpiScale - homeScreen.Y;
         if (Math.Abs(dx) > ArtworkZoomShowCalibrationMaxGapPx || Math.Abs(dy) > ArtworkZoomShowCalibrationMaxGapPx)
             return false;
         if (Math.Abs(dx) < 0.5 && Math.Abs(dy) < 0.5)
@@ -1610,11 +1612,12 @@ public partial class TaskBarMediaControl
         // The anchor is the bottom-centre: the growth scales about it (RenderTransformOrigin = (0.5,1)), so it sits at the
         // same screen spot at 1× and enlarged, and one anchor reconstructs the original slot either way; at 1× the origin
         // value does not affect PointToScreen at all.
-        var anchor = SongImageBorder.PointToScreen(new Point(width * 0.5, height));
-        var halfWidth = width * 0.5 * dpiScale;
-        var heightPx = height * dpiScale;
-        return cursor.X >= anchor.X - halfWidth - tolerance && cursor.X <= anchor.X + halfWidth + tolerance &&
-            cursor.Y >= anchor.Y - heightPx - tolerance && cursor.Y <= anchor.Y + tolerance;
+        var origin = SongImageBorder.RenderTransformOrigin;
+        var anchor = SongImageBorder.PointToScreen(new Point(width * origin.X, height * origin.Y));
+        var left = anchor.X - width * origin.X * dpiScale;
+        var top = anchor.Y - height * origin.Y * dpiScale;
+        return cursor.X >= left - tolerance && cursor.X <= left + width * dpiScale + tolerance &&
+            cursor.Y >= top - tolerance && cursor.Y <= top + height * dpiScale + tolerance;
     }
 
     /// <summary>
@@ -1672,6 +1675,10 @@ public partial class TaskBarMediaControl
     /// <summary>显示大图预览；已打开时只刷新内容，不重播进入动画。/ Shows the large preview; an already-open popup only refreshes its content without replaying the entrance.</summary>
     private void ShowArtworkHoverPreview(bool immediate = false)
     {
+        if (_artworkHoverPreview is { } preview)
+            preview.Placement = _isVertical
+                ? (_verticalTaskbarOnLeft ? System.Windows.Controls.Primitives.PlacementMode.Right : System.Windows.Controls.Primitives.PlacementMode.Left)
+                : System.Windows.Controls.Primitives.PlacementMode.Top;
         if (!IsLoaded || !CanUseTaskbarComponentHover())
             return;
         if (_artworkHoverPreview is not { } popup)
@@ -1682,6 +1689,7 @@ public partial class TaskBarMediaControl
             return;
 
         popup.IsOpen = true;
+        if (_isVertical && popup.Child is Visual previewChild) RaisePopupAboveTaskbar(previewChild);
         if (_artworkHoverPreviewScale is not { } scale)
             return;
 
@@ -2141,10 +2149,16 @@ public partial class TaskBarMediaControl
         if (!CanUseTaskbarComponentHover() || _isTaskbarHoverVisible)
             return;
 
-        if (!_isConnected || _currentMode != WindowMode.Taskbar || _isVertical ||
+        if (!_isConnected || _currentMode != WindowMode.Taskbar ||
             !SettingsManager.Current.TaskbarExperience.HoverLayerEnabled ||
-            (!SongInfoStackPanel.IsMouseOver && !HoverRevealHost.IsMouseOver))
+            (!SongInfoStackPanel.IsMouseOver && !HoverRevealHost.IsMouseOver && !TaskbarHoverLayer.IsMouseOver))
             return;
+
+        if (_isVertical)
+        {
+            ShowVerticalHoverLayer();
+            return;
+        }
 
         // 展开只需要"跑马灯按当前文字区宽度重新判定一次"：媒体栏几何每次快照都会重算（悬停层宽度、文字宽度、各处 Margin 都在那里写入），
         // 因此这里 MUST NOT 再跑一遍完整的体验设置——那会连带重建频谱、重排整条几何并走一次尺寸指纹，正好落在指针离开任务栏、
@@ -2222,6 +2236,13 @@ public partial class TaskBarMediaControl
 
     private void HideTaskbarHoverLayer(bool immediate = false)
     {
+        if (_verticalHoverPopup?.IsOpen == true)
+        {
+            _hoverOpenTimer.Stop();
+            _hoverCloseTimer.Stop();
+            _hoverHideFallbackTimer.Stop();
+            CloseVerticalHoverLayer();
+        }
         if (!immediate && !_isTaskbarHoverVisible && HoverRevealHost.Visibility == Visibility.Visible && CurrentMotion.UseTransitions)
             return;
         var generation = ++_hoverRevealGeneration;
@@ -2338,6 +2359,12 @@ public partial class TaskBarMediaControl
     /// </summary>
     private void InteractionSurface_MouseLeave(object sender, MouseEventArgs e)
     {
+        if (_isVertical && _verticalHoverPopup?.IsOpen == true)
+        {
+            _hoverCloseTimer.Stop();
+            _hoverCloseTimer.Start();
+            return;
+        }
         // 这个通知发生在 Shell 因指针离开任务栏而开始自动收起之前，是唯一个能在动画前清掉文字区 Blur 与裁剪动画的时机。
         // 等任务栏矩形开始变化后再清理已经太晚，WPF 与 Shell 会同时提交合成帧，这正是“交互后离开才偶发留角”的条件。
         // This notification arrives before the Shell starts auto-hiding after the pointer leaves the taskbar, making it the only point where the text

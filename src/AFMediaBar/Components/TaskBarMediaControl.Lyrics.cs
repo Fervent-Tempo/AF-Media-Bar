@@ -211,8 +211,8 @@ public partial class TaskBarMediaControl
     {
         _lyricsReleaseTimer.Stop();
         if (LyricsWebViewLifetimePolicy.Resolve(
-                _lyricsHostLoaded, SettingsManager.Current.LyricsEnabled, _webLyricsGraphicsDisabled,
-                _snapshot.IsConnected, _snapshot.Lyrics?.Document.Lines?.Count ?? 0,
+                _lyricsHostLoaded, SettingsManager.Current.LyricsEnabled || VerticalTextRequired, _webLyricsGraphicsDisabled,
+                _snapshot.IsConnected, VerticalTextRequired ? 1 : _snapshot.Lyrics?.Document.Lines?.Count ?? 0,
                 _lyricsWebRenderer is not null) == LyricsWebViewLifetimeAction.ReleaseAfterGrace)
             ReleaseWebLyricsRenderer();
     }
@@ -221,8 +221,8 @@ public partial class TaskBarMediaControl
     {
         _webLyricsGraphicsDisabled |= WebLyricsGraphicsRecovery.Session.IsDisabled;
         var action = LyricsWebViewLifetimePolicy.Resolve(
-            _lyricsHostLoaded, SettingsManager.Current.LyricsEnabled, _webLyricsGraphicsDisabled,
-            _snapshot.IsConnected, _snapshot.Lyrics?.Document.Lines?.Count ?? 0,
+            _lyricsHostLoaded, SettingsManager.Current.LyricsEnabled || VerticalTextRequired, _webLyricsGraphicsDisabled,
+            _snapshot.IsConnected, VerticalTextRequired ? 1 : _snapshot.Lyrics?.Document.Lines?.Count ?? 0,
             _lyricsWebRenderer is not null);
         switch (action)
         {
@@ -338,8 +338,10 @@ public partial class TaskBarMediaControl
         var previous = _lyricsFrame;
         var next = LyricsPresentationProjector.Project(_snapshot, SettingsManager.Current, DateTimeOffset.UtcNow);
         _lyricsFrame = next;
+        var isMetadata = _isVertical && !next.IsVisible && _snapshot.IsConnected;
+        var presentation = isMetadata ? BuildVerticalMetadataFrame() : next;
 
-        var showWebLyrics = next.IsVisible && !_webLyricsGraphicsDisabled &&
+        var showWebLyrics = presentation.IsVisible && !_webLyricsGraphicsDisabled &&
                             _backgroundPruneLevel < MemoryPruneLevel.DisplayOff && !_isHostVisibilitySuspended &&
                             _lyricsWebRenderer?.IsReady == true;
         var metadataVisibility = showWebLyrics ? Visibility.Collapsed : Visibility.Visible;
@@ -354,8 +356,8 @@ public partial class TaskBarMediaControl
         SongLyricsPanel.IsHitTestVisible = showWebLyrics;
         // The web engine decides whether a frame is a progress patch or a line transition.
         // Sending false on every 50 ms progress frame interrupts its in-flight roll animation.
-        if (!IsBackgroundPruned && LyricsPresentationRefreshPolicy.ShouldPresent(next.IsVisible, previous, next))
-            _lyricsWebRenderer?.Present(next, allowTransition && MotionPolicy.ResolveCurrent().UseTransitions);
+        if (!IsBackgroundPruned && (isMetadata || LyricsPresentationRefreshPolicy.ShouldPresent(next.IsVisible, previous, next)))
+            _lyricsWebRenderer?.Present(presentation, allowTransition && MotionPolicy.ResolveCurrent().UseTransitions, isMetadata);
         RefreshWebLyricsTimer();
 
         // 行变化后立即重发尺寸请求：自动模式下媒体栏长度跟着歌词内容走，若等到下一次快照才更新，
@@ -429,7 +431,7 @@ public partial class TaskBarMediaControl
             appearance.ResolveFontFamilySource(SystemFonts.MessageFontFamily.Source),
             appearance.ResolveLatinFontFamily(SystemFonts.MessageFontFamily.Source),
             appearance.ResolveCjkFontFamily(SystemFonts.MessageFontFamily.Source),
-            _layoutEngine?.LyricsFontSize ?? 12,
+            _isVertical ? VerticalPrimaryFontSize : _layoutEngine?.LyricsFontSize ?? 12,
             appearance.FontWeight,
             LyricsCharacterSpacing.Normalize(SettingsManager.Current.LyricsCharacterSpacingPercent),
             LyricsLineGap.Normalize(SettingsManager.Current.LyricsLineGapPercent),
@@ -439,7 +441,11 @@ public partial class TaskBarMediaControl
             ToCssColor(_lyricsForeground, secondaryOpacity),
             ToCssColor(_lyricsForeground, unsungOpacity),
             primary,
-            textShadow));
+            textShadow,
+            _isVertical,
+            VerticalSecondaryFontSize,
+            SettingsManager.Current.TaskbarExperience.MediaTextAlignment.ToString(),
+            !CurrentMotion.UseContinuousMotion));
     }
 
     private static string ToCssColor(Brush brush, double opacity)

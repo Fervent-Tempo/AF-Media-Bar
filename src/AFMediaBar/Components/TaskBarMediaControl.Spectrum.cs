@@ -54,8 +54,18 @@ public partial class TaskBarMediaControl
     private static readonly TimeSpan SpectrumFrameInterval = TimeSpan.FromMilliseconds(16);
 
     /// <summary>当前柱数决定的任务栏频谱占用宽度（DIP）。 / Width the taskbar spectrum occupies for the current bar count, in DIP.</summary>
-    private double SpectrumSurfaceWidth =>
+    private double SpectrumSurfaceWidth => _isVertical ? Math.Max(1, MainBorder.Width - 4) :
         SpectrumPresentationPolicy.CalculateSurfaceWidthDip(SettingsManager.Current.SpectrumComponent.Normalize().BandCount);
+
+    private SpectrumComponentSettings ResolveSpectrumPresentationSettings()
+    {
+        var settings = SettingsManager.Current.SpectrumComponent.Normalize();
+        return _isVertical ? settings with
+        {
+            BandCount = VerticalTaskbarPresentationPolicy.SpectrumBandCount(MainBorder.Width, settings.BandCount),
+            ContentHeightDip = Math.Min(24, settings.ContentHeightDip)
+        } : settings;
+    }
 
     /// <summary>
     /// 让频谱与媒体文字共用同一支自动前景：柱状图、像素柱状图与波形都换成同一颜色，因此在浅色背景上一起转深、
@@ -111,7 +121,7 @@ public partial class TaskBarMediaControl
     /// </summary>
     internal void ConfigureSpectrum()
     {
-        var settings = SettingsManager.Current.SpectrumComponent.Normalize();
+        var settings = ResolveSpectrumPresentationSettings();
         var contentHeight = SpectrumPresentationPolicy.ResolveContentHeightDip(settings);
         if (_appliedSpectrumStyle == settings.Style &&
             _appliedSpectrumBandCount == settings.BandCount &&
@@ -136,7 +146,7 @@ public partial class TaskBarMediaControl
         Array.Clear(_targetSpectrum, 0, _targetSpectrum.Length);
         Array.Clear(_displayedSpectrum, 0, _displayedSpectrum.Length);
         TaskbarSpectrum.Children.Clear();
-        TaskbarSpectrum.Width = SpectrumPresentationPolicy.CalculateContentWidthDip(settings.BandCount);
+        TaskbarSpectrum.Width = _isVertical ? settings.BandCount * 4 - 2 : SpectrumPresentationPolicy.CalculateContentWidthDip(settings.BandCount);
         // 横轴尺寸由设置决定；几何只保证它装得进悬停表面（表面高度取文字区悬停块与"内容 + 两侧留白"的较大者）。
         // The cross-axis size comes from the settings; the geometry only makes sure it fits inside the hover surface, whose height is the
         // larger of the text hover block and the content plus its padding.
@@ -182,7 +192,8 @@ public partial class TaskBarMediaControl
         // The tree is re-checked here so it always matches the settings: the first sample can arrive before the host applies
         // its settings, and without this step it would be drawn into an empty canvas.
         ConfigureSpectrum();
-        var settings = SettingsManager.Current.SpectrumComponent.Normalize();
+        var settings = ResolveSpectrumPresentationSettings();
+        if (_isVertical) bands = VerticalTaskbarPresentationPolicy.AggregateSpectrum(bands, settings.BandCount);
         if (!SpectrumPresentationPolicy.NeedsFrameDrivenSmoothing(settings.Style))
         {
             // 柱状图与对称柱状图仍由 WPF 的 ScaleY 动画插值：采样只负责重设目标，帧与帧之间由合成线程补齐。
@@ -231,7 +242,7 @@ public partial class TaskBarMediaControl
         if (!motion.UseContinuousMotion)
         {
             SnapSpectrumTargets();
-            DrawSmoothedSpectrum(SettingsManager.Current.SpectrumComponent.Normalize());
+            DrawSmoothedSpectrum(ResolveSpectrumPresentationSettings());
             StopSpectrumFrameTimer();
             return;
         }
@@ -257,7 +268,7 @@ public partial class TaskBarMediaControl
                 settled = false;
         }
 
-        DrawSmoothedSpectrum(SettingsManager.Current.SpectrumComponent.Normalize());
+        DrawSmoothedSpectrum(ResolveSpectrumPresentationSettings());
 
         // 追上目标就停表：静音或稳定状态下不该留着一个每帧唤醒 Dispatcher 的计时器。
         // Stop once the follower has caught up: a silent or steady spectrum must not keep a timer waking the dispatcher every

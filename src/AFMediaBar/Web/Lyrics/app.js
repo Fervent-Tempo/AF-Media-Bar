@@ -2396,6 +2396,7 @@ window.taskbarLyrics = {
     const payload = message.payload;
     switch (message.type) {
       case "lyrics":
+        if (window.taskbarVerticalText.present(payload)) break;
         lyricsApi.setLyrics(
           payload?.current,
           payload?.next,
@@ -2422,6 +2423,7 @@ window.taskbarLyrics = {
         break;
       case "style":
         lyricsApi.applyStyle(payload);
+        window.taskbarVerticalText.applyStyle(payload);
         break;
     }
   }

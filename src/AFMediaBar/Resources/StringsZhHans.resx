@@ -2914,4 +2914,6 @@
   <data name="Experimental.OpenInteraction" xml:space="preserve"><value>前往交互设置</value></data>
   <data name="Experimental.OpenContentLayout" xml:space="preserve"><value>前往内容与布局</value></data>
   <data name="Experimental.OpenAppearance" xml:space="preserve"><value>前往外观设置</value></data>
+  <data name="Experimental.Vertical.Notification.Title" xml:space="preserve"><value>已检测到竖向任务栏</value></data>
+  <data name="Experimental.Vertical.Notification.Body" xml:space="preserve"><value>启用竖向任务栏实验后可在此显示媒体栏。点击前往实验性功能。</value></data>
 </root>
