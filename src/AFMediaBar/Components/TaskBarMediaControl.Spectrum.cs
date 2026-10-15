@@ -55,11 +55,11 @@ public partial class TaskBarMediaControl
 
     /// <summary>当前柱数决定的任务栏频谱占用宽度（DIP）。 / Width the taskbar spectrum occupies for the current bar count, in DIP.</summary>
     private double SpectrumSurfaceWidth => _isVertical ? Math.Max(1, MainBorder.Width - 4) :
-        SpectrumPresentationPolicy.CalculateSurfaceWidthDip(SettingsManager.Current.SpectrumComponent.Normalize().BandCount);
+        SpectrumPresentationPolicy.CalculateSurfaceWidthDip(PresentationSettings.SpectrumComponent.Normalize().BandCount);
 
     private SpectrumComponentSettings ResolveSpectrumPresentationSettings()
     {
-        var settings = SettingsManager.Current.SpectrumComponent.Normalize();
+        var settings = PresentationSettings.SpectrumComponent.Normalize();
         return _isVertical ? settings with
         {
             BandCount = VerticalTaskbarPresentationPolicy.SpectrumBandCount(MainBorder.Width, settings.BandCount),

@@ -952,7 +952,7 @@
       "id": "retained-mode",
       "prefixes": ["settings.dynamicIsland"],
       "paths": ["settings.windowMode"],
-      "text": "当前批次仅运行任务栏；灵动岛和预留悬浮标识归一化为Taskbar，独立悬浮宿主留在下一批。横竖任务栏共享原配置，悬浮配置首次复制后独立保存。"
+      "text": "桌面悬浮标识仅在对应实验开启时生效；实验关闭和旧灵动岛标识归一化为Taskbar。横竖任务栏共享原配置，悬浮配置首次复制后独立保存。"
     },
     {
       "id": "retained-fields",

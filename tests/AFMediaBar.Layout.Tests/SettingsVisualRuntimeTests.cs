@@ -89,6 +89,7 @@ public sealed class SettingsVisualRuntimeTests
                 VerifyNarrowRow(app);
                 SettingsLiveVisualChecks.VerifyCardHover(app);
                 VerifyPageMarkup(app);
+                _ = new ExperimentalPage(null!);
                 VerifyManualLyricsChoices();
                 DeveloperToolsMarkupChecks.Verify(app, FindRepository());
                 VerifyReleaseHistoryBody();

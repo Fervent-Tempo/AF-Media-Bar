@@ -2917,4 +2917,18 @@
   <data name="Experimental.Vertical.Notification.Title" xml:space="preserve"><value>已检测到竖向任务栏</value></data>
   <data name="Experimental.Vertical.Notification.Body" xml:space="preserve"><value>启用竖向任务栏实验后可在此显示媒体栏。点击前往实验性功能。</value></data>
   <data name="Experimental.Audio.RoutingPreserved" xml:space="preserve"><value>关闭实验会保留实验设置及已有的 Windows 应用音频路由偏好，不会自动清除。</value></data>
+  <data name="Experimental.Floating.Mode" xml:space="preserve"><value>运行模式</value></data>
+  <data name="Experimental.Floating.Taskbar" xml:space="preserve"><value>任务栏</value></data>
+  <data name="Experimental.Floating.Switching" xml:space="preserve"><value>正在切换显示模式…</value></data>
+  <data name="Experimental.Floating.Failed" xml:space="preserve"><value>切换失败，已保留原显示模式。请重试或反馈日志。</value></data>
+  <data name="Experimental.Floating.Active" xml:space="preserve"><value>当前运行：桌面悬浮条</value></data>
+  <data name="Experimental.Floating.TaskbarActive" xml:space="preserve"><value>当前运行：任务栏</value></data>
+  <data name="Experimental.Floating.Orientation" xml:space="preserve"><value>方向</value></data>
+  <data name="Experimental.Floating.Horizontal" xml:space="preserve"><value>横向</value></data>
+  <data name="Experimental.Floating.Vertical" xml:space="preserve"><value>竖向</value></data>
+  <data name="Experimental.Floating.Layer" xml:space="preserve"><value>窗口层级</value></data>
+  <data name="Experimental.Floating.Desktop" xml:space="preserve"><value>桌面层</value></data>
+  <data name="Experimental.Floating.Topmost" xml:space="preserve"><value>始终置顶</value></data>
+  <data name="Experimental.Floating.Lock" xml:space="preserve"><value>锁定位置</value></data>
+  <data name="Experimental.Floating.OpenDisplay" xml:space="preserve"><value>前往显示与位置</value></data>
 </root>

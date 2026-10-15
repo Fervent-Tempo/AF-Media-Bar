@@ -19,6 +19,14 @@ namespace AFMediaBar.Views.Windows;
 /// <summary>任务栏外的完整媒体、音频与性能面板。 / Full media, audio, and performance panel outside the taskbar.</summary>
 public partial class TaskbarFullPanelWindow : FluentWindow
 {
+    private AppSettings? _presentationSettings;
+    private AppSettings PresentationSettings => _presentationSettings ?? SettingsManager.Current;
+    public void ApplyPresentationSettings(AppSettings? settings)
+    {
+        _presentationSettings = settings;
+        ApplyFullPanelSettings(animate: false);
+    }
+
     private static readonly TimeSpan VolumeWheelApplyDelay =
         TimeSpan.FromMilliseconds(AudioApplyPolicy.ApplicationVolumeDelayMilliseconds);
     private readonly MediaSessionService _mediaSessionService;
@@ -263,8 +271,8 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         if (_isClosing)
             return;
 
-        var settings = SettingsManager.Current.TaskbarExperience.FullPanel.Normalize();
-        var inputVisibility = SettingsManager.Current.Experiments.NewAudioControl ? Visibility.Visible : Visibility.Collapsed;
+        var settings = PresentationSettings.TaskbarExperience.FullPanel.Normalize();
+        var inputVisibility = PresentationSettings.Experiments.NewAudioControl ? Visibility.Visible : Visibility.Collapsed;
         InputDeviceLabel.Visibility = inputVisibility;
         InputDeviceCombo.Visibility = inputVisibility;
         var animationVersion = ++_sectionAnimationVersion;
@@ -416,7 +424,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
                 devices.FirstOrDefault(device => device.PolicyId == outputPreview.PolicyId);
             InputDeviceCombo.SelectedItem = inputPreview is null ? inputs.FirstOrDefault(device => device.IsDefault) :
                 inputs.FirstOrDefault(device => device.PolicyId == inputPreview.PolicyId);
-            AudioDeviceStatusText.Text = DeviceCombo.SelectedItem is null || (SettingsManager.Current.Experiments.NewAudioControl && InputDeviceCombo.SelectedItem is null) ?
+            AudioDeviceStatusText.Text = DeviceCombo.SelectedItem is null || (PresentationSettings.Experiments.NewAudioControl && InputDeviceCombo.SelectedItem is null) ?
                 Translations.Get("Audio.Route.HiddenOrDisconnected") : string.Empty;
             _currentVolume = volume;
             VolumeSlider.IsEnabled = volume is not null;

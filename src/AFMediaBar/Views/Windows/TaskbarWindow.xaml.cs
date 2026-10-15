@@ -31,7 +31,7 @@ namespace AFMediaBar.Views.Windows;
 /// A transparent child window spans the whole taskbar; the media bar is placed on a canvas
 /// and clipped with SetWindowRgn so the rest of the taskbar remains visible and click-through.
 /// </summary>
-public partial class TaskbarWindow : Window
+public partial class TaskbarWindow : Window, IBarRuntimeHost
 {
     // physical px offsets from the taskbar edges
     private const int EdgePadding = 20;
@@ -157,11 +157,12 @@ public partial class TaskbarWindow : Window
         SystemMetricsMonitorService metricsMonitor,
         ScreenBackgroundSampler screenBackgroundSampler,
         NativeMouseInputMonitor mouseInputMonitor,
-        MemoryPruneCoordinator memoryPruneCoordinator)
+        MemoryPruneCoordinator memoryPruneCoordinator,
+        TaskbarWindowViewModel? viewModel = null, bool startImmediately = true)
     {
         WindowHelper.SetNoActivate(this);
         InitializeComponent();
-        ViewModel = App.Services.GetService<TaskbarWindowViewModel>();
+        ViewModel = viewModel ?? App.Services.GetRequiredService<TaskbarWindowViewModel>();
         _targetMonitorDeviceId = targetMonitorDeviceId;
         _mouseInputMonitor = mouseInputMonitor;
         DataContext = ViewModel;
@@ -317,7 +318,30 @@ public partial class TaskbarWindow : Window
 
         Loaded += Window_Loaded;
 
+        if (startImmediately) Show(); else SuspendForEnvironmentRecovery();
+    }
+
+    public async Task ActivateAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ResumeAfterEnvironmentRecovery();
         Show();
+        await Dispatcher.Yield(DispatcherPriority.Loaded);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (_isClosing) throw new ObjectDisposedException(nameof(TaskbarWindow));
+        UpdatePosition();
+        if (_lastTaskbarHandle == IntPtr.Zero || _windowHandle == IntPtr.Zero || GetParent(_windowHandle) != _lastTaskbarHandle)
+            throw new InvalidOperationException("Taskbar host is unavailable.");
+    }
+
+    public void Suspend() { SuspendForEnvironmentRecovery(); Hide(); }
+    public void Resume() { ResumeAfterEnvironmentRecovery(); Show(); UpdatePosition(); }
+    public void Dispose()
+    {
+        if (_isClosing) return;
+        SuspendForEnvironmentRecovery();
+        DetachFromTaskbar();
+        try { Close(); } catch (InvalidOperationException) { }
     }
 
     /// <summary>初始化任务栏宿主窗口句柄和消息钩子。/ Initializes the taskbar-host handle and message hook.</summary>
@@ -677,7 +701,7 @@ public partial class TaskbarWindow : Window
                 _targetMonitorDeviceId, out _);
             _lastTaskbarHandle = taskbarHandle;
 
-            ApplyLayoutSettings(SettingsManager.Current.WindowMode, SettingsManager.Current.LayoutOrientationMode,
+            ApplyLayoutSettings(WindowMode.Taskbar, SettingsManager.Current.LayoutOrientationMode,
                 taskbarHandle);
 
             // If this window is created faster than the taskbar is loaded, taskbarHandle will be NULL;
@@ -729,7 +753,7 @@ public partial class TaskbarWindow : Window
 
             _lastTaskbarHandle = taskbarHandle;
 
-            ApplyLayoutSettings(SettingsManager.Current.WindowMode, SettingsManager.Current.LayoutOrientationMode,
+            ApplyLayoutSettings(WindowMode.Taskbar, SettingsManager.Current.LayoutOrientationMode,
                 taskbarHandle);
 
             if (interop.Handle == IntPtr.Zero)
@@ -1163,7 +1187,7 @@ public partial class TaskbarWindow : Window
             var taskbarHandle = _lastTaskbarHandle;
             if (taskbarHandle == IntPtr.Zero)
                 taskbarHandle = _taskBarService.GetSelectedTaskbarHandle(_targetMonitorDeviceId, out _);
-            ApplyLayoutSettings(SettingsManager.Current.WindowMode, SettingsManager.Current.LayoutOrientationMode,
+            ApplyLayoutSettings(WindowMode.Taskbar, SettingsManager.Current.LayoutOrientationMode,
                 taskbarHandle);
             ApplyExtraFeaturesSettings();
             MediaControl.UpdateSongInfo(_lastSnapshot);

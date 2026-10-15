@@ -262,8 +262,9 @@ public sealed class AppSettings : INotifyPropertyChanged
         if (!Enum.IsDefined(result.TrayWheelBehavior)) result.TrayWheelBehavior = defaults.TrayWheelBehavior;
         result.LyricsSecondaryLine = result.LyricsSecondaryLine.Normalize();
         if (!Enum.IsDefined(result.Position)) result.Position = defaults.Position;
-        // 独立悬浮宿主在下一批接入；预留成员不能激活尚未实现的运行模式。
-        result.WindowMode = WindowMode.Taskbar;
+        // 旧灵动岛标识继续回退，悬浮仅在实验开启后生效。
+        if (result.WindowMode != WindowMode.FloatingBar || !result.Experiments.FloatingBar)
+            result.WindowMode = WindowMode.Taskbar;
         if (!Enum.IsDefined(result.LayoutOrientationMode)) result.LayoutOrientationMode = defaults.LayoutOrientationMode;
         if (!Enum.IsDefined(result.DynamicIslandBackgroundMode)) result.DynamicIslandBackgroundMode = defaults.DynamicIslandBackgroundMode;
         if (!Enum.IsDefined(result.DynamicIslandEdge)) result.DynamicIslandEdge = defaults.DynamicIslandEdge;

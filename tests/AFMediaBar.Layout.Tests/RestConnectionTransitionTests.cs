@@ -118,6 +118,7 @@ public sealed class RestConnectionTransitionTests
                         Assert.IsTrue(((FrameworkElement)control.FindName("InteractionSurface")).IsHitTestVisible);
                     }
                 }
+                await FloatingBarHostChecks.VerifyAsync();
             }
             finally
             {

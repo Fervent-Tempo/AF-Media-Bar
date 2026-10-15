@@ -62,6 +62,32 @@
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.FloatingBar, Mode=TwoWay}" />
                         </components:SettingsRow>
                         <StackPanel Visibility="{Binding ViewModel.FloatingBar, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                            <components:SettingsRow Title="{DynamicResource Loc.Experimental.Floating.Mode}">
+                                <ComboBox SelectedIndex="{Binding ViewModel.RunningModeSelection, Mode=TwoWay}" MinWidth="180">
+                                    <ComboBoxItem Content="{DynamicResource Loc.Experimental.Floating.Taskbar}" />
+                                    <ComboBoxItem Content="{DynamicResource Loc.Experimental.Floating.Title}" />
+                                </ComboBox>
+                            </components:SettingsRow>
+                            <TextBlock Text="{Binding ViewModel.RuntimeStatus}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,6,0,12" />
+                            <components:SettingsRow Title="{DynamicResource Loc.Experimental.Floating.Orientation}">
+                                <ComboBox SelectedIndex="{Binding ViewModel.FloatingOrientation, Mode=TwoWay}" MinWidth="180">
+                                    <ComboBoxItem Content="{DynamicResource Loc.Experimental.Floating.Horizontal}" />
+                                    <ComboBoxItem Content="{DynamicResource Loc.Experimental.Floating.Vertical}" />
+                                </ComboBox>
+                            </components:SettingsRow>
+                            <components:SettingsRow Title="{DynamicResource Loc.Experimental.Floating.Layer}">
+                                <ComboBox SelectedIndex="{Binding ViewModel.FloatingLayer, Mode=TwoWay}" MinWidth="180">
+                                    <ComboBoxItem Content="{DynamicResource Loc.Experimental.Floating.Desktop}" />
+                                    <ComboBoxItem Content="{DynamicResource Loc.Experimental.Floating.Topmost}" />
+                                </ComboBox>
+                            </components:SettingsRow>
+                            <components:SettingsRow Title="{DynamicResource Loc.Experimental.Floating.Lock}">
+                                <ui:ToggleSwitch IsChecked="{Binding ViewModel.FloatingLocked, Mode=TwoWay}" />
+                            </components:SettingsRow>
+                            <components:SettingsRow Title="{DynamicResource Loc.Common.Page.ScreenAndPlacement}" Icon="{ui:SymbolIcon Desktop24}">
+                                <ui:Button Content="{DynamicResource Loc.Experimental.Floating.OpenDisplay}" Style="{StaticResource AfSettingsButtonStyle}"
+                                    Uid="FloatingBar" Tag="{x:Static services:SettingsPageKey.ScreenAndPlacement}" Click="OpenSettings_Click" />
+                            </components:SettingsRow>
                             <TextBlock Text="{DynamicResource Loc.Experimental.Floating.Independent}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,8,0,12" />
                             <components:SettingsRow Title="{DynamicResource Loc.Common.Page.ContentLayout}"
                                 Description="{DynamicResource Loc.ContentLayout.Header.Subtitle}" Icon="{ui:SymbolIcon Grid24}">

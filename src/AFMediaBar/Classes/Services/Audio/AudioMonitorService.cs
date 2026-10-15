@@ -91,9 +91,18 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
         }
     }
 
+    private SpectrumCaptureSource? _presentationCaptureSource;
+
+    public void ApplyPresentationCaptureSource(SpectrumCaptureSource? source)
+    {
+        if (_presentationCaptureSource == source) return;
+        _presentationCaptureSource = source;
+        OnSettingsChanged(this, null!);
+    }
+
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args)
     {
-        var source = SettingsManager.Current.SpectrumComponent.Normalize().CaptureSource;
+        var source = _presentationCaptureSource ?? SettingsManager.Current.SpectrumComponent.Normalize().CaptureSource;
         lock (_sourceGate)
         {
             if (_disposed || source == _captureSource) return;

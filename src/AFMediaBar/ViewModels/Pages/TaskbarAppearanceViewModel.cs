@@ -19,16 +19,19 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
     public CancellationToken ContextCancellationToken => _configuration.CancellationToken;
 
     private readonly LocalizationService _localization;
+    private readonly bool _hasFloatingBudget;
     private bool _isRefreshing;
     private bool _disposed;
     private string _idleNoteColorHex;
 
     /// <summary>Creates a taskbar-only appearance editor for the cached page scope.</summary>
-    public TaskbarAppearanceViewModel(ISettingsConfiguration configuration, TaskbarLengthConstraintsService constraints, LocalizationService localization)
+    public TaskbarAppearanceViewModel(ISettingsConfiguration configuration, TaskbarLengthConstraintsService constraints, LocalizationService localization, FloatingBarLengthConstraints? floatingConstraints = null)
     {
         _configuration = configuration;
         _idleNoteColorHex = configuration.Current.Appearance.IdleNoteColor ?? configuration.Current.Appearance.AccentColor;
         configuration.Activated += OnActivated;
+        _hasFloatingBudget = configuration.Target == BarConfigurationTarget.FloatingBar && floatingConstraints is not null;
+        if (_hasFloatingBudget) constraints = floatingConstraints!.Range;
         _taskbarLengthConstraints = constraints;
         _localization = localization;
         constraints.Changed += OnTaskbarLengthConstraintsChanged;
@@ -211,7 +214,7 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
     }
 
     public bool UsesFixedTaskbarLength => !FollowMediaTextLength;
-    private bool HasFixedTaskbarLengthRange => _configuration.Target == BarConfigurationTarget.Taskbar &&
+    private bool HasFixedTaskbarLengthRange => (_configuration.Target == BarConfigurationTarget.Taskbar || _hasFloatingBudget) &&
         _taskbarLengthConstraints.HasAvailableRange &&
         Math.Ceiling(_taskbarLengthConstraints.MinimumLengthDip) <= Math.Floor(_taskbarLengthConstraints.MaximumLengthDip);
     public bool CanEditFixedTaskbarLength => UsesFixedTaskbarLength && HasFixedTaskbarLengthRange;

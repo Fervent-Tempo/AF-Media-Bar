@@ -32,7 +32,7 @@ public partial class TaskBarMediaControl
     // 文字保留原文，溢出时仅移动两份绘制；暂停保留时钟位置，卸载才解除时钟。
     internal void ApplyMarqueeLayout(double availableWidth)
     {
-        var enabled = IsLoaded && _currentMode == WindowMode.Taskbar && !_isVertical &&
+        var enabled = IsLoaded && IsBarPresentation && !_isVertical &&
                       (_isConnected || _restTransitionKeepsOutgoingText) && CurrentMotion.UseContinuousMotion;
         var paused = IsAdvancePruned || !IsVisible || SongMetadataPanel.Visibility != Visibility.Visible ||
                      HoverRevealHost.Visibility == Visibility.Visible || _restTransitionActive || _restTransitionPreparing;
@@ -58,8 +58,8 @@ public partial class TaskBarMediaControl
         element.TextAlignment = alignment;
     }
 
-    private static TextAlignment ResolveConfiguredAlignment(TextBlock element) =>
-        ExperimentalAudioPolicy.Experience(SettingsManager.Current.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl).Normalize().MediaTextAlignment switch
+    private TextAlignment ResolveConfiguredAlignment(TextBlock element) =>
+        ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize().MediaTextAlignment switch
         {
             TaskbarMediaTextAlignment.Center => TextAlignment.Center,
             TaskbarMediaTextAlignment.Right => TextAlignment.Right,
@@ -227,11 +227,11 @@ public partial class TaskBarMediaControl
     private bool CanUseTaskbarComponentHover() =>
         !_isPlacementMotionActive && !_isHostVisibilitySuspended && !_restTransitionActive &&
         _backgroundPruneLevel < MemoryPruneLevel.DisplayOff &&
-        _isConnected && _currentMode == WindowMode.Taskbar;
+        _isConnected && IsBarPresentation;
 
     private bool CanUseTaskbarRestHover(Border surface)
     {
-        if (_isPlacementMotionActive || _currentMode != WindowMode.Taskbar || _restTransitionActive)
+        if (_isPlacementMotionActive || !IsBarPresentation || _restTransitionActive)
             return false;
 
         if (_isConnected)
@@ -249,7 +249,7 @@ public partial class TaskBarMediaControl
 
     private bool CanShowDirectFullPanelHandle()
     {
-        var experience = SettingsManager.Current.TaskbarExperience;
+        var experience = PresentationSettings.TaskbarExperience;
         return CanUseTaskbarComponentHover() &&
                experience.FullPanelEntryVisible &&
                !experience.HoverLayerEnabled &&
@@ -1829,7 +1829,7 @@ public partial class TaskBarMediaControl
 
     /// <summary>封面这一格当前绑定的点击动作；门禁与提示符号都由它决定。/ The click action currently bound to the artwork slot; it gates the hint and picks its glyph.</summary>
     private PlayerClickAction ResolveArtworkClickAction() =>
-        _currentMode == WindowMode.Taskbar
+        IsBarPresentation
             ? PlayerClickBindingPolicy.Resolve(EffectiveInteraction, artwork: true)
             : PlayerClickAction.TogglePlayPause;
 
@@ -2086,7 +2086,7 @@ public partial class TaskBarMediaControl
         AnimateDirectFullPanelHandle(true);
         _hoverCloseTimer.Stop();
         _hoverOpenTimer.Stop();
-        if (SettingsManager.Current.TaskbarExperience.HoverLayerEnabled)
+        if (PresentationSettings.TaskbarExperience.HoverLayerEnabled)
             _hoverOpenTimer.Start();
     }
 
@@ -2149,8 +2149,8 @@ public partial class TaskBarMediaControl
         if (!CanUseTaskbarComponentHover() || _isTaskbarHoverVisible)
             return;
 
-        if (!_isConnected || _currentMode != WindowMode.Taskbar ||
-            !SettingsManager.Current.TaskbarExperience.HoverLayerEnabled ||
+        if (!_isConnected || !IsBarPresentation ||
+            !PresentationSettings.TaskbarExperience.HoverLayerEnabled ||
             (!SongInfoStackPanel.IsMouseOver && !HoverRevealHost.IsMouseOver && !TaskbarHoverLayer.IsMouseOver))
             return;
 

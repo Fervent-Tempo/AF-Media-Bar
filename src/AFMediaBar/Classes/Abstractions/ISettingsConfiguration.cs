@@ -25,6 +25,12 @@ public interface ISettingsConfiguration
     {
         if (IsActive) SettingsManager.Current.Experiments = settings;
     }
+    /// <summary>明确选择运行宿主；启用实验本身不切换模式。</summary>
+    void SetWindowMode(AFMediaBar.Classes.Models.Layout.WindowMode mode)
+    {
+        if (IsActive) SettingsManager.Current.WindowMode = mode == AFMediaBar.Classes.Models.Layout.WindowMode.FloatingBar &&
+            SettingsManager.Current.Experiments.FloatingBar ? mode : AFMediaBar.Classes.Models.Layout.WindowMode.Taskbar;
+    }
     /// <summary>修改独立悬浮宿主偏好。</summary>
     void SetFloatingBar(FloatingBarSettings settings)
     {

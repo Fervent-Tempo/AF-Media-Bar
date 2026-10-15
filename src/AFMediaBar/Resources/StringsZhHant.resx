@@ -2917,4 +2917,18 @@
   <data name="Experimental.Vertical.Notification.Title" xml:space="preserve"><value>已偵測到直向工作列</value></data>
   <data name="Experimental.Vertical.Notification.Body" xml:space="preserve"><value>啟用直向工作列實驗後即可在此顯示媒體列。點擊前往實驗性功能。</value></data>
   <data name="Experimental.Audio.RoutingPreserved" xml:space="preserve"><value>關閉實驗會保留實驗設定及既有 Windows 應用程式音訊路由偏好，不會自動清除。</value></data>
+  <data name="Experimental.Floating.Mode" xml:space="preserve"><value>執行模式</value></data>
+  <data name="Experimental.Floating.Taskbar" xml:space="preserve"><value>工作列</value></data>
+  <data name="Experimental.Floating.Switching" xml:space="preserve"><value>正在切換顯示模式…</value></data>
+  <data name="Experimental.Floating.Failed" xml:space="preserve"><value>切換失敗，已保留原顯示模式。請重試或回報記錄。</value></data>
+  <data name="Experimental.Floating.Active" xml:space="preserve"><value>目前執行：桌面懸浮列</value></data>
+  <data name="Experimental.Floating.TaskbarActive" xml:space="preserve"><value>目前執行：工作列</value></data>
+  <data name="Experimental.Floating.Orientation" xml:space="preserve"><value>方向</value></data>
+  <data name="Experimental.Floating.Horizontal" xml:space="preserve"><value>橫向</value></data>
+  <data name="Experimental.Floating.Vertical" xml:space="preserve"><value>直向</value></data>
+  <data name="Experimental.Floating.Layer" xml:space="preserve"><value>視窗層級</value></data>
+  <data name="Experimental.Floating.Desktop" xml:space="preserve"><value>桌面層</value></data>
+  <data name="Experimental.Floating.Topmost" xml:space="preserve"><value>一律置頂</value></data>
+  <data name="Experimental.Floating.Lock" xml:space="preserve"><value>鎖定位置</value></data>
+  <data name="Experimental.Floating.OpenDisplay" xml:space="preserve"><value>前往顯示與位置</value></data>
 </root>

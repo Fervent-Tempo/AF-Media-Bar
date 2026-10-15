@@ -24,7 +24,7 @@ public static class SettingsPageCatalog
     });
 
     /// <summary>Only hosts implemented in this release can become active settings contexts.</summary>
-    public static bool IsImplemented(SettingsMode mode) => mode == SettingsMode.Taskbar;
+    public static bool IsImplemented(SettingsMode mode) => mode is SettingsMode.Taskbar or SettingsMode.FloatingBar;
     /// <summary>设置目标可编辑不表示该宿主已接入运行时。</summary>
     public static bool CanEditProfile(SettingsMode mode) => mode == SettingsMode.Taskbar ||
         mode == SettingsMode.FloatingBar && AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.FloatingBar;

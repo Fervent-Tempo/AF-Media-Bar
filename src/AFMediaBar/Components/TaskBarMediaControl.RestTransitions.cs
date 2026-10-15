@@ -72,11 +72,11 @@ public partial class TaskBarMediaControl
     private Dictionary<TaskbarRestComponent, RestVisual>? CaptureRestVisuals(bool targetConnected)
     {
         if (!AllowRestConnectionTransition || !IsLoaded || _isHostVisibilitySuspended || _isPlacementMotionActive ||
-            _backgroundPruneLevel >= MemoryPruneLevel.DisplayOff || _currentMode != WindowMode.Taskbar ||
+            _backgroundPruneLevel >= MemoryPruneLevel.DisplayOff || !IsBarPresentation ||
             _isVertical || !CurrentMotion.UseTransitions)
             return null;
 
-        var experience = ExperimentalAudioPolicy.Experience(SettingsManager.Current.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl).Normalize();
+        var experience = ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize();
         var targetVisibility = new TaskbarRestLayoutPolicy.Visibility(
             targetConnected,
             experience.IdleComponents,

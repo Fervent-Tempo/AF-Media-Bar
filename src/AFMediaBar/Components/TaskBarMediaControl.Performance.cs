@@ -20,7 +20,7 @@ public partial class TaskBarMediaControl
 
     private bool ConfigurePerformance()
     {
-        var settings = SettingsManager.Current.PerformanceComponent.Normalize();
+        var settings = PresentationSettings.PerformanceComponent.Normalize();
         var metrics = settings.GetOrderedMetrics();
         var font = TextElement.GetFontFamily(TaskbarPerformanceItems).Source;
         if (_performanceCells.Count > 0 && _performanceSettings.DisplayMode == settings.DisplayMode &&

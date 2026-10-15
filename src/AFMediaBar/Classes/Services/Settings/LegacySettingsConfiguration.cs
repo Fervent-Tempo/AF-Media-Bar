@@ -57,6 +57,7 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context) : I
         if (settings.FloatingBar && SettingsManager.Current.FloatingBar.Profile is null)
             SettingsManager.Current.FloatingBar = SettingsManager.Current.FloatingBar with { Profile = BarDisplaySettings.Capture(SettingsManager.Current) };
         SettingsManager.Current.Experiments = settings;
+        if (!settings.FloatingBar) SettingsManager.Current.WindowMode = AFMediaBar.Classes.Models.Layout.WindowMode.Taskbar;
     }
     public void SetFloatingBar(FloatingBarSettings settings) { if (IsActive) SettingsManager.Current.FloatingBar = settings; }
     public void SetTaskbarTargets(IReadOnlyList<string> deviceIds)
@@ -72,6 +73,8 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context) : I
     }
     public void SetTaskbarPlacement(bool? locked = null, bool? avoidIcons = null, double? crossAxisOffsetDip = null, bool reset = false, TaskbarBarPosition? alignment = null)
     {
+        if (reset && IsActive && Target == BarConfigurationTarget.FloatingBar)
+            SetFloatingBar(SettingsManager.Current.FloatingBar with { Positions = [] });
         Update(current =>
         {
             if (alignment is { } position && Enum.IsDefined(position) && current.Position != position)
@@ -137,6 +140,8 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context) : I
         var next = scope switch
         {
             SettingsResetScope.All => profile,
+            SettingsResetScope.Layout => current with { Position = profile.Position, TaskbarBarManualPadding = profile.TaskbarBarManualPadding,
+                TaskbarBarCrossAxisOffsetDip = profile.TaskbarBarCrossAxisOffsetDip, TaskbarBarPositionLocked = profile.TaskbarBarPositionLocked },
             SettingsResetScope.Appearance => current with
             {
                 Appearance = profile.Appearance,
@@ -167,7 +172,9 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context) : I
             },
             _ => throw new ArgumentOutOfRangeException(nameof(scope))
         };
-        SetFloatingBar(SettingsManager.Current.FloatingBar with { Profile = next });
+        SetFloatingBar(scope is SettingsResetScope.Layout or SettingsResetScope.All
+            ? SettingsManager.Current.FloatingBar with { Profile = next, Positions = defaults.FloatingBar.Positions, MonitorDeviceIds = defaults.FloatingBar.MonitorDeviceIds }
+            : SettingsManager.Current.FloatingBar with { Profile = next });
         if (scope == SettingsResetScope.Interaction)
         {
             var root = SettingsManager.Current;

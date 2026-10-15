@@ -2955,4 +2955,18 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   <data name="Experimental.Vertical.Notification.Title" xml:space="preserve"><value>Đã phát hiện thanh tác vụ dọc</value></data>
   <data name="Experimental.Vertical.Notification.Body" xml:space="preserve"><value>Bật thử nghiệm thanh tác vụ dọc để hiển thị thanh phương tiện tại đây. Nhấn để mở Tính năng thử nghiệm.</value></data>
   <data name="Experimental.Audio.RoutingPreserved" xml:space="preserve"><value>Tắt thử nghiệm sẽ giữ cài đặt đã lưu và tùy chọn định tuyến âm thanh ứng dụng hiện có của Windows.</value></data>
+  <data name="Experimental.Floating.Mode" xml:space="preserve"><value>Chế độ hiển thị</value></data>
+  <data name="Experimental.Floating.Taskbar" xml:space="preserve"><value>Thanh tác vụ</value></data>
+  <data name="Experimental.Floating.Switching" xml:space="preserve"><value>Đang chuyển chế độ hiển thị…</value></data>
+  <data name="Experimental.Floating.Failed" xml:space="preserve"><value>Không thể chuyển. Chế độ trước được giữ lại. Hãy thử lại hoặc gửi nhật ký.</value></data>
+  <data name="Experimental.Floating.Active" xml:space="preserve"><value>Đang chạy: tiện ích màn hình</value></data>
+  <data name="Experimental.Floating.TaskbarActive" xml:space="preserve"><value>Đang chạy: thanh tác vụ</value></data>
+  <data name="Experimental.Floating.Orientation" xml:space="preserve"><value>Hướng</value></data>
+  <data name="Experimental.Floating.Horizontal" xml:space="preserve"><value>Ngang</value></data>
+  <data name="Experimental.Floating.Vertical" xml:space="preserve"><value>Dọc</value></data>
+  <data name="Experimental.Floating.Layer" xml:space="preserve"><value>Lớp cửa sổ</value></data>
+  <data name="Experimental.Floating.Desktop" xml:space="preserve"><value>Màn hình nền</value></data>
+  <data name="Experimental.Floating.Topmost" xml:space="preserve"><value>Luôn ở trên cùng</value></data>
+  <data name="Experimental.Floating.Lock" xml:space="preserve"><value>Khóa vị trí</value></data>
+  <data name="Experimental.Floating.OpenDisplay" xml:space="preserve"><value>Mở hiển thị và vị trí</value></data>
 </root>

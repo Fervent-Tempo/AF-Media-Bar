@@ -64,20 +64,21 @@ public sealed class AudioInteractionService
     public bool SetApplicationVolume(string processName, int volumePercent) =>
         _volumeService.SetApplicationVolume(processName, volumePercent);
 
-    public async Task<string> AdjustCurrentMediaVolumeAsync(int signedSteps)
+    public async Task<string> AdjustCurrentMediaVolumeAsync(int signedSteps, CancellationToken cancellationToken = default)
     {
         if (signedSteps == 0)
             return Translations.Get("Audio.Volume.Unchanged");
 
-        await _volumeGate.WaitAsync();
+        await _volumeGate.WaitAsync(cancellationToken);
         try
         {
             var current = await Task.Run(GetCurrentMediaVolume);
             if (current is null)
                 return Translations.Get("Audio.Volume.Unavailable");
 
+            cancellationToken.ThrowIfCancellationRequested();
             var next = Math.Clamp(current.VolumePercent + signedSteps * VolumeStepPercent, 0, 100);
-            await Task.Run(() => SetApplicationVolume(current.ProcessName, next));
+            await Task.Run(() => { cancellationToken.ThrowIfCancellationRequested(); return SetApplicationVolume(current.ProcessName, next); }, cancellationToken);
             return Translations.Format("Audio.Volume.Value", current.DisplayName, next);
         }
         finally
@@ -153,12 +154,13 @@ public sealed class AudioInteractionService
         _switches.CancelOwner(owner);
     }
 
-    public Task<string> CycleOutputDeviceAsync(int signedSteps, bool deferApply) =>
-        CycleDeviceAsync(AudioDeviceDirection.Output, signedSteps);
-    public async Task<string> CycleDeviceAsync(AudioDeviceDirection direction, int signedSteps)
+    public Task<string> CycleOutputDeviceAsync(int signedSteps, bool deferApply, object? owner = null, CancellationToken cancellationToken = default) =>
+        CycleDeviceAsync(AudioDeviceDirection.Output, signedSteps, owner, cancellationToken);
+    public async Task<string> CycleDeviceAsync(AudioDeviceDirection direction, int signedSteps, object? owner = null, CancellationToken cancellationToken = default)
     {
         var target = new AudioDeviceTarget(direction);
-        var device = await _switches.PreviewAsync(target, signedSteps, this);
+        cancellationToken.ThrowIfCancellationRequested();
+        var device = await _switches.PreviewAsync(target, signedSteps, owner ?? this);
         return device is null ? Translations.Get("Audio.Device.Unavailable") : device.DisplayName;
     }
 

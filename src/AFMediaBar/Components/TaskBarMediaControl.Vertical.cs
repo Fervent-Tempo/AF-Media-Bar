@@ -22,9 +22,9 @@ public partial class TaskBarMediaControl
     private double _verticalSpectrumLength = 28;
     private bool VerticalTextRequired => _isVertical && _snapshot.IsConnected;
     private double VerticalPrimaryFontSize => VerticalTaskbarPresentationPolicy.PrimaryFontSizeDip *
-        ExperimentalAudioPolicy.Experience(SettingsManager.Current.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl).Normalize().MediaFontSizePercent / 100d;
+        ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize().MediaFontSizePercent / 100d;
     private double VerticalSecondaryFontSize => VerticalTaskbarPresentationPolicy.SecondaryFontSizeDip *
-        ExperimentalAudioPolicy.Experience(SettingsManager.Current.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl).Normalize().MediaFontSizePercent / 100d;
+        ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize().MediaFontSizePercent / 100d;
 
     public void ApplyVerticalTaskbarSide(bool onLeft)
     {
@@ -86,13 +86,13 @@ public partial class TaskBarMediaControl
 
     private LyricsPresentationFrame BuildVerticalMetadataFrame() => new(
         true, _actualTitle + "\n" + _actualArtist, -1,
-        TaskbarExperiencePolicy.FormatMetadataTitle(_actualTitle, _actualArtist, SettingsManager.Current.TaskbarExperience.ContentLayout), SettingsManager.Current.TaskbarExperience.ContentLayout == TaskbarContentLayout.CompactInline
+        TaskbarExperiencePolicy.FormatMetadataTitle(_actualTitle, _actualArtist, PresentationSettings.TaskbarExperience.ContentLayout), PresentationSettings.TaskbarExperience.ContentLayout == TaskbarContentLayout.CompactInline
             ? string.Empty : _actualArtist,
         string.Empty, string.Empty, false, 0, null, _snapshot.IsPlaying);
 
     private TaskbarRestLayout ResolveVerticalLayout(double primaryLength)
     {
-        var experience = ExperimentalAudioPolicy.Experience(SettingsManager.Current.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl).Normalize();
+        var experience = ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize();
         var visibility = ResolveRestVisibility(experience);
         var metrics = TaskbarDensityMetrics.From(experience.Density);
         return TaskbarRestLayoutPolicy.Arrange(
@@ -104,9 +104,9 @@ public partial class TaskBarMediaControl
     }
 
     private double VerticalSectionGap => TaskbarExperiencePolicy.ResolveSectionGap(
-        SettingsManager.Current.TaskbarExperience.Density,
-        SettingsManager.Current.TaskbarExperience.ComponentSpacingDip) *
-        SettingsManager.Current.LayoutLengthScalePercent / 100d;
+        PresentationSettings.TaskbarExperience.Density,
+        PresentationSettings.TaskbarExperience.ComponentSpacingDip) *
+        PresentationSettings.LayoutLengthScalePercent / 100d;
 
     private double VerticalComponentLength(TaskbarRestComponent component, TaskbarDensityMetrics metrics) => component switch
     {
@@ -119,14 +119,14 @@ public partial class TaskBarMediaControl
 
     private MediaBarSizeRequest BuildVerticalSizeRequest(MediaBarSizeRequest request, bool lyricsVisible, string current, string secondary)
     {
-        var experience = ExperimentalAudioPolicy.Experience(SettingsManager.Current.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl).Normalize();
+        var experience = ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize();
         double Measure(string text, double fontSize) => VerticalTaskbarPresentationPolicy.MeasureText(
-            text, fontSize, lyricsVisible ? SettingsManager.Current.LyricsCharacterSpacingPercent : 0,
+            text, fontSize, lyricsVisible ? PresentationSettings.LyricsCharacterSpacingPercent : 0,
             sideways => MeasureTextWidthExact(sideways, SongTitle) * fontSize / Math.Max(1, SongTitle.FontSize));
         if (!lyricsVisible)
             current = TaskbarExperiencePolicy.FormatMetadataTitle(_actualTitle, _actualArtist, experience.ContentLayout);
-        var textLength = lyricsVisible && SettingsManager.Current.LyricsFixedWidthEnabled
-            ? LyricsFixedWidth.Normalize(SettingsManager.Current.LyricsFixedWidthDip)
+        var textLength = lyricsVisible && PresentationSettings.LyricsFixedWidthEnabled
+            ? LyricsFixedWidth.Normalize(PresentationSettings.LyricsFixedWidthDip)
             : Math.Max(Measure(current, VerticalPrimaryFontSize),
                 Measure(lyricsVisible ? secondary : _actualArtist, lyricsVisible ? VerticalPrimaryFontSize : VerticalSecondaryFontSize));
         var visibility = ResolveRestVisibility(experience);
@@ -146,10 +146,10 @@ public partial class TaskBarMediaControl
 
     private void ApplyVerticalSectionGeometry(double primaryLength)
     {
-        _verticalSpectrumLength = Math.Min(24, SettingsManager.Current.SpectrumComponent.Normalize().ContentHeightDip) + 4;
+        _verticalSpectrumLength = Math.Min(24, PresentationSettings.SpectrumComponent.Normalize().ContentHeightDip) + 4;
         var width = Math.Max(1, MainBorder.Width);
         var innerWidth = Math.Max(1, width - 4);
-        var experience = ExperimentalAudioPolicy.Experience(SettingsManager.Current.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl).Normalize();
+        var experience = ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize();
         var tooltipPlacement = _verticalTaskbarOnLeft ? PlacementMode.Right : PlacementMode.Left;
         _wheelTooltip.Placement = tooltipPlacement;
         _artworkWheelTooltip.Placement = tooltipPlacement;
@@ -231,7 +231,7 @@ public partial class TaskBarMediaControl
 
     private void ConfigureVerticalHoverGeometry()
     {
-        var experience = ExperimentalAudioPolicy.Experience(SettingsManager.Current.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl).Normalize();
+        var experience = ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize();
         var size = Math.Max(24, TaskbarDensityMetrics.From(experience.Density).ButtonSize);
         var count = 0;
         foreach (FrameworkElement group in TaskbarHoverActions.Children)
