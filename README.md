@@ -102,7 +102,7 @@ AF Media Bar 是一款 Windows 10/11 任务栏媒体控制器。它从系统媒�
 <div align="center">
 
 如果 AF Media Bar 对你有帮助，可以给项目一个 Star❤️。
-
+<img src="https://whale-star.whale-star.workers.dev/?repo=Fervent-Tempo%2FAF-Media-Bar&pack=default" alt="star 大肥鱼" width="600" />
 </div>
 
 请作者喝杯咖啡。**大于 10 元的赞助可以进入赞助者名单，请在备注中留下 id。**
