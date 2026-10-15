@@ -95,6 +95,7 @@ namespace AFMediaBar.Views.Windows
             AddHandler(ApplicationPage.OpenHighlightsEvent, new RoutedEventHandler(OnOpenHighlightsRequested));
             AddHandler(AppearancePage.OpenApplicationFontsEvent, new RoutedEventHandler(OnOpenApplicationFontsRequested));
             AddHandler(LyricsPage.OpenTextLayoutEvent, new RoutedEventHandler(OnOpenTextLayoutRequested));
+            AddHandler(ExperimentalPage.OpenSettingsEvent, new RoutedEventHandler(OnExperimentalSettingsRequested));
             RootNavigation.Navigated += OnNavigated;
 
             // 落地页：窗口每次打开都直接落在「显示与位置」。
@@ -477,8 +478,26 @@ namespace AFMediaBar.Views.Windows
         }
         private void UpdateContextHeader()
         {
-            // 设置仍由所有显示器共用，先隐藏仅切换环境上下文的显示器选择器。
-            RootNavigation.HeaderVisibility = Visibility.Collapsed;
+            var visible = Classes.Settings.SettingsManager.Current.Experiments.FloatingBar &&
+                _currentPage is SettingsPageKey.Components or SettingsPageKey.Appearance or SettingsPageKey.Lyrics or SettingsPageKey.Interaction;
+            ConfigurationTargetPanel.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+            RootNavigation.HeaderVisibility = visible ? Visibility.Visible : Visibility.Collapsed;
+            _updatingMonitorChoices = true;
+            try { ConfigurationTargetPicker.SelectedValue = _contexts.Current.Mode; }
+            finally { _updatingMonitorChoices = false; }
+        }
+        private void OnConfigurationTargetChanged(object sender, SelectionChangedEventArgs args)
+        {
+            if (!_updatingMonitorChoices && ConfigurationTargetPicker.SelectedValue is SettingsMode mode)
+                _contexts.SelectConfigurationTarget(mode);
+        }
+        private void OnExperimentalSettingsRequested(object sender, RoutedEventArgs args)
+        {
+            if (args.OriginalSource is not System.Windows.Controls.Button { Tag: SettingsPageKey page } button) return;
+            args.Handled = true;
+            if (Enum.TryParse<SettingsMode>(button.Uid, out var mode)) _contexts.SelectConfigurationTarget(mode);
+            if (button.CommandParameter is string group) NavigateToGroup(page, group);
+            else Navigate(SettingsPageProvider.PageTypes[page]);
         }
         private void OnEditingMonitorChanged(object sender, SelectionChangedEventArgs e)
         {

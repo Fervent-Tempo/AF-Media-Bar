@@ -129,7 +129,7 @@
                             Title="{DynamicResource Loc.DisplayModes.Rest.Row.DeviceButton.Title}">
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.RestOutputDeviceVisible, Mode=TwoWay}" />
                         </components:SettingsRow>
-                        <components:SettingsRow
+                        <components:SettingsRow Visibility="{Binding ViewModel.Layers.CanEditExperimentalAudio, Converter={StaticResource AfBooleanToVisibilityConverter}}"
                             Description="{DynamicResource Loc.Audio.Device.InputDescription}"
                             Icon="{ui:SymbolIcon Mic24}"
                             Title="{DynamicResource Loc.Common.InputDevice}">
@@ -187,7 +187,7 @@
                         <ui:CardExpander
                             Style="{StaticResource AfSettingsExpanderStyle}"
                             Icon="{ui:SymbolIcon ArrowSort24}"
-                            Visibility="{Binding ViewModel.Layout.IsHorizontalLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                            Visibility="{Binding ViewModel.Layout.CanConfigureBarLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
                                     <TextBlock
@@ -502,7 +502,7 @@
                             Description="{DynamicResource Loc.DisplayModes.Rest.Row.Layout.Description}"
                             Icon="{ui:SymbolIcon Grid24}"
                             Title="{DynamicResource Loc.DisplayModes.Rest.Row.Layout.Title}"
-                            Visibility="{Binding ViewModel.Layout.IsHorizontalLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                            Visibility="{Binding ViewModel.Layout.CanConfigureBarLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                             <ComboBox
                                 MinWidth="200"
                                 SelectedValue="{Binding ViewModel.Layout.ContentLayout, Mode=TwoWay}"
@@ -531,7 +531,7 @@
                                     Description="{DynamicResource Loc.DisplayModes.Rest.Row.Alignment.Description}"
                                     Icon="{ui:SymbolIcon TextAlignLeft24}"
                                     Title="{DynamicResource Loc.DisplayModes.Rest.Row.Alignment.Title}"
-                                    Visibility="{Binding ViewModel.Layout.IsHorizontalLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                                    Visibility="{Binding ViewModel.Layout.CanConfigureBarLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                                     <ComboBox
                                         MinWidth="200"
                                         SelectedValue="{Binding ViewModel.Layout.MediaTextAlignment, Mode=TwoWay}"
@@ -567,7 +567,7 @@
                                     </ComboBox>
                                 </components:SettingsRow>
                                 <components:SettingsRow
-                                    Visibility="{Binding ViewModel.Layers.IsHorizontalLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}"
+                                    Visibility="{Binding ViewModel.Layers.CanConfigureBarLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}"
                                     Description="{DynamicResource Loc.DisplayModes.Placement.Row.Arrangement.Description}"
                                     Icon="{ui:SymbolIcon ArrowMove24}"
                                     Title="{DynamicResource Loc.DisplayModes.Placement.Row.Arrangement.Title}">
@@ -772,7 +772,7 @@
                                     Title="{DynamicResource Loc.Common.OutputDevice}">
                                     <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverOutputDeviceVisible, Mode=TwoWay}" />
                                 </components:SettingsRow>
-                        <components:SettingsRow
+                        <components:SettingsRow Visibility="{Binding ViewModel.Layers.CanEditExperimentalAudio, Converter={StaticResource AfBooleanToVisibilityConverter}}"
                                     Icon="{ui:SymbolIcon Mic24}"
                                     IsNested="True"
                                     Title="{DynamicResource Loc.Common.InputDevice}">

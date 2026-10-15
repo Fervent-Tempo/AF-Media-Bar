@@ -2898,4 +2898,20 @@
   <data name="Lyrics.Sources.Order.Reset" xml:space="preserve">
     <value>還原預設順序</value>
   </data>
+  <data name="Common.Page.Experimental" xml:space="preserve"><value>實驗性功能</value></data>
+  <data name="Experimental.Warning" xml:space="preserve"><value>實驗性功能未經充分測試，如遇問題，請透過任意現有回饋管道回報。</value></data>
+  <data name="Experimental.Enable" xml:space="preserve"><value>啟用此實驗</value></data>
+  <data name="Experimental.Audio.Title" xml:space="preserve"><value>新版音訊控制</value></data>
+  <data name="Experimental.Audio.Description" xml:space="preserve"><value>新版選單、輸入裝置、應用程式裝置路由、黑名單與進階切換策略。</value></data>
+  <data name="Experimental.Audio.RoutesNotice" xml:space="preserve"><value>關閉實驗將恢復原版輸出裝置與音量介面，並保留實驗設定。已儲存至 Windows 的應用程式路由偏好不會自動清除。</value></data>
+  <data name="Experimental.Vertical.Title" xml:space="preserve"><value>直向工作列</value></data>
+  <data name="Experimental.Vertical.Description" xml:space="preserve"><value>在實際的左側或右側工作列中顯示直向媒體列。</value></data>
+  <data name="Experimental.Vertical.Shared" xml:space="preserve"><value>工作列橫向與直向共用同一份設定。此處修改也會影響橫向工作列。</value></data>
+  <data name="Experimental.Floating.Title" xml:space="preserve"><value>桌面浮動列</value></data>
+  <data name="Experimental.Floating.Description" xml:space="preserve"><value>獨立桌面小工具，支援橫向、直向及依顯示器儲存位置。啟用後可手動切換模式。</value></data>
+  <data name="Settings.Context.ConfigurationTarget" xml:space="preserve"><value>編輯設定</value></data>
+  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>工作列橫直共用設定，桌面懸浮使用獨立設定，均在既有設定頁面編輯。</value></data>
+  <data name="Experimental.OpenInteraction" xml:space="preserve"><value>前往互動設定</value></data>
+  <data name="Experimental.OpenContentLayout" xml:space="preserve"><value>前往內容與版面配置</value></data>
+  <data name="Experimental.OpenAppearance" xml:space="preserve"><value>前往外觀設定</value></data>
 </root>

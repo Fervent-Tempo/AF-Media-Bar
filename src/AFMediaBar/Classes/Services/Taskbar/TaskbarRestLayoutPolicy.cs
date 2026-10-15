@@ -162,6 +162,16 @@ public static class TaskbarRestLayoutPolicy
         return kept;
     }
 
+    /// <summary>编辑可见顺序时保留实验输入组件的原位置，不覆盖隐藏偏好。</summary>
+    public static IReadOnlyList<TaskbarRestComponent> KeepInputDeviceOrder(
+        IReadOnlyList<TaskbarRestComponent>? current, IReadOnlyList<TaskbarRestComponent>? requested)
+    {
+        var visible = new Queue<TaskbarRestComponent>(ResolveOrder(requested)
+            .Where(component => !FixedOrder.Contains(component) && component != TaskbarRestComponent.InputDevice));
+        return ResolveOrder(current).Where(component => !FixedOrder.Contains(component))
+            .Select(component => component == TaskbarRestComponent.InputDevice ? component : visible.Dequeue()).ToArray();
+    }
+
     /// <summary>静置层显隐判定所需的输入。 / Inputs the rest-layer visibility decision needs.</summary>
     /// <param name="MediaConnected">是否有已连接的 SMTC 来源。/ Whether a connected SMTC source exists.</param>
     /// <param name="IdleComponents">没有媒体时保留的组件；<see langword="null"/> 表示从未配置（用默认值）。/ Components kept without media; null means never configured (the default applies).</param>

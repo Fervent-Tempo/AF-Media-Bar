@@ -188,7 +188,7 @@ public sealed class SettingsOrganizationTests
     public void SevenMainPagesAndLegacyDestinationsResolveToActualGroups()
     {
         var pages = SettingsPageCatalog.ForMode(SettingsMode.Taskbar);
-        Assert.AreEqual(7, pages.Count(page => !page.IsFooter));
+        Assert.AreEqual(8, pages.Count(page => !page.IsFooter));
         Assert.AreEqual(2, pages.Count(page => page.IsFooter));
         Assert.AreEqual((SettingsPageKey.Appearance, "Common.Group.Fonts"),
             SettingsPageCatalog.ResolveDestination(SettingsPageKey.ApplicationAppearance, "Common.Group.Fonts"));

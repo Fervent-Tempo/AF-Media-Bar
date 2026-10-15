@@ -2898,4 +2898,20 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Lyrics.Sources.Order.Reset" xml:space="preserve">
     <value>Restore default order</value>
   </data>
+  <data name="Common.Page.Experimental" xml:space="preserve"><value>Experimental features</value></data>
+  <data name="Experimental.Warning" xml:space="preserve"><value>Experimental features have not been fully tested. Please report problems through any existing feedback channel.</value></data>
+  <data name="Experimental.Enable" xml:space="preserve"><value>Enable this experiment</value></data>
+  <data name="Experimental.Audio.Title" xml:space="preserve"><value>New audio controls</value></data>
+  <data name="Experimental.Audio.Description" xml:space="preserve"><value>New menus, input devices, application routing, device exclusions and advanced switching.</value></data>
+  <data name="Experimental.Audio.RoutesNotice" xml:space="preserve"><value>Disabling restores the original output and volume controls and keeps experimental preferences. Application routes saved in Windows are not cleared automatically.</value></data>
+  <data name="Experimental.Vertical.Title" xml:space="preserve"><value>Vertical taskbar</value></data>
+  <data name="Experimental.Vertical.Description" xml:space="preserve"><value>Show a vertical media bar in a taskbar on the left or right side.</value></data>
+  <data name="Experimental.Vertical.Shared" xml:space="preserve"><value>Horizontal and vertical taskbars share one configuration. Changes here also affect horizontal taskbars.</value></data>
+  <data name="Experimental.Floating.Title" xml:space="preserve"><value>Desktop floating bar</value></data>
+  <data name="Experimental.Floating.Description" xml:space="preserve"><value>An independent desktop widget with horizontal and vertical layouts and positions saved per display. Enable to reveal the mode switch.</value></data>
+  <data name="Settings.Context.ConfigurationTarget" xml:space="preserve"><value>Editing configuration</value></data>
+  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>Taskbar orientations share one configuration. Desktop floating uses a separate configuration, edited on the same settings pages.</value></data>
+  <data name="Experimental.OpenInteraction" xml:space="preserve"><value>Open interaction settings</value></data>
+  <data name="Experimental.OpenContentLayout" xml:space="preserve"><value>Open content and layout</value></data>
+  <data name="Experimental.OpenAppearance" xml:space="preserve"><value>Open appearance settings</value></data>
 </root>

@@ -280,6 +280,8 @@ namespace AFMediaBar
                 services.AddScoped<ContentLayoutViewModel>();
 
                 services.AddScoped<InteractionPage>();
+                services.AddScoped<ExperimentalPage>();
+                services.AddScoped<ExperimentalViewModel>();
                 services.AddScoped<InteractionViewModel>();
 
                 services.AddScoped<LyricsPage>();

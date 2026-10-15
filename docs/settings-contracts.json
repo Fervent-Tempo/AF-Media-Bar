@@ -3,6 +3,166 @@
   "latestRelease": "v1.4.0",
   "settingsSchemaVersion": 2,
   "settings": {
+    "experiments": {
+      "floatingBar": "unreleased",
+      "newAudioControl": "unreleased",
+      "$release": "unreleased",
+      "verticalTaskbar": "unreleased"
+    },
+    "floatingBar": {
+      "$release": "unreleased",
+      "profile": {
+        "taskbarBarCrossAxisOffsetDip": "unreleased",
+        "$release": "unreleased",
+        "quickLaunch": {
+          "$release": "unreleased",
+          "entries": {
+            "$release": "unreleased",
+            "$items": {
+              "displayName": "unreleased",
+              "id": "unreleased",
+              "kind": "unreleased",
+              "sourceId": "unreleased",
+              "target": "unreleased"
+            }
+          }
+        },
+        "layoutLengthScalePercent": "unreleased",
+        "taskbarBarManualPadding": "unreleased",
+        "taskbarBarPositionLocked": "unreleased",
+        "appearance": {
+          "$release": "unreleased",
+          "accentColor": "unreleased",
+          "accentColorMode": "unreleased",
+          "applicationThemeMode": "unreleased",
+          "backdropMode": "unreleased",
+          "backdropTintOpacityPercent": "unreleased",
+          "cjkFont": "unreleased",
+          "cjkFontFamily": "unreleased",
+          "enhancedReadability": "unreleased",
+          "fontWeight": "unreleased",
+          "idleNoteColor": "unreleased",
+          "latinFont": "unreleased",
+          "latinFontFamily": "unreleased",
+          "playerForegroundMode": "unreleased",
+          "showTaskbarBackgroundWhenIdle": "unreleased",
+          "showTaskbarBackgroundTint": "unreleased",
+          "showTaskbarBackgroundBorder": "unreleased",
+          "showTaskbarBackgroundTexture": "unreleased",
+          "taskbarBackgroundMaterial": "unreleased",
+          "taskbarBackgroundOpacityPercent": "unreleased",
+          "taskbarFrostedStyle": "unreleased"
+        },
+        "interaction": {
+          "$release": "unreleased",
+          "artworkClickAction": "unreleased",
+          "artworkHoverMode": "unreleased",
+          "chordWheelAction": "unreleased",
+          "modifier": "unreleased",
+          "primaryWheelAction": "unreleased",
+          "showWheelTooltips": "unreleased",
+          "textClickAction": "unreleased",
+          "trayChordWheelAction": "unreleased",
+          "trayClickAction": "unreleased",
+          "trayPrimaryWheelAction": "unreleased",
+          "outputDeviceClickTarget": "unreleased",
+          "outputDeviceWheelTarget": "unreleased",
+          "inputDeviceClickTarget": "unreleased",
+          "inputDeviceWheelTarget": "unreleased"
+        },
+        "lyricsLineGapPercent": "unreleased",
+        "taskbarSurface": {
+          "$release": "unreleased",
+          "backgroundOpacityPercent": "unreleased",
+          "cornerRadiusDip": "unreleased",
+          "style": "unreleased"
+        },
+        "lyricsTextAlignment": "unreleased",
+        "twoLineLyricsEnabled": "unreleased",
+        "performanceComponent": {
+          "$release": "unreleased",
+          "displayMode": "unreleased",
+          "metricOrder": "unreleased",
+          "metrics": "unreleased",
+          "openTaskManagerOnClick": "unreleased",
+          "refreshIntervalMilliseconds": "unreleased"
+        },
+        "spectrumComponent": {
+          "$release": "unreleased",
+          "bandCount": "unreleased",
+          "captureSource": "unreleased",
+          "contentHeightDip": "unreleased",
+          "refreshRateHz": "unreleased",
+          "sensitivityPercent": "unreleased",
+          "style": "unreleased"
+        },
+        "position": "unreleased",
+        "lyricsChineseConversion": "unreleased",
+        "layoutThicknessScalePercent": "unreleased",
+        "lyricsFixedWidthEnabled": "unreleased",
+        "lyricsSecondaryLine": {
+          "$release": "unreleased",
+          "order": "unreleased"
+        },
+        "lyricsFixedWidthDip": "unreleased",
+        "lyricsEnabled": "unreleased",
+        "lyricsCharacterSpacingPercent": "unreleased",
+        "lyricsUnsungOpacityPercent": "unreleased",
+        "lyricsSyllableHighlightEnabled": "unreleased",
+        "taskbarExperience": {
+          "$release": "unreleased",
+          "arrangement": "unreleased",
+          "artworkProgressVisible": "unreleased",
+          "artworkVisible": "unreleased",
+          "componentSpacingDip": "unreleased",
+          "contentLayout": "unreleased",
+          "density": "unreleased",
+          "fixedLengthDip": "unreleased",
+          "fullLayerEnabled": "unreleased",
+          "fullPanel": {
+            "$release": "unreleased",
+            "audioControlsVisible": "unreleased",
+            "mediaControlsVisible": "unreleased",
+            "mediaInfoVisible": "unreleased",
+            "performanceVisible": "unreleased"
+          },
+          "fullPanelEntryVisible": "unreleased",
+          "hoverButtonSpacingDip": "unreleased",
+          "hoverControls": {
+            "$release": "unreleased",
+            "audioControlVisible": "unreleased",
+            "outputDeviceVisible": "unreleased",
+            "playPauseVisible": "unreleased",
+            "previousNextVisible": "unreleased",
+            "progressVisible": "unreleased",
+            "inputDeviceVisible": "unreleased"
+          },
+          "hoverLayerEnabled": "unreleased",
+          "idleComponents": "unreleased",
+          "lengthMode": "unreleased",
+          "mediaFontSizePercent": "unreleased",
+          "mediaTextAlignment": "unreleased",
+          "outputDeviceVisible": "unreleased",
+          "performanceVisible": "unreleased",
+          "restComponentOrder": "unreleased",
+          "restProgressVisible": "unreleased",
+          "spectrumVisible": "unreleased",
+          "volumeVisible": "unreleased",
+          "inputDeviceVisible": "unreleased"
+        }
+      },
+      "orientation": "unreleased",
+      "layer": "unreleased",
+      "monitorDeviceIds": "unreleased",
+      "positions": {
+        "$items": {
+          "centerXDip": "unreleased",
+          "monitorDeviceId": "unreleased",
+          "centerYDip": "unreleased"
+        },
+        "$release": "unreleased"
+      }
+    },
     "allowBrowserAndVideoLyrics": "v1.3.0",
     "appearance": {
       "$release": "v1.2.0",
@@ -216,6 +376,37 @@
     }
   },
   "enums": {
+    "FloatingBarLayer": {
+        "paths": [
+          "settings.floatingBar.layer"
+        ],
+        "members": {
+          "Desktop": {
+            "value": 0,
+            "release": "unreleased"
+          },
+          "Topmost": {
+            "value": 1,
+            "release": "unreleased"
+          }
+        }
+      },
+      "LayoutOrientation": {
+        "paths": [
+          "settings.floatingBar.orientation"
+        ],
+        "members": {
+          "Horizontal": {
+            "value": 0,
+            "release": "unreleased"
+          },
+          "Vertical": {
+            "value": 1,
+            "release": "unreleased"
+          }
+        }
+      },
+
     "LyricsSourceRule": {
       "paths": ["settings.lyricsSource.rule"],
       "members": {
@@ -559,7 +750,8 @@
       "paths": ["settings.windowMode"],
       "members": {
         "Taskbar": {"value": 0, "release": "v1.2.0"},
-        "DynamicIsland": {"value": 1, "release": "v1.2.0"}
+        "DynamicIsland": {"value": 1, "release": "v1.2.0"},
+        "FloatingBar": {"value": 2, "release": "unreleased"}
       }
     },
     "PerformanceDisplayMode": {
@@ -760,7 +952,7 @@
       "id": "retained-mode",
       "prefixes": ["settings.dynamicIsland"],
       "paths": ["settings.windowMode"],
-      "text": "当前只运行任务栏，WindowMode归一化为Taskbar；保留灵动岛字段和表面不等于该模式已实现。"
+      "text": "当前批次仅运行任务栏；灵动岛和预留悬浮标识归一化为Taskbar，独立悬浮宿主留在下一批。横竖任务栏共享原配置，悬浮配置首次复制后独立保存。"
     },
     {
       "id": "retained-fields",

@@ -2898,4 +2898,20 @@
   <data name="Lyrics.Sources.Order.Reset" xml:space="preserve">
     <value>恢复默认顺序</value>
   </data>
+  <data name="Common.Page.Experimental" xml:space="preserve"><value>实验性功能</value></data>
+  <data name="Experimental.Warning" xml:space="preserve"><value>实验性功能未经充分测试，如遇问题，请通过任意现有反馈渠道反馈。</value></data>
+  <data name="Experimental.Enable" xml:space="preserve"><value>启用此实验</value></data>
+  <data name="Experimental.Audio.Title" xml:space="preserve"><value>新版音频控制</value></data>
+  <data name="Experimental.Audio.Description" xml:space="preserve"><value>新版菜单、输入设备、应用设备路由、黑名单与高级切换策略。</value></data>
+  <data name="Experimental.Audio.RoutesNotice" xml:space="preserve"><value>关闭实验将恢复原版输出设备与音量界面，并保留实验配置。已保存到 Windows 的应用路由偏好不会自动清除。</value></data>
+  <data name="Experimental.Vertical.Title" xml:space="preserve"><value>竖向任务栏</value></data>
+  <data name="Experimental.Vertical.Description" xml:space="preserve"><value>在真实的左侧或右侧任务栏中显示竖向媒体栏。</value></data>
+  <data name="Experimental.Vertical.Shared" xml:space="preserve"><value>任务栏横向与竖向共享同一份配置。此处修改也会影响横向任务栏。</value></data>
+  <data name="Experimental.Floating.Title" xml:space="preserve"><value>桌面悬浮条</value></data>
+  <data name="Experimental.Floating.Description" xml:space="preserve"><value>独立桌面小工具，支持横向、竖向和按显示器保存位置。启用后可手动切换模式。</value></data>
+  <data name="Settings.Context.ConfigurationTarget" xml:space="preserve"><value>编辑配置</value></data>
+  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>任务栏横竖共享配置，桌面悬浮使用独立配置，均在已有设置页面编辑。</value></data>
+  <data name="Experimental.OpenInteraction" xml:space="preserve"><value>前往交互设置</value></data>
+  <data name="Experimental.OpenContentLayout" xml:space="preserve"><value>前往内容与布局</value></data>
+  <data name="Experimental.OpenAppearance" xml:space="preserve"><value>前往外观设置</value></data>
 </root>

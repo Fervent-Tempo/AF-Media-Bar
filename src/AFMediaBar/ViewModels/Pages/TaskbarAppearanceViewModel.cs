@@ -95,6 +95,8 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
     }
     /// <summary>Whether horizontal-only ordering and spacing controls are meaningful for this environment.</summary>
     public bool IsHorizontalLayout => _configuration.Context.Orientation != AFMediaBar.Classes.Models.Layout.LayoutOrientation.Vertical;
+    public bool CanConfigureBarLayout => _configuration.Context.Mode is AFMediaBar.Classes.Models.Settings.SettingsMode.Taskbar
+        or AFMediaBar.Classes.Models.Settings.SettingsMode.FloatingBar;
 
     /// <summary>是否启用当前任务栏的背景层。</summary>
     public bool UseFrostedTaskbarBackground
@@ -209,7 +211,8 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
     }
 
     public bool UsesFixedTaskbarLength => !FollowMediaTextLength;
-    private bool HasFixedTaskbarLengthRange => _taskbarLengthConstraints.HasAvailableRange &&
+    private bool HasFixedTaskbarLengthRange => _configuration.Target == BarConfigurationTarget.Taskbar &&
+        _taskbarLengthConstraints.HasAvailableRange &&
         Math.Ceiling(_taskbarLengthConstraints.MinimumLengthDip) <= Math.Floor(_taskbarLengthConstraints.MaximumLengthDip);
     public bool CanEditFixedTaskbarLength => UsesFixedTaskbarLength && HasFixedTaskbarLengthRange;
     public double FixedTaskbarLengthMinimum => HasFixedTaskbarLengthRange ? Math.Ceiling(_taskbarLengthConstraints.MinimumLengthDip) : 0;
@@ -290,7 +293,9 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
 
     private void RefreshRestOrderEntries()
     {
-        var order = TaskbarRestLayoutPolicy.ResolveOrder(_configuration.Current.TaskbarExperience.RestComponentOrder);
+        var order = TaskbarRestLayoutPolicy.ResolveOrder(_configuration.Current.TaskbarExperience.RestComponentOrder)
+            .Where(component => component != TaskbarRestComponent.InputDevice ||
+                SettingsManager.Current.Experiments.NewAudioControl).ToArray();
         if (RestOrderEntries.Select(entry => entry.Component).SequenceEqual(order))
         {
             foreach (var entry in RestOrderEntries)
@@ -330,6 +335,8 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
     private void SaveRestComponentOrder()
     {
         var ordered = RestOrderEntries.Where(entry => entry.CanMove).Select(entry => entry.Component).ToArray();
+        if (!SettingsManager.Current.Experiments.NewAudioControl)
+            ordered = TaskbarRestLayoutPolicy.KeepInputDeviceOrder(_configuration.Current.TaskbarExperience.RestComponentOrder, ordered).ToArray();
         UpdateTaskbarExperience(_configuration.Current.TaskbarExperience with
         {
             RestComponentOrder = ordered.SequenceEqual(TaskbarRestLayoutPolicy.DefaultTailOrder) ? null : ordered
@@ -352,7 +359,7 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>Restores only taskbar appearance, retaining application theme and interface fonts.</summary>
-    public void ResetAppearance() { if (!_disposed && _configuration.IsActive) SettingsManager.ResetTaskbarAppearance(); }
+    public void ResetAppearance() { if (!_disposed && _configuration.IsActive) _configuration.Reset(SettingsResetScope.Appearance); }
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args)
     {
         if (_disposed || !_configuration.IsActive) return;

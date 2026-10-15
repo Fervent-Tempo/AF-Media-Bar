@@ -2936,4 +2936,20 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   <data name="Lyrics.Sources.Order.Reset" xml:space="preserve">
     <value>Khôi phục thứ tự mặc định</value>
   </data>
+  <data name="Common.Page.Experimental" xml:space="preserve"><value>Tính năng thử nghiệm</value></data>
+  <data name="Experimental.Warning" xml:space="preserve"><value>Các tính năng thử nghiệm chưa được kiểm thử đầy đủ. Vui lòng báo lỗi qua bất kỳ kênh phản hồi hiện có.</value></data>
+  <data name="Experimental.Enable" xml:space="preserve"><value>Bật tính năng thử nghiệm này</value></data>
+  <data name="Experimental.Audio.Title" xml:space="preserve"><value>Điều khiển âm thanh mới</value></data>
+  <data name="Experimental.Audio.Description" xml:space="preserve"><value>Menu mới, thiết bị đầu vào, định tuyến ứng dụng, danh sách loại trừ và chuyển đổi nâng cao.</value></data>
+  <data name="Experimental.Audio.RoutesNotice" xml:space="preserve"><value>Tắt sẽ khôi phục giao diện đầu ra và âm lượng cũ, đồng thời giữ cấu hình thử nghiệm. Định tuyến ứng dụng đã lưu trong Windows không tự động bị xóa.</value></data>
+  <data name="Experimental.Vertical.Title" xml:space="preserve"><value>Thanh tác vụ dọc</value></data>
+  <data name="Experimental.Vertical.Description" xml:space="preserve"><value>Hiển thị thanh phương tiện dọc trên thanh tác vụ ở cạnh trái hoặc phải.</value></data>
+  <data name="Experimental.Vertical.Shared" xml:space="preserve"><value>Thanh tác vụ ngang và dọc dùng chung cấu hình. Thay đổi tại đây cũng ảnh hưởng thanh tác vụ ngang.</value></data>
+  <data name="Experimental.Floating.Title" xml:space="preserve"><value>Thanh nổi trên màn hình</value></data>
+  <data name="Experimental.Floating.Description" xml:space="preserve"><value>Tiện ích màn hình độc lập, hỗ trợ bố cục ngang, dọc và lưu vị trí theo màn hình. Bật để hiện lựa chọn chế độ.</value></data>
+  <data name="Settings.Context.ConfigurationTarget" xml:space="preserve"><value>Cấu hình đang chỉnh sửa</value></data>
+  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>Các hướng thanh tác vụ dùng chung một cấu hình. Thanh nổi có cấu hình riêng, được chỉnh sửa trên cùng các trang cài đặt.</value></data>
+  <data name="Experimental.OpenInteraction" xml:space="preserve"><value>Mở cài đặt tương tác</value></data>
+  <data name="Experimental.OpenContentLayout" xml:space="preserve"><value>Mở nội dung và bố cục</value></data>
+  <data name="Experimental.OpenAppearance" xml:space="preserve"><value>Mở cài đặt giao diện</value></data>
 </root>

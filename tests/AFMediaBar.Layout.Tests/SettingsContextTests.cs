@@ -4,13 +4,39 @@ using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Models.Settings;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Settings;
+using AFMediaBar.Classes.Settings;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace AFMediaBar.Layout.Tests;
 
 [TestClass]
+[DoNotParallelize]
 public sealed class SettingsContextTests
 {
+    [TestMethod]
+    public void ConfigurationTargetDoesNotSwitchRuntimeAndClosingExperimentReturnsToTaskbar()
+    {
+        SettingsMotionTests.RunSta(() =>
+        {
+            var previous = SettingsManager.Current;
+            try
+            {
+                SettingsManager.Current = new AppSettings();
+                using var service = new SettingsContextService(new Reader());
+                service.SelectConfigurationTarget(SettingsMode.FloatingBar);
+                Assert.AreEqual(SettingsMode.Taskbar, service.Current.Mode);
+                SettingsManager.Current.Experiments = new() { FloatingBar = true };
+                service.SelectConfigurationTarget(SettingsMode.FloatingBar);
+                Complete(service.RefreshAsync());
+                Assert.AreEqual(SettingsMode.FloatingBar, service.Current.Mode);
+                Assert.AreEqual(WindowMode.Taskbar, SettingsManager.Current.WindowMode);
+                SettingsManager.Current.Experiments = new();
+                Assert.AreEqual(SettingsMode.Taskbar, service.Current.Mode);
+                Assert.AreEqual(WindowMode.Taskbar, SettingsManager.Current.WindowMode);
+            }
+            finally { SettingsManager.Current = previous; }
+        });
+    }
     [TestMethod]
     public void UnsupportedModesCannotExposeTaskbarPages()
     {
@@ -25,13 +51,13 @@ public sealed class SettingsContextTests
     }
 
     [TestMethod]
-    public void InactivePageContextCancelsItsWorkWithoutClaimingIndependentStorage()
+    public void InactivePageContextCancelsItsWorkWithIndependentHostStorage()
     {
         using var page = new SettingsPageContext();
         page.Initialize(new(SettingsMode.Taskbar, "second", LayoutOrientation.Vertical, true, true));
         var configuration = new LegacySettingsConfiguration(page);
         var token = configuration.CancellationToken;
-        Assert.IsFalse(configuration.HasIndependentProfiles);
+        Assert.IsTrue(configuration.HasIndependentProfiles);
         page.Deactivate();
         Assert.IsTrue(token.IsCancellationRequested);
         Assert.IsFalse(configuration.IsActive);

@@ -1,33 +1,42 @@
-// Adapts existing SettingsManager values to a page scope. Horizontal and vertical contexts still share the legacy persisted data.
+// 连接设置编辑上下文与持久化配置；任务栏横竖共用原字段，悬浮配置独立保存。
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models.Settings;
 using AFMediaBar.Classes.Settings;
 
 namespace AFMediaBar.Classes.Services.Settings;
 
-/// <summary>Phase-one access boundary, intentionally without schema or persisted mode-profile changes.</summary>
+/// <summary>按宿主目标读写设置，非活动页面不能提交旧编辑结果。</summary>
 public sealed class LegacySettingsConfiguration(SettingsPageContext context) : ISettingsConfiguration
 {
-    /// <inheritdoc />
     public SettingsContext Context => context.Snapshot;
-    /// <inheritdoc />
-    public bool IsActive => context.IsActive;
-    /// <inheritdoc />
+    public bool IsActive => context.IsActive && (Context.Mode != SettingsMode.FloatingBar ||
+        SettingsManager.Current.Experiments.FloatingBar);
     public CancellationToken CancellationToken => context.CancellationToken;
-    /// <inheritdoc />
-    public AppSettings Current => SettingsManager.Current;
-    /// <inheritdoc />
-    public bool HasIndependentProfiles => false;
-    /// <inheritdoc />
-    public void SetTaskbarExperience(TaskbarExperienceSettings settings) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetTaskbarExperienceSettings(settings.Normalize()); }
-    /// <inheritdoc />
-    public void SetAppearance(AppearanceSettings settings) { if (IsActive) SettingsManager.SetAppearanceSettings(settings.Normalize()); }
-    /// <inheritdoc />
-    public void SetTaskbarAppearance(AppearanceSettings settings)
+    public BarConfigurationTarget Target => Context.Mode == SettingsMode.FloatingBar ? BarConfigurationTarget.FloatingBar : BarConfigurationTarget.Taskbar;
+    public AppSettings Current => Target == BarConfigurationTarget.Taskbar ? SettingsManager.Current
+        : (SettingsManager.Current.FloatingBar.Profile ?? BarDisplaySettings.Capture(SettingsManager.Current)).ApplyTo(SettingsManager.Current);
+    public bool HasIndependentProfiles => true;
+    public event EventHandler? Activated { add => context.Activated += value; remove => context.Activated -= value; }
+
+    private void Update(Action<AppSettings> update)
     {
-        if (!IsActive || Context.Mode != SettingsMode.Taskbar) return;
-        var current = Current.Appearance;
-        SettingsManager.SetAppearanceSettings(current with
+        if (!IsActive || Context.Mode is not (SettingsMode.Taskbar or SettingsMode.FloatingBar)) return;
+        var current = Current;
+        update(current);
+        if (Target == BarConfigurationTarget.FloatingBar)
+            SettingsManager.Current.FloatingBar = SettingsManager.Current.FloatingBar with { Profile = BarDisplaySettings.Capture(current) };
+    }
+
+    public void SetTaskbarExperience(TaskbarExperienceSettings settings) => Update(current => current.TaskbarExperience = settings.Normalize());
+    public void SetAppearance(AppearanceSettings settings)
+    {
+        if (!IsActive) return;
+        SettingsManager.SetAppearanceSettings(Target == BarConfigurationTarget.FloatingBar
+            ? BarDisplaySettings.MergeAppearance(settings.Normalize(), SettingsManager.Current.Appearance) : settings.Normalize());
+    }
+    public void SetTaskbarAppearance(AppearanceSettings settings) => Update(current =>
+    {
+        current.Appearance = current.Appearance with
         {
             PlayerForegroundMode = settings.PlayerForegroundMode,
             TaskbarBackgroundMaterial = settings.TaskbarBackgroundMaterial,
@@ -37,84 +46,134 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context) : I
             ShowTaskbarBackgroundBorder = settings.ShowTaskbarBackgroundBorder,
             ShowTaskbarBackgroundTexture = settings.ShowTaskbarBackgroundTexture,
             TaskbarFrostedStyle = settings.TaskbarFrostedStyle,
-            IdleNoteColor = settings.IdleNoteColor
-        });
-    }
-    /// <inheritdoc />
-    public void SetSpectrum(SpectrumComponentSettings settings) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetSpectrumComponentSettings(settings.Normalize()); }
-    /// <inheritdoc />
-    public void SetPerformance(PerformanceComponentSettings settings) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetPerformanceComponentSettings(settings.Normalize()); }
-    /// <inheritdoc />
-    public event EventHandler? Activated { add => context.Activated += value; remove => context.Activated -= value; }
-    /// <inheritdoc />
-    public void Reset(SettingsResetScope scope)
+            IdleNoteColor = settings.IdleNoteColor,
+        };
+    });
+    public void SetSpectrum(SpectrumComponentSettings settings) => Update(current => current.SpectrumComponent = settings.Normalize());
+    public void SetPerformance(PerformanceComponentSettings settings) => Update(current => current.PerformanceComponent = settings.Normalize());
+    public void SetExperiments(ExperimentalSettings settings)
     {
-        if (!IsActive || Context.Mode != SettingsMode.Taskbar) return;
-        switch (scope)
-        {
-            case SettingsResetScope.Lyrics: SettingsManager.ResetLyrics(); break;
-            case SettingsResetScope.Interaction: SettingsManager.ResetInteraction(); break;
-            case SettingsResetScope.DisplayModes: SettingsManager.ResetDisplayModes(); break;
-            case SettingsResetScope.Components: SettingsManager.ResetComponents(); break;
-            default: throw new ArgumentOutOfRangeException(nameof(scope));
-        }
+        if (!context.IsActive) return;
+        if (settings.FloatingBar && SettingsManager.Current.FloatingBar.Profile is null)
+            SettingsManager.Current.FloatingBar = SettingsManager.Current.FloatingBar with { Profile = BarDisplaySettings.Capture(SettingsManager.Current) };
+        SettingsManager.Current.Experiments = settings;
     }
-    /// <inheritdoc />
+    public void SetFloatingBar(FloatingBarSettings settings) { if (IsActive) SettingsManager.Current.FloatingBar = settings; }
     public void SetTaskbarTargets(IReadOnlyList<string> deviceIds)
     {
-        if (!IsActive || Context.Mode != SettingsMode.Taskbar) return;
-        if (!(Current.TaskbarTargetMonitorDeviceIds ?? []).SequenceEqual(deviceIds, StringComparer.OrdinalIgnoreCase))
-            Current.TaskbarTargetMonitorDeviceIds = deviceIds.ToList();
-        Current.TaskbarTargetMonitorDeviceId = null;
+        if (!IsActive) return;
+        if (Target == BarConfigurationTarget.FloatingBar)
+            SetFloatingBar(SettingsManager.Current.FloatingBar with { MonitorDeviceIds = deviceIds.ToArray() });
+        else
+        {
+            SettingsManager.Current.TaskbarTargetMonitorDeviceIds = deviceIds.ToArray();
+            SettingsManager.Current.TaskbarTargetMonitorDeviceId = null;
+        }
     }
-    /// <inheritdoc />
     public void SetTaskbarPlacement(bool? locked = null, bool? avoidIcons = null, double? crossAxisOffsetDip = null, bool reset = false, TaskbarBarPosition? alignment = null)
     {
-        if (!IsActive || Context.Mode != SettingsMode.Taskbar) return;
-        if (alignment is { } position && Enum.IsDefined(position) && Current.Position != position)
+        Update(current =>
         {
-            Current.TaskbarBarManualPadding = 0;
-            Current.TaskbarExperience = Current.TaskbarExperience with { Arrangement = null };
-            Current.Position = position;
-        }
-        if (locked is { } lockValue) Current.TaskbarBarPositionLocked = lockValue;
-        if (avoidIcons is { } avoidValue) Current.TaskbarBarAvoidIcons = avoidValue;
-        if (crossAxisOffsetDip is { } offset) Current.TaskbarBarCrossAxisOffsetDip = offset;
-        if (reset) { Current.Position = TaskbarBarPosition.Start; Current.TaskbarBarManualPadding = 0; Current.TaskbarBarCrossAxisOffsetDip = 0; }
-        SettingsManager.RaiseLayoutSettingsChanged(Current.WindowMode, Current.LayoutOrientationMode);
+            if (alignment is { } position && Enum.IsDefined(position) && current.Position != position)
+            {
+                current.TaskbarBarManualPadding = 0;
+                current.TaskbarExperience = current.TaskbarExperience with { Arrangement = null };
+                current.Position = position;
+            }
+            if (locked is { } lockValue) current.TaskbarBarPositionLocked = lockValue;
+            if (avoidIcons is { } avoidValue) current.TaskbarBarAvoidIcons = avoidValue;
+            if (crossAxisOffsetDip is { } offset) current.TaskbarBarCrossAxisOffsetDip = offset;
+            if (reset) { current.Position = TaskbarBarPosition.Start; current.TaskbarBarManualPadding = 0; current.TaskbarBarCrossAxisOffsetDip = 0; }
+        });
+        if (IsActive && Target == BarConfigurationTarget.Taskbar)
+            SettingsManager.RaiseLayoutSettingsChanged(SettingsManager.Current.WindowMode, Current.LayoutOrientationMode);
     }
-    /// <inheritdoc />
-    public void SetLyricsEnabled(bool enabled) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetLyricsEnabled(enabled); }
-    /// <inheritdoc />
-    public void SetAllowBrowserAndVideoLyrics(bool enabled) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetAllowBrowserAndVideoLyrics(enabled); }
-    /// <inheritdoc />
-    public void SetTwoLineLyricsEnabled(bool enabled) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetTwoLineLyricsEnabled(enabled); }
-    /// <inheritdoc />
-    public void SetLyricsSecondaryLineSettings(LyricsSecondaryLineSettings settings) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetLyricsSecondaryLineSettings(settings); }
-    /// <inheritdoc />
-    public void SetLyricsTextAlignment(LyricsTextAlignment alignment) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetLyricsTextAlignment(alignment); }
-    /// <inheritdoc />
-    public void SetLyricsSyllableHighlightEnabled(bool enabled) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetLyricsSyllableHighlightEnabled(enabled); }
-    /// <inheritdoc />
-    public void SetLyricsChineseConversion(LyricsChineseConversionMode mode) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetLyricsChineseConversion(mode); }
-    /// <inheritdoc />
-    public void SetLyricsUnsungOpacityPercent(int percent) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetLyricsUnsungOpacityPercent(percent); }
-    /// <inheritdoc />
-    public void SetLyricsCharacterSpacingPercent(int percent) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetLyricsCharacterSpacingPercent(percent); }
-    /// <inheritdoc />
-    public void SetLyricsLineGapPercent(int percent) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetLyricsLineGapPercent(percent); }
-    /// <inheritdoc />
-    public void SetLyricsFixedWidthEnabled(bool enabled) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetLyricsFixedWidthEnabled(enabled); }
-    /// <inheritdoc />
-    public void SetLyricsFixedWidthDip(int dip) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetLyricsFixedWidthDip(dip); }
-    /// <inheritdoc />
-    public void SetLyricsInfoLineFilterEnabled(bool enabled) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetLyricsInfoLineFilterEnabled(enabled); }
-    /// <inheritdoc />
-    public void SetLyricsSourceSettings(LyricsSourceSettings settings) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetLyricsSourceSettings(settings); }
-    /// <inheritdoc />
-    public void SetLyricsArtistSeparators(string separators) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetLyricsArtistSeparators(separators); }
-    /// <inheritdoc />
-    public void SetInteractionSettings(GlobalInteractionSettings settings) { if (IsActive && Context.Mode == SettingsMode.Taskbar) SettingsManager.SetInteractionSettings(settings); }
-    /// <inheritdoc />
-    public void SetTrackChangeNotificationSettings(TrackChangeNotificationSettings settings) { if (IsActive) SettingsManager.SetTrackChangeNotificationSettings(settings); }
+    public void SetLyricsEnabled(bool value) => Update(current => current.LyricsEnabled = value);
+    public void SetTwoLineLyricsEnabled(bool value) => Update(current => current.TwoLineLyricsEnabled = value);
+    public void SetLyricsSecondaryLineSettings(LyricsSecondaryLineSettings value) => Update(current => current.LyricsSecondaryLine = value);
+    public void SetLyricsTextAlignment(LyricsTextAlignment value) => Update(current => current.LyricsTextAlignment = value);
+    public void SetLyricsSyllableHighlightEnabled(bool value) => Update(current => current.LyricsSyllableHighlightEnabled = value);
+    public void SetLyricsChineseConversion(LyricsChineseConversionMode value) => Update(current => current.LyricsChineseConversion = value);
+    public void SetLyricsUnsungOpacityPercent(int value) => Update(current => current.LyricsUnsungOpacityPercent = value);
+    public void SetLyricsCharacterSpacingPercent(int value) => Update(current => current.LyricsCharacterSpacingPercent = value);
+    public void SetLyricsLineGapPercent(int value) => Update(current => current.LyricsLineGapPercent = value);
+    public void SetLyricsFixedWidthEnabled(bool value) => Update(current => current.LyricsFixedWidthEnabled = value);
+    public void SetLyricsFixedWidthDip(int value) => Update(current => current.LyricsFixedWidthDip = value);
+    public void SetInteractionSettings(GlobalInteractionSettings value)
+    {
+        if (!IsActive) return;
+        if (Target == BarConfigurationTarget.FloatingBar)
+            SettingsManager.Current.Interaction = BarDisplaySettings.MergeInteraction(value, SettingsManager.Current.Interaction);
+        Update(current => current.Interaction = value);
+    }
+    public void SetAllowBrowserAndVideoLyrics(bool value) { if (IsActive) SettingsManager.Current.AllowBrowserAndVideoLyrics = value; }
+    public void SetLyricsInfoLineFilterEnabled(bool value) { if (IsActive) SettingsManager.Current.LyricsInfoLineFilterEnabled = value; }
+    public void SetLyricsSourceSettings(LyricsSourceSettings value) { if (IsActive) SettingsManager.Current.LyricsSource = value; }
+    public void SetLyricsArtistSeparators(string value) { if (IsActive) SettingsManager.Current.LyricsArtistSeparators = value; }
+    public void SetTrackChangeNotificationSettings(TrackChangeNotificationSettings value) { if (IsActive) SettingsManager.Current.TrackChangeNotification = value; }
+    public void SetAudioDeviceSettings(AudioDeviceSettings value) { if (IsActive) SettingsManager.Current.AudioDevices = value; }
+
+    public void Reset(SettingsResetScope scope)
+    {
+        if (!IsActive) return;
+        if (Target == BarConfigurationTarget.Taskbar)
+        {
+            switch (scope)
+            {
+                case SettingsResetScope.Lyrics: SettingsManager.ResetLyrics(); break;
+                case SettingsResetScope.Interaction: SettingsManager.ResetInteraction(); break;
+                case SettingsResetScope.DisplayModes: SettingsManager.ResetDisplayModes(); break;
+                case SettingsResetScope.Components: SettingsManager.ResetComponents(); break;
+                case SettingsResetScope.ContentLayout: SettingsManager.ResetContentLayout(); break;
+                case SettingsResetScope.Appearance: SettingsManager.ResetTaskbarAppearance(); break;
+                case SettingsResetScope.Layout: SettingsManager.ResetScreenAndPlacement(); break;
+                default: throw new ArgumentOutOfRangeException(nameof(scope));
+            }
+            return;
+        }
+        var defaults = SettingsManager.UserDefaults ?? new AppSettings();
+        var profile = defaults.FloatingBar.Profile ?? BarDisplaySettings.Capture(defaults);
+        var current = SettingsManager.Current.FloatingBar.Profile ?? BarDisplaySettings.Capture(SettingsManager.Current);
+        var next = scope switch
+        {
+            SettingsResetScope.All => profile,
+            SettingsResetScope.Appearance => current with
+            {
+                Appearance = profile.Appearance,
+                TaskbarExperience = current.TaskbarExperience with { MediaFontSizePercent = profile.TaskbarExperience.MediaFontSizePercent }
+            },
+            SettingsResetScope.ContentLayout => current with
+            {
+                TaskbarExperience = SettingsResetPolicy.Content(current.TaskbarExperience, profile.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl),
+                SpectrumComponent = profile.SpectrumComponent,
+                PerformanceComponent = profile.PerformanceComponent,
+                LyricsTextAlignment = profile.LyricsTextAlignment,
+                LyricsFixedWidthEnabled = profile.LyricsFixedWidthEnabled,
+                LyricsFixedWidthDip = profile.LyricsFixedWidthDip
+            },
+            SettingsResetScope.Components => current with { SpectrumComponent = profile.SpectrumComponent, PerformanceComponent = profile.PerformanceComponent },
+            SettingsResetScope.Interaction => current with { Interaction = profile.Interaction },
+            SettingsResetScope.DisplayModes => current with { TaskbarExperience = profile.TaskbarExperience },
+            SettingsResetScope.Lyrics => current with
+            {
+                LyricsEnabled = profile.LyricsEnabled,
+                TwoLineLyricsEnabled = profile.TwoLineLyricsEnabled,
+                LyricsSecondaryLine = profile.LyricsSecondaryLine,
+                LyricsSyllableHighlightEnabled = profile.LyricsSyllableHighlightEnabled,
+                LyricsUnsungOpacityPercent = profile.LyricsUnsungOpacityPercent,
+                LyricsCharacterSpacingPercent = profile.LyricsCharacterSpacingPercent,
+                LyricsLineGapPercent = profile.LyricsLineGapPercent,
+                LyricsChineseConversion = profile.LyricsChineseConversion,
+            },
+            _ => throw new ArgumentOutOfRangeException(nameof(scope))
+        };
+        SetFloatingBar(SettingsManager.Current.FloatingBar with { Profile = next });
+        if (scope == SettingsResetScope.Interaction)
+        {
+            var root = SettingsManager.Current;
+            var interaction = SettingsResetPolicy.Interaction(root.Interaction, defaults.Interaction, root.Experiments.NewAudioControl);
+            root.Interaction = BarDisplaySettings.MergeInteraction(interaction, root.Interaction);
+            if (root.Experiments.NewAudioControl) root.AudioDevices = defaults.AudioDevices;
+        }
+    }
 }

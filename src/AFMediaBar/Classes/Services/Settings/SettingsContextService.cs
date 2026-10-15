@@ -2,6 +2,7 @@
 using System.Windows.Threading;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models.Settings;
+using AFMediaBar.Classes.Settings;
 
 namespace AFMediaBar.Classes.Services.Settings;
 
@@ -18,6 +19,8 @@ public sealed class SettingsContextService : IDisposable
     private bool _disposed;
     private string? _preferredDeviceId;
     private int _resourcesDisposed;
+    private SettingsMode? _editingMode;
+    private SettingsEnvironmentSnapshot? _snapshot;
 
     /// <summary>Creates a window-scoped context session; the reader owns platform access.</summary>
     public SettingsContextService(ISettingsEnvironmentReader reader)
@@ -26,6 +29,7 @@ public sealed class SettingsContextService : IDisposable
         _dispatcher = Dispatcher.CurrentDispatcher;
         _timer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromSeconds(1) };
         _timer.Tick += OnTick;
+        SettingsManager.SettingsChanged += OnSettingsChanged;
     }
 
     /// <summary>Cancels window-owned operations, including open reset dialogs, on close.</summary>
@@ -76,14 +80,41 @@ public sealed class SettingsContextService : IDisposable
         _dispatcher.VerifyAccess();
         if (_disposed || !Monitors.Any(value => string.Equals(value.DeviceId, deviceId, StringComparison.OrdinalIgnoreCase))) return;
         _preferredDeviceId = deviceId;
-        Apply(new(Current.Mode, Monitors));
+        Apply(_snapshot ?? new(Current.Mode, Monitors));
+    }
+
+    /// <summary>只切换现有页面的配置目标，不创建宿主或修改运行模式。</summary>
+    public void SelectConfigurationTarget(SettingsMode mode)
+    {
+        _dispatcher.VerifyAccess();
+        if (_disposed || !SettingsPageCatalog.CanEditProfile(mode)) return;
+        _editingMode = mode;
+        Apply(_snapshot ?? new(SettingsMode.Taskbar, Monitors));
+    }
+
+    private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args)
+    {
+        if (_disposed || args.PropertyName is not (null or nameof(AppSettings.Experiments) or nameof(AppSettings.FloatingBar))) return;
+        if (!_dispatcher.CheckAccess())
+        {
+            _dispatcher.BeginInvoke(new Action(() => OnSettingsChanged(sender, args)));
+            return;
+        }
+        if (_editingMode == SettingsMode.FloatingBar && !SettingsManager.Current.Experiments.FloatingBar)
+            _editingMode = SettingsMode.Taskbar;
+        var previous = Current;
+        Apply(_snapshot ?? new(SettingsMode.Taskbar, Monitors));
+        if (previous == Current) Changed?.Invoke(this, EventArgs.Empty);
     }
 
     private void Apply(SettingsEnvironmentSnapshot snapshot)
     {
+        _snapshot = snapshot;
         var monitor = snapshot.Monitors.FirstOrDefault(value => string.Equals(value.DeviceId, _preferredDeviceId, StringComparison.OrdinalIgnoreCase))
             ?? snapshot.Monitors.FirstOrDefault(value => value.IsPrimary) ?? snapshot.Monitors.FirstOrDefault();
-        var next = new SettingsContext(snapshot.RunningMode, monitor?.DeviceId, monitor?.Orientation,
+        var mode = _editingMode ?? snapshot.RunningMode;
+        var next = new SettingsContext(mode, monitor?.DeviceId,
+            mode == SettingsMode.FloatingBar ? SettingsManager.Current.FloatingBar.Orientation : monitor?.Orientation,
             monitor?.IsCompact ?? false, monitor?.EnvironmentAvailable ?? false);
         var choicesChanged = !Monitors.SequenceEqual(snapshot.Monitors);
         if (next == Current && !choicesChanged) return;
@@ -103,6 +134,7 @@ public sealed class SettingsContextService : IDisposable
         _generation++;
         _timer.Stop();
         _timer.Tick -= OnTick;
+        SettingsManager.SettingsChanged -= OnSettingsChanged;
         _lifetime.Cancel();
         DisposeResourcesIfIdle();
     }

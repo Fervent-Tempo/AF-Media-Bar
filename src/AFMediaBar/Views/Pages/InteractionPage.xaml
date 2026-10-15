@@ -6,9 +6,18 @@
     xmlns:settings="clr-namespace:AFMediaBar.Classes.Settings"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     x:Class="AFMediaBar.Views.Pages.InteractionPage"
+    x:Name="InteractionView"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     ScrollViewer.CanContentScroll="False">
     <Page.Resources>
+        <Style x:Key="ExperimentalAudioOptionStyle" TargetType="ComboBoxItem">
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ViewModel.IsNewAudioControlEnabled, ElementName=InteractionView}" Value="True">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
         <DataTemplate x:Key="AudioDevicePermissionTemplate">
             <Border Padding="16,12" BorderThickness="0,1,0,0"
                     BorderBrush="{DynamicResource AfSettingsBorderBrush}">
@@ -130,7 +139,7 @@
                                 <ComboBoxItem
                                     Content="{DynamicResource Loc.Common.SwitchOutputDevice}"
                                     Tag="{x:Static settings:WheelAction.OutputDevice}" />
-                                <ComboBoxItem
+                                <ComboBoxItem Style="{StaticResource ExperimentalAudioOptionStyle}"
                                     Content="{DynamicResource Loc.Common.SwitchInputDevice}"
                                     Tag="{x:Static settings:WheelAction.InputDevice}" />
                                 <ComboBoxItem
@@ -158,7 +167,7 @@
                                 <ComboBoxItem
                                     Content="{DynamicResource Loc.Common.SwitchOutputDevice}"
                                     Tag="{x:Static settings:WheelAction.OutputDevice}" />
-                                <ComboBoxItem
+                                <ComboBoxItem Style="{StaticResource ExperimentalAudioOptionStyle}"
                                     Content="{DynamicResource Loc.Common.SwitchInputDevice}"
                                     Tag="{x:Static settings:WheelAction.InputDevice}" />
                                 <ComboBoxItem
@@ -212,7 +221,7 @@
                                 <ComboBoxItem
                                     Content="{DynamicResource Loc.Interaction.TrayAction.OpenOutputDeviceMenu}"
                                     Tag="{x:Static settings:TrayClickAction.OpenOutputDeviceMenu}" />
-                                <ComboBoxItem
+                                <ComboBoxItem Style="{StaticResource ExperimentalAudioOptionStyle}"
                                     Content="{DynamicResource Loc.Common.InputDevice}"
                                     Tag="{x:Static settings:TrayClickAction.OpenInputDeviceMenu}" />
                                 <ComboBoxItem
@@ -240,7 +249,7 @@
                                 <ComboBoxItem
                                     Content="{DynamicResource Loc.Common.SwitchOutputDevice}"
                                     Tag="{x:Static settings:TrayWheelBehavior.SwitchOutputDevice}" />
-                                <ComboBoxItem
+                                <ComboBoxItem Style="{StaticResource ExperimentalAudioOptionStyle}"
                                     Content="{DynamicResource Loc.Common.SwitchInputDevice}"
                                     Tag="{x:Static settings:TrayWheelBehavior.SwitchInputDevice}" />
                                 <ComboBoxItem
@@ -255,6 +264,7 @@
                 </components:SettingsGroup>
 
                 <components:SettingsGroup GroupId="Audio.Settings.Title" Header="{DynamicResource Loc.Audio.Settings.Title}"
+                    Visibility="{Binding ViewModel.IsNewAudioControlEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}"
                     Description="{DynamicResource Loc.Audio.Settings.Description}" Icon="{ui:SymbolIcon Speaker224}">
                     <StackPanel>
                         <components:SettingsCallout IsAccent="False" Symbol="Info24" Margin="0,0,0,12" Text="{DynamicResource Loc.Audio.Settings.AvailabilityHint}" />

@@ -132,7 +132,7 @@ internal static class SettingsLiveVisualChecks
             var widgetsPanel = (Panel)groups.Single(group => group.GroupId == "Common.Group.Widgets").Content;
             var ordered = widgetsPanel.Children.OfType<Wpf.Ui.Controls.CardExpander>().Single(expander =>
                 expander.Content is Panel panel && panel.Children.OfType<ItemsControl>().Any(items => items.ItemsSource == layout.ViewModel.Layout.RestOrderEntries));
-            Assert.AreEqual(Visibility.Collapsed, ordered.Visibility, "Vertical taskbars must not expose horizontal component sorting.");
+            Assert.AreEqual(Visibility.Visible, ordered.Visibility, "任务栏横竖共享配置及组件排序入口。");
             Assert.IsTrue(navigation.Navigate(typeof(InteractionPage)));
             Assert.IsTrue(navigation.Navigate(typeof(AppearancePage)));
             Assert.AreSame(vertical, arrived, "NavigationView must ask the provider for the current context rather than reuse its own old page.");

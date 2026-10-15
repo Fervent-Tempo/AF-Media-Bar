@@ -91,7 +91,11 @@ public sealed class AudioDeviceSettingsTests
                 Interaction = GlobalInteractionSettings.Default with { OutputDeviceClickTarget = AudioDeviceSwitchTarget.ForegroundApplication }
             };
             SettingsManager.SetUserDefaults(saved);
-            SettingsManager.Current = new AppSettings { TaskbarExperience = TaskbarExperienceSettings.Default with { InputDeviceVisible = true } };
+            SettingsManager.Current = new AppSettings
+            {
+                Experiments = new() { NewAudioControl = true },
+                TaskbarExperience = TaskbarExperienceSettings.Default with { InputDeviceVisible = true }
+            };
             SettingsManager.ResetInteraction();
             Assert.IsTrue(SettingsManager.Current.AudioDevices.SwitchOutputCommunications);
             Assert.IsFalse(SettingsManager.Current.AudioDevices.IsAllowed(AudioDeviceDirection.Output, "speaker"));

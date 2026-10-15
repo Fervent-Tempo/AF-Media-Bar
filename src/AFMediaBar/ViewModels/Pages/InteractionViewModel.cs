@@ -14,6 +14,7 @@ public partial class InteractionViewModel : ObservableObject, IDisposable
     private readonly ISettingsConfiguration _configuration;
     private bool _disposed;
     public AudioDeviceSettingsViewModel AudioDevices { get; }
+    public bool IsNewAudioControlEnabled => SettingsManager.Current.Experiments.NewAudioControl;
     public AudioDeviceSwitchTarget OutputDeviceClickTarget { get => Current.OutputDeviceClickTarget; set => Update(Current with { OutputDeviceClickTarget = value }); }
     public AudioDeviceSwitchTarget OutputDeviceWheelTarget { get => Current.OutputDeviceWheelTarget; set => Update(Current with { OutputDeviceWheelTarget = value }); }
     public AudioDeviceSwitchTarget InputDeviceClickTarget { get => Current.InputDeviceClickTarget; set => Update(Current with { InputDeviceClickTarget = value }); }
@@ -123,7 +124,8 @@ public partial class InteractionViewModel : ObservableObject, IDisposable
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
     {
         if (_disposed || !_configuration.IsActive) return;
-        if (e.ResetScope is SettingsResetScope.Interaction or SettingsResetScope.All)
+        if (e.PropertyName is nameof(AppSettings.Experiments) or nameof(AppSettings.FloatingBar) ||
+            e.ResetScope is SettingsResetScope.Interaction or SettingsResetScope.All)
             RaiseAll();
     }
 

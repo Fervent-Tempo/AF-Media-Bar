@@ -177,7 +177,7 @@
                             <TextBlock Text="{Binding ViewModel.OrientationText}" VerticalAlignment="Center" />
                         </components:SettingsRow>
                         <components:SettingsRow
-                            Visibility="{Binding ViewModel.IsHorizontalLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}"
+                            Visibility="{Binding ViewModel.CanConfigureBarLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}"
                             Description="{DynamicResource Loc.DisplayModes.Placement.Row.Alignment.Description}"
                             Icon="{ui:SymbolIcon ArrowMove24}"
                             Title="{DynamicResource Loc.DisplayModes.Placement.Row.Alignment.Title}">

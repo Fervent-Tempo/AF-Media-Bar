@@ -288,7 +288,7 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
             return;
         }
 
-        if (e.ResetScope is SettingsResetScope.Lyrics or SettingsResetScope.All)
+        if (e.PropertyName == nameof(AppSettings.FloatingBar) || e.ResetScope is SettingsResetScope.Lyrics or SettingsResetScope.All)
         {
             OnPropertyChanged(nameof(ArtistSeparatorsText));
             RefreshSourceEntries();

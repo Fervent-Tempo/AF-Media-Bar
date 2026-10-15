@@ -5,6 +5,7 @@ using AFMediaBar.Classes.Utils;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services;
+using AFMediaBar.Classes.Services.Settings;
 using AFMediaBar.Classes.Services.Localization;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Resources;
@@ -20,7 +21,8 @@ public enum DisplayModeSelection
     Taskbar = 0,
     DynamicIsland = 1,
     DesktopCard = 2,
-    FloatingBall = 3
+    FloatingBall = 3,
+    FloatingBar = 4
 }
 
 /// <summary>四种显示模式及各层功能开关。 / Four display modes and their layer feature switches.</summary>
@@ -180,7 +182,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
             entry.VisibilityChanged -= OnRestComponentVisibilityChanged;
 
         IdleComponentEntries.Clear();
-        foreach (var component in IdleVisibilityOrder)
+        foreach (var component in IdleVisibilityOrder.Where(component => component != TaskbarRestComponent.InputDevice || CanEditExperimentalAudio))
         {
             var entry = new TaskbarRestComponentSettingItem(
                 component, canMove: false, isVisible: kept.Contains(component),
@@ -215,6 +217,8 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         var selected = IdleComponentEntries
             .Where(entry => entry.IsVisible)
             .Select(entry => entry.Component)
+            .Concat(!CanEditExperimentalAudio && (_configuration.Current.TaskbarExperience.IdleComponents?.Contains(TaskbarRestComponent.InputDevice) ?? false)
+                ? new[] { TaskbarRestComponent.InputDevice } : [])
             .ToArray();
         var isDefault = selected.SequenceEqual(TaskbarRestLayoutPolicy.DefaultIdleComponents);
         UpdateExperience(_configuration.Current.TaskbarExperience with
@@ -310,6 +314,8 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
 
     /// <summary>横向任务栏对齐设置是否适用于当前编辑环境。</summary>
     public bool IsHorizontalLayout => _configuration.Context.Orientation != LayoutOrientation.Vertical;
+    public bool CanConfigureBarLayout => SettingsPageCatalog.CanEditProfile(_configuration.Context.Mode);
+    public bool CanEditExperimentalAudio => SettingsManager.Current.Experiments.NewAudioControl;
 
     /// <summary>任务栏主轴对齐；切换时清除拖动偏移和手动内容排布。</summary>
     public TaskbarBarPosition TaskbarPosition
@@ -453,7 +459,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
 
     private void UpdateExperience(TaskbarExperienceSettings value)
     {
-        if (_disposed || !_configuration.IsActive || _isRefreshing || !IsTaskbarMode) return;
+        if (_disposed || !_configuration.IsActive || _isRefreshing || !CanConfigureBarLayout) return;
         _configuration.SetTaskbarExperience(value.Normalize());
         RaiseExperience();
     }
@@ -506,7 +512,8 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     {
         if (_disposed || !_configuration.IsActive) return;
         if (!_dispatcher.CheckAccess()) { DispatcherHelper.Run(_dispatcher, () => OnSettingsChanged(sender, e)); return; }
-        if (e.ResetScope is SettingsResetScope.DisplayModes or SettingsResetScope.Layout or SettingsResetScope.Components or SettingsResetScope.All)
+        if (e.PropertyName is nameof(AppSettings.Experiments) or nameof(AppSettings.FloatingBar) ||
+            e.ResetScope is SettingsResetScope.DisplayModes or SettingsResetScope.Layout or SettingsResetScope.Components or SettingsResetScope.All)
             RaiseAll();
         else if (!_isRefreshing && (e.PropertyName is nameof(AppSettings.Position) or nameof(AppSettings.TaskbarExperience)))
         {
@@ -647,6 +654,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
 
     private void RaiseExperience()
     {
+        OnPropertyChanged(nameof(CanEditExperimentalAudio));
         OnPropertyChanged(nameof(TaskbarArrangementOverride));
         OnPropertyChanged(nameof(TaskbarArrangementIndex));
         OnPropertyChanged(nameof(TaskbarArrangement));

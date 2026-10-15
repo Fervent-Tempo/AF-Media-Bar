@@ -21,6 +21,6 @@ public sealed class ContentLayoutViewModel(
 
     public void ResetContentLayout()
     {
-        if (configuration.IsActive && configuration.Context.Mode == SettingsMode.Taskbar) SettingsManager.ResetContentLayout();
+        if (configuration.IsActive) configuration.Reset(SettingsResetScope.ContentLayout);
     }
 }
