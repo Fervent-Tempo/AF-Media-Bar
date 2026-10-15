@@ -7,6 +7,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
@@ -70,7 +71,8 @@ public partial class TaskBarMediaControl
 
     private Dictionary<TaskbarRestComponent, RestVisual>? CaptureRestVisuals(bool targetConnected)
     {
-        if (!AllowRestConnectionTransition || !IsLoaded || _currentMode != WindowMode.Taskbar ||
+        if (!AllowRestConnectionTransition || !IsLoaded || _isHostVisibilitySuspended || _isPlacementMotionActive ||
+            _backgroundPruneLevel >= MemoryPruneLevel.DisplayOff || _currentMode != WindowMode.Taskbar ||
             _isVertical || !CurrentMotion.UseTransitions)
             return null;
 
@@ -321,6 +323,8 @@ public partial class TaskBarMediaControl
 
     private void RestTransitionTimer_Tick(object? sender, EventArgs e)
     {
+        if (!_restTransitionActive)
+            return;
         var elapsed = Stopwatch.GetElapsedTime(_restTransitionStartedAt).TotalMilliseconds;
         var duration = Math.Max(1, _restTransitionDuration.TotalMilliseconds);
         var fraction = Math.Clamp(elapsed / duration, 0, 1);
@@ -370,6 +374,9 @@ public partial class TaskBarMediaControl
 
     private void FinishRestTransition()
     {
+        _restTransitionTimer?.Stop();
+        if (!_restTransitionActive)
+            return;
         var wasActive = _restTransitionActive;
         var clearOutgoingText = _restTransitionKeepsOutgoingText;
         _restTransitionKeepsOutgoingText = false;

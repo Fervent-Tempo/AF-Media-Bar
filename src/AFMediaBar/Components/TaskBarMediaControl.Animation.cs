@@ -133,8 +133,10 @@ public partial class TaskBarMediaControl
     {
         try
         {
+            if (_restTransitionActive)
+                return;
             var motion = CurrentMotion;
-            if (!motion.UseTransitions)
+            if (!motion.UseTransitions || _isHostVisibilitySuspended)
             {
                 SongInfoStackPanel.BeginAnimation(OpacityProperty, null);
                 SongInfoStackPanel.Opacity = _isTaskbarHoverVisible ? TaskbarCoveredOpacity : 1;
@@ -2125,6 +2127,10 @@ public partial class TaskBarMediaControl
         AnimateDirectFullPanelHandle(false);
     }
 
+    private int _hoverRevealGeneration;
+    private int _hoverHideFallbackGeneration;
+    private long _hoverHideFallbackDeadline;
+
     private void ShowTaskbarHoverLayer()
     {
         // 宿主正在跟随任务栏动画时不开悬停层：展开会给整块文字区装上 BlurEffect 并播一段裁剪动画，
@@ -2132,7 +2138,7 @@ public partial class TaskBarMediaControl
         // The hover layer is not opened while the host is following the taskbar animation: revealing it installs a BlurEffect on the whole text area and
         // plays a clip animation, and both compete for the same compositing pipeline as the Shell's taskbar animation — the most expensive part of the
         // jank seen when the taskbar hides right after a hover.
-        if (_isHostVisibilitySuspended)
+        if (!CanUseTaskbarComponentHover() || _isTaskbarHoverVisible)
             return;
 
         if (!_isConnected || _currentMode != WindowMode.Taskbar || _isVertical ||
@@ -2156,8 +2162,9 @@ public partial class TaskBarMediaControl
         HoverRevealHost.IsHitTestVisible = true;
         var targetWidth = Math.Max(0, SongInfoStackPanel.Width);
         HoverRevealHost.Width = targetWidth;
-        HoverRevealClip.BeginAnimation(RectangleGeometry.RectProperty, null);
+        ++_hoverRevealGeneration;
         var currentWidth = Math.Clamp(HoverRevealClip.Rect.Width, 0, targetWidth);
+        HoverRevealClip.BeginAnimation(RectangleGeometry.RectProperty, null);
         HoverRevealClip.Rect = TaskbarRevealRect(currentWidth);
         if (!CurrentMotion.UseTransitions)
         {
@@ -2178,6 +2185,7 @@ public partial class TaskBarMediaControl
     // Keep the reveal fraction when the text area changes size during an open or close transition.
     private void RetargetHoverRevealWidth(double targetWidth)
     {
+        var generation = ++_hoverRevealGeneration;
         var oldWidth = Math.Max(0, HoverRevealHost.Width);
         var fraction = oldWidth > 0
             ? Math.Clamp(HoverRevealClip.Rect.Width / oldWidth, 0, 1)
@@ -2205,12 +2213,18 @@ public partial class TaskBarMediaControl
             EasingFunction = _isTaskbarHoverVisible ? CreateEaseOut() : CreateEaseInOut()
         };
         if (!_isTaskbarHoverVisible)
-            animation.Completed += (_, _) => FinishTaskbarHoverLayerHide();
+        {
+            animation.Completed += (_, _) => CompleteTaskbarHoverLayerHide(generation);
+            ArmHoverHideFallback(animation.Duration.TimeSpan, generation);
+        }
         HoverRevealClip.BeginAnimation(RectangleGeometry.RectProperty, animation, HandoffBehavior.SnapshotAndReplace);
     }
 
     private void HideTaskbarHoverLayer(bool immediate = false)
     {
+        if (!immediate && !_isTaskbarHoverVisible && HoverRevealHost.Visibility == Visibility.Visible && CurrentMotion.UseTransitions)
+            return;
+        var generation = ++_hoverRevealGeneration;
         _hoverOpenTimer.Stop();
         _hoverCloseTimer.Stop();
         _hoverHideFallbackTimer.Stop();
@@ -2243,7 +2257,7 @@ public partial class TaskBarMediaControl
             Duration = CurrentMotion.ExitDuration,
             EasingFunction = CreateEaseInOut()
         };
-        hide.Completed += (_, _) => FinishTaskbarHoverLayerHide();
+        hide.Completed += (_, _) => CompleteTaskbarHoverLayerHide(generation);
         HoverRevealClip.BeginAnimation(RectangleGeometry.RectProperty, hide, HandoffBehavior.SnapshotAndReplace);
 
         // 兜底：动画回调可能永远不来——渲染时钟停走（任务栏自动隐藏、窗口被遮挡）或这次动画被下一次动画顶掉时，
@@ -2251,8 +2265,23 @@ public partial class TaskBarMediaControl
         // Fallback: the animation callback may never arrive — when the render clock stops (auto-hidden taskbar, occluded window) or the
         // animation is replaced by the next one, the collapse freezes halfway and the hover layer stays on screen. The timer only depends
         // on the dispatcher, so the state is always cleaned up.
-        _hoverHideFallbackTimer.Interval = CurrentMotion.ExitDuration + HoverHideFallbackMargin;
+        ArmHoverHideFallback(CurrentMotion.ExitDuration, generation);
+    }
+
+    private void ArmHoverHideFallback(TimeSpan duration, int generation)
+    {
+        var timeout = duration + HoverHideFallbackMargin;
+        _hoverHideFallbackGeneration = generation;
+        _hoverHideFallbackDeadline = Stopwatch.GetTimestamp() + (long)(timeout.TotalSeconds * Stopwatch.Frequency);
+        _hoverHideFallbackTimer.Stop();
+        _hoverHideFallbackTimer.Interval = timeout;
         _hoverHideFallbackTimer.Start();
+    }
+
+    private void CompleteTaskbarHoverLayerHide(int generation)
+    {
+        if (generation == _hoverRevealGeneration && !_isTaskbarHoverVisible)
+            FinishTaskbarHoverLayerHide();
     }
 
     /// <summary>
@@ -2262,6 +2291,7 @@ public partial class TaskBarMediaControl
     /// </summary>
     private void FinishTaskbarHoverLayerHide(bool immediate = false)
     {
+        ++_hoverRevealGeneration;
         _hoverHideFallbackTimer.Stop();
         HoverRevealClip.BeginAnimation(RectangleGeometry.RectProperty, null);
         HoverRevealHost.Width = 0;

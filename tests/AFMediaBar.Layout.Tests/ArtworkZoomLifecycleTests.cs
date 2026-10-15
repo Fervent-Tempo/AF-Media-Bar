@@ -197,6 +197,56 @@ public sealed class ArtworkZoomLifecycleTests
         return Task.CompletedTask;
     });
 
+    [TestMethod]
+    public void HostSuspensionSettlesConnectionTransitionsAndRejectsHiddenTransitions() => RunIsolated(nameof(HostSuspensionSettlesConnectionTransitionsAndRejectsHiddenTransitions), (control, dispatcher) =>
+    {
+        control.AllowRestConnectionTransition = true;
+        control.UpdateSongInfo(MediaSnapshot.Disconnected);
+        control.ApplyHostVisibilitySuspension(true);
+        Assert.IsFalse(control.IsRestConnectionTransitionActive, "宿主挂起必须结束连接过渡，不能留下半截裁剪。");
+        Assert.IsNull(((FrameworkElement)control.FindName("SongInfoStackPanel")).Clip);
+        var timer = (DispatcherTimer?)typeof(TaskBarMediaControl).GetField("_restTransitionTimer", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control);
+        Assert.IsFalse(timer?.IsEnabled ?? false, "隐藏期间不能继续推进连接动画。");
+        control.UpdateSongInfo(MediaSnapshot.Disconnected with { IsConnected = true, Title = "Hidden connection" });
+        Assert.IsFalse(control.IsRestConnectionTransitionActive, "隐藏期间的新快照必须直接落到最新状态。");
+        control.ApplyHostVisibilitySuspension(false);
+        Assert.AreEqual("Hidden connection", ((System.Windows.Controls.TextBlock)control.FindName("SongTitle")).Text);
+        AssertRestored(control);
+        return Task.CompletedTask;
+    });
+
+    [TestMethod]
+    public void MetadataEntranceDoesNotReplaceConnectionClipOrSurviveHostSuspension() => RunIsolated(nameof(MetadataEntranceDoesNotReplaceConnectionClipOrSurviveHostSuspension), (control, dispatcher) =>
+    {
+        control.UpdateSongInfo(MediaSnapshot.Disconnected);
+        control.AllowRestConnectionTransition = true;
+        var connected = MediaSnapshot.Disconnected with { IsConnected = true, Title = "Connecting" };
+        control.UpdateSongInfo(connected);
+        control.UpdateSongInfo(connected with { Title = "New metadata while connecting" });
+        if (control.IsRestConnectionTransitionActive)
+            Assert.IsFalse(((FrameworkElement)control.FindName("SongInfoStackPanel")).HasAnimatedProperties,
+                "连接裁剪期间不能再让曲目入场动画控制同一文字表面。");
+        control.ApplyHostVisibilitySuspension(true);
+        control.UpdateSongInfo(connected with { Title = "Latest hidden metadata" });
+        Assert.IsFalse(((FrameworkElement)control.FindName("SongInfoStackPanel")).HasAnimatedProperties);
+        return Task.CompletedTask;
+    });
+
+    [TestMethod]
+    public void StaleHoverCloseCannotHideTheNewReveal() => RunIsolated(nameof(StaleHoverCloseCannotHideTheNewReveal), (control, dispatcher) =>
+    {
+        var host = (FrameworkElement)control.FindName("HoverRevealHost");
+        host.Visibility = Visibility.Visible;
+        host.Width = 200;
+        typeof(TaskBarMediaControl).GetField("_isTaskbarHoverVisible", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(control, true);
+        var generation = (int)typeof(TaskBarMediaControl).GetField("_hoverRevealGeneration", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
+        Invoke(control, "RetargetHoverRevealWidth", 240d);
+        Invoke(control, "CompleteTaskbarHoverLayerHide", generation);
+        Assert.AreEqual(Visibility.Visible, host.Visibility);
+        Assert.AreEqual(240d, host.Width);
+        return Task.CompletedTask;
+    });
+
     private static void RunIsolated(string name, Func<TaskBarMediaControl, Dispatcher, Task> verify)
     {
         const string IsolationVariable = "AFMB_ARTWORK_ZOOM_ISOLATED";

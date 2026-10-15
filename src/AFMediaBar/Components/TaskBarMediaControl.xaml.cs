@@ -100,8 +100,10 @@ namespace AFMediaBar.Components
             _hoverHideFallbackTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
             _hoverHideFallbackTimer.Tick += (_, _) =>
             {
+                if (Stopwatch.GetTimestamp() < _hoverHideFallbackDeadline)
+                    return;
                 _hoverHideFallbackTimer.Stop();
-                FinishTaskbarHoverLayerHide();
+                CompleteTaskbarHoverLayerHide(_hoverHideFallbackGeneration);
             };
             // 原地放大收拢的兜底：与悬停层同一种病——收拢动画的 Completed 可能因为渲染时钟停走或动画被顶掉而永远不来，
             // 封面就会滞留在开着的 Popup 里（IsArtworkZoomActive 恒真、封面不在主树，收不到任何鼠标事件）。
@@ -1558,6 +1560,8 @@ namespace AFMediaBar.Components
             {
                 SettleTaskbarPointerVisuals();
                 AnimateArtworkHover(false, immediate: true);
+                // 隐藏会冻结渲染时钟；结束连接过渡并发布最新目标，不保存半截画面作为恢复尺寸。
+                FinishRestTransition();
             }
             else
             {
