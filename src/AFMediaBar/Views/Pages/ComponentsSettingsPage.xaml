@@ -85,7 +85,7 @@
             Margin="{StaticResource AfSettingsHeaderMargin}"
             MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
             Grid.Row="0"
-            PageIcon="{ui:SymbolIcon LayoutColumnTwo24}"
+            PageIcon="{ui:SymbolIcon Grid24}"
             Subtitle="{DynamicResource Loc.ContentLayout.Header.Subtitle}"
             Target="{Binding ElementName=PageScroll}"
             Title="{DynamicResource Loc.Common.Page.ContentLayout}" />
@@ -496,11 +496,11 @@
                 <components:SettingsGroup
                     GroupId="Appearance.Group.RestLayout"
                     Header="{DynamicResource Loc.Appearance.Group.RestLayout}"
-                    Icon="{ui:SymbolIcon LayoutColumnTwo24}">
+                    Icon="{ui:SymbolIcon Grid24}">
                     <StackPanel>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.DisplayModes.Rest.Row.Layout.Description}"
-                            Icon="{ui:SymbolIcon LayoutColumnTwo24}"
+                            Icon="{ui:SymbolIcon Grid24}"
                             Title="{DynamicResource Loc.DisplayModes.Rest.Row.Layout.Title}"
                             Visibility="{Binding ViewModel.Layout.IsHorizontalLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                             <ComboBox
