@@ -225,6 +225,43 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
     /// <summary>取词来源启用列表，执行顺序由代码策略决定。/ Enabled sources; execution order belongs to the retrieval policy.</summary>
     public ObservableCollection<LyricsSourceSettingItem> SourceEntries { get; } = [];
 
+    public LyricsSourceRule SourceRule
+    {
+        get => _configuration.Current.LyricsSource.Rule;
+        set => _configuration.SetLyricsSourceSettings(_configuration.Current.LyricsSource with { Rule = value });
+    }
+
+    public bool IsManualSourceRule => SourceRule == LyricsSourceRule.Manual;
+
+    public LyricsSourceAttemptMode SourceAttemptMode
+    {
+        get => _configuration.Current.LyricsSource.AttemptMode;
+        set => _configuration.SetLyricsSourceSettings(_configuration.Current.LyricsSource with { AttemptMode = value });
+    }
+
+    public LyricsSourceResultMode SourceResultMode
+    {
+        get => _configuration.Current.LyricsSource.ResultMode;
+        set => _configuration.SetLyricsSourceSettings(_configuration.Current.LyricsSource with { ResultMode = value });
+    }
+
+    public string SourceRuleDescription => Translations.Get(IsManualSourceRule
+        ? "Lyrics.Sources.Rule.Manual.Description" : "Lyrics.Sources.Rule.Default.Description");
+
+    public string SourceResultDescription => Translations.Get(SourceAttemptMode == LyricsSourceAttemptMode.Sequential
+        ? "Lyrics.Sources.Result.SequentialHint" : SourceResultMode == LyricsSourceResultMode.FirstAvailable
+            ? "Lyrics.Sources.Result.FirstAvailable.Description" : "Lyrics.Sources.Result.Ordered.Description");
+
+    private void RaiseSourceProperties()
+    {
+        OnPropertyChanged(nameof(SourceRule));
+        OnPropertyChanged(nameof(IsManualSourceRule));
+        OnPropertyChanged(nameof(SourceAttemptMode));
+        OnPropertyChanged(nameof(SourceResultMode));
+        OnPropertyChanged(nameof(SourceRuleDescription));
+        OnPropertyChanged(nameof(SourceResultDescription));
+    }
+
     /// <summary>是否一个来源都没启用：此时不会请求任何歌词服务，页面用提示条说明后果。
     /// Whether no source is enabled: no lyric service is contacted then, and a callout on the page states that consequence.</summary>
     public bool IsEverySourceDisabled => SourceEntries.Count > 0 && SourceEntries.All(entry => !entry.IsEnabled);
@@ -311,20 +348,22 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// 按代码目录顺序显示全部来源并恢复启用状态；旧配置中的排序不控制获取阶段。
-    /// Lists every source in catalogue order and restores enabled flags; old ordering does not control dispatch.
+    /// 按当前规则显示来源；启用状态与手动顺序独立，未知身份在编辑时保留。
     /// </summary>
     private void RefreshSourceEntries()
     {
         _isRefreshing = true;
         try
         {
-            var enabledIds = _configuration.Current.LyricsSource.Normalize().EnabledSourceIds;
+            var settings = _configuration.Current.LyricsSource.Normalize();
+            var enabledIds = settings.EnabledSourceIds;
             var enabled = enabledIds is null
                 ? null
                 : new HashSet<string>(enabledIds, StringComparer.Ordinal);
 
-            var order = LyricsSourceCatalog.DefaultOrder;
+            var order = settings.Rule == LyricsSourceRule.Manual
+                ? LyricsSourcePolicy.OrderSourceIds(LyricsSourceCatalog.DefaultOrder, settings.PrioritySourceIds)
+                : LyricsSourceCatalog.DefaultOrder;
 
             foreach (var entry in SourceEntries)
             {
@@ -345,6 +384,8 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
 
             OnPropertyChanged(nameof(SourceEntries));
             OnPropertyChanged(nameof(IsEverySourceDisabled));
+            UpdateSourceMoveAvailability();
+            RaiseSourceProperties();
         }
         finally { _isRefreshing = false; }
     }
@@ -367,7 +408,13 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
     private void SaveSourceEntries()
     {
         var enabled = SourceEntries.Where(entry => entry.IsEnabled).Select(entry => entry.SourceId).ToArray();
-        var settings = new LyricsSourceSettings(SourceEntries.All(entry => entry.IsEnabled) ? null : enabled);
+        var current = _configuration.Current.LyricsSource;
+        var unknown = current.EnabledSourceIds?.Where(id => !LyricsSourceCatalog.IsKnown(id)).ToArray() ?? [];
+        var settings = current with
+        {
+            EnabledSourceIds = SourceEntries.All(entry => entry.IsEnabled) && unknown.Length == 0
+                ? null : enabled.Concat(unknown).ToArray()
+        };
 
         _isSavingSources = true;
         try
@@ -401,6 +448,50 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         }
 
         SaveSourceEntries();
+    }
+
+    [RelayCommand]
+    private void MoveSourceUp(LyricsSourceSettingItem? item) => MoveSource(item, -1);
+
+    [RelayCommand]
+    private void MoveSourceDown(LyricsSourceSettingItem? item) => MoveSource(item, 1);
+
+    private void MoveSource(LyricsSourceSettingItem? item, int offset)
+    {
+        if (_disposed || !_configuration.IsActive || !IsManualSourceRule || item is null) return;
+        var index = SourceEntries.IndexOf(item);
+        var target = index + offset;
+        if (index < 0 || target < 0 || target >= SourceEntries.Count) return;
+        SourceEntries.Move(index, target);
+        var current = _configuration.Current.LyricsSource;
+        var unknown = current.PrioritySourceIds?.Where(id => !LyricsSourceCatalog.IsKnown(id)) ?? [];
+        _isSavingSources = true;
+        try
+        {
+            _configuration.SetLyricsSourceSettings(current with
+            {
+                PrioritySourceIds = SourceEntries.Select(entry => entry.SourceId).Concat(unknown).ToArray()
+            });
+        }
+        finally { _isSavingSources = false; }
+        UpdateSourceMoveAvailability();
+    }
+
+    private void UpdateSourceMoveAvailability()
+    {
+        for (var index = 0; index < SourceEntries.Count; index++)
+        {
+            SourceEntries[index].CanMoveUp = index > 0;
+            SourceEntries[index].CanMoveDown = index < SourceEntries.Count - 1;
+        }
+    }
+
+    [RelayCommand]
+    private void ResetSourceOrder()
+    {
+        var current = _configuration.Current.LyricsSource;
+        var unknown = current.PrioritySourceIds?.Where(id => !LyricsSourceCatalog.IsKnown(id)).ToArray();
+        _configuration.SetLyricsSourceSettings(current with { PrioritySourceIds = unknown is { Length: > 0 } ? unknown : null });
     }
 
     /// <summary>

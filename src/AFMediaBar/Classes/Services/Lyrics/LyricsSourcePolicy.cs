@@ -5,10 +5,22 @@ namespace AFMediaBar.Classes.Services.Lyrics;
 
 /// <summary>
 /// 解析启用来源；null 表示全部、空数组表示全部关闭，未知来源忽略。
-/// 保留序列化列表顺序，但运行时阶段与同分顺序由 LyricsRetrievalPolicy/目录拥有。
+/// 默认规则由 LyricsRetrievalPolicy 仲裁；手动规则采用独立优先级。
 /// </summary>
 public static class LyricsSourcePolicy
 {
+    /// <summary>先放指定顺序中的现有来源，遗漏来源按目录顺序追加；未知身份只在运行时忽略。</summary>
+    public static IReadOnlyList<string> OrderSourceIds(IReadOnlyList<string> sourceIds, IReadOnlyList<string>? priorityIds) =>
+        (priorityIds ?? []).Concat(sourceIds).Where(sourceIds.Contains).Distinct(StringComparer.Ordinal).ToArray();
+
+    private static IReadOnlyList<ILyricsProvider> ApplyManualOrder(IReadOnlyList<ILyricsProvider> providers, LyricsSourceSettings settings)
+    {
+        if (settings.Rule != LyricsSourceRule.Manual)
+            return providers;
+        var ids = OrderSourceIds(providers.Select(provider => provider.SourceName).ToArray(), settings.PrioritySourceIds);
+        return ids.Select(id => providers.First(provider => provider.SourceName == id)).ToArray();
+    }
+
     /// <summary>将播放器标识与歌词目录关联；不判断启用状态，也不依赖播放器适配器实现。</summary>
     public static bool IsCurrentPlaybackSource(string? playbackSourceId, string lyricsSourceId)
     {
@@ -30,12 +42,13 @@ public static class LyricsSourcePolicy
     /// </summary>
     /// <param name="providers">全部提供器（组合根构造的默认顺序）/ Every provider in the default order built at the composition root.</param>
     /// <param name="settings">用户的来源设置 / The user's source settings.</param>
-    /// <returns>启用的提供器，按用户顺序；用户关掉全部来源时为空 / The enabled providers in the user's order, empty when every source is off.</returns>
+    /// <returns>已启用的提供器；手动规则按独立优先级排列，全关时为空。</returns>
     public static IReadOnlyList<ILyricsProvider> ResolveActive(
         IReadOnlyList<ILyricsProvider> providers,
         LyricsSourceSettings settings)
     {
         ArgumentNullException.ThrowIfNull(providers);
+        settings = settings.Normalize();
         if (providers.Count == 0)
         {
             return [];
@@ -44,7 +57,7 @@ public static class LyricsSourcePolicy
         var enabledIds = settings.Normalize().EnabledSourceIds;
         if (enabledIds is null)
         {
-            return providers;
+            return ApplyManualOrder(providers, settings);
         }
 
         if (enabledIds.Count == 0)
@@ -67,6 +80,8 @@ public static class LyricsSourcePolicy
             }
         }
 
-        return active;
+        return settings.Rule == LyricsSourceRule.Manual
+            ? ApplyManualOrder(providers.Where(active.Contains).ToArray(), settings)
+            : active;
     }
 }

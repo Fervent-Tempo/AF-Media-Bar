@@ -1505,10 +1505,10 @@
     <value>Tất cả nguồn lời bài hát đã bị tắt: không có yêu cầu lời bài hát nào được gửi, thanh media chỉ hiển thị tiêu đề và nghệ sĩ.</value>
   </data>
   <data name="Lyrics.Sources.Callout" xml:space="preserve">
-    <value>Ưu tiên thử QQ Music nếu được bật; kết quả khớp phải đạt điểm từ 85 trở lên mới tải lời bài hát. Nếu không, truy vấn song song các nguồn đã bật khác và lấy kết quả điểm cao nhất.</value>
+    <value>Dùng quy tắc mặc định hoặc tùy chỉnh thứ tự nguồn, cách yêu cầu và chọn kết quả.</value>
   </data>
   <data name="Lyrics.Sources.Expander.Description" xml:space="preserve">
-    <value>Chọn các nguồn được phép cung cấp lời bài hát. Thứ tự truy vấn và cách tính điểm do ứng dụng quản lý.</value>
+    <value>Chọn nguồn lời và quy tắc lấy lời mặc định hoặc thủ công.</value>
   </data>
   <data name="Lyrics.Sources.Expander.Title" xml:space="preserve">
     <value>Nguồn lời bài hát</value>
@@ -1526,7 +1526,7 @@
     <value>Bật lại toàn bộ nguồn lời bài hát.</value>
   </data>
   <data name="Lyrics.Sources.Reset.Title" xml:space="preserve">
-    <value>Khôi phục nguồn mặc định</value>
+    <value>Bật tất cả nguồn</value>
   </data>
   <data name="Lyrics.Sources.Row.Description" xml:space="preserve">
     <value>Cho phép lấy lời bài hát từ nguồn này.</value>
@@ -1937,7 +1937,7 @@
     <value>Cài đặt hiển thị lời bài hát, dòng thứ hai và chạy chữ từng từ.</value>
   </data>
   <data name="Search.Lyrics.Sources.Description" xml:space="preserve">
-    <value>Chọn các nguồn lời bài hát được bật; ứng dụng quản lý thứ tự lấy và tính điểm</value>
+    <value>Nguồn lời, quy tắc mặc định và thủ công, thứ tự ưu tiên, thử lần lượt và song song</value>
   </data>
   <data name="Search.MediaAndNotifications.MediaSource.Description" xml:space="preserve">
     <value>Danh sách nguồn cho phép và các nguồn phát hiện được</value>
@@ -2881,5 +2881,59 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   </data>
   <data name="Audio.Device.NotPresent" xml:space="preserve">
     <value>Hiện không khả dụng</value>
+  </data>
+  <data name="Lyrics.Sources.Rule.Title" xml:space="preserve">
+    <value>Quy tắc lấy lời</value>
+  </data>
+  <data name="Lyrics.Sources.Rule.Default" xml:space="preserve">
+    <value>Quy tắc mặc định</value>
+  </data>
+  <data name="Lyrics.Sources.Rule.Manual" xml:space="preserve">
+    <value>Quy tắc thủ công</value>
+  </data>
+  <data name="Lyrics.Sources.Rule.Default.Description" xml:space="preserve">
+    <value>Ưu tiên QQ Music khi điểm khớp đạt 80; nếu không, truy vấn đồng thời các nguồn còn lại, ưu tiên nguồn của trình phát hiện tại rồi so sánh điểm.</value>
+  </data>
+  <data name="Lyrics.Sources.Rule.Manual.Description" xml:space="preserve">
+    <value>Chọn lời theo cách yêu cầu và quy tắc kết quả; tiếp tục thử nguồn khác nếu chưa có lời.</value>
+  </data>
+  <data name="Lyrics.Sources.Attempt.Title" xml:space="preserve">
+    <value>Yêu cầu nguồn</value>
+  </data>
+  <data name="Lyrics.Sources.Attempt.Description" xml:space="preserve">
+    <value>Chờ tối đa 5 giây cho mỗi nguồn. Thử song song gửi yêu cầu đến tất cả nguồn đang bật.</value>
+  </data>
+  <data name="Lyrics.Sources.Attempt.Sequential" xml:space="preserve">
+    <value>Thử lần lượt</value>
+  </data>
+  <data name="Lyrics.Sources.Attempt.Parallel" xml:space="preserve">
+    <value>Thử song song</value>
+  </data>
+  <data name="Lyrics.Sources.Result.Title" xml:space="preserve">
+    <value>Kết quả lời bài hát</value>
+  </data>
+  <data name="Lyrics.Sources.Result.FirstAvailable" xml:space="preserve">
+    <value>Có trước dùng trước</value>
+  </data>
+  <data name="Lyrics.Sources.Result.Ordered" xml:space="preserve">
+    <value>Ưu tiên thứ tự nguồn</value>
+  </data>
+  <data name="Lyrics.Sources.Result.SequentialHint" xml:space="preserve">
+    <value>Khi thử lần lượt, cả hai quy tắc đều dùng lời đầu tiên có sẵn theo thứ tự từ trên xuống.</value>
+  </data>
+  <data name="Lyrics.Sources.Result.FirstAvailable.Description" xml:space="preserve">
+    <value>Dùng lời hợp lệ trả về đầu tiên và ngừng chờ các nguồn còn lại.</value>
+  </data>
+  <data name="Lyrics.Sources.Result.Ordered.Description" xml:space="preserve">
+    <value>Ưu tiên nguồn ở trên; chờ các nguồn trước hoàn tất hoặc hết thời gian trước khi nhận kết quả của nguồn sau.</value>
+  </data>
+  <data name="Lyrics.Sources.Order.Title" xml:space="preserve">
+    <value>Thứ tự ưu tiên nguồn</value>
+  </data>
+  <data name="Lyrics.Sources.Order.Description" xml:space="preserve">
+    <value>Thử lần lượt và ưu tiên thứ tự đều theo danh sách từ trên xuống. Nguồn bị tắt vẫn giữ vị trí.</value>
+  </data>
+  <data name="Lyrics.Sources.Order.Reset" xml:space="preserve">
+    <value>Khôi phục thứ tự mặc định</value>
   </data>
 </root>

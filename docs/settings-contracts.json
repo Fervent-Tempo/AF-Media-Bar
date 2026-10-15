@@ -75,7 +75,11 @@
     },
     "lyricsSource": {
       "$release": "v1.2.0",
-      "enabledSourceIds": "v1.2.0"
+      "enabledSourceIds": "v1.2.0",
+      "rule": "unreleased",
+      "attemptMode": "unreleased",
+      "resultMode": "unreleased",
+      "prioritySourceIds": "unreleased"
     },
     "lyricsSyllableHighlightEnabled": "v1.2.0",
     "lyricsTextAlignment": "v1.2.0",
@@ -212,6 +216,27 @@
     }
   },
   "enums": {
+    "LyricsSourceRule": {
+      "paths": ["settings.lyricsSource.rule"],
+      "members": {
+        "Default": {"value": 0, "release": "unreleased"},
+        "Manual": {"value": 1, "release": "unreleased"}
+      }
+    },
+    "LyricsSourceAttemptMode": {
+      "paths": ["settings.lyricsSource.attemptMode"],
+      "members": {
+        "Sequential": {"value": 0, "release": "unreleased"},
+        "Parallel": {"value": 1, "release": "unreleased"}
+      }
+    },
+    "LyricsSourceResultMode": {
+      "paths": ["settings.lyricsSource.resultMode"],
+      "members": {
+        "Ordered": {"value": 0, "release": "unreleased"},
+        "FirstAvailable": {"value": 1, "release": "unreleased"}
+      }
+    },
     "AccentColorMode": {
       "paths": ["settings.appearance.accentColorMode"],
       "members": {
@@ -665,7 +690,7 @@
     {
       "id": "lyrics-sources",
       "prefixes": ["settings.lyricsSource"],
-      "text": "null 全启用，空数组全关；保存未知ID，使用时忽略。按Ordinal去重，顺序不决定取词阶段。ID为Netease、NeteaseSearch、LRCLIB、QQMusic、Kugou、SodaMusic。"
+      "text": "null 全启用，空数组全关；保存未知ID，使用时忽略。按Ordinal去重；enabledSourceIds仅控制启用集合，手动规则使用独立prioritySourceIds排序，默认规则不使用手动调度选项。ID为Netease、NeteaseSearch、LRCLIB、QQMusic、Kugou、SodaMusic。"
     },
     {
       "id": "secondary-line",

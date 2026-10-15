@@ -1526,10 +1526,10 @@
     <value>Every lyric source is off: no lyric request is sent at all, and the media bar shows the title and artist only.</value>
   </data>
   <data name="Lyrics.Sources.Callout" xml:space="preserve">
-    <value>Try enabled QQ Music first; matches must score at least 85 before lyrics are downloaded. Otherwise query other enabled sources in parallel and trust the highest score, including confirmed absence of lyrics.</value>
+    <value>Use default rules or customize source priority, request scheduling, and result selection.</value>
   </data>
   <data name="Lyrics.Sources.Expander.Description" xml:space="preserve">
-    <value>Choose which sources may supply lyrics. Retrieval stages and scoring are managed by the app.</value>
+    <value>Choose lyric sources and default or manual retrieval rules.</value>
   </data>
   <data name="Lyrics.Sources.Expander.Title" xml:space="preserve">
     <value>Lyric sources</value>
@@ -1547,7 +1547,7 @@
     <value>Enable every lyric source again.</value>
   </data>
   <data name="Lyrics.Sources.Reset.Title" xml:space="preserve">
-    <value>Restore default sources</value>
+    <value>Enable all sources</value>
   </data>
   <data name="Lyrics.Sources.Row.Description" xml:space="preserve">
     <value>Allow lyrics from this source.</value>
@@ -1961,7 +1961,7 @@
     <value>Enable live lyrics and configure one or two lines and secondary-line priority.</value>
   </data>
   <data name="Search.Lyrics.Sources.Description" xml:space="preserve">
-    <value>Choose which lyric sources are enabled; the app manages retrieval order and scoring</value>
+    <value>Lyric sources, default and manual rules, priority, sequential and parallel attempts</value>
   </data>
   <data name="Search.MediaAndNotifications.MediaSource.Description" xml:space="preserve">
     <value>Source allow list and detected sources</value>
@@ -2843,5 +2843,59 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   </data>
   <data name="Audio.Device.NotPresent" xml:space="preserve">
     <value>Currently unavailable</value>
+  </data>
+  <data name="Lyrics.Sources.Rule.Title" xml:space="preserve">
+    <value>Retrieval rules</value>
+  </data>
+  <data name="Lyrics.Sources.Rule.Default" xml:space="preserve">
+    <value>Default rules</value>
+  </data>
+  <data name="Lyrics.Sources.Rule.Manual" xml:space="preserve">
+    <value>Manual rules</value>
+  </data>
+  <data name="Lyrics.Sources.Rule.Default.Description" xml:space="preserve">
+    <value>Use QQ Music at a match score of 80 or higher; otherwise query the remaining sources together, preferring the current player’s source before comparing scores.</value>
+  </data>
+  <data name="Lyrics.Sources.Rule.Manual.Description" xml:space="preserve">
+    <value>Use the selected request and result rules; continue to other sources when no lyrics are available.</value>
+  </data>
+  <data name="Lyrics.Sources.Attempt.Title" xml:space="preserve">
+    <value>Source requests</value>
+  </data>
+  <data name="Lyrics.Sources.Attempt.Description" xml:space="preserve">
+    <value>Wait up to 5 seconds per source. Parallel attempts request all enabled sources together.</value>
+  </data>
+  <data name="Lyrics.Sources.Attempt.Sequential" xml:space="preserve">
+    <value>Try one by one</value>
+  </data>
+  <data name="Lyrics.Sources.Attempt.Parallel" xml:space="preserve">
+    <value>Try in parallel</value>
+  </data>
+  <data name="Lyrics.Sources.Result.Title" xml:space="preserve">
+    <value>Lyric results</value>
+  </data>
+  <data name="Lyrics.Sources.Result.FirstAvailable" xml:space="preserve">
+    <value>First available</value>
+  </data>
+  <data name="Lyrics.Sources.Result.Ordered" xml:space="preserve">
+    <value>Source order first</value>
+  </data>
+  <data name="Lyrics.Sources.Result.SequentialHint" xml:space="preserve">
+    <value>With one-by-one requests, both result rules use the first available lyrics from top to bottom.</value>
+  </data>
+  <data name="Lyrics.Sources.Result.FirstAvailable.Description" xml:space="preserve">
+    <value>Use the first valid lyrics to arrive and stop waiting for other sources.</value>
+  </data>
+  <data name="Lyrics.Sources.Result.Ordered.Description" xml:space="preserve">
+    <value>Prefer sources higher in the list; wait for earlier sources to finish or time out before accepting a later result.</value>
+  </data>
+  <data name="Lyrics.Sources.Order.Title" xml:space="preserve">
+    <value>Source priority</value>
+  </data>
+  <data name="Lyrics.Sources.Order.Description" xml:space="preserve">
+    <value>One-by-one requests and ordered results follow the list from top to bottom. Disabled sources keep their position.</value>
+  </data>
+  <data name="Lyrics.Sources.Order.Reset" xml:space="preserve">
+    <value>Restore default order</value>
   </data>
 </root>

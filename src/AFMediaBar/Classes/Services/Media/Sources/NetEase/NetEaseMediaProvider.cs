@@ -48,7 +48,8 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
         LyricsCacheCapacity,
         result => LyricsCacheBudgetPolicy.EstimateBytes(result?.Document),
         LyricsCacheBudgetPolicy.DefaultBudgetBytes);
-    private readonly HashSet<string> _pendingLyrics = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, CancellationTokenSource> _pendingLyrics = new(StringComparer.Ordinal);
+    private readonly object _lyricsRequestGate = new();
 
     /// <summary>缓存代次：取词设置变化时自增，让仍在飞行中的结果写不回来。/ Cache generation: incremented when retrieval settings change, so an in-flight result cannot be written back.</summary>
     private int _lyricsCacheGeneration;
@@ -113,6 +114,7 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
 
         _lyricsCache.Clear();
         _lyricsCacheGeneration++;
+        CancelPendingLyrics();
     }
 
     /// <summary>
@@ -192,6 +194,7 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
         {
             _lyricsCache.Clear();
             _lyricsCacheGeneration++;
+            CancelPendingLyrics();
         }
 
         if (level >= MemoryPruneLevel.DisplayOff)
@@ -225,7 +228,7 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
         _currentProcessId = 0;
         _version++;
         _continuity.Clear();
-        _pendingLyrics.Clear();
+        CancelPendingLyrics();
         if (!_isDisposed)
             SnapshotChanged?.Invoke(this, null);
     }
@@ -258,6 +261,7 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
                         _currentProcessId = result.ProcessId;
                         _currentInfo = null;
                         _version++;
+                        CancelPendingLyrics();
                         _continuity.Clear();
                     }
                     if (result.Info is { } info)
@@ -268,6 +272,7 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
                         // Late lyrics cannot resurrect a failed or exited source.
                         _currentInfo = null;
                         _version++;
+                        CancelPendingLyrics();
                         PublishSnapshot(_continuity.Update(null, result.ProcessId > 0, DateTimeOffset.UtcNow), token);
                     }
                 }, DispatcherPriority.Background, token).Task.ConfigureAwait(false);
@@ -316,16 +321,25 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
     {
         if (_currentInfo is not { } current ||
             !string.Equals(current.Identity, info.Identity, StringComparison.Ordinal))
+        {
             _version++;
+            CancelPendingLyrics();
+        }
         _currentInfo = info;
         _currentInfoReadAt = readAt;
 
         var hasCachedLyrics = _lyricsCache.TryGetValue(info.Identity, out var lyrics);
-        var shouldLoadLyrics = !hasCachedLyrics && _pendingLyrics.Add(info.Identity);
         PublishSnapshot(_continuity.Update(CreateSnapshot(info, lyrics, readAt), true, DateTimeOffset.UtcNow), token);
-        if (shouldLoadLyrics)
+        if (!hasCachedLyrics)
         {
-            _ = LoadLyricsAsync(info, token);
+            CancellationTokenSource cancellation;
+            lock (_lyricsRequestGate)
+            {
+                if (_pendingLyrics.ContainsKey(info.Identity)) return;
+                cancellation = CancellationTokenSource.CreateLinkedTokenSource(token);
+                _pendingLyrics.Add(info.Identity, cancellation);
+            }
+            _ = LoadLyricsAsync(info, cancellation);
         }
     }
 
@@ -359,8 +373,24 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
         SnapshotChanged?.Invoke(this, snapshot);
     }
 
-    private async Task LoadLyricsAsync(PlayerInfo info, CancellationToken token)
+    private void CancelPendingLyrics()
     {
+        CancellationTokenSource[] cancellations;
+        lock (_lyricsRequestGate)
+        {
+            cancellations = _pendingLyrics.Values.ToArray();
+            _pendingLyrics.Clear();
+        }
+        foreach (var cancellation in cancellations)
+        {
+            try { cancellation.Cancel(); }
+            catch (ObjectDisposedException) { }
+        }
+    }
+
+    private async Task LoadLyricsAsync(PlayerInfo info, CancellationTokenSource cancellation)
+    {
+        var token = cancellation.Token;
         var generation = _lyricsCacheGeneration;
         var version = _version;
         try
@@ -399,8 +429,12 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
         }
         finally
         {
-            if (!token.IsCancellationRequested)
-                _pendingLyrics.Remove(info.Identity);
+            lock (_lyricsRequestGate)
+            {
+                if (_pendingLyrics.TryGetValue(info.Identity, out var current) && ReferenceEquals(current, cancellation))
+                    _pendingLyrics.Remove(info.Identity);
+            }
+            cancellation.Dispose();
         }
     }
 

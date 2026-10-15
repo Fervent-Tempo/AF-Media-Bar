@@ -12,6 +12,10 @@ using System.Xml.Linq;
 using AFMediaBar.Resources;
 using AFMediaBar.Components;
 using AFMediaBar.Classes.Services;
+using AFMediaBar.Classes.Models.Settings;
+using AFMediaBar.Classes.Services.Settings;
+using AFMediaBar.Classes.Services.Localization;
+using AFMediaBar.Classes.Settings;
 using AFMediaBar.ViewModels.Pages;
 using AFMediaBar.Views.Pages;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -85,6 +89,7 @@ public sealed class SettingsVisualRuntimeTests
                 VerifyNarrowRow(app);
                 SettingsLiveVisualChecks.VerifyCardHover(app);
                 VerifyPageMarkup(app);
+                VerifyManualLyricsChoices();
                 DeveloperToolsMarkupChecks.Verify(app, FindRepository());
                 VerifyReleaseHistoryBody();
                 SettingsLiveVisualChecks.VerifyContextNavigation(app);
@@ -180,6 +185,44 @@ public sealed class SettingsVisualRuntimeTests
                 encoder.Save(output);
             }
         }
+    }
+
+    private static void VerifyManualLyricsChoices()
+    {
+        var previous = SettingsManager.Current;
+        using var context = new SettingsPageContext();
+        context.Initialize(SettingsContext.Initial);
+        using var localization = new LocalizationService();
+        SettingsManager.Current = new AppSettings { LyricsSource = LyricsSourceSettings.Default with { Rule = LyricsSourceRule.Manual } };
+        using var model = new LyricsViewModel(localization, new LegacySettingsConfiguration(context));
+        var page = new LyricsPage(model);
+        var window = SettingsLiveVisualChecks.CreateWindow(page);
+        try
+        {
+            window.Show();
+            window.UpdateLayout();
+            var scroll = (ScrollViewer)page.FindName("PageScroll");
+            var group = ((Panel)scroll.Content).Children.OfType<SettingsGroup>().Single(item => item.GroupId == "Common.Group.LyricsSources");
+            var expander = ((Panel)group.Content).Children.OfType<CardExpander>().Single();
+            expander.IsExpanded = true;
+            SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(40));
+            var rows = (Panel)expander.Content;
+            var rule = (ComboBox)rows.Children.OfType<SettingsRow>().First().Content;
+            var manual = rows.Children.OfType<Panel>().Single();
+            var choices = manual.Children.OfType<SettingsRow>().Select(row => row.Content).OfType<ComboBox>().ToArray();
+            Assert.AreEqual(LyricsSourceRule.Manual, rule.SelectedValue);
+            Assert.AreEqual(Visibility.Visible, manual.Visibility);
+            choices[0].SelectedValue = LyricsSourceAttemptMode.Parallel;
+            choices[1].SelectedValue = LyricsSourceResultMode.FirstAvailable;
+            Assert.AreEqual(LyricsSourceAttemptMode.Parallel, model.SourceAttemptMode);
+            Assert.AreEqual(LyricsSourceResultMode.FirstAvailable, model.SourceResultMode);
+            rule.SelectedValue = LyricsSourceRule.Default;
+            Assert.AreEqual(Visibility.Collapsed, manual.Visibility);
+            rule.SelectedValue = LyricsSourceRule.Manual;
+            Assert.AreEqual(LyricsSourceAttemptMode.Parallel, choices[0].SelectedValue);
+            Assert.AreEqual(LyricsSourceResultMode.FirstAvailable, choices[1].SelectedValue);
+        }
+        finally { window.Close(); SettingsManager.Current = previous; }
     }
 
     private static void VerifyReleaseHistoryBody()

@@ -1,4 +1,4 @@
-// 协调优先源/并发备用源取词，拥有一次请求的预算与取消；不持久化原文或管理媒体身份。
+// 协调默认与手动规则取词，拥有一次请求的预算与取消；不持久化原文或管理媒体身份。
 using System.Diagnostics;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
@@ -6,29 +6,36 @@ using AFMediaBar.Classes.Settings;
 
 namespace AFMediaBar.Classes.Services.Lyrics;
 
-/// <summary>QQ 优先；低于门槛时并发备用源，优先当前播放器对应源，再按分数选择。</summary>
+/// <summary>按默认规则仲裁，或按手动请求方式与优先级获取歌词。</summary>
 public sealed class LyricsService
 {
     /// <summary>单源等待上限。/ Per-source wait limit.</summary>
     public static readonly TimeSpan DefaultPerSourceBudget = TimeSpan.FromSeconds(6);
     /// <summary>包括优先阶段的总等待上限。/ Total wait limit including the preferred stage.</summary>
     public static readonly TimeSpan DefaultTotalBudget = TimeSpan.FromSeconds(12);
+    /// <summary>手动规则的单源等待上限，不受默认整链预算限制。</summary>
+    public static readonly TimeSpan DefaultManualPerSourceBudget = TimeSpan.FromSeconds(5);
     private readonly IReadOnlyList<ILyricsProvider> _providers;
     private readonly TimeSpan _perSourceBudget;
     private readonly TimeSpan _totalBudget;
+    private readonly TimeSpan _manualPerSourceBudget;
 
     /// <summary>使用默认预算创建协调器。/ Creates the coordinator with default budgets.</summary>
     public LyricsService(params ILyricsProvider[] providers) : this(DefaultPerSourceBudget, DefaultTotalBudget, providers) { }
 
     /// <summary>使用显式预算创建协调器。/ Creates the coordinator with explicit wait budgets.</summary>
     public LyricsService(TimeSpan perSourceBudget, TimeSpan totalBudget, params ILyricsProvider[] providers)
+        : this(perSourceBudget, totalBudget, DefaultManualPerSourceBudget, providers) { }
+
+    internal LyricsService(TimeSpan perSourceBudget, TimeSpan totalBudget, TimeSpan manualPerSourceBudget, params ILyricsProvider[] providers)
     {
         _providers = providers;
         _perSourceBudget = perSourceBudget > TimeSpan.Zero ? perSourceBudget : DefaultPerSourceBudget;
         _totalBudget = totalBudget > TimeSpan.Zero ? totalBudget : DefaultTotalBudget;
+        _manualPerSourceBudget = manualPerSourceBudget > TimeSpan.Zero ? manualPerSourceBudget : DefaultManualPerSourceBudget;
     }
 
-    /// <summary>按启用来源执行固定策略。/ Retrieves with the fixed policy and enabled sources.</summary>
+    /// <summary>固定本次设置快照，按启用来源及所选规则取词。</summary>
     public async Task<LyricsResult?> GetLyricsAsync(LyricsRequest request, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -38,7 +45,11 @@ public sealed class LyricsService
             FilterInfoLines = settings.LyricsInfoLineFilterEnabled,
             ArtistSeparators = settings.LyricsArtistSeparators
         };
-        var plan = LyricsRetrievalPolicy.Plan(_providers, LyricsSourcePolicy.ResolveActive(_providers, settings.LyricsSource));
+        var sourceSettings = settings.LyricsSource.Normalize();
+        var active = LyricsSourcePolicy.ResolveActive(_providers, sourceSettings);
+        if (sourceSettings.Rule == LyricsSourceRule.Manual)
+            return await GetManualLyricsAsync(effectiveRequest, active, sourceSettings, cancellationToken).ConfigureAwait(false);
+        var plan = LyricsRetrievalPolicy.Plan(_providers, active);
         var started = Stopwatch.GetTimestamp();
         using var work = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         LyricsResult? preferredResult = null;
@@ -71,6 +82,63 @@ public sealed class LyricsService
         }
         finally { work.Cancel(); }
     }
+
+    private async Task<LyricsResult?> GetManualLyricsAsync(LyricsRequest request, IReadOnlyList<ILyricsProvider> providers,
+        LyricsSourceSettings settings, CancellationToken cancellationToken)
+    {
+        var started = Stopwatch.GetTimestamp();
+        using var work = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        LyricsResult? noLyrics = null;
+        try
+        {
+            if (settings.AttemptMode == LyricsSourceAttemptMode.Sequential)
+            {
+                foreach (var provider in providers)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var result = await TryProviderAsync(provider, request, _manualPerSourceBudget, work.Token).ConfigureAwait(false);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (IsAvailable(result)) return LogResult(result, started);
+                    if (result?.Status == LyricsResultStatus.NoLyrics) noLyrics ??= result;
+                }
+                return LogResult(noLyrics, started);
+            }
+
+            var firstAvailable = new TaskCompletionSource<LyricsResult?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            async Task<LyricsResult?> QueryAsync(ILyricsProvider provider)
+            {
+                var result = await TryProviderAsync(provider, request, _manualPerSourceBudget, work.Token).ConfigureAwait(false);
+                if (IsAvailable(result)) firstAvailable.TrySetResult(result);
+                return result;
+            }
+            var tasks = providers.Select(QueryAsync).ToArray();
+            var all = Task.WhenAll(tasks);
+            // 提前采纳结果后，其余包装任务仍会因取消退出；它们的异常也必须被观察。
+            _ = all.ContinueWith(static abandoned => _ = abandoned.Exception, CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
+            if (settings.ResultMode == LyricsSourceResultMode.FirstAvailable)
+            {
+                await Task.WhenAny(firstAvailable.Task, all).ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
+                if (firstAvailable.Task.IsCompletedSuccessfully)
+                    return LogResult(await firstAvailable.Task.ConfigureAwait(false), started);
+            }
+            // 顺序等待已同时启动的任务；后序即使先返回，也不能越过仍在等待的前序来源。
+            foreach (var task in tasks)
+            {
+                var result = await task.ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
+                if (IsAvailable(result)) return LogResult(result, started);
+                if (result?.Status == LyricsResultStatus.NoLyrics) noLyrics ??= result;
+            }
+            cancellationToken.ThrowIfCancellationRequested();
+            return LogResult(noLyrics, started);
+        }
+        finally { work.Cancel(); }
+    }
+
+    private static bool IsAvailable(LyricsResult? result) =>
+        result is { Status: LyricsResultStatus.Available, Document.Lines.Count: > 0 };
 
     private TimeSpan Remaining(long started)
     {

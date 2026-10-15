@@ -38,7 +38,8 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
 
     private readonly LyricsService _lyricsService;
     private readonly LruCache<(string SessionId, LyricsRequest Request), LyricsResult?> _lyricsCache;
-    private readonly HashSet<(string SessionId, LyricsRequest Request)> _pendingLyrics = [];
+    private readonly Dictionary<(string SessionId, LyricsRequest Request), CancellationTokenSource> _pendingLyrics = [];
+    private readonly object _lyricsRequestGate = new();
     private (string SessionId, LyricsRequest Request)? _lastLyricsKey;
     private readonly CancellationTokenSource _lifetime = new();
     private bool _disposed;
@@ -75,6 +76,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
 
         _lyricsCache.Clear();
         _lyricsCacheGeneration++;
+        CancelPendingLyrics();
 
         // 封面缩略图与主色缓存也归本构建器管：它们是本类在构建快照时填进去的（见 Build），因此也由本类丢弃，
         // 而不是让某个"清理服务"隔着模块去动别人的静态缓存。
@@ -108,6 +110,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         if (_disposed) return;
         _disposed = true;
         SettingsManager.SettingsChanged -= OnSettingsChanged;
+        CancelPendingLyrics();
         _lifetime.Cancel();
         _lifetime.Dispose();
         _lyricsCache.Clear();
@@ -127,6 +130,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
 
         _lyricsCache.Clear();
         _lyricsCacheGeneration++;
+        CancelPendingLyrics();
         EnrichmentCompleted?.Invoke();
     }
 
@@ -251,19 +255,18 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         // SMTC 的总时长可能随时间轴更新变化；它用于匹配，不用于缓存或在途请求的曲目身份。
         var key = (sessionId, request with { DurationSeconds = null });
         _lastLyricsKey = key;
+        CancelPendingLyrics(key);
         if (_lyricsCache.TryGetValue(key, out var cached))
         {
             return cached;
         }
-        if (_pendingLyrics.Contains(key) ||
-            IsProvidedBySourceProvider(sourceId) ||
+        if (IsProvidedBySourceProvider(sourceId) ||
             string.IsNullOrWhiteSpace(request.Title))
         {
             return null;
         }
 
-        _pendingLyrics.Add(key);
-        _ = LoadLyricsAsync(key, request);
+        BeginLyricsRequest(key, request);
         return null;
     }
 
@@ -311,40 +314,77 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
                   last.Request.PlaybackSourceId == sourceId &&
                   last.Request.Title == title && last.Request.Artist == artist
             ? last : (sessionId, request with { DurationSeconds = null });
-        if (_lyricsCache.TryGetValue(key, out _) || !_pendingLyrics.Add(key))
+        CancelPendingLyrics(key);
+        if (_lyricsCache.TryGetValue(key, out _))
         {
             return;
         }
 
-        _ = LoadLyricsAsync(key, request with { Album = key.Request.Album });
+        BeginLyricsRequest(key, request with { Album = key.Request.Album });
     }
 
-    private async Task LoadLyricsAsync((string SessionId, LyricsRequest Request) key, LyricsRequest request)
+    private void BeginLyricsRequest((string SessionId, LyricsRequest Request) key, LyricsRequest request)
+    {
+        CancellationTokenSource cancellation;
+        lock (_lyricsRequestGate)
+        {
+            if (_disposed || _pendingLyrics.ContainsKey(key)) return;
+            cancellation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+            _pendingLyrics.Add(key, cancellation);
+        }
+        _ = LoadLyricsAsync(key, request, cancellation);
+    }
+
+    private void CancelPendingLyrics((string SessionId, LyricsRequest Request)? current = null)
+    {
+        CancellationTokenSource[] cancellations;
+        lock (_lyricsRequestGate)
+        {
+            var stale = _pendingLyrics.Where(pair => current is not { } active ||
+                pair.Key.SessionId == active.SessionId && pair.Key != active).ToArray();
+            cancellations = stale.Select(pair => pair.Value).ToArray();
+            foreach (var pair in stale) _pendingLyrics.Remove(pair.Key);
+        }
+        foreach (var cancellation in cancellations)
+        {
+            // 请求可能在锁外取消前已经完成并自行释放。
+            try { cancellation.Cancel(); }
+            catch (ObjectDisposedException) { }
+        }
+    }
+
+    private async Task LoadLyricsAsync((string SessionId, LyricsRequest Request) key, LyricsRequest request, CancellationTokenSource cancellation)
     {
         var generation = _lyricsCacheGeneration;
+        var token = cancellation.Token;
         try
         {
-            var result = await _lyricsService.GetLyricsAsync(request, _lifetime.Token);
+            var result = await _lyricsService.GetLyricsAsync(request, token);
 
             // 取词过程中设置若被改过（来源、署名行过滤），这次结果已经不属于当前配置，写入只会让用户以为设置没生效。
             // If the settings changed while this retrieval ran (sources, credit filtering), the result no longer belongs
             // to the current configuration and writing it would only make the setting look ineffective.
-            if (!_disposed && generation == _lyricsCacheGeneration)
+            if (!_disposed && !token.IsCancellationRequested && generation == _lyricsCacheGeneration)
             {
                 _lyricsCache.Set(key, result, LyricsCacheRetentionPolicy.Lifetime(result));
             }
         }
         catch
         {
-            if (!_disposed && generation == _lyricsCacheGeneration)
+            if (!_disposed && !token.IsCancellationRequested && generation == _lyricsCacheGeneration)
             {
                 _lyricsCache.Set(key, null, LyricsCacheRetentionPolicy.Lifetime(null));
             }
         }
         finally
         {
-            _pendingLyrics.Remove(key);
-            if (!_disposed) EnrichmentCompleted?.Invoke();
+            lock (_lyricsRequestGate)
+            {
+                if (_pendingLyrics.TryGetValue(key, out var current) && ReferenceEquals(current, cancellation))
+                    _pendingLyrics.Remove(key);
+            }
+            cancellation.Dispose();
+            if (!_disposed && !token.IsCancellationRequested && generation == _lyricsCacheGeneration) EnrichmentCompleted?.Invoke();
         }
     }
 

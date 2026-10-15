@@ -10,8 +10,7 @@ internal sealed record LyricsRetrievalPlan(ILyricsProvider? Preferred, IReadOnly
 /// <summary>构造取词阶段；备用阶段优先当前播放器对应结果，再按匹配分选择。</summary>
 internal static class LyricsRetrievalPolicy
 {
-    // QQ 优质歌词库优先；备用源并发后按分数采纳。阶段、权重和门槛属于实现策略，
-    // 避免用户组合出互相冲突的调度规则；后续扩展在此调整，不重新添加策略 UI 设置。
+    // 默认规则：QQ 优质歌词库优先；备用源并发后按分数采纳。手动来源顺序不改变这条策略。
     internal const string PreferredSource = LyricsSourceCatalog.QQMusic;
     // QQ 达到此分数直接结束优先阶段；低分结果保留，与备用源按真实元数据评分比较。
     internal const int PreferredMinimumScore = 80;

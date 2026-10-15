@@ -1526,10 +1526,10 @@
     <value>已关闭全部歌词来源：不会再发出任何歌词请求，媒体栏只显示标题与歌手。</value>
   </data>
   <data name="Lyrics.Sources.Callout" xml:space="preserve">
-    <value>优先搜索已启用的 QQ 音乐，匹配达到 85 分才下载歌词。否则并发查询其他启用来源，采纳最高分结果，包括确认无歌词的结果。</value>
+    <value>可使用默认规则，或手动调整来源优先级、请求方式与结果选择。</value>
   </data>
   <data name="Lyrics.Sources.Expander.Description" xml:space="preserve">
-    <value>选择允许获取歌词的来源；查询阶段与评分由应用统一管理。</value>
+    <value>选择歌词来源及默认或手动获取规则。</value>
   </data>
   <data name="Lyrics.Sources.Expander.Title" xml:space="preserve">
     <value>歌词来源</value>
@@ -1547,7 +1547,7 @@
     <value>重新启用全部歌词来源。</value>
   </data>
   <data name="Lyrics.Sources.Reset.Title" xml:space="preserve">
-    <value>恢复默认来源</value>
+    <value>启用全部来源</value>
   </data>
   <data name="Lyrics.Sources.Row.Description" xml:space="preserve">
     <value>允许从此来源获取歌词。</value>
@@ -1961,7 +1961,7 @@
     <value>启用实时歌词，设置单双行和第二行内容优先级。</value>
   </data>
   <data name="Search.Lyrics.Sources.Description" xml:space="preserve">
-    <value>选择启用的歌词来源；取词顺序和评分由应用管理</value>
+    <value>歌词来源、默认与手动规则、优先级及逐个或并发尝试</value>
   </data>
   <data name="Search.MediaAndNotifications.MediaSource.Description" xml:space="preserve">
     <value>来源允许列表与已检测来源</value>
@@ -2843,5 +2843,59 @@
   </data>
   <data name="Audio.Device.NotPresent" xml:space="preserve">
     <value>当前不可用</value>
+  </data>
+  <data name="Lyrics.Sources.Rule.Title" xml:space="preserve">
+    <value>获取规则</value>
+  </data>
+  <data name="Lyrics.Sources.Rule.Default" xml:space="preserve">
+    <value>默认规则</value>
+  </data>
+  <data name="Lyrics.Sources.Rule.Manual" xml:space="preserve">
+    <value>手动规则</value>
+  </data>
+  <data name="Lyrics.Sources.Rule.Default.Description" xml:space="preserve">
+    <value>QQ 音乐匹配达到 80 分时优先采用；否则并发查询其余来源，优先当前播放器对应来源，再比较匹配分。</value>
+  </data>
+  <data name="Lyrics.Sources.Rule.Manual.Description" xml:space="preserve">
+    <value>按所选获取方式和来源顺序选用歌词；无歌词时继续尝试其他来源。</value>
+  </data>
+  <data name="Lyrics.Sources.Attempt.Title" xml:space="preserve">
+    <value>歌词源</value>
+  </data>
+  <data name="Lyrics.Sources.Attempt.Description" xml:space="preserve">
+    <value>每个来源最多等待 5 秒。并发尝试会同时请求所有已启用来源。</value>
+  </data>
+  <data name="Lyrics.Sources.Attempt.Sequential" xml:space="preserve">
+    <value>逐个尝试</value>
+  </data>
+  <data name="Lyrics.Sources.Attempt.Parallel" xml:space="preserve">
+    <value>并发尝试</value>
+  </data>
+  <data name="Lyrics.Sources.Result.Title" xml:space="preserve">
+    <value>歌词结果</value>
+  </data>
+  <data name="Lyrics.Sources.Result.FirstAvailable" xml:space="preserve">
+    <value>先到先得</value>
+  </data>
+  <data name="Lyrics.Sources.Result.Ordered" xml:space="preserve">
+    <value>顺序优先</value>
+  </data>
+  <data name="Lyrics.Sources.Result.SequentialHint" xml:space="preserve">
+    <value>逐个尝试时，两种结果规则均采用从上到下首个可用歌词。</value>
+  </data>
+  <data name="Lyrics.Sources.Result.FirstAvailable.Description" xml:space="preserve">
+    <value>采用最先返回的可用歌词，停止等待其余来源。</value>
+  </data>
+  <data name="Lyrics.Sources.Result.Ordered.Description" xml:space="preserve">
+    <value>优先采用靠上的来源；后续来源先返回时，仍等待前序来源结束或超时。</value>
+  </data>
+  <data name="Lyrics.Sources.Order.Title" xml:space="preserve">
+    <value>来源优先级</value>
+  </data>
+  <data name="Lyrics.Sources.Order.Description" xml:space="preserve">
+    <value>逐个尝试或顺序优先时，按从上到下的顺序选用来源。关闭来源会保留其位置。</value>
+  </data>
+  <data name="Lyrics.Sources.Order.Reset" xml:space="preserve">
+    <value>恢复默认顺序</value>
   </data>
 </root>

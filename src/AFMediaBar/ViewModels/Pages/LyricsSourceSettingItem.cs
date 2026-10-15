@@ -24,6 +24,12 @@ public partial class LyricsSourceSettingItem : ObservableObject
     [ObservableProperty]
     private bool _isEnabled;
 
+    [ObservableProperty]
+    private bool _canMoveUp;
+
+    [ObservableProperty]
+    private bool _canMoveDown;
+
     /// <summary>启用状态变化时通知页面视图模型重新写入设置。/ Notifies the page view model to write the settings again.</summary>
     public event Action<LyricsSourceSettingItem>? EnabledChanged;
 

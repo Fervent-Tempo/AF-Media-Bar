@@ -267,7 +267,7 @@ public static class SettingsSearchIndex
             "Common.Group.LyricsSources",
             "Search.Lyrics.Sources.Description",
             language,
-            ["来源", "歌词来源", "source", "sources", "网易云", "网易云音乐", "netease", "qq 音乐", "qqmusic", "酷狗", "kugou", "汽水", "soda", "lrclib", "搜索", "search", "匹配", "match", "艺术家分隔符", "artist separators"]),
+            ["来源", "歌词来源", "source", "sources", "网易云", "网易云音乐", "netease", "qq 音乐", "qqmusic", "酷狗", "kugou", "汽水", "soda", "lrclib", "搜索", "search", "匹配", "match", "艺术家分隔符", "artist separators", "默认规则", "手动规则", "权重", "优先级", "顺序优先", "先到先得", "逐个尝试", "并发尝试", "manual", "priority", "parallel", "sequential", "first available", "手動", "並行", "優先", "thủ công", "song song", "lần lượt"]),
 
         // ---- 外观 / Appearance ----
         Create(SettingsPageKey.Appearance, "Appearance.Group.TaskbarBackground", "Appearance.Row.TaskbarBackground.Description", language,

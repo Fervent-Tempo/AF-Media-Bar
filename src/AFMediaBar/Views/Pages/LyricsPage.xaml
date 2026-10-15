@@ -297,6 +297,37 @@
                             </ui:CardExpander.Header>
                             <StackPanel>
                                 <components:SettingsRow
+                                    Title="{DynamicResource Loc.Lyrics.Sources.Rule.Title}"
+                                    Description="{Binding ViewModel.SourceRuleDescription}"
+                                    IsNested="True">
+                                    <ComboBox SelectedValue="{Binding ViewModel.SourceRule, Mode=TwoWay}" SelectedValuePath="Tag">
+                                        <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Sources.Rule.Default}" Tag="{x:Static settings:LyricsSourceRule.Default}" />
+                                        <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Sources.Rule.Manual}" Tag="{x:Static settings:LyricsSourceRule.Manual}" />
+                                    </ComboBox>
+                                </components:SettingsRow>
+                                <StackPanel Visibility="{Binding ViewModel.IsManualSourceRule, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                                    <components:SettingsRow Title="{DynamicResource Loc.Lyrics.Sources.Attempt.Title}"
+                                        Description="{DynamicResource Loc.Lyrics.Sources.Attempt.Description}" IsNested="True">
+                                        <ComboBox SelectedValue="{Binding ViewModel.SourceAttemptMode, Mode=TwoWay}" SelectedValuePath="Tag">
+                                            <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Sources.Attempt.Sequential}" Tag="{x:Static settings:LyricsSourceAttemptMode.Sequential}" />
+                                            <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Sources.Attempt.Parallel}" Tag="{x:Static settings:LyricsSourceAttemptMode.Parallel}" />
+                                        </ComboBox>
+                                    </components:SettingsRow>
+                                    <components:SettingsRow Title="{DynamicResource Loc.Lyrics.Sources.Result.Title}"
+                                        Description="{Binding ViewModel.SourceResultDescription}" IsNested="True">
+                                        <ComboBox SelectedValue="{Binding ViewModel.SourceResultMode, Mode=TwoWay}" SelectedValuePath="Tag">
+                                            <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Sources.Result.FirstAvailable}" Tag="{x:Static settings:LyricsSourceResultMode.FirstAvailable}" />
+                                            <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Sources.Result.Ordered}" Tag="{x:Static settings:LyricsSourceResultMode.Ordered}" />
+                                        </ComboBox>
+                                    </components:SettingsRow>
+                                    <components:SettingsRow Title="{DynamicResource Loc.Lyrics.Sources.Order.Title}"
+                                        Description="{DynamicResource Loc.Lyrics.Sources.Order.Description}" IsNested="True">
+                                        <ui:Button Command="{Binding ViewModel.ResetSourceOrderCommand}"
+                                            Content="{DynamicResource Loc.Lyrics.Sources.Order.Reset}" Icon="{ui:SymbolIcon ArrowReset24}"
+                                            Style="{StaticResource AfSettingsButtonStyle}" />
+                                    </components:SettingsRow>
+                                </StackPanel>
+                                <components:SettingsRow
                                     Description="{DynamicResource Loc.Lyrics.Sources.Reset.Description}"
                                     Icon="{ui:SymbolIcon ArrowReset24}"
                                     IsNested="True"
@@ -315,6 +346,15 @@
                                                 IsNested="True"
                                                 Title="{Binding DisplayName}">
                                                 <StackPanel Orientation="Horizontal">
+                                                    <StackPanel Orientation="Horizontal"
+                                                        Visibility="{Binding DataContext.ViewModel.IsManualSourceRule, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                                                        <ui:Button Command="{Binding DataContext.ViewModel.MoveSourceUpCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                            CommandParameter="{Binding}" IsEnabled="{Binding CanMoveUp}" Icon="{ui:SymbolIcon ArrowUp24}"
+                                                            ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveUp}" Style="{StaticResource AfSettingsIconButtonStyle}" />
+                                                        <ui:Button Command="{Binding DataContext.ViewModel.MoveSourceDownCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                            CommandParameter="{Binding}" IsEnabled="{Binding CanMoveDown}" Icon="{ui:SymbolIcon ArrowDown24}"
+                                                            ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveDown}" Style="{StaticResource AfSettingsIconButtonStyle}" />
+                                                    </StackPanel>
                                                     <ui:ToggleSwitch IsChecked="{Binding IsEnabled, Mode=TwoWay}" />
                                                 </StackPanel>
                                             </components:SettingsRow>

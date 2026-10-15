@@ -1,9 +1,29 @@
 // 歌词源启用集合的数据契约与归一化；不依赖界面设置、服务或外部资源。
 namespace AFMediaBar.Classes.Settings;
 
+/// <summary>歌词来源仲裁规则。</summary>
+public enum LyricsSourceRule
+{
+    Default = 0,
+    Manual = 1
+}
+
+/// <summary>手动规则下来源请求的启动方式。</summary>
+public enum LyricsSourceAttemptMode
+{
+    Sequential = 0,
+    Parallel = 1
+}
+
+/// <summary>手动规则下有效歌词结果的采纳方式。</summary>
+public enum LyricsSourceResultMode
+{
+    Ordered = 0,
+    FirstAvailable = 1
+}
+
 /// <summary>
-/// 歌词来源开关：列表仅决定启用集合，查询顺序由固定策略拥有。
-/// Lyric-source selection; retrieval order belongs to the fixed policy.
+/// 歌词来源开关及规则；启用集合与手动优先级分别保存。
 ///
 /// 三种取值含义不同，不能混为一谈：
 /// - <c>null</c>：从未配置过 → 全部来源启用，因此旧设置文件与新增来源都会自动生效；
@@ -20,6 +40,12 @@ namespace AFMediaBar.Classes.Settings;
 /// <param name="EnabledSourceIds">启用来源的有序 id 列表；null 表示全部来源，空数组表示全部关闭 / Ordered ids of the enabled sources; null means all of them, an empty array means none.</param>
 public readonly record struct LyricsSourceSettings(IReadOnlyList<string>? EnabledSourceIds)
 {
+    public LyricsSourceRule Rule { get; init; } = LyricsSourceRule.Default;
+    public LyricsSourceAttemptMode AttemptMode { get; init; } = LyricsSourceAttemptMode.Sequential;
+    public LyricsSourceResultMode ResultMode { get; init; } = LyricsSourceResultMode.Ordered;
+    /// <summary>手动来源顺序，null 使用目录顺序；关闭来源也保留其位置。</summary>
+    public IReadOnlyList<string>? PrioritySourceIds { get; init; }
+
     /// <summary>默认值：从未配置，即全部来源启用。</summary>
     public static LyricsSourceSettings Default { get; } = new(null);
 
@@ -30,12 +56,16 @@ public readonly record struct LyricsSourceSettings(IReadOnlyList<string>? Enable
     /// </summary>
     public LyricsSourceSettings Normalize() => this with
     {
-        EnabledSourceIds = EnabledSourceIds is null
-            ? null
-            : EnabledSourceIds
-                .Where(static value => !string.IsNullOrWhiteSpace(value))
-                .Select(static value => value.Trim())
-                .Distinct(StringComparer.Ordinal)
-                .ToArray()
+        Rule = Enum.IsDefined(Rule) ? Rule : LyricsSourceRule.Default,
+        AttemptMode = Enum.IsDefined(AttemptMode) ? AttemptMode : LyricsSourceAttemptMode.Sequential,
+        ResultMode = Enum.IsDefined(ResultMode) ? ResultMode : LyricsSourceResultMode.Ordered,
+        EnabledSourceIds = NormalizeIds(EnabledSourceIds),
+        PrioritySourceIds = NormalizeIds(PrioritySourceIds)
     };
+
+    private static string[]? NormalizeIds(IReadOnlyList<string>? ids) => ids?
+        .Where(static value => !string.IsNullOrWhiteSpace(value))
+        .Select(static value => value.Trim())
+        .Distinct(StringComparer.Ordinal)
+        .ToArray();
 }
