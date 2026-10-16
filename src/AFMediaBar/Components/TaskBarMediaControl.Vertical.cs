@@ -1,10 +1,9 @@
-// 竖向实际宽度布局与快捷控制弹层；控件在卸载时关闭 Popup 并归还共享视觉树。
+// 竖向实际宽度布局与栏内快捷控制；封面弹层沿用控件统一生命周期。
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Interop;
 using System.Windows.Media;
-using System.Windows.Media.Animation;
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Lyrics;
@@ -15,7 +14,6 @@ namespace AFMediaBar.Components;
 
 public partial class TaskBarMediaControl
 {
-    private Popup? _verticalHoverPopup;
     private bool _verticalHostConfigured;
     private bool _verticalTaskbarOnLeft;
     private double _verticalPerformanceLength = 44;
@@ -32,6 +30,11 @@ public partial class TaskBarMediaControl
         HideTaskbarHoverLayer(immediate: true);
         AnimateArtworkHover(false, immediate: true);
         _verticalTaskbarOnLeft = onLeft;
+        if (_isVertical)
+        {
+            ConfigureSpectrum();
+            ApplyVerticalSectionGeometry(MainBorder.Height);
+        }
     }
 
     private void ConfigureVerticalHost(bool vertical)
@@ -44,17 +47,9 @@ public partial class TaskBarMediaControl
         TaskbarTransportButtons.Orientation = TaskbarHoverActions.Orientation;
         TaskbarHoverActionsOffset.X = 0;
         TaskbarHoverActionsOffset.Y = 0;
-        TaskbarHoverLayer.MouseEnter -= TaskbarHoverLayer_MouseEnter;
-        TaskbarHoverLayer.MouseLeave -= TaskbarHoverLayer_MouseLeave;
-        if (vertical)
-        {
-            TaskbarHoverLayer.MouseEnter += TaskbarHoverLayer_MouseEnter;
-            TaskbarHoverLayer.MouseLeave += TaskbarHoverLayer_MouseLeave;
-        }
         TaskbarPerformanceItems.Orientation = vertical ? Orientation.Vertical : Orientation.Horizontal;
         if (vertical)
         {
-            TaskbarHoverLayer.Resources = Resources;
             TaskbarHoverLayer.SetResourceReference(Border.BackgroundProperty, "SolidBackgroundFillColorBaseBrush");
             TaskbarHoverLayer.SetResourceReference(Border.BorderBrushProperty, "ControlStrokeColorDefaultBrush");
             TaskbarHoverLayer.BorderThickness = new Thickness(1);
@@ -79,6 +74,15 @@ public partial class TaskBarMediaControl
             TaskbarDirectFullPanelHandle.HorizontalAlignment = HorizontalAlignment.Left;
             TaskbarDirectFullPanelHandle.VerticalAlignment = VerticalAlignment.Top;
             if (TaskbarDirectFullPanelHandle.Content is Border handle) { handle.Width = 28; handle.Height = 4; }
+            HoverRevealHost.VerticalAlignment = VerticalAlignment.Center;
+            TaskbarHoverContent.Margin = new Thickness(5, 5, 6, 3);
+            TaskbarHoverActions.HorizontalAlignment = HorizontalAlignment.Left;
+            TaskbarFullPanelHandle.Width = 44;
+            TaskbarFullPanelHandle.Height = 8;
+            TaskbarFullPanelHandle.Margin = new Thickness(0, -5, 0, 0);
+            TaskbarFullPanelHandle.HorizontalAlignment = HorizontalAlignment.Center;
+            TaskbarFullPanelHandle.VerticalAlignment = VerticalAlignment.Top;
+            if (TaskbarFullPanelHandle.Content is Border hoverHandle) { hoverHandle.Width = 28; hoverHandle.Height = 4; }
             foreach (var surface in new FrameworkElement[] { TaskbarSpectrumHoverSurface, TaskbarPerformanceHoverSurface, TaskbarOutputDeviceHoverSurface, TaskbarInputDeviceHoverSurface, TaskbarVolumeHoverSurface })
                 surface.VerticalAlignment = VerticalAlignment.Center;
         }
@@ -125,6 +129,7 @@ public partial class TaskBarMediaControl
             sideways => MeasureTextWidthExact(sideways, SongTitle) * fontSize / Math.Max(1, SongTitle.FontSize));
         if (!lyricsVisible)
             current = VisibleMetadataTitle(experience);
+        var hoverMinimum = experience.HoverLayerEnabled ? VerticalHoverMinimumLength() : 0;
         var textLength = lyricsVisible && PresentationSettings.LyricsFixedWidthEnabled
             ? LyricsFixedWidth.Normalize(PresentationSettings.LyricsFixedWidthDip)
             : Math.Max(Measure(current, VerticalPrimaryFontSize),
@@ -136,7 +141,8 @@ public partial class TaskBarMediaControl
         double Content(double text) => TaskbarExperiencePolicy.CalculateRestWidth(
             components, 2, text, 2, VerticalSectionGap,
             component => VerticalComponentLength(component, metrics), double.PositiveInfinity);
-        _minimumPrimaryLength = Content(24);
+        _minimumPrimaryLength = Content(Math.Max(24, hoverMinimum));
+        textLength = Math.Max(textLength, hoverMinimum);
         var length = _snapshot.IsConnected
             ? TaskbarExperiencePolicy.ResolvePrimaryLength(Content(textLength), _minimumPrimaryLength,
                 double.PositiveInfinity, experience.LengthMode, experience.FixedLengthDip)
@@ -146,7 +152,7 @@ public partial class TaskBarMediaControl
 
     private void ApplyVerticalSectionGeometry(double primaryLength)
     {
-        _verticalSpectrumLength = Math.Min(24, PresentationSettings.SpectrumComponent.Normalize().ContentHeightDip) + 4;
+        _verticalSpectrumLength = TaskbarSpectrum.Width + 4;
         var width = Math.Max(1, MainBorder.Width);
         var innerWidth = Math.Max(1, width - 4);
         var experience = ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize();
@@ -199,6 +205,7 @@ public partial class TaskBarMediaControl
         SongArtistContainer.Margin = new Thickness(0, 2, 0, 0);
         TaskbarPerformanceSurface.Width = innerWidth;
         TaskbarPerformanceSurface.Padding = new Thickness(1);
+        TaskbarPerformanceSurface.Height = Math.Max(1, _verticalPerformanceLength - 2);
         foreach (var cell in _performanceCells.Values) cell.Width = Math.Max(1, innerWidth - 2);
         var buttonSize = Math.Min(innerWidth, Math.Max(24, TaskbarDensityMetrics.From(experience.Density).ButtonSize));
         foreach (var surface in new[] { TaskbarOutputDeviceSurface, TaskbarInputDeviceSurface, TaskbarVolumeSurface })
@@ -206,7 +213,15 @@ public partial class TaskBarMediaControl
             surface.Width = buttonSize;
             surface.Height = buttonSize;
         }
+        HoverRevealHost.HorizontalAlignment = HorizontalAlignment.Left;
+        HoverRevealHost.VerticalAlignment = VerticalAlignment.Top;
+        HoverRevealHost.Margin = new Thickness(2, layout.TextLeft, 0, 0);
+        var hoverHeightChanged = Math.Abs(HoverRevealHost.Height - textLength) > 0.01;
+        HoverRevealHost.Height = textLength;
         ConfigureVerticalHoverGeometry();
+        if (HoverRevealHost.Visibility == Visibility.Visible &&
+            (hoverHeightChanged || Math.Abs(HoverRevealHost.Width - innerWidth) > 0.01))
+            RetargetHoverRevealWidth(innerWidth);
         var progress = _snapshot.Duration > 0 && experience.RestProgressVisible && layout.Find(TaskbarRestComponent.MediaText) is not null;
         TaskbarRestProgress.Visibility = progress ? Visibility.Visible : Visibility.Collapsed;
         TaskbarRestProgress.HorizontalAlignment = HorizontalAlignment.Left;
@@ -214,7 +229,8 @@ public partial class TaskBarMediaControl
         TaskbarRestProgress.Width = textLength;
         TaskbarRestProgress.Height = 2;
         TaskbarRestProgress.Margin = new Thickness(_verticalTaskbarOnLeft ? width - 2 : 2, layout.TextLeft, 0, 0);
-        TaskbarRestProgress.RenderTransform = new RotateTransform(90);
+        if (TaskbarRestProgress.RenderTransform is not TransformGroup)
+            TaskbarRestProgress.RenderTransform = new RotateTransform(90);
         TaskbarDirectFullPanelHandle.HorizontalAlignment = HorizontalAlignment.Left;
         TaskbarDirectFullPanelHandle.VerticalAlignment = VerticalAlignment.Top;
         TaskbarDirectFullPanelHandle.Width = 8;
@@ -226,16 +242,32 @@ public partial class TaskBarMediaControl
             handle.Height = 28;
         }
         ApplyWebLyricsStyle();
-        if (_verticalHoverPopup?.IsOpen == true) RefreshArtworkPopupPosition(_verticalHoverPopup);
     }
+
+    private double VerticalHoverMinimumLength()
+    {
+        var controls = ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience,
+            PresentationSettings.Experiments.NewAudioControl).Normalize();
+        var count = (controls.HoverControls.PreviousNextVisible ? 2 : 0) +
+            (controls.HoverControls.PlayPauseVisible ? 1 : 0) +
+            (controls.HoverControls.OutputDeviceVisible ? 1 : 0) +
+            (controls.HoverControls.InputDeviceVisible ? 1 : 0) +
+            (controls.HoverControls.AudioControlVisible ? 1 : 0);
+        return count * VerticalHoverButtonSize() + Math.Max(0, count - 1) * controls.HoverButtonSpacingDip + 8;
+    }
+
+    private double VerticalHoverButtonSize() => Math.Min(
+        TaskbarDensityMetrics.From(PresentationSettings.TaskbarExperience.Density).ButtonSize,
+        Math.Max(1, MainBorder.Width - 16));
 
     private void ConfigureVerticalHoverGeometry()
     {
         var experience = ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize();
-        var size = Math.Max(24, TaskbarDensityMetrics.From(experience.Density).ButtonSize);
+        var size = VerticalHoverButtonSize();
         var count = 0;
         foreach (FrameworkElement group in TaskbarHoverActions.Children)
         {
+            if (group.Visibility != Visibility.Visible) continue;
             var items = group is StackPanel panel ? panel.Children.Cast<FrameworkElement>() : [group];
             foreach (var item in items)
             {
@@ -244,54 +276,18 @@ public partial class TaskBarMediaControl
                 item.Margin = new Thickness(0, item.Visibility == Visibility.Visible && count++ > 0 ? experience.HoverButtonSpacingDip : 0, 0, 0);
             }
         }
-        TaskbarHoverLayer.Width = size + 12;
+        TaskbarHoverContent.Margin = _verticalTaskbarOnLeft ? new Thickness(2, 2, 8, 2) : new Thickness(8, 2, 2, 2);
+        TaskbarHoverActions.HorizontalAlignment = HorizontalAlignment.Center;
+        TaskbarHoverLayer.Width = Math.Max(1, MainBorder.Width - 4);
+        TaskbarHoverLayer.Height = Math.Max(1, SongInfoStackPanel.Height);
         TaskbarHoverActionsOffset.X = 0;
         TaskbarHoverActionsOffset.Y = 0;
-        TaskbarHoverActions.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        TaskbarHoverLayer.Height = Math.Max(24, TaskbarHoverActions.DesiredSize.Height + 18);
-    }
-
-    private void ShowVerticalHoverLayer()
-    {
-        ConfigureVerticalHoverGeometry();
-        _verticalHoverPopup ??= new Popup
-        {
-            AllowsTransparency = true,
-            StaysOpen = true,
-            Placement = PlacementMode.Custom,
-            PlacementTarget = SongInfoStackPanel,
-            CustomPopupPlacementCallback = (_, _, _) =>
-            {
-                var dpi = VisualTreeHelper.GetDpi(this).DpiScaleX;
-                var origin = SongInfoStackPanel.PointToScreen(new Point());
-                var work = GetPopupMonitorWorkArea(origin);
-                var x = _verticalTaskbarOnLeft ? origin.X + SongInfoStackPanel.Width * dpi : origin.X - TaskbarHoverLayer.Width * dpi;
-                var y = origin.Y + (SongInfoStackPanel.Height - TaskbarHoverLayer.Height) * dpi / 2;
-                x = Math.Clamp(x, work.Left, Math.Max(work.Left, work.Right - TaskbarHoverLayer.Width * dpi));
-                y = Math.Clamp(y, work.Top, Math.Max(work.Top, work.Bottom - TaskbarHoverLayer.Height * dpi));
-                return [new CustomPopupPlacement(new Point(x - origin.X, y - origin.Y), PopupPrimaryAxis.None)];
-            }
-        };
-        HoverRevealHost.Children.Remove(TaskbarHoverLayer);
-        _verticalHoverPopup.Child = TaskbarHoverLayer;
-        _isTaskbarHoverVisible = true;
-        _hoverHideFallbackTimer.Stop();
-        TaskbarHoverLayer.Opacity = 1;
-        _verticalHoverPopup.IsOpen = true;
-        RaisePopupAboveTaskbar(TaskbarHoverLayer);
-        if (CurrentMotion.UseTransitions)
-            TaskbarHoverLayer.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, CurrentMotion.FastDuration));
-    }
-
-    private void CloseVerticalHoverLayer()
-    {
-        if (_verticalHoverPopup is null) return;
-        TaskbarHoverLayer.BeginAnimation(OpacityProperty, null);
-        TaskbarHoverLayer.Opacity = 1;
-        _verticalHoverPopup.IsOpen = false;
-        _verticalHoverPopup.Child = null;
-        if (!HoverRevealHost.Children.Contains(TaskbarHoverLayer)) HoverRevealHost.Children.Add(TaskbarHoverLayer);
-        _isTaskbarHoverVisible = false;
+        TaskbarFullPanelHandle.Width = 8;
+        TaskbarFullPanelHandle.Height = Math.Min(44, TaskbarHoverLayer.Height);
+        TaskbarFullPanelHandle.Margin = _verticalTaskbarOnLeft ? new Thickness(0, 0, -8, 0) : new Thickness(-8, 0, 0, 0);
+        TaskbarFullPanelHandle.HorizontalAlignment = _verticalTaskbarOnLeft ? HorizontalAlignment.Right : HorizontalAlignment.Left;
+        TaskbarFullPanelHandle.VerticalAlignment = VerticalAlignment.Center;
+        if (TaskbarFullPanelHandle.Content is Border handle) { handle.Width = 4; handle.Height = 28; }
     }
 
     private static RECT GetPopupMonitorWorkArea(Point physicalPoint)

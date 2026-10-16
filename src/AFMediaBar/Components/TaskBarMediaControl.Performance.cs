@@ -121,35 +121,27 @@ public partial class TaskBarMediaControl
         var formatted = MetricPresentationPolicy.Format(metric, _performanceSnapshot);
         cell.Inlines.Clear();
         cell.FontSize = 10;
-        cell.LineHeight = double.NaN;
-        cell.LineStackingStrategy = LineStackingStrategy.MaxHeight;
-        cell.Height = metric == MetricKind.SystemNetwork ? 68 : 48;
+        cell.LineHeight = 16;
+        cell.LineStackingStrategy = LineStackingStrategy.BlockLineHeight;
+        cell.Height = 32;
         cell.Width = Math.Max(1, MainBorder.Width - 8);
-        cell.TextTrimming = TextTrimming.CharacterEllipsis;
+        cell.TextTrimming = TextTrimming.None;
+        cell.TextWrapping = TextWrapping.NoWrap;
+        void AddLine(string text, double size)
+        {
+            if (cell.Inlines.Count > 0) cell.Inlines.Add(new LineBreak());
+            var measured = MeasureTextWidthExact(text, cell) * size / cell.FontSize;
+            var fitted = measured > cell.Width ? size * cell.Width / measured : size;
+            cell.Inlines.Add(new Run(text) { FontSize = Math.Max(1, fitted) });
+        }
         if (metric == MetricKind.SystemNetwork)
         {
-            foreach (var line in formatted.Split('\n'))
-            {
-                if (cell.Inlines.Count > 0) cell.Inlines.Add(new LineBreak());
-                var parts = line.Split(' ', 3);
-                cell.Inlines.Add(new Run(parts.Length > 1 ? parts[0] + " " + parts[1] : line) { FontSize = 13 });
-                if (parts.Length > 2)
-                {
-                    cell.Inlines.Add(new LineBreak());
-                    cell.Inlines.Add(new Run(parts[2]) { FontSize = 9 });
-                }
-            }
+            foreach (var line in formatted.Split('\n')) AddLine(line, 11);
             return;
         }
         var values = formatted.Split(' ', 3);
-        cell.Inlines.Add(new Run(values[0]) { FontSize = 10 });
-        cell.Inlines.Add(new LineBreak());
-        cell.Inlines.Add(new Run(values.Length > 1 ? values[1] : "—") { FontSize = 15 });
-        if (values.Length > 2)
-        {
-            cell.Inlines.Add(new LineBreak());
-            cell.Inlines.Add(new Run(values[2]) { FontSize = 9 });
-        }
+        AddLine(values.Length > 2 ? values[0] + " " + values[2] : values[0], 10);
+        AddLine(values.Length > 1 ? values[1] : "—", 14);
     }
 
     private bool UpdatePerformanceWidth()
@@ -157,12 +149,13 @@ public partial class TaskBarMediaControl
         if (_isVertical)
         {
             var length = _performanceSettings.DisplayMode == PerformanceDisplayMode.Parallel
-                ? _performanceCells.Keys.Sum(metric => metric == MetricKind.SystemNetwork ? 68d : 48d) + Math.Max(0, _performanceCells.Count - 1) * 4 + 4
-                : _performanceCells.ContainsKey(MetricKind.SystemNetwork) ? 72 : 52;
+                ? _performanceCells.Count * 32d + Math.Max(0, _performanceCells.Count - 1) * 4 + 4
+                : 36;
             var changedLength = Math.Abs(length - _verticalPerformanceLength) > 0.1;
             _verticalPerformanceLength = length;
             return changedLength;
         }
+        TaskbarPerformanceSurface.Height = 24;
         TaskbarPerformanceSurface.Padding = _performanceCompact ? new Thickness(4, 0, 4, 0) : new Thickness(8, 2, 8, 2);
         var width = _performanceCells.Count == 0 ? 74 : _performanceSettings.DisplayMode == PerformanceDisplayMode.Parallel
             ? _performanceCells.Values.Sum(cell => cell.Width) + 8 * (_performanceCells.Count - 1) + 16

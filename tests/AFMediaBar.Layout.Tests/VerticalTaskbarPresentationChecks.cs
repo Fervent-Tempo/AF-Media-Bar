@@ -1,6 +1,10 @@
 // 在既有隔离 WPF 测试进程中检查实际控件，避免为每个方向重复启动 Application。
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Reflection;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Settings;
@@ -22,7 +26,7 @@ internal static class VerticalTaskbarPresentationChecks
                 SpectrumVisible = true,
                 MediaFontSizePercent = 125
             };
-            SettingsManager.Current.PerformanceComponent = new([MetricKind.SystemCpu, MetricKind.ProcessMemory], 500, false)
+            SettingsManager.Current.PerformanceComponent = new([MetricKind.SystemCpu, MetricKind.ProcessMemory, MetricKind.SystemNetwork], 500, false)
             {
                 DisplayMode = PerformanceDisplayMode.Parallel
             };
@@ -50,6 +54,44 @@ internal static class VerticalTaskbarPresentationChecks
                 Assert.AreEqual(height, performance.Height, 0.01, "Sampling must not move surrounding components.");
                 Assert.IsTrue(items.Children.Cast<TextBlock>().All(cell => cell.Width <= width - 4));
                 Assert.AreEqual(Orientation.Vertical, ((StackPanel)control.FindName("TaskbarHoverActions")).Orientation);
+                var card = (Border)control.FindName("TaskbarPerformanceSurface");
+                Assert.IsTrue(card.Height >= items.Children.Cast<TextBlock>().Sum(cell => cell.Height),
+                    "The inner card must expose both metric rows, not retain the horizontal 24 DIP height.");
+                foreach (var cell in items.Children.Cast<TextBlock>())
+                    Assert.AreEqual(1, cell.Inlines.OfType<LineBreak>().Count(), "Each metric uses two readable rows.");
+                foreach (var onLeft in new[] { true, false })
+                {
+                    control.ApplyVerticalTaskbarSide(onLeft);
+                    Assert.AreEqual(onLeft ? HorizontalAlignment.Right : HorizontalAlignment.Left,
+                        ((Button)control.FindName("TaskbarFullPanelHandle")).HorizontalAlignment,
+                        "Changing taskbar sides must update the handle before another size request arrives.");
+                    control.ApplyPrimaryLength(600);
+                    var spectrum = (FrameworkElement)control.FindName("TaskbarSpectrum");
+                    Assert.AreEqual(onLeft ? 90d : -90d, ((RotateTransform)spectrum.LayoutTransform).Angle);
+                    Assert.IsTrue(spectrum.Height <= width - 8, $"Spectrum cross-axis overflow: {spectrum.Height} / {width}.");
+                    var hover = (Grid)control.FindName("HoverRevealHost");
+                    typeof(TaskBarMediaControl).GetField("_isTaskbarHoverVisible", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(control, true);
+                    hover.Visibility = Visibility.Visible;
+                    control.ApplyPrimaryLength(600);
+                    control.Measure(new Size(width, 600));
+                    control.Arrange(new Rect(0, 0, width, 600));
+                    control.UpdateLayout();
+                    var layer = (Border)control.FindName("TaskbarHoverLayer");
+                    Assert.AreSame(hover, layer.Parent, "Vertical hover stays in the media bar's visual/input tree.");
+                    Assert.AreEqual(width - 4, layer.Width, 0.01);
+                    Assert.AreEqual(text.Height, layer.Height, 0.01);
+                    var handle = (Button)control.FindName("TaskbarFullPanelHandle");
+                    Assert.AreEqual(onLeft ? HorizontalAlignment.Right : HorizontalAlignment.Left, handle.HorizontalAlignment);
+                    Assert.AreEqual(4d, ((Border)handle.Content).Width);
+                    Assert.AreEqual(28d, ((Border)handle.Content).Height);
+                    var position = layer.TranslatePoint(new Point(), control);
+                    Assert.IsTrue(position.X >= 0 && position.X + layer.ActualWidth <= width + 0.01,
+                        $"Hover is outside the bar: left={position.X}, actualWidth={layer.ActualWidth}, bar={width}.");
+                    Capture(control, width, onLeft ? "hover-left" : "hover-right");
+                    hover.Visibility = Visibility.Collapsed;
+                    typeof(TaskBarMediaControl).GetField("_isTaskbarHoverVisible", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(control, false);
+                    Capture(control, width, onLeft ? "rest-left" : "rest-right");
+                }
             }
             SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
             {
@@ -68,7 +110,22 @@ internal static class VerticalTaskbarPresentationChecks
             control.ApplyPrimaryLength(600);
             Assert.AreEqual(Orientation.Horizontal, ((StackPanel)control.FindName("TaskbarHoverActions")).Orientation);
             Assert.AreEqual(Orientation.Horizontal, ((StackPanel)control.FindName("TaskbarPerformanceItems")).Orientation);
+            Assert.AreEqual(24d, ((Border)control.FindName("TaskbarPerformanceSurface")).Height);
+            Assert.AreEqual(0d, ((RotateTransform)((FrameworkElement)control.FindName("TaskbarSpectrum")).LayoutTransform).Angle);
         }
         finally { SettingsManager.Replace(settings); }
     }
+    private static void Capture(TaskBarMediaControl control, double width, string name)
+    {
+        var directory = Environment.GetEnvironmentVariable("AFMB_VERTICAL_POLISH_CAPTURE_DIR");
+        if (width != 48 || string.IsNullOrEmpty(directory)) return;
+        Directory.CreateDirectory(directory);
+        var bitmap = new RenderTargetBitmap((int)width * 2, 1200, 192, 192, PixelFormats.Pbgra32);
+        bitmap.Render(control);
+        var encoder = new PngBitmapEncoder();
+        encoder.Frames.Add(BitmapFrame.Create(bitmap));
+        using var stream = File.Create(Path.Combine(directory, name + ".png"));
+        encoder.Save(stream);
+    }
+
 }

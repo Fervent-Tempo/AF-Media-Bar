@@ -12,6 +12,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Components;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -244,6 +245,46 @@ public sealed class ArtworkZoomLifecycleTests
         Invoke(control, "CompleteTaskbarHoverLayerHide", generation);
         Assert.AreEqual(Visibility.Visible, host.Visibility);
         Assert.AreEqual(240d, host.Width);
+        return Task.CompletedTask;
+    });
+
+    [TestMethod]
+    public void VerticalZoomPushesAlongPrimaryAxisAndRestoresWithoutLosingRotation() => RunIsolated(nameof(VerticalZoomPushesAlongPrimaryAxisAndRestoresWithoutLosingRotation), (control, dispatcher) =>
+    {
+        var window = Window.GetWindow(control);
+        window.Width = 48;
+        window.Height = 500;
+        foreach (var onLeft in new[] { true, false })
+        {
+            control.ApplyLayout(WindowMode.Taskbar, LayoutOrientation.Vertical, 100, 100, 48);
+            control.ApplyVerticalTaskbarSide(onLeft);
+            control.ApplyPrimaryLength(500);
+            control.UpdateLayout();
+            var text = (FrameworkElement)control.FindName("SongInfoStackPanel");
+            var home = text.TranslatePoint(new Point(), control);
+            var extra = 0d;
+            void OnExtension(object? sender, double value) => extra = value;
+            control.ArtworkZoomExtensionChanged += OnExtension;
+            try
+            {
+                Invoke(control, "ShowArtworkHoverZoom");
+                Invoke(control, "AnimateArtworkZoom", true, true, 1d);
+                Assert.IsTrue(GetPopup(control).IsOpen);
+                Assert.IsTrue(extra > 0);
+                var pushed = text.TranslatePoint(new Point(), control);
+                Assert.AreEqual(home.X, pushed.X, 0.01);
+                Assert.AreEqual(home.Y + extra, pushed.Y, 0.01, "Cover growth must push vertical content down.");
+                control.ApplyPrimaryLength(480);
+                Assert.IsTrue(GetPopup(control).IsOpen, "Content sizing must retain the active cover.");
+                var progress = (FrameworkElement)control.FindName("TaskbarRestProgress");
+                Assert.IsTrue(progress.RenderTransform.Value.M12 > 0.9, "Push must preserve the progress bar's rotation.");
+                Invoke(control, "HideArtworkHoverZoom", true);
+                Assert.AreEqual(0d, extra);
+                Assert.AreEqual(0d, text.RenderTransform.Value.OffsetY, 0.01);
+                AssertRestored(control);
+            }
+            finally { control.ArtworkZoomExtensionChanged -= OnExtension; }
+        }
         return Task.CompletedTask;
     });
 

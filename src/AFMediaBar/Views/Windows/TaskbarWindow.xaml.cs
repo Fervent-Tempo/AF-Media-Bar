@@ -115,7 +115,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     private bool _hasInputRegion;
     /// <summary>最近一次定位读到的任务栏 DPI 缩放；区域扩展的 DIP→物理像素换算依赖它。/ DPI scale from the latest positioning pass; the region extension's DIP-to-physical conversion relies on it.</summary>
     private double _lastDpiScale = 1.0;
-    /// <summary>原地放大激活期间临时扩展到媒体栏右侧的物理像素数；0 表示未扩展。基础矩形存于 _lastInputRegion。/ Physical pixels temporarily extending right of the bar while the in-place artwork zoom is active; 0 when not extended. The base rect lives in _lastInputRegion.</summary>
+    /// <summary>原地放大激活期间沿媒体栏主轴末端扩展的物理像素数；0 表示未扩展。基础矩形存于 _lastInputRegion。/ Physical pixels temporarily extending the bar's primary-axis end while the in-place artwork zoom is active; 0 when not extended. The base rect lives in _lastInputRegion.</summary>
     private int _artworkZoomExtensionPx;
     private readonly AudioMonitorService _audioMonitorService;
     private readonly NativeMouseInputMonitor _mouseInputMonitor;
@@ -876,39 +876,26 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         left.Right == right.Right && left.Bottom == right.Bottom;
 
     /// <summary>
-    /// 应用媒体栏的窗口区域：基础矩形右侧叠加当前的原地放大扩展量。窗口本身铺满任务栏，扩展只改区域、不动窗口
-    /// 几何。注意这只解决 HWND 层的 SetWindowRgn 裁切——WPF 层 MainBorder 的 ClipToBounds 由控制件在放大存续期间
-    /// 自行解除（见 TaskBarMediaControl.ShowArtworkHoverZoom），两层缺一组件仍会被吃。
-    /// Applies the media bar's window region: the base rect plus the current in-place zoom extension on its right. The window
-    /// itself covers the whole taskbar, so the extension only widens the region without touching window geometry. Note this
-    /// addresses only the HWND-layer SetWindowRgn clipping — the WPF layer's MainBorder ClipToBounds is released by the control
-    /// itself while the zoom lasts (see TaskBarMediaControl.ShowArtworkHoverZoom); missing either layer still eats the widgets.
+    /// 沿主轴末端扩展放大期间的可见与输入区，窗口仍铺满任务栏；WPF 裁剪由控件配合解除。
     /// </summary>
     private void ApplyBarInputRegion(IntPtr taskbarWindowHandle, RECT baseRect)
     {
         var effective = baseRect;
         if (_artworkZoomExtensionPx > 0)
-            effective.Right += _artworkZoomExtensionPx;
+        {
+            if (IsVerticalPresentation) effective.Bottom += _artworkZoomExtensionPx;
+            else effective.Right += _artworkZoomExtensionPx;
+        }
         _taskBarService.ApplyInputRegion(taskbarWindowHandle, [effective]);
     }
 
     /// <summary>
-    /// 原地放大激活/收回时重设区域扩展量并立即重应用区域。扩展带只有推挤出去的组件在用，交互语义与栏内一致；
-    /// 该带会暂时覆盖媒体栏右侧的任务栏图标悬停（仅放大存续期间，指针在封面上）。重定位路径（CalculateAndSetPosition）
-    /// 经 ApplyBarInputRegion 也会带上扩展量，任务栏几何变化不会把它冲掉。
-    /// Resizes the region extension when the in-place zoom activates/reclaims and reapplies the region at once. Only the pushed
-    /// widgets occupy the extension strip, keeping their in-bar interaction semantics; the strip temporarily overrides hovering of
-    /// taskbar icons right of the bar (only while the zoom lasts and the pointer sits on the artwork). The repositioning path
-    /// (CalculateAndSetPosition) routes through ApplyBarInputRegion too, so taskbar geometry changes never wash the extension out.
+    /// 原地放大时同步推挤组件的输入区；收回后还原。扩展带暂时占用主轴末端的任务栏区域，重定位时保留该扩展量。
     /// </summary>
     private void MediaControl_ArtworkZoomExtensionChanged(object? sender, double extraDip)
     {
         if (_isClosing)
             return;
-
-        // 竖向原地放大向屏幕内侧生长，不扩展任务栏子窗口的输入区。
-        if (_appliedOrientation != LayoutOrientation.Horizontal)
-            extraDip = 0;
 
         // 放大激活时若拖动正在进行（含"待定"），立即取消并释放鼠标捕获：捕获会把命中测试重定向到拖动子树，
         // 而封面此刻已被移进 Popup（不在该子树内）——IsMouseOver 从此谎报、进出事件不再送达封面，"拖不动"

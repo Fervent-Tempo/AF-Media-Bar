@@ -183,7 +183,6 @@ namespace AFMediaBar.Components
             {
                 MainCanvas.LayoutUpdated -= OnArtworkPopupLayoutUpdated;
                 HideTaskbarHoverLayer(immediate: true);
-                CloseVerticalHoverLayer();
                 _progressTimer.Stop();
                 _hoverOpenTimer.Stop();
                 _hoverCloseTimer.Stop();

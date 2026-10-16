@@ -813,9 +813,8 @@ public partial class TaskBarMediaControl
         // The cover's current main-tree screen spot: the shared baseline for the host placement and the in-host shift.
         var homeScreen = SongImageBorder.PointToScreen(new Point(0, 0));
 
-        // 推挤量 = 宽度增长的一半：右侧内容右移同样的距离，封面与它们的间距维持不变。
-        // The push equals half the width growth: the right-hand content shifts by the same distance, keeping its gap to the cover.
-        _artworkZoomPushOffset = _isVertical ? 0 : width * (ArtworkHoverZoomScaleFactor - 1) / 2;
+        // 沿主轴推挤封面之后的内容，避开以封面中心放大后增长的半边。
+        _artworkZoomPushOffset = (_isVertical ? height : width) * (ArtworkHoverZoomScaleFactor - 1) / 2;
         BuildArtworkZoomPushTransforms();
 
         // 替身先就位、再抽走真封面：主画布这一格里永远有封面（见 _artworkZoomSubstitute）——送进 Popup 的那一帧
@@ -1367,8 +1366,14 @@ public partial class TaskBarMediaControl
             return GetOrCreateSongInfoPushTransform();
         if (element.RenderTransform is TranslateTransform existing)
             return existing;
+        if (element.RenderTransform is TransformGroup group && group.Children.OfType<TranslateTransform>().LastOrDefault() is { } push)
+            return push;
         var transform = new TranslateTransform();
-        element.RenderTransform = transform;
+        var transforms = new TransformGroup();
+        if (element.RenderTransform is { } original && !original.Value.IsIdentity)
+            transforms.Children.Add(original);
+        transforms.Children.Add(transform);
+        element.RenderTransform = transforms;
         return transform;
     }
 
@@ -1410,7 +1415,7 @@ public partial class TaskBarMediaControl
         return _songInfoPushTransform;
     }
 
-    /// <summary>封面右侧需要推挤避让的全部元素；横向任务栏里它们按布局引擎的排布都在封面之右。/ All elements that must yield right of the artwork; in a horizontal taskbar the layout engine keeps every one of them right of the cover.</summary>
+    /// <summary>沿主轴随封面放大避让的呈现和命中表面；文字入场与封面推挤使用独立变换。</summary>
     private IEnumerable<UIElement> ArtworkZoomPushElements()
     {
         yield return SongInfoStackPanel;
@@ -1420,6 +1425,8 @@ public partial class TaskBarMediaControl
         yield return TaskbarPerformanceHoverSurface;
         yield return TaskbarOutputDeviceHoverSurface;
         yield return TaskbarVolumeHoverSurface;
+        yield return TaskbarInputDeviceHoverSurface;
+        if (_isVertical) yield return TaskbarDirectFullPanelHandle;
         yield return HoverRevealHost;
     }
 
@@ -1428,16 +1435,17 @@ public partial class TaskBarMediaControl
     {
         if (_artworkZoomPushTransforms is null)
             return;
+        var axis = _isVertical ? TranslateTransform.YProperty : TranslateTransform.XProperty;
         foreach (var transform in _artworkZoomPushTransforms)
         {
             if (easing is null)
             {
-                transform.BeginAnimation(TranslateTransform.XProperty, null);
-                transform.X = targetOffset;
+                transform.BeginAnimation(axis, null);
+                if (_isVertical) transform.Y = targetOffset; else transform.X = targetOffset;
             }
             else
             {
-                transform.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation
+                transform.BeginAnimation(axis, new DoubleAnimation
                 {
                     To = targetOffset,
                     Duration = new Duration(duration),
@@ -1455,7 +1463,9 @@ public partial class TaskBarMediaControl
         foreach (var transform in _artworkZoomPushTransforms)
         {
             transform.BeginAnimation(TranslateTransform.XProperty, null);
+            transform.BeginAnimation(TranslateTransform.YProperty, null);
             transform.X = 0;
+            transform.Y = 0;
         }
         _artworkZoomPushTransforms = null;
     }
@@ -2154,12 +2164,6 @@ public partial class TaskBarMediaControl
             (!SongInfoStackPanel.IsMouseOver && !HoverRevealHost.IsMouseOver && !TaskbarHoverLayer.IsMouseOver))
             return;
 
-        if (_isVertical)
-        {
-            ShowVerticalHoverLayer();
-            return;
-        }
-
         // 展开只需要"跑马灯按当前文字区宽度重新判定一次"：媒体栏几何每次快照都会重算（悬停层宽度、文字宽度、各处 Margin 都在那里写入），
         // 因此这里 MUST NOT 再跑一遍完整的体验设置——那会连带重建频谱、重排整条几何并走一次尺寸指纹，正好落在指针离开任务栏、
         // Shell 准备开始收起动画的那一刻，而这一刻宿主的冻结请求还排在 UI 线程的队列里。
@@ -2236,13 +2240,6 @@ public partial class TaskBarMediaControl
 
     private void HideTaskbarHoverLayer(bool immediate = false)
     {
-        if (_verticalHoverPopup?.IsOpen == true)
-        {
-            _hoverOpenTimer.Stop();
-            _hoverCloseTimer.Stop();
-            _hoverHideFallbackTimer.Stop();
-            CloseVerticalHoverLayer();
-        }
         if (!immediate && !_isTaskbarHoverVisible && HoverRevealHost.Visibility == Visibility.Visible && CurrentMotion.UseTransitions)
             return;
         var generation = ++_hoverRevealGeneration;
@@ -2359,12 +2356,6 @@ public partial class TaskBarMediaControl
     /// </summary>
     private void InteractionSurface_MouseLeave(object sender, MouseEventArgs e)
     {
-        if (_isVertical && _verticalHoverPopup?.IsOpen == true)
-        {
-            _hoverCloseTimer.Stop();
-            _hoverCloseTimer.Start();
-            return;
-        }
         // 这个通知发生在 Shell 因指针离开任务栏而开始自动收起之前，是唯一个能在动画前清掉文字区 Blur 与裁剪动画的时机。
         // 等任务栏矩形开始变化后再清理已经太晚，WPF 与 Shell 会同时提交合成帧，这正是“交互后离开才偶发留角”的条件。
         // This notification arrives before the Shell starts auto-hiding after the pointer leaves the taskbar, making it the only point where the text

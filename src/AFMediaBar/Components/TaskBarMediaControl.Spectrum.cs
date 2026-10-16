@@ -60,7 +60,9 @@ public partial class TaskBarMediaControl
     private double ResolveSpectrumContentHeight(SpectrumComponentSettings settings)
     {
         var configured = SpectrumPresentationPolicy.ResolveContentHeightDip(settings);
-        return UsesAdaptiveTaskbarText && !_isVertical
+        if (_isVertical)
+            return Math.Min(configured, Math.Max(1, MainBorder.Width - 8));
+        return UsesAdaptiveTaskbarText
             ? Math.Min(configured, Math.Max(1, MainBorder.Height - _textBudget.PaddingDip * 2 - SpectrumPresentationPolicy.SurfacePaddingDip * 2))
             : configured;
     }
@@ -70,8 +72,7 @@ public partial class TaskBarMediaControl
         var settings = PresentationSettings.SpectrumComponent.Normalize();
         return _isVertical ? settings with
         {
-            BandCount = VerticalTaskbarPresentationPolicy.SpectrumBandCount(MainBorder.Width, settings.BandCount),
-            ContentHeightDip = Math.Min(24, settings.ContentHeightDip)
+            BandCount = Math.Min(16, settings.BandCount)
         } : settings;
     }
 
@@ -130,6 +131,9 @@ public partial class TaskBarMediaControl
     internal void ConfigureSpectrum()
     {
         var settings = ResolveSpectrumPresentationSettings();
+        var angle = _isVertical ? (_verticalTaskbarOnLeft ? 90d : -90d) : 0;
+        if (TaskbarSpectrum.LayoutTransform is not RotateTransform rotation || rotation.Angle != angle)
+            TaskbarSpectrum.LayoutTransform = new RotateTransform(angle);
         var contentHeight = ResolveSpectrumContentHeight(settings);
         if (_appliedSpectrumStyle == settings.Style &&
             _appliedSpectrumBandCount == settings.BandCount &&
@@ -154,7 +158,7 @@ public partial class TaskBarMediaControl
         Array.Clear(_targetSpectrum, 0, _targetSpectrum.Length);
         Array.Clear(_displayedSpectrum, 0, _displayedSpectrum.Length);
         TaskbarSpectrum.Children.Clear();
-        TaskbarSpectrum.Width = _isVertical ? settings.BandCount * 4 - 2 : SpectrumPresentationPolicy.CalculateContentWidthDip(settings.BandCount);
+        TaskbarSpectrum.Width = SpectrumPresentationPolicy.CalculateContentWidthDip(settings.BandCount);
         // 横轴尺寸由设置决定；几何只保证它装得进悬停表面（表面高度取文字区悬停块与"内容 + 两侧留白"的较大者）。
         // The cross-axis size comes from the settings; the geometry only makes sure it fits inside the hover surface, whose height is the
         // larger of the text hover block and the content plus its padding.

@@ -78,6 +78,7 @@ public partial class TaskBarMediaControl
     }
 
     private Rect TaskbarRevealRect(double revealedWidth) => new(
-        TaskbarArrangementPolicy.RevealLeft(TaskbarHoverLayer.Width, revealedWidth, ResolvedTaskbarHoverAlignment),
+        _isVertical ? (_verticalTaskbarOnLeft ? Math.Max(0, TaskbarHoverLayer.Width - revealedWidth) : 0) :
+            TaskbarArrangementPolicy.RevealLeft(TaskbarHoverLayer.Width, revealedWidth, ResolvedTaskbarHoverAlignment),
         0, revealedWidth, HoverRevealHost.Height);
 }

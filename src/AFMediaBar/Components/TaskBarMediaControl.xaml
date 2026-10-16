@@ -523,7 +523,7 @@
                         TextOptions.TextFormattingMode="Display"
                         ClipToBounds="True">
                     <Grid>
-                        <Grid Margin="5,5,6,3">
+                        <Grid x:Name="TaskbarHoverContent" Margin="5,5,6,3">
                             <StackPanel x:Name="TaskbarHoverActions"
                                         Orientation="Horizontal"
                                         HorizontalAlignment="Left"
