@@ -99,6 +99,11 @@ public sealed class SettingsContextService : IDisposable
     private async void OnRuntimeChanged(object? sender, EventArgs args)
     {
         if (_disposed || _runtime is null || _runtime.IsSwitching) return;
+        if (!_dispatcher.CheckAccess())
+        {
+            _ = _dispatcher.BeginInvoke(new Action(() => OnRuntimeChanged(sender, args)));
+            return;
+        }
         _generation++;
         var mode = _runtime.RunningMode == AFMediaBar.Classes.Models.Layout.WindowMode.FloatingBar ? SettingsMode.FloatingBar : SettingsMode.Taskbar;
         if (mode != Current.Mode) Apply(new(mode, []));

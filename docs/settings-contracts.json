@@ -499,7 +499,7 @@
       }
     },
     "TaskbarBarPosition": {
-      "paths": ["settings.position"],
+      "paths": ["settings.position", "settings.floatingBar.profile.position"],
       "members": {
         "Start": {"value": 0, "release": "v1.2.0"},
         "Center": {"value": 1, "release": "v1.2.0"},
@@ -507,7 +507,7 @@
       }
     },
     "TaskbarContentArrangement": {
-      "paths": ["settings.taskbarExperience.arrangement"],
+      "paths": ["settings.taskbarExperience.arrangement", "settings.floatingBar.profile.arrangement"],
       "members": {
         "Left": {"value": 0, "release": "v1.4.0"},
         "Right": {"value": 1, "release": "v1.4.0"}
@@ -539,7 +539,7 @@
       }
     },
     "TaskbarLengthMode": {
-      "paths": ["settings.taskbarExperience.lengthMode"],
+      "paths": ["settings.taskbarExperience.lengthMode", "settings.floatingBar.profile.lengthMode"],
       "members": {
         "FollowContent": {"value": 0, "release": "v1.2.0"},
         "Fixed": {"value": 1, "release": "v1.2.0"}
@@ -715,7 +715,7 @@
     },
     {
       "id": "arrangement",
-      "paths": ["settings.taskbarExperience.arrangement"],
+      "paths": ["settings.taskbarExperience.arrangement", "settings.floatingBar.profile.arrangement"],
       "text": "null 时 position=End 解析为 Right，其余为 Left；显式值优先。",
       "relatedPaths": ["settings.position"]
     },

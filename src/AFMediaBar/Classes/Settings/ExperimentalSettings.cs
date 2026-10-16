@@ -1,4 +1,4 @@
-// 保存实验开关及独立悬浮配置；不包含宿主句柄或全局服务。
+// 保存实验开关及悬浮宿主几何；不包含宿主句柄或全局服务。
 using AFMediaBar.Classes.Models.Layout;
 
 namespace AFMediaBar.Classes.Settings;
@@ -11,7 +11,7 @@ public sealed record ExperimentalSettings
     public bool FloatingBar { get; init; }
 }
 
-/// <summary>配置所属宿主，横竖方向共享同一份配置。</summary>
+/// <summary>几何配置所属宿主，横竖方向不产生额外副本。</summary>
 public enum BarConfigurationTarget { Taskbar, FloatingBar }
 
 /// <summary>悬浮窗口的桌面层级。</summary>

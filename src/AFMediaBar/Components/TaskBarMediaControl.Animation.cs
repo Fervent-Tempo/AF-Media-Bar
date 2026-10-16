@@ -222,6 +222,12 @@ public partial class TaskBarMediaControl
             AnimateArtworkHover(false, immediate: true);
             HideTaskbarHoverLayer(immediate: true);
         }
+        else if (CanUseTaskbarComponentHover() && PresentationSettings.TaskbarExperience.HoverLayerEnabled &&
+            (SongInfoStackPanel.IsMouseOver || HoverRevealHost.IsMouseOver))
+        {
+            _hoverOpenTimer.Stop();
+            _hoverOpenTimer.Start();
+        }
     }
 
     private bool CanUseTaskbarComponentHover() =>

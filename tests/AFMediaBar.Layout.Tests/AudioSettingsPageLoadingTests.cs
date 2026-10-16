@@ -88,7 +88,7 @@ public sealed class AudioSettingsPageLoadingTests
                 };
                 var links = LogicalChildren(entry).OfType<Button>().Where(button => button.Tag is AFMediaBar.Classes.Services.SettingsPageKey).ToArray();
                 foreach (var link in links) link.RaiseEvent(new RoutedEventArgs(Button.ClickEvent, link));
-                Assert.AreEqual(6, navigations, "音频、竖向和悬浮入口应导航到现有页面。");
+                Assert.AreEqual(4, navigations, "实验页保留音频和共用设置入口，悬浮选项统一导航到显示与位置。");
                 await VerifyExperimentalBlankAreaWheelAsync(entry);
             }
             finally { SettingsManager.Current = previous; application.Shutdown(); }

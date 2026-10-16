@@ -1,4 +1,4 @@
-// Owns taskbar appearance for one context, not application theme or interface typography; its scope releases all subscriptions.
+// 提供共用媒体栏外观与当前模式的几何；页面作用域负责释放订阅。
 using System.Collections.ObjectModel;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Services.Localization;
@@ -10,7 +10,7 @@ using AFMediaBar.Classes.Utils;
 
 namespace AFMediaBar.ViewModels.Pages;
 
-/// <summary>提供当前任务栏的外观与布局设置，分别由两个设置页组合呈现。</summary>
+/// <summary>提供共用媒体栏外观与当前模式布局，分别由两个设置页组合呈现。</summary>
 public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
 {
     private readonly ISettingsConfiguration _configuration;
@@ -40,7 +40,7 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
         RefreshRestOrderEntries();
     }
 
-    /// <summary>Media color belongs to the current mode, even while phase one uses the legacy appearance record.</summary>
+    /// <summary>媒体文字色在任务栏与桌面悬浮模式之间共用。</summary>
     public PlayerForegroundMode PlayerForegroundMode
     {
         get => _configuration.Current.Appearance.PlayerForegroundMode;

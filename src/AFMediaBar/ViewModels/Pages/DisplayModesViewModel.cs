@@ -25,7 +25,7 @@ public enum DisplayModeSelection
     FloatingBar = 4
 }
 
-/// <summary>四种显示模式及各层功能开关。 / Four display modes and their layer feature switches.</summary>
+/// <summary>协调当前媒体栏的设置、运行模式与显示器选择。</summary>
 public partial class DisplayModesViewModel : ObservableObject, IDisposable
 {
     private readonly IDisplayMonitorService _displayMonitorService;
@@ -487,7 +487,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
 
     private void SelectMode(DisplayModeSelection mode)
     {
-        // No other runtime host is implemented. Preview clicks must never mutate runtime mode or expose fake editors.
+        // 旧预览命令不切换运行宿主；实际切换通过运行模式入口。
         if (mode != DisplayModeSelection.Taskbar) return;
         OnPropertyChanged(nameof(SelectedMode));
     }

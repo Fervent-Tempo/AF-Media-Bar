@@ -42,7 +42,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     private readonly DispatcherTimer _spectrumTimer = new();
     private readonly DispatcherTimer _quickLaunchApplyTimer = new();
     private readonly DispatcherTimer _volumeApplyTimer = new();
-    private readonly DispatcherTimer _dragTimer = new();
+    private readonly DispatcherTimer _dragTimer = new(DispatcherPriority.Input);
     private readonly DispatcherTimer _sizeTimer = new();
     private readonly DispatcherTimer _backgroundTimer = new();
     private IDisposable? _zRegistration;
@@ -76,6 +76,9 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     private long _animationTick;
     private double _animationProgress;
     private double _cross = 44;
+    private Size? _layoutSizeDip;
+    private double _layoutDpi;
+    private Int32Rect? _nativeBoundsPx;
     private nint _handle;
     private readonly float[] _bands = new float[SpectrumComponentSettings.MaximumBandCount];
     private MediaSnapshot _lastSnapshot = MediaSnapshot.Disconnected;
@@ -134,7 +137,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _compactFlyout = new TaskbarCompactFlyoutWindow(appearance);
         ConnectInput();
         _foregroundSamplingSession = new AdaptiveForegroundSamplingSession(sampler, Dispatcher,
-            () => IsOperational && PresentationSettings.Appearance.PlayerForegroundMode == PlayerForegroundMode.Automatic &&
+            () => IsOperational && !_dragging && PresentationSettings.Appearance.PlayerForegroundMode == PlayerForegroundMode.Automatic &&
                 _mediaControl.TryGetForegroundSampleBounds(out var bounds) ? bounds : null,
             _mediaControl.ApplyAdaptiveForegroundDecision);
         _spectrumTimer.Tick += SpectrumTick;
@@ -210,6 +213,8 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _compactFlyout.VolumeWheelRequested += CompactFlyout_VolumeWheelRequested;
         _compactFlyout.VolumeValueRequested += MediaControl_VolumeValueRequested;
         PreviewMouseLeftButtonDown += StartDrag;
+        PreviewMouseMove += (_, _) => ObserveDrag();
+        LostMouseCapture += (_, _) => { if (_dragging && Mouse.Captured != this) EndDrag(); };
         PreviewMouseLeftButtonUp += (_, args) =>
         {
             var pending = _taskManagerClickPending;
@@ -290,7 +295,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             if (environmentChanged) RegisterZOrder();
             if (PresentationSettings.TaskbarBarPositionLocked) EndDrag();
             SynchronizeResources();
-            ApplyBounds();
+            ApplyBounds(refreshLayout: true);
         }
         finally { _applyingSettings = false; }
     }
@@ -346,23 +351,37 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         if (frame.IsCompleted) _sizeTimer.Stop();
     }
 
-    private void ApplyBounds()
+    private void ApplyBounds(bool refreshLayout = false)
     {
         if (_isClosing) return;
         var requested = _orientation == LayoutOrientation.Vertical ? new Size(_cross, _primary) : new Size(_primary, _cross);
         var bounds = FloatingBarGeometryPolicy.Resolve(new Size(Monitor.WorkArea.Width / Dpi, Monitor.WorkArea.Height / Dpi),
             requested, new Point((_centerPx.X - Monitor.WorkArea.Left) / Dpi, (_centerPx.Y - Monitor.WorkArea.Top) / Dpi));
-        Width = bounds.Width;
-        Height = bounds.Height;
-        _mediaControl.ApplyPrimaryLength(_orientation == LayoutOrientation.Vertical ? bounds.Height : bounds.Width);
-        if (!_suspended) _lengthConstraints.Range.Update(this, _mediaControl.GetMinimumPrimaryLength(Dpi),
-            (_orientation == LayoutOrientation.Vertical ? Monitor.WorkArea.Height : Monitor.WorkArea.Width) / Dpi);
-        if (_orientation == LayoutOrientation.Vertical) _mediaControl.ApplyVerticalTaskbarSide(_centerPx.X < Monitor.WorkArea.Left + Monitor.WorkArea.Width / 2);
-        if (_handle != nint.Zero)
-            SetWindowPos(_handle, 0, (int)Math.Round(Monitor.WorkArea.Left + bounds.Left * Dpi),
-                (int)Math.Round(Monitor.WorkArea.Top + bounds.Top * Dpi), (int)Math.Ceiling(bounds.Width * Dpi),
-                (int)Math.Ceiling(bounds.Height * Dpi), SWP_NOACTIVATE | SWP_NOZORDER);
-        _foregroundSamplingSession?.RequestRefresh();
+        // 纯平移不重排内容或发布长度预算；实际尺寸、DPI 或配置变化才更新布局。
+        var size = bounds.Size;
+        if (refreshLayout || _layoutSizeDip != size || _layoutDpi != Dpi)
+        {
+            _layoutSizeDip = size;
+            _layoutDpi = Dpi;
+            Width = bounds.Width;
+            Height = bounds.Height;
+            _mediaControl.ApplyPrimaryLength(_orientation == LayoutOrientation.Vertical ? bounds.Height : bounds.Width);
+            if (!_suspended) _lengthConstraints.Range.Update(this, _mediaControl.GetMinimumPrimaryLength(Dpi),
+                (_orientation == LayoutOrientation.Vertical ? Monitor.WorkArea.Height : Monitor.WorkArea.Width) / Dpi);
+        }
+        if (_orientation == LayoutOrientation.Vertical)
+            _mediaControl.ApplyVerticalTaskbarSide(_centerPx.X < Monitor.WorkArea.Left + Monitor.WorkArea.Width / 2);
+        var physical = new Int32Rect((int)Math.Round(Monitor.WorkArea.Left + bounds.Left * Dpi),
+            (int)Math.Round(Monitor.WorkArea.Top + bounds.Top * Dpi), (int)Math.Ceiling(bounds.Width * Dpi), (int)Math.Ceiling(bounds.Height * Dpi));
+        if (_handle != nint.Zero && _nativeBoundsPx != physical)
+        {
+            var flags = SWP_NOACTIVATE | SWP_NOZORDER;
+            if (_nativeBoundsPx is { } previous && previous.Width == physical.Width && previous.Height == physical.Height)
+                flags |= SWP_NOSIZE;
+            if (SetWindowPos(_handle, 0, physical.X, physical.Y, physical.Width, physical.Height, flags))
+                _nativeBoundsPx = physical;
+        }
+        if (!_dragging) _foregroundSamplingSession?.RequestRefresh();
     }
 
     private Rect GetPhysicalBounds()
@@ -384,7 +403,8 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
     {
         base.OnDpiChanged(oldDpi, newDpi);
-        if (!_isClosing) Dispatcher.BeginInvoke(() => { if (!_isClosing) ApplyBounds(); }, DispatcherPriority.Loaded);
+        _nativeBoundsPx = null;
+        if (!_isClosing) Dispatcher.BeginInvoke(() => { if (!_isClosing) ApplyBounds(refreshLayout: true); }, DispatcherPriority.Loaded);
     }
 
     private void StartDrag(object sender, MouseButtonEventArgs args)
@@ -407,7 +427,8 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
 
     private void ObserveDrag()
     {
-        if (!_dragPending || !IsOperational || Mouse.LeftButton != MouseButtonState.Pressed) { EndDrag(); return; }
+        if (!_dragPending) return;
+        if (!IsOperational || Mouse.LeftButton != MouseButtonState.Pressed) { EndDrag(); return; }
         if (!GetCursorPos(out var cursor)) return;
         var delta = new Vector(cursor.X - _dragStart.X, cursor.Y - _dragStart.Y);
         if (!_dragging && Math.Abs(delta.X) < SystemParameters.MinimumHorizontalDragDistance * Dpi &&
@@ -415,11 +436,17 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         if (!_dragging)
         {
             _dragging = true;
+            _mediaControl.ApplyPlacementMotionSuspension(true);
             ClearInteraction();
             PlacementTransitionStarted?.Invoke(this, EventArgs.Empty);
             Mouse.Capture(this, CaptureMode.SubTree);
         }
-        _centerPx = _dragCenter + delta;
+        ApplyDragPosition(cursor.X, cursor.Y);
+    }
+
+    private void ApplyDragPosition(int x, int y)
+    {
+        _centerPx = _dragCenter + new Vector(x - _dragStart.X, y - _dragStart.Y);
         ApplyBounds();
     }
 
@@ -433,12 +460,15 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _dragTimer.Stop();
         _dragPending = false;
         if (!_dragging) return;
+        if (!_isClosing && !_suspended && GetCursorPos(out var cursor)) ApplyDragPosition(cursor.X, cursor.Y);
         _dragging = false;
+        _mediaControl.ApplyPlacementMotionSuspension(false);
         if (Mouse.Captured == this) Mouse.Capture(null);
         _suppressClickUntil = DateTime.UtcNow.AddMilliseconds(450);
         if (!_isClosing && !_suspended && string.Equals(TargetMonitorDeviceId, Monitor.DeviceId, StringComparison.OrdinalIgnoreCase))
         {
-            var bounds = GetPhysicalBounds();
+            var bounds = _nativeBoundsPx is { } physical
+                ? new Rect(physical.X, physical.Y, physical.Width, physical.Height) : GetPhysicalBounds();
             _centerPx = new Point(bounds.Left + bounds.Width / 2, bounds.Top + bounds.Height / 2);
             _savedPosition = new FloatingBarPosition(TargetMonitorDeviceId,
                 (_centerPx.X - Monitor.WorkArea.Left) / Dpi, (_centerPx.Y - Monitor.WorkArea.Top) / Dpi);
@@ -454,6 +484,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             }
             finally { _savingPosition = false; }
         }
+        if (IsOperational) _foregroundSamplingSession.RequestRefresh();
     }
 
     private void ClearInteraction()

@@ -155,8 +155,10 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
             next.TaskbarBarPositionLocked = geometry.TaskbarBarPositionLocked;
             next.FloatingBar = next.FloatingBar with
             {
-                Positions = defaults.FloatingBar.Positions, MonitorDeviceIds = defaults.FloatingBar.MonitorDeviceIds,
-                Orientation = defaults.FloatingBar.Orientation, Layer = defaults.FloatingBar.Layer
+                Positions = defaults.FloatingBar.Positions,
+                MonitorDeviceIds = defaults.FloatingBar.MonitorDeviceIds,
+                Orientation = defaults.FloatingBar.Orientation,
+                Layer = defaults.FloatingBar.Layer
             };
         }
         else if (scope is SettingsResetScope.ContentLayout or SettingsResetScope.DisplayModes)
