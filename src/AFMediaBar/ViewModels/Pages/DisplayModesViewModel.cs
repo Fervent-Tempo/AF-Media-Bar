@@ -315,6 +315,14 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     /// <summary>横向任务栏对齐设置是否适用于当前编辑环境。</summary>
     public bool IsHorizontalLayout => _configuration.Context.Orientation != LayoutOrientation.Vertical;
     public bool CanConfigureBarLayout => SettingsPageCatalog.CanEditProfile(_configuration.Context.Mode);
+    public string AxisStartText => DirectionText("DisplayModes.Placement.Alignment.Start", "Settings.Direction.Top", "Settings.Direction.Start");
+    public string AxisEndText => DirectionText("DisplayModes.Placement.Alignment.End", "Settings.Direction.Bottom", "Settings.Direction.End");
+    public string ExpandStartText => DirectionText("DisplayModes.Placement.Arrangement.Left", "Settings.Direction.ExpandTop", "Settings.Direction.ExpandStart");
+    public string ExpandEndText => DirectionText("DisplayModes.Placement.Arrangement.Right", "Settings.Direction.ExpandBottom", "Settings.Direction.ExpandEnd");
+
+    private string DirectionText(string horizontal, string vertical, string unknown) => Translations.Get(
+        _configuration.Context.Orientation switch { LayoutOrientation.Horizontal => horizontal, LayoutOrientation.Vertical => vertical, _ => unknown });
+
     public bool CanEditExperimentalAudio => SettingsManager.Current.Experiments.NewAudioControl;
 
     /// <summary>任务栏主轴对齐；切换时清除拖动偏移和手动内容排布。</summary>
@@ -654,6 +662,8 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
 
     private void RaiseExperience()
     {
+        OnPropertyChanged(nameof(AxisStartText)); OnPropertyChanged(nameof(AxisEndText));
+        OnPropertyChanged(nameof(ExpandStartText)); OnPropertyChanged(nameof(ExpandEndText));
         OnPropertyChanged(nameof(CanEditExperimentalAudio));
         OnPropertyChanged(nameof(TaskbarArrangementOverride));
         OnPropertyChanged(nameof(TaskbarArrangementIndex));

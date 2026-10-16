@@ -183,13 +183,13 @@
                             Title="{DynamicResource Loc.DisplayModes.Placement.Row.Alignment.Title}">
                             <ComboBox MinWidth="200" SelectedValue="{Binding ViewModel.TaskbarPosition, Mode=TwoWay}" SelectedValuePath="Tag">
                                 <ComboBoxItem
-                                    Content="{DynamicResource Loc.DisplayModes.Placement.Alignment.Start}"
+                                    Content="{Binding ViewModel.AxisStartText}"
                                     Tag="{x:Static settings:TaskbarBarPosition.Start}" />
                                 <ComboBoxItem
                                     Content="{DynamicResource Loc.DisplayModes.Placement.Alignment.Center}"
                                     Tag="{x:Static settings:TaskbarBarPosition.Center}" />
                                 <ComboBoxItem
-                                    Content="{DynamicResource Loc.DisplayModes.Placement.Alignment.End}"
+                                    Content="{Binding ViewModel.AxisEndText}"
                                     Tag="{x:Static settings:TaskbarBarPosition.End}" />
                             </ComboBox>
                         </components:SettingsRow>

@@ -10,7 +10,7 @@
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     ScrollViewer.CanContentScroll="False">
     <Page.Resources>
-        <Style x:Key="ExperimentalAudioOptionStyle" TargetType="ComboBoxItem">
+        <Style x:Key="ExperimentalAudioOptionStyle" BasedOn="{StaticResource {x:Type ComboBoxItem}}" TargetType="ComboBoxItem">
             <Setter Property="Visibility" Value="Collapsed" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding ViewModel.IsNewAudioControlEnabled, ElementName=InteractionView}" Value="True">

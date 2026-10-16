@@ -1088,7 +1088,7 @@
     <value>Restore the default order</value>
   </data>
   <data name="DisplayModes.Rest.Row.Alignment.Description" xml:space="preserve">
-    <value>Align the title and artist horizontally.</value>
+    <value>Align the title and artist within the text area.</value>
   </data>
   <data name="DisplayModes.Rest.Row.Alignment.Title" xml:space="preserve">
     <value>Title and artist alignment</value>
@@ -1112,7 +1112,7 @@
     <value>Show the output-device button in the always-on view</value>
   </data>
   <data name="DisplayModes.Rest.Row.Entry.Description" xml:space="preserve">
-    <value>Open the full panel by hovering over the bar or clicking the top entry.</value>
+    <value>Open the full panel by hovering over the bar or clicking its panel entry.</value>
   </data>
   <data name="DisplayModes.Rest.Row.Entry.Title" xml:space="preserve">
     <value>Show the full-panel entry</value>
@@ -1124,7 +1124,7 @@
     <value>Title and artist layout</value>
   </data>
   <data name="DisplayModes.Rest.Row.Progress.Description" xml:space="preserve">
-    <value>Show read-only progress at the bottom of the always-on view; hide it when duration is unavailable.</value>
+    <value>Show read-only progress along the media bar edge; hide it when duration is unavailable.</value>
   </data>
   <data name="DisplayModes.Rest.Row.Artwork.Description" xml:space="preserve">
     <value>Show artwork while media is connected; the idle note has its own setting.</value>
@@ -1475,13 +1475,13 @@
     <value>Enable lyrics first</value>
   </data>
   <data name="Lyrics.Row.FixedWidth.Description" xml:space="preserve">
-    <value>Keep the lyric area at one width instead of resizing for each line.</value>
+    <value>Keep the lyrics area at a fixed length across lines.</value>
   </data>
   <data name="Lyrics.Row.FixedWidth.Title" xml:space="preserve">
     <value>Fixed lyric-box length</value>
   </data>
   <data name="Lyrics.Row.FixedWidth.Length.Description" xml:space="preserve">
-    <value>Set the fixed width; it shrinks when taskbar space is limited.</value>
+    <value>Set a fixed length; it shrinks when available space is limited.</value>
   </data>
   <data name="Lyrics.Row.FixedWidth.Length.Title" xml:space="preserve">
     <value>Lyric-box length</value>
@@ -1955,7 +1955,7 @@
     <value>Click and wheel behavior of the tray icon</value>
   </data>
   <data name="Search.Lyrics.Alignment.Description" xml:space="preserve">
-    <value>Left, center, or right alignment of the lyrics</value>
+    <value>Lyrics alignment within the text area</value>
   </data>
   <data name="Search.Lyrics.Display.Description" xml:space="preserve">
     <value>Enable live lyrics and configure one or two lines and secondary-line priority.</value>
@@ -2907,7 +2907,7 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Experimental.Vertical.Title" xml:space="preserve"><value>Vertical taskbar</value></data>
   <data name="Experimental.Vertical.Description" xml:space="preserve"><value>Show a vertical media bar in a taskbar on the left or right side.</value></data>
   <data name="Experimental.Vertical.Shared" xml:space="preserve"><value>Horizontal and vertical taskbars share one configuration. Changes here also affect horizontal taskbars.</value></data>
-  <data name="Experimental.Floating.Title" xml:space="preserve"><value>Desktop floating bar</value></data>
+  <data name="Experimental.Floating.Title" xml:space="preserve"><value>Desktop floating mode</value></data>
   <data name="Experimental.Floating.Description" xml:space="preserve"><value>An independent desktop widget with horizontal and vertical layouts and positions saved per display. Enable to reveal the mode switch.</value></data>
   <data name="Settings.Context.ConfigurationTarget" xml:space="preserve"><value>Editing configuration</value></data>
   <data name="Experimental.Floating.Independent" xml:space="preserve"><value>Taskbar orientations share one configuration. Desktop floating uses a separate configuration, edited on the same settings pages.</value></data>
@@ -2933,4 +2933,12 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Experimental.Floating.OpenDisplay" xml:space="preserve"><value>Open display and placement</value></data>
   <data name="Taskbar.Compact.Notification.Title" xml:space="preserve"><value>Limited taskbar space</value></data>
   <data name="Taskbar.Compact.Notification.Body" xml:space="preserve"><value>The current lyric or title stays visible; secondary information is temporarily hidden. Try the desktop widget for more room. Click to open Experimental features.</value></data>
+  <data name="Settings.Direction.Top" xml:space="preserve"><value>Top</value></data>
+  <data name="Settings.Direction.Bottom" xml:space="preserve"><value>Bottom</value></data>
+  <data name="Settings.Direction.Start" xml:space="preserve"><value>Start</value></data>
+  <data name="Settings.Direction.End" xml:space="preserve"><value>End</value></data>
+  <data name="Settings.Direction.ExpandTop" xml:space="preserve"><value>Expand from top</value></data>
+  <data name="Settings.Direction.ExpandBottom" xml:space="preserve"><value>Expand from bottom</value></data>
+  <data name="Settings.Direction.ExpandStart" xml:space="preserve"><value>Expand from start</value></data>
+  <data name="Settings.Direction.ExpandEnd" xml:space="preserve"><value>Expand from end</value></data>
 </root>

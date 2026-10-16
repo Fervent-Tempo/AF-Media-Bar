@@ -1052,7 +1052,7 @@
     <value>Khôi phục thứ tự mặc định</value>
   </data>
   <data name="DisplayModes.Rest.Row.Alignment.Description" xml:space="preserve">
-    <value>Căn lề tiêu đề và nghệ sĩ theo chiều ngang.</value>
+    <value>Căn tiêu đề và nghệ sĩ trong vùng văn bản.</value>
   </data>
   <data name="DisplayModes.Rest.Row.Alignment.Title" xml:space="preserve">
     <value>Căn lề tiêu đề và nghệ sĩ</value>
@@ -1070,7 +1070,7 @@
     <value>Hiển thị nút thiết bị đầu ra ở lớp tĩnh</value>
   </data>
   <data name="DisplayModes.Rest.Row.Entry.Description" xml:space="preserve">
-    <value>Mở bảng điều khiển đầy đủ bằng cách di chuột qua thanh hoặc nhấp vào nút ở trên cùng.</value>
+    <value>Mở bảng đầy đủ bằng cách di chuột lên thanh hoặc nhấp lối mở bảng.</value>
   </data>
   <data name="DisplayModes.Rest.Row.Entry.Title" xml:space="preserve">
     <value>Hiển thị lối vào bảng điều khiển đầy đủ</value>
@@ -1082,7 +1082,7 @@
     <value>Bố cục nội dung</value>
   </data>
   <data name="DisplayModes.Rest.Row.Progress.Description" xml:space="preserve">
-    <value>Hiển thị tiến trình chỉ đọc ở dưới cùng lớp tĩnh; ẩn khi không có thông tin thời lượng.</value>
+    <value>Hiển thị tiến trình chỉ đọc dọc mép thanh; ẩn khi không có thời lượng.</value>
   </data>
   <data name="DisplayModes.Rest.Row.Progress.Title" xml:space="preserve">
     <value>Hiển thị tiến trình phát</value>
@@ -1397,10 +1397,10 @@
     <value>Hãy bật lời bài hát trước</value>
   </data>
   <data name="Lyrics.Row.FixedWidth.Description" xml:space="preserve">
-    <value>Giữ khung lời bài hát ở một chiều rộng cố định thay vì thay đổi theo từng câu.</value>
+    <value>Giữ độ dài vùng lời bài hát cố định khi chuyển câu.</value>
   </data>
   <data name="Lyrics.Row.FixedWidth.Length.Description" xml:space="preserve">
-    <value>Đặt chiều rộng cố định; khung sẽ thu nhỏ lại khi không gian Taskbar bị hạn chế.</value>
+    <value>Đặt độ dài cố định; tự thu nhỏ khi thiếu không gian.</value>
   </data>
   <data name="Lyrics.Row.FixedWidth.Length.Title" xml:space="preserve">
     <value>Độ dài khung lời bài hát</value>
@@ -1931,7 +1931,7 @@
     <value>Hành vi nhấp chuột và cuộn chuột của biểu tượng khay hệ thống</value>
   </data>
   <data name="Search.Lyrics.Alignment.Description" xml:space="preserve">
-    <value>Căn trái, căn giữa hoặc căn phải lời bài hát</value>
+    <value>Căn lời bài hát trong vùng văn bản</value>
   </data>
   <data name="Search.Lyrics.Display.Description" xml:space="preserve">
     <value>Cài đặt hiển thị lời bài hát, dòng thứ hai và chạy chữ từng từ.</value>
@@ -2945,7 +2945,7 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   <data name="Experimental.Vertical.Title" xml:space="preserve"><value>Thanh tác vụ dọc</value></data>
   <data name="Experimental.Vertical.Description" xml:space="preserve"><value>Hiển thị thanh phương tiện dọc trên thanh tác vụ ở cạnh trái hoặc phải.</value></data>
   <data name="Experimental.Vertical.Shared" xml:space="preserve"><value>Thanh tác vụ ngang và dọc dùng chung cấu hình. Thay đổi tại đây cũng ảnh hưởng thanh tác vụ ngang.</value></data>
-  <data name="Experimental.Floating.Title" xml:space="preserve"><value>Thanh nổi trên màn hình</value></data>
+  <data name="Experimental.Floating.Title" xml:space="preserve"><value>Chế độ nổi trên màn hình</value></data>
   <data name="Experimental.Floating.Description" xml:space="preserve"><value>Tiện ích màn hình độc lập, hỗ trợ bố cục ngang, dọc và lưu vị trí theo màn hình. Bật để hiện lựa chọn chế độ.</value></data>
   <data name="Settings.Context.ConfigurationTarget" xml:space="preserve"><value>Cấu hình đang chỉnh sửa</value></data>
   <data name="Experimental.Floating.Independent" xml:space="preserve"><value>Các hướng thanh tác vụ dùng chung một cấu hình. Thanh nổi có cấu hình riêng, được chỉnh sửa trên cùng các trang cài đặt.</value></data>
@@ -2971,4 +2971,12 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   <data name="Experimental.Floating.OpenDisplay" xml:space="preserve"><value>Mở hiển thị và vị trí</value></data>
   <data name="Taskbar.Compact.Notification.Title" xml:space="preserve"><value>Không gian thanh tác vụ hẹp</value></data>
   <data name="Taskbar.Compact.Notification.Body" xml:space="preserve"><value>Ưu tiên lời hiện tại hoặc tiêu đề; thông tin phụ tạm ẩn. Hãy thử tiện ích màn hình để có thêm chỗ. Nhấp để mở Tính năng thử nghiệm.</value></data>
+  <data name="Settings.Direction.Top" xml:space="preserve"><value>Trên</value></data>
+  <data name="Settings.Direction.Bottom" xml:space="preserve"><value>Dưới</value></data>
+  <data name="Settings.Direction.Start" xml:space="preserve"><value>Đầu</value></data>
+  <data name="Settings.Direction.End" xml:space="preserve"><value>Cuối</value></data>
+  <data name="Settings.Direction.ExpandTop" xml:space="preserve"><value>Mở từ trên</value></data>
+  <data name="Settings.Direction.ExpandBottom" xml:space="preserve"><value>Mở từ dưới</value></data>
+  <data name="Settings.Direction.ExpandStart" xml:space="preserve"><value>Mở từ đầu</value></data>
+  <data name="Settings.Direction.ExpandEnd" xml:space="preserve"><value>Mở từ cuối</value></data>
 </root>

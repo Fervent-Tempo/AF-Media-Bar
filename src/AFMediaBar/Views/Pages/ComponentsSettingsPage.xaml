@@ -537,13 +537,13 @@
                                         SelectedValue="{Binding ViewModel.Layout.MediaTextAlignment, Mode=TwoWay}"
                                         SelectedValuePath="Tag">
                                         <ComboBoxItem
-                                            Content="{DynamicResource Loc.Common.AlignLeft}"
+                                            Content="{Binding ViewModel.Layers.AxisStartText}"
                                             Tag="{x:Static settings:TaskbarMediaTextAlignment.Left}" />
                                         <ComboBoxItem
                                             Content="{DynamicResource Loc.Common.AlignCenter}"
                                             Tag="{x:Static settings:TaskbarMediaTextAlignment.Center}" />
                                         <ComboBoxItem
-                                            Content="{DynamicResource Loc.Common.AlignRight}"
+                                            Content="{Binding ViewModel.Layers.AxisEndText}"
                                             Tag="{x:Static settings:TaskbarMediaTextAlignment.Right}" />
                                     </ComboBox>
                                 </components:SettingsRow>
@@ -556,13 +556,13 @@
                                         SelectedValue="{Binding ViewModel.Lyrics.TextAlignment, Mode=TwoWay}"
                                         SelectedValuePath="Tag">
                                         <ComboBoxItem
-                                            Content="{DynamicResource Loc.Common.AlignLeft}"
+                                            Content="{Binding ViewModel.Layers.AxisStartText}"
                                             Tag="{x:Static settings:LyricsTextAlignment.Left}" />
                                         <ComboBoxItem
                                             Content="{DynamicResource Loc.Common.AlignCenter}"
                                             Tag="{x:Static settings:LyricsTextAlignment.Center}" />
                                         <ComboBoxItem
-                                            Content="{DynamicResource Loc.Common.AlignRight}"
+                                            Content="{Binding ViewModel.Layers.AxisEndText}"
                                             Tag="{x:Static settings:LyricsTextAlignment.Right}" />
                                     </ComboBox>
                                 </components:SettingsRow>
@@ -577,10 +577,10 @@
                                         SelectedIndex="{Binding ViewModel.Layers.TaskbarArrangementIndex, Mode=TwoWay}">
                                         <ComboBoxItem Content="{DynamicResource Loc.ContentLayout.Arrangement.Auto}" Tag="{x:Null}" />
                                         <ComboBoxItem
-                                            Content="{DynamicResource Loc.DisplayModes.Placement.Arrangement.Left}"
+                                            Content="{Binding ViewModel.Layers.ExpandStartText}"
                                             Tag="{x:Static settings:TaskbarContentArrangement.Left}" />
                                         <ComboBoxItem
-                                            Content="{DynamicResource Loc.DisplayModes.Placement.Arrangement.Right}"
+                                            Content="{Binding ViewModel.Layers.ExpandEndText}"
                                             Tag="{x:Static settings:TaskbarContentArrangement.Right}" />
                                     </ComboBox>
                                 </components:SettingsRow>

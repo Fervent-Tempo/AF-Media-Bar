@@ -1088,7 +1088,7 @@
     <value>恢复默认顺序</value>
   </data>
   <data name="DisplayModes.Rest.Row.Alignment.Description" xml:space="preserve">
-    <value>设置标题和歌手的水平对齐方式。</value>
+    <value>设置标题和歌手在文字区域内的对齐方式。</value>
   </data>
   <data name="DisplayModes.Rest.Row.Alignment.Title" xml:space="preserve">
     <value>标题与歌手对齐</value>
@@ -1112,7 +1112,7 @@
     <value>常驻状态显示输出设备按钮</value>
   </data>
   <data name="DisplayModes.Rest.Row.Entry.Description" xml:space="preserve">
-    <value>通过悬停媒体栏或点击顶部入口打开完整面板。</value>
+    <value>通过悬停媒体栏或点击面板入口打开完整面板。</value>
   </data>
   <data name="DisplayModes.Rest.Row.Entry.Title" xml:space="preserve">
     <value>显示进入完整面板的入口</value>
@@ -1124,7 +1124,7 @@
     <value>标题与歌手显示方式</value>
   </data>
   <data name="DisplayModes.Rest.Row.Progress.Description" xml:space="preserve">
-    <value>在常驻状态底部显示只读进度；无时长时隐藏。</value>
+    <value>在媒体栏边缘显示只读进度；无时长时隐藏。</value>
   </data>
   <data name="DisplayModes.Rest.Row.Artwork.Description" xml:space="preserve">
     <value>有媒体时显示封面；不影响无媒体时的小音符。</value>
@@ -1475,13 +1475,13 @@
     <value>需先启用歌词</value>
   </data>
   <data name="Lyrics.Row.FixedWidth.Description" xml:space="preserve">
-    <value>固定歌词区域宽度，不随每句歌词变化。</value>
+    <value>固定歌词区域长度，不随每句歌词变化。</value>
   </data>
   <data name="Lyrics.Row.FixedWidth.Title" xml:space="preserve">
     <value>固定歌词框长度</value>
   </data>
   <data name="Lyrics.Row.FixedWidth.Length.Description" xml:space="preserve">
-    <value>设置固定宽度；任务栏空间不足时自动缩小。</value>
+    <value>设置固定长度；可用空间不足时自动缩小。</value>
   </data>
   <data name="Lyrics.Row.FixedWidth.Length.Title" xml:space="preserve">
     <value>歌词框长度</value>
@@ -1955,7 +1955,7 @@
     <value>托盘图标的点击与滚轮行为</value>
   </data>
   <data name="Search.Lyrics.Alignment.Description" xml:space="preserve">
-    <value>歌词靠左、居中还是靠右</value>
+    <value>歌词在文字区域内的对齐方式</value>
   </data>
   <data name="Search.Lyrics.Display.Description" xml:space="preserve">
     <value>启用实时歌词，设置单双行和第二行内容优先级。</value>
@@ -2907,7 +2907,7 @@
   <data name="Experimental.Vertical.Title" xml:space="preserve"><value>竖向任务栏</value></data>
   <data name="Experimental.Vertical.Description" xml:space="preserve"><value>在真实的左侧或右侧任务栏中显示竖向媒体栏。</value></data>
   <data name="Experimental.Vertical.Shared" xml:space="preserve"><value>任务栏横向与竖向共享同一份配置。此处修改也会影响横向任务栏。</value></data>
-  <data name="Experimental.Floating.Title" xml:space="preserve"><value>桌面悬浮条</value></data>
+  <data name="Experimental.Floating.Title" xml:space="preserve"><value>桌面悬浮模式</value></data>
   <data name="Experimental.Floating.Description" xml:space="preserve"><value>独立桌面小工具，支持横向、竖向和按显示器保存位置。启用后可手动切换模式。</value></data>
   <data name="Settings.Context.ConfigurationTarget" xml:space="preserve"><value>编辑配置</value></data>
   <data name="Experimental.Floating.Independent" xml:space="preserve"><value>任务栏横竖共享配置，桌面悬浮使用独立配置，均在已有设置页面编辑。</value></data>
@@ -2921,7 +2921,7 @@
   <data name="Experimental.Floating.Taskbar" xml:space="preserve"><value>任务栏</value></data>
   <data name="Experimental.Floating.Switching" xml:space="preserve"><value>正在切换显示模式…</value></data>
   <data name="Experimental.Floating.Failed" xml:space="preserve"><value>切换失败，已保留原显示模式。请重试或反馈日志。</value></data>
-  <data name="Experimental.Floating.Active" xml:space="preserve"><value>当前运行：桌面悬浮条</value></data>
+  <data name="Experimental.Floating.Active" xml:space="preserve"><value>当前运行：桌面悬浮模式</value></data>
   <data name="Experimental.Floating.TaskbarActive" xml:space="preserve"><value>当前运行：任务栏</value></data>
   <data name="Experimental.Floating.Orientation" xml:space="preserve"><value>方向</value></data>
   <data name="Experimental.Floating.Horizontal" xml:space="preserve"><value>横向</value></data>
@@ -2932,5 +2932,13 @@
   <data name="Experimental.Floating.Lock" xml:space="preserve"><value>锁定位置</value></data>
   <data name="Experimental.Floating.OpenDisplay" xml:space="preserve"><value>前往显示与位置</value></data>
   <data name="Taskbar.Compact.Notification.Title" xml:space="preserve"><value>任务栏空间较窄</value></data>
-  <data name="Taskbar.Compact.Notification.Body" xml:space="preserve"><value>已优先显示当前歌词或标题，临时收起副信息。可尝试桌面悬浮条获得更多空间，点击前往实验性功能。</value></data>
+  <data name="Taskbar.Compact.Notification.Body" xml:space="preserve"><value>已优先显示当前歌词或标题，临时收起副信息。可尝试桌面悬浮模式获得更多空间，点击前往实验性功能。</value></data>
+  <data name="Settings.Direction.Top" xml:space="preserve"><value>靠上</value></data>
+  <data name="Settings.Direction.Bottom" xml:space="preserve"><value>靠下</value></data>
+  <data name="Settings.Direction.Start" xml:space="preserve"><value>起始</value></data>
+  <data name="Settings.Direction.End" xml:space="preserve"><value>末尾</value></data>
+  <data name="Settings.Direction.ExpandTop" xml:space="preserve"><value>从上方展开</value></data>
+  <data name="Settings.Direction.ExpandBottom" xml:space="preserve"><value>从下方展开</value></data>
+  <data name="Settings.Direction.ExpandStart" xml:space="preserve"><value>从起始位置展开</value></data>
+  <data name="Settings.Direction.ExpandEnd" xml:space="preserve"><value>从末尾位置展开</value></data>
 </root>
