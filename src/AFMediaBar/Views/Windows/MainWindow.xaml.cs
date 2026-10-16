@@ -176,6 +176,7 @@ namespace AFMediaBar.Views.Windows
                 if (!_isClosing && !TaskbarEnvironmentRecovering && SettingsManager.Current.WindowMode == WindowMode.Taskbar)
                     ApplyEffectiveTaskbarMonitorChange();
                 if (!_isClosing && SettingsManager.Current.WindowMode == WindowMode.FloatingBar) QueueRuntimeRefresh();
+                TryNotifySmallTaskbar();
             };
 
             InitializeComponent();
@@ -799,6 +800,7 @@ namespace AFMediaBar.Views.Windows
         {
             var window = _taskbarFactory(targetDeviceId, this);
             window.OpenFullPanelRequested += TaskbarWindow_OpenFullPanelRequested;
+            window.InformationAutomaticallyHidden += TaskbarWindow_InformationAutomaticallyHidden;
             window.PlayerMenuOpenRequested += TaskbarWindow_PlayerMenuOpenRequested;
             window.PlacementTransitionStarted += TaskbarWindow_PlacementTransitionStarted;
             window.PlacementFallbackRequested += TaskbarWindow_PlacementFallbackRequested;
@@ -947,6 +949,12 @@ namespace AFMediaBar.Views.Windows
             if (target == ShellNotificationTarget.Application)
             {
                 ViewModel_OpenUpdateSettingsRequested(this, EventArgs.Empty);
+                return;
+            }
+            if (target == ShellNotificationTarget.FloatingBarExperiment)
+            {
+                ViewModel_OpenSettingsRequested(this, EventArgs.Empty);
+                _settingsWindow?.NavigateToGroup(SettingsPageKey.Experimental, "Experimental.Floating.Title");
                 return;
             }
             if (target == ShellNotificationTarget.VerticalTaskbarExperiment)

@@ -1011,11 +1011,17 @@ namespace AFMediaBar.Components
                 layout,
                 lengthScalePercent / 100.0,
                 thicknessScalePercent / 100.0,
-                mediaFontScale);
+                mediaFontScale,
+                mode == WindowMode.Taskbar && orientation == LayoutOrientation.Horizontal ? crossAxisDip : null,
+                preserveMediaFontSize: mode == WindowMode.Taskbar);
 
             // 更新内部状态标志以保持兼容
             // Update internal state flags to maintain compatibility
             _isVertical = orientation == LayoutOrientation.Vertical;
+            _naturalTitleSize = SongTitle.FontSize;
+            _naturalArtistSize = SongArtist.FontSize;
+            _naturalLyricSize = _layoutEngine?.LyricsFontSize ?? 12;
+            RefreshTaskbarTextBudget(_lyricsFrame);
             ApplyTaskbarExperienceSettings(publishSize: false);
             // The host computes the new target after this call. Keep the displayed length until then,
             // so a layout-setting change cannot overwrite the animation's starting geometry.
@@ -1140,14 +1146,17 @@ namespace AFMediaBar.Components
                 {
                     if (item is System.Windows.Controls.Button button)
                     {
-                        button.Width = metrics.ButtonSize;
-                        button.Height = metrics.ButtonSize;
+                        var availableButtonSize = UsesAdaptiveTaskbarText && !_isVertical
+                            ? Math.Min(metrics.ButtonSize, Math.Max(1, MainBorder.Height - 2)) : metrics.ButtonSize;
+                        button.Width = availableButtonSize;
+                        button.Height = availableButtonSize;
                     }
                     if (item.Visibility == Visibility.Visible)
                         item.Margin = new Thickness(visibleHoverItems++ == 0 ? 0 : hoverGap, 0, 0, 0);
                 }
             }
-            TaskbarHoverLayer.Height = metrics.HoverLayerHeight;
+            TaskbarHoverLayer.Height = UsesAdaptiveTaskbarText && !_isVertical
+                ? Math.Min(metrics.HoverLayerHeight, Math.Max(1, MainBorder.Height - 2)) : metrics.HoverLayerHeight;
             ApplyTaskbarSectionGeometry(_isVertical ? MainBorder.Height : MainBorder.Width);
             // 频谱被收起时把柱清空一次，免得下次显示时先闪出上一帧的高度；清空的时机放在几何之后，因为它决定频谱这次可不可见。
             // Clearing the bars once while the spectrum is collapsed keeps the next reveal from flashing the previous frame's heights; it happens
@@ -1173,7 +1182,7 @@ namespace AFMediaBar.Components
                 if (experience.ContentLayout == TaskbarContentLayout.CompactInline &&
                     !string.IsNullOrEmpty(_actualArtist))
                 {
-                    SongTitle.Text = TaskbarExperiencePolicy.FormatMetadataTitle(_actualTitle, _actualArtist, experience.ContentLayout);
+                    SongTitle.Text = VisibleMetadataTitle(experience);
                     SongArtistContainer.Visibility = Visibility.Collapsed;
                 }
                 else
@@ -1201,6 +1210,7 @@ namespace AFMediaBar.Components
                 AnimateComponentHover(TaskbarSpectrumHoverSurface, false);
             }
 
+            RefreshTaskbarTextBudget(_lyricsFrame);
             if (publishSize)
                 RaiseDesiredSizeChanged(isForcedRefresh: performanceWidthChanged);
 
@@ -1218,6 +1228,7 @@ namespace AFMediaBar.Components
         /// </summary>
         private void ApplyTaskbarSectionGeometry(double primaryLength)
         {
+            RefreshTaskbarTextBudget(_lyricsFrame);
             // 先按封面自身的比例纠正封面框：下面的文字起点与整条宽度都按封面右缘计算，封面宽度必须是最终值。
             // The artwork box is corrected to the artwork's own aspect first, because the text start and the whole length below are derived
             // from the artwork's right edge, which therefore has to be final.
@@ -1304,8 +1315,9 @@ namespace AFMediaBar.Components
             // carrying its own fixed value; a spectrum content area taller than the text block wins, so the canvas always fits.
             var hoverHeight = Math.Max(
                 ResolveRestHoverHeight(),
-                SpectrumPresentationPolicy.ResolveContentHeightDip(PresentationSettings.SpectrumComponent) +
+                ResolveSpectrumContentHeight(ResolveSpectrumPresentationSettings()) +
                 SpectrumPresentationPolicy.SurfacePaddingDip * 2);
+            if (UsesAdaptiveTaskbarText) hoverHeight = Math.Min(hoverHeight, Math.Max(1, MainBorder.Height - _textBudget.PaddingDip * 2));
             PlaceRestWidget(TaskbarSpectrumHoverSurface, layout.Find(TaskbarRestComponent.Spectrum), hoverHeight);
             PlaceRestWidget(TaskbarPerformanceHoverSurface, layout.Find(TaskbarRestComponent.Performance), hoverHeight);
             PlaceRestWidget(TaskbarOutputDeviceHoverSurface, layout.Find(TaskbarRestComponent.OutputDevice), hoverHeight);
@@ -1507,7 +1519,7 @@ namespace AFMediaBar.Components
             var layout = LayoutPresets.GetLayout(_currentMode, LayoutOrientation.Horizontal);
             var artwork = layout.Components.FirstOrDefault(component =>
                 string.Equals(component.Id, LayoutComponentIds.Artwork, StringComparison.Ordinal));
-            var inset = artwork?.Bounds.X ?? 0;
+            var inset = _isSmallTaskbar && UsesAdaptiveTaskbarText ? 2 : artwork?.Bounds.X ?? 0;
             return double.IsFinite(inset) && inset > 0 ? inset : 0;
         }
 
@@ -2090,13 +2102,14 @@ namespace AFMediaBar.Components
             if (_layoutEngine?.CurrentOrientation is not { } orientation)
                 return;
 
-            var lyricsVisible = SongLyricsPanel.Opacity > 0;
+            var effectiveLyrics = VisibleLyricsFrame(_lyricsFrame);
+            var lyricsVisible = effectiveLyrics.IsVisible;
             var metadataTitle = IsBarPresentation && orientation == LayoutOrientation.Horizontal
-                ? TaskbarExperiencePolicy.FormatMetadataTitle(_actualTitle, _actualArtist, PresentationSettings.TaskbarExperience.ContentLayout)
+                ? VisibleMetadataTitle(PresentationSettings.TaskbarExperience)
                 : _actualTitle;
-            var visibleText = !_isConnected ? string.Empty : lyricsVisible ? _lyricsFrame.Current : metadataTitle;
+            var visibleText = !_isConnected ? string.Empty : lyricsVisible ? effectiveLyrics.Current : metadataTitle;
             var secondaryText = _isConnected && lyricsVisible
-                ? string.IsNullOrEmpty(_lyricsFrame.CurrentTranslation) ? _lyricsFrame.Next : _lyricsFrame.CurrentTranslation
+                ? string.IsNullOrEmpty(effectiveLyrics.CurrentTranslation) ? effectiveLyrics.Next : effectiveLyrics.CurrentTranslation
                 : string.Empty;
             var artist = _isConnected && !lyricsVisible && SongArtistContainer.Visibility == Visibility.Visible ? _actualArtist : string.Empty;
             // Spectrum tuning and metric selection never change their reserved widths. Keeping
@@ -2190,6 +2203,7 @@ namespace AFMediaBar.Components
                 _minimumPrimaryLength = ContentWidth(0);
                 request = request with
                 {
+                    Height = MainBorder.Height,
                     Width = _snapshot.IsConnected
                         ? TaskbarExperiencePolicy.ResolvePrimaryLength(
                             contentWidth,

@@ -2931,4 +2931,6 @@
   <data name="Experimental.Floating.Topmost" xml:space="preserve"><value>一律置頂</value></data>
   <data name="Experimental.Floating.Lock" xml:space="preserve"><value>鎖定位置</value></data>
   <data name="Experimental.Floating.OpenDisplay" xml:space="preserve"><value>前往顯示與位置</value></data>
+  <data name="Taskbar.Compact.Notification.Title" xml:space="preserve"><value>工作列空間較窄</value></data>
+  <data name="Taskbar.Compact.Notification.Body" xml:space="preserve"><value>已優先顯示目前歌詞或標題，暫時收起次要資訊。可嘗試桌面懸浮列取得更多空間，點擊前往實驗性功能。</value></data>
 </root>

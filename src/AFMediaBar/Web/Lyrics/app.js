@@ -31,6 +31,7 @@ let spectrumBarEls = Array.from(document.querySelectorAll(".spectrum span"));
 let displayedCurrent = currentLineTextEl?.textContent || "";
 let displayedNext = nextLineTextEl?.textContent || "";
 let requestedFontSize = 13;
+let compactPresentation = false;
 let currentSize = 13;
 let viewportDescenderBufferPx = 2;
 let layoutScaleFactor = 1;
@@ -1578,7 +1579,8 @@ function updateMetrics() {
   // Exclude the host-provided descender buffer from row metrics.
   const measuredViewportHeight = viewportEl.clientHeight || 30;
   const minimumHostHeight = Math.max(2, Math.round(26 * layoutScaleFactor));
-  const hostHeight = Math.max(minimumHostHeight, measuredViewportHeight - viewportDescenderBufferPx);
+  const hostHeight = compactPresentation ? Math.max(1, measuredViewportHeight - viewportDescenderBufferPx) :
+    Math.max(minimumHostHeight, measuredViewportHeight - viewportDescenderBufferPx);
   // 先按"没有额外行距"的基准算出当前字号与字号夹取的下限：行距的夹取必须保证每行不低于
   // 字号 ÷ 0.92（字号夹取规则的下限），因此先得到这个下限，再让 resolveRowMetrics 求行高/间隙，
   // 最后才夹字号。行距按字号的百分比换算成像素，随字号等比缩放。
@@ -1593,15 +1595,14 @@ function updateMetrics() {
   const requestedGapPx = requestedLineGapPercent > 0
     ? (requestedLineGapPercent / 100) * baseSize
     : 0;
-  const rowMetrics = window.taskbarLyricsSpacing.resolveRowMetrics(
-    hostHeight,
-    requestedGapPx,
-    minimumRowHeightPx
-  );
+  const rowMetrics = compactPresentation
+    ? { rowHeightPx: hostHeight, rowGapPx: 0, linePitchPx: hostHeight }
+    : window.taskbarLyricsSpacing.resolveRowMetrics(hostHeight, requestedGapPx, minimumRowHeightPx);
   rowHeightPx = rowMetrics.rowHeightPx;
   rowGapPx = rowMetrics.rowGapPx;
   linePitchPx = rowMetrics.linePitchPx;
-  const currentSizeMax = Math.max(11.2 * layoutScaleFactor, rowHeightPx * 0.92);
+  const currentSizeMax = compactPresentation ? rowHeightPx * 0.92 :
+    Math.max(11.2 * layoutScaleFactor, rowHeightPx * 0.92);
   currentSize = Math.min(requestedFontSize, currentSizeMax);
   const nextSize = Math.max(9 * layoutScaleFactor, currentSize * 0.92);
   root.style.setProperty("--row-height", `${rowHeightPx}px`);
@@ -2287,6 +2288,9 @@ const lyricsApi = {
     if (Number.isFinite(layoutScalePercent) && layoutScalePercent > 0) {
       layoutScaleFactor = layoutScalePercent / 100;
     }
+    compactPresentation = payload.compact === true;
+    root.style.setProperty("--lyrics-pane-padding-top", payload.compact ? "0px" : "3px");
+    root.style.setProperty("--line-text-padding-bottom", payload.compact ? "0px" : "2px");
     requestedFontSize = Number(payload.fontSize) || 13;
     root.style.setProperty("--font-size", `${requestedFontSize}px`);
     root.style.setProperty("--font-weight", window.taskbarLyricsState.normalizeWeight(payload.fontWeight));

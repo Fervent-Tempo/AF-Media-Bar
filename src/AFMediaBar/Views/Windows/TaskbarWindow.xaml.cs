@@ -135,6 +135,9 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     private TimeSpan? _subscribedMetricInterval;
 
     public event EventHandler? OpenFullPanelRequested;
+    public event EventHandler? InformationAutomaticallyHidden;
+    public bool HasAutomaticallyHiddenInformation => !_isClosing && !_isEnvironmentSuspended && IsVisible &&
+        MediaControl.HasAutomaticallyHiddenInformation;
     /// <summary>请求稳定宿主打开右键菜单；坐标为空表示鼠标入口，否则为键盘入口的物理屏幕锚点。</summary>
     public event Action<TaskbarWindow, Point?>? PlayerMenuOpenRequested;
     internal ContextMenu PlayerContextMenu => PlayerMenu;
@@ -198,6 +201,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         MediaControl.QuickLaunchMenuRequested += MediaControl_QuickLaunchMenuRequested;
         MediaControl.QuickLaunchWheelRequested += MediaControl_QuickLaunchWheelRequested;
         MediaControl.OpenTaskManagerRequested += MediaControl_OpenTaskManagerRequested;
+        MediaControl.InformationAutomaticallyHidden += MediaControl_InformationAutomaticallyHidden;
         MediaControl.WheelRequested += MediaControl_WheelRequested;
         MediaControl.DesiredSizeChanged += MediaControl_DesiredSizeChanged;
         MediaControl.RestTransitionFinished += MediaControl_RestTransitionFinished;
@@ -1013,13 +1017,13 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         var orientation = _taskBarService.IsTaskbarVertical(taskbarHandle)
             ? LayoutOrientation.Vertical : LayoutOrientation.Horizontal;
         double? crossAxisDip = null;
-        if (orientation == LayoutOrientation.Vertical && _taskBarService.TryGetTaskbarRect(taskbarHandle, out var actualRect))
+        if (_taskBarService.TryGetTaskbarRect(taskbarHandle, out var actualRect))
         {
             var actualDpi = _taskBarService.GetTaskbarDpiScale(taskbarHandle);
-            crossAxisDip = Math.Max(1, (actualRect.Right - actualRect.Left) / Math.Max(0.1, actualDpi));
+            crossAxisDip = Math.Max(1, (orientation == LayoutOrientation.Vertical ? actualRect.Right - actualRect.Left : actualRect.Bottom - actualRect.Top) / Math.Max(0.1, actualDpi));
             var monitor = MonitorFromWindow(taskbarHandle, 2);
             var info = new MONITORINFOEX { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<MONITORINFOEX>(), szDevice = string.Empty };
-            if (GetMonitorInfo(monitor, ref info))
+            if (orientation == LayoutOrientation.Vertical && GetMonitorInfo(monitor, ref info))
                 MediaControl.ApplyVerticalTaskbarSide(actualRect.Left + actualRect.Right < info.rcMonitor.Left + info.rcMonitor.Right);
         }
 
@@ -1031,12 +1035,14 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             taskbarHandle,
             orientation,
             SettingsManager.Current.LayoutThicknessScalePercent);
+        if (orientation == LayoutOrientation.Horizontal && crossAxisDip.HasValue)
+            crossAxisDip = Math.Min(crossAxisDip.Value, LayoutPresets.TaskbarHorizontal.Canvas.Height * thicknessScalePercent / 100);
         var mediaFontSizePercent = ExperimentalAudioPolicy.Experience(SettingsManager.Current.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl).Normalize().MediaFontSizePercent;
         var layoutChanged = _appliedWindowMode != windowMode ||
                             orientationChanged ||
                             !lengthScalePercent.Equals(_appliedLengthScalePercent) ||
                             !thicknessScalePercent.Equals(_appliedThicknessScalePercent) ||
-                            (crossAxisDip.HasValue && Math.Abs((MediaControl.CurrentLayout?.Canvas.Width ?? 0) - crossAxisDip.Value) > 0.1) ||
+                            (crossAxisDip.HasValue && Math.Abs((orientation == LayoutOrientation.Vertical ? MediaControl.CurrentLayout?.Canvas.Width ?? 0 : MediaControl.CurrentLayout?.Canvas.Height ?? 0) - crossAxisDip.Value) > 0.1) ||
                             mediaFontSizePercent != _appliedMediaFontSizePercent;
         if (layoutChanged)
         {
@@ -1413,6 +1419,11 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     {
         if (command.CanExecute(null))
             command.Execute(null);
+    }
+
+    private void MediaControl_InformationAutomaticallyHidden(object? sender, EventArgs args)
+    {
+        if (HasAutomaticallyHiddenInformation) InformationAutomaticallyHidden?.Invoke(this, EventArgs.Empty);
     }
 
     private void MediaControl_OpenFullPanelRequested(object? sender, EventArgs e) =>
@@ -2375,6 +2386,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         MediaControl.QuickLaunchWheelRequested -= MediaControl_QuickLaunchWheelRequested;
         PlayerMenu.QuickLaunchRequested -= PlayerMenu_QuickLaunchRequested;
         MediaControl.OpenTaskManagerRequested -= MediaControl_OpenTaskManagerRequested;
+        MediaControl.InformationAutomaticallyHidden -= MediaControl_InformationAutomaticallyHidden;
+        InformationAutomaticallyHidden = null;
         MediaControl.WheelRequested -= MediaControl_WheelRequested;
         MediaControl.DesiredSizeChanged -= MediaControl_DesiredSizeChanged;
         MediaControl.RestTransitionFinished -= MediaControl_RestTransitionFinished;

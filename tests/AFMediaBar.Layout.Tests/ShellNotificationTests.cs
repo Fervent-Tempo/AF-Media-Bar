@@ -33,6 +33,12 @@ public sealed class ShellNotificationTests
             var preview = calls.Last().Data;
             Assert.IsTrue(notifications.TryShowNotification("update", "body", ShellNotificationTarget.Application));
             var update = calls.Last().Data;
+            Assert.IsTrue(notifications.TryShowNotification("vertical", "body", ShellNotificationTarget.VerticalTaskbarExperiment));
+            var vertical = calls.Last().Data;
+            Assert.IsTrue(notifications.TryShowNotification("floating", "body", ShellNotificationTarget.FloatingBarExperiment));
+            var floating = calls.Last().Data;
+            Assert.AreNotEqual(vertical.uID, floating.uID);
+            Assert.AreNotEqual(floating.uID, update.uID);
             Assert.AreNotEqual(background.uID, update.uID);
             Assert.AreNotEqual(lyrics.uID, update.uID);
             Assert.AreNotEqual(lyrics.uID, background.uID);
@@ -45,10 +51,13 @@ public sealed class ShellNotificationTests
             Click(tray, lyrics);
             Click(tray, preview);
             Click(tray, update);
+            Click(tray, vertical);
+            Click(tray, floating);
             Assert.IsTrue(tray.TryShowNotification("generic", "body"));
             Click(tray, calls.Last().Data);
             CollectionAssert.AreEqual(new[] { ShellNotificationTarget.TaskbarBackground, ShellNotificationTarget.LyricsRecovery,
-                ShellNotificationTarget.DeveloperLyricsPreview, ShellNotificationTarget.Application }, targets);
+                ShellNotificationTarget.DeveloperLyricsPreview, ShellNotificationTarget.Application,
+                ShellNotificationTarget.VerticalTaskbarExperiment, ShellNotificationTarget.FloatingBarExperiment }, targets);
             return Task.CompletedTask;
         });
     }

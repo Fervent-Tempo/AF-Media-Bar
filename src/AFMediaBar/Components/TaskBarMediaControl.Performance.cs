@@ -17,18 +17,21 @@ public partial class TaskBarMediaControl
     private double _performanceWidth = 74;
     private string? _performanceFont;
     private bool _performanceVertical;
+    private bool _performanceCompact;
 
     private bool ConfigurePerformance()
     {
         var settings = PresentationSettings.PerformanceComponent.Normalize();
+        var compact = UsesAdaptiveTaskbarText && !_isVertical && MainBorder.Height < 28;
         var metrics = settings.GetOrderedMetrics();
         var font = TextElement.GetFontFamily(TaskbarPerformanceItems).Source;
         if (_performanceCells.Count > 0 && _performanceSettings.DisplayMode == settings.DisplayMode &&
-            _performanceSettings.GetOrderedMetrics().SequenceEqual(metrics) && _performanceFont == font && _performanceVertical == _isVertical)
+            _performanceSettings.GetOrderedMetrics().SequenceEqual(metrics) && _performanceFont == font && _performanceVertical == _isVertical && _performanceCompact == compact)
             return false;
 
         _performanceSettings = settings;
         _performanceVertical = _isVertical;
+        _performanceCompact = compact;
         _performanceFont = font;
         _performanceCells.Clear();
         TaskbarPerformanceItems.Children.Clear();
@@ -42,13 +45,13 @@ public partial class TaskBarMediaControl
                 IsHitTestVisible = false,
                 Text = metric switch
                 {
-                    MetricKind.SystemNetwork => "↑ 999.9 GiB/s\n↓ 999.9 GiB/s",
+                    MetricKind.SystemNetwork => compact ? "↑ 999.9 GiB/s · ↓ 999.9 GiB/s" : "↑ 999.9 GiB/s\n↓ 999.9 GiB/s",
                     MetricKind.ProcessMemory => "APP 99999 MB",
                     _ => MetricPresentationPolicy.Format(metric, new(100, 100, 100, 99999))
                 }
             };
             cell.SetResourceReference(TextBlock.FontWeightProperty, "AppTextMediumFontWeight");
-            if (metric == MetricKind.SystemNetwork)
+            if (metric == MetricKind.SystemNetwork && !compact)
             {
                 cell.LineHeight = 11;
                 cell.LineStackingStrategy = LineStackingStrategy.BlockLineHeight;
@@ -102,7 +105,9 @@ public partial class TaskBarMediaControl
             if (_isVertical)
                 ApplyVerticalMetricText(pair.Value, pair.Key);
             else
-                pair.Value.Text = MetricPresentationPolicy.Format(pair.Key, _performanceSnapshot);
+                pair.Value.Text = _performanceCompact
+                    ? MetricPresentationPolicy.Format(pair.Key, _performanceSnapshot).Replace("\n", " · ")
+                    : MetricPresentationPolicy.Format(pair.Key, _performanceSnapshot);
             pair.Value.Visibility = _performanceSettings.DisplayMode == PerformanceDisplayMode.Parallel || pair.Key == current
                 ? Visibility.Visible : Visibility.Collapsed;
             pair.Value.Margin = _isVertical
@@ -158,7 +163,7 @@ public partial class TaskBarMediaControl
             _verticalPerformanceLength = length;
             return changedLength;
         }
-        TaskbarPerformanceSurface.Padding = new Thickness(8, 2, 8, 2);
+        TaskbarPerformanceSurface.Padding = _performanceCompact ? new Thickness(4, 0, 4, 0) : new Thickness(8, 2, 8, 2);
         var width = _performanceCells.Count == 0 ? 74 : _performanceSettings.DisplayMode == PerformanceDisplayMode.Parallel
             ? _performanceCells.Values.Sum(cell => cell.Width) + 8 * (_performanceCells.Count - 1) + 16
             : _performanceCells.Values.Max(cell => cell.Width) + 16;

@@ -26,7 +26,8 @@ public sealed record LyricsWebStyle(
     bool IsVertical = false,
     double SecondaryFontSize = 14,
     string MetadataAlignment = "Left",
-    bool ReduceMotion = false);
+    bool ReduceMotion = false,
+    bool Compact = false);
 
 /// <summary>
 /// WebView2 歌词适配器。它只保留每种消息的最新值，因此初始化或脚本执行较慢时不会回放过期帧。
@@ -145,7 +146,8 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
             style.IsVertical,
             style.SecondaryFontSize,
             style.MetadataAlignment,
-            style.ReduceMotion
+            style.ReduceMotion,
+            style.Compact
         });
         StartDrain();
     }

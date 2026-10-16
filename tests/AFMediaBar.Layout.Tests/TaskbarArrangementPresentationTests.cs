@@ -220,6 +220,7 @@ public sealed class TaskbarArrangementPresentationTests
                 Assert.AreSame(control.FindName("TaskbarPreviousButton"), transport.Children[0]);
                 AssertPerformanceLayout(control);
                 VerticalTaskbarPresentationChecks.Verify(control);
+                SmallTaskbarPresentationChecks.Verify(control);
                 control.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent));
                 MetadataMarqueePresentationChecks.Verify();
             }

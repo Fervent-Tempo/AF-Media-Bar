@@ -22,9 +22,9 @@ public partial class TaskBarMediaControl
     private double _verticalSpectrumLength = 28;
     private bool VerticalTextRequired => _isVertical && _snapshot.IsConnected;
     private double VerticalPrimaryFontSize => VerticalTaskbarPresentationPolicy.PrimaryFontSizeDip *
-        ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize().MediaFontSizePercent / 100d;
+        ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize().MediaFontSizePercent / 100d * _textBudget.FontScale;
     private double VerticalSecondaryFontSize => VerticalTaskbarPresentationPolicy.SecondaryFontSizeDip *
-        ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize().MediaFontSizePercent / 100d;
+        ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize().MediaFontSizePercent / 100d * _textBudget.FontScale;
 
     public void ApplyVerticalTaskbarSide(bool onLeft)
     {
@@ -86,7 +86,7 @@ public partial class TaskBarMediaControl
 
     private LyricsPresentationFrame BuildVerticalMetadataFrame() => new(
         true, _actualTitle + "\n" + _actualArtist, -1,
-        TaskbarExperiencePolicy.FormatMetadataTitle(_actualTitle, _actualArtist, PresentationSettings.TaskbarExperience.ContentLayout), PresentationSettings.TaskbarExperience.ContentLayout == TaskbarContentLayout.CompactInline
+        VisibleMetadataTitle(PresentationSettings.TaskbarExperience), _isSmallTaskbar || PresentationSettings.TaskbarExperience.ContentLayout == TaskbarContentLayout.CompactInline
             ? string.Empty : _actualArtist,
         string.Empty, string.Empty, false, 0, null, _snapshot.IsPlaying);
 
@@ -124,11 +124,11 @@ public partial class TaskBarMediaControl
             text, fontSize, lyricsVisible ? PresentationSettings.LyricsCharacterSpacingPercent : 0,
             sideways => MeasureTextWidthExact(sideways, SongTitle) * fontSize / Math.Max(1, SongTitle.FontSize));
         if (!lyricsVisible)
-            current = TaskbarExperiencePolicy.FormatMetadataTitle(_actualTitle, _actualArtist, experience.ContentLayout);
+            current = VisibleMetadataTitle(experience);
         var textLength = lyricsVisible && PresentationSettings.LyricsFixedWidthEnabled
             ? LyricsFixedWidth.Normalize(PresentationSettings.LyricsFixedWidthDip)
             : Math.Max(Measure(current, VerticalPrimaryFontSize),
-                Measure(lyricsVisible ? secondary : _actualArtist, lyricsVisible ? VerticalPrimaryFontSize : VerticalSecondaryFontSize));
+                Measure(lyricsVisible ? secondary : _isSmallTaskbar ? string.Empty : _actualArtist, lyricsVisible ? VerticalPrimaryFontSize : VerticalSecondaryFontSize));
         var visibility = ResolveRestVisibility(experience);
         var components = TaskbarRestLayoutPolicy.ResolveOrder(experience.RestComponentOrder)
             .Where(component => TaskbarRestLayoutPolicy.IsVisible(component, visibility)).ToArray();
@@ -195,7 +195,7 @@ public partial class TaskBarMediaControl
         SongArtistContainer.Width = innerWidth;
         SongTitle.Width = innerWidth;
         SongArtist.Width = innerWidth;
-        SongArtistContainer.Visibility = string.IsNullOrEmpty(_actualArtist) ? Visibility.Collapsed : Visibility.Visible;
+        SongArtistContainer.Visibility = _isSmallTaskbar || string.IsNullOrEmpty(_actualArtist) ? Visibility.Collapsed : Visibility.Visible;
         SongArtistContainer.Margin = new Thickness(0, 2, 0, 0);
         TaskbarPerformanceSurface.Width = innerWidth;
         TaskbarPerformanceSurface.Padding = new Thickness(1);

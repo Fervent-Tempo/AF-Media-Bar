@@ -57,6 +57,14 @@ public partial class TaskBarMediaControl
     private double SpectrumSurfaceWidth => _isVertical ? Math.Max(1, MainBorder.Width - 4) :
         SpectrumPresentationPolicy.CalculateSurfaceWidthDip(PresentationSettings.SpectrumComponent.Normalize().BandCount);
 
+    private double ResolveSpectrumContentHeight(SpectrumComponentSettings settings)
+    {
+        var configured = SpectrumPresentationPolicy.ResolveContentHeightDip(settings);
+        return UsesAdaptiveTaskbarText && !_isVertical
+            ? Math.Min(configured, Math.Max(1, MainBorder.Height - _textBudget.PaddingDip * 2 - SpectrumPresentationPolicy.SurfacePaddingDip * 2))
+            : configured;
+    }
+
     private SpectrumComponentSettings ResolveSpectrumPresentationSettings()
     {
         var settings = PresentationSettings.SpectrumComponent.Normalize();
@@ -122,7 +130,7 @@ public partial class TaskBarMediaControl
     internal void ConfigureSpectrum()
     {
         var settings = ResolveSpectrumPresentationSettings();
-        var contentHeight = SpectrumPresentationPolicy.ResolveContentHeightDip(settings);
+        var contentHeight = ResolveSpectrumContentHeight(settings);
         if (_appliedSpectrumStyle == settings.Style &&
             _appliedSpectrumBandCount == settings.BandCount &&
             Math.Abs(_appliedSpectrumContentHeight - contentHeight) < 0.01)
@@ -393,7 +401,7 @@ public partial class TaskBarMediaControl
             var targetScale = SpectrumPresentationPolicy.ResolveBarScale(
                 value,
                 settings.SensitivityPercent,
-                SpectrumPresentationPolicy.ResolveContentHeightDip(settings));
+                ResolveSpectrumContentHeight(settings));
             ApplySpectrumBarTarget(_spectrumBars[index], targetScale, motion);
         }
     }
@@ -443,7 +451,7 @@ public partial class TaskBarMediaControl
             var lit = SpectrumPresentationPolicy.ResolveLitPixelCount(
                 value,
                 settings.SensitivityPercent,
-                SpectrumPresentationPolicy.ResolveContentHeightDip(settings));
+                ResolveSpectrumContentHeight(settings));
             var column = _spectrumPixelColumns[index];
             for (var dotIndex = 0; dotIndex < column.Count; dotIndex++)
             {
@@ -491,7 +499,7 @@ public partial class TaskBarMediaControl
     {
         var count = SpectrumPresentationPolicy.WriteWaveformOutline(
             _displayedSpectrum.AsSpan(0, settings.BandCount), settings.SensitivityPercent,
-            SpectrumPresentationPolicy.ResolveContentHeightDip(settings), _waveformOutline);
+            ResolveSpectrumContentHeight(settings), _waveformOutline);
         return _waveformOutline.AsSpan(0, count);
     }
 

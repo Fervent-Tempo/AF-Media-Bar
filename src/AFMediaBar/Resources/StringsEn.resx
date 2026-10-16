@@ -2931,4 +2931,6 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Experimental.Floating.Topmost" xml:space="preserve"><value>Always on top</value></data>
   <data name="Experimental.Floating.Lock" xml:space="preserve"><value>Lock position</value></data>
   <data name="Experimental.Floating.OpenDisplay" xml:space="preserve"><value>Open display and placement</value></data>
+  <data name="Taskbar.Compact.Notification.Title" xml:space="preserve"><value>Limited taskbar space</value></data>
+  <data name="Taskbar.Compact.Notification.Body" xml:space="preserve"><value>The current lyric or title stays visible; secondary information is temporarily hidden. Try the desktop widget for more room. Click to open Experimental features.</value></data>
 </root>

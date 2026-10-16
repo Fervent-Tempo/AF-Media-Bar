@@ -103,6 +103,7 @@ public partial class MainWindow
                 var snapshot = _mediaSessionService.CurrentSnapshot ?? MediaSnapshot.Disconnected;
                 MediaSessionService_OnSnapshotChanged(this, snapshot);
                 MediaSessionService_OnSessionsChanged(_mediaSessionService.CurrentSessionOptions);
+                TryNotifySmallTaskbar();
             }
             else if (_runtime.LastFailure is not null)
             {
