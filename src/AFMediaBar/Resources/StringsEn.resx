@@ -560,7 +560,7 @@
     <value>Application</value>
   </data>
   <data name="Common.Group.ChooseDisplayMode" xml:space="preserve">
-    <value>Running mode</value>
+    <value>Display mode</value>
   </data>
   <data name="Common.Group.Fonts" xml:space="preserve">
     <value>Shared fonts</value>
@@ -947,7 +947,7 @@
     <value>Taskbar</value>
   </data>
   <data name="DisplayModes.Mode.Taskbar.Caption" xml:space="preserve">
-    <value>Runs in the Windows taskbar and provides the always-on view, the quick controls, and the full panel</value>
+    <value>Show media information and controls within the Windows taskbar.</value>
   </data>
   <data name="DisplayModes.Monitor.DisconnectedSuffix" xml:space="preserve">
     <value> (not connected)</value>
@@ -1925,7 +1925,7 @@
     <value>Light or dark appearance, and the window backdrop material</value>
   </data>
   <data name="Search.DisplayModes.ChooseDisplayMode.Description" xml:space="preserve">
-    <value>View the running mode and future display modes.</value>
+    <value>Choose taskbar or desktop floating mode and view upcoming modes.</value>
   </data>
   <data name="Search.DisplayModes.FullLayer.Description" xml:space="preserve">
     <value>Sections of the panel that opens when the media bar is clicked</value>
@@ -2307,7 +2307,7 @@
     <value>Display &amp; placement</value>
   </data>
   <data name="ScreenAndPlacement.Header.Subtitle" xml:space="preserve">
-    <value>Choose the running mode, displays, and media bar position.</value>
+    <value>Choose a display mode, monitor, and media bar position.</value>
   </data>
   <data name="Common.Page.ApplicationAppearance" xml:space="preserve">
     <value>Application appearance</value>
@@ -2910,7 +2910,7 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Experimental.Floating.Title" xml:space="preserve"><value>Desktop floating mode</value></data>
   <data name="Experimental.Floating.Description" xml:space="preserve"><value>An independent desktop widget with horizontal and vertical layouts and positions saved per display. Enable to reveal the mode switch.</value></data>
   <data name="Settings.Context.ConfigurationTarget" xml:space="preserve"><value>Editing configuration</value></data>
-  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>After enabling, open Display and position to switch modes and configure orientation, layer, and position. Fonts, appearance, and interactions are shared across modes.</value></data>
+  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>Once enabled, go to Display &amp; Placement to switch display modes and configure orientation, layer, and position. Font, appearance, and interactions are shared across modes.</value></data>
   <data name="Experimental.OpenInteraction" xml:space="preserve"><value>Open interaction settings</value></data>
   <data name="Experimental.OpenContentLayout" xml:space="preserve"><value>Open content and layout</value></data>
   <data name="Experimental.OpenAppearance" xml:space="preserve"><value>Open appearance settings</value></data>
@@ -2943,4 +2943,6 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Settings.Direction.ExpandEnd" xml:space="preserve"><value>Expand from end</value></data>
   <data name="Placement.Floating.Title" xml:space="preserve"><value>Desktop floating settings</value></data>
   <data name="Placement.Floating.Description" xml:space="preserve"><value>Show a desktop widget on each selected display, with positions saved separately.</value></data>
+  <data name="DisplayModes.Mode.FloatingBar.Caption" xml:space="preserve"><value>Place the bar on the desktop, drag it freely, and choose its window layer.</value></data>
+  <data name="DisplayModes.Mode.Experimental" xml:space="preserve"><value>Experimental</value></data>
 </root>

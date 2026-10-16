@@ -560,7 +560,7 @@
     <value>應用程式</value>
   </data>
   <data name="Common.Group.ChooseDisplayMode" xml:space="preserve">
-    <value>執行模式</value>
+    <value>顯示模式</value>
   </data>
   <data name="Common.Group.Fonts" xml:space="preserve">
     <value>通用字型</value>
@@ -947,7 +947,7 @@
     <value>工作列</value>
   </data>
   <data name="DisplayModes.Mode.Taskbar.Caption" xml:space="preserve">
-    <value>置於 Windows 工作列，含常駐狀態、快捷控制與完整面板</value>
+    <value>嵌入 Windows 工作列，顯示媒體資訊與播放控制。</value>
   </data>
   <data name="DisplayModes.Monitor.DisconnectedSuffix" xml:space="preserve">
     <value>（目前未連接）</value>
@@ -1925,7 +1925,7 @@
     <value>淺色還是深色，以及視窗背景材質</value>
   </data>
   <data name="Search.DisplayModes.ChooseDisplayMode.Description" xml:space="preserve">
-    <value>檢視實際執行模式與後續顯示模式。</value>
+    <value>選擇工作列或桌面懸浮模式，查看其他模式的實作狀態。</value>
   </data>
   <data name="Search.DisplayModes.FullLayer.Description" xml:space="preserve">
     <value>點選媒體列展開的面板包含哪些分區</value>
@@ -2307,7 +2307,7 @@
     <value>顯示與位置</value>
   </data>
   <data name="ScreenAndPlacement.Header.Subtitle" xml:space="preserve">
-    <value>選擇執行模式，設定顯示器與媒體列位置。</value>
+    <value>選擇顯示模式，設定顯示器與媒體列位置。</value>
   </data>
   <data name="Common.Page.ApplicationAppearance" xml:space="preserve">
     <value>應用程式外觀</value>
@@ -2910,14 +2910,14 @@
   <data name="Experimental.Floating.Title" xml:space="preserve"><value>桌面懸浮模式</value></data>
   <data name="Experimental.Floating.Description" xml:space="preserve"><value>獨立桌面小工具，支援橫向、直向及依顯示器儲存位置。啟用後可手動切換模式。</value></data>
   <data name="Settings.Context.ConfigurationTarget" xml:space="preserve"><value>編輯設定</value></data>
-  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>啟用後，請前往「顯示與位置」切換執行模式並設定方向、層級及位置。字型、外觀與互動由各模式共用。</value></data>
+  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>啟用後，請前往「顯示與位置」切換顯示模式並設定方向、層級和位置。字型、外觀與互動在各模式間共用。</value></data>
   <data name="Experimental.OpenInteraction" xml:space="preserve"><value>前往互動設定</value></data>
   <data name="Experimental.OpenContentLayout" xml:space="preserve"><value>前往內容與版面配置</value></data>
   <data name="Experimental.OpenAppearance" xml:space="preserve"><value>前往外觀設定</value></data>
   <data name="Experimental.Vertical.Notification.Title" xml:space="preserve"><value>已偵測到直向工作列</value></data>
   <data name="Experimental.Vertical.Notification.Body" xml:space="preserve"><value>啟用直向工作列實驗後即可在此顯示媒體列。點擊前往實驗性功能。</value></data>
   <data name="Experimental.Audio.RoutingPreserved" xml:space="preserve"><value>關閉實驗會保留實驗設定及既有 Windows 應用程式音訊路由偏好，不會自動清除。</value></data>
-  <data name="Experimental.Floating.Mode" xml:space="preserve"><value>執行模式</value></data>
+  <data name="Experimental.Floating.Mode" xml:space="preserve"><value>顯示模式</value></data>
   <data name="Experimental.Floating.Taskbar" xml:space="preserve"><value>工作列</value></data>
   <data name="Experimental.Floating.Switching" xml:space="preserve"><value>正在切換顯示模式…</value></data>
   <data name="Experimental.Floating.Failed" xml:space="preserve"><value>切換失敗，已保留原顯示模式。請重試或回報記錄。</value></data>
@@ -2943,4 +2943,6 @@
   <data name="Settings.Direction.ExpandEnd" xml:space="preserve"><value>從末端位置展開</value></data>
   <data name="Placement.Floating.Title" xml:space="preserve"><value>桌面懸浮設定</value></data>
   <data name="Placement.Floating.Description" xml:space="preserve"><value>在選取的顯示器上顯示桌面小工具，位置分別儲存。</value></data>
+  <data name="DisplayModes.Mode.FloatingBar.Caption" xml:space="preserve"><value>獨立顯示在桌面，可自由拖曳並選擇視窗層級。</value></data>
+  <data name="DisplayModes.Mode.Experimental" xml:space="preserve"><value>實驗性</value></data>
 </root>

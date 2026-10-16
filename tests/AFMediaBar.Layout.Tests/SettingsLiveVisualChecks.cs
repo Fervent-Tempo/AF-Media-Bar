@@ -166,9 +166,18 @@ internal static class SettingsLiveVisualChecks
                 horizontalLayout.UpdateLayout();
             }
             CapturePreview(host, "TextLayout");
-            SettingsManager.Current.Experiments = new() { FloatingBar = true, NewAudioControl = true };
             var placement = (ScreenAndPlacementPage)provider.GetPage(typeof(ScreenAndPlacementPage))!;
-            placement.ViewModel.RuntimeModeSelection = 1;
+            Assert.AreEqual(Visibility.Collapsed, ((RadioButton)placement.FindName("FloatingModeCard")).Visibility);
+            Assert.IsFalse(((Wpf.Ui.Controls.CardExpander)placement.FindName("FutureModesExpander")).IsExpanded, "Upcoming modes must start collapsed.");
+            SettingsManager.Current.Experiments = new() { FloatingBar = true, NewAudioControl = true };
+            var floatingCard = (RadioButton)placement.FindName("FloatingModeCard");
+            var taskbarCard = (RadioButton)placement.FindName("TaskbarModeCard");
+            Assert.AreEqual(Visibility.Visible, floatingCard.Visibility);
+            // RadioButton 先更新选中状态，再发出 Click；请求期间仍应呈现实际宿主。
+            floatingCard.SetCurrentValue(RadioButton.IsCheckedProperty, true);
+            floatingCard.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+            Assert.IsTrue(taskbarCard.IsChecked);
+            Assert.IsFalse(floatingCard.IsChecked, "Requesting a mode must not claim that its host is already running.");
             Assert.AreEqual(WindowMode.FloatingBar, SettingsManager.Current.WindowMode);
             Assert.AreEqual(0, placement.ViewModel.RuntimeModeSelection, "The editor must wait for an actual runtime context.");
             provider.SetContext(horizontal with { Mode = SettingsMode.FloatingBar });
@@ -176,6 +185,11 @@ internal static class SettingsLiveVisualChecks
             navigation.ReplaceContent(placement);
             Pump(TimeSpan.FromMilliseconds(100));
             Assert.AreEqual(1, placement.ViewModel.RuntimeModeSelection);
+            Assert.IsTrue(((RadioButton)placement.FindName("FloatingModeCard")).IsChecked);
+            Assert.IsFalse(((RadioButton)placement.FindName("TaskbarModeCard")).IsChecked);
+            Assert.IsFalse(((Wpf.Ui.Controls.CardExpander)placement.FindName("FutureModesExpander")).IsExpanded);
+            taskbarCard.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+            Assert.AreEqual(WindowMode.FloatingBar, SettingsManager.Current.WindowMode, "A retired page cannot switch the new context.");
             var placementGroups = ((Panel)((ScrollViewer)placement.FindName("PageScroll")).Content).Children.OfType<SettingsGroup>().ToArray();
             Assert.AreEqual(Visibility.Visible, placementGroups.Single(group => group.GroupId == "Placement.Floating.Title").Visibility);
             Assert.AreEqual(Visibility.Collapsed, placementGroups.Single(group => group.GroupId == "Common.Group.ScreenAndPlacement").Visibility);
@@ -214,6 +228,24 @@ internal static class SettingsLiveVisualChecks
             if ((combo.Template.FindName("PART_Popup", combo) ?? combo.Template.FindName("Popup", combo)) is System.Windows.Controls.Primitives.Popup lightPopup && lightPopup.Child is FrameworkElement lightContent)
                 CapturePreview(lightContent, "InputDeviceDropdownLight");
             combo.IsDropDownOpen = false;
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AFMB_SETTINGS_PREVIEW_DIR")))
+            {
+                foreach (var key in new[] { "AfSettingsCardBrush", "AfSettingsInfoSurfaceBrush", "AfSettingsGroupSurfaceBrush", "AfSettingsSectionBrush" })
+                    app.Resources[key] = new SolidColorBrush(Color.FromRgb(250, 250, 250));
+                app.Resources["AfSettingsInputBrush"] = new SolidColorBrush(Color.FromRgb(238, 238, 238));
+                app.Resources["AfSettingsBorderBrush"] = new SolidColorBrush(Color.FromRgb(210, 210, 210));
+                navigation.ReplaceContent(placement);
+                ((ScrollViewer)placement.FindName("PageScroll")).ScrollToTop();
+                Pump(TimeSpan.FromMilliseconds(100));
+                CapturePreview(host, "DisplayModesLight");
+                host.Width = 800;
+                Pump(TimeSpan.FromMilliseconds(100));
+                CapturePreview(host, "DisplayModesNarrow");
+                ((Wpf.Ui.Controls.CardExpander)placement.FindName("FutureModesExpander")).IsExpanded = true;
+                Pump(TimeSpan.FromMilliseconds(250));
+                CapturePreview(host, "DisplayModesUpcoming");
+                host.Width = 1100;
+            }
             VerifyResetCancellation(resetHost);
         }
         finally { host.Close(); Pump(TimeSpan.FromMilliseconds(30)); SettingsManager.Replace(previousSettings); }

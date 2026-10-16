@@ -560,7 +560,7 @@
     <value>应用</value>
   </data>
   <data name="Common.Group.ChooseDisplayMode" xml:space="preserve">
-    <value>运行模式</value>
+    <value>显示模式</value>
   </data>
   <data name="Common.Group.Fonts" xml:space="preserve">
     <value>通用字体</value>
@@ -947,7 +947,7 @@
     <value>任务栏</value>
   </data>
   <data name="DisplayModes.Mode.Taskbar.Caption" xml:space="preserve">
-    <value>置于 Windows 任务栏，含常驻状态、快捷控制与完整面板</value>
+    <value>嵌入 Windows 任务栏，显示媒体信息与播放控制。</value>
   </data>
   <data name="DisplayModes.Monitor.DisconnectedSuffix" xml:space="preserve">
     <value>（当前未连接）</value>
@@ -1925,7 +1925,7 @@
     <value>浅色还是深色，以及窗口背景材质</value>
   </data>
   <data name="Search.DisplayModes.ChooseDisplayMode.Description" xml:space="preserve">
-    <value>查看实际运行模式和后续显示模式。</value>
+    <value>选择任务栏或桌面悬浮模式，查看其他模式的实现状态。</value>
   </data>
   <data name="Search.DisplayModes.FullLayer.Description" xml:space="preserve">
     <value>点击媒体栏展开的面板包含哪些分区</value>
@@ -2307,7 +2307,7 @@
     <value>显示与位置</value>
   </data>
   <data name="ScreenAndPlacement.Header.Subtitle" xml:space="preserve">
-    <value>选择运行模式，配置显示器与媒体栏位置。</value>
+    <value>选择显示模式，配置显示器与媒体栏位置。</value>
   </data>
   <data name="Common.Page.ApplicationAppearance" xml:space="preserve">
     <value>应用外观</value>
@@ -2910,14 +2910,14 @@
   <data name="Experimental.Floating.Title" xml:space="preserve"><value>桌面悬浮模式</value></data>
   <data name="Experimental.Floating.Description" xml:space="preserve"><value>独立桌面小工具，支持横向、竖向和按显示器保存位置。启用后可手动切换模式。</value></data>
   <data name="Settings.Context.ConfigurationTarget" xml:space="preserve"><value>编辑配置</value></data>
-  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>启用后，请前往“显示与位置”切换运行模式并配置方向、层级和位置。字体、外观与交互在各模式间共用。</value></data>
+  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>启用后，请前往“显示与位置”切换显示模式并配置方向、层级和位置。字体、外观与交互在各模式间共用。</value></data>
   <data name="Experimental.OpenInteraction" xml:space="preserve"><value>前往交互设置</value></data>
   <data name="Experimental.OpenContentLayout" xml:space="preserve"><value>前往内容与布局</value></data>
   <data name="Experimental.OpenAppearance" xml:space="preserve"><value>前往外观设置</value></data>
   <data name="Experimental.Vertical.Notification.Title" xml:space="preserve"><value>已检测到竖向任务栏</value></data>
   <data name="Experimental.Vertical.Notification.Body" xml:space="preserve"><value>启用竖向任务栏实验后可在此显示媒体栏。点击前往实验性功能。</value></data>
   <data name="Experimental.Audio.RoutingPreserved" xml:space="preserve"><value>关闭实验会保留实验设置及已有的 Windows 应用音频路由偏好，不会自动清除。</value></data>
-  <data name="Experimental.Floating.Mode" xml:space="preserve"><value>运行模式</value></data>
+  <data name="Experimental.Floating.Mode" xml:space="preserve"><value>显示模式</value></data>
   <data name="Experimental.Floating.Taskbar" xml:space="preserve"><value>任务栏</value></data>
   <data name="Experimental.Floating.Switching" xml:space="preserve"><value>正在切换显示模式…</value></data>
   <data name="Experimental.Floating.Failed" xml:space="preserve"><value>切换失败，已保留原显示模式。请重试或反馈日志。</value></data>
@@ -2943,4 +2943,6 @@
   <data name="Settings.Direction.ExpandEnd" xml:space="preserve"><value>从末尾位置展开</value></data>
   <data name="Placement.Floating.Title" xml:space="preserve"><value>桌面悬浮设置</value></data>
   <data name="Placement.Floating.Description" xml:space="preserve"><value>在选中的显示器上显示桌面小工具，位置分别保存。</value></data>
+  <data name="DisplayModes.Mode.FloatingBar.Caption" xml:space="preserve"><value>独立显示在桌面，可自由拖动并选择窗口层级。</value></data>
+  <data name="DisplayModes.Mode.Experimental" xml:space="preserve"><value>实验性</value></data>
 </root>
