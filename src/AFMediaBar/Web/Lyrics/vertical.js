@@ -8,11 +8,11 @@
   css.textContent = `
     @font-face { font-family:"AF Media Bar Emoji"; src:local("Segoe UI Emoji");
       unicode-range:U+200D,U+FE0F,U+2600-27BF,U+1F000-1FAFF; }
-    .vertical-stage { position:fixed; inset:0; display:flex; flex-direction:row-reverse;
+    .vertical-stage { position:fixed; inset:0; display:flex; flex-direction:row;
       justify-content:center; align-items:stretch; gap:2px; overflow:hidden; padding:2px 0;
       font-family:"AF Media Bar Emoji",var(--font-family); font-weight:var(--font-weight); text-shadow:var(--text-shadow); }
     .vertical-stage[hidden] { display:none; }
-    .v-column { position:relative; flex:none; overflow:hidden; height:100%; }
+    .v-column { position:relative; flex:none; overflow:hidden; height:100%; transform-origin:top left; }
     .v-track { position:absolute; top:0; left:0; width:100%; }
     .v-ink { display:block; writing-mode:vertical-rl; text-orientation:mixed; white-space:pre;
       line-height:1; letter-spacing:var(--letter-spacing,0em); width:100%; height:max-content; }
@@ -32,6 +32,17 @@
   let changedAt = 0;
   let animationFrame = 0;
   let columns = [];
+  let motion = [];
+  let ghosts = [];
+  const presentation = window.taskbarLyricsPresentation;
+  const planner = new presentation.PresentationPlanner();
+  const rollEase = "cubic-bezier(0.22, 0.72, 0.24, 1)";
+  function stopMotion() {
+    motion.forEach(animation => animation.cancel());
+    motion = [];
+    ghosts.forEach(ghost => ghost.remove());
+    ghosts = [];
+  }
   const clamp = (x, max = 1) => Math.max(0, Math.min(max, Number(x) || 0));
   const reduced = () => style.reduceMotion || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   function cancel() {
@@ -97,11 +108,24 @@
     if (needsClock) animationFrame = requestAnimationFrame(render);
   }
   function present(payload) {
+    const previousFrame = frame;
     frame = payload || {};
     const nextIdentity = [frame.scene, frame.trackId, frame.currentLineIndex,
       frame.current, frame.currentTranslation || frame.next].join("\n");
     if (nextIdentity !== identity) {
       const previousIdentity = identity;
+      const stageBox = stage.getBoundingClientRect();
+      // 先读取正在呈现的位置，快速连续切行从当前画面接替，不回到动画起点。
+      const previous = columns.map(item => ({
+        text: item.base.textContent,
+        left: item.column.getBoundingClientRect().left - stageBox.left,
+        width: item.column.getBoundingClientRect().width,
+        offset: item.column.offsetLeft,
+        transform: getComputedStyle(item.column).transform,
+        opacity: getComputedStyle(item.column).opacity,
+        copy: item.column.cloneNode(true)
+      }));
+      stopMotion();
       identity = nextIdentity;
       changedAt = performance.now();
       stage.replaceChildren();
@@ -109,10 +133,43 @@
       if (frame.current) columns.push(makeColumn(String(frame.current), 0, frame.scene === "metadata"));
       const secondary = frame.currentTranslation || frame.next;
       if (secondary) columns.push(makeColumn(String(secondary), 1, frame.scene === "metadata"));
-      if (previousIdentity && frame.animateTransition && !reduced()) {
-        stage.getAnimations().forEach(animation => animation.cancel());
-        stage.animate([{ opacity:0, transform:"translateX(3px)" },
-          { opacity:1, transform:"translateX(0)" }], { duration:180, easing:"ease-out" });
+      render();
+      const plan = planner.plan(previousFrame, frame, {
+        animateTransition: frame.animateTransition !== false,
+        reducedMotion: reduced()
+      });
+      if (previousIdentity && frame.scene !== "metadata" && previousFrame.scene !== "metadata" &&
+          presentation.resolveTransitionPrimitive(plan.kind) === presentation.TRANSITION_PRIMITIVES.ROLL) {
+        const gap = parseFloat(getComputedStyle(stage).gap) || 2;
+        const pitch = (columns[0]?.size || 18) + gap;
+        const duration = plan.durationMs;
+        const animate = (element, from, to) => {
+          const animation = element.animate([from, to], { duration, easing: rollEase });
+          motion.push(animation);
+          return animation;
+        };
+        previous.forEach(item => {
+          if (!frame.translationMode && item.text === frame.current) return;
+          const ghost = item.copy;
+          ghost.classList.add("v-outgoing");
+          Object.assign(ghost.style, { position: "absolute", left: item.offset + "px", top: "2px" });
+          stage.append(ghost);
+          ghosts.push(ghost);
+          const animation = animate(ghost,
+            { transform: item.transform, opacity: item.opacity },
+            { transform: `translateX(${-pitch}px)`, opacity: 0 });
+          // 节点由本次动画所有；取消/换向会同步清理，迟到的完成不会触碰下一句。
+          animation.finished.then(() => ghost.remove(), () => {});
+        });
+        columns.forEach((item, index) => {
+          const box = item.column.getBoundingClientRect();
+          const promoted = !frame.translationMode && index === 0 && previous.find(old => old.text === item.base.textContent);
+          const fromX = promoted ? promoted.left - (box.left - stageBox.left) : pitch;
+          const scale = promoted ? promoted.width / Math.max(1, box.width) : 1;
+          animate(item.column,
+            { transform: `translateX(${fromX}px) scale(${scale})`, opacity: promoted ? 0.68 : 0 },
+            { transform: "translateX(0px) scale(1)", opacity: 1 });
+        });
       }
     }
     cancel();
@@ -128,9 +185,23 @@
       cancel();
       if (enabled) {
         stage.style.gap = 2 + (Number(style.lineGapPercent) || 0) / 100 * (Number(style.fontSize) || 18) + "px";
-        identity = "";
-        present(frame);
+        if (!wasEnabled) {
+          identity = "";
+          present(frame);
+        } else {
+          columns.forEach((item, index) => {
+            const size = index ? Number(style.secondaryFontSize) || 14 : Number(style.fontSize) || 18;
+            item.size = size;
+            item.column.style.fontSize = size + "px";
+            item.column.style.width = Math.ceil(size) + "px";
+            item.column.style.letterSpacing = frame.scene === "metadata" ? "0em" :
+              (Number(style.characterSpacingPercent) || 0) / 100 + "em";
+          });
+          if (reduced()) stopMotion();
+          render();
+        }
       } else if (wasEnabled) {
+        stopMotion();
         stage.replaceChildren();
         columns = [];
         identity = "";
@@ -143,5 +214,9 @@
     }
   };
   new ResizeObserver(() => { cancel(); render(); }).observe(stage);
-  document.addEventListener("visibilitychange", () => { cancel(); render(); });
+  document.addEventListener("visibilitychange", () => {
+    cancel();
+    if (document.hidden) stopMotion();
+    render();
+  });
 })();
