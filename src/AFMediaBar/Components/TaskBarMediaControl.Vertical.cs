@@ -48,18 +48,6 @@ public partial class TaskBarMediaControl
         TaskbarHoverActionsOffset.X = 0;
         TaskbarHoverActionsOffset.Y = 0;
         TaskbarPerformanceItems.Orientation = vertical ? Orientation.Vertical : Orientation.Horizontal;
-        if (vertical)
-        {
-            TaskbarHoverLayer.SetResourceReference(Border.BackgroundProperty, "SolidBackgroundFillColorBaseBrush");
-            TaskbarHoverLayer.SetResourceReference(Border.BorderBrushProperty, "ControlStrokeColorDefaultBrush");
-            TaskbarHoverLayer.BorderThickness = new Thickness(1);
-        }
-        else
-        {
-            TaskbarHoverLayer.ClearValue(Border.BackgroundProperty);
-            TaskbarHoverLayer.ClearValue(Border.BorderBrushProperty);
-            TaskbarHoverLayer.BorderThickness = new Thickness(0);
-        }
         if (!vertical)
         {
             _wheelTooltip.Placement = PlacementMode.Top;
