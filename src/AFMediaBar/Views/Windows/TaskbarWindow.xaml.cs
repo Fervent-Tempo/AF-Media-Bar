@@ -743,6 +743,11 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         if (!SettingsManager.Current.TaskbarBarEnabled)
             return;
 
+        // 候选宿主先恢复状态、再 Show；首次 HWND 尚未创建不代表旧宿主已被 Explorer 销毁。
+        // 初次定位由 Loaded 完成，避免激活期间排队重建并取消自己的运行模式切换。
+        if (!_setupComplete && _windowHandle == IntPtr.Zero)
+            return;
+
         try
         {
             var interop = new WindowInteropHelper(this);

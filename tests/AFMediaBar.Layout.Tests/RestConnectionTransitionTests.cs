@@ -119,6 +119,7 @@ public sealed class RestConnectionTransitionTests
                     }
                 }
                 await FloatingBarHostChecks.VerifyAsync();
+                await TaskbarHostActivationChecks.VerifyAsync();
             }
             finally
             {
