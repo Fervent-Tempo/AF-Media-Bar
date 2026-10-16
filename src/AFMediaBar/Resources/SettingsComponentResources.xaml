@@ -166,6 +166,8 @@
                         BorderThickness="{TemplateBinding BorderThickness}"
                         CornerRadius="{TemplateBinding CornerRadius}"
                         SnapsToDevicePixels="True" IsHitTestVisible="False" components:SettingsHoverShadow.IsEnabled="True" />
+                    <Border x:Name="RowHoverTint" Background="{DynamicResource SubtleFillColorSecondaryBrush}"
+                            CornerRadius="{TemplateBinding CornerRadius}" Opacity="0" IsHitTestVisible="False" />
                     <Border Padding="{TemplateBinding Padding}" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="Transparent" Background="Transparent">
                         <Grid>
                             <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
@@ -274,8 +276,11 @@
                             <MultiTrigger.Conditions>
                                 <Condition Property="IsNested" Value="False" />
                                 <Condition Property="IsMouseOver" Value="True" />
+                                <Condition Property="IsEnabled" Value="True" />
+                                <Condition Property="IsStylusOver" Value="False" />
                             </MultiTrigger.Conditions>
                             <Setter TargetName="RowSurface" Property="BorderBrush" Value="{DynamicResource ControlStrokeColorSecondaryBrush}" />
+                            <Setter TargetName="RowHoverTint" Property="Opacity" Value="1" />
                         </MultiTrigger>
                         <!--
                             选中态用 IsKeyboardFocusWithin 而不是 IsKeyboardFocused：点击或拖动行内滑杆时焦点落在滑杆上，

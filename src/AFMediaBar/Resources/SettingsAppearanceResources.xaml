@@ -464,6 +464,8 @@
                         BorderThickness="{TemplateBinding BorderThickness}"
                         CornerRadius="{TemplateBinding CornerRadius}"
                         SnapsToDevicePixels="True" IsHitTestVisible="False" components:SettingsHoverShadow.IsEnabled="True" />
+                    <Border x:Name="CardHoverTint" Background="{DynamicResource SubtleFillColorSecondaryBrush}"
+                            CornerRadius="{TemplateBinding CornerRadius}" Opacity="0" IsHitTestVisible="False" />
                     <Border Padding="{TemplateBinding Padding}" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="Transparent" Background="Transparent">
                         <Grid
                             HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
@@ -529,9 +531,15 @@
                         <Trigger Property="Content" Value="">
                             <Setter TargetName="ContentHost" Property="Margin" Value="0" />
                         </Trigger>
-                        <Trigger Property="IsMouseOver" Value="True">
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True" />
+                                <Condition Property="IsEnabled" Value="True" />
+                                <Condition Property="IsStylusOver" Value="False" />
+                            </MultiTrigger.Conditions>
                             <Setter TargetName="CardBorder" Property="BorderBrush" Value="{DynamicResource ControlStrokeColorSecondaryBrush}" />
-                        </Trigger>
+                            <Setter TargetName="CardHoverTint" Property="Opacity" Value="1" />
+                        </MultiTrigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
                             <Setter TargetName="CardBorder" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}" />
                         </Trigger>
