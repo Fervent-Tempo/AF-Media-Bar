@@ -61,7 +61,13 @@
                     Header="{DynamicResource Loc.Common.Group.ChooseDisplayMode}"
                     Icon="{ui:SymbolIcon WindowConsole20}">
                     <StackPanel>
-                        <components:SettingsCallout Text="{Binding ViewModel.HostingModeText}" Symbol="WindowConsole20" />
+                        <components:SettingsRow Title="{DynamicResource Loc.Experimental.Floating.Mode}" Icon="{ui:SymbolIcon WindowConsole20}">
+                            <ComboBox SelectedIndex="{Binding ViewModel.RuntimeModeSelection, Mode=TwoWay}" MinWidth="200" IsEnabled="{Binding ViewModel.CanChangeMode}">
+                                <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Mode.Taskbar}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Experimental.Floating.Title}" Visibility="{Binding ViewModel.IsFloatingExperimentEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
+                            </ComboBox>
+                        </components:SettingsRow>
+                        <components:SettingsCallout Text="{Binding ViewModel.RuntimeStatus}" Symbol="Info24" />
                         <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="False" Icon="{ui:SymbolIcon Options24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
@@ -225,6 +231,37 @@
                                 Content="{DynamicResource Loc.DisplayModes.Placement.ResetAction}"
                                 Icon="{ui:SymbolIcon ArrowReset24}"
                                 Style="{StaticResource AfSettingsButtonStyle}" />
+                        </components:SettingsRow>
+                    </StackPanel>
+                </components:SettingsGroup>
+                <components:SettingsGroup GroupId="Placement.Floating.Title" Header="{DynamicResource Loc.Placement.Floating.Title}"
+                    Description="{DynamicResource Loc.Placement.Floating.Description}" Icon="{ui:SymbolIcon Desktop24}"
+                    Visibility="{Binding ViewModel.IsFloatingBarMode, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                    <StackPanel>
+                        <components:SettingsRow Title="{DynamicResource Loc.Common.TargetMonitor}" Icon="{ui:SymbolIcon Desktop24}">
+                            <ItemsControl ItemsSource="{Binding ViewModel.TaskbarMonitorOptions}" MinWidth="260">
+                                <ItemsControl.ItemTemplate><DataTemplate>
+                                    <ui:ToggleSwitch Margin="0,3" Content="{Binding DisplayName}" IsChecked="{Binding IsSelected, Mode=TwoWay}" IsEnabled="{Binding CanToggle}" />
+                                </DataTemplate></ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </components:SettingsRow>
+                        <components:SettingsRow Title="{DynamicResource Loc.Experimental.Floating.Orientation}" Icon="{ui:SymbolIcon Orientation24}">
+                            <ComboBox SelectedIndex="{Binding ViewModel.FloatingOrientation, Mode=TwoWay}" MinWidth="200">
+                                <ComboBoxItem Content="{DynamicResource Loc.Experimental.Floating.Horizontal}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Experimental.Floating.Vertical}" />
+                            </ComboBox>
+                        </components:SettingsRow>
+                        <components:SettingsRow Title="{DynamicResource Loc.Experimental.Floating.Layer}">
+                            <ComboBox SelectedIndex="{Binding ViewModel.FloatingLayer, Mode=TwoWay}" MinWidth="200">
+                                <ComboBoxItem Content="{DynamicResource Loc.Experimental.Floating.Desktop}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Experimental.Floating.Topmost}" />
+                            </ComboBox>
+                        </components:SettingsRow>
+                        <components:SettingsRow Title="{DynamicResource Loc.Experimental.Floating.Lock}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.IsTaskbarPositionLocked, Mode=TwoWay}" />
+                        </components:SettingsRow>
+                        <components:SettingsRow Title="{DynamicResource Loc.Common.ResetPosition}" Icon="{ui:SymbolIcon ArrowReset24}">
+                            <ui:Button Content="{DynamicResource Loc.DisplayModes.Placement.ResetAction}" Command="{Binding ViewModel.ResetTaskbarPositionCommand}" Style="{StaticResource AfSettingsButtonStyle}" />
                         </components:SettingsRow>
                     </StackPanel>
                 </components:SettingsGroup>

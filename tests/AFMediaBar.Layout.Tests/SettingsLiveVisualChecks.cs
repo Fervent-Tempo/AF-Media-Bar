@@ -73,6 +73,7 @@ internal static class SettingsLiveVisualChecks
         services.AddScoped<InteractionViewModel>();
         services.AddScoped<AppearancePage>();
         services.AddScoped<InteractionPage>();
+        services.AddScoped<ScreenAndPlacementPage>();
         using var root = services.BuildServiceProvider();
         using var cache = new SettingsPageScopeCache(root.GetRequiredService<IServiceScopeFactory>());
         using var provider = new SettingsPageProvider(cache);
@@ -165,9 +166,67 @@ internal static class SettingsLiveVisualChecks
                 horizontalLayout.UpdateLayout();
             }
             CapturePreview(host, "TextLayout");
+            SettingsManager.Current.Experiments = new() { FloatingBar = true, NewAudioControl = true };
+            var placement = (ScreenAndPlacementPage)provider.GetPage(typeof(ScreenAndPlacementPage))!;
+            placement.ViewModel.RuntimeModeSelection = 1;
+            Assert.AreEqual(WindowMode.FloatingBar, SettingsManager.Current.WindowMode);
+            Assert.AreEqual(0, placement.ViewModel.RuntimeModeSelection, "The editor must wait for an actual runtime context.");
+            provider.SetContext(horizontal with { Mode = SettingsMode.FloatingBar });
+            placement = (ScreenAndPlacementPage)provider.GetPage(typeof(ScreenAndPlacementPage))!;
+            navigation.ReplaceContent(placement);
+            Pump(TimeSpan.FromMilliseconds(100));
+            Assert.AreEqual(1, placement.ViewModel.RuntimeModeSelection);
+            var placementGroups = ((Panel)((ScrollViewer)placement.FindName("PageScroll")).Content).Children.OfType<SettingsGroup>().ToArray();
+            Assert.AreEqual(Visibility.Visible, placementGroups.Single(group => group.GroupId == "Placement.Floating.Title").Visibility);
+            Assert.AreEqual(Visibility.Collapsed, placementGroups.Single(group => group.GroupId == "Common.Group.ScreenAndPlacement").Visibility);
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AFMB_SETTINGS_PREVIEW_DIR")))
+            {
+                // 隔离预览不启动 App 组合根，补齐其设置表面色以便检查可读性。
+                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Dark);
+                foreach (var key in new[] { "AfSettingsCardBrush", "AfSettingsInfoSurfaceBrush", "AfSettingsGroupSurfaceBrush", "AfSettingsSectionBrush" })
+                    app.Resources[key] = new SolidColorBrush(Color.FromRgb(44, 44, 44));
+                app.Resources["AfSettingsInputBrush"] = new SolidColorBrush(Color.FromRgb(54, 54, 54));
+                app.Resources["AfSettingsBorderBrush"] = new SolidColorBrush(Color.FromRgb(72, 72, 72));
+                Pump(TimeSpan.FromMilliseconds(80));
+            }
+            CapturePreview(host, "FloatingPlacement");
+            ((Grid)placement.Content).Children.OfType<SettingsGroupStrip>().Single().RevealGroup("Placement.Floating.Title");
+            Pump(TimeSpan.FromMilliseconds(200));
+            CapturePreview(host, "FloatingOptions");
+            var interaction = (InteractionPage)provider.GetPage(typeof(InteractionPage))!;
+            navigation.ReplaceContent(interaction);
+            Pump(TimeSpan.FromMilliseconds(100));
+            var combo = Descendants(interaction).OfType<System.Windows.Controls.ComboBox>().First(item => item.Items.OfType<ComboBoxItem>().Any(option => option.Tag is WheelAction.InputDevice));
+            var input = combo.Items.OfType<ComboBoxItem>().Single(item => item.Tag is WheelAction.InputDevice);
+            var output = combo.Items.OfType<ComboBoxItem>().Single(item => item.Tag is WheelAction.OutputDevice);
+            combo.SelectedItem = input;
+            combo.IsDropDownOpen = true;
+            Pump(TimeSpan.FromMilliseconds(100));
+            Assert.IsNotNull(input.Template);
+            Assert.AreSame(output.Template, input.Template, "Input and output device choices must inherit the same theme template.");
+            if ((combo.Template.FindName("PART_Popup", combo) ?? combo.Template.FindName("Popup", combo)) is System.Windows.Controls.Primitives.Popup popup && popup.Child is FrameworkElement popupContent)
+                CapturePreview(popupContent, "InputDeviceDropdownDark");
+            combo.IsDropDownOpen = false;
+            Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Light);
+            combo.IsDropDownOpen = true;
+            Pump(TimeSpan.FromMilliseconds(100));
+            Assert.AreSame(output.Template, input.Template);
+            if ((combo.Template.FindName("PART_Popup", combo) ?? combo.Template.FindName("Popup", combo)) is System.Windows.Controls.Primitives.Popup lightPopup && lightPopup.Child is FrameworkElement lightContent)
+                CapturePreview(lightContent, "InputDeviceDropdownLight");
+            combo.IsDropDownOpen = false;
             VerifyResetCancellation(resetHost);
         }
         finally { host.Close(); Pump(TimeSpan.FromMilliseconds(30)); SettingsManager.Replace(previousSettings); }
+    }
+
+    private static IEnumerable<DependencyObject> Descendants(DependencyObject parent)
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            yield return child;
+            foreach (var descendant in Descendants(child)) yield return descendant;
+        }
     }
 
     private static void CapturePreview(FrameworkElement visual, string name)

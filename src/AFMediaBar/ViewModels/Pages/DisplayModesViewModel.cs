@@ -35,6 +35,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     private readonly LocalizationService _localization;
     private bool _isRefreshing;
     private readonly ISettingsConfiguration _configuration;
+    private readonly BarRuntimeCoordinator? _runtime;
     private readonly Dispatcher _dispatcher = DispatcherHelper.Current;
     private bool _disposed;
     private IReadOnlyList<TaskbarMonitorSelectionItem> _taskbarMonitorOptions = Array.Empty<TaskbarMonitorSelectionItem>();
@@ -47,12 +48,36 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     public bool IsDynamicIslandMode => SelectedMode == DisplayModeSelection.DynamicIsland;
     public bool IsDesktopCardMode => SelectedMode == DisplayModeSelection.DesktopCard;
     public bool IsFloatingBallMode => SelectedMode == DisplayModeSelection.FloatingBall;
-    public bool IsUnimplementedMode => !IsTaskbarMode;
+    public bool IsFloatingBarMode => SelectedMode == DisplayModeSelection.FloatingBar;
+    public bool IsUnimplementedMode => !IsTaskbarMode && !IsFloatingBarMode;
+    public bool IsFloatingExperimentEnabled => SettingsManager.Current.Experiments.FloatingBar;
+    public bool CanChangeMode => _runtime?.IsSwitching != true;
+    public int RuntimeModeSelection
+    {
+        get => IsFloatingBarMode ? 1 : 0;
+        set
+        {
+            if (_disposed || _isRefreshing || !CanChangeMode || !_configuration.IsActive || value is < 0 or > 1 || value == RuntimeModeSelection) return;
+            _configuration.SetWindowMode(value == 1 ? WindowMode.FloatingBar : WindowMode.Taskbar);
+        }
+    }
+    public int FloatingOrientation
+    {
+        get => SettingsManager.Current.FloatingBar.Orientation == LayoutOrientation.Vertical ? 1 : 0;
+        set { if (IsFloatingBarMode && !_isRefreshing) _configuration.SetFloatingBar(SettingsManager.Current.FloatingBar with { Orientation = value == 1 ? LayoutOrientation.Vertical : LayoutOrientation.Horizontal }); }
+    }
+    public int FloatingLayer
+    {
+        get => SettingsManager.Current.FloatingBar.Layer == FloatingBarLayer.Topmost ? 1 : 0;
+        set { if (IsFloatingBarMode && !_isRefreshing) _configuration.SetFloatingBar(SettingsManager.Current.FloatingBar with { Layer = value == 1 ? FloatingBarLayer.Topmost : FloatingBarLayer.Desktop }); }
+    }
+    public string RuntimeStatus => _runtime?.IsSwitching == true ? Translations.Get("Experimental.Floating.Switching") :
+        _runtime?.LastFailure is not null ? Translations.Get("Experimental.Floating.Failed") : HostingModeText;
 
     /// <summary>Name of the actual running family supplied by the settings context.</summary>
     public string HostingModeText => Translations.Format(
         "DisplayModes.Status.Current",
-        Translations.Get(IsTaskbarMode ? "DisplayModes.Mode.Taskbar" : "Common.DynamicIsland"));
+        Translations.Get(IsFloatingBarMode ? "Experimental.Floating.Title" : "DisplayModes.Mode.Taskbar"));
 
     /// <summary>
     /// 任务栏是否就是当前运行模式。模式卡片用它决定“当前模式”芯片是否显示，
@@ -406,11 +431,13 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     /// </param>
     public DisplayModesViewModel(
         IDisplayMonitorService displayMonitorService,
-        LocalizationService localization, ISettingsConfiguration configuration)
+        LocalizationService localization, ISettingsConfiguration configuration, BarRuntimeCoordinator? runtime = null)
     {
         _displayMonitorService = displayMonitorService;
         _localization = localization;
         _configuration = configuration;
+        _runtime = runtime;
+        if (_runtime is not null) _runtime.Changed += OnRuntimeChanged;
         configuration.Activated += OnActivated;
         SettingsManager.SettingsChanged += OnSettingsChanged;
         _displayMonitorService.MonitorsChanged += OnMonitorsChanged;
@@ -513,7 +540,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     public void ResetDisplayModes() => _configuration.Reset(SettingsResetScope.DisplayModes);
     public void ResetScreenAndPlacement()
     {
-        if (!_disposed && _configuration.IsActive && IsTaskbarMode) SettingsManager.ResetScreenAndPlacement();
+        if (!_disposed && _configuration.IsActive) _configuration.Reset(SettingsResetScope.Layout);
     }
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
@@ -595,13 +622,13 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
 
     private HashSet<string> ResolveConfiguredTaskbarSelection(IReadOnlyList<DisplayMonitorInfo> monitors)
     {
-        var selected = (_configuration.Current.TaskbarTargetMonitorDeviceIds ?? [])
+        var selected = (IsFloatingBarMode ? SettingsManager.Current.FloatingBar.MonitorDeviceIds : _configuration.Current.TaskbarTargetMonitorDeviceIds ?? [])
             .Where(deviceId => !string.IsNullOrWhiteSpace(deviceId))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         if (selected.Count > 0)
             return selected;
 
-        var legacy = _configuration.Current.TaskbarTargetMonitorDeviceId;
+        var legacy = IsFloatingBarMode ? null : _configuration.Current.TaskbarTargetMonitorDeviceId;
         if (TaskbarTargetPolicy.IsLegacyAllTaskbars(legacy))
             selected.UnionWith(monitors.Select(monitor => monitor.DeviceId));
         else if (!string.IsNullOrWhiteSpace(legacy))
@@ -652,6 +679,9 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(CurrentWindowMode)); OnPropertyChanged(nameof(IsTaskbarMode)); OnPropertyChanged(nameof(IsDynamicIslandMode));
             OnPropertyChanged(nameof(IsDesktopCardMode)); OnPropertyChanged(nameof(IsFloatingBallMode)); OnPropertyChanged(nameof(IsUnimplementedMode));
             OnPropertyChanged(nameof(HostingModeText)); OnPropertyChanged(nameof(IsTaskbarHostingActive));
+            OnPropertyChanged(nameof(IsFloatingBarMode)); OnPropertyChanged(nameof(IsFloatingExperimentEnabled));
+            OnPropertyChanged(nameof(CanChangeMode)); OnPropertyChanged(nameof(RuntimeModeSelection));
+            OnPropertyChanged(nameof(FloatingOrientation)); OnPropertyChanged(nameof(FloatingLayer)); OnPropertyChanged(nameof(RuntimeStatus));
             OnPropertyChanged(nameof(TaskbarPosition));
             RaiseExperience(); OnPropertyChanged(nameof(Orientation)); OnPropertyChanged(nameof(IsTaskbarPositionLocked));
             OnPropertyChanged(nameof(IsTaskbarAvoidingIcons)); OnPropertyChanged(nameof(TaskbarCrossAxisOffsetDip));
@@ -703,6 +733,11 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         Performance
     }
 
+    private void OnRuntimeChanged(object? sender, EventArgs e)
+    {
+        if (!_disposed) RaiseAll();
+    }
+
     private void OnActivated(object? sender, EventArgs e) => RaiseAll();
     /// <summary>Releases monitor, language and settings subscriptions when this page scope closes.</summary>
     public void Dispose()
@@ -713,6 +748,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         _displayMonitorService.MonitorsChanged -= OnMonitorsChanged;
         _localization.LanguageChanged -= OnLanguageChanged;
         _configuration.Activated -= OnActivated;
+        if (_runtime is not null) _runtime.Changed -= OnRuntimeChanged;
         foreach (var item in _taskbarMonitorOptions) item.SelectionChanged -= OnTaskbarMonitorSelectionChanged;
     }
 

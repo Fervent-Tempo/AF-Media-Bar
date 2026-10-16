@@ -70,6 +70,23 @@ public sealed class SettingsSearchLayoutTests
         Assert.IsTrue(hits.Any(hit => hit.Page == page && hit.GroupId == group));
     }
 
+    [TestMethod]
+    public void FloatingPlacementSearchRequiresEnabledExperimentAndActiveMode()
+    {
+        var previous = AFMediaBar.Classes.Settings.SettingsManager.Current;
+        try
+        {
+            AFMediaBar.Classes.Settings.SettingsManager.Current = new();
+            var context = AFMediaBar.Classes.Models.Settings.SettingsContext.Initial with { Mode = AFMediaBar.Classes.Models.Settings.SettingsMode.FloatingBar };
+            Assert.IsFalse(SettingsSearchIndex.ForContext(context).Any(entry => entry.GroupId == "Placement.Floating.Title"));
+            AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments = new() { FloatingBar = true };
+            Assert.IsTrue(SettingsSearchIndex.ForContext(context).Any(entry => entry.GroupId == "Placement.Floating.Title"));
+            Assert.IsFalse(SettingsSearchIndex.ForContext(context).Any(entry => entry.GroupId == "Common.Group.ScreenAndPlacement"));
+            Assert.IsFalse(SettingsSearchIndex.ForContext(context with { Mode = AFMediaBar.Classes.Models.Settings.SettingsMode.Taskbar }).Any(entry => entry.GroupId == "Placement.Floating.Title"));
+        }
+        finally { AFMediaBar.Classes.Settings.SettingsManager.Current = previous; }
+    }
+
     private static string FindRepository()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

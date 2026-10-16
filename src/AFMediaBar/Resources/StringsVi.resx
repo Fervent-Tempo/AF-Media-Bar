@@ -749,10 +749,10 @@
     <value>Chiều rộng tự động theo nội dung; khi tắt sẽ dùng chiều rộng cố định, và phạm vi phụ thuộc vào Taskbar hiện tại.</value>
   </data>
   <data name="Diagram.TaskbarLength.Label.MinimumWidth" xml:space="preserve">
-    <value>Chiều rộng tối thiểu yêu cầu</value>
+    <value>Độ dài nội dung tối thiểu</value>
   </data>
   <data name="Diagram.TaskbarLength.Label.TaskbarLimit" xml:space="preserve">
-    <value>Giới hạn an toàn của Taskbar</value>
+    <value>Giới hạn không gian</value>
   </data>
   <data name="Diagram.TaskbarPlacement.Caption" xml:space="preserve">
     <value>Thanh media tự động tránh các biểu tượng Taskbar; độ lệch cạnh giúp chỉnh khoảng cách giữa nó và khu vực biểu tượng.</value>
@@ -1112,13 +1112,13 @@
     <value>Hãy tắt chế độ theo nội dung trước</value>
   </data>
   <data name="DisplayModes.Width.Row.Fixed.Description" xml:space="preserve">
-    <value>Đặt chiều rộng giữa mức tối thiểu yêu cầu và không gian Taskbar khả dụng.</value>
+    <value>Điều chỉnh độ dài giữa mức tối thiểu của nội dung và không gian màn hình khả dụng.</value>
   </data>
   <data name="DisplayModes.Width.Row.Fixed.Title" xml:space="preserve">
     <value>Chiều rộng cố định</value>
   </data>
   <data name="DisplayModes.Width.Row.Follow.Description" xml:space="preserve">
-    <value>Tự động đổi kích thước để vừa với nội dung media.</value>
+    <value>Tự điều chỉnh độ dài theo nội dung phát.</value>
   </data>
   <data name="DisplayModes.Width.Row.Follow.Title" xml:space="preserve">
     <value>Chiều rộng theo độ dài nội dung</value>
@@ -1913,7 +1913,7 @@
     <value>Kiểu nền Dynamic Island, độ mờ và bán kính góc bo; hiện ở chế độ chỉ đọc</value>
   </data>
   <data name="Search.DisplayModes.MediaBarWidth.Description" xml:space="preserve">
-    <value>Chiều rộng theo nội dung hoặc cố định, và khoảng cách thành phần</value>
+    <value>Độ dài theo nội dung, độ dài cố định và khoảng cách thành phần</value>
   </data>
   <data name="Search.DisplayModes.RestLayer.Description" xml:space="preserve">
     <value>Đặt nội dung lớp trạng thái tĩnh và điểm mở bảng điều khiển đầy đủ.</value>
@@ -2309,7 +2309,7 @@
     <value>Các điều khiển này xuất hiện khi bật Điều khiển nhanh. Bạn có thể cấu hình trước khi nó đang tắt.</value>
   </data>
   <data name="ContentLayout.LengthMode.Description" xml:space="preserve">
-    <value>Điều khiển tổng chiều dài của thanh trong phạm vi giới hạn thành phần và không gian thanh tác vụ.</value>
+    <value>Đặt độ dài thanh. Kích thước hiển thị phụ thuộc độ dài nội dung tối thiểu và không gian khả dụng.</value>
   </data>
   <data name="ContentLayout.LengthMode.Fixed" xml:space="preserve">
     <value>Chiều dài cố định</value>
@@ -2372,7 +2372,7 @@
     <value>Hướng hiển thị nội dung</value>
   </data>
   <data name="DisplayModes.Width.NoCommonRange" xml:space="preserve">
-    <value>Không có dải chiều dài cố định chung cho các thanh tác vụ hiện tại. Chiều dài đã lưu vẫn được giữ nguyên; mỗi thanh tuân theo không gian khả dụng của riêng nó.</value>
+    <value>Các màn hình đã chọn không có khoảng độ dài cố định chung. Giá trị đã lưu được giữ lại và hiển thị theo không gian khả dụng của từng màn hình.</value>
   </data>
   <data name="Interaction.Group.Wheel" xml:space="preserve">
     <value>Con lăn chuột trên thanh media</value>
@@ -2432,7 +2432,7 @@
     <value>Điểm mới của phiên bản đã làm mới: {0}.</value>
   </data>
   <data name="ScreenAndPlacement.Header.Subtitle" xml:space="preserve">
-    <value>Chọn màn hình hiển thị và vị trí thanh media; hướng xoay được xác định bởi thanh tác vụ hệ thống.</value>
+    <value>Chọn chế độ đang chạy, màn hình và vị trí thanh.</value>
   </data>
   <data name="Search.Appearance.TextAndFonts.Description" xml:space="preserve">
     <value>Điều chỉnh kích thước và màu sắc chữ media, cùng phông chữ và độ đậm dùng chung cho giao diện và thanh media.</value>
@@ -2948,7 +2948,7 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   <data name="Experimental.Floating.Title" xml:space="preserve"><value>Chế độ nổi trên màn hình</value></data>
   <data name="Experimental.Floating.Description" xml:space="preserve"><value>Tiện ích màn hình độc lập, hỗ trợ bố cục ngang, dọc và lưu vị trí theo màn hình. Bật để hiện lựa chọn chế độ.</value></data>
   <data name="Settings.Context.ConfigurationTarget" xml:space="preserve"><value>Cấu hình đang chỉnh sửa</value></data>
-  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>Các hướng thanh tác vụ dùng chung một cấu hình. Thanh nổi có cấu hình riêng, được chỉnh sửa trên cùng các trang cài đặt.</value></data>
+  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>Sau khi bật, mở Hiển thị và vị trí để đổi chế độ, hướng, lớp và vị trí. Phông chữ, giao diện và tương tác được dùng chung giữa các chế độ.</value></data>
   <data name="Experimental.OpenInteraction" xml:space="preserve"><value>Mở cài đặt tương tác</value></data>
   <data name="Experimental.OpenContentLayout" xml:space="preserve"><value>Mở nội dung và bố cục</value></data>
   <data name="Experimental.OpenAppearance" xml:space="preserve"><value>Mở cài đặt giao diện</value></data>
@@ -2979,4 +2979,6 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   <data name="Settings.Direction.ExpandBottom" xml:space="preserve"><value>Mở từ dưới</value></data>
   <data name="Settings.Direction.ExpandStart" xml:space="preserve"><value>Mở từ đầu</value></data>
   <data name="Settings.Direction.ExpandEnd" xml:space="preserve"><value>Mở từ cuối</value></data>
+  <data name="Placement.Floating.Title" xml:space="preserve"><value>Cài đặt chế độ nổi</value></data>
+  <data name="Placement.Floating.Description" xml:space="preserve"><value>Hiển thị tiện ích trên từng màn hình đã chọn và lưu vị trí riêng.</value></data>
 </root>

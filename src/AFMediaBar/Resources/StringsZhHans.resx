@@ -797,10 +797,10 @@
     <value>跟随内容时宽度自动变化；关闭跟随后可输入固定宽度，范围随任务栏可用空间更新。</value>
   </data>
   <data name="Diagram.TaskbarLength.Label.MinimumWidth" xml:space="preserve">
-    <value>所需最小宽度</value>
+    <value>内容最小长度</value>
   </data>
   <data name="Diagram.TaskbarLength.Label.TaskbarLimit" xml:space="preserve">
-    <value>任务栏安全上限</value>
+    <value>可用空间上限</value>
   </data>
   <data name="Diagram.TaskbarPlacement.Caption" xml:space="preserve">
     <value>开启避让后，媒体栏会避开任务栏图标；厚度方向偏移用于上下或左右微调。</value>
@@ -1160,13 +1160,13 @@
     <value>需先关闭跟随</value>
   </data>
   <data name="DisplayModes.Width.Row.Fixed.Description" xml:space="preserve">
-    <value>在所需最小宽度与任务栏可用宽度之间调整。</value>
+    <value>在内容最小长度和显示器可用空间之间调整长度。</value>
   </data>
   <data name="DisplayModes.Width.Row.Fixed.Title" xml:space="preserve">
     <value>固定长度</value>
   </data>
   <data name="DisplayModes.Width.Row.Follow.Description" xml:space="preserve">
-    <value>根据媒体内容自动调整宽度。</value>
+    <value>根据媒体内容自动调整长度。</value>
   </data>
   <data name="DisplayModes.Width.Row.Follow.Title" xml:space="preserve">
     <value>跟随内容长度</value>
@@ -1937,7 +1937,7 @@
     <value>灵动岛的背景样式、不透明度与圆角，当前只读</value>
   </data>
   <data name="Search.DisplayModes.MediaBarWidth.Description" xml:space="preserve">
-    <value>宽度跟随内容、固定宽度与组件间距</value>
+    <value>长度跟随内容、固定长度与组件间距</value>
   </data>
   <data name="Search.DisplayModes.RestLayer.Description" xml:space="preserve">
     <value>设置常驻状态的显示内容和完整面板入口。</value>
@@ -2307,7 +2307,7 @@
     <value>显示与位置</value>
   </data>
   <data name="ScreenAndPlacement.Header.Subtitle" xml:space="preserve">
-    <value>选择显示屏幕，调整媒体栏位置；朝向由系统任务栏决定。</value>
+    <value>选择运行模式，配置显示器与媒体栏位置。</value>
   </data>
   <data name="Common.Page.ApplicationAppearance" xml:space="preserve">
     <value>应用外观</value>
@@ -2421,7 +2421,7 @@
     <value>当前任务栏空间不足，媒体栏已缩窄显示。关闭部分任务栏图标后会自动恢复。</value>
   </data>
   <data name="DisplayModes.Width.NoCommonRange" xml:space="preserve">
-    <value>当前任务栏没有共同可用的固定长度范围。已保存的长度会保留，各任务栏按自身空间限宽。</value>
+    <value>当前显示器没有共同可用的固定长度范围。已保存的长度会保留，并按各显示器的可用空间显示。</value>
   </data>
   <data name="Common.Page.ContentLayout" xml:space="preserve">
     <value>内容与布局</value>
@@ -2457,7 +2457,7 @@
     <value>媒体栏长度方式</value>
   </data>
   <data name="ContentLayout.LengthMode.Description" xml:space="preserve">
-    <value>控制整条媒体栏的长度，仍受组件最低需求及任务栏可用空间限制。</value>
+    <value>设置媒体栏长度。实际显示受内容最小长度和可用空间限制。</value>
   </data>
   <data name="ContentLayout.LengthMode.Follow" xml:space="preserve">
     <value>随内容变化</value>
@@ -2910,7 +2910,7 @@
   <data name="Experimental.Floating.Title" xml:space="preserve"><value>桌面悬浮模式</value></data>
   <data name="Experimental.Floating.Description" xml:space="preserve"><value>独立桌面小工具，支持横向、竖向和按显示器保存位置。启用后可手动切换模式。</value></data>
   <data name="Settings.Context.ConfigurationTarget" xml:space="preserve"><value>编辑配置</value></data>
-  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>任务栏横竖共享配置，桌面悬浮使用独立配置，均在已有设置页面编辑。</value></data>
+  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>启用后，请前往“显示与位置”切换运行模式并配置方向、层级和位置。字体、外观与交互在各模式间共用。</value></data>
   <data name="Experimental.OpenInteraction" xml:space="preserve"><value>前往交互设置</value></data>
   <data name="Experimental.OpenContentLayout" xml:space="preserve"><value>前往内容与布局</value></data>
   <data name="Experimental.OpenAppearance" xml:space="preserve"><value>前往外观设置</value></data>
@@ -2941,4 +2941,6 @@
   <data name="Settings.Direction.ExpandBottom" xml:space="preserve"><value>从下方展开</value></data>
   <data name="Settings.Direction.ExpandStart" xml:space="preserve"><value>从起始位置展开</value></data>
   <data name="Settings.Direction.ExpandEnd" xml:space="preserve"><value>从末尾位置展开</value></data>
+  <data name="Placement.Floating.Title" xml:space="preserve"><value>桌面悬浮设置</value></data>
+  <data name="Placement.Floating.Description" xml:space="preserve"><value>在选中的显示器上显示桌面小工具，位置分别保存。</value></data>
 </root>

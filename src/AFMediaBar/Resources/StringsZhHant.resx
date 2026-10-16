@@ -797,10 +797,10 @@
     <value>跟隨內容時寬度自動變化；關閉跟隨後可輸入固定寬度，範圍隨工作列可用空間更新。</value>
   </data>
   <data name="Diagram.TaskbarLength.Label.MinimumWidth" xml:space="preserve">
-    <value>所需最小寬度</value>
+    <value>內容最小長度</value>
   </data>
   <data name="Diagram.TaskbarLength.Label.TaskbarLimit" xml:space="preserve">
-    <value>工作列安全上限</value>
+    <value>可用空間上限</value>
   </data>
   <data name="Diagram.TaskbarPlacement.Caption" xml:space="preserve">
     <value>開啟避讓後，媒體列會避開工作列圖示；厚度方向偏移用於上下或左右微調。</value>
@@ -1160,13 +1160,13 @@
     <value>需先關閉跟隨</value>
   </data>
   <data name="DisplayModes.Width.Row.Fixed.Description" xml:space="preserve">
-    <value>在所需最小寬度與工作列可用寬度之間調整。</value>
+    <value>在內容最小長度與顯示器可用空間之間調整長度。</value>
   </data>
   <data name="DisplayModes.Width.Row.Fixed.Title" xml:space="preserve">
     <value>固定長度</value>
   </data>
   <data name="DisplayModes.Width.Row.Follow.Description" xml:space="preserve">
-    <value>根據媒體內容自動調整寬度。</value>
+    <value>依媒體內容自動調整長度。</value>
   </data>
   <data name="DisplayModes.Width.Row.Follow.Title" xml:space="preserve">
     <value>跟隨內容長度</value>
@@ -1937,7 +1937,7 @@
     <value>動態島的背景樣式、不透明度與圓角，目前唯讀</value>
   </data>
   <data name="Search.DisplayModes.MediaBarWidth.Description" xml:space="preserve">
-    <value>寬度跟隨內容、固定寬度與元件間距</value>
+    <value>長度跟隨內容、固定長度與元件間距</value>
   </data>
   <data name="Search.DisplayModes.RestLayer.Description" xml:space="preserve">
     <value>設定常駐狀態的顯示內容和完整面板入口。</value>
@@ -2307,7 +2307,7 @@
     <value>顯示與位置</value>
   </data>
   <data name="ScreenAndPlacement.Header.Subtitle" xml:space="preserve">
-    <value>選擇顯示螢幕，調整媒體列位置；方向由系統工作列決定。</value>
+    <value>選擇執行模式，設定顯示器與媒體列位置。</value>
   </data>
   <data name="Common.Page.ApplicationAppearance" xml:space="preserve">
     <value>應用程式外觀</value>
@@ -2421,7 +2421,7 @@
     <value>目前工作列空間不足，媒體列已縮窄顯示。關閉部分工作列圖示後會自動恢復。</value>
   </data>
   <data name="DisplayModes.Width.NoCommonRange" xml:space="preserve">
-    <value>目前工作列沒有共同可用的固定長度範圍。已儲存的長度會保留，各工作列依自身空間限制寬度。</value>
+    <value>目前顯示器沒有共同可用的固定長度範圍。已儲存的長度會保留，並依各顯示器的可用空間顯示。</value>
   </data>
   <data name="Common.Page.ContentLayout" xml:space="preserve">
     <value>內容與配置</value>
@@ -2457,7 +2457,7 @@
     <value>媒體列長度模式</value>
   </data>
   <data name="ContentLayout.LengthMode.Description" xml:space="preserve">
-    <value>控制整條媒體列的長度，仍受元件最低需求及工作列可用空間限制。</value>
+    <value>設定媒體列長度。實際顯示受內容最小長度與可用空間限制。</value>
   </data>
   <data name="ContentLayout.LengthMode.Follow" xml:space="preserve">
     <value>隨內容變化</value>
@@ -2910,7 +2910,7 @@
   <data name="Experimental.Floating.Title" xml:space="preserve"><value>桌面懸浮模式</value></data>
   <data name="Experimental.Floating.Description" xml:space="preserve"><value>獨立桌面小工具，支援橫向、直向及依顯示器儲存位置。啟用後可手動切換模式。</value></data>
   <data name="Settings.Context.ConfigurationTarget" xml:space="preserve"><value>編輯設定</value></data>
-  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>工作列橫直共用設定，桌面懸浮使用獨立設定，均在既有設定頁面編輯。</value></data>
+  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>啟用後，請前往「顯示與位置」切換執行模式並設定方向、層級及位置。字型、外觀與互動由各模式共用。</value></data>
   <data name="Experimental.OpenInteraction" xml:space="preserve"><value>前往互動設定</value></data>
   <data name="Experimental.OpenContentLayout" xml:space="preserve"><value>前往內容與版面配置</value></data>
   <data name="Experimental.OpenAppearance" xml:space="preserve"><value>前往外觀設定</value></data>
@@ -2941,4 +2941,6 @@
   <data name="Settings.Direction.ExpandBottom" xml:space="preserve"><value>從下方展開</value></data>
   <data name="Settings.Direction.ExpandStart" xml:space="preserve"><value>從起始位置展開</value></data>
   <data name="Settings.Direction.ExpandEnd" xml:space="preserve"><value>從末端位置展開</value></data>
+  <data name="Placement.Floating.Title" xml:space="preserve"><value>桌面懸浮設定</value></data>
+  <data name="Placement.Floating.Description" xml:space="preserve"><value>在選取的顯示器上顯示桌面小工具，位置分別儲存。</value></data>
 </root>

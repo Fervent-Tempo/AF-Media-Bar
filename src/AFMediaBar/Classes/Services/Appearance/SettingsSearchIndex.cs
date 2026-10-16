@@ -61,7 +61,9 @@ public static class SettingsSearchIndex
     public static IReadOnlyList<SettingsSearchEntry> ForContext(SettingsContext context) => Entries.Where(entry =>
         SettingsPageCatalog.Find(entry.Page, context.Mode) is not null &&
         (entry.GroupId != "Audio.Settings.Title" || AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.NewAudioControl) &&
-        (entry.Page != SettingsPageKey.ScreenAndPlacement || context.Mode == SettingsMode.Taskbar || entry.GroupId == "Common.Group.ChooseDisplayMode") &&
+        (entry.Page != SettingsPageKey.ScreenAndPlacement || entry.GroupId == "Common.Group.ChooseDisplayMode" ||
+            entry.GroupId == "Common.Group.ScreenAndPlacement" && context.Mode == SettingsMode.Taskbar ||
+            entry.GroupId == "Placement.Floating.Title" && context.Mode == SettingsMode.FloatingBar && AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.FloatingBar) &&
         (entry.Page != SettingsPageKey.Appearance || SettingsPageCatalog.CanEditProfile(context.Mode) ||
             entry.GroupId is "Common.Group.ThemeAndBackdrop" or "Common.Group.Fonts")).ToArray();
 
@@ -140,6 +142,7 @@ public static class SettingsSearchIndex
     /// <summary>Builds localized labels while keeping page and group identities stable.</summary>
     private static SettingsSearchEntry[] Build(LocalizationLanguage language) =>
     [
+        Create(SettingsPageKey.ScreenAndPlacement, "Placement.Floating.Title", "Placement.Floating.Description", language, ["桌面悬浮模式", "floating", "置顶", "锁定", "拖动"]),
         Create(SettingsPageKey.Experimental, "Experimental.Audio.Title", "Experimental.Audio.Description", language, ["实验", "experimental", "input", "输入设备", "黑名单", "新音频"]),
         Create(SettingsPageKey.Experimental, "Experimental.Vertical.Title", "Experimental.Vertical.Description", language, ["竖向", "vertical", "纵向"]),
         Create(SettingsPageKey.Experimental, "Experimental.Floating.Title", "Experimental.Floating.Description", language, ["悬浮", "floating", "桌面小工具"]),

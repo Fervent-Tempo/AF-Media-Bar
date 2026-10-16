@@ -797,10 +797,10 @@
     <value>Width follows the content automatically. Turn this off to enter a fixed width; the range follows available taskbar space.</value>
   </data>
   <data name="Diagram.TaskbarLength.Label.MinimumWidth" xml:space="preserve">
-    <value>Minimum required width</value>
+    <value>Minimum content length</value>
   </data>
   <data name="Diagram.TaskbarLength.Label.TaskbarLimit" xml:space="preserve">
-    <value>Taskbar safe limit</value>
+    <value>Available space limit</value>
   </data>
   <data name="Diagram.TaskbarPlacement.Caption" xml:space="preserve">
     <value>With avoidance enabled, the media bar stays clear of taskbar icons. Thickness offset fine-tunes its position vertically or horizontally.</value>
@@ -1160,13 +1160,13 @@
     <value>Turn content following off first</value>
   </data>
   <data name="DisplayModes.Width.Row.Fixed.Description" xml:space="preserve">
-    <value>Set a width between the required minimum and available taskbar space.</value>
+    <value>Adjust the length between the content minimum and available display space.</value>
   </data>
   <data name="DisplayModes.Width.Row.Fixed.Title" xml:space="preserve">
     <value>Fixed length</value>
   </data>
   <data name="DisplayModes.Width.Row.Follow.Description" xml:space="preserve">
-    <value>Resize automatically to fit media content.</value>
+    <value>Adjust the length automatically to fit media content.</value>
   </data>
   <data name="DisplayModes.Width.Row.Follow.Title" xml:space="preserve">
     <value>Follow the content length</value>
@@ -1937,7 +1937,7 @@
     <value>Dynamic island background style, opacity, and corner radius; currently read-only</value>
   </data>
   <data name="Search.DisplayModes.MediaBarWidth.Description" xml:space="preserve">
-    <value>Content-driven or fixed width, and component spacing</value>
+    <value>Content-based length, fixed length, and component spacing</value>
   </data>
   <data name="Search.DisplayModes.RestLayer.Description" xml:space="preserve">
     <value>Set always-on view content and the full-panel entry point.</value>
@@ -2307,7 +2307,7 @@
     <value>Display &amp; placement</value>
   </data>
   <data name="ScreenAndPlacement.Header.Subtitle" xml:space="preserve">
-    <value>Choose screens and media bar placement. The system taskbar determines orientation.</value>
+    <value>Choose the running mode, displays, and media bar position.</value>
   </data>
   <data name="Common.Page.ApplicationAppearance" xml:space="preserve">
     <value>Application appearance</value>
@@ -2421,7 +2421,7 @@
     <value>The media bar has narrowed because taskbar space is limited. It will restore its width when some taskbar icons are closed.</value>
   </data>
   <data name="DisplayModes.Width.NoCommonRange" xml:space="preserve">
-    <value>There is no shared fixed-length range for the current taskbars. The saved length is retained; each bar respects its own available space.</value>
+    <value>The selected displays have no common fixed-length range. The saved length is retained and fitted to the available space on each display.</value>
   </data>
   <data name="Common.Page.ContentLayout" xml:space="preserve">
     <value>Content &amp; layout</value>
@@ -2457,7 +2457,7 @@
     <value>Media bar length</value>
   </data>
   <data name="ContentLayout.LengthMode.Description" xml:space="preserve">
-    <value>Control the entire bar length, within component minimums and available taskbar space.</value>
+    <value>Set the media bar length. Its displayed size is limited by minimum content length and available space.</value>
   </data>
   <data name="ContentLayout.LengthMode.Follow" xml:space="preserve">
     <value>Follow content</value>
@@ -2910,7 +2910,7 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Experimental.Floating.Title" xml:space="preserve"><value>Desktop floating mode</value></data>
   <data name="Experimental.Floating.Description" xml:space="preserve"><value>An independent desktop widget with horizontal and vertical layouts and positions saved per display. Enable to reveal the mode switch.</value></data>
   <data name="Settings.Context.ConfigurationTarget" xml:space="preserve"><value>Editing configuration</value></data>
-  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>Taskbar orientations share one configuration. Desktop floating uses a separate configuration, edited on the same settings pages.</value></data>
+  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>After enabling, open Display and position to switch modes and configure orientation, layer, and position. Fonts, appearance, and interactions are shared across modes.</value></data>
   <data name="Experimental.OpenInteraction" xml:space="preserve"><value>Open interaction settings</value></data>
   <data name="Experimental.OpenContentLayout" xml:space="preserve"><value>Open content and layout</value></data>
   <data name="Experimental.OpenAppearance" xml:space="preserve"><value>Open appearance settings</value></data>
@@ -2941,4 +2941,6 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Settings.Direction.ExpandBottom" xml:space="preserve"><value>Expand from bottom</value></data>
   <data name="Settings.Direction.ExpandStart" xml:space="preserve"><value>Expand from start</value></data>
   <data name="Settings.Direction.ExpandEnd" xml:space="preserve"><value>Expand from end</value></data>
+  <data name="Placement.Floating.Title" xml:space="preserve"><value>Desktop floating settings</value></data>
+  <data name="Placement.Floating.Description" xml:space="preserve"><value>Show a desktop widget on each selected display, with positions saved separately.</value></data>
 </root>

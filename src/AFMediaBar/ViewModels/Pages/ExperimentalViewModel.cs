@@ -35,30 +35,6 @@ public sealed class ExperimentalViewModel : ObservableObject, IDisposable
         get => SettingsManager.Current.Experiments.FloatingBar;
         set => _configuration.SetExperiments(SettingsManager.Current.Experiments with { FloatingBar = value });
     }
-    public int RunningModeSelection
-    {
-        get => SettingsManager.Current.WindowMode == WindowMode.FloatingBar ? 1 : 0;
-        set => _configuration.SetWindowMode(value == 1 ? WindowMode.FloatingBar : WindowMode.Taskbar);
-    }
-    public int FloatingOrientation
-    {
-        get => SettingsManager.Current.FloatingBar.Orientation == LayoutOrientation.Vertical ? 1 : 0;
-        set => _configuration.SetFloatingBar(SettingsManager.Current.FloatingBar with { Orientation = value == 1 ? LayoutOrientation.Vertical : LayoutOrientation.Horizontal });
-    }
-    public int FloatingLayer
-    {
-        get => SettingsManager.Current.FloatingBar.Layer == FloatingBarLayer.Topmost ? 1 : 0;
-        set => _configuration.SetFloatingBar(SettingsManager.Current.FloatingBar with { Layer = value == 1 ? FloatingBarLayer.Topmost : FloatingBarLayer.Desktop });
-    }
-    public bool FloatingLocked
-    {
-        get => SettingsManager.Current.FloatingBar.Profile?.TaskbarBarPositionLocked == true;
-        set
-        {
-            var settings = SettingsManager.Current.FloatingBar;
-            _configuration.SetFloatingBar(settings with { Profile = (settings.Profile ?? BarDisplaySettings.Capture(SettingsManager.Current)) with { TaskbarBarPositionLocked = value } });
-        }
-    }
     public string RuntimeStatus => _runtime?.IsSwitching == true ? Translations.Get("Experimental.Floating.Switching") :
         _runtime?.LastFailure is not null ? Translations.Get("Experimental.Floating.Failed") :
         Translations.Get(_runtime?.RunningMode == WindowMode.FloatingBar ? "Experimental.Floating.Active" : "Experimental.Floating.TaskbarActive");
@@ -70,10 +46,6 @@ public sealed class ExperimentalViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(NewAudioControl));
             OnPropertyChanged(nameof(VerticalTaskbar));
             OnPropertyChanged(nameof(FloatingBar));
-            OnPropertyChanged(nameof(RunningModeSelection));
-            OnPropertyChanged(nameof(FloatingOrientation));
-            OnPropertyChanged(nameof(FloatingLayer));
-            OnPropertyChanged(nameof(FloatingLocked));
             OnPropertyChanged(nameof(RuntimeStatus));
         }
     }
