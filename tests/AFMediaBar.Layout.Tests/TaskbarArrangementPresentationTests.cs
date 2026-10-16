@@ -8,6 +8,8 @@ using System.Windows.Controls;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Settings;
+using AFMediaBar.Classes.Services.Lyrics;
+using Microsoft.Web.WebView2.Wpf;
 using AFMediaBar.Components;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -223,6 +225,7 @@ public sealed class TaskbarArrangementPresentationTests
                 VerticalTaskbarPresentationChecks.Verify(control);
                 SmallTaskbarPresentationChecks.Verify(control);
                 AssertMetadataSurvivesOrientationChanges();
+                AssertLyricsSurviveOrientationChanges();
                 control.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent));
                 MetadataMarqueePresentationChecks.Verify();
             }
@@ -282,6 +285,75 @@ public sealed class TaskbarArrangementPresentationTests
                         $"{mode}: {text.Name} is outside the horizontal bar after orientation change: {origin.Y}, height={text.ActualHeight}");
                 }
             }
+        }
+    }
+
+    private static void AssertLyricsSurviveOrientationChanges()
+    {
+        var lyrics = new LyricsResult("test", new LyricDocument([
+            new LyricLine(2, 10, "当前歌词 Mixed 🎵") { Words = [new(2, 5, "当前"), new(5, 10, "歌词 Mixed 🎵")] },
+            new LyricLine(10, 20, "Next line")], LyricsSyncType.SyllableSynced, "test"));
+        foreach (var mode in new[] { WindowMode.Taskbar, WindowMode.FloatingBar })
+        {
+            var settings = new AppSettings();
+            var control = new TaskBarMediaControl();
+            control.ApplyPresentationSettings(settings);
+            var webView = new WebView2CompositionControl { MinWidth = 1, MinHeight = 1 };
+            using var renderer = new LyricsWebViewRenderer(webView);
+            // 仅提供浏览器就绪状态以检查真实呈现分支和 WPF 容器；不把此检查当成 WebView2 实机验收。
+            typeof(LyricsWebViewRenderer).GetField("_documentReady", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(renderer, true);
+            typeof(TaskBarMediaControl).GetField("_lyricsWebRenderer", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(control, renderer);
+            typeof(TaskBarMediaControl).GetField("_lyricsHostLoaded", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(control, true);
+            ((Border)control.FindName("LyricsWebViewHost")).Child = webView;
+            try
+            {
+                foreach (var twoLines in new[] { false, true })
+                    foreach (var position in new[] { 3d, 10d, 0d, -1d })
+                    {
+                        settings.TwoLineLyricsEnabled = twoLines;
+                        var snapshot = MediaSnapshot.Disconnected with
+                        {
+                            IsConnected = true,
+                            Title = "Fallback title",
+                            Artist = "Artist",
+                            Lyrics = position < 0 ? null : lyrics,
+                            Position = Math.Max(0, position),
+                            Duration = 20
+                        };
+                        foreach (var orientation in new[] { LayoutOrientation.Vertical, LayoutOrientation.Horizontal })
+                        {
+                            control.ApplyLayout(mode, orientation, 100, 100, orientation == LayoutOrientation.Vertical ? 48 : 44);
+                            control.UpdateSongInfo(snapshot);
+                            control.ApplyPrimaryLength(520);
+                            var size = orientation == LayoutOrientation.Vertical ? new Size(48, 520) : new Size(520, 44);
+                            control.Measure(size);
+                            control.Arrange(new Rect(new Point(), size));
+                            control.UpdateLayout();
+                            var panel = (FrameworkElement)control.FindName("SongLyricsPanel");
+                            var origin = panel.TranslatePoint(new Point(), control);
+                            Assert.IsTrue(panel.ActualWidth > 0 && panel.ActualHeight > 0);
+                            Assert.IsTrue(origin.X >= 0 && origin.Y >= 0 && origin.X + panel.ActualWidth <= size.Width + .01 &&
+                                origin.Y + panel.ActualHeight <= size.Height + .01, $"{mode}/{orientation}: lyric viewport escaped the bar.");
+                            var frame = LyricsPresentationProjector.Project(snapshot, settings, DateTimeOffset.UtcNow);
+                            Assert.AreEqual(orientation == LayoutOrientation.Vertical || frame.IsVisible ? 1d : 0d, panel.Opacity);
+                            if (orientation == LayoutOrientation.Horizontal)
+                            {
+                                Assert.AreEqual(frame.IsVisible ? Visibility.Collapsed : Visibility.Visible,
+                                    ((FrameworkElement)control.FindName("SongMetadataPanel")).Visibility);
+                                if (frame.IsVisible)
+                                {
+                                    var effective = (LyricsPresentationFrame)typeof(TaskBarMediaControl)
+                                        .GetField("_lastEffectiveLyricsFrame", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
+                                    Assert.AreEqual(frame.Current, effective.Current);
+                                    Assert.AreEqual(twoLines && position == 3 ? "Next line" : string.Empty, effective.Next);
+                                    if (position == 3)
+                                        Assert.IsTrue(effective.WordScanProgress is >= 0 and <= 1);
+                                }
+                            }
+                        }
+                    }
+            }
+            finally { control.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent)); }
         }
     }
 

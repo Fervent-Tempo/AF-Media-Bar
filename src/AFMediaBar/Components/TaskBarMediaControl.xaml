@@ -201,7 +201,7 @@
                                     BorderBrush="Transparent"
                                     BorderThickness="0,1.25,0,0"
                                     IsHitTestVisible="False" />
-                            <!-- 悬停时显示当前点击意图；提示随封面共同缩放。 -->
+                            <!-- 封面进度与悬停提示独立叠加；放大提示按最终显示尺寸呈现。 -->
                             <local:ArtworkProgress x:Name="SongImageProgress" IsHitTestVisible="False" Panel.ZIndex="1"
                                                         Stroke="{DynamicResource AfAccentBrush}" Visibility="Collapsed" />
                             <Border x:Name="SongImageHoverHint"

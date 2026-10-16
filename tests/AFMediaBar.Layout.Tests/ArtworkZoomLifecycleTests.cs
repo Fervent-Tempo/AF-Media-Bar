@@ -191,7 +191,8 @@ public sealed class ArtworkZoomLifecycleTests
         Invoke(control, "RefreshArtworkZoomTooltip");
         Assert.IsTrue(tooltip.IsOpen, "放大态仍应显示原有滚轮提示。");
         Assert.IsNotNull(tooltip.Content);
-        Assert.AreSame(artwork, tooltip.PlacementTarget);
+        Assert.AreSame(GetPopup(control).Child, tooltip.PlacementTarget, "提示锚定完整放大区域，避免盖住封面。");
+        Assert.AreEqual(PlacementMode.Custom, tooltip.Placement);
         Invoke(control, "HideArtworkHoverZoom", true);
         Assert.IsFalse(tooltip.IsOpen);
         AssertRestored(control);

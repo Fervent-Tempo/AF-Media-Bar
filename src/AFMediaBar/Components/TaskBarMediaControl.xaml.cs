@@ -166,6 +166,10 @@ namespace AFMediaBar.Components
             // carrying the enlarged cover, anchored above the artwork.
             _artworkHoverPreview = BuildArtworkHoverPreviewPopup();
             _artworkHoverZoomPopup = BuildArtworkHoverZoomPopup();
+            SongImageScale.Changed += (_, _) => RefreshArtworkHintScale();
+            _artworkHoverPreviewScale!.Changed += (_, _) => RefreshArtworkHintScale();
+            _artworkWheelTooltip.CustomPopupPlacementCallback = PlaceArtworkWheelTooltip;
+            _artworkWheelTooltip.Opened += (_, _) => UpdateArtworkWheelTooltipPlacement();
             ApplyArtworkTooltipOwner();
             _outputDeviceSurface = TaskbarDeviceButton;
             _inputDeviceSurface = TaskbarInputDeviceButton;
@@ -248,9 +252,6 @@ namespace AFMediaBar.Components
 
         /// <summary>暂停时盖在主封面上的遮罩不透明度，取 1 − 旧实现的封面画刷不透明度（0.4）：淡化浓度与改动前一致，只是从"压封面画刷"换成"主动盖遮罩"，理由见 <see cref="ApplyArtworkDimming"/>。颜色另由 <see cref="ApplyAppearanceSettings"/> 按任务栏表面的明暗给出。替身封面共用同一把画刷，浓度与颜色都自动跟随。/ The opacity of the scrim laid over the main artwork while paused, i.e. 1 − the cover-brush opacity the old implementation used (0.4): the dimming strength matches the previous look and only moves from "lower the cover brush" to "lay a scrim", as <see cref="ApplyArtworkDimming"/> explains. Its colour is a separate matter, set by <see cref="ApplyAppearanceSettings"/> from the taskbar surface's lightness. The stand-in cover shares the very same brush, so both strength and colour follow by themselves.</summary>
         private const double ArtworkPausedScrimOpacity = 0.6;
-
-        /// <summary>大图预览的暂停减暗（压低图像不透明度）。预览是独立 Popup、底为不透明黑，透不出任何东西，所以它既不需要遮罩、也不受原地放大影响。/ The large preview's paused dimming (image opacity lowered). The preview is its own Popup over an opaque black root and nothing can show through it, so it needs no scrim and is untroubled by the in-place zoom.</summary>
-        private const double ArtworkPausedDimOpacity = 0.4;
 
         private readonly DispatcherTimer _wheelTooltipTimer;
 
@@ -677,7 +678,10 @@ namespace AFMediaBar.Components
             if (!ReferenceEquals(owner.ToolTip, surface.Tooltip))
                 return;
 
-            surface.Tooltip.PlacementTarget = surface.Surface;
+            if (ReferenceEquals(surface.Tooltip, _artworkWheelTooltip))
+                UpdateArtworkWheelTooltipPlacement();
+            else
+                surface.Tooltip.PlacementTarget = surface.Surface;
             if (!surface.Tooltip.IsOpen)
                 surface.Tooltip.IsOpen = true;
         }
@@ -756,6 +760,7 @@ namespace AFMediaBar.Components
             MainCanvas.ToolTip = owner;
             if (owner is not null)
                 owner.PlacementTarget = SongImageBorder;
+            UpdateArtworkWheelTooltipPlacement();
         }
 
         private void ArtworkTooltipOwner_ToolTipOpening(object sender, ToolTipEventArgs e)
@@ -2009,6 +2014,7 @@ namespace AFMediaBar.Components
                 // Both branches must run it: with no artwork the scrim has to go out, or a layer of scrim is left on the empty slot
                 // (the brush is still in effect, only the ImageSource is null).
                 ApplyArtworkDimming();
+                RestoreArtworkPlaceholderVisibility();
 
                 // 悬停提示可能正展示时播放状态翻转（点击封面切换了播放）：只让符号与门禁跟随新状态，
                 // 不经 AnimateArtworkHover 的 immediate 路径——那会把生长中的放大动画瞬间拉到目标倍率。
@@ -2085,7 +2091,7 @@ namespace AFMediaBar.Components
         /// dropped: with no artwork a still-lit scrim would leave a patch on the empty slot.
         /// </summary>
         private void ApplyArtworkDimming()
-            => SongImagePauseScrimBrush.Opacity = _isPaused && SongImage.ImageSource is not null
+            => SongImagePauseScrimBrush.Opacity = _isPaused && SongImage.ImageSource is not null && !UsesEnlargedArtworkHint
                 ? ArtworkPausedScrimOpacity
                 : 0.0;
 

@@ -442,6 +442,62 @@ public partial class TaskBarMediaControl
 
     /// <summary>大图预览的高度（DIP）；宽度由共享封面比例策略确定。</summary>
     private const double ArtworkHoverPreviewHeightDip = 120;
+    private const double EnlargedArtworkHintSizeDip = 20;
+    private readonly ScaleTransform _artworkHintCounterScale = new();
+    private readonly ScaleTransform _artworkPreviewHintCounterScale = new();
+    private bool _enlargedArtworkHintStyled;
+    private (Rect Bounds, Point Origin)? _artworkTooltipPlacementGeometry;
+
+    private bool UsesEnlargedArtworkHint => _artworkHoverZoomHost is { } host && ReferenceEquals(SongImageBorder.Parent, host);
+
+    private void RefreshArtworkHintStyle()
+    {
+        var enlarged = UsesEnlargedArtworkHint;
+        if (enlarged)
+        {
+            ApplyEnlargedArtworkIconAppearance(SongImageHoverHintIcon);
+            SongImageHoverHint.Background = Brushes.Transparent;
+            SongImageHoverHintIcon.RenderTransform = _artworkHintCounterScale;
+            SongImageHoverHintIcon.RenderTransformOrigin = new Point(0.5, 0.5);
+            RefreshArtworkHintScale();
+        }
+        else if (_enlargedArtworkHintStyled)
+        {
+            SongImageHoverHintIcon.SetBinding(Wpf.Ui.Controls.SymbolIcon.ForegroundProperty,
+                new System.Windows.Data.Binding(nameof(Wpf.Ui.Controls.SymbolIcon.Foreground)) { Source = SongImagePlaceholder });
+            SongImageHoverHintIcon.SetBinding(Wpf.Ui.Controls.SymbolIcon.FontSizeProperty,
+                new System.Windows.Data.Binding(nameof(Wpf.Ui.Controls.SymbolIcon.FontSize)) { Source = SongImagePlaceholder });
+            SongImageHoverHintIcon.RenderTransform = Transform.Identity;
+            SongImageHoverHintIcon.Effect = null;
+            SongImageHoverHintIcon.Symbol = Wpf.Ui.Controls.SymbolRegular.Pause24;
+            SongImageHoverHint.Background = new SolidColorBrush(Color.FromArgb(0x66, 0, 0, 0));
+        }
+        _enlargedArtworkHintStyled = enlarged;
+        ApplyArtworkDimming();
+    }
+
+    private void ApplyEnlargedArtworkIconAppearance(Wpf.Ui.Controls.SymbolIcon icon)
+    {
+        icon.FontSize = EnlargedArtworkHintSizeDip;
+        icon.Foreground = SystemParameters.HighContrast ? SystemColors.WindowTextBrush : Brushes.White;
+        icon.Symbol = _isPaused ? Wpf.Ui.Controls.SymbolRegular.Play24 : Wpf.Ui.Controls.SymbolRegular.Pause24;
+        if (CurrentMotion.UseDecorativeEffects && !SystemParameters.HighContrast)
+            icon.Effect ??= new DropShadowEffect { Color = Colors.Black, BlurRadius = 3, ShadowDepth = 1, Opacity = 0.65 };
+        else
+            icon.Effect = null;
+    }
+
+    // 只抵消图标的缩放，不参与封面的布局、推挤或动画时钟。
+    private void RefreshArtworkHintScale()
+    {
+        _artworkHintCounterScale.ScaleX = 1 / Math.Max(0.01, SongImageScale.ScaleX);
+        _artworkHintCounterScale.ScaleY = 1 / Math.Max(0.01, SongImageScale.ScaleY);
+        if (_artworkHoverPreviewScale is { } scale)
+        {
+            _artworkPreviewHintCounterScale.ScaleX = 1 / Math.Max(0.01, scale.ScaleX);
+            _artworkPreviewHintCounterScale.ScaleY = 1 / Math.Max(0.01, scale.ScaleY);
+        }
+    }
 
     /// <summary>封面悬停提示是否处于激活状态（紧凑提示或大图预览任一）；快照更新据此在播放状态翻转时刷新符号（见 AnimateArtworkHover）。
     /// Whether the artwork hover hint is active (either the compact hint or the large preview); snapshot updates key off it to refresh the
@@ -630,12 +686,14 @@ public partial class TaskBarMediaControl
         {
             Symbol = Wpf.Ui.Controls.SymbolRegular.Pause24,
             Filled = true,
-            FontSize = 44,
+            FontSize = EnlargedArtworkHintSizeDip,
+            RenderTransform = _artworkPreviewHintCounterScale,
+            RenderTransformOrigin = new Point(0.5, 0.5),
             Foreground = Brushes.White
         };
         _artworkHoverPreviewScrim = new Border
         {
-            Background = new SolidColorBrush(Color.FromArgb(0x66, 0, 0, 0)),
+            Background = Brushes.Transparent,
             Child = _artworkHoverPreviewIcon,
             IsHitTestVisible = false
         };
@@ -831,6 +889,8 @@ public partial class TaskBarMediaControl
         ShowArtworkZoomSubstitute();
         MainCanvas.Children.Remove(SongImageBorder);
         host.Children.Add(SongImageBorder);
+        RefreshArtworkHintStyle();
+        RestoreArtworkPlaceholderVisibility();
 
         // 摆放点全程物理像素：实测确认 Custom 回调收发的都是物理像素（popupSize=120 = 80 DIP × 1.5），喂 DIP 会被
         // 放大 1.5 倍。摆放与宿主内位移是两条严格分离的补偿：摆放不做任何跨轮反馈（往里掺反馈曾致指数发散），
@@ -844,6 +904,7 @@ public partial class TaskBarMediaControl
         PositionArtworkHoverZoom(homeScreen, dpiScale, host);
 
         popup.IsOpen = true;
+        UpdateArtworkWheelTooltipPlacement();
         if (_isVertical) RaisePopupAboveTaskbar(host);
         // 开窗即刻校准封面渲染偏移：本会话的第一次放大若等到第一次收回才学，就会带着 3~4px 的未校准偏差长出来。
         // Calibrate the rendered offset the moment the Popup opens: a session's first zoom that waits for the first reclaim
@@ -868,6 +929,7 @@ public partial class TaskBarMediaControl
     // 在主树布局落地后同步独立 Popup；订阅由控件 Loaded/Unloaded 配对管理。
     private void OnArtworkPopupLayoutUpdated(object? sender, EventArgs e)
     {
+        RefreshArtworkTooltipPosition();
         if (!IsLoaded || (_artworkHoverZoomPopup?.IsOpen != true && _artworkHoverPreview?.IsOpen != true) ||
             PresentationSource.FromVisual(MainCanvas) is null)
             return;
@@ -1070,6 +1132,9 @@ public partial class TaskBarMediaControl
 
         if (!ReferenceEquals(SongImageBorder.Parent, host))
         {
+            RefreshArtworkHintStyle();
+            RestoreArtworkPlaceholderVisibility();
+            UpdateArtworkWheelTooltipPlacement();
             // 元素已不在宿主（从未离开或已送回）：把两层裁切与区域扩展恢复到收回态即可，重复收回是幂等的。
             // The element is not in the host (never left or already returned): restoring the clipping layers and the region
             // extension to their reclaimed state completes it — a repeated reclaim is idempotent.
@@ -1079,12 +1144,19 @@ public partial class TaskBarMediaControl
             return;
         }
 
+        SongImageScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        SongImageScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        SongImageScale.ScaleX = SongImageScale.ScaleY = 1;
         host.Children.Remove(SongImageBorder);
         SongImageBorder.HorizontalAlignment = _artworkZoomRestoreHorizontalAlignment;
         SongImageBorder.VerticalAlignment = _artworkZoomRestoreVerticalAlignment;
         SongImageBorder.RenderTransformOrigin = new Point(0.5, 0.5);
         if (!MainCanvas.Children.Contains(SongImageBorder))
             MainCanvas.Children.Add(SongImageBorder);
+        RefreshArtworkHintStyle();
+        RestoreArtworkPlaceholderVisibility();
+        SetArtworkHoverHintOpacity(0);
+        UpdateArtworkWheelTooltipPlacement();
         // 真封面已经就位（替身本次的桥接使命已由主窗口"已合成过"的那几帧完成），撤掉替身。
         // The real cover is in place (the stand-in's bridging is already carried by the frames the main window composed while
         // it was up), so it exits.
@@ -1669,6 +1741,89 @@ public partial class TaskBarMediaControl
         RefreshArtworkZoomTooltip();
     }
 
+    private void UpdateArtworkWheelTooltipPlacement()
+    {
+        var target = _artworkHoverZoomPopup?.IsOpen == true ? _artworkHoverZoomHost
+            : _artworkHoverPreview?.IsOpen == true ? _artworkHoverPreview.Child as FrameworkElement : null;
+        var enlarged = target is not null;
+        _artworkWheelTooltip.PlacementTarget = target ?? SongImageBorder;
+        _artworkWheelTooltip.Placement = enlarged ? System.Windows.Controls.Primitives.PlacementMode.Custom
+            : _isVertical ? (_verticalTaskbarOnLeft ? System.Windows.Controls.Primitives.PlacementMode.Right
+                                                  : System.Windows.Controls.Primitives.PlacementMode.Left)
+                          : System.Windows.Controls.Primitives.PlacementMode.Top;
+    }
+
+    private (Rect Bounds, Point Origin)? GetArtworkTooltipGeometry()
+    {
+        var surface = _artworkHoverZoomPopup?.IsOpen == true ? _artworkHoverZoomHost
+            : _artworkHoverPreview?.IsOpen == true ? _artworkHoverPreview.Child as FrameworkElement : null;
+        if (surface is null || PresentationSource.FromVisual(MainCanvas) is null || PresentationSource.FromVisual(surface) is null)
+            return null;
+
+        // Popup 回调和 PointToScreen 均用物理像素；缩放原点固定，按最终尺寸避让生长中的整张封面。
+        var dpi = VisualTreeHelper.GetDpi(surface);
+        var anchor = new Point(surface.ActualWidth * surface.RenderTransformOrigin.X, surface.ActualHeight * surface.RenderTransformOrigin.Y);
+        var screenAnchor = surface.PointToScreen(anchor);
+        var blocked = new Rect(screenAnchor.X - anchor.X * dpi.DpiScaleX, screenAnchor.Y - anchor.Y * dpi.DpiScaleY,
+            surface.ActualWidth * dpi.DpiScaleX, surface.ActualHeight * dpi.DpiScaleY);
+        var cover = SongImageBorder.PointToScreen(new Point());
+        blocked.Union(new Rect(cover, SongImageBorder.PointToScreen(new Point(SongImageBorder.ActualWidth, SongImageBorder.ActualHeight))));
+        return (blocked, surface.PointToScreen(new Point()));
+    }
+
+    private void RefreshArtworkTooltipPosition()
+    {
+        if (!_artworkWheelTooltip.IsOpen || GetArtworkTooltipGeometry() is not { } geometry ||
+            _artworkTooltipPlacementGeometry == geometry) return;
+        _artworkTooltipPlacementGeometry = geometry;
+        var offset = _artworkWheelTooltip.HorizontalOffset;
+        _artworkWheelTooltip.SetCurrentValue(System.Windows.Controls.ToolTip.HorizontalOffsetProperty, offset + 1);
+        _artworkWheelTooltip.SetCurrentValue(System.Windows.Controls.ToolTip.HorizontalOffsetProperty, offset);
+    }
+
+    private System.Windows.Controls.Primitives.CustomPopupPlacement[] PlaceArtworkWheelTooltip(Size popupSize, Size targetSize, Point offset)
+    {
+        if (GetArtworkTooltipGeometry() is not { } geometry)
+            return [new(new Point(), System.Windows.Controls.Primitives.PopupPrimaryAxis.None)];
+        _artworkTooltipPlacementGeometry = geometry;
+        var blocked = geometry.Bounds;
+        var dpi = VisualTreeHelper.GetDpi(_artworkWheelTooltip.PlacementTarget);
+        var work = GetPopupMonitorWorkArea(new Point(blocked.Left + blocked.Width / 2, blocked.Top + blocked.Height / 2));
+        var position = ResolveArtworkTooltipPosition(popupSize, blocked,
+            new Rect(work.Left, work.Top, work.Right - work.Left, work.Bottom - work.Top),
+            _isVertical, _verticalTaskbarOnLeft, 8 * dpi.DpiScaleX);
+        var origin = geometry.Origin;
+        Visual tooltipRoot = _artworkWheelTooltip;
+        while (VisualTreeHelper.GetParent(tooltipRoot) is Visual parent) tooltipRoot = parent;
+        // 主题模板的外边距不在 popupSize 内，但会偏移可见气泡；按实际视觉树抵消，不写死主题尺寸。
+        var inset = _artworkWheelTooltip.TransformToAncestor(tooltipRoot).Transform(new Point());
+        var tooltipDpi = VisualTreeHelper.GetDpi(tooltipRoot);
+        return [new(new Point(position.X - origin.X - inset.X * tooltipDpi.DpiScaleX,
+            position.Y - origin.Y - inset.Y * tooltipDpi.DpiScaleY), System.Windows.Controls.Primitives.PopupPrimaryAxis.None)];
+    }
+
+    internal static Point ResolveArtworkTooltipPosition(Size tooltip, Rect artwork, Rect workArea, bool vertical, bool onLeft, double gap)
+    {
+        var above = new Point(artwork.Left + (artwork.Width - tooltip.Width) / 2, artwork.Top - tooltip.Height - gap);
+        var below = new Point(above.X, artwork.Bottom + gap);
+        var left = new Point(artwork.Left - tooltip.Width - gap, artwork.Top + (artwork.Height - tooltip.Height) / 2);
+        var right = new Point(artwork.Right + gap, left.Y);
+        var candidates = vertical ? (onLeft ? new[] { right, left, above, below } : new[] { left, right, above, below })
+            : new[] { above, below, right, left };
+        var best = candidates[0];
+        var leastOverlap = double.PositiveInfinity;
+        foreach (var candidate in candidates)
+        {
+            var point = new Point(Math.Clamp(candidate.X, workArea.Left, Math.Max(workArea.Left, workArea.Right - tooltip.Width)),
+                Math.Clamp(candidate.Y, workArea.Top, Math.Max(workArea.Top, workArea.Bottom - tooltip.Height)));
+            var intersection = Rect.Intersect(new Rect(point, tooltip), artwork);
+            var overlap = intersection.IsEmpty ? 0 : intersection.Width * intersection.Height;
+            if (overlap < leastOverlap) { leastOverlap = overlap; best = point; }
+            if (overlap == 0) break;
+        }
+        return best;
+    }
+
     private void RefreshArtworkZoomTooltip()
     {
         // Popup 的自动提示不跨树寻找主窗口 owner；手动显示同一实例，保留原有延迟和时长。
@@ -1684,7 +1839,7 @@ public partial class TaskBarMediaControl
             _artworkWheelTooltip.IsOpen = false;
             return;
         }
-        _artworkWheelTooltip.PlacementTarget = SongImageBorder;
+        UpdateArtworkWheelTooltipPlacement();
         _artworkWheelTooltip.IsOpen = true;
     }
 
@@ -1705,6 +1860,7 @@ public partial class TaskBarMediaControl
             return;
 
         popup.IsOpen = true;
+        UpdateArtworkWheelTooltipPlacement();
         if (_isVertical && popup.Child is Visual previewChild) RaisePopupAboveTaskbar(previewChild);
         if (_artworkHoverPreviewScale is not { } scale)
             return;
@@ -1740,6 +1896,7 @@ public partial class TaskBarMediaControl
     {
         if (_artworkHoverPreview?.IsOpen == true)
             _artworkHoverPreview.IsOpen = false;
+        UpdateArtworkWheelTooltipPlacement();
     }
 
     /// <summary>
@@ -1806,41 +1963,26 @@ public partial class TaskBarMediaControl
         HideArtworkHoverZoom(immediate: true);
     }
 
-    /// <summary>把最新快照同步进大图预览：封面源、播放/暂停符号与显隐门禁。暂停语言与主程序封面格一致——图像减暗、
-    /// 封面主色双杠、不叠遮罩；播放中才是遮罩+白色双杠（见 UpdateSongInfo 的暂停分支）。
-    /// Syncs the latest snapshot into the large preview: artwork source, play/pause glyph, and its gates. The paused language matches
-    /// the main program's artwork slot — a dimmed image, bars in the artwork's dominant colour, no scrim; the scrim with white bars
-    /// belongs to playing (see UpdateSongInfo's paused branch).</summary>
+    /// <summary>大图预览保留完整原图，只在中央提示现有播放操作。</summary>
     private void RefreshArtworkHoverPreviewContent()
     {
         if (_artworkHoverPreviewImage is null)
             return;
-
         _artworkHoverPreviewImage.Source = _snapshot.Artwork;
+        _artworkHoverPreviewImage.Opacity = 1;
         if (_artworkHoverPreview?.Child is Border root)
         {
-            // 与通知和完整层共用框比例上限；极端比例或未知尺寸由 Uniform 留白，保留整张封面。
             var artwork = _snapshot.Artwork as BitmapSource;
             root.Width = ArtworkBoxPolicy.Resolve(ArtworkHoverPreviewHeightDip,
                 artwork?.PixelWidth ?? 0, artwork?.PixelHeight ?? 0).Width;
         }
-        _artworkHoverPreviewImage.Opacity = _isPaused ? ArtworkPausedDimOpacity : 1.0;
-        var showGlyph = _canPlayPause && ResolveArtworkClickAction() == PlayerClickAction.TogglePlayPause;
+        var showGlyph = _snapshot.Artwork is not null && _canPlayPause &&
+                        ResolveArtworkClickAction() == PlayerClickAction.TogglePlayPause;
         if (_artworkHoverPreviewScrim is not null)
-        {
             _artworkHoverPreviewScrim.Visibility = showGlyph ? Visibility.Visible : Visibility.Collapsed;
-            // 暂停时已有封面淡化，不再叠加悬停遮罩。
-            _artworkHoverPreviewScrim.Background = _isPaused
-                ? Brushes.Transparent
-                : new SolidColorBrush(Color.FromArgb(0x66, 0, 0, 0));
-        }
-        if (showGlyph && _artworkHoverPreviewIcon is not null)
-        {
-            _artworkHoverPreviewIcon.Symbol = _isPaused
-                ? Wpf.Ui.Controls.SymbolRegular.Play24
-                : Wpf.Ui.Controls.SymbolRegular.Pause24;
-            _artworkHoverPreviewIcon.Foreground = SongImagePlaceholder.Foreground;
-        }
+        if (_artworkHoverPreviewIcon is not null)
+            ApplyEnlargedArtworkIconAppearance(_artworkHoverPreviewIcon);
+        RefreshArtworkHintScale();
     }
 
     /// <summary>封面这一格当前绑定的点击动作；门禁与提示符号都由它决定。/ The click action currently bound to the artwork slot; it gates the hint and picks its glyph.</summary>
@@ -1849,20 +1991,7 @@ public partial class TaskBarMediaControl
             ? PlayerClickBindingPolicy.Resolve(EffectiveInteraction, artwork: true)
             : PlayerClickAction.TogglePlayPause;
 
-    /// <summary>
-    /// 封面悬停的放大与播放/暂停提示，三种模式由 <c>ArtworkHoverMode</c> 选择：默认在栏内放大 1.1 倍；原地放大（Zoom）把
-    /// 封面元素本体移进透明 Popup、底部锚定放大 2 倍、只往上生长，同时把右侧内容右移同样的放大量；大图模式（Preview）
-    /// 经独立 Popup 把放大的封面画到任务栏上方、突出任务栏。提示图标与主程序的封面格同一套语言：播放中显示遮罩+暂停
-    /// 双杠，已暂停时封面格本身就是"双杠+遮罩"（UpdateSongInfo 的暂停分支），不再叠加会重影的提示层；点击绑定被用户
-    /// 改成其它动作时不显示图标，只保留放大。无媒体时这一格是快速启动音符，整体维持原交互。
-    /// Artwork hover zoom plus the play/pause hint, three modes chosen by <c>ArtworkHoverMode</c>: the default zooms 1.1× inside the bar;
-    /// the in-place zoom (Zoom) moves the artwork element itself into a transparent Popup, anchored at its bottom and grown 2× upward
-    /// only, while the right-hand content shifts right by the same amount; the large mode (Preview) renders the enlarged cover through
-    /// its own Popup above the taskbar, popping out beyond the bar. The hint glyph speaks the same language as the main program's
-    /// artwork slot: a scrim plus the pause bars while playing, and when paused the slot itself already reads "bars over a scrimmed
-    /// cover" (UpdateSongInfo's paused branch) so no hint layer is stacked to double the glyph. With the click binding rebound to
-    /// another action no glyph appears and only the zoom remains. Without media the slot is the quick-launch note and stays as is.
-    /// </summary>
+    /// <summary>保留原悬停缩放和输入，仅在放大封面上使用不遮挡原图的小图标。</summary>
     private void AnimateArtworkHover(bool isHovered, bool immediate = false)
     {
         var hoverMode = EffectiveInteraction.ArtworkHoverMode;
@@ -1870,8 +1999,6 @@ public partial class TaskBarMediaControl
         var previewActive = hoverEligible && hoverMode == ArtworkHoverMode.Preview;
         var zoomActive = hoverEligible && hoverMode == ArtworkHoverMode.Zoom;
         var inlineZoomActive = hoverEligible && hoverMode == ArtworkHoverMode.Off;
-        var hintActive = hoverEligible && !_isPaused && _canPlayPause
-            && ResolveArtworkClickAction() == PlayerClickAction.TogglePlayPause;
         // 快照更新（换歌、播放状态翻转）据此在悬停期间刷新提示：暂停↔播放的翻转在任何悬停形态下都可能发生。
         // Snapshot updates (track change, playback flip) refresh the presentation off this flag: a pause/play flip can happen
         // under any hover shape.
@@ -1904,6 +2031,9 @@ public partial class TaskBarMediaControl
         else if (!zoomCollapseInFlight)
             HideArtworkHoverZoom(immediate);
 
+        RefreshArtworkHintStyle();
+        var hintActive = hoverEligible && (UsesEnlargedArtworkHint || !_isPaused) && _canPlayPause
+            && ResolveArtworkClickAction() == PlayerClickAction.TogglePlayPause;
         if (hintActive)
         {
             // 提示层在占位图标之上，两者同时可见会叠出重影；提示激活期间让占位图标让位。
@@ -1985,7 +2115,8 @@ public partial class TaskBarMediaControl
         // while a stale capture lingers — IsMouseOver then lies false and an enlarged cover gets wrongly collapsed by an
         // ordinary track change or pause flip. The other widgets never re-parent, so they need no such guard.
         var hoverEligible = IsPointerOverArtwork() && CanUseTaskbarComponentHover() && _snapshot.Artwork is not null;
-        var hintActive = hoverEligible && !_isPaused && _canPlayPause
+        RefreshArtworkHintStyle();
+        var hintActive = hoverEligible && (UsesEnlargedArtworkHint || !_isPaused) && _canPlayPause
             && ResolveArtworkClickAction() == PlayerClickAction.TogglePlayPause;
 
         if (hintActive)
@@ -2013,7 +2144,9 @@ public partial class TaskBarMediaControl
     /// Restores the artwork placeholder visibility from the current playback state, matching UpdateSongInfo's artwork branch.</summary>
     private void RestoreArtworkPlaceholderVisibility()
     {
-        if (!_isConnected || _snapshot.Artwork is null)
+        if (UsesEnlargedArtworkHint && _snapshot.Artwork is not null)
+            SongImagePlaceholder.Visibility = Visibility.Collapsed;
+        else if (!_isConnected || _snapshot.Artwork is null)
             SongImagePlaceholder.Visibility = Visibility.Visible;
         else if (_isPaused)
             SongImagePlaceholder.Visibility = Visibility.Visible;
