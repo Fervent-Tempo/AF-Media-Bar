@@ -1421,7 +1421,7 @@
     <value>順序即優先順序：排在上面的來源優先使用，沒有內容時往下取</value>
   </data>
   <data name="Lyrics.Row.SecondLine.OrderRow.Description" xml:space="preserve">
-    <value>上移即提高優先順序</value>
+    <value>靠前的項目優先使用。</value>
   </data>
   <data name="Lyrics.Row.SecondLine.Title" xml:space="preserve">
     <value>第二行內容</value>
@@ -2644,7 +2644,7 @@
     <value>並排顯示</value>
   </data>
   <data name="Media.Performance.Order.Description" xml:space="preserve">
-    <value>使用上下按鈕調整已選指標順序；兩種顯示方式共用順序，至少保留一個指標。</value>
+    <value>拖曳調整已選指標順序；兩種顯示方式共用順序，至少保留一個指標。</value>
   </data>
   <data name="Panel.Performance.Upload" xml:space="preserve">
     <value>上傳</value>
@@ -2945,4 +2945,6 @@
   <data name="Placement.Floating.Description" xml:space="preserve"><value>在選取的顯示器上顯示桌面小工具，位置分別儲存。</value></data>
   <data name="DisplayModes.Mode.FloatingBar.Caption" xml:space="preserve"><value>獨立顯示在桌面，可自由拖曳並選擇視窗層級。</value></data>
   <data name="DisplayModes.Mode.Experimental" xml:space="preserve"><value>實驗性</value></data>
+  <data name="Settings.Reorder.Help" xml:space="preserve"><value>拖曳調整順序；也可聚焦後按 Alt＋↑／↓。</value></data>
+  <data name="Settings.Reorder.Position" xml:space="preserve"><value>第 {0} 項，共 {1} 項</value></data>
 </root>

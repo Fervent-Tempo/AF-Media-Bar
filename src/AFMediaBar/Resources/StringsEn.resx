@@ -1421,7 +1421,7 @@
     <value>The order is the priority: the source listed first is used first, and an empty one falls through to the next</value>
   </data>
   <data name="Lyrics.Row.SecondLine.OrderRow.Description" xml:space="preserve">
-    <value>Moving a row up raises its priority</value>
+    <value>Items nearer the top have higher priority.</value>
   </data>
   <data name="Lyrics.Row.SecondLine.Title" xml:space="preserve">
     <value>Second-line content</value>
@@ -2644,7 +2644,7 @@
     <value>Side by side</value>
   </data>
   <data name="Media.Performance.Order.Description" xml:space="preserve">
-    <value>Use the arrow buttons to reorder selected metrics. Both modes share this order; keep at least one metric selected.</value>
+    <value>Drag to reorder selected metrics. Both display modes share this order; keep at least one metric.</value>
   </data>
   <data name="Panel.Performance.Upload" xml:space="preserve">
     <value>Upload</value>
@@ -2945,4 +2945,6 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Placement.Floating.Description" xml:space="preserve"><value>Show a desktop widget on each selected display, with positions saved separately.</value></data>
   <data name="DisplayModes.Mode.FloatingBar.Caption" xml:space="preserve"><value>Place the bar on the desktop, drag it freely, and choose its window layer.</value></data>
   <data name="DisplayModes.Mode.Experimental" xml:space="preserve"><value>Experimental</value></data>
+  <data name="Settings.Reorder.Help" xml:space="preserve"><value>Drag to reorder, or focus the handle and press Alt+Up/Down.</value></data>
+  <data name="Settings.Reorder.Position" xml:space="preserve"><value>Item {0} of {1}</value></data>
 </root>

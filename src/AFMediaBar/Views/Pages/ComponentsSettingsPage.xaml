@@ -203,35 +203,20 @@
                                     Margin="0,0,0,4"
                                     Symbol="Info24"
                                     Text="{DynamicResource Loc.DisplayModes.Rest.Order.Notice}" />
-                                <ItemsControl Margin="0,0,0,4" ItemsSource="{Binding ViewModel.Layout.RestOrderEntries}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <components:SettingsRow
-                                                Description="{Binding Description}"
-                                                IsNested="True"
-                                                Title="{Binding DisplayName}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <ui:Button
-                                                        Margin="8,0,0,0"
-                                                        Command="{Binding DataContext.ViewModel.Layout.MoveRestComponentUpCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                        CommandParameter="{Binding}"
-                                                        Icon="{ui:SymbolIcon ArrowUp24}"
-                                                        Style="{StaticResource AfSettingsIconButtonStyle}"
-                                                        ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveUp}"
-                                                        Visibility="{Binding CanMove, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
-                                                    <ui:Button
-                                                        Margin="4,0,0,0"
-                                                        Command="{Binding DataContext.ViewModel.Layout.MoveRestComponentDownCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                        CommandParameter="{Binding}"
-                                                        Icon="{ui:SymbolIcon ArrowDown24}"
-                                                        Style="{StaticResource AfSettingsIconButtonStyle}"
-                                                        ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveDown}"
-                                                        Visibility="{Binding CanMove, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
-                                                </StackPanel>
-                                            </components:SettingsRow>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                <AdornerDecorator>
+                                    <ItemsControl components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Layout.ReorderRestComponentCommand}" Margin="0,0,0,4" ItemsSource="{Binding ViewModel.Layout.RestOrderEntries}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <components:SettingsRow KeepControlInline="True"
+                                                    Description="{Binding Description}"
+                                                    IsNested="True"
+                                                    Title="{Binding DisplayName}">
+                                                    <components:SettingsReorderHandle ItemKey="{Binding Component}" Visibility="{Binding CanMove, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
+                                                </components:SettingsRow>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </AdornerDecorator>
                                 <components:SettingsRow
                                     Description="{DynamicResource Loc.DisplayModes.Rest.Order.Reset.Description}"
                                     Icon="{ui:SymbolIcon ArrowReset24}"
@@ -239,7 +224,7 @@
                                     Title="{DynamicResource Loc.DisplayModes.Rest.Order.Reset.Title}">
                                     <ui:Button
                                         Command="{Binding ViewModel.Layout.ResetRestComponentOrderCommand}"
-                                        Content="{DynamicResource Loc.Lyrics.Sources.Reset.Action}"
+                                        Content="{DynamicResource Loc.DisplayModes.Rest.Order.Reset.Title}"
                                         Icon="{ui:SymbolIcon ArrowReset24}"
                                         Style="{StaticResource AfSettingsButtonStyle}" />
                                 </components:SettingsRow>
@@ -461,26 +446,19 @@
                                     </ComboBox>
                                 </components:SettingsRow>
                                 <components:SettingsCallout Margin="0,4,0,4" Text="{DynamicResource Loc.Media.Performance.Order.Description}" />
-                                <ItemsControl ItemsSource="{Binding ViewModel.Components.MetricOrderEntries}"
-                                              IsEnabled="{Binding ViewModel.Components.CanConfigurePerformance}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <components:SettingsRow IsNested="True"
-                                                                    Title="{Binding DisplayName}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <ui:Button Command="{Binding DataContext.ViewModel.Components.MoveMetricUpCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                               CommandParameter="{Binding}" IsEnabled="{Binding CanMoveUp}"
-                                                               Icon="{ui:SymbolIcon ArrowUp24}" Style="{StaticResource AfSettingsIconButtonStyle}"
-                                                               ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveUp}" />
-                                                    <ui:Button Margin="4,0,0,0" Command="{Binding DataContext.ViewModel.Components.MoveMetricDownCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                               CommandParameter="{Binding}" IsEnabled="{Binding CanMoveDown}"
-                                                               Icon="{ui:SymbolIcon ArrowDown24}" Style="{StaticResource AfSettingsIconButtonStyle}"
-                                                               ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveDown}" />
-                                                </StackPanel>
-                                            </components:SettingsRow>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                <AdornerDecorator>
+                                    <ItemsControl components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Components.ReorderMetricCommand}" ItemsSource="{Binding ViewModel.Components.MetricOrderEntries}"
+                                                  IsEnabled="{Binding ViewModel.Components.CanConfigurePerformance}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <components:SettingsRow KeepControlInline="True" IsNested="True"
+                                                                        Title="{Binding DisplayName}">
+                                                    <components:SettingsReorderHandle ItemKey="{Binding Metric}" />
+                                                </components:SettingsRow>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </AdornerDecorator>
                                 <components:SettingsRow
                                     Description="{DynamicResource Loc.Media.Performance.OpenTaskManager.Description}"
                                     Icon="{ui:SymbolIcon CursorClick24}"

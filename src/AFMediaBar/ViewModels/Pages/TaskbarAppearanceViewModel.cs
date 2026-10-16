@@ -1,4 +1,5 @@
 // 提供共用媒体栏外观与当前模式的几何；页面作用域负责释放订阅。
+using AFMediaBar.Classes.Models;
 using System.Collections.ObjectModel;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Services.Localization;
@@ -323,14 +324,15 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
 
     private void MoveRestComponent(TaskbarRestComponentSettingItem? entry, int offset)
     {
-        if (entry is null || !entry.CanMove)
-            return;
+        if (entry is null) return;
+        ReorderRestComponent(new SettingsReorderRequest(entry, RestOrderEntries.IndexOf(entry) + offset, RestOrderEntries));
+    }
 
-        var index = RestOrderEntries.IndexOf(entry);
-        var target = index + offset;
-        if (index < 0 || target < TaskbarRestLayoutPolicy.FixedOrder.Count || target >= RestOrderEntries.Count)
-            return;
-
+    [RelayCommand]
+    private void ReorderRestComponent(SettingsReorderRequest? request)
+    {
+        if (_disposed || !_configuration.IsActive || request?.Item is not TaskbarRestComponentSettingItem { CanMove: true } ||
+            !request.TryResolve(RestOrderEntries, entry => entry.Component, out var index, out var target, TaskbarRestLayoutPolicy.FixedOrder.Count)) return;
         RestOrderEntries.Move(index, target);
         SaveRestComponentOrder();
     }

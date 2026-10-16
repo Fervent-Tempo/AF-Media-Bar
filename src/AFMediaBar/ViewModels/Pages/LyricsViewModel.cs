@@ -1,3 +1,4 @@
+using AFMediaBar.Classes.Models;
 using System.Collections.ObjectModel;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Services;
@@ -458,10 +459,15 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
 
     private void MoveSource(LyricsSourceSettingItem? item, int offset)
     {
-        if (_disposed || !_configuration.IsActive || !IsManualSourceRule || item is null) return;
-        var index = SourceEntries.IndexOf(item);
-        var target = index + offset;
-        if (index < 0 || target < 0 || target >= SourceEntries.Count) return;
+        if (item is null) return;
+        ReorderSource(new SettingsReorderRequest(item, SourceEntries.IndexOf(item) + offset, SourceEntries));
+    }
+
+    [RelayCommand]
+    private void ReorderSource(SettingsReorderRequest? request)
+    {
+        if (_disposed || !_configuration.IsActive || !IsManualSourceRule || request is null ||
+            !request.TryResolve(SourceEntries, entry => entry.SourceId, out var index, out var target)) return;
         SourceEntries.Move(index, target);
         var current = _configuration.Current.LyricsSource;
         var unknown = current.PrioritySourceIds?.Where(id => !LyricsSourceCatalog.IsKnown(id)) ?? [];
@@ -548,18 +554,15 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
 
     private void MoveSecondaryLine(LyricsSecondaryLineSettingItem? item, int offset)
     {
-        if (item is null)
-        {
-            return;
-        }
+        if (item is null) return;
+        ReorderSecondaryLine(new SettingsReorderRequest(item, SecondaryLineEntries.IndexOf(item) + offset, SecondaryLineEntries));
+    }
 
-        var index = SecondaryLineEntries.IndexOf(item);
-        var target = index + offset;
-        if (index < 0 || target < 0 || target >= SecondaryLineEntries.Count)
-        {
-            return;
-        }
-
+    [RelayCommand]
+    private void ReorderSecondaryLine(SettingsReorderRequest? request)
+    {
+        if (_disposed || !_configuration.IsActive || request is null ||
+            !request.TryResolve(SecondaryLineEntries, entry => entry.Mode, out var index, out var target)) return;
         SecondaryLineEntries.Move(index, target);
         SaveSecondaryLineEntries();
     }

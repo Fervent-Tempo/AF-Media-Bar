@@ -26,11 +26,22 @@ public class SettingsRow : HeaderedContentControl
     /// <summary>Whether this row uses the narrow-content layout.</summary>
     public bool IsCompact => (bool)GetValue(IsCompactProperty);
 
+    /// <summary>紧凑操作（例如排序手柄）在窄页面也保持位于行末。</summary>
+    public static readonly DependencyProperty KeepControlInlineProperty = DependencyProperty.Register(
+        nameof(KeepControlInline), typeof(bool), typeof(SettingsRow), new PropertyMetadata(false, OnInlineChanged));
+    public bool KeepControlInline { get => (bool)GetValue(KeepControlInlineProperty); set => SetValue(KeepControlInlineProperty, value); }
+
+    private static void OnInlineChanged(DependencyObject sender, DependencyPropertyChangedEventArgs args)
+    {
+        var row = (SettingsRow)sender;
+        row.SetValue(IsCompactPropertyKey, !row.KeepControlInline && row.ActualWidth < 520d);
+    }
+
     /// <inheritdoc />
     protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
     {
         base.OnRenderSizeChanged(sizeInfo);
-        SetValue(IsCompactPropertyKey, sizeInfo.NewSize.Width < 520d);
+        SetValue(IsCompactPropertyKey, !KeepControlInline && sizeInfo.NewSize.Width < 520d);
     }
     /// <summary>行标题左侧的图标。/ Icon to the left of the row title.</summary>
     public static readonly DependencyProperty IconProperty = DependencyProperty.Register(

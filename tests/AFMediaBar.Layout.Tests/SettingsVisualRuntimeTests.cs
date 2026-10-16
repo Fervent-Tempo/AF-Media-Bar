@@ -95,6 +95,7 @@ public sealed class SettingsVisualRuntimeTests
                 VerifyReleaseHistoryBody();
                 SettingsLiveVisualChecks.VerifyContextNavigation(app);
                 SettingsLiveVisualChecks.VerifyNavigationMotion(app);
+                SettingsReorderVisualChecks.Verify(app);
             }
             finally { app.Shutdown(); }
         }, TimeSpan.FromSeconds(30));

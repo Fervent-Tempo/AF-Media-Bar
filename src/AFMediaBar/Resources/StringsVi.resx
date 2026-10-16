@@ -1430,7 +1430,7 @@
     <value>Thứ tự quyết định mức ưu tiên: nguồn được liệt kê đầu tiên sẽ dùng trước, nếu trống sẽ chuyển sang nguồn kế tiếp</value>
   </data>
   <data name="Lyrics.Row.SecondLine.OrderRow.Description" xml:space="preserve">
-    <value>Di chuyển hàng lên trên để tăng mức ưu tiên</value>
+    <value>Mục gần đầu danh sách được ưu tiên.</value>
   </data>
   <data name="Lyrics.Row.SecondLine.Title" xml:space="preserve">
     <value>Nội dung dòng thứ hai</value>
@@ -2682,7 +2682,7 @@
     <value>Cạnh nhau</value>
   </data>
   <data name="Media.Performance.Order.Description" xml:space="preserve">
-    <value>Dùng các nút mũi tên để sắp xếp chỉ số đã chọn. Hai chế độ dùng chung thứ tự; chọn ít nhất một chỉ số.</value>
+    <value>Kéo để sắp xếp chỉ số đã chọn. Hai chế độ dùng chung thứ tự; giữ ít nhất một chỉ số.</value>
   </data>
   <data name="Panel.Performance.Upload" xml:space="preserve">
     <value>Tải lên</value>
@@ -2983,4 +2983,6 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   <data name="Placement.Floating.Description" xml:space="preserve"><value>Hiển thị tiện ích trên từng màn hình đã chọn và lưu vị trí riêng.</value></data>
   <data name="DisplayModes.Mode.FloatingBar.Caption" xml:space="preserve"><value>Hiển thị riêng trên màn hình, kéo tự do và chọn lớp cửa sổ.</value></data>
   <data name="DisplayModes.Mode.Experimental" xml:space="preserve"><value>Thử nghiệm</value></data>
+  <data name="Settings.Reorder.Help" xml:space="preserve"><value>Kéo để đổi thứ tự, hoặc chọn tay nắm rồi nhấn Alt+Lên/Xuống.</value></data>
+  <data name="Settings.Reorder.Position" xml:space="preserve"><value>Mục {0} trên {1}</value></data>
 </root>

@@ -132,7 +132,7 @@ internal static class SettingsLiveVisualChecks
             Assert.AreSame(layout, arrived);
             var widgetsPanel = (Panel)groups.Single(group => group.GroupId == "Common.Group.Widgets").Content;
             var ordered = widgetsPanel.Children.OfType<Wpf.Ui.Controls.CardExpander>().Single(expander =>
-                expander.Content is Panel panel && panel.Children.OfType<ItemsControl>().Any(items => items.ItemsSource == layout.ViewModel.Layout.RestOrderEntries));
+                expander.Content is Panel panel && Descendants(panel).OfType<ItemsControl>().Any(items => items.ItemsSource == layout.ViewModel.Layout.RestOrderEntries));
             Assert.AreEqual(Visibility.Visible, ordered.Visibility, "任务栏横竖共享配置及组件排序入口。");
             Assert.IsTrue(navigation.Navigate(typeof(InteractionPage)));
             Assert.IsTrue(navigation.Navigate(typeof(AppearancePage)));
@@ -261,7 +261,7 @@ internal static class SettingsLiveVisualChecks
         }
     }
 
-    private static void CapturePreview(FrameworkElement visual, string name)
+    internal static void CapturePreview(FrameworkElement visual, string name)
     {
         var directory = Environment.GetEnvironmentVariable("AFMB_SETTINGS_PREVIEW_DIR");
         if (string.IsNullOrEmpty(directory)) return;

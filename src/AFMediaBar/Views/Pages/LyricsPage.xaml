@@ -116,32 +116,20 @@
                                         Text="{Binding ViewModel.SecondaryLineOrderText}"
                                         TextWrapping="Wrap" />
                                 </components:SettingsRow>
-                                <ItemsControl Margin="0,0,0,4" ItemsSource="{Binding ViewModel.SecondaryLineEntries}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <components:SettingsRow
-                                                Description="{DynamicResource Loc.Lyrics.Row.SecondLine.OrderRow.Description}"
-                                                IsNested="True"
-                                                Title="{Binding DisplayName}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <ui:Button
-                                                        Command="{Binding DataContext.ViewModel.MoveSecondaryLineUpCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                        CommandParameter="{Binding}"
-                                                        Icon="{ui:SymbolIcon ArrowUp24}"
-                                                        Style="{StaticResource AfSettingsIconButtonStyle}"
-                                                        ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveUp}" />
-                                                    <ui:Button
-                                                        Margin="4,0,0,0"
-                                                        Command="{Binding DataContext.ViewModel.MoveSecondaryLineDownCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                        CommandParameter="{Binding}"
-                                                        Icon="{ui:SymbolIcon ArrowDown24}"
-                                                        Style="{StaticResource AfSettingsIconButtonStyle}"
-                                                        ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveDown}" />
-                                                </StackPanel>
-                                            </components:SettingsRow>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                <AdornerDecorator>
+                                    <ItemsControl components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.ReorderSecondaryLineCommand}" Margin="0,0,0,4" ItemsSource="{Binding ViewModel.SecondaryLineEntries}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <components:SettingsRow KeepControlInline="True"
+                                                    Description="{DynamicResource Loc.Lyrics.Row.SecondLine.OrderRow.Description}"
+                                                    IsNested="True"
+                                                    Title="{Binding DisplayName}">
+                                                    <components:SettingsReorderHandle ItemKey="{Binding Mode}" />
+                                                </components:SettingsRow>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </AdornerDecorator>
                                 <components:SettingsRow
                                     Description="{DynamicResource Loc.Lyrics.SecondLine.Reset.Description}"
                                     Icon="{ui:SymbolIcon ArrowReset24}"
@@ -149,7 +137,7 @@
                                     Title="{DynamicResource Loc.Lyrics.SecondLine.Reset.Title}">
                                     <ui:Button
                                         Command="{Binding ViewModel.ResetSecondaryLineOrderCommand}"
-                                        Content="{DynamicResource Loc.Lyrics.Sources.Reset.Action}"
+                                        Content="{DynamicResource Loc.Lyrics.SecondLine.Reset.Title}"
                                         Icon="{ui:SymbolIcon ArrowReset24}"
                                         Style="{StaticResource AfSettingsButtonStyle}" />
                                 </components:SettingsRow>
@@ -338,29 +326,26 @@
                                         Icon="{ui:SymbolIcon ArrowReset24}"
                                         Style="{StaticResource AfSettingsButtonStyle}" />
                                 </components:SettingsRow>
-                                <ItemsControl Margin="0,0,0,4" ItemsSource="{Binding ViewModel.SourceEntries}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <components:SettingsRow
-                                                Description="{DynamicResource Loc.Lyrics.Sources.Row.Description}"
-                                                IsNested="True"
-                                                Title="{Binding DisplayName}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <StackPanel Orientation="Horizontal"
-                                                        Visibility="{Binding DataContext.ViewModel.IsManualSourceRule, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource AfBooleanToVisibilityConverter}}">
-                                                        <ui:Button Command="{Binding DataContext.ViewModel.MoveSourceUpCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                            CommandParameter="{Binding}" IsEnabled="{Binding CanMoveUp}" Icon="{ui:SymbolIcon ArrowUp24}"
-                                                            ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveUp}" Style="{StaticResource AfSettingsIconButtonStyle}" />
-                                                        <ui:Button Command="{Binding DataContext.ViewModel.MoveSourceDownCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                            CommandParameter="{Binding}" IsEnabled="{Binding CanMoveDown}" Icon="{ui:SymbolIcon ArrowDown24}"
-                                                            ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveDown}" Style="{StaticResource AfSettingsIconButtonStyle}" />
+                                <AdornerDecorator>
+                                    <ItemsControl components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.ReorderSourceCommand}" Margin="0,0,0,4" ItemsSource="{Binding ViewModel.SourceEntries}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <components:SettingsRow KeepControlInline="True"
+                                                    Description="{DynamicResource Loc.Lyrics.Sources.Row.Description}"
+                                                    IsNested="True"
+                                                    Title="{Binding DisplayName}">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <StackPanel Orientation="Horizontal"
+                                                            Visibility="{Binding DataContext.ViewModel.IsManualSourceRule, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                                                            <components:SettingsReorderHandle ItemKey="{Binding SourceId}" />
+                                                        </StackPanel>
+                                                        <ui:ToggleSwitch IsChecked="{Binding IsEnabled, Mode=TwoWay}" />
                                                     </StackPanel>
-                                                    <ui:ToggleSwitch IsChecked="{Binding IsEnabled, Mode=TwoWay}" />
-                                                </StackPanel>
-                                            </components:SettingsRow>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                                </components:SettingsRow>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </AdornerDecorator>
                                 <components:SettingsCallout Text="{DynamicResource Loc.Lyrics.Sources.AllDisabled.Callout}">
                                     <components:SettingsCallout.Style>
                                         <Style TargetType="{x:Type components:SettingsCallout}">

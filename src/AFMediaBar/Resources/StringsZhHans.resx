@@ -1421,7 +1421,7 @@
     <value>顺序即优先级：排在上面的来源优先使用，没有内容时依次往下取</value>
   </data>
   <data name="Lyrics.Row.SecondLine.OrderRow.Description" xml:space="preserve">
-    <value>上移即提高优先级</value>
+    <value>靠前的项目优先使用。</value>
   </data>
   <data name="Lyrics.Row.SecondLine.Title" xml:space="preserve">
     <value>第二行内容</value>
@@ -2644,7 +2644,7 @@
     <value>并排显示</value>
   </data>
   <data name="Media.Performance.Order.Description" xml:space="preserve">
-    <value>使用上下按钮调整已选指标顺序；两种显示方式共用顺序，至少保留一个指标。</value>
+    <value>拖动调整已选指标顺序；两种显示方式共用顺序，至少保留一个指标。</value>
   </data>
   <data name="Panel.Performance.Upload" xml:space="preserve">
     <value>上传</value>
@@ -2945,4 +2945,6 @@
   <data name="Placement.Floating.Description" xml:space="preserve"><value>在选中的显示器上显示桌面小工具，位置分别保存。</value></data>
   <data name="DisplayModes.Mode.FloatingBar.Caption" xml:space="preserve"><value>独立显示在桌面，可自由拖动并选择窗口层级。</value></data>
   <data name="DisplayModes.Mode.Experimental" xml:space="preserve"><value>实验性</value></data>
+  <data name="Settings.Reorder.Help" xml:space="preserve"><value>拖动调整顺序；也可聚焦后按 Alt＋↑／↓。</value></data>
+  <data name="Settings.Reorder.Position" xml:space="preserve"><value>第 {0} 项，共 {1} 项</value></data>
 </root>
