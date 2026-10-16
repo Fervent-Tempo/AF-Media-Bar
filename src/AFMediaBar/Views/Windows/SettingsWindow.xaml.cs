@@ -478,24 +478,12 @@ namespace AFMediaBar.Views.Windows
         }
         private void UpdateContextHeader()
         {
-            var visible = Classes.Settings.SettingsManager.Current.Experiments.FloatingBar &&
-                _currentPage is SettingsPageKey.Components or SettingsPageKey.Appearance or SettingsPageKey.Lyrics or SettingsPageKey.Interaction;
-            ConfigurationTargetPanel.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
-            RootNavigation.HeaderVisibility = visible ? Visibility.Visible : Visibility.Collapsed;
-            _updatingMonitorChoices = true;
-            try { ConfigurationTargetPicker.SelectedValue = _contexts.Current.Mode; }
-            finally { _updatingMonitorChoices = false; }
-        }
-        private void OnConfigurationTargetChanged(object sender, SelectionChangedEventArgs args)
-        {
-            if (!_updatingMonitorChoices && ConfigurationTargetPicker.SelectedValue is SettingsMode mode)
-                _contexts.SelectConfigurationTarget(mode);
+            RootNavigation.HeaderVisibility = EditingMonitorPanel.Visibility;
         }
         private void OnExperimentalSettingsRequested(object sender, RoutedEventArgs args)
         {
             if (args.OriginalSource is not System.Windows.Controls.Button { Tag: SettingsPageKey page } button) return;
             args.Handled = true;
-            if (Enum.TryParse<SettingsMode>(button.Uid, out var mode)) _contexts.SelectConfigurationTarget(mode);
             if (button.CommandParameter is string group) NavigateToGroup(page, group);
             else Navigate(SettingsPageProvider.PageTypes[page]);
         }

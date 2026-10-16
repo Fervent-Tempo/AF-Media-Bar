@@ -75,13 +75,6 @@
             TitleBar="{Binding ElementName=TitleBar, Mode=OneWay}">
             <ui:NavigationView.Header>
                 <StackPanel Margin="16,4,16,4">
-                    <StackPanel x:Name="ConfigurationTargetPanel" Orientation="Horizontal" Visibility="Collapsed">
-                        <TextBlock Text="{DynamicResource Loc.Settings.Context.ConfigurationTarget}" VerticalAlignment="Center" Margin="0,0,12,0" />
-                        <ComboBox x:Name="ConfigurationTargetPicker" MinWidth="200" SelectedValuePath="Tag" SelectionChanged="OnConfigurationTargetChanged">
-                            <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Mode.Taskbar}" Tag="{x:Static settings:SettingsMode.Taskbar}" />
-                            <ComboBoxItem Content="{DynamicResource Loc.Experimental.Floating.Title}" Tag="{x:Static settings:SettingsMode.FloatingBar}" />
-                        </ComboBox>
-                    </StackPanel>
                     <StackPanel x:Name="EditingMonitorPanel" Orientation="Horizontal" Visibility="Collapsed">
                         <TextBlock Text="{DynamicResource Loc.Settings.Context.EditingMonitor}" VerticalAlignment="Center" Margin="0,0,12,0" />
                         <ComboBox x:Name="EditingMonitorPicker" MinWidth="200" MaxWidth="360" DisplayMemberPath="DeviceName" SelectedValuePath="DeviceId" SelectionChanged="OnEditingMonitorChanged" />

@@ -31,11 +31,7 @@ internal static class FloatingBarHostChecks
             SettingsManager.Current = new AppSettings
             {
                 Experiments = new() { FloatingBar = true },
-                FloatingBar = new()
-                {
-                    Profile = BarDisplaySettings.Capture(new AppSettings
-                    { TaskbarExperience = new() { SpectrumVisible = false, PerformanceVisible = false } })
-                }
+                TaskbarExperience = TaskbarExperienceSettings.Default with { SpectrumVisible = false, PerformanceVisible = false }
             };
             var display = new DisplayMonitorInfo("test", "Test display", true,
                 new Rect(0, 0, 1200, 800), new Rect(0, 0, 1200, 760), 96, 96);

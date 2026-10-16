@@ -1,4 +1,4 @@
-// 设置编辑上下文的读写边界，任务栏保留原字段，悬浮配置独立保存。
+// 设置编辑上下文的读写边界，任务栏保留原字段，悬浮几何独立保存。
 using AFMediaBar.Classes.Models.Settings;
 using AFMediaBar.Classes.Settings;
 
@@ -15,8 +15,6 @@ public interface ISettingsConfiguration
     CancellationToken CancellationToken { get; }
     /// <summary>Existing settings source; caller writes remain on the UI thread.</summary>
     AppSettings Current { get; }
-    /// <summary>是否按宿主隔离配置；同一宿主的横竖方向共享设置。</summary>
-    bool HasIndependentProfiles { get; }
     /// <summary>本页写入的配置目标；朝向不产生额外配置。</summary>
     BarConfigurationTarget Target => Context.Mode == SettingsMode.FloatingBar
         ? BarConfigurationTarget.FloatingBar : BarConfigurationTarget.Taskbar;

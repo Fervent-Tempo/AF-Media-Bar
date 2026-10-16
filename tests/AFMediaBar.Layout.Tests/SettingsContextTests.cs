@@ -14,7 +14,7 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class SettingsContextTests
 {
     [TestMethod]
-    public void ConfigurationTargetDoesNotSwitchRuntimeAndClosingExperimentReturnsToTaskbar()
+    public void EditingContextFollowsObservedRuntimeAndEnablingExperimentDoesNotSwitch()
     {
         SettingsMotionTests.RunSta(() =>
         {
@@ -22,17 +22,18 @@ public sealed class SettingsContextTests
             try
             {
                 SettingsManager.Current = new AppSettings();
-                using var service = new SettingsContextService(new Reader());
-                service.SelectConfigurationTarget(SettingsMode.FloatingBar);
-                Assert.AreEqual(SettingsMode.Taskbar, service.Current.Mode);
+                var reader = new Reader();
+                using var service = new SettingsContextService(reader);
+                Complete(service.RefreshAsync());
                 SettingsManager.Current.Experiments = new() { FloatingBar = true };
-                service.SelectConfigurationTarget(SettingsMode.FloatingBar);
+                Assert.AreEqual(SettingsMode.Taskbar, service.Current.Mode);
+                reader.Result = new(SettingsMode.FloatingBar, []);
                 Complete(service.RefreshAsync());
                 Assert.AreEqual(SettingsMode.FloatingBar, service.Current.Mode);
-                Assert.AreEqual(WindowMode.Taskbar, SettingsManager.Current.WindowMode);
-                SettingsManager.Current.Experiments = new();
+                Assert.AreEqual(WindowMode.Taskbar, SettingsManager.Current.WindowMode, "Only the committed environment determines the editor.");
+                reader.Result = new(SettingsMode.Taskbar, []);
+                Complete(service.RefreshAsync());
                 Assert.AreEqual(SettingsMode.Taskbar, service.Current.Mode);
-                Assert.AreEqual(WindowMode.Taskbar, SettingsManager.Current.WindowMode);
             }
             finally { SettingsManager.Current = previous; }
         });
@@ -57,7 +58,7 @@ public sealed class SettingsContextTests
         page.Initialize(new(SettingsMode.Taskbar, "second", LayoutOrientation.Vertical, true, true));
         var configuration = new LegacySettingsConfiguration(page);
         var token = configuration.CancellationToken;
-        Assert.IsTrue(configuration.HasIndependentProfiles);
+        Assert.AreEqual(BarConfigurationTarget.Taskbar, configuration.Target);
         page.Deactivate();
         Assert.IsTrue(token.IsCancellationRequested);
         Assert.IsFalse(configuration.IsActive);
@@ -134,6 +135,36 @@ public sealed class SettingsContextTests
         });
     }
 
+    [TestMethod]
+    public void CommittedModeRejectsOldEnvironmentAndFailedSwitchKeepsContext()
+    {
+        SettingsMotionTests.RunSta(() =>
+        {
+            var previous = SettingsManager.Current;
+            try
+            {
+                SettingsManager.Current = new AppSettings { Experiments = new() { FloatingBar = true } };
+                var pending = new TaskCompletionSource<SettingsEnvironmentSnapshot>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var reader = new Reader { Pending = pending.Task };
+                using var runtime = new BarRuntimeCoordinator();
+                using var service = new SettingsContextService(reader, runtime);
+                var oldRefresh = service.RefreshAsync();
+                reader.Pending = null;
+                reader.Result = new(SettingsMode.FloatingBar, [new("floating", "Floating", true, LayoutOrientation.Horizontal, false, true)]);
+                Complete(runtime.SwitchAsync(WindowMode.FloatingBar, _ => Task.FromResult<IReadOnlyList<IBarRuntimeHost>>([])));
+                Assert.AreEqual(SettingsMode.FloatingBar, service.Current.Mode);
+                pending.SetResult(new(SettingsMode.Taskbar, [new("old", "Old", true, LayoutOrientation.Vertical, false, true)]));
+                Complete(oldRefresh);
+                SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(50));
+                Assert.AreEqual("floating", service.Current.MonitorDeviceId);
+                Complete(runtime.SwitchAsync(WindowMode.Taskbar, _ => throw new InvalidOperationException("prepare failed")));
+                Assert.AreEqual(SettingsMode.FloatingBar, service.Current.Mode);
+                Assert.AreEqual(WindowMode.FloatingBar, runtime.RunningMode);
+            }
+            finally { SettingsManager.Current = previous; }
+        });
+    }
+
     private static void Complete(Task task)
     {
         var until = DateTime.UtcNow + TimeSpan.FromSeconds(5);
@@ -145,7 +176,7 @@ public sealed class SettingsContextTests
     private sealed class Reader : ISettingsEnvironmentReader
     {
         public SettingsEnvironmentSnapshot Result { get; set; } = new(SettingsMode.Taskbar, []);
-        public Task<SettingsEnvironmentSnapshot>? Pending { get; init; }
+        public Task<SettingsEnvironmentSnapshot>? Pending { get; set; }
         public Task<SettingsEnvironmentSnapshot> ReadAsync(CancellationToken cancellationToken) => Pending ?? Task.FromResult(Result);
     }
 }

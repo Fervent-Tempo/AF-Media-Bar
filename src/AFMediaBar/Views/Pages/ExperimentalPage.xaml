@@ -45,12 +45,12 @@
                             <components:SettingsRow Title="{DynamicResource Loc.Common.Page.ContentLayout}"
                                 Description="{DynamicResource Loc.ContentLayout.Header.Subtitle}" Icon="{ui:SymbolIcon Grid24}">
                                 <ui:Button Content="{DynamicResource Loc.Experimental.OpenContentLayout}" Style="{StaticResource AfSettingsButtonStyle}"
-                                    Uid="Taskbar" Tag="{x:Static services:SettingsPageKey.Components}" Click="OpenSettings_Click" />
+                                    Tag="{x:Static services:SettingsPageKey.Components}" Click="OpenSettings_Click" />
                             </components:SettingsRow>
                             <components:SettingsRow Title="{DynamicResource Loc.Common.Page.Appearance}"
                                 Description="{DynamicResource Loc.Appearance.Unified.Header.Subtitle}" Icon="{ui:SymbolIcon PaintBrush24}">
                                 <ui:Button Content="{DynamicResource Loc.Experimental.OpenAppearance}" Style="{StaticResource AfSettingsButtonStyle}"
-                                    Uid="Taskbar" Tag="{x:Static services:SettingsPageKey.Appearance}" Click="OpenSettings_Click" />
+                                    Tag="{x:Static services:SettingsPageKey.Appearance}" Click="OpenSettings_Click" />
                             </components:SettingsRow>
                         </StackPanel>
                     </StackPanel>
@@ -86,18 +86,18 @@
                             </components:SettingsRow>
                             <components:SettingsRow Title="{DynamicResource Loc.Common.Page.ScreenAndPlacement}" Icon="{ui:SymbolIcon Desktop24}">
                                 <ui:Button Content="{DynamicResource Loc.Experimental.Floating.OpenDisplay}" Style="{StaticResource AfSettingsButtonStyle}"
-                                    Uid="FloatingBar" Tag="{x:Static services:SettingsPageKey.ScreenAndPlacement}" Click="OpenSettings_Click" />
+                                    Tag="{x:Static services:SettingsPageKey.ScreenAndPlacement}" Click="OpenSettings_Click" />
                             </components:SettingsRow>
                             <TextBlock Text="{DynamicResource Loc.Experimental.Floating.Independent}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,8,0,12" />
                             <components:SettingsRow Title="{DynamicResource Loc.Common.Page.ContentLayout}"
                                 Description="{DynamicResource Loc.ContentLayout.Header.Subtitle}" Icon="{ui:SymbolIcon Grid24}">
                                 <ui:Button Content="{DynamicResource Loc.Experimental.OpenContentLayout}" Style="{StaticResource AfSettingsButtonStyle}"
-                                    Uid="FloatingBar" Tag="{x:Static services:SettingsPageKey.Components}" Click="OpenSettings_Click" />
+                                    Tag="{x:Static services:SettingsPageKey.Components}" Click="OpenSettings_Click" />
                             </components:SettingsRow>
                             <components:SettingsRow Title="{DynamicResource Loc.Common.Page.Appearance}"
                                 Description="{DynamicResource Loc.Appearance.Unified.Header.Subtitle}" Icon="{ui:SymbolIcon PaintBrush24}">
                                 <ui:Button Content="{DynamicResource Loc.Experimental.OpenAppearance}" Style="{StaticResource AfSettingsButtonStyle}"
-                                    Uid="FloatingBar" Tag="{x:Static services:SettingsPageKey.Appearance}" Click="OpenSettings_Click" />
+                                    Tag="{x:Static services:SettingsPageKey.Appearance}" Click="OpenSettings_Click" />
                             </components:SettingsRow>
                         </StackPanel>
                     </StackPanel>

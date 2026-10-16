@@ -20,7 +20,7 @@ public enum FloatingBarLayer { Desktop, Topmost }
 /// <summary>以显示器工作区为基准保存的中心位置，单位为 DIP。</summary>
 public sealed record FloatingBarPosition(string MonitorDeviceId, double CenterXDip, double CenterYDip);
 
-/// <summary>悬浮宿主偏好；Profile 为空时首次从当前任务栏配置初始化。</summary>
+/// <summary>悬浮宿主偏好；Profile 仅保存几何，首次从任务栏几何初始化。</summary>
 public sealed record FloatingBarSettings
 {
     public BarDisplaySettings? Profile { get; init; }

@@ -16,7 +16,7 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class ExperimentalConfigurationTests
 {
     [TestMethod]
-    public void ExistingPagesKeepFloatingBarValuesSeparateFromGlobalAppearanceAndTray()
+    public void ExistingPagesSharePresentationAndInteractionAcrossHosts()
     {
         var previous = SettingsManager.Current;
         using var page = new SettingsPageContext();
@@ -29,7 +29,7 @@ public sealed class ExperimentalConfigurationTests
             var taskbarInteraction = SettingsManager.Current.Interaction;
             configuration.SetTaskbarAppearance(configuration.Current.Appearance with { TaskbarBackgroundOpacityPercent = 63 });
             configuration.SetAppearance(configuration.Current.Appearance with { FontWeight = 700 });
-            Assert.AreEqual(taskbarAppearance.TaskbarBackgroundOpacityPercent, SettingsManager.Current.Appearance.TaskbarBackgroundOpacityPercent);
+            Assert.AreEqual(63, SettingsManager.Current.Appearance.TaskbarBackgroundOpacityPercent);
             Assert.AreEqual(63, configuration.Current.Appearance.TaskbarBackgroundOpacityPercent);
             Assert.AreEqual(700, SettingsManager.Current.Appearance.FontWeight);
             configuration.SetInteractionSettings(configuration.Current.Interaction with
@@ -37,9 +37,17 @@ public sealed class ExperimentalConfigurationTests
                 PrimaryWheelAction = WheelAction.Disabled,
                 TrayClickAction = TrayClickAction.OpenSettings
             });
-            Assert.AreEqual(taskbarInteraction.PrimaryWheelAction, SettingsManager.Current.Interaction.PrimaryWheelAction);
+            Assert.AreEqual(WheelAction.Disabled, SettingsManager.Current.Interaction.PrimaryWheelAction);
             Assert.AreEqual(TrayClickAction.OpenSettings, SettingsManager.Current.Interaction.TrayClickAction);
             Assert.AreEqual(WheelAction.Disabled, configuration.Current.Interaction.PrimaryWheelAction);
+            var taskbarLength = SettingsManager.Current.TaskbarExperience.FixedLengthDip;
+            configuration.SetTaskbarExperience(configuration.Current.TaskbarExperience with { MediaFontSizePercent = 120, FixedLengthDip = 444 });
+            Assert.AreEqual(120, SettingsManager.Current.TaskbarExperience.MediaFontSizePercent);
+            Assert.AreEqual(taskbarLength, SettingsManager.Current.TaskbarExperience.FixedLengthDip);
+            Assert.AreEqual(444d, configuration.Current.TaskbarExperience.FixedLengthDip);
+            SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with { MediaFontSizePercent = 110 };
+            Assert.AreEqual(110, configuration.Current.TaskbarExperience.MediaFontSizePercent);
+            Assert.AreEqual(444d, configuration.Current.TaskbarExperience.FixedLengthDip);
             configuration.SetExperiments(new());
             var saved = SettingsManager.Current.FloatingBar;
             configuration.SetLyricsFixedWidthDip(555);
@@ -182,7 +190,7 @@ public sealed class ExperimentalConfigurationTests
     }
 
     [TestMethod]
-    public void FloatingEditsAndResetDoNotOverwriteTaskbarOrGlobalSettings()
+    public void FloatingEditsSharePresentationAndResetKeepsTaskbarGeometry()
     {
         var previous = SettingsManager.Current;
         var previousDefaults = SettingsManager.UserDefaults;
@@ -197,7 +205,7 @@ public sealed class ExperimentalConfigurationTests
             configuration.SetTwoLineLyricsEnabled(true);
             configuration.SetLyricsFixedWidthDip(330);
             configuration.SetTaskbarAppearance(configuration.Current.Appearance with { TaskbarBackgroundOpacityPercent = 63 });
-            Assert.IsFalse(SettingsManager.Current.TwoLineLyricsEnabled);
+            Assert.IsTrue(SettingsManager.Current.TwoLineLyricsEnabled);
             Assert.AreEqual(220, SettingsManager.Current.LyricsFixedWidthDip);
             Assert.AreEqual(330, configuration.Current.LyricsFixedWidthDip);
             SettingsManager.Current.Appearance = SettingsManager.Current.Appearance with { FontWeight = 700 };
@@ -206,7 +214,7 @@ public sealed class ExperimentalConfigurationTests
             Assert.AreEqual(330, configuration.Current.LyricsFixedWidthDip);
 
             var defaults = SettingsManager.Current.Clone();
-            defaults.FloatingBar = defaults.FloatingBar with { Profile = captured with { TwoLineLyricsEnabled = false } };
+            defaults.TwoLineLyricsEnabled = false;
             SettingsManager.SetUserDefaults(defaults);
             configuration.Reset(SettingsResetScope.Lyrics);
             Assert.IsFalse(configuration.Current.TwoLineLyricsEnabled);
