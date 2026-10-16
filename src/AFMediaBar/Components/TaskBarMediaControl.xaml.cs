@@ -1275,7 +1275,6 @@ namespace AFMediaBar.Components
 
             Canvas.SetLeft(SongInfoStackPanel, textLeft);
             SongInfoStackPanel.Width = textWidth;
-            SongInfoSurface.Width = textWidth;
             SongTitleContainer.Width = textWidth;
             SongArtistContainer.Width = textWidth;
             SongLyricsPanel.Width = textWidth;
@@ -1283,7 +1282,6 @@ namespace AFMediaBar.Components
             {
                 Canvas.SetLeft(SongInfoStackPanel, _outgoingTextLeft);
                 SongInfoStackPanel.Width = _outgoingTextWidth;
-                SongInfoSurface.Width = _outgoingTextWidth;
                 SongTitleContainer.Width = _outgoingTextWidth;
                 SongArtistContainer.Width = _outgoingTextWidth;
                 SongLyricsPanel.Width = _outgoingTextWidth;

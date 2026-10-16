@@ -6,6 +6,7 @@ using System.Runtime.ExceptionServices;
 using System.Windows;
 using System.Windows.Controls;
 using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Components;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -221,6 +222,7 @@ public sealed class TaskbarArrangementPresentationTests
                 AssertPerformanceLayout(control);
                 VerticalTaskbarPresentationChecks.Verify(control);
                 SmallTaskbarPresentationChecks.Verify(control);
+                AssertMetadataSurvivesOrientationChanges();
                 control.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent));
                 MetadataMarqueePresentationChecks.Verify();
             }
@@ -238,6 +240,51 @@ public sealed class TaskbarArrangementPresentationTests
         if (failure is not null)
             ExceptionDispatchInfo.Capture(failure).Throw();
     }
+    private static void AssertMetadataSurvivesOrientationChanges()
+    {
+        var settings = new AppSettings
+        {
+            TaskbarExperience = new() { ContentLayout = TaskbarContentLayout.AdaptiveStack }
+        };
+        var snapshot = MediaSnapshot.Disconnected with
+        {
+            IsConnected = true,
+            Title = "无歌词标题 Mixed 🎵",
+            Artist = "Artist"
+        };
+        foreach (var mode in new[] { WindowMode.Taskbar, WindowMode.FloatingBar })
+        {
+            var control = new TaskBarMediaControl();
+            control.ApplyPresentationSettings(settings);
+            control.UpdateSongInfo(snapshot);
+            var title = (TextBlock)control.FindName("SongTitle");
+            var artist = (TextBlock)control.FindName("SongArtist");
+            var metadata = (FrameworkElement)control.FindName("SongMetadataPanel");
+            for (var cycle = 0; cycle < 2; cycle++)
+            {
+                control.ApplyLayout(mode, LayoutOrientation.Vertical, 100, 100, 48);
+                control.ApplyPrimaryLength(520);
+                control.Measure(new Size(48, 520));
+                control.Arrange(new Rect(0, 0, 48, 520));
+                control.ApplyLayout(mode, LayoutOrientation.Horizontal, 100, 100, 44);
+                control.ApplyPrimaryLength(520);
+                control.UpdateSongInfo(snapshot);
+                control.Measure(new Size(520, 44));
+                control.Arrange(new Rect(0, 0, 520, 44));
+                control.UpdateLayout();
+                Assert.AreEqual(Visibility.Visible, metadata.Visibility);
+                Assert.AreEqual(snapshot.Title, title.Text);
+                Assert.AreEqual(snapshot.Artist, artist.Text);
+                foreach (var text in new[] { title, artist })
+                {
+                    var origin = text.TranslatePoint(new Point(), control);
+                    Assert.IsTrue(origin.Y >= 0 && origin.Y + text.ActualHeight <= 44,
+                        $"{mode}: {text.Name} is outside the horizontal bar after orientation change: {origin.Y}, height={text.ActualHeight}");
+                }
+            }
+        }
+    }
+
     private static void AssertPerformanceLayout(TaskBarMediaControl control)
     {
         SettingsManager.Current.PerformanceComponent = new PerformanceComponentSettings(

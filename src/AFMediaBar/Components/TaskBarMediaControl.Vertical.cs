@@ -180,8 +180,6 @@ public partial class TaskBarMediaControl
         Place(TaskbarInputDeviceHoverSurface, TaskbarRestComponent.InputDevice);
         Place(TaskbarVolumeHoverSurface, TaskbarRestComponent.Volume);
         var textLength = layout.TextWidth;
-        SongInfoSurface.Width = innerWidth;
-        SongInfoSurface.Height = textLength;
         SongLyricsPanel.Width = innerWidth;
         SongLyricsPanel.Height = textLength;
         // Web 不可用时保留未旋转的简化元数据。

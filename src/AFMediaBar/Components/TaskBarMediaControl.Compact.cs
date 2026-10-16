@@ -54,7 +54,6 @@ public partial class TaskBarMediaControl
                 var available = Math.Max(1, cross - budget.PaddingDip * 2);
                 Canvas.SetTop(SongInfoStackPanel, budget.PaddingDip);
                 SongInfoStackPanel.Height = available;
-                SongInfoSurface.Height = available;
                 SongLyricsPanel.Height = available;
                 SongMetadataPanel.VerticalAlignment = VerticalAlignment.Center;
                 SongTitleContainer.Height = Math.Min(available, Math.Ceiling(SongTitle.FontSize * 1.25));
