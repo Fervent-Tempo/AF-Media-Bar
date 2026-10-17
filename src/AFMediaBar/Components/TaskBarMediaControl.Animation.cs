@@ -442,7 +442,7 @@ public partial class TaskBarMediaControl
 
     /// <summary>大图预览的高度（DIP）；宽度由共享封面比例策略确定。</summary>
     private const double ArtworkHoverPreviewHeightDip = 120;
-    private const double EnlargedArtworkHintSizeDip = 20;
+    private const double EnlargedArtworkHintSizeDip = 24;
     private readonly ScaleTransform _artworkHintCounterScale = new();
     private readonly ScaleTransform _artworkPreviewHintCounterScale = new();
     private bool _enlargedArtworkHintStyled;
@@ -479,7 +479,11 @@ public partial class TaskBarMediaControl
     private void ApplyEnlargedArtworkIconAppearance(Wpf.Ui.Controls.SymbolIcon icon)
     {
         icon.FontSize = EnlargedArtworkHintSizeDip;
-        icon.Foreground = SystemParameters.HighContrast ? SystemColors.WindowTextBrush : Brushes.White;
+        if (SystemParameters.HighContrast)
+            icon.Foreground = SystemColors.WindowTextBrush;
+        else if (!System.Windows.Data.BindingOperations.IsDataBound(icon, Wpf.Ui.Controls.SymbolIcon.ForegroundProperty))
+            icon.SetBinding(Wpf.Ui.Controls.SymbolIcon.ForegroundProperty,
+                new System.Windows.Data.Binding(nameof(Wpf.Ui.Controls.SymbolIcon.Foreground)) { Source = SongImagePlaceholder });
         icon.Symbol = _isPaused ? Wpf.Ui.Controls.SymbolRegular.Play24 : Wpf.Ui.Controls.SymbolRegular.Pause24;
         if (CurrentMotion.UseDecorativeEffects && !SystemParameters.HighContrast)
             icon.Effect ??= new DropShadowEffect { Color = Colors.Black, BlurRadius = 3, ShadowDepth = 1, Opacity = 0.65 };
@@ -691,6 +695,8 @@ public partial class TaskBarMediaControl
             RenderTransformOrigin = new Point(0.5, 0.5),
             Foreground = Brushes.White
         };
+        _artworkHoverPreviewIcon.SetBinding(Wpf.Ui.Controls.SymbolIcon.ForegroundProperty,
+            new System.Windows.Data.Binding(nameof(Wpf.Ui.Controls.SymbolIcon.Foreground)) { Source = SongImagePlaceholder });
         _artworkHoverPreviewScrim = new Border
         {
             Background = Brushes.Transparent,
@@ -754,6 +760,8 @@ public partial class TaskBarMediaControl
         _artworkHoverZoomHost.PreviewMouseWheel += (_, e) => InteractionSurface_PreviewMouseWheel(InteractionSurface, e);
         // Popup 不把鼠标输入路由回 PlacementTarget，按下意图交给现有宿主。
         _artworkHoverZoomHost.PreviewMouseLeftButtonDown += (_, e) => ArtworkPointerPressed?.Invoke(this, e);
+        _artworkHoverZoomHost.PreviewMouseMove += (_, e) => ArtworkPointerMoved?.Invoke(this, e);
+        _artworkHoverZoomHost.PreviewMouseLeftButtonUp += (_, e) => ArtworkPointerReleased?.Invoke(this, e);
         return new System.Windows.Controls.Primitives.Popup
         {
             AllowsTransparency = true,
@@ -1125,6 +1133,7 @@ public partial class TaskBarMediaControl
         System.Windows.Controls.Grid host,
         Point? settleFrom)
     {
+        ReleaseArtworkPointerCapture();
         _artworkWheelTooltip.IsOpen = false;
         _quickLaunchTooltip.IsOpen = false;
         if (popup.IsOpen)
@@ -1938,20 +1947,18 @@ public partial class TaskBarMediaControl
         }, System.Windows.Threading.DispatcherPriority.Background);
     }
 
-    /// <summary>
-    /// 宿主在拖动按下时调用：立即（无动画）收回原地放大，让拖动照常进行。
-    ///
-    /// 收回必须<b>同步且无动画</b>。拖动是"按下即开始"的手势，若放收拢动画跑（约 220 ms），整个拖动过程都会与收拢、
-    /// 推挤复位、封面换树交叠——拖动中收拢、推挤残留、位置基准漂移，正是当初"放大期间索性禁拖"要躲的东西。立即收回
-    /// 把封面送回主树、推挤清零、区域扩展收回，拖动于是落在干净的静态布局上。
-    /// Called by the host on a drag press: immediately (no animation) reclaims the in-place zoom so the drag can proceed.
-    ///
-    /// The reclaim must be <b>synchronous and animation-free</b>. Dragging begins on the press, so letting the ~220 ms collapse
-    /// run would overlap the whole drag with the collapse, the push reset, and the artwork re-parenting — collapsing mid-drag,
-    /// leftover pushes, drifting position bases: precisely what once made "no dragging while zoomed" look attractive. The
-    /// immediate reclaim returns the cover to the main tree, zeroes the push, and retracts the region extension, leaving the
-    /// drag on a clean, static layout.
-    /// </summary>
+    // 待定拖动捕获 Popup 子树，按下和抬起仍落在真实封面；确认拖动后才交还主宿主。
+    internal bool CaptureArtworkPointer(DependencyObject? source) => IsArtworkZoomActive &&
+        _artworkHoverZoomHost is { } host && source is Visual visual &&
+        (ReferenceEquals(host, visual) || host.IsAncestorOf(visual)) && Mouse.Capture(host, CaptureMode.SubTree);
+
+    internal void ReleaseArtworkPointerCapture()
+    {
+        if (_artworkHoverZoomHost is { } host && ReferenceEquals(Mouse.Captured, host))
+            Mouse.Capture(null);
+    }
+
+    /// <summary>宿主确认拖动后同步收回封面并清除推挤，避免拖动与收回动画交叠。</summary>
     public void CollapseArtworkZoomForDrag()
     {
         if (!IsArtworkZoomActive)

@@ -219,6 +219,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         // lingers, WPF sandboxes hit-testing inside the captured subtree and even the window tunnel receives nothing — hence the extra
         // global left-release hook (MouseInputMonitor_OnLeftButtonReleased), the one input channel immune to WPF captures, and "release"
         // being the deterministic endpoint of every drag attempt.
+        MediaControl.ArtworkPointerMoved += MediaControl_PreviewMouseMove;
+        MediaControl.ArtworkPointerReleased += MediaControl_PreviewMouseLeftButtonUp;
         PreviewMouseMove += TaskbarWindow_PreviewMouseMove;
         _mouseInputMonitor.LeftButtonReleased += MouseInputMonitor_OnLeftButtonReleased;
 
@@ -1892,20 +1894,6 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             return;
         }
 
-        // 原地放大存续期间不再禁止拖动（旧版在这里直接 return）。当初禁拖的两层理由后来都被治了：②命中测试被拖动捕获
-        // 重定向这件事，悬停判定已改成屏幕几何（IsPointerOverArtwork，不受捕获影响），陈旧捕获另有窗口级看门狗
-        // （HealStaleMediaControlCapture）与抬起后的 ResyncArtworkHoverFromPointer 兜底；①与放大瞬态交叠这件事，只需在
-        // 按下这一刻**立即收回**放大（同步、无动画）即可——拖动随后落在静态布局上。若留到拖动中途再收，收拢动画就会与
-        // 整个拖动过程交叠（拖动中收拢、推挤残留、位置基准漂移）。未在放大时这是个空操作，故这里不加条件。
-        // No more "no dragging while the in-place zoom is live" (the old code simply returned here). Both reasons behind that
-        // ban were fixed since: ② hit-test redirection by the drag capture no longer matters because the hover verdict is
-        // screen geometry (IsPointerOverArtwork, capture-immune), and stale captures are cleared by the window-level watchdog
-        // (HealStaleMediaControlCapture) plus the post-release ResyncArtworkHoverFromPointer; ① overlap with the zoom's
-        // transient state needs only an <b>immediate</b> reclaim of the zoom on this very press (synchronous, no animation) —
-        // the drag then runs on a static layout. Reclaiming later, mid-drag, would overlap the collapse animation with the whole
-        // drag (collapsing mid-drag, leftover pushes, drifting position bases). It is a no-op when not zoomed, hence no guard.
-        MediaControl.CollapseArtworkZoomForDrag();
-
         // 性能组件是可点击控件而不是可拖动的空白：命中它时不开拖动，否则这次点击的抬起事件会被拖动路径标记为已处理，
         // 组件上声明的 MouseLeftButtonUp 永远不会执行，点击打开任务管理器就永远不生效。
         // The performance component is a clickable control rather than draggable background: a hit on it must not start a
@@ -1945,7 +1933,9 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             : Canvas.GetLeft(GetActiveControl())) * dpiScale);
         _dragPrimaryLimit = Math.Max(0, primaryLength - primarySize);
         _isDragPending = true;
-        Mouse.Capture(GetActiveControl(), CaptureMode.SubTree);
+        // 普通点击保持放大；独立 Popup 的捕获和输入在拖动阈值前仍留在 Popup 子树。
+        if (!MediaControl.CaptureArtworkPointer(e.OriginalSource as DependencyObject))
+            Mouse.Capture(GetActiveControl(), CaptureMode.SubTree);
     }
 
     private void MediaControl_PreviewMouseMove(object sender, MouseEventArgs e)
@@ -1973,6 +1963,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
                 return;
             _isDragPending = false;
             _isDragging = true;
+            MediaControl.CollapseArtworkZoomForDrag();
+            Mouse.Capture(GetActiveControl(), CaptureMode.SubTree);
         }
 
         var targetPrimary = Math.Clamp(
@@ -2028,9 +2020,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         // locked inside the captured subtree — the artwork, re-parented into its Popup, sits outside it and never receives
         // another mouse event, killing hover outright. Legitimate captures have ended by button-up, so this is a pure repair
         // layer that never steals a control's own capture (those hang on children; IsMouseCaptured holds only for MediaControl).
-        // Releases routed inside a Popup tree never reach this handler; those are the window-level watchdog's beat
-        // (HealStaleMediaControlCapture — now driven both by mouse moves and the global left-release hook, the one channel
-        // a lingering capture cannot silence).
+        // 放大 Popup 显式转发抬起；全局抬起钩子继续兜底处理未送达的释放。
+        MediaControl.ReleaseArtworkPointerCapture();
         if (MediaControl.IsMouseCaptured)
             MediaControl.ReleaseMouseCapture();
 
@@ -2213,7 +2204,11 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     {
         if (_isClosing)
             return;
-        Dispatcher.BeginInvoke(HealStaleMediaControlCapture, DispatcherPriority.Background);
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (_isDragPending && !_isDragging) EndTaskbarDrag();
+            HealStaleMediaControlCapture();
+        }, DispatcherPriority.Background);
     }
 
     /// <summary>
@@ -2287,8 +2282,12 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         _isDragging = false;
         _isDragPending = false;
         _isTaskManagerClickPending = false;
-        if (releaseCapture && MediaControl.IsMouseCaptured)
-            MediaControl.ReleaseMouseCapture();
+        if (releaseCapture)
+        {
+            MediaControl.ReleaseArtworkPointerCapture();
+            if (MediaControl.IsMouseCaptured)
+                MediaControl.ReleaseMouseCapture();
+        }
 
         if (_pendingSizeRequest is { } request && _appliedOrientation is { } orientation)
         {
@@ -2384,6 +2383,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         MediaControl.DesiredSizeChanged -= MediaControl_DesiredSizeChanged;
         MediaControl.RestTransitionFinished -= MediaControl_RestTransitionFinished;
         MediaControl.ArtworkZoomExtensionChanged -= MediaControl_ArtworkZoomExtensionChanged;
+        MediaControl.ArtworkPointerMoved -= MediaControl_PreviewMouseMove;
+        MediaControl.ArtworkPointerReleased -= MediaControl_PreviewMouseLeftButtonUp;
         PreviewMouseMove -= TaskbarWindow_PreviewMouseMove;
         _mouseInputMonitor.LeftButtonReleased -= MouseInputMonitor_OnLeftButtonReleased;
         MediaControl.OutputDeviceInfoRequested -= MediaControl_OutputDeviceInfoRequested;

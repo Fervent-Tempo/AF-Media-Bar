@@ -399,6 +399,8 @@ namespace AFMediaBar.Components
 
         /// <summary>独立封面 Popup 内的按下意图，由宿主沿用原有拖动与点击判定。</summary>
         public event MouseButtonEventHandler? ArtworkPointerPressed;
+        internal event MouseEventHandler? ArtworkPointerMoved;
+        internal event MouseButtonEventHandler? ArtworkPointerReleased;
         public event EventHandler<MediaBarSizeRequestEventArgs>? DesiredSizeChanged;
 
         /// <summary>
@@ -415,11 +417,7 @@ namespace AFMediaBar.Components
         /// </summary>
         public event EventHandler<double>? ArtworkZoomExtensionChanged;
 
-        /// <summary>原地放大（Zoom 模式）是否存续：Popup 开着即为真。<see cref="CollapseArtworkZoomForDrag"/> 据此判断拖动按下时
-        /// 有没有东西要收回；宿主在每次左键抬起后还会调 <see cref="ResyncArtworkHoverFromPointer"/> 兜底重同步。/ Whether the
-        /// in-place zoom (Zoom mode) is live: true while its Popup is open. <see cref="CollapseArtworkZoomForDrag"/> uses it to decide
-        /// whether a drag press has anything to reclaim; the host additionally re-syncs through
-        /// <see cref="ResyncArtworkHoverFromPointer"/> after every left release.</summary>
+        /// <summary>原地放大 Popup 是否打开；普通按下保留放大，宿主确认拖动后才收回，抬起后可重同步悬停。</summary>
         public bool IsArtworkZoomActive => _artworkHoverZoomPopup?.IsOpen == true;
 
         /// <summary>指针进入输出设备按钮，宿主应刷新该按钮提示。 / Pointer entered the output-device button; the host should refresh its tooltip.</summary>

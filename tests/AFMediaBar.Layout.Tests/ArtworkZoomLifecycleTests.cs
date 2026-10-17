@@ -121,6 +121,89 @@ public sealed class ArtworkZoomLifecycleTests
     });
 
     [TestMethod]
+    public void PopupClickAndPlaybackRefreshKeepZoomWithoutReparenting() => RunIsolated(nameof(PopupClickAndPlaybackRefreshKeepZoomWithoutReparenting), (control, dispatcher) =>
+    {
+        typeof(TaskBarMediaControl).GetField("_webLyricsGraphicsDisabled", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(control, true);
+        var window = Window.GetWindow(control)!;
+        SettingsManager.Current.Interaction = SettingsManager.Current.Interaction with { ArtworkHoverMode = ArtworkHoverMode.Zoom };
+        var snapshot = MediaSnapshot.Disconnected with
+        {
+            IsConnected = true,
+            IsPlaying = true,
+            CanPlayPause = true,
+            Title = "Track",
+            Artwork = BitmapSource.Create(2, 2, 96, 96, PixelFormats.Bgra32, null, new byte[16], 8)
+        };
+        foreach (var mode in new[] { WindowMode.Taskbar, WindowMode.FloatingBar })
+            foreach (var orientation in new[] { LayoutOrientation.Horizontal, LayoutOrientation.Vertical })
+            {
+                control.ApplyLayout(mode, orientation, 100, 100, 48);
+                control.ApplyPrimaryLength(500);
+                window.Width = orientation == LayoutOrientation.Vertical ? 48 : 500;
+                window.Height = orientation == LayoutOrientation.Vertical ? 500 : 44;
+                control.UpdateSongInfo(snapshot);
+                window.UpdateLayout();
+                Invoke(control, "AnimateArtworkHover", true, true);
+                var popup = GetPopup(control);
+                var artwork = (Border)control.FindName("SongImageBorder");
+                var scale = (ScaleTransform)control.FindName("SongImageScale");
+                Assert.IsFalse(control.CaptureArtworkPointer(control), "主树的文字或空白不能被放大层抢走输入。");
+                var presses = 0;
+                var releases = 0;
+                var moves = 0;
+                var clicks = 0;
+                MouseEventArgs? requestedMove = null;
+                void Press(object sender, MouseButtonEventArgs args) { presses++; Assert.IsTrue(control.CaptureArtworkPointer(artwork)); }
+                void Move(object sender, MouseEventArgs args) { if (ReferenceEquals(args, requestedMove)) moves++; }
+                void Release(object sender, MouseButtonEventArgs args) { releases++; control.ReleaseArtworkPointerCapture(); }
+                void Click(object? sender, EventArgs args)
+                {
+                    clicks++;
+                    snapshot = snapshot with { IsPlaying = !snapshot.IsPlaying };
+                    control.UpdateSongInfo(snapshot);
+                }
+                control.ArtworkPointerPressed += Press;
+                control.ArtworkPointerMoved += Move;
+                control.ArtworkPointerReleased += Release;
+                control.TogglePlayPauseRequested += Click;
+                try
+                {
+                    for (var click = 0; click < 2; click++)
+                    {
+                        artwork.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left) { RoutedEvent = Mouse.PreviewMouseDownEvent });
+                        Assert.IsTrue(popup.IsOpen);
+                        Assert.AreSame(popup.Child, artwork.Parent);
+                        Assert.AreSame(popup.Child, Mouse.Captured);
+                        requestedMove = new MouseEventArgs(Mouse.PrimaryDevice, Environment.TickCount) { RoutedEvent = Mouse.PreviewMouseMoveEvent };
+                        artwork.RaiseEvent(requestedMove);
+                        artwork.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left) { RoutedEvent = Mouse.PreviewMouseUpEvent });
+                        artwork.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left) { RoutedEvent = Mouse.MouseUpEvent });
+                        Assert.IsTrue(popup.IsOpen, "普通点击和播放快照不能收回封面。");
+                        Assert.AreSame(popup.Child, artwork.Parent);
+                        Assert.AreEqual(2d, scale.ScaleX, .001);
+                        Assert.AreEqual(click + 1, clicks);
+                    }
+                    Assert.AreEqual(2, presses);
+                    Assert.AreEqual(2, releases);
+                    Assert.AreEqual(2, moves);
+                    Assert.IsTrue(control.CaptureArtworkPointer(artwork));
+                    control.CollapseArtworkZoomForDrag();
+                    Assert.IsNull(Mouse.Captured, "真正拖动收回后不能留下 Popup 捕获。");
+                    AssertRestored(control);
+                }
+                finally
+                {
+                    control.ArtworkPointerPressed -= Press;
+                    control.ArtworkPointerMoved -= Move;
+                    control.ArtworkPointerReleased -= Release;
+                    control.TogglePlayPauseRequested -= Click;
+                    Invoke(control, "HideArtworkHoverZoom", true);
+                }
+            }
+        return Task.CompletedTask;
+    });
+
+    [TestMethod]
     public void ContentResizeKeepsZoomTreeAndFollowsTheArtworkSlot() => RunIsolated(nameof(ContentResizeKeepsZoomTreeAndFollowsTheArtworkSlot), (control, dispatcher) =>
     {
         SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with

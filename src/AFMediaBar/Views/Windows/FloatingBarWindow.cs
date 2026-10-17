@@ -215,21 +215,28 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         PreviewMouseLeftButtonDown += StartDrag;
         PreviewMouseMove += (_, _) => ObserveDrag();
         LostMouseCapture += (_, _) => { if (_dragging && Mouse.Captured != this) EndDrag(); };
-        PreviewMouseLeftButtonUp += (_, args) =>
-        {
-            var pending = _taskManagerClickPending;
-            _taskManagerClickPending = false;
-            EndDrag();
-            if (pending && IsOperational && DateTime.UtcNow >= _suppressClickUntil &&
-                _mediaControl.IsPerformanceComponentClick(args.OriginalSource as DependencyObject))
-                _mediaControl.RequestOpenTaskManager();
-        };
+        _mediaControl.ArtworkPointerPressed += StartDrag;
+        _mediaControl.ArtworkPointerMoved += ArtworkPointerMoved;
+        _mediaControl.ArtworkPointerReleased += PointerReleased;
+        PreviewMouseLeftButtonUp += PointerReleased;
         PreviewMouseRightButtonUp += (_, args) =>
         {
             if (!IsOperational || DateTime.UtcNow < _suppressClickUntil || _mouse.ConsumeSuppressedClick()) return;
             PlayerMenuOpenRequested?.Invoke(this, null);
             args.Handled = true;
         };
+    }
+
+    private void ArtworkPointerMoved(object sender, MouseEventArgs args) => ObserveDrag();
+
+    private void PointerReleased(object sender, MouseButtonEventArgs args)
+    {
+        var pending = _taskManagerClickPending;
+        _taskManagerClickPending = false;
+        EndDrag();
+        if (pending && IsOperational && DateTime.UtcNow >= _suppressClickUntil &&
+            _mediaControl.IsPerformanceComponentClick(args.OriginalSource as DependencyObject))
+            _mediaControl.RequestOpenTaskManager();
     }
 
     private static void Execute(ICommand command) { if (command.CanExecute(null)) command.Execute(null); }
@@ -417,7 +424,6 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         for (var item = args.OriginalSource as DependencyObject; item is not null; item = item is Visual ? VisualTreeHelper.GetParent(item) : LogicalTreeHelper.GetParent(item))
             if (item is ButtonBase or Slider or ComboBox || item is FrameworkElement { Tag: "MediaAction" }) return;
         if (!GetCursorPos(out var cursor)) return;
-        _mediaControl.CollapseArtworkZoomForDrag();
         _dragStart = new Point(cursor.X, cursor.Y);
         var bounds = GetPhysicalBounds();
         _dragCenter = new Point(bounds.Left + bounds.Width / 2, bounds.Top + bounds.Height / 2);
@@ -608,6 +614,9 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _isClosing = true;
         _requests.Cancel();
         _requests.Dispose();
+        _mediaControl.ArtworkPointerPressed -= StartDrag;
+        _mediaControl.ArtworkPointerMoved -= ArtworkPointerMoved;
+        _mediaControl.ArtworkPointerReleased -= PointerReleased;
         SettingsManager.SettingsChanged -= SettingsChanged;
         _prune.LevelChanged -= PruneChanged;
         _mouse.LeftButtonReleased -= LeftReleased;

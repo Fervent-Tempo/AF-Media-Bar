@@ -256,9 +256,8 @@ public sealed class ArtworkHoverPreviewTests
 
             refreshPreview.Invoke(control, null);
             Assert.AreEqual(playing ? SymbolRegular.Pause24 : SymbolRegular.Play24, previewIcon.Symbol);
-            Assert.AreEqual(20d, previewIcon.FontSize);
-            Assert.AreEqual(SystemParameters.HighContrast ? SystemColors.WindowTextColor : Colors.White,
-                ((SolidColorBrush)previewIcon.Foreground).Color);
+            Assert.AreEqual(24d, previewIcon.FontSize);
+            Assert.AreSame(SystemParameters.HighContrast ? SystemColors.WindowTextBrush : placeholder.Foreground, previewIcon.Foreground, "大图提示应跟随封面氛围色。");
             var previewImage = (Image)typeof(TaskBarMediaControl).GetField("_artworkHoverPreviewImage", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
             Assert.AreEqual(1d, previewImage.Opacity, "暂停不能淡化大图预览。");
             animateHover.Invoke(control, [false, true]);
@@ -313,7 +312,15 @@ public sealed class ArtworkHoverPreviewTests
                     control.UpdateSongInfo(snapshot);
                     window.UpdateLayout();
                     animate.Invoke(control, [true, true]);
-                    Assert.AreEqual(20d, icon.FontSize);
+                    Assert.AreEqual(24d, icon.FontSize);
+                    var color = placeholder.Foreground;
+                    var updatedColor = new SolidColorBrush(Colors.Coral);
+                    placeholder.Foreground = updatedColor;
+                    Assert.AreSame(SystemParameters.HighContrast ? SystemColors.WindowTextBrush : updatedColor, icon.Foreground, "放大提示应实时跟随封面取色。");
+                    refreshPreview.Invoke(control, null);
+                    var previewIcon = (SymbolIcon)typeof(TaskBarMediaControl).GetField("_artworkHoverPreviewIcon", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
+                    Assert.AreSame(SystemParameters.HighContrast ? SystemColors.WindowTextBrush : updatedColor, previewIcon.Foreground);
+                    placeholder.Foreground = color;
                     Assert.AreEqual(playing ? SymbolRegular.Pause24 : SymbolRegular.Play24, icon.Symbol);
                     Assert.AreEqual(1d, hint.Opacity);
                     Assert.AreEqual(0, ((SolidColorBrush)hint.Background).Color.A);
@@ -323,7 +330,7 @@ public sealed class ArtworkHoverPreviewTests
                     foreach (var factor in new[] { 1d, 1.6, 2d })
                     {
                         scale.ScaleX = scale.ScaleY = factor;
-                        Assert.AreEqual(20d, icon.FontSize * factor * counterScale.ScaleX, .001);
+                        Assert.AreEqual(24d, icon.FontSize * factor * counterScale.ScaleX, .001);
                     }
                     scale.ScaleX = scale.ScaleY = 1.6;
                     control.UpdateSongInfo(snapshot with { Title = "Updated track", Artwork = CreateMarkedArtwork(80, 80), IsPlaying = !playing });
