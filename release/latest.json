@@ -1,34 +1,35 @@
 {
   "schemaVersion": 1,
-  "version": "1.4.0",
-  "releaseDate": "2026-10-12",
+  "version": "1.5.0",
+  "releaseDate": "2026-10-17",
   "minimumSupportedVersion": "1.2.0",
   "mandatory": false,
-  "title": "AF Media Bar 1.4.0",
+  "title": "AF Media Bar 1.5.0",
   "changelog": [
-    "这次更新重新整理设置页，增加任务栏背景、封面、歌词和性能组件选项，并改善任务栏定位、媒体恢复与退出。",
-    "设置页类别重构；滑杆支持精确数值输入。",
-    "新增越南语界面与安装向导。",
-    "新增磨砂背景选项；小音符支持自选颜色。",
-    "支持左右内容排布、封面悬停放大和大图预览；新增封面边缘播放进度。",
-    "优化任务栏图标避让算法、空间缩窄提醒与恢复、长标题循环滚动。",
-    "歌词可在简体与繁体间转换；歌词显示异常时提供恢复或重启提示。",
-    "频谱可选择采集当前输出设备、所有应用、当前媒体应用。",
-    "性能组件增加网络上传和下载速率，支持轮换、并排显示和指标排序。",
-    "改善媒体来源与播放进度更新，修复音频浮窗、窗口材质切换及设置导航问题。",
-    "改进退出、后台资源停止和重启交接，减少退出卡住桌面或残留进程的风险。",
-    "开发人员与赞助名单提供离线副本和更新按钮。"
+    "这次更新带来桌面悬浮模式、竖向任务栏和新版音频控制，支持自定义歌词来源优先级，并改善小任务栏显示与日常交互。",
+    "桌面悬浮模式、竖向任务栏和新版音频控制均为实验性功能，默认关闭，可在设置的“实验性功能”页按需开启。这些功能尚未经充分测试，遇到问题欢迎反馈。",
+    "新增桌面悬浮模式，可在桌面上拖动媒体栏，选择横向或竖向布局、桌面显示或始终置顶，并按显示器记住位置；开启实验后，在“显示与位置”切换。",
+    "支持左侧与右侧的竖向任务栏，标题、歌手和歌词竖排显示，控制面板向屏幕内侧展开。",
+    "可切换扬声器、耳机和麦克风，也可为不同应用分别选择播放与录音设备。",
+    "音量合成器采用紧凑应用列表，支持独立调节音量、点击应用图标静音，并展开设备选择。",
+    "新增麦克风组件与滚轮切换输入设备；可隐藏不常用的设备，并分别设置点击和滚轮控制系统默认设备或前台应用。",
+    "歌词来源支持自定义优先级，可选择逐个或同时尝试，以及优先采用哪个结果。",
+    "组件、歌词来源、性能指标和快速启动等列表支持拖动排序，拖动时可预览顺序；也可使用 Alt＋↑／↓ 调整。",
+    "小任务栏自动减少留白，空间不足时优先显示歌词或标题，空间恢复后重新显示副信息。",
+    "修复歌词切行时悬停控件和完整面板意外收起、横竖切换后文字裁切及竖向任务栏闪烁；改善悬浮拖动与任务栏动画。",
+    "修复点击放大封面播放／暂停时的缩放跳动，播放提示跟随封面颜色，滚轮提示避让封面。",
+    "改善自动隐藏任务栏下的右键与音频菜单；修复音量或静音操作失败后显示不准确的问题，完善设备菜单主题与设置卡片悬停反馈。"
   ],
-  "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.4.0",
+  "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.5.0",
   "releasePageUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/latest",
   "downloads": {
-    "github": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/download/v1.4.0/AFMediaBar-v1.4.0-win-x64.zip"
+    "github": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/download/v1.5.0/AFMediaBar-v1.5.0-win-x64.zip"
   },
   "packages": [
     {
-      "url": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/download/v1.4.0/AFMediaBar-Setup-v1.4.0-win-x64.exe",
-      "size": 74986885,
-      "sha256": "142eeb81da6918afecad4a54e5155912defaee04359292084ca5d8d668a8d8b9"
+      "url": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/download/v1.5.0/AFMediaBar-Setup-v1.5.0-win-x64.exe",
+      "size": 75140936,
+      "sha256": "5f34f89a1480f8f1766e0ec8f1cfddf8b1578d8cd5e8e507204fbc14af58271b"
     }
   ]
 }
