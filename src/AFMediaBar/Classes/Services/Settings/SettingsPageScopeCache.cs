@@ -37,7 +37,8 @@ public sealed class SettingsPageScopeCache(IServiceScopeFactory scopeFactory) : 
         try
         {
             var context = scope.ServiceProvider.GetRequiredService<SettingsPageContext>();
-            context.Initialize(_context);
+            context.Initialize(definition.IsGlobal && !definition.HasModeContent
+                ? _context with { Mode = SettingsMode.Taskbar } : _context);
             var page = scope.ServiceProvider.GetRequiredService(pageType);
             _cache.Add(key, new(scope, context, page));
             return page;

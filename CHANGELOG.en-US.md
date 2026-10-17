@@ -6,6 +6,35 @@ All notable changes to AF Media Bar are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-10-17
+
+Add opt-in experiments for vertical taskbars and desktop floating mode, with improvements to narrow taskbars, Settings ordering and artwork interaction.
+
+### Added
+
+- Add an Experimental features page. New audio controls, vertical taskbars and desktop floating mode are off by default and can be toggled at runtime; related options, search results and commands follow their switches.
+- New audio controls provide input-device switching, per-application device routing, device blacklists and advanced switching policies. Turning the experiment off restores the previous output-device and volume interface while retaining experiment settings; existing Windows application-routing preferences are not cleared automatically.
+- Support real left- and right-side taskbars, with native vertical titles, artists and lyrics. Quick controls, artwork and the full panel open toward the desktop.
+- Add desktop floating mode with horizontal or vertical layout, desktop or always-on-top layers, dragging within each target display's work area and saved positions per display. Taskbar and floating modes are mutually exclusive.
+- Allow manual lyric-source priority, sequential or parallel retrieval, and ordered or first-available results.
+
+### Changed
+
+- Unify implemented display modes under Display and placement; collapse unimplemented modes by default. Keep experiment switches and links in Experimental features instead of duplicate configuration controls.
+- Edit only the active runtime mode. Share fonts, font size, appearance, lyrics, components and interactions; save display, position, locking, direction, layer, length and thickness separately by mode. Failed switches retain the previous host and editing context.
+- Replace ordering arrows with drag handles for components, secondary lyrics, lyric sources, metrics and quick launch. Add live displacement, edge scrolling and Alt+Up/Down keyboard ordering, plus subtle hover feedback for ordinary Settings cards.
+- Reduce padding on narrow taskbars and prioritize the current lyric or title when space is limited. Restore secondary information when space returns without changing saved visibility preferences.
+- Keep settings schema 2, reading 1.4.0 settings and user-default snapshots. Missing experiment fields default to off. Keep update-manifest schema 1.
+
+### Fixed and improved
+
+- Fix repeated host rebuilding and flicker during initial vertical-taskbar activation, exclude the application's own controls from taskbar occupancy probing, and discard stale foreground-color samples directly.
+- Make floating-mode dragging update only window position for translation, avoiding repeated layout, text rendering and settings projection. Save position and refresh color sampling after dragging ends.
+- Fix title and lyric-region clipping after orientation changes. Retain hover and full panels through lyric-line and ordinary content-length changes, while continuing popup cleanup for real placement or environment changes.
+- Improve vertical lyric ordering and transitions, two-line metrics, spectrum direction, hover materials and artwork stacking.
+- Fix enlarged artwork shrinking and expanding again when clicked to play or pause. Keep the full image visible, use a centered 24-DIP artwork-colored icon, and position wheel tooltips outside the artwork.
+- Improve interrupted taskbar animations, connection transitions and popup input release, reducing stale state during auto-hide, dragging and host switches.
+
 ## [1.4.0] - 2026-10-12
 
 Reorganize Settings, extend taskbar appearance, artwork, lyrics and metrics, and improve placement, media recovery and shutdown reliability.

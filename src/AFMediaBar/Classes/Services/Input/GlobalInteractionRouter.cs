@@ -27,9 +27,11 @@ public sealed class GlobalInteractionRouter
         int delta,
         bool isShiftDown,
         bool isLeftButtonDown,
-        bool isRightButtonDown)
+        bool isRightButtonDown,
+        GlobalInteractionSettings? interaction = null, object? owner = null, CancellationToken cancellationToken = default)
     {
-        var settings = SettingsManager.Current.Interaction;
+        cancellationToken.ThrowIfCancellationRequested();
+        var settings = ExperimentalAudioPolicy.Interaction(interaction ?? SettingsManager.Current.Interaction, SettingsManager.Current.Experiments.NewAudioControl);
         var action = GlobalWheelGesturePolicy.Resolve(
             settings,
             isShiftDown,
@@ -74,19 +76,19 @@ public sealed class GlobalInteractionRouter
 
             case WheelAction.CurrentApplicationVolume:
             {
-                var detail = await _audioInteractionService.AdjustCurrentMediaVolumeAsync(delta > 0 ? steps : -steps);
+                var detail = await _audioInteractionService.AdjustCurrentMediaVolumeAsync(delta > 0 ? steps : -steps, cancellationToken);
                 return new WheelTooltipResult(Translations.Get("Wheel.Action.CurrentMediaVolume"), detail);
             }
 
             case WheelAction.InputDevice:
                 {
-                    var detail = await _audioInteractionService.CycleDeviceAsync(AFMediaBar.Classes.Models.AudioDeviceDirection.Input, delta > 0 ? -steps : steps);
+                    var detail = await _audioInteractionService.CycleDeviceAsync(AFMediaBar.Classes.Models.AudioDeviceDirection.Input, delta > 0 ? -steps : steps, owner, cancellationToken);
                     return new WheelTooltipResult(Translations.Get("Common.InputDevice"), detail);
                 }
 
             case WheelAction.OutputDevice:
             {
-                var detail = await _audioInteractionService.CycleOutputDeviceAsync(delta > 0 ? -steps : steps, deferApply: true);
+                var detail = await _audioInteractionService.CycleOutputDeviceAsync(delta > 0 ? -steps : steps, deferApply: true, owner, cancellationToken);
                 return new WheelTooltipResult(Translations.Get("Common.OutputDevice"), StripLabel(detail));
             }
 

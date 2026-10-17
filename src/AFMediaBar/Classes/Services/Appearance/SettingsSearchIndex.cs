@@ -57,31 +57,15 @@ public static class SettingsSearchIndex
         }
     }
 
-    /// <summary>Only searches the current family and common pages, skipping orientation-specific hidden groups.</summary>
+    /// <summary>搜索唯一设置页面；未开启实验的专属选项不加入结果。</summary>
     public static IReadOnlyList<SettingsSearchEntry> ForContext(SettingsContext context) => Entries.Where(entry =>
         SettingsPageCatalog.Find(entry.Page, context.Mode) is not null &&
-        (entry.Page != SettingsPageKey.ScreenAndPlacement || context.Mode == SettingsMode.Taskbar || entry.GroupId == "Common.Group.ChooseDisplayMode") &&
-        (entry.Page != SettingsPageKey.Appearance || context.Mode == SettingsMode.Taskbar ||
-            entry.GroupId is "Common.Group.ThemeAndBackdrop" or "Common.Group.Fonts"))
-        .Select(entry => ForOrientation(entry, context)).ToArray();
-
-    private static SettingsSearchEntry ForOrientation(SettingsSearchEntry entry, SettingsContext context)
-    {
-        if (context.Orientation != LayoutOrientation.Vertical) return entry;
-        var (description, hiddenTerms) = (entry.Page, entry.GroupId) switch
-        {
-            (SettingsPageKey.Components, "Common.RestLayer") => ("Search.ContentLayout.Vertical.Rest", new[] { "顺序", "順序", "排序", "order", "sort", "上移", "下移" }),
-            (SettingsPageKey.Components, "Common.Group.Widgets") => ("Common.Widgets.Description", new[] { "顺序", "順序", "排序", "order", "sort", "上移", "下移" }),
-            (SettingsPageKey.Components, "Appearance.Group.RestLayout") => ("Search.ContentLayout.Vertical.Text", new[] { "标题", "標題", "歌手", "artist", "title", "排列", "排布", "展開", "展开", "direction", "rest layout" }),
-            (SettingsPageKey.ScreenAndPlacement, "Common.Group.ScreenAndPlacement") => ("Search.Placement.Vertical", new[] { "靠左", "靠右", "居中", "置中", "对齐", "對齊", "align", "left", "right", "center" }),
-            _ => (string.Empty, Array.Empty<string>())
-        };
-        return hiddenTerms.Length == 0 ? entry : entry with
-        {
-            Description = Translations.Get(description),
-            Keywords = entry.Keywords.Where(keyword => !hiddenTerms.Any(term => keyword.Contains(term, StringComparison.OrdinalIgnoreCase))).ToArray()
-        };
-    }
+        (entry.GroupId != "Audio.Settings.Title" || AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.NewAudioControl) &&
+        (entry.Page != SettingsPageKey.ScreenAndPlacement || entry.GroupId == "Common.Group.ChooseDisplayMode" ||
+            entry.GroupId == "Common.Group.ScreenAndPlacement" && context.Mode == SettingsMode.Taskbar ||
+            entry.GroupId == "Placement.Floating.Title" && context.Mode == SettingsMode.FloatingBar && AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.FloatingBar) &&
+        (entry.Page != SettingsPageKey.Appearance || SettingsPageCatalog.CanEditProfile(context.Mode) ||
+            entry.GroupId is "Common.Group.ThemeAndBackdrop" or "Common.Group.Fonts")).ToArray();
 
     /// <summary>导航栏里的页面名称，与 <c>SettingsWindow</c> 的菜单项文案一致；按当前语言解析，因此与页面标题永远同步。/ Navigation labels, matching the menu items in <c>SettingsWindow</c>, resolved in the active language so they never drift from the page headers.</summary>
     public static string GetPageTitle(SettingsPageKey page) => Translations.Get(PageTitleKey(page));
@@ -158,6 +142,10 @@ public static class SettingsSearchIndex
     /// <summary>Builds localized labels while keeping page and group identities stable.</summary>
     private static SettingsSearchEntry[] Build(LocalizationLanguage language) =>
     [
+        Create(SettingsPageKey.ScreenAndPlacement, "Placement.Floating.Title", "Placement.Floating.Description", language, ["桌面悬浮模式", "floating", "置顶", "锁定", "拖动"]),
+        Create(SettingsPageKey.Experimental, "Experimental.Audio.Title", "Experimental.Audio.Description", language, ["实验", "experimental", "input", "输入设备", "黑名单", "新音频"]),
+        Create(SettingsPageKey.Experimental, "Experimental.Vertical.Title", "Experimental.Vertical.Description", language, ["竖向", "vertical", "纵向"]),
+        Create(SettingsPageKey.Experimental, "Experimental.Floating.Title", "Experimental.Floating.Description", language, ["悬浮", "floating", "桌面小工具"]),
         Create(SettingsPageKey.Appearance, "Appearance.IdleNote.Title", "Appearance.IdleNote.Description", language,
             ["小音符", "音符颜色", "music note", "note color", "占位图标", "自定义音符"]),
         Create(

@@ -8,6 +8,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Components;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -75,6 +76,8 @@ public sealed class ArtworkHoverPreviewTests
                 var root = (Border)popup.Child;
                 var refresh = typeof(TaskBarMediaControl).GetMethod("RefreshArtworkHoverPreviewContent", BindingFlags.Instance | BindingFlags.NonPublic)!;
                 VerifyPlaybackHints(control, refresh);
+                VerifyEnlargedHints(control, refresh);
+                VerifyTooltipAvoidance();
                 VerifyNoteColor(control);
                 VerifyTaskbarBackgroundLayers(control);
                 foreach (var (width, height, expectedWidth) in new[]
@@ -253,9 +256,198 @@ public sealed class ArtworkHoverPreviewTests
 
             refreshPreview.Invoke(control, null);
             Assert.AreEqual(playing ? SymbolRegular.Pause24 : SymbolRegular.Play24, previewIcon.Symbol);
-            Assert.AreSame(placeholder.Foreground, previewIcon.Foreground);
+            Assert.AreEqual(24d, previewIcon.FontSize);
+            Assert.AreSame(SystemParameters.HighContrast ? SystemColors.WindowTextBrush : placeholder.Foreground, previewIcon.Foreground, "大图提示应跟随封面氛围色。");
+            var previewImage = (Image)typeof(TaskBarMediaControl).GetField("_artworkHoverPreviewImage", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
+            Assert.AreEqual(1d, previewImage.Opacity, "暂停不能淡化大图预览。");
             animateHover.Invoke(control, [false, true]);
         }
+    }
+
+    private static void VerifyEnlargedHints(TaskBarMediaControl control, MethodInfo refreshPreview)
+    {
+        var interaction = SettingsManager.Current.Interaction;
+        var artwork = (Border)control.FindName("SongImageBorder");
+        var canvas = (Canvas)control.FindName("MainCanvas");
+        var hint = (Border)control.FindName("SongImageHoverHint");
+        var icon = (SymbolIcon)control.FindName("SongImageHoverHintIcon");
+        var placeholder = (SymbolIcon)control.FindName("SongImagePlaceholder");
+        var scrim = (Border)control.FindName("SongImagePauseScrim");
+        var scale = (ScaleTransform)control.FindName("SongImageScale");
+        var host = (Grid)typeof(TaskBarMediaControl).GetField("_artworkHoverZoomHost", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
+        var popup = (Popup)typeof(TaskBarMediaControl).GetField("_artworkHoverPreview", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
+        var animate = typeof(TaskBarMediaControl).GetMethod("AnimateArtworkHover", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var reclaim = typeof(TaskBarMediaControl).GetMethod("ReclaimArtworkZoom", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var disabledField = typeof(TaskBarMediaControl).GetField("_webLyricsGraphicsDisabled", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var graphicsDisabled = disabledField.GetValue(control);
+        disabledField.SetValue(control, true);
+        var window = new Window
+        {
+            Content = control,
+            Width = 500,
+            Height = 44,
+            Left = 400,
+            Top = 300,
+            ShowActivated = false,
+            WindowStyle = WindowStyle.None,
+            AllowsTransparency = true,
+            Background = Brushes.Transparent
+        };
+        try
+        {
+            window.Show();
+            SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(30));
+            SettingsManager.Current.Interaction = interaction with { ArtworkHoverMode = ArtworkHoverMode.Zoom };
+            foreach (var orientation in new[] { LayoutOrientation.Horizontal, LayoutOrientation.Vertical })
+            {
+                control.ApplyLayout(WindowMode.FloatingBar, orientation, 100, 100, 48);
+                control.ApplyPrimaryLength(500);
+                window.Width = orientation == LayoutOrientation.Vertical ? 48 : 500;
+                window.Height = orientation == LayoutOrientation.Vertical ? 500 : 44;
+                window.UpdateLayout();
+                foreach (var playing in new[] { false, true, false })
+                {
+                    var snapshot = MediaSnapshot.Disconnected with
+                    { IsConnected = true, IsPlaying = playing, CanPlayPause = true, Artwork = CreateMarkedArtwork(64, 64) };
+                    control.UpdateSongInfo(snapshot);
+                    window.UpdateLayout();
+                    animate.Invoke(control, [true, true]);
+                    Assert.AreEqual(24d, icon.FontSize);
+                    var color = placeholder.Foreground;
+                    var updatedColor = new SolidColorBrush(Colors.Coral);
+                    placeholder.Foreground = updatedColor;
+                    Assert.AreSame(SystemParameters.HighContrast ? SystemColors.WindowTextBrush : updatedColor, icon.Foreground, "放大提示应实时跟随封面取色。");
+                    refreshPreview.Invoke(control, null);
+                    var previewIcon = (SymbolIcon)typeof(TaskBarMediaControl).GetField("_artworkHoverPreviewIcon", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
+                    Assert.AreSame(SystemParameters.HighContrast ? SystemColors.WindowTextBrush : updatedColor, previewIcon.Foreground);
+                    placeholder.Foreground = color;
+                    Assert.AreEqual(playing ? SymbolRegular.Pause24 : SymbolRegular.Play24, icon.Symbol);
+                    Assert.AreEqual(1d, hint.Opacity);
+                    Assert.AreEqual(0, ((SolidColorBrush)hint.Background).Color.A);
+                    Assert.AreEqual(0d, scrim.Background.Opacity);
+                    Assert.AreEqual(Visibility.Collapsed, placeholder.Visibility);
+                    var counterScale = (ScaleTransform)icon.RenderTransform;
+                    foreach (var factor in new[] { 1d, 1.6, 2d })
+                    {
+                        scale.ScaleX = scale.ScaleY = factor;
+                        Assert.AreEqual(24d, icon.FontSize * factor * counterScale.ScaleX, .001);
+                    }
+                    scale.ScaleX = scale.ScaleY = 1.6;
+                    control.UpdateSongInfo(snapshot with { Title = "Updated track", Artwork = CreateMarkedArtwork(80, 80), IsPlaying = !playing });
+                    Assert.AreEqual(1.6, scale.ScaleX, .001, "快照刷新不能重启动画。");
+                    Assert.AreEqual(playing ? SymbolRegular.Play24 : SymbolRegular.Pause24, icon.Symbol);
+                    animate.Invoke(control, [true, true]);
+                    CaptureArtwork(host, $"zoom-{orientation}-{playing}");
+                    refreshPreview.Invoke(control, null);
+                    CaptureArtwork((FrameworkElement)popup.Child, $"preview-{orientation}-{playing}");
+                    control.UpdateSongInfo(snapshot with { CanPlayPause = false });
+                    animate.Invoke(control, [true, true]);
+                    Assert.AreEqual(0d, hint.Opacity);
+                    SettingsManager.Current.Interaction = SettingsManager.Current.Interaction with { ArtworkClickAction = PlayerClickAction.ActivateSource };
+                    control.UpdateSongInfo(snapshot);
+                    animate.Invoke(control, [true, true]);
+                    Assert.AreEqual(0d, hint.Opacity);
+                    refreshPreview.Invoke(control, null);
+                    Assert.AreEqual(Visibility.Collapsed, ((Grid)((Border)popup.Child).Child).Children.OfType<Border>().Single().Visibility);
+                    SettingsManager.Current.Interaction = SettingsManager.Current.Interaction with { ArtworkClickAction = PlayerClickAction.TogglePlayPause };
+                    control.UpdateSongInfo(snapshot);
+                    AssertOpenTooltipAvoidsArtwork(control, host);
+                    reclaim.Invoke(control, [true]);
+                    reclaim.Invoke(control, [true]);
+                    Assert.AreSame(canvas, artwork.Parent);
+                    Assert.AreEqual(1d, scale.ScaleX);
+                    Assert.AreEqual(playing ? 0d : .6, scrim.Background.Opacity);
+                    Assert.AreEqual(playing ? Visibility.Collapsed : Visibility.Visible, placeholder.Visibility);
+                    Assert.AreEqual(placeholder.FontSize, icon.FontSize);
+                    Assert.AreEqual(0d, hint.Opacity);
+                    Assert.AreSame(placeholder.Foreground, icon.Foreground);
+                }
+                SettingsManager.Current.Interaction = SettingsManager.Current.Interaction with { ArtworkHoverMode = ArtworkHoverMode.Preview };
+                animate.Invoke(control, [true, true]);
+                Assert.IsTrue(popup.IsOpen);
+                AssertOpenTooltipAvoidsArtwork(control, (FrameworkElement)popup.Child);
+                animate.Invoke(control, [false, true]);
+                SettingsManager.Current.Interaction = SettingsManager.Current.Interaction with { ArtworkHoverMode = ArtworkHoverMode.Zoom };
+            }
+        }
+        finally
+        {
+            reclaim.Invoke(control, [true]);
+            SettingsManager.Current.Interaction = interaction;
+            window.Close();
+            window.Content = null;
+            disabledField.SetValue(control, graphicsDisabled);
+            control.ApplyLayout(WindowMode.Taskbar, LayoutOrientation.Horizontal, 100, 100);
+        }
+    }
+
+    private static void AssertOpenTooltipAvoidsArtwork(TaskBarMediaControl control, FrameworkElement artwork)
+    {
+        var tooltip = (ToolTip)typeof(TaskBarMediaControl).GetField("_artworkWheelTooltip", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
+        tooltip.Content = "普通滚轮：上一首 / 下一首";
+        // 本夹具显式打开弹层以检查几何，不让真实桌面指针的封面和滚轮轮询收回它。
+        var timers = new[] { "_artworkZoomHoverSyncTimer", "_wheelTooltipTimer" }
+            .Select(field => (System.Windows.Threading.DispatcherTimer)typeof(TaskBarMediaControl)
+                .GetField(field, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!)
+            .Select(timer => (Timer: timer, WasRunning: timer.IsEnabled)).ToArray();
+        foreach (var (timer, _) in timers) timer.Stop();
+        try
+        {
+            tooltip.IsOpen = true;
+            var started = Stopwatch.StartNew();
+            do
+            {
+                tooltip.UpdateLayout();
+                control.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Render);
+                SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(10));
+            } while ((PresentationSource.FromVisual(tooltip) is null || tooltip.ActualWidth <= 0 || tooltip.ActualHeight <= 0) &&
+                     started.Elapsed < TimeSpan.FromSeconds(2));
+            Assert.IsTrue(tooltip.IsOpen, "几何断言前提示不能被关闭。");
+            Assert.IsNotNull(PresentationSource.FromVisual(tooltip), "提示未在期限内连接到呈现源。");
+            Assert.IsNotNull(PresentationSource.FromVisual(artwork), "封面未连接到呈现源。");
+            var hint = new Rect(tooltip.PointToScreen(new Point()), tooltip.PointToScreen(new Point(tooltip.ActualWidth, tooltip.ActualHeight)));
+            var image = new Rect(artwork.PointToScreen(new Point()), artwork.PointToScreen(new Point(artwork.ActualWidth, artwork.ActualHeight)));
+            Assert.IsFalse(hint.IntersectsWith(image), $"提示遮挡了封面：tooltip={hint}, artwork={image}");
+        }
+        finally
+        {
+            tooltip.IsOpen = false;
+            foreach (var (timer, wasRunning) in timers)
+                if (wasRunning) timer.Start();
+        }
+    }
+
+    private static void VerifyTooltipAvoidance()
+    {
+        foreach (var dpi in new[] { 1d, 1.5, 2d })
+            foreach (var vertical in new[] { false, true })
+                foreach (var onLeft in new[] { false, true })
+                    foreach (var edge in new[] { new Point(0, 0), new Point(900, 0), new Point(0, 680), new Point(900, 680) })
+                    {
+                        var work = new Rect(-1000 * dpi, 0, 1000 * dpi, 800 * dpi);
+                        var blocked = new Rect((edge.X - 1000) * dpi, edge.Y * dpi, 100 * dpi, 120 * dpi);
+                        var size = new Size(210 * dpi, 40 * dpi);
+                        var position = TaskBarMediaControl.ResolveArtworkTooltipPosition(size, blocked, work, vertical, onLeft, 8 * dpi);
+                        var bounds = new Rect(position, size);
+                        Assert.IsTrue(work.Contains(bounds));
+                        Assert.IsFalse(bounds.IntersectsWith(blocked), "滚轮提示不能遮挡放大封面。");
+                    }
+    }
+
+    private static void CaptureArtwork(FrameworkElement root, string name)
+    {
+        var directory = Environment.GetEnvironmentVariable("AFMB_ARTWORK_HINT_CAPTURE_DIR");
+        if (string.IsNullOrEmpty(directory)) return;
+        Directory.CreateDirectory(directory);
+        root.Measure(new Size(root.Width, root.Height));
+        root.Arrange(new Rect(0, 0, root.Width, root.Height));
+        root.UpdateLayout();
+        var bitmap = new RenderTargetBitmap((int)Math.Ceiling(root.Width), (int)Math.Ceiling(root.Height), 96, 96, PixelFormats.Pbgra32);
+        bitmap.Render(root);
+        var encoder = new PngBitmapEncoder();
+        encoder.Frames.Add(BitmapFrame.Create(bitmap));
+        using var file = File.Create(Path.Combine(directory, name + ".png"));
+        encoder.Save(file);
     }
 
     private static BitmapSource CreateMarkedArtwork(int width, int height)

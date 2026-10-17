@@ -159,7 +159,8 @@ public static class SpectrumPresentationPolicy
         var height = double.IsFinite(contentHeightDip) ? Math.Max(0, contentHeightDip) : 0;
         var maximumHalfHeight = ResolveWaveformHalfHeightDip(height);
         var centre = height / 2;
-        var step = CalculateContentWidthDip(count) / (count - 1);
+        // 此处使用已聚合的显示频段数；不再套用持久化设置的最小柱数。
+        var step = (count * BarWidthDip + (count - 1) * BarGapDip) / (count - 1);
         var segments = WaveformSegmentsPerGap * (count - 1);
         for (var segment = 0; segment < count - 1; segment++)
         {

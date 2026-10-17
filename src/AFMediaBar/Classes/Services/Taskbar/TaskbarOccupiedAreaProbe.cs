@@ -482,7 +482,11 @@ public sealed class TaskbarOccupiedAreaProbe : ITaskbarOccupiedAreaProbe, IDispo
             AutomationElementCollection elements;
             using (cacheRequest.Activate())
             {
-                elements = root.FindAll(TreeScope.Descendants, interactiveControlCondition);
+                // 媒体栏是任务栏子窗口，UIA 也会枚举到它的按钮。
+                // 排除本进程，避免媒体栏避让自身后反复移动或隐藏。
+                var externalControlCondition = new AndCondition(interactiveControlCondition,
+                    new NotCondition(new PropertyCondition(AutomationElement.ProcessIdProperty, Environment.ProcessId)));
+                elements = root.FindAll(TreeScope.Descendants, externalControlCondition);
             }
 
             foreach (AutomationElement element in elements)

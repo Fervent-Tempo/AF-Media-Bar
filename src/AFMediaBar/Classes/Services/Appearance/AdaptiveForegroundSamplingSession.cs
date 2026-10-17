@@ -86,7 +86,11 @@ internal sealed class AdaptiveForegroundSamplingSession : IDisposable
         try
         {
             var samples = await _sampler.SampleAsync(bounds, cancellationToken).ConfigureAwait(false);
+            if (cancellationToken.IsCancellationRequested)
+                return;
             var decision = PlayerForegroundPolicy.Resolve(samples, previousDecision);
+            // 代际取消只丢弃结果；不要用已取消的令牌创建 DispatcherOperation，
+            // 否则正常移动/隐藏会连续制造首次机会 TaskCanceledException。
             await _dispatcher.InvokeAsync(() =>
             {
                 if (!PlayerForegroundPolicy.IsCurrent(_disposed, generation, _generation) ||
@@ -96,7 +100,7 @@ internal sealed class AdaptiveForegroundSamplingSession : IDisposable
                     return;
                 _lastDecision = decision;
                 _apply(decision);
-            }, DispatcherPriority.Background, cancellationToken);
+            }, DispatcherPriority.Background);
         }
         catch (OperationCanceledException)
         {

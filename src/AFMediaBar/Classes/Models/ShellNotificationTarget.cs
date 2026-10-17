@@ -8,5 +8,7 @@ public enum ShellNotificationTarget
     Application,
     TaskbarBackground,
     LyricsRecovery,
-    DeveloperLyricsPreview
+    DeveloperLyricsPreview,
+    VerticalTaskbarExperiment,
+    FloatingBarExperiment
 }

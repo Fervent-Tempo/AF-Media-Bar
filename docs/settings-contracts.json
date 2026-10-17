@@ -3,6 +3,40 @@
   "latestRelease": "v1.4.0",
   "settingsSchemaVersion": 2,
   "settings": {
+    "experiments": {
+      "floatingBar": "unreleased",
+      "newAudioControl": "unreleased",
+      "$release": "unreleased",
+      "verticalTaskbar": "unreleased"
+    },
+    "floatingBar": {
+      "$release": "unreleased",
+      "profile": {
+        "taskbarBarCrossAxisOffsetDip": "unreleased",
+        "$release": "unreleased",
+        "layoutLengthScalePercent": "unreleased",
+        "taskbarBarManualPadding": "unreleased",
+        "taskbarBarPositionLocked": "unreleased",
+        "position": "unreleased",
+        "layoutThicknessScalePercent": "unreleased",
+        "lyricsFixedWidthEnabled": "unreleased",
+        "lyricsFixedWidthDip": "unreleased",
+        "lengthMode": "unreleased",
+        "fixedLengthDip": "unreleased",
+        "arrangement": "unreleased"
+      },
+      "orientation": "unreleased",
+      "layer": "unreleased",
+      "monitorDeviceIds": "unreleased",
+      "positions": {
+        "$items": {
+          "centerXDip": "unreleased",
+          "monitorDeviceId": "unreleased",
+          "centerYDip": "unreleased"
+        },
+        "$release": "unreleased"
+      }
+    },
     "allowBrowserAndVideoLyrics": "v1.3.0",
     "appearance": {
       "$release": "v1.2.0",
@@ -216,6 +250,37 @@
     }
   },
   "enums": {
+    "FloatingBarLayer": {
+        "paths": [
+          "settings.floatingBar.layer"
+        ],
+        "members": {
+          "Desktop": {
+            "value": 0,
+            "release": "unreleased"
+          },
+          "Topmost": {
+            "value": 1,
+            "release": "unreleased"
+          }
+        }
+      },
+      "LayoutOrientation": {
+        "paths": [
+          "settings.floatingBar.orientation"
+        ],
+        "members": {
+          "Horizontal": {
+            "value": 0,
+            "release": "unreleased"
+          },
+          "Vertical": {
+            "value": 1,
+            "release": "unreleased"
+          }
+        }
+      },
+
     "LyricsSourceRule": {
       "paths": ["settings.lyricsSource.rule"],
       "members": {
@@ -434,7 +499,7 @@
       }
     },
     "TaskbarBarPosition": {
-      "paths": ["settings.position"],
+      "paths": ["settings.position", "settings.floatingBar.profile.position"],
       "members": {
         "Start": {"value": 0, "release": "v1.2.0"},
         "Center": {"value": 1, "release": "v1.2.0"},
@@ -442,7 +507,7 @@
       }
     },
     "TaskbarContentArrangement": {
-      "paths": ["settings.taskbarExperience.arrangement"],
+      "paths": ["settings.taskbarExperience.arrangement", "settings.floatingBar.profile.arrangement"],
       "members": {
         "Left": {"value": 0, "release": "v1.4.0"},
         "Right": {"value": 1, "release": "v1.4.0"}
@@ -474,7 +539,7 @@
       }
     },
     "TaskbarLengthMode": {
-      "paths": ["settings.taskbarExperience.lengthMode"],
+      "paths": ["settings.taskbarExperience.lengthMode", "settings.floatingBar.profile.lengthMode"],
       "members": {
         "FollowContent": {"value": 0, "release": "v1.2.0"},
         "Fixed": {"value": 1, "release": "v1.2.0"}
@@ -559,7 +624,8 @@
       "paths": ["settings.windowMode"],
       "members": {
         "Taskbar": {"value": 0, "release": "v1.2.0"},
-        "DynamicIsland": {"value": 1, "release": "v1.2.0"}
+        "DynamicIsland": {"value": 1, "release": "v1.2.0"},
+        "FloatingBar": {"value": 2, "release": "unreleased"}
       }
     },
     "PerformanceDisplayMode": {
@@ -649,7 +715,7 @@
     },
     {
       "id": "arrangement",
-      "paths": ["settings.taskbarExperience.arrangement"],
+      "paths": ["settings.taskbarExperience.arrangement", "settings.floatingBar.profile.arrangement"],
       "text": "null 时 position=End 解析为 Right，其余为 Left；显式值优先。",
       "relatedPaths": ["settings.position"]
     },
@@ -760,7 +826,7 @@
       "id": "retained-mode",
       "prefixes": ["settings.dynamicIsland"],
       "paths": ["settings.windowMode"],
-      "text": "当前只运行任务栏，WindowMode归一化为Taskbar；保留灵动岛字段和表面不等于该模式已实现。"
+      "text": "桌面悬浮标识仅在对应实验开启时生效；实验关闭和旧灵动岛标识归一化为Taskbar。横竖任务栏共享原配置，悬浮配置首次复制后独立保存。"
     },
     {
       "id": "retained-fields",

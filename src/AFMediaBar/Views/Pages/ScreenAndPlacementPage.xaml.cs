@@ -20,6 +20,15 @@ public partial class ScreenAndPlacementPage : INavigableView<DisplayModesViewMod
         InitializeComponent();
     }
 
+    private void OnModeCardClick(object sender, RoutedEventArgs args)
+    {
+        if (sender is not RadioButton { Tag: string selection } || !int.TryParse(selection, out var mode)) return;
+        ViewModel.RuntimeModeSelection = mode;
+        // 选择表示实际运行状态，等待宿主切换成功后再由新页面更新。
+        FloatingModeCard.GetBindingExpression(RadioButton.IsCheckedProperty)?.UpdateTarget();
+        TaskbarModeCard.GetBindingExpression(RadioButton.IsCheckedProperty)?.UpdateTarget();
+    }
+
     private void OnPageLoaded(object sender, RoutedEventArgs args) => SettingsRevealAnimator.Play(sender as Panel);
     private async void ResetButton_Click(object sender, RoutedEventArgs e)
     {

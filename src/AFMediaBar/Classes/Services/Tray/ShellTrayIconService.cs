@@ -18,6 +18,8 @@ public sealed class ShellTrayIconService : ISystemNotificationService, IDisposab
     private const uint GenericNotificationId = 3;
     private const uint LyricsRecoveryNotificationId = 4;
     private const uint DeveloperLyricsNotificationId = 5;
+    private const uint VerticalTaskbarNotificationId = 6;
+    private const uint FloatingBarNotificationId = 7;
     private readonly HashSet<uint> _notificationIcons = [];
     private readonly NotifyIconCall _notifyIcon;
 
@@ -102,6 +104,8 @@ public sealed class ShellTrayIconService : ISystemNotificationService, IDisposab
             ShellNotificationTarget.None => GenericNotificationId,
             ShellNotificationTarget.LyricsRecovery => LyricsRecoveryNotificationId,
             ShellNotificationTarget.DeveloperLyricsPreview => DeveloperLyricsNotificationId,
+            ShellNotificationTarget.VerticalTaskbarExperiment => VerticalTaskbarNotificationId,
+            ShellNotificationTarget.FloatingBarExperiment => FloatingBarNotificationId,
             _ => throw new ArgumentOutOfRangeException(nameof(target))
         };
         if (iconId != IconId && !EnsureNotificationIcon(iconId)) return false;
@@ -226,6 +230,8 @@ public sealed class ShellTrayIconService : ISystemNotificationService, IDisposab
                 BackgroundNotificationId when _notificationIcons.Contains(sourceIconId) => ShellNotificationTarget.TaskbarBackground,
                 DeveloperLyricsNotificationId when _notificationIcons.Contains(sourceIconId) => ShellNotificationTarget.DeveloperLyricsPreview,
                 LyricsRecoveryNotificationId when _notificationIcons.Contains(sourceIconId) => ShellNotificationTarget.LyricsRecovery,
+                VerticalTaskbarNotificationId when _notificationIcons.Contains(sourceIconId) => ShellNotificationTarget.VerticalTaskbarExperiment,
+                FloatingBarNotificationId when _notificationIcons.Contains(sourceIconId) => ShellNotificationTarget.FloatingBarExperiment,
                 _ => ShellNotificationTarget.None
             };
             if (target != ShellNotificationTarget.None) NotificationClicked?.Invoke(target);

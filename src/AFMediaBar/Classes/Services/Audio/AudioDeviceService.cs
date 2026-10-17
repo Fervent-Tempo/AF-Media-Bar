@@ -21,6 +21,8 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
     private readonly AudioPlatformService _platform;
     private AudioDeviceSettings _settings;
     private int _policyVersion;
+    private bool _experimentalAudioEnabled;
+    public bool ExperimentalAudioEnabled => Volatile.Read(ref _experimentalAudioEnabled);
     public int PolicyVersion => Volatile.Read(ref _policyVersion);
     public int Version => _platform.Version;
     public event EventHandler? Changed { add => _platform.Changed += value; remove => _platform.Changed -= value; }
@@ -29,18 +31,21 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
     {
         _platform = platform;
         _settings = SettingsManager.Current.AudioDevices;
+        _experimentalAudioEnabled = SettingsManager.Current.Experiments.NewAudioControl;
         SettingsManager.SettingsChanged += OnSettingsChanged;
     }
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args)
     {
-        if (args.PropertyName is not (null or nameof(AppSettings.AudioDevices) or nameof(AppSettings.Interaction))) return;
+        if (args.PropertyName is not (null or nameof(AppSettings.AudioDevices) or nameof(AppSettings.Interaction) or nameof(AppSettings.Experiments))) return;
+        Volatile.Write(ref _experimentalAudioEnabled, SettingsManager.Current.Experiments.NewAudioControl);
         Volatile.Write(ref _settings, SettingsManager.Current.AudioDevices);
         Interlocked.Increment(ref _policyVersion);
         _platform.Invalidate(cancelPending: true);
     }
 
-    public bool IsAllowed(AudioDeviceDirection direction, string id) => Volatile.Read(ref _settings).IsAllowed(direction, id);
+    public bool IsAllowed(AudioDeviceDirection direction, string id) => ExperimentalAudioEnabled
+        ? Volatile.Read(ref _settings).IsAllowed(direction, id) : direction == AudioDeviceDirection.Output;
     public Task<IReadOnlyList<AudioDeviceOption>> GetRenderDevicesAsync() => GetDevicesAsync(AudioDeviceDirection.Output);
     public Task<IReadOnlyList<AudioDeviceOption>> GetDevicesAsync(AudioDeviceDirection direction,
         bool includeHidden = false, CancellationToken cancellationToken = default) =>
@@ -49,6 +54,7 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
     private IReadOnlyList<AudioDeviceOption> Enumerate(AudioDeviceDirection direction, bool includeHidden)
     {
         using var enumerator = new MMDeviceEnumerator();
+        if (!ExperimentalAudioEnabled && direction == AudioDeviceDirection.Input) return [];
         var flow = direction == AudioDeviceDirection.Output ? DataFlow.Render : DataFlow.Capture;
         var defaultId = GetDefaultId(enumerator, flow, Role.Console);
         using var devices = enumerator.EnumerateAudioEndPoints(flow, includeHidden ? DeviceState.All : DeviceState.Active);
@@ -89,8 +95,9 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
         var flow = device.Direction == AudioDeviceDirection.Output ? DataFlow.Render : DataFlow.Capture;
         if (endpoint.State != DeviceState.Active || endpoint.DataFlow != flow)
             return new AudioDeviceOperationResult(AudioDeviceOperationStatus.Unavailable);
+        var operationPolicyVersion = PolicyVersion;
         var settings = Volatile.Read(ref _settings);
-        var communications = device.Direction == AudioDeviceDirection.Output ? settings.SwitchOutputCommunications : settings.SwitchInputCommunications;
+        var communications = ExperimentalAudioEnabled && (device.Direction == AudioDeviceDirection.Output ? settings.SwitchOutputCommunications : settings.SwitchInputCommunications);
         var roles = communications ? new[] { Role.Console, Role.Multimedia, Role.Communications } : new[] { Role.Console, Role.Multimedia };
         if (roles.All(role => string.Equals(GetDefaultId(enumerator, flow, role), device.PolicyId, StringComparison.OrdinalIgnoreCase)))
             return new AudioDeviceOperationResult(AudioDeviceOperationStatus.Unchanged);
@@ -100,7 +107,7 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
         try
         {
             AudioPolicyConfig.SetDefaultDevice(device.PolicyId, communications,
-                () => !token.IsCancellationRequested && isCurrent?.Invoke() != false && IsAllowed(device.Direction, device.PolicyId));
+                () => operationPolicyVersion == PolicyVersion && !token.IsCancellationRequested && isCurrent?.Invoke() != false && IsAllowed(device.Direction, device.PolicyId));
             _platform.Invalidate();
             return new AudioDeviceOperationResult(AudioDeviceOperationStatus.Applied);
         }
@@ -115,6 +122,7 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
 
     public Task<string> GetDefaultDescriptionAsync(AudioDeviceDirection direction) => _platform.RunAsync(() =>
     {
+        if (!ExperimentalAudioEnabled && direction == AudioDeviceDirection.Input) return Translations.Get("Audio.Device.Disabled");
         using var enumerator = new MMDeviceEnumerator();
         var id = GetDefaultId(enumerator, direction == AudioDeviceDirection.Output ? DataFlow.Render : DataFlow.Capture, Role.Console);
         if (id is null) return Translations.Get("Audio.Device.Unavailable");

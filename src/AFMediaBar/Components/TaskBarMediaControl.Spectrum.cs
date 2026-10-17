@@ -54,8 +54,27 @@ public partial class TaskBarMediaControl
     private static readonly TimeSpan SpectrumFrameInterval = TimeSpan.FromMilliseconds(16);
 
     /// <summary>当前柱数决定的任务栏频谱占用宽度（DIP）。 / Width the taskbar spectrum occupies for the current bar count, in DIP.</summary>
-    private double SpectrumSurfaceWidth =>
-        SpectrumPresentationPolicy.CalculateSurfaceWidthDip(SettingsManager.Current.SpectrumComponent.Normalize().BandCount);
+    private double SpectrumSurfaceWidth => _isVertical ? Math.Max(1, MainBorder.Width - 4) :
+        SpectrumPresentationPolicy.CalculateSurfaceWidthDip(PresentationSettings.SpectrumComponent.Normalize().BandCount);
+
+    private double ResolveSpectrumContentHeight(SpectrumComponentSettings settings)
+    {
+        var configured = SpectrumPresentationPolicy.ResolveContentHeightDip(settings);
+        if (_isVertical)
+            return Math.Min(configured, Math.Max(1, MainBorder.Width - 8));
+        return UsesAdaptiveTaskbarText
+            ? Math.Min(configured, Math.Max(1, MainBorder.Height - _textBudget.PaddingDip * 2 - SpectrumPresentationPolicy.SurfacePaddingDip * 2))
+            : configured;
+    }
+
+    private SpectrumComponentSettings ResolveSpectrumPresentationSettings()
+    {
+        var settings = PresentationSettings.SpectrumComponent.Normalize();
+        return _isVertical ? settings with
+        {
+            BandCount = Math.Min(16, settings.BandCount)
+        } : settings;
+    }
 
     /// <summary>
     /// 让频谱与媒体文字共用同一支自动前景：柱状图、像素柱状图与波形都换成同一颜色，因此在浅色背景上一起转深、
@@ -111,8 +130,11 @@ public partial class TaskBarMediaControl
     /// </summary>
     internal void ConfigureSpectrum()
     {
-        var settings = SettingsManager.Current.SpectrumComponent.Normalize();
-        var contentHeight = SpectrumPresentationPolicy.ResolveContentHeightDip(settings);
+        var settings = ResolveSpectrumPresentationSettings();
+        var angle = _isVertical ? (_verticalTaskbarOnLeft ? 90d : -90d) : 0;
+        if (TaskbarSpectrum.LayoutTransform is not RotateTransform rotation || rotation.Angle != angle)
+            TaskbarSpectrum.LayoutTransform = new RotateTransform(angle);
+        var contentHeight = ResolveSpectrumContentHeight(settings);
         if (_appliedSpectrumStyle == settings.Style &&
             _appliedSpectrumBandCount == settings.BandCount &&
             Math.Abs(_appliedSpectrumContentHeight - contentHeight) < 0.01)
@@ -182,7 +204,8 @@ public partial class TaskBarMediaControl
         // The tree is re-checked here so it always matches the settings: the first sample can arrive before the host applies
         // its settings, and without this step it would be drawn into an empty canvas.
         ConfigureSpectrum();
-        var settings = SettingsManager.Current.SpectrumComponent.Normalize();
+        var settings = ResolveSpectrumPresentationSettings();
+        if (_isVertical) bands = VerticalTaskbarPresentationPolicy.AggregateSpectrum(bands, settings.BandCount);
         if (!SpectrumPresentationPolicy.NeedsFrameDrivenSmoothing(settings.Style))
         {
             // 柱状图与对称柱状图仍由 WPF 的 ScaleY 动画插值：采样只负责重设目标，帧与帧之间由合成线程补齐。
@@ -231,7 +254,7 @@ public partial class TaskBarMediaControl
         if (!motion.UseContinuousMotion)
         {
             SnapSpectrumTargets();
-            DrawSmoothedSpectrum(SettingsManager.Current.SpectrumComponent.Normalize());
+            DrawSmoothedSpectrum(ResolveSpectrumPresentationSettings());
             StopSpectrumFrameTimer();
             return;
         }
@@ -257,7 +280,7 @@ public partial class TaskBarMediaControl
                 settled = false;
         }
 
-        DrawSmoothedSpectrum(SettingsManager.Current.SpectrumComponent.Normalize());
+        DrawSmoothedSpectrum(ResolveSpectrumPresentationSettings());
 
         // 追上目标就停表：静音或稳定状态下不该留着一个每帧唤醒 Dispatcher 的计时器。
         // Stop once the follower has caught up: a silent or steady spectrum must not keep a timer waking the dispatcher every
@@ -382,7 +405,7 @@ public partial class TaskBarMediaControl
             var targetScale = SpectrumPresentationPolicy.ResolveBarScale(
                 value,
                 settings.SensitivityPercent,
-                SpectrumPresentationPolicy.ResolveContentHeightDip(settings));
+                ResolveSpectrumContentHeight(settings));
             ApplySpectrumBarTarget(_spectrumBars[index], targetScale, motion);
         }
     }
@@ -432,7 +455,7 @@ public partial class TaskBarMediaControl
             var lit = SpectrumPresentationPolicy.ResolveLitPixelCount(
                 value,
                 settings.SensitivityPercent,
-                SpectrumPresentationPolicy.ResolveContentHeightDip(settings));
+                ResolveSpectrumContentHeight(settings));
             var column = _spectrumPixelColumns[index];
             for (var dotIndex = 0; dotIndex < column.Count; dotIndex++)
             {
@@ -480,7 +503,7 @@ public partial class TaskBarMediaControl
     {
         var count = SpectrumPresentationPolicy.WriteWaveformOutline(
             _displayedSpectrum.AsSpan(0, settings.BandCount), settings.SensitivityPercent,
-            SpectrumPresentationPolicy.ResolveContentHeightDip(settings), _waveformOutline);
+            ResolveSpectrumContentHeight(settings), _waveformOutline);
         return _waveformOutline.AsSpan(0, count);
     }
 

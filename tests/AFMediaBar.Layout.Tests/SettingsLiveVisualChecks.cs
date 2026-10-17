@@ -73,6 +73,7 @@ internal static class SettingsLiveVisualChecks
         services.AddScoped<InteractionViewModel>();
         services.AddScoped<AppearancePage>();
         services.AddScoped<InteractionPage>();
+        services.AddScoped<ScreenAndPlacementPage>();
         using var root = services.BuildServiceProvider();
         using var cache = new SettingsPageScopeCache(root.GetRequiredService<IServiceScopeFactory>());
         using var provider = new SettingsPageProvider(cache);
@@ -131,8 +132,8 @@ internal static class SettingsLiveVisualChecks
             Assert.AreSame(layout, arrived);
             var widgetsPanel = (Panel)groups.Single(group => group.GroupId == "Common.Group.Widgets").Content;
             var ordered = widgetsPanel.Children.OfType<Wpf.Ui.Controls.CardExpander>().Single(expander =>
-                expander.Content is Panel panel && panel.Children.OfType<ItemsControl>().Any(items => items.ItemsSource == layout.ViewModel.Layout.RestOrderEntries));
-            Assert.AreEqual(Visibility.Collapsed, ordered.Visibility, "Vertical taskbars must not expose horizontal component sorting.");
+                expander.Content is Panel panel && Descendants(panel).OfType<ItemsControl>().Any(items => items.ItemsSource == layout.ViewModel.Layout.RestOrderEntries));
+            Assert.AreEqual(Visibility.Visible, ordered.Visibility, "任务栏横竖共享配置及组件排序入口。");
             Assert.IsTrue(navigation.Navigate(typeof(InteractionPage)));
             Assert.IsTrue(navigation.Navigate(typeof(AppearancePage)));
             Assert.AreSame(vertical, arrived, "NavigationView must ask the provider for the current context rather than reuse its own old page.");
@@ -165,12 +166,102 @@ internal static class SettingsLiveVisualChecks
                 horizontalLayout.UpdateLayout();
             }
             CapturePreview(host, "TextLayout");
+            var placement = (ScreenAndPlacementPage)provider.GetPage(typeof(ScreenAndPlacementPage))!;
+            Assert.AreEqual(Visibility.Collapsed, ((RadioButton)placement.FindName("FloatingModeCard")).Visibility);
+            Assert.IsFalse(((Wpf.Ui.Controls.CardExpander)placement.FindName("FutureModesExpander")).IsExpanded, "Upcoming modes must start collapsed.");
+            SettingsManager.Current.Experiments = new() { FloatingBar = true, NewAudioControl = true };
+            var floatingCard = (RadioButton)placement.FindName("FloatingModeCard");
+            var taskbarCard = (RadioButton)placement.FindName("TaskbarModeCard");
+            Assert.AreEqual(Visibility.Visible, floatingCard.Visibility);
+            // RadioButton 先更新选中状态，再发出 Click；请求期间仍应呈现实际宿主。
+            floatingCard.SetCurrentValue(RadioButton.IsCheckedProperty, true);
+            floatingCard.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+            Assert.IsTrue(taskbarCard.IsChecked);
+            Assert.IsFalse(floatingCard.IsChecked, "Requesting a mode must not claim that its host is already running.");
+            Assert.AreEqual(WindowMode.FloatingBar, SettingsManager.Current.WindowMode);
+            Assert.AreEqual(0, placement.ViewModel.RuntimeModeSelection, "The editor must wait for an actual runtime context.");
+            provider.SetContext(horizontal with { Mode = SettingsMode.FloatingBar });
+            placement = (ScreenAndPlacementPage)provider.GetPage(typeof(ScreenAndPlacementPage))!;
+            navigation.ReplaceContent(placement);
+            Pump(TimeSpan.FromMilliseconds(100));
+            Assert.AreEqual(1, placement.ViewModel.RuntimeModeSelection);
+            Assert.IsTrue(((RadioButton)placement.FindName("FloatingModeCard")).IsChecked);
+            Assert.IsFalse(((RadioButton)placement.FindName("TaskbarModeCard")).IsChecked);
+            Assert.IsFalse(((Wpf.Ui.Controls.CardExpander)placement.FindName("FutureModesExpander")).IsExpanded);
+            taskbarCard.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+            Assert.AreEqual(WindowMode.FloatingBar, SettingsManager.Current.WindowMode, "A retired page cannot switch the new context.");
+            var placementGroups = ((Panel)((ScrollViewer)placement.FindName("PageScroll")).Content).Children.OfType<SettingsGroup>().ToArray();
+            Assert.AreEqual(Visibility.Visible, placementGroups.Single(group => group.GroupId == "Placement.Floating.Title").Visibility);
+            Assert.AreEqual(Visibility.Collapsed, placementGroups.Single(group => group.GroupId == "Common.Group.ScreenAndPlacement").Visibility);
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AFMB_SETTINGS_PREVIEW_DIR")))
+            {
+                // 隔离预览不启动 App 组合根，补齐其设置表面色以便检查可读性。
+                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Dark);
+                foreach (var key in new[] { "AfSettingsCardBrush", "AfSettingsInfoSurfaceBrush", "AfSettingsGroupSurfaceBrush", "AfSettingsSectionBrush" })
+                    app.Resources[key] = new SolidColorBrush(Color.FromRgb(44, 44, 44));
+                app.Resources["AfSettingsInputBrush"] = new SolidColorBrush(Color.FromRgb(54, 54, 54));
+                app.Resources["AfSettingsBorderBrush"] = new SolidColorBrush(Color.FromRgb(72, 72, 72));
+                Pump(TimeSpan.FromMilliseconds(80));
+            }
+            CapturePreview(host, "FloatingPlacement");
+            ((Grid)placement.Content).Children.OfType<SettingsGroupStrip>().Single().RevealGroup("Placement.Floating.Title");
+            Pump(TimeSpan.FromMilliseconds(200));
+            CapturePreview(host, "FloatingOptions");
+            var interaction = (InteractionPage)provider.GetPage(typeof(InteractionPage))!;
+            navigation.ReplaceContent(interaction);
+            Pump(TimeSpan.FromMilliseconds(100));
+            var combo = Descendants(interaction).OfType<System.Windows.Controls.ComboBox>().First(item => item.Items.OfType<ComboBoxItem>().Any(option => option.Tag is WheelAction.InputDevice));
+            var input = combo.Items.OfType<ComboBoxItem>().Single(item => item.Tag is WheelAction.InputDevice);
+            var output = combo.Items.OfType<ComboBoxItem>().Single(item => item.Tag is WheelAction.OutputDevice);
+            combo.SelectedItem = input;
+            combo.IsDropDownOpen = true;
+            Pump(TimeSpan.FromMilliseconds(100));
+            Assert.IsNotNull(input.Template);
+            Assert.AreSame(output.Template, input.Template, "Input and output device choices must inherit the same theme template.");
+            if ((combo.Template.FindName("PART_Popup", combo) ?? combo.Template.FindName("Popup", combo)) is System.Windows.Controls.Primitives.Popup popup && popup.Child is FrameworkElement popupContent)
+                CapturePreview(popupContent, "InputDeviceDropdownDark");
+            combo.IsDropDownOpen = false;
+            Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Light);
+            combo.IsDropDownOpen = true;
+            Pump(TimeSpan.FromMilliseconds(100));
+            Assert.AreSame(output.Template, input.Template);
+            if ((combo.Template.FindName("PART_Popup", combo) ?? combo.Template.FindName("Popup", combo)) is System.Windows.Controls.Primitives.Popup lightPopup && lightPopup.Child is FrameworkElement lightContent)
+                CapturePreview(lightContent, "InputDeviceDropdownLight");
+            combo.IsDropDownOpen = false;
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AFMB_SETTINGS_PREVIEW_DIR")))
+            {
+                foreach (var key in new[] { "AfSettingsCardBrush", "AfSettingsInfoSurfaceBrush", "AfSettingsGroupSurfaceBrush", "AfSettingsSectionBrush" })
+                    app.Resources[key] = new SolidColorBrush(Color.FromRgb(250, 250, 250));
+                app.Resources["AfSettingsInputBrush"] = new SolidColorBrush(Color.FromRgb(238, 238, 238));
+                app.Resources["AfSettingsBorderBrush"] = new SolidColorBrush(Color.FromRgb(210, 210, 210));
+                navigation.ReplaceContent(placement);
+                ((ScrollViewer)placement.FindName("PageScroll")).ScrollToTop();
+                Pump(TimeSpan.FromMilliseconds(100));
+                CapturePreview(host, "DisplayModesLight");
+                host.Width = 800;
+                Pump(TimeSpan.FromMilliseconds(100));
+                CapturePreview(host, "DisplayModesNarrow");
+                ((Wpf.Ui.Controls.CardExpander)placement.FindName("FutureModesExpander")).IsExpanded = true;
+                Pump(TimeSpan.FromMilliseconds(250));
+                CapturePreview(host, "DisplayModesUpcoming");
+                host.Width = 1100;
+            }
             VerifyResetCancellation(resetHost);
         }
         finally { host.Close(); Pump(TimeSpan.FromMilliseconds(30)); SettingsManager.Replace(previousSettings); }
     }
 
-    private static void CapturePreview(FrameworkElement visual, string name)
+    private static IEnumerable<DependencyObject> Descendants(DependencyObject parent)
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            yield return child;
+            foreach (var descendant in Descendants(child)) yield return descendant;
+        }
+    }
+
+    internal static void CapturePreview(FrameworkElement visual, string name)
     {
         var directory = Environment.GetEnvironmentVariable("AFMB_SETTINGS_PREVIEW_DIR");
         if (string.IsNullOrEmpty(directory)) return;

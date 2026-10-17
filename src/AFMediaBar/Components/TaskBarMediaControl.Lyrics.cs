@@ -38,6 +38,7 @@ public partial class TaskBarMediaControl
     private int _lyricsSuspendGeneration;
     private bool _lyricsSuspendRequested;
     private LyricsPresentationFrame _lyricsFrame = LyricsPresentationFrame.Hidden;
+    private LyricsPresentationFrame _lastEffectiveLyricsFrame = LyricsPresentationFrame.Hidden;
     private Brush _lyricsForeground = Brushes.White;
     private bool _lyricsNeedsContrastShadow;
     private bool _lyricsUsesLightText = true;
@@ -211,8 +212,8 @@ public partial class TaskBarMediaControl
     {
         _lyricsReleaseTimer.Stop();
         if (LyricsWebViewLifetimePolicy.Resolve(
-                _lyricsHostLoaded, SettingsManager.Current.LyricsEnabled, _webLyricsGraphicsDisabled,
-                _snapshot.IsConnected, _snapshot.Lyrics?.Document.Lines?.Count ?? 0,
+                _lyricsHostLoaded, PresentationSettings.LyricsEnabled || VerticalTextRequired, _webLyricsGraphicsDisabled,
+                _snapshot.IsConnected, VerticalTextRequired ? 1 : _snapshot.Lyrics?.Document.Lines?.Count ?? 0,
                 _lyricsWebRenderer is not null) == LyricsWebViewLifetimeAction.ReleaseAfterGrace)
             ReleaseWebLyricsRenderer();
     }
@@ -221,8 +222,8 @@ public partial class TaskBarMediaControl
     {
         _webLyricsGraphicsDisabled |= WebLyricsGraphicsRecovery.Session.IsDisabled;
         var action = LyricsWebViewLifetimePolicy.Resolve(
-            _lyricsHostLoaded, SettingsManager.Current.LyricsEnabled, _webLyricsGraphicsDisabled,
-            _snapshot.IsConnected, _snapshot.Lyrics?.Document.Lines?.Count ?? 0,
+            _lyricsHostLoaded, PresentationSettings.LyricsEnabled || VerticalTextRequired, _webLyricsGraphicsDisabled,
+            _snapshot.IsConnected, VerticalTextRequired ? 1 : _snapshot.Lyrics?.Document.Lines?.Count ?? 0,
             _lyricsWebRenderer is not null);
         switch (action)
         {
@@ -247,7 +248,7 @@ public partial class TaskBarMediaControl
                 break;
             default:
                 _lyricsReleaseTimer.Stop();
-                if (!_snapshot.IsConnected || !SettingsManager.Current.LyricsEnabled)
+                if (!_snapshot.IsConnected || !PresentationSettings.LyricsEnabled)
                     _lyricsCreationFailures = 0;
                 break;
         }
@@ -335,11 +336,15 @@ public partial class TaskBarMediaControl
         if (_restTransitionKeepsOutgoingText)
             return;
 
-        var previous = _lyricsFrame;
-        var next = LyricsPresentationProjector.Project(_snapshot, SettingsManager.Current, DateTimeOffset.UtcNow);
+        var previous = _lastEffectiveLyricsFrame;
+        var next = LyricsPresentationProjector.Project(_snapshot, PresentationSettings, DateTimeOffset.UtcNow);
         _lyricsFrame = next;
+        RefreshTaskbarTextBudget(next);
+        var isMetadata = _isVertical && !next.IsVisible && _snapshot.IsConnected;
+        var presentation = isMetadata ? BuildVerticalMetadataFrame() : VisibleLyricsFrame(next);
+        _lastEffectiveLyricsFrame = presentation;
 
-        var showWebLyrics = next.IsVisible && !_webLyricsGraphicsDisabled &&
+        var showWebLyrics = presentation.IsVisible && !_webLyricsGraphicsDisabled &&
                             _backgroundPruneLevel < MemoryPruneLevel.DisplayOff && !_isHostVisibilitySuspended &&
                             _lyricsWebRenderer?.IsReady == true;
         var metadataVisibility = showWebLyrics ? Visibility.Collapsed : Visibility.Visible;
@@ -354,8 +359,8 @@ public partial class TaskBarMediaControl
         SongLyricsPanel.IsHitTestVisible = showWebLyrics;
         // The web engine decides whether a frame is a progress patch or a line transition.
         // Sending false on every 50 ms progress frame interrupts its in-flight roll animation.
-        if (!IsBackgroundPruned && LyricsPresentationRefreshPolicy.ShouldPresent(next.IsVisible, previous, next))
-            _lyricsWebRenderer?.Present(next, allowTransition && MotionPolicy.ResolveCurrent().UseTransitions);
+        if (!IsBackgroundPruned && (isMetadata || LyricsPresentationRefreshPolicy.ShouldPresent(presentation.IsVisible, previous, presentation)))
+            _lyricsWebRenderer?.Present(presentation, allowTransition && MotionPolicy.ResolveCurrent().UseTransitions, isMetadata);
         RefreshWebLyricsTimer();
 
         // 行变化后立即重发尺寸请求：自动模式下媒体栏长度跟着歌词内容走，若等到下一次快照才更新，
@@ -363,7 +368,7 @@ public partial class TaskBarMediaControl
         // Re-issue the size request as soon as the line changes: in auto mode the bar length follows the content, and waiting for the
         // next snapshot would render the new line at the previous width and briefly show an ellipsis at its right edge. A fixed box does
         // not depend on this path.
-        var secondaryText = string.IsNullOrEmpty(next.CurrentTranslation) ? next.Next : next.CurrentTranslation;
+        var secondaryText = string.IsNullOrEmpty(presentation.CurrentTranslation) ? presentation.Next : presentation.CurrentTranslation;
         if (!string.Equals(_lastSizeLyricText, next.Current, StringComparison.Ordinal) ||
             !string.Equals(_lastSizeSecondaryText, secondaryText, StringComparison.Ordinal))
         {
@@ -388,7 +393,7 @@ public partial class TaskBarMediaControl
             IsAdvancePruned,
             _lyricsFrame.IsVisible,
             _snapshot.IsPlaying,
-            SettingsManager.Current.LyricsEnabled,
+            PresentationSettings.LyricsEnabled,
             _snapshot.IsConnected,
             _snapshot.Lyrics?.Document.Lines?.Count ?? 0);
         if (shouldRun)
@@ -407,8 +412,8 @@ public partial class TaskBarMediaControl
         if (_lyricsWebRenderer is null)
             return;
 
-        var appearance = SettingsManager.Current.Appearance.Normalize();
-        var alignment = SettingsManager.Current.LyricsTextAlignment switch
+        var appearance = PresentationSettings.Appearance.Normalize();
+        var alignment = PresentationSettings.LyricsTextAlignment switch
         {
             LyricsTextAlignment.Left => "Left",
             LyricsTextAlignment.Right => "Right",
@@ -418,7 +423,7 @@ public partial class TaskBarMediaControl
         var secondaryOpacity = SystemParameters.HighContrast ? 1 : 0.68;
         var unsungOpacity = SystemParameters.HighContrast
             ? 1
-            : LyricsUnsungOpacity.Normalize(SettingsManager.Current.LyricsUnsungOpacityPercent) / 100d;
+            : LyricsUnsungOpacity.Normalize(PresentationSettings.LyricsUnsungOpacityPercent) / 100d;
         var textShadow = _lyricsNeedsContrastShadow
             ? _lyricsUsesLightText
                 ? "1px 1px 1px rgba(0, 0, 0, 0.85)"
@@ -429,17 +434,22 @@ public partial class TaskBarMediaControl
             appearance.ResolveFontFamilySource(SystemFonts.MessageFontFamily.Source),
             appearance.ResolveLatinFontFamily(SystemFonts.MessageFontFamily.Source),
             appearance.ResolveCjkFontFamily(SystemFonts.MessageFontFamily.Source),
-            _layoutEngine?.LyricsFontSize ?? 12,
+            EffectiveLyricFontSize,
             appearance.FontWeight,
-            LyricsCharacterSpacing.Normalize(SettingsManager.Current.LyricsCharacterSpacingPercent),
-            LyricsLineGap.Normalize(SettingsManager.Current.LyricsLineGapPercent),
+            LyricsCharacterSpacing.Normalize(PresentationSettings.LyricsCharacterSpacingPercent),
+            LyricsLineGap.Normalize(PresentationSettings.LyricsLineGapPercent),
             alignment,
             primary,
             ToCssColor(_lyricsForeground, secondaryOpacity),
             ToCssColor(_lyricsForeground, secondaryOpacity),
             ToCssColor(_lyricsForeground, unsungOpacity),
             primary,
-            textShadow));
+            textShadow,
+            _isVertical,
+            VerticalSecondaryFontSize,
+            PresentationSettings.TaskbarExperience.MediaTextAlignment.ToString(),
+            !CurrentMotion.UseContinuousMotion,
+            UsesAdaptiveTaskbarText && _textBudget.HideSecondary));
     }
 
     private static string ToCssColor(Brush brush, double opacity)
@@ -467,7 +477,7 @@ public partial class TaskBarMediaControl
             return 0;
 
         var sourceSize = Math.Max(1, SongArtist.FontSize);
-        var targetSize = _layoutEngine?.LyricsFontSize ?? sourceSize;
+        var targetSize = EffectiveLyricFontSize;
         var width = MeasureTextWidthExact(text, SongArtist) * targetSize / sourceSize + WebLyricsHorizontalInsetDip;
 
         // Web 歌词用 CSS letter-spacing 拉开字距：每个字符（含空格与末尾字符）都会多出
@@ -477,7 +487,7 @@ public partial class TaskBarMediaControl
         // "font size × percent". The auto-size has to add the same amount, otherwise a wider spacing overflows the text
         // area that was requested without it and the right side is clipped with an ellipsis even though the taskbar still
         // has free room. Measured against the real page: width = base + characters × percent × font size.
-        var percent = LyricsCharacterSpacing.Normalize(SettingsManager.Current.LyricsCharacterSpacingPercent);
+        var percent = LyricsCharacterSpacing.Normalize(PresentationSettings.LyricsCharacterSpacingPercent);
         if (percent > 0)
         {
             width += text.Length * targetSize * percent / 100.0;

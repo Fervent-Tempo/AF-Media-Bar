@@ -16,12 +16,17 @@ public static class ScaledLayoutFactory
     /// <param name="lengthScale">主轴间距缩放系数 / Primary-axis spacing scale</param>
     /// <param name="thicknessScale">横轴粗细缩放系数 / Cross-axis thickness scale</param>
     /// <param name="mediaFontScale">媒体文字字号缩放系数；只影响文字字号，不改变组件尺寸。/ Media-text font-size scale; affects text sizes only, not component bounds.</param>
-    public static LayoutSchema Create(LayoutSchema source, double lengthScale, double thicknessScale, double mediaFontScale = 1)
+    /// <param name="crossAxisDip">宿主当前可用横轴；仅夹取运行时几何，不写设置。</param>
+    /// <param name="preserveMediaFontSize">让任务栏文字独立于粗细缩放。</param>
+    public static LayoutSchema Create(LayoutSchema source, double lengthScale, double thicknessScale, double mediaFontScale = 1, double? crossAxisDip = null, bool preserveMediaFontSize = false)
     {
         lengthScale = Math.Clamp(lengthScale, 0.7, 1.25);
         thicknessScale = Math.Clamp(thicknessScale, 0.7, 1.25);
         mediaFontScale = Math.Clamp(mediaFontScale, 0.5, 2);
         var isVertical = source.Orientation == LayoutOrientation.Vertical;
+        var baseCross = isVertical ? source.Canvas.Width : source.Canvas.Height;
+        if (crossAxisDip is { } cross && double.IsFinite(cross) && cross > 0 && baseCross > 0)
+            thicknessScale = Math.Min(thicknessScale, cross / baseCross);
 
         var components = source.Components.Select(component => new ComponentConfig
         {
@@ -35,7 +40,7 @@ public static class ScaledLayoutFactory
                 component.Bounds.Y * thicknessScale,
                 component.Bounds.Width * thicknessScale,
                 component.Bounds.Height * thicknessScale),
-            Properties = ScaleVisualProperties(component.Properties, thicknessScale, mediaFontScale)
+            Properties = ScaleVisualProperties(component.Properties, thicknessScale, mediaFontScale, preserveMediaFontSize)
         }).ToList();
 
         var primaryGapDelta = 0d;
@@ -83,7 +88,7 @@ public static class ScaledLayoutFactory
     private static Dictionary<string, object> ScaleVisualProperties(
         IReadOnlyDictionary<string, object> properties,
         double thicknessScale,
-        double mediaFontScale)
+        double mediaFontScale, bool preserveMediaFontSize)
     {
         var result = new Dictionary<string, object>(properties);
         foreach (var key in new[] { "cornerRadius", "placeholderIconSize" })
@@ -92,13 +97,11 @@ public static class ScaledLayoutFactory
                 result[key] = number * thicknessScale;
         }
 
-        // 文字字号同时受横轴粗细和用户字号设置影响；两种缩放都只在数据层完成，渲染引擎只读取结果。
-        // Text sizes follow both the cross-axis thickness and the user font-size setting; both scalings stay in the data
-        // layer and the render engine only reads the result.
+        // 任务栏保持用户字号；其他宿主保留原有粗细缩放语义，渲染引擎只读取结果。
         foreach (var key in new[] { "titleFontSize", "artistFontSize", "lyricsFontSize" })
         {
             if (result.TryGetValue(key, out var value) && value is double number)
-                result[key] = number * thicknessScale * mediaFontScale;
+                result[key] = number * (preserveMediaFontSize ? 1 : thicknessScale) * mediaFontScale;
         }
 
         return result;

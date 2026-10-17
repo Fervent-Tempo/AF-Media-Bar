@@ -13,7 +13,9 @@ public enum SettingsMode
     /// <summary>A desktop card host.</summary>
     DesktopCard,
     /// <summary>A floating orb host.</summary>
-    FloatingBall
+    FloatingBall,
+    /// <summary>独立桌面悬浮媒体栏的配置。</summary>
+    FloatingBar
 }
 
 /// <summary>Immutable, non-persistent mode and monitor context for one settings page instance.</summary>

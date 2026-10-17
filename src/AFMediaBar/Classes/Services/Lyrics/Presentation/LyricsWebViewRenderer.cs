@@ -22,7 +22,12 @@ public sealed record LyricsWebStyle(
     string TranslationColor,
     string WordScanBaseColor,
     string WordScanOverlayColor,
-    string TextShadow);
+    string TextShadow,
+    bool IsVertical = false,
+    double SecondaryFontSize = 14,
+    string MetadataAlignment = "Left",
+    bool ReduceMotion = false,
+    bool Compact = false);
 
 /// <summary>
 /// WebView2 歌词适配器。它只保留每种消息的最新值，因此初始化或脚本执行较慢时不会回放过期帧。
@@ -137,12 +142,17 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
             style.WordScanOverlayColor,
             surfaceColor = "transparent",
             surfaceShadow = "none",
-            style.TextShadow
+            style.TextShadow,
+            style.IsVertical,
+            style.SecondaryFontSize,
+            style.MetadataAlignment,
+            style.ReduceMotion,
+            style.Compact
         });
         StartDrain();
     }
 
-    public void Present(LyricsPresentationFrame frame, bool animateTransition)
+    public void Present(LyricsPresentationFrame frame, bool animateTransition, bool isMetadata = false)
     {
         ArgumentNullException.ThrowIfNull(frame);
         if (_disposed || _failed) return;
@@ -160,7 +170,7 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
             nextTranslation = frame.IsVisible ? frame.NextTranslation : string.Empty,
             translationMode = frame.IsVisible && frame.TranslationMode,
             animateTransition = frame.IsVisible && animateTransition,
-            scene = "lyrics"
+            scene = isMetadata ? "metadata" : "lyrics"
         });
         StartDrain();
     }
@@ -336,6 +346,7 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
             ReadResource("Web.Lyrics.state.js"),
             ReadResource("Web.Lyrics.spacing.js"),
             ReadResource("Web.Lyrics.presentation.js"),
+            ReadResource("Web.Lyrics.vertical.js"),
             ReadResource("Web.Lyrics.app.js")
         }).Replace("</script", "<\\/script", StringComparison.OrdinalIgnoreCase);
         return template.Replace("{{STYLE_CSS}}", style, StringComparison.Ordinal)

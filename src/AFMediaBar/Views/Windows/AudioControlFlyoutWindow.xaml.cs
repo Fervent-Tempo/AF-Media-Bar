@@ -21,6 +21,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
     private bool _isDisposed;
     private int _animationVersion;
     private int _navigationVersion;
+    private int _presentationVersion;
     private double _applicationListOffset;
     private WeakReference<IInputElement>? _applicationListFocus;
 
@@ -36,6 +37,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
         InitializeComponent();
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         ApplyMotionEffects();
+        MaxHeight = ViewModel.IsNewAudioControlEnabled ? 620 : 440;
         appearanceService.Attach(this);
     }
 
@@ -50,10 +52,11 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
 
         // 门禁覆盖刷新和 HWND 创建；同步完成的刷新也必须先退出托盘原生消息回调。
         _isToggling = true;
+        var presentationVersion = _presentationVersion;
         try
         {
             await Dispatcher.Yield(DispatcherPriority.Background);
-            if (_isDisposed || Dispatcher.HasShutdownStarted)
+            if (_isDisposed || presentationVersion != _presentationVersion || Dispatcher.HasShutdownStarted)
                 return;
 
             if (IsVisible && !_isHiding)
@@ -63,7 +66,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
             }
 
             await ViewModel.RefreshAsync();
-            if (_isDisposed || Dispatcher.HasShutdownStarted)
+            if (_isDisposed || presentationVersion != _presentationVersion || Dispatcher.HasShutdownStarted)
                 return;
 
             _animationVersion++;
@@ -151,7 +154,23 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
 
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
     {
-        if (_isDisposed || args.PropertyName != nameof(AudioControlViewModel.SelectedAudioApplication)) return;
+        if (_isDisposed) return;
+        if (args.PropertyName == nameof(AudioControlViewModel.IsNewAudioControlEnabled))
+        {
+            _presentationVersion++;
+            _navigationVersion++;
+            _animationVersion++;
+            OutputDeviceComboBox.IsDropDownOpen = false;
+            LegacyOutputDeviceComboBox.IsDropDownOpen = false;
+            InputDeviceComboBox.IsDropDownOpen = false;
+            ApplicationOutputDeviceComboBox.IsDropDownOpen = false;
+            ApplicationInputDeviceComboBox.IsDropDownOpen = false;
+            _isHiding = false;
+            Hide();
+            MaxHeight = ViewModel.IsNewAudioControlEnabled ? 620 : 440;
+            return;
+        }
+        if (args.PropertyName != nameof(AudioControlViewModel.SelectedAudioApplication)) return;
         ApplicationOutputDeviceComboBox.IsDropDownOpen = false;
         ApplicationInputDeviceComboBox.IsDropDownOpen = false;
         var version = ++_navigationVersion;
@@ -201,9 +220,17 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
         e.Handled = true;
     }
 
+    private static ApplicationVolumeItemViewModel? ResolveVolumeRow(object sender) => sender is Slider slider
+        ? slider.DataContext switch
+        {
+            ApplicationAudioItemViewModel card => card.Volume,
+            ApplicationVolumeItemViewModel legacy => legacy,
+            _ => null
+        } : null;
+
     private void ApplicationVolumeSlider_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
-        if (sender is Slider { DataContext: ApplicationAudioItemViewModel { Volume: { } application } })
+        if (ResolveVolumeRow(sender) is { } application)
         {
             application.SetApplyImmediately(false);
             var notches = Math.Max(1, Math.Abs(e.Delta) / Mouse.MouseWheelDeltaForOneLine);
@@ -214,7 +241,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
 
     private void ApplicationVolumeSlider_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (sender is Slider { DataContext: ApplicationAudioItemViewModel { Volume: { } application } })
+        if (ResolveVolumeRow(sender) is { } application)
         {
             application.SetApplyImmediately(true);
         }
@@ -222,7 +249,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
 
     private void ApplicationVolumeSlider_OnPreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
-        if (sender is Slider { DataContext: ApplicationAudioItemViewModel { Volume: { } application } })
+        if (ResolveVolumeRow(sender) is { } application)
         {
             application.SetApplyImmediately(false);
         }
@@ -230,7 +257,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
 
     private void ApplicationVolumeSlider_OnLostMouseCapture(object sender, MouseEventArgs e)
     {
-        if (sender is Slider { DataContext: ApplicationAudioItemViewModel { Volume: { } application } })
+        if (ResolveVolumeRow(sender) is { } application)
         {
             application.SetApplyImmediately(false);
         }
@@ -238,7 +265,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
 
     private void ApplicationVolumeSlider_OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (sender is Slider { DataContext: ApplicationAudioItemViewModel { Volume: { } application } })
+        if (ResolveVolumeRow(sender) is { } application)
         {
             application.SetApplyImmediately(true);
         }
@@ -256,7 +283,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
         // The ComboBox list uses a separate Popup; wait for its state to settle before treating deactivation as an outside click.
         Dispatcher.BeginInvoke(() =>
         {
-            if (!_isDisposed && IsVisible && !_isOutputDeviceDropDownOpen && !OutputDeviceComboBox.IsDropDownOpen && !InputDeviceComboBox.IsDropDownOpen &&
+            if (!_isDisposed && IsVisible && !_isOutputDeviceDropDownOpen && !OutputDeviceComboBox.IsDropDownOpen && !LegacyOutputDeviceComboBox.IsDropDownOpen && !InputDeviceComboBox.IsDropDownOpen &&
                 !ApplicationOutputDeviceComboBox.IsDropDownOpen && !ApplicationInputDeviceComboBox.IsDropDownOpen && !IsActive)
             {
                 BeginHideAnimation();

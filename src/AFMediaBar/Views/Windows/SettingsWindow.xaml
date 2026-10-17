@@ -9,6 +9,7 @@
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
 
     xmlns:pages="clr-namespace:AFMediaBar.Views.Pages"
+    xmlns:settings="clr-namespace:AFMediaBar.Classes.Models.Settings"
     Title="{Binding ViewModel.ApplicationTitle, Mode=OneWay}"
     Width="1100"
     Height="650"

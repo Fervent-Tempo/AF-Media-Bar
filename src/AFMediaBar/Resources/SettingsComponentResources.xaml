@@ -166,6 +166,8 @@
                         BorderThickness="{TemplateBinding BorderThickness}"
                         CornerRadius="{TemplateBinding CornerRadius}"
                         SnapsToDevicePixels="True" IsHitTestVisible="False" components:SettingsHoverShadow.IsEnabled="True" />
+                    <Border x:Name="RowHoverTint" Background="{DynamicResource SubtleFillColorSecondaryBrush}"
+                            CornerRadius="{TemplateBinding CornerRadius}" Opacity="0" IsHitTestVisible="False" />
                     <Border Padding="{TemplateBinding Padding}" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="Transparent" Background="Transparent">
                         <Grid>
                             <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
@@ -274,8 +276,11 @@
                             <MultiTrigger.Conditions>
                                 <Condition Property="IsNested" Value="False" />
                                 <Condition Property="IsMouseOver" Value="True" />
+                                <Condition Property="IsEnabled" Value="True" />
+                                <Condition Property="IsStylusOver" Value="False" />
                             </MultiTrigger.Conditions>
                             <Setter TargetName="RowSurface" Property="BorderBrush" Value="{DynamicResource ControlStrokeColorSecondaryBrush}" />
+                            <Setter TargetName="RowHoverTint" Property="Opacity" Value="1" />
                         </MultiTrigger>
                         <!--
                             选中态用 IsKeyboardFocusWithin 而不是 IsKeyboardFocused：点击或拖动行内滑杆时焦点落在滑杆上，
@@ -796,4 +801,38 @@
         </ControlTemplate></Setter.Value></Setter>
     </Style>
 
+
+    <Style TargetType="{x:Type components:SettingsReorderHandle}">
+        <Setter Property="Width" Value="32" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="Margin" Value="4,0,0,0" />
+        <Setter Property="Focusable" Value="True" />
+        <Setter Property="Cursor" Value="SizeAll" />
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AfFocusVisualStyle}" />
+        <Setter Property="ToolTip" Value="{DynamicResource Loc.Settings.Reorder.Help}" />
+        <Setter Property="AutomationProperties.HelpText" Value="{DynamicResource Loc.Settings.Reorder.Help}" />
+        <Setter Property="AutomationProperties.Name" Value="{Binding Title, RelativeSource={RelativeSource AncestorType={x:Type components:SettingsRow}}}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type components:SettingsReorderHandle}">
+                    <Border x:Name="GripSurface" Background="Transparent" CornerRadius="4">
+                        <Path Width="10" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" Stretch="Fill" Fill="{TemplateBinding Foreground}"
+                              Data="M0,0 H3 V3 H0 Z M7,0 H10 V3 H7 Z M0,6.5 H3 V9.5 H0 Z M7,6.5 H10 V9.5 H7 Z M0,13 H3 V16 H0 Z M7,13 H10 V16 H7 Z" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="GripSurface" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsDragging" Value="True">
+                            <Setter Property="Foreground" Value="{DynamicResource AfAccentBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 </ResourceDictionary>

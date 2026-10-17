@@ -18,15 +18,19 @@ public static class SettingsPageCatalog
         new SettingsPageDefinition(SettingsPageKey.Interaction, "Common.Page.Interaction", "HandDraw24", false),
         new SettingsPageDefinition(SettingsPageKey.MediaAndNotifications, "Common.Page.MediaAndNotifications", "PuzzlePiece24", true),
         new SettingsPageDefinition(SettingsPageKey.Application, "Common.Page.Application", "Settings24", true),
+        new SettingsPageDefinition(SettingsPageKey.Experimental, "Common.Page.Experimental", "Beaker24", true),
         new SettingsPageDefinition(SettingsPageKey.ReleaseHighlights, "Common.Page.ReleaseHighlights", "Sparkle24", true, true),
         new SettingsPageDefinition(SettingsPageKey.About, "Common.Page.About", "QuestionCircle24", true, true)
     });
 
     /// <summary>Only hosts implemented in this release can become active settings contexts.</summary>
-    public static bool IsImplemented(SettingsMode mode) => mode == SettingsMode.Taskbar;
+    public static bool IsImplemented(SettingsMode mode) => mode is SettingsMode.Taskbar or SettingsMode.FloatingBar;
+    /// <summary>设置目标可编辑不表示该宿主已接入运行时。</summary>
+    public static bool CanEditProfile(SettingsMode mode) => mode == SettingsMode.Taskbar ||
+        mode == SettingsMode.FloatingBar && AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.FloatingBar;
     /// <summary>Returns current-mode pages plus common application destinations; future hosts get no fake specialized controls.</summary>
     public static IReadOnlyList<SettingsPageDefinition> ForMode(SettingsMode mode) =>
-        IsImplemented(mode) ? TaskbarPages : TaskbarPages.Where(page => page.IsGlobal).ToArray();
+        CanEditProfile(mode) ? TaskbarPages : TaskbarPages.Where(page => page.IsGlobal).ToArray();
     /// <summary>Finds a semantic destination in the current composition.</summary>
     public static SettingsPageDefinition? Find(SettingsPageKey key, SettingsMode mode) => ForMode(mode).FirstOrDefault(page => page.Key == key);
 

@@ -1,4 +1,4 @@
-// Defines the UI configuration boundary; phase one adapts existing storage rather than creating per-mode JSON profiles.
+// 设置编辑上下文的读写边界，任务栏保留原字段，悬浮几何独立保存。
 using AFMediaBar.Classes.Models.Settings;
 using AFMediaBar.Classes.Settings;
 
@@ -15,8 +15,25 @@ public interface ISettingsConfiguration
     CancellationToken CancellationToken { get; }
     /// <summary>Existing settings source; caller writes remain on the UI thread.</summary>
     AppSettings Current { get; }
-    /// <summary>Whether configuration storage is isolated by mode/axis. False until the release migration is implemented.</summary>
-    bool HasIndependentProfiles { get; }
+    /// <summary>本页写入的配置目标；朝向不产生额外配置。</summary>
+    BarConfigurationTarget Target => Context.Mode == SettingsMode.FloatingBar
+        ? BarConfigurationTarget.FloatingBar : BarConfigurationTarget.Taskbar;
+    /// <summary>修改实验开关，保存的实验偏好保持不变。</summary>
+    void SetExperiments(ExperimentalSettings settings)
+    {
+        if (IsActive) SettingsManager.Current.Experiments = settings;
+    }
+    /// <summary>明确选择运行宿主；启用实验本身不切换模式。</summary>
+    void SetWindowMode(AFMediaBar.Classes.Models.Layout.WindowMode mode)
+    {
+        if (IsActive) SettingsManager.Current.WindowMode = mode == AFMediaBar.Classes.Models.Layout.WindowMode.FloatingBar &&
+            SettingsManager.Current.Experiments.FloatingBar ? mode : AFMediaBar.Classes.Models.Layout.WindowMode.Taskbar;
+    }
+    /// <summary>修改独立悬浮宿主偏好。</summary>
+    void SetFloatingBar(FloatingBarSettings settings)
+    {
+        if (IsActive) SettingsManager.Current.FloatingBar = settings;
+    }
     /// <summary>Replaces the taskbar section through the existing normalization and event path.</summary>
     void SetTaskbarExperience(TaskbarExperienceSettings settings);
     /// <summary>Replaces application appearance through the current storage contract.</summary>

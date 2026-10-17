@@ -201,6 +201,18 @@ public partial class ExtraFeaturesViewModel : ObservableObject
         SaveQuickLaunch(items);
     }
 
+    [RelayCommand]
+    private void ReorderQuickLaunch(SettingsReorderRequest? request)
+    {
+        if (_isRefreshing || request is null ||
+            !request.TryResolve(QuickLaunchEntries, entry => entry.Id, out var index, out var target)) return;
+        var entries = QuickLaunchEntries.ToList();
+        var entry = entries[index];
+        entries.RemoveAt(index);
+        entries.Insert(target, entry);
+        SaveQuickLaunch(entries);
+    }
+
     private void SaveQuickLaunch(IEnumerable<QuickLaunchEntry> entries) =>
         SettingsManager.SetQuickLaunchSettings(new QuickLaunchSettings(entries.ToArray()));
 

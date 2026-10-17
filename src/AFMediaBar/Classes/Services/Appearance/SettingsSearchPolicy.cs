@@ -42,6 +42,8 @@ public enum SettingsPageKey
     ScreenAndPlacement,
     /// <summary>Application-wide theme, window material, and interface typography.</summary>
     ApplicationAppearance,
+    /// <summary>默认关闭的实验项目及其专属配置。</summary>
+    Experimental,
 }
 
 /// <summary>

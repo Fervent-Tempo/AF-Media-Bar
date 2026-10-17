@@ -98,7 +98,7 @@
                             </Style>
                         </components:ReleaseOpenComboBox.Style>
                     </components:ReleaseOpenComboBox>
-                    <TextBlock Text="{DynamicResource Loc.Common.InputDevice}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,12,0,6" />
+                    <TextBlock x:Name="InputDeviceLabel" Text="{DynamicResource Loc.Common.InputDevice}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,12,0,6" />
                     <components:ReleaseOpenComboBox x:Name="InputDeviceCombo"
                               DisplayMemberPath="DisplayName"
                               ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=SelectedItem.DisplayName}"

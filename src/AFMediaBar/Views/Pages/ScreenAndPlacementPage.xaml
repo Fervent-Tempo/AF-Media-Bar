@@ -10,29 +10,70 @@
     <Page.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <Style x:Key="ModeChoiceStyle" BasedOn="{StaticResource AfSettingsChoiceCardStyle}" TargetType="RadioButton">
-            <Setter Property="MinHeight" Value="96" />
-            <Setter Property="Padding" Value="16,14" />
-            <Setter Property="Margin" Value="0,0,8,8" />
+            <Setter Property="Padding" Value="16" />
+            <Setter Property="Margin" Value="0,0,12,12" />
+            <Setter Property="VerticalContentAlignment" Value="Top" />
+        </Style>
+        <Style x:Key="ModeTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontWeight" Value="{DynamicResource AppTextStrongFontWeight}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,12,0,4" />
         </Style>
         <Style x:Key="ModeCaptionStyle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="12" />
-            <Setter Property="LineHeight" Value="17" />
+            <Setter Property="LineHeight" Value="18" />
             <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
             <Setter Property="TextWrapping" Value="Wrap" />
-            <Setter Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
         </Style>
-        <Style
-            x:Key="TaskbarModeRowStyle"
-            BasedOn="{StaticResource {x:Type components:SettingsRow}}"
-            TargetType="{x:Type components:SettingsRow}">
-            <Setter Property="Badge" Value="" />
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding ViewModel.IsTaskbarHostingActive}" Value="True">
-                    <Setter Property="Badge" Value="{DynamicResource Loc.DisplayModes.Mode.Current}" />
-                    <Setter Property="BadgeTone" Value="Accent" />
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
+        <ControlTemplate x:Key="ModePreviewTemplate" TargetType="ContentControl">
+            <Border Height="104" Padding="12" Background="{DynamicResource AfSettingsInputBrush}" CornerRadius="6" IsHitTestVisible="False">
+                <Grid>
+                    <Viewbox Stretch="Uniform" StretchDirection="DownOnly">
+                        <Grid Width="240" Height="80">
+                            <Border Width="84" Height="40" Margin="8,4,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"
+                                    BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1" CornerRadius="4">
+                                <StackPanel Margin="8">
+                                    <Border Height="3" Width="28" HorizontalAlignment="Left" Background="{DynamicResource TextFillColorTertiaryBrush}" CornerRadius="1.5" Opacity="0.55" />
+                                    <Border Height="3" Margin="0,6,0,0" Background="{DynamicResource TextFillColorTertiaryBrush}" CornerRadius="1.5" Opacity="0.2" />
+                                    <Border Height="3" Width="40" Margin="0,4,0,0" HorizontalAlignment="Left" Background="{DynamicResource TextFillColorTertiaryBrush}" CornerRadius="1.5" Opacity="0.2" />
+                                </StackPanel>
+                            </Border>
+                            <Border x:Name="TaskbarTrack" Height="16" VerticalAlignment="Bottom" Background="{DynamicResource AfSettingsBorderBrush}" CornerRadius="3" />
+                            <Border x:Name="MediaBar" Height="16" Width="112" VerticalAlignment="Bottom" HorizontalAlignment="Center"
+                                    Padding="4,3" Background="{DynamicResource AfAccentBrush}" CornerRadius="3">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Width="10" Background="{DynamicResource AfOnAccentBrush}" CornerRadius="2" Opacity="0.85" />
+                                    <Border Grid.Column="1" Height="3" Margin="6,0" Background="{DynamicResource AfOnAccentBrush}" CornerRadius="1.5" Opacity="0.65" />
+                                    <Path Grid.Column="2" Width="6" Height="7" Fill="{DynamicResource AfOnAccentBrush}" Data="M 0,0 L 6,3.5 L 0,7 Z" Stretch="Uniform" />
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Viewbox>
+                    <Grid Width="20" Height="20" HorizontalAlignment="Right" VerticalAlignment="Top">
+                        <Ellipse Fill="{DynamicResource AfSettingsCardBrush}" Stroke="{DynamicResource TextFillColorTertiaryBrush}" StrokeThickness="1" />
+                        <Ellipse Width="12" Height="12" Fill="{DynamicResource AfAccentBrush}"
+                                 Visibility="{Binding IsChecked, RelativeSource={RelativeSource AncestorType=RadioButton}, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
+                    </Grid>
+                </Grid>
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="Tag" Value="Floating">
+                    <Setter TargetName="MediaBar" Property="Height" Value="26" />
+                    <Setter TargetName="MediaBar" Property="Width" Value="128" />
+                    <Setter TargetName="MediaBar" Property="VerticalAlignment" Value="Center" />
+                    <Setter TargetName="MediaBar" Property="Margin" Value="24,16,0,0" />
+                    <Setter TargetName="MediaBar" Property="Padding" Value="6" />
+                    <Setter TargetName="TaskbarTrack" Property="Opacity" Value="0.45" />
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
         <Style x:Key="RowSliderStyle" BasedOn="{StaticResource AfSettingsRowSliderStyle}" TargetType="{x:Type Slider}" />
         <Style x:Key="RowValueStyle" BasedOn="{StaticResource AfSettingsRowValueStyle}" TargetType="{x:Type TextBlock}" />
     </Page.Resources>
@@ -61,87 +102,62 @@
                     Header="{DynamicResource Loc.Common.Group.ChooseDisplayMode}"
                     Icon="{ui:SymbolIcon WindowConsole20}">
                     <StackPanel>
-                        <components:SettingsCallout Text="{Binding ViewModel.HostingModeText}" Symbol="WindowConsole20" />
-                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="False" Icon="{ui:SymbolIcon Options24}">
+                        <UniformGrid Margin="0,0,-12,0" Rows="1" IsEnabled="{Binding ViewModel.CanChangeMode}">
+                            <UniformGrid.Style>
+                                <Style TargetType="UniformGrid">
+                                    <Setter Property="Columns" Value="2" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ViewModel.IsFloatingExperimentEnabled}" Value="False">
+                                            <Setter Property="Columns" Value="1" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </UniformGrid.Style>
+                            <RadioButton x:Name="TaskbarModeCard" GroupName="ImplementedDisplayMode" Tag="0"
+                                         IsChecked="{Binding ViewModel.IsTaskbarMode, Mode=OneWay}" Click="OnModeCardClick"
+                                         AutomationProperties.Name="{DynamicResource Loc.DisplayModes.Mode.Taskbar}"
+                                         Style="{StaticResource ModeChoiceStyle}">
+                                <StackPanel>
+                                    <ContentControl Template="{StaticResource ModePreviewTemplate}" Focusable="False" />
+                                    <TextBlock Text="{DynamicResource Loc.DisplayModes.Mode.Taskbar}" Style="{StaticResource ModeTitleStyle}" />
+                                    <TextBlock Text="{DynamicResource Loc.DisplayModes.Mode.Taskbar.Caption}" Style="{StaticResource ModeCaptionStyle}" />
+                                    <ContentControl Content="{DynamicResource Loc.DisplayModes.Mode.Current}" Margin="0,12,0,0" HorizontalAlignment="Left"
+                                                    Style="{StaticResource AfSettingsBadgeAccentStyle}"
+                                                    Visibility="{Binding ViewModel.IsTaskbarMode, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
+                                </StackPanel>
+                            </RadioButton>
+                            <RadioButton x:Name="FloatingModeCard" GroupName="ImplementedDisplayMode" Tag="1"
+                                         IsChecked="{Binding ViewModel.IsFloatingBarMode, Mode=OneWay}" Click="OnModeCardClick"
+                                         Visibility="{Binding ViewModel.IsFloatingExperimentEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}"
+                                         AutomationProperties.Name="{DynamicResource Loc.Experimental.Floating.Title}"
+                                         Style="{StaticResource ModeChoiceStyle}">
+                                <StackPanel>
+                                    <ContentControl Template="{StaticResource ModePreviewTemplate}" Tag="Floating" Focusable="False" />
+                                    <TextBlock Text="{DynamicResource Loc.Experimental.Floating.Title}" Style="{StaticResource ModeTitleStyle}" />
+                                    <TextBlock Text="{DynamicResource Loc.DisplayModes.Mode.FloatingBar.Caption}" Style="{StaticResource ModeCaptionStyle}" />
+                                    <WrapPanel Margin="0,12,0,0">
+                                        <ContentControl Content="{DynamicResource Loc.DisplayModes.Mode.Experimental}" Margin="0,0,8,0" Style="{StaticResource AfSettingsBadgeAttentionStyle}" />
+                                        <ContentControl Content="{DynamicResource Loc.DisplayModes.Mode.Current}" Margin="0" Style="{StaticResource AfSettingsBadgeAccentStyle}"
+                                                        Visibility="{Binding ViewModel.IsFloatingBarMode, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
+                                    </WrapPanel>
+                                </StackPanel>
+                            </RadioButton>
+                        </UniformGrid>
+                        <components:SettingsCallout Text="{Binding ViewModel.RuntimeStatus}" Symbol="Info24" />
+                        <ui:CardExpander x:Name="FutureModesExpander" Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="False" Icon="{ui:SymbolIcon Options24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
-                                    <TextBlock
-                                        Style="{StaticResource AfSettingsRowTitleStyle}"
-                                        Text="{DynamicResource Loc.Placement.FutureModes.Title}" />
-                                    <TextBlock
-                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
-                                        Text="{DynamicResource Loc.Placement.FutureModes.Description}" />
+                                    <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Placement.FutureModes.Title}" />
+                                    <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Placement.FutureModes.Description}" />
                                 </StackPanel>
                             </ui:CardExpander.Header>
                             <StackPanel>
-                                <UniformGrid Columns="1">
-                                    <RadioButton
-                                        GroupName="DisplayMode"
-                                        IsChecked="{Binding ViewModel.IsDynamicIslandMode, Mode=OneWay}"
-                                        IsEnabled="False"
-                                        Style="{StaticResource ModeChoiceStyle}">
-                                        <StackPanel>
-                                            <DockPanel>
-                                                <ContentControl
-                                                    DockPanel.Dock="Right"
-                                                    Content="{DynamicResource Loc.Common.NotImplemented}"
-                                                    Style="{StaticResource AfSettingsBadgeNeutralStyle}" />
-                                                <TextBlock
-                                                    FontSize="16"
-                                                    FontWeight="{DynamicResource AppTextStrongFontWeight}"
-                                                    Text="{DynamicResource Loc.Common.DynamicIsland}" />
-                                            </DockPanel>
-                                            <TextBlock
-                                                Margin="0,8,0,0"
-                                                Style="{StaticResource ModeCaptionStyle}"
-                                                Text="{DynamicResource Loc.DisplayModes.Mode.DynamicIsland.Caption}" />
-                                        </StackPanel>
-                                    </RadioButton>
-                                    <RadioButton
-                                        GroupName="DisplayMode"
-                                        IsChecked="{Binding ViewModel.IsDesktopCardMode, Mode=OneWay}"
-                                        IsEnabled="False"
-                                        Style="{StaticResource ModeChoiceStyle}">
-                                        <StackPanel>
-                                            <DockPanel>
-                                                <ContentControl
-                                                    DockPanel.Dock="Right"
-                                                    Content="{DynamicResource Loc.Common.NotImplemented}"
-                                                    Style="{StaticResource AfSettingsBadgeNeutralStyle}" />
-                                                <TextBlock
-                                                    FontSize="16"
-                                                    FontWeight="{DynamicResource AppTextStrongFontWeight}"
-                                                    Text="{DynamicResource Loc.DisplayModes.Mode.DesktopCard}" />
-                                            </DockPanel>
-                                            <TextBlock
-                                                Margin="0,8,0,0"
-                                                Style="{StaticResource ModeCaptionStyle}"
-                                                Text="{DynamicResource Loc.DisplayModes.Mode.DesktopCard.Caption}" />
-                                        </StackPanel>
-                                    </RadioButton>
-                                    <RadioButton
-                                        GroupName="DisplayMode"
-                                        IsChecked="{Binding ViewModel.IsFloatingBallMode, Mode=OneWay}"
-                                        IsEnabled="False"
-                                        Style="{StaticResource ModeChoiceStyle}">
-                                        <StackPanel>
-                                            <DockPanel>
-                                                <ContentControl
-                                                    DockPanel.Dock="Right"
-                                                    Content="{DynamicResource Loc.Common.NotImplemented}"
-                                                    Style="{StaticResource AfSettingsBadgeNeutralStyle}" />
-                                                <TextBlock
-                                                    FontSize="16"
-                                                    FontWeight="{DynamicResource AppTextStrongFontWeight}"
-                                                    Text="{DynamicResource Loc.DisplayModes.Mode.FloatingBall}" />
-                                            </DockPanel>
-                                            <TextBlock
-                                                Margin="0,8,0,0"
-                                                Style="{StaticResource ModeCaptionStyle}"
-                                                Text="{DynamicResource Loc.DisplayModes.Mode.FloatingBall.Caption}" />
-                                        </StackPanel>
-                                    </RadioButton>
-                                </UniformGrid>
+                                <components:SettingsRow Title="{DynamicResource Loc.Common.DynamicIsland}" Description="{DynamicResource Loc.DisplayModes.Mode.DynamicIsland.Caption}"
+                                                        Badge="{DynamicResource Loc.Common.NotImplemented}" Icon="{ui:SymbolIcon WindowConsole20}" IsEnabled="False" />
+                                <components:SettingsRow Title="{DynamicResource Loc.DisplayModes.Mode.DesktopCard}" Description="{DynamicResource Loc.DisplayModes.Mode.DesktopCard.Caption}"
+                                                        Badge="{DynamicResource Loc.Common.NotImplemented}" Icon="{ui:SymbolIcon Desktop24}" IsEnabled="False" />
+                                <components:SettingsRow Title="{DynamicResource Loc.DisplayModes.Mode.FloatingBall}" Description="{DynamicResource Loc.DisplayModes.Mode.FloatingBall.Caption}"
+                                                        Badge="{DynamicResource Loc.Common.NotImplemented}" Icon="{ui:SymbolIcon Options24}" IsEnabled="False" />
                             </StackPanel>
                         </ui:CardExpander>
                     </StackPanel>
@@ -177,19 +193,19 @@
                             <TextBlock Text="{Binding ViewModel.OrientationText}" VerticalAlignment="Center" />
                         </components:SettingsRow>
                         <components:SettingsRow
-                            Visibility="{Binding ViewModel.IsHorizontalLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}"
+                            Visibility="{Binding ViewModel.CanConfigureBarLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}"
                             Description="{DynamicResource Loc.DisplayModes.Placement.Row.Alignment.Description}"
                             Icon="{ui:SymbolIcon ArrowMove24}"
                             Title="{DynamicResource Loc.DisplayModes.Placement.Row.Alignment.Title}">
                             <ComboBox MinWidth="200" SelectedValue="{Binding ViewModel.TaskbarPosition, Mode=TwoWay}" SelectedValuePath="Tag">
                                 <ComboBoxItem
-                                    Content="{DynamicResource Loc.DisplayModes.Placement.Alignment.Start}"
+                                    Content="{Binding ViewModel.AxisStartText}"
                                     Tag="{x:Static settings:TaskbarBarPosition.Start}" />
                                 <ComboBoxItem
                                     Content="{DynamicResource Loc.DisplayModes.Placement.Alignment.Center}"
                                     Tag="{x:Static settings:TaskbarBarPosition.Center}" />
                                 <ComboBoxItem
-                                    Content="{DynamicResource Loc.DisplayModes.Placement.Alignment.End}"
+                                    Content="{Binding ViewModel.AxisEndText}"
                                     Tag="{x:Static settings:TaskbarBarPosition.End}" />
                             </ComboBox>
                         </components:SettingsRow>
@@ -225,6 +241,37 @@
                                 Content="{DynamicResource Loc.DisplayModes.Placement.ResetAction}"
                                 Icon="{ui:SymbolIcon ArrowReset24}"
                                 Style="{StaticResource AfSettingsButtonStyle}" />
+                        </components:SettingsRow>
+                    </StackPanel>
+                </components:SettingsGroup>
+                <components:SettingsGroup GroupId="Placement.Floating.Title" Header="{DynamicResource Loc.Placement.Floating.Title}"
+                    Description="{DynamicResource Loc.Placement.Floating.Description}" Icon="{ui:SymbolIcon Desktop24}"
+                    Visibility="{Binding ViewModel.IsFloatingBarMode, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                    <StackPanel>
+                        <components:SettingsRow Title="{DynamicResource Loc.Common.TargetMonitor}" Icon="{ui:SymbolIcon Desktop24}">
+                            <ItemsControl ItemsSource="{Binding ViewModel.TaskbarMonitorOptions}" MinWidth="260">
+                                <ItemsControl.ItemTemplate><DataTemplate>
+                                    <ui:ToggleSwitch Margin="0,3" Content="{Binding DisplayName}" IsChecked="{Binding IsSelected, Mode=TwoWay}" IsEnabled="{Binding CanToggle}" />
+                                </DataTemplate></ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </components:SettingsRow>
+                        <components:SettingsRow Title="{DynamicResource Loc.Experimental.Floating.Orientation}" Icon="{ui:SymbolIcon Orientation24}">
+                            <ComboBox SelectedIndex="{Binding ViewModel.FloatingOrientation, Mode=TwoWay}" MinWidth="200">
+                                <ComboBoxItem Content="{DynamicResource Loc.Experimental.Floating.Horizontal}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Experimental.Floating.Vertical}" />
+                            </ComboBox>
+                        </components:SettingsRow>
+                        <components:SettingsRow Title="{DynamicResource Loc.Experimental.Floating.Layer}">
+                            <ComboBox SelectedIndex="{Binding ViewModel.FloatingLayer, Mode=TwoWay}" MinWidth="200">
+                                <ComboBoxItem Content="{DynamicResource Loc.Experimental.Floating.Desktop}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Experimental.Floating.Topmost}" />
+                            </ComboBox>
+                        </components:SettingsRow>
+                        <components:SettingsRow Title="{DynamicResource Loc.Experimental.Floating.Lock}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.IsTaskbarPositionLocked, Mode=TwoWay}" />
+                        </components:SettingsRow>
+                        <components:SettingsRow Title="{DynamicResource Loc.Common.ResetPosition}" Icon="{ui:SymbolIcon ArrowReset24}">
+                            <ui:Button Content="{DynamicResource Loc.DisplayModes.Placement.ResetAction}" Command="{Binding ViewModel.ResetTaskbarPositionCommand}" Style="{StaticResource AfSettingsButtonStyle}" />
                         </components:SettingsRow>
                     </StackPanel>
                 </components:SettingsGroup>

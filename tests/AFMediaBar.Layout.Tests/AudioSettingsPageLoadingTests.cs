@@ -2,6 +2,9 @@
 using System.Diagnostics;
 using System.Windows;
 using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Settings;
+using AFMediaBar.Components;
+using System.Windows.Controls;
 using AFMediaBar.Classes.Services.Audio;
 using AFMediaBar.Classes.Services.Localization;
 using AFMediaBar.Classes.Services.Settings;
@@ -36,9 +39,15 @@ public sealed class AudioSettingsPageLoadingTests
         }
         StaTest.Run(async _ =>
         {
+            var previous = SettingsManager.Current;
             var application = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
             try
             {
+                application.Resources["AfBooleanToVisibilityConverter"] = new BooleanToVisibilityConverter();
+                SettingsManager.Current = new AppSettings
+                {
+                    Interaction = GlobalInteractionSettings.Default with { PrimaryWheelAction = WheelAction.InputDevice }
+                };
                 application.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ThemesDictionary());
                 application.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
                 foreach (var name in new[] { "MotionResources", "SettingsAppearanceResources", "SettingsDiagrams", "SettingsComponentResources" })
@@ -51,9 +60,94 @@ public sealed class AudioSettingsPageLoadingTests
                 page.Measure(new Size(820, 900));
                 Assert.AreEqual(1, viewModel.AudioDevices.OtherOutputDevices.Count);
                 Assert.IsNotNull(page.Content);
+                var audio = LogicalChildren(page).OfType<SettingsGroup>().Single(group => group.GroupId == "Audio.Settings.Title");
+                var inputs = LogicalChildren(page).OfType<ComboBoxItem>().Where(item =>
+                    item.Tag is WheelAction.InputDevice or TrayClickAction.OpenInputDeviceMenu or TrayWheelBehavior.SwitchInputDevice).ToArray();
+                Assert.AreEqual(4, inputs.Length);
+                Assert.AreEqual(Visibility.Collapsed, audio.Visibility);
+                Assert.IsTrue(inputs.All(item => item.Visibility == Visibility.Collapsed));
+                SettingsManager.Current.Experiments = new() { NewAudioControl = true, VerticalTaskbar = true, FloatingBar = true };
+                await System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+                Assert.AreEqual(Visibility.Visible, audio.Visibility);
+                Assert.IsTrue(inputs.All(item => item.Visibility == Visibility.Visible), "原交互页应按开关显示输入选项。");
+                SettingsManager.Current.Experiments = new();
+                await System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+                Assert.IsTrue(inputs.All(item => item.Visibility == Visibility.Collapsed));
+                Assert.AreEqual(WheelAction.InputDevice, SettingsManager.Current.Interaction.PrimaryWheelAction, "隐藏选项不能清除保存的偏好。");
+
+                using var experiments = new ExperimentalViewModel(new LegacySettingsConfiguration(context));
+                var entry = new ExperimentalPage(experiments);
+                entry.Measure(new Size(820, 900));
+                Assert.IsFalse(LogicalChildren(entry).Any(child => child is Frame or Page), "实验页不再嵌入完整设置页。");
+                var navigations = 0;
+                entry.OpenSettings += (_, args) =>
+                {
+                    Assert.IsInstanceOfType<Button>(args.OriginalSource);
+                    Assert.IsInstanceOfType<AFMediaBar.Classes.Services.SettingsPageKey>(((Button)args.OriginalSource).Tag);
+                    navigations++;
+                };
+                var links = LogicalChildren(entry).OfType<Button>().Where(button => button.Tag is AFMediaBar.Classes.Services.SettingsPageKey).ToArray();
+                foreach (var link in links) link.RaiseEvent(new RoutedEventArgs(Button.ClickEvent, link));
+                Assert.AreEqual(4, navigations, "实验页保留音频和共用设置入口，悬浮选项统一导航到显示与位置。");
+                await VerifyExperimentalBlankAreaWheelAsync(entry);
             }
-            finally { application.Shutdown(); }
+            finally { SettingsManager.Current = previous; application.Shutdown(); }
         });
+    }
+
+    private static async Task VerifyExperimentalBlankAreaWheelAsync(ExperimentalPage page)
+    {
+        var navigation = new Wpf.Ui.Controls.NavigationView
+        {
+            Transition = Wpf.Ui.Animations.Transition.None,
+            IsPaneOpen = false,
+            IsBackButtonVisible = Wpf.Ui.Controls.NavigationViewBackButtonVisible.Collapsed
+        };
+        var window = new Window
+        {
+            Content = navigation,
+            Width = 1200,
+            Height = 420,
+            Left = -10000,
+            Top = -10000,
+            ShowInTaskbar = false,
+            ShowActivated = false,
+            WindowStyle = WindowStyle.None
+        };
+        try
+        {
+            window.Show();
+            navigation.ReplaceContent(page);
+            await window.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+            var scroll = (ScrollViewer)page.FindName("PageScroll");
+            Assert.IsTrue(scroll.ScrollableHeight > 0, "测试窗口必须产生真实溢出。");
+            var notice = LogicalChildren(page).OfType<SettingsCallout>().First();
+            var gaps = new[] { notice.TranslatePoint(new Point(12, notice.ActualHeight + 4), page),
+                scroll.TranslatePoint(new Point(12, scroll.ViewportHeight / 2), page) };
+            foreach (var gap in gaps)
+            {
+                scroll.ScrollToTop();
+                await window.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+                var hit = page.InputHitTest(gap) as UIElement;
+                Assert.IsNotNull(hit);
+                hit.RaiseEvent(new System.Windows.Input.MouseWheelEventArgs(System.Windows.Input.Mouse.PrimaryDevice, Environment.TickCount, -120)
+                {
+                    RoutedEvent = System.Windows.Input.Mouse.MouseWheelEvent
+                });
+                await window.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+                Assert.IsTrue(scroll.VerticalOffset > 0, "提示下方间距和宽窗口两侧留白均应支持原生滚轮路由。");
+            }
+        }
+        finally { window.Close(); }
+    }
+
+    private static IEnumerable<DependencyObject> LogicalChildren(DependencyObject root)
+    {
+        foreach (var child in LogicalTreeHelper.GetChildren(root).OfType<DependencyObject>())
+        {
+            yield return child;
+            foreach (var descendant in LogicalChildren(child)) yield return descendant;
+        }
     }
 
     private sealed class Catalog : IAudioDeviceCatalog

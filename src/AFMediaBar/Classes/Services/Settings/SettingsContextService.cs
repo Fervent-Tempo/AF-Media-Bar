@@ -2,6 +2,7 @@
 using System.Windows.Threading;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models.Settings;
+using AFMediaBar.Classes.Settings;
 
 namespace AFMediaBar.Classes.Services.Settings;
 
@@ -18,14 +19,20 @@ public sealed class SettingsContextService : IDisposable
     private bool _disposed;
     private string? _preferredDeviceId;
     private int _resourcesDisposed;
+    private readonly BarRuntimeCoordinator? _runtime;
+    private bool _refreshPending;
+    private SettingsEnvironmentSnapshot? _snapshot;
 
     /// <summary>Creates a window-scoped context session; the reader owns platform access.</summary>
-    public SettingsContextService(ISettingsEnvironmentReader reader)
+    public SettingsContextService(ISettingsEnvironmentReader reader, BarRuntimeCoordinator? runtime = null)
     {
         _reader = reader;
+        _runtime = runtime;
+        if (_runtime is not null) _runtime.Changed += OnRuntimeChanged;
         _dispatcher = Dispatcher.CurrentDispatcher;
         _timer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromSeconds(1) };
         _timer.Tick += OnTick;
+        SettingsManager.SettingsChanged += OnSettingsChanged;
     }
 
     /// <summary>Cancels window-owned operations, including open reset dialogs, on close.</summary>
@@ -54,7 +61,8 @@ public sealed class SettingsContextService : IDisposable
     /// <summary>Refreshes asynchronously, dropping stale results and never blocking platform work on the UI thread.</summary>
     public async Task RefreshAsync()
     {
-        if (_disposed || !await _refreshGate.WaitAsync(0)) return;
+        if (_disposed) return;
+        if (!await _refreshGate.WaitAsync(0)) { _refreshPending = true; return; }
         var generation = _generation;
         try
         {
@@ -67,7 +75,16 @@ public sealed class SettingsContextService : IDisposable
         {
             if (!_disposed) await _dispatcher.InvokeAsync(() => { if (!_disposed) RefreshFailed?.Invoke(this, exception); });
         }
-        finally { _refreshGate.Release(); DisposeResourcesIfIdle(); }
+        finally
+        {
+            _refreshGate.Release();
+            DisposeResourcesIfIdle();
+            if (_refreshPending && !_disposed)
+            {
+                _refreshPending = false;
+                _ = _dispatcher.BeginInvoke(new Action(() => OnTick(this, EventArgs.Empty)));
+            }
+        }
     }
 
     /// <summary>Changes only the display being edited, not configured runtime targets or taskbar orientation.</summary>
@@ -76,14 +93,44 @@ public sealed class SettingsContextService : IDisposable
         _dispatcher.VerifyAccess();
         if (_disposed || !Monitors.Any(value => string.Equals(value.DeviceId, deviceId, StringComparison.OrdinalIgnoreCase))) return;
         _preferredDeviceId = deviceId;
-        Apply(new(Current.Mode, Monitors));
+        Apply(_snapshot ?? new(Current.Mode, Monitors));
+    }
+
+    private async void OnRuntimeChanged(object? sender, EventArgs args)
+    {
+        if (_disposed || _runtime is null || _runtime.IsSwitching) return;
+        if (!_dispatcher.CheckAccess())
+        {
+            _ = _dispatcher.BeginInvoke(new Action(() => OnRuntimeChanged(sender, args)));
+            return;
+        }
+        _generation++;
+        var mode = _runtime.RunningMode == AFMediaBar.Classes.Models.Layout.WindowMode.FloatingBar ? SettingsMode.FloatingBar : SettingsMode.Taskbar;
+        if (mode != Current.Mode) Apply(new(mode, []));
+        await RefreshAsync();
+    }
+
+    private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args)
+    {
+        if (_disposed || args.PropertyName is not (null or nameof(AppSettings.Experiments) or nameof(AppSettings.FloatingBar))) return;
+        if (!_dispatcher.CheckAccess())
+        {
+            _dispatcher.BeginInvoke(new Action(() => OnSettingsChanged(sender, args)));
+            return;
+        }
+        var previous = Current;
+        Apply(_snapshot ?? new(SettingsMode.Taskbar, Monitors));
+        if (previous == Current) Changed?.Invoke(this, EventArgs.Empty);
     }
 
     private void Apply(SettingsEnvironmentSnapshot snapshot)
     {
+        _snapshot = snapshot;
         var monitor = snapshot.Monitors.FirstOrDefault(value => string.Equals(value.DeviceId, _preferredDeviceId, StringComparison.OrdinalIgnoreCase))
             ?? snapshot.Monitors.FirstOrDefault(value => value.IsPrimary) ?? snapshot.Monitors.FirstOrDefault();
-        var next = new SettingsContext(snapshot.RunningMode, monitor?.DeviceId, monitor?.Orientation,
+        var mode = snapshot.RunningMode;
+        var next = new SettingsContext(mode, monitor?.DeviceId,
+            mode == SettingsMode.FloatingBar ? SettingsManager.Current.FloatingBar.Orientation : monitor?.Orientation,
             monitor?.IsCompact ?? false, monitor?.EnvironmentAvailable ?? false);
         var choicesChanged = !Monitors.SequenceEqual(snapshot.Monitors);
         if (next == Current && !choicesChanged) return;
@@ -101,8 +148,10 @@ public sealed class SettingsContextService : IDisposable
         if (_disposed) return;
         _disposed = true;
         _generation++;
+        if (_runtime is not null) _runtime.Changed -= OnRuntimeChanged;
         _timer.Stop();
         _timer.Tick -= OnTick;
+        SettingsManager.SettingsChanged -= OnSettingsChanged;
         _lifetime.Cancel();
         DisposeResourcesIfIdle();
     }

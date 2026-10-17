@@ -104,9 +104,11 @@ public sealed class LayoutRenderEngine
     /// <param name="lengthScale">组件间距缩放系数 / Component-spacing scale factor</param>
     /// <param name="thicknessScale">横轴厚度缩放系数 / Cross-axis thickness scale factor</param>
     /// <param name="mediaFontScale">媒体文字字号缩放系数 / Media-text font-size scale factor</param>
-    public void ApplyLayout(LayoutSchema layout, double lengthScale, double thicknessScale, double mediaFontScale = 1)
+    /// <param name="crossAxisDip">实际横轴空间，可小于设置编辑范围。</param>
+    /// <param name="preserveMediaFontSize">字体百分比仅应用一次。</param>
+    public void ApplyLayout(LayoutSchema layout, double lengthScale, double thicknessScale, double mediaFontScale = 1, double? crossAxisDip = null, bool preserveMediaFontSize = false)
     {
-        var effectiveLayout = ScaledLayoutFactory.Create(layout, lengthScale, thicknessScale, mediaFontScale);
+        var effectiveLayout = ScaledLayoutFactory.Create(layout, lengthScale, thicknessScale, mediaFontScale, crossAxisDip, preserveMediaFontSize);
         _currentLayout = effectiveLayout;
 
         // 应用画布配置
@@ -449,8 +451,7 @@ public sealed class LayoutRenderEngine
         _mainBorder.Height = resized.Canvas.Height;
         // Horizontal taskbar rest components are placed by TaskBarMediaControl's section geometry.
         // Reapplying the preset here first would write competing positions and visibility every frame.
-        if (resized.Orientation == LayoutOrientation.Vertical)
-            ApplyComponentLayout(resized.Components);
+        // Taskbar section geometry owns component placement after resizing.
     }
 
     /// <summary>

@@ -29,7 +29,10 @@ public enum WindowMode
     Taskbar,
 
     /// <summary>灵动岛模式：贴靠桌面顶部边缘的独立媒体窗口 / Dynamic island mode: an independent media window attached to the desktop top edge</summary>
-    DynamicIsland
+    DynamicIsland,
+
+    /// <summary>独立桌面悬浮媒体栏。</summary>
+    FloatingBar
 }
 
 /// <summary>灵动岛暂停时隐藏到的桌面边缘。/ Desktop edge used to retract the dynamic island while paused.</summary>

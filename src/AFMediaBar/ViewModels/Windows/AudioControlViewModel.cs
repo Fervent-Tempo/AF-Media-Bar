@@ -23,6 +23,9 @@ namespace AFMediaBar.ViewModels.Windows;
 /// </summary>
 public partial class AudioControlViewModel : ObservableObject, IDisposable
 {
+    private GlobalInteractionSettings EffectiveInteraction => ExperimentalAudioPolicy.Interaction(
+        SettingsManager.Current.Interaction, SettingsManager.Current.Experiments.NewAudioControl);
+
     private const int VolumeStepPercent = 2;
     private const bool TrayChordWheelEnabled = false;
     private static readonly TimeSpan DeviceApplyDelay =
@@ -35,7 +38,9 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     private readonly SpatialAudioService _spatialAudioService;
     private readonly ApplicationVolumeService _volumeService;
     private readonly ApplicationAudioControlCoordinator _applicationControl;
-    private readonly CancellationTokenSource _applicationCancellation = new();
+    private CancellationTokenSource _applicationCancellation = new();
+    private bool _experimentalAudioEnabled = SettingsManager.Current.Experiments.NewAudioControl;
+    public bool IsNewAudioControlEnabled => SettingsManager.Current.Experiments.NewAudioControl;
     private readonly MediaSessionService _mediaSessionService;
     private readonly ShellTrayIconService _trayIconService;
     private readonly NativeMouseInputMonitor _mouseInputMonitor;
@@ -69,7 +74,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void ToggleAudioApplication(ApplicationAudioItemViewModel? row)
     {
-        if (_disposed || row is null || !row.CanRoute || !AudioApplications.Contains(row)) return;
+        if (_disposed || !IsNewAudioControlEnabled || row is null || !row.CanRoute || !AudioApplications.Contains(row)) return;
         SelectedAudioApplication = ReferenceEquals(SelectedAudioApplication, row) ? null : row;
     }
 
@@ -351,7 +356,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
 
     private void OnTrayWheelChanged(object? sender, TrayWheelEventArgs e)
     {
-        var interaction = SettingsManager.Current.Interaction.Normalize();
+        var interaction = EffectiveInteraction.Normalize();
         var chordHeld = GlobalWheelGesturePolicy.IsChordHeld(
             interaction, e.IsShiftDown, e.IsLeftButtonDown, e.IsRightButtonDown);
         if (chordHeld && !TrayChordWheelEnabled)
@@ -534,7 +539,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         if (chordWheelClick || DateTime.UtcNow < _suppressTrayLeftClickUntilUtc)
             return;
 
-        switch (SettingsManager.Current.Interaction.TrayClickAction)
+        switch (EffectiveInteraction.TrayClickAction)
         {
             case TrayClickAction.OpenSettings:
                 SettingsOpenRequested?.Invoke(this, EventArgs.Empty);
@@ -575,7 +580,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
 
         _tooltipSourceId = snapshot.SourceId;
         _tooltipSourceName = snapshot.SourceName;
-        if (SettingsManager.Current.Interaction.TrayPrimaryWheelAction == TrayWheelBehavior.AdjustVolume)
+        if (EffectiveInteraction.TrayPrimaryWheelAction == TrayWheelBehavior.AdjustVolume)
             QueueTrayTooltipRefresh();
     }
 
@@ -598,6 +603,24 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
 
     private void OnInteractionSettingsChanged(object? sender, EventArgs e)
     {
+        var enabled = SettingsManager.Current.Experiments.NewAudioControl;
+        if (_experimentalAudioEnabled != enabled)
+        {
+            _experimentalAudioEnabled = enabled;
+            _audioRefreshVersion++;
+            _deviceApplyVersion++;
+            _pendingTrayDeviceSteps = 0;
+            _pendingTrayVolumeSteps = 0;
+            _audioInteraction.CancelDeviceOwner(this);
+            _applicationCancellation.Cancel();
+            _applicationCancellation.Dispose();
+            _applicationCancellation = new();
+            CloseApplicationDetail();
+            foreach (var row in AudioApplications) row.Dispose();
+            AudioApplications.Clear();
+            InputDevices.Clear();
+            OnPropertyChanged(nameof(IsNewAudioControlEnabled));
+        }
         QueueTrayTooltipRefresh();
     }
 
@@ -611,7 +634,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     {
         try
         {
-            var settings = SettingsManager.Current.Interaction.Normalize();
+            var settings = EffectiveInteraction.Normalize();
             var slot = settings.ShowWheelTooltips && ChordWheelHeld
                 ? WheelGestureSlot.Chord
                 : WheelGestureSlot.Primary;
@@ -689,7 +712,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     /// inside that service.
     /// </summary>
     private bool ChordWheelHeld => GlobalWheelGesturePolicy.IsChordHeld(
-        SettingsManager.Current.Interaction,
+        EffectiveInteraction,
         _mouseInputMonitor.IsShiftDown,
         _mouseInputMonitor.IsLeftButtonDown,
         _mouseInputMonitor.IsRightButtonDown);
@@ -714,7 +737,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         if (_disposed) return;
         _tooltipRefreshVersion++;
         // 暂留滚轮结果供确认，之后恢复实时读取，避免系统设置中的变化被旧结果永久遮住。
-        _appliedTrayWheelSlot = SettingsManager.Current.Interaction.ShowWheelTooltips && ChordWheelHeld
+        _appliedTrayWheelSlot = EffectiveInteraction.ShowWheelTooltips && ChordWheelHeld
             ? WheelGestureSlot.Chord
             : WheelGestureSlot.Primary;
         _trayWheelResultShown = true;

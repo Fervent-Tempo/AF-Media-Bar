@@ -1,4 +1,4 @@
-// 协调单个横向任务栏的已应用布局状态；窗口拥有状态，关闭后不发布通知。
+// 协调单个任务栏的已应用布局状态；窗口拥有状态，关闭后不发布通知。
 // 区间与恢复算法归纯策略，探测与托盘资源仍由注入服务及隐藏宿主持有。
 using System.Diagnostics;
 using System.Windows.Controls;
@@ -10,9 +10,10 @@ using static AFMediaBar.Classes.Interop.NativeMethods;
 
 namespace AFMediaBar.Views.Windows;
 
-/// <summary>横向任务栏锚点、长度及实际应用的协调。</summary>
+/// <summary>任务栏主轴锚点、长度及实际应用的协调。</summary>
 public partial class TaskbarWindow
 {
+    public bool IsVerticalPresentation => _appliedOrientation == LayoutOrientation.Vertical;
     private TaskbarPlacementState _placementState = new();
     private PlacementContext? _placementContext;
     private TaskbarPlacementDecision? _pendingPlacementDecision;
@@ -21,7 +22,7 @@ public partial class TaskbarWindow
     private TaskbarPlacementState? _dragPlacementSeed;
     private PlacementContext? _dragPlacementContext;
     private readonly TaskbarReturnTransition _returnTransition = new();
-    private RECT? _renderedHorizontalRect;
+    private RECT? _renderedPrimaryRect;
     private bool _skipPlacementTransition;
     private bool _isPlacementInteractionSuspended;
     private double _returnDpi;
@@ -57,17 +58,17 @@ public partial class TaskbarWindow
         PlacementTransitionStarted?.Invoke(this, EventArgs.Empty);
     }
 
-    private readonly record struct PlacementContext(nint Handle, int Length, double Dpi,
+    private readonly record struct PlacementContext(nint Handle, int Length, double Dpi, LayoutOrientation Orientation,
         TaskbarBarPosition Alignment, int Padding, bool Avoid);
 
     private PlacementContext GetPlacementContext(RECT rect, double dpi) => new(
-        _lastTaskbarHandle, rect.Right - rect.Left, dpi, SettingsManager.Current.Position,
+        _lastTaskbarHandle, IsVerticalPresentation ? rect.Bottom - rect.Top : rect.Right - rect.Left, dpi, _appliedOrientation ?? LayoutOrientation.Horizontal, SettingsManager.Current.Position,
         SettingsManager.Current.TaskbarBarManualPadding, SettingsManager.Current.TaskbarBarAvoidIcons);
 
     private void QueueOccupancyRefresh()
     {
         if (_isClosing || _isEnvironmentSuspended || IsBackgroundPruned || IsTaskbarPresentationSuspended ||
-            _appliedOrientation != LayoutOrientation.Horizontal || !SettingsManager.Current.TaskbarBarAvoidIcons || MediaControl.IsRestLayerEmpty) return;
+            !SettingsManager.Current.TaskbarBarAvoidIcons || MediaControl.IsRestLayerEmpty) return;
         _occupancyRefresh.Changed(Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency);
         _occupancyRefreshTimer.Start();
     }
@@ -82,7 +83,7 @@ public partial class TaskbarWindow
     {
         var seconds = Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency;
         if (_isClosing || _isEnvironmentSuspended || IsBackgroundPruned || IsTaskbarPresentationSuspended ||
-            _isDragging || _appliedOrientation != LayoutOrientation.Horizontal || MediaControl.IsRestLayerEmpty ||
+            _isDragging || MediaControl.IsRestLayerEmpty ||
             !SettingsManager.Current.TaskbarBarAvoidIcons || !_occupancyRefresh.IsActive(seconds))
         {
             StopOccupancyRefresh();
@@ -91,13 +92,13 @@ public partial class TaskbarWindow
         if (!_occupancyRefresh.TryBegin(seconds) || DateTime.UtcNow < _skipOccupiedAreaProbeUntilUtc ||
             _hostActions.IsEnvironmentRecovering) return;
         if (_taskBarService.TryGetTaskbarRect(_lastTaskbarHandle, out var rect))
-            _occupiedAreaService.GetSnapshot(_lastTaskbarHandle, rect, LayoutOrientation.Horizontal, _lastDpiScale, EdgePadding, requestRefresh: true);
+            _occupiedAreaService.GetSnapshot(_lastTaskbarHandle, rect, _appliedOrientation ?? LayoutOrientation.Horizontal, _lastDpiScale, EdgePadding, requestRefresh: true);
     }
 
-    private TaskbarPlacementDecision PreviewHorizontalPlacement(RECT rect, double dpi, double desiredDip) =>
-        PreviewHorizontalPlacement(rect, dpi, desiredDip, out _);
+    private TaskbarPlacementDecision PreviewPlacement(RECT rect, double dpi, double desiredDip) =>
+        PreviewPlacement(rect, dpi, desiredDip, out _);
 
-    private TaskbarPlacementDecision PreviewHorizontalPlacement(RECT rect, double dpi, double desiredDip,
+    private TaskbarPlacementDecision PreviewPlacement(RECT rect, double dpi, double desiredDip,
         out TaskbarOccupancySnapshot snapshot)
     {
         var context = GetPlacementContext(rect, dpi);
@@ -110,45 +111,46 @@ public partial class TaskbarWindow
         else if (_hostActions.IsEnvironmentRecovering || IsTaskbarPresentationSuspended || DateTime.UtcNow < _skipOccupiedAreaProbeUntilUtc)
             snapshot = new(TaskbarProbeStatus.Pending, Math.Max(0, state.Generation), 0, 0, []);
         else
-            snapshot = _occupiedAreaService.GetSnapshot(_lastTaskbarHandle, rect, LayoutOrientation.Horizontal, dpi, EdgePadding);
+            snapshot = _occupiedAreaService.GetSnapshot(_lastTaskbarHandle, rect, _appliedOrientation ?? LayoutOrientation.Horizontal, dpi, EdgePadding);
         var desired = double.IsFinite(desiredDip) ? (int)Math.Ceiling(Math.Max(0, desiredDip) * dpi) : minimum;
         return TaskbarPlacementPolicy.Evaluate(state, snapshot, context.Alignment, context.Length, context.Padding, minimum, desired);
     }
 
-    private RECT PositionHorizontalBar(RECT rect, double dpi)
+    private RECT PositionPrimaryBar(RECT rect, double dpi)
     {
         var canvas = MediaControl.CurrentLayout?.Canvas;
-        var desired = _lastDesiredSizeRequest?.PrimaryLength ?? canvas?.Width ?? 300;
-        var decision = PreviewHorizontalPlacement(rect, dpi, desired, out var snapshot);
+        var desired = _lastDesiredSizeRequest?.PrimaryLength ?? (IsVerticalPresentation ? canvas?.Height : canvas?.Width) ?? 300;
+        var decision = PreviewPlacement(rect, dpi, desired, out var snapshot);
         _pendingPlacementContext = GetPlacementContext(rect, dpi);
         _pendingPlacementDecision = decision;
         _pendingPlacementSnapshot = snapshot;
         _hasSafePlacement = decision.State.IsVisible;
         if (!_hasSafePlacement)
         {
-            if (_renderedHorizontalRect is not null) ClosePlacementPopups();
+            if (_renderedPrimaryRect is not null) ClosePlacementPopups();
             StopLayoutTransition();
-            _renderedHorizontalRect = null;
+            _renderedPrimaryRect = null;
             _lengthConstraints.Remove(this);
             return default;
         }
-        var thickness = Math.Min(Math.Max(1, rect.Bottom - rect.Top), (int)Math.Round((canvas?.Height ?? 44) * dpi));
-        var cross = Math.Clamp((rect.Bottom - rect.Top - thickness) / 2 +
-            (int)Math.Round(SettingsManager.Current.TaskbarBarCrossAxisOffsetDip * dpi), 0, Math.Max(0, rect.Bottom - rect.Top - thickness));
+        var crossLength = IsVerticalPresentation ? rect.Right - rect.Left : rect.Bottom - rect.Top;
+        var thickness = Math.Min(Math.Max(1, crossLength), (int)Math.Round((IsVerticalPresentation ? canvas?.Width ?? 48 : canvas?.Height ?? 44) * dpi));
+        var cross = Math.Clamp((crossLength - thickness) / 2 +
+            (int)Math.Round(SettingsManager.Current.TaskbarBarCrossAxisOffsetDip * dpi), 0, Math.Max(0, crossLength - thickness));
         var motion = MotionPolicy.ResolveCurrent();
         var now = Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency;
         var preserveInteraction = TaskbarPlacementPolicy.CanPreserveInteraction(
             _placementState, decision.State, _placementContext == _pendingPlacementContext,
-            _renderedHorizontalRect is { } previousRect && previousRect.Top == cross && previousRect.Bottom == cross + thickness);
-        if (!preserveInteraction && !_isPlacementInteractionSuspended && _renderedHorizontalRect is not null)
+            _renderedPrimaryRect is { } previousRect && previousRect.Top == cross && previousRect.Bottom == cross + thickness);
+        if (!preserveInteraction && !_isPlacementInteractionSuspended && _renderedPrimaryRect is not null)
             ClosePlacementPopups();
         var canReturn = !_skipPlacementTransition && !_applySettingsSizeImmediately && !_isDragging &&
             !_isRestoringTaskbarPresentation && !MediaControl.IsRestConnectionTransitionActive &&
             _placementContext == _pendingPlacementContext && _placementState.IsVisible &&
             _placementState.Generation == decision.State.Generation && motion.UseTransitions &&
-            _renderedHorizontalRect is { } current && current.Top == cross && current.Bottom == cross + thickness &&
+            _renderedPrimaryRect is { } current && current.Top == cross && current.Bottom == cross + thickness &&
             current.Left >= decision.State.Range.Start && current.Right <= decision.State.Range.End;
-        if (canReturn && _renderedHorizontalRect is { } previous)
+        if (canReturn && _renderedPrimaryRect is { } previous)
         {
             _returnTransition.Retarget(previous.Left, previous.Right - previous.Left,
                 decision.Position, decision.Width, now, motion.PositionDuration.TotalSeconds);
@@ -163,32 +165,32 @@ public partial class TaskbarWindow
                 var frame = _returnTransition.Advance(now);
                 _lengthConstraints.Update(this, decision.State.Minimum / dpi, decision.State.Budget / dpi);
                 if (!_returnTransition.IsActive) StopLayoutTransition(resumeInteraction: false);
-                return ApplyHorizontalFrame(frame.Position, frame.Width, dpi, cross, thickness);
+                return ApplyPrimaryFrame(frame.Position, frame.Width, dpi, cross, thickness);
             }
         }
         _lengthConstraints.Update(this, decision.State.Minimum / dpi, decision.State.Budget / dpi);
-        var result = ApplyHorizontalFrame(decision.Position, decision.Width, dpi, cross, thickness);
+        var result = ApplyPrimaryFrame(decision.Position, decision.Width, dpi, cross, thickness);
         // 输入区域由调用方随后写入；离散内容请求不能提前解除位置恢复的交互保护。
         StopLayoutTransition(resumeInteraction: false);
         return result;
     }
 
-    private RECT ApplyHorizontalFrame(double position, double width, double dpi, int cross, int thickness)
+    private RECT ApplyPrimaryFrame(double position, double width, double dpi, int cross, int thickness)
     {
         var left = (int)Math.Round(position);
         var pixels = (int)Math.Round(width);
         var alignment = SettingsManager.Current.Position;
         var anchor = 2L * left + (alignment == TaskbarBarPosition.End ? 2L * pixels : alignment == TaskbarBarPosition.Center ? pixels : 0);
         MediaControl.ApplyPlacementAnchor(left, anchor, dpi);
-        if (MediaControl.CurrentLayout is not { } layout || Math.Abs(layout.Canvas.Width * dpi - pixels) >= 0.5)
+        if (MediaControl.CurrentLayout is not { } layout || Math.Abs((IsVerticalPresentation ? layout.Canvas.Height : layout.Canvas.Width) * dpi - pixels) >= 0.5)
             MediaControl.ApplyPrimaryLength(pixels / dpi);
-        Canvas.SetLeft(MediaControl, left / dpi);
-        Canvas.SetTop(MediaControl, cross / dpi);
-        MediaControl.Width = pixels / dpi;
-        MediaControl.Height = thickness / dpi;
+        Canvas.SetLeft(MediaControl, (IsVerticalPresentation ? cross : left) / dpi);
+        Canvas.SetTop(MediaControl, (IsVerticalPresentation ? left : cross) / dpi);
+        MediaControl.Width = (IsVerticalPresentation ? thickness : pixels) / dpi;
+        MediaControl.Height = (IsVerticalPresentation ? pixels : thickness) / dpi;
         var result = new RECT { Left = left, Top = cross, Right = left + pixels, Bottom = cross + thickness };
-        _renderedHorizontalRect = result;
-        return result;
+        _renderedPrimaryRect = result;
+        return IsVerticalPresentation ? new RECT { Left = result.Top, Top = result.Left, Right = result.Bottom, Bottom = result.Right } : result;
     }
 
     private void AdvanceReturnTransition()
@@ -204,7 +206,7 @@ public partial class TaskbarWindow
         var frame = _returnTransition.Advance(Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency);
         var width = Math.Clamp((int)Math.Round(frame.Width), 1, _returnRange.Length);
         var position = Math.Clamp((int)Math.Round(frame.Position), _returnRange.Start, _returnRange.End - width);
-        var rect = ApplyHorizontalFrame(position, width, _returnDpi, _returnCross, _returnThickness);
+        var rect = ApplyPrimaryFrame(position, width, _returnDpi, _returnCross, _returnThickness);
         if (!_hasInputRegion || !SameRect(_lastInputRegion, rect))
         {
             ApplyBarInputRegion(_windowHandle, rect);
@@ -215,7 +217,7 @@ public partial class TaskbarWindow
         if (!_returnTransition.IsActive) StopLayoutTransition();
     }
 
-    private void PrepareHorizontalDrag(int desiredPosition, int width, TaskbarPrimaryRange range, RECT rect, double dpi)
+    private void PreparePrimaryDrag(int desiredPosition, int width, TaskbarPrimaryRange range, RECT rect, double dpi)
     {
         var position = Math.Clamp(desiredPosition, range.Start, Math.Max(range.Start, range.End - width));
         var alignment = SettingsManager.Current.Position;
@@ -236,7 +238,7 @@ public partial class TaskbarWindow
         };
     }
 
-    private void CommitHorizontalPlacement()
+    private void CommitPlacement()
     {
         if (_pendingPlacementDecision is not { } decision || _isClosing)
             return;

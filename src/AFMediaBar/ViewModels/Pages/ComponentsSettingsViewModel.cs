@@ -26,6 +26,7 @@ public sealed class ComponentsSettingsViewModel : ObservableObject, IDisposable
     public ComponentsSettingsViewModel(ISettingsConfiguration configuration, LocalizationService localization)
     {
         _configuration = configuration;
+        ReorderMetricCommand = new RelayCommand<SettingsReorderRequest>(ReorderMetric);
         MoveMetricUpCommand = new RelayCommand<PerformanceMetricSettingItem>(item => MoveMetric(item, -1));
         MoveMetricDownCommand = new RelayCommand<PerformanceMetricSettingItem>(item => MoveMetric(item, 1));
         configuration.Activated += OnActivated;
@@ -171,6 +172,7 @@ public sealed class ComponentsSettingsViewModel : ObservableObject, IDisposable
         }
     }
 
+    public IRelayCommand<SettingsReorderRequest> ReorderMetricCommand { get; }
     public IRelayCommand<PerformanceMetricSettingItem> MoveMetricUpCommand { get; }
     public IRelayCommand<PerformanceMetricSettingItem> MoveMetricDownCommand { get; }
 
@@ -192,15 +194,21 @@ public sealed class ComponentsSettingsViewModel : ObservableObject, IDisposable
 
     private void MoveMetric(PerformanceMetricSettingItem? item, int offset)
     {
-        if (item is null || _disposed || !_configuration.IsActive)
-            return;
+        if (item is null) return;
+        var entries = MetricOrderEntries;
+        var index = entries.ToList().FindIndex(entry => entry.Metric == item.Metric);
+        ReorderMetric(new SettingsReorderRequest(item, index + offset, entries));
+    }
+
+    private void ReorderMetric(SettingsReorderRequest? request)
+    {
+        if (_disposed || !_configuration.IsActive || request is null ||
+            !request.TryResolve(MetricOrderEntries, entry => entry.Metric, out var index, out var target)) return;
         var settings = _configuration.Current.PerformanceComponent.Normalize();
         var order = settings.GetOrderedMetrics().ToList();
-        var index = order.IndexOf(item.Metric);
-        var target = index + offset;
-        if (index < 0 || target < 0 || target >= order.Count)
-            return;
-        (order[index], order[target]) = (order[target], order[index]);
+        var metric = order[index];
+        order.RemoveAt(index);
+        order.Insert(target, metric);
         _configuration.SetPerformance(settings with { MetricOrder = order });
         OnPropertyChanged(nameof(MetricOrderEntries));
     }

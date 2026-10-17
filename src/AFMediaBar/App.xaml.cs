@@ -240,6 +240,13 @@ namespace AFMediaBar
                 services.AddSingleton<INavigationWindow, MainWindow>();
                 services.AddSingleton<MainWindowViewModel>();
                 services.AddSingleton<TaskbarWindowViewModel>();
+                services.AddSingleton<BarRuntimeCoordinator>();
+                services.AddSingleton<FloatingBarLengthConstraints>();
+                services.AddSingleton<DesktopWidgetZOrderService>();
+                services.AddSingleton<Func<string, AFMediaBar.Classes.Abstractions.ITaskbarWindowHostActions, TaskbarWindow>>(sp =>
+                    (target, actions) => ActivatorUtilities.CreateInstance<TaskbarWindow>(sp, target, actions, false));
+                services.AddSingleton<Func<string, DisplayMonitorInfo, FloatingBarWindow>>(sp =>
+                    (target, monitor) => ActivatorUtilities.CreateInstance<FloatingBarWindow>(sp, target, monitor));
                 services.AddSingleton<AudioControlViewModel>();
                 services.AddSingleton<AudioControlFlyoutWindow>();
 
@@ -280,6 +287,8 @@ namespace AFMediaBar
                 services.AddScoped<ContentLayoutViewModel>();
 
                 services.AddScoped<InteractionPage>();
+                services.AddScoped<ExperimentalPage>();
+                services.AddScoped<ExperimentalViewModel>();
                 services.AddScoped<InteractionViewModel>();
 
                 services.AddScoped<LyricsPage>();

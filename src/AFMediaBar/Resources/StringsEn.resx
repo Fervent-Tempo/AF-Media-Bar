@@ -560,7 +560,7 @@
     <value>Application</value>
   </data>
   <data name="Common.Group.ChooseDisplayMode" xml:space="preserve">
-    <value>Running mode</value>
+    <value>Display mode</value>
   </data>
   <data name="Common.Group.Fonts" xml:space="preserve">
     <value>Shared fonts</value>
@@ -797,10 +797,10 @@
     <value>Width follows the content automatically. Turn this off to enter a fixed width; the range follows available taskbar space.</value>
   </data>
   <data name="Diagram.TaskbarLength.Label.MinimumWidth" xml:space="preserve">
-    <value>Minimum required width</value>
+    <value>Minimum content length</value>
   </data>
   <data name="Diagram.TaskbarLength.Label.TaskbarLimit" xml:space="preserve">
-    <value>Taskbar safe limit</value>
+    <value>Available space limit</value>
   </data>
   <data name="Diagram.TaskbarPlacement.Caption" xml:space="preserve">
     <value>With avoidance enabled, the media bar stays clear of taskbar icons. Thickness offset fine-tunes its position vertically or horizontally.</value>
@@ -947,7 +947,7 @@
     <value>Taskbar</value>
   </data>
   <data name="DisplayModes.Mode.Taskbar.Caption" xml:space="preserve">
-    <value>Runs in the Windows taskbar and provides the always-on view, the quick controls, and the full panel</value>
+    <value>Show media information and controls within the Windows taskbar.</value>
   </data>
   <data name="DisplayModes.Monitor.DisconnectedSuffix" xml:space="preserve">
     <value> (not connected)</value>
@@ -1088,7 +1088,7 @@
     <value>Restore the default order</value>
   </data>
   <data name="DisplayModes.Rest.Row.Alignment.Description" xml:space="preserve">
-    <value>Align the title and artist horizontally.</value>
+    <value>Align the title and artist within the text area.</value>
   </data>
   <data name="DisplayModes.Rest.Row.Alignment.Title" xml:space="preserve">
     <value>Title and artist alignment</value>
@@ -1112,7 +1112,7 @@
     <value>Show the output-device button in the always-on view</value>
   </data>
   <data name="DisplayModes.Rest.Row.Entry.Description" xml:space="preserve">
-    <value>Open the full panel by hovering over the bar or clicking the top entry.</value>
+    <value>Open the full panel by hovering over the bar or clicking its panel entry.</value>
   </data>
   <data name="DisplayModes.Rest.Row.Entry.Title" xml:space="preserve">
     <value>Show the full-panel entry</value>
@@ -1124,7 +1124,7 @@
     <value>Title and artist layout</value>
   </data>
   <data name="DisplayModes.Rest.Row.Progress.Description" xml:space="preserve">
-    <value>Show read-only progress at the bottom of the always-on view; hide it when duration is unavailable.</value>
+    <value>Show read-only progress along the media bar edge; hide it when duration is unavailable.</value>
   </data>
   <data name="DisplayModes.Rest.Row.Artwork.Description" xml:space="preserve">
     <value>Show artwork while media is connected; the idle note has its own setting.</value>
@@ -1160,13 +1160,13 @@
     <value>Turn content following off first</value>
   </data>
   <data name="DisplayModes.Width.Row.Fixed.Description" xml:space="preserve">
-    <value>Set a width between the required minimum and available taskbar space.</value>
+    <value>Adjust the length between the content minimum and available display space.</value>
   </data>
   <data name="DisplayModes.Width.Row.Fixed.Title" xml:space="preserve">
     <value>Fixed length</value>
   </data>
   <data name="DisplayModes.Width.Row.Follow.Description" xml:space="preserve">
-    <value>Resize automatically to fit media content.</value>
+    <value>Adjust the length automatically to fit media content.</value>
   </data>
   <data name="DisplayModes.Width.Row.Follow.Title" xml:space="preserve">
     <value>Follow the content length</value>
@@ -1421,7 +1421,7 @@
     <value>The order is the priority: the source listed first is used first, and an empty one falls through to the next</value>
   </data>
   <data name="Lyrics.Row.SecondLine.OrderRow.Description" xml:space="preserve">
-    <value>Moving a row up raises its priority</value>
+    <value>Items nearer the top have higher priority.</value>
   </data>
   <data name="Lyrics.Row.SecondLine.Title" xml:space="preserve">
     <value>Second-line content</value>
@@ -1475,13 +1475,13 @@
     <value>Enable lyrics first</value>
   </data>
   <data name="Lyrics.Row.FixedWidth.Description" xml:space="preserve">
-    <value>Keep the lyric area at one width instead of resizing for each line.</value>
+    <value>Keep the lyrics area at a fixed length across lines.</value>
   </data>
   <data name="Lyrics.Row.FixedWidth.Title" xml:space="preserve">
     <value>Fixed lyric-box length</value>
   </data>
   <data name="Lyrics.Row.FixedWidth.Length.Description" xml:space="preserve">
-    <value>Set the fixed width; it shrinks when taskbar space is limited.</value>
+    <value>Set a fixed length; it shrinks when available space is limited.</value>
   </data>
   <data name="Lyrics.Row.FixedWidth.Length.Title" xml:space="preserve">
     <value>Lyric-box length</value>
@@ -1925,7 +1925,7 @@
     <value>Light or dark appearance, and the window backdrop material</value>
   </data>
   <data name="Search.DisplayModes.ChooseDisplayMode.Description" xml:space="preserve">
-    <value>View the running mode and future display modes.</value>
+    <value>Choose taskbar or desktop floating mode and view upcoming modes.</value>
   </data>
   <data name="Search.DisplayModes.FullLayer.Description" xml:space="preserve">
     <value>Sections of the panel that opens when the media bar is clicked</value>
@@ -1937,7 +1937,7 @@
     <value>Dynamic island background style, opacity, and corner radius; currently read-only</value>
   </data>
   <data name="Search.DisplayModes.MediaBarWidth.Description" xml:space="preserve">
-    <value>Content-driven or fixed width, and component spacing</value>
+    <value>Content-based length, fixed length, and component spacing</value>
   </data>
   <data name="Search.DisplayModes.RestLayer.Description" xml:space="preserve">
     <value>Set always-on view content and the full-panel entry point.</value>
@@ -1955,7 +1955,7 @@
     <value>Click and wheel behavior of the tray icon</value>
   </data>
   <data name="Search.Lyrics.Alignment.Description" xml:space="preserve">
-    <value>Left, center, or right alignment of the lyrics</value>
+    <value>Lyrics alignment within the text area</value>
   </data>
   <data name="Search.Lyrics.Display.Description" xml:space="preserve">
     <value>Enable live lyrics and configure one or two lines and secondary-line priority.</value>
@@ -2307,7 +2307,7 @@
     <value>Display &amp; placement</value>
   </data>
   <data name="ScreenAndPlacement.Header.Subtitle" xml:space="preserve">
-    <value>Choose screens and media bar placement. The system taskbar determines orientation.</value>
+    <value>Choose a display mode, monitor, and media bar position.</value>
   </data>
   <data name="Common.Page.ApplicationAppearance" xml:space="preserve">
     <value>Application appearance</value>
@@ -2421,7 +2421,7 @@
     <value>The media bar has narrowed because taskbar space is limited. It will restore its width when some taskbar icons are closed.</value>
   </data>
   <data name="DisplayModes.Width.NoCommonRange" xml:space="preserve">
-    <value>There is no shared fixed-length range for the current taskbars. The saved length is retained; each bar respects its own available space.</value>
+    <value>The selected displays have no common fixed-length range. The saved length is retained and fitted to the available space on each display.</value>
   </data>
   <data name="Common.Page.ContentLayout" xml:space="preserve">
     <value>Content &amp; layout</value>
@@ -2457,7 +2457,7 @@
     <value>Media bar length</value>
   </data>
   <data name="ContentLayout.LengthMode.Description" xml:space="preserve">
-    <value>Control the entire bar length, within component minimums and available taskbar space.</value>
+    <value>Set the media bar length. Its displayed size is limited by minimum content length and available space.</value>
   </data>
   <data name="ContentLayout.LengthMode.Follow" xml:space="preserve">
     <value>Follow content</value>
@@ -2644,7 +2644,7 @@
     <value>Side by side</value>
   </data>
   <data name="Media.Performance.Order.Description" xml:space="preserve">
-    <value>Use the arrow buttons to reorder selected metrics. Both modes share this order; keep at least one metric selected.</value>
+    <value>Drag to reorder selected metrics. Both display modes share this order; keep at least one metric.</value>
   </data>
   <data name="Panel.Performance.Upload" xml:space="preserve">
     <value>Upload</value>
@@ -2898,4 +2898,53 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Lyrics.Sources.Order.Reset" xml:space="preserve">
     <value>Restore default order</value>
   </data>
+  <data name="Common.Page.Experimental" xml:space="preserve"><value>Experimental features</value></data>
+  <data name="Experimental.Warning" xml:space="preserve"><value>Experimental features have not been fully tested. Please report problems through any existing feedback channel.</value></data>
+  <data name="Experimental.Enable" xml:space="preserve"><value>Enable this experiment</value></data>
+  <data name="Experimental.Audio.Title" xml:space="preserve"><value>New audio controls</value></data>
+  <data name="Experimental.Audio.Description" xml:space="preserve"><value>New menus, input devices, application routing, device exclusions and advanced switching.</value></data>
+  <data name="Experimental.Audio.RoutesNotice" xml:space="preserve"><value>Disabling restores the original output and volume controls and keeps experimental preferences. Application routes saved in Windows are not cleared automatically.</value></data>
+  <data name="Experimental.Vertical.Title" xml:space="preserve"><value>Vertical taskbar</value></data>
+  <data name="Experimental.Vertical.Description" xml:space="preserve"><value>Show a vertical media bar in a taskbar on the left or right side.</value></data>
+  <data name="Experimental.Vertical.Shared" xml:space="preserve"><value>Horizontal and vertical taskbars share one configuration. Changes here also affect horizontal taskbars.</value></data>
+  <data name="Experimental.Floating.Title" xml:space="preserve"><value>Desktop floating mode</value></data>
+  <data name="Experimental.Floating.Description" xml:space="preserve"><value>An independent desktop widget with horizontal and vertical layouts and positions saved per display. Enable to reveal the mode switch.</value></data>
+  <data name="Settings.Context.ConfigurationTarget" xml:space="preserve"><value>Editing configuration</value></data>
+  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>Once enabled, go to Display &amp; Placement to switch display modes and configure orientation, layer, and position. Font, appearance, and interactions are shared across modes.</value></data>
+  <data name="Experimental.OpenInteraction" xml:space="preserve"><value>Open interaction settings</value></data>
+  <data name="Experimental.OpenContentLayout" xml:space="preserve"><value>Open content and layout</value></data>
+  <data name="Experimental.OpenAppearance" xml:space="preserve"><value>Open appearance settings</value></data>
+  <data name="Experimental.Vertical.Notification.Title" xml:space="preserve"><value>Vertical taskbar detected</value></data>
+  <data name="Experimental.Vertical.Notification.Body" xml:space="preserve"><value>Enable the vertical taskbar experiment to show the media bar here. Click to open Experimental features.</value></data>
+  <data name="Experimental.Audio.RoutingPreserved" xml:space="preserve"><value>Turning this experiment off keeps its saved settings and existing Windows application routing preferences.</value></data>
+  <data name="Experimental.Floating.Mode" xml:space="preserve"><value>Display mode</value></data>
+  <data name="Experimental.Floating.Taskbar" xml:space="preserve"><value>Taskbar</value></data>
+  <data name="Experimental.Floating.Switching" xml:space="preserve"><value>Switching display mode…</value></data>
+  <data name="Experimental.Floating.Failed" xml:space="preserve"><value>Could not switch. The previous mode is retained. Retry or report the logs.</value></data>
+  <data name="Experimental.Floating.Active" xml:space="preserve"><value>Running: desktop widget</value></data>
+  <data name="Experimental.Floating.TaskbarActive" xml:space="preserve"><value>Running: taskbar</value></data>
+  <data name="Experimental.Floating.Orientation" xml:space="preserve"><value>Orientation</value></data>
+  <data name="Experimental.Floating.Horizontal" xml:space="preserve"><value>Horizontal</value></data>
+  <data name="Experimental.Floating.Vertical" xml:space="preserve"><value>Vertical</value></data>
+  <data name="Experimental.Floating.Layer" xml:space="preserve"><value>Window layer</value></data>
+  <data name="Experimental.Floating.Desktop" xml:space="preserve"><value>Desktop</value></data>
+  <data name="Experimental.Floating.Topmost" xml:space="preserve"><value>Always on top</value></data>
+  <data name="Experimental.Floating.Lock" xml:space="preserve"><value>Lock position</value></data>
+  <data name="Experimental.Floating.OpenDisplay" xml:space="preserve"><value>Open display and placement</value></data>
+  <data name="Taskbar.Compact.Notification.Title" xml:space="preserve"><value>Limited taskbar space</value></data>
+  <data name="Taskbar.Compact.Notification.Body" xml:space="preserve"><value>The current lyric or title stays visible; secondary information is temporarily hidden. Try the desktop widget for more room. Click to open Experimental features.</value></data>
+  <data name="Settings.Direction.Top" xml:space="preserve"><value>Top</value></data>
+  <data name="Settings.Direction.Bottom" xml:space="preserve"><value>Bottom</value></data>
+  <data name="Settings.Direction.Start" xml:space="preserve"><value>Start</value></data>
+  <data name="Settings.Direction.End" xml:space="preserve"><value>End</value></data>
+  <data name="Settings.Direction.ExpandTop" xml:space="preserve"><value>Expand from top</value></data>
+  <data name="Settings.Direction.ExpandBottom" xml:space="preserve"><value>Expand from bottom</value></data>
+  <data name="Settings.Direction.ExpandStart" xml:space="preserve"><value>Expand from start</value></data>
+  <data name="Settings.Direction.ExpandEnd" xml:space="preserve"><value>Expand from end</value></data>
+  <data name="Placement.Floating.Title" xml:space="preserve"><value>Desktop floating settings</value></data>
+  <data name="Placement.Floating.Description" xml:space="preserve"><value>Show a desktop widget on each selected display, with positions saved separately.</value></data>
+  <data name="DisplayModes.Mode.FloatingBar.Caption" xml:space="preserve"><value>Place the bar on the desktop, drag it freely, and choose its window layer.</value></data>
+  <data name="DisplayModes.Mode.Experimental" xml:space="preserve"><value>Experimental</value></data>
+  <data name="Settings.Reorder.Help" xml:space="preserve"><value>Drag to reorder, or focus the handle and press Alt+Up/Down.</value></data>
+  <data name="Settings.Reorder.Position" xml:space="preserve"><value>Item {0} of {1}</value></data>
 </root>

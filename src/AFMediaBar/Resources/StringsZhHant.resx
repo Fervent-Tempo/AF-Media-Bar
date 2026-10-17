@@ -560,7 +560,7 @@
     <value>應用程式</value>
   </data>
   <data name="Common.Group.ChooseDisplayMode" xml:space="preserve">
-    <value>執行模式</value>
+    <value>顯示模式</value>
   </data>
   <data name="Common.Group.Fonts" xml:space="preserve">
     <value>通用字型</value>
@@ -797,10 +797,10 @@
     <value>跟隨內容時寬度自動變化；關閉跟隨後可輸入固定寬度，範圍隨工作列可用空間更新。</value>
   </data>
   <data name="Diagram.TaskbarLength.Label.MinimumWidth" xml:space="preserve">
-    <value>所需最小寬度</value>
+    <value>內容最小長度</value>
   </data>
   <data name="Diagram.TaskbarLength.Label.TaskbarLimit" xml:space="preserve">
-    <value>工作列安全上限</value>
+    <value>可用空間上限</value>
   </data>
   <data name="Diagram.TaskbarPlacement.Caption" xml:space="preserve">
     <value>開啟避讓後，媒體列會避開工作列圖示；厚度方向偏移用於上下或左右微調。</value>
@@ -947,7 +947,7 @@
     <value>工作列</value>
   </data>
   <data name="DisplayModes.Mode.Taskbar.Caption" xml:space="preserve">
-    <value>置於 Windows 工作列，含常駐狀態、快捷控制與完整面板</value>
+    <value>嵌入 Windows 工作列，顯示媒體資訊與播放控制。</value>
   </data>
   <data name="DisplayModes.Monitor.DisconnectedSuffix" xml:space="preserve">
     <value>（目前未連接）</value>
@@ -1088,7 +1088,7 @@
     <value>恢復預設順序</value>
   </data>
   <data name="DisplayModes.Rest.Row.Alignment.Description" xml:space="preserve">
-    <value>設定標題與演出者的水平對齊方式。</value>
+    <value>設定標題與演出者在文字區域內的對齊方式。</value>
   </data>
   <data name="DisplayModes.Rest.Row.Alignment.Title" xml:space="preserve">
     <value>標題與歌手對齊</value>
@@ -1112,7 +1112,7 @@
     <value>常駐狀態顯示輸出裝置按鈕</value>
   </data>
   <data name="DisplayModes.Rest.Row.Entry.Description" xml:space="preserve">
-    <value>懸停媒體列或點擊頂部入口，即可開啟完整面板。</value>
+    <value>懸停媒體列或點擊面板入口，即可開啟完整面板。</value>
   </data>
   <data name="DisplayModes.Rest.Row.Entry.Title" xml:space="preserve">
     <value>顯示進入完整面板的入口</value>
@@ -1124,7 +1124,7 @@
     <value>標題與歌手顯示方式</value>
   </data>
   <data name="DisplayModes.Rest.Row.Progress.Description" xml:space="preserve">
-    <value>在常駐狀態底部顯示唯讀進度；沒有時長時隱藏。</value>
+    <value>在媒體列邊緣顯示唯讀進度；沒有時長時隱藏。</value>
   </data>
   <data name="DisplayModes.Rest.Row.Artwork.Description" xml:space="preserve">
     <value>有媒體時顯示封面；不影響無媒體時的小音符。</value>
@@ -1160,13 +1160,13 @@
     <value>需先關閉跟隨</value>
   </data>
   <data name="DisplayModes.Width.Row.Fixed.Description" xml:space="preserve">
-    <value>在所需最小寬度與工作列可用寬度之間調整。</value>
+    <value>在內容最小長度與顯示器可用空間之間調整長度。</value>
   </data>
   <data name="DisplayModes.Width.Row.Fixed.Title" xml:space="preserve">
     <value>固定長度</value>
   </data>
   <data name="DisplayModes.Width.Row.Follow.Description" xml:space="preserve">
-    <value>根據媒體內容自動調整寬度。</value>
+    <value>依媒體內容自動調整長度。</value>
   </data>
   <data name="DisplayModes.Width.Row.Follow.Title" xml:space="preserve">
     <value>跟隨內容長度</value>
@@ -1421,7 +1421,7 @@
     <value>順序即優先順序：排在上面的來源優先使用，沒有內容時往下取</value>
   </data>
   <data name="Lyrics.Row.SecondLine.OrderRow.Description" xml:space="preserve">
-    <value>上移即提高優先順序</value>
+    <value>靠前的項目優先使用。</value>
   </data>
   <data name="Lyrics.Row.SecondLine.Title" xml:space="preserve">
     <value>第二行內容</value>
@@ -1475,13 +1475,13 @@
     <value>需先啟用歌詞</value>
   </data>
   <data name="Lyrics.Row.FixedWidth.Description" xml:space="preserve">
-    <value>固定歌詞區域寬度，不隨每句歌詞變化。</value>
+    <value>固定歌詞區域長度，不隨每句歌詞變化。</value>
   </data>
   <data name="Lyrics.Row.FixedWidth.Title" xml:space="preserve">
     <value>固定歌詞框長度</value>
   </data>
   <data name="Lyrics.Row.FixedWidth.Length.Description" xml:space="preserve">
-    <value>設定固定寬度；工作列空間不足時自動縮小。</value>
+    <value>設定固定長度；可用空間不足時自動縮小。</value>
   </data>
   <data name="Lyrics.Row.FixedWidth.Length.Title" xml:space="preserve">
     <value>歌詞框長度</value>
@@ -1925,7 +1925,7 @@
     <value>淺色還是深色，以及視窗背景材質</value>
   </data>
   <data name="Search.DisplayModes.ChooseDisplayMode.Description" xml:space="preserve">
-    <value>檢視實際執行模式與後續顯示模式。</value>
+    <value>選擇工作列或桌面懸浮模式，查看其他模式的實作狀態。</value>
   </data>
   <data name="Search.DisplayModes.FullLayer.Description" xml:space="preserve">
     <value>點選媒體列展開的面板包含哪些分區</value>
@@ -1937,7 +1937,7 @@
     <value>動態島的背景樣式、不透明度與圓角，目前唯讀</value>
   </data>
   <data name="Search.DisplayModes.MediaBarWidth.Description" xml:space="preserve">
-    <value>寬度跟隨內容、固定寬度與元件間距</value>
+    <value>長度跟隨內容、固定長度與元件間距</value>
   </data>
   <data name="Search.DisplayModes.RestLayer.Description" xml:space="preserve">
     <value>設定常駐狀態的顯示內容和完整面板入口。</value>
@@ -1955,7 +1955,7 @@
     <value>托盤圖示的點選與滾輪行為</value>
   </data>
   <data name="Search.Lyrics.Alignment.Description" xml:space="preserve">
-    <value>歌詞靠左、置中還是靠右</value>
+    <value>歌詞在文字區域內的對齊方式</value>
   </data>
   <data name="Search.Lyrics.Display.Description" xml:space="preserve">
     <value>啟用即時歌詞，設定單雙行與第二行內容優先順序。</value>
@@ -2307,7 +2307,7 @@
     <value>顯示與位置</value>
   </data>
   <data name="ScreenAndPlacement.Header.Subtitle" xml:space="preserve">
-    <value>選擇顯示螢幕，調整媒體列位置；方向由系統工作列決定。</value>
+    <value>選擇顯示模式，設定顯示器與媒體列位置。</value>
   </data>
   <data name="Common.Page.ApplicationAppearance" xml:space="preserve">
     <value>應用程式外觀</value>
@@ -2421,7 +2421,7 @@
     <value>目前工作列空間不足，媒體列已縮窄顯示。關閉部分工作列圖示後會自動恢復。</value>
   </data>
   <data name="DisplayModes.Width.NoCommonRange" xml:space="preserve">
-    <value>目前工作列沒有共同可用的固定長度範圍。已儲存的長度會保留，各工作列依自身空間限制寬度。</value>
+    <value>目前顯示器沒有共同可用的固定長度範圍。已儲存的長度會保留，並依各顯示器的可用空間顯示。</value>
   </data>
   <data name="Common.Page.ContentLayout" xml:space="preserve">
     <value>內容與配置</value>
@@ -2457,7 +2457,7 @@
     <value>媒體列長度模式</value>
   </data>
   <data name="ContentLayout.LengthMode.Description" xml:space="preserve">
-    <value>控制整條媒體列的長度，仍受元件最低需求及工作列可用空間限制。</value>
+    <value>設定媒體列長度。實際顯示受內容最小長度與可用空間限制。</value>
   </data>
   <data name="ContentLayout.LengthMode.Follow" xml:space="preserve">
     <value>隨內容變化</value>
@@ -2644,7 +2644,7 @@
     <value>並排顯示</value>
   </data>
   <data name="Media.Performance.Order.Description" xml:space="preserve">
-    <value>使用上下按鈕調整已選指標順序；兩種顯示方式共用順序，至少保留一個指標。</value>
+    <value>拖曳調整已選指標順序；兩種顯示方式共用順序，至少保留一個指標。</value>
   </data>
   <data name="Panel.Performance.Upload" xml:space="preserve">
     <value>上傳</value>
@@ -2898,4 +2898,53 @@
   <data name="Lyrics.Sources.Order.Reset" xml:space="preserve">
     <value>還原預設順序</value>
   </data>
+  <data name="Common.Page.Experimental" xml:space="preserve"><value>實驗性功能</value></data>
+  <data name="Experimental.Warning" xml:space="preserve"><value>實驗性功能未經充分測試，如遇問題，請透過任意現有回饋管道回報。</value></data>
+  <data name="Experimental.Enable" xml:space="preserve"><value>啟用此實驗</value></data>
+  <data name="Experimental.Audio.Title" xml:space="preserve"><value>新版音訊控制</value></data>
+  <data name="Experimental.Audio.Description" xml:space="preserve"><value>新版選單、輸入裝置、應用程式裝置路由、黑名單與進階切換策略。</value></data>
+  <data name="Experimental.Audio.RoutesNotice" xml:space="preserve"><value>關閉實驗將恢復原版輸出裝置與音量介面，並保留實驗設定。已儲存至 Windows 的應用程式路由偏好不會自動清除。</value></data>
+  <data name="Experimental.Vertical.Title" xml:space="preserve"><value>直向工作列</value></data>
+  <data name="Experimental.Vertical.Description" xml:space="preserve"><value>在實際的左側或右側工作列中顯示直向媒體列。</value></data>
+  <data name="Experimental.Vertical.Shared" xml:space="preserve"><value>工作列橫向與直向共用同一份設定。此處修改也會影響橫向工作列。</value></data>
+  <data name="Experimental.Floating.Title" xml:space="preserve"><value>桌面懸浮模式</value></data>
+  <data name="Experimental.Floating.Description" xml:space="preserve"><value>獨立桌面小工具，支援橫向、直向及依顯示器儲存位置。啟用後可手動切換模式。</value></data>
+  <data name="Settings.Context.ConfigurationTarget" xml:space="preserve"><value>編輯設定</value></data>
+  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>啟用後，請前往「顯示與位置」切換顯示模式並設定方向、層級和位置。字型、外觀與互動在各模式間共用。</value></data>
+  <data name="Experimental.OpenInteraction" xml:space="preserve"><value>前往互動設定</value></data>
+  <data name="Experimental.OpenContentLayout" xml:space="preserve"><value>前往內容與版面配置</value></data>
+  <data name="Experimental.OpenAppearance" xml:space="preserve"><value>前往外觀設定</value></data>
+  <data name="Experimental.Vertical.Notification.Title" xml:space="preserve"><value>已偵測到直向工作列</value></data>
+  <data name="Experimental.Vertical.Notification.Body" xml:space="preserve"><value>啟用直向工作列實驗後即可在此顯示媒體列。點擊前往實驗性功能。</value></data>
+  <data name="Experimental.Audio.RoutingPreserved" xml:space="preserve"><value>關閉實驗會保留實驗設定及既有 Windows 應用程式音訊路由偏好，不會自動清除。</value></data>
+  <data name="Experimental.Floating.Mode" xml:space="preserve"><value>顯示模式</value></data>
+  <data name="Experimental.Floating.Taskbar" xml:space="preserve"><value>工作列</value></data>
+  <data name="Experimental.Floating.Switching" xml:space="preserve"><value>正在切換顯示模式…</value></data>
+  <data name="Experimental.Floating.Failed" xml:space="preserve"><value>切換失敗，已保留原顯示模式。請重試或回報記錄。</value></data>
+  <data name="Experimental.Floating.Active" xml:space="preserve"><value>目前執行：桌面懸浮列</value></data>
+  <data name="Experimental.Floating.TaskbarActive" xml:space="preserve"><value>目前執行：工作列</value></data>
+  <data name="Experimental.Floating.Orientation" xml:space="preserve"><value>方向</value></data>
+  <data name="Experimental.Floating.Horizontal" xml:space="preserve"><value>橫向</value></data>
+  <data name="Experimental.Floating.Vertical" xml:space="preserve"><value>直向</value></data>
+  <data name="Experimental.Floating.Layer" xml:space="preserve"><value>視窗層級</value></data>
+  <data name="Experimental.Floating.Desktop" xml:space="preserve"><value>桌面層</value></data>
+  <data name="Experimental.Floating.Topmost" xml:space="preserve"><value>一律置頂</value></data>
+  <data name="Experimental.Floating.Lock" xml:space="preserve"><value>鎖定位置</value></data>
+  <data name="Experimental.Floating.OpenDisplay" xml:space="preserve"><value>前往顯示與位置</value></data>
+  <data name="Taskbar.Compact.Notification.Title" xml:space="preserve"><value>工作列空間較窄</value></data>
+  <data name="Taskbar.Compact.Notification.Body" xml:space="preserve"><value>已優先顯示目前歌詞或標題，暫時收起次要資訊。可嘗試桌面懸浮列取得更多空間，點擊前往實驗性功能。</value></data>
+  <data name="Settings.Direction.Top" xml:space="preserve"><value>靠上</value></data>
+  <data name="Settings.Direction.Bottom" xml:space="preserve"><value>靠下</value></data>
+  <data name="Settings.Direction.Start" xml:space="preserve"><value>起始</value></data>
+  <data name="Settings.Direction.End" xml:space="preserve"><value>末端</value></data>
+  <data name="Settings.Direction.ExpandTop" xml:space="preserve"><value>從上方展開</value></data>
+  <data name="Settings.Direction.ExpandBottom" xml:space="preserve"><value>從下方展開</value></data>
+  <data name="Settings.Direction.ExpandStart" xml:space="preserve"><value>從起始位置展開</value></data>
+  <data name="Settings.Direction.ExpandEnd" xml:space="preserve"><value>從末端位置展開</value></data>
+  <data name="Placement.Floating.Title" xml:space="preserve"><value>桌面懸浮設定</value></data>
+  <data name="Placement.Floating.Description" xml:space="preserve"><value>在選取的顯示器上顯示桌面小工具，位置分別儲存。</value></data>
+  <data name="DisplayModes.Mode.FloatingBar.Caption" xml:space="preserve"><value>獨立顯示在桌面，可自由拖曳並選擇視窗層級。</value></data>
+  <data name="DisplayModes.Mode.Experimental" xml:space="preserve"><value>實驗性</value></data>
+  <data name="Settings.Reorder.Help" xml:space="preserve"><value>拖曳調整順序；也可聚焦後按 Alt＋↑／↓。</value></data>
+  <data name="Settings.Reorder.Position" xml:space="preserve"><value>第 {0} 項，共 {1} 項</value></data>
 </root>

@@ -22,6 +22,7 @@ public sealed class SettingsPageProvider(SettingsPageScopeCache cache) : INaviga
         [SettingsPageKey.Components] = typeof(ComponentsSettingsPage),
         [SettingsPageKey.MediaAndNotifications] = typeof(ExtraFeaturesPage),
         [SettingsPageKey.Application] = typeof(ApplicationPage),
+        [SettingsPageKey.Experimental] = typeof(ExperimentalPage),
         [SettingsPageKey.ReleaseHighlights] = typeof(ReleaseHighlightsPage),
         [SettingsPageKey.About] = typeof(AboutPage)
     };
@@ -39,7 +40,7 @@ public sealed class SettingsPageProvider(SettingsPageScopeCache cache) : INaviga
         if (pageType == typeof(AppearancePage))
         {
             var page = (AppearancePage)cache.Get(pageType, definition with { HasModeContent = false });
-            var editor = SettingsPageCatalog.IsImplemented(_context.Mode)
+            var editor = SettingsPageCatalog.CanEditProfile(_context.Mode)
                 ? (TaskbarAppearanceViewModel)cache.Get(typeof(TaskbarAppearanceViewModel), definition with { IsGlobal = false })
                 : null;
             page.SetTaskbarEditor(editor);

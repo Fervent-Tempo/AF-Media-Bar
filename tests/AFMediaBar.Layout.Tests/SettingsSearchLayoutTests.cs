@@ -7,8 +7,25 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace AFMediaBar.Layout.Tests;
 
 [TestClass]
+[DoNotParallelize]
 public sealed class SettingsSearchLayoutTests
 {
+    [TestMethod]
+    public void AudioOptionsAreSearchableOnlyAfterEnablingExperiment()
+    {
+        var previous = AFMediaBar.Classes.Settings.SettingsManager.Current;
+        try
+        {
+            AFMediaBar.Classes.Settings.SettingsManager.Current = new AFMediaBar.Classes.Settings.AppSettings();
+            var context = AFMediaBar.Classes.Models.Settings.SettingsContext.Initial;
+            Assert.IsFalse(SettingsSearchIndex.ForContext(context).Any(entry => entry.GroupId == "Audio.Settings.Title"));
+            Assert.IsTrue(SettingsSearchIndex.ForContext(context).Any(entry => entry.GroupId == "Experimental.Audio.Title"));
+            AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments = new() { NewAudioControl = true };
+            Assert.IsTrue(SettingsSearchIndex.ForContext(context).Any(entry =>
+                entry.Page == SettingsPageKey.Interaction && entry.GroupId == "Audio.Settings.Title"));
+        }
+        finally { AFMediaBar.Classes.Settings.SettingsManager.Current = previous; }
+    }
     [DataTestMethod]
     [DataRow(SettingsPageKey.Appearance, "AppearancePage")]
     [DataRow(SettingsPageKey.Interaction, "InteractionPage")]
@@ -19,6 +36,7 @@ public sealed class SettingsSearchLayoutTests
     [DataRow(SettingsPageKey.ScreenAndPlacement, "ScreenAndPlacementPage")]
     [DataRow(SettingsPageKey.About, "AboutPage")]
     [DataRow(SettingsPageKey.ReleaseHighlights, "ReleaseHighlightsPage")]
+    [DataRow(SettingsPageKey.Experimental, "ExperimentalPage")]
     public void SearchDestinationsFollowDeclaredGroups(SettingsPageKey page, string fileName)
     {
         var root = FindRepository();
@@ -52,6 +70,23 @@ public sealed class SettingsSearchLayoutTests
         Assert.IsTrue(hits.Any(hit => hit.Page == page && hit.GroupId == group));
     }
 
+    [TestMethod]
+    public void FloatingPlacementSearchRequiresEnabledExperimentAndActiveMode()
+    {
+        var previous = AFMediaBar.Classes.Settings.SettingsManager.Current;
+        try
+        {
+            AFMediaBar.Classes.Settings.SettingsManager.Current = new();
+            var context = AFMediaBar.Classes.Models.Settings.SettingsContext.Initial with { Mode = AFMediaBar.Classes.Models.Settings.SettingsMode.FloatingBar };
+            Assert.IsFalse(SettingsSearchIndex.ForContext(context).Any(entry => entry.GroupId == "Placement.Floating.Title"));
+            AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments = new() { FloatingBar = true };
+            Assert.IsTrue(SettingsSearchIndex.ForContext(context).Any(entry => entry.GroupId == "Placement.Floating.Title"));
+            Assert.IsFalse(SettingsSearchIndex.ForContext(context).Any(entry => entry.GroupId == "Common.Group.ScreenAndPlacement"));
+            Assert.IsFalse(SettingsSearchIndex.ForContext(context with { Mode = AFMediaBar.Classes.Models.Settings.SettingsMode.Taskbar }).Any(entry => entry.GroupId == "Placement.Floating.Title"));
+        }
+        finally { AFMediaBar.Classes.Settings.SettingsManager.Current = previous; }
+    }
+
     private static string FindRepository()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
@@ -80,8 +115,8 @@ public sealed class SettingsSearchLayoutTests
         var entries = SettingsSearchIndex.ForContext(vertical);
         Assert.IsTrue(entries.Any(entry => entry.GroupId == "Appearance.Group.RestLayout"));
         Assert.IsTrue(entries.Any(entry => entry.Page == SettingsPageKey.Appearance && entry.GroupId == "Common.Group.Fonts"));
-        Assert.AreEqual(0, SettingsSearchPolicy.Search("组件顺序", entries).Count);
-        Assert.AreEqual(0, SettingsSearchPolicy.Search("展开方向", entries).Count);
+        Assert.IsTrue(SettingsSearchPolicy.Search("组件顺序", entries).Any());
+        Assert.IsTrue(SettingsSearchPolicy.Search("展开方向", entries).Any());
         Assert.IsTrue(SettingsSearchPolicy.Search("歌词对齐", entries).Any(hit => hit.GroupId == "Appearance.Group.RestLayout"));
         var future = vertical with { Mode = AFMediaBar.Classes.Models.Settings.SettingsMode.DynamicIsland };
         Assert.IsTrue(SettingsSearchIndex.ForContext(future).All(entry => entry.Page != SettingsPageKey.Components &&

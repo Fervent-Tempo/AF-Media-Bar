@@ -2,6 +2,49 @@
   "schemaVersion": 1,
   "releases": [
     {
+      "version": "1.4.0",
+      "releaseDate": "2026-10-12",
+      "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.4.0",
+      "localizations": {
+        "zh-Hans": {
+          "title": "设置与任务栏体验更新",
+          "highlights": [
+            "重新组织设置导航，增加精确数值输入和越南语界面。",
+            "新增磨砂背景、封面边缘进度、原地放大与大图预览，改善任务栏避让和长标题滚动。",
+            "歌词支持简繁转换与视图恢复，性能组件增加网络速率，频谱可选择音频采集范围。",
+            "改进媒体进度、音频浮窗、退出与重启，内置开发人员和赞助名单。"
+          ]
+        },
+        "zh-Hant": {
+          "title": "設定與工作列體驗更新",
+          "highlights": [
+            "重新整理設定導覽，加入精確數值輸入與越南語介面。",
+            "新增磨砂背景、封面邊緣進度、原地放大與大圖預覽，改善工作列避讓與長標題捲動。",
+            "歌詞支援簡繁轉換與檢視恢復，效能元件加入網路速率，頻譜可選擇音訊擷取範圍。",
+            "改善媒體進度、音訊浮窗、結束與重新啟動，內建開發人員與贊助名單。"
+          ]
+        },
+        "en": {
+          "title": "Settings and taskbar improvements",
+          "highlights": [
+            "Reorganize Settings navigation, add precise numeric input and a Vietnamese interface.",
+            "Add frosted backgrounds, artwork-edge progress, in-place zoom and large previews; improve taskbar avoidance and long-title scrolling.",
+            "Add Chinese lyric conversion and view recovery, network rates in metrics, and selectable spectrum capture.",
+            "Improve media progress, audio flyouts, shutdown and restart; bundle developer and sponsor lists."
+          ]
+        },
+        "vi": {
+          "title": "Cải thiện cài đặt và thanh tác vụ",
+          "highlights": [
+            "Sắp xếp lại cài đặt, thêm nhập số chính xác và giao diện tiếng Việt.",
+            "Thêm nền mờ, tiến trình quanh ảnh bìa, phóng to tại chỗ và xem trước ảnh lớn; cải thiện tránh biểu tượng và cuộn tiêu đề dài.",
+            "Thêm chuyển đổi chữ Hán cho lời bài hát, khôi phục khung hiển thị, tốc độ mạng và lựa chọn nguồn âm thanh cho phổ tần.",
+            "Cải thiện tiến trình phát, bảng âm thanh, thoát và khởi động lại; tích hợp danh sách nhà phát triển và nhà tài trợ."
+          ]
+        }
+      }
+    },
+    {
       "version": "1.3.2",
       "releaseDate": "2026-10-06",
       "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.3.2",

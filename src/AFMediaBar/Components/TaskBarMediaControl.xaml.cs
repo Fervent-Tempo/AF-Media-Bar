@@ -62,6 +62,16 @@ namespace AFMediaBar.Components
     {
         // === 布局渲染引擎 Layout Render Engine ===
         private LayoutRenderEngine? _layoutEngine;
+        private GlobalInteractionSettings EffectiveInteraction => ExperimentalAudioPolicy.Interaction(
+            PresentationSettings.Interaction, PresentationSettings.Experiments.NewAudioControl);
+
+        private AppSettings? _presentationSettings;
+        private AppSettings PresentationSettings => _presentationSettings ?? SettingsManager.Current;
+        public BarPresentationContext PresentationContext { get; private set; } = new(WindowMode.Taskbar, LayoutOrientation.Horizontal);
+        private bool IsBarPresentation => PresentationContext.SupportsBarInteractions;
+
+        public void ApplyPresentationSettings(AppSettings? settings) => _presentationSettings = settings;
+
         private WindowMode _currentMode = WindowMode.Taskbar;  // 当前窗口模式 Current window mode
 
         /// <summary>
@@ -156,6 +166,10 @@ namespace AFMediaBar.Components
             // carrying the enlarged cover, anchored above the artwork.
             _artworkHoverPreview = BuildArtworkHoverPreviewPopup();
             _artworkHoverZoomPopup = BuildArtworkHoverZoomPopup();
+            SongImageScale.Changed += (_, _) => RefreshArtworkHintScale();
+            _artworkHoverPreviewScale!.Changed += (_, _) => RefreshArtworkHintScale();
+            _artworkWheelTooltip.CustomPopupPlacementCallback = PlaceArtworkWheelTooltip;
+            _artworkWheelTooltip.Opened += (_, _) => UpdateArtworkWheelTooltipPlacement();
             ApplyArtworkTooltipOwner();
             _outputDeviceSurface = TaskbarDeviceButton;
             _inputDeviceSurface = TaskbarInputDeviceButton;
@@ -172,6 +186,7 @@ namespace AFMediaBar.Components
             Unloaded += (_, _) =>
             {
                 MainCanvas.LayoutUpdated -= OnArtworkPopupLayoutUpdated;
+                HideTaskbarHoverLayer(immediate: true);
                 _progressTimer.Stop();
                 _hoverOpenTimer.Stop();
                 _hoverCloseTimer.Stop();
@@ -237,9 +252,6 @@ namespace AFMediaBar.Components
 
         /// <summary>暂停时盖在主封面上的遮罩不透明度，取 1 − 旧实现的封面画刷不透明度（0.4）：淡化浓度与改动前一致，只是从"压封面画刷"换成"主动盖遮罩"，理由见 <see cref="ApplyArtworkDimming"/>。颜色另由 <see cref="ApplyAppearanceSettings"/> 按任务栏表面的明暗给出。替身封面共用同一把画刷，浓度与颜色都自动跟随。/ The opacity of the scrim laid over the main artwork while paused, i.e. 1 − the cover-brush opacity the old implementation used (0.4): the dimming strength matches the previous look and only moves from "lower the cover brush" to "lay a scrim", as <see cref="ApplyArtworkDimming"/> explains. Its colour is a separate matter, set by <see cref="ApplyAppearanceSettings"/> from the taskbar surface's lightness. The stand-in cover shares the very same brush, so both strength and colour follow by themselves.</summary>
         private const double ArtworkPausedScrimOpacity = 0.6;
-
-        /// <summary>大图预览的暂停减暗（压低图像不透明度）。预览是独立 Popup、底为不透明黑，透不出任何东西，所以它既不需要遮罩、也不受原地放大影响。/ The large preview's paused dimming (image opacity lowered). The preview is its own Popup over an opaque black root and nothing can show through it, so it needs no scrim and is untroubled by the in-place zoom.</summary>
-        private const double ArtworkPausedDimOpacity = 0.4;
 
         private readonly DispatcherTimer _wheelTooltipTimer;
 
@@ -337,7 +349,7 @@ namespace AFMediaBar.Components
         /// horizontal taskbar mode only; a vertical taskbar is outside this rule.
         /// </summary>
         public bool ShouldHideTaskbarWindow =>
-            SettingsManager.Current.TaskbarBarEnabled &&
+            PresentationSettings.TaskbarBarEnabled &&
             !_isConnected &&
             _isRestLayerEmpty &&
             !_restTransitionDefersHide;
@@ -387,6 +399,8 @@ namespace AFMediaBar.Components
 
         /// <summary>独立封面 Popup 内的按下意图，由宿主沿用原有拖动与点击判定。</summary>
         public event MouseButtonEventHandler? ArtworkPointerPressed;
+        internal event MouseEventHandler? ArtworkPointerMoved;
+        internal event MouseButtonEventHandler? ArtworkPointerReleased;
         public event EventHandler<MediaBarSizeRequestEventArgs>? DesiredSizeChanged;
 
         /// <summary>
@@ -403,11 +417,7 @@ namespace AFMediaBar.Components
         /// </summary>
         public event EventHandler<double>? ArtworkZoomExtensionChanged;
 
-        /// <summary>原地放大（Zoom 模式）是否存续：Popup 开着即为真。<see cref="CollapseArtworkZoomForDrag"/> 据此判断拖动按下时
-        /// 有没有东西要收回；宿主在每次左键抬起后还会调 <see cref="ResyncArtworkHoverFromPointer"/> 兜底重同步。/ Whether the
-        /// in-place zoom (Zoom mode) is live: true while its Popup is open. <see cref="CollapseArtworkZoomForDrag"/> uses it to decide
-        /// whether a drag press has anything to reclaim; the host additionally re-syncs through
-        /// <see cref="ResyncArtworkHoverFromPointer"/> after every left release.</summary>
+        /// <summary>原地放大 Popup 是否打开；普通按下保留放大，宿主确认拖动后才收回，抬起后可重同步悬停。</summary>
         public bool IsArtworkZoomActive => _artworkHoverZoomPopup?.IsOpen == true;
 
         /// <summary>指针进入输出设备按钮，宿主应刷新该按钮提示。 / Pointer entered the output-device button; the host should refresh its tooltip.</summary>
@@ -543,7 +553,7 @@ namespace AFMediaBar.Components
         public void RefreshWheelTooltip()
         {
             var slot = ChordWheelHeld ? WheelGestureSlot.Chord : WheelGestureSlot.Primary;
-            var settings = SettingsManager.Current.Interaction.Normalize();
+            var settings = EffectiveInteraction.Normalize();
             var action = slot == WheelGestureSlot.Chord ? settings.ChordWheelAction : settings.PrimaryWheelAction;
             var showHint = settings.ShowWheelTooltips && action != WheelAction.Disabled;
             var textOwner = showHint ? _wheelTooltip : null;
@@ -578,7 +588,7 @@ namespace AFMediaBar.Components
         /// <param name="result">滚轮手势结果。/ Wheel gesture result.</param>
         public void SetWheelResult(WheelTooltipResult result)
         {
-            if (!SettingsManager.Current.Interaction.ShowWheelTooltips)
+            if (!EffectiveInteraction.ShowWheelTooltips)
                 return;
             _appliedWheelSlot = ChordWheelHeld ? WheelGestureSlot.Chord : WheelGestureSlot.Primary;
             _wheelResultShown = true;
@@ -618,7 +628,7 @@ namespace AFMediaBar.Components
         /// shared with the tray.
         /// </summary>
         private bool ChordWheelHeld => GlobalWheelGesturePolicy.IsChordHeld(
-            SettingsManager.Current.Interaction,
+            EffectiveInteraction,
             Keyboard.Modifiers.HasFlag(ModifierKeys.Shift),
             Mouse.LeftButton == MouseButtonState.Pressed,
             Mouse.RightButton == MouseButtonState.Pressed);
@@ -666,7 +676,10 @@ namespace AFMediaBar.Components
             if (!ReferenceEquals(owner.ToolTip, surface.Tooltip))
                 return;
 
-            surface.Tooltip.PlacementTarget = surface.Surface;
+            if (ReferenceEquals(surface.Tooltip, _artworkWheelTooltip))
+                UpdateArtworkWheelTooltipPlacement();
+            else
+                surface.Tooltip.PlacementTarget = surface.Surface;
             if (!surface.Tooltip.IsOpen)
                 surface.Tooltip.IsOpen = true;
         }
@@ -726,7 +739,7 @@ namespace AFMediaBar.Components
         /// </summary>
         private void ApplyArtworkTooltipOwner()
         {
-            var settings = SettingsManager.Current.Interaction.Normalize();
+            var settings = EffectiveInteraction.Normalize();
             var action = ChordWheelHeld ? settings.ChordWheelAction : settings.PrimaryWheelAction;
             var owner = _isConnected
                 ? settings.ShowWheelTooltips && action != WheelAction.Disabled ? _artworkWheelTooltip : null
@@ -745,6 +758,7 @@ namespace AFMediaBar.Components
             MainCanvas.ToolTip = owner;
             if (owner is not null)
                 owner.PlacementTarget = SongImageBorder;
+            UpdateArtworkWheelTooltipPlacement();
         }
 
         private void ArtworkTooltipOwner_ToolTipOpening(object sender, ToolTipEventArgs e)
@@ -948,8 +962,8 @@ namespace AFMediaBar.Components
             ApplyLayout(
                 mode,
                 orientation,
-                SettingsManager.Current.LayoutLengthScalePercent,
-                SettingsManager.Current.LayoutThicknessScalePercent);
+                PresentationSettings.LayoutLengthScalePercent,
+                PresentationSettings.LayoutThicknessScalePercent);
         }
 
         /// <summary>
@@ -964,7 +978,8 @@ namespace AFMediaBar.Components
             WindowMode mode,
             LayoutOrientation orientation,
             double lengthScalePercent,
-            double thicknessScalePercent)
+            double thicknessScalePercent,
+            double? crossAxisDip = null)
         {
             var previousLayout = _layoutEngine?.CurrentLayout;
             var previousPrimary = previousLayout is null
@@ -974,15 +989,22 @@ namespace AFMediaBar.Components
                     : previousLayout.Canvas.Height;
             var preservePrimary = previousLayout?.Orientation == orientation && previousPrimary > 0;
             _currentMode = mode;
+            PresentationContext = new(mode, orientation);
 
             // 从预设中获取布局
             // Get layout from presets
             var layout = LayoutPresets.GetLayout(mode, orientation);
+            if ((mode is WindowMode.Taskbar or WindowMode.FloatingBar) && orientation == LayoutOrientation.Vertical)
+            {
+                layout = layout with { Canvas = layout.Canvas with { Width = Math.Max(1, crossAxisDip ?? 48) } };
+                thicknessScalePercent = 100;
+            }
+            ConfigureVerticalHost(orientation == LayoutOrientation.Vertical);
 
             // 字号设置只作用于任务栏静置层的媒体文字。
             // The font-size setting only scales taskbar rest-layer media text; the island keeps its preset sizes.
-            var mediaFontScale = mode == WindowMode.Taskbar
-                ? SettingsManager.Current.TaskbarExperience.Normalize().MediaFontSizePercent / 100.0
+            var mediaFontScale = mode is WindowMode.Taskbar or WindowMode.FloatingBar
+                ? ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize().MediaFontSizePercent / 100.0
                 : 1.0;
 
             // 应用布局
@@ -991,11 +1013,17 @@ namespace AFMediaBar.Components
                 layout,
                 lengthScalePercent / 100.0,
                 thicknessScalePercent / 100.0,
-                mediaFontScale);
+                mediaFontScale,
+                mode == WindowMode.Taskbar && orientation == LayoutOrientation.Horizontal ? crossAxisDip : null,
+                preserveMediaFontSize: mode == WindowMode.Taskbar);
 
             // 更新内部状态标志以保持兼容
             // Update internal state flags to maintain compatibility
             _isVertical = orientation == LayoutOrientation.Vertical;
+            _naturalTitleSize = SongTitle.FontSize;
+            _naturalArtistSize = SongArtist.FontSize;
+            _naturalLyricSize = _layoutEngine?.LyricsFontSize ?? 12;
+            RefreshTaskbarTextBudget(_lyricsFrame);
             ApplyTaskbarExperienceSettings(publishSize: false);
             // The host computes the new target after this call. Keep the displayed length until then,
             // so a layout-setting change cannot overwrite the animation's starting geometry.
@@ -1039,8 +1067,9 @@ namespace AFMediaBar.Components
         public void ApplyTaskbarExperienceSettings(bool publishSize = true)
         {
             RefreshWheelTooltip();
-            var isHorizontalTaskbar = _currentMode == WindowMode.Taskbar && !_isVertical;
-            var experience = SettingsManager.Current.TaskbarExperience.Normalize();
+            var isHorizontalTaskbar = IsBarPresentation && !_isVertical;
+            var isTaskbar = IsBarPresentation;
+            var experience = ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize();
             var metrics = TaskbarDensityMetrics.From(experience.Density);
             // 频谱的柱数与样式决定它占用的宽度，因此必须在任何宽度计算之前先重建视觉树。
             // The spectrum's bar count and style decide how much width it occupies, so the visual tree is rebuilt before any
@@ -1119,15 +1148,18 @@ namespace AFMediaBar.Components
                 {
                     if (item is System.Windows.Controls.Button button)
                     {
-                        button.Width = metrics.ButtonSize;
-                        button.Height = metrics.ButtonSize;
+                        var availableButtonSize = UsesAdaptiveTaskbarText && !_isVertical
+                            ? Math.Min(metrics.ButtonSize, Math.Max(1, MainBorder.Height - 2)) : metrics.ButtonSize;
+                        button.Width = availableButtonSize;
+                        button.Height = availableButtonSize;
                     }
                     if (item.Visibility == Visibility.Visible)
                         item.Margin = new Thickness(visibleHoverItems++ == 0 ? 0 : hoverGap, 0, 0, 0);
                 }
             }
-            TaskbarHoverLayer.Height = metrics.HoverLayerHeight;
-            ApplyTaskbarSectionGeometry(MainBorder.Width);
+            TaskbarHoverLayer.Height = UsesAdaptiveTaskbarText && !_isVertical
+                ? Math.Min(metrics.HoverLayerHeight, Math.Max(1, MainBorder.Height - 2)) : metrics.HoverLayerHeight;
+            ApplyTaskbarSectionGeometry(_isVertical ? MainBorder.Height : MainBorder.Width);
             // 频谱被收起时把柱清空一次，免得下次显示时先闪出上一帧的高度；清空的时机放在几何之后，因为它决定频谱这次可不可见。
             // Clearing the bars once while the spectrum is collapsed keeps the next reveal from flashing the previous frame's heights; it happens
             // after the geometry because that pass decides whether the spectrum is visible this time.
@@ -1152,7 +1184,7 @@ namespace AFMediaBar.Components
                 if (experience.ContentLayout == TaskbarContentLayout.CompactInline &&
                     !string.IsNullOrEmpty(_actualArtist))
                 {
-                    SongTitle.Text = TaskbarExperiencePolicy.FormatMetadataTitle(_actualTitle, _actualArtist, experience.ContentLayout);
+                    SongTitle.Text = VisibleMetadataTitle(experience);
                     SongArtistContainer.Visibility = Visibility.Collapsed;
                 }
                 else
@@ -1168,21 +1200,23 @@ namespace AFMediaBar.Components
                 SongTitle.Text = _actualTitle;
             }
 
-            if (!isHorizontalTaskbar || !experience.HoverLayerEnabled)
+            if (!isTaskbar || !experience.HoverLayerEnabled)
                 HideTaskbarHoverLayer(immediate: true);
-            if (!isHorizontalTaskbar)
+            if (!isTaskbar)
             {
                 StopMarqueeAnimations();
                 AnimateComponentHover(SongImageHoverOverlay, false);
-                // 非横向任务栏不提供封面悬停放大：模式切换后立即归位，避免残留的缩放挂在封面上。
-                // The artwork hover zoom belongs to the horizontal taskbar only: snap it back right after a mode switch so no leftover scale stays on the cover.
+                // 离开任务栏呈现时立即收回独立封面弹层。
                 AnimateArtworkHover(false, immediate: true);
                 AnimateComponentHover(SongInfoHoverOverlay, false);
                 AnimateComponentHover(TaskbarSpectrumHoverSurface, false);
             }
 
+            RefreshTaskbarTextBudget(_lyricsFrame);
             if (publishSize)
                 RaiseDesiredSizeChanged(isForcedRefresh: performanceWidthChanged);
+
+            if (_isVertical) ApplyVerticalSectionGeometry(MainBorder.Height);
 
             // 文字或几何变化后同步更新溢出判据与时钟。
             if (isHorizontalTaskbar && !_restTransitionKeepsOutgoingText)
@@ -1196,11 +1230,17 @@ namespace AFMediaBar.Components
         /// </summary>
         private void ApplyTaskbarSectionGeometry(double primaryLength)
         {
+            RefreshTaskbarTextBudget(_lyricsFrame);
             // 先按封面自身的比例纠正封面框：下面的文字起点与整条宽度都按封面右缘计算，封面宽度必须是最终值。
             // The artwork box is corrected to the artwork's own aspect first, because the text start and the whole length below are derived
             // from the artwork's right edge, which therefore has to be final.
             ApplyTaskbarArtworkAspect();
-            if (_currentMode != WindowMode.Taskbar || _isVertical || !double.IsFinite(primaryLength))
+            if (IsBarPresentation && _isVertical && double.IsFinite(primaryLength))
+            {
+                ApplyVerticalSectionGeometry(primaryLength);
+                return;
+            }
+            if (!IsBarPresentation || !double.IsFinite(primaryLength))
             {
                 // 几何拿不到有效长度时仍然按现有文字宽度重跑一次跑马灯：一次无效的长度不该让正在滚动的文字退回被裁状态，
                 // 而宽度与裁剪方式只由这里和几何写入，跳过就等于把上一次的结果留在屏幕上。
@@ -1208,12 +1248,12 @@ namespace AFMediaBar.Components
                 // must not drop a scrolling text back to a cut-off state, because this method and the geometry are the only writers of
                 // that width, and skipping it leaves the previous result on screen.
                 _isRestLayerEmpty = false;
-                if (_currentMode == WindowMode.Taskbar && !_isVertical)
+                if (IsBarPresentation && !_isVertical)
                     ApplyMarqueeLayout(Math.Max(0, SongInfoStackPanel.Width));
                 return;
             }
 
-            var experience = SettingsManager.Current.TaskbarExperience.Normalize();
+            var experience = ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize();
             var layout = ResolveRestLayout(experience, primaryLength);
             _isRestLayerEmpty = layout.IsEmpty;
             // 布局本身表达了谁可见；这里统一落地显隐，避免设置与尺寸路径的判据漂移。
@@ -1238,7 +1278,6 @@ namespace AFMediaBar.Components
 
             Canvas.SetLeft(SongInfoStackPanel, textLeft);
             SongInfoStackPanel.Width = textWidth;
-            SongInfoSurface.Width = textWidth;
             SongTitleContainer.Width = textWidth;
             SongArtistContainer.Width = textWidth;
             SongLyricsPanel.Width = textWidth;
@@ -1246,7 +1285,6 @@ namespace AFMediaBar.Components
             {
                 Canvas.SetLeft(SongInfoStackPanel, _outgoingTextLeft);
                 SongInfoStackPanel.Width = _outgoingTextWidth;
-                SongInfoSurface.Width = _outgoingTextWidth;
                 SongTitleContainer.Width = _outgoingTextWidth;
                 SongArtistContainer.Width = _outgoingTextWidth;
                 SongLyricsPanel.Width = _outgoingTextWidth;
@@ -1277,8 +1315,9 @@ namespace AFMediaBar.Components
             // carrying its own fixed value; a spectrum content area taller than the text block wins, so the canvas always fits.
             var hoverHeight = Math.Max(
                 ResolveRestHoverHeight(),
-                SpectrumPresentationPolicy.ResolveContentHeightDip(SettingsManager.Current.SpectrumComponent) +
+                ResolveSpectrumContentHeight(ResolveSpectrumPresentationSettings()) +
                 SpectrumPresentationPolicy.SurfacePaddingDip * 2);
+            if (UsesAdaptiveTaskbarText) hoverHeight = Math.Min(hoverHeight, Math.Max(1, MainBorder.Height - _textBudget.PaddingDip * 2));
             PlaceRestWidget(TaskbarSpectrumHoverSurface, layout.Find(TaskbarRestComponent.Spectrum), hoverHeight);
             PlaceRestWidget(TaskbarPerformanceHoverSurface, layout.Find(TaskbarRestComponent.Performance), hoverHeight);
             PlaceRestWidget(TaskbarOutputDeviceHoverSurface, layout.Find(TaskbarRestComponent.OutputDevice), hoverHeight);
@@ -1480,7 +1519,7 @@ namespace AFMediaBar.Components
             var layout = LayoutPresets.GetLayout(_currentMode, LayoutOrientation.Horizontal);
             var artwork = layout.Components.FirstOrDefault(component =>
                 string.Equals(component.Id, LayoutComponentIds.Artwork, StringComparison.Ordinal));
-            var inset = artwork?.Bounds.X ?? 0;
+            var inset = _isSmallTaskbar && UsesAdaptiveTaskbarText ? 2 : artwork?.Bounds.X ?? 0;
             return double.IsFinite(inset) && inset > 0 ? inset : 0;
         }
 
@@ -1508,7 +1547,7 @@ namespace AFMediaBar.Components
         {
             if (SongImage.Stretch != Stretch.Uniform)
                 SongImage.Stretch = Stretch.Uniform;
-            if (_currentMode != WindowMode.Taskbar || _isVertical)
+            if (!IsBarPresentation || _isVertical)
                 return;
 
             var height = SongImageBorder.Height;
@@ -1569,7 +1608,7 @@ namespace AFMediaBar.Components
                 // 否则用户要先把指针移开再移回来才会看到悬停按钮。
                 // The hover layer was collapsed outright on suspension instead of through its own close timer; if the pointer is still over the text
                 // region when the host comes back, queue it again, otherwise the user has to move the pointer away and back to see the hover buttons.
-                if (SettingsManager.Current.TaskbarExperience.Normalize().HoverLayerEnabled &&
+                if (ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize().HoverLayerEnabled &&
                     (SongInfoStackPanel.IsMouseOver || HoverRevealHost.IsMouseOver))
                 {
                     _hoverOpenTimer.Stop();
@@ -1691,7 +1730,7 @@ namespace AFMediaBar.Components
         /// </summary>
         public void ApplyAppearanceSettings()
         {
-            var appearance = SettingsManager.Current.Appearance.Normalize();
+            var appearance = PresentationSettings.Appearance.Normalize();
             ApplyNoteColor();
             var appTheme = ApplicationThemeManager.GetAppTheme();
             var isDark = appTheme == ApplicationTheme.Dark;
@@ -1772,7 +1811,7 @@ namespace AFMediaBar.Components
         private void ApplyNoteColor()
         {
             if (SongImage.ImageSource is not null) return;
-            var customColor = SettingsManager.Current.Appearance.Normalize().IdleNoteColor;
+            var customColor = PresentationSettings.Appearance.Normalize().IdleNoteColor;
             if (SystemParameters.HighContrast)
                 SongImagePlaceholder.Foreground = SystemColors.WindowTextBrush;
             else if (ColorHex.TryParse(customColor, out var color))
@@ -1886,7 +1925,7 @@ namespace AFMediaBar.Components
                     }
 
                     // 连接状态变化后重新应用无媒体背景偏好，保留灵动岛的布局背景。
-                    if (_currentMode == WindowMode.Taskbar && wasConnected)
+                    if (IsBarPresentation && wasConnected)
                     {
                         ApplyAppearanceSettings();
                     }
@@ -1973,6 +2012,7 @@ namespace AFMediaBar.Components
                 // Both branches must run it: with no artwork the scrim has to go out, or a layer of scrim is left on the empty slot
                 // (the brush is still in effect, only the ImageSource is null).
                 ApplyArtworkDimming();
+                RestoreArtworkPlaceholderVisibility();
 
                 // 悬停提示可能正展示时播放状态翻转（点击封面切换了播放）：只让符号与门禁跟随新状态，
                 // 不经 AnimateArtworkHover 的 immediate 路径——那会把生长中的放大动画瞬间拉到目标倍率。
@@ -1992,10 +2032,10 @@ namespace AFMediaBar.Components
                 SongArtistContainer.Visibility = !_isSmallTaskbar && !_isVertical && !string.IsNullOrEmpty(_actualArtist)
                     ? Visibility.Visible
                     : Visibility.Collapsed;
-                SongInfoStackPanel.Visibility = _isVertical ? Visibility.Collapsed : Visibility.Visible;
-                SongInfoStackPanel.IsHitTestVisible = !_isVertical;
+                SongInfoStackPanel.Visibility = Visibility.Visible;
+                SongInfoStackPanel.IsHitTestVisible = true;
                 // 首次连接恢复背景层；封面切换只刷新纹理可见性，避免每次进度快照重算主题。
-                if (!wasConnected && _currentMode == WindowMode.Taskbar)
+                if (!wasConnected && IsBarPresentation)
                     ApplyAppearanceSettings();
                 else
                     RefreshTaskbarBackgroundArtwork();
@@ -2049,7 +2089,7 @@ namespace AFMediaBar.Components
         /// dropped: with no artwork a still-lit scrim would leave a patch on the empty slot.
         /// </summary>
         private void ApplyArtworkDimming()
-            => SongImagePauseScrimBrush.Opacity = _isPaused && SongImage.ImageSource is not null
+            => SongImagePauseScrimBrush.Opacity = _isPaused && SongImage.ImageSource is not null && !UsesEnlargedArtworkHint
                 ? ArtworkPausedScrimOpacity
                 : 0.0;
 
@@ -2063,13 +2103,14 @@ namespace AFMediaBar.Components
             if (_layoutEngine?.CurrentOrientation is not { } orientation)
                 return;
 
-            var lyricsVisible = SongLyricsPanel.Opacity > 0;
-            var metadataTitle = _currentMode == WindowMode.Taskbar && orientation == LayoutOrientation.Horizontal
-                ? TaskbarExperiencePolicy.FormatMetadataTitle(_actualTitle, _actualArtist, SettingsManager.Current.TaskbarExperience.ContentLayout)
+            var effectiveLyrics = VisibleLyricsFrame(_lyricsFrame);
+            var lyricsVisible = effectiveLyrics.IsVisible;
+            var metadataTitle = IsBarPresentation && orientation == LayoutOrientation.Horizontal
+                ? VisibleMetadataTitle(PresentationSettings.TaskbarExperience)
                 : _actualTitle;
-            var visibleText = !_isConnected ? string.Empty : lyricsVisible ? _lyricsFrame.Current : metadataTitle;
+            var visibleText = !_isConnected ? string.Empty : lyricsVisible ? effectiveLyrics.Current : metadataTitle;
             var secondaryText = _isConnected && lyricsVisible
-                ? string.IsNullOrEmpty(_lyricsFrame.CurrentTranslation) ? _lyricsFrame.Next : _lyricsFrame.CurrentTranslation
+                ? string.IsNullOrEmpty(effectiveLyrics.CurrentTranslation) ? effectiveLyrics.Next : effectiveLyrics.CurrentTranslation
                 : string.Empty;
             var artist = _isConnected && !lyricsVisible && SongArtistContainer.Visibility == Visibility.Visible ? _actualArtist : string.Empty;
             // Spectrum tuning and metric selection never change their reserved widths. Keeping
@@ -2092,7 +2133,7 @@ namespace AFMediaBar.Components
             // MUST be part of the fingerprint; otherwise widening the spacing would be deduplicated away, the bar would keep its old
             // length, and the right side of the line would be clipped with an ellipsis.
             // The two fixed-box settings belong here as well: they decide the text area's width directly.
-            var fingerprint = $"{orientation}|{visibleText}|{secondaryText}|{artist}|{SongTitle.FontSize:0.##}|{SongArtist.FontSize:0.##}|{SettingsManager.Current.LayoutLengthScalePercent:0.##}|{SettingsManager.Current.LayoutThicknessScalePercent:0.##}|{SettingsManager.Current.LyricsEnabled}|{SettingsManager.Current.TwoLineLyricsEnabled}|{SettingsManager.Current.LyricsSecondaryLine}|{string.Join(',', LyricsSecondaryLinePolicy.ResolveOrder(SettingsManager.Current.LyricsSecondaryLine))}|{SettingsManager.Current.TaskbarExperience}|{SpectrumSurfaceWidth:0.##}|{SettingsManager.Current.SpectrumComponent.ContentHeightDip:0.##}|{_snapshot.IsConnected}|{_snapshot.Duration > 0}|{_isRestLayerEmpty}|{string.Join(',', SettingsManager.Current.TaskbarExperience.IdleComponents ?? [])}|{SettingsManager.Current.LyricsCharacterSpacingPercent}|{SettingsManager.Current.LyricsFixedWidthEnabled}|{SettingsManager.Current.LyricsFixedWidthDip}";
+            var fingerprint = $"{orientation}|{visibleText}|{secondaryText}|{artist}|{SongTitle.FontSize:0.##}|{SongArtist.FontSize:0.##}|{PresentationSettings.LayoutLengthScalePercent:0.##}|{PresentationSettings.LayoutThicknessScalePercent:0.##}|{PresentationSettings.LyricsEnabled}|{PresentationSettings.TwoLineLyricsEnabled}|{PresentationSettings.LyricsSecondaryLine}|{string.Join(',', LyricsSecondaryLinePolicy.ResolveOrder(PresentationSettings.LyricsSecondaryLine))}|{PresentationSettings.TaskbarExperience}|{SpectrumSurfaceWidth:0.##}|{PresentationSettings.SpectrumComponent.ContentHeightDip:0.##}|{_snapshot.IsConnected}|{_snapshot.Duration > 0}|{_isRestLayerEmpty}|{string.Join(',', PresentationSettings.TaskbarExperience.IdleComponents ?? [])}|{PresentationSettings.LyricsCharacterSpacingPercent}|{PresentationSettings.LyricsFixedWidthEnabled}|{PresentationSettings.LyricsFixedWidthDip}";
 
             // 没有订阅者的请求不会被任何宿主消费，因此不能记入指纹；否则订阅后的首次请求会被去重丢弃，
             // 媒体栏在上一次媒体连接之前一直停留在预设长度。
@@ -2109,26 +2150,26 @@ namespace AFMediaBar.Components
             // 固定歌词框：开启后歌词宽度不再随内容变化，直接使用用户设定的长度；任务栏放不下时由布局引擎按可用长度夹取。
             // A fixed lyric box: while enabled the lyric width no longer follows the content but uses the configured length; the layout
             // engine clamps it to the available taskbar room when there is not enough space.
-            var isHorizontalMetadata = !lyricsVisible && _currentMode == WindowMode.Taskbar && orientation == LayoutOrientation.Horizontal;
+            var isHorizontalMetadata = !lyricsVisible && IsBarPresentation && orientation == LayoutOrientation.Horizontal;
             var lyricWidth = lyricsVisible
-                ? SettingsManager.Current.LyricsFixedWidthEnabled
-                    ? LyricsFixedWidth.Normalize(SettingsManager.Current.LyricsFixedWidthDip)
+                ? PresentationSettings.LyricsFixedWidthEnabled
+                    ? LyricsFixedWidth.Normalize(PresentationSettings.LyricsFixedWidthDip)
                     : Math.Max(MeasureWebLyricWidth(visibleText), MeasureWebLyricWidth(secondaryText))
                 : MeasureTextWidth(visibleText, SongTitle, isHorizontalMetadata);
             var textWidth = Math.Max(lyricWidth, MeasureTextWidth(artist, SongArtist, isHorizontalMetadata));
             var preset = LayoutPresets.GetLayout(_currentMode, orientation);
             var request = LayoutSizeCalculator.Calculate(
                 preset,
-                SettingsManager.Current.LayoutLengthScalePercent / 100.0,
-                SettingsManager.Current.LayoutThicknessScalePercent / 100.0,
+                PresentationSettings.LayoutLengthScalePercent / 100.0,
+                PresentationSettings.LayoutThicknessScalePercent / 100.0,
                 textWidth,
                 double.PositiveInfinity,
                 fingerprint,
                 isForcedRefresh,
                 skipTransition);
-            if (_currentMode == WindowMode.Taskbar && orientation == LayoutOrientation.Horizontal)
+            if (IsBarPresentation && orientation == LayoutOrientation.Horizontal)
             {
-                var experience = SettingsManager.Current.TaskbarExperience.Normalize();
+                var experience = ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize();
                 var progressVisible = _snapshot.Duration > 0;
                 var restVisibility = ResolveRestVisibility(experience);
                 var visibleComponents = TaskbarRestLayoutPolicy
@@ -2163,6 +2204,7 @@ namespace AFMediaBar.Components
                 _minimumPrimaryLength = ContentWidth(0);
                 request = request with
                 {
+                    Height = MainBorder.Height,
                     Width = _snapshot.IsConnected
                         ? TaskbarExperiencePolicy.ResolvePrimaryLength(
                             contentWidth,
@@ -2173,6 +2215,8 @@ namespace AFMediaBar.Components
                         : contentWidth
                 };
             }
+            if (IsBarPresentation && _isVertical)
+                request = BuildVerticalSizeRequest(request, lyricsVisible, visibleText, secondaryText);
             DesiredSizeChanged?.Invoke(this, new MediaBarSizeRequestEventArgs(request));
         }
 
@@ -2183,7 +2227,7 @@ namespace AFMediaBar.Components
 
             if (!_isConnected)
             {
-                if (_currentMode == WindowMode.Taskbar && !_isVertical)
+                if (IsBarPresentation)
                 {
                     QuickLaunchMenuRequested?.Invoke(this, EventArgs.Empty);
                     e.Handled = true;
@@ -2191,8 +2235,8 @@ namespace AFMediaBar.Components
                 return;
             }
 
-            var action = _currentMode == WindowMode.Taskbar
-                ? PlayerClickBindingPolicy.Resolve(SettingsManager.Current.Interaction, artwork: true)
+            var action = IsBarPresentation
+                ? PlayerClickBindingPolicy.Resolve(EffectiveInteraction, artwork: true)
                 : PlayerClickAction.TogglePlayPause;
             ExecutePlayerClickAction(action);
             e.Handled = true;
@@ -2253,7 +2297,7 @@ namespace AFMediaBar.Components
 
             if (!_isConnected)
             {
-                if (_currentMode == WindowMode.Taskbar && !_isVertical && SongImageBorder.IsMouseOver && _quickLaunchEntries.Count > 0)
+                if (IsBarPresentation && SongImageBorder.IsMouseOver && _quickLaunchEntries.Count > 0)
                 {
                     QuickLaunchWheelRequested?.Invoke(this, new PlayerSurfaceWheelEventArgs(e.Delta, false, false, false));
                     e.Handled = true;
@@ -2261,7 +2305,7 @@ namespace AFMediaBar.Components
                 return;
             }
 
-            if (_currentMode == WindowMode.Taskbar)
+            if (IsBarPresentation)
             {
                 // 全局滚轮手势只属于封面与文字区（见 ResolveGlobalWheelSurface）：在频谱、性能块或媒体栏的空白处滚动
                 // 什么都不做，那些组件将来会有自己的滚轮语义。
@@ -2274,7 +2318,7 @@ namespace AFMediaBar.Components
                 var leftDown = Mouse.LeftButton == MouseButtonState.Pressed;
                 var rightDown = Mouse.RightButton == MouseButtonState.Pressed;
                 var shiftDown = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
-                var modifier = SettingsManager.Current.Interaction.Normalize().Modifier;
+                var modifier = EffectiveInteraction.Normalize().Modifier;
                 if ((modifier == InteractionModifier.LeftMouseButton && leftDown) ||
                     (modifier == InteractionModifier.RightMouseButton && rightDown))
                     _suppressSurfaceClickUntilUtc = DateTime.UtcNow.AddMilliseconds(350);
@@ -2449,11 +2493,11 @@ namespace AFMediaBar.Components
             var hasDuration = _snapshot.Duration > 0;
             TaskbarRestProgress.Maximum = Math.Max(1, _snapshot.Duration);
             TaskbarRestProgress.Value = position;
-            var experience = SettingsManager.Current.TaskbarExperience.Normalize();
+            var experience = ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize();
             SongImageProgress.Progress = hasDuration ? position / _snapshot.Duration : 0;
             SongImageProgress.Visibility = _isConnected && hasDuration && experience.ArtworkProgressVisible
                 ? Visibility.Visible : Visibility.Collapsed;
-            if (_currentMode == WindowMode.Taskbar && !_isVertical)
+            if (IsBarPresentation && !_isVertical)
             {
                 TaskbarRestProgress.Visibility = hasDuration && experience.RestProgressVisible
                     ? Visibility.Visible
@@ -2478,8 +2522,8 @@ namespace AFMediaBar.Components
             if (!_isConnected || e.ChangedButton != MouseButton.Left || ShouldSuppressSurfaceClick())
                 return;
 
-            var action = _currentMode == WindowMode.Taskbar
-                ? PlayerClickBindingPolicy.Resolve(SettingsManager.Current.Interaction, artwork: false)
+            var action = IsBarPresentation
+                ? PlayerClickBindingPolicy.Resolve(EffectiveInteraction, artwork: false)
                 : PlayerClickAction.ActivateSource;
             ExecutePlayerClickAction(action);
             e.Handled = true;

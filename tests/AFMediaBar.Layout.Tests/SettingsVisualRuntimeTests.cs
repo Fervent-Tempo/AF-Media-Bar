@@ -89,11 +89,13 @@ public sealed class SettingsVisualRuntimeTests
                 VerifyNarrowRow(app);
                 SettingsLiveVisualChecks.VerifyCardHover(app);
                 VerifyPageMarkup(app);
+                _ = new ExperimentalPage(null!);
                 VerifyManualLyricsChoices();
                 DeveloperToolsMarkupChecks.Verify(app, FindRepository());
                 VerifyReleaseHistoryBody();
                 SettingsLiveVisualChecks.VerifyContextNavigation(app);
                 SettingsLiveVisualChecks.VerifyNavigationMotion(app);
+                SettingsReorderVisualChecks.Verify(app);
             }
             finally { app.Shutdown(); }
         }, TimeSpan.FromSeconds(30));

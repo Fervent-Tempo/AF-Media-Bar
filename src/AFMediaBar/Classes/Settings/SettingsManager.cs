@@ -57,6 +57,8 @@ public sealed class AppSettings : INotifyPropertyChanged
     /// <summary>Maximum cross-axis taskbar offset in DIP.</summary>
     public const double MaximumTaskbarCrossAxisOffsetDip = 20d;
     private AppearanceSettings _appearance = AppearanceSettings.Default;
+    private ExperimentalSettings _experiments = new();
+    private FloatingBarSettings _floatingBar = new();
     private TrayWheelBehavior _trayWheelBehavior = TrayWheelBehavior.SwitchOutputDevice;
     private bool _lyricsEnabled = true;
     private bool _allowBrowserAndVideoLyrics;
@@ -113,6 +115,8 @@ public sealed class AppSettings : INotifyPropertyChanged
     private bool _translucentTbCompatibilityPromptShown;
 
     public AppearanceSettings Appearance { get => _appearance; set => Set(ref _appearance, value.Normalize()); }
+    public ExperimentalSettings Experiments { get => _experiments; set => Set(ref _experiments, value ?? new()); }
+    public FloatingBarSettings FloatingBar { get => _floatingBar; set => Set(ref _floatingBar, (value ?? new()).Normalize()); }
     public TrayWheelBehavior TrayWheelBehavior { get => _trayWheelBehavior; set => Set(ref _trayWheelBehavior, value); }
     public bool LyricsEnabled { get => _lyricsEnabled; set => Set(ref _lyricsEnabled, value); }
     public bool AllowBrowserAndVideoLyrics { get => _allowBrowserAndVideoLyrics; set => Set(ref _allowBrowserAndVideoLyrics, value); }
@@ -258,7 +262,9 @@ public sealed class AppSettings : INotifyPropertyChanged
         if (!Enum.IsDefined(result.TrayWheelBehavior)) result.TrayWheelBehavior = defaults.TrayWheelBehavior;
         result.LyricsSecondaryLine = result.LyricsSecondaryLine.Normalize();
         if (!Enum.IsDefined(result.Position)) result.Position = defaults.Position;
-        result.WindowMode = WindowMode.Taskbar;
+        // 旧灵动岛标识继续回退，悬浮仅在实验开启后生效。
+        if (result.WindowMode != WindowMode.FloatingBar || !result.Experiments.FloatingBar)
+            result.WindowMode = WindowMode.Taskbar;
         if (!Enum.IsDefined(result.LayoutOrientationMode)) result.LayoutOrientationMode = defaults.LayoutOrientationMode;
         if (!Enum.IsDefined(result.DynamicIslandBackgroundMode)) result.DynamicIslandBackgroundMode = defaults.DynamicIslandBackgroundMode;
         if (!Enum.IsDefined(result.DynamicIslandEdge)) result.DynamicIslandEdge = defaults.DynamicIslandEdge;
@@ -306,6 +312,8 @@ public sealed class AppSettings : INotifyPropertyChanged
     public AppSettings Clone() => new()
     {
         Appearance = Appearance,
+        Experiments = Experiments with { },
+        FloatingBar = FloatingBar.Normalize(),
         TrayWheelBehavior = TrayWheelBehavior,
         LyricsEnabled = LyricsEnabled,
         AllowBrowserAndVideoLyrics = AllowBrowserAndVideoLyrics,
@@ -378,7 +386,7 @@ public sealed class AppSettings : INotifyPropertyChanged
 }
 
 /// <summary>设置重置范围。 / Settings reset scope.</summary>
-public enum SettingsResetScope { General, Appearance, Layout, DisplayModes, ExtraFeatures, Interaction, Lyrics, All, Components }
+public enum SettingsResetScope { General, Appearance, Layout, DisplayModes, ExtraFeatures, Interaction, Lyrics, All, Components, ContentLayout }
 
 /// <summary>设置变更通知参数。 / Settings change notification arguments.</summary>
 public sealed class SettingsChangedEventArgs(SettingsResetScope? resetScope = null, string? propertyName = null) : EventArgs
@@ -564,10 +572,8 @@ public static class SettingsManager
     {
         var next = Current.Clone();
         var defaults = Defaults;
-        next.TaskbarExperience = defaults.TaskbarExperience with
-        {
-            MediaFontSizePercent = next.TaskbarExperience.MediaFontSizePercent
-        };
+        next.TaskbarExperience = AFMediaBar.Classes.Services.Settings.SettingsResetPolicy.Content(next.TaskbarExperience,
+            defaults.TaskbarExperience, next.Experiments.NewAudioControl);
         next.SpectrumComponent = defaults.SpectrumComponent;
         next.PerformanceComponent = defaults.PerformanceComponent;
         next.LyricsTextAlignment = defaults.LyricsTextAlignment;
@@ -646,8 +652,8 @@ public static class SettingsManager
     public static void ResetInteraction()
     {
         var next = Current.Clone();
-        next.Interaction = Defaults.Interaction;
-        next.AudioDevices = Defaults.AudioDevices.Normalize();
+        next.Interaction = AFMediaBar.Classes.Services.Settings.SettingsResetPolicy.Interaction(next.Interaction, Defaults.Interaction, next.Experiments.NewAudioControl);
+        if (next.Experiments.NewAudioControl) next.AudioDevices = Defaults.AudioDevices;
         Replace(next, SettingsResetScope.Interaction);
     }
     public static void ResetLyrics()
@@ -725,6 +731,10 @@ public static class SettingsManager
             case nameof(AppSettings.LyricsTextAlignment): LyricsSettingsChanged?.Invoke(null, EventArgs.Empty); break;
             case nameof(AppSettings.TaskbarExperience): TaskbarExperienceSettingsChanged?.Invoke(null, EventArgs.Empty); break;
             case nameof(AppSettings.Interaction): InteractionSettingsChanged?.Invoke(null, EventArgs.Empty); break;
+            case nameof(AppSettings.Experiments):
+                InteractionSettingsChanged?.Invoke(null, EventArgs.Empty);
+                TaskbarExperienceSettingsChanged?.Invoke(null, EventArgs.Empty);
+                break;
             case nameof(AppSettings.TrackChangeNotification): TrackChangeNotificationSettingsChanged?.Invoke(null, EventArgs.Empty); break;
             case nameof(AppSettings.SmtcSourceFilter):
             case nameof(AppSettings.QuickLaunch):

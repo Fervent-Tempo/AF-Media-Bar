@@ -99,8 +99,8 @@ dotnet_naming_rule.private_static_readonly_fields.symbols = private_static_reado
 dotnet_naming_rule.private_static_readonly_fields.style = private_field
 dotnet_naming_rule.private_static_readonly_fields.severity = suggestion
 
-# 这四个文件含私有 WPF 标识；配置无法按字段类型排除，静态只读字段改为人工复核。
-[src/AFMediaBar/Components/{SettingsDiagram,SettingsGroupStrip,SliderInputBehavior}.cs]
+# 这些文件含私有 WPF 标识；配置无法按字段类型排除，静态只读字段改为人工复核。
+[src/AFMediaBar/Components/{SettingsDiagram,SettingsGroupStrip,SliderInputBehavior,SettingsRow,SettingsReorderBehavior}.cs]
 dotnet_naming_rule.private_static_readonly_fields.severity = none
 
 [src/AFMediaBar/Classes/Utils/SettingsRevealAnimator.cs]

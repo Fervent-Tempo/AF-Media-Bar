@@ -125,10 +125,17 @@ namespace AFMediaBar.Views.Windows
             LyricsRecoveryNotificationCoordinator lyricsRecoveryNotifications,
             UpdateService updateService,
             MemoryPruneCoordinator memoryPruneCoordinator,
-            IApplicationExitService exitService)
+            IApplicationExitService exitService,
+            BarRuntimeCoordinator runtime,
+            Func<string, ITaskbarWindowHostActions, TaskbarWindow> taskbarFactory,
+            Func<string, DisplayMonitorInfo, FloatingBarWindow> floatingFactory)
         {
             ViewModel = viewModel;
             _exitService = exitService;
+            _runtime = runtime;
+            _taskbarFactory = taskbarFactory;
+            _floatingFactory = floatingFactory;
+            SettingsManager.SettingsChanged += RuntimeSettingsChanged;
             _taskbarViewModel = taskbarViewModel;
             DataContext = this;
             _mediaSessionService = App.Services.GetRequiredService<MediaSessionService>();
@@ -156,6 +163,7 @@ namespace AFMediaBar.Views.Windows
             _lyricsRecoveryNotifications = lyricsRecoveryNotifications;
             _updateService = updateService;
             _memoryPruneCoordinator = memoryPruneCoordinator;
+            _memoryPruneCoordinator.LevelChanged += RuntimePruneChanged;
 
             // Shell 可能在 TaskbarCreated 之后才稍晚创建副任务栏，而且切换 Windows 的“在所有显示器上显示任务栏”不会改变显示器列表。
             // 这个低成本监视只比较句柄、不观察任务栏矩形，因此能补齐拓扑，又不会让自动隐藏动画触发宿主重建。
@@ -167,6 +175,8 @@ namespace AFMediaBar.Views.Windows
             {
                 if (!_isClosing && !TaskbarEnvironmentRecovering && SettingsManager.Current.WindowMode == WindowMode.Taskbar)
                     ApplyEffectiveTaskbarMonitorChange();
+                if (!_isClosing && SettingsManager.Current.WindowMode == WindowMode.FloatingBar) QueueRuntimeRefresh();
+                TryNotifySmallTaskbar();
             };
 
             InitializeComponent();
@@ -221,6 +231,7 @@ namespace AFMediaBar.Views.Windows
 
             // evaluate the initial state once the window is loaded
             Loaded += MainWindow_Loaded;
+            InitializeExperimentalHostWatcher();
         }
 
         #region INavigationWindow methods
@@ -363,6 +374,7 @@ namespace AFMediaBar.Views.Windows
         /// </summary>
         internal void RequestTaskbarEnvironmentRecovery()
         {
+            if (SettingsManager.Current.WindowMode == WindowMode.FloatingBar) { QueueRuntimeRefresh(force: true); return; }
             if (_isClosing || SettingsManager.Current.WindowMode != WindowMode.Taskbar)
                 return;
 
@@ -387,6 +399,7 @@ namespace AFMediaBar.Views.Windows
         /// </summary>
         internal void RequestTaskbarHostReload()
         {
+            if (SettingsManager.Current.WindowMode == WindowMode.FloatingBar) { QueueRuntimeRefresh(force: true); return; }
             if (_isClosing || SettingsManager.Current.WindowMode != WindowMode.Taskbar)
                 return;
 
@@ -476,54 +489,17 @@ namespace AFMediaBar.Views.Windows
         public void RecreateTaskbarWindow() => RecreateTaskbarWindows();
 
         private void RecreateTaskbarWindows()
-        {
-            CloseTaskbarWindows();
-            CreateTaskbarWindows();
-            _effectiveTaskbarTargetSignature = ResolveEffectiveTaskbarTargetSignature();
-
-            // Replay the latest snapshot; if none exists yet, force a synchronous refresh.
-            if (App.Services.GetRequiredService<MediaSessionService>().CurrentSnapshot is { } snapshot)
-            {
-                foreach (var taskbarWindow in _taskbarWindows)
-                    taskbarWindow.ApplySnapshot(snapshot);
-            }
-            else
-            {
-                App.Services.GetRequiredService<MediaSessionService>().RefreshNow();
-            }
-        }
+        { QueueRuntimeRefresh(force: true); }
 
         private void CloseTaskbarWindows()
         {
-            // 完整层的坐标与任务栏宿主一一对应；重建宿主时先收起旧面板，避免它继续挂在已失效的屏幕/DPI 上。
-            // Full-panel coordinates belong to their taskbar hosts; dismiss old panels before rebuilding hosts so none remains on stale monitor/DPI state.
+            SettingsManager.SettingsChanged -= RuntimeSettingsChanged;
+            _memoryPruneCoordinator.LevelChanged -= RuntimePruneChanged;
+            _runtimeRequest++;
             CloseFullPanelWindows();
-            // 先清除共享引用，避免重入的媒体回调访问已被 Explorer 或 Close() 销毁 HWND 的窗口。
-            // Clear the published reference first so reentrant media callbacks cannot target
-            // a Window whose HWND has already been destroyed by Explorer or Close().
-            var taskbarWindows = _taskbarWindows.ToArray();
             _taskbarWindows.Clear();
-            if (taskbarWindows.Length == 0)
-                return;
-
-            foreach (var taskbarWindow in taskbarWindows)
-            {
-                taskbarWindow.OpenFullPanelRequested -= TaskbarWindow_OpenFullPanelRequested;
-                taskbarWindow.PlayerMenuOpenRequested -= TaskbarWindow_PlayerMenuOpenRequested;
-                taskbarWindow.PlacementTransitionStarted -= TaskbarWindow_PlacementTransitionStarted;
-                taskbarWindow.PlacementFallbackRequested -= TaskbarWindow_PlacementFallbackRequested;
-                _placementNotificationGate.ForgetHost(taskbarWindow.TargetMonitorDeviceId);
-                taskbarWindow.SuspendForEnvironmentRecovery();
-                taskbarWindow.DetachFromTaskbar();
-                try
-                {
-                    taskbarWindow.Close();
-                }
-                catch (InvalidOperationException)
-                {
-                    // Explorer may already have destroyed the cross-process child HWND.
-                }
-            }
+            _floatingWindows.Clear();
+            _runtime.Dispose();
         }
 
         /// <summary>
@@ -554,6 +530,7 @@ namespace AFMediaBar.Views.Windows
 
             foreach (var taskbarWindow in _taskbarWindows)
                 taskbarWindow.ApplySnapshot(snapshot);
+            foreach (var floating in _floatingWindows) floating.ApplySnapshot(snapshot);
         }
 
         private void MediaSessionService_OnSessionsChanged(IReadOnlyList<MediaSessionOption> options)
@@ -637,23 +614,7 @@ namespace AFMediaBar.Views.Windows
         }
 
         private void ActivateTaskbarMode()
-        {
-            if (_taskbarWindows.Count == 0)
-            {
-                CreateTaskbarWindows();
-                if (_mediaSessionService.CurrentSnapshot is { } snapshot)
-                {
-                    foreach (var taskbarWindow in _taskbarWindows)
-                    {
-                        taskbarWindow.ApplySnapshot(snapshot);
-                    }
-                }
-                else
-                {
-                    _mediaSessionService.RefreshNow();
-                }
-            }
-        }
+        { QueueRuntimeRefresh(); }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
@@ -727,6 +688,7 @@ namespace AFMediaBar.Views.Windows
 
         private void ApplyEffectiveTaskbarMonitorChange()
         {
+            if (SettingsManager.Current.WindowMode == WindowMode.FloatingBar) { QueueRuntimeRefresh(); return; }
             if (_isClosing || TaskbarEnvironmentRecovering)
                 return;
 
@@ -792,8 +754,14 @@ namespace AFMediaBar.Views.Windows
 
         private async Task ShowTrayCompactMenuAsync(TaskbarCompactFlyoutMode mode, TrayIconBounds? bounds)
         {
+            if (_isClosing) return;
+            if (_floatingWindows.FirstOrDefault() is { } floating)
+            {
+                await floating.ShowCompactMenuAsync(mode, bounds);
+                return;
+            }
             var primaryTaskbarWindow = _taskbarWindows.FirstOrDefault();
-            if (_isClosing || primaryTaskbarWindow is null)
+            if (primaryTaskbarWindow is null)
                 return;
 
             await primaryTaskbarWindow.ShowCompactMenuAsync(mode, bounds);
@@ -815,44 +783,24 @@ namespace AFMediaBar.Views.Windows
                 _experienceSettingsUpdateScheduled = false;
                 if (_isClosing)
                     return;
+                if (_lastAudioExperiment != SettingsManager.Current.Experiments.NewAudioControl)
+                {
+                    _lastAudioExperiment = SettingsManager.Current.Experiments.NewAudioControl;
+                    CloseFullPanelWindows();
+                }
                 foreach (var taskbarWindow in _taskbarWindows)
                     taskbarWindow.ApplyExperienceSettings();
             }, DispatcherPriority.Render);
         }
 
         private void CreateTaskbarWindows()
-        {
-            var seenTaskbars = new HashSet<IntPtr>();
-            foreach (var targetDeviceId in ResolveTaskbarTargetDeviceIds())
-            {
-                var handle = _taskBarService.GetSelectedTaskbarHandle(targetDeviceId, out _);
-                if (handle == IntPtr.Zero || !seenTaskbars.Add(handle))
-                    continue;
-
-                var window = CreateTaskbarWindow(targetDeviceId);
-                _taskbarWindows.Add(window);
-                window.ApplyAppearanceSettings();
-            }
-        }
+        { QueueRuntimeRefresh(); }
 
         private TaskbarWindow CreateTaskbarWindow(string targetDeviceId)
         {
-            var window = new TaskbarWindow(
-                _taskBarService,
-                targetDeviceId,
-                this,
-                _appearanceService,
-                _occupiedAreaService,
-                _taskbarLengthConstraints,
-                _interactionRouter,
-                _audioInteractionService,
-                _audioMonitorService,
-                _sourceActivationService,
-                _systemMetricsMonitor,
-                _screenBackgroundSampler,
-                _mouseInputMonitor,
-                _memoryPruneCoordinator);
+            var window = _taskbarFactory(targetDeviceId, this);
             window.OpenFullPanelRequested += TaskbarWindow_OpenFullPanelRequested;
+            window.InformationAutomaticallyHidden += TaskbarWindow_InformationAutomaticallyHidden;
             window.PlayerMenuOpenRequested += TaskbarWindow_PlayerMenuOpenRequested;
             window.PlacementTransitionStarted += TaskbarWindow_PlacementTransitionStarted;
             window.PlacementFallbackRequested += TaskbarWindow_PlacementFallbackRequested;
@@ -861,7 +809,7 @@ namespace AFMediaBar.Views.Windows
 
         private void TaskbarWindow_PlacementTransitionStarted(object? sender, EventArgs e)
         {
-            if (sender is TaskbarWindow window && _fullPanelWindows.TryGetValue(window.TargetMonitorDeviceId, out var panel))
+            if (sender is TaskbarWindow window && _taskbarWindows.Contains(window) && _fullPanelWindows.TryGetValue(window.TargetMonitorDeviceId, out var panel))
                 panel.RequestClose();
         }
 
@@ -873,7 +821,7 @@ namespace AFMediaBar.Views.Windows
 
         private void TaskbarWindow_OpenFullPanelRequested(object? sender, EventArgs e)
         {
-            if (_isClosing || sender is not TaskbarWindow taskbarWindow)
+            if (_isClosing || sender is not TaskbarWindow taskbarWindow || !_taskbarWindows.Contains(taskbarWindow))
                 return;
 
             var targetDeviceId = taskbarWindow.TargetMonitorDeviceId;
@@ -892,7 +840,8 @@ namespace AFMediaBar.Views.Windows
 
             panel.Closed -= FullPanelWindow_Closed;
             panel.Closed += FullPanelWindow_Closed;
-            panel.ToggleNear(taskbarWindow.GetMediaBarScreenBounds(), targetDeviceId);
+            panel.ApplyPresentationSettings(null);
+            panel.ToggleNear(taskbarWindow.GetMediaBarScreenBounds(), targetDeviceId, taskbarWindow.IsVerticalPresentation);
         }
 
         private void FullPanelWindow_Closed(object? sender, EventArgs e)
@@ -1000,6 +949,18 @@ namespace AFMediaBar.Views.Windows
             if (target == ShellNotificationTarget.Application)
             {
                 ViewModel_OpenUpdateSettingsRequested(this, EventArgs.Empty);
+                return;
+            }
+            if (target == ShellNotificationTarget.FloatingBarExperiment)
+            {
+                ViewModel_OpenSettingsRequested(this, EventArgs.Empty);
+                _settingsWindow?.NavigateToGroup(SettingsPageKey.Experimental, "Experimental.Floating.Title");
+                return;
+            }
+            if (target == ShellNotificationTarget.VerticalTaskbarExperiment)
+            {
+                ViewModel_OpenSettingsRequested(this, EventArgs.Empty);
+                _settingsWindow?.NavigateToGroup(SettingsPageKey.Experimental, "Experimental.Vertical.Title");
                 return;
             }
             if (target != ShellNotificationTarget.TaskbarBackground) return;

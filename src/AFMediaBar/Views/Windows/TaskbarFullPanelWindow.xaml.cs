@@ -19,6 +19,14 @@ namespace AFMediaBar.Views.Windows;
 /// <summary>任务栏外的完整媒体、音频与性能面板。 / Full media, audio, and performance panel outside the taskbar.</summary>
 public partial class TaskbarFullPanelWindow : FluentWindow
 {
+    private AppSettings? _presentationSettings;
+    private AppSettings PresentationSettings => _presentationSettings ?? SettingsManager.Current;
+    public void ApplyPresentationSettings(AppSettings? settings)
+    {
+        _presentationSettings = settings;
+        ApplyFullPanelSettings(animate: false);
+    }
+
     private static readonly TimeSpan VolumeWheelApplyDelay =
         TimeSpan.FromMilliseconds(AudioApplyPolicy.ApplicationVolumeDelayMilliseconds);
     private readonly MediaSessionService _mediaSessionService;
@@ -68,7 +76,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         ApplyFullPanelSettings(animate: false);
     }
 
-    public void ToggleNear(Rect anchor, string targetMonitorDeviceId)
+    public void ToggleNear(Rect anchor, string targetMonitorDeviceId, bool verticalAnchor = false)
     {
         if (_isClosing)
             return;
@@ -85,6 +93,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         ApplyMotionEffects();
         Show();
         UpdateLayout();
+        _verticalAnchor = verticalAnchor;
         PositionNear(anchor, targetMonitorDeviceId);
         BeginOpenAnimation(anchor);
         Activate();
@@ -157,6 +166,8 @@ public partial class TaskbarFullPanelWindow : FluentWindow
             PanelRoot.Effect = null;
     }
 
+    private bool _verticalAnchor;
+
     private void PositionNear(Rect anchor, string targetMonitorDeviceId)
     {
         var monitor = _displayMonitorService.ResolveFixedMonitor(targetMonitorDeviceId);
@@ -169,6 +180,13 @@ public partial class TaskbarFullPanelWindow : FluentWindow
                 monitor.WorkArea.Top / scaleY,
                 monitor.WorkArea.Width / scaleX,
                 monitor.WorkArea.Height / scaleY);
+        if (_verticalAnchor)
+        {
+            var onLeft = anchor.Left + anchor.Width / 2 < work.Left + work.Width / 2;
+            Left = Math.Clamp(onLeft ? anchor.Right + 8 : anchor.Left - ActualWidth - 8, work.Left, Math.Max(work.Left, work.Right - ActualWidth));
+            Top = Math.Clamp(anchor.Top + (anchor.Height - ActualHeight) / 2, work.Top, Math.Max(work.Top, work.Bottom - ActualHeight));
+            return;
+        }
         Left = Math.Clamp(anchor.Left + (anchor.Width - ActualWidth) / 2, work.Left, Math.Max(work.Left, work.Right - ActualWidth));
         var above = anchor.Top - ActualHeight - 8;
         var below = anchor.Bottom + 8;
@@ -253,7 +271,10 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         if (_isClosing)
             return;
 
-        var settings = SettingsManager.Current.TaskbarExperience.FullPanel.Normalize();
+        var settings = PresentationSettings.TaskbarExperience.FullPanel.Normalize();
+        var inputVisibility = PresentationSettings.Experiments.NewAudioControl ? Visibility.Visible : Visibility.Collapsed;
+        InputDeviceLabel.Visibility = inputVisibility;
+        InputDeviceCombo.Visibility = inputVisibility;
         var animationVersion = ++_sectionAnimationVersion;
         var audioBecameVisible = !_audioControlsVisible && settings.AudioControlsVisible;
         var mediaInfoWasVisible = MediaInfoSection.Visibility == Visibility.Visible;
@@ -403,7 +424,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
                 devices.FirstOrDefault(device => device.PolicyId == outputPreview.PolicyId);
             InputDeviceCombo.SelectedItem = inputPreview is null ? inputs.FirstOrDefault(device => device.IsDefault) :
                 inputs.FirstOrDefault(device => device.PolicyId == inputPreview.PolicyId);
-            AudioDeviceStatusText.Text = DeviceCombo.SelectedItem is null || InputDeviceCombo.SelectedItem is null ?
+            AudioDeviceStatusText.Text = DeviceCombo.SelectedItem is null || (PresentationSettings.Experiments.NewAudioControl && InputDeviceCombo.SelectedItem is null) ?
                 Translations.Get("Audio.Route.HiddenOrDisconnected") : string.Empty;
             _currentVolume = volume;
             VolumeSlider.IsEnabled = volume is not null;

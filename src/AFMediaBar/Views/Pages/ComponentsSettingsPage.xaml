@@ -129,7 +129,7 @@
                             Title="{DynamicResource Loc.DisplayModes.Rest.Row.DeviceButton.Title}">
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.RestOutputDeviceVisible, Mode=TwoWay}" />
                         </components:SettingsRow>
-                        <components:SettingsRow
+                        <components:SettingsRow Visibility="{Binding ViewModel.Layers.CanEditExperimentalAudio, Converter={StaticResource AfBooleanToVisibilityConverter}}"
                             Description="{DynamicResource Loc.Audio.Device.InputDescription}"
                             Icon="{ui:SymbolIcon Mic24}"
                             Title="{DynamicResource Loc.Common.InputDevice}">
@@ -187,7 +187,7 @@
                         <ui:CardExpander
                             Style="{StaticResource AfSettingsExpanderStyle}"
                             Icon="{ui:SymbolIcon ArrowSort24}"
-                            Visibility="{Binding ViewModel.Layout.IsHorizontalLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                            Visibility="{Binding ViewModel.Layout.CanConfigureBarLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
                                     <TextBlock
@@ -203,35 +203,20 @@
                                     Margin="0,0,0,4"
                                     Symbol="Info24"
                                     Text="{DynamicResource Loc.DisplayModes.Rest.Order.Notice}" />
-                                <ItemsControl Margin="0,0,0,4" ItemsSource="{Binding ViewModel.Layout.RestOrderEntries}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <components:SettingsRow
-                                                Description="{Binding Description}"
-                                                IsNested="True"
-                                                Title="{Binding DisplayName}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <ui:Button
-                                                        Margin="8,0,0,0"
-                                                        Command="{Binding DataContext.ViewModel.Layout.MoveRestComponentUpCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                        CommandParameter="{Binding}"
-                                                        Icon="{ui:SymbolIcon ArrowUp24}"
-                                                        Style="{StaticResource AfSettingsIconButtonStyle}"
-                                                        ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveUp}"
-                                                        Visibility="{Binding CanMove, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
-                                                    <ui:Button
-                                                        Margin="4,0,0,0"
-                                                        Command="{Binding DataContext.ViewModel.Layout.MoveRestComponentDownCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                        CommandParameter="{Binding}"
-                                                        Icon="{ui:SymbolIcon ArrowDown24}"
-                                                        Style="{StaticResource AfSettingsIconButtonStyle}"
-                                                        ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveDown}"
-                                                        Visibility="{Binding CanMove, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
-                                                </StackPanel>
-                                            </components:SettingsRow>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                <AdornerDecorator>
+                                    <ItemsControl components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Layout.ReorderRestComponentCommand}" Margin="0,0,0,4" ItemsSource="{Binding ViewModel.Layout.RestOrderEntries}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <components:SettingsRow KeepControlInline="True"
+                                                    Description="{Binding Description}"
+                                                    IsNested="True"
+                                                    Title="{Binding DisplayName}">
+                                                    <components:SettingsReorderHandle ItemKey="{Binding Component}" Visibility="{Binding CanMove, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
+                                                </components:SettingsRow>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </AdornerDecorator>
                                 <components:SettingsRow
                                     Description="{DynamicResource Loc.DisplayModes.Rest.Order.Reset.Description}"
                                     Icon="{ui:SymbolIcon ArrowReset24}"
@@ -239,7 +224,7 @@
                                     Title="{DynamicResource Loc.DisplayModes.Rest.Order.Reset.Title}">
                                     <ui:Button
                                         Command="{Binding ViewModel.Layout.ResetRestComponentOrderCommand}"
-                                        Content="{DynamicResource Loc.Lyrics.Sources.Reset.Action}"
+                                        Content="{DynamicResource Loc.DisplayModes.Rest.Order.Reset.Title}"
                                         Icon="{ui:SymbolIcon ArrowReset24}"
                                         Style="{StaticResource AfSettingsButtonStyle}" />
                                 </components:SettingsRow>
@@ -461,26 +446,19 @@
                                     </ComboBox>
                                 </components:SettingsRow>
                                 <components:SettingsCallout Margin="0,4,0,4" Text="{DynamicResource Loc.Media.Performance.Order.Description}" />
-                                <ItemsControl ItemsSource="{Binding ViewModel.Components.MetricOrderEntries}"
-                                              IsEnabled="{Binding ViewModel.Components.CanConfigurePerformance}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <components:SettingsRow IsNested="True"
-                                                                    Title="{Binding DisplayName}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <ui:Button Command="{Binding DataContext.ViewModel.Components.MoveMetricUpCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                               CommandParameter="{Binding}" IsEnabled="{Binding CanMoveUp}"
-                                                               Icon="{ui:SymbolIcon ArrowUp24}" Style="{StaticResource AfSettingsIconButtonStyle}"
-                                                               ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveUp}" />
-                                                    <ui:Button Margin="4,0,0,0" Command="{Binding DataContext.ViewModel.Components.MoveMetricDownCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                               CommandParameter="{Binding}" IsEnabled="{Binding CanMoveDown}"
-                                                               Icon="{ui:SymbolIcon ArrowDown24}" Style="{StaticResource AfSettingsIconButtonStyle}"
-                                                               ToolTip="{DynamicResource Loc.Lyrics.Sources.MoveDown}" />
-                                                </StackPanel>
-                                            </components:SettingsRow>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                <AdornerDecorator>
+                                    <ItemsControl components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Components.ReorderMetricCommand}" ItemsSource="{Binding ViewModel.Components.MetricOrderEntries}"
+                                                  IsEnabled="{Binding ViewModel.Components.CanConfigurePerformance}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <components:SettingsRow KeepControlInline="True" IsNested="True"
+                                                                        Title="{Binding DisplayName}">
+                                                    <components:SettingsReorderHandle ItemKey="{Binding Metric}" />
+                                                </components:SettingsRow>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </AdornerDecorator>
                                 <components:SettingsRow
                                     Description="{DynamicResource Loc.Media.Performance.OpenTaskManager.Description}"
                                     Icon="{ui:SymbolIcon CursorClick24}"
@@ -502,7 +480,7 @@
                             Description="{DynamicResource Loc.DisplayModes.Rest.Row.Layout.Description}"
                             Icon="{ui:SymbolIcon Grid24}"
                             Title="{DynamicResource Loc.DisplayModes.Rest.Row.Layout.Title}"
-                            Visibility="{Binding ViewModel.Layout.IsHorizontalLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                            Visibility="{Binding ViewModel.Layout.CanConfigureBarLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                             <ComboBox
                                 MinWidth="200"
                                 SelectedValue="{Binding ViewModel.Layout.ContentLayout, Mode=TwoWay}"
@@ -531,19 +509,19 @@
                                     Description="{DynamicResource Loc.DisplayModes.Rest.Row.Alignment.Description}"
                                     Icon="{ui:SymbolIcon TextAlignLeft24}"
                                     Title="{DynamicResource Loc.DisplayModes.Rest.Row.Alignment.Title}"
-                                    Visibility="{Binding ViewModel.Layout.IsHorizontalLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                                    Visibility="{Binding ViewModel.Layout.CanConfigureBarLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                                     <ComboBox
                                         MinWidth="200"
                                         SelectedValue="{Binding ViewModel.Layout.MediaTextAlignment, Mode=TwoWay}"
                                         SelectedValuePath="Tag">
                                         <ComboBoxItem
-                                            Content="{DynamicResource Loc.Common.AlignLeft}"
+                                            Content="{Binding ViewModel.Layers.AxisStartText}"
                                             Tag="{x:Static settings:TaskbarMediaTextAlignment.Left}" />
                                         <ComboBoxItem
                                             Content="{DynamicResource Loc.Common.AlignCenter}"
                                             Tag="{x:Static settings:TaskbarMediaTextAlignment.Center}" />
                                         <ComboBoxItem
-                                            Content="{DynamicResource Loc.Common.AlignRight}"
+                                            Content="{Binding ViewModel.Layers.AxisEndText}"
                                             Tag="{x:Static settings:TaskbarMediaTextAlignment.Right}" />
                                     </ComboBox>
                                 </components:SettingsRow>
@@ -556,18 +534,18 @@
                                         SelectedValue="{Binding ViewModel.Lyrics.TextAlignment, Mode=TwoWay}"
                                         SelectedValuePath="Tag">
                                         <ComboBoxItem
-                                            Content="{DynamicResource Loc.Common.AlignLeft}"
+                                            Content="{Binding ViewModel.Layers.AxisStartText}"
                                             Tag="{x:Static settings:LyricsTextAlignment.Left}" />
                                         <ComboBoxItem
                                             Content="{DynamicResource Loc.Common.AlignCenter}"
                                             Tag="{x:Static settings:LyricsTextAlignment.Center}" />
                                         <ComboBoxItem
-                                            Content="{DynamicResource Loc.Common.AlignRight}"
+                                            Content="{Binding ViewModel.Layers.AxisEndText}"
                                             Tag="{x:Static settings:LyricsTextAlignment.Right}" />
                                     </ComboBox>
                                 </components:SettingsRow>
                                 <components:SettingsRow
-                                    Visibility="{Binding ViewModel.Layers.IsHorizontalLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}"
+                                    Visibility="{Binding ViewModel.Layers.CanConfigureBarLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}"
                                     Description="{DynamicResource Loc.DisplayModes.Placement.Row.Arrangement.Description}"
                                     Icon="{ui:SymbolIcon ArrowMove24}"
                                     Title="{DynamicResource Loc.DisplayModes.Placement.Row.Arrangement.Title}">
@@ -577,10 +555,10 @@
                                         SelectedIndex="{Binding ViewModel.Layers.TaskbarArrangementIndex, Mode=TwoWay}">
                                         <ComboBoxItem Content="{DynamicResource Loc.ContentLayout.Arrangement.Auto}" Tag="{x:Null}" />
                                         <ComboBoxItem
-                                            Content="{DynamicResource Loc.DisplayModes.Placement.Arrangement.Left}"
+                                            Content="{Binding ViewModel.Layers.ExpandStartText}"
                                             Tag="{x:Static settings:TaskbarContentArrangement.Left}" />
                                         <ComboBoxItem
-                                            Content="{DynamicResource Loc.DisplayModes.Placement.Arrangement.Right}"
+                                            Content="{Binding ViewModel.Layers.ExpandEndText}"
                                             Tag="{x:Static settings:TaskbarContentArrangement.Right}" />
                                     </ComboBox>
                                 </components:SettingsRow>
@@ -772,7 +750,7 @@
                                     Title="{DynamicResource Loc.Common.OutputDevice}">
                                     <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverOutputDeviceVisible, Mode=TwoWay}" />
                                 </components:SettingsRow>
-                        <components:SettingsRow
+                        <components:SettingsRow Visibility="{Binding ViewModel.Layers.CanEditExperimentalAudio, Converter={StaticResource AfBooleanToVisibilityConverter}}"
                                     Icon="{ui:SymbolIcon Mic24}"
                                     IsNested="True"
                                     Title="{DynamicResource Loc.Common.InputDevice}">
