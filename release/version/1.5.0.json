@@ -27,6 +27,21 @@
   },
   "packages": [
     {
+      "url": "https://v4.gh-proxy.org/https://github.com/Fervent-Tempo/AF-Media-Bar/releases/download/v1.5.0/AFMediaBar-Setup-v1.5.0-win-x64.exe",
+      "size": 75140936,
+      "sha256": "5f34f89a1480f8f1766e0ec8f1cfddf8b1578d8cd5e8e507204fbc14af58271b"
+    },
+    {
+      "url": "https://cdn.gh-proxy.org/https://github.com/Fervent-Tempo/AF-Media-Bar/releases/download/v1.5.0/AFMediaBar-Setup-v1.5.0-win-x64.exe",
+      "size": 75140936,
+      "sha256": "5f34f89a1480f8f1766e0ec8f1cfddf8b1578d8cd5e8e507204fbc14af58271b"
+    },
+    {
+      "url": "https://gh-proxy.com/https://github.com/Fervent-Tempo/AF-Media-Bar/releases/download/v1.5.0/AFMediaBar-Setup-v1.5.0-win-x64.exe",
+      "size": 75140936,
+      "sha256": "5f34f89a1480f8f1766e0ec8f1cfddf8b1578d8cd5e8e507204fbc14af58271b"
+    },
+    {
       "url": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/download/v1.5.0/AFMediaBar-Setup-v1.5.0-win-x64.exe",
       "size": 75140936,
       "sha256": "5f34f89a1480f8f1766e0ec8f1cfddf8b1578d8cd5e8e507204fbc14af58271b"
