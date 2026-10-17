@@ -14,6 +14,7 @@ Add opt-in experiments for vertical taskbars and desktop floating mode, with imp
 
 - Add an Experimental features page. New audio controls, vertical taskbars and desktop floating mode are off by default and can be toggled at runtime; related options, search results and commands follow their switches.
 - New audio controls provide input-device switching, per-application device routing, device blacklists and advanced switching policies. Turning the experiment off restores the previous output-device and volume interface while retaining experiment settings; existing Windows application-routing preferences are not cleared automatically.
+- Add a microphone component and input-device wheel actions to the new audio controls. Input and output buttons can target the system default or foreground application separately for clicks and wheel actions, with optional communication-device switching.
 - Support real left- and right-side taskbars, with native vertical titles, artists and lyrics. Quick controls, artwork and the full panel open toward the desktop.
 - Add desktop floating mode with horizontal or vertical layout, desktop or always-on-top layers, dragging within each target display's work area and saved positions per display. Taskbar and floating modes are mutually exclusive.
 - Allow manual lyric-source priority, sequential or parallel retrieval, and ordered or first-available results.
@@ -24,6 +25,7 @@ Add opt-in experiments for vertical taskbars and desktop floating mode, with imp
 - Edit only the active runtime mode. Share fonts, font size, appearance, lyrics, components and interactions; save display, position, locking, direction, layer, length and thickness separately by mode. Failed switches retain the previous host and editing context.
 - Replace ordering arrows with drag handles for components, secondary lyrics, lyric sources, metrics and quick launch. Add live displacement, edge scrolling and Alt+Up/Down keyboard ordering, plus subtle hover feedback for ordinary Settings cards.
 - Reduce padding on narrow taskbars and prioritize the current lyric or title when space is limited. Restore secondary information when space returns without changing saved visibility preferences.
+- Use a compact application list with separate device details in the new volume mixer, and click application icons to mute. Use scrollable device menus and group managed devices by availability.
 - Keep settings schema 2, reading 1.4.0 settings and user-default snapshots. Missing experiment fields default to off. Keep update-manifest schema 1.
 
 ### Fixed and improved
@@ -34,6 +36,7 @@ Add opt-in experiments for vertical taskbars and desktop floating mode, with imp
 - Improve vertical lyric ordering and transitions, two-line metrics, spectrum direction, hover materials and artwork stacking.
 - Fix enlarged artwork shrinking and expanding again when clicked to play or pause. Keep the full image visible, use a centered 24-DIP artwork-colored icon, and position wheel tooltips outside the artwork.
 - Improve interrupted taskbar animations, connection transitions and popup input release, reducing stale state during auto-hide, dragging and host switches.
+- Fix context and audio menus closing unexpectedly with auto-hide taskbars, and unify popup dismissal. Restore displayed volume and mute state after failed writes; fix lost application icons and device-menu theming.
 
 ## [1.4.0] - 2026-10-12
 
