@@ -385,17 +385,36 @@ public sealed class ArtworkHoverPreviewTests
     {
         var tooltip = (ToolTip)typeof(TaskBarMediaControl).GetField("_artworkWheelTooltip", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
         tooltip.Content = "普通滚轮：上一首 / 下一首";
+        // 本夹具显式打开弹层以检查几何，不让真实桌面指针的封面和滚轮轮询收回它。
+        var timers = new[] { "_artworkZoomHoverSyncTimer", "_wheelTooltipTimer" }
+            .Select(field => (System.Windows.Threading.DispatcherTimer)typeof(TaskBarMediaControl)
+                .GetField(field, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!)
+            .Select(timer => (Timer: timer, WasRunning: timer.IsEnabled)).ToArray();
+        foreach (var (timer, _) in timers) timer.Stop();
         try
         {
             tooltip.IsOpen = true;
-            tooltip.UpdateLayout();
-            control.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Render);
-            SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(20));
+            var started = Stopwatch.StartNew();
+            do
+            {
+                tooltip.UpdateLayout();
+                control.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Render);
+                SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(10));
+            } while ((PresentationSource.FromVisual(tooltip) is null || tooltip.ActualWidth <= 0 || tooltip.ActualHeight <= 0) &&
+                     started.Elapsed < TimeSpan.FromSeconds(2));
+            Assert.IsTrue(tooltip.IsOpen, "几何断言前提示不能被关闭。");
+            Assert.IsNotNull(PresentationSource.FromVisual(tooltip), "提示未在期限内连接到呈现源。");
+            Assert.IsNotNull(PresentationSource.FromVisual(artwork), "封面未连接到呈现源。");
             var hint = new Rect(tooltip.PointToScreen(new Point()), tooltip.PointToScreen(new Point(tooltip.ActualWidth, tooltip.ActualHeight)));
             var image = new Rect(artwork.PointToScreen(new Point()), artwork.PointToScreen(new Point(artwork.ActualWidth, artwork.ActualHeight)));
             Assert.IsFalse(hint.IntersectsWith(image), $"提示遮挡了封面：tooltip={hint}, artwork={image}");
         }
-        finally { tooltip.IsOpen = false; }
+        finally
+        {
+            tooltip.IsOpen = false;
+            foreach (var (timer, wasRunning) in timers)
+                if (wasRunning) timer.Start();
+        }
     }
 
     private static void VerifyTooltipAvoidance()
