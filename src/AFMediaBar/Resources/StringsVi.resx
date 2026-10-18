@@ -2987,4 +2987,16 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   <data name="DisplayModes.Mode.Experimental" xml:space="preserve"><value>Thử nghiệm</value></data>
   <data name="Settings.Reorder.Help" xml:space="preserve"><value>Kéo để đổi thứ tự, hoặc chọn tay nắm rồi nhấn Alt+Lên/Xuống.</value></data>
   <data name="Settings.Reorder.Position" xml:space="preserve"><value>Mục {0} trên {1}</value></data>
+  <data name="Media.Selection.Title" xml:space="preserve"><value>Chính sách chuyển nguồn</value></data>
+  <data name="Media.Selection.Mode.Automatic" xml:space="preserve"><value>Tự động</value></data>
+  <data name="Media.Selection.Mode.LatestSession" xml:space="preserve"><value>Phiên mới nhất</value></data>
+  <data name="Media.Selection.Mode.PreferredApplication" xml:space="preserve"><value>Ưu tiên ứng dụng</value></data>
+  <data name="Media.Selection.Description.Automatic" xml:space="preserve"><value>Nguồn vừa bắt đầu hoặc tiếp tục phát sẽ được chọn. Giữ nguồn hiện tại khi tất cả đều tạm dừng.</value></data>
+  <data name="Media.Selection.Description.LatestSession" xml:space="preserve"><value>Phiên phương tiện mới xuất hiện sẽ được chọn, kể cả khi tạm dừng. Đổi bài hoặc tiếp tục phát không thay đổi thứ tự.</value></data>
+  <data name="Media.Selection.Description.PreferredApplication" xml:space="preserve"><value>Ưu tiên phiên phương tiện của ứng dụng đã chọn, kể cả khi tạm dừng. Dùng Tự động khi ứng dụng không có phiên.</value></data>
+  <data name="Media.Selection.Preferred.Title" xml:space="preserve"><value>Ứng dụng ưu tiên</value></data>
+  <data name="Media.Selection.Preferred.Description" xml:space="preserve"><value>Chọn một nguồn phương tiện đã phát hiện. Lựa chọn vẫn được lưu khi ứng dụng không hoạt động.</value></data>
+  <data name="Media.Selection.NoPreferred" xml:space="preserve"><value>Không chọn (dùng Tự động)</value></data>
+  <data name="Media.Selection.Filtered" xml:space="preserve"><value>Ứng dụng này bị bộ lọc nguồn loại trừ. Hiện đang dùng lựa chọn Tự động.</value></data>
+  <data name="Media.Selection.ManualHint" xml:space="preserve"><value>Chọn nguồn thủ công có hiệu lực ngay. Phiên mới hoặc hoạt động phát phù hợp với chính sách vẫn có thể được chọn.</value></data>
 </root>

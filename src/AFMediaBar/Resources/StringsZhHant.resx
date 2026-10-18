@@ -2949,4 +2949,16 @@
   <data name="DisplayModes.Mode.Experimental" xml:space="preserve"><value>實驗性</value></data>
   <data name="Settings.Reorder.Help" xml:space="preserve"><value>拖曳調整順序；也可聚焦後按 Alt＋↑／↓。</value></data>
   <data name="Settings.Reorder.Position" xml:space="preserve"><value>第 {0} 項，共 {1} 項</value></data>
+  <data name="Media.Selection.Title" xml:space="preserve"><value>自動切換策略</value></data>
+  <data name="Media.Selection.Mode.Automatic" xml:space="preserve"><value>自動選擇</value></data>
+  <data name="Media.Selection.Mode.LatestSession" xml:space="preserve"><value>後來居上</value></data>
+  <data name="Media.Selection.Mode.PreferredApplication" xml:space="preserve"><value>指定應用優先</value></data>
+  <data name="Media.Selection.Description.Automatic" xml:space="preserve"><value>最近開始或恢復播放的來源接管；全部暫停時保留目前來源。</value></data>
+  <data name="Media.Selection.Description.LatestSession" xml:space="preserve"><value>新增媒體工作階段接管，即使處於暫停狀態；切歌和恢復播放不改變先後。</value></data>
+  <data name="Media.Selection.Description.PreferredApplication" xml:space="preserve"><value>優先顯示指定應用，包括暫停狀態；沒有其媒體工作階段時使用自動選擇。</value></data>
+  <data name="Media.Selection.Preferred.Title" xml:space="preserve"><value>優先應用</value></data>
+  <data name="Media.Selection.Preferred.Description" xml:space="preserve"><value>從已發現的媒體來源中選擇；應用離線時保留此設定。</value></data>
+  <data name="Media.Selection.NoPreferred" xml:space="preserve"><value>未指定（使用自動選擇）</value></data>
+  <data name="Media.Selection.Filtered" xml:space="preserve"><value>此應用已被媒體來源篩選排除，目前使用自動選擇。</value></data>
+  <data name="Media.Selection.ManualHint" xml:space="preserve"><value>手動選源立即生效；後續新工作階段或符合策略的播放活動仍可接管。</value></data>
 </root>

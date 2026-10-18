@@ -201,7 +201,8 @@ public static class SettingsSearchIndex
             "Common.MediaSource",
             "Search.MediaAndNotifications.MediaSource.Description",
             language,
-            ["来源", "source", "SMTC", "允许", "过滤", "filter", "白名单", "应用", "播放器", "媒体来源", "已检测来源", "允许列表"]),
+            ["来源", "source", "SMTC", "允许", "过滤", "filter", "白名单", "应用", "播放器", "媒体来源", "已检测来源", "允许列表",
+                "自动切换", "自动选择", "后来居上", "优先应用", "指定应用优先", "切换顺序", "媒体优先级", "automatic selection", "latest session", "preferred application", "priority", "自動切換", "後來居上", "優先應用", "tự động", "ưu tiên", "phiên mới"]),
         Create(
             SettingsPageKey.MediaAndNotifications,
             "Common.Group.QuickLaunch",

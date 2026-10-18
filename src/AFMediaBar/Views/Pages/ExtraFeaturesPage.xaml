@@ -45,6 +45,38 @@
                 <components:SettingsGroup GroupId="Common.MediaSource" Header="{DynamicResource Loc.Common.MediaSource}" Icon="{ui:SymbolIcon Filter24}">
                     <StackPanel>
                         <components:SettingsRow
+                            Description="{Binding ViewModel.SelectionDescription}"
+                            Icon="{ui:SymbolIcon ArrowSwap24}"
+                            Title="{DynamicResource Loc.Media.Selection.Title}">
+                            <ComboBox
+                                MinWidth="220"
+                                SelectedValue="{Binding ViewModel.SelectionMode, Mode=TwoWay}"
+                                SelectedValuePath="Tag">
+                                <ComboBoxItem Content="{DynamicResource Loc.Media.Selection.Mode.Automatic}" Tag="{x:Static settings:MediaSelectionMode.Automatic}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Media.Selection.Mode.LatestSession}" Tag="{x:Static settings:MediaSelectionMode.LatestSession}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Media.Selection.Mode.PreferredApplication}" Tag="{x:Static settings:MediaSelectionMode.PreferredApplication}" />
+                            </ComboBox>
+                        </components:SettingsRow>
+                        <StackPanel Visibility="{Binding ViewModel.IsPreferredApplication, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                            <components:SettingsRow
+                                Description="{DynamicResource Loc.Media.Selection.Preferred.Description}"
+                                IsNested="True"
+                                Title="{DynamicResource Loc.Media.Selection.Preferred.Title}">
+                                <ComboBox
+                                    DisplayMemberPath="DisplayName"
+                                    ItemsSource="{Binding ViewModel.PreferredSourceOptions}"
+                                    MinWidth="220"
+                                    SelectedValue="{Binding ViewModel.PreferredSourceId, Mode=TwoWay}"
+                                    SelectedValuePath="SourceId" />
+                            </components:SettingsRow>
+                            <TextBlock
+                                Margin="0,4,0,8"
+                                Style="{StaticResource AfSettingsHintTextStyle}"
+                                Text="{DynamicResource Loc.Media.Selection.Filtered}"
+                                Visibility="{Binding ViewModel.IsPreferredSourceBlocked, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
+                        </StackPanel>
+                        <TextBlock Margin="0,4,0,8" Style="{StaticResource AfSettingsHintTextStyle}" Text="{DynamicResource Loc.Media.Selection.ManualHint}" />
+                        <components:SettingsRow
                             Description="{DynamicResource Loc.Media.SourceFilter.Description}"
                             Icon="{ui:SymbolIcon Filter24}"
                             Title="{DynamicResource Loc.Media.SourceFilter.Title}">

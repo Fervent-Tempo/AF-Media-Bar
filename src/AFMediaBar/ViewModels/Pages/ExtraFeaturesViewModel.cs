@@ -33,6 +33,39 @@ public partial class ExtraFeaturesViewModel : ObservableObject
     public ObservableCollection<MediaSourceSettingItem> Sources { get; } = [];
     public ObservableCollection<QuickLaunchEntry> QuickLaunchEntries { get; } = [];
     public IReadOnlyList<DisplayMonitorOption> MonitorOptions { get; private set; } = [];
+    public IReadOnlyList<MediaSourceDescriptor> PreferredSourceOptions { get; private set; } = [];
+
+    public MediaSelectionMode SelectionMode
+    {
+        get => SettingsManager.Current.MediaSelection.Mode;
+        set
+        {
+            if (_isRefreshing || value == SelectionMode) return;
+            SettingsManager.SetMediaSelectionSettings(SettingsManager.Current.MediaSelection with { Mode = value });
+        }
+    }
+
+    public string PreferredSourceId
+    {
+        get => _sources.NormalizeSourceId(SettingsManager.Current.MediaSelection.PreferredSourceId ?? string.Empty);
+        set
+        {
+            if (_isRefreshing) return;
+            var sourceId = string.IsNullOrWhiteSpace(value) ? null : _sources.NormalizeSourceId(value.Trim());
+            if (string.Equals(sourceId, SettingsManager.Current.MediaSelection.PreferredSourceId, StringComparison.OrdinalIgnoreCase)) return;
+            SettingsManager.SetMediaSelectionSettings(SettingsManager.Current.MediaSelection with { PreferredSourceId = sourceId });
+        }
+    }
+
+    public bool IsPreferredApplication => SelectionMode == MediaSelectionMode.PreferredApplication;
+    public bool IsPreferredSourceBlocked => !string.IsNullOrEmpty(PreferredSourceId) &&
+        !_sources.IsAllowed(PreferredSourceId, SettingsManager.Current.SmtcSourceFilter);
+    public string SelectionDescription => Translations.Get(SelectionMode switch
+    {
+        MediaSelectionMode.LatestSession => "Media.Selection.Description.LatestSession",
+        MediaSelectionMode.PreferredApplication => "Media.Selection.Description.PreferredApplication",
+        _ => "Media.Selection.Description.Automatic"
+    });
 
     /// <summary>快速启动条目数，显示在「已添加的启动项」行里；单位词属于文案，因此读数由代码拼。/ Number of quick launch entries, shown in the "added entries" row; the unit word is text, so the reading is composed in code.</summary>
     public string QuickLaunchEntryCountText => Translations.Format("Media.QuickLaunch.EntryCount", QuickLaunchEntries.Count);
@@ -84,6 +117,7 @@ public partial class ExtraFeaturesViewModel : ObservableObject
     /// </summary>
     private void OnLanguageChanged(object? sender, EventArgs e)
     {
+        RefreshSources();
         RefreshMonitors();
         OnPropertyChanged(string.Empty);
     }
@@ -229,7 +263,7 @@ public partial class ExtraFeaturesViewModel : ObservableObject
         OnPropertyChanged(nameof(CanSelectTrackChangeNotificationMonitor));
     }
 
-    private void OnDiscoveredSourcesChanged(IReadOnlyList<MediaSourceDescriptor> sources) => RefreshSources();
+    private void OnDiscoveredSourcesChanged(IReadOnlyList<MediaSourceDescriptor> sources) => DispatcherHelper.Run(_dispatcher, RefreshSources);
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e) => DispatcherHelper.Run(_dispatcher, RefreshAll);
     private void OnMonitorsChanged(object? sender, EventArgs e) => DispatcherHelper.Run(_dispatcher, RefreshMonitors);
 
@@ -243,6 +277,9 @@ public partial class ExtraFeaturesViewModel : ObservableObject
             foreach (var entry in SettingsManager.Current.QuickLaunch.Entries ?? []) QuickLaunchEntries.Add(entry);
             RefreshMonitors();
             OnPropertyChanged(nameof(SmtcFilterEnabled));
+            OnPropertyChanged(nameof(SelectionMode));
+            OnPropertyChanged(nameof(IsPreferredApplication));
+            OnPropertyChanged(nameof(SelectionDescription));
             UpdateNotification(Notification);
         }
         finally { _isRefreshing = false; }
@@ -250,19 +287,34 @@ public partial class ExtraFeaturesViewModel : ObservableObject
 
     private void RefreshSources()
     {
-        var allowed = (SettingsManager.Current.SmtcSourceFilter.AllowedSourceIds ?? [])
-            .Select(_sources.NormalizeSourceId).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-        var descriptors = _mediaSessions.CurrentDiscoveredSources.ToDictionary(source => source.SourceId, StringComparer.OrdinalIgnoreCase);
-        foreach (var sourceId in allowed)
-            descriptors.TryAdd(sourceId, new MediaSourceDescriptor(sourceId, MediaSourceNameFormatter.GetDisplayName(sourceId, sourceId), null, null));
-
-        Sources.Clear();
-        foreach (var descriptor in descriptors.Values.OrderBy(value => value.DisplayName, StringComparer.CurrentCultureIgnoreCase))
+        var wasRefreshing = _isRefreshing;
+        _isRefreshing = true;
+        try
         {
-            var item = new MediaSourceSettingItem(descriptor, allowed.Contains(descriptor.SourceId, StringComparer.OrdinalIgnoreCase));
-            item.AllowedChanged += OnSourceAllowedChanged;
-            Sources.Add(item);
+            var allowed = (SettingsManager.Current.SmtcSourceFilter.AllowedSourceIds ?? [])
+                .Select(_sources.NormalizeSourceId).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+            var descriptors = _mediaSessions.CurrentDiscoveredSources.ToDictionary(source => source.SourceId, StringComparer.OrdinalIgnoreCase);
+            foreach (var sourceId in allowed)
+                descriptors.TryAdd(sourceId, new MediaSourceDescriptor(sourceId, MediaSourceNameFormatter.GetDisplayName(sourceId, sourceId), null, null));
+            if (!string.IsNullOrEmpty(PreferredSourceId))
+                descriptors.TryAdd(PreferredSourceId, new MediaSourceDescriptor(PreferredSourceId,
+                    MediaSourceNameFormatter.GetDisplayName(PreferredSourceId, PreferredSourceId), null, null));
+
+            PreferredSourceOptions = new[] { new MediaSourceDescriptor(string.Empty, Translations.Get("Media.Selection.NoPreferred"), null, null) }
+                .Concat(descriptors.Values.OrderBy(value => value.DisplayName, StringComparer.CurrentCultureIgnoreCase)).ToArray();
+            OnPropertyChanged(nameof(PreferredSourceOptions));
+            OnPropertyChanged(nameof(PreferredSourceId));
+            OnPropertyChanged(nameof(IsPreferredSourceBlocked));
+
+            Sources.Clear();
+            foreach (var descriptor in descriptors.Values.OrderBy(value => value.DisplayName, StringComparer.CurrentCultureIgnoreCase))
+            {
+                var item = new MediaSourceSettingItem(descriptor, allowed.Contains(descriptor.SourceId, StringComparer.OrdinalIgnoreCase));
+                item.AllowedChanged += OnSourceAllowedChanged;
+                Sources.Add(item);
+            }
         }
+        finally { _isRefreshing = wasRefreshing; }
     }
 
     private void OnSourceAllowedChanged(MediaSourceSettingItem item)

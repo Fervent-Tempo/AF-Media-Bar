@@ -2949,4 +2949,16 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="DisplayModes.Mode.Experimental" xml:space="preserve"><value>Experimental</value></data>
   <data name="Settings.Reorder.Help" xml:space="preserve"><value>Drag to reorder, or focus the handle and press Alt+Up/Down.</value></data>
   <data name="Settings.Reorder.Position" xml:space="preserve"><value>Item {0} of {1}</value></data>
+  <data name="Media.Selection.Title" xml:space="preserve"><value>Automatic switching</value></data>
+  <data name="Media.Selection.Mode.Automatic" xml:space="preserve"><value>Automatic</value></data>
+  <data name="Media.Selection.Mode.LatestSession" xml:space="preserve"><value>Newest session</value></data>
+  <data name="Media.Selection.Mode.PreferredApplication" xml:space="preserve"><value>Preferred application</value></data>
+  <data name="Media.Selection.Description.Automatic" xml:space="preserve"><value>The source that most recently starts or resumes playback takes over. Keep the current source when all are paused.</value></data>
+  <data name="Media.Selection.Description.LatestSession" xml:space="preserve"><value>A newly added media session takes over, even when paused. Track changes and resuming playback do not change its order.</value></data>
+  <data name="Media.Selection.Description.PreferredApplication" xml:space="preserve"><value>Prefer the selected application&apos;s media session, even when paused. Use Automatic when it has no session.</value></data>
+  <data name="Media.Selection.Preferred.Title" xml:space="preserve"><value>Preferred application</value></data>
+  <data name="Media.Selection.Preferred.Description" xml:space="preserve"><value>Choose a discovered media source. The preference is kept while the application is offline.</value></data>
+  <data name="Media.Selection.NoPreferred" xml:space="preserve"><value>None (use Automatic)</value></data>
+  <data name="Media.Selection.Filtered" xml:space="preserve"><value>This application is excluded by the source filter. Automatic selection is used instead.</value></data>
+  <data name="Media.Selection.ManualHint" xml:space="preserve"><value>Manual selection takes effect immediately. A new session or playback activity can take over according to the policy.</value></data>
 </root>
