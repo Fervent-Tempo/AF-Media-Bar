@@ -59,6 +59,16 @@ internal static class VerticalTaskbarPresentationChecks
                     "The inner card must expose both metric rows, not retain the horizontal 24 DIP height.");
                 foreach (var cell in items.Children.Cast<TextBlock>())
                     Assert.AreEqual(1, cell.Inlines.OfType<LineBreak>().Count(), "Each metric uses two readable rows.");
+                control.ApplyPerformanceSnapshot(new(40, 7, 3, 123, 1024, 2048), 0, false);
+                var cells = items.Children.Cast<TextBlock>().ToArray();
+                CollectionAssert.AreEqual(new[] { "CPU", "7%" }, cells[0].Inlines.OfType<Run>().Select(run => run.Text).ToArray());
+                CollectionAssert.AreEqual(new[] { "APP MB", "123" }, cells[1].Inlines.OfType<Run>().Select(run => run.Text).ToArray());
+                Assert.IsTrue(cells[2].Inlines.OfType<Run>().First().Text.StartsWith("↑ "));
+                Assert.IsTrue(cells[2].Inlines.OfType<Run>().Last().Text.StartsWith("↓ "));
+                control.ApplyPerformanceSnapshot(default, 0, false);
+                Assert.AreEqual("—", cells[0].Inlines.OfType<Run>().Last().Text, "Unavailable readings must replace the previous value.");
+                Assert.AreEqual("—", cells[1].Inlines.OfType<Run>().Last().Text);
+                Assert.IsTrue(cells.All(cell => cell.Inlines.OfType<Run>().All(run => run.FontSize is >= 1 and <= 14)));
                 foreach (var onLeft in new[] { true, false })
                 {
                     control.ApplyVerticalTaskbarSide(onLeft);

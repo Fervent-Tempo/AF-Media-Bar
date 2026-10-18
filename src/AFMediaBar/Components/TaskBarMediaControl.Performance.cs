@@ -11,6 +11,7 @@ namespace AFMediaBar.Components;
 public partial class TaskBarMediaControl
 {
     private readonly Dictionary<MetricKind, TextBlock> _performanceCells = [];
+    private IReadOnlyList<MetricKind> _performanceMetrics = [];
     private PerformanceComponentSettings _performanceSettings;
     private SystemMetricsSnapshot _performanceSnapshot;
     private int _performanceCycleIndex;
@@ -26,10 +27,11 @@ public partial class TaskBarMediaControl
         var metrics = settings.GetOrderedMetrics();
         var font = TextElement.GetFontFamily(TaskbarPerformanceItems).Source;
         if (_performanceCells.Count > 0 && _performanceSettings.DisplayMode == settings.DisplayMode &&
-            _performanceSettings.GetOrderedMetrics().SequenceEqual(metrics) && _performanceFont == font && _performanceVertical == _isVertical && _performanceCompact == compact)
+            _performanceMetrics.SequenceEqual(metrics) && _performanceFont == font && _performanceVertical == _isVertical && _performanceCompact == compact)
             return false;
 
         _performanceSettings = settings;
+        _performanceMetrics = metrics;
         _performanceVertical = _isVertical;
         _performanceCompact = compact;
         _performanceFont = font;
@@ -97,7 +99,7 @@ public partial class TaskBarMediaControl
 
     private void UpdatePerformanceCells()
     {
-        var metrics = _performanceSettings.GetOrderedMetrics();
+        var metrics = _performanceMetrics;
         var current = metrics.Count > 0 ? metrics[Math.Clamp(_performanceCycleIndex, 0, metrics.Count - 1)] : MetricKind.SystemMemory;
         var index = 0;
         foreach (var pair in _performanceCells)
@@ -119,7 +121,16 @@ public partial class TaskBarMediaControl
     private void ApplyVerticalMetricText(TextBlock cell, MetricKind metric)
     {
         var formatted = MetricPresentationPolicy.Format(metric, _performanceSnapshot);
-        cell.Inlines.Clear();
+        // 每个指标始终占两行；复用文本元素，避免每次采样重建 TextContainer 的内容树。
+        if (cell.Inlines.Count != 3 || cell.Inlines.FirstInline is not Run firstLine || cell.Inlines.LastInline is not Run secondLine)
+        {
+            cell.Inlines.Clear();
+            firstLine = new Run();
+            secondLine = new Run();
+            cell.Inlines.Add(firstLine);
+            cell.Inlines.Add(new LineBreak());
+            cell.Inlines.Add(secondLine);
+        }
         cell.FontSize = 10;
         cell.LineHeight = 16;
         cell.LineStackingStrategy = LineStackingStrategy.BlockLineHeight;
@@ -127,21 +138,23 @@ public partial class TaskBarMediaControl
         cell.Width = Math.Max(1, MainBorder.Width - 8);
         cell.TextTrimming = TextTrimming.None;
         cell.TextWrapping = TextWrapping.NoWrap;
-        void AddLine(string text, double size)
+        void UpdateLine(Run line, string text, double size)
         {
-            if (cell.Inlines.Count > 0) cell.Inlines.Add(new LineBreak());
             var measured = MeasureTextWidthExact(text, cell) * size / cell.FontSize;
             var fitted = measured > cell.Width ? size * cell.Width / measured : size;
-            cell.Inlines.Add(new Run(text) { FontSize = Math.Max(1, fitted) });
+            line.Text = text;
+            line.FontSize = Math.Max(1, fitted);
         }
         if (metric == MetricKind.SystemNetwork)
         {
-            foreach (var line in formatted.Split('\n')) AddLine(line, 11);
+            var lines = formatted.Split('\n');
+            UpdateLine(firstLine, lines[0], 11);
+            UpdateLine(secondLine, lines[1], 11);
             return;
         }
         var values = formatted.Split(' ', 3);
-        AddLine(values.Length > 2 ? values[0] + " " + values[2] : values[0], 10);
-        AddLine(values.Length > 1 ? values[1] : "—", 14);
+        UpdateLine(firstLine, values.Length > 2 ? values[0] + " " + values[2] : values[0], 10);
+        UpdateLine(secondLine, values.Length > 1 ? values[1] : "—", 14);
     }
 
     private bool UpdatePerformanceWidth()
