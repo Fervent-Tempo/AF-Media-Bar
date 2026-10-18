@@ -105,6 +105,7 @@ public sealed class AppSettings : INotifyPropertyChanged
     private string _lyricsArtistSeparators = "/";
     private TrackChangeNotificationSettings _trackChangeNotification = TrackChangeNotificationSettings.Default;
     private SmtcSourceFilterSettings _smtcSourceFilter = SmtcSourceFilterSettings.Default;
+    private MediaSelectionSettings _mediaSelection = MediaSelectionSettings.Default;
     private QuickLaunchSettings _quickLaunch = QuickLaunchSettings.Default;
     private SpectrumComponentSettings _spectrumComponent = SpectrumComponentSettings.Default;
     private PerformanceComponentSettings _performanceComponent = PerformanceComponentSettings.Default;
@@ -214,6 +215,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         set => Set(ref _trackChangeNotification, value.Normalize());
     }
     public SmtcSourceFilterSettings SmtcSourceFilter { get => _smtcSourceFilter; set => Set(ref _smtcSourceFilter, value.Normalize()); }
+    public MediaSelectionSettings MediaSelection { get => _mediaSelection; set => Set(ref _mediaSelection, (value ?? MediaSelectionSettings.Default).Normalize()); }
     public QuickLaunchSettings QuickLaunch { get => _quickLaunch; set => Set(ref _quickLaunch, value.Normalize()); }
     public SpectrumComponentSettings SpectrumComponent { get => _spectrumComponent; set => Set(ref _spectrumComponent, value.Normalize()); }
     public PerformanceComponentSettings PerformanceComponent { get => _performanceComponent; set => Set(ref _performanceComponent, value.Normalize()); }
@@ -282,6 +284,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         result.DynamicIslandSurface = result.DynamicIslandSurface.Normalize();
         result.TrackChangeNotification = result.TrackChangeNotification.Normalize();
         result.SmtcSourceFilter = result.SmtcSourceFilter.Normalize();
+        result.MediaSelection = result.MediaSelection.Normalize();
         result.QuickLaunch = result.QuickLaunch.Normalize();
         result.SpectrumComponent = result.SpectrumComponent.Normalize();
         result.PerformanceComponent = result.PerformanceComponent.Normalize();
@@ -355,6 +358,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         LyricsArtistSeparators = LyricsArtistSeparators,
         TrackChangeNotification = TrackChangeNotification,
         SmtcSourceFilter = SmtcSourceFilter,
+        MediaSelection = MediaSelection,
         QuickLaunch = QuickLaunch,
         SpectrumComponent = SpectrumComponent,
         PerformanceComponent = PerformanceComponent,
@@ -489,6 +493,7 @@ public static class SettingsManager
     public static void SetInteractionSettings(GlobalInteractionSettings settings) => Current.Interaction = settings;
     public static void SetTrackChangeNotificationSettings(TrackChangeNotificationSettings settings) => Current.TrackChangeNotification = settings;
     public static void SetSmtcSourceFilterSettings(SmtcSourceFilterSettings settings) => Current.SmtcSourceFilter = settings;
+    public static void SetMediaSelectionSettings(MediaSelectionSettings settings) => Current.MediaSelection = settings;
     public static void SetQuickLaunchSettings(QuickLaunchSettings settings) => Current.QuickLaunch = settings;
     public static void SetSpectrumComponentSettings(SpectrumComponentSettings settings) => Current.SpectrumComponent = settings;
     public static void SetPerformanceComponentSettings(PerformanceComponentSettings settings) => Current.PerformanceComponent = settings;
@@ -639,6 +644,7 @@ public static class SettingsManager
         var next = Current.Clone(); var defaults = Defaults;
         next.TrackChangeNotification = defaults.TrackChangeNotification;
         next.SmtcSourceFilter = defaults.SmtcSourceFilter;
+        next.MediaSelection = defaults.MediaSelection;
         next.QuickLaunch = defaults.QuickLaunch;
         Replace(next, SettingsResetScope.ExtraFeatures);
     }
@@ -737,6 +743,7 @@ public static class SettingsManager
                 break;
             case nameof(AppSettings.TrackChangeNotification): TrackChangeNotificationSettingsChanged?.Invoke(null, EventArgs.Empty); break;
             case nameof(AppSettings.SmtcSourceFilter):
+            case nameof(AppSettings.MediaSelection):
             case nameof(AppSettings.QuickLaunch):
             case nameof(AppSettings.SpectrumComponent):
             case nameof(AppSettings.PerformanceComponent): ExtraFeaturesSettingsChanged?.Invoke(null, EventArgs.Empty); break;

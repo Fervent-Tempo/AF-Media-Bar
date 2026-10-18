@@ -169,7 +169,7 @@ internal static class SettingsReorderVisualChecks
         using var builder = new MediaSnapshotBuilder(null!);
         var registry = new MediaSourceRegistry([]);
         var catalog = new MediaSessionCatalog();
-        using var selection = new MediaSessionSelectionService(catalog);
+        using var selection = new MediaSessionSelectionService(catalog, new MediaSourceRegistry([]));
         using var media = new MediaSessionService(registry, catalog, selection, builder, [], null!,
             new MemoryPruneCoordinator(null!, null!, null!, []), null!);
         try

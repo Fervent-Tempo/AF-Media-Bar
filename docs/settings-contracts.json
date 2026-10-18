@@ -127,6 +127,11 @@
       "refreshIntervalMilliseconds": "v1.2.0"
     },
     "position": "v1.2.0",
+    "mediaSelection": {
+      "$release": "unreleased",
+      "mode": "unreleased",
+      "preferredSourceId": "unreleased"
+    },
     "quickLaunch": {
       "$release": "v1.2.0",
       "entries": {
@@ -466,6 +471,14 @@
         "ThemeTint": {"value": 2, "release": "v1.2.0"}
       }
     },
+    "MediaSelectionMode": {
+      "paths": ["settings.mediaSelection.mode"],
+      "members": {
+        "Automatic": {"value": 0, "release": "unreleased"},
+        "LatestSession": {"value": 1, "release": "unreleased"},
+        "PreferredApplication": {"value": 2, "release": "unreleased"}
+      }
+    },
     "QuickLaunchTargetKind": {
       "paths": ["settings.quickLaunch.entries[].kind"],
       "members": {
@@ -786,7 +799,7 @@
     },
     {
       "id": "media-source-id",
-      "paths": ["settings.smtcSourceFilter.allowedSourceIds", "settings.quickLaunch.entries[].sourceId"],
+      "paths": ["settings.smtcSourceFilter.allowedSourceIds", "settings.quickLaunch.entries[].sourceId", "settings.mediaSelection.preferredSourceId"],
       "text": "媒体ID是开放的SMTC集合。网易云SourceId=cloudmusic、选择键source:cloudmusic；cloudmusic/netease/163music别名不区分大小写，与歌词来源ID不是同一契约。"
     },
     {

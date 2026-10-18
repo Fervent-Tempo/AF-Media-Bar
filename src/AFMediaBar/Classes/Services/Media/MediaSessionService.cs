@@ -416,10 +416,12 @@ public sealed class MediaSessionService : IDisposable
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
     {
-        if (e.PropertyName != nameof(AppSettings.SmtcSourceFilter) &&
+        if (e.PropertyName != nameof(AppSettings.SmtcSourceFilter) && e.PropertyName != nameof(AppSettings.MediaSelection) &&
             e.ResetScope is not SettingsResetScope.ExtraFeatures and not SettingsResetScope.All)
             return;
         _selection.ClearSelection();
+        _controlSelectionRevision++;
+        CancelBrowserPresentationHold();
         ScheduleSessionsRefresh();
     }
 
@@ -740,7 +742,7 @@ public sealed class MediaSessionService : IDisposable
             _smtcCandidates = _lastSessions.Select(session => new MediaSourceCandidate(
                 session.Id, MediaSessionGuard.GetSourceId(session), IsPlaying(session), session.Id)).ToArray();
             _candidates = BuildCandidates();
-            var selected = _selection.Resolve(_candidates);
+            var selected = _selection.Resolve(_candidates, SettingsManager.Current.MediaSelection);
             if (selected is null && _selection.IsMissingSessionGraceActive)
             {
                 BeginBrowserPresentationHold();
@@ -748,9 +750,6 @@ public sealed class MediaSessionService : IDisposable
             }
 
             CancelBrowserPresentationHold();
-
-            if (_selection.TryAutoSwitchToPlaying(_candidates))
-                selected = _candidates.FirstOrDefault(source => source.Key == _selection.SelectedKey);
 
             if (!string.Equals(_controlSelectionKey, selected?.Key, StringComparison.Ordinal) ||
                 !string.Equals(_selectedSessionKey, selected?.SessionKey, StringComparison.Ordinal))
@@ -775,7 +774,7 @@ public sealed class MediaSessionService : IDisposable
             }
 
             _snapshotBuildInFlight = true;
-            _ = BuildAndPublishSnapshotAsync(session, session.Id, Volatile.Read(ref _mediaRevision));
+            _ = BuildAndPublishSnapshotAsync(session, session.Id, Volatile.Read(ref _mediaRevision), _controlSelectionRevision);
         }
         catch (Exception ex)
         {
@@ -783,12 +782,12 @@ public sealed class MediaSessionService : IDisposable
         }
     }
 
-    private async Task BuildAndPublishSnapshotAsync(MediaSession session, string sessionKey, int mediaRevision)
+    private async Task BuildAndPublishSnapshotAsync(MediaSession session, string sessionKey, int mediaRevision, int selectionRevision)
     {
         try
         {
             var snapshot = await _snapshotBuilder.BuildAsync(session, isStarted: true, _snapshotBuildCancellation.Token);
-            if (_isDisposed || mediaRevision != Volatile.Read(ref _mediaRevision) ||
+            if (_isDisposed || selectionRevision != _controlSelectionRevision || mediaRevision != Volatile.Read(ref _mediaRevision) ||
                 !string.Equals(sessionKey, _selectedSessionKey, StringComparison.Ordinal) ||
                 _selection.IsMissingSessionGraceActive)
                 return;

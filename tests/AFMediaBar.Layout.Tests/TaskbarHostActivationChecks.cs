@@ -35,7 +35,7 @@ internal static class TaskbarHostActivationChecks
         using var builder = new MediaSnapshotBuilder(null!);
         var catalog = new MediaSessionCatalog();
         using var media = new MediaSessionService(new MediaSourceRegistry([]), catalog,
-            new MediaSessionSelectionService(catalog), builder, [], null!, prune, null!);
+            new MediaSessionSelectionService(catalog, new MediaSourceRegistry([])), builder, [], null!, prune, null!);
         using var updates = new UpdateService(null!, null!, null!, null!, null!);
         using var localization = new LocalizationService();
         var viewModel = new TaskbarWindowViewModel(media, updates, localization, null!);
