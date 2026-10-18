@@ -47,7 +47,12 @@ public partial class ExtraFeaturesViewModel : ObservableObject
 
     public string PreferredSourceId
     {
-        get => _sources.NormalizeSourceId(SettingsManager.Current.MediaSelection.PreferredSourceId ?? string.Empty);
+        get
+        {
+            var sourceId = _sources.NormalizeSourceId(SettingsManager.Current.MediaSelection.PreferredSourceId ?? string.Empty);
+            return PreferredSourceOptions.FirstOrDefault(option =>
+                string.Equals(option.SourceId, sourceId, StringComparison.OrdinalIgnoreCase))?.SourceId ?? sourceId;
+        }
         set
         {
             if (_isRefreshing) return;

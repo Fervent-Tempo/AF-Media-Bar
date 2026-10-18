@@ -103,6 +103,11 @@ public sealed class MediaSessionSelectionService : IDisposable, IMemoryPrunable
         var keys = sessions.Select(session => session.Key).ToHashSet(StringComparer.Ordinal);
         foreach (var (key, observation) in _observations.ToArray())
         {
+            if (observation.MissingSince is { } missingSince && now - missingSince >= _missingSessionGracePeriod)
+            {
+                _observations.Remove(key);
+                continue;
+            }
             if (keys.Contains(key)) continue;
             observation.MissingSince ??= now;
             if (!IsBrowserSource(observation.SourceId) || now - observation.MissingSince.Value >= _missingSessionGracePeriod)

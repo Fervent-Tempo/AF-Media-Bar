@@ -774,7 +774,10 @@ public sealed class MediaSessionService : IDisposable
             }
 
             _snapshotBuildInFlight = true;
-            _ = BuildAndPublishSnapshotAsync(session, session.Id, Volatile.Read(ref _mediaRevision), _controlSelectionRevision);
+            var selectionRevision = _controlSelectionRevision;
+            var mediaRevision = Volatile.Read(ref _mediaRevision);
+            var pendingSnapshot = _snapshotBuilder.BuildAsync(session, isStarted: true, _snapshotBuildCancellation.Token);
+            _ = BuildAndPublishSnapshotAsync(pendingSnapshot, session.Id, mediaRevision, selectionRevision);
         }
         catch (Exception ex)
         {
@@ -782,11 +785,11 @@ public sealed class MediaSessionService : IDisposable
         }
     }
 
-    private async Task BuildAndPublishSnapshotAsync(MediaSession session, string sessionKey, int mediaRevision, int selectionRevision)
+    private async Task BuildAndPublishSnapshotAsync(Task<MediaSnapshot?> pendingSnapshot, string sessionKey, int mediaRevision, int selectionRevision)
     {
         try
         {
-            var snapshot = await _snapshotBuilder.BuildAsync(session, isStarted: true, _snapshotBuildCancellation.Token);
+            var snapshot = await pendingSnapshot;
             if (_isDisposed || selectionRevision != _controlSelectionRevision || mediaRevision != Volatile.Read(ref _mediaRevision) ||
                 !string.Equals(sessionKey, _selectedSessionKey, StringComparison.Ordinal) ||
                 _selection.IsMissingSessionGraceActive)

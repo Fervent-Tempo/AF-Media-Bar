@@ -183,6 +183,23 @@ internal static class SettingsReorderVisualChecks
             var before = SettingsManager.Current.QuickLaunch;
             model.ReorderQuickLaunchCommand.Execute(request);
             Assert.AreEqual(before, SettingsManager.Current.QuickLaunch);
+            model.SelectionMode = MediaSelectionMode.PreferredApplication;
+            model.PreferredSourceId = "offline-player";
+            Assert.IsTrue(model.IsPreferredApplication);
+            Assert.IsTrue(model.PreferredSourceOptions.Any(option => option.SourceId == "offline-player"));
+            Assert.AreEqual("offline-player", model.PreferredSourceId,
+                "重建候选列表不能把离线优先应用清空。");
+            typeof(MediaSessionService).GetField("_lastDiscoveredSources", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .SetValue(media, new MediaSourceDescriptor[] { new("OFFLINE-PLAYER", "Player", null, null) });
+            Call(model, "RefreshSources");
+            Assert.AreEqual("OFFLINE-PLAYER", model.PreferredSourceId, "绑定值应匹配列表中的实际大小写。");
+            Assert.AreEqual("offline-player", SettingsManager.Current.MediaSelection.PreferredSourceId,
+                "显示刷新不能重写已保存的来源身份。");
+            SettingsManager.SetSmtcSourceFilterSettings(new(true, []));
+            Assert.IsTrue(model.IsPreferredSourceBlocked);
+            model.PreferredSourceId = string.Empty;
+            Assert.IsNull(SettingsManager.Current.MediaSelection.PreferredSourceId);
+            Assert.IsFalse(model.IsPreferredSourceBlocked);
         }
         finally { SettingsManager.Current = original; }
     }
