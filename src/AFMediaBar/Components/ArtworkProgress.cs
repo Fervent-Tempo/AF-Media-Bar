@@ -30,6 +30,9 @@ public sealed class ArtworkProgress : FrameworkElement
     private Size _pathSize;
     private Point[] _points = [];
     private double _perimeter;
+    private StreamGeometry? _trackGeometry;
+    private StreamGeometry? _progressGeometry;
+    private double _pathProgress;
     private const double StrokeWidth = 2.5;
     private const double OutlineWidth = 4;
     private static readonly Pen _trackPen = CreateTrackPen();
@@ -86,13 +89,21 @@ public sealed class ArtworkProgress : FrameworkElement
                 }))
                 .Append(flattened.StartPoint).ToArray();
             _perimeter = Enumerable.Range(1, _points.Length - 1).Sum(index => (_points[index] - _points[index - 1]).Length);
+            _trackGeometry = BuildPath(1);
+            _progressGeometry = null;
         }
 
-        drawingContext.DrawGeometry(null, _trackPen, BuildPath(1));
+        // 冻结的轨道只随尺寸重建；其他属性导致的重绘复用当前进度路径。
+        drawingContext.DrawGeometry(null, _trackPen, _trackGeometry);
         var progress = double.IsFinite(Progress) ? Math.Clamp(Progress, 0, 1) : 0;
         if (progress > 0)
         {
-            var progressPath = BuildPath(progress);
+            if (_progressGeometry is null || _pathProgress != progress)
+            {
+                _pathProgress = progress;
+                _progressGeometry = progress >= 1 ? _trackGeometry : BuildPath(progress);
+            }
+            var progressPath = _progressGeometry;
             // 深色描边把进度与封面纹理隔开，常态小尺寸也能看清已播放部分。
             drawingContext.DrawGeometry(null, _outlinePen, progressPath);
             drawingContext.DrawGeometry(null, new Pen(Stroke, StrokeWidth) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round }, progressPath);

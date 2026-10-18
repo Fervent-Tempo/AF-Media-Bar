@@ -47,11 +47,23 @@ public sealed class SettingsVisualRuntimeTests
             {
                 app.Resources.MergedDictionaries.Add(new ThemesDictionary { Theme = ApplicationTheme.Light });
                 app.Resources.MergedDictionaries.Add(new ControlsDictionary());
-                foreach (var file in new[] { "MotionResources", "SettingsComponentResources" })
+                var markup = XDocument.Load(Path.Combine(FindRepository(), "src", "AFMediaBar", "App.xaml"));
+                XNamespace presentation = "http://schemas.microsoft.com/winfx/2006/xaml/presentation";
+                var sources = markup.Descendants(presentation + "ResourceDictionary.MergedDictionaries").First()
+                    .Elements(presentation + "ResourceDictionary").Select(element => (string)element.Attribute("Source")!).ToArray();
+                foreach (var source in sources)
                     app.Resources.MergedDictionaries.Add(new ResourceDictionary
                     {
-                        Source = new Uri("/AFMediaBar;component/Resources/" + file + ".xaml", UriKind.Relative)
+                        Source = new Uri(source, UriKind.Relative)
                     });
+                static IEnumerable<ResourceDictionary> EnumerateDictionaries(ResourceDictionary dictionary) =>
+                    new[] { dictionary }.Concat(dictionary.MergedDictionaries.SelectMany(EnumerateDictionaries));
+                var settingsSources = EnumerateDictionaries(app.Resources).Select(dictionary => dictionary.Source?.OriginalString)
+                    .Where(source => source?.Contains("AFMediaBar;component/Resources/Settings", StringComparison.Ordinal) == true).ToArray();
+                Assert.AreEqual(settingsSources.Length, settingsSources.Distinct(StringComparer.Ordinal).Count(),
+                    "设置资源应在合并树中共享，不能在应用和组件层重复加载。");
+                Assert.IsInstanceOfType<ControlTemplate>(app.FindResource("AfDiagramLayerRest"));
+                Assert.AreEqual(380d, app.FindResource("AfSettingsFieldWidth"));
                 app.Resources["AfAccentBrush"] = new SolidColorBrush(Color.FromRgb(0, 120, 212));
                 app.Resources["AfOnAccentBrush"] = Brushes.White;
                 app.Resources["AfAccentTintBrush"] = new SolidColorBrush(Color.FromArgb(25, 0, 120, 212));

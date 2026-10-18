@@ -14,15 +14,7 @@
         <ui:ThemesDictionary Theme="Light" />
         <ui:ControlsDictionary />
         <ResourceDictionary Source="/AFMediaBar;component/Resources/MotionResources.xaml" />
-        <ResourceDictionary Source="/AFMediaBar;component/Resources/SettingsAppearanceResources.xaml" />
-        <ResourceDictionary Source="/AFMediaBar;component/Resources/SettingsDiagrams.xaml" />
-        <!--
-          结构组件字典自己也会合并上面两个字典，因为 ResourceDictionary 解析时看不到这里：
-          它只能看到自己声明的合并项。同一个 Source 由 WPF 缓存复用，因此重复合并不会重复解析。
-          The component dictionary also merges the two above, because a ResourceDictionary cannot see this
-          list while it is parsed and can only resolve what it merges itself. WPF caches by Source, so the
-          repeated merge reuses one instance rather than parsing twice.
-        -->
+        <!-- 外观和说明图经组件字典统一提供，避免应用级再次加载同一组资源。 -->
         <ResourceDictionary Source="/AFMediaBar;component/Resources/SettingsComponentResources.xaml" />
       </ResourceDictionary.MergedDictionaries>
       <FontFamily x:Key="AppTextFontFamily">Segoe UI Variable Text, Segoe UI</FontFamily>
