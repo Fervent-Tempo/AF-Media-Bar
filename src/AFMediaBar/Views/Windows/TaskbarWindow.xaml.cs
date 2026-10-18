@@ -36,7 +36,6 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     // physical px offsets from the taskbar edges
     private const int EdgePadding = 20;
     private static readonly TimeSpan EnvironmentChangeProbeCooldown = TimeSpan.FromSeconds(2);
-    private static readonly TimeSpan TaskbarMotionProbeCooldown = TimeSpan.FromMilliseconds(400);
     private static readonly TimeSpan TaskbarMotionSampleInterval = TimeSpan.FromMilliseconds(50);
     private static readonly TimeSpan TaskbarHiddenTrimDelay = TimeSpan.FromSeconds(30);
 
@@ -449,7 +448,6 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
         if (_taskbarMotionState.IsMoving)
         {
-            _skipOccupiedAreaProbeUntilUtc = DateTime.UtcNow + TaskbarMotionProbeCooldown;
             _taskbarMotionSettleTimer.Stop();
             _taskbarMotionSettleTimer.Start();
         }
@@ -517,7 +515,11 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         _taskbarHiddenTrimTimer.Stop();
         if (previous.IsHidden || previous.IsMoving)
             AppLogService.Current?.Info("Taskbar",
-                $"任务栏动画稳定，宿主恢复: {_targetMonitorDeviceId}");
+                $"任务栏动画稳定，开始恢复宿主: {_targetMonitorDeviceId}");
+
+        // 稳定样本已确认动画结束，立即请求安全区，并以短时刷新完成后续确认。
+        // 首次隐藏启动没有可复用定位，不能再等慢速定位轮询触发首次探测。
+        QueueOccupancyRefresh();
 
         // 运动期间只复用原生相对几何；稳定后先校正最终尺寸、定位和裁剪，最后恢复输入。
         _hasTaskbarPresentationPlacement = false;
@@ -718,6 +720,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
                 _targetMonitorDeviceId, out _);
             _lastTaskbarHandle = taskbarHandle;
 
+            // 布局刷新可能请求安全区；先识别隐藏状态，避免首次布局绕过探测门禁。
+            ObserveTaskbarMotion();
             ApplyLayoutSettings(WindowMode.Taskbar, SettingsManager.Current.LayoutOrientationMode,
                 taskbarHandle);
 

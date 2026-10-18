@@ -124,6 +124,45 @@ internal static class TaskbarHostActivationChecks
                 }
             }
 
+            // 首次隐藏启动没有历史安全区，展开后必须由稳定事件启动探测，不能等待慢速定位轮询。
+            SettingsManager.Current.TaskbarBarAvoidIcons = true;
+            GetWindowRect(dock.Handle, out var initialRect);
+            var monitorBounds = MonitorUtil.GetMonitor(dock.Handle).monitorArea;
+            dock.ObservedRect = new RECT
+            {
+                Left = initialRect.Left,
+                Right = initialRect.Right,
+                Top = (int)monitorBounds.Bottom - 2,
+                Bottom = (int)monitorBounds.Bottom + 46
+            };
+            var firstPlacement = new FirstPlacementProbe();
+            var firstWindow = new TaskbarWindow(dock, "test", actions, appearance,
+                new TaskbarOccupiedAreaService(firstPlacement), new TaskbarLengthConstraintsService(),
+                new GlobalInteractionRouter(media, audio), audio, monitor, null!, null!,
+                new ScreenBackgroundSampler(), mouse, prune, surfaceSessions, viewModel, startImmediately: false);
+            Assert.IsTrue(await runtime.SwitchAsync(WindowMode.Taskbar,
+                _ => Task.FromResult<IReadOnlyList<IBarRuntimeHost>>([firstWindow]), force: true));
+            var firstHandle = new WindowInteropHelper(firstWindow).Handle;
+            Assert.IsFalse(firstWindow.IsVisible);
+            Assert.AreEqual(0, firstPlacement.Requests, $"任务栏收起期间不能探测占用区，首次请求={firstPlacement.FirstRequest}。");
+            var slowTimer = (DispatcherTimer)typeof(TaskbarWindow).GetField("_timer",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.GetValue(firstWindow)!;
+            var originalInterval = slowTimer.Interval;
+            slowTimer.Interval = TimeSpan.FromMinutes(1);
+            dock.ObservedRect = initialRect;
+            typeof(TaskbarWindow).GetMethod("ObserveTaskbarMotion",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.Invoke(firstWindow, [false]);
+            Assert.AreEqual(0, firstPlacement.Requests, "运动尚未稳定时不能提前探测。");
+            await firstPlacement.Requested.Task.WaitAsync(TimeSpan.FromSeconds(2));
+            Assert.IsFalse(firstWindow.IsVisible, "安全区尚未发布时保持隐藏。");
+            firstPlacement.Complete();
+            await WaitUntilAsync(() => firstWindow.IsVisible && firstWindow.MediaControl.IsHitTestVisible);
+            Assert.IsTrue(firstWindow.IsVisible && firstWindow.MediaControl.IsHitTestVisible,
+                "稳定事件和安全区发布必须直接恢复显示与输入。");
+            Assert.AreEqual(firstHandle, new WindowInteropHelper(firstWindow).Handle, "首次显示不得靠重建宿主完成。");
+            Assert.AreEqual(0, actions.Rebuilds);
+            slowTimer.Interval = originalInterval;
+
             var active = (TaskbarWindow)runtime.Hosts.Single();
             var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var release = new TaskCompletionSource<TaskbarHostSurfaceHit>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -150,6 +189,35 @@ internal static class TaskbarHostActivationChecks
             Assert.AreEqual(1, actions.Rebuilds, "连续异常样本应通过现有重载入口恢复。");
         }
         finally { parent.Close(); SettingsManager.Current = original; }
+    }
+
+    private sealed class FirstPlacementProbe : ITaskbarOccupiedAreaProbe
+    {
+        private Action<IReadOnlyList<TaskbarPrimaryRange>>? _complete;
+        private IReadOnlyList<TaskbarPrimaryRange> _ranges = [];
+        private bool _hasCompleted;
+        public int Requests { get; private set; }
+        public string? FirstRequest { get; private set; }
+        public TaskCompletionSource Requested { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public void Start(nint handle, RECT rect, LayoutOrientation orientation, double dpi, int padding,
+            Action<IReadOnlyList<TaskbarPrimaryRange>> succeeded, Action failed)
+        {
+            Requests++;
+            FirstRequest ??= $"handle={handle}, rect=({rect.Left},{rect.Top})-({rect.Right},{rect.Bottom})";
+            var length = orientation == LayoutOrientation.Horizontal ? rect.Right - rect.Left : rect.Bottom - rect.Top;
+            _ranges = [new(padding, length - padding)];
+            if (_hasCompleted) succeeded(_ranges);
+            else _complete = succeeded;
+            Requested.TrySetResult();
+        }
+
+        public void Complete()
+        {
+            _hasCompleted = true;
+            _complete!(_ranges);
+            _complete = null;
+        }
     }
 
     private static async Task WaitUntilAsync(Func<bool> condition)
