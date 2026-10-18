@@ -245,7 +245,8 @@ public sealed class SettingsPersistenceService : IDisposable
                 if (settings[property] is null) settings.Remove(property);
             }
         }
-        var envelope = JsonSerializer.Deserialize<SettingsEnvelope>(node.ToJsonString(), _jsonOptions)
+        // 保留节点上的旧空值处理，直接反序列化，避免再分配和转码一份完整 JSON 字符串。
+        var envelope = node.Deserialize<SettingsEnvelope>(_jsonOptions)
             ?? throw new JsonException("Settings envelope is empty.");
         // 只接受当前编号：编号不同的文件（含 1.1.1 写出的一切旧编号）既不读取也不改写，由调用方隔离后回到内置默认值。
         // Only the current number is accepted: a file carrying a different one — including everything 1.1.1 wrote — is neither read

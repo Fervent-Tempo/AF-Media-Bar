@@ -15,6 +15,43 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class SpectrumCaptureTests
 {
     [TestMethod]
+    public void UnusedSpectrumDefersBuffersAndFirstCaptureSupportsEveryFftSize()
+    {
+        WithSettingsDirectory(_ =>
+        {
+            SettingsManager.SetSpectrumComponentSettings(SpectrumComponentSettings.Default with
+            { CaptureSource = SpectrumCaptureSource.AllApplications });
+            using var devices = new AudioCaptureDeviceResolver();
+            using var monitor = new AudioMonitorService(devices, new SpectrumCaptureProcessResolver(new MediaSourceProcessResolver()));
+            var bands = new float[9];
+            Assert.IsFalse(monitor.GetSpectrum(bands, bands.Length));
+            foreach (var field in new[] { "_sampleRing", "_fftReal", "_fftImaginary", "_fftWindow", "_powerSpectrum", "_bandEdges", "_bandMagnitudes" })
+                Assert.AreEqual(0, GetField<Array>(monitor, field).Length, "尚未采集时不分配分析缓冲。");
+
+            var configure = typeof(AudioMonitorService).GetMethod("ConfigureFft", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var push = typeof(AudioMonitorService).GetMethod("PushSample", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            foreach (var sampleRate in new[] { 22050, 48000, 96000 })
+            {
+                configure.Invoke(monitor, [sampleRate]);
+                SetField(monitor, "_sampleRate", sampleRate);
+                var fftSize = SpectrumAnalysisPolicy.ResolveFftSize(sampleRate);
+                Assert.AreEqual(fftSize, GetField<double[]>(monitor, "_fftReal").Length);
+                var ring = GetField<float[]>(monitor, "_sampleRing");
+                configure.Invoke(monitor, [sampleRate]);
+                Assert.AreSame(ring, GetField<float[]>(monitor, "_sampleRing"), "相同格式应复用已创建缓冲。");
+
+                for (var index = 0; index < fftSize; index++)
+                    push.Invoke(monitor, [(float)Math.Sin(2 * Math.PI * 1000 * index / sampleRate)]);
+                SetField(monitor, "_lastPacketTick", Environment.TickCount64);
+                SetField(monitor, "_activeCaptureVersion", GetField<int>(monitor, "_captureVersion"));
+                SetField(monitor, "_captureReady", true);
+                Assert.IsTrue(monitor.GetSpectrum(bands, bands.Length));
+                Assert.IsTrue(bands.Any(value => value > 0), "延迟初始化和格式切换后仍能分析缓存的正弦样本。");
+            }
+        });
+    }
+
+    [TestMethod]
     [DataRow("")]
     [DataRow(", \"captureSource\": null")]
     [DataRow(", \"captureSource\": \"unknown\"")]

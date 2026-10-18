@@ -40,25 +40,22 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
     private long _lastPacketTick;
     private double _spectrumReference;
     private long _lastSpectrumTick;
-    // FFT 相关缓冲区随采样率确定点数后再分配（96 kHz 至少要 4096 点才能把 45–206 Hz 的前几段分开），
-    // 因此它们不是 readonly 的固定数组；ConfigureFft 在拿到混音格式后统一重建。
-    // The FFT buffers are allocated once the sample rate fixes the size (96 kHz needs at least 4096 points to separate the first bands
-    // between 45 and 206 Hz), so they are not fixed readonly arrays; ConfigureFft rebuilds them after the mix format is known.
-    private float[] _sampleRing = new float[MinimumRingSize];
-    private double[] _fftReal = new double[SpectrumAnalysisPolicy.MinimumFftSize];
-    private double[] _fftImaginary = new double[SpectrumAnalysisPolicy.MinimumFftSize];
-    private double[] _fftWindow = CreateFftWindow(SpectrumAnalysisPolicy.MinimumFftSize);
-    private double[] _powerSpectrum = new double[SpectrumAnalysisPolicy.MinimumFftSize / 2 + 1];
+    // 首次有采集需求并取得混音格式后再分配，避免频谱未使用时占用缓冲、启动后又按真实采样率重建。
+    private float[] _sampleRing = [];
+    private double[] _fftReal = [];
+    private double[] _fftImaginary = [];
+    private double[] _fftWindow = [];
+    private double[] _powerSpectrum = [];
     private int _fftSize = SpectrumAnalysisPolicy.MinimumFftSize;
     private int _ringSize = MinimumRingSize;
     // 频段边界只随柱数变化，因此按柱数缓存；采样线程每帧都要读它，不能每帧重新计算等比数列。
     // Band edges change only with the bar count, so they are cached per count: the sampling thread reads them every frame
     // and must not rebuild the geometric progression each time.
-    private float[] _bandEdges = SpectrumBandPolicy.CreateBandEdges(SpectrumComponentSettings.DefaultBandCount);
-    private int _bandEdgeCount = SpectrumComponentSettings.DefaultBandCount;
+    private float[] _bandEdges = [];
+    private int _bandEdgeCount;
     // 频段幅度先整体算完再映射：相对 dB 窗口需要一个"本次采样的最大幅度"作为参考更新的输入。
     // Band magnitudes are computed in full before mapping: the relative dB window needs this sample's largest magnitude to advance the reference.
-    private readonly double[] _bandMagnitudes = new double[SpectrumComponentSettings.MaximumBandCount];
+    private double[] _bandMagnitudes = [];
 
     /// <summary>创建由宿主控制生命周期的频谱服务。 / Creates the host-managed spectrum service.</summary>
     public AudioMonitorService(AudioCaptureDeviceResolver deviceResolver,
@@ -433,15 +430,15 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
 
     /// <summary>
     /// 按采样率重建 FFT 缓冲区（点数为 2 的幂、bin 宽目标见 <see cref="SpectrumAnalysisPolicy.ResolveFftSize"/>）。
-    /// 点数不变时不做任何事；重建会同时清空采样环，因为旧样本的点数语义已经不同。
+    /// 缓冲已创建且点数不变时不做任何事；重建会同时清空采样环，因为旧样本的点数语义已经不同。
     /// Rebuilds the FFT buffers for a sample rate (the size is a power of two; see <see cref="SpectrumAnalysisPolicy.ResolveFftSize"/>
-    /// for the bin-width target). An unchanged size does nothing; a rebuild also clears the sample ring, because old samples belong
+    /// for the bin-width target). Existing buffers of the same size are reused; a rebuild also clears the sample ring, because old samples belong
     /// to a different size.
     /// </summary>
     private void ConfigureFft(int sampleRate)
     {
         var fftSize = SpectrumAnalysisPolicy.ResolveFftSize(sampleRate);
-        if (fftSize == _fftSize)
+        if (fftSize == _fftSize && _sampleRing.Length != 0)
         {
             return;
         }
@@ -453,6 +450,8 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
         _fftImaginary = new double[_fftSize];
         _fftWindow = CreateFftWindow(_fftSize);
         _powerSpectrum = new double[_fftSize / 2 + 1];
+        if (_bandMagnitudes.Length == 0)
+            _bandMagnitudes = new double[SpectrumComponentSettings.MaximumBandCount];
         _sampleWriteIndex = 0;
         _sampleCount = 0;
     }
