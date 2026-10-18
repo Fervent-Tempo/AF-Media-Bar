@@ -148,7 +148,7 @@ public sealed class MediaSessionSelectionService : IDisposable, IMemoryPrunable
                 observation.Established = true;
                 observation.Added = sequence;
                 observation.Playback = session.IsPlaying ? sequence : 0;
-                added |= _hasObservation;
+                added |= _hasObservation && session.Key != SelectedKey;
                 playback |= _hasObservation && session.IsPlaying && session.Key != SelectedKey;
             }
             else if (!restored && !observation.WasPlaying && session.IsPlaying)

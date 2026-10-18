@@ -159,6 +159,20 @@ public sealed class MediaSelectionTests
     });
 
     [TestMethod]
+    public void ManuallySelectedRecoveringSourceKeepsItsChoiceWhenItBecomesReadable() => Run(f =>
+    {
+        var playing = Source("playing", true);
+        var pending = Source("pending", false, recovering: true);
+        f.Resolve(playing);
+        f.Resolve(playing, pending);
+        f.Selection.Select("pending", [playing, pending]);
+        Assert.AreEqual("pending", f.Resolve(playing, pending)?.Key);
+        Assert.AreEqual("pending", f.Resolve(playing, pending with { IsRecovering = false })?.Key,
+            "已手动选中的会话读到数据不属于另一个新来源。");
+        Assert.IsTrue(f.Selection.IsManualSelection);
+    });
+
+    [TestMethod]
     public void ChangingPolicyReusesArrivalHistoryAndClearsManualOverride() => Run(f =>
     {
         var first = Source("first", true);
