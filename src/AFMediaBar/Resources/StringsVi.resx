@@ -2657,6 +2657,8 @@
   <data name="Developer.Description.Reload" xml:space="preserve"><value>Dùng tải lại cửa sổ hiện có, không kết thúc Explorer.</value></data>
   <data name="Developer.Action.State" xml:space="preserve"><value>Chụp trạng thái</value></data>
   <data name="Developer.Description.State" xml:space="preserve"><value>Đọc phiên bản, màn hình, khôi phục, nguồn và bộ nhớ; mặc định loại bài hát và đường dẫn người dùng.</value></data>
+  <data name="Developer.Action.Surface" xml:space="preserve"><value>Tiêm lỗi cửa sổ thanh tác vụ không vẽ</value></data>
+  <data name="Developer.Description.Surface" xml:space="preserve"><value>Cắt cửa sổ thanh phương tiện về vùng rỗng để tái hiện "hiển thị nhưng không vẽ"; thanh sẽ tự phục hồi trong một hai giây.</value></data>
   <data name="Developer.Action.Trim" xml:space="preserve"><value>Thu gọn bộ nhớ thủ công</value></data>
   <data name="Developer.Description.Trim" xml:space="preserve"><value>Dùng thao tác thủ công hiện có; nhận yêu cầu không nghĩa đã thu gọn xong.</value></data>
   <data name="Developer.Action.Logs" xml:space="preserve"><value>Mở thư mục nhật ký</value></data>

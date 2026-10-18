@@ -36,6 +36,9 @@ namespace AFMediaBar.Classes.Services;
 /// </summary>
 public class TaskbarDockService : ITaskbarDockService
 {
+    // 同时覆盖两轴，避免窄图标或竖向布局的中线恰好落在透明留白。
+    private const int SurfaceSampleCount = 5;
+
     private readonly IDisplayMonitorService _displayMonitorService;
 
     /// <summary>创建使用共享显示器目录的任务栏停靠服务。 / Creates a taskbar docking service using the shared display catalog.</summary>
@@ -243,18 +246,20 @@ public class TaskbarDockService : ITaskbarDockService
     /// 合并给定物理矩形并转移 GDI 区域所有权给窗口，以限制任务栏子窗口的可交互范围。
     /// Combines the physical rectangles and transfers the resulting GDI region to the window to constrain its interactive area.
     /// </summary>
-    public void ApplyInputRegion(IntPtr windowHandle, IReadOnlyList<RECT> rects)
+    public void ApplyInputRegion(IntPtr windowHandle, IReadOnlyList<RECT> rects, bool redraw)
     {
         if (windowHandle == IntPtr.Zero)
             return;
 
         IntPtr rgn = CreateRectRgn(0, 0, 0, 0);
+        var hasArea = false;
         foreach (var r in rects)
         {
             // skip empty rects
             if (r.Right <= r.Left || r.Bottom <= r.Top)
                 continue;
 
+            hasArea = true;
             IntPtr newRgn = CreateRectRgn(r.Left, r.Top, r.Right, r.Bottom);
             if (newRgn == IntPtr.Zero)
                 goto on_error;
@@ -268,16 +273,15 @@ public class TaskbarDockService : ITaskbarDockService
             DeleteObject(newRgn);
         }
 
-        // bRedraw=false：窗口几何始终铺满任务栏，区域只改可见/可命中的形状，WPF 的合成线程持续把内容画进重定向
-        // 表面——扩展带揭示的是已渲染好的像素，收缩带只是隐藏一条，都不需要系统再强制整窗重画一遍（原地放大的
-        // 激活与收回各改一次区域）。错误恢复路径保持 true：那一步把先前被裁掉的区域整个重新可见，旧像素确实需要重画。
-        // bRedraw=false: the window geometry always covers the whole taskbar and the region only reshapes what is
-        // visible/hit-testable, while WPF's composition keeps painting content into the redirection surface — an
-        // extension reveals already-rendered pixels and a shrink merely hides a strip, so neither needs the system to
-        // force a full-window repaint (the in-place zoom's activation and reclaim each change the region once). The
-        // error-recovery path stays true: it re-exposes previously clipped area at once, and those stale pixels do
-        // need a repaint.
-        if (!SetWindowRgn(windowHandle, rgn, false))
+        // 暂无安全几何时保留既有区域，由宿主隐藏窗口，避免把整窗裁成空区域。
+        if (!hasArea)
+        {
+            DeleteObject(rgn);
+            return;
+        }
+
+        // 首次落地要求重画；常规尺寸过渡只调整裁剪，避免每帧强制整窗重画。
+        if (!SetWindowRgn(windowHandle, rgn, redraw))
             goto on_error;
 
         return;
@@ -286,5 +290,54 @@ public class TaskbarDockService : ITaskbarDockService
         // Regions not transferred to the window must be destroyed manually
         DeleteObject(rgn);
         SetWindowRgn(windowHandle, IntPtr.Zero, true);
+    }
+
+    /// <inheritdoc />
+    public TaskbarHostSurfaceHit ProbeHostSurface(IntPtr windowHandle, IntPtr taskbarHandle, RECT region)
+    {
+        if (windowHandle == IntPtr.Zero || taskbarHandle == IntPtr.Zero ||
+            region.Right <= region.Left || region.Bottom <= region.Top ||
+            !IsWindowVisible(windowHandle) || !IsWindowEnabled(windowHandle) ||
+            !GetWindowRect(windowHandle, out var windowRect))
+        {
+            return TaskbarHostSurfaceHit.Other;
+        }
+
+        // 输入穿透期间命中测试必然跳过宿主，那不是失绘；只有真正可交互的窗口才提供证据。
+        // An input-transparent window is skipped by hit testing by design, which is not evidence of a stale surface; only an
+        // interactive window tells us anything.
+        if ((GetWindowLong(windowHandle, GWL_EXSTYLE) & WS_EX_TRANSPARENT) != 0)
+            return TaskbarHostSurfaceHit.Other;
+
+        var allTaskbarHits = true;
+        for (var row = 1; row <= SurfaceSampleCount; row++)
+            for (var column = 1; column <= SurfaceSampleCount; column++)
+            {
+                // 区域使用窗口坐标，父 HWND 带动的位移已经包含在窗口矩形里。
+                // The region uses window coordinates; movement carried by the parent HWND is already inside the window rectangle.
+                var point = new POINT
+                {
+                    X = windowRect.Left + region.Left + (region.Right - region.Left) * column / (SurfaceSampleCount + 1),
+                    Y = windowRect.Top + region.Top + (region.Bottom - region.Top) * row / (SurfaceSampleCount + 1)
+                };
+                var hit = WindowFromPoint(point);
+                var taskbarHit = false;
+                for (var current = hit; current != IntPtr.Zero; current = GetParent(current))
+                {
+                    if (current == windowHandle)
+                        return TaskbarHostSurfaceHit.Host;
+                    if (current == taskbarHandle)
+                    {
+                        taskbarHit = true;
+                        break;
+                    }
+                }
+                allTaskbarHits &= taskbarHit;
+            }
+
+        // 其他应用、Shell 浮层、空桌面，以及盖在任务栏上的全屏窗口都不构成失绘证据：它们与宿主有没有绘制无关。
+        // A foreign application, a Shell flyout, the empty desktop, or a fullscreen window lying over the taskbar is not evidence
+        // either: none of them says anything about whether the host painted.
+        return allTaskbarHits ? TaskbarHostSurfaceHit.Taskbar : TaskbarHostSurfaceHit.Other;
     }
 }

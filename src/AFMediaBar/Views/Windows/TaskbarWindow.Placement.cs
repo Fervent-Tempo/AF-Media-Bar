@@ -209,7 +209,7 @@ public partial class TaskbarWindow
         var rect = ApplyPrimaryFrame(position, width, _returnDpi, _returnCross, _returnThickness);
         if (!_hasInputRegion || !SameRect(_lastInputRegion, rect))
         {
-            ApplyBarInputRegion(_windowHandle, rect);
+            ApplyBarInputRegion(_windowHandle, rect, redraw: !_hasInputRegion);
             _lastInputRegion = rect;
             _hasInputRegion = true;
             _inputRegionWindowHandle = _windowHandle;

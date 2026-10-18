@@ -2619,6 +2619,8 @@
   <data name="Developer.Description.Reload" xml:space="preserve"><value>复用现有宿主重载，不终止 Explorer。</value></data>
   <data name="Developer.Action.State" xml:space="preserve"><value>读取状态快照</value></data>
   <data name="Developer.Description.State" xml:space="preserve"><value>读取版本、显示器、恢复、电源与内存；不默认复制歌曲或路径。</value></data>
+  <data name="Developer.Action.Surface" xml:space="preserve"><value>注入任务栏宿主失绘</value></data>
+  <data name="Developer.Description.Surface" xml:space="preserve"><value>把媒体栏宿主裁成空区域，复现“窗口可见却没有像素”；媒体栏应在一两秒内自愈重建。</value></data>
   <data name="Developer.Action.Trim" xml:space="preserve"><value>手动整理内存</value></data>
   <data name="Developer.Description.Trim" xml:space="preserve"><value>使用现有手动入口；接受请求不表示回收已完成。</value></data>
   <data name="Developer.Action.Logs" xml:space="preserve"><value>打开日志目录</value></data>

@@ -2619,6 +2619,8 @@
   <data name="Developer.Description.Reload" xml:space="preserve"><value>Uses existing host reload without terminating Explorer.</value></data>
   <data name="Developer.Action.State" xml:space="preserve"><value>Capture state</value></data>
   <data name="Developer.Description.State" xml:space="preserve"><value>Reads versions, displays, recovery, power and memory; excludes tracks and user paths by default.</value></data>
+  <data name="Developer.Action.Surface" xml:space="preserve"><value>Inject stale taskbar host surface</value></data>
+  <data name="Developer.Description.Surface" xml:space="preserve"><value>Clips the media-bar host to an empty region to reproduce "visible but unpainted"; the bar should heal itself within a second or two.</value></data>
   <data name="Developer.Action.Trim" xml:space="preserve"><value>Manual memory trim</value></data>
   <data name="Developer.Description.Trim" xml:space="preserve"><value>Uses the existing manual entry; acceptance does not mean trimming completed.</value></data>
   <data name="Developer.Action.Logs" xml:space="preserve"><value>Open log folder</value></data>

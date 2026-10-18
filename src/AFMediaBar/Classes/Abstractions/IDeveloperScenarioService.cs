@@ -18,6 +18,7 @@ public interface IDeveloperHostActions
     IReadOnlyList<DeveloperLyricsHostState> GetLyricsHosts();
     DeveloperActionResult ExecuteLyricsAction(string command, string? hostId);
     DeveloperActionResult ReloadTaskbar();
+    DeveloperActionResult BreakTaskbarSurface();
     DeveloperActionResult ShowTrackPreview();
     string CaptureState();
     void ClosePreviews();

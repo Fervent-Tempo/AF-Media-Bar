@@ -127,7 +127,7 @@ public sealed class RestConnectionTransitionTests
                 SettingsManager.Current = original;
                 app.Shutdown();
             }
-        });
+        }, TimeSpan.FromSeconds(40));
     }
 
     private static async Task ChangeConnectionAsync(TaskBarMediaControl control, MediaSnapshot snapshot, bool expectTransition)

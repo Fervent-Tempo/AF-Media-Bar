@@ -113,6 +113,11 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     private IntPtr _inputRegionWindowHandle;
     private RECT _lastInputRegion;
     private bool _hasInputRegion;
+    /// <summary>连续"可见却不可命中"的样本数；达到策略要求后自愈重建宿主。/ Consecutive "visible but not hit-testable" samples; the host heals itself once the policy's requirement is met.</summary>
+    private int _staleSurfaceSamples;
+    private readonly TaskbarHostSurfaceSession _surfaceSession;
+    private bool _surfaceProbeInFlight;
+    private int _surfaceProbeGeneration;
     /// <summary>最近一次定位读到的任务栏 DPI 缩放；区域扩展的 DIP→物理像素换算依赖它。/ DPI scale from the latest positioning pass; the region extension's DIP-to-physical conversion relies on it.</summary>
     private double _lastDpiScale = 1.0;
     /// <summary>原地放大激活期间沿媒体栏主轴末端扩展的物理像素数；0 表示未扩展。基础矩形存于 _lastInputRegion。/ Physical pixels temporarily extending the bar's primary-axis end while the in-place artwork zoom is active; 0 when not extended. The base rect lives in _lastInputRegion.</summary>
@@ -161,12 +166,14 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         ScreenBackgroundSampler screenBackgroundSampler,
         NativeMouseInputMonitor mouseInputMonitor,
         MemoryPruneCoordinator memoryPruneCoordinator,
+        TaskbarHostSurfaceSessions surfaceSessions,
         TaskbarWindowViewModel? viewModel = null, bool startImmediately = true)
     {
         WindowHelper.SetNoActivate(this);
         InitializeComponent();
         ViewModel = viewModel ?? App.Services.GetRequiredService<TaskbarWindowViewModel>();
         _targetMonitorDeviceId = targetMonitorDeviceId;
+        _surfaceSession = surfaceSessions.Get(targetMonitorDeviceId);
         _mouseInputMonitor = mouseInputMonitor;
         DataContext = ViewModel;
         ContextMenuHelper.AttachOutsideClickDismissal(PlayerMenu);
@@ -341,7 +348,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     }
 
     public void Suspend() { SuspendForEnvironmentRecovery(); Hide(); }
-    public void Resume() { ResumeAfterEnvironmentRecovery(); Show(); UpdatePosition(); }
+    public void Resume() { ResumeAfterEnvironmentRecovery(); Show(); ApplyMediaBarVisibility(); UpdatePosition(); }
     public void Dispose()
     {
         if (_isClosing) return;
@@ -364,6 +371,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
     private void SuspendHostInput()
     {
+        InvalidateSurfaceProbe();
         MediaControl.IsHitTestVisible = false;
         WindowHelper.SetInputTransparent(this, true);
     }
@@ -671,6 +679,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         }
 
         UpdatePosition();
+        // 每个轮询周期只采一次，且让本轮定位和 WPF 渲染先执行，避免把刚显示的空白帧累计成失绘。
+        _ = VerifyHostSurfaceAsync();
         _foregroundSamplingSession.RequestRefresh();
     }
 
@@ -690,6 +700,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     {
         SetupWindow();
         _setupComplete = true;
+        ResumeOperationalTimers();
         SynchronizeSpectrumTimer();
         Dispatcher.BeginInvoke(_foregroundSamplingSession.RequestRefresh, DispatcherPriority.ContextIdle);
     }
@@ -846,13 +857,22 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
             // Place the bar on the canvas and clip the window to it
             RECT barRect = PositionBar(taskbarRect, dpiScale);
-            if (!_hasInputRegion || _inputRegionWindowHandle != taskbarWindowHandle ||
-                !SameRect(_lastInputRegion, barRect))
+            if (HasArea(barRect))
             {
-                ApplyBarInputRegion(taskbarWindowHandle, barRect);
-                _inputRegionWindowHandle = taskbarWindowHandle;
-                _lastInputRegion = barRect;
-                _hasInputRegion = true;
+                if (!_hasInputRegion || _inputRegionWindowHandle != taskbarWindowHandle ||
+                    !SameRect(_lastInputRegion, barRect))
+                {
+                    // 首次取得有效区域时请求重画。
+                    ApplyBarInputRegion(taskbarWindowHandle, barRect, redraw: !_hasInputRegion);
+                    _inputRegionWindowHandle = taskbarWindowHandle;
+                    _lastInputRegion = barRect;
+                    _hasInputRegion = true;
+                }
+            }
+            else
+            {
+                // 安全几何未就绪时保留原生区域，由显隐门禁隐藏宿主。
+                _hasInputRegion = false;
             }
             if (!_returnTransition.IsActive)
                 ResumePlacementInteraction();
@@ -877,10 +897,12 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         left.Left == right.Left && left.Top == right.Top &&
         left.Right == right.Right && left.Bottom == right.Bottom;
 
+    private static bool HasArea(RECT rect) => rect.Right > rect.Left && rect.Bottom > rect.Top;
+
     /// <summary>
     /// 沿主轴末端扩展放大期间的可见与输入区，窗口仍铺满任务栏；WPF 裁剪由控件配合解除。
     /// </summary>
-    private void ApplyBarInputRegion(IntPtr taskbarWindowHandle, RECT baseRect)
+    private void ApplyBarInputRegion(IntPtr taskbarWindowHandle, RECT baseRect, bool redraw)
     {
         var effective = baseRect;
         if (_artworkZoomExtensionPx > 0)
@@ -888,7 +910,76 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             if (IsVerticalPresentation) effective.Bottom += _artworkZoomExtensionPx;
             else effective.Right += _artworkZoomExtensionPx;
         }
-        _taskBarService.ApplyInputRegion(taskbarWindowHandle, [effective]);
+        _taskBarService.ApplyInputRegion(taskbarWindowHandle, [effective], redraw);
+    }
+
+    private bool CanVerifyHostSurface =>
+        !_isClosing && !_isEnvironmentSuspended && !IsBackgroundPruned && !IsTaskbarPresentationSuspended &&
+        !_isDragging && !_isRestoringTaskbarPresentation && !_isPlacementInteractionSuspended &&
+        !_returnTransition.IsActive && !MediaControl.IsRestConnectionTransitionActive && _hasInputRegion &&
+        Visibility == Visibility.Visible && _hasTaskbarPresentationPlacement &&
+        SettingsManager.Current.TaskbarBarEnabled && !MediaControl.ShouldHideTaskbarWindow &&
+        !_hostActions.IsEnvironmentRecovering && _windowHandle != IntPtr.Zero && _lastTaskbarHandle != IntPtr.Zero;
+
+    private void InvalidateSurfaceProbe()
+    {
+        _staleSurfaceSamples = 0;
+        _surfaceProbeGeneration++;
+        _surfaceSession.RecordUnhealthy();
+    }
+
+    /// <summary>后台检查可交互区域；连续异常只作为重建依据，不推断 WPF 是否停止提交像素。</summary>
+    private async Task VerifyHostSurfaceAsync()
+    {
+        if (_surfaceProbeInFlight) return;
+        _surfaceProbeInFlight = true;
+        try
+        {
+            await Dispatcher.Yield(DispatcherPriority.Background);
+            if (!CanVerifyHostSurface) { InvalidateSurfaceProbe(); return; }
+
+            var generation = _surfaceProbeGeneration;
+            var windowHandle = _windowHandle;
+            var taskbarHandle = _lastTaskbarHandle;
+            var region = _lastInputRegion;
+            var motion = _taskbarMotionState;
+            var hit = await Task.Run(() => _taskBarService.ProbeHostSurface(windowHandle, taskbarHandle, region));
+            if (_isClosing) return;
+            // 隐藏、关闭、重建或布局改变后的结果不能触发重载。
+            if (generation != _surfaceProbeGeneration || !CanVerifyHostSurface || windowHandle != _windowHandle ||
+                taskbarHandle != _lastTaskbarHandle || !SameRect(region, _lastInputRegion) || motion != _taskbarMotionState)
+            {
+                InvalidateSurfaceProbe();
+                return;
+            }
+
+            if (!TaskbarHostSurfacePolicy.IsStaleSample(hit))
+            {
+                _staleSurfaceSamples = 0;
+                if (hit == TaskbarHostSurfaceHit.Host) _surfaceSession.RecordHealthy();
+                else _surfaceSession.RecordUnhealthy();
+                return;
+            }
+
+            _surfaceSession.RecordUnhealthy();
+            _staleSurfaceSamples = Math.Min(_staleSurfaceSamples + 1, TaskbarHostSurfacePolicy.RequiredStaleSamples);
+            if (!_surfaceSession.ShouldReload(_staleSurfaceSamples, DateTime.UtcNow)) return;
+
+            _staleSurfaceSamples = 0;
+            _surfaceSession.RecordReload(DateTime.UtcNow);
+            AppLogService.Current?.Warn("Taskbar", $"媒体栏连续采样未命中宿主，请求重建: {_targetMonitorDeviceId}, " +
+                $"region=({region.Left},{region.Top})-({region.Right},{region.Bottom}), " +
+                $"reloads={_surfaceSession.Reloads}, " +
+                $"cooldown={TaskbarHostSurfacePolicy.GetCooldown(_surfaceSession.ConsecutiveReloads).TotalSeconds:F0}s");
+            _hostActions.RequestTaskbarHostReload();
+        }
+        catch (Exception exception)
+        {
+            if (_isClosing) return;
+            InvalidateSurfaceProbe();
+            AppLogService.Current?.Warn("Taskbar", $"媒体栏表面检查失败: {exception.Message}");
+        }
+        finally { _surfaceProbeInFlight = false; }
     }
 
     /// <summary>
@@ -916,7 +1007,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
         _artworkZoomExtensionPx = extensionPx;
         if (_hasInputRegion && _inputRegionWindowHandle != IntPtr.Zero)
-            ApplyBarInputRegion(_inputRegionWindowHandle, _lastInputRegion);
+            ApplyBarInputRegion(_inputRegionWindowHandle, _lastInputRegion, redraw: false);
     }
 
     #endregion
@@ -1231,6 +1322,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         var target = resolved == TaskbarHostVisibility.Visible ? Visibility.Visible : Visibility.Collapsed;
         if (Visibility != target)
         {
+            InvalidateSurfaceProbe();
             Visibility = target;
             if (target == Visibility.Visible)
                 WidgetCanvas.InvalidateVisual();
@@ -1265,6 +1357,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             return;
 
         _placementState = TaskbarPlacementPolicy.ClearConfirmation(_placementState);
+        InvalidateSurfaceProbe();
         _isEnvironmentSuspended = true;
         _menuEnvironmentVersion++;
         StopOccupancyRefresh();
@@ -1296,6 +1389,9 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             return;
 
         _isEnvironmentSuspended = false;
+        // 隐藏启动及等待首次安全区时也必须保留定位轮询，不能依赖成功显示来启动恢复链。
+        if (!IsBackgroundPruned)
+            _timer.Start();
         RegisterTaskbarLocationHook(_lastTaskbarHandle);
         _taskbarMotionState = default;
         ObserveTaskbarMotion();
@@ -1339,6 +1435,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     internal void ApplyBackgroundPruneLevel(MemoryPruneLevel level)
     {
         _backgroundPruneLevel = level;
+        InvalidateSurfaceProbe();
 
         // 控件自己那几只计时器由宿主转达；控件不查询电源状态（所有权与依赖方向见 IMPLEMENTATION_CONSTRAINTS）。
         // The control's own timers are passed down by the host; the control never queries the power state, which keeps ownership and dependency
@@ -1374,15 +1471,19 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     /// </summary>
     private void ResumeOperationalTimers()
     {
-        if (_isClosing || _isEnvironmentSuspended || IsBackgroundPruned || IsTaskbarPresentationSuspended ||
+        if (_isClosing || _isEnvironmentSuspended || IsBackgroundPruned)
+            return;
+
+        // 观察任务栏的轮询不依赖媒体栏可见；输入、媒体采样仍等待安全定位完成。
+        if (!_timer.IsEnabled)
+            _timer.Start();
+        if (IsTaskbarPresentationSuspended ||
             _isRestoringTaskbarPresentation || Visibility != Visibility.Visible || !_hasTaskbarPresentationPlacement)
             return;
 
         MediaControl.ApplyHostVisibilitySuspension(false);
         MediaControl.IsHitTestVisible = true;
         WindowHelper.SetInputTransparent(this, false);
-        if (!_timer.IsEnabled)
-            _timer.Start();
         ApplyExtraFeaturesSettings();
         UpdatePosition();
         Dispatcher.BeginInvoke(_foregroundSamplingSession.RequestRefresh, DispatcherPriority.ContextIdle);

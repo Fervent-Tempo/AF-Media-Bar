@@ -117,6 +117,7 @@ namespace AFMediaBar
                 // 任务栏停靠引擎（将媒体栏嵌入到资源管理器任务栏）
                 // Taskbar docking engine (embeds the media bar into the Explorer taskbar)
                 services.AddSingleton<ITaskbarDockService, TaskbarDockService>();
+                services.AddSingleton<TaskbarHostSurfaceSessions>();
                 services.AddSingleton<ITaskbarOccupiedAreaProbe, TaskbarOccupiedAreaProbe>();
                 services.AddSingleton<TaskbarOccupiedAreaService>();
                 services.AddSingleton<TaskbarLengthConstraintsService>();

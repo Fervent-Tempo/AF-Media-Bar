@@ -2619,6 +2619,8 @@
   <data name="Developer.Description.Reload" xml:space="preserve"><value>重用既有宿主重新載入，不終止 Explorer。</value></data>
   <data name="Developer.Action.State" xml:space="preserve"><value>讀取狀態快照</value></data>
   <data name="Developer.Description.State" xml:space="preserve"><value>讀取版本、顯示器、復原、電源與記憶體；不預設複製歌曲或路徑。</value></data>
+  <data name="Developer.Action.Surface" xml:space="preserve"><value>注入工作列宿主失繪</value></data>
+  <data name="Developer.Description.Surface" xml:space="preserve"><value>把媒體列宿主裁成空區域，重現「視窗可見卻沒有像素」；媒體列應在一兩秒內自癒重建。</value></data>
   <data name="Developer.Action.Trim" xml:space="preserve"><value>手動整理記憶體</value></data>
   <data name="Developer.Description.Trim" xml:space="preserve"><value>使用既有手動入口；接受請求不表示回收已完成。</value></data>
   <data name="Developer.Action.Logs" xml:space="preserve"><value>開啟記錄目錄</value></data>

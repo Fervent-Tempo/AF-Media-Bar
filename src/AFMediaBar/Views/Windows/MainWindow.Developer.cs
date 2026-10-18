@@ -1,6 +1,7 @@
 // 平台宿主的开发者输入与快照；独立歌曲预览窗口由宿主关闭，不转发到媒体服务。
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Components;
 using AFMediaBar.Resources;
@@ -27,6 +28,15 @@ public partial class MainWindow : IDeveloperHostActions
         if (_isClosing || TaskbarEnvironmentRecovering) return new(DeveloperActionStatus.Busy);
         RequestTaskbarHostReload();
         return new(DeveloperActionStatus.Queued);
+    }
+
+    DeveloperActionResult IDeveloperHostActions.BreakTaskbarSurface()
+    {
+        Dispatcher.VerifyAccess();
+        if (_isClosing || TaskbarEnvironmentRecovering) return new(DeveloperActionStatus.Busy);
+        var window = _taskbarWindows.FirstOrDefault();
+        if (window is null) return new(DeveloperActionStatus.Unavailable);
+        return window.BreakSurfaceForDiagnostics();
     }
 
     DeveloperActionResult IDeveloperHostActions.ShowTrackPreview()

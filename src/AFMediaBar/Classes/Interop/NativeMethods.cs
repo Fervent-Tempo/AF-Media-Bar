@@ -334,6 +334,10 @@ public static partial class NativeMethods
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool IsWindowVisible(IntPtr hWnd);
 
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool IsWindowEnabled(IntPtr hWnd);
+
     /// <summary>取窗口层次里的指定祖先。/ Retrieves the requested ancestor of a window.</summary>
     [LibraryImport("user32.dll")]
     public static partial IntPtr GetAncestor(IntPtr hWnd, uint flags);
@@ -514,6 +518,10 @@ public static partial class NativeMethods
     [LibraryImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool SetWindowRgn(IntPtr hWnd, IntPtr hRgn, [MarshalAs(UnmanagedType.Bool)] bool bRedraw);
+
+    /// <summary>读取窗口当前区域的包围盒与区域类型；只用于验证已下发的区域，不参与定位。/ Reads the bound box and type of the window's current region; used to verify an applied region, never for placement.</summary>
+    [LibraryImport("user32.dll", SetLastError = true)]
+    public static partial int GetWindowRgnBox(IntPtr hWnd, out RECT lprc);
 
     // DllImport instead of LibraryImport for SetWindowPos because for some reason it functions differently when using
     // LibraryImport, causing windows to not be topmost and it to be hidden unless you focus on the taskbar.

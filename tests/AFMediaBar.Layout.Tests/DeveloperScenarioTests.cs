@@ -239,6 +239,7 @@ public sealed class DeveloperScenarioTests
             Applied.Add(command); return new(DeveloperActionStatus.Queued);
         }
         public DeveloperActionResult ReloadTaskbar() => new(DeveloperActionStatus.Queued);
+        public DeveloperActionResult BreakTaskbarSurface() => new(DeveloperActionStatus.Accepted);
         public DeveloperActionResult ShowTrackPreview() => new(DeveloperActionStatus.Accepted);
         public string CaptureState() => "state";
         public void ClosePreviews() { }

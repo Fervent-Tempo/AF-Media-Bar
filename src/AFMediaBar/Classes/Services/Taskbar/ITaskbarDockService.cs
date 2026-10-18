@@ -98,6 +98,21 @@ public interface ITaskbarDockService
     /// 用途 Purpose:
     /// 媒体栏只占任务栏一部分，其他区域需要点击穿透，让任务栏原有控件可交互。
     /// Media bar occupies only part of taskbar; other areas need click-through so original taskbar controls remain interactive.
+    ///
+    /// 空区域会把窗口裁到什么都不画，因此调用方 MUST NOT 用它表达"暂时没有可用几何"。
+    /// An empty region clips the window down to nothing, so callers MUST NOT use one to mean "no usable geometry right now".
     /// </summary>
-    void ApplyInputRegion(IntPtr windowHandle, IReadOnlyList<RECT> rects);
+    /// <param name="windowHandle">宿主窗口句柄。/ Host window handle.</param>
+    /// <param name="rects">窗口坐标下的可见矩形；至少一个非空矩形。/ Visible rectangles in window coordinates; at least one non-empty.</param>
+    /// <param name="redraw">是否请求系统重画；首次落地或重设失效区域时为 true，常规尺寸过渡为 false。</param>
+    void ApplyInputRegion(IntPtr windowHandle, IReadOnlyList<RECT> rects, bool redraw);
+
+    /// <summary>
+    /// 在两轴采样可交互区域；全部命中任务栏才作为异常，遮挡返回未知。
+    /// 调用方在后台执行并校验结果代际；此探测不能确定裁剪、层级或绘制异常的具体原因。
+    /// </summary>
+    /// <param name="windowHandle">宿主窗口句柄。/ Host window handle.</param>
+    /// <param name="taskbarHandle">宿主所属任务栏句柄。/ Taskbar handle the host is docked into.</param>
+    /// <param name="region">宿主窗口坐标下的可见矩形。/ Visible rectangle in host window coordinates.</param>
+    TaskbarHostSurfaceHit ProbeHostSurface(IntPtr windowHandle, IntPtr taskbarHandle, RECT region);
 }

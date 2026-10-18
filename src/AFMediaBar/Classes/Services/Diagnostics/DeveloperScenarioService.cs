@@ -102,6 +102,7 @@ public sealed class DeveloperScenarioService : IDeveloperScenarioService, IDispo
                 // 对话框期间宿主可能重建，平台入口还会检查原 HostId。
                 return Host.ExecuteLyricsAction(action.Command, hostId);
             case "taskbar reload": return Host.ReloadTaskbar();
+            case "taskbar surface": return Host.BreakTaskbarSurface();
             case "notify track": return Host.ShowTrackPreview();
             case "memory trim": return new(_prune.RequestTrim(MemoryTrimTrigger.ManualRequest) ? DeveloperActionStatus.Accepted : DeveloperActionStatus.Busy);
             case "logs open": _log?.OpenFolder(); return new(_log is null ? DeveloperActionStatus.Unavailable : DeveloperActionStatus.Accepted);

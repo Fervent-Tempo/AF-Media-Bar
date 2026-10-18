@@ -5,7 +5,7 @@ namespace AFMediaBar.Layout.Tests;
 
 internal static class StaTest
 {
-    internal static void Run(Func<Dispatcher, Task> action)
+    internal static void Run(Func<Dispatcher, Task> action, TimeSpan? timeout = null)
     {
         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var thread = new Thread(() =>
@@ -24,7 +24,7 @@ internal static class StaTest
         thread.Start();
         try
         {
-            completion.Task.WaitAsync(TimeSpan.FromSeconds(20)).GetAwaiter().GetResult();
+            completion.Task.WaitAsync(timeout ?? TimeSpan.FromSeconds(20)).GetAwaiter().GetResult();
         }
         finally
         {
