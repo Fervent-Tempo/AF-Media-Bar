@@ -26,7 +26,8 @@ public sealed class AdaptiveForegroundSamplingSessionTests
                     Interlocked.Increment(ref canceled);
             }
             AppDomain.CurrentDomain.FirstChanceException += OnException;
-            using var session = new AdaptiveForegroundSamplingSession(new ScreenBackgroundSampler(), dispatcher,
+            using var sampler = new ScreenBackgroundSampler();
+            using var session = new AdaptiveForegroundSamplingSession(sampler, dispatcher,
                 () => bounds, decision =>
                 {
                     if (decision is null) return;
