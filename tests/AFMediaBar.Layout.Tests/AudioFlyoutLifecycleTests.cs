@@ -28,6 +28,79 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class AudioFlyoutLifecycleTests
 {
     [TestMethod]
+    public void HostCreatesFlyoutOnlyOnDemandAndCancelsPendingCreation()
+    {
+        if (RunIsolated(nameof(HostCreatesFlyoutOnlyOnDemandAndCancelsPendingCreation))) return;
+
+        StaTest.Run(async _ =>
+        {
+            SettingsManager.Current.Experiments = SettingsManager.Current.Experiments with { NewAudioControl = true };
+            var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+            using var icons = new AppIconService();
+            using var appearance = new WindowAppearanceService(new NativeWindowBackdropAdapter(), icons);
+            AudioControlFlyoutWindow? window = null;
+            try
+            {
+                app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ThemesDictionary());
+                app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
+                foreach (var resource in new[] { "MotionResources", "SettingsAppearanceResources" })
+                    app.Resources.MergedDictionaries.Add(new ResourceDictionary
+                    {
+                        Source = new Uri($"/AFMediaBar;component/Resources/{resource}.xaml", UriKind.Relative)
+                    });
+
+                var viewModel = (AudioControlViewModel)RuntimeHelpers.GetUninitializedObject(typeof(AudioControlViewModel));
+                viewModel.IsBusy = true;
+                // 只驱动宿主的浮窗协调入口，避免创建真实托盘、媒体服务和全局 Hook。
+                var host = (MainWindow)RuntimeHelpers.GetUninitializedObject(typeof(MainWindow));
+                var factoryCalls = 0;
+                Func<AudioControlFlyoutWindow> factory = () =>
+                {
+                    factoryCalls++;
+                    return window = CreateWindow(viewModel, appearance);
+                };
+                typeof(MainWindow).GetField("_audioControlFlyoutFactory", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .SetValue(host, factory);
+
+                host.HideAudioControlFlyout();
+                Assert.AreEqual(0, factoryCalls, "隐藏未打开的浮窗不能加载界面。");
+                var canceled = host.ToggleAudioControlFlyoutAsync(null);
+                Assert.IsFalse(canceled.IsCompleted);
+                Assert.AreEqual(0, factoryCalls, "创建必须离开当前原生消息回调。");
+                host.HideAudioControlFlyout();
+                await canceled;
+                Assert.AreEqual(0, factoryCalls, "切换到其他菜单应取消待创建的浮窗。");
+
+                await Task.WhenAll(host.ToggleAudioControlFlyoutAsync(null), host.ToggleAudioControlFlyoutAsync(null));
+                Assert.AreEqual(1, factoryCalls, "首次打开的重入应复用同一实例。");
+                Assert.IsNotNull(window);
+                Assert.IsTrue(window.IsVisible);
+                var handle = new WindowInteropHelper(window).Handle;
+                host.HideAudioControlFlyout();
+                await host.ToggleAudioControlFlyoutAsync(null);
+                Assert.AreEqual(1, factoryCalls);
+                Assert.AreEqual(handle, new WindowInteropHelper(window).Handle);
+                Assert.IsTrue(window.IsVisible);
+
+                var closingHost = (MainWindow)RuntimeHelpers.GetUninitializedObject(typeof(MainWindow));
+                typeof(MainWindow).GetField("_audioControlFlyoutFactory", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .SetValue(closingHost, factory);
+                var pending = closingHost.ToggleAudioControlFlyoutAsync(null);
+                typeof(MainWindow).GetField("_isClosing", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .SetValue(closingHost, true);
+                await pending;
+                await closingHost.ToggleAudioControlFlyoutAsync(null);
+                Assert.AreEqual(1, factoryCalls, "退出后不能完成待创建请求或接受新请求。");
+            }
+            finally
+            {
+                window?.Dispose();
+                app.Shutdown();
+            }
+        });
+    }
+
+    [TestMethod]
     public void ToggleDefersWindowCreationCoalescesReentryAndStopsAfterDisposal()
     {
         if (RunIsolated(nameof(ToggleDefersWindowCreationCoalescesReentryAndStopsAfterDisposal))) return;

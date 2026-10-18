@@ -40,7 +40,9 @@ namespace AFMediaBar.Views.Windows
         private readonly ITaskbarDockService _taskBarService;
         private readonly MediaSessionService _mediaSessionService;
         private readonly AudioControlViewModel _audioControlViewModel;
-        private readonly AudioControlFlyoutWindow _audioControlFlyout;
+        private readonly Func<AudioControlFlyoutWindow> _audioControlFlyoutFactory;
+        private AudioControlFlyoutWindow? _audioControlFlyout;
+        private int _audioControlFlyoutRequestVersion;
         private readonly AppLogService _logService;
         private readonly NativeMouseInputMonitor _mouseInputMonitor;
         private readonly WindowAppearanceService _appearanceService;
@@ -103,7 +105,7 @@ namespace AFMediaBar.Views.Windows
             TaskbarWindowViewModel taskbarViewModel,
             ITaskbarDockService taskBarService,
             AudioControlViewModel audioControlViewModel,
-            AudioControlFlyoutWindow audioControlFlyout,
+            Func<AudioControlFlyoutWindow> audioControlFlyoutFactory,
             AppLogService logService,
             NativeMouseInputMonitor mouseInputMonitor,
             WindowAppearanceService appearanceService,
@@ -141,7 +143,7 @@ namespace AFMediaBar.Views.Windows
             _mediaSessionService = App.Services.GetRequiredService<MediaSessionService>();
             _taskBarService = taskBarService;
             _audioControlViewModel = audioControlViewModel;
-            _audioControlFlyout = audioControlFlyout;
+            _audioControlFlyoutFactory = audioControlFlyoutFactory;
             _logService = logService;
             _mouseInputMonitor = mouseInputMonitor;
             _appearanceService = appearanceService;
@@ -293,7 +295,7 @@ namespace AFMediaBar.Views.Windows
                 taskbarWindow.ClosePlayerMenu();
 
             CloseTaskbarWindows();
-            _audioControlFlyout.Dispose();
+            _audioControlFlyout?.Dispose();
             CloseFullPanelWindows();
             var notificationWindow = _trackChangeNotificationWindow;
             _trackChangeNotificationWindow = null;
@@ -728,12 +730,44 @@ namespace AFMediaBar.Views.Windows
 
             try
             {
-                await _audioControlFlyout.ToggleAsync(bounds);
+                await ToggleAudioControlFlyoutAsync(bounds);
             }
             catch (Exception exception)
             {
                 _logService.Error("Audio", "切换托盘音频面板失败", exception);
             }
+        }
+
+        /// <summary>首次打开才加载音频浮窗界面；离开原生回调后再创建，隐藏或退出使待打开请求失效。</summary>
+        internal async Task ToggleAudioControlFlyoutAsync(TrayIconBounds? bounds)
+        {
+            if (_isClosing)
+                return;
+
+            if (_audioControlFlyout is null)
+            {
+                var version = _audioControlFlyoutRequestVersion;
+                await Dispatcher.Yield(DispatcherPriority.Background);
+                if (_isClosing || version != _audioControlFlyoutRequestVersion)
+                    return;
+                _audioControlFlyout ??= _audioControlFlyoutFactory();
+                if (_isClosing)
+                {
+                    _audioControlFlyout.Dispose();
+                    return;
+                }
+                if (version != _audioControlFlyoutRequestVersion)
+                    return;
+            }
+
+            await _audioControlFlyout.ToggleAsync(bounds);
+        }
+
+        /// <summary>隐藏已有浮窗并取消尚未开始的首次创建，不为关闭操作加载界面。</summary>
+        internal void HideAudioControlFlyout()
+        {
+            _audioControlFlyoutRequestVersion++;
+            _audioControlFlyout?.Hide();
         }
 
         /// <summary>
@@ -1017,7 +1051,7 @@ namespace AFMediaBar.Views.Windows
             if (_isClosing)
                 return;
 
-            _audioControlFlyout.Hide();
+            HideAudioControlFlyout();
             TrayMenu.ApplySessions(App.Services.GetRequiredService<MediaSessionService>().CurrentSessionOptions);
             TrayMenu.ApplyQuickLaunchEntries(SettingsManager.Current.QuickLaunch.Entries ?? []);
             TrayMenu.IsReloadTaskbarHostEnabled =

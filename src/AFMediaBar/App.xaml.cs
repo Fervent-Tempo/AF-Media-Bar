@@ -250,6 +250,8 @@ namespace AFMediaBar
                     (target, monitor) => ActivatorUtilities.CreateInstance<FloatingBarWindow>(sp, target, monitor));
                 services.AddSingleton<AudioControlViewModel>();
                 services.AddSingleton<AudioControlFlyoutWindow>();
+                services.AddSingleton<Func<AudioControlFlyoutWindow>>(sp =>
+                    () => sp.GetRequiredService<AudioControlFlyoutWindow>());
 
                 // === 设置窗口（从任务栏右键菜单打开）Settings Window (opened from taskbar context menu) ===
                 services.AddSingleton<SettingsWindowViewModel>();
