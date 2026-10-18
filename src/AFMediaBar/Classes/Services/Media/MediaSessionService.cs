@@ -27,6 +27,7 @@ public sealed class MediaSessionService : IDisposable
     private readonly ISystemNotificationService _notifications;
     private string? _lastControlNotificationSource;
     private DateTimeOffset _lastControlNotificationUtc;
+    private string? _missingControlSourceId;
     private readonly MediaSessionSelectionService _selection;
     private readonly MediaSnapshotBuilder _snapshotBuilder;
     private readonly IReadOnlyList<IMediaSourceProvider> _sourceProviders;
@@ -997,21 +998,23 @@ public sealed class MediaSessionService : IDisposable
         }
 
         snapshot = _browserPresentation.Project(snapshot);
-        var notifyUnavailable = snapshot.IsConnected && !snapshot.CanPlayPause &&
-            (!_lastSnapshot.IsConnected || _lastSnapshot.CanPlayPause ||
-             !string.Equals(snapshot.SourceId, _lastSnapshot.SourceId, StringComparison.OrdinalIgnoreCase));
+        // 单项控制能力不代表 SMTC 会话缺失；同一来源连续缺少控制通道时只主动提示一次。
+        var missingControlSourceId = snapshot.IsConnected && string.IsNullOrEmpty(_selectedSessionKey)
+            ? snapshot.SourceId
+            : null;
+        var notifyUnavailable = missingControlSourceId is not null &&
+            !string.Equals(missingControlSourceId, _missingControlSourceId, StringComparison.OrdinalIgnoreCase);
+        _missingControlSourceId = missingControlSourceId;
 
         lock (_publishGate)
         {
-            if (Equals(_lastSnapshot, snapshot))
+            if (!Equals(_lastSnapshot, snapshot))
             {
-                return;
+                _lastSnapshot = snapshot;
+                CurrentSnapshot = snapshot;
+                LogSnapshot(snapshot);
+                SnapshotChanged?.Invoke(this, snapshot);
             }
-
-            _lastSnapshot = snapshot;
-            CurrentSnapshot = snapshot;
-            LogSnapshot(snapshot);
-            SnapshotChanged?.Invoke(this, snapshot);
         }
         if (notifyUnavailable)
             ReportControlUnavailable(snapshot.SourceId);
