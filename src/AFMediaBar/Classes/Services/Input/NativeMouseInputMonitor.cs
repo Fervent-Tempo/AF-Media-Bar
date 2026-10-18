@@ -70,6 +70,18 @@ public sealed class NativeMouseInputMonitor : IDisposable
     /// <summary>鼠标右键当前是否按住。 / Whether the right button is currently held.</summary>
     public bool IsRightButtonDown => _isRightButtonDown;
 
+    /// <summary>读取物理屏幕坐标，供独立输入窗口检查跨 HWND 的指针衔接。</summary>
+    public bool TryGetPointerPosition(out Point position)
+    {
+        if (NativeMethods.GetCursorPos(out var point))
+        {
+            position = new Point(point.X, point.Y);
+            return true;
+        }
+        position = default;
+        return false;
+    }
+
     /// <summary>
     /// Shift 当前是否按住。组合键可能是 Shift，而托盘图标与任务栏窗口都不接收键盘事件，因此这里直接读物理键状态。
     /// Whether Shift is currently held. The chord key can be Shift, and neither the tray icon nor the taskbar window receives key

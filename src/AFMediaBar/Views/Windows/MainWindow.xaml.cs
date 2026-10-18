@@ -853,7 +853,7 @@ namespace AFMediaBar.Views.Windows
             ContextMenuHelper.OpenAtScreenAnchor(host.PlayerContextMenu, this, screenAnchor);
         }
 
-        private void TaskbarWindow_OpenFullPanelRequested(object? sender, EventArgs e)
+        private void TaskbarWindow_OpenFullPanelRequested(object? sender, FullPanelOpenRequestEventArgs e)
         {
             if (_isClosing || sender is not TaskbarWindow taskbarWindow || !_taskbarWindows.Contains(taskbarWindow))
                 return;
@@ -875,7 +875,11 @@ namespace AFMediaBar.Views.Windows
             panel.Closed -= FullPanelWindow_Closed;
             panel.Closed += FullPanelWindow_Closed;
             panel.ApplyPresentationSettings(null);
-            panel.ToggleNear(taskbarWindow.GetMediaBarScreenBounds(), targetDeviceId, taskbarWindow.IsVerticalPresentation);
+            if (e.EnsureOpen)
+                panel.ShowNear(e.Anchor, targetDeviceId, e.VerticalAnchor);
+            else
+                panel.ToggleNear(e.Anchor, targetDeviceId, e.VerticalAnchor);
+            taskbarWindow.SetFullPanelOpen(panel.IsVisible);
         }
 
         private void FullPanelWindow_Closed(object? sender, EventArgs e)
@@ -888,6 +892,8 @@ namespace AFMediaBar.Views.Windows
                 {
                     _fullPanelWindows.Remove(target);
                     _fullPanelClosedAtUtc[target] = DateTime.UtcNow;
+                    foreach (var host in _taskbarWindows.Where(host => host.TargetMonitorDeviceId == target))
+                        host.SetFullPanelOpen(false);
                 }
 
                 // 完整层是歌词与封面的另一个消费者，关闭后做一遍温和回收。

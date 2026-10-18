@@ -87,6 +87,14 @@ public partial class TaskbarFullPanelWindow : FluentWindow
             return;
         }
 
+        ShowNear(anchor, targetMonitorDeviceId, verticalAnchor);
+    }
+
+    /// <summary>外侧悬停入口只请求打开，重复请求不关闭已有面板。</summary>
+    public void ShowNear(Rect anchor, string targetMonitorDeviceId, bool verticalAnchor = false)
+    {
+        if (_isClosing || IsVisible) return;
+
         _isClosing = false;
         _anchor = anchor;
         _targetMonitorDeviceId = targetMonitorDeviceId;

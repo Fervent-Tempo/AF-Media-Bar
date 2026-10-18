@@ -2961,4 +2961,22 @@
   <data name="Media.Selection.NoPreferred" xml:space="preserve"><value>未指定（使用自动选择）</value></data>
   <data name="Media.Selection.Filtered" xml:space="preserve"><value>该应用已被媒体来源过滤排除，当前使用自动选择。</value></data>
   <data name="Media.Selection.ManualHint" xml:space="preserve"><value>手动选源立即生效；后续新会话或符合策略的播放活动仍可接管。</value></data>
+  <data name="Experimental.FullPanel.Title" xml:space="preserve">
+    <value>外侧完整层入口</value>
+  </data>
+  <data name="Experimental.FullPanel.Description" xml:space="preserve">
+    <value>鼠标进入任务栏媒体栏时，在朝向桌面的一侧显示横杠，替换原来的栏内入口。</value>
+  </data>
+  <data name="Experimental.FullPanel.Trigger" xml:space="preserve">
+    <value>打开方式</value>
+  </data>
+  <data name="Experimental.FullPanel.Click" xml:space="preserve">
+    <value>点击打开</value>
+  </data>
+  <data name="Experimental.FullPanel.Hover" xml:space="preserve">
+    <value>悬停 0.5 秒</value>
+  </data>
+  <data name="Experimental.FullPanel.AutoHide" xml:space="preserve">
+    <value>任务栏自动收起时，鼠标所在的横杠会暂时保留；移开后隐藏。仅对任务栏模式生效。</value>
+  </data>
 </root>

@@ -72,7 +72,7 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
         if (!context.IsActive) return;
         if (settings.FloatingBar && SettingsManager.Current.FloatingBar.Profile is null)
             SettingsManager.Current.FloatingBar = SettingsManager.Current.FloatingBar with { Profile = BarDisplaySettings.Capture(SettingsManager.Current) };
-        SettingsManager.Current.Experiments = settings;
+        SettingsManager.Current.Experiments = settings.Normalize();
         if (!settings.FloatingBar) SettingsManager.Current.WindowMode = AFMediaBar.Classes.Models.Layout.WindowMode.Taskbar;
     }
     public void SetFloatingBar(FloatingBarSettings settings) { if (IsActive) SettingsManager.Current.FloatingBar = settings; }

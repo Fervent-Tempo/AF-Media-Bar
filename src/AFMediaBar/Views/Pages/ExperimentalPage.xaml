@@ -16,6 +16,24 @@
             <StackPanel MaxWidth="{StaticResource AfSettingsContentMaxWidth}">
                 <components:SettingsCallout Text="{DynamicResource Loc.Experimental.Warning}" Symbol="Warning24"
                     IsAccent="True" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,16" />
+                <components:SettingsGroup GroupId="Experimental.FullPanel.Title" Header="{DynamicResource Loc.Experimental.FullPanel.Title}"
+                    Description="{DynamicResource Loc.Experimental.FullPanel.Description}" Icon="{ui:SymbolIcon Window24}">
+                    <StackPanel>
+                        <components:SettingsRow Title="{DynamicResource Loc.Experimental.Enable}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.ExternalFullPanelHandle, Mode=TwoWay}" />
+                        </components:SettingsRow>
+                        <StackPanel Visibility="{Binding ViewModel.ExternalFullPanelHandle, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                            <components:SettingsRow Title="{DynamicResource Loc.Experimental.FullPanel.Trigger}">
+                                <ComboBox SelectedIndex="{Binding ViewModel.ExternalFullPanelHandleTriggerIndex, Mode=TwoWay}" MinWidth="180">
+                                    <ComboBoxItem Content="{DynamicResource Loc.Experimental.FullPanel.Click}" />
+                                    <ComboBoxItem Content="{DynamicResource Loc.Experimental.FullPanel.Hover}" />
+                                </ComboBox>
+                            </components:SettingsRow>
+                            <TextBlock Text="{DynamicResource Loc.Experimental.FullPanel.AutoHide}" TextWrapping="Wrap"
+                                Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,8,0,0" />
+                        </StackPanel>
+                    </StackPanel>
+                </components:SettingsGroup>
                 <components:SettingsGroup GroupId="Experimental.Audio.Title" Header="{DynamicResource Loc.Experimental.Audio.Title}"
                     Description="{DynamicResource Loc.Experimental.Audio.Description}" Icon="{ui:SymbolIcon Speaker224}">
                     <StackPanel>

@@ -138,7 +138,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     private IReadOnlyList<MetricKind> _subscribedMetricKinds = [];
     private TimeSpan? _subscribedMetricInterval;
 
-    public event EventHandler? OpenFullPanelRequested;
+    public event EventHandler<FullPanelOpenRequestEventArgs>? OpenFullPanelRequested;
     public event EventHandler? InformationAutomaticallyHidden;
     public bool HasAutomaticallyHiddenInformation => !_isClosing && !_isEnvironmentSuspended && IsVisible &&
         MediaControl.HasAutomaticallyHiddenInformation;
@@ -166,7 +166,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         NativeMouseInputMonitor mouseInputMonitor,
         MemoryPruneCoordinator memoryPruneCoordinator,
         TaskbarHostSurfaceSessions surfaceSessions,
-        TaskbarWindowViewModel? viewModel = null, bool startImmediately = true)
+        TaskbarWindowViewModel? viewModel = null, bool startImmediately = true,
+        Func<ExternalFullPanelHandleWindow>? externalFullPanelHandleFactory = null)
     {
         WindowHelper.SetNoActivate(this);
         InitializeComponent();
@@ -174,6 +175,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         _targetMonitorDeviceId = targetMonitorDeviceId;
         _surfaceSession = surfaceSessions.Get(targetMonitorDeviceId);
         _mouseInputMonitor = mouseInputMonitor;
+        InitializeExternalFullPanelHandle(externalFullPanelHandleFactory);
         DataContext = ViewModel;
         ContextMenuHelper.AttachOutsideClickDismissal(PlayerMenu);
         appearanceService.Attach(PlayerMenu, this);
@@ -473,6 +475,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
         if (suspended)
         {
+            _externalFullPanelHandle?.SuspendTaskbar();
             StopOccupancyRefresh();
             _placementState = TaskbarPlacementPolicy.ClearConfirmation(_placementState);
             MediaControl.ApplyHostVisibilitySuspension(true);
@@ -1356,6 +1359,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     /// </summary>
     internal void SuspendForEnvironmentRecovery()
     {
+        _externalFullPanelHandle?.Dismiss();
         _audioInteractionService.CancelDeviceOwner(this);
         if (_isEnvironmentSuspended)
             return;
@@ -1438,6 +1442,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     /// <param name="level">剪枝档位。/ The prune level.</param>
     internal void ApplyBackgroundPruneLevel(MemoryPruneLevel level)
     {
+        _externalFullPanelHandle?.Dismiss();
         _backgroundPruneLevel = level;
         InvalidateSurfaceProbe();
 
@@ -1526,7 +1531,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     }
 
     private void MediaControl_OpenFullPanelRequested(object? sender, EventArgs e) =>
-        OpenFullPanelRequested?.Invoke(this, EventArgs.Empty);
+        OpenFullPanelRequested?.Invoke(this, new FullPanelOpenRequestEventArgs(
+            GetMediaBarScreenBounds(), IsVerticalPresentation, ensureOpen: false));
 
     private async void MediaControl_WheelRequested(object? sender, PlayerSurfaceWheelEventArgs e)
     {
@@ -2068,6 +2074,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
                 return;
             _isDragPending = false;
             _isDragging = true;
+            _externalFullPanelHandle?.Dismiss();
             MediaControl.CollapseArtworkZoomForDrag();
             Mouse.Capture(GetActiveControl(), CaptureMode.SubTree);
         }
@@ -2447,6 +2454,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     protected override void OnClosed(EventArgs e)
     {
         _isClosing = true;
+        DisposeExternalFullPanelHandle();
         PlayerMenu.ExitRequested -= PlayerMenu_ExitRequested;
         StopOccupancyRefresh();
         _memoryPruneCoordinator.LevelChanged -= MemoryPruneCoordinator_LevelChanged;

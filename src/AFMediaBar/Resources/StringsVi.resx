@@ -2999,4 +2999,22 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   <data name="Media.Selection.NoPreferred" xml:space="preserve"><value>Không chọn (dùng Tự động)</value></data>
   <data name="Media.Selection.Filtered" xml:space="preserve"><value>Ứng dụng này bị bộ lọc nguồn loại trừ. Hiện đang dùng lựa chọn Tự động.</value></data>
   <data name="Media.Selection.ManualHint" xml:space="preserve"><value>Chọn nguồn thủ công có hiệu lực ngay. Phiên mới hoặc hoạt động phát phù hợp với chính sách vẫn có thể được chọn.</value></data>
+  <data name="Experimental.FullPanel.Title" xml:space="preserve">
+    <value>Thanh mở bảng đầy đủ bên ngoài</value>
+  </data>
+  <data name="Experimental.FullPanel.Description" xml:space="preserve">
+    <value>Hiện thanh mở ở phía hướng vào màn hình nền khi con trỏ đi vào thanh đa phương tiện, thay cho thanh mở bên trong.</value>
+  </data>
+  <data name="Experimental.FullPanel.Trigger" xml:space="preserve">
+    <value>Cách mở</value>
+  </data>
+  <data name="Experimental.FullPanel.Click" xml:space="preserve">
+    <value>Nhấp chuột</value>
+  </data>
+  <data name="Experimental.FullPanel.Hover" xml:space="preserve">
+    <value>Di chuột trong 0,5 giây</value>
+  </data>
+  <data name="Experimental.FullPanel.AutoHide" xml:space="preserve">
+    <value>Khi thanh tác vụ tự ẩn, thanh mở vẫn hiện nếu con trỏ ở trên đó và ẩn khi con trỏ rời đi. Chỉ áp dụng cho chế độ thanh tác vụ.</value>
+  </data>
 </root>

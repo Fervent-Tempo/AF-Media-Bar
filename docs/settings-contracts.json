@@ -6,6 +6,8 @@
     "experiments": {
       "floatingBar": "unreleased",
       "newAudioControl": "unreleased",
+      "externalFullPanelHandle": "unreleased",
+      "externalFullPanelHandleTrigger": "unreleased",
       "$release": "unreleased",
       "verticalTaskbar": "unreleased"
     },
@@ -255,6 +257,13 @@
     }
   },
   "enums": {
+    "FullPanelHandleTrigger": {
+      "paths": ["settings.experiments.externalFullPanelHandleTrigger"],
+      "members": {
+        "Click": {"value": 0, "release": "unreleased"},
+        "Hover": {"value": 1, "release": "unreleased"}
+      }
+    },
     "FloatingBarLayer": {
         "paths": [
           "settings.floatingBar.layer"

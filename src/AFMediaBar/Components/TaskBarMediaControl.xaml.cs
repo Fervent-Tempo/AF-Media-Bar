@@ -69,6 +69,13 @@ namespace AFMediaBar.Components
         private AppSettings PresentationSettings => _presentationSettings ?? SettingsManager.Current;
         public BarPresentationContext PresentationContext { get; private set; } = new(WindowMode.Taskbar, LayoutOrientation.Horizontal);
         private bool IsBarPresentation => PresentationContext.SupportsBarInteractions;
+        private bool UsesExternalFullPanelHandle => PresentationContext.Host == WindowMode.Taskbar &&
+            PresentationSettings.Experiments.ExternalFullPanelHandle;
+
+        /// <summary>入口沿任务栏主轴的中心；没有文字区时使用媒体栏中心。</summary>
+        internal Point GetFullPanelEntryScreenCenter() => SongInfoStackPanel.IsVisible && SongInfoStackPanel.ActualWidth > 0
+            ? SongInfoStackPanel.PointToScreen(new Point(SongInfoStackPanel.ActualWidth / 2, SongInfoStackPanel.ActualHeight / 2))
+            : PointToScreen(new Point(ActualWidth / 2, ActualHeight / 2));
 
         public void ApplyPresentationSettings(AppSettings? settings) => _presentationSettings = settings;
 
@@ -1120,7 +1127,7 @@ namespace AFMediaBar.Components
             // The full-layer entry switch covers both the hover layer's button and the thin bar above the rest-layer text: what the
             // user asks for is "do I want this entry", so both have to disappear together, otherwise turning it off would remove
             // the thin bar while leaving the hover button behind.
-            TaskbarFullPanelHandle.Visibility = experience.FullLayerEnabled && experience.FullPanelEntryVisible
+            TaskbarFullPanelHandle.Visibility = experience.FullLayerEnabled && experience.FullPanelEntryVisible && !UsesExternalFullPanelHandle
                 ? Visibility.Visible
                 : Visibility.Collapsed;
             var directFullPanelHandleVisible = CanShowDirectFullPanelHandle();

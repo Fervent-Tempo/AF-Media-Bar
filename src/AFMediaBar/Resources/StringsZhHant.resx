@@ -2961,4 +2961,22 @@
   <data name="Media.Selection.NoPreferred" xml:space="preserve"><value>未指定（使用自動選擇）</value></data>
   <data name="Media.Selection.Filtered" xml:space="preserve"><value>此應用已被媒體來源篩選排除，目前使用自動選擇。</value></data>
   <data name="Media.Selection.ManualHint" xml:space="preserve"><value>手動選源立即生效；後續新工作階段或符合策略的播放活動仍可接管。</value></data>
+  <data name="Experimental.FullPanel.Title" xml:space="preserve">
+    <value>外側完整層入口</value>
+  </data>
+  <data name="Experimental.FullPanel.Description" xml:space="preserve">
+    <value>滑鼠進入工作列媒體列時，在朝向桌面的一側顯示橫槓，取代原本的列內入口。</value>
+  </data>
+  <data name="Experimental.FullPanel.Trigger" xml:space="preserve">
+    <value>開啟方式</value>
+  </data>
+  <data name="Experimental.FullPanel.Click" xml:space="preserve">
+    <value>點擊開啟</value>
+  </data>
+  <data name="Experimental.FullPanel.Hover" xml:space="preserve">
+    <value>懸停 0.5 秒</value>
+  </data>
+  <data name="Experimental.FullPanel.AutoHide" xml:space="preserve">
+    <value>工作列自動收起時，滑鼠所在的橫槓會暫時保留；移開後隱藏。僅對工作列模式生效。</value>
+  </data>
 </root>

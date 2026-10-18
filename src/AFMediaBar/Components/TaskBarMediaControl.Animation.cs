@@ -257,6 +257,7 @@ public partial class TaskBarMediaControl
     {
         var experience = PresentationSettings.TaskbarExperience;
         return CanUseTaskbarComponentHover() &&
+               !UsesExternalFullPanelHandle &&
                experience.FullPanelEntryVisible &&
                !experience.HoverLayerEnabled &&
                experience.FullLayerEnabled;

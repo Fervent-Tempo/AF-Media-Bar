@@ -261,6 +261,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         var defaults = new AppSettings();
         var result = Clone();
         result.Appearance = result.Appearance.Normalize();
+        result.Experiments = result.Experiments.Normalize();
         if (!Enum.IsDefined(result.TrayWheelBehavior)) result.TrayWheelBehavior = defaults.TrayWheelBehavior;
         result.LyricsSecondaryLine = result.LyricsSecondaryLine.Normalize();
         if (!Enum.IsDefined(result.Position)) result.Position = defaults.Position;
