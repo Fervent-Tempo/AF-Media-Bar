@@ -11,6 +11,8 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
 {
     private readonly MemoryToolsService _metrics;
     private readonly MemoryPruneCoordinator _prune;
+    private readonly SystemMemoryCleanupService _systemCleanup;
+    private SystemMemoryCleanupResult? _systemResult;
     private CancellationTokenSource? _sampling;
     private bool _visible;
     private bool _disposed;
@@ -18,6 +20,10 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
     private MemoryTrimOutcome? _lastOutcome;
     private DateTimeOffset? _lastTrimAt;
     private bool _isBusy;
+    public bool IsSystemCleanupEnabled => IsEnabled && SettingsManager.Current.Experiments.SystemMemoryCleanup;
+    public string SystemResultText => _systemResult is not { } result ? string.Empty :
+        Translations.Get("Memory.System." + result.Status) + (result.Before is not null && result.After is not null ? "\n" +
+        Translations.Format("Memory.System.Readings", FormatBytes((double?)result.Before), FormatBytes((double?)result.After)) : string.Empty);
     public bool IsEnabled => SettingsManager.Current.Experiments.MemoryTools;
     public bool IsBusy { get => _isBusy; private set { if (SetProperty(ref _isBusy, value)) OnPropertyChanged(nameof(CanRun)); } }
     public bool CanRun => !IsBusy;
@@ -36,8 +42,9 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
             Translations.Get(counters.ReturnedWorkingSet ? "Memory.WorkingSetReturned" : "Memory.WorkingSetNotReturned")) :
         Translations.Get("Memory.Status." + outcome.Status);
 
-    public MemoryToolsViewModel(MemoryToolsService metrics, MemoryPruneCoordinator prune)
+    public MemoryToolsViewModel(MemoryToolsService metrics, MemoryPruneCoordinator prune, SystemMemoryCleanupService systemCleanup)
     {
+        _systemCleanup = systemCleanup;
         _metrics = metrics;
         _prune = prune;
         SettingsManager.SettingsChanged += OnSettingsChanged;
@@ -80,6 +87,22 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    private async Task CleanSystemAsync()
+    {
+        if (_disposed || IsBusy || !IsSystemCleanupEnabled) return;
+        IsBusy = true;
+        var source = _sampling;
+        try
+        {
+            var result = await _systemCleanup.RunAsync();
+            if (_disposed || !_visible || source != _sampling || !IsSystemCleanupEnabled) return;
+            _systemResult = result;
+            OnPropertyChanged(nameof(SystemResultText));
+        }
+        finally { if (!_disposed) IsBusy = false; }
+    }
+
+    [RelayCommand]
     private Task GentleAsync() => TrimAsync(MemoryTrimStrength.Gentle);
     [RelayCommand]
     private Task DeepAsync() => TrimAsync(MemoryTrimStrength.Deep);
@@ -104,6 +127,7 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
     {
         if (_disposed || args.PropertyName is not (null or nameof(AppSettings.Experiments))) return;
         OnPropertyChanged(nameof(IsEnabled));
+        OnPropertyChanged(nameof(IsSystemCleanupEnabled));
         RestartSampling();
     }
 

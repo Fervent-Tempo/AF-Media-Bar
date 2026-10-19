@@ -20,6 +20,11 @@ public sealed class ExperimentalViewModel : ObservableObject, IDisposable
         SettingsManager.SettingsChanged += OnSettingsChanged;
     }
 
+    public bool SystemMemoryCleanup
+    {
+        get => SettingsManager.Current.Experiments.SystemMemoryCleanup;
+        set => _configuration.SetExperiments(SettingsManager.Current.Experiments with { SystemMemoryCleanup = value });
+    }
     public bool MemoryTools
     {
         get => SettingsManager.Current.Experiments.MemoryTools;
@@ -61,6 +66,7 @@ public sealed class ExperimentalViewModel : ObservableObject, IDisposable
     {
         if (args.PropertyName is null or nameof(AppSettings.Experiments) or nameof(AppSettings.FloatingBar) or nameof(AppSettings.WindowMode))
         {
+            OnPropertyChanged(nameof(SystemMemoryCleanup));
             OnPropertyChanged(nameof(MemoryTools));
             OnPropertyChanged(nameof(NewAudioControl));
             OnPropertyChanged(nameof(VerticalTaskbar));

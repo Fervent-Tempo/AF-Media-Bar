@@ -7,6 +7,7 @@ namespace AFMediaBar.Classes.Settings;
 public sealed record ExperimentalSettings
 {
     public bool MemoryTools { get; init; }
+    public bool SystemMemoryCleanup { get; init; }
     public bool NewAudioControl { get; init; }
     public bool VerticalTaskbar { get; init; }
     public bool FloatingBar { get; init; }

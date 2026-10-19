@@ -3035,4 +3035,16 @@ Heap được quản lý {6} → {7} · {8} ms · {9}</value></data>
   <data name="Memory.Status.Cancelled" xml:space="preserve"><value>Đã hủy trước khi bắt đầu</value></data>
   <data name="Memory.Status.Unavailable" xml:space="preserve"><value>Không thể thu hồi lúc này</value></data>
   <data name="Memory.Status.Failed" xml:space="preserve"><value>Thu hồi thất bại; xem nhật ký</value></data>
+  <data name="Memory.System.Title" xml:space="preserve"><value>Dọn bộ nhớ hệ thống thủ công</value></data>
+  <data name="Memory.System.Description" xml:space="preserve"><value>Chỉ dọn trang chờ ưu tiên thấp, yêu cầu quyền quản trị khi bấm. Bộ đệm có thể cần tạo lại; hỗ trợ API và hiệu quả tùy phiên bản Windows.</value></data>
+  <data name="Memory.System.Clean" xml:space="preserve"><value>Dọn trang chờ ưu tiên thấp…</value></data>
+  <data name="Memory.System.Completed" xml:space="preserve"><value>Yêu cầu dọn dẹp đã hoàn tất</value></data>
+  <data name="Memory.System.PermissionDenied" xml:space="preserve"><value>Không đủ quyền; chưa dọn dẹp</value></data>
+  <data name="Memory.System.Unsupported" xml:space="preserve"><value>Môi trường này không hỗ trợ thao tác</value></data>
+  <data name="Memory.System.Failed" xml:space="preserve"><value>Dọn dẹp thất bại; hãy thử lại thủ công</value></data>
+  <data name="Memory.System.TimedOut" xml:space="preserve"><value>Hết thời gian chờ; chưa xác nhận kết quả. Không tự thử lại.</value></data>
+  <data name="Memory.System.InvalidRequest" xml:space="preserve"><value>Yêu cầu dọn dẹp không hợp lệ</value></data>
+  <data name="Memory.System.Cancelled" xml:space="preserve"><value>Đã hủy yêu cầu dọn dẹp</value></data>
+  <data name="Memory.System.Busy" xml:space="preserve"><value>Đang dọn bộ nhớ hệ thống</value></data>
+  <data name="Memory.System.Readings" xml:space="preserve"><value>Bộ nhớ hệ thống còn {0} → {1} (cũng chịu ảnh hưởng hoạt động khác; không phải số byte thu hồi chính xác)</value></data>
 </root>

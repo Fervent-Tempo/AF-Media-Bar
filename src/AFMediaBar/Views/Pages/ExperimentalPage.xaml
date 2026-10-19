@@ -19,6 +19,9 @@
                 <components:SettingsGroup GroupId="Memory.Title" Header="{DynamicResource Loc.Memory.Title}" Description="{DynamicResource Loc.Memory.Explanation}" Icon="{ui:SymbolIcon ArrowMinimize24}">
                     <StackPanel>
                         <components:SettingsRow Title="{DynamicResource Loc.Experimental.Enable}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.MemoryTools, Mode=TwoWay}" /></components:SettingsRow>
+                        <components:SettingsRow Title="{DynamicResource Loc.Memory.System.Title}" Description="{DynamicResource Loc.Memory.System.Description}" Visibility="{Binding ViewModel.MemoryTools, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.SystemMemoryCleanup, Mode=TwoWay}" />
+                        </components:SettingsRow>
                         <components:SettingsRow Title="{DynamicResource Loc.Memory.Open}" Visibility="{Binding ViewModel.MemoryTools, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                             <ui:Button Content="{DynamicResource Loc.Memory.Open}" Style="{StaticResource AfSettingsButtonStyle}" Tag="{x:Static services:SettingsPageKey.Application}" CommandParameter="Common.Group.Diagnostics" Click="OpenSettings_Click" />
                         </components:SettingsRow>

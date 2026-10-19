@@ -2997,4 +2997,16 @@
   <data name="Memory.Status.Cancelled" xml:space="preserve"><value>开始前已取消</value></data>
   <data name="Memory.Status.Unavailable" xml:space="preserve"><value>回收当前不可用</value></data>
   <data name="Memory.Status.Failed" xml:space="preserve"><value>回收失败，请查看日志</value></data>
+  <data name="Memory.System.Title" xml:space="preserve"><value>手动系统内存清理</value></data>
+  <data name="Memory.System.Description" xml:space="preserve"><value>仅清理低优先级待机页，点击时请求管理员权限。系统缓存可能需要重建；接口兼容性与效果因系统版本而异。</value></data>
+  <data name="Memory.System.Clean" xml:space="preserve"><value>清理低优先级待机页…</value></data>
+  <data name="Memory.System.Completed" xml:space="preserve"><value>系统已接受清理请求</value></data>
+  <data name="Memory.System.PermissionDenied" xml:space="preserve"><value>权限不足，未执行清理</value></data>
+  <data name="Memory.System.Unsupported" xml:space="preserve"><value>此环境不支持该清理操作</value></data>
+  <data name="Memory.System.Failed" xml:space="preserve"><value>清理失败，请稍后手动重试</value></data>
+  <data name="Memory.System.TimedOut" xml:space="preserve"><value>等待超时，结果未确认；不会自动重试</value></data>
+  <data name="Memory.System.InvalidRequest" xml:space="preserve"><value>清理请求无效</value></data>
+  <data name="Memory.System.Cancelled" xml:space="preserve"><value>已取消清理请求</value></data>
+  <data name="Memory.System.Busy" xml:space="preserve"><value>已有系统清理正在执行</value></data>
+  <data name="Memory.System.Readings" xml:space="preserve"><value>系统可用内存 {0} → {1}（含其他程序同期活动，不是精确释放量）</value></data>
 </root>

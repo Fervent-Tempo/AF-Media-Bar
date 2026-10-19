@@ -5,6 +5,7 @@
   "settings": {
     "experiments": {
       "memoryTools": "unreleased",
+      "systemMemoryCleanup": "unreleased",
       "floatingBar": "unreleased",
       "newAudioControl": "unreleased",
       "externalFullPanelHandle": "unreleased",

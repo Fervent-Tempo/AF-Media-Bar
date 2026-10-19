@@ -2997,4 +2997,16 @@ Managed heap {6} → {7} · {8} ms · {9}</value></data>
   <data name="Memory.Status.Cancelled" xml:space="preserve"><value>Cancelled before starting</value></data>
   <data name="Memory.Status.Unavailable" xml:space="preserve"><value>Reclaim is unavailable</value></data>
   <data name="Memory.Status.Failed" xml:space="preserve"><value>Reclaim failed; see the log</value></data>
+  <data name="Memory.System.Title" xml:space="preserve"><value>Manual system memory cleanup</value></data>
+  <data name="Memory.System.Description" xml:space="preserve"><value>Clears only low-priority standby pages and requests elevation on click. Caches may need rebuilding; API support and effects vary by Windows version.</value></data>
+  <data name="Memory.System.Clean" xml:space="preserve"><value>Clear low-priority standby pages…</value></data>
+  <data name="Memory.System.Completed" xml:space="preserve"><value>System cleanup request completed</value></data>
+  <data name="Memory.System.PermissionDenied" xml:space="preserve"><value>Permission denied; cleanup was not performed</value></data>
+  <data name="Memory.System.Unsupported" xml:space="preserve"><value>This cleanup operation is unsupported here</value></data>
+  <data name="Memory.System.Failed" xml:space="preserve"><value>Cleanup failed; retry manually later</value></data>
+  <data name="Memory.System.TimedOut" xml:space="preserve"><value>Timed out; result unconfirmed. No automatic retry.</value></data>
+  <data name="Memory.System.InvalidRequest" xml:space="preserve"><value>Invalid cleanup request</value></data>
+  <data name="Memory.System.Cancelled" xml:space="preserve"><value>Cleanup request cancelled</value></data>
+  <data name="Memory.System.Busy" xml:space="preserve"><value>System cleanup is already running</value></data>
+  <data name="Memory.System.Readings" xml:space="preserve"><value>System available memory {0} → {1} (also affected by other activity; not exact reclaimed bytes)</value></data>
 </root>

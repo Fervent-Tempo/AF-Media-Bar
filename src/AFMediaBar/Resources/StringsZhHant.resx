@@ -2997,4 +2997,16 @@
   <data name="Memory.Status.Cancelled" xml:space="preserve"><value>開始前已取消</value></data>
   <data name="Memory.Status.Unavailable" xml:space="preserve"><value>目前無法回收</value></data>
   <data name="Memory.Status.Failed" xml:space="preserve"><value>回收失敗，請查看記錄</value></data>
+  <data name="Memory.System.Title" xml:space="preserve"><value>手動系統記憶體清理</value></data>
+  <data name="Memory.System.Description" xml:space="preserve"><value>僅清理低優先順序待命頁面，點擊時要求系統管理員權限。系統快取可能需要重建；介面相容性與效果因系統版本而異。</value></data>
+  <data name="Memory.System.Clean" xml:space="preserve"><value>清理低優先順序待命頁面…</value></data>
+  <data name="Memory.System.Completed" xml:space="preserve"><value>系統已接受清理要求</value></data>
+  <data name="Memory.System.PermissionDenied" xml:space="preserve"><value>權限不足，未執行清理</value></data>
+  <data name="Memory.System.Unsupported" xml:space="preserve"><value>此環境不支援此清理操作</value></data>
+  <data name="Memory.System.Failed" xml:space="preserve"><value>清理失敗，請稍後手動重試</value></data>
+  <data name="Memory.System.TimedOut" xml:space="preserve"><value>等候逾時，結果未確認；不會自動重試</value></data>
+  <data name="Memory.System.InvalidRequest" xml:space="preserve"><value>清理要求無效</value></data>
+  <data name="Memory.System.Cancelled" xml:space="preserve"><value>已取消清理要求</value></data>
+  <data name="Memory.System.Busy" xml:space="preserve"><value>已有系統清理正在執行</value></data>
+  <data name="Memory.System.Readings" xml:space="preserve"><value>系統可用記憶體 {0} → {1}（包含其他程式同期活動，並非精確釋放量）</value></data>
 </root>

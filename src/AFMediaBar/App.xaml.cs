@@ -75,7 +75,10 @@ namespace AFMediaBar
         // .NET Generic Host 提供依赖注入、配置、日志等服务。
         // The .NET Generic Host provides dependency injection, configuration, logging, and other services.
         // https://docs.microsoft.com/dotnet/core/extensions/generic-host
-        private static readonly IHost _host = Host
+        private bool _isMemoryCleanupHelper;
+        private static readonly Lazy<IHost> _hostFactory = new(() => CreateHost());
+        private static IHost _host => _hostFactory.Value;
+        private static IHost CreateHost() => Host
             .CreateDefaultBuilder()
             .ConfigureAppConfiguration(c => { c.SetBasePath(Path.GetDirectoryName(AppContext.BaseDirectory)); })
             .ConfigureServices((context, services) =>
@@ -101,6 +104,7 @@ namespace AFMediaBar
                 services.AddSingleton<PowerStateMonitor>();
                 services.AddSingleton<ProcessMemoryTrimmer>();
                 services.AddSingleton<MemoryToolsService>();
+                services.AddSingleton<SystemMemoryCleanupService>();
                 services.AddSingleton<MemoryToolsViewModel>();
                 services.AddSingleton<MemoryPruneCoordinator>();
 
@@ -343,6 +347,12 @@ namespace AFMediaBar
         /// </summary>
         private async void OnStartup(object sender, StartupEventArgs e)
         {
+            if (SystemMemoryCleanupService.IsCleanupRequest(e.Args))
+            {
+                _isMemoryCleanupHelper = true;
+                Shutdown(await SystemMemoryCleanupService.ExecuteHelperAsync(e.Args));
+                return;
+            }
             _exitCoordinator.ExitRequested += OnExitRequested;
             try
             {
@@ -588,6 +598,7 @@ namespace AFMediaBar
         /// </summary>
         private void OnExit(object sender, ExitEventArgs e)
         {
+            if (_isMemoryCleanupHelper) return;
             // Exit can be requested by both a ContextMenu command and MainWindow.OnClosed.
             // Process the cleanup boundary only once so a re-entrant Shutdown call cannot
             // interrupt disposal halfway through.

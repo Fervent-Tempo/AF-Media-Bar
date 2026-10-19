@@ -317,6 +317,11 @@
                                     <ui:Button Content="{DynamicResource Loc.Memory.Deep}" Command="{Binding ViewModel.MemoryTools.DeepCommand}" Style="{StaticResource AfSettingsButtonStyle}" Margin="8,0,0,0" />
                                 </StackPanel>
                                 <TextBlock Text="{Binding ViewModel.MemoryTools.ResultText}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" />
+                                <StackPanel Visibility="{Binding ViewModel.MemoryTools.IsSystemCleanupEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}" Margin="0,12,0,0">
+                                    <TextBlock Text="{DynamicResource Loc.Memory.System.Description}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" />
+                                    <ui:Button Content="{DynamicResource Loc.Memory.System.Clean}" Command="{Binding ViewModel.MemoryTools.CleanSystemCommand}" IsEnabled="{Binding ViewModel.MemoryTools.CanRun}" Style="{StaticResource AfSettingsButtonStyle}" HorizontalAlignment="Left" Margin="0,8,0,8" />
+                                    <TextBlock Text="{Binding ViewModel.MemoryTools.SystemResultText}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" />
+                                </StackPanel>
                                 <TextBlock Text="{DynamicResource Loc.Memory.Explanation}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,8,0,0" />
                             </StackPanel>
                         </StackPanel>
