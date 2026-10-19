@@ -66,6 +66,7 @@ public sealed class AppSettings : INotifyPropertyChanged
     private SmtcSourceFilterSettings _smtcSourceFilter = SmtcSourceFilterSettings.Default;
     private MediaSelectionSettings _mediaSelection = MediaSelectionSettings.Default;
     private QuickLaunchSettings _quickLaunch = QuickLaunchSettings.Default;
+    private ApplicationVolumeMemorySettings _applicationVolumeMemory = ApplicationVolumeMemorySettings.Default;
     private SpectrumComponentSettings _spectrumComponent = SpectrumComponentSettings.Default;
     private BluetoothBatteryWidgetSettings _bluetoothBatteryWidget = new();
     private SystemMemoryOptimizationSettings _systemMemoryOptimization = new();
@@ -178,6 +179,7 @@ public sealed class AppSettings : INotifyPropertyChanged
     public SmtcSourceFilterSettings SmtcSourceFilter { get => _smtcSourceFilter; set => Set(ref _smtcSourceFilter, value.Normalize()); }
     public MediaSelectionSettings MediaSelection { get => _mediaSelection; set => Set(ref _mediaSelection, (value ?? MediaSelectionSettings.Default).Normalize()); }
     public QuickLaunchSettings QuickLaunch { get => _quickLaunch; set => Set(ref _quickLaunch, value.Normalize()); }
+    public ApplicationVolumeMemorySettings ApplicationVolumeMemory { get => _applicationVolumeMemory; set => Set(ref _applicationVolumeMemory, (value ?? ApplicationVolumeMemorySettings.Default).Normalize()); }
     public SpectrumComponentSettings SpectrumComponent { get => _spectrumComponent; set => Set(ref _spectrumComponent, value.Normalize()); }
     public BluetoothBatteryWidgetSettings BluetoothBatteryWidget { get => _bluetoothBatteryWidget; set => Set(ref _bluetoothBatteryWidget, (value ?? new()).Normalize()); }
     public SystemMemoryOptimizationSettings SystemMemoryOptimization { get => _systemMemoryOptimization; set => Set(ref _systemMemoryOptimization, (value ?? new()).Normalize()); }
@@ -250,6 +252,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         result.SmtcSourceFilter = result.SmtcSourceFilter.Normalize();
         result.MediaSelection = result.MediaSelection.Normalize();
         result.QuickLaunch = result.QuickLaunch.Normalize();
+        result.ApplicationVolumeMemory = result.ApplicationVolumeMemory.Normalize();
         result.SpectrumComponent = result.SpectrumComponent.Normalize();
         result.BluetoothBatteryWidget = result.BluetoothBatteryWidget.Normalize();
         result.SystemMemoryOptimization = result.SystemMemoryOptimization.Normalize();
@@ -326,6 +329,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         SmtcSourceFilter = SmtcSourceFilter,
         MediaSelection = MediaSelection,
         QuickLaunch = QuickLaunch,
+        ApplicationVolumeMemory = ApplicationVolumeMemory.Normalize(),
         SpectrumComponent = SpectrumComponent,
         BluetoothBatteryWidget = BluetoothBatteryWidget,
         SystemMemoryOptimization = SystemMemoryOptimization,

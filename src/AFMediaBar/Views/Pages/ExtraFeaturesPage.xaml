@@ -171,6 +171,27 @@
                     </StackPanel>
                 </components:SettingsGroup>
 
+                <components:SettingsGroup GroupId="Audio.VolumeMemory.Title" Header="{DynamicResource Loc.Audio.VolumeMemory.Title}" Icon="{ui:SymbolIcon Speaker224}">
+                    <StackPanel>
+                        <components:SettingsRow Title="{DynamicResource Loc.Audio.VolumeMemory.Title}" Description="{DynamicResource Loc.Audio.VolumeMemory.Description}">
+                            <ui:Button Click="BrowseVolumeMemory_Click" Content="{DynamicResource Loc.Audio.VolumeMemory.Add}" Style="{StaticResource AfSettingsButtonStyle}" />
+                        </components:SettingsRow>
+                        <ItemsControl ItemsSource="{Binding ViewModel.VolumeMemoryEntries}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <components:SettingsRow Title="{Binding Entry.DisplayName}" Description="{Binding Entry.ExecutablePath}" IsNested="True">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding LevelText}" Style="{StaticResource AfSettingsRowValueStyle}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                                            <ui:Button Command="{Binding DataContext.ViewModel.RemoveVolumeMemoryCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding Entry}"
+                                                Icon="{ui:SymbolIcon Delete24}" Style="{StaticResource AfSettingsIconButtonStyle}" ToolTip="{DynamicResource Loc.Audio.VolumeMemory.Remove}" />
+                                        </StackPanel>
+                                    </components:SettingsRow>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </components:SettingsGroup>
+
                 <components:SettingsGroup GroupId="Common.Group.TrackChangeNotification" Header="{DynamicResource Loc.Common.Group.TrackChangeNotification}" Icon="{ui:SymbolIcon MusicNote220}">
                     <StackPanel>
                         <components:SettingsRow

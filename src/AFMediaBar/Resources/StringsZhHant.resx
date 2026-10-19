@@ -3128,4 +3128,10 @@
   <data name="Memory.Authorization.Revoked" xml:space="preserve"><value>已撤銷本安裝的系統最佳化授權</value></data>
   <data name="Memory.Result.Close" xml:space="preserve"><value>關閉</value></data>
   <data name="Memory.Status.Completed" xml:space="preserve"><value>回收已完成</value></data>
+  <data name="Audio.VolumeMemory.Title" xml:space="preserve"><value>應用程式音量記憶</value></data>
+  <data name="Audio.VolumeMemory.Description" xml:space="preserve"><value>加入程式後記住目前的工作階段音量，新工作階段出現時還原一次。之後在系統混音器或媒體列中的調整會更新記憶；不改變靜音狀態。</value></data>
+  <data name="Audio.VolumeMemory.Add" xml:space="preserve"><value>加入程式</value></data>
+  <data name="Audio.VolumeMemory.Filter" xml:space="preserve"><value>應用程式 (*.exe)|*.exe</value></data>
+  <data name="Audio.VolumeMemory.Waiting" xml:space="preserve"><value>等待應用程式播放</value></data>
+  <data name="Audio.VolumeMemory.Remove" xml:space="preserve"><value>移除音量記憶</value></data>
 </root>

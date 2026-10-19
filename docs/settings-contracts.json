@@ -241,6 +241,10 @@
       "skippedVersion": "v1.2.0"
     },
     "windowMode": "v1.2.0",
+    "applicationVolumeMemory": {
+      "$release": "unreleased",
+      "entries": { "$release": "unreleased", "$items": { "executablePath": "unreleased", "volumePercent": "unreleased" } }
+    },
     "bluetoothBatteryWidget": {
       "$release": "unreleased", "enabled": "unreleased", "deviceId": "unreleased", "lastKnownName": "unreleased",
       "displayMode": "unreleased", "notifications": "unreleased", "lowThreshold": "unreleased"

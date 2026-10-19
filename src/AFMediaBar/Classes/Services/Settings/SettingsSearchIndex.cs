@@ -221,6 +221,8 @@ public static class SettingsSearchIndex
             ["通知", "notification", "切歌", "曲目", "track", "位置", "锚点", "停留", "时长", "duration", "全屏", "显示器", "停留时间", "目标显示器"]),
 
         Create(SettingsPageKey.DeviceManagement, "Common.InputDevice", "Audio.Settings.InputList", language, ["输入", "麦克风", "input", "microphone"]),
+        Create(SettingsPageKey.MediaAndNotifications, "Audio.VolumeMemory.Title", "Audio.VolumeMemory.Description", language,
+            ["应用音量", "音量记忆", "重启音量", "音量恢复", "合成器", "nons", "volume", "remember", "restore", "mixer"]),
         Create(SettingsPageKey.DeviceManagement, "Device.Hotkeys", "Device.Cycle.Hint", language, ["设备快捷键", "循环", "别名", "排序", "拖动", "hotkey", "cycle", "alias", "order"]),
         Create(SettingsPageKey.DeviceManagement, "Battery.Title", "Battery.SelectHint", language, ["蓝牙", "藍牙", "电量", "電量", "耳机", "鼠标", "键盘", "battery", "bluetooth", "headphones", "mouse", "keyboard", "低电量"]),
         Create(SettingsPageKey.Interaction, "Interaction.AudioGestures", "Audio.Settings.AdvancedDescription", language, ["音频手势", "设备点击", "设备滚轮", "audio gestures", "click", "wheel"]),

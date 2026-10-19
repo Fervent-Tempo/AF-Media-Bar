@@ -3128,4 +3128,10 @@ Source: {2}</value></data>
   <data name="Memory.Authorization.Revoked" xml:space="preserve"><value>System optimization authorization for this installation was revoked</value></data>
   <data name="Memory.Result.Close" xml:space="preserve"><value>Close</value></data>
   <data name="Memory.Status.Completed" xml:space="preserve"><value>Reclaim completed</value></data>
+  <data name="Audio.VolumeMemory.Title" xml:space="preserve"><value>Application volume memory</value></data>
+  <data name="Audio.VolumeMemory.Description" xml:space="preserve"><value>Add an application to remember its current session volume and restore it once for each new session. Later adjustments in the system mixer or media bar update the remembered level. Mute state is preserved.</value></data>
+  <data name="Audio.VolumeMemory.Add" xml:space="preserve"><value>Add application</value></data>
+  <data name="Audio.VolumeMemory.Filter" xml:space="preserve"><value>Applications (*.exe)|*.exe</value></data>
+  <data name="Audio.VolumeMemory.Waiting" xml:space="preserve"><value>Waiting for playback</value></data>
+  <data name="Audio.VolumeMemory.Remove" xml:space="preserve"><value>Remove volume memory</value></data>
 </root>

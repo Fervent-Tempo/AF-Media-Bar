@@ -3166,4 +3166,10 @@ Nguồn: {2}</value></data>
   <data name="Memory.Authorization.Revoked" xml:space="preserve"><value>Đã thu hồi quyền tối ưu hệ thống của bản cài đặt này</value></data>
   <data name="Memory.Result.Close" xml:space="preserve"><value>Đóng</value></data>
   <data name="Memory.Status.Completed" xml:space="preserve"><value>Đã hoàn tất thu hồi bộ nhớ</value></data>
+  <data name="Audio.VolumeMemory.Title" xml:space="preserve"><value>Ghi nhớ âm lượng ứng dụng</value></data>
+  <data name="Audio.VolumeMemory.Description" xml:space="preserve"><value>Thêm ứng dụng để ghi nhớ âm lượng phiên hiện tại và khôi phục một lần cho mỗi phiên mới. Các điều chỉnh sau đó trong bộ trộn hệ thống hoặc thanh media sẽ cập nhật mức đã nhớ. Giữ nguyên trạng thái tắt tiếng.</value></data>
+  <data name="Audio.VolumeMemory.Add" xml:space="preserve"><value>Thêm ứng dụng</value></data>
+  <data name="Audio.VolumeMemory.Filter" xml:space="preserve"><value>Ứng dụng (*.exe)|*.exe</value></data>
+  <data name="Audio.VolumeMemory.Waiting" xml:space="preserve"><value>Đang chờ phát</value></data>
+  <data name="Audio.VolumeMemory.Remove" xml:space="preserve"><value>Xóa mức âm lượng đã nhớ</value></data>
 </root>

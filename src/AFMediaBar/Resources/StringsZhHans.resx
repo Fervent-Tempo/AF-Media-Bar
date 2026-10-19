@@ -3128,4 +3128,10 @@
   <data name="Memory.Authorization.Revoked" xml:space="preserve"><value>已撤销本安装的系统优化授权</value></data>
   <data name="Memory.Result.Close" xml:space="preserve"><value>关闭</value></data>
   <data name="Memory.Status.Completed" xml:space="preserve"><value>回收已完成</value></data>
+  <data name="Audio.VolumeMemory.Title" xml:space="preserve"><value>应用音量记忆</value></data>
+  <data name="Audio.VolumeMemory.Description" xml:space="preserve"><value>添加程序后记住它的当前会话音量，新会话出现时恢复一次。之后在系统合成器或媒体栏中的调整会更新记忆；不改变静音状态。</value></data>
+  <data name="Audio.VolumeMemory.Add" xml:space="preserve"><value>添加程序</value></data>
+  <data name="Audio.VolumeMemory.Filter" xml:space="preserve"><value>应用程序 (*.exe)|*.exe</value></data>
+  <data name="Audio.VolumeMemory.Waiting" xml:space="preserve"><value>等待应用播放</value></data>
+  <data name="Audio.VolumeMemory.Remove" xml:space="preserve"><value>移除音量记忆</value></data>
 </root>
