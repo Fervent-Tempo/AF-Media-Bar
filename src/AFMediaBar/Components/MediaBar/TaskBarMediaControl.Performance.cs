@@ -19,11 +19,13 @@ public partial class TaskBarMediaControl
     private string? _performanceFont;
     private bool _performanceVertical;
     private bool _performanceCompact;
+    private double PreferredPerformanceHeight => !_performanceCompact && _performanceMetrics.Contains(MetricKind.SystemNetwork) ? 26 : 24;
 
     private bool ConfigurePerformance()
     {
         var settings = PresentationSettings.PerformanceComponent.Normalize();
-        var compact = UsesAdaptiveTaskbarText && !_isVertical && MainBorder.Height < 28;
+        var compact = IsBarPresentation && !_isVertical && MainBorder.Height <
+            26 + RestWidgetVerticalInset(TaskbarPerformanceHoverSurface) + _textBudget.PaddingDip * 2;
         var metrics = settings.GetOrderedMetrics();
         var font = TextElement.GetFontFamily(TaskbarPerformanceItems).Source;
         if (_performanceCells.Count > 0 && _performanceSettings.DisplayMode == settings.DisplayMode &&
@@ -161,14 +163,13 @@ public partial class TaskBarMediaControl
     {
         if (_isVertical)
         {
-            var length = _performanceSettings.DisplayMode == PerformanceDisplayMode.Parallel
-                ? _performanceCells.Count * 32d + Math.Max(0, _performanceCells.Count - 1) * 4 + 4
-                : 36;
+            var count = _performanceSettings.DisplayMode == PerformanceDisplayMode.Parallel ? Math.Max(1, _performanceCells.Count) : 1;
+            var length = Math.Ceiling(count * 32d + (count - 1) * 4 + 2 + RestWidgetVerticalInset(TaskbarPerformanceHoverSurface));
             var changedLength = Math.Abs(length - _verticalPerformanceLength) > 0.1;
             _verticalPerformanceLength = length;
             return changedLength;
         }
-        TaskbarPerformanceSurface.Height = 24;
+        TaskbarPerformanceSurface.Height = PreferredPerformanceHeight;
         TaskbarPerformanceSurface.Padding = _performanceCompact ? new Thickness(4, 0, 4, 0) : new Thickness(8, 2, 8, 2);
         var width = _performanceCells.Count == 0 ? 74 : _performanceSettings.DisplayMode == PerformanceDisplayMode.Parallel
             ? _performanceCells.Values.Sum(cell => cell.Width) + 8 * (_performanceCells.Count - 1) + 16

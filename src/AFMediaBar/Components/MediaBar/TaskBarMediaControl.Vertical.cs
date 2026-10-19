@@ -107,7 +107,8 @@ public partial class TaskBarMediaControl
         TaskbarRestComponent.Spectrum => _verticalSpectrumLength,
         TaskbarRestComponent.Performance => _verticalPerformanceLength,
         TaskbarRestComponent.BluetoothBattery => BatteryVerticalLength,
-        TaskbarRestComponent.OutputDevice or TaskbarRestComponent.InputDevice or TaskbarRestComponent.Volume => metrics.ButtonSize + 2,
+        TaskbarRestComponent.OutputDevice or TaskbarRestComponent.InputDevice or TaskbarRestComponent.Volume =>
+            VerticalAudioButtonSize(metrics) + RestWidgetVerticalInset(TaskbarOutputDeviceHoverSurface),
         _ => 0
     };
 
@@ -142,7 +143,7 @@ public partial class TaskBarMediaControl
 
     private void ApplyVerticalSectionGeometry(double primaryLength)
     {
-        _verticalSpectrumLength = TaskbarSpectrum.Width + 4;
+        _verticalSpectrumLength = TaskbarSpectrum.Width + RestWidgetVerticalInset(TaskbarSpectrumHoverSurface);
         var width = Math.Max(1, MainBorder.Width);
         var innerWidth = Math.Max(1, width - 4);
         var experience = ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize();
@@ -192,11 +193,12 @@ public partial class TaskBarMediaControl
         SongArtist.Width = innerWidth;
         SongArtistContainer.Visibility = _isSmallTaskbar || string.IsNullOrEmpty(_actualArtist) ? Visibility.Collapsed : Visibility.Visible;
         SongArtistContainer.Margin = new Thickness(0, 2, 0, 0);
-        TaskbarPerformanceSurface.Width = innerWidth;
+        TaskbarPerformanceSurface.Width = Math.Max(1, innerWidth - TaskbarPerformanceHoverSurface.Padding.Left -
+            TaskbarPerformanceHoverSurface.Padding.Right - TaskbarPerformanceHoverSurface.BorderThickness.Left - TaskbarPerformanceHoverSurface.BorderThickness.Right);
         TaskbarPerformanceSurface.Padding = new Thickness(1);
-        TaskbarPerformanceSurface.Height = Math.Max(1, _verticalPerformanceLength - 2);
-        foreach (var cell in _performanceCells.Values) cell.Width = Math.Max(1, innerWidth - 2);
-        var buttonSize = Math.Min(innerWidth, Math.Max(24, TaskbarDensityMetrics.From(experience.Density).ButtonSize));
+        TaskbarPerformanceSurface.Height = Math.Max(1, _verticalPerformanceLength - RestWidgetVerticalInset(TaskbarPerformanceHoverSurface));
+        foreach (var cell in _performanceCells.Values) cell.Width = Math.Max(1, TaskbarPerformanceSurface.Width - 2);
+        var buttonSize = VerticalAudioButtonSize(TaskbarDensityMetrics.From(experience.Density));
         foreach (var surface in new[] { TaskbarOutputDeviceSurface, TaskbarInputDeviceSurface, TaskbarVolumeSurface })
         {
             surface.Width = buttonSize;
@@ -232,6 +234,10 @@ public partial class TaskBarMediaControl
         }
         _lyrics.ApplyWebLyricsStyle();
     }
+
+    private double VerticalAudioButtonSize(TaskbarDensityMetrics metrics) => Math.Min(Math.Max(1, MainBorder.Width - 4 -
+        TaskbarOutputDeviceHoverSurface.Padding.Left - TaskbarOutputDeviceHoverSurface.Padding.Right -
+        TaskbarOutputDeviceHoverSurface.BorderThickness.Left - TaskbarOutputDeviceHoverSurface.BorderThickness.Right), Math.Max(24, metrics.ButtonSize));
 
     private double VerticalHoverMinimumLength()
     {

@@ -1299,7 +1299,7 @@ namespace AFMediaBar.Components
             PlaceRestWidget(TaskbarOutputDeviceHoverSurface, layout.Find(TaskbarRestComponent.OutputDevice), hoverHeight);
             PlaceRestWidget(TaskbarInputDeviceHoverSurface, layout.Find(TaskbarRestComponent.InputDevice), hoverHeight);
             PlaceRestWidget(TaskbarVolumeHoverSurface, layout.Find(TaskbarRestComponent.Volume), hoverHeight);
-            TaskbarPerformanceSurface.Height = Math.Min(24, Math.Max(1, hoverHeight - RestWidgetVerticalInset(TaskbarPerformanceHoverSurface)));
+            TaskbarPerformanceSurface.Height = Math.Min(PreferredPerformanceHeight, Math.Max(1, hoverHeight - RestWidgetVerticalInset(TaskbarPerformanceHoverSurface)));
             foreach (var surface in new[] { TaskbarOutputDeviceSurface, TaskbarInputDeviceSurface, TaskbarVolumeSurface })
                 surface.Height = Math.Min(metrics.ButtonSize, Math.Max(1, hoverHeight - RestWidgetVerticalInset(TaskbarOutputDeviceHoverSurface)));
 

@@ -130,6 +130,13 @@ internal static class SmallTaskbarPresentationChecks
                 var actual = orientation == LayoutOrientation.Horizontal ? center.Y : center.X;
                 var expected = (orientation == LayoutOrientation.Horizontal ? border.ActualHeight : border.ActualWidth) / 2;
                 Assert.AreEqual(expected, actual, .75, $"{mode}/{orientation}/{cross}: {name} must share the cross-axis center.");
+                if (element.Parent is Border parent && name.StartsWith("Taskbar", StringComparison.Ordinal))
+                {
+                    var bounds = element.TransformToAncestor(parent).TransformBounds(new Rect(new Size(element.ActualWidth, element.ActualHeight)));
+                    Assert.IsTrue(bounds.Left >= -.75 && bounds.Top >= -.75 &&
+                        bounds.Right <= parent.ActualWidth + .75 && bounds.Bottom <= parent.ActualHeight + .75,
+                        $"{mode}/{orientation}/{cross}: {name} must fit its hover surface.");
+                }
             }
         }
     }
