@@ -1228,6 +1228,7 @@ namespace AFMediaBar.Components
             }
 
             var experience = ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize();
+            var metrics = TaskbarDensityMetrics.From(experience.Density);
             var layout = ResolveRestLayout(experience, primaryLength);
             _isRestLayerEmpty = layout.IsEmpty;
             // 布局本身表达了谁可见；这里统一落地显隐，避免设置与尺寸路径的判据漂移。
