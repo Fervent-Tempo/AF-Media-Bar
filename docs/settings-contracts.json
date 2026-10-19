@@ -4,6 +4,7 @@
   "settingsSchemaVersion": 2,
   "settings": {
     "experiments": {
+      "devicePersonalization": "unreleased",
       "memoryTools": "unreleased",
       "systemMemoryCleanup": "unreleased",
       "floatingBar": "unreleased",
@@ -239,6 +240,7 @@
     },
     "windowMode": "v1.2.0",
     "audioDevices": {
+      "preferences": { "$release": "unreleased", "$items": { "direction": "unreleased", "endpointId": "unreleased", "lastKnownName": "unreleased", "alias": "unreleased", "isFavorite": "unreleased" } },
       "$release": "unreleased",
       "outputBlacklist": {
         "$release": "unreleased",
@@ -259,6 +261,10 @@
     }
   },
   "enums": {
+    "AudioDeviceDirection": {
+      "paths": ["settings.audioDevices.preferences[].direction"],
+      "members": { "Output": { "value": 0, "release": "unreleased" }, "Input": { "value": 1, "release": "unreleased" } }
+    },
     "FullPanelHandleTrigger": {
       "paths": ["settings.experiments.externalFullPanelHandleTrigger"],
       "members": {

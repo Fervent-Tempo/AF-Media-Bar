@@ -14,6 +14,9 @@ public sealed record AudioDeviceSettings
 {
     public IReadOnlyList<AudioDeviceExclusion> OutputBlacklist { get; init; } = [];
     public IReadOnlyList<AudioDeviceExclusion> InputBlacklist { get; init; } = [];
+    public IReadOnlyList<AudioDevicePreference> Preferences { get; init; } = [];
+    public AudioDevicePreference? FindPreference(AudioDeviceDirection direction, string id) => Preferences.FirstOrDefault(entry =>
+        entry.Direction == direction && entry.EndpointId.Equals(id, StringComparison.OrdinalIgnoreCase));
     public bool SwitchOutputCommunications { get; init; }
     public bool SwitchInputCommunications { get; init; }
     public static AudioDeviceSettings Default { get; } = new();
@@ -24,6 +27,9 @@ public sealed record AudioDeviceSettings
 
     public AudioDeviceSettings Normalize() => this with
     {
+        Preferences = (Preferences ?? []).Where(entry => entry is not null && Enum.IsDefined(entry.Direction) && !string.IsNullOrWhiteSpace(entry.EndpointId))
+            .Select(entry => entry with { EndpointId = entry.EndpointId.Trim(), LastKnownName = entry.LastKnownName ?? string.Empty,
+                Alias = (entry.Alias ?? string.Empty).Trim() }).DistinctBy(entry => $"{entry.Direction}:{entry.EndpointId}", StringComparer.OrdinalIgnoreCase).ToArray(),
         OutputBlacklist = NormalizeList(OutputBlacklist),
         InputBlacklist = NormalizeList(InputBlacklist)
     };

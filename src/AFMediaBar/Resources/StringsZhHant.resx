@@ -3009,4 +3009,13 @@
   <data name="Memory.System.Cancelled" xml:space="preserve"><value>已取消清理要求</value></data>
   <data name="Memory.System.Busy" xml:space="preserve"><value>已有系統清理正在執行</value></data>
   <data name="Memory.System.Readings" xml:space="preserve"><value>系統可用記憶體 {0} → {1}（包含其他程式同期活動，並非精確釋放量）</value></data>
+  <data name="Device.Personalization" xml:space="preserve"><value>裝置別名、收藏與排序</value></data>
+  <data name="Device.PersonalizationHint" xml:space="preserve"><value>僅影響 AF 顯示；收藏置頂，其他裝置仍可選擇。</value></data>
+  <data name="Device.Alias" xml:space="preserve"><value>AF 顯示名稱（留空使用系統名稱）</value></data>
+  <data name="Device.Favorite" xml:space="preserve"><value>收藏</value></data>
+  <data name="Device.MoveUp" xml:space="preserve"><value>上移</value></data>
+  <data name="Device.MoveDown" xml:space="preserve"><value>下移</value></data>
+  <data name="Device.Forget" xml:space="preserve"><value>刪除失聯設定</value></data>
+  <data name="Device.Rebind" xml:space="preserve"><value>重新關聯</value></data>
+  <data name="Device.RebindHint" xml:space="preserve"><value>手動選擇替代端點，將此設定轉移並取代目標端點的 AF 設定。不會依名稱自動關聯。</value></data>
 </root>

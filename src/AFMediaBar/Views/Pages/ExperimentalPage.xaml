@@ -53,6 +53,9 @@
                         </components:SettingsRow>
                         <TextBlock Text="{DynamicResource Loc.Experimental.Audio.RoutingPreserved}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,8,0,0" />
                         <StackPanel Visibility="{Binding ViewModel.NewAudioControl, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                            <components:SettingsRow Title="{DynamicResource Loc.Device.Personalization}" Description="{DynamicResource Loc.Device.PersonalizationHint}">
+                                <ui:ToggleSwitch IsChecked="{Binding ViewModel.DevicePersonalization, Mode=TwoWay}" />
+                            </components:SettingsRow>
                             <TextBlock Text="{DynamicResource Loc.Experimental.Audio.RoutesNotice}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,8,0,12" />
                             <components:SettingsRow Title="{DynamicResource Loc.Audio.Settings.Title}"
                                 Description="{DynamicResource Loc.Audio.Settings.Description}" Icon="{ui:SymbolIcon Speaker224}">

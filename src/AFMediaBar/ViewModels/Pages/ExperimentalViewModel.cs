@@ -30,6 +30,11 @@ public sealed class ExperimentalViewModel : ObservableObject, IDisposable
         get => SettingsManager.Current.Experiments.MemoryTools;
         set => _configuration.SetExperiments(SettingsManager.Current.Experiments with { MemoryTools = value });
     }
+    public bool DevicePersonalization
+    {
+        get => SettingsManager.Current.Experiments.DevicePersonalization;
+        set => _configuration.SetExperiments(SettingsManager.Current.Experiments with { DevicePersonalization = value });
+    }
     public bool NewAudioControl
     {
         get => SettingsManager.Current.Experiments.NewAudioControl;
@@ -68,6 +73,7 @@ public sealed class ExperimentalViewModel : ObservableObject, IDisposable
         {
             OnPropertyChanged(nameof(SystemMemoryCleanup));
             OnPropertyChanged(nameof(MemoryTools));
+            OnPropertyChanged(nameof(DevicePersonalization));
             OnPropertyChanged(nameof(NewAudioControl));
             OnPropertyChanged(nameof(VerticalTaskbar));
             OnPropertyChanged(nameof(FloatingBar));

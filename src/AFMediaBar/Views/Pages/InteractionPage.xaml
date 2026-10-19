@@ -19,26 +19,32 @@
             </Style.Triggers>
         </Style>
         <DataTemplate x:Key="AudioDevicePermissionTemplate">
-            <Border Padding="16,12" BorderThickness="0,1,0,0"
-                    BorderBrush="{DynamicResource AfSettingsBorderBrush}">
-                <Grid>
-                    <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                    <StackPanel VerticalAlignment="Center" Margin="0,0,20,0">
-                        <TextBlock Text="{Binding DisplayName}" TextWrapping="Wrap" FontSize="14" />
-                        <TextBlock FontSize="12" Margin="0,4,0,0"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                            <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Text" Value="{DynamicResource Loc.Audio.Device.NotPresent}" /><Style.Triggers>
-                                <DataTrigger Binding="{Binding Availability}" Value="{x:Static models:AudioDeviceAvailability.Active}"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
-                                <DataTrigger Binding="{Binding Availability}" Value="{x:Static models:AudioDeviceAvailability.Disabled}"><Setter Property="Text" Value="{DynamicResource Loc.Audio.Device.SystemDisabled}" /></DataTrigger>
-                                <DataTrigger Binding="{Binding Availability}" Value="{x:Static models:AudioDeviceAvailability.Unplugged}"><Setter Property="Text" Value="{DynamicResource Loc.Audio.Device.Unplugged}" /></DataTrigger>
-                            </Style.Triggers></Style></TextBlock.Style>
-                        </TextBlock>
+            <Border Padding="16,12" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource AfSettingsBorderBrush}">
+                <StackPanel>
+                    <Grid><Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                        <StackPanel><TextBlock Text="{Binding DisplayName}" TextWrapping="Wrap" FontSize="14" />
+                            <TextBlock Text="{Binding StateText}" Style="{StaticResource AfSettingsHintTextStyle}" />
+                        </StackPanel>
+                        <CheckBox Grid.Column="1" Content="{DynamicResource Loc.Audio.Settings.Allow}" AutomationProperties.Name="{Binding DisplayName}" IsChecked="{Binding IsAllowed, Mode=TwoWay}" />
+                    </Grid>
+                    <StackPanel Visibility="{Binding IsPersonalizationEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}" Margin="0,8,0,0">
+                        <TextBlock Text="{DynamicResource Loc.Device.Alias}" Style="{StaticResource AfSettingsHintTextStyle}" />
+                        <TextBox Text="{Binding Alias, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="{DynamicResource Loc.Device.Alias}" MaxLength="120" />
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <CheckBox Content="{DynamicResource Loc.Device.Favorite}" IsChecked="{Binding IsFavorite, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                            <ui:Button Content="{DynamicResource Loc.Device.MoveUp}" Command="{Binding MoveUpCommand}" Style="{StaticResource AfSettingsButtonStyle}" />
+                            <ui:Button Content="{DynamicResource Loc.Device.MoveDown}" Command="{Binding MoveDownCommand}" Style="{StaticResource AfSettingsButtonStyle}" Margin="8,0,0,0" />
+                        </StackPanel>
+                        <StackPanel Visibility="{Binding IsOffline, Converter={StaticResource AfBooleanToVisibilityConverter}}" Margin="0,8,0,0">
+                            <TextBlock Text="{DynamicResource Loc.Device.RebindHint}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" />
+                            <ComboBox ItemsSource="{Binding Replacements}" SelectedItem="{Binding Replacement}" DisplayMemberPath="DisplayName" AutomationProperties.Name="{DynamicResource Loc.Device.Rebind}" />
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <ui:Button Content="{DynamicResource Loc.Device.Rebind}" Command="{Binding RebindCommand}" Style="{StaticResource AfSettingsButtonStyle}" />
+                                <ui:Button Content="{DynamicResource Loc.Device.Forget}" Command="{Binding ForgetCommand}" Style="{StaticResource AfSettingsButtonStyle}" Margin="8,0,0,0" />
+                            </StackPanel>
+                        </StackPanel>
                     </StackPanel>
-                    <CheckBox Grid.Column="1" VerticalAlignment="Center"
-                              Content="{DynamicResource Loc.Audio.Settings.Allow}"
-                              AutomationProperties.Name="{Binding DisplayName}"
-                              IsChecked="{Binding IsAllowed, Mode=TwoWay}" />
-                </Grid>
+                </StackPanel>
             </Border>
         </DataTemplate>
     </Page.Resources>

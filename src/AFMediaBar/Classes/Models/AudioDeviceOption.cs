@@ -10,6 +10,8 @@ public enum AudioDeviceAvailability { Active, Disabled, Unplugged, Unavailable }
 /// <summary>可用的 Windows 音频设备；Id 保留现有输出接口标识。</summary>
 public sealed record AudioDeviceOption(string Id, string PolicyId, string DisplayName, bool IsDefault)
 {
+    public string SystemName { get; init; } = DisplayName;
+    public bool IsFavorite { get; init; }
     public AudioDeviceDirection Direction { get; init; }
     public bool IsActive { get; init; } = true;
     public AudioDeviceAvailability Availability { get; init; } = AudioDeviceAvailability.Active;

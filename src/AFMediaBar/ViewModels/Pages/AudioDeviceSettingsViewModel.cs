@@ -14,6 +14,8 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
     private readonly IAudioDeviceCatalog _devices;
     private readonly ISettingsConfiguration _configuration;
     private bool _disposed;
+    private IReadOnlyList<AudioDeviceOption> _allDevices = [];
+    public bool IsPersonalizationEnabled => _configuration.Current.Experiments.NewAudioControl && _configuration.Current.Experiments.DevicePersonalization;
     private int _version;
     public ObservableCollection<AudioDevicePermissionItemViewModel> OutputDevices { get; } = [];
     public ObservableCollection<AudioDevicePermissionItemViewModel> InputDevices { get; } = [];
@@ -48,7 +50,23 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
             var output = await _devices.GetDevicesAsync(AudioDeviceDirection.Output, true, token);
             var input = await _devices.GetDevicesAsync(AudioDeviceDirection.Input, true, token);
             if (_disposed || token.IsCancellationRequested || !_configuration.IsActive || version != _version) return;
+            _allDevices = output.Concat(input).ToArray();
             var settings = _configuration.Current.AudioDevices;
+            if (IsPersonalizationEnabled)
+            {
+                var preferences = settings.Preferences.ToList();
+                foreach (var device in _allDevices)
+                {
+                    var index = preferences.FindIndex(entry => entry.Direction == device.Direction && entry.EndpointId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase));
+                    if (index < 0) preferences.Add(new(device.Direction, device.PolicyId, device.SystemName));
+                    else preferences[index] = preferences[index] with { LastKnownName = device.SystemName };
+                }
+                if (!settings.Preferences.SequenceEqual(preferences))
+                {
+                    settings = settings with { Preferences = preferences.ToArray() };
+                    _configuration.SetAudioDeviceSettings(settings);
+                }
+            }
             var outputNames = UpdateNames(settings.OutputBlacklist, output);
             var inputNames = UpdateNames(settings.InputBlacklist, input);
             if (!settings.OutputBlacklist.SequenceEqual(outputNames) || !settings.InputBlacklist.SequenceEqual(inputNames))
@@ -71,17 +89,65 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
     {
         var settings = _configuration.Current.AudioDevices;
         var blocked = direction == AudioDeviceDirection.Output ? settings.OutputBlacklist : settings.InputBlacklist;
-        var all = devices.Concat(blocked.Where(entry => !devices.Any(device => device.PolicyId.Equals(entry.EndpointId, StringComparison.OrdinalIgnoreCase)))
+        var preferences = settings.Preferences.Where(entry => entry.Direction == direction).ToArray();
+        var known = blocked.Concat(preferences.Select(entry => new AudioDeviceExclusion(entry.EndpointId, entry.LastKnownName)))
+            .DistinctBy(entry => entry.EndpointId, StringComparer.OrdinalIgnoreCase);
+        var all = devices.Concat(known.Where(entry => !devices.Any(device => device.PolicyId.Equals(entry.EndpointId, StringComparison.OrdinalIgnoreCase)))
             .Select(entry => new AudioDeviceOption(entry.EndpointId, entry.EndpointId, entry.DisplayName, false) { Direction = direction, IsActive = false, Availability = AudioDeviceAvailability.Unavailable }));
         rows.Clear();
         otherRows.Clear();
         foreach (var device in all.GroupBy(device => device.PolicyId, StringComparer.OrdinalIgnoreCase)
             .Select(group => group.OrderByDescending(device => device.IsActive).First())
-            .OrderBy(device => device.DisplayName, StringComparer.CurrentCultureIgnoreCase).ThenBy(device => device.PolicyId, StringComparer.OrdinalIgnoreCase))
+            .OrderByDescending(device => IsPersonalizationEnabled && settings.FindPreference(direction, device.PolicyId)?.IsFavorite == true)
+            .ThenBy(device => IsPersonalizationEnabled ? Array.FindIndex(preferences, entry => entry.EndpointId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase)) is var index && index >= 0 ? index : int.MaxValue : 0)
+            .ThenBy(device => device.DisplayName, StringComparer.CurrentCultureIgnoreCase).ThenBy(device => device.PolicyId, StringComparer.OrdinalIgnoreCase))
         {
             var destination = device.IsActive ? rows : otherRows;
-            destination.Add(new(device, settings.IsAllowed(direction, device.PolicyId), allowed => SetAllowed(device, allowed)));
+            destination.Add(new(device, settings.IsAllowed(direction, device.PolicyId), allowed => SetAllowed(device, allowed), this));
         }
+    }
+    internal AudioDevicePreference Preference(AudioDeviceOption device) => _configuration.Current.AudioDevices.FindPreference(device.Direction, device.PolicyId)
+        ?? new(device.Direction, device.PolicyId, device.SystemName);
+    internal IReadOnlyList<AudioDeviceOption> Replacements(AudioDeviceOption device) => _allDevices.Where(item => item.IsActive && item.Direction == device.Direction &&
+        !item.PolicyId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase)).ToArray();
+    internal void UpdatePreference(AudioDeviceOption device, Func<AudioDevicePreference, AudioDevicePreference> update)
+    {
+        if (_disposed || !_configuration.IsActive || !IsPersonalizationEnabled) return;
+        var settings = _configuration.Current.AudioDevices;
+        var preferences = settings.Preferences.ToList();
+        var index = preferences.FindIndex(entry => entry.Direction == device.Direction && entry.EndpointId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase));
+        if (index < 0) preferences.Add(update(Preference(device))); else preferences[index] = update(preferences[index]);
+        _configuration.SetAudioDeviceSettings(settings with { Preferences = preferences.ToArray() });
+    }
+    internal void Move(AudioDeviceOption device, int step)
+    {
+        if (_disposed || !_configuration.IsActive || !IsPersonalizationEnabled) return;
+        var settings = _configuration.Current.AudioDevices;
+        var entries = settings.Preferences.ToList();
+        var candidates = entries.Where(entry => entry.Direction == device.Direction && entry.IsFavorite == Preference(device).IsFavorite).ToList();
+        var index = candidates.FindIndex(entry => entry.EndpointId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase));
+        if (index < 0 || index + step < 0 || index + step >= candidates.Count) return;
+        var a = entries.IndexOf(candidates[index]); var b = entries.IndexOf(candidates[index + step]);
+        (entries[a], entries[b]) = (entries[b], entries[a]);
+        _configuration.SetAudioDeviceSettings(settings with { Preferences = entries.ToArray() });
+        _ = RefreshAsync();
+    }
+    internal void RemoveOrRebind(AudioDeviceOption old, AudioDeviceOption? replacement)
+    {
+        if (_disposed || !_configuration.IsActive || !IsPersonalizationEnabled || old.IsActive) return;
+        var settings = _configuration.Current.AudioDevices;
+        var entries = settings.Preferences.Where(entry => entry.Direction != old.Direction ||
+            (!entry.EndpointId.Equals(old.PolicyId, StringComparison.OrdinalIgnoreCase) &&
+             (replacement is null || !entry.EndpointId.Equals(replacement.PolicyId, StringComparison.OrdinalIgnoreCase)))).ToList();
+        if (replacement is not null) entries.Add(Preference(old) with { EndpointId = replacement.PolicyId, LastKnownName = replacement.SystemName });
+        var blacklist = (old.Direction == AudioDeviceDirection.Output ? settings.OutputBlacklist : settings.InputBlacklist)
+            .Where(entry => !entry.EndpointId.Equals(old.PolicyId, StringComparison.OrdinalIgnoreCase) &&
+                (replacement is null || !entry.EndpointId.Equals(replacement.PolicyId, StringComparison.OrdinalIgnoreCase))).ToList();
+        if (replacement is not null && !settings.IsAllowed(old.Direction, old.PolicyId)) blacklist.Add(new(replacement.PolicyId, replacement.SystemName));
+        _configuration.SetAudioDeviceSettings(old.Direction == AudioDeviceDirection.Output
+            ? settings with { Preferences = entries.ToArray(), OutputBlacklist = blacklist.ToArray() }
+            : settings with { Preferences = entries.ToArray(), InputBlacklist = blacklist.ToArray() });
+        _ = RefreshAsync();
     }
     private void SetAllowed(AudioDeviceOption device, bool allowed)
     {
@@ -107,10 +173,20 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
 }
 
 /// <summary>允许列表中的一个端点，断开设备仍可解除隐藏。</summary>
-public sealed class AudioDevicePermissionItemViewModel(AudioDeviceOption device, bool allowed, Action<bool> changed) : ObservableObject
+public sealed partial class AudioDevicePermissionItemViewModel(AudioDeviceOption device, bool allowed, Action<bool> changed, AudioDeviceSettingsViewModel owner) : ObservableObject
 {
+    public bool IsPersonalizationEnabled => owner.IsPersonalizationEnabled;
+    public bool IsOffline => !device.IsActive;
+    public string Alias { get => owner.Preference(device).Alias; set { owner.UpdatePreference(device, entry => entry with { Alias = value }); OnPropertyChanged(); } }
+    public bool IsFavorite { get => owner.Preference(device).IsFavorite; set { owner.UpdatePreference(device, entry => entry with { IsFavorite = value }); OnPropertyChanged(); } }
+    public IReadOnlyList<AudioDeviceOption> Replacements => owner.Replacements(device);
+    public AudioDeviceOption? Replacement { get; set; }
+    [RelayCommand] private void MoveUp() => owner.Move(device, -1);
+    [RelayCommand] private void MoveDown() => owner.Move(device, 1);
+    [RelayCommand] private void Forget() => owner.RemoveOrRebind(device, null);
+    [RelayCommand] private void Rebind() { if (Replacement is not null) owner.RemoveOrRebind(device, Replacement); }
     private bool _isAllowed = allowed;
-    public string DisplayName => device.DisplayName;
+    public string DisplayName => device.SystemName;
     public string EndpointId => device.PolicyId;
     public AudioDeviceAvailability Availability => device.IsActive ? AudioDeviceAvailability.Active :
         device.Availability == AudioDeviceAvailability.Active ? AudioDeviceAvailability.Unavailable : device.Availability;

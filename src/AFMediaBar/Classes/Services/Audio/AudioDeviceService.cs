@@ -81,7 +81,17 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
             }
             catch (COMException) { }
         }
-        return options.OrderBy(device => device.DisplayName, StringComparer.CurrentCultureIgnoreCase)
+        if (!ExperimentalAudioEnabled || !SettingsManager.Current.Experiments.DevicePersonalization)
+            return options.OrderBy(device => device.DisplayName, StringComparer.CurrentCultureIgnoreCase)
+                .ThenBy(device => device.PolicyId, StringComparer.OrdinalIgnoreCase).ToArray();
+        var preferences = Volatile.Read(ref _settings).Preferences.Where(entry => entry.Direction == direction).ToArray();
+        return options.Select(device =>
+        {
+            var entry = preferences.FirstOrDefault(item => item.EndpointId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase));
+            return device with { DisplayName = string.IsNullOrWhiteSpace(entry?.Alias) ? device.SystemName : entry.Alias, IsFavorite = entry?.IsFavorite == true };
+        }).OrderByDescending(device => device.IsFavorite)
+            .ThenBy(device => { var index = Array.FindIndex(preferences, entry => entry.EndpointId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase)); return index < 0 ? int.MaxValue : index; })
+            .ThenBy(device => device.DisplayName, StringComparer.CurrentCultureIgnoreCase)
             .ThenBy(device => device.PolicyId, StringComparer.OrdinalIgnoreCase).ToArray();
     }
 
@@ -128,7 +138,9 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
         if (id is null) return Translations.Get("Audio.Device.Unavailable");
         if (!IsAllowed(direction, id)) return Translations.Get("Audio.Device.Hidden");
         using var device = enumerator.GetDevice(id);
-        return device.FriendlyName;
+        var preference = Volatile.Read(ref _settings).FindPreference(direction, id);
+        return ExperimentalAudioEnabled && SettingsManager.Current.Experiments.DevicePersonalization && !string.IsNullOrWhiteSpace(preference?.Alias)
+            ? preference.Alias : device.FriendlyName;
     });
 
     private static string? GetDefaultId(MMDeviceEnumerator enumerator, DataFlow flow, Role role)

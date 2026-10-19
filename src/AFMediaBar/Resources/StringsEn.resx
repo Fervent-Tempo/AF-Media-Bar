@@ -3009,4 +3009,13 @@ Managed heap {6} → {7} · {8} ms · {9}</value></data>
   <data name="Memory.System.Cancelled" xml:space="preserve"><value>Cleanup request cancelled</value></data>
   <data name="Memory.System.Busy" xml:space="preserve"><value>System cleanup is already running</value></data>
   <data name="Memory.System.Readings" xml:space="preserve"><value>System available memory {0} → {1} (also affected by other activity; not exact reclaimed bytes)</value></data>
+  <data name="Device.Personalization" xml:space="preserve"><value>Device aliases, favorites and order</value></data>
+  <data name="Device.PersonalizationHint" xml:space="preserve"><value>Changes AF only. Favorites appear first; other devices remain available.</value></data>
+  <data name="Device.Alias" xml:space="preserve"><value>AF display name (blank uses system name)</value></data>
+  <data name="Device.Favorite" xml:space="preserve"><value>Favorite</value></data>
+  <data name="Device.MoveUp" xml:space="preserve"><value>Move up</value></data>
+  <data name="Device.MoveDown" xml:space="preserve"><value>Move down</value></data>
+  <data name="Device.Forget" xml:space="preserve"><value>Forget missing device</value></data>
+  <data name="Device.Rebind" xml:space="preserve"><value>Rebind</value></data>
+  <data name="Device.RebindHint" xml:space="preserve"><value>Choose a replacement endpoint. This transfers the saved preferences and replaces its AF configuration. Names are never matched automatically.</value></data>
 </root>
