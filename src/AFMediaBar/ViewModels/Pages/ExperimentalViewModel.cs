@@ -30,6 +30,11 @@ public sealed class ExperimentalViewModel : ObservableObject, IDisposable
         get => SettingsManager.Current.Experiments.MemoryTools;
         set => _configuration.SetExperiments(SettingsManager.Current.Experiments with { MemoryTools = value });
     }
+    public bool BluetoothBattery
+    {
+        get => SettingsManager.Current.Experiments.BluetoothBattery;
+        set => _configuration.SetExperiments(SettingsManager.Current.Experiments with { BluetoothBattery = value });
+    }
     public bool DeviceHotkeys
     {
         get => SettingsManager.Current.Experiments.DeviceHotkeys;
@@ -78,6 +83,7 @@ public sealed class ExperimentalViewModel : ObservableObject, IDisposable
         {
             OnPropertyChanged(nameof(SystemMemoryCleanup));
             OnPropertyChanged(nameof(MemoryTools));
+            OnPropertyChanged(nameof(BluetoothBattery));
             OnPropertyChanged(nameof(DeviceHotkeys));
             OnPropertyChanged(nameof(DevicePersonalization));
             OnPropertyChanged(nameof(NewAudioControl));

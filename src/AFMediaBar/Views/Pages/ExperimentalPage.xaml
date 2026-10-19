@@ -53,6 +53,9 @@
                         </components:SettingsRow>
                         <TextBlock Text="{DynamicResource Loc.Experimental.Audio.RoutingPreserved}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,8,0,0" />
                         <StackPanel Visibility="{Binding ViewModel.NewAudioControl, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                            <components:SettingsRow Title="{DynamicResource Loc.Battery.Title}" Description="{DynamicResource Loc.Battery.Hint}">
+                                <ui:ToggleSwitch IsChecked="{Binding ViewModel.BluetoothBattery, Mode=TwoWay}" />
+                            </components:SettingsRow>
                             <components:SettingsRow Title="{DynamicResource Loc.Device.Hotkey.Title}" Description="{DynamicResource Loc.Device.Hotkey.Hint}">
                                 <ui:ToggleSwitch IsChecked="{Binding ViewModel.DeviceHotkeys, Mode=TwoWay}" />
                             </components:SettingsRow>

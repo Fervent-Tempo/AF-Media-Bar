@@ -3029,4 +3029,17 @@ Managed heap {6} → {7} · {8} ms · {9}</value></data>
   <data name="Device.Hotkey.Registered" xml:space="preserve"><value>Registered</value></data>
   <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>No available target; check favorites, hidden devices and connections</value></data>
   <data name="Device.Hotkey.Failed" xml:space="preserve"><value>Device switch did not complete</value></data>
+  <data name="Battery.Title" xml:space="preserve"><value>Bluetooth headphone battery</value></data>
+  <data name="Battery.Hint" xml:space="preserve"><value>Uses Windows properties and standard BLE battery data; unsupported devices show unknown. Alerts apply only to the current output headphone, once per low-battery cycle. Startup, switching and reconnect establish a baseline.</value></data>
+  <data name="Battery.Notify" xml:space="preserve"><value>Low-battery alerts</value></data>
+  <data name="Battery.Threshold" xml:space="preserve"><value>Alert threshold</value></data>
+  <data name="Battery.Unknown" xml:space="preserve"><value>Battery unknown</value></data>
+  <data name="Battery.Stale" xml:space="preserve"><value>not current</value></data>
+  <data name="Battery.Details" xml:space="preserve"><value>Battery: {0}
+Last valid reading: {1}
+Source: {2}</value></data>
+  <data name="Battery.WindowsProperty" xml:space="preserve"><value>Windows device property</value></data>
+  <data name="Battery.BleGatt" xml:space="preserve"><value>Standard BLE battery service</value></data>
+  <data name="Battery.LowTitle" xml:space="preserve"><value>Headphone battery low</value></data>
+  <data name="Battery.LowBody" xml:space="preserve"><value>{0} battery is at {1}%.</value></data>
 </root>

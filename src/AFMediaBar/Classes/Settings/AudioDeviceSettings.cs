@@ -14,6 +14,8 @@ public sealed record AudioDeviceSettings
 {
     public IReadOnlyList<AudioDeviceExclusion> OutputBlacklist { get; init; } = [];
     public IReadOnlyList<AudioDeviceExclusion> InputBlacklist { get; init; } = [];
+    public bool LowBatteryNotifications { get; init; }
+    public int LowBatteryThreshold { get; init; } = 20;
     public string OutputCycleHotkey { get; init; } = string.Empty;
     public string InputCycleHotkey { get; init; } = string.Empty;
     public IReadOnlyList<AudioDevicePreference> Preferences { get; init; } = [];
@@ -29,6 +31,7 @@ public sealed record AudioDeviceSettings
 
     public AudioDeviceSettings Normalize() => this with
     {
+        LowBatteryThreshold = Math.Clamp(LowBatteryThreshold, 5, 90),
         OutputCycleHotkey = (OutputCycleHotkey ?? string.Empty).Trim(),
         InputCycleHotkey = (InputCycleHotkey ?? string.Empty).Trim(),
         Preferences = (Preferences ?? []).Where(entry => entry is not null && Enum.IsDefined(entry.Direction) && !string.IsNullOrWhiteSpace(entry.EndpointId))

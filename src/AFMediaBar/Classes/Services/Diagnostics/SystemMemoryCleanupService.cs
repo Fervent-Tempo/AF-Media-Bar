@@ -8,8 +8,11 @@ using Microsoft.Win32.SafeHandles;
 namespace AFMediaBar.Classes.Services;
 
 /// <summary>固定操作的退出协议；未知退出码按失败处理。</summary>
-public enum SystemMemoryCleanupStatus { Completed = 0, PermissionDenied = 10, Unsupported = 11, Failed = 12,
-    TimedOut = 13, InvalidRequest = 14, Cancelled = 15, Busy = 16 }
+public enum SystemMemoryCleanupStatus
+{
+    Completed = 0, PermissionDenied = 10, Unsupported = 11, Failed = 12,
+    TimedOut = 13, InvalidRequest = 14, Cancelled = 15, Busy = 16
+}
 
 /// <summary>系统可用内存前后读数，不代表本次操作释放的精确字节数。</summary>
 public sealed record SystemMemoryCleanupResult(SystemMemoryCleanupStatus Status, ulong? Before, ulong? After);
@@ -46,7 +49,10 @@ public sealed class SystemMemoryCleanupService : IDisposable
                 return new(SystemMemoryCleanupStatus.Unsupported, before, null);
             using var process = await Task.Run(() => Process.Start(new ProcessStartInfo(executable)
             {
-                Arguments = Argument, UseShellExecute = true, Verb = "runas", WindowStyle = ProcessWindowStyle.Hidden
+                Arguments = Argument,
+                UseShellExecute = true,
+                Verb = "runas",
+                WindowStyle = ProcessWindowStyle.Hidden
             }));
             if (process is null) return new(SystemMemoryCleanupStatus.Failed, before, null);
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_stopping.Token);

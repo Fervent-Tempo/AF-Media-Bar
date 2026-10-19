@@ -54,7 +54,7 @@ public sealed class AudioSettingsPageLoadingTests
                     application.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri($"/AFMediaBar;component/Resources/{name}.xaml", UriKind.Relative) });
                 using var localization = new LocalizationService();
                 using var context = new SettingsPageContext();
-                using var viewModel = new InteractionViewModel(localization, new LegacySettingsConfiguration(context), new Catalog());
+                using var viewModel = new InteractionViewModel(localization, new LegacySettingsConfiguration(context), new AudioDeviceSettingsViewModel(new Catalog(), new LegacySettingsConfiguration(context)));
                 await viewModel.AudioDevices.RefreshAsync();
                 var page = new InteractionPage(viewModel);
                 page.Measure(new Size(820, 900));
@@ -88,7 +88,7 @@ public sealed class AudioSettingsPageLoadingTests
                 };
                 var links = LogicalChildren(entry).OfType<Button>().Where(button => button.Tag is AFMediaBar.Classes.Services.SettingsPageKey).ToArray();
                 foreach (var link in links) link.RaiseEvent(new RoutedEventArgs(Button.ClickEvent, link));
-                Assert.AreEqual(4, navigations, "实验页保留音频和共用设置入口，悬浮选项统一导航到显示与位置。");
+                Assert.AreEqual(links.Length, navigations, "每个设置入口都应转发一次导航意图。");
                 await VerifyExperimentalBlankAreaWheelAsync(entry);
             }
             finally { SettingsManager.Current = previous; application.Shutdown(); }

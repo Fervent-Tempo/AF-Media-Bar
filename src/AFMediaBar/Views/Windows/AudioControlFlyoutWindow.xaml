@@ -51,7 +51,7 @@
             </ControlTemplate></Setter.Value></Setter>
         </Style>
         <DataTemplate x:Key="ApplicationRouteDeviceTemplate">
-            <TextBlock Text="{Binding DisplayName}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayName}" />
+            <TextBlock Text="{Binding MenuLabel}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding DeviceHint}" />
         </DataTemplate>
         <DataTemplate x:Key="AudioApplicationCardTemplate">
             <Border Height="40" Margin="0,0,0,4" CornerRadius="6" BorderThickness="1" Padding="8,0"
@@ -188,7 +188,7 @@
                       MinHeight="32"
                       MaxDropDownHeight="240"
                       ItemsSource="{Binding OutputDevices}"
-                      DisplayMemberPath="DisplayName"
+                      DisplayMemberPath="MenuLabel"
                       SelectedItem="{Binding SelectedOutputDevice, Mode=TwoWay}"
                       DropDownOpened="OutputDevice_OnDropDownOpened"
                       DropDownClosed="OutputDevice_OnDropDownClosed"
@@ -341,8 +341,8 @@
                       MinHeight="32"
                       MaxDropDownHeight="240"
                       ItemsSource="{Binding OutputDevices}"
-                      DisplayMemberPath="DisplayName"
-                      ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=SelectedItem.DisplayName}"
+                      DisplayMemberPath="MenuLabel"
+                      ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=SelectedItem.DeviceHint}"
                       SelectedItem="{Binding SelectedOutputDevice, Mode=TwoWay}"
                       DropDownOpened="OutputDevice_OnDropDownOpened"
                       DropDownClosed="OutputDevice_OnDropDownClosed"
@@ -360,8 +360,8 @@
                     <TextBlock Text="{DynamicResource Loc.Common.InputDevice}" Style="{StaticResource AudioDeviceLabelStyle}" />
                 </StackPanel>
                 <components:ReleaseOpenComboBox x:Name="InputDeviceComboBox" MinHeight="32" MaxDropDownHeight="240"
-                    Style="{StaticResource {x:Type ComboBox}}" ItemsSource="{Binding InputDevices}" DisplayMemberPath="DisplayName"
-                    ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=SelectedItem.DisplayName}"
+                    Style="{StaticResource {x:Type ComboBox}}" ItemsSource="{Binding InputDevices}" DisplayMemberPath="MenuLabel"
+                    ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=SelectedItem.DeviceHint}"
                     SelectedItem="{Binding SelectedInputDevice, Mode=TwoWay}" PreviewMouseWheel="InputDevice_OnPreviewMouseWheel"
                     DropDownOpened="OutputDevice_OnDropDownOpened" DropDownClosed="OutputDevice_OnDropDownClosed" />
                 <TextBlock Text="{Binding InputDeviceStatus}">

@@ -3029,4 +3029,17 @@
   <data name="Device.Hotkey.Registered" xml:space="preserve"><value>已注册</value></data>
   <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>没有可用目标，请检查收藏、黑名单或连接状态</value></data>
   <data name="Device.Hotkey.Failed" xml:space="preserve"><value>设备切换未完成</value></data>
+  <data name="Battery.Title" xml:space="preserve"><value>蓝牙耳机电量</value></data>
+  <data name="Battery.Hint" xml:space="preserve"><value>只读取 Windows 属性和标准 BLE 电量；不支持的设备显示未知。低电量提醒仅针对当前输出耳机，同一周期一次；启动、切换及重连先建立基线。</value></data>
+  <data name="Battery.Notify" xml:space="preserve"><value>低电量提醒</value></data>
+  <data name="Battery.Threshold" xml:space="preserve"><value>提醒阈值</value></data>
+  <data name="Battery.Unknown" xml:space="preserve"><value>电量未知</value></data>
+  <data name="Battery.Stale" xml:space="preserve"><value>非实时</value></data>
+  <data name="Battery.Details" xml:space="preserve"><value>电量：{0}
+最近有效读数：{1}
+来源：{2}</value></data>
+  <data name="Battery.WindowsProperty" xml:space="preserve"><value>Windows 设备属性</value></data>
+  <data name="Battery.BleGatt" xml:space="preserve"><value>标准 BLE 电量</value></data>
+  <data name="Battery.LowTitle" xml:space="preserve"><value>耳机电量较低</value></data>
+  <data name="Battery.LowBody" xml:space="preserve"><value>{0} 当前电量为 {1}%。</value></data>
 </root>

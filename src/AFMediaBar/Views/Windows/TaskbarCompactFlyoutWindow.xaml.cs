@@ -106,10 +106,10 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
         LegacyOutputDeviceComboBox.ItemsSource = devices;
         LegacyOutputDeviceComboBox.SelectedItem = selected;
         _isUpdating = false;
-        CurrentDeviceText.Text = selected?.DisplayName ?? Translations.Get("Audio.Device.Unavailable");
+        CurrentDeviceText.Text = selected?.MenuLabel ?? Translations.Get("Audio.Device.Unavailable");
         DeviceUnavailableText.Text = !OutputDeviceList.IsEnabled ? Translations.Get("Audio.Route.Unsupported") :
             devices.Count == 0 ? Translations.Get("Audio.Device.Unavailable") : string.Empty;
-        if (pending) CurrentDeviceText.ToolTip = selected?.DisplayName;
+        CurrentDeviceText.ToolTip = selected?.DeviceHint;
         RevealCandidate(selected);
     }
 
@@ -130,8 +130,8 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
         _isUpdating = true;
         LegacyOutputDeviceComboBox.SelectedItem = candidate;
         _isUpdating = false;
-        CurrentDeviceText.Text = candidate.DisplayName;
-        CurrentDeviceText.ToolTip = candidate.DisplayName;
+        CurrentDeviceText.Text = candidate.MenuLabel;
+        CurrentDeviceText.ToolTip = candidate.DeviceHint;
         RevealCandidate(OutputDeviceList.SelectedItem as AudioDeviceOption);
     }
 

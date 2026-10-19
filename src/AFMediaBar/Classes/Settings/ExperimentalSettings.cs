@@ -8,6 +8,7 @@ public sealed record ExperimentalSettings
 {
     public bool MemoryTools { get; init; }
     public bool SystemMemoryCleanup { get; init; }
+    public bool BluetoothBattery { get; init; }
     public bool DeviceHotkeys { get; init; }
     public bool DevicePersonalization { get; init; }
     public bool NewAudioControl { get; init; }

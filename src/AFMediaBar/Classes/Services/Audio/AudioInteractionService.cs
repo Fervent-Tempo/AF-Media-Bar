@@ -161,7 +161,7 @@ public sealed class AudioInteractionService
         var target = new AudioDeviceTarget(direction);
         cancellationToken.ThrowIfCancellationRequested();
         var device = await _switches.PreviewAsync(target, signedSteps, owner ?? this);
-        return device is null ? Translations.Get("Audio.Device.Unavailable") : device.DisplayName;
+        return device is null ? Translations.Get("Audio.Device.Unavailable") : device.DeviceHint;
     }
 
 }

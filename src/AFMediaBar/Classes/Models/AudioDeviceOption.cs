@@ -10,6 +10,10 @@ public enum AudioDeviceAvailability { Active, Disabled, Unplugged, Unavailable }
 /// <summary>可用的 Windows 音频设备；Id 保留现有输出接口标识。</summary>
 public sealed record AudioDeviceOption(string Id, string PolicyId, string DisplayName, bool IsDefault)
 {
+    public Guid? ContainerId { get; init; }
+    public BluetoothBatterySnapshot? Battery { get; init; }
+    public string MenuLabel => (IsFavorite ? "★ " : string.Empty) + DisplayName + (Battery is { } battery ? " · " + battery.Label : string.Empty);
+    public string DeviceHint => DisplayName + (Battery is { } battery ? "\n" + battery.Details : string.Empty);
     public string SystemName { get; init; } = DisplayName;
     public bool IsFavorite { get; init; }
     public AudioDeviceDirection Direction { get; init; }

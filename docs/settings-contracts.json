@@ -4,6 +4,7 @@
   "settingsSchemaVersion": 2,
   "settings": {
     "experiments": {
+      "bluetoothBattery": "unreleased",
       "deviceHotkeys": "unreleased",
       "devicePersonalization": "unreleased",
       "memoryTools": "unreleased",
@@ -242,6 +243,8 @@
     "windowMode": "v1.2.0",
     "audioDevices": {
       "preferences": { "$release": "unreleased", "$items": { "direction": "unreleased", "endpointId": "unreleased", "lastKnownName": "unreleased", "alias": "unreleased", "isFavorite": "unreleased", "hotkey": "unreleased" } },
+      "lowBatteryNotifications": "unreleased",
+      "lowBatteryThreshold": "unreleased",
       "outputCycleHotkey": "unreleased",
       "inputCycleHotkey": "unreleased",
       "$release": "unreleased",

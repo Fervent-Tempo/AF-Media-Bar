@@ -17,6 +17,17 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
     private readonly ISettingsConfiguration _configuration;
     private bool _disposed;
     private IReadOnlyList<AudioDeviceOption> _allDevices = [];
+    public bool IsBatteryEnabled => _configuration.Current.Experiments.NewAudioControl && _configuration.Current.Experiments.BluetoothBattery;
+    public bool LowBatteryNotifications
+    {
+        get => _configuration.Current.AudioDevices.LowBatteryNotifications;
+        set { if (!_disposed && _configuration.IsActive) _configuration.SetAudioDeviceSettings(_configuration.Current.AudioDevices with { LowBatteryNotifications = value }); OnPropertyChanged(); }
+    }
+    public int LowBatteryThreshold
+    {
+        get => _configuration.Current.AudioDevices.LowBatteryThreshold;
+        set { if (!_disposed && _configuration.IsActive) _configuration.SetAudioDeviceSettings(_configuration.Current.AudioDevices with { LowBatteryThreshold = value }); OnPropertyChanged(); }
+    }
     public bool IsHotkeysEnabled => _configuration.Current.Experiments.NewAudioControl && _configuration.Current.Experiments.DeviceHotkeys;
     public string OutputCycleHotkey { get => _configuration.Current.AudioDevices.OutputCycleHotkey; set => SetCycleHotkey(AudioDeviceDirection.Output, value); }
     public string InputCycleHotkey { get => _configuration.Current.AudioDevices.InputCycleHotkey; set => SetCycleHotkey(AudioDeviceDirection.Input, value); }
@@ -204,6 +215,8 @@ public sealed partial class AudioDevicePermissionItemViewModel(AudioDeviceOption
     public string Hotkey { get => owner.Preference(device).Hotkey; set { owner.UpdatePreference(device, entry => entry with { Hotkey = value }); OnPropertyChanged(); OnPropertyChanged(nameof(HotkeyStatus)); } }
     public string HotkeyStatus => owner.HotkeyStatus(device);
     internal void RefreshHotkeyStatus() => OnPropertyChanged(nameof(HotkeyStatus));
+    public bool HasBattery => owner.IsBatteryEnabled && device.Battery is not null;
+    public string BatteryText => device.Battery?.Details ?? Translations.Get("Battery.Unknown");
     public bool IsOffline => !device.IsActive;
     public string Alias { get => owner.Preference(device).Alias; set { owner.UpdatePreference(device, entry => entry with { Alias = value }); OnPropertyChanged(); } }
     public bool IsFavorite { get => owner.Preference(device).IsFavorite; set { owner.UpdatePreference(device, entry => entry with { IsFavorite = value }); OnPropertyChanged(); } }

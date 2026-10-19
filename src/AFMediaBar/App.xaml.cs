@@ -165,6 +165,10 @@ namespace AFMediaBar
                 services.AddSingleton<IApplicationAudioControl>(provider => provider.GetRequiredService<ApplicationVolumeService>());
                 services.AddSingleton<ApplicationAudioControlCoordinator>();
                 services.AddSingleton<AudioPlatformService>();
+                services.AddSingleton<BluetoothBatteryCache>();
+                services.AddSingleton<BluetoothBatteryReader>();
+                services.AddSingleton<BluetoothBatteryService>();
+                services.AddHostedService(sp => sp.GetRequiredService<BluetoothBatteryService>());
                 services.AddSingleton<AudioDeviceService>();
                 services.AddSingleton<IAudioDeviceCatalog>(sp => sp.GetRequiredService<AudioDeviceService>());
                 services.AddSingleton<ApplicationAudioRoutingService>();
@@ -302,6 +306,7 @@ namespace AFMediaBar
                 services.AddScoped<InteractionPage>();
                 services.AddScoped<ExperimentalPage>();
                 services.AddScoped<ExperimentalViewModel>();
+                services.AddScoped<AudioDeviceSettingsViewModel>();
                 services.AddScoped<InteractionViewModel>();
 
                 services.AddScoped<LyricsPage>();

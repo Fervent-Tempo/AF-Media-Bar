@@ -3067,4 +3067,17 @@ Heap được quản lý {6} → {7} · {8} ms · {9}</value></data>
   <data name="Device.Hotkey.Registered" xml:space="preserve"><value>Đã đăng ký</value></data>
   <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>Không có đích khả dụng; kiểm tra yêu thích, danh sách ẩn và kết nối</value></data>
   <data name="Device.Hotkey.Failed" xml:space="preserve"><value>Chuyển thiết bị chưa hoàn tất</value></data>
+  <data name="Battery.Title" xml:space="preserve"><value>Pin tai nghe Bluetooth</value></data>
+  <data name="Battery.Hint" xml:space="preserve"><value>Dùng thuộc tính Windows và pin BLE chuẩn; thiết bị không hỗ trợ hiển thị không rõ. Chỉ báo tai nghe đầu ra hiện tại một lần mỗi chu kỳ pin yếu. Khởi động, chuyển đổi và kết nối lại sẽ lấy mốc ban đầu.</value></data>
+  <data name="Battery.Notify" xml:space="preserve"><value>Báo pin yếu</value></data>
+  <data name="Battery.Threshold" xml:space="preserve"><value>Ngưỡng báo</value></data>
+  <data name="Battery.Unknown" xml:space="preserve"><value>Không rõ mức pin</value></data>
+  <data name="Battery.Stale" xml:space="preserve"><value>không cập nhật</value></data>
+  <data name="Battery.Details" xml:space="preserve"><value>Pin: {0}
+Lần đọc hợp lệ cuối: {1}
+Nguồn: {2}</value></data>
+  <data name="Battery.WindowsProperty" xml:space="preserve"><value>Thuộc tính thiết bị Windows</value></data>
+  <data name="Battery.BleGatt" xml:space="preserve"><value>Dịch vụ pin BLE chuẩn</value></data>
+  <data name="Battery.LowTitle" xml:space="preserve"><value>Pin tai nghe yếu</value></data>
+  <data name="Battery.LowBody" xml:space="preserve"><value>Pin {0} còn {1}%.</value></data>
 </root>

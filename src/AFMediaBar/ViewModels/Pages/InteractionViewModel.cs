@@ -101,11 +101,11 @@ public partial class InteractionViewModel : ObservableObject, IDisposable
     /// page is left in the old text. Both subscriptions are released with the page scope.
     /// </summary>
     /// <param name="localization">界面语言服务：本页在它变化后刷新自己产出的文案。/ The interface-language service, whose change this page follows to refresh its own text.</param>
-    public InteractionViewModel(LocalizationService localization, ISettingsConfiguration configuration, AFMediaBar.Classes.Services.Audio.IAudioDeviceCatalog devices)
+    public InteractionViewModel(LocalizationService localization, ISettingsConfiguration configuration, AudioDeviceSettingsViewModel audioDevices)
     {
         _localization = localization;
         _configuration = configuration;
-        AudioDevices = new(devices, configuration);
+        AudioDevices = audioDevices;
         configuration.Activated += OnActivated;
         SettingsManager.SettingsChanged += OnSettingsChanged;
         _localization.LanguageChanged += OnLanguageChanged;

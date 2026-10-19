@@ -87,8 +87,8 @@
                 <StackPanel>
                     <TextBlock Text="{DynamicResource Loc.Common.OutputDevice}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,6" />
                     <components:ReleaseOpenComboBox x:Name="DeviceCombo"
-                              DisplayMemberPath="DisplayName"
-                              ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=SelectedItem.DisplayName}"
+                              DisplayMemberPath="MenuLabel"
+                              ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=SelectedItem.DeviceHint}"
                               DropDownOpened="DeviceCombo_DropDownOpened"
                               SelectionChanged="DeviceCombo_SelectionChanged"
                               PreviewMouseWheel="DeviceCombo_PreviewMouseWheel">
@@ -100,8 +100,8 @@
                     </components:ReleaseOpenComboBox>
                     <TextBlock x:Name="InputDeviceLabel" Text="{DynamicResource Loc.Common.InputDevice}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,12,0,6" />
                     <components:ReleaseOpenComboBox x:Name="InputDeviceCombo"
-                              DisplayMemberPath="DisplayName"
-                              ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=SelectedItem.DisplayName}"
+                              DisplayMemberPath="MenuLabel"
+                              ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=SelectedItem.DeviceHint}"
                               DropDownOpened="InputDeviceCombo_DropDownOpened"
                               SelectionChanged="InputDeviceCombo_SelectionChanged"
                               PreviewMouseWheel="InputDeviceCombo_PreviewMouseWheel">
