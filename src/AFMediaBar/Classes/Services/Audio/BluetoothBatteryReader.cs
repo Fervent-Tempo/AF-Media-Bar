@@ -10,7 +10,7 @@ using Windows.Storage.Streams;
 
 namespace AFMediaBar.Classes.Services.Audio;
 
-/// <summary>标准系统属性及 BLE 电量读取，不连接、配对或发送厂商命令。</summary>
+/// <summary>标准系统属性及 BLE 电量读取，不主动连接、配对或发送厂商命令。</summary>
 public sealed class BluetoothBatteryReader
 {
     private sealed class PnpBattery
@@ -24,10 +24,12 @@ public sealed class BluetoothBatteryReader
 
     public async Task<IReadOnlyList<BluetoothBatteryDevice>> ListPairedAsync(CancellationToken token)
     {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
+        timeout.CancelAfter(TimeSpan.FromSeconds(20));
         var result = new List<BluetoothBatteryDevice>();
         foreach (var lowEnergy in new[] { false, true })
         {
-            var devices = await DeviceInformation.FindAllAsync(Selector(lowEnergy), DeviceProperties, DeviceInformationKind.AssociationEndpoint).AsTask(token).ConfigureAwait(false);
+            var devices = await DeviceInformation.FindAllAsync(Selector(lowEnergy), DeviceProperties, DeviceInformationKind.AssociationEndpoint).AsTask(timeout.Token).ConfigureAwait(false);
             foreach (var device in devices)
             {
                 var address = NormalizeAddress(device.Properties.GetValueOrDefault("System.Devices.Aep.DeviceAddress") as string);

@@ -227,7 +227,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         PreviewMouseRightButtonUp += (_, args) =>
         {
             if (!IsOperational || DateTime.UtcNow < _suppressClickUntil || _mouse.ConsumeSuppressedClick()) return;
-            IsPerformanceMenuRequested = _mediaControl.IsPerformanceComponentClick(args.OriginalSource as DependencyObject);
+            IsPerformanceMenuRequested = SettingsManager.Current.Experiments.MemoryTools && _mediaControl.IsPerformanceComponentClick(args.OriginalSource as DependencyObject);
             IsBatteryMenuRequested = _mediaControl.IsBatteryComponentClick(args.OriginalSource as DependencyObject);
             PlayerMenuOpenRequested?.Invoke(this, null);
             args.Handled = true;

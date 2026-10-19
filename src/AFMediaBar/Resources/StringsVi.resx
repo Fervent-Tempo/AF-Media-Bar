@@ -3035,8 +3035,8 @@ Heap được quản lý {6} → {7} · {8} ms · {9}</value></data>
   <data name="Memory.Status.Cancelled" xml:space="preserve"><value>Đã hủy trước khi bắt đầu</value></data>
   <data name="Memory.Status.Unavailable" xml:space="preserve"><value>Không thể thu hồi lúc này</value></data>
   <data name="Memory.Status.Failed" xml:space="preserve"><value>Thu hồi thất bại; xem nhật ký</value></data>
-  <data name="Memory.System.Title" xml:space="preserve"><value>Dọn bộ nhớ hệ thống thủ công</value></data>
-  <data name="Memory.System.Description" xml:space="preserve"><value>Chỉ dọn trang chờ ưu tiên thấp, yêu cầu quyền quản trị khi bấm. Bộ đệm có thể cần tạo lại; hỗ trợ API và hiệu quả tùy phiên bản Windows.</value></data>
+  <data name="Memory.System.Title" xml:space="preserve"><value>Tối ưu bộ nhớ hệ thống</value></data>
+  <data name="Memory.System.Description" xml:space="preserve"><value>Tiêu chuẩn xóa trang chờ ưu tiên thấp; Chuyên sâu xử lý thêm bộ đệm tệp và toàn bộ trang chờ. Cần quyền quản trị. Bộ đệm có thể cần tạo lại; hỗ trợ và kết quả tùy phiên bản Windows.</value></data>
   <data name="Memory.System.Clean" xml:space="preserve"><value>Dọn trang chờ ưu tiên thấp…</value></data>
   <data name="Memory.System.Completed" xml:space="preserve"><value>Yêu cầu dọn dẹp đã hoàn tất</value></data>
   <data name="Memory.System.PermissionDenied" xml:space="preserve"><value>Không đủ quyền; chưa dọn dẹp</value></data>
@@ -3047,8 +3047,8 @@ Heap được quản lý {6} → {7} · {8} ms · {9}</value></data>
   <data name="Memory.System.Cancelled" xml:space="preserve"><value>Đã hủy yêu cầu dọn dẹp</value></data>
   <data name="Memory.System.Busy" xml:space="preserve"><value>Đang dọn bộ nhớ hệ thống</value></data>
   <data name="Memory.System.Readings" xml:space="preserve"><value>Bộ nhớ hệ thống còn {0} → {1} (cũng chịu ảnh hưởng hoạt động khác; không phải số byte thu hồi chính xác)</value></data>
-  <data name="Device.Personalization" xml:space="preserve"><value>Bí danh, yêu thích và thứ tự thiết bị</value></data>
-  <data name="Device.PersonalizationHint" xml:space="preserve"><value>Chỉ đổi hiển thị trong AF. Mục yêu thích ở đầu; thiết bị khác vẫn chọn được.</value></data>
+  <data name="Device.Personalization" xml:space="preserve"><value>Bí danh và thứ tự thiết bị</value></data>
+  <data name="Device.PersonalizationHint" xml:space="preserve"><value>Kéo để sắp xếp hiển thị và chuyển trong AF. Thiết bị đã tắt được thu gọn; không đổi thiết bị Windows.</value></data>
   <data name="Device.Alias" xml:space="preserve"><value>Tên hiển thị AF (để trống dùng tên hệ thống)</value></data>
   <data name="Device.MoveUp" xml:space="preserve"><value>Lên</value></data>
   <data name="Device.MoveDown" xml:space="preserve"><value>Xuống</value></data>
@@ -3056,17 +3056,17 @@ Heap được quản lý {6} → {7} · {8} ms · {9}</value></data>
   <data name="Device.Rebind" xml:space="preserve"><value>Liên kết lại</value></data>
   <data name="Device.RebindHint" xml:space="preserve"><value>Chọn điểm cuối thay thế. Cấu hình này sẽ chuyển sang và thay thế cấu hình AF của đích. Không tự ghép theo tên.</value></data>
   <data name="Device.Hotkey.Title" xml:space="preserve"><value>Phím tắt chuyển thiết bị</value></data>
-  <data name="Device.Hotkey.Hint" xml:space="preserve"><value>Chỉ đổi thiết bị mặc định hệ thống. Bấm ô ghi rồi nhấn tổ hợp có Ctrl hoặc Alt; không hỗ trợ Win và F12. Luân phiên theo thứ tự yêu thích, bỏ qua thiết bị không khả dụng.</value></data>
+  <data name="Device.Hotkey.Hint" xml:space="preserve"><value>Chỉ đổi thiết bị mặc định hệ thống. Ghi tổ hợp có Ctrl hoặc Alt; không hỗ trợ Win và F12. Chuyển vòng thiết bị đã chọn và bật theo thứ tự hiển thị, bỏ qua ngoại tuyến.</value></data>
   <data name="Device.Hotkey.CycleOutput" xml:space="preserve"><value>Chuyển vòng thiết bị đầu ra đã chọn</value></data>
   <data name="Device.Hotkey.CycleInput" xml:space="preserve"><value>Chuyển vòng thiết bị đầu vào đã chọn</value></data>
   <data name="Device.Hotkey.Invalid" xml:space="preserve"><value>Tổ hợp phím không hợp lệ</value></data>
   <data name="Device.Hotkey.Duplicate" xml:space="preserve"><value>Trùng phím tắt AF khác; chưa đăng ký</value></data>
   <data name="Device.Hotkey.Conflict" xml:space="preserve"><value>Phím đã bị chiếm hoặc hệ thống từ chối; chưa đăng ký</value></data>
   <data name="Device.Hotkey.Registered" xml:space="preserve"><value>Đã đăng ký</value></data>
-  <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>Không có đích khả dụng; kiểm tra yêu thích, danh sách ẩn và kết nối</value></data>
+  <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>Không có đích khả dụng; kiểm tra lựa chọn vòng, trạng thái bật và kết nối</value></data>
   <data name="Device.Hotkey.Failed" xml:space="preserve"><value>Chuyển thiết bị chưa hoàn tất</value></data>
   <data name="Battery.Title" xml:space="preserve"><value>Pin Bluetooth</value></data>
-  <data name="Battery.Hint" xml:space="preserve"><value>Dùng thuộc tính Windows và pin BLE chuẩn; thiết bị không hỗ trợ hiển thị không rõ. Chỉ báo tai nghe đầu ra hiện tại một lần mỗi chu kỳ pin yếu. Khởi động, chuyển đổi và kết nối lại sẽ lấy mốc ban đầu.</value></data>
+  <data name="Battery.Hint" xml:space="preserve"><value>Theo dõi một thiết bị Bluetooth được chọn bằng thuộc tính Windows và pin BLE chuẩn. Mỗi chu kỳ pin yếu chỉ cảnh báo một lần; khởi động, đổi chọn và kết nối lại thiết lập mốc trước.</value></data>
   <data name="Battery.Notify" xml:space="preserve"><value>Cảnh báo pin yếu cho thiết bị đã chọn</value></data>
   <data name="Battery.Threshold" xml:space="preserve"><value>Ngưỡng pin yếu (%)</value></data>
   <data name="Battery.Unknown" xml:space="preserve"><value>Không rõ mức pin</value></data>
@@ -3158,4 +3158,5 @@ Nguồn: {2}</value></data>
   <data name="Battery.Refresh" xml:space="preserve"><value>Làm mới pin</value></data>
   <data name="Battery.RefreshHint" xml:space="preserve"><value>Đọc tối đa mỗi phút một lần; cập nhật khi đổi kết nối và lùi thời gian khi lỗi.</value></data>
   <data name="Battery.WidgetHint" xml:space="preserve"><value>Chọn thiết bị trong Quản lý thiết bị. Để hiện khi không có phương tiện, chọn Pin Bluetooth trong danh sách thành phần giữ lại.</value></data>
+  <data name="Interaction.AudioGestures" xml:space="preserve"><value>Thao tác thiết bị âm thanh</value></data>
 </root>

@@ -241,7 +241,7 @@
                     </StackPanel>
                 </components:SettingsGroup>
 
-                <components:SettingsGroup GroupId="Audio.Settings.Title" Header="{DynamicResource Loc.Audio.Settings.Title}"
+                <components:SettingsGroup GroupId="Interaction.AudioGestures" Header="{DynamicResource Loc.Interaction.AudioGestures}"
                     Visibility="{Binding ViewModel.IsNewAudioControlEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}"
                     Description="{DynamicResource Loc.Audio.Settings.Description}" Icon="{ui:SymbolIcon Speaker224}">
                     <StackPanel>

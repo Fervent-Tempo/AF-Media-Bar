@@ -21,6 +21,7 @@ AF-Media-Bar/
 │   ├── Resources/            # 主题、样式与语言文案
 │   ├── ViewModels/           # MVVM 视图模型
 │   └── Views/                # 页面与宿主窗口
+├── src/AFMediaBar.MemoryHelper/ # 固定内存操作的隔离执行端，不加载应用配置或 Host
 ├── tests/AFMediaBar.Layout.Tests/   # 按领域组织的逻辑、呈现与生命周期回归
 ├── tools/                    # 设置契约与开发、发布验证脚本
 ├── installer/                # Inno Setup 安装脚本
@@ -59,6 +60,8 @@ AppSettings、设置枚举/事件和 SettingsManager 门面分文件维护；设
 歌词网页通过 LyricsWebViewRenderer 按顺序拼成一个内嵌脚本：context 提供 DOM 与共享布局上下文，word-scan 和 transitions 负责歌词推进，artwork 和 spectrum 以闭包独占各自状态，app 接收原有协议。模块不引入额外联网或加载器。
 
 代码落在拥有该状态和资源的领域。只在独立职责、复用或生命周期需要时新增文件；不因文件长度或访问方便拆分、跨层添加逻辑。新文件职责说明和公开类型 XML 文档见代码风格规范。
+
+系统内存优化使用独立的 `AFMediaBar.MemoryHelper` 执行端。主程序内嵌其执行文件与自带运行库的归档，按需提权；持久授权仅注册指向管理员保护目录的固定任务；执行文件及运行库均在该目录部署，不依赖临时目录自解压，返回结果通过带请求身份的单向管道验证。执行端没有 WPF、普通 Host、用户设置或任意命令入口。
 
 ## 依赖与平台宿主
 

@@ -24,6 +24,8 @@ public sealed partial class BluetoothBatterySettingsViewModel : ObservableObject
     public bool IsExperimentEnabled => SettingsManager.Current.Experiments.BluetoothBattery;
     public bool Enabled { get => Current.Enabled; set => Update(Current with { Enabled = value }); }
     public bool Notifications { get => Current.Notifications; set => Update(Current with { Notifications = value }); }
+    public double MinimumLowThreshold => BluetoothBatteryWidgetSettings.MinimumThreshold;
+    public double MaximumLowThreshold => BluetoothBatteryWidgetSettings.MaximumThreshold;
     public int LowThreshold { get => Current.LowThreshold; set => Update(Current with { LowThreshold = value }); }
     public BluetoothBatteryDisplayMode DisplayMode { get => Current.DisplayMode; set => Update(Current with { DisplayMode = value }); }
     public BluetoothBatteryDevice? SelectedDevice
@@ -62,7 +64,7 @@ public sealed partial class BluetoothBatterySettingsViewModel : ObservableObject
             _status = string.Empty;
             OnPropertyChanged(string.Empty);
         }
-        catch (OperationCanceledException) { }
+        catch (OperationCanceledException) when (_disposed || _configuration.CancellationToken.IsCancellationRequested) { }
         catch (Exception) { if (!_disposed && generation == _generation) { _status = Translations.Get("Battery.ReadFailed"); OnPropertyChanged(nameof(CurrentDetails)); } }
         finally { _refreshing = false; }
     }

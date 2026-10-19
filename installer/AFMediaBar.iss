@@ -186,6 +186,10 @@ var
   OwnerSid: String;
   Helper: String;
   TemporaryHelper: String;
+  TemporaryDirectory: String;
+  PayloadDirectory: String;
+  FindRecord: TFindRec;
+  CopiedPayload: Boolean;
   ExitCode: Integer;
 begin
   if not RegGetSubkeyNames(HKCU64, 'Software\AFMediaBar\MemoryOptimizer', Entries) then
@@ -209,10 +213,29 @@ begin
       Helper := ExpandConstant('{commonpf64}') + '\AFMediaBar.MemoryOptimizer\' + OwnerSid + '\' + Instance + '\AFMediaBar.MemoryHelper.exe';
       if FileExists(Helper) then
       begin
-        TemporaryHelper := ExpandConstant('{tmp}\AFMediaBar.MemoryHelper.exe');
-        if FileCopy(Helper, TemporaryHelper, False) then
+        PayloadDirectory := ExtractFileDir(Helper);
+        TemporaryDirectory := ExpandConstant('{tmp}\AFMemoryUninstall');
+        ForceDirectories(TemporaryDirectory);
+        CopiedPayload := True;
+        if FindFirst(PayloadDirectory + '\*', FindRecord) then
+        begin
+          try
+            repeat
+              if (FindRecord.Attributes and FILE_ATTRIBUTE_DIRECTORY) = 0 then
+                if not FileCopy(PayloadDirectory + '\' + FindRecord.Name, TemporaryDirectory + '\' + FindRecord.Name, False) then CopiedPayload := False;
+            until not FindNext(FindRecord);
+          finally
+            FindClose(FindRecord);
+          end;
+        end
+        else CopiedPayload := False;
+        TemporaryHelper := TemporaryDirectory + '\AFMediaBar.MemoryHelper.exe';
+        if CopiedPayload then
+        begin
           if not ShellExec('runas', TemporaryHelper, '--uninstall ' + OwnerSid + ' ' + Instance, '', SW_HIDE, ewWaitUntilTerminated, ExitCode) or (ExitCode <> 0) then
             Log('Memory optimization authorization cleanup needs manual retry.');
+        end
+        else Log('Unable to prepare memory optimization cleanup files; authorization needs manual removal.');
       end;
     end;
   end;

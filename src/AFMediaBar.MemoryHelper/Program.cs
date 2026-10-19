@@ -7,6 +7,8 @@ using System.Text.Json;
 using AFMediaBar.Classes.Services;
 using Microsoft.Win32.SafeHandles;
 
+using AFMediaBar.Classes.Settings;
+
 namespace AFMediaBar.MemoryHelper;
 
 internal static class Program
@@ -17,8 +19,8 @@ internal static class Program
             null, TimeSpan.FromSeconds(60), Timeout.InfiniteTimeSpan);
         try
         {
-            var run = args.Length == 3 && args[0] == "--run" && args[1] is "standard" or "deep";
-            var manage = args.Length == 4 && args[0] is "--install" or "--revoke";
+            var run = args.Length == 3 && args[0] == "--run" && (args[1] is "standard" or "deep") && Guid.TryParseExact(args[2], "N", out _);
+            var manage = args.Length == 4 && (args[0] is "--install" or "--revoke") && Guid.TryParseExact(args[3], "N", out _);
             var uninstall = args.Length == 3 && args[0] == "--uninstall";
             if (!run && !manage && !uninstall) return (int)SystemMemoryCleanupStatus.InvalidRequest;
             using var identity = WindowsIdentity.GetCurrent();
@@ -59,10 +61,13 @@ internal static class Program
             await using var writer = new StreamWriter(pipe);
             await writer.WriteLineAsync(JsonSerializer.Serialize(reply));
             await writer.FlushAsync();
+            // 保持客户端存活到父进程完成身份检查并读完结果，不接收任何命令。
+            pipe.WaitForPipeDrain();
             return (int)reply.Status;
         }
         catch (Exception) { return (int)SystemMemoryCleanupStatus.Failed; }
     }
-    [DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)]
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool GetNamedPipeServerProcessId(SafePipeHandle pipe, out int processId);
 }

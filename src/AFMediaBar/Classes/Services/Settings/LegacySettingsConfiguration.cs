@@ -168,7 +168,7 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
             { LengthMode = geometry.LengthMode, FixedLengthDip = geometry.FixedLengthDip, Arrangement = geometry.Arrangement };
             next.SpectrumComponent = defaults.SpectrumComponent;
             next.PerformanceComponent = defaults.PerformanceComponent;
-            root.BluetoothBatteryWidget = root.BluetoothBatteryWidget with { Enabled = defaults.BluetoothBatteryWidget.Enabled };
+            next.BluetoothBatteryWidget = next.BluetoothBatteryWidget with { Enabled = defaults.BluetoothBatteryWidget.Enabled };
             next.LyricsTextAlignment = defaults.LyricsTextAlignment;
             next.LyricsFixedWidthEnabled = geometry.LyricsFixedWidthEnabled;
             next.LyricsFixedWidthDip = geometry.LyricsFixedWidthDip;

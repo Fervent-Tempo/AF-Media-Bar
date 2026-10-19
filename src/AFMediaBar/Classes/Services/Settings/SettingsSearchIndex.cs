@@ -61,7 +61,9 @@ public static class SettingsSearchIndex
     public static IReadOnlyList<SettingsSearchEntry> ForContext(SettingsContext context) => Entries.Where(entry =>
         SettingsPageCatalog.Find(entry.Page, context.Mode) is not null &&
         (entry.Page != SettingsPageKey.Application || entry.GroupId != "Memory.Title" || AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.MemoryTools) &&
-        (entry.GroupId != "Audio.Settings.Title" || AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.NewAudioControl) &&
+        (entry.Page != SettingsPageKey.DeviceManagement || (entry.GroupId == "Battery.Title"
+            ? AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.BluetoothBattery : AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.NewAudioControl)) &&
+        (entry.Page != SettingsPageKey.Interaction || entry.GroupId != "Interaction.AudioGestures" || AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.NewAudioControl) &&
         (entry.Page != SettingsPageKey.ScreenAndPlacement || entry.GroupId == "Common.Group.ChooseDisplayMode" ||
             entry.GroupId == "Common.Group.ScreenAndPlacement" && context.Mode == SettingsMode.Taskbar ||
             entry.GroupId == "Placement.Floating.Title" && context.Mode == SettingsMode.FloatingBar && AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.FloatingBar) &&
@@ -218,11 +220,13 @@ public static class SettingsSearchIndex
             language,
             ["通知", "notification", "切歌", "曲目", "track", "位置", "锚点", "停留", "时长", "duration", "全屏", "显示器", "停留时间", "目标显示器"]),
 
-        Create(SettingsPageKey.DeviceManagement, "Device.Input", "Audio.Settings.InputList", language, ["输入", "麦克风", "input", "microphone"]),
+        Create(SettingsPageKey.DeviceManagement, "Common.InputDevice", "Audio.Settings.InputList", language, ["输入", "麦克风", "input", "microphone"]),
         Create(SettingsPageKey.DeviceManagement, "Device.Hotkeys", "Device.Cycle.Hint", language, ["设备快捷键", "循环", "别名", "排序", "拖动", "hotkey", "cycle", "alias", "order"]),
         Create(SettingsPageKey.DeviceManagement, "Battery.Title", "Battery.SelectHint", language, ["蓝牙", "藍牙", "电量", "電量", "耳机", "鼠标", "键盘", "battery", "bluetooth", "headphones", "mouse", "keyboard", "低电量"]),
+        Create(SettingsPageKey.Interaction, "Interaction.AudioGestures", "Audio.Settings.AdvancedDescription", language, ["音频手势", "设备点击", "设备滚轮", "audio gestures", "click", "wheel"]),
+        Create(SettingsPageKey.Experimental, "Battery.Title", "Battery.SelectHint", language, ["蓝牙电量", "bluetooth battery", "电量组件"]),
         // ---- 交互 / Interaction ----
-        Create(SettingsPageKey.DeviceManagement, "Device.Output", "Audio.Settings.Description", language,
+        Create(SettingsPageKey.DeviceManagement, "Common.OutputDevice", "Audio.Settings.Description", language,
             ["音频", "audio", "输入", "input", "输出", "output", "麦克风", "microphone", "黑名单", "blacklist", "通信设备", "communications", "前台应用", "foreground"]),
         Create(
             SettingsPageKey.Interaction,

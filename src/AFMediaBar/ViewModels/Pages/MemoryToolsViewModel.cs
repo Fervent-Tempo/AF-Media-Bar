@@ -18,6 +18,10 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
     public string AutomaticStatusText => Translations.Get(_automation.StatusKey);
     public bool TimerEnabled { get => SettingsManager.Current.SystemMemoryOptimization.TimerEnabled; set => _ = SetAutomaticAsync(true, value); }
     public bool ThresholdEnabled { get => SettingsManager.Current.SystemMemoryOptimization.ThresholdEnabled; set => _ = SetAutomaticAsync(false, value); }
+    public double MinimumAutomaticInterval => SystemMemoryOptimizationSettings.MinimumIntervalMinutes;
+    public double MaximumAutomaticInterval => SystemMemoryOptimizationSettings.MaximumIntervalMinutes;
+    public double MinimumAutomaticThreshold => SystemMemoryOptimizationSettings.MinimumThresholdPercent;
+    public double MaximumAutomaticThreshold => SystemMemoryOptimizationSettings.MaximumThresholdPercent;
     public int IntervalMinutes { get => SettingsManager.Current.SystemMemoryOptimization.IntervalMinutes; set => UpdateAutomatic(SettingsManager.Current.SystemMemoryOptimization with { IntervalMinutes = value }); }
     public int ThresholdPercent { get => SettingsManager.Current.SystemMemoryOptimization.ThresholdPercent; set => UpdateAutomatic(SettingsManager.Current.SystemMemoryOptimization with { ThresholdPercent = value }); }
     public SystemMemoryOptimizationLevel AutomaticLevel { get => SettingsManager.Current.SystemMemoryOptimization.Level; set => UpdateAutomatic(SettingsManager.Current.SystemMemoryOptimization with { Level = value }); }
@@ -33,6 +37,7 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
             {
                 if (await _authorizationPrompt.ChooseAsync(true) != MemoryAuthorizationChoice.Remember || _disposed) return;
                 var result = await _systemCleanup.ManageAuthorizationAsync(true);
+                _systemResult = result;
                 if (_disposed || result.Status != SystemMemoryCleanupStatus.Completed || _systemCleanup.Authorization != MemoryCleanupAuthorization.Ready) return;
             }
             var settings = SettingsManager.Current.SystemMemoryOptimization;
@@ -202,7 +207,7 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
         try
         {
             var outcome = await _prune.RequestTrimAsync(strength);
-            if (_disposed || !_visible || source != _sampling) return;
+            if (_disposed) return;
             _lastOutcome = outcome;
             _lastTrimAt = DateTimeOffset.Now;
             OnPropertyChanged(nameof(ResultText));

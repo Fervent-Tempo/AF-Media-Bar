@@ -23,6 +23,7 @@ internal static class FloatingBarHostChecks
         using var icons = new AppIconService();
         using var appearance = new WindowAppearanceService(new NativeWindowBackdropAdapter(), icons);
         using var switches = new AudioDeviceSwitchCoordinator(new NoDevices());
+        using var battery = new BluetoothBatteryService(new(), new(), null!, null!);
         using var zOrder = new DesktopWidgetZOrderService();
         var audio = new AudioInteractionService(null!, null!, null!, null!, switches, null!, () => false);
         // 不调用 Start：没有计时器、消息窗口或电源订阅，宿主仅读取初始档位。
@@ -41,7 +42,7 @@ internal static class FloatingBarHostChecks
                 new Rect(0, 0, 1200, 800), new Rect(0, 0, 1200, 760), 96, 96);
             var limits = new FloatingBarLengthConstraints();
             // 未触发的命令与业务服务不构造；若布局错误地要求采样，本回归会失败。
-            window = new FloatingBarWindow("test", display, null!, null!, audio, null!, null!, null!, mouse,
+            window = new FloatingBarWindow(battery, "test", display, null!, null!, audio, null!, null!, null!, mouse,
                 prune, zOrder, appearance, new ScreenBackgroundSampler(), log, limits)
             { Title = "AFMB floating verification" };
             window.ApplySnapshot(MediaSnapshot.Disconnected with

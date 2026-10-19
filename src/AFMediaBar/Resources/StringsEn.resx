@@ -2997,8 +2997,8 @@ Managed heap {6} → {7} · {8} ms · {9}</value></data>
   <data name="Memory.Status.Cancelled" xml:space="preserve"><value>Cancelled before starting</value></data>
   <data name="Memory.Status.Unavailable" xml:space="preserve"><value>Reclaim is unavailable</value></data>
   <data name="Memory.Status.Failed" xml:space="preserve"><value>Reclaim failed; see the log</value></data>
-  <data name="Memory.System.Title" xml:space="preserve"><value>Manual system memory cleanup</value></data>
-  <data name="Memory.System.Description" xml:space="preserve"><value>Clears only low-priority standby pages and requests elevation on click. Caches may need rebuilding; API support and effects vary by Windows version.</value></data>
+  <data name="Memory.System.Title" xml:space="preserve"><value>System memory optimization</value></data>
+  <data name="Memory.System.Description" xml:space="preserve"><value>Standard clears low-priority standby pages; Deep also processes the system file cache and all standby pages. Requires administrator approval. Caches may need rebuilding; support and effects vary by Windows version.</value></data>
   <data name="Memory.System.Clean" xml:space="preserve"><value>Clear low-priority standby pages…</value></data>
   <data name="Memory.System.Completed" xml:space="preserve"><value>System cleanup request completed</value></data>
   <data name="Memory.System.PermissionDenied" xml:space="preserve"><value>Permission denied; cleanup was not performed</value></data>
@@ -3009,8 +3009,8 @@ Managed heap {6} → {7} · {8} ms · {9}</value></data>
   <data name="Memory.System.Cancelled" xml:space="preserve"><value>Cleanup request cancelled</value></data>
   <data name="Memory.System.Busy" xml:space="preserve"><value>System cleanup is already running</value></data>
   <data name="Memory.System.Readings" xml:space="preserve"><value>System available memory {0} → {1} (also affected by other activity; not exact reclaimed bytes)</value></data>
-  <data name="Device.Personalization" xml:space="preserve"><value>Device aliases, favorites and order</value></data>
-  <data name="Device.PersonalizationHint" xml:space="preserve"><value>Changes AF only. Favorites appear first; other devices remain available.</value></data>
+  <data name="Device.Personalization" xml:space="preserve"><value>Device aliases and order</value></data>
+  <data name="Device.PersonalizationHint" xml:space="preserve"><value>Drag to reorder display and switching in AF. Disabled devices are collapsed; Windows devices are unaffected.</value></data>
   <data name="Device.Alias" xml:space="preserve"><value>AF display name (blank uses system name)</value></data>
   <data name="Device.MoveUp" xml:space="preserve"><value>Move up</value></data>
   <data name="Device.MoveDown" xml:space="preserve"><value>Move down</value></data>
@@ -3018,17 +3018,17 @@ Managed heap {6} → {7} · {8} ms · {9}</value></data>
   <data name="Device.Rebind" xml:space="preserve"><value>Rebind</value></data>
   <data name="Device.RebindHint" xml:space="preserve"><value>Choose a replacement endpoint. This transfers the saved preferences and replaces its AF configuration. Names are never matched automatically.</value></data>
   <data name="Device.Hotkey.Title" xml:space="preserve"><value>Device switching hotkeys</value></data>
-  <data name="Device.Hotkey.Hint" xml:space="preserve"><value>Switches system defaults only. Click a recorder and press a shortcut with Ctrl or Alt; Win and F12 are unavailable. Cycling follows favorite order and skips unavailable devices.</value></data>
+  <data name="Device.Hotkey.Hint" xml:space="preserve"><value>Switches system defaults only. Record a shortcut containing Ctrl or Alt; Win and F12 are unsupported. Cycle checked, enabled devices in their displayed order, skipping offline devices.</value></data>
   <data name="Device.Hotkey.CycleOutput" xml:space="preserve"><value>Cycle selected output devices</value></data>
   <data name="Device.Hotkey.CycleInput" xml:space="preserve"><value>Cycle selected input devices</value></data>
   <data name="Device.Hotkey.Invalid" xml:space="preserve"><value>Invalid key combination</value></data>
   <data name="Device.Hotkey.Duplicate" xml:space="preserve"><value>Duplicates another AF hotkey; not registered</value></data>
   <data name="Device.Hotkey.Conflict" xml:space="preserve"><value>Key combination is occupied or rejected; not registered</value></data>
   <data name="Device.Hotkey.Registered" xml:space="preserve"><value>Registered</value></data>
-  <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>No available target; check favorites, hidden devices and connections</value></data>
+  <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>No available target; check cycle selection, enabled state and connection</value></data>
   <data name="Device.Hotkey.Failed" xml:space="preserve"><value>Device switch did not complete</value></data>
   <data name="Battery.Title" xml:space="preserve"><value>Bluetooth battery</value></data>
-  <data name="Battery.Hint" xml:space="preserve"><value>Uses Windows properties and standard BLE battery data; unsupported devices show unknown. Alerts apply only to the current output headphone, once per low-battery cycle. Startup, switching and reconnect establish a baseline.</value></data>
+  <data name="Battery.Hint" xml:space="preserve"><value>Tracks one manually selected Bluetooth device using Windows properties and standard BLE battery data. One alert per low-battery cycle; startup, selection changes and reconnection establish a baseline first.</value></data>
   <data name="Battery.Notify" xml:space="preserve"><value>Low-battery alerts for selected device</value></data>
   <data name="Battery.Threshold" xml:space="preserve"><value>Low-battery threshold (%)</value></data>
   <data name="Battery.Unknown" xml:space="preserve"><value>Battery unknown</value></data>
@@ -3120,4 +3120,5 @@ Source: {2}</value></data>
   <data name="Battery.Refresh" xml:space="preserve"><value>Refresh battery</value></data>
   <data name="Battery.RefreshHint" xml:space="preserve"><value>Reads at most once per minute, with connection updates and backoff on failures.</value></data>
   <data name="Battery.WidgetHint" xml:space="preserve"><value>Select a device in Device management. To show it without media, also select Bluetooth battery in the kept components list.</value></data>
+  <data name="Interaction.AudioGestures" xml:space="preserve"><value>Audio device gestures</value></data>
 </root>

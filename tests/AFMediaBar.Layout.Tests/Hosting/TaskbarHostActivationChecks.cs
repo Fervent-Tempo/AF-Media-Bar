@@ -27,6 +27,7 @@ internal static class TaskbarHostActivationChecks
         using var icons = new AppIconService();
         using var appearance = new WindowAppearanceService(new NativeWindowBackdropAdapter(), icons);
         using var switches = new AudioDeviceSwitchCoordinator(new NoDevices());
+        using var battery = new BluetoothBatteryService(new(), new(), null!, null!);
         var audio = new AudioInteractionService(null!, null!, null!, null!, switches, null!, () => false);
         var prune = new MemoryPruneCoordinator(null!, null!, null!, []);
         using var mouse = new NativeMouseInputMonitor(null!);
@@ -89,7 +90,7 @@ internal static class TaskbarHostActivationChecks
                             Bottom = (int)bounds.Bottom + 46
                         };
                     dock.ObservedRect = attempt == 0 ? hiddenRect : revealedRect;
-                    var window = new TaskbarWindow(dock, "test", actions, appearance,
+                    var window = new TaskbarWindow(battery, dock, "test", actions, appearance,
                         new TaskbarOccupiedAreaService(probe), new TaskbarLengthConstraintsService(),
                         new GlobalInteractionRouter(media, audio), audio, monitor, null!, null!,
                         new ScreenBackgroundSampler(), mouse, prune, surfaceSessions, viewModel, null!, startImmediately: false);
@@ -136,7 +137,7 @@ internal static class TaskbarHostActivationChecks
                 Bottom = (int)monitorBounds.Bottom + 46
             };
             var firstPlacement = new FirstPlacementProbe();
-            var firstWindow = new TaskbarWindow(dock, "test", actions, appearance,
+            var firstWindow = new TaskbarWindow(battery, dock, "test", actions, appearance,
                 new TaskbarOccupiedAreaService(firstPlacement), new TaskbarLengthConstraintsService(),
                 new GlobalInteractionRouter(media, audio), audio, monitor, null!, null!,
                 new ScreenBackgroundSampler(), mouse, prune, surfaceSessions, viewModel, null!, startImmediately: false);

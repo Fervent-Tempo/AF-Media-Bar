@@ -123,7 +123,7 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
     }
     private static IReadOnlyList<AudioDeviceExclusion> UpdateNames(IReadOnlyList<AudioDeviceExclusion> entries, IReadOnlyList<AudioDeviceOption> devices) =>
         entries.Select(entry => devices.FirstOrDefault(device => device.PolicyId.Equals(entry.EndpointId, StringComparison.OrdinalIgnoreCase)) is { } device ?
-            entry with { DisplayName = device.DisplayName } : entry).ToArray();
+            entry with { DisplayName = device.SystemName } : entry).ToArray();
 
     private void Synchronize(ObservableCollection<AudioDevicePermissionItemViewModel> rows,
         ObservableCollection<AudioDevicePermissionItemViewModel> disabledRows,
@@ -133,7 +133,7 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
         var settings = _configuration.Current.AudioDevices;
         var blocked = direction == AudioDeviceDirection.Output ? settings.OutputBlacklist : settings.InputBlacklist;
         var preferences = settings.Preferences.Where(entry => entry.Direction == direction).ToArray();
-        var known = blocked.Concat(preferences.Select(entry => new AudioDeviceExclusion(entry.EndpointId, entry.LastKnownName)))
+        var known = preferences.Select(entry => new AudioDeviceExclusion(entry.EndpointId, entry.LastKnownName)).Concat(blocked)
             .DistinctBy(entry => entry.EndpointId, StringComparer.OrdinalIgnoreCase);
         var all = devices.Concat(known.Where(entry => !devices.Any(device => device.PolicyId.Equals(entry.EndpointId, StringComparison.OrdinalIgnoreCase)))
             .Select(entry => new AudioDeviceOption(entry.EndpointId, entry.EndpointId, entry.DisplayName, false) { Direction = direction, IsActive = false, Availability = AudioDeviceAvailability.Unavailable }));
@@ -230,7 +230,7 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
         var settings = _configuration.Current.AudioDevices;
         var entries = (device.Direction == AudioDeviceDirection.Output ? settings.OutputBlacklist : settings.InputBlacklist)
             .Where(entry => !entry.EndpointId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase)).ToList();
-        if (!allowed) entries.Add(new(device.PolicyId, device.DisplayName));
+        if (!allowed) entries.Add(new(device.PolicyId, device.SystemName));
         _configuration.SetAudioDeviceSettings(device.Direction == AudioDeviceDirection.Output ?
             settings with { OutputBlacklist = entries.ToArray() } : settings with { InputBlacklist = entries.ToArray() });
     }

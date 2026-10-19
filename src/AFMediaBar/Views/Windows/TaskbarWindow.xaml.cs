@@ -2388,8 +2388,10 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             return;
         }
 
-        IsPerformanceMenuRequested = MediaControl.IsPerformanceComponentClick(e.OriginalSource as DependencyObject);
-        IsBatteryMenuRequested = MediaControl.IsBatteryComponentClick(e.OriginalSource as DependencyObject);
+        var menuSource = e.CursorLeft < 0 && e.CursorTop < 0 ? Keyboard.FocusedElement as DependencyObject
+            : MediaControl.InputHitTest(Mouse.GetPosition(MediaControl)) as DependencyObject ?? e.OriginalSource as DependencyObject;
+        IsPerformanceMenuRequested = SettingsManager.Current.Experiments.MemoryTools && MediaControl.IsPerformanceComponentClick(menuSource);
+        IsBatteryMenuRequested = MediaControl.IsBatteryComponentClick(menuSource);
         PlayerMenu.ApplyQuickLaunchEntries(SettingsManager.Current.QuickLaunch.Entries ?? []);
         _playerMenuOpeningAnchor = GetMediaBarScreenPhysicalBounds();
         Point? keyboardAnchor = e.CursorLeft < 0 && e.CursorTop < 0

@@ -53,7 +53,7 @@
         <ScrollViewer x:Name="PageScroll" Grid.Row="1" Margin="{StaticResource AfSettingsScrollMargin}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <StackPanel MaxWidth="{StaticResource AfSettingsContentMaxWidth}" Loaded="OnPageLoaded">
                 <components:SettingsCallout Text="{DynamicResource Loc.Device.RequireExperiment}" Symbol="Info24" IsAccent="False" Margin="0,0,0,12"/>
-                <components:SettingsGroup GroupId="Device.Output" Header="{DynamicResource Loc.Common.OutputDevice}" Icon="{ui:SymbolIcon Speaker224}" IsEnabled="{Binding ViewModel.IsEnabled}">
+                <components:SettingsGroup GroupId="Common.OutputDevice" Header="{DynamicResource Loc.Common.OutputDevice}" Icon="{ui:SymbolIcon Speaker224}" IsEnabled="{Binding ViewModel.IsEnabled}">
                     <StackPanel>
                         <ItemsControl ItemsSource="{Binding ViewModel.OutputDevices}" ItemTemplate="{StaticResource DeviceRow}"/>
                         <Expander Header="{DynamicResource Loc.Device.Disabled}" Margin="12,8"><ItemsControl ItemsSource="{Binding ViewModel.DisabledOutputDevices}" ItemTemplate="{StaticResource DeviceRow}"/></Expander>
@@ -61,7 +61,7 @@
                         <components:SettingsRow Title="{DynamicResource Loc.Audio.Settings.OutputCommunications}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.SwitchOutputCommunications, Mode=TwoWay}"/></components:SettingsRow>
                     </StackPanel>
                 </components:SettingsGroup>
-                <components:SettingsGroup GroupId="Device.Input" Header="{DynamicResource Loc.Common.InputDevice}" Icon="{ui:SymbolIcon Mic24}" IsEnabled="{Binding ViewModel.IsEnabled}">
+                <components:SettingsGroup GroupId="Common.InputDevice" Header="{DynamicResource Loc.Common.InputDevice}" Icon="{ui:SymbolIcon Mic24}" IsEnabled="{Binding ViewModel.IsEnabled}">
                     <StackPanel>
                         <ItemsControl ItemsSource="{Binding ViewModel.InputDevices}" ItemTemplate="{StaticResource DeviceRow}"/>
                         <Expander Header="{DynamicResource Loc.Device.Disabled}" Margin="12,8"><ItemsControl ItemsSource="{Binding ViewModel.DisabledInputDevices}" ItemTemplate="{StaticResource DeviceRow}"/></Expander>
@@ -90,7 +90,7 @@
                             <ComboBoxItem Content="{DynamicResource Loc.Battery.WhenLow}" Tag="{x:Static settings:BluetoothBatteryDisplayMode.WhenLow}"/>
                         </ComboBox></components:SettingsRow>
                         <components:SettingsRow Title="{DynamicResource Loc.Battery.Notify}"><ui:ToggleSwitch IsChecked="{Binding Notifications, Mode=TwoWay}"/></components:SettingsRow>
-                        <components:SettingsRow Title="{DynamicResource Loc.Battery.Threshold}"><ui:NumberBox Minimum="5" Maximum="90" Value="{Binding LowThreshold, Mode=TwoWay}" Width="150"/></components:SettingsRow>
+                        <components:SettingsRow Title="{DynamicResource Loc.Battery.Threshold}"><ui:NumberBox Minimum="{Binding MinimumLowThreshold}" Maximum="{Binding MaximumLowThreshold}" Value="{Binding LowThreshold, Mode=TwoWay}" Width="150"/></components:SettingsRow>
                         <TextBlock Text="{Binding CurrentDetails}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="16,8"/>
                         <components:SettingsRow Title="{DynamicResource Loc.Battery.RefreshHint}"><ui:Button Content="{DynamicResource Loc.Battery.Refresh}" Command="{Binding RefreshCommand}" Style="{StaticResource AfSettingsButtonStyle}"/></components:SettingsRow>
                     </StackPanel>

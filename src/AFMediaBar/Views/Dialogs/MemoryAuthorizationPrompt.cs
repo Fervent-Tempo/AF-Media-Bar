@@ -24,13 +24,27 @@ public sealed class MemoryAuthorizationPrompt(WindowAppearanceService appearance
         var panel = new StackPanel { Margin = new Thickness(24) };
         panel.Children.Add(new TextBlock { Text = Translations.Get("Memory.Authorization.Explanation"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 20) });
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
-        var dialog = new FluentWindow { Title = Translations.Get("Memory.Authorization.Title"), Content = panel, Width = 580,
-            MinHeight = 0, SizeToContent = SizeToContent.Height, ResizeMode = ResizeMode.NoResize, ShowInTaskbar = true, WindowStartupLocation = WindowStartupLocation.CenterScreen };
+        var dialog = new FluentWindow
+        {
+            Title = Translations.Get("Memory.Authorization.Title"),
+            Content = panel,
+            Width = 580,
+            MinHeight = 0,
+            SizeToContent = SizeToContent.Height,
+            ResizeMode = ResizeMode.NoResize,
+            ShowInTaskbar = true,
+            WindowStartupLocation = WindowStartupLocation.CenterScreen
+        };
         _window = dialog;
         void Add(string key, MemoryAuthorizationChoice value)
         {
-            var button = new Button { Content = Translations.Get(key), Margin = new Thickness(4), IsCancel = value == MemoryAuthorizationChoice.Cancel,
-                IsDefault = value == MemoryAuthorizationChoice.Cancel };
+            var button = new Button
+            {
+                Content = Translations.Get(key),
+                Margin = new Thickness(4),
+                IsCancel = value == MemoryAuthorizationChoice.Cancel,
+                IsDefault = value == MemoryAuthorizationChoice.Cancel
+            };
             button.Click += (_, _) => { choice = value; dialog.Close(); };
             buttons.Children.Add(button);
         }

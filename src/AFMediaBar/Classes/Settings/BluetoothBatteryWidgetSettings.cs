@@ -7,17 +7,20 @@ public enum BluetoothBatteryDisplayMode { WhenConnected, WhenLow }
 /// <summary>组件和低电量提醒共用所选设备及阈值，缺字段保持关闭。</summary>
 public sealed record BluetoothBatteryWidgetSettings
 {
+    public const int MinimumThreshold = 5;
+    public const int MaximumThreshold = 90;
+    public const int DefaultThreshold = 20;
     public bool Enabled { get; init; }
     public string? DeviceId { get; init; }
     public string LastKnownName { get; init; } = string.Empty;
     public BluetoothBatteryDisplayMode DisplayMode { get; init; }
     public bool Notifications { get; init; }
-    public int LowThreshold { get; init; } = 20;
+    public int LowThreshold { get; init; } = DefaultThreshold;
     public BluetoothBatteryWidgetSettings Normalize() => this with
     {
         DeviceId = string.IsNullOrWhiteSpace(DeviceId) ? null : DeviceId.Trim(),
         LastKnownName = LastKnownName ?? string.Empty,
         DisplayMode = Enum.IsDefined(DisplayMode) ? DisplayMode : BluetoothBatteryDisplayMode.WhenConnected,
-        LowThreshold = Math.Clamp(LowThreshold, 5, 90)
+        LowThreshold = Math.Clamp(LowThreshold, MinimumThreshold, MaximumThreshold)
     };
 }

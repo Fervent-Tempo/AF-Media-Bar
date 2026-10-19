@@ -18,17 +18,18 @@ public sealed class SettingsSearchLayoutTests
         {
             AFMediaBar.Classes.Settings.SettingsManager.Current = new AFMediaBar.Classes.Settings.AppSettings();
             var context = AFMediaBar.Classes.Models.Settings.SettingsContext.Initial;
-            Assert.IsFalse(SettingsSearchIndex.ForContext(context).Any(entry => entry.GroupId == "Audio.Settings.Title"));
+            Assert.IsFalse(SettingsSearchIndex.ForContext(context).Any(entry => entry.GroupId == "Common.OutputDevice"));
             Assert.IsTrue(SettingsSearchIndex.ForContext(context).Any(entry => entry.GroupId == "Experimental.Audio.Title"));
             AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments = new() { NewAudioControl = true };
             Assert.IsTrue(SettingsSearchIndex.ForContext(context).Any(entry =>
-                entry.Page == SettingsPageKey.Interaction && entry.GroupId == "Audio.Settings.Title"));
+                entry.Page == SettingsPageKey.DeviceManagement && entry.GroupId == "Common.OutputDevice"));
         }
         finally { AFMediaBar.Classes.Settings.SettingsManager.Current = previous; }
     }
     [DataTestMethod]
     [DataRow(SettingsPageKey.Appearance, "AppearancePage")]
     [DataRow(SettingsPageKey.Interaction, "InteractionPage")]
+    [DataRow(SettingsPageKey.DeviceManagement, "DeviceManagementPage")]
     [DataRow(SettingsPageKey.MediaAndNotifications, "ExtraFeaturesPage")]
     [DataRow(SettingsPageKey.Lyrics, "LyricsPage")]
     [DataRow(SettingsPageKey.Components, "ComponentsSettingsPage")]

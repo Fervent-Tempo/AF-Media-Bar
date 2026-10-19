@@ -64,7 +64,7 @@ public sealed class AudioSettingsPageLoadingTests
                 page.Measure(new Size(820, 900));
                 Assert.AreEqual(1, devices.OtherOutputDevices.Count);
                 Assert.IsNotNull(page.Content);
-                var audio = LogicalChildren(page).OfType<SettingsGroup>().Single(group => group.GroupId == "Audio.Settings.Title");
+                var audio = LogicalChildren(page).OfType<SettingsGroup>().Single(group => group.GroupId == "Interaction.AudioGestures");
                 var inputs = LogicalChildren(page).OfType<ComboBoxItem>().Where(item =>
                     item.Tag is WheelAction.InputDevice or TrayClickAction.OpenInputDeviceMenu or TrayWheelBehavior.SwitchInputDevice).ToArray();
                 Assert.AreEqual(4, inputs.Length);

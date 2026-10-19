@@ -66,7 +66,16 @@ public sealed class BluetoothBatteryService(BluetoothBatteryReader reader, Bluet
         var settings = SettingsManager.Current.BluetoothBatteryWidget;
         var enabled = SettingsManager.Current.Experiments.BluetoothBattery && settings.DeviceId is not null && (settings.Enabled || settings.Notifications);
         if (_configuration == settings && enabled == (_session is not null)) return;
+        // 仅改变组件显隐不重建会话，避免重置同一设备的提醒周期和重复创建观察器。
+        if (enabled && _session is not null && _configuration is { } previous && previous.DeviceId == settings.DeviceId &&
+            previous.Notifications == settings.Notifications && previous.LowThreshold == settings.LowThreshold)
+        {
+            _configuration = settings;
+            Changed?.Invoke(this, EventArgs.Empty);
+            return;
+        }
         var previousId = _configuration?.DeviceId;
+        if (_configuration?.LowThreshold != settings.LowThreshold) _lowVisible = false;
         _configuration = settings;
         Interlocked.Exchange(ref _session, null)?.Cancel();
         if (previousId != settings.DeviceId) { _lastReadAttempt = default; _lowVisible = false; cache.Clear(); }
@@ -98,7 +107,7 @@ public sealed class BluetoothBatteryService(BluetoothBatteryReader reader, Bluet
                 {
                     if (token.IsCancellationRequested || id is not null && !id.Equals(session.DeviceId, StringComparison.OrdinalIgnoreCase) &&
                         !Volatile.Read(ref session.PeerIds).Contains(id, StringComparer.OrdinalIgnoreCase)) return;
-                    Interlocked.Increment(ref session.Version);
+                    if (id is not null) Interlocked.Increment(ref session.Version);
                     session.Wake();
                 }
                 TypedEventHandler<DeviceWatcher, DeviceInformation> added = (_, device) => Wake(device.Id);
@@ -111,7 +120,8 @@ public sealed class BluetoothBatteryService(BluetoothBatteryReader reader, Bluet
                     watcher.Added -= added; watcher.Updated -= updated; watcher.Removed -= removed; watcher.EnumerationCompleted -= completed;
                     if (watcher.Status is DeviceWatcherStatus.Started or DeviceWatcherStatus.EnumerationCompleted) watcher.Stop();
                 });
-                watcher.Start();
+                try { watcher.Start(); }
+                catch (Exception error) { log.Warn("Bluetooth", "设备事件观察不可用，继续低频查询", error); }
             }
             while (!token.IsCancellationRequested)
             {

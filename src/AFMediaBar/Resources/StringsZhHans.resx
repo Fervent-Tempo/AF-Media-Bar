@@ -2997,8 +2997,8 @@
   <data name="Memory.Status.Cancelled" xml:space="preserve"><value>开始前已取消</value></data>
   <data name="Memory.Status.Unavailable" xml:space="preserve"><value>回收当前不可用</value></data>
   <data name="Memory.Status.Failed" xml:space="preserve"><value>回收失败，请查看日志</value></data>
-  <data name="Memory.System.Title" xml:space="preserve"><value>手动系统内存清理</value></data>
-  <data name="Memory.System.Description" xml:space="preserve"><value>仅清理低优先级待机页，点击时请求管理员权限。系统缓存可能需要重建；接口兼容性与效果因系统版本而异。</value></data>
+  <data name="Memory.System.Title" xml:space="preserve"><value>系统内存优化</value></data>
+  <data name="Memory.System.Description" xml:space="preserve"><value>标准清理低优先级待机页，深度处理系统文件缓存和全部待机页。需管理员授权，缓存可能需要重建；兼容性与效果因系统版本而异。</value></data>
   <data name="Memory.System.Clean" xml:space="preserve"><value>清理低优先级待机页…</value></data>
   <data name="Memory.System.Completed" xml:space="preserve"><value>系统已接受清理请求</value></data>
   <data name="Memory.System.PermissionDenied" xml:space="preserve"><value>权限不足，未执行清理</value></data>
@@ -3009,8 +3009,8 @@
   <data name="Memory.System.Cancelled" xml:space="preserve"><value>已取消清理请求</value></data>
   <data name="Memory.System.Busy" xml:space="preserve"><value>已有系统清理正在执行</value></data>
   <data name="Memory.System.Readings" xml:space="preserve"><value>系统可用内存 {0} → {1}（含其他程序同期活动，不是精确释放量）</value></data>
-  <data name="Device.Personalization" xml:space="preserve"><value>设备别名、收藏与排序</value></data>
-  <data name="Device.PersonalizationHint" xml:space="preserve"><value>仅影响 AF 展示；收藏置顶，其余设备仍可选择。</value></data>
+  <data name="Device.Personalization" xml:space="preserve"><value>设备别名与顺序</value></data>
+  <data name="Device.PersonalizationHint" xml:space="preserve"><value>拖动调整 AF 中的显示与切换顺序；禁用设备收起，仅影响 AF。</value></data>
   <data name="Device.Alias" xml:space="preserve"><value>AF 显示名称（留空使用系统名称）</value></data>
   <data name="Device.MoveUp" xml:space="preserve"><value>上移</value></data>
   <data name="Device.MoveDown" xml:space="preserve"><value>下移</value></data>
@@ -3018,17 +3018,17 @@
   <data name="Device.Rebind" xml:space="preserve"><value>重新关联</value></data>
   <data name="Device.RebindHint" xml:space="preserve"><value>手动选择替代端点，将本条配置转移并替换目标端点的 AF 配置。不会按名称自动关联。</value></data>
   <data name="Device.Hotkey.Title" xml:space="preserve"><value>设备切换快捷键</value></data>
-  <data name="Device.Hotkey.Hint" xml:space="preserve"><value>仅切换系统默认设备。点击录制框后按组合键，需包含 Ctrl 或 Alt，不支持 Win 与 F12。循环按收藏顺序并跳过不可用设备。</value></data>
+  <data name="Device.Hotkey.Hint" xml:space="preserve"><value>仅切换系统默认设备。点击录制后按包含 Ctrl 或 Alt 的组合键，不支持 Win 与 F12。按拖动顺序循环勾选的启用设备，跳过离线设备。</value></data>
   <data name="Device.Hotkey.CycleOutput" xml:space="preserve"><value>循环所选输出设备</value></data>
   <data name="Device.Hotkey.CycleInput" xml:space="preserve"><value>循环所选输入设备</value></data>
   <data name="Device.Hotkey.Invalid" xml:space="preserve"><value>组合键格式无效</value></data>
   <data name="Device.Hotkey.Duplicate" xml:space="preserve"><value>与 AF 的其他快捷键重复，未注册</value></data>
   <data name="Device.Hotkey.Conflict" xml:space="preserve"><value>组合键被占用或系统拒绝，未注册</value></data>
   <data name="Device.Hotkey.Registered" xml:space="preserve"><value>已注册</value></data>
-  <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>没有可用目标，请检查收藏、黑名单或连接状态</value></data>
+  <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>没有可用目标，请检查循环勾选、启用状态和设备连接</value></data>
   <data name="Device.Hotkey.Failed" xml:space="preserve"><value>设备切换未完成</value></data>
   <data name="Battery.Title" xml:space="preserve"><value>蓝牙电量</value></data>
-  <data name="Battery.Hint" xml:space="preserve"><value>只读取 Windows 属性和标准 BLE 电量；不支持的设备显示未知。低电量提醒仅针对当前输出耳机，同一周期一次；启动、切换及重连先建立基线。</value></data>
+  <data name="Battery.Hint" xml:space="preserve"><value>仅追踪手动选择的一个蓝牙设备，读取 Windows 属性和标准 BLE 电量。低电量同一周期提醒一次，启动、改选和重连先建立基线。</value></data>
   <data name="Battery.Notify" xml:space="preserve"><value>所选设备低电量提醒</value></data>
   <data name="Battery.Threshold" xml:space="preserve"><value>低电量阈值（%）</value></data>
   <data name="Battery.Unknown" xml:space="preserve"><value>电量未知</value></data>
@@ -3120,4 +3120,5 @@
   <data name="Battery.Refresh" xml:space="preserve"><value>刷新电量</value></data>
   <data name="Battery.RefreshHint" xml:space="preserve"><value>读取最多每分钟一次；连接变化会更新状态，失败时退避。</value></data>
   <data name="Battery.WidgetHint" xml:space="preserve"><value>在设备管理中选择追踪目标。无媒体时显示需在下方保留组件中勾选蓝牙电量。</value></data>
+  <data name="Interaction.AudioGestures" xml:space="preserve"><value>音频设备手势</value></data>
 </root>

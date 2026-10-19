@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
+using System.IO.Compression;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Runtime.InteropServices;
@@ -10,6 +11,8 @@ using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
 using System.Text.Json;
+
+using AFMediaBar.Classes.Settings;
 
 namespace AFMediaBar.Classes.Services;
 
@@ -23,9 +26,9 @@ public sealed class SystemMemoryCleanupService : IDisposable
     private readonly CancellationTokenSource _stopping = new();
     private int _running;
     private bool _disposed;
-    private readonly string _owner = WindowsIdentity.GetCurrent().User!.Value;
+    private readonly string _owner = CurrentUserSid();
     private readonly string _instance = MemoryCleanupTasks.InstanceId(Environment.ProcessPath!);
-    private byte[]? _helperHash;
+    private IReadOnlyDictionary<string, byte[]>? _payloadHashes;
     public MemoryCleanupAuthorization Authorization { get; private set; }
     public event EventHandler? Changed;
 
@@ -33,10 +36,12 @@ public sealed class SystemMemoryCleanupService : IDisposable
     {
         var value = await Task.Run(() =>
         {
-            using var resource = Assembly.GetExecutingAssembly().GetManifestResourceStream("AFMediaBar.MemoryHelper.exe");
-            if (resource is null) return MemoryCleanupAuthorization.Unavailable;
-            _helperHash ??= SHA256.HashData(resource);
-            return MemoryCleanupTasks.Inspect(_owner, _instance, _helperHash);
+            try
+            {
+                _payloadHashes ??= ReadPayloadHashes();
+                return MemoryCleanupTasks.Inspect(_owner, _instance, _payloadHashes);
+            }
+            catch (Exception) { return MemoryCleanupAuthorization.Unavailable; }
         });
         if (!_disposed) { Authorization = value; Changed?.Invoke(this, EventArgs.Empty); }
         return value;
@@ -51,6 +56,7 @@ public sealed class SystemMemoryCleanupService : IDisposable
     }
     public SystemMemoryCleanupResult? LastResult { get; private set; }
     public DateTimeOffset? LastAttemptAt { get; private set; }
+    public long? LastAttemptTimestamp { get; private set; }
     public bool IsRunning => Volatile.Read(ref _running) != 0;
     public static bool IsCleanupRequest(string[] args) => args.Any(arg => arg.StartsWith("--internal-memory-clean", StringComparison.Ordinal));
 
@@ -60,6 +66,7 @@ public sealed class SystemMemoryCleanupService : IDisposable
         if (!Enum.IsDefined(level)) return new(SystemMemoryCleanupStatus.InvalidRequest, null, null);
         if (Interlocked.CompareExchange(ref _running, 1, 0) != 0) return new(SystemMemoryCleanupStatus.Busy, null, null);
         LastAttemptAt = DateTimeOffset.UtcNow;
+        LastAttemptTimestamp = Stopwatch.GetTimestamp();
         Changed?.Invoke(this, EventArgs.Empty);
         SystemMemoryCleanupResult result;
         try
@@ -78,13 +85,14 @@ public sealed class SystemMemoryCleanupService : IDisposable
         ulong? before = null;
         string? directory = null;
         Process? process = null;
+        var extractionGuards = new List<FileStream>();
         try
         {
             before = await Task.Run(MemoryToolsService.CaptureAvailableBytes);
             var nonce = Guid.NewGuid().ToString("N");
             var security = new PipeSecurity();
             security.SetAccessRuleProtection(true, false);
-            security.AddAccessRule(new PipeAccessRule(WindowsIdentity.GetCurrent().User!, PipeAccessRights.ReadWrite, AccessControlType.Allow));
+            security.AddAccessRule(new PipeAccessRule(new SecurityIdentifier(_owner), PipeAccessRights.ReadWrite, AccessControlType.Allow));
             using var pipe = NamedPipeServerStreamAcl.Create("AFMB.Memory." + nonce, PipeDirection.In, 1,
                 PipeTransmissionMode.Byte, PipeOptions.Asynchronous, 0, 0, security);
             string helper;
@@ -96,7 +104,18 @@ public sealed class SystemMemoryCleanupService : IDisposable
             else
             {
                 directory = Path.Combine(Path.GetTempPath(), "AFMB.Memory." + nonce);
-                helper = await Task.Run(() => ExtractHelper(directory));
+                helper = await Task.Run(() =>
+                {
+                    var path = ExtractHelper(directory);
+                    _payloadHashes ??= ReadPayloadHashes();
+                    foreach (var entry in _payloadHashes)
+                    {
+                        var guard = new FileStream(Path.Combine(directory, entry.Key), FileMode.Open, FileAccess.Read, FileShare.Read);
+                        extractionGuards.Add(guard);
+                        if (!CryptographicOperations.FixedTimeEquals(SHA256.HashData(guard), entry.Value)) throw new InvalidDataException();
+                    }
+                    return path;
+                });
                 var arguments = management is null
                     ? "--run " + (level == SystemMemoryOptimizationLevel.Deep ? "deep" : "standard") + " " + nonce
                     : management + " " + _owner + " " + _instance + " " + nonce;
@@ -106,7 +125,20 @@ public sealed class SystemMemoryCleanupService : IDisposable
             }
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_stopping.Token);
             timeout.CancelAfter(TimeSpan.FromSeconds(65));
-            await pipe.WaitForConnectionAsync(timeout.Token);
+            var connection = pipe.WaitForConnectionAsync(timeout.Token);
+            if (process is not null)
+            {
+                var exited = process.WaitForExitAsync(timeout.Token);
+                if (await Task.WhenAny(connection, exited) == exited && !connection.IsCompleted)
+                {
+                    await exited;
+                    timeout.Cancel();
+                    try { await connection; } catch (OperationCanceledException) { }
+                    return new(process.ExitCode != 0 && Enum.IsDefined(typeof(SystemMemoryCleanupStatus), process.ExitCode)
+                        ? (SystemMemoryCleanupStatus)process.ExitCode : SystemMemoryCleanupStatus.Failed, before, null);
+                }
+            }
+            await connection;
             if (!GetNamedPipeClientProcessId(pipe.SafePipeHandle, out var clientId)) throw new InvalidDataException();
             if (process is not null && clientId != process.Id) throw new InvalidDataException();
             var validImage = await Task.Run(() =>
@@ -140,24 +172,56 @@ public sealed class SystemMemoryCleanupService : IDisposable
         finally
         {
             process?.Dispose();
+            foreach (var guard in extractionGuards) guard.Dispose();
             if (directory is not null) TryDeleteExtraction(directory);
         }
     }
 
+    private static string CurrentUserSid()
+    {
+        using var identity = WindowsIdentity.GetCurrent();
+        return identity.User!.Value;
+    }
+    private static IReadOnlyDictionary<string, byte[]> ReadPayloadHashes()
+    {
+        using var resource = Assembly.GetExecutingAssembly().GetManifestResourceStream("AFMediaBar.MemoryHelper.zip") ?? throw new InvalidDataException();
+        using var archive = new ZipArchive(resource, ZipArchiveMode.Read);
+        var hashes = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in archive.Entries)
+        {
+            if (!MemoryCleanupTasks.ValidPayloadName(entry.FullName) || !hashes.TryAdd(entry.FullName, [])) throw new InvalidDataException();
+            using var input = entry.Open();
+            hashes[entry.FullName] = SHA256.HashData(input);
+        }
+        if (!hashes.ContainsKey(MemoryCleanupTasks.PayloadManifest) || !hashes.ContainsKey("AFMediaBar.MemoryHelper.exe")) throw new InvalidDataException();
+        return hashes;
+    }
     internal static string ExtractHelper(string directory)
     {
         Directory.CreateDirectory(directory);
-        var path = Path.Combine(directory, "AFMediaBar.MemoryHelper.exe");
-        using var resource = Assembly.GetExecutingAssembly().GetManifestResourceStream("AFMediaBar.MemoryHelper.exe")
-            ?? throw new InvalidOperationException("Missing embedded memory helper.");
-        using var file = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-        resource.CopyTo(file);
-        return path;
+        using var resource = Assembly.GetExecutingAssembly().GetManifestResourceStream("AFMediaBar.MemoryHelper.zip") ?? throw new InvalidDataException();
+        using var archive = new ZipArchive(resource, ZipArchiveMode.Read);
+        foreach (var entry in archive.Entries)
+        {
+            if (!MemoryCleanupTasks.ValidPayloadName(entry.FullName)) throw new InvalidDataException();
+            entry.ExtractToFile(Path.Combine(directory, entry.FullName), overwrite: false);
+        }
+        return Path.Combine(directory, "AFMediaBar.MemoryHelper.exe");
     }
     internal static void TryDeleteExtraction(string directory)
     {
-        // 只清理本次创建的已知文件，不递归处理调用方目录。
-        try { File.Delete(Path.Combine(directory, "AFMediaBar.MemoryHelper.exe")); Directory.Delete(directory); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+        // 只删除编译进程序的平铺文件名，不递归处理任何调用方路径。
+        try
+        {
+            using var resource = Assembly.GetExecutingAssembly().GetManifestResourceStream("AFMediaBar.MemoryHelper.zip");
+            if (resource is null) return;
+            using var archive = new ZipArchive(resource, ZipArchiveMode.Read);
+            foreach (var entry in archive.Entries)
+                if (MemoryCleanupTasks.ValidPayloadName(entry.FullName)) File.Delete(Path.Combine(directory, entry.FullName));
+            Directory.Delete(directory);
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
     public void Dispose() { if (_disposed) return; _disposed = true; _stopping.Cancel(); }
     [DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)]

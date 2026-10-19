@@ -125,9 +125,14 @@
   </Target>
 
   <Target Name="PublishMemoryHelper" BeforeTargets="AssignTargetPaths">
-    <PropertyGroup><MemoryHelperOutput>$(MSBuildProjectDirectory)\obj\memory-helper\$(Configuration)\publish\</MemoryHelperOutput></PropertyGroup>
+    <PropertyGroup><MemoryHelperOutput>$(MSBuildProjectDirectory)\obj\memory-helper\$(Configuration)\payload\</MemoryHelperOutput></PropertyGroup>
     <MSBuild Projects="..\AFMediaBar.MemoryHelper\AFMediaBar.MemoryHelper.csproj" Targets="Restore;Publish"
-             BuildInParallel="false" Properties="Configuration=$(Configuration);RuntimeIdentifier=win-x64;PublishDir=$(MemoryHelperOutput)" />
-    <ItemGroup><EmbeddedResource Include="$(MemoryHelperOutput)AFMediaBar.MemoryHelper.exe" LogicalName="AFMediaBar.MemoryHelper.exe" /></ItemGroup>
+             BuildInParallel="false" Properties="Configuration=$(Configuration);RuntimeIdentifier=win-x64;SelfContained=true;PublishSingleFile=false;IncludeNativeLibrariesForSelfExtract=false;PublishDir=$(MemoryHelperOutput)" />
+    <ItemGroup>
+      <MemoryHelperFiles Include="$(MemoryHelperOutput)*" Exclude="$(MemoryHelperOutput)payload.files" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(MemoryHelperOutput)payload.files" Lines="@(MemoryHelperFiles->'%(Filename)%(Extension)')" Overwrite="true" Encoding="UTF-8" />
+    <ZipDirectory SourceDirectory="$(MemoryHelperOutput)" DestinationFile="$(MemoryHelperOutput)..\memory-helper.zip" Overwrite="true" />
+    <ItemGroup><EmbeddedResource Include="$(MemoryHelperOutput)..\memory-helper.zip" LogicalName="AFMediaBar.MemoryHelper.zip" /></ItemGroup>
   </Target>
 </Project>
