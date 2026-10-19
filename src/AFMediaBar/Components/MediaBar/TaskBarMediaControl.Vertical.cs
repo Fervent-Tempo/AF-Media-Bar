@@ -48,6 +48,7 @@ public partial class TaskBarMediaControl
         TaskbarHoverActionsOffset.X = 0;
         TaskbarHoverActionsOffset.Y = 0;
         TaskbarPerformanceItems.Orientation = vertical ? Orientation.Vertical : Orientation.Horizontal;
+        TaskbarBatteryContent.Orientation = vertical ? Orientation.Vertical : Orientation.Horizontal;
         if (!vertical)
         {
             _wheelTooltip.Placement = PlacementMode.Top;
@@ -71,7 +72,7 @@ public partial class TaskBarMediaControl
             TaskbarFullPanelHandle.HorizontalAlignment = HorizontalAlignment.Center;
             TaskbarFullPanelHandle.VerticalAlignment = VerticalAlignment.Top;
             if (TaskbarFullPanelHandle.Content is Border hoverHandle) { hoverHandle.Width = 28; hoverHandle.Height = 4; }
-            foreach (var surface in new FrameworkElement[] { TaskbarSpectrumHoverSurface, TaskbarPerformanceHoverSurface, TaskbarOutputDeviceHoverSurface, TaskbarInputDeviceHoverSurface, TaskbarVolumeHoverSurface })
+            foreach (var surface in new FrameworkElement[] { TaskbarSpectrumHoverSurface, TaskbarPerformanceHoverSurface, TaskbarBatterySurface, TaskbarOutputDeviceHoverSurface, TaskbarInputDeviceHoverSurface, TaskbarVolumeHoverSurface })
                 surface.VerticalAlignment = VerticalAlignment.Center;
         }
     }
@@ -105,6 +106,7 @@ public partial class TaskBarMediaControl
         TaskbarRestComponent.Artwork => Math.Max(1, MainBorder.Width - 4),
         TaskbarRestComponent.Spectrum => _verticalSpectrumLength,
         TaskbarRestComponent.Performance => _verticalPerformanceLength,
+        TaskbarRestComponent.BluetoothBattery => BatteryVerticalLength,
         TaskbarRestComponent.OutputDevice or TaskbarRestComponent.InputDevice or TaskbarRestComponent.Volume => metrics.ButtonSize + 2,
         _ => 0
     };
@@ -176,6 +178,7 @@ public partial class TaskBarMediaControl
         Place(SongInfoHoverOverlay, TaskbarRestComponent.MediaText);
         Place(TaskbarSpectrumHoverSurface, TaskbarRestComponent.Spectrum);
         Place(TaskbarPerformanceHoverSurface, TaskbarRestComponent.Performance);
+        Place(TaskbarBatterySurface, TaskbarRestComponent.BluetoothBattery);
         Place(TaskbarOutputDeviceHoverSurface, TaskbarRestComponent.OutputDevice);
         Place(TaskbarInputDeviceHoverSurface, TaskbarRestComponent.InputDevice);
         Place(TaskbarVolumeHoverSurface, TaskbarRestComponent.Volume);

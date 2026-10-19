@@ -3027,10 +3027,10 @@
   <data name="Device.Hotkey.Registered" xml:space="preserve"><value>已注册</value></data>
   <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>没有可用目标，请检查收藏、黑名单或连接状态</value></data>
   <data name="Device.Hotkey.Failed" xml:space="preserve"><value>设备切换未完成</value></data>
-  <data name="Battery.Title" xml:space="preserve"><value>蓝牙耳机电量</value></data>
+  <data name="Battery.Title" xml:space="preserve"><value>蓝牙电量</value></data>
   <data name="Battery.Hint" xml:space="preserve"><value>只读取 Windows 属性和标准 BLE 电量；不支持的设备显示未知。低电量提醒仅针对当前输出耳机，同一周期一次；启动、切换及重连先建立基线。</value></data>
-  <data name="Battery.Notify" xml:space="preserve"><value>低电量提醒</value></data>
-  <data name="Battery.Threshold" xml:space="preserve"><value>提醒阈值</value></data>
+  <data name="Battery.Notify" xml:space="preserve"><value>所选设备低电量提醒</value></data>
+  <data name="Battery.Threshold" xml:space="preserve"><value>低电量阈值（%）</value></data>
   <data name="Battery.Unknown" xml:space="preserve"><value>电量未知</value></data>
   <data name="Battery.Stale" xml:space="preserve"><value>非实时</value></data>
   <data name="Battery.Details" xml:space="preserve"><value>电量：{0}
@@ -3105,4 +3105,19 @@
   <data name="Device.Cycle.Include" xml:space="preserve"><value>参与快捷键循环</value></data>
   <data name="Device.Hotkeys" xml:space="preserve"><value>循环快捷键</value></data>
   <data name="Device.Cycle.Hint" xml:space="preserve"><value>按拖动顺序循环已勾选的启用设备，跳过离线设备。输入和输出各使用一个组合键。</value></data>
+  <data name="Battery.SelectHint" xml:space="preserve"><value>手动选择一个已配对设备，仅查询该设备的标准电量信息。驱动或设备不提供时显示未知。</value></data>
+  <data name="Battery.Select" xml:space="preserve"><value>追踪设备</value></data>
+  <data name="Battery.ListRefresh" xml:space="preserve"><value>刷新配对设备列表</value></data>
+  <data name="Battery.Clear" xml:space="preserve"><value>清除选择</value></data>
+  <data name="Battery.WidgetEnabled" xml:space="preserve"><value>显示电量组件</value></data>
+  <data name="Battery.DisplayMode" xml:space="preserve"><value>自动显示方式</value></data>
+  <data name="Battery.WhenConnected" xml:space="preserve"><value>所选设备连接时显示</value></data>
+  <data name="Battery.WhenLow" xml:space="preserve"><value>仅低电量时显示</value></data>
+  <data name="Battery.Connected" xml:space="preserve"><value>已连接</value></data>
+  <data name="Battery.Disconnected" xml:space="preserve"><value>未连接</value></data>
+  <data name="Battery.ReadFailed" xml:space="preserve"><value>无法读取蓝牙设备，请稍后刷新</value></data>
+  <data name="Battery.Open" xml:space="preserve"><value>配置蓝牙电量</value></data>
+  <data name="Battery.Refresh" xml:space="preserve"><value>刷新电量</value></data>
+  <data name="Battery.RefreshHint" xml:space="preserve"><value>读取最多每分钟一次；连接变化会更新状态，失败时退避。</value></data>
+  <data name="Battery.WidgetHint" xml:space="preserve"><value>在设备管理中选择追踪目标。无媒体时显示需在下方保留组件中勾选蓝牙电量。</value></data>
 </root>

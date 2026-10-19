@@ -99,8 +99,9 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     public event EventHandler? PlacementTransitionStarted;
     public event Action<FloatingBarWindow, Point?>? PlayerMenuOpenRequested;
     internal bool IsPerformanceMenuRequested { get; private set; }
+    internal bool IsBatteryMenuRequested { get; private set; }
 
-    public FloatingBarWindow(string targetMonitorDeviceId, DisplayMonitorInfo monitor,
+    public FloatingBarWindow(AFMediaBar.Classes.Services.Audio.BluetoothBatteryService batterySource, string targetMonitorDeviceId, DisplayMonitorInfo monitor,
         TaskbarWindowViewModel commands, GlobalInteractionRouter interactionRouter,
         AudioInteractionService audioInteractionService, AudioMonitorService audioMonitor,
         MediaSourceActivationService sourceActivationService, SystemMetricsMonitorService metricsMonitor,
@@ -127,6 +128,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         ShowInTaskbar = false;
         ShowActivated = false;
         WindowHelper.SetNoActivate(this);
+        _mediaControl.BindBatterySource(batterySource);
         Content = _mediaControl;
         PresentationSettings = ProjectSettings();
         _centerPx = new Point(monitor.WorkArea.Left + monitor.WorkArea.Width / 2,
@@ -226,6 +228,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         {
             if (!IsOperational || DateTime.UtcNow < _suppressClickUntil || _mouse.ConsumeSuppressedClick()) return;
             IsPerformanceMenuRequested = _mediaControl.IsPerformanceComponentClick(args.OriginalSource as DependencyObject);
+            IsBatteryMenuRequested = _mediaControl.IsBatteryComponentClick(args.OriginalSource as DependencyObject);
             PlayerMenuOpenRequested?.Invoke(this, null);
             args.Handled = true;
         };

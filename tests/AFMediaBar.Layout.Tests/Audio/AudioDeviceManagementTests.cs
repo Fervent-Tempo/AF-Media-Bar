@@ -17,7 +17,7 @@ public sealed class AudioDeviceManagementTests
     public void LowBatteryAlertsEstablishBaselineAndRearmOnlyAfterHysteresis()
     {
         var policy = new BluetoothBatteryAlertPolicy();
-        var id = Guid.NewGuid();
+        var id = Guid.NewGuid().ToString("N");
         BluetoothBatterySnapshot Reading(int percent) => new(id, percent, BluetoothBatterySource.WindowsProperty, true, true, DateTimeOffset.UtcNow);
         Assert.IsFalse(policy.Evaluate(id, Reading(15), true, 20), "启动时已经低电量只建立基线。");
         Assert.IsFalse(policy.Evaluate(id, Reading(25), true, 20));
@@ -33,9 +33,9 @@ public sealed class AudioDeviceManagementTests
     public void SwitchingReconnectingAndFailedReadingsDoNotRepeatLowBatteryCycle()
     {
         var policy = new BluetoothBatteryAlertPolicy();
-        var first = Guid.NewGuid();
-        var second = Guid.NewGuid();
-        BluetoothBatterySnapshot Reading(Guid id, int percent) => new(id, percent, BluetoothBatterySource.BleGatt, true, true, DateTimeOffset.UtcNow);
+        var first = Guid.NewGuid().ToString("N");
+        var second = Guid.NewGuid().ToString("N");
+        BluetoothBatterySnapshot Reading(string id, int percent) => new(id, percent, BluetoothBatterySource.BleGatt, true, true, DateTimeOffset.UtcNow);
         Assert.IsFalse(policy.Evaluate(first, Reading(first, 30), true, 20));
         Assert.IsTrue(policy.Evaluate(first, Reading(first, 20), true, 20));
         Assert.IsFalse(policy.Evaluate(second, Reading(second, 60), true, 20));

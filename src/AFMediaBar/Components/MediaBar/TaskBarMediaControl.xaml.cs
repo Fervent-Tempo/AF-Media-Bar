@@ -202,6 +202,8 @@ namespace AFMediaBar.Components
         /// <summary>宿主最终关闭时释放控件级呈现资源；普通卸载仍允许重新加载。</summary>
         internal void DisposePresentation()
         {
+            DetachBatterySource();
+            _batterySource = null;
             _artworkHover.Dispose();
             _lyrics.Dispose();
         }
@@ -1290,6 +1292,7 @@ namespace AFMediaBar.Components
             if (UsesAdaptiveTaskbarText) hoverHeight = Math.Min(hoverHeight, Math.Max(1, MainBorder.Height - _textBudget.PaddingDip * 2));
             PlaceRestWidget(TaskbarSpectrumHoverSurface, layout.Find(TaskbarRestComponent.Spectrum), hoverHeight);
             PlaceRestWidget(TaskbarPerformanceHoverSurface, layout.Find(TaskbarRestComponent.Performance), hoverHeight);
+            PlaceRestWidget(TaskbarBatterySurface, layout.Find(TaskbarRestComponent.BluetoothBattery), hoverHeight);
             PlaceRestWidget(TaskbarOutputDeviceHoverSurface, layout.Find(TaskbarRestComponent.OutputDevice), hoverHeight);
             PlaceRestWidget(TaskbarInputDeviceHoverSurface, layout.Find(TaskbarRestComponent.InputDevice), hoverHeight);
             PlaceRestWidget(TaskbarVolumeHoverSurface, layout.Find(TaskbarRestComponent.Volume), hoverHeight);
@@ -1353,6 +1356,7 @@ namespace AFMediaBar.Components
             SetRestComponentVisible(TaskbarSpectrumHoverSurface, spectrumVisible);
             SetRestComponentVisible(TaskbarPerformanceHoverSurface, performanceVisible);
             SetRestComponentVisible(TaskbarPerformanceSurface, performanceVisible);
+            SetRestComponentVisible(TaskbarBatterySurface, Visible(TaskbarRestComponent.BluetoothBattery));
             SetRestComponentVisible(TaskbarOutputDeviceHoverSurface, outputDeviceVisible);
             SetRestComponentVisible(TaskbarOutputDeviceSurface, outputDeviceVisible);
             SetRestComponentVisible(TaskbarInputDeviceHoverSurface, inputDeviceVisible);
@@ -1443,7 +1447,7 @@ namespace AFMediaBar.Components
                 experience.PerformanceVisible,
                 experience.OutputDeviceVisible,
                 experience.VolumeVisible,
-                experience.ArtworkVisible, experience.InputDeviceVisible);
+                experience.ArtworkVisible, experience.InputDeviceVisible, _batteryCanShow);
 
         /// <summary>
         /// 一个静置层组件占用的固定宽度；媒体文字不吃固定宽度，它取剩余长度。
@@ -1454,6 +1458,7 @@ namespace AFMediaBar.Components
             TaskbarRestComponent.Artwork => Math.Max(0, SongImageBorder.Width),
             TaskbarRestComponent.Spectrum => SpectrumSurfaceWidth,
             TaskbarRestComponent.Performance => _performanceWidth + TaskbarWidgetPadding * 2,
+            TaskbarRestComponent.BluetoothBattery => BatterySurfaceWidth,
             TaskbarRestComponent.OutputDevice => metrics.ButtonSize + TaskbarWidgetPadding * 2,
             TaskbarRestComponent.InputDevice => metrics.ButtonSize + TaskbarWidgetPadding * 2,
             TaskbarRestComponent.Volume => metrics.ButtonSize + TaskbarWidgetPadding * 2,

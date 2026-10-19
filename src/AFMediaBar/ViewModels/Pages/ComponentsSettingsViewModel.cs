@@ -34,6 +34,12 @@ public sealed class ComponentsSettingsViewModel : ObservableObject, IDisposable
         SettingsManager.SettingsChanged += OnSettingsChanged;
         localization.LanguageChanged += OnLanguageChanged;
     }
+    public bool IsBatteryExperimentEnabled => SettingsManager.Current.Experiments.BluetoothBattery;
+    public bool BatteryWidgetEnabled
+    {
+        get => SettingsManager.Current.BluetoothBatteryWidget.Enabled;
+        set { if (!_disposed && _configuration.IsActive) SettingsManager.Current.BluetoothBatteryWidget = SettingsManager.Current.BluetoothBatteryWidget with { Enabled = value }; }
+    }
     public int SpectrumBandCount
     {
         get => _configuration.Current.SpectrumComponent.BandCount;

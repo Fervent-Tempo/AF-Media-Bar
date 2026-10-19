@@ -80,7 +80,8 @@ public static class TaskbarRestLayoutPolicy
         TaskbarRestComponent.Performance,
         TaskbarRestComponent.OutputDevice,
         TaskbarRestComponent.InputDevice,
-        TaskbarRestComponent.Volume
+        TaskbarRestComponent.Volume,
+        TaskbarRestComponent.BluetoothBattery
     ];
 
     /// <summary>默认的完整顺序（固定头 + 可排序段）。 / The full default order: the pinned head followed by the reorderable tail.</summary>
@@ -188,7 +189,8 @@ public static class TaskbarRestLayoutPolicy
         bool OutputDeviceEnabled,
         bool VolumeEnabled,
         bool ArtworkEnabled = true,
-        bool InputDeviceEnabled = false);
+        bool InputDeviceEnabled = false,
+        bool BatteryEnabled = false);
 
     /// <summary>
     /// 判定一个静置层组件这次是否可见。
@@ -211,6 +213,7 @@ public static class TaskbarRestLayoutPolicy
     /// <param name="visibility">当前输入。/ The current inputs.</param>
     public static bool IsVisible(TaskbarRestComponent component, in Visibility visibility)
     {
+        if (component == TaskbarRestComponent.BluetoothBattery && !visibility.BatteryEnabled) return false;
         if (!visibility.MediaConnected)
         {
             // 没有媒体时媒体文字没有任何内容可写，因此它不在保留列表的可选项里；列表即便写了它也不算数。
@@ -229,6 +232,7 @@ public static class TaskbarRestLayoutPolicy
             TaskbarRestComponent.MediaText => true,
             TaskbarRestComponent.Spectrum => visibility.SpectrumEnabled,
             TaskbarRestComponent.Performance => visibility.PerformanceEnabled,
+            TaskbarRestComponent.BluetoothBattery => visibility.BatteryEnabled,
             TaskbarRestComponent.OutputDevice => visibility.OutputDeviceEnabled,
             TaskbarRestComponent.InputDevice => visibility.InputDeviceEnabled,
             TaskbarRestComponent.Volume => visibility.VolumeEnabled,

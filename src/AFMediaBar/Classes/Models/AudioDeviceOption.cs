@@ -11,9 +11,8 @@ public enum AudioDeviceAvailability { Active, Disabled, Unplugged, Unavailable }
 public sealed record AudioDeviceOption(string Id, string PolicyId, string DisplayName, bool IsDefault)
 {
     public Guid? ContainerId { get; init; }
-    public BluetoothBatterySnapshot? Battery { get; init; }
     public string MenuLabel => DisplayName;
-    public string DeviceHint => DisplayName + (Battery is { } battery ? "\n" + battery.Details : string.Empty);
+    public string DeviceHint => DisplayName;
     public string SystemName { get; init; } = DisplayName;
     public AudioDeviceDirection Direction { get; init; }
     public bool IsActive { get; init; } = true;

@@ -13,6 +13,7 @@ using AFMediaBar.Classes.Utils;
 using AFMediaBar.Resources;
 using AFMediaBar.ViewModels.Windows;
 using System.ComponentModel;
+using System.Windows.Controls;
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -98,8 +99,10 @@ namespace AFMediaBar.Views.Windows
         /// Creates the application host window and initializes its infrastructure dependencies.
         /// </summary>
         private readonly AFMediaBar.Components.MemoryContextMenu _memoryMenu;
+        private readonly ContextMenu _batteryMenu;
 
         public MainWindow(
+            AFMediaBar.Classes.Services.Audio.BluetoothBatteryService batterySource,
             AFMediaBar.ViewModels.Pages.MemoryToolsViewModel memoryTools,
             MainWindowViewModel viewModel,
             TaskbarWindowViewModel taskbarViewModel,
@@ -140,7 +143,20 @@ namespace AFMediaBar.Views.Windows
                 ViewModel_OpenSettingsRequested(this, EventArgs.Empty);
                 _settingsWindow?.NavigateToGroup(SettingsPageKey.Application, "Memory.Title");
             });
-            Closed += (_, _) => _memoryMenu.IsOpen = false;
+            _batteryMenu = new ContextMenu();
+            _batteryMenu.SetResourceReference(StyleProperty, typeof(ContextMenu));
+            var refreshBattery = new Wpf.Ui.Controls.MenuItem();
+            refreshBattery.SetResourceReference(HeaderedItemsControl.HeaderProperty, "Loc.Battery.Refresh");
+            refreshBattery.Click += (_, _) => batterySource.RequestRefresh();
+            var batterySettings = new Wpf.Ui.Controls.MenuItem();
+            batterySettings.SetResourceReference(HeaderedItemsControl.HeaderProperty, "Loc.Battery.Open");
+            batterySettings.Click += (_, _) =>
+            {
+                ViewModel_OpenSettingsRequested(this, EventArgs.Empty);
+                _settingsWindow?.NavigateToGroup(SettingsPageKey.DeviceManagement, "Battery.Title");
+            };
+            _batteryMenu.Items.Add(refreshBattery); _batteryMenu.Items.Add(batterySettings);
+            Closed += (_, _) => { _memoryMenu.IsOpen = false; _batteryMenu.IsOpen = false; };
             _exitService = exitService;
             _runtime = runtime;
             _taskbarFactory = taskbarFactory;
@@ -267,6 +283,7 @@ namespace AFMediaBar.Views.Windows
             if (_isClosing) return;
 
             _isClosing = true;
+            _memoryMenu.IsOpen = false; _batteryMenu.IsOpen = false;
             DetachTaskbarHostsForExit();
             CloseDeveloperPreviews();
             _lyricsRecoveryNotifications.CancelPendingRequests();
@@ -840,7 +857,7 @@ namespace AFMediaBar.Views.Windows
         private void TaskbarWindow_PlayerMenuOpenRequested(TaskbarWindow host, Point? screenAnchor)
         {
             if (_isClosing || TaskbarEnvironmentRecovering || !_taskbarWindows.Contains(host)) return;
-            ContextMenuHelper.OpenAtScreenAnchor(host.IsPerformanceMenuRequested ? _memoryMenu : host.PlayerContextMenu, this, screenAnchor);
+            ContextMenuHelper.OpenAtScreenAnchor(host.IsPerformanceMenuRequested ? _memoryMenu : host.IsBatteryMenuRequested ? _batteryMenu : host.PlayerContextMenu, this, screenAnchor);
         }
 
         private void TaskbarWindow_OpenFullPanelRequested(object? sender, FullPanelOpenRequestEventArgs e)

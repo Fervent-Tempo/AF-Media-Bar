@@ -220,6 +220,7 @@ public static class SettingsSearchIndex
 
         Create(SettingsPageKey.DeviceManagement, "Device.Input", "Audio.Settings.InputList", language, ["输入", "麦克风", "input", "microphone"]),
         Create(SettingsPageKey.DeviceManagement, "Device.Hotkeys", "Device.Cycle.Hint", language, ["设备快捷键", "循环", "别名", "排序", "拖动", "hotkey", "cycle", "alias", "order"]),
+        Create(SettingsPageKey.DeviceManagement, "Battery.Title", "Battery.SelectHint", language, ["蓝牙", "藍牙", "电量", "電量", "耳机", "鼠标", "键盘", "battery", "bluetooth", "headphones", "mouse", "keyboard", "低电量"]),
         // ---- 交互 / Interaction ----
         Create(SettingsPageKey.DeviceManagement, "Device.Output", "Audio.Settings.Description", language,
             ["音频", "audio", "输入", "input", "输出", "output", "麦克风", "microphone", "黑名单", "blacklist", "通信设备", "communications", "前台应用", "foreground"]),
@@ -327,9 +328,9 @@ public static class SettingsSearchIndex
             ["开发者", "開發者", "developer", "test tools", "debug", "nhà phát triển", "日志", "log", "logs", "诊断", "diagnostics", "报错", "崩溃", "crash", "上报", "报告", "排查", "打开文件夹", "导出", "内存", "memory", "ram", "占用", "压缩", "释放", "工作集"]),
 
         Create(SettingsPageKey.Application, "Memory.Title", "Memory.ToolsDescription", language,
-            ["内存", "記憶體", "memory", "ram", "温和", "深度", "工作集", "托管堆", "待机页", "缓存清理"]),
+            ["内存", "記憶體", "memory", "ram", "定时", "阈值", "自动优化", "深度", "工作集", "托管堆", "待机页", "缓存清理", "automatic", "threshold", "timer"]),
         Create(SettingsPageKey.Experimental, "Memory.Title", "Memory.ToolsDescription", language,
-            ["内存工具", "memory tools", "系统清理", "温和回收", "深度回收"]),
+            ["内存工具", "memory tools", "系统清理", "优化 AF", "优化系统"]),
 
         // ---- 关于 / About ----
         Create(

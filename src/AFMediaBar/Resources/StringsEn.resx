@@ -3027,10 +3027,10 @@ Managed heap {6} → {7} · {8} ms · {9}</value></data>
   <data name="Device.Hotkey.Registered" xml:space="preserve"><value>Registered</value></data>
   <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>No available target; check favorites, hidden devices and connections</value></data>
   <data name="Device.Hotkey.Failed" xml:space="preserve"><value>Device switch did not complete</value></data>
-  <data name="Battery.Title" xml:space="preserve"><value>Bluetooth headphone battery</value></data>
+  <data name="Battery.Title" xml:space="preserve"><value>Bluetooth battery</value></data>
   <data name="Battery.Hint" xml:space="preserve"><value>Uses Windows properties and standard BLE battery data; unsupported devices show unknown. Alerts apply only to the current output headphone, once per low-battery cycle. Startup, switching and reconnect establish a baseline.</value></data>
-  <data name="Battery.Notify" xml:space="preserve"><value>Low-battery alerts</value></data>
-  <data name="Battery.Threshold" xml:space="preserve"><value>Alert threshold</value></data>
+  <data name="Battery.Notify" xml:space="preserve"><value>Low-battery alerts for selected device</value></data>
+  <data name="Battery.Threshold" xml:space="preserve"><value>Low-battery threshold (%)</value></data>
   <data name="Battery.Unknown" xml:space="preserve"><value>Battery unknown</value></data>
   <data name="Battery.Stale" xml:space="preserve"><value>not current</value></data>
   <data name="Battery.Details" xml:space="preserve"><value>Battery: {0}
@@ -3105,4 +3105,19 @@ Source: {2}</value></data>
   <data name="Device.Cycle.Include" xml:space="preserve"><value>Include in shortcut cycle</value></data>
   <data name="Device.Hotkeys" xml:space="preserve"><value>Cycle shortcuts</value></data>
   <data name="Device.Cycle.Hint" xml:space="preserve"><value>Cycle checked, enabled devices in displayed order, skipping offline devices. One shortcut each for input and output.</value></data>
+  <data name="Battery.SelectHint" xml:space="preserve"><value>Choose one paired device. Only its standard battery information is queried; unsupported devices show unknown.</value></data>
+  <data name="Battery.Select" xml:space="preserve"><value>Tracked device</value></data>
+  <data name="Battery.ListRefresh" xml:space="preserve"><value>Refresh paired devices</value></data>
+  <data name="Battery.Clear" xml:space="preserve"><value>Clear selection</value></data>
+  <data name="Battery.WidgetEnabled" xml:space="preserve"><value>Enable battery component</value></data>
+  <data name="Battery.DisplayMode" xml:space="preserve"><value>Automatic visibility</value></data>
+  <data name="Battery.WhenConnected" xml:space="preserve"><value>Show when selected device is connected</value></data>
+  <data name="Battery.WhenLow" xml:space="preserve"><value>Show only when battery is low</value></data>
+  <data name="Battery.Connected" xml:space="preserve"><value>Connected</value></data>
+  <data name="Battery.Disconnected" xml:space="preserve"><value>Disconnected</value></data>
+  <data name="Battery.ReadFailed" xml:space="preserve"><value>Unable to read Bluetooth devices; refresh later</value></data>
+  <data name="Battery.Open" xml:space="preserve"><value>Configure Bluetooth battery</value></data>
+  <data name="Battery.Refresh" xml:space="preserve"><value>Refresh battery</value></data>
+  <data name="Battery.RefreshHint" xml:space="preserve"><value>Reads at most once per minute, with connection updates and backoff on failures.</value></data>
+  <data name="Battery.WidgetHint" xml:space="preserve"><value>Select a device in Device management. To show it without media, also select Bluetooth battery in the kept components list.</value></data>
 </root>

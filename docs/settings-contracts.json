@@ -241,14 +241,16 @@
       "skippedVersion": "v1.2.0"
     },
     "windowMode": "v1.2.0",
+    "bluetoothBatteryWidget": {
+      "$release": "unreleased", "enabled": "unreleased", "deviceId": "unreleased", "lastKnownName": "unreleased",
+      "displayMode": "unreleased", "notifications": "unreleased", "lowThreshold": "unreleased"
+    },
     "systemMemoryOptimization": {
       "$release": "unreleased", "timerEnabled": "unreleased", "intervalMinutes": "unreleased",
       "thresholdEnabled": "unreleased", "thresholdPercent": "unreleased", "level": "unreleased"
     },
     "audioDevices": {
       "preferences": { "$release": "unreleased", "$items": { "direction": "unreleased", "endpointId": "unreleased", "lastKnownName": "unreleased", "alias": "unreleased", "participatesInCycle": "unreleased" } },
-      "lowBatteryNotifications": "unreleased",
-      "lowBatteryThreshold": "unreleased",
       "outputCycleHotkey": "unreleased",
       "inputCycleHotkey": "unreleased",
       "$release": "unreleased",
@@ -271,6 +273,10 @@
     }
   },
   "enums": {
+    "BluetoothBatteryDisplayMode": {
+      "paths": ["settings.bluetoothBatteryWidget.displayMode"],
+      "members": { "WhenConnected": { "value": 0, "release": "unreleased" }, "WhenLow": { "value": 1, "release": "unreleased" } }
+    },
     "SystemMemoryOptimizationLevel": {
       "paths": ["settings.systemMemoryOptimization.level"],
       "members": { "Standard": { "value": 0, "release": "unreleased" }, "Deep": { "value": 1, "release": "unreleased" } }
@@ -598,16 +604,41 @@
       }
     },
     "TaskbarRestComponent": {
-      "paths": ["settings.taskbarExperience.idleComponents", "settings.taskbarExperience.restComponentOrder"],
+      "paths": [
+        "settings.taskbarExperience.idleComponents",
+        "settings.taskbarExperience.restComponentOrder"
+      ],
       "members": {
-        "Artwork": {"value": 0, "release": "v1.2.1"},
-        "MediaText": {"value": 1, "release": "v1.2.1"},
-        "Spectrum": {"value": 2, "release": "v1.2.1"},
-        "Performance": {"value": 3, "release": "v1.2.1"},
-        "OutputDevice": {"value": 4, "release": "v1.2.1"},
-        "Volume": {"value": 5, "release": "v1.2.1"},
+        "Artwork": {
+          "value": 0,
+          "release": "v1.2.1"
+        },
+        "MediaText": {
+          "value": 1,
+          "release": "v1.2.1"
+        },
+        "Spectrum": {
+          "value": 2,
+          "release": "v1.2.1"
+        },
+        "Performance": {
+          "value": 3,
+          "release": "v1.2.1"
+        },
+        "OutputDevice": {
+          "value": 4,
+          "release": "v1.2.1"
+        },
+        "Volume": {
+          "value": 5,
+          "release": "v1.2.1"
+        },
         "InputDevice": {
           "value": 6,
+          "release": "unreleased"
+        },
+        "BluetoothBattery": {
+          "value": 7,
           "release": "unreleased"
         }
       }

@@ -19,7 +19,6 @@ public interface IAudioDeviceCatalog
 public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
 {
     private readonly AudioPlatformService _platform;
-    private readonly BluetoothBatteryCache _battery;
     private AudioDeviceSettings _settings;
     private readonly Dictionary<AudioDeviceDirection, List<string>> _observedOrder = [];
     private volatile bool _disposed;
@@ -30,17 +29,14 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
     public int Version => _platform.Version;
     public event EventHandler? Changed { add => _platform.Changed += value; remove => _platform.Changed -= value; }
 
-    public AudioDeviceService(AudioPlatformService platform, BluetoothBatteryCache battery)
+    public AudioDeviceService(AudioPlatformService platform)
     {
         _platform = platform;
-        _battery = battery;
-        _battery.Changed += OnBatteryChanged;
         _settings = SettingsManager.Current.AudioDevices;
         _experimentalAudioEnabled = SettingsManager.Current.Experiments.NewAudioControl;
         SettingsManager.SettingsChanged += OnSettingsChanged;
     }
 
-    private void OnBatteryChanged(object? sender, EventArgs args) => _platform.Invalidate();
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args)
     {
@@ -80,7 +76,6 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
                     id, string.IsNullOrWhiteSpace(name) ? id : name, string.Equals(id, defaultId, StringComparison.OrdinalIgnoreCase))
                 { Direction = direction, IsActive = device.State == DeviceState.Active,
                     ContainerId = containerId,
-                    Battery = ExperimentalAudioEnabled && SettingsManager.Current.Experiments.BluetoothBattery ? _battery.Get(containerId) : null,
                     Availability = device.State switch
                     {
                         DeviceState.Active => AudioDeviceAvailability.Active,
@@ -176,8 +171,8 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
         var preference = Volatile.Read(ref _settings).FindPreference(direction, id);
         var name = ExperimentalAudioEnabled && SettingsManager.Current.Experiments.DevicePersonalization && !string.IsNullOrWhiteSpace(preference?.Alias)
             ? preference.Alias : device.FriendlyName;
-        var battery = ExperimentalAudioEnabled && SettingsManager.Current.Experiments.BluetoothBattery ? _battery.Get(ReadContainerId(device)) : null;
-        return name + (battery is not null ? "\n" + battery.Details : string.Empty);
+
+        return name;
     });
 
     private static string? GetDefaultId(MMDeviceEnumerator enumerator, DataFlow flow, Role role)
@@ -187,5 +182,5 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
         return device.ID;
     }
 
-    public void Dispose() { if (_disposed) return; _disposed = true; SettingsManager.SettingsChanged -= OnSettingsChanged; _battery.Changed -= OnBatteryChanged; }
+    public void Dispose() { if (_disposed) return; _disposed = true; SettingsManager.SettingsChanged -= OnSettingsChanged;  }
 }

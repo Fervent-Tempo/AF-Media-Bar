@@ -67,6 +67,7 @@ public sealed class AppSettings : INotifyPropertyChanged
     private MediaSelectionSettings _mediaSelection = MediaSelectionSettings.Default;
     private QuickLaunchSettings _quickLaunch = QuickLaunchSettings.Default;
     private SpectrumComponentSettings _spectrumComponent = SpectrumComponentSettings.Default;
+    private BluetoothBatteryWidgetSettings _bluetoothBatteryWidget = new();
     private SystemMemoryOptimizationSettings _systemMemoryOptimization = new();
     private PerformanceComponentSettings _performanceComponent = PerformanceComponentSettings.Default;
     private UpdateSettings _update = UpdateSettings.Default;
@@ -178,6 +179,7 @@ public sealed class AppSettings : INotifyPropertyChanged
     public MediaSelectionSettings MediaSelection { get => _mediaSelection; set => Set(ref _mediaSelection, (value ?? MediaSelectionSettings.Default).Normalize()); }
     public QuickLaunchSettings QuickLaunch { get => _quickLaunch; set => Set(ref _quickLaunch, value.Normalize()); }
     public SpectrumComponentSettings SpectrumComponent { get => _spectrumComponent; set => Set(ref _spectrumComponent, value.Normalize()); }
+    public BluetoothBatteryWidgetSettings BluetoothBatteryWidget { get => _bluetoothBatteryWidget; set => Set(ref _bluetoothBatteryWidget, (value ?? new()).Normalize()); }
     public SystemMemoryOptimizationSettings SystemMemoryOptimization { get => _systemMemoryOptimization; set => Set(ref _systemMemoryOptimization, (value ?? new()).Normalize()); }
     public PerformanceComponentSettings PerformanceComponent { get => _performanceComponent; set => Set(ref _performanceComponent, value.Normalize()); }
 
@@ -249,6 +251,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         result.MediaSelection = result.MediaSelection.Normalize();
         result.QuickLaunch = result.QuickLaunch.Normalize();
         result.SpectrumComponent = result.SpectrumComponent.Normalize();
+        result.BluetoothBatteryWidget = result.BluetoothBatteryWidget.Normalize();
         result.SystemMemoryOptimization = result.SystemMemoryOptimization.Normalize();
         result.PerformanceComponent = result.PerformanceComponent.Normalize();
         result.Update = result.Update.Normalize();
@@ -324,6 +327,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         MediaSelection = MediaSelection,
         QuickLaunch = QuickLaunch,
         SpectrumComponent = SpectrumComponent,
+        BluetoothBatteryWidget = BluetoothBatteryWidget,
         SystemMemoryOptimization = SystemMemoryOptimization,
         PerformanceComponent = PerformanceComponent,
         Update = Update,

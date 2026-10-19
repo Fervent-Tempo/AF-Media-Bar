@@ -1,4 +1,4 @@
-// 只读取与音频容器可靠关联的蓝牙电量；每批只枚举一次 PnP，句柄与 GATT 对象在读取内释放。
+// 目录只枚举配对身份，电量仅查询所选设备；PnP 句柄、GATT 服务和设备对象在读取内释放。
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -18,57 +18,53 @@ public sealed class BluetoothBatteryReader
         public int? Percent;
         public HashSet<string> Addresses { get; } = new(StringComparer.OrdinalIgnoreCase);
     }
-    private sealed record Peer(string Id, string Address, Guid? AssociationContainer, bool Connected, bool IsLe);
-    private readonly Dictionary<Guid, (DateTimeOffset Next, int Failures)> _gattRetries = [];
-    private static readonly string[] _properties = ["System.Devices.Aep.ContainerId", "System.Devices.Aep.DeviceAddress", "System.Devices.Aep.IsConnected"];
+    public static readonly string[] DeviceProperties = ["System.Devices.Aep.ContainerId", "System.Devices.Aep.DeviceAddress", "System.Devices.Aep.IsConnected"];
 
-    public async Task<IReadOnlyDictionary<Guid, BluetoothBatterySnapshot>> ReadAsync(IReadOnlyList<AudioDeviceOption> endpoints, CancellationToken token)
+    public static string Selector(bool lowEnergy) => lowEnergy ? BluetoothLEDevice.GetDeviceSelectorFromPairingState(true) : BluetoothDevice.GetDeviceSelectorFromPairingState(true);
+
+    public async Task<IReadOnlyList<BluetoothBatteryDevice>> ListPairedAsync(CancellationToken token)
     {
-        var containers = endpoints.Select(device => AudioDeviceIdentity.PhysicalContainer(device.ContainerId)).OfType<Guid>().ToHashSet();
-        if (containers.Count == 0) return new Dictionary<Guid, BluetoothBatterySnapshot>();
-        var pnp = await Task.Run(() => ReadPnp(containers, token), token).ConfigureAwait(false);
-        var peers = new List<Peer>();
-        foreach (var isLe in new[] { false, true })
+        var result = new List<BluetoothBatteryDevice>();
+        foreach (var lowEnergy in new[] { false, true })
         {
-            var selector = isLe ? BluetoothLEDevice.GetDeviceSelectorFromPairingState(true) : BluetoothDevice.GetDeviceSelectorFromPairingState(true);
-            var devices = await DeviceInformation.FindAllAsync(selector, _properties, DeviceInformationKind.AssociationEndpoint).AsTask(token).ConfigureAwait(false);
+            var devices = await DeviceInformation.FindAllAsync(Selector(lowEnergy), DeviceProperties, DeviceInformationKind.AssociationEndpoint).AsTask(token).ConfigureAwait(false);
             foreach (var device in devices)
             {
-                var address = device.Properties.GetValueOrDefault("System.Devices.Aep.DeviceAddress") as string;
-                var association = device.Properties.GetValueOrDefault("System.Devices.Aep.ContainerId") is Guid id ? AudioDeviceIdentity.PhysicalContainer(id) : null;
-                peers.Add(new(device.Id, NormalizeAddress(address), association,
-                    device.Properties.GetValueOrDefault("System.Devices.Aep.IsConnected") is true, isLe));
-            }
-        }
-        var result = new Dictionary<Guid, BluetoothBatterySnapshot>();
-        foreach (var container in containers)
-        {
-            token.ThrowIfCancellationRequested();
-            pnp.TryGetValue(container, out var node);
-            var matches = peers.Where(peer => peer.AssociationContainer == container || node?.Addresses.Contains(peer.Address) == true).ToArray();
-            if (node is null && matches.Length == 0) continue;
-            var connected = matches.Any(peer => peer.Connected);
-            var percent = connected ? node?.Percent : null;
-            BluetoothBatterySource? source = percent is not null ? BluetoothBatterySource.WindowsProperty : null;
-            if (connected && percent is null && (!_gattRetries.TryGetValue(container, out var retry) || DateTimeOffset.UtcNow >= retry.Next))
-            {
-                foreach (var peer in matches.Where(peer => peer.Connected && peer.IsLe))
+                var address = NormalizeAddress(device.Properties.GetValueOrDefault("System.Devices.Aep.DeviceAddress") as string);
+                var container = device.Properties.GetValueOrDefault("System.Devices.Aep.ContainerId") is Guid id ? AudioDeviceIdentity.PhysicalContainer(id) : null;
+                var peer = new BluetoothBatteryPeer(device.Id, lowEnergy, device.Properties.GetValueOrDefault("System.Devices.Aep.IsConnected") is true);
+                var index = result.FindIndex(item => item.Matches(device.Id) || container is not null && item.ContainerId == container ||
+                    address.Length > 0 && item.Address == address);
+                if (index < 0) result.Add(new(device.Id, string.IsNullOrWhiteSpace(device.Name) ? device.Id : device.Name, container, address, [peer]));
+                else
                 {
-                    percent = await ReadGattAsync(peer.Id, token).ConfigureAwait(false);
-                    if (percent is not null) { source = BluetoothBatterySource.BleGatt; break; }
+                    var existing = result[index];
+                    result[index] = existing with { ContainerId = existing.ContainerId ?? container,
+                        Address = existing.Address.Length > 0 ? existing.Address : address, Peers = existing.Peers.Concat([peer]).DistinctBy(item => item.Id).ToArray() };
                 }
             }
-            if (percent is not null) _gattRetries.Remove(container);
-            else if (connected && (!_gattRetries.TryGetValue(container, out var oldRetry) || DateTimeOffset.UtcNow >= oldRetry.Next))
-            {
-                var failures = Math.Min(_gattRetries.GetValueOrDefault(container).Failures + 1, 4);
-                _gattRetries[container] = (DateTimeOffset.UtcNow.AddSeconds(Math.Min(60 * (1 << failures), 600)), failures);
-            }
-            foreach (var absent in _gattRetries.Keys.Where(id => !containers.Contains(id)).ToArray()) _gattRetries.Remove(absent);
-            result[container] = new(container, percent, source, connected, percent is not null,
-                percent is not null ? DateTimeOffset.UtcNow : null);
         }
-        return result;
+        return result.OrderBy(device => device.DisplayName, StringComparer.CurrentCultureIgnoreCase).ThenBy(device => device.Id, StringComparer.OrdinalIgnoreCase).ToArray();
+    }
+
+    public async Task<BluetoothBatterySnapshot> ReadAsync(BluetoothBatteryDevice device, string selectedId, CancellationToken token)
+    {
+        int? percent = null;
+        BluetoothBatterySource? source = null;
+        if (device.IsConnected && device.ContainerId is { } container)
+        {
+            var properties = await Task.Run(() => ReadPnp([container], token), token).ConfigureAwait(false);
+            percent = properties.GetValueOrDefault(container)?.Percent;
+            if (percent is not null) source = BluetoothBatterySource.WindowsProperty;
+        }
+        if (device.IsConnected && percent is null)
+            foreach (var peer in device.Peers.Where(peer => peer.IsLowEnergy && peer.IsConnected))
+            {
+                percent = await ReadGattAsync(peer.Id, token).ConfigureAwait(false);
+                if (percent is not null) { source = BluetoothBatterySource.BleGatt; break; }
+            }
+        return new(selectedId, percent, source, device.IsConnected, percent is not null,
+            percent is not null ? DateTimeOffset.UtcNow : null) { DeviceName = device.DisplayName };
     }
 
     private static async Task<int?> ReadGattAsync(string deviceId, CancellationToken token)

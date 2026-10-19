@@ -16,6 +16,12 @@
             <StackPanel MaxWidth="{StaticResource AfSettingsContentMaxWidth}">
                 <components:SettingsCallout Text="{DynamicResource Loc.Experimental.Warning}" Symbol="Warning24"
                     IsAccent="True" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,16" />
+                <components:SettingsGroup GroupId="Battery.Title" Header="{DynamicResource Loc.Battery.Title}" Description="{DynamicResource Loc.Battery.SelectHint}" Icon="{ui:SymbolIcon Bluetooth24}">
+                    <StackPanel>
+                        <components:SettingsRow Title="{DynamicResource Loc.Experimental.Enable}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.BluetoothBattery, Mode=TwoWay}"/></components:SettingsRow>
+                        <components:SettingsRow Title="{DynamicResource Loc.Battery.Open}"><ui:Button Content="{DynamicResource Loc.Common.Settings}" Style="{StaticResource AfSettingsButtonStyle}" Tag="{x:Static services:SettingsPageKey.DeviceManagement}" CommandParameter="Battery.Title" Click="OpenSettings_Click"/></components:SettingsRow>
+                    </StackPanel>
+                </components:SettingsGroup>
                 <components:SettingsGroup GroupId="Memory.Title" Header="{DynamicResource Loc.Memory.Title}" Description="{DynamicResource Loc.Memory.Explanation}" Icon="{ui:SymbolIcon ArrowMinimize24}">
                     <StackPanel>
                         <components:SettingsRow Title="{DynamicResource Loc.Experimental.Enable}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.MemoryTools, Mode=TwoWay}" /></components:SettingsRow>
@@ -53,9 +59,6 @@
                         </components:SettingsRow>
                         <TextBlock Text="{DynamicResource Loc.Experimental.Audio.RoutingPreserved}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,8,0,0" />
                         <StackPanel Visibility="{Binding ViewModel.NewAudioControl, Converter={StaticResource AfBooleanToVisibilityConverter}}">
-                            <components:SettingsRow Title="{DynamicResource Loc.Battery.Title}" Description="{DynamicResource Loc.Battery.Hint}">
-                                <ui:ToggleSwitch IsChecked="{Binding ViewModel.BluetoothBattery, Mode=TwoWay}" />
-                            </components:SettingsRow>
                             <components:SettingsRow Title="{DynamicResource Loc.Device.Hotkey.Title}" Description="{DynamicResource Loc.Device.Hotkey.Hint}">
                                 <ui:ToggleSwitch IsChecked="{Binding ViewModel.DeviceHotkeys, Mode=TwoWay}" />
                             </components:SettingsRow>

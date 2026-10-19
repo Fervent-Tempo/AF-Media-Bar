@@ -225,7 +225,8 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         TaskbarRestComponent.Performance,
         TaskbarRestComponent.OutputDevice,
         TaskbarRestComponent.InputDevice,
-        TaskbarRestComponent.Volume
+        TaskbarRestComponent.Volume,
+        TaskbarRestComponent.BluetoothBattery
     ];
 
     private void OnRestComponentVisibilityChanged(TaskbarRestComponentSettingItem entry) => SaveIdleComponents();

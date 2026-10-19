@@ -7,9 +7,10 @@ namespace AFMediaBar.Classes.Models;
 public enum BluetoothBatterySource { WindowsProperty, BleGatt }
 
 /// <summary>失败保留最后有效读数，但不能作为实时电量或通知依据。</summary>
-public sealed record BluetoothBatterySnapshot(Guid ContainerId, int? Percent, BluetoothBatterySource? Source,
+public sealed record BluetoothBatterySnapshot(string DeviceId, int? Percent, BluetoothBatterySource? Source,
     bool IsConnected, bool ReadSucceeded, DateTimeOffset? UpdatedAt)
 {
+    public string DeviceName { get; init; } = string.Empty;
     public bool IsRealtime => IsConnected && ReadSucceeded && Percent is not null && UpdatedAt is { } at && DateTimeOffset.UtcNow - at < TimeSpan.FromMinutes(3);
     public string Label => Percent is { } percent ? $"{percent}%" + (IsRealtime ? string.Empty : " · " + Translations.Get("Battery.Stale")) : Translations.Get("Battery.Unknown");
     public string Details => UpdatedAt is null ? Translations.Get("Battery.NoReading") : Translations.Format("Battery.Details", Label,

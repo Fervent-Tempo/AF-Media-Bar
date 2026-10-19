@@ -16,7 +16,7 @@ public partial class DeviceManagementPage : INavigableView<AudioDeviceSettingsVi
     public DeviceManagementPage(AudioDeviceSettingsViewModel viewModel)
     { ViewModel = viewModel; DataContext = this; InitializeComponent(); Unloaded += (_, _) => _dragStart = null; }
     private async void OnPageLoaded(object sender, RoutedEventArgs args)
-    { SettingsRevealAnimator.Play(sender as Panel); await ViewModel.RefreshAsync(); }
+    { SettingsRevealAnimator.Play(sender as Panel); await ViewModel.RefreshAsync(); if (ViewModel.Battery is { } battery) await battery.RefreshDevicesAsync(); }
     private void DragHandle_Down(object sender, MouseButtonEventArgs args) => _dragStart = args.GetPosition(this);
     private void DragHandle_Move(object sender, MouseEventArgs args)
     {

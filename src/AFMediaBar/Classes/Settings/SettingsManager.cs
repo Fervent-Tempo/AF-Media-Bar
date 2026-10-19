@@ -192,6 +192,7 @@ public static class SettingsManager
             defaults.TaskbarExperience, next.Experiments.NewAudioControl);
         next.SpectrumComponent = defaults.SpectrumComponent;
         next.PerformanceComponent = defaults.PerformanceComponent;
+        next.BluetoothBatteryWidget = next.BluetoothBatteryWidget with { Enabled = defaults.BluetoothBatteryWidget.Enabled };
         next.LyricsTextAlignment = defaults.LyricsTextAlignment;
         next.LyricsFixedWidthEnabled = defaults.LyricsFixedWidthEnabled;
         next.LyricsFixedWidthDip = defaults.LyricsFixedWidthDip;
@@ -264,12 +265,14 @@ public static class SettingsManager
         var next = Current.Clone(); var defaults = Defaults;
         next.SpectrumComponent = defaults.SpectrumComponent;
         next.PerformanceComponent = defaults.PerformanceComponent;
+        next.BluetoothBatteryWidget = next.BluetoothBatteryWidget with { Enabled = defaults.BluetoothBatteryWidget.Enabled };
         Replace(next, SettingsResetScope.Components);
     }
     public static void ResetDeviceManagement()
     {
         var next = Current.Clone();
         next.AudioDevices = Defaults.AudioDevices;
+        next.BluetoothBatteryWidget = Defaults.BluetoothBatteryWidget;
         Replace(next, SettingsResetScope.DeviceManagement);
     }
 

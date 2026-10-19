@@ -140,7 +140,7 @@ public partial class MainWindow
                     {
                         if (_isClosing || !_floatingWindows.Contains(host)) return;
                         TrayMenu.ApplyQuickLaunchEntries(host.EffectiveSettings.QuickLaunch.Entries ?? []);
-                        ContextMenuHelper.OpenAtScreenAnchor(host.IsPerformanceMenuRequested ? _memoryMenu : TrayMenu, this, point);
+                        ContextMenuHelper.OpenAtScreenAnchor(host.IsPerformanceMenuRequested ? _memoryMenu : host.IsBatteryMenuRequested ? _batteryMenu : TrayMenu, this, point);
                     };
                 }
             }

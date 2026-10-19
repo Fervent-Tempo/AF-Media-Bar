@@ -23,6 +23,7 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
         if (!_disposed && recording && IsHotkeysEnabled && _hotkeys is not null) _recordings[owner] = _hotkeys.PauseForRecording();
     }
     private readonly AudioDeviceHotkeyService? _hotkeys;
+    public BluetoothBatterySettingsViewModel? Battery { get; }
     private readonly IAudioDeviceCatalog _devices;
     private readonly ISettingsConfiguration _configuration;
     private bool _disposed;
@@ -70,8 +71,9 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
         get => _configuration.Current.AudioDevices.SwitchInputCommunications;
         set => _configuration.SetAudioDeviceSettings(_configuration.Current.AudioDevices with { SwitchInputCommunications = value });
     }
-    public AudioDeviceSettingsViewModel(IAudioDeviceCatalog devices, ISettingsConfiguration configuration, AudioDeviceHotkeyService? hotkeys = null)
+    public AudioDeviceSettingsViewModel(IAudioDeviceCatalog devices, ISettingsConfiguration configuration, AudioDeviceHotkeyService? hotkeys = null, BluetoothBatterySettingsViewModel? battery = null)
     {
+        Battery = battery;
         _hotkeys = hotkeys;
         if (_hotkeys is not null) _hotkeys.Changed += OnHotkeysChanged;
         _devices = devices;
@@ -235,6 +237,7 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args)
     {
         if (_disposed || args.PropertyName is not (null or nameof(AppSettings.Experiments) or nameof(AppSettings.AudioDevices))) return;
+        if (!IsHotkeysEnabled) { IsRecordingOutputCycle = false; IsRecordingInputCycle = false; }
         QueueRefresh();
     }
     private void QueueRefresh()

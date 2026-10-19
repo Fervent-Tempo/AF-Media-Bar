@@ -146,6 +146,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     /// Creates the taskbar media host and connects its infrastructure actions.
     /// </summary>
     public TaskbarWindow(
+        AFMediaBar.Classes.Services.Audio.BluetoothBatteryService batterySource,
         ITaskbarDockService taskBarService,
         string targetMonitorDeviceId,
         ITaskbarWindowHostActions hostActions,
@@ -175,6 +176,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         _mouseInputMonitor = mouseInputMonitor;
         InitializeExternalFullPanelHandle(externalFullPanelHandleFactory);
         DataContext = ViewModel;
+        MediaControl.BindBatterySource(batterySource);
         ContextMenuHelper.AttachOutsideClickDismissal(PlayerMenu);
         appearanceService.Attach(PlayerMenu, this);
         PlayerMenu.OpenSettingsRequested += PlayerMenu_OpenSettingsRequested;
@@ -2363,6 +2365,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     }
 
     internal bool IsPerformanceMenuRequested { get; private set; }
+    internal bool IsBatteryMenuRequested { get; private set; }
 
     private void Window_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
@@ -2386,6 +2389,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         }
 
         IsPerformanceMenuRequested = MediaControl.IsPerformanceComponentClick(e.OriginalSource as DependencyObject);
+        IsBatteryMenuRequested = MediaControl.IsBatteryComponentClick(e.OriginalSource as DependencyObject);
         PlayerMenu.ApplyQuickLaunchEntries(SettingsManager.Current.QuickLaunch.Entries ?? []);
         _playerMenuOpeningAnchor = GetMediaBarScreenPhysicalBounds();
         Point? keyboardAnchor = e.CursorLeft < 0 && e.CursorTop < 0

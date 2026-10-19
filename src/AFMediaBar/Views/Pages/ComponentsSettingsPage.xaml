@@ -184,6 +184,10 @@
                     Header="{DynamicResource Loc.Common.Group.Widgets}"
                     Icon="{ui:SymbolIcon Apps24}">
                     <StackPanel>
+                        <components:SettingsRow Title="{DynamicResource Loc.Battery.Title}" Description="{DynamicResource Loc.Battery.WidgetHint}" IsEnabled="{Binding ViewModel.Components.IsBatteryExperimentEnabled}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.BatteryWidgetEnabled, Mode=TwoWay}"/>
+                        </components:SettingsRow>
+
                         <ui:CardExpander
                             Style="{StaticResource AfSettingsExpanderStyle}"
                             Icon="{ui:SymbolIcon ArrowSort24}"

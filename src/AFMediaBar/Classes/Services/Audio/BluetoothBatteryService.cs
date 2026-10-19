@@ -1,189 +1,203 @@
-// 实验开启期间拥有电量读取循环；设置、设备事件和退出通过取消/代际阻止迟到结果与通知。
+// 只追踪用户所选设备；服务拥有读取循环及设备观察器，停用后取消并阻止迟到发布。
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Resources;
 using Microsoft.Extensions.Hosting;
+using Windows.Devices.Enumeration;
+using Windows.Foundation;
 
 namespace AFMediaBar.Classes.Services.Audio;
 
-/// <summary>只监测相关音频设备，读取失败退避；低电量提醒只针对当前系统输出。</summary>
-public sealed class BluetoothBatteryService(IAudioDeviceCatalog devices, BluetoothBatteryReader reader,
-    BluetoothBatteryCache cache, ISystemNotificationService notifications, AppLogService log) : IHostedService, IDisposable
+/// <summary>所选蓝牙设备的电量与提醒，独立于默认音频设备。</summary>
+public sealed class BluetoothBatteryService(BluetoothBatteryReader reader, BluetoothBatteryCache cache,
+    ISystemNotificationService notifications, AppLogService log) : IHostedService, IDisposable
 {
-    private sealed class Session
+    private sealed class Session(string deviceId)
     {
+        public string DeviceId { get; } = deviceId;
         public CancellationTokenSource Cancellation { get; } = new();
         public SemaphoreSlim Signal { get; } = new(0, 1);
-        public Task Loop { get; set; } = Task.CompletedTask;
+        public string[] PeerIds = [];
         public int Version;
-        public int NotificationVersion;
-        public void Cancel() { try { Cancellation.Cancel(); } catch (ObjectDisposedException) { } }
+        public Task Loop { get; set; } = Task.CompletedTask;
         public void Wake()
         {
             try { if (Signal.CurrentCount == 0) Signal.Release(); }
-            catch (SemaphoreFullException) { }
             catch (ObjectDisposedException) { }
+            catch (SemaphoreFullException) { }
         }
+        public void Cancel() { try { Cancellation.Cancel(); } catch (ObjectDisposedException) { } }
     }
     private readonly SemaphoreSlim _readGate = new(1, 1);
     private readonly List<Task> _loops = [];
     private Session? _session;
+    private BluetoothBatteryWidgetSettings? _configuration;
+    private DateTimeOffset _lastReadAttempt;
+    private bool _lowVisible;
     private bool _disposed;
-    private bool _notifyEnabled;
-    private int _threshold;
-
+    public event EventHandler? Changed;
+    public BluetoothBatterySnapshot? Snapshot => cache.Snapshot;
+    public bool ShouldShowWidget
+    {
+        get
+        {
+            var settings = SettingsManager.Current;
+            var widget = settings.BluetoothBatteryWidget;
+            return settings.Experiments.BluetoothBattery && widget.Enabled && Snapshot is { IsConnected: true } snapshot &&
+                snapshot.DeviceId == widget.DeviceId && (widget.DisplayMode == BluetoothBatteryDisplayMode.WhenConnected || snapshot.IsRealtime && _lowVisible);
+        }
+    }
+    public Task<IReadOnlyList<BluetoothBatteryDevice>> GetDevicesAsync(CancellationToken token = default) => reader.ListPairedAsync(token);
+    public void RequestRefresh() => _session?.Wake();
     public Task StartAsync(CancellationToken cancellationToken)
     {
         SettingsManager.SettingsChanged += OnSettingsChanged;
-        devices.Changed += OnDevicesChanged;
         Reconfigure();
         return Task.CompletedTask;
     }
-
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args)
     {
-        if (_disposed || args.PropertyName is not (null or nameof(AppSettings.Experiments) or nameof(AppSettings.AudioDevices))) return;
-        Reconfigure();
+        if (args.PropertyName is null or nameof(AppSettings.Experiments) or nameof(AppSettings.BluetoothBatteryWidget)) Reconfigure();
     }
-
     private void Reconfigure()
     {
         if (_disposed) return;
-        var settings = SettingsManager.Current;
-        var enabled = settings.Experiments.NewAudioControl && settings.Experiments.BluetoothBattery;
-        var notify = settings.AudioDevices.LowBatteryNotifications;
-        var threshold = settings.AudioDevices.LowBatteryThreshold;
-        if (notify != _notifyEnabled || threshold != _threshold)
+        var settings = SettingsManager.Current.BluetoothBatteryWidget;
+        var enabled = SettingsManager.Current.Experiments.BluetoothBattery && settings.DeviceId is not null && (settings.Enabled || settings.Notifications);
+        if (_configuration == settings && enabled == (_session is not null)) return;
+        var previousId = _configuration?.DeviceId;
+        _configuration = settings;
+        Interlocked.Exchange(ref _session, null)?.Cancel();
+        if (previousId != settings.DeviceId) { _lastReadAttempt = default; _lowVisible = false; cache.Clear(); }
+        if (!enabled) { cache.Clear(); _lowVisible = false; }
+        else
         {
-            _notifyEnabled = notify; _threshold = threshold;
-            if (_session is { } current) Interlocked.Increment(ref current.NotificationVersion);
-        }
-        if (!enabled)
-        {
-            var old = Interlocked.Exchange(ref _session, null);
-            old?.Cancel();
-            cache.Clear();
-        }
-        else if (_session is null)
-        {
-            var session = new Session();
+            var session = new Session(settings.DeviceId!);
             _session = session;
             session.Loop = Task.Run(() => RunAsync(session));
             _loops.RemoveAll(task => task.IsCompleted);
             _loops.Add(session.Loop);
         }
-        else _session?.Wake();
+        Changed?.Invoke(this, EventArgs.Empty);
     }
-
-    private void OnDevicesChanged(object? sender, EventArgs args)
-    {
-        if (_disposed || _session is not { } session) return;
-        Interlocked.Increment(ref session.Version);
-        session.Wake();
-    }
-
     private async Task RunAsync(Session session)
     {
         var token = session.Cancellation.Token;
-        var nextRead = DateTimeOffset.MinValue;
-        var failures = 0;
-        Guid? target = null;
-        var notificationVersion = -1;
         var alerts = new BluetoothBatteryAlertPolicy();
+        var observers = new List<Action>();
+        var nextRead = _lastReadAttempt.AddMinutes(1);
+        var failures = 0;
+        bool? connected = null;
         try
         {
+            foreach (var le in new[] { false, true })
+            {
+                var watcher = DeviceInformation.CreateWatcher(BluetoothBatteryReader.Selector(le), BluetoothBatteryReader.DeviceProperties, DeviceInformationKind.AssociationEndpoint);
+                void Wake(string? id)
+                {
+                    if (token.IsCancellationRequested || id is not null && !id.Equals(session.DeviceId, StringComparison.OrdinalIgnoreCase) &&
+                        !Volatile.Read(ref session.PeerIds).Contains(id, StringComparer.OrdinalIgnoreCase)) return;
+                    Interlocked.Increment(ref session.Version);
+                    session.Wake();
+                }
+                TypedEventHandler<DeviceWatcher, DeviceInformation> added = (_, device) => Wake(device.Id);
+                TypedEventHandler<DeviceWatcher, DeviceInformationUpdate> updated = (_, device) => Wake(device.Id);
+                TypedEventHandler<DeviceWatcher, DeviceInformationUpdate> removed = (_, device) => Wake(device.Id);
+                TypedEventHandler<DeviceWatcher, object> completed = (_, _) => Wake(null);
+                watcher.Added += added; watcher.Updated += updated; watcher.Removed += removed; watcher.EnumerationCompleted += completed;
+                observers.Add(() =>
+                {
+                    watcher.Added -= added; watcher.Updated -= updated; watcher.Removed -= removed; watcher.EnumerationCompleted -= completed;
+                    if (watcher.Status is DeviceWatcherStatus.Started or DeviceWatcherStatus.EnumerationCompleted) watcher.Stop();
+                });
+                watcher.Start();
+            }
             while (!token.IsCancellationRequested)
             {
                 var version = Volatile.Read(ref session.Version);
-                var output = await devices.GetDevicesAsync(AudioDeviceDirection.Output, true, token).ConfigureAwait(false);
-                var input = await devices.GetDevicesAsync(AudioDeviceDirection.Input, true, token).ConfigureAwait(false);
-                var selected = output.FirstOrDefault(device => device.IsDefault);
-                var currentTarget = selected?.ContainerId;
-                var currentNotificationVersion = Volatile.Read(ref session.NotificationVersion);
-                if (currentTarget != target || notificationVersion != currentNotificationVersion)
+                IReadOnlyList<BluetoothBatteryDevice> devices;
+                try { devices = await reader.ListPairedAsync(token).ConfigureAwait(false); }
+                catch (Exception error) when (!token.IsCancellationRequested)
                 {
-                    alerts.ResetBaseline();
-                    target = currentTarget; notificationVersion = currentNotificationVersion;
-                }
-                var previous = cache.Get(target);
-                if (previous?.IsConnected == false) alerts.ResetBaseline();
-                if (DateTimeOffset.UtcNow >= nextRead)
-                {
-                    var read = false;
-                    IReadOnlyDictionary<Guid, BluetoothBatterySnapshot> snapshots = new Dictionary<Guid, BluetoothBatterySnapshot>();
-                    try
-                    {
-                        await _readGate.WaitAsync(token).ConfigureAwait(false);
-                        try
-                        {
-                            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
-                            timeout.CancelAfter(TimeSpan.FromSeconds(20));
-                            snapshots = await reader.ReadAsync(output.Concat(input).ToArray(), timeout.Token).ConfigureAwait(false);
-                            read = true;
-                        }
-                        finally { _readGate.Release(); }
-                    }
-                    catch (OperationCanceledException) when (!token.IsCancellationRequested) { }
-                    catch (Exception exception) when (!token.IsCancellationRequested) { log.Warn("Bluetooth", "电量读取失败", exception); }
-                    if (token.IsCancellationRequested || !ReferenceEquals(_session, session) || _disposed) return;
-                    failures = read ? 0 : Math.Min(failures + 1, 4);
-                    nextRead = DateTimeOffset.UtcNow.AddSeconds(read ? 60 : Math.Min(60 * (1 << failures), 600));
-                    if (version != Volatile.Read(ref session.Version)) { alerts.ResetBaseline(); continue; }
-                    var merged = new Dictionary<Guid, BluetoothBatterySnapshot>();
-                    foreach (var endpoint in output.Concat(input).Where(device => device.ContainerId is not null))
-                    {
-                        var id = endpoint.ContainerId!.Value;
-                        var old = cache.Get(id);
-                        var fresh = snapshots.GetValueOrDefault(id);
-                        if (fresh is null && old is null) continue;
-                        merged[id] = fresh?.ReadSucceeded == true ? fresh : (fresh ?? old!) with
-                        {
-                            Percent = old?.Percent,
-                            Source = old?.Source,
-                            UpdatedAt = old?.UpdatedAt,
-                            ReadSucceeded = false,
-                            IsConnected = read && fresh?.IsConnected == true
-                        };
-                    }
-                    var published = false;
+                    failures = Math.Min(failures + 1, 4);
+                    log.Warn("Bluetooth", "配对设备目录读取失败，稍后重试", error);
                     await Application.Current.Dispatcher.InvokeAsync(() =>
                     {
-                        if (!_disposed && !token.IsCancellationRequested && ReferenceEquals(_session, session) &&
-                            version == Volatile.Read(ref session.Version))
-                        {
-                            cache.Replace(merged);
-                            published = true;
-                        }
+                        if (_disposed || token.IsCancellationRequested || !ReferenceEquals(_session, session)) return;
+                        if (cache.Snapshot is { } previous) cache.Publish(previous with { ReadSucceeded = false });
+                        Changed?.Invoke(this, EventArgs.Empty);
                     });
-                    if (_disposed || token.IsCancellationRequested || !ReferenceEquals(_session, session)) return;
-                    if (!published) { alerts.ResetBaseline(); continue; }
-                    var battery = target is { } physical ? snapshots.GetValueOrDefault(physical) : null;
-                    if (alerts.Evaluate(target, battery, Volatile.Read(ref _notifyEnabled), Volatile.Read(ref _threshold)))
-                    {
-                        var liveOutput = await devices.GetDevicesAsync(AudioDeviceDirection.Output, true, token).ConfigureAwait(false);
-                        if (liveOutput.FirstOrDefault(device => device.IsDefault)?.ContainerId == target)
-                        {
-                            var noticeVersion = Volatile.Read(ref session.Version);
-                            await Application.Current.Dispatcher.InvokeAsync(() =>
-                            {
-                                if (_disposed || token.IsCancellationRequested || !ReferenceEquals(_session, session) ||
-                                    noticeVersion != Volatile.Read(ref session.Version) || currentNotificationVersion != Volatile.Read(ref session.NotificationVersion) || !_notifyEnabled) return;
-                                try { notifications.TryShowNotification(Translations.Get("Battery.LowTitle"), Translations.Format("Battery.LowBody", selected?.DisplayName ?? string.Empty, battery!.Percent)); }
-                                catch (Exception exception) { log.Warn("Bluetooth", "低电量通知发送失败", exception); }
-                            });
-                        }
-                    }
+                    await Task.Delay(TimeSpan.FromSeconds(Math.Min(60 * (1 << failures), 600)), token).ConfigureAwait(false);
+                    continue;
                 }
-                var delay = nextRead - DateTimeOffset.UtcNow;
-                await session.Signal.WaitAsync(delay > TimeSpan.Zero ? delay : TimeSpan.FromSeconds(1), token).ConfigureAwait(false);
+                var device = devices.FirstOrDefault(device => device.Matches(session.DeviceId));
+                Volatile.Write(ref session.PeerIds, device?.Peers.Select(peer => peer.Id).ToArray() ?? []);
+                var isConnected = device?.IsConnected == true;
+                if (connected != isConnected)
+                {
+                    alerts.ResetBaseline();
+                    if (isConnected && (connected == false || cache.Snapshot is null)) nextRead = DateTimeOffset.MinValue;
+                    connected = isConnected;
+                }
+                var old = cache.Snapshot is { } saved && saved.DeviceId == session.DeviceId ? saved : null;
+                var reading = old is null
+                    ? new BluetoothBatterySnapshot(session.DeviceId, null, null, isConnected, false, null) { DeviceName = device?.DisplayName ?? SettingsManager.Current.BluetoothBatteryWidget.LastKnownName }
+                    : old with { IsConnected = isConnected };
+                if (isConnected && device is not null && DateTimeOffset.UtcNow >= nextRead)
+                {
+                    await _readGate.WaitAsync(token).ConfigureAwait(false);
+                    try
+                    {
+                        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
+                        timeout.CancelAfter(TimeSpan.FromSeconds(20));
+                        _lastReadAttempt = DateTimeOffset.UtcNow;
+                        reading = await reader.ReadAsync(device, session.DeviceId, timeout.Token).ConfigureAwait(false);
+                        failures = reading.ReadSucceeded ? 0 : Math.Min(failures + 1, 4);
+                    }
+                    catch (Exception error) when (!token.IsCancellationRequested)
+                    {
+                        failures = Math.Min(failures + 1, 4);
+                        reading = reading with { ReadSucceeded = false };
+                        log.Warn("Bluetooth", "所选设备电量读取失败", error);
+                    }
+                    finally { _readGate.Release(); }
+                    nextRead = DateTimeOffset.UtcNow.AddSeconds(failures == 0 ? 60 : Math.Min(60 * (1 << failures), 600));
+                    if (!reading.ReadSucceeded && old is not null)
+                        reading = reading with { Percent = old.Percent, Source = old.Source, UpdatedAt = old.UpdatedAt };
+                }
+                if (!isConnected) reading = reading with { ReadSucceeded = false };
+                if (token.IsCancellationRequested || _disposed || !ReferenceEquals(_session, session)) return;
+                await Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    if (_disposed || token.IsCancellationRequested || !ReferenceEquals(_session, session) ||
+                        version != Volatile.Read(ref session.Version) || SettingsManager.Current.BluetoothBatteryWidget.DeviceId != session.DeviceId) return;
+                    var configuration = SettingsManager.Current.BluetoothBatteryWidget;
+                    if (reading.IsRealtime)
+                    {
+                        if (reading.Percent <= configuration.LowThreshold) _lowVisible = true;
+                        else if (reading.Percent >= configuration.LowThreshold + 5) _lowVisible = false;
+                    }
+                    cache.Publish(reading);
+                    Changed?.Invoke(this, EventArgs.Empty);
+                    if (alerts.Evaluate(session.DeviceId, reading, configuration.Notifications, configuration.LowThreshold))
+                    {
+                        try { notifications.TryShowNotification(Translations.Get("Battery.LowTitle"), Translations.Format("Battery.LowBody", reading.DeviceName, reading.Percent)); }
+                        catch (Exception error) { log.Warn("Bluetooth", "低电量通知失败", error); }
+                    }
+                });
+                await session.Signal.WaitAsync(TimeSpan.FromSeconds(60), token).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException) { }
-        catch (Exception exception) { if (!_disposed) log.Warn("Bluetooth", "电量监测已停止", exception); }
-        finally { Interlocked.CompareExchange(ref _session, null, session); session.Signal.Dispose(); session.Cancellation.Dispose(); }
+        catch (Exception error) { if (!_disposed) log.Warn("Bluetooth", "所选设备追踪已停止", error); }
+        finally
+        {
+            foreach (var release in observers) { try { release(); } catch (Exception) { } }
+            Interlocked.CompareExchange(ref _session, null, session);
+            session.Signal.Dispose(); session.Cancellation.Dispose();
+        }
     }
-
     public async Task StopAsync(CancellationToken cancellationToken)
     {
         Dispose();
@@ -194,8 +208,8 @@ public sealed class BluetoothBatteryService(IAudioDeviceCatalog devices, Bluetoo
         if (_disposed) return;
         _disposed = true;
         SettingsManager.SettingsChanged -= OnSettingsChanged;
-        devices.Changed -= OnDevicesChanged;
         Interlocked.Exchange(ref _session, null)?.Cancel();
         cache.Clear();
+        Changed = null;
     }
 }

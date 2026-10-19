@@ -407,6 +407,14 @@
                 for the same buttons, so the menu, the tooltips, and the wheel semantics have one implementation each. Tag="MediaAction" makes
                 the host's drag logic pass the press through, otherwise the drag path marks it handled and the inner MouseLeftButtonUp never runs.
             -->
+            <Border x:Name="TaskbarBatterySurface" Panel.ZIndex="4" Width="66" Height="32" Padding="4" CornerRadius="5"
+                HorizontalAlignment="Left" VerticalAlignment="Center" Background="Transparent" Visibility="Collapsed" Tag="MediaAction"
+                MouseEnter="TaskbarBatterySurface_MouseEnter" MouseLeave="TaskbarBatterySurface_MouseLeave">
+                <StackPanel x:Name="TaskbarBatteryContent" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False">
+                    <ui:SymbolIcon Symbol="Bluetooth24" FontSize="14" VerticalAlignment="Center" Foreground="{Binding Foreground, ElementName=SongTitle}"/>
+                    <TextBlock x:Name="TaskbarBatteryText" Text="—" FontSize="12" VerticalAlignment="Center" Foreground="{Binding Foreground, ElementName=SongTitle}"/>
+                </StackPanel>
+            </Border>
             <Border x:Name="TaskbarOutputDeviceHoverSurface"
                     Panel.ZIndex="4"
                     Width="26"

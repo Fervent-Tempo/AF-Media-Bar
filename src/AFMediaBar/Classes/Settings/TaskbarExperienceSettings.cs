@@ -66,7 +66,9 @@ public enum TaskbarRestComponent
 
     /// <summary>音量按钮：点击打开音量菜单，滚轮调节当前媒体来源的音量。 / Volume button: clicking opens the volume menu, the wheel adjusts the current source's volume.</summary>
     Volume = 5,
-    InputDevice = 6
+    InputDevice = 6,
+    /// <summary>所选蓝牙设备的电量组件。</summary>
+    BluetoothBattery = 7
 }
 
 /// <summary>播放器表面的基础背景方案。 / Basic background style for a player surface.</summary>

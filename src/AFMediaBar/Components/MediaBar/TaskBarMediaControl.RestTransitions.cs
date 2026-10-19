@@ -135,6 +135,7 @@ public partial class TaskBarMediaControl
         TaskbarRestComponent.MediaText => SongInfoStackPanel,
         TaskbarRestComponent.Spectrum => TaskbarSpectrumHoverSurface,
         TaskbarRestComponent.Performance => TaskbarPerformanceHoverSurface,
+        TaskbarRestComponent.BluetoothBattery => TaskbarBatterySurface,
         TaskbarRestComponent.OutputDevice => TaskbarOutputDeviceHoverSurface,
         TaskbarRestComponent.InputDevice => TaskbarInputDeviceHoverSurface,
         TaskbarRestComponent.Volume => TaskbarVolumeHoverSurface,

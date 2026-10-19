@@ -1,20 +1,18 @@
-// 电量服务写入不可变字典，设备目录只读；事件不触发新的原生查询。
+// 单设备不可变快照，服务在 UI 线程发布；呈现订阅不触发额外平台查询。
 using AFMediaBar.Classes.Models;
 
 namespace AFMediaBar.Classes.Services.Audio;
 
-/// <summary>物理设备电量共享缓存，打断读取服务与音频目录之间的依赖环。</summary>
+/// <summary>设置、组件与提醒共用的所选设备快照。</summary>
 public sealed class BluetoothBatteryCache
 {
-    private IReadOnlyDictionary<Guid, BluetoothBatterySnapshot> _snapshots = new Dictionary<Guid, BluetoothBatterySnapshot>();
+    public BluetoothBatterySnapshot? Snapshot { get; private set; }
     public event EventHandler? Changed;
-    public BluetoothBatterySnapshot? Get(Guid? containerId) => AudioDeviceIdentity.PhysicalContainer(containerId) is { } id ? Volatile.Read(ref _snapshots).GetValueOrDefault(id) : null;
-    public void Replace(IReadOnlyDictionary<Guid, BluetoothBatterySnapshot> snapshots)
+    public void Publish(BluetoothBatterySnapshot? snapshot)
     {
-        var old = Volatile.Read(ref _snapshots);
-        if (old.Count == snapshots.Count && snapshots.All(pair => old.TryGetValue(pair.Key, out var value) && value == pair.Value)) return;
-        Volatile.Write(ref _snapshots, snapshots);
+        if (Snapshot == snapshot) return;
+        Snapshot = snapshot;
         Changed?.Invoke(this, EventArgs.Empty);
     }
-    public void Clear() => Replace(new Dictionary<Guid, BluetoothBatterySnapshot>());
+    public void Clear() => Publish(null);
 }
