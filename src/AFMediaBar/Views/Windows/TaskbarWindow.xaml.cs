@@ -993,6 +993,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
         var wasConnected = _lastSnapshot.IsConnected;
         _lastSnapshot = snapshot;
+        if (!snapshot.IsConnected)
+            _externalFullPanelHandle?.Dismiss();
         if (snapshot.IsConnected && !wasConnected)
         {
             _pendingRestExitSizeRequest = null;

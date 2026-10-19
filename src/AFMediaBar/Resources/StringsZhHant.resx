@@ -2962,10 +2962,10 @@
   <data name="Media.Selection.Filtered" xml:space="preserve"><value>此應用已被媒體來源篩選排除，目前使用自動選擇。</value></data>
   <data name="Media.Selection.ManualHint" xml:space="preserve"><value>手動選源立即生效；後續新工作階段或符合策略的播放活動仍可接管。</value></data>
   <data name="Experimental.FullPanel.Title" xml:space="preserve">
-    <value>外側完整層入口</value>
+    <value>外側完整面板入口</value>
   </data>
   <data name="Experimental.FullPanel.Description" xml:space="preserve">
-    <value>滑鼠進入工作列媒體列時，在朝向桌面的一側顯示橫槓，取代原本的列內入口。</value>
+    <value>有媒體工作階段時，滑鼠進入工作列媒體列會在朝向桌面的一側顯示橫槓，取代原本的列內入口；無媒體時隱藏。</value>
   </data>
   <data name="Experimental.FullPanel.Trigger" xml:space="preserve">
     <value>開啟方式</value>

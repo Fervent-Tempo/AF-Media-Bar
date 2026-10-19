@@ -3003,7 +3003,7 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
     <value>Thanh mở bảng đầy đủ bên ngoài</value>
   </data>
   <data name="Experimental.FullPanel.Description" xml:space="preserve">
-    <value>Hiện thanh mở ở phía hướng vào màn hình nền khi con trỏ đi vào thanh đa phương tiện, thay cho thanh mở bên trong.</value>
+    <value>Khi có phiên media, hiện thanh mở ở phía hướng vào màn hình nền khi con trỏ đi vào thanh đa phương tiện, thay cho thanh mở bên trong. Ẩn khi không có media.</value>
   </data>
   <data name="Experimental.FullPanel.Trigger" xml:space="preserve">
     <value>Cách mở</value>

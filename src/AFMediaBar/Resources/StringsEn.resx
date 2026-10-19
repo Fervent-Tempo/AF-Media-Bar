@@ -2965,7 +2965,7 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
     <value>External full-panel handle</value>
   </data>
   <data name="Experimental.FullPanel.Description" xml:space="preserve">
-    <value>Show a handle on the desktop-facing side of the taskbar when the pointer enters the media bar, replacing the handle inside the bar.</value>
+    <value>When a media session is available, show a handle on the desktop-facing side of the taskbar as the pointer enters the media bar, replacing the handle inside the bar. Hide it when no media is available.</value>
   </data>
   <data name="Experimental.FullPanel.Trigger" xml:space="preserve">
     <value>Open with</value>

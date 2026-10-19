@@ -1092,7 +1092,7 @@ namespace AFMediaBar.Components
             // The full-layer entry switch covers both the hover layer's button and the thin bar above the rest-layer text: what the
             // user asks for is "do I want this entry", so both have to disappear together, otherwise turning it off would remove
             // the thin bar while leaving the hover button behind.
-            TaskbarFullPanelHandle.Visibility = experience.FullLayerEnabled && experience.FullPanelEntryVisible && !UsesExternalFullPanelHandle
+            TaskbarFullPanelHandle.Visibility = _isConnected && experience.FullLayerEnabled && experience.FullPanelEntryVisible && !UsesExternalFullPanelHandle
                 ? Visibility.Visible
                 : Visibility.Collapsed;
             var directFullPanelHandleVisible = CanShowDirectFullPanelHandle();

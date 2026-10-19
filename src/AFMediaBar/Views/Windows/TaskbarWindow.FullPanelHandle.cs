@@ -24,6 +24,7 @@ public partial class TaskbarWindow
     }
 
     private bool CanKeepExternalFullPanelHandle() => !_isClosing && !_isEnvironmentSuspended && !IsBackgroundPruned &&
+        _lastSnapshot.IsConnected &&
         (IsVisible || IsTaskbarPresentationSuspended) &&
         !_isDragging && !_isFullPanelOpen && !PlayerMenu.IsOpen && !_compactFlyout.IsVisible &&
         SettingsManager.Current.TaskbarBarEnabled && SettingsManager.Current.Experiments.ExternalFullPanelHandle &&
@@ -81,7 +82,7 @@ public partial class TaskbarWindow
         catch (Exception exception)
         {
             _externalFullPanelHandle?.Dismiss();
-            AFMediaBar.Classes.Services.AppLogService.Current?.Warn("FullPanel", "外侧完整层入口显示失败", exception);
+            AFMediaBar.Classes.Services.AppLogService.Current?.Warn("FullPanel", "外侧完整面板入口显示失败", exception);
         }
     }
 
