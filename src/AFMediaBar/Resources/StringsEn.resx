@@ -3055,8 +3055,8 @@ Source: {2}</value></data>
   <data name="Memory.Available" xml:space="preserve"><value>System available physical memory</value></data>
   <data name="Memory.SampleTime" xml:space="preserve"><value>Sample time</value></data>
   <data name="Memory.LastResult" xml:space="preserve"><value>Last AF reclaim result</value></data>
-  <data name="Memory.System.Scope" xml:space="preserve"><value>Affects Windows caches separately from AF reclaim. Requires elevation when run.</value></data>
-  <data name="Memory.System.Run" xml:space="preserve"><value>Clean…</value></data>
+  <data name="Memory.System.Scope" xml:space="preserve"><value>Standard clears low-priority standby pages. Deep also trims the system file cache and clears all standby pages, without trimming other applications.</value></data>
+  <data name="Memory.System.Run" xml:space="preserve"><value>Standard optimization</value></data>
   <data name="Battery.NoReading" xml:space="preserve"><value>Battery reading unavailable</value></data>
   <data name="Device.Default" xml:space="preserve"><value>Current default</value></data>
   <data name="Device.Edit" xml:space="preserve"><value>Edit device settings</value></data>
@@ -3064,4 +3064,14 @@ Source: {2}</value></data>
   <data name="Device.Hotkey.Record" xml:space="preserve"><value>Click and press a shortcut</value></data>
   <data name="Device.Hotkey.Recording" xml:space="preserve"><value>Press a shortcut…</value></data>
   <data name="Device.Hotkey.RecordHint" xml:space="preserve"><value>Press a shortcut with Ctrl or Alt. Esc cancels, Backspace or Delete clears, Tab leaves.</value></data>
+  <data name="Memory.OptimizeAf" xml:space="preserve"><value>Optimize AF memory</value></data>
+  <data name="Memory.OptimizeSystem" xml:space="preserve"><value>Optimize system memory</value></data>
+  <data name="Memory.System.Standard" xml:space="preserve"><value>Standard optimization</value></data>
+  <data name="Memory.System.Deep" xml:space="preserve"><value>Deep optimization</value></data>
+  <data name="Memory.System.DeepDescription" xml:space="preserve"><value>Trim the system file cache working set and clear all standby pages. Later access may rebuild caches.</value></data>
+  <data name="Memory.System.PartialSuccess" xml:space="preserve"><value>Some operations completed; see individual results</value></data>
+  <data name="Memory.System.AuthorizationRequired" xml:space="preserve"><value>Authorize system memory optimization first</value></data>
+  <data name="Memory.Stage.FileCache" xml:space="preserve"><value>System file cache</value></data>
+  <data name="Memory.Stage.Standby" xml:space="preserve"><value>All standby pages</value></data>
+  <data name="Memory.Stage.LowStandby" xml:space="preserve"><value>Low-priority standby pages</value></data>
 </root>

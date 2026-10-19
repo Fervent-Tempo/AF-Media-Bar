@@ -124,4 +124,10 @@
     <Delete Files="@(_WebView2ReferenceDocumentation)" />
   </Target>
 
+  <Target Name="PublishMemoryHelper" BeforeTargets="AssignTargetPaths">
+    <PropertyGroup><MemoryHelperOutput>$(MSBuildProjectDirectory)\obj\memory-helper\$(Configuration)\publish\</MemoryHelperOutput></PropertyGroup>
+    <MSBuild Projects="..\AFMediaBar.MemoryHelper\AFMediaBar.MemoryHelper.csproj" Targets="Restore;Publish"
+             BuildInParallel="false" Properties="Configuration=$(Configuration);RuntimeIdentifier=win-x64;PublishDir=$(MemoryHelperOutput)" />
+    <ItemGroup><EmbeddedResource Include="$(MemoryHelperOutput)AFMediaBar.MemoryHelper.exe" LogicalName="AFMediaBar.MemoryHelper.exe" /></ItemGroup>
+  </Target>
 </Project>

@@ -3093,8 +3093,8 @@ Nguồn: {2}</value></data>
   <data name="Memory.Available" xml:space="preserve"><value>Bộ nhớ vật lý hệ thống còn</value></data>
   <data name="Memory.SampleTime" xml:space="preserve"><value>Thời điểm lấy mẫu</value></data>
   <data name="Memory.LastResult" xml:space="preserve"><value>Kết quả thu hồi AF gần nhất</value></data>
-  <data name="Memory.System.Scope" xml:space="preserve"><value>Tác động bộ đệm Windows, khác thu hồi riêng AF. Cần quyền quản trị khi chạy.</value></data>
-  <data name="Memory.System.Run" xml:space="preserve"><value>Dọn…</value></data>
+  <data name="Memory.System.Scope" xml:space="preserve"><value>Tiêu chuẩn xóa trang chờ ưu tiên thấp. Chuyên sâu xử lý thêm bộ đệm tệp và toàn bộ trang chờ, không thu gọn ứng dụng khác.</value></data>
+  <data name="Memory.System.Run" xml:space="preserve"><value>Tối ưu tiêu chuẩn</value></data>
   <data name="Battery.NoReading" xml:space="preserve"><value>Chưa đọc được mức pin</value></data>
   <data name="Device.Default" xml:space="preserve"><value>Mặc định hiện tại</value></data>
   <data name="Device.Edit" xml:space="preserve"><value>Sửa cài đặt thiết bị</value></data>
@@ -3102,4 +3102,14 @@ Nguồn: {2}</value></data>
   <data name="Device.Hotkey.Record" xml:space="preserve"><value>Bấm rồi nhấn tổ hợp phím</value></data>
   <data name="Device.Hotkey.Recording" xml:space="preserve"><value>Nhấn tổ hợp phím…</value></data>
   <data name="Device.Hotkey.RecordHint" xml:space="preserve"><value>Nhấn tổ hợp có Ctrl hoặc Alt. Esc hủy, Backspace hoặc Delete xóa, Tab rời đi.</value></data>
+  <data name="Memory.OptimizeAf" xml:space="preserve"><value>Tối ưu bộ nhớ AF</value></data>
+  <data name="Memory.OptimizeSystem" xml:space="preserve"><value>Tối ưu bộ nhớ hệ thống</value></data>
+  <data name="Memory.System.Standard" xml:space="preserve"><value>Tối ưu tiêu chuẩn</value></data>
+  <data name="Memory.System.Deep" xml:space="preserve"><value>Tối ưu chuyên sâu</value></data>
+  <data name="Memory.System.DeepDescription" xml:space="preserve"><value>Thu gọn bộ đệm tệp hệ thống và xóa toàn bộ trang chờ. Bộ đệm có thể cần được tạo lại.</value></data>
+  <data name="Memory.System.PartialSuccess" xml:space="preserve"><value>Một số thao tác thành công; xem kết quả từng mục</value></data>
+  <data name="Memory.System.AuthorizationRequired" xml:space="preserve"><value>Hãy cấp quyền tối ưu bộ nhớ hệ thống trước</value></data>
+  <data name="Memory.Stage.FileCache" xml:space="preserve"><value>Bộ đệm tệp hệ thống</value></data>
+  <data name="Memory.Stage.Standby" xml:space="preserve"><value>Toàn bộ trang chờ</value></data>
+  <data name="Memory.Stage.LowStandby" xml:space="preserve"><value>Trang chờ ưu tiên thấp</value></data>
 </root>

@@ -3055,8 +3055,8 @@
   <data name="Memory.Available" xml:space="preserve"><value>系统可用物理内存</value></data>
   <data name="Memory.SampleTime" xml:space="preserve"><value>采样时间</value></data>
   <data name="Memory.LastResult" xml:space="preserve"><value>最近一次 AF 回收结果</value></data>
-  <data name="Memory.System.Scope" xml:space="preserve"><value>影响 Windows 缓存，不是 AF 自身回收；执行时需要管理员权限。</value></data>
-  <data name="Memory.System.Run" xml:space="preserve"><value>清理…</value></data>
+  <data name="Memory.System.Scope" xml:space="preserve"><value>标准档仅清理低优先级待机页；深度档额外处理系统文件缓存与全部待机页。不回收其他应用工作集。</value></data>
+  <data name="Memory.System.Run" xml:space="preserve"><value>标准优化</value></data>
   <data name="Battery.NoReading" xml:space="preserve"><value>暂时无法获取电量</value></data>
   <data name="Device.Default" xml:space="preserve"><value>当前默认</value></data>
   <data name="Device.Edit" xml:space="preserve"><value>编辑设备设置</value></data>
@@ -3064,4 +3064,14 @@
   <data name="Device.Hotkey.Record" xml:space="preserve"><value>点击后按组合键</value></data>
   <data name="Device.Hotkey.Recording" xml:space="preserve"><value>请按组合键…</value></data>
   <data name="Device.Hotkey.RecordHint" xml:space="preserve"><value>按下包含 Ctrl 或 Alt 的组合键；Esc 取消，退格或 Delete 清除，Tab 离开。</value></data>
+  <data name="Memory.OptimizeAf" xml:space="preserve"><value>优化 AF 内存</value></data>
+  <data name="Memory.OptimizeSystem" xml:space="preserve"><value>优化系统内存</value></data>
+  <data name="Memory.System.Standard" xml:space="preserve"><value>标准优化</value></data>
+  <data name="Memory.System.Deep" xml:space="preserve"><value>深度优化</value></data>
+  <data name="Memory.System.DeepDescription" xml:space="preserve"><value>回收系统文件缓存工作集并清理全部待机页，后续访问可能需要重建缓存。</value></data>
+  <data name="Memory.System.PartialSuccess" xml:space="preserve"><value>部分操作成功，请查看分项结果</value></data>
+  <data name="Memory.System.AuthorizationRequired" xml:space="preserve"><value>请先授权系统内存优化</value></data>
+  <data name="Memory.Stage.FileCache" xml:space="preserve"><value>系统文件缓存</value></data>
+  <data name="Memory.Stage.Standby" xml:space="preserve"><value>全部待机页</value></data>
+  <data name="Memory.Stage.LowStandby" xml:space="preserve"><value>低优先级待机页</value></data>
 </root>

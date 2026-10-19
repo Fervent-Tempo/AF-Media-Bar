@@ -22,7 +22,8 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
     private bool _isBusy;
     public bool IsSystemCleanupEnabled => IsEnabled && SettingsManager.Current.Experiments.SystemMemoryCleanup;
     public string SystemResultText => _systemResult is not { } result ? string.Empty :
-        Translations.Get("Memory.System." + result.Status) + (result.Before is not null && result.After is not null ? "\n" +
+        Translations.Get("Memory.System." + result.Status) +
+        (result.Details is { } details ? "\n" + string.Join("\n", details.Stages.Select(stage => Translations.Get("Memory.Stage." + stage.Operation) + ": " + Translations.Get("Memory.System." + stage.Status))) + " · " + details.ElapsedMilliseconds + " ms" : string.Empty) + (result.Before is not null && result.After is not null ? "\n" +
         Translations.Format("Memory.System.Readings", FormatBytes((double?)result.Before), FormatBytes((double?)result.After)) : string.Empty);
     public bool IsLegacyTrimVisible => !IsEnabled;
     public bool HasResult => _lastOutcome is not null;
@@ -36,7 +37,7 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
     public string SampleTimeText => _snapshot?.At.ToLocalTime().ToString("T", CultureInfo.CurrentCulture) ?? Translations.Get("Memory.Unavailable");
     public bool IsEnabled => SettingsManager.Current.Experiments.MemoryTools;
     public bool IsBusy { get => _isBusy; private set { if (SetProperty(ref _isBusy, value)) OnPropertyChanged(nameof(CanRun)); } }
-    public bool CanRun => !IsBusy;
+    public bool CanRun => !IsBusy && !_systemCleanup.IsRunning;
     public string MetricsText => _snapshot is not { } snapshot ? Translations.Get("Memory.Unavailable") :
         Translations.Format("Memory.Metrics", FormatBytes(snapshot.Process?.WorkingSetBytes), FormatBytes(snapshot.Process?.PrivateBytes),
             FormatBytes(snapshot.Process?.ManagedHeapBytes), snapshot.Process?.HandleCount.ToString() ?? Translations.Get("Memory.Unavailable"),
@@ -55,6 +56,7 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
     public MemoryToolsViewModel(MemoryToolsService metrics, MemoryPruneCoordinator prune, SystemMemoryCleanupService systemCleanup)
     {
         _systemCleanup = systemCleanup;
+        systemCleanup.Changed += OnCleanupChanged;
         _metrics = metrics;
         _prune = prune;
         SettingsManager.SettingsChanged += OnSettingsChanged;
@@ -106,14 +108,19 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private async Task CleanSystemAsync()
+    private async Task CleanSystemAsync() => await CleanSystemCoreAsync(SystemMemoryOptimizationLevel.Standard);
+
+    [RelayCommand]
+    private async Task CleanSystemDeepAsync() => await CleanSystemCoreAsync(SystemMemoryOptimizationLevel.Deep);
+
+    private async Task CleanSystemCoreAsync(SystemMemoryOptimizationLevel level)
     {
         if (_disposed || IsBusy || !IsSystemCleanupEnabled) return;
         IsBusy = true;
         var source = _sampling;
         try
         {
-            var result = await _systemCleanup.RunAsync();
+            var result = await _systemCleanup.RunAsync(level);
             if (_disposed || !_visible || source != _sampling || !IsSystemCleanupEnabled) return;
             _systemResult = result;
             OnPropertyChanged(nameof(SystemResultText));
@@ -122,8 +129,6 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
         finally { if (!_disposed) IsBusy = false; }
     }
 
-    [RelayCommand]
-    private Task GentleAsync() => TrimAsync(MemoryTrimStrength.Gentle);
     [RelayCommand]
     private Task DeepAsync() => TrimAsync(MemoryTrimStrength.Deep);
 
@@ -142,6 +147,15 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(HasResult));
         }
         finally { if (!_disposed) IsBusy = false; }
+    }
+
+    private void OnCleanupChanged(object? sender, EventArgs args)
+    {
+        if (_disposed) return;
+        _systemResult = _systemCleanup.LastResult;
+        OnPropertyChanged(nameof(CanRun));
+        OnPropertyChanged(nameof(SystemResultText));
+        OnPropertyChanged(nameof(HasSystemResult));
     }
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args)
@@ -163,5 +177,6 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
         _sampling?.Cancel();
         _sampling = null;
         SettingsManager.SettingsChanged -= OnSettingsChanged;
+        _systemCleanup.Changed -= OnCleanupChanged;
     }
 }

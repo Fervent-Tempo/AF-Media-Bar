@@ -97,7 +97,10 @@ namespace AFMediaBar.Views.Windows
         /// 创建并初始化应用宿主窗口及其基础设施依赖。
         /// Creates the application host window and initializes its infrastructure dependencies.
         /// </summary>
+        private readonly AFMediaBar.Components.MemoryContextMenu _memoryMenu;
+
         public MainWindow(
+            AFMediaBar.ViewModels.Pages.MemoryToolsViewModel memoryTools,
             MainWindowViewModel viewModel,
             TaskbarWindowViewModel taskbarViewModel,
             ITaskbarDockService taskBarService,
@@ -132,6 +135,12 @@ namespace AFMediaBar.Views.Windows
             AFMediaBar.ViewModels.Components.AFContextMenuViewModel menuViewModel)
         {
             ViewModel = viewModel;
+            _memoryMenu = new AFMediaBar.Components.MemoryContextMenu(memoryTools, () =>
+            {
+                ViewModel_OpenSettingsRequested(this, EventArgs.Empty);
+                _settingsWindow?.NavigateToGroup(SettingsPageKey.Application, "Memory.Title");
+            });
+            Closed += (_, _) => _memoryMenu.IsOpen = false;
             _exitService = exitService;
             _runtime = runtime;
             _taskbarFactory = taskbarFactory;
@@ -831,7 +840,7 @@ namespace AFMediaBar.Views.Windows
         private void TaskbarWindow_PlayerMenuOpenRequested(TaskbarWindow host, Point? screenAnchor)
         {
             if (_isClosing || TaskbarEnvironmentRecovering || !_taskbarWindows.Contains(host)) return;
-            ContextMenuHelper.OpenAtScreenAnchor(host.PlayerContextMenu, this, screenAnchor);
+            ContextMenuHelper.OpenAtScreenAnchor(host.IsPerformanceMenuRequested ? _memoryMenu : host.PlayerContextMenu, this, screenAnchor);
         }
 
         private void TaskbarWindow_OpenFullPanelRequested(object? sender, FullPanelOpenRequestEventArgs e)

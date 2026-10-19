@@ -357,7 +357,7 @@ namespace AFMediaBar
             if (SystemMemoryCleanupService.IsCleanupRequest(e.Args))
             {
                 _isMemoryCleanupHelper = true;
-                Shutdown(await SystemMemoryCleanupService.ExecuteHelperAsync(e.Args));
+                Shutdown((int)SystemMemoryCleanupStatus.InvalidRequest);
                 return;
             }
             _exitCoordinator.ExitRequested += OnExitRequested;

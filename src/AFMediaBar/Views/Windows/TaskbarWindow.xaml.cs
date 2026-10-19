@@ -2362,6 +2362,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         UpdatePosition();
     }
 
+    internal bool IsPerformanceMenuRequested { get; private set; }
+
     private void Window_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
         // 阻止 WPF 把 Popup 绑定到会随 Explorer 收起的任务栏子窗口。
@@ -2383,6 +2385,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             return;
         }
 
+        IsPerformanceMenuRequested = MediaControl.IsPerformanceComponentClick(e.OriginalSource as DependencyObject);
         PlayerMenu.ApplyQuickLaunchEntries(SettingsManager.Current.QuickLaunch.Entries ?? []);
         _playerMenuOpeningAnchor = GetMediaBarScreenPhysicalBounds();
         Point? keyboardAnchor = e.CursorLeft < 0 && e.CursorTop < 0

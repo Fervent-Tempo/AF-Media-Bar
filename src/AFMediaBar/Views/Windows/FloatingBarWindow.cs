@@ -98,6 +98,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     public event EventHandler? OpenFullPanelRequested;
     public event EventHandler? PlacementTransitionStarted;
     public event Action<FloatingBarWindow, Point?>? PlayerMenuOpenRequested;
+    internal bool IsPerformanceMenuRequested { get; private set; }
 
     public FloatingBarWindow(string targetMonitorDeviceId, DisplayMonitorInfo monitor,
         TaskbarWindowViewModel commands, GlobalInteractionRouter interactionRouter,
@@ -224,6 +225,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         PreviewMouseRightButtonUp += (_, args) =>
         {
             if (!IsOperational || DateTime.UtcNow < _suppressClickUntil || _mouse.ConsumeSuppressedClick()) return;
+            IsPerformanceMenuRequested = _mediaControl.IsPerformanceComponentClick(args.OriginalSource as DependencyObject);
             PlayerMenuOpenRequested?.Invoke(this, null);
             args.Handled = true;
         };

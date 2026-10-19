@@ -303,12 +303,12 @@
                             <components:SettingsRow
                                 Description="{DynamicResource Loc.About.Row.TrimMemory.Description}"
                                 Icon="{ui:SymbolIcon ArrowMinimize24}"
-                                Title="{DynamicResource Loc.About.Row.TrimMemory.Title}"
+                                Title="{DynamicResource Loc.Memory.OptimizeAf}"
                                 Visibility="{Binding ViewModel.MemoryTools.IsLegacyTrimVisible, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                                 <ui:Button
                                     Command="{Binding ViewModel.MemoryTools.DeepCommand}"
                                     IsEnabled="{Binding ViewModel.MemoryTools.CanRun}"
-                                    Content="{DynamicResource Loc.About.Row.TrimMemory.Button}"
+                                    Content="{DynamicResource Loc.Memory.OptimizeAf}"
                                     Icon="{ui:SymbolIcon ArrowMinimize24}"
                                     Style="{StaticResource AfSettingsButtonStyle}" />
                             </components:SettingsRow>
@@ -319,11 +319,8 @@
                 <components:SettingsGroup GroupId="Memory.Title" Header="{DynamicResource Loc.Memory.Title}" Description="{DynamicResource Loc.Memory.ToolsDescription}" Icon="{ui:SymbolIcon ArrowMinimize24}"
                     Visibility="{Binding ViewModel.MemoryTools.IsEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                     <StackPanel>
-                        <components:SettingsRow Title="{DynamicResource Loc.Memory.Self.Title}" Description="{DynamicResource Loc.Memory.Gentle.Description}">
-                            <ui:Button Content="{DynamicResource Loc.Memory.Gentle}" Command="{Binding ViewModel.MemoryTools.GentleCommand}" IsEnabled="{Binding ViewModel.MemoryTools.CanRun}" Style="{StaticResource AfSettingsButtonStyle}" />
-                        </components:SettingsRow>
-                        <components:SettingsRow Title="{DynamicResource Loc.Memory.Deep}" Description="{DynamicResource Loc.Memory.Deep.Description}">
-                            <ui:Button Content="{DynamicResource Loc.Memory.Deep}" Command="{Binding ViewModel.MemoryTools.DeepCommand}" IsEnabled="{Binding ViewModel.MemoryTools.CanRun}" Style="{StaticResource AfSettingsButtonStyle}" />
+                        <components:SettingsRow Title="{DynamicResource Loc.Memory.OptimizeAf}" Description="{DynamicResource Loc.Memory.Deep.Description}">
+                            <ui:Button Content="{DynamicResource Loc.Memory.OptimizeAf}" Command="{Binding ViewModel.MemoryTools.DeepCommand}" IsEnabled="{Binding ViewModel.MemoryTools.CanRun}" Style="{StaticResource AfSettingsButtonStyle}" />
                         </components:SettingsRow>
                         <Expander Header="{DynamicResource Loc.Memory.Metrics.Title}" Margin="0,8,0,0">
                             <StackPanel>
@@ -348,6 +345,9 @@
                             <StackPanel>
                                 <components:SettingsRow Title="{DynamicResource Loc.Memory.System.Clean}" Description="{DynamicResource Loc.Memory.System.Description}">
                                     <ui:Button Content="{DynamicResource Loc.Memory.System.Run}" Command="{Binding ViewModel.MemoryTools.CleanSystemCommand}" IsEnabled="{Binding ViewModel.MemoryTools.CanRun}" Style="{StaticResource AfSettingsButtonStyle}" />
+                                </components:SettingsRow>
+                                <components:SettingsRow Title="{DynamicResource Loc.Memory.System.Deep}" Description="{DynamicResource Loc.Memory.System.DeepDescription}">
+                                    <ui:Button Content="{DynamicResource Loc.Memory.System.Deep}" Command="{Binding ViewModel.MemoryTools.CleanSystemDeepCommand}" IsEnabled="{Binding ViewModel.MemoryTools.CanRun}" Style="{StaticResource AfSettingsButtonStyle}" />
                                 </components:SettingsRow>
                                 <TextBlock Text="{Binding ViewModel.MemoryTools.SystemResultText}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="16,8" Visibility="{Binding ViewModel.MemoryTools.HasSystemResult, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
                             </StackPanel>
