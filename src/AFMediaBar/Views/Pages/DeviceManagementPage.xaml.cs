@@ -21,7 +21,7 @@ public partial class DeviceManagementPage : INavigableView<AudioDeviceSettingsVi
     private void DragHandle_Move(object sender, MouseEventArgs args)
     {
         if (args.LeftButton != MouseButtonState.Pressed) { _dragStart = null; return; }
-        if (!ViewModel.CanEdit || !ViewModel.IsPersonalizationEnabled || _dragStart is not { } start ||
+        if (!ViewModel.CanEdit || !ViewModel.IsOrderingEnabled || _dragStart is not { } start ||
             sender is not FrameworkElement { DataContext: AudioDevicePermissionItemViewModel row } element || !row.IsAllowed || row.IsOffline) return;
         var point = args.GetPosition(this);
         if (Math.Abs(point.X - start.X) < SystemParameters.MinimumHorizontalDragDistance && Math.Abs(point.Y - start.Y) < SystemParameters.MinimumVerticalDragDistance) return;

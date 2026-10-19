@@ -3012,7 +3012,6 @@ Managed heap {6} → {7} · {8} ms · {9}</value></data>
   <data name="Device.Personalization" xml:space="preserve"><value>Device aliases, favorites and order</value></data>
   <data name="Device.PersonalizationHint" xml:space="preserve"><value>Changes AF only. Favorites appear first; other devices remain available.</value></data>
   <data name="Device.Alias" xml:space="preserve"><value>AF display name (blank uses system name)</value></data>
-  <data name="Device.Favorite" xml:space="preserve"><value>Favorite</value></data>
   <data name="Device.MoveUp" xml:space="preserve"><value>Move up</value></data>
   <data name="Device.MoveDown" xml:space="preserve"><value>Move down</value></data>
   <data name="Device.Forget" xml:space="preserve"><value>Forget missing device</value></data>
@@ -3020,7 +3019,6 @@ Managed heap {6} → {7} · {8} ms · {9}</value></data>
   <data name="Device.RebindHint" xml:space="preserve"><value>Choose a replacement endpoint. This transfers the saved preferences and replaces its AF configuration. Names are never matched automatically.</value></data>
   <data name="Device.Hotkey.Title" xml:space="preserve"><value>Device switching hotkeys</value></data>
   <data name="Device.Hotkey.Hint" xml:space="preserve"><value>Switches system defaults only. Click a recorder and press a shortcut with Ctrl or Alt; Win and F12 are unavailable. Cycling follows favorite order and skips unavailable devices.</value></data>
-  <data name="Device.Hotkey.Direct" xml:space="preserve"><value>Direct hotkey</value></data>
   <data name="Device.Hotkey.CycleOutput" xml:space="preserve"><value>Cycle selected output devices</value></data>
   <data name="Device.Hotkey.CycleInput" xml:space="preserve"><value>Cycle selected input devices</value></data>
   <data name="Device.Hotkey.Invalid" xml:space="preserve"><value>Invalid key combination</value></data>

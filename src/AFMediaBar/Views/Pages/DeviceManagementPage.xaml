@@ -10,7 +10,7 @@
                     <Grid>
                         <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                         <Border Padding="4,8,12,8" Cursor="SizeAll" PreviewMouseLeftButtonDown="DragHandle_Down" PreviewMouseMove="DragHandle_Move"
-                            Visibility="{Binding IsPersonalizationEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}" ToolTip="{DynamicResource Loc.Device.Drag}">
+                            Visibility="{Binding CanReorder, Converter={StaticResource AfBooleanToVisibilityConverter}}" ToolTip="{DynamicResource Loc.Device.Drag}">
                             <TextBlock Text="⠿" FontSize="20" VerticalAlignment="Center"/>
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
@@ -25,7 +25,7 @@
                             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                             <CheckBox Content="{DynamicResource Loc.Device.Cycle.Include}" IsChecked="{Binding ParticipatesInCycle, Mode=TwoWay}"
                                 Visibility="{Binding IsHotkeysEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}" VerticalAlignment="Center"/>
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" Visibility="{Binding IsPersonalizationEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Visibility="{Binding CanReorder, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                                 <ui:Button Content="{DynamicResource Loc.Device.MoveUp}" Command="{Binding MoveUpCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
                                 <ui:Button Content="{DynamicResource Loc.Device.MoveDown}" Command="{Binding MoveDownCommand}" Style="{StaticResource AfSettingsButtonStyle}" Margin="8,0,0,0"/>
                             </StackPanel>

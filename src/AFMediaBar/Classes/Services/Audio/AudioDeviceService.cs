@@ -91,7 +91,7 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
             }
             catch (COMException) { }
         }
-        if (!ExperimentalAudioEnabled || !SettingsManager.Current.Experiments.DevicePersonalization)
+        if (!ExperimentalAudioEnabled || !(SettingsManager.Current.Experiments.DevicePersonalization || SettingsManager.Current.Experiments.DeviceHotkeys))
             return options.OrderBy(device => device.DisplayName, StringComparer.CurrentCultureIgnoreCase)
                 .ThenBy(device => device.PolicyId, StringComparer.OrdinalIgnoreCase).ToArray();
         if (!_observedOrder.TryGetValue(direction, out var observed)) _observedOrder[direction] = observed = [];
@@ -103,7 +103,7 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
             var discovered = options.OrderBy(device => observed.IndexOf(device.PolicyId)).ToArray();
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
-                if (_disposed || !ExperimentalAudioEnabled || !SettingsManager.Current.Experiments.DevicePersonalization) return;
+                if (_disposed || !ExperimentalAudioEnabled || !(SettingsManager.Current.Experiments.DevicePersonalization || SettingsManager.Current.Experiments.DeviceHotkeys)) return;
                 var settings = SettingsManager.Current.AudioDevices;
                 var entries = settings.Preferences.ToList();
                 foreach (var device in discovered)
@@ -115,7 +115,7 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
         return options.Select(device =>
         {
             var entry = preferences.FirstOrDefault(item => item.EndpointId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase));
-            return device with { DisplayName = string.IsNullOrWhiteSpace(entry?.Alias) ? device.SystemName : entry.Alias };
+            return device with { DisplayName = !SettingsManager.Current.Experiments.DevicePersonalization || string.IsNullOrWhiteSpace(entry?.Alias) ? device.SystemName : entry.Alias };
         }).OrderBy(device => { var index = Array.FindIndex(preferences, entry => entry.EndpointId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase)); return index < 0 ? preferences.Length + observed.IndexOf(device.PolicyId) : index; })
             .ThenBy(device => device.DisplayName, StringComparer.CurrentCultureIgnoreCase)
             .ThenBy(device => device.PolicyId, StringComparer.OrdinalIgnoreCase).ToArray();

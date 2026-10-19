@@ -13,7 +13,7 @@ namespace AFMediaBar.Classes.Services.Input;
 /// <summary>系统设备快捷键的注册状态与执行入口；不安装键盘 Hook。</summary>
 public sealed class AudioDeviceHotkeyService(AudioDeviceSwitchCoordinator switches) : IHostedService, IDisposable
 {
-    private sealed record Binding(string Identity, AudioDeviceDirection Direction, string? EndpointId, string Gesture);
+    private sealed record Binding(string Identity, AudioDeviceDirection Direction, string Gesture);
     private readonly Dictionary<int, Binding> _registered = [];
     private readonly Dictionary<string, string> _statuses = new(StringComparer.OrdinalIgnoreCase);
     private readonly int[] _versions = new int[2];
@@ -67,10 +67,12 @@ public sealed class AudioDeviceHotkeyService(AudioDeviceSwitchCoordinator switch
         if (_disposed) return;
         var settings = SettingsManager.Current;
         var enabled = settings.Experiments.NewAudioControl && settings.Experiments.DeviceHotkeys && _recordingCount == 0;
-        var bindings = enabled ? new[] { new Binding(Identity(AudioDeviceDirection.Output, null), AudioDeviceDirection.Output, null, settings.AudioDevices.OutputCycleHotkey),
-                new Binding(Identity(AudioDeviceDirection.Input, null), AudioDeviceDirection.Input, null, settings.AudioDevices.InputCycleHotkey) }
+        var bindings = enabled ? new[] { new Binding(Identity(AudioDeviceDirection.Output, null), AudioDeviceDirection.Output, settings.AudioDevices.OutputCycleHotkey),
+                new Binding(Identity(AudioDeviceDirection.Input, null), AudioDeviceDirection.Input, settings.AudioDevices.InputCycleHotkey) }
             .Where(binding => !string.IsNullOrWhiteSpace(binding.Gesture)).ToArray() : [];
-        var signature = string.Join("|", bindings.Select(binding => $"{binding.Identity}={binding.Gesture}"));
+        var signature = string.Join("|", bindings.Select(binding => $"{binding.Identity}={binding.Gesture}")) + ":" +
+            string.Join("|", settings.AudioDevices.Preferences.Where(entry => entry.ParticipatesInCycle)
+                .Select(entry => $"{entry.Direction}:{entry.EndpointId}:{settings.AudioDevices.IsAllowed(entry.Direction, entry.EndpointId)}"));
         if (_signature == signature) return;
         _signature = signature;
         _requests.Cancel(); _requests.Dispose(); _requests = new();
@@ -130,7 +132,7 @@ public sealed class AudioDeviceHotkeyService(AudioDeviceSwitchCoordinator switch
         {
             handled = true;
             var direction = (int)binding.Direction;
-            if (binding.EndpointId is null) _steps[direction]++; else _steps[direction] = 0;
+            _steps[direction]++;
             _ = ExecuteAsync(binding, ++_versions[direction], _requests.Token);
         }
         return IntPtr.Zero;
@@ -144,18 +146,14 @@ public sealed class AudioDeviceHotkeyService(AudioDeviceSwitchCoordinator switch
             var choices = await switches.GetChoicesAsync(target, token);
             var direction = (int)binding.Direction;
             if (_disposed || token.IsCancellationRequested || version != _versions[direction]) return;
-            AudioDeviceOption? next;
-            if (binding.EndpointId is { } id) next = choices.FirstOrDefault(device => device.PolicyId.Equals(id, StringComparison.OrdinalIgnoreCase));
-            else
-            {
-                var preferences = SettingsManager.Current.AudioDevices.Preferences.Where(entry => entry.Direction == binding.Direction && entry.ParticipatesInCycle).ToArray();
-                var favorites = preferences.Select(entry => choices.FirstOrDefault(device => device.PolicyId.Equals(entry.EndpointId, StringComparison.OrdinalIgnoreCase)))
-                    .OfType<AudioDeviceOption>().Where(device => device.IsActive).ToArray();
-                var current = switches.GetPreview(target)?.PolicyId ?? choices.FirstOrDefault(device => device.IsDefault)?.PolicyId;
-                var index = Array.FindIndex(favorites, device => device.PolicyId.Equals(current, StringComparison.OrdinalIgnoreCase));
-                var steps = _steps[direction]; _steps[direction] = 0;
-                next = favorites.Length == 0 ? null : favorites[(Math.Max(index, -1) + steps) % favorites.Length];
-            }
+            var preferences = SettingsManager.Current.AudioDevices.Preferences.Where(entry => entry.Direction == binding.Direction && entry.ParticipatesInCycle &&
+                SettingsManager.Current.AudioDevices.IsAllowed(binding.Direction, entry.EndpointId)).ToArray();
+            var candidates = preferences.Select(entry => choices.FirstOrDefault(device => device.PolicyId.Equals(entry.EndpointId, StringComparison.OrdinalIgnoreCase)))
+                .OfType<AudioDeviceOption>().Where(device => device.IsActive).ToArray();
+            var current = switches.GetPreview(target)?.PolicyId ?? choices.FirstOrDefault(device => device.IsDefault)?.PolicyId;
+            var index = Array.FindIndex(candidates, device => device.PolicyId.Equals(current, StringComparison.OrdinalIgnoreCase));
+            var steps = _steps[direction]; _steps[direction] = 0;
+            var next = candidates.Length == 0 ? null : candidates[((index + steps) % candidates.Length + candidates.Length) % candidates.Length];
             if (next is null) { SetStatus(binding.Identity, "Device.Hotkey.Unavailable"); return; }
             var result = await switches.SelectAsync(target, next, this, token);
             if (_disposed || token.IsCancellationRequested || version != _versions[direction]) return;
@@ -163,7 +161,7 @@ public sealed class AudioDeviceHotkeyService(AudioDeviceSwitchCoordinator switch
                 ? "Device.Hotkey.Registered" : "Device.Hotkey.Failed");
         }
         catch (OperationCanceledException) { }
-        catch (Exception) { if (!_disposed && !token.IsCancellationRequested) SetStatus(binding.Identity, "Device.Hotkey.Failed"); }
+        catch (Exception) { if (!_disposed && !token.IsCancellationRequested && version == _versions[(int)binding.Direction]) SetStatus(binding.Identity, "Device.Hotkey.Failed"); }
     }
 
     private void SetStatus(string identity, string key) { _statuses[identity] = key; Changed?.Invoke(this, EventArgs.Empty); }

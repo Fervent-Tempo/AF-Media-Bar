@@ -44,6 +44,7 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
         if (_disposed) return;
         OnPropertyChanged(nameof(OutputCycleStatus)); OnPropertyChanged(nameof(InputCycleStatus));
     }
+    public bool IsOrderingEnabled => IsPersonalizationEnabled || IsHotkeysEnabled;
     public bool IsPersonalizationEnabled => _configuration.Current.Experiments.NewAudioControl && _configuration.Current.Experiments.DevicePersonalization;
     public bool IsEnabled => _configuration.Current.Experiments.NewAudioControl;
     public bool CanEdit => !_disposed && _configuration.IsActive;
@@ -140,7 +141,7 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
         var disabled = new List<AudioDevicePermissionItemViewModel>();
         foreach (var device in all.GroupBy(device => device.PolicyId, StringComparer.OrdinalIgnoreCase)
             .Select(group => group.OrderByDescending(device => device.IsActive).First())
-            .OrderBy(device => IsPersonalizationEnabled ? Array.FindIndex(preferences, entry => entry.EndpointId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase)) is var index && index >= 0 ? index : int.MaxValue : 0)
+            .OrderBy(device => IsOrderingEnabled ? Array.FindIndex(preferences, entry => entry.EndpointId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase)) is var index && index >= 0 ? index : int.MaxValue : 0)
             .ThenBy(device => device.DisplayName, StringComparer.CurrentCultureIgnoreCase).ThenBy(device => device.PolicyId, StringComparer.OrdinalIgnoreCase))
         {
             if (!existing.TryGetValue(device.PolicyId, out var row)) row = new(device, settings.IsAllowed(direction, device.PolicyId), this);
@@ -176,7 +177,7 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
     }
     internal void Move(AudioDeviceOption device, int step)
     {
-        if (_disposed || !_configuration.IsActive || !IsPersonalizationEnabled) return;
+        if (_disposed || !_configuration.IsActive || !IsOrderingEnabled) return;
         var settings = _configuration.Current.AudioDevices;
         var entries = settings.Preferences.ToList();
         var visible = device.Direction == AudioDeviceDirection.Output ? OutputDevices : InputDevices;
@@ -190,7 +191,7 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
     }
     public void Reorder(AudioDevicePermissionItemViewModel source, AudioDevicePermissionItemViewModel target)
     {
-        if (!CanEdit || !IsPersonalizationEnabled || source == target || source.Direction != target.Direction ||
+        if (!CanEdit || !IsOrderingEnabled || source == target || source.Direction != target.Direction ||
             !source.IsAllowed || !target.IsAllowed || source.IsOffline || target.IsOffline) return;
         var rows = source.Direction == AudioDeviceDirection.Output ? OutputDevices : InputDevices;
         if (!rows.Contains(source) || !rows.Contains(target)) return;
@@ -273,6 +274,7 @@ public sealed partial class AudioDevicePermissionItemViewModel : ObservableObjec
     { _device = device; _isAllowed = allowed; OnPropertyChanged(string.Empty); }
     public bool IsPersonalizationEnabled => _owner.IsPersonalizationEnabled;
     public bool IsHotkeysEnabled => _owner.IsHotkeysEnabled;
+    public bool CanReorder => _owner.IsOrderingEnabled;
     public bool HasDetails => IsPersonalizationEnabled || IsHotkeysEnabled;
     public AudioDeviceDirection Direction => _device.Direction;
     public bool IsOffline => !_device.IsActive;

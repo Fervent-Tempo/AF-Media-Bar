@@ -3050,7 +3050,6 @@ Heap được quản lý {6} → {7} · {8} ms · {9}</value></data>
   <data name="Device.Personalization" xml:space="preserve"><value>Bí danh, yêu thích và thứ tự thiết bị</value></data>
   <data name="Device.PersonalizationHint" xml:space="preserve"><value>Chỉ đổi hiển thị trong AF. Mục yêu thích ở đầu; thiết bị khác vẫn chọn được.</value></data>
   <data name="Device.Alias" xml:space="preserve"><value>Tên hiển thị AF (để trống dùng tên hệ thống)</value></data>
-  <data name="Device.Favorite" xml:space="preserve"><value>Yêu thích</value></data>
   <data name="Device.MoveUp" xml:space="preserve"><value>Lên</value></data>
   <data name="Device.MoveDown" xml:space="preserve"><value>Xuống</value></data>
   <data name="Device.Forget" xml:space="preserve"><value>Xóa cấu hình thiết bị mất kết nối</value></data>
@@ -3058,7 +3057,6 @@ Heap được quản lý {6} → {7} · {8} ms · {9}</value></data>
   <data name="Device.RebindHint" xml:space="preserve"><value>Chọn điểm cuối thay thế. Cấu hình này sẽ chuyển sang và thay thế cấu hình AF của đích. Không tự ghép theo tên.</value></data>
   <data name="Device.Hotkey.Title" xml:space="preserve"><value>Phím tắt chuyển thiết bị</value></data>
   <data name="Device.Hotkey.Hint" xml:space="preserve"><value>Chỉ đổi thiết bị mặc định hệ thống. Bấm ô ghi rồi nhấn tổ hợp có Ctrl hoặc Alt; không hỗ trợ Win và F12. Luân phiên theo thứ tự yêu thích, bỏ qua thiết bị không khả dụng.</value></data>
-  <data name="Device.Hotkey.Direct" xml:space="preserve"><value>Phím tắt trực tiếp</value></data>
   <data name="Device.Hotkey.CycleOutput" xml:space="preserve"><value>Chuyển vòng thiết bị đầu ra đã chọn</value></data>
   <data name="Device.Hotkey.CycleInput" xml:space="preserve"><value>Chuyển vòng thiết bị đầu vào đã chọn</value></data>
   <data name="Device.Hotkey.Invalid" xml:space="preserve"><value>Tổ hợp phím không hợp lệ</value></data>

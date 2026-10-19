@@ -18,6 +18,7 @@ public sealed class HotkeyRecorder : TextBox
 
     public HotkeyRecorder()
     {
+        SetResourceReference(StyleProperty, "AfHotkeyRecorderStyle");
         IsReadOnly = true;
         IsReadOnlyCaretVisible = false;
         Loaded += (_, _) => RefreshText();
