@@ -31,13 +31,12 @@ namespace AFMediaBar.Views.Pages
         public event RoutedEventHandler OpenHighlights { add => AddHandler(OpenHighlightsEvent, value); remove => RemoveHandler(OpenHighlightsEvent, value); }
 
         /// <summary>
-        /// 创建应用页并注入它需要的三个入口服务：设置文件、日志与内存回收。
-        /// Creates the application page with its three entry services: settings file, log, and memory reclaim.
+        /// 创建应用页并注入页面状态、设置文件与日志入口。
+        /// Creates the application page with its state, settings file and log entry points.
         /// </summary>
         /// <param name="viewModel">本页视图模型。/ This page's view model.</param>
         /// <param name="persistence">设置文件与用户默认值的所有者。/ Owner of the settings file and user defaults.</param>
         /// <param name="log">程序日志；「打开日志文件夹」直接调用它。/ The application log, which the log-folder entry calls.</param>
-        /// <param name="pruneCoordinator">内存剪枝协调器；「压缩内存占用」请求它回收一次。/ The prune coordinator, which the compress-memory entry asks for one reclaim.</param>
         public ApplicationPage(
             ApplicationViewModel viewModel,
             SettingsPersistenceService persistence,

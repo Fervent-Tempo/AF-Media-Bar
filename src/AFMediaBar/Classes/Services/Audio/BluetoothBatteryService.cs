@@ -146,11 +146,18 @@ public sealed class BluetoothBatteryService(IAudioDeviceCatalog devices, Bluetoo
                             IsConnected = read && fresh?.IsConnected == true
                         };
                     }
+                    var published = false;
                     await Application.Current.Dispatcher.InvokeAsync(() =>
                     {
-                        if (!_disposed && !token.IsCancellationRequested && ReferenceEquals(_session, session)) cache.Replace(merged);
+                        if (!_disposed && !token.IsCancellationRequested && ReferenceEquals(_session, session) &&
+                            version == Volatile.Read(ref session.Version))
+                        {
+                            cache.Replace(merged);
+                            published = true;
+                        }
                     });
                     if (_disposed || token.IsCancellationRequested || !ReferenceEquals(_session, session)) return;
+                    if (!published) { alerts.ResetBaseline(); continue; }
                     var battery = target is { } physical ? snapshots.GetValueOrDefault(physical) : null;
                     if (alerts.Evaluate(target, battery, Volatile.Read(ref _notifyEnabled), Volatile.Read(ref _threshold)))
                     {
