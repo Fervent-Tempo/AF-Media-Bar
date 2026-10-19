@@ -404,7 +404,7 @@ public sealed class MediaSessionService : IDisposable
         if (!_candidates.SequenceEqual(BuildCandidates()))
             RefreshSnapshot(_lastSessions);
 
-        // 提供器可能每 233 毫秒报告读取失败；快照构建器负责在途去重和失败冷却，允许网络恢复后重试。
+        // 提供器会持续报告读取失败；快照构建器负责在途去重、失败冷却、暂停门控和次数限制。
         if (snapshot is null)
         {
             TryRequestFallbackLyrics();
@@ -416,12 +416,12 @@ public sealed class MediaSessionService : IDisposable
     ///
     /// 判据是"提供器已经明确报过它没有可读的媒体"（<see cref="MediaEnrichmentFallbackPolicy"/>）：提供器还没发布过任何
     /// 快照时它只是还没跑完第一轮轮询，那时兜底会在每次切歌的头 233 毫秒里白发一次请求。
-    /// 重复请求由歌词缓存与在途去重挡住，临时失败在冷却后允许重试。
+    /// 重复请求由歌词缓存与在途去重挡住，临时失败在播放中冷却后重试，连续失败最多十轮。
     /// Starts one online-lyric fallback for the current SMTC session when its source provider cannot read any media.
     ///
     /// The condition is that the provider has already reported having no readable media (<see cref="MediaEnrichmentFallbackPolicy"/>): before
     /// it has published anything it has merely not finished its first poll, and a fallback then would waste one request during the first
-    /// 233 ms of every track change. The lyric cache and in-flight lookup set block repeats while allowing failed requests to retry after a cooldown.
+    /// 233 ms of every track change. Cached and in-flight requests block repeats; failures retry after a cooldown during playback, up to ten consecutive failures.
     /// </summary>
     private void TryRequestFallbackLyrics()
     {
@@ -455,7 +455,8 @@ public sealed class MediaSessionService : IDisposable
             baseline.SourceId,
             baseline.Title,
             baseline.Artist,
-            baseline.Duration > 0 ? baseline.Duration : null);
+            baseline.Duration > 0 ? baseline.Duration : null,
+            baseline.IsPlaying);
     }
 
     private void ScheduleRefresh()

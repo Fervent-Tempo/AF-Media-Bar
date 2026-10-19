@@ -44,10 +44,8 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
     private readonly Dispatcher _dispatcher;
     private readonly Func<INetEaseMemoryReader> _createReader;
     private readonly LyricsService _lyricsService;
-    private readonly LruCache<string, LyricsResult?> _lyricsCache = new(
-        LyricsCacheCapacity,
-        result => LyricsCacheBudgetPolicy.EstimateBytes(result?.Document),
-        LyricsCacheBudgetPolicy.DefaultBudgetBytes);
+    private readonly LruCache<string, LyricsResult?> _lyricsCache;
+    private readonly LyricsRetryTracker<string> _lyricsRetries = new(LyricsCacheCapacity);
     private readonly Dictionary<string, CancellationTokenSource> _pendingLyrics = new(StringComparer.Ordinal);
     private readonly object _lyricsRequestGate = new();
 
@@ -84,11 +82,15 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
     {
     }
 
-    internal NetEaseMediaProvider(LyricsService lyricsService, Dispatcher dispatcher, Func<INetEaseMemoryReader> createReader)
+    internal NetEaseMediaProvider(LyricsService lyricsService, Dispatcher dispatcher, Func<INetEaseMemoryReader> createReader,
+        TimeProvider? timeProvider = null)
     {
         _dispatcher = dispatcher;
         _createReader = createReader;
         _lyricsService = lyricsService;
+        _lyricsCache = new(LyricsCacheCapacity,
+            result => LyricsCacheBudgetPolicy.EstimateBytes(result?.Document),
+            LyricsCacheBudgetPolicy.DefaultBudgetBytes, timeProvider);
         SettingsManager.SettingsChanged += OnSettingsChanged;
     }
 
@@ -113,6 +115,7 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
         }
 
         _lyricsCache.Clear();
+        _lyricsRetries.Clear();
         _lyricsCacheGeneration++;
         CancelPendingLyrics();
     }
@@ -166,6 +169,7 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
         _isDisposed = true;
         SettingsManager.SettingsChanged -= OnSettingsChanged;
         StopPolling();
+        _lyricsRetries.Clear();
     }
 
     /// <summary>参与者名称，只用于诊断。/ Participant name, used for diagnostics only.</summary>
@@ -330,7 +334,7 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
 
         var hasCachedLyrics = _lyricsCache.TryGetValue(info.Identity, out var lyrics);
         PublishSnapshot(_continuity.Update(CreateSnapshot(info, lyrics, readAt), true, DateTimeOffset.UtcNow), token);
-        if (!hasCachedLyrics)
+        if (!hasCachedLyrics && _lyricsRetries.CanRequest(info.Identity, !info.Pause))
         {
             CancellationTokenSource cancellation;
             lock (_lyricsRequestGate)
@@ -407,6 +411,7 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
             // writing it would only make the setting look ineffective.
             if (generation == _lyricsCacheGeneration)
             {
+                _lyricsRetries.RecordResult(info.Identity, result, info.Title);
                 _lyricsCache.Set(info.Identity, result, LyricsCacheRetentionPolicy.Lifetime(result));
             }
 
@@ -424,6 +429,7 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
         {
             if (!token.IsCancellationRequested && !_isDisposed && generation == _lyricsCacheGeneration)
             {
+                _lyricsRetries.RecordResult(info.Identity, null, info.Title);
                 _lyricsCache.Set(info.Identity, null, LyricsCacheRetentionPolicy.Lifetime(null));
             }
         }

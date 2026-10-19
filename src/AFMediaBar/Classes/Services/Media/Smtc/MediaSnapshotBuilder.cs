@@ -38,6 +38,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
 
     private readonly LyricsService _lyricsService;
     private readonly LruCache<(string SessionId, LyricsRequest Request), LyricsResult?> _lyricsCache;
+    private readonly LyricsRetryTracker<(string SessionId, LyricsRequest Request)> _lyricsRetries = new(LyricsCacheCapacity);
     private readonly Dictionary<(string SessionId, LyricsRequest Request), CancellationTokenSource> _pendingLyrics = [];
     private readonly object _lyricsRequestGate = new();
     private (string SessionId, LyricsRequest Request)? _lastLyricsKey;
@@ -115,6 +116,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         _lifetime.Dispose();
         _lyricsCache.Clear();
         _lastLyricsKey = null;
+        _lyricsRetries.Clear();
     }
 
     /// <summary>
@@ -129,6 +131,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         }
 
         _lyricsCache.Clear();
+        _lyricsRetries.Clear();
         _lyricsCacheGeneration++;
         CancelPendingLyrics();
         EnrichmentCompleted?.Invoke();
@@ -209,7 +212,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         var artist = read.Artist;
         var request = new LyricsRequest(title, artist, read.Album, duration > 0 ? duration : null, null,
             PlaybackSourceId: sourceId);
-        var lyrics = GetLyrics(session.Id, sourceId, request, read.IsVideo);
+        var lyrics = GetLyrics(session.Id, sourceId, request, read.IsVideo, read.IsPlaying);
 
         return new MediaSnapshot(
             true,
@@ -246,7 +249,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         _ => MediaRepeatMode.Unavailable
     };
 
-    internal LyricsResult? GetLyrics(string sessionId, string sourceId, LyricsRequest request, bool isVideo = false)
+    internal LyricsResult? GetLyrics(string sessionId, string sourceId, LyricsRequest request, bool isVideo = false, bool isPlaying = true)
     {
         if (_disposed) return null;
         if (!LyricsMediaEligibilityPolicy.ShouldFetch(sourceId, isVideo, SettingsManager.Current.AllowBrowserAndVideoLyrics))
@@ -266,7 +269,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
             return null;
         }
 
-        BeginLyricsRequest(key, request);
+        BeginLyricsRequest(key, request, isPlaying);
         return null;
     }
 
@@ -299,7 +302,8 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
     /// <param name="title">曲名。/ Title.</param>
     /// <param name="artist">歌手。/ Artist.</param>
     /// <param name="durationSeconds">曲目时长（秒）；不可用时传 null。/ Track duration in seconds, or null when unavailable.</param>
-    public void RequestOnlineLyrics(string sessionId, string sourceId, string title, string artist, double? durationSeconds)
+    /// <param name="isPlaying">暂停时只允许尚未失败过的曲目首次取词。</param>
+    public void RequestOnlineLyrics(string sessionId, string sourceId, string title, string artist, double? durationSeconds, bool isPlaying = true)
     {
         if (_disposed || string.IsNullOrWhiteSpace(sessionId) || string.IsNullOrWhiteSpace(title) ||
             !LyricsMediaEligibilityPolicy.ShouldFetch(sourceId, false, SettingsManager.Current.AllowBrowserAndVideoLyrics))
@@ -320,15 +324,15 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
             return;
         }
 
-        BeginLyricsRequest(key, request with { Album = key.Request.Album });
+        BeginLyricsRequest(key, request with { Album = key.Request.Album }, isPlaying);
     }
 
-    private void BeginLyricsRequest((string SessionId, LyricsRequest Request) key, LyricsRequest request)
+    private void BeginLyricsRequest((string SessionId, LyricsRequest Request) key, LyricsRequest request, bool isPlaying)
     {
         CancellationTokenSource cancellation;
         lock (_lyricsRequestGate)
         {
-            if (_disposed || _pendingLyrics.ContainsKey(key)) return;
+            if (_disposed || _pendingLyrics.ContainsKey(key) || !_lyricsRetries.CanRequest(key, isPlaying)) return;
             cancellation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
             _pendingLyrics.Add(key, cancellation);
         }
@@ -366,6 +370,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
             // to the current configuration and writing it would only make the setting look ineffective.
             if (!_disposed && !token.IsCancellationRequested && generation == _lyricsCacheGeneration)
             {
+                _lyricsRetries.RecordResult(key, result, request.Title);
                 _lyricsCache.Set(key, result, LyricsCacheRetentionPolicy.Lifetime(result));
             }
         }
@@ -373,6 +378,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         {
             if (!_disposed && !token.IsCancellationRequested && generation == _lyricsCacheGeneration)
             {
+                _lyricsRetries.RecordResult(key, null, request.Title);
                 _lyricsCache.Set(key, null, LyricsCacheRetentionPolicy.Lifetime(null));
             }
         }
