@@ -41,6 +41,7 @@ internal static class Program
             if (manage)
             {
                 var status = SystemMemoryCleanupStatus.Completed;
+                string? errorCode = null;
                 try
                 {
                     if (args[0] == "--install")
@@ -53,9 +54,9 @@ internal static class Program
                     }
                     else MemoryCleanupTasks.Remove(args[1], args[2]);
                 }
-                catch (UnauthorizedAccessException) { status = SystemMemoryCleanupStatus.PermissionDenied; }
-                catch (Exception) { status = SystemMemoryCleanupStatus.Failed; }
-                reply = new(MemoryCleanupReply.ProtocolVersion, nonce, level, status, [new("Authorization", status)], 0);
+                catch (UnauthorizedAccessException error) { status = SystemMemoryCleanupStatus.PermissionDenied; errorCode = $"HRESULT 0x{error.HResult:X8}"; }
+                catch (Exception error) { status = SystemMemoryCleanupStatus.Failed; errorCode = $"{error.GetType().Name} 0x{error.HResult:X8}"; }
+                reply = new(MemoryCleanupReply.ProtocolVersion, nonce, level, status, [new("Authorization", status, errorCode)], 0);
             }
             else reply = await Task.Run(() => MemoryCleanupOperations.Execute(level, nonce));
             await using var writer = new StreamWriter(pipe);

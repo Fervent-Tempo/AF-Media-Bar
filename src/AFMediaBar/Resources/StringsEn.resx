@@ -3000,7 +3000,7 @@ Managed heap {6} → {7} · {8} ms · {9}</value></data>
   <data name="Memory.System.Title" xml:space="preserve"><value>System memory optimization</value></data>
   <data name="Memory.System.Description" xml:space="preserve"><value>Standard clears low-priority standby pages; Deep also processes the system file cache and all standby pages. Requires administrator approval. Caches may need rebuilding; support and effects vary by Windows version.</value></data>
   <data name="Memory.System.Clean" xml:space="preserve"><value>Clear low-priority standby pages…</value></data>
-  <data name="Memory.System.Completed" xml:space="preserve"><value>System cleanup request completed</value></data>
+  <data name="Memory.System.Completed" xml:space="preserve"><value>System cleanup completed</value></data>
   <data name="Memory.System.PermissionDenied" xml:space="preserve"><value>Permission denied; cleanup was not performed</value></data>
   <data name="Memory.System.Unsupported" xml:space="preserve"><value>This cleanup operation is unsupported here</value></data>
   <data name="Memory.System.Failed" xml:space="preserve"><value>Cleanup failed; retry manually later</value></data>
@@ -3008,7 +3008,7 @@ Managed heap {6} → {7} · {8} ms · {9}</value></data>
   <data name="Memory.System.InvalidRequest" xml:space="preserve"><value>Invalid cleanup request</value></data>
   <data name="Memory.System.Cancelled" xml:space="preserve"><value>Cleanup request cancelled</value></data>
   <data name="Memory.System.Busy" xml:space="preserve"><value>System cleanup is already running</value></data>
-  <data name="Memory.System.Readings" xml:space="preserve"><value>System available memory {0} → {1} (also affected by other activity; not exact reclaimed bytes)</value></data>
+  <data name="Memory.System.Readings" xml:space="preserve"><value>Available system memory: {0} → {1}</value></data>
   <data name="Device.Personalization" xml:space="preserve"><value>Device aliases and order</value></data>
   <data name="Device.PersonalizationHint" xml:space="preserve"><value>Drag to reorder display and switching in AF. Disabled devices are collapsed; Windows devices are unaffected.</value></data>
   <data name="Device.Alias" xml:space="preserve"><value>AF display name (blank uses system name)</value></data>
@@ -3121,4 +3121,11 @@ Source: {2}</value></data>
   <data name="Battery.RefreshHint" xml:space="preserve"><value>Reads at most once per minute, with connection updates and backoff on failures.</value></data>
   <data name="Battery.WidgetHint" xml:space="preserve"><value>Select a device in Device management. To show it without media, also select Bluetooth battery in the kept components list.</value></data>
   <data name="Interaction.AudioGestures" xml:space="preserve"><value>Audio device gestures</value></data>
+  <data name="Memory.System.CacheReadings" xml:space="preserve"><value>System cache (including standby pages): {0} → {1}</value></data>
+  <data name="Memory.System.Change" xml:space="preserve"><value>Change in available memory: {0} MB</value></data>
+  <data name="Memory.System.Elapsed" xml:space="preserve"><value>Execution time: {0} ms</value></data>
+  <data name="Memory.System.ResultExplanation" xml:space="preserve"><value>Standby pages already count as available memory, so clearing cache may not lower memory usage. Readings include other programs’ activity. Successful execution does not guarantee improved performance; caches may rebuild afterward.</value></data>
+  <data name="Memory.Authorization.Revoked" xml:space="preserve"><value>System optimization authorization for this installation was revoked</value></data>
+  <data name="Memory.Result.Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Memory.Status.Completed" xml:space="preserve"><value>Reclaim completed</value></data>
 </root>

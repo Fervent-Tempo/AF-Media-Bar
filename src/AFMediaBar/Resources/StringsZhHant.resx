@@ -3000,7 +3000,7 @@
   <data name="Memory.System.Title" xml:space="preserve"><value>系統記憶體最佳化</value></data>
   <data name="Memory.System.Description" xml:space="preserve"><value>標準清理低優先順序待命頁，深度處理系統檔案快取和全部待命頁。需要管理員授權，快取可能需要重建；相容性與效果因系統版本而異。</value></data>
   <data name="Memory.System.Clean" xml:space="preserve"><value>清理低優先順序待命頁面…</value></data>
-  <data name="Memory.System.Completed" xml:space="preserve"><value>系統已接受清理要求</value></data>
+  <data name="Memory.System.Completed" xml:space="preserve"><value>系統清理已完成</value></data>
   <data name="Memory.System.PermissionDenied" xml:space="preserve"><value>權限不足，未執行清理</value></data>
   <data name="Memory.System.Unsupported" xml:space="preserve"><value>此環境不支援此清理操作</value></data>
   <data name="Memory.System.Failed" xml:space="preserve"><value>清理失敗，請稍後手動重試</value></data>
@@ -3008,7 +3008,7 @@
   <data name="Memory.System.InvalidRequest" xml:space="preserve"><value>清理要求無效</value></data>
   <data name="Memory.System.Cancelled" xml:space="preserve"><value>已取消清理要求</value></data>
   <data name="Memory.System.Busy" xml:space="preserve"><value>已有系統清理正在執行</value></data>
-  <data name="Memory.System.Readings" xml:space="preserve"><value>系統可用記憶體 {0} → {1}（包含其他程式同期活動，並非精確釋放量）</value></data>
+  <data name="Memory.System.Readings" xml:space="preserve"><value>系統可用記憶體：{0} → {1}</value></data>
   <data name="Device.Personalization" xml:space="preserve"><value>裝置別名與順序</value></data>
   <data name="Device.PersonalizationHint" xml:space="preserve"><value>拖曳調整 AF 中的顯示與切換順序；停用裝置收合，僅影響 AF。</value></data>
   <data name="Device.Alias" xml:space="preserve"><value>AF 顯示名稱（留空使用系統名稱）</value></data>
@@ -3121,4 +3121,11 @@
   <data name="Battery.RefreshHint" xml:space="preserve"><value>讀取最多每分鐘一次；連線變化會更新狀態，失敗時延後重試。</value></data>
   <data name="Battery.WidgetHint" xml:space="preserve"><value>在裝置管理中選擇追蹤目標。無媒體時顯示需在下方保留元件中勾選藍牙電量。</value></data>
   <data name="Interaction.AudioGestures" xml:space="preserve"><value>音訊裝置手勢</value></data>
+  <data name="Memory.System.CacheReadings" xml:space="preserve"><value>系統快取（含待命頁）：{0} → {1}</value></data>
+  <data name="Memory.System.Change" xml:space="preserve"><value>可用記憶體變化：{0} MB</value></data>
+  <data name="Memory.System.Elapsed" xml:space="preserve"><value>執行耗時：{0} ms</value></data>
+  <data name="Memory.System.ResultExplanation" xml:space="preserve"><value>待命頁原本就計入可用記憶體，清理快取不一定降低記憶體使用率。前後讀數包含其他程式同期活動；執行成功不代表效能一定提升，快取可能隨後重建。</value></data>
+  <data name="Memory.Authorization.Revoked" xml:space="preserve"><value>已撤銷本安裝的系統最佳化授權</value></data>
+  <data name="Memory.Result.Close" xml:space="preserve"><value>關閉</value></data>
+  <data name="Memory.Status.Completed" xml:space="preserve"><value>回收已完成</value></data>
 </root>

@@ -68,6 +68,7 @@ public static class MemoryCleanupTasks
             }
             return MemoryCleanupAuthorization.Ready;
         }
+        catch (Exception error) when (IsMissing(error)) { return MemoryCleanupAuthorization.NeedsRepair; }
         catch (COMException) { return MemoryCleanupAuthorization.NeedsRepair; }
         catch (Exception) { return MemoryCleanupAuthorization.Unavailable; }
     }
@@ -133,7 +134,8 @@ public static class MemoryCleanupTasks
             dynamic actions = com.Track(definition.Actions);
             dynamic action = com.Track(actions.Create(0));
             action.Path = destination; action.Arguments = Arguments(level); action.WorkingDirectory = HelperDirectory(owner, instance);
-            com.Track(folder.RegisterTaskDefinition(TaskName(owner, instance, level), definition, 6, owner, null, 3,
+            // 保留显式只读/执行权限，禁止调度器为当前用户额外添加可写 ACE。
+            com.Track(folder.RegisterTaskDefinition(TaskName(owner, instance, level), definition, 0x6 | 0x10, owner, null, 3,
                 $"O:BAG:BAD:P(A;;FA;;;SY)(A;;FA;;;BA)(A;;GRGX;;;{owner})"));
         }
         using var key = Registry.CurrentUser.CreateSubKey(RegistryPath + "\\" + instance);
@@ -147,7 +149,7 @@ public static class MemoryCleanupTasks
         using (var com = new TaskSession())
         {
             dynamic folder;
-            try { folder = com.Folder(); } catch (COMException error) when ((uint)error.HResult == 0x80070002) { folder = null!; }
+            try { folder = com.Folder(); } catch (Exception error) when (IsMissing(error)) { folder = null!; }
             if (folder is not null)
                 foreach (var level in Enum.GetValues<SystemMemoryOptimizationLevel>())
                     try
@@ -156,7 +158,7 @@ public static class MemoryCleanupTasks
                         if ((int)task.State == 4) task.Stop(0);
                         folder.DeleteTask(TaskName(owner, instance, level), 0);
                     }
-                    catch (COMException error) when ((uint)error.HResult == 0x80070002) { }
+                    catch (Exception error) when (IsMissing(error)) { }
         }
         var directory = HelperDirectory(owner, instance);
         if (Directory.Exists(directory))
@@ -219,6 +221,8 @@ public static class MemoryCleanupTasks
                 !allowed.SecurityIdentifier.IsWellKnown(WellKnownSidType.BuiltinAdministratorsSid) && !allowed.SecurityIdentifier.IsWellKnown(WellKnownSidType.LocalSystemSid)) return false;
         return true;
     }
+    // COM 的常见 HRESULT 会被运行时映射为 FileNotFoundException 等托管异常。
+    private static bool IsMissing(Exception error) => (uint)error.HResult is 0x80070002 or 0x80070003;
     private static bool SameUser(string user, string owner) => user == owner ||
         new NTAccount(user).Translate(typeof(SecurityIdentifier)).Value == owner;
 
@@ -235,7 +239,7 @@ public static class MemoryCleanupTasks
         public dynamic Folder(bool create = false)
         {
             try { return Track(Service.GetFolder("\\" + FolderName)); }
-            catch (COMException error) when (create && (uint)error.HResult == 0x80070002)
+            catch (Exception error) when (create && IsMissing(error))
             {
                 dynamic root = Track(Service.GetFolder("\\"));
                 return Track(root.CreateFolder(FolderName, "O:BAG:BAD:P(A;;FA;;;SY)(A;;FA;;;BA)(A;;GRGX;;;BU)"));

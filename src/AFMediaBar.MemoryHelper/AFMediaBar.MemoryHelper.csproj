@@ -15,6 +15,7 @@
         <RuntimeHostConfigurationOption Include="System.StartupHookProvider.IsSupported" Value="false" />
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="../AFMediaBar/Classes/Services/Diagnostics/SystemMemoryCountersReader.cs" Link="SystemMemoryCountersReader.cs" />
         <Compile Include="../AFMediaBar/Classes/Services/Diagnostics/MemoryCleanupProtocol.cs" Link="MemoryCleanupProtocol.cs" />
         <Compile Include="../AFMediaBar/Classes/Services/Diagnostics/MemoryCleanupTasks.cs" Link="MemoryCleanupTasks.cs" />
         <Compile Include="../AFMediaBar/Classes/Settings/SystemMemoryOptimizationSettings.cs" Link="SystemMemoryOptimizationSettings.cs" />

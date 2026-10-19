@@ -12,11 +12,11 @@ public enum SystemMemoryCleanupStatus
 }
 
 /// <summary>单个系统操作的实际返回值。</summary>
-public sealed record MemoryCleanupStage(string Operation, SystemMemoryCleanupStatus Status);
+public sealed record MemoryCleanupStage(string Operation, SystemMemoryCleanupStatus Status, string? ErrorCode = null);
 
 /// <summary>仅包含固定操作结果的进程通信数据。</summary>
 public sealed record MemoryCleanupReply(int Version, string RequestId, SystemMemoryOptimizationLevel Level,
-    SystemMemoryCleanupStatus Status, MemoryCleanupStage[] Stages, long ElapsedMilliseconds)
+    SystemMemoryCleanupStatus Status, MemoryCleanupStage[] Stages, long ElapsedMilliseconds, SystemMemoryCounters? Before = null, SystemMemoryCounters? After = null)
 {
-    public const int ProtocolVersion = 1;
+    public const int ProtocolVersion = 2;
 }

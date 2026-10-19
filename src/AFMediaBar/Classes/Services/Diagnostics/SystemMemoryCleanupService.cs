@@ -19,12 +19,13 @@ namespace AFMediaBar.Classes.Services;
 
 /// <summary>可用内存变化包含其他进程活动，不代表本次释放的精确字节数。</summary>
 public sealed record SystemMemoryCleanupResult(SystemMemoryCleanupStatus Status, ulong? Before, ulong? After,
-    MemoryCleanupReply? Details = null);
+    MemoryCleanupReply? Details = null, ulong? CacheBefore = null, ulong? CacheAfter = null, string? ErrorCode = null);
 
 /// <summary>串行启动固定清理执行端，验证管道客户端和回复身份，释放后拒绝结果。</summary>
 public sealed class SystemMemoryCleanupService : IDisposable
 {
     private readonly AudioProcessInfoService _processInfo;
+    private readonly AppLogService _log;
     private readonly CancellationTokenSource _stopping = new();
     private int _running;
     private bool _disposed;
@@ -34,9 +35,10 @@ public sealed class SystemMemoryCleanupService : IDisposable
     public MemoryCleanupAuthorization Authorization { get; private set; }
     public event EventHandler? Changed;
 
-    public SystemMemoryCleanupService(AudioProcessInfoService processInfo)
+    public SystemMemoryCleanupService(AudioProcessInfoService processInfo, AppLogService log)
     {
         _processInfo = processInfo;
+        _log = log;
     }
 
     public async Task<MemoryCleanupAuthorization> RefreshAuthorizationAsync()
@@ -58,8 +60,16 @@ public sealed class SystemMemoryCleanupService : IDisposable
     {
         if (_disposed || Interlocked.CompareExchange(ref _running, 1, 0) != 0) return new(SystemMemoryCleanupStatus.Busy, null, null);
         Changed?.Invoke(this, EventArgs.Empty);
-        try { return await ExecuteAsync(SystemMemoryOptimizationLevel.Standard, install ? "--install" : "--revoke"); }
-        finally { Interlocked.Exchange(ref _running, 0); if (!_disposed) await RefreshAuthorizationAsync(); }
+        try
+        {
+            var result = await ExecuteAsync(SystemMemoryOptimizationLevel.Standard, install ? "--install" : "--revoke");
+            if (!_disposed) await RefreshAuthorizationAsync();
+            if (install && result.Status == SystemMemoryCleanupStatus.Completed && Authorization != MemoryCleanupAuthorization.Ready)
+                result = result with { Status = SystemMemoryCleanupStatus.AuthorizationRequired };
+            _log.Info("Memory", $"系统优化授权操作：install={install}, result={result.Status}, authorization={Authorization}");
+            return result;
+        }
+        finally { Interlocked.Exchange(ref _running, 0); if (!_disposed) Changed?.Invoke(this, EventArgs.Empty); }
     }
     public SystemMemoryCleanupResult? LastResult { get; private set; }
     public DateTimeOffset? LastAttemptAt { get; private set; }
@@ -169,14 +179,21 @@ public sealed class SystemMemoryCleanupService : IDisposable
             var expected = management is not null ? new[] { "Authorization" } : level == SystemMemoryOptimizationLevel.Deep ? new[] { "FileCache", "Standby" } : new[] { "LowStandby" };
             if (reply is null || reply.Version != MemoryCleanupReply.ProtocolVersion || reply.RequestId != nonce || reply.Level != level ||
                 !Enum.IsDefined(reply.Status) || reply.Stages is null || !reply.Stages.Select(stage => stage.Operation).SequenceEqual(expected) ||
-                reply.Stages.Any(stage => !Enum.IsDefined(stage.Status))) throw new InvalidDataException();
+                reply.Stages.Any(stage => !Enum.IsDefined(stage.Status) || stage.ErrorCode?.Length > 128)) throw new InvalidDataException();
             if (process is not null) await process.WaitForExitAsync(timeout.Token);
-            return new(reply.Status, before, await Task.Run(MemoryToolsService.CaptureAvailableBytes), reply);
+            var after = await Task.Run(MemoryToolsService.CaptureAvailableBytes);
+            _log.Info("Memory", $"系统优化执行：level={level}, operation={management ?? "cleanup"}, status={reply.Status}, stages={string.Join(",", reply.Stages.Select(stage => stage.Operation + ":" + stage.Status + ":" + stage.ErrorCode))}");
+            return new(reply.Status, reply.Before?.AvailableBytes ?? before, reply.After?.AvailableBytes ?? after, reply,
+                reply.Before?.CacheBytes, reply.After?.CacheBytes);
         }
         catch (Win32Exception error) when (error.NativeErrorCode == 1223) { return new(SystemMemoryCleanupStatus.Cancelled, before, null); }
         catch (Exception error) when (error is UnauthorizedAccessException || error is Win32Exception { NativeErrorCode: 5 }) { return new(SystemMemoryCleanupStatus.PermissionDenied, before, null); }
         catch (OperationCanceledException) { return new(_stopping.IsCancellationRequested ? SystemMemoryCleanupStatus.Cancelled : SystemMemoryCleanupStatus.TimedOut, before, null); }
-        catch (Exception) { return new(SystemMemoryCleanupStatus.Failed, before, null); }
+        catch (Exception error)
+        {
+            _log.Warn("Memory", $"系统优化执行端失败：level={level}, operation={management ?? "cleanup"}", error);
+            return new(SystemMemoryCleanupStatus.Failed, before, null, ErrorCode: $"{error.GetType().Name} 0x{error.HResult:X8}");
+        }
         finally
         {
             process?.Dispose();

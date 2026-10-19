@@ -10,54 +10,55 @@ public static class MemoryCleanupOperations
 {
     public static MemoryCleanupReply Execute(SystemMemoryOptimizationLevel level, string requestId)
     {
+        var before = SystemMemoryCountersReader.Capture();
         var watch = Stopwatch.StartNew();
         var stages = new List<MemoryCleanupStage>();
         if (level == SystemMemoryOptimizationLevel.Deep)
-            stages.Add(new("FileCache", WithPrivilege("SeIncreaseQuotaPrivilege", () =>
+            stages.Add(WithPrivilege("FileCache", "SeIncreaseQuotaPrivilege", () =>
                 SetSystemFileCacheSize(nuint.MaxValue, nuint.MaxValue, 0)
-                    ? SystemMemoryCleanupStatus.Completed : FromWin32(Marshal.GetLastWin32Error()))));
-        stages.Add(new(level == SystemMemoryOptimizationLevel.Deep ? "Standby" : "LowStandby",
-            WithPrivilege("SeProfileSingleProcessPrivilege", () =>
-            {
-                var command = level == SystemMemoryOptimizationLevel.Deep ? 4 : 5;
-                return FromNt(NtSetSystemInformation(80, ref command, sizeof(int)));
-            })));
+                    ? new("FileCache", SystemMemoryCleanupStatus.Completed) : FromWin32("FileCache", Marshal.GetLastWin32Error())));
+        var standby = level == SystemMemoryOptimizationLevel.Deep ? "Standby" : "LowStandby";
+        stages.Add(WithPrivilege(standby, "SeProfileSingleProcessPrivilege", () =>
+        {
+            var command = level == SystemMemoryOptimizationLevel.Deep ? 4 : 5;
+            return FromNt(standby, NtSetSystemInformation(80, ref command, sizeof(int)));
+        }));
         var successes = stages.Count(stage => stage.Status == SystemMemoryCleanupStatus.Completed);
         var status = successes == stages.Count ? SystemMemoryCleanupStatus.Completed
             : successes > 0 ? SystemMemoryCleanupStatus.PartialSuccess : stages[0].Status;
-        return new(MemoryCleanupReply.ProtocolVersion, requestId, level, status, stages.ToArray(), watch.ElapsedMilliseconds);
+        return new(MemoryCleanupReply.ProtocolVersion, requestId, level, status, stages.ToArray(), watch.ElapsedMilliseconds, before, SystemMemoryCountersReader.Capture());
     }
 
-    private static SystemMemoryCleanupStatus WithPrivilege(string name, Func<SystemMemoryCleanupStatus> operation)
+    private static MemoryCleanupStage WithPrivilege(string operationName, string name, Func<MemoryCleanupStage> operation)
     {
         try
         {
-            if (!OpenProcessToken(new IntPtr(-1), 0x28, out var token)) return SystemMemoryCleanupStatus.PermissionDenied;
+            if (!OpenProcessToken(new IntPtr(-1), 0x28, out var token)) return FromWin32(operationName, Marshal.GetLastWin32Error());
             using (token)
             {
-                if (!LookupPrivilegeValue(null, name, out var luid)) return SystemMemoryCleanupStatus.PermissionDenied;
+                if (!LookupPrivilegeValue(null, name, out var luid)) return FromWin32(operationName, Marshal.GetLastWin32Error());
                 var state = new TokenPrivileges { Count = 1, Luid = luid, Attributes = 2 };
                 if (!AdjustTokenPrivileges(token, false, ref state, 0, IntPtr.Zero, IntPtr.Zero) || Marshal.GetLastWin32Error() == 1300)
-                    return SystemMemoryCleanupStatus.PermissionDenied;
+                    return FromWin32(operationName, Marshal.GetLastWin32Error());
                 return operation();
             }
         }
-        catch (EntryPointNotFoundException) { return SystemMemoryCleanupStatus.Unsupported; }
-        catch (Exception) { return SystemMemoryCleanupStatus.Failed; }
+        catch (EntryPointNotFoundException error) { return new(operationName, SystemMemoryCleanupStatus.Unsupported, $"HRESULT 0x{error.HResult:X8}"); }
+        catch (Exception error) { return new(operationName, SystemMemoryCleanupStatus.Failed, $"HRESULT 0x{error.HResult:X8}"); }
     }
 
-    private static SystemMemoryCleanupStatus FromWin32(int code) => code switch
+    private static MemoryCleanupStage FromWin32(string operation, int code) => new(operation, code switch
     {
         5 or 1300 or 1314 => SystemMemoryCleanupStatus.PermissionDenied,
         50 or 120 or 127 => SystemMemoryCleanupStatus.Unsupported,
         _ => SystemMemoryCleanupStatus.Failed
-    };
-    private static SystemMemoryCleanupStatus FromNt(int status) => status >= 0 ? SystemMemoryCleanupStatus.Completed : unchecked((uint)status) switch
+    }, $"Win32 {code}");
+    private static MemoryCleanupStage FromNt(string operation, int status) => new(operation, status >= 0 ? SystemMemoryCleanupStatus.Completed : unchecked((uint)status) switch
     {
         0xC0000061 or 0xC0000022 => SystemMemoryCleanupStatus.PermissionDenied,
         0xC0000003 or 0xC0000002 or 0xC00000BB => SystemMemoryCleanupStatus.Unsupported,
         _ => SystemMemoryCleanupStatus.Failed
-    };
+    }, status >= 0 ? null : $"NTSTATUS 0x{status:X8}");
     [StructLayout(LayoutKind.Sequential)] private struct Luid { public uint Low; public int High; }
     [StructLayout(LayoutKind.Sequential)] private struct TokenPrivileges { public uint Count; public Luid Luid; public uint Attributes; }
     [DllImport("advapi32.dll", SetLastError = true)]

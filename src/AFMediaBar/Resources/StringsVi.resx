@@ -3038,7 +3038,7 @@ Heap được quản lý {6} → {7} · {8} ms · {9}</value></data>
   <data name="Memory.System.Title" xml:space="preserve"><value>Tối ưu bộ nhớ hệ thống</value></data>
   <data name="Memory.System.Description" xml:space="preserve"><value>Tiêu chuẩn xóa trang chờ ưu tiên thấp; Chuyên sâu xử lý thêm bộ đệm tệp và toàn bộ trang chờ. Cần quyền quản trị. Bộ đệm có thể cần tạo lại; hỗ trợ và kết quả tùy phiên bản Windows.</value></data>
   <data name="Memory.System.Clean" xml:space="preserve"><value>Dọn trang chờ ưu tiên thấp…</value></data>
-  <data name="Memory.System.Completed" xml:space="preserve"><value>Yêu cầu dọn dẹp đã hoàn tất</value></data>
+  <data name="Memory.System.Completed" xml:space="preserve"><value>Đã hoàn tất dọn dẹp hệ thống</value></data>
   <data name="Memory.System.PermissionDenied" xml:space="preserve"><value>Không đủ quyền; chưa dọn dẹp</value></data>
   <data name="Memory.System.Unsupported" xml:space="preserve"><value>Môi trường này không hỗ trợ thao tác</value></data>
   <data name="Memory.System.Failed" xml:space="preserve"><value>Dọn dẹp thất bại; hãy thử lại thủ công</value></data>
@@ -3046,7 +3046,7 @@ Heap được quản lý {6} → {7} · {8} ms · {9}</value></data>
   <data name="Memory.System.InvalidRequest" xml:space="preserve"><value>Yêu cầu dọn dẹp không hợp lệ</value></data>
   <data name="Memory.System.Cancelled" xml:space="preserve"><value>Đã hủy yêu cầu dọn dẹp</value></data>
   <data name="Memory.System.Busy" xml:space="preserve"><value>Đang dọn bộ nhớ hệ thống</value></data>
-  <data name="Memory.System.Readings" xml:space="preserve"><value>Bộ nhớ hệ thống còn {0} → {1} (cũng chịu ảnh hưởng hoạt động khác; không phải số byte thu hồi chính xác)</value></data>
+  <data name="Memory.System.Readings" xml:space="preserve"><value>Bộ nhớ hệ thống khả dụng: {0} → {1}</value></data>
   <data name="Device.Personalization" xml:space="preserve"><value>Bí danh và thứ tự thiết bị</value></data>
   <data name="Device.PersonalizationHint" xml:space="preserve"><value>Kéo để sắp xếp hiển thị và chuyển trong AF. Thiết bị đã tắt được thu gọn; không đổi thiết bị Windows.</value></data>
   <data name="Device.Alias" xml:space="preserve"><value>Tên hiển thị AF (để trống dùng tên hệ thống)</value></data>
@@ -3159,4 +3159,11 @@ Nguồn: {2}</value></data>
   <data name="Battery.RefreshHint" xml:space="preserve"><value>Đọc tối đa mỗi phút một lần; cập nhật khi đổi kết nối và lùi thời gian khi lỗi.</value></data>
   <data name="Battery.WidgetHint" xml:space="preserve"><value>Chọn thiết bị trong Quản lý thiết bị. Để hiện khi không có phương tiện, chọn Pin Bluetooth trong danh sách thành phần giữ lại.</value></data>
   <data name="Interaction.AudioGestures" xml:space="preserve"><value>Thao tác thiết bị âm thanh</value></data>
+  <data name="Memory.System.CacheReadings" xml:space="preserve"><value>Bộ nhớ đệm hệ thống (gồm trang chờ): {0} → {1}</value></data>
+  <data name="Memory.System.Change" xml:space="preserve"><value>Thay đổi bộ nhớ khả dụng: {0} MB</value></data>
+  <data name="Memory.System.Elapsed" xml:space="preserve"><value>Thời gian thực hiện: {0} ms</value></data>
+  <data name="Memory.System.ResultExplanation" xml:space="preserve"><value>Trang chờ đã được tính vào bộ nhớ khả dụng nên dọn bộ nhớ đệm có thể không làm giảm mức sử dụng. Số liệu bao gồm hoạt động đồng thời của chương trình khác. Thực hiện thành công không đảm bảo hiệu năng tăng; bộ nhớ đệm có thể được tạo lại.</value></data>
+  <data name="Memory.Authorization.Revoked" xml:space="preserve"><value>Đã thu hồi quyền tối ưu hệ thống của bản cài đặt này</value></data>
+  <data name="Memory.Result.Close" xml:space="preserve"><value>Đóng</value></data>
+  <data name="Memory.Status.Completed" xml:space="preserve"><value>Đã hoàn tất thu hồi bộ nhớ</value></data>
 </root>

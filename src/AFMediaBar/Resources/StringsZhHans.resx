@@ -3000,7 +3000,7 @@
   <data name="Memory.System.Title" xml:space="preserve"><value>系统内存优化</value></data>
   <data name="Memory.System.Description" xml:space="preserve"><value>标准清理低优先级待机页，深度处理系统文件缓存和全部待机页。需管理员授权，缓存可能需要重建；兼容性与效果因系统版本而异。</value></data>
   <data name="Memory.System.Clean" xml:space="preserve"><value>清理低优先级待机页…</value></data>
-  <data name="Memory.System.Completed" xml:space="preserve"><value>系统已接受清理请求</value></data>
+  <data name="Memory.System.Completed" xml:space="preserve"><value>系统清理已完成</value></data>
   <data name="Memory.System.PermissionDenied" xml:space="preserve"><value>权限不足，未执行清理</value></data>
   <data name="Memory.System.Unsupported" xml:space="preserve"><value>此环境不支持该清理操作</value></data>
   <data name="Memory.System.Failed" xml:space="preserve"><value>清理失败，请稍后手动重试</value></data>
@@ -3008,7 +3008,7 @@
   <data name="Memory.System.InvalidRequest" xml:space="preserve"><value>清理请求无效</value></data>
   <data name="Memory.System.Cancelled" xml:space="preserve"><value>已取消清理请求</value></data>
   <data name="Memory.System.Busy" xml:space="preserve"><value>已有系统清理正在执行</value></data>
-  <data name="Memory.System.Readings" xml:space="preserve"><value>系统可用内存 {0} → {1}（含其他程序同期活动，不是精确释放量）</value></data>
+  <data name="Memory.System.Readings" xml:space="preserve"><value>系统可用内存：{0} → {1}</value></data>
   <data name="Device.Personalization" xml:space="preserve"><value>设备别名与顺序</value></data>
   <data name="Device.PersonalizationHint" xml:space="preserve"><value>拖动调整 AF 中的显示与切换顺序；禁用设备收起，仅影响 AF。</value></data>
   <data name="Device.Alias" xml:space="preserve"><value>AF 显示名称（留空使用系统名称）</value></data>
@@ -3121,4 +3121,11 @@
   <data name="Battery.RefreshHint" xml:space="preserve"><value>读取最多每分钟一次；连接变化会更新状态，失败时退避。</value></data>
   <data name="Battery.WidgetHint" xml:space="preserve"><value>在设备管理中选择追踪目标。无媒体时显示需在下方保留组件中勾选蓝牙电量。</value></data>
   <data name="Interaction.AudioGestures" xml:space="preserve"><value>音频设备手势</value></data>
+  <data name="Memory.System.CacheReadings" xml:space="preserve"><value>系统缓存（含待机页）：{0} → {1}</value></data>
+  <data name="Memory.System.Change" xml:space="preserve"><value>可用内存变化：{0} MB</value></data>
+  <data name="Memory.System.Elapsed" xml:space="preserve"><value>执行耗时：{0} ms</value></data>
+  <data name="Memory.System.ResultExplanation" xml:space="preserve"><value>待机页本来就计入可用内存，清理缓存不一定降低内存使用率。前后读数包含其他程序同期活动；执行成功不代表性能一定提升，缓存可能随后重建。</value></data>
+  <data name="Memory.Authorization.Revoked" xml:space="preserve"><value>已撤销本安装的系统优化授权</value></data>
+  <data name="Memory.Result.Close" xml:space="preserve"><value>关闭</value></data>
+  <data name="Memory.Status.Completed" xml:space="preserve"><value>回收已完成</value></data>
 </root>

@@ -38,7 +38,12 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
                 if (await _authorizationPrompt.ChooseAsync(true) != MemoryAuthorizationChoice.Remember || _disposed) return;
                 var result = await _systemCleanup.ManageAuthorizationAsync(true);
                 _systemResult = result;
-                if (_disposed || result.Status != SystemMemoryCleanupStatus.Completed || _systemCleanup.Authorization != MemoryCleanupAuthorization.Ready) return;
+                if (_disposed) return;
+                if (result.Status != SystemMemoryCleanupStatus.Completed || _systemCleanup.Authorization != MemoryCleanupAuthorization.Ready)
+                {
+                    await ShowAuthorizationResultAsync(result, true);
+                    return;
+                }
             }
             var settings = SettingsManager.Current.SystemMemoryOptimization;
             if (!_disposed) UpdateAutomatic(timer ? settings with { TimerEnabled = enabled } : settings with { ThresholdEnabled = enabled });
@@ -50,14 +55,14 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
     {
         if (_disposed || !CanRun) return;
         _systemResult = await _systemCleanup.ManageAuthorizationAsync(true);
-        if (!_disposed) OnPropertyChanged(string.Empty);
+        if (!_disposed) { OnPropertyChanged(string.Empty); await ShowAuthorizationResultAsync(_systemResult, true); }
     }
     [RelayCommand] private async Task RevokeAuthorizationAsync()
     {
         if (_disposed || !CanRun) return;
         UpdateAutomatic(SettingsManager.Current.SystemMemoryOptimization with { TimerEnabled = false, ThresholdEnabled = false });
         _systemResult = await _systemCleanup.ManageAuthorizationAsync(false);
-        if (!_disposed) OnPropertyChanged(string.Empty);
+        if (!_disposed) { OnPropertyChanged(string.Empty); await ShowAuthorizationResultAsync(_systemResult, false); }
     }
     [RelayCommand] private void ResumeAutomatic() => _automation.Resume();
     private readonly MemoryPruneCoordinator _prune;
@@ -71,10 +76,34 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
     private DateTimeOffset? _lastTrimAt;
     private bool _isBusy;
     public bool IsSystemCleanupEnabled => IsEnabled && SettingsManager.Current.Experiments.SystemMemoryCleanup;
-    public string SystemResultText => _systemResult is not { } result ? string.Empty :
-        Translations.Get("Memory.System." + result.Status) +
-        (result.Details is { } details ? "\n" + string.Join("\n", details.Stages.Select(stage => Translations.Get("Memory.Stage." + stage.Operation) + ": " + Translations.Get("Memory.System." + stage.Status))) + " · " + details.ElapsedMilliseconds + " ms" : string.Empty) + (result.Before is not null && result.After is not null ? "\n" +
-        Translations.Format("Memory.System.Readings", FormatBytes((double?)result.Before), FormatBytes((double?)result.After)) : string.Empty);
+    public string SystemResultText => _systemResult is { } result ? FormatSystemResult(result) : string.Empty;
+    private static string FormatSystemResult(SystemMemoryCleanupResult result)
+    {
+        var lines = new List<string> { Translations.Get("Memory.System." + result.Status) };
+        if (result.Details is { } details)
+        {
+            lines.AddRange(details.Stages.Select(stage => Translations.Get("Memory.Stage." + stage.Operation) + ": " +
+                Translations.Get("Memory.System." + stage.Status) + (stage.ErrorCode is { } error ? " (" + error + ")" : string.Empty)));
+            lines.Add(Translations.Format("Memory.System.Elapsed", details.ElapsedMilliseconds));
+        }
+        if (result.ErrorCode is { } code) lines.Add(code);
+        if (result.Details?.Stages.Any(stage => stage.Operation == "Authorization") != true)
+        {
+            lines.Add(Translations.Format("Memory.System.Readings", FormatBytes((double?)result.Before), FormatBytes((double?)result.After)));
+            if (result.Before is { } before && result.After is { } after)
+                lines.Add(Translations.Format("Memory.System.Change", (((double)after - before) / 1048576).ToString("+0.0;-0.0;0.0", CultureInfo.CurrentCulture)));
+            lines.Add(Translations.Format("Memory.System.CacheReadings", FormatBytes((double?)result.CacheBefore), FormatBytes((double?)result.CacheAfter)));
+            lines.Add(Translations.Get("Memory.System.ResultExplanation"));
+        }
+        return string.Join("\n", lines);
+    }
+    private Task ShowAuthorizationResultAsync(SystemMemoryCleanupResult result, bool install)
+    {
+        var text = result.Status == SystemMemoryCleanupStatus.Completed
+            ? Translations.Get(install ? "Memory.Authorization.Ready" : "Memory.Authorization.Revoked")
+            : FormatSystemResult(result) + "\n" + AuthorizationText;
+        return _authorizationPrompt.ShowResultAsync(Translations.Get("Memory.Authorization.Title"), text);
+    }
     public bool IsLegacyTrimVisible => !IsEnabled;
     public bool HasResult => _lastOutcome is not null;
     public bool HasSystemResult => _systemResult is not null;
@@ -174,24 +203,33 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
     {
         if (_disposed || IsBusy || !IsSystemCleanupEnabled) return;
         IsBusy = true;
-        var source = _sampling;
+        var requireAuthorization = true;
         try
         {
             if (await _systemCleanup.RefreshAuthorizationAsync() != MemoryCleanupAuthorization.Ready)
             {
                 var choice = await _authorizationPrompt.ChooseAsync(false);
                 if (_disposed || choice == MemoryAuthorizationChoice.Cancel) return;
+                requireAuthorization = choice != MemoryAuthorizationChoice.Once;
                 if (choice == MemoryAuthorizationChoice.Remember)
                 {
                     var authorization = await _systemCleanup.ManageAuthorizationAsync(true);
-                    if (_disposed || authorization.Status != SystemMemoryCleanupStatus.Completed) { _systemResult = authorization; OnPropertyChanged(string.Empty); return; }
+                    if (_disposed) return;
+                    if (authorization.Status != SystemMemoryCleanupStatus.Completed || _systemCleanup.Authorization != MemoryCleanupAuthorization.Ready)
+                    {
+                        _systemResult = authorization;
+                        OnPropertyChanged(string.Empty);
+                        await ShowAuthorizationResultAsync(authorization, true);
+                        return;
+                    }
                 }
             }
-            var result = await _systemCleanup.RunAsync(level);
-            if (_disposed || !_visible || source != _sampling || !IsSystemCleanupEnabled) return;
+            var result = await _systemCleanup.RunAsync(level, requireAuthorization);
+            if (_disposed) return;
             _systemResult = result;
             OnPropertyChanged(nameof(SystemResultText));
             OnPropertyChanged(nameof(HasSystemResult));
+            await _authorizationPrompt.ShowResultAsync(Translations.Get(level == SystemMemoryOptimizationLevel.Deep ? "Memory.System.Deep" : "Memory.System.Standard"), SystemResultText);
         }
         finally { if (!_disposed) IsBusy = false; }
     }
@@ -203,7 +241,6 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
     {
         if (_disposed || IsBusy) return;
         IsBusy = true;
-        var source = _sampling;
         try
         {
             var outcome = await _prune.RequestTrimAsync(strength);
@@ -212,6 +249,8 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
             _lastTrimAt = DateTimeOffset.Now;
             OnPropertyChanged(nameof(ResultText));
             OnPropertyChanged(nameof(HasResult));
+            await _authorizationPrompt.ShowResultAsync(Translations.Get("Memory.OptimizeAf"),
+                Translations.Get("Memory.Status." + outcome.Status) + "\n" + ResultText);
         }
         finally { if (!_disposed) IsBusy = false; }
     }
