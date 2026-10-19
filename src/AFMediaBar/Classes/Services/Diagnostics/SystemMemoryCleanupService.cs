@@ -13,6 +13,7 @@ using System.Text;
 using System.Text.Json;
 
 using AFMediaBar.Classes.Settings;
+using AFMediaBar.Classes.Services.Audio;
 
 namespace AFMediaBar.Classes.Services;
 
@@ -23,6 +24,7 @@ public sealed record SystemMemoryCleanupResult(SystemMemoryCleanupStatus Status,
 /// <summary>串行启动固定清理执行端，验证管道客户端和回复身份，释放后拒绝结果。</summary>
 public sealed class SystemMemoryCleanupService : IDisposable
 {
+    private readonly AudioProcessInfoService _processInfo;
     private readonly CancellationTokenSource _stopping = new();
     private int _running;
     private bool _disposed;
@@ -31,6 +33,11 @@ public sealed class SystemMemoryCleanupService : IDisposable
     private IReadOnlyDictionary<string, byte[]>? _payloadHashes;
     public MemoryCleanupAuthorization Authorization { get; private set; }
     public event EventHandler? Changed;
+
+    public SystemMemoryCleanupService(AudioProcessInfoService processInfo)
+    {
+        _processInfo = processInfo;
+    }
 
     public async Task<MemoryCleanupAuthorization> RefreshAuthorizationAsync()
     {
@@ -143,8 +150,9 @@ public sealed class SystemMemoryCleanupService : IDisposable
             if (process is not null && clientId != process.Id) throw new InvalidDataException();
             var validImage = await Task.Run(() =>
             {
-                using var client = Process.GetProcessById(clientId);
-                return string.Equals(client.MainModule?.FileName, helper, StringComparison.OrdinalIgnoreCase);
+                // 辅助进程已经提权，只查询映像路径，避免 MainModule 额外要求模块读取权限。
+                var clientPath = _processInfo.GetExecutablePath((uint)clientId);
+                return string.Equals(clientPath, helper, StringComparison.OrdinalIgnoreCase);
             });
             if (!validImage) throw new InvalidDataException();
             var buffer = new byte[16384];
