@@ -27,23 +27,11 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
     private readonly ISettingsConfiguration _configuration;
     private bool _disposed;
     private IReadOnlyList<AudioDeviceOption> _allDevices = [];
-    public bool IsBatteryEnabled => _configuration.Current.Experiments.NewAudioControl && _configuration.Current.Experiments.BluetoothBattery;
-    public bool LowBatteryNotifications
-    {
-        get => _configuration.Current.AudioDevices.LowBatteryNotifications;
-        set { if (!_disposed && _configuration.IsActive) _configuration.SetAudioDeviceSettings(_configuration.Current.AudioDevices with { LowBatteryNotifications = value }); OnPropertyChanged(); }
-    }
-    public int LowBatteryThreshold
-    {
-        get => _configuration.Current.AudioDevices.LowBatteryThreshold;
-        set { if (!_disposed && _configuration.IsActive) _configuration.SetAudioDeviceSettings(_configuration.Current.AudioDevices with { LowBatteryThreshold = value }); OnPropertyChanged(); }
-    }
     public bool IsHotkeysEnabled => _configuration.Current.Experiments.NewAudioControl && _configuration.Current.Experiments.DeviceHotkeys;
     public string OutputCycleHotkey { get => _configuration.Current.AudioDevices.OutputCycleHotkey; set => SetCycleHotkey(AudioDeviceDirection.Output, value); }
     public string InputCycleHotkey { get => _configuration.Current.AudioDevices.InputCycleHotkey; set => SetCycleHotkey(AudioDeviceDirection.Input, value); }
     public string OutputCycleStatus => _hotkeys?.GetStatus(AudioDeviceDirection.Output, null) ?? string.Empty;
     public string InputCycleStatus => _hotkeys?.GetStatus(AudioDeviceDirection.Input, null) ?? string.Empty;
-    internal string HotkeyStatus(AudioDeviceOption device) => _hotkeys?.GetStatus(device.Direction, device.PolicyId) ?? string.Empty;
     private void SetCycleHotkey(AudioDeviceDirection direction, string value)
     {
         if (_disposed || !_configuration.IsActive || !IsHotkeysEnabled) return;
@@ -55,12 +43,18 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
     {
         if (_disposed) return;
         OnPropertyChanged(nameof(OutputCycleStatus)); OnPropertyChanged(nameof(InputCycleStatus));
-        foreach (var row in OutputDevices.Concat(InputDevices).Concat(OtherOutputDevices).Concat(OtherInputDevices)) row.RefreshHotkeyStatus();
     }
     public bool IsPersonalizationEnabled => _configuration.Current.Experiments.NewAudioControl && _configuration.Current.Experiments.DevicePersonalization;
+    public bool IsEnabled => _configuration.Current.Experiments.NewAudioControl;
+    public bool CanEdit => !_disposed && _configuration.IsActive;
+    public void Reset() => _configuration.Reset(SettingsResetScope.DeviceManagement);
+    public CancellationToken CancellationToken => _configuration.CancellationToken;
+    private bool _refreshQueued;
     private int _version;
     public ObservableCollection<AudioDevicePermissionItemViewModel> OutputDevices { get; } = [];
     public ObservableCollection<AudioDevicePermissionItemViewModel> InputDevices { get; } = [];
+    public ObservableCollection<AudioDevicePermissionItemViewModel> DisabledOutputDevices { get; } = [];
+    public ObservableCollection<AudioDevicePermissionItemViewModel> DisabledInputDevices { get; } = [];
     public ObservableCollection<AudioDevicePermissionItemViewModel> OtherOutputDevices { get; } = [];
     public ObservableCollection<AudioDevicePermissionItemViewModel> OtherInputDevices { get; } = [];
     private string _statusText = string.Empty;
@@ -83,6 +77,7 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
         _configuration = configuration;
         devices.Changed += OnDevicesChanged;
         configuration.Activated += OnActivated;
+        SettingsManager.SettingsChanged += OnSettingsChanged;
     }
     public async Task RefreshAsync()
     {
@@ -115,8 +110,8 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
             var inputNames = UpdateNames(settings.InputBlacklist, input);
             if (!settings.OutputBlacklist.SequenceEqual(outputNames) || !settings.InputBlacklist.SequenceEqual(inputNames))
                 _configuration.SetAudioDeviceSettings(settings with { OutputBlacklist = outputNames, InputBlacklist = inputNames });
-            Synchronize(OutputDevices, OtherOutputDevices, output, AudioDeviceDirection.Output);
-            Synchronize(InputDevices, OtherInputDevices, input, AudioDeviceDirection.Input);
+            Synchronize(OutputDevices, DisabledOutputDevices, OtherOutputDevices, output, AudioDeviceDirection.Output);
+            Synchronize(InputDevices, DisabledInputDevices, OtherInputDevices, input, AudioDeviceDirection.Input);
             StatusText = string.Empty;
             OnPropertyChanged(string.Empty);
         }
@@ -128,6 +123,7 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
             entry with { DisplayName = device.DisplayName } : entry).ToArray();
 
     private void Synchronize(ObservableCollection<AudioDevicePermissionItemViewModel> rows,
+        ObservableCollection<AudioDevicePermissionItemViewModel> disabledRows,
         ObservableCollection<AudioDevicePermissionItemViewModel> otherRows,
         IReadOnlyList<AudioDeviceOption> devices, AudioDeviceDirection direction)
     {
@@ -138,20 +134,21 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
             .DistinctBy(entry => entry.EndpointId, StringComparer.OrdinalIgnoreCase);
         var all = devices.Concat(known.Where(entry => !devices.Any(device => device.PolicyId.Equals(entry.EndpointId, StringComparison.OrdinalIgnoreCase)))
             .Select(entry => new AudioDeviceOption(entry.EndpointId, entry.EndpointId, entry.DisplayName, false) { Direction = direction, IsActive = false, Availability = AudioDeviceAvailability.Unavailable }));
-        var existing = rows.Concat(otherRows).ToDictionary(row => row.EndpointId, StringComparer.OrdinalIgnoreCase);
+        var existing = rows.Concat(disabledRows).Concat(otherRows).ToDictionary(row => row.EndpointId, StringComparer.OrdinalIgnoreCase);
         var active = new List<AudioDevicePermissionItemViewModel>();
         var inactive = new List<AudioDevicePermissionItemViewModel>();
+        var disabled = new List<AudioDevicePermissionItemViewModel>();
         foreach (var device in all.GroupBy(device => device.PolicyId, StringComparer.OrdinalIgnoreCase)
             .Select(group => group.OrderByDescending(device => device.IsActive).First())
-            .OrderByDescending(device => IsPersonalizationEnabled && settings.FindPreference(direction, device.PolicyId)?.IsFavorite == true)
-            .ThenBy(device => IsPersonalizationEnabled ? Array.FindIndex(preferences, entry => entry.EndpointId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase)) is var index && index >= 0 ? index : int.MaxValue : 0)
+            .OrderBy(device => IsPersonalizationEnabled ? Array.FindIndex(preferences, entry => entry.EndpointId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase)) is var index && index >= 0 ? index : int.MaxValue : 0)
             .ThenBy(device => device.DisplayName, StringComparer.CurrentCultureIgnoreCase).ThenBy(device => device.PolicyId, StringComparer.OrdinalIgnoreCase))
         {
             if (!existing.TryGetValue(device.PolicyId, out var row)) row = new(device, settings.IsAllowed(direction, device.PolicyId), this);
             else row.Synchronize(device, settings.IsAllowed(direction, device.PolicyId));
-            (device.IsActive ? active : inactive).Add(row);
+            (!device.IsActive ? inactive : row.IsAllowed ? active : disabled).Add(row);
         }
         SynchronizeRows(rows, active);
+        SynchronizeRows(disabledRows, disabled);
         SynchronizeRows(otherRows, inactive);
     }
     private static void SynchronizeRows(ObservableCollection<AudioDevicePermissionItemViewModel> rows, IReadOnlyList<AudioDevicePermissionItemViewModel> desired)
@@ -182,7 +179,8 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
         if (_disposed || !_configuration.IsActive || !IsPersonalizationEnabled) return;
         var settings = _configuration.Current.AudioDevices;
         var entries = settings.Preferences.ToList();
-        var candidates = entries.Where(entry => entry.Direction == device.Direction && entry.IsFavorite == Preference(device).IsFavorite).ToList();
+        var visible = device.Direction == AudioDeviceDirection.Output ? OutputDevices : InputDevices;
+        var candidates = entries.Where(entry => entry.Direction == device.Direction && visible.Any(row => row.EndpointId.Equals(entry.EndpointId, StringComparison.OrdinalIgnoreCase))).ToList();
         var index = candidates.FindIndex(entry => entry.EndpointId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase));
         if (index < 0 || index + step < 0 || index + step >= candidates.Count) return;
         var a = entries.IndexOf(candidates[index]); var b = entries.IndexOf(candidates[index + step]);
@@ -190,6 +188,22 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
         _configuration.SetAudioDeviceSettings(settings with { Preferences = entries.ToArray() });
         _ = RefreshAsync();
     }
+    public void Reorder(AudioDevicePermissionItemViewModel source, AudioDevicePermissionItemViewModel target)
+    {
+        if (!CanEdit || !IsPersonalizationEnabled || source == target || source.Direction != target.Direction ||
+            !source.IsAllowed || !target.IsAllowed || source.IsOffline || target.IsOffline) return;
+        var rows = source.Direction == AudioDeviceDirection.Output ? OutputDevices : InputDevices;
+        if (!rows.Contains(source) || !rows.Contains(target)) return;
+        var settings = _configuration.Current.AudioDevices;
+        var entries = settings.Preferences.ToList();
+        var from = entries.FindIndex(entry => entry.Direction == source.Direction && entry.EndpointId.Equals(source.EndpointId, StringComparison.OrdinalIgnoreCase));
+        var to = entries.FindIndex(entry => entry.Direction == target.Direction && entry.EndpointId.Equals(target.EndpointId, StringComparison.OrdinalIgnoreCase));
+        if (from < 0 || to < 0) return;
+        var moving = entries[from]; entries.RemoveAt(from); entries.Insert(to, moving);
+        _configuration.SetAudioDeviceSettings(settings with { Preferences = entries.ToArray() });
+        _ = RefreshAsync();
+    }
+
     internal void RemoveOrRebind(AudioDeviceOption old, AudioDeviceOption? replacement)
     {
         if (_disposed || !_configuration.IsActive || !IsPersonalizationEnabled || old.IsActive) return;
@@ -217,6 +231,19 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
         _configuration.SetAudioDeviceSettings(device.Direction == AudioDeviceDirection.Output ?
             settings with { OutputBlacklist = entries.ToArray() } : settings with { InputBlacklist = entries.ToArray() });
     }
+    private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args)
+    {
+        if (_disposed || args.PropertyName is not (null or nameof(AppSettings.Experiments) or nameof(AppSettings.AudioDevices))) return;
+        QueueRefresh();
+    }
+    private void QueueRefresh()
+    {
+        if (_disposed || _refreshQueued) return;
+        var dispatcher = Application.Current?.Dispatcher ?? System.Windows.Threading.Dispatcher.FromThread(Thread.CurrentThread);
+        if (dispatcher is null) return;
+        _refreshQueued = true;
+        dispatcher.BeginInvoke(() => { _refreshQueued = false; if (CanEdit) _ = RefreshAsync(); });
+    }
     private void OnActivated(object? sender, EventArgs args) => _ = RefreshAsync();
     private void OnDevicesChanged(object? sender, EventArgs args) =>
         Application.Current?.Dispatcher.BeginInvoke(() => { if (!_disposed && _configuration.IsActive) _ = RefreshAsync(); });
@@ -230,6 +257,7 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
         if (_hotkeys is not null) _hotkeys.Changed -= OnHotkeysChanged;
         _devices.Changed -= OnDevicesChanged;
         _configuration.Activated -= OnActivated;
+        SettingsManager.SettingsChanged -= OnSettingsChanged;
     }
 }
 
@@ -239,24 +267,18 @@ public sealed partial class AudioDevicePermissionItemViewModel : ObservableObjec
     private AudioDeviceOption _device;
     private readonly AudioDeviceSettingsViewModel _owner;
     private bool _isAllowed;
-    private bool _isRecording;
     public AudioDevicePermissionItemViewModel(AudioDeviceOption device, bool allowed, AudioDeviceSettingsViewModel owner)
     { _device = device; _isAllowed = allowed; _owner = owner; }
     internal void Synchronize(AudioDeviceOption device, bool allowed)
     { _device = device; _isAllowed = allowed; OnPropertyChanged(string.Empty); }
     public bool IsPersonalizationEnabled => _owner.IsPersonalizationEnabled;
     public bool IsHotkeysEnabled => _owner.IsHotkeysEnabled;
-    public bool HasDetails => IsPersonalizationEnabled || IsHotkeysEnabled || HasBattery;
-    public bool IsRecording { get => _isRecording; set { if (SetProperty(ref _isRecording, value)) _owner.SetRecording(this, value); } }
-    public string Hotkey { get => _owner.Preference(_device).Hotkey; set { _owner.UpdatePreference(_device, entry => entry with { Hotkey = value }); OnPropertyChanged(); OnPropertyChanged(nameof(HotkeyStatus)); OnPropertyChanged(nameof(SummaryText)); } }
-    public string HotkeyStatus => _owner.HotkeyStatus(_device);
-    internal void RefreshHotkeyStatus() => OnPropertyChanged(nameof(HotkeyStatus));
-    public bool HasBattery => _owner.IsBatteryEnabled && _device.Battery is not null && AudioDeviceIdentity.PhysicalContainer(_device.ContainerId) is not null;
-    public string BatteryText => _device.Battery?.Details ?? string.Empty;
+    public bool HasDetails => IsPersonalizationEnabled || IsHotkeysEnabled;
+    public AudioDeviceDirection Direction => _device.Direction;
     public bool IsOffline => !_device.IsActive;
     public string Alias { get => _owner.Preference(_device).Alias; set { _owner.UpdatePreference(_device, entry => entry with { Alias = value }); OnPropertyChanged(); OnPropertyChanged(nameof(DisplayName)); } }
-    public bool IsFavorite { get => _owner.Preference(_device).IsFavorite; set { _owner.UpdatePreference(_device, entry => entry with { IsFavorite = value }); OnPropertyChanged(); } }
-    public string SummaryText => string.Join(" · ", new[] { StateText, IsHotkeysEnabled ? Hotkey : null, HasBattery ? _device.Battery!.Label : null }.Where(text => !string.IsNullOrWhiteSpace(text)));
+    public bool ParticipatesInCycle { get => _owner.Preference(_device).ParticipatesInCycle; set { _owner.UpdatePreference(_device, entry => entry with { ParticipatesInCycle = value }); OnPropertyChanged(); } }
+    public string SummaryText => StateText;
     public IReadOnlyList<AudioDeviceOption> Replacements => _owner.Replacements(_device);
     public AudioDeviceOption? Replacement { get; set; }
     [RelayCommand] private void MoveUp() => _owner.Move(_device, -1);

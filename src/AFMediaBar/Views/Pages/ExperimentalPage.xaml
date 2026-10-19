@@ -66,8 +66,8 @@
                             <components:SettingsRow Title="{DynamicResource Loc.Audio.Settings.Title}"
                                 Description="{DynamicResource Loc.Audio.Settings.Description}" Icon="{ui:SymbolIcon Speaker224}">
                                 <ui:Button Content="{DynamicResource Loc.Experimental.OpenInteraction}"
-                                    Style="{StaticResource AfSettingsButtonStyle}" Tag="{x:Static services:SettingsPageKey.Interaction}"
-                                    CommandParameter="Audio.Settings.Title" Click="OpenSettings_Click" />
+                                    Style="{StaticResource AfSettingsButtonStyle}" Tag="{x:Static services:SettingsPageKey.DeviceManagement}"
+                                    CommandParameter="Device.Output" Click="OpenSettings_Click" />
                             </components:SettingsRow>
                         </StackPanel>
                     </StackPanel>

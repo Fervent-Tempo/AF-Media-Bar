@@ -97,6 +97,9 @@ public sealed class AudioDeviceSettingsTests
                 TaskbarExperience = TaskbarExperienceSettings.Default with { InputDeviceVisible = true }
             };
             SettingsManager.ResetInteraction();
+            Assert.IsFalse(SettingsManager.Current.AudioDevices.SwitchOutputCommunications);
+            Assert.IsTrue(SettingsManager.Current.AudioDevices.IsAllowed(AudioDeviceDirection.Output, "speaker"));
+            SettingsManager.ResetDeviceManagement();
             Assert.IsTrue(SettingsManager.Current.AudioDevices.SwitchOutputCommunications);
             Assert.IsFalse(SettingsManager.Current.AudioDevices.IsAllowed(AudioDeviceDirection.Output, "speaker"));
             Assert.AreEqual(AudioDeviceSwitchTarget.ForegroundApplication, SettingsManager.Current.Interaction.OutputDeviceClickTarget);

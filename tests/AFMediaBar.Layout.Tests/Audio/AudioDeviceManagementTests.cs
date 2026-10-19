@@ -71,8 +71,9 @@ public sealed class AudioDeviceManagementTests
                 using var context = new SettingsPageContext();
                 using var editor = new AudioDeviceSettingsViewModel(catalog, new LegacySettingsConfiguration(context));
                 await editor.RefreshAsync();
-                Assert.AreEqual(1, editor.OutputDevices.Count);
-                Assert.IsFalse(editor.OutputDevices[0].IsAllowed, "活动的隐藏设备仍必须可管理。");
+                Assert.AreEqual(0, editor.OutputDevices.Count);
+                Assert.AreEqual(1, editor.DisabledOutputDevices.Count);
+                Assert.IsFalse(editor.DisabledOutputDevices[0].IsAllowed, "活动的隐藏设备仍必须可管理。");
                 Assert.AreEqual(3, editor.OtherOutputDevices.Count);
                 Assert.AreEqual(AudioDeviceAvailability.Disabled, editor.OtherOutputDevices.Single(row => row.EndpointId == "disabled").Availability);
                 Assert.AreEqual(AudioDeviceAvailability.Unplugged, editor.OtherOutputDevices.Single(row => row.EndpointId == "unplugged").Availability);

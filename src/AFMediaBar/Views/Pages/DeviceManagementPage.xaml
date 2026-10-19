@@ -1,0 +1,85 @@
+<Page x:Class="AFMediaBar.Views.Pages.DeviceManagementPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:components="clr-namespace:AFMediaBar.Components" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False">
+    <Page.Resources>
+        <DataTemplate x:Key="DeviceRow">
+            <Border Padding="12" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                AllowDrop="True" Drop="DeviceRow_Drop" DragOver="DeviceRow_DragOver">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <Border Padding="4,8,12,8" Cursor="SizeAll" PreviewMouseLeftButtonDown="DragHandle_Down" PreviewMouseMove="DragHandle_Move"
+                            Visibility="{Binding IsPersonalizationEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}" ToolTip="{DynamicResource Loc.Device.Drag}">
+                            <TextBlock Text="⠿" FontSize="20" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" ToolTip="{Binding SystemName}" Style="{StaticResource AfSettingsRowTitleStyle}"/>
+                            <TextBlock Text="{Binding StateText}" Style="{StaticResource AfSettingsHintTextStyle}"/>
+                        </StackPanel>
+                        <CheckBox Grid.Column="2" Content="{DynamicResource Loc.Device.Enabled}" IsChecked="{Binding IsAllowed, Mode=TwoWay}" AutomationProperties.Name="{Binding DisplayName}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                    </Grid>
+                    <StackPanel Visibility="{Binding HasDetails, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                        <components:SettingsRow Title="{DynamicResource Loc.Device.Alias}" Visibility="{Binding IsPersonalizationEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}"><TextBox Text="{Binding Alias, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" MinWidth="180" MaxWidth="280" AutomationProperties.Name="{DynamicResource Loc.Device.Alias}"/></components:SettingsRow>
+                        <Grid Margin="16,8">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <CheckBox Content="{DynamicResource Loc.Device.Cycle.Include}" IsChecked="{Binding ParticipatesInCycle, Mode=TwoWay}"
+                                Visibility="{Binding IsHotkeysEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Visibility="{Binding IsPersonalizationEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                                <ui:Button Content="{DynamicResource Loc.Device.MoveUp}" Command="{Binding MoveUpCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
+                                <ui:Button Content="{DynamicResource Loc.Device.MoveDown}" Command="{Binding MoveDownCommand}" Style="{StaticResource AfSettingsButtonStyle}" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                        <Expander Header="{DynamicResource Loc.Device.Rebind}" Visibility="{Binding IsOffline, Converter={StaticResource AfBooleanToVisibilityConverter}}" Margin="16,4">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource Loc.Device.RebindHint}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,8"/>
+                                <ComboBox ItemsSource="{Binding Replacements}" SelectedItem="{Binding Replacement}" DisplayMemberPath="DisplayName" MinWidth="180" MaxWidth="280" HorizontalAlignment="Left"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,8">
+                                    <ui:Button Content="{DynamicResource Loc.Device.Rebind}" Command="{Binding RebindCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
+                                    <ui:Button Content="{DynamicResource Loc.Device.Forget}" Command="{Binding ForgetCommand}" Style="{StaticResource AfSettingsButtonStyle}" Margin="8,0,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Expander>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+    </Page.Resources>
+    <Grid>
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+        <components:SettingsGroupStrip Margin="{StaticResource AfSettingsHeaderMargin}" MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
+            PageIcon="{ui:SymbolIcon Headphones24}" Title="{DynamicResource Loc.Device.Management.Title}" Subtitle="{DynamicResource Loc.Device.Management.Description}" Target="{Binding ElementName=PageScroll}"/>
+        <ScrollViewer x:Name="PageScroll" Grid.Row="1" Margin="{StaticResource AfSettingsScrollMargin}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel MaxWidth="{StaticResource AfSettingsContentMaxWidth}" Loaded="OnPageLoaded">
+                <components:SettingsCallout Text="{DynamicResource Loc.Device.RequireExperiment}" Symbol="Info24" IsAccent="False" Margin="0,0,0,12"/>
+                <components:SettingsGroup GroupId="Device.Output" Header="{DynamicResource Loc.Common.OutputDevice}" Icon="{ui:SymbolIcon Speaker224}" IsEnabled="{Binding ViewModel.IsEnabled}">
+                    <StackPanel>
+                        <ItemsControl ItemsSource="{Binding ViewModel.OutputDevices}" ItemTemplate="{StaticResource DeviceRow}"/>
+                        <Expander Header="{DynamicResource Loc.Device.Disabled}" Margin="12,8"><ItemsControl ItemsSource="{Binding ViewModel.DisabledOutputDevices}" ItemTemplate="{StaticResource DeviceRow}"/></Expander>
+                        <Expander Header="{DynamicResource Loc.Device.Offline}" Margin="12,8"><ItemsControl ItemsSource="{Binding ViewModel.OtherOutputDevices}" ItemTemplate="{StaticResource DeviceRow}"/></Expander>
+                        <components:SettingsRow Title="{DynamicResource Loc.Audio.Settings.OutputCommunications}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.SwitchOutputCommunications, Mode=TwoWay}"/></components:SettingsRow>
+                    </StackPanel>
+                </components:SettingsGroup>
+                <components:SettingsGroup GroupId="Device.Input" Header="{DynamicResource Loc.Common.InputDevice}" Icon="{ui:SymbolIcon Mic24}" IsEnabled="{Binding ViewModel.IsEnabled}">
+                    <StackPanel>
+                        <ItemsControl ItemsSource="{Binding ViewModel.InputDevices}" ItemTemplate="{StaticResource DeviceRow}"/>
+                        <Expander Header="{DynamicResource Loc.Device.Disabled}" Margin="12,8"><ItemsControl ItemsSource="{Binding ViewModel.DisabledInputDevices}" ItemTemplate="{StaticResource DeviceRow}"/></Expander>
+                        <Expander Header="{DynamicResource Loc.Device.Offline}" Margin="12,8"><ItemsControl ItemsSource="{Binding ViewModel.OtherInputDevices}" ItemTemplate="{StaticResource DeviceRow}"/></Expander>
+                        <components:SettingsRow Title="{DynamicResource Loc.Audio.Settings.InputCommunications}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.SwitchInputCommunications, Mode=TwoWay}"/></components:SettingsRow>
+                    </StackPanel>
+                </components:SettingsGroup>
+                <components:SettingsGroup GroupId="Device.Hotkeys" Header="{DynamicResource Loc.Device.Hotkeys}" Description="{DynamicResource Loc.Device.Cycle.Hint}" Icon="{ui:SymbolIcon Keyboard24}">
+                    <StackPanel IsEnabled="{Binding ViewModel.IsHotkeysEnabled}">
+                        <components:SettingsRow Title="{DynamicResource Loc.Device.Hotkey.CycleOutput}"><components:HotkeyRecorder Hotkey="{Binding ViewModel.OutputCycleHotkey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsRecording="{Binding ViewModel.IsRecordingOutputCycle, Mode=TwoWay}" Width="240" AutomationProperties.Name="{DynamicResource Loc.Device.Hotkey.CycleOutput}" ToolTip="{DynamicResource Loc.Device.Hotkey.RecordHint}"/></components:SettingsRow>
+                        <TextBlock Text="{Binding ViewModel.OutputCycleStatus}" Style="{StaticResource AfSettingsHintTextStyle}" TextWrapping="Wrap" Margin="16,4"/>
+                        <components:SettingsRow Title="{DynamicResource Loc.Device.Hotkey.CycleInput}"><components:HotkeyRecorder Hotkey="{Binding ViewModel.InputCycleHotkey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsRecording="{Binding ViewModel.IsRecordingInputCycle, Mode=TwoWay}" Width="240" AutomationProperties.Name="{DynamicResource Loc.Device.Hotkey.CycleInput}" ToolTip="{DynamicResource Loc.Device.Hotkey.RecordHint}"/></components:SettingsRow>
+                        <TextBlock Text="{Binding ViewModel.InputCycleStatus}" Style="{StaticResource AfSettingsHintTextStyle}" TextWrapping="Wrap" Margin="16,4"/>
+                    </StackPanel>
+                </components:SettingsGroup>
+                <!-- 所选蓝牙设备的独立配置在电量组件接入时放在此处。 -->
+                <TextBlock Text="{Binding ViewModel.StatusText}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}"/>
+                <ui:Button Click="ResetButton_Click" Content="{DynamicResource Loc.Common.ResetPageDefaults}" Style="{StaticResource AfSettingsButtonStyle}" HorizontalAlignment="Left" Margin="0,16,0,40"/>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

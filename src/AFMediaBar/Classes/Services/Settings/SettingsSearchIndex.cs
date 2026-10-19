@@ -218,8 +218,10 @@ public static class SettingsSearchIndex
             language,
             ["通知", "notification", "切歌", "曲目", "track", "位置", "锚点", "停留", "时长", "duration", "全屏", "显示器", "停留时间", "目标显示器"]),
 
+        Create(SettingsPageKey.DeviceManagement, "Device.Input", "Audio.Settings.InputList", language, ["输入", "麦克风", "input", "microphone"]),
+        Create(SettingsPageKey.DeviceManagement, "Device.Hotkeys", "Device.Cycle.Hint", language, ["设备快捷键", "循环", "别名", "排序", "拖动", "hotkey", "cycle", "alias", "order"]),
         // ---- 交互 / Interaction ----
-        Create(SettingsPageKey.Interaction, "Audio.Settings.Title", "Audio.Settings.Description", language,
+        Create(SettingsPageKey.DeviceManagement, "Device.Output", "Audio.Settings.Description", language,
             ["音频", "audio", "输入", "input", "输出", "output", "麦克风", "microphone", "黑名单", "blacklist", "通信设备", "communications", "前台应用", "foreground"]),
         Create(
             SettingsPageKey.Interaction,

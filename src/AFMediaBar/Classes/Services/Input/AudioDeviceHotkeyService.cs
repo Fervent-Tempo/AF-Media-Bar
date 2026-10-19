@@ -67,10 +67,8 @@ public sealed class AudioDeviceHotkeyService(AudioDeviceSwitchCoordinator switch
         if (_disposed) return;
         var settings = SettingsManager.Current;
         var enabled = settings.Experiments.NewAudioControl && settings.Experiments.DeviceHotkeys && _recordingCount == 0;
-        var bindings = enabled ? settings.AudioDevices.Preferences.Where(entry => !string.IsNullOrWhiteSpace(entry.Hotkey))
-            .Select(entry => new Binding(Identity(entry.Direction, entry.EndpointId), entry.Direction, entry.EndpointId, entry.Hotkey))
-            .Concat(new[] { new Binding(Identity(AudioDeviceDirection.Output, null), AudioDeviceDirection.Output, null, settings.AudioDevices.OutputCycleHotkey),
-                new Binding(Identity(AudioDeviceDirection.Input, null), AudioDeviceDirection.Input, null, settings.AudioDevices.InputCycleHotkey) })
+        var bindings = enabled ? new[] { new Binding(Identity(AudioDeviceDirection.Output, null), AudioDeviceDirection.Output, null, settings.AudioDevices.OutputCycleHotkey),
+                new Binding(Identity(AudioDeviceDirection.Input, null), AudioDeviceDirection.Input, null, settings.AudioDevices.InputCycleHotkey) }
             .Where(binding => !string.IsNullOrWhiteSpace(binding.Gesture)).ToArray() : [];
         var signature = string.Join("|", bindings.Select(binding => $"{binding.Identity}={binding.Gesture}"));
         if (_signature == signature) return;
@@ -150,7 +148,7 @@ public sealed class AudioDeviceHotkeyService(AudioDeviceSwitchCoordinator switch
             if (binding.EndpointId is { } id) next = choices.FirstOrDefault(device => device.PolicyId.Equals(id, StringComparison.OrdinalIgnoreCase));
             else
             {
-                var preferences = SettingsManager.Current.AudioDevices.Preferences.Where(entry => entry.Direction == binding.Direction && entry.IsFavorite).ToArray();
+                var preferences = SettingsManager.Current.AudioDevices.Preferences.Where(entry => entry.Direction == binding.Direction && entry.ParticipatesInCycle).ToArray();
                 var favorites = preferences.Select(entry => choices.FirstOrDefault(device => device.PolicyId.Equals(entry.EndpointId, StringComparison.OrdinalIgnoreCase)))
                     .OfType<AudioDeviceOption>().Where(device => device.IsActive).ToArray();
                 var current = switches.GetPreview(target)?.PolicyId ?? choices.FirstOrDefault(device => device.IsDefault)?.PolicyId;

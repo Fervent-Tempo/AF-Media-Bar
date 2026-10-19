@@ -3021,8 +3021,8 @@ Managed heap {6} → {7} · {8} ms · {9}</value></data>
   <data name="Device.Hotkey.Title" xml:space="preserve"><value>Device switching hotkeys</value></data>
   <data name="Device.Hotkey.Hint" xml:space="preserve"><value>Switches system defaults only. Click a recorder and press a shortcut with Ctrl or Alt; Win and F12 are unavailable. Cycling follows favorite order and skips unavailable devices.</value></data>
   <data name="Device.Hotkey.Direct" xml:space="preserve"><value>Direct hotkey</value></data>
-  <data name="Device.Hotkey.CycleOutput" xml:space="preserve"><value>Cycle favorite outputs</value></data>
-  <data name="Device.Hotkey.CycleInput" xml:space="preserve"><value>Cycle favorite inputs</value></data>
+  <data name="Device.Hotkey.CycleOutput" xml:space="preserve"><value>Cycle selected output devices</value></data>
+  <data name="Device.Hotkey.CycleInput" xml:space="preserve"><value>Cycle selected input devices</value></data>
   <data name="Device.Hotkey.Invalid" xml:space="preserve"><value>Invalid key combination</value></data>
   <data name="Device.Hotkey.Duplicate" xml:space="preserve"><value>Duplicates another AF hotkey; not registered</value></data>
   <data name="Device.Hotkey.Conflict" xml:space="preserve"><value>Key combination is occupied or rejected; not registered</value></data>
@@ -3097,4 +3097,14 @@ Source: {2}</value></data>
   <data name="Memory.Auto.Waiting" xml:space="preserve"><value>Waiting for a trigger (including cooldown)</value></data>
   <data name="Memory.Auto.Running" xml:space="preserve"><value>Automatic optimization is running</value></data>
   <data name="Memory.Auto.Paused" xml:space="preserve"><value>Paused after authorization loss or repeated failures; check the latest result before resuming</value></data>
+  <data name="Device.Management.Title" xml:space="preserve"><value>Device management</value></data>
+  <data name="Device.Management.Description" xml:space="preserve"><value>Manage audio devices, switching order, shortcuts and Bluetooth battery</value></data>
+  <data name="Device.RequireExperiment" xml:space="preserve"><value>Device switching and personalization follow their experimental switches. Disabling a device here affects AF only.</value></data>
+  <data name="Device.Enabled" xml:space="preserve"><value>Enabled</value></data>
+  <data name="Device.Disabled" xml:space="preserve"><value>Disabled devices</value></data>
+  <data name="Device.Offline" xml:space="preserve"><value>Currently unavailable</value></data>
+  <data name="Device.Drag" xml:space="preserve"><value>Drag to change display and switching order</value></data>
+  <data name="Device.Cycle.Include" xml:space="preserve"><value>Include in shortcut cycle</value></data>
+  <data name="Device.Hotkeys" xml:space="preserve"><value>Cycle shortcuts</value></data>
+  <data name="Device.Cycle.Hint" xml:space="preserve"><value>Cycle checked, enabled devices in displayed order, skipping offline devices. One shortcut each for input and output.</value></data>
 </root>

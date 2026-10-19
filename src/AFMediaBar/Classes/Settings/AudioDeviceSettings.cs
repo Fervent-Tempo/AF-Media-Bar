@@ -36,7 +36,7 @@ public sealed record AudioDeviceSettings
         InputCycleHotkey = (InputCycleHotkey ?? string.Empty).Trim(),
         Preferences = (Preferences ?? []).Where(entry => entry is not null && Enum.IsDefined(entry.Direction) && !string.IsNullOrWhiteSpace(entry.EndpointId))
             .Select(entry => entry with { EndpointId = entry.EndpointId.Trim(), LastKnownName = entry.LastKnownName ?? string.Empty,
-                Hotkey = (entry.Hotkey ?? string.Empty).Trim(), Alias = (entry.Alias ?? string.Empty).Trim() }).DistinctBy(entry => $"{entry.Direction}:{entry.EndpointId}", StringComparer.OrdinalIgnoreCase).ToArray(),
+                Alias = (entry.Alias ?? string.Empty).Trim() }).DistinctBy(entry => $"{entry.Direction}:{entry.EndpointId}", StringComparer.OrdinalIgnoreCase).ToArray(),
         OutputBlacklist = NormalizeList(OutputBlacklist),
         InputBlacklist = NormalizeList(InputBlacklist)
     };

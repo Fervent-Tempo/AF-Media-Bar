@@ -246,7 +246,7 @@
       "thresholdEnabled": "unreleased", "thresholdPercent": "unreleased", "level": "unreleased"
     },
     "audioDevices": {
-      "preferences": { "$release": "unreleased", "$items": { "direction": "unreleased", "endpointId": "unreleased", "lastKnownName": "unreleased", "alias": "unreleased", "isFavorite": "unreleased", "hotkey": "unreleased" } },
+      "preferences": { "$release": "unreleased", "$items": { "direction": "unreleased", "endpointId": "unreleased", "lastKnownName": "unreleased", "alias": "unreleased", "participatesInCycle": "unreleased" } },
       "lowBatteryNotifications": "unreleased",
       "lowBatteryThreshold": "unreleased",
       "outputCycleHotkey": "unreleased",

@@ -266,11 +266,17 @@ public static class SettingsManager
         next.PerformanceComponent = defaults.PerformanceComponent;
         Replace(next, SettingsResetScope.Components);
     }
+    public static void ResetDeviceManagement()
+    {
+        var next = Current.Clone();
+        next.AudioDevices = Defaults.AudioDevices;
+        Replace(next, SettingsResetScope.DeviceManagement);
+    }
+
     public static void ResetInteraction()
     {
         var next = Current.Clone();
         next.Interaction = AFMediaBar.Classes.Services.Settings.SettingsResetPolicy.Interaction(next.Interaction, Defaults.Interaction, next.Experiments.NewAudioControl);
-        if (next.Experiments.NewAudioControl) next.AudioDevices = Defaults.AudioDevices;
         Replace(next, SettingsResetScope.Interaction);
     }
     public static void ResetLyrics()

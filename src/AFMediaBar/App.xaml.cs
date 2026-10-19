@@ -307,6 +307,7 @@ namespace AFMediaBar
                 services.AddScoped<ContentLayoutViewModel>();
 
                 services.AddScoped<InteractionPage>();
+                services.AddScoped<DeviceManagementPage>();
                 services.AddScoped<ExperimentalPage>();
                 services.AddScoped<ExperimentalViewModel>();
                 services.AddScoped<AudioDeviceSettingsViewModel>();

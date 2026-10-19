@@ -3021,8 +3021,8 @@
   <data name="Device.Hotkey.Title" xml:space="preserve"><value>裝置切換快速鍵</value></data>
   <data name="Device.Hotkey.Hint" xml:space="preserve"><value>僅切換系統預設裝置。點擊錄製框後按組合鍵，須包含 Ctrl 或 Alt，不支援 Win 與 F12。循環依收藏順序並略過無法使用的裝置。</value></data>
   <data name="Device.Hotkey.Direct" xml:space="preserve"><value>直達快速鍵</value></data>
-  <data name="Device.Hotkey.CycleOutput" xml:space="preserve"><value>循環收藏的輸出裝置</value></data>
-  <data name="Device.Hotkey.CycleInput" xml:space="preserve"><value>循環收藏的輸入裝置</value></data>
+  <data name="Device.Hotkey.CycleOutput" xml:space="preserve"><value>循環所選輸出裝置</value></data>
+  <data name="Device.Hotkey.CycleInput" xml:space="preserve"><value>循環所選輸入裝置</value></data>
   <data name="Device.Hotkey.Invalid" xml:space="preserve"><value>組合鍵格式無效</value></data>
   <data name="Device.Hotkey.Duplicate" xml:space="preserve"><value>與 AF 的其他快速鍵重複，未註冊</value></data>
   <data name="Device.Hotkey.Conflict" xml:space="preserve"><value>組合鍵被占用或系統拒絕，未註冊</value></data>
@@ -3097,4 +3097,14 @@
   <data name="Memory.Auto.Waiting" xml:space="preserve"><value>等待下次觸發（含冷卻）</value></data>
   <data name="Memory.Auto.Running" xml:space="preserve"><value>自動最佳化執行中</value></data>
   <data name="Memory.Auto.Paused" xml:space="preserve"><value>權限失效或多次失敗，已暫停；請檢查最近結果後恢復</value></data>
+  <data name="Device.Management.Title" xml:space="preserve"><value>裝置管理</value></data>
+  <data name="Device.Management.Description" xml:space="preserve"><value>管理輸入輸出裝置、切換順序、快捷鍵與藍牙電量</value></data>
+  <data name="Device.RequireExperiment" xml:space="preserve"><value>裝置切換與個人化受實驗功能開關控制；請開啟對應項目。停用僅影響 AF，不會停用 Windows 裝置。</value></data>
+  <data name="Device.Enabled" xml:space="preserve"><value>啟用</value></data>
+  <data name="Device.Disabled" xml:space="preserve"><value>已停用裝置</value></data>
+  <data name="Device.Offline" xml:space="preserve"><value>暫時無法使用</value></data>
+  <data name="Device.Drag" xml:space="preserve"><value>拖曳調整顯示與切換順序</value></data>
+  <data name="Device.Cycle.Include" xml:space="preserve"><value>參與快捷鍵循環</value></data>
+  <data name="Device.Hotkeys" xml:space="preserve"><value>循環快捷鍵</value></data>
+  <data name="Device.Cycle.Hint" xml:space="preserve"><value>依拖曳順序循環已勾選的啟用裝置，略過離線裝置。輸入和輸出各使用一個組合鍵。</value></data>
 </root>

@@ -12,10 +12,9 @@ public sealed record AudioDeviceOption(string Id, string PolicyId, string Displa
 {
     public Guid? ContainerId { get; init; }
     public BluetoothBatterySnapshot? Battery { get; init; }
-    public string MenuLabel => (IsFavorite ? "★ " : string.Empty) + DisplayName + (Battery is { } battery ? " · " + battery.Label : string.Empty);
+    public string MenuLabel => DisplayName;
     public string DeviceHint => DisplayName + (Battery is { } battery ? "\n" + battery.Details : string.Empty);
     public string SystemName { get; init; } = DisplayName;
-    public bool IsFavorite { get; init; }
     public AudioDeviceDirection Direction { get; init; }
     public bool IsActive { get; init; } = true;
     public AudioDeviceAvailability Availability { get; init; } = AudioDeviceAvailability.Active;

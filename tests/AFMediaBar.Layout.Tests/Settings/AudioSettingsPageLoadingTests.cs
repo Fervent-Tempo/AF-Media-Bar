@@ -54,11 +54,15 @@ public sealed class AudioSettingsPageLoadingTests
                     application.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri($"/AFMediaBar;component/Resources/{name}.xaml", UriKind.Relative) });
                 using var localization = new LocalizationService();
                 using var context = new SettingsPageContext();
-                using var viewModel = new InteractionViewModel(localization, new LegacySettingsConfiguration(context), new AudioDeviceSettingsViewModel(new Catalog(), new LegacySettingsConfiguration(context)));
-                await viewModel.AudioDevices.RefreshAsync();
+                using var devices = new AudioDeviceSettingsViewModel(new Catalog(), new LegacySettingsConfiguration(context));
+                using var viewModel = new InteractionViewModel(localization, new LegacySettingsConfiguration(context));
+                await devices.RefreshAsync();
+                var management = new DeviceManagementPage(devices);
+                management.Measure(new Size(820, 900));
+                Assert.IsNotNull(management.Content);
                 var page = new InteractionPage(viewModel);
                 page.Measure(new Size(820, 900));
-                Assert.AreEqual(1, viewModel.AudioDevices.OtherOutputDevices.Count);
+                Assert.AreEqual(1, devices.OtherOutputDevices.Count);
                 Assert.IsNotNull(page.Content);
                 var audio = LogicalChildren(page).OfType<SettingsGroup>().Single(group => group.GroupId == "Audio.Settings.Title");
                 var inputs = LogicalChildren(page).OfType<ComboBoxItem>().Where(item =>

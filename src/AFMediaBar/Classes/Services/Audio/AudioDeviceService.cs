@@ -21,6 +21,8 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
     private readonly AudioPlatformService _platform;
     private readonly BluetoothBatteryCache _battery;
     private AudioDeviceSettings _settings;
+    private readonly Dictionary<AudioDeviceDirection, List<string>> _observedOrder = [];
+    private volatile bool _disposed;
     private int _policyVersion;
     private bool _experimentalAudioEnabled;
     public bool ExperimentalAudioEnabled => Volatile.Read(ref _experimentalAudioEnabled);
@@ -92,13 +94,29 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
         if (!ExperimentalAudioEnabled || !SettingsManager.Current.Experiments.DevicePersonalization)
             return options.OrderBy(device => device.DisplayName, StringComparer.CurrentCultureIgnoreCase)
                 .ThenBy(device => device.PolicyId, StringComparer.OrdinalIgnoreCase).ToArray();
+        if (!_observedOrder.TryGetValue(direction, out var observed)) _observedOrder[direction] = observed = [];
+        foreach (var option in options.OrderBy(device => device.SystemName, StringComparer.CurrentCultureIgnoreCase))
+            if (!observed.Contains(option.PolicyId, StringComparer.OrdinalIgnoreCase)) observed.Add(option.PolicyId);
         var preferences = Volatile.Read(ref _settings).Preferences.Where(entry => entry.Direction == direction).ToArray();
+        if (options.Any(device => !preferences.Any(entry => entry.EndpointId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase))))
+        {
+            var discovered = options.OrderBy(device => observed.IndexOf(device.PolicyId)).ToArray();
+            Application.Current?.Dispatcher.BeginInvoke(() =>
+            {
+                if (_disposed || !ExperimentalAudioEnabled || !SettingsManager.Current.Experiments.DevicePersonalization) return;
+                var settings = SettingsManager.Current.AudioDevices;
+                var entries = settings.Preferences.ToList();
+                foreach (var device in discovered)
+                    if (!entries.Any(entry => entry.Direction == direction && entry.EndpointId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase)))
+                        entries.Add(new(direction, device.PolicyId, device.SystemName));
+                if (entries.Count != settings.Preferences.Count) SettingsManager.Current.AudioDevices = settings with { Preferences = entries.ToArray() };
+            });
+        }
         return options.Select(device =>
         {
             var entry = preferences.FirstOrDefault(item => item.EndpointId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase));
-            return device with { DisplayName = string.IsNullOrWhiteSpace(entry?.Alias) ? device.SystemName : entry.Alias, IsFavorite = entry?.IsFavorite == true };
-        }).OrderByDescending(device => device.IsFavorite)
-            .ThenBy(device => { var index = Array.FindIndex(preferences, entry => entry.EndpointId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase)); return index < 0 ? int.MaxValue : index; })
+            return device with { DisplayName = string.IsNullOrWhiteSpace(entry?.Alias) ? device.SystemName : entry.Alias };
+        }).OrderBy(device => { var index = Array.FindIndex(preferences, entry => entry.EndpointId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase)); return index < 0 ? preferences.Length + observed.IndexOf(device.PolicyId) : index; })
             .ThenBy(device => device.DisplayName, StringComparer.CurrentCultureIgnoreCase)
             .ThenBy(device => device.PolicyId, StringComparer.OrdinalIgnoreCase).ToArray();
     }
@@ -169,5 +187,5 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
         return device.ID;
     }
 
-    public void Dispose() { SettingsManager.SettingsChanged -= OnSettingsChanged; _battery.Changed -= OnBatteryChanged; }
+    public void Dispose() { if (_disposed) return; _disposed = true; SettingsManager.SettingsChanged -= OnSettingsChanged; _battery.Changed -= OnBatteryChanged; }
 }

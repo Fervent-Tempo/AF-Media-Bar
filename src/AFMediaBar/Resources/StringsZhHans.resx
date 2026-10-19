@@ -3021,8 +3021,8 @@
   <data name="Device.Hotkey.Title" xml:space="preserve"><value>设备切换快捷键</value></data>
   <data name="Device.Hotkey.Hint" xml:space="preserve"><value>仅切换系统默认设备。点击录制框后按组合键，需包含 Ctrl 或 Alt，不支持 Win 与 F12。循环按收藏顺序并跳过不可用设备。</value></data>
   <data name="Device.Hotkey.Direct" xml:space="preserve"><value>直达快捷键</value></data>
-  <data name="Device.Hotkey.CycleOutput" xml:space="preserve"><value>循环收藏的输出设备</value></data>
-  <data name="Device.Hotkey.CycleInput" xml:space="preserve"><value>循环收藏的输入设备</value></data>
+  <data name="Device.Hotkey.CycleOutput" xml:space="preserve"><value>循环所选输出设备</value></data>
+  <data name="Device.Hotkey.CycleInput" xml:space="preserve"><value>循环所选输入设备</value></data>
   <data name="Device.Hotkey.Invalid" xml:space="preserve"><value>组合键格式无效</value></data>
   <data name="Device.Hotkey.Duplicate" xml:space="preserve"><value>与 AF 的其他快捷键重复，未注册</value></data>
   <data name="Device.Hotkey.Conflict" xml:space="preserve"><value>组合键被占用或系统拒绝，未注册</value></data>
@@ -3097,4 +3097,14 @@
   <data name="Memory.Auto.Waiting" xml:space="preserve"><value>等待下次触发（含冷却）</value></data>
   <data name="Memory.Auto.Running" xml:space="preserve"><value>自动优化执行中</value></data>
   <data name="Memory.Auto.Paused" xml:space="preserve"><value>权限失效或多次失败，已暂停；请检查最近结果后恢复</value></data>
+  <data name="Device.Management.Title" xml:space="preserve"><value>设备管理</value></data>
+  <data name="Device.Management.Description" xml:space="preserve"><value>管理输入输出设备、切换顺序、快捷键与蓝牙电量</value></data>
+  <data name="Device.RequireExperiment" xml:space="preserve"><value>设备切换与个性化受实验功能开关控制；请开启对应项目。禁用仅影响 AF，不会禁用 Windows 设备。</value></data>
+  <data name="Device.Enabled" xml:space="preserve"><value>启用</value></data>
+  <data name="Device.Disabled" xml:space="preserve"><value>已禁用设备</value></data>
+  <data name="Device.Offline" xml:space="preserve"><value>暂不可用</value></data>
+  <data name="Device.Drag" xml:space="preserve"><value>拖动调整显示与切换顺序</value></data>
+  <data name="Device.Cycle.Include" xml:space="preserve"><value>参与快捷键循环</value></data>
+  <data name="Device.Hotkeys" xml:space="preserve"><value>循环快捷键</value></data>
+  <data name="Device.Cycle.Hint" xml:space="preserve"><value>按拖动顺序循环已勾选的启用设备，跳过离线设备。输入和输出各使用一个组合键。</value></data>
 </root>

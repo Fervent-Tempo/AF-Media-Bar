@@ -16,6 +16,7 @@ public static class SettingsPageCatalog
         new SettingsPageDefinition(SettingsPageKey.Appearance, "Common.Page.Appearance", "PaintBrush24", true, HasModeContent: true),
         new SettingsPageDefinition(SettingsPageKey.Lyrics, "Common.Page.Lyrics", "TextQuote24", false),
         new SettingsPageDefinition(SettingsPageKey.Interaction, "Common.Page.Interaction", "HandDraw24", false),
+        new SettingsPageDefinition(SettingsPageKey.DeviceManagement, "Device.Management.Title", "Headphones24", true),
         new SettingsPageDefinition(SettingsPageKey.MediaAndNotifications, "Common.Page.MediaAndNotifications", "PuzzlePiece24", true),
         new SettingsPageDefinition(SettingsPageKey.Application, "Common.Page.Application", "Settings24", true),
         new SettingsPageDefinition(SettingsPageKey.Experimental, "Common.Page.Experimental", "Beaker24", true),
@@ -44,6 +45,7 @@ public static class SettingsPageCatalog
         (SettingsPageKey.Lyrics, "Common.Group.LyricsAlignment") => (SettingsPageKey.Components, "Appearance.Group.RestLayout"),
         (SettingsPageKey.Components, "Common.Group.RestLayerComponents") => (SettingsPageKey.Components, "Common.Group.Widgets"),
         (SettingsPageKey.Interaction, "Common.Group.SharedModifier") => (SettingsPageKey.Interaction, "Interaction.Group.Wheel"),
+        (SettingsPageKey.Interaction, "Audio.Settings.Title") => (SettingsPageKey.DeviceManagement, "Device.Output"),
         _ => (page, groupId)
     };
 }

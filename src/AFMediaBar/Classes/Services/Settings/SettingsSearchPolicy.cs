@@ -44,6 +44,8 @@ public enum SettingsPageKey
     ApplicationAppearance,
     /// <summary>默认关闭的实验项目及其专属配置。</summary>
     Experimental,
+    /// <summary>全局设备清单、循环和电量设置。</summary>
+    DeviceManagement,
 }
 
 /// <summary>
