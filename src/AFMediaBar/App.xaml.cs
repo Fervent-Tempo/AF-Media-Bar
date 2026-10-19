@@ -163,6 +163,8 @@ namespace AFMediaBar
                 services.AddSingleton<MediaSourceProcessResolver>();
                 services.AddSingleton<SpectrumCaptureProcessResolver>();
                 services.AddSingleton<AudioProcessInfoService>();
+                services.AddSingleton<ApplicationVolumeMemoryService>();
+                services.AddHostedService(sp => sp.GetRequiredService<ApplicationVolumeMemoryService>());
                 services.AddSingleton<ApplicationIconService>();
                 services.AddSingleton<ApplicationVolumeService>();
                 services.AddSingleton<IApplicationAudioControl>(provider => provider.GetRequiredService<ApplicationVolumeService>());
