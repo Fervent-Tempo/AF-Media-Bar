@@ -1,79 +1,17 @@
-using AFMediaBar.Views.Pages;
-using AFMediaBar.Views.Windows;
-using Microsoft.Extensions.DependencyInjection;
+// 执行组合根提供的 UI 激活动作，不解析窗口或承担业务资源生命周期。
 using Microsoft.Extensions.Hosting;
-using Wpf.Ui;
 
-namespace AFMediaBar.Classes.Services
+namespace AFMediaBar.Classes.Services;
+
+/// <summary>在通用宿主启动时激活应用外壳。</summary>
+public sealed class ApplicationHostService(Action activate) : IHostedService
 {
-    /// <summary>
-    /// 应用托管服务：负责在应用启动时创建主窗口。
-    /// Application hosted service: responsible for creating the main window on app startup.
-    ///
-    /// 职责 Responsibilities:
-    /// 1. 在 StartAsync 中创建并显示 MainWindow
-    ///    Create and show MainWindow in StartAsync
-    /// 2. 管理应用生命周期（启动和关闭）
-    ///    Manage application lifecycle (startup and shutdown)
-    ///
-    /// ⚠️ 注意 Note:
-    /// 此类由 .NET Generic Host 自动调用，在 App.xaml.cs 中注册为 HostedService。
-    /// This class is automatically called by .NET Generic Host, registered as HostedService in App.xaml.cs.
-    /// </summary>
-    public class ApplicationHostService : IHostedService
+    public Task StartAsync(CancellationToken cancellationToken)
     {
-        private readonly IServiceProvider _serviceProvider;
-
-        private INavigationWindow _navigationWindow;
-
-        /// <summary>
-        /// 创建由通用宿主管理的窗口激活服务；窗口及导航依赖在启动阶段从组合根解析。
-        /// Creates the Generic Host activation service; window and navigation dependencies are resolved from the composition root during startup.
-        /// </summary>
-        public ApplicationHostService(IServiceProvider serviceProvider)
-        {
-            _serviceProvider = serviceProvider;
-        }
-
-        /// <summary>
-        /// 应用宿主准备启动服务时触发：创建主窗口。
-        /// Triggered when the application host is ready to start: creates the main window.
-        /// </summary>
-        /// <param name="cancellationToken">指示启动进程已被中止 Indicates that the start process has been aborted.</param>
-        public async Task StartAsync(CancellationToken cancellationToken)
-        {
-            await HandleActivationAsync();
-        }
-
-        /// <summary>
-        /// 应用宿主执行优雅关闭时触发。
-        /// Triggered when the application host is performing a graceful shutdown.
-        /// </summary>
-        /// <param name="cancellationToken">指示关闭进程不应再优雅 Indicates that the shutdown process should no longer be graceful.</param>
-        public async Task StopAsync(CancellationToken cancellationToken)
-        {
-            await Task.CompletedTask;
-        }
-
-        /// <summary>
-        /// 激活期间创建主窗口：检查是否已存在，不存在则创建。
-        /// Creates main window during activation: checks if it exists, creates if not.
-        /// </summary>
-        private async Task HandleActivationAsync()
-        {
-            if (!Application.Current.Windows.OfType<MainWindow>().Any())
-            {
-                _navigationWindow = (
-                    _serviceProvider.GetService(typeof(INavigationWindow)) as INavigationWindow
-                )!;
-                _navigationWindow!.ShowWindow();
-
-                // 导航到默认页面（显示模式页，它承载任务栏的承载与三层配置）
-                // Navigate to the default page (display modes, which owns the taskbar hosting configuration)
-                _navigationWindow.Navigate(typeof(Views.Pages.DisplayModesPage));
-            }
-
-            await Task.CompletedTask;
-        }
+        cancellationToken.ThrowIfCancellationRequested();
+        activate();
+        return Task.CompletedTask;
     }
+
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }

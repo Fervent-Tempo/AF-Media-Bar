@@ -347,6 +347,11 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
             ReadResource("Web.Lyrics.spacing.js"),
             ReadResource("Web.Lyrics.presentation.js"),
             ReadResource("Web.Lyrics.vertical.js"),
+            ReadResource("Web.Lyrics.context.js"),
+            ReadResource("Web.Lyrics.word-scan.js"),
+            ReadResource("Web.Lyrics.transitions.js"),
+            ReadResource("Web.Lyrics.artwork.js"),
+            ReadResource("Web.Lyrics.spectrum.js"),
             ReadResource("Web.Lyrics.app.js")
         }).Replace("</script", "<\\/script", StringComparison.OrdinalIgnoreCase);
         return template.Replace("{{STYLE_CSS}}", style, StringComparison.Ordinal)

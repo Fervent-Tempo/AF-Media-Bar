@@ -18,3 +18,20 @@ public sealed record MediaSelectionSettings(MediaSelectionMode Mode = MediaSelec
         Enum.IsDefined(Mode) ? Mode : MediaSelectionMode.Automatic,
         string.IsNullOrWhiteSpace(PreferredSourceId) ? null : PreferredSourceId.Trim());
 }
+
+
+/// <summary>SMTC 应用来源允许列表。 / Allow-list for SMTC application sources.</summary>
+public readonly record struct SmtcSourceFilterSettings(bool Enabled, IReadOnlyList<string>? AllowedSourceIds)
+{
+    public static SmtcSourceFilterSettings Default { get; } = new(false, []);
+
+    public SmtcSourceFilterSettings Normalize() => this with
+    {
+        AllowedSourceIds = (AllowedSourceIds ?? [])
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
+            .ToArray()
+    };
+}

@@ -17,12 +17,12 @@ AF-Media-Bar/
 │   │   ├── Services/         # 按所有权分目录的服务（Media、Lyrics、Audio、Updates…）
 │   │   ├── Settings/         # 设置模型与兼容门面
 │   │   └── Utils/            # 无状态辅助与有界缓存
-│   ├── Components/           # 可复用 WPF 控件
+│   ├── Components/           # MediaBar 媒体呈现、Settings 设置控件、Common 共用控件
 │   ├── Resources/            # 主题、样式与语言文案
 │   ├── ViewModels/           # MVVM 视图模型
 │   └── Views/                # 页面与宿主窗口
-├── tests/AFMediaBar.Layout.Tests/   # 纯逻辑、策略与设置测试
-├── tools/                    # 架构静态检查等脚本
+├── tests/AFMediaBar.Layout.Tests/   # 按领域组织的逻辑、呈现与生命周期回归
+├── tools/                    # 设置契约与开发、发布验证脚本
 ├── installer/                # Inno Setup 安装脚本
 └── docs/                     # 项目文档、资源与版本清单
 ```
@@ -33,19 +33,30 @@ AF-Media-Bar/
 
 | 所有者 | 职责与边界 |
 |---|---|
-| `App.xaml.cs` | DI 注册、启动与最终退出；唯一组合根 |
+| `App.xaml.cs` | DI 注册、启动与最终退出；唯一组合根，外观资源交给 ApplicationAppearanceResources 生成 |
 | `Views/Windows/MainWindow.xaml.cs` | 隐藏宿主，协调任务栏窗口、媒体快照转发与 Explorer 恢复；不拥有业务服务 |
 | `Views/Windows/TaskbarWindow.xaml.cs` | 单个任务栏的 HWND、停靠、位置及窗口资源生命周期 |
 | `Views/Windows/FloatingBarWindow.cs` | 单个显示器上的独立工具窗口、拖动、弹层和呈现租约 |
 | `BarRuntimeCoordinator` | 事务切换宿主；全部激活成功后发布实际模式，失败恢复原宿主 |
 | `DesktopWidgetZOrderService` | 已注册浮窗的桌面/置顶层级、WinEvent 和观察计时器；最后租约释放时停止观察 |
-| `Components/TaskBarMediaControl.*` | 呈现、动画和输入意图；不承载媒体来源与歌词算法 |
+| `Components/MediaBar/TaskBarMediaControl.*` | 呈现、动画和输入意图；不承载媒体来源与歌词算法 |
+| `TaskBarMediaControl.ArtworkHoverController` | 每个控件独有的封面 Popup、重挂、动画代际与回收计时器；挂起/卸载立即回收，宿主最终关闭时释放 |
+| `TaskBarMediaControl.BarLyricsPresenter` | 每个控件独有的 WebView、刷新/重试计时器和歌词恢复订阅；卸载可重载，最终释放拒绝迟到结果 |
+| `SpectrumPresentationSession` | 每个任务栏或悬浮宿主的采样计时器、缓冲与代际；借用应用级 AudioMonitorService，不释放共享音频服务 |
+| `FullPanelWindowHost` | 各显示器完整面板的字典、关闭冷却、复用和最终释放；MainWindow 只表达打开、关闭和上下文意图 |
+| `MediaSessionReconcileCoordinator` | SMTC 重连看门狗、取消与退避；借用目录和选择器，不接管它们的释放 |
 | `ViewModels/` | 可绑定状态、命令和异步协调；不引用具体 View、HWND 或 App.Services |
 | `Classes/Services/<领域>/` | 业务、平台资源、协调器与纯策略；新服务不直接放 Services 根目录 |
 | `Classes/Models/`、`Abstractions/`、`Interop/` | 数据契约、接口与原生互操作 |
 | `Classes/Settings/`、`Services/Settings/` | 设置模型、读写与持久化 |
 | `Views/`、`Resources/`、`Web/Lyrics/` | WPF 页面与宿主、共享样式与语言、内嵌歌词绘制 |
 | `tests/AFMediaBar.Layout.Tests/`、`tools/`、`installer/`（仓库根目录） | 回归测试、验证脚本、安装分发 |
+
+布局渲染引擎随媒体呈现放在 Components/MediaBar；字体枚举归 Appearance；封面读取与缓存归 Media/Artwork；设置搜索归 Settings。目录迁移保留既有类型全名，避免夹带命名空间重命名。
+
+AppSettings、设置枚举/事件和 SettingsManager 门面分文件维护；设置契约按交互、媒体栏、频谱、指标及通知归组，不改变序列化名称或数值。
+
+歌词网页通过 LyricsWebViewRenderer 按顺序拼成一个内嵌脚本：context 提供 DOM 与共享布局上下文，word-scan 和 transitions 负责歌词推进，artwork 和 spectrum 以闭包独占各自状态，app 接收原有协议。模块不引入额外联网或加载器。
 
 代码落在拥有该状态和资源的领域。只在独立职责、复用或生命周期需要时新增文件；不因文件长度或访问方便拆分、跨层添加逻辑。新文件职责说明和公开类型 XML 文档见代码风格规范。
 

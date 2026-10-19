@@ -25,6 +25,7 @@ namespace AFMediaBar.Views.Windows;
 /// <summary>拥有单个显示器上的浮窗、输入、弹层和呈现租约，不拥有共享业务服务。</summary>
 public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
 {
+    private readonly SpectrumPresentationSession _spectrumSession;
     private readonly TaskBarMediaControl _mediaControl = new();
     private readonly TaskbarWindowViewModel _commands;
     private readonly GlobalInteractionRouter _interactionRouter;
@@ -39,7 +40,6 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     private readonly FloatingBarLengthConstraints _lengthConstraints;
     private readonly AdaptiveForegroundSamplingSession _foregroundSamplingSession;
     private readonly TaskbarCompactFlyoutWindow _compactFlyout;
-    private readonly DispatcherTimer _spectrumTimer = new();
     private readonly DispatcherTimer _quickLaunchApplyTimer = new();
     private readonly DispatcherTimer _volumeApplyTimer = new();
     private readonly DispatcherTimer _dragTimer = new(DispatcherPriority.Input);
@@ -57,7 +57,6 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     private bool _isClosing;
     private bool _windowClosed;
     private bool _suspended = true;
-    private bool _spectrumPending;
     private bool _applyingSettings;
     private bool _savingPosition;
     private bool _taskManagerClickPending;
@@ -80,7 +79,6 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     private double _layoutDpi;
     private Int32Rect? _nativeBoundsPx;
     private nint _handle;
-    private readonly float[] _bands = new float[SpectrumComponentSettings.MaximumBandCount];
     private MediaSnapshot _lastSnapshot = MediaSnapshot.Disconnected;
     private AudioDeviceTarget? _deviceMenuTarget;
     private QuickLaunchEntry? _pendingQuickLaunch;
@@ -140,7 +138,11 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             () => IsOperational && !_dragging && PresentationSettings.Appearance.PlayerForegroundMode == PlayerForegroundMode.Automatic &&
                 _mediaControl.TryGetForegroundSampleBounds(out var bounds) ? bounds : null,
             _mediaControl.ApplyAdaptiveForegroundDecision);
-        _spectrumTimer.Tick += SpectrumTick;
+        _spectrumSession = new SpectrumPresentationSession(audioMonitor, Dispatcher,
+            () => PresentationSettings.SpectrumComponent,
+            () => IsOperational && _mediaControl.IsSpectrumComponentVisible,
+            (bands, count) => _mediaControl.ApplySpectrum(bands.AsSpan(0, count)),
+            exception => _log.Warn("FloatingBar", $"频谱采样失败: {exception.Message}"));
         _backgroundTimer.Interval = TimeSpan.FromSeconds(2);
         _backgroundTimer.Tick += (_, _) => _foregroundSamplingSession.RequestRefresh();
         _sizeTimer.Interval = TimeSpan.FromMilliseconds(16);
@@ -497,6 +499,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     {
         _taskManagerClickPending = false;
         _menuEnvironmentVersion++;
+        _spectrumSession.Invalidate();
         _requests.Cancel();
         _requests.Dispose();
         _requests = new CancellationTokenSource();
@@ -516,27 +519,8 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     private void SynchronizeResources()
     {
         SynchronizeMetricsSubscription(PresentationSettings.PerformanceComponent.Normalize());
-        _spectrumTimer.Interval = TimeSpan.FromMilliseconds(1000d / PresentationSettings.SpectrumComponent.Normalize().RefreshRateHz);
-        if (IsOperational && _mediaControl.IsSpectrumComponentVisible) _spectrumTimer.Start(); else _spectrumTimer.Stop();
-    }
-
-    private async void SpectrumTick(object? sender, EventArgs args)
-    {
-        if (_spectrumPending || !IsOperational || !_mediaControl.IsSpectrumComponentVisible) return;
-        var version = _menuEnvironmentVersion;
-        var count = PresentationSettings.SpectrumComponent.Normalize().BandCount;
-        _spectrumPending = true;
-        try
-        {
-            var sample = await _audioMonitor.GetSpectrumAsync(_bands, count);
-            if (CanPublishMenu(version) && _audioMonitor.IsCaptureCurrent(sample.CaptureVersion))
-            {
-                if (!sample.IsAvailable) Array.Clear(_bands);
-                _mediaControl.ApplySpectrum(_bands.AsSpan(0, count));
-            }
-        }
-        catch (Exception ex) { _log.Warn("FloatingBar", $"频谱采样失败: {ex.Message}"); }
-        finally { _spectrumPending = false; }
+        _spectrumSession.Interval = TimeSpan.FromMilliseconds(1000d / PresentationSettings.SpectrumComponent.Normalize().RefreshRateHz);
+        if (IsOperational && _mediaControl.IsSpectrumComponentVisible) _spectrumSession.Start(); else _spectrumSession.Stop();
     }
 
     private void PruneChanged(object? sender, MemoryPruneLevelChangedEventArgs args)
@@ -612,6 +596,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         if (_isClosing) return;
         Suspend();
         _isClosing = true;
+        _spectrumSession.Dispose();
         _requests.Cancel();
         _requests.Dispose();
         _mediaControl.ArtworkPointerPressed -= StartDrag;
@@ -626,6 +611,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _foregroundSamplingSession.Dispose();
         _compactFlyout.Dispose();
         _mediaControl.ApplyHostVisibilitySuspension(true);
+        _mediaControl.DisposePresentation();
         if (!_windowClosed) Close();
     }
 }

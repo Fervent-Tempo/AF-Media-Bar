@@ -21,7 +21,6 @@ using Wpf.Ui;
 using Wpf.Ui.Abstractions;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
-using Microsoft.Extensions.DependencyInjection;
 using static AFMediaBar.Classes.Interop.NativeMethods;
 
 namespace AFMediaBar.Views.Windows
@@ -30,8 +29,9 @@ namespace AFMediaBar.Views.Windows
     /// 隐藏的应用宿主窗口，协调媒体栏模式、托盘入口和任务栏恢复。
     /// Invisible application host coordinating media-bar modes, tray entry points, and taskbar recovery.
     /// </summary>
-    public partial class MainWindow : INavigationWindow, ITaskbarWindowHostActions
+    public partial class MainWindow : ITaskbarWindowHostActions
     {
+        private readonly FullPanelWindowHost _fullPanels;
         public MainWindowViewModel ViewModel { get; }
         private readonly IApplicationExitService _exitService;
 
@@ -55,7 +55,6 @@ namespace AFMediaBar.Views.Windows
         private readonly AudioMonitorService _audioMonitorService;
         private readonly MediaSourceActivationService _sourceActivationService;
         private readonly SystemMetricsMonitorService _systemMetricsMonitor;
-        private readonly Func<TaskbarFullPanelWindow> _fullPanelFactory;
         private readonly IDisplayMonitorService _displayMonitorService;
         private readonly TrackChangeNotificationCoordinator _trackChangeNotificationCoordinator;
         private readonly Func<TrackChangeNotificationWindow> _trackChangeNotificationFactory;
@@ -71,8 +70,6 @@ namespace AFMediaBar.Views.Windows
         private readonly MemoryPruneCoordinator _memoryPruneCoordinator;
         private readonly List<TaskbarWindow> _taskbarWindows = [];
         private SettingsWindow? _settingsWindow;
-        private readonly Dictionary<string, TaskbarFullPanelWindow> _fullPanelWindows = new(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, DateTime> _fullPanelClosedAtUtc = new(StringComparer.OrdinalIgnoreCase);
         private TrackChangeNotificationWindow? _trackChangeNotificationWindow;
         private string? _effectiveTaskbarTargetSignature;
         private int _taskbarCreatedMessage;
@@ -118,7 +115,7 @@ namespace AFMediaBar.Views.Windows
             AudioMonitorService audioMonitorService,
             MediaSourceActivationService sourceActivationService,
             SystemMetricsMonitorService systemMetricsMonitor,
-            Func<TaskbarFullPanelWindow> fullPanelFactory,
+            FullPanelWindowHost fullPanels,
             IDisplayMonitorService displayMonitorService,
             TrackChangeNotificationCoordinator trackChangeNotificationCoordinator,
             Func<TrackChangeNotificationWindow> trackChangeNotificationFactory,
@@ -130,7 +127,9 @@ namespace AFMediaBar.Views.Windows
             IApplicationExitService exitService,
             BarRuntimeCoordinator runtime,
             Func<string, ITaskbarWindowHostActions, TaskbarWindow> taskbarFactory,
-            Func<string, DisplayMonitorInfo, FloatingBarWindow> floatingFactory)
+            Func<string, DisplayMonitorInfo, FloatingBarWindow> floatingFactory,
+            MediaSessionService mediaSessionService,
+            AFMediaBar.ViewModels.Components.AFContextMenuViewModel menuViewModel)
         {
             ViewModel = viewModel;
             _exitService = exitService;
@@ -140,7 +139,7 @@ namespace AFMediaBar.Views.Windows
             SettingsManager.SettingsChanged += RuntimeSettingsChanged;
             _taskbarViewModel = taskbarViewModel;
             DataContext = this;
-            _mediaSessionService = App.Services.GetRequiredService<MediaSessionService>();
+            _mediaSessionService = mediaSessionService;
             _taskBarService = taskBarService;
             _audioControlViewModel = audioControlViewModel;
             _audioControlFlyoutFactory = audioControlFlyoutFactory;
@@ -156,7 +155,8 @@ namespace AFMediaBar.Views.Windows
             _audioMonitorService = audioMonitorService;
             _sourceActivationService = sourceActivationService;
             _systemMetricsMonitor = systemMetricsMonitor;
-            _fullPanelFactory = fullPanelFactory;
+            _fullPanels = fullPanels;
+            _fullPanels.PanelClosed += FullPanelHostClosed;
             _displayMonitorService = displayMonitorService;
             _trackChangeNotificationCoordinator = trackChangeNotificationCoordinator;
             _trackChangeNotificationFactory = trackChangeNotificationFactory;
@@ -182,6 +182,7 @@ namespace AFMediaBar.Views.Windows
             };
 
             InitializeComponent();
+            TrayMenu.ViewModel = menuViewModel;
 
 
             Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0));
@@ -194,8 +195,8 @@ namespace AFMediaBar.Views.Windows
             TrayMenu.QuickLaunchRequested += TrayMenu_QuickLaunchRequested;
 
             // 快照事件已在服务内调度到 UI 线程，这里只负责转发给任务栏窗口。
-            App.Services.GetRequiredService<MediaSessionService>().SnapshotChanged += MediaSessionService_OnSnapshotChanged;
-            App.Services.GetRequiredService<MediaSessionService>().SessionsChanged += MediaSessionService_OnSessionsChanged;
+            _mediaSessionService.SnapshotChanged += MediaSessionService_OnSnapshotChanged;
+            _mediaSessionService.SessionsChanged += MediaSessionService_OnSessionsChanged;
 
             // 订阅布局设置变更事件
             // Subscribe to layout settings changed event
@@ -236,29 +237,7 @@ namespace AFMediaBar.Views.Windows
             InitializeExperimentalHostWatcher();
         }
 
-        #region INavigationWindow methods
 
-        /// <summary>返回导航控件；隐藏宿主不提供页面导航。/ Returns the navigation control; the hidden host does not expose page navigation.</summary>
-        public INavigationView GetNavigation() => throw new NotImplementedException();
-
-        /// <summary>尝试导航到页面类型。/ Attempts to navigate to a page type.</summary>
-        public bool Navigate(Type pageType) => false;
-
-        /// <summary>设置页面提供器；隐藏宿主不承载页面。/ Sets the page provider; the hidden host does not host pages.</summary>
-        public void SetPageService(INavigationViewPageProvider navigationViewPageProvider) =>
-            throw new NotImplementedException();
-
-        /// <summary>设置导航服务提供器；隐藏宿主不使用该入口。/ Sets the navigation service provider; unused by the hidden host.</summary>
-        public void SetServiceProvider(IServiceProvider serviceProvider) =>
-            throw new NotImplementedException();
-
-        /// <summary>显示宿主窗口。/ Shows the host window.</summary>
-        public void ShowWindow() => Show();
-
-        /// <summary>关闭宿主窗口。/ Closes the host window.</summary>
-        public void CloseWindow() => Close();
-
-        #endregion INavigationWindow methods
 
         #region Window Controller & others
 
@@ -310,8 +289,8 @@ namespace AFMediaBar.Views.Windows
         {
             base.OnClosed(e);
 
-            App.Services.GetRequiredService<MediaSessionService>().SnapshotChanged -= MediaSessionService_OnSnapshotChanged;
-            App.Services.GetRequiredService<MediaSessionService>().SessionsChanged -= MediaSessionService_OnSessionsChanged;
+            _mediaSessionService.SnapshotChanged -= MediaSessionService_OnSnapshotChanged;
+            _mediaSessionService.SessionsChanged -= MediaSessionService_OnSessionsChanged;
             SettingsManager.LayoutSettingsChanged -= SettingsManager_OnLayoutSettingsChanged;
             SettingsManager.AppearanceSettingsChanged -= SettingsManager_OnAppearanceSettingsChanged;
             SettingsManager.TaskbarAppearanceSettingsChanged -= SettingsManager_OnTaskbarAppearanceSettingsChanged;
@@ -343,6 +322,8 @@ namespace AFMediaBar.Views.Windows
             _trayIconService.ShellRestarted -= OnNotificationShellRestored;
             WebLyricsGraphicsRecovery.Session.Degraded -= OnWebLyricsDegraded;
             // Make sure that closing this window will begin the process of closing the application.
+            _fullPanels.PanelClosed -= FullPanelHostClosed;
+            _fullPanels.Dispose();
             _exitService.RequestExit();
         }
 
@@ -843,7 +824,7 @@ namespace AFMediaBar.Views.Windows
 
         private void TaskbarWindow_PlacementTransitionStarted(object? sender, EventArgs e)
         {
-            if (sender is TaskbarWindow window && _taskbarWindows.Contains(window) && _fullPanelWindows.TryGetValue(window.TargetMonitorDeviceId, out var panel))
+            if (sender is TaskbarWindow window && _taskbarWindows.Contains(window) && _fullPanels.TryGet(window.TargetMonitorDeviceId, out var panel))
                 panel.RequestClose();
         }
 
@@ -855,58 +836,18 @@ namespace AFMediaBar.Views.Windows
 
         private void TaskbarWindow_OpenFullPanelRequested(object? sender, FullPanelOpenRequestEventArgs e)
         {
-            if (_isClosing || sender is not TaskbarWindow taskbarWindow || !_taskbarWindows.Contains(taskbarWindow))
-                return;
-
-            var targetDeviceId = taskbarWindow.TargetMonitorDeviceId;
-            if (!_fullPanelWindows.TryGetValue(targetDeviceId, out var panel) &&
-                _fullPanelClosedAtUtc.TryGetValue(targetDeviceId, out var closedAtUtc) &&
-                DateTime.UtcNow - closedAtUtc < TimeSpan.FromMilliseconds(350))
-            {
-                return;
-            }
-
-            if (panel is null)
-            {
-                panel = _fullPanelFactory();
-                _fullPanelWindows[targetDeviceId] = panel;
-            }
-
-            panel.Closed -= FullPanelWindow_Closed;
-            panel.Closed += FullPanelWindow_Closed;
-            panel.ApplyPresentationSettings(null);
-            if (e.EnsureOpen)
-                panel.ShowNear(e.Anchor, targetDeviceId, e.VerticalAnchor);
-            else
-                panel.ToggleNear(e.Anchor, targetDeviceId, e.VerticalAnchor);
-            taskbarWindow.SetFullPanelOpen(panel.IsVisible);
+            if (_isClosing || sender is not TaskbarWindow host || !_taskbarWindows.Contains(host)) return;
+            var panel = _fullPanels.Open(host.TargetMonitorDeviceId, e.Anchor, e.VerticalAnchor, e.EnsureOpen, null);
+            if (panel is not null) host.SetFullPanelOpen(panel.IsVisible);
         }
 
-        private void FullPanelWindow_Closed(object? sender, EventArgs e)
+        private void FullPanelHostClosed(string target)
         {
-            if (sender is TaskbarFullPanelWindow window)
-            {
-                window.Closed -= FullPanelWindow_Closed;
-                var target = _fullPanelWindows.FirstOrDefault(entry => ReferenceEquals(entry.Value, window)).Key;
-                if (!string.IsNullOrWhiteSpace(target))
-                {
-                    _fullPanelWindows.Remove(target);
-                    _fullPanelClosedAtUtc[target] = DateTime.UtcNow;
-                    foreach (var host in _taskbarWindows.Where(host => host.TargetMonitorDeviceId == target))
-                        host.SetFullPanelOpen(false);
-                }
-
-                // 完整层是歌词与封面的另一个消费者，关闭后做一遍温和回收。
-                // The full panel is another consumer of lyrics and artwork, so a gentle reclaim follows its close.
-                _memoryPruneCoordinator.RequestTrim(MemoryTrimTrigger.PanelClosed);
-            }
+            foreach (var host in _taskbarWindows.Where(host => host.TargetMonitorDeviceId == target))
+                host.SetFullPanelOpen(false);
         }
 
-        private void CloseFullPanelWindows()
-        {
-            foreach (var window in _fullPanelWindows.Values.Distinct().ToArray())
-                window.RequestClose();
-        }
+        private void CloseFullPanelWindows() => _fullPanels.CloseAll();
 
         private void ViewModel_OpenSettingsRequested(object? sender, EventArgs e)
         {
@@ -1058,7 +999,7 @@ namespace AFMediaBar.Views.Windows
                 return;
 
             HideAudioControlFlyout();
-            TrayMenu.ApplySessions(App.Services.GetRequiredService<MediaSessionService>().CurrentSessionOptions);
+            TrayMenu.ApplySessions(_mediaSessionService.CurrentSessionOptions);
             TrayMenu.ApplyQuickLaunchEntries(SettingsManager.Current.QuickLaunch.Entries ?? []);
             TrayMenu.IsReloadTaskbarHostEnabled =
                 SettingsManager.Current.WindowMode == WindowMode.Taskbar;

@@ -197,3 +197,12 @@ public readonly record struct LyricsSecondaryLineSettings(IReadOnlyList<LyricsSe
                 .ToArray()
     };
 }
+
+
+/// <summary>歌词文字对齐方式。 / Lyric text alignment.</summary>
+public enum LyricsTextAlignment
+{
+    Left = 0,
+    Center = 1,
+    Right = 2
+}

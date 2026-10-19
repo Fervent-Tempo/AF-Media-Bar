@@ -34,7 +34,7 @@ public partial class MainWindow
             {
                 var settings = (_floatingWindows.FirstOrDefault()?.EffectiveSettings);
                 _audioMonitorService.ApplyPresentationCaptureSource(settings?.SpectrumComponent.CaptureSource);
-                foreach (var panel in _fullPanelWindows.Values) panel.ApplyPresentationSettings(settings);
+                _fullPanels.ApplyPresentationSettings(settings);
             }
         }, DispatcherPriority.Background);
     }
@@ -168,15 +168,7 @@ public partial class MainWindow
     private void FloatingFullPanelRequested(object? sender, EventArgs args)
     {
         if (_isClosing || sender is not FloatingBarWindow host || !_floatingWindows.Contains(host)) return;
-        var target = host.TargetMonitorDeviceId;
-        if (!_fullPanelWindows.TryGetValue(target, out var panel))
-        {
-            if (_fullPanelClosedAtUtc.TryGetValue(target, out var closed) && DateTime.UtcNow - closed < TimeSpan.FromMilliseconds(350)) return;
-            panel = _fullPanelFactory();
-            _fullPanelWindows[target] = panel;
-            panel.Closed += FullPanelWindow_Closed;
-        }
-        panel.ApplyPresentationSettings(host.EffectiveSettings);
-        panel.ToggleNear(host.GetMediaBarScreenBounds(), target, host.IsVerticalPresentation);
+        _fullPanels.Open(host.TargetMonitorDeviceId, host.GetMediaBarScreenBounds(), host.IsVerticalPresentation,
+            ensureOpen: false, host.EffectiveSettings);
     }
 }

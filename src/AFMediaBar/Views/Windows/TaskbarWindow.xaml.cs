@@ -20,7 +20,6 @@ using AFMediaBar.Classes.Utils;
 using AFMediaBar.ViewModels.Windows;
 using AFMediaBar.Components;
 using AFMediaBar.Resources;
-using Microsoft.Extensions.DependencyInjection;
 using MenuItem = Wpf.Ui.Controls.MenuItem;
 using static AFMediaBar.Classes.Interop.NativeMethods;
 
@@ -33,6 +32,7 @@ namespace AFMediaBar.Views.Windows;
 /// </summary>
 public partial class TaskbarWindow : Window, IBarRuntimeHost
 {
+    private readonly SpectrumPresentationSession _spectrumSession;
     // physical px offsets from the taskbar edges
     private const int EdgePadding = 20;
     private static readonly TimeSpan EnvironmentChangeProbeCooldown = TimeSpan.FromSeconds(2);
@@ -50,13 +50,10 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     private readonly ITaskbarWindowHostActions _hostActions;
     private readonly DispatcherTimer _timer;
     private readonly DispatcherTimer _sizeAnimationTimer;
-    private readonly DispatcherTimer _spectrumTimer;
     private readonly DispatcherTimer _quickLaunchApplyTimer;
     private readonly DispatcherTimer _volumeApplyTimer;
     private readonly DispatcherTimer _taskbarMotionSettleTimer;
     private readonly DispatcherTimer _taskbarHiddenTrimTimer;
-    private bool _spectrumActive;
-    private bool _spectrumRequestInFlight;
     private readonly GlobalInteractionRouter _interactionRouter;
     private readonly AudioInteractionService _audioInteractionService;
     private readonly MediaSourceActivationService _sourceActivationService;
@@ -124,8 +121,6 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     private readonly AudioMonitorService _audioMonitorService;
     private readonly NativeMouseInputMonitor _mouseInputMonitor;
     private readonly AdaptiveForegroundSamplingSession _foregroundSamplingSession;
-    private readonly float[] _spectrumBands = new float[SpectrumComponentSettings.MaximumBandCount];
-    private readonly float[] _spectrumWorkerBands = new float[SpectrumComponentSettings.MaximumBandCount];
     private MediaSnapshot _lastSnapshot = MediaSnapshot.Disconnected;
     private AudioDeviceTarget? _deviceMenuTarget;
     private int _menuEnvironmentVersion;
@@ -166,12 +161,15 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         NativeMouseInputMonitor mouseInputMonitor,
         MemoryPruneCoordinator memoryPruneCoordinator,
         TaskbarHostSurfaceSessions surfaceSessions,
-        TaskbarWindowViewModel? viewModel = null, bool startImmediately = true,
+        TaskbarWindowViewModel viewModel,
+        AFMediaBar.ViewModels.Components.AFContextMenuViewModel menuViewModel,
+        bool startImmediately = true,
         Func<ExternalFullPanelHandleWindow>? externalFullPanelHandleFactory = null)
     {
         WindowHelper.SetNoActivate(this);
         InitializeComponent();
-        ViewModel = viewModel ?? App.Services.GetRequiredService<TaskbarWindowViewModel>();
+        ViewModel = viewModel;
+        PlayerMenu.ViewModel = menuViewModel;
         _targetMonitorDeviceId = targetMonitorDeviceId;
         _surfaceSession = surfaceSessions.Get(targetMonitorDeviceId);
         _mouseInputMonitor = mouseInputMonitor;
@@ -283,8 +281,11 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         _occupancyRefreshTimer.Tick += OccupancyRefreshTimer_Tick;
         _sizeAnimationTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
         _sizeAnimationTimer.Tick += (_, _) => AdvanceSizeAnimation();
-        _spectrumTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
-        _spectrumTimer.Tick += OnSpectrumTimerTick;
+        _spectrumSession = new SpectrumPresentationSession(audioMonitorService, Dispatcher,
+            () => SettingsManager.Current.SpectrumComponent,
+            () => !_isClosing && !IsTaskbarPresentationSuspended && _appliedOrientation.HasValue && MediaControl.IsSpectrumComponentVisible,
+            (bands, count) => MediaControl.ApplySpectrum(bands.AsSpan(0, count)),
+            exception => AppLogService.Current?.Warn("Audio", $"频谱采样失败: {exception.Message}"));
 
         // 窗口也可能在档位已经生效时被创建（屏幕关闭期间 Explorer 重建了任务栏）：那时不能等下一次档位变化，
         // 否则刚启动的计时器会一直转到一个没人看得见的窗口上。这里只走"停"的一侧，不触发恢复路径。
@@ -484,7 +485,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             StopLayoutTransition();
             if (_lastDesiredSizeRequest is { } desiredSize)
                 _pendingSizeRequest = desiredSize;
-            _spectrumTimer.Stop();
+            _spectrumSession.Stop();
             DisposeMetricsSubscription();
             _foregroundSamplingSession.Invalidate(clearDecision: false);
             // 点击浮窗使用独立 HWND；这里只挂起媒体栏，任务栏收起不结束菜单交互。
@@ -562,7 +563,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             _windowHandle = IntPtr.Zero;
             _timer.Stop();
             StopLayoutTransition();
-            _spectrumTimer.Stop();
+            _spectrumSession.Stop();
             _taskbarMotionSettleTimer.Stop();
             _taskbarHiddenTrimTimer.Stop();
             UnregisterTaskbarLocationHook();
@@ -614,55 +615,6 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         }
 
         return IntPtr.Zero;
-    }
-
-    private async void OnSpectrumTimerTick(object? sender, EventArgs e)
-    {
-        if (_spectrumRequestInFlight) return;
-
-        var bandCount = SettingsManager.Current.SpectrumComponent.Normalize().BandCount;
-        // Only the visible spectrum samples audio. Its COM calls and FFT run on AudioMonitorService's worker;
-        // this dispatcher callback only presents the completed frame, and never queues overlapping reads.
-        if (_isClosing || IsTaskbarPresentationSuspended ||
-            !MediaControl.IsSpectrumComponentVisible)
-        {
-            ClearSpectrum(bandCount);
-            return;
-        }
-
-        _spectrumRequestInFlight = true;
-        try
-        {
-            var sample = await _audioMonitorService.GetSpectrumAsync(_spectrumWorkerBands, bandCount);
-            if (!_isClosing && !IsTaskbarPresentationSuspended && _appliedOrientation.HasValue &&
-                MediaControl.IsSpectrumComponentVisible && sample.IsAvailable && _audioMonitorService.IsCaptureCurrent(sample.CaptureVersion))
-            {
-                Array.Copy(_spectrumWorkerBands, _spectrumBands, bandCount);
-                _spectrumActive = true;
-                MediaControl.ApplySpectrum(_spectrumBands.AsSpan(0, bandCount));
-            }
-            else if (!_isClosing)
-            {
-                ClearSpectrum(bandCount);
-            }
-        }
-        catch (Exception exception)
-        {
-            AppLogService.Current?.Warn("Audio", $"频谱采样失败: {exception.Message}");
-            if (!_isClosing) ClearSpectrum(bandCount);
-        }
-        finally
-        {
-            _spectrumRequestInFlight = false;
-        }
-    }
-
-    private void ClearSpectrum(int bandCount)
-    {
-        if (!_spectrumActive) return;
-        Array.Clear(_spectrumBands);
-        MediaControl.ApplySpectrum(_spectrumBands.AsSpan(0, bandCount));
-        _spectrumActive = false;
     }
 
     private void PositionTimer_Tick(object? sender, EventArgs e)
@@ -1374,7 +1326,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         UnregisterTaskbarLocationHook();
         _timer.Stop();
         StopLayoutTransition();
-        _spectrumTimer.Stop();
+        _spectrumSession.Stop();
         _taskbarMotionSettleTimer.Stop();
         _taskbarHiddenTrimTimer.Stop();
         DisposeMetricsSubscription();
@@ -1468,7 +1420,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         _timer.Stop();
         StopOccupancyRefresh();
         StopLayoutTransition();
-        _spectrumTimer.Stop();
+        _spectrumSession.Stop();
         DisposeMetricsSubscription();
         _pendingSizeRequest = null;
     }
@@ -1899,7 +1851,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     private void ApplyExtraFeaturesSettings()
     {
         var spectrum = SettingsManager.Current.SpectrumComponent.Normalize();
-        _spectrumTimer.Interval = TimeSpan.FromMilliseconds(1000d / spectrum.RefreshRateHz);
+        _spectrumSession.Interval = TimeSpan.FromMilliseconds(1000d / spectrum.RefreshRateHz);
         var performance = SettingsManager.Current.PerformanceComponent.Normalize();
         MediaControl.ApplyQuickLaunchEntries(SettingsManager.Current.QuickLaunch.Entries ?? []);
         MediaControl.ApplyTaskbarExperienceSettings();
@@ -1919,13 +1871,13 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
                         MediaControl.IsSpectrumComponentVisible;
         if (shouldRun)
         {
-            if (!_spectrumTimer.IsEnabled)
-                _spectrumTimer.Start();
+            if (!_spectrumSession.IsEnabled)
+                _spectrumSession.Start();
         }
         else
         {
-            _spectrumTimer.Stop();
-            ClearSpectrum(SettingsManager.Current.SpectrumComponent.Normalize().BandCount);
+            _spectrumSession.Stop();
+            _spectrumSession.Clear();
         }
     }
 
@@ -2460,7 +2412,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         _memoryPruneCoordinator.LevelChanged -= MemoryPruneCoordinator_LevelChanged;
         _timer.Stop();
         StopLayoutTransition();
-        _spectrumTimer.Stop();
+        _spectrumSession.Dispose();
         _taskbarMotionSettleTimer.Stop();
         _taskbarHiddenTrimTimer.Stop();
         UnregisterTaskbarLocationHook();
@@ -2505,6 +2457,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         _compactFlyout.Dispose();
         ClosePlayerMenu();
         PlayerMenuOpenRequested = null;
+        MediaControl.DisposePresentation();
         base.OnClosed(e);
     }
 

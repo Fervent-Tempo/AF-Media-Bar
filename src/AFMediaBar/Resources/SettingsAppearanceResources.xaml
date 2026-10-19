@@ -549,8 +549,8 @@
         </Setter>
     </Style>
 
-    <!--  隐式应用：设置页里的卡片不再逐一声明样式，LayoutPage 等历史页面共用同一外观。  -->
-    <!--  Implicit application: settings cards declare no style, and the legacy LayoutPage shares the look.  -->
+    <!--  隐式应用：设置页卡片共用同一外观。  -->
+    <!--  Implicit application: settings cards share the same appearance.  -->
     <Style BasedOn="{StaticResource AfSettingsCardStyle}" TargetType="{x:Type ui:CardControl}" />
 
     <!--
