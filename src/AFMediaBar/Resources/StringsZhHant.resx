@@ -3019,7 +3019,7 @@
   <data name="Device.Rebind" xml:space="preserve"><value>重新關聯</value></data>
   <data name="Device.RebindHint" xml:space="preserve"><value>手動選擇替代端點，將此設定轉移並取代目標端點的 AF 設定。不會依名稱自動關聯。</value></data>
   <data name="Device.Hotkey.Title" xml:space="preserve"><value>裝置切換快速鍵</value></data>
-  <data name="Device.Hotkey.Hint" xml:space="preserve"><value>僅切換系統預設裝置。輸入如 Ctrl+Alt+F8，留空不註冊；須含 Ctrl 或 Alt，不支援 Win 與 F12。循環依收藏順序並略過無法使用的裝置。</value></data>
+  <data name="Device.Hotkey.Hint" xml:space="preserve"><value>僅切換系統預設裝置。點擊錄製框後按組合鍵，須包含 Ctrl 或 Alt，不支援 Win 與 F12。循環依收藏順序並略過無法使用的裝置。</value></data>
   <data name="Device.Hotkey.Direct" xml:space="preserve"><value>直達快速鍵</value></data>
   <data name="Device.Hotkey.CycleOutput" xml:space="preserve"><value>循環收藏的輸出裝置</value></data>
   <data name="Device.Hotkey.CycleInput" xml:space="preserve"><value>循環收藏的輸入裝置</value></data>
@@ -3042,4 +3042,26 @@
   <data name="Battery.BleGatt" xml:space="preserve"><value>標準 BLE 電量</value></data>
   <data name="Battery.LowTitle" xml:space="preserve"><value>耳機電量偏低</value></data>
   <data name="Battery.LowBody" xml:space="preserve"><value>{0} 目前電量為 {1}%。</value></data>
+  <data name="Memory.ToolsDescription" xml:space="preserve"><value>檢視 AF 記憶體並按需回收；系統快取清理獨立操作。</value></data>
+  <data name="Memory.Self.Title" xml:space="preserve"><value>回收 AF 自身記憶體</value></data>
+  <data name="Memory.Gentle.Description" xml:space="preserve"><value>回收不再使用的物件，保留目前駐留記憶體，減少再次使用時的卡頓。</value></data>
+  <data name="Memory.Deep.Description" xml:space="preserve"><value>回收不再使用的物件，並嘗試交還 AF 的實體記憶體；再次使用時可能短暫卡頓。</value></data>
+  <data name="Memory.Metrics.Title" xml:space="preserve"><value>檢視記憶體讀數</value></data>
+  <data name="Memory.WorkingSet" xml:space="preserve"><value>AF 工作集</value></data>
+  <data name="Memory.PrivateCommit" xml:space="preserve"><value>AF 私有認可</value></data>
+  <data name="Memory.ManagedHeap" xml:space="preserve"><value>AF 受控堆積</value></data>
+  <data name="Memory.Handles" xml:space="preserve"><value>控制代碼數</value></data>
+  <data name="Memory.Threads" xml:space="preserve"><value>執行緒數</value></data>
+  <data name="Memory.Available" xml:space="preserve"><value>系統可用實體記憶體</value></data>
+  <data name="Memory.SampleTime" xml:space="preserve"><value>取樣時間</value></data>
+  <data name="Memory.LastResult" xml:space="preserve"><value>最近一次 AF 回收結果</value></data>
+  <data name="Memory.System.Scope" xml:space="preserve"><value>影響 Windows 快取，與 AF 自身回收不同；執行時需要系統管理員權限。</value></data>
+  <data name="Memory.System.Run" xml:space="preserve"><value>清理…</value></data>
+  <data name="Battery.NoReading" xml:space="preserve"><value>暫時無法取得電量</value></data>
+  <data name="Device.Default" xml:space="preserve"><value>目前預設</value></data>
+  <data name="Device.Edit" xml:space="preserve"><value>編輯裝置設定</value></data>
+  <data name="Device.Order" xml:space="preserve"><value>顯示順序</value></data>
+  <data name="Device.Hotkey.Record" xml:space="preserve"><value>點擊後按組合鍵</value></data>
+  <data name="Device.Hotkey.Recording" xml:space="preserve"><value>請按組合鍵…</value></data>
+  <data name="Device.Hotkey.RecordHint" xml:space="preserve"><value>按下包含 Ctrl 或 Alt 的組合鍵；Esc 取消，退格或 Delete 清除，Tab 離開。</value></data>
 </root>

@@ -24,7 +24,7 @@ public sealed class BluetoothBatteryReader
 
     public async Task<IReadOnlyDictionary<Guid, BluetoothBatterySnapshot>> ReadAsync(IReadOnlyList<AudioDeviceOption> endpoints, CancellationToken token)
     {
-        var containers = endpoints.Where(device => device.ContainerId is not null).Select(device => device.ContainerId!.Value).ToHashSet();
+        var containers = endpoints.Select(device => AudioDeviceIdentity.PhysicalContainer(device.ContainerId)).OfType<Guid>().ToHashSet();
         if (containers.Count == 0) return new Dictionary<Guid, BluetoothBatterySnapshot>();
         var pnp = await Task.Run(() => ReadPnp(containers, token), token).ConfigureAwait(false);
         var peers = new List<Peer>();
@@ -35,7 +35,7 @@ public sealed class BluetoothBatteryReader
             foreach (var device in devices)
             {
                 var address = device.Properties.GetValueOrDefault("System.Devices.Aep.DeviceAddress") as string;
-                var association = device.Properties.GetValueOrDefault("System.Devices.Aep.ContainerId") is Guid id && id != Guid.Empty ? id : (Guid?)null;
+                var association = device.Properties.GetValueOrDefault("System.Devices.Aep.ContainerId") is Guid id ? AudioDeviceIdentity.PhysicalContainer(id) : null;
                 peers.Add(new(device.Id, NormalizeAddress(address), association,
                     device.Properties.GetValueOrDefault("System.Devices.Aep.IsConnected") is true, isLe));
             }
@@ -126,7 +126,7 @@ public sealed class BluetoothBatteryReader
                 var buffer = new byte[16];
                 if (!SetupDiGetDeviceProperty(set, ref info, ref containerKey, out var type, buffer, buffer.Length, out var size, 0) || type != 13 || size != 16) continue;
                 var container = new Guid(buffer);
-                if (!containers.Contains(container) || container == Guid.Empty) continue;
+                if (!containers.Contains(container) || AudioDeviceIdentity.PhysicalContainer(container) is null) continue;
                 if (!result.TryGetValue(container, out var node)) result[container] = node = new();
                 var match = Regex.Match(instanceId, @"DEV_([0-9A-F]{12})(?![0-9A-F])", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
                 if (match.Success) node.Addresses.Add(match.Groups[1].Value);

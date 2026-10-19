@@ -3057,7 +3057,7 @@ Heap được quản lý {6} → {7} · {8} ms · {9}</value></data>
   <data name="Device.Rebind" xml:space="preserve"><value>Liên kết lại</value></data>
   <data name="Device.RebindHint" xml:space="preserve"><value>Chọn điểm cuối thay thế. Cấu hình này sẽ chuyển sang và thay thế cấu hình AF của đích. Không tự ghép theo tên.</value></data>
   <data name="Device.Hotkey.Title" xml:space="preserve"><value>Phím tắt chuyển thiết bị</value></data>
-  <data name="Device.Hotkey.Hint" xml:space="preserve"><value>Chỉ đổi thiết bị mặc định hệ thống. Ví dụ Ctrl+Alt+F8; để trống để tắt. Cần Ctrl hoặc Alt; không hỗ trợ Win và F12. Luân phiên theo thứ tự yêu thích, bỏ qua thiết bị không khả dụng.</value></data>
+  <data name="Device.Hotkey.Hint" xml:space="preserve"><value>Chỉ đổi thiết bị mặc định hệ thống. Bấm ô ghi rồi nhấn tổ hợp có Ctrl hoặc Alt; không hỗ trợ Win và F12. Luân phiên theo thứ tự yêu thích, bỏ qua thiết bị không khả dụng.</value></data>
   <data name="Device.Hotkey.Direct" xml:space="preserve"><value>Phím tắt trực tiếp</value></data>
   <data name="Device.Hotkey.CycleOutput" xml:space="preserve"><value>Luân phiên đầu ra yêu thích</value></data>
   <data name="Device.Hotkey.CycleInput" xml:space="preserve"><value>Luân phiên đầu vào yêu thích</value></data>
@@ -3080,4 +3080,26 @@ Nguồn: {2}</value></data>
   <data name="Battery.BleGatt" xml:space="preserve"><value>Dịch vụ pin BLE chuẩn</value></data>
   <data name="Battery.LowTitle" xml:space="preserve"><value>Pin tai nghe yếu</value></data>
   <data name="Battery.LowBody" xml:space="preserve"><value>Pin {0} còn {1}%.</value></data>
+  <data name="Memory.ToolsDescription" xml:space="preserve"><value>Xem và thu hồi bộ nhớ AF khi cần. Dọn bộ đệm hệ thống là thao tác riêng.</value></data>
+  <data name="Memory.Self.Title" xml:space="preserve"><value>Thu hồi bộ nhớ AF</value></data>
+  <data name="Memory.Gentle.Description" xml:space="preserve"><value>Thu gom đối tượng không còn dùng, giữ trang đang cư trú để giảm khựng khi dùng lại.</value></data>
+  <data name="Memory.Deep.Description" xml:space="preserve"><value>Thu gom đối tượng không còn dùng và thử trả bộ nhớ vật lý AF. Lần dùng sau có thể khựng nhẹ.</value></data>
+  <data name="Memory.Metrics.Title" xml:space="preserve"><value>Xem chỉ số bộ nhớ</value></data>
+  <data name="Memory.WorkingSet" xml:space="preserve"><value>Tập làm việc AF</value></data>
+  <data name="Memory.PrivateCommit" xml:space="preserve"><value>Cam kết riêng AF</value></data>
+  <data name="Memory.ManagedHeap" xml:space="preserve"><value>Heap được quản lý AF</value></data>
+  <data name="Memory.Handles" xml:space="preserve"><value>Số handle</value></data>
+  <data name="Memory.Threads" xml:space="preserve"><value>Số luồng</value></data>
+  <data name="Memory.Available" xml:space="preserve"><value>Bộ nhớ vật lý hệ thống còn</value></data>
+  <data name="Memory.SampleTime" xml:space="preserve"><value>Thời điểm lấy mẫu</value></data>
+  <data name="Memory.LastResult" xml:space="preserve"><value>Kết quả thu hồi AF gần nhất</value></data>
+  <data name="Memory.System.Scope" xml:space="preserve"><value>Tác động bộ đệm Windows, khác thu hồi riêng AF. Cần quyền quản trị khi chạy.</value></data>
+  <data name="Memory.System.Run" xml:space="preserve"><value>Dọn…</value></data>
+  <data name="Battery.NoReading" xml:space="preserve"><value>Chưa đọc được mức pin</value></data>
+  <data name="Device.Default" xml:space="preserve"><value>Mặc định hiện tại</value></data>
+  <data name="Device.Edit" xml:space="preserve"><value>Sửa cài đặt thiết bị</value></data>
+  <data name="Device.Order" xml:space="preserve"><value>Thứ tự hiển thị</value></data>
+  <data name="Device.Hotkey.Record" xml:space="preserve"><value>Bấm rồi nhấn tổ hợp phím</value></data>
+  <data name="Device.Hotkey.Recording" xml:space="preserve"><value>Nhấn tổ hợp phím…</value></data>
+  <data name="Device.Hotkey.RecordHint" xml:space="preserve"><value>Nhấn tổ hợp có Ctrl hoặc Alt. Esc hủy, Backspace hoặc Delete xóa, Tab rời đi.</value></data>
 </root>

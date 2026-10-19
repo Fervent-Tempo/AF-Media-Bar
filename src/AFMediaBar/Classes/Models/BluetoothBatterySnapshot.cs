@@ -12,7 +12,7 @@ public sealed record BluetoothBatterySnapshot(Guid ContainerId, int? Percent, Bl
 {
     public bool IsRealtime => IsConnected && ReadSucceeded && Percent is not null && UpdatedAt is { } at && DateTimeOffset.UtcNow - at < TimeSpan.FromMinutes(3);
     public string Label => Percent is { } percent ? $"{percent}%" + (IsRealtime ? string.Empty : " · " + Translations.Get("Battery.Stale")) : Translations.Get("Battery.Unknown");
-    public string Details => Translations.Format("Battery.Details", Label,
+    public string Details => UpdatedAt is null ? Translations.Get("Battery.NoReading") : Translations.Format("Battery.Details", Label,
         UpdatedAt?.ToLocalTime().ToString("g") ?? Translations.Get("Battery.Unknown"),
         Translations.Get(Source == BluetoothBatterySource.WindowsProperty ? "Battery.WindowsProperty" : Source == BluetoothBatterySource.BleGatt ? "Battery.BleGatt" : "Battery.Unknown"));
 }

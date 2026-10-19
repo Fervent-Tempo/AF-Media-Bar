@@ -62,9 +62,6 @@ namespace AFMediaBar.Views.Pages
         /// <summary>打开日志目录：日志只有一个文件，出问题时用户把这一份发出来即可。/ Opens the log directory; the log is one file and that one file is what the user sends when something breaks.</summary>
         private void OpenLogFolder_Click(object sender, RoutedEventArgs e) => _log.OpenFolder();
 
-        private async void TrimMemory_Click(object sender, RoutedEventArgs e) =>
-            await ViewModel.MemoryTools.DeepCommand.ExecuteAsync(null);
-
         private async void ResetAllButton_Click(object sender, RoutedEventArgs e)
         {
             // 本页保留统一的“重置全部”；开发者开关同样遵循用户默认快照。

@@ -8,7 +8,7 @@ public sealed class BluetoothBatteryCache
 {
     private IReadOnlyDictionary<Guid, BluetoothBatterySnapshot> _snapshots = new Dictionary<Guid, BluetoothBatterySnapshot>();
     public event EventHandler? Changed;
-    public BluetoothBatterySnapshot? Get(Guid? containerId) => containerId is { } id ? Volatile.Read(ref _snapshots).GetValueOrDefault(id) : null;
+    public BluetoothBatterySnapshot? Get(Guid? containerId) => AudioDeviceIdentity.PhysicalContainer(containerId) is { } id ? Volatile.Read(ref _snapshots).GetValueOrDefault(id) : null;
     public void Replace(IReadOnlyDictionary<Guid, BluetoothBatterySnapshot> snapshots)
     {
         var old = Volatile.Read(ref _snapshots);

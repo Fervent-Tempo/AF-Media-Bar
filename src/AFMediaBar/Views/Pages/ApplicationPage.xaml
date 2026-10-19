@@ -303,29 +303,56 @@
                             <components:SettingsRow
                                 Description="{DynamicResource Loc.About.Row.TrimMemory.Description}"
                                 Icon="{ui:SymbolIcon ArrowMinimize24}"
-                                Title="{DynamicResource Loc.About.Row.TrimMemory.Title}">
+                                Title="{DynamicResource Loc.About.Row.TrimMemory.Title}"
+                                Visibility="{Binding ViewModel.MemoryTools.IsLegacyTrimVisible, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                                 <ui:Button
-                                    Click="TrimMemory_Click"
+                                    Command="{Binding ViewModel.MemoryTools.DeepCommand}"
+                                    IsEnabled="{Binding ViewModel.MemoryTools.CanRun}"
                                     Content="{DynamicResource Loc.About.Row.TrimMemory.Button}"
                                     Icon="{ui:SymbolIcon ArrowMinimize24}"
                                     Style="{StaticResource AfSettingsButtonStyle}" />
                             </components:SettingsRow>
-                            <StackPanel Visibility="{Binding ViewModel.MemoryTools.IsEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}" Margin="0,12,0,0">
-                                <TextBlock Text="{Binding ViewModel.MemoryTools.MetricsText}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" />
-                                <StackPanel Orientation="Horizontal" Margin="0,12,0,8" IsEnabled="{Binding ViewModel.MemoryTools.CanRun}">
-                                    <ui:Button Content="{DynamicResource Loc.Memory.Gentle}" Command="{Binding ViewModel.MemoryTools.GentleCommand}" Style="{StaticResource AfSettingsButtonStyle}" />
-                                    <ui:Button Content="{DynamicResource Loc.Memory.Deep}" Command="{Binding ViewModel.MemoryTools.DeepCommand}" Style="{StaticResource AfSettingsButtonStyle}" Margin="8,0,0,0" />
-                                </StackPanel>
-                                <TextBlock Text="{Binding ViewModel.MemoryTools.ResultText}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" />
-                                <StackPanel Visibility="{Binding ViewModel.MemoryTools.IsSystemCleanupEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}" Margin="0,12,0,0">
-                                    <TextBlock Text="{DynamicResource Loc.Memory.System.Description}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" />
-                                    <ui:Button Content="{DynamicResource Loc.Memory.System.Clean}" Command="{Binding ViewModel.MemoryTools.CleanSystemCommand}" IsEnabled="{Binding ViewModel.MemoryTools.CanRun}" Style="{StaticResource AfSettingsButtonStyle}" HorizontalAlignment="Left" Margin="0,8,0,8" />
-                                    <TextBlock Text="{Binding ViewModel.MemoryTools.SystemResultText}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" />
-                                </StackPanel>
-                                <TextBlock Text="{DynamicResource Loc.Memory.Explanation}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,8,0,0" />
-                            </StackPanel>
+
                         </StackPanel>
                     </ui:CardExpander>
+                </components:SettingsGroup>
+                <components:SettingsGroup GroupId="Memory.Title" Header="{DynamicResource Loc.Memory.Title}" Description="{DynamicResource Loc.Memory.ToolsDescription}" Icon="{ui:SymbolIcon ArrowMinimize24}"
+                    Visibility="{Binding ViewModel.MemoryTools.IsEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                    <StackPanel>
+                        <components:SettingsRow Title="{DynamicResource Loc.Memory.Self.Title}" Description="{DynamicResource Loc.Memory.Gentle.Description}">
+                            <ui:Button Content="{DynamicResource Loc.Memory.Gentle}" Command="{Binding ViewModel.MemoryTools.GentleCommand}" IsEnabled="{Binding ViewModel.MemoryTools.CanRun}" Style="{StaticResource AfSettingsButtonStyle}" />
+                        </components:SettingsRow>
+                        <components:SettingsRow Title="{DynamicResource Loc.Memory.Deep}" Description="{DynamicResource Loc.Memory.Deep.Description}">
+                            <ui:Button Content="{DynamicResource Loc.Memory.Deep}" Command="{Binding ViewModel.MemoryTools.DeepCommand}" IsEnabled="{Binding ViewModel.MemoryTools.CanRun}" Style="{StaticResource AfSettingsButtonStyle}" />
+                        </components:SettingsRow>
+                        <Expander Header="{DynamicResource Loc.Memory.Metrics.Title}" Margin="0,8,0,0">
+                            <StackPanel>
+                                <components:SettingsRow Title="{DynamicResource Loc.Memory.WorkingSet}"><TextBlock Text="{Binding ViewModel.MemoryTools.WorkingSetText}" /></components:SettingsRow>
+                                <components:SettingsRow Title="{DynamicResource Loc.Memory.PrivateCommit}"><TextBlock Text="{Binding ViewModel.MemoryTools.PrivateCommitText}" /></components:SettingsRow>
+                                <components:SettingsRow Title="{DynamicResource Loc.Memory.ManagedHeap}"><TextBlock Text="{Binding ViewModel.MemoryTools.ManagedHeapText}" /></components:SettingsRow>
+                                <components:SettingsRow Title="{DynamicResource Loc.Memory.Handles}"><TextBlock Text="{Binding ViewModel.MemoryTools.HandlesText}" /></components:SettingsRow>
+                                <components:SettingsRow Title="{DynamicResource Loc.Memory.Threads}"><TextBlock Text="{Binding ViewModel.MemoryTools.ThreadsText}" /></components:SettingsRow>
+                                <components:SettingsRow Title="{DynamicResource Loc.Memory.Available}"><TextBlock Text="{Binding ViewModel.MemoryTools.AvailableMemoryText}" /></components:SettingsRow>
+                                <components:SettingsRow Title="{DynamicResource Loc.Memory.SampleTime}"><TextBlock Text="{Binding ViewModel.MemoryTools.SampleTimeText}" /></components:SettingsRow>
+                                <TextBlock Text="{DynamicResource Loc.Memory.Explanation}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="16,8" />
+                            </StackPanel>
+                        </Expander>
+                        <Expander Header="{DynamicResource Loc.Memory.LastResult}" IsExpanded="True" Margin="0,8,0,0" Visibility="{Binding ViewModel.MemoryTools.HasResult, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                            <TextBlock Text="{Binding ViewModel.MemoryTools.ResultText}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="16,8" />
+                        </Expander>
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Margin="0,12,0,0" Visibility="{Binding ViewModel.MemoryTools.IsSystemCleanupEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                            <ui:CardExpander.Header><StackPanel>
+                                <TextBlock Text="{DynamicResource Loc.Memory.System.Title}" Style="{StaticResource AfSettingsRowTitleStyle}" />
+                                <TextBlock Text="{DynamicResource Loc.Memory.System.Scope}" TextWrapping="Wrap" Style="{StaticResource AfSettingsRowDescriptionStyle}" />
+                            </StackPanel></ui:CardExpander.Header>
+                            <StackPanel>
+                                <components:SettingsRow Title="{DynamicResource Loc.Memory.System.Clean}" Description="{DynamicResource Loc.Memory.System.Description}">
+                                    <ui:Button Content="{DynamicResource Loc.Memory.System.Run}" Command="{Binding ViewModel.MemoryTools.CleanSystemCommand}" IsEnabled="{Binding ViewModel.MemoryTools.CanRun}" Style="{StaticResource AfSettingsButtonStyle}" />
+                                </components:SettingsRow>
+                                <TextBlock Text="{Binding ViewModel.MemoryTools.SystemResultText}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="16,8" Visibility="{Binding ViewModel.MemoryTools.HasSystemResult, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
+                            </StackPanel>
+                        </ui:CardExpander>
+                    </StackPanel>
                 </components:SettingsGroup>
             </StackPanel>
         </ScrollViewer>

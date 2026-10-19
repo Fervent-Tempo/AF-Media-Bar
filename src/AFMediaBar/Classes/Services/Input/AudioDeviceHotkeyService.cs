@@ -22,6 +22,25 @@ public sealed class AudioDeviceHotkeyService(AudioDeviceSwitchCoordinator switch
     private CancellationTokenSource _requests = new();
     private string? _signature;
     private bool _disposed;
+    private int _recordingCount;
+    private sealed class RegistrationPause(Action release) : IDisposable
+    {
+        private Action? _release = release;
+        public void Dispose() => Interlocked.Exchange(ref _release, null)?.Invoke();
+    }
+    /// <summary>录制期间暂停 AF 注册，使已注册组合键仍能到达录制框；租约由页面状态释放。</summary>
+    public IDisposable PauseForRecording()
+    {
+        if (_disposed) return new RegistrationPause(() => { });
+        _recordingCount++;
+        Reconfigure();
+        return new RegistrationPause(() =>
+        {
+            if (_disposed) return;
+            _recordingCount--;
+            Reconfigure();
+        });
+    }
     public event EventHandler? Changed;
     public string GetStatus(AudioDeviceDirection direction, string? endpointId) =>
         _statuses.TryGetValue(Identity(direction, endpointId), out var key) ? Translations.Get(key) : string.Empty;
@@ -47,7 +66,7 @@ public sealed class AudioDeviceHotkeyService(AudioDeviceSwitchCoordinator switch
     {
         if (_disposed) return;
         var settings = SettingsManager.Current;
-        var enabled = settings.Experiments.NewAudioControl && settings.Experiments.DeviceHotkeys;
+        var enabled = settings.Experiments.NewAudioControl && settings.Experiments.DeviceHotkeys && _recordingCount == 0;
         var bindings = enabled ? settings.AudioDevices.Preferences.Where(entry => !string.IsNullOrWhiteSpace(entry.Hotkey))
             .Select(entry => new Binding(Identity(entry.Direction, entry.EndpointId), entry.Direction, entry.EndpointId, entry.Hotkey))
             .Concat(new[] { new Binding(Identity(AudioDeviceDirection.Output, null), AudioDeviceDirection.Output, null, settings.AudioDevices.OutputCycleHotkey),

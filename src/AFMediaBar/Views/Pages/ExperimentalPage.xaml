@@ -23,7 +23,7 @@
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.SystemMemoryCleanup, Mode=TwoWay}" />
                         </components:SettingsRow>
                         <components:SettingsRow Title="{DynamicResource Loc.Memory.Open}" Visibility="{Binding ViewModel.MemoryTools, Converter={StaticResource AfBooleanToVisibilityConverter}}">
-                            <ui:Button Content="{DynamicResource Loc.Memory.Open}" Style="{StaticResource AfSettingsButtonStyle}" Tag="{x:Static services:SettingsPageKey.Application}" CommandParameter="Common.Group.Diagnostics" Click="OpenSettings_Click" />
+                            <ui:Button Content="{DynamicResource Loc.Memory.Open}" Style="{StaticResource AfSettingsButtonStyle}" Tag="{x:Static services:SettingsPageKey.Application}" CommandParameter="Memory.Title" Click="OpenSettings_Click" />
                         </components:SettingsRow>
                     </StackPanel>
                 </components:SettingsGroup>

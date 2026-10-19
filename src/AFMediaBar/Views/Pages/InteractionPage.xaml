@@ -21,35 +21,40 @@
         <DataTemplate x:Key="AudioDevicePermissionTemplate">
             <Border Padding="16,12" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource AfSettingsBorderBrush}">
                 <StackPanel>
-                    <Grid><Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                        <StackPanel><TextBlock Text="{Binding DisplayName}" TextWrapping="Wrap" FontSize="14" />
-                            <TextBlock Text="{Binding StateText}" Style="{StaticResource AfSettingsHintTextStyle}" />
+                    <Grid><Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                        <StackPanel Margin="0,0,12,0" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding DisplayName}" TextWrapping="Wrap" FontSize="14" ToolTip="{Binding SystemName}" />
+                            <TextBlock Text="{Binding SummaryText}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,4,0,0" />
                         </StackPanel>
-                        <CheckBox Grid.Column="1" Content="{DynamicResource Loc.Audio.Settings.Allow}" AutomationProperties.Name="{Binding DisplayName}" IsChecked="{Binding IsAllowed, Mode=TwoWay}" />
+                        <CheckBox Grid.Column="1" Content="{DynamicResource Loc.Device.Favorite}" IsChecked="{Binding IsFavorite, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,16,0" Visibility="{Binding IsPersonalizationEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
+                        <CheckBox Grid.Column="2" Content="{DynamicResource Loc.Audio.Settings.Allow}" AutomationProperties.Name="{Binding DisplayName}" IsChecked="{Binding IsAllowed, Mode=TwoWay}" VerticalAlignment="Center" />
                     </Grid>
-                    <TextBlock Text="{Binding BatteryText}" Visibility="{Binding HasBattery, Converter={StaticResource AfBooleanToVisibilityConverter}}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,4,0,0" />
-                    <StackPanel Visibility="{Binding IsHotkeysEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}" Margin="0,8,0,0">
-                        <TextBlock Text="{DynamicResource Loc.Device.Hotkey.Direct}" Style="{StaticResource AfSettingsHintTextStyle}" />
-                        <TextBox Text="{Binding Hotkey, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" MaxLength="80" AutomationProperties.Name="{DynamicResource Loc.Device.Hotkey.Direct}" />
-                        <TextBlock Text="{Binding HotkeyStatus}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" />
-                    </StackPanel>
-                    <StackPanel Visibility="{Binding IsPersonalizationEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}" Margin="0,8,0,0">
-                        <TextBlock Text="{DynamicResource Loc.Device.Alias}" Style="{StaticResource AfSettingsHintTextStyle}" />
-                        <TextBox Text="{Binding Alias, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="{DynamicResource Loc.Device.Alias}" MaxLength="120" />
-                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                            <CheckBox Content="{DynamicResource Loc.Device.Favorite}" IsChecked="{Binding IsFavorite, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,12,0" />
-                            <ui:Button Content="{DynamicResource Loc.Device.MoveUp}" Command="{Binding MoveUpCommand}" Style="{StaticResource AfSettingsButtonStyle}" />
-                            <ui:Button Content="{DynamicResource Loc.Device.MoveDown}" Command="{Binding MoveDownCommand}" Style="{StaticResource AfSettingsButtonStyle}" Margin="8,0,0,0" />
-                        </StackPanel>
-                        <StackPanel Visibility="{Binding IsOffline, Converter={StaticResource AfBooleanToVisibilityConverter}}" Margin="0,8,0,0">
-                            <TextBlock Text="{DynamicResource Loc.Device.RebindHint}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" />
-                            <ComboBox ItemsSource="{Binding Replacements}" SelectedItem="{Binding Replacement}" DisplayMemberPath="DisplayName" AutomationProperties.Name="{DynamicResource Loc.Device.Rebind}" />
-                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                                <ui:Button Content="{DynamicResource Loc.Device.Rebind}" Command="{Binding RebindCommand}" Style="{StaticResource AfSettingsButtonStyle}" />
-                                <ui:Button Content="{DynamicResource Loc.Device.Forget}" Command="{Binding ForgetCommand}" Style="{StaticResource AfSettingsButtonStyle}" Margin="8,0,0,0" />
+                    <Expander Header="{DynamicResource Loc.Device.Edit}" Margin="0,8,0,0" Visibility="{Binding HasDetails, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                        <StackPanel>
+                            <components:SettingsRow Title="{DynamicResource Loc.Device.Alias}" Visibility="{Binding IsPersonalizationEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                                <TextBox Text="{Binding Alias, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="{DynamicResource Loc.Device.Alias}" MaxLength="120" MinWidth="180" MaxWidth="280" />
+                            </components:SettingsRow>
+                            <components:SettingsRow Title="{DynamicResource Loc.Device.Hotkey.Direct}" Visibility="{Binding IsHotkeysEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                                <components:HotkeyRecorder Hotkey="{Binding Hotkey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsRecording="{Binding IsRecording, Mode=TwoWay}" AutomationProperties.Name="{DynamicResource Loc.Device.Hotkey.Direct}" MinWidth="180" MaxWidth="280" ToolTip="{DynamicResource Loc.Device.Hotkey.RecordHint}" />
+                            </components:SettingsRow>
+                            <TextBlock Text="{Binding HotkeyStatus}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="16,0" Visibility="{Binding IsHotkeysEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
+                            <components:SettingsRow Title="{DynamicResource Loc.Device.Order}" Visibility="{Binding IsPersonalizationEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                                <StackPanel Orientation="Horizontal"><ui:Button Content="{DynamicResource Loc.Device.MoveUp}" Command="{Binding MoveUpCommand}" Style="{StaticResource AfSettingsButtonStyle}" />
+                                    <ui:Button Content="{DynamicResource Loc.Device.MoveDown}" Command="{Binding MoveDownCommand}" Style="{StaticResource AfSettingsButtonStyle}" Margin="8,0,0,0" /></StackPanel>
+                            </components:SettingsRow>
+                            <TextBlock Text="{Binding BatteryText}" Visibility="{Binding HasBattery, Converter={StaticResource AfBooleanToVisibilityConverter}}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="16,8" />
+                            <StackPanel Visibility="{Binding IsOffline, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                                <StackPanel Visibility="{Binding IsPersonalizationEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                                    <TextBlock Text="{DynamicResource Loc.Device.RebindHint}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="16,8" />
+                                    <components:SettingsRow Title="{DynamicResource Loc.Device.Rebind}"><ComboBox ItemsSource="{Binding Replacements}" SelectedItem="{Binding Replacement}" DisplayMemberPath="DisplayName" MinWidth="180" MaxWidth="280" AutomationProperties.Name="{DynamicResource Loc.Device.Rebind}" /></components:SettingsRow>
+                                    <StackPanel Orientation="Horizontal" Margin="16,8">
+                                        <ui:Button Content="{DynamicResource Loc.Device.Rebind}" Command="{Binding RebindCommand}" Style="{StaticResource AfSettingsButtonStyle}" />
+                                        <ui:Button Content="{DynamicResource Loc.Device.Forget}" Command="{Binding ForgetCommand}" Style="{StaticResource AfSettingsButtonStyle}" Margin="8,0,0,0" />
+                                    </StackPanel>
+                                </StackPanel>
                             </StackPanel>
                         </StackPanel>
-                    </StackPanel>
+                    </Expander>
                 </StackPanel>
             </Border>
         </DataTemplate>
@@ -290,9 +295,9 @@
                         </StackPanel>
                         <StackPanel Visibility="{Binding ViewModel.AudioDevices.IsHotkeysEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}" Margin="0,0,0,12">
                             <TextBlock Text="{DynamicResource Loc.Device.Hotkey.Hint}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" />
-                            <components:SettingsRow Title="{DynamicResource Loc.Device.Hotkey.CycleOutput}"><TextBox Text="{Binding ViewModel.AudioDevices.OutputCycleHotkey, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" MinWidth="180" MaxLength="80" AutomationProperties.Name="{DynamicResource Loc.Device.Hotkey.CycleOutput}" /></components:SettingsRow>
+                            <components:SettingsRow Title="{DynamicResource Loc.Device.Hotkey.CycleOutput}"><components:HotkeyRecorder Hotkey="{Binding ViewModel.AudioDevices.OutputCycleHotkey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsRecording="{Binding ViewModel.AudioDevices.IsRecordingOutputCycle, Mode=TwoWay}" MinWidth="180" MaxWidth="280" AutomationProperties.Name="{DynamicResource Loc.Device.Hotkey.CycleOutput}" ToolTip="{DynamicResource Loc.Device.Hotkey.RecordHint}" /></components:SettingsRow>
                             <TextBlock Text="{Binding ViewModel.AudioDevices.OutputCycleStatus}" Style="{StaticResource AfSettingsHintTextStyle}" />
-                            <components:SettingsRow Title="{DynamicResource Loc.Device.Hotkey.CycleInput}"><TextBox Text="{Binding ViewModel.AudioDevices.InputCycleHotkey, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" MinWidth="180" MaxLength="80" AutomationProperties.Name="{DynamicResource Loc.Device.Hotkey.CycleInput}" /></components:SettingsRow>
+                            <components:SettingsRow Title="{DynamicResource Loc.Device.Hotkey.CycleInput}"><components:HotkeyRecorder Hotkey="{Binding ViewModel.AudioDevices.InputCycleHotkey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsRecording="{Binding ViewModel.AudioDevices.IsRecordingInputCycle, Mode=TwoWay}" MinWidth="180" MaxWidth="280" AutomationProperties.Name="{DynamicResource Loc.Device.Hotkey.CycleInput}" ToolTip="{DynamicResource Loc.Device.Hotkey.RecordHint}" /></components:SettingsRow>
                             <TextBlock Text="{Binding ViewModel.AudioDevices.InputCycleStatus}" Style="{StaticResource AfSettingsHintTextStyle}" />
                         </StackPanel>
                         <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Speaker224}">

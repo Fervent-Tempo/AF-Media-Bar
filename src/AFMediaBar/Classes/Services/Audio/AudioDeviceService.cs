@@ -107,7 +107,7 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
     {
         try
         {
-            return device.Properties.TryGetValue<Guid>(new PropertyKey(new Guid("8C7ED206-3F8A-4827-B3AB-AE9E1FAEFC6C"), 2), out var id) && id != Guid.Empty ? id : null;
+            return device.Properties.TryGetValue<Guid>(new PropertyKey(new Guid("8C7ED206-3F8A-4827-B3AB-AE9E1FAEFC6C"), 2), out var id) ? AudioDeviceIdentity.PhysicalContainer(id) : null;
         }
         catch (COMException) { return null; }
     }

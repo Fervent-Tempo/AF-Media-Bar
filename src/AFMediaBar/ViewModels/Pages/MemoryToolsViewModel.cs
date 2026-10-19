@@ -24,6 +24,16 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
     public string SystemResultText => _systemResult is not { } result ? string.Empty :
         Translations.Get("Memory.System." + result.Status) + (result.Before is not null && result.After is not null ? "\n" +
         Translations.Format("Memory.System.Readings", FormatBytes((double?)result.Before), FormatBytes((double?)result.After)) : string.Empty);
+    public bool IsLegacyTrimVisible => !IsEnabled;
+    public bool HasResult => _lastOutcome is not null;
+    public bool HasSystemResult => _systemResult is not null;
+    public string WorkingSetText => FormatBytes(_snapshot?.Process?.WorkingSetBytes);
+    public string PrivateCommitText => FormatBytes(_snapshot?.Process?.PrivateBytes);
+    public string ManagedHeapText => FormatBytes(_snapshot?.Process?.ManagedHeapBytes);
+    public string HandlesText => _snapshot?.Process?.HandleCount.ToString() ?? Translations.Get("Memory.Unavailable");
+    public string ThreadsText => _snapshot?.Process?.ThreadCount.ToString() ?? Translations.Get("Memory.Unavailable");
+    public string AvailableMemoryText => FormatBytes((double?)_snapshot?.AvailableBytes);
+    public string SampleTimeText => _snapshot?.At.ToLocalTime().ToString("T", CultureInfo.CurrentCulture) ?? Translations.Get("Memory.Unavailable");
     public bool IsEnabled => SettingsManager.Current.Experiments.MemoryTools;
     public bool IsBusy { get => _isBusy; private set { if (SetProperty(ref _isBusy, value)) OnPropertyChanged(nameof(CanRun)); } }
     public bool CanRun => !IsBusy;
@@ -76,14 +86,23 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
                 var snapshot = await Task.Run(_metrics.Capture, source.Token);
                 if (source.IsCancellationRequested || _disposed || !ReferenceEquals(_sampling, source)) return;
                 _snapshot = snapshot;
-                OnPropertyChanged(nameof(MetricsText));
+                RefreshMetrics();
                 OnPropertyChanged(nameof(ResultText));
                 await Task.Delay(TimeSpan.FromSeconds(2), source.Token);
             } while (!source.IsCancellationRequested);
         }
         catch (OperationCanceledException) { }
-        catch (Exception) { if (!_disposed && ReferenceEquals(_sampling, source)) { _snapshot = null; OnPropertyChanged(nameof(MetricsText)); } }
+        catch (Exception) { if (!_disposed && ReferenceEquals(_sampling, source)) { _snapshot = null; RefreshMetrics(); } }
         finally { if (ReferenceEquals(_sampling, source)) _sampling = null; source.Dispose(); }
+    }
+
+    private void RefreshMetrics()
+    {
+        OnPropertyChanged(nameof(MetricsText));
+        OnPropertyChanged(nameof(WorkingSetText)); OnPropertyChanged(nameof(PrivateCommitText));
+        OnPropertyChanged(nameof(ManagedHeapText)); OnPropertyChanged(nameof(HandlesText));
+        OnPropertyChanged(nameof(ThreadsText)); OnPropertyChanged(nameof(AvailableMemoryText));
+        OnPropertyChanged(nameof(SampleTimeText));
     }
 
     [RelayCommand]
@@ -98,6 +117,7 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
             if (_disposed || !_visible || source != _sampling || !IsSystemCleanupEnabled) return;
             _systemResult = result;
             OnPropertyChanged(nameof(SystemResultText));
+            OnPropertyChanged(nameof(HasSystemResult));
         }
         finally { if (!_disposed) IsBusy = false; }
     }
@@ -119,6 +139,7 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
             _lastOutcome = outcome;
             _lastTrimAt = DateTimeOffset.Now;
             OnPropertyChanged(nameof(ResultText));
+            OnPropertyChanged(nameof(HasResult));
         }
         finally { if (!_disposed) IsBusy = false; }
     }
@@ -127,6 +148,7 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
     {
         if (_disposed || args.PropertyName is not (null or nameof(AppSettings.Experiments))) return;
         OnPropertyChanged(nameof(IsEnabled));
+        OnPropertyChanged(nameof(IsLegacyTrimVisible));
         OnPropertyChanged(nameof(IsSystemCleanupEnabled));
         RestartSampling();
     }

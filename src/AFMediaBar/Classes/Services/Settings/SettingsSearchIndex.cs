@@ -60,6 +60,7 @@ public static class SettingsSearchIndex
     /// <summary>搜索唯一设置页面；未开启实验的专属选项不加入结果。</summary>
     public static IReadOnlyList<SettingsSearchEntry> ForContext(SettingsContext context) => Entries.Where(entry =>
         SettingsPageCatalog.Find(entry.Page, context.Mode) is not null &&
+        (entry.Page != SettingsPageKey.Application || entry.GroupId != "Memory.Title" || AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.MemoryTools) &&
         (entry.GroupId != "Audio.Settings.Title" || AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.NewAudioControl) &&
         (entry.Page != SettingsPageKey.ScreenAndPlacement || entry.GroupId == "Common.Group.ChooseDisplayMode" ||
             entry.GroupId == "Common.Group.ScreenAndPlacement" && context.Mode == SettingsMode.Taskbar ||
@@ -322,6 +323,11 @@ public static class SettingsSearchIndex
             "Search.Application.Diagnostics.Description",
             language,
             ["开发者", "開發者", "developer", "test tools", "debug", "nhà phát triển", "日志", "log", "logs", "诊断", "diagnostics", "报错", "崩溃", "crash", "上报", "报告", "排查", "打开文件夹", "导出", "内存", "memory", "ram", "占用", "压缩", "释放", "工作集"]),
+
+        Create(SettingsPageKey.Application, "Memory.Title", "Memory.ToolsDescription", language,
+            ["内存", "記憶體", "memory", "ram", "温和", "深度", "工作集", "托管堆", "待机页", "缓存清理"]),
+        Create(SettingsPageKey.Experimental, "Memory.Title", "Memory.ToolsDescription", language,
+            ["内存工具", "memory tools", "系统清理", "温和回收", "深度回收"]),
 
         // ---- 关于 / About ----
         Create(

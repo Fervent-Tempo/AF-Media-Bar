@@ -3019,7 +3019,7 @@ Managed heap {6} → {7} · {8} ms · {9}</value></data>
   <data name="Device.Rebind" xml:space="preserve"><value>Rebind</value></data>
   <data name="Device.RebindHint" xml:space="preserve"><value>Choose a replacement endpoint. This transfers the saved preferences and replaces its AF configuration. Names are never matched automatically.</value></data>
   <data name="Device.Hotkey.Title" xml:space="preserve"><value>Device switching hotkeys</value></data>
-  <data name="Device.Hotkey.Hint" xml:space="preserve"><value>Switches system defaults only. Example: Ctrl+Alt+F8; blank disables. Requires Ctrl or Alt; Win and F12 are unavailable. Cycling follows favorite order and skips unavailable devices.</value></data>
+  <data name="Device.Hotkey.Hint" xml:space="preserve"><value>Switches system defaults only. Click a recorder and press a shortcut with Ctrl or Alt; Win and F12 are unavailable. Cycling follows favorite order and skips unavailable devices.</value></data>
   <data name="Device.Hotkey.Direct" xml:space="preserve"><value>Direct hotkey</value></data>
   <data name="Device.Hotkey.CycleOutput" xml:space="preserve"><value>Cycle favorite outputs</value></data>
   <data name="Device.Hotkey.CycleInput" xml:space="preserve"><value>Cycle favorite inputs</value></data>
@@ -3042,4 +3042,26 @@ Source: {2}</value></data>
   <data name="Battery.BleGatt" xml:space="preserve"><value>Standard BLE battery service</value></data>
   <data name="Battery.LowTitle" xml:space="preserve"><value>Headphone battery low</value></data>
   <data name="Battery.LowBody" xml:space="preserve"><value>{0} battery is at {1}%.</value></data>
+  <data name="Memory.ToolsDescription" xml:space="preserve"><value>Inspect and reclaim AF memory. System cache cleanup is a separate action.</value></data>
+  <data name="Memory.Self.Title" xml:space="preserve"><value>Reclaim AF memory</value></data>
+  <data name="Memory.Gentle.Description" xml:space="preserve"><value>Collect unused objects while keeping resident pages to reduce stalls on later use.</value></data>
+  <data name="Memory.Deep.Description" xml:space="preserve"><value>Collect unused objects and try to return AF physical memory. Later use may briefly stall.</value></data>
+  <data name="Memory.Metrics.Title" xml:space="preserve"><value>View memory counters</value></data>
+  <data name="Memory.WorkingSet" xml:space="preserve"><value>AF working set</value></data>
+  <data name="Memory.PrivateCommit" xml:space="preserve"><value>AF private commit</value></data>
+  <data name="Memory.ManagedHeap" xml:space="preserve"><value>AF managed heap</value></data>
+  <data name="Memory.Handles" xml:space="preserve"><value>Handles</value></data>
+  <data name="Memory.Threads" xml:space="preserve"><value>Threads</value></data>
+  <data name="Memory.Available" xml:space="preserve"><value>System available physical memory</value></data>
+  <data name="Memory.SampleTime" xml:space="preserve"><value>Sample time</value></data>
+  <data name="Memory.LastResult" xml:space="preserve"><value>Last AF reclaim result</value></data>
+  <data name="Memory.System.Scope" xml:space="preserve"><value>Affects Windows caches separately from AF reclaim. Requires elevation when run.</value></data>
+  <data name="Memory.System.Run" xml:space="preserve"><value>Clean…</value></data>
+  <data name="Battery.NoReading" xml:space="preserve"><value>Battery reading unavailable</value></data>
+  <data name="Device.Default" xml:space="preserve"><value>Current default</value></data>
+  <data name="Device.Edit" xml:space="preserve"><value>Edit device settings</value></data>
+  <data name="Device.Order" xml:space="preserve"><value>Display order</value></data>
+  <data name="Device.Hotkey.Record" xml:space="preserve"><value>Click and press a shortcut</value></data>
+  <data name="Device.Hotkey.Recording" xml:space="preserve"><value>Press a shortcut…</value></data>
+  <data name="Device.Hotkey.RecordHint" xml:space="preserve"><value>Press a shortcut with Ctrl or Alt. Esc cancels, Backspace or Delete clears, Tab leaves.</value></data>
 </root>
