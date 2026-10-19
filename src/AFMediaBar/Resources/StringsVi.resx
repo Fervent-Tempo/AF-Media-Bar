@@ -1676,7 +1676,7 @@
     <value>Thêm vào khởi chạy nhanh</value>
   </data>
   <data name="Media.SourceList.AddToQuickLaunch.ToolTip" xml:space="preserve">
-    <value>Chỉ có thể thêm trình phát có phương thức khởi chạy phát hiện được; dùng Duyệt cho ứng dụng khác.</value>
+    <value>Thêm nguồn này; nếu không tìm được cách khởi chạy, hãy chọn ứng dụng hoặc lối tắt tương ứng.</value>
   </data>
   <data name="Media.SourceList.Allow" xml:space="preserve">
     <value>Cho phép</value>

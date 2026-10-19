@@ -36,7 +36,7 @@ public sealed class MediaSourceActivationService
         }
 
         var executablePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var processName in _processResolver.ResolveProcessNames(sourceId))
+        foreach (var processName in ResolveActivationProcessNames(sourceId))
         {
             foreach (var process in Process.GetProcessesByName(processName))
             {
@@ -104,7 +104,7 @@ public sealed class MediaSourceActivationService
         if (sourceId.Contains('!'))
             return new MediaSourceDescriptor(sourceId, displayName, QuickLaunchTargetKind.AppUserModelId, sourceId);
 
-        foreach (var processName in _processResolver.ResolveProcessNames(sourceId))
+        foreach (var processName in ResolveActivationProcessNames(sourceId))
         {
             foreach (var process in Process.GetProcessesByName(processName))
             {
@@ -165,7 +165,7 @@ public sealed class MediaSourceActivationService
 
     private bool TryActivateRunning(string sourceId)
     {
-        foreach (var processName in _processResolver.ResolveProcessNames(sourceId))
+        foreach (var processName in ResolveActivationProcessNames(sourceId))
         {
             foreach (var process in Process.GetProcessesByName(processName))
             {
@@ -187,6 +187,17 @@ public sealed class MediaSourceActivationService
             }
         }
         return false;
+    }
+
+    private IEnumerable<string> ResolveActivationProcessNames(string sourceId)
+    {
+        var names = _processResolver.ResolveProcessNames(sourceId);
+        // 桌面应用也可用不带 .exe 的进程名注册 SMTC；只补充精确名称，不猜测相似应用。
+        if (!string.IsNullOrWhiteSpace(sourceId) && !sourceId.Contains('!') &&
+            sourceId.IndexOfAny(Path.GetInvalidFileNameChars()) < 0 &&
+            !sourceId.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            return names.Append(sourceId).Distinct(StringComparer.OrdinalIgnoreCase);
+        return names;
     }
 
 }

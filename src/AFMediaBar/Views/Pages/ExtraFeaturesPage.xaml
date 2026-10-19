@@ -105,10 +105,8 @@
                                                     IsChecked="{Binding IsAllowed, Mode=TwoWay}" />
                                                 <ui:Button
                                                     Margin="12,0,0,0"
-                                                    Command="{Binding DataContext.ViewModel.AddDetectedSourceCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                    CommandParameter="{Binding}"
+                                                    Click="AddDetectedSource_Click"
                                                     Content="{DynamicResource Loc.Media.SourceList.AddToQuickLaunch}"
-                                                    IsEnabled="{Binding Descriptor.CanQuickLaunch}"
                                                     Style="{StaticResource AfSettingsButtonStyle}"
                                                     ToolTip="{DynamicResource Loc.Media.SourceList.AddToQuickLaunch.ToolTip}"
                                                     ToolTipService.ShowOnDisabled="True" />

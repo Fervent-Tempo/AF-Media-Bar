@@ -1700,7 +1700,7 @@
     <value>加入快速启动</value>
   </data>
   <data name="Media.SourceList.AddToQuickLaunch.ToolTip" xml:space="preserve">
-    <value>只能添加可自动找到启动方式的播放器；其他程序请用“浏览程序或快捷方式”。</value>
+    <value>添加此来源；无法自动找到启动方式时，选择对应程序或快捷方式。</value>
   </data>
   <data name="Media.SourceList.Allow" xml:space="preserve">
     <value>允许</value>

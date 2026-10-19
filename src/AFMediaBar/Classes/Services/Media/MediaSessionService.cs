@@ -36,6 +36,9 @@ public sealed class MediaSessionService : IDisposable
     private readonly object _publishGate = new();
     private IReadOnlyList<MediaSessionOption> _lastSessionOptions = Array.Empty<MediaSessionOption>();
     private IReadOnlyList<MediaSourceDescriptor> _lastDiscoveredSources = Array.Empty<MediaSourceDescriptor>();
+    private string[] _discoverySourceIds = [];
+    private int _discoveryRevision;
+    private bool _discoveryInFlight;
     private MediaSnapshot _sessionSnapshot = MediaSnapshot.Disconnected;
     private readonly Dictionary<IMediaSourceProvider, MediaSnapshot?> _sourceSnapshots = new();
     private MediaSnapshot _lastSnapshot = MediaSnapshot.Disconnected;
@@ -681,14 +684,42 @@ public sealed class MediaSessionService : IDisposable
 
     private void PublishDiscoveredSources(IReadOnlyList<MediaSession> sessions)
     {
-        var sources = _sources.DiscoverSourceIds(sessions.Select(MediaSessionGuard.GetSourceId))
-            .Select(_sourceActivator.Describe)
-            .OrderBy(source => source.DisplayName, StringComparer.CurrentCultureIgnoreCase)
-            .ToArray();
-        if (sources.SequenceEqual(_lastDiscoveredSources))
-            return;
-        _lastDiscoveredSources = sources;
-        DiscoveredSourcesChanged?.Invoke(sources);
+        var sourceIds = _sources.DiscoverSourceIds(sessions.Select(MediaSessionGuard.GetSourceId))
+            .Order(StringComparer.OrdinalIgnoreCase).ToArray();
+        if (!sourceIds.SequenceEqual(_discoverySourceIds, StringComparer.OrdinalIgnoreCase))
+        {
+            _discoverySourceIds = sourceIds;
+            _discoveryRevision++;
+        }
+        if (!_discoveryInFlight)
+            _ = PublishDiscoveredSourcesAsync(_discoverySourceIds, _discoveryRevision);
+    }
+
+    private async Task PublishDiscoveredSourcesAsync(string[] sourceIds, int revision)
+    {
+        _discoveryInFlight = true;
+        try
+        {
+            // 启动路径解析会读取进程；与媒体快照分开在后台执行，同一时刻只保留一次解析。
+            var sources = await Task.Run(() => sourceIds.TakeWhile(_ => !_isDisposed)
+                .Select(_sourceActivator.Describe)
+                .OrderBy(source => source.DisplayName, StringComparer.CurrentCultureIgnoreCase)
+                .ToArray());
+            if (_isDisposed || revision != _discoveryRevision || sources.SequenceEqual(_lastDiscoveredSources))
+                return;
+            _lastDiscoveredSources = sources;
+            DiscoveredSourcesChanged?.Invoke(sources);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[MediaSessionService] Failed to resolve source launch paths: {ex}");
+        }
+        finally
+        {
+            _discoveryInFlight = false;
+            if (!_isDisposed && revision != _discoveryRevision)
+                _ = PublishDiscoveredSourcesAsync(_discoverySourceIds, _discoveryRevision);
+        }
     }
 
     private void Publish(MediaSnapshot snapshot)

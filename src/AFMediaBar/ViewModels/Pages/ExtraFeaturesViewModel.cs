@@ -181,7 +181,7 @@ public partial class ExtraFeaturesViewModel : ObservableObject
     [RelayCommand]
     private void MoveQuickLaunchDown(QuickLaunchEntry? entry) => Move(entry, 1);
 
-    public void AddQuickLaunchFile(string path)
+    public void AddQuickLaunchFile(string path, MediaSourceDescriptor? source = null)
     {
         var extension = Path.GetExtension(path);
         var kind = string.Equals(extension, ".exe", StringComparison.OrdinalIgnoreCase)
@@ -194,7 +194,8 @@ public partial class ExtraFeaturesViewModel : ObservableObject
             SetStatus("Media.Status.OnlyExistingFiles");
             return;
         }
-        AddQuickLaunch(new QuickLaunchEntry(Guid.NewGuid().ToString("N"), Path.GetFileNameWithoutExtension(path), kind.Value, Path.GetFullPath(path)));
+        AddQuickLaunch(new QuickLaunchEntry(Guid.NewGuid().ToString("N"),
+            source?.DisplayName ?? Path.GetFileNameWithoutExtension(path), kind.Value, Path.GetFullPath(path), source?.SourceId));
     }
 
     public void ResetExtraFeatures() => SettingsManager.ResetExtraFeatures();

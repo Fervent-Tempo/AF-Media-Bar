@@ -1700,7 +1700,7 @@
     <value>Add to quick launch</value>
   </data>
   <data name="Media.SourceList.AddToQuickLaunch.ToolTip" xml:space="preserve">
-    <value>Only players with a detectable launch method can be added here; use Browse for other apps.</value>
+    <value>Add this source; if its launch method cannot be detected, select its application or shortcut.</value>
   </data>
   <data name="Media.SourceList.Allow" xml:space="preserve">
     <value>Allow</value>

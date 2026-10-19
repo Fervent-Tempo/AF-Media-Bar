@@ -1,4 +1,5 @@
 using AFMediaBar.Classes.Utils;
+using AFMediaBar.Classes.Models;
 using AFMediaBar.Resources;
 using AFMediaBar.ViewModels.Pages;
 using Wpf.Ui.Abstractions.Controls;
@@ -23,6 +24,19 @@ public partial class ExtraFeaturesPage : INavigableView<ExtraFeaturesViewModel>
         SettingsRevealAnimator.Play(sender as System.Windows.Controls.Panel);
 
     private void BrowseQuickLaunch_Click(object sender, System.Windows.RoutedEventArgs e)
+        => BrowseQuickLaunch(null);
+
+    private void AddDetectedSource_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        if (sender is not System.Windows.FrameworkElement { DataContext: MediaSourceSettingItem item })
+            return;
+        if (item.Descriptor.CanQuickLaunch)
+            ViewModel.AddDetectedSourceCommand.Execute(item);
+        else
+            BrowseQuickLaunch(item.Descriptor);
+    }
+
+    private void BrowseQuickLaunch(MediaSourceDescriptor? source)
     {
         // 对话框在打开的这一刻取文案：它是系统窗口，不会跟随 XAML 的动态资源刷新，因此每次点击都重新取一次。
         // The dialog reads its text at the moment it opens: it is a system window that does not follow the XAML dynamic
@@ -35,7 +49,7 @@ public partial class ExtraFeaturesPage : INavigableView<ExtraFeaturesViewModel>
             CheckFileExists = true
         };
         if (dialog.ShowDialog() == true)
-            ViewModel.AddQuickLaunchFile(dialog.FileName);
+            ViewModel.AddQuickLaunchFile(dialog.FileName, source);
     }
 
     private async void ResetButton_Click(object sender, System.Windows.RoutedEventArgs e)
