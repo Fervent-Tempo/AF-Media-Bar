@@ -6,6 +6,7 @@ namespace AFMediaBar.Classes.Settings;
 /// <summary>端点失联后仍保留的展示偏好。</summary>
 public sealed record AudioDevicePreference(AudioDeviceDirection Direction, string EndpointId, string LastKnownName)
 {
+    public string Hotkey { get; init; } = string.Empty;
     public string Alias { get; init; } = string.Empty;
     public bool IsFavorite { get; init; }
 }

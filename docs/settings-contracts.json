@@ -4,6 +4,7 @@
   "settingsSchemaVersion": 2,
   "settings": {
     "experiments": {
+      "deviceHotkeys": "unreleased",
       "devicePersonalization": "unreleased",
       "memoryTools": "unreleased",
       "systemMemoryCleanup": "unreleased",
@@ -240,7 +241,9 @@
     },
     "windowMode": "v1.2.0",
     "audioDevices": {
-      "preferences": { "$release": "unreleased", "$items": { "direction": "unreleased", "endpointId": "unreleased", "lastKnownName": "unreleased", "alias": "unreleased", "isFavorite": "unreleased" } },
+      "preferences": { "$release": "unreleased", "$items": { "direction": "unreleased", "endpointId": "unreleased", "lastKnownName": "unreleased", "alias": "unreleased", "isFavorite": "unreleased", "hotkey": "unreleased" } },
+      "outputCycleHotkey": "unreleased",
+      "inputCycleHotkey": "unreleased",
       "$release": "unreleased",
       "outputBlacklist": {
         "$release": "unreleased",

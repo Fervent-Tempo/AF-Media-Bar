@@ -14,6 +14,8 @@ public sealed record AudioDeviceSettings
 {
     public IReadOnlyList<AudioDeviceExclusion> OutputBlacklist { get; init; } = [];
     public IReadOnlyList<AudioDeviceExclusion> InputBlacklist { get; init; } = [];
+    public string OutputCycleHotkey { get; init; } = string.Empty;
+    public string InputCycleHotkey { get; init; } = string.Empty;
     public IReadOnlyList<AudioDevicePreference> Preferences { get; init; } = [];
     public AudioDevicePreference? FindPreference(AudioDeviceDirection direction, string id) => Preferences.FirstOrDefault(entry =>
         entry.Direction == direction && entry.EndpointId.Equals(id, StringComparison.OrdinalIgnoreCase));
@@ -27,9 +29,11 @@ public sealed record AudioDeviceSettings
 
     public AudioDeviceSettings Normalize() => this with
     {
+        OutputCycleHotkey = (OutputCycleHotkey ?? string.Empty).Trim(),
+        InputCycleHotkey = (InputCycleHotkey ?? string.Empty).Trim(),
         Preferences = (Preferences ?? []).Where(entry => entry is not null && Enum.IsDefined(entry.Direction) && !string.IsNullOrWhiteSpace(entry.EndpointId))
             .Select(entry => entry with { EndpointId = entry.EndpointId.Trim(), LastKnownName = entry.LastKnownName ?? string.Empty,
-                Alias = (entry.Alias ?? string.Empty).Trim() }).DistinctBy(entry => $"{entry.Direction}:{entry.EndpointId}", StringComparer.OrdinalIgnoreCase).ToArray(),
+                Hotkey = (entry.Hotkey ?? string.Empty).Trim(), Alias = (entry.Alias ?? string.Empty).Trim() }).DistinctBy(entry => $"{entry.Direction}:{entry.EndpointId}", StringComparer.OrdinalIgnoreCase).ToArray(),
         OutputBlacklist = NormalizeList(OutputBlacklist),
         InputBlacklist = NormalizeList(InputBlacklist)
     };

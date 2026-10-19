@@ -171,6 +171,8 @@ namespace AFMediaBar
                 services.AddSingleton<ForegroundAudioApplicationService>();
                 services.AddSingleton<IForegroundAudioApplicationResolver>(sp => sp.GetRequiredService<ForegroundAudioApplicationService>());
                 services.AddSingleton<IAudioDeviceSwitchOperations, AudioDeviceSwitchOperations>();
+                services.AddSingleton<AFMediaBar.Classes.Services.Input.AudioDeviceHotkeyService>();
+                services.AddHostedService(sp => sp.GetRequiredService<AFMediaBar.Classes.Services.Input.AudioDeviceHotkeyService>());
                 services.AddSingleton<AudioDeviceSwitchCoordinator>();
                 services.AddHostedService(sp => sp.GetRequiredService<AudioDeviceSwitchCoordinator>());
                 services.AddSingleton<AudioInteractionService>();

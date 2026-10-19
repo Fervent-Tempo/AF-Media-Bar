@@ -3018,4 +3018,15 @@ Managed heap {6} → {7} · {8} ms · {9}</value></data>
   <data name="Device.Forget" xml:space="preserve"><value>Forget missing device</value></data>
   <data name="Device.Rebind" xml:space="preserve"><value>Rebind</value></data>
   <data name="Device.RebindHint" xml:space="preserve"><value>Choose a replacement endpoint. This transfers the saved preferences and replaces its AF configuration. Names are never matched automatically.</value></data>
+  <data name="Device.Hotkey.Title" xml:space="preserve"><value>Device switching hotkeys</value></data>
+  <data name="Device.Hotkey.Hint" xml:space="preserve"><value>Switches system defaults only. Example: Ctrl+Alt+F8; blank disables. Requires Ctrl or Alt; Win and F12 are unavailable. Cycling follows favorite order and skips unavailable devices.</value></data>
+  <data name="Device.Hotkey.Direct" xml:space="preserve"><value>Direct hotkey</value></data>
+  <data name="Device.Hotkey.CycleOutput" xml:space="preserve"><value>Cycle favorite outputs</value></data>
+  <data name="Device.Hotkey.CycleInput" xml:space="preserve"><value>Cycle favorite inputs</value></data>
+  <data name="Device.Hotkey.Invalid" xml:space="preserve"><value>Invalid key combination</value></data>
+  <data name="Device.Hotkey.Duplicate" xml:space="preserve"><value>Duplicates another AF hotkey; not registered</value></data>
+  <data name="Device.Hotkey.Conflict" xml:space="preserve"><value>Key combination is occupied or rejected; not registered</value></data>
+  <data name="Device.Hotkey.Registered" xml:space="preserve"><value>Registered</value></data>
+  <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>No available target; check favorites, hidden devices and connections</value></data>
+  <data name="Device.Hotkey.Failed" xml:space="preserve"><value>Device switch did not complete</value></data>
 </root>

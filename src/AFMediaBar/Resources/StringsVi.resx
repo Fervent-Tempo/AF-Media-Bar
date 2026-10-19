@@ -3056,4 +3056,15 @@ Heap được quản lý {6} → {7} · {8} ms · {9}</value></data>
   <data name="Device.Forget" xml:space="preserve"><value>Xóa cấu hình thiết bị mất kết nối</value></data>
   <data name="Device.Rebind" xml:space="preserve"><value>Liên kết lại</value></data>
   <data name="Device.RebindHint" xml:space="preserve"><value>Chọn điểm cuối thay thế. Cấu hình này sẽ chuyển sang và thay thế cấu hình AF của đích. Không tự ghép theo tên.</value></data>
+  <data name="Device.Hotkey.Title" xml:space="preserve"><value>Phím tắt chuyển thiết bị</value></data>
+  <data name="Device.Hotkey.Hint" xml:space="preserve"><value>Chỉ đổi thiết bị mặc định hệ thống. Ví dụ Ctrl+Alt+F8; để trống để tắt. Cần Ctrl hoặc Alt; không hỗ trợ Win và F12. Luân phiên theo thứ tự yêu thích, bỏ qua thiết bị không khả dụng.</value></data>
+  <data name="Device.Hotkey.Direct" xml:space="preserve"><value>Phím tắt trực tiếp</value></data>
+  <data name="Device.Hotkey.CycleOutput" xml:space="preserve"><value>Luân phiên đầu ra yêu thích</value></data>
+  <data name="Device.Hotkey.CycleInput" xml:space="preserve"><value>Luân phiên đầu vào yêu thích</value></data>
+  <data name="Device.Hotkey.Invalid" xml:space="preserve"><value>Tổ hợp phím không hợp lệ</value></data>
+  <data name="Device.Hotkey.Duplicate" xml:space="preserve"><value>Trùng phím tắt AF khác; chưa đăng ký</value></data>
+  <data name="Device.Hotkey.Conflict" xml:space="preserve"><value>Phím đã bị chiếm hoặc hệ thống từ chối; chưa đăng ký</value></data>
+  <data name="Device.Hotkey.Registered" xml:space="preserve"><value>Đã đăng ký</value></data>
+  <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>Không có đích khả dụng; kiểm tra yêu thích, danh sách ẩn và kết nối</value></data>
+  <data name="Device.Hotkey.Failed" xml:space="preserve"><value>Chuyển thiết bị chưa hoàn tất</value></data>
 </root>

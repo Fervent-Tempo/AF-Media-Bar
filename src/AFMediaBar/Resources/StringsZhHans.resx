@@ -3018,4 +3018,15 @@
   <data name="Device.Forget" xml:space="preserve"><value>删除失联配置</value></data>
   <data name="Device.Rebind" xml:space="preserve"><value>重新关联</value></data>
   <data name="Device.RebindHint" xml:space="preserve"><value>手动选择替代端点，将本条配置转移并替换目标端点的 AF 配置。不会按名称自动关联。</value></data>
+  <data name="Device.Hotkey.Title" xml:space="preserve"><value>设备切换快捷键</value></data>
+  <data name="Device.Hotkey.Hint" xml:space="preserve"><value>仅切换系统默认设备。输入如 Ctrl+Alt+F8，留空不注册；需含 Ctrl 或 Alt，不支持 Win 与 F12。循环按收藏顺序并跳过不可用设备。</value></data>
+  <data name="Device.Hotkey.Direct" xml:space="preserve"><value>直达快捷键</value></data>
+  <data name="Device.Hotkey.CycleOutput" xml:space="preserve"><value>循环收藏的输出设备</value></data>
+  <data name="Device.Hotkey.CycleInput" xml:space="preserve"><value>循环收藏的输入设备</value></data>
+  <data name="Device.Hotkey.Invalid" xml:space="preserve"><value>组合键格式无效</value></data>
+  <data name="Device.Hotkey.Duplicate" xml:space="preserve"><value>与 AF 的其他快捷键重复，未注册</value></data>
+  <data name="Device.Hotkey.Conflict" xml:space="preserve"><value>组合键被占用或系统拒绝，未注册</value></data>
+  <data name="Device.Hotkey.Registered" xml:space="preserve"><value>已注册</value></data>
+  <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>没有可用目标，请检查收藏、黑名单或连接状态</value></data>
+  <data name="Device.Hotkey.Failed" xml:space="preserve"><value>设备切换未完成</value></data>
 </root>

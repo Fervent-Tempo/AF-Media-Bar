@@ -3018,4 +3018,15 @@
   <data name="Device.Forget" xml:space="preserve"><value>刪除失聯設定</value></data>
   <data name="Device.Rebind" xml:space="preserve"><value>重新關聯</value></data>
   <data name="Device.RebindHint" xml:space="preserve"><value>手動選擇替代端點，將此設定轉移並取代目標端點的 AF 設定。不會依名稱自動關聯。</value></data>
+  <data name="Device.Hotkey.Title" xml:space="preserve"><value>裝置切換快速鍵</value></data>
+  <data name="Device.Hotkey.Hint" xml:space="preserve"><value>僅切換系統預設裝置。輸入如 Ctrl+Alt+F8，留空不註冊；須含 Ctrl 或 Alt，不支援 Win 與 F12。循環依收藏順序並略過無法使用的裝置。</value></data>
+  <data name="Device.Hotkey.Direct" xml:space="preserve"><value>直達快速鍵</value></data>
+  <data name="Device.Hotkey.CycleOutput" xml:space="preserve"><value>循環收藏的輸出裝置</value></data>
+  <data name="Device.Hotkey.CycleInput" xml:space="preserve"><value>循環收藏的輸入裝置</value></data>
+  <data name="Device.Hotkey.Invalid" xml:space="preserve"><value>組合鍵格式無效</value></data>
+  <data name="Device.Hotkey.Duplicate" xml:space="preserve"><value>與 AF 的其他快速鍵重複，未註冊</value></data>
+  <data name="Device.Hotkey.Conflict" xml:space="preserve"><value>組合鍵被占用或系統拒絕，未註冊</value></data>
+  <data name="Device.Hotkey.Registered" xml:space="preserve"><value>已註冊</value></data>
+  <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>沒有可用目標，請檢查收藏、黑名單或連線狀態</value></data>
+  <data name="Device.Hotkey.Failed" xml:space="preserve"><value>裝置切換未完成</value></data>
 </root>

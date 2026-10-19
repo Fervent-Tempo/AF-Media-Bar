@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services.Audio;
+using AFMediaBar.Classes.Services.Input;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Resources;
 
@@ -11,10 +12,30 @@ namespace AFMediaBar.ViewModels.Pages;
 /// <summary>输入/输出黑名单和通信角色的全局设置编辑器。</summary>
 public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
 {
+    private readonly AudioDeviceHotkeyService? _hotkeys;
     private readonly IAudioDeviceCatalog _devices;
     private readonly ISettingsConfiguration _configuration;
     private bool _disposed;
     private IReadOnlyList<AudioDeviceOption> _allDevices = [];
+    public bool IsHotkeysEnabled => _configuration.Current.Experiments.NewAudioControl && _configuration.Current.Experiments.DeviceHotkeys;
+    public string OutputCycleHotkey { get => _configuration.Current.AudioDevices.OutputCycleHotkey; set => SetCycleHotkey(AudioDeviceDirection.Output, value); }
+    public string InputCycleHotkey { get => _configuration.Current.AudioDevices.InputCycleHotkey; set => SetCycleHotkey(AudioDeviceDirection.Input, value); }
+    public string OutputCycleStatus => _hotkeys?.GetStatus(AudioDeviceDirection.Output, null) ?? string.Empty;
+    public string InputCycleStatus => _hotkeys?.GetStatus(AudioDeviceDirection.Input, null) ?? string.Empty;
+    internal string HotkeyStatus(AudioDeviceOption device) => _hotkeys?.GetStatus(device.Direction, device.PolicyId) ?? string.Empty;
+    private void SetCycleHotkey(AudioDeviceDirection direction, string value)
+    {
+        if (_disposed || !_configuration.IsActive || !IsHotkeysEnabled) return;
+        var settings = _configuration.Current.AudioDevices;
+        _configuration.SetAudioDeviceSettings(direction == AudioDeviceDirection.Output ? settings with { OutputCycleHotkey = value } : settings with { InputCycleHotkey = value });
+        OnHotkeysChanged(null, EventArgs.Empty);
+    }
+    private void OnHotkeysChanged(object? sender, EventArgs args)
+    {
+        if (_disposed) return;
+        OnPropertyChanged(nameof(OutputCycleStatus)); OnPropertyChanged(nameof(InputCycleStatus));
+        foreach (var row in OutputDevices.Concat(InputDevices).Concat(OtherOutputDevices).Concat(OtherInputDevices)) row.RefreshHotkeyStatus();
+    }
     public bool IsPersonalizationEnabled => _configuration.Current.Experiments.NewAudioControl && _configuration.Current.Experiments.DevicePersonalization;
     private int _version;
     public ObservableCollection<AudioDevicePermissionItemViewModel> OutputDevices { get; } = [];
@@ -33,8 +54,10 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
         get => _configuration.Current.AudioDevices.SwitchInputCommunications;
         set => _configuration.SetAudioDeviceSettings(_configuration.Current.AudioDevices with { SwitchInputCommunications = value });
     }
-    public AudioDeviceSettingsViewModel(IAudioDeviceCatalog devices, ISettingsConfiguration configuration)
+    public AudioDeviceSettingsViewModel(IAudioDeviceCatalog devices, ISettingsConfiguration configuration, AudioDeviceHotkeyService? hotkeys = null)
     {
+        _hotkeys = hotkeys;
+        if (_hotkeys is not null) _hotkeys.Changed += OnHotkeysChanged;
         _devices = devices;
         _configuration = configuration;
         devices.Changed += OnDevicesChanged;
@@ -52,7 +75,7 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
             if (_disposed || token.IsCancellationRequested || !_configuration.IsActive || version != _version) return;
             _allDevices = output.Concat(input).ToArray();
             var settings = _configuration.Current.AudioDevices;
-            if (IsPersonalizationEnabled)
+            if (IsPersonalizationEnabled || IsHotkeysEnabled)
             {
                 var preferences = settings.Preferences.ToList();
                 foreach (var device in _allDevices)
@@ -112,7 +135,7 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
         !item.PolicyId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase)).ToArray();
     internal void UpdatePreference(AudioDeviceOption device, Func<AudioDevicePreference, AudioDevicePreference> update)
     {
-        if (_disposed || !_configuration.IsActive || !IsPersonalizationEnabled) return;
+        if (_disposed || !_configuration.IsActive || (!IsPersonalizationEnabled && !IsHotkeysEnabled)) return;
         var settings = _configuration.Current.AudioDevices;
         var preferences = settings.Preferences.ToList();
         var index = preferences.FindIndex(entry => entry.Direction == device.Direction && entry.EndpointId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase));
@@ -167,6 +190,7 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
         if (_disposed) return;
         _disposed = true;
         _version++;
+        if (_hotkeys is not null) _hotkeys.Changed -= OnHotkeysChanged;
         _devices.Changed -= OnDevicesChanged;
         _configuration.Activated -= OnActivated;
     }
@@ -176,6 +200,10 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
 public sealed partial class AudioDevicePermissionItemViewModel(AudioDeviceOption device, bool allowed, Action<bool> changed, AudioDeviceSettingsViewModel owner) : ObservableObject
 {
     public bool IsPersonalizationEnabled => owner.IsPersonalizationEnabled;
+    public bool IsHotkeysEnabled => owner.IsHotkeysEnabled;
+    public string Hotkey { get => owner.Preference(device).Hotkey; set { owner.UpdatePreference(device, entry => entry with { Hotkey = value }); OnPropertyChanged(); OnPropertyChanged(nameof(HotkeyStatus)); } }
+    public string HotkeyStatus => owner.HotkeyStatus(device);
+    internal void RefreshHotkeyStatus() => OnPropertyChanged(nameof(HotkeyStatus));
     public bool IsOffline => !device.IsActive;
     public string Alias { get => owner.Preference(device).Alias; set { owner.UpdatePreference(device, entry => entry with { Alias = value }); OnPropertyChanged(); } }
     public bool IsFavorite { get => owner.Preference(device).IsFavorite; set { owner.UpdatePreference(device, entry => entry with { IsFavorite = value }); OnPropertyChanged(); } }
