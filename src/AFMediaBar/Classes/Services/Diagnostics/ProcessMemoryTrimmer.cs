@@ -108,12 +108,13 @@ public sealed class ProcessMemoryTrimmer
     {
         try
         {
+            using var snapshot = Process.GetCurrentProcess();
             return new ProcessMemoryCounters(
-                _process.WorkingSet64,
-                _process.PrivateMemorySize64,
+                snapshot.WorkingSet64,
+                snapshot.PrivateMemorySize64,
                 GC.GetTotalMemory(forceFullCollection: false),
-                _process.HandleCount,
-                _process.Threads.Count);
+                snapshot.HandleCount,
+                snapshot.Threads.Count);
         }
         catch (Exception ex)
         {

@@ -177,51 +177,49 @@ public sealed class MemoryPruneCoordinator : IDisposable
     /// <returns>本次请求是否被接受（被节流或已在回收中时为 false）。/ Whether the request was accepted; false while throttled or already reclaiming.</returns>
     public bool RequestTrim(MemoryTrimTrigger trigger)
     {
-        if (_disposed)
-        {
-            return false;
-        }
-
-        var now = DateTime.UtcNow;
-        lock (_trimGate)
-        {
-            if (Interlocked.CompareExchange(ref _trimInProgress, 1, 0) != 0)
-            {
-                return false;
-            }
-
-            if (!MemoryTrimPolicy.ShouldTrim(trigger, _lastTrimUtc, now))
-            {
-                Interlocked.Exchange(ref _trimInProgress, 0);
-                return false;
-            }
-
-            _lastTrimUtc = now;
-        }
-
-        var strength = MemoryTrimPolicy.ResolveStrength(trigger);
-        _ = Task.Run(() =>
-        {
-            try
-            {
-                var result = _trimmer.TrimWorkingSet(strength);
-                WriteTrimLog(trigger, result);
-            }
-            catch (Exception ex)
-            {
-                // 按需回收只是"顺手省一点"，它失败绝不能让关窗路径或用户点击抛出。
-                // An on-demand reclaim only saves a little on the side, so its failure must never escape into a window-close path or a user click.
-                if (!_disposed)
-                    _log?.Warn("Prune", $"按需回收失败({trigger}): {ex.Message}");
-            }
-            finally
-            {
-                Interlocked.Exchange(ref _trimInProgress, 0);
-            }
-        });
-
+        if (!TryBeginTrim(trigger)) return false;
+        _ = ExecuteTrimAsync(trigger, MemoryTrimPolicy.ResolveStrength(trigger));
         return true;
     }
+
+    /// <summary>手动请求共用重入保护；开始回收后取消令牌不再中断原生操作或 GC。</summary>
+    public Task<MemoryTrimOutcome> RequestTrimAsync(MemoryTrimStrength strength, CancellationToken token = default)
+    {
+        if (!Enum.IsDefined(strength)) return Task.FromResult(new MemoryTrimOutcome(MemoryTrimStatus.Unavailable, strength));
+        if (token.IsCancellationRequested) return Task.FromResult(new MemoryTrimOutcome(MemoryTrimStatus.Cancelled, strength));
+        if (_disposed) return Task.FromResult(new MemoryTrimOutcome(MemoryTrimStatus.Unavailable, strength));
+        if (!TryBeginTrim(MemoryTrimTrigger.ManualRequest)) return Task.FromResult(new MemoryTrimOutcome(MemoryTrimStatus.Busy, strength));
+        return ExecuteTrimAsync(MemoryTrimTrigger.ManualRequest, strength);
+    }
+
+    private bool TryBeginTrim(MemoryTrimTrigger trigger)
+    {
+        lock (_trimGate)
+        {
+            if (_disposed || _trimInProgress != 0 || !MemoryTrimPolicy.ShouldTrim(trigger, _lastTrimUtc, DateTime.UtcNow)) return false;
+            _trimInProgress = 1;
+            _lastTrimUtc = DateTime.UtcNow;
+            return true;
+        }
+    }
+
+    private Task<MemoryTrimOutcome> ExecuteTrimAsync(MemoryTrimTrigger trigger, MemoryTrimStrength strength) => Task.Run(() =>
+    {
+        var elapsed = Stopwatch.StartNew();
+        try
+        {
+            if (_disposed) return new MemoryTrimOutcome(MemoryTrimStatus.Unavailable, strength);
+            var result = _trimmer.TrimWorkingSet(strength);
+            WriteTrimLog(trigger, result);
+            return new MemoryTrimOutcome(MemoryTrimStatus.Completed, strength, result, elapsed.Elapsed);
+        }
+        catch (Exception exception)
+        {
+            if (!_disposed) _log?.Warn("Prune", $"按需回收失败({trigger}): {exception.Message}");
+            return new MemoryTrimOutcome(MemoryTrimStatus.Failed, strength, Elapsed: elapsed.Elapsed, Error: exception.Message);
+        }
+        finally { lock (_trimGate) _trimInProgress = 0; }
+    });
 
     private void WriteTrimLog(MemoryTrimTrigger trigger, WorkingSetTrimResult result)
     {

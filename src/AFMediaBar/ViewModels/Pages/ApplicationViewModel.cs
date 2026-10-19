@@ -23,6 +23,7 @@ namespace AFMediaBar.ViewModels.Pages
     /// </summary>
     public partial class ApplicationViewModel : ObservableObject
     {
+        public MemoryToolsViewModel MemoryTools { get; }
         private readonly UpdateService _updateService;
         private readonly SettingsPersistenceService _settingsPersistence;
         private readonly StartupRegistrationService _startupRegistration;
@@ -104,8 +105,10 @@ namespace AFMediaBar.ViewModels.Pages
             SettingsPersistenceService settingsPersistence,
             StartupRegistrationService startupRegistration,
             LocalizationService localization,
-            IDeveloperModeService developerMode)
+            IDeveloperModeService developerMode,
+            MemoryToolsViewModel memoryTools)
         {
+            MemoryTools = memoryTools;
             _developerMode = developerMode;
             _developerMode.EnabledChanged += (_, _) => OnPropertyChanged(nameof(DeveloperModeEnabled));
             _updateService = updateService;

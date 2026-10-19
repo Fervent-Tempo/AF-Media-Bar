@@ -4,6 +4,7 @@
   "settingsSchemaVersion": 2,
   "settings": {
     "experiments": {
+      "memoryTools": "unreleased",
       "floatingBar": "unreleased",
       "newAudioControl": "unreleased",
       "externalFullPanelHandle": "unreleased",

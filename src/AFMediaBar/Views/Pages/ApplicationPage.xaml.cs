@@ -25,7 +25,6 @@ namespace AFMediaBar.Views.Pages
 
         private readonly SettingsPersistenceService _persistence;
         private readonly AppLogService _log;
-        private readonly MemoryPruneCoordinator _pruneCoordinator;
         /// <summary>Bubbles a semantic navigation request to the owning settings window.</summary>
         public static readonly RoutedEvent OpenHighlightsEvent = EventManager.RegisterRoutedEvent(nameof(OpenHighlights), RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(ApplicationPage));
         /// <summary>Requests the common highlights destination without retaining a global navigation control.</summary>
@@ -42,16 +41,16 @@ namespace AFMediaBar.Views.Pages
         public ApplicationPage(
             ApplicationViewModel viewModel,
             SettingsPersistenceService persistence,
-            AppLogService log,
-            MemoryPruneCoordinator pruneCoordinator)
+            AppLogService log)
         {
             ViewModel = viewModel;
             _persistence = persistence;
             _log = log;
-            _pruneCoordinator = pruneCoordinator;
             DataContext = this;
 
             InitializeComponent();
+            Loaded += (_, _) => ViewModel.MemoryTools.SetVisible(true);
+            Unloaded += (_, _) => ViewModel.MemoryTools.SetVisible(false);
         }
 
         /// <summary>页面首次加载时执行入场揭示。/ Reveals the page on first load.</summary>
@@ -64,18 +63,8 @@ namespace AFMediaBar.Views.Pages
         /// <summary>打开日志目录：日志只有一个文件，出问题时用户把这一份发出来即可。/ Opens the log directory; the log is one file and that one file is what the user sends when something breaks.</summary>
         private void OpenLogFolder_Click(object sender, RoutedEventArgs e) => _log.OpenFolder();
 
-        /// <summary>
-        /// 手动把工作集交还给系统。
-        /// Returns the working set to the system on request.
-        ///
-        /// 这里刻意不做任何反馈动画或提示：回收在后台线程执行，而且它只改变"物理内存占用"这一个读数，提交量不变——按钮旁边的说明已经把
-        /// 这一点写清楚了，再补一个"已完成"的气泡只会让人以为释放了更多东西。
-        /// No feedback animation or toast is shown on purpose: the reclaim runs on a background thread and only changes one reading — physical memory in
-        /// use — while the commit size stays the same, which the description next to the button already says, and a "done" balloon would only suggest
-        /// that more had been released.
-        /// </summary>
-        private void TrimMemory_Click(object sender, RoutedEventArgs e) =>
-            _pruneCoordinator.RequestTrim(MemoryTrimTrigger.ManualRequest);
+        private async void TrimMemory_Click(object sender, RoutedEventArgs e) =>
+            await ViewModel.MemoryTools.DeepCommand.ExecuteAsync(null);
 
         private async void ResetAllButton_Click(object sender, RoutedEventArgs e)
         {

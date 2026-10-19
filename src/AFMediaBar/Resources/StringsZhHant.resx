@@ -2979,4 +2979,22 @@
   <data name="Experimental.FullPanel.AutoHide" xml:space="preserve">
     <value>工作列自動收起時，滑鼠所在的橫槓會暫時保留；移開後隱藏。僅對工作列模式生效。</value>
   </data>
+  <data name="Memory.Title" xml:space="preserve"><value>記憶體工具</value></data>
+  <data name="Memory.Open" xml:space="preserve"><value>開啟記憶體工具</value></data>
+  <data name="Memory.Unavailable" xml:space="preserve"><value>無法使用</value></data>
+  <data name="Memory.Gentle" xml:space="preserve"><value>溫和回收</value></data>
+  <data name="Memory.Deep" xml:space="preserve"><value>深度回收</value></data>
+  <data name="Memory.Metrics" xml:space="preserve"><value>工作集 {0} · 私有認可 {1} · 受控堆積 {2}
+控制代碼 {3} · 執行緒 {4} · 系統可用 {5}
+取樣時間 {6}</value></data>
+  <data name="Memory.Explanation" xml:space="preserve"><value>工作集、私有認可和受控堆積不能相加。深度回收可能增加後續分頁錯誤；讀數下降不代表修復洩漏。</value></data>
+  <data name="Memory.Result" xml:space="preserve"><value>{0} · {1}
+工作集 {2} → {3} · 私有認可 {4} → {5}
+受控堆積 {6} → {7} · {8} ms · {9}</value></data>
+  <data name="Memory.WorkingSetReturned" xml:space="preserve"><value>已要求交還工作集</value></data>
+  <data name="Memory.WorkingSetNotReturned" xml:space="preserve"><value>未交還工作集</value></data>
+  <data name="Memory.Status.Busy" xml:space="preserve"><value>已有回收正在執行</value></data>
+  <data name="Memory.Status.Cancelled" xml:space="preserve"><value>開始前已取消</value></data>
+  <data name="Memory.Status.Unavailable" xml:space="preserve"><value>目前無法回收</value></data>
+  <data name="Memory.Status.Failed" xml:space="preserve"><value>回收失敗，請查看記錄</value></data>
 </root>

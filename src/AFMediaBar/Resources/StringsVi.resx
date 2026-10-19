@@ -3017,4 +3017,22 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   <data name="Experimental.FullPanel.AutoHide" xml:space="preserve">
     <value>Khi thanh tác vụ tự ẩn, thanh mở vẫn hiện nếu con trỏ ở trên đó và ẩn khi con trỏ rời đi. Chỉ áp dụng cho chế độ thanh tác vụ.</value>
   </data>
+  <data name="Memory.Title" xml:space="preserve"><value>Công cụ bộ nhớ</value></data>
+  <data name="Memory.Open" xml:space="preserve"><value>Mở công cụ bộ nhớ</value></data>
+  <data name="Memory.Unavailable" xml:space="preserve"><value>Không khả dụng</value></data>
+  <data name="Memory.Gentle" xml:space="preserve"><value>Thu hồi nhẹ</value></data>
+  <data name="Memory.Deep" xml:space="preserve"><value>Thu hồi sâu</value></data>
+  <data name="Memory.Metrics" xml:space="preserve"><value>Tập làm việc {0} · Cam kết riêng {1} · Heap được quản lý {2}
+Handle {3} · Luồng {4} · Hệ thống còn {5}
+Lấy mẫu lúc {6}</value></data>
+  <data name="Memory.Explanation" xml:space="preserve"><value>Các chỉ số có phần trùng nhau, không cộng lại. Thu hồi sâu có thể tăng lỗi trang sau đó; số liệu giảm không chứng minh đã sửa rò rỉ.</value></data>
+  <data name="Memory.Result" xml:space="preserve"><value>{0} · {1}
+Tập làm việc {2} → {3} · Cam kết riêng {4} → {5}
+Heap được quản lý {6} → {7} · {8} ms · {9}</value></data>
+  <data name="Memory.WorkingSetReturned" xml:space="preserve"><value>Đã trả tập làm việc</value></data>
+  <data name="Memory.WorkingSetNotReturned" xml:space="preserve"><value>Chưa trả tập làm việc</value></data>
+  <data name="Memory.Status.Busy" xml:space="preserve"><value>Đang thu hồi bộ nhớ</value></data>
+  <data name="Memory.Status.Cancelled" xml:space="preserve"><value>Đã hủy trước khi bắt đầu</value></data>
+  <data name="Memory.Status.Unavailable" xml:space="preserve"><value>Không thể thu hồi lúc này</value></data>
+  <data name="Memory.Status.Failed" xml:space="preserve"><value>Thu hồi thất bại; xem nhật ký</value></data>
 </root>

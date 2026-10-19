@@ -20,6 +20,11 @@ public sealed class ExperimentalViewModel : ObservableObject, IDisposable
         SettingsManager.SettingsChanged += OnSettingsChanged;
     }
 
+    public bool MemoryTools
+    {
+        get => SettingsManager.Current.Experiments.MemoryTools;
+        set => _configuration.SetExperiments(SettingsManager.Current.Experiments with { MemoryTools = value });
+    }
     public bool NewAudioControl
     {
         get => SettingsManager.Current.Experiments.NewAudioControl;
@@ -56,6 +61,7 @@ public sealed class ExperimentalViewModel : ObservableObject, IDisposable
     {
         if (args.PropertyName is null or nameof(AppSettings.Experiments) or nameof(AppSettings.FloatingBar) or nameof(AppSettings.WindowMode))
         {
+            OnPropertyChanged(nameof(MemoryTools));
             OnPropertyChanged(nameof(NewAudioControl));
             OnPropertyChanged(nameof(VerticalTaskbar));
             OnPropertyChanged(nameof(FloatingBar));

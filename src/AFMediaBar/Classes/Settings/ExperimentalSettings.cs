@@ -6,6 +6,7 @@ namespace AFMediaBar.Classes.Settings;
 /// <summary>缺字段时保持关闭的实验项目。</summary>
 public sealed record ExperimentalSettings
 {
+    public bool MemoryTools { get; init; }
     public bool NewAudioControl { get; init; }
     public bool VerticalTaskbar { get; init; }
     public bool FloatingBar { get; init; }

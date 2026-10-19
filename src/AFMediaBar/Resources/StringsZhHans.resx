@@ -2979,4 +2979,22 @@
   <data name="Experimental.FullPanel.AutoHide" xml:space="preserve">
     <value>任务栏自动收起时，鼠标所在的横杠会暂时保留；移开后隐藏。仅对任务栏模式生效。</value>
   </data>
+  <data name="Memory.Title" xml:space="preserve"><value>内存工具</value></data>
+  <data name="Memory.Open" xml:space="preserve"><value>打开内存工具</value></data>
+  <data name="Memory.Unavailable" xml:space="preserve"><value>不可用</value></data>
+  <data name="Memory.Gentle" xml:space="preserve"><value>温和回收</value></data>
+  <data name="Memory.Deep" xml:space="preserve"><value>深度回收</value></data>
+  <data name="Memory.Metrics" xml:space="preserve"><value>工作集 {0} · 私有提交 {1} · 托管堆 {2}
+句柄 {3} · 线程 {4} · 系统可用 {5}
+采样时间 {6}</value></data>
+  <data name="Memory.Explanation" xml:space="preserve"><value>工作集、私有提交和托管堆不能相加。深度回收可能增加后续缺页；读数下降不代表修复泄漏。</value></data>
+  <data name="Memory.Result" xml:space="preserve"><value>{0} · {1}
+工作集 {2} → {3} · 私有提交 {4} → {5}
+托管堆 {6} → {7} · {8} ms · {9}</value></data>
+  <data name="Memory.WorkingSetReturned" xml:space="preserve"><value>已请求交还工作集</value></data>
+  <data name="Memory.WorkingSetNotReturned" xml:space="preserve"><value>未交还工作集</value></data>
+  <data name="Memory.Status.Busy" xml:space="preserve"><value>已有回收正在执行</value></data>
+  <data name="Memory.Status.Cancelled" xml:space="preserve"><value>开始前已取消</value></data>
+  <data name="Memory.Status.Unavailable" xml:space="preserve"><value>回收当前不可用</value></data>
+  <data name="Memory.Status.Failed" xml:space="preserve"><value>回收失败，请查看日志</value></data>
 </root>

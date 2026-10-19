@@ -16,6 +16,14 @@
             <StackPanel MaxWidth="{StaticResource AfSettingsContentMaxWidth}">
                 <components:SettingsCallout Text="{DynamicResource Loc.Experimental.Warning}" Symbol="Warning24"
                     IsAccent="True" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,16" />
+                <components:SettingsGroup GroupId="Memory.Title" Header="{DynamicResource Loc.Memory.Title}" Description="{DynamicResource Loc.Memory.Explanation}" Icon="{ui:SymbolIcon ArrowMinimize24}">
+                    <StackPanel>
+                        <components:SettingsRow Title="{DynamicResource Loc.Experimental.Enable}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.MemoryTools, Mode=TwoWay}" /></components:SettingsRow>
+                        <components:SettingsRow Title="{DynamicResource Loc.Memory.Open}" Visibility="{Binding ViewModel.MemoryTools, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                            <ui:Button Content="{DynamicResource Loc.Memory.Open}" Style="{StaticResource AfSettingsButtonStyle}" Tag="{x:Static services:SettingsPageKey.Application}" CommandParameter="Common.Group.Diagnostics" Click="OpenSettings_Click" />
+                        </components:SettingsRow>
+                    </StackPanel>
+                </components:SettingsGroup>
                 <components:SettingsGroup GroupId="Experimental.FullPanel.Title" Header="{DynamicResource Loc.Experimental.FullPanel.Title}"
                     Description="{DynamicResource Loc.Experimental.FullPanel.Description}" Icon="{ui:SymbolIcon Window24}">
                     <StackPanel>

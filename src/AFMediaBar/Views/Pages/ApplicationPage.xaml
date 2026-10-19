@@ -310,6 +310,15 @@
                                     Icon="{ui:SymbolIcon ArrowMinimize24}"
                                     Style="{StaticResource AfSettingsButtonStyle}" />
                             </components:SettingsRow>
+                            <StackPanel Visibility="{Binding ViewModel.MemoryTools.IsEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}" Margin="0,12,0,0">
+                                <TextBlock Text="{Binding ViewModel.MemoryTools.MetricsText}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" />
+                                <StackPanel Orientation="Horizontal" Margin="0,12,0,8" IsEnabled="{Binding ViewModel.MemoryTools.CanRun}">
+                                    <ui:Button Content="{DynamicResource Loc.Memory.Gentle}" Command="{Binding ViewModel.MemoryTools.GentleCommand}" Style="{StaticResource AfSettingsButtonStyle}" />
+                                    <ui:Button Content="{DynamicResource Loc.Memory.Deep}" Command="{Binding ViewModel.MemoryTools.DeepCommand}" Style="{StaticResource AfSettingsButtonStyle}" Margin="8,0,0,0" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding ViewModel.MemoryTools.ResultText}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" />
+                                <TextBlock Text="{DynamicResource Loc.Memory.Explanation}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,8,0,0" />
+                            </StackPanel>
                         </StackPanel>
                     </ui:CardExpander>
                 </components:SettingsGroup>

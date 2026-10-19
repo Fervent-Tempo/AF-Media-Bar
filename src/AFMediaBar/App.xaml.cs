@@ -100,6 +100,8 @@ namespace AFMediaBar
                 services.AddSingleton<IDeveloperModeService>(sp => sp.GetRequiredService<DeveloperModeService>());
                 services.AddSingleton<PowerStateMonitor>();
                 services.AddSingleton<ProcessMemoryTrimmer>();
+                services.AddSingleton<MemoryToolsService>();
+                services.AddSingleton<MemoryToolsViewModel>();
                 services.AddSingleton<MemoryPruneCoordinator>();
 
                 // === 核心服务层 Core Service Layer ===

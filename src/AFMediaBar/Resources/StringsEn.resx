@@ -2979,4 +2979,22 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Experimental.FullPanel.AutoHide" xml:space="preserve">
     <value>When the taskbar auto-hides, the handle stays while the pointer is over it and hides after the pointer leaves. Applies to taskbar mode only.</value>
   </data>
+  <data name="Memory.Title" xml:space="preserve"><value>Memory tools</value></data>
+  <data name="Memory.Open" xml:space="preserve"><value>Open memory tools</value></data>
+  <data name="Memory.Unavailable" xml:space="preserve"><value>Unavailable</value></data>
+  <data name="Memory.Gentle" xml:space="preserve"><value>Gentle reclaim</value></data>
+  <data name="Memory.Deep" xml:space="preserve"><value>Deep reclaim</value></data>
+  <data name="Memory.Metrics" xml:space="preserve"><value>Working set {0} · Private commit {1} · Managed heap {2}
+Handles {3} · Threads {4} · System available {5}
+Sampled at {6}</value></data>
+  <data name="Memory.Explanation" xml:space="preserve"><value>These counters overlap and must not be added. Deep reclaim may increase later page faults; a lower reading does not prove a leak is fixed.</value></data>
+  <data name="Memory.Result" xml:space="preserve"><value>{0} · {1}
+Working set {2} → {3} · Private commit {4} → {5}
+Managed heap {6} → {7} · {8} ms · {9}</value></data>
+  <data name="Memory.WorkingSetReturned" xml:space="preserve"><value>Working set return succeeded</value></data>
+  <data name="Memory.WorkingSetNotReturned" xml:space="preserve"><value>Working set was not returned</value></data>
+  <data name="Memory.Status.Busy" xml:space="preserve"><value>A reclaim is already running</value></data>
+  <data name="Memory.Status.Cancelled" xml:space="preserve"><value>Cancelled before starting</value></data>
+  <data name="Memory.Status.Unavailable" xml:space="preserve"><value>Reclaim is unavailable</value></data>
+  <data name="Memory.Status.Failed" xml:space="preserve"><value>Reclaim failed; see the log</value></data>
 </root>
