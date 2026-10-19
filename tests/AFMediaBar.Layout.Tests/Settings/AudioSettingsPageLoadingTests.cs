@@ -48,6 +48,13 @@ public sealed class AudioSettingsPageLoadingTests
                 {
                     Interaction = GlobalInteractionSettings.Default with { PrimaryWheelAction = WheelAction.InputDevice }
                 };
+                // Host 可在后台线程启动；实验关闭时也会发布初始状态，不能跨线程触碰呈现对象。
+                using var battery = new BluetoothBatteryService(new(), new(), null!, null!);
+                var batteryStatus = new TextBlock();
+                battery.Changed += (_, _) => batteryStatus.Text = "updated";
+                await Task.Run(() => battery.StartAsync(CancellationToken.None));
+                Assert.AreEqual("updated", batteryStatus.Text);
+                await battery.StopAsync(CancellationToken.None);
                 application.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ThemesDictionary());
                 application.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
                 foreach (var name in new[] { "MotionResources", "SettingsAppearanceResources", "SettingsDiagrams", "SettingsComponentResources" })

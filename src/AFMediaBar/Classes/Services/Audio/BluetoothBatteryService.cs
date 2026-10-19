@@ -1,4 +1,5 @@
 // 只追踪用户所选设备；服务拥有读取循环及设备观察器，停用后取消并阻止迟到发布。
+using System.Windows.Threading;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Settings;
@@ -36,6 +37,7 @@ public sealed class BluetoothBatteryService(BluetoothBatteryReader reader, Bluet
     private DateTimeOffset _lastReadAttempt;
     private bool _lowVisible;
     private bool _disposed;
+    private bool _started;
     public event EventHandler? Changed;
     public BluetoothBatterySnapshot? Snapshot => cache.Snapshot;
     public bool ShouldShowWidget
@@ -50,15 +52,20 @@ public sealed class BluetoothBatteryService(BluetoothBatteryReader reader, Bluet
     }
     public Task<IReadOnlyList<BluetoothBatteryDevice>> GetDevicesAsync(CancellationToken token = default) => reader.ListPairedAsync(token);
     public void RequestRefresh() => _session?.Wake();
-    public Task StartAsync(CancellationToken cancellationToken)
+    public Task StartAsync(CancellationToken cancellationToken) => Application.Current.Dispatcher.InvokeAsync(() =>
     {
+        if (_disposed || _started) return;
+        _started = true;
         SettingsManager.SettingsChanged += OnSettingsChanged;
         Reconfigure();
-        return Task.CompletedTask;
-    }
+    }, DispatcherPriority.Normal, cancellationToken).Task;
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args)
     {
-        if (args.PropertyName is null or nameof(AppSettings.Experiments) or nameof(AppSettings.BluetoothBatteryWidget)) Reconfigure();
+        if (_disposed || args.PropertyName is not (null or nameof(AppSettings.Experiments) or nameof(AppSettings.BluetoothBatteryWidget))) return;
+        // 初始状态和配置变更也会通知呈现订阅，与读取结果使用同一 UI 线程。
+        var dispatcher = Application.Current.Dispatcher;
+        if (dispatcher.CheckAccess()) Reconfigure();
+        else if (!dispatcher.HasShutdownStarted) dispatcher.BeginInvoke(Reconfigure);
     }
     private void Reconfigure()
     {
