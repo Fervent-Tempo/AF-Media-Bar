@@ -915,7 +915,8 @@ namespace AFMediaBar.Components
                 songArtist: SongArtist,
                 songTitleContainer: SongTitleContainer,
                 songArtistContainer: SongArtistContainer,
-                lyricsHost: SongLyricsPanel
+                lyricsHost: SongLyricsPanel,
+                canvasStroke: CanvasStroke
             );
 
             // 应用默认布局（任务栏横向）
@@ -1108,6 +1109,8 @@ namespace AFMediaBar.Components
                     immediate: true);
 
             var hoverGap = experience.HoverButtonSpacingDip;
+            var hoverLayerHeight = IsBarPresentation && !_isVertical
+                ? Math.Min(metrics.HoverLayerHeight, Math.Max(1, MainBorder.Height - 2)) : metrics.HoverLayerHeight;
             var visibleHoverItems = 0;
             foreach (FrameworkElement child in TaskbarHoverActions.Children)
             {
@@ -1120,8 +1123,8 @@ namespace AFMediaBar.Components
                 {
                     if (item is System.Windows.Controls.Button button)
                     {
-                        var availableButtonSize = UsesAdaptiveTaskbarText && !_isVertical
-                            ? Math.Min(metrics.ButtonSize, Math.Max(1, MainBorder.Height - 2)) : metrics.ButtonSize;
+                        var availableButtonSize = IsBarPresentation && !_isVertical
+                            ? Math.Min(metrics.ButtonSize, hoverLayerHeight) : metrics.ButtonSize;
                         button.Width = availableButtonSize;
                         button.Height = availableButtonSize;
                     }
@@ -1129,8 +1132,7 @@ namespace AFMediaBar.Components
                         item.Margin = new Thickness(visibleHoverItems++ == 0 ? 0 : hoverGap, 0, 0, 0);
                 }
             }
-            TaskbarHoverLayer.Height = UsesAdaptiveTaskbarText && !_isVertical
-                ? Math.Min(metrics.HoverLayerHeight, Math.Max(1, MainBorder.Height - 2)) : metrics.HoverLayerHeight;
+            TaskbarHoverLayer.Height = hoverLayerHeight;
             ApplyTaskbarSectionGeometry(_isVertical ? MainBorder.Height : MainBorder.Width);
             // 频谱被收起时把柱清空一次，免得下次显示时先闪出上一帧的高度；清空的时机放在几何之后，因为它决定频谱这次可不可见。
             // Clearing the bars once while the spectrum is collapsed keeps the next reveal from flashing the previous frame's heights; it happens
@@ -1288,14 +1290,17 @@ namespace AFMediaBar.Components
             var hoverHeight = Math.Max(
                 ResolveRestHoverHeight(),
                 ResolveSpectrumContentHeight(ResolveSpectrumPresentationSettings()) +
-                SpectrumPresentationPolicy.SurfacePaddingDip * 2);
-            if (UsesAdaptiveTaskbarText) hoverHeight = Math.Min(hoverHeight, Math.Max(1, MainBorder.Height - _textBudget.PaddingDip * 2));
+                RestWidgetVerticalInset(TaskbarSpectrumHoverSurface));
+            if (IsBarPresentation) hoverHeight = Math.Min(hoverHeight, Math.Max(1, MainBorder.Height - _textBudget.PaddingDip * 2));
             PlaceRestWidget(TaskbarSpectrumHoverSurface, layout.Find(TaskbarRestComponent.Spectrum), hoverHeight);
             PlaceRestWidget(TaskbarPerformanceHoverSurface, layout.Find(TaskbarRestComponent.Performance), hoverHeight);
             PlaceRestWidget(TaskbarBatterySurface, layout.Find(TaskbarRestComponent.BluetoothBattery), hoverHeight);
             PlaceRestWidget(TaskbarOutputDeviceHoverSurface, layout.Find(TaskbarRestComponent.OutputDevice), hoverHeight);
             PlaceRestWidget(TaskbarInputDeviceHoverSurface, layout.Find(TaskbarRestComponent.InputDevice), hoverHeight);
             PlaceRestWidget(TaskbarVolumeHoverSurface, layout.Find(TaskbarRestComponent.Volume), hoverHeight);
+            TaskbarPerformanceSurface.Height = Math.Min(24, Math.Max(1, hoverHeight - RestWidgetVerticalInset(TaskbarPerformanceHoverSurface)));
+            foreach (var surface in new[] { TaskbarOutputDeviceSurface, TaskbarInputDeviceSurface, TaskbarVolumeSurface })
+                surface.Height = Math.Min(metrics.ButtonSize, Math.Max(1, hoverHeight - RestWidgetVerticalInset(TaskbarOutputDeviceHoverSurface)));
 
             TaskbarRestProgress.Margin = new Thickness(
                 textLeft,
@@ -1476,6 +1481,9 @@ namespace AFMediaBar.Components
             surface.Height = hoverHeight;
             surface.Margin = new Thickness(value.Left, 0, 0, 0);
         }
+
+        private static double RestWidgetVerticalInset(Border surface) => surface.Padding.Top + surface.Padding.Bottom +
+            surface.BorderThickness.Top + surface.BorderThickness.Bottom;
 
         /// <summary>
         /// 第一个组件之前的留白：取自布局预设给封面写的左偏移（`LayoutComponentIds.Artwork` 的 `Bounds.X`）。

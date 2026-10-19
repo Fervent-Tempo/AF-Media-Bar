@@ -39,6 +39,7 @@ public sealed class LayoutRenderEngine
 
     // 组件引用 Component references
     private readonly Border? _artworkBorder;
+    private readonly Border _canvasStroke;
     private readonly StackPanel? _songInfoPanel;
     private readonly FontIcon? _artworkPlaceholder;
     private readonly TextBlock? _songTitle;
@@ -69,9 +70,11 @@ public sealed class LayoutRenderEngine
         TextBlock? songArtist = null,
         FrameworkElement? songTitleContainer = null,
         FrameworkElement? songArtistContainer = null,
-        FrameworkElement? lyricsHost = null)
+        FrameworkElement? lyricsHost = null,
+        Border? canvasStroke = null)
     {
         _mainBorder = mainBorder;
+        _canvasStroke = canvasStroke ?? mainBorder;
         _contentCanvas = contentCanvas;
         _backgroundImage = backgroundImage;
         _artworkBorder = artworkBorder;
@@ -142,6 +145,10 @@ public sealed class LayoutRenderEngine
         // 设置圆角
         // Set corner radius
         _mainBorder.CornerRadius = new CornerRadius(config.CornerRadius);
+        _canvasStroke.CornerRadius = _mainBorder.CornerRadius;
+        // 组件坐标以完整画布为基准；装饰边框独立绘制，不缩小内容区或移动原点。
+        if (!ReferenceEquals(_canvasStroke, _mainBorder))
+            _mainBorder.BorderThickness = new Thickness(0);
 
         // 设置背景颜色
         // Set background color
@@ -165,7 +172,7 @@ public sealed class LayoutRenderEngine
         }
         else
         {
-            _mainBorder.BorderThickness = new Thickness(0);
+            _canvasStroke.BorderThickness = new Thickness(0);
         }
     }
 
@@ -177,7 +184,7 @@ public sealed class LayoutRenderEngine
     {
         // 设置边框粗细
         // Set border thickness
-        _mainBorder.BorderThickness = border.TopOnly
+        _canvasStroke.BorderThickness = border.TopOnly
             ? new Thickness(0, border.Thickness, 0, 0)  // 仅顶部
             : new Thickness(border.Thickness);           // 四边
 
@@ -186,13 +193,13 @@ public sealed class LayoutRenderEngine
         try
         {
             var borderColor = (Color)ColorConverter.ConvertFromString(border.Color);
-            _mainBorder.BorderBrush = new SolidColorBrush(borderColor);
+            _canvasStroke.BorderBrush = new SolidColorBrush(borderColor);
         }
         catch
         {
             // 如果颜色格式无效，使用透明边框
             // If color format is invalid, use transparent border
-            _mainBorder.BorderBrush = Brushes.Transparent;
+            _canvasStroke.BorderBrush = Brushes.Transparent;
         }
     }
 

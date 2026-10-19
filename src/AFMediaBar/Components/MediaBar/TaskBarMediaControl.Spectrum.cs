@@ -62,8 +62,8 @@ public partial class TaskBarMediaControl
         var configured = SpectrumPresentationPolicy.ResolveContentHeightDip(settings);
         if (_isVertical)
             return Math.Min(configured, Math.Max(1, MainBorder.Width - 8));
-        return UsesAdaptiveTaskbarText
-            ? Math.Min(configured, Math.Max(1, MainBorder.Height - _textBudget.PaddingDip * 2 - SpectrumPresentationPolicy.SurfacePaddingDip * 2))
+        return IsBarPresentation
+            ? Math.Min(configured, Math.Max(1, MainBorder.Height - _textBudget.PaddingDip * 2 - RestWidgetVerticalInset(TaskbarSpectrumHoverSurface)))
             : configured;
     }
 

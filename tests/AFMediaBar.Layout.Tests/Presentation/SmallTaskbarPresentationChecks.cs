@@ -99,7 +99,38 @@ internal static class SmallTaskbarPresentationChecks
                 Assert.AreEqual(saved.LyricsSecondaryLine, SettingsManager.Current.LyricsSecondaryLine);
             }
             finally { control.DesiredSizeChanged -= OnSize; }
+            VerifyCenters(control);
         }
         finally { SettingsManager.Current = previous; control.ApplyPresentationSettings(null); }
+    }
+
+    private static void VerifyCenters(TaskBarMediaControl control)
+    {
+        SettingsManager.Current.LyricsEnabled = false;
+        SettingsManager.Current.TaskbarExperience = new()
+        {
+            SpectrumVisible = true, PerformanceVisible = true, OutputDeviceVisible = true, VolumeVisible = true
+        };
+        control.UpdateSongInfo(MediaSnapshot.Disconnected with { IsConnected = true, Title = "Alignment" });
+        var border = (FrameworkElement)control.FindName("MainBorder");
+        foreach (var mode in new[] { WindowMode.Taskbar, WindowMode.FloatingBar })
+        foreach (var orientation in new[] { LayoutOrientation.Horizontal, LayoutOrientation.Vertical })
+        foreach (var cross in orientation == LayoutOrientation.Horizontal ? new[] { 24d, 44d } : new[] { 32d, 64d })
+        {
+            control.ApplyLayout(mode, orientation, 100, 100, cross);
+            control.ApplyPrimaryLength(500);
+            control.Measure(new Size(orientation == LayoutOrientation.Horizontal ? 500 : cross,
+                orientation == LayoutOrientation.Horizontal ? cross : 500));
+            control.Arrange(new Rect(control.DesiredSize));
+            control.UpdateLayout();
+            foreach (var name in new[] { "SongImageBorder", "SongInfoStackPanel", "TaskbarSpectrum", "TaskbarPerformanceSurface", "TaskbarOutputDeviceSurface", "TaskbarVolumeSurface" })
+            {
+                var element = (FrameworkElement)control.FindName(name);
+                var center = element.TranslatePoint(new Point(element.ActualWidth / 2, element.ActualHeight / 2), border);
+                var actual = orientation == LayoutOrientation.Horizontal ? center.Y : center.X;
+                var expected = (orientation == LayoutOrientation.Horizontal ? border.ActualHeight : border.ActualWidth) / 2;
+                Assert.AreEqual(expected, actual, .75, $"{mode}/{orientation}/{cross}: {name} must share the cross-axis center.");
+            }
+        }
     }
 }

@@ -64,7 +64,7 @@ public partial class TaskBarMediaControl
             TaskbarDirectFullPanelHandle.VerticalAlignment = VerticalAlignment.Top;
             if (TaskbarDirectFullPanelHandle.Content is Border handle) { handle.Width = 28; handle.Height = 4; }
             HoverRevealHost.VerticalAlignment = VerticalAlignment.Center;
-            TaskbarHoverContent.Margin = new Thickness(5, 5, 6, 3);
+            TaskbarHoverContent.Margin = new Thickness(5, 0, 6, 0);
             TaskbarHoverActions.HorizontalAlignment = HorizontalAlignment.Left;
             TaskbarFullPanelHandle.Width = 44;
             TaskbarFullPanelHandle.Height = 8;

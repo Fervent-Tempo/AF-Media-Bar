@@ -49,7 +49,7 @@ public partial class TaskBarMediaControl
         {
             SongTitle.FontSize = Math.Max(1, _naturalTitleSize * budget.FontScale);
             SongArtist.FontSize = Math.Max(1, _naturalArtistSize * budget.FontScale);
-            if (UsesAdaptiveTaskbarText && !_restTransitionActive && !_restTransitionPreparing)
+            if (IsBarPresentation && !_restTransitionActive && !_restTransitionPreparing)
             {
                 var available = Math.Max(1, cross - budget.PaddingDip * 2);
                 Canvas.SetTop(SongInfoStackPanel, budget.PaddingDip);

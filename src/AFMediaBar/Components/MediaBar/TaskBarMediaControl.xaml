@@ -118,7 +118,8 @@
                     BorderThickness="1"
                     CornerRadius="6"
                     IsHitTestVisible="False" />
-            <Border Name="TopBorder" BorderThickness="0,1.25,0,0" CornerRadius="5" Margin="0,0,0,1.25">
+            <Border x:Name="CanvasStroke" IsHitTestVisible="False" />
+            <Border Name="TopBorder" BorderThickness="0,1.25,0,0" CornerRadius="5" IsHitTestVisible="False" />
                 <!-- 使用 Canvas 支持绝对定位，便于布局系统动态调整组件位置 -->
                 <!-- Use Canvas for absolute positioning, allowing layout system to dynamically adjust component positions -->
                 <Canvas Name="MainCanvas">
@@ -319,7 +320,6 @@
                             IsHitTestVisible="False" />
 
                 </Canvas>
-            </Border>
 
             <!-- 仅用于横向任务栏静置层；原始 Canvas 仍是唯一的封面和文字布局。 -->
             <!-- Horizontal-taskbar rest adorners; the original Canvas remains the sole artwork/text layout. -->
@@ -334,6 +334,7 @@
                          Visibility="Collapsed" />
             <!--
                 静置层的四个"小组件"（频谱、性能、输出设备、音量）都是同一种结构：外层悬停表面负责显隐、命中测试与 hover，
+                顶部高亮边框占 1.25 DIP，底部 Padding 补齐同样空间，使内层内容保持垂直居中。
                 内层承载真正的外观。位置由 ApplyTaskbarSectionGeometry 按用户在静置层顺序里排的位置写入 Margin.Left，
                 因此这里 MUST 用 Left 对齐：改成 Right 会把它们钉在右边缘，顺序就再也排不出来了。
                 The rest layer's four "widgets" (spectrum, performance, output device, volume) share one shape: an outer hover surface owns
@@ -346,7 +347,7 @@
                     Width="36"
                     Height="32"
                     Margin="0"
-                    Padding="1"
+                    Padding="1,1,1,2.25"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Center"
                     CornerRadius="5"
@@ -377,7 +378,7 @@
                     Width="76"
                     Height="32"
                     Margin="0"
-                    Padding="1"
+                    Padding="1,1,1,2.25"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Center"
                     CornerRadius="5"
@@ -420,7 +421,7 @@
                     Width="26"
                     Height="32"
                     Margin="0"
-                    Padding="1"
+                    Padding="1,1,1,2.25"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Center"
                     CornerRadius="5"
@@ -449,7 +450,7 @@
                     Width="26"
                     Height="32"
                     Margin="0"
-                    Padding="1"
+                    Padding="1,1,1,2.25"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Center"
                     CornerRadius="5"
@@ -478,7 +479,7 @@
                     Width="26"
                     Height="32"
                     Margin="0"
-                    Padding="1"
+                    Padding="1,1,1,2.25"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Center"
                     CornerRadius="5"
@@ -531,7 +532,7 @@
                         TextOptions.TextFormattingMode="Display"
                         ClipToBounds="True">
                     <Grid>
-                        <Grid x:Name="TaskbarHoverContent" Margin="5,5,6,3">
+                        <Grid x:Name="TaskbarHoverContent" Margin="5,0,6,0">
                             <StackPanel x:Name="TaskbarHoverActions"
                                         Orientation="Horizontal"
                                         HorizontalAlignment="Left"
