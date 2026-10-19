@@ -175,6 +175,49 @@ begin
   Result := CompareText(Command, ExpandConstant('{app}\{#MyAppExeName}')) = 0;
 end;
 
+procedure RemoveMemoryOptimizationAuthorization;
+var
+  Entries: TArrayOfString;
+  Index: Integer;
+  CharacterIndex: Integer;
+  ValidIdentity: Boolean;
+  Instance: String;
+  Origin: String;
+  OwnerSid: String;
+  Helper: String;
+  TemporaryHelper: String;
+  ExitCode: Integer;
+begin
+  if not RegGetSubkeyNames(HKCU64, 'Software\AFMediaBar\MemoryOptimizer', Entries) then
+    Exit;
+  for Index := 0 to GetArrayLength(Entries) - 1 do
+  begin
+    Instance := Entries[Index];
+    ValidIdentity := Length(Instance) = 24;
+    for CharacterIndex := 1 to Length(Instance) do
+      if Pos(Instance[CharacterIndex], '0123456789ABCDEFabcdef') = 0 then ValidIdentity := False;
+    if RegQueryStringValue(HKCU64, 'Software\AFMediaBar\MemoryOptimizer\' + Instance, 'OwnerSid', OwnerSid) then
+    begin
+      if Copy(OwnerSid, 1, 2) <> 'S-' then ValidIdentity := False;
+      for CharacterIndex := 3 to Length(OwnerSid) do
+        if Pos(OwnerSid[CharacterIndex], '0123456789-') = 0 then ValidIdentity := False;
+    end
+    else ValidIdentity := False;
+    if ValidIdentity and RegQueryStringValue(HKCU64, 'Software\AFMediaBar\MemoryOptimizer\' + Instance, 'Origin', Origin) and
+       (CompareText(Origin, ExpandConstant('{app}\{#MyAppExeName}')) = 0) then
+    begin
+      Helper := ExpandConstant('{commonpf64}') + '\AFMediaBar.MemoryOptimizer\' + OwnerSid + '\' + Instance + '\AFMediaBar.MemoryHelper.exe';
+      if FileExists(Helper) then
+      begin
+        TemporaryHelper := ExpandConstant('{tmp}\AFMediaBar.MemoryHelper.exe');
+        if FileCopy(Helper, TemporaryHelper, False) then
+          if not ShellExec('runas', TemporaryHelper, '--uninstall ' + OwnerSid + ' ' + Instance, '', SW_HIDE, ewWaitUntilTerminated, ExitCode) or (ExitCode <> 0) then
+            Log('Memory optimization authorization cleanup needs manual retry.');
+      end;
+    end;
+  end;
+end;
+
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   RunKey: String;
@@ -185,6 +228,7 @@ begin
   if CurUninstallStep <> usUninstall then
     Exit;
 
+  RemoveMemoryOptimizationAuthorization;
   RunKey := 'Software\Microsoft\Windows\CurrentVersion\Run';
   if not RegQueryStringValue(HKCU64, RunKey, 'AFMediaBar', Command) then
     Exit;

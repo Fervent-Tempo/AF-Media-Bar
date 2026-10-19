@@ -3074,4 +3074,27 @@
   <data name="Memory.Stage.FileCache" xml:space="preserve"><value>系统文件缓存</value></data>
   <data name="Memory.Stage.Standby" xml:space="preserve"><value>全部待机页</value></data>
   <data name="Memory.Stage.LowStandby" xml:space="preserve"><value>低优先级待机页</value></data>
+  <data name="Memory.Authorization.Title" xml:space="preserve"><value>系统优化授权</value></data>
+  <data name="Memory.Authorization.Explanation" xml:space="preserve"><value>系统优化需要管理员权限。仅本次会显示 UAC；授权后续免重复确认会安装仅执行固定内存清理的按需任务，AF 仍以普通权限运行。可在设置中撤销。自动优化需要后者。</value></data>
+  <data name="Memory.Authorization.Once" xml:space="preserve"><value>仅本次</value></data>
+  <data name="Memory.Authorization.Remember" xml:space="preserve"><value>授权后续免重复确认</value></data>
+  <data name="Memory.Authorization.Revoke" xml:space="preserve"><value>撤销授权</value></data>
+  <data name="Memory.Authorization.Missing" xml:space="preserve"><value>尚未授权；可仅授权本次</value></data>
+  <data name="Memory.Authorization.Ready" xml:space="preserve"><value>已授权，固定任务可按需执行</value></data>
+  <data name="Memory.Authorization.NeedsRepair" xml:space="preserve"><value>授权失配，请重新授权修复</value></data>
+  <data name="Memory.Authorization.Unavailable" xml:space="preserve"><value>无法读取系统授权状态</value></data>
+  <data name="Memory.Stage.Authorization" xml:space="preserve"><value>授权操作</value></data>
+  <data name="Memory.Auto.Title" xml:space="preserve"><value>自动系统优化</value></data>
+  <data name="Memory.Auto.Description" xml:space="preserve"><value>仅在 AF 运行且未锁屏或睡眠时执行。阈值需持续 30 秒；每次尝试后冷却 15 分钟，阈值回落 5 个百分点后才重新允许触发。自动执行不弹成功通知。</value></data>
+  <data name="Memory.Auto.Timer" xml:space="preserve"><value>定时优化</value></data>
+  <data name="Memory.Auto.Interval" xml:space="preserve"><value>间隔（分钟）</value></data>
+  <data name="Memory.Auto.Threshold" xml:space="preserve"><value>内存阈值触发</value></data>
+  <data name="Memory.Auto.Percent" xml:space="preserve"><value>物理内存使用率（%）</value></data>
+  <data name="Memory.Auto.Level" xml:space="preserve"><value>自动优化档位</value></data>
+  <data name="Memory.Auto.Resume" xml:space="preserve"><value>恢复自动执行</value></data>
+  <data name="Memory.Auto.Disabled" xml:space="preserve"><value>自动优化已关闭</value></data>
+  <data name="Memory.Auto.Suspended" xml:space="preserve"><value>锁屏或睡眠，自动优化已暂停</value></data>
+  <data name="Memory.Auto.Waiting" xml:space="preserve"><value>等待下次触发（含冷却）</value></data>
+  <data name="Memory.Auto.Running" xml:space="preserve"><value>自动优化执行中</value></data>
+  <data name="Memory.Auto.Paused" xml:space="preserve"><value>权限失效或多次失败，已暂停；请检查最近结果后恢复</value></data>
 </root>

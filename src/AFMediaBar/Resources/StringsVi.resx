@@ -3112,4 +3112,27 @@ Nguồn: {2}</value></data>
   <data name="Memory.Stage.FileCache" xml:space="preserve"><value>Bộ đệm tệp hệ thống</value></data>
   <data name="Memory.Stage.Standby" xml:space="preserve"><value>Toàn bộ trang chờ</value></data>
   <data name="Memory.Stage.LowStandby" xml:space="preserve"><value>Trang chờ ưu tiên thấp</value></data>
+  <data name="Memory.Authorization.Title" xml:space="preserve"><value>Cấp quyền tối ưu hệ thống</value></data>
+  <data name="Memory.Authorization.Explanation" xml:space="preserve"><value>Tối ưu hệ thống cần quyền quản trị. Chỉ lần này yêu cầu UAC. Cấp quyền cho các lần sau cài tác vụ bộ nhớ cố định; AF vẫn chạy với quyền thường. Có thể thu hồi trong cài đặt. Tự động tối ưu cần quyền này.</value></data>
+  <data name="Memory.Authorization.Once" xml:space="preserve"><value>Chỉ lần này</value></data>
+  <data name="Memory.Authorization.Remember" xml:space="preserve"><value>Cấp quyền cho các lần sau</value></data>
+  <data name="Memory.Authorization.Revoke" xml:space="preserve"><value>Thu hồi quyền</value></data>
+  <data name="Memory.Authorization.Missing" xml:space="preserve"><value>Chưa cấp quyền; có thể cấp quyền một lần</value></data>
+  <data name="Memory.Authorization.Ready" xml:space="preserve"><value>Đã cấp quyền; tác vụ sẵn sàng</value></data>
+  <data name="Memory.Authorization.NeedsRepair" xml:space="preserve"><value>Quyền không khớp; cấp lại để sửa</value></data>
+  <data name="Memory.Authorization.Unavailable" xml:space="preserve"><value>Không đọc được trạng thái cấp quyền</value></data>
+  <data name="Memory.Stage.Authorization" xml:space="preserve"><value>Thao tác cấp quyền</value></data>
+  <data name="Memory.Auto.Title" xml:space="preserve"><value>Tự động tối ưu hệ thống</value></data>
+  <data name="Memory.Auto.Description" xml:space="preserve"><value>Chỉ chạy khi AF mở, máy không ngủ hoặc khóa. Ngưỡng phải duy trì 30 giây. Mỗi lần thử cách nhau 15 phút; kích hoạt lại khi giảm 5 điểm phần trăm. Không thông báo thành công.</value></data>
+  <data name="Memory.Auto.Timer" xml:space="preserve"><value>Tối ưu định kỳ</value></data>
+  <data name="Memory.Auto.Interval" xml:space="preserve"><value>Khoảng thời gian (phút)</value></data>
+  <data name="Memory.Auto.Threshold" xml:space="preserve"><value>Kích hoạt theo ngưỡng bộ nhớ</value></data>
+  <data name="Memory.Auto.Percent" xml:space="preserve"><value>Mức sử dụng bộ nhớ vật lý (%)</value></data>
+  <data name="Memory.Auto.Level" xml:space="preserve"><value>Mức tối ưu tự động</value></data>
+  <data name="Memory.Auto.Resume" xml:space="preserve"><value>Tiếp tục tự động</value></data>
+  <data name="Memory.Auto.Disabled" xml:space="preserve"><value>Đã tắt tự động tối ưu</value></data>
+  <data name="Memory.Auto.Suspended" xml:space="preserve"><value>Tạm dừng khi khóa hoặc ngủ</value></data>
+  <data name="Memory.Auto.Waiting" xml:space="preserve"><value>Đang chờ kích hoạt (gồm thời gian nghỉ)</value></data>
+  <data name="Memory.Auto.Running" xml:space="preserve"><value>Đang tự động tối ưu</value></data>
+  <data name="Memory.Auto.Paused" xml:space="preserve"><value>Tạm dừng do mất quyền hoặc lỗi lặp lại; kiểm tra kết quả trước khi tiếp tục</value></data>
 </root>

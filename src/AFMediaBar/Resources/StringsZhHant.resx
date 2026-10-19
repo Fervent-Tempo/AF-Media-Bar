@@ -3074,4 +3074,27 @@
   <data name="Memory.Stage.FileCache" xml:space="preserve"><value>系統檔案快取</value></data>
   <data name="Memory.Stage.Standby" xml:space="preserve"><value>全部待命頁</value></data>
   <data name="Memory.Stage.LowStandby" xml:space="preserve"><value>低優先順序待命頁</value></data>
+  <data name="Memory.Authorization.Title" xml:space="preserve"><value>系統最佳化授權</value></data>
+  <data name="Memory.Authorization.Explanation" xml:space="preserve"><value>系統最佳化需要管理員權限。僅本次會顯示 UAC；授權後續免重複確認會安裝僅執行固定記憶體清理的隨選工作，AF 仍以一般權限執行。可在設定中撤銷。自動最佳化需要後者。</value></data>
+  <data name="Memory.Authorization.Once" xml:space="preserve"><value>僅本次</value></data>
+  <data name="Memory.Authorization.Remember" xml:space="preserve"><value>授權後續免重複確認</value></data>
+  <data name="Memory.Authorization.Revoke" xml:space="preserve"><value>撤銷授權</value></data>
+  <data name="Memory.Authorization.Missing" xml:space="preserve"><value>尚未授權；可僅授權本次</value></data>
+  <data name="Memory.Authorization.Ready" xml:space="preserve"><value>已授權，固定工作可隨選執行</value></data>
+  <data name="Memory.Authorization.NeedsRepair" xml:space="preserve"><value>授權不相符，請重新授權修復</value></data>
+  <data name="Memory.Authorization.Unavailable" xml:space="preserve"><value>無法讀取系統授權狀態</value></data>
+  <data name="Memory.Stage.Authorization" xml:space="preserve"><value>授權操作</value></data>
+  <data name="Memory.Auto.Title" xml:space="preserve"><value>自動系統最佳化</value></data>
+  <data name="Memory.Auto.Description" xml:space="preserve"><value>僅在 AF 執行且未鎖定螢幕或睡眠時執行。門檻需持續 30 秒；每次嘗試後冷卻 15 分鐘，門檻回落 5 個百分點後才重新允許觸發。自動執行不顯示成功通知。</value></data>
+  <data name="Memory.Auto.Timer" xml:space="preserve"><value>定時最佳化</value></data>
+  <data name="Memory.Auto.Interval" xml:space="preserve"><value>間隔（分鐘）</value></data>
+  <data name="Memory.Auto.Threshold" xml:space="preserve"><value>記憶體門檻觸發</value></data>
+  <data name="Memory.Auto.Percent" xml:space="preserve"><value>實體記憶體使用率（%）</value></data>
+  <data name="Memory.Auto.Level" xml:space="preserve"><value>自動最佳化等級</value></data>
+  <data name="Memory.Auto.Resume" xml:space="preserve"><value>恢復自動執行</value></data>
+  <data name="Memory.Auto.Disabled" xml:space="preserve"><value>自動最佳化已關閉</value></data>
+  <data name="Memory.Auto.Suspended" xml:space="preserve"><value>鎖定螢幕或睡眠，自動最佳化已暫停</value></data>
+  <data name="Memory.Auto.Waiting" xml:space="preserve"><value>等待下次觸發（含冷卻）</value></data>
+  <data name="Memory.Auto.Running" xml:space="preserve"><value>自動最佳化執行中</value></data>
+  <data name="Memory.Auto.Paused" xml:space="preserve"><value>權限失效或多次失敗，已暫停；請檢查最近結果後恢復</value></data>
 </root>

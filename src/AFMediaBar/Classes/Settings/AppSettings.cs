@@ -67,6 +67,7 @@ public sealed class AppSettings : INotifyPropertyChanged
     private MediaSelectionSettings _mediaSelection = MediaSelectionSettings.Default;
     private QuickLaunchSettings _quickLaunch = QuickLaunchSettings.Default;
     private SpectrumComponentSettings _spectrumComponent = SpectrumComponentSettings.Default;
+    private SystemMemoryOptimizationSettings _systemMemoryOptimization = new();
     private PerformanceComponentSettings _performanceComponent = PerformanceComponentSettings.Default;
     private UpdateSettings _update = UpdateSettings.Default;
     private bool _launchAtStartup = true;
@@ -177,6 +178,7 @@ public sealed class AppSettings : INotifyPropertyChanged
     public MediaSelectionSettings MediaSelection { get => _mediaSelection; set => Set(ref _mediaSelection, (value ?? MediaSelectionSettings.Default).Normalize()); }
     public QuickLaunchSettings QuickLaunch { get => _quickLaunch; set => Set(ref _quickLaunch, value.Normalize()); }
     public SpectrumComponentSettings SpectrumComponent { get => _spectrumComponent; set => Set(ref _spectrumComponent, value.Normalize()); }
+    public SystemMemoryOptimizationSettings SystemMemoryOptimization { get => _systemMemoryOptimization; set => Set(ref _systemMemoryOptimization, (value ?? new()).Normalize()); }
     public PerformanceComponentSettings PerformanceComponent { get => _performanceComponent; set => Set(ref _performanceComponent, value.Normalize()); }
 
     /// <summary>更新下载器设置：自动检查、自动下载安装、已跳过版本与上次检查结果。/ Update-downloader settings: automatic checking, automatic download and install, skipped version, and the last check result.</summary>
@@ -247,6 +249,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         result.MediaSelection = result.MediaSelection.Normalize();
         result.QuickLaunch = result.QuickLaunch.Normalize();
         result.SpectrumComponent = result.SpectrumComponent.Normalize();
+        result.SystemMemoryOptimization = result.SystemMemoryOptimization.Normalize();
         result.PerformanceComponent = result.PerformanceComponent.Normalize();
         result.Update = result.Update.Normalize();
         if (!Enum.IsDefined(result.InterfaceLanguage)) result.InterfaceLanguage = defaults.InterfaceLanguage;
@@ -321,6 +324,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         MediaSelection = MediaSelection,
         QuickLaunch = QuickLaunch,
         SpectrumComponent = SpectrumComponent,
+        SystemMemoryOptimization = SystemMemoryOptimization,
         PerformanceComponent = PerformanceComponent,
         Update = Update,
         DeveloperModeEnabled = DeveloperModeEnabled,

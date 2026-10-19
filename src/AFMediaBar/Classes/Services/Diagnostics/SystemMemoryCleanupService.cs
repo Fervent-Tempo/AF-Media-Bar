@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Security.Principal;
@@ -22,23 +23,61 @@ public sealed class SystemMemoryCleanupService : IDisposable
     private readonly CancellationTokenSource _stopping = new();
     private int _running;
     private bool _disposed;
+    private readonly string _owner = WindowsIdentity.GetCurrent().User!.Value;
+    private readonly string _instance = MemoryCleanupTasks.InstanceId(Environment.ProcessPath!);
+    private byte[]? _helperHash;
+    public MemoryCleanupAuthorization Authorization { get; private set; }
     public event EventHandler? Changed;
+
+    public async Task<MemoryCleanupAuthorization> RefreshAuthorizationAsync()
+    {
+        var value = await Task.Run(() =>
+        {
+            using var resource = Assembly.GetExecutingAssembly().GetManifestResourceStream("AFMediaBar.MemoryHelper.exe");
+            if (resource is null) return MemoryCleanupAuthorization.Unavailable;
+            _helperHash ??= SHA256.HashData(resource);
+            return MemoryCleanupTasks.Inspect(_owner, _instance, _helperHash);
+        });
+        if (!_disposed) { Authorization = value; Changed?.Invoke(this, EventArgs.Empty); }
+        return value;
+    }
+
+    public async Task<SystemMemoryCleanupResult> ManageAuthorizationAsync(bool install)
+    {
+        if (_disposed || Interlocked.CompareExchange(ref _running, 1, 0) != 0) return new(SystemMemoryCleanupStatus.Busy, null, null);
+        Changed?.Invoke(this, EventArgs.Empty);
+        try { return await ExecuteAsync(SystemMemoryOptimizationLevel.Standard, install ? "--install" : "--revoke"); }
+        finally { Interlocked.Exchange(ref _running, 0); if (!_disposed) await RefreshAuthorizationAsync(); }
+    }
     public SystemMemoryCleanupResult? LastResult { get; private set; }
     public DateTimeOffset? LastAttemptAt { get; private set; }
     public bool IsRunning => Volatile.Read(ref _running) != 0;
     public static bool IsCleanupRequest(string[] args) => args.Any(arg => arg.StartsWith("--internal-memory-clean", StringComparison.Ordinal));
 
-    public async Task<SystemMemoryCleanupResult> RunAsync(SystemMemoryOptimizationLevel level = SystemMemoryOptimizationLevel.Standard)
+    public async Task<SystemMemoryCleanupResult> RunAsync(SystemMemoryOptimizationLevel level = SystemMemoryOptimizationLevel.Standard, bool requireAuthorization = false)
     {
         if (_disposed) return new(SystemMemoryCleanupStatus.Cancelled, null, null);
         if (!Enum.IsDefined(level)) return new(SystemMemoryCleanupStatus.InvalidRequest, null, null);
         if (Interlocked.CompareExchange(ref _running, 1, 0) != 0) return new(SystemMemoryCleanupStatus.Busy, null, null);
         LastAttemptAt = DateTimeOffset.UtcNow;
         Changed?.Invoke(this, EventArgs.Empty);
+        SystemMemoryCleanupResult result;
+        try
+        {
+            await RefreshAuthorizationAsync();
+            result = requireAuthorization && Authorization != MemoryCleanupAuthorization.Ready
+                ? new(SystemMemoryCleanupStatus.AuthorizationRequired, null, null) : await ExecuteAsync(level, null);
+        }
+        finally { Interlocked.Exchange(ref _running, 0); }
+        if (!_disposed) { LastResult = result; Changed?.Invoke(this, EventArgs.Empty); }
+        return result;
+    }
+
+    private async Task<SystemMemoryCleanupResult> ExecuteAsync(SystemMemoryOptimizationLevel level, string? management)
+    {
         ulong? before = null;
         string? directory = null;
         Process? process = null;
-        SystemMemoryCleanupResult result;
         try
         {
             before = await Task.Run(MemoryToolsService.CaptureAvailableBytes);
@@ -48,19 +87,34 @@ public sealed class SystemMemoryCleanupService : IDisposable
             security.AddAccessRule(new PipeAccessRule(WindowsIdentity.GetCurrent().User!, PipeAccessRights.ReadWrite, AccessControlType.Allow));
             using var pipe = NamedPipeServerStreamAcl.Create("AFMB.Memory." + nonce, PipeDirection.In, 1,
                 PipeTransmissionMode.Byte, PipeOptions.Asynchronous, 0, 0, security);
-            directory = Path.Combine(Path.GetTempPath(), "AFMB.Memory." + nonce);
-            var helper = await Task.Run(() => ExtractHelper(directory));
-            process = await Task.Run(() => Process.Start(new ProcessStartInfo(helper)
+            string helper;
+            if (management is null && Authorization == MemoryCleanupAuthorization.Ready)
             {
-                Arguments = "--run " + (level == SystemMemoryOptimizationLevel.Deep ? "deep" : "standard") + " " + nonce,
-                UseShellExecute = true, Verb = "runas", WindowStyle = ProcessWindowStyle.Hidden
-            }));
-            if (process is null) throw new InvalidOperationException();
+                helper = MemoryCleanupTasks.HelperPath(_owner, _instance);
+                await Task.Run(() => MemoryCleanupTasks.Run(_owner, _instance, level, nonce));
+            }
+            else
+            {
+                directory = Path.Combine(Path.GetTempPath(), "AFMB.Memory." + nonce);
+                helper = await Task.Run(() => ExtractHelper(directory));
+                var arguments = management is null
+                    ? "--run " + (level == SystemMemoryOptimizationLevel.Deep ? "deep" : "standard") + " " + nonce
+                    : management + " " + _owner + " " + _instance + " " + nonce;
+                process = await Task.Run(() => Process.Start(new ProcessStartInfo(helper)
+                { Arguments = arguments, UseShellExecute = true, Verb = "runas", WindowStyle = ProcessWindowStyle.Hidden }));
+                if (process is null) throw new InvalidOperationException();
+            }
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_stopping.Token);
             timeout.CancelAfter(TimeSpan.FromSeconds(65));
             await pipe.WaitForConnectionAsync(timeout.Token);
-            if (!GetNamedPipeClientProcessId(pipe.SafePipeHandle, out var clientId) || clientId != process.Id)
-                throw new InvalidDataException();
+            if (!GetNamedPipeClientProcessId(pipe.SafePipeHandle, out var clientId)) throw new InvalidDataException();
+            if (process is not null && clientId != process.Id) throw new InvalidDataException();
+            var validImage = await Task.Run(() =>
+            {
+                using var client = Process.GetProcessById(clientId);
+                return string.Equals(client.MainModule?.FileName, helper, StringComparison.OrdinalIgnoreCase);
+            });
+            if (!validImage) throw new InvalidDataException();
             var buffer = new byte[16384];
             var length = 0;
             while (length < buffer.Length)
@@ -72,23 +126,22 @@ public sealed class SystemMemoryCleanupService : IDisposable
             }
             if (length == buffer.Length) throw new InvalidDataException();
             var reply = JsonSerializer.Deserialize<MemoryCleanupReply>(Encoding.UTF8.GetString(buffer, 0, length));
+            var expected = management is not null ? new[] { "Authorization" } : level == SystemMemoryOptimizationLevel.Deep ? new[] { "FileCache", "Standby" } : new[] { "LowStandby" };
             if (reply is null || reply.Version != MemoryCleanupReply.ProtocolVersion || reply.RequestId != nonce || reply.Level != level ||
-                !Enum.IsDefined(reply.Status) || reply.Stages.Length is < 1 or > 2) throw new InvalidDataException();
-            await process.WaitForExitAsync(timeout.Token);
-            result = new(reply.Status, before, await Task.Run(MemoryToolsService.CaptureAvailableBytes), reply);
+                !Enum.IsDefined(reply.Status) || reply.Stages is null || !reply.Stages.Select(stage => stage.Operation).SequenceEqual(expected) ||
+                reply.Stages.Any(stage => !Enum.IsDefined(stage.Status))) throw new InvalidDataException();
+            if (process is not null) await process.WaitForExitAsync(timeout.Token);
+            return new(reply.Status, before, await Task.Run(MemoryToolsService.CaptureAvailableBytes), reply);
         }
-        catch (Win32Exception error) when (error.NativeErrorCode == 1223) { result = new(SystemMemoryCleanupStatus.Cancelled, before, null); }
-        catch (Win32Exception error) when (error.NativeErrorCode == 5) { result = new(SystemMemoryCleanupStatus.PermissionDenied, before, null); }
-        catch (OperationCanceledException) { result = new(_stopping.IsCancellationRequested ? SystemMemoryCleanupStatus.Cancelled : SystemMemoryCleanupStatus.TimedOut, before, null); }
-        catch (Exception) { result = new(SystemMemoryCleanupStatus.Failed, before, null); }
+        catch (Win32Exception error) when (error.NativeErrorCode == 1223) { return new(SystemMemoryCleanupStatus.Cancelled, before, null); }
+        catch (Exception error) when (error is UnauthorizedAccessException || error is Win32Exception { NativeErrorCode: 5 }) { return new(SystemMemoryCleanupStatus.PermissionDenied, before, null); }
+        catch (OperationCanceledException) { return new(_stopping.IsCancellationRequested ? SystemMemoryCleanupStatus.Cancelled : SystemMemoryCleanupStatus.TimedOut, before, null); }
+        catch (Exception) { return new(SystemMemoryCleanupStatus.Failed, before, null); }
         finally
         {
             process?.Dispose();
             if (directory is not null) TryDeleteExtraction(directory);
-            Interlocked.Exchange(ref _running, 0);
         }
-        if (!_disposed) { LastResult = result; Changed?.Invoke(this, EventArgs.Empty); }
-        return result;
     }
 
     internal static string ExtractHelper(string directory)

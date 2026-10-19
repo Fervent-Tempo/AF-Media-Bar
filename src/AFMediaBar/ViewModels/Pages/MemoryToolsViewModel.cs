@@ -1,5 +1,6 @@
 // 应用页可见时才拥有采样循环；关闭页面取消呈现，不中断已经开始的回收。
 using System.Globalization;
+using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Resources;
@@ -9,7 +10,51 @@ namespace AFMediaBar.ViewModels.Pages;
 /// <summary>内存诊断与手动操作的页面状态。</summary>
 public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
 {
+    private readonly IMemoryAuthorizationPrompt _authorizationPrompt;
+    private readonly SystemMemoryAutomationService _automation;
+    private bool _configuringAutomation;
     private readonly MemoryToolsService _metrics;
+    public string AuthorizationText => Translations.Get("Memory.Authorization." + _systemCleanup.Authorization);
+    public string AutomaticStatusText => Translations.Get(_automation.StatusKey);
+    public bool TimerEnabled { get => SettingsManager.Current.SystemMemoryOptimization.TimerEnabled; set => _ = SetAutomaticAsync(true, value); }
+    public bool ThresholdEnabled { get => SettingsManager.Current.SystemMemoryOptimization.ThresholdEnabled; set => _ = SetAutomaticAsync(false, value); }
+    public int IntervalMinutes { get => SettingsManager.Current.SystemMemoryOptimization.IntervalMinutes; set => UpdateAutomatic(SettingsManager.Current.SystemMemoryOptimization with { IntervalMinutes = value }); }
+    public int ThresholdPercent { get => SettingsManager.Current.SystemMemoryOptimization.ThresholdPercent; set => UpdateAutomatic(SettingsManager.Current.SystemMemoryOptimization with { ThresholdPercent = value }); }
+    public SystemMemoryOptimizationLevel AutomaticLevel { get => SettingsManager.Current.SystemMemoryOptimization.Level; set => UpdateAutomatic(SettingsManager.Current.SystemMemoryOptimization with { Level = value }); }
+    private void UpdateAutomatic(SystemMemoryOptimizationSettings value)
+    { if (!_disposed) SettingsManager.Current.SystemMemoryOptimization = value.Normalize(); }
+    private async Task SetAutomaticAsync(bool timer, bool enabled)
+    {
+        if (_disposed || _configuringAutomation) { OnPropertyChanged(string.Empty); return; }
+        _configuringAutomation = true;
+        try
+        {
+            if (enabled && await _systemCleanup.RefreshAuthorizationAsync() != MemoryCleanupAuthorization.Ready)
+            {
+                if (await _authorizationPrompt.ChooseAsync(true) != MemoryAuthorizationChoice.Remember || _disposed) return;
+                var result = await _systemCleanup.ManageAuthorizationAsync(true);
+                if (_disposed || result.Status != SystemMemoryCleanupStatus.Completed || _systemCleanup.Authorization != MemoryCleanupAuthorization.Ready) return;
+            }
+            var settings = SettingsManager.Current.SystemMemoryOptimization;
+            if (!_disposed) UpdateAutomatic(timer ? settings with { TimerEnabled = enabled } : settings with { ThresholdEnabled = enabled });
+        }
+        catch (Exception) { }
+        finally { _configuringAutomation = false; if (!_disposed) OnPropertyChanged(string.Empty); }
+    }
+    [RelayCommand] private async Task AuthorizeAsync()
+    {
+        if (_disposed || !CanRun) return;
+        _systemResult = await _systemCleanup.ManageAuthorizationAsync(true);
+        if (!_disposed) OnPropertyChanged(string.Empty);
+    }
+    [RelayCommand] private async Task RevokeAuthorizationAsync()
+    {
+        if (_disposed || !CanRun) return;
+        UpdateAutomatic(SettingsManager.Current.SystemMemoryOptimization with { TimerEnabled = false, ThresholdEnabled = false });
+        _systemResult = await _systemCleanup.ManageAuthorizationAsync(false);
+        if (!_disposed) OnPropertyChanged(string.Empty);
+    }
+    [RelayCommand] private void ResumeAutomatic() => _automation.Resume();
     private readonly MemoryPruneCoordinator _prune;
     private readonly SystemMemoryCleanupService _systemCleanup;
     private SystemMemoryCleanupResult? _systemResult;
@@ -53,8 +98,11 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
             Translations.Get(counters.ReturnedWorkingSet ? "Memory.WorkingSetReturned" : "Memory.WorkingSetNotReturned")) :
         Translations.Get("Memory.Status." + outcome.Status);
 
-    public MemoryToolsViewModel(MemoryToolsService metrics, MemoryPruneCoordinator prune, SystemMemoryCleanupService systemCleanup)
+    public MemoryToolsViewModel(MemoryToolsService metrics, MemoryPruneCoordinator prune, SystemMemoryCleanupService systemCleanup, SystemMemoryAutomationService automation, IMemoryAuthorizationPrompt authorizationPrompt)
     {
+        _authorizationPrompt = authorizationPrompt;
+        _automation = automation;
+        automation.Changed += OnCleanupChanged;
         _systemCleanup = systemCleanup;
         systemCleanup.Changed += OnCleanupChanged;
         _metrics = metrics;
@@ -67,7 +115,11 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
         if (_disposed) return;
         _visible = visible;
         RestartSampling();
+        if (visible) _ = RefreshAuthorizationAsync();
     }
+
+    private async Task RefreshAuthorizationAsync()
+    { try { await _systemCleanup.RefreshAuthorizationAsync(); } catch (Exception) { } }
 
     private void RestartSampling()
     {
@@ -120,6 +172,16 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
         var source = _sampling;
         try
         {
+            if (await _systemCleanup.RefreshAuthorizationAsync() != MemoryCleanupAuthorization.Ready)
+            {
+                var choice = await _authorizationPrompt.ChooseAsync(false);
+                if (_disposed || choice == MemoryAuthorizationChoice.Cancel) return;
+                if (choice == MemoryAuthorizationChoice.Remember)
+                {
+                    var authorization = await _systemCleanup.ManageAuthorizationAsync(true);
+                    if (_disposed || authorization.Status != SystemMemoryCleanupStatus.Completed) { _systemResult = authorization; OnPropertyChanged(string.Empty); return; }
+                }
+            }
             var result = await _systemCleanup.RunAsync(level);
             if (_disposed || !_visible || source != _sampling || !IsSystemCleanupEnabled) return;
             _systemResult = result;
@@ -154,16 +216,19 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
         if (_disposed) return;
         _systemResult = _systemCleanup.LastResult;
         OnPropertyChanged(nameof(CanRun));
+        OnPropertyChanged(nameof(AuthorizationText));
+        OnPropertyChanged(nameof(AutomaticStatusText));
         OnPropertyChanged(nameof(SystemResultText));
         OnPropertyChanged(nameof(HasSystemResult));
     }
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args)
     {
-        if (_disposed || args.PropertyName is not (null or nameof(AppSettings.Experiments))) return;
+        if (_disposed || args.PropertyName is not (null or nameof(AppSettings.Experiments) or nameof(AppSettings.SystemMemoryOptimization))) return;
         OnPropertyChanged(nameof(IsEnabled));
         OnPropertyChanged(nameof(IsLegacyTrimVisible));
         OnPropertyChanged(nameof(IsSystemCleanupEnabled));
+        OnPropertyChanged(string.Empty);
         RestartSampling();
     }
 
@@ -178,5 +243,6 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
         _sampling = null;
         SettingsManager.SettingsChanged -= OnSettingsChanged;
         _systemCleanup.Changed -= OnCleanupChanged;
+        _automation.Changed -= OnCleanupChanged;
     }
 }

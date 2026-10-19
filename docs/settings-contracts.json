@@ -241,6 +241,10 @@
       "skippedVersion": "v1.2.0"
     },
     "windowMode": "v1.2.0",
+    "systemMemoryOptimization": {
+      "$release": "unreleased", "timerEnabled": "unreleased", "intervalMinutes": "unreleased",
+      "thresholdEnabled": "unreleased", "thresholdPercent": "unreleased", "level": "unreleased"
+    },
     "audioDevices": {
       "preferences": { "$release": "unreleased", "$items": { "direction": "unreleased", "endpointId": "unreleased", "lastKnownName": "unreleased", "alias": "unreleased", "isFavorite": "unreleased", "hotkey": "unreleased" } },
       "lowBatteryNotifications": "unreleased",
@@ -267,6 +271,10 @@
     }
   },
   "enums": {
+    "SystemMemoryOptimizationLevel": {
+      "paths": ["settings.systemMemoryOptimization.level"],
+      "members": { "Standard": { "value": 0, "release": "unreleased" }, "Deep": { "value": 1, "release": "unreleased" } }
+    },
     "AudioDeviceDirection": {
       "paths": ["settings.audioDevices.preferences[].direction"],
       "members": { "Output": { "value": 0, "release": "unreleased" }, "Input": { "value": 1, "release": "unreleased" } }

@@ -113,7 +113,9 @@ public static class SettingsManager
     {
         // Current general-page controls are operating-system or navigation actions and do not
         // own interaction or lyric settings. Publish the reset boundary without changing them.
-        Replace(Current.Clone(), SettingsResetScope.General);
+        var next = Current.Clone();
+        next.SystemMemoryOptimization = Defaults.SystemMemoryOptimization;
+        Replace(next, SettingsResetScope.General);
     }
     public static void ResetAppearance()
     {

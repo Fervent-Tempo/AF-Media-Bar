@@ -105,6 +105,9 @@ namespace AFMediaBar
                 services.AddSingleton<ProcessMemoryTrimmer>();
                 services.AddSingleton<MemoryToolsService>();
                 services.AddSingleton<SystemMemoryCleanupService>();
+                services.AddSingleton<SystemMemoryAutomationService>();
+                services.AddHostedService(sp => sp.GetRequiredService<SystemMemoryAutomationService>());
+                services.AddSingleton<IMemoryAuthorizationPrompt, AFMediaBar.Views.Dialogs.MemoryAuthorizationPrompt>();
                 services.AddSingleton<MemoryToolsViewModel>();
                 services.AddSingleton<MemoryPruneCoordinator>();
 

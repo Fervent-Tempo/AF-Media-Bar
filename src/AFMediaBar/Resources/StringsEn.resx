@@ -3074,4 +3074,27 @@ Source: {2}</value></data>
   <data name="Memory.Stage.FileCache" xml:space="preserve"><value>System file cache</value></data>
   <data name="Memory.Stage.Standby" xml:space="preserve"><value>All standby pages</value></data>
   <data name="Memory.Stage.LowStandby" xml:space="preserve"><value>Low-priority standby pages</value></data>
+  <data name="Memory.Authorization.Title" xml:space="preserve"><value>System optimization authorization</value></data>
+  <data name="Memory.Authorization.Explanation" xml:space="preserve"><value>System optimization requires administrator rights. Once requests UAC for this run. Authorize future runs installs on-demand tasks limited to fixed memory operations; AF keeps normal privileges. Revoke them in settings. Automation requires this authorization.</value></data>
+  <data name="Memory.Authorization.Once" xml:space="preserve"><value>Once</value></data>
+  <data name="Memory.Authorization.Remember" xml:space="preserve"><value>Authorize future runs</value></data>
+  <data name="Memory.Authorization.Revoke" xml:space="preserve"><value>Revoke authorization</value></data>
+  <data name="Memory.Authorization.Missing" xml:space="preserve"><value>Not authorized; one-time approval is available</value></data>
+  <data name="Memory.Authorization.Ready" xml:space="preserve"><value>Authorized; fixed tasks are ready on demand</value></data>
+  <data name="Memory.Authorization.NeedsRepair" xml:space="preserve"><value>Authorization mismatch; authorize again to repair</value></data>
+  <data name="Memory.Authorization.Unavailable" xml:space="preserve"><value>Authorization status unavailable</value></data>
+  <data name="Memory.Stage.Authorization" xml:space="preserve"><value>Authorization operation</value></data>
+  <data name="Memory.Auto.Title" xml:space="preserve"><value>Automatic system optimization</value></data>
+  <data name="Memory.Auto.Description" xml:space="preserve"><value>Runs while AF is open, awake and unlocked. The threshold must persist for 30 seconds. Attempts have a 15-minute cooldown; threshold triggers rearm after a 5-point drop. No success notifications.</value></data>
+  <data name="Memory.Auto.Timer" xml:space="preserve"><value>Optimize periodically</value></data>
+  <data name="Memory.Auto.Interval" xml:space="preserve"><value>Interval (minutes)</value></data>
+  <data name="Memory.Auto.Threshold" xml:space="preserve"><value>Memory threshold trigger</value></data>
+  <data name="Memory.Auto.Percent" xml:space="preserve"><value>Physical memory usage (%)</value></data>
+  <data name="Memory.Auto.Level" xml:space="preserve"><value>Automatic optimization level</value></data>
+  <data name="Memory.Auto.Resume" xml:space="preserve"><value>Resume automation</value></data>
+  <data name="Memory.Auto.Disabled" xml:space="preserve"><value>Automation is off</value></data>
+  <data name="Memory.Auto.Suspended" xml:space="preserve"><value>Paused while locked or asleep</value></data>
+  <data name="Memory.Auto.Waiting" xml:space="preserve"><value>Waiting for a trigger (including cooldown)</value></data>
+  <data name="Memory.Auto.Running" xml:space="preserve"><value>Automatic optimization is running</value></data>
+  <data name="Memory.Auto.Paused" xml:space="preserve"><value>Paused after authorization loss or repeated failures; check the latest result before resuming</value></data>
 </root>
