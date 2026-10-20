@@ -22,6 +22,8 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     private readonly NativeMouseInputMonitor _input;
     private readonly Border _line;
     private readonly Border _outline;
+    private readonly Grid _marks;
+    private readonly ScreenBackgroundSampler _sampler;
     private readonly AdaptiveForegroundSamplingSession _contrastSampling;
     private readonly DispatcherTimer _pointerTimer;
     private readonly Stopwatch _clock = Stopwatch.StartNew();
@@ -34,6 +36,10 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     private TimeSpan? _hoverSince;
     private TimeSpan? _outsideSince;
     private TimeSpan _nextContrastRefresh;
+    private CancellationTokenSource? _initialContrastCancellation;
+    private PlayerForegroundDecision? _foregroundDecision;
+    private int _revealVersion;
+    private bool _contrastReady;
     private bool _vertical;
     private bool _taskbarSuspended;
     private bool _isPressed;
@@ -44,6 +50,7 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     public ExternalFullPanelHandleWindow(NativeMouseInputMonitor input, ScreenBackgroundSampler sampler)
     {
         _input = input;
+        _sampler = sampler;
         WindowStyle = WindowStyle.None;
         ResizeMode = ResizeMode.NoResize;
         ShowInTaskbar = false;
@@ -56,10 +63,10 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         _outline = new Border { CornerRadius = new CornerRadius(3), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         _contrastSampling = new AdaptiveForegroundSamplingSession(sampler, Dispatcher, GetContrastBounds, ApplyContrast);
         // 极低 alpha 让整个按钮矩形可命中；窗口尺寸不包含媒体栏与过渡区域。
-        var marks = new Grid();
-        marks.Children.Add(_outline);
-        marks.Children.Add(_line);
-        var surface = new Border { Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0)), Child = marks, Cursor = Cursors.Hand };
+        _marks = new Grid { Opacity = 0 };
+        _marks.Children.Add(_outline);
+        _marks.Children.Add(_line);
+        var surface = new Border { Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0)), Child = _marks, Cursor = Cursors.Hand };
         surface.MouseLeftButtonUp += Surface_MouseLeftButtonUp;
         surface.MouseLeftButtonDown += Surface_MouseLeftButtonDown;
         Content = surface;
@@ -94,15 +101,57 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         _line.Height = vertical ? 28 : 4;
         _outline.Width = vertical ? 6 : 30;
         _outline.Height = vertical ? 30 : 6;
-        ApplyContrast(null);
+        _contrastReady = false;
+        _marks.Opacity = 0;
         var handle = new WindowInteropHelper(this).EnsureHandle();
         Position(handle);
         Show();
         // Show 可能完成目标显示器的 DPI 切换，再断言物理边界，避免首次显示使用主屏缩放。
         Position(handle);
-        _nextContrastRefresh = _clock.Elapsed;
-        RefreshContrast();
         _pointerTimer.Start();
+        if (SystemParameters.HighContrast)
+        {
+            ApplyContrast(null);
+            CompleteInitialContrast();
+        }
+        else if (GetContrastBounds() is { } bounds)
+        {
+            var cancellation = new CancellationTokenSource();
+            _initialContrastCancellation = cancellation;
+            _ = PrepareContrastAsync(bounds, ++_revealVersion, cancellation);
+        }
+    }
+
+    private async Task PrepareContrastAsync(Int32Rect bounds, int version, CancellationTokenSource cancellation)
+    {
+        try
+        {
+            IReadOnlyList<Color> samples = [];
+            try { samples = await _sampler.SampleAsync(bounds, cancellation.Token); }
+            catch (Exception exception) { Debug.WriteLine($"[FullPanelHandle] Initial background sampling failed: {exception}"); }
+            if (_disposed || cancellation.IsCancellationRequested || version != _revealVersion ||
+                !IsVisible || _request is null || _canRemainVisible?.Invoke() != true) return;
+            // 首次取色完成前不绘制横杠，避免系统回退色先黑后白。
+            ApplyContrast(PlayerForegroundPolicy.Resolve(samples, _foregroundDecision));
+            CompleteInitialContrast();
+        }
+        catch (Exception exception)
+        {
+            Debug.WriteLine($"[FullPanelHandle] Initial presentation failed: {exception}");
+            if (!_disposed && version == _revealVersion) Dismiss();
+        }
+        finally
+        {
+            if (ReferenceEquals(_initialContrastCancellation, cancellation)) _initialContrastCancellation = null;
+            cancellation.Dispose();
+        }
+    }
+
+    private void CompleteInitialContrast()
+    {
+        _contrastReady = true;
+        _nextContrastRefresh = _clock.Elapsed + TimeSpan.FromMilliseconds(250);
+        _marks.Opacity = 1;
     }
 
     private Int32Rect? GetContrastBounds()
@@ -120,20 +169,21 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     private void ApplyContrast(PlayerForegroundDecision? decision)
     {
         if (_disposed) return;
+        if (decision is not null) _foregroundDecision = decision;
         if (SystemParameters.HighContrast)
         {
             _line.Background = SystemColors.WindowTextBrush;
             _outline.Background = SystemColors.WindowBrush;
             return;
         }
-        var light = decision?.UsesLightText ?? SystemColors.WindowTextColor.R > 127;
+        var light = _foregroundDecision?.UsesLightText ?? true;
         _line.Background = light ? Brushes.White : new SolidColorBrush(Color.FromRgb(0x1C, 0x1C, 0x1C));
         _outline.Background = new SolidColorBrush(light ? Color.FromArgb(192, 0, 0, 0) : Color.FromArgb(216, 255, 255, 255));
     }
 
     private void RefreshContrast()
     {
-        if (_clock.Elapsed < _nextContrastRefresh) return;
+        if (!_contrastReady || _clock.Elapsed < _nextContrastRefresh) return;
         _nextContrastRefresh = _clock.Elapsed + TimeSpan.FromMilliseconds(250);
         if (SystemParameters.HighContrast) _contrastSampling.Invalidate(clearDecision: true);
         else _contrastSampling.RequestRefresh();
@@ -152,7 +202,11 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     public void Dismiss()
     {
         _pointerTimer.Stop();
-        _contrastSampling.Invalidate(clearDecision: true);
+        _revealVersion++;
+        _initialContrastCancellation?.Cancel();
+        _initialContrastCancellation = null;
+        _contrastReady = false;
+        _contrastSampling.Invalidate(clearDecision: false);
         _request = null;
         _canRemainVisible = null;
         _hoverSince = null;
