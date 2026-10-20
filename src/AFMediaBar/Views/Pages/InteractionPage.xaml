@@ -98,6 +98,9 @@
                                     Tag="{x:Static settings:ArtworkHoverMode.Preview}" />
                             </ComboBox>
                         </components:SettingsRow>
+                    <WrapPanel Margin="16,8,16,12">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.RestContent}" Destination="Components" GroupId="Common.RestLayer" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
+                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup
@@ -285,6 +288,21 @@
                             </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>
+                    <WrapPanel Margin="16,8,16,12">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.DeviceOrder}" Destination="DeviceManagement" GroupId="Common.OutputDevice" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
+                        </WrapPanel>
+                    </StackPanel>
+                </components:SettingsGroup>
+                <components:SettingsGroup GroupId="Device.Hotkeys" Visibility="{Binding ViewModel.IsNewAudioControlEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}" Header="{DynamicResource Loc.Device.Hotkeys}" Description="{DynamicResource Loc.Device.Cycle.Hint}" Icon="{ui:SymbolIcon Keyboard24}">
+                    <StackPanel>
+                        <StackPanel IsEnabled="{Binding ViewModel.Hotkeys.IsEnabled}">
+                        <components:SettingsRow Title="{DynamicResource Loc.Device.Hotkey.CycleOutput}"><components:HotkeyRecorder Hotkey="{Binding ViewModel.Hotkeys.OutputCycleHotkey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsRecording="{Binding ViewModel.Hotkeys.IsRecordingOutputCycle, Mode=TwoWay}" Width="240" AutomationProperties.Name="{DynamicResource Loc.Device.Hotkey.CycleOutput}" ToolTip="{DynamicResource Loc.Device.Hotkey.RecordHint}"/></components:SettingsRow>
+                        <TextBlock Text="{Binding ViewModel.Hotkeys.OutputCycleStatus}" Style="{StaticResource AfSettingsHintTextStyle}" TextWrapping="Wrap" Margin="16,4"/>
+                        <components:SettingsRow Title="{DynamicResource Loc.Device.Hotkey.CycleInput}"><components:HotkeyRecorder Hotkey="{Binding ViewModel.Hotkeys.InputCycleHotkey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsRecording="{Binding ViewModel.Hotkeys.IsRecordingInputCycle, Mode=TwoWay}" Width="240" AutomationProperties.Name="{DynamicResource Loc.Device.Hotkey.CycleInput}" ToolTip="{DynamicResource Loc.Device.Hotkey.RecordHint}"/></components:SettingsRow>
+                        <TextBlock Text="{Binding ViewModel.Hotkeys.InputCycleStatus}" Style="{StaticResource AfSettingsHintTextStyle}" TextWrapping="Wrap" Margin="16,4"/>
+                        </StackPanel>
+                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.DeviceOrder}" Destination="DeviceManagement" GroupId="Common.OutputDevice" Style="{StaticResource AfSettingsButtonStyle}" HorizontalAlignment="Left" Margin="16,8"/>
+                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.Experiments}" Destination="Experimental" GroupId="Experimental.Audio.Title" Style="{StaticResource AfSettingsButtonStyle}" HorizontalAlignment="Left" Margin="16,0,16,8"/>
                     </StackPanel>
                 </components:SettingsGroup>
                 <ui:Button

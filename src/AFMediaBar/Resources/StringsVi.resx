@@ -3049,9 +3049,7 @@ Heap được quản lý {6} → {7} · {8} ms · {9}</value></data>
   <data name="Memory.System.Readings" xml:space="preserve"><value>Bộ nhớ hệ thống khả dụng: {0} → {1}</value></data>
   <data name="Device.Personalization" xml:space="preserve"><value>Bí danh và thứ tự thiết bị</value></data>
   <data name="Device.PersonalizationHint" xml:space="preserve"><value>Kéo để sắp xếp hiển thị và chuyển trong AF. Thiết bị đã tắt được thu gọn; không đổi thiết bị Windows.</value></data>
-  <data name="Device.Alias" xml:space="preserve"><value>Tên hiển thị AF (để trống dùng tên hệ thống)</value></data>
-  <data name="Device.MoveUp" xml:space="preserve"><value>Lên</value></data>
-  <data name="Device.MoveDown" xml:space="preserve"><value>Xuống</value></data>
+  <data name="Device.Alias" xml:space="preserve"><value>Bí danh thiết bị trong AF (xóa để dùng tên hệ thống, Enter lưu, Esc hủy)</value></data>
   <data name="Device.Forget" xml:space="preserve"><value>Xóa cấu hình thiết bị mất kết nối</value></data>
   <data name="Device.Rebind" xml:space="preserve"><value>Liên kết lại</value></data>
   <data name="Device.RebindHint" xml:space="preserve"><value>Chọn điểm cuối thay thế. Cấu hình này sẽ chuyển sang và thay thế cấu hình AF của đích. Không tự ghép theo tên.</value></data>
@@ -3063,7 +3061,7 @@ Heap được quản lý {6} → {7} · {8} ms · {9}</value></data>
   <data name="Device.Hotkey.Duplicate" xml:space="preserve"><value>Trùng phím tắt AF khác; chưa đăng ký</value></data>
   <data name="Device.Hotkey.Conflict" xml:space="preserve"><value>Phím đã bị chiếm hoặc hệ thống từ chối; chưa đăng ký</value></data>
   <data name="Device.Hotkey.Registered" xml:space="preserve"><value>Đã đăng ký</value></data>
-  <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>Không có đích khả dụng; kiểm tra lựa chọn vòng, trạng thái bật và kết nối</value></data>
+  <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>Không có thiết bị đích khả dụng; kiểm tra trạng thái bật và kết nối trong Quản lý thiết bị</value></data>
   <data name="Device.Hotkey.Failed" xml:space="preserve"><value>Chuyển thiết bị chưa hoàn tất</value></data>
   <data name="Battery.Title" xml:space="preserve"><value>Pin Bluetooth</value></data>
   <data name="Battery.Hint" xml:space="preserve"><value>Theo dõi một thiết bị Bluetooth được chọn bằng thuộc tính Windows và pin BLE chuẩn. Mỗi chu kỳ pin yếu chỉ cảnh báo một lần; khởi động, đổi chọn và kết nối lại thiết lập mốc trước.</value></data>
@@ -3134,15 +3132,13 @@ Nguồn: {2}</value></data>
   <data name="Memory.Auto.Running" xml:space="preserve"><value>Đang tự động tối ưu</value></data>
   <data name="Memory.Auto.Paused" xml:space="preserve"><value>Tạm dừng do mất quyền hoặc lỗi lặp lại; kiểm tra kết quả trước khi tiếp tục</value></data>
   <data name="Device.Management.Title" xml:space="preserve"><value>Quản lý thiết bị</value></data>
-  <data name="Device.Management.Description" xml:space="preserve"><value>Quản lý thiết bị âm thanh, thứ tự chuyển, phím tắt và pin Bluetooth</value></data>
+  <data name="Device.Management.Description" xml:space="preserve"><value>Quản lý thiết bị vào/ra được bật, bí danh, thứ tự hiển thị và chuyển đổi cùng pin Bluetooth</value></data>
   <data name="Device.RequireExperiment" xml:space="preserve"><value>Chuyển và tùy chỉnh thiết bị theo công tắc thử nghiệm. Vô hiệu hóa ở đây chỉ ảnh hưởng AF.</value></data>
   <data name="Device.Enabled" xml:space="preserve"><value>Bật</value></data>
   <data name="Device.Disabled" xml:space="preserve"><value>Thiết bị đã tắt</value></data>
   <data name="Device.Offline" xml:space="preserve"><value>Hiện không khả dụng</value></data>
-  <data name="Device.Drag" xml:space="preserve"><value>Kéo để đổi thứ tự hiển thị và chuyển</value></data>
-  <data name="Device.Cycle.Include" xml:space="preserve"><value>Tham gia vòng chuyển bằng phím tắt</value></data>
   <data name="Device.Hotkeys" xml:space="preserve"><value>Phím tắt chuyển vòng</value></data>
-  <data name="Device.Cycle.Hint" xml:space="preserve"><value>Chuyển vòng thiết bị đã chọn và bật theo thứ tự hiển thị, bỏ qua thiết bị ngoại tuyến. Một phím tắt cho đầu vào và đầu ra.</value></data>
+  <data name="Device.Cycle.Hint" xml:space="preserve"><value>Chuyển vòng qua thiết bị được bật theo thứ tự trong Quản lý thiết bị, bỏ qua thiết bị ngoại tuyến. Đầu vào và đầu ra dùng tổ hợp riêng; cần bật thử nghiệm phím tắt thiết bị.</value></data>
   <data name="Battery.SelectHint" xml:space="preserve"><value>Chọn một thiết bị đã ghép đôi. Chỉ đọc pin chuẩn của thiết bị đó; thiết bị không hỗ trợ hiển thị không rõ.</value></data>
   <data name="Battery.Select" xml:space="preserve"><value>Thiết bị theo dõi</value></data>
   <data name="Battery.ListRefresh" xml:space="preserve"><value>Làm mới thiết bị đã ghép đôi</value></data>
@@ -3175,4 +3171,15 @@ Nguồn: {2}</value></data>
   <data name="Memory.Result.StageCompleted" xml:space="preserve"><value>Xong</value></data>
   <data name="Memory.Notification.PartialSuccess" xml:space="preserve"><value>Hoàn tất một phần</value></data>
   <data name="Memory.Notification.TimedOut" xml:space="preserve"><value>Chưa xác nhận kết quả</value></data>
+  <data name="Device.RenameHint" xml:space="preserve"><value>Nhấp đúp vào tên để đổi tên</value></data>
+  <data name="Settings.Related.DeviceOrder" xml:space="preserve"><value>Thiết bị được bật và thứ tự</value></data>
+  <data name="Settings.Related.Experiments" xml:space="preserve"><value>Các thử nghiệm liên quan</value></data>
+  <data name="Settings.Related.RestContent" xml:space="preserve"><value>Nội dung thường trực và thứ tự</value></data>
+  <data name="Settings.Related.RestInteraction" xml:space="preserve"><value>Thao tác nhấp và di chuột</value></data>
+  <data name="Settings.Related.IdleNote" xml:space="preserve"><value>Văn bản khi không có nội dung</value></data>
+  <data name="Settings.Related.TextLayout" xml:space="preserve"><value>Bố cục và căn chỉnh văn bản</value></data>
+  <data name="Settings.Related.TextAppearance" xml:space="preserve"><value>Giao diện văn bản</value></data>
+  <data name="Settings.Related.LyricsPresentation" xml:space="preserve"><value>Cách hiển thị lời bài hát</value></data>
+  <data name="Settings.Related.WidgetLayout" xml:space="preserve"><value>Tiện ích và thứ tự</value></data>
+  <data name="Settings.Related.MemoryTools" xml:space="preserve"><value>Chính sách tối ưu bộ nhớ</value></data>
 </root>

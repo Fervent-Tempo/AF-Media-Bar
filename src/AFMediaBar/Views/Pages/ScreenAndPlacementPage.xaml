@@ -160,6 +160,9 @@
                                                         Badge="{DynamicResource Loc.Common.NotImplemented}" Icon="{ui:SymbolIcon Options24}" IsEnabled="False" />
                             </StackPanel>
                         </ui:CardExpander>
+                    <WrapPanel Margin="16,8,16,12">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.Experiments}" Destination="Experimental" GroupId="Experimental.Floating.Title" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
+                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup
@@ -242,6 +245,9 @@
                                 Icon="{ui:SymbolIcon ArrowReset24}"
                                 Style="{StaticResource AfSettingsButtonStyle}" />
                         </components:SettingsRow>
+                    <WrapPanel Margin="16,8,16,12">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.Experiments}" Destination="Experimental" GroupId="Experimental.Vertical.Title" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
+                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup GroupId="Placement.Floating.Title" Header="{DynamicResource Loc.Placement.Floating.Title}"

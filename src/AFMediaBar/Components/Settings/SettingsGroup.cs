@@ -55,6 +55,11 @@ public class SettingsGroup : HeaderedContentControl
         typeof(SettingsGroup),
         new PropertyMetadata(SettingsGroupTint.Neutral));
 
+    /// <summary>标题旁的轻量提示，空值不占位，不参与分组导航名称。</summary>
+    public static readonly DependencyProperty HeaderHintProperty = DependencyProperty.Register(
+        nameof(HeaderHint), typeof(string), typeof(SettingsGroup), new PropertyMetadata(string.Empty));
+    public string HeaderHint { get => (string)GetValue(HeaderHintProperty); set => SetValue(HeaderHintProperty, value); }
+
     /// <summary>可选状态芯片文本；为空时不显示芯片。/ Optional status chip text; an empty value hides the chip.</summary>
     public static readonly DependencyProperty StatusTextProperty = DependencyProperty.Register(
         nameof(StatusText),

@@ -470,10 +470,11 @@
                                             KeyboardNavigation.IsTabStop="False" />
                                     </Grid>
 
-                                    <TextBlock
-                                        Grid.Column="1"
-                                        Style="{StaticResource AfSettingsSectionTitleStyle}"
-                                        Text="{TemplateBinding Header}" />
+                                    <WrapPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Style="{StaticResource AfSettingsSectionTitleStyle}" Text="{TemplateBinding Header}" />
+                                        <TextBlock x:Name="GroupHeaderHint" Text="{TemplateBinding HeaderHint}" Margin="12,0,0,0"
+                                            VerticalAlignment="Center" Style="{StaticResource AfSettingsHintTextStyle}" />
+                                    </WrapPanel>
 
                                     <ContentControl
                                         x:Name="GroupStatus"
@@ -507,6 +508,9 @@
                         </Trigger>
                         <Trigger Property="Description" Value="">
                             <Setter TargetName="GroupDescription" Property="Visibility" Value="Collapsed" />
+                        </Trigger>
+                        <Trigger Property="HeaderHint" Value="">
+                            <Setter TargetName="GroupHeaderHint" Property="Visibility" Value="Collapsed" />
                         </Trigger>
                         <Trigger Property="StatusText" Value="">
                             <Setter TargetName="GroupStatus" Property="Visibility" Value="Collapsed" />

@@ -45,6 +45,7 @@ public static class SettingsPageCatalog
         (SettingsPageKey.Lyrics, "Common.Group.LyricsAlignment") => (SettingsPageKey.Components, "Appearance.Group.RestLayout"),
         (SettingsPageKey.Components, "Common.Group.RestLayerComponents") => (SettingsPageKey.Components, "Common.Group.Widgets"),
         (SettingsPageKey.Interaction, "Common.Group.SharedModifier") => (SettingsPageKey.Interaction, "Interaction.Group.Wheel"),
+        (SettingsPageKey.DeviceManagement, "Device.Hotkeys") => (SettingsPageKey.Interaction, "Device.Hotkeys"),
         (SettingsPageKey.Interaction, "Audio.Settings.Title") => (SettingsPageKey.DeviceManagement, "Common.OutputDevice"),
         _ => (page, groupId)
     };

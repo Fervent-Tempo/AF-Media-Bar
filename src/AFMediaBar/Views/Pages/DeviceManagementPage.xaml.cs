@@ -1,46 +1,56 @@
-// 页面只将拖动、重排与重置意图交给视图模型；设备枚举和持久化由应用服务处理。
+// 页面只表达重命名、重置和导航意图；排序预览使用共用行为，设备与持久化由视图模型协调。
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 using AFMediaBar.Classes.Utils;
 using AFMediaBar.ViewModels.Pages;
 using Wpf.Ui.Abstractions.Controls;
 
 namespace AFMediaBar.Views.Pages;
 
-/// <summary>输入输出设备、循环快捷键与所选蓝牙设备的全局配置。</summary>
+/// <summary>输入输出设备、顺序与所选蓝牙设备的全局配置。</summary>
 public partial class DeviceManagementPage : INavigableView<AudioDeviceSettingsViewModel>
 {
-    private Point? _dragStart;
     public AudioDeviceSettingsViewModel ViewModel { get; }
     public DeviceManagementPage(AudioDeviceSettingsViewModel viewModel)
-    { ViewModel = viewModel; DataContext = this; InitializeComponent(); Unloaded += (_, _) => _dragStart = null; }
+    { ViewModel = viewModel; DataContext = this; InitializeComponent(); }
     private async void OnPageLoaded(object sender, RoutedEventArgs args)
     { SettingsRevealAnimator.Play(sender as Panel); await ViewModel.RefreshAsync(); if (ViewModel.Battery is { IsExperimentEnabled: true } battery) await battery.RefreshDevicesAsync(); }
-    private void DragHandle_Down(object sender, MouseButtonEventArgs args) => _dragStart = args.GetPosition(this);
-    private void DragHandle_Move(object sender, MouseEventArgs args)
+    private void DeviceName_MouseDown(object sender, MouseButtonEventArgs args)
     {
-        if (args.LeftButton != MouseButtonState.Pressed) { _dragStart = null; return; }
-        if (!ViewModel.CanEdit || !ViewModel.IsOrderingEnabled || _dragStart is not { } start ||
-            sender is not FrameworkElement { DataContext: AudioDevicePermissionItemViewModel row } element || !row.IsAllowed || row.IsOffline) return;
-        var point = args.GetPosition(this);
-        if (Math.Abs(point.X - start.X) < SystemParameters.MinimumHorizontalDragDistance && Math.Abs(point.Y - start.Y) < SystemParameters.MinimumVerticalDragDistance) return;
-        _dragStart = null;
+        if (sender is not FrameworkElement { DataContext: AudioDevicePermissionItemViewModel row } element || row.IsRenaming) return;
+        element.Focus();
+        if (args.ClickCount != 2) return;
+        row.BeginRenameCommand.Execute(null);
         args.Handled = true;
-        DragDrop.DoDragDrop(element, new DataObject(typeof(AudioDevicePermissionItemViewModel), row), DragDropEffects.Move);
     }
-    private void DeviceRow_DragOver(object sender, DragEventArgs args)
+    private void DeviceName_KeyDown(object sender, KeyEventArgs args)
     {
-        args.Handled = true; args.Effects = DragDropEffects.None;
-        if (sender is FrameworkElement { DataContext: AudioDevicePermissionItemViewModel target } && target.IsAllowed && !target.IsOffline &&
-            args.Data.GetData(typeof(AudioDevicePermissionItemViewModel)) is AudioDevicePermissionItemViewModel source && source.Direction == target.Direction)
-            args.Effects = DragDropEffects.Move;
-    }
-    private void DeviceRow_Drop(object sender, DragEventArgs args)
-    {
+        if (args.Key != Key.F2 || sender is not FrameworkElement { DataContext: AudioDevicePermissionItemViewModel row }) return;
+        row.BeginRenameCommand.Execute(null);
         args.Handled = true;
-        if (sender is FrameworkElement { DataContext: AudioDevicePermissionItemViewModel target } &&
-            args.Data.GetData(typeof(AudioDevicePermissionItemViewModel)) is AudioDevicePermissionItemViewModel source) ViewModel.Reorder(source, target);
+    }
+    private void AliasEditor_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs args)
+    {
+        if (args.NewValue is not true || sender is not TextBox editor) return;
+        editor.Dispatcher.BeginInvoke(DispatcherPriority.Input, new Action(() =>
+        {
+            if (editor.IsVisible && ViewModel.CanEdit && editor.DataContext is AudioDevicePermissionItemViewModel { IsRenaming: true })
+            { editor.Focus(); editor.SelectAll(); }
+        }));
+    }
+    private void AliasEditor_KeyDown(object sender, KeyEventArgs args)
+    {
+        if (sender is not TextBox { DataContext: AudioDevicePermissionItemViewModel row } editor || args.Key is not (Key.Enter or Key.Escape)) return;
+        if (args.Key == Key.Escape) row.CancelRenameCommand.Execute(null);
+        else row.CommitRenameCommand.Execute(null);
+        args.Handled = true;
+        if (editor.Parent is Grid { Parent: Border nameSurface }) nameSurface.Focus();
+    }
+    private void AliasEditor_LostFocus(object sender, KeyboardFocusChangedEventArgs args)
+    {
+        if (sender is FrameworkElement { DataContext: AudioDevicePermissionItemViewModel row }) row.CommitRenameCommand.Execute(null);
     }
     private async void ResetButton_Click(object sender, RoutedEventArgs args)
     { if (await SettingsResetDialog.ConfirmAsync("Device.Management.Title", cancellationToken: ViewModel.CancellationToken)) ViewModel.Reset(); }

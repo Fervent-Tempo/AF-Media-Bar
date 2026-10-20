@@ -3011,9 +3011,7 @@
   <data name="Memory.System.Readings" xml:space="preserve"><value>系統可用記憶體：{0} → {1}</value></data>
   <data name="Device.Personalization" xml:space="preserve"><value>裝置別名與順序</value></data>
   <data name="Device.PersonalizationHint" xml:space="preserve"><value>拖曳調整 AF 中的顯示與切換順序；停用裝置收合，僅影響 AF。</value></data>
-  <data name="Device.Alias" xml:space="preserve"><value>AF 顯示名稱（留空使用系統名稱）</value></data>
-  <data name="Device.MoveUp" xml:space="preserve"><value>上移</value></data>
-  <data name="Device.MoveDown" xml:space="preserve"><value>下移</value></data>
+  <data name="Device.Alias" xml:space="preserve"><value>AF 裝置別名（清空恢復系統名稱，Enter 儲存，Esc 取消）</value></data>
   <data name="Device.Forget" xml:space="preserve"><value>刪除失聯設定</value></data>
   <data name="Device.Rebind" xml:space="preserve"><value>重新關聯</value></data>
   <data name="Device.RebindHint" xml:space="preserve"><value>手動選擇替代端點，將此設定轉移並取代目標端點的 AF 設定。不會依名稱自動關聯。</value></data>
@@ -3025,7 +3023,7 @@
   <data name="Device.Hotkey.Duplicate" xml:space="preserve"><value>與 AF 的其他快速鍵重複，未註冊</value></data>
   <data name="Device.Hotkey.Conflict" xml:space="preserve"><value>組合鍵被占用或系統拒絕，未註冊</value></data>
   <data name="Device.Hotkey.Registered" xml:space="preserve"><value>已註冊</value></data>
-  <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>沒有可用目標，請檢查循環勾選、啟用狀態和裝置連線</value></data>
+  <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>沒有可用目標，請在裝置管理中檢查啟用狀態與連線</value></data>
   <data name="Device.Hotkey.Failed" xml:space="preserve"><value>裝置切換未完成</value></data>
   <data name="Battery.Title" xml:space="preserve"><value>藍牙電量</value></data>
   <data name="Battery.Hint" xml:space="preserve"><value>僅追蹤手動選擇的一個藍牙裝置，讀取 Windows 屬性和標準 BLE 電量。低電量同一週期提醒一次，啟動、改選和重新連線先建立基準。</value></data>
@@ -3096,15 +3094,13 @@
   <data name="Memory.Auto.Running" xml:space="preserve"><value>自動最佳化執行中</value></data>
   <data name="Memory.Auto.Paused" xml:space="preserve"><value>權限失效或多次失敗，已暫停；請檢查最近結果後恢復</value></data>
   <data name="Device.Management.Title" xml:space="preserve"><value>裝置管理</value></data>
-  <data name="Device.Management.Description" xml:space="preserve"><value>管理輸入輸出裝置、切換順序、快捷鍵與藍牙電量</value></data>
+  <data name="Device.Management.Description" xml:space="preserve"><value>管理輸入輸出裝置的啟用、別名、顯示與切換順序，以及藍牙電量</value></data>
   <data name="Device.RequireExperiment" xml:space="preserve"><value>裝置切換與個人化受實驗功能開關控制；請開啟對應項目。停用僅影響 AF，不會停用 Windows 裝置。</value></data>
   <data name="Device.Enabled" xml:space="preserve"><value>啟用</value></data>
   <data name="Device.Disabled" xml:space="preserve"><value>已停用裝置</value></data>
   <data name="Device.Offline" xml:space="preserve"><value>暫時無法使用</value></data>
-  <data name="Device.Drag" xml:space="preserve"><value>拖曳調整顯示與切換順序</value></data>
-  <data name="Device.Cycle.Include" xml:space="preserve"><value>參與快捷鍵循環</value></data>
   <data name="Device.Hotkeys" xml:space="preserve"><value>循環快捷鍵</value></data>
-  <data name="Device.Cycle.Hint" xml:space="preserve"><value>依拖曳順序循環已勾選的啟用裝置，略過離線裝置。輸入和輸出各使用一個組合鍵。</value></data>
+  <data name="Device.Cycle.Hint" xml:space="preserve"><value>依裝置管理中已啟用裝置的順序循環，略過離線裝置。輸入和輸出各使用一個組合鍵；需開啟裝置快捷鍵實驗。</value></data>
   <data name="Battery.SelectHint" xml:space="preserve"><value>手動選擇一個已配對裝置，僅查詢該裝置的標準電量資訊。驅動程式或裝置未提供時顯示未知。</value></data>
   <data name="Battery.Select" xml:space="preserve"><value>追蹤裝置</value></data>
   <data name="Battery.ListRefresh" xml:space="preserve"><value>重新整理已配對裝置清單</value></data>
@@ -3137,4 +3133,15 @@
   <data name="Memory.Result.StageCompleted" xml:space="preserve"><value>完成</value></data>
   <data name="Memory.Notification.PartialSuccess" xml:space="preserve"><value>部分清理完成</value></data>
   <data name="Memory.Notification.TimedOut" xml:space="preserve"><value>結果未確認</value></data>
+  <data name="Device.RenameHint" xml:space="preserve"><value>按兩下名稱可重新命名</value></data>
+  <data name="Settings.Related.DeviceOrder" xml:space="preserve"><value>裝置啟用與順序</value></data>
+  <data name="Settings.Related.Experiments" xml:space="preserve"><value>相關實驗開關</value></data>
+  <data name="Settings.Related.RestContent" xml:space="preserve"><value>常駐內容與順序</value></data>
+  <data name="Settings.Related.RestInteraction" xml:space="preserve"><value>點擊與懸停操作</value></data>
+  <data name="Settings.Related.IdleNote" xml:space="preserve"><value>無媒體提示文字</value></data>
+  <data name="Settings.Related.TextLayout" xml:space="preserve"><value>文字配置與對齊</value></data>
+  <data name="Settings.Related.TextAppearance" xml:space="preserve"><value>文字外觀</value></data>
+  <data name="Settings.Related.LyricsPresentation" xml:space="preserve"><value>歌詞樣式</value></data>
+  <data name="Settings.Related.WidgetLayout" xml:space="preserve"><value>小元件與順序</value></data>
+  <data name="Settings.Related.MemoryTools" xml:space="preserve"><value>記憶體最佳化策略</value></data>
 </root>
