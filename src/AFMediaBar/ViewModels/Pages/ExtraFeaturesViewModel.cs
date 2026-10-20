@@ -32,8 +32,6 @@ public partial class ExtraFeaturesViewModel : ObservableObject
 
     public ObservableCollection<MediaSourceSettingItem> Sources { get; } = [];
     public ObservableCollection<QuickLaunchEntry> QuickLaunchEntries { get; } = [];
-    public IReadOnlyList<ApplicationVolumeMemoryItem> VolumeMemoryEntries => SettingsManager.Current.ApplicationVolumeMemory.Entries
-        .Select(entry => new ApplicationVolumeMemoryItem(entry)).ToArray();
     public IReadOnlyList<DisplayMonitorOption> MonitorOptions { get; private set; } = [];
     public IReadOnlyList<MediaSourceDescriptor> PreferredSourceOptions { get; private set; } = [];
 
@@ -202,27 +200,6 @@ public partial class ExtraFeaturesViewModel : ObservableObject
 
     public void ResetExtraFeatures() => SettingsManager.ResetExtraFeatures();
 
-    public void AddVolumeMemoryApplication(string path)
-    {
-        if (!Path.GetExtension(path).Equals(".exe", StringComparison.OrdinalIgnoreCase) || !File.Exists(path)) return;
-        var settings = SettingsManager.Current.ApplicationVolumeMemory;
-        SettingsManager.SetApplicationVolumeMemorySettings(settings with
-        {
-            Entries = settings.Entries.Append(new ApplicationVolumeMemoryEntry(Path.GetFullPath(path))).ToArray()
-        });
-    }
-
-    [RelayCommand]
-    private void RemoveVolumeMemory(ApplicationVolumeMemoryEntry? entry)
-    {
-        if (entry is null) return;
-        var settings = SettingsManager.Current.ApplicationVolumeMemory;
-        SettingsManager.SetApplicationVolumeMemorySettings(settings with
-        {
-            Entries = settings.Entries.Where(candidate => !candidate.ExecutablePath.Equals(entry.ExecutablePath, StringComparison.OrdinalIgnoreCase)).ToArray()
-        });
-    }
-
     /// <summary>
     /// 写状态行。参数是文案键而不是拼好的句子，因此语言变化后这一行会自己跟着换语言。
     /// Writes the status line. The argument is a text key rather than a finished sentence, so the line follows a language
@@ -306,7 +283,6 @@ public partial class ExtraFeaturesViewModel : ObservableObject
             foreach (var entry in SettingsManager.Current.QuickLaunch.Entries ?? []) QuickLaunchEntries.Add(entry);
             RefreshMonitors();
             OnPropertyChanged(nameof(SmtcFilterEnabled));
-            OnPropertyChanged(nameof(VolumeMemoryEntries));
             OnPropertyChanged(nameof(SelectionMode));
             OnPropertyChanged(nameof(IsPreferredApplication));
             OnPropertyChanged(nameof(SelectionDescription));
@@ -368,12 +344,6 @@ public partial class ExtraFeaturesViewModel : ObservableObject
     }
 
 
-}
-
-/// <summary>音量记忆设置行，离线应用也可查看或移除。</summary>
-public sealed record ApplicationVolumeMemoryItem(ApplicationVolumeMemoryEntry Entry)
-{
-    public string LevelText => Entry.VolumePercent is { } volume ? $"{volume}%" : Translations.Get("Audio.VolumeMemory.Waiting");
 }
 
 /// <summary>设置页中的可选媒体来源。 / Selectable media source shown on the settings page.</summary>

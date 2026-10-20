@@ -58,15 +58,4 @@ public partial class ExtraFeaturesPage : INavigableView<ExtraFeaturesViewModel>
             ViewModel.ResetExtraFeatures();
     }
 
-    private void BrowseVolumeMemory_Click(object sender, System.Windows.RoutedEventArgs e)
-    {
-        var dialog = new OpenFileDialog
-        {
-            Title = Translations.Get("Audio.VolumeMemory.Add"),
-            Filter = Translations.Get("Audio.VolumeMemory.Filter"),
-            Multiselect = false,
-            CheckFileExists = true
-        };
-        if (dialog.ShowDialog() == true) ViewModel.AddVolumeMemoryApplication(dialog.FileName);
-    }
 }

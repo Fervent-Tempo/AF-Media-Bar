@@ -104,7 +104,6 @@ public static class SettingsManager
     public static void SetSmtcSourceFilterSettings(SmtcSourceFilterSettings settings) => Current.SmtcSourceFilter = settings;
     public static void SetMediaSelectionSettings(MediaSelectionSettings settings) => Current.MediaSelection = settings;
     public static void SetQuickLaunchSettings(QuickLaunchSettings settings) => Current.QuickLaunch = settings;
-    public static void SetApplicationVolumeMemorySettings(ApplicationVolumeMemorySettings settings) => Current.ApplicationVolumeMemory = settings;
     public static void SetSpectrumComponentSettings(SpectrumComponentSettings settings) => Current.SpectrumComponent = settings;
     public static void SetPerformanceComponentSettings(PerformanceComponentSettings settings) => Current.PerformanceComponent = settings;
     public static void SetUpdateSettings(UpdateSettings settings) => Current.Update = settings;
@@ -259,7 +258,6 @@ public static class SettingsManager
         next.SmtcSourceFilter = defaults.SmtcSourceFilter;
         next.MediaSelection = defaults.MediaSelection;
         next.QuickLaunch = defaults.QuickLaunch;
-        next.ApplicationVolumeMemory = defaults.ApplicationVolumeMemory;
         Replace(next, SettingsResetScope.ExtraFeatures);
     }
     public static void ResetComponents()
@@ -367,7 +365,6 @@ public static class SettingsManager
             case nameof(AppSettings.SmtcSourceFilter):
             case nameof(AppSettings.MediaSelection):
             case nameof(AppSettings.QuickLaunch):
-            case nameof(AppSettings.ApplicationVolumeMemory):
             case nameof(AppSettings.SpectrumComponent):
             case nameof(AppSettings.PerformanceComponent): ExtraFeaturesSettingsChanged?.Invoke(null, EventArgs.Empty); break;
             case nameof(AppSettings.Update): UpdateSettingsChanged?.Invoke(null, EventArgs.Empty); break;
