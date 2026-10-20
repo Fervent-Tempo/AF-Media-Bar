@@ -3083,7 +3083,7 @@ Nguồn: {2}</value></data>
   <data name="Device.Order" xml:space="preserve"><value>Thứ tự hiển thị</value></data>
   <data name="Device.Hotkey.Record" xml:space="preserve"><value>Bấm rồi nhấn tổ hợp phím</value></data>
   <data name="Device.Hotkey.Recording" xml:space="preserve"><value>Nhấn tổ hợp phím…</value></data>
-  <data name="Device.Hotkey.RecordHint" xml:space="preserve"><value>Nhấn tổ hợp có Ctrl hoặc Alt. Esc hủy, Backspace hoặc Delete xóa, Tab rời đi.</value></data>
+  <data name="Device.Hotkey.RecordHint" xml:space="preserve"><value>Nhấp để ghi tổ hợp có Ctrl hoặc Alt; không hỗ trợ Win và F12. Esc hủy ghi; Delete, Backspace hoặc nút xóa bên cạnh sẽ xóa phím tắt.</value></data>
   <data name="Memory.OptimizeAf" xml:space="preserve"><value>Tối ưu bộ nhớ AF</value></data>
   <data name="Memory.OptimizeSystem" xml:space="preserve"><value>Tối ưu bộ nhớ hệ thống</value></data>
   <data name="Memory.System.Standard" xml:space="preserve"><value>Tối ưu tiêu chuẩn</value></data>

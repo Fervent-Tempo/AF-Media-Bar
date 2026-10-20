@@ -3045,7 +3045,7 @@ Source: {2}</value></data>
   <data name="Device.Order" xml:space="preserve"><value>Display order</value></data>
   <data name="Device.Hotkey.Record" xml:space="preserve"><value>Click and press a shortcut</value></data>
   <data name="Device.Hotkey.Recording" xml:space="preserve"><value>Press a shortcut…</value></data>
-  <data name="Device.Hotkey.RecordHint" xml:space="preserve"><value>Press a shortcut with Ctrl or Alt. Esc cancels, Backspace or Delete clears, Tab leaves.</value></data>
+  <data name="Device.Hotkey.RecordHint" xml:space="preserve"><value>Click to record a combination containing Ctrl or Alt; Win and F12 are unsupported. Esc cancels recording; Delete, Backspace or the adjacent delete button clears the shortcut.</value></data>
   <data name="Memory.OptimizeAf" xml:space="preserve"><value>Optimize AF memory</value></data>
   <data name="Memory.OptimizeSystem" xml:space="preserve"><value>Optimize system memory</value></data>
   <data name="Memory.System.Standard" xml:space="preserve"><value>Standard optimization</value></data>

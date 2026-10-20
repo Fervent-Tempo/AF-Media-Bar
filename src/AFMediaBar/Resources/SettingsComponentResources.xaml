@@ -852,10 +852,20 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type components:HotkeyRecorder}">
-                    <Border x:Name="InputBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                        BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4" Padding="{TemplateBinding Padding}">
-                        <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center" Focusable="False"/>
-                    </Border>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Border x:Name="InputBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center" Focusable="False"/>
+                        </Border>
+                        <ui:Button Grid.Column="1" Margin="8,0,0,0" Width="32" Height="32" Padding="0"
+                            Command="{Binding ClearHotkeyCommand, RelativeSource={RelativeSource TemplatedParent}}"
+                            ToolTip="{DynamicResource Loc.Common.Clear}" AutomationProperties.Name="{DynamicResource Loc.Common.Clear}"
+                            Icon="{ui:SymbolIcon Delete24}"/>
+                    </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="InputBorder" Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}"/></Trigger>
                         <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.55"/></Trigger>

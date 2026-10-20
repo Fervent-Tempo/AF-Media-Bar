@@ -15,9 +15,11 @@ public sealed class HotkeyRecorder : TextBox
         new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
     public string Hotkey { get => (string)GetValue(HotkeyProperty); set => SetValue(HotkeyProperty, value); }
     public bool IsRecording { get => (bool)GetValue(IsRecordingProperty); set => SetValue(IsRecordingProperty, value); }
+    public ICommand ClearHotkeyCommand { get; }
 
     public HotkeyRecorder()
     {
+        ClearHotkeyCommand = new RelayCommand(ClearHotkey);
         SetResourceReference(StyleProperty, "AfHotkeyRecorderStyle");
         IsReadOnly = true;
         IsReadOnlyCaretVisible = false;
@@ -30,6 +32,7 @@ public sealed class HotkeyRecorder : TextBox
     protected override void OnGotKeyboardFocus(KeyboardFocusChangedEventArgs e)
     {
         base.OnGotKeyboardFocus(e);
+        if (!ReferenceEquals(e.NewFocus, this)) return;
         SetCurrentValue(IsRecordingProperty, true);
         Text = Translations.Get("Device.Hotkey.Recording");
     }
@@ -41,6 +44,7 @@ public sealed class HotkeyRecorder : TextBox
     }
     protected override void OnPreviewKeyDown(KeyEventArgs e)
     {
+        if (!IsKeyboardFocused) { base.OnPreviewKeyDown(e); return; }
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
         if (key == Key.Tab) { base.OnPreviewKeyDown(e); return; }
         e.Handled = true;
@@ -48,7 +52,7 @@ public sealed class HotkeyRecorder : TextBox
         if (key is Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt or Key.LeftShift or Key.RightShift or Key.LWin or Key.RWin) return;
         var modifiers = Keyboard.Modifiers;
         if (modifiers == ModifierKeys.None && key is Key.Back or Key.Delete)
-        { SetCurrentValue(HotkeyProperty, string.Empty); Finish(); return; }
+        { ClearHotkey(); return; }
         var parts = new List<string>();
         if (modifiers.HasFlag(ModifierKeys.Control)) parts.Add("Ctrl");
         if (modifiers.HasFlag(ModifierKeys.Alt)) parts.Add("Alt");
@@ -62,7 +66,14 @@ public sealed class HotkeyRecorder : TextBox
     }
     private void Finish()
     {
+        SetCurrentValue(IsRecordingProperty, false);
         RefreshText();
-        if (!MoveFocus(new TraversalRequest(FocusNavigationDirection.Next))) Keyboard.ClearFocus();
+        Keyboard.ClearFocus();
+    }
+
+    private void ClearHotkey()
+    {
+        SetCurrentValue(HotkeyProperty, string.Empty);
+        Finish();
     }
 }

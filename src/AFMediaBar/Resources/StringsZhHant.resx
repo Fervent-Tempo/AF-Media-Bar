@@ -3045,7 +3045,7 @@
   <data name="Device.Order" xml:space="preserve"><value>顯示順序</value></data>
   <data name="Device.Hotkey.Record" xml:space="preserve"><value>點擊後按組合鍵</value></data>
   <data name="Device.Hotkey.Recording" xml:space="preserve"><value>請按組合鍵…</value></data>
-  <data name="Device.Hotkey.RecordHint" xml:space="preserve"><value>按下包含 Ctrl 或 Alt 的組合鍵；Esc 取消，退格或 Delete 清除，Tab 離開。</value></data>
+  <data name="Device.Hotkey.RecordHint" xml:space="preserve"><value>點選錄製後按包含 Ctrl 或 Alt 的組合鍵，不支援 Win 與 F12。Esc 取消錄製；Delete、Backspace 或旁邊的刪除按鈕可清除。</value></data>
   <data name="Memory.OptimizeAf" xml:space="preserve"><value>最佳化 AF 記憶體</value></data>
   <data name="Memory.OptimizeSystem" xml:space="preserve"><value>最佳化系統記憶體</value></data>
   <data name="Memory.System.Standard" xml:space="preserve"><value>標準最佳化</value></data>
