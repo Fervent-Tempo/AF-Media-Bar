@@ -19,6 +19,7 @@ public sealed class LyricsService
     private readonly TimeSpan _perSourceBudget;
     private readonly TimeSpan _totalBudget;
     private readonly TimeSpan _manualPerSourceBudget;
+    private readonly RepeatedFailureReporter _failures = new();
 
     /// <summary>使用默认预算创建协调器。/ Creates the coordinator with default budgets.</summary>
     public LyricsService(params ILyricsProvider[] providers) : this(DefaultPerSourceBudget, DefaultTotalBudget, providers) { }
@@ -47,8 +48,9 @@ public sealed class LyricsService
         };
         var sourceSettings = settings.LyricsSource.Normalize();
         var active = LyricsSourcePolicy.ResolveActive(_providers, sourceSettings);
+        var trace = new LyricsRequestLog(effectiveRequest, sourceSettings, AppLogService.Current);
         if (sourceSettings.Rule == LyricsSourceRule.Manual)
-            return await GetManualLyricsAsync(effectiveRequest, active, sourceSettings, cancellationToken).ConfigureAwait(false);
+            return await GetManualLyricsAsync(effectiveRequest, active, sourceSettings, trace, cancellationToken).ConfigureAwait(false);
         var plan = LyricsRetrievalPolicy.Plan(_providers, active);
         var started = Stopwatch.GetTimestamp();
         using var work = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -57,16 +59,16 @@ public sealed class LyricsService
         {
             if (plan.Preferred is { } preferred)
             {
-                preferredResult = await TryProviderAsync(preferred, effectiveRequest, Remaining(started), work.Token).ConfigureAwait(false);
+                preferredResult = await TryProviderAsync(preferred, effectiveRequest, Remaining(started), work.Token, trace).ConfigureAwait(false);
                 cancellationToken.ThrowIfCancellationRequested();
                 if (preferredResult is not null && preferredResult.MatchScore >= LyricsRetrievalPolicy.PreferredMinimumScore)
-                    return LogResult(preferredResult, started);
+                    return trace.Finish(preferredResult);
             }
             cancellationToken.ThrowIfCancellationRequested();
             var budget = Remaining(started);
-            if (budget <= TimeSpan.Zero) return LogResult(preferredResult, started);
+            if (budget <= TimeSpan.Zero) return trace.Finish(preferredResult);
             // 等的是各自受预算约束的包装任务，不会无限等待底层歌词库。
-            var tasks = plan.Fallbacks.Select(provider => TryProviderAsync(provider, effectiveRequest, budget, work.Token)).ToArray();
+            var tasks = plan.Fallbacks.Select(provider => TryProviderAsync(provider, effectiveRequest, budget, work.Token, trace)).ToArray();
             var results = await Task.WhenAll(tasks).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
             // Provider identity owns routing; a result's display/source label may differ from SourceName.
@@ -78,15 +80,14 @@ public sealed class LyricsService
                 if (LyricsSourcePolicy.IsCurrentPlaybackSource(effectiveRequest.PlaybackSourceId, plan.Fallbacks[index].SourceName))
                     currentPlayback = results[index];
             }
-            return LogResult(LyricsRetrievalPolicy.Select(results, preferredResult, currentPlayback), started);
+            return trace.Finish(LyricsRetrievalPolicy.Select(results, preferredResult, currentPlayback));
         }
         finally { work.Cancel(); }
     }
 
     private async Task<LyricsResult?> GetManualLyricsAsync(LyricsRequest request, IReadOnlyList<ILyricsProvider> providers,
-        LyricsSourceSettings settings, CancellationToken cancellationToken)
+        LyricsSourceSettings settings, LyricsRequestLog trace, CancellationToken cancellationToken)
     {
-        var started = Stopwatch.GetTimestamp();
         using var work = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         LyricsResult? noLyrics = null;
         try
@@ -96,18 +97,18 @@ public sealed class LyricsService
                 foreach (var provider in providers)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    var result = await TryProviderAsync(provider, request, _manualPerSourceBudget, work.Token).ConfigureAwait(false);
+                    var result = await TryProviderAsync(provider, request, _manualPerSourceBudget, work.Token, trace).ConfigureAwait(false);
                     cancellationToken.ThrowIfCancellationRequested();
-                    if (IsAvailable(result)) return LogResult(result, started);
+                    if (IsAvailable(result)) return trace.Finish(result);
                     if (result?.Status == LyricsResultStatus.NoLyrics) noLyrics ??= result;
                 }
-                return LogResult(noLyrics, started);
+                return trace.Finish(noLyrics);
             }
 
             var firstAvailable = new TaskCompletionSource<LyricsResult?>(TaskCreationOptions.RunContinuationsAsynchronously);
             async Task<LyricsResult?> QueryAsync(ILyricsProvider provider)
             {
-                var result = await TryProviderAsync(provider, request, _manualPerSourceBudget, work.Token).ConfigureAwait(false);
+                var result = await TryProviderAsync(provider, request, _manualPerSourceBudget, work.Token, trace).ConfigureAwait(false);
                 if (IsAvailable(result)) firstAvailable.TrySetResult(result);
                 return result;
             }
@@ -121,18 +122,18 @@ public sealed class LyricsService
                 await Task.WhenAny(firstAvailable.Task, all).ConfigureAwait(false);
                 cancellationToken.ThrowIfCancellationRequested();
                 if (firstAvailable.Task.IsCompletedSuccessfully)
-                    return LogResult(await firstAvailable.Task.ConfigureAwait(false), started);
+                    return trace.Finish(await firstAvailable.Task.ConfigureAwait(false));
             }
             // 顺序等待已同时启动的任务；后序即使先返回，也不能越过仍在等待的前序来源。
             foreach (var task in tasks)
             {
                 var result = await task.ConfigureAwait(false);
                 cancellationToken.ThrowIfCancellationRequested();
-                if (IsAvailable(result)) return LogResult(result, started);
+                if (IsAvailable(result)) return trace.Finish(result);
                 if (result?.Status == LyricsResultStatus.NoLyrics) noLyrics ??= result;
             }
             cancellationToken.ThrowIfCancellationRequested();
-            return LogResult(noLyrics, started);
+            return trace.Finish(noLyrics);
         }
         finally { work.Cancel(); }
     }
@@ -146,9 +147,10 @@ public sealed class LyricsService
         return remaining <= TimeSpan.Zero ? TimeSpan.Zero : remaining < _perSourceBudget ? remaining : _perSourceBudget;
     }
 
-    private static async Task<LyricsResult?> TryProviderAsync(ILyricsProvider provider, LyricsRequest request, TimeSpan budget, CancellationToken token)
+    private async Task<LyricsResult?> TryProviderAsync(ILyricsProvider provider, LyricsRequest request, TimeSpan budget, CancellationToken token, LyricsRequestLog trace)
     {
         if (budget <= TimeSpan.Zero) return null;
+        var attempt = trace.Begin(provider.SourceName);
         // 超时取消合作式工作；库内不可取消的请求继续结束，晚到结果不采纳且异常被观察。
         using var source = CancellationTokenSource.CreateLinkedTokenSource(token);
         Task<LyricsResult?>? task = null;
@@ -156,19 +158,22 @@ public sealed class LyricsService
         {
             task = provider.GetLyricsAsync(request, source.Token);
             var result = await task.WaitAsync(budget, token).ConfigureAwait(false);
-            AppLogService.Current?.Info("Lyrics", $"来源取词结果: source={provider.SourceName} " +
-                $"status={result?.Status.ToString() ?? "FailedOrUnmatched"} score={result?.MatchScore.ToString() ?? "none"}");
+            trace.Record(attempt, provider.SourceName, result?.Status.ToString() ?? "FailedOrUnmatched", result?.MatchScore);
+            if (result is not null)
+                _failures.Recover(AppLogService.Current, "Lyrics", provider.SourceName, "歌词来源请求已恢复");
             return result;
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
             // WaitAsync 使用 TaskCanceledException；统一为调用方令牌的取消出口，保持既有契约。
+            trace.Record(attempt, provider.SourceName, "Cancelled");
             token.ThrowIfCancellationRequested();
             throw;
         }
         catch (Exception exception)
         {
-            AppLogService.Current?.Warn("Lyrics", $"来源取词失败: {provider.SourceName} {exception.GetType().Name}");
+            trace.Record(attempt, provider.SourceName, exception is TimeoutException ? "Timeout" : $"Error({exception.GetType().Name})");
+            _failures.Report(AppLogService.Current, "Lyrics", provider.SourceName, "歌词来源请求失败", exception);
             return null;
         }
         finally
@@ -180,11 +185,4 @@ public sealed class LyricsService
         }
     }
 
-    private static LyricsResult? LogResult(LyricsResult? result, long started)
-    {
-        AppLogService.Current?.Info("Lyrics", $"取词结束: source={result?.Source ?? "none"} " +
-            $"score={result?.MatchScore.ToString() ?? "none"} status={result?.Status.ToString() ?? "FailedOrUnmatched"} " +
-            $"elapsed={Stopwatch.GetElapsedTime(started).TotalMilliseconds:0}ms");
-        return result;
-    }
 }

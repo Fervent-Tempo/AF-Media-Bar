@@ -7,6 +7,8 @@ namespace AFMediaBar.Classes.Services.Media.Smtc;
 
 internal sealed class MediaSessionReconcileCoordinator : IDisposable
 {
+    private readonly AppLogService? _log;
+    private readonly RepeatedFailureReporter _failures = new();
     private readonly MediaSessionCatalog _catalog;
     private readonly MediaSessionSelectionService _selection;
     private readonly MemoryPruneCoordinator _memoryPrune;
@@ -19,9 +21,10 @@ internal sealed class MediaSessionReconcileCoordinator : IDisposable
 
     internal MediaSessionReconcileCoordinator(MediaSessionCatalog catalog, MediaSessionSelectionService selection,
         MemoryPruneCoordinator memoryPrune, Dispatcher dispatcher, Func<bool> isConnected,
-        Func<bool> isSnapshotBuilding, Action refreshSnapshot)
+        Func<bool> isSnapshotBuilding, Action refreshSnapshot, AppLogService? log = null)
     {
         _catalog = catalog;
+        _log = log;
         _selection = selection;
         _memoryPrune = memoryPrune;
         _dispatcher = dispatcher;
@@ -191,7 +194,7 @@ internal sealed class MediaSessionReconcileCoordinator : IDisposable
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[MediaSessionService] Background reconcile failed: {ex}");
+            if (!_isDisposed && !token.IsCancellationRequested) _failures.Report(_log, "Media", "reconcile", "后台媒体恢复失败", ex);
         }
         finally
         {
@@ -255,10 +258,11 @@ internal sealed class MediaSessionReconcileCoordinator : IDisposable
         try
         {
             _refreshSnapshot();
+            _failures.Recover(_log, "Media", "reconcile-publish", "发布媒体恢复结果已恢复");
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[MediaSessionService] Failed to publish reconcile result: {ex}");
+            _failures.Report(_log, "Media", "reconcile-publish", "发布媒体恢复结果失败", ex);
         }
 
         // The snapshot now finishes asynchronously. Counting a failure against the previous snapshot here would
@@ -276,6 +280,7 @@ internal sealed class MediaSessionReconcileCoordinator : IDisposable
     {
         if (_isConnected())
         {
+            _failures.Recover(_log, "Media", "reconcile", "后台媒体恢复已恢复");
             _consecutiveFailedReconciles = 0;
             _consecutiveCatalogRestarts = 0;
             _lastCatalogRestartTimestamp = 0;

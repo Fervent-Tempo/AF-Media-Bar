@@ -36,6 +36,7 @@ public sealed record LyricsWebStyle(
 /// </summary>
 public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : IDisposable
 {
+    private readonly RepeatedFailureReporter _deliveryFailures = new();
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
@@ -315,12 +316,16 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
                     break;
 
                 await _core.ExecuteScriptAsync(script);
-                if (IsReady) _unresponsiveNotifications = 0;
+                if (IsReady)
+                {
+                    _unresponsiveNotifications = 0;
+                    _deliveryFailures.Recover(AppLogService.Current, "Lyrics", "web-delivery", "Web 歌词画面提交已恢复");
+                }
             }
         }
         catch (Exception ex)
         {
-            AppLogService.Current?.Error("Lyrics", "Failed to update the web lyrics renderer.", ex);
+            _deliveryFailures.Report(AppLogService.Current, "Lyrics", "web-delivery", "提交 Web 歌词画面失败", ex, AppLogLevel.Error);
             ReportFailure();
         }
         finally

@@ -25,6 +25,7 @@ namespace AFMediaBar.Classes.Services.Lyrics;
 /// </summary>
 internal static class NetEaseLyricFetcher
 {
+    private static readonly RepeatedFailureReporter _endpointFailures = new();
     /// <summary>
     /// 按歌曲 id 取词并构建文档：两个端点并发，任一侧失败只损失那一侧的内容。
     /// Retrieves by song id and builds the document: both endpoints run concurrently, and a failure on either side only costs
@@ -45,8 +46,8 @@ internal static class NetEaseLyricFetcher
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var legacyTask = TryGetAsync("GetLyric", () => api.GetLyric(songId));
-        var wordLevelTask = TryGetAsync("GetLyricNew", () => api.GetLyricNew(songId));
+        var legacyTask = TryGetAsync("GetLyric", () => api.GetLyric(songId), cancellationToken);
+        var wordLevelTask = TryGetAsync("GetLyricNew", () => api.GetLyricNew(songId), cancellationToken);
         await Task.WhenAll(legacyTask, wordLevelTask);
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -57,11 +58,14 @@ internal static class NetEaseLyricFetcher
     /// 请求单个端点；失败返回 null，让另一侧的结果继续可用。
     /// Requests one endpoint; a failure returns null so the other side's result stays usable.
     /// </summary>
-    private static async Task<LyricResult?> TryGetAsync(string endpoint, Func<Task<LyricResult?>> request)
+    private static async Task<LyricResult?> TryGetAsync(string endpoint, Func<Task<LyricResult?>> request, CancellationToken token)
     {
         try
         {
-            return await request();
+            var result = await request();
+            if (!token.IsCancellationRequested && result is not null)
+                _endpointFailures.Recover(AppLogService.Current, "Lyrics", endpoint, "网易云歌词端点请求已恢复");
+            return result;
         }
         catch (OperationCanceledException)
         {
@@ -69,7 +73,8 @@ internal static class NetEaseLyricFetcher
         }
         catch (Exception exception)
         {
-            AppLogService.Current?.Warn("Lyrics", $"网易云歌词端点失败: endpoint={endpoint} {exception.GetType().Name}");
+            if (!token.IsCancellationRequested)
+                _endpointFailures.Report(AppLogService.Current, "Lyrics", endpoint, "网易云歌词端点失败", exception);
             return null;
         }
     }

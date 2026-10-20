@@ -24,10 +24,10 @@ public readonly record struct ProcessMemoryCounters(
     /// <summary>格式化为一行便于对比的读数（MB，一位小数）。/ Formats the reading as one comparable line in megabytes with one decimal.</summary>
     /// <returns>读数文本。/ The formatted reading.</returns>
     public string Describe() =>
-        $"WorkSet {Megabytes(WorkingSetBytes)}{Megabytes(PrivateBytes)}{Megabytes(ManagedHeapBytes)} / " +
-        $"句柄 handles {HandleCount} / 线程 threads {ThreadCount}";
+        $"workingSetMB={Megabytes(WorkingSetBytes)} privateMB={Megabytes(PrivateBytes)} managedMB={Megabytes(ManagedHeapBytes)} " +
+        $"handles={HandleCount} threads={ThreadCount}";
 
-    private static string Megabytes(long bytes) => $"{bytes / 1024d / 1024d:0.0} MB";
+    private static string Megabytes(long bytes) => $"{bytes / 1024d / 1024d:0.0}";
 }
 
 /// <summary>

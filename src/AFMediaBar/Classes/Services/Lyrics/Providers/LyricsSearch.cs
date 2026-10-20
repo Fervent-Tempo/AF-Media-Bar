@@ -8,6 +8,7 @@ namespace AFMediaBar.Classes.Services.Lyrics;
 /// <summary>独立评分的候选搜索，不使用库内元数据筛选。/ Candidate search with application-owned scoring.</summary>
 internal static class LyricsSearch
 {
+    private static readonly RepeatedFailureReporter _searchFailures = new();
     internal sealed record Match(ISearchResult Candidate, int Score);
 
     public static Task<Match?> MatchAsync(LyricsRequest request, Searchers source, CancellationToken token,
@@ -27,11 +28,14 @@ internal static class LyricsSearch
             {
                 // string 重载返回原始候选；ITrackMetadata 重载会偷偷应用库内评分，不能使用。
                 candidates = await searcher.SearchForResults(query).ConfigureAwait(false);
+                if (!token.IsCancellationRequested && candidates is not null)
+                    _searchFailures.Recover(AppLogService.Current, "Lyrics", searcher.Name, "歌词搜索请求已恢复");
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception exception)
             {
-                AppLogService.Current?.Warn("Lyrics", $"歌曲搜索异常: {searcher.Name} {exception.GetType().Name}");
+                if (!token.IsCancellationRequested)
+                    _searchFailures.Report(AppLogService.Current, "Lyrics", searcher.Name, "歌曲搜索异常", exception);
                 continue;
             }
             token.ThrowIfCancellationRequested();
@@ -46,7 +50,7 @@ internal static class LyricsSearch
             // A low QQ candidate is kept for cross-source comparison, but must not stop later search queries.
             if (best is not null && best.Score >= minimumScore) break;
         }
-        AppLogService.Current?.Info("Lyrics", $"歌曲匹配: source={searcher.Name} score={best?.Score.ToString() ?? "none"} " +
+        AppLogService.Current?.Verbose("Lyrics", $"歌曲匹配: source={searcher.Name} score={best?.Score.ToString() ?? "none"} " +
             $"bestCandidateScore={bestCandidateScore?.ToString() ?? "none"} minimum={minimumScore}");
         return best;
     }

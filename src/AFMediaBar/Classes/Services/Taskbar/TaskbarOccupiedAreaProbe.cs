@@ -29,7 +29,9 @@ public sealed class TaskbarOccupiedAreaProbe : ITaskbarOccupiedAreaProbe, IDispo
     private static readonly object OverlaySignatureGate = new();
     private static readonly Dictionary<IntPtr, string> LastOverlaySignatures = [];
 
-    private static readonly Dictionary<IntPtr, DateTime> LastMissingTaskbarWarnings = [];
+    private static readonly Dictionary<IntPtr, long> _missingTaskbarSince = [];
+    private static readonly Dictionary<IntPtr, string> _lastAcceptedSignatures = [];
+    private static readonly RepeatedFailureReporter _missingTaskbarFailures = new();
 
     private readonly object _workerGate = new();
     private readonly List<ProbeRequest> _pending = [];
@@ -289,31 +291,32 @@ public sealed class TaskbarOccupiedAreaProbe : ITaskbarOccupiedAreaProbe, IDispo
             return false;
         CollectHitTestWindows(taskbarHandle, taskbarRect, orientation, primaryLength, ownProcessId, Consider);
 
-        if (accepted.Count == 0 && rejected.Count == 0)
-            return true;
-
-        var description = string.Join(
-            "; ",
-            accepted
-                .Select(candidate => $"{DescribeWindow(candidate.Handle)} range={candidate.Range.Start}..{candidate.Range.End}")
-                .Concat(rejected.Select(candidate => $"{DescribeWindow(candidate.Handle)} 被拒/{candidate.Reason}")));
-
-        // 探测每 250 毫秒重跑一次，因此只有内容变化时才写日志：这一行是"媒体栏为什么被放在这里"的唯一现场证据，
-        // 用户报障的机器（Release 构建）拿不到调试输出，所以它 MUST 进日志而不是只进调试输出。
-        // The probe re-runs every 250 ms, so the line is only written when its content changes. This is the only on-site evidence for
-        // "why the bar ended up here", and a reporting user runs a Release build with no debug output, so it MUST go to the log
-        // rather than to debug output only.
+        var ranges = string.Join(",", accepted.Select(candidate => candidate.Range).Distinct()
+            .OrderBy(range => range.Start).ThenBy(range => range.End).Select(range => $"{range.Start}..{range.End}"));
+        var description = string.Join("; ", accepted.OrderBy(candidate => candidate.Handle.ToInt64())
+            .Select(candidate => $"{DescribeWindow(candidate.Handle)} range={candidate.Range.Start}..{candidate.Range.End}")
+            .Concat(rejected.OrderBy(candidate => candidate.Handle.ToInt64())
+                .Select(candidate => $"{DescribeWindow(candidate.Handle)} 被拒/{candidate.Reason}")));
+        bool rangesChanged;
+        bool detailsChanged;
         lock (OverlaySignatureGate)
         {
-            if (LastOverlaySignatures.TryGetValue(taskbarHandle, out var previous) &&
-                string.Equals(previous, description, StringComparison.Ordinal))
+            rangesChanged = _lastAcceptedSignatures.TryGetValue(taskbarHandle, out var previousRanges)
+                ? previousRanges != ranges : ranges.Length > 0;
+            detailsChanged = !LastOverlaySignatures.TryGetValue(taskbarHandle, out var previousDetails) || previousDetails != description;
+            if (!_lastAcceptedSignatures.ContainsKey(taskbarHandle) && _lastAcceptedSignatures.Count >= 32)
             {
-                return true;
+                var oldest = _lastAcceptedSignatures.Keys.First();
+                _lastAcceptedSignatures.Remove(oldest);
+                LastOverlaySignatures.Remove(oldest);
             }
-
+            _lastAcceptedSignatures[taskbarHandle] = ranges;
             LastOverlaySignatures[taskbarHandle] = description;
         }
-        AppLogService.Current?.Info("Taskbar", $"任务栏上的外部窗口: {description}");
+        if (rangesChanged)
+            AppLogService.Current?.Info("Taskbar", $"外部占用区变化: hwnd=0x{taskbarHandle.ToInt64():X} ranges=[{ranges}]");
+        if (detailsChanged)
+            AppLogService.Current?.Verbose("Taskbar", $"外部窗口探测: hwnd=0x{taskbarHandle.ToInt64():X} {description}");
         return true;
     }
 
@@ -336,33 +339,31 @@ public sealed class TaskbarOccupiedAreaProbe : ITaskbarOccupiedAreaProbe, IDispo
             return true;
         }, IntPtr.Zero);
 
-        // Missing/stale HWNDs are an expected transient shell state, not an exception.
-        // Keep one throttled diagnostic so a persistent mismatch can be distinguished
-        // from a temporarily replaced Explorer HWND on the reporting machine.
+        // Explorer 替换 HWND 时允许短暂缺失；持续两秒才升级为警告。
+        var key = $"taskbar-hwnd:{taskbarHandle.ToInt64():X}";
         if (!reachedTaskbar)
         {
-            var shouldLog = false;
+            long first;
+            bool started;
             lock (OverlaySignatureGate)
             {
-                var now = DateTime.UtcNow;
-                if (!LastMissingTaskbarWarnings.TryGetValue(taskbarHandle, out var previous) ||
-                    now - previous >= TimeSpan.FromMinutes(1))
+                started = !_missingTaskbarSince.TryGetValue(taskbarHandle, out first);
+                if (started)
                 {
-                    LastMissingTaskbarWarnings[taskbarHandle] = now;
-                    if (LastMissingTaskbarWarnings.Count > 16)
-                    {
-                        var oldest = LastMissingTaskbarWarnings.MinBy(pair => pair.Value).Key;
-                        LastMissingTaskbarWarnings.Remove(oldest);
-                    }
-                    shouldLog = true;
+                    first = Stopwatch.GetTimestamp();
+                    if (_missingTaskbarSince.Count >= 32) _missingTaskbarSince.Remove(_missingTaskbarSince.MinBy(pair => pair.Value).Key);
+                    _missingTaskbarSince[taskbarHandle] = first;
                 }
             }
-            if (shouldLog)
-            {
-                var root = GetAncestor(taskbarHandle, GA_ROOT);
-                AppLogService.Current?.Warn("Taskbar",
-                    $"任务栏不在 Z 序枚举中: hwnd=0x{taskbarHandle.ToInt64():X} root=0x{root.ToInt64():X} {DescribeWindow(taskbarHandle)}");
-            }
+            if (started) AppLogService.Current?.Verbose("Taskbar", $"任务栏暂不在 Z 序枚举中: {key}");
+            if (Stopwatch.GetElapsedTime(first) >= TimeSpan.FromSeconds(2))
+                _missingTaskbarFailures.Report(AppLogService.Current, "Taskbar", key,
+                    $"任务栏持续不在 Z 序枚举中: {DescribeWindow(taskbarHandle)}");
+        }
+        else
+        {
+            lock (OverlaySignatureGate) _missingTaskbarSince.Remove(taskbarHandle);
+            _missingTaskbarFailures.Recover(AppLogService.Current, "Taskbar", key, "任务栏 Z 序探测已恢复");
         }
         return reachedTaskbar;
     }

@@ -109,6 +109,8 @@ public sealed class AppLogService : IDisposable
     /// <summary>日志文件（就是需要发出来的那一份）。/ The log file, which is the one to send.</summary>
     public string FilePath { get; }
 
+    internal bool IsDisposed => _disposed;
+
     /// <summary>写一条关键事件。/ Writes one key event.</summary>
     /// <param name="category">分类，例如 Media、Lyrics、Taskbar。/ Category such as Media, Lyrics, or Taskbar.</param>
     /// <param name="message">内容。/ Message.</param>
@@ -147,14 +149,16 @@ public sealed class AppLogService : IDisposable
     /// </summary>
     public void LogSessionStart()
     {
-        var version = Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "unknown";
+        var assembly = Assembly.GetEntryAssembly();
+        var version = assembly?.GetName().Version?.ToString() ?? "unknown";
+        var build = assembly?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown";
         var isDebug = false;
 #if DEBUG
         isDebug = true;
 #endif
         Info("App", $"===== 启动: AF Media Bar {version} ({(isDebug ? "Debug" : "Release")}) =====");
-        Info("App", $"系统: {Environment.OSVersion.VersionString} (.NET {Environment.Version}), 64-bit={Environment.Is64BitProcess}");
-        Info("App", $"日志文件: {FilePath}（只保留最近 {MaximumLines} 条{MaximumLines} lines only）");
+        Info("App", $"build={build} pid={Environment.ProcessId} 系统: {Environment.OSVersion.VersionString} (.NET {Environment.Version}), 64-bit={Environment.Is64BitProcess}");
+        Info("App", $"日志文件: {FilePath}（保留最近 {MaximumLines} 条）");
     }
 
     /// <summary>

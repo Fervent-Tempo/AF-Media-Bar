@@ -37,11 +37,13 @@ public sealed class BarRuntimeCoordinator : IDisposable
         IReadOnlyList<IBarRuntimeHost>? candidates = null;
         var old = Hosts;
         var suspended = false;
+        var previousMode = RunningMode;
         try
         {
             await _switchGate.WaitAsync(request.Token);
             entered = true;
             old = Hosts;
+            previousMode = RunningMode;
             if (_disposed || generation != _generation) return false;
             if (_hasCommitted && mode == RunningMode && !force) return true;
             IsSwitching = true;
@@ -61,6 +63,7 @@ public sealed class BarRuntimeCoordinator : IDisposable
             Hosts = candidates.ToArray();
             candidates = null;
             RunningMode = mode;
+            _log?.Info("DisplayMode", $"媒体栏宿主切换已提交: from={previousMode} to={mode} hosts={Hosts.Count} force={force}");
             _hasCommitted = true;
             suspended = false;
             foreach (var host in old) Retire(host);
@@ -78,9 +81,15 @@ public sealed class BarRuntimeCoordinator : IDisposable
             if (candidates is not null)
                 foreach (var host in candidates) Retire(host);
             if (suspended && !_disposed)
+            {
+                var restored = true;
                 foreach (var host in old)
                     try { host.Resume(); }
-                    catch (Exception exception) { _log?.Error("DisplayMode", "恢复原宿主失败", exception); }
+                    catch (Exception exception) { restored = false; _log?.Error("DisplayMode", "恢复原宿主失败", exception); }
+                var message = $"媒体栏宿主切换回滚: requested={mode} retained={RunningMode} restored={restored} hosts={old.Count}";
+                if (restored) _log?.Info("DisplayMode", message);
+                else _log?.Warn("DisplayMode", message);
+            }
             if (entered)
             {
                 IsSwitching = false;

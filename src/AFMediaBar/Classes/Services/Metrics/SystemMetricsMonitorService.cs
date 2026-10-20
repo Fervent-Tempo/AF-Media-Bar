@@ -12,6 +12,8 @@ public sealed class SystemMetricsMonitorService : IDisposable, IMemoryPrunable, 
 {
     private const double IdleIntervalScale = 4d;
     private readonly ISystemMetricsSampler _sampler;
+    private readonly AppLogService? _log;
+    private readonly RepeatedFailureReporter _failures = new();
     private readonly Dispatcher _dispatcher;
     private readonly object _gate = new();
     private readonly List<Subscription> _subscriptions = [];
@@ -25,9 +27,10 @@ public sealed class SystemMetricsMonitorService : IDisposable, IMemoryPrunable, 
     private int _generation;
     private bool _resetRequired;
 
-    public SystemMetricsMonitorService(ISystemMetricsSampler sampler)
+    public SystemMetricsMonitorService(ISystemMetricsSampler sampler, AppLogService? log = null)
     {
         _sampler = sampler;
+        _log = log;
         _dispatcher = Dispatcher.CurrentDispatcher;
     }
 
@@ -132,10 +135,11 @@ public sealed class SystemMetricsMonitorService : IDisposable, IMemoryPrunable, 
                     try
                     {
                         snapshot = _sampler.Sample();
+                        _failures.Recover(_log, "Metrics", "sample", "性能采样循环已恢复");
                     }
                     catch (Exception exception)
                     {
-                        AppLogService.Current?.Warn("Metrics", $"性能采样失败: {exception.Message}");
+                        _failures.Report(_log, "Metrics", "sample", "性能采样失败", exception);
                     }
 
                     lock (_gate)
@@ -157,7 +161,7 @@ public sealed class SystemMetricsMonitorService : IDisposable, IMemoryPrunable, 
         }
         catch (Exception exception)
         {
-            AppLogService.Current?.Warn("Metrics", $"性能监视器停止: {exception.Message}");
+            _log?.Warn("Metrics", "性能监视器意外停止", exception);
         }
         finally
         {
@@ -169,7 +173,7 @@ public sealed class SystemMetricsMonitorService : IDisposable, IMemoryPrunable, 
             }
             catch (Exception exception)
             {
-                AppLogService.Current?.Warn("Metrics", $"性能资源清理失败: {exception.Message}");
+                _log?.Warn("Metrics", "性能资源清理失败", exception);
             }
         }
     }

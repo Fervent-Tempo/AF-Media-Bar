@@ -45,6 +45,7 @@ public sealed partial class UpdateService : IDisposable
     private readonly InstalledApplicationProbe _probe;
     private readonly InstallCoordinatorMutex _installMutex;
     private readonly Dispatcher _dispatcher;
+    private readonly AppLogService? _log;
     private readonly object _gate = new();
     private readonly HashSet<string> _failedSources = new(StringComparer.OrdinalIgnoreCase);
 
@@ -74,8 +75,9 @@ public sealed partial class UpdateService : IDisposable
         UpdatePackageDownloader downloader,
         UpdatePackageStore store,
         InstalledApplicationProbe probe,
-        InstallCoordinatorMutex installMutex)
+        InstallCoordinatorMutex installMutex, AppLogService? log = null)
     {
+        _log = log;
         _manifestClient = manifestClient;
         _downloader = downloader;
         _store = store;
@@ -554,6 +556,7 @@ public sealed partial class UpdateService : IDisposable
 
             if (outcome.Succeeded)
             {
+                _log?.Info("Update", $"更新渠道成功: host={source.HostName} version={manifest.Version} fallback={_failedSources.Count > 0}");
                 record = outcome.Record;
                 usedSource = outcome.SourceHost is null
                     ? null
@@ -574,6 +577,7 @@ public sealed partial class UpdateService : IDisposable
             }
 
             lastFailure = outcome.FailureReason;
+            _log?.Warn("Update", $"更新渠道失败: host={source.HostName} reason={outcome.FailureReason}");
             _failedSources.Add(source.Url);
         }
 
@@ -712,7 +716,11 @@ public sealed partial class UpdateService : IDisposable
         try
         {
             if (_installerOverride is { } launch)
-                return launch(path, arguments, useRunAs);
+            {
+                var accepted = launch(path, arguments, useRunAs);
+                LogInstallerLaunch(accepted, path, useRunAs);
+                return accepted;
+            }
             var startInfo = new ProcessStartInfo(path, arguments)
             {
                 UseShellExecute = useRunAs,
@@ -726,17 +734,24 @@ public sealed partial class UpdateService : IDisposable
             }
 
             using var process = Process.Start(startInfo);
-            Debug.WriteLine($"[Update] Installer started ({useRunAs}): {path} {arguments}");
+            LogInstallerLaunch(process is not null, path, useRunAs);
             return process is not null;
         }
         catch (Exception exception)
         {
-            Debug.WriteLine($"[Update] Installer could not be started: {exception.Message}");
+            _log?.Error("Update", "安装进程交接失败，未确认启动安装程序", exception);
             return false;
         }
     }
 
-    private static bool TryOpenUrl(string url)
+    private void LogInstallerLaunch(bool started, string path, bool elevated)
+    {
+        var message = $"安装进程交接: started={started} elevated={elevated} file={System.IO.Path.GetFileName(path)}";
+        if (started) _log?.Info("Update", message);
+        else _log?.Warn("Update", message);
+    }
+
+    private bool TryOpenUrl(string url)
     {
         try
         {
@@ -745,13 +760,14 @@ public sealed partial class UpdateService : IDisposable
         }
         catch (Exception exception)
         {
-            Debug.WriteLine($"[Update] Could not open {url}: {exception.Message}");
+            _log?.Warn("Update", "打开更新页面失败", exception);
             return false;
         }
     }
 
     private void PublishState(UpdateState state)
     {
+        bool logChange;
         lock (_gate)
         {
             if (_disposed)
@@ -759,7 +775,17 @@ public sealed partial class UpdateService : IDisposable
                 return;
             }
 
+            logChange = _state.Phase != state.Phase || _state.AvailableVersion != state.AvailableVersion ||
+                _state.ActiveSource?.HostName != state.ActiveSource?.HostName || _state.FailureReason != state.FailureReason ||
+                _state.InstallBlockedReason != state.InstallBlockedReason;
             _state = state;
+        }
+        if (logChange)
+        {
+            var message = $"更新状态: phase={state.Phase} current={state.CurrentVersion} available={state.AvailableVersion ?? "none"} " +
+                $"host={state.ActiveSource?.HostName ?? "none"} failure={state.FailureReason ?? "none"} installBlocked={state.InstallBlockedReason ?? "none"}";
+            if (state.Phase == UpdatePhase.Failed) _log?.Warn("Update", message);
+            else _log?.Info("Update", message);
         }
 
         RaiseOnDispatcher(() =>

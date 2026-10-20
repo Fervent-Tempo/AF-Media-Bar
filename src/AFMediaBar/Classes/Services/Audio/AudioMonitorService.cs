@@ -18,6 +18,9 @@ namespace AFMediaBar.Classes.Services;
 public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
 {
     private const int MinimumRingSize = 4_096;
+    private readonly RepeatedFailureReporter _captureFailures = new();
+    private string? _captureLogSignature;
+    private string _captureRestartReason = "initial";
     private readonly AudioCaptureDeviceResolver _deviceResolver;
     private readonly SpectrumCaptureProcessResolver _processResolver;
     private volatile SpectrumCaptureSource _captureSource;
@@ -247,8 +250,8 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
                 }
                 catch (Exception exception)
                 {
-                    Debug.WriteLine($"[AudioMonitorService] Capture failed: {exception.Message}");
-                    if (failures == 0) AppLogService.Current?.Warn("Audio", $"频谱采集失败：{exception.Message}");
+                    _captureRestartReason = "failure";
+                    _captureFailures.Report(AppLogService.Current, "Audio", "capture", "频谱采集失败", exception);
                     failures = Math.Min(failures + 1, 4);
                     var delay = failures switch { 1 => 100, 2 => 500, 3 => 1000, _ => 3000 };
                     await Task.Delay(delay, stoppingToken).ConfigureAwait(false);
@@ -329,24 +332,30 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
         EventHandler<StoppedEventArgs> onStopped = (_, args) => stopped.TrySetResult(args.Exception);
         capture.DataAvailable += onData;
         capture.RecordingStopped += onStopped;
+        var stopReason = "demand-or-environment-changed";
         try
         {
             capture.StartRecording();
-            AppLogService.Current?.Info("Audio", $"频谱采集已启动：范围={source}，PID={processId}，格式={format}");
+            var signature = $"{source}|{processId}|{deviceId}|{format}";
+            var message = $"频谱采集已启动: source={source} pid={processId?.ToString() ?? "none"} device={deviceId ?? "none"} format={format} reason={_captureRestartReason}";
+            var recovered = _captureFailures.Recover(AppLogService.Current, "Audio", "capture", $"频谱采集已恢复: {message}");
+            if (!recovered && signature != _captureLogSignature) AppLogService.Current?.Info("Audio", message);
+            else AppLogService.Current?.Verbose("Audio", message);
+            _captureLogSignature = signature;
             var lastProcessCheck = Environment.TickCount64;
             while (HasDemand(version) && !token.IsCancellationRequested)
             {
                 if (source == SpectrumCaptureSource.CurrentDevice)
                 {
                     var nextTarget = _deviceResolver.TargetDeviceId;
-                    if (!string.IsNullOrEmpty(nextTarget) && !string.Equals(nextTarget, deviceId, StringComparison.OrdinalIgnoreCase)) break;
+                    if (!string.IsNullOrEmpty(nextTarget) && !string.Equals(nextTarget, deviceId, StringComparison.OrdinalIgnoreCase)) { stopReason = "device-changed"; break; }
                 }
                 else if (source == SpectrumCaptureSource.CurrentMediaApplication &&
                     Environment.TickCount64 - lastProcessCheck >= 2000)
                 {
                     lastProcessCheck = Environment.TickCount64;
                     // 捕获的进程退出或重启时释放旧树；新来源/范围会由代际检查立即使本次采集失效。
-                    if (_processResolver.ResolveProcessId(media, processId, token) != processId) break;
+                    if (_processResolver.ResolveProcessId(media, processId, token) != processId) { stopReason = "process-changed"; break; }
                 }
                 if (stopped.Task.IsCompleted)
                     throw await stopped.Task.ConfigureAwait(false) ?? new InvalidOperationException("Loopback capture stopped unexpectedly.");
@@ -362,6 +371,8 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
             }
             capture.DataAvailable -= onData;
             capture.RecordingStopped -= onStopped;
+            _captureRestartReason = token.IsCancellationRequested ? "cancelled" : stopReason;
+            AppLogService.Current?.Verbose("Audio", $"频谱采集已停止: reason={_captureRestartReason} device={deviceId ?? "none"}");
             // Disposal joins NAudio's capture thread, outside the sample gate and off the UI thread.
         }
     }

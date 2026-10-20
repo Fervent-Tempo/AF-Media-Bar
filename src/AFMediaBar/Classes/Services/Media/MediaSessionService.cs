@@ -1,6 +1,7 @@
 using AFMediaBar.Classes.Services.Media.Smtc;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Abstractions;
@@ -63,24 +64,10 @@ public sealed class MediaSessionService : IDisposable
     private readonly MemoryPruneCoordinator _memoryPrune;
     private readonly MediaSessionReconcileCoordinator _reconcile;
 
-    /// <summary>
-    /// 已经请求过在线取词兜底的那一曲（来源 + 曲名 + 歌手的指纹），只保留最后一个。
-    /// 来源提供器每 233 毫秒都会报一次"没有可读的媒体"，没有这个门闩就会每 233 毫秒发起一次兜底取词；
-    /// 只留一个是刻意的：它只需要挡住"同一首歌的重复请求"，换歌就该重新允许，而无界集合会随播放一直增长。
-    /// The track (a fingerprint of source, title, and artist) whose online-lyric fallback has already been requested, keeping only the last one.
-    /// A source provider reports "no readable media" every 233 ms, so without this latch a fallback would be requested every 233 ms; keeping
-    /// exactly one is deliberate: it only has to block repeats for the same track, a track change must allow a new one, and an unbounded set
-    /// would grow for as long as playback lasts.
-    /// </summary>
-
-    /// <summary>最近一次写进日志的快照指纹；相同则不再重复记录（时间戳每次轮询都变，否则会刷屏）。/ Signature of the last logged snapshot; an identical one is not logged again, since the timestamp changes on every poll.</summary>
-    private string? _loggedSnapshotSignature;
-
-    /// <summary>最近一次写进日志的播放位置（秒），用于播放中每秒最多记一条进度。/ Playback position of the last logged line, in seconds, used to write at most one progress line per second while playing.</summary>
-    private double _loggedPositionSeconds;
-
-    /// <summary>播放中记录进度所需的最小位置变化（秒）。/ Smallest position change, in seconds, that earns a progress line while playing.</summary>
-    private const double PositionLogStepSeconds = 1;
+    // 只用于诊断去重；请求预算与缓存仍由快照构建器持有。
+    private string? _fallbackLogKey;
+    private RepeatedFailureReporter? _readFailures;
+    private readonly AppLogService? _log;
 
     /// <summary>最新的媒体快照。 / Latest published media snapshot.</summary>
     public MediaSnapshot? CurrentSnapshot { get; private set; }
@@ -109,7 +96,7 @@ public sealed class MediaSessionService : IDisposable
         IEnumerable<IMediaSourceProvider> sourceProviders,
         MediaSourceActivationService sourceActivator,
         MemoryPruneCoordinator memoryPrune,
-        ISystemNotificationService notifications)
+        ISystemNotificationService notifications, AppLogService? log = null)
     {
         _sources = sources;
         _catalog = catalog;
@@ -119,9 +106,10 @@ public sealed class MediaSessionService : IDisposable
         _sourceActivator = sourceActivator;
         _memoryPrune = memoryPrune;
         _notifications = notifications;
+        _log = log;
         _dispatcher = Application.Current.Dispatcher;
         _reconcile = new MediaSessionReconcileCoordinator(_catalog, _selection, _memoryPrune,
-            _dispatcher, () => _sessionSnapshot.IsConnected, () => _snapshotBuildInFlight, RefreshSnapshot);
+            _dispatcher, () => _sessionSnapshot.IsConnected, () => _snapshotBuildInFlight, RefreshSnapshot, log);
 
         _catalog.AnyMediaPropertyChanged += OnAnyMediaPropertyChanged;
         _catalog.AnyPlaybackStateChanged += OnAnyPlaybackStateChanged;
@@ -285,14 +273,14 @@ public sealed class MediaSessionService : IDisposable
     }
 
     private async Task ExecuteOnSelectedAsync(
-        Func<GlobalSystemMediaTransportControlsSession, Task<bool>> action)
+        Func<GlobalSystemMediaTransportControlsSession, Task<bool>> action, [CallerMemberName] string operation = "")
     {
         if (_isDisposed) return;
         var sourceId = SelectedSourceId;
         var selectionRevision = _controlSelectionRevision;
         if (!_catalog.TryGetSnapshot(out var sessions))
         {
-            ReportControlUnavailable(sourceId);
+            ReportControlUnavailable(sourceId, operation);
             return;
         }
 
@@ -309,7 +297,7 @@ public sealed class MediaSessionService : IDisposable
         var controlSession = selected?.ControlSession;
         if (controlSession is null)
         {
-            ReportControlUnavailable(sourceId);
+            ReportControlUnavailable(sourceId, operation);
             return;
         }
 
@@ -317,21 +305,24 @@ public sealed class MediaSessionService : IDisposable
         {
             var accepted = await Task.Run(() => action(controlSession));
             if (!accepted && selectionRevision == _controlSelectionRevision)
-                ReportControlUnavailable(sourceId);
+                ReportControlUnavailable(sourceId, operation);
+            else if (accepted && selectionRevision == _controlSelectionRevision)
+                (_readFailures ??= new()).Recover(_log, "Media", $"control:{operation}:{sourceId}", "媒体控制已恢复");
         }
         catch (Exception ex) when (ex is COMException or InvalidOperationException or ObjectDisposedException)
         {
-            Debug.WriteLine($"[MediaSessionService] Media command failed: {ex}");
             if (selectionRevision == _controlSelectionRevision)
-                ReportControlUnavailable(sourceId);
+                ReportControlUnavailable(sourceId, operation, ex);
         }
     }
 
-    private void ReportControlUnavailable(string sourceId)
+    private void ReportControlUnavailable(string sourceId, string operation = "control-channel", Exception? controlException = null)
     {
         if (_isDisposed || !_lastSnapshot.IsConnected ||
             !_sources.IsAllowed(sourceId, SettingsManager.Current.SmtcSourceFilter) ||
             !string.Equals(sourceId, SelectedSourceId, StringComparison.OrdinalIgnoreCase)) return;
+        (_readFailures ??= new()).Report(_log, "Media", $"control:{operation}:{sourceId}",
+            $"媒体控制失败: source={sourceId} action={operation}", controlException);
         var now = DateTimeOffset.UtcNow;
         if (string.Equals(sourceId, _lastControlNotificationSource, StringComparison.OrdinalIgnoreCase) &&
             now - _lastControlNotificationUtc < TimeSpan.FromSeconds(30)) return;
@@ -412,6 +403,13 @@ public sealed class MediaSessionService : IDisposable
         {
             TryRequestFallbackLyrics();
         }
+        else if (snapshot.IsConnected && provider.CanHandle(_sessionSnapshot.SourceId) &&
+                 _fallbackLogKey?.StartsWith(_sessionSnapshot.SourceId + "\u001f", StringComparison.Ordinal) == true)
+        {
+            // 恢复日志只观察通道，不借由诊断再次触发取词调度。
+            _log?.Info("Media", $"已恢复专用媒体通道: source={_sessionSnapshot.SourceId} title=\"{snapshot.Title}\"");
+            _fallbackLogKey = null;
+        }
     }
 
     /// <summary>
@@ -435,12 +433,17 @@ public sealed class MediaSessionService : IDisposable
         var providerPublishedNothing = provider is not null &&
                                        _sourceSnapshots.TryGetValue(provider, out var published) &&
                                        published is null;
+        var fallbackKey = $"{baseline.SourceId}\u001f{baseline.Title}\u001f{baseline.Artist}";
         if (!MediaEnrichmentFallbackPolicy.ShouldRequestOnlineLyrics(
                 baseline.IsConnected,
                 provider is not null,
                 providerPublishedNothing,
                 baseline.Title))
         {
+            if (_fallbackLogKey?.StartsWith(baseline.SourceId + "\u001f", StringComparison.Ordinal) == true && provider is not null &&
+                _sourceSnapshots.GetValueOrDefault(provider) is { IsConnected: true })
+                _log?.Info("Media", $"已恢复专用媒体通道: source={baseline.SourceId} title=\"{baseline.Title}\"");
+            _fallbackLogKey = null;
             return;
         }
 
@@ -453,6 +456,11 @@ public sealed class MediaSessionService : IDisposable
             return;
         }
 
+        if (_fallbackLogKey != fallbackKey)
+        {
+            _fallbackLogKey = fallbackKey;
+            _log?.Info("Media", $"进入在线取词兜底: source={baseline.SourceId} title=\"{baseline.Title}\" reason=source-provider-unavailable");
+        }
         _snapshotBuilder.RequestOnlineLyrics(
             sessionKey,
             baseline.SourceId,
@@ -487,13 +495,15 @@ public sealed class MediaSessionService : IDisposable
         // An unavailable SMTC catalog must not block the independent memory source.
         try
         {
-            var sessions = _catalog.TryGetSnapshot(out var current) ? current : _lastSessions;
+            var catalogAvailable = _catalog.TryGetSnapshot(out var current);
+            var sessions = catalogAvailable ? current : _lastSessions;
             PublishDiscoveredSources(sessions);
             RefreshSnapshot(sessions);
+            if (catalogAvailable) (_readFailures ??= new()).Recover(_log, "Media", "catalog", "刷新媒体目录已恢复");
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[MediaSessionService] Failed to refresh source catalog: {ex}");
+            (_readFailures ??= new()).Report(_log, "Media", "catalog", "刷新媒体目录失败", ex);
         }
     }
 
@@ -542,11 +552,12 @@ public sealed class MediaSessionService : IDisposable
             var selectionRevision = _controlSelectionRevision;
             var mediaRevision = Volatile.Read(ref _mediaRevision);
             var pendingSnapshot = _snapshotBuilder.BuildAsync(session, isStarted: true, _snapshotBuildCancellation.Token);
+            (_readFailures ??= new()).Recover(_log, "Media", "snapshot", "媒体快照调度已恢复");
             _ = BuildAndPublishSnapshotAsync(pendingSnapshot, session.Id, mediaRevision, selectionRevision);
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[MediaSessionService] Failed to refresh snapshot: {ex}");
+            (_readFailures ??= new()).Report(_log, "Media", "snapshot", "刷新媒体快照失败", ex);
         }
     }
 
@@ -563,6 +574,7 @@ public sealed class MediaSessionService : IDisposable
             if (snapshot is not null)
             {
                 Publish(snapshot);
+                (_readFailures ??= new()).Recover(_log, "Media", "build", "媒体快照构建已恢复");
                 TryRequestFallbackLyrics();
             }
         }
@@ -572,7 +584,7 @@ public sealed class MediaSessionService : IDisposable
         }
         catch (Exception exception)
         {
-            Debug.WriteLine($"[MediaSessionService] Failed to build snapshot: {exception}");
+            (_readFailures ??= new()).Report(_log, "Media", "build", "构建媒体快照失败", exception);
         }
         finally
         {
@@ -655,11 +667,12 @@ public sealed class MediaSessionService : IDisposable
                 try
                 {
                     PublishResolved(MediaSnapshot.Disconnected);
+                    (_readFailures ??= new()).Recover(_log, "Media", "browser-presentation", "发布浏览器保留画面已恢复");
                 }
                 catch (Exception ex)
                 {
                     // A subscriber failure must not escape a DispatcherTimer tick and crash the host.
-                    Debug.WriteLine($"[MediaSessionService] Failed to publish missing browser presentation: {ex}");
+                    (_readFailures ??= new()).Report(_log, "Media", "browser-presentation", "发布浏览器保留画面失败", ex);
                 }
             }
         };
@@ -709,10 +722,11 @@ public sealed class MediaSessionService : IDisposable
                 return;
             _lastDiscoveredSources = sources;
             DiscoveredSourcesChanged?.Invoke(sources);
+            (_readFailures ??= new()).Recover(_log, "Media", "source-paths", "媒体来源启动路径读取已恢复");
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[MediaSessionService] Failed to resolve source launch paths: {ex}");
+            (_readFailures ??= new()).Report(_log, "Media", "source-paths", "读取媒体来源启动路径失败", ex);
         }
         finally
         {
@@ -804,65 +818,17 @@ public sealed class MediaSessionService : IDisposable
             ReportControlUnavailable(snapshot.SourceId);
     }
 
-    /// <summary>
-    /// 快照的"有意义变化"指纹：不含时间戳与播放位置。
-    ///
-    /// 播放器每次轮询都会刷新时间轴时间戳（`TimelineUpdatedAt`），因此暂停时快照也会每 240 毫秒重新发布一次；
-    /// 若按发布记录日志，文件与调试输出会被同一行"刷屏"，反而看不清真正发生了什么。轨道、播放状态、控制能力、
-    /// 时长、循环、倍速与歌词来源变化才记一行；播放中另外按每秒最多一行记录进度（只在调试输出里）。
-    /// Fingerprint of a snapshot's meaningful change, without the timestamp or the playback position.
-    ///
-    /// A player refreshes the timeline timestamp (`TimelineUpdatedAt`) on every poll, so even a paused track republishes a snapshot every
-    /// 240 ms; logging per publication would flood the file and the debug output with the same line and hide what actually happened. Only a
-    /// change of track, playback state, control availability, duration, repeat mode, playback rate, or lyric source gets a line, and while
-    /// playing at most one progress line per second, which goes to the debug output only.
-    /// </summary>
-    /// <param name="snapshot">快照。/ The snapshot.</param>
-    private static string BuildLogSignature(MediaSnapshot snapshot) =>
-        $"{snapshot.SourceId}\u001f{snapshot.SourceName}\u001f{snapshot.Title}\u001f{snapshot.Artist}" +
-        $"\u001f{snapshot.IsConnected}\u001f{snapshot.IsPlaying}\u001f{snapshot.Duration:0}" +
-        $"\u001f{snapshot.CanSeek}\u001f{snapshot.CanSkipPrevious}\u001f{snapshot.CanSkipNext}" +
-        $"\u001f{snapshot.RepeatMode}\u001f{snapshot.PlaybackRate:0.##}\u001f{snapshot.Lyrics?.Source}";
+    private MediaSnapshotLogState? _snapshotLog;
 
-    /// <summary>按上面的规则记录一次快照（真正变化才写，播放中每秒最多一条进度）。/ Logs a snapshot by the rule above: only a real change is written, plus at most one progress line per second while playing.</summary>
-    /// <param name="snapshot">快照。/ The snapshot.</param>
     private void LogSnapshot(MediaSnapshot snapshot)
     {
         var log = AppLogService.Current;
-        if (log is null)
-        {
-            return;
-        }
-
-        var signature = BuildLogSignature(snapshot);
-        if (!string.Equals(signature, _loggedSnapshotSignature, StringComparison.Ordinal))
-        {
-            _loggedSnapshotSignature = signature;
-            _loggedPositionSeconds = snapshot.Position;
-            log.Info(
-                "Media",
-                $"快照变化: {snapshot.SourceName}({snapshot.SourceId}) " +
-                $"\"{snapshot.Title}\" — \"{snapshot.Artist}\" " +
-                $"connected={snapshot.IsConnected} playing={snapshot.IsPlaying} " +
-                $"pos={snapshot.Position:0.0}/{snapshot.Duration:0.0} rate={snapshot.PlaybackRate:0.##} " +
-                $"lyrics={(snapshot.Lyrics is null ? "none" : snapshot.Lyrics.Source)}");
-            log.Verbose(
-                "Media",
-                $"快照细节: seek={snapshot.CanSeek} prev={snapshot.CanSkipPrevious} next={snapshot.CanSkipNext} " +
-                $"repeat={snapshot.RepeatMode} timelineAt={snapshot.TimelineUpdatedAt:HH:mm:ss.fff}");
-            return;
-        }
-
-        // 播放中按每秒最多一条记录进度：暂停或卡住时位置不动，因此这里什么都不写——那正是"日志一直刷同一行"的来源。
-        // While playing at most one progress line per second; a paused or stalled track never moves the position, so nothing is written here,
-        // which is exactly what used to flood the log with the same line.
-        if (!snapshot.IsPlaying || Math.Abs(snapshot.Position - _loggedPositionSeconds) < PositionLogStepSeconds)
-        {
-            return;
-        }
-
-        _loggedPositionSeconds = snapshot.Position;
-        // log.Verbose("Media", $"进度 / position: {snapshot.Position:0.0}/{snapshot.Duration:0.0}");
+        if (log is null || (_snapshotLog ??= new()).DescribeChanges(snapshot) is not { } changes) return;
+        log.Info("Media", $"快照变化: changed=[{changes}] {snapshot.SourceName}({snapshot.SourceId}) " +
+            $"\"{snapshot.Title}\" — \"{snapshot.Artist}\" connected={snapshot.IsConnected} playing={snapshot.IsPlaying} " +
+            $"pos={snapshot.Position:0.0}/{snapshot.Duration:0.0} rate={snapshot.PlaybackRate:0.##} " +
+            $"lyrics={snapshot.Lyrics?.Source ?? "none"} controls=(playPause={snapshot.CanPlayPause},seek={snapshot.CanSeek}," +
+            $"prev={snapshot.CanSkipPrevious},next={snapshot.CanSkipNext},repeat={snapshot.CanChangeRepeat}) repeat={snapshot.RepeatMode}");
     }
 
     private static bool IsPlaying(MediaSession session)

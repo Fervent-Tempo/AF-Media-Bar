@@ -239,10 +239,12 @@ public sealed class MemoryPruneCoordinator : IDisposable
         };
         var strength = result.Strength == MemoryTrimStrength.Deep ? "深度 deep" : "温和 gentle";
 
-        _log.Info(
-            "Prune",
-            $"按需回收（{reason}，{strength}）：{result.Before.Describe()} → （{result.After.Describe()}；" +
-            $"工作集已交还 working set returned={result.ReturnedWorkingSet}）");
+        var message = $"按需回收: trigger={reason} strength={strength} before=({result.Before.Describe()}) " +
+            $"after=({result.After.Describe()}) returnedWorkingSet={result.ReturnedWorkingSet}";
+        if (trigger is MemoryTrimTrigger.ManualRequest or MemoryTrimTrigger.StartupSettled)
+            _log.Info("Prune", message);
+        else
+            _log.Verbose("Prune", message);
     }
 
     /// <summary>

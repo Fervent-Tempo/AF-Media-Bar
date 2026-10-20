@@ -34,6 +34,8 @@ public sealed record UpdateManifestFetchResult(UpdateManifest? Manifest, string?
 /// </summary>
 public sealed class UpdateManifestClient
 {
+    private readonly AppLogService? _log;
+    public UpdateManifestClient(AppLogService? log = null) => _log = log;
     /// <summary>
     /// 仅用于测试与人工验收的覆盖变量：设置后**替换**整份端点列表。
     ///
@@ -66,6 +68,9 @@ public sealed class UpdateManifestClient
             var content = await ReadEndpointAsync(endpoint, userAgent, cancellationToken).ConfigureAwait(false);
             if (content.Content is null)
             {
+                var message = $"更新清单渠道失败: host={EndpointName(endpoint)} reason={content.FailureReason}";
+                if (content.Error is { } error) _log?.Warn("Update", message, error);
+                else _log?.Warn("Update", message);
                 firstFailure ??= content.FailureReason;
                 continue;
             }
@@ -73,12 +78,14 @@ public sealed class UpdateManifestClient
             var parsed = UpdateManifestParser.Parse(content.Content);
             if (parsed.Manifest is not null)
             {
+                _log?.Info("Update", $"更新清单已读取: host={EndpointName(endpoint)} fallback={firstFailure is not null} version={parsed.Manifest.Version}");
                 return new UpdateManifestFetchResult(parsed.Manifest, null, endpoint);
             }
 
             // 解析失败也继续尝试下一个端点：端点内容可能不一致，而换一个地址往往就能拿到完整清单。
             // A parse failure also moves on: endpoints can disagree, and a different address often serves a
             // complete manifest.
+            _log?.Warn("Update", $"更新清单解析失败: host={EndpointName(endpoint)} reason={parsed.FailureReason}");
             firstFailure ??= parsed.FailureReason;
         }
 
@@ -100,7 +107,12 @@ public sealed class UpdateManifestClient
         return UpdateSourcePlanPolicy.ManifestEndpoints;
     }
 
-    private static async Task<(string? Content, string? FailureReason)> ReadEndpointAsync(
+    private static string EndpointName(string endpoint) =>
+        Uri.TryCreate(endpoint, UriKind.Absolute, out var uri) && !uri.IsFile ? uri.Host : "local-file";
+
+    private sealed record EndpointReadResult(string? Content, string? FailureReason, Exception? Error = null);
+
+    private static async Task<EndpointReadResult> ReadEndpointAsync(
         string endpoint,
         string userAgent,
         CancellationToken cancellationToken)
@@ -109,13 +121,13 @@ public sealed class UpdateManifestClient
         {
             if (File.Exists(endpoint))
             {
-                return (await File.ReadAllTextAsync(endpoint, cancellationToken).ConfigureAwait(false), null);
+                return new(await File.ReadAllTextAsync(endpoint, cancellationToken).ConfigureAwait(false), null);
             }
 
             if (!Uri.TryCreate(endpoint, UriKind.Absolute, out var uri) ||
                 (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
             {
-                return (null, Translations.Get("Update.Reason.ManifestEndpointInvalid"));
+                return new(null, Translations.Get("Update.Reason.ManifestEndpointInvalid"));
             }
 
             using var request = new HttpRequestMessage(HttpMethod.Get, uri);
@@ -124,10 +136,10 @@ public sealed class UpdateManifestClient
             using var response = await HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
-                return (null, Translations.Format("Update.Reason.ManifestHttp", (int)response.StatusCode));
+                return new(null, Translations.Format("Update.Reason.ManifestHttp", (int)response.StatusCode));
             }
 
-            return (await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false), null);
+            return new(await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false), null);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -135,8 +147,7 @@ public sealed class UpdateManifestClient
         }
         catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or IOException or UnauthorizedAccessException)
         {
-            Debug.WriteLine($"[Update] Manifest endpoint failed ({endpoint}): {exception.Message}");
-            return (null, Translations.Get("Update.Reason.ManifestNetwork"));
+            return new(null, Translations.Get("Update.Reason.ManifestNetwork"), exception);
         }
     }
 }

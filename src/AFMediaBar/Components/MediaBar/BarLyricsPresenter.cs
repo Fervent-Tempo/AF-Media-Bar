@@ -64,6 +64,7 @@ public partial class TaskBarMediaControl
         /// <summary>已经为 WebView2 图形层故障重建过几次歌词视图（见 RecoverWebLyricsGraphics）。
         /// How many times the lyric view has been rebuilt after a WebView2 graphics fault (see RecoverWebLyricsGraphics).</summary>
         internal int _lyricsGraphicsRecoveries;
+        private bool _graphicsRecoveryPending;
 
         /// <summary>重建预算用尽后置位：停用 Web 歌词、退回元数据，避免同一缺陷反复击穿应用。
         /// Set once the rebuild budget is spent: the web lyrics stay off and the bar falls back to metadata so the same defect cannot take the app down again.</summary>
@@ -139,6 +140,11 @@ public partial class TaskBarMediaControl
             if (!_lyricsHostLoaded || !ReferenceEquals(sender, _lyricsWebRenderer))
                 return;
 
+            if (_graphicsRecoveryPending)
+            {
+                _graphicsRecoveryPending = false;
+                AppLogService.Current?.Info("Lyrics", $"WebView2 歌词视图重建完成: generation={_lyricsRendererGeneration} recovery={_lyricsGraphicsRecoveries}");
+            }
             _lyricsRetryTimer.Stop();
             UpdateWebLyricsPowerState();
             UpdateWebLyricsPresentation(allowTransition: false);
@@ -580,6 +586,9 @@ public partial class TaskBarMediaControl
 
         internal void DisableWebLyricsGraphics()
         {
+            _graphicsRecoveryPending = false;
+            if (!_webLyricsGraphicsDisabled)
+                AppLogService.Current?.Info("Lyrics", $"本宿主已停用 Web 歌词，退回元数据: generation={_lyricsRendererGeneration}");
             _webLyricsGraphicsDisabled = true;
             StopWebLyrics();
             _owner.SongLyricsPanel.Visibility = Visibility.Collapsed;
@@ -612,6 +621,7 @@ public partial class TaskBarMediaControl
             }
 
             _lyricsGraphicsRecoveries++;
+            _graphicsRecoveryPending = true;
             AppLogService.Current?.Warn(
                 "Lyrics",
                 $"WebView2 图形层故障，正在重建歌词视图（第 {_lyricsGraphicsRecoveries}/{WebView2GraphicsFaultPolicy.MaximumRecoveries} 次）");

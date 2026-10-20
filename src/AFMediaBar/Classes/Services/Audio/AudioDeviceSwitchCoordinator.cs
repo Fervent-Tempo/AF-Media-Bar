@@ -50,15 +50,17 @@ public sealed record AudioDeviceSwitchUpdate(AudioDeviceTarget Target, AudioDevi
 public sealed class AudioDeviceSwitchCoordinator : IDisposable, IHostedService
 {
     private readonly IAudioDeviceSwitchOperations _operations;
+    private readonly AppLogService? _log;
     private readonly object _gate = new();
     private readonly Dictionary<string, Pending> _pending = new();
     private readonly HashSet<Task> _activeTasks = [];
     private bool _disposed;
     public event Action<AudioDeviceSwitchUpdate>? Updated;
     public event EventHandler? Invalidated;
-    public AudioDeviceSwitchCoordinator(IAudioDeviceSwitchOperations operations)
+    public AudioDeviceSwitchCoordinator(IAudioDeviceSwitchOperations operations, AppLogService? log = null)
     {
         _operations = operations;
+        _log = log;
         operations.Changed += OnChanged;
     }
 
@@ -177,10 +179,20 @@ public sealed class AudioDeviceSwitchCoordinator : IDisposable, IHostedService
     private void Complete(AudioDeviceTarget target, Pending request, AudioDeviceOperationResult result)
     {
         bool current;
+        bool logCurrent;
         lock (_gate)
         {
             current = !_disposed && ReferenceEquals(_pending.GetValueOrDefault(target.Key), request);
+            logCurrent = current && !request.Cancellation.IsCancellationRequested && request.PolicyVersion == _operations.PolicyVersion;
             if (current) _pending.Remove(target.Key);
+        }
+        if (logCurrent)
+        {
+            var message = $"设备切换结果: target={target.Key} device={request.Candidate?.DisplayName ?? "none"} " +
+                $"status={result.Status} reason={result.Message ?? "none"}";
+            if (result.Status == AudioDeviceOperationStatus.Applied) _log?.Info("Audio", message);
+            else if (result.Status is AudioDeviceOperationStatus.Unchanged or AudioDeviceOperationStatus.Cancelled) _log?.Verbose("Audio", message);
+            else _log?.Warn("Audio", message);
         }
         if (current) Publish(new(target, request.Candidate, result));
         request.Cancellation.Dispose();
@@ -197,7 +209,7 @@ public sealed class AudioDeviceSwitchCoordinator : IDisposable, IHostedService
     private async Task ObserveAsync(Task task)
     {
         try { await task.ConfigureAwait(false); }
-        catch (Exception exception) { Debug.WriteLine(exception); }
+        catch (Exception exception) { _log?.Warn("Audio", "设备切换后台任务失败", exception); }
         finally { lock (_gate) _activeTasks.Remove(task); }
     }
     /// <summary>等待已启动的延迟请求结束，供停止服务及隔离验证使用。</summary>
@@ -249,7 +261,7 @@ public sealed class AudioDeviceSwitchCoordinator : IDisposable, IHostedService
         }
         catch (OperationCanceledException) { }
         catch (ObjectDisposedException) { }
-        catch (Exception exception) { Debug.WriteLine(exception); CancelRequest(key, request); }
+        catch (Exception exception) { _log?.Warn("Audio", "设备切换环境更新失败", exception); CancelRequest(key, request); }
     }
     private void CancelRequest(string key, Pending request)
     {
@@ -260,7 +272,7 @@ public sealed class AudioDeviceSwitchCoordinator : IDisposable, IHostedService
     {
         if (_disposed || Updated is not { } handlers) return;
         foreach (Action<AudioDeviceSwitchUpdate> handler in handlers.GetInvocationList())
-            try { handler(update); } catch (Exception exception) { Debug.WriteLine(exception); }
+            try { handler(update); } catch (Exception exception) { _log?.Warn("Audio", "设备切换结果订阅者失败", exception); }
     }
     public void Dispose()
     {

@@ -71,12 +71,14 @@ public sealed class UpdatePackageDownloader
     private static readonly HttpClient HttpClient = new() { Timeout = TimeSpan.FromMinutes(15) };
 
     private readonly UpdatePackageStore _store;
+    private readonly AppLogService? _log;
 
     /// <summary>创建下载器。/ Creates the downloader.</summary>
     /// <param name="store">更新目录的所有者。/ Owner of the update directory.</param>
-    public UpdatePackageDownloader(UpdatePackageStore store)
+    public UpdatePackageDownloader(UpdatePackageStore store, AppLogService? log = null)
     {
         _store = store;
+        _log = log;
     }
 
     /// <summary>
@@ -158,6 +160,7 @@ public sealed class UpdatePackageDownloader
             var actual = Convert.ToHexString(hash.GetHashAndReset());
             if (!string.Equals(actual, asset.Sha256, StringComparison.OrdinalIgnoreCase))
             {
+                _log?.Error("Update", $"安装包校验失败: version={version} host={source.HostName} receivedBytes={received} reason=sha256-mismatch");
                 _store.RemoveInstaller(temporary);
                 return UpdateDownloadOutcome.Failure(
                     Translations.Format("Update.Reason.DownloadHashMismatch", received),
@@ -183,7 +186,7 @@ public sealed class UpdatePackageDownloader
         }
         catch (Exception exception) when (exception is HttpRequestException or IOException or UnauthorizedAccessException or TaskCanceledException or InvalidDataException)
         {
-            Debug.WriteLine($"[Update] Download from {source.Url} failed: {exception.Message}");
+            _log?.Verbose("Update", $"下载渠道异常: host={source.HostName} error={exception.GetType().Name} hresult=0x{exception.HResult:X8}");
             _store.RemoveInstaller(temporary);
             return UpdateDownloadOutcome.Failure(
                 exception is TaskCanceledException
@@ -248,6 +251,7 @@ public sealed class UpdatePackageDownloader
             cancellationToken.ThrowIfCancellationRequested();
             if (!string.Equals(actual, asset.Sha256, StringComparison.OrdinalIgnoreCase))
             {
+                _log?.Error("Update", $"安装包复核失败: version={version} reason=sha256-mismatch");
                 if (persistRecord)
                 {
                     _store.RemoveInstaller(path);
@@ -275,7 +279,7 @@ public sealed class UpdatePackageDownloader
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            Debug.WriteLine($"[Update] Re-verification of {path} failed: {exception.Message}");
+            _log?.Warn("Update", $"安装包复核读取失败: version={version}", exception);
             if (persistRecord)
             {
                 _store.RemoveInstaller(path);

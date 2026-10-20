@@ -41,6 +41,7 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
     /// </summary>
     private const int LyricsCacheCapacity = 64;
 
+    private readonly AppLogService? _log;
     private readonly Dispatcher _dispatcher;
     private readonly Func<INetEaseMemoryReader> _createReader;
     private readonly LyricsService _lyricsService;
@@ -77,15 +78,16 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
     /// 创建网易云来源提供器；实际进程读取在显式启动后进行，并由本实例负责释放。
     /// Creates the NetEase source provider; process reading begins only after explicit start and is owned by this instance.
     /// </summary>
-    public NetEaseMediaProvider(LyricsService lyricsService)
-        : this(lyricsService, Application.Current.Dispatcher, () => new NetEaseMemoryReader())
+    public NetEaseMediaProvider(LyricsService lyricsService, AppLogService? log = null)
+        : this(lyricsService, Application.Current.Dispatcher, () => new NetEaseMemoryReader(), log: log)
     {
     }
 
     internal NetEaseMediaProvider(LyricsService lyricsService, Dispatcher dispatcher, Func<INetEaseMemoryReader> createReader,
-        TimeProvider? timeProvider = null)
+        TimeProvider? timeProvider = null, AppLogService? log = null)
     {
         _dispatcher = dispatcher;
+        _log = log;
         _createReader = createReader;
         _lyricsService = lyricsService;
         _lyricsCache = new(LyricsCacheCapacity,
@@ -288,7 +290,8 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[NetEaseMediaProvider] Poll failed: {ex}");
+            if (_log is { IsDisposed: false }) _log.Error("Media", "网易云内存轮询意外停止", ex);
+            else Debug.WriteLine($"[NetEaseMediaProvider] Poll failed: {ex}");
         }
         finally
         {
@@ -307,7 +310,8 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[NetEaseMediaProvider] Reader disposal failed: {ex}");
+                if (_log is { IsDisposed: false }) _log.Warn("Media", "网易云内存读取器释放失败", ex);
+                else Debug.WriteLine($"[NetEaseMediaProvider] Reader disposal failed: {ex}");
             }
             finally
             {

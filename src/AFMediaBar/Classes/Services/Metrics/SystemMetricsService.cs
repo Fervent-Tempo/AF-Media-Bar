@@ -14,6 +14,9 @@ namespace AFMediaBar.Classes.Services;
 public sealed class SystemMetricsService : IDisposable, ISystemMetricsSampler
 {
     private readonly object _gate = new();
+    private readonly AppLogService? _log;
+    private readonly RepeatedFailureReporter _failures = new();
+    public SystemMetricsService(AppLogService? log = null) => _log = log;
     private readonly HashSet<MetricKind> _demand = [];
     private readonly NetworkUsageSampler _network = new();
     private int _disposed;
@@ -66,11 +69,11 @@ public sealed class SystemMetricsService : IDisposable, ISystemMetricsSampler
                 (double? Upload, double? Download) network = (null, null);
                 if (_demand.Contains(MetricKind.SystemNetwork))
                 {
-                    try { network = _network.Sample(); }
+                    try { network = _network.Sample(); _failures.Recover(_log, "Metrics", "network", "网络采样已恢复"); }
                     catch (Exception exception)
                     {
                         _network.Reset();
-                        AppLogService.Current?.Warn("Metrics", $"网络采样失败: {exception.Message}");
+                        _failures.Report(_log, "Metrics", "network", "网络采样失败", exception);
                     }
                 }
                 return new(memory, cpu, gpu, process, network.Upload, network.Download);
@@ -87,7 +90,12 @@ public sealed class SystemMetricsService : IDisposable, ISystemMetricsSampler
     {
         if (!_demand.Contains(metric))
             return null;
-        try { return read(); }
+        try
+        {
+            var result = read();
+            if (result is not null) _failures.Recover(_log, "Metrics", metric.ToString(), "指标采样已恢复");
+            return result;
+        }
         catch (Exception exception)
         {
             if (metric == MetricKind.SystemGpu)
@@ -97,7 +105,7 @@ public sealed class SystemMetricsService : IDisposable, ISystemMetricsSampler
             }
             if (metric == MetricKind.SystemCpu)
                 ResetCpuSample();
-            AppLogService.Current?.Warn("Metrics", $"{metric} 采样失败: {exception.Message}");
+            _failures.Report(_log, "Metrics", metric.ToString(), $"{metric} 采样失败", exception);
             return null;
         }
     }

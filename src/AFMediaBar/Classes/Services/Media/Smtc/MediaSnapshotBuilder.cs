@@ -36,6 +36,8 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
     /// </summary>
     private const int LyricsCacheCapacity = 64;
 
+    private readonly AppLogService? _log;
+    private readonly RepeatedFailureReporter _readFailures = new();
     private readonly LyricsService _lyricsService;
     private readonly LruCache<(string SessionId, LyricsRequest Request), LyricsResult?> _lyricsCache;
     private readonly LyricsRetryTracker<(string SessionId, LyricsRequest Request)> _lyricsRetries = new(LyricsCacheCapacity);
@@ -91,14 +93,15 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
     /// 创建快照构建器，并使用歌词服务执行与当前曲目版本绑定的异步补全。
     /// Creates the snapshot builder and uses the lyrics service for asynchronous enrichment tied to the current track version.
     /// </summary>
-    public MediaSnapshotBuilder(LyricsService lyricsService)
-        : this(lyricsService, TimeProvider.System)
+    public MediaSnapshotBuilder(LyricsService lyricsService, AppLogService? log = null)
+        : this(lyricsService, TimeProvider.System, log)
     {
     }
 
-    internal MediaSnapshotBuilder(LyricsService lyricsService, TimeProvider timeProvider)
+    internal MediaSnapshotBuilder(LyricsService lyricsService, TimeProvider timeProvider, AppLogService? log = null)
     {
         _lyricsService = lyricsService;
+        _log = log;
         _lyricsCache = new(LyricsCacheCapacity,
             result => LyricsCacheBudgetPolicy.EstimateBytes(result?.Document),
             LyricsCacheBudgetPolicy.DefaultBudgetBytes, timeProvider);
@@ -195,6 +198,8 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         }
         catch (Exception exception) when (exception is COMException or InvalidOperationException or ObjectDisposedException)
         {
+            if (!_disposed && !cancellationToken.IsCancellationRequested)
+                _readFailures.Report(_log, "Media", $"smtc:{session.Id}", "读取 SMTC 媒体快照失败", exception);
             return null;
         }
 
@@ -204,6 +209,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
             return null;
         }
 
+        _readFailures.Recover(_log, "Media", $"smtc:{session.Id}", "SMTC 媒体读取已恢复");
         var duration = Math.Max(0, read.Duration);
         var position = Math.Clamp(read.Position - read.TimelineStart, 0, duration > 0 ? duration : double.MaxValue);
         BitmapHelper.GetDominantColors(1, read.ArtworkHash);

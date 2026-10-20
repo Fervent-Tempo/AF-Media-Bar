@@ -264,10 +264,10 @@ public sealed class MediaSessionCatalog : IDisposable
 
     private static void LogRetirementFailure(string message, Exception ex)
     {
-        Debug.WriteLine($"[MediaSessionCatalog] {message}: {ex}");
         try
         {
-            AppLogService.Current?.Error("Media", message, ex);
+            if (AppLogService.Current is { IsDisposed: false } log) log.Error("Media", message, ex);
+            else Debug.WriteLine($"[MediaSessionCatalog] {message}: {ex}");
         }
         catch
         {
