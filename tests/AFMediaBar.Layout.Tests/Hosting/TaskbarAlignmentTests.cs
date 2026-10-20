@@ -50,7 +50,8 @@ public sealed class TaskbarAlignmentTests
     {
         foreach (var width in new[] { 450.0, 500.0, 600.0 })
         {
-            var layout = TaskbarRestLayoutPolicy.Arrange(TaskbarRestLayoutPolicy.DefaultOrder,
+            // 只显示封面与文字，避免新增默认组件挤占本用例的按钮空间。
+            var layout = TaskbarRestLayoutPolicy.Arrange(TaskbarRestLayoutPolicy.FixedOrder,
                 component => component == TaskbarRestComponent.Artwork ? 36 : 40,
                 _ => true, 3, width, 8, 6, fromRight: true);
             Assert.AreEqual(width - 3, layout.Find(TaskbarRestComponent.Artwork)!.Value.Right);

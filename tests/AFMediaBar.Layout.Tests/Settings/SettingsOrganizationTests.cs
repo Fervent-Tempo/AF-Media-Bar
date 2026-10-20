@@ -185,10 +185,21 @@ public sealed class SettingsOrganizationTests
     }
 
     [TestMethod]
-    public void SevenMainPagesAndLegacyDestinationsResolveToActualGroups()
+    public void MainPagesAndLegacyDestinationsResolveToActualGroups()
     {
         var pages = SettingsPageCatalog.ForMode(SettingsMode.Taskbar);
-        Assert.AreEqual(8, pages.Count(page => !page.IsFooter));
+        CollectionAssert.AreEqual(new[]
+        {
+            SettingsPageKey.ScreenAndPlacement,
+            SettingsPageKey.Components,
+            SettingsPageKey.Appearance,
+            SettingsPageKey.Lyrics,
+            SettingsPageKey.Interaction,
+            SettingsPageKey.DeviceManagement,
+            SettingsPageKey.MediaAndNotifications,
+            SettingsPageKey.Application,
+            SettingsPageKey.Experimental
+        }, pages.Where(page => !page.IsFooter).Select(page => page.Key).ToArray());
         Assert.AreEqual(2, pages.Count(page => page.IsFooter));
         Assert.AreEqual((SettingsPageKey.Appearance, "Common.Group.Fonts"),
             SettingsPageCatalog.ResolveDestination(SettingsPageKey.ApplicationAppearance, "Common.Group.Fonts"));
