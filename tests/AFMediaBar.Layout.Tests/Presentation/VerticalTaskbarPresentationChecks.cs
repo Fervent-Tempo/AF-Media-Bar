@@ -120,7 +120,7 @@ internal static class VerticalTaskbarPresentationChecks
             control.ApplyPrimaryLength(600);
             Assert.AreEqual(Orientation.Horizontal, ((StackPanel)control.FindName("TaskbarHoverActions")).Orientation);
             Assert.AreEqual(Orientation.Horizontal, ((StackPanel)control.FindName("TaskbarPerformanceItems")).Orientation);
-            Assert.AreEqual(24d, ((Border)control.FindName("TaskbarPerformanceSurface")).Height);
+            Assert.AreEqual(26d, ((Border)control.FindName("TaskbarPerformanceSurface")).Height);
             Assert.AreEqual(0d, ((RotateTransform)((FrameworkElement)control.FindName("TaskbarSpectrum")).LayoutTransform).Angle);
         }
         finally { SettingsManager.Replace(settings); }
