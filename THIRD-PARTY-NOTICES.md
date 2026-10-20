@@ -1,5 +1,30 @@
 # Third-party notices
 
+## Project license
+
+AF Media Bar is distributed under the **GNU General Public License, version 3 or later**
+(GPL-3.0-or-later). The complete license text is [LICENSE](LICENSE).
+
+The project contains code ported from FluentFlyout, which is GPL-3.0-or-later, and a combined
+distribution has to carry the GPL; the project license follows it. Earlier releases shipped
+with an MIT license file; this notice replaces it from this commit on.
+
+## FluentFlyout taskbar integration
+
+The taskbar docking engine, the docked media-bar window, and the Win32 interop beneath them are
+ported from FluentFlyout (https://github.com/ManualDinosaur/FluentFlyout), Copyright (c) the
+FluentFlyout Authors, licensed under GPL-3.0-or-later. The derived files are:
+
+- `src/AFMediaBar/Classes/Services/Taskbar/TaskbarDockService.cs`
+- `src/AFMediaBar/Classes/Services/Taskbar/ITaskbarDockService.cs`
+- `src/AFMediaBar/Views/Windows/TaskbarWindow.xaml.cs`
+- `src/AFMediaBar/Classes/Interop/NativeMethods.cs`
+- `src/AFMediaBar/Classes/Utils/WindowHelper.cs`
+- `src/AFMediaBar/Classes/Utils/MonitorUtil.cs`
+- `src/AFMediaBar/Classes/Utils/LruCache.cs`
+- `src/AFMediaBar/Classes/Services/Media/Artwork/ArtworkLoader.cs`
+- `src/AFMediaBar/Classes/Services/Media/Artwork/BitmapHelper.cs`
+
 ## TaskbarLyrics web lyrics presentation engine
 
 The files under `src/AFMediaBar/Web/Lyrics/` are derived from the TaskbarLyrics web lyrics presentation engine.
