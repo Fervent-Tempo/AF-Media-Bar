@@ -1,4 +1,4 @@
-// 独立完整层入口的呈现与跨窗口指针衔接；任务栏宿主持有，隐藏停表，关闭释放订阅。
+// 独立完整面板入口的呈现、背景采样及跨窗口指针衔接；任务栏宿主持有，隐藏取消采样，关闭释放订阅。
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
@@ -21,6 +21,8 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
 {
     private readonly NativeMouseInputMonitor _input;
     private readonly Border _line;
+    private readonly Border _outline;
+    private readonly AdaptiveForegroundSamplingSession _contrastSampling;
     private readonly DispatcherTimer _pointerTimer;
     private readonly Stopwatch _clock = Stopwatch.StartNew();
     private Rect _barBounds;
@@ -31,13 +33,15 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     private FullPanelHandleTrigger _trigger;
     private TimeSpan? _hoverSince;
     private TimeSpan? _outsideSince;
+    private TimeSpan _nextContrastRefresh;
+    private bool _vertical;
     private bool _taskbarSuspended;
     private bool _isPressed;
     private bool _disposed;
 
     public event EventHandler<FullPanelOpenRequestEventArgs>? OpenRequested;
 
-    public ExternalFullPanelHandleWindow(NativeMouseInputMonitor input)
+    public ExternalFullPanelHandleWindow(NativeMouseInputMonitor input, ScreenBackgroundSampler sampler)
     {
         _input = input;
         WindowStyle = WindowStyle.None;
@@ -49,8 +53,13 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         UseLayoutRounding = true;
         WindowHelper.SetNoActivate(this);
         _line = new Border { CornerRadius = new CornerRadius(2), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        _outline = new Border { CornerRadius = new CornerRadius(3), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        _contrastSampling = new AdaptiveForegroundSamplingSession(sampler, Dispatcher, GetContrastBounds, ApplyContrast);
         // 极低 alpha 让整个按钮矩形可命中；窗口尺寸不包含媒体栏与过渡区域。
-        var surface = new Border { Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0)), Child = _line, Cursor = Cursors.Hand };
+        var marks = new Grid();
+        marks.Children.Add(_outline);
+        marks.Children.Add(_line);
+        var surface = new Border { Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0)), Child = marks, Cursor = Cursors.Hand };
         surface.MouseLeftButtonUp += Surface_MouseLeftButtonUp;
         surface.MouseLeftButtonDown += Surface_MouseLeftButtonDown;
         Content = surface;
@@ -59,7 +68,7 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     }
 
     public void Reveal(TrayIconBounds bar, Rect handleBounds, Rect transitBounds, FullPanelOpenRequestEventArgs request,
-        bool vertical, Brush brush, FullPanelHandleTrigger trigger, Func<bool> canRemainVisible)
+        bool vertical, FullPanelHandleTrigger trigger, Func<bool> canRemainVisible)
     {
         if (_disposed) return;
         _barBounds = new Rect(bar.Left, bar.Top, bar.Right - bar.Left, bar.Bottom - bar.Top);
@@ -74,6 +83,7 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         _request = request;
         _canRemainVisible = canRemainVisible;
         _trigger = trigger;
+        _vertical = vertical;
         Title = Translations.Get("Experimental.FullPanel.Title");
         _taskbarSuspended = false;
         _hoverSince = null;
@@ -82,13 +92,51 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         Height = vertical ? 44 : 8;
         _line.Width = vertical ? 4 : 28;
         _line.Height = vertical ? 28 : 4;
-        _line.Background = brush;
+        _outline.Width = vertical ? 6 : 30;
+        _outline.Height = vertical ? 30 : 6;
+        ApplyContrast(null);
         var handle = new WindowInteropHelper(this).EnsureHandle();
         Position(handle);
         Show();
         // Show 可能完成目标显示器的 DPI 切换，再断言物理边界，避免首次显示使用主屏缩放。
         Position(handle);
+        _nextContrastRefresh = _clock.Elapsed;
+        RefreshContrast();
         _pointerTimer.Start();
+    }
+
+    private Int32Rect? GetContrastBounds()
+    {
+        if (_disposed || !IsVisible) return null;
+        // 只取按钮透明边缘的背景，避开横杠及轮廓本身，避免颜色自反馈。
+        var scale = (_vertical ? _handleBounds.Width : _handleBounds.Height) / 8;
+        return _vertical
+            ? new Int32Rect((int)_handleBounds.Left, (int)Math.Round(_handleBounds.Top + 8 * scale),
+                Math.Max(1, (int)Math.Floor(scale)), Math.Max(1, (int)Math.Round(28 * scale)))
+            : new Int32Rect((int)Math.Round(_handleBounds.Left + 8 * scale), (int)_handleBounds.Top,
+                Math.Max(1, (int)Math.Round(28 * scale)), Math.Max(1, (int)Math.Floor(scale)));
+    }
+
+    private void ApplyContrast(PlayerForegroundDecision? decision)
+    {
+        if (_disposed) return;
+        if (SystemParameters.HighContrast)
+        {
+            _line.Background = SystemColors.WindowTextBrush;
+            _outline.Background = SystemColors.WindowBrush;
+            return;
+        }
+        var light = decision?.UsesLightText ?? SystemColors.WindowTextColor.R > 127;
+        _line.Background = light ? Brushes.White : new SolidColorBrush(Color.FromRgb(0x1C, 0x1C, 0x1C));
+        _outline.Background = new SolidColorBrush(light ? Color.FromArgb(192, 0, 0, 0) : Color.FromArgb(216, 255, 255, 255));
+    }
+
+    private void RefreshContrast()
+    {
+        if (_clock.Elapsed < _nextContrastRefresh) return;
+        _nextContrastRefresh = _clock.Elapsed + TimeSpan.FromMilliseconds(250);
+        if (SystemParameters.HighContrast) _contrastSampling.Invalidate(clearDecision: true);
+        else _contrastSampling.RequestRefresh();
     }
 
     private void Position(IntPtr handle)
@@ -104,6 +152,7 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     public void Dismiss()
     {
         _pointerTimer.Stop();
+        _contrastSampling.Invalidate(clearDecision: true);
         _request = null;
         _canRemainVisible = null;
         _hoverSince = null;
@@ -122,6 +171,7 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
                 return;
             }
             var now = _clock.Elapsed;
+            RefreshContrast();
             var overHandle = _handleBounds.Contains(point) && IsMouseOver;
             var overArea = overHandle || _transitBounds.Contains(point) || (!_taskbarSuspended && _barBounds.Contains(point));
             if (!overArea)
@@ -180,6 +230,7 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     {
         Dismiss();
         _disposed = true;
+        _contrastSampling.Dispose();
         _pointerTimer.Tick -= PointerTimer_Tick;
         ((Border)Content).MouseLeftButtonUp -= Surface_MouseLeftButtonUp;
         ((Border)Content).MouseLeftButtonDown -= Surface_MouseLeftButtonDown;
