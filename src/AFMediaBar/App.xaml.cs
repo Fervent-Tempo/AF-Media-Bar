@@ -307,6 +307,8 @@ namespace AFMediaBar
                 services.AddScoped<ExtraFeaturesPage>();
                 services.AddSingleton<ExtraFeaturesViewModel>();
                 services.AddScoped<ComponentsSettingsPage>();
+                services.AddScoped<WidgetsSettingsPage>();
+                services.AddScoped<WidgetsSettingsViewModel>();
                 services.AddScoped<ComponentsSettingsViewModel>();
                 services.AddScoped<ContentLayoutViewModel>();
 

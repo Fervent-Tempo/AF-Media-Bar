@@ -4,6 +4,7 @@ using AFMediaBar.Classes.Models.Settings;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Settings;
 using AFMediaBar.Classes.Settings;
+using System.Text.Json;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace AFMediaBar.Layout.Tests;
@@ -63,15 +64,20 @@ public sealed class SettingsOrganizationTests
         current.LyricsSource = new LyricsSourceSettings([]);
         current.Interaction = current.Interaction with { ArtworkHoverMode = ArtworkHoverMode.Zoom };
         var appearance = current.Appearance;
+        var spectrum = current.SpectrumComponent;
+        var performance = current.PerformanceComponent;
+        current.BluetoothBatteryWidget = current.BluetoothBatteryWidget with { LastKnownName = "Keep me" };
+        var battery = current.BluetoothBatteryWidget;
 
         SettingsManager.ResetContentLayout();
 
         current = SettingsManager.Current;
-        Assert.AreEqual(saved.TaskbarExperience.Normalize() with { MediaFontSizePercent = 120, RestComponentOrder = null },
+        Assert.AreEqual(saved.TaskbarExperience.Normalize() with { MediaFontSizePercent = 120, RestComponentOrder = null, SpectrumVisible = true, PerformanceVisible = true },
             current.TaskbarExperience with { RestComponentOrder = null });
         CollectionAssert.AreEqual(saved.TaskbarExperience.RestComponentOrder!.ToArray(), current.TaskbarExperience.RestComponentOrder!.ToArray());
-        Assert.AreEqual(20, current.SpectrumComponent.BandCount);
-        CollectionAssert.AreEqual(new[] { MetricKind.SystemCpu }, current.PerformanceComponent.Metrics!.ToArray());
+        Assert.AreEqual(spectrum, current.SpectrumComponent);
+        Assert.AreEqual(JsonSerializer.Serialize(performance), JsonSerializer.Serialize(current.PerformanceComponent));
+        Assert.AreEqual(battery, current.BluetoothBatteryWidget);
         Assert.AreEqual(LyricsTextAlignment.Left, current.LyricsTextAlignment);
         Assert.IsTrue(current.LyricsFixedWidthEnabled);
         Assert.AreEqual(330, current.LyricsFixedWidthDip);
@@ -82,6 +88,34 @@ public sealed class SettingsOrganizationTests
         Assert.AreEqual(10, current.LyricsCharacterSpacingPercent);
         Assert.AreEqual(0, current.LyricsSource.EnabledSourceIds!.Count);
         Assert.AreEqual(ArtworkHoverMode.Zoom, current.Interaction.ArtworkHoverMode);
+    }
+
+    [TestMethod]
+    public void WidgetResetRestoresSnapshotWithoutChangingLayoutOrDeviceRouting()
+    {
+        var saved = new AppSettings
+        {
+            SpectrumComponent = SpectrumComponentSettings.Default with { CaptureDeviceId = "saved-endpoint", CaptureDeviceName = "Saved" },
+            PerformanceComponent = PerformanceComponentSettings.Default with { RefreshIntervalMilliseconds = 4000 },
+            BluetoothBatteryWidget = new() { Enabled = true, DeviceId = "headphones", LastKnownName = "Headphones" },
+            TaskbarExperience = TaskbarExperienceSettings.Default with { SpectrumVisible = false, PerformanceVisible = false }
+        };
+        SettingsManager.SetUserDefaults(saved);
+        SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
+        { ComponentSpacingDip = 18, MediaFontSizePercent = 120 };
+        SettingsManager.Current.AudioDevices = new() { SwitchOutputCommunications = true };
+        var layout = SettingsManager.Current.TaskbarExperience;
+        var devices = SettingsManager.Current.AudioDevices;
+
+        SettingsManager.ResetComponents();
+
+        Assert.AreEqual(saved.SpectrumComponent, SettingsManager.Current.SpectrumComponent);
+        Assert.AreEqual(JsonSerializer.Serialize(saved.PerformanceComponent.Normalize()), JsonSerializer.Serialize(SettingsManager.Current.PerformanceComponent));
+        Assert.AreEqual(saved.BluetoothBatteryWidget.Normalize(), SettingsManager.Current.BluetoothBatteryWidget);
+        Assert.AreEqual(layout with { SpectrumVisible = false, PerformanceVisible = false }, SettingsManager.Current.TaskbarExperience);
+        Assert.AreEqual(JsonSerializer.Serialize(devices), JsonSerializer.Serialize(SettingsManager.Current.AudioDevices));
+        SettingsManager.ResetDeviceManagement();
+        Assert.AreEqual(saved.BluetoothBatteryWidget.Normalize(), SettingsManager.Current.BluetoothBatteryWidget);
     }
 
     [TestMethod]
@@ -192,6 +226,7 @@ public sealed class SettingsOrganizationTests
         {
             SettingsPageKey.ScreenAndPlacement,
             SettingsPageKey.Components,
+            SettingsPageKey.Widgets,
             SettingsPageKey.Appearance,
             SettingsPageKey.Lyrics,
             SettingsPageKey.Interaction,
@@ -201,6 +236,10 @@ public sealed class SettingsOrganizationTests
             SettingsPageKey.Experimental
         }, pages.Where(page => !page.IsFooter).Select(page => page.Key).ToArray());
         Assert.AreEqual(2, pages.Count(page => page.IsFooter));
+        Assert.AreEqual((SettingsPageKey.Widgets, "Widgets.Spectrum"),
+            SettingsPageCatalog.ResolveDestination(SettingsPageKey.Components, "Common.Group.Widgets"));
+        Assert.AreEqual((SettingsPageKey.Widgets, "Battery.Title"),
+            SettingsPageCatalog.ResolveDestination(SettingsPageKey.DeviceManagement, "Battery.Title"));
         Assert.AreEqual((SettingsPageKey.Appearance, "Common.Group.Fonts"),
             SettingsPageCatalog.ResolveDestination(SettingsPageKey.ApplicationAppearance, "Common.Group.Fonts"));
         Assert.AreEqual((SettingsPageKey.Components, "Common.RestLayer"),

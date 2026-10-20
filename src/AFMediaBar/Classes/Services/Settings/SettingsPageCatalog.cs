@@ -13,6 +13,7 @@ public static class SettingsPageCatalog
     {
         new SettingsPageDefinition(SettingsPageKey.ScreenAndPlacement, "Common.Page.ScreenAndPlacement", "Desktop24", true, HasModeContent: true),
         new SettingsPageDefinition(SettingsPageKey.Components, "Common.Page.ContentLayout", "Grid24", false),
+        new SettingsPageDefinition(SettingsPageKey.Widgets, "Common.Page.Widgets", "Apps24", true),
         new SettingsPageDefinition(SettingsPageKey.Appearance, "Common.Page.Appearance", "PaintBrush24", true, HasModeContent: true),
         new SettingsPageDefinition(SettingsPageKey.Lyrics, "Common.Page.Lyrics", "TextQuote24", false),
         new SettingsPageDefinition(SettingsPageKey.Interaction, "Common.Page.Interaction", "HandDraw24", false),
@@ -43,7 +44,8 @@ public static class SettingsPageCatalog
         (SettingsPageKey.ApplicationAppearance, _) => (SettingsPageKey.Appearance, groupId),
         (SettingsPageKey.Appearance, "Common.Group.MediaBarWidth" or "Appearance.Group.RestLayout" or "Appearance.Group.InteractionButtons") => (SettingsPageKey.Components, groupId),
         (SettingsPageKey.Lyrics, "Common.Group.LyricsAlignment") => (SettingsPageKey.Components, "Appearance.Group.RestLayout"),
-        (SettingsPageKey.Components, "Common.Group.RestLayerComponents") => (SettingsPageKey.Components, "Common.Group.Widgets"),
+        (SettingsPageKey.Components, "Common.Group.RestLayerComponents" or "Common.Group.Widgets") => (SettingsPageKey.Widgets, "Widgets.Spectrum"),
+        (SettingsPageKey.DeviceManagement, "Battery.Title") => (SettingsPageKey.Widgets, "Battery.Title"),
         (SettingsPageKey.Interaction, "Common.Group.SharedModifier") => (SettingsPageKey.Interaction, "Interaction.Group.Wheel"),
         (SettingsPageKey.Interaction, "Interaction.AudioGestures") => (SettingsPageKey.Interaction, "Audio.Settings.Advanced"),
         (SettingsPageKey.Experimental, "Experimental.FullPanel.Title") => (SettingsPageKey.Components, "Common.FullLayer"),

@@ -8,15 +8,10 @@ namespace AFMediaBar.Views.Pages;
 public partial class ExperimentalPage : Page
 {
     public ExperimentalViewModel ViewModel { get; }
-    public static readonly RoutedEvent OpenSettingsEvent = EventManager.RegisterRoutedEvent(nameof(OpenSettings),
-        RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(ExperimentalPage));
-    public event RoutedEventHandler OpenSettings { add => AddHandler(OpenSettingsEvent, value); remove => RemoveHandler(OpenSettingsEvent, value); }
     public ExperimentalPage(ExperimentalViewModel viewModel)
     {
         ViewModel = viewModel;
         DataContext = this;
         InitializeComponent();
     }
-    private void OpenSettings_Click(object sender, RoutedEventArgs args) =>
-        RaiseEvent(new RoutedEventArgs(OpenSettingsEvent, sender));
 }

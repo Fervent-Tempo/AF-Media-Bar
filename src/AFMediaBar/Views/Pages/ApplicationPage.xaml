@@ -90,10 +90,9 @@
                             Title="{DynamicResource Loc.Common.Page.ReleaseHighlights}"
                             Description="{DynamicResource Loc.ReleaseHighlights.Application.Description}"
                             Icon="{ui:SymbolIcon Sparkle24}">
-                            <ui:Button
+                            <components:SettingsNavigationButton
                                 Content="{DynamicResource Loc.ReleaseHighlights.Application.Open}"
-                                Click="OnOpenHighlights"
-                                Style="{StaticResource AfSettingsButtonStyle}" />
+                                Destination="ReleaseHighlights" />
                         </components:SettingsRow>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.About.Row.AutoCheck.Description}"
@@ -377,8 +376,8 @@
                             </StackPanel>
                         </ui:CardExpander>
                     <WrapPanel Margin="16,8,16,12">
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.WidgetLayout}" Destination="Components" GroupId="Common.Group.Widgets" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.Experiments}" Destination="Experimental" GroupId="Memory.Title" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.WidgetLayout}" Destination="Components" GroupId="Common.Group.ComponentOrder" Margin="0,0,8,4"/>
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.Experiments}" Destination="Experimental" GroupId="Memory.Title" Margin="0,0,8,4"/>
                         </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>

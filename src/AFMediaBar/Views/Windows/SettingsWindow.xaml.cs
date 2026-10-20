@@ -93,10 +93,7 @@ namespace AFMediaBar.Views.Windows
             RootNavigation.Transition = Transition.None;
             RootNavigation.TransitionDuration = 0;
 
-            AddHandler(ApplicationPage.OpenHighlightsEvent, new RoutedEventHandler(OnOpenHighlightsRequested));
             AddHandler(AppearancePage.OpenApplicationFontsEvent, new RoutedEventHandler(OnOpenApplicationFontsRequested));
-            AddHandler(LyricsPage.OpenTextLayoutEvent, new RoutedEventHandler(OnOpenTextLayoutRequested));
-            AddHandler(ExperimentalPage.OpenSettingsEvent, new RoutedEventHandler(OnExperimentalSettingsRequested));
             AddHandler(AFMediaBar.Components.SettingsNavigationButton.NavigateEvent, new RoutedEventHandler(OnRelatedSettingsRequested));
             RootNavigation.Navigated += OnNavigated;
 
@@ -294,18 +291,6 @@ namespace AFMediaBar.Views.Windows
             NavigateToGroup(SettingsPageKey.ApplicationAppearance, "Common.Group.Fonts");
         }
 
-        private void OnOpenTextLayoutRequested(object sender, RoutedEventArgs e)
-        {
-            e.Handled = true;
-            NavigateToGroup(SettingsPageKey.Components, "Appearance.Group.RestLayout");
-        }
-
-        private void OnOpenHighlightsRequested(object sender, RoutedEventArgs e)
-        {
-            e.Handled = true;
-            Navigate(typeof(ReleaseHighlightsPage));
-        }
-
         private void UpdateNoticeNavItem_Click(object sender, RoutedEventArgs e)
         {
             // 更新入口只展示版本亮点；下载和安装仍由应用页负责。
@@ -491,16 +476,9 @@ namespace AFMediaBar.Views.Windows
             var experiments = SettingsManager.Current.Experiments;
             if (page == SettingsPageKey.Application && group == "Memory.Title" && !experiments.MemoryTools)
                 page = SettingsPageKey.Experimental;
-            else if (page == SettingsPageKey.DeviceManagement && group == "Battery.Title" && !experiments.BluetoothBattery)
+            else if ((page is SettingsPageKey.DeviceManagement or SettingsPageKey.Widgets) && group == "Battery.Title" && !experiments.BluetoothBattery)
                 page = SettingsPageKey.Experimental;
             if (!string.IsNullOrEmpty(group)) NavigateToGroup(page, group);
-            else Navigate(SettingsPageProvider.PageTypes[page]);
-        }
-        private void OnExperimentalSettingsRequested(object sender, RoutedEventArgs args)
-        {
-            if (args.OriginalSource is not System.Windows.Controls.Button { Tag: SettingsPageKey page } button) return;
-            args.Handled = true;
-            if (button.CommandParameter is string group) NavigateToGroup(page, group);
             else Navigate(SettingsPageProvider.PageTypes[page]);
         }
         private void OnEditingMonitorChanged(object sender, SelectionChangedEventArgs e)

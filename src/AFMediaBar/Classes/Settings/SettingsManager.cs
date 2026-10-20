@@ -190,13 +190,10 @@ public static class SettingsManager
         var defaults = Defaults;
         next.TaskbarExperience = AFMediaBar.Classes.Services.Settings.SettingsResetPolicy.Content(next.TaskbarExperience,
             defaults.TaskbarExperience);
-        next.SpectrumComponent = defaults.SpectrumComponent;
-        next.PerformanceComponent = defaults.PerformanceComponent;
-        next.BluetoothBatteryWidget = next.BluetoothBatteryWidget with { Enabled = defaults.BluetoothBatteryWidget.Enabled };
         next.LyricsTextAlignment = defaults.LyricsTextAlignment;
         next.LyricsFixedWidthEnabled = defaults.LyricsFixedWidthEnabled;
         next.LyricsFixedWidthDip = defaults.LyricsFixedWidthDip;
-        Replace(next, SettingsResetScope.Components);
+        Replace(next, SettingsResetScope.ContentLayout);
     }
 
     /// <summary>恢复显示目标与定位，不恢复各层内容及外观。</summary>
@@ -266,7 +263,9 @@ public static class SettingsManager
         var next = Current.Clone(); var defaults = Defaults;
         next.SpectrumComponent = defaults.SpectrumComponent;
         next.PerformanceComponent = defaults.PerformanceComponent;
-        next.BluetoothBatteryWidget = next.BluetoothBatteryWidget with { Enabled = defaults.BluetoothBatteryWidget.Enabled };
+        next.BluetoothBatteryWidget = defaults.BluetoothBatteryWidget;
+        next.TaskbarExperience = next.TaskbarExperience with
+        { SpectrumVisible = defaults.TaskbarExperience.SpectrumVisible, PerformanceVisible = defaults.TaskbarExperience.PerformanceVisible };
         Replace(next, SettingsResetScope.Components);
     }
     public static void ResetDeviceManagement()
@@ -274,7 +273,6 @@ public static class SettingsManager
         var next = Current.Clone();
         next.AudioDevices = Defaults.AudioDevices with
         { OutputCycleHotkey = next.AudioDevices.OutputCycleHotkey, InputCycleHotkey = next.AudioDevices.InputCycleHotkey };
-        next.BluetoothBatteryWidget = Defaults.BluetoothBatteryWidget;
         Replace(next, SettingsResetScope.DeviceManagement);
     }
 

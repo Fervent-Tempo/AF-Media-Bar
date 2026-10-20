@@ -1,4 +1,4 @@
-// 计算内容页重置值；保留由外观页编辑的字号，不发布事件或修改设置。
+// 计算内容页重置值，保留外观页字号和小组件页显隐；不发布事件或修改设置。
 using AFMediaBar.Classes.Settings;
 
 namespace AFMediaBar.Classes.Services.Settings;
@@ -7,5 +7,10 @@ namespace AFMediaBar.Classes.Services.Settings;
 internal static class SettingsResetPolicy
 {
     public static TaskbarExperienceSettings Content(TaskbarExperienceSettings current, TaskbarExperienceSettings defaults) =>
-        defaults with { MediaFontSizePercent = current.MediaFontSizePercent };
+        defaults with
+        {
+            MediaFontSizePercent = current.MediaFontSizePercent,
+            SpectrumVisible = current.SpectrumVisible,
+            PerformanceVisible = current.PerformanceVisible
+        };
 }

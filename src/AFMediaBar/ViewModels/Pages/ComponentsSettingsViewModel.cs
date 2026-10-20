@@ -12,7 +12,7 @@ using CommunityToolkit.Mvvm.Input;
 namespace AFMediaBar.ViewModels.Pages;
 
 /// <summary>Component-specific view model, independent of media discovery, launchers, and notifications.</summary>
-public sealed class ComponentsSettingsViewModel : ObservableObject, IDisposable
+public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDisposable
 {
     private readonly ISettingsConfiguration _configuration;
     /// <summary>Cancels asynchronous UI work when this editor context becomes inactive.</summary>
@@ -22,10 +22,12 @@ public sealed class ComponentsSettingsViewModel : ObservableObject, IDisposable
     private readonly Dispatcher _dispatcher = DispatcherHelper.Current;
     private bool _disposed;
 
-    /// <summary>Creates one component editor for its page context and observes only settings and language.</summary>
-    public ComponentsSettingsViewModel(ISettingsConfiguration configuration, LocalizationService localization)
+    /// <summary>创建参数编辑器，订阅设置、语言与共享音频目录的变更。</summary>
+    public ComponentsSettingsViewModel(ISettingsConfiguration configuration, LocalizationService localization,
+        AFMediaBar.Classes.Services.Audio.IAudioDeviceCatalog? captureDevices = null)
     {
         _configuration = configuration;
+        InitializeCaptureDevices(captureDevices);
         ReorderMetricCommand = new RelayCommand<SettingsReorderRequest>(ReorderMetric);
         MoveMetricUpCommand = new RelayCommand<PerformanceMetricSettingItem>(item => MoveMetric(item, -1));
         MoveMetricDownCommand = new RelayCommand<PerformanceMetricSettingItem>(item => MoveMetric(item, 1));
@@ -33,12 +35,6 @@ public sealed class ComponentsSettingsViewModel : ObservableObject, IDisposable
         _localization = localization;
         SettingsManager.SettingsChanged += OnSettingsChanged;
         localization.LanguageChanged += OnLanguageChanged;
-    }
-    public bool IsBatteryExperimentEnabled => SettingsManager.Current.Experiments.BluetoothBattery;
-    public bool BatteryWidgetEnabled
-    {
-        get => SettingsManager.Current.BluetoothBatteryWidget.Enabled;
-        set { if (!_disposed && _configuration.IsActive) SettingsManager.Current.BluetoothBatteryWidget = SettingsManager.Current.BluetoothBatteryWidget with { Enabled = value }; }
     }
     public int SpectrumBandCount
     {
@@ -304,20 +300,23 @@ public sealed class ComponentsSettingsViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(CanUncheckProcessMemory));
         OnPropertyChanged(nameof(CanUncheckSystemNetwork));
     }
-    /// <summary>Restores only spectrum and performance defaults through the existing reset contract.</summary>
+    /// <summary>通过现有重置契约恢复小组件参数。</summary>
     public void ResetComponents() { if (!_disposed && _configuration.IsActive) SettingsManager.ResetComponents(); }
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args) => DispatcherHelper.Run(_dispatcher, () =>
     {
         if (_disposed || !_configuration.IsActive) return;
+        if (args.PropertyName is null or nameof(AppSettings.SpectrumComponent)) RefreshCaptureDeviceOptions();
+        if (args.PropertyName == nameof(AppSettings.AudioDevices)) QueueCaptureDeviceRefresh();
         OnPropertyChanged(string.Empty);
     });
-    private void OnLanguageChanged(object? sender, EventArgs args) { if (!_disposed) OnPropertyChanged(string.Empty); }
+    private void OnLanguageChanged(object? sender, EventArgs args) { if (!_disposed) { RefreshCaptureDeviceOptions(); OnPropertyChanged(string.Empty); } }
     /// <summary>Unsubscribes when the cached page scope is removed.</summary>
-    private void OnActivated(object? sender, EventArgs e) { OnPropertyChanged(string.Empty); }
+    private void OnActivated(object? sender, EventArgs e) { QueueCaptureDeviceRefresh(); OnPropertyChanged(string.Empty); }
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
+        DisposeCaptureDevices();
         _configuration.Activated -= OnActivated;
         SettingsManager.SettingsChanged -= OnSettingsChanged;
         _localization.LanguageChanged -= OnLanguageChanged;

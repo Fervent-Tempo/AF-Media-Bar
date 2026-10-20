@@ -2,7 +2,6 @@
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:components="clr-namespace:AFMediaBar.Components"
-      xmlns:services="clr-namespace:AFMediaBar.Classes.Services"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False">
     <Grid>
@@ -19,7 +18,7 @@
                 <components:SettingsGroup GroupId="Battery.Title" Header="{DynamicResource Loc.Battery.Title}" Description="{DynamicResource Loc.Battery.SelectHint}" Icon="{ui:SymbolIcon Bluetooth24}">
                     <StackPanel>
                         <components:SettingsRow Title="{DynamicResource Loc.Experimental.Enable}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.BluetoothBattery, Mode=TwoWay}"/></components:SettingsRow>
-                        <components:SettingsRow Title="{DynamicResource Loc.Battery.Open}"><ui:Button Content="{DynamicResource Loc.Common.Settings}" Style="{StaticResource AfSettingsButtonStyle}" Tag="{x:Static services:SettingsPageKey.DeviceManagement}" CommandParameter="Battery.Title" Click="OpenSettings_Click"/></components:SettingsRow>
+                        <components:SettingsRow Title="{DynamicResource Loc.Battery.Open}"><components:SettingsNavigationButton Content="{DynamicResource Loc.Common.Settings}" Destination="Widgets" GroupId="Battery.Title"/></components:SettingsRow>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup GroupId="Memory.Title" Header="{DynamicResource Loc.Memory.Title}" Description="{DynamicResource Loc.Memory.Explanation}" Icon="{ui:SymbolIcon ArrowMinimize24}">
@@ -29,7 +28,7 @@
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.SystemMemoryCleanup, Mode=TwoWay}" />
                         </components:SettingsRow>
                         <components:SettingsRow Title="{DynamicResource Loc.Memory.Open}" Visibility="{Binding ViewModel.MemoryTools, Converter={StaticResource AfBooleanToVisibilityConverter}}">
-                            <ui:Button Content="{DynamicResource Loc.Memory.Open}" Style="{StaticResource AfSettingsButtonStyle}" Tag="{x:Static services:SettingsPageKey.Application}" CommandParameter="Memory.Title" Click="OpenSettings_Click" />
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Memory.Open}" Destination="Application" GroupId="Memory.Title" />
                         </components:SettingsRow>
                     </StackPanel>
                 </components:SettingsGroup>
@@ -43,17 +42,17 @@
                             <TextBlock Text="{DynamicResource Loc.Experimental.Vertical.Shared}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,8,0,12" />
                             <components:SettingsRow Title="{DynamicResource Loc.Common.Page.ContentLayout}"
                                 Description="{DynamicResource Loc.ContentLayout.Header.Subtitle}" Icon="{ui:SymbolIcon Grid24}">
-                                <ui:Button Content="{DynamicResource Loc.Experimental.OpenContentLayout}" Style="{StaticResource AfSettingsButtonStyle}"
-                                    Tag="{x:Static services:SettingsPageKey.Components}" Click="OpenSettings_Click" />
+                                <components:SettingsNavigationButton Content="{DynamicResource Loc.Experimental.OpenContentLayout}"
+                                    Destination="Components" />
                             </components:SettingsRow>
                             <components:SettingsRow Title="{DynamicResource Loc.Common.Page.Appearance}"
                                 Description="{DynamicResource Loc.Appearance.Unified.Header.Subtitle}" Icon="{ui:SymbolIcon PaintBrush24}">
-                                <ui:Button Content="{DynamicResource Loc.Experimental.OpenAppearance}" Style="{StaticResource AfSettingsButtonStyle}"
-                                    Tag="{x:Static services:SettingsPageKey.Appearance}" Click="OpenSettings_Click" />
+                                <components:SettingsNavigationButton Content="{DynamicResource Loc.Experimental.OpenAppearance}"
+                                    Destination="Appearance" />
                             </components:SettingsRow>
                         </StackPanel>
                     <WrapPanel Margin="16,8,16,12">
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Common.Page.ScreenAndPlacement}" Destination="ScreenAndPlacement" GroupId="Common.Group.ScreenAndPlacement" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Common.Page.ScreenAndPlacement}" Destination="ScreenAndPlacement" GroupId="Common.Group.ScreenAndPlacement" Margin="0,0,8,4"/>
                         </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
@@ -66,8 +65,8 @@
                         <StackPanel Visibility="{Binding ViewModel.FloatingBar, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                             <components:SettingsCallout Text="{DynamicResource Loc.Experimental.Floating.Independent}" Symbol="Info24" />
                             <components:SettingsRow Title="{DynamicResource Loc.Common.Page.ScreenAndPlacement}" Icon="{ui:SymbolIcon Desktop24}">
-                                <ui:Button Content="{DynamicResource Loc.Experimental.Floating.OpenDisplay}" Style="{StaticResource AfSettingsButtonStyle}"
-                                    Tag="{x:Static services:SettingsPageKey.ScreenAndPlacement}" CommandParameter="Common.Group.ChooseDisplayMode" Click="OpenSettings_Click" />
+                                <components:SettingsNavigationButton Content="{DynamicResource Loc.Experimental.Floating.OpenDisplay}"
+                                    Destination="ScreenAndPlacement" GroupId="Common.Group.ChooseDisplayMode" />
                             </components:SettingsRow>
                         </StackPanel>
                     </StackPanel>

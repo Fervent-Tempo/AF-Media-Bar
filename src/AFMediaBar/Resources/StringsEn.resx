@@ -2418,7 +2418,7 @@
     <value>Content &amp; layout</value>
   </data>
   <data name="ContentLayout.Header.Subtitle" xml:space="preserve">
-    <value>Choose persistent content, text layout, component details and control panels.</value>
+    <value>Configure always-on content, text layout, component order and control panels.</value>
   </data>
   <data name="Appearance.Unified.Header.Subtitle" xml:space="preserve">
     <value>Set shared themes and fonts, plus media bar text and background.</value>
@@ -3062,7 +3062,7 @@ Source: {2}</value></data>
   <data name="Memory.Auto.Running" xml:space="preserve"><value>Automatic optimization is running</value></data>
   <data name="Memory.Auto.Paused" xml:space="preserve"><value>Paused after authorization loss or repeated failures; check the latest result before resuming</value></data>
   <data name="Device.Management.Title" xml:space="preserve"><value>Device management</value></data>
-  <data name="Device.Management.Description" xml:space="preserve"><value>Manage enabled input/output devices, aliases, display and switching order, and Bluetooth battery</value></data>
+  <data name="Device.Management.Description" xml:space="preserve"><value>Manage enabled input and output devices, aliases, display and switching order, and communications roles.</value></data>
   <data name="Device.Enabled" xml:space="preserve"><value>Enabled</value></data>
   <data name="Device.Disabled" xml:space="preserve"><value>Disabled devices</value></data>
   <data name="Device.Offline" xml:space="preserve"><value>Currently unavailable</value></data>
@@ -3110,4 +3110,40 @@ Source: {2}</value></data>
   <data name="Settings.Related.LyricsPresentation" xml:space="preserve"><value>Lyrics presentation</value></data>
   <data name="Settings.Related.WidgetLayout" xml:space="preserve"><value>Widgets and order</value></data>
   <data name="Settings.Related.MemoryTools" xml:space="preserve"><value>Memory optimization policy</value></data>
+  <data name="Common.Page.Widgets" xml:space="preserve">
+    <value>Widgets</value>
+  </data>
+  <data name="Widgets.Header.Subtitle" xml:space="preserve">
+    <value>Configure spectrum, performance and Bluetooth battery widgets. Arrange them in Content and layout.</value>
+  </data>
+  <data name="Widgets.Spectrum" xml:space="preserve">
+    <value>Spectrum</value>
+  </data>
+  <data name="Widgets.Spectrum.Description" xml:space="preserve">
+    <value>Choose the capture scope, output device and spectrum appearance.</value>
+  </data>
+  <data name="Widgets.Performance" xml:space="preserve">
+    <value>Performance</value>
+  </data>
+  <data name="Common.Group.ComponentOrder" xml:space="preserve">
+    <value>Component order</value>
+  </data>
+  <data name="Common.ComponentOrder.Description" xml:space="preserve">
+    <value>Arrange media bar components. Configure spectrum, performance and battery in Widgets.</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.Title" xml:space="preserve">
+    <value>Capture device</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.Description" xml:space="preserve">
+    <value>Follow the current AF media source’s output device, falling back to the system default when unidentified. A selected offline device pauses capture and remains selected.</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.Automatic" xml:space="preserve">
+    <value>Follow current media source</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.Offline" xml:space="preserve">
+    <value>{0} (offline)</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.ListUnavailable" xml:space="preserve">
+    <value>The device list is unavailable. Reopen this page to try again.</value>
+  </data>
 </root>

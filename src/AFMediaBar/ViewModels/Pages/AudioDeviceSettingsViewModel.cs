@@ -11,7 +11,6 @@ namespace AFMediaBar.ViewModels.Pages;
 /// <summary>输入/输出黑名单和通信角色的全局设置编辑器。</summary>
 public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
 {
-    public BluetoothBatterySettingsViewModel? Battery { get; }
     private readonly IAudioDeviceCatalog _devices;
     private readonly ISettingsConfiguration _configuration;
     private bool _disposed;
@@ -44,9 +43,8 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
         get => _configuration.Current.AudioDevices.SwitchInputCommunications;
         set => _configuration.SetAudioDeviceSettings(_configuration.Current.AudioDevices with { SwitchInputCommunications = value });
     }
-    public AudioDeviceSettingsViewModel(IAudioDeviceCatalog devices, ISettingsConfiguration configuration, BluetoothBatterySettingsViewModel? battery = null)
+    public AudioDeviceSettingsViewModel(IAudioDeviceCatalog devices, ISettingsConfiguration configuration)
     {
-        Battery = battery;
         ReorderDevicesCommand = new RelayCommand<SettingsReorderRequest>(Reorder);
         _devices = devices;
         _configuration = configuration;

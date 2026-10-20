@@ -147,10 +147,9 @@
                             Title="{DynamicResource Loc.ContentLayout.Text.Shortcut.Title}"
                             Description="{DynamicResource Loc.ContentLayout.Text.Shortcut.Description}"
                             Icon="{ui:SymbolIcon TextAlignCenter24}">
-                            <ui:Button
-                                Click="OpenTextLayout_Click"
-                                Content="{DynamicResource Loc.ContentLayout.Text.Shortcut.Action}"
-                                Style="{StaticResource AfSettingsButtonStyle}" />
+                            <components:SettingsNavigationButton
+                                Destination="Components" GroupId="Appearance.Group.RestLayout"
+                                Content="{DynamicResource Loc.ContentLayout.Text.Shortcut.Action}" />
                         </components:SettingsRow>
                     </StackPanel>
                 </components:SettingsGroup>
@@ -250,8 +249,8 @@
                             </StackPanel>
                         </ui:CardExpander>
                     <WrapPanel Margin="16,8,16,12">
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.TextLayout}" Destination="Components" GroupId="Appearance.Group.RestLayout" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.TextAppearance}" Destination="Appearance" GroupId="Common.Group.MediaBarText" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.TextLayout}" Destination="Components" GroupId="Appearance.Group.RestLayout" Margin="0,0,8,4"/>
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.TextAppearance}" Destination="Appearance" GroupId="Common.Group.MediaBarText" Margin="0,0,8,4"/>
                         </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>

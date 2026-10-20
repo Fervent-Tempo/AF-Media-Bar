@@ -166,9 +166,15 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
         {
             next.TaskbarExperience = SettingsResetPolicy.Content(next.TaskbarExperience, defaults.TaskbarExperience) with
             { LengthMode = geometry.LengthMode, FixedLengthDip = geometry.FixedLengthDip, Arrangement = geometry.Arrangement };
-            next.SpectrumComponent = defaults.SpectrumComponent;
-            next.PerformanceComponent = defaults.PerformanceComponent;
-            next.BluetoothBatteryWidget = next.BluetoothBatteryWidget with { Enabled = defaults.BluetoothBatteryWidget.Enabled };
+            if (scope == SettingsResetScope.DisplayModes)
+            {
+                // 旧入口维持原有范围；当前内容与布局页保留小组件设置。
+                next.TaskbarExperience = next.TaskbarExperience with
+                { SpectrumVisible = defaults.TaskbarExperience.SpectrumVisible, PerformanceVisible = defaults.TaskbarExperience.PerformanceVisible };
+                next.SpectrumComponent = defaults.SpectrumComponent;
+                next.PerformanceComponent = defaults.PerformanceComponent;
+                next.BluetoothBatteryWidget = next.BluetoothBatteryWidget with { Enabled = defaults.BluetoothBatteryWidget.Enabled };
+            }
             next.LyricsTextAlignment = defaults.LyricsTextAlignment;
             next.LyricsFixedWidthEnabled = geometry.LyricsFixedWidthEnabled;
             next.LyricsFixedWidthDip = geometry.LyricsFixedWidthDip;

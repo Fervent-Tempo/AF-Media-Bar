@@ -156,6 +156,8 @@
       "$release": "v1.2.0",
       "bandCount": "v1.2.0",
       "captureSource": "v1.4.0",
+      "captureDeviceId": "unreleased",
+      "captureDeviceName": "unreleased",
       "contentHeightDip": "v1.2.0",
       "refreshRateHz": "v1.2.0",
       "sensitivityPercent": "v1.2.0",
@@ -759,6 +761,11 @@
   },
   "rules": [
     {
+      "id": "spectrum-device-target",
+      "paths": ["settings.spectrumComponent.captureSource", "settings.spectrumComponent.captureDeviceId", "settings.spectrumComponent.captureDeviceName"],
+      "text": "设备采集默认跟随 AF 当前媒体来源实际使用的输出端点，无法匹配时回退系统默认；手动端点离线保留配置并暂停采集。程序采集范围忽略所存设备选择。新字段缺失或 ID 为空时使用自动模式。"
+    },
+    {
       "id": "full-panel-entry-only",
       "paths": ["settings.taskbarExperience.fullLayerEnabled", "settings.taskbarExperience.fullPanelEntryVisible"],
       "text": "完整面板始终允许交互打开；FullLayerEnabled 仅保留已发布字段兼容，归一化时与 FullPanelEntryVisible 合并为入口可见性并恢复为 true。入口关闭只隐藏外侧横杆，不关闭完整面板。"
@@ -781,7 +788,7 @@
     {
       "id": "taskbar-reset",
       "prefixes": ["settings.taskbarExperience"],
-      "text": "ResetContentLayout 恢复任务栏体验但保留媒体字号；字号由 ResetTaskbarAppearance 恢复。旧 ResetDisplayModes 仍会恢复组件显隐等，不等于当前页面重置；两者均保留交互中的封面悬停模式。"
+      "text": "ResetContentLayout 恢复任务栏体验但保留媒体字号及频谱、性能显隐；字号由 ResetTaskbarAppearance 恢复，小组件显隐由 ResetComponents 恢复。旧 ResetDisplayModes 仍会恢复组件显隐等，不等于当前页面重置；两者均保留交互中的封面悬停模式。"
     },
     {
       "id": "artwork-progress",
@@ -874,7 +881,7 @@
     {
       "id": "components",
       "prefixes": ["settings.spectrumComponent", "settings.performanceComponent"],
-      "text": "频谱及性能由 ResetComponents/ResetContentLayout 恢复。性能 metrics 空或全无效回 SystemMemory；metricOrder 只决定已选指标顺序，缺失或 null 沿用原顺序。枚举新增成员的发布状态独立核对。"
+      "text": "小组件页 ResetComponents 恢复频谱、性能、蓝牙电量参数及显隐；ResetContentLayout 和 ResetDeviceManagement 保留这些设置。性能 metrics 空或全无效回 SystemMemory；metricOrder 只决定已选指标顺序，缺失或 null 沿用原顺序。枚举新增成员的发布状态独立核对。"
     },
     {
       "id": "startup",

@@ -874,4 +874,51 @@
             </Setter.Value>
         </Setter>
     </Style>
+
+    <!-- 页面间跳转统一使用文字与方向箭头，保留原生键盘焦点和主题资源。 -->
+    <Style x:Key="AfSettingsNavigationButtonStyle" TargetType="{x:Type components:SettingsNavigationButton}"
+           BasedOn="{StaticResource AfSettingsButtonStyle}">
+        <Setter Property="Padding" Value="12,8" />
+        <Setter Property="MinHeight" Value="36" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type components:SettingsNavigationButton}">
+                    <Border x:Name="Surface" Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="8" Padding="{TemplateBinding Padding}">
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="True"
+                                              ContentSource="Content" Margin="0,0,12,0"/>
+                            <Border Grid.Column="1" Width="22" Height="22" CornerRadius="5"
+                                    Background="{DynamicResource SubtleFillColorSecondaryBrush}">
+                                <ui:SymbolIcon Symbol="ArrowRight24" FontSize="14" Foreground="{DynamicResource AfAccentBrush}"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Surface" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}"/>
+                            <Setter TargetName="Surface" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Surface" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Surface" Property="Background" Value="{DynamicResource ControlFillColorTertiaryBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 </ResourceDictionary>

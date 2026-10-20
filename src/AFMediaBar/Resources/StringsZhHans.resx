@@ -2418,7 +2418,7 @@
     <value>内容与布局</value>
   </data>
   <data name="ContentLayout.Header.Subtitle" xml:space="preserve">
-    <value>配置常驻内容、文字布局、组件参数和控制面板。</value>
+    <value>配置常驻内容、文字布局、组件顺序和控制面板。</value>
   </data>
   <data name="Appearance.Unified.Header.Subtitle" xml:space="preserve">
     <value>设置通用主题与字体，以及媒体栏专属文字和背景。</value>
@@ -3062,7 +3062,7 @@
   <data name="Memory.Auto.Running" xml:space="preserve"><value>自动优化执行中</value></data>
   <data name="Memory.Auto.Paused" xml:space="preserve"><value>权限失效或多次失败，已暂停；请检查最近结果后恢复</value></data>
   <data name="Device.Management.Title" xml:space="preserve"><value>设备管理</value></data>
-  <data name="Device.Management.Description" xml:space="preserve"><value>管理输入输出设备的启用、别名、显示与切换顺序，以及蓝牙电量</value></data>
+  <data name="Device.Management.Description" xml:space="preserve"><value>管理输入输出设备的启用、别名、显示与切换顺序及通信角色。</value></data>
   <data name="Device.Enabled" xml:space="preserve"><value>启用</value></data>
   <data name="Device.Disabled" xml:space="preserve"><value>已禁用设备</value></data>
   <data name="Device.Offline" xml:space="preserve"><value>暂不可用</value></data>
@@ -3110,4 +3110,40 @@
   <data name="Settings.Related.LyricsPresentation" xml:space="preserve"><value>歌词样式</value></data>
   <data name="Settings.Related.WidgetLayout" xml:space="preserve"><value>小组件与顺序</value></data>
   <data name="Settings.Related.MemoryTools" xml:space="preserve"><value>内存优化策略</value></data>
+  <data name="Common.Page.Widgets" xml:space="preserve">
+    <value>小组件</value>
+  </data>
+  <data name="Widgets.Header.Subtitle" xml:space="preserve">
+    <value>配置频谱、性能和蓝牙电量；组件顺序在内容与布局中调整。</value>
+  </data>
+  <data name="Widgets.Spectrum" xml:space="preserve">
+    <value>频谱</value>
+  </data>
+  <data name="Widgets.Spectrum.Description" xml:space="preserve">
+    <value>选择音频采集范围、设备和频谱显示参数。</value>
+  </data>
+  <data name="Widgets.Performance" xml:space="preserve">
+    <value>性能</value>
+  </data>
+  <data name="Common.Group.ComponentOrder" xml:space="preserve">
+    <value>组件顺序</value>
+  </data>
+  <data name="Common.ComponentOrder.Description" xml:space="preserve">
+    <value>调整媒体栏组件的显示顺序；频谱、性能和电量参数在小组件页设置。</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.Title" xml:space="preserve">
+    <value>采集设备</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.Description" xml:space="preserve">
+    <value>默认跟随 AF 当前媒体来源的输出设备；无法识别时使用系统默认设备。手动设备离线时暂停采集并保留选择。</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.Automatic" xml:space="preserve">
+    <value>跟随当前媒体来源</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.Offline" xml:space="preserve">
+    <value>{0}（离线）</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.ListUnavailable" xml:space="preserve">
+    <value>暂时无法读取设备列表，请重新打开此页。</value>
+  </data>
 </root>

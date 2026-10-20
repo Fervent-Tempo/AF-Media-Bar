@@ -2291,7 +2291,7 @@
     <value>Theo vị trí thanh media bar</value>
   </data>
   <data name="ContentLayout.Header.Subtitle" xml:space="preserve">
-    <value>Tùy chọn nội dung thường trực, bố cục văn bản, chi tiết thành phần và bảng điều khiển.</value>
+    <value>Cấu hình nội dung thường trực, bố cục văn bản, thứ tự thành phần và bảng điều khiển.</value>
   </data>
   <data name="ContentLayout.Hover.Prerequisite" xml:space="preserve">
     <value>Các điều khiển này xuất hiện khi bật Điều khiển nhanh. Bạn có thể cấu hình trước khi nó đang tắt.</value>
@@ -3100,7 +3100,7 @@ Nguồn: {2}</value></data>
   <data name="Memory.Auto.Running" xml:space="preserve"><value>Đang tự động tối ưu</value></data>
   <data name="Memory.Auto.Paused" xml:space="preserve"><value>Tạm dừng do mất quyền hoặc lỗi lặp lại; kiểm tra kết quả trước khi tiếp tục</value></data>
   <data name="Device.Management.Title" xml:space="preserve"><value>Quản lý thiết bị</value></data>
-  <data name="Device.Management.Description" xml:space="preserve"><value>Quản lý thiết bị vào/ra được bật, bí danh, thứ tự hiển thị và chuyển đổi cùng pin Bluetooth</value></data>
+  <data name="Device.Management.Description" xml:space="preserve"><value>Quản lý thiết bị đầu vào và đầu ra được bật, bí danh, thứ tự hiển thị và chuyển đổi, cùng vai trò liên lạc.</value></data>
   <data name="Device.Enabled" xml:space="preserve"><value>Bật</value></data>
   <data name="Device.Disabled" xml:space="preserve"><value>Thiết bị đã tắt</value></data>
   <data name="Device.Offline" xml:space="preserve"><value>Hiện không khả dụng</value></data>
@@ -3148,4 +3148,40 @@ Nguồn: {2}</value></data>
   <data name="Settings.Related.LyricsPresentation" xml:space="preserve"><value>Cách hiển thị lời bài hát</value></data>
   <data name="Settings.Related.WidgetLayout" xml:space="preserve"><value>Tiện ích và thứ tự</value></data>
   <data name="Settings.Related.MemoryTools" xml:space="preserve"><value>Chính sách tối ưu bộ nhớ</value></data>
+  <data name="Common.Page.Widgets" xml:space="preserve">
+    <value>Tiện ích</value>
+  </data>
+  <data name="Widgets.Header.Subtitle" xml:space="preserve">
+    <value>Cấu hình phổ âm, hiệu năng và pin Bluetooth. Sắp xếp trong Nội dung và bố cục.</value>
+  </data>
+  <data name="Widgets.Spectrum" xml:space="preserve">
+    <value>Phổ âm</value>
+  </data>
+  <data name="Widgets.Spectrum.Description" xml:space="preserve">
+    <value>Chọn phạm vi thu âm, thiết bị đầu ra và cách hiển thị phổ âm.</value>
+  </data>
+  <data name="Widgets.Performance" xml:space="preserve">
+    <value>Hiệu năng</value>
+  </data>
+  <data name="Common.Group.ComponentOrder" xml:space="preserve">
+    <value>Thứ tự thành phần</value>
+  </data>
+  <data name="Common.ComponentOrder.Description" xml:space="preserve">
+    <value>Sắp xếp các thành phần trên thanh phương tiện. Cấu hình phổ âm, hiệu năng và pin trong Tiện ích.</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.Title" xml:space="preserve">
+    <value>Thiết bị thu âm</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.Description" xml:space="preserve">
+    <value>Theo thiết bị đầu ra của nguồn phương tiện hiện tại trong AF; dùng thiết bị mặc định nếu không xác định được. Khi thiết bị đã chọn ngoại tuyến, tạm dừng thu và giữ lựa chọn.</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.Automatic" xml:space="preserve">
+    <value>Theo nguồn phương tiện hiện tại</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.Offline" xml:space="preserve">
+    <value>{0} (ngoại tuyến)</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.ListUnavailable" xml:space="preserve">
+    <value>Không thể đọc danh sách thiết bị. Hãy mở lại trang để thử lại.</value>
+  </data>
 </root>

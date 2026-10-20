@@ -61,7 +61,7 @@ public static class SettingsSearchIndex
     public static IReadOnlyList<SettingsSearchEntry> ForContext(SettingsContext context) => Entries.Where(entry =>
         SettingsPageCatalog.Find(entry.Page, context.Mode) is not null &&
         (entry.Page != SettingsPageKey.Application || entry.GroupId != "Memory.Title" || AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.MemoryTools) &&
-        (entry.Page != SettingsPageKey.DeviceManagement || entry.GroupId != "Battery.Title" || AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.BluetoothBattery) &&
+        (entry.Page != SettingsPageKey.Widgets || entry.GroupId != "Battery.Title" || AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.BluetoothBattery) &&
         (entry.Page != SettingsPageKey.ScreenAndPlacement || entry.GroupId == "Common.Group.ChooseDisplayMode" ||
             entry.GroupId == "Common.Group.ScreenAndPlacement" && context.Mode == SettingsMode.Taskbar ||
             entry.GroupId == "Placement.Floating.Title" && context.Mode == SettingsMode.FloatingBar && AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.FloatingBar) &&
@@ -176,12 +176,12 @@ public static class SettingsSearchIndex
             "Search.DisplayModes.RestLayer.Description",
             language,
             ["静置", "静置层", "靜置層", "常驻", "常驻状态", "常駐狀態", "rest", "rest layer", "always-on view", "进度", "播放进度", "progress", "设备按钮", "输出设备", "音量按钮", "没有媒体", "无媒体", "空闲", "idle", "隐藏", "保留组件", "小音符", "封面放大", "artwork zoom"]),
-        Create(
-            SettingsPageKey.Components,
-            "Common.Group.Widgets",
-            "Common.Widgets.Description",
-            language,
-            ["小组件", "小元件", "组件设置", "components", "widgets", "频谱", "spectrum", "音频采集范围", "前台程序音频", "所有程序音频", "音訊擷取範圍", "audio capture scope", "current media application", "all applications", "phạm vi thu âm thanh", "柱数", "刷新率", "灵敏度", "性能", "performance", "网速", "网络速率", "網路速率", "上传", "下载", "轮换", "並排", "并排", "network", "upload", "download", "cycle", "side by side", "tốc độ mạng", "luân phiên", "cạnh nhau", "内存", "cpu", "gpu", "任务管理器", "波形", "像素", "上下对称", "采样间隔", "刷新间隔", "组件顺序", "順序", "排序", "order", "上移", "下移"]),
+        Create(SettingsPageKey.Components, "Common.Group.ComponentOrder", "Common.ComponentOrder.Description", language,
+            ["组件顺序", "順序", "排序", "order", "上移", "下移", "layout", "组件位置"]),
+        Create(SettingsPageKey.Widgets, "Widgets.Spectrum", "Widgets.Spectrum.Description", language,
+            ["小组件", "小元件", "组件设置", "widgets", "频谱", "spectrum", "音频采集范围", "采集设备", "前台程序音频", "audio capture scope", "current media application", "all applications", "音訊擷取範圍", "phạm vi thu âm thanh", "柱数", "刷新率", "灵敏度", "波形", "像素", "上下对称"]),
+        Create(SettingsPageKey.Widgets, "Widgets.Performance", "Media.Performance.Metrics.Description", language,
+            ["性能", "performance", "网速", "网络速率", "網路速率", "上传", "下载", "轮换", "并排", "network", "upload", "download", "cycle", "side by side", "tốc độ mạng", "luân phiên", "cạnh nhau", "内存", "cpu", "gpu", "任务管理器", "采样间隔", "刷新间隔"]),
         Create(
             SettingsPageKey.Components,
             "Common.HoverLayer",
@@ -218,7 +218,7 @@ public static class SettingsSearchIndex
 
         Create(SettingsPageKey.DeviceManagement, "Common.InputDevice", "Audio.Settings.InputList", language, ["输入", "麦克风", "input", "microphone"]),
         Create(SettingsPageKey.Interaction, "Device.Hotkeys", "Device.Cycle.Hint", language, ["设备快捷键", "循环", "hotkey", "cycle"]),
-        Create(SettingsPageKey.DeviceManagement, "Battery.Title", "Battery.SelectHint", language, ["蓝牙", "藍牙", "电量", "電量", "耳机", "鼠标", "键盘", "battery", "bluetooth", "headphones", "mouse", "keyboard", "低电量"]),
+        Create(SettingsPageKey.Widgets, "Battery.Title", "Battery.SelectHint", language, ["蓝牙", "藍牙", "电量", "電量", "耳机", "鼠标", "键盘", "battery", "bluetooth", "headphones", "mouse", "keyboard", "低电量"]),
         Create(SettingsPageKey.Interaction, "Audio.Settings.Advanced", "Audio.Settings.AdvancedDescription", language, ["音频设备手势", "音频手势", "设备点击", "设备滚轮", "audio gestures", "click", "wheel"]),
         Create(SettingsPageKey.Experimental, "Battery.Title", "Battery.SelectHint", language, ["蓝牙电量", "bluetooth battery", "电量组件"]),
         // ---- 交互 / Interaction ----

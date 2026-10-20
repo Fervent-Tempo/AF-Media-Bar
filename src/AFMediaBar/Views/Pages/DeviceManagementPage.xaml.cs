@@ -9,14 +9,14 @@ using Wpf.Ui.Abstractions.Controls;
 
 namespace AFMediaBar.Views.Pages;
 
-/// <summary>输入输出设备、顺序与所选蓝牙设备的全局配置。</summary>
+/// <summary>输入输出设备、别名、顺序与通信角色的全局配置。</summary>
 public partial class DeviceManagementPage : INavigableView<AudioDeviceSettingsViewModel>
 {
     public AudioDeviceSettingsViewModel ViewModel { get; }
     public DeviceManagementPage(AudioDeviceSettingsViewModel viewModel)
     { ViewModel = viewModel; DataContext = this; InitializeComponent(); }
     private async void OnPageLoaded(object sender, RoutedEventArgs args)
-    { SettingsRevealAnimator.Play(sender as Panel); await ViewModel.RefreshAsync(); if (ViewModel.Battery is { IsExperimentEnabled: true } battery) await battery.RefreshDevicesAsync(); }
+    { SettingsRevealAnimator.Play(sender as Panel); await ViewModel.RefreshAsync(); }
     private void DeviceName_MouseDown(object sender, MouseButtonEventArgs args)
     {
         if (sender is not FrameworkElement { DataContext: AudioDevicePermissionItemViewModel row } element || row.IsRenaming) return;

@@ -2418,7 +2418,7 @@
     <value>內容與配置</value>
   </data>
   <data name="ContentLayout.Header.Subtitle" xml:space="preserve">
-    <value>設定常駐內容、文字配置、元件參數和控制面板。</value>
+    <value>設定常駐內容、文字配置、元件順序與控制面板。</value>
   </data>
   <data name="Appearance.Unified.Header.Subtitle" xml:space="preserve">
     <value>設定通用佈景主題與字型，以及媒體列專用文字和背景。</value>
@@ -3062,7 +3062,7 @@
   <data name="Memory.Auto.Running" xml:space="preserve"><value>自動最佳化執行中</value></data>
   <data name="Memory.Auto.Paused" xml:space="preserve"><value>權限失效或多次失敗，已暫停；請檢查最近結果後恢復</value></data>
   <data name="Device.Management.Title" xml:space="preserve"><value>裝置管理</value></data>
-  <data name="Device.Management.Description" xml:space="preserve"><value>管理輸入輸出裝置的啟用、別名、顯示與切換順序，以及藍牙電量</value></data>
+  <data name="Device.Management.Description" xml:space="preserve"><value>管理輸入輸出裝置的啟用、別名、顯示與切換順序及通訊角色。</value></data>
   <data name="Device.Enabled" xml:space="preserve"><value>啟用</value></data>
   <data name="Device.Disabled" xml:space="preserve"><value>已停用裝置</value></data>
   <data name="Device.Offline" xml:space="preserve"><value>暫時無法使用</value></data>
@@ -3110,4 +3110,40 @@
   <data name="Settings.Related.LyricsPresentation" xml:space="preserve"><value>歌詞樣式</value></data>
   <data name="Settings.Related.WidgetLayout" xml:space="preserve"><value>小元件與順序</value></data>
   <data name="Settings.Related.MemoryTools" xml:space="preserve"><value>記憶體最佳化策略</value></data>
+  <data name="Common.Page.Widgets" xml:space="preserve">
+    <value>小元件</value>
+  </data>
+  <data name="Widgets.Header.Subtitle" xml:space="preserve">
+    <value>設定頻譜、效能和藍牙電量；元件順序在內容與配置中調整。</value>
+  </data>
+  <data name="Widgets.Spectrum" xml:space="preserve">
+    <value>頻譜</value>
+  </data>
+  <data name="Widgets.Spectrum.Description" xml:space="preserve">
+    <value>選擇音訊擷取範圍、裝置與頻譜顯示參數。</value>
+  </data>
+  <data name="Widgets.Performance" xml:space="preserve">
+    <value>效能</value>
+  </data>
+  <data name="Common.Group.ComponentOrder" xml:space="preserve">
+    <value>元件順序</value>
+  </data>
+  <data name="Common.ComponentOrder.Description" xml:space="preserve">
+    <value>調整媒體列元件的顯示順序；頻譜、效能和電量參數在小元件頁設定。</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.Title" xml:space="preserve">
+    <value>擷取裝置</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.Description" xml:space="preserve">
+    <value>預設跟隨 AF 目前媒體來源的輸出裝置；無法識別時使用系統預設裝置。手動裝置離線時暫停擷取並保留選擇。</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.Automatic" xml:space="preserve">
+    <value>跟隨目前媒體來源</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.Offline" xml:space="preserve">
+    <value>{0}（離線）</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.ListUnavailable" xml:space="preserve">
+    <value>暫時無法讀取裝置清單，請重新開啟此頁。</value>
+  </data>
 </root>

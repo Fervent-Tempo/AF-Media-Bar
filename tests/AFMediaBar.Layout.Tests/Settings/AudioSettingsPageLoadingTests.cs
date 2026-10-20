@@ -61,7 +61,23 @@ public sealed class AudioSettingsPageLoadingTests
                     application.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri($"/AFMediaBar;component/Resources/{name}.xaml", UriKind.Relative) });
                 using var localization = new LocalizationService();
                 using var context = new SettingsPageContext();
-                using var devices = new AudioDeviceSettingsViewModel(new Catalog(), new LegacySettingsConfiguration(context));
+                var configuration = new LegacySettingsConfiguration(context);
+                using var devices = new AudioDeviceSettingsViewModel(new Catalog(), configuration);
+                using var components = new ComponentsSettingsViewModel(configuration, localization, new Catalog());
+                using var batteryEditor = new BluetoothBatterySettingsViewModel(battery, configuration, localization);
+                var widgetsModel = new WidgetsSettingsViewModel(components, batteryEditor, configuration);
+                await widgetsModel.RefreshAsync();
+                var widgets = new WidgetsSettingsPage(widgetsModel);
+                widgets.Measure(new Size(820, 900));
+                Assert.IsNotNull(widgets.Content);
+                Assert.IsNull(components.SelectedSpectrumCaptureDevice!.DeviceId);
+                Assert.AreEqual(2, components.SpectrumCaptureDevices.Count);
+                components.SelectedSpectrumCaptureDevice = components.SpectrumCaptureDevices.Single(option => option.DeviceId == "old");
+                await widgetsModel.RefreshAsync();
+                Assert.AreEqual("old", components.SelectedSpectrumCaptureDevice!.DeviceId, "刷新离线设备列表不能把手动选择改回自动。");
+                Assert.AreEqual("old", SettingsManager.Current.SpectrumComponent.CaptureDeviceId);
+                components.SelectedSpectrumCaptureDevice = components.SpectrumCaptureDevices.First();
+                Assert.IsNull(SettingsManager.Current.SpectrumComponent.CaptureDeviceId);
                 using var viewModel = new InteractionViewModel(localization, new LegacySettingsConfiguration(context));
                 await devices.RefreshAsync();
                 var management = new DeviceManagementPage(devices);
@@ -89,14 +105,19 @@ public sealed class AudioSettingsPageLoadingTests
                 entry.Measure(new Size(820, 900));
                 Assert.IsFalse(LogicalChildren(entry).Any(child => child is Frame or Page), "实验页不再嵌入完整设置页。");
                 var navigations = 0;
-                entry.OpenSettings += (_, args) =>
+                entry.AddHandler(SettingsNavigationButton.NavigateEvent, new RoutedEventHandler((_, args) =>
                 {
-                    Assert.IsInstanceOfType<Button>(args.OriginalSource);
-                    Assert.IsInstanceOfType<AFMediaBar.Classes.Services.SettingsPageKey>(((Button)args.OriginalSource).Tag);
+                    Assert.IsInstanceOfType<SettingsNavigationEventArgs>(args);
                     navigations++;
-                };
-                var links = LogicalChildren(entry).OfType<Button>().Where(button => button.Tag is AFMediaBar.Classes.Services.SettingsPageKey).ToArray();
-                foreach (var link in links) link.RaiseEvent(new RoutedEventArgs(Button.ClickEvent, link));
+                }));
+                var links = LogicalChildren(entry).OfType<SettingsNavigationButton>().ToArray();
+                Assert.AreEqual(6, links.Length);
+                foreach (var link in links)
+                {
+                    var peer = new System.Windows.Automation.Peers.ButtonAutomationPeer(link);
+                    ((System.Windows.Automation.Provider.IInvokeProvider)peer).Invoke();
+                }
+                await entry.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
                 Assert.AreEqual(links.Length, navigations, "每个设置入口都应转发一次导航意图。");
                 await VerifyExperimentalBlankAreaWheelAsync(entry);
             }

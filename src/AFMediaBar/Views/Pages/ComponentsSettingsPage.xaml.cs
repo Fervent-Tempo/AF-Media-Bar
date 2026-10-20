@@ -6,7 +6,7 @@ using Wpf.Ui.Abstractions.Controls;
 
 namespace AFMediaBar.Views.Pages;
 
-/// <summary>呈现常驻内容、文字布局、组件参数和控制面板，各编辑器共用当前上下文。</summary>
+/// <summary>呈现常驻内容、文字布局、组件顺序和控制面板，各编辑器共用当前上下文。</summary>
 public partial class ComponentsSettingsPage : INavigableView<ContentLayoutViewModel>
 {
     /// <summary>当前上下文的内容与布局编辑器组合。</summary>
