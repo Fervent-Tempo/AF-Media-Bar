@@ -59,19 +59,9 @@ public partial class TaskBarMediaControl
             TaskbarRestProgress.VerticalAlignment = VerticalAlignment.Bottom;
             TaskbarRestProgress.Width = double.NaN;
             TaskbarRestProgress.Height = 2;
-            TaskbarDirectFullPanelHandle.Height = 8;
-            TaskbarDirectFullPanelHandle.HorizontalAlignment = HorizontalAlignment.Left;
-            TaskbarDirectFullPanelHandle.VerticalAlignment = VerticalAlignment.Top;
-            if (TaskbarDirectFullPanelHandle.Content is Border handle) { handle.Width = 28; handle.Height = 4; }
             HoverRevealHost.VerticalAlignment = VerticalAlignment.Center;
             TaskbarHoverContent.Margin = new Thickness(5, 0, 6, 0);
             TaskbarHoverActions.HorizontalAlignment = HorizontalAlignment.Left;
-            TaskbarFullPanelHandle.Width = 44;
-            TaskbarFullPanelHandle.Height = 8;
-            TaskbarFullPanelHandle.Margin = new Thickness(0, -5, 0, 0);
-            TaskbarFullPanelHandle.HorizontalAlignment = HorizontalAlignment.Center;
-            TaskbarFullPanelHandle.VerticalAlignment = VerticalAlignment.Top;
-            if (TaskbarFullPanelHandle.Content is Border hoverHandle) { hoverHandle.Width = 28; hoverHandle.Height = 4; }
             foreach (var surface in new FrameworkElement[] { TaskbarSpectrumHoverSurface, TaskbarPerformanceHoverSurface, TaskbarBatterySurface, TaskbarOutputDeviceHoverSurface, TaskbarInputDeviceHoverSurface, TaskbarVolumeHoverSurface })
                 surface.VerticalAlignment = VerticalAlignment.Center;
         }
@@ -222,12 +212,6 @@ public partial class TaskBarMediaControl
         TaskbarRestProgress.Margin = new Thickness(_verticalTaskbarOnLeft ? width - 2 : 2, layout.TextLeft, 0, 0);
         if (TaskbarRestProgress.RenderTransform is not TransformGroup)
             TaskbarRestProgress.RenderTransform = new RotateTransform(90);
-        TaskbarDirectFullPanelHandle.HorizontalAlignment = HorizontalAlignment.Left;
-        TaskbarDirectFullPanelHandle.VerticalAlignment = VerticalAlignment.Top;
-        TaskbarDirectFullPanelHandle.Width = 8;
-        TaskbarDirectFullPanelHandle.Height = Math.Max(24, textLength);
-        TaskbarDirectFullPanelHandle.Margin = new Thickness(_verticalTaskbarOnLeft ? width - 8 : 0, layout.TextLeft, 0, 0);
-        if (TaskbarDirectFullPanelHandle.Content is Border handle)
         {
             handle.Width = 4;
             handle.Height = 28;
@@ -276,12 +260,6 @@ public partial class TaskBarMediaControl
         TaskbarHoverLayer.Height = Math.Max(1, SongInfoStackPanel.Height);
         TaskbarHoverActionsOffset.X = 0;
         TaskbarHoverActionsOffset.Y = 0;
-        TaskbarFullPanelHandle.Width = 8;
-        TaskbarFullPanelHandle.Height = Math.Min(44, TaskbarHoverLayer.Height);
-        TaskbarFullPanelHandle.Margin = _verticalTaskbarOnLeft ? new Thickness(0, 0, -8, 0) : new Thickness(-8, 0, 0, 0);
-        TaskbarFullPanelHandle.HorizontalAlignment = _verticalTaskbarOnLeft ? HorizontalAlignment.Right : HorizontalAlignment.Left;
-        TaskbarFullPanelHandle.VerticalAlignment = VerticalAlignment.Center;
-        if (TaskbarFullPanelHandle.Content is Border handle) { handle.Width = 4; handle.Height = 28; }
     }
 
     private static RECT GetPopupMonitorWorkArea(Point physicalPoint)

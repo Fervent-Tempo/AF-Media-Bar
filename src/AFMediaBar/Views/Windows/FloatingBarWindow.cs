@@ -94,7 +94,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     public DisplayMonitorInfo Monitor { get; }
     public bool IsVerticalPresentation => _orientation == LayoutOrientation.Vertical;
     public AppSettings EffectiveSettings => PresentationSettings;
-    public event EventHandler? OpenFullPanelRequested;
+    public event EventHandler<FullPanelOpenRequestEventArgs>? OpenFullPanelRequested;
     public event EventHandler? PlacementTransitionStarted;
     public event Action<FloatingBarWindow, Point?>? PlayerMenuOpenRequested;
     internal bool IsPerformanceMenuRequested { get; private set; }
@@ -105,7 +105,8 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         AudioInteractionService audioInteractionService, AudioMonitorService audioMonitor,
         MediaSourceActivationService sourceActivationService, SystemMetricsMonitorService metricsMonitor,
         NativeMouseInputMonitor mouse, MemoryPruneCoordinator prune, DesktopWidgetZOrderService zOrder,
-        WindowAppearanceService appearance, ScreenBackgroundSampler sampler, AppLogService log, FloatingBarLengthConstraints lengthConstraints)
+        WindowAppearanceService appearance, ScreenBackgroundSampler sampler, AppLogService log, FloatingBarLengthConstraints lengthConstraints,
+        Func<ExternalFullPanelHandleWindow>? externalFullPanelHandleFactory = null)
     {
         TargetMonitorDeviceId = targetMonitorDeviceId;
         Monitor = monitor;
@@ -136,6 +137,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _mediaControl.SuppressedClickSource = () => DateTime.UtcNow < _suppressClickUntil || _mouse.ConsumeSuppressedClick();
         _compactFlyout = new TaskbarCompactFlyoutWindow(appearance);
         ConnectInput();
+        InitializeExternalFullPanelHandle(externalFullPanelHandleFactory);
         _foregroundSamplingSession = new AdaptiveForegroundSamplingSession(sampler, Dispatcher,
             () => IsOperational && !_dragging && PresentationSettings.Appearance.PlayerForegroundMode == PlayerForegroundMode.Automatic &&
                 _mediaControl.TryGetForegroundSampleBounds(out var bounds) ? bounds : null,
@@ -196,7 +198,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _mediaControl.SkipPreviousRequested += (_, _) => Execute(_commands.SkipPreviousCommand);
         _mediaControl.SkipNextRequested += (_, _) => Execute(_commands.SkipNextCommand);
         _mediaControl.ActivateSourceRequested += (_, _) => Execute(_commands.ActivateMediaSourceCommand);
-        _mediaControl.OpenFullPanelRequested += (_, _) => { if (IsOperational) OpenFullPanelRequested?.Invoke(this, EventArgs.Empty); };
+        _mediaControl.OpenFullPanelRequested += (_, _) => RequestFullPanel();
         _mediaControl.OutputDeviceMenuRequested += MediaControl_OutputDeviceMenuRequested;
         _mediaControl.InputDeviceMenuRequested += MediaControl_InputDeviceMenuRequested;
         _mediaControl.InputDeviceWheelRequested += MediaControl_InputDeviceWheelRequested;
@@ -228,6 +230,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             if (!IsOperational || DateTime.UtcNow < _suppressClickUntil || _mouse.ConsumeSuppressedClick()) return;
             IsPerformanceMenuRequested = SettingsManager.Current.Experiments.MemoryTools && _mediaControl.IsPerformanceComponentClick(args.OriginalSource as DependencyObject);
             IsBatteryMenuRequested = _mediaControl.IsBatteryComponentClick(args.OriginalSource as DependencyObject);
+            _externalFullPanelHandle?.Dismiss(immediate: true);
             PlayerMenuOpenRequested?.Invoke(this, null);
             args.Handled = true;
         };
@@ -280,6 +283,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     private void ApplySettings()
     {
         if (_isClosing || _applyingSettings) return;
+        _externalFullPanelHandle?.Dismiss(immediate: true);
         _applyingSettings = true;
         try
         {
@@ -308,6 +312,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             if (PresentationSettings.TaskbarBarPositionLocked) EndDrag();
             SynchronizeResources();
             ApplyBounds(refreshLayout: true);
+            RevealExternalFullPanelHandle();
         }
         finally { _applyingSettings = false; }
     }
@@ -342,6 +347,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             _sizeTimer.Stop();
             _primary = next;
             ApplyBounds();
+            if (!_applyingSettings) RevealExternalFullPanelHandle();
             return;
         }
         _sizeTimer.Interval = TimeSpan.FromMilliseconds(motion.Mode == MotionMode.Full ? 16 : 33);
@@ -360,7 +366,11 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _animationProgress = frame.Progress;
         _primary = frame.Value;
         ApplyBounds();
-        if (frame.IsCompleted) _sizeTimer.Stop();
+        if (frame.IsCompleted)
+        {
+            _sizeTimer.Stop();
+            RevealExternalFullPanelHandle();
+        }
     }
 
     private void ApplyBounds(bool refreshLayout = false)
@@ -387,6 +397,8 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             (int)Math.Round(Monitor.WorkArea.Top + bounds.Top * Dpi), (int)Math.Ceiling(bounds.Width * Dpi), (int)Math.Ceiling(bounds.Height * Dpi));
         if (_handle != nint.Zero && _nativeBoundsPx != physical)
         {
+            _externalFullPanelHandle?.Dismiss(immediate: true);
+            if (_isFullPanelOpen) PlacementTransitionStarted?.Invoke(this, EventArgs.Empty);
             var flags = SWP_NOACTIVATE | SWP_NOZORDER;
             if (_nativeBoundsPx is { } previous && previous.Width == physical.Width && previous.Height == physical.Height)
                 flags |= SWP_NOSIZE;
@@ -495,11 +507,16 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             }
             finally { _savingPosition = false; }
         }
-        if (IsOperational) _foregroundSamplingSession.RequestRefresh();
+        if (IsOperational)
+        {
+            _foregroundSamplingSession.RequestRefresh();
+            RevealExternalFullPanelHandle();
+        }
     }
 
     private void ClearInteraction()
     {
+        _externalFullPanelHandle?.Dismiss(immediate: true);
         _taskManagerClickPending = false;
         _menuEnvironmentVersion++;
         _spectrumSession.Invalidate();
@@ -611,6 +628,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _audioInteractionService.DeviceSwitches.Updated -= OnAudioDeviceSwitchUpdated;
         _audioInteractionService.DeviceSwitches.Invalidated -= OnAudioDeviceInvalidated;
         DisposeMetricsSubscription();
+        DisposeExternalFullPanelHandle();
         _foregroundSamplingSession.Dispose();
         _compactFlyout.Dispose();
         _mediaControl.ApplyHostVisibilitySuspension(true);

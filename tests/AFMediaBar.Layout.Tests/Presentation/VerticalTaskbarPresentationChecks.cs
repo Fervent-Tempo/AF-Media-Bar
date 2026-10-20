@@ -72,9 +72,6 @@ internal static class VerticalTaskbarPresentationChecks
                 foreach (var onLeft in new[] { true, false })
                 {
                     control.ApplyVerticalTaskbarSide(onLeft);
-                    Assert.AreEqual(onLeft ? HorizontalAlignment.Right : HorizontalAlignment.Left,
-                        ((Button)control.FindName("TaskbarFullPanelHandle")).HorizontalAlignment,
-                        "Changing taskbar sides must update the handle before another size request arrives.");
                     control.ApplyPrimaryLength(600);
                     var spectrum = (FrameworkElement)control.FindName("TaskbarSpectrum");
                     Assert.AreEqual(onLeft ? 90d : -90d, ((RotateTransform)spectrum.LayoutTransform).Angle);
@@ -90,10 +87,6 @@ internal static class VerticalTaskbarPresentationChecks
                     Assert.AreSame(hover, layer.Parent, "Vertical hover stays in the media bar's visual/input tree.");
                     Assert.AreEqual(width - 4, layer.Width, 0.01);
                     Assert.AreEqual(text.Height, layer.Height, 0.01);
-                    var handle = (Button)control.FindName("TaskbarFullPanelHandle");
-                    Assert.AreEqual(onLeft ? HorizontalAlignment.Right : HorizontalAlignment.Left, handle.HorizontalAlignment);
-                    Assert.AreEqual(4d, ((Border)handle.Content).Width);
-                    Assert.AreEqual(28d, ((Border)handle.Content).Height);
                     var position = layer.TranslatePoint(new Point(), control);
                     Assert.IsTrue(position.X >= 0 && position.X + layer.ActualWidth <= width + 0.01,
                         $"Hover is outside the bar: left={position.X}, actualWidth={layer.ActualWidth}, bar={width}.");

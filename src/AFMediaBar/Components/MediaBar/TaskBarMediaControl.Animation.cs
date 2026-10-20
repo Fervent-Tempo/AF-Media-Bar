@@ -253,15 +253,6 @@ public partial class TaskBarMediaControl
              ReferenceEquals(surface, TaskbarVolumeHoverSurface));
     }
 
-    private bool CanShowDirectFullPanelHandle()
-    {
-        var experience = PresentationSettings.TaskbarExperience;
-        return CanUseTaskbarComponentHover() &&
-               !UsesExternalFullPanelHandle &&
-               experience.FullPanelEntryVisible &&
-               !experience.HoverLayerEnabled &&
-               experience.FullLayerEnabled;
-    }
 
     /// <summary>直接模糊并淡化原文字区域，悬停按钮作为独立兄弟元素保持清晰。</summary>
     private void AnimateSongInfoCovered(bool isCovered, bool immediate = false)
@@ -349,27 +340,6 @@ public partial class TaskBarMediaControl
         }, HandoffBehavior.SnapshotAndReplace);
     }
 
-    private void AnimateDirectFullPanelHandle(bool isVisible, bool immediate = false)
-    {
-        var targetOpacity = isVisible && CanShowDirectFullPanelHandle() ? 1 : 0;
-        var motion = CurrentMotion;
-        if (immediate || !motion.UseTransitions)
-        {
-            TaskbarDirectFullPanelHandle.BeginAnimation(OpacityProperty, null);
-            TaskbarDirectFullPanelHandle.Opacity = targetOpacity;
-            return;
-        }
-
-        TaskbarDirectFullPanelHandle.BeginAnimation(OpacityProperty, new DoubleAnimation
-        {
-            To = targetOpacity,
-            Duration = motion.FastDuration,
-            EasingFunction = new CubicEase
-            {
-                EasingMode = targetOpacity > 0 ? EasingMode.EaseOut : EasingMode.EaseInOut
-            }
-        }, HandoffBehavior.SnapshotAndReplace);
-    }
 
     /// <summary>复用原 TaskBarMediaControl 的 hover 色彩和节奏，但将效果限制在单个组件。</summary>
     private void AnimateComponentHover(Border surface, bool isHovered, bool immediate = false)
@@ -603,7 +573,6 @@ public partial class TaskBarMediaControl
 
         // 控件遮住文字后暂停滚动，收起后从原位继续。
         AnimateComponentHover(SongInfoHoverOverlay, true);
-        AnimateDirectFullPanelHandle(true);
         _hoverCloseTimer.Stop();
         _hoverOpenTimer.Stop();
         if (PresentationSettings.TaskbarExperience.HoverLayerEnabled)
@@ -616,11 +585,7 @@ public partial class TaskBarMediaControl
         ApplyMarqueeLayout(Math.Max(0, SongInfoStackPanel.Width));
         if (!_isTaskbarHoverVisible)
         {
-            if (!TaskbarDirectFullPanelHandle.IsMouseOver)
-            {
-                AnimateComponentHover(SongInfoHoverOverlay, false);
-                AnimateDirectFullPanelHandle(false);
-            }
+            AnimateComponentHover(SongInfoHoverOverlay, false);
             return;
         }
         _hoverCloseTimer.Stop();
@@ -639,21 +604,7 @@ public partial class TaskBarMediaControl
         _hoverCloseTimer.Start();
     }
 
-    private void TaskbarDirectFullPanelHandle_MouseEnter(object sender, MouseEventArgs e)
-    {
-        if (!CanShowDirectFullPanelHandle())
-            return;
-        AnimateComponentHover(SongInfoHoverOverlay, true);
-        AnimateDirectFullPanelHandle(true);
-    }
 
-    private void TaskbarDirectFullPanelHandle_MouseLeave(object sender, MouseEventArgs e)
-    {
-        if (SongInfoStackPanel.IsMouseOver)
-            return;
-        AnimateComponentHover(SongInfoHoverOverlay, false);
-        AnimateDirectFullPanelHandle(false);
-    }
 
     private int _hoverRevealGeneration;
     private int _hoverHideFallbackGeneration;
@@ -757,13 +708,12 @@ public partial class TaskBarMediaControl
         _hoverCloseTimer.Stop();
         _hoverHideFallbackTimer.Stop();
         var keepRegularHover = CanUseTaskbarComponentHover() &&
-                               (SongInfoStackPanel.IsMouseOver || TaskbarDirectFullPanelHandle.IsMouseOver);
+                               SongInfoStackPanel.IsMouseOver;
         if (immediate || HoverRevealHost.Visibility != Visibility.Visible)
         {
             FinishTaskbarHoverLayerHide(immediate);
             AnimateSongInfoCovered(false, immediate: true);
             AnimateComponentHover(SongInfoHoverOverlay, keepRegularHover, immediate);
-            AnimateDirectFullPanelHandle(keepRegularHover, immediate: true);
             return;
         }
 
@@ -828,10 +778,9 @@ public partial class TaskBarMediaControl
         HoverRevealHost.IsHitTestVisible = false;
         ApplyMarqueeLayout(Math.Max(0, SongInfoStackPanel.Width));
         _isTaskbarHoverVisible = false;
-        if (!SongInfoStackPanel.IsMouseOver && !TaskbarDirectFullPanelHandle.IsMouseOver)
+        if (!SongInfoStackPanel.IsMouseOver)
         {
             AnimateComponentHover(SongInfoHoverOverlay, false, immediate);
-            AnimateDirectFullPanelHandle(false, immediate);
         }
     }
 
@@ -849,7 +798,6 @@ public partial class TaskBarMediaControl
         _quickLaunchTooltip.IsOpen = false;
         HideTaskbarHoverLayer(immediate: true);
         AnimateSongInfoCovered(false, immediate: true);
-        AnimateDirectFullPanelHandle(false, immediate: true);
         AnimateComponentHover(SongImageHoverOverlay, false, immediate: true);
         AnimateComponentHover(SongInfoHoverOverlay, false, immediate: true);
         AnimateComponentHover(TaskbarSpectrumHoverSurface, false, immediate: true);

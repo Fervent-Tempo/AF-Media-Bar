@@ -11,16 +11,9 @@ public sealed record ExperimentalSettings
     public bool BluetoothBattery { get; init; }
     public bool VerticalTaskbar { get; init; }
     public bool FloatingBar { get; init; }
-    public bool ExternalFullPanelHandle { get; init; }
-    public FullPanelHandleTrigger ExternalFullPanelHandleTrigger { get; init; }
 
-    public ExperimentalSettings Normalize() => Enum.IsDefined(ExternalFullPanelHandleTrigger)
-        ? this
-        : this with { ExternalFullPanelHandleTrigger = FullPanelHandleTrigger.Click };
+    public ExperimentalSettings Normalize() => this;
 }
-
-/// <summary>外侧完整层入口的打开方式；数值参与设置序列化。</summary>
-public enum FullPanelHandleTrigger { Click = 0, Hover = 1 }
 
 /// <summary>几何配置所属宿主，横竖方向不产生额外副本。</summary>
 public enum BarConfigurationTarget { Taskbar, FloatingBar }

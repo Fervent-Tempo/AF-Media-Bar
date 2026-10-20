@@ -72,10 +72,6 @@ namespace AFMediaBar.Components
         private AppSettings PresentationSettings => _presentationSettings ?? SettingsManager.Current;
         public BarPresentationContext PresentationContext { get; private set; } = new(WindowMode.Taskbar, LayoutOrientation.Horizontal);
         private bool IsBarPresentation => PresentationContext.SupportsBarInteractions;
-        private bool UsesExternalFullPanelHandle => PresentationContext.Host == WindowMode.Taskbar &&
-            PresentationSettings.Experiments.ExternalFullPanelHandle;
-
-        /// <summary>入口沿任务栏主轴的中心；没有文字区时使用媒体栏中心。</summary>
         internal Point GetFullPanelEntryScreenCenter() => SongInfoStackPanel.IsVisible && SongInfoStackPanel.ActualWidth > 0
             ? SongInfoStackPanel.PointToScreen(new Point(SongInfoStackPanel.ActualWidth / 2, SongInfoStackPanel.ActualHeight / 2))
             : PointToScreen(new Point(ActualWidth / 2, ActualHeight / 2));
@@ -669,7 +665,7 @@ namespace AFMediaBar.Components
         /// (they cover it and serve nothing else), so hovering them counts as the same place and the wheel gesture and its hint still hold.
         /// </summary>
         private bool IsTextSurfaceHovered =>
-            SongInfoStackPanel.IsMouseOver || HoverRevealHost.IsMouseOver || TaskbarDirectFullPanelHandle.IsMouseOver;
+            SongInfoStackPanel.IsMouseOver || HoverRevealHost.IsMouseOver;
 
         /// <summary>
         /// 指针当前所在的全局滚轮面，以及这个面自己的提示实例；指针不在任何一个面上时为 null。
@@ -1087,26 +1083,6 @@ namespace AFMediaBar.Components
             TaskbarDeviceButton.Visibility = controls.OutputDeviceVisible ? Visibility.Visible : Visibility.Collapsed;
             TaskbarInputDeviceButton.Visibility = controls.InputDeviceVisible ? Visibility.Visible : Visibility.Collapsed;
             TaskbarVolumeButton.Visibility = controls.AudioControlVisible ? Visibility.Visible : Visibility.Collapsed;
-            // 完整层入口开关同时作用于悬停层的完整层按钮与静置层文字区顶部那条细杠：用户看到的只是"要不要这个入口"，
-            // 因此两个入口必须一起消失，否则关掉开关后细杠没了、悬停按钮还留着。
-            // The full-layer entry switch covers both the hover layer's button and the thin bar above the rest-layer text: what the
-            // user asks for is "do I want this entry", so both have to disappear together, otherwise turning it off would remove
-            // the thin bar while leaving the hover button behind.
-            TaskbarFullPanelHandle.Visibility = _isConnected && experience.FullLayerEnabled && experience.FullPanelEntryVisible && !UsesExternalFullPanelHandle
-                ? Visibility.Visible
-                : Visibility.Collapsed;
-            var directFullPanelHandleVisible = CanShowDirectFullPanelHandle();
-            TaskbarDirectFullPanelHandle.Visibility = directFullPanelHandleVisible
-                ? Visibility.Visible
-                : Visibility.Collapsed;
-            TaskbarDirectFullPanelHandle.IsHitTestVisible = directFullPanelHandleVisible;
-            if (!directFullPanelHandleVisible)
-                AnimateDirectFullPanelHandle(false, immediate: true);
-            else
-                AnimateDirectFullPanelHandle(
-                    SongInfoStackPanel.IsMouseOver || TaskbarDirectFullPanelHandle.IsMouseOver,
-                    immediate: true);
-
             var hoverGap = experience.HoverButtonSpacingDip;
             var hoverLayerHeight = IsBarPresentation && !_isVertical
                 ? Math.Min(metrics.HoverLayerHeight, Math.Max(1, MainBorder.Height - 2)) : metrics.HoverLayerHeight;
@@ -1312,8 +1288,6 @@ namespace AFMediaBar.Components
             HoverRevealHost.Height = Math.Max(0, MainBorder.Height - 2);
             TaskbarHoverLayer.Width = textWidth;
             ApplyTaskbarActionsGeometry(primaryLength, textLeft, textWidth);
-            TaskbarDirectFullPanelHandle.Width = textWidth;
-            TaskbarDirectFullPanelHandle.Margin = new Thickness(textLeft, 1, 0, 0);
             if (HoverRevealHost.Visibility == Visibility.Visible)
             {
                 if (Math.Abs(HoverRevealHost.Width - textWidth) > 0.01)
@@ -2466,9 +2440,6 @@ namespace AFMediaBar.Components
             InputDeviceWheelRequested?.Invoke(this, new PlayerSurfaceWheelEventArgs(e.Delta, false, false, false));
             e.Handled = true;
         }
-
-        private void TaskbarFullPanelHandle_Click(object sender, RoutedEventArgs e) =>
-            OpenFullPanelRequested?.Invoke(this, EventArgs.Empty);
 
         private void UpdateTaskbarProgress()
         {

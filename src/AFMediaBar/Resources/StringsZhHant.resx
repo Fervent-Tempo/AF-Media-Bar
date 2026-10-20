@@ -749,7 +749,7 @@
     <value>點擊標題或歌詞</value>
   </data>
   <data name="Diagram.LayerFull.Caption" xml:space="preserve">
-    <value>點擊媒體列可開啟完整面板；四個區塊可分別關閉，至少保留一個。</value>
+    <value>透過外側橫桿或已設定的互動開啟；四個區域可分別關閉，至少保留一個。</value>
   </data>
   <data name="Diagram.LayerFull.Label.MediaInfo" xml:space="preserve">
     <value>媒體資訊</value>
@@ -836,7 +836,7 @@
     <value>完整面板內容</value>
   </data>
   <data name="DisplayModes.Full.Group.Description" xml:space="preserve">
-    <value>點擊媒體列後展開的控制面板。</value>
+    <value>透過外側橫桿或自訂互動開啟的控制面板。</value>
   </data>
   <data name="DisplayModes.Full.Preset.Compact" xml:space="preserve">
     <value>精簡</value>
@@ -846,12 +846,6 @@
   </data>
   <data name="DisplayModes.Full.Preset.Full" xml:space="preserve">
     <value>完整</value>
-  </data>
-  <data name="DisplayModes.Full.Row.Enable.Description" xml:space="preserve">
-    <value>點擊媒體列時開啟完整控制面板。</value>
-  </data>
-  <data name="DisplayModes.Full.Row.Enable.Title" xml:space="preserve">
-    <value>啟用完整面板</value>
   </data>
   <data name="DisplayModes.Full.Row.MediaControls.Title" xml:space="preserve">
     <value>播放控制</value>
@@ -1109,10 +1103,10 @@
     <value>常駐狀態顯示輸出裝置按鈕</value>
   </data>
   <data name="DisplayModes.Rest.Row.Entry.Description" xml:space="preserve">
-    <value>懸停媒體列或點擊面板入口，即可開啟完整面板。</value>
+    <value>有媒體時，懸停媒體列顯示外側橫桿；關閉只隱藏橫桿，仍可透過已設定的互動開啟完整面板。</value>
   </data>
   <data name="DisplayModes.Rest.Row.Entry.Title" xml:space="preserve">
-    <value>顯示進入完整面板的入口</value>
+    <value>顯示外側入口</value>
   </data>
   <data name="DisplayModes.Rest.Row.Layout.Description" xml:space="preserve">
     <value>標題與歌手並排單行，或上下兩行；緊湊工作列可能僅顯示標題。</value>
@@ -1925,7 +1919,7 @@
     <value>選擇工作列或桌面懸浮模式，查看其他模式的實作狀態。</value>
   </data>
   <data name="Search.DisplayModes.FullLayer.Description" xml:space="preserve">
-    <value>點選媒體列展開的面板包含哪些分區</value>
+    <value>設定外側入口、開啟方式與完整面板內容。</value>
   </data>
   <data name="Search.DisplayModes.HoverLayer.Description" xml:space="preserve">
     <value>滑鼠移入媒體列時出現的快速控制</value>
@@ -2501,9 +2495,6 @@
   <data name="ContentLayout.Hover.Prerequisite" xml:space="preserve">
     <value>開啟快捷控制後顯示以下內容；關閉時仍可預先設定。</value>
   </data>
-  <data name="ContentLayout.Full.Prerequisite" xml:space="preserve">
-    <value>開啟完整面板後使用以下入口和內容；關閉時仍可預先設定。</value>
-  </data>
   <data name="Search.ContentLayout.Vertical.Rest" xml:space="preserve">
     <value>設定常駐與無媒體內容，以及頻譜和效能參數。</value>
   </data>
@@ -2951,23 +2942,14 @@
   <data name="Media.Selection.NoPreferred" xml:space="preserve"><value>未指定（使用自動選擇）</value></data>
   <data name="Media.Selection.Filtered" xml:space="preserve"><value>此應用已被媒體來源篩選排除，目前使用自動選擇。</value></data>
   <data name="Media.Selection.ManualHint" xml:space="preserve"><value>手動選源立即生效；後續新工作階段或符合策略的播放活動仍可接管。</value></data>
-  <data name="Experimental.FullPanel.Title" xml:space="preserve">
-    <value>外側完整面板入口</value>
-  </data>
-  <data name="Experimental.FullPanel.Description" xml:space="preserve">
-    <value>有媒體工作階段時，滑鼠進入工作列媒體列會在朝向桌面的一側顯示橫槓，取代原本的列內入口；無媒體時隱藏。</value>
-  </data>
-  <data name="Experimental.FullPanel.Trigger" xml:space="preserve">
+  <data name="DisplayModes.Full.Entry.Trigger" xml:space="preserve">
     <value>開啟方式</value>
   </data>
-  <data name="Experimental.FullPanel.Click" xml:space="preserve">
+  <data name="DisplayModes.Full.Entry.Click" xml:space="preserve">
     <value>點擊開啟</value>
   </data>
-  <data name="Experimental.FullPanel.Hover" xml:space="preserve">
+  <data name="DisplayModes.Full.Entry.Hover" xml:space="preserve">
     <value>懸停 0.5 秒</value>
-  </data>
-  <data name="Experimental.FullPanel.AutoHide" xml:space="preserve">
-    <value>工作列自動收起時，滑鼠所在的橫槓會暫時保留；移開後隱藏。僅對工作列模式生效。</value>
   </data>
   <data name="Memory.Title" xml:space="preserve"><value>記憶體工具</value></data>
   <data name="Memory.Open" xml:space="preserve"><value>開啟記憶體工具</value></data>

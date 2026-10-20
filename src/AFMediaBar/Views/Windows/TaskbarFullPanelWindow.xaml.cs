@@ -47,6 +47,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
     private int _volumeApplyVersion;
     private int _sectionAnimationVersion;
     private Rect? _anchor;
+    private FullPanelPlacementSide? _placementSide;
     private string? _targetMonitorDeviceId;
 
     public TaskbarFullPanelWindow(
@@ -76,7 +77,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         ApplyFullPanelSettings(animate: false);
     }
 
-    public void ToggleNear(Rect anchor, string targetMonitorDeviceId, bool verticalAnchor = false)
+    public void ToggleNear(Rect anchor, string targetMonitorDeviceId, bool verticalAnchor = false, FullPanelPlacementSide? side = null)
     {
         if (_isClosing)
             return;
@@ -87,23 +88,24 @@ public partial class TaskbarFullPanelWindow : FluentWindow
             return;
         }
 
-        ShowNear(anchor, targetMonitorDeviceId, verticalAnchor);
+        ShowNear(anchor, targetMonitorDeviceId, verticalAnchor, side);
     }
 
     /// <summary>外侧悬停入口只请求打开，重复请求不关闭已有面板。</summary>
-    public void ShowNear(Rect anchor, string targetMonitorDeviceId, bool verticalAnchor = false)
+    public void ShowNear(Rect anchor, string targetMonitorDeviceId, bool verticalAnchor = false, FullPanelPlacementSide? side = null)
     {
         if (_isClosing || IsVisible) return;
 
         _isClosing = false;
         _anchor = anchor;
         _targetMonitorDeviceId = targetMonitorDeviceId;
+        _verticalAnchor = verticalAnchor;
+        _placementSide = side;
         ApplyMotionEffects();
         Show();
         UpdateLayout();
-        _verticalAnchor = verticalAnchor;
         PositionNear(anchor, targetMonitorDeviceId);
-        BeginOpenAnimation(anchor);
+        BeginOpenAnimation();
         Activate();
     }
 
@@ -145,7 +147,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         PanelScale.BeginAnimation(ScaleTransform.ScaleYProperty, closeAnimation, HandoffBehavior.SnapshotAndReplace);
     }
 
-    private void BeginOpenAnimation(Rect anchor)
+    private void BeginOpenAnimation()
     {
         var motion = MotionPolicy.ResolveCurrent();
         PanelRoot.BeginAnimation(OpacityProperty, null);
@@ -154,9 +156,6 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         PanelRoot.Opacity = motion.UseTransitions ? 0 : 1;
         PanelScale.ScaleX = motion.UseTransitions ? 0.98 : 1;
         PanelScale.ScaleY = motion.UseTransitions ? 0.98 : 1;
-        PanelRoot.RenderTransformOrigin = Top < anchor.Top
-            ? new Point(0.5, 1)
-            : new Point(0.5, 0);
         if (!motion.UseTransitions)
             return;
 
@@ -188,18 +187,21 @@ public partial class TaskbarFullPanelWindow : FluentWindow
                 monitor.WorkArea.Top / scaleY,
                 monitor.WorkArea.Width / scaleX,
                 monitor.WorkArea.Height / scaleY);
-        if (_verticalAnchor)
+        var side = _placementSide ?? FullPanelPlacementPolicy.ResolveSide(anchor, work, _verticalAnchor);
+        var limit = FullPanelPlacementPolicy.GetPanelLimit(anchor, work, side);
+        MaxWidth = limit.Width;
+        MaxHeight = limit.Height;
+        UpdateLayout();
+        var bounds = FullPanelPlacementPolicy.PlacePanel(anchor, new Size(ActualWidth, ActualHeight), work, side);
+        Left = bounds.Left;
+        Top = bounds.Top;
+        PanelRoot.RenderTransformOrigin = side switch
         {
-            var onLeft = anchor.Left + anchor.Width / 2 < work.Left + work.Width / 2;
-            Left = Math.Clamp(onLeft ? anchor.Right + 8 : anchor.Left - ActualWidth - 8, work.Left, Math.Max(work.Left, work.Right - ActualWidth));
-            Top = Math.Clamp(anchor.Top + (anchor.Height - ActualHeight) / 2, work.Top, Math.Max(work.Top, work.Bottom - ActualHeight));
-            return;
-        }
-        Left = Math.Clamp(anchor.Left + (anchor.Width - ActualWidth) / 2, work.Left, Math.Max(work.Left, work.Right - ActualWidth));
-        var above = anchor.Top - ActualHeight - 8;
-        var below = anchor.Bottom + 8;
-        var desiredTop = above >= work.Top ? above : below;
-        Top = Math.Clamp(desiredTop, work.Top, Math.Max(work.Top, work.Bottom - ActualHeight));
+            FullPanelPlacementSide.Above => new Point(0.5, 1),
+            FullPanelPlacementSide.Below => new Point(0.5, 0),
+            FullPanelPlacementSide.Left => new Point(1, 0.5),
+            _ => new Point(0, 0.5)
+        };
     }
 
     private void OnSnapshotChanged(object? sender, MediaSnapshot snapshot) => Dispatcher.BeginInvoke(() => ApplySnapshot(snapshot));

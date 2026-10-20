@@ -33,27 +33,6 @@
                         </components:SettingsRow>
                     </StackPanel>
                 </components:SettingsGroup>
-                <components:SettingsGroup GroupId="Experimental.FullPanel.Title" Header="{DynamicResource Loc.Experimental.FullPanel.Title}"
-                    Description="{DynamicResource Loc.Experimental.FullPanel.Description}" Icon="{ui:SymbolIcon Window24}">
-                    <StackPanel>
-                        <components:SettingsRow Title="{DynamicResource Loc.Experimental.Enable}">
-                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.ExternalFullPanelHandle, Mode=TwoWay}" />
-                        </components:SettingsRow>
-                        <StackPanel Visibility="{Binding ViewModel.ExternalFullPanelHandle, Converter={StaticResource AfBooleanToVisibilityConverter}}">
-                            <components:SettingsRow Title="{DynamicResource Loc.Experimental.FullPanel.Trigger}">
-                                <ComboBox SelectedIndex="{Binding ViewModel.ExternalFullPanelHandleTriggerIndex, Mode=TwoWay}" MinWidth="180">
-                                    <ComboBoxItem Content="{DynamicResource Loc.Experimental.FullPanel.Click}" />
-                                    <ComboBoxItem Content="{DynamicResource Loc.Experimental.FullPanel.Hover}" />
-                                </ComboBox>
-                            </components:SettingsRow>
-                            <TextBlock Text="{DynamicResource Loc.Experimental.FullPanel.AutoHide}" TextWrapping="Wrap"
-                                Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,8,0,0" />
-                        </StackPanel>
-                    <WrapPanel Margin="16,8,16,12">
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Common.FullLayer}" Destination="Components" GroupId="Common.FullLayer" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
-                        </WrapPanel>
-                    </StackPanel>
-                </components:SettingsGroup>
                 <components:SettingsGroup GroupId="Experimental.Vertical.Title" Header="{DynamicResource Loc.Experimental.Vertical.Title}"
                     Description="{DynamicResource Loc.Experimental.Vertical.Description}" Icon="{ui:SymbolIcon ArrowSort24}">
                     <StackPanel>

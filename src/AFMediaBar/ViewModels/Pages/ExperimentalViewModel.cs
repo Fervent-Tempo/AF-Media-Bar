@@ -45,19 +45,6 @@ public sealed class ExperimentalViewModel : ObservableObject, IDisposable
         get => SettingsManager.Current.Experiments.FloatingBar;
         set => _configuration.SetExperiments(SettingsManager.Current.Experiments with { FloatingBar = value });
     }
-    public bool ExternalFullPanelHandle
-    {
-        get => SettingsManager.Current.Experiments.ExternalFullPanelHandle;
-        set => _configuration.SetExperiments(SettingsManager.Current.Experiments with { ExternalFullPanelHandle = value });
-    }
-    public int ExternalFullPanelHandleTriggerIndex
-    {
-        get => (int)SettingsManager.Current.Experiments.Normalize().ExternalFullPanelHandleTrigger;
-        set => _configuration.SetExperiments(SettingsManager.Current.Experiments with
-        {
-            ExternalFullPanelHandleTrigger = value == 1 ? FullPanelHandleTrigger.Hover : FullPanelHandleTrigger.Click
-        });
-    }
     public string RuntimeStatus => _runtime?.IsSwitching == true ? Translations.Get("Experimental.Floating.Switching") :
         _runtime?.LastFailure is not null ? Translations.Get("Experimental.Floating.Failed") :
         Translations.Get(_runtime?.RunningMode == WindowMode.FloatingBar ? "Experimental.Floating.Active" : "Experimental.Floating.TaskbarActive");
@@ -71,8 +58,6 @@ public sealed class ExperimentalViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(BluetoothBattery));
             OnPropertyChanged(nameof(VerticalTaskbar));
             OnPropertyChanged(nameof(FloatingBar));
-            OnPropertyChanged(nameof(ExternalFullPanelHandle));
-            OnPropertyChanged(nameof(ExternalFullPanelHandleTriggerIndex));
             OnPropertyChanged(nameof(RuntimeStatus));
         }
     }

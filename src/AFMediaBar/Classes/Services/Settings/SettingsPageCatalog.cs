@@ -46,6 +46,7 @@ public static class SettingsPageCatalog
         (SettingsPageKey.Components, "Common.Group.RestLayerComponents") => (SettingsPageKey.Components, "Common.Group.Widgets"),
         (SettingsPageKey.Interaction, "Common.Group.SharedModifier") => (SettingsPageKey.Interaction, "Interaction.Group.Wheel"),
         (SettingsPageKey.Interaction, "Interaction.AudioGestures") => (SettingsPageKey.Interaction, "Audio.Settings.Advanced"),
+        (SettingsPageKey.Experimental, "Experimental.FullPanel.Title") => (SettingsPageKey.Components, "Common.FullLayer"),
         (SettingsPageKey.Experimental, "Experimental.Audio.Title") => (SettingsPageKey.DeviceManagement, "Common.OutputDevice"),
         (SettingsPageKey.DeviceManagement, "Device.Hotkeys") => (SettingsPageKey.Interaction, "Device.Hotkeys"),
         (SettingsPageKey.Interaction, "Audio.Settings.Title") => (SettingsPageKey.DeviceManagement, "Common.OutputDevice"),

@@ -8,8 +8,6 @@
       "memoryTools": "unreleased",
       "systemMemoryCleanup": "unreleased",
       "floatingBar": "unreleased",
-      "externalFullPanelHandle": "unreleased",
-      "externalFullPanelHandleTrigger": "unreleased",
       "$release": "unreleased",
       "verticalTaskbar": "unreleased"
     },
@@ -187,6 +185,7 @@
         "performanceVisible": "v1.2.0"
       },
       "fullPanelEntryVisible": "v1.2.0",
+      "fullPanelEntryTrigger": "unreleased",
       "hoverButtonSpacingDip": "v1.3.0",
       "hoverControls": {
         "$release": "v1.2.0",
@@ -283,7 +282,7 @@
       "members": { "Output": { "value": 0, "release": "unreleased" }, "Input": { "value": 1, "release": "unreleased" } }
     },
     "FullPanelHandleTrigger": {
-      "paths": ["settings.experiments.externalFullPanelHandleTrigger"],
+      "paths": ["settings.taskbarExperience.fullPanelEntryTrigger"],
       "members": {
         "Click": {"value": 0, "release": "unreleased"},
         "Hover": {"value": 1, "release": "unreleased"}
@@ -759,6 +758,11 @@
     }
   },
   "rules": [
+    {
+      "id": "full-panel-entry-only",
+      "paths": ["settings.taskbarExperience.fullLayerEnabled", "settings.taskbarExperience.fullPanelEntryVisible"],
+      "text": "完整面板始终允许交互打开；FullLayerEnabled 仅保留已发布字段兼容，归一化时与 FullPanelEntryVisible 合并为入口可见性并恢复为 true。入口关闭只隐藏外侧横杆，不关闭完整面板。"
+    },
     {
       "id": "input-shapes",
       "always": true,

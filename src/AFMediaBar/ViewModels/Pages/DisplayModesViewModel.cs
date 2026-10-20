@@ -93,19 +93,18 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         set => UpdateExperience(_configuration.Current.TaskbarExperience with { HoverLayerEnabled = value });
     }
 
-    public bool FullLayerEnabled
+
+    /// <summary>外侧横杆通过点击或持续悬停打开完整面板。</summary>
+    public int FullPanelEntryTriggerIndex
     {
-        get => _configuration.Current.TaskbarExperience.FullLayerEnabled;
-        set => UpdateExperience(_configuration.Current.TaskbarExperience with { FullLayerEnabled = value });
+        get => (int)_configuration.Current.TaskbarExperience.FullPanelEntryTrigger;
+        set => UpdateExperience(_configuration.Current.TaskbarExperience with
+        {
+            FullPanelEntryTrigger = value == 1 ? FullPanelHandleTrigger.Hover : FullPanelHandleTrigger.Click
+        });
     }
 
-    /// <summary>
-    /// 静置层与悬停层是否提供进入完整层的入口（文字区顶部细杠与悬停层按钮）。界面开关在本页静置层分区，
-    /// 关闭后两个入口一起消失；完整层本身与托盘、菜单入口不受影响。
-    /// Whether the rest and hover layers offer an entry into the full layer (the thin bar above the text and the hover layer's
-    /// button). The switch sits in this page's rest section; turning it off removes both entries, while the full layer itself and
-    /// the tray and menu entries stay as they are.
-    /// </summary>
+    /// <summary>只控制外侧横杆，不限制其它交互打开完整面板。</summary>
     public bool FullPanelEntryVisible
     {
         get => _configuration.Current.TaskbarExperience.FullPanelEntryVisible;
@@ -695,8 +694,9 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(TaskbarArrangementOverride));
         OnPropertyChanged(nameof(TaskbarArrangementIndex));
         OnPropertyChanged(nameof(TaskbarArrangement));
-        OnPropertyChanged(nameof(HoverLayerEnabled)); OnPropertyChanged(nameof(FullLayerEnabled));
+        OnPropertyChanged(nameof(HoverLayerEnabled));
         OnPropertyChanged(nameof(FullPanelEntryVisible));
+        OnPropertyChanged(nameof(FullPanelEntryTriggerIndex));
         OnPropertyChanged(nameof(RestProgressVisible));
         OnPropertyChanged(nameof(ArtworkProgressVisible));
         OnPropertyChanged(nameof(RestArtworkVisible));

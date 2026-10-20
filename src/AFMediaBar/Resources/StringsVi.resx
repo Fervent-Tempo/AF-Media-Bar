@@ -701,7 +701,7 @@
     <value>Nhấp vào tiêu đề hoặc lời bài hát</value>
   </data>
   <data name="Diagram.LayerFull.Caption" xml:space="preserve">
-    <value>Bảng điều khiển mở ra từ thanh media có bốn phần; mỗi phần có thể tắt riêng nhưng phải giữ lại ít nhất một phần.</value>
+    <value>Mở bằng thanh bên ngoài hoặc thao tác đã cấu hình. Có thể ẩn từng phần nhưng phải giữ ít nhất một.</value>
   </data>
   <data name="Diagram.LayerFull.Label.MediaInfo" xml:space="preserve">
     <value>Thông tin media</value>
@@ -788,7 +788,7 @@
     <value>Nội dung bảng điều khiển đầy đủ</value>
   </data>
   <data name="DisplayModes.Full.Group.Description" xml:space="preserve">
-    <value>Bảng điều khiển mở ra từ thanh media.</value>
+    <value>Bảng điều khiển mở từ thanh bên ngoài hoặc thao tác tùy chỉnh.</value>
   </data>
   <data name="DisplayModes.Full.Preset.Compact" xml:space="preserve">
     <value>Thu gọn</value>
@@ -798,12 +798,6 @@
   </data>
   <data name="DisplayModes.Full.Preset.Full" xml:space="preserve">
     <value>Đầy đủ</value>
-  </data>
-  <data name="DisplayModes.Full.Row.Enable.Description" xml:space="preserve">
-    <value>Mở bảng điều khiển đầy đủ khi nhấp vào thanh media.</value>
-  </data>
-  <data name="DisplayModes.Full.Row.Enable.Title" xml:space="preserve">
-    <value>Bật bảng điều khiển đầy đủ</value>
   </data>
   <data name="DisplayModes.Full.Row.MediaControls.Title" xml:space="preserve">
     <value>Điều khiển phát lại</value>
@@ -1067,10 +1061,10 @@
     <value>Hiển thị nút thiết bị đầu ra ở lớp tĩnh</value>
   </data>
   <data name="DisplayModes.Rest.Row.Entry.Description" xml:space="preserve">
-    <value>Mở bảng đầy đủ bằng cách di chuột lên thanh hoặc nhấp lối mở bảng.</value>
+    <value>Di chuột lên thanh phương tiện khi có phiên để hiện thanh mở bên ngoài. Tắt chỉ ẩn thanh mở; thao tác đã cấu hình vẫn mở được bảng đầy đủ.</value>
   </data>
   <data name="DisplayModes.Rest.Row.Entry.Title" xml:space="preserve">
-    <value>Hiển thị lối vào bảng điều khiển đầy đủ</value>
+    <value>Hiện thanh mở bên ngoài</value>
   </data>
   <data name="DisplayModes.Rest.Row.Layout.Description" xml:space="preserve">
     <value>Đặt tiêu đề và nghệ sĩ trên cùng một dòng cạnh nhau, hoặc xếp chồng lên nhau</value>
@@ -1901,7 +1895,7 @@
     <value>Chọn chế độ thanh tác vụ hoặc nổi trên màn hình và xem các chế độ sắp có.</value>
   </data>
   <data name="Search.DisplayModes.FullLayer.Description" xml:space="preserve">
-    <value>Các phần của bảng điều khiển mở ra khi nhấp vào thanh media</value>
+    <value>Cấu hình thanh mở bên ngoài, cách mở và nội dung bảng đầy đủ.</value>
   </data>
   <data name="Search.DisplayModes.HoverLayer.Description" xml:space="preserve">
     <value>Các nút điều khiển nhanh hiển thị khi con trỏ chuột di vào thanh media</value>
@@ -2295,9 +2289,6 @@
   </data>
   <data name="ContentLayout.Arrangement.Auto" xml:space="preserve">
     <value>Theo vị trí thanh media bar</value>
-  </data>
-  <data name="ContentLayout.Full.Prerequisite" xml:space="preserve">
-    <value>Các mục và phần này áp dụng khi bảng điều khiển đầy đủ được bật. Bạn có thể cấu hình trước khi nó đang tắt.</value>
   </data>
   <data name="ContentLayout.Header.Subtitle" xml:space="preserve">
     <value>Tùy chọn nội dung thường trực, bố cục văn bản, chi tiết thành phần và bảng điều khiển.</value>
@@ -2989,23 +2980,14 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   <data name="Media.Selection.NoPreferred" xml:space="preserve"><value>Không chọn (dùng Tự động)</value></data>
   <data name="Media.Selection.Filtered" xml:space="preserve"><value>Ứng dụng này bị bộ lọc nguồn loại trừ. Hiện đang dùng lựa chọn Tự động.</value></data>
   <data name="Media.Selection.ManualHint" xml:space="preserve"><value>Chọn nguồn thủ công có hiệu lực ngay. Phiên mới hoặc hoạt động phát phù hợp với chính sách vẫn có thể được chọn.</value></data>
-  <data name="Experimental.FullPanel.Title" xml:space="preserve">
-    <value>Thanh mở bảng đầy đủ bên ngoài</value>
-  </data>
-  <data name="Experimental.FullPanel.Description" xml:space="preserve">
-    <value>Khi có phiên media, hiện thanh mở ở phía hướng vào màn hình nền khi con trỏ đi vào thanh đa phương tiện, thay cho thanh mở bên trong. Ẩn khi không có media.</value>
-  </data>
-  <data name="Experimental.FullPanel.Trigger" xml:space="preserve">
+  <data name="DisplayModes.Full.Entry.Trigger" xml:space="preserve">
     <value>Cách mở</value>
   </data>
-  <data name="Experimental.FullPanel.Click" xml:space="preserve">
+  <data name="DisplayModes.Full.Entry.Click" xml:space="preserve">
     <value>Nhấp chuột</value>
   </data>
-  <data name="Experimental.FullPanel.Hover" xml:space="preserve">
+  <data name="DisplayModes.Full.Entry.Hover" xml:space="preserve">
     <value>Di chuột trong 0,5 giây</value>
-  </data>
-  <data name="Experimental.FullPanel.AutoHide" xml:space="preserve">
-    <value>Khi thanh tác vụ tự ẩn, thanh mở vẫn hiện nếu con trỏ ở trên đó và ẩn khi con trỏ rời đi. Chỉ áp dụng cho chế độ thanh tác vụ.</value>
   </data>
   <data name="Memory.Title" xml:space="preserve"><value>Công cụ bộ nhớ</value></data>
   <data name="Memory.Open" xml:space="preserve"><value>Mở công cụ bộ nhớ</value></data>

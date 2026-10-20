@@ -377,11 +377,11 @@
                         <StackPanel>
                             <components:SettingsDiagram Margin="0,0,0,12" Kind="LayerFull" />
 
-                            <components:SettingsRow
-                                Description="{DynamicResource Loc.DisplayModes.Full.Row.Enable.Description}"
-                                Icon="{ui:SymbolIcon ProjectionScreen24}"
-                                Title="{DynamicResource Loc.DisplayModes.Full.Row.Enable.Title}">
-                                <ui:ToggleSwitch IsChecked="{Binding ViewModel.FullLayerEnabled, Mode=TwoWay}" />
+                            <components:SettingsRow Title="{DynamicResource Loc.DisplayModes.Full.Entry.Trigger}" Icon="{ui:SymbolIcon CursorClick24}">
+                                <ComboBox SelectedIndex="{Binding ViewModel.FullPanelEntryTriggerIndex, Mode=TwoWay}" MinWidth="{StaticResource AfSettingsSelectMinWidth}">
+                                    <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Full.Entry.Click}" />
+                                    <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Full.Entry.Hover}" />
+                                </ComboBox>
                             </components:SettingsRow>
 
                             <ui:CardExpander

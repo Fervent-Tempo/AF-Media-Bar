@@ -144,7 +144,6 @@ public static class SettingsSearchIndex
     private static SettingsSearchEntry[] Build(LocalizationLanguage language) =>
     [
         Create(SettingsPageKey.ScreenAndPlacement, "Placement.Floating.Title", "Placement.Floating.Description", language, ["桌面悬浮模式", "floating", "置顶", "锁定", "拖动"]),
-        Create(SettingsPageKey.Experimental, "Experimental.FullPanel.Title", "Experimental.FullPanel.Description", language, ["完整面板", "完整層", "完整层", "横杠", "外侧", "悬停", "full panel", "handle", "hover", "0.5"]),
         Create(SettingsPageKey.Experimental, "Experimental.Vertical.Title", "Experimental.Vertical.Description", language, ["竖向", "vertical", "纵向"]),
         Create(SettingsPageKey.Experimental, "Experimental.Floating.Title", "Experimental.Floating.Description", language, ["悬浮", "floating", "桌面小工具"]),
         Create(SettingsPageKey.Appearance, "Appearance.IdleNote.Title", "Appearance.IdleNote.Description", language,
@@ -194,7 +193,7 @@ public static class SettingsSearchIndex
             "Common.FullLayer",
             "Search.DisplayModes.FullLayer.Description",
             language,
-            ["完整", "完整层", "完整層", "完整面板", "面板", "full", "full layer", "panel", "预设", "preset", "分区", "媒体信息", "播放控制", "音频控制", "性能", "套用预设", "完整层入口", "横杆", "细杠", "进入完整层"]),
+            ["完整", "完整层", "完整層", "完整面板", "面板", "full", "full layer", "panel", "预设", "preset", "分区", "媒体信息", "播放控制", "音频控制", "性能", "套用预设", "完整层入口", "外侧入口", "横杆", "细杠", "进入完整层", "handle", "hover", "0.5"]),
 
         // ---- 媒体与通知 / Media and notifications ----
         Create(

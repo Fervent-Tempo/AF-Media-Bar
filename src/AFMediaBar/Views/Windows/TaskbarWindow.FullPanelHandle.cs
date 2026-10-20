@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Input;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Settings;
+using AFMediaBar.Classes.Services.Layout;
 using AFMediaBar.Classes.Utils;
 
 namespace AFMediaBar.Views.Windows;
@@ -26,8 +27,7 @@ public partial class TaskbarWindow
         _lastSnapshot.IsConnected &&
         (IsVisible || IsTaskbarPresentationSuspended) &&
         !_isDragging && !_isFullPanelOpen && !PlayerMenu.IsOpen && !_compactFlyout.IsVisible &&
-        SettingsManager.Current.TaskbarBarEnabled && SettingsManager.Current.Experiments.ExternalFullPanelHandle &&
-        SettingsManager.Current.TaskbarExperience is { FullLayerEnabled: true, FullPanelEntryVisible: true };
+        SettingsManager.Current.TaskbarBarEnabled && SettingsManager.Current.TaskbarExperience.FullPanelEntryVisible;
 
     private void ExternalHandle_MediaMouseEnter(object sender, MouseEventArgs e)
     {
@@ -41,44 +41,25 @@ public partial class TaskbarWindow
             if (dpi <= 0) return;
             var monitor = MonitorUtil.GetMonitor(_lastTaskbarHandle).monitorArea;
             var vertical = IsVerticalPresentation;
-            var positive = vertical ? taskbar.Left + taskbar.Right < monitor.Left + monitor.Right
-                : taskbar.Top + taskbar.Bottom < monitor.Top + monitor.Bottom;
+            var attachment = new Rect(taskbar.Left, taskbar.Top, taskbar.Right - taskbar.Left, taskbar.Bottom - taskbar.Top);
+            var screen = new Rect(monitor.Left, monitor.Top, monitor.Right - monitor.Left, monitor.Bottom - monitor.Top);
+            var side = FullPanelPlacementPolicy.ResolveSide(attachment, screen, vertical);
+            var positive = side is FullPanelPlacementSide.Below or FullPanelPlacementSide.Right;
             var center = MediaControl.GetFullPanelEntryScreenCenter();
             var bar = GetMediaBarScreenPhysicalBounds();
-            var thickness = Math.Max(1, Math.Round(8 * dpi));
-            var length = Math.Max(1, Math.Round(44 * dpi));
-            var handleBounds = vertical
-                ? new Rect(positive ? taskbar.Right : taskbar.Left - thickness, Math.Round(center.Y - length / 2), thickness, length)
-                : new Rect(Math.Round(center.X - length / 2), positive ? taskbar.Bottom : taskbar.Top - thickness, length, thickness);
-            if (vertical)
-                handleBounds.Y = Math.Clamp(handleBounds.Y, monitor.Top, Math.Max(monitor.Top, monitor.Bottom - length));
-            else
-                handleBounds.X = Math.Clamp(handleBounds.X, monitor.Left, Math.Max(monitor.Left, monitor.Right - length));
-            var hitThickness = Math.Max(1, Math.Round(ExternalFullPanelHandleWindow.HitThicknessDip * dpi));
-            var hitLength = Math.Max(1, Math.Round(ExternalFullPanelHandleWindow.HitLengthDip * dpi));
-            // 只向桌面侧加厚命中区域，避免覆盖任务栏中的其他按钮；视觉横杆保持原位。
-            var hitBounds = vertical
-                ? new Rect(positive ? handleBounds.Left : handleBounds.Right - hitThickness,
-                    Math.Round(handleBounds.Top + (handleBounds.Height - hitLength) / 2), hitThickness, hitLength)
-                : new Rect(Math.Round(handleBounds.Left + (handleBounds.Width - hitLength) / 2),
-                    positive ? handleBounds.Top : handleBounds.Bottom - hitThickness, hitLength, hitThickness);
-            hitBounds.Intersect(new Rect(monitor.Left, monitor.Top, monitor.Right - monitor.Left, monitor.Bottom - monitor.Top));
-            if (hitBounds.IsEmpty) return;
-            // 过渡区域只用于延长可见性，不创建覆盖桌面的输入窗口。
-            var transit = vertical
-                ? new Rect(Math.Min(hitBounds.Left, bar.Right), hitBounds.Top,
-                    Math.Max(hitBounds.Right, bar.Left) - Math.Min(hitBounds.Left, bar.Right), hitBounds.Height)
-                : new Rect(hitBounds.Left, Math.Min(hitBounds.Top, bar.Bottom), hitBounds.Width,
-                    Math.Max(hitBounds.Bottom, bar.Top) - Math.Min(hitBounds.Top, bar.Bottom));
+            var geometry = FullPanelPlacementPolicy.PlaceHandle(
+                new Rect(bar.Left, bar.Top, bar.Right - bar.Left, bar.Bottom - bar.Top),
+                attachment, screen, center, side, dpi);
+            if (geometry.HitBounds.IsEmpty) return;
             if (_externalFullPanelHandle is null)
             {
                 _externalFullPanelHandle = _externalFullPanelHandleFactory();
                 _externalFullPanelHandle.OpenRequested += ExternalHandle_OpenRequested;
             }
             var taskbarHandle = _lastTaskbarHandle;
-            _externalFullPanelHandle.Reveal(bar, handleBounds, hitBounds, transit,
-                new FullPanelOpenRequestEventArgs(GetMediaBarScreenBounds(), vertical, ensureOpen: true), vertical, positive,
-                SettingsManager.Current.Experiments.Normalize().ExternalFullPanelHandleTrigger,
+            _externalFullPanelHandle.Reveal(bar, geometry.VisualBounds, geometry.HitBounds, geometry.TransitBounds,
+                new FullPanelOpenRequestEventArgs(GetMediaBarScreenBounds(), vertical, ensureOpen: true, side), vertical, positive,
+                SettingsManager.Current.TaskbarExperience.FullPanelEntryTrigger,
                 () => CanKeepExternalFullPanelHandle() && taskbarHandle == _lastTaskbarHandle &&
                     Math.Abs(_taskBarService.GetTaskbarDpiScale(taskbarHandle) - dpi) < 0.001 &&
                     _taskBarService.TryGetTaskbarRect(taskbarHandle, out var current) &&

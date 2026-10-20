@@ -1,4 +1,4 @@
-// 独立完整面板入口的呈现、背景采样及跨窗口指针衔接；任务栏宿主持有，隐藏取消采样，关闭释放订阅。
+// 独立完整面板入口的呈现、背景采样及跨窗口指针衔接；所属宿主持有，隐藏取消采样，关闭释放订阅。
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
@@ -10,6 +10,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
+using AFMediaBar.Classes.Services.Layout;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Utils;
 using AFMediaBar.Resources;
@@ -20,8 +21,8 @@ namespace AFMediaBar.Views.Windows;
 /// <summary>只覆盖横杠按钮的小窗口；不接管媒体栏或完整层的生命周期。</summary>
 public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
 {
-    internal const double HitLengthDip = 52;
-    internal const double HitThicknessDip = 16;
+    internal const double HitLengthDip = FullPanelPlacementPolicy.HitLengthDip;
+    internal const double HitThicknessDip = FullPanelPlacementPolicy.HitThicknessDip;
     private static readonly TimeSpan PointerLeaveGrace = TimeSpan.FromMilliseconds(500);
     private readonly NativeMouseInputMonitor _input;
     private readonly Border _line;
@@ -39,6 +40,7 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     private Rect _transitBounds;
     private FullPanelOpenRequestEventArgs? _request;
     private Func<bool>? _canRemainVisible;
+    private Func<bool>? _isBarPointerActive;
     private FullPanelHandleTrigger _trigger;
     private TimeSpan? _hoverSince;
     private TimeSpan? _outsideSince;
@@ -91,7 +93,8 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     }
 
     public void Reveal(TrayIconBounds bar, Rect handleBounds, Rect hitBounds, Rect transitBounds, FullPanelOpenRequestEventArgs request,
-        bool vertical, bool taskbarOnLeadingEdge, FullPanelHandleTrigger trigger, Func<bool> canRemainVisible)
+        bool vertical, bool taskbarOnLeadingEdge, FullPanelHandleTrigger trigger, Func<bool> canRemainVisible,
+        Func<bool>? isBarPointerActive = null)
     {
         if (_disposed) return;
         _barBounds = new Rect(bar.Left, bar.Top, bar.Right - bar.Left, bar.Bottom - bar.Top);
@@ -99,6 +102,7 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
             Dismiss(immediate: true);
         _request = request;
         _canRemainVisible = canRemainVisible;
+        _isBarPointerActive = isBarPointerActive;
         _trigger = trigger;
         if (IsVisible)
         {
@@ -112,7 +116,7 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         _transitBounds = transitBounds;
         _vertical = vertical;
         _taskbarOnLeadingEdge = taskbarOnLeadingEdge;
-        Title = Translations.Get("Experimental.FullPanel.Title");
+        Title = Translations.Get("DisplayModes.Rest.Row.Entry.Title");
         _taskbarSuspended = false;
         _hoverSince = null;
         _outsideSince = null;
@@ -226,7 +230,7 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
 
     private Vector GetHiddenTranslation()
     {
-        // 起点落在靠任务栏的一侧边缘，上方/左侧为负方向，下方/右侧为正方向。
+        // 起点落在靠媒体栏的一侧边缘，上方/左侧为负方向，下方/右侧为正方向。
         var direction = _taskbarOnLeadingEdge ? -1 : 1;
         return _vertical ? new Vector(direction * _visualHost.Width / 2, 0) : new Vector(0, direction * _visualHost.Height / 2);
     }
@@ -306,6 +310,7 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         _canResumeDismissal = false;
         _request = null;
         _canRemainVisible = null;
+        _isBarPointerActive = null;
         _hoverSince = null;
         _outsideSince = null;
         _isPressed = false;
@@ -350,7 +355,8 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
             var now = _clock.Elapsed;
             if (!_isHiding) RefreshContrast();
             var overHandle = _hitBounds.Contains(point) && IsMouseOver;
-            var overArea = overHandle || _transitBounds.Contains(point) || (!_taskbarSuspended && _barBounds.Contains(point));
+            var overArea = overHandle || _transitBounds.Contains(point) ||
+                (!_taskbarSuspended && _barBounds.Contains(point) && _isBarPointerActive?.Invoke() != false);
             if (!overArea)
             {
                 _hoverSince = null;

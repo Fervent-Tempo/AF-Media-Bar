@@ -67,14 +67,6 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
-        <Style x:Key="FullDependencyHintStyle" BasedOn="{StaticResource AfSettingsHintTextStyle}" TargetType="TextBlock">
-            <Setter Property="Visibility" Value="Collapsed" />
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding ViewModel.Layers.FullLayerEnabled}" Value="False">
-                    <Setter Property="Visibility" Value="Visible" />
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
     </Page.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -797,17 +789,16 @@
                     <StackPanel>
                         <components:SettingsDiagram Margin="0,0,0,12" Kind="LayerFull" />
                         <components:SettingsRow
-                            Description="{DynamicResource Loc.DisplayModes.Full.Row.Enable.Description}"
-                            Icon="{ui:SymbolIcon ProjectionScreen24}"
-                            Title="{DynamicResource Loc.DisplayModes.Full.Row.Enable.Title}">
-                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.FullLayerEnabled, Mode=TwoWay}" />
-                        </components:SettingsRow>
-                        <TextBlock Style="{StaticResource FullDependencyHintStyle}" Margin="0,4,0,8" Text="{DynamicResource Loc.ContentLayout.Full.Prerequisite}" />
-                        <components:SettingsRow
                             Description="{DynamicResource Loc.DisplayModes.Rest.Row.Entry.Description}"
                             Icon="{ui:SymbolIcon ChevronUp24}"
                             Title="{DynamicResource Loc.DisplayModes.Rest.Row.Entry.Title}">
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.FullPanelEntryVisible, Mode=TwoWay}" />
+                        </components:SettingsRow>
+                        <components:SettingsRow Title="{DynamicResource Loc.DisplayModes.Full.Entry.Trigger}" Icon="{ui:SymbolIcon CursorClick24}">
+                            <ComboBox SelectedIndex="{Binding ViewModel.Layers.FullPanelEntryTriggerIndex, Mode=TwoWay}" MinWidth="{StaticResource AfSettingsSelectMinWidth}">
+                                <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Full.Entry.Click}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Full.Entry.Hover}" />
+                            </ComboBox>
                         </components:SettingsRow>
                         <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Info24}">
                             <ui:CardExpander.Header>
@@ -872,9 +863,6 @@
                                 </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>
-                    <WrapPanel Margin="16,8,16,12">
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.Experiments}" Destination="Experimental" GroupId="Experimental.FullPanel.Title" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
-                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <ui:Button

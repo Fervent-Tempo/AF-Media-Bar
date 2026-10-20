@@ -1164,7 +1164,6 @@ public partial class TaskBarMediaControl
             yield return _owner.TaskbarOutputDeviceHoverSurface;
             yield return _owner.TaskbarVolumeHoverSurface;
             yield return _owner.TaskbarInputDeviceHoverSurface;
-            if (_owner._isVertical) yield return _owner.TaskbarDirectFullPanelHandle;
             yield return _owner.HoverRevealHost;
         }
 

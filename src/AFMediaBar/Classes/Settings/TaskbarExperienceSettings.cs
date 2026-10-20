@@ -4,6 +4,9 @@ using System.IO;
 
 namespace AFMediaBar.Classes.Settings;
 
+/// <summary>外侧完整面板入口的打开方式；数值参与设置序列化。</summary>
+public enum FullPanelHandleTrigger { Click = 0, Hover = 1 }
+
 
 /// <summary>任务栏固定布局的信息密度。 / Information density for the fixed taskbar layout.</summary>
 public enum TaskbarInformationDensity
@@ -183,14 +186,11 @@ public readonly record struct TaskbarExperienceSettings(
 
     private readonly bool? _artworkProgressVisible;
 
-    /// <summary>
-    /// 静置层与悬停层是否提供进入完整层的入口。关闭后静置层文字区顶部那条细杠不再绘制、也不再可点，
-    /// 悬停层的完整层按钮同时隐藏；完整层本身与其它入口（托盘、菜单）不受影响。
-    /// Whether the rest and hover layers offer an entry into the full layer. Turning it off stops drawing and hit-testing the thin
-    /// bar above the rest-layer text and hides the hover layer's full-layer button; the full layer itself and other entries
-    /// (tray, menus) stay as they are.
-    /// </summary>
+    /// <summary>是否显示外侧横杆；不限制封面、文字等交互打开完整面板。</summary>
     public bool FullPanelEntryVisible { get; init; } = true;
+
+    /// <summary>外侧横杆的打开方式，默认点击。</summary>
+    public FullPanelHandleTrigger FullPanelEntryTrigger { get; init; } = FullPanelHandleTrigger.Click;
 
     /// <summary>悬停层中各项控制的显隐设置。 / Visibility settings for individual hover-layer controls.</summary>
     public TaskbarHoverControlsSettings HoverControls { get; init; } = TaskbarHoverControlsSettings.Default;
@@ -286,6 +286,10 @@ public readonly record struct TaskbarExperienceSettings(
         var defaults = Default;
         return this with
         {
+            // 已发布的旧总开关只折合为入口可见性，完整面板本身始终可通过交互打开。
+            FullPanelEntryVisible = FullLayerEnabled && FullPanelEntryVisible,
+            FullLayerEnabled = true,
+            FullPanelEntryTrigger = Enum.IsDefined(FullPanelEntryTrigger) ? FullPanelEntryTrigger : FullPanelHandleTrigger.Click,
             Density = Enum.IsDefined(Density) ? Density : defaults.Density,
             ContentLayout = Enum.IsDefined(ContentLayout) ? ContentLayout : defaults.ContentLayout,
             MediaTextAlignment = Enum.IsDefined(MediaTextAlignment) ? MediaTextAlignment : defaults.MediaTextAlignment,

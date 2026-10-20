@@ -590,46 +590,11 @@
                                     <TextBlock x:Name="TaskbarHoverVolumeGlyph" Text="&#xE767;" FontFamily="{DynamicResource AppIconFontFamily}" FontSize="14" />
                                 </Button>
                             </StackPanel>
-                            <Button x:Name="TaskbarFullPanelHandle"
-                                    Width="44"
-                                    Height="8"
-                                    Padding="0"
-                                    Margin="0,-5,0,0"
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Top"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    Tag="MediaAction"
-                                    ToolTip="{DynamicResource Loc.Common.OpenFullPanel}"
-                                    Click="TaskbarFullPanelHandle_Click">
-                                <Border Width="28" Height="4" CornerRadius="2" Background="{DynamicResource TaskbarHoverHandleBrush}" />
-                            </Button>
                         </Grid>
                     </Grid>
                 </Border>
             </Grid>
 
-            <!-- 关闭悬停层但保留完整层时，在文字区顶部提供同款拉杆入口。 -->
-            <!-- When Hover is disabled but Full remains enabled, expose the same pull handle over the text region. -->
-            <Button x:Name="TaskbarDirectFullPanelHandle"
-                    Panel.ZIndex="7"
-                    Width="0"
-                    Height="8"
-                    Padding="0"
-                    Margin="52,1,0,0"
-                    HorizontalAlignment="Left"
-                    VerticalAlignment="Top"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Opacity="0"
-                    Visibility="Collapsed"
-                    Tag="MediaAction"
-                    ToolTip="{DynamicResource Loc.Common.OpenFullPanel}"
-                    MouseEnter="TaskbarDirectFullPanelHandle_MouseEnter"
-                    MouseLeave="TaskbarDirectFullPanelHandle_MouseLeave"
-                    Click="TaskbarFullPanelHandle_Click">
-                <Border Width="28" Height="4" CornerRadius="2" Background="{DynamicResource TaskbarHoverHandleBrush}" />
-            </Button>
 
         </Grid>
     </Border>

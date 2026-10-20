@@ -749,7 +749,7 @@
     <value>Title or lyrics click</value>
   </data>
   <data name="Diagram.LayerFull.Caption" xml:space="preserve">
-    <value>Click the media bar to open the full panel. Its four sections can be turned off individually; keep at least one.</value>
+    <value>Open with the external handle or a configured interaction. Hide individual sections while keeping at least one.</value>
   </data>
   <data name="Diagram.LayerFull.Label.MediaInfo" xml:space="preserve">
     <value>Media info</value>
@@ -836,7 +836,7 @@
     <value>Full-panel content</value>
   </data>
   <data name="DisplayModes.Full.Group.Description" xml:space="preserve">
-    <value>The control panel opened from the media bar.</value>
+    <value>A control panel opened from the external handle or custom interactions.</value>
   </data>
   <data name="DisplayModes.Full.Preset.Compact" xml:space="preserve">
     <value>Compact</value>
@@ -846,12 +846,6 @@
   </data>
   <data name="DisplayModes.Full.Preset.Full" xml:space="preserve">
     <value>Full</value>
-  </data>
-  <data name="DisplayModes.Full.Row.Enable.Description" xml:space="preserve">
-    <value>Open the full control panel when the media bar is clicked.</value>
-  </data>
-  <data name="DisplayModes.Full.Row.Enable.Title" xml:space="preserve">
-    <value>Enable the full panel</value>
   </data>
   <data name="DisplayModes.Full.Row.MediaControls.Title" xml:space="preserve">
     <value>Playback controls</value>
@@ -1109,10 +1103,10 @@
     <value>Show the output-device button in the always-on view</value>
   </data>
   <data name="DisplayModes.Rest.Row.Entry.Description" xml:space="preserve">
-    <value>Open the full panel by hovering over the bar or clicking its panel entry.</value>
+    <value>Hover over the media bar while media is available to show the external handle. Hiding it still allows configured interactions to open the full panel.</value>
   </data>
   <data name="DisplayModes.Rest.Row.Entry.Title" xml:space="preserve">
-    <value>Show the full-panel entry</value>
+    <value>Show external handle</value>
   </data>
   <data name="DisplayModes.Rest.Row.Layout.Description" xml:space="preserve">
     <value>Show title and artist on one or two lines. Compact taskbars may show only the title.</value>
@@ -1925,7 +1919,7 @@
     <value>Choose taskbar or desktop floating mode and view upcoming modes.</value>
   </data>
   <data name="Search.DisplayModes.FullLayer.Description" xml:space="preserve">
-    <value>Sections of the panel that opens when the media bar is clicked</value>
+    <value>Configure the external handle, opening method and full panel sections.</value>
   </data>
   <data name="Search.DisplayModes.HoverLayer.Description" xml:space="preserve">
     <value>Quick controls shown when the pointer enters the media bar</value>
@@ -2501,9 +2495,6 @@
   <data name="ContentLayout.Hover.Prerequisite" xml:space="preserve">
     <value>These controls appear when Quick controls is enabled. You can configure them while it is off.</value>
   </data>
-  <data name="ContentLayout.Full.Prerequisite" xml:space="preserve">
-    <value>These entries and sections apply when the full panel is enabled. You can configure them while it is off.</value>
-  </data>
   <data name="Search.ContentLayout.Vertical.Rest" xml:space="preserve">
     <value>Configure persistent and idle content, plus spectrum and performance parameters.</value>
   </data>
@@ -2951,23 +2942,14 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Media.Selection.NoPreferred" xml:space="preserve"><value>None (use Automatic)</value></data>
   <data name="Media.Selection.Filtered" xml:space="preserve"><value>This application is excluded by the source filter. Automatic selection is used instead.</value></data>
   <data name="Media.Selection.ManualHint" xml:space="preserve"><value>Manual selection takes effect immediately. A new session or playback activity can take over according to the policy.</value></data>
-  <data name="Experimental.FullPanel.Title" xml:space="preserve">
-    <value>External full-panel handle</value>
-  </data>
-  <data name="Experimental.FullPanel.Description" xml:space="preserve">
-    <value>When a media session is available, show a handle on the desktop-facing side of the taskbar as the pointer enters the media bar, replacing the handle inside the bar. Hide it when no media is available.</value>
-  </data>
-  <data name="Experimental.FullPanel.Trigger" xml:space="preserve">
+  <data name="DisplayModes.Full.Entry.Trigger" xml:space="preserve">
     <value>Open with</value>
   </data>
-  <data name="Experimental.FullPanel.Click" xml:space="preserve">
+  <data name="DisplayModes.Full.Entry.Click" xml:space="preserve">
     <value>Click</value>
   </data>
-  <data name="Experimental.FullPanel.Hover" xml:space="preserve">
+  <data name="DisplayModes.Full.Entry.Hover" xml:space="preserve">
     <value>Hover for 0.5 seconds</value>
-  </data>
-  <data name="Experimental.FullPanel.AutoHide" xml:space="preserve">
-    <value>When the taskbar auto-hides, the handle stays while the pointer is over it and hides after the pointer leaves. Applies to taskbar mode only.</value>
   </data>
   <data name="Memory.Title" xml:space="preserve"><value>Memory tools</value></data>
   <data name="Memory.Open" xml:space="preserve"><value>Open memory tools</value></data>

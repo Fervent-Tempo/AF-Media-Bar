@@ -80,6 +80,7 @@
         <Border x:Name="PanelChrome" CornerRadius="16" Background="Transparent" IsHitTestVisible="False"
                 BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1" />
         <Border Padding="20" BorderThickness="1" BorderBrush="Transparent" Background="Transparent">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" CanContentScroll="False">
             <StackPanel>
                 <Grid x:Name="MediaInfoSection" Margin="0,0,0,18">
                     <Grid.ColumnDefinitions><ColumnDefinition x:Name="ArtworkColumn" Width="76"/><ColumnDefinition Width="16"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
@@ -186,6 +187,7 @@
                     </StackPanel>
                 </Border>
             </StackPanel>
+            </ScrollViewer>
         </Border>
     </Grid>
 </ui:FluentWindow>

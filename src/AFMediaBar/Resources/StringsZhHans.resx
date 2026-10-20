@@ -749,7 +749,7 @@
     <value>点击标题或歌词</value>
   </data>
   <data name="Diagram.LayerFull.Caption" xml:space="preserve">
-    <value>点击媒体栏可打开完整面板；四个分区可分别关闭，至少保留一个。</value>
+    <value>通过外侧横杆或已配置的交互打开；四个分区可分别关闭，至少保留一个。</value>
   </data>
   <data name="Diagram.LayerFull.Label.MediaInfo" xml:space="preserve">
     <value>媒体信息</value>
@@ -836,7 +836,7 @@
     <value>完整面板内容</value>
   </data>
   <data name="DisplayModes.Full.Group.Description" xml:space="preserve">
-    <value>点击媒体栏后展开的控制面板。</value>
+    <value>通过外侧横杆或自定义交互打开的控制面板。</value>
   </data>
   <data name="DisplayModes.Full.Preset.Compact" xml:space="preserve">
     <value>紧凑</value>
@@ -846,12 +846,6 @@
   </data>
   <data name="DisplayModes.Full.Preset.Full" xml:space="preserve">
     <value>完整</value>
-  </data>
-  <data name="DisplayModes.Full.Row.Enable.Description" xml:space="preserve">
-    <value>点击媒体栏时打开完整控制面板。</value>
-  </data>
-  <data name="DisplayModes.Full.Row.Enable.Title" xml:space="preserve">
-    <value>启用完整面板</value>
   </data>
   <data name="DisplayModes.Full.Row.MediaControls.Title" xml:space="preserve">
     <value>播放控制</value>
@@ -1109,10 +1103,10 @@
     <value>常驻状态显示输出设备按钮</value>
   </data>
   <data name="DisplayModes.Rest.Row.Entry.Description" xml:space="preserve">
-    <value>通过悬停媒体栏或点击面板入口打开完整面板。</value>
+    <value>有媒体时，悬停媒体栏显示外侧横杆；关闭只隐藏横杆，仍可通过已配置的交互打开完整面板。</value>
   </data>
   <data name="DisplayModes.Rest.Row.Entry.Title" xml:space="preserve">
-    <value>显示进入完整面板的入口</value>
+    <value>显示外侧入口</value>
   </data>
   <data name="DisplayModes.Rest.Row.Layout.Description" xml:space="preserve">
     <value>标题与歌手并排一行，或上下两行；紧凑任务栏可能只显示标题。</value>
@@ -1925,7 +1919,7 @@
     <value>选择任务栏或桌面悬浮模式，查看其他模式的实现状态。</value>
   </data>
   <data name="Search.DisplayModes.FullLayer.Description" xml:space="preserve">
-    <value>点击媒体栏展开的面板包含哪些分区</value>
+    <value>设置外侧入口、打开方式和完整面板内容。</value>
   </data>
   <data name="Search.DisplayModes.HoverLayer.Description" xml:space="preserve">
     <value>鼠标移入媒体栏时出现的快捷控制</value>
@@ -2501,9 +2495,6 @@
   <data name="ContentLayout.Hover.Prerequisite" xml:space="preserve">
     <value>开启快捷控制后显示以下内容；关闭时仍可预先配置。</value>
   </data>
-  <data name="ContentLayout.Full.Prerequisite" xml:space="preserve">
-    <value>开启完整面板后使用以下入口和内容；关闭时仍可预先配置。</value>
-  </data>
   <data name="Search.ContentLayout.Vertical.Rest" xml:space="preserve">
     <value>配置常驻与无媒体内容，以及频谱和性能参数。</value>
   </data>
@@ -2951,23 +2942,14 @@
   <data name="Media.Selection.NoPreferred" xml:space="preserve"><value>未指定（使用自动选择）</value></data>
   <data name="Media.Selection.Filtered" xml:space="preserve"><value>该应用已被媒体来源过滤排除，当前使用自动选择。</value></data>
   <data name="Media.Selection.ManualHint" xml:space="preserve"><value>手动选源立即生效；后续新会话或符合策略的播放活动仍可接管。</value></data>
-  <data name="Experimental.FullPanel.Title" xml:space="preserve">
-    <value>外侧完整面板入口</value>
-  </data>
-  <data name="Experimental.FullPanel.Description" xml:space="preserve">
-    <value>有媒体会话时，鼠标进入任务栏媒体栏会在朝向桌面的一侧显示横杠，替换原来的栏内入口；无媒体时隐藏。</value>
-  </data>
-  <data name="Experimental.FullPanel.Trigger" xml:space="preserve">
+  <data name="DisplayModes.Full.Entry.Trigger" xml:space="preserve">
     <value>打开方式</value>
   </data>
-  <data name="Experimental.FullPanel.Click" xml:space="preserve">
+  <data name="DisplayModes.Full.Entry.Click" xml:space="preserve">
     <value>点击打开</value>
   </data>
-  <data name="Experimental.FullPanel.Hover" xml:space="preserve">
+  <data name="DisplayModes.Full.Entry.Hover" xml:space="preserve">
     <value>悬停 0.5 秒</value>
-  </data>
-  <data name="Experimental.FullPanel.AutoHide" xml:space="preserve">
-    <value>任务栏自动收起时，鼠标所在的横杠会暂时保留；移开后隐藏。仅对任务栏模式生效。</value>
   </data>
   <data name="Memory.Title" xml:space="preserve"><value>内存工具</value></data>
   <data name="Memory.Open" xml:space="preserve"><value>打开内存工具</value></data>

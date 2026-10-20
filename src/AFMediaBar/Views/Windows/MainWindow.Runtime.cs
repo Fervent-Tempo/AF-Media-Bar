@@ -165,10 +165,11 @@ public partial class MainWindow
         catch { foreach (var host in hosts) host.Dispose(); throw; }
     }
 
-    private void FloatingFullPanelRequested(object? sender, EventArgs args)
+    private void FloatingFullPanelRequested(object? sender, FullPanelOpenRequestEventArgs args)
     {
         if (_isClosing || sender is not FloatingBarWindow host || !_floatingWindows.Contains(host)) return;
-        _fullPanels.Open(host.TargetMonitorDeviceId, host.GetMediaBarScreenBounds(), host.IsVerticalPresentation,
-            ensureOpen: false, host.EffectiveSettings);
+        var panel = _fullPanels.Open(host.TargetMonitorDeviceId, args.Anchor, args.VerticalAnchor,
+            args.EnsureOpen, host.EffectiveSettings, args.PlacementSide);
+        if (panel is not null) host.SetFullPanelOpen(panel.IsVisible);
     }
 }
