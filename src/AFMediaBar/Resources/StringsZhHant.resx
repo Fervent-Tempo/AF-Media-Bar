@@ -466,9 +466,6 @@
   <data name="Audio.OutputDevice.Unavailable" xml:space="preserve">
     <value>輸出裝置：無法使用</value>
   </data>
-  <data name="Audio.OutputDevice.Unchanged" xml:space="preserve">
-    <value>輸出裝置：未變更</value>
-  </data>
   <data name="Audio.OutputDevice.Value" xml:space="preserve">
     <value>輸出裝置：{0}</value>
   </data>
@@ -2725,9 +2722,6 @@
   </data>
   <data name="Audio.Device.Applied" xml:space="preserve">
     <value>預設裝置已切換</value>
-  </data>
-  <data name="Audio.Device.Unchanged" xml:space="preserve">
-    <value>裝置未變更</value>
   </data>
   <data name="Audio.Device.Cancelled" xml:space="preserve">
     <value>裝置切換已取消</value>

@@ -838,7 +838,7 @@ namespace AFMediaBar.Components
         public TrayIconBounds GetOutputDeviceAnchor() => GetScreenBounds(_outputDeviceSurface);
         public TrayIconBounds GetInputDeviceAnchor() => GetScreenBounds(_inputDeviceSurface);
         public void SetDeviceTooltip(AudioDeviceDirection direction, string text) =>
-            (direction == AudioDeviceDirection.Output ? _outputDeviceSurface : _inputDeviceSurface).ToolTip = text;
+            (direction == AudioDeviceDirection.Output ? _outputDeviceSurface : _inputDeviceSurface).ToolTip = string.IsNullOrEmpty(text) ? null : text;
 
         /// <summary>返回音量菜单的物理屏幕锚点，取自最近交互的那个音量入口。 / Returns the physical screen anchor for the volume menu, taken from the volume entry last interacted with.</summary>
         public TrayIconBounds GetVolumeAnchor() => GetScreenBounds(_volumeSurface);

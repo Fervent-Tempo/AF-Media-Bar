@@ -4,18 +4,20 @@ using AFMediaBar.Resources;
 
 namespace AFMediaBar.Classes.Services.Audio;
 
-/// <summary>按结果状态生成可信反馈，不将路由偏好误报为音频流迁移。</summary>
+/// <summary>按结果状态生成反馈，设备未变化时返回空文本，不将路由偏好误报为音频流迁移。</summary>
 public static class AudioDevicePresentation
 {
-    public static string GetResultText(AudioDeviceOperationResult result, bool application) =>
-        Translations.Get(result.Status switch
+    public static string GetResultText(AudioDeviceOperationResult result, bool application)
+    {
+        if (result.Status == AudioDeviceOperationStatus.Unchanged) return string.Empty;
+        return Translations.Get(result.Status switch
         {
             AudioDeviceOperationStatus.Applied => application ? "Audio.Route.Saved" : "Audio.Device.Applied",
-            AudioDeviceOperationStatus.Unchanged => "Audio.Device.Unchanged",
             AudioDeviceOperationStatus.Unsupported => "Audio.Route.Unsupported",
             AudioDeviceOperationStatus.Partial => "Audio.Route.Partial",
             AudioDeviceOperationStatus.Cancelled => "Audio.Device.Cancelled",
             AudioDeviceOperationStatus.Unavailable => application ? "Audio.App.Unavailable" : "Audio.Device.Unavailable",
             _ => "Audio.Route.Failed"
         });
+    }
 }

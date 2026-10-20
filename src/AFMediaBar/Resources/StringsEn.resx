@@ -466,9 +466,6 @@
   <data name="Audio.OutputDevice.Unavailable" xml:space="preserve">
     <value>Output device: unavailable</value>
   </data>
-  <data name="Audio.OutputDevice.Unchanged" xml:space="preserve">
-    <value>Output device: unchanged</value>
-  </data>
   <data name="Audio.OutputDevice.Value" xml:space="preserve">
     <value>Output device: {0}</value>
   </data>
@@ -2725,9 +2722,6 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   </data>
   <data name="Audio.Device.Applied" xml:space="preserve">
     <value>Default device changed</value>
-  </data>
-  <data name="Audio.Device.Unchanged" xml:space="preserve">
-    <value>Device unchanged</value>
   </data>
   <data name="Audio.Device.Cancelled" xml:space="preserve">
     <value>Device switch cancelled</value>

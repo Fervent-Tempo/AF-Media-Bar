@@ -116,7 +116,7 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
     public void ShowDeviceStatus(string text)
     {
         if (_allowClose) return;
-        CurrentDeviceText.ToolTip = text;
+        CurrentDeviceText.ToolTip = string.IsNullOrEmpty(text) ? null : text;
         if (!OutputDeviceList.IsEnabled || OutputDeviceList.Items.Count == 0) DeviceUnavailableText.Text = text;
         RepositionVisibleMenu();
     }

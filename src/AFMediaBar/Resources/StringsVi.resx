@@ -355,9 +355,6 @@
   <data name="Audio.OutputDevice.Unavailable" xml:space="preserve">
     <value>Thiết bị đầu ra: không khả dụng</value>
   </data>
-  <data name="Audio.OutputDevice.Unchanged" xml:space="preserve">
-    <value>Thiết bị đầu ra: không đổi</value>
-  </data>
   <data name="Audio.OutputDevice.Value" xml:space="preserve">
     <value>Thiết bị đầu ra: {0}</value>
   </data>
@@ -2763,9 +2760,6 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   </data>
   <data name="Audio.Device.Applied" xml:space="preserve">
     <value>Đã đổi thiết bị mặc định</value>
-  </data>
-  <data name="Audio.Device.Unchanged" xml:space="preserve">
-    <value>Thiết bị không thay đổi</value>
   </data>
   <data name="Audio.Device.Cancelled" xml:space="preserve">
     <value>Đã hủy chuyển thiết bị</value>

@@ -1612,10 +1612,12 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         var scope = update.Target.Direction == AudioDeviceDirection.Output ? settings.OutputDeviceWheelTarget : settings.InputDeviceWheelTarget;
         if ((scope == AudioDeviceSwitchTarget.SystemDefault && update.Target.Application is null) ||
             (scope == AudioDeviceSwitchTarget.ForegroundApplication && update.Target.Application is not null))
-            MediaControl.SetDeviceTooltip(update.Target.Direction,
-                (update.Target.Application is null ? string.Empty : update.Target.Application.DisplayName + " · ") +
-                (update.Result is null ? update.Candidate?.DisplayName ?? Translations.Get("Audio.Device.Unavailable") :
-                    AudioDevicePresentation.GetResultText(update.Result, update.Target.Application is not null)));
+        {
+            var detail = update.Result is null ? update.Candidate?.DisplayName ?? Translations.Get("Audio.Device.Unavailable") :
+                AudioDevicePresentation.GetResultText(update.Result, update.Target.Application is not null);
+            MediaControl.SetDeviceTooltip(update.Target.Direction, string.IsNullOrEmpty(detail) ? string.Empty :
+                (update.Target.Application is null ? string.Empty : update.Target.Application.DisplayName + " · ") + detail);
+        }
         if (_deviceMenuTarget?.Key == update.Target.Key && _compactFlyout.IsVisible)
         {
             if (update.Result is null && update.Candidate is { } candidate) _compactFlyout.SetOutputDevicePreview(candidate);
