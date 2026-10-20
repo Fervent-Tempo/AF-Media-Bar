@@ -113,6 +113,7 @@ public sealed class ShellNotificationTests
     [DataTestMethod]
     [DataRow(ShellNotificationTarget.TaskbarBackground)]
     [DataRow(ShellNotificationTarget.DeveloperLyricsPreview)]
+    [DataRow(ShellNotificationTarget.MemoryResult)]
     public void ShellRecreationRestoresTheSameHiddenNotificationIdentity(ShellNotificationTarget target)
     {
         StaTest.Run(_ =>

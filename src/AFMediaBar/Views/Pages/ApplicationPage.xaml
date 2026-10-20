@@ -323,6 +323,9 @@
                         <components:SettingsRow Title="{DynamicResource Loc.Memory.OptimizeAf}" Description="{DynamicResource Loc.Memory.Deep.Description}">
                             <ui:Button Content="{DynamicResource Loc.Memory.OptimizeAf}" Command="{Binding ViewModel.MemoryTools.DeepCommand}" IsEnabled="{Binding ViewModel.MemoryTools.CanRun}" Style="{StaticResource AfSettingsButtonStyle}" />
                         </components:SettingsRow>
+                        <ui:Button Content="{DynamicResource Loc.Memory.Result.ViewLatest}" Command="{Binding ViewModel.MemoryTools.ShowLastResultCommand}"
+                            Style="{StaticResource AfSettingsButtonStyle}" HorizontalAlignment="Left" Margin="16,8"
+                            Visibility="{Binding ViewModel.MemoryTools.HasManualResult, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
                         <Expander Header="{DynamicResource Loc.Memory.Metrics.Title}" Margin="0,8,0,0">
                             <StackPanel>
                                 <components:SettingsRow Title="{DynamicResource Loc.Memory.WorkingSet}"><TextBlock Text="{Binding ViewModel.MemoryTools.WorkingSetText}" /></components:SettingsRow>

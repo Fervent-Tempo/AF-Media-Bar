@@ -1,6 +1,7 @@
 // 应用页可见时才拥有采样循环；关闭页面取消呈现，不中断已经开始的回收。
 using System.Globalization;
 using AFMediaBar.Classes.Abstractions;
+using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Resources;
@@ -10,7 +11,13 @@ namespace AFMediaBar.ViewModels.Pages;
 /// <summary>内存诊断与手动操作的页面状态。</summary>
 public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
 {
+    private sealed record ManualResult(string Title, string Details, string? Explanation);
     private readonly IMemoryAuthorizationPrompt _authorizationPrompt;
+    private readonly ISystemNotificationService _notifications;
+    private readonly AppLogService _log;
+    private ManualResult? _manualResult;
+    private bool _showingResult;
+    public bool HasManualResult => _manualResult is not null;
     private readonly SystemMemoryAutomationService _automation;
     private bool _configuringAutomation;
     private readonly MemoryToolsService _metrics;
@@ -80,22 +87,70 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
     private static string FormatSystemResult(SystemMemoryCleanupResult result)
     {
         var lines = new List<string> { Translations.Get("Memory.System." + result.Status) };
-        if (result.Details is { } details)
-        {
-            lines.AddRange(details.Stages.Select(stage => Translations.Get("Memory.Stage." + stage.Operation) + ": " +
-                Translations.Get("Memory.System." + stage.Status) + (stage.ErrorCode is { } error ? " (" + error + ")" : string.Empty)));
-            lines.Add(Translations.Format("Memory.System.Elapsed", details.ElapsedMilliseconds));
-        }
-        if (result.ErrorCode is { } code) lines.Add(code);
         if (result.Details?.Stages.Any(stage => stage.Operation == "Authorization") != true)
         {
             lines.Add(Translations.Format("Memory.System.Readings", FormatBytes((double?)result.Before), FormatBytes((double?)result.After)));
             if (result.Before is { } before && result.After is { } after)
-                lines.Add(Translations.Format("Memory.System.Change", (((double)after - before) / 1048576).ToString("+0.0;-0.0;0.0", CultureInfo.CurrentCulture)));
+                lines.Add(Translations.Format("Memory.System.Change", FormatChange(before, after)));
             lines.Add(Translations.Format("Memory.System.CacheReadings", FormatBytes((double?)result.CacheBefore), FormatBytes((double?)result.CacheAfter)));
-            lines.Add(Translations.Get("Memory.System.ResultExplanation"));
         }
+        if (result.Details is { } details)
+        {
+            lines.Add(Translations.Format("Memory.System.Elapsed", details.ElapsedMilliseconds));
+            lines.AddRange(details.Stages.Select(stage => Translations.Get("Memory.Stage." + stage.Operation) + ": " +
+                Translations.Get(stage.Status == SystemMemoryCleanupStatus.Completed ? "Memory.Result.StageCompleted" : "Memory.System." + stage.Status) +
+                (stage.ErrorCode is { } error ? " (" + error + ")" : string.Empty)));
+        }
+        if (result.ErrorCode is { } code) lines.Add(code);
         return string.Join("\n", lines);
+    }
+    private static string FormatChange(ulong before, ulong after) =>
+        (((double)after - before) / 1048576).ToString("+0.0;-0.0;0.0", CultureInfo.CurrentCulture);
+
+    private void NotifySystemResult(SystemMemoryOptimizationLevel level, SystemMemoryCleanupResult result)
+    {
+        var title = Translations.Get(level == SystemMemoryOptimizationLevel.Deep ? "Memory.System.Deep" : "Memory.System.Standard");
+        var summary = new List<string>();
+        if (result.Before is { } before && result.After is { } after)
+            summary.Add(Translations.Format("Memory.System.Change", FormatChange(before, after)));
+        if (result.Details is { } details)
+        {
+            var failed = details.Stages.FirstOrDefault(stage => stage.Status != SystemMemoryCleanupStatus.Completed);
+            if (failed is not null)
+                summary.Add(Translations.Get("Memory.Stage." + failed.Operation) + ": " + Translations.Get("Memory.System." + failed.Status));
+            summary.Add(Translations.Format("Memory.System.Elapsed", details.ElapsedMilliseconds));
+        }
+        var status = Translations.Get(result.Status is SystemMemoryCleanupStatus.Completed or SystemMemoryCleanupStatus.PartialSuccess or SystemMemoryCleanupStatus.TimedOut
+            ? "Memory.Notification." + result.Status : "Memory.System." + result.Status);
+        NotifyManualResult(title, status, summary, SystemResultText, Translations.Get("Memory.System.ResultExplanation"));
+    }
+    private void NotifyManualResult(string title, string status, List<string> summary, string details, string? explanation = null)
+    {
+        if (_disposed) return;
+        // Shell 点击不携带操作标识，只缓存最近一次手动结果；自动结果不覆盖这个入口。
+        _manualResult = new(title, details, explanation);
+        OnPropertyChanged(nameof(HasManualResult));
+        summary.Add(Translations.Get("Memory.Notification.Details"));
+        try
+        {
+            _notifications.TryShowNotification(Translations.Format("Memory.Notification.Title", title, status),
+                string.Join("\n", summary), ShellNotificationTarget.MemoryResult);
+        }
+        catch (Exception error) { _log.Warn("Memory", "内存操作通知发送失败，仍可从菜单或设置查看结果", error); }
+    }
+    [RelayCommand]
+    private async Task ShowLastResultAsync()
+    {
+        if (_disposed || _showingResult || _manualResult is not { } result) return;
+        _showingResult = true;
+        try { await _authorizationPrompt.ShowResultAsync(result.Title, result.Details, result.Explanation); }
+        finally { _showingResult = false; }
+    }
+    private async void OnNotificationClicked(ShellNotificationTarget target)
+    {
+        if (_disposed || target != ShellNotificationTarget.MemoryResult) return;
+        try { await ShowLastResultAsync(); }
+        catch (Exception error) { _log.Warn("Memory", "内存操作详情打开失败", error); }
     }
     private Task ShowAuthorizationResultAsync(SystemMemoryCleanupResult result, bool install)
     {
@@ -132,9 +187,12 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
             Translations.Get(counters.ReturnedWorkingSet ? "Memory.WorkingSetReturned" : "Memory.WorkingSetNotReturned")) :
         Translations.Get("Memory.Status." + outcome.Status);
 
-    public MemoryToolsViewModel(MemoryToolsService metrics, MemoryPruneCoordinator prune, SystemMemoryCleanupService systemCleanup, SystemMemoryAutomationService automation, IMemoryAuthorizationPrompt authorizationPrompt)
+    public MemoryToolsViewModel(MemoryToolsService metrics, MemoryPruneCoordinator prune, SystemMemoryCleanupService systemCleanup, SystemMemoryAutomationService automation, IMemoryAuthorizationPrompt authorizationPrompt, ISystemNotificationService notifications, AppLogService log)
     {
         _authorizationPrompt = authorizationPrompt;
+        _notifications = notifications;
+        _log = log;
+        notifications.NotificationClicked += OnNotificationClicked;
         _automation = automation;
         automation.Changed += OnCleanupChanged;
         _systemCleanup = systemCleanup;
@@ -229,7 +287,7 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
             _systemResult = result;
             OnPropertyChanged(nameof(SystemResultText));
             OnPropertyChanged(nameof(HasSystemResult));
-            await _authorizationPrompt.ShowResultAsync(Translations.Get(level == SystemMemoryOptimizationLevel.Deep ? "Memory.System.Deep" : "Memory.System.Standard"), SystemResultText);
+            NotifySystemResult(level, result);
         }
         finally { if (!_disposed) IsBusy = false; }
     }
@@ -249,8 +307,15 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
             _lastTrimAt = DateTimeOffset.Now;
             OnPropertyChanged(nameof(ResultText));
             OnPropertyChanged(nameof(HasResult));
-            await _authorizationPrompt.ShowResultAsync(Translations.Get("Memory.OptimizeAf"),
-                Translations.Get("Memory.Status." + outcome.Status) + "\n" + ResultText);
+            var summary = new List<string>();
+            if (outcome.Counters is { } counters)
+            {
+                summary.Add(Translations.Format("Memory.Notification.AfReadings", FormatBytes(counters.Before.WorkingSetBytes), FormatBytes(counters.After.WorkingSetBytes)));
+                summary.Add(Translations.Format("Memory.System.Elapsed", outcome.Elapsed.TotalMilliseconds.ToString("0", CultureInfo.CurrentCulture)));
+            }
+            var status = Translations.Get("Memory.Status." + outcome.Status);
+            NotifyManualResult(Translations.Get("Memory.OptimizeAf"), status, summary,
+                outcome.Counters is null ? ResultText : status + "\n" + ResultText);
         }
         finally { if (!_disposed) IsBusy = false; }
     }
@@ -288,5 +353,7 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
         SettingsManager.SettingsChanged -= OnSettingsChanged;
         _systemCleanup.Changed -= OnCleanupChanged;
         _automation.Changed -= OnCleanupChanged;
+        _notifications.NotificationClicked -= OnNotificationClicked;
+        _manualResult = null;
     }
 }

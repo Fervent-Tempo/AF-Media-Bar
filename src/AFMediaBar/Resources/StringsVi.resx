@@ -3172,4 +3172,13 @@ Nguồn: {2}</value></data>
   <data name="Audio.VolumeMemory.Filter" xml:space="preserve"><value>Ứng dụng (*.exe)|*.exe</value></data>
   <data name="Audio.VolumeMemory.Waiting" xml:space="preserve"><value>Đang chờ phát</value></data>
   <data name="Audio.VolumeMemory.Remove" xml:space="preserve"><value>Xóa mức âm lượng đã nhớ</value></data>
+  <data name="Memory.Notification.Title" xml:space="preserve"><value>{0}: {1}</value></data>
+  <data name="Memory.Notification.Completed" xml:space="preserve"><value>Đã dọn dẹp xong</value></data>
+  <data name="Memory.Notification.AfReadings" xml:space="preserve"><value>Tập làm việc AF: {0} → {1}</value></data>
+  <data name="Memory.Notification.Details" xml:space="preserve"><value>Nhấn để xem kết quả thao tác thủ công gần nhất</value></data>
+  <data name="Memory.Result.ViewLatest" xml:space="preserve"><value>Xem kết quả gần nhất</value></data>
+  <data name="Memory.Result.Explanation" xml:space="preserve"><value>Về các số liệu này</value></data>
+  <data name="Memory.Result.StageCompleted" xml:space="preserve"><value>Xong</value></data>
+  <data name="Memory.Notification.PartialSuccess" xml:space="preserve"><value>Hoàn tất một phần</value></data>
+  <data name="Memory.Notification.TimedOut" xml:space="preserve"><value>Chưa xác nhận kết quả</value></data>
 </root>

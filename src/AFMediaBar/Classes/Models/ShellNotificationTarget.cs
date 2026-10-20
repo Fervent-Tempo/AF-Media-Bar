@@ -10,5 +10,6 @@ public enum ShellNotificationTarget
     LyricsRecovery,
     DeveloperLyricsPreview,
     VerticalTaskbarExperiment,
-    FloatingBarExperiment
+    FloatingBarExperiment,
+    MemoryResult
 }

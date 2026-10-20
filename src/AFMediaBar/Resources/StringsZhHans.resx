@@ -3134,4 +3134,13 @@
   <data name="Audio.VolumeMemory.Filter" xml:space="preserve"><value>应用程序 (*.exe)|*.exe</value></data>
   <data name="Audio.VolumeMemory.Waiting" xml:space="preserve"><value>等待应用播放</value></data>
   <data name="Audio.VolumeMemory.Remove" xml:space="preserve"><value>移除音量记忆</value></data>
+  <data name="Memory.Notification.Title" xml:space="preserve"><value>{0}：{1}</value></data>
+  <data name="Memory.Notification.Completed" xml:space="preserve"><value>清理完成</value></data>
+  <data name="Memory.Notification.AfReadings" xml:space="preserve"><value>AF 工作集：{0} → {1}</value></data>
+  <data name="Memory.Notification.Details" xml:space="preserve"><value>点击查看最近一次手动操作结果</value></data>
+  <data name="Memory.Result.ViewLatest" xml:space="preserve"><value>查看最近一次结果</value></data>
+  <data name="Memory.Result.Explanation" xml:space="preserve"><value>关于这些读数</value></data>
+  <data name="Memory.Result.StageCompleted" xml:space="preserve"><value>完成</value></data>
+  <data name="Memory.Notification.PartialSuccess" xml:space="preserve"><value>部分清理完成</value></data>
+  <data name="Memory.Notification.TimedOut" xml:space="preserve"><value>结果未确认</value></data>
 </root>

@@ -21,6 +21,9 @@ public sealed class MemoryContextMenu : ContextMenu
         system.Items.Add(Item("Memory.System.Standard", "CleanSystemCommand"));
         system.Items.Add(Item("Memory.System.Deep", "CleanSystemDeepCommand"));
         Items.Add(system);
+        var details = Item("Memory.Result.ViewLatest", "ShowLastResultCommand");
+        details.SetBinding(VisibilityProperty, new Binding(nameof(viewModel.HasManualResult)) { Converter = new BooleanToVisibilityConverter() });
+        Items.Add(details);
         var settings = Item("Memory.Open", null);
         settings.Click += (_, _) => openSettings();
         Items.Add(settings);

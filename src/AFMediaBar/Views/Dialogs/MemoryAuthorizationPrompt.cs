@@ -56,16 +56,25 @@ public sealed class MemoryAuthorizationPrompt(WindowAppearanceService appearance
         try { appearance.Attach(dialog); dialog.ShowDialog(); return _disposed || token.IsCancellationRequested ? MemoryAuthorizationChoice.Cancel : choice; }
         finally { _window = null; }
     }
-    public async Task ShowResultAsync(string title, string message, CancellationToken token = default)
+    public async Task ShowResultAsync(string title, string message, string? explanation = null, CancellationToken token = default)
     {
         if (_disposed || _window is not null || token.IsCancellationRequested) return;
         await Task.Yield();
         if (_disposed || _window is not null || token.IsCancellationRequested) return;
         var panel = new StackPanel { Margin = new Thickness(24) };
         panel.Children.Add(new TextBlock { Text = title, FontSize = 20, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 16) });
+        var details = new StackPanel();
+        details.Children.Add(new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap });
+        if (!string.IsNullOrEmpty(explanation))
+            details.Children.Add(new Expander
+            {
+                Header = Translations.Get("Memory.Result.Explanation"),
+                Margin = new Thickness(0, 16, 0, 0),
+                Content = new TextBlock { Text = explanation, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) }
+            });
         panel.Children.Add(new ScrollViewer
         {
-            Content = new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap },
+            Content = details,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             MaxHeight = 480
         });

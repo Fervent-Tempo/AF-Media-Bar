@@ -8,5 +8,5 @@ public enum MemoryAuthorizationChoice { Cancel, Once, Remember }
 public interface IMemoryAuthorizationPrompt
 {
     Task<MemoryAuthorizationChoice> ChooseAsync(bool persistentRequired, CancellationToken token = default);
-    Task ShowResultAsync(string title, string message, CancellationToken token = default);
+    Task ShowResultAsync(string title, string message, string? explanation = null, CancellationToken token = default);
 }
