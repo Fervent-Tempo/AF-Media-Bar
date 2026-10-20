@@ -21,10 +21,11 @@ namespace AFMediaBar.Classes.Services.Audio;
 public sealed class ApplicationVolumeService : IApplicationAudioControl
 {
     private const string SystemSoundsProcessName = "AFMediaBar.SystemSounds";
-    private readonly object _gate = new();
+    private readonly object _gate;
     private readonly MediaSourceProcessResolver _processResolver;
     private readonly ApplicationIconService _iconService;
     private readonly AudioProcessInfoService _processInfo;
+    private readonly ApplicationVolumeMemoryService _volumeMemory;
 
     /// <summary>
     /// 创建应用音量协调器，并使用共享来源解析器将媒体来源映射到音频会话。
@@ -33,11 +34,14 @@ public sealed class ApplicationVolumeService : IApplicationAudioControl
     public ApplicationVolumeService(
         MediaSourceProcessResolver processResolver,
         ApplicationIconService iconService,
-        AudioProcessInfoService processInfo)
+        AudioProcessInfoService processInfo,
+        ApplicationVolumeMemoryService volumeMemory)
     {
         _processResolver = processResolver;
         _iconService = iconService;
         _processInfo = processInfo;
+        _volumeMemory = volumeMemory;
+        _gate = volumeMemory.WriteGate;
     }
 
     /// <summary>
@@ -63,7 +67,7 @@ public sealed class ApplicationVolumeService : IApplicationAudioControl
         lock (_gate)
         {
             var aggregates = new Dictionary<string, Aggregate>(StringComparer.OrdinalIgnoreCase);
-            ForEachSession((processId, processName, displayName, iconPath, state, level, muted, _) =>
+            ForEachSession((processId, processName, displayName, iconPath, state, level, muted, _, _) =>
             {
                 if (!aggregates.TryGetValue(processName, out var aggregate))
                 {
@@ -109,7 +113,7 @@ public sealed class ApplicationVolumeService : IApplicationAudioControl
         {
             var target = Math.Clamp(volumePercent, 0, 100) / 100f;
             var changed = false;
-            ForEachSession((_, candidate, _, _, _, _, _, volume) =>
+            ForEachSession((processId, candidate, _, _, _, _, _, volume, session) =>
             {
                 if (!string.Equals(candidate, processName, StringComparison.OrdinalIgnoreCase))
                 {
@@ -117,6 +121,7 @@ public sealed class ApplicationVolumeService : IApplicationAudioControl
                 }
 
                 volume.Volume = target;
+                RememberVolume(processId, session, volumePercent);
                 if (target > 0)
                 {
                     volume.Mute = false;
@@ -138,7 +143,7 @@ public sealed class ApplicationVolumeService : IApplicationAudioControl
             var matched = 0;
             var applied = 0;
             var failed = 0;
-            ForEachSession((_, candidate, name, icon, state, _, _, volume) =>
+            ForEachSession((processId, candidate, name, icon, state, _, _, volume, session) =>
             {
                 if (!string.Equals(candidate, processName, StringComparison.OrdinalIgnoreCase) || !isCurrent()) return;
                 matched++;
@@ -147,6 +152,7 @@ public sealed class ApplicationVolumeService : IApplicationAudioControl
                     if (volumePercent is { } percent)
                     {
                         volume.Volume = Math.Clamp(percent, 0, 100) / 100f;
+                        RememberVolume(processId, session, percent);
                         if (percent > 0) volume.Mute = false;
                     }
                     if (muted is { } mute) volume.Mute = mute;
@@ -163,7 +169,22 @@ public sealed class ApplicationVolumeService : IApplicationAudioControl
         }
     }
 
-    private void ForEachSession(Action<uint, string, string?, string?, AudioSessionState, float, bool, SimpleAudioVolume> visitor)
+    private void RememberVolume(uint processId, AudioSessionControl session, int percent)
+    {
+        if (processId == 0) return;
+        try
+        {
+            var path = _processInfo.GetExecutablePath(processId);
+            if (path is null) return;
+            string? key = null;
+            try { key = session.GetSessionInstanceIdentifier; }
+            catch (Exception error) { System.Diagnostics.Debug.WriteLine(error); }
+            _volumeMemory.RecordAppliedVolume(path, percent, key);
+        }
+        catch (Exception error) { System.Diagnostics.Debug.WriteLine($"[VolumeMemory] Record: {error.Message}"); }
+    }
+
+    private void ForEachSession(Action<uint, string, string?, string?, AudioSessionState, float, bool, SimpleAudioVolume, AudioSessionControl> visitor)
     {
         using var enumerator = new MMDeviceEnumerator();
         using var devices = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
@@ -200,7 +221,7 @@ public sealed class ApplicationVolumeService : IApplicationAudioControl
                         try { displayName = session.DisplayName; } catch (COMException) { }
                         try { iconPath = session.IconPath; } catch (COMException) { }
                         visitor(processId, processName, displayName, iconPath, state,
-                            volume.Volume, volume.Mute, volume);
+                            volume.Volume, volume.Mute, volume, session);
                     }
                     catch (COMException)
                     {

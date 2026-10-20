@@ -1,76 +1,92 @@
-// 在独立 MTA 线程拥有端点、会话及通知；回调只排队，停止后在同一线程解除订阅并释放 COM。
+// 在独立 MTA 线程拥有端点和会话创建通知；AF 写入后异步落盘，停止后在拥有线程释放 COM。
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Windows.Threading;
-using AFMediaBar.Classes.Settings;
-using AFMediaBar.Classes.Utils;
 using Microsoft.Extensions.Hosting;
 using NAudio.CoreAudioApi;
 using NAudio.CoreAudioApi.Interfaces;
 
 namespace AFMediaBar.Classes.Services.Audio;
 
-/// <summary>仅为用户选择的应用恢复新会话音量；后续变化更新记忆，不持续强制音量。</summary>
+/// <summary>默认记住 AF 成功写入的应用音量，只在新会话出现时恢复一次，不持续强制音量。</summary>
 public sealed class ApplicationVolumeMemoryService : IHostedService, IDisposable
 {
     private readonly AudioProcessInfoService _processInfo;
-    private readonly Dispatcher _uiDispatcher = DispatcherHelper.Current;
+    private readonly ApplicationVolumeMemoryStore _store;
     private readonly BlockingCollection<Action> _queue = new();
     private readonly TaskCompletionSource _completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly Dictionary<string, EndpointWatch> _endpoints = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, (int Version, int Volume)> _pendingVolumes = new(StringComparer.OrdinalIgnoreCase);
     private readonly Thread _thread;
-    private ApplicationVolumeMemoryEntry[] _entries = [];
-    private Dictionary<string, int> _enrollments = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, int> _volumes = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _editedSessions = new(StringComparer.Ordinal);
+    private long _revision;
+    private long _savedRevision;
+    // AF 写入与新会话恢复共用此锁；磁盘读写始终在锁外执行。
+    internal object WriteGate { get; } = new();
     private MMDeviceEnumerator? _enumerator;
     private MMDeviceNotificationClient? _notifications;
     private int _started;
     private int _stopping;
-    private int _nextEnrollment;
     private int _devicesQueued;
 
-    public ApplicationVolumeMemoryService(AudioProcessInfoService processInfo)
+    public ApplicationVolumeMemoryService(AudioProcessInfoService processInfo, ApplicationVolumeMemoryStore store)
     {
         _processInfo = processInfo;
+        _store = store;
         _thread = new Thread(Run) { IsBackground = true, Name = "AF Volume Memory" };
-        // Core Audio 的会话创建通知要求在非 UI 的 MTA 中注册，不能借用现有 STA 音频线程。
         _thread.SetApartmentState(ApartmentState.MTA);
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        if (Volatile.Read(ref _stopping) != 0 || Interlocked.Exchange(ref _started, 1) != 0) return Task.CompletedTask;
-        SettingsManager.SettingsChanged += OnSettingsChanged;
-        _thread.Start();
-        UpdateConfiguration();
+        if (Volatile.Read(ref _stopping) == 0 && Interlocked.Exchange(ref _started, 1) == 0) _thread.Start();
         return Task.CompletedTask;
     }
 
-    private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args)
+    /// <summary>仅由 AF 的音量写入成功路径调用；不在调用线程进行磁盘或音频操作。</summary>
+    public void RecordAppliedVolume(string? executablePath, int percent, string? editedSessionKey)
     {
-        if (args.PropertyName is null or nameof(AppSettings.ApplicationVolumeMemory)) UpdateConfiguration();
+        var path = ApplicationVolumeMemoryStore.NormalizePath(executablePath);
+        if (path is null) return;
+        var volume = Math.Clamp(percent, 0, 100);
+        lock (WriteGate)
+        {
+            if (Volatile.Read(ref _stopping) != 0) return;
+            if (!_volumes.TryGetValue(path, out var previous) || previous != volume) _revision++;
+            _volumes[path] = volume;
+            if (editedSessionKey is not null) _editedSessions.Add(editedSessionKey);
+            Queue(() =>
+            {
+                try
+                {
+                    SavePendingVolumes();
+                    SynchronizeDevices(path, editedSessionKey);
+                }
+                finally
+                {
+                    if (editedSessionKey is not null)
+                        lock (WriteGate) _editedSessions.Remove(editedSessionKey);
+                }
+            });
+        }
     }
 
-    private void UpdateConfiguration()
+    private void SavePendingVolumes()
     {
-        if (Volatile.Read(ref _stopping) != 0) return;
-        if (!_uiDispatcher.CheckAccess())
+        Dictionary<string, int> snapshot;
+        long revision;
+        lock (WriteGate)
         {
-            if (!_uiDispatcher.HasShutdownStarted) _uiDispatcher.BeginInvoke(() => UpdateConfiguration());
-            return;
+            if (_savedRevision == _revision) return;
+            revision = _revision;
+            snapshot = new(_volumes, StringComparer.OrdinalIgnoreCase);
         }
-        var entries = SettingsManager.Current.ApplicationVolumeMemory.Entries.ToArray();
-        var previous = Volatile.Read(ref _entries);
-        var enrollments = Volatile.Read(ref _enrollments);
-        var next = entries.ToDictionary(entry => entry.ExecutablePath,
-            entry => enrollments.TryGetValue(entry.ExecutablePath, out var version) ? version : ++_nextEnrollment,
-            StringComparer.OrdinalIgnoreCase);
-        Volatile.Write(ref _entries, entries);
-        Volatile.Write(ref _enrollments, next);
-        // 音量更新不会重建订阅或再次恢复；只有启用列表改变才重新枚举。
-        if (previous.Length == 0 || !previous.Select(entry => entry.ExecutablePath)
-            .SequenceEqual(entries.Select(entry => entry.ExecutablePath), StringComparer.OrdinalIgnoreCase)) QueueDevices();
+        try
+        {
+            _store.Save(snapshot);
+            lock (WriteGate) _savedRevision = revision;
+        }
+        catch (Exception error) { Debug.WriteLine($"[VolumeMemory] Save: {error}"); }
     }
 
     private void Queue(Action action)
@@ -92,9 +108,14 @@ public sealed class ApplicationVolumeMemoryService : IHostedService, IDisposable
         try
         {
             Marshal.ThrowExceptionForHR(initialized);
+            var saved = _store.Load();
+            lock (WriteGate)
+                foreach (var pair in saved) _volumes.TryAdd(pair.Key, pair.Value);
+            try { SynchronizeDevices(); }
+            catch (Exception error) { Debug.WriteLine($"[VolumeMemory] Start: {error}"); }
             foreach (var action in _queue.GetConsumingEnumerable())
             {
-                if (Volatile.Read(ref _stopping) != 0) break;
+                // 停止时排空 AF 已成功写入的记录；各原生刷新入口会拒绝新的音频操作。
                 try { action(); }
                 catch (Exception error) { Debug.WriteLine($"[VolumeMemory] {error}"); }
             }
@@ -103,7 +124,6 @@ public sealed class ApplicationVolumeMemoryService : IHostedService, IDisposable
         finally
         {
             Interlocked.Exchange(ref _stopping, 1);
-            SettingsManager.SettingsChanged -= OnSettingsChanged;
             try { ReleaseDevices(); }
             finally
             {
@@ -114,9 +134,10 @@ public sealed class ApplicationVolumeMemoryService : IHostedService, IDisposable
         }
     }
 
-    private void SynchronizeDevices()
+    private void SynchronizeDevices(string? editedPath = null, string? editedSessionKey = null)
     {
-        if (Volatile.Read(ref _entries).Length == 0) { ReleaseDevices(); return; }
+        if (Volatile.Read(ref _stopping) != 0) return;
+        lock (WriteGate) if (_volumes.Count == 0) return;
         if (_enumerator is null)
         {
             _enumerator = new MMDeviceEnumerator();
@@ -144,16 +165,14 @@ public sealed class ApplicationVolumeMemoryService : IHostedService, IDisposable
                     _endpoints.Add(id, endpoint);
                     retained = true;
                 }
-                SynchronizeSessions(endpoint);
+                SynchronizeSessions(endpoint, editedPath, editedSessionKey);
             }
             catch (Exception error) { Debug.WriteLine($"[VolumeMemory] Endpoint: {error.Message}"); }
             finally { if (!retained) device.Dispose(); }
         }
         foreach (var id in _endpoints.Keys.Where(id => !present.Contains(id)).ToArray())
-        {
             if (_endpoints.Remove(id, out var endpoint))
                 try { endpoint.Dispose(); } catch (Exception error) { Debug.WriteLine(error); }
-        }
     }
 
     private void QueueSessions(EndpointWatch endpoint)
@@ -167,130 +186,44 @@ public sealed class ApplicationVolumeMemoryService : IHostedService, IDisposable
         });
     }
 
-    private void SynchronizeSessions(EndpointWatch endpoint)
+    private void SynchronizeSessions(EndpointWatch endpoint, string? editedPath = null, string? editedSessionKey = null)
     {
+        if (Volatile.Read(ref _stopping) != 0) return;
         endpoint.Manager.RefreshSessions();
         var sessions = endpoint.Manager.Sessions;
         var present = new HashSet<string>(StringComparer.Ordinal);
         for (var index = 0; index < sessions.Count; index++)
         {
-            var session = sessions[index];
-            var retained = false;
-            SessionWatch? watch = null;
-            string? attachedKey = null;
+            using var session = sessions[index];
+            string? key = null;
             try
             {
                 if (session.State == AudioSessionState.AudioSessionStateExpired) continue;
-                var key = session.GetSessionInstanceIdentifier;
-                if (endpoint.Sessions.TryGetValue(key, out var existing))
-                {
-                    if (Enrollment(existing.Path) == existing.Enrollment && FindPreference(existing.Path) is not null)
-                    {
-                        present.Add(key);
-                        continue;
-                    }
-                    endpoint.Sessions.Remove(key);
-                    existing.Dispose();
-                }
+                key = session.GetSessionInstanceIdentifier;
+                present.Add(key);
+                if (endpoint.Observed.Contains(key)) continue;
                 var pid = session.GetProcessID;
                 if (pid == 0 || pid == Environment.ProcessId) continue;
                 var path = _processInfo.GetExecutablePath(pid);
-                var version = Enrollment(path);
-                var preference = FindPreference(path);
-                if (preference is null || version == 0) continue;
-                present.Add(key);
-                watch = new SessionWatch(session, preference.ExecutablePath, version);
-                var owned = watch;
-                watch.VolumeChanged = () => QueueVolume(endpoint, key, owned);
-                watch.Ended = () => QueueSessions(endpoint);
-                endpoint.Sessions.Add(key, watch);
-                attachedKey = key;
-                retained = true;
-                session.RegisterEventClient(watch);
-                var current = ReadVolume(session);
-                if (Volatile.Read(ref _stopping) != 0 || version != Enrollment(path) || FindPreference(path) is null)
+                if (path is null) continue;
+                lock (WriteGate)
                 {
-                    endpoint.Sessions.Remove(key);
-                    watch.Dispose();
-                    continue;
+                    if (!_volumes.TryGetValue(path, out var saved)) continue;
+                    var wasEdited = _editedSessions.Remove(key) || editedPath is not null &&
+                        path.Equals(editedPath, StringComparison.OrdinalIgnoreCase) && (editedSessionKey is null || key == editedSessionKey);
+                    endpoint.Observed.Add(key);
+                    if (wasEdited || Volatile.Read(ref _stopping) != 0) continue;
+                    var current = Math.Clamp((int)Math.Round(session.SimpleAudioVolume.Volume * 100), 0, 100);
+                    if (saved != current) session.SimpleAudioVolume.Volume = saved / 100f;
                 }
-                var saved = _pendingVolumes.TryGetValue(preference.ExecutablePath, out var pending) && pending.Version == version
-                    ? pending.Volume : FindPreference(path)?.VolumePercent;
-                watch.LastVolume = saved ?? current;
-                if (saved is { } target && target != current &&
-                    Volatile.Read(ref _stopping) == 0 && version == Enrollment(path) && FindPreference(path) is not null)
-                    session.SimpleAudioVolume.Volume = target / 100f;
-                else if (saved is null) Remember(watch.Path, current, version);
             }
             catch (Exception error)
             {
+                if (key is not null) endpoint.Observed.Remove(key);
                 Debug.WriteLine($"[VolumeMemory] Session: {error.Message}");
-                if (attachedKey is not null)
-                {
-                    endpoint.Sessions.Remove(attachedKey);
-                    watch?.Dispose();
-                }
             }
-            finally { if (!retained) session.Dispose(); }
         }
-        foreach (var key in endpoint.Sessions.Keys.Where(key => !present.Contains(key)).ToArray())
-        {
-            if (endpoint.Sessions.Remove(key, out var watch))
-                try { watch.Dispose(); } catch (Exception error) { Debug.WriteLine(error); }
-        }
-    }
-
-    private ApplicationVolumeMemoryEntry? FindPreference(string? path) => path is null ? null :
-        Volatile.Read(ref _entries).FirstOrDefault(entry => entry.ExecutablePath.Equals(path, StringComparison.OrdinalIgnoreCase));
-
-    private int Enrollment(string? path) => path is null ? 0 : Volatile.Read(ref _enrollments).GetValueOrDefault(path);
-
-    private static int ReadVolume(AudioSessionControl session) => Math.Clamp((int)Math.Round(session.SimpleAudioVolume.Volume * 100), 0, 100);
-
-    private void QueueVolume(EndpointWatch endpoint, string key, SessionWatch watch)
-    {
-        if (Interlocked.Exchange(ref watch.ReadQueued, 1) != 0) return;
-        Queue(() =>
-        {
-            Interlocked.Exchange(ref watch.ReadQueued, 0);
-            if (!endpoint.Sessions.TryGetValue(key, out var current) || !ReferenceEquals(current, watch) ||
-                Enrollment(watch.Path) != watch.Enrollment || FindPreference(watch.Path) is null ||
-                watch.Session.State == AudioSessionState.AudioSessionStateExpired) return;
-            // 回读最新值，避免恢复产生的迟到通知覆盖随后由用户设置的音量。
-            var volume = ReadVolume(watch.Session);
-            if (volume == watch.LastVolume || Enrollment(watch.Path) != watch.Enrollment) return;
-            watch.LastVolume = volume;
-            Remember(watch.Path, volume, watch.Enrollment);
-        });
-    }
-
-    private void Remember(string path, int volume, int version)
-    {
-        if (Volatile.Read(ref _stopping) != 0 || version != Enrollment(path) || _uiDispatcher.HasShutdownStarted) return;
-        _pendingVolumes[path] = (version, volume);
-        _uiDispatcher.BeginInvoke(() =>
-        {
-            try
-            {
-                if (Volatile.Read(ref _stopping) != 0 || version != Enrollment(path)) return;
-                var settings = SettingsManager.Current.ApplicationVolumeMemory;
-                var entry = settings.Entries.FirstOrDefault(entry => entry.ExecutablePath.Equals(path, StringComparison.OrdinalIgnoreCase));
-                if (entry is null || entry.VolumePercent == volume) return;
-                SettingsManager.SetApplicationVolumeMemorySettings(settings with
-                {
-                    Entries = settings.Entries.Select(candidate => ReferenceEquals(candidate, entry) ? candidate with { VolumePercent = volume } : candidate).ToArray()
-                });
-            }
-            catch (Exception error) { Debug.WriteLine($"[VolumeMemory] Save: {error}"); }
-            finally
-            {
-                Queue(() =>
-                {
-                    if (_pendingVolumes.TryGetValue(path, out var pending) && pending == (version, volume))
-                        _pendingVolumes.Remove(path);
-                });
-            }
-        }, DispatcherPriority.Background);
+        endpoint.Observed.IntersectWith(present);
     }
 
     private void ReleaseDevices()
@@ -313,7 +246,6 @@ public sealed class ApplicationVolumeMemoryService : IHostedService, IDisposable
     public void Dispose()
     {
         if (Interlocked.Exchange(ref _stopping, 1) != 0) return;
-        SettingsManager.SettingsChanged -= OnSettingsChanged;
         _queue.CompleteAdding();
         if (Volatile.Read(ref _started) == 0) { _queue.Dispose(); _completion.TrySetResult(); }
     }
@@ -325,44 +257,14 @@ public sealed class ApplicationVolumeMemoryService : IHostedService, IDisposable
         public string Id { get; } = device.ID;
         public AudioSessionManager Manager { get; } = device.AudioSessionManager;
         public AudioSessionManager.SessionCreatedDelegate? Created;
-        public Dictionary<string, SessionWatch> Sessions { get; } = new(StringComparer.Ordinal);
+        public HashSet<string> Observed { get; } = new(StringComparer.Ordinal);
         public int RefreshQueued;
         public void Dispose()
         {
             if (_disposed) return;
             _disposed = true;
             if (Created is not null) Manager.OnSessionCreated -= Created;
-            foreach (var session in Sessions.Values)
-                try { session.Dispose(); } catch (Exception error) { Debug.WriteLine(error); }
-            Sessions.Clear();
             Device.Dispose();
-        }
-    }
-
-    private sealed class SessionWatch(AudioSessionControl session, string path, int enrollment) : IAudioSessionEventsHandler, IDisposable
-    {
-        private bool _disposed;
-        public AudioSessionControl Session { get; } = session;
-        public string Path { get; } = path;
-        public int Enrollment { get; } = enrollment;
-        public int LastVolume;
-        public int ReadQueued;
-        public Action? VolumeChanged;
-        public Action? Ended;
-        public void OnVolumeChanged(float volume, bool isMuted) => VolumeChanged?.Invoke();
-        public void OnStateChanged(AudioSessionState state) { if (state == AudioSessionState.AudioSessionStateExpired) Ended?.Invoke(); }
-        public void OnSessionDisconnected(AudioSessionDisconnectReason disconnectReason) => Ended?.Invoke();
-        public void OnDisplayNameChanged(string displayName) { }
-        public void OnIconPathChanged(string iconPath) { }
-        public void OnChannelVolumeChanged(uint channelCount, IntPtr newVolumes, uint channelIndex) { }
-        public void OnGroupingParamChanged(ref Guid groupingId) { }
-        public void Dispose()
-        {
-            if (_disposed) return;
-            _disposed = true;
-            VolumeChanged = null; Ended = null;
-            try { Session.UnRegisterEventClient(this); }
-            finally { Session.Dispose(); }
         }
     }
 
