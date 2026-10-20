@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
@@ -19,10 +20,13 @@ namespace AFMediaBar.Views.Windows;
 /// <summary>只覆盖横杠按钮的小窗口；不接管媒体栏或完整层的生命周期。</summary>
 public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
 {
+    private static readonly TimeSpan PointerLeaveGrace = TimeSpan.FromMilliseconds(500);
+    private const double HiddenLengthScale = 0.9;
     private readonly NativeMouseInputMonitor _input;
     private readonly Border _line;
     private readonly Border _outline;
     private readonly Grid _marks;
+    private readonly ScaleTransform _markScale = new();
     private readonly ScreenBackgroundSampler _sampler;
     private readonly AdaptiveForegroundSamplingSession _contrastSampling;
     private readonly DispatcherTimer _pointerTimer;
@@ -40,6 +44,9 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     private PlayerForegroundDecision? _foregroundDecision;
     private int _revealVersion;
     private bool _contrastReady;
+    private int _animationVersion;
+    private bool _isHiding;
+    private bool _canResumeDismissal;
     private bool _vertical;
     private bool _taskbarSuspended;
     private bool _isPressed;
@@ -63,12 +70,13 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         _outline = new Border { CornerRadius = new CornerRadius(3), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         _contrastSampling = new AdaptiveForegroundSamplingSession(sampler, Dispatcher, GetContrastBounds, ApplyContrast);
         // 极低 alpha 让整个按钮矩形可命中；窗口尺寸不包含媒体栏与过渡区域。
-        _marks = new Grid { Opacity = 0 };
+        _marks = new Grid { Opacity = 0, RenderTransform = _markScale, RenderTransformOrigin = new Point(0.5, 0.5) };
         _marks.Children.Add(_outline);
         _marks.Children.Add(_line);
         var surface = new Border { Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0)), Child = _marks, Cursor = Cursors.Hand };
         surface.MouseLeftButtonUp += Surface_MouseLeftButtonUp;
         surface.MouseLeftButtonDown += Surface_MouseLeftButtonDown;
+        surface.MouseEnter += Surface_MouseEnter;
         Content = surface;
         _pointerTimer = new DispatcherTimer(DispatcherPriority.Input, Dispatcher) { Interval = TimeSpan.FromMilliseconds(50) };
         _pointerTimer.Tick += PointerTimer_Tick;
@@ -79,17 +87,19 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     {
         if (_disposed) return;
         _barBounds = new Rect(bar.Left, bar.Top, bar.Right - bar.Left, bar.Bottom - bar.Top);
+        if (IsVisible && (_handleBounds != handleBounds || _vertical != vertical)) Dismiss(immediate: true);
+        _request = request;
+        _canRemainVisible = canRemainVisible;
+        _trigger = trigger;
         if (IsVisible)
         {
             _taskbarSuspended = false;
-            _outsideSince = null;
+            _pointerTimer.Start();
+            ResumePresentation();
             return;
         }
         _handleBounds = handleBounds;
         _transitBounds = transitBounds;
-        _request = request;
-        _canRemainVisible = canRemainVisible;
-        _trigger = trigger;
         _vertical = vertical;
         Title = Translations.Get("Experimental.FullPanel.Title");
         _taskbarSuspended = false;
@@ -102,7 +112,9 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         _outline.Width = vertical ? 6 : 30;
         _outline.Height = vertical ? 30 : 6;
         _contrastReady = false;
-        _marks.Opacity = 0;
+        var motion = MotionPolicy.ResolveCurrent();
+        SetPresentation(0, motion.Mode == MotionMode.Full && !vertical ? HiddenLengthScale : 1,
+            motion.Mode == MotionMode.Full && vertical ? HiddenLengthScale : 1);
         var handle = new WindowInteropHelper(this).EnsureHandle();
         Position(handle);
         Show();
@@ -151,7 +163,56 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     {
         _contrastReady = true;
         _nextContrastRefresh = _clock.Elapsed + TimeSpan.FromMilliseconds(250);
-        _marks.Opacity = 1;
+        AnimatePresentation(visible: true);
+    }
+
+    private void AnimatePresentation(bool visible)
+    {
+        _isHiding = !visible;
+        var version = ++_animationVersion;
+        var motion = MotionPolicy.ResolveCurrent();
+        var opacity = _marks.Opacity;
+        var scaleX = _markScale.ScaleX;
+        var scaleY = _markScale.ScaleY;
+        var targetScale = visible ? 1 : HiddenLengthScale;
+        var targetX = motion.Mode == MotionMode.Full && !_vertical ? targetScale : 1;
+        var targetY = motion.Mode == MotionMode.Full && _vertical ? targetScale : 1;
+        // 先读取当前动画值，再移除旧时钟；反向过渡从当前画面接续，不跳回起点。
+        SetPresentation(visible ? 1 : 0, targetX, targetY);
+        if (!motion.UseTransitions || !visible && opacity <= 0)
+        {
+            if (!visible) CompleteDismiss();
+            return;
+        }
+
+        var duration = visible ? motion.PositionDuration : motion.StandardDuration;
+        var ease = new PowerEase { Power = 3, EasingMode = EasingMode.EaseOut };
+        var fade = new DoubleAnimation(opacity, visible ? 1 : 0, duration) { EasingFunction = ease, FillBehavior = FillBehavior.Stop };
+        // 旧退场即使已排入完成队列，也不能隐藏后来恢复的入口。
+        fade.Completed += (_, _) =>
+        {
+            if (_disposed || version != _animationVersion || _isHiding == visible) return;
+            if (visible) SetPresentation(1, 1, 1);
+            else CompleteDismiss();
+        };
+        _marks.BeginAnimation(OpacityProperty, fade, HandoffBehavior.SnapshotAndReplace);
+        if (motion.Mode == MotionMode.Full)
+        {
+            _markScale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(scaleX, targetX, duration)
+                { EasingFunction = ease, FillBehavior = FillBehavior.Stop }, HandoffBehavior.SnapshotAndReplace);
+            _markScale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(scaleY, targetY, duration)
+                { EasingFunction = ease, FillBehavior = FillBehavior.Stop }, HandoffBehavior.SnapshotAndReplace);
+        }
+    }
+
+    private void SetPresentation(double opacity, double scaleX, double scaleY)
+    {
+        _marks.BeginAnimation(OpacityProperty, null);
+        _markScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        _markScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        _marks.Opacity = opacity;
+        _markScale.ScaleX = scaleX;
+        _markScale.ScaleY = scaleY;
     }
 
     private Int32Rect? GetContrastBounds()
@@ -199,44 +260,81 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     /// <summary>只保留横杠和过渡区域，收起中的原媒体栏不再延长入口寿命。</summary>
     public void SuspendTaskbar() => _taskbarSuspended = true;
 
-    public void Dismiss()
+    /// <summary>普通收起播放退场；宿主失效、拖动或释放时可立即取消全部过渡。</summary>
+    public void Dismiss(bool immediate = false)
+    {
+        if (_disposed) return;
+        StopInteraction();
+        if (immediate || !IsVisible) CompleteDismiss();
+        else if (!_isHiding) AnimatePresentation(visible: false);
+    }
+
+    private void StopInteraction()
     {
         _pointerTimer.Stop();
         _revealVersion++;
         _initialContrastCancellation?.Cancel();
         _initialContrastCancellation = null;
-        _contrastReady = false;
         _contrastSampling.Invalidate(clearDecision: false);
+        _canResumeDismissal = false;
         _request = null;
         _canRemainVisible = null;
         _hoverSince = null;
         _outsideSince = null;
         _isPressed = false;
-        if (!_disposed && IsVisible) Hide();
+    }
+
+    private void CompleteDismiss()
+    {
+        StopInteraction();
+        _animationVersion++;
+        _isHiding = false;
+        _contrastReady = false;
+        SetPresentation(0, 1, 1);
+        if (IsVisible) Hide();
+    }
+
+    private void BeginPointerLeaveDismissal()
+    {
+        if (_isHiding) return;
+        _canResumeDismissal = true;
+        _isPressed = false;
+        _contrastSampling.Invalidate(clearDecision: false);
+        AnimatePresentation(visible: false);
+    }
+
+    private void ResumePresentation()
+    {
+        _outsideSince = null;
+        _canResumeDismissal = false;
+        if (_isHiding && _contrastReady) AnimatePresentation(visible: true);
     }
 
     private void PointerTimer_Tick(object? sender, EventArgs e)
     {
+        if (!_pointerTimer.IsEnabled) return;
         try
         {
             if (_disposed || _canRemainVisible?.Invoke() != true || !_input.TryGetPointerPosition(out var point))
             {
-                Dismiss();
+                Dismiss(immediate: true);
                 return;
             }
             var now = _clock.Elapsed;
-            RefreshContrast();
+            if (!_isHiding) RefreshContrast();
             var overHandle = _handleBounds.Contains(point) && IsMouseOver;
             var overArea = overHandle || _transitBounds.Contains(point) || (!_taskbarSuspended && _barBounds.Contains(point));
             if (!overArea)
             {
                 _hoverSince = null;
                 _outsideSince ??= now;
-                if (now - _outsideSince.Value >= TimeSpan.FromMilliseconds(150)) Dismiss();
+                if (now - _outsideSince.Value >= PointerLeaveGrace) BeginPointerLeaveDismissal();
                 return;
             }
             _outsideSince = null;
-            if (!overHandle || _input.IsLeftButtonDown || _input.IsRightButtonDown)
+            if (_canResumeDismissal) ResumePresentation();
+            RefreshContrast();
+            if (!_contrastReady || !overHandle || _input.IsLeftButtonDown || _input.IsRightButtonDown)
             {
                 _hoverSince = null;
                 return;
@@ -247,9 +345,14 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         }
         catch (Exception exception)
         {
-            Dismiss();
+            Dismiss(immediate: true);
             AppLogService.Current?.Warn("FullPanel", "外侧入口指针检查失败", exception);
         }
+    }
+
+    private void Surface_MouseEnter(object sender, MouseEventArgs e)
+    {
+        if (!_disposed && _canResumeDismissal && _request is not null && _pointerTimer.IsEnabled) ResumePresentation();
     }
 
     private void Surface_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -268,7 +371,7 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
 
     private void RequestOpen()
     {
-        if (_disposed || !IsVisible || _request is not { } request || _canRemainVisible?.Invoke() != true) return;
+        if (_disposed || !IsVisible || !_contrastReady || _request is not { } request || _canRemainVisible?.Invoke() != true) return;
         Dismiss();
         OpenRequested?.Invoke(this, request);
     }
@@ -276,18 +379,19 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     public void Dispose()
     {
         if (_disposed) return;
-        Dismiss();
+        Dismiss(immediate: true);
         Close();
     }
 
     protected override void OnClosed(EventArgs e)
     {
-        Dismiss();
+        Dismiss(immediate: true);
         _disposed = true;
         _contrastSampling.Dispose();
         _pointerTimer.Tick -= PointerTimer_Tick;
         ((Border)Content).MouseLeftButtonUp -= Surface_MouseLeftButtonUp;
         ((Border)Content).MouseLeftButtonDown -= Surface_MouseLeftButtonDown;
+        ((Border)Content).MouseEnter -= Surface_MouseEnter;
         OpenRequested = null;
         base.OnClosed(e);
     }

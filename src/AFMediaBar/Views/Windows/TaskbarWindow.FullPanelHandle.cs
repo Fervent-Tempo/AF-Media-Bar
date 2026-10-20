@@ -79,7 +79,7 @@ public partial class TaskbarWindow
         }
         catch (Exception exception)
         {
-            _externalFullPanelHandle?.Dismiss();
+            _externalFullPanelHandle?.Dismiss(immediate: true);
             AFMediaBar.Classes.Services.AppLogService.Current?.Warn("FullPanel", "外侧完整面板入口显示失败", exception);
         }
     }

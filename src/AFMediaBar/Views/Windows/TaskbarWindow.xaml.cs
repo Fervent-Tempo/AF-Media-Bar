@@ -1314,7 +1314,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     /// </summary>
     internal void SuspendForEnvironmentRecovery()
     {
-        _externalFullPanelHandle?.Dismiss();
+        _externalFullPanelHandle?.Dismiss(immediate: true);
         _audioInteractionService.CancelDeviceOwner(this);
         if (_isEnvironmentSuspended)
             return;
@@ -1397,7 +1397,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     /// <param name="level">剪枝档位。/ The prune level.</param>
     internal void ApplyBackgroundPruneLevel(MemoryPruneLevel level)
     {
-        _externalFullPanelHandle?.Dismiss();
+        _externalFullPanelHandle?.Dismiss(immediate: true);
         _backgroundPruneLevel = level;
         InvalidateSurfaceProbe();
 
@@ -2031,7 +2031,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
                 return;
             _isDragPending = false;
             _isDragging = true;
-            _externalFullPanelHandle?.Dismiss();
+            _externalFullPanelHandle?.Dismiss(immediate: true);
             MediaControl.CollapseArtworkZoomForDrag();
             Mouse.Capture(GetActiveControl(), CaptureMode.SubTree);
         }
