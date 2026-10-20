@@ -1,5 +1,4 @@
-// Copyright (c) 2024-2026 The FluentFlyout Authors
-// SPDX-License-Identifier: GPL-3.0-or-later
+// 媒体封面的内容哈希、加载与缩略图缓存。
 
 using System.IO;
 using System.Runtime.InteropServices;

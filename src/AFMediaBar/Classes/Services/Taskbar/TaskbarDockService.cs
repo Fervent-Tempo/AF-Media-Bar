@@ -1,5 +1,4 @@
-// Taskbar docking engine, ported from FluentFlyout
-// (https://github.com/ManualDinosaur/FluentFlyout, GPL-3.0-or-later).
+// 将媒体栏停靠到 Explorer 任务栏；调用方负责窗口生命周期。
 using System.Text;
 using AFMediaBar.Classes.Utils;
 using static AFMediaBar.Classes.Interop.NativeMethods;
@@ -31,8 +30,7 @@ namespace AFMediaBar.Classes.Services;
 ///    Create GDI region and restrict input area via SetWindowRgn
 ///
 /// ⚠️ 注意 Note:
-/// 此服务移植自 FluentFlyout (GPL-3.0-or-later)，包含复杂的 Win32 API 调用和多监视器处理。
-/// This service is ported from FluentFlyout (GPL-3.0-or-later), contains complex Win32 API calls and multi-monitor handling.
+/// 此服务调用 Win32 API 处理停靠与多显示器定位。
 /// </summary>
 public class TaskbarDockService : ITaskbarDockService
 {

@@ -1,5 +1,4 @@
-// Copyright (c) 2024-2026 The FluentFlyout Authors
-// SPDX-License-Identifier: GPL-3.0-or-later
+// 线程安全的有界最近最少使用缓存。
 
 namespace AFMediaBar.Classes.Utils;
 

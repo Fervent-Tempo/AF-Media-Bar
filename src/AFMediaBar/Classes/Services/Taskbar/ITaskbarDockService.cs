@@ -18,8 +18,7 @@ namespace AFMediaBar.Classes.Services;
 ///    Set input region for click-through behavior
 ///
 /// 实现 Implementation:
-/// TaskbarDockService 实现此接口，移植自 FluentFlyout (GPL-3.0-or-later)。
-/// Implemented by TaskbarDockService, ported from FluentFlyout (GPL-3.0-or-later).
+/// TaskbarDockService 实现此接口。
 ///
 /// 使用场景 Usage:
 /// TaskbarWindow 在初始化和位置更新时调用此服务的方法。

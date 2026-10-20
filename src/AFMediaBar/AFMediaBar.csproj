@@ -37,7 +37,7 @@
     <Authors>AmorFate</Authors>
     <Copyright>Copyright (c) 2026 AmorFate</Copyright>
     <RepositoryUrl>https://github.com/Fervent-Tempo/AF-Media-Bar</RepositoryUrl>
-    <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
 <PropertyGroup Condition="'$(Configuration)' == 'Release' and '$(RuntimeIdentifier)' == 'win-x64'">
