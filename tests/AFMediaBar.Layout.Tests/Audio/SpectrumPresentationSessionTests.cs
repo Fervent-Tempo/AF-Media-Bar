@@ -25,7 +25,7 @@ public sealed class SpectrumPresentationSessionTests
                     SpectrumComponent = SpectrumComponentSettings.Default with
                     { CaptureSource = SpectrumCaptureSource.AllApplications }
                 };
-                using var devices = new AudioCaptureDeviceResolver();
+                using var devices = new AudioCaptureDeviceResolver(new MediaSourceProcessResolver());
                 using var monitor = new AudioMonitorService(devices,
                     new SpectrumCaptureProcessResolver(new MediaSourceProcessResolver()));
                 // 与既有采集回归相同，准备真实正弦样本和缓存标记，不创建原生采集对象。

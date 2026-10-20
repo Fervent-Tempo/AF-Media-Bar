@@ -14,28 +14,18 @@ public readonly record struct AudioEndpointAudibility(string DeviceId, int Rank,
 /// <summary>
 /// 频谱采集的目标设备选择。
 ///
-/// 采集目标是"正在出声的那个设备"，而不是"系统默认设备"：虚拟声卡（SteelSeries Sonar 等）会把不同应用路由到不同端点，
-/// 系统默认端点可能完全没有声音——只认默认端点时，频谱会一直停在静音。选择规则：
-/// 先取可听等级最高的那一档（应用出声 &gt; 仅系统混音出声）；同档内优先保持当前采集的端点（避免来回切换），
-/// 其次是默认端点，最后取峰值最大的端点；整档都不可听时只沿用仍在活动列表中的当前端点，否则回退默认端点。
-/// Target-device selection for the spectrum capture.
-///
-/// The target is the device that is actually audible, not the system default one: virtual audio drivers (SteelSeries Sonar and
-/// friends) route different applications to different endpoints, and the default endpoint may carry no sound at all — capturing only
-/// the default would leave the spectrum silent. The rules: prefer the highest audibility rank (an application playing beats only the
-/// system mixer playing); within that rank keep the currently captured endpoint first (which avoids switching back and forth), then
-/// the default endpoint, then the loudest one; when nothing is audible, keep the current endpoint only if it is still active, otherwise
-/// fall back to the default.
+/// 候选仅包含 AF 当前媒体来源的音频会话。优先出声端点，其次是已匹配但静音的端点；
+/// 同档优先当前端点、默认端点，再按峰值选择。会话暂时消失时保留仍连接的端点，否则回退系统默认。
 /// </summary>
 public static class AudioCaptureDevicePolicy
 {
     /// <summary>没有可听会话。/ No audible session.</summary>
     public const int RankSilent = 0;
 
-    /// <summary>只有系统混音进程（audiodg）的会话在出声，通常是虚拟声卡送到物理端点的回声。/ Only the system mixer process (audiodg) is audible, usually the echo a virtual driver sends to a physical endpoint.</summary>
-    public const int RankSystemOnly = 1;
+    /// <summary>已匹配媒体来源，但会话暂停或当前静音。</summary>
+    public const int RankMatchedSilent = 1;
 
-    /// <summary>有普通应用的会话在出声。/ An ordinary application's session is audible.</summary>
+    /// <summary>已匹配媒体来源，且会话正在出声。</summary>
     public const int RankApplication = 2;
 
     /// <summary>正常档位的扫描间隔：两秒一次端点与会话枚举，毫秒级成本，足以在"出声设备变化"后迅速跟上。

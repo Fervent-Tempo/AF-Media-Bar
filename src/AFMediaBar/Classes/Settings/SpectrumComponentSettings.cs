@@ -47,6 +47,12 @@ public readonly record struct SpectrumComponentSettings(int BandCount, int Refre
     /// <summary>缺少字段的旧设置继续采集当前设备；程序模式无法解析时不扩大采集范围。</summary>
     public SpectrumCaptureSource CaptureSource { get; init; } = SpectrumCaptureSource.CurrentDevice;
 
+    /// <summary>设备模式手动指定的输出端点；null 跟随 AF 当前媒体来源使用的设备。</summary>
+    public string? CaptureDeviceId { get; init; }
+
+    /// <summary>手动设备离线后仍能显示其最后已知名称。</summary>
+    public string CaptureDeviceName { get; init; } = string.Empty;
+
     /// <summary>
     /// 柱数下限。频谱组件宽度随柱数增长，柱宽保持固定，因此柱数不能再降到 9 以下：
     /// 更少的柱子会把频谱压缩成一小撮，与「柱数决定宽度」的尺寸关系自相矛盾。
@@ -131,6 +137,8 @@ public readonly record struct SpectrumComponentSettings(int BandCount, int Refre
     {
         Style = Enum.IsDefined(Style) ? Style : SpectrumStyle.Bars,
         CaptureSource = Enum.IsDefined(CaptureSource) ? CaptureSource : SpectrumCaptureSource.CurrentDevice,
+        CaptureDeviceId = string.IsNullOrWhiteSpace(CaptureDeviceId) ? null : CaptureDeviceId.Trim(),
+        CaptureDeviceName = CaptureDeviceName ?? string.Empty,
         ContentHeightDip = SnapContentHeightDip(ContentHeightDip)
     };
 

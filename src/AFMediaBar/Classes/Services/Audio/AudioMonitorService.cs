@@ -1,6 +1,7 @@
 // Owns demand-driven NAudio loopback capture on a hosted worker; callbacks only update samples under the gate.
 // Host shutdown awaits the worker, which disposes capture before its endpoint. UI callers never touch native audio resources.
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Services.Audio;
@@ -24,6 +25,7 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
     private readonly AudioCaptureDeviceResolver _deviceResolver;
     private readonly SpectrumCaptureProcessResolver _processResolver;
     private volatile SpectrumCaptureSource _captureSource;
+    private volatile string? _captureDeviceId;
     private SpectrumCaptureProcessResolver.MediaIdentity _mediaSource =
         SpectrumCaptureProcessResolver.MediaIdentity.FromSnapshot(MediaSnapshot.Disconnected);
     private readonly object _sourceGate = new();
@@ -69,7 +71,9 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
         SettingsManager.SettingsChanged += OnSettingsChanged;
         lock (_sourceGate)
         {
-            _captureSource = SettingsManager.Current.SpectrumComponent.Normalize().CaptureSource;
+            var settings = SettingsManager.Current.SpectrumComponent.Normalize();
+            _captureSource = settings.CaptureSource;
+            _captureDeviceId = settings.CaptureDeviceId;
         }
     }
 
@@ -83,7 +87,9 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
                 !string.Equals(_mediaSource.SourceId, snapshot.SourceId, StringComparison.OrdinalIgnoreCase) ||
                 !string.Equals(_mediaSource.SourceName, snapshot.SourceName, StringComparison.OrdinalIgnoreCase);
             _mediaSource = SpectrumCaptureProcessResolver.MediaIdentity.FromSnapshot(snapshot);
-            if (changed && _captureSource == SpectrumCaptureSource.CurrentMediaApplication)
+            _deviceResolver.UpdateMediaSource(_mediaSource);
+            if (changed && (_captureSource == SpectrumCaptureSource.CurrentMediaApplication ||
+                _captureSource == SpectrumCaptureSource.CurrentDevice && _captureDeviceId is null))
             {
                 InvalidateSourceCapture();
                 WakeWorker();
@@ -102,11 +108,16 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args)
     {
-        var source = _presentationCaptureSource ?? SettingsManager.Current.SpectrumComponent.Normalize().CaptureSource;
+        var settings = SettingsManager.Current.SpectrumComponent.Normalize();
+        var source = _presentationCaptureSource ?? settings.CaptureSource;
         lock (_sourceGate)
         {
-            if (_disposed || source == _captureSource) return;
+            if (_disposed) return;
+            var changed = source != _captureSource || source == SpectrumCaptureSource.CurrentDevice &&
+                !string.Equals(settings.CaptureDeviceId, _captureDeviceId, StringComparison.OrdinalIgnoreCase);
             _captureSource = source;
+            _captureDeviceId = settings.CaptureDeviceId;
+            if (!changed) return;
             InvalidateSourceCapture();
             WakeWorker();
         }
@@ -150,7 +161,7 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
             if (_disposed || _pruneLevel >= MemoryPruneLevel.DisplayOff)
                 return false;
             _lastDemandTick = Environment.TickCount64;
-            if (_captureSource == SpectrumCaptureSource.CurrentDevice) _deviceResolver.RequestScan();
+            if (_captureSource == SpectrumCaptureSource.CurrentDevice && _captureDeviceId is null) _deviceResolver.RequestScan();
             WakeWorker();
             if (!_captureReady || _activeCaptureVersion != Volatile.Read(ref _captureVersion))
                 return false;
@@ -274,10 +285,12 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
     private async Task CaptureAsync(int version, CancellationToken token)
     {
         SpectrumCaptureSource source;
+        string? configuredDeviceId;
         SpectrumCaptureProcessResolver.MediaIdentity media;
         lock (_sourceGate)
         {
             source = _captureSource;
+            configuredDeviceId = _captureDeviceId;
             media = _mediaSource;
         }
         if (!HasDemand(version)) return;
@@ -299,10 +312,16 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
             }
         }
         using var enumerator = source == SpectrumCaptureSource.CurrentDevice ? new MMDeviceEnumerator() : null;
-        var target = _deviceResolver.TargetDeviceId;
+        var target = configuredDeviceId ?? _deviceResolver.TargetDeviceId;
         using var device = source != SpectrumCaptureSource.CurrentDevice ? null : string.IsNullOrEmpty(target)
             ? enumerator!.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia)
-            : enumerator!.GetDevice(target);
+            : configuredDeviceId is null ? enumerator!.GetDevice(target) : OpenConfiguredDevice(enumerator!, target);
+        if (source == SpectrumCaptureSource.CurrentDevice && device is null)
+        {
+            // 手动端点离线时保留选择，等待重新连接；不扩大到其它设备。
+            await Task.Delay(1000, token).ConfigureAwait(false);
+            return;
+        }
         using var capture = processId is { } pid
             ? await CreateProcessCaptureAsync(pid, source == SpectrumCaptureSource.AllApplications
                 ? ProcessLoopbackMode.ExcludeTargetProcessTree : ProcessLoopbackMode.IncludeTargetProcessTree, token).ConfigureAwait(false)
@@ -345,7 +364,7 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
             var lastProcessCheck = Environment.TickCount64;
             while (HasDemand(version) && !token.IsCancellationRequested)
             {
-                if (source == SpectrumCaptureSource.CurrentDevice)
+                if (source == SpectrumCaptureSource.CurrentDevice && configuredDeviceId is null)
                 {
                     var nextTarget = _deviceResolver.TargetDeviceId;
                     if (!string.IsNullOrEmpty(nextTarget) && !string.Equals(nextTarget, deviceId, StringComparison.OrdinalIgnoreCase)) { stopReason = "device-changed"; break; }
@@ -375,6 +394,19 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
             AppLogService.Current?.Verbose("Audio", $"频谱采集已停止: reason={_captureRestartReason} device={deviceId ?? "none"}");
             // Disposal joins NAudio's capture thread, outside the sample gate and off the UI thread.
         }
+    }
+
+    private static MMDevice? OpenConfiguredDevice(MMDeviceEnumerator enumerator, string id)
+    {
+        MMDevice? device = null;
+        try
+        {
+            device = enumerator.GetDevice(id);
+            if (device.State == DeviceState.Active && device.DataFlow == DataFlow.Render) return device;
+        }
+        catch (COMException) { }
+        device?.Dispose();
+        return null;
     }
 
     private static async Task<WasapiRecorder> CreateProcessCaptureAsync(uint processId, ProcessLoopbackMode mode, CancellationToken token)

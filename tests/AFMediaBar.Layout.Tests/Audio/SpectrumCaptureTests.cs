@@ -21,7 +21,7 @@ public sealed class SpectrumCaptureTests
         {
             SettingsManager.SetSpectrumComponentSettings(SpectrumComponentSettings.Default with
             { CaptureSource = SpectrumCaptureSource.AllApplications });
-            using var devices = new AudioCaptureDeviceResolver();
+            using var devices = new AudioCaptureDeviceResolver(new MediaSourceProcessResolver());
             using var monitor = new AudioMonitorService(devices, new SpectrumCaptureProcessResolver(new MediaSourceProcessResolver()));
             var bands = new float[9];
             Assert.IsFalse(monitor.GetSpectrum(bands, bands.Length));
@@ -66,6 +66,7 @@ public sealed class SpectrumCaptureTests
             persistence.Initialize();
             Assert.AreEqual(SpectrumCaptureSource.CurrentDevice, SettingsManager.Current.SpectrumComponent.CaptureSource);
             Assert.AreEqual(12, SettingsManager.Current.SpectrumComponent.BandCount);
+            Assert.IsNull(SettingsManager.Current.SpectrumComponent.CaptureDeviceId);
         });
     }
 
@@ -80,7 +81,8 @@ public sealed class SpectrumCaptureTests
             using (var persistence = new SettingsPersistenceService(directory, TimeSpan.FromMinutes(5)))
             {
                 persistence.Initialize();
-                SettingsManager.SetSpectrumComponentSettings(SpectrumComponentSettings.Default with { CaptureSource = source });
+                SettingsManager.SetSpectrumComponentSettings(SpectrumComponentSettings.Default with
+                { CaptureSource = source, CaptureDeviceId = " endpoint-id ", CaptureDeviceName = "Headphones" });
                 persistence.Flush();
                 using var document = JsonDocument.Parse(File.ReadAllText(persistence.SettingsPath));
                 Assert.AreEqual(2, document.RootElement.GetProperty("schemaVersion").GetInt32());
@@ -91,11 +93,15 @@ public sealed class SpectrumCaptureTests
             using var reloaded = new SettingsPersistenceService(directory, TimeSpan.FromMinutes(5));
             reloaded.Initialize();
             Assert.AreEqual(source, SettingsManager.Current.SpectrumComponent.CaptureSource);
+            Assert.AreEqual("endpoint-id", SettingsManager.Current.SpectrumComponent.CaptureDeviceId);
+            Assert.AreEqual("Headphones", SettingsManager.Current.SpectrumComponent.CaptureDeviceName);
             var saved = SettingsManager.Current.Clone();
             SettingsManager.SetUserDefaults(saved);
             SettingsManager.SetSpectrumComponentSettings(SpectrumComponentSettings.Default with { CaptureSource = (SpectrumCaptureSource)999 });
             SettingsManager.ResetComponents();
             Assert.AreEqual(source, SettingsManager.Current.SpectrumComponent.CaptureSource);
+            Assert.AreEqual("endpoint-id", SettingsManager.Current.SpectrumComponent.CaptureDeviceId);
+            Assert.AreEqual("Headphones", SettingsManager.Current.SpectrumComponent.CaptureDeviceName);
         });
     }
 
@@ -141,7 +147,7 @@ public sealed class SpectrumCaptureTests
         {
             SettingsManager.SetSpectrumComponentSettings(SpectrumComponentSettings.Default with
             { CaptureSource = SpectrumCaptureSource.CurrentMediaApplication });
-            using var devices = new AudioCaptureDeviceResolver();
+            using var devices = new AudioCaptureDeviceResolver(new MediaSourceProcessResolver());
             using var monitor = new AudioMonitorService(devices, new SpectrumCaptureProcessResolver(new MediaSourceProcessResolver()));
             var snapshot = MediaSnapshot.Disconnected with { IsConnected = true, SourceId = "chrome", SourceName = "Chrome" };
             monitor.UpdateMediaSource(snapshot);
@@ -164,6 +170,19 @@ public sealed class SpectrumCaptureTests
                 CaptureSource = SpectrumCaptureSource.AllApplications
             });
             Assert.IsFalse(monitor.GetSpectrum(bands, bands.Length));
+            // 固定端点不因媒体切换重建，修改端点后拒绝旧帧；自动模式随媒体身份失效。
+            SettingsManager.SetSpectrumComponentSettings(SpectrumComponentSettings.Default with { CaptureDeviceId = "fixed" });
+            version = GetField<int>(monitor, "_captureVersion");
+            SetField(monitor, "_captureReady", true);
+            monitor.UpdateMediaSource(snapshot);
+            Assert.IsTrue(monitor.IsCaptureCurrent(version));
+            SettingsManager.SetSpectrumComponentSettings(SpectrumComponentSettings.Default with { CaptureDeviceId = "other" });
+            Assert.IsFalse(monitor.IsCaptureCurrent(version));
+            SettingsManager.SetSpectrumComponentSettings(SpectrumComponentSettings.Default);
+            version = GetField<int>(monitor, "_captureVersion");
+            SetField(monitor, "_captureReady", true);
+            monitor.UpdateMediaSource(snapshot with { SourceId = "Spotify", SourceName = "Spotify" });
+            Assert.IsFalse(monitor.IsCaptureCurrent(version));
             monitor.Dispose();
             monitor.UpdateMediaSource(snapshot);
             Assert.IsFalse(monitor.GetSpectrum(bands, bands.Length));
@@ -179,7 +198,7 @@ public sealed class SpectrumCaptureTests
             {
                 CaptureSource = SpectrumCaptureSource.CurrentMediaApplication
             });
-            using var devices = new AudioCaptureDeviceResolver();
+            using var devices = new AudioCaptureDeviceResolver(new MediaSourceProcessResolver());
             using var monitor = new AudioMonitorService(devices, new SpectrumCaptureProcessResolver(new MediaSourceProcessResolver()));
             using var entered = new ManualResetEventSlim();
             using var release = new ManualResetEventSlim();

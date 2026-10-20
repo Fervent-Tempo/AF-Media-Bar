@@ -1,24 +1,17 @@
-// Resolves the audible endpoint in the background; each scan disposes its NAudio devices and sessions.
+// 后台解析当前媒体来源的输出端点；每次扫描自行释放 NAudio 设备与会话。
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using NAudio.CoreAudioApi;
 using NAudio.CoreAudioApi.Interfaces;
 using AFMediaBar.Classes.Abstractions;
+using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Services.Audio;
 
 namespace AFMediaBar.Classes.Services;
 
 /// <summary>
-/// 后台解析频谱采集的目标输出端点，并把结果缓存下来供采集路径读取。
-///
-/// 端点和音频会话的枚举（Core Audio + 进程查询）是毫秒级的阻塞调用，不能从频谱的 UI 计时器执行：
-/// 本服务只在频谱持续请求采样时，用一条后台循环按档位节奏扫描（正常 2 秒、Idle 10 秒、息屏/睡眠不枚举），
-/// 选出"正在出声的那个设备"后写入 <see cref="TargetDeviceId"/>；采集路径只读取这个缓存值，不做任何枚举。
-/// Resolves the spectrum capture's target render endpoint on a background loop and caches the result for the capture path.
-///
-/// Enumerating endpoints and audio sessions (Core Audio plus process queries) consists of blocking calls in the millisecond range and
-/// must not run from the spectrum's UI timer: while spectrum samples are requested, a background loop scans on a level-aware cadence
-/// (two seconds normally, ten when idle, no enumeration while the display is off or the system suspends), picks the audible device and
-/// writes it to <see cref="TargetDeviceId"/>; the capture path only reads that cached value and never enumerates.
+/// 按需在后台解析 AF 当前媒体来源的实际输出端点；暂停保留仍连接的目标，无法匹配时回退系统默认设备。
+/// 端点、会话和进程读取只在后台循环中执行，停止频谱取样后沿用原有空闲与剪枝节奏。
 /// </summary>
 public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
 {
@@ -28,6 +21,11 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
     /// listening is still recognized.</summary>
     private const float AudibleSessionPeakThreshold = 0.002f;
 
+    private readonly MediaSourceProcessResolver _sourceResolver;
+    private readonly object _sourceGate = new();
+    private SpectrumCaptureProcessResolver.MediaIdentity _mediaSource =
+        SpectrumCaptureProcessResolver.MediaIdentity.FromSnapshot(MediaSnapshot.Disconnected);
+    private int _sourceVersion;
     private readonly CancellationTokenSource _cancellation = new();
     private readonly SemaphoreSlim _scanRequested = new(0, 1);
     private int _scanWakePending;
@@ -53,8 +51,9 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
     /// Starts the demand-driven resolution loop; the first spectrum sample triggers an immediate scan without background enumeration
     /// while the spectrum is unused.
     /// </summary>
-    public AudioCaptureDeviceResolver()
+    public AudioCaptureDeviceResolver(MediaSourceProcessResolver sourceResolver)
     {
+        _sourceResolver = sourceResolver;
         var token = _cancellation.Token;
         _ = Task.Run(() => RunLoopAsync(token));
     }
@@ -75,6 +74,11 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
             return;
         }
 
+        WakeScan();
+    }
+
+    private void WakeScan()
+    {
         // Several taskbar hosts can resume together; coalesce their wake-ups before
         // Release so the normal full-semaphore case never throws a first-chance exception.
         if (Interlocked.Exchange(ref _scanWakePending, 1) != 0)
@@ -84,6 +88,18 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
         {
             // A final UI tick can race with application shutdown.
         }
+    }
+
+    internal void UpdateMediaSource(SpectrumCaptureProcessResolver.MediaIdentity source)
+    {
+        lock (_sourceGate)
+        {
+            if (_isDisposed || _mediaSource == source) return;
+            _mediaSource = source;
+            _sourceVersion++;
+            _targetDeviceId = null;
+        }
+        if (HasRecentDemand()) WakeScan();
     }
 
     /// <summary>记录剪枝档位；循环按档位决定扫描间隔与是否枚举。/ Records the prune level; the loop derives its scan interval and whether to enumerate from it.</summary>
@@ -152,12 +168,17 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
             return;
         }
 
+        SpectrumCaptureProcessResolver.MediaIdentity source;
+        string? current;
+        int version;
+        lock (_sourceGate) { source = _mediaSource; current = _targetDeviceId; version = _sourceVersion; }
         try
         {
-            if (TryResolveTarget(out var resolved))
+            if (TryResolveTarget(source, current, out var resolved))
             {
-                if (!token.IsCancellationRequested && !_isDisposed)
-                    _targetDeviceId = resolved;
+                lock (_sourceGate)
+                    if (!token.IsCancellationRequested && !_isDisposed && version == _sourceVersion)
+                        _targetDeviceId = resolved;
             }
         }
         catch (Exception ex)
@@ -176,7 +197,7 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
     /// Every resolution creates and releases its COM objects on the current thread and shares nothing between resolutions, so running
     /// the loop on a thread-pool thread is safe.
     /// </summary>
-    private bool TryResolveTarget(out string? targetDeviceId)
+    private bool TryResolveTarget(SpectrumCaptureProcessResolver.MediaIdentity source, string? current, out string? targetDeviceId)
     {
         using var enumerator = new MMDeviceEnumerator();
         var defaultId = ResolveDefaultEndpointId(enumerator);
@@ -190,7 +211,7 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
                 using var endpoint = devices[index];
                 var id = endpoint.ID;
                 activeDeviceIds.Add(id);
-                var rank = ResolveAudibilityRank(endpoint, out var peak);
+                var rank = ResolveMediaAudibilityRank(endpoint, source, out var peak);
                 if (rank > AudioCaptureDevicePolicy.RankSilent)
                     candidates.Add(new AudioEndpointAudibility(id, rank, peak));
             }
@@ -199,66 +220,44 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
                 // A device may disappear while scanning; continue with surviving endpoints.
             }
         }
-        targetDeviceId = AudioCaptureDevicePolicy.SelectTarget(_targetDeviceId, defaultId, activeDeviceIds, candidates);
+        targetDeviceId = AudioCaptureDevicePolicy.SelectTarget(current, defaultId, activeDeviceIds, candidates);
         return true;
     }
 
-    private static int ResolveAudibilityRank(MMDevice endpoint, out float peak)
+    private int ResolveMediaAudibilityRank(MMDevice endpoint, SpectrumCaptureProcessResolver.MediaIdentity source, out float peak)
     {
         peak = 0;
+        if (!source.IsConnected) return AudioCaptureDevicePolicy.RankSilent;
+        var matched = false;
         try
         {
             var sessions = endpoint.AudioSessionManager.Sessions;
-            var applicationPeak = 0f;
-            var systemPeak = 0f;
             for (var index = 0; index < sessions.Count; index++)
             {
                 try
                 {
                     using var session = sessions[index];
-                    if (session.State != AudioSessionState.AudioSessionStateActive)
-                        continue;
                     var processId = session.GetProcessID;
-                    if (processId == 0 || processId == (uint)Environment.ProcessId)
-                        continue;
-                    var sessionPeak = session.AudioMeterInformation?.MasterPeakValue ?? 0;
-                    if (IsSystemAudioProcess(processId))
-                        systemPeak = Math.Max(systemPeak, sessionPeak);
-                    else
-                        applicationPeak = Math.Max(applicationPeak, sessionPeak);
+                    if (session.State == AudioSessionState.AudioSessionStateExpired || processId == 0 || processId == Environment.ProcessId) continue;
+                    var name = ReadProcessName(processId);
+                    if (name is null || !_sourceResolver.Matches(source.SourceId, source.SourceName, name, session.DisplayName)) continue;
+                    matched = true;
+                    if (session.State == AudioSessionState.AudioSessionStateActive)
+                        peak = Math.Max(peak, session.AudioMeterInformation?.MasterPeakValue ?? 0);
                 }
-                catch (COMException)
-                {
-                    // One expired session must not suppress the remaining audible sessions.
-                }
+                catch (COMException) { }
             }
-            peak = Math.Max(applicationPeak, systemPeak);
-            return applicationPeak >= AudibleSessionPeakThreshold
-                ? AudioCaptureDevicePolicy.RankApplication
-                : systemPeak >= AudibleSessionPeakThreshold
-                    ? AudioCaptureDevicePolicy.RankSystemOnly
-                    : AudioCaptureDevicePolicy.RankSilent;
         }
-        catch (COMException)
-        {
-            return AudioCaptureDevicePolicy.RankSilent;
-        }
+        catch (COMException) { }
+        // 同一媒体程序在多个设备上有会话时，先选实际出声设备；暂停但仍连接的会话保留目标。
+        return !matched ? AudioCaptureDevicePolicy.RankSilent : peak >= AudibleSessionPeakThreshold
+            ? AudioCaptureDevicePolicy.RankApplication : AudioCaptureDevicePolicy.RankMatchedSilent;
     }
 
-    /// <summary>该进程是否是系统混音进程（audiodg）；查不到进程时按系统进程处理，它不会成为"应用在出声"的证据。
-    /// Whether the process is the system audio engine (audiodg); an unresolvable process counts as a system one, so it can never
-    /// become evidence of "an application is playing".</summary>
-    private static bool IsSystemAudioProcess(uint processId)
+    private static string? ReadProcessName(uint processId)
     {
-        try
-        {
-            using var process = Process.GetProcessById((int)processId);
-            return string.Equals(process.ProcessName, "audiodg", StringComparison.OrdinalIgnoreCase);
-        }
-        catch
-        {
-            return true;
-        }
+        try { using var process = Process.GetProcessById((int)processId); return process.ProcessName; }
+        catch { return null; }
     }
 
     /// <summary>解析系统默认多媒体端点的标识；不可用时返回 null。/ Resolves the system default multimedia endpoint identifier, or null.</summary>
