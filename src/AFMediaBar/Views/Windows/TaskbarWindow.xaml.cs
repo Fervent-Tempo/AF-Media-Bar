@@ -41,8 +41,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     private readonly ITaskbarDockService _taskBarService;
     private readonly string _targetMonitorDeviceId;
     private readonly TaskbarOccupiedAreaService _occupiedAreaService;
-    private GlobalInteractionSettings EffectiveInteraction => ExperimentalAudioPolicy.Interaction(
-        SettingsManager.Current.Interaction, SettingsManager.Current.Experiments.NewAudioControl);
+    private GlobalInteractionSettings EffectiveInteraction => SettingsManager.Current.Interaction;
 
     private readonly TaskbarLengthConstraintsService _lengthConstraints;
     public TaskbarWindowViewModel ViewModel { get; }
@@ -1084,7 +1083,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             SettingsManager.Current.LayoutThicknessScalePercent);
         if (orientation == LayoutOrientation.Horizontal && crossAxisDip.HasValue)
             crossAxisDip = Math.Min(crossAxisDip.Value, LayoutPresets.TaskbarHorizontal.Canvas.Height * thicknessScalePercent / 100);
-        var mediaFontSizePercent = ExperimentalAudioPolicy.Experience(SettingsManager.Current.TaskbarExperience, SettingsManager.Current.Experiments.NewAudioControl).Normalize().MediaFontSizePercent;
+        var mediaFontSizePercent = SettingsManager.Current.TaskbarExperience.Normalize().MediaFontSizePercent;
         var layoutChanged = _appliedWindowMode != windowMode ||
                             orientationChanged ||
                             !lengthScalePercent.Equals(_appliedLengthScalePercent) ||
@@ -1518,11 +1517,6 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
     private async Task ShowDeviceMenuAsync(AudioDeviceDirection direction, AudioDeviceSwitchTarget scope, TrayIconBounds anchor)
     {
-        if (!SettingsManager.Current.Experiments.NewAudioControl)
-        {
-            if (direction == AudioDeviceDirection.Input) return;
-            scope = AudioDeviceSwitchTarget.SystemDefault;
-        }
         if (!CanPublishMenu(_menuEnvironmentVersion) || scope == AudioDeviceSwitchTarget.Disabled) return;
         var environmentVersion = _menuEnvironmentVersion;
         var mode = direction == AudioDeviceDirection.Output ? TaskbarCompactFlyoutMode.OutputDevice : TaskbarCompactFlyoutMode.InputDevice;

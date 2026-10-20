@@ -207,7 +207,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
             entry.VisibilityChanged -= OnRestComponentVisibilityChanged;
 
         IdleComponentEntries.Clear();
-        foreach (var component in IdleVisibilityOrder.Where(component => component != TaskbarRestComponent.InputDevice || CanEditExperimentalAudio))
+        foreach (var component in IdleVisibilityOrder)
         {
             var entry = new TaskbarRestComponentSettingItem(
                 component, canMove: false, isVisible: kept.Contains(component),
@@ -243,8 +243,6 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         var selected = IdleComponentEntries
             .Where(entry => entry.IsVisible)
             .Select(entry => entry.Component)
-            .Concat(!CanEditExperimentalAudio && (_configuration.Current.TaskbarExperience.IdleComponents?.Contains(TaskbarRestComponent.InputDevice) ?? false)
-                ? new[] { TaskbarRestComponent.InputDevice } : [])
             .ToArray();
         var isDefault = selected.SequenceEqual(TaskbarRestLayoutPolicy.DefaultIdleComponents);
         UpdateExperience(_configuration.Current.TaskbarExperience with
@@ -349,7 +347,6 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     private string DirectionText(string horizontal, string vertical, string unknown) => Translations.Get(
         _configuration.Context.Orientation switch { LayoutOrientation.Horizontal => horizontal, LayoutOrientation.Vertical => vertical, _ => unknown });
 
-    public bool CanEditExperimentalAudio => SettingsManager.Current.Experiments.NewAudioControl;
 
     /// <summary>任务栏主轴对齐；切换时清除拖动偏移和手动内容排布。</summary>
     public TaskbarBarPosition TaskbarPosition
@@ -695,7 +692,6 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     {
         OnPropertyChanged(nameof(AxisStartText)); OnPropertyChanged(nameof(AxisEndText));
         OnPropertyChanged(nameof(ExpandStartText)); OnPropertyChanged(nameof(ExpandEndText));
-        OnPropertyChanged(nameof(CanEditExperimentalAudio));
         OnPropertyChanged(nameof(TaskbarArrangementOverride));
         OnPropertyChanged(nameof(TaskbarArrangementIndex));
         OnPropertyChanged(nameof(TaskbarArrangement));

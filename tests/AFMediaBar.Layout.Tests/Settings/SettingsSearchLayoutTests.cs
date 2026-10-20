@@ -11,16 +11,17 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class SettingsSearchLayoutTests
 {
     [TestMethod]
-    public void AudioOptionsAreSearchableOnlyAfterEnablingExperiment()
+    public void AudioOptionsAreSearchableWithoutExperiments()
     {
         var previous = AFMediaBar.Classes.Settings.SettingsManager.Current;
         try
         {
             AFMediaBar.Classes.Settings.SettingsManager.Current = new AFMediaBar.Classes.Settings.AppSettings();
             var context = AFMediaBar.Classes.Models.Settings.SettingsContext.Initial;
-            Assert.IsFalse(SettingsSearchIndex.ForContext(context).Any(entry => entry.GroupId == "Common.OutputDevice"));
-            Assert.IsTrue(SettingsSearchIndex.ForContext(context).Any(entry => entry.GroupId == "Experimental.Audio.Title"));
-            AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments = new() { NewAudioControl = true };
+            Assert.IsTrue(SettingsSearchIndex.ForContext(context).Any(entry => entry.GroupId == "Common.InputDevice"));
+            Assert.IsTrue(SettingsSearchIndex.ForContext(context).Any(entry => entry.GroupId == "Device.Hotkeys"));
+            Assert.IsTrue(SettingsSearchIndex.ForContext(context).Any(entry => entry.GroupId == "Audio.Settings.Advanced"));
+            Assert.IsFalse(SettingsSearchIndex.ForContext(context).Any(entry => entry.GroupId == "Experimental.Audio.Title"));
             Assert.IsTrue(SettingsSearchIndex.ForContext(context).Any(entry =>
                 entry.Page == SettingsPageKey.DeviceManagement && entry.GroupId == "Common.OutputDevice"));
         }

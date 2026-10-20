@@ -2897,9 +2897,6 @@
   <data name="Common.Page.Experimental" xml:space="preserve"><value>實驗性功能</value></data>
   <data name="Experimental.Warning" xml:space="preserve"><value>實驗性功能未經充分測試，如遇問題，請透過任意現有回饋管道回報。</value></data>
   <data name="Experimental.Enable" xml:space="preserve"><value>啟用此實驗</value></data>
-  <data name="Experimental.Audio.Title" xml:space="preserve"><value>新版音訊控制</value></data>
-  <data name="Experimental.Audio.Description" xml:space="preserve"><value>新版選單、輸入裝置、應用程式裝置路由、黑名單與進階切換策略。</value></data>
-  <data name="Experimental.Audio.RoutesNotice" xml:space="preserve"><value>關閉實驗將恢復原版輸出裝置與音量介面，並保留實驗設定。已儲存至 Windows 的應用程式路由偏好不會自動清除。</value></data>
   <data name="Experimental.Vertical.Title" xml:space="preserve"><value>直向工作列</value></data>
   <data name="Experimental.Vertical.Description" xml:space="preserve"><value>在實際的左側或右側工作列中顯示直向媒體列。</value></data>
   <data name="Experimental.Vertical.Shared" xml:space="preserve"><value>工作列橫向與直向共用同一份設定。此處修改也會影響橫向工作列。</value></data>
@@ -2912,7 +2909,6 @@
   <data name="Experimental.OpenAppearance" xml:space="preserve"><value>前往外觀設定</value></data>
   <data name="Experimental.Vertical.Notification.Title" xml:space="preserve"><value>已偵測到直向工作列</value></data>
   <data name="Experimental.Vertical.Notification.Body" xml:space="preserve"><value>啟用直向工作列實驗後即可在此顯示媒體列。點擊前往實驗性功能。</value></data>
-  <data name="Experimental.Audio.RoutingPreserved" xml:space="preserve"><value>關閉實驗會保留實驗設定及既有 Windows 應用程式音訊路由偏好，不會自動清除。</value></data>
   <data name="Experimental.Floating.Mode" xml:space="preserve"><value>顯示模式</value></data>
   <data name="Experimental.Floating.Taskbar" xml:space="preserve"><value>工作列</value></data>
   <data name="Experimental.Floating.Switching" xml:space="preserve"><value>正在切換顯示模式…</value></data>
@@ -3003,14 +2999,10 @@
   <data name="Memory.System.Cancelled" xml:space="preserve"><value>已取消清理要求</value></data>
   <data name="Memory.System.Busy" xml:space="preserve"><value>已有系統清理正在執行</value></data>
   <data name="Memory.System.Readings" xml:space="preserve"><value>系統可用記憶體：{0} → {1}</value></data>
-  <data name="Device.Personalization" xml:space="preserve"><value>裝置別名與順序</value></data>
-  <data name="Device.PersonalizationHint" xml:space="preserve"><value>拖曳調整 AF 中的顯示與切換順序；停用裝置收合，僅影響 AF。</value></data>
   <data name="Device.Alias" xml:space="preserve"><value>AF 裝置別名（清空恢復系統名稱，Enter 儲存，Esc 取消）</value></data>
   <data name="Device.Forget" xml:space="preserve"><value>刪除失聯設定</value></data>
   <data name="Device.Rebind" xml:space="preserve"><value>重新關聯</value></data>
   <data name="Device.RebindHint" xml:space="preserve"><value>手動選擇替代端點，將此設定轉移並取代目標端點的 AF 設定。不會依名稱自動關聯。</value></data>
-  <data name="Device.Hotkey.Title" xml:space="preserve"><value>裝置切換快速鍵</value></data>
-  <data name="Device.Hotkey.Hint" xml:space="preserve"><value>僅切換系統預設裝置。點選錄製後按包含 Ctrl 或 Alt 的組合鍵，不支援 Win 與 F12。依拖曳順序循環勾選的啟用裝置，略過離線裝置。</value></data>
   <data name="Device.Hotkey.CycleOutput" xml:space="preserve"><value>循環所選輸出裝置</value></data>
   <data name="Device.Hotkey.CycleInput" xml:space="preserve"><value>循環所選輸入裝置</value></data>
   <data name="Device.Hotkey.Invalid" xml:space="preserve"><value>組合鍵格式無效</value></data>
@@ -3089,12 +3081,11 @@
   <data name="Memory.Auto.Paused" xml:space="preserve"><value>權限失效或多次失敗，已暫停；請檢查最近結果後恢復</value></data>
   <data name="Device.Management.Title" xml:space="preserve"><value>裝置管理</value></data>
   <data name="Device.Management.Description" xml:space="preserve"><value>管理輸入輸出裝置的啟用、別名、顯示與切換順序，以及藍牙電量</value></data>
-  <data name="Device.RequireExperiment" xml:space="preserve"><value>裝置切換與個人化受實驗功能開關控制；請開啟對應項目。停用僅影響 AF，不會停用 Windows 裝置。</value></data>
   <data name="Device.Enabled" xml:space="preserve"><value>啟用</value></data>
   <data name="Device.Disabled" xml:space="preserve"><value>已停用裝置</value></data>
   <data name="Device.Offline" xml:space="preserve"><value>暫時無法使用</value></data>
-  <data name="Device.Hotkeys" xml:space="preserve"><value>循環快捷鍵</value></data>
-  <data name="Device.Cycle.Hint" xml:space="preserve"><value>依裝置管理中已啟用裝置的順序循環，略過離線裝置。輸入和輸出各使用一個組合鍵；需開啟裝置快捷鍵實驗。</value></data>
+  <data name="Device.Hotkeys" xml:space="preserve"><value>裝置切換快速鍵</value></data>
+  <data name="Device.Cycle.Hint" xml:space="preserve"><value>僅切換系統預設裝置，依裝置管理中已啟用裝置的順序循環，略過離線裝置。輸入和輸出各使用一個組合鍵。</value></data>
   <data name="Battery.SelectHint" xml:space="preserve"><value>手動選擇一個已配對裝置，僅查詢該裝置的標準電量資訊。驅動程式或裝置未提供時顯示未知。</value></data>
   <data name="Battery.Select" xml:space="preserve"><value>追蹤裝置</value></data>
   <data name="Battery.ListRefresh" xml:space="preserve"><value>重新整理已配對裝置清單</value></data>
@@ -3110,7 +3101,6 @@
   <data name="Battery.Refresh" xml:space="preserve"><value>重新整理電量</value></data>
   <data name="Battery.RefreshHint" xml:space="preserve"><value>讀取最多每分鐘一次；連線變化會更新狀態，失敗時延後重試。</value></data>
   <data name="Battery.WidgetHint" xml:space="preserve"><value>在裝置管理中選擇追蹤目標。無媒體時顯示需在下方保留元件中勾選藍牙電量。</value></data>
-  <data name="Interaction.AudioGestures" xml:space="preserve"><value>音訊裝置手勢</value></data>
   <data name="Memory.System.CacheReadings" xml:space="preserve"><value>系統快取（含待命頁）：{0} → {1}</value></data>
   <data name="Memory.System.Change" xml:space="preserve"><value>可用記憶體變化：{0} MB</value></data>
   <data name="Memory.System.Elapsed" xml:space="preserve"><value>執行耗時：{0} ms</value></data>

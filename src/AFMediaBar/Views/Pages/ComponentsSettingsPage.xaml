@@ -129,7 +129,7 @@
                             Title="{DynamicResource Loc.DisplayModes.Rest.Row.DeviceButton.Title}">
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.RestOutputDeviceVisible, Mode=TwoWay}" />
                         </components:SettingsRow>
-                        <components:SettingsRow Visibility="{Binding ViewModel.Layers.CanEditExperimentalAudio, Converter={StaticResource AfBooleanToVisibilityConverter}}"
+                        <components:SettingsRow
                             Description="{DynamicResource Loc.Audio.Device.InputDescription}"
                             Icon="{ui:SymbolIcon Mic24}"
                             Title="{DynamicResource Loc.Common.InputDevice}">
@@ -770,7 +770,7 @@
                                     Title="{DynamicResource Loc.Common.OutputDevice}">
                                     <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverOutputDeviceVisible, Mode=TwoWay}" />
                                 </components:SettingsRow>
-                        <components:SettingsRow Visibility="{Binding ViewModel.Layers.CanEditExperimentalAudio, Converter={StaticResource AfBooleanToVisibilityConverter}}"
+                        <components:SettingsRow
                                     Icon="{ui:SymbolIcon Mic24}"
                                     IsNested="True"
                                     Title="{DynamicResource Loc.Common.InputDevice}">

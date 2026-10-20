@@ -16,11 +16,11 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
     private readonly ISettingsConfiguration _configuration;
     private bool _disposed;
     private IReadOnlyList<AudioDeviceOption> _allDevices = [];
-    public bool IsHotkeysEnabled => _configuration.Current.Experiments.NewAudioControl && _configuration.Current.Experiments.DeviceHotkeys;
+    public bool IsHotkeysEnabled => !_disposed && _configuration.IsActive;
     public IRelayCommand<SettingsReorderRequest> ReorderDevicesCommand { get; }
     public bool IsOrderingEnabled => IsPersonalizationEnabled || IsHotkeysEnabled;
-    public bool IsPersonalizationEnabled => _configuration.Current.Experiments.NewAudioControl && _configuration.Current.Experiments.DevicePersonalization;
-    public bool IsEnabled => _configuration.Current.Experiments.NewAudioControl;
+    public bool IsPersonalizationEnabled => !_disposed && _configuration.IsActive;
+    public bool IsEnabled => !_disposed && _configuration.IsActive;
     public bool CanEdit => !_disposed && _configuration.IsActive;
     public void Reset() => _configuration.Reset(SettingsResetScope.DeviceManagement);
     public CancellationToken CancellationToken => _configuration.CancellationToken;

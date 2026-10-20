@@ -15,7 +15,7 @@ public sealed class AudioDeviceHotkeySettingsViewModel : ObservableObject, IDisp
     private bool _disposed;
     private bool _isRecordingOutputCycle;
     private bool _isRecordingInputCycle;
-    public bool IsEnabled => _configuration.Current.Experiments.NewAudioControl && _configuration.Current.Experiments.DeviceHotkeys;
+    public bool IsEnabled => !_disposed && _configuration.IsActive;
     public bool IsRecordingOutputCycle { get => _isRecordingOutputCycle; set { if (SetProperty(ref _isRecordingOutputCycle, value)) SetRecording(AudioDeviceDirection.Output, value); } }
     public bool IsRecordingInputCycle { get => _isRecordingInputCycle; set { if (SetProperty(ref _isRecordingInputCycle, value)) SetRecording(AudioDeviceDirection.Input, value); } }
     public string OutputCycleHotkey { get => _configuration.Current.AudioDevices.OutputCycleHotkey; set => SetHotkey(AudioDeviceDirection.Output, value); }

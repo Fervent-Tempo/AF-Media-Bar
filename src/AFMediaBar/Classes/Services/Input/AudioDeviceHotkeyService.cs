@@ -66,7 +66,7 @@ public sealed class AudioDeviceHotkeyService(AudioDeviceSwitchCoordinator switch
     {
         if (_disposed) return;
         var settings = SettingsManager.Current;
-        var enabled = settings.Experiments.NewAudioControl && settings.Experiments.DeviceHotkeys && _recordingCount == 0;
+        var enabled = _recordingCount == 0;
         var bindings = enabled ? new[] { new Binding(Identity(AudioDeviceDirection.Output, null), AudioDeviceDirection.Output, settings.AudioDevices.OutputCycleHotkey),
                 new Binding(Identity(AudioDeviceDirection.Input, null), AudioDeviceDirection.Input, settings.AudioDevices.InputCycleHotkey) }
             .Where(binding => !string.IsNullOrWhiteSpace(binding.Gesture)).ToArray() : [];

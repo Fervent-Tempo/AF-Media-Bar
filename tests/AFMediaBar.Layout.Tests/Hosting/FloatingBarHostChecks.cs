@@ -25,7 +25,7 @@ internal static class FloatingBarHostChecks
         using var switches = new AudioDeviceSwitchCoordinator(new NoDevices());
         using var battery = new BluetoothBatteryService(new(), new(), null!, null!);
         using var zOrder = new DesktopWidgetZOrderService();
-        var audio = new AudioInteractionService(null!, null!, null!, null!, switches, null!, () => false);
+        var audio = new AudioInteractionService(null!, null!, null!, null!, switches, null!);
         // 不调用 Start：没有计时器、消息窗口或电源订阅，宿主仅读取初始档位。
         var prune = new MemoryPruneCoordinator(null!, null!, null!, []);
         using var mouse = new NativeMouseInputMonitor(null!);

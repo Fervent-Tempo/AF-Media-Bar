@@ -71,20 +71,18 @@ public sealed class AudioSettingsPageLoadingTests
                 page.Measure(new Size(820, 900));
                 Assert.AreEqual(1, devices.OtherOutputDevices.Count);
                 Assert.IsNotNull(page.Content);
-                var audio = LogicalChildren(page).OfType<SettingsGroup>().Single(group => group.GroupId == "Interaction.AudioGestures");
+                var audio = LogicalChildren(page).OfType<SettingsGroup>().Single(group => group.GroupId == "Audio.Settings.Advanced");
                 var inputs = LogicalChildren(page).OfType<ComboBoxItem>().Where(item =>
                     item.Tag is WheelAction.InputDevice or TrayClickAction.OpenInputDeviceMenu or TrayWheelBehavior.SwitchInputDevice).ToArray();
                 Assert.AreEqual(4, inputs.Length);
-                Assert.AreEqual(Visibility.Collapsed, audio.Visibility);
-                Assert.IsTrue(inputs.All(item => item.Visibility == Visibility.Collapsed));
-                SettingsManager.Current.Experiments = new() { NewAudioControl = true, VerticalTaskbar = true, FloatingBar = true };
-                await System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
                 Assert.AreEqual(Visibility.Visible, audio.Visibility);
-                Assert.IsTrue(inputs.All(item => item.Visibility == Visibility.Visible), "原交互页应按开关显示输入选项。");
+                Assert.IsTrue(inputs.All(item => item.Visibility == Visibility.Visible), "输入选项应默认可用。");
+                SettingsManager.Current.Experiments = new() { VerticalTaskbar = true, FloatingBar = true };
+                await System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
                 SettingsManager.Current.Experiments = new();
                 await System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
-                Assert.IsTrue(inputs.All(item => item.Visibility == Visibility.Collapsed));
-                Assert.AreEqual(WheelAction.InputDevice, SettingsManager.Current.Interaction.PrimaryWheelAction, "隐藏选项不能清除保存的偏好。");
+                Assert.IsTrue(inputs.All(item => item.Visibility == Visibility.Visible), "其他实验开关不应隐藏音频选项。");
+                Assert.AreEqual(WheelAction.InputDevice, SettingsManager.Current.Interaction.PrimaryWheelAction);
 
                 using var experiments = new ExperimentalViewModel(new LegacySettingsConfiguration(context));
                 var entry = new ExperimentalPage(experiments);

@@ -108,12 +108,6 @@ internal static class VerticalTaskbarPresentationChecks
                 InputDeviceVisible = true,
                 HoverControls = SettingsManager.Current.TaskbarExperience.HoverControls with { InputDeviceVisible = true }
             };
-            SettingsManager.Current.Experiments = SettingsManager.Current.Experiments with { NewAudioControl = false };
-            control.ApplyTaskbarExperienceSettings();
-            Assert.AreEqual(Visibility.Collapsed, ((FrameworkElement)control.FindName("TaskbarInputDeviceHoverSurface")).Visibility);
-            Assert.AreEqual(Visibility.Collapsed, ((FrameworkElement)control.FindName("TaskbarInputDeviceButton")).Visibility);
-            Assert.IsTrue(SettingsManager.Current.TaskbarExperience.InputDeviceVisible);
-            SettingsManager.Current.Experiments = SettingsManager.Current.Experiments with { NewAudioControl = true };
             control.ApplyTaskbarExperienceSettings();
             Assert.AreEqual(Visibility.Visible, ((FrameworkElement)control.FindName("TaskbarInputDeviceHoverSurface")).Visibility);
             control.ApplyLayout(WindowMode.Taskbar, LayoutOrientation.Horizontal, 100, 100);

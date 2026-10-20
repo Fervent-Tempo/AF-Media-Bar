@@ -2935,9 +2935,6 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   <data name="Common.Page.Experimental" xml:space="preserve"><value>Tính năng thử nghiệm</value></data>
   <data name="Experimental.Warning" xml:space="preserve"><value>Các tính năng thử nghiệm chưa được kiểm thử đầy đủ. Vui lòng báo lỗi qua bất kỳ kênh phản hồi hiện có.</value></data>
   <data name="Experimental.Enable" xml:space="preserve"><value>Bật tính năng thử nghiệm này</value></data>
-  <data name="Experimental.Audio.Title" xml:space="preserve"><value>Điều khiển âm thanh mới</value></data>
-  <data name="Experimental.Audio.Description" xml:space="preserve"><value>Menu mới, thiết bị đầu vào, định tuyến ứng dụng, danh sách loại trừ và chuyển đổi nâng cao.</value></data>
-  <data name="Experimental.Audio.RoutesNotice" xml:space="preserve"><value>Tắt sẽ khôi phục giao diện đầu ra và âm lượng cũ, đồng thời giữ cấu hình thử nghiệm. Định tuyến ứng dụng đã lưu trong Windows không tự động bị xóa.</value></data>
   <data name="Experimental.Vertical.Title" xml:space="preserve"><value>Thanh tác vụ dọc</value></data>
   <data name="Experimental.Vertical.Description" xml:space="preserve"><value>Hiển thị thanh phương tiện dọc trên thanh tác vụ ở cạnh trái hoặc phải.</value></data>
   <data name="Experimental.Vertical.Shared" xml:space="preserve"><value>Thanh tác vụ ngang và dọc dùng chung cấu hình. Thay đổi tại đây cũng ảnh hưởng thanh tác vụ ngang.</value></data>
@@ -2950,7 +2947,6 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   <data name="Experimental.OpenAppearance" xml:space="preserve"><value>Mở cài đặt giao diện</value></data>
   <data name="Experimental.Vertical.Notification.Title" xml:space="preserve"><value>Đã phát hiện thanh tác vụ dọc</value></data>
   <data name="Experimental.Vertical.Notification.Body" xml:space="preserve"><value>Bật thử nghiệm thanh tác vụ dọc để hiển thị thanh phương tiện tại đây. Nhấn để mở Tính năng thử nghiệm.</value></data>
-  <data name="Experimental.Audio.RoutingPreserved" xml:space="preserve"><value>Tắt thử nghiệm sẽ giữ cài đặt đã lưu và tùy chọn định tuyến âm thanh ứng dụng hiện có của Windows.</value></data>
   <data name="Experimental.Floating.Mode" xml:space="preserve"><value>Chế độ hiển thị</value></data>
   <data name="Experimental.Floating.Taskbar" xml:space="preserve"><value>Thanh tác vụ</value></data>
   <data name="Experimental.Floating.Switching" xml:space="preserve"><value>Đang chuyển chế độ hiển thị…</value></data>
@@ -3041,14 +3037,10 @@ Heap được quản lý {6} → {7} · {8} ms · {9}</value></data>
   <data name="Memory.System.Cancelled" xml:space="preserve"><value>Đã hủy yêu cầu dọn dẹp</value></data>
   <data name="Memory.System.Busy" xml:space="preserve"><value>Đang dọn bộ nhớ hệ thống</value></data>
   <data name="Memory.System.Readings" xml:space="preserve"><value>Bộ nhớ hệ thống khả dụng: {0} → {1}</value></data>
-  <data name="Device.Personalization" xml:space="preserve"><value>Bí danh và thứ tự thiết bị</value></data>
-  <data name="Device.PersonalizationHint" xml:space="preserve"><value>Kéo để sắp xếp hiển thị và chuyển trong AF. Thiết bị đã tắt được thu gọn; không đổi thiết bị Windows.</value></data>
   <data name="Device.Alias" xml:space="preserve"><value>Bí danh thiết bị trong AF (xóa để dùng tên hệ thống, Enter lưu, Esc hủy)</value></data>
   <data name="Device.Forget" xml:space="preserve"><value>Xóa cấu hình thiết bị mất kết nối</value></data>
   <data name="Device.Rebind" xml:space="preserve"><value>Liên kết lại</value></data>
   <data name="Device.RebindHint" xml:space="preserve"><value>Chọn điểm cuối thay thế. Cấu hình này sẽ chuyển sang và thay thế cấu hình AF của đích. Không tự ghép theo tên.</value></data>
-  <data name="Device.Hotkey.Title" xml:space="preserve"><value>Phím tắt chuyển thiết bị</value></data>
-  <data name="Device.Hotkey.Hint" xml:space="preserve"><value>Chỉ đổi thiết bị mặc định hệ thống. Ghi tổ hợp có Ctrl hoặc Alt; không hỗ trợ Win và F12. Chuyển vòng thiết bị đã chọn và bật theo thứ tự hiển thị, bỏ qua ngoại tuyến.</value></data>
   <data name="Device.Hotkey.CycleOutput" xml:space="preserve"><value>Chuyển vòng thiết bị đầu ra đã chọn</value></data>
   <data name="Device.Hotkey.CycleInput" xml:space="preserve"><value>Chuyển vòng thiết bị đầu vào đã chọn</value></data>
   <data name="Device.Hotkey.Invalid" xml:space="preserve"><value>Tổ hợp phím không hợp lệ</value></data>
@@ -3127,12 +3119,11 @@ Nguồn: {2}</value></data>
   <data name="Memory.Auto.Paused" xml:space="preserve"><value>Tạm dừng do mất quyền hoặc lỗi lặp lại; kiểm tra kết quả trước khi tiếp tục</value></data>
   <data name="Device.Management.Title" xml:space="preserve"><value>Quản lý thiết bị</value></data>
   <data name="Device.Management.Description" xml:space="preserve"><value>Quản lý thiết bị vào/ra được bật, bí danh, thứ tự hiển thị và chuyển đổi cùng pin Bluetooth</value></data>
-  <data name="Device.RequireExperiment" xml:space="preserve"><value>Chuyển và tùy chỉnh thiết bị theo công tắc thử nghiệm. Vô hiệu hóa ở đây chỉ ảnh hưởng AF.</value></data>
   <data name="Device.Enabled" xml:space="preserve"><value>Bật</value></data>
   <data name="Device.Disabled" xml:space="preserve"><value>Thiết bị đã tắt</value></data>
   <data name="Device.Offline" xml:space="preserve"><value>Hiện không khả dụng</value></data>
-  <data name="Device.Hotkeys" xml:space="preserve"><value>Phím tắt chuyển vòng</value></data>
-  <data name="Device.Cycle.Hint" xml:space="preserve"><value>Chuyển vòng qua thiết bị được bật theo thứ tự trong Quản lý thiết bị, bỏ qua thiết bị ngoại tuyến. Đầu vào và đầu ra dùng tổ hợp riêng; cần bật thử nghiệm phím tắt thiết bị.</value></data>
+  <data name="Device.Hotkeys" xml:space="preserve"><value>Phím tắt chuyển thiết bị</value></data>
+  <data name="Device.Cycle.Hint" xml:space="preserve"><value>Chuyển thiết bị mặc định hệ thống theo thứ tự thiết bị được bật trong Quản lý thiết bị, bỏ qua thiết bị ngoại tuyến. Đầu vào và đầu ra dùng tổ hợp riêng.</value></data>
   <data name="Battery.SelectHint" xml:space="preserve"><value>Chọn một thiết bị đã ghép đôi. Chỉ đọc pin chuẩn của thiết bị đó; thiết bị không hỗ trợ hiển thị không rõ.</value></data>
   <data name="Battery.Select" xml:space="preserve"><value>Thiết bị theo dõi</value></data>
   <data name="Battery.ListRefresh" xml:space="preserve"><value>Làm mới thiết bị đã ghép đôi</value></data>
@@ -3148,7 +3139,6 @@ Nguồn: {2}</value></data>
   <data name="Battery.Refresh" xml:space="preserve"><value>Làm mới pin</value></data>
   <data name="Battery.RefreshHint" xml:space="preserve"><value>Đọc tối đa mỗi phút một lần; cập nhật khi đổi kết nối và lùi thời gian khi lỗi.</value></data>
   <data name="Battery.WidgetHint" xml:space="preserve"><value>Chọn thiết bị trong Quản lý thiết bị. Để hiện khi không có phương tiện, chọn Pin Bluetooth trong danh sách thành phần giữ lại.</value></data>
-  <data name="Interaction.AudioGestures" xml:space="preserve"><value>Thao tác thiết bị âm thanh</value></data>
   <data name="Memory.System.CacheReadings" xml:space="preserve"><value>Bộ nhớ đệm hệ thống (gồm trang chờ): {0} → {1}</value></data>
   <data name="Memory.System.Change" xml:space="preserve"><value>Thay đổi bộ nhớ khả dụng: {0} MB</value></data>
   <data name="Memory.System.Elapsed" xml:space="preserve"><value>Thời gian thực hiện: {0} ms</value></data>

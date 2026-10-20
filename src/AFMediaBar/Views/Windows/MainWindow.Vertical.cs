@@ -10,7 +10,6 @@ namespace AFMediaBar.Views.Windows;
 public partial class MainWindow
 {
     private bool _verticalExperimentNotified;
-    private bool _lastAudioExperiment = SettingsManager.Current.Experiments.NewAudioControl;
     private string? _experimentalHostSignature;
     private readonly DispatcherTimer _experimentalHostWatcher = new(DispatcherPriority.Background)
     {

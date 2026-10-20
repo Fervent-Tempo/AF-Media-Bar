@@ -81,10 +81,11 @@ function Read-SettingsRegistry {
             throw "历史删除项与当前字段冲突：$fieldPath"
         }
         $item = $catalog.removed[$fieldPath]
-        foreach ($marker in @($item.firstReleased, $item.lastPresentRelease, $item.firstAbsentRelease)) {
+        foreach ($marker in @($item.firstReleased, $item.lastPresentRelease)) {
             Assert-ReleaseMarker $marker
             if ($marker -ceq 'unreleased') { throw '历史删除项必须有正式发布版本。' }
         }
+        Assert-ReleaseMarker $item.firstAbsentRelease
         if (-not $item.currentHandling) { throw "历史删除项缺少处理说明：$fieldPath" }
     }
     $ruleIds = @{}

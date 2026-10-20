@@ -20,9 +20,9 @@ public partial class TaskBarMediaControl
     private double _verticalSpectrumLength = 28;
     private bool VerticalTextRequired => _isVertical && _snapshot.IsConnected;
     private double VerticalPrimaryFontSize => VerticalTaskbarPresentationPolicy.PrimaryFontSizeDip *
-        ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize().MediaFontSizePercent / 100d * _textBudget.FontScale;
+        PresentationSettings.TaskbarExperience.Normalize().MediaFontSizePercent / 100d * _textBudget.FontScale;
     private double VerticalSecondaryFontSize => VerticalTaskbarPresentationPolicy.SecondaryFontSizeDip *
-        ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize().MediaFontSizePercent / 100d * _textBudget.FontScale;
+        PresentationSettings.TaskbarExperience.Normalize().MediaFontSizePercent / 100d * _textBudget.FontScale;
 
     public void ApplyVerticalTaskbarSide(bool onLeft)
     {
@@ -85,7 +85,7 @@ public partial class TaskBarMediaControl
 
     private TaskbarRestLayout ResolveVerticalLayout(double primaryLength)
     {
-        var experience = ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize();
+        var experience = PresentationSettings.TaskbarExperience.Normalize();
         var visibility = ResolveRestVisibility(experience);
         var metrics = TaskbarDensityMetrics.From(experience.Density);
         return TaskbarRestLayoutPolicy.Arrange(
@@ -114,7 +114,7 @@ public partial class TaskBarMediaControl
 
     private MediaBarSizeRequest BuildVerticalSizeRequest(MediaBarSizeRequest request, bool lyricsVisible, string current, string secondary)
     {
-        var experience = ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize();
+        var experience = PresentationSettings.TaskbarExperience.Normalize();
         double Measure(string text, double fontSize) => VerticalTaskbarPresentationPolicy.MeasureText(
             text, fontSize, lyricsVisible ? PresentationSettings.LyricsCharacterSpacingPercent : 0,
             sideways => MeasureTextWidthExact(sideways, SongTitle) * fontSize / Math.Max(1, SongTitle.FontSize));
@@ -146,7 +146,7 @@ public partial class TaskBarMediaControl
         _verticalSpectrumLength = TaskbarSpectrum.Width + RestWidgetVerticalInset(TaskbarSpectrumHoverSurface);
         var width = Math.Max(1, MainBorder.Width);
         var innerWidth = Math.Max(1, width - 4);
-        var experience = ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize();
+        var experience = PresentationSettings.TaskbarExperience.Normalize();
         var tooltipPlacement = _verticalTaskbarOnLeft ? PlacementMode.Right : PlacementMode.Left;
         _wheelTooltip.Placement = tooltipPlacement;
         _artworkWheelTooltip.Placement = tooltipPlacement;
@@ -241,8 +241,7 @@ public partial class TaskBarMediaControl
 
     private double VerticalHoverMinimumLength()
     {
-        var controls = ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience,
-            PresentationSettings.Experiments.NewAudioControl).Normalize();
+        var controls = PresentationSettings.TaskbarExperience.Normalize();
         var count = (controls.HoverControls.PreviousNextVisible ? 2 : 0) +
             (controls.HoverControls.PlayPauseVisible ? 1 : 0) +
             (controls.HoverControls.OutputDeviceVisible ? 1 : 0) +
@@ -257,7 +256,7 @@ public partial class TaskBarMediaControl
 
     private void ConfigureVerticalHoverGeometry()
     {
-        var experience = ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize();
+        var experience = PresentationSettings.TaskbarExperience.Normalize();
         var size = VerticalHoverButtonSize();
         var count = 0;
         foreach (FrameworkElement group in TaskbarHoverActions.Children)

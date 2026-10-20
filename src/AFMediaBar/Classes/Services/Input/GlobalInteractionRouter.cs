@@ -31,7 +31,7 @@ public sealed class GlobalInteractionRouter
         GlobalInteractionSettings? interaction = null, object? owner = null, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var settings = ExperimentalAudioPolicy.Interaction(interaction ?? SettingsManager.Current.Interaction, SettingsManager.Current.Experiments.NewAudioControl);
+        var settings = interaction ?? SettingsManager.Current.Interaction;
         var action = GlobalWheelGesturePolicy.Resolve(
             settings,
             isShiftDown,

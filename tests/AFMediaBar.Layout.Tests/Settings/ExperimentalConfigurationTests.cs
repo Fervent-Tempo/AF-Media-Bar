@@ -114,7 +114,7 @@ public sealed class ExperimentalConfigurationTests
             SettingsManager.Current = new AppSettings
             {
                 LyricsFixedWidthDip = 220,
-                Experiments = new() { NewAudioControl = true },
+                Experiments = new() { FloatingBar = true },
                 FloatingBar = new()
                 {
                     Profile = BarDisplaySettings.Capture(new AppSettings { LyricsFixedWidthDip = 310 }),
@@ -124,7 +124,7 @@ public sealed class ExperimentalConfigurationTests
             using var persistence = new SettingsPersistenceService(directory);
             Assert.IsNull(persistence.SaveCurrentAsUserDefaults());
             var restored = persistence.LoadUserDefaults()!;
-            Assert.IsTrue(restored.Experiments.NewAudioControl);
+            Assert.IsTrue(restored.Experiments.FloatingBar);
             Assert.IsFalse(restored.Experiments.VerticalTaskbar);
             Assert.AreEqual(220, restored.LyricsFixedWidthDip);
             Assert.AreEqual(310, restored.FloatingBar.Profile!.LyricsFixedWidthDip);
@@ -138,7 +138,7 @@ public sealed class ExperimentalConfigurationTests
         }
     }
     [TestMethod]
-    public void HiddenInputPreferencesSurviveStableEditorsAndExperimentSwitches()
+    public void AudioEditorsIncludeInputAndResetUsesUserDefaults()
     {
         StaTest.Run(_ =>
         {
@@ -148,9 +148,17 @@ public sealed class ExperimentalConfigurationTests
             using var localization = new LocalizationService();
             try
             {
-                SettingsManager.SetUserDefaults(new AppSettings());
+                SettingsManager.SetUserDefaults(new AppSettings
+                {
+                    AudioDevices = new() { OutputCycleHotkey = "Ctrl+Alt+Y", InputCycleHotkey = "Ctrl+Alt+U" }
+                });
                 SettingsManager.Current = new AppSettings
                 {
+                    AudioDevices = new()
+                    {
+                        OutputCycleHotkey = "Ctrl+Alt+X", InputCycleHotkey = "Ctrl+Alt+M",
+                        InputBlacklist = [new("mic", "Microphone")]
+                    },
                     Interaction = GlobalInteractionSettings.Default with { PrimaryWheelAction = WheelAction.InputDevice },
                     TaskbarExperience = TaskbarExperienceSettings.Default with
                     {
@@ -160,15 +168,18 @@ public sealed class ExperimentalConfigurationTests
                     }
                 };
                 using var editor = new TaskbarAppearanceViewModel(new LegacySettingsConfiguration(context), new TaskbarLengthConstraintsService(), localization);
-                Assert.IsFalse(editor.RestOrderEntries.Any(entry => entry.Component == TaskbarRestComponent.InputDevice));
+                Assert.IsTrue(editor.RestOrderEntries.Any(entry => entry.Component == TaskbarRestComponent.InputDevice));
                 var volume = editor.RestOrderEntries.Single(entry => entry.Component == TaskbarRestComponent.Volume);
                 editor.MoveRestComponentUpCommand.Execute(volume);
                 Assert.AreEqual(TaskbarRestComponent.InputDevice, SettingsManager.Current.TaskbarExperience.RestComponentOrder![0]);
                 SettingsManager.ResetInteraction();
-                Assert.AreEqual(WheelAction.InputDevice, SettingsManager.Current.Interaction.PrimaryWheelAction);
+                Assert.AreEqual("Ctrl+Alt+Y", SettingsManager.Current.AudioDevices.OutputCycleHotkey);
+                Assert.AreEqual("Ctrl+Alt+U", SettingsManager.Current.AudioDevices.InputCycleHotkey);
+                Assert.AreEqual("mic", SettingsManager.Current.AudioDevices.InputBlacklist.Single().EndpointId);
+                Assert.AreEqual(GlobalInteractionSettings.Default.PrimaryWheelAction, SettingsManager.Current.Interaction.PrimaryWheelAction);
                 SettingsManager.ResetContentLayout();
-                Assert.IsTrue(SettingsManager.Current.TaskbarExperience.InputDeviceVisible);
-                Assert.AreEqual(TaskbarRestComponent.InputDevice, SettingsManager.Current.TaskbarExperience.RestComponentOrder![0]);
+                Assert.AreEqual(TaskbarExperienceSettings.Default.InputDeviceVisible, SettingsManager.Current.TaskbarExperience.InputDeviceVisible);
+                Assert.IsNull(SettingsManager.Current.TaskbarExperience.RestComponentOrder);
             }
             finally
             {
@@ -178,6 +189,22 @@ public sealed class ExperimentalConfigurationTests
             return Task.CompletedTask;
         });
     }
+    [TestMethod]
+    public void RetiredAudioFlagIsIgnoredAndDevicePreferencesSurvive()
+    {
+        var settings = JsonSerializer.Deserialize<AppSettings>("""
+            {"Experiments":{"NewAudioControl":false},"AudioDevices":{
+              "OutputCycleHotkey":"Ctrl+Alt+X","InputCycleHotkey":"Ctrl+Alt+M",
+              "InputBlacklist":[{"EndpointId":"mic","DisplayName":"Microphone"}],
+              "Preferences":[{"Direction":0,"EndpointId":"speaker","LastKnownName":"Speaker","Alias":"Desk"}]}}
+            """)!.Normalize().Clone();
+        Assert.AreEqual("Ctrl+Alt+X", settings.AudioDevices.OutputCycleHotkey);
+        Assert.AreEqual("Ctrl+Alt+M", settings.AudioDevices.InputCycleHotkey);
+        Assert.IsFalse(settings.AudioDevices.IsAllowed(AFMediaBar.Classes.Models.AudioDeviceDirection.Input, "mic"));
+        Assert.AreEqual("Desk", settings.AudioDevices.FindPreference(AFMediaBar.Classes.Models.AudioDeviceDirection.Output, "speaker")?.Alias);
+        Assert.IsFalse(JsonSerializer.Serialize(settings).Contains("NewAudioControl"));
+    }
+
     [TestMethod]
     public void OldSettingsKeepTaskbarValuesAndLeaveAllExperimentsOff()
     {

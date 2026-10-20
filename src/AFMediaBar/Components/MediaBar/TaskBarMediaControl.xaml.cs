@@ -66,8 +66,7 @@ namespace AFMediaBar.Components
 
         // === 布局渲染引擎 Layout Render Engine ===
         private LayoutRenderEngine? _layoutEngine;
-        private GlobalInteractionSettings EffectiveInteraction => ExperimentalAudioPolicy.Interaction(
-            PresentationSettings.Interaction, PresentationSettings.Experiments.NewAudioControl);
+        private GlobalInteractionSettings EffectiveInteraction => PresentationSettings.Interaction;
 
         private AppSettings? _presentationSettings;
         private AppSettings PresentationSettings => _presentationSettings ?? SettingsManager.Current;
@@ -977,7 +976,7 @@ namespace AFMediaBar.Components
             // 字号设置只作用于任务栏静置层的媒体文字。
             // The font-size setting only scales taskbar rest-layer media text; the island keeps its preset sizes.
             var mediaFontScale = mode is WindowMode.Taskbar or WindowMode.FloatingBar
-                ? ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize().MediaFontSizePercent / 100.0
+                ? PresentationSettings.TaskbarExperience.Normalize().MediaFontSizePercent / 100.0
                 : 1.0;
 
             // 应用布局
@@ -1042,7 +1041,7 @@ namespace AFMediaBar.Components
             RefreshWheelTooltip();
             var isHorizontalTaskbar = IsBarPresentation && !_isVertical;
             var isTaskbar = IsBarPresentation;
-            var experience = ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize();
+            var experience = PresentationSettings.TaskbarExperience.Normalize();
             var metrics = TaskbarDensityMetrics.From(experience.Density);
             // 频谱的柱数与样式决定它占用的宽度，因此必须在任何宽度计算之前先重建视觉树。
             // The spectrum's bar count and style decide how much width it occupies, so the visual tree is rebuilt before any
@@ -1227,7 +1226,7 @@ namespace AFMediaBar.Components
                 return;
             }
 
-            var experience = ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize();
+            var experience = PresentationSettings.TaskbarExperience.Normalize();
             var metrics = TaskbarDensityMetrics.From(experience.Density);
             var layout = ResolveRestLayout(experience, primaryLength);
             _isRestLayerEmpty = layout.IsEmpty;
@@ -1592,7 +1591,7 @@ namespace AFMediaBar.Components
                 // 否则用户要先把指针移开再移回来才会看到悬停按钮。
                 // The hover layer was collapsed outright on suspension instead of through its own close timer; if the pointer is still over the text
                 // region when the host comes back, queue it again, otherwise the user has to move the pointer away and back to see the hover buttons.
-                if (ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize().HoverLayerEnabled &&
+                if (PresentationSettings.TaskbarExperience.Normalize().HoverLayerEnabled &&
                     (SongInfoStackPanel.IsMouseOver || HoverRevealHost.IsMouseOver))
                 {
                     _hoverOpenTimer.Stop();
@@ -2153,7 +2152,7 @@ namespace AFMediaBar.Components
                 skipTransition);
             if (IsBarPresentation && orientation == LayoutOrientation.Horizontal)
             {
-                var experience = ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize();
+                var experience = PresentationSettings.TaskbarExperience.Normalize();
                 var progressVisible = _snapshot.Duration > 0;
                 var restVisibility = ResolveRestVisibility(experience);
                 var visibleComponents = TaskbarRestLayoutPolicy
@@ -2477,7 +2476,7 @@ namespace AFMediaBar.Components
             var hasDuration = _snapshot.Duration > 0;
             TaskbarRestProgress.Maximum = Math.Max(1, _snapshot.Duration);
             TaskbarRestProgress.Value = position;
-            var experience = ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize();
+            var experience = PresentationSettings.TaskbarExperience.Normalize();
             SongImageProgress.Progress = hasDuration ? position / _snapshot.Duration : 0;
             SongImageProgress.Visibility = _isConnected && hasDuration && experience.ArtworkProgressVisible
                 ? Visibility.Visible : Visibility.Collapsed;

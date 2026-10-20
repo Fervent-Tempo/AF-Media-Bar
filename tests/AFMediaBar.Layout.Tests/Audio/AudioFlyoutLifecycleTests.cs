@@ -34,7 +34,6 @@ public sealed class AudioFlyoutLifecycleTests
 
         StaTest.Run(async _ =>
         {
-            SettingsManager.Current.Experiments = SettingsManager.Current.Experiments with { NewAudioControl = true };
             var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
             using var icons = new AppIconService();
             using var appearance = new WindowAppearanceService(new NativeWindowBackdropAdapter(), icons);
@@ -107,7 +106,6 @@ public sealed class AudioFlyoutLifecycleTests
 
         StaTest.Run(async _ =>
         {
-            SettingsManager.Current.Experiments = SettingsManager.Current.Experiments with { NewAudioControl = true };
             var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
             using var icons = new AppIconService();
             using var appearance = new WindowAppearanceService(new NativeWindowBackdropAdapter(), icons);
@@ -186,7 +184,6 @@ public sealed class AudioFlyoutLifecycleTests
         if (RunIsolated(nameof(ThreeCardViewportReplacesListWithEqualHeightDetailAndRestoresScroll))) return;
         StaTest.Run(async dispatcher =>
         {
-            SettingsManager.Current.Experiments = SettingsManager.Current.Experiments with { NewAudioControl = true };
             var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
             using var icons = new AppIconService();
             using var appearance = new WindowAppearanceService(new NativeWindowBackdropAdapter(), icons);
@@ -361,83 +358,6 @@ public sealed class AudioFlyoutLifecycleTests
         }
 
         return false;
-    }
-
-    [TestMethod]
-    public void LegacySurfaceUsesVolumeRowsAndModeChangeInvalidatesPendingOpen()
-    {
-        if (RunIsolated(nameof(LegacySurfaceUsesVolumeRowsAndModeChangeInvalidatesPendingOpen))) return;
-        StaTest.Run(async dispatcher =>
-        {
-            SettingsManager.Current.Experiments = SettingsManager.Current.Experiments with { NewAudioControl = false };
-            var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
-            using var icons = new AppIconService();
-            using var appearance = new WindowAppearanceService(new NativeWindowBackdropAdapter(), icons);
-            AudioControlFlyoutWindow? window = null;
-            try
-            {
-                app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ThemesDictionary());
-                app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
-                foreach (var resource in new[] { "MotionResources", "SettingsAppearanceResources" })
-                    app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri($"/AFMediaBar;component/Resources/{resource}.xaml", UriKind.Relative) });
-                foreach (var key in AFMediaBar.Resources.Translations.Keys) app.Resources["Loc." + key] = AFMediaBar.Resources.Translations.Get(key);
-                var vm = (AudioControlViewModel)RuntimeHelpers.GetUninitializedObject(typeof(AudioControlViewModel));
-                vm.IsBusy = true;
-                var device = new AudioDeviceOption("speaker", "speaker", "Speakers", true);
-                typeof(AudioControlViewModel).GetField("<OutputDevices>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!
-                    .SetValue(vm, new ObservableCollection<AudioDeviceOption> { device });
-                typeof(AudioControlViewModel).GetField("_selectedOutputDevice", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(vm, device);
-                var writes = 0;
-                var volume = new ApplicationVolumeItemViewModel(new("player", "Music player", 50, false, true, null),
-                    (_, _, _) => writes++, _ => Task.CompletedTask);
-                typeof(AudioControlViewModel).GetField("<Applications>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!
-                    .SetValue(vm, new ObservableCollection<ApplicationVolumeItemViewModel> { volume });
-                window = CreateWindow(vm, appearance);
-                await window.ToggleAsync(null);
-                await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
-                window.UpdateLayout();
-                var legacy = (FrameworkElement)window.FindName("LegacyAudioContent");
-                var experimental = (FrameworkElement)window.FindName("ExperimentalAudioContent");
-                Assert.IsTrue(legacy.IsVisible);
-                Assert.IsFalse(experimental.IsVisible);
-                var slider = Descendants(legacy).OfType<Slider>().Single();
-                slider.RaiseEvent(new MouseWheelEventArgs(Mouse.PrimaryDevice, Environment.TickCount, 120) { RoutedEvent = UIElement.PreviewMouseWheelEvent });
-                Assert.AreEqual(52, volume.VolumePercent);
-                Assert.AreEqual(1, writes);
-                if (Environment.GetEnvironmentVariable("AFMB_AUDIO_CAPTURE_DIR") is { Length: > 0 } directory)
-                {
-                    System.IO.Directory.CreateDirectory(directory);
-                    var root = (Border)window.FindName("FlyoutRoot");
-                    root.BeginAnimation(UIElement.OpacityProperty, null);
-                    root.Opacity = 1;
-                    root.Background = Brushes.White;
-                    var scale = (ScaleTransform)window.FindName("FlyoutScale");
-                    scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-                    scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-                    scale.ScaleX = scale.ScaleY = 1;
-                    window.UpdateLayout();
-                    var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap(
-                        (int)Math.Ceiling(window.ActualWidth), (int)Math.Ceiling(window.ActualHeight), 96, 96, PixelFormats.Pbgra32);
-                    bitmap.Render((Visual)window.Content);
-                    var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
-                    encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
-                    using var output = System.IO.File.Create(System.IO.Path.Combine(directory, "legacy-audio.png"));
-                    encoder.Save(output);
-                }
-                var pending = window.ToggleAsync(null);
-                SettingsManager.Current.Experiments = SettingsManager.Current.Experiments with { NewAudioControl = true };
-                typeof(CommunityToolkit.Mvvm.ComponentModel.ObservableObject)
-                    .GetMethod("OnPropertyChanged", BindingFlags.Instance | BindingFlags.NonPublic, [typeof(string)])!
-                    .Invoke(vm, [nameof(AudioControlViewModel.IsNewAudioControlEnabled)]);
-                await pending;
-                Assert.IsFalse(window.IsVisible, "A mode change must invalidate an old pending toggle.");
-                await window.ToggleAsync(null);
-                await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
-                Assert.IsTrue(experimental.IsVisible);
-                Assert.IsFalse(legacy.IsVisible);
-            }
-            finally { window?.Dispose(); app.Shutdown(); }
-        });
     }
 
     private static AudioControlFlyoutWindow CreateWindow(AudioControlViewModel viewModel, WindowAppearanceService appearance) =>

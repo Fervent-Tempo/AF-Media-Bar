@@ -17,7 +17,7 @@ pwsh -NoProfile -File tools/settings-contracts.ps1 -Action Query -List
 - `settings` 保持实际 JSON 键名和嵌套关系；叶子值为 `vX.Y.Z` 或 `unreleased`。
 - 对象用 `$release` 记录自身发布时间，子字段各自标记。对象列表用 `$items` 记录条目模板，查询路径采用 `entries[].target`。
 - `enums` 记录关联字段及各成员的数值、发布时间。父字段已经发布，不代表新增成员也已发布；已发布数值不能随意重排。
-- `removed` 保留发布后删除的字段、版本与当前处理；`rules` 只记录必要兼容例外，不复刻所有字段的默认值和归一化细节。
+- `removed` 保留发布后删除的字段、版本与当前处理；删除尚未正式发布时，`firstAbsentRelease` 标记 `unreleased`。`rules` 只记录必要兼容例外，不复刻所有字段的默认值和归一化细节。
 
 例如，当前 `settings.appearance.fontWeight` 为 `v1.2.0`，`settings.appearance.idleNoteColor` 为 `v1.4.0`。这些值表示发布时间，不表示字体字重或颜色。
 

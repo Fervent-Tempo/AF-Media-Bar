@@ -297,9 +297,7 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
 
     private void RefreshRestOrderEntries()
     {
-        var order = TaskbarRestLayoutPolicy.ResolveOrder(_configuration.Current.TaskbarExperience.RestComponentOrder)
-            .Where(component => component != TaskbarRestComponent.InputDevice ||
-                SettingsManager.Current.Experiments.NewAudioControl).ToArray();
+        var order = TaskbarRestLayoutPolicy.ResolveOrder(_configuration.Current.TaskbarExperience.RestComponentOrder).ToArray();
         if (RestOrderEntries.Select(entry => entry.Component).SequenceEqual(order))
         {
             foreach (var entry in RestOrderEntries)
@@ -340,8 +338,6 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
     private void SaveRestComponentOrder()
     {
         var ordered = RestOrderEntries.Where(entry => entry.CanMove).Select(entry => entry.Component).ToArray();
-        if (!SettingsManager.Current.Experiments.NewAudioControl)
-            ordered = TaskbarRestLayoutPolicy.KeepInputDeviceOrder(_configuration.Current.TaskbarExperience.RestComponentOrder, ordered).ToArray();
         UpdateTaskbarExperience(_configuration.Current.TaskbarExperience with
         {
             RestComponentOrder = ordered.SequenceEqual(TaskbarRestLayoutPolicy.DefaultTailOrder) ? null : ordered

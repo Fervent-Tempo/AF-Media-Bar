@@ -59,11 +59,9 @@
             PageIcon="{ui:SymbolIcon Headphones24}" Title="{DynamicResource Loc.Device.Management.Title}" Subtitle="{DynamicResource Loc.Device.Management.Description}" Target="{Binding ElementName=PageScroll}"/>
         <ScrollViewer x:Name="PageScroll" Grid.Row="1" Margin="{StaticResource AfSettingsScrollMargin}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <StackPanel MaxWidth="{StaticResource AfSettingsContentMaxWidth}" Loaded="OnPageLoaded">
-                <components:SettingsCallout Text="{DynamicResource Loc.Device.RequireExperiment}" Symbol="Info24" IsAccent="False" Margin="0,0,0,12"/>
                 <WrapPanel Margin="0,0,0,12">
                     <components:SettingsNavigationButton Content="{DynamicResource Loc.Device.Hotkeys}" Destination="Interaction" GroupId="Device.Hotkeys" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
-                    <components:SettingsNavigationButton Content="{DynamicResource Loc.Interaction.AudioGestures}" Destination="Interaction" GroupId="Interaction.AudioGestures" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
-                    <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.Experiments}" Destination="Experimental" GroupId="Experimental.Audio.Title" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,0,4"/>
+                    <components:SettingsNavigationButton Content="{DynamicResource Loc.Audio.Settings.Advanced}" Destination="Interaction" GroupId="Audio.Settings.Advanced" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
                 </WrapPanel>
                 <components:SettingsGroup Style="{StaticResource DeviceGroupStyle}" GroupId="Common.OutputDevice" Header="{DynamicResource Loc.Common.OutputDevice}" Icon="{ui:SymbolIcon Speaker224}" IsEnabled="{Binding ViewModel.IsEnabled}">
                     <StackPanel>

@@ -61,9 +61,7 @@ public static class SettingsSearchIndex
     public static IReadOnlyList<SettingsSearchEntry> ForContext(SettingsContext context) => Entries.Where(entry =>
         SettingsPageCatalog.Find(entry.Page, context.Mode) is not null &&
         (entry.Page != SettingsPageKey.Application || entry.GroupId != "Memory.Title" || AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.MemoryTools) &&
-        (entry.Page != SettingsPageKey.DeviceManagement || (entry.GroupId == "Battery.Title"
-            ? AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.BluetoothBattery : AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.NewAudioControl)) &&
-        (entry.Page != SettingsPageKey.Interaction || entry.GroupId is not ("Interaction.AudioGestures" or "Device.Hotkeys") || AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.NewAudioControl) &&
+        (entry.Page != SettingsPageKey.DeviceManagement || entry.GroupId != "Battery.Title" || AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.BluetoothBattery) &&
         (entry.Page != SettingsPageKey.ScreenAndPlacement || entry.GroupId == "Common.Group.ChooseDisplayMode" ||
             entry.GroupId == "Common.Group.ScreenAndPlacement" && context.Mode == SettingsMode.Taskbar ||
             entry.GroupId == "Placement.Floating.Title" && context.Mode == SettingsMode.FloatingBar && AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.FloatingBar) &&
@@ -146,7 +144,6 @@ public static class SettingsSearchIndex
     private static SettingsSearchEntry[] Build(LocalizationLanguage language) =>
     [
         Create(SettingsPageKey.ScreenAndPlacement, "Placement.Floating.Title", "Placement.Floating.Description", language, ["桌面悬浮模式", "floating", "置顶", "锁定", "拖动"]),
-        Create(SettingsPageKey.Experimental, "Experimental.Audio.Title", "Experimental.Audio.Description", language, ["实验", "experimental", "input", "输入设备", "黑名单", "新音频"]),
         Create(SettingsPageKey.Experimental, "Experimental.FullPanel.Title", "Experimental.FullPanel.Description", language, ["完整面板", "完整層", "完整层", "横杠", "外侧", "悬停", "full panel", "handle", "hover", "0.5"]),
         Create(SettingsPageKey.Experimental, "Experimental.Vertical.Title", "Experimental.Vertical.Description", language, ["竖向", "vertical", "纵向"]),
         Create(SettingsPageKey.Experimental, "Experimental.Floating.Title", "Experimental.Floating.Description", language, ["悬浮", "floating", "桌面小工具"]),
@@ -223,7 +220,7 @@ public static class SettingsSearchIndex
         Create(SettingsPageKey.DeviceManagement, "Common.InputDevice", "Audio.Settings.InputList", language, ["输入", "麦克风", "input", "microphone"]),
         Create(SettingsPageKey.Interaction, "Device.Hotkeys", "Device.Cycle.Hint", language, ["设备快捷键", "循环", "hotkey", "cycle"]),
         Create(SettingsPageKey.DeviceManagement, "Battery.Title", "Battery.SelectHint", language, ["蓝牙", "藍牙", "电量", "電量", "耳机", "鼠标", "键盘", "battery", "bluetooth", "headphones", "mouse", "keyboard", "低电量"]),
-        Create(SettingsPageKey.Interaction, "Interaction.AudioGestures", "Audio.Settings.AdvancedDescription", language, ["音频手势", "设备点击", "设备滚轮", "audio gestures", "click", "wheel"]),
+        Create(SettingsPageKey.Interaction, "Audio.Settings.Advanced", "Audio.Settings.AdvancedDescription", language, ["音频设备手势", "音频手势", "设备点击", "设备滚轮", "audio gestures", "click", "wheel"]),
         Create(SettingsPageKey.Experimental, "Battery.Title", "Battery.SelectHint", language, ["蓝牙电量", "bluetooth battery", "电量组件"]),
         // ---- 交互 / Interaction ----
         Create(SettingsPageKey.DeviceManagement, "Common.OutputDevice", "Audio.Settings.Description", language,

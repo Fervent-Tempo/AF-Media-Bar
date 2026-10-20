@@ -35,21 +35,6 @@ public sealed class ExperimentalViewModel : ObservableObject, IDisposable
         get => SettingsManager.Current.Experiments.BluetoothBattery;
         set => _configuration.SetExperiments(SettingsManager.Current.Experiments with { BluetoothBattery = value });
     }
-    public bool DeviceHotkeys
-    {
-        get => SettingsManager.Current.Experiments.DeviceHotkeys;
-        set => _configuration.SetExperiments(SettingsManager.Current.Experiments with { DeviceHotkeys = value });
-    }
-    public bool DevicePersonalization
-    {
-        get => SettingsManager.Current.Experiments.DevicePersonalization;
-        set => _configuration.SetExperiments(SettingsManager.Current.Experiments with { DevicePersonalization = value });
-    }
-    public bool NewAudioControl
-    {
-        get => SettingsManager.Current.Experiments.NewAudioControl;
-        set => _configuration.SetExperiments(SettingsManager.Current.Experiments with { NewAudioControl = value });
-    }
     public bool VerticalTaskbar
     {
         get => SettingsManager.Current.Experiments.VerticalTaskbar;
@@ -84,9 +69,6 @@ public sealed class ExperimentalViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(SystemMemoryCleanup));
             OnPropertyChanged(nameof(MemoryTools));
             OnPropertyChanged(nameof(BluetoothBattery));
-            OnPropertyChanged(nameof(DeviceHotkeys));
-            OnPropertyChanged(nameof(DevicePersonalization));
-            OnPropertyChanged(nameof(NewAudioControl));
             OnPropertyChanged(nameof(VerticalTaskbar));
             OnPropertyChanged(nameof(FloatingBar));
             OnPropertyChanged(nameof(ExternalFullPanelHandle));

@@ -59,7 +59,7 @@ public partial class TaskBarMediaControl
     }
 
     private TextAlignment ResolveConfiguredAlignment(TextBlock element) =>
-        ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize().MediaTextAlignment switch
+        PresentationSettings.TaskbarExperience.Normalize().MediaTextAlignment switch
         {
             TaskbarMediaTextAlignment.Center => TextAlignment.Center,
             TaskbarMediaTextAlignment.Right => TextAlignment.Right,

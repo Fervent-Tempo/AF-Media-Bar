@@ -169,7 +169,7 @@ internal static class SettingsLiveVisualChecks
             var placement = (ScreenAndPlacementPage)provider.GetPage(typeof(ScreenAndPlacementPage))!;
             Assert.AreEqual(Visibility.Collapsed, ((RadioButton)placement.FindName("FloatingModeCard")).Visibility);
             Assert.IsFalse(((Wpf.Ui.Controls.CardExpander)placement.FindName("FutureModesExpander")).IsExpanded, "Upcoming modes must start collapsed.");
-            SettingsManager.Current.Experiments = new() { FloatingBar = true, NewAudioControl = true };
+            SettingsManager.Current.Experiments = new() { FloatingBar = true };
             var floatingCard = (RadioButton)placement.FindName("FloatingModeCard");
             var taskbarCard = (RadioButton)placement.FindName("TaskbarModeCard");
             Assert.AreEqual(Visibility.Visible, floatingCard.Visibility);

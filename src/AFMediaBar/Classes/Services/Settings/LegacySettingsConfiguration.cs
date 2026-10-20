@@ -164,7 +164,7 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
         }
         else if (scope is SettingsResetScope.ContentLayout or SettingsResetScope.DisplayModes)
         {
-            next.TaskbarExperience = SettingsResetPolicy.Content(next.TaskbarExperience, defaults.TaskbarExperience, root.Experiments.NewAudioControl) with
+            next.TaskbarExperience = SettingsResetPolicy.Content(next.TaskbarExperience, defaults.TaskbarExperience) with
             { LengthMode = geometry.LengthMode, FixedLengthDip = geometry.FixedLengthDip, Arrangement = geometry.Arrangement };
             next.SpectrumComponent = defaults.SpectrumComponent;
             next.PerformanceComponent = defaults.PerformanceComponent;

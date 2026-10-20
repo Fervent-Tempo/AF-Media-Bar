@@ -189,7 +189,7 @@ public static class SettingsManager
         var next = Current.Clone();
         var defaults = Defaults;
         next.TaskbarExperience = AFMediaBar.Classes.Services.Settings.SettingsResetPolicy.Content(next.TaskbarExperience,
-            defaults.TaskbarExperience, next.Experiments.NewAudioControl);
+            defaults.TaskbarExperience);
         next.SpectrumComponent = defaults.SpectrumComponent;
         next.PerformanceComponent = defaults.PerformanceComponent;
         next.BluetoothBatteryWidget = next.BluetoothBatteryWidget with { Enabled = defaults.BluetoothBatteryWidget.Enabled };
@@ -280,10 +280,9 @@ public static class SettingsManager
     public static void ResetInteraction()
     {
         var next = Current.Clone();
-        next.Interaction = AFMediaBar.Classes.Services.Settings.SettingsResetPolicy.Interaction(next.Interaction, Defaults.Interaction, next.Experiments.NewAudioControl);
-        if (next.Experiments.NewAudioControl && next.Experiments.DeviceHotkeys)
-            next.AudioDevices = next.AudioDevices with
-            { OutputCycleHotkey = Defaults.AudioDevices.OutputCycleHotkey, InputCycleHotkey = Defaults.AudioDevices.InputCycleHotkey };
+        next.Interaction = Defaults.Interaction;
+        next.AudioDevices = next.AudioDevices with
+        { OutputCycleHotkey = Defaults.AudioDevices.OutputCycleHotkey, InputCycleHotkey = Defaults.AudioDevices.InputCycleHotkey };
         Replace(next, SettingsResetScope.Interaction);
     }
     public static void ResetLyrics()

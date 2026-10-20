@@ -23,8 +23,6 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
     private readonly Dictionary<AudioDeviceDirection, List<string>> _observedOrder = [];
     private volatile bool _disposed;
     private int _policyVersion;
-    private bool _experimentalAudioEnabled;
-    public bool ExperimentalAudioEnabled => Volatile.Read(ref _experimentalAudioEnabled);
     public int PolicyVersion => Volatile.Read(ref _policyVersion);
     public int Version => _platform.Version;
     public event EventHandler? Changed { add => _platform.Changed += value; remove => _platform.Changed -= value; }
@@ -33,7 +31,6 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
     {
         _platform = platform;
         _settings = SettingsManager.Current.AudioDevices;
-        _experimentalAudioEnabled = SettingsManager.Current.Experiments.NewAudioControl;
         SettingsManager.SettingsChanged += OnSettingsChanged;
     }
 
@@ -41,14 +38,12 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args)
     {
         if (args.PropertyName is not (null or nameof(AppSettings.AudioDevices) or nameof(AppSettings.Interaction) or nameof(AppSettings.Experiments))) return;
-        Volatile.Write(ref _experimentalAudioEnabled, SettingsManager.Current.Experiments.NewAudioControl);
         Volatile.Write(ref _settings, SettingsManager.Current.AudioDevices);
         Interlocked.Increment(ref _policyVersion);
         _platform.Invalidate(cancelPending: true);
     }
 
-    public bool IsAllowed(AudioDeviceDirection direction, string id) => ExperimentalAudioEnabled
-        ? Volatile.Read(ref _settings).IsAllowed(direction, id) : direction == AudioDeviceDirection.Output;
+    public bool IsAllowed(AudioDeviceDirection direction, string id) => Volatile.Read(ref _settings).IsAllowed(direction, id);
     public Task<IReadOnlyList<AudioDeviceOption>> GetRenderDevicesAsync() => GetDevicesAsync(AudioDeviceDirection.Output);
     public Task<IReadOnlyList<AudioDeviceOption>> GetDevicesAsync(AudioDeviceDirection direction,
         bool includeHidden = false, CancellationToken cancellationToken = default) =>
@@ -57,7 +52,6 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
     private IReadOnlyList<AudioDeviceOption> Enumerate(AudioDeviceDirection direction, bool includeHidden)
     {
         using var enumerator = new MMDeviceEnumerator();
-        if (!ExperimentalAudioEnabled && direction == AudioDeviceDirection.Input) return [];
         var flow = direction == AudioDeviceDirection.Output ? DataFlow.Render : DataFlow.Capture;
         var defaultId = GetDefaultId(enumerator, flow, Role.Console);
         using var devices = enumerator.EnumerateAudioEndPoints(flow, includeHidden ? DeviceState.All : DeviceState.Active);
@@ -71,7 +65,7 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
                 if (!includeHidden && !IsAllowed(direction, id)) continue;
                 var suffix = direction == AudioDeviceDirection.Output ? "e6327cad-dcec-4949-ae8a-991e976a79d2" : "2eef81be-33fa-4800-9670-1cd474972c3f";
                 var name = device.FriendlyName;
-                var containerId = ExperimentalAudioEnabled && SettingsManager.Current.Experiments.BluetoothBattery ? ReadContainerId(device) : null;
+                var containerId = SettingsManager.Current.Experiments.BluetoothBattery ? ReadContainerId(device) : null;
                 options.Add(new AudioDeviceOption(@"\\?\SWD#MMDEVAPI#" + id + "#{" + suffix + "}",
                     id, string.IsNullOrWhiteSpace(name) ? id : name, string.Equals(id, defaultId, StringComparison.OrdinalIgnoreCase))
                 { Direction = direction, IsActive = device.State == DeviceState.Active,
@@ -86,9 +80,6 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
             }
             catch (COMException) { }
         }
-        if (!ExperimentalAudioEnabled || !(SettingsManager.Current.Experiments.DevicePersonalization || SettingsManager.Current.Experiments.DeviceHotkeys))
-            return options.OrderBy(device => device.DisplayName, StringComparer.CurrentCultureIgnoreCase)
-                .ThenBy(device => device.PolicyId, StringComparer.OrdinalIgnoreCase).ToArray();
         if (!_observedOrder.TryGetValue(direction, out var observed)) _observedOrder[direction] = observed = [];
         foreach (var option in options.OrderBy(device => device.SystemName, StringComparer.CurrentCultureIgnoreCase))
             if (!observed.Contains(option.PolicyId, StringComparer.OrdinalIgnoreCase)) observed.Add(option.PolicyId);
@@ -98,7 +89,7 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
             var discovered = options.OrderBy(device => observed.IndexOf(device.PolicyId)).ToArray();
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
-                if (_disposed || !ExperimentalAudioEnabled || !(SettingsManager.Current.Experiments.DevicePersonalization || SettingsManager.Current.Experiments.DeviceHotkeys)) return;
+                if (_disposed) return;
                 var settings = SettingsManager.Current.AudioDevices;
                 var entries = settings.Preferences.ToList();
                 foreach (var device in discovered)
@@ -110,7 +101,7 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
         return options.Select(device =>
         {
             var entry = preferences.FirstOrDefault(item => item.EndpointId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase));
-            return device with { DisplayName = !SettingsManager.Current.Experiments.DevicePersonalization || string.IsNullOrWhiteSpace(entry?.Alias) ? device.SystemName : entry.Alias };
+            return device with { DisplayName = string.IsNullOrWhiteSpace(entry?.Alias) ? device.SystemName : entry.Alias };
         }).OrderBy(device => { var index = Array.FindIndex(preferences, entry => entry.EndpointId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase)); return index < 0 ? preferences.Length + observed.IndexOf(device.PolicyId) : index; })
             .ThenBy(device => device.DisplayName, StringComparer.CurrentCultureIgnoreCase)
             .ThenBy(device => device.PolicyId, StringComparer.OrdinalIgnoreCase).ToArray();
@@ -137,7 +128,7 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
             return new AudioDeviceOperationResult(AudioDeviceOperationStatus.Unavailable);
         var operationPolicyVersion = PolicyVersion;
         var settings = Volatile.Read(ref _settings);
-        var communications = ExperimentalAudioEnabled && (device.Direction == AudioDeviceDirection.Output ? settings.SwitchOutputCommunications : settings.SwitchInputCommunications);
+        var communications = device.Direction == AudioDeviceDirection.Output ? settings.SwitchOutputCommunications : settings.SwitchInputCommunications;
         var roles = communications ? new[] { Role.Console, Role.Multimedia, Role.Communications } : new[] { Role.Console, Role.Multimedia };
         if (roles.All(role => string.Equals(GetDefaultId(enumerator, flow, role), device.PolicyId, StringComparison.OrdinalIgnoreCase)))
             return new AudioDeviceOperationResult(AudioDeviceOperationStatus.Unchanged);
@@ -162,14 +153,13 @@ public sealed class AudioDeviceService : IAudioDeviceCatalog, IDisposable
 
     public Task<string> GetDefaultDescriptionAsync(AudioDeviceDirection direction) => _platform.RunAsync(() =>
     {
-        if (!ExperimentalAudioEnabled && direction == AudioDeviceDirection.Input) return Translations.Get("Audio.Device.Disabled");
         using var enumerator = new MMDeviceEnumerator();
         var id = GetDefaultId(enumerator, direction == AudioDeviceDirection.Output ? DataFlow.Render : DataFlow.Capture, Role.Console);
         if (id is null) return Translations.Get("Audio.Device.Unavailable");
         if (!IsAllowed(direction, id)) return Translations.Get("Audio.Device.Hidden");
         using var device = enumerator.GetDevice(id);
         var preference = Volatile.Read(ref _settings).FindPreference(direction, id);
-        var name = ExperimentalAudioEnabled && SettingsManager.Current.Experiments.DevicePersonalization && !string.IsNullOrWhiteSpace(preference?.Alias)
+        var name = !string.IsNullOrWhiteSpace(preference?.Alias)
             ? preference.Alias : device.FriendlyName;
 
         return name;

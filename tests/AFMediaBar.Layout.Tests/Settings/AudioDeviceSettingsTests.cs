@@ -93,7 +93,6 @@ public sealed class AudioDeviceSettingsTests
             SettingsManager.SetUserDefaults(saved);
             SettingsManager.Current = new AppSettings
             {
-                Experiments = new() { NewAudioControl = true },
                 TaskbarExperience = TaskbarExperienceSettings.Default with { InputDeviceVisible = true }
             };
             SettingsManager.ResetInteraction();

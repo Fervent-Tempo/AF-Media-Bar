@@ -37,7 +37,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
         InitializeComponent();
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         ApplyMotionEffects();
-        MaxHeight = ViewModel.IsNewAudioControlEnabled ? 620 : 440;
+        MaxHeight = 620;
         appearanceService.Attach(this);
     }
 
@@ -155,21 +155,6 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
     {
         if (_isDisposed) return;
-        if (args.PropertyName == nameof(AudioControlViewModel.IsNewAudioControlEnabled))
-        {
-            _presentationVersion++;
-            _navigationVersion++;
-            _animationVersion++;
-            OutputDeviceComboBox.IsDropDownOpen = false;
-            LegacyOutputDeviceComboBox.IsDropDownOpen = false;
-            InputDeviceComboBox.IsDropDownOpen = false;
-            ApplicationOutputDeviceComboBox.IsDropDownOpen = false;
-            ApplicationInputDeviceComboBox.IsDropDownOpen = false;
-            _isHiding = false;
-            Hide();
-            MaxHeight = ViewModel.IsNewAudioControlEnabled ? 620 : 440;
-            return;
-        }
         if (args.PropertyName != nameof(AudioControlViewModel.SelectedAudioApplication)) return;
         ApplicationOutputDeviceComboBox.IsDropDownOpen = false;
         ApplicationInputDeviceComboBox.IsDropDownOpen = false;
@@ -283,7 +268,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
         // The ComboBox list uses a separate Popup; wait for its state to settle before treating deactivation as an outside click.
         Dispatcher.BeginInvoke(() =>
         {
-            if (!_isDisposed && IsVisible && !_isOutputDeviceDropDownOpen && !OutputDeviceComboBox.IsDropDownOpen && !LegacyOutputDeviceComboBox.IsDropDownOpen && !InputDeviceComboBox.IsDropDownOpen &&
+            if (!_isDisposed && IsVisible && !_isOutputDeviceDropDownOpen && !OutputDeviceComboBox.IsDropDownOpen && !InputDeviceComboBox.IsDropDownOpen &&
                 !ApplicationOutputDeviceComboBox.IsDropDownOpen && !ApplicationInputDeviceComboBox.IsDropDownOpen && !IsActive)
             {
                 BeginHideAnimation();

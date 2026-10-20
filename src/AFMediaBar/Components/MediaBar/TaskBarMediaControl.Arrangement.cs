@@ -26,7 +26,7 @@ public partial class TaskBarMediaControl
     public double GetMinimumPrimaryLength(double dpiScale)
     {
         var scale = double.IsFinite(dpiScale) && dpiScale > 0 ? dpiScale : 1;
-        var experience = ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize();
+        var experience = PresentationSettings.TaskbarExperience.Normalize();
         if (_isVertical || !_isConnected || !experience.HoverLayerEnabled)
             return Math.Ceiling(_minimumPrimaryLength * scale) / scale;
         var baseLength = Math.Max(_minimumPrimaryLength, ResolveRestLayout(experience, _minimumPrimaryLength).ContentWidth);
@@ -40,7 +40,7 @@ public partial class TaskBarMediaControl
     }
 
     private TaskbarContentArrangement ResolvedTaskbarArrangement => TaskbarArrangementPolicy.ResolveContent(
-        ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize().Arrangement, PresentationSettings.Position);
+        PresentationSettings.TaskbarExperience.Normalize().Arrangement, PresentationSettings.Position);
 
     private TaskbarBarPosition ResolvedTaskbarHoverAlignment => PresentationSettings.Position;
 
@@ -64,7 +64,7 @@ public partial class TaskBarMediaControl
         {
             // Use a canonical fixed-width layout, rather than subtracting changing widths.
             // This also avoids a one-pixel ties-to-even oscillation at the right anchor.
-            var experience = ExperimentalAudioPolicy.Experience(PresentationSettings.TaskbarExperience, PresentationSettings.Experiments.NewAudioControl).Normalize();
+            var experience = PresentationSettings.TaskbarExperience.Normalize();
             var baseWidth = Math.Max(_minimumPrimaryLength, ResolveRestLayout(experience, _minimumPrimaryLength).ContentWidth);
             var fixedLayout = ResolveRestLayout(experience, baseWidth);
             var anchor = _taskbarAnchorTwicePx.HasValue ? _taskbarAnchorTwicePx.Value / 2.0

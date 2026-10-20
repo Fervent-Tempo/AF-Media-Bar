@@ -2897,9 +2897,6 @@
   <data name="Common.Page.Experimental" xml:space="preserve"><value>实验性功能</value></data>
   <data name="Experimental.Warning" xml:space="preserve"><value>实验性功能未经充分测试，如遇问题，请通过任意现有反馈渠道反馈。</value></data>
   <data name="Experimental.Enable" xml:space="preserve"><value>启用此实验</value></data>
-  <data name="Experimental.Audio.Title" xml:space="preserve"><value>新版音频控制</value></data>
-  <data name="Experimental.Audio.Description" xml:space="preserve"><value>新版菜单、输入设备、应用设备路由、黑名单与高级切换策略。</value></data>
-  <data name="Experimental.Audio.RoutesNotice" xml:space="preserve"><value>关闭实验将恢复原版输出设备与音量界面，并保留实验配置。已保存到 Windows 的应用路由偏好不会自动清除。</value></data>
   <data name="Experimental.Vertical.Title" xml:space="preserve"><value>竖向任务栏</value></data>
   <data name="Experimental.Vertical.Description" xml:space="preserve"><value>在真实的左侧或右侧任务栏中显示竖向媒体栏。</value></data>
   <data name="Experimental.Vertical.Shared" xml:space="preserve"><value>任务栏横向与竖向共享同一份配置。此处修改也会影响横向任务栏。</value></data>
@@ -2912,7 +2909,6 @@
   <data name="Experimental.OpenAppearance" xml:space="preserve"><value>前往外观设置</value></data>
   <data name="Experimental.Vertical.Notification.Title" xml:space="preserve"><value>已检测到竖向任务栏</value></data>
   <data name="Experimental.Vertical.Notification.Body" xml:space="preserve"><value>启用竖向任务栏实验后可在此显示媒体栏。点击前往实验性功能。</value></data>
-  <data name="Experimental.Audio.RoutingPreserved" xml:space="preserve"><value>关闭实验会保留实验设置及已有的 Windows 应用音频路由偏好，不会自动清除。</value></data>
   <data name="Experimental.Floating.Mode" xml:space="preserve"><value>显示模式</value></data>
   <data name="Experimental.Floating.Taskbar" xml:space="preserve"><value>任务栏</value></data>
   <data name="Experimental.Floating.Switching" xml:space="preserve"><value>正在切换显示模式…</value></data>
@@ -3003,14 +2999,10 @@
   <data name="Memory.System.Cancelled" xml:space="preserve"><value>已取消清理请求</value></data>
   <data name="Memory.System.Busy" xml:space="preserve"><value>已有系统清理正在执行</value></data>
   <data name="Memory.System.Readings" xml:space="preserve"><value>系统可用内存：{0} → {1}</value></data>
-  <data name="Device.Personalization" xml:space="preserve"><value>设备别名与顺序</value></data>
-  <data name="Device.PersonalizationHint" xml:space="preserve"><value>拖动调整 AF 中的显示与切换顺序；禁用设备收起，仅影响 AF。</value></data>
   <data name="Device.Alias" xml:space="preserve"><value>AF 设备别名（清空恢复系统名称，Enter 保存，Esc 取消）</value></data>
   <data name="Device.Forget" xml:space="preserve"><value>删除失联配置</value></data>
   <data name="Device.Rebind" xml:space="preserve"><value>重新关联</value></data>
   <data name="Device.RebindHint" xml:space="preserve"><value>手动选择替代端点，将本条配置转移并替换目标端点的 AF 配置。不会按名称自动关联。</value></data>
-  <data name="Device.Hotkey.Title" xml:space="preserve"><value>设备切换快捷键</value></data>
-  <data name="Device.Hotkey.Hint" xml:space="preserve"><value>仅切换系统默认设备。点击录制后按包含 Ctrl 或 Alt 的组合键，不支持 Win 与 F12。按拖动顺序循环勾选的启用设备，跳过离线设备。</value></data>
   <data name="Device.Hotkey.CycleOutput" xml:space="preserve"><value>循环所选输出设备</value></data>
   <data name="Device.Hotkey.CycleInput" xml:space="preserve"><value>循环所选输入设备</value></data>
   <data name="Device.Hotkey.Invalid" xml:space="preserve"><value>组合键格式无效</value></data>
@@ -3089,12 +3081,11 @@
   <data name="Memory.Auto.Paused" xml:space="preserve"><value>权限失效或多次失败，已暂停；请检查最近结果后恢复</value></data>
   <data name="Device.Management.Title" xml:space="preserve"><value>设备管理</value></data>
   <data name="Device.Management.Description" xml:space="preserve"><value>管理输入输出设备的启用、别名、显示与切换顺序，以及蓝牙电量</value></data>
-  <data name="Device.RequireExperiment" xml:space="preserve"><value>设备切换与个性化受实验功能开关控制；请开启对应项目。禁用仅影响 AF，不会禁用 Windows 设备。</value></data>
   <data name="Device.Enabled" xml:space="preserve"><value>启用</value></data>
   <data name="Device.Disabled" xml:space="preserve"><value>已禁用设备</value></data>
   <data name="Device.Offline" xml:space="preserve"><value>暂不可用</value></data>
-  <data name="Device.Hotkeys" xml:space="preserve"><value>循环快捷键</value></data>
-  <data name="Device.Cycle.Hint" xml:space="preserve"><value>按设备管理中已启用设备的顺序循环，跳过离线设备。输入和输出各使用一个组合键；需开启设备快捷键实验。</value></data>
+  <data name="Device.Hotkeys" xml:space="preserve"><value>设备切换快捷键</value></data>
+  <data name="Device.Cycle.Hint" xml:space="preserve"><value>仅切换系统默认设备，按设备管理中已启用设备的顺序循环，跳过离线设备。输入和输出各使用一个组合键。</value></data>
   <data name="Battery.SelectHint" xml:space="preserve"><value>手动选择一个已配对设备，仅查询该设备的标准电量信息。驱动或设备不提供时显示未知。</value></data>
   <data name="Battery.Select" xml:space="preserve"><value>追踪设备</value></data>
   <data name="Battery.ListRefresh" xml:space="preserve"><value>刷新配对设备列表</value></data>
@@ -3110,7 +3101,6 @@
   <data name="Battery.Refresh" xml:space="preserve"><value>刷新电量</value></data>
   <data name="Battery.RefreshHint" xml:space="preserve"><value>读取最多每分钟一次；连接变化会更新状态，失败时退避。</value></data>
   <data name="Battery.WidgetHint" xml:space="preserve"><value>在设备管理中选择追踪目标。无媒体时显示需在下方保留组件中勾选蓝牙电量。</value></data>
-  <data name="Interaction.AudioGestures" xml:space="preserve"><value>音频设备手势</value></data>
   <data name="Memory.System.CacheReadings" xml:space="preserve"><value>系统缓存（含待机页）：{0} → {1}</value></data>
   <data name="Memory.System.Change" xml:space="preserve"><value>可用内存变化：{0} MB</value></data>
   <data name="Memory.System.Elapsed" xml:space="preserve"><value>执行耗时：{0} ms</value></data>

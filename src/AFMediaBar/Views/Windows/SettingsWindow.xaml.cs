@@ -493,9 +493,6 @@ namespace AFMediaBar.Views.Windows
                 page = SettingsPageKey.Experimental;
             else if (page == SettingsPageKey.DeviceManagement && group == "Battery.Title" && !experiments.BluetoothBattery)
                 page = SettingsPageKey.Experimental;
-            else if ((page == SettingsPageKey.DeviceManagement && group != "Battery.Title" ||
-                page == SettingsPageKey.Interaction && group is "Device.Hotkeys" or "Interaction.AudioGestures") && !experiments.NewAudioControl)
-            { page = SettingsPageKey.Experimental; group = "Experimental.Audio.Title"; }
             if (!string.IsNullOrEmpty(group)) NavigateToGroup(page, group);
             else Navigate(SettingsPageProvider.PageTypes[page]);
         }

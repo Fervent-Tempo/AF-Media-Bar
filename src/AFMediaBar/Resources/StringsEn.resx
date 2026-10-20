@@ -2897,9 +2897,6 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Common.Page.Experimental" xml:space="preserve"><value>Experimental features</value></data>
   <data name="Experimental.Warning" xml:space="preserve"><value>Experimental features have not been fully tested. Please report problems through any existing feedback channel.</value></data>
   <data name="Experimental.Enable" xml:space="preserve"><value>Enable this experiment</value></data>
-  <data name="Experimental.Audio.Title" xml:space="preserve"><value>New audio controls</value></data>
-  <data name="Experimental.Audio.Description" xml:space="preserve"><value>New menus, input devices, application routing, device exclusions and advanced switching.</value></data>
-  <data name="Experimental.Audio.RoutesNotice" xml:space="preserve"><value>Disabling restores the original output and volume controls and keeps experimental preferences. Application routes saved in Windows are not cleared automatically.</value></data>
   <data name="Experimental.Vertical.Title" xml:space="preserve"><value>Vertical taskbar</value></data>
   <data name="Experimental.Vertical.Description" xml:space="preserve"><value>Show a vertical media bar in a taskbar on the left or right side.</value></data>
   <data name="Experimental.Vertical.Shared" xml:space="preserve"><value>Horizontal and vertical taskbars share one configuration. Changes here also affect horizontal taskbars.</value></data>
@@ -2912,7 +2909,6 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Experimental.OpenAppearance" xml:space="preserve"><value>Open appearance settings</value></data>
   <data name="Experimental.Vertical.Notification.Title" xml:space="preserve"><value>Vertical taskbar detected</value></data>
   <data name="Experimental.Vertical.Notification.Body" xml:space="preserve"><value>Enable the vertical taskbar experiment to show the media bar here. Click to open Experimental features.</value></data>
-  <data name="Experimental.Audio.RoutingPreserved" xml:space="preserve"><value>Turning this experiment off keeps its saved settings and existing Windows application routing preferences.</value></data>
   <data name="Experimental.Floating.Mode" xml:space="preserve"><value>Display mode</value></data>
   <data name="Experimental.Floating.Taskbar" xml:space="preserve"><value>Taskbar</value></data>
   <data name="Experimental.Floating.Switching" xml:space="preserve"><value>Switching display mode…</value></data>
@@ -3003,14 +2999,10 @@ Managed heap {6} → {7} · {8} ms · {9}</value></data>
   <data name="Memory.System.Cancelled" xml:space="preserve"><value>Cleanup request cancelled</value></data>
   <data name="Memory.System.Busy" xml:space="preserve"><value>System cleanup is already running</value></data>
   <data name="Memory.System.Readings" xml:space="preserve"><value>Available system memory: {0} → {1}</value></data>
-  <data name="Device.Personalization" xml:space="preserve"><value>Device aliases and order</value></data>
-  <data name="Device.PersonalizationHint" xml:space="preserve"><value>Drag to reorder display and switching in AF. Disabled devices are collapsed; Windows devices are unaffected.</value></data>
   <data name="Device.Alias" xml:space="preserve"><value>AF device alias (clear to use the system name, Enter to save, Esc to cancel)</value></data>
   <data name="Device.Forget" xml:space="preserve"><value>Forget missing device</value></data>
   <data name="Device.Rebind" xml:space="preserve"><value>Rebind</value></data>
   <data name="Device.RebindHint" xml:space="preserve"><value>Choose a replacement endpoint. This transfers the saved preferences and replaces its AF configuration. Names are never matched automatically.</value></data>
-  <data name="Device.Hotkey.Title" xml:space="preserve"><value>Device switching hotkeys</value></data>
-  <data name="Device.Hotkey.Hint" xml:space="preserve"><value>Switches system defaults only. Record a shortcut containing Ctrl or Alt; Win and F12 are unsupported. Cycle checked, enabled devices in their displayed order, skipping offline devices.</value></data>
   <data name="Device.Hotkey.CycleOutput" xml:space="preserve"><value>Cycle selected output devices</value></data>
   <data name="Device.Hotkey.CycleInput" xml:space="preserve"><value>Cycle selected input devices</value></data>
   <data name="Device.Hotkey.Invalid" xml:space="preserve"><value>Invalid key combination</value></data>
@@ -3089,12 +3081,11 @@ Source: {2}</value></data>
   <data name="Memory.Auto.Paused" xml:space="preserve"><value>Paused after authorization loss or repeated failures; check the latest result before resuming</value></data>
   <data name="Device.Management.Title" xml:space="preserve"><value>Device management</value></data>
   <data name="Device.Management.Description" xml:space="preserve"><value>Manage enabled input/output devices, aliases, display and switching order, and Bluetooth battery</value></data>
-  <data name="Device.RequireExperiment" xml:space="preserve"><value>Device switching and personalization follow their experimental switches. Disabling a device here affects AF only.</value></data>
   <data name="Device.Enabled" xml:space="preserve"><value>Enabled</value></data>
   <data name="Device.Disabled" xml:space="preserve"><value>Disabled devices</value></data>
   <data name="Device.Offline" xml:space="preserve"><value>Currently unavailable</value></data>
-  <data name="Device.Hotkeys" xml:space="preserve"><value>Cycle shortcuts</value></data>
-  <data name="Device.Cycle.Hint" xml:space="preserve"><value>Cycle through enabled devices in Device management order, skipping offline devices. Input and output each use one shortcut; enable the device hotkey experiment first.</value></data>
+  <data name="Device.Hotkeys" xml:space="preserve"><value>Device switching shortcuts</value></data>
+  <data name="Device.Cycle.Hint" xml:space="preserve"><value>Switch system defaults through enabled devices in Device management order, skipping offline devices. Input and output each use one shortcut.</value></data>
   <data name="Battery.SelectHint" xml:space="preserve"><value>Choose one paired device. Only its standard battery information is queried; unsupported devices show unknown.</value></data>
   <data name="Battery.Select" xml:space="preserve"><value>Tracked device</value></data>
   <data name="Battery.ListRefresh" xml:space="preserve"><value>Refresh paired devices</value></data>
@@ -3110,7 +3101,6 @@ Source: {2}</value></data>
   <data name="Battery.Refresh" xml:space="preserve"><value>Refresh battery</value></data>
   <data name="Battery.RefreshHint" xml:space="preserve"><value>Reads at most once per minute, with connection updates and backoff on failures.</value></data>
   <data name="Battery.WidgetHint" xml:space="preserve"><value>Select a device in Device management. To show it without media, also select Bluetooth battery in the kept components list.</value></data>
-  <data name="Interaction.AudioGestures" xml:space="preserve"><value>Audio device gestures</value></data>
   <data name="Memory.System.CacheReadings" xml:space="preserve"><value>System cache (including standby pages): {0} → {1}</value></data>
   <data name="Memory.System.Change" xml:space="preserve"><value>Change in available memory: {0} MB</value></data>
   <data name="Memory.System.Elapsed" xml:space="preserve"><value>Execution time: {0} ms</value></data>

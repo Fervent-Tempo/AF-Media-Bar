@@ -5,12 +5,9 @@
   "settings": {
     "experiments": {
       "bluetoothBattery": "unreleased",
-      "deviceHotkeys": "unreleased",
-      "devicePersonalization": "unreleased",
       "memoryTools": "unreleased",
       "systemMemoryCleanup": "unreleased",
       "floatingBar": "unreleased",
-      "newAudioControl": "unreleased",
       "externalFullPanelHandle": "unreleased",
       "externalFullPanelHandleTrigger": "unreleased",
       "$release": "unreleased",
@@ -734,6 +731,12 @@
     }
   },
   "removed": {
+    "settings.experiments.newAudioControl": {
+      "firstReleased": "v1.5.0",
+      "lastPresentRelease": "v1.5.0",
+      "firstAbsentRelease": "unreleased",
+      "currentHandling": "legacy flag ignored; audio controls always available; saved device preferences and hotkeys preserved"
+    },
     "settings.lyricsMatchStrictness": {
       "firstReleased": "v1.2.0",
       "lastPresentRelease": "v1.2.1",

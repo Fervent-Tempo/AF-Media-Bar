@@ -14,7 +14,6 @@ public partial class InteractionViewModel : ObservableObject, IDisposable
     private readonly ISettingsConfiguration _configuration;
     private bool _disposed;
     public AudioDeviceHotkeySettingsViewModel? Hotkeys { get; }
-    public bool IsNewAudioControlEnabled => SettingsManager.Current.Experiments.NewAudioControl;
     public AudioDeviceSwitchTarget OutputDeviceClickTarget { get => Current.OutputDeviceClickTarget; set => Update(Current with { OutputDeviceClickTarget = value }); }
     public AudioDeviceSwitchTarget OutputDeviceWheelTarget { get => Current.OutputDeviceWheelTarget; set => Update(Current with { OutputDeviceWheelTarget = value }); }
     public AudioDeviceSwitchTarget InputDeviceClickTarget { get => Current.InputDeviceClickTarget; set => Update(Current with { InputDeviceClickTarget = value }); }

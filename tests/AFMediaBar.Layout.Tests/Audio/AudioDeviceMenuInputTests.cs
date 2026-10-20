@@ -38,7 +38,6 @@ public sealed class AudioDeviceMenuInputTests
         }
         StaTest.Run(_ =>
         {
-            SettingsManager.Current.Experiments = SettingsManager.Current.Experiments with { NewAudioControl = true };
             var application = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
             using var icons = new AppIconService();
             using var appearance = new WindowAppearanceService(new NativeWindowBackdropAdapter(), icons);

@@ -62,11 +62,8 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
     public void ShowDevices(AudioDeviceTarget target, IReadOnlyList<AudioDeviceOption> devices, AudioDeviceOption? selected, TrayIconBounds anchor, bool isSupported = true)
     {
         if (_allowClose) return;
-        var experimental = SettingsManager.Current.Experiments.NewAudioControl;
-        if (!experimental && (target.Direction == AudioDeviceDirection.Input || target.Application is not null)) { Dismiss(); return; }
-        LegacyOutputDeviceComboBox.Visibility = experimental ? Visibility.Collapsed : Visibility.Visible;
-        OutputDeviceList.Visibility = experimental ? Visibility.Visible : Visibility.Collapsed;
-        CurrentDeviceText.Visibility = experimental ? Visibility.Visible : Visibility.Collapsed;
+        OutputDeviceList.Visibility = Visibility.Visible;
+        CurrentDeviceText.Visibility = Visibility.Visible;
         DeviceTarget = target;
         OutputDeviceList.IsEnabled = isSupported;
         DeviceTitleText.Text = Translations.Get(target.Direction == AudioDeviceDirection.Output ? "Common.OutputDevice" : "Common.InputDevice");
@@ -102,10 +99,6 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
         if (_allowClose) return;
         OutputDeviceList.ItemsSource = devices;
         OutputDeviceList.SelectedItem = selected;
-        _isUpdating = true;
-        LegacyOutputDeviceComboBox.ItemsSource = devices;
-        LegacyOutputDeviceComboBox.SelectedItem = selected;
-        _isUpdating = false;
         CurrentDeviceText.Text = selected?.MenuLabel ?? Translations.Get("Audio.Device.Unavailable");
         DeviceUnavailableText.Text = !OutputDeviceList.IsEnabled ? Translations.Get("Audio.Route.Unsupported") :
             devices.Count == 0 ? Translations.Get("Audio.Device.Unavailable") : string.Empty;
@@ -127,9 +120,6 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
         OutputDeviceList.SelectedItem = OutputDeviceList.Items.Cast<AudioDeviceOption>()
             .FirstOrDefault(item => item.PolicyId.Equals(device.PolicyId, StringComparison.OrdinalIgnoreCase));
         if (OutputDeviceList.SelectedItem is not AudioDeviceOption candidate) return;
-        _isUpdating = true;
-        LegacyOutputDeviceComboBox.SelectedItem = candidate;
-        _isUpdating = false;
         CurrentDeviceText.Text = candidate.MenuLabel;
         CurrentDeviceText.ToolTip = candidate.DeviceHint;
         RevealCandidate(OutputDeviceList.SelectedItem as AudioDeviceOption);
@@ -163,7 +153,6 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
     /// <summary>使用统一退出动效隐藏菜单。 / Hides the menu with the shared exit motion.</summary>
     public void Dismiss()
     {
-        LegacyOutputDeviceComboBox.IsDropDownOpen = false;
         if (IsVisible) BeginHideAnimation();
     }
 
@@ -235,13 +224,6 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
         }
     }
 
-    private void LegacyOutputDeviceComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (_isUpdating || _allowClose || LegacyOutputDeviceComboBox.SelectedItem is not AudioDeviceOption device) return;
-        Dismiss();
-        OutputDeviceSelected?.Invoke(device);
-    }
-
     private void DeviceItem_Click(object sender, RoutedEventArgs e)
     {
         if (_allowClose || !OutputDeviceList.IsEnabled || sender is not Button { DataContext: AudioDeviceOption device }) return;
@@ -289,7 +271,7 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
         var version = _animationVersion;
         Dispatcher.BeginInvoke(() =>
         {
-            if (!_allowClose && version == _animationVersion && IsVisible && !IsActive && !LegacyOutputDeviceComboBox.IsDropDownOpen) BeginHideAnimation();
+            if (!_allowClose && version == _animationVersion && IsVisible && !IsActive) BeginHideAnimation();
         }, DispatcherPriority.ContextIdle);
     }
 
@@ -342,7 +324,6 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
     public void Dispose()
     {
         if (_allowClose) return;
-        LegacyOutputDeviceComboBox.IsDropDownOpen = false;
         _allowClose = true;
         _animationVersion++;
         FlyoutRoot.BeginAnimation(OpacityProperty, null);

@@ -88,8 +88,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     private bool IsBackgroundPruned => _prune.CurrentLevel >= MemoryPruneLevel.DisplayOff;
     private bool IsOperational => !_isClosing && !_suspended && !IsBackgroundPruned && SettingsManager.Current.TaskbarBarEnabled && !_mediaControl.ShouldHideTaskbarWindow;
     private double Dpi => Math.Max(1, Monitor.DpiX) / 96d;
-    private GlobalInteractionSettings EffectiveInteraction => ExperimentalAudioPolicy.Interaction(
-        PresentationSettings.Interaction, SettingsManager.Current.Experiments.NewAudioControl);
+    private GlobalInteractionSettings EffectiveInteraction => PresentationSettings.Interaction;
 
     public string TargetMonitorDeviceId { get; }
     public DisplayMonitorInfo Monitor { get; }
@@ -291,8 +290,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             if (_savedPosition is not null && saved is null)
                 _centerPx = new Point(Monitor.WorkArea.Left + Monitor.WorkArea.Width / 2, Monitor.WorkArea.Top + Monitor.WorkArea.Height / 2);
             _savedPosition = saved;
-            var environmentChanged = settings.Orientation != _orientation || settings.Layer != _layer ||
-                PresentationSettings.Experiments.NewAudioControl != SettingsManager.Current.Experiments.NewAudioControl;
+            var environmentChanged = settings.Orientation != _orientation || settings.Layer != _layer;
             if (environmentChanged) ClearInteraction();
             _orientation = settings.Orientation;
             _layer = settings.Layer;

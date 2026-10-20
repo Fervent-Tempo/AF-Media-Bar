@@ -18,7 +18,6 @@ public sealed class ApplicationAudioRoutingService(AudioPlatformService platform
         platform.RunAsync<IReadOnlyList<ApplicationAudioSnapshot>>(EnumerateApplications, token);
     private IReadOnlyList<ApplicationAudioSnapshot> EnumerateApplications()
     {
-        if (!devices.ExperimentalAudioEnabled) return [];
         var groups = new Dictionary<string, (string Name, string Display, Dictionary<int, AudioProcessIdentity> Processes, bool Output, bool Input)>(StringComparer.OrdinalIgnoreCase);
         using var enumerator = new MMDeviceEnumerator();
         foreach (var direction in Enum.GetValues<AudioDeviceDirection>())
@@ -83,7 +82,6 @@ public sealed class ApplicationAudioRoutingService(AudioPlatformService platform
     public Task<ApplicationAudioRoute> ReadRouteAsync(ApplicationAudioSnapshot app, AudioDeviceDirection direction, CancellationToken token = default) =>
         platform.RunAsync(() =>
         {
-            if (!devices.ExperimentalAudioEnabled) return new ApplicationAudioRoute(null, false, false, "Audio.Route.Unsupported");
             try
             {
                 using var policy = new ApplicationAudioPolicy();
@@ -102,7 +100,7 @@ public sealed class ApplicationAudioRoutingService(AudioPlatformService platform
     public Task<AudioDeviceOperationResult> SetRouteAsync(ApplicationAudioSnapshot app, AudioDeviceDirection direction,
         AudioDeviceOption? device, CancellationToken token = default, Func<bool>? isCurrent = null) => platform.RunAsync(() =>
     {
-        if (!devices.ExperimentalAudioEnabled || isCurrent?.Invoke() == false) return new AudioDeviceOperationResult(AudioDeviceOperationStatus.Cancelled);
+        if (isCurrent?.Invoke() == false) return new AudioDeviceOperationResult(AudioDeviceOperationStatus.Cancelled);
         if (device is not null)
         {
             if (device.Direction != direction || !devices.IsAllowed(direction, device.PolicyId))
@@ -125,7 +123,7 @@ public sealed class ApplicationAudioRoutingService(AudioPlatformService platform
                 for (var role = 0; role < 3; role++)
                 {
                     token.ThrowIfCancellationRequested();
-                    if (!devices.ExperimentalAudioEnabled || isCurrent?.Invoke() == false || !IsCurrent(process) ||
+                    if (isCurrent?.Invoke() == false || !IsCurrent(process) ||
                         (device is not null && !devices.IsAllowed(direction, device.PolicyId)))
                         return new AudioDeviceOperationResult(changed > 0 ? AudioDeviceOperationStatus.Partial : AudioDeviceOperationStatus.Cancelled);
                     try

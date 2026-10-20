@@ -23,8 +23,7 @@ namespace AFMediaBar.ViewModels.Windows;
 /// </summary>
 public partial class AudioControlViewModel : ObservableObject, IDisposable
 {
-    private GlobalInteractionSettings EffectiveInteraction => ExperimentalAudioPolicy.Interaction(
-        SettingsManager.Current.Interaction, SettingsManager.Current.Experiments.NewAudioControl);
+    private GlobalInteractionSettings EffectiveInteraction => SettingsManager.Current.Interaction;
 
     private const int VolumeStepPercent = 2;
     private const bool TrayChordWheelEnabled = false;
@@ -39,8 +38,6 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     private readonly ApplicationVolumeService _volumeService;
     private readonly ApplicationAudioControlCoordinator _applicationControl;
     private CancellationTokenSource _applicationCancellation = new();
-    private bool _experimentalAudioEnabled = SettingsManager.Current.Experiments.NewAudioControl;
-    public bool IsNewAudioControlEnabled => SettingsManager.Current.Experiments.NewAudioControl;
     private readonly MediaSessionService _mediaSessionService;
     private readonly ShellTrayIconService _trayIconService;
     private readonly NativeMouseInputMonitor _mouseInputMonitor;
@@ -74,7 +71,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void ToggleAudioApplication(ApplicationAudioItemViewModel? row)
     {
-        if (_disposed || !IsNewAudioControlEnabled || row is null || !row.CanRoute || !AudioApplications.Contains(row)) return;
+        if (_disposed || row is null || !row.CanRoute || !AudioApplications.Contains(row)) return;
         SelectedAudioApplication = ReferenceEquals(SelectedAudioApplication, row) ? null : row;
     }
 
@@ -603,24 +600,6 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
 
     private void OnInteractionSettingsChanged(object? sender, EventArgs e)
     {
-        var enabled = SettingsManager.Current.Experiments.NewAudioControl;
-        if (_experimentalAudioEnabled != enabled)
-        {
-            _experimentalAudioEnabled = enabled;
-            _audioRefreshVersion++;
-            _deviceApplyVersion++;
-            _pendingTrayDeviceSteps = 0;
-            _pendingTrayVolumeSteps = 0;
-            _audioInteraction.CancelDeviceOwner(this);
-            _applicationCancellation.Cancel();
-            _applicationCancellation.Dispose();
-            _applicationCancellation = new();
-            CloseApplicationDetail();
-            foreach (var row in AudioApplications) row.Dispose();
-            AudioApplications.Clear();
-            InputDevices.Clear();
-            OnPropertyChanged(nameof(IsNewAudioControlEnabled));
-        }
         QueueTrayTooltipRefresh();
     }
 

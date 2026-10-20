@@ -21,11 +21,6 @@ public sealed partial class FloatingBarWindow
 
     private async Task ShowDeviceMenuAsync(AudioDeviceDirection direction, AudioDeviceSwitchTarget scope, TrayIconBounds anchor)
     {
-        if (!PresentationSettings.Experiments.NewAudioControl)
-        {
-            if (direction == AudioDeviceDirection.Input) return;
-            scope = AudioDeviceSwitchTarget.SystemDefault;
-        }
         if (!CanPublishMenu(_menuEnvironmentVersion) || scope == AudioDeviceSwitchTarget.Disabled) return;
         var environmentVersion = _menuEnvironmentVersion;
         var mode = direction == AudioDeviceDirection.Output ? TaskbarCompactFlyoutMode.OutputDevice : TaskbarCompactFlyoutMode.InputDevice;

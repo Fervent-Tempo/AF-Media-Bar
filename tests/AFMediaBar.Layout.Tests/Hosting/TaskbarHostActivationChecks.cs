@@ -28,7 +28,7 @@ internal static class TaskbarHostActivationChecks
         using var appearance = new WindowAppearanceService(new NativeWindowBackdropAdapter(), icons);
         using var switches = new AudioDeviceSwitchCoordinator(new NoDevices());
         using var battery = new BluetoothBatteryService(new(), new(), null!, null!);
-        var audio = new AudioInteractionService(null!, null!, null!, null!, switches, null!, () => false);
+        var audio = new AudioInteractionService(null!, null!, null!, null!, switches, null!);
         var prune = new MemoryPruneCoordinator(null!, null!, null!, []);
         using var mouse = new NativeMouseInputMonitor(null!);
         using var monitor = new AudioMonitorService(null!, null!);
