@@ -21,12 +21,11 @@ namespace AFMediaBar.Views.Windows;
 public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
 {
     private static readonly TimeSpan PointerLeaveGrace = TimeSpan.FromMilliseconds(500);
-    private const double HiddenLengthScale = 0.9;
     private readonly NativeMouseInputMonitor _input;
     private readonly Border _line;
     private readonly Border _outline;
     private readonly Grid _marks;
-    private readonly ScaleTransform _markScale = new();
+    private readonly TranslateTransform _markTranslation = new();
     private readonly ScreenBackgroundSampler _sampler;
     private readonly AdaptiveForegroundSamplingSession _contrastSampling;
     private readonly DispatcherTimer _pointerTimer;
@@ -46,8 +45,10 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     private bool _contrastReady;
     private int _animationVersion;
     private bool _isHiding;
+    private bool _isAnimating;
     private bool _canResumeDismissal;
     private bool _vertical;
+    private bool _taskbarOnLeadingEdge;
     private bool _taskbarSuspended;
     private bool _isPressed;
     private bool _disposed;
@@ -70,10 +71,10 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         _outline = new Border { CornerRadius = new CornerRadius(3), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         _contrastSampling = new AdaptiveForegroundSamplingSession(sampler, Dispatcher, GetContrastBounds, ApplyContrast);
         // 极低 alpha 让整个按钮矩形可命中；窗口尺寸不包含媒体栏与过渡区域。
-        _marks = new Grid { Opacity = 0, RenderTransform = _markScale, RenderTransformOrigin = new Point(0.5, 0.5) };
+        _marks = new Grid { Opacity = 0, RenderTransform = _markTranslation };
         _marks.Children.Add(_outline);
         _marks.Children.Add(_line);
-        var surface = new Border { Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0)), Child = _marks, Cursor = Cursors.Hand };
+        var surface = new Border { Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0)), Child = _marks, Cursor = Cursors.Hand, ClipToBounds = true };
         surface.MouseLeftButtonUp += Surface_MouseLeftButtonUp;
         surface.MouseLeftButtonDown += Surface_MouseLeftButtonDown;
         surface.MouseEnter += Surface_MouseEnter;
@@ -83,11 +84,12 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     }
 
     public void Reveal(TrayIconBounds bar, Rect handleBounds, Rect transitBounds, FullPanelOpenRequestEventArgs request,
-        bool vertical, FullPanelHandleTrigger trigger, Func<bool> canRemainVisible)
+        bool vertical, bool taskbarOnLeadingEdge, FullPanelHandleTrigger trigger, Func<bool> canRemainVisible)
     {
         if (_disposed) return;
         _barBounds = new Rect(bar.Left, bar.Top, bar.Right - bar.Left, bar.Bottom - bar.Top);
-        if (IsVisible && (_handleBounds != handleBounds || _vertical != vertical)) Dismiss(immediate: true);
+        if (IsVisible && (_handleBounds != handleBounds || _vertical != vertical || _taskbarOnLeadingEdge != taskbarOnLeadingEdge))
+            Dismiss(immediate: true);
         _request = request;
         _canRemainVisible = canRemainVisible;
         _trigger = trigger;
@@ -101,6 +103,7 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         _handleBounds = handleBounds;
         _transitBounds = transitBounds;
         _vertical = vertical;
+        _taskbarOnLeadingEdge = taskbarOnLeadingEdge;
         Title = Translations.Get("Experimental.FullPanel.Title");
         _taskbarSuspended = false;
         _hoverSince = null;
@@ -113,8 +116,8 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         _outline.Height = vertical ? 30 : 6;
         _contrastReady = false;
         var motion = MotionPolicy.ResolveCurrent();
-        SetPresentation(0, motion.Mode == MotionMode.Full && !vertical ? HiddenLengthScale : 1,
-            motion.Mode == MotionMode.Full && vertical ? HiddenLengthScale : 1);
+        var hiddenOffset = motion.Mode == MotionMode.Full ? GetHiddenTranslation() : new Vector();
+        SetPresentation(0, hiddenOffset.X, hiddenOffset.Y);
         var handle = new WindowInteropHelper(this).EnsureHandle();
         Position(handle);
         Show();
@@ -172,13 +175,11 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         var version = ++_animationVersion;
         var motion = MotionPolicy.ResolveCurrent();
         var opacity = _marks.Opacity;
-        var scaleX = _markScale.ScaleX;
-        var scaleY = _markScale.ScaleY;
-        var targetScale = visible ? 1 : HiddenLengthScale;
-        var targetX = motion.Mode == MotionMode.Full && !_vertical ? targetScale : 1;
-        var targetY = motion.Mode == MotionMode.Full && _vertical ? targetScale : 1;
+        var offsetX = _markTranslation.X;
+        var offsetY = _markTranslation.Y;
+        var hiddenOffset = motion.Mode == MotionMode.Full && !visible ? GetHiddenTranslation() : new Vector();
         // 先读取当前动画值，再移除旧时钟；反向过渡从当前画面接续，不跳回起点。
-        SetPresentation(visible ? 1 : 0, targetX, targetY);
+        SetPresentation(visible ? 1 : 0, hiddenOffset.X, hiddenOffset.Y);
         if (!motion.UseTransitions || !visible && opacity <= 0)
         {
             if (!visible) CompleteDismiss();
@@ -192,27 +193,38 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         fade.Completed += (_, _) =>
         {
             if (_disposed || version != _animationVersion || _isHiding == visible) return;
-            if (visible) SetPresentation(1, 1, 1);
+            if (visible) SetPresentation(1, 0, 0);
             else CompleteDismiss();
         };
+        _isAnimating = true;
+        // 滑动会经过按钮边缘的取色区域，过渡期间暂停采样，避免采到横杠自身。
+        _contrastSampling.Invalidate(clearDecision: false);
         _marks.BeginAnimation(OpacityProperty, fade, HandoffBehavior.SnapshotAndReplace);
         if (motion.Mode == MotionMode.Full)
         {
-            _markScale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(scaleX, targetX, duration)
+            _markTranslation.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(offsetX, hiddenOffset.X, duration)
                 { EasingFunction = ease, FillBehavior = FillBehavior.Stop }, HandoffBehavior.SnapshotAndReplace);
-            _markScale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(scaleY, targetY, duration)
+            _markTranslation.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(offsetY, hiddenOffset.Y, duration)
                 { EasingFunction = ease, FillBehavior = FillBehavior.Stop }, HandoffBehavior.SnapshotAndReplace);
         }
     }
 
-    private void SetPresentation(double opacity, double scaleX, double scaleY)
+    private Vector GetHiddenTranslation()
+    {
+        // 起点落在靠任务栏的一侧边缘，上方/左侧为负方向，下方/右侧为正方向。
+        var direction = _taskbarOnLeadingEdge ? -1 : 1;
+        return _vertical ? new Vector(direction * Width / 2, 0) : new Vector(0, direction * Height / 2);
+    }
+
+    private void SetPresentation(double opacity, double offsetX, double offsetY)
     {
         _marks.BeginAnimation(OpacityProperty, null);
-        _markScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-        _markScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        _markTranslation.BeginAnimation(TranslateTransform.XProperty, null);
+        _markTranslation.BeginAnimation(TranslateTransform.YProperty, null);
+        _isAnimating = false;
         _marks.Opacity = opacity;
-        _markScale.ScaleX = scaleX;
-        _markScale.ScaleY = scaleY;
+        _markTranslation.X = offsetX;
+        _markTranslation.Y = offsetY;
     }
 
     private Int32Rect? GetContrastBounds()
@@ -244,7 +256,7 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
 
     private void RefreshContrast()
     {
-        if (!_contrastReady || _clock.Elapsed < _nextContrastRefresh) return;
+        if (!_contrastReady || _isAnimating || _clock.Elapsed < _nextContrastRefresh) return;
         _nextContrastRefresh = _clock.Elapsed + TimeSpan.FromMilliseconds(250);
         if (SystemParameters.HighContrast) _contrastSampling.Invalidate(clearDecision: true);
         else _contrastSampling.RequestRefresh();
@@ -290,7 +302,7 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         _animationVersion++;
         _isHiding = false;
         _contrastReady = false;
-        SetPresentation(0, 1, 1);
+        SetPresentation(0, 0, 0);
         if (IsVisible) Hide();
     }
 

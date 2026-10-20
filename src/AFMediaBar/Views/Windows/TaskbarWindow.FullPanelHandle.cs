@@ -67,7 +67,7 @@ public partial class TaskbarWindow
             }
             var taskbarHandle = _lastTaskbarHandle;
             _externalFullPanelHandle.Reveal(bar, handleBounds, transit,
-                new FullPanelOpenRequestEventArgs(GetMediaBarScreenBounds(), vertical, ensureOpen: true), vertical,
+                new FullPanelOpenRequestEventArgs(GetMediaBarScreenBounds(), vertical, ensureOpen: true), vertical, positive,
                 SettingsManager.Current.Experiments.Normalize().ExternalFullPanelHandleTrigger,
                 () => CanKeepExternalFullPanelHandle() && taskbarHandle == _lastTaskbarHandle &&
                     Math.Abs(_taskBarService.GetTaskbarDpiScale(taskbarHandle) - dpi) < 0.001 &&
