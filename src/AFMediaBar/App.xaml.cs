@@ -280,7 +280,8 @@ namespace AFMediaBar
                 services.AddTransient<TaskbarFullPanelWindow>();
                 services.AddSingleton<FullPanelWindowHost>();
                 services.AddSingleton<Func<ExternalFullPanelHandleWindow>>(sp =>
-                    () => new ExternalFullPanelHandleWindow(sp.GetRequiredService<NativeMouseInputMonitor>()));
+                    () => new ExternalFullPanelHandleWindow(sp.GetRequiredService<NativeMouseInputMonitor>(),
+                        sp.GetRequiredService<ScreenBackgroundSampler>()));
                 services.AddSingleton<Func<TaskbarFullPanelWindow>>(sp =>
                     () => sp.GetRequiredService<TaskbarFullPanelWindow>());
                 services.AddTransient<TrackChangeNotificationWindow>();

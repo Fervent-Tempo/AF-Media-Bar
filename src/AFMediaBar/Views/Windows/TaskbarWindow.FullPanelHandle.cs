@@ -1,7 +1,6 @@
 // 任务栏宿主管理外侧入口的资格、几何和释放；自动隐藏仅冻结此次交互的锚点。
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Media;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Utils;
@@ -69,7 +68,6 @@ public partial class TaskbarWindow
             var taskbarHandle = _lastTaskbarHandle;
             _externalFullPanelHandle.Reveal(bar, handleBounds, transit,
                 new FullPanelOpenRequestEventArgs(GetMediaBarScreenBounds(), vertical, ensureOpen: true), vertical,
-                MediaControl.TryFindResource("TaskbarHoverHandleBrush") as Brush ?? SystemColors.ControlTextBrush,
                 SettingsManager.Current.Experiments.Normalize().ExternalFullPanelHandleTrigger,
                 () => CanKeepExternalFullPanelHandle() && taskbarHandle == _lastTaskbarHandle &&
                     Math.Abs(_taskBarService.GetTaskbarDpiScale(taskbarHandle) - dpi) < 0.001 &&
