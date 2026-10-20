@@ -7,5 +7,4 @@ namespace AFMediaBar.Classes.Settings;
 public sealed record AudioDevicePreference(AudioDeviceDirection Direction, string EndpointId, string LastKnownName)
 {
     public string Alias { get; init; } = string.Empty;
-    public bool ParticipatesInCycle { get; init; }
 }

@@ -3011,9 +3011,7 @@ Managed heap {6} → {7} · {8} ms · {9}</value></data>
   <data name="Memory.System.Readings" xml:space="preserve"><value>Available system memory: {0} → {1}</value></data>
   <data name="Device.Personalization" xml:space="preserve"><value>Device aliases and order</value></data>
   <data name="Device.PersonalizationHint" xml:space="preserve"><value>Drag to reorder display and switching in AF. Disabled devices are collapsed; Windows devices are unaffected.</value></data>
-  <data name="Device.Alias" xml:space="preserve"><value>AF display name (blank uses system name)</value></data>
-  <data name="Device.MoveUp" xml:space="preserve"><value>Move up</value></data>
-  <data name="Device.MoveDown" xml:space="preserve"><value>Move down</value></data>
+  <data name="Device.Alias" xml:space="preserve"><value>AF device alias (clear to use the system name, Enter to save, Esc to cancel)</value></data>
   <data name="Device.Forget" xml:space="preserve"><value>Forget missing device</value></data>
   <data name="Device.Rebind" xml:space="preserve"><value>Rebind</value></data>
   <data name="Device.RebindHint" xml:space="preserve"><value>Choose a replacement endpoint. This transfers the saved preferences and replaces its AF configuration. Names are never matched automatically.</value></data>
@@ -3025,7 +3023,7 @@ Managed heap {6} → {7} · {8} ms · {9}</value></data>
   <data name="Device.Hotkey.Duplicate" xml:space="preserve"><value>Duplicates another AF hotkey; not registered</value></data>
   <data name="Device.Hotkey.Conflict" xml:space="preserve"><value>Key combination is occupied or rejected; not registered</value></data>
   <data name="Device.Hotkey.Registered" xml:space="preserve"><value>Registered</value></data>
-  <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>No available target; check cycle selection, enabled state and connection</value></data>
+  <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>No available target; check enabled devices and connections in Device management</value></data>
   <data name="Device.Hotkey.Failed" xml:space="preserve"><value>Device switch did not complete</value></data>
   <data name="Battery.Title" xml:space="preserve"><value>Bluetooth battery</value></data>
   <data name="Battery.Hint" xml:space="preserve"><value>Tracks one manually selected Bluetooth device using Windows properties and standard BLE battery data. One alert per low-battery cycle; startup, selection changes and reconnection establish a baseline first.</value></data>
@@ -3096,15 +3094,13 @@ Source: {2}</value></data>
   <data name="Memory.Auto.Running" xml:space="preserve"><value>Automatic optimization is running</value></data>
   <data name="Memory.Auto.Paused" xml:space="preserve"><value>Paused after authorization loss or repeated failures; check the latest result before resuming</value></data>
   <data name="Device.Management.Title" xml:space="preserve"><value>Device management</value></data>
-  <data name="Device.Management.Description" xml:space="preserve"><value>Manage audio devices, switching order, shortcuts and Bluetooth battery</value></data>
+  <data name="Device.Management.Description" xml:space="preserve"><value>Manage enabled input/output devices, aliases, display and switching order, and Bluetooth battery</value></data>
   <data name="Device.RequireExperiment" xml:space="preserve"><value>Device switching and personalization follow their experimental switches. Disabling a device here affects AF only.</value></data>
   <data name="Device.Enabled" xml:space="preserve"><value>Enabled</value></data>
   <data name="Device.Disabled" xml:space="preserve"><value>Disabled devices</value></data>
   <data name="Device.Offline" xml:space="preserve"><value>Currently unavailable</value></data>
-  <data name="Device.Drag" xml:space="preserve"><value>Drag to change display and switching order</value></data>
-  <data name="Device.Cycle.Include" xml:space="preserve"><value>Include in shortcut cycle</value></data>
   <data name="Device.Hotkeys" xml:space="preserve"><value>Cycle shortcuts</value></data>
-  <data name="Device.Cycle.Hint" xml:space="preserve"><value>Cycle checked, enabled devices in displayed order, skipping offline devices. One shortcut each for input and output.</value></data>
+  <data name="Device.Cycle.Hint" xml:space="preserve"><value>Cycle through enabled devices in Device management order, skipping offline devices. Input and output each use one shortcut; enable the device hotkey experiment first.</value></data>
   <data name="Battery.SelectHint" xml:space="preserve"><value>Choose one paired device. Only its standard battery information is queried; unsupported devices show unknown.</value></data>
   <data name="Battery.Select" xml:space="preserve"><value>Tracked device</value></data>
   <data name="Battery.ListRefresh" xml:space="preserve"><value>Refresh paired devices</value></data>
@@ -3137,4 +3133,15 @@ Source: {2}</value></data>
   <data name="Memory.Result.StageCompleted" xml:space="preserve"><value>Done</value></data>
   <data name="Memory.Notification.PartialSuccess" xml:space="preserve"><value>Partially completed</value></data>
   <data name="Memory.Notification.TimedOut" xml:space="preserve"><value>Result unconfirmed</value></data>
+  <data name="Device.RenameHint" xml:space="preserve"><value>Double-click a name to rename</value></data>
+  <data name="Settings.Related.DeviceOrder" xml:space="preserve"><value>Enabled devices and order</value></data>
+  <data name="Settings.Related.Experiments" xml:space="preserve"><value>Related experiments</value></data>
+  <data name="Settings.Related.RestContent" xml:space="preserve"><value>Always-on content and order</value></data>
+  <data name="Settings.Related.RestInteraction" xml:space="preserve"><value>Click and hover actions</value></data>
+  <data name="Settings.Related.IdleNote" xml:space="preserve"><value>No-media placeholder text</value></data>
+  <data name="Settings.Related.TextLayout" xml:space="preserve"><value>Text layout and alignment</value></data>
+  <data name="Settings.Related.TextAppearance" xml:space="preserve"><value>Text appearance</value></data>
+  <data name="Settings.Related.LyricsPresentation" xml:space="preserve"><value>Lyrics presentation</value></data>
+  <data name="Settings.Related.WidgetLayout" xml:space="preserve"><value>Widgets and order</value></data>
+  <data name="Settings.Related.MemoryTools" xml:space="preserve"><value>Memory optimization policy</value></data>
 </root>

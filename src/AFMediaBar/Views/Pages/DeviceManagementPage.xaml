@@ -4,44 +4,51 @@
     xmlns:components="clr-namespace:AFMediaBar.Components" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False">
     <Page.Resources>
+        <Style x:Key="DeviceGroupStyle" TargetType="{x:Type components:SettingsGroup}" BasedOn="{StaticResource {x:Type components:SettingsGroup}}">
+            <Setter Property="HeaderHint" Value="{DynamicResource Loc.Device.RenameHint}" />
+            <Style.Triggers><DataTrigger Binding="{Binding ViewModel.IsPersonalizationEnabled}" Value="False"><Setter Property="HeaderHint" Value="" /></DataTrigger></Style.Triggers>
+        </Style>
         <DataTemplate x:Key="DeviceRow">
-            <Border Padding="12" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                AllowDrop="True" Drop="DeviceRow_Drop" DragOver="DeviceRow_DragOver">
+            <Border Padding="12,8" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">
                 <StackPanel>
-                    <Grid>
-                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                        <Border Padding="4,8,12,8" Cursor="SizeAll" PreviewMouseLeftButtonDown="DragHandle_Down" PreviewMouseMove="DragHandle_Move"
-                            Visibility="{Binding CanReorder, Converter={StaticResource AfBooleanToVisibilityConverter}}" ToolTip="{DynamicResource Loc.Device.Drag}">
-                            <TextBlock Text="⠿" FontSize="20" VerticalAlignment="Center"/>
-                        </Border>
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" ToolTip="{Binding SystemName}" Style="{StaticResource AfSettingsRowTitleStyle}"/>
-                            <TextBlock Text="{Binding StateText}" Style="{StaticResource AfSettingsHintTextStyle}"/>
+                    <Grid MinHeight="44">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <Border Background="Transparent" Focusable="True" MouseLeftButtonDown="DeviceName_MouseDown" KeyDown="DeviceName_KeyDown" ToolTip="{Binding SystemName}">
+                                <Grid>
+                                    <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis">
+                                        <TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource AfSettingsRowTitleStyle}"><Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsRenaming}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger>
+                                        </Style.Triggers></Style></TextBlock.Style>
+                                    </TextBlock>
+                                    <TextBox Text="{Binding AliasDraft, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinHeight="32"
+                                        AutomationProperties.Name="{DynamicResource Loc.Device.Alias}" IsVisibleChanged="AliasEditor_IsVisibleChanged"
+                                        PreviewKeyDown="AliasEditor_KeyDown" LostKeyboardFocus="AliasEditor_LostFocus">
+                                        <TextBox.Style><Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsRenaming}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger>
+                                        </Style.Triggers></Style></TextBox.Style>
+                                    </TextBox>
+                                </Grid>
+                            </Border>
+                            <TextBlock Text="{Binding StateText}"><TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource AfSettingsHintTextStyle}"><Style.Triggers>
+                                <DataTrigger Binding="{Binding StateText}" Value=""><Setter Property="Visibility" Value="Collapsed"/></DataTrigger>
+                            </Style.Triggers></Style></TextBlock.Style></TextBlock>
                         </StackPanel>
-                        <CheckBox Grid.Column="2" Content="{DynamicResource Loc.Device.Enabled}" IsChecked="{Binding IsAllowed, Mode=TwoWay}" AutomationProperties.Name="{Binding DisplayName}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                        <CheckBox Grid.Column="1" Content="{DynamicResource Loc.Device.Enabled}" IsChecked="{Binding IsAllowed, Mode=TwoWay}"
+                            AutomationProperties.Name="{Binding DisplayName}" VerticalAlignment="Center" Margin="12,0"/>
+                        <components:SettingsReorderHandle Grid.Column="2" ItemKey="{Binding EndpointId}" AutomationProperties.Name="{Binding DisplayName}"
+                            Visibility="{Binding CanReorder, Converter={StaticResource AfBooleanToVisibilityConverter}}"/>
                     </Grid>
-                    <StackPanel Visibility="{Binding HasDetails, Converter={StaticResource AfBooleanToVisibilityConverter}}">
-                        <components:SettingsRow Title="{DynamicResource Loc.Device.Alias}" Visibility="{Binding IsPersonalizationEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}"><TextBox Text="{Binding Alias, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" MinWidth="180" MaxWidth="280" AutomationProperties.Name="{DynamicResource Loc.Device.Alias}"/></components:SettingsRow>
-                        <Grid Margin="16,8">
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                            <CheckBox Content="{DynamicResource Loc.Device.Cycle.Include}" IsChecked="{Binding ParticipatesInCycle, Mode=TwoWay}"
-                                Visibility="{Binding IsHotkeysEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}" VerticalAlignment="Center"/>
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" Visibility="{Binding CanReorder, Converter={StaticResource AfBooleanToVisibilityConverter}}">
-                                <ui:Button Content="{DynamicResource Loc.Device.MoveUp}" Command="{Binding MoveUpCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
-                                <ui:Button Content="{DynamicResource Loc.Device.MoveDown}" Command="{Binding MoveDownCommand}" Style="{StaticResource AfSettingsButtonStyle}" Margin="8,0,0,0"/>
+                    <Expander Header="{DynamicResource Loc.Device.Rebind}" Visibility="{Binding CanRebind, Converter={StaticResource AfBooleanToVisibilityConverter}}" Margin="0,4">
+                        <StackPanel>
+                            <TextBlock Text="{DynamicResource Loc.Device.RebindHint}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,8"/>
+                            <ComboBox ItemsSource="{Binding Replacements}" SelectedItem="{Binding Replacement}" DisplayMemberPath="DisplayName" MinWidth="180" MaxWidth="280" HorizontalAlignment="Left"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,8">
+                                <ui:Button Content="{DynamicResource Loc.Device.Rebind}" Command="{Binding RebindCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
+                                <ui:Button Content="{DynamicResource Loc.Device.Forget}" Command="{Binding ForgetCommand}" Style="{StaticResource AfSettingsButtonStyle}" Margin="8,0,0,0"/>
                             </StackPanel>
-                        </Grid>
-                        <Expander Header="{DynamicResource Loc.Device.Rebind}" Visibility="{Binding IsOffline, Converter={StaticResource AfBooleanToVisibilityConverter}}" Margin="16,4">
-                            <StackPanel>
-                                <TextBlock Text="{DynamicResource Loc.Device.RebindHint}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,8"/>
-                                <ComboBox ItemsSource="{Binding Replacements}" SelectedItem="{Binding Replacement}" DisplayMemberPath="DisplayName" MinWidth="180" MaxWidth="280" HorizontalAlignment="Left"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,8">
-                                    <ui:Button Content="{DynamicResource Loc.Device.Rebind}" Command="{Binding RebindCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
-                                    <ui:Button Content="{DynamicResource Loc.Device.Forget}" Command="{Binding ForgetCommand}" Style="{StaticResource AfSettingsButtonStyle}" Margin="8,0,0,0"/>
-                                </StackPanel>
-                            </StackPanel>
-                        </Expander>
-                    </StackPanel>
+                        </StackPanel>
+                    </Expander>
                 </StackPanel>
             </Border>
         </DataTemplate>
@@ -53,28 +60,25 @@
         <ScrollViewer x:Name="PageScroll" Grid.Row="1" Margin="{StaticResource AfSettingsScrollMargin}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <StackPanel MaxWidth="{StaticResource AfSettingsContentMaxWidth}" Loaded="OnPageLoaded">
                 <components:SettingsCallout Text="{DynamicResource Loc.Device.RequireExperiment}" Symbol="Info24" IsAccent="False" Margin="0,0,0,12"/>
-                <components:SettingsGroup GroupId="Common.OutputDevice" Header="{DynamicResource Loc.Common.OutputDevice}" Icon="{ui:SymbolIcon Speaker224}" IsEnabled="{Binding ViewModel.IsEnabled}">
+                <WrapPanel Margin="0,0,0,12">
+                    <components:SettingsNavigationButton Content="{DynamicResource Loc.Device.Hotkeys}" Destination="Interaction" GroupId="Device.Hotkeys" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
+                    <components:SettingsNavigationButton Content="{DynamicResource Loc.Interaction.AudioGestures}" Destination="Interaction" GroupId="Interaction.AudioGestures" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
+                    <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.Experiments}" Destination="Experimental" GroupId="Experimental.Audio.Title" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,0,4"/>
+                </WrapPanel>
+                <components:SettingsGroup Style="{StaticResource DeviceGroupStyle}" GroupId="Common.OutputDevice" Header="{DynamicResource Loc.Common.OutputDevice}" Icon="{ui:SymbolIcon Speaker224}" IsEnabled="{Binding ViewModel.IsEnabled}">
                     <StackPanel>
-                        <ItemsControl ItemsSource="{Binding ViewModel.OutputDevices}" ItemTemplate="{StaticResource DeviceRow}"/>
+                        <AdornerDecorator><ItemsControl components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.ReorderDevicesCommand}" ItemsSource="{Binding ViewModel.OutputDevices}" ItemTemplate="{StaticResource DeviceRow}"/></AdornerDecorator>
                         <Expander Header="{DynamicResource Loc.Device.Disabled}" Margin="12,8"><ItemsControl ItemsSource="{Binding ViewModel.DisabledOutputDevices}" ItemTemplate="{StaticResource DeviceRow}"/></Expander>
                         <Expander Header="{DynamicResource Loc.Device.Offline}" Margin="12,8"><ItemsControl ItemsSource="{Binding ViewModel.OtherOutputDevices}" ItemTemplate="{StaticResource DeviceRow}"/></Expander>
                         <components:SettingsRow Title="{DynamicResource Loc.Audio.Settings.OutputCommunications}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.SwitchOutputCommunications, Mode=TwoWay}"/></components:SettingsRow>
                     </StackPanel>
                 </components:SettingsGroup>
-                <components:SettingsGroup GroupId="Common.InputDevice" Header="{DynamicResource Loc.Common.InputDevice}" Icon="{ui:SymbolIcon Mic24}" IsEnabled="{Binding ViewModel.IsEnabled}">
+                <components:SettingsGroup Style="{StaticResource DeviceGroupStyle}" GroupId="Common.InputDevice" Header="{DynamicResource Loc.Common.InputDevice}" Icon="{ui:SymbolIcon Mic24}" IsEnabled="{Binding ViewModel.IsEnabled}">
                     <StackPanel>
-                        <ItemsControl ItemsSource="{Binding ViewModel.InputDevices}" ItemTemplate="{StaticResource DeviceRow}"/>
+                        <AdornerDecorator><ItemsControl components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.ReorderDevicesCommand}" ItemsSource="{Binding ViewModel.InputDevices}" ItemTemplate="{StaticResource DeviceRow}"/></AdornerDecorator>
                         <Expander Header="{DynamicResource Loc.Device.Disabled}" Margin="12,8"><ItemsControl ItemsSource="{Binding ViewModel.DisabledInputDevices}" ItemTemplate="{StaticResource DeviceRow}"/></Expander>
                         <Expander Header="{DynamicResource Loc.Device.Offline}" Margin="12,8"><ItemsControl ItemsSource="{Binding ViewModel.OtherInputDevices}" ItemTemplate="{StaticResource DeviceRow}"/></Expander>
                         <components:SettingsRow Title="{DynamicResource Loc.Audio.Settings.InputCommunications}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.SwitchInputCommunications, Mode=TwoWay}"/></components:SettingsRow>
-                    </StackPanel>
-                </components:SettingsGroup>
-                <components:SettingsGroup GroupId="Device.Hotkeys" Header="{DynamicResource Loc.Device.Hotkeys}" Description="{DynamicResource Loc.Device.Cycle.Hint}" Icon="{ui:SymbolIcon Keyboard24}">
-                    <StackPanel IsEnabled="{Binding ViewModel.IsHotkeysEnabled}">
-                        <components:SettingsRow Title="{DynamicResource Loc.Device.Hotkey.CycleOutput}"><components:HotkeyRecorder Hotkey="{Binding ViewModel.OutputCycleHotkey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsRecording="{Binding ViewModel.IsRecordingOutputCycle, Mode=TwoWay}" Width="240" AutomationProperties.Name="{DynamicResource Loc.Device.Hotkey.CycleOutput}" ToolTip="{DynamicResource Loc.Device.Hotkey.RecordHint}"/></components:SettingsRow>
-                        <TextBlock Text="{Binding ViewModel.OutputCycleStatus}" Style="{StaticResource AfSettingsHintTextStyle}" TextWrapping="Wrap" Margin="16,4"/>
-                        <components:SettingsRow Title="{DynamicResource Loc.Device.Hotkey.CycleInput}"><components:HotkeyRecorder Hotkey="{Binding ViewModel.InputCycleHotkey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsRecording="{Binding ViewModel.IsRecordingInputCycle, Mode=TwoWay}" Width="240" AutomationProperties.Name="{DynamicResource Loc.Device.Hotkey.CycleInput}" ToolTip="{DynamicResource Loc.Device.Hotkey.RecordHint}"/></components:SettingsRow>
-                        <TextBlock Text="{Binding ViewModel.InputCycleStatus}" Style="{StaticResource AfSettingsHintTextStyle}" TextWrapping="Wrap" Margin="16,4"/>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup GroupId="Battery.Title" Header="{DynamicResource Loc.Battery.Title}" Description="{DynamicResource Loc.Battery.SelectHint}" Icon="{ui:SymbolIcon Bluetooth24}">
@@ -93,6 +97,9 @@
                         <components:SettingsRow Title="{DynamicResource Loc.Battery.Threshold}"><ui:NumberBox Minimum="{Binding MinimumLowThreshold}" Maximum="{Binding MaximumLowThreshold}" Value="{Binding LowThreshold, Mode=TwoWay}" Width="150"/></components:SettingsRow>
                         <TextBlock Text="{Binding CurrentDetails}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="16,8"/>
                         <components:SettingsRow Title="{DynamicResource Loc.Battery.RefreshHint}"><ui:Button Content="{DynamicResource Loc.Battery.Refresh}" Command="{Binding RefreshCommand}" Style="{StaticResource AfSettingsButtonStyle}"/></components:SettingsRow>
+                    <WrapPanel Margin="16,8,16,12">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.WidgetLayout}" Destination="Components" GroupId="Common.Group.Widgets" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
+                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <TextBlock Text="{Binding ViewModel.StatusText}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}"/>

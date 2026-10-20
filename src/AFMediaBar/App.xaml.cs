@@ -316,6 +316,7 @@ namespace AFMediaBar
                 services.AddScoped<ExperimentalViewModel>();
                 services.AddScoped<AudioDeviceSettingsViewModel>();
                 services.AddScoped<BluetoothBatterySettingsViewModel>();
+                services.AddScoped<AudioDeviceHotkeySettingsViewModel>();
                 services.AddScoped<InteractionViewModel>();
 
                 services.AddScoped<LyricsPage>();

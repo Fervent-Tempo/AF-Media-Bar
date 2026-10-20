@@ -49,6 +49,9 @@
                             <TextBlock Text="{DynamicResource Loc.Experimental.FullPanel.AutoHide}" TextWrapping="Wrap"
                                 Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,8,0,0" />
                         </StackPanel>
+                    <WrapPanel Margin="16,8,16,12">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Common.FullLayer}" Destination="Components" GroupId="Common.FullLayer" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
+                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup GroupId="Experimental.Audio.Title" Header="{DynamicResource Loc.Experimental.Audio.Title}"
@@ -73,6 +76,10 @@
                                     CommandParameter="Common.OutputDevice" Click="OpenSettings_Click" />
                             </components:SettingsRow>
                         </StackPanel>
+                    <WrapPanel Margin="16,8,16,12">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Device.Hotkeys}" Destination="Interaction" GroupId="Device.Hotkeys" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Interaction.AudioGestures}" Destination="Interaction" GroupId="Interaction.AudioGestures" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
+                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup GroupId="Experimental.Vertical.Title" Header="{DynamicResource Loc.Experimental.Vertical.Title}"
@@ -94,6 +101,9 @@
                                     Tag="{x:Static services:SettingsPageKey.Appearance}" Click="OpenSettings_Click" />
                             </components:SettingsRow>
                         </StackPanel>
+                    <WrapPanel Margin="16,8,16,12">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Common.Page.ScreenAndPlacement}" Destination="ScreenAndPlacement" GroupId="Common.Group.ScreenAndPlacement" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
+                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup GroupId="Experimental.Floating.Title" Header="{DynamicResource Loc.Experimental.Floating.Title}"

@@ -1,5 +1,6 @@
 using AFMediaBar.Classes.Models.Settings;
 using AFMediaBar.Classes.Services.Settings;
+using AFMediaBar.Classes.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using AFMediaBar.ViewModels.Windows;
 using AFMediaBar.Classes.Services;
@@ -96,6 +97,7 @@ namespace AFMediaBar.Views.Windows
             AddHandler(AppearancePage.OpenApplicationFontsEvent, new RoutedEventHandler(OnOpenApplicationFontsRequested));
             AddHandler(LyricsPage.OpenTextLayoutEvent, new RoutedEventHandler(OnOpenTextLayoutRequested));
             AddHandler(ExperimentalPage.OpenSettingsEvent, new RoutedEventHandler(OnExperimentalSettingsRequested));
+            AddHandler(AFMediaBar.Components.SettingsNavigationButton.NavigateEvent, new RoutedEventHandler(OnRelatedSettingsRequested));
             RootNavigation.Navigated += OnNavigated;
 
             // 落地页：窗口每次打开都直接落在「显示与位置」。
@@ -479,6 +481,23 @@ namespace AFMediaBar.Views.Windows
         private void UpdateContextHeader()
         {
             RootNavigation.HeaderVisibility = EditingMonitorPanel.Visibility;
+        }
+        private void OnRelatedSettingsRequested(object sender, RoutedEventArgs args)
+        {
+            if (args is not AFMediaBar.Components.SettingsNavigationEventArgs request) return;
+            args.Handled = true;
+            var page = request.Destination;
+            var group = request.GroupId;
+            var experiments = SettingsManager.Current.Experiments;
+            if (page == SettingsPageKey.Application && group == "Memory.Title" && !experiments.MemoryTools)
+                page = SettingsPageKey.Experimental;
+            else if (page == SettingsPageKey.DeviceManagement && group == "Battery.Title" && !experiments.BluetoothBattery)
+                page = SettingsPageKey.Experimental;
+            else if ((page == SettingsPageKey.DeviceManagement && group != "Battery.Title" ||
+                page == SettingsPageKey.Interaction && group is "Device.Hotkeys" or "Interaction.AudioGestures") && !experiments.NewAudioControl)
+            { page = SettingsPageKey.Experimental; group = "Experimental.Audio.Title"; }
+            if (!string.IsNullOrEmpty(group)) NavigateToGroup(page, group);
+            else Navigate(SettingsPageProvider.PageTypes[page]);
         }
         private void OnExperimentalSettingsRequested(object sender, RoutedEventArgs args)
         {

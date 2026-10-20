@@ -3011,9 +3011,7 @@
   <data name="Memory.System.Readings" xml:space="preserve"><value>系统可用内存：{0} → {1}</value></data>
   <data name="Device.Personalization" xml:space="preserve"><value>设备别名与顺序</value></data>
   <data name="Device.PersonalizationHint" xml:space="preserve"><value>拖动调整 AF 中的显示与切换顺序；禁用设备收起，仅影响 AF。</value></data>
-  <data name="Device.Alias" xml:space="preserve"><value>AF 显示名称（留空使用系统名称）</value></data>
-  <data name="Device.MoveUp" xml:space="preserve"><value>上移</value></data>
-  <data name="Device.MoveDown" xml:space="preserve"><value>下移</value></data>
+  <data name="Device.Alias" xml:space="preserve"><value>AF 设备别名（清空恢复系统名称，Enter 保存，Esc 取消）</value></data>
   <data name="Device.Forget" xml:space="preserve"><value>删除失联配置</value></data>
   <data name="Device.Rebind" xml:space="preserve"><value>重新关联</value></data>
   <data name="Device.RebindHint" xml:space="preserve"><value>手动选择替代端点，将本条配置转移并替换目标端点的 AF 配置。不会按名称自动关联。</value></data>
@@ -3025,7 +3023,7 @@
   <data name="Device.Hotkey.Duplicate" xml:space="preserve"><value>与 AF 的其他快捷键重复，未注册</value></data>
   <data name="Device.Hotkey.Conflict" xml:space="preserve"><value>组合键被占用或系统拒绝，未注册</value></data>
   <data name="Device.Hotkey.Registered" xml:space="preserve"><value>已注册</value></data>
-  <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>没有可用目标，请检查循环勾选、启用状态和设备连接</value></data>
+  <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>没有可用目标，请在设备管理中检查启用状态和连接</value></data>
   <data name="Device.Hotkey.Failed" xml:space="preserve"><value>设备切换未完成</value></data>
   <data name="Battery.Title" xml:space="preserve"><value>蓝牙电量</value></data>
   <data name="Battery.Hint" xml:space="preserve"><value>仅追踪手动选择的一个蓝牙设备，读取 Windows 属性和标准 BLE 电量。低电量同一周期提醒一次，启动、改选和重连先建立基线。</value></data>
@@ -3096,15 +3094,13 @@
   <data name="Memory.Auto.Running" xml:space="preserve"><value>自动优化执行中</value></data>
   <data name="Memory.Auto.Paused" xml:space="preserve"><value>权限失效或多次失败，已暂停；请检查最近结果后恢复</value></data>
   <data name="Device.Management.Title" xml:space="preserve"><value>设备管理</value></data>
-  <data name="Device.Management.Description" xml:space="preserve"><value>管理输入输出设备、切换顺序、快捷键与蓝牙电量</value></data>
+  <data name="Device.Management.Description" xml:space="preserve"><value>管理输入输出设备的启用、别名、显示与切换顺序，以及蓝牙电量</value></data>
   <data name="Device.RequireExperiment" xml:space="preserve"><value>设备切换与个性化受实验功能开关控制；请开启对应项目。禁用仅影响 AF，不会禁用 Windows 设备。</value></data>
   <data name="Device.Enabled" xml:space="preserve"><value>启用</value></data>
   <data name="Device.Disabled" xml:space="preserve"><value>已禁用设备</value></data>
   <data name="Device.Offline" xml:space="preserve"><value>暂不可用</value></data>
-  <data name="Device.Drag" xml:space="preserve"><value>拖动调整显示与切换顺序</value></data>
-  <data name="Device.Cycle.Include" xml:space="preserve"><value>参与快捷键循环</value></data>
   <data name="Device.Hotkeys" xml:space="preserve"><value>循环快捷键</value></data>
-  <data name="Device.Cycle.Hint" xml:space="preserve"><value>按拖动顺序循环已勾选的启用设备，跳过离线设备。输入和输出各使用一个组合键。</value></data>
+  <data name="Device.Cycle.Hint" xml:space="preserve"><value>按设备管理中已启用设备的顺序循环，跳过离线设备。输入和输出各使用一个组合键；需开启设备快捷键实验。</value></data>
   <data name="Battery.SelectHint" xml:space="preserve"><value>手动选择一个已配对设备，仅查询该设备的标准电量信息。驱动或设备不提供时显示未知。</value></data>
   <data name="Battery.Select" xml:space="preserve"><value>追踪设备</value></data>
   <data name="Battery.ListRefresh" xml:space="preserve"><value>刷新配对设备列表</value></data>
@@ -3137,4 +3133,15 @@
   <data name="Memory.Result.StageCompleted" xml:space="preserve"><value>完成</value></data>
   <data name="Memory.Notification.PartialSuccess" xml:space="preserve"><value>部分清理完成</value></data>
   <data name="Memory.Notification.TimedOut" xml:space="preserve"><value>结果未确认</value></data>
+  <data name="Device.RenameHint" xml:space="preserve"><value>双击名称可重命名</value></data>
+  <data name="Settings.Related.DeviceOrder" xml:space="preserve"><value>设备启用与顺序</value></data>
+  <data name="Settings.Related.Experiments" xml:space="preserve"><value>相关实验开关</value></data>
+  <data name="Settings.Related.RestContent" xml:space="preserve"><value>常驻内容与顺序</value></data>
+  <data name="Settings.Related.RestInteraction" xml:space="preserve"><value>点击与悬停操作</value></data>
+  <data name="Settings.Related.IdleNote" xml:space="preserve"><value>无媒体提示文字</value></data>
+  <data name="Settings.Related.TextLayout" xml:space="preserve"><value>文字布局与对齐</value></data>
+  <data name="Settings.Related.TextAppearance" xml:space="preserve"><value>文字外观</value></data>
+  <data name="Settings.Related.LyricsPresentation" xml:space="preserve"><value>歌词样式</value></data>
+  <data name="Settings.Related.WidgetLayout" xml:space="preserve"><value>小组件与顺序</value></data>
+  <data name="Settings.Related.MemoryTools" xml:space="preserve"><value>内存优化策略</value></data>
 </root>

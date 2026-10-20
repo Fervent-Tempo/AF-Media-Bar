@@ -71,7 +71,7 @@ public sealed class AudioDeviceHotkeyService(AudioDeviceSwitchCoordinator switch
                 new Binding(Identity(AudioDeviceDirection.Input, null), AudioDeviceDirection.Input, settings.AudioDevices.InputCycleHotkey) }
             .Where(binding => !string.IsNullOrWhiteSpace(binding.Gesture)).ToArray() : [];
         var signature = string.Join("|", bindings.Select(binding => $"{binding.Identity}={binding.Gesture}")) + ":" +
-            string.Join("|", settings.AudioDevices.Preferences.Where(entry => entry.ParticipatesInCycle)
+            string.Join("|", settings.AudioDevices.Preferences
                 .Select(entry => $"{entry.Direction}:{entry.EndpointId}:{settings.AudioDevices.IsAllowed(entry.Direction, entry.EndpointId)}"));
         if (_signature == signature) return;
         _signature = signature;
@@ -146,10 +146,8 @@ public sealed class AudioDeviceHotkeyService(AudioDeviceSwitchCoordinator switch
             var choices = await switches.GetChoicesAsync(target, token);
             var direction = (int)binding.Direction;
             if (_disposed || token.IsCancellationRequested || version != _versions[direction]) return;
-            var preferences = SettingsManager.Current.AudioDevices.Preferences.Where(entry => entry.Direction == binding.Direction && entry.ParticipatesInCycle &&
-                SettingsManager.Current.AudioDevices.IsAllowed(binding.Direction, entry.EndpointId)).ToArray();
-            var candidates = preferences.Select(entry => choices.FirstOrDefault(device => device.PolicyId.Equals(entry.EndpointId, StringComparison.OrdinalIgnoreCase)))
-                .OfType<AudioDeviceOption>().Where(device => device.IsActive).ToArray();
+            var candidates = choices.Where(device => device.IsActive && !device.IsSystemDefaultChoice &&
+                SettingsManager.Current.AudioDevices.IsAllowed(binding.Direction, device.PolicyId)).ToArray();
             var current = switches.GetPreview(target)?.PolicyId ?? choices.FirstOrDefault(device => device.IsDefault)?.PolicyId;
             var index = Array.FindIndex(candidates, device => device.PolicyId.Equals(current, StringComparison.OrdinalIgnoreCase));
             var steps = _steps[direction]; _steps[direction] = 0;

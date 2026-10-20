@@ -176,6 +176,10 @@
                             IsAccent="True"
                             Symbol="DataHistogram24"
                             Text="{DynamicResource Loc.DisplayModes.Rest.Notice}" />
+                    <WrapPanel Margin="16,8,16,12">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.RestInteraction}" Destination="Interaction" GroupId="Common.Group.InAppRestLayer" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.IdleNote}" Destination="Appearance" GroupId="Appearance.IdleNote.Title" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
+                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup
@@ -473,6 +477,11 @@
                                 </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>
+                    <WrapPanel Margin="16,8,16,12">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Device.Management.Title}" Destination="DeviceManagement" GroupId="Common.OutputDevice" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Battery.Open}" Destination="DeviceManagement" GroupId="Battery.Title" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.MemoryTools}" Destination="Application" GroupId="Memory.Title" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
+                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup
@@ -568,6 +577,10 @@
                                 </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>
+                    <WrapPanel Margin="16,8,16,12">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.TextAppearance}" Destination="Appearance" GroupId="Common.Group.MediaBarText" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.LyricsPresentation}" Destination="Lyrics" GroupId="Lyrics.Group.Presentation" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
+                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup
@@ -708,6 +721,9 @@
                                 Step="1"
                                 Unit="{DynamicResource Loc.Settings.Numeric.Dip}" />
                         </components:SettingsRow>
+                    <WrapPanel Margin="16,8,16,12">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.RestInteraction}" Destination="Interaction" GroupId="Common.Group.InAppRestLayer" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
+                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup
@@ -768,6 +784,9 @@
                                 </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>
+                    <WrapPanel Margin="16,8,16,12">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.RestInteraction}" Destination="Interaction" GroupId="Common.Group.InAppRestLayer" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
+                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup
@@ -853,6 +872,9 @@
                                 </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>
+                    <WrapPanel Margin="16,8,16,12">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.Experiments}" Destination="Experimental" GroupId="Experimental.FullPanel.Title" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,8,4"/>
+                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <ui:Button
