@@ -1,5 +1,4 @@
-// Copyright (c) 2024-2026 The FluentFlyout Authors
-// SPDX-License-Identifier: GPL-3.0-or-later
+// 从缓存封面提取主题主色并复用结果。
 
 using System.Buffers;
 using System.Diagnostics;

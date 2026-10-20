@@ -1,5 +1,4 @@
-// Window helpers, ported from FluentFlyout
-// (https://github.com/ManualDinosaur/FluentFlyout, GPL-3.0-or-later).
+// 辅助窗口样式与显示状态操作。
 using System.Windows.Interop;
 using AFMediaBar.Classes.Interop;
 using static AFMediaBar.Classes.Interop.NativeMethods;

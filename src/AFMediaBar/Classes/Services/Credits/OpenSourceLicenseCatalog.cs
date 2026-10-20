@@ -36,22 +36,9 @@ public static class OpenSourceLicenseCatalog
     ];
 
     /// <summary>
-    /// 本程序**衍生代码**的来源项目：文件头保留着它们的版权与许可声明，因此必须与包一起列出，
-    /// 否则这一节会漏掉"我们自己的文件里也有别人的代码"这一事实。
-    /// The projects this program's **derived code** comes from: their copyright and license notices are kept in the file
-    /// headers, so they have to be listed next to the packages, otherwise this section would hide the fact that some of our own
-    /// files carry someone else's code.
+    /// 第三方源码的许可信息，按来源项目登记。
     /// </summary>
-    public static IReadOnlyList<LicenseEntry> DerivedCode { get; } =
-    [
-        new(
-            "FluentFlyout",
-            string.Empty,
-            "GPL-3.0",
-            "https://github.com/unchihugo/FluentFlyout",
-            "ArtworkLoader / BitmapHelper / LruCache 等文件的头部保留了原项目的版权与许可声明 / file headers in ArtworkLoader, BitmapHelper, LruCache and others keep the original notice")
-        
-    ];
+    public static IReadOnlyList<LicenseEntry> DerivedCode { get; } = [];
 
     /// <summary>完整的许可清单：包在前、衍生代码在后。/ The complete catalog: packages first, derived code after.</summary>
     public static IReadOnlyList<LicenseEntry> All { get; } =

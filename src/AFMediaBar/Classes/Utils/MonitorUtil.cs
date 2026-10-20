@@ -1,5 +1,4 @@
-// Monitor enumeration, ported from FluentFlyout
-// (https://github.com/ManualDinosaur/FluentFlyout, GPL-3.0-or-later).
+// 枚举显示器并提供显示区域信息。
 using System.Runtime.InteropServices;
 using AFMediaBar.Classes.Interop;
 using static AFMediaBar.Classes.Interop.NativeMethods;

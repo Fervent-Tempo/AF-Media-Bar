@@ -1,5 +1,4 @@
-// Win32 interop declarations, ported from FluentFlyout
-// (https://github.com/ManualDinosaur/FluentFlyout, GPL-3.0-or-later).
+// Windows 原生 API 声明；原生资源由调用方管理。
 using System.Runtime.InteropServices;
 using System.Text;
 

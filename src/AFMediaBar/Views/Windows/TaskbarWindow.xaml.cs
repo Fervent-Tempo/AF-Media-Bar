@@ -1,5 +1,4 @@
-// The media bar docked into the Explorer taskbar, ported from FluentFlyout's TaskbarWindow
-// (https://github.com/ManualDinosaur/FluentFlyout, GPL-3.0-or-later).
+// 任务栏媒体栏宿主，负责停靠、定位与窗口资源释放。
 
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Settings;
