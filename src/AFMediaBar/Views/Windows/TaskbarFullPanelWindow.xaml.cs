@@ -169,9 +169,9 @@ public partial class TaskbarFullPanelWindow : FluentWindow
     private void ApplyMotionEffects()
     {
         if (MotionPolicy.ResolveCurrent().UseDecorativeEffects)
-            PanelRoot.SetResourceReference(Border.EffectProperty, "AfPanelShadowEffect");
+            PanelChrome.SetResourceReference(Border.EffectProperty, "AfPanelShadowEffect");
         else
-            PanelRoot.Effect = null;
+            PanelChrome.Effect = null;
     }
 
     private bool _verticalAnchor;
@@ -283,6 +283,8 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         var inputVisibility = PresentationSettings.Experiments.NewAudioControl ? Visibility.Visible : Visibility.Collapsed;
         InputDeviceLabel.Visibility = inputVisibility;
         InputDeviceCombo.Visibility = inputVisibility;
+        InputDeviceGap.Width = new GridLength(inputVisibility == Visibility.Visible ? 12 : 0);
+        InputDeviceColumn.Width = inputVisibility == Visibility.Visible ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
         var animationVersion = ++_sectionAnimationVersion;
         var audioBecameVisible = !_audioControlsVisible && settings.AudioControlsVisible;
         var mediaInfoWasVisible = MediaInfoSection.Visibility == Visibility.Visible;
