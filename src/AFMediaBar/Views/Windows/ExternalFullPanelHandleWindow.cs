@@ -20,11 +20,14 @@ namespace AFMediaBar.Views.Windows;
 /// <summary>只覆盖横杠按钮的小窗口；不接管媒体栏或完整层的生命周期。</summary>
 public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
 {
+    internal const double HitLengthDip = 52;
+    internal const double HitThicknessDip = 16;
     private static readonly TimeSpan PointerLeaveGrace = TimeSpan.FromMilliseconds(500);
     private readonly NativeMouseInputMonitor _input;
     private readonly Border _line;
     private readonly Border _outline;
     private readonly Grid _marks;
+    private readonly Border _visualHost;
     private readonly TranslateTransform _markTranslation = new();
     private readonly ScreenBackgroundSampler _sampler;
     private readonly AdaptiveForegroundSamplingSession _contrastSampling;
@@ -32,6 +35,7 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     private readonly Stopwatch _clock = Stopwatch.StartNew();
     private Rect _barBounds;
     private Rect _handleBounds;
+    private Rect _hitBounds;
     private Rect _transitBounds;
     private FullPanelOpenRequestEventArgs? _request;
     private Func<bool>? _canRemainVisible;
@@ -74,7 +78,10 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         _marks = new Grid { Opacity = 0, RenderTransform = _markTranslation };
         _marks.Children.Add(_outline);
         _marks.Children.Add(_line);
-        var surface = new Border { Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0)), Child = _marks, Cursor = Cursors.Hand, ClipToBounds = true };
+        _visualHost = new Border { Child = _marks, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top, ClipToBounds = true };
+        var layout = new Grid();
+        layout.Children.Add(_visualHost);
+        var surface = new Border { Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0)), Child = layout, Cursor = Cursors.Hand, ClipToBounds = true };
         surface.MouseLeftButtonUp += Surface_MouseLeftButtonUp;
         surface.MouseLeftButtonDown += Surface_MouseLeftButtonDown;
         surface.MouseEnter += Surface_MouseEnter;
@@ -83,12 +90,12 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         _pointerTimer.Tick += PointerTimer_Tick;
     }
 
-    public void Reveal(TrayIconBounds bar, Rect handleBounds, Rect transitBounds, FullPanelOpenRequestEventArgs request,
+    public void Reveal(TrayIconBounds bar, Rect handleBounds, Rect hitBounds, Rect transitBounds, FullPanelOpenRequestEventArgs request,
         bool vertical, bool taskbarOnLeadingEdge, FullPanelHandleTrigger trigger, Func<bool> canRemainVisible)
     {
         if (_disposed) return;
         _barBounds = new Rect(bar.Left, bar.Top, bar.Right - bar.Left, bar.Bottom - bar.Top);
-        if (IsVisible && (_handleBounds != handleBounds || _vertical != vertical || _taskbarOnLeadingEdge != taskbarOnLeadingEdge))
+        if (IsVisible && (_handleBounds != handleBounds || _hitBounds != hitBounds || _vertical != vertical || _taskbarOnLeadingEdge != taskbarOnLeadingEdge))
             Dismiss(immediate: true);
         _request = request;
         _canRemainVisible = canRemainVisible;
@@ -101,6 +108,7 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
             return;
         }
         _handleBounds = handleBounds;
+        _hitBounds = hitBounds;
         _transitBounds = transitBounds;
         _vertical = vertical;
         _taskbarOnLeadingEdge = taskbarOnLeadingEdge;
@@ -108,21 +116,28 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         _taskbarSuspended = false;
         _hoverSince = null;
         _outsideSince = null;
-        Width = vertical ? 8 : 44;
-        Height = vertical ? 44 : 8;
+        Width = vertical ? HitThicknessDip : HitLengthDip;
+        Height = vertical ? HitLengthDip : HitThicknessDip;
         _line.Width = vertical ? 4 : 28;
         _line.Height = vertical ? 28 : 4;
         _outline.Width = vertical ? 6 : 30;
         _outline.Height = vertical ? 30 : 6;
         _contrastReady = false;
-        var motion = MotionPolicy.ResolveCurrent();
-        var hiddenOffset = motion.Mode == MotionMode.Full ? GetHiddenTranslation() : new Vector();
-        SetPresentation(0, hiddenOffset.X, hiddenOffset.Y);
+        SetPresentation(0, 0, 0);
         var handle = new WindowInteropHelper(this).EnsureHandle();
         Position(handle);
         Show();
         // Show 可能完成目标显示器的 DPI 切换，再断言物理边界，避免首次显示使用主屏缩放。
         Position(handle);
+        // 命中窗口向桌面侧扩展；视觉框保留原来的物理位置、取色区域和滑动距离。
+        var dpi = VisualTreeHelper.GetDpi(this);
+        _visualHost.Width = handleBounds.Width / dpi.DpiScaleX;
+        _visualHost.Height = handleBounds.Height / dpi.DpiScaleY;
+        _visualHost.Margin = new Thickness((handleBounds.Left - hitBounds.Left) / dpi.DpiScaleX,
+            (handleBounds.Top - hitBounds.Top) / dpi.DpiScaleY, 0, 0);
+        var motion = MotionPolicy.ResolveCurrent();
+        var hiddenOffset = motion.Mode == MotionMode.Full ? GetHiddenTranslation() : new Vector();
+        SetPresentation(0, hiddenOffset.X, hiddenOffset.Y);
         _pointerTimer.Start();
         if (SystemParameters.HighContrast)
         {
@@ -213,7 +228,7 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     {
         // 起点落在靠任务栏的一侧边缘，上方/左侧为负方向，下方/右侧为正方向。
         var direction = _taskbarOnLeadingEdge ? -1 : 1;
-        return _vertical ? new Vector(direction * Width / 2, 0) : new Vector(0, direction * Height / 2);
+        return _vertical ? new Vector(direction * _visualHost.Width / 2, 0) : new Vector(0, direction * _visualHost.Height / 2);
     }
 
     private void SetPresentation(double opacity, double offsetX, double offsetY)
@@ -264,8 +279,8 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
 
     private void Position(IntPtr handle)
     {
-        if (!SetWindowPos(handle, -1, (int)Math.Round(_handleBounds.X), (int)Math.Round(_handleBounds.Y),
-                (int)Math.Round(_handleBounds.Width), (int)Math.Round(_handleBounds.Height), SWP_NOACTIVATE))
+        if (!SetWindowPos(handle, -1, (int)Math.Round(_hitBounds.X), (int)Math.Round(_hitBounds.Y),
+                (int)Math.Round(_hitBounds.Width), (int)Math.Round(_hitBounds.Height), SWP_NOACTIVATE))
             throw new Win32Exception();
     }
 
@@ -334,7 +349,7 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
             }
             var now = _clock.Elapsed;
             if (!_isHiding) RefreshContrast();
-            var overHandle = _handleBounds.Contains(point) && IsMouseOver;
+            var overHandle = _hitBounds.Contains(point) && IsMouseOver;
             var overArea = overHandle || _transitBounds.Contains(point) || (!_taskbarSuspended && _barBounds.Contains(point));
             if (!overArea)
             {

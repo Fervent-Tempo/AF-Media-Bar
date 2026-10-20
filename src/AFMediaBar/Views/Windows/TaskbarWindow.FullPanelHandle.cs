@@ -54,19 +54,29 @@ public partial class TaskbarWindow
                 handleBounds.Y = Math.Clamp(handleBounds.Y, monitor.Top, Math.Max(monitor.Top, monitor.Bottom - length));
             else
                 handleBounds.X = Math.Clamp(handleBounds.X, monitor.Left, Math.Max(monitor.Left, monitor.Right - length));
+            var hitThickness = Math.Max(1, Math.Round(ExternalFullPanelHandleWindow.HitThicknessDip * dpi));
+            var hitLength = Math.Max(1, Math.Round(ExternalFullPanelHandleWindow.HitLengthDip * dpi));
+            // 只向桌面侧加厚命中区域，避免覆盖任务栏中的其他按钮；视觉横杆保持原位。
+            var hitBounds = vertical
+                ? new Rect(positive ? handleBounds.Left : handleBounds.Right - hitThickness,
+                    Math.Round(handleBounds.Top + (handleBounds.Height - hitLength) / 2), hitThickness, hitLength)
+                : new Rect(Math.Round(handleBounds.Left + (handleBounds.Width - hitLength) / 2),
+                    positive ? handleBounds.Top : handleBounds.Bottom - hitThickness, hitLength, hitThickness);
+            hitBounds.Intersect(new Rect(monitor.Left, monitor.Top, monitor.Right - monitor.Left, monitor.Bottom - monitor.Top));
+            if (hitBounds.IsEmpty) return;
             // 过渡区域只用于延长可见性，不创建覆盖桌面的输入窗口。
             var transit = vertical
-                ? new Rect(Math.Min(handleBounds.Left, bar.Right), handleBounds.Top,
-                    Math.Max(handleBounds.Right, bar.Left) - Math.Min(handleBounds.Left, bar.Right), handleBounds.Height)
-                : new Rect(handleBounds.Left, Math.Min(handleBounds.Top, bar.Bottom), handleBounds.Width,
-                    Math.Max(handleBounds.Bottom, bar.Top) - Math.Min(handleBounds.Top, bar.Bottom));
+                ? new Rect(Math.Min(hitBounds.Left, bar.Right), hitBounds.Top,
+                    Math.Max(hitBounds.Right, bar.Left) - Math.Min(hitBounds.Left, bar.Right), hitBounds.Height)
+                : new Rect(hitBounds.Left, Math.Min(hitBounds.Top, bar.Bottom), hitBounds.Width,
+                    Math.Max(hitBounds.Bottom, bar.Top) - Math.Min(hitBounds.Top, bar.Bottom));
             if (_externalFullPanelHandle is null)
             {
                 _externalFullPanelHandle = _externalFullPanelHandleFactory();
                 _externalFullPanelHandle.OpenRequested += ExternalHandle_OpenRequested;
             }
             var taskbarHandle = _lastTaskbarHandle;
-            _externalFullPanelHandle.Reveal(bar, handleBounds, transit,
+            _externalFullPanelHandle.Reveal(bar, handleBounds, hitBounds, transit,
                 new FullPanelOpenRequestEventArgs(GetMediaBarScreenBounds(), vertical, ensureOpen: true), vertical, positive,
                 SettingsManager.Current.Experiments.Normalize().ExternalFullPanelHandleTrigger,
                 () => CanKeepExternalFullPanelHandle() && taskbarHandle == _lastTaskbarHandle &&
