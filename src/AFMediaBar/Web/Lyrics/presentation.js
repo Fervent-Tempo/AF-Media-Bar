@@ -256,13 +256,26 @@
         const textChanged = current.current !== target.current ||
           current.next !== target.next ||
           current.currentTranslation !== target.currentTranslation ||
-          current.nextTranslation !== target.nextTranslation ||
-          current.layout !== target.layout;
+          current.nextTranslation !== target.nextTranslation;
+        if (!textChanged) {
+          return makePlan(
+            current.layout === target.layout ? TRANSITIONS.PROGRESS_PATCH : TRANSITIONS.REPLACE_IN_PLACE,
+            current,
+            target,
+            0);
+        }
+
+        // The text of the line already on screen changed: hiding reading annotations, or the Chinese
+        // conversion becoming ready in the background, both do this. Treat it as a line change so the old
+        // sentence rolls out and the new one rolls in; swapping it in place is what reads as a hard refresh.
+        const isTranslationPair = target.layout === LAYOUTS.TRANSLATION_PAIR;
         return makePlan(
-          textChanged ? TRANSITIONS.REPLACE_IN_PLACE : TRANSITIONS.PROGRESS_PATCH,
+          isTranslationPair ? TRANSITIONS.TRANSLATION_PAIR_ROLL : TRANSITIONS.SINGLE_ROLL,
           current,
           target,
-          0);
+          isTranslationPair
+            ? DEFAULT_DURATION_MS.translationPairRoll
+            : DEFAULT_DURATION_MS.singleRoll);
       }
 
       if (target.scene === SCENES.LYRICS && current.scene === SCENES.LYRICS) {

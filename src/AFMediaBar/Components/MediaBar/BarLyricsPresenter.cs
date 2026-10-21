@@ -131,8 +131,13 @@ public partial class TaskBarMediaControl
                     _owner.Dispatcher.BeginInvoke(() => OnWebLyricsSettingsChanged(sender, e));
                 return;
             }
+            // 允许过渡：有的设置会改掉这一行显示的文字（隐藏日语读音标注、繁简转换在后台就绪），
+            // 直接落位就是一次"硬刷新"。改外观的设置不会换字，规划结果仍是进度补丁，不会平白起动画。
+            // Allow the transition: some settings rewrite the text of the line on screen (hiding Japanese
+            // reading annotations, the Chinese conversion becoming ready), and snapping it into place is the
+            // hard refresh. Appearance-only settings leave the text alone and still plan a progress patch.
             if (_lyricsHostLoaded)
-                UpdateWebLyricsPresentation(allowTransition: false);
+                UpdateWebLyricsPresentation(allowTransition: true);
         }
 
         internal void OnWebLyricsReady(object? sender, EventArgs e)
@@ -366,6 +371,12 @@ public partial class TaskBarMediaControl
             var isMetadata = _owner._isVertical && !next.IsVisible && _owner._snapshot.IsConnected;
             var presentation = isMetadata ? _owner.BuildVerticalMetadataFrame() : _owner.VisibleLyricsFrame(next);
             _lastEffectiveLyricsFrame = presentation;
+            // 设置变更可能改掉这一行显示的文字（隐藏日语读音标注、繁简转换在后台就绪）。只有"之前和现在都在显示
+            // 歌词"时才让这类变化走过渡：开启/关闭歌词、首次就绪与故障恢复仍然立即落位，与改动前一致。
+            // A settings change can rewrite the line on screen (hidden reading annotations, a conversion that just
+            // became ready). Only let that animate while lyrics were and still are on screen; enabling or disabling
+            // lyrics, first readiness, and fault recovery keep snapping into place exactly as before.
+            var animateTransition = allowTransition && previous.IsVisible && presentation.IsVisible;
 
             var showWebLyrics = presentation.IsVisible && !_webLyricsGraphicsDisabled &&
                                 _owner._backgroundPruneLevel < MemoryPruneLevel.DisplayOff && !_owner._isHostVisibilitySuspended &&
@@ -383,7 +394,7 @@ public partial class TaskBarMediaControl
             // The web engine decides whether a frame is a progress patch or a line transition.
             // Sending false on every 50 ms progress frame interrupts its in-flight roll animation.
             if (!_owner.IsBackgroundPruned && (isMetadata || LyricsPresentationRefreshPolicy.ShouldPresent(presentation.IsVisible, previous, presentation)))
-                _lyricsWebRenderer?.Present(presentation, allowTransition && MotionPolicy.ResolveCurrent().UseTransitions, isMetadata);
+                _lyricsWebRenderer?.Present(presentation, animateTransition && MotionPolicy.ResolveCurrent().UseTransitions, isMetadata);
             RefreshWebLyricsTimer();
 
             // 行变化后立即重发尺寸请求：自动模式下媒体栏长度跟着歌词内容走，若等到下一次快照才更新，
