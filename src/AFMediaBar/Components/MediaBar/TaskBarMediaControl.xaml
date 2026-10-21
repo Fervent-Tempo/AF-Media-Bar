@@ -175,7 +175,8 @@
                             <TranslateTransform x:Name="SongImageSettleTranslate" />
                         </TransformGroup>
                     </Border.RenderTransform>
-                        <Grid>
+                        <!-- 固定命中区域不随内部图标缩放；无封面时也能命中整格。 -->
+                        <Grid Background="Transparent">
                             <!--
                                 暂停遮罩层：暂停时给封面盖一层不透明遮罩，读作"封面被淡化"。为什么是遮罩、而不是把封面画刷压到半透明，
                                 以及它与替身封面的同构关系，见 ApplyArtworkDimming——那里是这件事唯一的"为什么"。
