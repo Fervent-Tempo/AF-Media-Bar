@@ -1664,7 +1664,7 @@
     <value>{0} 項</value>
   </data>
   <data name="Media.QuickLaunch.FromNote.Description" xml:space="preserve">
-    <value>點擊音符開啟清單；捲動預覽，停約 1.2 秒後啟動選取項。</value>
+    <value>選擇沒有媒體時可透過小音符啟動的程式，支援 EXE 與捷徑。</value>
   </data>
   <data name="Media.QuickLaunch.FromNote.Title" xml:space="preserve">
     <value>無媒體時從音符啟動</value>
@@ -3114,7 +3114,7 @@
     <value>小元件</value>
   </data>
   <data name="Widgets.Header.Subtitle" xml:space="preserve">
-    <value>設定頻譜、效能和藍牙電量；元件順序在內容與配置中調整。</value>
+    <value>設定小音符、頻譜、效能和藍牙電量；元件順序在內容與配置中調整。</value>
   </data>
   <data name="Widgets.Spectrum" xml:space="preserve">
     <value>頻譜</value>
@@ -3145,5 +3145,33 @@
   </data>
   <data name="Media.Spectrum.CaptureDevice.ListUnavailable" xml:space="preserve">
     <value>暫時無法讀取裝置清單，請重新開啟此頁。</value>
+  </data>
+  <data name="Widgets.Note" xml:space="preserve">
+    <value>小音符</value>
+  </data>
+  <data name="Widgets.Note.Manage" xml:space="preserve">
+    <value>管理小音符與快速啟動</value>
+  </data>
+  <data name="Widgets.Note.Interaction.Title" xml:space="preserve">
+    <value>啟動互動</value>
+  </data>
+  <data name="Widgets.Note.Interaction.Description" xml:space="preserve">
+    <value>清單啟動：單擊清單，滾輪預選後啟動。選擇後啟動：滾輪選擇，雙擊啟動，單擊稍候開啟清單。</value>
+  </data>
+  <data name="Widgets.Note.Interaction.List" xml:space="preserve">
+    <value>清單啟動</value>
+  </data>
+  <data name="Widgets.Note.Interaction.Select" xml:space="preserve">
+    <value>選擇後啟動</value>
+  </data>
+  <data name="Widgets.Note.HoverIcon.Title" xml:space="preserve">
+    <value>懸停顯示應用程式圖示</value>
+  </data>
+  <data name="Widgets.Note.HoverIcon.Description" xml:space="preserve">
+    <value>平時顯示小音符，滑鼠懸停時顯示目前目標應用程式；關閉後一律顯示小音符。</value>
+  </data>
+  <data name="Widgets.Note.Tooltip.Select" xml:space="preserve">
+    <value>{0}
+雙擊啟動 · 滾輪切換應用程式 · 單擊開啟清單</value>
   </data>
 </root>

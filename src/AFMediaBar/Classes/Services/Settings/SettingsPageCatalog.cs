@@ -44,6 +44,7 @@ public static class SettingsPageCatalog
         (SettingsPageKey.ApplicationAppearance, _) => (SettingsPageKey.Appearance, groupId),
         (SettingsPageKey.Appearance, "Common.Group.MediaBarWidth" or "Appearance.Group.RestLayout" or "Appearance.Group.InteractionButtons") => (SettingsPageKey.Components, groupId),
         (SettingsPageKey.Lyrics, "Common.Group.LyricsAlignment") => (SettingsPageKey.Components, "Appearance.Group.RestLayout"),
+        (SettingsPageKey.MediaAndNotifications, "Common.Group.QuickLaunch") => (SettingsPageKey.Widgets, "Widgets.Note"),
         (SettingsPageKey.Components, "Common.Group.RestLayerComponents" or "Common.Group.Widgets") => (SettingsPageKey.Widgets, "Widgets.Spectrum"),
         (SettingsPageKey.DeviceManagement, "Battery.Title") => (SettingsPageKey.Widgets, "Battery.Title"),
         (SettingsPageKey.Interaction, "Common.Group.SharedModifier") => (SettingsPageKey.Interaction, "Interaction.Group.Wheel"),

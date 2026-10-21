@@ -65,7 +65,9 @@ public sealed class AudioSettingsPageLoadingTests
                 using var devices = new AudioDeviceSettingsViewModel(new Catalog(), configuration);
                 using var components = new ComponentsSettingsViewModel(configuration, localization, new Catalog());
                 using var batteryEditor = new BluetoothBatterySettingsViewModel(battery, configuration, localization);
-                var widgetsModel = new WidgetsSettingsViewModel(components, batteryEditor, configuration);
+                using var quickLaunch = new AFMediaBar.Classes.Services.QuickLaunchService();
+                using var note = new QuickLaunchSettingsViewModel(quickLaunch, configuration, localization);
+                var widgetsModel = new WidgetsSettingsViewModel(components, batteryEditor, note, configuration);
                 await widgetsModel.RefreshAsync();
                 var widgets = new WidgetsSettingsPage(widgetsModel);
                 widgets.Measure(new Size(820, 900));

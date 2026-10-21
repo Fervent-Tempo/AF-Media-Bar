@@ -150,6 +150,8 @@
                             ToolTipService.ShowDuration="20000"
                             MouseEnter="SongImageBorder_MouseEnter"
                             MouseLeave="SongImageBorder_MouseLeave"
+                            PreviewMouseLeftButtonDown="SongImageBorder_PreviewMouseLeftButtonDown"
+                            PreviewMouseMove="SongImageBorder_PreviewMouseMove"
                             MouseLeftButtonUp="SongImageBorder_MouseLeftButtonUp">
                     <Border.RenderTransform>
                         <!-- 悬停放大用的缩放变换：RenderTransform 不参与布局，Canvas 不会因此重排文字起点。
@@ -193,9 +195,12 @@
                                     <SolidColorBrush x:Name="SongImagePauseScrimBrush" Color="White" Opacity="0" />
                                 </Border.Background>
                             </Border>
+                            <Grid x:Name="QuickLaunchVisualHost" RenderTransformOrigin="0.5,0.5" IsHitTestVisible="False" ClipToBounds="True">
+                                <Grid.RenderTransform><ScaleTransform x:Name="QuickLaunchPressScale" ScaleX="1" ScaleY="1"/></Grid.RenderTransform>
                             <ui:SymbolIcon Name="SongImagePlaceholder" Symbol="MusicNote220" FontSize="24"
                                            Filled="True"
                                            Foreground="{DynamicResource AfAccentBrush}" />
+                            </Grid>
                             <Border x:Name="SongImageHoverOverlay"
                                     CornerRadius="5"
                                     Background="Transparent"

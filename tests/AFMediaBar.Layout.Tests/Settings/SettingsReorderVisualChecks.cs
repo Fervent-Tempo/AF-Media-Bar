@@ -176,12 +176,15 @@ internal static class SettingsReorderVisualChecks
         {
             var entries = Enumerable.Range(0, 4).Select(index => new QuickLaunchEntry(index.ToString(), "Player " + index, QuickLaunchTargetKind.Executable, "player" + index + ".exe")).ToArray();
             SettingsManager.Current = new AppSettings { QuickLaunch = new QuickLaunchSettings(entries) };
-            var model = new ExtraFeaturesViewModel(registry, media, new NoMonitors(), localization);
-            var request = new SettingsReorderRequest(model.QuickLaunchEntries[0], 3, model.QuickLaunchEntries);
-            model.ReorderQuickLaunchCommand.Execute(request);
+            using var quickLaunch = new QuickLaunchService();
+            using var noteContext = new SettingsPageContext();
+            using var note = new QuickLaunchSettingsViewModel(quickLaunch, new LegacySettingsConfiguration(noteContext), localization);
+            var model = new ExtraFeaturesViewModel(registry, media, new NoMonitors(), localization, quickLaunch);
+            var request = new SettingsReorderRequest(note.QuickLaunchEntries[0], 3, note.QuickLaunchEntries);
+            note.ReorderQuickLaunchCommand.Execute(request);
             CollectionAssert.AreEqual(new[] { "1", "2", "3", "0" }, SettingsManager.Current.QuickLaunch.Entries!.Select(entry => entry.Id).ToArray());
             var before = SettingsManager.Current.QuickLaunch;
-            model.ReorderQuickLaunchCommand.Execute(request);
+            note.ReorderQuickLaunchCommand.Execute(request);
             Assert.AreEqual(before, SettingsManager.Current.QuickLaunch);
             model.SelectionMode = MediaSelectionMode.PreferredApplication;
             model.PreferredSourceId = "offline-player";

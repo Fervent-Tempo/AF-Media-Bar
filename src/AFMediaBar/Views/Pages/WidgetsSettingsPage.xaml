@@ -41,6 +41,71 @@
         <ScrollViewer x:Name="PageScroll" Grid.Row="1" Margin="{StaticResource AfSettingsScrollMargin}"
             HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <StackPanel x:Name="PageRoot" MaxWidth="{StaticResource AfSettingsContentMaxWidth}" Loaded="OnPageLoaded">
+                <components:SettingsGroup GroupId="Widgets.Note" Header="{DynamicResource Loc.Widgets.Note}" Icon="{ui:SymbolIcon MusicNote220}">
+                    <StackPanel>
+                        <components:SettingsRow Title="{DynamicResource Loc.Widgets.Note.Interaction.Title}"
+                            Description="{DynamicResource Loc.Widgets.Note.Interaction.Description}">
+                            <ComboBox SelectedValue="{Binding ViewModel.Note.InteractionMode, Mode=TwoWay}" SelectedValuePath="Tag" MinWidth="200">
+                                <ComboBoxItem Content="{DynamicResource Loc.Widgets.Note.Interaction.List}" Tag="{x:Static settings:QuickLaunchInteractionMode.ListLaunch}"/>
+                                <ComboBoxItem Content="{DynamicResource Loc.Widgets.Note.Interaction.Select}" Tag="{x:Static settings:QuickLaunchInteractionMode.SelectThenLaunch}"/>
+                            </ComboBox>
+                        </components:SettingsRow>
+                        <components:SettingsRow Title="{DynamicResource Loc.Widgets.Note.HoverIcon.Title}"
+                            Description="{DynamicResource Loc.Widgets.Note.HoverIcon.Description}"
+                            Visibility="{Binding ViewModel.Note.IsSelectThenLaunch, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Note.ShowApplicationIconOnHover, Mode=TwoWay}"/>
+                        </components:SettingsRow>
+
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Media.QuickLaunch.FromNote.Description}"
+                            Icon="{ui:SymbolIcon MusicNote220}"
+                            Title="{DynamicResource Loc.Media.QuickLaunch.FromNote.Title}">
+                            <ui:Button
+                                Click="BrowseQuickLaunch_Click"
+                                Content="{DynamicResource Loc.Media.QuickLaunch.Browse}"
+                                Icon="{ui:SymbolIcon FolderOpen24}"
+                                Style="{StaticResource AfSettingsButtonStyle}" />
+                        </components:SettingsRow>
+
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Media.QuickLaunch.Entries.Description}"
+                            Icon="{ui:SymbolIcon AppsListDetail24}"
+                            Title="{DynamicResource Loc.Media.QuickLaunch.Entries.Title}">
+                            <TextBlock
+                                Style="{StaticResource AfSettingsRowValueStyle}"
+                                Text="{Binding ViewModel.Note.QuickLaunchEntryCountText}" />
+                        </components:SettingsRow>
+
+                        <AdornerDecorator>
+                            <ItemsControl components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Note.ReorderQuickLaunchCommand}" Margin="0,0,0,4" ItemsSource="{Binding ViewModel.Note.QuickLaunchEntries}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <components:SettingsRow KeepControlInline="True"
+                                            Description="{Binding Target}"
+                                            IsNested="True"
+                                            Title="{Binding DisplayName}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <components:SettingsReorderHandle ItemKey="{Binding Id}" />
+                                                <ui:Button
+                                                    Margin="4,0,0,0"
+                                                    Command="{Binding DataContext.ViewModel.Note.RemoveQuickLaunchCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                    CommandParameter="{Binding}"
+                                                    Icon="{ui:SymbolIcon Delete24}"
+                                                    Style="{StaticResource AfSettingsIconButtonStyle}"
+                                                    ToolTip="{DynamicResource Loc.Media.QuickLaunch.Remove}" />
+                                            </StackPanel>
+                                        </components:SettingsRow>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </AdornerDecorator>
+
+                        <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,4,0,0"><TextBlock
+                            Style="{StaticResource AfSettingsHintTextStyle}"
+                            Text="{Binding ViewModel.Note.StatusText}" /></Border>
+                    </StackPanel>
+                </components:SettingsGroup>
+
                 <components:SettingsGroup GroupId="Widgets.Spectrum" Header="{DynamicResource Loc.Widgets.Spectrum}"
                     Description="{DynamicResource Loc.Widgets.Spectrum.Description}" Icon="{ui:SymbolIcon DataHistogram24}">
                     <StackPanel>

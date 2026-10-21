@@ -282,6 +282,7 @@ public sealed partial class FloatingBarWindow
     private async void MediaControl_QuickLaunchRequested(QuickLaunchEntry entry)
     {
         if (!CanPublishMenu(_menuEnvironmentVersion)) return;
+        _quickLaunch?.Select(entry.Id);
         _quickLaunchApplyTimer.Stop();
         _pendingQuickLaunch = null;
         var environmentVersion = _menuEnvironmentVersion;
@@ -330,12 +331,20 @@ public sealed partial class FloatingBarWindow
     {
         var entries = PresentationSettings.QuickLaunch.Entries ?? [];
         if (entries.Count == 0) return;
+        if (_quickLaunch?.Settings.InteractionMode == QuickLaunchInteractionMode.SelectThenLaunch)
+        {
+            _quickLaunchApplyTimer.Stop();
+            _pendingQuickLaunch = null;
+            _quickLaunch.MoveSelection(e.Delta);
+            return;
+        }
         var current = _pendingQuickLaunch is null
             ? 0
             : entries.ToList().FindIndex(entry => entry.Id == _pendingQuickLaunch.Id);
         var index = DeferredCircularSelection.Move(current, e.Delta, entries.Count);
         if (index < 0) return;
         _pendingQuickLaunch = entries[index];
+        _quickLaunch?.Select(_pendingQuickLaunch.Id);
         _mediaControl.SetQuickLaunchPreview(_pendingQuickLaunch);
         _quickLaunchApplyTimer.Stop();
         _quickLaunchApplyTimer.Start();

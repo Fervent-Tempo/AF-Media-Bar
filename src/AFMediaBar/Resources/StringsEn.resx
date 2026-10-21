@@ -1664,7 +1664,7 @@
     <value>{0} items</value>
   </data>
   <data name="Media.QuickLaunch.FromNote.Description" xml:space="preserve">
-    <value>Click the note to open the list; scroll to preview, then pause for about 1.2 seconds to launch the selection.</value>
+    <value>Choose applications to launch from the idle note. EXE files and shortcuts are supported.</value>
   </data>
   <data name="Media.QuickLaunch.FromNote.Title" xml:space="preserve">
     <value>Launch from the note icon when no media is playing</value>
@@ -3114,7 +3114,7 @@ Source: {2}</value></data>
     <value>Widgets</value>
   </data>
   <data name="Widgets.Header.Subtitle" xml:space="preserve">
-    <value>Configure spectrum, performance and Bluetooth battery widgets. Arrange them in Content and layout.</value>
+    <value>Configure the quick-launch note, spectrum, performance and Bluetooth battery. Arrange components in Content and layout.</value>
   </data>
   <data name="Widgets.Spectrum" xml:space="preserve">
     <value>Spectrum</value>
@@ -3145,5 +3145,33 @@ Source: {2}</value></data>
   </data>
   <data name="Media.Spectrum.CaptureDevice.ListUnavailable" xml:space="preserve">
     <value>The device list is unavailable. Reopen this page to try again.</value>
+  </data>
+  <data name="Widgets.Note" xml:space="preserve">
+    <value>Quick-launch note</value>
+  </data>
+  <data name="Widgets.Note.Manage" xml:space="preserve">
+    <value>Manage note and quick launch</value>
+  </data>
+  <data name="Widgets.Note.Interaction.Title" xml:space="preserve">
+    <value>Launch interaction</value>
+  </data>
+  <data name="Widgets.Note.Interaction.Description" xml:space="preserve">
+    <value>List launch: click for the list, or scroll to launch after preview. Select then launch: scroll to select, double-click to launch; a single click opens the list after the double-click interval.</value>
+  </data>
+  <data name="Widgets.Note.Interaction.List" xml:space="preserve">
+    <value>List launch</value>
+  </data>
+  <data name="Widgets.Note.Interaction.Select" xml:space="preserve">
+    <value>Select then launch</value>
+  </data>
+  <data name="Widgets.Note.HoverIcon.Title" xml:space="preserve">
+    <value>Show application icon on hover</value>
+  </data>
+  <data name="Widgets.Note.HoverIcon.Description" xml:space="preserve">
+    <value>Show the note normally and the selected application on hover. Turn off to keep the note visible.</value>
+  </data>
+  <data name="Widgets.Note.Tooltip.Select" xml:space="preserve">
+    <value>{0}
+Double-click to launch · Scroll to select · Click for list</value>
   </data>
 </root>

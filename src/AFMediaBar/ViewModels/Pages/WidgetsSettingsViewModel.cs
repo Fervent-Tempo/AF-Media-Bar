@@ -4,12 +4,14 @@ using AFMediaBar.Classes.Settings;
 
 namespace AFMediaBar.ViewModels.Pages;
 
-/// <summary>频谱、性能与蓝牙电量的全局配置。</summary>
+/// <summary>小音符、频谱、性能与蓝牙电量的全局配置。</summary>
 public sealed class WidgetsSettingsViewModel(
     ComponentsSettingsViewModel components,
     BluetoothBatterySettingsViewModel battery,
+    QuickLaunchSettingsViewModel note,
     ISettingsConfiguration configuration)
 {
+    public QuickLaunchSettingsViewModel Note { get; } = note;
     public ComponentsSettingsViewModel Components { get; } = components;
     public BluetoothBatterySettingsViewModel Battery { get; } = battery;
     public CancellationToken ContextCancellationToken => configuration.CancellationToken;

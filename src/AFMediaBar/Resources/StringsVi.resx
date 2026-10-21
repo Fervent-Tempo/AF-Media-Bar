@@ -1640,7 +1640,7 @@
     <value>{0} mục</value>
   </data>
   <data name="Media.QuickLaunch.FromNote.Description" xml:space="preserve">
-    <value>Nhấp vào nốt nhạc để mở danh sách; cuộn để xem trước, sau đó dừng khoảng 1.2 giây để khởi chạy mục đã chọn.</value>
+    <value>Chọn ứng dụng để khởi chạy từ nốt nhạc khi không có phương tiện. Hỗ trợ EXE và lối tắt.</value>
   </data>
   <data name="Media.QuickLaunch.FromNote.Title" xml:space="preserve">
     <value>Khởi chạy từ biểu tượng nốt nhạc khi không có media phát</value>
@@ -3152,7 +3152,7 @@ Nguồn: {2}</value></data>
     <value>Tiện ích</value>
   </data>
   <data name="Widgets.Header.Subtitle" xml:space="preserve">
-    <value>Cấu hình phổ âm, hiệu năng và pin Bluetooth. Sắp xếp trong Nội dung và bố cục.</value>
+    <value>Cấu hình nốt nhạc khởi chạy, phổ âm, hiệu năng và pin Bluetooth. Sắp xếp thành phần trong Nội dung và bố cục.</value>
   </data>
   <data name="Widgets.Spectrum" xml:space="preserve">
     <value>Phổ âm</value>
@@ -3183,5 +3183,33 @@ Nguồn: {2}</value></data>
   </data>
   <data name="Media.Spectrum.CaptureDevice.ListUnavailable" xml:space="preserve">
     <value>Không thể đọc danh sách thiết bị. Hãy mở lại trang để thử lại.</value>
+  </data>
+  <data name="Widgets.Note" xml:space="preserve">
+    <value>Nốt nhạc khởi chạy</value>
+  </data>
+  <data name="Widgets.Note.Manage" xml:space="preserve">
+    <value>Quản lý nốt nhạc và khởi chạy nhanh</value>
+  </data>
+  <data name="Widgets.Note.Interaction.Title" xml:space="preserve">
+    <value>Thao tác khởi chạy</value>
+  </data>
+  <data name="Widgets.Note.Interaction.Description" xml:space="preserve">
+    <value>Danh sách: nhấp để mở danh sách, hoặc cuộn để xem trước rồi chạy. Chọn rồi chạy: cuộn để chọn, nhấp đúp để chạy; nhấp một lần sẽ mở danh sách sau khoảng nhận diện nhấp đúp.</value>
+  </data>
+  <data name="Widgets.Note.Interaction.List" xml:space="preserve">
+    <value>Khởi chạy từ danh sách</value>
+  </data>
+  <data name="Widgets.Note.Interaction.Select" xml:space="preserve">
+    <value>Chọn rồi khởi chạy</value>
+  </data>
+  <data name="Widgets.Note.HoverIcon.Title" xml:space="preserve">
+    <value>Hiện biểu tượng ứng dụng khi trỏ chuột</value>
+  </data>
+  <data name="Widgets.Note.HoverIcon.Description" xml:space="preserve">
+    <value>Thường hiển thị nốt nhạc và đổi thành biểu tượng ứng dụng đã chọn khi trỏ chuột. Tắt để luôn hiện nốt nhạc.</value>
+  </data>
+  <data name="Widgets.Note.Tooltip.Select" xml:space="preserve">
+    <value>{0}
+Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách</value>
   </data>
 </root>

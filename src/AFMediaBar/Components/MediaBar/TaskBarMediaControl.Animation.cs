@@ -513,6 +513,7 @@ public partial class TaskBarMediaControl
 
     private void SongImageBorder_MouseEnter(object sender, MouseEventArgs e)
     {
+        if (!_isConnected && _quickLaunchTarget is { } target) SetQuickLaunchPreview(target);
         AnimateComponentHover(SongImageHoverOverlay, true);
         // 进事件也以原格几何为准：指针可以从侧面落进"放大后的轮廓、但已出原格"的那一圈，此时不该长开——
         // 长开会立刻被悬停区轮询收回，两者拉成永不停的收/放振荡。1× 静止态下指针刚进入元素，判定必然为真，
@@ -526,6 +527,7 @@ public partial class TaskBarMediaControl
 
     private void SongImageBorder_MouseLeave(object sender, MouseEventArgs e)
     {
+        if (_notePressed) CancelQuickLaunchInteraction();
         _quickLaunchTooltip.IsOpen = false;
         AnimateComponentHover(SongImageHoverOverlay, false);
         if (_artworkHover._artworkHoverZoomPopup?.IsOpen == true)

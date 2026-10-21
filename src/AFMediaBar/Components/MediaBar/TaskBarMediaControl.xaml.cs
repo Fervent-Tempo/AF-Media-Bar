@@ -139,6 +139,7 @@ namespace AFMediaBar.Components
             _marqueeTexts.Add(new MetadataMarqueePresenter(SongTitle, SongTitleDuplicate));
             _marqueeTexts.Add(new MetadataMarqueePresenter(SongArtist, SongArtistDuplicate));
             IsVisibleChanged += (_, _) => ApplyMarqueeLayout(Math.Max(0, SongInfoStackPanel.Width));
+            IsVisibleChanged += (_, _) => { if (!IsVisible) CancelQuickLaunchInteraction(); };
             _lyrics.InitializeWebLyrics();
             // 程序内的全局滚轮提示各挂在一个全局滚轮面上：文字区与封面。两个 ToolTip 实例不能共用（一个实例只属于一个元素），
             // 因此实例各自独立、**内容**由同一处写入，随手势与结果实时改写。
@@ -174,6 +175,7 @@ namespace AFMediaBar.Components
             };
             Unloaded += (_, _) =>
             {
+                CancelQuickLaunchInteraction();
                 _artworkHover.Detach();
                 HideTaskbarHoverLayer(immediate: true);
                 _progressTimer.Stop();
@@ -197,6 +199,9 @@ namespace AFMediaBar.Components
         /// <summary>宿主最终关闭时释放控件级呈现资源；普通卸载仍允许重新加载。</summary>
         internal void DisposePresentation()
         {
+            CancelQuickLaunchInteraction();
+            _quickLaunchSession?.Dispose();
+            if (_quickLaunchClickTimer is not null) _quickLaunchClickTimer.Tick -= QuickLaunchSingleClick;
             DetachBatterySource();
             _batterySource = null;
             _artworkHover.Dispose();
@@ -478,7 +483,9 @@ namespace AFMediaBar.Components
         // This matches the wheel tooltip used for the rest of the bar.
         public void SetQuickLaunchPreview(QuickLaunchEntry entry)
         {
-            var text = WheelTooltipPolicy.BuildQuickLaunchPreview(entry.DisplayName);
+            var text = _quickLaunchSettings.InteractionMode == QuickLaunchInteractionMode.SelectThenLaunch
+                ? Translations.Format("Widgets.Note.Tooltip.Select", entry.DisplayName)
+                : WheelTooltipPolicy.BuildQuickLaunchPreview(entry.DisplayName);
             if (_quickLaunchTooltip.Content as string != text)
             {
                 _quickLaunchTooltip.Content = text;
@@ -1894,6 +1901,7 @@ namespace AFMediaBar.Components
 
             var wasConnected = _isConnected;
             _isPaused = !snapshot.IsPlaying;
+            CancelQuickLaunchInteraction();
             _isConnected = true;
             _canPlayPause = snapshot.CanPlayPause;
             _canSkipPrevious = snapshot.CanSkipPrevious;
@@ -2180,13 +2188,16 @@ namespace AFMediaBar.Components
         private void SongImageBorder_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             if (e.ChangedButton != MouseButton.Left || ShouldSuppressSurfaceClick())
+            {
+                CancelQuickLaunchInteraction();
                 return;
+            }
 
             if (!_isConnected)
             {
                 if (IsBarPresentation)
                 {
-                    QuickLaunchMenuRequested?.Invoke(this, EventArgs.Empty);
+                    HandleQuickLaunchClick();
                     e.Handled = true;
                 }
                 return;
@@ -2256,6 +2267,7 @@ namespace AFMediaBar.Components
             {
                 if (IsBarPresentation && SongImageBorder.IsMouseOver && _quickLaunchEntries.Count > 0)
                 {
+                    CancelQuickLaunchInteraction();
                     QuickLaunchWheelRequested?.Invoke(this, new PlayerSurfaceWheelEventArgs(e.Delta, false, false, false));
                     e.Handled = true;
                 }

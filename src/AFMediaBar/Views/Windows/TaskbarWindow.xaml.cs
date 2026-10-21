@@ -143,6 +143,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     /// 创建任务栏媒体宿主并连接其基础设施动作。
     /// Creates the taskbar media host and connects its infrastructure actions.
     /// </summary>
+    private readonly QuickLaunchService? _quickLaunch;
     public TaskbarWindow(
         AFMediaBar.Classes.Services.Audio.BluetoothBatteryService batterySource,
         ITaskbarDockService taskBarService,
@@ -163,8 +164,10 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         TaskbarWindowViewModel viewModel,
         AFMediaBar.ViewModels.Components.AFContextMenuViewModel menuViewModel,
         bool startImmediately = true,
-        Func<ExternalFullPanelHandleWindow>? externalFullPanelHandleFactory = null)
+        Func<ExternalFullPanelHandleWindow>? externalFullPanelHandleFactory = null,
+        QuickLaunchService? quickLaunch = null)
     {
+        _quickLaunch = quickLaunch;
         WindowHelper.SetNoActivate(this);
         InitializeComponent();
         ViewModel = viewModel;
@@ -300,6 +303,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             { Interval = TimeSpan.FromMilliseconds(AudioApplyPolicy.OutputDevicePreviewDelayMilliseconds) };
         _quickLaunchApplyTimer.Tick += async (_, _) =>
         {
+            MediaControl.CancelQuickLaunchInteraction();
             _quickLaunchApplyTimer.Stop();
             var pending = _pendingQuickLaunch;
             _pendingQuickLaunch = null;
@@ -313,6 +317,11 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
                 if (CanPublishMenu(environmentVersion)) ShowQuickLaunchResult(result, anchor);
             }
         };
+        MediaControl.QuickLaunchActionsAllowed = () => CanPublishMenu(_menuEnvironmentVersion) && !_isDragging && !IsTaskbarPresentationSuspended;
+        MediaControl.QuickLaunchDirectRequested += MediaControl_QuickLaunchRequested;
+        if (_quickLaunch is not null) MediaControl.BindQuickLaunch(_quickLaunch, () =>
+        { _quickLaunchApplyTimer.Stop(); _pendingQuickLaunch = null; });
+
         _volumeApplyTimer = new DispatcherTimer
             { Interval = TimeSpan.FromMilliseconds(AudioApplyPolicy.ApplicationVolumeDelayMilliseconds) };
         _volumeApplyTimer.Tick += async (_, _) =>
@@ -568,6 +577,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             _taskbarHiddenTrimTimer.Stop();
             UnregisterTaskbarLocationHook();
             DisposeMetricsSubscription();
+            MediaControl.CancelQuickLaunchInteraction();
             _quickLaunchApplyTimer.Stop();
             _volumeApplyTimer.Stop();
             _compactFlyout.Dismiss();
@@ -996,6 +1006,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         if (snapshot.IsConnected && !wasConnected)
         {
             _pendingRestExitSizeRequest = null;
+            MediaControl.CancelQuickLaunchInteraction();
             _quickLaunchApplyTimer.Stop();
             _pendingQuickLaunch = null;
             if (_compactFlyout.IsShowing(TaskbarCompactFlyoutMode.QuickLaunch)) _compactFlyout.Dismiss();
@@ -1332,6 +1343,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         _taskbarMotionSettleTimer.Stop();
         _taskbarHiddenTrimTimer.Stop();
         DisposeMetricsSubscription();
+        MediaControl.CancelQuickLaunchInteraction();
         _quickLaunchApplyTimer.Stop();
         _volumeApplyTimer.Stop();
         _pendingQuickLaunch = null;
@@ -1764,6 +1776,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     private async void MediaControl_QuickLaunchRequested(QuickLaunchEntry entry)
     {
         if (!CanPublishMenu(_menuEnvironmentVersion)) return;
+        MediaControl.CancelQuickLaunchInteraction();
+        _quickLaunch?.Select(entry.Id);
         _quickLaunchApplyTimer.Stop();
         _pendingQuickLaunch = null;
         var environmentVersion = _menuEnvironmentVersion;
@@ -1775,6 +1789,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     private async void PlayerMenu_QuickLaunchRequested(QuickLaunchEntry entry)
     {
         if (!CanPublishMenu(_menuEnvironmentVersion)) return;
+        _quickLaunch?.Select(entry.Id);
         var environmentVersion = _menuEnvironmentVersion;
         var anchor = _playerMenuOpeningAnchor ?? GetMediaBarScreenPhysicalBounds();
         var result = await _sourceActivationService.LaunchAsync(entry);
@@ -1821,13 +1836,22 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     {
         var entries = SettingsManager.Current.QuickLaunch.Entries ?? [];
         if (entries.Count == 0) return;
+        if (_quickLaunch?.Settings.InteractionMode == QuickLaunchInteractionMode.SelectThenLaunch)
+        {
+            _quickLaunchApplyTimer.Stop();
+            _pendingQuickLaunch = null;
+            _quickLaunch.MoveSelection(e.Delta);
+            return;
+        }
         var current = _pendingQuickLaunch is null
             ? 0
             : entries.ToList().FindIndex(entry => entry.Id == _pendingQuickLaunch.Id);
         var index = DeferredCircularSelection.Move(current, e.Delta, entries.Count);
         if (index < 0) return;
         _pendingQuickLaunch = entries[index];
+        _quickLaunch?.Select(_pendingQuickLaunch.Id);
         MediaControl.SetQuickLaunchPreview(_pendingQuickLaunch);
+        MediaControl.CancelQuickLaunchInteraction();
         _quickLaunchApplyTimer.Stop();
         _quickLaunchApplyTimer.Start();
     }
@@ -2424,6 +2448,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         UnregisterTaskbarLocationHook();
         _lengthConstraints.Remove(this);
         DisposeMetricsSubscription();
+        MediaControl.CancelQuickLaunchInteraction();
         _quickLaunchApplyTimer.Stop();
         _volumeApplyTimer.Stop();
         SettingsManager.ExtraFeaturesSettingsChanged -= SettingsManager_ExtraFeaturesSettingsChanged;

@@ -100,14 +100,17 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     internal bool IsPerformanceMenuRequested { get; private set; }
     internal bool IsBatteryMenuRequested { get; private set; }
 
+    private readonly QuickLaunchService? _quickLaunch;
     public FloatingBarWindow(AFMediaBar.Classes.Services.Audio.BluetoothBatteryService batterySource, string targetMonitorDeviceId, DisplayMonitorInfo monitor,
         TaskbarWindowViewModel commands, GlobalInteractionRouter interactionRouter,
         AudioInteractionService audioInteractionService, AudioMonitorService audioMonitor,
         MediaSourceActivationService sourceActivationService, SystemMetricsMonitorService metricsMonitor,
         NativeMouseInputMonitor mouse, MemoryPruneCoordinator prune, DesktopWidgetZOrderService zOrder,
         WindowAppearanceService appearance, ScreenBackgroundSampler sampler, AppLogService log, FloatingBarLengthConstraints lengthConstraints,
-        Func<ExternalFullPanelHandleWindow>? externalFullPanelHandleFactory = null)
+        Func<ExternalFullPanelHandleWindow>? externalFullPanelHandleFactory = null,
+        QuickLaunchService? quickLaunch = null)
     {
+        _quickLaunch = quickLaunch;
         TargetMonitorDeviceId = targetMonitorDeviceId;
         Monitor = monitor;
         _commands = commands;
@@ -156,11 +159,17 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _quickLaunchApplyTimer.Interval = TimeSpan.FromMilliseconds(AudioApplyPolicy.OutputDevicePreviewDelayMilliseconds);
         _quickLaunchApplyTimer.Tick += async (_, _) =>
         {
+            _mediaControl.CancelQuickLaunchInteraction();
             _quickLaunchApplyTimer.Stop();
             if (_pendingQuickLaunch is not { } pending || !IsOperational || _lastSnapshot.IsConnected) return;
             _pendingQuickLaunch = null;
             await LaunchAsync(pending);
         };
+        _mediaControl.QuickLaunchActionsAllowed = () => IsOperational && !_dragging;
+        _mediaControl.QuickLaunchDirectRequested += MediaControl_QuickLaunchRequested;
+        if (_quickLaunch is not null) _mediaControl.BindQuickLaunch(_quickLaunch, () =>
+        { _quickLaunchApplyTimer.Stop(); _pendingQuickLaunch = null; });
+
         _volumeApplyTimer.Interval = TimeSpan.FromMilliseconds(AudioApplyPolicy.ApplicationVolumeDelayMilliseconds);
         _volumeApplyTimer.Tick += async (_, _) =>
         {
@@ -325,6 +334,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         if (_suspended) return;
         if (snapshot.IsConnected && !wasConnected)
         {
+            _mediaControl.CancelQuickLaunchInteraction();
             _quickLaunchApplyTimer.Stop();
             _pendingQuickLaunch = null;
             if (_compactFlyout.IsShowing(TaskbarCompactFlyoutMode.QuickLaunch)) _compactFlyout.Dismiss();
@@ -525,6 +535,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _requests = new CancellationTokenSource();
         _audioInteractionService.CancelDeviceOwner(this);
         _compactFlyout.Dismiss();
+        _mediaControl.CancelQuickLaunchInteraction();
         _quickLaunchApplyTimer.Stop();
         _volumeApplyTimer.Stop();
         _pendingQuickLaunch = null;

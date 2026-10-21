@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
@@ -10,19 +9,20 @@ using AFMediaBar.Resources;
 
 namespace AFMediaBar.ViewModels.Pages;
 
-/// <summary>媒体来源、快捷启动与曲目通知设置，不拥有频谱和性能参数。</summary>
+/// <summary>媒体来源、加入快速启动的意图与曲目通知设置；小音符参数由小组件页编辑。</summary>
 public partial class ExtraFeaturesViewModel : ObservableObject
 {
     private readonly MediaSourceRegistry _sources;
     private readonly MediaSessionService _mediaSessions;
     private readonly IDisplayMonitorService _displayMonitorService;
     private readonly LocalizationService _localization;
+    private readonly QuickLaunchService _quickLaunch;
 
     // 设置写入会同步通知订阅者，而写设置的那一方可能在后台线程上（更新检查的网络等待之后就是如此）：
-    // 本页的 Sources / QuickLaunchEntries 绑定到界面，跨线程改它们会让 WPF 的 CollectionView 抛异常，
+    // 本页的 Sources 绑定到界面，跨线程改它们会让 WPF 的 CollectionView 抛异常，
     // 因此刷新 MUST 回到 UI 线程。根因侧同样已修（`UpdateService.WriteUpdateSettings`），这里是第二道防线。
     // A settings write notifies its subscribers synchronously, and whoever writes may be on a background thread (that is exactly
-    // what happens after the update check's network wait): this page's Sources and QuickLaunchEntries are bound to the interface,
+    // what happens after the update check's network wait): this page's Sources are bound to the interface,
     // and mutating them across threads makes WPF's CollectionView throw, so the refresh MUST come back to the UI thread. The root
     // cause is fixed as well (`UpdateService.WriteUpdateSettings`); this is the second line of defence.
     private readonly Dispatcher _dispatcher = DispatcherHelper.Current;
@@ -31,7 +31,6 @@ public partial class ExtraFeaturesViewModel : ObservableObject
     private string? _statusKey;
 
     public ObservableCollection<MediaSourceSettingItem> Sources { get; } = [];
-    public ObservableCollection<QuickLaunchEntry> QuickLaunchEntries { get; } = [];
     public IReadOnlyList<DisplayMonitorOption> MonitorOptions { get; private set; } = [];
     public IReadOnlyList<MediaSourceDescriptor> PreferredSourceOptions { get; private set; } = [];
 
@@ -72,9 +71,6 @@ public partial class ExtraFeaturesViewModel : ObservableObject
         _ => "Media.Selection.Description.Automatic"
     });
 
-    /// <summary>快速启动条目数，显示在「已添加的启动项」行里；单位词属于文案，因此读数由代码拼。/ Number of quick launch entries, shown in the "added entries" row; the unit word is text, so the reading is composed in code.</summary>
-    public string QuickLaunchEntryCountText => Translations.Format("Media.QuickLaunch.EntryCount", QuickLaunchEntries.Count);
-
     /// <summary>
     /// 快速启动列表下方的状态行。存的是文案键而不是已经拼好的句子：语言变化后这一行必须跟着换语言，
     /// 而拼好的句子只会在旧语言上停留，直到用户再点一次按钮。
@@ -87,8 +83,9 @@ public partial class ExtraFeaturesViewModel : ObservableObject
         MediaSourceRegistry sources,
         MediaSessionService mediaSessions,
         IDisplayMonitorService displayMonitorService,
-        LocalizationService localization)
+        LocalizationService localization, QuickLaunchService quickLaunch)
     {
+        _quickLaunch = quickLaunch;
         _sources = sources;
         _mediaSessions = mediaSessions;
         _displayMonitorService = displayMonitorService;
@@ -100,11 +97,6 @@ public partial class ExtraFeaturesViewModel : ObservableObject
         // 本页是单例，订阅与进程同寿命，不需要在关闭时取消。
         // This page is a singleton, so the subscription lives as long as the process and needs no unsubscription.
         _localization.LanguageChanged += OnLanguageChanged;
-
-        // 条目数显示在行内，增删后读数必须重算；绑定落在这个属性上而不是 Count 上，因为单位词属于文案。
-        // The entry count is shown in a row and has to be recomputed when entries are added or removed; the binding targets
-        // this property rather than Count because the unit word is text.
-        QuickLaunchEntries.CollectionChanged += (_, _) => OnPropertyChanged(nameof(QuickLaunchEntryCountText));
 
         RefreshAll();
     }
@@ -168,34 +160,10 @@ public partial class ExtraFeaturesViewModel : ObservableObject
         AddQuickLaunch(new QuickLaunchEntry(Guid.NewGuid().ToString("N"), descriptor.DisplayName, kind, descriptor.LaunchTarget, descriptor.SourceId));
     }
 
-    [RelayCommand]
-    private void RemoveQuickLaunch(QuickLaunchEntry? entry)
+    public async Task AddQuickLaunchFileAsync(string path, MediaSourceDescriptor? source = null)
     {
-        if (entry is null) return;
-        SaveQuickLaunch(QuickLaunchEntries.Where(candidate => candidate.Id != entry.Id));
-    }
-
-    [RelayCommand]
-    private void MoveQuickLaunchUp(QuickLaunchEntry? entry) => Move(entry, -1);
-
-    [RelayCommand]
-    private void MoveQuickLaunchDown(QuickLaunchEntry? entry) => Move(entry, 1);
-
-    public void AddQuickLaunchFile(string path, MediaSourceDescriptor? source = null)
-    {
-        var extension = Path.GetExtension(path);
-        var kind = string.Equals(extension, ".exe", StringComparison.OrdinalIgnoreCase)
-            ? QuickLaunchTargetKind.Executable
-            : string.Equals(extension, ".lnk", StringComparison.OrdinalIgnoreCase)
-                ? QuickLaunchTargetKind.Shortcut
-                : (QuickLaunchTargetKind?)null;
-        if (kind is null || !File.Exists(path))
-        {
-            SetStatus("Media.Status.OnlyExistingFiles");
-            return;
-        }
-        AddQuickLaunch(new QuickLaunchEntry(Guid.NewGuid().ToString("N"),
-            source?.DisplayName ?? Path.GetFileNameWithoutExtension(path), kind.Value, Path.GetFullPath(path), source?.SourceId));
+        try { SetStatus(await _quickLaunch.AddFileAsync(path, source, CancellationToken.None)); }
+        catch (OperationCanceledException) { }
     }
 
     public void ResetExtraFeatures() => SettingsManager.ResetExtraFeatures();
@@ -214,47 +182,8 @@ public partial class ExtraFeaturesViewModel : ObservableObject
 
     private void AddQuickLaunch(QuickLaunchEntry entry)
     {
-        var before = SettingsManager.Current.QuickLaunch.Entries?.Count ?? 0;
-        SaveQuickLaunch(QuickLaunchEntries.Append(entry));
-        SetStatus((SettingsManager.Current.QuickLaunch.Entries?.Count ?? 0) == before
-            ? "Media.Status.AlreadyInQuickLaunch"
-            : "Media.Status.AddedToQuickLaunch");
+        SetStatus(_quickLaunch.Add(entry) ? "Media.Status.AddedToQuickLaunch" : "Media.Status.AlreadyInQuickLaunch");
     }
-
-    private void Move(QuickLaunchEntry? entry, int offset)
-    {
-        if (entry is null) return;
-        var items = QuickLaunchEntries.ToList();
-        var index = items.FindIndex(candidate => candidate.Id == entry.Id);
-        if (index < 0) return;
-        var target = index + offset;
-        if (target < 0 || target >= items.Count)
-        {
-            // 以前这里直接返回，按钮看起来像坏了。现在把原因说出来，用户才知道是到底了而不是没生效。
-            // This used to return silently and the button read as broken. Saying why tells the user the list
-            // end was reached rather than that the click did nothing.
-            SetStatus(offset < 0 ? "Media.Status.AlreadyFirst" : "Media.Status.AlreadyLast");
-            return;
-        }
-
-        (items[index], items[target]) = (items[target], items[index]);
-        SaveQuickLaunch(items);
-    }
-
-    [RelayCommand]
-    private void ReorderQuickLaunch(SettingsReorderRequest? request)
-    {
-        if (_isRefreshing || request is null ||
-            !request.TryResolve(QuickLaunchEntries, entry => entry.Id, out var index, out var target)) return;
-        var entries = QuickLaunchEntries.ToList();
-        var entry = entries[index];
-        entries.RemoveAt(index);
-        entries.Insert(target, entry);
-        SaveQuickLaunch(entries);
-    }
-
-    private void SaveQuickLaunch(IEnumerable<QuickLaunchEntry> entries) =>
-        SettingsManager.SetQuickLaunchSettings(SettingsManager.Current.QuickLaunch with { Entries = entries.ToArray() });
 
     private void UpdateNotification(TrackChangeNotificationSettings settings)
     {
@@ -279,8 +208,6 @@ public partial class ExtraFeaturesViewModel : ObservableObject
         try
         {
             RefreshSources();
-            QuickLaunchEntries.Clear();
-            foreach (var entry in SettingsManager.Current.QuickLaunch.Entries ?? []) QuickLaunchEntries.Add(entry);
             RefreshMonitors();
             OnPropertyChanged(nameof(SmtcFilterEnabled));
             OnPropertyChanged(nameof(SelectionMode));

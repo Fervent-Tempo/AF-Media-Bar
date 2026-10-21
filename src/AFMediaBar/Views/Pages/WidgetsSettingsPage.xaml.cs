@@ -7,7 +7,7 @@ using Wpf.Ui.Abstractions.Controls;
 
 namespace AFMediaBar.Views.Pages;
 
-/// <summary>呈现小组件参数与返回布局的入口。</summary>
+/// <summary>呈现小组件参数、快速启动列表与返回布局的入口。</summary>
 public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewModel>
 {
     public WidgetsSettingsViewModel ViewModel { get; }
@@ -23,6 +23,17 @@ public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewMod
     {
         SettingsRevealAnimator.Play(sender as Panel);
         await ViewModel.RefreshAsync();
+    }
+
+    private async void BrowseQuickLaunch_Click(object sender, RoutedEventArgs args)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = AFMediaBar.Resources.Translations.Get("Media.Dialog.Browse.Title"),
+            Filter = AFMediaBar.Resources.Translations.Get("Media.Dialog.Browse.Filter"),
+            Multiselect = false, CheckFileExists = true
+        };
+        if (dialog.ShowDialog() == true) await ViewModel.Note.AddFileAsync(dialog.FileName);
     }
 
     private async void ResetButton_Click(object sender, RoutedEventArgs args)
