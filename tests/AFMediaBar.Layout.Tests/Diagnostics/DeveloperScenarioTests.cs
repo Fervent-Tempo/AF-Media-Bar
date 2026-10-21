@@ -28,6 +28,31 @@ public sealed class DeveloperScenarioTests
     }
 
     [TestMethod]
+    public async Task ResourceBaselineCannotBeReusedAcrossDeveloperModeSessions()
+    {
+        using var fixture = new Fixture();
+        Assert.AreEqual(DeveloperActionStatus.Unavailable,
+            (await fixture.Service.ExecuteAsync("resources compare", null, CancellationToken.None)).Status);
+        Assert.AreEqual(DeveloperActionStatus.Completed,
+            (await fixture.Service.ExecuteAsync("resources baseline", null, CancellationToken.None)).Status);
+        var comparison = await fixture.Service.ExecuteAsync("resources compare", null, CancellationToken.None);
+        Assert.AreEqual(DeveloperActionStatus.Completed, comparison.Status);
+        Assert.IsFalse(string.IsNullOrWhiteSpace(comparison.Detail));
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        Assert.AreEqual(DeveloperActionStatus.Canceled,
+            (await fixture.Service.ExecuteAsync("resources baseline", null, canceled.Token)).Status);
+        Assert.AreEqual(DeveloperActionStatus.Completed,
+            (await fixture.Service.ExecuteAsync("resources compare", null, CancellationToken.None)).Status);
+        fixture.Mode.SetEnabled(false);
+        fixture.Mode.SetEnabled(true);
+        Assert.AreEqual(DeveloperActionStatus.Unavailable,
+            (await fixture.Service.ExecuteAsync("resources compare", null, CancellationToken.None)).Status);
+        Assert.AreEqual(DeveloperActionStatus.Completed,
+            (await fixture.Service.ExecuteAsync("resources baseline", null, CancellationToken.None)).Status);
+    }
+
+    [TestMethod]
     public async Task RepeatedPreviewsPreserveSettingsAndProductionDeduplication()
     {
         using var fixture = new Fixture();
@@ -183,6 +208,11 @@ public sealed class DeveloperScenarioTests
             Assert.IsFalse(System.Text.RegularExpressions.Regex.IsMatch(viewModel.Output, "result-1(?:\\r?\\n|$)"));
             Assert.IsTrue(viewModel.Output.EndsWith("result-103", StringComparison.Ordinal));
             Assert.IsTrue(viewModel.CanRunCommands);
+            viewModel.ClearOutputCommand.Execute(null);
+            Assert.AreEqual(string.Empty, viewModel.Output);
+            await viewModel.ExecuteActionCommand.ExecuteAsync(item);
+            Assert.AreEqual(1, System.Text.RegularExpressions.Regex.Matches(viewModel.Output, "result-\\d+").Count);
+            Assert.IsTrue(viewModel.Output.EndsWith("result-104", StringComparison.Ordinal));
         });
     }
 

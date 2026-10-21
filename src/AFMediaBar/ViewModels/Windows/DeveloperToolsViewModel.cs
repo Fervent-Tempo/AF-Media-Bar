@@ -142,6 +142,14 @@ public sealed partial class DeveloperToolsViewModel : ObservableObject, IDisposa
     }
 
     [RelayCommand]
+    private void ClearOutput()
+    {
+        if (_disposed) return;
+        _records.Clear();
+        Output = string.Empty;
+    }
+
+    [RelayCommand]
     private void CopyOutput()
     {
         if (!_disposed) CopyRequested?.Invoke(Output);

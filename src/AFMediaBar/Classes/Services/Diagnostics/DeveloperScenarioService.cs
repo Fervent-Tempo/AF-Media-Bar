@@ -23,6 +23,7 @@ public sealed class DeveloperScenarioService : IDeveloperScenarioService, IDispo
     private readonly AppLogService? _log;
     private readonly CancellationTokenSource _lifetime = new();
     private CancellationTokenSource? _previewLifetime;
+    private DeveloperResourceSnapshot? _resourceBaseline;
     private int _busy;
     private bool _disposed;
 
@@ -106,6 +107,21 @@ public sealed class DeveloperScenarioService : IDeveloperScenarioService, IDispo
             case "notify track": return Host.ShowTrackPreview();
             case "memory trim": return new(_prune.RequestTrim(MemoryTrimTrigger.ManualRequest) ? DeveloperActionStatus.Accepted : DeveloperActionStatus.Busy);
             case "logs open": _log?.OpenFolder(); return new(_log is null ? DeveloperActionStatus.Unavailable : DeveloperActionStatus.Accepted);
+            case "resources baseline":
+            case "resources compare":
+                var baseline = _resourceBaseline;
+                if (action.Command == "resources compare" && baseline is null)
+                    return new(DeveloperActionStatus.Unavailable, Translations.Get("Developer.Resources.NoBaseline"));
+                var snapshot = await DeveloperResourceSnapshot.CaptureAsync(token);
+                // 采样完成后再检查，防止关闭模式时的迟到结果写回基线。
+                token.ThrowIfCancellationRequested();
+                if (action.Command == "resources baseline")
+                {
+                    _resourceBaseline = snapshot;
+                    return new(DeveloperActionStatus.Completed, Translations.Get("Developer.Resources.BaselineSaved") +
+                        Environment.NewLine + snapshot.Format() + Environment.NewLine + Translations.Get("Developer.Resources.Scope"));
+                }
+                return new(DeveloperActionStatus.Completed, snapshot.FormatComparison(baseline!));
             case "state":
                 var uiState = Host.CaptureState();
                 var powerState = Translations.Format("Developer.State.Power", _power.IsDisplayOff, _power.IsSessionLocked,
@@ -176,7 +192,11 @@ public sealed class DeveloperScenarioService : IDeveloperScenarioService, IDispo
 
     private void OnModeChanged(object? sender, EventArgs e)
     {
-        if (!_mode.IsEnabled) ClosePreviews();
+        if (!_mode.IsEnabled)
+        {
+            _resourceBaseline = null;
+            ClosePreviews();
+        }
     }
 
     public void ClosePreviews()
@@ -193,6 +213,7 @@ public sealed class DeveloperScenarioService : IDeveloperScenarioService, IDispo
     {
         if (_disposed) return;
         _disposed = true;
+        _resourceBaseline = null;
         _lifetime.Cancel();
         ClosePreviews();
         _notifications.NotificationClicked -= OnNotificationClicked;

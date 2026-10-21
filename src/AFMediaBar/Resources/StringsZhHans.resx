@@ -3174,4 +3174,14 @@
     <value>{0}
 双击启动 · 滚轮切换应用 · 单击打开列表</value>
   </data>
+  <data name="Developer.Clear" xml:space="preserve"><value>清空输出</value></data>
+  <data name="Developer.Action.ResourceBaseline" xml:space="preserve"><value>记录资源基线</value></data>
+  <data name="Developer.Description.ResourceBaseline" xml:space="preserve"><value>记录 AF 进程读数，供复现问题后对比；再次记录会替换原基线。</value></data>
+  <data name="Developer.Action.ResourceCompare" xml:space="preserve"><value>对比资源变化</value></data>
+  <data name="Developer.Description.ResourceCompare" xml:space="preserve"><value>显示当前读数及相对基线的变化；多次对比使用同一基线。</value></data>
+  <data name="Developer.Resources.NoBaseline" xml:space="preserve"><value>请先执行 resources baseline 记录资源基线。</value></data>
+  <data name="Developer.Resources.BaselineSaved" xml:space="preserve"><value>已记录资源基线。复现问题后执行 resources compare 查看变化。</value></data>
+  <data name="Developer.Resources.Snapshot" xml:space="preserve"><value>AF 进程采样于 {0:yyyy-MM-dd HH:mm:ss zzz}：工作集={1:0.0} MiB，私有字节={2:0.0} MiB，托管堆={3:0.0} MiB，句柄={4}，线程={5}，GC 次数（0/1/2 代）={6}/{7}/{8}</value></data>
+  <data name="Developer.Resources.Delta" xml:space="preserve"><value>相对 {0:yyyy-MM-dd HH:mm:ss zzz} 的变化，间隔 {1:0.0} 秒：工作集={2:+0.0;-0.0;0.0} MiB，私有字节={3:+0.0;-0.0;0.0} MiB，托管堆={4:+0.0;-0.0;0.0} MiB，句柄={5:+0;-0;0}，线程={6:+0;-0;0}，GC 次数（0/1/2 代）=+{7}/+{8}/+{9}</value></data>
+  <data name="Developer.Resources.Scope" xml:space="preserve"><value>仅统计 AF 主进程，不含 WebView2 子进程；不强制 GC 或整理内存。读数增长本身不代表泄漏。关闭开发者模式会清除基线。</value></data>
 </root>

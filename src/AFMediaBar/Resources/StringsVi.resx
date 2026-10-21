@@ -3212,4 +3212,14 @@ Nguồn: {2}</value></data>
     <value>{0}
 Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách</value>
   </data>
+  <data name="Developer.Clear" xml:space="preserve"><value>Xóa kết quả</value></data>
+  <data name="Developer.Action.ResourceBaseline" xml:space="preserve"><value>Ghi mốc tài nguyên</value></data>
+  <data name="Developer.Description.ResourceBaseline" xml:space="preserve"><value>Ghi số liệu tiến trình AF để so sánh sau khi tái hiện lỗi. Ghi lại sẽ thay thế mốc cũ.</value></data>
+  <data name="Developer.Action.ResourceCompare" xml:space="preserve"><value>So sánh tài nguyên</value></data>
+  <data name="Developer.Description.ResourceCompare" xml:space="preserve"><value>Hiển thị số liệu hiện tại và thay đổi so với mốc. Các lần so sánh giữ nguyên mốc.</value></data>
+  <data name="Developer.Resources.NoBaseline" xml:space="preserve"><value>Hãy chạy resources baseline trước.</value></data>
+  <data name="Developer.Resources.BaselineSaved" xml:space="preserve"><value>Đã ghi mốc tài nguyên. Tái hiện lỗi rồi chạy resources compare để xem thay đổi.</value></data>
+  <data name="Developer.Resources.Snapshot" xml:space="preserve"><value>Tiến trình AF lúc {0:yyyy-MM-dd HH:mm:ss zzz}: tập làm việc={1:0.0} MiB, byte riêng={2:0.0} MiB, heap quản lý={3:0.0} MiB, handle={4}, luồng={5}, số lần GC (0/1/2)={6}/{7}/{8}</value></data>
+  <data name="Developer.Resources.Delta" xml:space="preserve"><value>Thay đổi từ {0:yyyy-MM-dd HH:mm:ss zzz} sau {1:0.0} giây: tập làm việc={2:+0.0;-0.0;0.0} MiB, byte riêng={3:+0.0;-0.0;0.0} MiB, heap quản lý={4:+0.0;-0.0;0.0} MiB, handle={5:+0;-0;0}, luồng={6:+0;-0;0}, số lần GC (0/1/2)=+{7}/+{8}/+{9}</value></data>
+  <data name="Developer.Resources.Scope" xml:space="preserve"><value>Chỉ tính tiến trình chính AF, không gồm tiến trình con WebView2. Không ép GC hay dọn bộ nhớ. Số liệu tăng chưa chứng minh rò rỉ. Tắt chế độ nhà phát triển sẽ xóa mốc.</value></data>
 </root>

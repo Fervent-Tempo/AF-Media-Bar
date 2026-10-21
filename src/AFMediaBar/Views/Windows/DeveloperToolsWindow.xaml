@@ -57,6 +57,9 @@
             <TabItem Header="{DynamicResource Loc.Developer.Impact.Diagnostic}"><ScrollViewer VerticalScrollBarVisibility="Auto"><ItemsControl ItemsSource="{Binding DiagnosticActions}" ItemTemplate="{StaticResource ActionTemplate}" Margin="8" /></ScrollViewer></TabItem>
         </TabControl>
         <TextBox Grid.Row="4" Margin="24,0,24,8" Text="{Binding Output, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
-        <ui:Button Grid.Row="5" Margin="24,0,24,16" HorizontalAlignment="Right" Content="{DynamicResource Loc.Developer.Copy}" Command="{Binding CopyOutputCommand}" />
+        <StackPanel Grid.Row="5" Margin="24,0,24,16" HorizontalAlignment="Right" Orientation="Horizontal">
+            <ui:Button Margin="0,0,8,0" Content="{DynamicResource Loc.Developer.Clear}" Command="{Binding ClearOutputCommand}" />
+            <ui:Button Content="{DynamicResource Loc.Developer.Copy}" Command="{Binding CopyOutputCommand}" />
+        </StackPanel>
     </Grid>
 </ui:FluentWindow>

@@ -3174,4 +3174,14 @@
     <value>{0}
 雙擊啟動 · 滾輪切換應用程式 · 單擊開啟清單</value>
   </data>
+  <data name="Developer.Clear" xml:space="preserve"><value>清空輸出</value></data>
+  <data name="Developer.Action.ResourceBaseline" xml:space="preserve"><value>記錄資源基準</value></data>
+  <data name="Developer.Description.ResourceBaseline" xml:space="preserve"><value>記錄 AF 處理程序讀數，供重現問題後比較；再次記錄會取代原基準。</value></data>
+  <data name="Developer.Action.ResourceCompare" xml:space="preserve"><value>比較資源變化</value></data>
+  <data name="Developer.Description.ResourceCompare" xml:space="preserve"><value>顯示目前讀數及相對基準的變化；多次比較使用同一基準。</value></data>
+  <data name="Developer.Resources.NoBaseline" xml:space="preserve"><value>請先執行 resources baseline 記錄資源基準。</value></data>
+  <data name="Developer.Resources.BaselineSaved" xml:space="preserve"><value>已記錄資源基準。重現問題後執行 resources compare 查看變化。</value></data>
+  <data name="Developer.Resources.Snapshot" xml:space="preserve"><value>AF 處理程序取樣於 {0:yyyy-MM-dd HH:mm:ss zzz}：工作集={1:0.0} MiB，私人位元組={2:0.0} MiB，受控堆積={3:0.0} MiB，控制代碼={4}，執行緒={5}，GC 次數（0/1/2 代）={6}/{7}/{8}</value></data>
+  <data name="Developer.Resources.Delta" xml:space="preserve"><value>相對 {0:yyyy-MM-dd HH:mm:ss zzz} 的變化，間隔 {1:0.0} 秒：工作集={2:+0.0;-0.0;0.0} MiB，私人位元組={3:+0.0;-0.0;0.0} MiB，受控堆積={4:+0.0;-0.0;0.0} MiB，控制代碼={5:+0;-0;0}，執行緒={6:+0;-0;0}，GC 次數（0/1/2 代）=+{7}/+{8}/+{9}</value></data>
+  <data name="Developer.Resources.Scope" xml:space="preserve"><value>僅統計 AF 主處理程序，不含 WebView2 子處理程序；不強制 GC 或整理記憶體。讀數成長本身不代表洩漏。關閉開發者模式會清除基準。</value></data>
 </root>

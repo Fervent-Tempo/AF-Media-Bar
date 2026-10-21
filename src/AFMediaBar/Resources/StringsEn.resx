@@ -3174,4 +3174,14 @@ Source: {2}</value></data>
     <value>{0}
 Double-click to launch · Scroll to select · Click for list</value>
   </data>
+  <data name="Developer.Clear" xml:space="preserve"><value>Clear output</value></data>
+  <data name="Developer.Action.ResourceBaseline" xml:space="preserve"><value>Record resource baseline</value></data>
+  <data name="Developer.Description.ResourceBaseline" xml:space="preserve"><value>Records AF process counters for comparison after reproducing an issue. Replaces the previous baseline.</value></data>
+  <data name="Developer.Action.ResourceCompare" xml:space="preserve"><value>Compare with baseline</value></data>
+  <data name="Developer.Description.ResourceCompare" xml:space="preserve"><value>Shows current counters and changes since the baseline. Repeated comparisons keep the same baseline.</value></data>
+  <data name="Developer.Resources.NoBaseline" xml:space="preserve"><value>Run resources baseline first.</value></data>
+  <data name="Developer.Resources.BaselineSaved" xml:space="preserve"><value>Resource baseline recorded. Reproduce the issue, then run resources compare.</value></data>
+  <data name="Developer.Resources.Snapshot" xml:space="preserve"><value>AF process at {0:yyyy-MM-dd HH:mm:ss zzz}: working set={1:0.0} MiB, private bytes={2:0.0} MiB, managed heap={3:0.0} MiB, handles={4}, threads={5}, GC collections (0/1/2)={6}/{7}/{8}</value></data>
+  <data name="Developer.Resources.Delta" xml:space="preserve"><value>Change from {0:yyyy-MM-dd HH:mm:ss zzz} over {1:0.0} s: working set={2:+0.0;-0.0;0.0} MiB, private bytes={3:+0.0;-0.0;0.0} MiB, managed heap={4:+0.0;-0.0;0.0} MiB, handles={5:+0;-0;0}, threads={6:+0;-0;0}, GC collections (0/1/2)=+{7}/+{8}/+{9}</value></data>
+  <data name="Developer.Resources.Scope" xml:space="preserve"><value>AF main process only; excludes WebView2 child processes. No forced GC or memory trimming. Growth alone does not prove a leak. Disabling developer mode clears the baseline.</value></data>
 </root>

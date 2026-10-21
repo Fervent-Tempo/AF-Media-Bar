@@ -24,6 +24,8 @@ public static class DeveloperActionCatalog
         new("webview disable", "Disable", DeveloperActionImpact.Session, true),
         new("taskbar reload", "Reload", DeveloperActionImpact.Session),
         new("state", "State", DeveloperActionImpact.Diagnostic),
+        new("resources baseline", "ResourceBaseline", DeveloperActionImpact.Diagnostic),
+        new("resources compare", "ResourceCompare", DeveloperActionImpact.Diagnostic),
         new("taskbar surface", "Surface", DeveloperActionImpact.Diagnostic),
         new("memory trim", "Trim", DeveloperActionImpact.Diagnostic),
         new("logs open", "Logs", DeveloperActionImpact.Diagnostic),
