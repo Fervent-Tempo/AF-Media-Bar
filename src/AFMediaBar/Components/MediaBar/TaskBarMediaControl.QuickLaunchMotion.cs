@@ -106,7 +106,8 @@ public partial class TaskBarMediaControl
             image.BeginAnimation(OpacityProperty, null);
             image.Opacity = current;
         }
-        _noteRolling = false;
+        // 冻结不是完成：淡出未结束就重新进入时，继续复用两层当前状态。
+        _noteRolling = QuickLaunchIconOutgoing.Source is not null;
     }
 
     private static void AnimateNoteValue(DependencyObject target, DependencyProperty property, double value, TimeSpan duration, Action? completed = null)
