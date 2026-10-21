@@ -133,10 +133,16 @@ public partial class TaskBarMediaControl
             }
             // 允许过渡：有的设置会改掉这一行显示的文字（隐藏日语读音标注、繁简转换在后台就绪），
             // 直接落位就是一次"硬刷新"。改外观的设置不会换字，规划结果仍是进度补丁，不会平白起动画。
+            // 没有改字时连帧都不重发：歌词里没有读音标注时切那个开关，画面上就该什么都不发生。
             // Allow the transition: some settings rewrite the text of the line on screen (hiding Japanese
             // reading annotations, the Chinese conversion becoming ready), and snapping it into place is the
             // hard refresh. Appearance-only settings leave the text alone and still plan a progress patch.
-            if (_lyricsHostLoaded)
+            // With no text change the frame is not even re-sent: toggling that switch on lyrics without any
+            // reading annotation has to leave the bar exactly as it is.
+            if (!_lyricsHostLoaded)
+                return;
+            var projected = LyricsPresentationProjector.Project(_owner._snapshot, _owner.PresentationSettings, DateTimeOffset.UtcNow);
+            if (VisibleTextChanged(_lyricsFrame, projected))
                 UpdateWebLyricsPresentation(allowTransition: true);
         }
 
@@ -414,6 +420,19 @@ public partial class TaskBarMediaControl
                 _owner.RaiseDesiredSizeChanged(skipTransition: true);
             }
         }
+
+        /// <summary>
+        /// 两帧显示的内容是否不同：只看用户看得见的文本与行结构，不看进度。设置变更靠它决定要不要重发。
+        /// Whether the two frames show different content: only the visible text and the row structure count, never
+        /// progress. Settings changes use it to decide whether anything has to be re-sent.
+        /// </summary>
+        private static bool VisibleTextChanged(LyricsPresentationFrame previous, LyricsPresentationFrame next) =>
+            previous.IsVisible != next.IsVisible ||
+            previous.TranslationMode != next.TranslationMode ||
+            !string.Equals(previous.Current, next.Current, StringComparison.Ordinal) ||
+            !string.Equals(previous.Next, next.Next, StringComparison.Ordinal) ||
+            !string.Equals(previous.CurrentTranslation, next.CurrentTranslation, StringComparison.Ordinal) ||
+            !string.Equals(previous.NextTranslation, next.NextTranslation, StringComparison.Ordinal);
 
         internal void RefreshWebLyricsTimer()
         {
