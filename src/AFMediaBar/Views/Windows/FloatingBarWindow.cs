@@ -1,4 +1,4 @@
-// 独立桌面工具窗口；不附着或重新托管任务栏 HWND。
+﻿// 独立桌面工具窗口；不附着或重新托管任务栏 HWND。
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Controls;
@@ -311,6 +311,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         nameof(AppSettings.LyricsLineGapPercent) or
         nameof(AppSettings.LyricsChineseConversion) or
         nameof(AppSettings.LyricsFuriganaFilterEnabled) or
+        nameof(AppSettings.LyricsBracketSymbolsHidden) or
         nameof(AppSettings.LyricsTextAlignment);
 
     private void ApplyLyricsPresentationSettings()

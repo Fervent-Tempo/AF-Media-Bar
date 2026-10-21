@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!--StringsZhHant stores one UI language; Translations owns lookup and runtime WPF publication.-->
 <root>
   <resheader name="resmimetype">
@@ -2487,7 +2487,7 @@
     <value>更新</value>
   </data>
   <data name="Search.Lyrics.Presentation.Description" xml:space="preserve">
-    <value>設定逐字擦亮、署名和日語振假名過濾、字距與行距。</value>
+    <value>設定逐字擦亮、署名和日語振假名過濾、譯文格式、字距與行距。</value>
   </data>
   <data name="Search.Application.Updates.Description" xml:space="preserve">
     <value>檢查、下載、安裝更新，或略過指定版本。</value>
@@ -3185,5 +3185,7 @@
   <data name="Developer.Resources.Delta" xml:space="preserve"><value>相對 {0:yyyy-MM-dd HH:mm:ss zzz} 的變化，間隔 {1:0.0} 秒：工作集={2:+0.0;-0.0;0.0} MiB，私人位元組={3:+0.0;-0.0;0.0} MiB，受控堆積={4:+0.0;-0.0;0.0} MiB，控制代碼={5:+0;-0;0}，執行緒={6:+0;-0;0}，GC 次數（0/1/2 代）=+{7}/+{8}/+{9}</value></data>
   <data name="Developer.Resources.Scope" xml:space="preserve"><value>僅統計 AF 主處理程序，不含 WebView2 子處理程序；不強制 GC 或整理記憶體。讀數成長本身不代表洩漏。關閉開發者模式會清除基準。</value></data>
   <data name="Lyrics.Row.FuriganaFilter.Title" xml:space="preserve"><value>隱藏日語振假名標註</value></data>
-  <data name="Lyrics.Row.FuriganaFilter.Description" xml:space="preserve"><value>預設開啟。僅隱藏原文中 () 或（）內全部為假名的標註；保留英文、中文及混合內容，不變更原始歌詞、時間軸、譯文或音譯。</value></data>
+  <data name="Lyrics.Row.FuriganaFilter.Description" xml:space="preserve"><value>預設開啟。隱藏日文歌詞中括號內的純假名，避免注音標註佔用過多顯示空間。部分實際歌詞可能被誤隱藏，可按需關閉。</value></data>
+  <data name="Lyrics.Row.BracketSymbols.Title" xml:space="preserve"><value>淨化譯文格式</value></data>
+  <data name="Lyrics.Row.BracketSymbols.Description" xml:space="preserve"><value>預設開啟。清理部分翻譯來源多餘的行首斜槓與括號，使譯文顯示更加簡潔。</value></data>
 </root>

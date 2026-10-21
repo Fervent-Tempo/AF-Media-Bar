@@ -1,0 +1,92 @@
+﻿// 验证译文格式清理只去掉来源附加的标记（行首斜杠、首尾成对括号），中间文字保留，并且只在显示层生效、不影响歌词文档。
+using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Services.Lyrics;
+using AFMediaBar.Classes.Settings;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+namespace AFMediaBar.Layout.Tests;
+
+/// <summary>译文行只去掉来源附加的格式标记，保留正文。</summary>
+[TestClass]
+public sealed class LyricsTranslationFormatFilterTests
+{
+    private static readonly DateTimeOffset _now = new(2026, 10, 22, 0, 30, 0, TimeSpan.Zero);
+
+    [DataTestMethod]
+    [DataRow("【一个人是艰辛的 于是两人牵起手】", "一个人是艰辛的 于是两人牵起手")]
+    [DataRow("〖总是在不知不觉中兜圈子的话语〗", "总是在不知不觉中兜圈子的话语")]
+    [DataRow("  【前后有空白也算整行】  ", "前后有空白也算整行")]
+    [DataRow("【外层【嵌套】也只去最外层】", "外层【嵌套】也只去最外层")]
+    [DataRow("/ 曾经沉睡着（曾经诞生）", "曾经沉睡着（曾经诞生）")]
+    [DataRow("/  只有斜杠标记  ", "只有斜杠标记")]
+    [DataRow("/ 【带斜杠又带括号】", "带斜杠又带括号")]
+    [DataRow("【/ 括号里再带斜杠】", "括号里再带斜杠")]
+    public void MarkersAreRemovedAndTextIsKept(string source, string expected) =>
+        Assert.AreEqual(expected, LyricsTranslationFormatFilter.Clean(source));
+
+    [TestMethod]
+    public void NothingLeftBecomesBlankInsteadOfTheSearchingPlaceholder()
+    {
+        // 什么都不剩时给一个空格：空串会被渲染层当成"还没取到歌词"而显示搜索兜底文案。
+        Assert.AreEqual(LyricsTranslationFormatFilter.HiddenText, LyricsTranslationFormatFilter.Clean("【】"));
+        Assert.AreEqual(LyricsTranslationFormatFilter.HiddenText, LyricsTranslationFormatFilter.Clean("〖 〗"));
+        Assert.AreEqual(LyricsTranslationFormatFilter.HiddenText, LyricsTranslationFormatFilter.Clean("/ 【】"));
+    }
+
+    [DataTestMethod]
+    [DataRow("普通的一句歌词")]
+    [DataRow("【只有左边括号")]
+    [DataRow("只有右边括号】")]
+    [DataRow("【括号类型不配对〗")]
+    [DataRow("开头不是括号【中间才有】")]
+    [DataRow("【】后面还有正文")]
+    [DataRow("(半角括号不算)")]
+    [DataRow("/cause I love you")]
+    [DataRow("/")]
+    [DataRow("【")]
+    [DataRow("")]
+    public void EverythingElseStaysUntouched(string source)
+    {
+        var result = LyricsTranslationFormatFilter.Clean(source);
+        Assert.AreEqual(source, result);
+        if (!string.IsNullOrEmpty(source))
+            Assert.IsTrue(ReferenceEquals(source, result), "没有需要去掉的标记时必须返回同一个实例。");
+    }
+
+    [TestMethod]
+    public void ProjectionCleansFormattingOnlyWhenTheSettingIsOn()
+    {
+        var wrapped = new LyricLine(0, 10, "/ 【一个人是艰辛的 于是两人牵起手】")
+        {
+            Translation = "〖总是在不知不觉中兜圈子的话语〗"
+        };
+        var wrappedNext = new LyricLine(10, 20, "/ 曾经沉睡着（曾经诞生）");
+        var snapshot = Snapshot([wrapped, wrappedNext], position: 2);
+
+        var on = LyricsPresentationProjector.Project(
+            snapshot,
+            new AppSettings { LyricsEnabled = true, TwoLineLyricsEnabled = true, LyricsBracketSymbolsHidden = true },
+            _now);
+        Assert.AreEqual("一个人是艰辛的 于是两人牵起手", on.Current, "斜杠与括号一起去掉，正文保留。");
+        Assert.AreEqual("曾经沉睡着（曾经诞生）", on.Next, "行首斜杠同样去掉。");
+
+        var off = LyricsPresentationProjector.Project(
+            snapshot,
+            new AppSettings { LyricsEnabled = true, TwoLineLyricsEnabled = true, LyricsBracketSymbolsHidden = false },
+            _now);
+        Assert.AreEqual("/ 【一个人是艰辛的 于是两人牵起手】", off.Current);
+        Assert.AreEqual("/ 曾经沉睡着（曾经诞生）", off.Next);
+
+        // 歌词文档本身一个字符都不该被改。
+        Assert.AreEqual("/ 【一个人是艰辛的 于是两人牵起手】", wrapped.Text);
+        Assert.AreEqual("〖总是在不知不觉中兜圈子的话语〗", wrapped.Translation);
+    }
+
+    private static MediaSnapshot Snapshot(IReadOnlyList<LyricLine> lines, double position) => MediaSnapshot.Disconnected with
+    {
+        IsConnected = true,
+        Lyrics = new LyricsResult("test", new LyricDocument(lines, LyricsSyncType.LineSynced, "test")),
+        Position = position,
+        Duration = 30
+    };
+}

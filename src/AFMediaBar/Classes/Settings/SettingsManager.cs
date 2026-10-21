@@ -1,4 +1,4 @@
-// 维护当前设置、变更通知与重置门面；持久化由设置服务负责。
+﻿// 维护当前设置、变更通知与重置门面；持久化由设置服务负责。
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Localization;
@@ -296,6 +296,7 @@ public static class SettingsManager
         next.LyricsLineGapPercent = defaults.LyricsLineGapPercent;
         next.LyricsInfoLineFilterEnabled = defaults.LyricsInfoLineFilterEnabled;
         next.LyricsFuriganaFilterEnabled = defaults.LyricsFuriganaFilterEnabled;
+        next.LyricsBracketSymbolsHidden = defaults.LyricsBracketSymbolsHidden;
         next.LyricsChineseConversion = defaults.LyricsChineseConversion;
         next.LyricsSource = defaults.LyricsSource;
         next.LyricsArtistSeparators = defaults.LyricsArtistSeparators;
@@ -356,6 +357,7 @@ public static class SettingsManager
             case nameof(AppSettings.LyricsChineseConversion):
             case nameof(AppSettings.LyricsInfoLineFilterEnabled):
             case nameof(AppSettings.LyricsFuriganaFilterEnabled):
+            case nameof(AppSettings.LyricsBracketSymbolsHidden):
             case nameof(AppSettings.LyricsArtistSeparators):
             case nameof(AppSettings.LyricsSource): LyricsSettingsChanged?.Invoke(null, EventArgs.Empty); break;
             case nameof(AppSettings.LyricsTextAlignment): LyricsSettingsChanged?.Invoke(null, EventArgs.Empty); break;

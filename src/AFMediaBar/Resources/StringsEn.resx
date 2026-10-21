@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!--StringsEn stores one UI language; Translations owns lookup and runtime WPF publication.-->
 <root>
   <resheader name="resmimetype">
@@ -2487,7 +2487,7 @@
     <value>Updates</value>
   </data>
   <data name="Search.Lyrics.Presentation.Description" xml:space="preserve">
-    <value>Configure word highlighting, credit and Japanese furigana filtering, and text spacing.</value>
+    <value>Configure word highlighting, credit and Japanese furigana filtering, translation formatting, and text spacing.</value>
   </data>
   <data name="Search.Application.Updates.Description" xml:space="preserve">
     <value>Check for, download and install updates, or skip a version.</value>
@@ -3185,5 +3185,7 @@ Double-click to launch · Scroll to select · Click for list</value>
   <data name="Developer.Resources.Delta" xml:space="preserve"><value>Change from {0:yyyy-MM-dd HH:mm:ss zzz} over {1:0.0} s: working set={2:+0.0;-0.0;0.0} MiB, private bytes={3:+0.0;-0.0;0.0} MiB, managed heap={4:+0.0;-0.0;0.0} MiB, handles={5:+0;-0;0}, threads={6:+0;-0;0}, GC collections (0/1/2)=+{7}/+{8}/+{9}</value></data>
   <data name="Developer.Resources.Scope" xml:space="preserve"><value>AF main process only; excludes WebView2 child processes. No forced GC or memory trimming. Growth alone does not prove a leak. Disabling developer mode clears the baseline.</value></data>
   <data name="Lyrics.Row.FuriganaFilter.Title" xml:space="preserve"><value>Hide Japanese furigana annotations</value></data>
-  <data name="Lyrics.Row.FuriganaFilter.Description" xml:space="preserve"><value>On by default. Hides annotations in lyric text only when everything inside () or （） is kana. Keeps English, Chinese and mixed text; leaves source lyrics, timing, translations and romanization unchanged.</value></data>
+  <data name="Lyrics.Row.FuriganaFilter.Description" xml:space="preserve"><value>On by default. Hides kana-only text in parentheses inside Japanese lyrics so reading annotations do not take up too much display space. Some real lyric text may be hidden by mistake; turn it off when that happens.</value></data>
+  <data name="Lyrics.Row.BracketSymbols.Title" xml:space="preserve"><value>Clean up translation formatting</value></data>
+  <data name="Lyrics.Row.BracketSymbols.Description" xml:space="preserve"><value>On by default. Cleans up leftover leading slashes and brackets some translation sources include, so the translation reads more cleanly.</value></data>
 </root>

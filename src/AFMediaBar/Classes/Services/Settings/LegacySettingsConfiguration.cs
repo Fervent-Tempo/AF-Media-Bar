@@ -1,4 +1,4 @@
-// 连接设置编辑上下文与持久化配置；任务栏横竖共用原字段，悬浮几何独立保存。
+﻿// 连接设置编辑上下文与持久化配置；任务栏横竖共用原字段，悬浮几何独立保存。
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models.Settings;
 using AFMediaBar.Classes.Settings;
@@ -114,6 +114,7 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
     public void SetLyricsSyllableHighlightEnabled(bool value) => Update(current => current.LyricsSyllableHighlightEnabled = value);
     public void SetLyricsChineseConversion(LyricsChineseConversionMode value) => Update(current => current.LyricsChineseConversion = value);
     public void SetLyricsFuriganaFilterEnabled(bool value) => Update(current => current.LyricsFuriganaFilterEnabled = value);
+    public void SetLyricsBracketSymbolsHidden(bool value) => Update(current => current.LyricsBracketSymbolsHidden = value);
     public void SetLyricsUnsungOpacityPercent(int value) => Update(current => current.LyricsUnsungOpacityPercent = value);
     public void SetLyricsCharacterSpacingPercent(int value) => Update(current => current.LyricsCharacterSpacingPercent = value);
     public void SetLyricsLineGapPercent(int value) => Update(current => current.LyricsLineGapPercent = value);
