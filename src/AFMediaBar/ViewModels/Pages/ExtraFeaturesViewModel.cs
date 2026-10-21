@@ -254,7 +254,7 @@ public partial class ExtraFeaturesViewModel : ObservableObject
     }
 
     private void SaveQuickLaunch(IEnumerable<QuickLaunchEntry> entries) =>
-        SettingsManager.SetQuickLaunchSettings(new QuickLaunchSettings(entries.ToArray()));
+        SettingsManager.SetQuickLaunchSettings(SettingsManager.Current.QuickLaunch with { Entries = entries.ToArray() });
 
     private void UpdateNotification(TrackChangeNotificationSettings settings)
     {

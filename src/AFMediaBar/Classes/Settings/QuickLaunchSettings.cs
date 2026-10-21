@@ -4,10 +4,15 @@ using System.IO;
 
 namespace AFMediaBar.Classes.Settings;
 
+/// <summary>无媒体入口的快速启动交互。</summary>
+public enum QuickLaunchInteractionMode { ListLaunch = 0, SelectThenLaunch = 1 }
 
 /// <summary>快速启动列表设置。 / Quick-launch list settings.</summary>
 public readonly record struct QuickLaunchSettings(IReadOnlyList<QuickLaunchEntry>? Entries)
 {
+    public QuickLaunchInteractionMode InteractionMode { get; init; }
+    public bool ShowApplicationIconOnHover { get; init; } = true;
+    public string? SelectedEntryId { get; init; }
     public static QuickLaunchSettings Default { get; } = new([]);
 
     public QuickLaunchSettings Normalize()
@@ -33,6 +38,12 @@ public readonly record struct QuickLaunchSettings(IReadOnlyList<QuickLaunchEntry
                 SourceId = string.IsNullOrWhiteSpace(entry.SourceId) ? null : entry.SourceId.Trim()
             });
         }
-        return new QuickLaunchSettings(entries);
+        var selectedId = SelectedEntryId;
+        return this with
+        {
+            Entries = entries,
+            InteractionMode = Enum.IsDefined(InteractionMode) ? InteractionMode : QuickLaunchInteractionMode.ListLaunch,
+            SelectedEntryId = entries.Any(entry => entry.Id == selectedId) ? selectedId : null
+        };
     }
 }

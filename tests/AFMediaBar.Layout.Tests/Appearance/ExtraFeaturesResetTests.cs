@@ -21,6 +21,8 @@ public sealed class ExtraFeaturesResetTests
             SettingsManager.SetUserDefaults(new AppSettings { QuickLaunch = new([entry]) });
             SettingsManager.Current = new AppSettings { QuickLaunch = QuickLaunchSettings.Default, LyricsEnabled = false };
             SettingsManager.ResetExtraFeatures();
+            Assert.AreEqual(0, SettingsManager.Current.QuickLaunch.Entries!.Count);
+            SettingsManager.ResetComponents();
             CollectionAssert.AreEqual(new[] { entry }, SettingsManager.Current.QuickLaunch.Entries!.ToArray());
             Assert.IsFalse(SettingsManager.Current.LyricsEnabled);
             Assert.AreNotSame(SettingsManager.UserDefaults!.QuickLaunch.Entries, SettingsManager.Current.QuickLaunch.Entries);
@@ -28,7 +30,7 @@ public sealed class ExtraFeaturesResetTests
             Assert.AreEqual(entry, SettingsManager.UserDefaults.QuickLaunch.Entries!.Single());
             SettingsManager.SetUserDefaults(null);
             SettingsManager.Current.QuickLaunch = new([entry]);
-            SettingsManager.ResetExtraFeatures();
+            SettingsManager.ResetComponents();
             Assert.AreEqual(0, SettingsManager.Current.QuickLaunch.Entries!.Count);
         }
         finally { SettingsManager.SetUserDefaults(defaults); SettingsManager.Current = previous; }

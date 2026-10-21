@@ -129,12 +129,14 @@ public sealed class MediaSourceActivationService
 
     /// <summary>激活或启动一个经过设置归一化的快速启动项。 / Activates or starts a normalized quick-launch entry.</summary>
     public Task<QuickLaunchResult> LaunchAsync(QuickLaunchEntry entry)
-    {
-        if (!string.IsNullOrWhiteSpace(entry.SourceId) && TryActivateRunning(entry.SourceId))
-            return Task.FromResult(QuickLaunchResult.Success);
+        => Task.Run(() => LaunchCore(entry));
 
+    private QuickLaunchResult LaunchCore(QuickLaunchEntry entry)
+    {
         try
         {
+            if (!string.IsNullOrWhiteSpace(entry.SourceId) && TryActivateRunning(entry.SourceId))
+                return QuickLaunchResult.Success;
             var target = entry.Target.Trim();
             switch (entry.Kind)
             {
@@ -145,21 +147,21 @@ public sealed class MediaSourceActivationService
                         Arguments = $"shell:AppsFolder\\{target}",
                         UseShellExecute = true
                     });
-                    return Task.FromResult(QuickLaunchResult.Success);
+                    return QuickLaunchResult.Success;
                 case QuickLaunchTargetKind.Executable
                     when File.Exists(target) && string.Equals(Path.GetExtension(target), ".exe", StringComparison.OrdinalIgnoreCase):
                 case QuickLaunchTargetKind.Shortcut
                     when File.Exists(target) && string.Equals(Path.GetExtension(target), ".lnk", StringComparison.OrdinalIgnoreCase):
                     Process.Start(new ProcessStartInfo(Path.GetFullPath(target)) { UseShellExecute = true });
-                    return Task.FromResult(QuickLaunchResult.Success);
+                    return QuickLaunchResult.Success;
                 default:
-                    return Task.FromResult(QuickLaunchResult.InvalidTarget);
+                    return QuickLaunchResult.InvalidTarget;
             }
         }
         catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
         {
             Debug.WriteLine($"[MediaSourceActivationService] Quick launch failed: {ex}");
-            return Task.FromResult(QuickLaunchResult.Failed);
+            return QuickLaunchResult.Failed;
         }
     }
 

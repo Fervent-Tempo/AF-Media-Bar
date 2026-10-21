@@ -255,12 +255,12 @@ public static class SettingsManager
         next.TrackChangeNotification = defaults.TrackChangeNotification;
         next.SmtcSourceFilter = defaults.SmtcSourceFilter;
         next.MediaSelection = defaults.MediaSelection;
-        next.QuickLaunch = defaults.QuickLaunch;
         Replace(next, SettingsResetScope.ExtraFeatures);
     }
     public static void ResetComponents()
     {
         var next = Current.Clone(); var defaults = Defaults;
+        next.QuickLaunch = defaults.QuickLaunch;
         next.SpectrumComponent = defaults.SpectrumComponent;
         next.PerformanceComponent = defaults.PerformanceComponent;
         next.BluetoothBatteryWidget = defaults.BluetoothBatteryWidget;
