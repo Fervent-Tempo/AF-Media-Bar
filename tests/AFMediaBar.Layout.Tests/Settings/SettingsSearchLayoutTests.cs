@@ -68,6 +68,8 @@ public sealed class SettingsSearchLayoutTests
     [DataRow("组件设置", SettingsPageKey.Widgets, "Widgets.Spectrum")]
     [DataRow("组件顺序", SettingsPageKey.Components, "Common.Group.ComponentOrder")]
     [DataRow("采集设备", SettingsPageKey.Widgets, "Widgets.Spectrum")]
+    [DataRow("快速启动", SettingsPageKey.Widgets, "Widgets.Note")]
+    [DataRow("双击", SettingsPageKey.Widgets, "Widgets.Note")]
     [DataRow("应用外观", SettingsPageKey.Appearance, "Common.Group.ThemeAndBackdrop")]
     [DataRow("歌词对齐", SettingsPageKey.Components, "Appearance.Group.RestLayout")]
     [DataRow("小音符", SettingsPageKey.Appearance, "Appearance.IdleNote.Title")]

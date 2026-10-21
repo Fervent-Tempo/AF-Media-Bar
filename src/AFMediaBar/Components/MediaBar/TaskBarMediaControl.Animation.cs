@@ -513,6 +513,7 @@ public partial class TaskBarMediaControl
 
     private void SongImageBorder_MouseEnter(object sender, MouseEventArgs e)
     {
+        if (e.StylusDevice is null) QuickLaunchHoverChanged?.Invoke(true);
         if (!_isConnected && _quickLaunchTarget is { } target) SetQuickLaunchPreview(target);
         AnimateComponentHover(SongImageHoverOverlay, true);
         // 进事件也以原格几何为准：指针可以从侧面落进"放大后的轮廓、但已出原格"的那一圈，此时不该长开——
@@ -527,6 +528,7 @@ public partial class TaskBarMediaControl
 
     private void SongImageBorder_MouseLeave(object sender, MouseEventArgs e)
     {
+        QuickLaunchHoverChanged?.Invoke(false);
         if (_notePressed) CancelQuickLaunchInteraction();
         _quickLaunchTooltip.IsOpen = false;
         AnimateComponentHover(SongImageHoverOverlay, false);

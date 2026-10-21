@@ -10,6 +10,9 @@ public enum QuickLaunchInteractionMode { ListLaunch = 0, SelectThenLaunch = 1 }
 /// <summary>快速启动列表设置。 / Quick-launch list settings.</summary>
 public readonly record struct QuickLaunchSettings(IReadOnlyList<QuickLaunchEntry>? Entries)
 {
+    // JSON 缺少新属性时也执行属性初始化，避免结构体零值把默认开启读成关闭。
+    public QuickLaunchSettings() : this([]) { }
+
     public QuickLaunchInteractionMode InteractionMode { get; init; }
     public bool ShowApplicationIconOnHover { get; init; } = true;
     public string? SelectedEntryId { get; init; }

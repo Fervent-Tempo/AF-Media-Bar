@@ -101,6 +101,7 @@ namespace AFMediaBar.Views.Windows
         private readonly AFMediaBar.Components.MemoryContextMenu _memoryMenu;
         private readonly ContextMenu _batteryMenu;
 
+        private readonly QuickLaunchService _quickLaunch;
         public MainWindow(
             AFMediaBar.Classes.Services.Audio.BluetoothBatteryService batterySource,
             AFMediaBar.ViewModels.Pages.MemoryToolsViewModel memoryTools,
@@ -135,8 +136,10 @@ namespace AFMediaBar.Views.Windows
             Func<string, ITaskbarWindowHostActions, TaskbarWindow> taskbarFactory,
             Func<string, DisplayMonitorInfo, FloatingBarWindow> floatingFactory,
             MediaSessionService mediaSessionService,
-            AFMediaBar.ViewModels.Components.AFContextMenuViewModel menuViewModel)
+            AFMediaBar.ViewModels.Components.AFContextMenuViewModel menuViewModel,
+            QuickLaunchService quickLaunch)
         {
+            _quickLaunch = quickLaunch;
             ViewModel = viewModel;
             _memoryMenu = new AFMediaBar.Components.MemoryContextMenu(memoryTools, () =>
             {
@@ -1038,8 +1041,18 @@ namespace AFMediaBar.Views.Windows
 
         private async void TrayMenu_QuickLaunchRequested(QuickLaunchEntry entry)
         {
-            var result = await _sourceActivationService.LaunchAsync(entry);
-            if (_isClosing || result == QuickLaunchResult.Success)
+            if (_isClosing) return;
+            if (!(SettingsManager.Current.QuickLaunch.Entries ?? []).Any(current => current.Id == entry.Id &&
+                current.Kind == entry.Kind && current.Target == entry.Target)) return;
+            _quickLaunch.Select(entry.Id);
+            QuickLaunchResult result;
+            try { result = await _sourceActivationService.LaunchAsync(entry); }
+            catch (Exception exception)
+            {
+                _logService.Error("QuickLaunch", "启动应用失败", exception);
+                result = QuickLaunchResult.Failed;
+            }
+            if (_isClosing || _quickLaunch.Selected?.Id != entry.Id || result == QuickLaunchResult.Success)
                 return;
 
             _systemNotifications.TryShowNotification(

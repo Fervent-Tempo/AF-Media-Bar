@@ -164,6 +164,11 @@ public partial class ExtraFeaturesViewModel : ObservableObject
     {
         try { SetStatus(await _quickLaunch.AddFileAsync(path, source, CancellationToken.None)); }
         catch (OperationCanceledException) { }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Debug.WriteLine(exception);
+            SetStatus("Media.Status.OnlyExistingFiles");
+        }
     }
 
     public void ResetExtraFeatures() => SettingsManager.ResetExtraFeatures();

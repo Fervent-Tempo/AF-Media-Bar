@@ -52,6 +52,13 @@ public sealed partial class QuickLaunchSettingsViewModel : ObservableObject, IDi
             OnPropertyChanged(nameof(StatusText));
         }
         catch (OperationCanceledException) { }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Debug.WriteLine(exception);
+            if (_disposed || token.IsCancellationRequested || !_configuration.IsActive) return;
+            _statusKey = "Media.Status.OnlyExistingFiles";
+            OnPropertyChanged(nameof(StatusText));
+        }
     }
     [RelayCommand] private void RemoveQuickLaunch(QuickLaunchEntry? entry)
     {

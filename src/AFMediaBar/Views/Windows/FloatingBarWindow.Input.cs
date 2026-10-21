@@ -285,19 +285,39 @@ public sealed partial class FloatingBarWindow
         _quickLaunch?.Select(entry.Id);
         _quickLaunchApplyTimer.Stop();
         _pendingQuickLaunch = null;
+        _compactFlyout.Dismiss();
         var environmentVersion = _menuEnvironmentVersion;
         var anchor = _mediaControl.GetQuickLaunchAnchor();
-        var result = await _sourceActivationService.LaunchAsync(entry);
+        var result = await LaunchQuickLaunchEntryAsync(entry);
         if (CanPublishMenu(environmentVersion)) ShowQuickLaunchResult(result, anchor);
     }
 
-    private void ShowQuickLaunchResult(QuickLaunchResult result, TrayIconBounds? anchor = null)
+    private async Task<QuickLaunchResult?> LaunchQuickLaunchEntryAsync(QuickLaunchEntry entry)
     {
-        if (!CanPublishMenu(_menuEnvironmentVersion) || result == QuickLaunchResult.Success) return;
+        // 已打开的列表可能仍持有删除前的条目；在后台命令入队前再次校验身份。
+        if (!(SettingsManager.Current.QuickLaunch.Entries ?? []).Any(current => current.Id == entry.Id &&
+            current.Kind == entry.Kind && current.Target == entry.Target)) return null;
+        var token = _mediaControl.QuickLaunchRequestToken;
+        try
+        {
+            var result = await _sourceActivationService.LaunchAsync(entry, token);
+            return token.IsCancellationRequested ? null : result;
+        }
+        catch (OperationCanceledException) { return null; }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Debug.WriteLine(exception);
+            return QuickLaunchResult.Failed;
+        }
+    }
+
+    private void ShowQuickLaunchResult(QuickLaunchResult? result, TrayIconBounds? anchor = null)
+    {
+        if (!CanPublishMenu(_menuEnvironmentVersion) || result is null or QuickLaunchResult.Success) return;
         _compactFlyout.ShowQuickLaunch(
             PresentationSettings.QuickLaunch.Entries ?? [],
             anchor ?? _mediaControl.GetQuickLaunchAnchor());
-        _compactFlyout.ShowQuickLaunchStatus(DescribeQuickLaunchResult(result));
+        _compactFlyout.ShowQuickLaunchStatus(DescribeQuickLaunchResult(result.Value));
     }
 
     /// <summary>

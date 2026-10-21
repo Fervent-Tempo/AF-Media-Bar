@@ -13,10 +13,11 @@ internal sealed partial class QuickLaunchControlSession : IDisposable
     private readonly Action _invalidate;
     private QuickLaunchSettings _settings;
     private bool _disposed;
-    public QuickLaunchControlSession(TaskBarMediaControl owner, QuickLaunchService selection, Action invalidate)
+    public QuickLaunchControlSession(TaskBarMediaControl owner, QuickLaunchService selection, Action invalidate, QuickLaunchIconService? icons)
     {
         _owner = owner; _selection = selection; _invalidate = invalidate;
         _settings = selection.Settings;
+        InitializeIcons(icons);
         selection.Changed += Changed;
         owner.Loaded += Loaded;
         Refresh(0);
@@ -31,6 +32,7 @@ internal sealed partial class QuickLaunchControlSession : IDisposable
             !(_settings.Entries ?? []).SequenceEqual(next.Entries ?? []))
         {
             _owner.CancelQuickLaunchInteraction();
+            _owner.InvalidateQuickLaunchRequests();
             _invalidate();
         }
         _settings = next;
@@ -38,12 +40,15 @@ internal sealed partial class QuickLaunchControlSession : IDisposable
     }
     private void Refresh(int wheelDelta)
     {
-        if (!_disposed) _owner.ApplyQuickLaunchState(_selection.Settings, _selection.Selected, wheelDelta);
+        if (_disposed) return;
+        _owner.ApplyQuickLaunchState(_selection.Settings, _selection.Selected, wheelDelta);
+        RefreshIcon(wheelDelta);
     }
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
+        DisposeIcons();
         _selection.Changed -= Changed;
         _owner.Loaded -= Loaded;
         _owner.CancelQuickLaunchInteraction();

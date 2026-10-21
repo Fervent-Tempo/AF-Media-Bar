@@ -200,6 +200,14 @@
                             <ui:SymbolIcon Name="SongImagePlaceholder" Symbol="MusicNote220" FontSize="24"
                                            Filled="True"
                                            Foreground="{DynamicResource AfAccentBrush}" />
+                                <Grid x:Name="QuickLaunchIconViewport" ClipToBounds="True" Opacity="0">
+                                    <Image x:Name="QuickLaunchIconOutgoing" Stretch="Uniform" Margin="4" Opacity="0">
+                                        <Image.RenderTransform><TranslateTransform x:Name="NoteOutgoingTranslate"/></Image.RenderTransform>
+                                    </Image>
+                                    <Image x:Name="QuickLaunchIconIncoming" Stretch="Uniform" Margin="4" Opacity="0">
+                                        <Image.RenderTransform><TranslateTransform x:Name="NoteIncomingTranslate"/></Image.RenderTransform>
+                                    </Image>
+                                </Grid>
                             </Grid>
                             <Border x:Name="SongImageHoverOverlay"
                                     CornerRadius="5"

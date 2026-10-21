@@ -236,6 +236,8 @@ public sealed class SettingsOrganizationTests
             SettingsPageKey.Experimental
         }, pages.Where(page => !page.IsFooter).Select(page => page.Key).ToArray());
         Assert.AreEqual(2, pages.Count(page => page.IsFooter));
+        Assert.AreEqual((SettingsPageKey.Widgets, "Widgets.Note"),
+            SettingsPageCatalog.ResolveDestination(SettingsPageKey.MediaAndNotifications, "Common.Group.QuickLaunch"));
         Assert.AreEqual((SettingsPageKey.Widgets, "Widgets.Spectrum"),
             SettingsPageCatalog.ResolveDestination(SettingsPageKey.Components, "Common.Group.Widgets"));
         Assert.AreEqual((SettingsPageKey.Widgets, "Battery.Title"),

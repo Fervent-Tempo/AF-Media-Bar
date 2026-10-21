@@ -2,6 +2,7 @@
 using System.Text.Json;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
+using AFMediaBar.Classes.Services.Audio;
 using AFMediaBar.Classes.Settings;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -11,6 +12,15 @@ namespace AFMediaBar.Layout.Tests;
 [DoNotParallelize]
 public sealed class QuickLaunchSettingsTests
 {
+    [TestMethod]
+    public async Task CancelledLaunchNeverReachesActivation()
+    {
+        var activation = new MediaSourceActivationService(new MediaSourceProcessResolver());
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        var entry = new QuickLaunchEntry("cancelled", "Cancelled", QuickLaunchTargetKind.Executable, "never-launch-this.exe");
+        await Assert.ThrowsExceptionAsync<TaskCanceledException>(() => activation.LaunchAsync(entry, cancellation.Token));
+    }
     [TestMethod]
     public void SelectionSurvivesPersistenceReorderAndSnapshotReset()
     {

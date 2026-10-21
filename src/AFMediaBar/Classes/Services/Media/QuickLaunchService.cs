@@ -26,7 +26,7 @@ public sealed class QuickLaunchService : IDisposable
     public void Select(string id, int wheelDelta = 0)
     {
         _dispatcher.VerifyAccess();
-        if (_disposed || !Settings.Entries!.Any(entry => entry.Id == id)) return;
+        if (_disposed || Settings.SelectedEntryId == id || !(Settings.Entries ?? []).Any(entry => entry.Id == id)) return;
         _wheelDelta = wheelDelta;
         try { SettingsManager.SetQuickLaunchSettings(Settings with { SelectedEntryId = id }); }
         finally { _wheelDelta = 0; }

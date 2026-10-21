@@ -108,7 +108,8 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         NativeMouseInputMonitor mouse, MemoryPruneCoordinator prune, DesktopWidgetZOrderService zOrder,
         WindowAppearanceService appearance, ScreenBackgroundSampler sampler, AppLogService log, FloatingBarLengthConstraints lengthConstraints,
         Func<ExternalFullPanelHandleWindow>? externalFullPanelHandleFactory = null,
-        QuickLaunchService? quickLaunch = null)
+        QuickLaunchService? quickLaunch = null,
+        QuickLaunchIconService? quickLaunchIcons = null)
     {
         _quickLaunch = quickLaunch;
         TargetMonitorDeviceId = targetMonitorDeviceId;
@@ -168,7 +169,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _mediaControl.QuickLaunchActionsAllowed = () => IsOperational && !_dragging;
         _mediaControl.QuickLaunchDirectRequested += MediaControl_QuickLaunchRequested;
         if (_quickLaunch is not null) _mediaControl.BindQuickLaunch(_quickLaunch, () =>
-        { _quickLaunchApplyTimer.Stop(); _pendingQuickLaunch = null; });
+        { _quickLaunchApplyTimer.Stop(); _pendingQuickLaunch = null; }, quickLaunchIcons);
 
         _volumeApplyTimer.Interval = TimeSpan.FromMilliseconds(AudioApplyPolicy.ApplicationVolumeDelayMilliseconds);
         _volumeApplyTimer.Tick += async (_, _) =>
@@ -278,7 +279,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     private async Task LaunchAsync(QuickLaunchEntry entry)
     {
         var version = _menuEnvironmentVersion;
-        try { var result = await _sourceActivationService.LaunchAsync(entry); if (CanPublishMenu(version)) ShowQuickLaunchResult(result); }
+        try { var result = await LaunchQuickLaunchEntryAsync(entry); if (CanPublishMenu(version)) ShowQuickLaunchResult(result); }
         catch (Exception ex) { _log.Error("FloatingBar", "快速启动失败", ex); }
     }
 
@@ -469,6 +470,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         if (!_dragging)
         {
             _dragging = true;
+            _mediaControl.SuspendQuickLaunchPresentation();
             _mediaControl.ApplyPlacementMotionSuspension(true);
             ClearInteraction();
             PlacementTransitionStarted?.Invoke(this, EventArgs.Empty);
@@ -529,6 +531,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _externalFullPanelHandle?.Dismiss(immediate: true);
         _taskManagerClickPending = false;
         _menuEnvironmentVersion++;
+        _mediaControl.SuspendQuickLaunchPresentation();
         _spectrumSession.Invalidate();
         _requests.Cancel();
         _requests.Dispose();

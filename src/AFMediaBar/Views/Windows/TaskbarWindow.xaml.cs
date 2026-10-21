@@ -165,7 +165,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         AFMediaBar.ViewModels.Components.AFContextMenuViewModel menuViewModel,
         bool startImmediately = true,
         Func<ExternalFullPanelHandleWindow>? externalFullPanelHandleFactory = null,
-        QuickLaunchService? quickLaunch = null)
+        QuickLaunchService? quickLaunch = null,
+        QuickLaunchIconService? quickLaunchIcons = null)
     {
         _quickLaunch = quickLaunch;
         WindowHelper.SetNoActivate(this);
@@ -313,14 +314,14 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
                     _compactFlyout.Dismiss();
                 var environmentVersion = _menuEnvironmentVersion;
                 var anchor = MediaControl.GetQuickLaunchAnchor();
-                var result = await _sourceActivationService.LaunchAsync(pending);
+                var result = await LaunchQuickLaunchEntryAsync(pending);
                 if (CanPublishMenu(environmentVersion)) ShowQuickLaunchResult(result, anchor);
             }
         };
         MediaControl.QuickLaunchActionsAllowed = () => CanPublishMenu(_menuEnvironmentVersion) && !_isDragging && !IsTaskbarPresentationSuspended;
         MediaControl.QuickLaunchDirectRequested += MediaControl_QuickLaunchRequested;
         if (_quickLaunch is not null) MediaControl.BindQuickLaunch(_quickLaunch, () =>
-        { _quickLaunchApplyTimer.Stop(); _pendingQuickLaunch = null; });
+        { _quickLaunchApplyTimer.Stop(); _pendingQuickLaunch = null; }, quickLaunchIcons);
 
         _volumeApplyTimer = new DispatcherTimer
             { Interval = TimeSpan.FromMilliseconds(AudioApplyPolicy.ApplicationVolumeDelayMilliseconds) };
@@ -566,6 +567,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             // block media callbacks immediately so they cannot show an already closed Window.
             _isClosing = true;
             _menuEnvironmentVersion++;
+            MediaControl.SuspendQuickLaunchPresentation();
             MediaControl.ApplyHostVisibilitySuspension(true);
             PlayerMenu.IsOpen = false;
             StopOccupancyRefresh();
@@ -1235,6 +1237,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     public void ApplyExperienceSettings()
     {
         _menuEnvironmentVersion++;
+        MediaControl.SuspendQuickLaunchPresentation();
         _compactFlyout.Dismiss();
         _volumeApplyTimer.Stop();
         _pendingVolume = null;
@@ -1333,6 +1336,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         InvalidateSurfaceProbe();
         _isEnvironmentSuspended = true;
         _menuEnvironmentVersion++;
+        MediaControl.SuspendQuickLaunchPresentation();
         StopOccupancyRefresh();
         _hasTaskbarPresentationPlacement = false;
         Visibility = Visibility.Collapsed;
@@ -1424,6 +1428,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         }
 
         _menuEnvironmentVersion++;
+        MediaControl.SuspendQuickLaunchPresentation();
         _compactFlyout.Dismiss();
         PlayerMenu.IsOpen = false;
         _audioInteractionService.CancelDeviceOwner(this);
@@ -1780,9 +1785,10 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         _quickLaunch?.Select(entry.Id);
         _quickLaunchApplyTimer.Stop();
         _pendingQuickLaunch = null;
+        _compactFlyout.Dismiss();
         var environmentVersion = _menuEnvironmentVersion;
         var anchor = MediaControl.GetQuickLaunchAnchor();
-        var result = await _sourceActivationService.LaunchAsync(entry);
+        var result = await LaunchQuickLaunchEntryAsync(entry);
         if (CanPublishMenu(environmentVersion)) ShowQuickLaunchResult(result, anchor);
     }
 
@@ -1792,17 +1798,36 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         _quickLaunch?.Select(entry.Id);
         var environmentVersion = _menuEnvironmentVersion;
         var anchor = _playerMenuOpeningAnchor ?? GetMediaBarScreenPhysicalBounds();
-        var result = await _sourceActivationService.LaunchAsync(entry);
+        var result = await LaunchQuickLaunchEntryAsync(entry);
         if (CanPublishMenu(environmentVersion)) ShowQuickLaunchResult(result, anchor);
     }
 
-    private void ShowQuickLaunchResult(QuickLaunchResult result, TrayIconBounds? anchor = null)
+    private async Task<QuickLaunchResult?> LaunchQuickLaunchEntryAsync(QuickLaunchEntry entry)
     {
-        if (!CanPublishMenu(_menuEnvironmentVersion) || result == QuickLaunchResult.Success) return;
+        // 已打开的列表可能仍持有删除前的条目；在后台命令入队前再次校验身份。
+        if (!(SettingsManager.Current.QuickLaunch.Entries ?? []).Any(current => current.Id == entry.Id &&
+            current.Kind == entry.Kind && current.Target == entry.Target)) return null;
+        var token = MediaControl.QuickLaunchRequestToken;
+        try
+        {
+            var result = await _sourceActivationService.LaunchAsync(entry, token);
+            return token.IsCancellationRequested ? null : result;
+        }
+        catch (OperationCanceledException) { return null; }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Debug.WriteLine(exception);
+            return QuickLaunchResult.Failed;
+        }
+    }
+
+    private void ShowQuickLaunchResult(QuickLaunchResult? result, TrayIconBounds? anchor = null)
+    {
+        if (!CanPublishMenu(_menuEnvironmentVersion) || result is null or QuickLaunchResult.Success) return;
         _compactFlyout.ShowQuickLaunch(
             SettingsManager.Current.QuickLaunch.Entries ?? [],
             anchor ?? MediaControl.GetQuickLaunchAnchor());
-        _compactFlyout.ShowQuickLaunchStatus(DescribeQuickLaunchResult(result));
+        _compactFlyout.ShowQuickLaunchStatus(DescribeQuickLaunchResult(result.Value));
     }
 
     /// <summary>
@@ -2049,6 +2074,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
                 return;
             _isDragPending = false;
             _isDragging = true;
+            MediaControl.SuspendQuickLaunchPresentation();
             _externalFullPanelHandle?.Dismiss(immediate: true);
             MediaControl.CollapseArtworkZoomForDrag();
             Mouse.Capture(GetActiveControl(), CaptureMode.SubTree);

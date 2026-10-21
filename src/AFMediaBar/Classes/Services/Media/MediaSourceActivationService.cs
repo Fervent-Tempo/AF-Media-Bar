@@ -128,8 +128,12 @@ public sealed class MediaSourceActivationService
     }
 
     /// <summary>激活或启动一个经过设置归一化的快速启动项。 / Activates or starts a normalized quick-launch entry.</summary>
-    public Task<QuickLaunchResult> LaunchAsync(QuickLaunchEntry entry)
-        => Task.Run(() => LaunchCore(entry));
+    public Task<QuickLaunchResult> LaunchAsync(QuickLaunchEntry entry, CancellationToken cancellationToken = default)
+        => Task.Run(() =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return LaunchCore(entry);
+        }, cancellationToken);
 
     private QuickLaunchResult LaunchCore(QuickLaunchEntry entry)
     {
