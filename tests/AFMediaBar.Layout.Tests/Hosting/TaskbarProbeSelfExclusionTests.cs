@@ -14,8 +14,10 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class TaskbarProbeSelfExclusionTests
 {
     [TestMethod]
-    public void OwnInteractiveDescendantsDoNotConsumeVerticalTaskbarSpace()
+    public async Task OwnInteractiveDescendantsDoNotConsumeVerticalTaskbarSpace()
     {
+        if (await NativeTestProcess.RunIfNeededAsync(typeof(TaskbarProbeSelfExclusionTests).FullName + "." +
+            nameof(OwnInteractiveDescendantsDoNotConsumeVerticalTaskbarSpace))) return;
         StaTest.Run(async dispatcher =>
         {
             var button = new Button { Width = 36, Height = 120, Content = "Own media control" };
