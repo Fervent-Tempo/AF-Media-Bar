@@ -212,10 +212,6 @@ public partial class TaskBarMediaControl
         TaskbarRestProgress.Margin = new Thickness(_verticalTaskbarOnLeft ? width - 2 : 2, layout.TextLeft, 0, 0);
         if (TaskbarRestProgress.RenderTransform is not TransformGroup)
             TaskbarRestProgress.RenderTransform = new RotateTransform(90);
-        {
-            handle.Width = 4;
-            handle.Height = 28;
-        }
         _lyrics.ApplyWebLyricsStyle();
     }
 
