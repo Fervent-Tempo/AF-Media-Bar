@@ -113,6 +113,7 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
     public void SetLyricsTextAlignment(LyricsTextAlignment value) => Update(current => current.LyricsTextAlignment = value);
     public void SetLyricsSyllableHighlightEnabled(bool value) => Update(current => current.LyricsSyllableHighlightEnabled = value);
     public void SetLyricsChineseConversion(LyricsChineseConversionMode value) => Update(current => current.LyricsChineseConversion = value);
+    public void SetLyricsFuriganaFilterEnabled(bool value) => Update(current => current.LyricsFuriganaFilterEnabled = value);
     public void SetLyricsUnsungOpacityPercent(int value) => Update(current => current.LyricsUnsungOpacityPercent = value);
     public void SetLyricsCharacterSpacingPercent(int value) => Update(current => current.LyricsCharacterSpacingPercent = value);
     public void SetLyricsLineGapPercent(int value) => Update(current => current.LyricsLineGapPercent = value);

@@ -171,6 +171,16 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         set { _configuration.SetLyricsInfoLineFilterEnabled(value); OnPropertyChanged(); }
     }
 
+    public bool FuriganaFilterEnabled
+    {
+        get => _configuration.Current.LyricsFuriganaFilterEnabled;
+        set
+        {
+            if (!_configuration.IsActive || value == FuriganaFilterEnabled) return;
+            _configuration.SetLyricsFuriganaFilterEnabled(value);
+        }
+    }
+
     /// <summary>
     /// 用户上次选过的方向：总开关关掉时方向也一起失效（存 <c>None</c>），再打开时能回到原方向，不必重选。
     /// The direction the user last picked: turning the master switch off clears the direction as well (stored as <c>None</c>), so
@@ -311,6 +321,8 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(ArtistSeparatorsText));
         if (e.PropertyName == nameof(AppSettings.LyricsChineseConversion))
             RaiseChineseConversionProperties();
+        if (e.PropertyName == nameof(AppSettings.LyricsFuriganaFilterEnabled))
+            OnPropertyChanged(nameof(FuriganaFilterEnabled));
         if (e.ResetScope == SettingsResetScope.Components || e.PropertyName is nameof(AppSettings.LyricsEnabled)
             or nameof(AppSettings.TwoLineLyricsEnabled) or nameof(AppSettings.LyricsTextAlignment)
             or nameof(AppSettings.LyricsFixedWidthEnabled) or nameof(AppSettings.LyricsFixedWidthDip))
@@ -330,6 +342,7 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(TextAlignment));
         OnPropertyChanged(nameof(SyllableHighlightEnabled)); OnPropertyChanged(nameof(UnsungOpacityPercent));
         OnPropertyChanged(nameof(UnsungOpacityText)); OnPropertyChanged(nameof(InfoLineFilterEnabled));
+        OnPropertyChanged(nameof(FuriganaFilterEnabled));
         OnPropertyChanged(nameof(CharacterSpacingPercent)); OnPropertyChanged(nameof(CharacterSpacingText));
         OnPropertyChanged(nameof(LineGapPercent)); OnPropertyChanged(nameof(LineGapText));
         OnPropertyChanged(nameof(FixedWidthEnabled)); OnPropertyChanged(nameof(FixedWidthDip));

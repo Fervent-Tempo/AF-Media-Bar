@@ -103,6 +103,7 @@
     "lyricsEnabled": "v1.2.0",
     "lyricsFixedWidthDip": "v1.3.0",
     "lyricsFixedWidthEnabled": "v1.3.0",
+    "lyricsFuriganaFilterEnabled": "unreleased",
     "lyricsInfoLineFilterEnabled": "v1.2.0",
     "lyricsLineGapPercent": "v1.3.0",
     "lyricsSecondaryLine": {

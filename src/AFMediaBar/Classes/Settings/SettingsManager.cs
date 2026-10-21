@@ -295,6 +295,7 @@ public static class SettingsManager
         next.LyricsCharacterSpacingPercent = defaults.LyricsCharacterSpacingPercent;
         next.LyricsLineGapPercent = defaults.LyricsLineGapPercent;
         next.LyricsInfoLineFilterEnabled = defaults.LyricsInfoLineFilterEnabled;
+        next.LyricsFuriganaFilterEnabled = defaults.LyricsFuriganaFilterEnabled;
         next.LyricsChineseConversion = defaults.LyricsChineseConversion;
         next.LyricsSource = defaults.LyricsSource;
         next.LyricsArtistSeparators = defaults.LyricsArtistSeparators;
@@ -354,6 +355,7 @@ public static class SettingsManager
             case nameof(AppSettings.LyricsFixedWidthDip):
             case nameof(AppSettings.LyricsChineseConversion):
             case nameof(AppSettings.LyricsInfoLineFilterEnabled):
+            case nameof(AppSettings.LyricsFuriganaFilterEnabled):
             case nameof(AppSettings.LyricsArtistSeparators):
             case nameof(AppSettings.LyricsSource): LyricsSettingsChanged?.Invoke(null, EventArgs.Empty); break;
             case nameof(AppSettings.LyricsTextAlignment): LyricsSettingsChanged?.Invoke(null, EventArgs.Empty); break;

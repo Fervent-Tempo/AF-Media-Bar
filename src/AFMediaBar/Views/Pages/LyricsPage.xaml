@@ -171,6 +171,12 @@
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.InfoLineFilterEnabled, Mode=TwoWay}" />
                         </components:SettingsRow>
                         <components:SettingsRow
+                            Description="{DynamicResource Loc.Lyrics.Row.FuriganaFilter.Description}"
+                            Icon="{ui:SymbolIcon TextGrammarWand24}"
+                            Title="{DynamicResource Loc.Lyrics.Row.FuriganaFilter.Title}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.FuriganaFilterEnabled, Mode=TwoWay}" />
+                        </components:SettingsRow>
+                        <components:SettingsRow
                             Description="{DynamicResource Loc.Lyrics.Row.ChineseConversion.Description}"
                             Icon="{ui:SymbolIcon Translate24}"
                             Title="{DynamicResource Loc.Lyrics.Row.ChineseConversion.Title}">

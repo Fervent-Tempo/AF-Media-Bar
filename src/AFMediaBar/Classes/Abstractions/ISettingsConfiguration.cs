@@ -78,6 +78,8 @@ public interface ISettingsConfiguration
     void SetLyricsFixedWidthDip(int dip);
     /// <summary>Publishes this setting through the existing normalization contract.</summary>
     void SetLyricsInfoLineFilterEnabled(bool enabled);
+    /// <summary>通过当前配置上下文更新显示用的假名过滤。</summary>
+    void SetLyricsFuriganaFilterEnabled(bool enabled);
     /// <summary>Publishes this setting through the existing normalization contract.</summary>
     void SetLyricsSourceSettings(LyricsSourceSettings settings);
     /// <summary>Saves artist separators through the existing lyrics matching contract.</summary>

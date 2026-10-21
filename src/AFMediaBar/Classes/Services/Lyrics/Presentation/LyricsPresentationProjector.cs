@@ -65,9 +65,9 @@ public static class LyricsPresentationProjector
             return LyricsPresentationFrame.Hidden;
         }
 
-        var currentLine = lines[index];
-        var nextLine = index + 1 < lines.Count ? lines[index + 1] : null;
-        var followingLine = index + 2 < lines.Count ? lines[index + 2] : null;
+        var currentLine = DisplayLine(lines[index], settings);
+        var nextLine = index + 1 < lines.Count ? DisplayLine(lines[index + 1], settings) : null;
+        var followingLine = index + 2 < lines.Count ? DisplayLine(lines[index + 2], settings) : null;
         var currentSecondary = settings.TwoLineLyricsEnabled
             ? LyricsSecondaryLinePolicy.ResolveSelection(
                 settings.LyricsSecondaryLine,
@@ -122,6 +122,9 @@ public static class LyricsPresentationProjector
         snapshot.SourceId.Trim().ToUpperInvariant(),
         snapshot.Title.Trim().ToUpperInvariant(),
         snapshot.Artist.Trim().ToUpperInvariant());
+
+    private static LyricLine DisplayLine(LyricLine line, AppSettings settings) =>
+        settings.LyricsFuriganaFilterEnabled ? LyricsFuriganaFilter.Apply(line) : line;
 
     private static double ResolveLineProgress(LyricLine line, double position)
     {

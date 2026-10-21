@@ -2487,7 +2487,7 @@
     <value>更新</value>
   </data>
   <data name="Search.Lyrics.Presentation.Description" xml:space="preserve">
-    <value>设置逐字擦亮、署名过滤、字距及行距。</value>
+    <value>设置逐字擦亮、署名和日语振假名过滤、字距及行距。</value>
   </data>
   <data name="Search.Application.Updates.Description" xml:space="preserve">
     <value>检查、下载、安装更新，或跳过指定版本。</value>
@@ -3184,4 +3184,6 @@
   <data name="Developer.Resources.Snapshot" xml:space="preserve"><value>AF 进程采样于 {0:yyyy-MM-dd HH:mm:ss zzz}：工作集={1:0.0} MiB，私有字节={2:0.0} MiB，托管堆={3:0.0} MiB，句柄={4}，线程={5}，GC 次数（0/1/2 代）={6}/{7}/{8}</value></data>
   <data name="Developer.Resources.Delta" xml:space="preserve"><value>相对 {0:yyyy-MM-dd HH:mm:ss zzz} 的变化，间隔 {1:0.0} 秒：工作集={2:+0.0;-0.0;0.0} MiB，私有字节={3:+0.0;-0.0;0.0} MiB，托管堆={4:+0.0;-0.0;0.0} MiB，句柄={5:+0;-0;0}，线程={6:+0;-0;0}，GC 次数（0/1/2 代）=+{7}/+{8}/+{9}</value></data>
   <data name="Developer.Resources.Scope" xml:space="preserve"><value>仅统计 AF 主进程，不含 WebView2 子进程；不强制 GC 或整理内存。读数增长本身不代表泄漏。关闭开发者模式会清除基线。</value></data>
+  <data name="Lyrics.Row.FuriganaFilter.Title" xml:space="preserve"><value>隐藏日语振假名标注</value></data>
+  <data name="Lyrics.Row.FuriganaFilter.Description" xml:space="preserve"><value>默认开启。仅隐藏正文中 () 或（）内全部为假名的标注；保留英文、中文及混合内容，不改原始歌词、时间轴、译文或音译。</value></data>
 </root>

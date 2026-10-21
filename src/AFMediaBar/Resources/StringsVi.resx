@@ -2435,7 +2435,7 @@
     <value>Căn chỉnh lời bài hát trong vùng văn bản.</value>
   </data>
   <data name="Search.Lyrics.Presentation.Description" xml:space="preserve">
-    <value>Cấu hình làm sáng từng từ, lọc người đóng góp, khoảng cách ký tự và khoảng cách dòng.</value>
+    <value>Cấu hình làm sáng từng từ, lọc người đóng góp và furigana tiếng Nhật, khoảng cách ký tự và dòng.</value>
   </data>
   <data name="Search.Placement.Vertical" xml:space="preserve">
     <value>Chọn màn hình hiển thị, xem hướng hệ thống, và cấu hình tránh né, khóa vị trí và độ lệch.</value>
@@ -3222,4 +3222,6 @@ Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách
   <data name="Developer.Resources.Snapshot" xml:space="preserve"><value>Tiến trình AF lúc {0:yyyy-MM-dd HH:mm:ss zzz}: tập làm việc={1:0.0} MiB, byte riêng={2:0.0} MiB, heap quản lý={3:0.0} MiB, handle={4}, luồng={5}, số lần GC (0/1/2)={6}/{7}/{8}</value></data>
   <data name="Developer.Resources.Delta" xml:space="preserve"><value>Thay đổi từ {0:yyyy-MM-dd HH:mm:ss zzz} sau {1:0.0} giây: tập làm việc={2:+0.0;-0.0;0.0} MiB, byte riêng={3:+0.0;-0.0;0.0} MiB, heap quản lý={4:+0.0;-0.0;0.0} MiB, handle={5:+0;-0;0}, luồng={6:+0;-0;0}, số lần GC (0/1/2)=+{7}/+{8}/+{9}</value></data>
   <data name="Developer.Resources.Scope" xml:space="preserve"><value>Chỉ tính tiến trình chính AF, không gồm tiến trình con WebView2. Không ép GC hay dọn bộ nhớ. Số liệu tăng chưa chứng minh rò rỉ. Tắt chế độ nhà phát triển sẽ xóa mốc.</value></data>
+  <data name="Lyrics.Row.FuriganaFilter.Title" xml:space="preserve"><value>Ẩn chú thích furigana tiếng Nhật</value></data>
+  <data name="Lyrics.Row.FuriganaFilter.Description" xml:space="preserve"><value>Mặc định bật. Chỉ ẩn chú thích trong lời gốc khi toàn bộ nội dung trong () hoặc （） là kana. Giữ nguyên tiếng Anh, tiếng Trung và nội dung hỗn hợp; không đổi lời nguồn, thời gian, bản dịch hay phiên âm.</value></data>
 </root>

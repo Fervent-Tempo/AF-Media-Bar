@@ -59,6 +59,7 @@ public sealed class AppSettings : INotifyPropertyChanged
     private bool _lyricsFixedWidthEnabled;
     private int _lyricsFixedWidthDip = LyricsFixedWidth.DefaultDip;
     private bool _lyricsInfoLineFilterEnabled = true;
+    private bool _lyricsFuriganaFilterEnabled = true;
     private LyricsChineseConversionMode _lyricsChineseConversion = LyricsChineseConversionMode.None;
     private LyricsSourceSettings _lyricsSource = LyricsSourceSettings.Default;
     private string _lyricsArtistSeparators = "/";
@@ -147,6 +148,9 @@ public sealed class AppSettings : INotifyPropertyChanged
 
     /// <summary>是否丢弃作者、作曲、制作等信息行。/ Whether credit lines such as writer, composer, and producer are dropped.</summary>
     public bool LyricsInfoLineFilterEnabled { get => _lyricsInfoLineFilterEnabled; set => Set(ref _lyricsInfoLineFilterEnabled, value); }
+
+    /// <summary>仅在显示时隐藏括号内的日语假名，不修改来源歌词。</summary>
+    public bool LyricsFuriganaFilterEnabled { get => _lyricsFuriganaFilterEnabled; set => Set(ref _lyricsFuriganaFilterEnabled, value); }
 
     /// <summary>
     /// 歌词文本的简繁转换方向：<c>None</c> 表示不做转换。它只影响呈现，因此改变它不必清空取词缓存。
@@ -319,6 +323,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         LyricsFixedWidthEnabled = LyricsFixedWidthEnabled,
         LyricsFixedWidthDip = LyricsFixedWidthDip,
         LyricsInfoLineFilterEnabled = LyricsInfoLineFilterEnabled,
+        LyricsFuriganaFilterEnabled = LyricsFuriganaFilterEnabled,
         LyricsChineseConversion = LyricsChineseConversion,
         LyricsSource = LyricsSource,
         LyricsArtistSeparators = LyricsArtistSeparators,
