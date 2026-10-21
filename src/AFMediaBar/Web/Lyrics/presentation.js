@@ -257,7 +257,11 @@
           current.next !== target.next ||
           current.currentTranslation !== target.currentTranslation ||
           current.nextTranslation !== target.nextTranslation;
-        if (!textChanged) {
+        // Turning syllable highlighting on or off also changes what the line shows: going from a partial wipe
+        // to a plain (or back) would otherwise make the whole line jump at once, so it rolls like a line change.
+        const scanModeChanged =
+          (current.wordScanProgress === null) !== (target.wordScanProgress === null);
+        if (!textChanged && !scanModeChanged) {
           return makePlan(
             current.layout === target.layout ? TRANSITIONS.PROGRESS_PATCH : TRANSITIONS.REPLACE_IN_PLACE,
             current,

@@ -142,7 +142,7 @@ public partial class TaskBarMediaControl
             if (!_lyricsHostLoaded)
                 return;
             var projected = LyricsPresentationProjector.Project(_owner._snapshot, _owner.PresentationSettings, DateTimeOffset.UtcNow);
-            if (VisibleTextChanged(_lyricsFrame, projected))
+            if (VisibleContentChanged(_lyricsFrame, projected))
                 UpdateWebLyricsPresentation(allowTransition: true);
         }
 
@@ -426,9 +426,17 @@ public partial class TaskBarMediaControl
         /// Whether the two frames show different content: only the visible text and the row structure count, never
         /// progress. Settings changes use it to decide whether anything has to be re-sent.
         /// </summary>
-        private static bool VisibleTextChanged(LyricsPresentationFrame previous, LyricsPresentationFrame next) =>
+        /// <summary>
+        /// 两帧显示的内容是否不同：用户看得见的文本、行结构，以及"有没有逐字擦亮"这一模式。进度数值本身永远不算，
+        /// 否则每一帧都会被当成变化。设置变更靠它决定要不要重发，重发时会走换行过渡。
+        /// Whether the two frames show different content: the visible text, the row structure, and whether syllable
+        /// highlighting is in play at all. The progress value itself never counts, or every frame would look changed.
+        /// Settings changes use it to decide whether anything has to be re-sent, and a re-send rolls like a line change.
+        /// </summary>
+        private static bool VisibleContentChanged(LyricsPresentationFrame previous, LyricsPresentationFrame next) =>
             previous.IsVisible != next.IsVisible ||
             previous.TranslationMode != next.TranslationMode ||
+            (previous.WordScanProgress is null) != (next.WordScanProgress is null) ||
             !string.Equals(previous.Current, next.Current, StringComparison.Ordinal) ||
             !string.Equals(previous.Next, next.Next, StringComparison.Ordinal) ||
             !string.Equals(previous.CurrentTranslation, next.CurrentTranslation, StringComparison.Ordinal) ||
