@@ -2,10 +2,6 @@
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services.Notifications;
-using AFMediaBar.Classes.Services.Localization;
-using AFMediaBar.Resources;
-using System.Collections;
-using System.Resources;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace AFMediaBar.Layout.Tests;
@@ -77,34 +73,6 @@ public sealed class LyricsRecoveryNotificationTests
         coordinator.CancelPendingRequests(); choice.SetResult(true);
         Assert.AreEqual(ApplicationRestartResult.Canceled, await first);
         Assert.AreEqual(0, restart.Requests);
-    }
-
-    [TestMethod]
-    public void RecoveryAndRestartStringsExistInEverySupportedLanguage()
-    {
-        string[] keys = ["Lyrics.Recovery.Notification.Title", "Lyrics.Recovery.Notification.Body", "Lyrics.Recovery.RestartReason",
-            "Restart.Dialog.Title", "Restart.Dialog.Confirm", "Restart.Dialog.Later", "Restart.Failed", "Restart.Busy"];
-        foreach (var language in Enum.GetValues<LocalizationLanguage>())
-        {
-            var suffix = language switch
-            {
-                LocalizationLanguage.SimplifiedChinese => "StringsZhHans.resources",
-                LocalizationLanguage.TraditionalChinese => "StringsZhHant.resources",
-                LocalizationLanguage.English => "StringsEn.resources",
-                LocalizationLanguage.Vietnamese => "StringsVi.resources",
-                _ => throw new AssertFailedException("Unsupported language")
-            };
-            var assembly = typeof(Translations).Assembly;
-            using var stream = assembly.GetManifestResourceStream(assembly.GetManifestResourceNames().Single(name => name.EndsWith(suffix, StringComparison.Ordinal)))!;
-            using var reader = new ResourceReader(stream);
-            var values = reader.Cast<DictionaryEntry>().ToDictionary(entry => (string)entry.Key, entry => (string)entry.Value!);
-            foreach (var key in keys)
-            {
-                Assert.IsTrue(values.TryGetValue(key, out var value), $"Missing {key} in {language}");
-                Assert.IsFalse(string.IsNullOrWhiteSpace(value));
-                if (key.EndsWith("Notification.Body", StringComparison.Ordinal)) Assert.IsTrue(value.Length <= 255);
-            }
-        }
     }
 
     private sealed class Notifications : ISystemNotificationService

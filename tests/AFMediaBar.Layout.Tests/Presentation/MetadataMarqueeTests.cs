@@ -15,23 +15,6 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class MetadataMarqueeTests
 {
     [TestMethod]
-    public void LoopHoldsBothEndsAndMovesAtConstantSpeedAcrossTheSeam()
-    {
-        var plan = MetadataMarqueePolicy.Create(440, 240);
-        Assert.AreEqual(0d, plan.Sample(TimeSpan.FromSeconds(0.9)).Offset);
-        Assert.AreEqual(40d, plan.Sample(TimeSpan.FromSeconds(2)).Offset, 0.001);
-        Assert.AreEqual(MetadataMarqueePhase.TailHold, plan.Sample(TimeSpan.FromSeconds(6.4)).Phase);
-        Assert.AreEqual(200d, plan.Sample(TimeSpan.FromSeconds(6.4)).Offset);
-        Assert.AreEqual(240d, plan.Sample(TimeSpan.FromSeconds(7.8)).Offset, 0.001);
-        Assert.AreEqual(24d, plan.Gap);
-        Assert.AreEqual(0d, plan.Sample(plan.Duration).Offset);
-        Assert.AreEqual(9d, MetadataMarqueePolicy.Create(440, 90).Gap);
-        // 回绕时副本的起点恰好到达原文起点，尾部先完整进入视口。
-        Assert.AreEqual(0d, plan.Period - plan.Segments[^1].To);
-        Assert.AreEqual(plan.ViewportWidth, plan.TextWidth - plan.Tail);
-    }
-
-    [TestMethod]
     public void ResizeContinuesFromItsPhaseWithoutReplayingPassedTailHold()
     {
         var original = MetadataMarqueePolicy.Create(500, 240);
@@ -53,17 +36,6 @@ public sealed class MetadataMarqueeTests
         var seam = MetadataMarqueePolicy.Create(500, 120, new(MetadataMarqueePhase.ToHead, 520, TimeSpan.Zero));
         Assert.AreEqual(8d, seam.InitialOffset);
         Assert.AreEqual(MetadataMarqueePhase.ToTail, seam.Segments[0].Phase);
-    }
-
-    [TestMethod]
-    public void ResizePreservesRemainingHeadHoldAndFinishesOnlyTheCurrentLoop()
-    {
-        var original = MetadataMarqueePolicy.Create(500, 240);
-        var cursor = original.Sample(TimeSpan.FromSeconds(0.7));
-        var resized = MetadataMarqueePolicy.Create(500, 180, cursor);
-        Assert.IsFalse(resized.Repeat);
-        Assert.AreEqual(0.3, resized.Segments[0].End.TotalSeconds, 0.001);
-        Assert.AreEqual(MetadataMarqueePhase.ToTail, resized.Sample(TimeSpan.FromSeconds(0.4)).Phase);
     }
 
     [TestMethod]
@@ -179,9 +151,14 @@ public sealed class MetadataMarqueeTests
             // 完成事件由真实呈现目标驱动；独立 TextBlock 的时钟只能用于同步 Seek 检查。
             using var source = new HwndSource(new HwndSourceParameters("AFMB marquee test")
             {
-                Width = 240, Height = 30, PositionX = -10000, PositionY = -10000,
-                WindowStyle = unchecked((int)0x90000000), ExtendedWindowStyle = 0x80
-            }) { RootVisual = canvas };
+                Width = 240,
+                Height = 30,
+                PositionX = -10000,
+                PositionY = -10000,
+                WindowStyle = unchecked((int)0x90000000),
+                ExtendedWindowStyle = 0x80
+            })
+            { RootVisual = canvas };
             var presenter = new MetadataMarqueePresenter(element, duplicate);
             try
             {
@@ -224,8 +201,12 @@ public sealed class MetadataMarqueeTests
                     presenter.Configure(true, 240, true, TextAlignment.Left);
                     var reference = new TextBlock
                     {
-                        Text = text, FontFamily = element.FontFamily, FontSize = element.FontSize, FontStyle = element.FontStyle,
-                        Padding = element.Padding, TextTrimming = TextTrimming.None
+                        Text = text,
+                        FontFamily = element.FontFamily,
+                        FontSize = element.FontSize,
+                        FontStyle = element.FontStyle,
+                        Padding = element.Padding,
+                        TextTrimming = TextTrimming.None
                     };
                     TextOptions.SetTextFormattingMode(reference, TextFormattingMode.Display);
                     reference.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));

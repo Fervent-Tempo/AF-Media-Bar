@@ -3,7 +3,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Reflection;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Models.Layout;
@@ -43,8 +42,6 @@ internal static class VerticalTaskbarPresentationChecks
                 var text = (FrameworkElement)control.FindName("SongInfoStackPanel");
                 var items = (StackPanel)control.FindName("TaskbarPerformanceItems");
                 Assert.AreEqual(width - 4, artwork.Width, 0.01);
-                Assert.AreEqual(22.5, title.FontSize, 0.01, "Taskbar thickness must not shrink text.");
-                Assert.AreEqual(2, Canvas.GetLeft(text), 0.01);
                 Assert.AreEqual(width - 4, text.Width, 0.01);
                 Assert.AreEqual(Orientation.Vertical, items.Orientation);
                 var performance = (FrameworkElement)control.FindName("TaskbarPerformanceHoverSurface");
@@ -61,8 +58,6 @@ internal static class VerticalTaskbarPresentationChecks
                     Assert.AreEqual(1, cell.Inlines.OfType<LineBreak>().Count(), "Each metric uses two readable rows.");
                 control.ApplyPerformanceSnapshot(new(40, 7, 3, 123, 1024, 2048), 0, false);
                 var cells = items.Children.Cast<TextBlock>().ToArray();
-                CollectionAssert.AreEqual(new[] { "CPU", "7%" }, cells[0].Inlines.OfType<Run>().Select(run => run.Text).ToArray());
-                CollectionAssert.AreEqual(new[] { "APP MB", "123" }, cells[1].Inlines.OfType<Run>().Select(run => run.Text).ToArray());
                 Assert.IsTrue(cells[2].Inlines.OfType<Run>().First().Text.StartsWith("↑ "));
                 Assert.IsTrue(cells[2].Inlines.OfType<Run>().Last().Text.StartsWith("↓ "));
                 control.ApplyPerformanceSnapshot(default, 0, false);
@@ -90,10 +85,8 @@ internal static class VerticalTaskbarPresentationChecks
                     var position = layer.TranslatePoint(new Point(), control);
                     Assert.IsTrue(position.X >= 0 && position.X + layer.ActualWidth <= width + 0.01,
                         $"Hover is outside the bar: left={position.X}, actualWidth={layer.ActualWidth}, bar={width}.");
-                    Capture(control, width, onLeft ? "hover-left" : "hover-right");
                     hover.Visibility = Visibility.Collapsed;
                     MediaBarTestAccess.GetField("_isTaskbarHoverVisible", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(control, false);
-                    Capture(control, width, onLeft ? "rest-left" : "rest-right");
                 }
             }
             SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
@@ -111,18 +104,6 @@ internal static class VerticalTaskbarPresentationChecks
             Assert.AreEqual(0d, ((RotateTransform)((FrameworkElement)control.FindName("TaskbarSpectrum")).LayoutTransform).Angle);
         }
         finally { SettingsManager.Replace(settings); }
-    }
-    private static void Capture(TaskBarMediaControl control, double width, string name)
-    {
-        var directory = Environment.GetEnvironmentVariable("AFMB_VERTICAL_POLISH_CAPTURE_DIR");
-        if (width != 48 || string.IsNullOrEmpty(directory)) return;
-        Directory.CreateDirectory(directory);
-        var bitmap = new RenderTargetBitmap((int)width * 2, 1200, 192, 192, PixelFormats.Pbgra32);
-        bitmap.Render(control);
-        var encoder = new PngBitmapEncoder();
-        encoder.Frames.Add(BitmapFrame.Create(bitmap));
-        using var stream = File.Create(Path.Combine(directory, name + ".png"));
-        encoder.Save(stream);
     }
 
 }

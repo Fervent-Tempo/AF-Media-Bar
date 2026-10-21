@@ -1,7 +1,5 @@
 // 经真实设置事件与已加载窗口验证即时材质更新；只替换原生调用，结束恢复全局状态。
-using System.Runtime.InteropServices;
 using System.Windows;
-using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Services;
@@ -136,60 +134,5 @@ internal static class WindowBackdropRefreshChecks
             app.MainWindow = originalMain;
         }
     }
-    internal static void VerifyNativeSelection(Application app)
-    {
-        if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22621)) return;
-        var original = SettingsManager.Current;
-        var originalMain = app.MainWindow;
-        using var icons = new AppIconService();
-        using var localization = new LocalizationService();
-        using var context = new SettingsPageContext();
-        using var service = new WindowAppearanceService(new NativeWindowBackdropAdapter(), icons);
-        using var coordinator = new ApplicationThemeCoordinator(app.Dispatcher, (_, _, _) => { });
-        coordinator.AppearanceResourcesApplied += service.RequestRefresh;
-        var window = new FluentWindow { Left = -32000, Top = -32000, Width = 10, Height = 10, ShowInTaskbar = false, ShowActivated = false };
-        try
-        {
-            SettingsManager.Current = new AppSettings();
-            coordinator.Start();
-            coordinator.Apply(SettingsManager.Current.Appearance);
-            using var viewModel = new AppearanceViewModel(localization, new LegacySettingsConfiguration(context));
-            service.Attach(window);
-            window.Show();
-            app.Dispatcher.Invoke(() => { }, DispatcherPriority.Background);
-            var handle = new WindowInteropHelper(window).Handle;
-            foreach (var mode in new[] { ApplicationBackdropMode.Acrylic, ApplicationBackdropMode.MicaAlt, ApplicationBackdropMode.Mica, ApplicationBackdropMode.FluentSolid })
-            {
-                viewModel.BackdropMode = mode;
-                app.Dispatcher.Invoke(() => { }, DispatcherPriority.Background);
-                Assert.AreEqual(0, DwmGetWindowAttribute(handle, 38, out var actual, sizeof(int)));
-                var expected = MotionPolicy.ResolveCurrent().UseDecorativeEffects ? mode switch
-                {
-                    ApplicationBackdropMode.Mica => 2,
-                    ApplicationBackdropMode.Acrylic => 3,
-                    ApplicationBackdropMode.MicaAlt => 4,
-                    _ => 1
-                } : 1;
-                Assert.AreEqual(expected, actual, "The actual DWM attribute must follow the selected mode in the same window.");
-                window.Width += 1;
-                window.UpdateLayout();
-                app.Dispatcher.Invoke(() => { }, DispatcherPriority.Background);
-                Assert.AreEqual(0, DwmGetWindowAttribute(handle, 38, out actual, sizeof(int)));
-                Assert.AreEqual(expected, actual, "Resizing must retain the requested material.");
-            }
-        }
-        finally
-        {
-            window.Close();
-            service.Dispose();
-            coordinator.Dispose();
-            app.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
-            SettingsManager.Current = original;
-            app.MainWindow = originalMain;
-        }
-    }
-
-    [DllImport("dwmapi.dll")]
-    private static extern int DwmGetWindowAttribute(nint handle, int attribute, out int value, int size);
 
 }

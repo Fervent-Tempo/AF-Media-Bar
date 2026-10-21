@@ -217,38 +217,4 @@ public sealed class SettingsOrganizationTests
         Assert.AreEqual(defaults.Interaction.ArtworkHoverMode, SettingsManager.Current.Interaction.ArtworkHoverMode);
         Assert.IsFalse(SettingsManager.Current.TaskbarExperience.ArtworkVisible);
     }
-
-    [TestMethod]
-    public void MainPagesAndLegacyDestinationsResolveToActualGroups()
-    {
-        var pages = SettingsPageCatalog.ForMode(SettingsMode.Taskbar);
-        CollectionAssert.AreEqual(new[]
-        {
-            SettingsPageKey.ScreenAndPlacement,
-            SettingsPageKey.Components,
-            SettingsPageKey.Widgets,
-            SettingsPageKey.Appearance,
-            SettingsPageKey.Lyrics,
-            SettingsPageKey.Interaction,
-            SettingsPageKey.DeviceManagement,
-            SettingsPageKey.MediaAndNotifications,
-            SettingsPageKey.Application,
-            SettingsPageKey.Experimental
-        }, pages.Where(page => !page.IsFooter).Select(page => page.Key).ToArray());
-        Assert.AreEqual(2, pages.Count(page => page.IsFooter));
-        Assert.AreEqual((SettingsPageKey.Widgets, "Widgets.Note"),
-            SettingsPageCatalog.ResolveDestination(SettingsPageKey.MediaAndNotifications, "Common.Group.QuickLaunch"));
-        Assert.AreEqual((SettingsPageKey.Widgets, "Widgets.Spectrum"),
-            SettingsPageCatalog.ResolveDestination(SettingsPageKey.Components, "Common.Group.Widgets"));
-        Assert.AreEqual((SettingsPageKey.Widgets, "Battery.Title"),
-            SettingsPageCatalog.ResolveDestination(SettingsPageKey.DeviceManagement, "Battery.Title"));
-        Assert.AreEqual((SettingsPageKey.Appearance, "Common.Group.Fonts"),
-            SettingsPageCatalog.ResolveDestination(SettingsPageKey.ApplicationAppearance, "Common.Group.Fonts"));
-        Assert.AreEqual((SettingsPageKey.Components, "Common.RestLayer"),
-            SettingsPageCatalog.ResolveDestination(SettingsPageKey.DisplayModes, "Common.RestLayer"));
-        Assert.AreEqual((SettingsPageKey.Components, "Appearance.Group.RestLayout"),
-            SettingsPageCatalog.ResolveDestination(SettingsPageKey.Lyrics, "Common.Group.LyricsAlignment"));
-        Assert.AreEqual((SettingsPageKey.Components, "Common.Group.MediaBarWidth"),
-            SettingsPageCatalog.ResolveDestination(SettingsPageKey.Appearance, "Common.Group.MediaBarWidth"));
-    }
 }

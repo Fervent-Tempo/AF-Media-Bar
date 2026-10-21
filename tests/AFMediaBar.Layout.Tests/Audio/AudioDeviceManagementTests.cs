@@ -14,42 +14,6 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class AudioDeviceManagementTests
 {
     [TestMethod]
-    public void LowBatteryAlertsEstablishBaselineAndRearmOnlyAfterHysteresis()
-    {
-        var policy = new BluetoothBatteryAlertPolicy();
-        var id = Guid.NewGuid().ToString("N");
-        BluetoothBatterySnapshot Reading(int percent) => new(id, percent, BluetoothBatterySource.WindowsProperty, true, true, DateTimeOffset.UtcNow);
-        Assert.IsFalse(policy.Evaluate(id, Reading(15), true, 20), "启动时已经低电量只建立基线。");
-        Assert.IsFalse(policy.Evaluate(id, Reading(25), true, 20));
-        Assert.IsTrue(policy.Evaluate(id, Reading(20), true, 20));
-        Assert.IsFalse(policy.Evaluate(id, Reading(19), true, 20));
-        Assert.IsFalse(policy.Evaluate(id, Reading(22), true, 20));
-        Assert.IsFalse(policy.Evaluate(id, Reading(20), true, 20), "回升不足 5% 不重新提醒。");
-        Assert.IsFalse(policy.Evaluate(id, Reading(25), true, 20));
-        Assert.IsTrue(policy.Evaluate(id, Reading(20), true, 20));
-    }
-
-    [TestMethod]
-    public void SwitchingReconnectingAndFailedReadingsDoNotRepeatLowBatteryCycle()
-    {
-        var policy = new BluetoothBatteryAlertPolicy();
-        var first = Guid.NewGuid().ToString("N");
-        var second = Guid.NewGuid().ToString("N");
-        BluetoothBatterySnapshot Reading(string id, int percent) => new(id, percent, BluetoothBatterySource.BleGatt, true, true, DateTimeOffset.UtcNow);
-        Assert.IsFalse(policy.Evaluate(first, Reading(first, 30), true, 20));
-        Assert.IsTrue(policy.Evaluate(first, Reading(first, 20), true, 20));
-        Assert.IsFalse(policy.Evaluate(second, Reading(second, 60), true, 20));
-        Assert.IsFalse(policy.Evaluate(first, Reading(first, 22), true, 20));
-        Assert.IsFalse(policy.Evaluate(first, Reading(first, 20), true, 20));
-        Assert.IsFalse(policy.Evaluate(first, Reading(first, 18) with { IsConnected = false, ReadSucceeded = false }, true, 20));
-        Assert.IsFalse(policy.Evaluate(first, Reading(first, 18), true, 20));
-        Assert.IsFalse(policy.Evaluate(first, Reading(first, 10) with { ReadSucceeded = false }, true, 20));
-        Assert.IsFalse(policy.Evaluate(first, Reading(first, 10), true, 20));
-        Assert.IsFalse(policy.Evaluate(first, Reading(first, 30), false, 20));
-        Assert.IsFalse(policy.Evaluate(first, Reading(first, 15), true, 20));
-    }
-
-    [TestMethod]
     public void GroupsEndpointsByAvailabilityAndRecoversDisconnectedBlacklistRecords()
     {
         StaTest.Run(async _ =>

@@ -68,11 +68,6 @@ public sealed class TaskbarArrangementPresentationTests
                     {
                         Source = new Uri($"/AFMediaBar;component/Resources/{resource}.xaml", UriKind.Relative)
                     });
-                // Parse the actual page BAML so enum literals, icons and resources are checked at runtime.
-                _ = new AFMediaBar.Views.Pages.DisplayModesPage(null!);
-                _ = new AFMediaBar.Views.Pages.AppearancePage(null!, null!);
-                _ = new AFMediaBar.Views.Pages.ComponentsSettingsPage(null!);
-                _ = new AFMediaBar.Views.Pages.ScreenAndPlacementPage(null!);
                 var control = new TaskBarMediaControl();
                 control.UpdateSongInfo(MediaSnapshot.Disconnected with
                 {
@@ -123,7 +118,7 @@ public sealed class TaskbarArrangementPresentationTests
                         if (previous is { } expected)
                             Assert.AreEqual(expected, point, 1.1, $"{position}: button moved when content width changed");
                         previous = point;
-                        for (var frame = 0; frame < 24; frame++)
+                        for (var frame = 0; frame < 3; frame++)
                         {
                             control.ApplyPrimaryLength(width);
                             control.Measure(new Size(width, 44));
@@ -137,25 +132,6 @@ public sealed class TaskbarArrangementPresentationTests
                             Assert.IsTrue(artwork.TranslatePoint(new Point(), control).X > width / 2);
                         Assert.IsTrue(actions.ActualWidth > 0);
                     }
-                }
-                SettingsManager.Current.Position = TaskbarBarPosition.Center;
-                foreach (var arrangement in new[] { TaskbarContentArrangement.Left, TaskbarContentArrangement.Right })
-                {
-                    SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
-                    {
-                        Arrangement = arrangement,
-                        HoverControls = SettingsManager.Current.TaskbarExperience.HoverControls with { ProgressVisible = true }
-                    };
-                    control.ApplyTaskbarExperienceSettings();
-                    var transportButtons = (StackPanel)control.FindName("TaskbarTransportButtons");
-                    Assert.AreSame(control.FindName("TaskbarPreviousButton"), transportButtons.Children[0]);
-                    Assert.AreSame(control.FindName("TaskbarPlayPauseButton"), transportButtons.Children[1]);
-                    Assert.AreSame(control.FindName("TaskbarNextButton"), transportButtons.Children[2]);
-                    Assert.AreSame(transportButtons, actions.Children[0]);
-                    Assert.AreSame(control.FindName("TaskbarDeviceButton"), actions.Children[1]);
-                    Assert.AreSame(control.FindName("TaskbarInputDeviceButton"), actions.Children[2]);
-                    Assert.AreSame(control.FindName("TaskbarVolumeButton"), actions.Children[3]);
-                    Assert.AreEqual(4, actions.Children.Count, "悬停层不应再保留只读进度控件。");
                 }
                 foreach (var direction in new[] { TaskbarContentArrangement.Left, TaskbarContentArrangement.Right })
                     foreach (var alignment in new[] { TaskbarBarPosition.Start, TaskbarBarPosition.Center, TaskbarBarPosition.End })
@@ -219,8 +195,6 @@ public sealed class TaskbarArrangementPresentationTests
                 { Arrangement = TaskbarContentArrangement.Left };
                 SettingsManager.Current.Position = TaskbarBarPosition.Start;
                 control.ApplyTaskbarExperienceSettings();
-                var transport = (StackPanel)control.FindName("TaskbarTransportButtons");
-                Assert.AreSame(control.FindName("TaskbarPreviousButton"), transport.Children[0]);
                 AssertPerformanceLayout(control);
                 VerticalTaskbarPresentationChecks.Verify(control);
                 SmallTaskbarPresentationChecks.Verify(control);

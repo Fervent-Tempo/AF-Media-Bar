@@ -4,7 +4,8 @@ param([string]$Workspace = (Split-Path -Parent (Split-Path -Parent $PSScriptRoot
 $ErrorActionPreference = 'Stop'
 $tool = Join-Path $Workspace 'tools/settings-contracts.ps1'
 $registryPath = Join-Path $Workspace 'docs/settings-contracts.json'
-$fixture = Join-Path ([IO.Path]::GetTempPath()) ("settings-registry-$([Guid]::NewGuid().ToString('N')).json")
+$fixtureRoot = Join-Path ([IO.Path]::GetTempPath()) ("settings-registry-$([Guid]::NewGuid().ToString('N'))")
+$fixture = Join-Path $fixtureRoot 'docs/settings-contracts.json'
 
 function Assert-Registry {
     param([bool]$Condition, [string]$Message)
@@ -12,7 +13,7 @@ function Assert-Registry {
 }
 function Invoke-RegistryTool {
     param([string[]]$Arguments, [string]$Failure, [string]$Action = 'Query')
-    $output = & pwsh -NoProfile -File $tool -Action $Action -Workspace $Workspace @Arguments 2>&1
+    $output = & pwsh -NoProfile -File $tool -Action $Action -Workspace $fixtureRoot @Arguments 2>&1
     $code = $LASTEXITCODE
     $text = $output -join "`n"
     if ($Failure) {
@@ -30,6 +31,43 @@ function Write-Fixture {
 
 try {
     $before = (Get-Item -LiteralPath $registryPath).LastWriteTimeUtc.Ticks
+    # 查询语义使用独立夹具，字段的真实发布状态由登记文件维护。
+    [void][IO.Directory]::CreateDirectory((Split-Path -Parent $fixture))
+    $validRegistry = @'
+{
+  "formatVersion": 2,
+  "latestRelease": "v1.2.0",
+  "settingsSchemaVersion": 2,
+  "settings": {
+    "position": "v1.2.0",
+    "appearance": { "$release": "v1.2.0", "fontWeight": "v1.2.0", "idleNoteColor": "unreleased" },
+    "interaction": { "$release": "v1.2.0", "artworkHoverMode": "unreleased" },
+    "interfaceLanguage": "v1.2.0",
+    "quickLaunch": { "$release": "v1.2.0", "entries": { "$release": "v1.2.0", "$items": { "target": "v1.2.0" } } },
+    "taskbarExperience": { "$release": "v1.2.0", "hoverControls": {
+      "$release": "v1.2.0", "playPauseVisible": "v1.2.0", "previousNextVisible": "v1.2.0",
+      "progressVisible": "v1.2.0", "outputDeviceVisible": "v1.2.0", "volumeVisible": "v1.2.0"
+    } }
+  },
+  "enums": {
+    "InterfaceLanguage": { "paths": ["settings.interfaceLanguage"], "members": {
+      "System": { "value": 0, "release": "v1.2.0" }, "Vietnamese": { "value": 4, "release": "unreleased" }
+    } },
+    "ArtworkHoverMode": { "paths": ["settings.interaction.artworkHoverMode"], "members": {
+      "Off": { "value": 0, "release": "unreleased" }, "Zoom": { "value": 1, "release": "unreleased" },
+      "Preview": { "value": 2, "release": "unreleased" }
+    } }
+  },
+  "removed": { "settings.lyricsMatchStrictness": {
+    "firstReleased": "v1.2.0", "lastPresentRelease": "v1.2.0", "firstAbsentRelease": "unreleased", "currentHandling": "ignored"
+  } },
+  "rules": [
+    { "id": "artwork-hover", "paths": ["settings.interaction.artworkHoverMode"], "text": "Fixture rule" },
+    { "id": "removed-strictness", "paths": ["settings.lyricsMatchStrictness"], "text": "Fixture history" }
+  ]
+}
+'@ | ConvertFrom-Json -AsHashtable
+    Write-Fixture $validRegistry
     $cover = Invoke-RegistryTool -Arguments @('-Path', 'settings.interaction.artworkHoverMode')
     Assert-Registry (@($cover.Data.fields).Count -eq 1 -and $cover.Data.fields[0].release -eq 'unreleased') '封面模式的开发状态丢失。'
     Assert-Registry (@($cover.Data.enums[0].members).Count -eq 3 -and 'artwork-hover' -in $cover.Data.rules.id) '封面枚举或关联规则丢失。'
@@ -56,8 +94,10 @@ try {
     Invoke-RegistryTool -Action Verify -Arguments @('-Path', 'settings.position') -Failure '不接受查询参数' | Out-Null
     $verify = Invoke-RegistryTool -Action Verify
     Assert-Registry ($verify.Text -match '不证明源码覆盖') '格式检查夸大验证范围。'
+    & pwsh -NoProfile -File $tool -Action Verify -Workspace $Workspace
+    Assert-Registry ($LASTEXITCODE -eq 0) '当前仓库登记格式无效。'
     Assert-Registry ((Get-Item -LiteralPath $registryPath).LastWriteTimeUtc.Ticks -eq $before) '查询或格式检查改写了登记文件。'
-    $data = Get-Content -LiteralPath $registryPath -Raw | ConvertFrom-Json -AsHashtable
+    $data = $validRegistry | ConvertTo-Json -Depth 50 | ConvertFrom-Json -AsHashtable
     $data.settings.appearance.fontWeight = 'released'
     Write-Fixture $data
     Invoke-RegistryTool -Action Verify -Arguments @('-ContractFile', $fixture) -Failure '发布标记只能' | Out-Null
@@ -67,7 +107,7 @@ try {
     Invoke-RegistryTool -Action Verify -Arguments @('-ContractFile', $fixture) -Failure '引用未知或重复路径' | Out-Null
     [IO.File]::WriteAllText($fixture, '{"formatVersion":2,"formatVersion":2}')
     Invoke-RegistryTool -Action Verify -Arguments @('-ContractFile', $fixture) -Failure 'JSON 键重复' | Out-Null
-    $data = Get-Content -LiteralPath $registryPath -Raw | ConvertFrom-Json -AsHashtable
+    $data = $validRegistry | ConvertTo-Json -Depth 50 | ConvertFrom-Json -AsHashtable
     $data.latestRelease = 'v9.9.9'
     Write-Fixture $data
     # 形式合法的版本无需在本地存在 tag；通过不能作为正式发布证明。
@@ -78,5 +118,12 @@ try {
     Write-Error "设置登记测试失败：$($_.Exception.Message)" -ErrorAction Continue
     exit 1
 } finally {
-    if (Test-Path -LiteralPath $fixture) { Remove-Item -LiteralPath $fixture }
+    if (Test-Path -LiteralPath $fixtureRoot) {
+        $resolvedFixtureRoot = [IO.Path]::GetFullPath($fixtureRoot)
+        $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd([IO.Path]::DirectorySeparatorChar)
+        if (-not $resolvedFixtureRoot.StartsWith($tempRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+            throw '测试夹具不在临时目录中。'
+        }
+        Remove-Item -LiteralPath $resolvedFixtureRoot -Recurse
+    }
 }

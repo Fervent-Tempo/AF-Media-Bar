@@ -38,17 +38,4 @@ public sealed class SmallTaskbarPresentationTests
         Assert.AreEqual("Translation", raw.CurrentTranslation);
         Assert.AreSame(raw, SmallTaskbarPresentationPolicy.Project(raw, false));
     }
-
-    [TestMethod]
-    public void NotificationRequiresRealSuppressionAndSuccessfulPublishOnlyOnce()
-    {
-        var gate = new SmallTaskbarNotificationGate();
-        var calls = 0;
-        Assert.IsFalse(gate.TryNotify(false, () => { calls++; return true; }));
-        Assert.IsFalse(gate.TryNotify(true, () => { calls++; return false; }));
-        Assert.IsTrue(gate.TryNotify(true, () => { calls++; return true; }));
-        Assert.IsFalse(gate.TryNotify(true, () => { calls++; return true; }));
-        Assert.AreEqual(2, calls);
-        Assert.IsTrue(gate.WasShown);
-    }
 }

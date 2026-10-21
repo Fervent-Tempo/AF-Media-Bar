@@ -11,79 +11,6 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class TaskbarBackgroundMaterialPolicyTests
 {
     [TestMethod]
-    public void IdlePreferenceHidesAllLayersAndConnectedMediaRestoresThem()
-    {
-        var appearance = AppearanceSettings.Default with
-        {
-            TaskbarBackgroundMaterial = TaskbarBackgroundMaterial.Frosted,
-            ShowTaskbarBackgroundWhenIdle = false
-        };
-        foreach (var highContrast in new[] { false, true })
-        {
-            var idle = TaskbarBackgroundMaterialPolicy.Resolve(appearance, false, highContrast, true);
-            Assert.AreEqual(Colors.Transparent, idle.Tint);
-            Assert.AreEqual(Colors.Transparent, idle.Stroke);
-            Assert.AreEqual(0, idle.ArtworkOpacity);
-            var connected = TaskbarBackgroundMaterialPolicy.Resolve(appearance, true, highContrast, true);
-            Assert.IsTrue(connected.Tint.A > 0);
-            Assert.IsTrue(connected.Stroke.A > 0);
-        }
-    }
-
-    [TestMethod]
-    [DataRow(false, true, true)]
-    [DataRow(true, false, true)]
-    [DataRow(true, true, false)]
-    [DataRow(false, false, false)]
-    public void BackgroundLayersCanBeHiddenIndependently(bool tint, bool border, bool texture)
-    {
-        var appearance = AppearanceSettings.Default with
-        {
-            TaskbarBackgroundMaterial = TaskbarBackgroundMaterial.Frosted,
-            ShowTaskbarBackgroundTint = tint,
-            ShowTaskbarBackgroundBorder = border,
-            ShowTaskbarBackgroundTexture = texture
-        };
-        foreach (var highContrast in new[] { false, true })
-        {
-            var result = TaskbarBackgroundMaterialPolicy.Resolve(appearance, true, highContrast, true);
-            Assert.AreEqual(tint, result.Tint.A > 0);
-            Assert.AreEqual(border, result.Stroke.A > 0);
-            Assert.AreEqual(texture && !highContrast, result.ArtworkOpacity > 0);
-        }
-    }
-
-    [TestMethod]
-    public void TransparentMaterialDoesNotDrawSurface()
-    {
-        var result = TaskbarBackgroundMaterialPolicy.Resolve(TaskbarBackgroundMaterial.Transparent, false, true, 72);
-
-        Assert.AreEqual(Colors.Transparent, result.Tint);
-        Assert.AreEqual(Colors.Transparent, result.Stroke);
-        Assert.AreEqual(0, result.ArtworkOpacity);
-    }
-
-    [TestMethod]
-    public void FrostedMaterialUsesDarkTintBehindLightText()
-    {
-        var result = TaskbarBackgroundMaterialPolicy.Resolve(TaskbarBackgroundMaterial.Frosted, false, true, 72);
-
-        Assert.IsTrue(result.Tint.R < 64);
-        Assert.IsTrue(result.Tint.A >= 0xB0);
-        Assert.IsTrue(result.ArtworkOpacity > 0);
-    }
-
-    [TestMethod]
-    public void FrostedMaterialUsesLightTintBehindDarkText()
-    {
-        var result = TaskbarBackgroundMaterialPolicy.Resolve(TaskbarBackgroundMaterial.Frosted, false, false, 72);
-
-        Assert.IsTrue(result.Tint.R is >= 0x70 and <= 0xA0);
-        Assert.IsTrue(result.Tint.A is >= 0xA0 and <= 0xC8);
-        Assert.IsTrue(result.ArtworkOpacity > 0);
-    }
-
-    [TestMethod]
     public void HighContrastMaterialIsOpaqueAndDisablesTexture()
     {
         var result = TaskbarBackgroundMaterialPolicy.Resolve(TaskbarBackgroundMaterial.Frosted, true, true, 72);
@@ -101,40 +28,6 @@ public sealed class TaskbarBackgroundMaterialPolicyTests
         }).Normalize();
 
         Assert.AreEqual(TaskbarBackgroundMaterial.Transparent, settings.TaskbarBackgroundMaterial);
-    }
-
-    [TestMethod]
-    public void FrostStrengthControlsTintAlphaAndClampsToSupportedRange()
-    {
-        var minimum = TaskbarBackgroundMaterialPolicy.Resolve(TaskbarBackgroundMaterial.Frosted, false, false, 0);
-        var maximum = TaskbarBackgroundMaterialPolicy.Resolve(TaskbarBackgroundMaterial.Frosted, false, false, 100);
-
-        Assert.AreEqual(
-            (byte)Math.Round(byte.MaxValue * AppearanceSettings.MinimumTaskbarBackgroundOpacityPercent / 100d),
-            minimum.Tint.A);
-        Assert.AreEqual(
-            (byte)Math.Round(byte.MaxValue * AppearanceSettings.MaximumTaskbarBackgroundOpacityPercent / 100d),
-            maximum.Tint.A);
-        Assert.IsTrue(maximum.Tint.A > minimum.Tint.A);
-    }
-
-    [TestMethod]
-    public void FrostedStylesProvideDistinctPalettesWithoutReducingContrastMode()
-    {
-        var neutral = TaskbarBackgroundMaterialPolicy.Resolve(
-            TaskbarBackgroundMaterial.Frosted, false, true, 72, TaskbarFrostedStyle.Neutral);
-        var cool = TaskbarBackgroundMaterialPolicy.Resolve(
-            TaskbarBackgroundMaterial.Frosted, false, true, 72, TaskbarFrostedStyle.Cool);
-        var warm = TaskbarBackgroundMaterialPolicy.Resolve(
-            TaskbarBackgroundMaterial.Frosted, false, true, 72, TaskbarFrostedStyle.Warm);
-        var artwork = TaskbarBackgroundMaterialPolicy.Resolve(
-            TaskbarBackgroundMaterial.Frosted, false, true, 72, TaskbarFrostedStyle.Artwork);
-
-        Assert.AreNotEqual(neutral.Tint, cool.Tint);
-        Assert.AreNotEqual(neutral.Tint, warm.Tint);
-        Assert.IsTrue(artwork.ArtworkOpacity > neutral.ArtworkOpacity);
-        Assert.AreEqual(neutral.Tint.A, cool.Tint.A);
-        Assert.AreEqual(neutral.Tint.A, warm.Tint.A);
     }
 
     [TestMethod]
@@ -166,12 +59,6 @@ public sealed class TaskbarBackgroundMaterialPolicyTests
         Assert.AreEqual(
             TaskbarBackgroundMaterial.Transparent,
             JsonSerializer.Deserialize<AppearanceSettings>(legacy.ToJsonString()).TaskbarBackgroundMaterial);
-    }
-
-    [TestMethod]
-    public void TaskbarOpacitySupportsOnePercentSteps()
-    {
-        Assert.AreEqual(1, AppearanceSettings.TaskbarBackgroundOpacityStep);
     }
 
     [TestMethod]

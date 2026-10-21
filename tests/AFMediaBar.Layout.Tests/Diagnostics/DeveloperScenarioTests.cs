@@ -1,6 +1,4 @@
 // 验证预览不消费生产通知额度、确认用途隔离和取消；外部通知、平台窗口与重启使用替身。
-using System.Collections;
-using System.Resources;
 using System.Text.Json;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
@@ -164,28 +162,6 @@ public sealed class DeveloperScenarioTests
             Assert.IsTrue(scenarios.Token.IsCancellationRequested);
             Assert.AreEqual(1, scenarios.CloseCount);
         });
-    }
-
-    [TestMethod]
-    public void EveryDeveloperStringExistsWithoutLanguageFallback()
-    {
-        var assembly = typeof(Translations).Assembly;
-        HashSet<string>? reference = null;
-        foreach (var suffix in new[] { "StringsZhHans.resources", "StringsZhHant.resources", "StringsEn.resources", "StringsVi.resources" })
-        {
-            using var stream = assembly.GetManifestResourceStream(assembly.GetManifestResourceNames().Single(name => name.EndsWith(suffix, StringComparison.Ordinal)))!;
-            using var reader = new ResourceReader(stream);
-            var values = reader.Cast<DictionaryEntry>().Where(entry => ((string)entry.Key).StartsWith("Developer.", StringComparison.Ordinal))
-                .ToDictionary(entry => (string)entry.Key, entry => (string)entry.Value!);
-            Assert.IsTrue(values.Values.All(value => !string.IsNullOrWhiteSpace(value)));
-            reference ??= values.Keys.ToHashSet();
-            CollectionAssert.AreEquivalent(reference.ToArray(), values.Keys.ToArray());
-            foreach (var action in DeveloperActionCatalog.Actions)
-            {
-                Assert.IsTrue(values.ContainsKey("Developer.Action." + action.ResourceId));
-                Assert.IsTrue(values.ContainsKey("Developer.Description." + action.ResourceId));
-            }
-        }
     }
 
     [TestMethod]

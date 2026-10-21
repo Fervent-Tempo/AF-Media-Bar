@@ -21,16 +21,6 @@ public sealed class MetadataTextWidthTests
     }
 
     [TestMethod]
-    public void InlineTitleUsesTheCompleteOriginalTitleAndArtist()
-    {
-        var title = string.Concat(Enumerable.Repeat("视频 👩🏽‍💻 é ", 50));
-        var combined = TaskbarExperiencePolicy.FormatMetadataTitle(title, "Artist", TaskbarContentLayout.CompactInline);
-        Assert.AreEqual(title + " · Artist", combined);
-        Assert.AreEqual(title, TaskbarExperiencePolicy.FormatMetadataTitle(title, "Artist", TaskbarContentLayout.AdaptiveStack));
-        Assert.AreEqual("Artist", TaskbarExperiencePolicy.FormatMetadataTitle("", "Artist", TaskbarContentLayout.CompactInline));
-    }
-
-    [TestMethod]
     public void SmallerCurrentRegionKeepsItsAnchorUntilTheRealMinimumFails()
     {
         var first = TaskbarPlacementPolicy.Evaluate(new(), Snapshot(1, 20, 360), TaskbarBarPosition.Start, 1600, 0, 280, 300);

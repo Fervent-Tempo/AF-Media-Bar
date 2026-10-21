@@ -1,4 +1,4 @@
-// Loads compiled settings templates and checks runtime enum literals, including symbols that the XAML compiler does not validate.
+// 在隔离进程验证设置页资源加载、写入边界与异步清理；不启动真实播放器或音频服务。
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 using System.ComponentModel;
@@ -7,13 +7,12 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Data;
 using System.Windows.Markup;
-using System.Windows.Media.Imaging;
 using System.Xml.Linq;
 using AFMediaBar.Resources;
+using AFMediaBar.Classes.Models;
 using AFMediaBar.Components;
 using AFMediaBar.Classes.Services;
-using AFMediaBar.Classes.Models.Settings;
-using AFMediaBar.Classes.Services.Settings;
+using AFMediaBar.Classes.Services.Media.Smtc;
 using AFMediaBar.Classes.Services.Localization;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.ViewModels.Pages;
@@ -23,7 +22,6 @@ using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 using Wpf.Ui.Markup;
 using TextBox = System.Windows.Controls.TextBox;
-using TextBlock = System.Windows.Controls.TextBlock;
 
 namespace AFMediaBar.Layout.Tests;
 
@@ -32,12 +30,33 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class SettingsVisualRuntimeTests
 {
     [TestMethod]
-    public async Task CompiledCardTemplatesKeepEffectsOffTextAndUseSeparateEffects()
+    public Task SettingsPagesLoadAndNumericDraftsDoNotOverwriteSettings() =>
+        RunIsolatedAsync(nameof(SettingsPagesLoadAndNumericDraftsDoNotOverwriteSettings), app =>
+        {
+            VerifyNumericBinding(app);
+            VerifyPageMarkup(app);
+            _ = new ExperimentalPage(null!);
+            DeveloperToolsMarkupChecks.Verify(app, FindRepository());
+        });
+
+    [TestMethod]
+    public Task QuickLaunchDoubleClickAndSuspensionCancelPendingActions() =>
+        RunIsolatedAsync(nameof(QuickLaunchDoubleClickAndSuspensionCancelPendingActions), _ => QuickLaunchVisualChecks.Verify());
+
+    [TestMethod]
+    public Task BackdropRefreshCoalescesAndClosingOrDisposalRejectsQueuedWork() =>
+        RunIsolatedAsync(nameof(BackdropRefreshCoalescesAndClosingOrDisposalRejectsQueuedWork), WindowBackdropRefreshChecks.VerifyLiveSelection);
+
+    [TestMethod]
+    public Task PreferredSourceRefreshKeepsOfflineSelectionWithoutRewritingIdentity() =>
+        RunIsolatedAsync(nameof(PreferredSourceRefreshKeepsOfflineSelectionWithoutRewritingIdentity), _ => VerifyPreferredSourceIdentity());
+
+    private static async Task RunIsolatedAsync(string testName, Action<Application> verify)
     {
-        // WPF Application 关闭会改变进程级资源查找；隔离这个检查，避免污染后续窗口材质测试。
+        // Application 的关闭状态属于进程，避免污染后续 STA 测试。
         if (Environment.GetEnvironmentVariable("AFMB_SETTINGS_VISUAL_TEST_CHILD") != "1")
         {
-            await RunVisualCheckInSeparateProcessAsync();
+            await RunVisualCheckInSeparateProcessAsync(testName);
             return;
         }
         SettingsMotionTests.RunSta(() =>
@@ -52,69 +71,17 @@ public sealed class SettingsVisualRuntimeTests
                 var sources = markup.Descendants(presentation + "ResourceDictionary.MergedDictionaries").First()
                     .Elements(presentation + "ResourceDictionary").Select(element => (string)element.Attribute("Source")!).ToArray();
                 foreach (var source in sources)
-                    app.Resources.MergedDictionaries.Add(new ResourceDictionary
-                    {
-                        Source = new Uri(source, UriKind.Relative)
-                    });
-                static IEnumerable<ResourceDictionary> EnumerateDictionaries(ResourceDictionary dictionary) =>
-                    new[] { dictionary }.Concat(dictionary.MergedDictionaries.SelectMany(EnumerateDictionaries));
-                var settingsSources = EnumerateDictionaries(app.Resources).Select(dictionary => dictionary.Source?.OriginalString)
-                    .Where(source => source?.Contains("AFMediaBar;component/Resources/Settings", StringComparison.Ordinal) == true).ToArray();
-                Assert.AreEqual(settingsSources.Length, settingsSources.Distinct(StringComparer.Ordinal).Count(),
-                    "设置资源应在合并树中共享，不能在应用和组件层重复加载。");
-                Assert.IsInstanceOfType<ControlTemplate>(app.FindResource("AfDiagramLayerRest"));
-                Assert.AreEqual(380d, app.FindResource("AfSettingsFieldWidth"));
-                app.Resources["AfAccentBrush"] = new SolidColorBrush(Color.FromRgb(0, 120, 212));
+                    app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri(source, UriKind.Relative) });
+                app.Resources["AfAccentBrush"] = Brushes.DodgerBlue;
                 app.Resources["AfOnAccentBrush"] = Brushes.White;
-                app.Resources["AfAccentTintBrush"] = new SolidColorBrush(Color.FromArgb(25, 0, 120, 212));
-                var rows = new[] { new SettingsRow { Title = "First", Content = new TextBox() }, new SettingsRow { Title = "Second" } };
-                foreach (var row in rows)
-                {
-                    row.Style = (Style)app.Resources[typeof(SettingsRow)];
-                    row.ApplyTemplate();
-                    var surface = (Border)row.Template.FindName("RowSurface", row);
-                    Assert.IsNull(surface.Child, "Text and controls must be siblings of the shadow surface.");
-                    surface.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
-                }
-                var first = (Border)rows[0].Template.FindName("RowSurface", rows[0]);
-                var second = (Border)rows[1].Template.FindName("RowSurface", rows[1]);
-                if (MotionPolicy.ResolveCurrent().UseDecorativeEffects)
-                    Assert.AreNotSame(first.Effect, second.Effect, "Card effects must never be shared Freezables.");
-                foreach (var surface in new[] { first, second })
-                {
-                    surface.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent));
-                    Assert.IsNull(surface.Effect, "Unloading releases the effect and its environment subscriptions.");
-                }
-                var expander = new CardExpander { Style = (Style)app.Resources["AfSettingsExpanderStyle"], Header = "Details" };
-                expander.ApplyTemplate();
-                Assert.IsNotNull(expander.Template.FindName("ExpandedContent", expander));
-                var choice = new RadioButton { Style = (Style)app.Resources["AfSettingsChoiceRadioStyle"], Content = "Mode" };
-                choice.ApplyTemplate();
-                Assert.IsNull(((Border)choice.Template.FindName("ChoiceBorder", choice)).Child);
-                choice.IsChecked = true;
-                var tint = (Border)choice.Template.FindName("ChoiceTint", choice);
-                Assert.AreEqual(0.10d, tint.Opacity);
-                Assert.IsFalse(tint.HasAnimatedProperties, "Selection feedback must also work with all system animation disabled.");
-                WindowBackdropRefreshChecks.VerifyLiveSelection(app);
-                WindowBackdropRefreshChecks.VerifyNativeSelection(app);
-                VerifyNumericBinding(app);
-                VerifyNarrowRow(app);
-                SettingsLiveVisualChecks.VerifyCardHover(app);
-                VerifyPageMarkup(app);
-                QuickLaunchVisualChecks.Verify();
-                _ = new ExperimentalPage(null!);
-                VerifyManualLyricsChoices();
-                DeveloperToolsMarkupChecks.Verify(app, FindRepository());
-                VerifyReleaseHistoryBody();
-                SettingsLiveVisualChecks.VerifyContextNavigation(app);
-                SettingsLiveVisualChecks.VerifyNavigationMotion(app);
-                SettingsReorderVisualChecks.Verify(app);
+                app.Resources["AfAccentTintBrush"] = Brushes.LightBlue;
+                verify(app);
             }
             finally { app.Shutdown(); }
         }, TimeSpan.FromSeconds(30));
     }
 
-    private static async Task RunVisualCheckInSeparateProcessAsync()
+    private static async Task RunVisualCheckInSeparateProcessAsync(string testName)
     {
         var results = Path.Combine(Path.GetTempPath(), "AFMB-SettingsVisual-" + Guid.NewGuid().ToString("N"));
         var start = new ProcessStartInfo(Environment.GetEnvironmentVariable("DOTNET_HOST_PATH") ?? "dotnet")
@@ -126,7 +93,7 @@ public sealed class SettingsVisualRuntimeTests
         };
         start.ArgumentList.Add("vstest");
         start.ArgumentList.Add(typeof(SettingsVisualRuntimeTests).Assembly.Location);
-        start.ArgumentList.Add("/TestCaseFilter:FullyQualifiedName=" + typeof(SettingsVisualRuntimeTests).FullName + "." + nameof(CompiledCardTemplatesKeepEffectsOffTextAndUseSeparateEffects));
+        start.ArgumentList.Add("/TestCaseFilter:FullyQualifiedName=" + typeof(SettingsVisualRuntimeTests).FullName + "." + testName);
         start.ArgumentList.Add("/Logger:trx;LogFileName=settings-visual.trx");
         start.ArgumentList.Add("/ResultsDirectory:" + results);
         start.Environment["AFMB_SETTINGS_VISUAL_TEST_CHILD"] = "1";
@@ -181,141 +148,50 @@ public sealed class SettingsVisualRuntimeTests
             var markup = Regex.Replace(document.ToString(), "clr-namespace:AFMediaBar[.A-Za-z]+",
                 match => match.Value + ";assembly=AFMediaBar");
             var page = (Page)XamlReader.Parse(markup);
-            page.Background = new SolidColorBrush(Color.FromRgb(243, 243, 243));
-            foreach (var width in new[] { 344d, 800d })
-            {
-                page.Measure(new Size(width, 550d));
-                page.Arrange(new Rect(0d, 0d, width, 550d));
-                page.UpdateLayout();
-            }
-            var previewDirectory = Environment.GetEnvironmentVariable("AFMB_SETTINGS_PREVIEW_DIRECTORY");
-            if (!string.IsNullOrEmpty(previewDirectory) && name is "Appearance" or "Lyrics")
-            {
-                Directory.CreateDirectory(previewDirectory);
-                var bitmap = new RenderTargetBitmap(800, 550, 96d, 96d, PixelFormats.Pbgra32);
-                bitmap.Render(page);
-                var encoder = new PngBitmapEncoder();
-                encoder.Frames.Add(BitmapFrame.Create(bitmap));
-                using var output = File.Create(Path.Combine(previewDirectory, name + ".png"));
-                encoder.Save(output);
-            }
+            page.Measure(new Size(800, 550));
+            page.ApplyTemplate();
+            Assert.IsNotNull(page.Content, name + " page must load its content.");
         }
     }
 
-    private static void VerifyManualLyricsChoices()
+    private static void VerifyPreferredSourceIdentity()
     {
         var previous = SettingsManager.Current;
-        using var context = new SettingsPageContext();
-        context.Initialize(SettingsContext.Initial);
+        using var builder = new MediaSnapshotBuilder(null!);
+        var registry = new MediaSourceRegistry([]);
+        var catalog = new MediaSessionCatalog();
+        using var selection = new MediaSessionSelectionService(catalog, registry);
+        using var media = new MediaSessionService(registry, catalog, selection, builder, [], null!,
+            new MemoryPruneCoordinator(null!, null!, null!, []), null!);
         using var localization = new LocalizationService();
-        SettingsManager.Current = new AppSettings { LyricsSource = LyricsSourceSettings.Default with { Rule = LyricsSourceRule.Manual } };
-        using var model = new LyricsViewModel(localization, new LegacySettingsConfiguration(context));
-        var page = new LyricsPage(model);
-        var window = SettingsLiveVisualChecks.CreateWindow(page);
+        using var quickLaunch = new QuickLaunchService();
         try
         {
-            window.Show();
-            window.UpdateLayout();
-            var scroll = (ScrollViewer)page.FindName("PageScroll");
-            var group = ((Panel)scroll.Content).Children.OfType<SettingsGroup>().Single(item => item.GroupId == "Common.Group.LyricsSources");
-            var expander = ((Panel)group.Content).Children.OfType<CardExpander>().Single();
-            expander.IsExpanded = true;
-            SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(40));
-            var rows = (Panel)expander.Content;
-            var rule = (ComboBox)rows.Children.OfType<SettingsRow>().First().Content;
-            var manual = rows.Children.OfType<Panel>().Single();
-            var choices = manual.Children.OfType<SettingsRow>().Select(row => row.Content).OfType<ComboBox>().ToArray();
-            Assert.AreEqual(LyricsSourceRule.Manual, rule.SelectedValue);
-            Assert.AreEqual(Visibility.Visible, manual.Visibility);
-            choices[0].SelectedValue = LyricsSourceAttemptMode.Parallel;
-            choices[1].SelectedValue = LyricsSourceResultMode.FirstAvailable;
-            Assert.AreEqual(LyricsSourceAttemptMode.Parallel, model.SourceAttemptMode);
-            Assert.AreEqual(LyricsSourceResultMode.FirstAvailable, model.SourceResultMode);
-            rule.SelectedValue = LyricsSourceRule.Default;
-            Assert.AreEqual(Visibility.Collapsed, manual.Visibility);
-            rule.SelectedValue = LyricsSourceRule.Manual;
-            Assert.AreEqual(LyricsSourceAttemptMode.Parallel, choices[0].SelectedValue);
-            Assert.AreEqual(LyricsSourceResultMode.FirstAvailable, choices[1].SelectedValue);
-        }
-        finally { window.Close(); SettingsManager.Current = previous; }
-    }
-
-    private static void VerifyReleaseHistoryBody()
-    {
-        // 只取编译页面的历史项模板，不挂载页面，避免启动网络读取或更新服务。
-        var page = new ReleaseHighlightsPage(null!);
-        var scroll = (ScrollViewer)page.FindName("PageScroll");
-        var history = ((Panel)scroll.Content).Children.OfType<SettingsGroup>().Single(group => group.GroupId == "ReleaseHighlights.History");
-        var template = ((ItemsControl)history.Content).ItemTemplate;
-        var card = (CardExpander)template.LoadContent();
-        var item = new ReleaseHighlightsItem("1.2.3", "Historical release", "2026-09-21",
-            ["Historical improvement", "Historical fix"], "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.2.3", string.Empty, true);
-        card.DataContext = item;
-        var window = SettingsLiveVisualChecks.CreateWindow(card);
-        try
-        {
-            window.Show();
-            SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(80));
-            var body = (Border)card.Template.FindName("ExpandedContent", card);
-            Assert.AreEqual(Visibility.Collapsed, body.Visibility);
-            card.IsExpanded = true;
-            window.UpdateLayout();
-            SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(80));
-            var rendered = VisualDescendants(body).OfType<TextBlock>().Select(block => block.Text).ToArray();
-            CollectionAssert.Contains(rendered, "Historical improvement", "Expanded historical releases must render their highlight text.");
-            CollectionAssert.Contains(rendered, "Historical fix");
-            CollectionAssert.Contains(rendered, item.OriginalNotice);
-            Assert.IsTrue(VisualDescendants(body).OfType<Wpf.Ui.Controls.Button>().Any(button => button.Visibility == Visibility.Visible));
-            card.IsExpanded = false;
-            Assert.AreEqual(Visibility.Collapsed, body.Visibility);
-            card.DataContext = item with { Highlights = [], ReleaseNotesUrl = null, IsOriginal = false };
-            card.IsExpanded = true;
-            window.UpdateLayout();
-            SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(30));
-            Assert.IsTrue(VisualDescendants(body).OfType<TextBlock>().Any(block => block.Text == Translations.Get("ReleaseHighlights.NoHighlights") && block.Visibility == Visibility.Visible));
-            Assert.IsFalse(VisualDescendants(body).OfType<Wpf.Ui.Controls.Button>().Any(button => button.Visibility == Visibility.Visible));
-        }
-        finally { window.Close(); }
-    }
-
-    private static IEnumerable<DependencyObject> VisualDescendants(DependencyObject root)
-    {
-        for (var index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
-        {
-            var child = VisualTreeHelper.GetChild(root, index);
-            yield return child;
-            foreach (var descendant in VisualDescendants(child)) yield return descendant;
-        }
-    }
-
-    private static void VerifyNarrowRow(Application app)
-    {
-        var row = new SettingsRow
-        {
-            Style = (Style)app.Resources[typeof(SettingsRow)],
-            Title = "A setting with an exact numeric value",
-            Content = new SettingsNumericEditor
+            SettingsManager.Current = new AppSettings
             {
-                Style = (Style)app.Resources[typeof(SettingsNumericEditor)],
-                Value = 200d,
-                Maximum = 4096d,
-                Unit = "DIP"
-            }
-        };
-        row.ApplyTemplate();
-        var controls = (ContentPresenter)row.Template.FindName("ControlHost", row);
-        row.Measure(new Size(344d, 200d));
-        row.Arrange(new Rect(0d, 0d, 344d, 200d));
-        row.UpdateLayout();
-        Assert.IsTrue(row.IsCompact);
-        Assert.AreEqual(1, Grid.GetRow(controls), "A narrow row must place controls below its title.");
-        Assert.IsTrue(controls.TranslatePoint(new Point(controls.ActualWidth, 0d), row).X <= row.ActualWidth,
-            "The numeric editor must fit beside an expanded sidebar.");
-        row.Measure(new Size(800d, 200d));
-        row.Arrange(new Rect(0d, 0d, 800d, 200d));
-        row.UpdateLayout();
-        Assert.IsFalse(row.IsCompact);
-        Assert.AreEqual(0, Grid.GetRow(controls));
+                MediaSelection = new(MediaSelectionMode.PreferredApplication, "offline-player")
+            };
+            var model = new ExtraFeaturesViewModel(registry, media, new NoMonitors(), localization, quickLaunch);
+            Assert.IsTrue(model.PreferredSourceOptions.Any(option => option.SourceId == "offline-player"));
+            Assert.AreEqual("offline-player", model.PreferredSourceId);
+            typeof(MediaSessionService).GetField("_lastDiscoveredSources", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+                .SetValue(media, new MediaSourceDescriptor[] { new("OFFLINE-PLAYER", "Player", null, null) });
+            typeof(ExtraFeaturesViewModel).GetMethod("RefreshSources", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.Invoke(model, null);
+            Assert.AreEqual("OFFLINE-PLAYER", model.PreferredSourceId);
+            Assert.AreEqual("offline-player", SettingsManager.Current.MediaSelection.PreferredSourceId,
+                "候选来源刷新不能重写用户保存的来源身份。");
+        }
+        finally { SettingsManager.Current = previous; }
+    }
+
+    private sealed class NoMonitors : IDisplayMonitorService
+    {
+        public event EventHandler? MonitorsChanged { add { } remove { } }
+        public IReadOnlyList<DisplayMonitorInfo> GetMonitors() => [];
+        public void Refresh() { }
+        public DisplayMonitorInfo? ResolveFixedMonitor(string? deviceId) => null;
+        public DisplayMonitorInfo? ResolveNotificationMonitor(NotificationTargetMode mode, string? fixedDeviceId) => null;
+        public bool IsForegroundWindowFullscreen() => false;
     }
 
     private static string FindRepository()

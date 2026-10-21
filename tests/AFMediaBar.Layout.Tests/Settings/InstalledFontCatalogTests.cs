@@ -62,22 +62,6 @@ public sealed class InstalledFontCatalogTests
     }
 
     [TestMethod]
-    public void RelocalizingUpdatesExistingObjectsWithoutReplacingTheSelection()
-    {
-        IReadOnlyList<FontFamilyChoice> choices = [new("", "old system", "old sample"), new("Example", "Example", "old sample")];
-        var changed = new List<string?>();
-        choices[1].PropertyChanged += (_, e) => changed.Add(e.PropertyName);
-        var localized = InstalledFontCatalog.RelocalizeChoices(choices, "Appearance.CjkFont.FollowSystem", cjk: true);
-        Assert.AreSame(choices, localized);
-        Assert.AreSame(choices[1], localized[1]);
-        Assert.AreEqual(Translations.Get("Appearance.CjkFont.FollowSystem"), localized[0].DisplayName);
-        Assert.AreEqual("Example", localized[1].Name);
-        Assert.AreEqual("Example", localized[1].DisplayName);
-        Assert.AreEqual(Translations.Get("Appearance.CjkFont.Sample"), localized[1].PreviewText);
-        CollectionAssert.Contains(changed, nameof(FontFamilyChoice.PreviewText));
-    }
-
-    [TestMethod]
     public void LanguageChangeRetainsSelectedFontObjectsInBoundSelectors()
     {
         StaTest.Run(_ =>

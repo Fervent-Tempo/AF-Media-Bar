@@ -1,8 +1,6 @@
 // 隔离进程内检查实际悬浮宿主；不启动用户媒体、鼠标 Hook 或音频采样。
-using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text.Json;
 using System.Windows;
 using System.Windows.Interop;
 using AFMediaBar.Classes.Models;
@@ -56,7 +54,6 @@ internal static class FloatingBarHostChecks
             await Task.Delay(100);
             Assert.IsTrue(window.IsVisible);
             VerifyPureMoves(window);
-            Capture(window, "horizontal");
             Assert.IsTrue(limits.Range.HasAvailableRange);
             var handle = new WindowInteropHelper(window).Handle;
             Assert.AreEqual(nint.Zero, AFMediaBar.Classes.Interop.NativeMethods.GetParent(handle));
@@ -66,8 +63,7 @@ internal static class FloatingBarHostChecks
             Assert.IsTrue(window.IsVerticalPresentation);
             Assert.AreEqual(center, window.CenterPx);
             Assert.IsTrue(window.ActualHeight > window.ActualWidth);
-            VerifyPureMoves(window, "-vertical");
-            Capture(window, "vertical");
+            VerifyPureMoves(window);
             Assert.AreNotEqual(0, AFMediaBar.Classes.Interop.NativeMethods.GetWindowLong(handle, -20) & 8);
             window.Suspend();
             Assert.IsFalse(limits.Range.HasAvailableRange);
@@ -76,7 +72,6 @@ internal static class FloatingBarHostChecks
             window.Resume();
             Assert.IsTrue(window.IsVisible);
             SettingsManager.Current.FloatingBar = SettingsManager.Current.FloatingBar with { Orientation = LayoutOrientation.Horizontal };
-            if (Environment.GetEnvironmentVariable("AFMB_FLOATING_PREVIEW_HOLD") == "1") await Task.Delay(10000);
             window.Dispose();
             window.Dispose();
             Assert.IsFalse(limits.Range.HasAvailableRange);
@@ -84,7 +79,7 @@ internal static class FloatingBarHostChecks
         finally { window?.Dispose(); SettingsManager.Current = previous; }
     }
 
-    private static void VerifyPureMoves(FloatingBarWindow window, string suffix = "")
+    private static void VerifyPureMoves(FloatingBarWindow window)
     {
         var apply = typeof(FloatingBarWindow).GetMethod("ApplyBounds", BindingFlags.Instance | BindingFlags.NonPublic)!;
         var arguments = apply.GetParameters().Length == 0 ? null : new object[] { false };
@@ -108,41 +103,17 @@ internal static class FloatingBarHostChecks
         source.AddHook(Observe);
         SettingsManager.SettingsChanged += SettingsChanged;
         dragging.SetValue(window, true);
-        var times = new List<double>();
         try
         {
             for (var i = 0; i < 160; i++)
             {
                 window.RestoreCenter(new Point(center.X + i % 70, center.Y + i % 20));
-                var tick = Stopwatch.GetTimestamp();
                 apply.Invoke(window, arguments);
-                times.Add(Stopwatch.GetElapsedTime(tick).TotalMilliseconds);
             }
             var count = moveMessages;
             apply.Invoke(window, arguments);
-            var directory = Environment.GetEnvironmentVariable("AFMB_FLOATING_MOVE_MEASURE_DIR");
-            var name = Environment.GetEnvironmentVariable("AFMB_FLOATING_MOVE_MEASURE_NAME") ?? "after";
-            if (!string.IsNullOrEmpty(directory))
-            {
-                Directory.CreateDirectory(directory);
-                times.Sort();
-                File.WriteAllText(Path.Combine(directory, name + suffix + ".json"), JsonSerializer.Serialize(new
-                {
-                    sampleCount = times.Count,
-                    medianMs = times[times.Count / 2],
-                    p95Ms = times[(int)(times.Count * .95)],
-                    maxMs = times[^1],
-                    sizeMessages,
-                    moveMessages,
-                    duplicateMoveMessages = moveMessages - count,
-                    settingsWrites
-                }, new JsonSerializerOptions { WriteIndented = true }));
-            }
-            if (name != "before")
-            {
-                Assert.AreEqual(0, sizeMessages, "Moving must not repeatedly resize the native window.");
-                Assert.AreEqual(count, moveMessages, "An unchanged pixel position must not issue another move.");
-            }
+            Assert.AreEqual(0, sizeMessages, "Moving must not repeatedly resize the native window.");
+            Assert.AreEqual(count, moveMessages, "An unchanged pixel position must not issue another move.");
             Assert.AreEqual(0, settingsWrites, "Movement must not write settings until release.");
         }
         finally
@@ -164,20 +135,6 @@ internal static class FloatingBarHostChecks
         public uint Flags;
     }
 #pragma warning restore CS0649
-
-    private static void Capture(Window window, string name)
-    {
-        var directory = Environment.GetEnvironmentVariable("AFMB_FLOATING_CAPTURE_DIR");
-        if (string.IsNullOrEmpty(directory)) return;
-        Directory.CreateDirectory(directory);
-        var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap((int)Math.Ceiling(window.ActualWidth),
-            (int)Math.Ceiling(window.ActualHeight), 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
-        bitmap.Render(window);
-        var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
-        encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
-        using var stream = File.Create(Path.Combine(directory, name + ".png"));
-        encoder.Save(stream);
-    }
 
     private sealed class NoDevices : IAudioDeviceSwitchOperations
     {

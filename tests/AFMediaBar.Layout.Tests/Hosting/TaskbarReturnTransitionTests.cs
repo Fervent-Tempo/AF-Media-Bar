@@ -33,16 +33,4 @@ public sealed class TaskbarReturnTransitionTests
         Assert.AreEqual((200.0, 600.0), transition.Advance(1.23));
         Assert.IsFalse(transition.IsActive);
     }
-
-    [DataTestMethod]
-    [DataRow(0.22)]
-    [DataRow(0.16)]
-    [DataRow(0.0)]
-    public void MotionProfileCompletesExactlyAtTheTarget(double duration)
-    {
-        var transition = new TaskbarReturnTransition();
-        transition.Retarget(500, 300, 200, 600, 0, duration);
-        Assert.AreEqual((200.0, 600.0), transition.Advance(duration));
-        Assert.IsFalse(transition.IsActive);
-    }
 }

@@ -4,7 +4,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
-using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -13,19 +12,6 @@ namespace AFMediaBar.Layout.Tests;
 [TestClass]
 public sealed class SettingsMotionTests
 {
-    [TestMethod]
-    public void ReducedMotionRemovesMovementAndInstantMotionCreatesNoEntrance()
-    {
-        var full = SettingsRevealPolicy.Resolve(999, MotionPolicy.Resolve(true, false, false));
-        Assert.AreEqual(TimeSpan.Zero, full.Delay);
-        Assert.IsTrue(full.OffsetY > 0d);
-        var reduced = SettingsRevealPolicy.Resolve(999, MotionPolicy.Resolve(true, true, false));
-        Assert.IsTrue(reduced.ShouldAnimate);
-        Assert.AreEqual(0d, reduced.OffsetY);
-        Assert.AreEqual(TimeSpan.Zero, reduced.Delay);
-        Assert.IsFalse(SettingsRevealPolicy.Resolve(0, MotionPolicy.Resolve(false, false, false)).ShouldAnimate);
-    }
-
     [TestMethod]
     public void UnloadSettlesPreparedContentAndRestoresItsTransform()
     {

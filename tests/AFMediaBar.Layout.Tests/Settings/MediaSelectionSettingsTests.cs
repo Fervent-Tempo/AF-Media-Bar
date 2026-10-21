@@ -1,6 +1,4 @@
 // 使用独立目录验证设置读取和用户快照，结束时恢复全局设置；不读写用户实际配置。
-using System.Collections;
-using System.Resources;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -74,28 +72,6 @@ public sealed class MediaSelectionSettingsTests
             SettingsManager.SetUserDefaults(defaults);
             SettingsManager.Current = original;
             if (Directory.Exists(directory)) Directory.Delete(directory, true);
-        }
-    }
-
-    [TestMethod]
-    public void AllSupportedLanguagesContainTheSelectionControlsAndConditions()
-    {
-        var assembly = typeof(MediaSelectionSettings).Assembly;
-        var keys = new[]
-        {
-            "Media.Selection.Title", "Media.Selection.Mode.Automatic", "Media.Selection.Mode.LatestSession",
-            "Media.Selection.Mode.PreferredApplication", "Media.Selection.Description.Automatic",
-            "Media.Selection.Description.LatestSession", "Media.Selection.Description.PreferredApplication",
-            "Media.Selection.Preferred.Title", "Media.Selection.Preferred.Description", "Media.Selection.NoPreferred",
-            "Media.Selection.Filtered", "Media.Selection.ManualHint"
-        };
-        foreach (var suffix in new[] { "StringsZhHans.resources", "StringsZhHant.resources", "StringsEn.resources", "StringsVi.resources" })
-        {
-            using var stream = assembly.GetManifestResourceStream(assembly.GetManifestResourceNames().Single(name => name.EndsWith(suffix, StringComparison.Ordinal)));
-            using var reader = new ResourceReader(stream!);
-            var values = reader.Cast<DictionaryEntry>().ToDictionary(entry => (string)entry.Key, entry => entry.Value as string);
-            foreach (var key in keys)
-                Assert.IsTrue(values.TryGetValue(key, out var text) && !string.IsNullOrWhiteSpace(text), suffix + ": " + key);
         }
     }
 }

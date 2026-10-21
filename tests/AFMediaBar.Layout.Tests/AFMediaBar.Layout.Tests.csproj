@@ -5,21 +5,11 @@
     <IsPackable>false</IsPackable>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <!--
-      UseWPF 只服务于 UpdateThreadingTests：那一条断言的是"更新检查写设置时必须回到 UI 线程"，
-      而它要证明的后果（跨线程改绑定集合被 WPF 的 CollectionView 拒绝）只有引用 WPF 才表达得出来。
-      打开它会让隐式 using 换成 WPF 的那一组（不再包含 System.IO），因此下面显式补回。
-      UseWPF serves UpdateThreadingTests only: that test asserts "the update check's settings write has to come back to the UI
-      thread", and the consequence it proves — a bound collection mutated across threads being refused by WPF's CollectionView —
-      can only be expressed with WPF referenced. Enabling it switches the implicit usings to the WPF set (which no longer includes
-      System.IO), so that one is added back below.
-    -->
+    <!-- WPF 回归需要真实控件和 Dispatcher；隐式 using 缺少的 System.IO 在下方补回。 -->
     <UseWPF>true</UseWPF>
   </PropertyGroup>
   <ItemGroup>
     <Using Include="System.IO" />
-    <Content Include="..\..\src\AFMediaBar\Views\Pages\LyricsPage.xaml" Link="LyricsPage.xaml" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="..\..\src\AFMediaBar\Views\Pages\ArtistSeparatorsEditor.xaml" Link="ArtistSeparatorsEditor.xaml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\AFMediaBar\AFMediaBar.csproj" />

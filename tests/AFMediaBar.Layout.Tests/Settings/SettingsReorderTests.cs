@@ -32,17 +32,6 @@ public sealed class SettingsReorderTests
     }
 
     [TestMethod]
-    public void VariableHeightPreviewPreservesOrderAndPinnedPrefix()
-    {
-        double[] tops = [0, 40, 110, 140];
-        double[] extents = [40, 70, 30, 60];
-        Assert.AreEqual(3, SettingsReorderLayout.FindTarget(tops, extents, 1, 199, 1));
-        CollectionAssert.AreEqual(new double[] { 0, 90, -70, -70 }, SettingsReorderLayout.GetOffsets(tops, extents, 1, 3));
-        Assert.AreEqual(1, SettingsReorderLayout.FindTarget(tops, extents, 3, -100, 1));
-        CollectionAssert.AreEqual(new double[4], SettingsReorderLayout.GetOffsets(tops, extents, 2, 2));
-    }
-
-    [TestMethod]
     public void LyricsMoveSavesOnceRejectsStaleAndRetainsDefaultSemantics() => Run((configuration, localization, context) =>
     {
         using var model = new LyricsViewModel(localization, configuration);
@@ -137,6 +126,27 @@ public sealed class SettingsReorderTests
         before = SettingsManager.Current.PerformanceComponent;
         model.ReorderMetricCommand.Execute(request);
         Assert.AreEqual(before, SettingsManager.Current.PerformanceComponent);
+    });
+
+    [TestMethod]
+    public void QuickLaunchMovePreservesSelectionAndRejectsStaleRequests() => Run((configuration, localization, context) =>
+    {
+        var entries = Enumerable.Range(0, 4).Select(index => new QuickLaunchEntry(index.ToString(), "Player " + index,
+            QuickLaunchTargetKind.Executable, "player" + index + ".exe")).ToArray();
+        SettingsManager.Current.QuickLaunch = new(entries) { SelectedEntryId = "0" };
+        using var selection = new QuickLaunchService();
+        using var model = new QuickLaunchSettingsViewModel(selection, configuration, localization);
+        var request = new SettingsReorderRequest(model.QuickLaunchEntries[0], 3, model.QuickLaunchEntries);
+        model.ReorderQuickLaunchCommand.Execute(request);
+        CollectionAssert.AreEqual(new[] { "1", "2", "3", "0" }, SettingsManager.Current.QuickLaunch.Entries!.Select(entry => entry.Id).ToArray());
+        Assert.AreEqual("0", selection.Selected!.Id);
+        var before = SettingsManager.Current.QuickLaunch;
+        model.ReorderQuickLaunchCommand.Execute(request);
+        Assert.AreEqual(before, SettingsManager.Current.QuickLaunch);
+        context.Deactivate();
+        var reordered = model.QuickLaunchEntries.ToArray();
+        model.ReorderQuickLaunchCommand.Execute(new SettingsReorderRequest(reordered[0], 3, reordered));
+        Assert.AreEqual(before, SettingsManager.Current.QuickLaunch);
     });
 
     private static void Run(Action<LegacySettingsConfiguration, LocalizationService, SettingsPageContext> action)

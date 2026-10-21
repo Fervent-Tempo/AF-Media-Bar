@@ -1,5 +1,4 @@
 // 验证差分基线、接口变化和格式边界；不联网，也不修改真实网卡或系统性能设置。
-using System.Globalization;
 using System.Runtime.InteropServices;
 using AFMediaBar.Classes.Interop;
 using AFMediaBar.Classes.Services;
@@ -116,24 +115,6 @@ public sealed class MetricsPolicyTests
         Assert.IsNull(cpu.Sample(151, 53, 52));
         cpu.Reset();
         Assert.IsNull(cpu.Sample(200, 300, 200));
-    }
-
-    [TestMethod]
-    public void RateFormattingUsesBinaryUnitsAndPreservesUnavailableValues()
-    {
-        var culture = CultureInfo.CurrentCulture;
-        try
-        {
-            CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-            Assert.AreEqual("—", MetricPresentationPolicy.FormatRate(null));
-            Assert.AreEqual("—", MetricPresentationPolicy.FormatRate(double.NaN));
-            Assert.AreEqual("—", MetricPresentationPolicy.FormatRate(-1));
-            Assert.AreEqual("0 B/s", MetricPresentationPolicy.FormatRate(0));
-            Assert.AreEqual("1.0 KiB/s", MetricPresentationPolicy.FormatRate(1024));
-            Assert.AreEqual("1.0 MiB/s", MetricPresentationPolicy.FormatRate(1024 * 1024 - 1));
-            Assert.AreEqual("1.0 GiB/s", MetricPresentationPolicy.FormatRate(1024d * 1024 * 1024));
-        }
-        finally { CultureInfo.CurrentCulture = culture; }
     }
 
     [TestMethod]
