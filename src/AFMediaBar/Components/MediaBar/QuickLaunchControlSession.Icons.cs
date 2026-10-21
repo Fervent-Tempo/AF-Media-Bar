@@ -59,7 +59,10 @@ internal sealed partial class QuickLaunchControlSession
         System.Windows.Media.Imaging.BitmapSource? icon;
         try
         {
-            icon = await _icons!.GetAsync(target, token).ConfigureAwait(false);
+            var loading = _icons!.GetAsync(target, token);
+            // 冷读取期间淡回音符，避免旧应用图标长时间代表已经切换的目标；缓存命中不打断滚动。
+            if (!loading.IsCompletedSuccessfully) _owner.ShowQuickLaunchIcon(null, 0);
+            icon = await loading.ConfigureAwait(false);
         }
         catch (OperationCanceledException) { return; }
         catch (Exception exception)
