@@ -84,7 +84,10 @@ public sealed class AudioDeviceManagementTests
                 await editor.RefreshAsync();
                 Assert.AreEqual("gone", editor.OutputDevices.Single().EndpointId);
                 Assert.IsTrue(editor.OutputDevices.Single().IsAllowed);
-                Assert.AreEqual("active", editor.OtherOutputDevices.Single().EndpointId, "断开的隐藏活动设备保留管理记录。");
+                var disconnected = editor.OtherOutputDevices.Single(row => row.EndpointId == "active");
+                Assert.IsFalse(disconnected.IsAllowed, "断开的隐藏活动设备保留黑名单状态。");
+                disconnected.IsAllowed = true;
+                Assert.IsTrue(SettingsManager.Current.AudioDevices.IsAllowed(AudioDeviceDirection.Output, "active"));
                 editor.Dispose();
                 await editor.RefreshAsync();
                 Assert.AreEqual("gone", editor.OutputDevices.Single().EndpointId);
