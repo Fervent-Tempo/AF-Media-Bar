@@ -287,7 +287,46 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     {
         if (_isClosing || _savingPosition) return;
         if (!Dispatcher.CheckAccess()) { Dispatcher.BeginInvoke(() => SettingsChanged(sender, args)); return; }
+        if (IsLyricsPresentationSetting(args.PropertyName))
+        {
+            ApplyLyricsPresentationSettings();
+            return;
+        }
         ApplySettings();
+    }
+
+    /// <summary>
+    /// 只影响歌词显示方式的设置：逐字擦亮、未唱部分透明度、字距、行距、简繁转换、振假名过滤与对齐。
+    /// 这类设置不该触发整条栏的重排——重排会让画面闪一下，而它们要么通过 Web 歌词样式生效，要么由歌词演示器
+    /// 自己重投影（并申请它需要的尺寸）。
+    /// Settings that only change how lyrics are displayed: syllable highlight, unsung opacity, character spacing, line
+    /// gap, Chinese conversion, the furigana filter, and alignment. They must not re-layout the whole bar, which is what
+    /// makes it flash: they either land as a web lyrics style or are re-projected by the lyrics presenter, which also
+    /// requests the size it needs.
+    /// </summary>
+    private static bool IsLyricsPresentationSetting(string? propertyName) => propertyName is
+        nameof(AppSettings.LyricsSyllableHighlightEnabled) or
+        nameof(AppSettings.LyricsUnsungOpacityPercent) or
+        nameof(AppSettings.LyricsCharacterSpacingPercent) or
+        nameof(AppSettings.LyricsLineGapPercent) or
+        nameof(AppSettings.LyricsChineseConversion) or
+        nameof(AppSettings.LyricsFuriganaFilterEnabled) or
+        nameof(AppSettings.LyricsTextAlignment);
+
+    private void ApplyLyricsPresentationSettings()
+    {
+        if (_isClosing || _applyingSettings) return;
+        _applyingSettings = true;
+        try
+        {
+            // 设置副本仍要刷新：媒体控件与歌词演示器都从它读取当前值。
+            PresentationSettings = ProjectSettings();
+            _mediaControl.ApplyPresentationSettings(PresentationSettings);
+            // 字距、未唱部分透明度与对齐通过外观落到 Web 歌词，其余项在演示器重投影时生效。
+            _mediaControl.ApplyAppearanceSettings();
+            _mediaControl.UpdateSongInfo(_lastSnapshot);
+        }
+        finally { _applyingSettings = false; }
     }
 
     private void ApplySettings()
