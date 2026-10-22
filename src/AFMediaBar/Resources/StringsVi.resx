@@ -1367,7 +1367,7 @@
     <value>Khoảng cách ký tự</value>
   </data>
   <data name="Lyrics.Row.ChineseConversion.Description" xml:space="preserve">
-    <value>Hiển thị lời bài hát bằng chữ giản thể hoặc phồn thể. Chỉ thay đổi cách hiển thị; lời bài hát đã lấy vẫn giữ nguyên.</value>
+    <value>Hiển thị lời bài hát bằng chữ giản thể hoặc phồn thể. Chỉ thay đổi cách hiển thị; lời bài hát đã lấy vẫn giữ nguyên. Lời bài hát tiếng Nhật được giữ nguyên.</value>
   </data>
   <data name="Lyrics.Row.ChineseConversion.Direction.Description" xml:space="preserve">
     <value>Chọn dạng chữ muốn chuyển sang. Chọn “Tắt” để hiển thị lời bài hát đúng như nguồn cung cấp.</value>

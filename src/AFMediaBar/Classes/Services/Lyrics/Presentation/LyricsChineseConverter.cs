@@ -5,7 +5,7 @@ namespace AFMediaBar.Classes.Services.Lyrics;
 
 /// <summary>
 /// 按设置转换歌词呈现文本，不修改歌词文档或取词缓存。
-/// 词典与文本转换均在后台完成，呈现只读取有界缓存，未就绪时返回原文。
+/// 词典与文本转换均在后台完成，呈现只读取有界缓存，未就绪时返回原文；含日文假名的文本按日文处理，一律原样返回。
 /// </summary>
 public static class LyricsChineseConverter
 {
@@ -29,7 +29,11 @@ public static class LyricsChineseConverter
     /// </summary>
     /// <param name="text">待转换文本，可能是空串或不含中文的歌词 / Text to convert; may be empty or contain no Chinese at all.</param>
     /// <param name="mode">转换方向，<c>None</c> 表示原样返回 / Conversion direction; <c>None</c> returns the text unchanged.</param>
-    /// <returns>转换后的文本；转换器尚未就绪时返回原文 / The converted text, or the original while the converter is still warming up.</returns>
+    /// <returns>
+    /// 转换后的文本；转换器尚未就绪时返回原文，含日文假名时也返回原文。
+    /// The converted text; the original text is returned while the converter is still warming up, and also
+    /// when the text contains Japanese kana.
+    /// </returns>
     public static string Convert(string text, LyricsChineseConversionMode mode)
     {
         if (mode == LyricsChineseConversionMode.None || string.IsNullOrEmpty(text))
@@ -37,7 +41,38 @@ public static class LyricsChineseConverter
             return text;
         }
 
+        // 日文歌词与中文共用汉字：按字面转换会把「学校」写成「學校」这种日文不用的字形（实测 OpenCC 的
+        // S2T 正是这么干的）。检测到假名即按日文处理，整段原样返回，连后台队列都不进——切换方向时
+        // 投影结果与不转换逐字相同，演示器据此判定"内容没变"，画面什么都不发生。
+        // Japanese lyrics share kanji with Chinese: a glyph-level conversion writes forms Japanese does not
+        // use (OpenCC's S2T really does turn 「学校」 into 「學校」). Kana marks the text as Japanese, so it is
+        // returned untouched and does not even enter the background queue — the projection then matches the
+        // unconverted one character for character, the presenter sees "no content change", and nothing happens.
+        if (ContainsKana(text))
+        {
+            return text;
+        }
+
         return _cache.GetOrRequest(text, mode);
+    }
+
+    /// <summary>
+    /// 文本是否含日文假名：平假名、片假名（含长音符与半角片假名及其符号）。这些码位不出现在中文歌词里，
+    /// 是判定"这段是日文"最可靠的标记；纯汉字的日文句子（极少见）不在识别范围内。
+    /// Whether the text contains Japanese kana: hiragana, katakana (including the prolonged sound mark and
+    /// the half-width forms). Those code points do not occur in Chinese lyrics and are the most reliable
+    /// marker of "this is Japanese"; a kanji-only Japanese sentence (rare) is not recognised.
+    /// </summary>
+    private static bool ContainsKana(string text)
+    {
+        foreach (var c in text)
+        {
+            if ((c >= '\u3040' && c <= '\u309F') || (c >= '\u30A0' && c <= '\u30FF') ||
+                (c >= '\uFF61' && c <= '\uFF9F'))
+                return true;
+        }
+
+        return false;
     }
 
     internal static Task WaitForIdleAsync() => _cache.WaitForIdleAsync();

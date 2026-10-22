@@ -1385,7 +1385,7 @@
     <value>歌词繁简转换</value>
   </data>
   <data name="Lyrics.Row.ChineseConversion.Description" xml:space="preserve">
-    <value>把显示的歌词改成简体或繁体；只改显示，不改动取到的歌词本身。</value>
+    <value>把显示的歌词改成简体或繁体；只改显示，不改动取到的歌词本身。日文歌词不受影响。</value>
   </data>
   <data name="Lyrics.Row.ChineseConversion.Direction.Title" xml:space="preserve">
     <value>转换方向</value>
