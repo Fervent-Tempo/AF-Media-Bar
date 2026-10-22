@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!--StringsEn stores one UI language; Translations owns lookup and runtime WPF publication.-->
 <root>
   <resheader name="resmimetype">
@@ -2895,14 +2895,14 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Experimental.Vertical.Description" xml:space="preserve"><value>Show a vertical media bar in a taskbar on the left or right side.</value></data>
   <data name="Experimental.Vertical.Shared" xml:space="preserve"><value>Horizontal and vertical taskbars share one configuration. Changes here also affect horizontal taskbars.</value></data>
   <data name="Experimental.Floating.Title" xml:space="preserve"><value>Desktop floating mode</value></data>
-  <data name="Experimental.Floating.Description" xml:space="preserve"><value>An independent desktop widget with horizontal and vertical layouts and positions saved per display. Enable to reveal the mode switch.</value></data>
+  <data name="Experimental.Floating.Description" xml:space="preserve"><value>An independent desktop widget with horizontal and vertical layouts and positions saved per display.</value></data>
   <data name="Settings.Context.ConfigurationTarget" xml:space="preserve"><value>Editing configuration</value></data>
-  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>Once enabled, go to Display &amp; Placement to switch display modes and configure orientation, layer, and position. Font, appearance, and interactions are shared across modes.</value></data>
+  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>Switch display modes and configure orientation, layer, and position in Display &amp; Placement. Font, appearance, and interactions are shared across modes.</value></data>
   <data name="Experimental.OpenInteraction" xml:space="preserve"><value>Open interaction settings</value></data>
   <data name="Experimental.OpenContentLayout" xml:space="preserve"><value>Open content and layout</value></data>
   <data name="Experimental.OpenAppearance" xml:space="preserve"><value>Open appearance settings</value></data>
   <data name="Experimental.Vertical.Notification.Title" xml:space="preserve"><value>Vertical taskbar detected</value></data>
-  <data name="Experimental.Vertical.Notification.Body" xml:space="preserve"><value>Enable the vertical taskbar experiment to show the media bar here. Click to open Experimental features.</value></data>
+  <data name="Experimental.Vertical.Notification.Body" xml:space="preserve"><value>The vertical media bar follows the system taskbar orientation. Click to open Display &amp; Placement.</value></data>
   <data name="Experimental.Floating.Mode" xml:space="preserve"><value>Display mode</value></data>
   <data name="Experimental.Floating.Taskbar" xml:space="preserve"><value>Taskbar</value></data>
   <data name="Experimental.Floating.Switching" xml:space="preserve"><value>Switching display mode…</value></data>
@@ -2918,7 +2918,7 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Experimental.Floating.Lock" xml:space="preserve"><value>Lock position</value></data>
   <data name="Experimental.Floating.OpenDisplay" xml:space="preserve"><value>Open display and placement</value></data>
   <data name="Taskbar.Compact.Notification.Title" xml:space="preserve"><value>Limited taskbar space</value></data>
-  <data name="Taskbar.Compact.Notification.Body" xml:space="preserve"><value>The current lyric or title stays visible; secondary information is temporarily hidden. Try the desktop widget for more room. Click to open Experimental features.</value></data>
+  <data name="Taskbar.Compact.Notification.Body" xml:space="preserve"><value>The current lyric or title stays visible; secondary information is temporarily hidden. Try the desktop widget for more room. Click to open Display &amp; Placement.</value></data>
   <data name="Settings.Direction.Top" xml:space="preserve"><value>Top</value></data>
   <data name="Settings.Direction.Bottom" xml:space="preserve"><value>Bottom</value></data>
   <data name="Settings.Direction.Start" xml:space="preserve"><value>Start</value></data>

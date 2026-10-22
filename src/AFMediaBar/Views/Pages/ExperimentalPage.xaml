@@ -36,42 +36,6 @@
                         </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
-                <components:SettingsGroup GroupId="Experimental.Vertical.Title" Header="{DynamicResource Loc.Experimental.Vertical.Title}"
-                    Description="{DynamicResource Loc.Experimental.Vertical.Description}" Icon="{ui:SymbolIcon ArrowSort24}">
-                    <StackPanel>
-                        <components:SettingsRow Icon="{ui:SymbolIcon ArrowSort24}" Title="{DynamicResource Loc.Experimental.Enable}">
-                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.VerticalTaskbar, Mode=TwoWay}" />
-                        </components:SettingsRow>
-                        <StackPanel Visibility="{Binding ViewModel.VerticalTaskbar, Converter={StaticResource AfBooleanToVisibilityConverter}}">
-                            <TextBlock Text="{DynamicResource Loc.Experimental.Vertical.Shared}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,8,0,12" />
-
-                        </StackPanel>
-
-                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
-                            <components:SettingsNavigationButton ToolTip="{DynamicResource Loc.ContentLayout.Header.Subtitle}" Content="{DynamicResource Loc.Experimental.OpenContentLayout}"
-                                Visibility="{Binding ViewModel.VerticalTaskbar, Converter={StaticResource AfBooleanToVisibilityConverter}}" Destination="Components" />
-                            <components:SettingsNavigationButton ToolTip="{DynamicResource Loc.Appearance.Unified.Header.Subtitle}" Content="{DynamicResource Loc.Experimental.OpenAppearance}"
-                                Visibility="{Binding ViewModel.VerticalTaskbar, Converter={StaticResource AfBooleanToVisibilityConverter}}" Destination="Appearance" />
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Common.Page.ScreenAndPlacement}" Destination="ScreenAndPlacement" GroupId="Common.Group.ScreenAndPlacement"/>
-                        </WrapPanel>
-                    </StackPanel>
-                </components:SettingsGroup>
-                <components:SettingsGroup GroupId="Experimental.Floating.Title" Header="{DynamicResource Loc.Experimental.Floating.Title}"
-                    Description="{DynamicResource Loc.Experimental.Floating.Description}" Icon="{ui:SymbolIcon Desktop24}">
-                    <StackPanel>
-                        <components:SettingsRow Icon="{ui:SymbolIcon Desktop24}" Title="{DynamicResource Loc.Experimental.Enable}">
-                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.FloatingBar, Mode=TwoWay}" />
-                        </components:SettingsRow>
-                        <StackPanel Visibility="{Binding ViewModel.FloatingBar, Converter={StaticResource AfBooleanToVisibilityConverter}}">
-                            <components:SettingsCallout Text="{DynamicResource Loc.Experimental.Floating.Independent}" Symbol="Info24" />
-
-                            <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
-                                <components:SettingsNavigationButton Content="{DynamicResource Loc.Experimental.Floating.OpenDisplay}"
-                                    Destination="ScreenAndPlacement" GroupId="Common.Group.ChooseDisplayMode" />
-                            </WrapPanel>
-                        </StackPanel>
-                    </StackPanel>
-                </components:SettingsGroup>
             </StackPanel>
         </ScrollViewer>
     </Grid>

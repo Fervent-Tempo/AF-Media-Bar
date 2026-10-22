@@ -1,4 +1,4 @@
-﻿// 设置编辑上下文的读写边界，任务栏保留原字段，悬浮几何独立保存。
+// 设置编辑上下文的读写边界，任务栏保留原字段，悬浮几何独立保存。
 using AFMediaBar.Classes.Models.Settings;
 using AFMediaBar.Classes.Settings;
 
@@ -23,11 +23,14 @@ public interface ISettingsConfiguration
     {
         if (IsActive) SettingsManager.Current.Experiments = settings;
     }
-    /// <summary>明确选择运行宿主；启用实验本身不切换模式。</summary>
+    /// <summary>明确选择运行宿主，首次选择悬浮时初始化独立几何。</summary>
     void SetWindowMode(AFMediaBar.Classes.Models.Layout.WindowMode mode)
     {
-        if (IsActive) SettingsManager.Current.WindowMode = mode == AFMediaBar.Classes.Models.Layout.WindowMode.FloatingBar &&
-            SettingsManager.Current.Experiments.FloatingBar ? mode : AFMediaBar.Classes.Models.Layout.WindowMode.Taskbar;
+        if (!IsActive) return;
+        if (mode == AFMediaBar.Classes.Models.Layout.WindowMode.FloatingBar && SettingsManager.Current.FloatingBar.Profile is null)
+            SettingsManager.Current.FloatingBar = SettingsManager.Current.FloatingBar with { Profile = BarDisplaySettings.Capture(SettingsManager.Current) };
+        SettingsManager.Current.WindowMode = mode == AFMediaBar.Classes.Models.Layout.WindowMode.FloatingBar
+            ? mode : AFMediaBar.Classes.Models.Layout.WindowMode.Taskbar;
     }
     /// <summary>修改独立悬浮宿主偏好。</summary>
     void SetFloatingBar(FloatingBarSettings settings)

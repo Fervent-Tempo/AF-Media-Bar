@@ -9,7 +9,6 @@ namespace AFMediaBar.Views.Windows;
 
 public partial class MainWindow
 {
-    private bool _verticalExperimentNotified;
     private string? _experimentalHostSignature;
     private readonly DispatcherTimer _experimentalHostWatcher = new(DispatcherPriority.Background)
     {
@@ -31,8 +30,7 @@ public partial class MainWindow
         };
     }
 
-    private string GetExperimentalHostSignature() => SettingsManager.Current.Experiments.VerticalTaskbar + "|" +
-        string.Join("|", ResolveTaskbarTargetDeviceIds().Select(target =>
+    private string GetExperimentalHostSignature() => string.Join("|", ResolveTaskbarTargetDeviceIds().Select(target =>
         {
             var handle = _taskBarService.GetSelectedTaskbarHandle(target, out _);
             return $"{handle}:{_taskBarService.IsTaskbarVertical(handle)}";
@@ -47,12 +45,4 @@ public partial class MainWindow
         RecreateTaskbarWindows();
     }
 
-    private void NotifyVerticalExperimentRequired()
-    {
-        if (_verticalExperimentNotified) return;
-        _verticalExperimentNotified = _systemNotifications.TryShowNotification(
-            Translations.Get("Experimental.Vertical.Notification.Title"),
-            Translations.Get("Experimental.Vertical.Notification.Body"),
-            ShellNotificationTarget.VerticalTaskbarExperiment);
-    }
 }

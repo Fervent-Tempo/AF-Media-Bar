@@ -1,4 +1,4 @@
-// 仅在任务栏真实收起副信息后提示一次；点击定位已实现的悬浮实验入口。
+// 仅在任务栏真实收起副信息后提示一次；点击定位正式的显示模式选择入口。
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services;

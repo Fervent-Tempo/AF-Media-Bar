@@ -236,8 +236,8 @@ public sealed class AppSettings : INotifyPropertyChanged
         if (!Enum.IsDefined(result.TrayWheelBehavior)) result.TrayWheelBehavior = defaults.TrayWheelBehavior;
         result.LyricsSecondaryLine = result.LyricsSecondaryLine.Normalize();
         if (!Enum.IsDefined(result.Position)) result.Position = defaults.Position;
-        // 旧灵动岛标识继续回退，悬浮仅在实验开启后生效。
-        if (result.WindowMode != WindowMode.FloatingBar || !result.Experiments.FloatingBar)
+        // 旧灵动岛等未实现标识继续回退；悬浮模式不再受旧实验字段限制。
+        if (result.WindowMode != WindowMode.FloatingBar)
             result.WindowMode = WindowMode.Taskbar;
         if (!Enum.IsDefined(result.LayoutOrientationMode)) result.LayoutOrientationMode = defaults.LayoutOrientationMode;
         if (!Enum.IsDefined(result.DynamicIslandBackgroundMode)) result.DynamicIslandBackgroundMode = defaults.DynamicIslandBackgroundMode;
@@ -283,6 +283,8 @@ public sealed class AppSettings : INotifyPropertyChanged
         result.TaskbarBarCrossAxisOffsetDip = Math.Clamp(result.TaskbarBarCrossAxisOffsetDip, MinimumTaskbarCrossAxisOffsetDip, MaximumTaskbarCrossAxisOffsetDip);
         if (result.DynamicIslandLeft is not null && (!double.IsFinite(result.DynamicIslandLeft.Value) || result.DynamicIslandLeft < 0)) result.DynamicIslandLeft = null;
         if (result.DynamicIslandTop is not null && (!double.IsFinite(result.DynamicIslandTop.Value) || result.DynamicIslandTop < 0)) result.DynamicIslandTop = null;
+        if (result.WindowMode == WindowMode.FloatingBar && result.FloatingBar.Profile is null)
+            result.FloatingBar = result.FloatingBar with { Profile = BarDisplaySettings.Capture(result) };
         return result;
     }
 

@@ -49,9 +49,12 @@ public sealed class ExperimentalConfigurationTests
             Assert.AreEqual(110, configuration.Current.TaskbarExperience.MediaFontSizePercent);
             Assert.AreEqual(444d, configuration.Current.TaskbarExperience.FixedLengthDip);
             configuration.SetExperiments(new());
+            configuration.SetLyricsFixedWidthDip(550);
+            Assert.AreEqual(550, configuration.Current.LyricsFixedWidthDip, "旧实验字段不再限制正式悬浮配置。");
+            page.Deactivate();
             var saved = SettingsManager.Current.FloatingBar;
-            configuration.SetLyricsFixedWidthDip(555);
-            Assert.AreSame(saved, SettingsManager.Current.FloatingBar, "关闭实验后旧目标的编辑结果不得写回。");
+            configuration.SetLyricsFixedWidthDip(150);
+            Assert.AreSame(saved, SettingsManager.Current.FloatingBar, "离开上下文后旧编辑结果不得写回。");
         }
         finally { SettingsManager.Current = previous; }
     }
@@ -156,7 +159,8 @@ public sealed class ExperimentalConfigurationTests
                 {
                     AudioDevices = new()
                     {
-                        OutputCycleHotkey = "Ctrl+Alt+X", InputCycleHotkey = "Ctrl+Alt+M",
+                        OutputCycleHotkey = "Ctrl+Alt+X",
+                        InputCycleHotkey = "Ctrl+Alt+M",
                         InputBlacklist = [new("mic", "Microphone")]
                     },
                     Interaction = GlobalInteractionSettings.Default with { PrimaryWheelAction = WheelAction.InputDevice },
@@ -227,7 +231,7 @@ public sealed class ExperimentalConfigurationTests
         try
         {
             SettingsManager.Current = new AppSettings { LyricsFixedWidthDip = 220, TwoLineLyricsEnabled = false };
-            configuration.SetExperiments(new() { FloatingBar = true });
+            ((AFMediaBar.Classes.Abstractions.ISettingsConfiguration)configuration).SetWindowMode(WindowMode.FloatingBar);
             var captured = SettingsManager.Current.FloatingBar.Profile!;
             configuration.SetTwoLineLyricsEnabled(true);
             configuration.SetLyricsFixedWidthDip(330);

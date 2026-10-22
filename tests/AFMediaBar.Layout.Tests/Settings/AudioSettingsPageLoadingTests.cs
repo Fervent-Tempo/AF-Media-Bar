@@ -113,7 +113,8 @@ public sealed class AudioSettingsPageLoadingTests
                     navigations++;
                 }));
                 var links = LogicalChildren(entry).OfType<SettingsNavigationButton>().ToArray();
-                Assert.AreEqual(6, links.Length);
+                Assert.AreEqual(2, links.Length);
+                Assert.IsFalse(LogicalChildren(entry).OfType<SettingsGroup>().Any(group => group.GroupId is "Experimental.Floating.Title" or "Experimental.Vertical.Title"));
                 foreach (var link in links)
                 {
                     var peer = new System.Windows.Automation.Peers.ButtonAutomationPeer(link);

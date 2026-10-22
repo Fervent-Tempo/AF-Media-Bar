@@ -102,17 +102,7 @@
                     Header="{DynamicResource Loc.Common.Group.ChooseDisplayMode}"
                     Icon="{ui:SymbolIcon WindowConsole20}">
                     <StackPanel>
-                        <UniformGrid Margin="0,0,-12,0" Rows="1" IsEnabled="{Binding ViewModel.CanChangeMode}">
-                            <UniformGrid.Style>
-                                <Style TargetType="UniformGrid">
-                                    <Setter Property="Columns" Value="2" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding ViewModel.IsFloatingExperimentEnabled}" Value="False">
-                                            <Setter Property="Columns" Value="1" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </UniformGrid.Style>
+                        <UniformGrid Margin="0,0,-12,0" Rows="1" Columns="2" IsEnabled="{Binding ViewModel.CanChangeMode}">
                             <RadioButton x:Name="TaskbarModeCard" GroupName="ImplementedDisplayMode" Tag="0"
                                          IsChecked="{Binding ViewModel.IsTaskbarMode, Mode=OneWay}" Click="OnModeCardClick"
                                          AutomationProperties.Name="{DynamicResource Loc.DisplayModes.Mode.Taskbar}"
@@ -128,7 +118,6 @@
                             </RadioButton>
                             <RadioButton x:Name="FloatingModeCard" GroupName="ImplementedDisplayMode" Tag="1"
                                          IsChecked="{Binding ViewModel.IsFloatingBarMode, Mode=OneWay}" Click="OnModeCardClick"
-                                         Visibility="{Binding ViewModel.IsFloatingExperimentEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}"
                                          AutomationProperties.Name="{DynamicResource Loc.Experimental.Floating.Title}"
                                          Style="{StaticResource ModeChoiceStyle}">
                                 <StackPanel>
@@ -136,7 +125,6 @@
                                     <TextBlock Text="{DynamicResource Loc.Experimental.Floating.Title}" Style="{StaticResource ModeTitleStyle}" />
                                     <TextBlock Text="{DynamicResource Loc.DisplayModes.Mode.FloatingBar.Caption}" Style="{StaticResource ModeCaptionStyle}" />
                                     <WrapPanel Margin="0,12,0,0">
-                                        <ContentControl Content="{DynamicResource Loc.DisplayModes.Mode.Experimental}" Margin="0,0,8,0" Style="{StaticResource AfSettingsBadgeAttentionStyle}" />
                                         <ContentControl Content="{DynamicResource Loc.DisplayModes.Mode.Current}" Margin="0" Style="{StaticResource AfSettingsBadgeAccentStyle}"
                                                         Visibility="{Binding ViewModel.IsFloatingBarMode, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
                                     </WrapPanel>
@@ -161,9 +149,6 @@
                             </StackPanel>
                         </ui:CardExpander>
 
-                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.Experiments}" Destination="Experimental" GroupId="Experimental.Floating.Title"/>
-                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup
@@ -247,9 +232,6 @@
                                 Style="{StaticResource AfSettingsButtonStyle}" />
                         </components:SettingsRow>
 
-                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.Experiments}" Destination="Experimental" GroupId="Experimental.Vertical.Title"/>
-                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup GroupId="Placement.Floating.Title" Header="{DynamicResource Loc.Placement.Floating.Title}"

@@ -50,7 +50,6 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     public bool IsFloatingBallMode => SelectedMode == DisplayModeSelection.FloatingBall;
     public bool IsFloatingBarMode => SelectedMode == DisplayModeSelection.FloatingBar;
     public bool IsUnimplementedMode => !IsTaskbarMode && !IsFloatingBarMode;
-    public bool IsFloatingExperimentEnabled => SettingsManager.Current.Experiments.FloatingBar;
     public bool CanChangeMode => _runtime?.IsSwitching != true;
     public int RuntimeModeSelection
     {
@@ -676,7 +675,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(CurrentWindowMode)); OnPropertyChanged(nameof(IsTaskbarMode)); OnPropertyChanged(nameof(IsDynamicIslandMode));
             OnPropertyChanged(nameof(IsDesktopCardMode)); OnPropertyChanged(nameof(IsFloatingBallMode)); OnPropertyChanged(nameof(IsUnimplementedMode));
             OnPropertyChanged(nameof(HostingModeText)); OnPropertyChanged(nameof(IsTaskbarHostingActive));
-            OnPropertyChanged(nameof(IsFloatingBarMode)); OnPropertyChanged(nameof(IsFloatingExperimentEnabled));
+            OnPropertyChanged(nameof(IsFloatingBarMode));
             OnPropertyChanged(nameof(CanChangeMode)); OnPropertyChanged(nameof(RuntimeModeSelection));
             OnPropertyChanged(nameof(FloatingOrientation)); OnPropertyChanged(nameof(FloatingLayer)); OnPropertyChanged(nameof(RuntimeStatus));
             OnPropertyChanged(nameof(TaskbarPosition));

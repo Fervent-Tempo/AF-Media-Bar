@@ -9,6 +9,7 @@ public sealed record ExperimentalSettings
     public bool MemoryTools { get; init; }
     public bool SystemMemoryCleanup { get; init; }
     public bool BluetoothBattery { get; init; }
+    // v1.5.0 已发布的兼容字段；正式功能不再读取它们作为门禁。
     public bool VerticalTaskbar { get; init; }
     public bool FloatingBar { get; init; }
 

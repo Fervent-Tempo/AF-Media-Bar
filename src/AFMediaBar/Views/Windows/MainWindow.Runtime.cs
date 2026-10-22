@@ -47,8 +47,7 @@ public partial class MainWindow
             Dispatcher.BeginInvoke(() => QueueRuntimeRefresh(force: true));
     }
 
-    private WindowMode RequestedMode => SettingsManager.Current.Experiments.FloatingBar &&
-        SettingsManager.Current.WindowMode == WindowMode.FloatingBar ? WindowMode.FloatingBar : WindowMode.Taskbar;
+    private WindowMode RequestedMode => SettingsManager.Current.WindowMode == WindowMode.FloatingBar ? WindowMode.FloatingBar : WindowMode.Taskbar;
 
     private IReadOnlyList<(string Requested, DisplayMonitorInfo Actual)> FloatingTargets()
     {
@@ -107,9 +106,7 @@ public partial class MainWindow
             }
             else if (_runtime.LastFailure is not null)
             {
-                // 失败保留真实宿主及其开关，避免界面声称已经关闭仍在使用的实验。
-                if (_runtime.RunningMode == WindowMode.FloatingBar && !SettingsManager.Current.Experiments.FloatingBar)
-                    SettingsManager.Current.Experiments = SettingsManager.Current.Experiments with { FloatingBar = true };
+                // 切换失败时设置仍反映保留的真实宿主。
                 SettingsManager.Current.WindowMode = _runtime.RunningMode;
             }
         }
@@ -152,8 +149,6 @@ public partial class MainWindow
                     cancellationToken.ThrowIfCancellationRequested();
                     var handle = _taskBarService.GetSelectedTaskbarHandle(target, out _);
                     if (handle == nint.Zero || !seen.Add(handle)) continue;
-                    if (_taskBarService.IsTaskbarVertical(handle) && !SettingsManager.Current.Experiments.VerticalTaskbar)
-                    { NotifyVerticalExperimentRequired(); continue; }
                     var window = CreateTaskbarWindow(target);
                     hosts.Add(window);
                     window.ApplySnapshot(_mediaSessionService.CurrentSnapshot ?? MediaSnapshot.Disconnected);

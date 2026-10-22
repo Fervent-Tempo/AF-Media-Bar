@@ -29,7 +29,7 @@ public static class SettingsPageCatalog
     public static bool IsImplemented(SettingsMode mode) => mode is SettingsMode.Taskbar or SettingsMode.FloatingBar;
     /// <summary>设置目标可编辑不表示该宿主已接入运行时。</summary>
     public static bool CanEditProfile(SettingsMode mode) => mode == SettingsMode.Taskbar ||
-        mode == SettingsMode.FloatingBar && AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.FloatingBar;
+        mode == SettingsMode.FloatingBar;
     /// <summary>Returns current-mode pages plus common application destinations; future hosts get no fake specialized controls.</summary>
     public static IReadOnlyList<SettingsPageDefinition> ForMode(SettingsMode mode) =>
         CanEditProfile(mode) ? TaskbarPages : TaskbarPages.Where(page => page.IsGlobal).ToArray();
@@ -49,6 +49,8 @@ public static class SettingsPageCatalog
         (SettingsPageKey.DeviceManagement, "Battery.Title") => (SettingsPageKey.Widgets, "Battery.Title"),
         (SettingsPageKey.Interaction, "Common.Group.SharedModifier") => (SettingsPageKey.Interaction, "Interaction.Group.Wheel"),
         (SettingsPageKey.Interaction, "Interaction.AudioGestures") => (SettingsPageKey.Interaction, "Audio.Settings.Advanced"),
+        (SettingsPageKey.Experimental, "Experimental.Floating.Title") => (SettingsPageKey.ScreenAndPlacement, "Common.Group.ChooseDisplayMode"),
+        (SettingsPageKey.Experimental, "Experimental.Vertical.Title") => (SettingsPageKey.ScreenAndPlacement, "Common.Group.ScreenAndPlacement"),
         (SettingsPageKey.Experimental, "Experimental.FullPanel.Title") => (SettingsPageKey.Components, "Common.FullLayer"),
         (SettingsPageKey.Experimental, "Experimental.Audio.Title") => (SettingsPageKey.DeviceManagement, "Common.OutputDevice"),
         (SettingsPageKey.DeviceManagement, "Device.Hotkeys") => (SettingsPageKey.Interaction, "Device.Hotkeys"),

@@ -64,7 +64,7 @@ public static class SettingsSearchIndex
         (entry.Page != SettingsPageKey.Widgets || entry.GroupId != "Battery.Title" || AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.BluetoothBattery) &&
         (entry.Page != SettingsPageKey.ScreenAndPlacement || entry.GroupId == "Common.Group.ChooseDisplayMode" ||
             entry.GroupId == "Common.Group.ScreenAndPlacement" && context.Mode == SettingsMode.Taskbar ||
-            entry.GroupId == "Placement.Floating.Title" && context.Mode == SettingsMode.FloatingBar && AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.FloatingBar) &&
+            entry.GroupId == "Placement.Floating.Title" && context.Mode == SettingsMode.FloatingBar) &&
         (entry.Page != SettingsPageKey.Appearance || SettingsPageCatalog.CanEditProfile(context.Mode) ||
             entry.GroupId is "Common.Group.ThemeAndBackdrop" or "Common.Group.Fonts")).ToArray();
 
@@ -138,14 +138,12 @@ public static class SettingsSearchIndex
             "Common.Group.ChooseDisplayMode",
             "Search.DisplayModes.ChooseDisplayMode.Description",
             language,
-            ["模式", "mode", "显示模式", "承载模式", "灵动岛", "island", "桌面卡片", "悬浮球", "切换"]);
+            ["模式", "mode", "显示模式", "承载模式", "灵动岛", "island", "桌面卡片", "悬浮球", "桌面悬浮", "floating", "切换"]);
 
     /// <summary>Builds localized labels while keeping page and group identities stable.</summary>
     private static SettingsSearchEntry[] Build(LocalizationLanguage language) =>
     [
         Create(SettingsPageKey.ScreenAndPlacement, "Placement.Floating.Title", "Placement.Floating.Description", language, ["桌面悬浮模式", "floating", "置顶", "锁定", "拖动"]),
-        Create(SettingsPageKey.Experimental, "Experimental.Vertical.Title", "Experimental.Vertical.Description", language, ["竖向", "vertical", "纵向"]),
-        Create(SettingsPageKey.Experimental, "Experimental.Floating.Title", "Experimental.Floating.Description", language, ["悬浮", "floating", "桌面小工具"]),
         Create(SettingsPageKey.Appearance, "Appearance.IdleNote.Title", "Appearance.IdleNote.Description", language,
             ["小音符", "音符颜色", "music note", "note color", "占位图标", "自定义音符"]),
         Create(
@@ -169,7 +167,7 @@ public static class SettingsSearchIndex
             "Common.Group.ScreenAndPlacement",
             "Search.DisplayModes.ScreenAndPlacement.Description",
             language,
-            ["显示器", "屏幕", "monitor", "display", "朝向", "横向", "纵向", "orientation", "避让", "图标", "锁定", "位置", "偏移", "厚度方向偏移", "offset", "重置", "承载", "承载显示器", "承载与位置", "边缘偏移", "靠左", "靠右", "居中", "置中", "对齐", "對齊", "alignment", "left", "right", "center"]),
+            ["显示器", "屏幕", "monitor", "display", "朝向", "横向", "纵向", "竖向", "vertical", "orientation", "避让", "图标", "锁定", "位置", "偏移", "厚度方向偏移", "offset", "重置", "承载", "承载显示器", "承载与位置", "边缘偏移", "靠左", "靠右", "居中", "置中", "对齐", "對齊", "alignment", "left", "right", "center"]),
         Create(
             SettingsPageKey.Components,
             "Common.RestLayer",

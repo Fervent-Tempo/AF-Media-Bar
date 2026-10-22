@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!--StringsZhHant stores one UI language; Translations owns lookup and runtime WPF publication.-->
 <root>
   <resheader name="resmimetype">
@@ -2895,14 +2895,14 @@
   <data name="Experimental.Vertical.Description" xml:space="preserve"><value>在實際的左側或右側工作列中顯示直向媒體列。</value></data>
   <data name="Experimental.Vertical.Shared" xml:space="preserve"><value>工作列橫向與直向共用同一份設定。此處修改也會影響橫向工作列。</value></data>
   <data name="Experimental.Floating.Title" xml:space="preserve"><value>桌面懸浮模式</value></data>
-  <data name="Experimental.Floating.Description" xml:space="preserve"><value>獨立桌面小工具，支援橫向、直向及依顯示器儲存位置。啟用後可手動切換模式。</value></data>
+  <data name="Experimental.Floating.Description" xml:space="preserve"><value>獨立桌面小工具，支援橫向、直向及依顯示器儲存位置。</value></data>
   <data name="Settings.Context.ConfigurationTarget" xml:space="preserve"><value>編輯設定</value></data>
-  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>啟用後，請前往「顯示與位置」切換顯示模式並設定方向、層級和位置。字型、外觀與互動在各模式間共用。</value></data>
+  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>在「顯示與位置」切換顯示模式，設定方向、層級與位置。字型、外觀與互動由各模式共用。</value></data>
   <data name="Experimental.OpenInteraction" xml:space="preserve"><value>前往互動設定</value></data>
   <data name="Experimental.OpenContentLayout" xml:space="preserve"><value>前往內容與版面配置</value></data>
   <data name="Experimental.OpenAppearance" xml:space="preserve"><value>前往外觀設定</value></data>
   <data name="Experimental.Vertical.Notification.Title" xml:space="preserve"><value>已偵測到直向工作列</value></data>
-  <data name="Experimental.Vertical.Notification.Body" xml:space="preserve"><value>啟用直向工作列實驗後即可在此顯示媒體列。點擊前往實驗性功能。</value></data>
+  <data name="Experimental.Vertical.Notification.Body" xml:space="preserve"><value>直向媒體列隨系統工作列方向顯示。點擊前往顯示與位置。</value></data>
   <data name="Experimental.Floating.Mode" xml:space="preserve"><value>顯示模式</value></data>
   <data name="Experimental.Floating.Taskbar" xml:space="preserve"><value>工作列</value></data>
   <data name="Experimental.Floating.Switching" xml:space="preserve"><value>正在切換顯示模式…</value></data>
@@ -2918,7 +2918,7 @@
   <data name="Experimental.Floating.Lock" xml:space="preserve"><value>鎖定位置</value></data>
   <data name="Experimental.Floating.OpenDisplay" xml:space="preserve"><value>前往顯示與位置</value></data>
   <data name="Taskbar.Compact.Notification.Title" xml:space="preserve"><value>工作列空間較窄</value></data>
-  <data name="Taskbar.Compact.Notification.Body" xml:space="preserve"><value>已優先顯示目前歌詞或標題，暫時收起次要資訊。可嘗試桌面懸浮列取得更多空間，點擊前往實驗性功能。</value></data>
+  <data name="Taskbar.Compact.Notification.Body" xml:space="preserve"><value>已優先顯示目前歌詞或標題，暫時收起次要資訊。可嘗試桌面懸浮模式取得更多空間，點擊前往顯示與位置。</value></data>
   <data name="Settings.Direction.Top" xml:space="preserve"><value>靠上</value></data>
   <data name="Settings.Direction.Bottom" xml:space="preserve"><value>靠下</value></data>
   <data name="Settings.Direction.Start" xml:space="preserve"><value>起始</value></data>

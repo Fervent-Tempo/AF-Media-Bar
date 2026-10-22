@@ -30,23 +30,29 @@ public sealed class FloatingBarTests
     }
 
     [TestMethod]
-    public void FloatingModeRequiresExperimentAndClosingItPreservesProfile()
+    public void FloatingModeIgnoresLegacyExperimentAndPreservesProfile()
     {
         var previous = SettingsManager.Current;
         using var context = new SettingsPageContext();
         var configuration = new LegacySettingsConfiguration(context);
         try
         {
-            SettingsManager.Current = new AppSettings { WindowMode = WindowMode.FloatingBar };
-            Assert.AreEqual(WindowMode.Taskbar, SettingsManager.Current.Normalize().WindowMode);
+            SettingsManager.Current = new AppSettings();
             configuration.SetExperiments(new() { FloatingBar = true });
             Assert.AreEqual(WindowMode.Taskbar, SettingsManager.Current.WindowMode, "Enabling alone must not switch.");
             ((AFMediaBar.Classes.Abstractions.ISettingsConfiguration)configuration).SetWindowMode(WindowMode.FloatingBar);
             Assert.AreEqual(WindowMode.FloatingBar, SettingsManager.Current.Normalize().WindowMode);
             var profile = SettingsManager.Current.FloatingBar;
             configuration.SetExperiments(new());
-            Assert.AreEqual(WindowMode.Taskbar, SettingsManager.Current.WindowMode);
+            Assert.AreEqual(WindowMode.FloatingBar, SettingsManager.Current.WindowMode);
+            Assert.AreEqual(WindowMode.FloatingBar, SettingsManager.Current.Normalize().WindowMode);
             Assert.AreSame(profile, SettingsManager.Current.FloatingBar);
+            var old = System.Text.Json.JsonSerializer.Deserialize<AppSettings>("""
+                {"WindowMode":2,"Experiments":{"FloatingBar":false,"VerticalTaskbar":false},
+                 "FloatingBar":{"Positions":[{"MonitorDeviceId":"old","CenterXDip":350,"CenterYDip":200}]}}
+                """)!.Normalize();
+            Assert.AreEqual(WindowMode.FloatingBar, old.WindowMode);
+            Assert.AreEqual(350d, old.FloatingBar.Positions.Single().CenterXDip);
             SettingsManager.Current.WindowMode = WindowMode.DynamicIsland;
             Assert.AreEqual(WindowMode.Taskbar, SettingsManager.Current.Normalize().WindowMode);
         }

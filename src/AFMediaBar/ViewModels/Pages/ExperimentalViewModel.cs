@@ -1,9 +1,6 @@
 // 协调实验开关与保存的宿主偏好，不直接创建窗口或执行音频操作。
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Settings;
-using AFMediaBar.Classes.Services;
-using AFMediaBar.Classes.Models.Layout;
-using AFMediaBar.Resources;
 
 namespace AFMediaBar.ViewModels.Pages;
 
@@ -11,12 +8,9 @@ namespace AFMediaBar.ViewModels.Pages;
 public sealed class ExperimentalViewModel : ObservableObject, IDisposable
 {
     private readonly ISettingsConfiguration _configuration;
-    private readonly BarRuntimeCoordinator? _runtime;
-    public ExperimentalViewModel(ISettingsConfiguration configuration, BarRuntimeCoordinator? runtime = null)
+    public ExperimentalViewModel(ISettingsConfiguration configuration)
     {
         _configuration = configuration;
-        _runtime = runtime;
-        if (_runtime is not null) _runtime.Changed += RuntimeChanged;
         SettingsManager.SettingsChanged += OnSettingsChanged;
     }
 
@@ -35,20 +29,6 @@ public sealed class ExperimentalViewModel : ObservableObject, IDisposable
         get => SettingsManager.Current.Experiments.BluetoothBattery;
         set => _configuration.SetExperiments(SettingsManager.Current.Experiments with { BluetoothBattery = value });
     }
-    public bool VerticalTaskbar
-    {
-        get => SettingsManager.Current.Experiments.VerticalTaskbar;
-        set => _configuration.SetExperiments(SettingsManager.Current.Experiments with { VerticalTaskbar = value });
-    }
-    public bool FloatingBar
-    {
-        get => SettingsManager.Current.Experiments.FloatingBar;
-        set => _configuration.SetExperiments(SettingsManager.Current.Experiments with { FloatingBar = value });
-    }
-    public string RuntimeStatus => _runtime?.IsSwitching == true ? Translations.Get("Experimental.Floating.Switching") :
-        _runtime?.LastFailure is not null ? Translations.Get("Experimental.Floating.Failed") :
-        Translations.Get(_runtime?.RunningMode == WindowMode.FloatingBar ? "Experimental.Floating.Active" : "Experimental.Floating.TaskbarActive");
-    private void RuntimeChanged(object? sender, EventArgs args) => OnPropertyChanged(nameof(RuntimeStatus));
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args)
     {
         if (args.PropertyName is null or nameof(AppSettings.Experiments) or nameof(AppSettings.FloatingBar) or nameof(AppSettings.WindowMode))
@@ -56,14 +36,10 @@ public sealed class ExperimentalViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(SystemMemoryCleanup));
             OnPropertyChanged(nameof(MemoryTools));
             OnPropertyChanged(nameof(BluetoothBattery));
-            OnPropertyChanged(nameof(VerticalTaskbar));
-            OnPropertyChanged(nameof(FloatingBar));
-            OnPropertyChanged(nameof(RuntimeStatus));
         }
     }
     public void Dispose()
     {
         SettingsManager.SettingsChanged -= OnSettingsChanged;
-        if (_runtime is not null) _runtime.Changed -= RuntimeChanged;
     }
 }

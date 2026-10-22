@@ -1,4 +1,4 @@
-﻿// 连接设置编辑上下文与持久化配置；任务栏横竖共用原字段，悬浮几何独立保存。
+// 连接设置编辑上下文与持久化配置；任务栏横竖共用原字段，悬浮几何独立保存。
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models.Settings;
 using AFMediaBar.Classes.Settings;
@@ -9,8 +9,7 @@ namespace AFMediaBar.Classes.Services.Settings;
 public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFMediaBar.Classes.Services.BarRuntimeCoordinator? runtime = null) : ISettingsConfiguration
 {
     public SettingsContext Context => context.Snapshot;
-    public bool IsActive => context.IsActive && Context.Mode is (SettingsMode.Taskbar or SettingsMode.FloatingBar) && runtime?.IsSwitching != true && (Context.Mode != SettingsMode.FloatingBar ||
-        SettingsManager.Current.Experiments.FloatingBar);
+    public bool IsActive => context.IsActive && Context.Mode is (SettingsMode.Taskbar or SettingsMode.FloatingBar) && runtime?.IsSwitching != true;
     public CancellationToken CancellationToken => context.CancellationToken;
     public BarConfigurationTarget Target => Context.Mode == SettingsMode.FloatingBar ? BarConfigurationTarget.FloatingBar : BarConfigurationTarget.Taskbar;
     public AppSettings Current => Target == BarConfigurationTarget.Taskbar ? SettingsManager.Current
@@ -70,10 +69,7 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
     public void SetExperiments(ExperimentalSettings settings)
     {
         if (!context.IsActive) return;
-        if (settings.FloatingBar && SettingsManager.Current.FloatingBar.Profile is null)
-            SettingsManager.Current.FloatingBar = SettingsManager.Current.FloatingBar with { Profile = BarDisplaySettings.Capture(SettingsManager.Current) };
         SettingsManager.Current.Experiments = settings.Normalize();
-        if (!settings.FloatingBar) SettingsManager.Current.WindowMode = AFMediaBar.Classes.Models.Layout.WindowMode.Taskbar;
     }
     public void SetFloatingBar(FloatingBarSettings settings) { if (IsActive) SettingsManager.Current.FloatingBar = settings; }
     public void SetTaskbarTargets(IReadOnlyList<string> deviceIds)

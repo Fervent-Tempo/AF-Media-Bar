@@ -961,13 +961,13 @@ namespace AFMediaBar.Views.Windows
             if (target == ShellNotificationTarget.FloatingBarExperiment)
             {
                 ViewModel_OpenSettingsRequested(this, EventArgs.Empty);
-                _settingsWindow?.NavigateToGroup(SettingsPageKey.Experimental, "Experimental.Floating.Title");
+                _settingsWindow?.NavigateToGroup(SettingsPageKey.ScreenAndPlacement, "Common.Group.ChooseDisplayMode");
                 return;
             }
             if (target == ShellNotificationTarget.VerticalTaskbarExperiment)
             {
                 ViewModel_OpenSettingsRequested(this, EventArgs.Empty);
-                _settingsWindow?.NavigateToGroup(SettingsPageKey.Experimental, "Experimental.Vertical.Title");
+                _settingsWindow?.NavigateToGroup(SettingsPageKey.ScreenAndPlacement, "Common.Group.ScreenAndPlacement");
                 return;
             }
             if (target != ShellNotificationTarget.TaskbarBackground) return;

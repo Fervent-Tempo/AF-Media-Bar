@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!--StringsZhHans stores one UI language; Translations owns lookup and runtime WPF publication.-->
 <root>
   <resheader name="resmimetype">
@@ -2895,14 +2895,14 @@
   <data name="Experimental.Vertical.Description" xml:space="preserve"><value>在真实的左侧或右侧任务栏中显示竖向媒体栏。</value></data>
   <data name="Experimental.Vertical.Shared" xml:space="preserve"><value>任务栏横向与竖向共享同一份配置。此处修改也会影响横向任务栏。</value></data>
   <data name="Experimental.Floating.Title" xml:space="preserve"><value>桌面悬浮模式</value></data>
-  <data name="Experimental.Floating.Description" xml:space="preserve"><value>独立桌面小工具，支持横向、竖向和按显示器保存位置。启用后可手动切换模式。</value></data>
+  <data name="Experimental.Floating.Description" xml:space="preserve"><value>独立桌面小工具，支持横向、竖向和按显示器保存位置。</value></data>
   <data name="Settings.Context.ConfigurationTarget" xml:space="preserve"><value>编辑配置</value></data>
-  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>启用后，请前往“显示与位置”切换显示模式并配置方向、层级和位置。字体、外观与交互在各模式间共用。</value></data>
+  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>在“显示与位置”切换显示模式，配置方向、层级和位置。字体、外观与交互在各模式间共用。</value></data>
   <data name="Experimental.OpenInteraction" xml:space="preserve"><value>前往交互设置</value></data>
   <data name="Experimental.OpenContentLayout" xml:space="preserve"><value>前往内容与布局</value></data>
   <data name="Experimental.OpenAppearance" xml:space="preserve"><value>前往外观设置</value></data>
   <data name="Experimental.Vertical.Notification.Title" xml:space="preserve"><value>已检测到竖向任务栏</value></data>
-  <data name="Experimental.Vertical.Notification.Body" xml:space="preserve"><value>启用竖向任务栏实验后可在此显示媒体栏。点击前往实验性功能。</value></data>
+  <data name="Experimental.Vertical.Notification.Body" xml:space="preserve"><value>竖向媒体栏随系统任务栏朝向显示。点击前往显示与位置。</value></data>
   <data name="Experimental.Floating.Mode" xml:space="preserve"><value>显示模式</value></data>
   <data name="Experimental.Floating.Taskbar" xml:space="preserve"><value>任务栏</value></data>
   <data name="Experimental.Floating.Switching" xml:space="preserve"><value>正在切换显示模式…</value></data>
@@ -2918,7 +2918,7 @@
   <data name="Experimental.Floating.Lock" xml:space="preserve"><value>锁定位置</value></data>
   <data name="Experimental.Floating.OpenDisplay" xml:space="preserve"><value>前往显示与位置</value></data>
   <data name="Taskbar.Compact.Notification.Title" xml:space="preserve"><value>任务栏空间较窄</value></data>
-  <data name="Taskbar.Compact.Notification.Body" xml:space="preserve"><value>已优先显示当前歌词或标题，临时收起副信息。可尝试桌面悬浮模式获得更多空间，点击前往实验性功能。</value></data>
+  <data name="Taskbar.Compact.Notification.Body" xml:space="preserve"><value>已优先显示当前歌词或标题，临时收起副信息。可尝试桌面悬浮模式获得更多空间，点击前往显示与位置。</value></data>
   <data name="Settings.Direction.Top" xml:space="preserve"><value>靠上</value></data>
   <data name="Settings.Direction.Bottom" xml:space="preserve"><value>靠下</value></data>
   <data name="Settings.Direction.Start" xml:space="preserve"><value>起始</value></data>

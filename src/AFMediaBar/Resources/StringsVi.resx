@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!--StringsVi stores one UI language; Translations owns lookup and runtime WPF publication.-->
 <root>
   <resheader name="resmimetype">
@@ -2933,14 +2933,14 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   <data name="Experimental.Vertical.Description" xml:space="preserve"><value>Hiển thị thanh phương tiện dọc trên thanh tác vụ ở cạnh trái hoặc phải.</value></data>
   <data name="Experimental.Vertical.Shared" xml:space="preserve"><value>Thanh tác vụ ngang và dọc dùng chung cấu hình. Thay đổi tại đây cũng ảnh hưởng thanh tác vụ ngang.</value></data>
   <data name="Experimental.Floating.Title" xml:space="preserve"><value>Chế độ nổi trên màn hình</value></data>
-  <data name="Experimental.Floating.Description" xml:space="preserve"><value>Tiện ích màn hình độc lập, hỗ trợ bố cục ngang, dọc và lưu vị trí theo màn hình. Bật để hiện lựa chọn chế độ.</value></data>
+  <data name="Experimental.Floating.Description" xml:space="preserve"><value>Tiện ích màn hình độc lập, hỗ trợ bố cục ngang, dọc và lưu vị trí theo màn hình.</value></data>
   <data name="Settings.Context.ConfigurationTarget" xml:space="preserve"><value>Cấu hình đang chỉnh sửa</value></data>
-  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>Sau khi bật, vào Hiển thị &amp; vị trí để chuyển chế độ hiển thị và đặt hướng, lớp cửa sổ và vị trí. Phông chữ, giao diện và tương tác dùng chung giữa các chế độ.</value></data>
+  <data name="Experimental.Floating.Independent" xml:space="preserve"><value>Chuyển chế độ và chỉnh hướng, lớp cửa sổ, vị trí trong Hiển thị &amp; Vị trí. Phông chữ, giao diện và thao tác dùng chung giữa các chế độ.</value></data>
   <data name="Experimental.OpenInteraction" xml:space="preserve"><value>Mở cài đặt tương tác</value></data>
   <data name="Experimental.OpenContentLayout" xml:space="preserve"><value>Mở nội dung và bố cục</value></data>
   <data name="Experimental.OpenAppearance" xml:space="preserve"><value>Mở cài đặt giao diện</value></data>
   <data name="Experimental.Vertical.Notification.Title" xml:space="preserve"><value>Đã phát hiện thanh tác vụ dọc</value></data>
-  <data name="Experimental.Vertical.Notification.Body" xml:space="preserve"><value>Bật thử nghiệm thanh tác vụ dọc để hiển thị thanh phương tiện tại đây. Nhấn để mở Tính năng thử nghiệm.</value></data>
+  <data name="Experimental.Vertical.Notification.Body" xml:space="preserve"><value>Thanh phương tiện dọc theo hướng thanh tác vụ hệ thống. Nhấp để mở Hiển thị &amp; Vị trí.</value></data>
   <data name="Experimental.Floating.Mode" xml:space="preserve"><value>Chế độ hiển thị</value></data>
   <data name="Experimental.Floating.Taskbar" xml:space="preserve"><value>Thanh tác vụ</value></data>
   <data name="Experimental.Floating.Switching" xml:space="preserve"><value>Đang chuyển chế độ hiển thị…</value></data>
@@ -2956,7 +2956,7 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   <data name="Experimental.Floating.Lock" xml:space="preserve"><value>Khóa vị trí</value></data>
   <data name="Experimental.Floating.OpenDisplay" xml:space="preserve"><value>Mở hiển thị và vị trí</value></data>
   <data name="Taskbar.Compact.Notification.Title" xml:space="preserve"><value>Không gian thanh tác vụ hẹp</value></data>
-  <data name="Taskbar.Compact.Notification.Body" xml:space="preserve"><value>Ưu tiên lời hiện tại hoặc tiêu đề; thông tin phụ tạm ẩn. Hãy thử tiện ích màn hình để có thêm chỗ. Nhấp để mở Tính năng thử nghiệm.</value></data>
+  <data name="Taskbar.Compact.Notification.Body" xml:space="preserve"><value>Ưu tiên hiện lời bài hát hoặc tiêu đề, tạm ẩn thông tin phụ. Hãy thử thanh nổi để có thêm không gian. Nhấp để mở Hiển thị &amp; Vị trí.</value></data>
   <data name="Settings.Direction.Top" xml:space="preserve"><value>Trên</value></data>
   <data name="Settings.Direction.Bottom" xml:space="preserve"><value>Dưới</value></data>
   <data name="Settings.Direction.Start" xml:space="preserve"><value>Đầu</value></data>
